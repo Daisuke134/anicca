@@ -1719,6 +1719,15 @@ historical evidence below. Read-only inspection of the installed state shows:
   `0`, and wrote `READY_FOR_POLICY`. No public effect, provider link,
   transaction, or money claim was created; publication remains the next owner
   gate.
+- The next natural money-owner wake at `2026-08-20T13:51:10Z` was a duplicate-
+  safe readback: `READY_FOR_PUBLICATION`, `ALREADY_LIVE` on the existing X status,
+  a verified/deduplicated ElevenLabs placement link, and `REVENUE_COOLDOWN`.
+  Private ledger readback now shows 13 placements, 13 owned public URLs, 32
+  provider-link clicks, zero transaction rows, and zero approved/paid/pending/
+  reversed statuses. Rolling net remains `NO_TRANSACTIONS /
+  NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`, approved-or-paid net is null, and
+  actual cost/coverage remain `UNKNOWN`; Telegram has no pending event. This
+  closes no money gate and creates no new external effect.
 
 Execution resumes in this order. Time/provider outcomes are gates, but every safe
 independent harness task continues:

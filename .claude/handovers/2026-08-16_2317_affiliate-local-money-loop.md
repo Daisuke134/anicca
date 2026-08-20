@@ -528,3 +528,13 @@ placements, and rolling zero. Despite the direct label commands returning
 same Instagram job at `2026-08-20T13:43:25Z`, sealed evidence with Codex
 `0.148.0`, exit `0`, and wrote `READY_FOR_POLICY`. No public effect, provider
 transaction, or money was created; publication remains the next owner gate.
+
+The next natural money-owner wake at `2026-08-20T13:51:10Z` was a duplicate-safe
+readback: `READY_FOR_PUBLICATION`, `ALREADY_LIVE` on the existing X status, a
+verified/deduplicated ElevenLabs placement link, and revenue cooldown. Private
+ledger readback shows 13 placements, 13 owned public URLs, 32 provider-link
+clicks, zero transaction rows, and zero approved/paid/pending/reversed statuses.
+Rolling net remains `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`,
+approved-or-paid net is null, actual cost/coverage remain `UNKNOWN`, and
+Telegram has no pending event. This closes no money gate and creates no new
+external effect.
