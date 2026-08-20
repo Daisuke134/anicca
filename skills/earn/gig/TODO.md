@@ -204,11 +204,14 @@ The order to the end is:
    denies reads and writes to the durable project. Only artifact, acceptance and manifest are
    promoted. The producer is forbidden to create correspondence; the separate read-only reviewer
    receives the controller census and raw sources after the artifact hash is fixed and owns the
-   exhaustive semantic/modifier comparison. Live v19 isolation, review and delivery readback remain
-   to be proved.
-   review and delivery readback remain to be captured. Prove a new natural paid
-   order through validated artifact, one delivery
-   effect, exact-room official readback and replay zero.
+   exhaustive semantic/modifier comparison. The first natural v19 run re-reviewed v4 and rejected
+   it before delivery: direct inspection found clipped/obscured copy across both PC and responsive
+   artboards and proved that two buyer-supplied illustrations were loose package assets rather than
+   used in either layout. The controller persisted the complete class-wide finding under policy v19
+   and launched the exact next v5 producer from a temporary `paid-file-owner-*` staging root. That
+   root contains requirements, raw buyer sources, non-proof context and state, but no controller
+   census, prior candidate, review state, authorization or correspondence receipt. Live corrected
+   v5 review, one delivery effect, exact-room official readback and replay zero remain to be proved.
 6. **Prove 24/7 control-plane durability.** Browser, Apply, Negotiate, Storefront and Paid must each
    survive process exit and start again from the immutable release. The current shell cannot read
    the launchd domain (`launchctl` returns 141, `Reentrancy avoided`), although browser CDP and new
