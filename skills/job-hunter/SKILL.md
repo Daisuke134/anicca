@@ -26,6 +26,17 @@ ATS/PDF verification, approval state, and natural-language progress reports. The
 versioned `apps/job-search-loop/` owns browser and application side effects. Do not
 create a second executor in this skill.
 
+## Life Manager CLI and loop ownership
+
+`skills/job-hunter/job-hunter-cli.sh` is the user-facing dispatcher and
+`loops/job-hunter/registry.yaml` plus `loops/job-hunter/loop.toml` are the scheduler
+declarations. Acquisition runs once per hour and processes at most one candidate per
+wake; the recruiter inbox and interview-prep lane runs every 15 minutes. Both
+declarations delegate to the existing `apps/job-search-loop/scripts/` drivers, which
+remain the sole owner of browser, application, ledger, evidence, and Telegram-outbox
+side effects. The CLI and registry add no parallel executor and must never be used to
+submit an application independently.
+
 ## Canonical state
 
 Read private state before asking the user for anything:

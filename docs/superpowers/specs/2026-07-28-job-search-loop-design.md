@@ -5,10 +5,10 @@
 **Owner:** Daisuke Narita
 **Status:** Local acquisition, inbox and learning drivers are implemented and
 verified by direct canonical-wrapper runs from the canonical Life Manager
-checkout. Their 30-minute/15-minute resident LaunchAgents are currently not live
+checkout. Their hourly/15-minute resident schedulers are currently not live
 because the macOS user GUI launchd domain rejects registration/readback with
-`141: Reentrancy avoided`. Resume quality, harness-neutral skill extraction,
-operations guardianship, lifecycle closure and the Life Manager Career surface
+`141: Reentrancy avoided`. Resume quality, harness parity, operations
+guardianship, lifecycle closure and the Life Manager Career surface
 remain in progress.
 **Done when:** `Daisuke134/life-manager` is the only versioned source and the
 resident system can discover, qualify, tailor and submit up to ten truthful eligible
@@ -28,7 +28,7 @@ The loop optimizes for interviews, not raw submission count:
 
 | Objective | Rule |
 |---|---|
-| Daily application target | 10 unique, eligible, high-fit applications per Japan day; one candidate per 30-minute wake |
+| Daily application target | 10 unique, eligible, high-fit applications per Japan day; one candidate per hourly wake |
 | Location | Tokyo on-site/hybrid, Japan-remote, or global remote that accepts Japan-based workers |
 | Compensation | Prefer JPY 7M–10M+; hard reject known compensation below JPY 5.5M |
 | Role families | Applied AI/agent/GenAI engineering; AI product and technical program management; solutions/consulting; AI business development and partnerships; technical account management, customer success and sales engineering; agentic fintech/crypto/consumer AI |
@@ -38,12 +38,14 @@ The loop optimizes for interviews, not raw submission count:
 ### Current resident cadence contract
 
 The production `ai.anicca.job-search-daily` LaunchAgent is the single acquisition
-owner and is configured for an 1800-second wake. Each wake may process one candidate through the
+owner and is configured for a 3600-second wake. Each wake may process one candidate through the
 existing claim, browser, confirmation, ledger and Telegram fences. The committed
 strategy caps the Japan day at ten applications (dream 2, strong-fit 5, adjacent 3);
 once that cap is reached, a wake exits before browser/model initialization and writes
 `daily_quota_reached`. The installed plist and the versioned launchd/systemd
-templates are verified to carry the same 30-minute interval. The plist is currently
+templates are verified to carry the same hourly interval. The Life Manager
+`skills/job-hunter/job-hunter-cli.sh` dispatcher and `loops/job-hunter/` registry
+now point both scheduler declarations at this same canonical executor. The plist is currently
 configured but not registered in the user GUI launchd domain because every readback
 and kick returns `141: Reentrancy avoided`; the direct wrapper evidence below does
 not promote this host scheduler to live.
@@ -67,7 +69,7 @@ not job-selection policy or cloud architecture.
 | Legacy runner provenance | `Daisuke134/profitable-claude`, commit `191b205c03ae37d32b0125da4a1892924d585205` |
 | Versioned job runtime | `apps/job-search-loop/` |
 | Versioned model runner | `runtime/agent-runner/` |
-| Scheduling | Local macOS launchd every 30 minutes and inbox every 15 minutes |
+| Scheduling | Local macOS launchd every hour and inbox every 15 minutes |
 | Private data | Existing XDG profile, material, ledger, evidence, and outbox paths remain outside Git |
 | Cloud | Explicitly out of scope until the local loop is reliable enough for a paid product |
 
@@ -1056,7 +1058,7 @@ Live state measured on 2026-07-30:
 
 | Evidence | State |
 |---|---|
-| Daily LaunchAgent | idle after exit 0; 1800-second schedule |
+| Daily LaunchAgent | At the 2026-07-30 measurement it was idle after exit 0 on the prior 1800-second schedule; the current source and installed plist are hourly (3600 seconds) |
 | Inbox LaunchAgent | idle after exit 0; 900-second schedule |
 | Learning LaunchAgent | Sunday 09:15 JST plus RunAtLoad; canonical install and forced kicks reached runs=4 / last exit=0. The real ledger decision is `inconclusive / insufficient_resolved_applications`, baseline=0 and candidate=0 resolved, replay violations=0; receipt `175d3b7be5db06f88dbdc9aaf9428dfbda3fe65245a497a1f377b6271255564c`; Telegram ACK `4530`; identical retries reuse the same single outbox row and ACK |
 | Ledger | integrity `ok`; 2 submitted / 1 submit-unknown / 2 not-submitted |
@@ -1327,7 +1329,7 @@ must accumulate in the live loop:
 | Lane | Current evidence | Next completion gate |
 |---|---|---|
 | Engineering now | 11C merged in PR #1376 at `1bdbc67d3`, with health-status closure in PR #1377 at `fd26398cc`; the weekly learning driver, held-out replay, deterministic assignment, Wilson decision, rollback and hashed reporting have 203 passing job-loop tests and one real inconclusive receipt/Telegram ACK | Complete `JOB-RESUME-MATERIALS-1R`, `JOB-SKILL-BUNDLE-1S`, `JOB-HARNESS-PARITY-1H` and `JOB-TELEGRAM-COVERAGE-1T` |
-| Resident runtime | The interval plists and templates are valid, but current GUI launchd registration/readback is blocked by `141: Reentrancy avoided`; direct canonical-wrapper runs still reach browser/provider/ledger/Telegram, with ledger and interview-prep integrity `ok` and applications at 2 `submitted`, 1 `submit_unknown`, 2 `not_submitted` | Recover the GUI launchd domain, prove plist readback plus a 30-minute kick, then keep running Order 10 until the projection truthfully contains one confirmed Ashby and one confirmed Workday submission; current confirmed adapters are 0/2 |
+| Resident runtime | The interval plists and templates are valid, but current GUI launchd registration/readback is blocked by `141: Reentrancy avoided`; direct canonical-wrapper runs still reach browser/provider/ledger/Telegram, with ledger and interview-prep integrity `ok` and applications at 2 `submitted`, 1 `submit_unknown`, 2 `not_submitted` | Recover the GUI launchd domain, prove plist readback plus an hourly kick, then keep running Order 10 until the projection truthfully contains one confirmed Ashby and one confirmed Workday submission; current confirmed adapters are 0/2 |
 | Private/external wait | Real interview email or naturally occurring later same-thread recruiting message has not arrived | Order 8 is closed from the verified private profile; Order 9 and the 10L E2E gate close only when their authoritative external input exists; neither blocks 11B engineering |
 
 | Order | Deliverable | Status | Completion evidence |
@@ -1359,7 +1361,7 @@ not start merely because their design is already written:
 | `JOB-OUTCOME-ATTRIBUTION-11B` | `completed` | PR #1374 / merge `683ba9562` / final CI `30502556044`; immutable content-addressed generations and DB-enforced immutable assignments/outcomes persist; one external receipt may prove multiple stages only for its bound application; negative silence requires a versioned observation policy; Gmail submission confirmation is attributed; 191 job-loop and 11 runner tests pass; the redacted CLI migrated the live 5-row ledger with unchanged state counts, zero unassigned rows and integrity `ok`; projection rebuild is deterministic |
 | `JOB-LEARNING-PASS-11C` | `completed` | PR #1376 / merge `1bdbc67d3` / final CI `30507559728`; health-status follow-up PR #1377 / merge `fd26398cc`. 203 job-loop + 11 runner tests pass. Sunday 09:15 JST launchd and persistent systemd drivers replay eight safety cases, deterministically assign future canonical job keys, evaluate authoritative interview outcomes, atomically promote/close/rollback with pointer-race fencing, and send one content-addressed Telegram report. The live ledger stayed integrity `ok` with unchanged 2 submitted / 1 submit-unknown / 2 not-submitted counts; its first 0/0-sample decision was correctly inconclusive, receipt `175d3b7be5db06f88dbdc9aaf9428dfbda3fe65245a497a1f377b6271255564c`, Telegram ACK `4530`; canonical LaunchAgent reached runs=4 / last exit=0 and the three-driver healthcheck reports learning `status=success` with both SQLite integrity checks `ok` |
 | `JOB-RESUME-MATERIALS-1R` | `in_progress` | The approved TOEIC-inclusive technical-business baseline is promoted and historical evidence is preserved; remaining work is the canonical engineering/Japanese/rirekisho refresh and verification. |
-| `JOB-SKILL-BUNDLE-1S` | `pending_after_1R` | Extract a harness-neutral `skills/job-hunter/SKILL.md` and `loops/job-hunter/` registry from the current app without changing behavior; Codex is the first adapter, Claude and generic providers consume the same input/output schemas, and parity tests prove no duplicate executor or side-effect ownership |
+| `JOB-SKILL-BUNDLE-1S` | `completed` | `skills/job-hunter/SKILL.md` now exposes the Life Manager CLI/loop ownership contract; `skills/job-hunter/job-hunter-cli.sh`, `loops/job-hunter/registry.yaml`, and `loops/job-hunter/loop.toml` delegate to the existing `apps/job-search-loop` executor without changing application semantics. |
 | `JOB-HARNESS-PARITY-1H` | `pending_after_1S` | Add `claude-direct` and generic-provider candidates behind the same task-class schemas; preserve Codex-first selection, retry only transient provider failures, record provider/model/attempt evidence, and pass one fixed fixture through Codex, Claude and generic adapters without duplicate side effects |
 | `JOB-TELEGRAM-COVERAGE-1T` | `pending_after_1H` | Add one versioned event envelope and deterministic natural-language renderer; wire loop start/finish, model attempts/fallbacks, discovery/ranking, materials/ATS readiness, every external side effect, blockers, reconciliation, prep, learning and health into the fenced Telegram outbox; model failure must still produce a human-readable report and every delivery must have an ACK or durable `delivery_unknown` event |
 | `JOB-GUARDIAN-PASS-11D` | `pending_after_1T` | A deterministic scheduled guardian checks launchd/timer freshness, DB integrity, provider/browser health and leases; repairs only pre-side-effect failures; deduplicates alerts and persists remediation |
@@ -1376,7 +1378,7 @@ slice has one owner, one acceptance result and one durable receipt.
 
 | Slice | Parent | Status | Done when |
 |---|---|---|---|
-| `JOB-LOOP-CADENCE-2A` | 11 | `in_progress` | The resident acquisition owner uses a 30-minute LaunchAgent/systemd interval, processes at most one candidate per wake, preserves the ten-application Japan-day portfolio cap, and passes plist lint plus scheduler-template tests. The installed plist reads `StartInterval=1800`; the active release is `3a4caa720` and its direct canonical-wrapper passes completed with Codex/local-proxy, browser, ledger and Telegram evidence (`daily-20260820-210141`, schema-valid `rc=0`, report ACK `26116`; one-shot `daily-20260820-213110`, `rc=0`, no eligible posting, report ACK `26155`; active-release transport proof ACK `26095`; direct document proof ACK `26091`). The installer and healthcheck now resolve `Aqua → gui/<uid>` or `Background → user/<uid>` and fail closed with rc75 when the manager context is unavailable. `launchctl print`, `kickstart`, and `bootout/bootstrap` readback remain blocked by macOS error 141 (`Reentrancy avoided`), while `launchctl managername` returns rc153. This is a host user-launchd/LaunchServices bootstrap failure; the loop is not marked live until the user GUI launchd domain is recovered and the plist is read back successfully. |
+| `JOB-LOOP-CADENCE-2A` | 11 | `in_progress` | The resident acquisition owner uses an hourly LaunchAgent/systemd interval, processes at most one candidate per wake, preserves the ten-application Japan-day portfolio cap, and passes plist lint plus scheduler-template tests. The source and installed plist now read `StartInterval=3600`, the systemd timer reads `OnUnitActiveSec=1h`, and `loops/job-hunter/` plus `bin/plistgen.py` generate the same hourly label and CLI. The active release is `3a4caa720` and direct canonical-wrapper passes completed with Codex/local-proxy, browser, ledger and Telegram evidence (`daily-20260820-210141`, schema-valid `rc=0`, report ACK `26116`; one-shot `daily-20260820-213110`, `rc=0`, no eligible posting, report ACK `26155`; latest CLI-dispatched pass `daily-20260820-222916`, runner `rc=0`, no eligible verified posting, report ACK `26231`; active-release transport proof ACK `26095`; direct document proof ACK `26091`). The installer and healthcheck now resolve `Aqua → gui/<uid>` or `Background → user/<uid>` and fail closed with rc75 when the manager context is unavailable. `launchctl print`, `kickstart`, and `bootout/bootstrap` readback remain blocked by macOS error 141 (`Reentrancy avoided`), while `launchctl managername` returns rc153. This is a host user-launchd/LaunchServices bootstrap failure; the loop is not marked live until the user GUI launchd domain is recovered and the plist is read back successfully. |
 | `JOB-RESUME-FACTS-1R-A` | 1R | `completed` | Full institution names and periods are recorded, and Daisuke confirmed TOEIC 910. The private truth ledger now records TOEFL iBT 96, TOEIC 910, Duolingo English Test 140 and DELE B1; no language claim remains unresolved. |
 | `JOB-RESUME-EN-1R-B` | 1R | `in_progress` | The approved technical-business PDF is canonical and verified; the engineering variant still needs its canonical refresh before the English bundle is closed. Both variants must retain the one-page hierarchy, separate Research Experience/Education sections and full institution names. |
 | `JOB-RESUME-JA-1R-C` | 1R | `pending_after_1R-A` | Japanese 履歴書 and 職務経歴書 render from the same ledger with separate 学歴・職歴・研究 sections, full attendance periods, formal institution names, the language section, and grounded claims. |
@@ -1386,8 +1388,8 @@ slice has one owner, one acceptance result and one durable receipt.
 | `JOB-RESUME-REFINE-1R-G` | 1R | `pending_after_1R-F` | A fixed JD fixture produces a success profile, confidence-scored evidence mapping, separate project bullets, ATS-ready HTML/PDF, a before/after report, and exact hashes. |
 | `JOB-RESUME-APPROVAL-1R-H` | 1R | `completed` | Daisuke explicitly approved the corrected technical-business baseline; revision SHA `1a65d5de26be39ea75cf1c0c9ebdce2af49ccc88c4f7cdc62f04aec8cb5b6e6f` is promoted, prior SHAs are archived for historical receipts, and Telegram delivery is not used as the approval signal. |
 | `JOB-RESUME-AUTOPILOT-1R-I` | 1R | `pending_after_1R-H` | The resident job loop reuses the approved baseline without recurring resume questions, reports each material event, and stops only for new factual/consent conflicts. |
-| `JOB-SKILL-CONTRACT-1S-A` | 1S | `pending_after_1R-D` | `skills/job-hunter/SKILL.md` has valid frontmatter, relative references, no private data and one contract test. |
-| `JOB-LOOP-REGISTRY-1S-B` | 1S | `pending_after_1S-A` | `loops/job-hunter/registry.yaml` maps each loop to exactly one schedule, task schema and evidence root. |
+| `JOB-SKILL-CONTRACT-1S-A` | 1S | `completed` | Frontmatter/reference/private-data checks and the focused contract test pass; the CLI is shell-linted and contains no browser, Telegram, credential, or private-path logic. |
+| `JOB-LOOP-REGISTRY-1S-B` | 1S | `completed` | `loops/job-hunter/registry.yaml` and `loop.toml` map acquisition (hourly), inbox (15 minutes), and learning (Monday 09:15 JST) to unique labels, schemas, evidence root, and the single canonical executor; `plistgen.py` generated all three valid declarations. |
 | `JOB-SKILL-PARITY-1S-C` | 1S | `pending_after_1S-B` | The extracted skill and current app produce identical state/evidence for fixed daily and inbox fixtures. |
 | `JOB-CLAUDE-CANDIDATE-1H-A` | 1H | `pending_after_1S-C` | Claude candidates exist for every live model task class with the same schema, timeout and transient-failure policy. |
 | `JOB-GENERIC-ADAPTER-1H-B` | 1H | `pending_after_1H-A` | A generic provider adapter consumes the same packet and emits the same validated result envelope. |

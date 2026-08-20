@@ -1,9 +1,9 @@
 [Unit]
-Description=Run Anicca job search every 30 minutes
+Description=Run Anicca job search every hour
 
 [Timer]
 OnBootSec=2min
-OnUnitActiveSec=30min
+OnUnitActiveSec=1h
 Persistent=true
 Unit=ai.anicca.job-search-daily.service
 

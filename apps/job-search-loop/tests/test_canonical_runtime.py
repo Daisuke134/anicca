@@ -288,7 +288,7 @@ raise SystemExit(0)
                 learning["ProgramArguments"][0],
                 str(APP_ROOT / "scripts" / "run-learning.sh"),
             )
-            self.assertEqual(daily["StartInterval"], 1800)
+            self.assertEqual(daily["StartInterval"], 3600)
             self.assertEqual(inbox["StartInterval"], 900)
             self.assertEqual(
                 learning["StartCalendarInterval"],
@@ -352,7 +352,7 @@ raise SystemExit(0)
                 str(APP_ROOT / "scripts" / "run-daily.sh"), daily_service
             )
             self.assertIn(str(REPO_ROOT), daily_service)
-            self.assertIn("OnUnitActiveSec=30min", daily_timer)
+            self.assertIn("OnUnitActiveSec=1h", daily_timer)
             self.assertIn("Persistent=true", daily_timer)
             self.assertIn("OnUnitActiveSec=15min", inbox_timer)
             self.assertIn(

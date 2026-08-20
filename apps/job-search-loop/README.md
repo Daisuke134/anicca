@@ -2,14 +2,14 @@
 
 Anicca Job Search Loop is a bounded, evidence-first job application system for a
 verified private candidate profile. It discovers and ranks suitable roles, submits at
-most ten verified applications per Japan day (one candidate per 30-minute wake), monitors recruiter mail, prepares
+most ten verified applications per Japan day (one candidate per hourly wake), monitors recruiter mail, prepares
 interviews, and reports every material state change to Telegram.
 
 ## Operating contract
 
 | Concern | Current rule |
 |---|---|
-| Daily target | At most 10 unique, confirmed submissions; one candidate per 30-minute wake |
+| Daily target | At most 10 unique, confirmed submissions; one candidate per hourly wake |
 | Location | Tokyo or remote roles that can employ someone based in Japan |
 | Compensation | JPY 5.5M hard floor; JPY 7M target |
 | Role focus | Applied AI/agent engineering plus technical AI business roles: Product, Program, Solutions, GTM, Partnerships, Customer Success and Sales Engineering |
@@ -34,7 +34,7 @@ quota, and policy gates run before browser/model initialization.
 
 | Component | Schedule | Route |
 |---|---|---|
-| `ai.anicca.job-search-daily` | every 30 minutes | bounded browser-lane agent |
+| `ai.anicca.job-search-daily` | every hour | bounded browser-lane agent |
 | `ai.anicca.job-search-inbox` | every 15 minutes | deterministic Gmail and prep preflight; Terra composition agent only for new recruiting work or pending prep generation |
 
 The current local deployment uses launchd and is designed so the same drivers and
