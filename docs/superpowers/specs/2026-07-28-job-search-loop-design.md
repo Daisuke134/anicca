@@ -202,11 +202,13 @@ The canonical `runtime/agent-runner` owns model execution:
 | Weekly strategy experiment | `high-value-agent` → `codex/gpt-5.6-terra`, medium | Configured class; learning decisions are deterministic |
 
 `install-local.sh --provider auto` can select an authenticated Claude CLI when Codex
-is unavailable, but the current task-class candidate arrays contain Codex only. A
-Claude task fallback and a generic-provider adapter are therefore not yet live; they
-are separate atomic TODO `JOB-HARNESS-PARITY-1H`. All model outputs must validate
-against JSON Schema. A valid but schema-invalid response fails closed and does not
-silently switch providers.
+is unavailable. The two live browser/composition classes now keep Codex first and
+have a Claude Sonnet candidate only for a classified transient provider failure; the
+other job classes remain Codex-only until `JOB-HARNESS-PARITY-1H`. The Codex provider
+uses the private local proxy (`http://127.0.0.1:8317/v1`) when the host resolver cannot
+reach ChatGPT, without changing the selected model or Codex-first policy. All model
+outputs must validate against JSON Schema. A valid but schema-invalid response fails
+closed and does not silently switch providers.
 
 ### 4.2A Harness-neutral skills and loops
 
