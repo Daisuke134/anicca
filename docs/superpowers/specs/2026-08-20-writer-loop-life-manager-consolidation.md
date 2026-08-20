@@ -29,7 +29,8 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
 - Substack managed publisherのsource／active release契約fixtureは、JAのpublication identityをstateと環境へ明示してPASSした。これはローカル契約の確認で、外部Substack公開receiptではない。
 - 下書きGETのpublication/subdomainと明示bylineを読み戻してから画像upload／PUTへ進むfail-closed判定をsource／releaseへ追加した。identity readbackが欠ける既存英語targetは環境変数だけで再利用しない。
 - managed wrapperにもpair-specific identityとstate一致のゲートを追加し、remote receipt側は下書きidentityとredirect後の公開canonical hostを実読取してからliveを確定する。期待hostからURLを組み立てただけの値はreceiptにしない。
-- Life Managerの `skills/writer-agent` にactive release相当のproduction tree 475 filesを同期し、tree hash `b7435c4afa2e48214583e33bc30b948502936e5f1b3434892465b99456669356` とactive release hash `0f85ddb44983bcae56c7e3a232652f73feac1a6f4ac20d16f45b664f1c3e0d11` を `config/writer/runtime-manifest.json` に固定した。LaunchAgentテンプレートのLife Managerパス化と19 labelのpath censusを `69e2dbdc5` としてpushしたが、実際にインストールされたplistはまだ旧rootを呼び、state parityとowner fenceが無いためcutoverは未実施である。
+- Life Managerの `skills/writer-agent` にactive release相当のproduction tree 476 filesを同期し、tree hash `cba44554e94e9722fcfc6b8f2d2995d28adc93cb4aa3d5079a236d92104091a4` とactive release hash `b10435498e1cd6cf0661be953f5602dc17c63513ff46f16850a96e992c6cb5d1` を、同一のsha256 path+content方式で `config/writer/runtime-manifest.json` に固定した。所有者フェンス `writer_owner_fence.py` はLife Manager、active release、sourceの同一内容として実装し、daily creator、resume、Zenn deferred workerに停止ゲートを追加した。LaunchAgentテンプレートのLife Managerパス化と19 labelのpath censusは `69e2dbdc5` としてpush済みだが、実際にインストールされたplistはまだ旧rootを呼び、フェンスのインストール、state parity、旧owner drainが無いためcutoverは未実施である。
+- 停止範囲は現在、active releaseを呼ぶdaily/resumeとZenn deferred workerで実測済みである。別rootの`~/.local/bin/writer` legacy CLIについては、停止ゲートが適用されることをまだ証明していないため、停止中という表現をそのCLIへ拡張しない。
 - 現在の空き容量は約5.6GiBで、公開下限5GiBを上回る。ただし実行環境の通常DNSは名前解決に失敗し、1.1.1.1で解決したIPを`curl --resolve`に指定するとNote／Substack／XはHTTP 200になる。DNSを固定変更せず、Substackの言語identity・Xのmedia readback・Life Manager owner移行が確認できるまでpauseは解除しない。
 
 ## 目標構成

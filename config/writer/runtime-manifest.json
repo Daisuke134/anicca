@@ -1,8 +1,9 @@
 {
   "schema_version": 1,
   "runtime_root": "skills/writer-agent",
-  "runtime_tree_sha256": "b7435c4afa2e48214583e33bc30b948502936e5f1b3434892465b99456669356",
-  "runtime_file_count": 475,
+  "runtime_tree_sha256": "cba44554e94e9722fcfc6b8f2d2995d28adc93cb4aa3d5079a236d92104091a4",
+  "runtime_file_count": 476,
+  "hash_algorithm": "sha256(sorted relative path + NUL + file bytes + NUL; excludes state and cache directories)",
   "source": {
     "repository": "/Users/anicca/profitable-claude",
     "path": "skills/article-writer",
@@ -11,8 +12,8 @@
   },
   "active_release": {
     "path": "/Users/anicca/profitable-claude-releases/writer/e9ab21ea/writer-agent",
-    "tree_sha256": "0f85ddb44983bcae56c7e3a232652f73feac1a6f4ac20d16f45b664f1c3e0d11",
-    "file_count": 474,
+    "tree_sha256": "b10435498e1cd6cf0661be953f5602dc17c63513ff46f16850a96e992c6cb5d1",
+    "file_count": 475,
     "status": "currently-invoked-by-daily-and-resume"
   },
   "state": {
@@ -79,9 +80,16 @@
     "writer_engine_state": "/Users/anicca/.local/share/writer-engine",
     "status": "not-migrated"
   },
+  "owner_fence": {
+    "path": "skills/writer-agent/scripts/writer_owner_fence.py",
+    "state_path": "~/.local/state/life-manager/writer/owner-fence",
+    "status": "implemented-in-tree-not-installed",
+    "pause_gates": ["article-daily", "article-resume", "zenn-deferred-worker"],
+    "legacy_cli_pause_proven": false
+  },
   "cutover": {
     "status": "not-ready",
-    "reason": "shared owner fence, state parity, launchd drain, and bounded wake are not yet proven",
+    "reason": "owner fence is implemented in the Life Manager tree but not installed; state parity, launchd drain, and bounded wake are not yet proven",
     "publication_paused": true,
     "legacy_roots_must_not_be_deleted": true
   }

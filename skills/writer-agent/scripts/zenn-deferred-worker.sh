@@ -7,6 +7,13 @@ export PATH="${PATH:-/usr/bin:/bin:/usr/sbin:/sbin}:/opt/homebrew/bin:/usr/local
 set -a
 . "$HOME/.openclaw/.env" 2>/dev/null || true
 set +a
+ARTICLE_ROOT="${ARTICLE_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
+STATE_DIR="${ARTICLE_STATE_DIR:-$ARTICLE_ROOT/state}"
+PUBLICATION_PAUSE_FILE="${ARTICLE_PUBLICATION_PAUSE_FILE:-$STATE_DIR/.publication-paused}"
+if [ -f "$PUBLICATION_PAUSE_FILE" ]; then
+  echo "zenn-deferred-worker: publication paused file=$PUBLICATION_PAUSE_FILE"
+  exit 0
+fi
 SYSTEM_PYTHON="${WRITER_SYSTEM_PYTHON:-/opt/homebrew/bin/python3}"
 if [ ! -x "$SYSTEM_PYTHON" ]; then
   echo "Zenn worker system Python is unavailable: $SYSTEM_PYTHON" >&2

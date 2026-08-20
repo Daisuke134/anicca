@@ -35,6 +35,15 @@ if [ -f "$PUBLICATION_PAUSE_FILE" ]; then
   echo "article-resume: publication paused file=$PUBLICATION_PAUSE_FILE" >>"$LOG"
   exit 0
 fi
+if [ "${ARTICLE_OWNER_FENCE_ACTIVE:-0}" != "1" ]; then
+  OWNER_FENCE_DIR="${ARTICLE_OWNER_FENCE_DIR:-$HOME/.local/state/life-manager/writer/owner-fence}"
+  export ARTICLE_OWNER_FENCE_DIR
+  exec python3 "$ARTICLE_ROOT/scripts/writer_owner_fence.py" run \
+    --fence-dir "$OWNER_FENCE_DIR" --owner article-resume \
+    --root "$ARTICLE_ROOT" --state "$STATE_DIR" \
+    --run-id "${ARTICLE_EXPECTED_RUN_ID:-daily-$(TZ=Asia/Tokyo date +%F)}" \
+    -- "$0" "$@"
+fi
 
 # A publisher must not create an irreversible external effect when its durable
 # receipt, circuit, or outbox cannot be persisted. Resume has no cleanup rights;

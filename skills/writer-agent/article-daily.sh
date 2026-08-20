@@ -29,6 +29,15 @@ if [ -f "$PUBLICATION_PAUSE_FILE" ]; then
   echo "article-daily: publication paused file=$PUBLICATION_PAUSE_FILE" >>"$LOG"
   exit 0
 fi
+if [ "${ARTICLE_OWNER_FENCE_ACTIVE:-0}" != "1" ]; then
+  OWNER_FENCE_DIR="${ARTICLE_OWNER_FENCE_DIR:-$HOME/.local/state/life-manager/writer/owner-fence}"
+  export ARTICLE_OWNER_FENCE_DIR
+  exec python3 "$ARTICLE_ROOT/scripts/writer_owner_fence.py" run \
+    --fence-dir "$OWNER_FENCE_DIR" --owner article-daily \
+    --root "$ARTICLE_ROOT" --state "$STATE_DIR" \
+    --run-id "${ARTICLE_EXPECTED_RUN_ID:-daily-$(TZ=Asia/Tokyo date +%F)}" \
+    -- "$0" "$@"
+fi
 TELEGRAM_TARGET_ID="${TELEGRAM_TARGET_ID:-8547730585}"
 ARTICLE_PROVIDER_COOLDOWN_SECONDS="${ARTICLE_PROVIDER_COOLDOWN_SECONDS:-21600}"
 ARTICLE_PRODUCT_ID="${ARTICLE_PRODUCT_ID:-anicca}"
