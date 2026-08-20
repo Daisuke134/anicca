@@ -870,3 +870,105 @@ def test_resume_loop_tells_the_dispatcher_when_publication_work_is_pending(
     assert lines[0] == "bridge"
     assert lines[1].startswith("dispatch ")
     assert "--publication-backlog 1" in lines[1]
+
+
+def test_resume_loop_older_backlog_does_not_suppress_new_daily_schedule(
+    tmp_path: Path,
+) -> None:
+    """A prior-day repair must not turn the daily creator into a starvation queue."""
+    fake_root = tmp_path / "writer-agent"
+    state_dir = tmp_path / "state"
+    scripts = fake_root / "scripts"
+    (state_dir / "runs").mkdir(parents=True)
+    scripts.mkdir(parents=True)
+    shutil.copy(ROOT / "scripts" / "article-resume-pending.sh", scripts)
+    marker = tmp_path / "daily-started"
+    (fake_root / "article-daily.sh").write_text(
+        f"#!/usr/bin/env bash\nprintf '%s\\n' daily > {str(marker)!r}\n"
+    )
+    (fake_root / "article-daily.sh").chmod(0o755)
+    (scripts / "article_daily_start_control.py").write_text(
+        "print('{\"action\":\"new\"}')\n"
+    )
+    (scripts / "article_pending.py").write_text(
+        "import json\n"
+        "print(json.dumps({'status':'READY','run_id':'daily-2026-08-07',"
+        "'eligible_pairs':['substack/ja'],'initialization_pairs':[],"
+        "'recovery_pairs':[]}))\n"
+    )
+    log = tmp_path / "resume.log"
+    result = subprocess.run(
+        ["bash", str(scripts / "article-resume-pending.sh")],
+        env={
+            **os.environ,
+            "ARTICLE_ROOT": str(fake_root),
+            "ARTICLE_STATE_DIR": str(state_dir),
+            "ARTICLE_OWNER_FENCE_ACTIVE": "1",
+            "ARTICLE_LOCAL_DATE": "2026-08-21",
+            "ARTICLE_LOCAL_HOUR": "06",
+            "ARTICLE_DAILY_SCHEDULE_HOUR": "6",
+            "ARTICLE_RESUME_MIN_FREE_BYTES": "1",
+            "ARTICLE_RESUME_LOG": str(log),
+        },
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert marker.read_text().strip() == "daily"
+    assert "older publication backlog does not block daily schedule" in log.read_text()
+
+
+def test_resume_loop_future_or_unknown_backlog_still_suppresses_new_daily(
+    tmp_path: Path,
+) -> None:
+    """Future/invalid identities fail closed instead of creating a duplicate run."""
+    for index, run_id in enumerate(
+        ("daily-2026-08-22", "daily-not-a-date", "20260807-abcdef")
+    ):
+        case = tmp_path / str(index)
+        fake_root = case / "writer-agent"
+        state_dir = case / "state"
+        scripts = fake_root / "scripts"
+        (state_dir / "runs").mkdir(parents=True)
+        scripts.mkdir(parents=True)
+        shutil.copy(ROOT / "scripts" / "article-resume-pending.sh", scripts)
+        marker = case / "daily-started"
+        (fake_root / "article-daily.sh").write_text(
+            f"#!/usr/bin/env bash\nprintf '%s\\n' daily > {str(marker)!r}\n"
+        )
+        (fake_root / "article-daily.sh").chmod(0o755)
+        (scripts / "article_daily_start_control.py").write_text(
+            "print('{\"action\":\"new\"}')\n"
+        )
+        counter = case / "planner-calls"
+        (scripts / "article_pending.py").write_text(
+            "import json, pathlib\n"
+            f"counter = pathlib.Path({str(counter)!r})\n"
+            "n = int(counter.read_text()) if counter.exists() else 0\n"
+            "counter.write_text(str(n + 1))\n"
+            f"print(json.dumps({{'status':'READY','run_id':{run_id!r},"
+            "'eligible_pairs':['substack/ja'],'initialization_pairs':[],"
+            "'recovery_pairs':[]}) if n == 0 else "
+            "json.dumps({'status':'BLOCKED','reason':'test'}))\n"
+        )
+        result = subprocess.run(
+            ["bash", str(scripts / "article-resume-pending.sh")],
+            env={
+                **os.environ,
+                "ARTICLE_ROOT": str(fake_root),
+                "ARTICLE_STATE_DIR": str(state_dir),
+                "ARTICLE_OWNER_FENCE_ACTIVE": "1",
+                "ARTICLE_LOCAL_DATE": "2026-08-21",
+                "ARTICLE_LOCAL_HOUR": "06",
+                "ARTICLE_DAILY_SCHEDULE_HOUR": "6",
+                "ARTICLE_RESUME_MIN_FREE_BYTES": "1",
+                "ARTICLE_RESUME_LOG": str(case / "resume.log"),
+            },
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert result.returncode == 0, result.stderr
+        assert not marker.exists()

@@ -194,7 +194,49 @@ if [ "$PRE_START_ACTION" != "block-incomplete" ]; then
   PRIORITY_PUBLICATION_PLAN="$(python3 "$PLANNER" "${PRIORITY_PLAN_ARGS[@]}" 2>>"$LOG" || true)"
   if [ "$(printf '%s' "$PRIORITY_PUBLICATION_PLAN" | jq -r '.status // empty')" = "READY" ] \
     && [ "$(printf '%s' "$PRIORITY_PUBLICATION_PLAN" | jq '((.initialization_pairs // []) + (.eligible_pairs // []) + (.recovery_pairs // [])) | length')" -gt 0 ]; then
-    PRIORITY_PUBLICATION_READY=1
+    PRIORITY_RUN_ID="$(printf '%s' "$PRIORITY_PUBLICATION_PLAN" | jq -r '.run_id // empty')"
+    PRIORITY_RUN_DATE=""
+    if [ -n "$PRIORITY_RUN_ID" ]; then
+      PRIORITY_RUN_DATE="$(python3 - "$PRIORITY_RUN_ID" <<'PY' 2>/dev/null
+from datetime import date, datetime
+import re
+import sys
+
+run_id = sys.argv[1]
+if re.fullmatch(r"daily-\d{4}-\d{2}-\d{2}", run_id):
+    parsed = date.fromisoformat(run_id.removeprefix("daily-"))
+elif re.fullmatch(r"\d{8}-\d{6}", run_id):
+    parsed = datetime.strptime(run_id, "%Y%m%d-%H%M%S").date()
+else:
+    raise SystemExit(1)
+print(parsed.isoformat())
+PY
+)" || PRIORITY_RUN_DATE=""
+    fi
+    # An older backlog must not suppress today's article, but unknown, invalid,
+    # or future run identities fail closed so they cannot create a duplicate
+    # daily run. Only a calendar date proven strictly before LOCAL_DATE opts
+    # out of the foreground publication signal.
+    PRIORITY_OLDER_RUN=0
+    if [ -n "$PRIORITY_RUN_DATE" ] && python3 - "$PRIORITY_RUN_DATE" "$LOCAL_DATE" <<'PY'
+from datetime import date
+import sys
+
+try:
+    run_date = date.fromisoformat(sys.argv[1])
+    local_date = date.fromisoformat(sys.argv[2])
+except (IndexError, ValueError):
+    raise SystemExit(1)
+raise SystemExit(0 if run_date < local_date else 1)
+PY
+    then
+      PRIORITY_OLDER_RUN=1
+    fi
+    if [ "$PRIORITY_OLDER_RUN" -eq 1 ]; then
+      echo "article-resume: older publication backlog does not block daily schedule run=$PRIORITY_RUN_ID date=$PRIORITY_RUN_DATE local=$LOCAL_DATE" >>"$LOG"
+    else
+      PRIORITY_PUBLICATION_READY=1
+    fi
   fi
 fi
 # The 06:00 calendar job remains the normal creator. If the host was asleep,
