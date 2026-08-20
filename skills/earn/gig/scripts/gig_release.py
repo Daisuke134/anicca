@@ -281,12 +281,12 @@ def activate(job: dict, table: dict[str, str], release: Path, dry_run: bool,
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("wb") as handle:
         plistlib.dump(body, handle)
-    if skip_busy or label in CONTINUOUS_RELOADABLE:
+    if skip_busy:
         # Booting out mid-pass kills the browser lease and leaves locks behind.  A
-        # continuous lane is also fenced when launchd's control plane is returning
-        # ``Reentrancy avoided``: its durable process is safer than a blind reload.
         # The next watcher tick can activate the new immutable release after a
-        # natural gap, while this tick never creates a second owner.
+        # natural gap, while this tick never creates a second owner. Continuous
+        # lanes are deliberately reloadable because their durable outbox is the
+        # restart boundary and they otherwise have no natural idle gap.
         if is_running(label):
             print(f"  {label}: still mid-pass, leaving it for the next tick")
             return True
