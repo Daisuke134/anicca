@@ -1,7 +1,7 @@
 # Autonomous Job Search Loop Design
 
 **Date:** 2026-07-28
-**Last updated:** 2026-08-20
+**Last updated:** 2026-08-21
 **Owner:** Daisuke Narita
 **Status:** Local acquisition, inbox and learning drivers are implemented and
 verified by direct canonical-wrapper runs from the canonical Life Manager
@@ -1187,8 +1187,18 @@ but the model selected the legacy private `outbox.sqlite3` instead of the
 canonical daily-driver database `telegram-outbox.sqlite3`. The message was real,
 yet the canonical outbox could not prove it and could have allowed a duplicate.
 The daily prompt now pins the canonical path and requires ACK plus outbox-status
-readback before reporting delivery; this remains open until a subsequent canonical
-pass records its report in that database.
+readback before reporting delivery. The subsequent canonical pass below closes
+this specific path mismatch.
+
+The canonical pass `daily-20260821-000802` completed with `rc=0`, Codex
+`gpt-5.6-terra`/medium, no submitted application and no `submit_unknown`. It
+reported ACK `26339`, and a read-only query confirmed `status=sent` for that
+message in `telegram-outbox.sqlite3`. Liquid AI was stopped on an immutable
+strategy-assignment conflict without a rebind; Anthropic was stopped because the
+required free-text “Why Anthropic?” answer lacks a verified fact or approved
+material; Appier was stopped on its explicit three-year minimum. No form submit
+click occurred. The canonical summary still reports the required Workday adapter
+as unconfirmed.
 
 The code path is now pushed through `a181d5fd9` and its preceding job-search
 changes: non-Workday Apply navigation (`a595ca29f`), event-before-state ordering
