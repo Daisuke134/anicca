@@ -2,9 +2,9 @@
 
 | Field | Value |
 |---|---|
-| Status | ACTIVE — signed Apple Finance rows complete; `CFO-2b.2b2` whole-report parsing/reconciliation is the only active slice |
+| Status | PAUSED — signed Apple Finance rows complete; parent `CFO-OPS3a`/`OPS3b` and `CFO-1j` are active first, then `CFO-2b.2b2` resumes |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
-| Runtime | Local `apps/life-call`; existing ledgers and provider APIs only |
+| Runtime | Canonical target is local `/Users/anicca/Projects/life-manager-main/apps/life-manager`; existing `apps/life-call` code is migration evidence, not the final owner |
 | Role split | Sol specifies/verifies; Luna implements production code/tests |
 
 ## 1. Goal
@@ -36,7 +36,7 @@ flowchart LR
 
 ## 3. Ordered work
 
-Only the first unchecked item is active.
+Only the first unchecked business item is active after the parent spec's operational recovery gate.
 
 - [x] **CFO-2b.1 — Life Manager**
   - [x] **2b.1a** Normalize finalized TaskMarket/uGig external settlements already stored in `lm_agent_earnings`.
@@ -451,3 +451,22 @@ Rules:
   currency totals above matched; the privacy gate passed; payout, MUFG landing, profit, and FX remain unknown.
 - The next and only active slice is `CFO-2b.2b2`: move the proven one-off report boundary into the smallest durable
   parser and reconcile report-level Apple Partner Share coverage with RevenueCat without converting absence to zero.
+
+## 13. Resume audit
+
+- Code commit `f1986663b` and docs commit `9244aa159` remain present on their local and canonical remote-tracking
+  branches. The previous code/docs worktree directories were cleaned; durable replacements are
+  `/Users/anicca/anicca-project/.worktrees/cfo-resume-code` and
+  `/Users/anicca/anicca-project/.worktrees/cfo-resume-spec`.
+- The code branch's configured upstream is wrong: it points to the docs branch. Until corrected, push code only with
+  explicit target `canonical HEAD:feature/cfo-4d1-finalize-sol`; push specs to
+  `canonical HEAD:feature/cfo-moneytree-daily-report`. Never edit the dirty main worktree.
+- Fresh `normalizeAniccaIosAppleFinanceRow` focused tests pass 5/5. Fresh CFO/full gates are not green: the recovered
+  worktree's installed dependency directories for `@opentelemetry/api` and `ws` are invalid/empty, so four tests fail
+  at module load. This is recorded as an environment/runtime recovery failure, not proof of an Apple normalizer
+  regression.
+- The hourly launchd label is not loaded. Its plist references the deleted prior worktree; the old entrypoint is
+  absent. Last stdout is dated 2026-08-11 and last stderr shows the missing OpenTelemetry module. No current hourly
+  Telegram report is claimed. Parent `CFO-OPS3a`/`CFO-OPS3b` and the recent-transaction `CFO-1j` are therefore first;
+  once the canonical Life Manager-owned loop and real message receipt are verified,
+  `CFO-2b.2b2` is again the first business implementation slice.

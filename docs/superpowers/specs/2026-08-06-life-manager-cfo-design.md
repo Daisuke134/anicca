@@ -2,11 +2,12 @@
 
 | Field | Value |
 |---|---|
-| Status | M2 ACTIVE — CFO-2a3c live hourly subscription report complete; CFO-2a3b is external-gated, CFO-2b is next actionable |
+| Status | M2 RECOVERY — `CFO-OPS3a` consolidates into Life Manager, `OPS3b` restores hourly Telegram, then `CFO-1j` recent transactions |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
 | Existing foundations | `apps/life-call`, interactive Moneytree App access, Fleet telemetry, `lm_api_cost`, and the canonical `lm_agent_earnings` source (the panel's `lm_financial_ledger` name is a stale alias) |
+| Canonical repository | `Daisuke134/life-manager` at `/Users/anicca/Projects/life-manager-main`; CFO code, skill, loop, launchd template, tests, and specs converge there |
 | First unfinished item | **CFO-2a3b needs Google reauthentication; first actionable item is CFO-2b.2b Apple Finance reconciliation** |
 
 ## 1. Overview — What and Why
@@ -938,14 +939,32 @@ top-level seven-step sequence.
       meaningful changes/actions still send immediately. Live revision `6` produced Telegram `messageId=611`. M1 and
       owner-facing Product Stage 7 are closed.
 
-Current scheduler audit: the broken legacy `ai.anicca.cfo-daily` and
-`ai.anicca.life-manager-financial-report` jobs are booted out, while their plist files remain available. Exactly one
-`ai.anicca.life-manager-cfo-hourly` is loaded at interval `3600`; the verified OPS2 run count is `4`, last exit `0`.
+Current scheduler audit supersedes the earlier installation evidence. The legacy jobs remain out, but on the latest
+read-only audit `ai.anicca.life-manager-cfo-hourly` is not loaded. Its on-disk plist still points to deleted worktree
+`.worktrees/cfo-4d1-finalize`; that entrypoint does not exist. The last stdout evidence is from 2026-08-11
+(`reportingDate=2026-08-11`, revision 12), while the last stderr records a missing `@opentelemetry/api` in that old
+worktree. Therefore no current hourly Telegram delivery is claimed. Before the next M2 feature slice, restore the
+same local loop from a reviewed durable code worktree, install its pinned dependencies, run the focused/CFO/full
+gates there, reload exactly this one label, trigger one real run, and verify a current provider message receipt.
 
 Deferred after M1 by explicit owner decision: Binance Spot, trade history, Earn/funding sources, and their tax-lot
 ingestion. They are not unchecked M1 items and cannot become the active CFO item before CFO-1i closes.
 
 ### M2 — Business P&L and resource accounting
+
+- [ ] **CFO-OPS3a** Consolidate the proven CFO into the canonical Life Manager repository before reloading it. Reuse
+      existing `apps/life-manager`, `skills/life-manager`, `loops`, CFO Telegram callback, and financial-report
+      runtime; copy+tweak the proven `apps/life-call` CFO modules/tests instead of inventing a second framework.
+      The final owned surface is `apps/life-manager` for runtime/domain code, `skills/cfo` for the operator skill,
+      `loops/cfo-hourly` for the loop entrypoint/state contract, and a repository-owned launchd template/installer.
+      No installed plist may point at an expendable feature worktree. This repository consolidation is active first.
+- [ ] **CFO-OPS3b** Restore the consolidated local hourly CFO. Install the canonical lockfile dependencies, verify
+      focused/CFO/full tests, install/reload only `ai.anicca.life-manager-cfo-hourly`, trigger one real Moneytree read,
+      and prove one current Telegram provider message ID plus hourly schedule/path read-back. Do not revive the legacy
+      `life-manager-v0`, `cfo-daily`, or separate financial-report loop.
+- [ ] **CFO-1j** Add the recent-transaction concierge view from the existing Moneytree transaction adapter. Every
+      displayed row is a verified redacted transaction with direction/date/amount/category coverage; incomplete
+      pagination stays visible. This slice reports recent activity but gives no spending accusation or advice.
 
 - [x] **CFO-2a** Normalize existing `lm_api_cost` rows into the canonical financial-unit event contract without
       rewriting the source table. Only the four current Life Manager kinds are attributed; unknown kinds remain
