@@ -161,110 +161,18 @@ def _price_within_official_bounds(price_jpy: int, text: object) -> int:
     return price
 
 
-PRICING_BASIS = "budget_discount_v1_10pct"
+PRICING_BASIS = "planner_selected_v1"
 
 
 def _money_or_none(value: object) -> int | None:
     return value if isinstance(value, int) and not isinstance(value, bool) and value > 0 else None
 
 
-def _positive_env_int(name: str, default: int) -> int:
-    try:
-        value = int(os.environ.get(name, str(default)))
-    except ValueError:
-        return default
-    return value if value > 0 else default
-
-
-def _verified_category_contract_median(category: object) -> int | None:
-    """Read prices only for applied rows whose request has a local won-project dir."""
-    category_value = str(category or "").strip()
-    if not category_value:
-        return None
-    ledger = Path(os.environ.get("GIG_APPLIED_LEDGER", str(Path.home() / "gig/applied.jsonl")))
-    projects = Path(os.environ.get("GIG_PROJECTS_ROOT", str(Path.home() / "gig/projects")))
-    prices: list[int] = []
-    try:
-        lines = ledger.read_text(encoding="utf-8", errors="replace").splitlines()
-    except OSError:
-        return None
-    for line in lines:
-        try:
-            row = json.loads(line)
-        except (TypeError, ValueError):
-            continue
-        if not isinstance(row, dict) or str(row.get("category") or "").strip() != category_value:
-            continue
-        request_id = str(row.get("request_id") or "")
-        price = _money_or_none(row.get("price_jpy"))
-        if request_id.isdigit() and price is not None and (projects / request_id).is_dir():
-            prices.append(price)
-    if not prices:
-        return None
-    prices.sort()
-    middle = len(prices) // 2
-    return prices[middle] if len(prices) % 2 else (prices[middle - 1] + prices[middle]) // 2
-
-
-def _target_offer_price(
-    *,
-    budget_max: int | None,
-    official_min: int | None,
-    official_max: int | None,
-    profitability_floor: int,
-    category_contract_median: int | None,
-) -> int | None:
-    """Return the v1 code-owned bid, or None when no profitable basis exists."""
-    floor = max(1_000, int(profitability_floor))
-    if budget_max is None:
-        target = category_contract_median
-        ceiling = official_max
-    else:
-        discount = min(max(1_000, budget_max // 10), budget_max // 5)
-        unit = 1_000 if budget_max <= 50_000 else 5_000
-        target = ((budget_max - discount) // unit) * unit
-        ceiling = min(
-            value for value in (budget_max, official_max) if value is not None
-        )
-    if target is None:
-        return None
-    target = max(target, official_min or 1_000, floor)
-    if ceiling is not None and target > ceiling:
-        return None
-    return target
-
-
 def commercial_offer_price(
     detail: dict[str, object], *, planner_price_jpy: int,
-    planner_price_basis: str = "planner_selected",
 ) -> int | None:
-    """Own the final bid in code without inventing private competitor terms."""
-    if planner_price_basis == "buyer_explicit":
-        return _price_within_official_bounds(
-            int(planner_price_jpy), detail.get("visible_text")
-        )
-    minimum = detail.get("budget_min_jpy")
-    maximum = detail.get("budget_max_jpy")
-    profitability_floor = (
-        _money_or_none(detail.get("profitability_floor_jpy"))
-        or _positive_env_int("GIG_PROFITABILITY_FLOOR_JPY", 1_000)
-        or 1_000
-    )
-    category_median = (
-        _money_or_none(detail.get("category_contract_median_jpy"))
-        or _verified_category_contract_median(detail.get("category"))
-    )
-    return _target_offer_price(
-        budget_max=_money_or_none(maximum),
-        official_min=_money_or_none(minimum),
-        official_max=_money_or_none(maximum),
-        profitability_floor=profitability_floor,
-        # When Coconala exposes no numeric budget bounds, the planner price is
-        # grounded in the listing body (for example "応募金額は2,000円").  A
-        # category median must not overwrite that request with an unrelated
-        # prior contract price.
-        category_contract_median=_money_or_none(planner_price_jpy) or category_median,
-    )
+    """Preserve the planner's listing-grounded price; the form clamps official bounds."""
+    return _money_or_none(planner_price_jpy)
 
 
 def commercial_proposal_text(
@@ -319,7 +227,6 @@ def apply_commercial_offer_contract(
         price = commercial_offer_price(
             detail,
             planner_price_jpy=int(raw["price_jpy"]),
-            planner_price_basis=str(raw["price_basis"]),
         )
         if price is None:
             continue

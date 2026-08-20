@@ -280,13 +280,12 @@ definition and A0 acceptance is closed.
 - [ ] Preserve an official exact price through the whole commercial path. Request `5217126` explicitly
   requires a ¥15,000 proposal and its durable planner result correctly contained ¥15,000, but the
   final application decision replaced it with ¥27,000. Exact buyer price instructions outrank category
-  normalization and must reach the form unchanged. Source now requires the semantic planner to emit
-  `price_basis: buyer_explicit | planner_selected`; only `buyer_explicit` bypasses the competitive
-  budget normalization, while official form bounds still clamp invalid values. Direct function
-  readback proves the same ¥15,000 becomes ¥15,000 for `buyer_explicit` and ¥27,000 for the ordinary
-  selected-price path. The first natural planner call on `af58c94f1` omitted the new field and was
-  rejected rather than submitted; `6c5159527` now states the exact seven-field JSON shape in the
-  prompt. Natural re-plan, form fill and official readback for `5217126` remain.
+  normalization and must reach the form unchanged. The temporary `price_basis` schema is removed:
+  it added a failure mode without adding information. The semantic planner now owns the single final
+  `price_jpy`: preserve a buyer's explicit amount; otherwise choose roughly 20% below the budget cap
+  without making delivery uneconomic. Code preserves that price and only the official form boundary
+  may clamp it to a platform limit. Direct readback proves ¥15,000 remains ¥15,000. Natural re-plan,
+  form fill and official readback for `5217126` remain.
 - [ ] Prove the deployed failure report and form recovery on `5217126`. Its structured decision and
   proposal were present; execution failed with `cdp_Page.navigate_timeout_after_30s` at the browser
   boundary. The legacy `05b75fc29` formatter falsely reported “structured decision missing.” The

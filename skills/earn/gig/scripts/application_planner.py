@@ -24,9 +24,8 @@ MIN_PROPOSAL_CHARS = 200
 MAX_PROPOSAL_CHARS = 3000
 _ROOT_FIELDS = frozenset({"decisions"})
 _DECISION_FIELDS = frozenset({
-    "request_id", "business_class", "reason_codes", "proposal_text", "price_jpy", "price_basis", "deliver_date",
+    "request_id", "business_class", "reason_codes", "proposal_text", "price_jpy", "deliver_date",
 })
-PRICE_BASES = frozenset({"buyer_explicit", "planner_selected"})
 _DATE = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$")
 BUSINESS_CLASSES = frozenset({"submit_required", "hard_prohibited"})
 HARD_PROHIBITION_CLASSES = {
@@ -120,7 +119,6 @@ def validate_decisions(
             errors.append(f"decision[{index}]_reason_codes_invalid")
         proposal = row["proposal_text"]
         price = row["price_jpy"]
-        price_basis = row["price_basis"]
         date = row["deliver_date"]
         row_detail = detail_by_id.get(request_id) if isinstance(request_id, str) else None
         if business_class == "submit_required":
@@ -144,8 +142,6 @@ def validate_decisions(
                     )
             if isinstance(price, bool) or not isinstance(price, int) or price < 1:
                 errors.append(f"decision[{index}]_submit_required_price_required")
-            if price_basis not in PRICE_BASES:
-                errors.append(f"decision[{index}]_submit_required_price_basis_invalid")
             maximum = row_detail.get("budget_max_jpy") if isinstance(row_detail, dict) else None
             if (
                 isinstance(price, int)
@@ -221,7 +217,7 @@ def planner_prompt(envelope: dict) -> str:
         "For every request, make your own feasibility judgment from its actual visible details. Do not claim\n"
         "that anything was opened, filled, clicked, submitted, verified, or saved. Return JSON that matches\n"
         "the supplied schema exactly, with one decision for every request ID. Order the decision rows for execution: first\n"
-        "Every decision object has exactly these seven fields: request_id, business_class, reason_codes, proposal_text, price_jpy, price_basis, deliver_date. For submit_required, price_basis is exactly buyer_explicit or planner_selected. For hard_prohibited, proposal_text, price_jpy, price_basis, and deliver_date are null.\n"
+        "Every decision object has exactly these six fields: request_id, business_class, reason_codes, proposal_text, price_jpy, deliver_date.\n"
         "submit_required coding, AI, system, automation, and other high-reward work; within that group prefer higher expected\n"
         "reward, then place every other submit_required row. Never omit lower-priority feasible work. Put hard_prohibited rows\n"
         "after submit_required rows. If more than 20 rows are feasible, the first 20 submit_required rows must be the strongest\n"
@@ -229,7 +225,7 @@ def planner_prompt(envelope: dict) -> str:
         "When work is feasible, choose `submit_required`, leave reason_codes empty, and provide a concrete 200〜3000文字 proposal, honest price, and realistic\n"
         "deliver date. 納期には安全マージンとして日数を足さず、正直に実行可能な最短日を選ぶ。 "
         "When it is hard-prohibited, choose `hard_prohibited`, give concise reason codes, and set proposal,\n"
-        "price, price_basis, and date to null. Reason from the listing as a whole; do not use a mechanical keyword rule.\n\n"
+        "price and date to null. Reason from the listing as a whole; do not use a mechanical keyword rule.\n\n"
         "Scope fidelity is a hard gate. Judge the work and participation the buyer actually requires; never make an\n"
         "infeasible request feasible by replacing it with a different remote, digital, advisory, documentary, or reduced\n"
         "deliverable in proposal_text. Before choosing submit_required, identify the buyer's required outcome, required\n"
@@ -266,13 +262,13 @@ def planner_prompt(envelope: dict) -> str:
         "低単価の単発でも、非同期で確実に完遂できるなら請けてよい。\n"
         "\n"
         "既知の budget_max_jpy がある案件では、price_jpy は budget_max_jpy を超えない。案件規模と競争状況に合う、\n"
-        "買い手が応募額・提案額・報酬額を具体的に指定している場合は、その額をprice_jpyへそのまま入れ、price_basisをbuyer_explicitにする。単なる予算範囲や相場は具体的指定ではない。それ以外はprice_basisをplanner_selectedにする。\n"
-        "少し競争力のある価格を出す。budget_min_jpy と budget_max_jpy が両方 null の見積依頼（予算「応相談」「未定」）は、\n"
+        "買い手が応募額・提案額・報酬額を具体的に指定している場合は、その額をprice_jpyへそのまま入れる。指定がない場合は、安すぎて納品不能にならない範囲で予算上限よりおおむね20%安い競争価格にする。\n"
+        "budget_min_jpy と budget_max_jpy が両方 null の見積依頼（予算「応相談」「未定」）は、\n"
         "それだけで hard_prohibited にしない。ソフトウェア・コード・IT・システム・API・AI・自動化系は、scope と市場相場に応じて\n"
         "おおむね ¥50,000〜¥300,000 を目安に price_jpy を決める（小規模は下限寄り、広い・難しい・継続性のある案件は上限寄り）。\n"
         "これは見積もりの目安であり固定の hard ceiling ではない。その他は成果物・作業量・リスク・通常のカテゴリ相場から案件ごとに\n"
         "見積もり、一律の最低価格や固定の価格帯を設けず、実行可能なら submit_required にする。\n"
-        "最終price_jpyは送信前にcode-owned価格へ置換されるため、非公開の競合価格を推測しない。提案は対応可能、金額、\n"
+        "price_jpyが送信価格になる。非公開の競合価格を推測しない。提案は対応可能、金額、\n"
         "納品日、buyer固有の実行方法、契約後の情報整理の順にし、購入前の質問・疑問文を0件にする。deliver_dateも見積の規模に見合った現実的な\n"
         "日数にする（小規模なら短く、大規模なら長く）。\n"
         f"{proposal_feedback_fragment()}"
