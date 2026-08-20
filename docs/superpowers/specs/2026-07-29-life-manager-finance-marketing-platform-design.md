@@ -70,8 +70,8 @@ Repository identity is not inferred from a local directory name:
 | Legacy historical source | [`Daisuke134/life-manager-v0`](https://github.com/Daisuke134/life-manager-v0), repository ID `1273052304` | archived read-only; any old local clone is non-runtime | no new work, runtime, scheduler, CI, or deployment may target it; 35/35 disposition, issue transfer, redirect, archive, and runtime-reference-zero gate are complete |
 | Temporary worktrees | branches whose Git common directory is the canonical repository | multiple paths may exist during bounded work | a worktree is not another repository or SSOT; merge or retire it when its task closes |
 
-The selected architecture is portable local/cloud with cloud as the default
-hosted mode:
+The selected incident architecture is local direct-process/file-ledger first;
+hosted local/cloud parity is deferred and is not a recovery prerequisite:
 
 | Plane | Runtime | Responsibility |
 |---|---|---|
