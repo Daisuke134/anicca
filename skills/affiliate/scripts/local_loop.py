@@ -352,10 +352,19 @@ def owner_event(state, wake_event, sent_event_ids=None):
             "pending": "COMMISSION_PENDING", "approved": "COMMISSION_APPROVED",
             "reversed": "COMMISSION_REVERSED", "paid": "COMMISSION_PAID",
         }.get(transition.get("status"), "COMMISSION_CHANGED")
+        placement = transition.get("placement") or {}
+        placement_id = placement.get("placement_id") or "UNKNOWN"
         add(kind, {"kind": kind, "transition_id": transition["transition_id"]}, (
-            f"{transition.get('status')} / gross={transition.get('gross_commission_minor')} minor "
-            f"net={transition.get('net_commission_minor')} minor / {transition.get('currency') or 'currency unknown'}"
-        ), (transition.get("placement") or {}).get("public_url"))
+            f"provider={transition.get('provider') or 'UNKNOWN'} / "
+            f"transaction={transition.get('provider_transaction_id') or 'UNKNOWN'} / "
+            f"placement={placement_id} / status={transition.get('status') or 'UNKNOWN'} / "
+            f"gross={transition.get('gross_commission_minor') or 0} minor / "
+            f"reversal={transition.get('reversal_minor') or 0} minor / "
+            f"net={transition.get('net_commission_minor') or 0} minor / "
+            f"currency={transition.get('currency') or 'UNKNOWN'} / "
+            f"settlement={transition.get('provider_settlement_id') or 'UNKNOWN'} / "
+            f"payout={transition.get('provider_payout_id') or 'UNKNOWN'}"
+        ), placement.get("public_url"))
     for link_transition in click_transitions:
         if not isinstance(link_transition.get("delta_click_count"), int) or link_transition["delta_click_count"] <= 0:
             continue
