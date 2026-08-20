@@ -222,11 +222,14 @@ Execute top to bottom. A checked diagnostic is evidence, not lane completion.
   automated historical-offer editor for it.
 - [ ] Preserve per-request structured decisions durably before execution. A transient batch/provider
   failure may leave a request pending for retry, but must not generate a misleading terminal refusal.
-- [ ] Repair the post-confirmation CDP boundary exposed by request `5222490`: the valid ¥90,000
+- [x] Repair the post-confirmation CDP boundary exposed by request `5222490`: the valid ¥90,000
   proposal reached the official final `応募する` screen but returned as a candidate-owned wedge.
-  Determine whether the click had no effect or readback was lost before retrying; never blind-resend.
-- [ ] Obtain exactly one official applied-history readback for `5222490`, then replay it and prove
-  zero duplicate submission.
+  Later official applied-history evidence proves the click succeeded and the original failure was
+  lost readback, so no blind resend is needed.
+- [x] Obtain exactly one official applied-history readback for `5222490`, then replay it and prove
+  zero duplicate submission. Pass `gig-apply-direct-1787202286379991000-66643` recorded
+  `missing_count=0` and `unresolved_count=0`; the following two snapshots contain it only in
+  `already_applied_ids` and omit it from `request_details`.
 
 - [x] Diagnose the current outage: recent passes end in `parent_failed_rc_2`; both intent-provider
   attempts report `transient_quota`, and another pass hits `cdp_Page.enable_timeout_after_30s`.
