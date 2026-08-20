@@ -2072,8 +2072,11 @@ receipt readback, SSOT state update, commit, and push to both canonical remotes.
 - [ ] **D06.1** Let the existing Affiliate owner read the Repost `posted.jsonl`
   ledger through an explicit `AFFILIATE_REPOST_STATE_DIR` boundary, persist one
   replay-safe observation receipt, and report exact campaign-URL joins without
-  treating post actions as impressions, visits, clicks, or money. The source
-  observer and temporary mixed-join replay pass; installed owner proof is open.
+  treating post actions as impressions, visits, clicks, or money. The observer
+  runs immediately after the wake lock so a later provider/browser failure cannot
+  erase the observation. The source observer and temporary mixed-join replay pass;
+  the first installed attempt exposed a PartnerStack selector timeout before the
+  old late observer, so this ordering repair and installed proof remain open.
 - [ ] **D07** Prove one Repost/original-X exposure joins through owned visit and
   provider click to an exact transaction, or persist the broken edge explicitly.
 - [ ] **D08** After cohort maturity, compute approved net per 1,000 qualified

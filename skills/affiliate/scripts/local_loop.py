@@ -1815,6 +1815,18 @@ def wake(args):
         lock.close()
         print('{"state":"ALREADY_RUNNING"}')
         return 0
+    try:
+        repost_observation = observe_repost_acquisition(state)
+    except Exception as error:
+        repost_observation = {
+            "state": "OBSERVATION_FAILED", "changed": False,
+            "failure_type": type(error).__name__,
+            "transition_id": None, "source_file_sha256": None,
+            "post_action_count": None, "joined_campaign_count": None,
+            "unjoined_post_action_count": None, "invalid_row_count": None,
+            "denominator_state": "POST_ACTION_COUNT_ONLY",
+            "revenue_credit_state": "NO_REVENUE_CREDIT",
+        }
     link = elevenlabs_link(args.private_markdown.expanduser())
     browser = browser_ready(args.cdp_port)
     provider = provider_poll(state, args.cdp_port) if browser else {
@@ -1976,18 +1988,6 @@ def wake(args):
             "state": "OBSERVATION_FAILED", "article_count": None,
             "total_page_views": None, "delta_page_views": None,
             "failure_type": type(error).__name__,
-        }
-    try:
-        repost_observation = observe_repost_acquisition(state)
-    except Exception as error:
-        repost_observation = {
-            "state": "OBSERVATION_FAILED", "changed": False,
-            "failure_type": type(error).__name__,
-            "transition_id": None, "source_file_sha256": None,
-            "post_action_count": None, "joined_campaign_count": None,
-            "unjoined_post_action_count": None, "invalid_row_count": None,
-            "denominator_state": "POST_ACTION_COUNT_ONLY",
-            "revenue_credit_state": "NO_REVENUE_CREDIT",
         }
     revenue = run_revenue_cycle(state, args.cdp_port) if provider["state"] == "AUTHENTICATED" else {
         "state": "PROVIDER_NOT_AUTHENTICATED", "source_rows": None, "appended_transitions": None,
