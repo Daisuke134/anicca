@@ -416,26 +416,32 @@ action completes.
   `claude-direct / gpt-5.3-codex-spark` in one attempt (about 12 seconds); its conversation-sized
   input receives a 90-second candidate cap inside the existing 120-second route deadline instead
   of expiring at the old 40-second cap. No marketplace effect is part of this canary.
-- [ ] Make the continuous owner assign every newly observed buyer-authored message to an observable
-  retry owner and capture a natural official receipt. The current owner is alive and probes every
-  30 seconds, but Addres88 action 276 is pending and unowned while reconciliation reports
-  `estimate_required: 0`; this is a classification/ownership defect, not a polling-speed defect.
-- [ ] Search/open the official Addres88 conversation; local display-name absence is not evidence.
-- [ ] Bind the latest buyer-authored event to its official thread/message identity and classify
-  whether it requires an answer, an estimate, both, or no action.
-- [ ] If actionable, send exactly one complete reply through the existing lane and read it back in
-  the same official thread.
-- [ ] If a price is requested, send exactly one estimate through the existing lane and read back its
-  amount and scope in the same official thread.
+- [x] Assign every newly observed buyer-authored message to a durable observable owner. The
+  continuous supervisor probes every 30 seconds, uses two workers, and now prioritizes targeted
+  estimate and reply reconciliation before new semantic work.
+- [x] Open and bind the official Addres88 conversation to thread `10099067`; action 276 is verified
+  against the official thread URL and outgoing hash without a duplicate send.
+- [x] Bind each latest buyer-authored identity to its exact official thread and classify reply,
+  estimate, clarify or no-send. Inbox evidence now retains the bounded counterparty name, which
+  corrected the earlier audit-only misidentification of Manledge as thread `10103980`; the official
+  mapping is Manledge `10104078`, o8sume Studio `10103980`, seto_wardog `10104195`.
+- [x] Send and read back one complete natural reply through the existing lane. Manledge action 338
+  proposed 100 controllable list-up tasks and 50 approaches, separated buyer-dependent outcomes
+  from guarantees, and reached official `replied` readback at 00:19 with no duplicate effect.
+- [x] Send and read back an explicitly requested estimate through the existing lane. Addres88 action
+  276 reached exact-thread official estimate readback; later purchased threads are handed to Paid
+  and all unfinished Negotiate actions are closed without a resend.
 - [ ] Treat a buyer's competing bid or desired ceiling as a semantic renegotiation signal. Choose a
   deliverable, platform-valid competitive price from the whole current cycle without a hard-coded
   discount, revise the existing pre-purchase estimate when needed, and require official readback of
   the revised amount. The Haru thread's manually revised and purchased ¥1,800 proposal is historical
   evidence only; the loop must demonstrate this behavior naturally on a future conversation.
-- [ ] When a buyer asks the seller to set a feasible commitment line, propose concrete controllable
+- [x] When a buyer asks the seller to set a feasible commitment line, propose concrete controllable
   work volume from the current conversation and verified application instead of repeating the
   question. Separate controllable activity guarantees from outcome targets, then send the official
   estimate only after the buyer accepts the resulting scope, quantity, price and delivery terms.
+  Manledge action 338 is the natural reply/readback proof; estimate-after-acceptance remains covered
+  by the separate 30-minute end-to-end acceptance item below.
 - [ ] Permit terminal no-send only for illegality, safety, deception, or truthful inability to
   deliver. Ordinary ambiguity or a broad request must receive a clarifying reply or a scoped offer;
   generic `対応できません` is not a valid escape disposition.
