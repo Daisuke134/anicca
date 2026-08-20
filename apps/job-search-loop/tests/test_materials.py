@@ -99,6 +99,8 @@ class MaterialTests(unittest.TestCase):
                 {"id": "life_manager", "claim": "Builds Life Manager."},
                 {"id": "a10_marketing", "claim": "Managed growth campaigns."},
                 {"id": "agent_club", "claim": "Founded a weekly AI agent community."},
+                {"id": "naist", "claim": "NAIST research."},
+                {"id": "atr_research", "claim": "ATR research."},
                 {"id": "iclr", "claim": "Shared ICLR research learnings."},
             ],
         }
@@ -106,6 +108,17 @@ class MaterialTests(unittest.TestCase):
         self.assertEqual(
             sections[0]["heading"],
             "Mitsubishi UFJ Information Technology — Applied AI / AI Agent Engineering (Apr 2025–Present)",
+        )
+        self.assertEqual(
+            [section["heading"] for section in sections],
+            [
+                "Mitsubishi UFJ Information Technology — Applied AI / AI Agent Engineering (Apr 2025–Present)",
+                "Earlier Growth Experience",
+                "Research Experience",
+                "Education",
+                "Skills",
+                "Consumer AI Product",
+            ],
         )
         accomplishments = sections[0]["items"]
         self.assertEqual(
@@ -123,6 +136,9 @@ class MaterialTests(unittest.TestCase):
             [item["fact_ids"][0] for item in accomplishments[1]["items"]],
             ["iclr"],
         )
+        research_items = sections[2]["items"]
+        self.assertIn("Nara Institute of Science and Technology", research_items[0]["text"])
+        self.assertIn("Advanced Telecommunications Research Institute International", research_items[1]["text"])
         all_ids = {
             child["fact_ids"][0]
             for section in sections

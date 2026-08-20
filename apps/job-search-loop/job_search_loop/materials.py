@@ -195,24 +195,31 @@ def master_sections(profile: dict[str, Any]) -> list[dict[str, Any]]:
             ],
         ),
         (
-            "Research & Leadership — NAIST / ATR (2024–2026)",
+            "Research Experience",
             [
-                ("naist", "Applied EEG and machine learning to mind-wandering detection in NAIST master's research (April 2024–April 2026)."),
-                ("atr_research", "Conducted and presented mind-wandering research at ATR."),
+                ("naist", "Nara Institute of Science and Technology — Applied EEG and machine learning to mind-wandering detection in master's research (April 2024–April 2026)."),
+                ("atr_research", "Advanced Telecommunications Research Institute International — Conducted and presented concurrent mind-wandering research (April 2024–April 2026)."),
                 ("agent_club", "Founded a weekly community teaching Claude Code, Codex, Cursor, and AI-agent workflows for research and daily work."),
             ],
         ),
         ("Earlier Growth Experience", [("a10_marketing", None)]),
         (
-            "Core Skills",
+            "Education",
+            [
+                ("education", None),
+                ("education_naist", None),
+            ],
+        ),
+        (
+            "Skills",
             [
                 ("muit_agent_crm", "Salesforce Agentforce · AI-agent deployment · CRM workflows"),
                 ("muit_genie_logs", "Databricks · AI-agent behavior analysis · relationship-manager response quality"),
                 ("muit_rm_summary", "Prompt tuning · context engineering · relationship-manager workflows"),
                 ("anicca_consumer", "Swift / iOS · consumer AI products · product growth"),
+                ("languages", None),
             ],
         ),
-        ("Education & Languages", [("education", None), ("languages", None)]),
         ("Consumer AI Product", [("anicca_consumer", "Built and shipped Anicca, a mobile affirmation app with 45+ ratings and a 4.5/5 rating.")]),
     ]
     return [
@@ -251,15 +258,20 @@ def business_sections(profile: dict[str, Any]) -> list[dict[str, Any]]:
             [("a10_marketing", None)],
         ),
         (
-            "Research & Education",
-            [("naist", "Applied EEG and machine learning to mind-wandering detection in NAIST master's research (April 2024–April 2026)."), ("atr_research", "Conducted and presented mind-wandering research at ATR."), ("agent_club", "Founded a weekly community teaching Claude Code, Codex, Cursor, and AI-agent workflows for research and daily work."), ("education", None), ("languages", None)],
+            "Research Experience",
+            [("naist", "Nara Institute of Science and Technology — Applied EEG and machine learning to mind-wandering detection in master's research (April 2024–April 2026)."), ("atr_research", "Advanced Telecommunications Research Institute International — Conducted and presented concurrent mind-wandering research (April 2024–April 2026)."), ("agent_club", "Founded a weekly community teaching Claude Code, Codex, Cursor, and AI-agent workflows for research and daily work.")],
         ),
         (
-            "Core Skills",
+            "Education",
+            [("education", None), ("education_naist", None)],
+        ),
+        (
+            "Skills",
             [
                 ("muit_agent_crm", "Salesforce Agentforce · AI-agent deployment · CRM workflows"),
                 ("muit_genie_logs", "Databricks · AI-agent behavior analysis · relationship-manager response quality"),
                 ("muit_rm_summary", "Prompt tuning · context engineering · relationship-manager workflows"),
+                ("languages", None),
             ],
         ),
         (
@@ -306,7 +318,10 @@ JAPANESE_FACT_TEXT = {
         "奈良先端科学技術大学院大学の修士研究（2024年4月〜2026年4月）で、"
         "EEGと機械学習を用いたマインドワンダリング検出に従事。"
     ),
-    "atr_research": "ATRでマインドワンダリング研究を実施し、研究成果を発表。",
+    "atr_research": (
+        "国際電気通信基礎技術研究所（Advanced Telecommunications Research "
+        "Institute International）でマインドワンダリング研究を実施し、研究成果を発表。"
+    ),
     "agent_club": (
         "Claude Code、Codex、Cursor、AIエージェントの研究・業務活用を扱う"
         "週次勉強会とコミュニティを研究室・大学院内で設立。"
@@ -321,7 +336,10 @@ JAPANESE_FACT_TEXT = {
         "有料獲得数の過去最高を達成。"
     ),
     "education": (
-        "奈良先端科学技術大学院大学 修士課程、慶應義塾大学 法学部政治学科卒。"
+        "慶應義塾大学 法学部 政治学科 学士課程（2020年4月〜2024年4月）。"
+    ),
+    "education_naist": (
+        "奈良先端科学技術大学院大学 修士課程・研究（2024年4月〜2026年4月）。"
     ),
     "languages": (
         "日本語ネイティブ。英語：TOEFL iBT 96、Duolingo English Test 140。"
@@ -344,15 +362,16 @@ def japanese_sections(profile: dict[str, Any]) -> list[dict[str, Any]]:
             ],
         ),
         (
-            "個人開発・コンシューマーAI",
-            ["anicca_consumer", "life_manager"],
+            "学歴",
+            ["education", "education_naist"],
         ),
         (
-            "研究・コミュニティ活動 — NAIST / ATR",
+            "研究・コミュニティ活動",
             ["naist", "atr_research", "agent_club", "iclr"],
         ),
+        ("個人開発・コンシューマーAI", ["anicca_consumer", "life_manager"]),
         ("マーケティング経験", ["a10_marketing"]),
-        ("学歴・語学", ["education", "languages"]),
+        ("語学", ["languages"]),
     ]
     return [
         {
@@ -436,7 +455,7 @@ def render_master(profile_path: Path, output_dir: Path) -> tuple[Path, Path]:
         required_ats_text=(
             "Daisuke Narita",
             "Mitsubishi UFJ Information Technology",
-            "NAIST",
+            "Nara Institute of Science and Technology",
             "Applied AI",
         ),
     )
@@ -499,7 +518,7 @@ def render_japanese(profile_path: Path, output_dir: Path) -> tuple[Path, Path]:
             "職務経歴書",
             "三菱UFJインフォメーションテクノロジー",
             "AIエージェント",
-            "NAIST",
+            "奈良先端科学技術大学院大学",
         ),
         include_date_of_birth=True,
         date_of_birth_label="生年月日",

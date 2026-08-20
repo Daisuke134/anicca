@@ -128,9 +128,10 @@ The current Mitsubishi UFJ Information Technology business variant uses this ord
 1. Mitsubishi UFJ Information Technology — Applied AI / AI Agent Engineering
    (Apr 2025–Present)
 2. Earlier Growth Experience
-3. Research & Education
-4. Core Skills
-5. Consumer AI Product (last)
+3. Research Experience
+4. Education
+5. Skills
+6. Consumer AI Product (last)
 
 Within the current-role section, render exactly two accomplishment blocks:
 `Salesforce Agentforce deployment` contains three nested bullets (CRM deployment,
@@ -141,6 +142,34 @@ inside that block. Use the full employer name `Mitsubishi UFJ Information Techno
 in the resume instead of the `MUIT` abbreviation. Keep one consistent banking
 customer term throughout the variant. Do not include Life Manager or Portfolio links
 in this application variant unless a target explicitly requests them.
+
+## Education, research, and institution-name rules
+
+Read `references/resume-best-practices.md` before changing any resume material.
+The external resume-builder reference uses explicit education fields, domain-aware
+bullets, XYZ/STAR-style evidence, standard headings, and extracted-PDF checks.
+
+Keep these records separate in every English and Japanese variant:
+
+1. **Education:** institution, faculty/department, degree or study status, and
+   dates. For the English technical-business variant, show the date range when it
+   clarifies concurrent affiliations; do not pretend that a degree was conferred if
+   the fact bank only proves study.
+2. **Research experience:** each university or research institute is its own entry.
+   State the full institution name, research topic, method, and evidence. Do not
+   collapse NAIST and ATR into one vague school bullet.
+3. **Institution names:** spell out `Keio University, Faculty of Law, Department of
+   Political Science`, `Nara Institute of Science and Technology`, and `Advanced
+   Telecommunications Research Institute International` in visible resume text.
+   Acronyms are optional parenthetical aliases only after the full name; never use an
+   acronym-only heading.
+
+The Japanese 履歴書 uses full attendance periods and separate 学歴/職歴 sections;
+the Japanese 職務経歴書 uses concrete, concise research/work descriptions. The
+English resume follows the target market: completion/expected dates are the normal
+US default, while this candidate's overlapping NAIST/ATR work is shown with ranges
+for chronology. Do not apply the Japanese date convention blindly to every English
+resume or the US convention blindly to a Japanese form.
 
 ## Autonomous loop after approval
 

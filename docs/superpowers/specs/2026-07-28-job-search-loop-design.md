@@ -939,9 +939,13 @@ The default English resume is one ATS-friendly page, single column, text-first:
    engineering; `ICLR 2026 conference representation` contains one nested bullet.
    Spell out the employer name in the resume; do not use the `MUIT` abbreviation.
    Use `relationship managers` consistently for the bank sales audience.
-3. NAIST/ATR research and weekly agent-practice community leadership.
-4. Earlier growth work, research/education, and core skills are separate sections in
-   that order.
+3. Research Experience lists Nara Institute of Science and Technology and Advanced
+   Telecommunications Research Institute International as separate entries, with the
+   weekly agent-practice community as a separate activity.
+4. Earlier growth, Education, and Skills are separate standard sections. Education
+   names Keio University, Faculty of Law, Department of Political Science and Nara
+   Institute of Science and Technology with explicit periods for this candidate's
+   overlapping research chronology.
 5. Anicca is the final consumer-product section; Life Manager and portfolio links are
    omitted from the English application variants unless a target explicitly asks for
    founder/product-portfolio evidence.
@@ -980,9 +984,10 @@ Every generated bullet stores fact IDs, every PDF is text-extracted and hashed, 
 Telegram receives a natural-language event report. The skill never owns browser
 submission or creates a second executor.
 
-The Japanese variant is a one-page Japanese 職務経歴書 with fourteen grounded points
-covering Mitsubishi UFJ Information Technology/MUFG, Databricks, Agentforce,
-Anicca/Life Manager, NAIST/ATR,
+The Japanese variant is a one-page Japanese 職務経歴書 with grounded points covering
+Mitsubishi UFJ Information Technology/MUFG, Databricks, Agentforce,
+Anicca/Life Manager, Nara Institute of Science and Technology, and Advanced
+Telecommunications Research Institute International,
 agent-community leadership, ICLR communication, growth, education, and languages.
 The complete official posting text, not a person's name or presumed nationality,
 determines language: primarily Japanese postings use the Japanese PDF; English
@@ -1272,9 +1277,9 @@ slice has one owner, one acceptance result and one durable receipt.
 
 | Slice | Parent | Status | Done when |
 |---|---|---|---|
-| `JOB-RESUME-FACTS-1R-A` | 1R | `pending_actionable` | The private truth ledger records one exact TOEFL value, verified TOEIC 910 and DELE B1; the old accepted material baseline is explicitly reopened. |
-| `JOB-RESUME-EN-1R-B` | 1R | `pending_after_1R-A` | Engineering and technical-business English HTML/PDF variants render from the ledger with the new one-page hierarchy: Mitsubishi UFJ Information Technology first, two accomplishment blocks (three nested Agentforce deployment bullets, then one ICLR bullet), one banking customer term, A10 details, and Anicca last. |
-| `JOB-RESUME-JA-1R-C` | 1R | `pending_after_1R-A` | Japanese 履歴書 and 職務経歴書 render from the same ledger with the language section and grounded claims. |
+| `JOB-RESUME-FACTS-1R-A` | 1R | `pending_actionable` | The private truth ledger records one exact TOEFL value, verified TOEIC 910 and DELE B1; full institution names and periods for Keio University (April 2020–April 2024), Nara Institute of Science and Technology (April 2024–April 2026), and concurrent Advanced Telecommunications Research Institute International research; the old accepted material baseline is explicitly reopened. |
+| `JOB-RESUME-EN-1R-B` | 1R | `pending_after_1R-A` | Engineering and technical-business English HTML/PDF variants render from the ledger with the new one-page hierarchy: Mitsubishi UFJ Information Technology first, two accomplishment blocks (three nested Agentforce deployment bullets, then one ICLR bullet), separate Research Experience and Education sections with full institution names and chronology, one banking customer term, A10 details, and Anicca last. |
+| `JOB-RESUME-JA-1R-C` | 1R | `pending_after_1R-A` | Japanese 履歴書 and 職務経歴書 render from the same ledger with separate 学歴・職歴・研究 sections, full attendance periods, formal institution names, the language section, and grounded claims. |
 | `JOB-RESUME-VERIFY-1R-D` | 1R | `pending_after_1R-B-C` | Visual inspection, `pdftotext`, claim validation, ATS checks and SHA receipts pass for all four artifacts. |
 | `JOB-RESUME-SKILL-1R-E` | 1R | `in_progress` | `skills/job-hunter/SKILL.md`, its evidence-backed references, and resume-refinement eval prompts define intake, fact-bank construction, one approval gate, autonomous post-approval refinement, and provider-neutral outputs without private data. |
 | `JOB-RESUME-ONBOARD-1R-F` | 1R | `pending_after_1R-E` | A first-run fixture accepts email, resume, and supplemental information; writes a private fact bank; records unresolved fields; and never guesses missing facts. |
