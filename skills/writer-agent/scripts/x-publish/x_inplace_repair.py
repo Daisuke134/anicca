@@ -526,6 +526,14 @@ class XBrowserAdapter:
             )
         value = json.loads(parsed.stdout)
         images = value.get("content_images", [])
+        for image in images:
+            if not isinstance(image, dict):
+                continue
+            recovered = self._html_suffix_anchor(
+                str(value.get("html", "")), str(image.get("after_text", ""))
+            )
+            if recovered:
+                image["after_text"] = recovered
         markdown_images = len(
             re.findall(r"^!\[", prepared.read_text(encoding="utf-8"), re.M)
         )
@@ -588,13 +596,15 @@ class XBrowserAdapter:
     @staticmethod
     def _rendered_anchor(anchor: str) -> str:
         # X/Draft.js renders a Markdown link label and the text after it as
-        # separate DOM text nodes.  Keeping both in one anchor therefore makes
+        # separate DOM text nodes. Keeping both in one anchor therefore makes
         # the canonical inserter miss an otherwise visible paragraph (measured
-        # on daily-2026-08-21: ``X long-form example — 長文``).  Prefer the
-        # reader-visible link label, which remains one stable text node.
+        # on daily-2026-08-21: ``X long-form example — 長文``). Prefer the
+        # post-link text when present; it is usually unique while remaining a
+        # single stable text node. A link-only anchor falls back to its label.
         link = re.search(r"\[([^\]]+)\]\([^)]+\)", anchor)
         if link is not None and link.group(1).strip():
-            return link.group(1).strip()
+            suffix = anchor[link.end():].lstrip(" \t-—–:：")
+            return suffix.strip() or link.group(1).strip()
         rendered = re.sub(
             r"^(?:#{1,6}|[-*+])\s+",
             "",
@@ -618,6 +628,25 @@ class XBrowserAdapter:
         if raw_url_suffix is not None:
             return raw_url_suffix.group("label").rstrip()
         return rendered
+
+    @staticmethod
+    def _html_suffix_anchor(html: str, raw_anchor: str) -> str:
+        """Recover a visible suffix when the parser clipped its context."""
+        url = re.search(r"\]\((https?://[^)\s]+)", raw_anchor)
+        if url is None:
+            return ""
+        for block in re.finditer(
+            r"<(?:li|p|h[1-6]|blockquote)\b[^>]*>(.*?)</(?:li|p|h[1-6]|blockquote)>",
+            html,
+            re.IGNORECASE | re.DOTALL,
+        ):
+            fragment = block.group(0)
+            if url.group(1) not in fragment or "</a>" not in fragment:
+                continue
+            suffix = fragment.split("</a>", 1)[1]
+            visible = html_lib.unescape(re.sub(r"<[^>]+>", " ", suffix))
+            return visible.strip().lstrip("-—–:： ").strip()
+        return ""
 
     @staticmethod
     def _first_reader_visible_anchor(html: str) -> str:
@@ -867,6 +896,25 @@ class XBrowserAdapter:
                 anchor = self._rendered_anchor(
                     str(image.get("after_text", ""))
                 )
+                probe = canonical.search_phrase(anchor)
+                matches = page.evaluate(
+                    """(text) => {
+                        const editor = document.querySelector('div[data-testid="composer"]')
+                            || document.querySelector('div.public-DraftEditor-content');
+                        if (!editor || !text) return 0;
+                        const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT);
+                        let node, count = 0;
+                        while ((node = walker.nextNode())) {
+                            if ((node.textContent || '').includes(text)) count += 1;
+                        }
+                        return count;
+                    }""",
+                    probe,
+                )
+                if matches != 1:
+                    raise XRepairRefused(
+                        f"X body image anchor is not unique: {probe!r} matches={matches}"
+                    )
                 if not canonical.insert_content_image(page, path, anchor):
                     raise XRepairRefused("X body image insertion failed")
             file_input = page.locator('input[type="file"]')
