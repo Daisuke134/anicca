@@ -22,15 +22,15 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
 - `launchctl bootstrap`/`kickstart` は `141: Reentrancy avoided`。plistがあることは稼働証拠ではない。
 - 実行releaseは `/Users/anicca/profitable-claude-releases/writer/e9ab21ea/writer-agent`、
   stateは `/Users/anicca/profitable-claude/skills/writer-agent/state`。Life Manager checkoutは
-  `/Users/anicca/Projects/life-manager-main` だが、Writer runtime treeは未移行。
+  `/Users/anicca/Projects/life-manager-main` で、Writer runtime treeの同期コピーは完了したが、旧releaseが実行ownerのままである。
 - 現在はstate rootの `.publication-paused` が存在し、次のlaunchd tickは外部公開を行わずに終了する。JAは `SUBSTACK_PUBLICATION_JA`、ENは別の `SUBSTACK_PUBLICATION_EN` を必須とし、ENの既存draft `211988987` は公開禁止である。
 - Telegramには初期化報告 `26065`、未完了報告 `26075`、Note公開を含む進捗報告 `26087` を送信済み。今後はdeterministic rendererだけが自然文を送る。実受取receiptは未確認。Substack公開はJA/EN identityが分離されるまで停止する。
 - pause gateはresume workerとdaily creatorの両方で直接実行し、ロック・planner・publisherより前に終了コード0となることを確認した。変更対象の構文確認と、固定一時領域でのスケジュール／完了通知テスト `37 passed` も確認済み。外部公開の新規成功や売上receiptはまだ無い。
 - Substack managed publisherのsource／active release契約fixtureは、JAのpublication identityをstateと環境へ明示してPASSした。これはローカル契約の確認で、外部Substack公開receiptではない。
 - 下書きGETのpublication/subdomainと明示bylineを読み戻してから画像upload／PUTへ進むfail-closed判定をsource／releaseへ追加した。identity readbackが欠ける既存英語targetは環境変数だけで再利用しない。
 - managed wrapperにもpair-specific identityとstate一致のゲートを追加し、remote receipt側は下書きidentityとredirect後の公開canonical hostを実読取してからliveを確定する。期待hostからURLを組み立てただけの値はreceiptにしない。
-- Life Managerの `skills/writer-agent` にactive release相当のproduction tree 475 filesを同期し、tree hash `eb2d1a94916c7dc4ba38ae246b45a82957fa948bd161e15670be1797c55ca0a0` とactive release hash `41037e3b7b64ea39db973956b3ad2c6428cb0051eb0414f97552afb8af5ec6e1` を `config/writer/runtime-manifest.json` に固定した。ただしLaunchAgentはまだ旧releaseを呼び、state parityとowner fenceが無いためcutoverは未実施。
-- fresh adversarial reviewで空き容量は最新約382MiB（公開下限5GiB未満、直前は約704MiB）だったため、resumeにも同じfail-closedディスク判定を追加した。Substackの言語identity比較は正規化し、source circuitのpublisher timeoutをreleaseと同じ300秒へ揃え、間接ガード／readbackファイルも回路manifestへ含めた。EN/Xのidentity・media readbackが未確認なのでpauseは解除しない。
+- Life Managerの `skills/writer-agent` にactive release相当のproduction tree 475 filesを同期し、tree hash `b7435c4afa2e48214583e33bc30b948502936e5f1b3434892465b99456669356` とactive release hash `0f85ddb44983bcae56c7e3a232652f73feac1a6f4ac20d16f45b664f1c3e0d11` を `config/writer/runtime-manifest.json` に固定した。LaunchAgentテンプレートのLife Managerパス化と19 labelのpath censusを `69e2dbdc5` としてpushしたが、実際にインストールされたplistはまだ旧rootを呼び、state parityとowner fenceが無いためcutoverは未実施である。
+- 現在の空き容量は約5.6GiBで、公開下限5GiBを上回る。ただし実行環境の通常DNSは名前解決に失敗し、1.1.1.1で解決したIPを`curl --resolve`に指定するとNote／Substack／XはHTTP 200になる。DNSを固定変更せず、Substackの言語identity・Xのmedia readback・Life Manager owner移行が確認できるまでpauseは解除しない。
 
 ## 目標構成
 
@@ -92,14 +92,14 @@ publication identity、読者、payout、ledgerを分ける。
 | # | 作業 | 完了証拠 | 状態 |
 |---:|---|---|---|
 | 1 | launchd実行コンテキストを復旧し、creator/resumeを一度だけ起動 | 20:44 JSTのresume logは取得済み。`launchctl print`のrc=141は未解消 | 一部完了 |
-| 2 | DNSまたは承認済みnetwork transportを復旧 | NoteのHTTP公開・読み戻しは取得済み。Substack/Xは未確認 | 一部完了 |
-| 3 | Writer runtimeを`skills/writer-agent`へ移しmanifestを生成 | SHA付きpath census | 一部完了（tree複製とmanifestのみ。path audit／実行切替は未完了） |
+| 2 | DNSまたは承認済みnetwork transportを復旧 | 通常DNSは失敗。1.1.1.1解決＋`curl --resolve`ではNote／Substack／XがHTTP 200。publisher実行経路の再読戻しは未確認 | 一部完了 |
+| 3 | Writer runtimeを`skills/writer-agent`へ移しmanifestを生成 | SHA付きpath census、Life Manager commit `69e2dbdc5` | 一部完了（tree同期・manifest・テンプレート path化済み。実行切替は未完了） |
 | 4 | demand→artifact→publisher adapterを同じstate schemaへ接続 | run/artifact parity | 未着手 |
 | 5 | Note/Substack/Xの実公開とreadbackを同一runで完了 | Note 1/4。Substack identityとXが未完了 | 進行中 |
 | 6 | payment/publisher receipt collectorとmoney ledgerを接続 | artifact-level receipt | 未着手 |
 | 7 | neutral Telegram rendererを日次・失敗・完了へ接続 | message ID `26075`/`26087` + semantic hash | 一部完了 |
 | 8 | adversarial verifierで重複公開・誤金額・偽URL・secret漏洩を反証 | Note live境界とidentity gateのfresh review | 進行中 |
-| 9 | Life Manager ownerをloadし、19個のWriter関連LaunchAgent（creator、resume、retry、money、report、health、learning、opportunityを含む）のpath/state/lockをmanifest化。shared fenceで旧ownerをdrain後にdisable | owner manifest + old/new parity + bounded wake | 未着手 |
+| 9 | Life Manager ownerをloadし、19個のWriter関連LaunchAgent（creator、resume、retry、money、report、health、learning、opportunityを含む）のpath/state/lockをmanifest化。shared fenceで旧ownerをdrain後にdisable | 19 labelのpath censusはmanifest化済み。残りはowner fence + state parity + old/new drain + bounded wake | 一部完了 |
 | 10 | rollback archiveと復元試験を検証し、Writer専用releaseだけをアーカイブ。`.openclaw`と`profitable-claude`全体は削除しない | archive hash + restore receipt + deletion-scope receipt | 未着手 |
 
 削除は最後の一件であり、現在は実行しない。
