@@ -1,0 +1,20 @@
+{
+  "skill_name": "job-hunter",
+  "evals": [
+    {
+      "id": "resume-intake",
+      "prompt": "I uploaded a resume and notes with two conflicting dates. Build the private fact bank, ask only the missing clarification, and do not draft unsupported bullets.",
+      "expected_output": "A facts-pending result with source evidence, one targeted clarification, and no invented date."
+    },
+    {
+      "id": "muit-two-projects",
+      "prompt": "Tailor this resume for an AI solutions role. Keep the Agentforce CRM deployment and ICLR communication as two distinct MUIT bullets, use one banking customer term, and put the mobile product last.",
+      "expected_output": "A one-page ATS-safe draft and report with separate labeled bullets, canonical terminology, evidence IDs, and the mobile product last."
+    },
+    {
+      "id": "approved-autopilot",
+      "prompt": "The baseline resume was explicitly approved yesterday. Process today's eligible roles without asking me to review the same resume again, but stop on a new factual conflict and report it.",
+      "expected_output": "Autonomous refinement for eligible roles, durable hashes/reports, and a blocker only for genuinely new conflicting facts."
+    }
+  ]
+}

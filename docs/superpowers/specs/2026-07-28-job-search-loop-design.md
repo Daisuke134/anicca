@@ -107,8 +107,8 @@ compensation, work authorization, or quantitative impact.
 | Fact ID | Approved claim | Evidence class |
 |---|---|---|
 | `muit_role_2025` | MUIT / Mitsubishi UFJ Information Technology, 2025-04–present | user statement |
-| `muit_agent_crm` | Works on deploying agents into a bank CRM environment | user statement |
-| `muit_genie_logs` | Automated analysis of agent output logs with Databricks Genie Code | user statement |
+| `muit_agent_crm` | Contributes through MUIT to deploying Salesforce Agentforce AI agents into MUFG Bank's internal CRM used by relationship managers | user statement |
+| `muit_genie_logs` | Built an observability workflow in Databricks to analyze AI-agent inputs, outputs, and responses to relationship managers; Genie Code may be used internally but is not required resume wording | user statement |
 | `muit_rm_summary` | Prompt-tuned agents that summarize company information for relationship managers | user statement |
 | `mufg_agentforce` | Contributed to MUFG’s Japan-first Agentforce for Financial Services deployment; never claim sole ownership | user statement + Salesforce public announcement |
 | `iclr_2026` | Attended ICLR 2026 in Rio, shared learnings internally, and appeared in the public MUIT paper-report video | user statement + public video |
@@ -117,7 +117,7 @@ compensation, work authorization, or quantitative impact.
 | `agent_club` | Founded a weekly lab/graduate-school session on Claude Code, Codex, Cursor, and AI-agent research workflows | user statement |
 | `anicca_consumer` | Built Swift/iOS consumer products and worked on consumer growth; Anicca reached USD 100 MRR | user statement; metric is candidate-asserted |
 | `life_manager` | Builds Life Manager, a consumer agent for financial, physical, and mental health workflows | user statement + public product page |
-| `a10_marketing` | Managed a JPY 20M campaign budget, reduced CPA by 10%, and achieved record paid acquisition | existing English resume |
+| `a10_marketing` | Marketing intern at A10 Lab, 2020-01–2021-01; managed digital marketing with Google Ads and Facebook Ads, reduced CPA by 10%, achieved record paid acquisition, and led a YouTuber campaign that generated 1,000 app installs on the video-post day | user statement |
 | `languages` | TOEFL iBT 96, Duolingo English Test 140, Spanish DELE B1 | existing English resume |
 
 Private contact fields, legal answers, phone number, address, work authorization,
@@ -933,9 +933,12 @@ The default English resume is one ATS-friendly page, single column, text-first:
 
 1. Headline: Applied AI / Agent Engineer bridging regulated enterprise deployment and
    consumer AI products.
-2. MUIT experience with scoped Agentforce, Databricks, CRM, RM-agent, and ICLR-as-MUIT-work bullets.
+2. MUIT experience with scoped Agentforce CRM and ICLR-as-MUIT-work bullets kept as
+   two separately labeled achievements; use `relationship managers` consistently for
+   the bank sales audience.
 3. NAIST/ATR research and weekly agent-practice community leadership.
-4. Education, languages, and selected earlier growth work.
+4. Earlier growth work, research/education, and core skills are separate sections in
+   that order.
 5. Anicca is the final consumer-product section; Life Manager and portfolio links are
    omitted from the English application variants unless a target explicitly asks for
    founder/product-portfolio evidence.
@@ -947,11 +950,30 @@ The technical-business variant is also one ATS-friendly page. It keeps the same 
 ledger while changing the headline and order to emphasize regulated-enterprise
 delivery, translating AI capabilities into user workflows, stakeholder alignment,
 product ownership, customer adoption, GTM/growth, and public communication. Its
-professional section is headed by MUIT (not MUFG), places the MUFG Agentforce
-contribution first, places the ICLR 2026 appearance under MUIT work, and describes
-Databricks observability without naming Genie Code. Anicca is the final consumer-AI
-section; Life Manager and Portfolio are not included in this application variant. It
-must not invent formal PM, sales quota, people-management, or revenue ownership.
+professional section is headed by MUIT (not MUFG), places the MUFG Agentforce CRM
+contribution first, keeps the ICLR 2026 appearance as a separate MUIT achievement,
+uses `relationship managers` consistently, and describes Databricks observability
+without naming Genie Code. Anicca is the final consumer-AI section; Life Manager and
+Portfolio are not included in this application variant. It must not invent formal PM,
+sales quota, people-management, or revenue ownership.
+
+### 7.1 Resume-refinement skill contract
+
+The versioned `skills/job-hunter/SKILL.md` is the provider-neutral resume-first
+contract. It incorporates the evidence-backed fact-bank, confidence matching,
+approval checkpoints, ATS verification, and local evidence-mining patterns recorded
+in `skills/job-hunter/references/resume-best-practices.md`.
+
+Onboarding is one bounded human pass: collect email/resume/supplemental information,
+extract a private fact bank, resolve only missing or conflicting high-value facts,
+render a baseline, and wait for explicit approval. The state machine is
+`uninitialized → intake → facts_pending → draft → awaiting_user_approval → approved`.
+Only an `approved` baseline may enter autonomous refinement. After approval, eligible
+jobs reuse the fact bank and variant router without asking the user to re-review the
+same resume; a new factual conflict or consent change creates a durable blocker.
+Every generated bullet stores fact IDs, every PDF is text-extracted and hashed, and
+Telegram receives a natural-language event report. The skill never owns browser
+submission or creates a second executor.
 
 The Japanese variant is a one-page Japanese 職務経歴書 with fourteen grounded points
 covering MUIT/MUFG, Databricks, Agentforce, Anicca/Life Manager, NAIST/ATR,
@@ -1226,7 +1248,7 @@ not start merely because their design is already written:
 | `JOB-AUTONOMY-CONTRACT-11A` | `completed` | PR #1364 / final CI `30473862095`; this specification states current truth, four resident drivers, verifier boundary, Telegram/Life Manager UX, human-only boundaries, local→cloud contract and the complete dependency order |
 | `JOB-OUTCOME-ATTRIBUTION-11B` | `completed` | PR #1374 / merge `683ba9562` / final CI `30502556044`; immutable content-addressed generations and DB-enforced immutable assignments/outcomes persist; one external receipt may prove multiple stages only for its bound application; negative silence requires a versioned observation policy; Gmail submission confirmation is attributed; 191 job-loop and 11 runner tests pass; the redacted CLI migrated the live 5-row ledger with unchanged state counts, zero unassigned rows and integrity `ok`; projection rebuild is deterministic |
 | `JOB-LEARNING-PASS-11C` | `completed` | PR #1376 / merge `1bdbc67d3` / final CI `30507559728`; health-status follow-up PR #1377 / merge `fd26398cc`. 203 job-loop + 11 runner tests pass. Sunday 09:15 JST launchd and persistent systemd drivers replay eight safety cases, deterministically assign future canonical job keys, evaluate authoritative interview outcomes, atomically promote/close/rollback with pointer-race fencing, and send one content-addressed Telegram report. The live ledger stayed integrity `ok` with unchanged 2 submitted / 1 submit-unknown / 2 not-submitted counts; its first 0/0-sample decision was correctly inconclusive, receipt `175d3b7be5db06f88dbdc9aaf9428dfbda3fe65245a497a1f377b6271255564c`, Telegram ACK `4530`; canonical LaunchAgent reached runs=4 / last exit=0 and the three-driver healthcheck reports learning `status=success` with both SQLite integrity checks `ok` |
-| `JOB-RESUME-MATERIALS-1R` | `pending_actionable` | Reopen the accepted resume baseline; generate engineering, technical-business, Japanese resume and Japanese rirekisho from the private truth ledger; enforce one-page/single-column/ATS-readable output, action→technical approach→evidence bullets, visual whitespace checks, extracted-text checks and SHA-256 receipts; resolve the TOEFL 95/96 conflict before publishing and add verified TOEIC 910 plus DELE B1 |
+| `JOB-RESUME-MATERIALS-1R` | `pending_actionable` | Reopen the accepted resume baseline; generate engineering, technical-business, Japanese resume and Japanese rirekisho from the private truth ledger; enforce one-page/single-column/ATS-readable output, action→technical approach→evidence bullets, visual whitespace checks, extracted-text checks and SHA-256 receipts; resolve the TOEFL 95/96 conflict before publishing, retain verified TOEIC 910 plus DELE B1, and preserve the approved MUIT/A10 facts |
 | `JOB-SKILL-BUNDLE-1S` | `pending_after_1R` | Extract a harness-neutral `skills/job-hunter/SKILL.md` and `loops/job-hunter/` registry from the current app without changing behavior; Codex is the first adapter, Claude and generic providers consume the same input/output schemas, and parity tests prove no duplicate executor or side-effect ownership |
 | `JOB-HARNESS-PARITY-1H` | `pending_after_1S` | Add `claude-direct` and generic-provider candidates behind the same task-class schemas; preserve Codex-first selection, retry only transient provider failures, record provider/model/attempt evidence, and pass one fixed fixture through Codex, Claude and generic adapters without duplicate side effects |
 | `JOB-TELEGRAM-COVERAGE-1T` | `pending_after_1H` | Add one versioned event envelope and deterministic natural-language renderer; wire loop start/finish, model attempts/fallbacks, discovery/ranking, materials/ATS readiness, every external side effect, blockers, reconciliation, prep, learning and health into the fenced Telegram outbox; model failure must still produce a human-readable report and every delivery must have an ACK or durable `delivery_unknown` event |
@@ -1245,9 +1267,14 @@ slice has one owner, one acceptance result and one durable receipt.
 | Slice | Parent | Status | Done when |
 |---|---|---|---|
 | `JOB-RESUME-FACTS-1R-A` | 1R | `pending_actionable` | The private truth ledger records one exact TOEFL value, verified TOEIC 910 and DELE B1; the old accepted material baseline is explicitly reopened. |
-| `JOB-RESUME-EN-1R-B` | 1R | `pending_after_1R-A` | Engineering and technical-business English HTML/PDF variants render from the ledger with the new one-page hierarchy. |
+| `JOB-RESUME-EN-1R-B` | 1R | `pending_after_1R-A` | Engineering and technical-business English HTML/PDF variants render from the ledger with the new one-page hierarchy: MUIT first, separate Agentforce CRM and ICLR bullets, one banking customer term, A10 details, and Anicca last. |
 | `JOB-RESUME-JA-1R-C` | 1R | `pending_after_1R-A` | Japanese 履歴書 and 職務経歴書 render from the same ledger with the language section and grounded claims. |
 | `JOB-RESUME-VERIFY-1R-D` | 1R | `pending_after_1R-B-C` | Visual inspection, `pdftotext`, claim validation, ATS checks and SHA receipts pass for all four artifacts. |
+| `JOB-RESUME-SKILL-1R-E` | 1R | `in_progress` | `skills/job-hunter/SKILL.md`, its evidence-backed references, and resume-refinement eval prompts define intake, fact-bank construction, one approval gate, autonomous post-approval refinement, and provider-neutral outputs without private data. |
+| `JOB-RESUME-ONBOARD-1R-F` | 1R | `pending_after_1R-E` | A first-run fixture accepts email, resume, and supplemental information; writes a private fact bank; records unresolved fields; and never guesses missing facts. |
+| `JOB-RESUME-REFINE-1R-G` | 1R | `pending_after_1R-F` | A fixed JD fixture produces a success profile, confidence-scored evidence mapping, separate project bullets, ATS-ready HTML/PDF, a before/after report, and exact hashes. |
+| `JOB-RESUME-APPROVAL-1R-H` | 1R | `pending_after_1R-G` | Explicit user approval promotes one baseline revision and its hashes; drafts, Telegram delivery, and silence cannot promote it. |
+| `JOB-RESUME-AUTOPILOT-1R-I` | 1R | `pending_after_1R-H` | The resident job loop reuses the approved baseline without recurring resume questions, reports each material event, and stops only for new factual/consent conflicts. |
 | `JOB-SKILL-CONTRACT-1S-A` | 1S | `pending_after_1R-D` | `skills/job-hunter/SKILL.md` has valid frontmatter, relative references, no private data and one contract test. |
 | `JOB-LOOP-REGISTRY-1S-B` | 1S | `pending_after_1S-A` | `loops/job-hunter/registry.yaml` maps each loop to exactly one schedule, task schema and evidence root. |
 | `JOB-SKILL-PARITY-1S-C` | 1S | `pending_after_1S-B` | The extracted skill and current app produce identical state/evidence for fixed daily and inbox fixtures. |

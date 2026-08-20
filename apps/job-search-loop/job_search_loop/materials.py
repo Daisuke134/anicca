@@ -115,15 +115,15 @@ def master_sections(profile: dict[str, Any]) -> list[dict[str, Any]]:
             [
                 (
                     "mufg",
-                    "Contributed through MUIT to MUFG Bank's Japan-first production deployment of Salesforce Agentforce for Financial Services, integrating AI agents into the bank's internal CRM used by sales professionals.",
+                    "Agentforce CRM deployment — Contributed through MUIT to MUFG Bank's Japan-first production deployment of Salesforce Agentforce for Financial Services, integrating AI agents into the bank's internal CRM used by relationship managers.",
                 ),
                 (
                     "iclr",
-                    "Represented MUIT at ICLR 2026 in Rio de Janeiro as part of MUIT work; synthesized frontier-AI research for an internal executive briefing and presented key findings through MUIT's official conference report.",
+                    "ICLR 2026 at MUIT — Represented MUIT in Rio de Janeiro as part of MUIT work; synthesized frontier-AI research for an internal executive briefing and presented key findings through MUIT's official conference report.",
                 ),
                 (
                     "muit_genie_logs",
-                    "Built an observability workflow in Databricks to analyze AI-agent inputs, outputs, and responses to sales professionals; used it to investigate behavior and response quality.",
+                    "Built an observability workflow in Databricks to analyze AI-agent inputs, outputs, and responses to relationship managers; used it to investigate behavior and response quality.",
                 ),
                 (
                     "muit_rm_summary",
@@ -143,12 +143,12 @@ def master_sections(profile: dict[str, Any]) -> list[dict[str, Any]]:
                 ("agent_club", "Founded a weekly community teaching Claude Code, Codex, Cursor, and AI-agent workflows for research and daily work."),
             ],
         ),
-        ("Earlier Growth Experience", [("a10_marketing", "Managed a JPY 20M campaign budget, reduced CPA by 10%, and achieved record paid acquisition at A10 Lab.")]),
+        ("Earlier Growth Experience", [("a10_marketing", None)]),
         (
             "Core Skills",
             [
                 ("muit_agent_crm", "Salesforce Agentforce · AI-agent deployment · CRM workflows"),
-                ("muit_genie_logs", "Databricks · AI observability · response-quality analysis"),
+                ("muit_genie_logs", "Databricks · AI observability · relationship-manager response quality"),
                 ("muit_rm_summary", "Prompt tuning · context engineering · relationship-manager workflows"),
                 ("anicca_consumer", "Swift / iOS · consumer AI products · product growth"),
             ],
@@ -175,27 +175,27 @@ def business_sections(profile: dict[str, Any]) -> list[dict[str, Any]]:
         (
             "MUIT — Applied AI / AI Agent Engineering (Apr 2025–Present)",
             [
-                ("mufg", "Contributed through MUIT to MUFG Bank's Japan-first production deployment of Salesforce Agentforce for Financial Services, integrating AI agents into the bank's internal CRM used by sales professionals."),
-                ("iclr", "Represented MUIT at ICLR 2026 in Rio de Janeiro as part of MUIT work; synthesized frontier-AI research for an internal executive briefing and presented key findings through MUIT's official conference report."),
-                ("muit_genie_logs", "Built an observability workflow in Databricks to analyze AI-agent inputs, outputs, and responses to sales professionals; used it to investigate behavior and response quality."),
+                ("mufg", "Agentforce CRM deployment — Contributed through MUIT to MUFG Bank's Japan-first production deployment of Salesforce Agentforce for Financial Services, integrating AI agents into the bank's internal CRM used by relationship managers."),
+                ("iclr", "ICLR 2026 at MUIT — Represented MUIT in Rio de Janeiro as part of MUIT work; synthesized frontier-AI research for an internal executive briefing and presented key findings through MUIT's official conference report."),
+                ("muit_genie_logs", "Built an observability workflow in Databricks to analyze AI-agent inputs, outputs, and responses to relationship managers; used it to investigate behavior and response quality."),
                 ("muit_rm_summary", "Supported prompt tuning and context engineering for deployed AI agents, including company-information summaries for relationship managers."),
             ],
         ),
         (
             "Earlier Growth Experience",
-            [("a10_marketing", "Managed a JPY 20M campaign budget, reduced CPA by 10%, and achieved record paid acquisition at A10 Lab.")],
+            [("a10_marketing", None)],
+        ),
+        (
+            "Research & Education",
+            [("naist", "Applied EEG and machine learning to mind-wandering detection in NAIST master's research (April 2024–April 2026)."), ("atr_research", "Conducted and presented mind-wandering research at ATR."), ("agent_club", "Founded a weekly community teaching Claude Code, Codex, Cursor, and AI-agent workflows for research and daily work."), ("education", None), ("languages", None)],
         ),
         (
             "Core Skills",
             [
                 ("muit_agent_crm", "Salesforce Agentforce · AI-agent deployment · CRM workflows"),
-                ("muit_genie_logs", "Databricks · AI observability · response-quality analysis"),
+                ("muit_genie_logs", "Databricks · AI observability · relationship-manager response quality"),
                 ("muit_rm_summary", "Prompt tuning · context engineering · relationship-manager workflows"),
             ],
-        ),
-        (
-            "Research & Education",
-            [("naist", "Applied EEG and machine learning to mind-wandering detection in NAIST master's research (April 2024–April 2026)."), ("atr_research", "Conducted and presented mind-wandering research at ATR."), ("agent_club", "Founded a weekly community teaching Claude Code, Codex, Cursor, and AI-agent workflows for research and daily work."), ("education", None), ("languages", None)],
         ),
         (
             "Consumer AI Product",
