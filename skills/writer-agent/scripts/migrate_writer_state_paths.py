@@ -115,6 +115,13 @@ def migrate_publication_states(
         try:
             value = json.loads(before)
         except json.JSONDecodeError as error:
+            # Historical diagnostic receipts may contain literal newlines in
+            # an embedded traceback.  They are outside the managed publication
+            # boundary; leave them byte-for-byte untouched unless the retired
+            # root actually appears, in which case refusing is safer than
+            # migrating an unparseable path-bearing control file.
+            if legacy.encode() not in before:
+                continue
             raise PathMigrationError(f"invalid publication control: {path}") from error
         migrated, replacements = _replace(value, legacy, canonical)
         if replacements == 0:

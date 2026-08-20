@@ -198,6 +198,9 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
   `destination`だけが旧rootを指していることを検出した。既存migrationをrun/gates下の全JSON receiptへ
   拡張し、記事・画像bytesを変更せず別のappend-only path-migration receiptへ記録する。これを完了してから
   quarantineのlayout検証を再試行する。
+- その拡張時、過去のdiagnostic tracebackを含むmalformed JSON receiptも検出した。旧rootを含まない
+  malformed diagnosticはbyte-preservingでskipし、旧rootを含むmalformed controlは拒否するfail-closed
+  境界を追加した。publication/media controlはparse可能なまま移行する。
 
 ## 目標構成
 
