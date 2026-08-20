@@ -112,7 +112,7 @@ def _status_rank(status: str) -> int:
 
 
 def _merged_phase_summary(
-    phases: list[tuple[str, Path, int]], output_dir: Path,
+    phases: list[tuple[str, Path, int]], output_dir: Path, *, intent_root: Path | None = None,
 ) -> dict[str, Any]:
     """Choose one coherent detail/decision/result bundle per request, then reuse summarize."""
     winners: dict[str, tuple[int, dict[str, Any], dict[str, Any], dict[str, Any]]] = {}
@@ -207,7 +207,7 @@ def _merged_phase_summary(
             "filtered_results": list(filtered_results.values()),
             "lifecycle_results": [lifecycle_results[key] for key in sorted(lifecycle_results)],
         })
-    return summarize(output_dir, 1 if parent_failed else 0)
+    return summarize(output_dir, 1 if parent_failed else 0, intent_root=intent_root)
 
 
 def _default_pass_id() -> str:
@@ -539,6 +539,7 @@ def _oldest(details: list[dict[str, Any]]) -> str | None:
 
 def summarize(
     evidence_dir: Path, parent_rc: int, *, require_observations: bool = False,
+    intent_root: Path | None = None,
 ) -> dict[str, Any]:
     snapshot = _load(evidence_dir / "application-snapshot.json")
     details = _rows(snapshot, "request_details")
@@ -985,6 +986,37 @@ def _finish(
     args: argparse.Namespace,
     error: str | None = None,
 ) -> int:
+    values = dict(values)
+    report_results = list(values.get("report_results") or [])
+    reported_ids = {str(row.get("request_id") or "") for row in report_results}
+    durable_pending = []
+    if args.intent_root.is_dir():
+        for path in sorted(args.intent_root.glob("*.json")):
+            intent = _load(path)
+            if (
+                not isinstance(intent, dict)
+                or intent.get("version") != 2
+                or intent.get("state") != "prepared"
+                or intent.get("effect_phase") != "irreversible_attempt_started"
+            ):
+                continue
+            request_id = str(intent.get("request_id") or "").strip()
+            if not request_id or request_id in reported_ids:
+                continue
+            durable_pending.append({
+                "request_id": request_id,
+                "title": "",
+                "price_jpy": intent.get("price_jpy"),
+                "status": "prepared_unconfirmed",
+                "business_class": DUPLICATE_FENCED,
+                "reason": "durable_intent_requires_official_reconciliation",
+                "outcome": "prepared",
+            })
+    if durable_pending:
+        report_results.extend(durable_pending)
+        values["report_results"] = report_results
+        values["pending"] = int(values.get("pending") or 0) + len(durable_pending)
+        values["durable_pending_ids"] = [row["request_id"] for row in durable_pending]
     payload: dict[str, Any] = {
         "status": status,
         "pass_id": pass_id,
@@ -1260,6 +1292,7 @@ def main(argv: list[str] | None = None) -> int:
         phases.append((phase, phase_evidence, parent_rc))
         values = summarize(
             phase_evidence, parent_rc, require_observations=True,
+            intent_root=args.intent_root,
         )
         _publish_fresh_decision_notifications(
             args=args, pass_id=pass_id, evidence_dir=phase_evidence, values=values,
@@ -1329,9 +1362,10 @@ def main(argv: list[str] | None = None) -> int:
 
     last_phase, last_evidence, last_rc = phases[-1]
     values = (
-        _merged_phase_summary(phases, run_dir / "combined-evidence")
+        _merged_phase_summary(phases, run_dir / "combined-evidence", intent_root=args.intent_root)
         if len(phases) > 1 else summarize(
             last_evidence, last_rc, require_observations=True,
+            intent_root=args.intent_root,
         )
     )
     if wake is None:
@@ -1383,7 +1417,9 @@ def main(argv: list[str] | None = None) -> int:
     max_parent_turns = 3
     while True:
         last_phase, last_evidence, last_rc = phases[-1]
-        values = _merged_phase_summary(phases, run_dir / "combined-evidence")
+        values = _merged_phase_summary(
+            phases, run_dir / "combined-evidence", intent_root=args.intent_root,
+        )
         continuing_after_source_failure = False
         if last_rc != 0:
             denied_source_id = phase_source_denials.get(last_phase)
@@ -1503,6 +1539,7 @@ def main(argv: list[str] | None = None) -> int:
             )
         phase_values = summarize(
             phase_evidence, parent_rc, require_observations=True,
+            intent_root=args.intent_root,
         )
         _publish_fresh_decision_notifications(
             args=args, pass_id=pass_id, evidence_dir=phase_evidence, values=phase_values,

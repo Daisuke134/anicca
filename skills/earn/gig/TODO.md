@@ -255,8 +255,14 @@ definition and A0 acceptance is closed.
   decision failure from readback failure and retries official readback once on a fresh target without
   clicking submit again. Natural `current` pass
   `gig-apply-direct-1787210299529825000-90319` observed 40, submitted and officially read back four,
-  failed zero and retained three confirmation-pending rows for the next pass. Coverage remains open
-  until those three receive terminal official dispositions and the source traversal exhausts.
+  failed zero and retained three confirmation-pending rows for the next pass. The next natural pass
+  recovered `5222772` and `5222946` with official readback, but reported pending zero while durable
+  v2 intent `5222911` remained `prepared / irreversible_attempt_started`. Current source now merges
+  every such durable unresolved v2 intent into the terminal receipt only; phase-level traversal still
+  uses the current snapshot, so historical reconciliation debt cannot suppress deeper exploration.
+  The live store contains 26 such intents including `5222911`; they must receive terminal official
+  dispositions rather than disappear from the denominator. Coverage remains open until that durable
+  queue and the source traversal exhaust.
 - [x] Restore semantic scope fidelity before another exhaustive pass. Request `5217691`
   (`発泡ウレタンで等身大の女性を製作したい`) had repeatedly been classified correctly as
   `physical_or_onsite`, but pass `gig-apply-direct-1787206162452874000-19745` re-planned it as
