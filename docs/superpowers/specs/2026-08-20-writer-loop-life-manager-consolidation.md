@@ -8,7 +8,8 @@
   `gig_release.py`、immutable `~/gig/releases/life-manager/current`、
   `gig_disk_guard.py`、owner fence、外部 state `~/.local/state/life-manager/writer` を使う。
   Coconalaの4 laneと同様、公開ownerは重複起動せず、外部作用の前にlock・state・receiptを確認する。
-- current immutable release は `351f5aea408f6abfdeb99dafa93e98b9f206c1d5`。`daily-2026-08-21` は
+- current immutable releaseはrelease watcherがHEADから切り替える。直近source commitは
+  `69387c329853a2852866a8f8c4f1fb1f0cb362ea`。`daily-2026-08-21` は
   Note JA、Substack JA、X Article JA の
   native live receiptを同一runで確認済み。URLは `https://note.com/anicca123/n/ncbdb8a56bb20`、
   `https://aniccabuddha.substack.com/p/1`、`https://x.com/diceai0/article/2090526616854405173`。
@@ -22,6 +23,11 @@
   公式文書調査が公開lockを保持せず、公開待ちの前にモデルが走る順序逆転も防ぐ。shell構文と
   Coconala parityの順序ガードを含む16 focused tests、既存Note circuit/media wiring、planner、
   failure circuitをPASSした。
+- current releaseからの実owner直接wake（`2026-08-20T22:19:07Z`）は、plannerがNote recoveryを
+  選択した。認証済みdestinationの曖昧性は`REFUSED`として外部公開を行わず、self-heal routingも
+  evidence index不足で`UNRESOLVED`にfail-closedした。publisher lockは終了後に不在で、偽の公開URL・
+  収益receipt・モデル成功を記録していない。これはcurrent codeのlock解放と安全停止のruntime receiptであり、
+  `launchctl kickstart`の`141: Reentrancy avoided`とは別に、自然周期の実行証明はまだ未完了である。
 - Xの画像挿入失敗は、canonical publisherが外部macOS clipboard helperを直接呼んでいたことが原因だった。
   その局所副作用だけをページ所有Clipboardへ差し替え、実ブラウザでHTML/PNG書込み、native readback、
   同一run state更新を確認した。fresh adversarial reviewはCritical/ImportantなしでSHIP。
