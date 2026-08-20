@@ -169,7 +169,7 @@
     "reply-semantic-agent": {
       "route": "luna-medium-reply-semantic-with-provider-fallback",
       "token_reservation": 16384,
-      "timeout_seconds": 120,
+      "timeout_seconds": 240,
       "candidates": [
         {
           "provider": "codex",
