@@ -1322,10 +1322,10 @@ historical evidence below. Read-only inspection of the installed state shows:
 - PartnerStack remains authenticated and reports zero commission rows, so
   approved-or-paid net remains USD 0; actual cash cost remains unknown where no
   bill exists;
-- Telegram outbox contains 98 events and the sent ledger contains 97. The tiktok
-  `PLACEMENT_LIVE` event remains sent by the existing owner with provider message
-  ID `26004`; the newest `CLICK_DELTA` event is durably pending after
-  `SEND_TIMEOUT_UNKNOWN` and has no message ID;
+- Telegram outbox and sent ledger both contain 98 events with no pending row. The
+  tiktok `PLACEMENT_LIVE` event remains sent by the existing owner with provider
+  message ID `26004`; the newest `CLICK_DELTA` timeout was retried under the same
+  event UUID and sent as provider message ID `26019`;
 - the prior publication failure was `FileNotFoundError` for the missing allowed
   `.worktrees/affiliate-foundation-prod`, not a current `XPostError`. The
   existing `feature/affiliate-foundation-prod` branch was reconnected at that
@@ -1358,6 +1358,13 @@ historical evidence below. Read-only inspection of the installed state shows:
   remains USD 0 and actual billed cost remains UNKNOWN. The same wake appended
   one durable `CLICK_DELTA` event for the two new provider-link deltas, then
   returned `SEND_TIMEOUT_UNKNOWN`; no click or timeout is money.
+- the existing owner retry at `2026-08-20T10:54:48Z` recovered that exact pending
+  event without any publication, link, provider, or ledger mutation. The owner
+  recorded message ID `26019` once for event UUID
+  `4d674b7e14538be7e70cb00c236a8e1bc5153e68a29bf5b4cde0e4452a6a9bf8`, leaving
+  Telegram outbox and sent ledger both at 98 rows with zero pending rows. Revenue
+  remained in cooldown against the 10:43 empty capture; approved-or-paid net
+  remains USD 0. This closes the observed Telegram timeout self-heal, not B01.
 - a one-time read-only diagnostic capture was run through the installed
   `affiliate revenue capture` skill after the owner could not be kicked. The
   official PartnerStack report at `2026-08-20T08:49:11Z` had

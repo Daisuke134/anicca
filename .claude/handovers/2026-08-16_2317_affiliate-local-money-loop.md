@@ -10,7 +10,7 @@
 - Six Affiliate launchd plists exist: three keep-alive browser owners and source/composition/money jobs at 600-second intervals. CDP `9324`, `9326`, and `9327` each returned HTTP `200`; authenticated tabs showed ElevenLabs home, one exact Affiliate X status, and Impact home.
 - The canonical ledger contains **13 dedicated-link placements**, **13 owned public URLs**, and **32 provider-link clicks**. The latest poll appended `+1` to music and `+1` to voice-cloning; the aggregate provider metric is 41 clicks with `+40` explicitly unattributed. Neither is money.
 - PartnerStack/ElevenLabs is `AUTHENTICATED`; the latest official capture has `commission_row_count=0`, `NO_LIVE_ROWS`, currency display `USD`, tax registration required, and payment-provider selection required. Pending/approved/paid/reversed are therefore zero observed rows. Approved-or-paid net is **USD 0**. Unknown real costs remain unknown.
-- Telegram outbox has 98 rows and sent ledger has 97. The tiktok `PLACEMENT_LIVE` event was sent by the existing owner as provider message `26004`; the newest `CLICK_DELTA` event is pending after `SEND_TIMEOUT_UNKNOWN` with no message ID.
+- Telegram outbox and sent ledger both have 98 rows with no pending event. The tiktok `PLACEMENT_LIVE` event was sent by the existing owner as provider message `26004`; the newest `CLICK_DELTA` timeout was retried under the same event UUID and sent as provider message `26019`.
 - The first audit-shell DNS readback failed, so those earlier receipts were not
   promoted to public proof. After the owner resumed, independent DNS-resolved
   readback at `2026-08-20T09:01:49Z` returned HTTP 200 for the music owned page,
@@ -258,3 +258,11 @@ the music/voice-cloning deltas, then its Telegram send returned
 `SEND_TIMEOUT_UNKNOWN` without a provider message ID; outbox is 98, sent is 97,
 and the event remains pending for the next existing-owner retry. Approved-or-paid
 net is USD `0`; real billed cost is `UNKNOWN`; B01 remains open.
+
+The existing owner retry at `2026-08-20T10:54:48Z` recovered the exact pending
+`CLICK_DELTA` event without changing any publication, link, provider, or ledger
+receipt. Event UUID `4d674b7e14538be7e70cb00c236a8e1bc5153e68a29bf5b4cde0e4452a6a9bf8`
+was recorded once with Telegram provider message `26019`; outbox and sent ledger
+are both 98 rows with zero pending rows. Revenue remained in cooldown against
+the 10:43 empty capture; approved-or-paid net remains USD `0` and billed cost is
+`UNKNOWN`. This closes the observed Telegram timeout self-heal, not B01.
