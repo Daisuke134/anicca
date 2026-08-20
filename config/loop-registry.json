@@ -20,6 +20,25 @@
       "base_minute": 0,
       "base_hour": 0,
       "notes": "First loop ported to this repo. Runs from ~/loops/current, state in ~/loops/x-repost."
+    },
+    "cfo-hourly": {
+      "loop": "cfo-hourly",
+      "skill_dir": "skills/cfo",
+      "status": "live",
+      "allocation": {
+        "status": "normal",
+        "pass_frequency_multiplier": 1.0,
+        "capital_cap_usd": null
+      },
+      "cadence_contract": "one hourly pass appends at most one redacted CFO result and delivers at most one daily snapshot, or records a failure",
+      "evidence_path": "~/loops/cfo-hourly/last-result.json",
+      "ledger_paths": [
+        "~/loops/cfo-hourly/last-result.json"
+      ],
+      "base_interval_seconds": 3600,
+      "base_minute": 0,
+      "base_hour": 0,
+      "notes": "Stable release runs from ~/.local/share/life-manager/cfo-hourly/current; no account balances or provider secrets are stored in the registry."
     }
   }
 }

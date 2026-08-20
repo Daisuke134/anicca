@@ -1,4 +1,204 @@
 "use strict";
+const { createCfoSupabaseRpc } = require("./cfo-supabase-rpc.js");
+const { canonicalJson } = require("./cfo-registry.js");
+const { fail: costEventFail, plain: plainCostRow, timestamp: validCostTimestamp } = createCfoSupabaseRpc("cfo_business_ledger_invalid:");
+const { fail: usageFail, internal: usageInternal, plain: plainUsageInput, timestamp: validUsageTimestamp } = createCfoSupabaseRpc("cfo_provider_usage_invalid:");
+const { fail: localAgentUsageFail, exact: exactLocalAgentUsagePair, freeze: freezeLocalAgentUsage, internal: localAgentUsageInternal, plain: plainLocalAgentUsageInput, timestamp: validLocalAgentUsageTimestamp } = createCfoSupabaseRpc("cfo_local_agent_usage_invalid:");
+const LOCAL_AGENT_USAGE_PAIR_KEYS = new Set(["input", "context"]);
+const DIRECT_COST_KINDS = new Set(["gemini_live", "telnyx_call", "composio_call", "composio_poll"]);
+const COST_KIND = /^[a-z][a-z0-9_]*$/;
+const NUMERIC_TEXT = /^(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?$/;
+
+function positiveId(value) {
+  if (typeof value === "number" && Number.isSafeInteger(value) && value > 0) return String(value);
+  if (typeof value === "string" && /^[1-9]\d*$/.test(value)) return value;
+  costEventFail("invalid_id");
+}
+
+function numericText(value, reason) {
+  if (typeof value !== "number" && typeof value !== "string") costEventFail(reason);
+  const text = String(value);
+  if (!NUMERIC_TEXT.test(text) || !Number.isFinite(Number(text)) || Number(text) < 0) costEventFail(reason);
+  return text;
+}
+
+function normalizeApiCostEvent(row) {
+  if (!plainCostRow(row)) costEventFail("invalid_row");
+  const id = positiveId(row.id);
+  if (!validCostTimestamp(row.ts)) costEventFail("invalid_timestamp");
+  const ownerId = row.uid === null ? null : row.uid;
+  if (ownerId !== null && (typeof ownerId !== "string" || ownerId.length === 0 || ownerId.trim() !== ownerId))
+    costEventFail("invalid_owner");
+  if (typeof row.kind !== "string" || !COST_KIND.test(row.kind)) costEventFail("invalid_kind");
+  if (typeof row.unit !== "string" || row.unit.length === 0 || row.unit.trim() !== row.unit)
+    costEventFail("invalid_unit");
+  const attributed = DIRECT_COST_KINDS.has(row.kind);
+  return {
+    schema_version: 1, source_ledger: "lm_api_cost", source_event_id: `lm_api_cost:${id}`,
+    occurred_at: new Date(row.ts).toISOString(), owner_id: ownerId,
+    financial_unit_id: attributed ? "life_manager_saas" : null,
+    attribution_status: attributed ? "attributed" : "unattributed",
+    event_type: "operating_cost_estimate", cost_kind: row.kind,
+    quantity: { value: numericText(row.quantity, "invalid_quantity"), unit: row.unit },
+    amount: { value: numericText(row.est_usd, "invalid_amount"), currency: "USD" },
+    evidence_status: "locally_estimated",
+  };
+}
+
+function usageString(value, reason) {
+  if (typeof value !== "string" || value.length === 0 || value.trim() !== value) usageFail(reason);
+  return value;
+}
+
+function providerCount(metadata, key, optional) {
+  if (optional && !Object.prototype.hasOwnProperty.call(metadata, key)) return null;
+  const value = metadata[key];
+  if (!Number.isSafeInteger(value) || value < 0) usageFail("invalid_count");
+  return value;
+}
+
+function normalizeGeminiUsageEvidence(response, context) {
+  try {
+    if (!plainUsageInput(response) || !plainUsageInput(context) || !plainUsageInput(response.usageMetadata)) usageFail("invalid_input");
+    const metadata = response.usageMetadata;
+    const providerRequestId = usageString(response.responseId, "invalid_response_id");
+    const responseModel = usageString(response.modelVersion, "invalid_response_model");
+    const input = providerCount(metadata, "promptTokenCount", false);
+    const output = providerCount(metadata, "candidatesTokenCount", false);
+    const total = providerCount(metadata, "totalTokenCount", false);
+    const cached = providerCount(metadata, "cachedContentTokenCount", true);
+    const reasoning = providerCount(metadata, "thoughtsTokenCount", true);
+    const tool = providerCount(metadata, "toolUsePromptTokenCount", true);
+    const owner = usageString(context.owner_id, "invalid_owner");
+    const requestModel = usageString(context.request_model, "invalid_request_model");
+    if (context.financial_unit_id !== "life_manager_saas") usageFail("invalid_financial_unit");
+    if (!validUsageTimestamp(context.occurred_at)) usageFail("invalid_timestamp");
+    if (typeof context.trace_id !== "string" || !/^(?!0{32})[0-9a-f]{32}$/.test(context.trace_id)) usageFail("invalid_trace_id");
+    const otelOutput = output + (reasoning === null ? 0 : reasoning);
+    if (!Number.isSafeInteger(otelOutput)) usageFail("invalid_count");
+    const otelAttributes = { "gen_ai.operation.name": "generate_content", "gen_ai.provider.name": "gcp.gemini", "gen_ai.request.model": requestModel, "gen_ai.response.id": providerRequestId, "gen_ai.response.model": responseModel, "gen_ai.usage.input_tokens": input, "gen_ai.usage.output_tokens": otelOutput, "server.address": "generativelanguage.googleapis.com", "server.port": 443 };
+    if (cached !== null) otelAttributes["gen_ai.usage.cache_read.input_tokens"] = cached;
+    if (reasoning !== null) otelAttributes["gen_ai.usage.reasoning.output_tokens"] = reasoning;
+    return { schema_version: 1, provider: "gcp.gemini", provider_request_id: providerRequestId, usage_sequence: 0, occurred_at: new Date(context.occurred_at).toISOString(), owner_id: owner, financial_unit_id: "life_manager_saas", trace_id: context.trace_id, request_model: requestModel, response_model: responseModel, tokens: { input, output, cached_input: cached, reasoning_output: reasoning, tool_input: tool, total }, evidence_status: "provider_reported", otel_attributes: otelAttributes };
+  } catch (error) {
+    if (usageInternal(error)) throw error;
+    usageFail("invalid_input");
+  }
+}
+
+function normalizeGeminiLiveUsageEvidence(message, context) {
+  try {
+    if (!plainUsageInput(message) || !plainUsageInput(context) || !plainUsageInput(message.usageMetadata)) usageFail("invalid_input");
+    const metadata = message.usageMetadata;
+    const input = providerCount(metadata, "promptTokenCount", false); const output = providerCount(metadata, "responseTokenCount", false); const total = providerCount(metadata, "totalTokenCount", false);
+    const cached = providerCount(metadata, "cachedContentTokenCount", true); const reasoning = providerCount(metadata, "thoughtsTokenCount", true); const tool = providerCount(metadata, "toolUsePromptTokenCount", true);
+    const owner = usageString(context.owner_id, "invalid_owner"); const requestModel = usageString(context.request_model, "invalid_request_model");
+    if (requestModel !== "models/gemini-2.5-flash-native-audio-preview-09-2025") usageFail("invalid_request_model");
+    if (context.financial_unit_id !== "life_manager_saas") usageFail("invalid_financial_unit");
+    if (!validUsageTimestamp(context.occurred_at)) usageFail("invalid_timestamp");
+    if (typeof context.trace_id !== "string" || !/^(?!0{32})[0-9a-f]{32}$/.test(context.trace_id)) usageFail("invalid_trace_id");
+    const session = usageString(context.live_session_id, "invalid_live_session_id");
+    if (!/^(?!0{32})[0-9a-f]{32}$/.test(session)) usageFail("invalid_live_session_id");
+    if (!Number.isSafeInteger(context.usage_sequence) || context.usage_sequence < 0) usageFail("invalid_usage_sequence");
+    const otelOutput = output + (reasoning === null ? 0 : reasoning); if (!Number.isSafeInteger(otelOutput)) usageFail("invalid_count");
+    const otelAttributes = { "gen_ai.operation.name": "generate_content", "gen_ai.provider.name": "gcp.gemini", "gen_ai.request.model": requestModel, "gen_ai.request.stream": true, "gen_ai.output.type": "speech", "gen_ai.usage.input_tokens": input, "gen_ai.usage.output_tokens": otelOutput, "server.address": "generativelanguage.googleapis.com", "server.port": 443 };
+    if (cached !== null) otelAttributes["gen_ai.usage.cache_read.input_tokens"] = cached;
+    if (reasoning !== null) otelAttributes["gen_ai.usage.reasoning.output_tokens"] = reasoning;
+    return { schema_version: 1, provider: "gcp.gemini", provider_request_id: null, local_correlation_id: `live-session:${session}`, usage_sequence: context.usage_sequence, occurred_at: new Date(context.occurred_at).toISOString(), owner_id: owner, financial_unit_id: "life_manager_saas", trace_id: context.trace_id, request_model: requestModel, response_model: null, tokens: { input, output, cached_input: cached, reasoning_output: reasoning, tool_input: tool, total }, evidence_status: "provider_reported", otel_attributes: otelAttributes };
+  } catch (error) {
+    if (usageInternal(error)) throw error;
+    usageFail("invalid_input");
+  }
+}
+
+function normalizeLocalAgentUsageEvent(input, mapping) {
+  try {
+    if (!plainLocalAgentUsageInput(input) || !plainLocalAgentUsageInput(mapping) || !plainLocalAgentUsageInput(input.tokens)) localAgentUsageFail("invalid_input");
+    const sourceRowRef = mapping.source_row_ref;
+    if (!Object.prototype.hasOwnProperty.call(mapping, "source_row_ref") || typeof sourceRowRef !== "string" || !/^(?!0{64})[0-9a-f]{64}$/.test(sourceRowRef)) localAgentUsageFail("invalid_source_row_ref");
+    if (input.version !== 1) localAgentUsageFail("invalid_version");
+    if (typeof input.event_id !== "string" || !/^[0-9a-f]{24}$/.test(input.event_id)) localAgentUsageFail("invalid_event_id");
+    if (!validLocalAgentUsageTimestamp(input.timestamp)) localAgentUsageFail("invalid_timestamp");
+    for (const field of ["loop", "task_label", "provider", "provider_name", "model"]) {
+      if (typeof input[field] !== "string" || input[field].length === 0 || input[field].trim() !== input[field]) localAgentUsageFail(`invalid_${field}`);
+    }
+    if (input.upstream_model !== null && (typeof input.upstream_model !== "string" || input.upstream_model.length === 0 || input.upstream_model.trim() !== input.upstream_model)) localAgentUsageFail("invalid_upstream_model");
+    if (!Number.isSafeInteger(input.attempt) || input.attempt < 1) localAgentUsageFail("invalid_attempt");
+    if (input.status !== "success" && input.status !== "failed") localAgentUsageFail("invalid_status");
+    if (input.measurement !== "provider_reported" && input.measurement !== "unavailable") localAgentUsageFail("invalid_measurement");
+    const tokens = input.tokens;
+    const tokenFields = ["input", "cached_input", "cache_creation_input", "output", "reasoning_output", "total"];
+    for (const field of tokenFields) {
+      if (input.measurement === "provider_reported") {
+        if (!Number.isSafeInteger(tokens[field]) || tokens[field] < 0) localAgentUsageFail("invalid_count");
+      } else if (tokens[field] !== null) localAgentUsageFail("invalid_count");
+    }
+    const financialUnitId = Object.prototype.hasOwnProperty.call(mapping, "financial_unit_id") ? mapping.financial_unit_id : null;
+    if (financialUnitId !== null && (typeof financialUnitId !== "string" || financialUnitId.length === 0 || financialUnitId.trim() !== financialUnitId)) localAgentUsageFail("invalid_financial_unit");
+    const attributed = financialUnitId !== null;
+    const normalized = {
+      schema_version: 1,
+      source_ledger: "local_agent_usage",
+      source_event_id: `local_agent_usage:${sourceRowRef}`,
+      runner_event_id: input.event_id,
+      occurred_at: new Date(input.timestamp).toISOString(),
+      provider: input.provider,
+      provider_name: input.provider_name,
+      request_model: input.model,
+      upstream_model: input.upstream_model,
+      run: { loop: input.loop, task_label: input.task_label, attempt: input.attempt, status: input.status },
+      financial_unit_id: financialUnitId,
+      attribution_status: attributed ? "attributed" : "unattributed",
+      measurement: input.measurement,
+      token_value_basis: input.measurement === "provider_reported" ? "runner_normalized_provider_usage" : "unavailable",
+      tokens: Object.fromEntries(tokenFields.map((field) => [field, tokens[field]])),
+      coverage_status: input.measurement === "provider_reported" ? "covered" : "missing_usage",
+    };
+    return freezeLocalAgentUsage(normalized);
+  } catch (error) {
+    if (localAgentUsageInternal(error)) throw error;
+    localAgentUsageFail("invalid_input");
+  }
+}
+
+function reduceLocalAgentUsageEvents(pairs) {
+  try {
+    if (!Array.isArray(pairs) || require("node:util").types.isProxy(pairs)) localAgentUsageFail("invalid_input");
+    const groups = new Map();
+    for (let index = 0; index < pairs.length; index += 1) {
+      if (!Object.prototype.hasOwnProperty.call(pairs, index)) localAgentUsageFail("invalid_input");
+      const pair = pairs[index];
+      exactLocalAgentUsagePair(pair, LOCAL_AGENT_USAGE_PAIR_KEYS);
+      const event = normalizeLocalAgentUsageEvent(pair.input, pair.context);
+      const value = canonicalJson(event);
+      const group = groups.get(event.source_event_id);
+      if (group) {
+        group.rows += 1;
+        group.conflicting ||= group.canonical !== value;
+      } else groups.set(event.source_event_id, { event, canonical: value, rows: 1, conflicting: false });
+    }
+    const events = [], runnerSources = new Map(), counts = {
+      discovered_rows: pairs.length, accepted_rows: 0, duplicate_rows: 0, conflicting_rows: 0, missing_usage_rows: 0, runner_collision_groups: 0,
+    };
+    for (const group of groups.values()) {
+      if (group.conflicting) { counts.conflicting_rows += group.rows; continue; }
+      events.push(group.event); counts.accepted_rows += 1; counts.duplicate_rows += group.rows - 1;
+      if (group.event.coverage_status === "missing_usage") counts.missing_usage_rows += 1;
+      const sources = runnerSources.get(group.event.runner_event_id) || new Set();
+      sources.add(group.event.source_event_id);
+      runnerSources.set(group.event.runner_event_id, sources);
+    }
+    events.sort((a, b) => a.source_event_id < b.source_event_id ? -1 : a.source_event_id > b.source_event_id ? 1 : 0);
+    for (const sources of runnerSources.values()) if (sources.size > 1) counts.runner_collision_groups += 1;
+    const coverage_exceptions = Object.entries({ conflicting_usage: counts.conflicting_rows, missing_usage: counts.missing_usage_rows, runner_identity_collision: counts.runner_collision_groups })
+      .filter(([, count]) => count > 0).map(([key]) => key);
+    return freezeLocalAgentUsage({ events, counts, coverage_exceptions });
+  } catch (error) {
+    if (localAgentUsageInternal(error)) throw error;
+    localAgentUsageFail("invalid_input");
+  }
+}
+
 
 function headers(key, extra) {
   return Object.assign({ apikey: key, Authorization: `Bearer ${key}` }, extra || {});
@@ -137,4 +337,4 @@ function businessSummary(daysBack, rows, nowMs) {
   return summary;
 }
 
-module.exports = { recordCost, recordDailyComposioPoll, monthlyComposioCallCount, businessSummary };
+module.exports = { recordCost, recordDailyComposioPoll, monthlyComposioCallCount, normalizeApiCostEvent, normalizeGeminiUsageEvidence, normalizeGeminiLiveUsageEvidence, normalizeLocalAgentUsageEvent, reduceLocalAgentUsageEvents, businessSummary };

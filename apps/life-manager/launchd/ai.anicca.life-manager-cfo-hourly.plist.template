@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>__CFO_LABEL__</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>__CANONICAL_REPO_ROOT__/__CFO_PROGRAM__</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>HOME</key>
+    <string>__HOME__</string>
+    <key>PATH</key>
+    <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    <key>LIFE_MANAGER_APP_DIR</key>
+    <string>__CANONICAL_APP_DIR__</string>
+    <key>LIFE_MANAGER_ENV_FILE</key>
+    <string>__CFO_ENV_FILE__</string>
+    <key>CFO_STATE_DIR</key>
+    <string>__CFO_STATE_DIR__</string>
+    <key>LM_CFO_UID</key>
+    <string>__CFO_UID__</string>
+    <key>LM_CFO_TELEGRAM_CHAT_ID</key>
+    <string>__CFO_CHAT_ID__</string>
+  </dict>
+  <key>WorkingDirectory</key>
+  <string>__CANONICAL_REPO_ROOT__</string>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>StartInterval</key>
+  <integer>1</integer>
+  <key>ThrottleInterval</key>
+  <integer>60</integer>
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>StandardOutPath</key>
+  <string>__CFO_STATE_DIR__/launchd.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>__CFO_STATE_DIR__/launchd.err.log</string>
+</dict>
+</plist>

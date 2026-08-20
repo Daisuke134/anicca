@@ -95,6 +95,43 @@ const DAILY_STRINGS = Object.freeze({
   }),
 });
 
+// CFO renderer copy is kept in the canonical i18n owner alongside the other user-facing strings.
+// The hourly CFO never invents financial labels at the call site.
+const CFO_STRINGS = Object.freeze({
+  ja: Object.freeze({
+    title: "💰 今日のお金",
+    confirmedAssets: "確認できた資産",
+    confirmedLiabilities: "確認できた負債",
+    confirmedDifference: "差し引き",
+    change: "前回から",
+    noAction: "今すること：ありません",
+    partialTitle: "⚠️ 確認できた範囲のお金",
+    excluded: "合計に入れていません",
+    recovered: "✅ 更新の問題を自動修復し、最新データを再確認しました。",
+    actionTitle: "🔐 Moneytreeの接続を1回だけ更新してください",
+    actionBody: "最新の金額を確認できないため、古い残高は合計に入れていません。",
+    actionRetry: "接続後は自動で再確認し、今日のレポートを送ります。",
+    unknown: "不明",
+    updated: "更新",
+  }),
+  en: Object.freeze({
+    title: "💰 Today’s money",
+    confirmedAssets: "Confirmed assets",
+    confirmedLiabilities: "Confirmed liabilities",
+    confirmedDifference: "Difference",
+    change: "Since last report",
+    noAction: "Action now: Nothing right now",
+    partialTitle: "⚠️ Money I could confirm",
+    excluded: "Not included in the total",
+    recovered: "✅ I repaired the update and confirmed fresh data again.",
+    actionTitle: "🔐 Reconnect Moneytree once",
+    actionBody: "I could not confirm the latest amount, so old balances are not included in the total.",
+    actionRetry: "After reconnection, I will check again and send today’s report.",
+    unknown: "Unknown",
+    updated: " updated",
+  }),
+});
+
 // 11d PHYSICAL 事後報告 — spec §9.11 PHYSICAL. **This copy is Dais-editable**（No-human-loop 例外3）:
 // edit the strings here and the implementation follows; the implementation never writes copy inline.
 //
@@ -381,6 +418,7 @@ function formatTravelAutofillMessage(report, nowMs = Date.now()) {
 }
 
 module.exports = {
+  CFO_STRINGS,
   DAILY_STRINGS,
   DIET_STRINGS,
   DISCOVERY_STRINGS,

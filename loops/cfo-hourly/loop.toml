@@ -1,0 +1,13 @@
+# Canonical local CFO loop. The state directory is durable and intentionally outside releases.
+name      = "cfo-hourly"
+state_dir = "~/loops/cfo-hourly"
+
+[env]
+LIFE_MANAGER_APP_DIR = "~/.local/share/life-manager/cfo-hourly/current/apps/life-manager"
+LIFE_MANAGER_ENV_FILE = "~/.local/state/life-manager/.env"
+CFO_STATE_DIR = "~/loops/cfo-hourly"
+
+[jobs.hourly]
+label = "ai.anicca.life-manager-cfo-hourly"
+program = "skills/cfo/run.sh"
+interval_seconds = 3600
