@@ -421,6 +421,23 @@ def resolve_executable(provider_config: dict[str, Any], default: str) -> str:
     return os.path.expandvars(os.path.expanduser(primary))
 
 
+def codex_model_providers_toml(value: Any) -> str:
+    """Render the small string-only provider table accepted by Codex -c."""
+    if not isinstance(value, dict) or not value:
+        raise ValueError("codex model_providers must be a non-empty object")
+    providers: list[str] = []
+    for name, config in value.items():
+        if not isinstance(name, str) or not name or not isinstance(config, dict):
+            raise ValueError("codex model_providers must map names to objects")
+        fields: list[str] = []
+        for key, item in config.items():
+            if not isinstance(key, str) or not key or not isinstance(item, str):
+                raise ValueError("codex model provider fields must be strings")
+            fields.append(f"{key}={json.dumps(item)}")
+        providers.append(f"{name}={{" + ",".join(fields) + "}")
+    return "{" + ",".join(providers) + "}"
+
+
 def parse_contract_result(text: str, *, salvage: bool = True) -> Any:
     """Read the contract object out of a provider reply that may carry prose.
 
@@ -769,6 +786,17 @@ def command_for(provider: str, executable: str, provider_config: dict[str, Any],
             executable, "exec", "--ephemeral", "--model", model,
             "-c", f'model_reasoning_effort="{effort}"',
         ]
+        model_provider = provider_config.get("model_provider")
+        if model_provider:
+            if not isinstance(model_provider, str):
+                raise ValueError("codex model_provider must be a string")
+            command.extend(["-c", f"model_provider={json.dumps(model_provider)}"])
+            command.extend([
+                "-c",
+                "model_providers=" + codex_model_providers_toml(
+                    provider_config.get("model_providers")
+                ),
+            ])
         if provider_config.get("automation_home"):
             project_doc_max_bytes = provider_config.get("project_doc_max_bytes", 0)
             if not isinstance(project_doc_max_bytes, int) or project_doc_max_bytes < 0:
@@ -854,6 +882,13 @@ def classify_provider_error(rc: int, timed_out: bool, stdout: str, stderr: str, 
     # Claude prints quota/weekly-limit notices to stdout (with an empty
     # stderr), so both provider streams are part of the transient signal.
     text = f"{stdout}\n{stderr}\n{launch_error}".lower()
+    if any(token in text for token in (
+        "failed to lookup address information", "could not resolve host",
+        "nodename nor servname", "name or service not known",
+        "connection refused", "connection reset", "network is unreachable",
+        "stream disconnected before completion",
+    )):
+        return "transient_unavailable"
     if any(token in text for token in (
         "invalid credentials", "invalid api key", "invalid token",
         "permission denied", "insufficient permission", "forbidden", "unauthorized",

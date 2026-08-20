@@ -8,6 +8,15 @@
       "automation_home": "~/.local/state/life-manager/codex-runner",
       "auth_file": "~/.codex/auth.json",
       "ssl_cert_file": "/etc/ssl/cert.pem",
+      "model_provider": "local_proxy",
+      "model_providers": {
+        "local_proxy": {
+          "name": "Life Manager local proxy",
+          "base_url": "http://127.0.0.1:8317/v1",
+          "env_key": "CLIPROXY_API_KEY",
+          "wire_api": "responses"
+        }
+      },
       "project_doc_max_bytes": 0,
       "disabled_skills": ["imagegen", "openai-docs", "plugin-creator", "skill-creator", "skill-installer"],
       "disabled_features": ["apps", "auth_elicitation", "goals", "hooks", "image_generation", "multi_agent", "plugins", "remote_plugin", "tool_call_mcp_elicitation", "tool_suggest", "workspace_dependencies"],
@@ -52,7 +61,8 @@
       "route": "terra-medium-bounded",
       "token_reservation": 16384,
       "candidates": [
-        {"provider": "codex", "model": "gpt-5.6-terra", "effort": "medium"}
+        {"provider": "codex", "model": "gpt-5.6-terra", "effort": "medium"},
+        {"provider": "claude", "model": "claude-sonnet-5"}
       ]
     },
     "storefront-proposal-agent": {
@@ -85,7 +95,8 @@
       "_timeout_note": "Split from tool-agent 2026-07-27. The two jobs want opposite bounds: the reality auditor must stay short (180s) so it cannot itself become the stall, while the browser lanes need minutes. Measured on the apply lane: attempt-01 ran 174s against Coconala and was killed as transient_timeout with 289KB of progress already on stdout. Delivery, at 900s, completed; applications, at 180s, ran five times in a week. Scanning postings, opening each and writing a proposal is minutes of browser work, so the old cap made the lane structurally unable to finish. Same 900s as high-value-agent.",
       "timeout_seconds": 900,
       "candidates": [
-        {"provider": "codex", "model": "gpt-5.6-terra", "effort": "medium"}
+        {"provider": "codex", "model": "gpt-5.6-terra", "effort": "medium"},
+        {"provider": "claude", "model": "claude-sonnet-5"}
       ]
     },
     "application-lane-agent": {
