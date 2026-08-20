@@ -15,11 +15,17 @@
 
 ## Current blocker and safe resume
 
-The current failure is **not** `XPostError`. `last-run.json` reports
+The prior failure was **not** `XPostError`. `last-run.json` reported
 `PUBLICATION_FAILED / FileNotFoundError` because the allowed owned-publication
-checkout `/Users/anicca/anicca-project/.worktrees/affiliate-foundation-prod` is
-missing. Two dedicated-link rows have no owned public URL. Historical ambiguous X
-effects are already fenced and must never be republished.
+checkout `/Users/anicca/anicca-project/.worktrees/affiliate-foundation-prod` was
+missing. The existing `feature/affiliate-foundation-prod` branch is now
+reconnected at that exact path from the parent Git repository, at clean HEAD
+`d4170db1e`, with the required landing data path present. The existing owner has
+not read the repaired root yet: both `launchctl kickstart` and a one-time
+`launchctl start` fallback returned macOS `141: Reentrancy avoided`, so the
+last-run receipt remains the pre-repair FileNotFoundError. Two dedicated-link
+rows still have no owned public URL. No public effect was manually performed.
+Historical ambiguous X effects are already fenced and must never be republished.
 
 The next execution slice is P0: restore/reconcile that checkout through the
 existing ownership contract, trigger the existing launchd owner, resume the same

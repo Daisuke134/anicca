@@ -1321,9 +1321,16 @@ historical evidence below. Read-only inspection of the installed state shows:
   bill exists;
 - Telegram outbox and sent ledger both contain 88 events and the latest sent row
   has a provider message ID, so no queued duplicate is visible;
-- the current publication failure is `FileNotFoundError` for the missing allowed
-  `.worktrees/affiliate-foundation-prod`, not a current `XPostError`. Historical
-  ambiguous X effects remain safely fenced and MUST NOT be republished.
+- the prior publication failure was `FileNotFoundError` for the missing allowed
+  `.worktrees/affiliate-foundation-prod`, not a current `XPostError`. The
+  existing `feature/affiliate-foundation-prod` branch was reconnected at that
+  exact path from the parent Git repository; its HEAD is `d4170db1e`, its
+  worktree is clean, and the required landing data path exists. The owner has
+  not yet read this repaired root: both `launchctl kickstart` and the one-time
+  `launchctl start` fallback returned macOS `141: Reentrancy avoided`, while
+  `last-run.json` still contains the pre-repair `FileNotFoundError`. No public
+  effect was manually performed. Historical ambiguous X effects remain safely
+  fenced and MUST NOT be republished.
 
 Execution resumes in this order. Time/provider outcomes are gates, but every safe
 independent harness task continues:
@@ -1476,10 +1483,16 @@ receipt readback, SSOT state update, commit, and push to both canonical remotes.
 
 ##### A — Restore one truthful publication trajectory
 
-- [ ] **A01** Resolve the configured owned-publication root from launchd and
-  private state; record one redacted precondition receipt.
-- [ ] **A02** Recreate or reconnect only the missing allowed publication checkout
-  through its ownership contract; prove clean expected branch/upstream.
+- [x] **A01** Resolve the configured owned-publication root from launchd and
+  private state; record one redacted precondition receipt. Observed launchd
+  `AFFILIATE_LANDING_ROOT` matches the configured path, and the redacted
+  precondition is `root_exists=true`, exact Git worktree, branch
+  `feature/affiliate-foundation-prod`, HEAD `d4170db1e`, clean=true, and the
+  required landing data path exists. Owner readback remains A04.
+- [x] **A02** Recreate or reconnect only the missing allowed publication checkout
+  through its ownership contract; prove clean expected branch/upstream. The
+  existing branch was reconnected with `git worktree add` at the exact allowed
+  path; no file was authored, edited, pushed, or published by Codex.
 - [ ] **A03** Enumerate the two non-public placement jobs and bind each to its
   existing job/effect fingerprint; create no replacement job.
 - [ ] **A04** Kick the existing Affiliate launchd owner and require both jobs to
