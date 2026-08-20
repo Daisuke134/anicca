@@ -253,7 +253,7 @@ Negotiate, Storefront and Paid already run through `current`.
   formatter incorrectly called every transient failure a missing decision. Source now distinguishes
   decision failure from readback failure and retries official readback once on a fresh target without
   clicking submit again. Live exhaustive-pass proof remains.
-- [ ] Restore semantic scope fidelity before another exhaustive pass. Request `5217691`
+- [x] Restore semantic scope fidelity before another exhaustive pass. Request `5217691`
   (`発泡ウレタンで等身大の女性を製作したい`) had repeatedly been classified correctly as
   `physical_or_onsite`, but pass `gig-apply-direct-1787206162452874000-19745` re-planned it as
   `submit_required` and officially submitted ¥18,000. The official text asks for a Tokyo-resident
@@ -262,11 +262,11 @@ Negotiate, Storefront and Paid already run through `current`.
   to compare the buyer's required outcome, means, place and participation with the proposal and forbids
   inventing a remote substitute. Physical work remains eligible when the buyer explicitly requests a
   digital design, drawing, data file, written guide or remote advice and no handling/presence is
-  required. Live natural planner proof remains; the isolated canary reached the real provider but
-  timed out at 240 seconds and is not acceptance evidence. The first natural `current` pass selected
-  digital social-reply work `5222771`, preserved its ¥27,000 decision and completed official history
-  readback; this proves the positive digital side of the semantic boundary. A natural observation of
-  an actual physical/onsite candidate remains before the negative side is closed.
+  required. The first natural `current` pass selected digital social-reply work `5222771`, preserved
+  its ¥27,000 decision and completed official history readback. In the same snapshot it classified
+  request `5222807`, which requires residence in or frequent visits to the Ibaraki Rokko area, as
+  `hard_prohibited / physical_or_onsite`. This proves both sides of the semantic boundary without a
+  keyword gate. The earlier isolated canary timed out and is not used as acceptance evidence.
 - [ ] Preserve an official exact price through the whole commercial path. Request `5217126` explicitly
   requires a ¥15,000 proposal and its durable planner result correctly contained ¥15,000, but the
   final application decision replaced it with ¥27,000. Exact buyer price instructions outrank category
