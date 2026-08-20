@@ -796,6 +796,14 @@ official PartnerStack capture is due around `05:29 JST`. B01 remains open with
 `commission_row_count=0`, `NO_TRANSACTIONS`, approved/paid net null, and unknown
 cost coverage.
 
+At `2026-08-21T05:13:04Z`, the existing owner resumed the same voice-design job,
+read back the owned page and one exact X status, and advanced it to `X_LIVE`.
+Telegram owner receipt `26625` confirms the natural-language state. The
+canonical ledger is now 19 exact rows with 19 provider-link keys and 19 owned
+public URLs; provider clicks remain 32, commission statuses remain all zero, and
+all real cash costs remain unknown. This campaign is now a comparable English
+placement, but it has no official transaction and cannot influence allocation.
+
 At `2026-08-21T04:51:05Z`, the same existing owner selected the next bounded
 English opportunity and created one verified PartnerStack link for
 `elevenlabs-discovered-voice-design-en-1` (provider key is retained only in the
