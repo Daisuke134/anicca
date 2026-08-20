@@ -201,6 +201,39 @@ def build(sha: str) -> Path:
     return target
 
 
+def collect_old_releases() -> list[str]:
+    """Remove reproducible releases except current, live, and one rollback copy."""
+    if not RELEASE_ROOT.is_dir():
+        return []
+    releases = sorted(
+        (path for path in RELEASE_ROOT.iterdir()
+         if path.is_dir() and not path.is_symlink()
+         and re.fullmatch(r"[0-9a-f]{40}", path.name)),
+        key=lambda path: path.stat().st_mtime,
+        reverse=True,
+    )
+    protected = {CURRENT_RELEASE.resolve(strict=False)}
+    processes = subprocess.run(
+        ["ps", "-axo", "command="], capture_output=True, text=True, check=False,
+    )
+    if processes.returncode != 0:
+        return []
+    for release in releases:
+        if str(release) in processes.stdout:
+            protected.add(release)
+    rollback = next((path for path in releases if path not in protected), None)
+    if rollback:
+        protected.add(rollback)
+    removed = []
+    for release in releases:
+        if release in protected:
+            continue
+        subprocess.run(["chmod", "-R", "u+w", str(release)], check=False)
+        shutil.rmtree(release)
+        removed.append(release.name)
+    return removed
+
+
 def plist_for(job: dict, table: dict[str, str]) -> dict:
     manifest_env = json.loads(MANIFEST.read_text(encoding="utf-8"))["shared_env"]
     env = render(dict(manifest_env), table) | render(dict(job.get("env", {})), table)
@@ -391,6 +424,9 @@ def main() -> int:
             and not any(str(CURRENT_RELEASE) in arg for arg in loaded_program(job["label"]))
         ]
         if current_sha() == sha and not behind:
+            removed = collect_old_releases()
+            if removed:
+                print(f"collected {len(removed)} old releases")
             return 0
         release = build(sha)
         if current_sha() != sha:
@@ -405,6 +441,9 @@ def main() -> int:
         for job in behind:
             activate(job, stable_table, release, False,
                      skip_busy=job["label"] not in CONTINUOUS_RELOADABLE)
+        removed = collect_old_releases()
+        if removed:
+            print(f"collected {len(removed)} old releases")
         return 0
 
     sha = git("rev-parse", args.sha or "HEAD")
@@ -431,6 +470,9 @@ def main() -> int:
     if failed:
         print(f"not activated: {', '.join(failed)}")
         return 1
+    removed = collect_old_releases()
+    if removed:
+        print(f"collected {len(removed)} old releases")
     return 0
 
 
