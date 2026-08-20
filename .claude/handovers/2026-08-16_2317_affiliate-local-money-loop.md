@@ -500,7 +500,8 @@ changes; budget-blocked and evidence-bearing failures remain terminal. Compile,
 the existing composition focused checks `4/4`, and private state verification
 passed. The immutable installer switched `current`; the main money owner then
 naturally woke at `2026-08-20T13:40:53Z` and retained `ALREADY_LIVE`, 13
-placements, and rolling zero. The existing composition label could not be
-started because `launchctl kickstart` and `launchctl start` both returned
-`141: Reentrancy avoided`, so owner-E2E of this retry remains open. No public
-effect, provider transaction, or money was created.
+placements, and rolling zero. Despite the direct label commands returning
+`141: Reentrancy avoided`, the existing composition owner naturally retried the
+same Instagram job at `2026-08-20T13:43:25Z`, sealed evidence with Codex
+`0.148.0`, exit `0`, and wrote `READY_FOR_POLICY`. No public effect, provider
+transaction, or money was created; publication remains the next owner gate.
