@@ -172,8 +172,9 @@ deployment adapter for these same contracts, not a second implementation.
 
 Current override: the installed runtime is `cf7f19241`, not the older release
 identifier retained in historical table rows below. The 08:06 JST owner
-readback and Telegram `26784` recovery receipt in section 1.1.2 are the current
-runtime truth; no official transaction or money exists.
+readback, new official artifact `f69af229…6734e3a`, and Telegram `26784`
+recovery receipt in section 1.1.2 are the current runtime truth; no official
+transaction or money exists.
 
 This table prevents tests, fixtures, screenshots, or plans from being reported as
 live autonomous operation.
@@ -211,8 +212,9 @@ compilation, and a no-network replay fixture passed. The immutable release is
 installed as `current` with source/installed `local_loop.py` SHA-256
 `34c66744…42b13a80`; launchd browser bootstrap still returns `141`, so all-owner
 load is not claimed. The existing owner nevertheless ran the installed release
-at `2026-08-21T08:06:20+0900`, recovered the PartnerStack cycle to
-`NO_TRANSACTIONS` (`source_rows=0`, `appended_transitions=0`), and delivered the
+at `2026-08-21T08:06:20+0900`, captured new official artifact
+`f69af229…6734e3a` at `08:06:19+0900`, and recovered the PartnerStack cycle to
+`NO_TRANSACTIONS` (`source_rows=0`, `appended_transitions=0`). It delivered the
 recovery receipt as Telegram `26784` (`SELF_HEALED`) with linked delivery event
 `7db20f65…6c854`. No transaction, settlement, payout, commission, or money
 changed; the prior `07:55:09+0900` links failure remains historical evidence.
