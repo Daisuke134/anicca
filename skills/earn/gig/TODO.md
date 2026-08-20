@@ -285,7 +285,8 @@ definition and A0 acceptance is closed.
   `price_jpy`: preserve a buyer's explicit amount; otherwise choose roughly 20% below the budget cap
   without making delivery uneconomic. Code preserves that price and only the official form boundary
   may clamp it to a platform limit. Direct readback proves ¥15,000 remains ¥15,000. Natural re-plan,
-  form fill and official readback for `5217126` remain.
+  form fill and official readback for `5217126` remain. Apply now resolves the planner-runner symlink
+  once at pass start, so a later `current` publish cannot mix an old parent schema with a new planner.
 - [ ] Prove the deployed failure report and form recovery on `5217126`. Its structured decision and
   proposal were present; execution failed with `cdp_Page.navigate_timeout_after_30s` at the browser
   boundary. The legacy `05b75fc29` formatter falsely reported “structured decision missing.” The

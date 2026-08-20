@@ -1152,6 +1152,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--output", type=Path)
     args = parser.parse_args(argv)
+    args.planner_runner = args.planner_runner.resolve(strict=True)
 
     pass_id = str(args.pass_id)
     run_dir = args.state_dir / pass_id
