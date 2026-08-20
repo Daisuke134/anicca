@@ -118,20 +118,16 @@ def master_sections(profile: dict[str, Any]) -> list[dict[str, Any]]:
                     "Agentforce CRM deployment — Contributed through MUIT to MUFG Bank's Japan-first production deployment of Salesforce Agentforce for Financial Services, integrating AI agents into the bank's internal CRM used by relationship managers.",
                 ),
                 (
-                    "iclr",
-                    "ICLR 2026 at MUIT — Represented MUIT in Rio de Janeiro as part of MUIT work; synthesized frontier-AI research for an internal executive briefing and presented key findings through MUIT's official conference report.",
-                ),
-                (
                     "muit_genie_logs",
-                    "Built an observability workflow in Databricks to analyze AI-agent inputs, outputs, and responses to relationship managers; used it to investigate behavior and response quality.",
+                    "Agentforce observability — Built an observability workflow in Databricks to analyze AI-agent inputs, outputs, and responses to relationship managers; used it to investigate behavior and response quality.",
                 ),
                 (
                     "muit_rm_summary",
-                    "Supports prompt tuning and context engineering for deployed agents, including company-information summaries for relationship managers.",
+                    "Agentforce context engineering — Supported prompt tuning and context engineering for deployed agents, including company-information summaries for relationship managers.",
                 ),
                 (
-                    "mufg",
-                    "Contributed to MUFG's Japan-first production deployment of Agentforce for Financial Services in a highly regulated banking environment.",
+                    "iclr",
+                    "ICLR 2026 at MUIT — Represented MUIT in Rio de Janeiro as part of MUIT work; synthesized frontier-AI research for an internal executive briefing and presented key findings through MUIT's official conference report.",
                 ),
             ],
         ),
@@ -176,9 +172,9 @@ def business_sections(profile: dict[str, Any]) -> list[dict[str, Any]]:
             "MUIT — Applied AI / AI Agent Engineering (Apr 2025–Present)",
             [
                 ("mufg", "Agentforce CRM deployment — Contributed through MUIT to MUFG Bank's Japan-first production deployment of Salesforce Agentforce for Financial Services, integrating AI agents into the bank's internal CRM used by relationship managers."),
+                ("muit_genie_logs", "Agentforce observability — Built an observability workflow in Databricks to analyze AI-agent inputs, outputs, and responses to relationship managers; used it to investigate behavior and response quality."),
+                ("muit_rm_summary", "Agentforce context engineering — Supported prompt tuning and context engineering for deployed AI agents, including company-information summaries for relationship managers."),
                 ("iclr", "ICLR 2026 at MUIT — Represented MUIT in Rio de Janeiro as part of MUIT work; synthesized frontier-AI research for an internal executive briefing and presented key findings through MUIT's official conference report."),
-                ("muit_genie_logs", "Built an observability workflow in Databricks to analyze AI-agent inputs, outputs, and responses to relationship managers; used it to investigate behavior and response quality."),
-                ("muit_rm_summary", "Supported prompt tuning and context engineering for deployed AI agents, including company-information summaries for relationship managers."),
             ],
         ),
         (

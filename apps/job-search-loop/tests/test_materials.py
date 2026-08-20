@@ -110,7 +110,7 @@ class MaterialTests(unittest.TestCase):
         first_ids = [item["fact_ids"][0] for item in sections[0]["items"]]
         self.assertEqual(
             first_ids,
-            ["mufg", "iclr", "muit_genie_logs", "muit_rm_summary"],
+            ["mufg", "muit_genie_logs", "muit_rm_summary", "iclr"],
         )
         all_ids = {
             item["fact_ids"][0]

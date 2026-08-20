@@ -933,9 +933,10 @@ The default English resume is one ATS-friendly page, single column, text-first:
 
 1. Headline: Applied AI / Agent Engineer bridging regulated enterprise deployment and
    consumer AI products.
-2. MUIT experience with scoped Agentforce CRM and ICLR-as-MUIT-work bullets kept as
-   two separately labeled achievements; use `relationship managers` consistently for
-   the bank sales audience.
+2. MUIT experience with exactly three consecutive Agentforce CRM bullets—deployment,
+   observability, and relationship-manager context engineering—followed by a fourth,
+   separately labeled ICLR-as-MUIT-work bullet; use `relationship managers`
+   consistently for the bank sales audience.
 3. NAIST/ATR research and weekly agent-practice community leadership.
 4. Earlier growth work, research/education, and core skills are separate sections in
    that order.
@@ -951,8 +952,9 @@ ledger while changing the headline and order to emphasize regulated-enterprise
 delivery, translating AI capabilities into user workflows, stakeholder alignment,
 product ownership, customer adoption, GTM/growth, and public communication. Its
 professional section is headed by MUIT (not MUFG), places the MUFG Agentforce CRM
-contribution first, keeps the ICLR 2026 appearance as a separate MUIT achievement,
-uses `relationship managers` consistently, and describes Databricks observability
+contribution first, follows it with the observability and context-engineering bullets,
+then places the ICLR 2026 appearance as the fourth, separate MUIT achievement. It
+uses `relationship managers` consistently and describes Databricks observability
 without naming Genie Code. Anicca is the final consumer-AI section; Life Manager and
 Portfolio are not included in this application variant. It must not invent formal PM,
 sales quota, people-management, or revenue ownership.

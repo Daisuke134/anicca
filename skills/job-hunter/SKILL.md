@@ -131,10 +131,13 @@ The current MUIT business variant uses this order:
 4. Core Skills
 5. Consumer AI Product (last)
 
-Within MUIT, keep the Salesforce Agentforce CRM deployment and ICLR 2026 MUIT
-communication as two separately labeled bullets. Keep one consistent banking
-customer term throughout the variant. Do not include Life Manager or Portfolio
-links in this application variant unless a target explicitly requests them.
+Within MUIT, keep exactly three consecutive Agentforce CRM bullets—deployment,
+observability, and relationship-manager context engineering—followed by a fourth,
+separately labeled ICLR 2026 at MUIT bullet. This makes the two accomplishments
+visually distinct instead of scattering ICLR between project bullets. Keep one
+consistent banking customer term throughout the variant. Do not include Life Manager
+or Portfolio links in this application variant unless a target explicitly requests
+them.
 
 ## Autonomous loop after approval
 
