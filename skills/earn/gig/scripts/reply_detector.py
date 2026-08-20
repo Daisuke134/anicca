@@ -1229,6 +1229,23 @@ def _run_effect_pipeline(
         raise ValueError("reply queue must be an object")
     if target:
         items = queue_value.get("items") if isinstance(queue_value.get("items"), list) else []
+        if no_send and not semantic_failure:
+            closed = _targeted_close_no_send(
+                database=database, manifest=manifest,
+                action_id=int(target["action_id"]), thread_id=thread_id,
+                inbox_event_key=str(target["inbox_event_key"]),
+                expected_revision=target_expected_revision,
+                reason=next_action or "intentional_no_send", run_id=run_id,
+            )
+            if closed is not None and int(closed.get("revision") or 0) == target_expected_revision:
+                return {
+                    "status": "completed", "thread_id": thread_id, "run_id": run_id,
+                    "replied": 0, "official_readback": 0, "duplicate_effect": 0,
+                    "closed_without_send": 1, "pending": 0, "events": [], "errors": [],
+                    "estimate_required": 0, "estimate_effect": 0,
+                    "estimate_readback": 0, "estimate_pending": 0,
+                    "estimate_failed": 0, "estimate_events": [],
+                }
         bound = target if estimate_required else None
         if bound is None:
             for item in items:
@@ -1264,30 +1281,6 @@ def _run_effect_pipeline(
         except Exception as error:
             return _targeted_pending(thread_id, run_id, error=type(error).__name__ + ":" + str(error)[:180])
         if semantic_failure or not semantic_ready:
-            if no_send and not semantic_failure and next_action in _TARGETED_INTENTIONAL_NO_SEND:
-                closed = _targeted_close_no_send(
-                    database=database, manifest=manifest,
-                    action_id=int(target["action_id"]), thread_id=thread_id,
-                    inbox_event_key=str(target["inbox_event_key"]),
-                    expected_revision=target_expected_revision,
-                    reason=next_action or "intentional_no_send", run_id=run_id,
-                )
-                if (
-                    closed is None
-                    or int(closed.get("revision") or 0) != target_expected_revision
-                ):
-                    return _targeted_pending(
-                        thread_id, run_id,
-                        error="presemantic_action_revision_changed",
-                    )
-                return {
-                    "status": "completed", "thread_id": thread_id, "run_id": run_id,
-                    "replied": 0, "official_readback": 0, "duplicate_effect": 0,
-                    "closed_without_send": 1, "pending": 0, "events": [], "errors": [],
-                    "estimate_required": 0, "estimate_effect": 0,
-                    "estimate_readback": 0, "estimate_pending": 0,
-                    "estimate_failed": 0, "estimate_events": [],
-                }
             return _targeted_pending(
                 thread_id, run_id, error="semantic_action_not_authorized",
                 semantic_failure=semantic_failure or (
