@@ -131,7 +131,12 @@ The order to the end is:
    The live loop closed action 344 with `nothing_to_say:buyer_message_after_estimate`, created action
    349 for the buyer's purchase acknowledgement, replied and officially read it back with matching
    intent/card hash `7100055b48c6...`; buyer-to-seller latency was about 11m26s, inside the 30-minute
-   product SLO. Completion still requires a
+   product SLO. The final old blocked action 304 still has the same buyer head; a fresh official
+   head-only read now reports `sending_unavailable: false`, while its fixed exponential backoff
+   would otherwise wait two hours. The continuous supervisor now probes only
+   `submit_rejected_sending_unavailable` blocks and revives one immediately only when the exact
+   source identity is unchanged and the official send-unavailable marker is explicitly false.
+   Completion still requires a
    durable disposition for every buyer-authored message: replied with official readback, estimate
    sent with official readback, intentionally no-send with a bounded policy reason, or still pending
    with an observable retry owner. Missing from the queue is never a valid disposition.

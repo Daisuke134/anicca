@@ -1737,6 +1737,32 @@ def _supervisor_reconcile_work_from_action(action: dict[str, Any]) -> dict[str, 
     }
 
 
+def _supervisor_blocked_work_from_action(action: dict[str, Any]) -> dict[str, Any] | None:
+    work = _supervisor_work_from_action(action)
+    if work is not None:
+        work["kind"] = "blocked"
+    return work
+
+
+def run_blocked_probe(args: Any, work: dict[str, Any], evidence: Path) -> dict[str, Any]:
+    """Requeue a sending-unavailable reply only after a fresh official head proof."""
+    row = _collect_targeted_head(
+        args, evidence=evidence, thread_id=str(work["thread_id"]),
+        identity_sha256=str(work["identity_sha256"]),
+    )
+    if row.get("sending_unavailable") is not False:
+        return {"status": "blocked", "thread_id": work["thread_id"], "pending": 0}
+    stored = ConnectorOutbox(Path(args.database), Path(args.manifest)).revive_sending_available(
+        int(work["action_id"]), expected_revision=int(work["expected_revision"]),
+        now=int(time.time()),
+    )
+    return {
+        "status": "revived", "thread_id": work["thread_id"],
+        "action_id": int(stored["action_id"]), "revision": int(stored["revision"]),
+        "pending": 1,
+    }
+
+
 def _supervisor_rebind_targeted_work(
     outbox: ConnectorOutbox, work: dict[str, Any], result: Any, *, now: int,
 ) -> dict[str, Any] | None:
@@ -1843,6 +1869,7 @@ async def supervise_replies(
         allowed_states = (
             {"pending", "reconcile_pending"} if work.get("kind") == "estimate"
             else {"reconcile_pending"} if work.get("kind") == "reconcile"
+            else {"blocked"} if work.get("kind") == "blocked"
             else {"pending"}
         )
         if lifecycle is not None and lifecycle.get("state") not in allowed_states:
@@ -1897,6 +1924,10 @@ async def supervise_replies(
                 await enqueue_work(work)
         for action in get_outbox().pending_targeted_actions():
             work = _supervisor_work_from_action(action)
+            if work is not None:
+                await enqueue_work(work)
+        for action in get_outbox().blocked_targeted_actions():
+            work = _supervisor_blocked_work_from_action(action)
             if work is not None:
                 await enqueue_work(work)
 
@@ -2028,6 +2059,10 @@ async def _run_continuous_runtime(args: Any, evidence: Path) -> dict[str, Any]:
     async def worker(work: dict[str, Any]) -> dict[str, Any]:
         run_id = f"targeted-{int(time.time())}-{os.getpid()}-{work['action_id']}"
         worker_evidence = evidence / "continuous" / "workers" / run_id
+        if work.get("kind") == "blocked":
+            result = await asyncio.to_thread(run_blocked_probe, args, work, worker_evidence)
+            _atomic_json(worker_evidence / "result.json", result)
+            return result
         if work.get("kind") == "estimate":
             result = await asyncio.to_thread(
                 run_targeted_estimate, args,

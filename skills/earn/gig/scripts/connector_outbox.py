@@ -1189,6 +1189,70 @@ class ConnectorOutbox:
             ) from error
         return actions
 
+    def blocked_targeted_actions(self) -> list[dict[str, Any]]:
+        """Return sending-unavailable blocks that a fresh official head can release."""
+        with closing(self._connect()) as connection:
+            rows = connection.execute(
+                """SELECT a.*,e.event_key,i.rejection_code
+                     FROM connector_actions a
+                     JOIN connector_events e ON e.rowid=(
+                       SELECT latest.rowid FROM connector_events latest
+                        WHERE latest.action_id=a.action_id
+                          AND latest.event_key LIKE 'coconala:inbox:v1:%'
+                        ORDER BY latest.rowid DESC LIMIT 1)
+                     JOIN connector_intents i ON i.action_id=a.action_id
+                       AND i.revision=a.revision
+                    WHERE a.platform='coconala' AND a.state='blocked'
+                      AND a.dlq_at IS NULL
+                      AND i.state='superseded'
+                      AND i.rejection_code='submit_rejected_sending_unavailable'
+                    ORDER BY a.created_at,a.action_id"""
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    def revive_sending_available(
+        self, action_id: int, *, expected_revision: int, now: int,
+    ) -> dict[str, Any]:
+        """Release one blocked reply after a fresh official send-available proof."""
+        action_id = self._require_positive_integer("action_id", action_id)
+        expected_revision = self._require_positive_integer(
+            "expected_revision", expected_revision,
+        )
+        now = self._require_timestamp("now", now)
+        with self._write() as connection:
+            action = self._action(connection, action_id)
+            self._require_monotonic(action, now)
+            intent = self._intent(connection, action_id, expected_revision)
+            occupied = connection.execute(
+                """SELECT 1 FROM connector_actions
+                    WHERE platform=? AND thread_id=? AND action_id<>?
+                      AND state IN ('pending','claimed','intent_ready','reconcile_pending')
+                      AND dlq_at IS NULL LIMIT 1""",
+                (action["platform"], action["thread_id"], action_id),
+            ).fetchone()
+            if (
+                action["state"] != "blocked" or action["dlq_at"] is not None
+                or int(action["revision"]) != expected_revision
+                or intent is None or intent["state"] != "superseded"
+                or intent["rejection_code"] != "submit_rejected_sending_unavailable"
+                or occupied is not None
+            ):
+                raise InvalidTransition("blocked sending-available proof is stale")
+            connection.execute(
+                """UPDATE connector_actions
+                   SET state='pending',revision=revision+1,owner=NULL,lease_until=0,
+                       revive_attempts=revive_attempts+1,revived_at=?
+                   WHERE action_id=? AND state='blocked' AND revision=?""",
+                (now, action_id, expected_revision),
+            )
+            stored = dict(self._action(connection, action_id))
+        self._append_revive_record({
+            "action_id": action_id, "thread_id": stored["thread_id"],
+            "revision": int(stored["revision"]), "revived_at": now,
+            "disposition": "official_sending_available",
+        })
+        return stored
+
     def reconciliation_action_for_thread(self, thread_id: str) -> dict[str, Any] | None:
         """Return bounded intent metadata for one delivery-unknown thread."""
         thread_id = self._require_key("thread_id", thread_id)

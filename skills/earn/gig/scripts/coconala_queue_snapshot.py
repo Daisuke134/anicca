@@ -2959,6 +2959,7 @@ def direct_message_event(
 _DIRECT_THREAD_HEAD_FIELDS = (
     "talkroom_id", "talkroom_url", "last_message_identity_sha256",
     "last_message_side", "buyer_sent_at", "seller_sent_at", "reply_required",
+    "sending_unavailable", "reply_unavailable_reason",
 )
 
 
