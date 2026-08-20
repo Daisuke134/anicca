@@ -1,8 +1,8 @@
 # Affiliate local money loop handover
 
 - SSOT: `docs/affiliate-agent/AFFILIATE-AGENT-SSOT.md`; resume from `Measured planning checkpoint and next TODOs`, then `Remaining autonomous money-loop work — canonical order`.
-- Development route: `/Users/anicca/anicca-project/.worktrees/affiliate-life-manager-spec`, branch `docs/affiliate-life-manager-spec`. Current clean/pushed spec HEAD is `361866f51`, descended from required base `0a7debb58`.
-- Installed runtime: `/Users/anicca/.local/share/life-manager/affiliate/current` → release `088858bce2965f05783448b4b5f829fa053717ee`; `current` is byte-backed by that immutable release. Any future `skills/affiliate` change requires immutable install and real owner replay.
+- Development route: `/Users/anicca/anicca-project/.worktrees/affiliate-life-manager-spec`, branch `docs/affiliate-life-manager-spec`. The branch is clean/pushed and remains descended from required base `0a7debb58`; latest source/runtime commit is `792f483eb028cb1c7886f75571515e3616337297`.
+- Installed runtime: `/Users/anicca/.local/share/life-manager/affiliate/current` → release `792f483eb028cb1c7886f75571515e3616337297`; `current` is byte-backed by that immutable release. Any future `skills/affiliate` change requires immutable install and real owner replay.
 - Repository decision: one Life Manager implementation at `skills/affiliate/`; no Affiliate-only repo, executor, ledger, `apps/api`, or Railway runtime. Private mutable state stays under `~/.local/state/life-manager/affiliate/`. OSS is the same proven Skill packaged for a clean Mac, never a rewrite.
 
 ## Current measured truth
@@ -10,7 +10,7 @@
 - Six Affiliate launchd plists exist: three keep-alive browser owners and source/composition/money jobs at 600-second intervals. CDP `9324`, `9326`, and `9327` each returned HTTP `200`; authenticated tabs showed ElevenLabs home, one exact Affiliate X status, and Impact home.
 - The canonical ledger contains **13 dedicated-link placements**, **13 owned public URLs**, and **32 provider-link clicks**. The latest poll appended `+1` to music and `+1` to voice-cloning; the aggregate provider metric is 41 clicks with `+40` explicitly unattributed. Neither is money.
 - PartnerStack/ElevenLabs is `AUTHENTICATED`; the latest official capture has `commission_row_count=0`, `NO_LIVE_ROWS`, currency display `USD`, tax registration required, and payment-provider selection required. Pending/approved/paid/reversed are therefore zero observed rows. Approved-or-paid net is **USD 0**. Unknown real costs remain unknown.
-- Telegram outbox and sent ledger both have 98 rows with no pending event. The tiktok `PLACEMENT_LIVE` event was sent by the existing owner as provider message `26004`; the newest `CLICK_DELTA` timeout was retried under the same event UUID and sent as provider message `26019`.
+- Telegram outbox and sent ledger both have 102 rows with no pending event. The latest acquisition decision was sent by the existing owner as provider message `26171`; the latest empty-provider milestone was sent by Codex as message `26199`.
 - The first audit-shell DNS readback failed, so those earlier receipts were not
   promoted to public proof. After the owner resumed, independent DNS-resolved
   readback at `2026-08-20T09:01:49Z` returned HTTP 200 for the music owned page,
@@ -436,3 +436,14 @@ payout rows; artifact SHA `8418d228…af0c4`). The owner rolling receipt stayed
 is 13 placements, 32 provider-link clicks, and zero transaction rows. Telegram
 outbox/sent are `102/102` with no pending row. Codex milestone message `26199`
 confirms this state without secrets or raw tracking links. B01 remains open.
+
+Follow-up source commit `792f483eb028cb1c7886f75571515e3616337297` changes only
+owner-event precedence: a durable `ACQUISITION_DECISION_FAILED` receipt now
+prevents the same wake from emitting an unrelated generic `BLOCKED` event, while
+keeping stable failure identity and no-public-effect wording. Isolated pin,
+budget, invalid-config, timeout, start-failure, and failure-priority/dedupe
+fixtures plus focused inventory/revenue/acquisition checks passed `15/15`. The
+installer switched `current` to this release but again stopped at browser
+bootstrap `141: Reentrancy avoided`; no post-switch owner wake is observed yet,
+and no manual executor, provider capture, public effect, or money claim was
+created.
