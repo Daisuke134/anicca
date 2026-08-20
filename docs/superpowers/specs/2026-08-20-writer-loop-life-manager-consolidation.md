@@ -191,7 +191,7 @@ publication identity、読者、payout、ledgerを分ける。
 | 2 | DNSまたは承認済みnetwork transportを復旧 | 通常DNSは失敗。1.1.1.1解決＋`curl --resolve`ではNote／Substack／XがHTTP 200。publisher実行経路の再読戻しは未確認 | 一部完了 |
 | 3 | Writer runtimeを`skills/writer-agent`へ移しmanifestを生成 | SHA付きpath census、Life Manager current release、実行時の旧root read=0 | 完了（launchd readbackは別TODO。履歴・互換文字列のcensus 0ではない） |
 | 4 | demand→artifact→publisher adapterを同じstate schemaへ接続 | demand `FILLED` queue 1、pause下creator gate。公開解除後のrun/artifact parityは未確認 | 一部完了 |
-| 5 | Note/Substack/Xの実公開とreadbackを同一runで完了 | Note 1/4。Substack identityとXが未完了 | 進行中 |
+| 5 | Note/Substack/Xの実公開とreadbackを同一runで完了 | 同一runに3 intent（Note JA、Substack JA、X Article JA）を保持。Substack ENの別publication identityが未設定のため native URL/readbackは未確認 | ブロッカー（EN identity） |
 | 6 | payment/publisher receipt collectorとmoney ledgerを接続 | artifact-level receipt | 未着手 |
 | 7 | neutral Telegram rendererを日次・失敗・完了へ接続 | message ID `26075`/`26087` + semantic hash | 一部完了 |
 | 8 | adversarial verifierで重複公開・誤金額・偽URL・secret漏洩を反証 | Note live境界とidentity gateのfresh review | 進行中 |
