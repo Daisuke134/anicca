@@ -124,7 +124,11 @@ The order to the end is:
    Reconcile now exits directly through read-only official-card matching before any new estimate
    candidate, form or click. Action 343 then reached `replied` revision 2: official thread
    `10104078`, verified intent/card hash `267da3020abb...`, seller timestamp `1787242065`, and
-   intent state `verified`. The ¥9,000 estimate path is therefore closed. Completion still requires a
+   intent state `verified`. The ¥9,000 estimate path is therefore closed. A later buyer purchase
+   acknowledgement exposed `estimate_event_conflict`: an untouched stale estimate action blocked
+   the newer normal message. Queue handoff now closes only a pending estimate with no intent/click,
+   then atomically retries the newer buyer event; prepared or clicked estimates remain protected.
+   Completion still requires a
    durable disposition for every buyer-authored message: replied with official readback, estimate
    sent with official readback, intentionally no-send with a bounded policy reason, or still pending
    with an observable retry owner. Missing from the queue is never a valid disposition.

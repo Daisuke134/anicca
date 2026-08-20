@@ -19,6 +19,7 @@ try:
     from connector_outbox import (
         ConnectorOutbox,
         InvalidTransition,
+        OutboxError,
         coconala_message_event_key,
         validate_coconala_event_key,
     )
@@ -32,6 +33,7 @@ except ModuleNotFoundError:  # imported directly by the unit-test loader
     _outbox_spec.loader.exec_module(_outbox_module)
     ConnectorOutbox = _outbox_module.ConnectorOutbox
     InvalidTransition = _outbox_module.InvalidTransition
+    OutboxError = _outbox_module.OutboxError
     coconala_message_event_key = _outbox_module.coconala_message_event_key
     validate_coconala_event_key = _outbox_module.validate_coconala_event_key
 
@@ -107,12 +109,38 @@ def enqueue_queue(
         if not isinstance(event_keys, list) or not event_keys:
             raise ValueError("missing covered event keys")
         for event_key in event_keys:
-            action = outbox.enqueue(
-                event_key=str(event_key),
-                thread_id=thread_id,
-                thread_url=thread_url,
-                observed_at=observed_at,
-            )
+            try:
+                action = outbox.enqueue(
+                    event_key=str(event_key), thread_id=thread_id,
+                    thread_url=thread_url, observed_at=observed_at,
+                )
+            except OutboxError as error:
+                if str(error) != "estimate_event_conflict":
+                    raise
+                estimate = next(
+                    (
+                        candidate for candidate in outbox.estimate_pending_actions()
+                        if candidate.get("thread_id") == thread_id
+                    ),
+                    None,
+                )
+                owner = f"buyer-after-estimate-{thread_id}"
+                claimed = (
+                    outbox.claim(owner=owner, now=observed_at, lease_seconds=30,
+                                 action_id=int(estimate["action_id"]))
+                    if estimate is not None else None
+                )
+                if claimed is None:
+                    raise
+                outbox.close_nothing_to_say(
+                    int(claimed["action_id"]), owner=owner,
+                    fencing_token=int(claimed["fencing_token"]),
+                    reason="buyer_message_after_estimate", now=observed_at,
+                )
+                action = outbox.enqueue(
+                    event_key=str(event_key), thread_id=thread_id,
+                    thread_url=thread_url, observed_at=observed_at,
+                )
             semantic_body = item.get("semantic_reply_body")
             semantic_context = str(item.get("semantic_context_sha256") or "")
             if (
