@@ -174,6 +174,39 @@ class SubmissionConfirmationTests(unittest.TestCase):
             )
             ledger.close()
 
+    def test_late_confirmation_supports_existing_state_requires_event_trigger(self):
+        with tempfile.TemporaryDirectory() as directory:
+            ledger, _, intent_id = self._unknown_submission(Path(directory))
+            ledger.connection.executescript(
+                """
+                CREATE TRIGGER applications_state_requires_event_test
+                BEFORE UPDATE OF current_state ON applications
+                WHEN NEW.current_state != (
+                    SELECT to_state FROM events
+                    WHERE application_id = OLD.id ORDER BY rowid DESC LIMIT 1
+                )
+                BEGIN
+                    SELECT RAISE(ABORT, 'application state requires matching event');
+                END;
+                """
+            )
+            try:
+                result = ledger.reconcile_submission_confirmation(
+                    intent_id=intent_id,
+                    message_id="gmail-message-trigger",
+                    thread_id="gmail-thread-trigger",
+                    evidence_sha256="b" * 64,
+                    received_at=(
+                        datetime.now(timezone.utc) + timedelta(minutes=1)
+                    ).isoformat(),
+                )
+            finally:
+                ledger.connection.execute(
+                    "DROP TRIGGER applications_state_requires_event_test"
+                )
+            self.assertEqual(result, "reconciled")
+            ledger.close()
+
     def test_generic_transition_cannot_bypass_confirmation_receipt(self):
         with tempfile.TemporaryDirectory() as directory:
             ledger, application_id, _ = self._unknown_submission(

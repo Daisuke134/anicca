@@ -1517,16 +1517,6 @@ class Ledger:
             ):
                 raise FenceError("submission confirmation state is inconsistent")
             application_id = str(row["application_id"])
-            application_update = self.connection.execute(
-                """
-                UPDATE applications
-                SET current_state = 'submitted'
-                WHERE id = ? AND current_state = 'submit_unknown'
-                """,
-                (application_id,),
-            )
-            if application_update.rowcount != 1:
-                raise FenceError("application confirmation state is inconsistent")
             self._append_event(
                 application_id,
                 "submit_unknown",
@@ -1539,6 +1529,16 @@ class Ledger:
                     "received_at": received_at,
                 },
             )
+            application_update = self.connection.execute(
+                """
+                UPDATE applications
+                SET current_state = 'submitted'
+                WHERE id = ? AND current_state = 'submit_unknown'
+                """,
+                (application_id,),
+            )
+            if application_update.rowcount != 1:
+                raise FenceError("application confirmation state is inconsistent")
             outcome_identity = {
                 "application_id": application_id,
                 "funnel_stage": "confirmed_application",
