@@ -712,11 +712,19 @@ def flush_telegram(state, event, runner=subprocess.run):
         )
     except JobStateError:
         return {"state": "RECONCILE_REQUIRED", "sent": 0, "message_id": None}
-    completed = runner(
-        [openclaw, "message", "send", "--channel", "telegram", "--target", "8547730585",
-         "--message", row["body"], "--json"],
-        check=False, capture_output=True, text=True, timeout=30,
-    )
+    try:
+        completed = runner(
+            [openclaw, "message", "send", "--channel", "telegram", "--target", "8547730585",
+             "--message", row["body"], "--json"],
+            check=False, capture_output=True, text=True, timeout=30,
+        )
+    except subprocess.TimeoutExpired:
+        # The provider may have accepted the send before the CLI timed out.
+        # Keep the write-ahead effect unresolved and the event pending; never
+        # claim SENT or invent a message ID from a transport timeout.
+        return {"state": "SEND_TIMEOUT_UNKNOWN", "sent": 0, "message_id": None}
+    except OSError:
+        return {"state": "TRANSPORT_UNAVAILABLE", "sent": 0, "message_id": None}
     try:
         response = json.loads(completed.stdout)
     except ValueError:
