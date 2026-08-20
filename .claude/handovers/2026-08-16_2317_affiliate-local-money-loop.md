@@ -44,6 +44,15 @@ publish retry. Do not create a parallel executor or manually publish.
 7. P6: continue unattended until the ledger proves at least **USD 10,000 approved-or-paid net in one rolling 30-day period**, after reversals and known real billed costs. Pending, estimates, clicks, screenshots, tests, mocks, dry runs, model output, and unknown costs never count.
 8. P7: only after local proof, ship the same `skills/affiliate/` as a secret-free one-command macOS install with verifier, update/rollback/uninstall, redacted fixtures, and one scratch-Mac unattended reproduction. Public language never guarantees that users can “print money.”
 
+Execution update: A01/A02 restored the exact owned-publication worktree at clean
+`feature/affiliate-foundation-prod` HEAD `d4170db1e`. A03 enumerated the two
+non-public rows (`music` and `tiktok-transcript-generator`) and matched each to
+an existing verified PartnerStack placement-link job in the private job journal;
+no replacement job was created. A04 remains open because both the required
+`launchctl kickstart` and one `launchctl start` fallback returned `141:
+Reentrancy avoided`; the owner has not yet read the repaired root, so no public
+effect or success is claimed.
+
 This handover records a planning-only turn. No harness repair, owner kickstart,
 manual publication, provider write, or ledger mutation was performed.
 

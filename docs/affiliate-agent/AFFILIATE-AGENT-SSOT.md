@@ -1493,8 +1493,14 @@ receipt readback, SSOT state update, commit, and push to both canonical remotes.
   through its ownership contract; prove clean expected branch/upstream. The
   existing branch was reconnected with `git worktree add` at the exact allowed
   path; no file was authored, edited, pushed, or published by Codex.
-- [ ] **A03** Enumerate the two non-public placement jobs and bind each to its
-  existing job/effect fingerprint; create no replacement job.
+- [x] **A03** Enumerate the two non-public placement jobs and bind each to its
+  existing job/effect fingerprint; create no replacement job. The canonical
+  ledger identified exactly `elevenlabs-discovered-music-en-1` and
+  `elevenlabs-discovered-tiktok-transcript-generator-en-1` with `public_url=null`.
+  Existing Git-external `job-events.jsonl` already contains verified
+  `PARTNERSTACK_PLACEMENT_LINK` jobs for both targets (job prefixes `a0e1bdc6b8b2`
+  and `4c2f73d64cce`, action-fingerprint prefixes `ae651b22e844` and
+  `e4e1e136accf`). No replacement job or external effect was created.
 - [ ] **A04** Kick the existing Affiliate launchd owner and require both jobs to
   reach an exact terminal owned/X state or a typed durable failure.
 - [ ] **A05** Replay the unchanged owner and prove placement count, public URLs,
