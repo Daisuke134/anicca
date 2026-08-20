@@ -1555,7 +1555,8 @@ def run_targeted_estimate(
 
 
 def run_targeted_reconcile(
-    args: Any, *, action_id: int, thread_id: str, evidence: Path, run_id: str,
+    args: Any, *, action_id: int, thread_id: str, expected_revision: int,
+    evidence: Path, run_id: str,
 ) -> dict[str, Any]:
     """Read back one delivery-unknown reply without scanning every inbox page."""
     try:
@@ -1585,7 +1586,10 @@ def run_targeted_reconcile(
             "--fences", str(fences_path),
         ], accepted=(0, 2))
         lane = json.loads(lane_path.read_text(encoding="utf-8"))
-        result = _targeted_effect_result(lane, thread_id=thread_id, action_id=action_id)
+        result = _targeted_effect_result(
+            lane, thread_id=thread_id, action_id=action_id,
+            expected_revision=expected_revision,
+        )
         result["run_id"] = run_id
         if result.get("status") in {"completed", "replied"}:
             ConnectorOutbox(Path(args.database), Path(args.manifest)).revive_blocked_actions(
@@ -1973,6 +1977,7 @@ async def _run_continuous_runtime(args: Any, evidence: Path) -> dict[str, Any]:
             result = await asyncio.to_thread(
                 run_targeted_reconcile, args,
                 action_id=int(work["action_id"]), thread_id=str(work["thread_id"]),
+                expected_revision=int(work["expected_revision"]),
                 evidence=worker_evidence, run_id=run_id,
             )
             _atomic_json(worker_evidence / "result.json", result)
