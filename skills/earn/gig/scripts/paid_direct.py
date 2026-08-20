@@ -1976,7 +1976,9 @@ def _run_isolated_file_owner(args, root: Path, context: Path, prompt_text: str,
                 summary_path = owner_evidence / "summary.json"
                 summary = _load(summary_path)
                 if isinstance(summary, dict) and _text(summary.get("result_path")):
-                    summary["result_path"] = Path(_text(summary["result_path"])).name
+                    summary["result_path"] = str(
+                        (owner_evidence / Path(_text(summary["result_path"])).name).resolve()
+                    )
                     _write(summary_path, summary)
         owner, _proof = _file_runner_result(
             owner_evidence, task_label="paid-file-owner", started_ns=started,
