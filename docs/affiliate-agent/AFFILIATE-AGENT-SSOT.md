@@ -2407,6 +2407,13 @@ ports remain ready. The live job is therefore still pending external timeline
 readback, not counted as X `LIVE` and not counted as money. Official PartnerStack
 capture remains `commission_row_count=0`, `NO_TRANSACTIONS`, approved/paid net null,
 and actual cash cost `UNKNOWN`.
+The Codex receipt is Telegram `messageId=26583`. Post-install `launchctl print`
+failed for the Affiliate label, the entire `gui/$(id -u)` and `system` domains,
+and `launchctl managerpid` failed; a declared existing-owner `kickstart` and
+plist `bootstrap` both returned the same `141: Reentrancy avoided`. No direct
+executor or manual provider/public effect was substituted. This is a local
+launchd-session capability blocker; the smallest truthful recovery is to recreate
+the user session (log out/in) and let the existing owner perform the readback.
 M2.0 is closed for settled dedicated-link attribution: every settled revenue
 placement has one PartnerStack link and one canonical ledger row. The in-flight
 voice-isolator experiment remains explicitly split until its provider-link and owned
