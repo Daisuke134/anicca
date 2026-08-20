@@ -900,8 +900,16 @@ def _fresh_decision_notifications(
             heading = "⏭️ 公式に応募できない案件をスキップしました"
             explanation = "公式ページで募集受付中の応募フォームを確認できなかったためです。"
         elif outcome == "failed_transient":
-            heading = "⚠️ この案件の判断を完了できませんでした"
-            explanation = "構造化判断が欠落したため送信せず、次回の再判定へ残しました。"
+            status = str(row.get("status") or "")
+            if status.startswith("submission_"):
+                heading = "⚠️ この案件への応募確認を完了できませんでした"
+                explanation = (
+                    f"構造化判断は完了しましたが、送信後の公式確認が「{_clip_report(status, 120)}」"
+                    "で止まりました。再送信せず、次回に公式履歴を照合します。"
+                )
+            else:
+                heading = "⚠️ この案件の判断を完了できませんでした"
+                explanation = "構造化判断が欠落したため送信せず、次回の再判定へ残しました。"
         else:
             heading = "⚠️ この案件への応募を完了できませんでした"
             explanation = f"送信処理が「{_clip_report(row.get('status'), 120)}」で止まったため、完了とは扱っていません。"

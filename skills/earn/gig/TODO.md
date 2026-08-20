@@ -193,6 +193,11 @@ Execute top to bottom. A checked diagnostic is evidence, not lane completion.
   either officially applied, already applied, or carries one bounded truthful ineligibility reason.
   Missing structured decisions, provider failures, candidate wedges and unowned pending rows fail
   the pass; they must remain durably retryable rather than disappear from the denominator.
+  Pass `gig-apply-direct-1787203527469043000-43647` exposed four post-submit official-history
+  navigation timeouts, including `5222409`. Their structured decisions were present; the Telegram
+  formatter incorrectly called every transient failure a missing decision. Source now distinguishes
+  decision failure from readback failure and retries official readback once on a fresh target without
+  clicking submit again. Live exhaustive-pass proof remains.
 - [x] Restore intent-planner availability without a code change. Pass
   `gig-apply-direct-1787199355888187000-44491` completed four Luna batches successfully and again
   produced official application readbacks; quota failure is no longer the active defect.

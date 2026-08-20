@@ -2827,11 +2827,27 @@ def commit_decisions(
                     results.append(readback_inconclusive_result(request_id, error))
                     continue
                 except Exception as error:
-                    # The submit outcome is unknown when the independent official
-                    # readback transport fails. Preserve PREPARED for reconciliation,
-                    # record this candidate only, and keep evaluating fresh candidates.
-                    results.append(submission_failure_result(request_id, error))
-                    continue
+                    # A submit can kill only the current renderer. Replace that target
+                    # once and retry the independent official-history readback; never
+                    # click the irreversible submit control again.
+                    recover = getattr(effects, "recover_wedged_target", None)
+                    is_cdp_timeout = (
+                        isinstance(error, ParentContractError)
+                        and str(error).startswith("cdp_")
+                        and "_timeout_after_" in str(error)
+                    )
+                    try:
+                        if not is_cdp_timeout or not callable(recover) or recover() is not True:
+                            raise error
+                        exact_id_observed = effects.authoritative_exact_id_readback(request_id)
+                    except ReadbackScanTimeout as retry_error:
+                        results.append(readback_inconclusive_result(request_id, retry_error))
+                        continue
+                    except Exception as retry_error:
+                        # The submit outcome remains unknown. Preserve PREPARED for
+                        # reconciliation and continue with the next candidate.
+                        results.append(submission_failure_result(request_id, retry_error))
+                        continue
                 if not exact_id_observed:
                     results.append({
                         "request_id": request_id,
