@@ -108,6 +108,18 @@ an apply-navigation step, not a claim. Click its visible `Apply`, `Apply now`, o
 before filling anything. Never interpret a job-page Apply control as a submitted
 application.
 
+Before calling `Ledger.claim_submission`, inspect the final submit-bearing form's
+required controls and questions. Every required answer—including free-text,
+coding/technical, legal, eligibility, consent, select, and checkbox answers—must
+map to an exact verified profile fact, an approved resume/material, or an explicit
+deterministic policy value. A required question that is not covered by those
+sources is a hard candidate blocker: do not claim a slot, do not enter a guessed
+answer, do not click submit, and record the question label and missing fact as
+candidate-level `not_submitted`; then continue to the next distinct eligible
+official ATS URL. This pre-claim gate must run even when the ATS evaluator says
+`claim_ready=true`, so an unanswerable form never consumes the one-claim wake
+fence or a daily slot.
+
 Do not choose `Autofill with Resume` before resume routing, and do not improvise an
 account password or expose credentials in evidence. At a verified
 `workday_account_create` surface, run:

@@ -143,6 +143,10 @@ raise SystemExit(0)
         self.assertIn("AI agent engineer Tokyo Japan", prompt)
         self.assertIn("candidate-level", prompt)
         self.assertIn("ashby_job", prompt)
+        self.assertIn("Before calling `Ledger.claim_submission`", prompt)
+        self.assertIn("required controls and questions", prompt)
+        self.assertIn("exact verified profile fact", prompt)
+        self.assertIn("unanswerable form never consumes", prompt)
 
         result_schema = json.loads(
             (APP_ROOT / "schemas" / "pass-result.v1.schema.json").read_text(
