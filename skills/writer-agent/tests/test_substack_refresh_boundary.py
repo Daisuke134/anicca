@@ -13,6 +13,25 @@ assert SPEC.loader is not None
 SPEC.loader.exec_module(MODULE)
 
 
+def test_refresh_accepts_authenticated_post_bylines_shape() -> None:
+    assert MODULE._owned_byline_ids({"postBylines": [{"user_id": 336441894}]}) == {336441894}
+
+
+@pytest.mark.parametrize(
+    "draft",
+    [
+        {"postBylines": [{"user_id": 336441894}, {}]},
+        {
+            "draft_bylines": [{"id": 336441894}],
+            "postBylines": [{"user_id": 999}],
+        },
+    ],
+)
+def test_refresh_rejects_unknown_or_conflicting_byline_shapes(draft: dict) -> None:
+    with pytest.raises(MODULE.m.SubstackRepairRefused, match="byline"):
+        MODULE._owned_byline_ids(draft)
+
+
 @pytest.mark.parametrize(
     "draft",
     [

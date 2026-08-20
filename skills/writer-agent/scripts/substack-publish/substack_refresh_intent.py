@@ -48,6 +48,26 @@ def _authenticated_draft_publication_host(draft):
         return ""
     return _publication_host(profile)
 
+
+def _owned_byline_ids(draft):
+    def parse(value, key, label):
+        if value is None:
+            return None
+        if not isinstance(value, list):
+            raise m.SubstackRepairRefused(f"{label} readback shape is invalid")
+        ids=set()
+        for item in value:
+            if not isinstance(item, dict) or not str(item.get(key, "")).isdigit():
+                raise m.SubstackRepairRefused(f"{label} contains an unidentified byline")
+            ids.add(int(item[key]))
+        return ids or None
+
+    draft_ids=parse(draft.get("draft_bylines"), "id", "draft_bylines")
+    post_ids=parse(draft.get("postBylines"), "user_id", "postBylines")
+    if draft_ids and post_ids and draft_ids != post_ids:
+        raise m.SubstackRepairRefused("Substack byline readbacks disagree")
+    return draft_ids or post_ids or set()
+
 def refresh(pair):
     state=m._state(); entry=state["pairs"][pair]; target=str(entry.get("target",""))
     if entry.get("status")!="intent" or not target.isdigit(): raise m.SubstackRepairRefused("persisted intent missing")
@@ -68,10 +88,9 @@ def refresh(pair):
     if draft_publication != m._publication():
         raise m.SubstackRepairRefused("draft publication identity does not match configured publication")
     title=str(old.get("draft_title") or old.get("title") or "").strip()
-    bylines=old.get("draft_bylines")
-    if not isinstance(bylines, list) or not bylines:
+    byline_ids=_owned_byline_ids(old)
+    if not byline_ids:
         raise m.SubstackRepairRefused("draft byline identity readback missing")
-    byline_ids={int(x["id"]) for x in bylines if isinstance(x,dict) and str(x.get("id","")).isdigit()}
     if not title or byline_ids!={m._identity()}: raise m.SubstackRepairRefused("owned title/byline missing")
     media=state["media"]; headline=media["headline_image"]; bodies=media["body_assets"]
     for x in [headline,*bodies]:
