@@ -2452,15 +2452,48 @@ The completed history remains in the evidence tables below. The following list i
 the milestone order. Section 9.0.1.1 is the canonical atomic order for the current
 cursor; later work MUST NOT jump ahead of an unmet gate.
 
-Current execution cursor: **E1-H, close the first real transaction path. P0/A04/A05
-publication recovery is complete through the existing owner. The latest readback has
-20 canonical ledger rows, 20 provider-link keys, 20 owned public URLs, 32 provider
-clicks, 17 `INSUFFICIENT_DENOMINATOR` rows plus 3 observed Dev.to denominators,
-aggregate 41 clicks including `+40` unattributed, and zero commission rows. The
-newest generic opportunity is now `X_LIVE` after a verified, deduplicated link,
-owned readback, and same-job X reconciliation; it has no provider transaction and
-cannot receive allocation. B01 is waiting for the first non-empty official
-provider transaction artifact.**
+Current execution cursor (latest owner readback): **E1-H, close the first real
+transaction path.** Publication recovery and the ten-placement readiness gate
+are complete through the existing owner. The current ledger has 20 canonical
+English rows, 20 dedicated provider-link keys, 20 owned public URLs, and 34
+provider-link clicks; the aggregate PartnerStack overview has 43 clicks (42
+post-baseline) and zero commission/payout money. Three Dev.to exposure
+denominators are observed and the remaining 17 are
+`INSUFFICIENT_DENOMINATOR`. Repost observes 52 valid actions with 0 exact
+Affiliate campaign joins and 52 unjoined actions, so it grants no revenue credit.
+The installed `0e818458c` owner remains `COOLDOWN` after the 08:27 readback;
+official artifact `f69af229…6734e3a` has zero rows and rolling net remains
+`NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`. B01 is waiting for
+the first non-empty official provider transaction artifact.**
+
+Current atomic remaining queue (the checkboxes in this section are the detailed
+acceptance contract; this summary does not reorder them):
+
+1. **B01–B08 / E1-H:** capture one real provider transaction, normalize its
+   ID/status/currency/reversal, join exactly one placement, append and replay
+   lifecycle transitions, join settlement/payout when available, and send the
+   deduplicated Telegram receipt. Empty reports, clicks, pending-only rewards,
+   and fixtures remain non-money.
+2. **C01–C06:** make actual billed costs, complete coverage, FX, reversals, and
+   the rolling-30-day net receipt canonical; unknown material cost keeps net
+   unknown.
+3. **D02, D04–D08:** finish fresh opportunity selection, one-variable experiment
+   lineage, exact exposure/click/transaction denominators, shared X/Repost effect
+   arbitration, and money-evidence promote/revert learning.
+4. **E02–E10 / M2.2–M2.3-D:** admit Semrush, Amazon Japan, and Rakuten only
+   through official terms/auth/link/report gates; reach three executable,
+   independently receipted providers and enforce the 40% concentration cap.
+5. **F01–F06:** add canonical run/tool receipts, typed retry/quarantine/watchdog,
+   one allowlisted repair with same-job resume, and one live recoverable failure
+   with exact no-duplicate `SELF_HEALED` evidence.
+6. **G01–G07 / A2–A3:** prove mature comparable cohorts, four unattended
+   positive weeks, observed traffic/conversion requirements, 80/20 allocation,
+   <=40% concentration, then the replayed rolling 30-day USD 10,000 net gate
+   after reversals and known real costs.
+7. **O01–O12 / M4.1:** only after local money proof, freeze and sanitize the
+   release, define truthful onboarding, publish provider/channel plugins,
+   verifier and redacted fixtures, and reproduce install/rollback/uninstall on a
+   clean arm64 macOS user without this Mac's private authority.
 
 At `2026-08-21T06:07:09+0900`, the existing owner on release
 `1c5faf4ff7d9d70cf3f2a4e607ae11b81e1aca28` resumed the durable generic campaign
