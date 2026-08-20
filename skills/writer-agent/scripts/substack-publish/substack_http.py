@@ -169,18 +169,19 @@ def _curl(
         raise OSError(f"Substack curl fallback failed with exit {result.returncode}")
     output = result.stdout
     if content_type:
-        body, marker, value = output.rpartition(_CONTENT_TYPE_MARKER.encode())
-        if not marker:
-            raise OSError("Substack curl fallback did not return a content type")
-        status, separator, mime = value.decode("utf-8", errors="replace").partition("|")
-        if separator == "" or status not in {"200", "206"}:
-            raise OSError(f"Substack curl fallback returned unsafe HTTP status {status}")
         if asset_output_file is None:
             raise OSError("Substack curl fallback did not create an asset file")
+        asset_path = Path(asset_output_file.name)
         try:
-            asset = Path(asset_output_file.name).read_bytes()
+            _, marker, value = output.rpartition(_CONTENT_TYPE_MARKER.encode())
+            if not marker:
+                raise OSError("Substack curl fallback did not return a content type")
+            status, separator, mime = value.decode("utf-8", errors="replace").partition("|")
+            if separator == "" or status not in {"200", "206"}:
+                raise OSError(f"Substack curl fallback returned unsafe HTTP status {status}")
+            asset = asset_path.read_bytes()
         finally:
-            Path(asset_output_file.name).unlink(missing_ok=True)
+            asset_path.unlink(missing_ok=True)
         if len(asset) > _MAX_ASSET_BYTES:
             raise OSError("Substack curl fallback asset exceeds size limit")
         return asset, mime
