@@ -65,10 +65,18 @@ def _atomic_write(path: Path, data: bytes) -> None:
 def _control_paths(state_root: Path) -> list[Path]:
     paths: list[Path] = []
     for gates in sorted((state_root / "runs").glob("*/gates")):
-        for name in ("publication-state.json", "publication-state.json.bak"):
-            path = gates / name
-            if path.is_file():
-                paths.append(path)
+        # Every gate receipt can carry an absolute artifact/state path.  The
+        # first migration only covered publication-state.json and left
+        # media-create receipts pointing at the retired root, so the next
+        # managed boundary rejected an otherwise intact run.  Keep the scope
+        # to regular JSON receipts under the canonical run gates; raw logs and
+        # article bytes are intentionally untouched.
+        paths.extend(
+            path
+            for path in sorted(gates.iterdir())
+            if path.is_file()
+            and (path.name.endswith(".json") or path.name == "publication-state.json.bak")
+        )
     return paths
 
 

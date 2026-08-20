@@ -194,6 +194,10 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
 - focused identity/pending/CLI regressionは8 passed、pycompile、shell syntax、diff check、fresh adversarial
   reviewはCritical/Importantなしでship判定。実stateへのquarantine適用と、その後のsame-run native publication
   readbackは次のruntime actionで行い、まだ成功扱いにしない。
+- 実state migrationのreadbackで、publication stateはcanonical化済みでもmedia-create receiptの
+  `destination`だけが旧rootを指していることを検出した。既存migrationをrun/gates下の全JSON receiptへ
+  拡張し、記事・画像bytesを変更せず別のappend-only path-migration receiptへ記録する。これを完了してから
+  quarantineのlayout検証を再試行する。
 
 ## 目標構成
 
