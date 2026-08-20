@@ -342,7 +342,7 @@ JAPANESE_FACT_TEXT = {
         "奈良先端科学技術大学院大学 修士課程・研究（2024年4月〜2026年4月）。"
     ),
     "languages": (
-        "日本語ネイティブ。英語：TOEFL iBT 96、Duolingo English Test 140。"
+        "日本語ネイティブ。英語：TOEFL iBT 96、TOEIC 910、Duolingo English Test 140。"
         "スペイン語：DELE B1。"
     ),
 }
