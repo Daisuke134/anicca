@@ -18,7 +18,7 @@ from publication_resume import (
 )
 
 
-def store_from_env() -> PublicationStore:
+def store_from_env(*, validate_boundary: bool = True) -> PublicationStore:
     run_dir = os.environ.get("ARTICLE_RUN_DIR", "")
     state = os.environ.get("ARTICLE_PUBLICATION_STATE", "")
     ledger = os.environ.get("ARTICLE_LEDGER", "")
@@ -28,7 +28,8 @@ def store_from_env() -> PublicationStore:
             "for managed publication"
         )
     store = PublicationStore(Path(state), Path(ledger))
-    store.validate_managed_boundary(Path(run_dir))
+    if validate_boundary:
+        store.validate_managed_boundary(Path(run_dir))
     return store
 
 
@@ -104,12 +105,22 @@ def main() -> int:
     unavailable = sub.add_parser("mark-unavailable")
     unavailable.add_argument("--pair", required=True, choices=SUPPORTED_PAIRS)
     unavailable.add_argument("--reason", required=True)
+    quarantine_identity = sub.add_parser("quarantine-identity-conflict")
+    quarantine_identity.add_argument(
+        "--pair", required=True, choices=("substack/en",)
+    )
     sub.add_parser("terminalize-invalid-x-post")
     sub.add_parser("plan")
     manual = sub.add_parser("manual-check")
     manual.add_argument("--pair", required=True, choices=SUPPORTED_PAIRS)
     args = parser.parse_args()
-    store = manual_or_store()
+    if args.command == "quarantine-identity-conflict":
+        # This is the one migration command whose purpose is to repair the
+        # legacy equal-identity boundary; the method itself performs the
+        # canonical path/layout and remote-proof checks before writing state.
+        store = store_from_env(validate_boundary=False)
+    else:
+        store = manual_or_store()
     if store is None:
         result = {"action": "manual-unmanaged"}
     elif args.command == "manual-check":
@@ -154,6 +165,14 @@ def main() -> int:
         result = store.clear_unavailable(args.pair)
     elif args.command == "mark-unavailable":
         result = store.mark_unavailable(args.pair, args.reason)
+    elif args.command == "quarantine-identity-conflict":
+        entry = store.read().get("pairs", {}).get(args.pair)
+        if not isinstance(entry, dict) or not entry.get("target"):
+            raise InvariantError(f"no persisted target for {args.pair}")
+        remote = probe(args.pair, str(entry["target"]), state=store.read())
+        result = store.quarantine_identity_conflict(
+            args.pair, str(entry["target"]), remote
+        )
     elif args.command == "terminalize-invalid-x-post":
         result = store.terminalize_invalid_x_post_length()
     elif args.command == "plan":

@@ -126,6 +126,7 @@ EXPECTED_DESTINATION_IDENTITIES = {
     "x-article/en": "diceai0",
     "x-post/ja": "diceai0",
 }
+IDENTITY_CONFLICT_REASON = "substack-publication-identity-conflict"
 X_POST_MAX_CHARS = 280
 
 
@@ -195,6 +196,67 @@ def validate_destination_identities(identities: Any) -> None:
         raise InvariantError(
             "persisted English Substack identity must differ from Japanese identity"
         )
+
+
+def validate_persisted_destination_identities(state: dict[str, Any]) -> None:
+    """Validate persisted identities, allowing one explicit legacy quarantine.
+
+    A pre-gate active-four run could freeze JA and EN to the same Substack host.
+    That state is unsafe for EN publication, but it must not hold unrelated
+    destinations hostage once the EN pair is durably quarantined.  The
+    quarantine is deliberately narrow: the persisted identities remain
+    immutable, the EN pair must be unavailable with no receipt, and the
+    quarantine record must bind the exact old identity and reason.
+    """
+
+    identities = state.get("destination_identities")
+    try:
+        validate_destination_identities(identities)
+        return
+    except InvariantError:
+        pass
+
+    if not isinstance(identities, dict):
+        raise InvariantError("destination identities must be an object")
+    if set(identities) != set(EXPECTED_DESTINATION_IDENTITIES):
+        raise InvariantError("destination identities have an unexpected pair set")
+    japanese = identities.get("substack/ja")
+    english = identities.get("substack/en")
+    quarantine = state.get("identity_quarantine")
+    en_entry = state.get("pairs", {}).get("substack/en")
+    if not (
+        isinstance(japanese, str)
+        and isinstance(english, str)
+        and japanese.strip().lower() == english.strip().lower()
+        and isinstance(quarantine, dict)
+        and quarantine.get("version") == 1
+        and quarantine.get("pair") == "substack/en"
+        and quarantine.get("reason") == IDENTITY_CONFLICT_REASON
+        and quarantine.get("previous_identity") == english.strip().lower()
+        and isinstance(quarantine.get("recorded_at"), str)
+        and isinstance(en_entry, dict)
+        and en_entry.get("status") == "unavailable"
+        and en_entry.get("error") == IDENTITY_CONFLICT_REASON
+        and not en_entry.get("receipt")
+    ):
+        raise InvariantError(
+            "persisted destination identities are invalid or unquarantined"
+        )
+    # The non-Substack identities still have to remain the protected account
+    # identities.  Only the explicitly quarantined equal Substack pair is
+    # tolerated here; a malformed sibling must fail closed.
+    for pair, identity in identities.items():
+        if pair in {"substack/ja", "substack/en"}:
+            continue
+        if identity != EXPECTED_DESTINATION_IDENTITIES.get(pair):
+            raise InvariantError(f"destination identity changed for {pair}")
+    if any(
+        not isinstance(value, str)
+        or not value.strip().lower().endswith(".substack.com")
+        or "/" in value
+        for value in (japanese, english)
+    ):
+        raise InvariantError("invalid quarantined Substack publication identity")
 
 
 def validate_x_post_text(path: Path) -> int:
@@ -1018,7 +1080,7 @@ class PublicationStore:
     def _validate_state_boundary_locked(
         self, state: dict[str, Any], expected_run_dir: Path
     ) -> None:
-        validate_destination_identities(state.get("destination_identities"))
+        validate_persisted_destination_identities(state)
         stored_drafts = {
             lang: Path(str(state.get("drafts", {}).get(lang, {}).get("path", "")))
             for lang in ("ja", "en")
@@ -1232,6 +1294,133 @@ class PublicationStore:
             state["pairs"][pair] = entry
             self._write_locked(state)
             return entry
+
+    def quarantine_identity_conflict(
+        self, pair: str, target: str, remote: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Quarantine a frozen Substack identity conflict without touching the network.
+
+        This is the migration boundary for runs created before the distinct JA/EN
+        identity gate. It is idempotent, but requires an authenticated native
+        ``not-live`` readback for the exact frozen draft target. A later run must
+        be initialized with a genuinely distinct EN publication.
+        """
+
+        if pair != "substack/en" or not isinstance(remote, dict) or not target:
+            raise InvariantError(
+                "identity-conflict quarantine requires substack/en and a remote proof"
+            )
+        with self._lock():
+            state = self._read_locked()
+            identities = state.get("destination_identities")
+            if not isinstance(identities, dict):
+                raise InvariantError("destination identities must be an object")
+            japanese = str(identities.get("substack/ja", "")).strip().lower()
+            english = str(identities.get("substack/en", "")).strip().lower()
+            if not japanese or japanese != english:
+                raise InvariantError(
+                    "Substack identities are not a conflated legacy pair"
+                )
+            entry = state.get("pairs", {}).get(pair)
+            if not isinstance(entry, dict):
+                raise InvariantError("no persisted intent for substack/en")
+            if entry.get("status") == "unavailable":
+                quarantine = state.get("identity_quarantine")
+                if (
+                    isinstance(quarantine, dict)
+                    and quarantine.get("version") == 1
+                    and quarantine.get("pair") == pair
+                    and quarantine.get("reason") == IDENTITY_CONFLICT_REASON
+                    and quarantine.get("previous_identity") == english
+                    and entry.get("error") == IDENTITY_CONFLICT_REASON
+                    and not entry.get("receipt")
+                ):
+                    return dict(entry)
+                raise InvariantError("substack/en has a conflicting unavailable state")
+            if entry.get("status") != "intent":
+                raise InvariantError(
+                    "substack/en must be an unambiguous unpublished intent before quarantine"
+                )
+            if entry.get("receipt"):
+                raise InvariantError("substack/en already has a publication receipt")
+            validate_target(
+                pair,
+                str(entry.get("target_kind", "")),
+                str(entry.get("target", "")),
+            )
+            if entry.get("target") != target:
+                raise InvariantError("substack/en target changed during remote probe")
+            if not (
+                remote.get("status") == "not-live"
+                and remote.get("verified") is True
+                and remote.get("destination_identity") == english
+                and remote.get("identity_verified") is True
+                and remote.get("identity_source")
+                == "protected-substack-authenticated-draft-api"
+                and remote.get("source") == "substack-draft-api"
+            ):
+                raise InvariantError(
+                    "identity-conflict quarantine requires authenticated exact-target not-live proof"
+                )
+            if (
+                not english.endswith(".substack.com")
+                or "/" in english
+            ):
+                raise InvariantError("invalid conflated Substack publication identity")
+            run_dir = Path(str(state.get("run_dir", "")))
+            expected_state = run_dir / "gates" / "publication-state.json"
+            expected_ledger = run_dir.parent.parent / "articles.jsonl"
+            if (
+                self.state_path.is_symlink()
+                or self.state_path.resolve(strict=False) != expected_state.resolve(strict=False)
+                or self.ledger_path.resolve(strict=False) != expected_ledger.resolve(strict=False)
+                or state.get("state_path") != str(self.state_path.resolve(strict=False))
+                or state.get("ledger_path") != str(self.ledger_path.resolve(strict=False))
+            ):
+                raise InvariantError("publication state or ledger is outside the canonical run boundary")
+            # Do not invoke the normal identity validator here: this method is
+            # precisely the one bounded transition that repairs its legacy
+            # conflation.  The canonical run/media/state layout is still checked.
+            self._validate_layout(
+                str(state.get("run_id", "")),
+                Path(str(state.get("run_dir", ""))),
+                {
+                    lang: Path(str(state.get("drafts", {}).get(lang, {}).get("path", "")))
+                    for lang in ("ja", "en")
+                },
+                Path(str(state.get("x_post", {}).get("path")))
+                if self._is_legacy_state(state) and state.get("x_post", {}).get("path")
+                else None,
+                Path(str(state.get("media", {}).get("headline_image", {}).get("path", ""))),
+                [
+                    Path(str(item.get("path", "")))
+                    for item in state.get("media", {}).get("body_assets", [])
+                    if isinstance(item, dict)
+                ],
+                require_state=True,
+            )
+            for row in self._ledger_rows_locked():
+                if row.get("run_id") == state.get("run_id") and row.get("platform") == "substack" and row.get("lang") == "en":
+                    raise InvariantError(
+                        "substack/en has a current-run ledger row; quarantine refused"
+                    )
+            recorded_at = utc_now()
+            entry.update(
+                {
+                    "status": "unavailable",
+                    "error": IDENTITY_CONFLICT_REASON,
+                    "unavailable_at": recorded_at,
+                }
+            )
+            state["identity_quarantine"] = {
+                "version": 1,
+                "pair": pair,
+                "reason": IDENTITY_CONFLICT_REASON,
+                "previous_identity": english,
+                "recorded_at": recorded_at,
+            }
+            self._write_locked(state)
+            return dict(entry)
 
     def terminalize_invalid_x_post_length(self) -> dict[str, Any]:
         """Quarantine a legacy frozen overlength intent without editing its bytes.

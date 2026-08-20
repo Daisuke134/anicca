@@ -178,6 +178,23 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
 - この一連の自然文報告はTelegram message ID `26383`（current claim/creator）と`26388`（CTA境界とprovenance）で送信済みである。
 - 検証時のcurrent release `61afd77d6865e2302d4a07467ba526c2d0b75cfd`からclaim `rc=0`（観測231、queue 1→1、source outage 4）とcreator `rc=0`（pause停止）を再実行した。14 installed Writer plistは旧root argv=0だが、14件すべてのlaunchd readbackは`141: Reentrancy avoided`である。自然文の最終報告はTelegram message ID `26391`。その後のspec-only commitもwatcherでcurrentへ切り替えている。
 
+### 2026-08-21 identity-conflict quarantine slice
+
+- Coconala parityの「1 destinationの失敗は兄弟laneを止めない」契約に合わせ、旧runのSubstack ENだけを
+  `substack-publication-identity-conflict` として隔離するbounded migrationを追加した。通常のidentity
+  validatorは同一hostを拒否したまま、明示的なquarantine record、EN=`unavailable`、receiptなし、
+  exact identity key setだけを持つstateに限って persisted boundaryを通す。
+- quarantineはローカル状態だけで推測せず、同じdraft targetをSubstackのauthenticated draft APIで再読戻しし、
+  `status=not-live`、identity/source一致、target不変、同一runのEN ledger行なしを確認してから書き込む。
+  `live`、`ambiguous`、target競合、canonical path/layout不一致は拒否する。migration専用CLIだけが通常
+  boundary validationを一段迂回し、method側の全検証を維持する。通常のpublish/guard CLIは従来どおり
+  full validationを通る。
+- quarantine後はENをpublish eligibilityから除外し、同じrunのSubstack JAとX Article JAを既存workerが続行する。
+  ENは完了receiptに変換せず、別の承認済みpublication identityと新しいEN draftが作成されるまで未完了として残す。
+- focused identity/pending/CLI regressionは8 passed、pycompile、shell syntax、diff check、fresh adversarial
+  reviewはCritical/Importantなしでship判定。実stateへのquarantine適用と、その後のsame-run native publication
+  readbackは次のruntime actionで行い、まだ成功扱いにしない。
+
 ## 目標構成
 
 ### 実行トポロジー（Coconala parity）
