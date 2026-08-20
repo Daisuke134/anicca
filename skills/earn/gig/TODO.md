@@ -183,6 +183,11 @@ The order to the end is:
    natural v2 owner produced the array correctly and exposed the adjacent status-vocabulary split:
    it wrote manifest `status: PASS` while the controller requires `status: ok`. The same boundary
    now canonicalizes that producer spelling and the prompt explicitly requires `ok`. Live fresh
+   review then ran and correctly rejected a circular v2 source-correspondence proof. That same-pass
+   revision exposed a controller handoff bug: the owner prompt rendered its existing trusted census
+   as `None` because the census path was resolved only before the review finding existed. Census
+   resolution now runs on every build/revision entry and reuses the trusted receipt without another
+   model call. Live fresh
    review and delivery readback remain to be captured. Prove a new natural paid
    order through validated artifact, one delivery
    effect, exact-room official readback and replay zero.

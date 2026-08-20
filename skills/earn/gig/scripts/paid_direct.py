@@ -1909,8 +1909,7 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
             resumed = blocked_bundle
             blocked_recheck_finding = (_text(review_state.get("finding"))
                                        or "The prior fresh reviewer could not authorize this exact artifact.")
-    source_census = (_prepare_source_census(args, root, requirements_sha256, code_root)
-                     if resumed is None or finding else None)
+    source_census = _prepare_source_census(args, root, requirements_sha256, code_root)
     bound = _file_immutable_inputs(root, context)
     requirements_before = _requirements_snapshot(root)
     builder_prompt = base / "file" / "builder.prompt.txt"
