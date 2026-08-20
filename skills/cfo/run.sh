@@ -44,7 +44,10 @@ RC=$?
 set -e
 
 RESULT="$(tail -n 1 "$TMP_RESULT" 2>/dev/null || true)"
-if [[ ! "$RESULT" =~ ^\{"status": ]]; then
+# Bash 3.2 treats quotes inside an unquoted =~ expression as syntax, so the former regex
+# silently became ^\{status: and rejected every valid JSON summary. Use a literal prefix
+# match that is stable on the macOS system Bash used by launchd.
+if [[ "$RESULT" != '{"status":'* ]]; then
   RESULT='{"status":"failed","reportingDate":null,"revision":null,"appended":false,"delivered":false,"recovered":false}'
   RC=1
 fi
