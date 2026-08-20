@@ -69,35 +69,40 @@ def _telegram_request(
     host = "api.telegram.org"
     curl = shutil.which("curl") or "/usr/bin/curl"
 
-    def command(resolve: str | None = None) -> list[str]:
+    def command(resolve: str | None = None) -> tuple[list[str], str]:
         args = [curl, "-sS", "--max-time", "60"]
         if resolve:
             args.extend(["--resolve", f"{host}:443:{resolve}"])
         if document is None:
-            args.extend(
+            config = "\n".join(
                 [
-                    "-H",
-                    "Content-Type: application/json",
-                    "--data-binary",
-                    json.dumps(fields, ensure_ascii=False),
+                    f"header = {json.dumps('Content-Type: application/json')}",
+                    f"data-binary = {json.dumps(json.dumps(fields, ensure_ascii=False))}",
                 ]
             )
         else:
-            args.extend(
+            chat_field = f"chat_id={fields['chat_id']}"
+            caption_field = f"caption={fields['caption']}"
+            document_field = f"document=@{document};type=application/octet-stream"
+            config = "\n".join(
                 [
-                    "--form",
-                    f"chat_id={fields['chat_id']}",
-                    "--form",
-                    f"caption={fields['caption']}",
-                    "--form",
-                    f"document=@{document};type=application/octet-stream",
+                    f"form = {json.dumps(chat_field)}",
+                    f"form = {json.dumps(caption_field)}",
+                    f"form = {json.dumps(document_field)}",
                 ]
             )
-        args.append(url)
-        return args
+        config = f"url = {json.dumps(url)}\n{config}\n"
+        args.extend(["--config", "-"])
+        return args, config
 
+    command_args, command_config = command()
     completed = subprocess.run(
-        command(), check=False, capture_output=True, text=True, timeout=70
+        command_args,
+        input=command_config,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=70,
     )
     if completed.returncode != 0 and base_url.startswith("https://api.telegram.org"):
         resolved = subprocess.run(
@@ -124,8 +129,10 @@ def _telegram_request(
             None,
         )
         if address:
+            command_args, command_config = command(address)
             completed = subprocess.run(
-                command(address),
+                command_args,
+                input=command_config,
                 check=False,
                 capture_output=True,
                 text=True,
