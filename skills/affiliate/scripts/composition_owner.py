@@ -657,8 +657,11 @@ def inbox_priority(path: Path, state_root: Path) -> tuple[int, str]:
         return (1, path.name)
     try:
         receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+        bundle = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
-        return (2, path.name)
+        return (1, path.name)
+    if receipt.get("source_set_sha256") != bundle.get("source_set_sha256"):
+        return (1, path.name)
     if receipt.get("state") == "READY_FOR_POLICY" and (
         not SHA256.fullmatch(receipt.get("handoff_sha256", ""))
         or not SHA256.fullmatch(receipt.get("policy_sha256", ""))

@@ -433,6 +433,11 @@ def run_adapter(source):
     failure = classify_failure(result.returncode, output + result.stderr)
     if failure:
         raise CaptureError(failure)
+    if adapter == "crwl":
+        # Crawl4AI can include a carousel's non-content navigation label on
+        # alternate renders. Strip only that exact UI line so the same official
+        # evidence does not consume a new composition budget on every refresh.
+        output = re.sub(r"(?m)^Previous slideNext slide\s*$\n?", "", output)
     if adapter == "gh":
         try:
             repo = json.loads(output)
@@ -498,7 +503,7 @@ def capture(plan, state_root):
             "evidence_class": source["evidence_class"],
             "license": source["license"],
             "raw_sha256": digest,
-            "parser_version": "crwl-md-fit-v1" if source["adapter"] == "crwl" else "gh-api-v1",
+            "parser_version": "crwl-md-fit-v2" if source["adapter"] == "crwl" else "gh-api-v1",
             "failure_class": None,
             "observed_at": now.isoformat(),
             "expires_at": (now + timedelta(days=source["freshness_days"])).isoformat(),
