@@ -865,6 +865,12 @@ def build_transition(row, source_hash, observed_at):
         "reversal_minor": row["reversal_minor"],
         "net_commission_minor": row["net_commission_minor"],
         "currency": row["currency"],
+        # Attribution is part of the replay identity. A provider can expose a
+        # reward before its sub-ID/link fingerprint is present; omitting this
+        # binding would make the later exact placement match look like a
+        # duplicate and permanently strand the economic row as UNMATCHED.
+        "attribution": row["attribution"],
+        "placement": row["placement"],
     }
     transition_id = hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()
     return {
