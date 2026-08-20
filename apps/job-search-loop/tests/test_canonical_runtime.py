@@ -139,6 +139,8 @@ raise SystemExit(0)
         prompt = (APP_ROOT / "prompts" / "daily-pass.md").read_text(encoding="utf-8")
         self.assertIn("candidate-level transport", prompt)
         self.assertIn("at least five", prompt)
+        self.assertIn("AI engineer Tokyo Japan", prompt)
+        self.assertIn("AI agent engineer Tokyo Japan", prompt)
 
         result_schema = json.loads(
             (APP_ROOT / "schemas" / "pass-result.v1.schema.json").read_text(

@@ -49,6 +49,9 @@ in the existing isolated CloakBrowser/Playwright context and search official com
 career pages and ATS listings directly. A provider outage is not an application
 blocker. Only after both the multi-source command and browser fallback return no
 verified eligible posting may the pass report `no_eligible_job_found`.
+In addition to the role-family queries, run these exact high-recall Japan queries:
+`AI engineer Tokyo Japan` and `AI agent engineer Tokyo Japan`. Preserve their
+discovery evidence and include their official ATS URLs in the candidate queue.
 
 For every employer ATS navigation, do not wait for `domcontentloaded` or
 `networkidle`. Use the existing CDP page and:
