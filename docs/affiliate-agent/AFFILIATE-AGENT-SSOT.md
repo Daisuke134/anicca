@@ -1406,6 +1406,14 @@ historical evidence below. Read-only inspection of the installed state shows:
   isolated-replayed successfully and leaves the pending row for the existing
   owner to retry under its original UUID; no Telegram duplicate is treated as
   money or as proof until a provider message ID is read back.
+- the existing owner then ran release `cd7372f45` at
+  `2026-08-20T11:40:09Z`. It wrote placement-ledger SHA
+  `98573449c5812b6117c89d86acafe7cdb83d8c01a4f92d2bd57861bc40b2b1d8` into the
+  rolling receipt, kept `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS`, and
+  retried the pending `0a79a537…` under the same UUID exactly once as Telegram
+  message `26077`. Outbox and sent ledgers are now 101/101 with zero pending;
+  no new rolling event was created. This closes the observed duplicate-identity
+  self-heal, not B01 or any money gate.
 - the existing owner retry at `2026-08-20T10:54:48Z` recovered that exact pending
   event without any publication, link, provider, or ledger mutation. The owner
   recorded message ID `26019` once for event UUID

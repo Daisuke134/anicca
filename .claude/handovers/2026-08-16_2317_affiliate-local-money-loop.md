@@ -342,3 +342,13 @@ An isolated replay with two different placement-ledger hashes now returns the
 same event UUID, and an already-sent UUID returns no new event. The pending row
 must be retried by the existing owner under its original UUID; no duplicate or
 Telegram receipt is claimed until message ID readback exists.
+
+The existing owner wake at `2026-08-20T11:40:09Z` ran release `cd7372f45` and
+verified the stable-identity repair. The rolling receipt bound placement-ledger
+SHA `98573449c5812b6117c89d86acafe7cdb83d8c01a4f92d2bd57861bc40b2b1d8`, kept
+`NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS`, and retried pending event UUID
+`0a79a537d618f563d5b604d7e003165ef8cb2e5116a754f70cd360fed30e806c` exactly
+once as Telegram message `26077`. Outbox and sent are both 101 rows with zero
+pending; no new rolling event was generated. The duplicate-identity
+self-heal is now live-proven. B01 remains the first non-empty official provider
+transaction gate and no money is counted.
