@@ -1742,6 +1742,10 @@ def _normalize_acceptance_delta(root: Path) -> None:
     if not isinstance(acceptance, dict):
         raise ValueError("invalid acceptance delta")
     delta = acceptance.get("acceptance_delta")
+    if isinstance(delta, str) and delta.strip():
+        delta = [delta.strip()]
+        acceptance["acceptance_delta"] = delta
+        _write(acceptance_path, acceptance)
     if (acceptance.get("status") != "PASS" or not isinstance(delta, list)
             or not delta or any(not isinstance(value, str) or not value.strip() for value in delta)):
         raise ValueError("invalid acceptance delta")
@@ -1916,7 +1920,8 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
         "Choose tools from the complete buyer context and required output, never from a hardcoded buyer name, category, or keyword router. "
         "Create the actual buyer-facing deliverable that satisfies the complete accumulated request, not a plan, "
         "status report, transaction summary, or promise. Create exactly the next vN artifact under delivery/, "
-        "a JSON acceptance file with status PASS and a nonempty acceptance_delta, and delivery/paid-work-result.json "
+        "a JSON acceptance file with status PASS and acceptance_delta as a nonempty JSON array of nonempty strings, "
+        "and delivery/paid-work-result.json "
         "binding project_root, requirements_path, artifact_path, artifact_version, acceptance_evidence_path, "
         "acceptance_status, acceptance_delta, and package_sha256; copy acceptance_delta exactly from the acceptance "
         "file without paraphrasing it. Self-check every accumulated requirement against the "

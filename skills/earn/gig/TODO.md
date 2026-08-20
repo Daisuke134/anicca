@@ -174,7 +174,13 @@ The order to the end is:
    (`music-score-omr`, `buyma-work`, `ai-video-work`) even for an unrelated Illustrator/image
    order, while none exists on main. The controller now copies only approved skills actually
    present; absence of an unrelated skill no longer prevents the native-vision census or builder.
-   Live artifact creation and delivery readback remain to be captured. Prove a new natural paid
+   The next natural pass proved that fix by running the real Sol file owner for `18169583`. It
+   produced the PC/responsive Illustrator package, a valid ZIP, a 46-mapping source-correspondence
+   receipt and matching package SHA256, then exposed the next controller boundary defect:
+   `acceptance_delta` was a nonempty string because the owner prompt did not specify its JSON type,
+   while validation accepts only a string array. The boundary now canonicalizes a nonempty string
+   to a one-element array and the owner prompt explicitly requests that array contract. Live fresh
+   review and delivery readback remain to be captured. Prove a new natural paid
    order through validated artifact, one delivery
    effect, exact-room official readback and replay zero.
 6. **Prove 24/7 control-plane durability.** Browser, Apply, Negotiate, Storefront and Paid must each
