@@ -242,8 +242,12 @@ The order to the end is:
    its hash, archive, XML and extracted copy, but the old outer parent exited during the review
    before a final verdict. No buyer-visible delivery occurred (`effect: 0`). The active immutable
    release contains the six-hour file-preparation deadline; a direct launchd kickstart from the
-   current GUI context remains rejected with `141 Reentrancy avoided`, so the next natural Paid wake
-   must resume the persisted v8 review through the real loop. v8 fresh-review verdict, one delivery
+   current GUI context remained rejected with `141 Reentrancy avoided`, but the next scheduled
+   launchd wake naturally resumed the persisted v8 package through the real loop. The fresh reviewer
+   rejected v8 before delivery after proving two remaining source-copy substitutions, one responsive
+   right-edge clip, and bad crops in all five reused illustration assets. The controller persisted
+   the complete class-wide finding and automatically launched isolated v9 production under the
+   fixed six-hour parent. Buyer-visible effect remains zero. v9 fresh-review verdict, one delivery
    effect, exact-room official readback and replay zero remain to be proved.
 6. **Prove 24/7 control-plane durability.** Browser, Apply, Negotiate, Storefront and Paid must each
    survive process exit and start again from the immutable release. The current shell cannot read
