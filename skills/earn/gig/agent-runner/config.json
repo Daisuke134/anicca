@@ -167,15 +167,15 @@
       ]
     },
     "reply-semantic-agent": {
-      "route": "terra-high-reply-semantic",
+      "route": "luna-medium-reply-semantic",
       "token_reservation": 16384,
       "timeout_seconds": 240,
       "candidates": [
         {
           "provider": "codex",
-          "model": "gpt-5.6-terra",
-          "effort": "high",
-          "timeout_seconds": 180
+          "model": "gpt-5.6-luna",
+          "effort": "medium",
+          "timeout_seconds": 120
         }
       ]
     },
