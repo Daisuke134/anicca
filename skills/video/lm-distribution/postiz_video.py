@@ -245,6 +245,17 @@ def read_recent_posts(api_key: str, hours: int = 6):
     return _request_json(request)
 
 
+def is_reconciled_state(state: dict) -> bool:
+    return (
+        isinstance(state, dict)
+        and state.get("state") == "PUBLISHED"
+        and bool(re.fullmatch(
+            r"https://www\.tiktok\.com/@[^/]+/video/[0-9]+/?",
+            state.get("post_url") or "",
+        ))
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--video", type=Path, required=True)
@@ -299,7 +310,14 @@ def main() -> int:
                 break
         if state["state"] == "ERROR":
             break
-    result = {"post_id": post_id, **state}
+    # Postiz's PUBLISHED state plus an exact /video/<id> URL is the provider
+    # readback required by Life Manager; preserve that provenance in the
+    # publication receipt instead of silently downgrading it to false.
+    result = {
+        "post_id": post_id,
+        **state,
+        "reconciled": is_reconciled_state(state),
+    }
     print(json.dumps(result, ensure_ascii=False, separators=(",", ":")))
     if state["state"] != "PUBLISHED" or not re.fullmatch(
         r"https://www\.tiktok\.com/@[^/]+/video/[0-9]+/?",

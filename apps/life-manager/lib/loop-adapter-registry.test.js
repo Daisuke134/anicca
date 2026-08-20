@@ -152,7 +152,7 @@ test("registry rejects duplicate routing, absolute paths, and credential-shaped 
 test("committed manifest is portable and registers financial report first and Connector coverage last", () => {
   const manifest = loadLoopAdapterManifest(MANIFEST_PATH);
   assert.equal(manifest.schema_version, 1);
-  assert.equal(manifest.adapters.length, 8);
+  assert.equal(manifest.adapters.length, 9);
   assert.equal(
     manifest.adapters[0].capability,
     FINANCIAL_REPORT_CAPABILITY,
@@ -178,12 +178,14 @@ test("committed manifest is portable and registers financial report first and Co
     manifest.adapters[4].adapter_id,
     "marketing-video-generation",
   );
-  assert.equal(manifest.adapters[5].capability, MARKETING_LIVENESS_CAPABILITY);
-  assert.equal(manifest.adapters[5].adapter_id, "marketing-liveness-telegram");
-  assert.equal(manifest.adapters[6].capability, LUMA_RSVP_CAPABILITY);
-  assert.equal(manifest.adapters[6].adapter_id, "outbound-luma-rsvp");
-  assert.equal(manifest.adapters[7].capability, CONNECTOR_COVERAGE_CAPABILITY);
-  assert.equal(manifest.adapters[7].adapter_id, "connector-coverage-refresh");
+  assert.equal(manifest.adapters[5].capability, "marketing.video.publish");
+  assert.equal(manifest.adapters[5].adapter_id, "marketing-video-publication");
+  assert.equal(manifest.adapters[6].capability, MARKETING_LIVENESS_CAPABILITY);
+  assert.equal(manifest.adapters[6].adapter_id, "marketing-liveness-telegram");
+  assert.equal(manifest.adapters[7].capability, LUMA_RSVP_CAPABILITY);
+  assert.equal(manifest.adapters[7].adapter_id, "outbound-luma-rsvp");
+  assert.equal(manifest.adapters[8].capability, CONNECTOR_COVERAGE_CAPABILITY);
+  assert.equal(manifest.adapters[8].adapter_id, "connector-coverage-refresh");
   assert.doesNotMatch(
     fs.readFileSync(MANIFEST_PATH, "utf8"),
     /\.openclaw|profitable-claude|life-manager-v0|\/Users\/|api[_-]?key|password|token\s*":/i,

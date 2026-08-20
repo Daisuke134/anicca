@@ -50,6 +50,16 @@ class PostizVideoTests(unittest.TestCase):
         )
         self.assertEqual(postiz_video.find_post(rows, "p1"), {"state": "QUEUE", "post_url": None})
 
+    def test_published_exact_video_state_is_provider_reconciled(self):
+        self.assertTrue(postiz_video.is_reconciled_state({
+            "state": "PUBLISHED",
+            "post_url": "https://www.tiktok.com/@life/video/123",
+        }))
+        self.assertFalse(postiz_video.is_reconciled_state({
+            "state": "PUBLISHED",
+            "post_url": "https://www.tiktok.com/@life",
+        }))
+
     def test_find_post_rejects_published_without_public_url(self):
         with self.assertRaises(postiz_video.PostizError):
             postiz_video.find_post([{"id": "p", "state": "PUBLISHED"}], "p")

@@ -598,6 +598,44 @@ function createWorkerHandlers(env, capabilities, dependencies = {}) {
       now: dependencies.now || (() => new Date().toISOString()),
     };
   }
+  if (capabilities.includes("marketing.video.publish")) {
+    const tenantId = requiredEnv(env, "LM_RUNTIME_TENANT_ID");
+    const dataDir = path.resolve(requiredEnv(env, "LM_DATA_DIR"));
+    const runtimeOwnedPath = (name) => {
+      const resolved = path.resolve(requiredEnv(env, name));
+      if (resolved !== dataDir && !resolved.startsWith(`${dataDir}${path.sep}`)) {
+        throw new Error(`${name} must be beneath LM_DATA_DIR`);
+      }
+      return resolved;
+    };
+    const profileRef = requiredEnv(env, "LM_HONNE_EN_INSTAGRAM_PROFILE_REF");
+    const integrationRef = requiredEnv(env, "LM_HONNE_EN_TIKTOK_INTEGRATION_REF");
+    servicesByAdapter["marketing-video-publication"] = {
+      secretProvider: createScopedEnvironmentSecretProvider(env),
+      profileProvider: {
+        async get(requestTenantId, ref) {
+          if (requestTenantId !== tenantId || ref !== profileRef) {
+            throw new Error("marketing video publication Instagram profile scope mismatch");
+          }
+          return {
+            handle: requiredEnv(env, "LM_INSTAGRAM_HANDLE"),
+            accountsPath: runtimeOwnedPath("LM_INSTAGRAM_ACCOUNTS_PATH"),
+            settingsPath: runtimeOwnedPath("LM_INSTAGRAM_SETTINGS_PATH"),
+            credentialsPath: runtimeOwnedPath("LM_INSTAGRAM_CREDENTIALS_PATH"),
+            stateDir: runtimeOwnedPath("LM_INSTAGRAM_PROFILE_STATE_DIR"),
+          };
+        },
+      },
+      integrationProvider: {
+        async get(requestTenantId, ref) {
+          if (requestTenantId !== tenantId || ref !== integrationRef) {
+            throw new Error("marketing video publication TikTok integration scope mismatch");
+          }
+          return requiredEnv(env, "LM_TIKTOK_INTEGRATION");
+        },
+      },
+    };
+  }
   if (capabilities.includes("marketing.liveness.telegram")) {
     servicesByAdapter["marketing-liveness-telegram"] = {
       secretProvider: {

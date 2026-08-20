@@ -1019,3 +1019,32 @@ test("marketing video worker selects from tenant-scoped durable history and Life
     "ja",
   ]);
 });
+
+test("marketing video publication worker wires the Honne EN profile and TikTok integration scopes", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "lm-runtime-publish-"));
+  let services;
+  const handlers = createWorkerHandlers({
+    LM_RUNTIME_TENANT_ID: "tenant-a",
+    LM_DATA_DIR: root,
+    LM_HONNE_EN_INSTAGRAM_PROFILE_REF: "profile://instagram/honne_reveal",
+    LM_HONNE_EN_TIKTOK_INTEGRATION_REF: "integration://postiz/tiktok/cmoig11ew001zlv0yk6vqo1us",
+    LM_INSTAGRAM_HANDLE: "honne_reveal",
+    LM_INSTAGRAM_ACCOUNTS_PATH: path.join(root, "accounts.json"),
+    LM_INSTAGRAM_SETTINGS_PATH: path.join(root, "settings.json"),
+    LM_INSTAGRAM_CREDENTIALS_PATH: path.join(root, "credentials.json"),
+    LM_INSTAGRAM_PROFILE_STATE_DIR: path.join(root, "profile"),
+    LM_TIKTOK_INTEGRATION: "provider-integration-value",
+  }, ["marketing.video.publish"], {
+    createRegistry({ servicesByAdapter }) {
+      services = servicesByAdapter["marketing-video-publication"];
+      return {
+        hasCapability: (capability) => capability === "marketing.video.publish",
+        getByCapability: () => ({ execute: async () => ({ receipt: { kind: "fixture" } }) }),
+      };
+    },
+  });
+  assert.equal(typeof handlers["marketing.video.publish"], "function");
+  assert.equal(typeof services.profileProvider.get, "function");
+  assert.equal(typeof services.integrationProvider.get, "function");
+  assert.equal(typeof services.secretProvider.get, "function");
+});

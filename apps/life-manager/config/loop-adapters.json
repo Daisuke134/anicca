@@ -52,6 +52,16 @@
       "factory_export": "createMarketingVideoGenerationLoopAdapter"
     },
     {
+      "adapter_id": "marketing-video-publication",
+      "loop_id": "marketing.video.publish",
+      "capability": "marketing.video.publish",
+      "effect_classes": [
+        "publish"
+      ],
+      "module_ref": "lib/marketing-video-publication-adapter.js",
+      "factory_export": "createMarketingVideoPublicationLoopAdapter"
+    },
+    {
       "adapter_id": "marketing-liveness-telegram",
       "loop_id": "marketing.liveness",
       "capability": "marketing.liveness.telegram",
