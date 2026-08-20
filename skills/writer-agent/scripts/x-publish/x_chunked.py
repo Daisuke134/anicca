@@ -1,10 +1,9 @@
 """Reliable X-Articles draft: type-and-chunk insertion (text chunk -> image -> text chunk -> ...).
 Guarantees image ORDER (cursor always at end; no racy block-index click). Fresh draft. NEVER publishes."""
-import os,time,json,subprocess,tempfile,sys
+import os,time,json,sys
 from playwright.sync_api import sync_playwright
+from browser_clipboard import browser_write_html, browser_write_image
 W=os.path.expanduser("~/.cloak/note-work")
-CLIP=os.environ["WRITER_X_CLIPBOARD_HELPER"]
-HOMEPY=sys.executable
 PARSED=os.environ["X_PARSED"]
 d=json.load(open(PARSED)); TITLE=d["title"]; THUMB=d.get("cover_image",""); html=d["html"]
 cis=sorted(d["content_images"], key=lambda c:c["block_index"])
@@ -23,11 +22,7 @@ chunks.append(("html",html[pos:]))
 print("chunks:",len(chunks),"images:",sum(1 for k,_ in chunks if k=='img'))
 
 DETECT="""()=>{const t=[...document.querySelectorAll('textarea')].find(e=>{const a=((e.getAttribute('aria-label')||'')+(e.placeholder||'')).toLowerCase();const b=e.getBoundingClientRect();return a.includes('title')||(b.height>40&&b.width>300&&b.y<700&&b.x>900);});if(!t)return null;const b=t.getBoundingClientRect();return {x:Math.round(b.x+b.width/2),y:Math.round(b.y+b.height/2)};}"""
-def clip_html(s):
-    f=tempfile.NamedTemporaryFile("w",suffix=".html",delete=False); f.write(s); f.close()
-    subprocess.run([HOMEPY,CLIP,"html","--file",f.name],capture_output=True)
-def clip_img(p): subprocess.run([HOMEPY,CLIP,"image",p],capture_output=True)
-p=sync_playwright().start(); b=p.chromium.connect_over_cdp("http://localhost:9222"); pg=b.contexts[0].new_page()
+p=sync_playwright().start(); b=p.chromium.connect_over_cdp(os.environ.get("WRITER_CDP_URL", "http://localhost:9222")); pg=b.contexts[0].new_page()
 def upwait():
     for _ in range(20):
         if not pg.evaluate("()=>/Uploading|アップロード|正在上传/.test(document.body.innerText)"): break
@@ -48,13 +43,13 @@ try:
     for k,v in chunks:
         if k=="html":
             if not v.strip(): continue
-            clip_html(v); pg.keyboard.press("Meta+v"); time.sleep(2.0)
+            browser_write_html(pg, v); pg.keyboard.press("Meta+v"); time.sleep(2.0)
         else:
             if not os.path.exists(v): print("img missing",v); continue
             n0=pg.evaluate("()=>document.querySelector('[data-testid=composer]').querySelectorAll('img').length")
             ok=False
             for attempt in range(3):
-                clip_img(v); time.sleep(0.4); pg.keyboard.press("Meta+v"); time.sleep(2.8); upwait()
+                browser_write_image(pg, v); time.sleep(0.4); pg.keyboard.press("Meta+v"); time.sleep(2.8); upwait()
                 if pg.evaluate("()=>document.querySelector('[data-testid=composer]').querySelectorAll('img').length")>n0:
                     ok=True; break
                 time.sleep(1.0)

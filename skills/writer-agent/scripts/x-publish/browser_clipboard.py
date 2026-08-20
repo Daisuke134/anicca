@@ -4,11 +4,58 @@
 from __future__ import annotations
 
 import argparse
+import base64
+import html as html_lib
 import json
+import mimetypes
+import re
 import shutil
 import subprocess
 import sys
 from pathlib import Path
+
+
+def _plain_text(value: str) -> str:
+    return " ".join(
+        html_lib.unescape(re.sub(r"<[^>]+>", " ", value)).split()
+    )
+
+
+def browser_write_html(page, value: str) -> None:
+    """Write rich content through the page's granted clipboard permission.
+
+    The launchd process has no reliable AppKit pasteboard server, while the
+    authenticated X page grants clipboard-write. Keeping the write in that
+    page avoids a second browser owner and preserves the existing Meta+V flow.
+    """
+    page.evaluate(
+        """async ({html, plain}) => {
+            const item = new ClipboardItem({
+                'text/html': new Blob([html], {type: 'text/html'}),
+                'text/plain': new Blob([plain], {type: 'text/plain'})
+            });
+            await navigator.clipboard.write([item]);
+        }""",
+        {"html": value, "plain": _plain_text(value)},
+    )
+
+
+def browser_write_image(page, path: str) -> None:
+    """Write one local image through the page's granted clipboard permission."""
+    image = Path(path)
+    payload = base64.b64encode(image.read_bytes()).decode("ascii")
+    mime = mimetypes.guess_type(image.name)[0] or "image/png"
+    page.evaluate(
+        """async ({data, mime}) => {
+            const raw = atob(data);
+            const bytes = new Uint8Array(raw.length);
+            for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+            const blob = new Blob([bytes], {type: mime});
+            const item = new ClipboardItem({[mime]: blob});
+            await navigator.clipboard.write([item]);
+        }""",
+        {"data": payload, "mime": mime},
+    )
 
 
 def run_jxa(source: str, arguments: list[str]) -> None:

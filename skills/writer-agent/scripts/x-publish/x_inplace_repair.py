@@ -26,6 +26,7 @@ _pii_sys.path.insert(0, str(next(
     if (_p / "_shared" / "pii_gate.py").is_file()
 )))
 from pii_gate import gate_files, gate_run_dir, gate_text  # noqa: E402,F401
+from browser_clipboard import browser_write_html, browser_write_image  # noqa: E402
 
 from typing import Any
 from urllib.parse import urlparse
@@ -543,44 +544,26 @@ class XBrowserAdapter:
             )
         return value
 
-    def _clipboard_html(self, value: str) -> None:
-        with tempfile.NamedTemporaryFile(
-            "w", suffix=".html", delete=False, encoding="utf-8"
-        ) as handle:
-            handle.write(value)
-            temporary = Path(handle.name)
+    def _clipboard_html(self, page, value: str) -> None:
         try:
-            result = subprocess.run(
-                [
-                    sys.executable,
-                    str(self.clipboard),
-                    "html",
-                    "--file",
-                    str(temporary),
-                ],
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-            if result.returncode != 0:
-                raise XRepairRefused("X HTML clipboard write failed")
-        finally:
-            temporary.unlink(missing_ok=True)
+            browser_write_html(page, value)
+        except Exception as error:
+            raise XRepairRefused(
+                f"X HTML clipboard write failed: {error}"
+            ) from error
 
-    def _clipboard_image(self, path: str) -> None:
-        result = subprocess.run(
-            [sys.executable, str(self.clipboard), "image", path],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        if result.returncode != 0:
-            raise XRepairRefused("X image clipboard write failed")
+    def _clipboard_image(self, page, path: str) -> None:
+        try:
+            browser_write_image(page, path)
+        except Exception as error:
+            raise XRepairRefused(
+                f"X image clipboard write failed: {error}"
+            ) from error
 
     def _paste_image_chunk(self, page, composer, path: Path) -> None:
         before = composer.locator("img").count()
         for attempt in range(3):
-            self._clipboard_image(str(path))
+            self._clipboard_image(page, str(path))
             page.wait_for_timeout(400)
             page.keyboard.press("Meta+v")
             for _ in range(30):
@@ -862,7 +845,7 @@ class XBrowserAdapter:
             if composer.inner_text().strip():
                 raise XRepairRefused("X composer did not clear deterministically")
             body_html = str(parsed.get("html", ""))
-            self._clipboard_html(body_html)
+            self._clipboard_html(page, body_html)
             page.keyboard.press("Meta+v")
             page.wait_for_timeout(3_000)
             normalized_body = " ".join(
