@@ -48,6 +48,13 @@ configured but not registered in the user GUI launchd domain because every readb
 and kick returns `141: Reentrancy avoided`; the direct wrapper evidence below does
 not promote this host scheduler to live.
 
+The installer and healthcheck now resolve the launchd manager context instead of
+assuming `gui/<uid>`: `Aqua` maps to `gui/<uid>` and `Background` maps to
+`user/<uid>`. An unavailable or unknown manager context fails closed with exit 75.
+On this host `launchctl managername` itself fails (`153`/`141`), so the helper
+correctly refuses to register or report a resident service until the bootstrap
+namespace is healthy.
+
 ### 1.1 `JOB-CANONICAL-MERGE-1`
 
 This completed canonicalization deliverable changed ownership and runtime wiring,
@@ -1107,6 +1114,11 @@ are supplied over the subprocess stdin and are not persisted. Explicit Bot API
 `ok:false` responses now become a retryable `failed` outbox state; timeouts, DNS
 failures and other ambiguous outcomes remain `send_started` and are never blindly
 retried.
+
+The launchd installer/healthcheck change is source-verified by shell syntax and 13
+canonical-runtime/launchd tests. It does not claim a live scheduler: the current
+host still requires a repaired user bootstrap context before `print`/`kickstart`
+can be re-run.
 
 ### 8.2 Outcome and attribution model
 

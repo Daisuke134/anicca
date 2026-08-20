@@ -4,11 +4,12 @@ set -euo pipefail
 SCRIPT_DIR="${0:A:h}"
 source "$SCRIPT_DIR/runtime-paths.sh"
 JOB_UID="$(id -u)"
+JOB_SEARCH_LAUNCHD_DOMAIN="$(job_search_launchd_domain "$JOB_UID")"
 
 for NAME in ai.anicca.job-search-daily ai.anicca.job-search-inbox ai.anicca.job-search-learning; do
   "$JOB_SEARCH_PLUTIL" -lint "$JOB_SEARCH_APP_ROOT/launchd/$NAME.plist" >/dev/null
   "$JOB_SEARCH_PLUTIL" -lint "$JOB_SEARCH_LAUNCH_AGENT_DIR/$NAME.plist" >/dev/null
-  STATUS=$("$JOB_SEARCH_LAUNCHCTL" print "gui/$JOB_UID/$NAME" | awk '
+  STATUS=$("$JOB_SEARCH_LAUNCHCTL" print "$JOB_SEARCH_LAUNCHD_DOMAIN/$NAME" | awk '
     /^[[:space:]]*state =/ {state=$3}
     /^[[:space:]]*last exit code =/ {exit_code=$5}
     END {printf "state=%s last_exit=%s", state, exit_code}

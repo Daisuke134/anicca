@@ -387,6 +387,7 @@ raise SystemExit(0)
             launchctl = bin_dir / "launchctl"
             launchctl.write_text(
                 "#!/bin/sh\n"
+                "if [ \"$1\" = managername ]; then printf 'Aqua\\n'; exit 0; fi\n"
                 f"printf '%s\\n' \"$*\" >> {calls}\n",
                 encoding="utf-8",
             )

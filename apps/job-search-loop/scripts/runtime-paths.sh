@@ -20,6 +20,24 @@ typeset -gx JOB_SEARCH_JQ="${JOB_SEARCH_JQ:-/usr/bin/jq}"
 typeset -gx JOB_SEARCH_PLUTIL="${JOB_SEARCH_PLUTIL:-/usr/bin/plutil}"
 typeset -gx JOB_SEARCH_LAUNCHCTL="${JOB_SEARCH_LAUNCHCTL:-/bin/launchctl}"
 typeset -gx JOB_SEARCH_OPENCLAW="${JOB_SEARCH_OPENCLAW:-/opt/homebrew/bin/openclaw}"
+
+job_search_launchd_domain() {
+  local uid_value="${1:-$(id -u)}"
+  local manager_name
+  manager_name="$("$JOB_SEARCH_LAUNCHCTL" managername 2>/dev/null)" || {
+    print -u2 "launchd manager context unavailable"
+    return 75
+  }
+  case "$manager_name" in
+    Aqua) print -r -- "gui/$uid_value" ;;
+    Background) print -r -- "user/$uid_value" ;;
+    *)
+      print -u2 "unsupported launchd manager context: $manager_name"
+      return 75
+      ;;
+  esac
+}
+
 if [[ -z "${AGENT_RUNNER_PROVIDER:-}" && -f "$JOB_SEARCH_INSTALL_CONFIG" ]]; then
   JOB_SEARCH_SELECTED_PROVIDER=$("$JOB_SEARCH_PYTHON" - \
     "$JOB_SEARCH_INSTALL_CONFIG" <<'PY'

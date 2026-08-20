@@ -8,6 +8,10 @@ UID_VALUE="$(id -u)"
 mkdir -p "$JOB_SEARCH_LAUNCH_AGENT_DIR" "$JOB_SEARCH_STATE_ROOT/logs"
 chmod 700 "$JOB_SEARCH_STATE_ROOT" "$JOB_SEARCH_STATE_ROOT/logs"
 
+if [[ "${JOB_SEARCH_SKIP_LAUNCHCTL:-0}" != "1" ]]; then
+  JOB_SEARCH_LAUNCHD_DOMAIN="$(job_search_launchd_domain "$UID_VALUE")"
+fi
+
 if [[ "${JOB_SEARCH_SKIP_BOOTSTRAP:-0}" != "1" ]]; then
   "$JOB_SEARCH_APP_ROOT/scripts/bootstrap-framework.sh"
 fi
@@ -41,8 +45,8 @@ done
 
 if [[ "${JOB_SEARCH_SKIP_LAUNCHCTL:-0}" != "1" ]]; then
   for name in ai.anicca.job-search-daily ai.anicca.job-search-inbox ai.anicca.job-search-learning; do
-    "$JOB_SEARCH_LAUNCHCTL" bootout "gui/$UID_VALUE/$name" 2>/dev/null || true
+    "$JOB_SEARCH_LAUNCHCTL" bootout "$JOB_SEARCH_LAUNCHD_DOMAIN/$name" 2>/dev/null || true
     "$JOB_SEARCH_LAUNCHCTL" bootstrap \
-      "gui/$UID_VALUE" "$JOB_SEARCH_LAUNCH_AGENT_DIR/$name.plist"
+      "$JOB_SEARCH_LAUNCHD_DOMAIN" "$JOB_SEARCH_LAUNCH_AGENT_DIR/$name.plist"
   done
 fi
