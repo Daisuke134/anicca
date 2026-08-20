@@ -196,14 +196,14 @@ validated `current` publisher, stable plist rendering, continuous-owner migratio
 watcher when launchd readback is unavailable. The real watcher published
 `current -> 6e1ac2850ea5...` and naturally started Negotiate, Storefront and Paid through `current`;
 Storefront then produced a second natural `current` start and Paid produced a second natural receipt.
-Apply remains on the legacy loaded definition `05b75fc29` even though the published pointer is
-`current -> 32c516870095...`. Its periodic business pass exits, but the short brake-report process is
-also matched by `is_running`, so the watcher repeatedly calls it “still mid-pass” and never performs
-the one-time stable-definition migration. The existing bounded Apply brake produces durable
-`status: operator_brake / effect: 0` receipts and creates a safe migration window. The next slice must
-recognize only that exact brake-only PID/receipt as safe to replace, load the fixed `current` plist
-once, release the brake, and prove two natural Apply starts with no `05b75fc29` respawn. Negotiate,
-Storefront and Paid already run through `current`.
+Commit `7f6e44d4f` restricts the exceptional migration path to an exact Apply PID whose latest durable
+receipt is `status: operator_brake / effect: 0`. At the next real watcher tick, the release controller
+published `current -> 7f6e44d4f...`, replaced the legacy `05b75fc29` definition once and read the
+loaded Apply command back as `/current/.../gig_disk_guard.py`. The brake was then released. Apply's
+first post-migration natural business start, PID 90319, resolved both `application_direct.py` and
+`agent_runner.py` through `/current/`; the active pass was left untouched. One further natural Apply
+start and the absence of any `05b75fc29` respawn remain before this acceptance item is closed.
+Negotiate, Storefront and Paid already run through `current`.
 
 #### A. Restore safe operating headroom
 
