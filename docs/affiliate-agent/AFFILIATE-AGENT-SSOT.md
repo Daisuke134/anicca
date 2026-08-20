@@ -1767,7 +1767,8 @@ receipt readback, SSOT state update, commit, and push to both canonical remotes.
 ##### C — Make costs, FX, and rolling net canonical
 
 - [ ] **C01** Define immutable bill records for model, browser/tool, hosting,
-  channel, provider, and paid-distribution cash charges.
+  channel, provider, and paid-distribution cash charges, plus an explicit
+  complete-window coverage receipt for the canonical cost ledger.
 - [ ] **C02** Ingest only real invoice/API/bank bill amounts; store usage estimates
   separately and preserve missing cash cost as `unknown`.
 - [ ] **C03** Join each attributable bill to run, campaign, placement, or shared
