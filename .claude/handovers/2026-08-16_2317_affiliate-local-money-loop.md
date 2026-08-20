@@ -8,9 +8,9 @@
 ## Current measured truth
 
 - Six Affiliate launchd plists exist: three keep-alive browser owners and source/composition/money jobs at 600-second intervals. CDP `9324`, `9326`, and `9327` each returned HTTP `200`; authenticated tabs showed ElevenLabs home, one exact Affiliate X status, and Impact home.
-- The canonical ledger contains **13 dedicated-link placements**, **13 owned public URLs**, and **30 provider-link clicks**. The latest per-link transition is `+1` on the subtitle-translator placement; the aggregate provider metric is 41 clicks with `+40` explicitly unattributed. Neither is money.
+- The canonical ledger contains **13 dedicated-link placements**, **13 owned public URLs**, and **32 provider-link clicks**. The latest poll appended `+1` to music and `+1` to voice-cloning; the aggregate provider metric is 41 clicks with `+40` explicitly unattributed. Neither is money.
 - PartnerStack/ElevenLabs is `AUTHENTICATED`; the latest official capture has `commission_row_count=0`, `NO_LIVE_ROWS`, currency display `USD`, tax registration required, and payment-provider selection required. Pending/approved/paid/reversed are therefore zero observed rows. Approved-or-paid net is **USD 0**. Unknown real costs remain unknown.
-- Telegram outbox and sent ledger are both 97 rows after the owner retry; the tiktok `PLACEMENT_LIVE` event was sent by the existing owner as provider message `26004`, and no pending event is currently visible.
+- Telegram outbox has 98 rows and sent ledger has 97. The tiktok `PLACEMENT_LIVE` event was sent by the existing owner as provider message `26004`; the newest `CLICK_DELTA` event is pending after `SEND_TIMEOUT_UNKNOWN` with no message ID.
 - The first audit-shell DNS readback failed, so those earlier receipts were not
   promoted to public proof. After the owner resumed, independent DNS-resolved
   readback at `2026-08-20T09:01:49Z` returned HTTP 200 for the music owned page,
@@ -237,12 +237,24 @@ remained `2250d31a6`, the ledger remained 13 placements, and DNS-resolved public
 readback returned HTTP 200 with the expected owned title/disclosure/link marker
 and X status marker. Telegram outbox/sent are both 97 rows with no pending row.
 
-The latest official PartnerStack artifact remains empty (`commission_row_count=0`,
-`NO_LIVE_ROWS`, `payout_row_state=EMPTY`, `generic_transaction_id_available=false`,
-artifact SHA-256 `6bb1c9…`). The canonical placement ledger records 30
-provider-link clicks, while aggregate provider metrics show 41 clicks with `+40`
-unattributed; no click is money. There are zero official pending/approved/paid/
-reversed transaction rows, approved-or-paid net is USD `0`, and real billed cost
-is `UNKNOWN`. The next atomic item is B01: let the existing owner capture a
-non-empty official transaction/settlement artifact and join it replay-safely to
-one exact placement; no estimate or pending value can advance the $10,000 gate.
+The `10:31` checkpoint's official PartnerStack artifact was empty
+(`commission_row_count=0`, `NO_LIVE_ROWS`, `payout_row_state=EMPTY`,
+`generic_transaction_id_available=false`, artifact SHA-256 `6bb1c9…`). At that
+checkpoint the canonical placement ledger recorded 30 provider-link clicks,
+while aggregate provider metrics showed 41 clicks with `+40` unattributed; no
+click was money. There were zero official pending/approved/paid/reversed
+transaction rows, approved-or-paid net was USD `0`, and real billed cost was
+`UNKNOWN`.
+
+The next cooldown-eligible owner wake at `2026-08-20T10:43:22Z` refreshed the
+official PartnerStack report at `10:43:19Z`: `commission_row_count=0`,
+`payout_row_state=EMPTY`, `normalizer_state=NO_LIVE_ROWS`, artifact SHA-256
+`a0cf2e5d2924069a1e4d0fd534506fa9b3b9f680debb6b763ca180d7c59495ca`.
+Reconciliation remained `NO_TRANSACTIONS` with source rows `0`, appended
+transitions `0`, and replayed transitions `0`. The canonical ledger now has 32
+provider-link clicks and zero transaction rows; aggregate metrics remain 41 with
+`+40` unattributed. The owner appended one new durable `CLICK_DELTA` event for
+the music/voice-cloning deltas, then its Telegram send returned
+`SEND_TIMEOUT_UNKNOWN` without a provider message ID; outbox is 98, sent is 97,
+and the event remains pending for the next existing-owner retry. Approved-or-paid
+net is USD `0`; real billed cost is `UNKNOWN`; B01 remains open.
