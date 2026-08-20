@@ -162,7 +162,7 @@
   "last_validation": {
     "release_sha": "41140e53b7b5f6f0e63ca6751d38a1faa368ee68",
     "current_release": "/Users/anicca/gig/releases/life-manager/current",
-    "activate": "current symlink points to full-repo release 41140e53b7b5f6f0e63ca6751d38a1faa368ee68; Writer tree matches source runtime commit 41140e53b7b5f6f0e63ca6751d38a1faa368ee68; all bootstrap/readback attempts failed with rc=141 Reentrancy avoided",
+    "activate": "current symlink points to the immutable full-repo release published by the watcher; Writer tree matches source runtime commit 41140e53b7b5f6f0e63ca6751d38a1faa368ee68; all bootstrap/readback attempts failed with rc=141 Reentrancy avoided",
     "bounded_wake": {
       "creator_rc": 0,
       "resume_rc": 0,
