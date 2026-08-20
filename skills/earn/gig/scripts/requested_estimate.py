@@ -63,7 +63,7 @@ NA15_CATEGORY_IDS = {
 }
 
 SEMANTIC_RECEIPT_VERSION = 1
-SEMANTIC_PROMPT_VERSION = "reply-negotiate-v17"
+SEMANTIC_PROMPT_VERSION = "reply-negotiate-v18"
 SEMANTIC_RUNNER_PROFILE = "reply-semantic-agent"
 SEMANTIC_COMPATIBLE_RUNNER_PROFILES = frozenset({
     "composition-agent", SEMANTIC_RUNNER_PROFILE,
@@ -167,6 +167,7 @@ def semantic_prompt(
 必須規則:
 - next_actionはreply/send_estimate/clarify/wait/stopの1つ。seller-lastは単なる最新roleの別名ではなく、未処理のbuyer actionが残っていない状態だけです。まず全current cycleを読み、未処理の購入・見積送付承認がないか確認します。
 - buyerが購入または見積送付を承認済みなら、その後のsellerの確認・感謝・謝罪は承認を消しません。この場合conversation_state=seller_lastやnext_action=waitにせず、必要条件が揃えばready_to_buy/send_estimateにします。seller-lastで新しいreply/clarifyは作りません。
+- sellerが「見積りを送る」「見積ります」「お待ちください」等、公式見積りの後続送信を約束し、buyerが価格・内容を承認済みで、その約束後のstructured official estimate cardがverified_official_contextに存在しない場合、その約束は未履行です。最新roleがsellerでもseller_last/waitにせず、会話全体のbuyer根拠からsend_estimateにします。表層語だけで判断せず、約束済みの価格・内容・数量・納期・購入プランが一意な場合だけ適用します。
 - conversation_state=seller_lastは未処理buyer actionが本当に0の時だけで、evidence_message_idsは必ず空配列です。buyer evidenceを1件でも判断根拠に残すならseller_lastを返してはいけません。
 - send_estimateはbuyerが現在のcycleで購入または見積り送付を承認し、title、内容、数量、合計価格、購入プラン、購入起点の納期が一意な場合だけです。各fieldへ根拠buyer message IDを付けます。別cycleを混ぜません。
 - buyerが公式の見積り提案送付を明示的に求め、必要条件が一意ならnext_action=send_estimateです。金額・内容・納期を通常reply_bodyへ書いて見積り送付の代わりにしてはいけません。条件が不足する場合だけclarifyまたはrequired_official_contextで補います。

@@ -167,15 +167,15 @@
       ]
     },
     "reply-semantic-agent": {
-      "route": "luna-medium-reply-semantic-with-provider-fallback",
+      "route": "luna-max-reply-semantic",
       "token_reservation": 16384,
       "timeout_seconds": 240,
       "candidates": [
         {
           "provider": "codex",
           "model": "gpt-5.6-luna",
-          "effort": "medium",
-          "timeout_seconds": 120
+          "effort": "max",
+          "timeout_seconds": 240
         }
       ]
     },

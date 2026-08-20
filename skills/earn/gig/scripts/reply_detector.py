@@ -1182,7 +1182,10 @@ def _run_effect_pipeline(
         semantic_ready = bool(
             isinstance(semantic_receipt, dict)
             and semantic_failure is None
-            and inquiry.get("last_message_side") == "buyer"
+            and (
+                inquiry.get("last_message_side") == "buyer"
+                or next_action in _TARGETED_ESTIMATE_ACTIONS
+            )
             and next_action in (_TARGETED_SEND_ACTIONS | _TARGETED_ESTIMATE_ACTIONS)
         )
         no_send = next_action in _TARGETED_INTENTIONAL_NO_SEND
@@ -1691,8 +1694,6 @@ async def supervise_replies(
             if (
                 _TARGETED_THREAD_ID.fullmatch(thread_id) is None
                 or not re.fullmatch(r"[0-9a-f]{64}", identity)
-                or row.get("last_message_side") == "seller"
-                or not (row.get("unread") is True or row.get("reply_required") is True)
             ):
                 continue
             event_key = coconala_inbox_event_key(thread_id, identity)
