@@ -216,8 +216,16 @@ The order to the end is:
    the copied runner summary still pointed at its deleted temporary result. Promotion now resolves
    relative paths inside staging only and rewrites `result_path` to the copied durable evidence file;
    both fixes preserve the physical read fence and keep buyer-visible effect at zero on failure.
-   Live corrected v5 review, one delivery effect, exact-room official readback and replay zero remain
-   to be proved.
+   The corrected v5 was promoted and independently reviewed, but the reviewer rejected incomplete
+   source correspondence in both layouts: omitted/changed source copy and modifiers, missing
+   testimonial illustrations/final CTA, and whole infographic images embedded instead of isolated
+   supplied illustration regions. The isolated loop produced v6 from that class-wide finding; its
+   hash-bound package and manifest promoted successfully, proving the handoff fixes. Fresh review
+   rejected v6 before delivery because its SVG/PDF files were raster wrappers around repeated source
+   PNG sections rather than editable vector reconstruction, and its responsive layout merely scaled
+   the PC raster instead of reflowing it. The same live controller persisted that complete finding
+   and launched isolated v7 production automatically. v7 fresh review, one delivery effect,
+   exact-room official readback and replay zero remain to be proved.
 6. **Prove 24/7 control-plane durability.** Browser, Apply, Negotiate, Storefront and Paid must each
    survive process exit and start again from the immutable release. The current shell cannot read
    the launchd domain (`launchctl` returns 141, `Reentrancy avoided`), although browser CDP and new
