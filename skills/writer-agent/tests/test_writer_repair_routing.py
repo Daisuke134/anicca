@@ -53,6 +53,12 @@ def test_content_rejection_is_read_from_the_signature_when_the_reason_is_terse()
     ) == "publisher-content-rejection"
 
 
+def test_substack_identity_conflict_is_a_known_publisher_gate() -> None:
+    assert QUEUE._classification(
+        "destination:substack/en", "substack-publication-identity-conflict"
+    ) == "publisher-identity"
+
+
 def test_credential_and_rate_limit_classes_still_win_over_content_rejection() -> None:
     """403 and 429 are 4xx too; the pre-existing precise classes must not regress."""
     assert QUEUE._classification(

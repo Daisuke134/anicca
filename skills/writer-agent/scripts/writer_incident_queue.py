@@ -86,6 +86,14 @@ def _classification(phase: str, reason: str, signature: str = "") -> str:
         return "rate-limit"
     if _is_publisher_content_rejection(phase, lowered):
         return "publisher-content-rejection"
+    # A publisher identity mismatch is a deterministic destination gate, not
+    # an unknown process failure.  Keeping it precise prevents every tick from
+    # spending a Terra investigation on a lane that must simply remain pending
+    # until its configured publisher identity is repaired.
+    if phase.startswith("destination:") and (
+        "publication-identity-conflict" in lowered or "identity conflict" in lowered
+    ):
+        return "publisher-identity"
     if any(token in lowered for token in ("editor", "anchor", "selector", "dom")):
         return "DOM/selector"
     if "timeout" in lowered or "heartbeat" in lowered:
@@ -111,6 +119,7 @@ DESTINATION_IDENTITY_SCHEME = "run+artifact+destination+failure_class"
 # failures on the same destination.
 SUPERSEDED_FAILURE_CLASSES: dict[str, tuple[str, ...]] = {
     "publisher-content-rejection": ("process",),
+    "publisher-identity": ("process",),
 }
 
 

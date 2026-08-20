@@ -3,6 +3,13 @@
   "version": 1,
   "runbooks": [
     {
+      "runbook_id": "publisher-identity-v1",
+      "version": 1,
+      "match": {"classification": "publisher-identity"},
+      "mode": "read-only-plan",
+      "command": ["python3", "{scripts}/publication_resume.py", "--state", "{run_dir}/gates/publication-state.json", "--ledger", "{state_dir}/articles.jsonl", "worker-plan"]
+    },
+    {
       "runbook_id": "publication-plan-v1",
       "version": 1,
       "match": {"classification": "publication-readback"},
