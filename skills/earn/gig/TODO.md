@@ -136,6 +136,9 @@ The order to the end is:
    would otherwise wait two hours. The continuous supervisor now probes only
    `submit_rejected_sending_unavailable` blocks and revives one immediately only when the exact
    source identity is unchanged and the official send-unavailable marker is explicitly false.
+   The server still rejected action 304 despite that marker, so proof-triggered immediate revives
+   stop after three attempts; later retries return to the durable exponential-backoff owner instead
+   of burning sends every 30 seconds.
    Completion still requires a
    durable disposition for every buyer-authored message: replied with official readback, estimate
    sent with official readback, intentionally no-send with a bounded policy reason, or still pending
