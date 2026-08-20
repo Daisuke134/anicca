@@ -40,6 +40,15 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
   稼働証拠とは扱わない。fresh adversarial reviewも、Noteの実receiptは認めたが、Substack
   identity未設定のままの再開をNO-GOとした。従って現在の結論は「需要→queueとNote JAの
   native receiptは実証済み、4 destinationの毎日公開と収益loopは未完了」である。
+- 認証profileの実API readbackは、現在owner publicationが`aniccabuddha`の1件だけである。
+  正規bundleが示す`POST /api/v1/publication`と、利用可能性を返す
+  `/api/v1/check_subdomain?subdomain=...`を確認した。英語候補`aniccaglobal`は利用可能だったが、
+  作成POSTは1回だけ実行してHTTP 401（追加CAPTCHA認証）で拒否された。exact hostのGETは404、
+  profileはpublication 1件のままであり、作成済みとは扱わない。再POSTやCAPTCHA回避はしない。
+- plannerが同一host stateを`IDLE`として隠さないよう、`article_pending.py`は有効runが無い場合に
+  `status=BLOCKED`、`reason=invalid-incomplete-run`、`blocked_runs[*].reason=
+  substack-publication-identity-conflict`を返すようにした。これで既存Coconala型の周期laneと
+  自然文報告が、停止理由を捨てずに次の一手へ渡せる。
 
 ### 2026-08-21 latest Coconala parity recovery
 
@@ -247,7 +256,7 @@ publication identity、読者、payout、ledgerを分ける。
 | 2 | DNSまたは承認済みnetwork transportを復旧 | 通常DNSは失敗。1.1.1.1解決＋`curl --resolve`ではNote／Substack／XがHTTP 200。publisher実行経路の再読戻しは未確認 | 一部完了 |
 | 3 | Writer runtimeを`skills/writer-agent`へ移しmanifestを生成 | SHA付きpath census、Life Manager current release、実行時の旧root read=0 | 完了（launchd readbackは別TODO。履歴・互換文字列のcensus 0ではない） |
 | 4 | demand→artifact→publisher adapterを同じstate schemaへ接続 | TECHi本文のtransport-success/interstitialを7日以内のhash検証済み外部receiptへbounded reuseするfocused checkはPASS。実時刻claim receiptは`READY_WITH_SOURCE_OUTAGE`、queue `0→1`、有効なpaid-demand cardを確認 | 完了（artifact消費は次の未完run） |
-| 5 | Note/Substack/Xの実公開とreadbackを同一runで完了 | 同一runにNote JA、Substack JA、X Article JA、誤って同一hostのSubstack EN intentが残る。初期化gateは別`SUBSTACK_PUBLICATION_EN`必須へ修正済み。別publicationの実host/credentialが未設定のため native URL/readbackは未確認 | ブロッカー（EN identity） |
+| 5 | Note/Substack/Xの実公開とreadbackを同一runで完了 | 同一runにNote JAのnative live receiptと、Substack JA/EN・X Article JAのintentが残る。旧stateの同一hostはplannerがBLOCKEDとして明示する。`aniccaglobal`作成POSTはCAPTCHA要求のHTTP 401で未作成、別publicationの実host/credentialと新EN draftが未設定 | ブロッカー（EN publicationのCAPTCHA） |
 | 6 | payment/publisher receipt collectorとmoney ledgerを接続 | artifact-level receipt | 未着手 |
 | 7 | neutral Telegram rendererを日次・失敗・完了へ接続 | message ID `26075`/`26087` + semantic hash | 一部完了 |
 | 8 | adversarial verifierで重複公開・誤金額・偽URL・secret漏洩を反証 | fresh reviewでNote native receiptを確認し、Substack同一host／EN credential欠落をNO-GOとして反証。identity gateはcurrent releaseへ反映済み | 完了（別EN identity設定後に再検証） |

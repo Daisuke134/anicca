@@ -290,6 +290,7 @@ def plan_oldest(state_root: Path, now: datetime) -> dict[str, Any]:
 
     ledger = state_root / "articles.jsonl"
     discovered: list[tuple[dict[str, Any], dict[str, Any]]] = []
+    blocked_runs: list[dict[str, str]] = []
     for state_path in sorted((state_root / "runs").glob("*/gates/publication-state.json")):
         run_dir = state_path.parent.parent
         try:
@@ -298,6 +299,31 @@ def plan_oldest(state_root: Path, now: datetime) -> dict[str, Any]:
             if worker_plan.get("resumable") is not True:
                 initialization = store.initialization_plan()
                 if initialization.get("initializable") is not True:
+                    blocked_reason = str(
+                        initialization.get(
+                            "reason", "run-or-draft-boundary-invalid"
+                        )
+                    )
+                    try:
+                        raw_state = json.loads(
+                            state_path.read_text(encoding="utf-8")
+                        )
+                        identities = raw_state.get("destination_identities", {})
+                        if (
+                            isinstance(identities, dict)
+                            and identities.get("substack/ja")
+                            and identities.get("substack/ja")
+                            == identities.get("substack/en")
+                        ):
+                            blocked_reason = "substack-publication-identity-conflict"
+                    except (OSError, TypeError, json.JSONDecodeError):
+                        pass
+                    blocked_runs.append(
+                        {
+                            "run_id": run_dir.name,
+                            "reason": blocked_reason,
+                        }
+                    )
                     continue
                 worker_plan = {
                     "resumable": False,
@@ -313,9 +339,18 @@ def plan_oldest(state_root: Path, now: datetime) -> dict[str, Any]:
                 }
             state = store.read()
         except Exception:
+            blocked_runs.append(
+                {"run_id": run_dir.name, "reason": "state-read-failed"}
+            )
             continue
         discovered.append((worker_plan, state))
     if not discovered:
+        if blocked_runs:
+            return {
+                "status": "BLOCKED",
+                "reason": "invalid-incomplete-run",
+                "blocked_runs": blocked_runs,
+            }
         return {"status": "IDLE", "reason": "no-valid-incomplete-run"}
 
     # Today's run comes first: an older stuck run must never starve today's
