@@ -1017,7 +1017,45 @@ def advance_generic_publication(
     x_publisher = x_publisher or default_x_publisher
     link_acquirer = link_acquirer or elevenlabs_link_action
     completed = False
-    for policy_path in sorted((state / "campaign-policy").glob("*.json")):
+
+    def publication_priority(policy_path):
+        """Resume an in-flight owned publication before opening another one.
+
+        A public deploy can be delivered before its CDN readback becomes
+        observable.  If a newly sorted campaign acquires a link first, its
+        placement-link gate can return early forever and starve the delivered
+        publication's reconciliation.  Existing effect receipts make this
+        ordering replay-safe; no new external effect is introduced here.
+        """
+        plan_id = policy_path.stem
+        try:
+            progress = json.loads((
+                state / "campaign-publications" / f"{plan_id}.json"
+            ).read_text(encoding="utf-8"))
+        except (OSError, ValueError, json.JSONDecodeError):
+            progress = {}
+        try:
+            handoff = json.loads((
+                state / "campaign-handoffs" / f"{plan_id}.json"
+            ).read_text(encoding="utf-8"))
+        except (OSError, ValueError, json.JSONDecodeError):
+            handoff = {}
+        slug = progress.get("slug") or handoff.get("slug")
+        try:
+            owned = json.loads((
+                state / "owned-publications" / f"{slug}.json"
+            ).read_text(encoding="utf-8")) if slug else {}
+        except (OSError, ValueError, json.JSONDecodeError):
+            owned = {}
+        in_flight = (
+            progress.get("state") in {"MATERIALIZED", "OWNED_NOT_LIVE", "OWNED_LIVE"}
+            or owned.get("state") in {"INTENT", "DELIVERED", "LIVE"}
+        )
+        return (0 if in_flight else 1, policy_path.name)
+
+    for policy_path in sorted(
+        (state / "campaign-policy").glob("*.json"), key=publication_priority,
+    ):
         plan_id = policy_path.stem
         # A campaign whose placement is already live is finished, so its policy
         # and handoff receipts no longer gate anything. Validating them first
