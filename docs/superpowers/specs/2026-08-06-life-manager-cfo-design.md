@@ -957,6 +957,11 @@ and zero Moneytree completion events. Therefore no current hourly CFO Telegram f
 remains open until the existing launchd label runs one real Moneytree pass and a positive current provider message ID
 plus hourly path/schedule read-back are verified; no logout, reboot, or OS-service restart is part of this recovery.
 
+The post-fix install remains read-back clean (`plutil -lint` PASS and the stable wrapper `bash -n` PASS), but
+`launchctl list ai.anicca.life-manager-cfo-hourly` still returns 141. A non-interactive root attempt is not available
+because `sudo` reports that uid 501 does not exist in the passwd database; a localhost login context reports the same
+missing uid. No account-directory mutation, logout, reboot, or OS-service restart is part of this recovery.
+
 Deferred after M1 by explicit owner decision: Binance Spot, trade history, Earn/funding sources, and their tax-lot
 ingestion. They are not unchecked M1 items and cannot become the active CFO item before CFO-1i closes.
 
