@@ -410,3 +410,13 @@ returned `141: Reentrancy avoided`; `last-run.ts` and the official report did
 not advance. No fourth launcher, manual provider capture, OS-service restart,
 or public effect was created. This is the current external launchd observation
 gate; B01 and the USD 10,000 threshold remain open.
+
+Commit `b348a933fcb406216923add8945c2b6b89af4022` adds typed, retryable
+`ACQUISITION_DECISION_FAILURE` receipts for pin rejection, budget block (exit
+`75`), invalid config (exit `2`), timeout, and runner start failure, plus a
+stable `ACQUISITION_DECISION_FAILED` Telegram event with no public or money
+claim. Isolated temporary-state fixtures passed all classifications and
+same-failure dedupe. The canonical installer switched current to this release,
+but its browser bootstrap again stopped at `141: Reentrancy avoided`; the
+existing READY baseline receipt remains unchanged and no artificial failure
+receipt or manual owner run was created.
