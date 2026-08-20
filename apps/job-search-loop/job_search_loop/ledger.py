@@ -936,11 +936,15 @@ class Ledger:
     ) -> None:
         from_state = self.current_state(application_id)
         validate_transition(from_state, to_state)
+        # Some durable private ledgers enforce that the latest event already
+        # names the target state before applications.current_state is updated.
+        # Append first inside this transaction; rollback keeps both tables
+        # atomic if the state update fails.
+        self._append_event(application_id, from_state, to_state, payload)
         self.connection.execute(
             "UPDATE applications SET current_state = ? WHERE id = ?",
             (to_state, application_id),
         )
-        self._append_event(application_id, from_state, to_state, payload)
 
     def transition(
         self,

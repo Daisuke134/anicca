@@ -107,6 +107,29 @@ class LedgerTests(unittest.TestCase):
         )
         self.assertEqual(len(self.ledger.events(self.application_id)), 3)
 
+    def test_transition_supports_existing_state_requires_event_trigger(self):
+        self.ledger.connection.executescript(
+            """
+            CREATE TRIGGER applications_state_requires_event_test
+            BEFORE UPDATE OF current_state ON applications
+            WHEN NEW.current_state != (
+                SELECT to_state FROM events
+                WHERE application_id = OLD.id ORDER BY rowid DESC LIMIT 1
+            )
+            BEGIN
+                SELECT RAISE(ABORT, 'application state requires matching event');
+            END;
+            """
+        )
+        try:
+            self.ledger.transition(self.application_id, "qualified")
+        finally:
+            self.ledger.connection.execute(
+                "DROP TRIGGER applications_state_requires_event_test"
+            )
+        self.assertEqual(self.ledger.current_state(self.application_id), "qualified")
+        self.assertEqual(self.ledger.events(self.application_id)[-1]["to_state"], "qualified")
+
     def test_daily_quota_counts_submitted_and_unknown(self):
         self._ready()
         first = self._claim(
