@@ -594,3 +594,15 @@ Codex did not rewrite that mutable receipt. The next JST-day sweep should use
 the installed DOM fallback and clear the stale false negatives. B01 remains
 open: the official PartnerStack report still has zero commission rows and no
 transaction/settlement ID that can be joined to a placement.
+
+The following existing-owner wake completed that handoff at
+`2026-08-20T14:23:46Z`. The same Instagram job promoted the owned receipt to
+`LIVE`, published one X post with an exact readback, and sent Telegram message
+`26282`; no replacement placement, link, or post was created. The canonical
+ledger is now 14 placements, 14 owned public URLs, 32 provider-link clicks, and
+zero approved/paid/pending/reversed commission rows. Revenue remains
+`NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`, actual cost and
+coverage remain `UNKNOWN`, and no Telegram event is pending. P0 publication
+handoff is closed; B01 is the next atomic task: wait for a non-empty official
+PartnerStack transaction/settlement row and exact-join it replay-safely to one
+of these placements.
