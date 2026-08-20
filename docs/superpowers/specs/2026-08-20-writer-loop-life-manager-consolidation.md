@@ -56,6 +56,8 @@
 - `2026-08-20T22:34:12Z`のcurrent release実行receiptは空き容量`4,474,318,848` bytes、要求
   `5,368,709,120` bytesでdisk floor blocked、rc=0、lock=absentだった。既存Coconala parityのdisk guardを
   overrideせず、この記事公開は安全に停止している。保護対象を削除して空きを作ることはしない。
+- `2026-08-20T22:43:23Z`のrelease `901be512b`からのresumeも空き容量`4,345,827,328` bytesで同じ
+  floor blocked、rc=0、lock=absentを返した。disk floorを迂回する公開は行っていない。
 - `daily-2026-08-20` のX Articleは、原稿内の相対 `headline-image.png` / `body-diagram.png` 重複が
   `prepared/`で欠損扱いになる根因を `prep-x-md.py` で修正した。なお本当にimmutable画像が欠ける場合は、
   同一X編集URLの認証付き `not-live` readback、identity一致、ledger/journalの無作用、同一lock内のintent再確認を
