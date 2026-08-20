@@ -605,8 +605,19 @@ PROMPT="${PROMPT//8547730585/$TELEGRAM_TARGET_ID}"
 # runs. Resolve those instructions to the immutable Life Manager release before the model sees
 # them, so a fresh run never reads outside ARTICLE_ROOT.
 LEGACY_WRITING_CRAFT_ROOT="$HOME/$(printf 'profitable-%s' 'claude')/skills/writing-craft"
-PROMPT="${PROMPT//${LEGACY_WRITING_CRAFT_ROOT}\/CRAFT.md/$ARTICLE_ROOT\/reference\/CRAFT.md}"
-PROMPT="${PROMPT//${LEGACY_WRITING_CRAFT_ROOT}\/formats\/article.md/$ARTICLE_ROOT\/reference\/formats\/article.md}"
+LEGACY_WRITING_CRAFT_LITERAL_ROOT='~/profitable-claude/skills/writing-craft'
+LEGACY_CRAFT_FILE="${LEGACY_WRITING_CRAFT_ROOT}/CRAFT.md"
+LEGACY_ARTICLE_FORMAT_FILE="${LEGACY_WRITING_CRAFT_ROOT}/formats/article.md"
+LEGACY_LITERAL_CRAFT_FILE="${LEGACY_WRITING_CRAFT_LITERAL_ROOT}/CRAFT.md"
+LEGACY_LITERAL_ARTICLE_FORMAT_FILE="${LEGACY_WRITING_CRAFT_LITERAL_ROOT}/formats/article.md"
+CURRENT_CRAFT_FILE="$ARTICLE_ROOT/reference/CRAFT.md"
+CURRENT_ARTICLE_FORMAT_FILE="$ARTICLE_ROOT/reference/formats/article.md"
+# Replace both expanded and literal legacy paths. The prompt is single-quoted above, so
+# parameter expansion is the last safe compatibility boundary before the immutable prompt file.
+PROMPT="${PROMPT//$LEGACY_CRAFT_FILE/$CURRENT_CRAFT_FILE}"
+PROMPT="${PROMPT//$LEGACY_ARTICLE_FORMAT_FILE/$CURRENT_ARTICLE_FORMAT_FILE}"
+PROMPT="${PROMPT//$LEGACY_LITERAL_CRAFT_FILE/$CURRENT_CRAFT_FILE}"
+PROMPT="${PROMPT//$LEGACY_LITERAL_ARTICLE_FORMAT_FILE/$CURRENT_ARTICLE_FORMAT_FILE}"
 # self-heal L2 (spec #22): append-only, same technique as above -- if ensure_browser.sh could
 # not bring the shared daily-driver back, tell the pass to degrade gracefully (skip the
 # browser-dependent platforms and report why) instead of failing blind on every step that
