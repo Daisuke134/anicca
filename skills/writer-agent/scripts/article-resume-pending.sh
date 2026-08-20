@@ -21,6 +21,10 @@ LOCK_OWNER_FILE="$LOCK_DIR/owner.pid"
 # Without this export a launchd worker can fall back to an empty compatibility
 # directory when the model invokes scripts/run.sh.
 ARTICLE_SKILL_DIR="$ARTICLE_ROOT"
+# Always propagate the resolved external state root. When ARTICLE_STATE_DIR is
+# unset in a launchd environment, exporting the still-empty parameter leaves
+# nested managed publishers to fall back to the immutable release's state/.
+ARTICLE_STATE_DIR="$STATE_DIR"
 export ARTICLE_ROOT ARTICLE_STATE_DIR STATE_DIR ARTICLE_SKILL_DIR
 mkdir -p "$(dirname "$LOG")"
 
