@@ -35,7 +35,17 @@ python3 "$DIR/pii-gate.py" --stage publish-substack "$MD_FILE" >&2 || exit $?
 set -a; . "$HOME/.openclaw/.env" 2>/dev/null; set +a
 [[ -n "${SUBSTACK_SESSION_COOKIE:-}" ]] || { echo "FATAL: SUBSTACK_SESSION_COOKIE missing in ~/.openclaw/.env" >&2; exit 2; }
 
-PUBLICATION="${SUBSTACK_PUBLICATION:-aniccabuddha.substack.com}"
+case "${ARTICLE_PUBLISH_PAIR:-}" in
+  substack/ja)
+    PUBLICATION="${SUBSTACK_PUBLICATION_JA:-${SUBSTACK_PUBLICATION:-aniccabuddha.substack.com}}"
+    ;;
+  substack/en)
+    PUBLICATION="${SUBSTACK_PUBLICATION_EN:?SUBSTACK_PUBLICATION_EN is required for managed substack/en}"
+    ;;
+  *)
+    PUBLICATION="${SUBSTACK_PUBLICATION:-aniccabuddha.substack.com}"
+    ;;
+esac
 SUBDOMAIN="${PUBLICATION%.substack.com}"
 # Resolve the byline from the authenticated publication ownership response.
 # A hard-coded user ID can silently publish under the wrong identity after an

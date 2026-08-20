@@ -85,7 +85,7 @@ case "$CHANNEL" in
   zenn)           LANG="ja"; PLATFORM="Zenn";        ACCOUNT="${ZENN_ACCOUNT:-anicca-daisuke}" ;;
   devto)          LANG="en"; PLATFORM="Dev.to";      ACCOUNT="${DEVTO_ACCOUNT_HANDLE:-anicca_301094325e}" ;;
   substack-ja)    LANG="ja"; PLATFORM="Substack";    ACCOUNT="${SUBSTACK_PUBLICATION_JA:-${SUBSTACK_PUBLICATION:-aniccabuddha.substack.com}}" ;;
-  substack-en)    LANG="en"; PLATFORM="Substack";    ACCOUNT="${SUBSTACK_PUBLICATION_EN:-${SUBSTACK_PUBLICATION:-aniccabuddha.substack.com}}" ;;
+  substack-en)    LANG="en"; PLATFORM="Substack";    ACCOUNT="${SUBSTACK_PUBLICATION_EN:?SUBSTACK_PUBLICATION_EN is required for substack-en}" ;;
   note)           LANG="ja"; PLATFORM="Note";        ACCOUNT="${NOTE_URLNAME:-anicca123}" ;;
   aniccaai-blog)  LANG="ja"; PLATFORM="aniccaai-blog"; ACCOUNT="aniccaai.com" ;;
   *) echo "FATAL: unknown channel: $CHANNEL" >&2; exit 1 ;;
@@ -173,7 +173,8 @@ case "$PHASE" in
         if [[ "$CHANNEL" == "substack-ja" ]]; then
           export SUBSTACK_PUBLICATION="${SUBSTACK_PUBLICATION_JA:-${SUBSTACK_PUBLICATION:-aniccabuddha.substack.com}}"
         else
-          export SUBSTACK_PUBLICATION="${SUBSTACK_PUBLICATION_EN:-${SUBSTACK_PUBLICATION:-aniccabuddha.substack.com}}"
+          : "${SUBSTACK_PUBLICATION_EN:?SUBSTACK_PUBLICATION_EN is required for substack-en}"
+          export SUBSTACK_PUBLICATION="$SUBSTACK_PUBLICATION_EN"
         fi
         # publish-substack.sh alone ships raw ```mermaid fences unrendered (Substack does not
         # render mermaid) -- publish-substack-mermaid.sh wraps it with the kroki->PNG->upload
