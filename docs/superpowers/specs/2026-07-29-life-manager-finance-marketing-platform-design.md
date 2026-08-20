@@ -9,26 +9,20 @@
 OpenClaw dependency, first locally and then from the same runtime in the cloud.
 
 **Current implementation cursor:** the portable local foundation, bounded
-financial-report job adapter, shared loop-adapter registry, and the first Life
-Manager daily generation→publication chain are proven. A Life Manager-owned
-local scheduler and worker sent real Telegram `message_id=432`, persisted the
-immutable snapshot/effect receipt, and survived a worker restart without
-resend. The daily marketing path owns immutable generation inputs, a verified
-render receipt, and deterministic independent Instagram/TikTok jobs. The chain
-defaults off while the legacy LaunchAgent remains active. The Life Manager-owned
-Instagram profile is now recovered with exact-account, feed, launcher, and
-read-only Reel-list proof; the legacy source profile remains untouched. New
-publication receipts preserve provider metric join keys, and a generic
-per-publication 2h/24h/72h/7d observation adapter plus deterministic scheduler
-fanout is proven with missing metrics retained as unavailable. The observation
-schedule defaults off while the legacy owner remains active. The first generic
-ReelClaw generation slice now imports Honne JA's 24 hooks and four MP4s into
-Life Manager ownership, executes a durable tenant-scoped no-effect job, selects
-`HJA-007` from imported plus receipt history, and emits immutable video/copy
-lineage without reading a legacy path at runtime. The working Honne launchd
-owner is unchanged. Next: connect generic publication and scheduling in
-shadow mode, migrate the remaining Larry/ReelClaw products, add product
-attribution, and do not cut over ownership before the seven-expected-run gate.
+financial-report adapter, shared adapter registry, generic video publication
+adapter/chain, and one historical Honne JA shadow receipt are proven in code.
+The current production incident is separate from those proofs: as measured on
+2026-08-20 JST, every relevant OpenClaw marketing cron is disabled in the live
+SQLite scheduler, every Larry/ReelClaw LaunchAgent is explicitly disabled and
+unloaded, and no Life Manager marketing scheduler/worker is running. Postiz is
+connected and the Anicca/Honne TikTok integrations remain enabled, so billing
+or provider authentication is not the proximate stop cause. The next active
+slice is controlled recovery from Life Manager: keep the quarantined legacy
+state unchanged, restore one known-good product lane, emit a direct public URL
+and missed-slot alert to Telegram, prove seven expected cycles, and only then
+expand to the remaining Anicca/Honne producers. This incident recovery preserves
+existing behavior under Orders 9 and 11; it does not activate post-migration
+feature work.
 
 ## 1. Executive decision
 
@@ -179,16 +173,46 @@ Anicca iOS/API product boundary. They are not a Life Manager connector, metric
 source, implementation cursor, or completion gate. Hosted Life Manager
 entitlement remains Stripe-based.
 
-### 3.2 Marketing jobs actually loaded in launchd
+### 3.2 Mobile marketing incident snapshot (2026-08-20 JST)
 
-The table lists the revenue-relevant daily families, not every unrelated
-machine-maintenance job.
+This read-only incident measurement supersedes the historical launch state below.
+No legacy job was triggered, enabled, disabled, stopped, or restarted during the
+measurement.
 
-| Family | Current cadence | Current boundary | Latest observed condition |
+| Boundary | Measured fact | Consequence |
+|---|---|---|
+| OpenClaw runtime scheduler | the live SQLite store has 319 jobs and one unrelated enabled job; every Postiz, Larry, ReelClaw, Honne, Anicca-marketing, and TikTok job is disabled | OpenClaw is up, but it is not scheduling these mobile-marketing posts |
+| macOS launchd | 39 relevant marketing plists remain on disk; zero relevant labels are loaded; the persistent launchd override explicitly disables all 25 Larry/ReelClaw labels | the legacy clock stopped on 2026-08-01; files on disk are not evidence of execution |
+| Quarantine evidence | `jobs.json.pre-marketing-quarantine-20260801T0955.bak` and the final launchd logs align with a 2026-08-01 09:55 JST marketing quarantine | the exact actor and intent are unproven; do not mass-enable the old fleet |
+| Postiz account | `GET /public/v1/is-connected` returns `connected=true`; integrations return 29 total, 28 enabled, one disabled | cancellation is not the proximate cause |
+| Target TikTok integrations | Honne JA `@honnevideo`, Honne EN `@honne_reveal`, Anicca `@anicca.jp4`, and Anicca iOS `@anicca.jp` all return `disabled=false` | provider routing remains configured; TikTok-side publishing credentials remain unproven until a controlled canary |
+| Life Manager replacement | generic generation/publication contracts exist, but no Life Manager marketing scheduler or worker process/container is running | migration code has not yet replaced production scheduling |
+| Telegram observation | the post notifier repeatedly measures zero posts and sends zero publication messages; daily generic reports still send | zero-output silence must become a missed-expected-slot alert |
+| Shared learner | mining fails on judge/source ingestion; scoring skips because only three posts meet the 24-hour cohort and the minimum is ten | there is no closed self-improvement loop today |
+
+The last verified public target posts are:
+
+- Honne JA: `https://www.tiktok.com/@honnevideo/video/7668837367739418632`
+- Honne EN: `https://www.tiktok.com/@honne_reveal/video/7668814897594779655`
+- Anicca JP4: `https://www.tiktok.com/@anicca.jp4/video/7668590687105058834`
+- Anicca iOS: `https://www.tiktok.com/@anicca.jp/video/7668475610708232200`
+
+Honne EN/JA were healthy through their final runs. Several Anicca ReelClaw and
+Larry producers were already broken before quarantine by missing hook files,
+blank hook IDs, poster argument failures, and fragile environment loading.
+Therefore bulk re-enablement is not a valid rollback.
+
+### 3.3 Historical marketing launch state before quarantine
+
+The table preserves the pre-quarantine schedules for behavior equivalence. Its
+`Active` cells are historical observations, not the current launch state. It
+lists the revenue-relevant daily families, not every unrelated maintenance job.
+
+| Family | Historical cadence | Historical boundary | Pre-quarantine condition |
 |---|---|---|---|
 | Larry Anicca slideshows | Multiple EN/JA accounts, 1–4 posts per account/day | Profitable Claude wrapper; several scripts return to `~/.openclaw` | Active; some library-post jobs exit 3 |
 | ReelClaw Anicca videos | Card/widget EN/JA, 1–2 posts per variant/day | Mostly `~/.openclaw/skills/_dispatcher` and ReelClaw scripts | Active; several jobs exit 1 |
-| Honne videos | EN at 07:00/11:00/20:30; JA at 08:30/12:30/21:30 | `~/.openclaw` ReelClaw scripts | Active with recent logs. The JA shadow counterpart was enabled in the local compose stack on 2026-07-30 13:33 JST (worker capabilities generate-only, never `marketing.video.publish`, via a gitignored `deploy/local/compose.override.yaml` outside repo defaults), so seven-cycle shadow evidence now accrues automatically at the 12:30/21:30 JST slots while this legacy launchd job remains the production owner |
+| Honne videos | EN at 07:00/11:00/20:30; JA at 08:30/12:30/21:30 | `~/.openclaw` ReelClaw scripts | Active with recent logs. The JA shadow counterpart was enabled in the local compose stack on 2026-07-30 13:33 JST (worker capabilities generate-only, never `marketing.video.publish`, via a gitignored `deploy/local/compose.override.yaml` outside repo defaults); this was the historical basis for expecting shadow evidence at 12:30/21:30 JST, not proof that the gate is currently accruing |
 | Larry strategy learning | 05:10 daily | Reads OpenClaw content metrics and library state | Latest exit 2 |
 | Capafy core | 08:10 daily | `/Users/operator/anicca` | Active |
 | Capafy goal/marketing | 09:00, 11:20, 16:00 | `/Users/operator/anicca` | Active; latest marketing rows show zero engagement |
@@ -400,12 +424,13 @@ Manager scheduler in shadow mode with no external effect:
   are reported as `missed_slots`, and duplicate receipts for one slot also
   reset. No ownership cutover occurred and none is claimed.
 
-The OpenClaw store also contains enabled entries for Larry, ReelClaw, app
-reviews, Capafy publishing, CFO sync, and other jobs. Because the scheduler
-currently exposes no active jobs and no next wake, these are treated as stale
-configuration until a real run receipt proves otherwise.
+The historical OpenClaw JSON store contains enabled entries for Larry,
+ReelClaw, app reviews, Capafy publishing, CFO sync, and other jobs. The current
+SQLite scheduler supersedes that JSON snapshot and has no enabled relevant
+marketing row; stale configuration is never treated as a running owner without
+a current run receipt.
 
-### 3.3 Evidence and inference are separate
+### 3.4 Evidence and inference are separate
 
 **Evidence:** launchd logs show real posts and executions; the shared marketing
 runtime has no ledgers.
@@ -995,6 +1020,17 @@ producers become adapters behind the same artifact/publication contracts.
 Everything below was read off the running system, not inferred. It supersedes any
 earlier statement that Postiz was cancelled.
 
+**Current recheck (2026-08-20 JST).** Postiz still answers
+`connected=true`; 28 of 29 integrations are enabled and all four target
+Anicca/Honne TikTok integrations are enabled. The target accounts received zero
+new Postiz submissions from 2026-08-01 through 2026-08-20. The stop is upstream:
+the legacy schedulers are quarantined and the Life Manager replacement is not
+running. Postiz subscription and API authentication are therefore eliminated
+as the proximate cause; TikTok-side publishing credentials remain unverified
+until a controlled canary. The historical engine details
+below remain useful for migration equivalence, but their launch-state claims are
+not current.
+
 **Distribution actually in use.** `GET api.postiz.com/public/v1/integrations` returns
 **29 live integrations** (16 TikTok, 7 Instagram, 3 YouTube, 1 X). `anicca-larry`'s
 `post-to-tiktok.js` posts through that API with `POSTIZ_API_KEY`. Instagram
@@ -1032,10 +1068,13 @@ asynchronously; the Anicca iOS request already lists 50 available reports). A so
 that fails is stored with its error, never as a zero, and a run that reaches no money
 source at all exits non-zero. `measure/collect_post_metrics.py` fills the gap that
 made scoring impossible: 797 posts in `account-history.jsonl` had `views_6h/24h/48h`
-all null. Postiz returns no engagement, and its TikTok `releaseURL` is only the profile
-(`https://www.tiktok.com/@handle`), which is why `postURLs` answered 400 — TikTok is
-therefore collected by walking the profile and matching captions, Instagram by its real
-post URL. First real readings: 557, 189, 74 and 0 views.
+all null. Postiz returns no engagement, and its stored TikTok `releaseURL` is only the
+profile (`https://www.tiktok.com/@handle`), which is why `postURLs` answered 400.
+However, the numeric video ID inside `releaseId` deterministically yields the direct
+`https://www.tiktok.com/@handle/video/<id>` artifact URL and is verified before a
+publication receipt is reported. TikTok metrics still require provider/profile
+collection; Instagram uses its real post URL. First real readings: 557, 189, 74 and 0
+views.
 
 **A quarter of the output was disappearing.** The same window shows 106 posts, 83
 PUBLISHED and **23 in ERROR state — 22 of them on the "Anicca" TikTok account** — with
@@ -1060,11 +1099,13 @@ and which no loop was feeding), and `measure/audit_accounts.py` now runs at 06:3
 alerts, and exits non-zero while any target is dead. The three dead integrations still
 exist in Postiz and should be deleted or re-provisioned as agent-owned accounts.
 
-**Telegram is now three tiers, all fired and verified.** A per-post message with the
+**Telegram historically proved three delivery tiers.** A per-post message with the
 tappable public URL every 30 minutes (7 real sends, rerun sent 0, proving dedupe), a
 daily money digest at 22:00, and a weekly review on Sundays that names accounts to cut
-or feed. Raw logs appear in none of them. TikTok links point at the profile because
-Postiz exposes no per-video URL.
+or feed. Raw logs appear in none of them. The current notifier observes zero posts and
+sends zero publication messages, so the replacement must alert when an expected slot
+is missed. TikTok messages must use the direct video URL derived from the verified
+`releaseId`, not the profile URL.
 
 **The ebook can be bought.** The 401 was an expired *test* key; the live key answers
 200. Product, a $19 price, a payment link (checkout HTTP 200) and a post-purchase
@@ -1310,6 +1351,30 @@ The current migration subcursor is the generic Honne JA
 The numbered program above remains the SSOT. Until Order 26 passes, only
 runtime-migration work is active:
 
+The 2026-08-20 mobile-marketing outage is the active preservation slice inside
+Orders 9 and 11. Its order is fixed so that recovery does not recreate competing
+schedulers or revive known-broken producers:
+
+| Incident order | Work | Done evidence | State |
+|---:|---|---|---|
+| I-0 | Freeze incident truth and preserve rollback | live OpenClaw SQLite, launchd disabled overrides, Postiz connectivity/integrations, last public URLs, logs, and quarantine backup are read back without changing state | **done** |
+| I-1 | Add expected-slot liveness and Telegram incident reporting in Life Manager | each missed slot for an explicitly production-armed lane emits one deduplicated alert; disabled, shadow, and default-off lanes do not alert; zero output on an armed lane can never be silent; recovery emits the direct public artifact URL | open |
+| I-2 | Wire the generic Life Manager video chain to a default-off Honne EN schedule | exact 07:00/11:00/20:30 Asia/Tokyo slots generate durable jobs with no OpenClaw path or env read; shadow performs zero provider writes | open |
+| I-3 | Run one controlled Honne EN canary from Life Manager | one real TikTok publication reconciles as `PUBLISHED`, its direct `/video/<id>` URL returns publicly, Telegram receives the same URL, replay produces no duplicate | open; requires the normal canary external-effect gate |
+| I-4 | Prove seven consecutive Honne EN expected cycles | every slot has exactly one verified generation, publication, URL, notification, and initial observation receipt; any miss/duplicate resets the counter | open |
+| I-5 | Repair and migrate Anicca video/slideshow producers one lane at a time | missing hook sources, blank IDs, poster arguments, and secret boundaries are fixed behind Life Manager contracts; each lane passes shadow, canary, and seven expected cycles | open |
+| I-6 | Migrate Honne JA, then remaining Larry/ReelClaw routes | each retained route preserves product/locale/account/cadence behavior and no longer reads OpenClaw or another repository at runtime | open |
+| I-7 | Close observation and bounded learning | 2h/24h/72h/7d/35d metrics join artifact→publication→account→campaign→install→trial→paid→proceeds; unavailable is not zero; one variable changes per challenger and keep/revert is consumed by the next run | open |
+| I-8 | Retire legacy marketing ownership | only after every retained lane passes seven expected cycles, OpenClaw/legacy launch state remains disabled as rollback history and Life Manager is the sole scheduler | open |
+
+The product-growth sequence after incident recovery remains: (1) close and prove
+marketing, (2) use App Store Connect, RevenueCat, Mixpanel/PostHog, reviews, and
+retention evidence to iterate the existing apps, then (3) generalize build,
+submission, rejection-repair, and release into the mobile-app development loop.
+`$10k MRR` is the first outcome target, not a guaranteed system property; higher
+portfolio targets require measured unit economics, platform-policy compliance,
+and independent product demand.
+
 | Now | Work | Why it is still missing | Done evidence |
 |---:|---|---|---|
 | 1 | Repair and freeze the machine-readable scheduler inventory | the OpenClaw store and live scheduler disagree, and launchd is the real owner of many loops | every stored and loaded job has one `migrate`, `replace`, or `retire` decision and an owner; measured: all 399 captured rows and all 269 enabled-or-loaded rows now have exactly one disposition and a non-null owner |
@@ -1317,7 +1382,7 @@ runtime-migration work is active:
 | 3 | Build the portable local runtime foundation | current loops lack one shared Life Manager data root, secret provider, durable generic job protocol, and local service bundle. A legacy-path dependency scan now exists and passes (`apps/life-manager/scripts/scan-legacy-paths.js` + `scan-legacy-paths.test.js`, wired into `npm test` as `test:legacy-paths`): it walks the monorepo runtime (`apps/life-manager`, `runtime/`) plus every skill the runtime actually loads or spawns — `skills/video/daily-lm-video`, `skills/video/lm-distribution`, `skills/tools/telegram-user`, `skills/life-manager`, and `skills/earn/marketing-engine` (whose `run_agent.sh` is spawned by `life-manager-daily.sh` and `life-manager-dev-d0.sh`) — and fails on any non-allowlisted `.openclaw`/`profitable-claude`/`life-manager-v0` reference or legacy anicca code-root reference (`$HOME`-, `${HOME}`-, or `~`-rooted anicca checkout and the anicca-oss checkout). The allowlist holds only (a) line-pinned denial regexes and copy-only migration tooling and (b) an explicitly tracked, line-and-content-pinned set of five pre-Order-12 holes: the x402-sell/taskmarket/payout earn-loop boot defaults that still point at the legacy anicca code roots, each named with its owning Order (Order 12); `verifyAllowlist` fails the scan the moment any pinned line moves, changes, or disappears. The runtime's own legacy-path dependencies in that scope were removed: `daily-dev-loop.js` defaults its state dir to `<data root>/state/life-manager-dev` via `resolveDataRoot` in `runtime-paths.js` (`LM_DATA_DIR`, falling back to `~/.local/state/life-manager`), the four launchd boot scripts (payout, x402 ledger, taskmarket ledger, ugig observer) load `LIFE_MANAGER_ENV_FILE` (default `~/.local/state/life-manager/.env`) through a shared guarded loader that warns-but-boots when the file is absent and refuses (exit 1) any env file beneath a legacy runtime root, the taskmarket/ugig installers and the dev/taskmarket/ugig launchd templates write logs beneath `~/.local/state/life-manager/logs`, and the daily video generator's argless defaults resolve to the same `<data root>/state/lm-video` paths `life-manager-daily.sh` exports. Existing on-disk legacy state (lm-video recordings/render state, dev-loop `done.jsonl` dedup history) is migrated copy-based via `apps/life-manager/scripts/migrate-legacy-state.sh` (idempotent copy with size readback, never move/delete — the legacy loop stays owner until cutover); until that copy has run, `generate.py` and the dev loop fail loudly naming the migration script instead of silently starting empty or silently reading the legacy path. Still OPEN in this row (not claimed): the shared secret vault/provider (Order 6) and the legacy-env-inaccessibility proof (cutover gate 6: denied `~/.openclaw` access without interruption); no Order is marked done by this slice | one command starts API, panel, scheduler, database, objects, and workers while all legacy roots are denied |
 | 4 | Finish Telegram command migration and shadow the current financial report | the bounded report adapter is complete, but the rest of bot command routing and seven-run cutover evidence remain | **report slice proven:** local Life Manager sent real `message_id=432`, stored matching snapshot/effect receipt, and read no OpenClaw env. **Command routing slice done:** the LM webhook's slash-command surface now covers the legacy telegram_bot.py parity list (/help /status /where /stop /subscribe /connect /payout /reset, plus the already-routed /start and /panel and the edited_message live-location stream) via a generic router (`apps/life-manager/lib/slash-command.js` + `lib/late-notice.js#deleteLiveLocation`) with unit and fake-transport HTTP contract tests (`lib/slash-command.test.js`, `test/telegram-slash-http-contract.test.js`, both wired into `npm test`) proving unknown-/command honesty, branch ordering against the payout intake / feedback / panel / browser-task branches, tenant-scoped /stop deletion, idempotent /payout reopen, and the /connect alias into the existing parsed-control flow. **Adversary follow-ups closed:** (a) /reset now discloses that rewinding `tg_onboard_stage` also pauses browser-task intake (`lib/browser-task-intake.js` accepts only the `"done"` stage) and the coupling is named in code; (b) only an exact `/start` (optionally `@BotName`, optionally followed by a deep-link payload) is a start — `"/startfoo"` is answered as an unknown command, safe because Telegram deep links always deliver the payload space-separated (`core.telegram.org/bots/features` → Deep Linking: `?start=airplane` → `/start airplane`, `?startgroup=spaceship` → `/start@your_bot spaceship`); (c) `/connect <non-calendar>` (e.g. `/connect gmail`) is answered honestly instead of silently connecting Calendar; (d) `/status` distinguishes `active` / `complimentary until <expiry>` / `not active` so a comped row (`lib/comp-window.js`, which already carries it past the paywall) is no longer told its subscription is inactive; the seven-run shadow stays open |
 | 5 | Import shared execution contracts needed by retained loops | the shared adapter registry, content-addressed object import, tenant profile boundary, and financial/first marketing adapters are complete; most marketing and income loops still execute through legacy paths | Life Manager owns the remaining minimum runner, schemas, artifacts, publications, receipts, and verification adapters needed to preserve behavior |
-| 6 | Migrate Larry/ReelClaw, Capafy, clipping, writer, gig, bounty, and all retained loops | `ai.anicca.life-manager-daily` now has real portable generation and TikTok distribution receipts, a fixed visible-hook render, an idempotent generation→Instagram/TikTok durable-job chain, a read-only verified Life Manager-owned IG profile, and a generic due-window observation pipeline. Honne JA now also has a generic Life Manager-owned 24-hook/four-media producer with a completed durable `HJA-007` shadow receipt and idempotent replay. A generic (product-agnostic) marketing video publication adapter now exists at `apps/life-manager/lib/marketing-video-publication-adapter.js`, binding product/format/form/locale/slot/creative to one platform-scoped publish effect and passing its contract tests (job build, Instagram+TikTok planning, tenant-scoped provider execution with lineage/URL, and cross-product/mismatched-provider rejection); its job identity now agrees with its effect identity (job_id is derived from tenant + effect_key, slot is lineage only), so a replay of the same bytes+caption+platform at a new slot can never violate the database's `UNIQUE (tenant_id, effect_key)` rule or double-post. Its reconcile path is now proven by passing tests: `distribute.py` writes format/form/locale/slot lineage into every ledger row, a ledger-recovered receipt passes the adapter's own verification before "present" is returned, `provider_reconciled` is propagated from the ledger row (never fabricated), the absent path returns the reconciler-required receipt shape (`lookup: "ledger_no_published_row"`), and legacy shadow rows without lineage resolve to "unknown" without crashing the reader; the distribution subprocess also runs on an allowlisted environment instead of the full parent env. Reconcile provenance is now propagated on all paths (the ledger short-circuit reports the existing row's `provider_reconciled` instead of fabricating true, and the subprocess allowlist passes the real chain's `INSTAGRAPI_PYTHON`/`CDP_HOST`/`CDP_PORT` through), unknown reconciliation now ages (a durable per-attempt counter dead-letters the job with `RECONCILE_UNKNOWN_EXHAUSTED` after 5 consecutive unknown reconcile results, reset on resolution, per `migrations/20260730_runtime_reconcile_unknown_aging.sql`), and the chain's two-platform fanout is sequential fail-fast (a first-platform enqueue collision stops the remaining platform's enqueue in the same scan), all proven by passing python/node/postgres tests. It is not yet wired into any scheduler or the loop-adapter registry manifest. A generic `marketing-video-publication-chain.js` now chains one generic video generation receipt into exactly two independent durable Instagram/TikTok publication jobs product-generically, with an end-to-end fake-store proof (enqueue→claim→execute→complete, then full replay with 0 new jobs, 0 claimable jobs, 0 additional provider executions, under the enforced `(tenant_id, effect_key)` unique rule) and cross-product/hash-mismatch/different-slot rejection all proven by passing tests; it is not yet wired into any scheduler. Honne JA generic video scheduling is now wired into the Life Manager scheduler in shadow mode behind `LM_HONNE_JA_SHADOW_ENABLED` (default `false`, enabled nowhere), with slots encoding exactly the legacy 12:30/21:30 Asia/Tokyo launchd cadence (`lib/honne-ja-shadow-schedule.js`); one real manual shadow cycle (`scripts/honne-ja-shadow-cycle.js`) against the running local durable store completed generation receipt hook `HJA-008` (job `marketing-video-generation:0f19ddbb…`, slot `2026-07-30T03:30:00.000Z`, `video_sha256` equal to the legacy source bytes) through the same worker path as the HJA-007 proof, and enqueued both Instagram/TikTok publication jobs durably in a held state (`queued` + durable `shadow_held` hold row, zero provider calls, idempotent replay with no new rows); a seven-cycle status reader (`scripts/honne-ja-shadow-status.js`) counts, per §13 semantics, only the trailing run of consecutive EXPECTED 12:30/21:30 JST slots each holding exactly one verified receipt — an expected slot that passed with no receipt row (scheduler off/stopped) breaks and resets the count and is reported in `missed_slots`, and a duplicate receipt for one slot is a gate violation that also resets — so scattered receipts can never reach `gate_met`; it reports n/7 toward the §13 seven-expected-run gate. The legacy Honne launchd owner remains untouched and no cutover is claimed. Product attribution, bounded learning, the remaining broken Larry/ReelClaw slices, and all other loops remain open; all new fanout stays disabled during shadowing. Local compose stack shadow enablement was performed on 2026-07-30 13:33 JST (scheduler `LM_HONNE_JA_SHADOW_ENABLED=true`, worker capabilities generate-only — `runtime.noop,marketing.video.generate`, `marketing.video.publish` granted nowhere — via a gitignored `deploy/local/compose.override.yaml` that leaves repo compose defaults off), so seven-cycle shadow evidence now accrues automatically at the 12:30/21:30 JST slots (status read 1/7 with zero missed slots after restart; both held publication jobs remained queued with zero attempts) | every retained effect executes from a Life Manager job and produces a machine-verifiable receipt |
+| 6 | Migrate Larry/ReelClaw, Capafy, clipping, writer, gig, bounty, and all retained loops | `ai.anicca.life-manager-daily` now has real portable generation and TikTok distribution receipts, a fixed visible-hook render, an idempotent generation→Instagram/TikTok durable-job chain, a read-only verified Life Manager-owned IG profile, and a generic due-window observation pipeline. Honne JA now also has a generic Life Manager-owned 24-hook/four-media producer with a completed durable `HJA-007` shadow receipt and idempotent replay. A generic (product-agnostic) marketing video publication adapter now exists at `apps/life-manager/lib/marketing-video-publication-adapter.js`, binding product/format/form/locale/slot/creative to one platform-scoped publish effect and passing its contract tests (job build, Instagram+TikTok planning, tenant-scoped provider execution with lineage/URL, and cross-product/mismatched-provider rejection); its job identity now agrees with its effect identity (job_id is derived from tenant + effect_key, slot is lineage only), so a replay of the same bytes+caption+platform at a new slot can never violate the database's `UNIQUE (tenant_id, effect_key)` rule or double-post. Its reconcile path is now proven by passing tests: `distribute.py` writes format/form/locale/slot lineage into every ledger row, a ledger-recovered receipt passes the adapter's own verification before "present" is returned, `provider_reconciled` is propagated from the ledger row (never fabricated), the absent path returns the reconciler-required receipt shape (`lookup: "ledger_no_published_row"`), and legacy shadow rows without lineage resolve to "unknown" without crashing the reader; the distribution subprocess also runs on an allowlisted environment instead of the full parent env. Reconcile provenance is now propagated on all paths (the ledger short-circuit reports the existing row's `provider_reconciled` instead of fabricating true, and the subprocess allowlist passes the real chain's `INSTAGRAPI_PYTHON`/`CDP_HOST`/`CDP_PORT` through), unknown reconciliation now ages (a durable per-attempt counter dead-letters the job with `RECONCILE_UNKNOWN_EXHAUSTED` after 5 consecutive unknown reconcile results, reset on resolution, per `migrations/20260730_runtime_reconcile_unknown_aging.sql`), and the chain's two-platform fanout is sequential fail-fast (a first-platform enqueue collision stops the remaining platform's enqueue in the same scan), all proven by passing python/node/postgres tests. It is not yet wired into any scheduler or the loop-adapter registry manifest. A generic `marketing-video-publication-chain.js` now chains one generic video generation receipt into exactly two independent durable Instagram/TikTok publication jobs product-generically, with an end-to-end fake-store proof (enqueue→claim→execute→complete, then full replay with 0 new jobs, 0 claimable jobs, 0 additional provider executions, under the enforced `(tenant_id, effect_key)` unique rule) and cross-product/hash-mismatch/different-slot rejection all proven by passing tests; it is not yet wired into any scheduler. Honne JA generic video scheduling is now wired into the Life Manager scheduler in shadow mode behind `LM_HONNE_JA_SHADOW_ENABLED` (default `false`, enabled nowhere), with slots encoding exactly the legacy 12:30/21:30 Asia/Tokyo launchd cadence (`lib/honne-ja-shadow-schedule.js`); one real manual shadow cycle (`scripts/honne-ja-shadow-cycle.js`) against the running local durable store completed generation receipt hook `HJA-008` (job `marketing-video-generation:0f19ddbb…`, slot `2026-07-30T03:30:00.000Z`, `video_sha256` equal to the legacy source bytes) through the same worker path as the HJA-007 proof, and enqueued both Instagram/TikTok publication jobs durably in a held state (`queued` + durable `shadow_held` hold row, zero provider calls, idempotent replay with no new rows); a seven-cycle status reader (`scripts/honne-ja-shadow-status.js`) counts, per §13 semantics, only the trailing run of consecutive EXPECTED 12:30/21:30 JST slots each holding exactly one verified receipt — an expected slot that passed with no receipt row (scheduler off/stopped) breaks and resets the count and is reported in `missed_slots`, and a duplicate receipt for one slot is a gate violation that also resets — so scattered receipts can never reach `gate_met`; it reports n/7 toward the §13 seven-expected-run gate. Product attribution, bounded learning, the remaining broken Larry/ReelClaw slices, and all other loops remain open; all new fanout stays disabled during shadowing. A 2026-07-30 local compose override once produced a 1/7 status, but on 2026-08-20 no Life Manager marketing scheduler/worker process or container is running, so the shadow gate is not accruing and no current cutover ownership is claimed | every retained effect executes from a Life Manager job and produces a machine-verifiable receipt |
 | 7 | Switch scheduler ownership and prove OpenClaw-free local | launchd and OpenClaw can still become competing writers | seven expected local cycles pass with the gateway stopped and all legacy roots inaccessible, without missed or duplicate effects |
 | 8 | Package the supported local option | a working checkout is not yet a reproducible self-hosted product | clean-machine install, upgrade, backup/restore, health check, and uninstall verification pass |
 | 9 | Deploy the same release to cloud | current Railway service does not yet own every retained loop or worker class | API, scheduler, and worker pools run the same contracts and release hashes as local |
@@ -1327,7 +1392,10 @@ runtime-migration work is active:
 
 ## 13. Cutover gates
 
-No legacy job is disabled until its replacement passes:
+Normal cutover never disables a running legacy job until its replacement
+passes. Incident quarantine is the explicit exception: already-disabled jobs
+stay disabled and preserved as rollback state while controlled recovery proves
+the replacement; they are not mass-enabled merely to satisfy this gate.
 
 1. Seven consecutive expected runs have complete receipts.
 2. At least one real publication per selected account is reconciled to a
