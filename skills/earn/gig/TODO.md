@@ -14,9 +14,11 @@ remaining work. The current milestone is complete when a third party can inspect
 validate this package without this seller's private checkout, credentials, customer data,
 or runtime state.
 
-The public product principle is **fast, cheap, accurate, and minimal-human-loop**. The initial
-installer asks for exactly one value: the owner's notification/registration email address. The
-installer and loops own dependency installation, permitted marketplace signup/login automation,
+The public product principle is **fast, cheap, accurate, and minimal-human-loop**. Human work is
+front-loaded into one guided setup session. Before any 24/7 lane starts, the installer collects and
+completes every marketplace identity, SMS, eKYC, bank and consent step required for uninterrupted
+selling and bank payout. After activation, ordinary operation asks no questions and waits for no
+owner approval. The installer and loops own dependency installation, permitted signup/login automation,
 mailbox verification, capability discovery, listing construction, pricing research, application
 selection, negotiation, estimates, production, validation and delivery. They must not turn any
 of those responsibilities into an owner questionnaire or approval queue. The four independent
@@ -28,44 +30,41 @@ The public package must not promise guaranteed income or describe unverified act
 revenue. Owner notifications use a provider adapter; the distributable default is email,
 not this operator's Telegram identity.
 
-### Target one-input onboarding contract
+### Target one-session onboarding contract
 
-The public command is `./install.sh coconala`. Its initial prompt asks only for the notification /
-registration email address. It stores that address in the private local install configuration and
-continues without asking the owner to describe skills, choose categories, write listings, set
-prices, approve applications, approve replies, approve estimates, or approve deliveries.
+The public command is `./install.sh coconala`. One interactive setup session completes all required
+owner input before starting the loops. The wizard asks only for facts the official marketplace or
+bank rail requires; it never asks the owner to describe skills, choose categories, write listings,
+set prices, approve applications, approve replies, approve estimates, or approve deliveries.
 
 1. Inspect the device and install or configure the declared runtime, model route, browser, email
    adapter, four lane jobs and release watcher.
-2. Use the repository's signup/login skill or CLI to create or recover the owner's Coconala session
-   and consume email verification through the configured mailbox adapter. Credentials and session
-   material remain local and are never committed or sent in reports. Never create a second account
-   when an account already exists because Coconala prohibits multiple-account ownership.
-3. Discover executable capabilities from installed tools and prove them with a bounded local
+2. Collect the notification/registration email, create or recover exactly one Coconala account with
+   the signup/login skill or CLI, and consume email verification through the mailbox adapter. Never
+   create a second account when one already exists.
+3. In the same setup session, complete the official seller-information form (name/furigana, address,
+   birth date and gender), mobile-number SMS verification, required terms/consents, eKYC document and
+   face capture, and matching domestic bank-account registration. Sensitive values remain only on
+   official surfaces or in the minimum private local credential store; documents, OTPs and bank
+   details are never committed, logged, placed in model prompts or sent in reports.
+4. Discover executable capabilities from installed tools and prove them with a bounded local
    preflight. Import any existing official listings and history. When the account is new, build the
    initial sellable listing, price, scope, FAQ and assets from verified capabilities and observed
    marketplace demand. Unknown capability fails closed; it does not become a human question.
-4. Activate Apply, Negotiate, Storefront and Submission plus their browser/release owners, then
-   report official receipts to the configured email. Ordinary operation has no approval gate.
-5. Request official identity facts only at the first boundary that requires them and reuse them from
-   the owner's private local profile thereafter. Before the first ordinary listing, Coconala requires
-   seller name/furigana, address, birth date and gender. Before applying or asking questions on a
-   Coconala job posting, it requires a mobile number and SMS verification. These are marketplace
-   requirements, not loop configuration questions. Existing accounts that already satisfy them are
-   not asked again.
-6. Defer eKYC documents/face capture and bank details until the first bank withdrawal. Ordinary Web
-   listing, sale, delivery and Coconala-balance recognition do not require eKYC, but bank transfer
-   does require an approved identity verification plus a domestic bank account whose holder matches
-   the seller information. Invoice registration is not an earnings or withdrawal prerequisite.
-   Surface mandatory CAPTCHA, passkey, device confirmation, terms acceptance, SMS OTP, eKYC capture
-   and bank-entry screens only when the official site requires them; resume automatically afterward.
+5. Verify before activation that account/session, seller information, SMS, eKYC and payout account
+   are accepted by the official site. Invoice registration remains optional and is not invented as a
+   setup requirement.
+6. Activate Apply, Negotiate, Storefront and Submission plus their browser/release owners, then
+   report official receipts and bank-payout state to the configured email. Ordinary operation has no
+   approval gate. Login expiry uses autonomous session recovery; if the marketplace later introduces
+   a new non-delegable identity ceremony, the loop reports the exact blocker without pretending to
+   be 24/7 complete.
 
-The onboarding acceptance is not “the installer exited zero.” From a clean Mac, the initial email
-input and only the identity ceremonies Coconala requires at their actual boundaries, it must reach
-four loaded 24/7 owners; create or recover the marketplace session; establish a truthful storefront;
-and eventually produce the four natural official receipts without copying this operator's account,
-capability bundle, state or credentials. Bank arrival is a separate final receipt after eKYC and
-bank registration; Coconala balance is not bank income.
+The onboarding acceptance is not “the installer exited zero.” From a clean Mac and one setup
+session, it must finish every current official prerequisite, reach four loaded 24/7 owners, establish
+a truthful storefront, and eventually produce the four natural official business receipts plus a
+real bank-arrival receipt without copying this operator's account, capability bundle, state or
+credentials. Coconala balance is not bank income.
 
 ## Execution order to end
 
@@ -314,17 +313,17 @@ action completes.
 - [x] Remove known operator IDs, private payloads and absolute operator paths from the distributable
   tree and pass the exact `f90898caf` public acceptance.
 - [x] Provide email-first notification plus documented install, status, upgrade and uninstall.
-- [ ] Add the public `./install.sh coconala` entrypoint. Its only initial prompt is the notification /
-  registration email address; later identity input is requested only at a measured official boundary.
+- [ ] Add the public `./install.sh coconala` entrypoint and one-session wizard. Before activation it
+  completes registration/recovery, seller information, SMS, eKYC, bank registration and all current
+  mandatory official consents; no ordinary setup prompt may appear after lane activation.
 - [ ] Add the local mailbox adapter and permitted Coconala signup/login skill/CLI path so account
   creation, session recovery and email verification do not become recurring human tasks. Preserve
   platform-mandated CAPTCHA, passkey, terms and identity ceremonies as explicit resumable exceptions.
 - [ ] Replace the private capability-bundle onboarding requirement with automatic installed-tool
   discovery, bounded production preflights, official listing import and new-account storefront
   generation. Unknown capability must fail closed without asking the owner what they can do.
-- [ ] Perform a fresh third-party/friend install starting with only that person's notification email;
-  do not copy this operator's marketplace account, configuration, capability bundle, state or
-  credentials. Measure the first-listing seller-information and first-Apply SMS boundaries.
+- [ ] Perform a fresh third-party/friend install through one continuous setup session; do not copy
+  this operator's marketplace account, configuration, capability bundle, state or credentials.
 - [ ] Prove the clean install causes no marketplace effect before its own account/session is
   authoritatively established.
 - [ ] Prove the installer starts all four independent owners and the release watcher, and that each
@@ -332,9 +331,9 @@ action completes.
 - [ ] Prove all four lanes with the same four natural official receipts: application, buyer
   reply/estimate, listing create/update, and paid delivery; each must also replay with zero duplicate
   effect.
-- [ ] Prove ordinary listing, sale, delivery and balance recognition need no eKYC; then prove the first
-  bank withdrawal requests approved eKYC and a matching domestic bank account, receives the money,
-  and stores neither documents nor bank details in the public checkout or owner reports.
+- [ ] Before activation, read back approved eKYC and a matching domestic payout account from the
+  official site. Then prove the first bank withdrawal receives the money without another setup step,
+  and stores neither documents nor bank details in the public checkout, logs, prompts or reports.
 - [ ] Keep README and reports explicit that income is not guaranteed and revenue exists only after
   official payment readback.
 
