@@ -1904,6 +1904,16 @@ def _prepare_file_owner_staging(root: Path, context: Path, staging: Path) -> Non
 
 
 def _promote_staged_file_bundle(staging: Path, root: Path, expected_version: str) -> None:
+    manifest_path = staging / "delivery" / "paid-work-result.json"
+    manifest = _load(manifest_path)
+    if not isinstance(manifest, dict):
+        raise Failure("file_builder")
+    for key in ("requirements_path", "artifact_path", "acceptance_evidence_path"):
+        path = Path(_text(manifest.get(key)))
+        if not path.is_absolute():
+            manifest[key] = str((staging / path).resolve())
+    manifest["project_root"] = str(staging.resolve())
+    _write(manifest_path, manifest)
     _normalize_acceptance_delta(staging)
     manifest, _snapshots = _file_bundle_snapshots(staging, validate_source_census=False)
     if (_text(manifest.get("source_correspondence_path"))
