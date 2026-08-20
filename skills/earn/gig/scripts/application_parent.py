@@ -254,7 +254,11 @@ def commercial_offer_price(
         official_min=_money_or_none(minimum),
         official_max=_money_or_none(maximum),
         profitability_floor=profitability_floor,
-        category_contract_median=category_median,
+        # When Coconala exposes no numeric budget bounds, the planner price is
+        # grounded in the listing body (for example "応募金額は2,000円").  A
+        # category median must not overwrite that request with an unrelated
+        # prior contract price.
+        category_contract_median=_money_or_none(planner_price_jpy) or category_median,
     )
 
 

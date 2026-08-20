@@ -211,8 +211,10 @@ Execute top to bottom. A checked diagnostic is evidence, not lane completion.
 - [ ] Re-plan request `5222525` and prove it becomes an honest application answering all six requested
   fields, then obtain official submission readback and replay zero.
   Live pass `gig-apply-direct-1787202286379991000-66643` re-planned it as `submit_required`
-  with the six truthful answers, submitted at ¥2,000, and obtained official applied-list readback
-  (`missing_count=0`, `unresolved_count=0`). Only the following-pass replay-zero proof remains.
+  with the six truthful answers and obtained official applied-list readback (`missing_count=0`,
+  `unresolved_count=0`). The commercial contract incorrectly replaced its grounded ¥2,000 planner
+  price with a ¥90,000 category median; source is corrected to preserve the planner price when the
+  official form exposes no numeric bounds. Live corrected-price/replay-zero proof remains.
 - [ ] Preserve per-request structured decisions durably before execution. A transient batch/provider
   failure may leave a request pending for retry, but must not generate a misleading terminal refusal.
 - [ ] Repair the post-confirmation CDP boundary exposed by request `5222490`: the valid ¥90,000
