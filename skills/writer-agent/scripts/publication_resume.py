@@ -127,6 +127,81 @@ EXPECTED_DESTINATION_IDENTITIES = {
     "x-post/ja": "diceai0",
 }
 IDENTITY_CONFLICT_REASON = "substack-publication-identity-conflict"
+
+# A legacy run may contain an audit-only ledger row for a pair that never got
+# past staging.  This is deliberately an allowlist: a quarantine transition
+# must never treat an unfamiliar field as proof that no external effect
+# occurred.  In particular, provider_response/post_id/url-like fields are
+# effect-capable even when the older boolean fields still say ``published``
+# false.
+_NO_EFFECT_LEDGER_KEYS = frozenset(
+    {
+        "ts",
+        "run_id",
+        "topic_id",
+        "topic",
+        "localized_topic",
+        "topic_source",
+        "editorial_form",
+        "platform",
+        "lang",
+        "pair",
+        "draft_url",
+        "state",
+        "published",
+        "verified_logged_in",
+        "live_url",
+        "public_id",
+        "receipt",
+        "published_at",
+        "reality_gate",
+        "error",
+    }
+)
+_NO_EFFECT_REQUIRED_KEYS = frozenset(
+    {
+        "run_id",
+        "topic_id",
+        "platform",
+        "lang",
+        "state",
+        "published",
+        "verified_logged_in",
+    }
+)
+_NO_EFFECT_STATE_RE = re.compile(
+    r"^(?:staged(?::[a-z0-9]+(?:-[a-z0-9]+)*)?|unavailable(?::[a-z0-9]+(?:-[a-z0-9]+)*)?)$"
+)
+_NO_EFFECT_STATE_FORBIDDEN_TOKENS = frozenset(
+    {"live", "publish", "published", "effect", "receipt", "post", "url"}
+)
+
+
+def _is_no_effect_ledger_row(row: dict[str, Any], state: dict[str, Any]) -> bool:
+    """Return true only for the exact, effect-free legacy audit schema."""
+
+    if not _NO_EFFECT_REQUIRED_KEYS <= row.keys():
+        return False
+    if set(row) - _NO_EFFECT_LEDGER_KEYS:
+        return False
+    state_value = row.get("state")
+    if not isinstance(state_value, str) or not _NO_EFFECT_STATE_RE.fullmatch(state_value):
+        return False
+    state_lower = state_value.lower()
+    if any(token in state_lower for token in _NO_EFFECT_STATE_FORBIDDEN_TOKENS):
+        return False
+    if (
+        row.get("run_id") != state.get("run_id")
+        or row.get("topic_id") != state.get("topic_id")
+        or row.get("platform") != "substack"
+        or row.get("lang") != "en"
+        or row.get("published") is not False
+        or row.get("verified_logged_in") is not False
+    ):
+        return False
+    if any(row.get(key) not in {None, ""} for key in ("live_url", "public_id", "receipt", "published_at", "effect", "readback")):
+        return False
+    return row.get("reality_gate") in {None, ""}
 X_POST_MAX_CHARS = 280
 
 
@@ -1401,21 +1476,7 @@ class PublicationStore:
             )
             for row in self._ledger_rows_locked():
                 if row.get("run_id") == state.get("run_id") and row.get("platform") == "substack" and row.get("lang") == "en":
-                    no_effect_row = (
-                        row.get("topic_id") == state.get("topic_id")
-                        and row.get("published") is False
-                        and row.get("verified_logged_in") is False
-                        and not row.get("live_url")
-                        and not row.get("public_id")
-                        and not row.get("receipt")
-                        and not row.get("published_at")
-                        and not row.get("effect")
-                        and not row.get("readback")
-                        and row.get("reality_gate") in {None, ""}
-                        and isinstance(row.get("state"), str)
-                        and row["state"].startswith(("staged", "unavailable:"))
-                    )
-                    if not no_effect_row:
+                    if not _is_no_effect_ledger_row(row, state):
                         raise InvariantError(
                             "substack/en has an effect-capable current-run ledger row; quarantine refused"
                         )

@@ -202,9 +202,12 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
   malformed diagnosticはbyte-preservingでskipし、旧rootを含むmalformed controlは拒否するfail-closed
   境界を追加した。publication/media controlはparse可能なまま移行する。
 - migration後のledger readbackでは、過去runに外部作用のない`staged`/`unavailable`行が残ることが分かった。
-  authenticated exact-target not-live proofとtopic一致を併せ、published=false、verified_logged_in=false、
-  live_url/public_id/receipt/published_at/effect/readbackなしのno-effect行だけを許容する。それ以外の
-  EN rowはlive不確実性として拒否する。
+  authenticated exact-target not-live proofとtopic一致を併せ、固定した監査キーallowlist以外のキーを
+  一つでも持つ行は拒否する。必須の`published=false`、`verified_logged_in=false`と、
+  `live_url/public_id/receipt/published_at/reality_gate`の空値、`staged`または危険語を含まない
+  `staged:<token>`/`unavailable:<token>`だけをno-effect行として許容する。`provider_receipt`、
+  `post_id`、`url`など未知または外部作用を示せるキー、`staged:published`/`unavailable:live`は拒否し、
+  それ以外のEN rowはlive不確実性として扱う。
 
 ## 目標構成
 

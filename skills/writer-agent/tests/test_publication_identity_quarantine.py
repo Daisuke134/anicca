@@ -174,6 +174,53 @@ def test_quarantine_allows_explicit_no_effect_staging_row(
     assert result["status"] == "unavailable"
 
 
+@pytest.mark.parametrize(
+    "row_update",
+    [
+        {"provider_receipt": {"live_url": "https://example.test/live"}},
+        {"post_id": "123"},
+        {"state": "staged:published"},
+        {"state": "unavailable:live"},
+        {"state": "staged:republished"},
+        {"state": "unavailable:posted"},
+    ],
+)
+def test_quarantine_rejects_unknown_or_effect_capable_ledger_schema(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    row_update: dict,
+) -> None:
+    state_path, ledger, _ = _state(tmp_path)
+    row = {
+        "run_id": "daily-2026-08-21",
+        "topic_id": "topic-1",
+        "platform": "substack",
+        "lang": "en",
+        "state": "staged:pre-publication",
+        "published": False,
+        "verified_logged_in": False,
+        "live_url": None,
+        "public_id": None,
+        "receipt": None,
+        "published_at": None,
+        "reality_gate": None,
+    }
+    row.update(row_update)
+    ledger.write_text(json.dumps(row) + "\n", encoding="utf-8")
+    store = MODULE.PublicationStore(state_path, ledger)
+    monkeypatch.setattr(store, "_validate_layout", lambda *args, **kwargs: Path(tmp_path / "runs" / "daily-2026-08-21"))
+    remote = {
+        "status": "not-live",
+        "verified": True,
+        "destination_identity": "aniccabuddha.substack.com",
+        "identity_verified": True,
+        "identity_source": "protected-substack-authenticated-draft-api",
+        "source": "substack-draft-api",
+    }
+    with pytest.raises(MODULE.InvariantError, match="effect-capable"):
+        store.quarantine_identity_conflict("substack/en", "123", remote)
+
+
 def test_guard_cli_reaches_legacy_migration_before_normal_identity_validation(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
