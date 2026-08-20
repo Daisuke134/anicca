@@ -40,6 +40,13 @@
 - 現在の `publication-guard.py plan` は `resumable=false, reason=frozen-incomplete-pairs,
   frozen_pairs=[substack/en]`。英語Publicationの別identity・credential・native receipt・入金receiptは未確認で、
   JA Publicationへの混載はしない。
+- 収益の実測は`measure-sales.py`で5項目を取得したが、Note売上/購入数とSubstack paid subscribers・MRR・累計収益は
+  すべて明示数値を得られず`unknown`として保存した。`money_sync.py`のverified revenue eventは0件、
+  Stripe receiptも0件であり、公開・価格表示・閲覧を入金へ変換していない。
+- launchdは`launchctl print/kickstart`が引き続き`141: Reentrancy avoided`。同じ実行contextで`whoami`がUID `501`のみを返し、
+  `dscl . -read /Users/anicca`も`eServerError`であるため、これはWriterコードではなくmacOSのユーザーdirectory/control-plane障害として隔離する。
+  OS serviceのkill/restartやユーザーdirectoryの書換えは行わず、既存ownerの直接receiptだけを採用する。
+- 空き容量は現在約5.68GiBでfloorを一時的に上回るが、過去tickで5GiB未満へ戻った実績があるため、disk guardのfail-closed境界は解除しない。
 - 残TODOは順に、(1)保護対象を削除せず空き容量5GiB超を安定維持、(2)launchd control-plane readbackを復旧して
   Life Manager currentの定期実行を証明、(3)Substack ENの別identityとcredentialを承認済み経路で設定し、
   英語記事を同一runの英語Publicationへnative publish/readbackする、(4)publisher/paymentの実receiptだけを
