@@ -240,6 +240,14 @@ def loaded_program(label: str) -> list[str]:
     return argv
 
 
+def control_plane_available() -> bool:
+    """Whether this context can read the user's launchd domain."""
+    return subprocess.run(
+        ["launchctl", "print", f"gui/{os.getuid()}"],
+        capture_output=True,
+    ).returncode == 0
+
+
 def is_running(label: str) -> bool:
     printed = subprocess.run(["launchctl", "print", f"gui/{os.getuid()}/{label}"],
                              capture_output=True, text=True)
@@ -350,6 +358,9 @@ def main() -> int:
         print(f"release {sha[:12]} -> {release}")
         # SHA-specific definitions are migrated once. Stable definitions need no
         # deploy-time reload: their next process start follows CURRENT_RELEASE.
+        if behind and not control_plane_available():
+            print("launchd readback unavailable; current published, legacy jobs left running")
+            return 0
         _, stable_table = settings(CURRENT_RELEASE)
         for job in behind:
             activate(job, stable_table, release, False,
