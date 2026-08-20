@@ -1892,7 +1892,7 @@ independent harness task continues:
 4. **P3 — Convert Repost into measurable Affiliate acquisition, not raw volume.**
    Give `@selawmqt` one X effect owner, enforce English-only identity and bounded
    cadence, and join each Repost/ordinary-post exposure through owned article,
-   provider click, and transaction. Use the existing 19 public placements for the next
+   provider click, and transaction. Use the existing 20 exact public placements for the next
    one-variable experiment; no transaction join means no revenue credit.
 5. **P4 — Execute the provider flight plan and commerce admission.** Continue ElevenLabs while the
    Agent preserves HubSpot's rejected application and admits Semrush through official
@@ -2111,12 +2111,10 @@ receipt readback, SSOT state update, commit, and push to both canonical remotes.
   fresh official candidate set plus canonical placement outcomes; remove fixed-order selection.
 - [x] **D03** Grow the current six comparable English placements to ten through
   the existing source→composition→policy→link→owned/X→readback path. The
-  historical unattended owner run produced placements 8–10; current readback
-  has 19 public English placements with 20 dedicated provider-link keys, 19 owned
-  `LIVE` receipts, and 19 X `LIVE` receipts; one additional verified link-only row
-  remains `OWNED_NOT_LIVE` after the existing owner wake `2026-08-21T06:07:09+0900`.
-  This is placement/exposure readiness only; clicks and transactions remain
-  economic gates.
+  historical unattended owner run produced placements 8–10; current canonical
+  readback has 20 exact public English placements with 20 dedicated provider-link
+  keys and 20 matching X/public URLs. This is placement/exposure readiness only;
+  clicks and transactions remain economic gates.
 - [ ] **D04** Persist one falsifiable Experiment receipt and one changed variable
   for every new placement.
 - [ ] **D05** Record exact X exposure, owned-page visit, provider click, transaction,
@@ -2137,8 +2135,8 @@ receipt readback, SSOT state update, commit, and push to both canonical remotes.
   b4e owner proof at `2026-08-20T15:31:26Z` observed 46 valid actions, 0 exact
   campaign joins, 46 unjoined actions, and 0 invalid rows through the safe
   home fallback; Telegram message `26355` carries the same boundary and no raw
-  tracking link. The latest natural owner observation at `2026-08-20T18:21:49Z`
-  is 48 valid actions, 0 exact joins, 48 unjoined, and `NO_REVENUE_CREDIT`;
+  tracking link. The latest natural owner observation at `2026-08-20T22:01:41Z`
+  is 51 valid actions, 0 exact joins, 51 unjoined, and `NO_REVENUE_CREDIT`;
   D06 (shared effect arbiter) and D07 remain open.
 - [ ] **D07** Prove one Repost/original-X exposure joins through owned visit and
   provider click to an exact transaction, or persist the broken edge explicitly.
