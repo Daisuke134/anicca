@@ -31100,3 +31100,10 @@
 {"ts":1787193873,"wake_id":"00MT0X36257A990224EF49426F","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1787194000,"wake_id":"00MT0X5WLI363C4945D3464ABA","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1787194146,"wake_id":"00MT0X90W31BD217D0064846FA","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787194275,"wake_id":"00MT0XBSYL70057CB56CE44828","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787194466,"wake_id":"00MT0XFW32384220EC56DF451A","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: agent micro-task marketplace USDC [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced for the model "}
+{"ts":1787194593,"wake_id":"00MT0XILXZF972E5672B3D47BE","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787194720,"wake_id":"00MT0XLC3K9006BEA373704037","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787194851,"wake_id":"00MT0XO4V1AB9BC3E79BE44E2A","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787194990,"wake_id":"00MT0XR4B7F2DE523F5AD14ACE","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787195119,"wake_id":"00MT0XTVL8AE8CA99CAB5F4505","kind":"narrate","sleep_s":120,"model":"auto"}
