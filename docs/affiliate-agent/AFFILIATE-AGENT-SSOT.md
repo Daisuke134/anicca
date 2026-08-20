@@ -253,8 +253,22 @@ remained 20 exact rows. Telegram appended only a linked
 `NO_PENDING/ALREADY_DELIVERED` delivery receipt for already-sent message
 `26335` (delivery event `38e801bc…3e02d`), proving no duplicate external send
 or public effect. The launchctl command still returned macOS `141`, so this is
-an owner readback, not proof that all six labels are loaded. B01 remains
-`WAITING_FOR_PROVIDER_TRANSACTION`.
+an owner readback, not proof that all six labels are loaded. This owner readback
+confirms install, replay, and normal cooldown behavior only; the new failure
+retry branch is proven by bounded fixture checks, not by a live failure after
+the repair. B01 remains `WAITING_FOR_PROVIDER_TRANSACTION`.
+
+### 1.1.5 Subsequent owner replay
+
+The existing owner produced another wake at `2026-08-21T08:38:28+0900` with
+wake UUID `49c852a3…f67a7`. It remained `READY_FOR_PUBLICATION` with
+`revenue_state=COOLDOWN`, 20 placements, rolling net
+`NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`, and the same empty
+official artifact `f69af229…6734e3a`. Telegram appended only
+`NO_PENDING/ALREADY_DELIVERED` delivery event `cb65ebb4…593b4` for already-sent
+message `26335`; no public effect, provider capture, transaction, or money
+changed. This is another replay/readback proof, not a live retry-branch proof;
+B01 remains `WAITING_FOR_PROVIDER_TRANSACTION`.
 
 ### 1.2.0 Audited executable boundary
 
