@@ -213,6 +213,18 @@ def _rule_evidence_shapes(rule: dict[str, Any]) -> tuple[tuple[str, str], ...]:
     return ((str(rule["identity_source"]), str(rule["source"])),)
 
 
+def _rule_error_matches(rule: dict[str, Any], value: Any) -> bool:
+    """Match only listed recovery errors or explicitly bounded legacy prefixes."""
+    if not isinstance(value, str):
+        return False
+    if value in rule.get("errors", ()):
+        return True
+    return any(
+        value.startswith(str(prefix))
+        for prefix in rule.get("error_prefixes", ())
+    )
+
+
 class InvariantError(ValueError):
     """A stable identity or run boundary is missing/contradictory."""
 
@@ -2003,12 +2015,18 @@ class PublicationStore:
         },
         "substack/ja": {
             "errors": ("public-asset-readback-failed",),
+            "error_prefixes": (
+                "remote-probe-error:URLError:<urlopen error [Errno 8] nodename nor servname provided",
+            ),
             "identity_source": "protected-substack-publication-host",
             "source": "substack-draft-api+anonymous-public-html",
             "mismatch_to_repair": True,
         },
         "substack/en": {
             "errors": ("public-asset-readback-failed",),
+            "error_prefixes": (
+                "remote-probe-error:URLError:<urlopen error [Errno 8] nodename nor servname provided",
+            ),
             "identity_source": "protected-substack-publication-host",
             "source": "substack-draft-api+anonymous-public-html",
             "mismatch_to_repair": True,
@@ -2037,7 +2055,7 @@ class PublicationStore:
             )
             if (
                 entry.get("status") != "ambiguous"
-                or entry.get("error") not in rule["errors"]
+                or not _rule_error_matches(rule, entry.get("error"))
                 or entry.get("receipt")
             ):
                 raise InvariantError(

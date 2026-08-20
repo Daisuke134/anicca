@@ -24,6 +24,7 @@ from urllib.parse import urlparse
 _DNS_ERROR_TEXT = ("nodename", "name or service not known", "temporary failure")
 _FINAL_MARKER = "\n__SUBSTACK_FINAL_URL__="
 _CONTENT_TYPE_MARKER = "\n__SUBSTACK_CONTENT_TYPE__="
+_MAX_ASSET_BYTES = 25 * 1024 * 1024
 _ASSET_HOSTS = {
     "substack-post-media.s3.amazonaws.com",
     "substackcdn.com",
@@ -125,31 +126,64 @@ def _curl(
         config.extend(("location", 'proto-redir = "=https"'))
         config.append(f"write-out = {json.dumps(_FINAL_MARKER + '%{url_effective}')}" )
     elif content_type:
-        config.append(f"write-out = {json.dumps(_CONTENT_TYPE_MARKER + '%{content_type}')}" )
-    body_file = None
+        config.extend(
+            (
+                f"max-filesize = {_MAX_ASSET_BYTES + 1}",
+                f"range = 0-{_MAX_ASSET_BYTES}",
+                f"write-out = {json.dumps(_CONTENT_TYPE_MARKER + '%{http_code}|%{content_type}')}" ,
+            )
+        )
+    request_body_file = None
+    asset_output_file = None
     try:
         if data is not None:
-            body_file = tempfile.NamedTemporaryFile(prefix="substack-http-", suffix=".body", delete=False)
-            body_file.write(data)
-            body_file.close()
-            command.extend(("--data-binary", f"@{body_file.name}"))
-        result = subprocess.run(
-            command,
-            input=("\n".join(config) + "\n").encode("utf-8"),
-            capture_output=True,
-            check=False,
-        )
+            request_body_file = tempfile.NamedTemporaryFile(
+                prefix="substack-http-", suffix=".body", delete=False
+            )
+            request_body_file.write(data)
+            request_body_file.close()
+            command.extend(("--data-binary", f"@{request_body_file.name}"))
+        if content_type:
+            asset_output_file = tempfile.NamedTemporaryFile(
+                prefix="substack-http-", suffix=".asset", delete=False
+            )
+            asset_output_file.close()
+            config.append(f"output = {json.dumps(asset_output_file.name)}")
+        try:
+            result = subprocess.run(
+                command,
+                input=("\n".join(config) + "\n").encode("utf-8"),
+                capture_output=True,
+                check=False,
+            )
+        except BaseException:
+            if asset_output_file is not None:
+                Path(asset_output_file.name).unlink(missing_ok=True)
+            raise
     finally:
-        if body_file is not None:
-            Path(body_file.name).unlink(missing_ok=True)
+        if request_body_file is not None:
+            Path(request_body_file.name).unlink(missing_ok=True)
     if result.returncode != 0:
+        if asset_output_file is not None:
+            Path(asset_output_file.name).unlink(missing_ok=True)
         raise OSError(f"Substack curl fallback failed with exit {result.returncode}")
     output = result.stdout
     if content_type:
         body, marker, value = output.rpartition(_CONTENT_TYPE_MARKER.encode())
         if not marker:
             raise OSError("Substack curl fallback did not return a content type")
-        return body, value.decode("utf-8", errors="replace")
+        status, separator, mime = value.decode("utf-8", errors="replace").partition("|")
+        if separator == "" or status not in {"200", "206"}:
+            raise OSError(f"Substack curl fallback returned unsafe HTTP status {status}")
+        if asset_output_file is None:
+            raise OSError("Substack curl fallback did not create an asset file")
+        try:
+            asset = Path(asset_output_file.name).read_bytes()
+        finally:
+            Path(asset_output_file.name).unlink(missing_ok=True)
+        if len(asset) > _MAX_ASSET_BYTES:
+            raise OSError("Substack curl fallback asset exceeds size limit")
+        return asset, mime
     if not final_url:
         return output, None
     body, marker, resolved = output.rpartition(_FINAL_MARKER.encode())
@@ -219,7 +253,11 @@ def bytes_request(
     request = urllib.request.Request(url, headers=request_headers)
     try:
         with _open(request, timeout, follow_redirects=False) as response:
-            return response.read(), str(response.headers.get("Content-Type", "")).lower()
+            if response.status not in {200, 206}:
+                raise OSError(f"Substack asset returned unsafe HTTP status {response.status}")
+            return response.read(_MAX_ASSET_BYTES + 1), str(
+                response.headers.get("Content-Type", "")
+            ).lower()
     except urllib.error.URLError as error:
         if not _dns_failure(error):
             raise
