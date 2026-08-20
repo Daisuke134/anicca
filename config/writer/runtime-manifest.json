@@ -93,14 +93,25 @@
   "owner_fence": {
     "path": "skills/writer-agent/scripts/writer_owner_fence.py",
     "state_path": "~/.local/state/life-manager/writer/owner-fence",
-    "status": "implemented-in-tree-not-installed",
+    "status": "invoked-by-core-plists-not-loaded",
     "pause_gates": ["article-daily", "article-resume", "zenn-deferred-worker"],
     "fenced_workers": ["article-daily", "article-resume"],
     "legacy_cli_pause_proven": false
   },
+  "core_plist_cutover": {
+    "status": "written-not-loaded",
+    "labels": [
+      "ai.anicca.article-daily",
+      "ai.anicca.article-resume",
+      "ai.anicca.article-zenn-retry"
+    ],
+    "installed_path_readback": "life-manager-code-and-target-state",
+    "launchctl_readback": "rc=141: Reentrancy avoided",
+    "rollback_archive": "~/.local/state/life-manager/rollback/writer-core-cutover-20260820-a"
+  },
   "cutover": {
     "status": "not-ready",
-    "reason": "owner fence is implemented in the Life Manager tree but not installed; state parity, launchd drain, and bounded wake are not yet proven",
+    "reason": "state parity and core plist path cutover are recorded, but launchd readback is rc=141; owner drain, remaining label migration, and bounded wake are not yet proven",
     "publication_paused": true,
     "legacy_roots_must_not_be_deleted": true
   }
