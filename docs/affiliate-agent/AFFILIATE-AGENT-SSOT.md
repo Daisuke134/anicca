@@ -1421,8 +1421,19 @@ historical evidence below. Read-only inspection of the installed state shows:
   transitions; the canonical ledger stayed at 13 placements. This closes the
   source-refresh repair's owner-E2E and duplicate-free replay, but not A04:
   `elevenlabs-discovered-tiktok-transcript-generator-en-1` still has
-  `public_url=null`, and its same durable composition run is
-  `budget_blocked` (`pass_token_budget_exceeded`) rather than replaced.
+  `public_url=null`. Its historical `budget_blocked` run is superseded: the
+  same plan now has a `READY_FOR_POLICY` composition receipt and `PASS` campaign
+  policy for source set `ee8d…`. Publication is currently blocked by a stale
+  `MATERIALIZED` handoff fingerprint (`c116…` versus current `546…`), with no
+  owned or X receipt. The smallest repair is to rebind only that unpublished,
+  effect-free materialization; any existing owned/X receipt must remain a hard
+  `PUBLICATION_CONFLICT`.
+- an isolated publication replay verified this boundary: an effect-free stale
+  materialization rebounded to the current handoff and reached mocked `X_LIVE`,
+  its unchanged replay returned `ALREADY_LIVE` with one link/owned/X call, and
+  a stale materialization with an existing owned receipt remained
+  `PUBLICATION_CONFLICT` with zero effect calls. The repair is in the worktree
+  and is not yet installed or owner-E2E verified.
 - the current launchd capability check at `2026-08-20T09:20:57Z` also fails
   outside the service label: `launchctl managername`, `launchctl print user/501`,
   and `launchctl print gui/501` all return `141: Reentrancy avoided`, while

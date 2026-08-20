@@ -146,9 +146,15 @@ owned title/disclosure and X status ID. Telegram message `25964` is the owner
 receipt. Revenue stayed `NO_TRANSACTIONS` (`0` rows, `0` transitions), and the
 ledger stayed at 13 placements. This proves the source-refresh repair through
 the real owner and duplicate-free replay. A04 still remains open because the
-tiktok-transcript placement has no public URL; its same durable composition run
-is `budget_blocked` with `pass_token_budget_exceeded`, so no replacement was
-created.
+tiktok-transcript placement has no public URL. Its historical `budget_blocked`
+composition run is superseded: the same plan now has a `READY_FOR_POLICY`
+composition receipt and `PASS` campaign policy for source set `ee8d…`. The
+publication progress remains `MATERIALIZED` with stale handoff fingerprint
+`c116…` versus current `546…`, and neither owned nor X has a receipt. An
+isolated replay verified that only this effect-free stale materialization
+rebinds; unchanged replay is `ALREADY_LIVE`, while any existing owned receipt
+remains `PUBLICATION_CONFLICT` with zero effect calls. The repair is in the
+worktree and is not yet installed or owner-E2E verified.
 
 This handover records no Codex manual publication, provider write, or ledger
 mutation. The installed owner performed the verified music delivery described

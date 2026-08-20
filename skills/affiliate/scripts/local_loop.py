@@ -870,6 +870,17 @@ def advance_generic_publication(
             progress = json.loads(progress_path.read_text(encoding="utf-8"))
         except (OSError, ValueError):
             progress = {}
+        owned_receipt_path = state / "owned-publications" / f"{slug}.json"
+        x_receipt_path = state / "x-posts" / f"{placement}.json"
+        try:
+            existing_owned = json.loads(owned_receipt_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            existing_owned = {}
+        try:
+            existing_x = json.loads(x_receipt_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            existing_x = {}
+        rebound_from_handoff_fingerprint = None
         if progress:
             # A published placement is terminal. When a source refresh later
             # recomposes a live campaign the handoff legitimately changes, and
@@ -882,20 +893,19 @@ def advance_generic_publication(
                 completed = True
                 continue
             # Still a real hazard while the campaign is in flight: content that
-            # changed between materialization and publication.
+            # changed between materialization and publication. The sole safe
+            # exception is an unpublished MATERIALIZED checkpoint with neither
+            # effect receipt: it can be rebound to the current sealed handoff.
             if progress.get("handoff_fingerprint") != fingerprint:
-                return {"state": "PUBLICATION_CONFLICT", "public_url": None}
-
-        owned_receipt_path = state / "owned-publications" / f"{slug}.json"
-        x_receipt_path = state / "x-posts" / f"{placement}.json"
-        try:
-            existing_owned = json.loads(owned_receipt_path.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            existing_owned = {}
-        try:
-            existing_x = json.loads(x_receipt_path.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            existing_x = {}
+                if (
+                    progress.get("state") == "MATERIALIZED"
+                    and not existing_owned
+                    and not existing_x
+                ):
+                    rebound_from_handoff_fingerprint = progress.get("handoff_fingerprint")
+                    progress = {}
+                else:
+                    return {"state": "PUBLICATION_CONFLICT", "public_url": None}
         if not progress and existing_owned.get("state") == existing_x.get("state") == "LIVE":
             completed = True
             continue
@@ -943,6 +953,8 @@ def advance_generic_publication(
             "provider_link_key": dedicated.get("provider_link_key"),
             "tracking_custom_link_id": dedicated.get("tracking_custom_link_id"),
         }
+        if rebound_from_handoff_fingerprint:
+            progress["rebound_from_handoff_fingerprint"] = rebound_from_handoff_fingerprint
         if handoff.get("opportunity_decision"):
             progress["opportunity_decision"] = handoff["opportunity_decision"]
         if handoff.get("experiment"):
