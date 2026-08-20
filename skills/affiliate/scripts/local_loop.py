@@ -1699,14 +1699,30 @@ def sweep_publication_liveness(state, x_cdp_port, now=None, publisher=None):
 
 
 def revenue_cycle_due(state, now=None, cooldown_seconds=3600):
+    current_time = int(time.time()) if now is None else int(now)
     receipt = state / "revenue-cycle.json"
-    if not receipt.is_file():
-        return True
+    completed_at = None
+    if receipt.is_file():
+        try:
+            completed_at = int(json.loads(receipt.read_text(encoding="utf-8"))["completed_at"])
+        except (OSError, ValueError, KeyError, TypeError):
+            completed_at = None
+    if completed_at is not None and current_time - completed_at < cooldown_seconds:
+        return False
     try:
-        completed_at = int(json.loads(receipt.read_text(encoding="utf-8"))["completed_at"])
-    except (OSError, ValueError, KeyError, TypeError):
-        return True
-    return (int(time.time()) if now is None else now) - completed_at >= cooldown_seconds
+        failure = json.loads(
+            (state / "revenue-cycle-failure.json").read_text(encoding="utf-8")
+        )
+        failure_at = int(failure.get("observed_at", 0))
+        retry_after = int(failure.get("retry_after", 0))
+    except (OSError, ValueError, TypeError):
+        failure_at, retry_after = 0, 0
+    # A successful cycle supersedes an older failure receipt. A still-newer
+    # failure receipt owns the retry window and prevents repeated provider
+    # capture attempts on every ten-minute wake.
+    if failure_at > (completed_at or 0) and retry_after > current_time:
+        return False
+    return completed_at is None or current_time - completed_at >= cooldown_seconds
 
 
 def revenue_failure(state, stage, failure_type, return_code, error_text):
