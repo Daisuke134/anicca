@@ -1746,16 +1746,16 @@ async def supervise_replies(
                 if stop.is_set():
                     break
             if headroom_available():
-                await enqueue_pending_actions()
+                try:
+                    observed = await _supervisor_hook(probe)
+                    if headroom_available():
+                        await enqueue_head_rows(_supervisor_rows(observed))
+                except Exception:
+                    # A transient probe failure leaves durable pending rows for the
+                    # same pass; it must not tear down the supervised consumers.
+                    pass
                 if headroom_available():
-                    try:
-                        observed = await _supervisor_hook(probe)
-                        if headroom_available():
-                            await enqueue_head_rows(_supervisor_rows(observed))
-                    except Exception:
-                        # A transient probe failure leaves durable pending rows for the
-                        # next pass; it must not tear down the supervised consumers.
-                        pass
+                    await enqueue_pending_actions()
             now = time.monotonic()
             if immediate_after_overrun:
                 # One overdue pass is allowed to start immediately.  Reset the
