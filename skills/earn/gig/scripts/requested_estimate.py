@@ -2050,6 +2050,8 @@ def process_snapshot(
         )
     for action in pending_actions:
         action_id = int(action["action_id"])
+        if target_action_id is not None and action_id != target_action_id:
+            continue
         thread_id = str(action.get("thread_id") or "")
         if action_id in processed_actions or thread_id in processed_threads:
             continue
