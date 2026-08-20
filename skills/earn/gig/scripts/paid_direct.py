@@ -1973,6 +1973,11 @@ def _run_isolated_file_owner(args, root: Path, context: Path, prompt_text: str,
         finally:
             if staged_evidence.is_dir():
                 shutil.copytree(staged_evidence, owner_evidence, dirs_exist_ok=True)
+                summary_path = owner_evidence / "summary.json"
+                summary = _load(summary_path)
+                if isinstance(summary, dict) and _text(summary.get("result_path")):
+                    summary["result_path"] = Path(_text(summary["result_path"])).name
+                    _write(summary_path, summary)
         owner, _proof = _file_runner_result(
             owner_evidence, task_label="paid-file-owner", started_ns=started,
         )
