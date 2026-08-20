@@ -8,8 +8,9 @@
 //   2. claim + execute it for real (real artifact lineage, durable receipt,
 //      no external effect — generation is a no-effect producer),
 //   3. enqueue both Instagram/TikTok publication jobs and HOLD them
-//      (status shadow_held in the durable hold ledger; the jobs stay queued
-//      because no worker is granted marketing.video.publish in shadow).
+//      (status shadow_held in the durable hold ledger; available_at is pinned
+//      to the explicit-promotion sentinel so a future publish worker cannot
+//      accidentally claim historical shadow jobs).
 // It never calls Instagram, TikTok, or Postiz, and it never touches the
 // legacy launchd owner. Running this does NOT enable the scheduler.
 "use strict";
@@ -124,7 +125,7 @@ async function runHonneJaShadowCycle(argv, deps = {}) {
   }));
   let ledgerPath = null;
   const { results, hold } = await holdHonneJaShadowPublications(receipt, config, {
-    enqueueJob: jobStore.enqueueJob,
+    enqueueJobAt: jobStore.enqueueJobAt,
     storeOptions: jobStore.storeOptions,
     appendHold: async (record) => {
       ledgerPath = await appendHold(record);
@@ -172,6 +173,9 @@ async function main() {
     storeOptions: opts,
     query: opts.query,
     enqueueJob: (input, storeOptions) => store.enqueueJob(input, storeOptions || opts),
+    enqueueJobAt: (input, availableAt, storeOptions) => (
+      store.enqueueJobAt(input, availableAt, storeOptions || opts)
+    ),
     claimJobs: (input, storeOptions) => store.claimJobs(input, storeOptions || opts),
     completeJob: (input, storeOptions) => store.completeJob(input, storeOptions || opts),
     failJob: (input, storeOptions) => store.failJob(input, storeOptions || opts),

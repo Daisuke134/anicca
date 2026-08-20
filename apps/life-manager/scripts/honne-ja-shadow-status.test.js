@@ -139,3 +139,18 @@ test("an empty durable history prints 0/7 without failing", async () => {
   assert.deepEqual(printed.receipts, []);
   assert.deepEqual(printed.missed_slots, []);
 });
+
+test("EN status reports a missing 11:00 JST scheduler slot", async () => {
+  let output = "";
+  const row = slotReceiptRow("2026-08-19T22:00:00.000Z");
+  row.receipt.locale = "en";
+  const result = await readHonneJaShadowStatus([
+    "status", "--tenant", "dais-local", "--locale", "en",
+  ], {
+    query: async () => ({ rows: [row] }),
+    stdout: { write(text) { output += text; } },
+    nowMs: Date.parse("2026-08-20T02:05:00.000Z"),
+  });
+  assert.equal(result.consecutive, 0);
+  assert.deepEqual(JSON.parse(output).missed_slots, ["2026-08-20T02:00:00.000Z"]);
+});

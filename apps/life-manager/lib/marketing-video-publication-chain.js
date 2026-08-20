@@ -1,6 +1,9 @@
 "use strict";
 
-const { enqueueJob: durableEnqueueJob } = require("./runtime-job-store.js");
+const {
+  enqueueJob: durableEnqueueJob,
+  enqueueJobAt: durableEnqueueJobAt,
+} = require("./runtime-job-store.js");
 const {
   buildMarketingVideoPublicationJob,
 } = require("./marketing-video-publication-adapter.js");
@@ -37,7 +40,9 @@ function buildVideoPublicationJobsFromGeneration(receipt, options = {}) {
 }
 
 async function enqueueVideoGenerationPublications(receipt, options = {}, deps = {}) {
-  const enqueueJob = deps.enqueueJob || durableEnqueueJob;
+  const enqueueJob = deps.availableAt
+    ? (deps.enqueueJobAt || durableEnqueueJobAt)
+    : (deps.enqueueJob || durableEnqueueJob);
   const jobs = buildVideoPublicationJobsFromGeneration(receipt, options);
   // Fanout contract: runtime-job-store.js exposes single-statement enqueues only (no
   // multi-row transaction), so fanout is sequential and fail-fast — the first enqueue
@@ -47,7 +52,7 @@ async function enqueueVideoGenerationPublications(receipt, options = {}, deps = 
   // duplicate effects.
   const results = [];
   for (const job of jobs) {
-    results.push(await enqueueJob({
+    const input = {
       jobId: job.job_id,
       tenantId: job.tenant_id,
       loopId: job.loop_id,
@@ -56,7 +61,10 @@ async function enqueueVideoGenerationPublications(receipt, options = {}, deps = 
       effectKey: job.effect_key,
       inputRefs: job.input_refs,
       maxAttempts: job.max_attempts,
-    }, deps.storeOptions || {}));
+    };
+    results.push(await (deps.availableAt
+      ? enqueueJob(input, deps.availableAt, deps.storeOptions || {})
+      : enqueueJob(input, deps.storeOptions || {})));
   }
   return results;
 }

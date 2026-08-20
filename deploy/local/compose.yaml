@@ -127,6 +127,12 @@ services:
     environment:
       <<: *runtime-environment
       LM_DEPLOYMENT_ROLE: scheduler
+      LM_HONNE_EN_SHADOW_ENABLED: "false"
+      LM_HONNE_EN_SHADOW_TIME_ZONE: Asia/Tokyo
+      LM_HONNE_EN_PRODUCT_ID: honne-ai
+      LM_HONNE_EN_FORMAT_ID: reelclaw
+      LM_HONNE_EN_LOCALE: en
+      LM_HONNE_EN_TIKTOK_INTEGRATION_REF: integration://postiz/tiktok/cmoig11ew001zlv0yk6vqo1us
       LM_SCHEDULER_OWNER: local-primary
       LM_SCHEDULER_LEASE_KEY: primary
       LM_RUNTIME_TENANT_ID: ${LM_RUNTIME_TENANT_ID:-}

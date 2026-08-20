@@ -72,9 +72,31 @@ function fakeJobStore() {
       jobs.set(input.jobId, job);
       return { created: true, job };
     },
+    async enqueueJobAt(input, availableAt) {
+      const existing = jobs.get(input.jobId);
+      if (existing) return { created: false, job: existing };
+      const job = {
+        job_id: input.jobId,
+        tenant_id: input.tenantId,
+        loop_id: input.loopId,
+        capability: input.capability,
+        effect_class: input.effectClass,
+        effect_key: input.effectKey,
+        input_refs: input.inputRefs,
+        max_attempts: input.maxAttempts,
+        attempt: 1,
+        status: "queued",
+      };
+      jobs.set(input.jobId, job);
+      const result = { created: true, job };
+      result.job.available_at = availableAt;
+      return result;
+    },
     async claimJobs({ capabilities }) {
       return [...jobs.values()].filter((job) => (
-        job.status === "queued" && capabilities.includes(job.capability)
+        job.status === "queued"
+        && capabilities.includes(job.capability)
+        && (!job.available_at || Date.parse(job.available_at) <= Date.now())
       )).slice(0, 1).map((job) => ({ ...job, status: "running" }));
     },
     async completeJob(input) {

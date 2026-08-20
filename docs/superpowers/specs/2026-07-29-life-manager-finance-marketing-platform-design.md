@@ -1320,8 +1320,9 @@ ledger real-loop duplicate1, exact-five, and 251/251 cutover health are read bac
 `OSS-MERGE-1` PR #1268 is merged as canonical `8d47689d3…`; that exact `main`
 commit passes a clean fresh clone, 647/647 app tests, all eight evals, panel
 privacy, the seven-source manifest, and the single canonical runner contract.
-The current migration subcursor is the generic Honne JA
-`marketing.video.generate` shadow slice under Order 11.
+The current incident subcursor is I-3: one explicitly promoted Honne EN
+controlled canary under Order 11. I-2 leaves every Honne EN publication job
+claim-ineligible until that promotion; it does not activate the lane.
 
 | Order | Deliverable | Exit evidence |
 |---:|---|---|
@@ -1378,7 +1379,7 @@ schedulers or revive known-broken producers:
 |---:|---|---|---|
 | I-0 | Freeze incident truth and preserve rollback | live OpenClaw SQLite, launchd disabled overrides, Postiz connectivity/integrations, last public URLs, logs, and quarantine backup are read back without changing state | **done** |
 | I-1 | Add expected-slot liveness and Telegram incident reporting in Life Manager | independent liveness service + durable message jobs; fake Telegram proves direct reconciled artifact URL, truthful unavailable miss, replay dedupe, and zero jobs for disabled/default-off/shadow; changed runtime scope scans 0 legacy dependencies | **implementation done; repository-wide scan remains blocked by the pre-existing Connector photo transport at `outbound-guardian.js:176`** |
-| I-2 | Wire the generic Life Manager video chain to a default-off Honne EN schedule | exact 07:00/11:00/20:30 Asia/Tokyo slots generate durable jobs with no OpenClaw path or env read; shadow performs zero provider writes | open |
+| I-2 | Wire the generic Life Manager video chain to a default-off Honne EN schedule | exact 07:00/11:00/20:30 Asia/Tokyo slots generate durable jobs with no OpenClaw path or env read; shadow performs zero provider writes | **done** — `LM_HONNE_EN_SHADOW_ENABLED=false`; generation and publication lineage preserve Honne EN product/locale/creative/account refs; publication jobs are durable but claim-ineligible at the explicit-promotion sentinel, replay creates zero duplicates, and the EN status grid reports passed slots without receipts as missed. Runtime adapters and runtime-up suites pass; changed runtime scope has zero legacy references. The repository-wide scan still exposes only the pre-existing `outbound-guardian.js:176` OpenClaw media fallback recorded by I-1. |
 | I-3 | Run one controlled Honne EN canary from Life Manager | one real TikTok publication reconciles as `PUBLISHED`, its direct `/video/<id>` URL returns publicly, Telegram receives the same URL, replay produces no duplicate | open; requires the normal canary external-effect gate |
 | I-4 | Prove seven consecutive Honne EN expected cycles | every slot has exactly one verified generation, publication, URL, notification, and initial observation receipt; any miss/duplicate resets the counter | open |
 | I-5 | Repair and migrate Anicca video/slideshow producers one lane at a time | missing hook sources, blank IDs, poster arguments, and secret boundaries are fixed behind Life Manager contracts; each lane passes shadow, canary, and seven expected cycles | open |

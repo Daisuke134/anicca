@@ -1090,7 +1090,7 @@ async function runSchedulerOwner(env = process.env) {
     if (!honneJaShadow.enabled || honneJaShadowActive) return;
     honneJaShadowActive = true;
     try {
-      const { enqueueJob } = require("../lib/runtime-job-store.js");
+      const { enqueueJob, enqueueJobAt } = require("../lib/runtime-job-store.js");
       const storeOptions = { query: pool.query.bind(pool) };
       const job = planHonneJaShadowGeneration(honneJaShadow, Date.now());
       if (job) {
@@ -1114,7 +1114,7 @@ async function runSchedulerOwner(env = process.env) {
       });
       for (const receipt of receipts) {
         await holdHonneJaShadowPublications(receipt, honneJaShadow, {
-          enqueueJob,
+          enqueueJobAt,
           storeOptions,
           appendHold: (hold) => appendHonneJaShadowHold(hold, {
             dataDir: requiredEnv(env, "LM_DATA_DIR"),
@@ -1132,6 +1132,67 @@ async function runSchedulerOwner(env = process.env) {
     honneJaShadowTimer = setInterval(() => {
       runHonneJaShadowScan().catch(() => {});
     }, honneJaShadowPollMs);
+  }
+
+  // Honne EN recovery lane — DEFAULT OFF. This uses only Life Manager data and
+  // durable jobs. Shadow enqueues generation/publication lineage but grants no
+  // marketing.video.publish capability, so provider writes remain zero.
+  const {
+    honneEnShadowConfig,
+    planHonneEnShadowGeneration,
+    holdHonneEnShadowPublications,
+    appendHonneEnShadowHold,
+  } = require("../lib/honne-en-shadow-runtime.js");
+  const honneEnShadow = honneEnShadowConfig(env);
+  const honneEnShadowPollMs = Number(env.LM_HONNE_EN_SHADOW_POLL_MS || 60000);
+  let honneEnShadowTimer;
+  let honneEnShadowActive = false;
+  async function runHonneEnShadowScan() {
+    if (!honneEnShadow.enabled || honneEnShadowActive) return;
+    honneEnShadowActive = true;
+    try {
+      const { enqueueJob, enqueueJobAt } = require("../lib/runtime-job-store.js");
+      const storeOptions = { query: pool.query.bind(pool) };
+      const job = planHonneEnShadowGeneration(honneEnShadow, Date.now());
+      if (job) {
+        await enqueueJob({
+          jobId: job.job_id,
+          tenantId: job.tenant_id,
+          loopId: job.loop_id,
+          capability: job.capability,
+          effectClass: job.effect_class,
+          effectKey: job.effect_key,
+          inputRefs: job.input_refs,
+          maxAttempts: job.max_attempts,
+        }, storeOptions);
+      }
+      const receipts = await listHonneJaShadowGenerationReceipts(pool, {
+        tenantId: honneEnShadow.tenantId,
+        productId: honneEnShadow.productId,
+        formatId: honneEnShadow.formatId,
+        locale: honneEnShadow.locale,
+        after: requiredEnv(env, "LM_HONNE_EN_SHADOW_AFTER"),
+      });
+      for (const receipt of receipts) {
+        await holdHonneEnShadowPublications(receipt, honneEnShadow, {
+          enqueueJobAt,
+          storeOptions,
+          appendHold: (hold) => appendHonneEnShadowHold(hold, {
+            dataDir: requiredEnv(env, "LM_DATA_DIR"),
+            tenantId: honneEnShadow.tenantId,
+            productId: honneEnShadow.productId,
+          }),
+        });
+      }
+    } finally {
+      honneEnShadowActive = false;
+    }
+  }
+  await runHonneEnShadowScan();
+  if (honneEnShadow.enabled) {
+    honneEnShadowTimer = setInterval(() => {
+      runHonneEnShadowScan().catch(() => {});
+    }, honneEnShadowPollMs);
   }
 
   const child = spawn(process.execPath, ["server.js"], {
@@ -1166,6 +1227,7 @@ async function runSchedulerOwner(env = process.env) {
     if (publicationChainTimer) clearInterval(publicationChainTimer);
     if (observationTimer) clearInterval(observationTimer);
     if (honneJaShadowTimer) clearInterval(honneJaShadowTimer);
+    if (honneEnShadowTimer) clearInterval(honneEnShadowTimer);
     if (!child.killed) child.kill(signal || "SIGTERM");
     try {
       await pool.query(

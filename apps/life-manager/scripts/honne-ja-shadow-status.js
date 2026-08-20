@@ -10,6 +10,7 @@
 "use strict";
 
 const { honneJaShadowStatus } = require("../lib/honne-ja-shadow-runtime.js");
+const { honneEnShadowStatus } = require("../lib/honne-en-shadow-runtime.js");
 
 const DEFAULTS = { product: "honne-ai", format: "reelclaw", locale: "ja" };
 const ALLOWED = new Set(["tenant", "product", "format", "locale"]);
@@ -66,7 +67,8 @@ async function readHonneJaShadowStatus(argv, deps = {}) {
     `locale://${args.locale}`,
   ]);
   const env = deps.env || process.env;
-  const status = honneJaShadowStatus(result.rows.map((row) => ({
+  const statusReader = args.locale === "en" ? honneEnShadowStatus : honneJaShadowStatus;
+  const status = statusReader(result.rows.map((row) => ({
     outcome: row.outcome,
     receipt: row.receipt,
     created_at: row.created_at instanceof Date
@@ -74,7 +76,10 @@ async function readHonneJaShadowStatus(argv, deps = {}) {
       : row.created_at,
   })), {
     nowMs: deps.nowMs == null ? Date.now() : deps.nowMs,
-    timeZone: String(env.LM_HONNE_JA_SHADOW_TIME_ZONE || "Asia/Tokyo").trim(),
+    timeZone: String(
+      env[args.locale === "en" ? "LM_HONNE_EN_SHADOW_TIME_ZONE" : "LM_HONNE_JA_SHADOW_TIME_ZONE"]
+      || "Asia/Tokyo",
+    ).trim(),
   });
   (deps.stdout || process.stdout).write(`${JSON.stringify({
     tenant_id: args.tenant,

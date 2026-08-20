@@ -92,14 +92,15 @@ function zonedSlotInstant(clock, slot, timeZone) {
 // instant; null before the first slot of the local day. Every tick inside the
 // same slot window resolves to the same instant, so the derived generation
 // job_id is idempotent across scheduler polls.
-function honneJaDueSlot(nowMs, timeZone = "Asia/Tokyo") {
+function marketingVideoDueSlot(nowMs, timeZone = "Asia/Tokyo", slots = HONNE_JA_SLOTS) {
   if (typeof nowMs !== "number" || !Number.isFinite(nowMs)) {
     throw new Error("honne JA schedule time is invalid");
   }
   const local = wallClock(timeZone, new Date(nowMs));
   const nowMinutes = local.hour * 60 + local.minute;
   let due = null;
-  for (const slot of HONNE_JA_SLOTS) {
+  for (const slot of slots) {
+    if (!SLOT_PATTERN.test(slot)) throw new Error("marketing video schedule slot is invalid");
     const [hour, minute] = slot.split(":").map(Number);
     if (nowMinutes >= hour * 60 + minute) due = slot;
   }
@@ -111,8 +112,13 @@ function honneJaDueSlot(nowMs, timeZone = "Asia/Tokyo") {
   );
 }
 
+function honneJaDueSlot(nowMs, timeZone = "Asia/Tokyo") {
+  return marketingVideoDueSlot(nowMs, timeZone, HONNE_JA_SLOTS);
+}
+
 module.exports = {
   HONNE_JA_SLOTS,
   honneJaDueSlot,
+  marketingVideoDueSlot,
   zonedSlotInstant,
 };

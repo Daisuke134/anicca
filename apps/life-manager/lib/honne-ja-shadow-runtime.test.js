@@ -78,6 +78,11 @@ function fakeDurableStore() {
       jobs.set(input.jobId, job);
       return { created: true, job };
     },
+    async enqueueJobAt(input, availableAt) {
+      const result = await this.enqueueJob(input);
+      result.job.available_at = availableAt;
+      return result;
+    },
   };
 }
 
@@ -170,7 +175,7 @@ test("shadow hold enqueues both publication jobs, holds them queued, calls no pr
   const provider = () => { providerCalls += 1; };
 
   const { results, hold } = await holdHonneJaShadowPublications(generationReceipt(), config, {
-    enqueueJob: store.enqueueJob,
+    enqueueJobAt: store.enqueueJobAt.bind(store),
     appendHold: async (record) => { holds.push(record); },
     now: () => "2026-07-30T03:32:00.000Z",
     runDistribution: provider,
@@ -202,7 +207,7 @@ test("shadow hold replay leaves the durable store unchanged and providers untouc
   const store = fakeDurableStore();
   const holds = [];
   const deps = {
-    enqueueJob: store.enqueueJob,
+    enqueueJobAt: store.enqueueJobAt.bind(store),
     appendHold: async (record) => { holds.push(record); },
     now: () => "2026-07-30T03:32:00.000Z",
   };
@@ -224,7 +229,7 @@ test("shadow hold rejects an invalid generation receipt before enqueue or hold",
     holdHonneJaShadowPublications(
       generationReceipt({ video_sha256: "d".repeat(64) }),
       config,
-      { enqueueJob: store.enqueueJob, appendHold: async (record) => { holds.push(record); } },
+      { enqueueJobAt: store.enqueueJobAt.bind(store), appendHold: async (record) => { holds.push(record); } },
     ),
     /generation receipt/i,
   );

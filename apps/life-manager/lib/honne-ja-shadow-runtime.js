@@ -17,7 +17,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 
-const { HONNE_JA_SLOTS, honneJaDueSlot, zonedSlotInstant } = require("./honne-ja-shadow-schedule.js");
+const { HONNE_JA_SLOTS, honneJaDueSlot, marketingVideoDueSlot, zonedSlotInstant } = require("./honne-ja-shadow-schedule.js");
 const {
   buildMarketingVideoGenerationJob,
   verifyMarketingVideoGenerationReceipt,
@@ -27,6 +27,7 @@ const {
 } = require("./marketing-video-publication-chain.js");
 
 const SHADOW_HOLD_STATUS = "shadow_held";
+const SHADOW_HOLD_AVAILABLE_AT = "9999-12-31T23:59:59.000Z";
 const EXPECTED_SHADOW_CYCLES = 7;
 
 function requiredEnv(env, name) {
@@ -69,6 +70,40 @@ function honneJaShadowConfig(env = {}, options = {}) {
   });
 }
 
+function marketingVideoShadowConfig(env = {}, options = {}) {
+  const prefix = String(options.envPrefix || "").trim();
+  const slots = options.slots;
+  if (!/^LM_[A-Z0-9_]+$/.test(prefix) || !Array.isArray(slots) || slots.length < 1) {
+    throw new Error("marketing video shadow configuration is invalid");
+  }
+  const key = (suffix) => `${prefix}_${suffix}`;
+  const enabled = String(env[key("SHADOW_ENABLED")] == null ? "false" : env[key("SHADOW_ENABLED")])
+    .trim().toLowerCase() === "true";
+  const base = Object.freeze({
+    enabled,
+    timeZone: String(env[key("SHADOW_TIME_ZONE")] || "Asia/Tokyo").trim(),
+    slots,
+  });
+  if (!enabled && options.manual !== true) return base;
+  const mediaRefs = requiredEnv(env, key("MEDIA_REFS")).split(",").map((value) => value.trim()).filter(Boolean);
+  if (mediaRefs.length < 1) throw new Error(`${key("MEDIA_REFS")} is required`);
+  return Object.freeze({
+    ...base,
+    tenantId: requiredEnv(env, "LM_RUNTIME_TENANT_ID"),
+    productId: String(env[key("PRODUCT_ID")] || options.defaultProductId || "").trim(),
+    formatId: String(env[key("FORMAT_ID")] || options.defaultFormatId || "").trim(),
+    locale: String(env[key("LOCALE")] || options.defaultLocale || "").trim(),
+    packRef: requiredEnv(env, key("PACK_REF")),
+    mediaRefs: Object.freeze(mediaRefs),
+    publication: Object.freeze({
+      approvalRef: requiredEnv(env, key("PUBLICATION_APPROVAL_REF")),
+      instagramProfileRef: requiredEnv(env, key("INSTAGRAM_PROFILE_REF")),
+      postizTokenRef: requiredEnv(env, key("POSTIZ_TOKEN_REF")),
+      tiktokIntegrationRef: requiredEnv(env, key("TIKTOK_INTEGRATION_REF")),
+    }),
+  });
+}
+
 // The due generation job for `nowMs`, or null when the scheduler is disabled
 // or no slot has fired yet on the current local day. Two polls inside the same
 // slot window derive the same job_id, so the durable enqueue is idempotent.
@@ -87,15 +122,30 @@ function planHonneJaShadowGeneration(config, nowMs) {
   });
 }
 
+function planMarketingVideoShadowGeneration(config, nowMs) {
+  if (!config || config.enabled !== true) return null;
+  const slot = marketingVideoDueSlot(nowMs, config.timeZone, config.slots);
+  if (!slot) return null;
+  return buildMarketingVideoGenerationJob({
+    tenantId: config.tenantId,
+    productId: config.productId,
+    formatId: config.formatId,
+    locale: config.locale,
+    slot,
+    packRef: config.packRef,
+    mediaRefs: [...config.mediaRefs],
+  });
+}
+
 // Enqueue the Instagram+TikTok publication jobs for one verified generation
 // receipt and record the hold durably. Execution is NEVER triggered here: the
 // jobs stay queued because shadow grants no worker the publish capability.
 async function holdHonneJaShadowPublications(receipt, config, deps = {}) {
   if (!config || !config.publication) {
-    throw new Error("honne JA shadow publication references are required");
+    throw new Error("marketing video shadow publication references are required");
   }
   if (typeof deps.appendHold !== "function") {
-    throw new Error("honne JA shadow hold sink is required");
+    throw new Error("marketing video shadow hold sink is required");
   }
   if (!verifyMarketingVideoGenerationReceipt(receipt)) {
     throw new Error("marketing video generation receipt is invalid");
@@ -107,7 +157,11 @@ async function holdHonneJaShadowPublications(receipt, config, deps = {}) {
     instagramProfileRef: config.publication.instagramProfileRef,
     postizTokenRef: config.publication.postizTokenRef,
     tiktokIntegrationRef: config.publication.tiktokIntegrationRef,
-  }, { enqueueJob: deps.enqueueJob, storeOptions: deps.storeOptions });
+  }, {
+    availableAt: SHADOW_HOLD_AVAILABLE_AT,
+    enqueueJobAt: deps.enqueueJobAt,
+    storeOptions: deps.storeOptions,
+  });
   const hold = {
     schema_version: 1,
     kind: "marketing_video_publication_hold",
@@ -189,13 +243,13 @@ function previousCalendarDay(day) {
 // yields the previous grid slot, so the whole expected sequence is derivable
 // backward from any instant. A slot that does not exist on a local calendar
 // day (DST gap) is skipped: it was never expected to fire.
-function latestExpectedSlotInstant(beforeMs, timeZone) {
+function latestExpectedSlotInstant(beforeMs, timeZone, slots = HONNE_JA_SLOTS) {
   let day = localCalendarDay(beforeMs, timeZone);
   for (let dayIndex = 0; dayIndex < 4; dayIndex += 1) {
-    for (let slotIndex = HONNE_JA_SLOTS.length - 1; slotIndex >= 0; slotIndex -= 1) {
+    for (let slotIndex = slots.length - 1; slotIndex >= 0; slotIndex -= 1) {
       let instant;
       try {
-        instant = zonedSlotInstant(day, HONNE_JA_SLOTS[slotIndex], timeZone);
+        instant = zonedSlotInstant(day, slots[slotIndex], timeZone);
       } catch {
         continue;
       }
@@ -233,6 +287,7 @@ function honneJaShadowStatus(rows, options = {}) {
     throw new Error("honne JA shadow status time is invalid");
   }
   const timeZone = String(options.timeZone || "Asia/Tokyo").trim();
+  const slots = options.slots || HONNE_JA_SLOTS;
 
   // Trailing rows that are completed AND verifiable; any failed or
   // unverifiable row bounds the run (existing reset behavior preserved).
@@ -264,7 +319,7 @@ function honneJaShadowStatus(rows, options = {}) {
     for (const entry of trailing) {
       slotCounts.set(entry.slot, (slotCounts.get(entry.slot) || 0) + 1);
     }
-    let expectedSlot = latestExpectedSlotInstant(nowMs, timeZone);
+    let expectedSlot = latestExpectedSlotInstant(nowMs, timeZone, slots);
     let index = trailing.length - 1;
     while (index >= 0 && expectedSlot) {
       const entry = trailing[index];
@@ -280,7 +335,7 @@ function honneJaShadowStatus(rows, options = {}) {
           && missedSlots.length < MISSED_SLOT_REPORT_LIMIT
         ) {
           missedSlots.unshift(cursor);
-          cursor = latestExpectedSlotInstant(Date.parse(cursor) - 1, timeZone);
+          cursor = latestExpectedSlotInstant(Date.parse(cursor) - 1, timeZone, slots);
         }
         break;
       }
@@ -289,7 +344,7 @@ function honneJaShadowStatus(rows, options = {}) {
       if (slotCounts.get(entry.slot) > 1) break;
       receipts.unshift(entry);
       index -= 1;
-      expectedSlot = latestExpectedSlotInstant(Date.parse(expectedSlot) - 1, timeZone);
+      expectedSlot = latestExpectedSlotInstant(Date.parse(expectedSlot) - 1, timeZone, slots);
     }
   }
 
@@ -306,10 +361,13 @@ function honneJaShadowStatus(rows, options = {}) {
 
 module.exports = {
   EXPECTED_SHADOW_CYCLES,
+  SHADOW_HOLD_AVAILABLE_AT,
   SHADOW_HOLD_STATUS,
   appendHonneJaShadowHold,
   holdHonneJaShadowPublications,
   honneJaShadowConfig,
   honneJaShadowStatus,
+  marketingVideoShadowConfig,
+  planMarketingVideoShadowGeneration,
   planHonneJaShadowGeneration,
 };
