@@ -1390,6 +1390,17 @@ historical evidence below. Read-only inspection of the installed state shows:
   `2026-08-20T09:17:16Z` again returned `141: Reentrancy avoided`, no loop
   process started, and `last-run.json` still shows the pre-repair ContentError.
   Therefore the code fix is installed/readable but not yet owner-E2E verified.
+- the existing owner then ran naturally at `2026-08-20T09:23:59Z` on the
+  repaired release and passed the pricing-source gate, but failed closed at
+  the next policy gate with `ContentError: affiliate article policy failed`.
+  The policy receipt observed at `2026-08-20T09:23:55Z` had every check true
+  except `fresh_sources_match_artifact`: the reusable TTS artifact still held
+  the superseded pricing hash `5333196f…f74a21`, while the current official
+  capture is `de2957b4…c4ceec`. No owned/X write occurred and the ledger stayed
+  at 13 placements. The smallest repair is to make the deterministic builder
+  refresh an existing artifact whenever the current source-hash map differs;
+  a temporary isolated replay proved the rebuilt artifact and all five policy
+  checks pass without exposing or changing the real link.
 - the current launchd capability check at `2026-08-20T09:20:57Z` also fails
   outside the service label: `launchctl managername`, `launchctl print user/501`,
   and `launchctl print gui/501` all return `141: Reentrancy avoided`, while

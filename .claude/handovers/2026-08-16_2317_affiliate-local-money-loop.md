@@ -118,6 +118,17 @@ and `launchctl print gui/501` all return `141: Reentrancy avoided`, while
 domain is not readable from this session; no bootstrap, reload, OS-service
 restart, or parallel executor is an honest substitute.
 
+Despite that readback limitation, the existing owner continued its normal
+interval. At `2026-08-20T09:23:59Z` it passed the repaired TTS pricing-source
+gate and failed closed at policy: `fresh_sources_match_artifact=false` because
+the existing deterministic artifact retained pricing hash
+`5333196f…f74a21` while the current official capture is
+`de2957b4…c4ceec`. The policy receipt had the other four checks true; no owned
+or X effect occurred and the placement ledger remained at 13. The pending
+repair changes only the builder's artifact-reuse condition to require the
+current source-hash map; an isolated replay proved source rebinding and
+five-check policy PASS. It is not yet installed or owner-E2E verified.
+
 This handover records no Codex manual publication, provider write, or ledger
 mutation. The installed owner performed the verified music delivery described
 above; Codex did not create a parallel executor.

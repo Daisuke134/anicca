@@ -172,12 +172,15 @@ def build_tts_api(root, state, private_markdown):
     link = elevenlabs_link(private_markdown, TTS_API_LINK_FIELD)
     if not link:
         raise ContentError("executable ElevenLabs link is unavailable")
-    if target.is_file():
-        artifact = json.loads(target.read_text(encoding="utf-8"))
-        if artifact.get("readback_links") == [link]:
-            return {key: artifact[key] for key in ("artifact_id", "slug", "content_sha256", "state")}
     now = datetime.now(timezone.utc)
     source_hashes = require_sources(state, TTS_API_REQUIRED, now)
+    if target.is_file():
+        artifact = json.loads(target.read_text(encoding="utf-8"))
+        if (
+            artifact.get("readback_links") == [link]
+            and artifact.get("source_hashes") == source_hashes
+        ):
+            return {key: artifact[key] for key in ("artifact_id", "slug", "content_sha256", "state")}
     template = (root / "config" / "content" / "elevenlabs-tts-api-en-v1.md").read_text(encoding="utf-8")
     markdown = validate_tts_api_result({
         "title": TTS_API_TITLE, "markdown": template,
