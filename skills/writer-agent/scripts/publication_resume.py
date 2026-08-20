@@ -1049,9 +1049,9 @@ class PublicationStore:
             body_assets,
             require_state=False,
         )
-        if legacy_exact8:
-            if x_post_path is None:
-                raise InvariantError("legacy exact8 requires an x post artifact")
+        if legacy_exact8 and x_post_path is None:
+            raise InvariantError("legacy exact8 requires an x post artifact")
+        if x_post_path is not None:
             validate_x_post_text(x_post_path)
         quality_receipts = (
             require_quality_terminals(resolved_run, drafts)
@@ -1062,7 +1062,7 @@ class PublicationStore:
             "ja": Path(drafts["ja"]),
             "en": Path(drafts["en"]),
         }
-        if legacy_exact8 and x_post_path is not None:
+        if x_post_path is not None:
             cta_artifacts["x-post-ja"] = x_post_path
         _require_cta(resolved_run, cta_artifacts)
         publication_contract = "legacy-exact8" if legacy_exact8 else "active-four"

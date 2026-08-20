@@ -5,6 +5,9 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 mkdir -p "$TMP/bin" "$TMP/run"
+printf '# ja\n' >"$TMP/run/article-ja.md"
+printf '# en\n' >"$TMP/run/article-en.md"
+printf 'post\n' >"$TMP/run/x-post-ja.txt"
 printf 'headline' >"$TMP/run/headline.png"
 HASH="$(shasum -a 256 "$TMP/run/headline.png" | awk '{print $1}')"
 cat >"$TMP/state.json" <<JSON
@@ -39,6 +42,7 @@ SH
 chmod +x "$TMP/bin/"*
 
 CALL_LOG="$TMP/calls" ARGS_LOG="$TMP/args" \
+ARTICLE_RUN_DIR="$TMP/run" \
 ARTICLE_PUBLICATION_STATE="$TMP/state.json" \
 NOTE_POLICY_COMMAND="$TMP/bin/policy" \
 NOTE_EYECATCH_COMMAND="$TMP/bin/eyecatch" \
