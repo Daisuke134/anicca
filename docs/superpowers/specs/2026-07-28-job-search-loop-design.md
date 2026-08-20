@@ -183,15 +183,20 @@ immutable evidence → materialized SQLite state → verifier → summary.v2
 Deterministic code owns filtering, idempotency, transitions, and side effects.
 The canonical `runtime/agent-runner` owns model execution:
 
-| Task | Route |
-|---|---|
-| Job extraction, scoring explanation, tailoring | `composition-agent` → GPT-5.6 Terra medium, Claude fallback |
-| Repeated inbox classification | `repeatable-agent` → GPT-5.6 Luna medium, Claude fallback |
-| Browser ATS completion | `browser-lane-agent` → GPT-5.6 Terra medium, Claude fallback |
-| Weekly strategy experiment | `high-value-agent` → GPT-5.6 Luna medium, Claude fallback |
+| Task class | Current configured route | Current evidence |
+|---|---|---|
+| Job extraction, scoring explanation, inbox composition and tailoring | `composition-agent` → `codex/gpt-5.6-terra`, medium | `runtime/agent-runner/config.json`; the job entrypoints use this class |
+| Repeated decision work | `repeatable-agent` → `codex/gpt-5.6-terra`, medium | Configured class; the current inbox entrypoint uses `composition-agent` |
+| Browser ATS completion | `browser-lane-agent` → `codex/gpt-5.6-terra`, medium | Configured class; 900-second browser bound |
+| Application intent planning | `application-intent-planner` → `codex/gpt-5.6-luna`, high, then `codex/gpt-5.6-terra`, medium | Same-provider fallback in the versioned config |
+| Weekly strategy experiment | `high-value-agent` → `codex/gpt-5.6-terra`, medium | Configured class; learning decisions are deterministic |
 
-All model outputs must validate against JSON Schema. A valid but schema-invalid response
-fails closed and does not silently switch providers.
+`install-local.sh --provider auto` can select an authenticated Claude CLI when Codex
+is unavailable, but the current task-class candidate arrays contain Codex only. A
+Claude task fallback and a generic-provider adapter are therefore not yet live; they
+are separate atomic TODO `JOB-HARNESS-PARITY-1H`. All model outputs must validate
+against JSON Schema. A valid but schema-invalid response fails closed and does not
+silently switch providers.
 
 ### 4.2A Harness-neutral skills and loops
 
@@ -238,12 +243,13 @@ life-manager/
 └── schemas/{events,results,projections}/
 ```
 
-`skills/` is the one versioned procedure source. Codex is the first harness
-(`codex` → `claude` → other compatible providers); Claude and other models receive
-the same skill, input packet and output schema through their adapters. Harness
-adapters may stage or symlink the canonical skill into their discovery directory,
-but may not fork its policy. The loop registry is the only scheduler entrypoint;
-launchd/systemd invoke a loop, never a second ad-hoc executor.
+`skills/` is the one versioned procedure source. The target harness order is Codex
+first, then Claude, then other compatible providers. The live job runner is currently
+Codex-only; `JOB-HARNESS-PARITY-1H` must add the Claude and generic candidates. Once
+present, every harness receives the same skill, input packet and output schema through
+its adapter. Harness adapters may stage or symlink the canonical skill into their
+discovery directory, but may not fork its policy. The loop registry is the only
+scheduler entrypoint; launchd/systemd invoke a loop, never a second ad-hoc executor.
 
 The current `apps/job-search-loop/` remains the production owner until the proposed
 `skills/job-hunter/` and `loops/job-hunter/` pass behavior-parity tests. This avoids
@@ -872,6 +878,10 @@ Telegram is the phase-1 proactive interface:
 
 | Moment | Message contract |
 |---|---|
+| Loop lifecycle | loop name, Japan/local time, run ID, started/finished state, duration, next scheduled run and whether the run was clean, blocked or awaiting reconciliation |
+| Model execution | task class, provider, requested model, effort, attempt number, fallback used, measured token/cost summary when available and schema-validation result; never include prompts, credentials or raw private context |
+| Discovery and ranking | query families, providers attempted, fallback outcome, eligible/rejected counts, best lead and the exact reason for each material block |
+| Materials and ATS readiness | routed resume variant/hash, claim/evidence validation, ATS surface, readiness result and the next safe browser action |
 | Confirmed application | company, role, official URL, confirmed state, fit thesis, selected resume name/hash; send that exact PDF as a document |
 | Daily completion | best verified dream-job lead, discovered/qualified/submitted/unknown counts, blockers, fallbacks used, selected model route and next scheduled action |
 | Recruiter or assessment event | classification, durable action taken, deadline/rules evidence and only the remaining human-only action |
@@ -881,9 +891,19 @@ Telegram is the phase-1 proactive interface:
 | Weekly learning | baseline/candidate field, samples, funnel outcomes, replay result, confidence intervals and promote/inconclusive/rollback decision |
 | Operational health | only after bounded recovery fails or an uncertain side effect needs attention; include failure class, last good receipt and next automatic retry/reconciliation |
 
-Every event uses a stable content-addressed outbox key. A changed same-day result may
-send one correction; an identical run remains silent. Life Manager consumes the same
-event stream and `summary.v2`, so Telegram and the local dashboard cannot disagree.
+Reports are rendered from a versioned event envelope into natural-language prose in
+the private profile locale (Japanese for the current profile), with compact labeled
+lines for model, result, blocker and next action. They are not raw JSON and never
+contain passwords, activation URLs, tokens, cookies, private free-text answers or
+unredacted provider logs. The deterministic renderer may quote a public job URL and
+short evidence/hash prefixes when they help the user reconcile an action.
+
+Every material loop event uses a stable content-addressed outbox key. A changed
+same-day result may send one correction; an identical event remains silent. A model
+failure cannot suppress the report: the deterministic fallback renderer sends a
+human-readable failure/blocker message, and the transport's `delivery_unknown` state
+itself becomes a durable health event. Life Manager consumes the same event stream and
+`summary.v2`, so Telegram and the local dashboard cannot disagree.
 
 ## 6. Ranking
 
@@ -1139,11 +1159,11 @@ closed loop to pass real E2E verification, not merely unit tests or a polished U
 | 4 — whole-life coordination | evidence-backed Career inputs to Financial, Physical and Mental planning with separate consent boundaries |
 
 Phase 1 is the current implementation scope. Acquisition, follow-through and
-learning are live; resume quality, harness-neutral skill extraction, guardian,
-lifecycle closure and `summary.v2` are the remaining local work. Phase 2 starts only
-after the local closed-loop verification gates pass. Career is a coordinating Life
-Manager surface, not permission to merge private health and employment evidence into
-one unrestricted data pool.
+learning are live; resume quality, harness parity, complete natural-language Telegram
+coverage, guardian, lifecycle closure and `summary.v2` are the remaining local work.
+Phase 2 starts only after the local closed-loop verification gates pass. Career is a
+coordinating Life Manager surface, not permission to merge private health and
+employment evidence into one unrestricted data pool.
 
 ### 11.1 Ordered expansion backlog
 
@@ -1156,9 +1176,10 @@ for a naturally arriving email:
 
 - Runtime evidence pointer: Order 10 continues daily until one truthful confirmed
   submission exists for both Ashby and Workday.
-- Engineering pointer: resume quality revision `1R` and harness-neutral skill
-  extraction `1S` are now first; 11A–11C remain complete, then 11D's deterministic
-  resident guardian, 11E–11F and 13A–13C follow in the order below.
+- Engineering pointer: resume quality revision `1R`, skill extraction `1S`, harness
+  parity `1H` and Telegram coverage `1T` are now first; 11A–11C remain complete,
+  then 11D's deterministic resident guardian, 11E–11F and 13A–13C follow in the
+  order below.
 
 Orders 8 and 9, plus 10L's naturally occurring same-thread follow-up proof, wait for
 their respective private fact or external message.
@@ -1168,7 +1189,7 @@ must accumulate in the live loop:
 
 | Lane | Current evidence | Next completion gate |
 |---|---|---|
-| Engineering now | 11C merged in PR #1376 at `1bdbc67d3`, with health-status closure in PR #1377 at `fd26398cc`; the weekly learning driver, held-out replay, deterministic assignment, Wilson decision, rollback and hashed reporting have 203 passing job-loop tests and one real inconclusive receipt/Telegram ACK | Complete `JOB-RESUME-MATERIALS-1R`, then `JOB-SKILL-BUNDLE-1S` |
+| Engineering now | 11C merged in PR #1376 at `1bdbc67d3`, with health-status closure in PR #1377 at `fd26398cc`; the weekly learning driver, held-out replay, deterministic assignment, Wilson decision, rollback and hashed reporting have 203 passing job-loop tests and one real inconclusive receipt/Telegram ACK | Complete `JOB-RESUME-MATERIALS-1R`, `JOB-SKILL-BUNDLE-1S`, `JOB-HARNESS-PARITY-1H` and `JOB-TELEGRAM-COVERAGE-1T` |
 | Resident runtime | Acquisition, inbox and learning LaunchAgents are healthy (`last_exit=0`) on the 08:30 JST, 900-second and Sunday 09:15 JST schedules; ledger and interview-prep integrity are `ok`; applications remain 2 `submitted`, 1 `submit_unknown`, 2 `not_submitted` | Keep running Order 10 until the projection truthfully contains one confirmed Ashby and one confirmed Workday submission; current confirmed adapters are 0/2 |
 | Private/external wait | No verified nationality/work-visa facts, real interview email, or naturally occurring later same-thread recruiting message has arrived | Close Order 8, Order 9 and the 10L E2E gate only when their authoritative input exists; none blocks 11B engineering |
 
@@ -1202,7 +1223,9 @@ not start merely because their design is already written:
 | `JOB-LEARNING-PASS-11C` | `completed` | PR #1376 / merge `1bdbc67d3` / final CI `30507559728`; health-status follow-up PR #1377 / merge `fd26398cc`. 203 job-loop + 11 runner tests pass. Sunday 09:15 JST launchd and persistent systemd drivers replay eight safety cases, deterministically assign future canonical job keys, evaluate authoritative interview outcomes, atomically promote/close/rollback with pointer-race fencing, and send one content-addressed Telegram report. The live ledger stayed integrity `ok` with unchanged 2 submitted / 1 submit-unknown / 2 not-submitted counts; its first 0/0-sample decision was correctly inconclusive, receipt `175d3b7be5db06f88dbdc9aaf9428dfbda3fe65245a497a1f377b6271255564c`, Telegram ACK `4530`; canonical LaunchAgent reached runs=4 / last exit=0 and the three-driver healthcheck reports learning `status=success` with both SQLite integrity checks `ok` |
 | `JOB-RESUME-MATERIALS-1R` | `pending_actionable` | Reopen the accepted resume baseline; generate engineering, technical-business, Japanese resume and Japanese rirekisho from the private truth ledger; enforce one-page/single-column/ATS-readable output, action→technical approach→evidence bullets, visual whitespace checks, extracted-text checks and SHA-256 receipts; resolve the TOEFL 95/96 conflict before publishing and add verified TOEIC 910 plus DELE B1 |
 | `JOB-SKILL-BUNDLE-1S` | `pending_after_1R` | Extract a harness-neutral `skills/job-hunter/SKILL.md` and `loops/job-hunter/` registry from the current app without changing behavior; Codex is the first adapter, Claude and generic providers consume the same input/output schemas, and parity tests prove no duplicate executor or side-effect ownership |
-| `JOB-GUARDIAN-PASS-11D` | `pending_after_1S` | A deterministic scheduled guardian checks launchd/timer freshness, DB integrity, provider/browser health and leases; repairs only pre-side-effect failures; deduplicates alerts and persists remediation |
+| `JOB-HARNESS-PARITY-1H` | `pending_after_1S` | Add `claude-direct` and generic-provider candidates behind the same task-class schemas; preserve Codex-first selection, retry only transient provider failures, record provider/model/attempt evidence, and pass one fixed fixture through Codex, Claude and generic adapters without duplicate side effects |
+| `JOB-TELEGRAM-COVERAGE-1T` | `pending_after_1H` | Add one versioned event envelope and deterministic natural-language renderer; wire loop start/finish, model attempts/fallbacks, discovery/ranking, materials/ATS readiness, every external side effect, blockers, reconciliation, prep, learning and health into the fenced Telegram outbox; model failure must still produce a human-readable report and every delivery must have an ACK or durable `delivery_unknown` event |
+| `JOB-GUARDIAN-PASS-11D` | `pending_after_1T` | A deterministic scheduled guardian checks launchd/timer freshness, DB integrity, provider/browser health and leases; repairs only pre-side-effect failures; deduplicates alerts and persists remediation |
 | `JOB-LIFECYCLE-CLOSE-11E` | `pending_after_11D` | Follow-up cadence, every interview round, offers, negotiation support and accepted/declined/started outcomes are durable; only final identity/judgment actions require the user |
 | `JOB-CAREER-SUMMARY-11F` | `pending_after_11E` | Versioned `summary.v2` exposes Today, Pipeline, Interviews, Decisions, Learning and Health; its counts are rebuilt from the same events and match Telegram receipts |
 | `LIFE-CAREER-LOCAL-13A` | `pending_after_11F` | The local Life Manager Career surface reads `summary.v2`, shows the full timeline and provides pause/resume/goal controls without browser ownership |
@@ -1251,3 +1274,7 @@ Completion requires:
 16. Every registered loop maps to exactly one launchd/systemd entrypoint and a
     forced run records one durable receipt; no direct model invocation bypasses the
     loop registry.
+17. A fixed end-to-end fixture emits human-readable Telegram events for loop start,
+    model attempt/fallback, material decision, external side effect, completion and
+    failure; each event has one outbox key, an ACK or `delivery_unknown` receipt, and
+    no secret or raw JSON payload.
