@@ -8,7 +8,7 @@
   `gig_release.py`、immutable `~/gig/releases/life-manager/current`、
   `gig_disk_guard.py`、owner fence、外部 state `~/.local/state/life-manager/writer` を使う。
   Coconalaの4 laneと同様、公開ownerは重複起動せず、外部作用の前にlock・state・receiptを確認する。
-- current release は `51e810bc4`。`daily-2026-08-21` は Note JA、Substack JA、X Article JA の
+- current release は `24c13c3e5`。`daily-2026-08-21` は Note JA、Substack JA、X Article JA の
   native live receiptを同一runで確認済み。URLは `https://note.com/anicca123/n/ncbdb8a56bb20`、
   `https://aniccabuddha.substack.com/p/1`、`https://x.com/diceai0/article/2090526616854405173`。
   これは公開receiptであり、売上・入金receiptではない。
@@ -30,10 +30,20 @@
   `prepared/`で欠損扱いになる根因を `prep-x-md.py` で修正した。なお本当にimmutable画像が欠ける場合は、
   同一X編集URLの認証付き `not-live` readback、identity一致、ledger/journalの無作用、同一lock内のintent再確認を
   全て満たした時だけ `unavailable` へ隔離する。probeだけで状態を上書きしない。
-- 残TODOは順に、(1)保護対象を削除せず5GiB超を安定維持、(2)launchd control-plane readbackを復旧してLife Manager currentの定期実行を証明、
-  (3)Substack ENの別identityとcredentialを承認済み経路で設定、(4)古い`daily-2026-08-20`のX Articleを新adapterで再確認し、
-  画像が実在する場合は同一ID publish/readback、欠損の場合はstrict quarantineを実測する、(5)publisher/paymentの実receiptだけを収益ledgerへjoin、
-  (6)14日間の重複外部作用0と自然文Telegram deliveryを観測する。
+- `daily-2026-08-20` はその後、Note JA、Substack JA（draft ID `211988979` →
+  `https://aniccabuddha.substack.com/p/0fc`）、X Article JA（edit ID
+  `2090392988765605888` → `https://x.com/diceai0/article/2090541649873281459`）を、
+  同一run・同一不変原稿・画像SHA一致のnative readbackでlive化した。各destinationのledger行は1件で、
+  追加公開は行っていない。Substackのcanonical dispatch行（`platform=substack, lang=ja/en`）と
+  旧channel表記の両方をresume可能にした。XはCDPの実ブラウザが取得済み画像bytesでreadbackし、
+  認証proofなしの誤タブ（非X URL）ではquarantineしない。
+- 現在の `publication-guard.py plan` は `resumable=false, reason=frozen-incomplete-pairs,
+  frozen_pairs=[substack/en]`。英語Publicationの別identity・credential・native receipt・入金receiptは未確認で、
+  JA Publicationへの混載はしない。
+- 残TODOは順に、(1)保護対象を削除せず空き容量5GiB超を安定維持、(2)launchd control-plane readbackを復旧して
+  Life Manager currentの定期実行を証明、(3)Substack ENの別identityとcredentialを承認済み経路で設定し、
+  英語記事を同一runの英語Publicationへnative publish/readbackする、(4)publisher/paymentの実receiptだけを
+  収益ledgerへjoin、(5)14日間の重複外部作用0と自然文Telegram deliveryを観測する。
 
 ## 目的
 
