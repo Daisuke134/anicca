@@ -199,6 +199,13 @@ The order to the end is:
    is not sufficient isolation. The next slice must run production in a staging root containing only
    accumulated requirements and raw buyer sources, then copy the fixed artifact into the durable
    project and let a separate controller/reviewer process read the census. Live fresh
+   Policy v19 implements that physical split: each production round receives a temporary staging
+   root containing only requirements, raw buyer sources, non-proof context and state; macOS sandbox
+   denies reads and writes to the durable project. Only artifact, acceptance and manifest are
+   promoted. The producer is forbidden to create correspondence; the separate read-only reviewer
+   receives the controller census and raw sources after the artifact hash is fixed and owns the
+   exhaustive semantic/modifier comparison. Live v19 isolation, review and delivery readback remain
+   to be proved.
    review and delivery readback remain to be captured. Prove a new natural paid
    order through validated artifact, one delivery
    effect, exact-room official readback and replay zero.

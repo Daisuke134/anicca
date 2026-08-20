@@ -74,7 +74,7 @@ PAID_DECISION_SCHEMA_VERSION = 3
 PAID_DECISION_PROMPT_VERSION = "paid-semantic-decision-v6"
 PAID_DECISION_MODEL = "gpt-5.6-sol"
 PAID_FILE_MODEL = "gpt-5.6-sol"
-PAID_FILE_POLICY_VERSION = "paid-file-build-review-v18"
+PAID_FILE_POLICY_VERSION = "paid-file-build-review-v19"
 PAID_SOURCE_CENSUS_VERSION = "paid-source-census-v4"
 # The skills a paid order may be built with. A skill the lane cannot see is a skill it will
 # reimplement badly under time pressure, so the BUYMA and video contracts belong here now that both
@@ -1869,6 +1869,109 @@ def _validate_file_authorization(root: Path, stable: Path, feedback: str,
     return manifest
 
 
+def _rewrite_staging_paths(value: Any, source: Path, target: Path) -> Any:
+    if isinstance(value, dict):
+        return {key: _rewrite_staging_paths(child, source, target) for key, child in value.items()}
+    if isinstance(value, list):
+        return [_rewrite_staging_paths(child, source, target) for child in value]
+    if isinstance(value, str):
+        return value.replace(str(source.resolve()), str(target.resolve()))
+    return value
+
+
+def _prepare_file_owner_staging(root: Path, context: Path, staging: Path) -> None:
+    for name in ("requirements", "source"):
+        shutil.copytree(root / name, staging / name)
+    context_target = staging / "context"
+    context_target.mkdir(parents=True)
+    excluded = {
+        "paid-source-census.json", "paid-review-state.json", "paid-file-authorization.json",
+        "paid-output-visual-audit.json", "paid-output-audit-runner-error.json",
+    }
+    for path in (root / "context").iterdir():
+        if path.name in excluded or path.is_symlink():
+            continue
+        target = context_target / path.name
+        if path.is_dir():
+            shutil.copytree(path, target)
+        elif path.is_file():
+            shutil.copyfile(path, target)
+    rewritten = _rewrite_staging_paths(_load(context), root, staging)
+    _write(context_target / "current.json", rewritten)
+    shutil.copyfile(root / "state.json", staging / "state.json")
+    for name in ("delivery", "acceptance", "work", "evidence"):
+        (staging / name).mkdir()
+
+
+def _promote_staged_file_bundle(staging: Path, root: Path, expected_version: str) -> None:
+    _normalize_acceptance_delta(staging)
+    manifest, _snapshots = _file_bundle_snapshots(staging, validate_source_census=False)
+    if (_text(manifest.get("source_correspondence_path"))
+            or manifest.get("artifact_version") != expected_version):
+        raise Failure("file_builder")
+    artifact = Path(_text(manifest.get("artifact_path"))).resolve()
+    acceptance = Path(_text(manifest.get("acceptance_evidence_path"))).resolve()
+    artifact.relative_to(staging.resolve())
+    acceptance.relative_to(staging.resolve())
+    delivery_target = root / "delivery" / artifact.name
+    acceptance_target = root / "acceptance" / acceptance.name
+    shutil.copyfile(artifact, delivery_target)
+    shutil.copyfile(acceptance, acceptance_target)
+    promoted = _rewrite_staging_paths(manifest, staging, root)
+    promoted["project_root"] = str(root.resolve())
+    promoted["requirements_path"] = str((root / "requirements" / "live-buyer-reply.json").resolve())
+    promoted["artifact_path"] = str(delivery_target.resolve())
+    promoted["acceptance_evidence_path"] = str(acceptance_target.resolve())
+    promoted.pop("source_correspondence_path", None)
+    _write(root / "delivery" / "paid-work-result.json", promoted)
+
+
+def _run_isolated_file_owner(args, root: Path, context: Path, prompt_text: str,
+                             owner_evidence: Path) -> int:
+    with tempfile.TemporaryDirectory(prefix="paid-file-owner-") as temporary:
+        staging = Path(temporary)
+        _prepare_file_owner_staging(root, context, staging)
+        prompt = staging / "owner.prompt.txt"
+        versions = [int(match.group(1)) for path in (root / "delivery").iterdir()
+                    if (match := re.search(r"(?:^|-)v(\d+)(?:\D|$)", path.name))]
+        expected_version = f"v{max(versions, default=0) + 1}"
+        isolated_prompt = _rewrite_staging_paths(prompt_text, root, staging)
+        prompt.write_text(
+            isolated_prompt + f" The exact required artifact_version is {expected_version}; use that version in the "
+            "artifact filename, acceptance filename and manifest.",
+            encoding="utf-8",
+        )
+        staged_evidence = staging / "runner-evidence"
+        profile = staging / "owner-only.sb"
+        profile.write_text(
+            "(version 1)\n(allow default)\n"
+            f"(deny file-read* (subpath {json.dumps(str(root.resolve()))}))\n"
+            f"(deny file-write* (subpath {json.dumps(str(root.resolve()))}))\n",
+            encoding="utf-8",
+        )
+        started = time.time_ns()
+        command = [
+            "/usr/bin/sandbox-exec", "-f", str(profile), sys.executable, str(args.agent_runner),
+            "--task-class", "escalation-agent", "--candidate-model", PAID_FILE_MODEL,
+            "--prompt-file", str(prompt), "--schema", str(args.runner_schema),
+            "--evidence-dir", str(staged_evidence), "--task-label", "paid-file-owner",
+            "--loop", "gig", "--workdir", str(staging), "--timeout-seconds", "3600",
+            "--escalation-reason", "One isolated Sol paid owner must build the buyer deliverable",
+        ]
+        try:
+            _run(command, "file_builder")
+        finally:
+            if staged_evidence.is_dir():
+                shutil.copytree(staged_evidence, owner_evidence, dirs_exist_ok=True)
+        owner, _proof = _file_runner_result(
+            owner_evidence, task_label="paid-file-owner", started_ns=started,
+        )
+        if owner.get("status") != "ok" or step_result_status.status_from_evidence(owner_evidence) != "ok":
+            raise Failure("file_builder")
+        _promote_staged_file_bundle(staging, root, expected_version)
+        return started
+
+
 def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str, Any],
                               feedback: str, requirements_sha256: str, base: Path,
                               stable: Path) -> dict[str, Any]:
@@ -1931,28 +2034,10 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
         "When a prior review identifies one defect, derive its failure class, enumerate analogous instances across the "
         "complete source and output, repair every confirmed instance, and add class-wide regression evidence. Never patch "
         "only the named locator while leaving the same defect elsewhere. "
-        "When the deliverable transforms, edits, annotates, transcribes, or restructures buyer-provided source material, "
-        "also create a version-1 PASS JSON source-correspondence receipt under acceptance/ and bind its absolute path as "
-        "source_correspondence_path in paid-work-result.json. The receipt must bind artifact_sha256, list every relied-on "
-        "source as an in-project path plus exact sha256, and contain nonempty mappings with source_locator, output_locator, "
-        "correspondence, and verification. Locators must identify real source/output regions precisely enough for a fresh "
-        "reviewer to sample them. When completeness requires an independent source census, derive that census without reading "
-        "or importing any candidate ledger, detector or classifier, producer selection logic, output manifest, or include/exclude "
-        "decision used by the production path. Running shared logic earlier or under a different filename is circular proof, not "
-        "independent evidence. Fix the complete set of source items from the source alone before reading the candidate output; "
-        "candidate output pixels, annotations, or manifests must never select, filter, or confirm which source items count. "
-        "Independently compare every source item's exact semantic value, including modifiers, with the actual output value; a "
-        "derived expected natural value or nearby coloured mark is not proof of the value actually delivered. Never invent "
-        "correspondence from counts, layout, or an owner assertion. The controller-owned source-only census is "
-        f"{source_census}. Work in two ordered phases: before the next artifact ZIP and its hash are final, build only from "
-        "the raw buyer sources and accumulated requirements; do not open the controller census, its receipt, a prior "
-        "candidate artifact, or a prior correspondence receipt. Only after the new artifact hash is final may you read the "
-        "controller census to create and verify the correspondence receipt. Never list a prior candidate artifact as a "
-        "source. Never modify the census or its context/paid-source-census.json receipt. Every source-correspondence receipt "
-        "must bind independent_source_census with the exact absolute path and SHA256 of that census plus the exact absolute "
-        "controller_receipt_path and controller_receipt_sha256 of context/paid-source-census.json inside that same "
-        "independent_source_census object. The owner must not create a census generator, "
-        "replace the controller census, embed a prior producer ledger, or claim manual independence. "
+        "This is the physically isolated production phase. Build only from files present in this staging root. Do not create "
+        "a source-correspondence receipt or add source_correspondence_path to the manifest; a separate controller-owned fresh "
+        "reviewer performs post-hash correspondence after promotion. Prior candidates, controller census, proof receipts and "
+        "the durable project are intentionally inaccessible. "
         "Distinguish buyer-visible deliverable requirements from application qualifications and preferred production tools. "
         "Never claim use of an unavailable tool. A named tool is a delivery blocker only when the contract explicitly requires "
         "that editable source/project or proof of that tool's use as a delivered output; otherwise use the proven available CLI "
@@ -1977,16 +2062,9 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
                           f"this finding: {finding}" if finding else "")
             builder_prompt.write_text(owner_instructions + correction, encoding="utf-8")
             owner_evidence = root / "evidence" / "agent-PAID_FILE_OWNER"
-            owner_started = time.time_ns()
-            _run([sys.executable, str(args.agent_runner), "--task-class", "escalation-agent",
-                  "--candidate-model", PAID_FILE_MODEL,
-                  "--prompt-file", str(builder_prompt), "--schema", str(args.runner_schema),
-                  "--evidence-dir", str(owner_evidence), "--task-label", "paid-file-owner",
-                  "--loop", "gig", "--workdir", str(root), "--timeout-seconds", "3600",
-                  "--escalation-reason", "One Sol paid owner must build the buyer deliverable"], "file_builder")
-            owner, _ = _file_runner_result(owner_evidence, task_label="paid-file-owner", started_ns=owner_started)
-            if owner.get("status") != "ok" or step_result_status.status_from_evidence(owner_evidence) != "ok":
-                raise Failure("file_builder")
+            owner_started = _run_isolated_file_owner(
+                args, root, context, owner_instructions + correction, owner_evidence,
+            )
             _normalize_acceptance_delta(root)
             manifest, snapshots = _file_bundle_snapshots(root)
             for key in ("manifest", "artifact", "acceptance"):
@@ -2022,6 +2100,10 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
             str(path): _file_snapshot(path) for path in review_images + reference_images
         }
         audit_snapshot = _file_snapshot(audit_path) if audit_path is not None else None
+        census_snapshot = _file_snapshot(source_census) if source_census is not None else None
+        census_receipt = root / "context" / "paid-source-census.json"
+        census_receipt_snapshot = (_file_snapshot(census_receipt)
+                                   if source_census is not None else None)
         policy_instruction = (
             "No scoped account-owner policy exists."
             if operator_policy_path is None else
@@ -2058,26 +2140,18 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
             "expected values. Verify that receipt and independently inspect the same attached crops. Never claim a visual "
             "defect in a frame that was not attached; use raw "
             "receipts only for nonvisual facts about the remaining frames. "
-            "For any transformation, edit, annotation, transcription, or restructuring of buyer-provided source material, "
-            "require a source-correspondence receipt bound by the manifest and independently sample its source/output locators. "
-            "Counts, layout checks, and owner assertions do not prove semantic correspondence. A missing or false receipt must "
-            "never be accepted. Trace the raw receipt generators: an alleged independent source census is circular and must be "
-            "rejected when it shares a candidate ledger, detector or classifier, producer selection logic, output manifest, or "
-            "include/exclude decision with the production path. Executing shared logic before the manifest or renaming it does not "
-            "make it independent. Reject any census whose source-item set is selected, filtered, or confirmed using candidate "
-            "output pixels, annotations, or manifests; the complete source set must be fixed from source-only evidence before the "
-            "candidate is read. Verify modifiers and the actual output semantic value, not merely a derived natural value or a "
-            "nearby coloured mark. Required source wording appearing verbatim in both production and the controller census is "
-            "not by itself circularity; use execution evidence to determine whether production read or imported the census, "
-            "its receipt, or a prior candidate before fixing the new artifact hash. When raw buyer sources are locally available, "
-            "any such pre-hash dependency, or listing a prior candidate as a source, is a concrete repairable defect: return "
-            "needs_revision and require a clean two-phase rebuild from raw sources followed by post-hash correspondence. "
+            f"The controller-owned source-only census is {source_census} with SHA256 "
+            f"{census_snapshot[1] if census_snapshot else 'none'}, and its controller receipt is {census_receipt} with SHA256 "
+            f"{census_receipt_snapshot[1] if census_receipt_snapshot else 'none'}. The isolated producer was physically denied "
+            "read access to the durable project, census, prior candidates and prior receipts. There is intentionally no "
+            "producer-authored source-correspondence receipt. You are the separate post-hash correspondence authority: read the "
+            "fixed census, raw buyer sources and actual candidate, independently compare every semantic value and modifier, and "
+            "sample visual source/output regions directly. Counts, layout checks and owner assertions are not proof. Return "
+            "needs_revision for any concrete mismatch or missing item, including every analogous instance of its failure class. "
+            "Return undeterminable only when the available local tools and evidence cannot truthfully decide correspondence. "
             "When the exact buyer source and candidate are locally readable with existing available tools, "
             f"{blocked_recheck_instruction}"
-            "a missing receipt is itself a concrete correctable defect: return needs_revision and require the owner to create "
-            "the hash-bound locator mapping, independently verify it, and correct the artifact wherever the mapping exposes a "
-            "mismatch. Return undeterminable instead only when producing or checking truthful correspondence requires an "
-            "unavailable tool, paid license, signup, account change, or inaccessible source. "
+            "perform the comparison yourself rather than deferring to producer provenance. "
             "correctable buyer-visible defect proved by an attached candidate/reference comparison or deterministic receipt, "
             "and state the requirement, evidence, and repair. Before returning one repairable finding, inspect the complete "
             "source and output for analogous instances of the same failure class and include every confirmed instance in one "
