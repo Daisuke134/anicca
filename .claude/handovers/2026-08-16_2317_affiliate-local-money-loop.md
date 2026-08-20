@@ -2,7 +2,7 @@
 
 - SSOT: `docs/affiliate-agent/AFFILIATE-AGENT-SSOT.md`; resume from `Measured planning checkpoint and next TODOs`, then `Remaining autonomous money-loop work — canonical order`.
 - Development route: `/Users/anicca/anicca-project/.worktrees/affiliate-life-manager-spec`, branch `docs/affiliate-life-manager-spec`. The branch remains descended from required base `0a7debb58`; latest source/runtime commit is `02e3f5da7`.
-- Installed runtime: `/Users/anicca/.local/share/life-manager/affiliate/current` → release `02e3f5da789a23b893111f1ec5899fdcc47443e4`; `current` is byte-backed by that immutable release. The existing owner naturally woke at `2026-08-20T17:39:57Z` through this `current` path, preserved 15 Affiliate placements, observed 48 Repost post actions with `changed=false`, and kept revenue at cooldown with no money. The latest owner report is Telegram `26477`; the earlier changed observation is `26355`, and Codex milestone receipts `26396` and `26459` record the repairs. The source owner created the dedicated subtitle experiment; composition quarantined the malformed Google attachment, produced sealed subtitle/voice handoffs, and passed voice-changer and voice-isolator policy. A source-set oscillation caused subtitle's bounded `RUNNER_REJECTED / budget_blocked` receipt; at `2026-08-20T17:35:34Z` the existing owner reused the exact sealed `5da2…` evidence and rebuilt the subtitle handoff with no model rerun or public effect. Subtitle policy/public readback, dedicated-link publication, provider transaction, and money remain open. Any future `skills/affiliate` change requires immutable install and real owner replay.
+- Installed runtime: `/Users/anicca/.local/share/life-manager/affiliate/current` → release `02e3f5da789a23b893111f1ec5899fdcc47443e4`; `current` is byte-backed by that immutable release. The existing owner naturally woke at `2026-08-20T17:39:57Z` through this `current` path, preserved 15 Affiliate placements, observed 48 Repost post actions with `changed=false`, and kept revenue at cooldown with no money. The latest owner report is Telegram `26477`; the earlier changed observation is `26355`, and Codex milestone receipts `26396`, `26459`, and `26483` record the repairs. The source owner created the dedicated subtitle experiment; composition quarantined the malformed Google attachment, produced sealed subtitle/voice handoffs, and passed voice-changer and voice-isolator policy. A source-set oscillation caused subtitle's bounded `RUNNER_REJECTED / budget_blocked` receipt; at `2026-08-20T17:35:34Z` the existing owner reused the exact sealed `5da2…` evidence and rebuilt the subtitle handoff with no model rerun or public effect. At `2026-08-20T17:45:43Z` the existing policy owner returned `PASS` with `policy_sha256=63fdb279…`; subtitle dedicated-link/publication readback, provider transaction, and money remain open. Any future `skills/affiliate` change requires immutable install and real owner replay.
 - A later existing-owner `launchctl kickstart` attempt at `2026-08-20T15:36:27Z` returned `141: Reentrancy avoided`; `last-run.json` stayed at the prior wake and no placement, provider, Telegram, or ledger mutation occurred. This is not a new owner proof and does not authorize a parallel executor; retain the natural owner receipt above as the runtime evidence.
 - Release `90b33832ce293865a20c07e64fc5d9be8131b214` also repairs composition
   starvation after source refresh: unreceipted inboxes now precede receipt-backed
@@ -23,9 +23,10 @@
   `2026-08-20T17:10:35Z` with the stable `5da2…` set after the intervening
   `RUNNER_REJECTED / budget_blocked` receipt. The existing composition owner at
   `2026-08-20T17:35:34Z` reused that sealed result and rebuilt the subtitle
-  handoff without another model pass or public effect. No policy receipt,
-  dedicated link, publication, provider transaction, or money exists for it;
-  the next owner policy wake is the next bounded item.
+  handoff without another model pass or public effect. The next owner policy
+  wake at `2026-08-20T17:45:43Z` returned `PASS` with policy SHA
+  `63fdb279…`; no dedicated link, publication, provider transaction, or money
+  exists for it. The next bounded item is the existing publication/link owner.
 - The next bounded P3 bridge is source-implemented but not yet installed: the
   Affiliate owner will read the existing Repost ledger only through
   `AFFILIATE_REPOST_STATE_DIR`, hash and count valid `posted.jsonl` actions, and
