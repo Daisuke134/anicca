@@ -52,7 +52,28 @@ def validate_required_authority(
     supply = receipt.get("supply")
     supply_status = supply.get("status") if isinstance(supply, dict) else None
     if supply_status not in {"FILLED", "SUFFICIENT"}:
-        raise DemandAuthorityError(f"claim-loop supply status is not ready: {supply_status}")
+        # A pre-publication retry already owns one immutable paid-demand card.
+        # Coconala keeps that claimed work resumable when a later board poll is
+        # temporarily unavailable; do the same without weakening new-topic
+        # selection. The card itself remains the authority and is revalidated
+        # against the immutable opportunity evidence below.
+        resume_basename = os.environ.get("ARTICLE_RESUME_CARD_BASENAME", "").strip()
+        resume_card = state / "topics/queue" / resume_basename
+        if not resume_basename or "/" in resume_basename or "\\" in resume_basename:
+            raise DemandAuthorityError(
+                f"claim-loop supply status is not ready: {supply_status}"
+            )
+        if (
+            resume_card.is_symlink()
+            or not resume_card.is_file()
+            or not _is_paid_demand_queue_card(
+                resume_card, opportunity_database=state / "opportunities.sqlite3"
+            )
+        ):
+            raise DemandAuthorityError(
+                f"claim-loop supply status is not ready: {supply_status}"
+            )
+        supply_status = "RESUME_CARD"
     queue = state / "topics/queue"
     if queue.is_symlink() or not queue.is_dir():
         raise DemandAuthorityError("demand topic queue is missing or not a directory")

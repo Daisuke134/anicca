@@ -28,7 +28,7 @@
       "source_bytes": 590863796,
       "target_bytes": 590863796,
       "tree_sha256": "2a58d15a8b30dfa4edabb4ed0d845833d30a7844212b2d9ddb492d6c525e6e02",
-      "pause_marker": "present-in-source-and-target",
+      "pause_marker": "absent-in-source-and-target",
       "target_directory_mode": "0700"
     }
   },
@@ -139,7 +139,7 @@
   "cutover": {
     "status": "not-ready",
     "reason": "all 14 generated Writer plist files now point to the immutable current release and target state; current-release demand and creator gates are runtime-verified, but launchd bootstrap/readback is rc=141 and loaded owner, stale-old drain, and scheduler wake remain unproven",
-    "publication_paused": true,
+    "publication_paused": false,
     "legacy_roots_must_not_be_deleted": true
   },
   "runtime_blocker": {

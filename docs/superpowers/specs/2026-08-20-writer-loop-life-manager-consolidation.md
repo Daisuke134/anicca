@@ -11,6 +11,21 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
 
 ## 現在の実測
 
+### 2026-08-21 latest Coconala parity recovery
+
+- 公開停止markerは現在存在しない。Creatorは`gig_disk_guard.py → article-daily.sh`の
+  installed ProgramArgumentsで起動し、過去ログではなく起動直前のfilesystem snapshotを
+  pause判定に使う。`publication paused`という古いログ行を現在の停止証拠にしない。
+- `daily-2026-08-21`は公開stateと公開ledger行が無いまま生成物だけを残して終了したため、
+  Coconalaのbounded retryと同じ`interrupted-safe` archiveへ移した。archive時は同じtopicを
+  再取得するため`topic-route-input.json`と`topic-route.json`をrunに残す。
+- resume cardは完全なpaid-demand cardとして再検証できる。claim-loopの最新receiptが
+  `DEMAND_CARD_INVALID`（TECHi source outage）でも、新規topicのauthorityはfail-closedのまま、
+  同じrunの明示されたresume cardだけを`RESUME_CARD`として続行する。別topicの選択には使わない。
+- current releaseは`fea6a4922be5...`へpublish済み。launchd bootstrap/readbackは引き続き
+  `141: Reentrancy avoided`であり、これはcurrent release publishの失敗ではない。記事URL、
+  publisher-native readback、収益receiptはまだ0件なので、公開成功とは宣言しない。
+
 ### 2026-08-21 Coconala parity 再確認
 
 - Coconalaの実行実体は、常駐Supervisorではなく、launchdが
@@ -23,10 +38,9 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
   `writer-money-sync`、`writer-report`、`writer-opportunity-response`、
   `writer-sales-measure`の直近receipt更新を確認した。`launchctl print`のrc=141は
   readback不能の証拠であり、周期laneの未実行を意味しない。
-- Writerが公開しない直接の理由は、外部stateの
-  `~/.local/state/life-manager/writer/.publication-paused`である。Coconala parityの
-  lane構造と混同せず、公開解除後は同じlane本体を一度だけ実行し、記事・URL・native
-  readbackの実receiptで判定する。Substack用の新しいSupervisorや独自schedulerは作らない。
+- Writerの公開経路は、外部stateのpause marker、同じlane本体、publisher-native readbackを
+  別々に判定する。Coconala parityのlane構造と混同せず、Substack用の新しいSupervisorや
+  独自schedulerは作らない。
 
 - `daily-2026-08-20` はJA/EN原稿を生成し、active-fourの公開は1/4。
 - Noteは安定キー `ne6da5b602b4a` を同じまま公開し、
