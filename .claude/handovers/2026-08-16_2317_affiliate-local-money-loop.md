@@ -11,7 +11,11 @@
 - The canonical ledger contains **13 dedicated-link placements**, **11 owned public URLs**, and **28 provider-measured clicks**. Latest click delta is `0`.
 - PartnerStack/ElevenLabs is `AUTHENTICATED`; the latest official capture has `commission_row_count=0`, `NO_LIVE_ROWS`, currency display `USD`, tax registration required, and payment-provider selection required. Pending/approved/paid/reversed are therefore zero observed rows. Approved-or-paid net is **USD 0**. Unknown real costs remain unknown.
 - Telegram outbox and sent ledger are both 88 rows. The latest sent receipt has a real provider message ID; no pending duplicate is visible.
-- Public DNS readback from the audit shell failed, so the existing public receipts were not promoted to fresh public proof. The installed owner must close fresh owned/X readback after repair.
+- The first audit-shell DNS readback failed, so those earlier receipts were not
+  promoted to public proof. After the owner resumed, independent DNS-resolved
+  readback at `2026-08-20T09:01:49Z` returned HTTP 200 for the music owned page,
+  its X object, and its Substack object; the receipts are now fresh for that
+  trajectory only.
 
 ## Current blocker and safe resume
 
@@ -20,18 +24,20 @@ The prior failure was **not** `XPostError`. `last-run.json` reported
 checkout `/Users/anicca/anicca-project/.worktrees/affiliate-foundation-prod` was
 missing. The existing `feature/affiliate-foundation-prod` branch is now
 reconnected at that exact path from the parent Git repository, at clean HEAD
-`d4170db1e`, with the required landing data path present. The existing owner has
-not read the repaired root yet: both `launchctl kickstart` and a one-time
-`launchctl start` fallback returned macOS `141: Reentrancy avoided`, so the
-last-run receipt remains the pre-repair FileNotFoundError. Two dedicated-link
-rows still have no owned public URL. No public effect was manually performed.
-Historical ambiguous X effects are already fenced and must never be republished.
+`d4170db1e`, with the required landing data path present. Both
+`launchctl kickstart` and the one-time `launchctl start` fallback initially
+returned macOS `141: Reentrancy avoided`. The existing owner later resumed the
+music trajectory and verified owned Git `2254ceb73`, X object
+`2090363588603236767`, and Substack object `211974858`; the tiktok-transcript
+row still has no owned public URL or terminal owner/X receipt. No public effect
+was manually performed. Historical ambiguous X effects are already fenced and
+must never be republished.
 
-The next execution slice is P0: restore/reconcile that checkout through the
-existing ownership contract, trigger the existing launchd owner, resume the same
-durable jobs, obtain owned and X public readback, and replay without a duplicate.
-If a fresh `XPostError` appears, reconcile its exact effect fingerprint before any
-publish retry. Do not create a parallel executor or manually publish.
+The next execution slice remains A04: let the existing 600-second launchd owner
+resume the same tiktok durable job, obtain owned/X public readback, and replay
+without a duplicate. If a fresh `XPostError` appears, reconcile its exact effect
+fingerprint before any publish retry. Do not create a parallel executor or
+manually publish.
 
 ## Ordered route to completion
 
@@ -48,10 +54,10 @@ Execution update: A01/A02 restored the exact owned-publication worktree at clean
 `feature/affiliate-foundation-prod` HEAD `d4170db1e`. A03 enumerated the two
 non-public rows (`music` and `tiktok-transcript-generator`) and matched each to
 an existing verified PartnerStack placement-link job in the private job journal;
-no replacement job was created. A04 remains open because `launchctl kickstart`,
-`launchctl start`, and `launchctl asuser ... kickstart` returned `141:
-Reentrancy avoided`; the owner has not yet read the repaired root, so no public
-effect or success is claimed.
+no replacement job was created. A04 remains open because
+`launchctl kickstart`, `launchctl start`, and `launchctl asuser ... kickstart`
+returned `141: Reentrancy avoided` before the owner later resumed only the music
+trajectory; tiktok still has no terminal owner/X receipt.
 
 Because the launchd owner could not be kicked, one installed read-only
 `affiliate revenue capture` diagnostic was run. The official PartnerStack report
@@ -64,8 +70,9 @@ not a transaction or money proof; B01 remains open. The typed A04 blocker is
 `BLOCKED_EXTERNAL_141`; no fourth launcher, bootstrap/reload mutation, parallel
 executor, or manual publication is allowed.
 
-This handover records a planning-only turn. No harness repair, owner kickstart,
-manual publication, provider write, or ledger mutation was performed.
+This handover records no Codex manual publication, provider write, or ledger
+mutation. The installed owner performed the verified music delivery described
+above; Codex did not create a parallel executor.
 
 Fresh `@selawmqt:9326` read-only revalidation of X's canonical Article route
 returned `Page not found` with zero editor controls. This is a current capability

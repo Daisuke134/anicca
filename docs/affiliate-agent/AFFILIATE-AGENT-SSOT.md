@@ -1325,12 +1325,17 @@ historical evidence below. Read-only inspection of the installed state shows:
   `.worktrees/affiliate-foundation-prod`, not a current `XPostError`. The
   existing `feature/affiliate-foundation-prod` branch was reconnected at that
   exact path from the parent Git repository; its HEAD is `d4170db1e`, its
-  worktree is clean, and the required landing data path exists. The owner has
-  not yet read this repaired root: both `launchctl kickstart` and the one-time
-  `launchctl start` fallback returned macOS `141: Reentrancy avoided`, while
-  `last-run.json` still contains the pre-repair `FileNotFoundError`. No public
-  effect was manually performed. Historical ambiguous X effects remain safely
-  fenced and MUST NOT be republished.
+  worktree is clean, and the required landing data path exists. Initially both
+  `launchctl kickstart` and the one-time `launchctl start` fallback returned
+  macOS `141: Reentrancy avoided`, and `last-run.json` contained the pre-repair
+  `FileNotFoundError`. At `2026-08-20T09:01:49Z`, the owner read the repaired
+  root and verified the existing `elevenlabs-music-for-creators` trajectory:
+  owned Git commit `2254ceb73`, X object
+  `2090363588603236767`, and Substack object `211974858` are all recorded as
+  delivered/live. Independent DNS-resolved public readback returned HTTP 200 for
+  the owned page, X object, and Substack object. No public effect was manually
+  performed. Historical ambiguous X effects remain safely fenced and MUST NOT
+  be republished.
 - a one-time read-only diagnostic capture was run through the installed
   `affiliate revenue capture` skill after the owner could not be kicked. The
   official PartnerStack report at `2026-08-20T08:49:11Z` had
@@ -1341,6 +1346,11 @@ historical evidence below. Read-only inspection of the installed state shows:
   `114723950748c3df0daf759a9aa5268d2d23f3e9086803bf44e0e71921bf8e5e`.
   This is an empty provider report, not a transaction, settlement, payout, or
   money proof; B01 remains open.
+- after that owner wake, the canonical ledger still has 13 placements and zero
+  approved/paid/pending/reversed commission rows. The music placement now has
+  its owned public URL and zero provider clicks; the tiktok-transcript placement
+  remains `public_url=null` with zero provider clicks. Actual cash cost remains
+  `UNKNOWN`.
 
 Execution resumes in this order. Time/provider outcomes are gates, but every safe
 independent harness task continues:
@@ -1515,9 +1525,10 @@ receipt readback, SSOT state update, commit, and push to both canonical remotes.
   reach an exact terminal owned/X state or a typed durable failure. Current
   blocker is `BLOCKED_EXTERNAL_141`: `launchctl kickstart`, `launchctl start`,
   and `launchctl asuser ... kickstart` each returned macOS `141: Reentrancy
-  avoided`; no fourth launcher, bootstrap/reload mutation, parallel executor,
-  manual publication, or success claim is permitted until the owner domain can
-  be read back safely.
+  avoided`. The owner later resumed one existing trajectory and verified music
+  Git/X/Substack delivery, but tiktok still has no terminal owner/X receipt and
+  remains non-public. No fourth launcher, bootstrap/reload mutation, parallel
+  executor, manual publication, or success claim is permitted.
 - [ ] **A05** Replay the unchanged owner and prove placement count, public URLs,
   Git commits, and X objects do not increase for already accepted effects.
 
