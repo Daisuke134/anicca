@@ -220,8 +220,10 @@ Execute top to bottom. A checked diagnostic is evidence, not lane completion.
   no-official-bounds planner price unchanged (11/11) instead of applying a category median. The
   already-submitted ¥90,000 offer is a one-off manual correction if desired; do not build an
   automated historical-offer editor for it.
-- [ ] Preserve per-request structured decisions durably before execution. A transient batch/provider
-  failure may leave a request pending for retry, but must not generate a misleading terminal refusal.
+- [x] Preserve per-request structured decisions durably before execution. Each completed planner
+  batch writes its owned `attempt-01.result.json` before any effect; dropped IDs are projected as
+  `planner_missing_request_ids` and retried, never converted into a terminal refusal. Live pass
+  `gig-apply-direct-1787203527469043000-43647` preserves both batch artifacts before form execution.
 - [x] Repair the post-confirmation CDP boundary exposed by request `5222490`: the valid ¥90,000
   proposal reached the official final `応募する` screen but returned as a candidate-owned wedge.
   Later official applied-history evidence proves the click succeeded and the original failure was
