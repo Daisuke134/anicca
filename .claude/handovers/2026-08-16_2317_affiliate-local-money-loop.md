@@ -156,6 +156,16 @@ rebinds; unchanged replay is `ALREADY_LIVE`, while any existing owned receipt
 remains `PUBLICATION_CONFLICT` with zero effect calls. The repair is in the
 worktree and is not yet installed or owner-E2E verified.
 
+The next installed owner wake began at `2026-08-20T09:45:37Z` but exited before
+writing a wake receipt: Playwright raised `TimeoutError` while waiting for the
+PartnerStack `Custom links` control in `elevenlabs_link_action`. Both existing
+TTS and tiktok link receipts remained `VERIFIED`; no owned/X receipt or public
+effect was created, and the tiktok materialization was unchanged. The pending
+repair catches only this typed Playwright timeout, reuses the exact verified TTS
+local receipt with provider readback pending, and leaves unknown browser errors
+fail-closed. Compile and 19 focused tests pass; the repair is not yet installed
+or owner-E2E verified.
+
 This handover records no Codex manual publication, provider write, or ledger
 mutation. The installed owner performed the verified music delivery described
 above; Codex did not create a parallel executor.

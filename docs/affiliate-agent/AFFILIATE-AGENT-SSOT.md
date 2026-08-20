@@ -1434,6 +1434,16 @@ historical evidence below. Read-only inspection of the installed state shows:
   a stale materialization with an existing owned receipt remained
   `PUBLICATION_CONFLICT` with zero effect calls. The repair is in the worktree
   and is not yet installed or owner-E2E verified.
+- the next installed owner wake began at `2026-08-20T09:45:37Z` but exited
+  before writing a wake receipt: Playwright raised a `TimeoutError` waiting for
+  the PartnerStack `Custom links` control in `elevenlabs_link_action`. The
+  existing TTS and tiktok link receipts were already `VERIFIED`, no owned/X
+  receipt or public effect was created, and the tiktok materialization stayed
+  unchanged. The smallest repair is to reuse only the exact verified TTS local
+  receipt on this typed Playwright timeout, mark provider readback pending, and
+  continue the wake; unknown browser errors still fail closed. It is in the
+  worktree, with compile and 19 focused tests green, but not yet installed or
+  owner-E2E verified.
 - the current launchd capability check at `2026-08-20T09:20:57Z` also fails
   outside the service label: `launchctl managername`, `launchctl print user/501`,
   and `launchctl print gui/501` all return `141: Reentrancy avoided`, while

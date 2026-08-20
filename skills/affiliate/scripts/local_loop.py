@@ -1615,6 +1615,34 @@ def wake(args):
                 "state": "PLACEMENT_LINK_FAILED", "placement": TTS_PLACEMENT,
                 "deduplicated": None, "failure_type": type(error).__name__,
             }
+        except Exception as error:
+            # A transient Playwright selector timeout must not strand the
+            # already-verified link or kill the whole wake. Reuse only the
+            # exact local receipt for this placement; unknown browser errors
+            # still fail closed and remain visible to the owner.
+            is_playwright_timeout = (
+                type(error).__name__ == "TimeoutError"
+                and type(error).__module__.startswith("playwright.")
+            )
+            receipt_path = state / "program-links" / f"{TTS_PLACEMENT}.json"
+            try:
+                verified_receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+            except (OSError, ValueError, TypeError):
+                verified_receipt = {}
+            if is_playwright_timeout and (
+                verified_receipt.get("state") == "VERIFIED"
+                and verified_receipt.get("placement") == TTS_PLACEMENT
+            ):
+                placement_link = {
+                    **verified_receipt,
+                    "state": "VERIFIED",
+                    "deduplicated": True,
+                    "readback_state": "LOCAL_VERIFIED_RECEIPT_REUSED",
+                    "provider_readback_pending": True,
+                    "failure_type": type(error).__name__,
+                }
+            else:
+                raise
     placement_link_ready = placement_link.get("state") == "VERIFIED"
     placement_link_changed = placement_link_ready and not placement_link.get("deduplicated", False)
     impact = {
