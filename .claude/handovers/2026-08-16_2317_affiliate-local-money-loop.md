@@ -1,8 +1,8 @@
 # Affiliate local money loop handover
 
 - SSOT: `docs/affiliate-agent/AFFILIATE-AGENT-SSOT.md`; resume from `Measured planning checkpoint and next TODOs`, then `Remaining autonomous money-loop work — canonical order`.
-- Development route: `/Users/anicca/anicca-project/.worktrees/affiliate-life-manager-spec`, branch `docs/affiliate-life-manager-spec`. The branch is clean/pushed and remains descended from required base `0a7debb58`; latest source/runtime commit is `eb771cf61006276bac06ab0d044b9edf1043bb41`.
-- Installed runtime: `/Users/anicca/.local/share/life-manager/affiliate/current` → release `eb771cf61006276bac06ab0d044b9edf1043bb41`; `current` is byte-backed by that immutable release. Any future `skills/affiliate` change requires immutable install and real owner replay.
+- Development route: `/Users/anicca/anicca-project/.worktrees/affiliate-life-manager-spec`, branch `docs/affiliate-life-manager-spec`. The branch is clean/pushed and remains descended from required base `0a7debb58`; latest source/runtime commit is `e842fb8759a7f3ed315e5f2dce0817072d4afc9f`.
+- Installed runtime: `/Users/anicca/.local/share/life-manager/affiliate/current` → release `e842fb8759a7f3ed315e5f2dce0817072d4afc9f`; `current` is byte-backed by that immutable release. Any future `skills/affiliate` change requires immutable install and real owner replay.
 - Repository decision: one Life Manager implementation at `skills/affiliate/`; no Affiliate-only repo, executor, ledger, `apps/api`, or Railway runtime. Private mutable state stays under `~/.local/state/life-manager/affiliate/`. OSS is the same proven Skill packaged for a clean Mac, never a rewrite.
 
 ## Current measured truth
