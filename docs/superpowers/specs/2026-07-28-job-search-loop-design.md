@@ -639,6 +639,39 @@ diagnostic plus this real scheduled run jointly prove provider compatibility and
 production migration without fabricating a recruiting email.
 
 
+### 4.5.6 Required-question pre-claim gate
+
+`JOB-ATS-TRUTHFUL-10N` closes the observed failure mode where an ATS form is
+claim-ready by control shape but contains a required question that the private
+truth ledger cannot answer. A claim is a reservation for a possible external
+side effect, so the loop must prove answerability before allocating it.
+
+**As-is:** a final ATS form can evaluate `ready=true` and `claim_ready=true`,
+then reveal a required coding, technical, legal, eligibility, free-text, select,
+or checkbox question during form inspection.
+
+**To-be:** before `Ledger.claim_submission`, inspect every required control and
+question. Each answer must map to an exact verified profile fact, an approved
+resume/material, or an explicit deterministic policy value. If any required
+answer is uncovered, the executor records the question label and missing fact as
+candidate-level `not_submitted`, performs no claim, fill, or submit, and continues
+to the next distinct eligible official ATS URL. The gate applies even when the
+ATS evaluator returns `claim_ready=true`; therefore an unanswerable form cannot
+consume the one-claim wake fence or daily slot.
+
+Acceptance and test matrix:
+
+| # | Criterion | Evidence |
+|---:|---|---|
+| 1 | Required-question inspection is explicitly before `Ledger.claim_submission` | `test_daily_driver_exports_one_candidate_wake_fence` prompt contract assertion |
+| 2 | Missing verified facts fail closed without guessed answers or submit | Anthropic wake `daily-20260820-234421`, outcome `not_submitted`, Telegram ACK `26307` |
+| 3 | A candidate-level blocker releases the candidate and permits queue continuation | canonical prompt candidate-level continuation assertions; daily slot projection remained empty |
+| 4 | ATS claim-ready, URL identity, Ledger event ordering and confirmation paths remain green | `test_ats.py` + `test_canonical_runtime.py` (23 tests, 6 subtests); `test_ledger.py` + `test_submission_confirmation.py` (28 tests) |
+
+This slice is bounded to truthful pre-claim gating. It does not add facts to the
+profile, answer Python on the candidate's behalf, bypass CAPTCHA, or claim that
+all Workday/ATS accounts are authenticated.
+
 ### 4.6 Portable local installation
 
 `JOB-PORTABLE-LOCAL-12A` is the first Order 12 increment. It turns the checked-out
@@ -672,8 +705,8 @@ Scheduler ownership is platform-specific but application semantics stay shared:
 
 | Platform | User scheduler | Daily | Inbox |
 |---|---|---|---|
-| macOS | launchd LaunchAgents | every 30 minutes | every 15 minutes |
-| Linux | systemd user timers | every 30 minutes, persistent | every 15 minutes |
+| macOS | launchd LaunchAgents | every hour | every 15 minutes |
+| Linux | systemd user timers | every hour, persistent | every 15 minutes |
 
 The portable installer accepts an explicit `none` scheduler for test/local manual
 runs. Platform auto-detection supports only Darwin and Linux and fails closed on
@@ -758,7 +791,7 @@ say “run again.” Four independent drivers share durable contracts:
 
 | Driver | Trigger | Owns | Must never own |
 |---|---|---|---|
-| Acquisition | every 30 minutes, catch-up after wake | discovery, qualification, tailoring, one-candidate wake and ten-slot daily portfolio, daily report | Gmail acknowledgement or strategy promotion |
+| Acquisition | every hour, catch-up after wake | discovery, qualification, tailoring, one-candidate wake and ten-slot daily portfolio, daily report | Gmail acknowledgement or strategy promotion |
 | Follow-through | every 15 minutes | confirmation reconciliation, recruiter replies, Calendar, assessments, prep, stage/outcome updates | blind submit retry or offer acceptance |
 | Learning | weekly eligibility check and after newly resolved outcomes | assignment, attribution, replay, comparison, promotion/rollback receipt | candidate facts, hard filters, side effects |
 | Guardian | frequent deterministic check | freshness, integrity, stale pre-side-effect leases, safe kick/retry, remediation queue | code rewriting or retry after an uncertain external side effect |
@@ -1130,6 +1163,42 @@ canonical-runtime/launchd tests. It does not claim a live scheduler: the current
 host still requires a repaired user bootstrap context before `print`/`kickstart`
 can be re-run.
 
+### 4.2C Late canonical acquisition verification
+
+The next canonical-wrapper passes exercised the real browser owner, discovery,
+ATS evaluator, ledger and Telegram outbox after the hourly/fence changes. These
+passes are evidence of the current direct executor, not proof that the blocked
+macOS GUI launchd domain is resident:
+
+| Wake | Observed result | Telegram | External side effect |
+|---|---|---:|---|
+| `daily-20260820-232140` | Tailor was blocked by the private SQLite trigger until state-transition events were ordered before state updates; Appier was not claim-ready and Liquid AI was not submitted | `26287` | No claim, form input, or submit |
+| `daily-20260820-233202` | Appier remained `generic_job` after Apply and Liquid AI's `/application` snapshot failed immutable canonical-URL matching; Rakuten, Salesforce and Microsoft failed explicit minimum-experience filters | `26299` | No claim or submit |
+| `daily-20260820-234421` | Anthropic Applied AI Engineer reached a real Greenhouse `generic_application` (`claim_ready=true`), then the required Python-coding question had no verified profile fact | `26307` | A claim was created for evidence-bound inspection, no submit click occurred, and the intent/slot was released as `not_submitted` |
+
+The last pass proves the fail-closed behavior required for truthful autonomy: the
+loop does not invent Python, does not report an application as submitted, and
+leaves no current-day slot consumed by the unanswerable form. The new prompt gate
+now checks required controls and questions before every future claim, so the same
+candidate is skipped without consuming the wake fence.
+
+The code path is now pushed through `a181d5fd9` and its preceding job-search
+changes: non-Workday Apply navigation (`a595ca29f`), event-before-state ordering
+for normal and late-confirmation transitions (`def1d1918`, `48fe67fd3`), labeled
+Email control recognition (`568a75a0f`), same-origin application-route evidence
+(`25089cb71`, `a4ed853e9`), Greenhouse `gh_jid` identity-query rejection
+(`b6a055a19`), and the pre-claim required-question gate (`a181d5fd9`). The focused
+ATS/canonical tests pass (23 tests plus 6 subtests), Ledger/confirmation tests
+pass (28 tests), canonical runtime tests pass (9 tests), and `git diff --check`
+passes.
+
+The private Workday credential store still contains only CrowdStrike, NVIDIA and
+Salesforce tenants, while the existing Chrome CDP showed a Salesforce Workday
+candidate-home tab and Gmail. This is not evidence that every Workday or other ATS
+account is logged in. The resident scheduler remains blocked by launchd
+`141: Reentrancy avoided`; direct hourly-wrapper execution and Telegram reporting
+remain available.
+
 ### 8.2 Outcome and attribution model
 
 Every application receives one immutable `strategy_generation_id` and the exact
@@ -1221,7 +1290,7 @@ Locally, the loop owns side effects and Life Manager is the truthful read/contro
 surface:
 
 ```text
-every 30 minutes  discover → verify → apply one → Telegram receipt + exact PDFs
+every hour  discover → verify → apply one → Telegram receipt + exact PDFs
 every 15 min  reconcile Gmail → act → Calendar/prep → event message
 weekly  join outcomes → evaluate one experiment → promote/keep/rollback
 always  guardian checks freshness/integrity and repairs safe failures
