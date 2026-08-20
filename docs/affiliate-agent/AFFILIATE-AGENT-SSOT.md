@@ -1357,6 +1357,12 @@ historical evidence below. Read-only inspection of the installed state shows:
   `normalizer_state=NO_LIVE_ROWS`; rendered artifact SHA-256 is
   `97ad5b45c0fb1b8e8e51889520817814f1a70aee4b610a05eb12bb57ba134d9e`.
   This remains B01 evidence only and cannot count as money.
+- the latest installed read-only PartnerStack link-performance capture at
+  `2026-08-20T09:08:27Z` reports provider row count `11`; music and
+  tiktok-transcript both have `current_click_count=0` and
+  `delta_click_count=0`. Rendered artifact SHA-256 is
+  `9afdda85363faae596a94f9c33114f4280e33c341e74cee4920715520e2a6c51`.
+  These are provider denominators only, not commission or money.
 
 Execution resumes in this order. Time/provider outcomes are gates, but every safe
 independent harness task continues:

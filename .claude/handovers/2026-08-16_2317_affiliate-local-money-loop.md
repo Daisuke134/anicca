@@ -77,6 +77,12 @@ rendered artifact SHA-256 is
 `97ad5b45c0fb1b8e8e51889520817814f1a70aee4b610a05eb12bb57ba134d9e`. It is
 not a transaction or money proof; B01 remains open.
 
+The subsequent PartnerStack link-performance capture at
+`2026-08-20T09:08:27Z` reports 11 provider rows; both music and
+tiktok-transcript have current clicks `0` and delta `0`. Rendered artifact
+SHA-256 is `9afdda85363faae596a94f9c33114f4280e33c341e74cee4920715520e2a6c51`.
+This is a denominator observation only, not money.
+
 This handover records no Codex manual publication, provider write, or ledger
 mutation. The installed owner performed the verified music delivery described
 above; Codex did not create a parallel executor.
