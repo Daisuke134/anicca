@@ -3581,6 +3581,50 @@ def _run_parent_pipeline(
     return results
 
 
+def reconcile_prepared_from_official_history(
+    *, effects: CdpParentEffects, intent_root: Path
+) -> list[dict[str, object]]:
+    """Confirm old prepared intents that the official applied page proves were sent.
+
+    This recovery is readback-only: absence leaves the intent untouched and never grants
+    submit permission.  One bulk history scan replaces the unreachable state where old
+    intents appeared in Direct's pending denominator but were no longer present in a
+    current search snapshot, so commit_decisions could never reconcile them.
+    """
+    store = fence.IntentStore(intent_root)
+    prepared_ids: set[str] = set()
+    if intent_root.is_dir():
+        for path in intent_root.glob("*.json"):
+            if not path.stem.isdigit():
+                continue
+            intent = store.read(path.stem)
+            if intent is not None and intent["state"] == fence.PREPARED:
+                prepared_ids.add(path.stem)
+    if not prepared_ids:
+        return []
+    observed = effects._official_readback(
+        prepared_ids,
+        effects.evidence_dir / "parent-B2-prepared-history-reconciliation.json",
+    )
+    results: list[dict[str, object]] = []
+    for request_id in sorted(prepared_ids & observed, key=int):
+        with store.locked(request_id):
+            intent = store._read_locked(request_id)
+            if intent is None or intent["state"] != fence.PREPARED:
+                continue
+            detail = effects.reextract_detail(request_id)
+            application = _application_row_from_intent(detail, intent)
+            effects.canonical_ledger_append(application)
+            _confirm_locked(store, request_id, intent)
+            results.append({
+                "request_id": request_id,
+                "status": "reconciled_confirmed",
+                "business_class": DUPLICATE_FENCED,
+                "application": application,
+            })
+    return results
+
+
 def _readonly_discovery_effect_factory(
     *,
     lease_script: Path,
@@ -3697,6 +3741,9 @@ def run_parent(
                 # snapshot starts.  Projection and outbox event keys make this idempotent.
                 _publish_instant_work_events(ledger_path, pass_id)
             effects.ws_recycler = lease.recycle
+            recovered_results = reconcile_prepared_from_official_history(
+                effects=effects, intent_root=intent_root
+            )
             collector = CdpSnapshotCollector(
                 effects,
                 pass_id=pass_id,
@@ -3774,6 +3821,8 @@ def run_parent(
             attempt_budget_path=attempt_budget_path,
             attempt_budget_pass_id=pass_id,
         )
+        if fixture is None:
+            results = [*recovered_results, *results]
         if fixture is None and ineligible_path is not None:
             record_ineligible_results(
                 ineligible_path,
