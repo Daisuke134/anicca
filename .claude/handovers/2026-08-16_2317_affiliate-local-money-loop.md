@@ -825,8 +825,9 @@ failure file is historical evidence only. Canonical state remains 19 placements,
 3 observed denominators, zero pending/approved/paid/reversed statuses, and
 unknown real costs. Rolling net remains `NO_APPROVED_OR_PAID_ROWS` with null
 approved/paid USD net and `NOT_REACHED` for the $10,000 threshold. The next
-official capture is due around `06:45 JST`; B01 still waits for the first
-non-empty official transaction.
+official capture is due around `06:45 JST`; the owner emitted the
+natural-language recovery receipt as Telegram `26654`; B01 still waits for the
+first non-empty official transaction.
 
 At `2026-08-21T04:51:05Z`, the same existing owner selected the next bounded
 English opportunity and created one verified PartnerStack link for

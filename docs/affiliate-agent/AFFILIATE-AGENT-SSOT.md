@@ -2462,6 +2462,7 @@ zero pending/approved/paid/reversed statuses. Rolling net remains
 `threshold_state=NOT_REACHED`, and real costs `UNKNOWN`. The failure receipt is
 retained as historical evidence; the successful owner event and new artifact
 are the current truth. The next official capture is due around `06:45 JST`.
+The owner emitted the natural-language recovery receipt as Telegram `26654`.
 M2.0 is closed for settled dedicated-link attribution: every settled revenue
 placement has one PartnerStack link and one canonical ledger row. The
 voice-isolator experiment's provider-link and owned-publication identities are now
