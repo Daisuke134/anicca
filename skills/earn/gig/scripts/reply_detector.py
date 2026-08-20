@@ -1236,11 +1236,12 @@ def _run_effect_pipeline(
             return _targeted_pending(thread_id, run_id, error="targeted_event_not_coalesced")
         # Re-read the durable binding after enqueue so a queue implementation
         # cannot silently redirect this collected message to another action.
-        target_expected_revision = _count(bound.get("revision"))
-        if target_expected_revision is None or target_expected_revision <= 0:
-            return _targeted_pending(
-                thread_id, run_id, error="targeted_action_revision_invalid",
-            )
+        if not estimate_required:
+            target_expected_revision = _count(bound.get("revision"))
+            if target_expected_revision is None or target_expected_revision <= 0:
+                return _targeted_pending(
+                    thread_id, run_id, error="targeted_action_revision_invalid",
+                )
 
         try:
             _collect_targeted_head(
