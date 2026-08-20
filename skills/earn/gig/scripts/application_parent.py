@@ -3172,7 +3172,10 @@ def default_planner_cache_path() -> Path:
     return Path.home() / "gig" / "b2-planner-cache.json"
 
 
-INELIGIBLE_CACHE_VERSION = 1
+# Version 2 invalidates decisions made before verified age-band/prefecture
+# answers were available to the planner. Keeping version 1 would suppress a
+# corrected request for seven days after the planner policy changed.
+INELIGIBLE_CACHE_VERSION = 2
 PLANNER_CACHE_VERSION = 2
 INELIGIBLE_CACHE_TTL_SECONDS = 7 * 24 * 60 * 60
 

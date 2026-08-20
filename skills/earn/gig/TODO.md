@@ -206,6 +206,8 @@ Execute top to bottom. A checked diagnostic is evidence, not lane completion.
   facts. A numbered field label such as `5 年代` is not evidence of required fabrication. Reject only
   when the listing requires a specific attribute value that conflicts with verified facts or cannot
   be answered truthfully. Source prompt inspection passes; live request `5222525` remains the proof.
+- [x] Invalidate pre-fix ineligible decisions with cache schema v2 so the corrected planner actually
+  re-evaluates `5222525` instead of suppressing it for the seven-day cache TTL.
 - [ ] Re-plan request `5222525` and prove it becomes an honest application answering all six requested
   fields, then obtain official submission readback and replay zero.
 - [ ] Preserve per-request structured decisions durably before execution. A transient batch/provider
