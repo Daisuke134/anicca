@@ -870,3 +870,37 @@ transaction, commission, payout, or money was created. Rolling net remains
 `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`, approved/paid net is
 null, status counts are all zero, and real costs remain `UNKNOWN`; B01 still waits
 for the first non-empty official provider transaction and exact placement join.
+
+B01 money-boundary repair `403b98448fc7caeeb98086c4e6ba00ca5d88ff12` adds the
+literal provider status `reversed`, uses the observation time for a late reversal
+in the rolling window, and marks a non-USD reversal as FX-unknown instead of
+claiming a USD net. The existing Affiliate suite remained `69/69` and a
+non-persistent reversal/currency/timing fixture passed. The immutable release was
+installed with `LOCAL_READY` ownership and byte-equal `revenue_cli.py`; launchd
+bootstrap still returned only the known `141: Reentrancy avoided`. No provider row,
+transaction, or money was created.
+
+At `2026-08-21T06:18:18+0900`, the existing owner advanced the same realtime
+speech-to-text campaign through owned publication, then the existing X publisher
+left its one effect fence at `PUBLICATION_FAILED / XPostError` with timeline
+`NOT_FOUND`, attempt `1`, and a 3,600-second retry cooldown. No second X job or
+post was created. Because the in-flight campaign was `OWNED_LIVE` but the
+placement mapper only considered `X_LIVE`, the readback temporarily exposed a
+21-row ledger split: 20 provider-link keys, 20 public URLs, and one slug alias.
+
+Candidate repair `5d14460d5f4262d2029ea5bf903e45109c6b888f` treats in-flight
+`MATERIALIZED/OWNED_NOT_LIVE/OWNED_LIVE` campaign receipts as canonical placement
+identity. The read-only actual-state proof returned 20 candidates with the
+discovered placement carrying both the private link and owned URL and no slug
+alias; the existing suite remained `69/69`. The immutable release was installed
+with `LOCAL_READY` ownership and byte-equal source, and the browser bootstrap
+warning remained only `141`.
+
+The next natural owner wake at `2026-08-21T06:29:23+0900` read back the same X
+status URL under the same fence, promoted the campaign to `X_LIVE`, collapsed the
+canonical ledger to exactly 20 rows (20 provider-link keys and 20 owned public
+URLs), and removed the slug alias. Telegram `26700` is the natural-language
+`SELF_HEALED` receipt stating same-publication recovery with no duplicate effect.
+The wake remained in revenue cooldown; official source rows are still zero,
+approved/paid net is null, all pending/approved/paid/reversed counts are zero, and
+real billed costs remain `UNKNOWN`.
