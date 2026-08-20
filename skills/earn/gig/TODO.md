@@ -97,6 +97,13 @@ The order to the end is:
    durably retryable. Old pre-fix intents remain duplicate fences and reporting history, not a reason
    to replay stale proposals or delay current applications. The temporary historical replay path is
    deleted. → detailed evidence: section B.
+   The live owner is not disabled: launchd evaluates it every 60 seconds and prevents overlapping
+   Apply passes. Current pass `gig-apply-direct-1787222243411098000-92199` is actively traversing
+   older source pages through immutable release `e2833feee`; Telegram is emitted at terminal
+   receipt, not for every page. The preceding terminal pass observed 40 jobs, submitted and
+   officially confirmed one (`5223314`, ¥8,000), failed zero, and delivered Telegram message
+   `25994`. A long exhaustive pass can therefore create several minutes of Telegram silence without
+   the lane being stopped.
 3. **Negotiate is accelerated but not complete.** One continuous process probes every 30 seconds
    with two workers, so another lane no longer delays inbox observation. The exact-thread head
    preflight and stale-event rebind are now deployed (`9aa6a506c`); the latest targeted runs bind
@@ -105,10 +112,11 @@ The order to the end is:
    private token file is present it runs `gpt-5.3-codex-spark`, while installations without that
    file fall through to the remaining provider candidates. A real canary returned
    `schema_valid=true` in 12.5 seconds; no marketplace send was performed by the canary. The
-   static job points to `e4337a2f`, but the continuous owner still runs old release `c7fefe404`.
-   Addres88 thread `10099067` has pending durable actions 275 and 276. The latest targeted result
-   requires an estimate but reports `estimate_effect: 0 / estimate_readback: 0 /
-   estimate_failed: 1`; the estimate is not sent or officially confirmed. Completion requires a
+   live process has produced more than 400 continuous probes. A natural buyer reply on thread
+   `10099215` reached official seller readback in about 157 seconds, proving the reply path can meet
+   the product SLO. Addres88 thread `10099067` remains the concrete missing-estimate defect: action
+   275 is now dead-lettered and action 276 is pending without an owner or send receipt, while the
+   current reconciliation incorrectly reports `estimate_required: 0`. Completion requires a
    durable disposition for every buyer-authored message: replied with official readback, estimate
    sent with official readback, intentionally no-send with a bounded policy reason, or still pending
    with an observable retry owner. Missing from the queue is never a valid disposition.
@@ -358,8 +366,9 @@ Coverage and speed are both hard gates. Every newly observed buyer-authored mess
 durable action identity before semantic work. The producer keeps discovering while both consumers
 are busy. A message may end only as official reply readback, official estimate readback, explicit
 policy no-send, or owned pending retry; it may never disappear because another thread/model/browser
-operation is slow. The five-minute SLO applies to actionable messages, with two minutes as the
-operating target.
+operation is slow. The product SLO is official reply readback within 30 minutes of the buyer's
+message. Thirty-second polling is the operating mechanism, not a promise to send a reply every 30
+seconds.
 
 Source fix `da5e16627` now coalesces a changed buyer identity onto the current durable action and
 selects the newest coalesced event for restart dispatch. Commit `c366586ac` additionally binds a
@@ -396,13 +405,10 @@ action completes.
   `claude-direct / gpt-5.3-codex-spark` in one attempt (about 12 seconds); its conversation-sized
   input receives a 90-second candidate cap inside the existing 120-second route deadline instead
   of expiring at the old 40-second cap. No marketplace effect is part of this canary.
-- [ ] Activate that route in the continuous owner and capture a natural official receipt. The
-  currently loaded owner is still `c7fefe404` while the static job points to `e4337a2f`. Addres88
-  thread `10099067` currently has pending actions 275 and 276; its latest targeted result reports
-  `estimate_required: 1 / estimate_effect: 0 / estimate_readback: 0 / estimate_failed: 1`.
-  `launchctl print` for even the
-  system domain currently returns `141: Reentrancy avoided`, so this remains a control-plane
-  activation/readback item rather than a semantic authorization failure.
+- [ ] Make the continuous owner assign every newly observed buyer-authored message to an observable
+  retry owner and capture a natural official receipt. The current owner is alive and probes every
+  30 seconds, but Addres88 action 276 is pending and unowned while reconciliation reports
+  `estimate_required: 0`; this is a classification/ownership defect, not a polling-speed defect.
 - [ ] Search/open the official Addres88 conversation; local display-name absence is not evidence.
 - [ ] Bind the latest buyer-authored event to its official thread/message identity and classify
   whether it requires an answer, an estimate, both, or no action.
@@ -410,9 +416,12 @@ action completes.
   the same official thread.
 - [ ] If a price is requested, send exactly one estimate through the existing lane and read back its
   amount and scope in the same official thread.
+- [ ] Permit terminal no-send only for illegality, safety, deception, or truthful inability to
+  deliver. Ordinary ambiguity or a broad request must receive a clarifying reply or a scoped offer;
+  generic `対応できません` is not a valid escape disposition.
 - [ ] Replay the event and prove zero duplicate replies and estimates.
-- [ ] For a new natural actionable buyer message, prove official reply/estimate readback within five
-  minutes; retain two minutes as the operating target.
+- [ ] For a new natural actionable buyer message, prove official reply/estimate readback within 30
+  minutes from the buyer's official message timestamp.
 
 #### D. Make Storefront mutate real listings
 
