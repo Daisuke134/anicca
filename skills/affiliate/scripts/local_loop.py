@@ -83,6 +83,28 @@ def json_rows(path):
     return rows
 
 
+def wake_event_rows(state):
+    """Return wake rows without confusing append-only delivery receipts for wakes."""
+    return [
+        row for row in json_rows(state / "events.jsonl")
+        if row.get("event") in (None, "affiliate_wake")
+    ]
+
+
+def wake_event_uuid(event):
+    """Derive a stable identity before Telegram delivery fields are attached."""
+    identity = {
+        key: value for key, value in event.items()
+        if key not in {
+            "wake_event_uuid", "telegram_event_uuid", "telegram_state",
+            "telegram_message_id", "telegram_delivery_receipt_event_uuid",
+        }
+    }
+    return hashlib.sha256(
+        json.dumps(identity, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+
+
 def observe_repost_acquisition(state):
     """Read the existing Repost ledger without owning or creating its effects."""
     configured = os.environ.get("AFFILIATE_REPOST_STATE_DIR")
@@ -417,7 +439,7 @@ def owner_event(state, wake_event, sent_event_ids=None):
             "provider": "hubspot-impact",
             "job_id": wake_event["impact_login_reconciled_job_id"],
         }, "login effect reconciled from fresh authenticated readback", scope="impact-login")
-    wake_history = json_rows(state / "events.jsonl")
+    wake_history = wake_event_rows(state)
     if len(wake_history) >= 2:
         previous, current = wake_history[-2:]
         if (
@@ -738,7 +760,7 @@ def daily_summary_event(state, wake_event, now=None):
     wake_count_today = sum(
         datetime.fromtimestamp(row.get("ts", 0), ZoneInfo("Asia/Tokyo")).date().isoformat()
         == report_date
-        for row in json_rows(state / "events.jsonl")
+        for row in wake_event_rows(state)
         if isinstance(row.get("ts"), int)
     )
     identity = {"kind": "AFFILIATE_DAILY_SUMMARY", "date": report_date}
@@ -887,6 +909,7 @@ def find_message_id(value):
 
 
 def flush_telegram(state, event, runner=subprocess.run):
+    requested_event_uuid = event.get("event_uuid") if event else None
     if event:
         append_unique(state / "telegram-outbox.jsonl", event, ("event_uuid",))
     sent_ids = {row.get("event_uuid") for row in json_rows(state / "telegram-sent.jsonl")}
@@ -899,7 +922,10 @@ def flush_telegram(state, event, runner=subprocess.run):
             })
     pending = [row for row in json_rows(state / "telegram-outbox.jsonl") if row.get("event_uuid") not in sent_ids]
     if not pending:
-        return {"state": "NO_PENDING", "sent": 0, "message_id": None}
+        return {
+            "state": "NO_PENDING", "sent": 0,
+            "message_id": (sent_by_id.get(requested_event_uuid) or {}).get("message_id"),
+        }
     openclaw = shutil.which("openclaw")
     if not openclaw:
         return {"state": "TRANSPORT_UNAVAILABLE", "sent": 0, "message_id": None}
@@ -948,6 +974,64 @@ def flush_telegram(state, event, runner=subprocess.run):
         "state": "SENT", "event_uuid": row["event_uuid"], "message_id": message_id,
     })
     return {"state": "SENT", "sent": 1, "message_id": message_id}
+
+
+def append_telegram_delivery_receipt(state, wake_event, telegram_event, delivery):
+    """Persist Telegram enqueue/attempt/result beside the wake that caused it."""
+    wake_uuid = wake_event.get("wake_event_uuid") or wake_event_uuid(wake_event)
+    telegram_uuid = (
+        telegram_event.get("event_uuid")
+        if isinstance(telegram_event, dict) else None
+    )
+    delivery_state = delivery.get("state") or "UNKNOWN"
+    message_id = delivery.get("message_id")
+    attempted = delivery_state in {"SENT", "SEND_FAILED", "SEND_TIMEOUT_UNKNOWN"}
+    if delivery_state == "SENT":
+        delivery_result = "DELIVERED"
+    elif delivery_state == "NO_PENDING" and message_id:
+        delivery_result = "ALREADY_DELIVERED"
+    elif delivery_state == "NO_PENDING":
+        delivery_result = "NO_PENDING"
+    elif delivery_state == "SEND_FAILED":
+        delivery_result = "FAILED"
+    else:
+        delivery_result = "UNKNOWN"
+    failure_type = (
+        delivery_state
+        if delivery_state in {
+            "SEND_FAILED", "SEND_TIMEOUT_UNKNOWN", "TRANSPORT_UNAVAILABLE",
+            "RECONCILE_REQUIRED",
+        }
+        else None
+    )
+    identity = {
+        "wake_event_uuid": wake_uuid,
+        "telegram_event_uuid": telegram_uuid,
+        "delivery_state": delivery_state,
+        "provider_message_id": message_id,
+    }
+    receipt = {
+        "event": "affiliate_telegram_delivery",
+        "schema_version": 1,
+        "receipt_type": "AFFILIATE_TELEGRAM_DELIVERY",
+        "event_uuid": hashlib.sha256(
+            json.dumps(identity, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest(),
+        "wake_event_uuid": wake_uuid,
+        "wake_ts": wake_event.get("ts"),
+        "telegram_event_uuid": telegram_uuid,
+        "telegram_kind": telegram_event.get("kind") if isinstance(telegram_event, dict) else None,
+        "telegram_created_at": telegram_event.get("created_at") if isinstance(telegram_event, dict) else None,
+        "enqueue_state": "ENQUEUED" if telegram_uuid else "NOT_ENQUEUED",
+        "attempt_state": "ATTEMPTED" if attempted else "NOT_ATTEMPTED",
+        "delivery_state": delivery_state,
+        "delivery_result": delivery_result,
+        "provider_message_id": message_id,
+        "failure_type": failure_type,
+        "observed_at": datetime.now(timezone.utc).isoformat(),
+    }
+    append_unique(state / "events.jsonl", receipt, ("event_uuid",))
+    return receipt
 
 
 def elevenlabs_link(path, field="Default affiliate link"):
@@ -2192,11 +2276,18 @@ def wake(args):
         "status": status,
         "ts": int(time.time()),
     }
+    event["wake_event_uuid"] = wake_event_uuid(event)
     append(state / "events.jsonl", event)
     atomic_json(state / "last-run.json", event)
-    telegram = flush_telegram(state, next_telegram_event(state, event))
+    telegram_event = next_telegram_event(state, event)
+    telegram = flush_telegram(state, telegram_event)
+    delivery_receipt = append_telegram_delivery_receipt(
+        state, event, telegram_event, telegram,
+    )
+    event["telegram_event_uuid"] = telegram_event.get("event_uuid")
     event["telegram_state"] = telegram["state"]
     event["telegram_message_id"] = telegram["message_id"]
+    event["telegram_delivery_receipt_event_uuid"] = delivery_receipt["event_uuid"]
     atomic_json(state / "last-run.json", event)
     lock.close()
     print(json.dumps(event, sort_keys=True, separators=(",", ":")))
