@@ -587,6 +587,14 @@ class XBrowserAdapter:
 
     @staticmethod
     def _rendered_anchor(anchor: str) -> str:
+        # X/Draft.js renders a Markdown link label and the text after it as
+        # separate DOM text nodes.  Keeping both in one anchor therefore makes
+        # the canonical inserter miss an otherwise visible paragraph (measured
+        # on daily-2026-08-21: ``X long-form example — 長文``).  Prefer the
+        # reader-visible link label, which remains one stable text node.
+        link = re.search(r"\[([^\]]+)\]\([^)]+\)", anchor)
+        if link is not None and link.group(1).strip():
+            return link.group(1).strip()
         rendered = re.sub(
             r"^(?:#{1,6}|[-*+])\s+",
             "",
