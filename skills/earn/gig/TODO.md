@@ -14,15 +14,48 @@ remaining work. The current milestone is complete when a third party can inspect
 validate this package without this seller's private checkout, credentials, customer data,
 or runtime state.
 
-The public product principle is **fast, cheap, accurate, and minimal-human-loop**. A user
-creates and owns the marketplace account, connects their own authenticated browser and
-notification address, and the four independent lanes run in parallel. Apply finds and
-submits only work the configured capability policy permits; Negotiate answers buyers and
-returns estimates; Paid builds, verifies and delivers paid work; Storefront measures and
-improves listings. Revenue claims come only from official marketplace/payment readback.
+The public product principle is **fast, cheap, accurate, and minimal-human-loop**. Normal
+onboarding asks for exactly one value: the owner's notification email address. The installer
+and loops own dependency installation, permitted marketplace signup/login automation, mailbox
+verification, capability discovery, listing construction, pricing research, application
+selection, negotiation, estimates, production, validation and delivery. They must not turn any
+of those responsibilities into an owner questionnaire or approval queue. The four independent
+lanes then run in parallel. Apply finds and submits only work that a concrete preflight proves
+the installed system can deliver; Negotiate answers buyers and returns estimates; Paid builds,
+verifies and delivers paid work; Storefront creates, measures and improves listings. Revenue
+claims come only from official marketplace/payment readback.
 The public package must not promise guaranteed income or describe unverified activity as
 revenue. Owner notifications use a provider adapter; the distributable default is email,
 not this operator's Telegram identity.
+
+### Target one-input onboarding contract
+
+The public command is `./install.sh coconala`. It asks once for the notification email address,
+stores it in the private local install configuration, and continues without asking the owner to
+describe skills, choose categories, write listings, set prices, approve applications, approve
+replies, approve estimates, or approve deliveries.
+
+1. Inspect the device and install or configure the declared runtime, model route, browser, email
+   adapter, four lane jobs and release watcher.
+2. Use the repository's signup/login skill or CLI to create or recover the owner's Coconala session
+   and consume email verification through the configured mailbox adapter. Credentials and session
+   material remain local and are never committed or sent in reports.
+3. Discover executable capabilities from installed tools and prove them with a bounded local
+   preflight. Import any existing official listings and history. When the account is new, build the
+   initial sellable listing, price, scope, FAQ and assets from verified capabilities and observed
+   marketplace demand. Unknown capability fails closed; it does not become a human question.
+4. Activate Apply, Negotiate, Storefront and Submission plus their browser/release owners, then
+   report official receipts to the configured email. Ordinary operation has no approval gate.
+5. Ask for bank/payout and identity/KYC data only when the marketplace requires the account owner
+   to enable withdrawal. Never collect it merely to install, browse, list, apply, negotiate or
+   produce work. A platform-mandated CAPTCHA, passkey, device confirmation, terms acceptance or
+   identity ceremony is an explicit non-delegable exception: surface the exact official screen,
+   resume automatically after completion, and never replace it with recurring manual operation.
+
+The onboarding acceptance is not “the installer exited zero.” From a clean Mac and only the email
+input, it must reach four loaded 24/7 owners; create or recover the marketplace session; establish
+a truthful storefront; and eventually produce the four natural official receipts without copying
+this operator's account, capability bundle, state or credentials.
 
 ## Execution order to end
 
@@ -271,10 +304,26 @@ action completes.
 - [x] Remove known operator IDs, private payloads and absolute operator paths from the distributable
   tree and pass the exact `f90898caf` public acceptance.
 - [x] Provide email-first notification plus documented install, status, upgrade and uninstall.
-- [ ] Perform a fresh third-party/friend install using only that person's email, marketplace account,
-  authenticated browser and private capability bundle; do not copy this operator's configuration.
-- [ ] Prove the clean install causes no marketplace effect before explicit configuration/auth.
-- [ ] After opt-in configuration, prove all four lanes using the same four natural official receipts.
+- [ ] Add the public `./install.sh coconala` entrypoint. Its only normal prompt and only required
+  owner-provided value is the notification email address.
+- [ ] Add the local mailbox adapter and permitted Coconala signup/login skill/CLI path so account
+  creation, session recovery and email verification do not become recurring human tasks. Preserve
+  platform-mandated CAPTCHA, passkey, terms and identity ceremonies as explicit resumable exceptions.
+- [ ] Replace the private capability-bundle onboarding requirement with automatic installed-tool
+  discovery, bounded production preflights, official listing import and new-account storefront
+  generation. Unknown capability must fail closed without asking the owner what they can do.
+- [ ] Perform a fresh third-party/friend install using only that person's notification email; do not
+  copy this operator's marketplace account, configuration, capability bundle, state or credentials.
+- [ ] Prove the clean install causes no marketplace effect before its own account/session is
+  authoritatively established.
+- [ ] Prove the installer starts all four independent owners and the release watcher, and that each
+  survives two process exits plus a login/reboot lifecycle.
+- [ ] Prove all four lanes with the same four natural official receipts: application, buyer
+  reply/estimate, listing create/update, and paid delivery; each must also replay with zero duplicate
+  effect.
+- [ ] Prove bank/payout and identity/KYC collection is deferred until the marketplace requires it for
+  withdrawal, is performed only on the official surface, and is never stored in the public checkout
+  or owner reports.
 - [ ] Keep README and reports explicit that income is not guaranteed and revenue exists only after
   official payment readback.
 
