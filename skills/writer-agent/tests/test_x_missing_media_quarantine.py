@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import sys
 from pathlib import Path
 
@@ -40,6 +41,29 @@ class FakeStore:
         entry["status"] = "unavailable"
         entry["error"] = reason
         return entry
+
+    def quarantine_missing_media(
+        self, pair: str, target: str, reason: str, remote: dict
+    ) -> dict:
+        entry = self.state["pairs"][pair]
+        if entry.get("status") != "intent" or entry.get("target") != target:
+            raise GUARD.InvariantError("missing-media quarantine state changed before the atomic write")
+        if not (
+            remote.get("status") == "not-live"
+            and remote.get("verified") is True
+            and remote.get("destination_identity") == "diceai0"
+            and remote.get("identity_verified") is True
+            and remote.get("identity_source") == "x-authenticated-edit-url"
+            and remote.get("source") == "x-cdp-saved-article-editor"
+        ):
+            raise GUARD.InvariantError(
+                "missing-media quarantine requires an authenticated exact-editor not-live proof"
+            )
+        proof = json.dumps(remote, sort_keys=True, separators=(",", ":"))
+        return self.mark_unavailable(
+            pair,
+            f"{reason}; authenticated exact-editor not-live proof={proof}",
+        )
 
 
 def _wire(monkeypatch: pytest.MonkeyPatch, store: FakeStore, remote: dict) -> None:
@@ -110,3 +134,39 @@ def test_missing_media_quarantine_keeps_intent_when_remote_is_uncertain(
         GUARD.main()
     assert store.marked is None
     assert store.state["pairs"]["x-article/ja"]["status"] == "intent"
+
+
+def test_missing_media_quarantine_rechecks_state_after_remote_probe(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store = FakeStore()
+
+    def probe_then_publish(*args, **kwargs):
+        store.state["pairs"]["x-article/ja"]["status"] = "live"
+        return {
+            "status": "not-live",
+            "verified": True,
+            "destination_identity": "diceai0",
+            "identity_verified": True,
+            "identity_source": "x-authenticated-edit-url",
+            "source": "x-cdp-saved-article-editor",
+        }
+
+    _wire(monkeypatch, store, {})
+    monkeypatch.setattr(GUARD, "probe", probe_then_publish)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "publication-guard.py",
+            "quarantine-missing-media",
+            "--pair",
+            "x-article/ja",
+            "--reason",
+            "missing media",
+        ],
+    )
+
+    with pytest.raises(GUARD.InvariantError, match="state changed"):
+        GUARD.main()
+    assert store.marked is None

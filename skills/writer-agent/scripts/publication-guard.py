@@ -189,58 +189,12 @@ def main() -> int:
             raise InvariantError(
                 "missing-media quarantine refuses uncertain X effect evidence"
             )
-        language = args.pair.rsplit("/", 1)[1]
-        journal_path = (
-            Path(str(state.get("run_dir", "")))
-            / "gates"
-            / "x-inplace-repair"
-            / language
-            / "journal.json"
-        )
-        try:
-            journal = json.loads(journal_path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            journal = {}
-        if isinstance(journal, dict) and (
-            journal.get("browser_evidence")
-            or journal.get("unpublish_evidence")
-            or journal.get("phase") not in {None, "authorized"}
-        ):
-            raise InvariantError(
-                "missing-media quarantine refuses prior X browser-effect evidence"
-            )
         remote = probe(args.pair, str(entry["target"]), state=state)
         if not isinstance(remote, dict):
             raise InvariantError("missing-media quarantine received malformed remote proof")
-        expected_identity = str(
-            state.get("destination_identities", {}).get(args.pair, "")
-        ).strip().lstrip("@")
-        proof_fields = {
-            "status": remote.get("status"),
-            "verified": remote.get("verified"),
-            "destination_identity": remote.get("destination_identity"),
-            "identity_verified": remote.get("identity_verified"),
-            "identity_source": remote.get("identity_source"),
-            "source": remote.get("source"),
-        }
-        if not (
-            expected_identity
-            and remote.get("status") == "not-live"
-            and remote.get("verified") is True
-            and remote.get("destination_identity") == expected_identity
-            and remote.get("identity_verified") is True
-            and remote.get("identity_source") == "x-authenticated-edit-url"
-            and remote.get("source") == "x-cdp-saved-article-editor"
-        ):
-            raise InvariantError(
-                "missing-media quarantine requires an authenticated exact-editor "
-                f"not-live proof: {json.dumps(proof_fields, sort_keys=True)}"
-            )
-        reason = (
-            f"{args.reason}; authenticated exact-editor not-live proof="
-            f"{json.dumps(proof_fields, sort_keys=True, separators=(',', ':'))}"
+        result = store.quarantine_missing_media(
+            args.pair, str(entry["target"]), args.reason, remote
         )
-        result = store.mark_unavailable(args.pair, reason)
     elif args.command == "quarantine-identity-conflict":
         entry = store.read().get("pairs", {}).get(args.pair)
         if not isinstance(entry, dict) or not entry.get("target"):

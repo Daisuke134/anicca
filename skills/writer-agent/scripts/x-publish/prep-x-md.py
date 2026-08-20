@@ -38,6 +38,21 @@ if _canonical.search(md):
             "canonical body diagram is missing: "
             + os.path.join(_search_dirs[0], "body-diagram.png")
         )
+    # The canonical envelope is the sole source of X media. Older drafts also
+    # carried bare relative copies after the envelope; keeping those paths in
+    # the prepared directory makes the parser treat the same cover/body as
+    # missing content. Drop only these two legacy duplicate lines, preserving
+    # every other reader-visible image and the immutable source files.
+    md=re.sub(
+        r'(?m)^!\[[^\]]*\]\(headline-image\.png\)\s*\n?',
+        '',
+        md,
+    )
+    md=re.sub(
+        r'(?m)^!\[[^\]]*\]\(body-diagram\.png\)\s*\n?',
+        '',
+        md,
+    )
     def _adapt_canonical(match):
         # Only the media representations are platform-specific. Preserve any
         # reader-visible copy in the envelope (notably the measurable CTA);

@@ -1396,6 +1396,121 @@ class PublicationStore:
             self._write_locked(state)
             return entry
 
+    def quarantine_missing_media(
+        self,
+        pair: str,
+        target: str,
+        reason: str,
+        remote: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Atomically quarantine an X intent after an exact not-live readback.
+
+        The remote probe runs before this method's lock, so every mutable
+        publication invariant is re-read and re-checked under the same lock
+        immediately before writing ``unavailable``.  A concurrent receipt or
+        target transition therefore wins over the quarantine rather than being
+        silently downgraded.
+        """
+        if pair not in {"x-article/ja", "x-article/en"}:
+            raise InvariantError("missing-media quarantine requires an X Article pair")
+        if not isinstance(remote, dict) or not target or not reason:
+            raise InvariantError("missing-media quarantine requires target, reason and proof")
+        with self._lock():
+            state = self._read_locked()
+            self._assert_pair_mutation_allowed(state, pair)
+            if self._current_ledger_status_locked(state) == "complete":
+                raise InvariantError("terminal publication state is immutable")
+            entry = state.get("pairs", {}).get(pair)
+            if (
+                not isinstance(entry, dict)
+                or entry.get("status") != "intent"
+                or entry.get("target_kind") != "x-draft-url"
+                or entry.get("target") != target
+                or entry.get("receipt")
+                or isinstance(entry.get("existing_publication"), dict)
+            ):
+                raise InvariantError(
+                    "missing-media quarantine state changed before the atomic write"
+                )
+            expected_identity = str(
+                state.get("destination_identities", {}).get(pair, "")
+            ).strip().lstrip("@")
+            if not (
+                expected_identity
+                and remote.get("status") == "not-live"
+                and remote.get("verified") is True
+                and remote.get("destination_identity") == expected_identity
+                and remote.get("identity_verified") is True
+                and remote.get("identity_source") == "x-authenticated-edit-url"
+                and remote.get("source") == "x-cdp-saved-article-editor"
+            ):
+                raise InvariantError(
+                    "missing-media quarantine requires an authenticated exact-editor "
+                    "not-live proof"
+                )
+            try:
+                receipts = self._current_ledger_receipts_locked(state)
+            except InvariantError as error:
+                raise InvariantError(
+                    "missing-media quarantine refuses an ambiguous publication ledger"
+                ) from error
+            if pair in receipts:
+                raise InvariantError(
+                    "missing-media quarantine refuses an existing ledger receipt"
+                )
+            language = pair.rsplit("/", 1)[1]
+            journal_path = (
+                Path(str(state.get("run_dir", "")))
+                / "gates"
+                / "x-inplace-repair"
+                / language
+                / "journal.json"
+            )
+            if journal_path.exists():
+                try:
+                    journal = json.loads(journal_path.read_text(encoding="utf-8"))
+                except (OSError, json.JSONDecodeError) as error:
+                    raise InvariantError(
+                        "missing-media quarantine refuses an unreadable X repair journal"
+                    ) from error
+                if not isinstance(journal, dict):
+                    raise InvariantError(
+                        "missing-media quarantine refuses a malformed X repair journal"
+                    )
+                if (
+                    journal.get("browser_evidence")
+                    or journal.get("unpublish_evidence")
+                    or journal.get("phase") not in {None, "authorized"}
+                ):
+                    raise InvariantError(
+                        "missing-media quarantine refuses prior X browser-effect evidence"
+                    )
+            proof_fields = {
+                key: remote.get(key)
+                for key in (
+                    "status",
+                    "verified",
+                    "destination_identity",
+                    "identity_verified",
+                    "identity_source",
+                    "source",
+                )
+            }
+            entry = {
+                **entry,
+                "platform": "x-article",
+                "lang": language,
+                "status": "unavailable",
+                "error": (
+                    f"{reason}; authenticated exact-editor not-live proof="
+                    f"{json.dumps(proof_fields, sort_keys=True, separators=(',', ':'))}"
+                ),
+                "unavailable_at": utc_now(),
+            }
+            state["pairs"][pair] = entry
+            self._write_locked(state)
+            return entry
+
     def quarantine_identity_conflict(
         self, pair: str, target: str, remote: dict[str, Any]
     ) -> dict[str, Any]:
