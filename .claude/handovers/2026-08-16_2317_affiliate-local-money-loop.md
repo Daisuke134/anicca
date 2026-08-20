@@ -1,14 +1,14 @@
 # Affiliate local money loop handover
 
 - SSOT: `docs/affiliate-agent/AFFILIATE-AGENT-SSOT.md`; resume from `Measured planning checkpoint and next TODOs`, then `Remaining autonomous money-loop work — canonical order`.
-- Development route: `/Users/anicca/anicca-project/.worktrees/affiliate-life-manager-spec`, branch `docs/affiliate-life-manager-spec`. The branch is clean/pushed and remains descended from required base `0a7debb58`; latest source/runtime commit is `97d143d7908b05ee4261e83c85d41818c3478c04`.
-- Installed runtime: `/Users/anicca/.local/share/life-manager/affiliate/current` → release `97d143d7908b05ee4261e83c85d41818c3478c04`; `current` is byte-backed by that immutable release. Any future `skills/affiliate` change requires immutable install and real owner replay.
+- Development route: `/Users/anicca/anicca-project/.worktrees/affiliate-life-manager-spec`, branch `docs/affiliate-life-manager-spec`. The branch remains descended from required base `0a7debb58`; latest source/runtime commit is `9e8f7b90f4392966080edad9b29ff313d81318ae`.
+- Installed runtime: `/Users/anicca/.local/share/life-manager/affiliate/current` → release `9e8f7b90f4392966080edad9b29ff313d81318ae`; `current` is byte-backed by that immutable release. The existing owner naturally woke at `2026-08-20T14:34:34Z` through this `current` path, preserved the ledger, and produced the same empty official revenue state. Any future `skills/affiliate` change requires immutable install and real owner replay.
 - Repository decision: one Life Manager implementation at `skills/affiliate/`; no Affiliate-only repo, executor, ledger, `apps/api`, or Railway runtime. Private mutable state stays under `~/.local/state/life-manager/affiliate/`. OSS is the same proven Skill packaged for a clean Mac, never a rewrite.
 
 ## Current measured truth
 
 - Six Affiliate launchd plists exist: three keep-alive browser owners and source/composition/money jobs at 600-second intervals. CDP `9324`, `9326`, and `9327` each returned HTTP `200`; authenticated tabs showed ElevenLabs home, one exact Affiliate X status, and Impact home.
-- The canonical ledger contains **14 dedicated-link placements**, **13 owned public URLs**, and **32 provider-link clicks**. The fourteenth Instagram row has a verified private provider link and an owner-delivered article awaiting readback promotion. The latest aggregate provider metric is 41 clicks with `+40` explicitly unattributed. Neither is money.
+- The canonical ledger contains **14 dedicated-link placements**, **14 owned public URLs**, and **32 provider-link clicks**. The Instagram row is now `LIVE` through the existing owner’s owned-publication and X handoff; Telegram message `26282` is the owner receipt. The latest aggregate provider metric is 41 clicks with `+40` explicitly unattributed. Neither is money.
 - PartnerStack/ElevenLabs is `AUTHENTICATED`; the latest official capture has `commission_row_count=0`, `NO_LIVE_ROWS`, currency display `USD`, tax registration required, and payment-provider selection required. Pending/approved/paid/reversed are therefore zero observed rows. Approved-or-paid net is **USD 0**. Unknown real costs remain unknown.
 - Telegram outbox and sent ledger both have 103 rows with no pending event. The latest Impact rejection was sent by the existing owner as provider message `26218`; the prior acquisition decision was `26171`.
 - The first audit-shell DNS readback failed, so those earlier receipts were not
@@ -35,18 +35,18 @@ must never be republished.
 
 The prior publication slice A04/A05 is complete for the tiktok row: the existing
 owner reached its owned/X terminal receipts and an unchanged replay without a
-new commit, X object, link, or placement. The current durable Instagram job has
-now delivered its owned commit but is still awaiting the existing owner's
-readback promotion and X step. The next execution slice is to let that same
-owner resume once, then B01: capture the first non-empty official provider
+new commit, X object, link, or placement. The durable Instagram job completed
+its owned-publication readback and X step at `2026-08-20T14:23:46Z`; the next
+execution slice is B01: capture the first non-empty official provider
 transaction artifact, retaining the exact provider transaction/settlement
 identifiers and truthful empty/unknown states. Do not create a parallel executor
 or manually publish.
 
 ## Ordered route to completion
 
-1. P0: promote the current Instagram `DELIVERED` receipt through the existing
-   owner, then obtain exact owned/X readback without a duplicate effect.
+1. P0/A04/A05: publication handoff is complete for the current Instagram row;
+   retain the owner `LIVE` receipts and unchanged-replay evidence, then move to
+   B01 without creating a duplicate effect.
 2. E1-H/P1: ingest the first official provider transaction/settlement ID, currency, status and attribution; join one exact placement; replay safely; preserve pending/approved/paid/reversed/reversal lineage; send one natural Telegram receipt.
 3. P2: join known real billed costs, preserve unknown, and build the canonical rolling-30-day approved-or-paid net view.
 4. P3: turn the existing `@selawmqt` Repost loop into the bounded English Affiliate acquisition arm under one X effect owner; join every credited action through X exposure → owned article → provider click → transaction.
@@ -606,3 +606,16 @@ coverage remain `UNKNOWN`, and no Telegram event is pending. P0 publication
 handoff is closed; B01 is the next atomic task: wait for a non-empty official
 PartnerStack transaction/settlement row and exact-join it replay-safely to one
 of these placements.
+The next B01 repair is commit `9e8f7b90f4392966080edad9b29ff313d81318ae`.
+The commission transition identity now includes the attribution and placement
+join receipt in addition to provider, provider transaction key, lifecycle
+status, currency, gross, reversal, and net units. This prevents a real provider
+reward first observed as `UNMATCHED` from being permanently replay-deduped when
+a later poll supplies the exact sub-ID/link placement; replaying that matched
+state still appends zero duplicates. Existing revenue checks `8/8`, local-loop
+checks `16/16`, Python compilation, and the inline unmatched→matched→replay
+fixture passed. The immutable installer switched `current` to this release and
+source byte equality passed; browser bootstrap still returned only the known
+`141: Reentrancy avoided`, so the next natural owner wake is required for
+installed proof. The official provider report remains empty and no money was
+created.
