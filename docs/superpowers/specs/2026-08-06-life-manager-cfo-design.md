@@ -939,25 +939,29 @@ top-level seven-step sequence.
       meaningful changes/actions still send immediately. Live revision `6` produced Telegram `messageId=611`. M1 and
       owner-facing Product Stage 7 are closed.
 
-Current scheduler audit supersedes the earlier installation evidence. The legacy jobs remain out, but on the latest
-read-only audit `ai.anicca.life-manager-cfo-hourly` is not loaded. Its on-disk plist still points to deleted worktree
-`.worktrees/cfo-4d1-finalize`; that entrypoint does not exist. The last stdout evidence is from 2026-08-11
-(`reportingDate=2026-08-11`, revision 12), while the last stderr records a missing `@opentelemetry/api` in that old
-worktree. Therefore no current hourly Telegram delivery is claimed. Before the next M2 feature slice, restore the
-same local loop from a reviewed durable code worktree, install its pinned dependencies, run the focused/CFO/full
-gates there, reload exactly this one label, trigger one real run, and verify a current provider message receipt.
+Current scheduler audit supersedes the earlier installation evidence. The legacy jobs remain out. OPS3a is now
+consolidated in canonical branch `feature/cfo-ops3a-canonical` at `4e079708e`, with a stable release and no
+feature-worktree absolute path in the installed plist. The stable CFO entrypoint loads with its lock-matched
+dependencies and the fresh financial focused gate is 19/19. The label is still not loaded: `launchctl print/list`
+returns `141: Reentrancy avoided`, `managerpid` cannot resolve, and the current session reports unavailable
+OpenDirectory/uid-501 resolution. A direct Moneytree MCP read succeeds, but the non-interactive Codex reader still
+fails closed because its chatgpt.com/MCP transport cannot establish DNS/TLS. Therefore no current hourly CFO
+Telegram finance receipt is claimed. OPS3b remains open until the existing launchd label runs one real Moneytree
+pass and a positive current provider message ID plus hourly path/schedule read-back are verified; no logout, reboot,
+or OS-service restart is part of this recovery.
 
 Deferred after M1 by explicit owner decision: Binance Spot, trade history, Earn/funding sources, and their tax-lot
 ingestion. They are not unchecked M1 items and cannot become the active CFO item before CFO-1i closes.
 
 ### M2 — Business P&L and resource accounting
 
-- [ ] **CFO-OPS3a** Consolidate the proven CFO into the canonical Life Manager repository before reloading it. Reuse
+- [x] **CFO-OPS3a** Consolidate the proven CFO into the canonical Life Manager repository before reloading it. Reuse
       existing `apps/life-manager`, `skills/life-manager`, `loops`, CFO Telegram callback, and financial-report
       runtime; copy+tweak the proven `apps/life-call` CFO modules/tests instead of inventing a second framework.
       The final owned surface is `apps/life-manager` for runtime/domain code, `skills/cfo` for the operator skill,
       `loops/cfo-hourly` for the loop entrypoint/state contract, and a repository-owned launchd template/installer.
-      No installed plist may point at an expendable feature worktree. This repository consolidation is active first.
+      No installed plist may point at an expendable feature worktree. Closed in canonical commit `4e079708e`;
+      stable release/module-load and focused financial tests are verified, while launchd execution remains OPS3b.
 - [ ] **CFO-OPS3b** Restore the consolidated local hourly CFO. Install the canonical lockfile dependencies, verify
       focused/CFO/full tests, install/reload only `ai.anicca.life-manager-cfo-hourly`, trigger one real Moneytree read,
       and prove one current Telegram provider message ID plus hourly schedule/path read-back. Do not revive the legacy
