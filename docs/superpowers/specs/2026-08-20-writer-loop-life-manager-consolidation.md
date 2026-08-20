@@ -47,7 +47,7 @@
 - launchdは`launchctl print/kickstart`が引き続き`141: Reentrancy avoided`。同じ実行contextで`whoami`がUID `501`のみを返し、
   `dscl . -read /Users/anicca`も`eServerError`であるため、これはWriterコードではなくmacOSのユーザーdirectory/control-plane障害として隔離する。
   OS serviceのkill/restartやユーザーdirectoryの書換えは行わず、既存ownerの直接receiptだけを採用する。
-- 空き容量は現在約5.68GiBでfloorを一時的に上回るが、過去tickで5GiB未満へ戻った実績があるため、disk guardのfail-closed境界は解除しない。
+- 空き容量は現在約4.97GiBで5GiB floorを下回っている。過去tickでも変動しているため、disk guardのfail-closed境界は解除しない。
 - 06:11:52 JSTの実行では、Life Manager current配下の`article-resume-pending.sh`がowner fenceを通過して終了し、
   `daily-2026-08-10`のSubstack JAを既存draft ID `210519352`から
   `https://aniccabuddha.substack.com/p/ai14`へ公開・native readbackした。`article-resume.log`には
