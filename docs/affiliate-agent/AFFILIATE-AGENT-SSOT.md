@@ -1310,18 +1310,21 @@ operation.
 This checkpoint supersedes older counts and zero-click statements in the
 historical evidence below. Read-only inspection of the installed state shows:
 
-- source HEAD `0888ab4ca` is clean against its local upstream refs; installed
-  release `088858bce` is the current immutable `skills/affiliate` runtime;
+- spec HEAD `361866f51` is clean and pushed to both documentation remotes;
+  installed release `088858bce` is the current immutable `skills/affiliate`
+  runtime;
 - six expected launchd plists remain installed; three browser owners answer CDP
   `9324/9326/9327` with HTTP `200`, and three job owners retain 600-second intervals;
 - the canonical ledger contains 13 dedicated-link placements, all 13 with owned
-  public URLs, and 28 provider-measured clicks; the latest click delta is zero;
+  public URLs, and 30 provider-link clicks; the latest per-link transition is
+  `+1` on the subtitle-translator placement. The aggregate provider metric is
+  41 clicks with `+40` explicitly unattributed, so neither value is money;
 - PartnerStack remains authenticated and reports zero commission rows, so
   approved-or-paid net remains USD 0; actual cash cost remains unknown where no
   bill exists;
-- Telegram outbox and sent ledger both contain 96 events and the latest sent row
-  has a provider message ID; no pending event is currently visible, and the
-  tiktok `PLACEMENT_LIVE` event is the next owner-generated receipt to flush;
+- Telegram outbox and sent ledger both contain 97 events; the tiktok
+  `PLACEMENT_LIVE` event was sent by the existing owner with provider message ID
+  `26004`, with no pending event currently visible;
 - the prior publication failure was `FileNotFoundError` for the missing allowed
   `.worktrees/affiliate-foundation-prod`, not a current `XPostError`. The
   existing `feature/affiliate-foundation-prod` branch was reconnected at that
@@ -1337,6 +1340,13 @@ historical evidence below. Read-only inspection of the installed state shows:
   the owned page, X object, and Substack object. No public effect was manually
   performed. Historical ambiguous X effects remain safely fenced and MUST NOT
   be republished.
+- launchd introspection and `start`/`kickstart`/`bootstrap` each returned macOS
+  `141: Reentrancy avoided`, but the configured `bootstrap` invocation still
+  started the existing owner process. It completed at `2026-08-20T10:31:14Z`
+  as `ALREADY_LIVE`, changed no publication/link/ledger receipt, and flushed
+  the owner-generated tiktok `PLACEMENT_LIVE` event exactly once as Telegram
+  message `26004`. This is owner evidence, not permission to create a parallel
+  executor.
 - a one-time read-only diagnostic capture was run through the installed
   `affiliate revenue capture` skill after the owner could not be kicked. The
   official PartnerStack report at `2026-08-20T08:49:11Z` had
@@ -1505,8 +1515,8 @@ independent harness task continues:
 
 1. **P0/A04/A05 — Publication recovery is complete.** Both formerly non-public
    rows have owner-owned/X terminal receipts, independent public readback, and
-   unchanged replay with no new external effect. Continue only with the next
-   owner-generated Telegram receipt under B08; it is not money.
+   unchanged replay with no new external effect. The tiktok owner-generated
+   `PLACEMENT_LIVE` receipt is now sent as message `26004`; it is not money.
 2. **P1 — Close E1-H with the first real transaction.** Ingest the official
    provider transaction/settlement ID, currency, gross amount, status, observed
    time, and attribution keys; join the exact placement ID; replay twice without
@@ -1600,7 +1610,7 @@ an owned publishing identity when a provider requires them.
 | Surface | As-Is | To-Be |
 |---|---|---|
 | Publication | 13 dedicated placements, all 13 public; current owned-publication root is connected | Every job reconciles through the installed owner with exact owned/X readback and no duplicate effect |
-| Money | 28 provider clicks and zero commission rows | Real transaction and settlement lifecycle joins exact placements and costs |
+| Money | 30 provider-link clicks, aggregate 41 with +40 unattributed, and zero commission rows | Real transaction and settlement lifecycle joins exact placements and costs |
 | Learning | Experiments and source decisions are partial | One-variable mature cohorts determine 80/20 allocation |
 | Providers | ElevenLabs executable; HubSpot pending; others unproven | At least three independently executable, receipted providers; commerce lanes promoted only from mature evidence |
 | X/Repost | Shared account but disconnected optimization and mixed language | One English effect owner optimizes qualified visits and approved net while preserving platform policy |
@@ -1955,7 +1965,8 @@ cursor; later work MUST NOT jump ahead of an unmet gate.
 
 Current execution cursor: **E1-H, close the first real transaction path. P0/A04/A05
 publication recovery is complete through the existing owner, with 13 dedicated-link
-placements, 13 public, 28 provider-measured clicks, and zero commission rows.**
+placements, 13 public, 30 provider-link clicks, aggregate 41 clicks including
+`+40` unattributed, and zero commission rows.**
 M2.0 is closed for
 dedicated-link attribution: every existing revenue placement has one PartnerStack
 link and one canonical ledger row. Eleven of thirteen carry owned public URLs;
@@ -3921,7 +3932,7 @@ atomic replacement, matching Python's replacement contract
 |---|---|---|---|
 | U45 | CLOSED-EN | Installed Agent restored ElevenLabs from `SIGN_IN_REQUIRED` to `AUTHENTICATED`, verified the same login job, and the next wake required no recovery. Impact remains outside the active revenue lane | Reopen only if a future scheduled wake cannot repair the session within the bounded policy |
 | U46 | CLOSED-INSTALLED | Installed launchd replay observes both ElevenAgents and TTS receipts without duplicate Git or X effects. The TTS ambiguous first effect was fenced, reconciled from the timeline on the next wake, and then replayed with one job and one URL | Reopen only if a future campaign creates a second external object for the same placement fingerprint |
-| U47 | CLOSED-PROVIDER | The canonical ledger now holds 28 provider-measured clicks across 13 dedicated links; the latest poll delta is zero | Reopen if link identity or placement attribution fails; clicks still do not imply commission |
+| U47 | CLOSED-PROVIDER | The canonical ledger now holds 30 provider-link clicks across 13 dedicated links; the latest per-link transition is +1, while aggregate +40 remains explicitly unattributed | Reopen if link identity or placement attribution fails; clicks still do not imply commission |
 | U48 | LIVE-OPEN | No non-empty commission row has tested dedupe, status transition, or placement join | One real provider transaction replays twice without duplication and preserves pending/approved/reversed/paid lineage |
 | U49 | EXTERNAL | Payout is blocked by truthful tax registration and payment-provider selection | Authorized legal/tax/payment data completes provider readback; Agent never fabricates it |
 | U50 | EXTERNAL | HubSpot/Impact remains `APPLICATION_PENDING` | Authenticated provider or authorized email supplies a deduplicated approval/rejection transition |

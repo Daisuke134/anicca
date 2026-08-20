@@ -1,16 +1,16 @@
 # Affiliate local money loop handover
 
 - SSOT: `docs/affiliate-agent/AFFILIATE-AGENT-SSOT.md`; resume from `Measured planning checkpoint and next TODOs`, then `Remaining autonomous money-loop work — canonical order`.
-- Development route: `/Users/anicca/anicca-project/.worktrees/affiliate-life-manager-spec`, branch `docs/affiliate-life-manager-spec`. Verified local starting HEAD/upstream refs were `0888ab4ca`, descended from required base `0a7debb58`; GitHub DNS was unavailable during the planning audit, so remote freshness and both pushes must be rechecked before execution.
+- Development route: `/Users/anicca/anicca-project/.worktrees/affiliate-life-manager-spec`, branch `docs/affiliate-life-manager-spec`. Current clean/pushed spec HEAD is `361866f51`, descended from required base `0a7debb58`.
 - Installed runtime: `/Users/anicca/.local/share/life-manager/affiliate/current` → release `088858bce2965f05783448b4b5f829fa053717ee`; `current` is byte-backed by that immutable release. Any future `skills/affiliate` change requires immutable install and real owner replay.
 - Repository decision: one Life Manager implementation at `skills/affiliate/`; no Affiliate-only repo, executor, ledger, `apps/api`, or Railway runtime. Private mutable state stays under `~/.local/state/life-manager/affiliate/`. OSS is the same proven Skill packaged for a clean Mac, never a rewrite.
 
 ## Current measured truth
 
 - Six Affiliate launchd plists exist: three keep-alive browser owners and source/composition/money jobs at 600-second intervals. CDP `9324`, `9326`, and `9327` each returned HTTP `200`; authenticated tabs showed ElevenLabs home, one exact Affiliate X status, and Impact home.
-- The canonical ledger contains **13 dedicated-link placements**, **13 owned public URLs**, and **28 provider-measured clicks**. Latest click delta is `0`.
+- The canonical ledger contains **13 dedicated-link placements**, **13 owned public URLs**, and **30 provider-link clicks**. The latest per-link transition is `+1` on the subtitle-translator placement; the aggregate provider metric is 41 clicks with `+40` explicitly unattributed. Neither is money.
 - PartnerStack/ElevenLabs is `AUTHENTICATED`; the latest official capture has `commission_row_count=0`, `NO_LIVE_ROWS`, currency display `USD`, tax registration required, and payment-provider selection required. Pending/approved/paid/reversed are therefore zero observed rows. Approved-or-paid net is **USD 0**. Unknown real costs remain unknown.
-- Telegram outbox and sent ledger are both 96 rows after the owner retry; the latest Affiliate sent row has a real provider message ID and no pending event is currently visible. The tiktok `PLACEMENT_LIVE` event is the next owner-generated receipt to flush.
+- Telegram outbox and sent ledger are both 97 rows after the owner retry; the tiktok `PLACEMENT_LIVE` event was sent by the existing owner as provider message `26004`, and no pending event is currently visible.
 - The first audit-shell DNS readback failed, so those earlier receipts were not
   promoted to public proof. After the owner resumed, independent DNS-resolved
   readback at `2026-08-20T09:01:49Z` returned HTTP 200 for the music owned page,
@@ -225,3 +225,24 @@ Fresh `@selawmqt:9326` read-only revalidation of X's canonical Article route
 returned `Page not found` with zero editor controls. This is a current capability
 observation, not a permanent claim; Writer's working X Article belongs to the
 separate `@diceai0` identity and is not proof for the Affiliate account.
+
+At `2026-08-20T10:31:14Z`, the existing launchd owner completed another wake as
+`ALREADY_LIVE`. `launchctl` introspection and `start`/`kickstart`/`bootstrap`
+returned `141: Reentrancy avoided`, but the configured bootstrap still started
+the owner process; no parallel executor was created. The owner flushed the
+pending tiktok `PLACEMENT_LIVE` event once as Telegram provider message `26004`.
+The tiktok campaign, owned, X, and provider-link receipts remained byte-identical
+(receipt hashes `933a61…`, `aaef09…`, `16c4c4…`, `280f92…`); landing Git HEAD
+remained `2250d31a6`, the ledger remained 13 placements, and DNS-resolved public
+readback returned HTTP 200 with the expected owned title/disclosure/link marker
+and X status marker. Telegram outbox/sent are both 97 rows with no pending row.
+
+The latest official PartnerStack artifact remains empty (`commission_row_count=0`,
+`NO_LIVE_ROWS`, `payout_row_state=EMPTY`, `generic_transaction_id_available=false`,
+artifact SHA-256 `6bb1c9…`). The canonical placement ledger records 30
+provider-link clicks, while aggregate provider metrics show 41 clicks with `+40`
+unattributed; no click is money. There are zero official pending/approved/paid/
+reversed transaction rows, approved-or-paid net is USD `0`, and real billed cost
+is `UNKNOWN`. The next atomic item is B01: let the existing owner capture a
+non-empty official transaction/settlement artifact and join it replay-safely to
+one exact placement; no estimate or pending value can advance the $10,000 gate.
