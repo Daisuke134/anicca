@@ -8,6 +8,7 @@ import asyncio
 import fcntl
 import importlib.util
 import inspect
+import itertools
 import json
 import os
 import re
@@ -1671,7 +1672,8 @@ async def supervise_replies(
         except Exception:
             return False
 
-    dispatch: asyncio.Queue[dict[str, Any]] = asyncio.Queue()
+    dispatch: asyncio.PriorityQueue[tuple[int, int, dict[str, Any]]] = asyncio.PriorityQueue()
+    sequence = itertools.count()
     in_flight: set[str] = set()
 
     async def enqueue_work(work: dict[str, Any]) -> None:
@@ -1686,7 +1688,7 @@ async def supervise_replies(
         if lifecycle is not None and lifecycle.get("state") not in allowed_states:
             return
         in_flight.add(event_key)
-        await dispatch.put(work)
+        await dispatch.put((0 if work.get("kind") == "estimate" else 1, next(sequence), work))
 
     async def enqueue_head_rows(rows: list[dict[str, Any]]) -> None:
         outbox = get_outbox()
@@ -1773,7 +1775,7 @@ async def supervise_replies(
     async def consumer() -> None:
         while not stop.is_set() or not dispatch.empty():
             try:
-                work = await asyncio.wait_for(dispatch.get(), timeout=0.1)
+                _, _, work = await asyncio.wait_for(dispatch.get(), timeout=0.1)
             except asyncio.TimeoutError:
                 continue
             try:
