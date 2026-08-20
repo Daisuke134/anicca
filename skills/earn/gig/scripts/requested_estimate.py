@@ -63,7 +63,7 @@ NA15_CATEGORY_IDS = {
 }
 
 SEMANTIC_RECEIPT_VERSION = 1
-SEMANTIC_PROMPT_VERSION = "reply-negotiate-v15"
+SEMANTIC_PROMPT_VERSION = "reply-negotiate-v16"
 SEMANTIC_RUNNER_PROFILE = "reply-semantic-agent"
 SEMANTIC_COMPATIBLE_RUNNER_PROFILES = frozenset({
     "composition-agent", SEMANTIC_RUNNER_PROFILE,
@@ -169,6 +169,7 @@ def semantic_prompt(
 - buyerが購入または見積送付を承認済みなら、その後のsellerの確認・感謝・謝罪は承認を消しません。この場合conversation_state=seller_lastやnext_action=waitにせず、必要条件が揃えばready_to_buy/send_estimateにします。seller-lastで新しいreply/clarifyは作りません。
 - conversation_state=seller_lastは未処理buyer actionが本当に0の時だけで、evidence_message_idsは必ず空配列です。buyer evidenceを1件でも判断根拠に残すならseller_lastを返してはいけません。
 - send_estimateはbuyerが現在のcycleで購入または見積り送付を承認し、title、内容、数量、合計価格、購入プラン、購入起点の納期が一意な場合だけです。各fieldへ根拠buyer message IDを付けます。別cycleを混ぜません。
+- buyerが公式の見積り提案送付を明示的に求め、必要条件が一意ならnext_action=send_estimateです。金額・内容・納期を通常reply_bodyへ書いて見積り送付の代わりにしてはいけません。条件が不足する場合だけclarifyまたはrequired_official_contextで補います。
 - estimate_terms.quantityは案件project数ではなく、buyerへ渡すdistinct deliverable unitの合計です。記事1本＋SNS投稿1本はquantity=2です。title/contentに列挙した本数合計とquantityを一致させてから返します。
 - buyerがseller提示の納期rangeを受諾済みなら、短い側を約束せず、最も遅い上限をdelivery_daysにします。「購入当日または翌日」は1日、「2〜3日」は3日です。これは不確実性ではなくsellerに安全な確定値です。
 - selection sample/roughのexplicit buyer deadlineはinterim deadlineとして扱い、later official final delivery dateとは別で、applied scope内ならclarifyせず受諾して進みます。後日のofficial final delivery dateと矛盾しない中間成果物期限として、選定用ラフをその期限までに提出します。

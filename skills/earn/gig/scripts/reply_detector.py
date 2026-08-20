@@ -1718,7 +1718,7 @@ async def supervise_replies(
             try:
                 await asyncio.wait_for(stop.wait(), timeout=reconcile_seconds)
             except asyncio.TimeoutError:
-                if dispatch.empty() and not in_flight and headroom_available():
+                if headroom_available():
                     try:
                         await _supervisor_hook(reconcile)
                     except Exception:
