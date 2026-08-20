@@ -8,7 +8,7 @@
 | Runtime order | local first, Steel cloud second |
 | Existing foundations | `apps/life-call`, interactive Moneytree App access, Fleet telemetry, `lm_api_cost`, and the canonical `lm_agent_earnings` source (the panel's `lm_financial_ledger` name is a stale alias) |
 | Canonical repository | `Daisuke134/life-manager` at `/Users/anicca/Projects/life-manager-main`; CFO code, skill, loop, launchd template, tests, and specs converge there |
-| First unfinished item | **CFO-2a3b needs Google reauthentication; first actionable item is CFO-2b.2b Apple Finance reconciliation** |
+| First active item | **CFO-OPS3b restores the canonical hourly loop; then CFO-1j shows recent verified transactions; first business slice is CFO-2b.2b2. `CFO-2a3b` remains externally blocked by Google reauthentication.** |
 
 ## 1. Overview — What and Why
 
@@ -955,12 +955,15 @@ seconds, so merely preferring `~/.local/bin/codex` is not a proven fix. A final 
 temporary `network.proxy_url` and `network.enabled` overrides explicitly; it still produced only MCP timeout markers
 and zero Moneytree completion events. Therefore no current hourly CFO Telegram finance receipt is claimed. OPS3b
 remains open until the existing launchd label runs one real Moneytree pass and a positive current provider message ID
-plus hourly path/schedule read-back are verified; no logout, reboot, or OS-service restart is part of this recovery.
+plus hourly path/schedule read-back are verified.
 
-The post-fix install remains read-back clean (`plutil -lint` PASS and the stable wrapper `bash -n` PASS), but
-`launchctl list ai.anicca.life-manager-cfo-hourly` still returns 141. A non-interactive root attempt is not available
-because `sudo` reports that uid 501 does not exist in the passwd database; a localhost login context reports the same
-missing uid. No account-directory mutation, logout, reboot, or OS-service restart is part of this recovery.
+On 2026-08-21, authorized restart paths were attempted but no restart occurred: System Events returned Apple Event
+error `-10827`, `launchctl reboot system` returned `141: Reentrancy avoided`, `/sbin/reboot` returned
+`Operation not permitted`, and the Terminal helper was unavailable (`kLSNoExecutableErr -10827`). A read-only preflight
+found 240 LaunchAgents (238 valid and two invalid: `ai.anicca.cfo-daily.plist` and
+`ai.anicca.fleet-daily.plist`); the invalid/legacy CFO jobs remain intentionally out. No account-directory mutation,
+logout, reboot, or OS-service restart occurred. The post-fix install remains read-back clean (`plutil -lint` PASS and
+the stable wrapper `bash -n` PASS), but `launchctl list ai.anicca.life-manager-cfo-hourly` still returns 141.
 
 Deferred after M1 by explicit owner decision: Binance Spot, trade history, Earn/funding sources, and their tax-lot
 ingestion. They are not unchecked M1 items and cannot become the active CFO item before CFO-1i closes.
@@ -972,7 +975,7 @@ ingestion. They are not unchecked M1 items and cannot become the active CFO item
       runtime; copy+tweak the proven `apps/life-call` CFO modules/tests instead of inventing a second framework.
       The final owned surface is `apps/life-manager` for runtime/domain code, `skills/cfo` for the operator skill,
       `loops/cfo-hourly` for the loop entrypoint/state contract, and a repository-owned launchd template/installer.
-      No installed plist may point at an expendable feature worktree. Closed in canonical commit `4e079708e`;
+      No installed plist may point at an expendable feature worktree. Closed in canonical commit `2dac47124`;
       stable release/module-load and focused financial tests are verified, while launchd execution remains OPS3b.
 - [ ] **CFO-OPS3b** Restore the consolidated local hourly CFO. Install the canonical lockfile dependencies, verify
       focused/CFO/full tests, install/reload only `ai.anicca.life-manager-cfo-hourly`, trigger one real Moneytree read,

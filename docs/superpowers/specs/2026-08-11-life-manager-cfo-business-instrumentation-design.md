@@ -454,19 +454,24 @@ Rules:
 
 ## 13. Resume audit
 
-- Code commit `f1986663b` and docs commit `9244aa159` remain present on their local and canonical remote-tracking
-  branches. The previous code/docs worktree directories were cleaned; durable replacements are
-  `/Users/anicca/anicca-project/.worktrees/cfo-resume-code` and
-  `/Users/anicca/anicca-project/.worktrees/cfo-resume-spec`.
+- Apple normalizer migration-evidence commit `f1986663b` remains present on the code branch. The canonical OPS3a
+  owner is `feature/cfo-ops3a-canonical` at `2dac47124`; the stable release is the only installed CFO runtime.
+  Durable worktrees are `/Users/anicca/anicca-project/.worktrees/cfo-resume-code` and
+  `/Users/anicca/anicca-project/.worktrees/cfo-resume-spec`; the latter's pre-update remote head was
+  `ed4ef708c146941a2356239d8ed2643cd8e27f94`.
 - The code branch's configured upstream is wrong: it points to the docs branch. Until corrected, push code only with
   explicit target `canonical HEAD:feature/cfo-4d1-finalize-sol`; push specs to
   `canonical HEAD:feature/cfo-moneytree-daily-report`. Never edit the dirty main worktree.
-- Fresh `normalizeAniccaIosAppleFinanceRow` focused tests pass 5/5. Fresh CFO/full gates are not green: the recovered
-  worktree's installed dependency directories for `@opentelemetry/api` and `ws` are invalid/empty, so four tests fail
-  at module load. This is recorded as an environment/runtime recovery failure, not proof of an Apple normalizer
-  regression.
-- The hourly launchd label is not loaded. Its plist references the deleted prior worktree; the old entrypoint is
-  absent. Last stdout is dated 2026-08-11 and last stderr shows the missing OpenTelemetry module. No current hourly
-  Telegram report is claimed. Parent `CFO-OPS3a`/`CFO-OPS3b` and the recent-transaction `CFO-1j` are therefore first;
-  once the canonical Life Manager-owned loop and real message receipt are verified,
-  `CFO-2b.2b2` is again the first business implementation slice.
+- Fresh `normalizeAniccaIosAppleFinanceRow` focused tests pass 5/5. The migration-evidence worktree still has invalid
+  or empty `@opentelemetry/api` and `ws` directories, but the canonical stable release has lock-matched dependencies,
+  module-load PASS, and the fresh financial focused gate is 19/19. The failed recovered-worktree gate is an
+  environment/runtime recovery fact, not an Apple normalizer regression.
+- The installed plist now points to the stable release and passes `plutil -lint`; the hourly launchd label is still not
+  loaded. `launchctl print/list/bootstrap gui/501` and `launchctl list ai.anicca.life-manager-cfo-hourly` return
+  `141: Reentrancy avoided`, `managerpid` cannot resolve, and the current session cannot resolve uid 501 through
+  OpenDirectory. Direct Moneytree MCP read-only evidence succeeds, but the canonical non-interactive reader fails
+  closed after bounded CLI/appserver probes, so no current hourly Telegram finance report or provider `message_id` is
+  claimed. On 2026-08-21, authorized restart paths were attempted but did not execute (`-10827`, `141`, and
+  `Operation not permitted`); no account mutation, logout, reboot, or OS-service restart occurred. Parent
+  `CFO-OPS3b` and recent-transaction `CFO-1j` are first; once their real loop/receipt gates pass,
+  `CFO-2b.2b2` is the first business implementation slice.
