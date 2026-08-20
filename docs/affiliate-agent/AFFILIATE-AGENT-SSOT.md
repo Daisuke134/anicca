@@ -1364,7 +1364,11 @@ historical evidence below. Read-only inspection of the installed state shows:
   `4d674b7e14538be7e70cb00c236a8e1bc5153e68a29bf5b4cde0e4452a6a9bf8`, leaving
   Telegram outbox and sent ledger both at 98 rows with zero pending rows. Revenue
   remained in cooldown against the 10:43 empty capture; approved-or-paid net
-  remains USD 0. This closes the observed Telegram timeout self-heal, not B01.
+  remains USD 0. Independent DNS-resolved readback after this retry still
+  returned HTTP 200 for owned and X pages with the expected markers; tiktok
+  receipt hashes and landing HEAD `2250d31a6` were unchanged and the ledger
+  remained at 13 placements. This closes the observed Telegram timeout
+  self-heal, not B01.
 - a one-time read-only diagnostic capture was run through the installed
   `affiliate revenue capture` skill after the owner could not be kicked. The
   official PartnerStack report at `2026-08-20T08:49:11Z` had

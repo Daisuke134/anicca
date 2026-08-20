@@ -265,4 +265,7 @@ receipt. Event UUID `4d674b7e14538be7e70cb00c236a8e1bc5153e68a29bf5b4cde0e4452a6
 was recorded once with Telegram provider message `26019`; outbox and sent ledger
 are both 98 rows with zero pending rows. Revenue remained in cooldown against
 the 10:43 empty capture; approved-or-paid net remains USD `0` and billed cost is
-`UNKNOWN`. This closes the observed Telegram timeout self-heal, not B01.
+`UNKNOWN`. Independent DNS-resolved readback after this retry still returned
+HTTP 200 for owned and X pages with the expected markers; tiktok receipt hashes,
+landing HEAD `2250d31a6`, and the 13-placement ledger were unchanged. This closes
+the observed Telegram timeout self-heal, not B01.
