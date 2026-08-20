@@ -2384,12 +2384,12 @@ cursor; later work MUST NOT jump ahead of an unmet gate.
 
 Current execution cursor: **E1-H, close the first real transaction path. P0/A04/A05
 publication recovery is complete through the existing owner. The latest readback has
-19 canonical ledger rows, 18 provider-link keys, 18 owned public URLs, 32 provider
-clicks, 16 `INSUFFICIENT_DENOMINATOR` rows plus 3 observed Dev.to denominators,
+18 canonical ledger rows, 18 provider-link keys, 18 owned public URLs, 32 provider
+clicks, 15 `INSUFFICIENT_DENOMINATOR` rows plus 3 observed Dev.to denominators,
 aggregate 41 clicks including `+40` unattributed, and zero commission rows. The
-voice-isolator experiment is still split into one provider-link row (`…-1`) and one
-owned-only row until its same job closes; this is not an exact placement join. B01 is
-waiting for the first non-empty official provider transaction artifact.**
+voice-isolator experiment is now one exact joined placement after its same job
+closed. B01 is waiting for the first non-empty official provider transaction
+artifact.**
 
 Latest X effect repair (2026-08-21T04:23 JST): the real owner left
 `X_POST_PUBLISH` job `e5399f85…` in `EFFECT_STARTED` after a timeline readback of
@@ -2423,11 +2423,18 @@ placement is still not terminal `X_LIVE`. Release
 `ba2721b50a1439d3ae3f38ab39b3895bfce32c2c` moves journal verification after that
 final public readback. Its compile, existing `25/25` checks, and the temporary
 readback-failure guard passed; the immutable release is installed and byte-equal.
+The existing owner then naturally ran at `2026-08-21T04:40:03Z`, read back the
+same status URL, promoted the fence to `X_POST_PUBLIC_READBACK / LIVE`, advanced
+the campaign to `X_LIVE`, merged the provider-link and owned rows into the 18-row
+canonical ledger, and sent Telegram `26594`. No second X object or job appeared.
+`launchctl` introspection still returned 141, but the existing owner produced this
+real wake. Revenue remains in the one-hour cooldown from the `04:29:23 JST`
+cycle; the next official capture is due around `05:29 JST`.
 M2.0 is closed for settled dedicated-link attribution: every settled revenue
-placement has one PartnerStack link and one canonical ledger row. The in-flight
-voice-isolator experiment remains explicitly split until its provider-link and owned
-publication identities are joined. Settled rows carry owned public URLs and matching
-X receipts; provider clicks, exposure, cost, and commission-lineage gates remain
+placement has one PartnerStack link and one canonical ledger row. The
+voice-isolator experiment's provider-link and owned-publication identities are now
+joined in the same canonical row. All settled rows carry owned public URLs and
+matching X receipts; provider clicks, exposure, cost, and commission-lineage gates remain
 economic gates. Content volume
 without those measurement contracts does not advance the cursor.
 M0.1 is installed in release `e8d1b8ea1`: real launchd wake `7`

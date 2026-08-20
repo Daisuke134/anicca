@@ -781,3 +781,17 @@ after that final readback. The guard fixture proves a failed final readback leav
 release is installed with byte-equal `current`; the next existing owner wake must
 promote the current fence receipt without a new post. B01 remains
 `NO_TRANSACTIONS`, approved/paid net null, and costs unknown.
+
+The existing owner then naturally ran the installed repair at
+`2026-08-21T04:40:03Z`. It reconciled the same X status URL under the same job
+`e5399f85…`, promoted `x-posts/...-1.json` to terminal `LIVE`, advanced the
+campaign to `X_LIVE`, and sent owner Telegram `messageId=26594`. No second X post,
+job, or provider-link effect was created. The canonical ledger collapsed back to
+18 exact rows: 18 provider-link keys, 18 owned public URLs, 32 provider clicks,
+15 insufficient plus 3 observed Dev.to denominators, all four commission status
+counts zero, and all 18 real cash costs unknown. `launchctl` still reports 141 for
+introspection, but this natural owner wake is the installed runtime proof. The
+revenue cycle remains in its one-hour cooldown from `04:29:23 JST`; the next
+official PartnerStack capture is due around `05:29 JST`. B01 remains open with
+`commission_row_count=0`, `NO_TRANSACTIONS`, approved/paid net null, and unknown
+cost coverage.
