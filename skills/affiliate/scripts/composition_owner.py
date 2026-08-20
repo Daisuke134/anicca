@@ -663,7 +663,7 @@ def wake(
         paths = sorted(
             (state_root / "composition-inbox").glob("*.json"),
             key=lambda path: (
-                not (state_root / "composition-receipts" / path.name).is_file(),
+                (state_root / "composition-receipts" / path.name).is_file(),
                 path.name,
             ),
         )
