@@ -835,6 +835,7 @@ def test_resume_loop_plans_publication_before_self_heal() -> None:
     assert planner < dispatcher
     assert release < dispatcher
     assert '--publication-backlog "1"' in worker[dispatcher:]
+    assert "--defer-model-always" in worker[dispatcher:]
     assert '--publication-backlog "0"' in worker[dispatcher:]
     assert "publication queue foreground; self-heal deferred" in worker
 

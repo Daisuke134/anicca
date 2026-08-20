@@ -527,8 +527,8 @@ echo "article-resume: publication queue foreground; self-heal deferred run=$(pri
 # Claim and receipt one incident even while publication is READY. The dispatcher
 # sees backlog=1 and defers ordinary Terra work, but still performs the durable
 # incident claim/runbook decision so a repeatedly failing publication lane cannot
-# starve self-heal forever. The circuit-owner exception remains the existing
-# bounded escape hatch for an incident that itself makes publication impossible.
+# starve self-heal forever. READY passes --defer-model-always, so even a circuit
+# owner waits for the lock-free backlog=0 repair tick.
 python3 "$ARTICLE_ROOT/scripts/writer_repair_dispatch.py" \
   --state-root "$STATE_DIR" \
   --scripts "$ARTICLE_ROOT/scripts" \
