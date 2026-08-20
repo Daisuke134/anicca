@@ -86,6 +86,12 @@ def json_rows(path):
 def observe_repost_acquisition(state):
     """Read the existing Repost ledger without owning or creating its effects."""
     configured = os.environ.get("AFFILIATE_REPOST_STATE_DIR")
+    source_config_mode = "ENV" if configured else "NONE"
+    if not configured:
+        fallback = Path.home() / "loops" / "x-repost"
+        if fallback.is_dir():
+            configured = str(fallback)
+            source_config_mode = "DEFAULT_HOME_LOOPS"
     source_state, raw, rows, invalid_row_count = "NOT_CONFIGURED", b"", [], 0
     if configured:
         posted_path = Path(configured).expanduser() / "posted.jsonl"
@@ -130,6 +136,7 @@ def observe_repost_acquisition(state):
     )
     identity = {
         "source_state": source_state,
+        "source_config_mode": source_config_mode,
         "source_file_sha256": source_file_sha256,
         "post_action_count": post_action_count,
         "joined_campaign_count": joined_count,
@@ -153,6 +160,7 @@ def observe_repost_acquisition(state):
         "transition_id": transition_id,
         "observed_at": datetime.now(timezone.utc).isoformat(),
         "source_state": source_state,
+        "source_config_mode": source_config_mode,
         "source_file_sha256": source_file_sha256,
         "post_action_count": post_action_count if source_state == "OBSERVED" else None,
         "joined_campaign_count": joined_count if source_state == "OBSERVED" else None,

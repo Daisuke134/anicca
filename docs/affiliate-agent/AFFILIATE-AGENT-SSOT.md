@@ -2075,6 +2075,9 @@ receipt readback, SSOT state update, commit, and push to both canonical remotes.
   treating post actions as impressions, visits, clicks, or money. The observer
   runs immediately after the wake lock so a later provider/browser failure cannot
   erase the observation. The source observer and temporary mixed-join replay pass;
+  when launchd retains an older environment, an existing `$HOME/loops/x-repost`
+  directory is a safe fallback while a clean Mac without that directory stays
+  `NOT_CONFIGURED`;
   an unacknowledged transition remains reportable until a matching wake event is
   durable, so a provider failure cannot swallow its Telegram receipt;
   the first installed attempt exposed a PartnerStack selector timeout before the

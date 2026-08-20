@@ -20,6 +20,12 @@
   if provider recovery remains unhealthy. A second small repair keeps an
   unacknowledged observation transition reportable until a matching wake event is
   durable, preventing a provider failure from swallowing its Telegram receipt.
+- The `f41140b31` owner wake at `2026-08-20T15:21:09Z` did run the new observer,
+  but launchd retained the pre-install environment, so it recorded
+  `source_state=NOT_CONFIGURED` rather than inventing a count. The next repair
+  prefers `AFFILIATE_REPOST_STATE_DIR` and falls back only when the existing
+  `$HOME/loops/x-repost` directory is present; the real read-only file is still
+  46 valid actions, 0 exact campaign joins, and 46 unjoined.
 - Repository decision: one Life Manager implementation at `skills/affiliate/`; no Affiliate-only repo, executor, ledger, `apps/api`, or Railway runtime. Private mutable state stays under `~/.local/state/life-manager/affiliate/`. OSS is the same proven Skill packaged for a clean Mac, never a rewrite.
 
 ## Current measured truth
