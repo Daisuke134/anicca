@@ -14,6 +14,7 @@ const {
   marketingGenerationDueDate,
   listGenerationReceipts,
   listHonneJaShadowGenerationReceipts,
+  listMarketingVideoPublicationReceipts,
   listObservablePublicationReceipts,
   executeCapabilityJob,
   createScopedEnvironmentSecretProvider,
@@ -214,6 +215,7 @@ test("committed local compose is self-contained and never references a legacy ru
     "runtime-init",
     "api",
     "scheduler",
+    "marketing-liveness",
     "worker",
   ]) {
     assert.match(compose, new RegExp(`^  ${service}:`, "m"));
@@ -252,8 +254,11 @@ test("committed local compose is self-contained and never references a legacy ru
   );
   assert.match(
     compose,
-    /LM_WORKER_CAPABILITIES: \$\{LM_WORKER_CAPABILITIES:-runtime\.noop\}/,
+    /LM_WORKER_CAPABILITIES: \$\{LM_WORKER_CAPABILITIES:-runtime\.noop,marketing\.liveness\.telegram\}/,
   );
+  assert.match(compose, /command: \["node", "scripts\/runtime-up\.js", "internal-liveness"\]/);
+  assert.match(compose, /LM_MARKETING_LIVENESS_LANES_JSON: \$\{LM_MARKETING_LIVENESS_LANES_JSON:-\[\]\}/);
+  assert.match(compose, /LM_TELEGRAM_ALERT_CHAT_ID: \$\{LM_TELEGRAM_ALERT_CHAT_ID:-\}/);
   assert.match(compose, /^  worker:\n(?:.*\n){0,4}    build: \*runtime-build/m);
   assert.match(compose, /LM_TELEGRAM_BOT_TOKEN: \$\{LM_TELEGRAM_BOT_TOKEN:-\}/);
   assert.doesNotMatch(
@@ -437,6 +442,25 @@ test("honne JA shadow scan is scoped to one tenant/product/format/locale and an 
   );
 });
 
+test("marketing liveness receipt scan ranks per lane so unrelated volume cannot create a false miss", async () => {
+  const calls = [];
+  const rows = [{ receipt: { product_id: "honne-ai", locale: "en", platform: "tiktok" } }];
+  const result = await listMarketingVideoPublicationReceipts({
+    async query(sql, params) { calls.push({ sql, params }); return { rows }; },
+  }, "tenant-a", "2026-08-20T00:00:00.000Z", [
+    { product: "honne-ai", locale: "en", platform: "tiktok" },
+    { product: "anicca", locale: "ja", platform: "tiktok" },
+  ]);
+  assert.deepEqual(result, rows.map(({ receipt }) => receipt));
+  assert.match(calls[0].sql, /row_number\(\) OVER[\s\S]*PARTITION BY[\s\S]*lane_rank <= 100/i);
+  assert.match(calls[0].sql, /jsonb_to_recordset\(\$3::jsonb\)/i);
+  assert.doesNotMatch(calls[0].sql, /LIMIT 1000/i);
+  assert.deepEqual(JSON.parse(calls[0].params[2]), [
+    { product: "honne-ai", locale: "en", platform: "tiktok" },
+    { product: "anicca", locale: "ja", platform: "tiktok" },
+  ]);
+});
+
 test("capability worker completes a registered financial report with only its safe receipt", async () => {
   const calls = [];
   const job = {
@@ -468,6 +492,43 @@ test("capability worker completes a registered financial report with only its sa
     message_id: 44,
     snapshot_hash: "a".repeat(64),
   });
+});
+
+test("marketing liveness worker resolves only Life Manager Telegram refs and uses fake transport", async () => {
+  const sent = [];
+  const handlers = createWorkerHandlers({
+    LM_RUNTIME_TENANT_ID: "tenant-a",
+    LM_TELEGRAM_BOT_TOKEN: "fake-token",
+    LM_TELEGRAM_ALERT_CHAT_ID: "fake-chat",
+  }, ["marketing.liveness.telegram"], {
+    createRegistry({ servicesByAdapter }) {
+      const services = servicesByAdapter["marketing-liveness-telegram"];
+      return {
+        hasCapability: () => true,
+        getByCapability: () => ({
+          execute: async (job) => {
+            const token = await services.secretProvider.get(job.tenant_id, job.input_refs.telegram_token_ref);
+            const chat = await services.chatProvider.get(job.tenant_id, job.input_refs.telegram_chat_ref);
+            sent.push({ token, chat });
+            return { receipt: { kind: "fake_marketing_liveness" } };
+          },
+        }),
+      };
+    },
+  });
+  const job = {
+    tenant_id: "tenant-a",
+    capability: "marketing.liveness.telegram",
+    input_refs: {
+      telegram_token_ref: "secret://telegram/bot-token",
+      telegram_chat_ref: "telegram-chat://owner",
+    },
+  };
+  await handlers["marketing.liveness.telegram"](job);
+  assert.deepEqual(sent, [{ token: "fake-token", chat: "fake-chat" }]);
+  await assert.rejects(() => handlers["marketing.liveness.telegram"]({
+    ...job, tenant_id: "other-tenant",
+  }), /secret scope mismatch/i);
 });
 
 test("a registered no-effect capability executes its adapter instead of becoming a runtime noop", async () => {

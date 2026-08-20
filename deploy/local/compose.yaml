@@ -166,6 +166,35 @@ services:
       retries: 30
     restart: unless-stopped
 
+  marketing-liveness:
+    image: life-manager-local-runtime:dev
+    pull_policy: never
+    command: ["node", "scripts/runtime-up.js", "internal-liveness"]
+    environment:
+      <<: *runtime-environment
+      LM_DEPLOYMENT_ROLE: liveness
+      LM_RUNTIME_TENANT_ID: ${LM_RUNTIME_TENANT_ID:-}
+      LM_MARKETING_LIVENESS_LANES_JSON: ${LM_MARKETING_LIVENESS_LANES_JSON:-[]}
+      LM_MARKETING_LIVENESS_POLL_MS: ${LM_MARKETING_LIVENESS_POLL_MS:-60000}
+      LM_MARKETING_LIVENESS_HEALTH_PORT: "8791"
+      LM_TELEGRAM_TOKEN_REF: ${LM_TELEGRAM_TOKEN_REF:-secret://telegram/bot-token}
+      LIFE_RUN_LOOPS: "false"
+    ports:
+      - "${LM_LOCAL_LIVENESS_HEALTH_PORT:-18791}:8791"
+    volumes:
+      - runtime-data:/var/lib/life-manager
+    depends_on: *runtime-dependencies
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - fetch('http://localhost:8791/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+
   worker:
     image: life-manager-local-runtime:dev
     build: *runtime-build
@@ -175,10 +204,11 @@ services:
       <<: *runtime-environment
       LM_DEPLOYMENT_ROLE: worker
       LM_WORKER_ID: local-runtime-worker
-      LM_WORKER_CAPABILITIES: ${LM_WORKER_CAPABILITIES:-runtime.noop}
+      LM_WORKER_CAPABILITIES: ${LM_WORKER_CAPABILITIES:-runtime.noop,marketing.liveness.telegram}
       LM_WORKER_LEASE_SECONDS: ${LM_WORKER_LEASE_SECONDS:-300}
       LM_RUNTIME_TENANT_ID: ${LM_RUNTIME_TENANT_ID:-}
       LM_TELEGRAM_BOT_TOKEN: ${LM_TELEGRAM_BOT_TOKEN:-}
+      LM_TELEGRAM_ALERT_CHAT_ID: ${LM_TELEGRAM_ALERT_CHAT_ID:-}
       LM_POSTIZ_API_KEY: ${LM_POSTIZ_API_KEY:-}
       LM_INSTAGRAM_HANDLE: ${LM_INSTAGRAM_HANDLE:-}
       LM_INSTAGRAM_ACCOUNTS_PATH: ${LM_INSTAGRAM_ACCOUNTS_PATH:-}

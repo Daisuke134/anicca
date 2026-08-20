@@ -1,0 +1,122 @@
+"use strict";
+
+const assert = require("node:assert/strict");
+const test = require("node:test");
+
+const {
+  executeMarketingLivenessJob,
+  planMarketingLivenessJobs,
+  verifyMarketingLivenessReceipt,
+} = require("./marketing-liveness-adapter.js");
+
+const HASH = "a".repeat(64);
+const BASE = {
+  tenantId: "tenant-a",
+  nowMs: Date.parse("2026-08-20T02:30:00.000Z"),
+  telegramTokenRef: "secret://telegram/bot-token",
+  telegramChatRef: "telegram-chat://owner",
+};
+const LANE = {
+  lane_id: "honne-en-tiktok",
+  state: "production-armed",
+  product: "honne-ai",
+  locale: "en",
+  platform: "tiktok",
+  time_zone: "Asia/Tokyo",
+  slots: ["07:00", "11:00", "20:30"],
+  after: "2026-08-20T00:00:00.000Z",
+  grace_minutes: 15,
+};
+
+function publication(slot = "2026-08-20T02:00:00.000Z") {
+  return {
+    schema_version: 1, kind: "marketing_video_distribution", status: "published",
+    product_id: "honne-ai", format_id: "reelclaw", form: "video", locale: "en",
+    slot, creative_id: "hen-001", platform: "tiktok", video_sha256: HASH,
+    caption_sha256: HASH, public_url: "https://www.tiktok.com/@honne_reveal/video/7668814897594779655",
+    provider_post_id: "7668814897594779655", provider_route: "postiz",
+    provider_reconciled: true, published_at: "2026-08-20T02:05:00.000Z",
+  };
+}
+
+test("production-armed slot emits a fake-transport receipt with the verified direct public URL", async () => {
+  const jobs = planMarketingLivenessJobs({ ...BASE, lanes: [LANE], receipts: [publication()] });
+  assert.equal(jobs.length, 1);
+  const sent = [];
+  const result = await executeMarketingLivenessJob(jobs[0], {
+    secretProvider: { get: async () => "fake-token" },
+    chatProvider: { get: async () => "fake-chat" },
+    sendTelegram: async (token, chatId, text) => {
+      sent.push({ token, chatId, text });
+      return { ok: true, result: { message_id: 701 } };
+    },
+    now: () => "2026-08-20T02:30:00.000Z",
+  });
+  assert.equal(sent.length, 1);
+  assert.match(sent[0].text, /product: honne-ai[\s\S]*locale: en[\s\S]*platform: tiktok/);
+  assert.match(sent[0].text, /slot: 2026-08-20T02:00:00.000Z/);
+  assert.match(sent[0].text, /status: published/);
+  assert.match(sent[0].text, /https:\/\/www\.tiktok\.com\/@honne_reveal\/video\/7668814897594779655/);
+  assert.match(sent[0].text, /retry state: not_required/);
+  assert.equal(verifyMarketingLivenessReceipt(result.receipt), true);
+});
+
+test("miss alert identity is stable so rerun enqueues and sends only once", async () => {
+  const planned = planMarketingLivenessJobs({ ...BASE, lanes: [LANE], receipts: [] });
+  const replay = planMarketingLivenessJobs({ ...BASE, lanes: [LANE], receipts: [] });
+  assert.equal(planned.length, 1);
+  assert.equal(replay[0].job_id, planned[0].job_id);
+  assert.equal(replay[0].effect_key, planned[0].effect_key);
+  const stored = new Set();
+  let sends = 0;
+  for (const job of [planned[0], replay[0]]) {
+    if (stored.has(job.job_id)) continue;
+    stored.add(job.job_id);
+    await executeMarketingLivenessJob(job, {
+      secretProvider: { get: async () => "fake-token" },
+      chatProvider: { get: async () => "fake-chat" },
+      sendTelegram: async (_token, _chat, text) => {
+        sends += 1;
+        assert.match(text, /status: missed[\s\S]*public URL: unavailable[\s\S]*retry state: unavailable/);
+        return { ok: true, result: { message_id: 702 } };
+      },
+    });
+  }
+  assert.equal(sends, 1);
+});
+
+test("disabled, default-off, and shadow lanes never produce miss alerts", () => {
+  const lanes = ["disabled", "default-off", "shadow"].map((state, index) => ({
+    ...LANE, lane_id: `honne-${index}`, state,
+  }));
+  assert.deepEqual(planMarketingLivenessJobs({ ...BASE, lanes, receipts: [] }), []);
+});
+
+test("unreconciled publication is unavailable, unknown lane states fail, and old lanes still inspect recent slots", () => {
+  const unreconciled = { ...publication(), provider_reconciled: false };
+  const [job] = planMarketingLivenessJobs({ ...BASE, lanes: [LANE], receipts: [unreconciled] });
+  assert.match(decodeURIComponent(job.input_refs.marketing_liveness_ref), /"status":"missed"/);
+  assert.throws(() => planMarketingLivenessJobs({
+    ...BASE, lanes: [{ ...LANE, state: "prodution-armed" }], receipts: [],
+  }), /lane is invalid/);
+  const recentJobs = planMarketingLivenessJobs({
+    ...BASE,
+    lanes: [{ ...LANE, after: "2024-01-01T00:00:00.000Z", slots: ["11:00"] }],
+    receipts: [publication()],
+  });
+  const recent = recentJobs.find((candidate) => (
+    decodeURIComponent(candidate.input_refs.marketing_liveness_ref).includes("2026-08-20T02:00:00.000Z")
+  ));
+  assert.ok(recent);
+  assert.match(decodeURIComponent(recent.input_refs.marketing_liveness_ref), /"status":"published"/);
+});
+
+test("jsonb input-ref key order does not invalidate the same bound job", async () => {
+  const [job] = planMarketingLivenessJobs({ ...BASE, lanes: [LANE], receipts: [publication()] });
+  const reordered = { ...job, input_refs: Object.fromEntries(Object.entries(job.input_refs).reverse()) };
+  await assert.doesNotReject(() => executeMarketingLivenessJob(reordered, {
+    secretProvider: { get: async () => "fake-token" },
+    chatProvider: { get: async () => "fake-chat" },
+    sendTelegram: async () => ({ ok: true, result: { message_id: 703 } }),
+  }));
+});

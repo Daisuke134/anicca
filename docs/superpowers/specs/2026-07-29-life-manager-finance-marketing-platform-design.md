@@ -1121,6 +1121,25 @@ Note `dev` deploys only to a Netlify preview, so delivery files must reach `main
   Verified: gate FAILed before mining, monk-wisdom went 68 → 173 cards, the launchd
   run rotated to honne-relationship (79 → 179) and exited 0.
 
+**Incident I-1 implementation.** Life Manager now has a separate
+`marketing-liveness` process, independent of the marketing scheduler it
+observes. It evaluates only explicitly `production-armed` lanes, walks the
+most recent 100 expected local-time slots after each lane's grace period, and
+turns each slot into one deterministic `message` job. Disabled, default-off,
+and shadow lanes create no job. A success requires the generic publication
+adapter's verified receipt plus `provider_reconciled=true`; its Telegram body
+uses the direct TikTok `/video/<id>` or Instagram artifact URL. A missing or
+unreconciled publication reports `status=missed`, `public URL=unavailable`, and
+`retry state=unavailable`, never zero or success. The runtime job/effect key is
+the durable notification dedupe boundary, and worker execution rebinds every
+reference before resolving the tenant-scoped Telegram token and chat. Fake
+transport, replay, off-lane, long-lived schedule, JSONB round-trip, per-lane
+receipt ranking, runtime wiring, and independent-service tests pass. The four
+changed runtime paths pass the legacy dependency scanner with zero violations.
+The repository-wide scanner still reports the pre-existing Connector photo
+transport at `apps/life-manager/lib/outbound-guardian.js:176`; that unrelated
+cutover blocker is not hidden or allowlisted by I-1.
+
 **Ordered remainder for this engine** (mirrors the harness task list):
 
 | # | Work | Gate | State |
@@ -1358,7 +1377,7 @@ schedulers or revive known-broken producers:
 | Incident order | Work | Done evidence | State |
 |---:|---|---|---|
 | I-0 | Freeze incident truth and preserve rollback | live OpenClaw SQLite, launchd disabled overrides, Postiz connectivity/integrations, last public URLs, logs, and quarantine backup are read back without changing state | **done** |
-| I-1 | Add expected-slot liveness and Telegram incident reporting in Life Manager | each missed slot for an explicitly production-armed lane emits one deduplicated alert; disabled, shadow, and default-off lanes do not alert; zero output on an armed lane can never be silent; recovery emits the direct public artifact URL | open |
+| I-1 | Add expected-slot liveness and Telegram incident reporting in Life Manager | independent liveness service + durable message jobs; fake Telegram proves direct reconciled artifact URL, truthful unavailable miss, replay dedupe, and zero jobs for disabled/default-off/shadow; changed runtime scope scans 0 legacy dependencies | **implementation done; repository-wide scan remains blocked by the pre-existing Connector photo transport at `outbound-guardian.js:176`** |
 | I-2 | Wire the generic Life Manager video chain to a default-off Honne EN schedule | exact 07:00/11:00/20:30 Asia/Tokyo slots generate durable jobs with no OpenClaw path or env read; shadow performs zero provider writes | open |
 | I-3 | Run one controlled Honne EN canary from Life Manager | one real TikTok publication reconciles as `PUBLISHED`, its direct `/video/<id>` URL returns publicly, Telegram receives the same URL, replay produces no duplicate | open; requires the normal canary external-effect gate |
 | I-4 | Prove seven consecutive Honne EN expected cycles | every slot has exactly one verified generation, publication, URL, notification, and initial observation receipt; any miss/duplicate resets the counter | open |

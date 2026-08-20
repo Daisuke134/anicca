@@ -253,6 +253,73 @@ async function listHonneJaShadowGenerationReceipts(pool, options) {
   return result.rows.map((row) => row.receipt);
 }
 
+async function listMarketingVideoPublicationReceipts(pool, tenantId, after, lanes) {
+  if (
+    !String(tenantId || "").trim()
+    || !Number.isFinite(Date.parse(after))
+    || !Array.isArray(lanes)
+    || lanes.length < 1
+  ) {
+    throw new Error("marketing liveness receipt boundary is invalid");
+  }
+  const result = await pool.query(`
+    WITH ranked AS (
+      SELECT r.receipt, row_number() OVER (
+        PARTITION BY r.receipt->>'product_id', r.receipt->>'locale', r.receipt->>'platform'
+        ORDER BY r.created_at DESC
+      ) AS lane_rank
+      FROM public.lm_runtime_job_receipts r
+      JOIN public.lm_runtime_jobs j
+        ON j.job_id = r.job_id AND j.tenant_id = r.tenant_id
+      WHERE r.tenant_id = $1
+        AND j.capability = 'marketing.video.publish'
+        AND r.outcome = 'completed'
+        AND r.created_at >= $2::timestamptz
+        AND r.receipt->>'kind' = 'marketing_video_distribution'
+        AND r.receipt->>'status' = 'published'
+        AND EXISTS (
+          SELECT 1 FROM jsonb_to_recordset($3::jsonb)
+            AS lane(product text, locale text, platform text)
+          WHERE lane.product = r.receipt->>'product_id'
+            AND lane.locale = r.receipt->>'locale'
+            AND lane.platform = r.receipt->>'platform'
+        )
+    )
+    SELECT receipt FROM ranked WHERE lane_rank <= 100
+  `, [tenantId, after, JSON.stringify(lanes.map(({ product, locale, platform }) => ({ product, locale, platform })))]);
+  return result.rows.map((row) => row.receipt);
+}
+
+function marketingLivenessLanes(env) {
+  const raw = String(env.LM_MARKETING_LIVENESS_LANES_JSON || "[]").trim();
+  let lanes;
+  try { lanes = JSON.parse(raw); } catch { throw new Error("LM_MARKETING_LIVENESS_LANES_JSON is invalid"); }
+  if (!Array.isArray(lanes)) throw new Error("LM_MARKETING_LIVENESS_LANES_JSON is invalid");
+  return lanes;
+}
+
+async function enqueueMarketingLiveness(pool, env, nowMs = Date.now()) {
+  const lanes = marketingLivenessLanes(env);
+  if (lanes.length === 0) return [];
+  const tenantId = requiredEnv(env, "LM_RUNTIME_TENANT_ID");
+  const after = lanes.reduce((oldest, lane) => (
+    !oldest || String(lane.after || "") < oldest ? String(lane.after || "") : oldest
+  ), "");
+  const receipts = await listMarketingVideoPublicationReceipts(pool, tenantId, after, lanes);
+  const { planMarketingLivenessJobs } = require("../lib/marketing-liveness-adapter.js");
+  const { enqueueJob } = require("../lib/runtime-job-store.js");
+  const jobs = planMarketingLivenessJobs({
+    tenantId,
+    lanes,
+    receipts,
+    nowMs,
+    telegramTokenRef: String(env.LM_TELEGRAM_TOKEN_REF || "secret://telegram/bot-token"),
+    telegramChatRef: "telegram-chat://owner",
+  });
+  for (const job of jobs) await enqueueJob(job, { query: pool.query.bind(pool) });
+  return jobs;
+}
+
 function createHealthServer(port, state) {
   const server = http.createServer((request, response) => {
     if (request.url !== "/health") {
@@ -531,6 +598,31 @@ function createWorkerHandlers(env, capabilities, dependencies = {}) {
       now: dependencies.now || (() => new Date().toISOString()),
     };
   }
+  if (capabilities.includes("marketing.liveness.telegram")) {
+    servicesByAdapter["marketing-liveness-telegram"] = {
+      secretProvider: {
+        async get(requestTenantId, ref) {
+          if (
+            requestTenantId !== requiredEnv(env, "LM_RUNTIME_TENANT_ID")
+            || ref !== "secret://telegram/bot-token"
+          ) throw new Error("marketing liveness Telegram secret scope mismatch");
+          return requiredEnv(env, "LM_TELEGRAM_BOT_TOKEN");
+        },
+      },
+      chatProvider: {
+        async get(requestTenantId, ref) {
+          if (
+            requestTenantId !== requiredEnv(env, "LM_RUNTIME_TENANT_ID")
+            || ref !== "telegram-chat://owner"
+          ) {
+            throw new Error("marketing liveness Telegram chat scope mismatch");
+          }
+          return requiredEnv(env, "LM_TELEGRAM_ALERT_CHAT_ID");
+        },
+      },
+      now: dependencies.now,
+    };
+  }
   if (capabilities.includes("marketing.observation.collect")) {
     const tenantId = requiredEnv(env, "LM_RUNTIME_TENANT_ID");
     const query = dependencies.query;
@@ -760,6 +852,39 @@ async function runCapabilityWorker(env = process.env) {
 
   await tick();
   const timer = setInterval(tick, Number(env.LM_WORKER_POLL_MS || 1000));
+  const stop = async () => {
+    clearInterval(timer);
+    health.close();
+    await pool.end();
+  };
+  process.once("SIGTERM", () => stop().finally(() => process.exit(0)));
+  process.once("SIGINT", () => stop().finally(() => process.exit(0)));
+}
+
+async function runMarketingLivenessMonitor(env = process.env) {
+  const { Pool } = require("pg");
+  const pool = new Pool({ connectionString: requiredEnv(env, "LM_RUNTIME_DATABASE_URL"), max: 1 });
+  const state = { role: "liveness", workerId: "marketing-liveness", capabilities: [], ready: false, error: null, lastPollAt: null };
+  const health = createHealthServer(Number(env.LM_MARKETING_LIVENESS_HEALTH_PORT || 8791), state);
+  const intervalMs = Number(env.LM_MARKETING_LIVENESS_POLL_MS || 60000);
+  let active = false;
+  async function tick() {
+    if (active) return;
+    active = true;
+    try {
+      await pool.query("SELECT 1");
+      await enqueueMarketingLiveness(pool, env);
+      state.ready = true;
+      state.error = null;
+      state.lastPollAt = new Date().toISOString();
+    } catch (error) {
+      state.error = error;
+    } finally {
+      active = false;
+    }
+  }
+  await tick();
+  const timer = setInterval(tick, intervalMs);
   const stop = async () => {
     clearInterval(timer);
     health.close();
@@ -1063,6 +1188,7 @@ async function runSchedulerOwner(env = process.env) {
 async function main(argv = process.argv.slice(2)) {
   if (argv[0] === "internal-worker") return runCapabilityWorker();
   if (argv[0] === "internal-scheduler") return runSchedulerOwner();
+  if (argv[0] === "internal-liveness") return runMarketingLivenessMonitor();
   const result = runRuntimeUp({ argv });
   process.stdout.write(`${JSON.stringify(result)}\n`);
   return result;
@@ -1083,11 +1209,15 @@ module.exports = {
   marketingGenerationDueDate,
   listGenerationReceipts,
   listHonneJaShadowGenerationReceipts,
+  listMarketingVideoPublicationReceipts,
+  marketingLivenessLanes,
+  enqueueMarketingLiveness,
   listObservablePublicationReceipts,
   createScopedEnvironmentSecretProvider,
   createWorkerHandlers,
   observeWorkerPoll,
   executeCapabilityJob,
   runCapabilityWorker,
+  runMarketingLivenessMonitor,
   runSchedulerOwner,
 };

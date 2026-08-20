@@ -52,6 +52,16 @@
       "factory_export": "createMarketingVideoGenerationLoopAdapter"
     },
     {
+      "adapter_id": "marketing-liveness-telegram",
+      "loop_id": "marketing.liveness",
+      "capability": "marketing.liveness.telegram",
+      "effect_classes": [
+        "message"
+      ],
+      "module_ref": "lib/marketing-liveness-adapter.js",
+      "factory_export": "createMarketingLivenessLoopAdapter"
+    },
+    {
       "adapter_id": "outbound-luma-rsvp",
       "loop_id": "outbound.events",
       "capability": "outbound.event.apply",
