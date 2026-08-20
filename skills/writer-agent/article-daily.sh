@@ -27,9 +27,11 @@ mkdir -p "$(dirname "$LOG")"
 set -a; . "$HOME/.openclaw/.env" 2>/dev/null; set +a
 PUBLICATION_PAUSE_FILE="${ARTICLE_PUBLICATION_PAUSE_FILE:-$STATE_DIR/.publication-paused}"
 if [ -f "$PUBLICATION_PAUSE_FILE" ]; then
-  echo "article-daily: publication paused file=$PUBLICATION_PAUSE_FILE" >>"$LOG"
+  echo "article-daily: publication paused file=$PUBLICATION_PAUSE_FILE at=$(date -u '+%FT%TZ')" >>"$LOG"
   exit 0
 fi
+PUBLICATION_PAUSE_SNAPSHOT="absent"
+echo "article-daily: publication pause current=absent at=$(date -u '+%FT%TZ') file=$PUBLICATION_PAUSE_FILE" >>"$LOG"
 if [ "${ARTICLE_OWNER_FENCE_ACTIVE:-0}" != "1" ]; then
   OWNER_FENCE_DIR="${ARTICLE_OWNER_FENCE_DIR:-$HOME/.local/state/life-manager/writer/owner-fence}"
   export ARTICLE_OWNER_FENCE_DIR
@@ -518,6 +520,8 @@ fi
 
 PROMPT='Run ONE daily Writer Agent article pass, no daily human in the loop. This pass was triggered by a real launchd daily schedule (ai.anicca.article-daily) -- you do NOT need to register your own recurring scheduler; launchd is the only scheduler for this loop, never self-register one via any cron-creation tool. set -a; . ~/.openclaw/.env; set +a.
 
+CURRENT BRAKE SNAPSHOT: the wrapper checked ARTICLE_PUBLICATION_PAUSE_FILE immediately before building this prompt and found PUBLICATION_PAUSE_SNAPSHOT_PLACEHOLDER. Treat only that current filesystem check as pause evidence. A historical "publication paused" line in article-daily.log, an older run directory, or a stale manifest is not current state; when the snapshot is absent, continue through the normal gates and publisher-native readbacks.
+
 ★ DO THE WORK YOURSELF, IN THIS PASS, IN THE FOREGROUND. ★ Do not hand the job to a background agent and finish. The first real run did exactly that: it spawned a background worker, reported that it was waiting for it, and exited with a green rc=0 having produced zero articles. You are the worker. Research, write, stage, verify and report inside this pass, and only return when the drafts genuinely exist and you have looked at them. A clean exit code with nothing to show for it is the precise failure this loop exists to prevent.
 
 ★ SOURCE IMMUTABILITY — HARD BOUNDARY. ★ Never edit tracked source files during a daily run, including SKILL.md, scripts, tests, references, configuration, or launchd files. Runtime writes are limited to the Article Writer state tree plus the existing platform/browser workspaces exposed by the model runner. If a script or gate has a code defect, record the exact defect under the current run gates, leave the affected pair pending, continue independent pairs, and report it. Do not spawn a fixer, change permissions, bypass the sandbox, commit, or push source.
@@ -618,6 +622,7 @@ PROMPT="${PROMPT//$LEGACY_CRAFT_FILE/$CURRENT_CRAFT_FILE}"
 PROMPT="${PROMPT//$LEGACY_ARTICLE_FORMAT_FILE/$CURRENT_ARTICLE_FORMAT_FILE}"
 PROMPT="${PROMPT//$LEGACY_LITERAL_CRAFT_FILE/$CURRENT_CRAFT_FILE}"
 PROMPT="${PROMPT//$LEGACY_LITERAL_ARTICLE_FORMAT_FILE/$CURRENT_ARTICLE_FORMAT_FILE}"
+PROMPT="${PROMPT//PUBLICATION_PAUSE_SNAPSHOT_PLACEHOLDER/$PUBLICATION_PAUSE_SNAPSHOT}"
 # self-heal L2 (spec #22): append-only, same technique as above -- if ensure_browser.sh could
 # not bring the shared daily-driver back, tell the pass to degrade gracefully (skip the
 # browser-dependent platforms and report why) instead of failing blind on every step that

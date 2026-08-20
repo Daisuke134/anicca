@@ -11,6 +11,23 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
 
 ## 現在の実測
 
+### 2026-08-21 Coconala parity 再確認
+
+- Coconalaの実行実体は、常駐Supervisorではなく、launchdが
+  `gig_disk_guard.py`を先頭に置いたlane本体を周期起動し、`~/gig`の外部stateへ
+  receiptを書き込む方式である。現在も`application_direct.py`、
+  `storefront_direct.py`、`reply_detector.py`、`paid_direct.py`がlaunchdの子として
+  実行され、直近のout logとstate更新を確認できた。
+- Writerも同じ`config/launchd-jobs.json`、同じdisk guard、同じimmutable
+  `current` release、外部stateを使っている。`writer-claim-loop`、
+  `writer-money-sync`、`writer-report`、`writer-opportunity-response`、
+  `writer-sales-measure`の直近receipt更新を確認した。`launchctl print`のrc=141は
+  readback不能の証拠であり、周期laneの未実行を意味しない。
+- Writerが公開しない直接の理由は、外部stateの
+  `~/.local/state/life-manager/writer/.publication-paused`である。Coconala parityの
+  lane構造と混同せず、公開解除後は同じlane本体を一度だけ実行し、記事・URL・native
+  readbackの実receiptで判定する。Substack用の新しいSupervisorや独自schedulerは作らない。
+
 - `daily-2026-08-20` はJA/EN原稿を生成し、active-fourの公開は1/4。
 - Noteは安定キー `ne6da5b602b4a` を同じまま公開し、
   `https://note.com/anicca123/n/ne6da5b602b4a` の公開後読み戻し、¥500の有料設定、

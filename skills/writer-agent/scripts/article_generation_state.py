@@ -30,6 +30,11 @@ ALLOWED_PREPUBLICATION_FILES = {
     "gates/strategy-consumption.json",
     "gates/quality-replacement.json",
     "gates/media-create-required.json",
+    # The selected demand route is a durable pre-publication receipt. Keep it
+    # in place during an interrupted retry so the owner-fence can restore the
+    # exact in-progress card without selecting a second topic.
+    "gates/topic-route-input.json",
+    "gates/topic-route.json",
 }
 
 # Wrapper-owned runtime infrastructure inside the run dir. These are never
