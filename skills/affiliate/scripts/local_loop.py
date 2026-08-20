@@ -352,6 +352,7 @@ def owner_event(state, wake_event, sent_event_ids=None):
         add(kind, {
             "kind": kind,
             "source_ledger_sha256": rolling_net.get("source_ledger_sha256"),
+            "placement_ledger_sha256": rolling_net.get("placement_ledger_sha256"),
             "source_transition_count": rolling_net.get("source_transition_count"),
             "status_counts": rolling_net.get("status_counts"),
             "approved_or_paid_net_minor_by_currency": rolling_net.get(
@@ -1474,6 +1475,7 @@ def refresh_rolling_net(state):
         "net_state": receipt.get("net_state"),
         "threshold_state": receipt.get("threshold_state"),
         "approved_or_paid_net_usd": receipt.get("approved_or_paid_net_usd"),
+        "placement_ledger_sha256": receipt.get("placement_ledger_sha256"),
         "status_counts": receipt.get("status_counts"),
         "cost_state": receipt.get("cost_state"),
         "cost_coverage_state": receipt.get("cost_coverage_state"),
@@ -1918,6 +1920,7 @@ def wake(args):
         "rolling_net_threshold_state": rolling_net.get("threshold_state"),
         "rolling_net_approved_or_paid_net_usd": rolling_net.get("approved_or_paid_net_usd"),
         "rolling_net_sha256": rolling_net.get("receipt_sha256"),
+        "rolling_net_placement_ledger_sha256": rolling_net.get("placement_ledger_sha256"),
         "rolling_net_failure_type": rolling_net.get("failure_type"),
         "rolling_net_status_counts": rolling_net.get("status_counts"),
         "rolling_net_cost_state": rolling_net.get("cost_state"),

@@ -527,6 +527,11 @@ def build_rolling_net(state, now=None):
         hashlib.sha256(ledger_path.read_bytes()).hexdigest()
         if ledger_path.is_file() else None
     )
+    placement_ledger_path = state / "placement-ledger.json"
+    placement_ledger_sha256 = (
+        hashlib.sha256(placement_ledger_path.read_bytes()).hexdigest()
+        if placement_ledger_path.is_file() else None
+    )
     status_counts = {status: 0 for status in ("pending", "approved", "paid", "reversed")}
     approved_net = {}
     reversal_totals = {}
@@ -667,6 +672,7 @@ def build_rolling_net(state, now=None):
         "source_transition_count": len(transitions),
         "in_window_transition_count": in_window_rows,
         "source_ledger_sha256": source_ledger_sha256,
+        "placement_ledger_sha256": placement_ledger_sha256,
         "economic_rows": economic_rows,
         "unjoined_economic_transition_count": unjoined_economic_rows,
         "status_counts": status_counts,
