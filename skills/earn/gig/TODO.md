@@ -138,7 +138,12 @@ The order to the end is:
    source identity is unchanged and the official send-unavailable marker is explicitly false.
    The server still rejected action 304 despite that marker, so proof-triggered immediate revives
    stop after three attempts; later retries return to the durable exponential-backoff owner instead
-   of burning sends every 30 seconds.
+   of burning sends every 30 seconds. A current 30-row inbox-head audit found all 30 identities
+   durably bound: 29 have official-readback or intentional-no-send terminal dispositions; action
+   304 is the sole nonterminal row, blocked after five official server rejections with its bounded
+   backoff owner. No inbox identity is missing. Negotiate owner reporting is now the next defect:
+   `reply_wake` has created no Telegram row since report 7992 while Apply, Storefront and Paid
+   continue producing sent provider receipts.
    Completion still requires a
    durable disposition for every buyer-authored message: replied with official readback, estimate
    sent with official readback, intentionally no-send with a bounded policy reason, or still pending
