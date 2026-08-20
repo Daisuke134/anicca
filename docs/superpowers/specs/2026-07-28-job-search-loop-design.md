@@ -1058,7 +1058,7 @@ learning_driver_live + guardian_not_closed`, never as fully self-healing.
 ### 4.2B Runtime verification on 2026-08-20
 
 The canonical daily wrapper was run from immutable release
-`f67aeaf19247291f115d980ee8617c73e35ae301` after the installed LaunchAgent kick was
+`07f604d52a6a9c5b38032f377bf27ca2d5dc2493` after the installed LaunchAgent kick was
 rejected with macOS error `141: Reentrancy avoided`. The pass connected to the
 existing Chrome CDP owner, selected Codex `gpt-5.6-terra` through the local proxy,
 and returned `rc=0` with schema-valid output. It truthfully recorded
@@ -1073,9 +1073,18 @@ created, the row was re-opened once, and the corrected private-config sender
 delivered the original payload with ACK `26052`. The sender now reads
 `JOB_SEARCH_TELEGRAM_CHAT_ID` and `TELEGRAM_BOT_TOKEN` from the private job-search
 environment and retries DNS through `dig @1.1.1.1` plus curl `--resolve` only when the
-normal resolver fails. Telegram transport is therefore proven for the current
-runtime; the broader `JOB-TELEGRAM-COVERAGE-1T` event-envelope/coverage gate remains
-open.
+normal resolver fails. The runner now also loads the Codex local-proxy key from the
+private `~/.cli-proxy-api-key` when a scheduler provides no inherited environment;
+an env-stripped schema probe returned `rc=0` through the proxy. Telegram transport is
+therefore proven for the current runtime; the broader
+`JOB-TELEGRAM-COVERAGE-1T` event-envelope/coverage gate remains open. The learning
+lane now uses the same direct transport in production; its prior OpenClaw executable
+is retained only as an explicit test/legacy override.
+
+The direct `sendDocument` path was exercised with the approved business resume and
+received Telegram ACK `26073`. Explicit Bot API `ok:false` responses now become a
+retryable `failed` outbox state; timeouts, DNS failures and other ambiguous outcomes
+remain `send_started` and are never blindly retried.
 
 ### 8.2 Outcome and attribution model
 
@@ -1325,7 +1334,7 @@ slice has one owner, one acceptance result and one durable receipt.
 
 | Slice | Parent | Status | Done when |
 |---|---|---|---|
-| `JOB-LOOP-CADENCE-2A` | 11 | `in_progress` | The resident acquisition owner uses a 30-minute LaunchAgent/systemd interval, processes at most one candidate per wake, preserves the ten-application Japan-day portfolio cap, and passes plist lint plus scheduler-template tests. The installed plist reads `StartInterval=1800`; a direct canonical-wrapper pass from release `f67aeaf19` completed with Codex/local-proxy, browser, ledger and Telegram evidence (`daily-20260820-202630`, report ACK `26057`, resume ACKs `8100`/`8493`). `launchctl kickstart` and `launchctl bootout/bootstrap` readback remain blocked by macOS error 141 (`Reentrancy avoided`). This is a host user-launchd/LaunchServices bootstrap failure, independently reproduced by a fresh Chromium `bootstrap_check_in` failure; the loop is not marked live until the user GUI launchd domain is recovered and the plist is read back successfully. |
+| `JOB-LOOP-CADENCE-2A` | 11 | `in_progress` | The resident acquisition owner uses a 30-minute LaunchAgent/systemd interval, processes at most one candidate per wake, preserves the ten-application Japan-day portfolio cap, and passes plist lint plus scheduler-template tests. The installed plist reads `StartInterval=1800`; a direct canonical-wrapper pass from release `07f604d52` completed with Codex/local-proxy, browser, ledger and Telegram evidence (`daily-20260820-202630`, report ACK `26057`, resume ACKs `8100`/`8493`). `launchctl kickstart` and `launchctl bootout/bootstrap` readback remain blocked by macOS error 141 (`Reentrancy avoided`). This is a host user-launchd/LaunchServices bootstrap failure, independently reproduced by a fresh Chromium `bootstrap_check_in` failure; the loop is not marked live until the user GUI launchd domain is recovered and the plist is read back successfully. |
 | `JOB-RESUME-FACTS-1R-A` | 1R | `completed` | Full institution names and periods are recorded, and Daisuke confirmed TOEIC 910. The private truth ledger now records TOEFL iBT 96, TOEIC 910, Duolingo English Test 140 and DELE B1; no language claim remains unresolved. |
 | `JOB-RESUME-EN-1R-B` | 1R | `in_progress` | The approved technical-business PDF is canonical and verified; the engineering variant still needs its canonical refresh before the English bundle is closed. Both variants must retain the one-page hierarchy, separate Research Experience/Education sections and full institution names. |
 | `JOB-RESUME-JA-1R-C` | 1R | `pending_after_1R-A` | Japanese 履歴書 and 職務経歴書 render from the same ledger with separate 学歴・職歴・研究 sections, full attendance periods, formal institution names, the language section, and grounded claims. |

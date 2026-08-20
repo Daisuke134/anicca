@@ -15,6 +15,10 @@ from .outbox import Outbox
 TelegramRequester = Callable[..., dict[str, Any]]
 
 
+class TelegramRejected(RuntimeError):
+    """The Telegram API returned an explicit non-delivery response."""
+
+
 def _telegram_config_value(config_name: str, supplied: str | None) -> str:
     """Read private Telegram configuration without putting it in a release."""
     if supplied:
@@ -134,7 +138,7 @@ def _telegram_request(
     except json.JSONDecodeError as exc:
         raise RuntimeError("Telegram transport returned invalid JSON") from exc
     if not isinstance(result, dict) or result.get("ok") is not True:
-        raise RuntimeError("Telegram Bot API rejected the request")
+        raise TelegramRejected("Telegram Bot API rejected the request")
     return result
 
 
@@ -237,11 +241,15 @@ def send_once(
                 raise RuntimeError("Telegram ACK has no message ID")
             outbox.mark_sent(event_key, fence, str(message_id))
         else:
-            result = requester(
-                method="sendMessage",
-                token=_telegram_token(token),
-                fields={"chat_id": _telegram_target(target), "text": outbox.payload(event_key)},
-            )
+            try:
+                result = requester(
+                    method="sendMessage",
+                    token=_telegram_token(token),
+                    fields={"chat_id": _telegram_target(target), "text": outbox.payload(event_key)},
+                )
+            except TelegramRejected:
+                outbox.mark_failed(event_key, fence)
+                raise
             outbox.mark_sent(event_key, fence, _message_id(result))
         return outbox.status(event_key)
     finally:
@@ -318,15 +326,19 @@ def send_document_once(
                 raise RuntimeError("Telegram ACK has no message ID")
             outbox.mark_sent(event_key, fence, str(message_id))
         else:
-            result = requester(
-                method="sendDocument",
-                token=_telegram_token(token),
-                fields={
-                    "chat_id": _telegram_target(target),
-                    "caption": outbox.payload(event_key),
-                },
-                document=source,
-            )
+            try:
+                result = requester(
+                    method="sendDocument",
+                    token=_telegram_token(token),
+                    fields={
+                        "chat_id": _telegram_target(target),
+                        "caption": outbox.payload(event_key),
+                    },
+                    document=source,
+                )
+            except TelegramRejected:
+                outbox.mark_failed(event_key, fence)
+                raise
             outbox.mark_sent(event_key, fence, _message_id(result))
         return outbox.status(event_key)
     finally:
