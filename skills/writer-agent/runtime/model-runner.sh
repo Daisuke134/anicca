@@ -109,7 +109,7 @@ broker_pid_live() {
   kill -0 "$pid" 2>/dev/null
 }
 if [ "${ARTICLE_JUDGE_BROKER_SERVER:-}" != "1" ]; then
-  REGISTRY_STATE_ROOT="${ARTICLE_MODEL_STATE_ROOT:-$HOME/profitable-claude/skills/writer-agent/state}"
+  REGISTRY_STATE_ROOT="${ARTICLE_MODEL_STATE_ROOT:-${ARTICLE_STATE_DIR:-${ARTICLE_SKILL_DIR:-$SCRIPT_DIR/..}/state}}"
   if [ -n "${ARTICLE_RUN_DIR:-}" ]; then
     DISCOVERED_BROKER_DIR="${ARTICLE_RUN_DIR}/gates/judge-broker"
   else
@@ -226,11 +226,11 @@ if [ "$MODE" = "repair" ]; then
   esac
 fi
 
-MODEL_ROOT="${ARTICLE_MODEL_ROOT:-$HOME/profitable-claude}"
-MODEL_STATE_ROOT="${ARTICLE_MODEL_STATE_ROOT:-$MODEL_ROOT/skills/writer-agent/state}"
+MODEL_ROOT="${ARTICLE_MODEL_ROOT:-${ARTICLE_SKILL_DIR:-$SCRIPT_DIR/..}}"
+MODEL_STATE_ROOT="${ARTICLE_MODEL_STATE_ROOT:-${ARTICLE_STATE_DIR:-$MODEL_ROOT/state}}"
 RUN_ID="${ARTICLE_RUN_ID:-unknown}"
-HEALTH_FILE="${ARTICLE_PROVIDER_HEALTH:-$MODEL_ROOT/skills/writer-agent/state/provider-health.json}"
-MODEL_LOG="${ARTICLE_MODEL_LOG:-$MODEL_ROOT/skills/writer-agent/state/model-runner.log}"
+HEALTH_FILE="${ARTICLE_PROVIDER_HEALTH:-$MODEL_STATE_ROOT/provider-health.json}"
+MODEL_LOG="${ARTICLE_MODEL_LOG:-$MODEL_STATE_ROOT/model-runner.log}"
 COOLDOWN_SECONDS="${ARTICLE_PROVIDER_COOLDOWN_SECONDS:-21600}"
 CODEX_BIN="${ARTICLE_CODEX_BIN:-$(command -v codex 2>/dev/null || true)}"
 CLAUDE_BIN="${ARTICLE_CLAUDE_BIN:-$(command -v claude 2>/dev/null || true)}"

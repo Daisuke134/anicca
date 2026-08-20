@@ -19,7 +19,7 @@ mkdir -p "$BROKER_DIR/requests" "$BROKER_DIR/responses" "$BROKER_DIR/done"
 # Env-independent discovery: register this broker at a fixed state-root path
 # so the model-runner client can route even when an agent subshell dropped
 # every ARTICLE_* variable (observed repeatedly on 2026-07-25).
-STATE_ROOT="${ARTICLE_MODEL_STATE_ROOT:-$HOME/profitable-claude/skills/writer-agent/state}"
+STATE_ROOT="${ARTICLE_MODEL_STATE_ROOT:-${ARTICLE_STATE_DIR:-${ARTICLE_SKILL_DIR:-$SCRIPT_DIR/..}/state}}"
 REGISTRY="$STATE_ROOT/.judge-broker-active"
 mkdir -p "$STATE_ROOT"
 # The registry deliberately outlives the broker for post-mortem discovery.
