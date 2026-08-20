@@ -385,7 +385,10 @@ def owner_event(state, wake_event, sent_event_ids=None):
         add(kind, {"kind": kind, "provider": "elevenlabs", "state": "NO_TRANSACTIONS"},
             "NO_TRANSACTIONS / gross=unknown / net=unknown / cost=unknown",
             wake_event.get("publication_url") or latest_live_url(state))
-    if wake_event.get("status") not in ("READY_FOR_PUBLICATION",):
+    if (
+        wake_event.get("status") not in ("READY_FOR_PUBLICATION",)
+        and wake_event.get("acquisition_decision_state") != "DECISION_FAILED"
+    ):
         kind = "BLOCKED"
         add(kind, {"kind": kind, "provider": "elevenlabs", "status": wake_event.get("status")},
             "unknown", wake_event.get("publication_url") or latest_live_url(state))
