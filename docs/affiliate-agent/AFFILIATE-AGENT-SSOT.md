@@ -1363,6 +1363,15 @@ historical evidence below. Read-only inspection of the installed state shows:
   `delta_click_count=0`. Rendered artifact SHA-256 is
   `9afdda85363faae596a94f9c33114f4280e33c341e74cee4920715520e2a6c51`.
   These are provider denominators only, not commission or money.
+- the installed read-only commission reconciliation at
+  `2026-08-20T09:10:48Z` reports `money_state=NO_TRANSACTIONS`,
+  `source_rows=0`, `appended_transitions=0`, and `replayed_transitions=0`;
+  source artifact SHA-256 is
+  `97ad5b45c0fb1b8e8e51889520817814f1a70aee4b610a05eb12bb57ba134d9e` and
+  the placement-ledger SHA-256 is
+  `f3fe1efffafa5f1962990fe36d7854c3c8a196fa23f05fb7c308e9918690de92`.
+  This proves no transaction was appended or replayed; it does not close A05's
+  required owner replay.
 
 Execution resumes in this order. Time/provider outcomes are gates, but every safe
 independent harness task continues:
