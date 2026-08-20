@@ -269,3 +269,10 @@ the 10:43 empty capture; approved-or-paid net remains USD `0` and billed cost is
 HTTP 200 for owned and X pages with the expected markers; tiktok receipt hashes,
 landing HEAD `2250d31a6`, and the 13-placement ledger were unchanged. This closes
 the observed Telegram timeout self-heal, not B01.
+
+The installed revenue normalizer was audited read-only and its existing focused
+suite passed 8/8. It maps provider `pending|hold`, `approved|scheduled`, `paid`,
+and `declined` to canonical statuses, retains USD minor/reversal units, and
+derives a stable transition identity for replay. This is harness readiness only;
+the official report has no live rows, so no fixture or test value advances B02,
+B03, or the USD 10,000 gate.

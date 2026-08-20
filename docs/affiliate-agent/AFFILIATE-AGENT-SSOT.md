@@ -1358,6 +1358,13 @@ historical evidence below. Read-only inspection of the installed state shows:
   remains USD 0 and actual billed cost remains UNKNOWN. The same wake appended
   one durable `CLICK_DELTA` event for the two new provider-link deltas, then
   returned `SEND_TIMEOUT_UNKNOWN`; no click or timeout is money.
+- read-only normalizer audit and the existing `test_revenue_cli.py` suite (8/8)
+  confirm the installed contract maps provider `pending|hold`,
+  `approved|scheduled`, `paid`, and `declined` to the canonical statuses,
+  preserves USD minor units and reversal minor units, and derives a stable
+  transition identity. This is implementation readiness only: because the live
+  report still has zero rows, B02--B08 remain externally open and no fixture or
+  test value is counted as money.
 - the existing owner retry at `2026-08-20T10:54:48Z` recovered that exact pending
   event without any publication, link, provider, or ledger mutation. The owner
   recorded message ID `26019` once for event UUID
