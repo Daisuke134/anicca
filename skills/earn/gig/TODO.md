@@ -32,18 +32,20 @@ The order to the end is:
 1. **Recover operating headroom. DONE:** keep at least 10 GiB byte-exact free before trusting
    browser, SQLite or evidence writes. Closed public-audit clones, their temporary HOME trees,
    stale compiled speech-model cache files and `/private/tmp/lbj` were the only additional removals.
-   The data volume now reads 10,616,160 KiB free and a 4 KiB gig-state write/fsync/read/remove probe
+   The data volume now reads 15,819,068 KiB free and a 4 KiB gig-state write/fsync/read/remove probe
    succeeds. User media, research data, gig state, Codex sessions, registered worktrees, active
    toolchains, browser clones and applications remain untouched. The next slice prevents recurrence.
-2. **Apply is restored. DONE:** natural pass
+2. **Apply has regressed and is not currently complete.** Earlier natural pass
    `gig-apply-direct-1787144993473841000-39046` observed 40 postings, selected three eligible
    items, produced two application effects with two official readbacks, and isolated one transient
    `cdp_Page.navigate_timeout_after_30s` without losing the other effects. The immediately following
    natural pass `gig-apply-direct-1787145875711446000-90729` exhausted all sources with
    `observed: 100 / failed: 0 / pending: 0 / effect: 0`; it filtered 45 already-applied items, which
    is the replay/duplicate-effect proof. Both intent calls used the existing cheap Luna route.
-   The earlier quota and CDP failures recovered without a code or release change, so speculative
-   provider/reconnect changes are rejected unless the same failure recurs with a reproducible case.
+   Those receipts remain valid proof that submission/readback can work, but they are not current
+   health proof. The latest ten terminal passes all fail before selection with
+   `parent_failed_rc_2`: both Luna and Terra intent attempts report `transient_quota`. The Apply
+   process is alive on `e4337a2f`, but current business outcome is failed and must be re-proved.
 3. **Negotiate is accelerated but not complete.** One continuous process probes every 30 seconds
    with two workers, so another lane no longer delays inbox observation. The exact-thread head
    preflight and stale-event rebind are now deployed (`9aa6a506c`); the latest targeted runs bind
@@ -52,25 +54,30 @@ The order to the end is:
    private token file is present it runs `gpt-5.3-codex-spark`, while installations without that
    file fall through to the remaining provider candidates. A real canary returned
    `schema_valid=true` in 12.5 seconds; no marketplace send was performed by the canary. The
-   official action remains `pending: 1` until the loaded release produces semantic authorization,
-   official send/readback, and replay-zero.
-4. **Storefront observes but does not yet sell/mutate completely.** The current process reads 13
-   official services and completes cleanly, but recent passes remain `actionable: 0 / effect: 0 /
-   readback: 0`. Resolve product truth and prove one official listing create/update readback.
-5. **Paid observes but is not complete.** The latest receipt is `completed / observed: 3 /
-   readback: 2 / failed: 0 / pending: 1`; no Paid process was present at the inspection instant.
-   Prove recurring ownership plus a new natural paid order through validated artifact, one delivery
+   static job points to `e4337a2f`, but the continuous owner still runs old release `c7fefe404`.
+   Addres88 thread `10099067` has pending durable actions 275 and 276. The latest targeted result
+   requires an estimate but reports `estimate_effect: 0 / estimate_readback: 0 /
+   estimate_failed: 1`; the estimate is not sent or officially confirmed.
+4. **Storefront observes but does not yet sell/mutate completely.** Its `e4337a2f` process reads 13
+   official services and completes cleanly, but the current receipt remains `actionable: 0 /
+   effect: 0 / readback: 0` with `no_executable_unfenced_mutation_contract`. Resolve one valid
+   mutation contract and prove one official listing create/update readback.
+5. **Submission (Paid/delivery) observes but is not complete.** Its `e4337a2f` process is alive.
+   The latest receipt is `completed / observed: 3 / effect: 0 / readback: 2 / failed: 0 /
+   pending: 1`. Prove a new natural paid order through validated artifact, one delivery
    effect, exact-room official readback and replay zero.
 6. **Prove 24/7 control-plane durability.** Browser, Apply, Negotiate, Storefront and Paid must each
    survive process exit and start again from the immutable release. The current shell cannot read
    the launchd domain (`launchctl` returns 141, `Reentrancy avoided`), although browser CDP and new
-   Apply/Negotiate/Storefront PIDs are visible. Process presence is not yet durable registration
+   Apply, Negotiate, Storefront and Paid PIDs are simultaneously visible. Process presence is not
+   durable registration
    proof; capture two successive natural starts per lane and a loaded-definition readback from a
    valid GUI launchd context.
-7. **Public-package gate is closed at `f90898caf`.** Exact-archive acceptance passes 194 package
+7. **The code-level public-package gate is closed at `f90898caf`, but anyone-device acceptance is
+   still open.** Exact-archive acceptance passes 194 package
    tests, compilation, four empty-HOME plist renders, gitleaks and the owner-ID/path denylist.
-   Keep broad repetitive tests off the runtime hot path; use focused evidence and periodic fresh
-   Terra adversarial review.
+   The remote `main` now points to `e4337a2f`. A clean third-party/friend install must still prove
+   no effect before authentication and one natural official receipt for each of the four lanes.
 8. Finish the remaining product items in this file: **4 listing contract/product truth** →
    **2 stable paid-feedback identity and credential handling** → **5 storefront attribution** →
    **1 browser-major qualification** → **6 merge the already-pushed legacy-removal branch when its
@@ -121,6 +128,11 @@ Execute top to bottom. A checked diagnostic is evidence, not lane completion.
   inactive `skillopt` venv (~109 MiB). Do not delete installed apps or dirty worktree videos by size.
 
 #### B. Restore Apply and prove one new application
+
+- [ ] Restore current intent-planner availability and re-prove the lane. The latest ten terminal
+  passes fail with `parent_failed_rc_2`; both Luna and Terra candidates report `transient_quota`.
+  Completion requires a new natural official application readback followed by replay zero; the
+  earlier successful receipts remain historical evidence, not current 24/7 health.
 
 - [x] Diagnose the current outage: recent passes end in `parent_failed_rc_2`; both intent-provider
   attempts report `transient_quota`, and another pass hits `cdp_Page.enable_timeout_after_30s`.
@@ -174,8 +186,10 @@ action completes.
   input receives a 90-second candidate cap inside the existing 120-second route deadline instead
   of expiring at the old 40-second cap. No marketplace effect is part of this canary.
 - [ ] Activate that route in the continuous owner and capture a natural official receipt. The
-  currently loaded owner is still the prior immutable release; its Addres88 run safely produced
-  three provider timeouts at the old 40-second caps and no effect. `launchctl print` for even the
+  currently loaded owner is still `c7fefe404` while the static job points to `e4337a2f`. Addres88
+  thread `10099067` currently has pending actions 275 and 276; its latest targeted result reports
+  `estimate_required: 1 / estimate_effect: 0 / estimate_readback: 0 / estimate_failed: 1`.
+  `launchctl print` for even the
   system domain currently returns `141: Reentrancy avoided`, so this remains a control-plane
   activation/readback item rather than a semantic authorization failure.
 - [ ] Search/open the official Addres88 conversation; local display-name absence is not evidence.
