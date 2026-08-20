@@ -420,3 +420,10 @@ same-failure dedupe. The canonical installer switched current to this release,
 but its browser bootstrap again stopped at `141: Reentrancy avoided`; the
 existing READY baseline receipt remains unchanged and no artificial failure
 receipt or manual owner run was created.
+
+Read-only placement readback confirms the earlier durable campaign-seven run is
+complete and no replacement is needed: the canonical ledger has 13 English
+placements, 13 dedicated provider-link keys, 13 owned `LIVE` receipts, and 13
+X `LIVE` receipts. D01 and D03 are therefore closed in the SSOT. This is
+publication and denominator readiness only; every placement still has zero
+official transaction rows and no amount is money.

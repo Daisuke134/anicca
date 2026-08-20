@@ -1875,12 +1875,21 @@ receipt readback, SSOT state update, commit, and push to both canonical remotes.
 
 ##### D — Finish comparable acquisition and learning
 
-- [ ] **D01** Resume campaign seven's existing composition job only when its JST
-  budget is eligible; create no replacement composition.
+- [x] **D01** Resume campaign seven's existing composition job only when its JST
+  budget is eligible; create no replacement composition. The existing durable
+  `elevenlabs-discovered-youtube-transcript-generator-en-a1c63a8d19007084` run
+  resumed on the JST rollover, reached `READY_FOR_POLICY`, and was completed by
+  the real owner through dedicated link, owned publication, X readback, and
+  unchanged replay. Current ledger readback still contains exactly one live
+  `...youtube-transcript-generator-en-1` placement.
 - [ ] **D02** Require the marketing Agent to choose every later opportunity from a
   fresh official candidate set plus canonical placement outcomes; remove fixed-order selection.
-- [ ] **D03** Grow the current six comparable English placements to ten through
-  the existing source→composition→policy→link→owned/X→readback path.
+- [x] **D03** Grow the current six comparable English placements to ten through
+  the existing source→composition→policy→link→owned/X→readback path. The
+  historical unattended owner run produced placements 8–10; current readback
+  has 13 English placements with 13 dedicated provider-link keys, 13 owned
+  `LIVE` receipts, and 13 X `LIVE` receipts. This is placement/exposure
+  readiness only; clicks and transactions remain economic gates.
 - [ ] **D04** Persist one falsifiable Experiment receipt and one changed variable
   for every new placement.
 - [ ] **D05** Record exact X exposure, owned-page visit, provider click, transaction,
