@@ -2066,6 +2066,20 @@ async def _run_continuous_runtime(args: Any, evidence: Path) -> dict[str, Any]:
         except (NotImplementedError, RuntimeError):
             pass
     probe_number = 0
+    report_queue: asyncio.Queue[tuple[Path, dict[str, Any]]] = asyncio.Queue()
+
+    async def reporter() -> None:
+        while not stop.is_set() or not report_queue.empty():
+            try:
+                path, result = await asyncio.wait_for(report_queue.get(), timeout=0.1)
+            except asyncio.TimeoutError:
+                continue
+            try:
+                await asyncio.to_thread(
+                    _persist_continuous_worker_report, args, path, result,
+                )
+            finally:
+                report_queue.task_done()
 
     async def probe() -> dict[str, Any]:
         nonlocal probe_number
@@ -2078,10 +2092,7 @@ async def _run_continuous_runtime(args: Any, evidence: Path) -> dict[str, Any]:
         worker_evidence = evidence / "continuous" / "workers" / run_id
         if work.get("kind") == "blocked":
             result = await asyncio.to_thread(run_blocked_probe, args, work, worker_evidence)
-            await asyncio.to_thread(
-                _persist_continuous_worker_report,
-                args, worker_evidence / "result.json", result,
-            )
+            await report_queue.put((worker_evidence / "result.json", result))
             return result
         if work.get("kind") == "estimate":
             result = await asyncio.to_thread(
@@ -2091,10 +2102,7 @@ async def _run_continuous_runtime(args: Any, evidence: Path) -> dict[str, Any]:
                 expected_revision=int(work["expected_revision"]),
                 evidence=worker_evidence, run_id=run_id,
             )
-            await asyncio.to_thread(
-                _persist_continuous_worker_report,
-                args, worker_evidence / "result.json", result,
-            )
+            await report_queue.put((worker_evidence / "result.json", result))
             return result
         if work.get("kind") == "reconcile":
             result = await asyncio.to_thread(
@@ -2103,10 +2111,7 @@ async def _run_continuous_runtime(args: Any, evidence: Path) -> dict[str, Any]:
                 expected_revision=int(work["expected_revision"]),
                 evidence=worker_evidence, run_id=run_id,
             )
-            await asyncio.to_thread(
-                _persist_continuous_worker_report,
-                args, worker_evidence / "result.json", result,
-            )
+            await report_queue.put((worker_evidence / "result.json", result))
             return result
         result = await asyncio.to_thread(
             run_targeted_thread, args,
@@ -2116,10 +2121,7 @@ async def _run_continuous_runtime(args: Any, evidence: Path) -> dict[str, Any]:
             evidence=worker_evidence,
             run_id=run_id,
         )
-        await asyncio.to_thread(
-            _persist_continuous_worker_report,
-            args, worker_evidence / "result.json", result,
-        )
+        await report_queue.put((worker_evidence / "result.json", result))
         return result
 
     async def reconcile() -> dict[str, Any]:
@@ -2127,12 +2129,10 @@ async def _run_continuous_runtime(args: Any, evidence: Path) -> dict[str, Any]:
         run_id = str(result.get("run_id") or f"reconcile-{int(time.time())}")
         report_dir = evidence / "continuous" / "reconciliation-reports" / run_id
         report_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
-        await asyncio.to_thread(
-            _persist_continuous_worker_report, args,
-            report_dir / "result.json", result,
-        )
+        await report_queue.put((report_dir / "result.json", result))
         return result
 
+    reporter_task = asyncio.create_task(reporter(), name="gig-reply-reporter")
     try:
         await supervise_replies(
             args, probe=probe, worker=worker, reconcile=reconcile, stop=stop,
@@ -2143,6 +2143,9 @@ async def _run_continuous_runtime(args: Any, evidence: Path) -> dict[str, Any]:
                 loop.remove_signal_handler(signum)
             except (NotImplementedError, RuntimeError):
                 pass
+        stop.set()
+        await report_queue.join()
+        await reporter_task
     return {"status": "stopped", "workers": 2, "poll_seconds": args.poll_seconds}
 
 
