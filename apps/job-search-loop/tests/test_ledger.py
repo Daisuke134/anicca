@@ -468,6 +468,12 @@ class LedgerTests(unittest.TestCase):
         )
         self.assertFalse(
             ats_snapshot_matches_application(
+                "https://jobs.example.com/42?gh_jid=42",
+                "https://jobs.example.com/42?gh_jid=99",
+            )
+        )
+        self.assertFalse(
+            ats_snapshot_matches_application(
                 "https://jobs.example.com/42",
                 "http://jobs.example.com/42/application",
             )

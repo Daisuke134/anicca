@@ -81,7 +81,7 @@ def ats_snapshot_matches_application(application_url: str, snapshot_url: str) ->
     if application_query == snapshot_query:
         return True
 
-    tracking_keys = {"gh_jid", "gh_src", "ref", "referrer", "source"}
+    tracking_keys = {"gh_src", "ref", "referrer", "source"}
 
     def tracking_only(query: list[tuple[str, str]]) -> bool:
         return all(key.startswith("utm_") or key in tracking_keys for key, _ in query)
