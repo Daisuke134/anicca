@@ -1734,6 +1734,9 @@ def _file_bundle_snapshots(
 def _normalize_acceptance_delta(root: Path) -> None:
     manifest_path = root / "delivery" / "paid-work-result.json"
     manifest = _load(manifest_path)
+    if isinstance(manifest, dict) and manifest.get("status") == "PASS":
+        manifest["status"] = "ok"
+        _write(manifest_path, manifest)
     if not isinstance(manifest, dict) or manifest.get("status") != "ok":
         raise ValueError("invalid file manifest")
     acceptance_path = Path(_text(manifest.get("acceptance_evidence_path"))).resolve()
@@ -1921,7 +1924,7 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
         "Create the actual buyer-facing deliverable that satisfies the complete accumulated request, not a plan, "
         "status report, transaction summary, or promise. Create exactly the next vN artifact under delivery/, "
         "a JSON acceptance file with status PASS and acceptance_delta as a nonempty JSON array of nonempty strings, "
-        "and delivery/paid-work-result.json "
+        "and delivery/paid-work-result.json with status exactly 'ok' "
         "binding project_root, requirements_path, artifact_path, artifact_version, acceptance_evidence_path, "
         "acceptance_status, acceptance_delta, and package_sha256; copy acceptance_delta exactly from the acceptance "
         "file without paraphrasing it. Self-check every accumulated requirement against the "

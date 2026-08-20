@@ -179,7 +179,10 @@ The order to the end is:
    receipt and matching package SHA256, then exposed the next controller boundary defect:
    `acceptance_delta` was a nonempty string because the owner prompt did not specify its JSON type,
    while validation accepts only a string array. The boundary now canonicalizes a nonempty string
-   to a one-element array and the owner prompt explicitly requests that array contract. Live fresh
+   to a one-element array and the owner prompt explicitly requests that array contract. The next
+   natural v2 owner produced the array correctly and exposed the adjacent status-vocabulary split:
+   it wrote manifest `status: PASS` while the controller requires `status: ok`. The same boundary
+   now canonicalizes that producer spelling and the prompt explicitly requires `ok`. Live fresh
    review and delivery readback remain to be captured. Prove a new natural paid
    order through validated artifact, one delivery
    effect, exact-room official readback and replay zero.
