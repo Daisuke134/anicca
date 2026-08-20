@@ -63,7 +63,7 @@ NA15_CATEGORY_IDS = {
 }
 
 SEMANTIC_RECEIPT_VERSION = 1
-SEMANTIC_PROMPT_VERSION = "reply-negotiate-v16"
+SEMANTIC_PROMPT_VERSION = "reply-negotiate-v17"
 SEMANTIC_RUNNER_PROFILE = "reply-semantic-agent"
 SEMANTIC_COMPATIBLE_RUNNER_PROFILES = frozenset({
     "composition-agent", SEMANTIC_RUNNER_PROFILE,
@@ -522,29 +522,45 @@ class SemanticJudge:
             f"{context_sha256[:12]}-{official_context_sha256[:12]}"
         )
         evidence.mkdir(parents=True, exist_ok=True, mode=0o700)
-        completed = subprocess.run(
-            [
-                sys.executable, str(self.runner), "--task-class", SEMANTIC_RUNNER_PROFILE,
-                "--prompt-stdin", "--schema", str(self.schema), "--evidence-dir", str(evidence),
-                "--task-label", "gig-reply-semantic", "--loop", "gig",
-                "--workdir", str(self.workdir), "--timeout-seconds", str(self.timeout_seconds),
-            ],
-            input=semantic_prompt(rows, resolved_official_context, self.seller_facts),
-            text=True, capture_output=True, timeout=self.timeout_seconds + 30,
-            check=False, env=self.runner_environment(),
-        )
-        if completed.returncode != 0:
-            raise SemanticJudgementError(f"semantic_runner_failed_rc_{completed.returncode}")
-        try:
-            summary = json.loads((evidence / "summary.json").read_text(encoding="utf-8"))
-            if not isinstance(summary, dict) or summary.get("status") != "success":
-                raise SemanticJudgementError("semantic_runner_not_success")
-            result_path = Path(str(summary["result_path"])).resolve()
-            result_path.relative_to(evidence.resolve())
-            payload = json.loads(result_path.read_text(encoding="utf-8"))
-        except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
-            raise SemanticJudgementError("semantic_evidence_invalid") from error
-        judgement = validate_semantic_judgement(payload, rows)
+        prompt = semantic_prompt(rows, resolved_official_context, self.seller_facts)
+        judgement: dict[str, Any] | None = None
+        for correction in (None, (
+            "\n前回出力は構造契約違反です。conversation_stateが"
+            "explicit_estimate_requestならnext_action=replyは禁止です。"
+            "条件が一意ならsend_estimateと構造化estimate_termsを返し、"
+            "不足時だけclarifyまたは公式context要求を返してください。"
+        )):
+            run_evidence = evidence if correction is None else evidence / "corrective-1"
+            run_evidence.mkdir(parents=True, exist_ok=True, mode=0o700)
+            completed = subprocess.run(
+                [
+                    sys.executable, str(self.runner), "--task-class", SEMANTIC_RUNNER_PROFILE,
+                    "--prompt-stdin", "--schema", str(self.schema),
+                    "--evidence-dir", str(run_evidence),
+                    "--task-label", "gig-reply-semantic", "--loop", "gig",
+                    "--workdir", str(self.workdir), "--timeout-seconds", str(self.timeout_seconds),
+                ],
+                input=prompt + (correction or ""), text=True, capture_output=True,
+                timeout=self.timeout_seconds + 30, check=False, env=self.runner_environment(),
+            )
+            if completed.returncode != 0:
+                raise SemanticJudgementError(f"semantic_runner_failed_rc_{completed.returncode}")
+            try:
+                summary = json.loads((run_evidence / "summary.json").read_text(encoding="utf-8"))
+                if not isinstance(summary, dict) or summary.get("status") != "success":
+                    raise SemanticJudgementError("semantic_runner_not_success")
+                result_path = Path(str(summary["result_path"])).resolve()
+                result_path.relative_to(run_evidence.resolve())
+                payload = json.loads(result_path.read_text(encoding="utf-8"))
+                judgement = validate_semantic_judgement(payload, rows)
+                break
+            except SemanticJudgementError as error:
+                if correction is not None or str(error) != "semantic_estimate_request_reply_conflict":
+                    raise
+            except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
+                raise SemanticJudgementError("semantic_evidence_invalid") from error
+        if judgement is None:
+            raise SemanticJudgementError("semantic_corrective_retry_failed")
         receipt = {
             "version": SEMANTIC_RECEIPT_VERSION,
             "prompt_version": SEMANTIC_PROMPT_VERSION,

@@ -141,16 +141,5 @@
       "maxItems": 16,
       "items": {"type": "string", "minLength": 1, "maxLength": 240}
     }
-  },
-  "allOf": [
-    {
-      "if": {
-        "properties": {"conversation_state": {"const": "explicit_estimate_request"}},
-        "required": ["conversation_state"]
-      },
-      "then": {
-        "properties": {"next_action": {"not": {"const": "reply"}}}
-      }
-    }
-  ]
+  }
 }
