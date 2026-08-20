@@ -1351,6 +1351,12 @@ historical evidence below. Read-only inspection of the installed state shows:
   its owned public URL and zero provider clicks; the tiktok-transcript placement
   remains `public_url=null` with zero provider clicks. Actual cash cost remains
   `UNKNOWN`.
+- the latest installed read-only PartnerStack capture at
+  `2026-08-20T09:05:47Z` is still empty: `commission_row_count=0`,
+  `payout_row_state=EMPTY`, `generic_transaction_id_available=false`, and
+  `normalizer_state=NO_LIVE_ROWS`; rendered artifact SHA-256 is
+  `97ad5b45c0fb1b8e8e51889520817814f1a70aee4b610a05eb12bb57ba134d9e`.
+  This remains B01 evidence only and cannot count as money.
 
 Execution resumes in this order. Time/provider outcomes are gates, but every safe
 independent harness task continues:

@@ -70,6 +70,13 @@ not a transaction or money proof; B01 remains open. The typed A04 blocker is
 `BLOCKED_EXTERNAL_141`; no fourth launcher, bootstrap/reload mutation, parallel
 executor, or manual publication is allowed.
 
+A later installed read-only capture at `2026-08-20T09:05:47Z` remained empty:
+`commission_row_count=0`, `payout_row_state=EMPTY`,
+`generic_transaction_id_available=false`, and `normalizer_state=NO_LIVE_ROWS`;
+rendered artifact SHA-256 is
+`97ad5b45c0fb1b8e8e51889520817814f1a70aee4b610a05eb12bb57ba134d9e`. It is
+not a transaction or money proof; B01 remains open.
+
 This handover records no Codex manual publication, provider write, or ledger
 mutation. The installed owner performed the verified music delivery described
 above; Codex did not create a parallel executor.
