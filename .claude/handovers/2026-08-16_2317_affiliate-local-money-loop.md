@@ -306,3 +306,7 @@ C05 is now executable wiring but remains open for the first real transaction,
 exact placement join, complete real-billed-cost coverage, and replay proof. B01
 remains the next external gate; current approved-or-paid net is USD 0 and the
 USD 10,000 rolling window is not reached.
+
+Codex sent milestone Telegram message `26047` with the same release, owner
+readback, zero-money result, and B01 next gate. The message contains no secret or
+raw tracking link.
