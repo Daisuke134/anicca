@@ -107,7 +107,12 @@ def _state() -> tuple[dict[str, Any], Path]:
     return value, path
 
 
-def _guard(command: str, pair: str) -> dict[str, Any]:
+def _guard(
+    command: str,
+    pair: str,
+    *,
+    reason: str | None = None,
+) -> dict[str, Any]:
     state, _ = _state()
     target = str(state.get("pairs", {}).get(pair, {}).get("target", ""))
     arguments = [
@@ -121,6 +126,10 @@ def _guard(command: str, pair: str) -> dict[str, Any]:
         arguments.extend(
             ["--target-kind", "x-draft-url", "--target", target]
         )
+    if command == "quarantine-missing-media":
+        if not reason:
+            raise XRepairRefused("missing-media quarantine reason is required")
+        arguments.extend(["--reason", reason])
     result = subprocess.run(
         arguments,
         capture_output=True,
@@ -1236,13 +1245,32 @@ def main() -> int:
     # Fail-closed PII gate at the publish boundary: scan the frozen artifacts this target is
     # about to make public. An unset ARTICLE_RUN_DIR is itself a refusal.
     gate_run_dir("x-article-inplace", os.environ.get("ARTICLE_RUN_DIR", ""), pair=args.pair)
-    print(
-        json.dumps(
-            repair(args.pair),
-            ensure_ascii=False,
-            separators=(",", ":"),
-        )
-    )
+    try:
+        result = repair(args.pair)
+    except XRepairRefused as error:
+        message = str(error)
+        if "immutable headline image is missing or changed" not in message and (
+            "immutable body image" not in message
+            or "is missing or changed" not in message
+        ):
+            raise
+        try:
+            quarantine = _guard(
+                "quarantine-missing-media",
+                args.pair,
+                reason=f"x-article immutable media unavailable: {message}",
+            )
+        except XRepairRefused as quarantine_error:
+            raise XRepairRefused(
+                f"{message}; quarantine not applied: {quarantine_error}"
+            ) from quarantine_error
+        result = {
+            "action": "quarantined-missing-media",
+            "pair": args.pair,
+            "reason": message,
+            "state": quarantine,
+        }
+    print(json.dumps(result, ensure_ascii=False, separators=(",", ":")))
     return 0
 
 
