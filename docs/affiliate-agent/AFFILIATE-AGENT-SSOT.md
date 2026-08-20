@@ -1974,7 +1974,10 @@ receipt readback, SSOT state update, commit, and push to both canonical remotes.
   1,000 monthly unique visitors or significant organic social audience, Impact
   dashboard tracking, EFT/PayPal payout, and no self-referrals. The Impact-hosted
   terms/report artifact and a TTL-bound local capture are still missing, so no
-  application or executable link is admitted.
+  application or executable link is admitted. A second read-only fetch at
+  `2026-08-20T13:47:12Z` returned the same official page; its sign-up/terms link
+  redirected through Impact and failed with a redirect-loop response, so that
+  artifact remains unavailable without an admitted authenticated program.
 - [ ] **E03** Submit at most one Semrush application under a fenced semantic job
   and reconcile approval/rejection from authenticated readback.
 - [ ] **E04** Resume the existing Amazon Japan email-account intent without

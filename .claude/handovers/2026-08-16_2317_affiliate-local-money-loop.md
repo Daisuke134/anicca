@@ -483,6 +483,12 @@ table now labels HubSpot rejected and the former USD 12,501.86 three-provider
 mix as a scenario rather than current money; current executable provider count
 is one.
 
+A second read-only fetch at `2026-08-20T13:47:12Z` returned the same official
+Semrush page. The page's sign-up/terms link redirected through Impact and failed
+with a redirect-loop response, so the Impact-hosted terms/report artifact and a
+TTL-bound local capture remain unavailable without an admitted authenticated
+program; no application or executable link was attempted.
+
 The Semrush admission-gate refresh was committed and pushed as
 `206b1145cc81d72137ff8fda53e08e94bd2d2b0e`. The immutable installer switched
 `current` to that release, then stopped at the known launchd browser bootstrap
