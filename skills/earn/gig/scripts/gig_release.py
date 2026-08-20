@@ -273,6 +273,42 @@ def is_running(label: str) -> bool:
     return any(marker in line for line in processes.stdout.splitlines())
 
 
+def is_brake_only_process(label: str, table: dict[str, str]) -> bool:
+    """True only when the current Apply PID has durably refused work on the brake."""
+    if label != "ai.anicca.hf-gig-apply-direct":
+        return False
+    processes = subprocess.run(
+        ["ps", "-axo", "pid=,command="], capture_output=True, text=True, check=False,
+    )
+    if processes.returncode != 0:
+        return False
+    pids = []
+    for line in processes.stdout.splitlines():
+        if JOB_PROCESS_MARKERS[label] not in line:
+            continue
+        fields = line.strip().split(None, 1)
+        if fields and fields[0].isdigit():
+            pids.append(fields[0])
+    if len(pids) != 1:
+        return False
+    wakes = Path(table["GIG_STATE_DIR"]) / "apply-direct" / "wakes.jsonl"
+    try:
+        with wakes.open("rb") as handle:
+            handle.seek(0, os.SEEK_END)
+            end = handle.tell()
+            start = max(0, end - 2_000_000)
+            handle.seek(start)
+            lines = handle.read().splitlines()
+        receipt = json.loads(lines[-1])
+    except (OSError, IndexError, json.JSONDecodeError):
+        return False
+    return (
+        receipt.get("status") == "operator_brake"
+        and receipt.get("effect") == 0
+        and str(receipt.get("pass_id") or "").endswith(f"-{pids[0]}")
+    )
+
+
 def activate(job: dict, table: dict[str, str], release: Path, dry_run: bool,
              skip_busy: bool = False) -> bool:
     label = job["label"]
@@ -295,9 +331,13 @@ def activate(job: dict, table: dict[str, str], release: Path, dry_run: bool,
         # natural gap, while this tick never creates a second owner. Continuous
         # lanes are deliberately reloadable because their durable outbox is the
         # restart boundary and they otherwise have no natural idle gap.
-        if is_running(label):
+        running = is_running(label)
+        brake_only = is_brake_only_process(label, table) if running else False
+        if running and not brake_only:
             print(f"  {label}: still mid-pass, leaving it for the next tick")
             return True
+        if brake_only:
+            print(f"  {label}: brake-only receipt confirmed; migrating stable definition")
 
     domain = f"gui/{os.getuid()}"
     subprocess.run(["launchctl", "bootout", f"{domain}/{label}"], capture_output=True)
