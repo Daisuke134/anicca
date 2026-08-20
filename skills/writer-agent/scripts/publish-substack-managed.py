@@ -40,9 +40,12 @@ def main():
         raise SystemExit(f"Substack identity does not match persisted state for {pair}")
     entry=state.get("pairs",{}).get(pair,{})
     if entry.get("status")!="intent" or not str(entry.get("target","")).isdigit(): raise SystemExit("durable Substack intent missing")
-    platform=f"substack-{lang}"
     rows=[json.loads(x) for x in (Path(os.environ["ARTICLE_RUN_DIR"])/"gates/platform-dispatch.jsonl").read_text().splitlines() if x]
-    rows=[x for x in rows if x.get("platform")==platform and x.get("lang")==lang]
+    # The canonical dispatch ledger stores the platform as ``substack`` and
+    # carries the locale in ``lang``.  Keep accepting the older channel-shaped
+    # spelling so immutable runs created before the Life Manager move remain
+    # resumable without rewriting their receipts.
+    rows=[x for x in rows if x.get("platform") in {"substack", f"substack-{lang}"} and x.get("lang")==lang]
     if len(rows)!=1: raise SystemExit("persisted Substack row missing")
     argv=rows[0]["argv"]
     def value(flag):
