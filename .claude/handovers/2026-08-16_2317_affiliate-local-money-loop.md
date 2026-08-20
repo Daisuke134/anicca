@@ -749,3 +749,17 @@ warning, while CDP ports 9324/9326/9327 stayed ready. The next natural owner wak
 must verify cooldown readback without a duplicate post; once eligible around
 `05:17 JST`, it may resume that same job identity. B01 remains empty:
 `NO_TRANSACTIONS`, approved/paid net null, and actual cash cost unknown.
+
+The Codex owner receipt for this repair was sent as Telegram `messageId=26583`.
+After the install, read-only `launchctl print` failed for the Affiliate label,
+the whole `gui/$(id -u)` domain, and the `system` domain with
+`141: Reentrancy avoided`; `managerpid` also failed. A declared
+`kickstart` of the existing `ai.anicca.affiliate-loop` and a direct bootstrap of
+its existing plist both returned the same 141, while CDP ports 9324/9326/9327
+remained ready. No direct loop executor was started and no external post or
+provider action was fabricated. This is an indispensable local launchd-session
+capability blocker for the next real X timeline readback and B01 capture; the
+smallest truthful recovery action is to recreate the user launchd session (log
+out/in) and then let the existing owner run. Until that readback exists, the
+X effect stays `EFFECT_STARTED / NOT_FOUND`, the split placement is not joined,
+and money stays `NO_TRANSACTIONS` / USD 0 with unknown costs.
