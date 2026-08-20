@@ -77,17 +77,22 @@ The order to the end is:
    The data volume now reads 15,819,068 KiB free and a 4 KiB gig-state write/fsync/read/remove probe
    succeeds. User media, research data, gig state, Codex sessions, registered worktrees, active
    toolchains, browser clones and applications remain untouched. The next slice prevents recurrence.
-2. **Apply has regressed and is not currently complete.** Earlier natural pass
+2. **Apply is producing effects again but is not currently complete.** Earlier natural pass
    `gig-apply-direct-1787144993473841000-39046` observed 40 postings, selected three eligible
    items, produced two application effects with two official readbacks, and isolated one transient
    `cdp_Page.navigate_timeout_after_30s` without losing the other effects. The immediately following
    natural pass `gig-apply-direct-1787145875711446000-90729` exhausted all sources with
    `observed: 100 / failed: 0 / pending: 0 / effect: 0`; it filtered 45 already-applied items, which
    is the replay/duplicate-effect proof. Both intent calls used the existing cheap Luna route.
-   Those receipts remain valid proof that submission/readback can work, but they are not current
-   health proof. The latest ten terminal passes all fail before selection with
-   `parent_failed_rc_2`: both Luna and Terra intent attempts report `transient_quota`. The Apply
-   process is alive on `e4337a2f`, but current business outcome is failed and must be re-proved.
+   The later pass `gig-apply-direct-1787199355888187000-44491` recovered all four Luna planner
+   batches and produced multiple official application readbacks, so the earlier quota outage is no
+   longer the active root cause. Two correctness failures remain. Request `5222525` was falsely
+   rejected from the list item `5 年代` even though the private profile already contains date of
+   birth, current enterprise AI-agent work and shipped consumer products; the planner prompt does
+   not project those verified facts. Request `5222490` first emitted a transient missing-decision
+   report, then successfully re-planned as `submit_required` at ¥90,000 and reached the final
+   official confirmation screen, but its submit action wedged without official readback. Apply is
+   active, not healthy-complete, until both cases are repaired and replayed.
 3. **Negotiate is accelerated but not complete.** One continuous process probes every 30 seconds
    with two workers, so another lane no longer delays inbox observation. The exact-thread head
    preflight and stale-event rebind are now deployed (`9aa6a506c`); the latest targeted runs bind
@@ -171,10 +176,25 @@ Execute top to bottom. A checked diagnostic is evidence, not lane completion.
 
 #### B. Restore Apply and prove one new application
 
-- [ ] Restore current intent-planner availability and re-prove the lane. The latest ten terminal
-  passes fail with `parent_failed_rc_2`; both Luna and Terra candidates report `transient_quota`.
-  Completion requires a new natural official application readback followed by replay zero; the
-  earlier successful receipts remain historical evidence, not current 24/7 health.
+- [x] Restore intent-planner availability without a code change. Pass
+  `gig-apply-direct-1787199355888187000-44491` completed four Luna batches successfully and again
+  produced official application readbacks; quota failure is no longer the active defect.
+- [ ] Project the minimum verified seller facts needed for application questions into the planner:
+  derived current age band from private date of birth, engineering role/current status, verified
+  enterprise AI-agent work, and shipped consumer products. Do not expose address, full birth date or
+  unrelated private facts to the model.
+- [ ] Make `mandatory_attribute_fabrication` compare the requested answer with projected verified
+  facts. A numbered field label such as `5 年代` is not evidence of required fabrication. Reject only
+  when the listing requires an attribute that is verified false or cannot be answered truthfully.
+- [ ] Re-plan request `5222525` and prove it becomes an honest application answering all six requested
+  fields, then obtain official submission readback and replay zero.
+- [ ] Preserve per-request structured decisions durably before execution. A transient batch/provider
+  failure may leave a request pending for retry, but must not generate a misleading terminal refusal.
+- [ ] Repair the post-confirmation CDP boundary exposed by request `5222490`: the valid ¥90,000
+  proposal reached the official final `応募する` screen but returned as a candidate-owned wedge.
+  Determine whether the click had no effect or readback was lost before retrying; never blind-resend.
+- [ ] Obtain exactly one official applied-history readback for `5222490`, then replay it and prove
+  zero duplicate submission.
 
 - [x] Diagnose the current outage: recent passes end in `parent_failed_rc_2`; both intent-provider
   attempts report `transient_quota`, and another pass hits `cdp_Page.enable_timeout_after_30s`.
