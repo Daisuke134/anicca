@@ -787,6 +787,9 @@ def _body_hash(body: str) -> str:
 
 
 def _fresh_request_unchanged(item: dict[str, Any], context: dict[str, Any]) -> bool:
+    expected_head = str(item.get("source_inbox_identity_sha256") or "")
+    if re.fullmatch(r"[0-9a-f]{64}", expected_head):
+        return context.get("last_message_identity_sha256") == expected_head
     expected_context = str(item.get("semantic_context_sha256") or "")
     conversation = context.get("conversation")
     if re.fullmatch(r"[0-9a-f]{64}", expected_context) and isinstance(conversation, list):
@@ -1521,7 +1524,10 @@ def _estimate_items(snapshot: Any) -> list[dict[str, Any]]:
         and item.get("estimate_required") is True
         and item.get("next_action") == "requested_estimate"
         and isinstance(item.get("semantic_estimate_terms"), dict)
-        and re.fullmatch(r"[0-9a-f]{64}", str(item.get("semantic_context_sha256") or ""))
+        and (
+            re.fullmatch(r"[0-9a-f]{64}", str(item.get("semantic_context_sha256") or ""))
+            or re.fullmatch(r"[0-9a-f]{64}", str(item.get("source_inbox_identity_sha256") or ""))
+        )
     ]
 
 
@@ -1801,7 +1807,10 @@ def execute_requested_estimate(
     try:
         with browser_factory(helper, thread_url, estimate_url, hidden) as browser:
             if hasattr(browser, "semantic_context_required"):
-                browser.semantic_context_required = bool(item.get("semantic_context_sha256"))
+                browser.semantic_context_required = bool(
+                    item.get("semantic_context_sha256")
+                    or item.get("source_inbox_identity_sha256")
+                )
             context, thread_observation = browser.read_thread_context()
             context = dict(context or {})
             if isinstance(item.get("semantic_estimate_terms"), dict):

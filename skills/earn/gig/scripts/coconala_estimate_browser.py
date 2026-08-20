@@ -201,6 +201,9 @@ class CoconalaEstimateBrowser:
     def read_thread_context(self) -> tuple[dict[str, Any], dict[str, Any]]:
         raw = asyncio.run(collector.inspect_message_page(self.tab.ws, collector.DIRECT_MESSAGE_EXPRESSION, self.thread_url))
         rows = raw.get("messages") if isinstance(raw.get("messages"), list) else []
+        head = collector.direct_thread_head_projection(
+            raw, self.thread_url, talkroom_id=self.thread_url.rstrip("/").rsplit("/", 1)[-1],
+        )
         if self.semantic_context_required:
             conversation = estimate.semantic_conversation(raw)
             context = {
@@ -213,6 +216,7 @@ class CoconalaEstimateBrowser:
                 "buyer_messages": [dict(row, side="buyer") for row in rows if isinstance(row, dict) and row.get("author_path") != raw.get("own_user_path")],
                 "seller_messages": [dict(row, side="seller") for row in rows if isinstance(row, dict) and row.get("author_path") == raw.get("own_user_path")],
             }
+        context["last_message_identity_sha256"] = head.get("last_message_identity_sha256")
         return context, {"structured_offers": raw.get("structured_offers") or [], "estimate_url": raw.get("estimate_url"), "own_user_path": raw.get("own_user_path")}
 
     def fresh_thread_context(self, expected_own_user_path: str) -> dict[str, Any]:
@@ -227,16 +231,23 @@ class CoconalaEstimateBrowser:
         own = str(raw.get("own_user_path") or "").strip()
         if not own or own != expected_own_user_path:
             raise collector.CollectorUnhealthy("sender_identity_changed")
+        head = collector.direct_thread_head_projection(
+            raw, self.thread_url, talkroom_id=self.thread_url.rstrip("/").rsplit("/", 1)[-1],
+        )
         rows = raw.get("messages") if isinstance(raw.get("messages"), list) else []
         if not self.semantic_context_required:
             if any(not str(row.get("author_path") or "").strip() for row in rows if isinstance(row, dict)):
                 raise collector.CollectorUnhealthy("missing_sender_identity")
-            return {"own_user_path": own, "buyer_messages": [
+            return {"own_user_path": own,
+                    "last_message_identity_sha256": head.get("last_message_identity_sha256"),
+                    "buyer_messages": [
                 dict(row, side="buyer") for row in rows
                 if isinstance(row, dict) and row.get("author_path") != own
             ]}
         conversation = estimate.semantic_conversation(raw)
-        return {"own_user_path": own, "conversation": conversation, "buyer_messages": [
+        return {"own_user_path": own, "conversation": conversation,
+                "last_message_identity_sha256": head.get("last_message_identity_sha256"),
+                "buyer_messages": [
             dict(row, side="buyer") for row in conversation if row["role"] == "buyer"
         ]}
 

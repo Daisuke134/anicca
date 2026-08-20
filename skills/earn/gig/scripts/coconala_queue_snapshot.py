@@ -2975,6 +2975,9 @@ def direct_thread_head_projection(
     row["talkroom_id"] = talkroom_id
     row["talkroom_url"] = expected_url
     row["reply_required"] = row.get("last_message_side") == "buyer"
+    row["estimate_url"] = _requested_estimate_module().sanitize_estimate_url(
+        dom.get("estimate_url")
+    )
     return row
 
 

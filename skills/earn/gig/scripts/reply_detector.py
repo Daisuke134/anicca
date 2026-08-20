@@ -870,6 +870,62 @@ def _durable_event_action(
     return dict(row) if row is not None else None
 
 
+def _retry_estimate_snapshot(
+    database: Path, binding: dict[str, Any], event_key: str,
+    snapshot: dict[str, Any], thread_id: str,
+) -> dict[str, Any] | None:
+    """Reuse a pre-click estimate intent only while its source inbox head is current."""
+    inquiries = snapshot.get("inquiries") if isinstance(snapshot, dict) else None
+    if not isinstance(inquiries, list) or len(inquiries) != 1:
+        return None
+    inquiry = inquiries[0]
+    if not isinstance(inquiry, dict) or inquiry.get("talkroom_id") != thread_id:
+        return None
+    with sqlite3.connect(f"file:{database.resolve()}?mode=ro", uri=True) as connection:
+        row = connection.execute(
+            """SELECT i.outgoing_body,i.origin_at,source.event_key
+                 FROM connector_events estimate
+                 JOIN connector_intents i ON i.action_id=estimate.action_id
+                 JOIN connector_events source ON source.rowid=(
+                   SELECT prior.rowid FROM connector_events prior
+                    WHERE prior.thread_id=estimate.thread_id
+                      AND prior.event_key LIKE 'coconala:inbox:v1:%'
+                      AND prior.observed_at<=estimate.observed_at
+                    ORDER BY prior.observed_at DESC,prior.rowid DESC LIMIT 1)
+                WHERE estimate.action_id=? AND estimate.event_key=?
+                  AND i.outgoing_body IS NOT NULL
+                ORDER BY i.revision DESC LIMIT 1""",
+            (int(binding["action_id"]), event_key),
+        ).fetchone()
+    if row is None:
+        return None
+    source = _INBOX_EVENT.fullmatch(str(row[2] or ""))
+    if source is None or source.group("identity") != inquiry.get("last_message_identity_sha256"):
+        return None
+    try:
+        terms = json.loads(str(row[0]))
+        module = _requested_estimate_module()
+        module.canonical_offer_terms(terms)
+        module.validate_estimate_event_key(event_key, thread_id)
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return None
+    projected = dict(snapshot)
+    item = dict(inquiry)
+    item.update({
+        "reply_required": False, "next_action": "requested_estimate",
+        "estimate_required": True, "semantic_failure": None,
+        "estimate_request_identity": event_key.rsplit(":", 1)[-1],
+        "estimate_request_sent_at": int(row[1]),
+        "semantic_estimate_terms": terms, "estimate_terms": terms,
+        "source_inbox_identity_sha256": source.group("identity"),
+    })
+    projected.update({
+        "collector_mode": "direct-thread-only", "semantic_ssot": True,
+        "head_only": False, "inquiries": [item],
+    })
+    return projected
+
+
 def _validate_target_binding(
     *, database: Path, manifest: Path, action_id: int, inbox_event_key: str, thread_id: str,
 ) -> dict[str, Any]:
@@ -1518,15 +1574,26 @@ def run_targeted_estimate(
         snapshot_path = evidence / "marketplace-snapshot.json"
         command = [
             sys.executable, str(args.snapshot_script), "--output", str(snapshot_path),
-            "--evidence-dir", str(evidence / "direct-thread"), "--mode", "direct-thread-only",
+            "--evidence-dir", str(evidence / "direct-thread"), "--mode", "direct-thread-head-only",
             "--talkroom-id", thread_id, "--hidden-no-screenshot",
-            "--semantic-runner", str(args.runner), "--semantic-schema", str(args.semantic_schema),
-            "--semantic-workdir", str(Path.home()), "--database", str(args.database),
-            "--manifest", str(args.manifest), "--semantic-effects-enabled",
         ]
         _run("collect", command)
         _owner_only(snapshot_path)
         snapshot = _targeted_snapshot(snapshot_path)
+        retry_snapshot = _retry_estimate_snapshot(
+            Path(args.database), binding, event_key, snapshot, thread_id,
+        )
+        if retry_snapshot is None:
+            command[command.index("direct-thread-head-only")] = "direct-thread-only"
+            command.extend([
+                "--semantic-runner", str(args.runner), "--semantic-schema", str(args.semantic_schema),
+                "--semantic-workdir", str(Path.home()), "--database", str(args.database),
+                "--manifest", str(args.manifest), "--semantic-effects-enabled",
+            ])
+            _run("collect_semantic", command)
+            snapshot = _targeted_snapshot(snapshot_path)
+        else:
+            snapshot = retry_snapshot
         _targeted_inquiry(snapshot, thread_id)
         if binding.get("state") == "reconcile_pending":
             return run_requested_estimate(

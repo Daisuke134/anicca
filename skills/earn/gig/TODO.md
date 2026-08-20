@@ -111,17 +111,15 @@ The order to the end is:
    that browser in; production bot polling must never be stolen for readback.
 3. **Negotiate is accelerated but not complete.** One continuous process probes every 30 seconds
    with two workers, so another lane no longer delays inbox observation. The exact-thread head
-   preflight and stale-event rebind are now deployed (`9aa6a506c`); the latest targeted runs bind
-   the current buyer message correctly and stop before any unauthorized effect. A local loopback
-   proxy fallback is now configured in the existing tool-less `claude-direct` slot: when its
-   private token file is present it runs `gpt-5.3-codex-spark`, while installations without that
-   file fall through to the remaining provider candidates. A real canary returned
-   `schema_valid=true` in 12.5 seconds; no marketplace send was performed by the canary. The
-   live process has produced more than 400 continuous probes. A natural buyer reply on thread
-   `10099215` reached official seller readback in about 157 seconds, proving the reply path can meet
-   the product SLO. Addres88 thread `10099067` remains the concrete missing-estimate defect: action
-   275 is now dead-lettered and action 276 is pending without an owner or send receipt, while the
-   current reconciliation incorrectly reports `estimate_required: 0`. Completion requires a
+   preflight and stale-event rebind are deployed. Natural Manledge replies on thread `10104078`
+   reached official readback as actions 338 and 340. The next buyer message accepted the bounded
+   commitment, semantic action 342 selected a ¥9,000 single estimate, and estimate action 343
+   durably retained the exact 100-listup/50-approach/four-day terms. The remaining defect is retry
+   latency: a pre-click form failure superseded the current revision, then every retry paid for the
+   same semantic judgement even though the immutable prior estimate intent and source inbox event
+   were already durable. The current slice reuses that intent only when a fresh head-only official
+   read proves the source inbox identity is unchanged; a changed head falls back to fresh semantic
+   judgement. Completion still requires action 343's one official estimate-card readback and a
    durable disposition for every buyer-authored message: replied with official readback, estimate
    sent with official readback, intentionally no-send with a bounded policy reason, or still pending
    with an observable retry owner. Missing from the queue is never a valid disposition.
