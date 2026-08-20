@@ -201,7 +201,8 @@ receipt is `status: operator_brake / effect: 0`. At the next real watcher tick, 
 published `current -> 7f6e44d4f...`, replaced the legacy `05b75fc29` definition once and read the
 loaded Apply command back as `/current/.../gig_disk_guard.py`. The brake was then released. Apply's
 first post-migration natural business start, PID 90319, resolved both `application_direct.py` and
-`agent_runner.py` through `/current/`; the active pass was left untouched. One further natural Apply
+`agent_runner.py` through `/current/`; it then submitted request `5222771` at ¥27,000 and found that
+same ID in official application history. The active exhaustive pass was left untouched. One further natural Apply
 start and the absence of any `05b75fc29` respawn remain before this acceptance item is closed.
 Negotiate, Storefront and Paid already run through `current`.
 
@@ -262,7 +263,10 @@ Negotiate, Storefront and Paid already run through `current`.
   inventing a remote substitute. Physical work remains eligible when the buyer explicitly requests a
   digital design, drawing, data file, written guide or remote advice and no handling/presence is
   required. Live natural planner proof remains; the isolated canary reached the real provider but
-  timed out at 240 seconds and is not acceptance evidence.
+  timed out at 240 seconds and is not acceptance evidence. The first natural `current` pass selected
+  digital social-reply work `5222771`, preserved its ¥27,000 decision and completed official history
+  readback; this proves the positive digital side of the semantic boundary. A natural observation of
+  an actual physical/onsite candidate remains before the negative side is closed.
 - [ ] Preserve an official exact price through the whole commercial path. Request `5217126` explicitly
   requires a ¥15,000 proposal and its durable planner result correctly contained ¥15,000, but the
   final application decision replaced it with ¥27,000. Exact buyer price instructions outrank category
