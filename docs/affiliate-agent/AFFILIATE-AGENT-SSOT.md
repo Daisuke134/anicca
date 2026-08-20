@@ -1414,6 +1414,22 @@ historical evidence below. Read-only inspection of the installed state shows:
   message `26077`. Outbox and sent ledgers are now 101/101 with zero pending;
   no new rolling event was created. This closes the observed duplicate-identity
   self-heal, not B01 or any money gate.
+- after the next owner wake became revenue-eligible, the same installed owner
+  captured the official PartnerStack report at
+  `2026-08-20T11:51:46.626744Z`: `commission_row_count=0`,
+  `commission_row_state=EMPTY`, `payout_row_state=EMPTY`,
+  `normalizer_state=NO_LIVE_ROWS`, artifact SHA
+  `6567be531f2e6fae780ce6693c8002ee099d4e11231558695ed120dd2261251f`.
+  Reconciliation at `11:51:47.894387Z` remained
+  `NO_TRANSACTIONS / source_rows=0 / appended=0 / replayed=0`. The owner then
+  wrote rolling receipt SHA `9d9aa493…d1ff91` with
+  `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`, null USD net,
+  unknown cost and coverage, and placement-ledger SHA
+  `631ff2733181ff178069e068dbff37209682cabf4ff4b5567d1a1d9c0f6a671c`.
+  The canonical ledger remains 13 placements, 32 provider-link clicks, and
+  zero transactions/status rows. No new Telegram event was needed; outbox and
+  sent remain 101/101. This is the current B01 empty-state proof, not E1 or
+  revenue.
 - the existing owner retry at `2026-08-20T10:54:48Z` recovered that exact pending
   event without any publication, link, provider, or ledger mutation. The owner
   recorded message ID `26019` once for event UUID
