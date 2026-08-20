@@ -582,7 +582,7 @@ def deliver_learning_report(
     report: Mapping[str, Any],
     *,
     database: Path,
-    executable: str = "/opt/homebrew/bin/openclaw",
+    executable: str | None = None,
 ) -> dict[str, str | None]:
     message = (
         "🧠 Job-search learning pass\n"
@@ -652,7 +652,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--occurred-at")
     parser.add_argument("--report", type=Path)
     parser.add_argument("--outbox", type=Path)
-    parser.add_argument("--telegram-executable", default="/opt/homebrew/bin/openclaw")
+    parser.add_argument("--telegram-executable")
     parsed = parser.parse_args(argv)
 
     ledger = Ledger(parsed.ledger)

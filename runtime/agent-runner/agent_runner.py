@@ -311,6 +311,24 @@ def provider_process_env(provider: str, provider_config: dict[str, Any],
 
         if child_env.get("OPENAI_API_KEY"):
             return child_env
+        model_providers = provider_config.get("model_providers", {})
+        if isinstance(model_providers, dict):
+            for model_provider in model_providers.values():
+                if not isinstance(model_provider, dict):
+                    continue
+                env_key = model_provider.get("env_key")
+                if not isinstance(env_key, str) or not env_key or child_env.get(env_key):
+                    continue
+                token_file = os.path.expandvars(os.path.expanduser(str(
+                    model_provider.get("auth_token_file", "~/.cli-proxy-api-key")
+                )))
+                try:
+                    auth_token = Path(token_file).read_text(encoding="utf-8").strip()
+                except OSError as error:
+                    raise ValueError("codex model provider auth unavailable") from error
+                if not auth_token:
+                    raise ValueError("codex model provider auth unavailable")
+                child_env[env_key] = auth_token
         auth_file = Path(os.path.expandvars(os.path.expanduser(str(
             provider_config.get("auth_file", "~/.codex/auth.json")
         ))))
