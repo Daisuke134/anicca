@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -uo pipefail
-SKILL="$HOME/profitable-claude/skills/article-writer"
+SKILL="${ARTICLE_SKILL_DIR:-${ARTICLE_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}}"
 OUT_DIR="$SKILL/state/ai-watch-$(TZ=Asia/Tokyo date +%Y-%m-%d)"
 mkdir -p "$OUT_DIR"
 jq -c '.watched_agents[]' "$SKILL/data/ai-entity-watch.json" | while read -r A; do

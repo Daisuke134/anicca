@@ -20,7 +20,7 @@
   <key>ProgramArguments</key>
   <array>
     <string>/bin/bash</string>
-    <string>/Users/anicca/profitable-claude/skills/writer-agent/scripts/learn-whitelist.sh</string>
+    <string>/Users/anicca/Projects/life-manager-main/skills/writer-agent/scripts/learn-whitelist.sh</string>
   </array>
 
   <key>StartCalendarInterval</key>

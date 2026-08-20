@@ -19,7 +19,7 @@
   <key>ProgramArguments</key>
   <array>
     <string>/bin/bash</string>
-    <string>/Users/anicca/profitable-claude/skills/writer-agent/scripts/audit-7day.sh</string>
+    <string>/Users/anicca/Projects/life-manager-main/skills/writer-agent/scripts/audit-7day.sh</string>
   </array>
 
   <key>StartCalendarInterval</key>

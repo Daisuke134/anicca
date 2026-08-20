@@ -7,10 +7,14 @@
   <key>ProgramArguments</key>
   <array>
     <string>/bin/bash</string>
-    <string>/Users/anicca/profitable-claude/skills/writer-agent/scripts/article-resume-pending.sh</string>
+    <string>/Users/anicca/Projects/life-manager-main/skills/writer-agent/scripts/article-resume-pending.sh</string>
   </array>
   <key>EnvironmentVariables</key>
   <dict>
+    <key>ARTICLE_ROOT</key>
+    <string>/Users/anicca/Projects/life-manager-main/skills/writer-agent</string>
+    <key>ARTICLE_STATE_DIR</key>
+    <string>/Users/anicca/.local/state/life-manager/writer</string>
     <key>ARTICLE_AUTOPUBLISH</key>
     <string>1</string>
     <key>ARTICLE_PROVIDER</key>

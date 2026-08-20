@@ -1,18 +1,18 @@
 {
   "schema_version": 1,
   "runtime_root": "skills/writer-agent",
-  "runtime_tree_sha256": "eb2d1a94916c7dc4ba38ae246b45a82957fa948bd161e15670be1797c55ca0a0",
+  "runtime_tree_sha256": "b7435c4afa2e48214583e33bc30b948502936e5f1b3434892465b99456669356",
   "runtime_file_count": 475,
   "source": {
     "repository": "/Users/anicca/profitable-claude",
     "path": "skills/article-writer",
-    "commit": "38f71e61",
+    "commit": "0902b290",
     "status": "source-of-truth-until-cutover"
   },
   "active_release": {
     "path": "/Users/anicca/profitable-claude-releases/writer/e9ab21ea/writer-agent",
-    "tree_sha256": "41037e3b7b64ea39db973956b3ad2c6428cb0051eb0414f97552afb8af5ec6e1",
-    "file_count": 473,
+    "tree_sha256": "0f85ddb44983bcae56c7e3a232652f73feac1a6f4ac20d16f45b664f1c3e0d11",
+    "file_count": 474,
     "status": "currently-invoked-by-daily-and-resume"
   },
   "state": {
