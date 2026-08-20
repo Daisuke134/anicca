@@ -282,6 +282,42 @@ Telegram/email report, dry run, model response or local ledger row is not comple
 
 Execute top to bottom. A checked diagnostic is evidence, not lane completion.
 
+#### Current cursor and non-skippable order
+
+Operationally the four launchd lanes remain independent and may run concurrently, but development
+completion has exactly one cursor and may not jump forward because a later lane has live customer
+work. The non-skippable order is **Apply → Negotiate → Paid → Storefront → four-lane durability →
+OSS third-device acceptance**. A successful example, live PID, local ledger row, Telegram report or
+partial readback never closes a lane while any unchecked acceptance item in that lane remains.
+
+Current truth: Apply has a live verified application path but its final maximal-coverage/replay
+receipt remains part of the four-lane audit. **Negotiate is not complete**: competitive repricing,
+bounded terminal no-send, replay-zero and a new natural sub-30-minute official reply/estimate proof
+remain unchecked below. Work moved to Paid too early because Manledge action 338 and Addres88 action
+276 were incorrectly treated as lane completion rather than two examples. Paid work already owed to
+buyers remains an urgent customer-remediation exception and must be delivered without pausing the
+independent Negotiate owner, but it does not advance the development cursor past Negotiate.
+
+Immediate customer-remediation queue, in order:
+
+1. **Manledge / request 5200847 / thread 10104078.** Reconstruct the original application, all
+   pre-purchase DM, purchase scope and talkroom before acting. Deliver a real spreadsheet/CSV of 100
+   Osaka-centered food-delivery driver candidates matching the agreed screen (bike or bicycle,
+   monthly travel target at least 1,500 km where evidence exists, rating at least 4.5 where evidence
+   exists, Osaka-centered activity, no required-day restriction). Required columns are candidate
+   identity/handle, source/profile URL, contact route, area, vehicle, mileage evidence, rating
+   evidence, eligibility and reason. Perform and truthfully receipt 50 permitted outreach actions;
+   record destination, channel, timestamp, exact message, outcome and reply state. Never mark an
+   unperformed approach as sent. Attach the candidate file plus outreach ledger with one concise
+   apology/summary message and leave formal delivery unchecked. Official attachment/readback and a
+   replay with zero duplicate outreach are required; the manual apology is not completion.
+2. **haru haru9 / project 18169583.** Finish the current v10 producer/reviewer cycle, attach the
+   accepted PC/responsive editable package in the exact room with formal delivery unchecked, read
+   the attachment back officially and prove replay effect zero. Do not ask locality or copy questions
+   already resolved by the buyer's 羽曳野 instruction and attachments.
+3. Return the single development cursor to the first unchecked Negotiate item and close every item
+   before declaring Negotiate complete or beginning Storefront development completion.
+
 #### A0. Stabilize release activation before more lane fixes
 
 **Overview and evidence.** Immutable SHA releases are the correct rollback unit; the defect is that
