@@ -192,7 +192,13 @@ The order to the end is:
    now enforces two ordered phases: raw-source-only artifact construction and hash finalization,
    followed by controller-census correspondence. Necessary wording overlap alone is not circular;
    pre-hash census/prior-candidate access is, and is a repairable `needs_revision` when raw sources
-   are available. Live fresh
+   are available. The live v18 re-review returned `needs_revision` exactly as designed and launched
+   a v4 raw-source rebuild. That run proved the remaining architecture defect: a single owner still
+   performs both production and post-hash correspondence; after opening the census it found missing
+   copy, modified the same candidate and rehashed it, destroying the phase boundary. Prompt ordering
+   is not sufficient isolation. The next slice must run production in a staging root containing only
+   accumulated requirements and raw buyer sources, then copy the fixed artifact into the durable
+   project and let a separate controller/reviewer process read the census. Live fresh
    review and delivery readback remain to be captured. Prove a new natural paid
    order through validated artifact, one delivery
    effect, exact-room official readback and replay zero.
