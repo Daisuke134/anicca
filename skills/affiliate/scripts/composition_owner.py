@@ -661,6 +661,13 @@ def inbox_priority(path: Path, state_root: Path) -> tuple[int, str]:
     except (OSError, ValueError):
         return (1, path.name)
     if receipt.get("source_set_sha256") != bundle.get("source_set_sha256"):
+        run_id = f"{path.stem}-{bundle.get('source_set_sha256', '')[:16]}"
+        if (
+            receipt.get("state") == "FAILED"
+            and receipt.get("failure_class") == "RUNNER_REJECTED"
+            and (state_root / "composition-runs" / run_id / "evidence-seal.json").is_file()
+        ):
+            return (0, path.name)
         return (1, path.name)
     if receipt.get("state") == "READY_FOR_POLICY" and (
         not SHA256.fullmatch(receipt.get("handoff_sha256", ""))
