@@ -71,6 +71,12 @@
   fresh adversarial review（Critical/Importantなし、SHIP）を確認した。release watcherはcurrentをこのcommitへ
   切り替えたが、launchd control-plane readbackは引き続き`141: Reentrancy avoided`であり、自然tickの新receiptは
   まだ追加確認していない。
+- release切替後の自然owner receiptでは、06:52:04 JSTに同じNote拒否を`count=1`、06:57:52 JSTに
+  `count=2/open=true`として記録した。直後のcurrent plannerは`daily-2026-08-07`について
+  `blocked_pairs=[note/ja]`、`recovery_pairs=[]`、`eligible_pairs=[substack/ja]`を返し、lockも解放された。
+  これはNote circuitが兄弟を継続させる実runtime証拠である。一方、07:02:57 JSTまでに次の自然tickと
+  Substack native publish/readbackは発生していない。`launchctl print/kickstart`は引き続きrc=141のため、
+  兄弟公開の実証はcontrol-plane復旧後の残TODOとして保持する。
 - 06:11:52 JSTの同一ログには、空き容量`5,256,216,576` bytes（要求`5,368,709,120` bytes）で
   disk guardが公開をfail-closedにした記録もある。保護対象を削除せず、容量安定化までは外部公開を強行しない。
 - 残TODOは順に、(1)保護対象を削除せず空き容量5GiB超を安定維持、(2)launchd control-plane readbackを復旧して
