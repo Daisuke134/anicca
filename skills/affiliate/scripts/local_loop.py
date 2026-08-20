@@ -341,6 +341,34 @@ def owner_event(state, wake_event, sent_event_ids=None):
         kind = "PLACEMENT_LIVE"
         add(kind, {"kind": kind, "plan_id": campaign.get("plan_id"), "x_url": campaign["x_url"]},
             "LIVE / commission not observed yet", campaign["x_url"], campaign.get("owned_url"))
+    try:
+        rolling_net = json.loads((state / "rolling-net.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        rolling_net = {}
+    if rolling_net.get("receipt_type") == "AFFILIATE_ROLLING_NET":
+        kind = "AFFILIATE_ROLLING_NET"
+        net_usd = rolling_net.get("approved_or_paid_net_usd")
+        net_text = f"USD {net_usd:,.2f}" if isinstance(net_usd, (int, float)) else "UNKNOWN"
+        add(kind, {
+            "kind": kind,
+            "source_ledger_sha256": rolling_net.get("source_ledger_sha256"),
+            "source_transition_count": rolling_net.get("source_transition_count"),
+            "status_counts": rolling_net.get("status_counts"),
+            "approved_or_paid_net_minor_by_currency": rolling_net.get(
+                "approved_or_paid_net_minor_by_currency"
+            ),
+            "reversal_minor_by_currency": rolling_net.get("reversal_minor_by_currency"),
+            "cost_state": rolling_net.get("cost_state"),
+            "cost_coverage_state": rolling_net.get("cost_coverage_state"),
+            "net_state": rolling_net.get("net_state"),
+            "threshold_state": rolling_net.get("threshold_state"),
+        }, (
+            f"{rolling_net.get('money_state')} / net={rolling_net.get('net_state')} / "
+            f"threshold={rolling_net.get('threshold_state')} / "
+            f"approved_or_paid_net={net_text} / "
+            f"cost={rolling_net.get('cost_state')} / "
+            f"cost_coverage={rolling_net.get('cost_coverage_state')}"
+        ))
     if cycle.get("state") == "NO_TRANSACTIONS":
         kind = "REVENUE_RECONCILED"
         add(kind, {"kind": kind, "provider": "elevenlabs", "state": "NO_TRANSACTIONS"},
@@ -375,6 +403,8 @@ def owner_event(state, wake_event, sent_event_ids=None):
         else
         "同じ申請を再提出せず、Impactの審査状態を継続確認"
         if kind.startswith("PROGRAM_") or kind == "SELF_HEALED"
+        else "同じrolling 30日net receiptを再計算し、実取引だけを監視"
+        if kind == "AFFILIATE_ROLLING_NET"
         else "provider transactionを待ち、sub-IDまたはlink fingerprintでplacementへ照合"
         if kind in {"CLICK_DELTA", "UNATTRIBUTED_CLICK_DELTA", "PLACEMENT_LINK_VERIFIED"}
         else "buyer-intentを収集し、次の公開・収益照合を継続"
@@ -1421,6 +1451,36 @@ def refresh_placement_ledger(state):
     }
 
 
+def refresh_rolling_net(state):
+    """Rebuild the fail-closed rolling-net receipt from the same owner wake."""
+    script = Path(__file__).with_name("revenue_cli.py")
+    try:
+        completed = subprocess.run(
+            [sys.executable, str(script), "net", "--state", str(state)],
+            check=False, capture_output=True, text=True, timeout=30,
+        )
+    except subprocess.TimeoutExpired:
+        return {"state": "ROLLING_NET_FAILED", "failure_type": "TIMEOUT"}
+    if completed.returncode:
+        return {"state": "ROLLING_NET_FAILED", "failure_type": "NONZERO_EXIT"}
+    try:
+        receipt = json.loads(completed.stdout)
+    except ValueError:
+        return {"state": "ROLLING_NET_FAILED", "failure_type": "INVALID_JSON"}
+    return {
+        "state": "ROLLING_NET_READY",
+        "receipt_sha256": receipt.get("receipt_sha256"),
+        "money_state": receipt.get("money_state"),
+        "net_state": receipt.get("net_state"),
+        "threshold_state": receipt.get("threshold_state"),
+        "approved_or_paid_net_usd": receipt.get("approved_or_paid_net_usd"),
+        "status_counts": receipt.get("status_counts"),
+        "cost_state": receipt.get("cost_state"),
+        "cost_coverage_state": receipt.get("cost_coverage_state"),
+        "unknown_reasons": receipt.get("unknown_reasons"),
+    }
+
+
 def resume_systeme_provider(state, cdp_port, private_markdown):
     """Reuse the provider harness on the shared EN browser, then restore its owner URL."""
     try:
@@ -1765,6 +1825,7 @@ def wake(args):
         "state": "PROVIDER_NOT_AUTHENTICATED", "source_rows": None, "appended_transitions": None,
     }
     placement_ledger = refresh_placement_ledger(state)
+    rolling_net = refresh_rolling_net(state)
     try:
         acquisition_decision = advance_acquisition_decision(
             Path(__file__).resolve().parent.parent, state
@@ -1851,6 +1912,17 @@ def wake(args):
         "placement_ledger_sha256": placement_ledger.get("ledger_sha256"),
         "placement_ledger_count": placement_ledger.get("placement_count"),
         "placement_ledger_failure_type": placement_ledger.get("failure_type"),
+        "rolling_net_state": rolling_net.get("state"),
+        "rolling_net_money_state": rolling_net.get("money_state"),
+        "rolling_net_net_state": rolling_net.get("net_state"),
+        "rolling_net_threshold_state": rolling_net.get("threshold_state"),
+        "rolling_net_approved_or_paid_net_usd": rolling_net.get("approved_or_paid_net_usd"),
+        "rolling_net_sha256": rolling_net.get("receipt_sha256"),
+        "rolling_net_failure_type": rolling_net.get("failure_type"),
+        "rolling_net_status_counts": rolling_net.get("status_counts"),
+        "rolling_net_cost_state": rolling_net.get("cost_state"),
+        "rolling_net_cost_coverage_state": rolling_net.get("cost_coverage_state"),
+        "rolling_net_unknown_reasons": rolling_net.get("unknown_reasons"),
         "status": status,
         "ts": int(time.time()),
     }

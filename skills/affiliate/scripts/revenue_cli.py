@@ -7,7 +7,7 @@ import json
 import re
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -478,6 +478,223 @@ def build_placement_ledger(state):
     return core
 
 
+ROLLING_NET_THRESHOLD_USD_MINOR = 1_000_000
+
+
+def parse_timestamp(value):
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return datetime.fromtimestamp(value, timezone.utc)
+    if not isinstance(value, str) or not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return parsed.replace(tzinfo=timezone.utc) if parsed.tzinfo is None else parsed.astimezone(timezone.utc)
+
+
+def latest_commission_transitions(state):
+    latest = {}
+    for index, row in enumerate(_json_rows(state / "commission-ledger.jsonl")):
+        provider = row.get("provider") or "unknown"
+        transaction_id = row.get("provider_transaction_id")
+        if not isinstance(transaction_id, str) or not transaction_id:
+            continue
+        observed = parse_timestamp(row.get("observed_at"))
+        key = (observed or datetime.min.replace(tzinfo=timezone.utc), index)
+        identity = (provider, transaction_id)
+        prior = latest.get(identity)
+        if prior is None or key > prior[0]:
+            latest[identity] = (key, row)
+    return {transaction_id: value for transaction_id, (_, value) in latest.items()}
+
+
+def build_rolling_net(state, now=None):
+    """Write a fail-closed rolling net receipt from immutable economic inputs.
+
+    Approved and paid are lifecycle states of one transaction, not additive
+    revenue. A missing real-bill ledger, incomplete cost-window coverage,
+    missing FX, missing placement join, or missing economic time keeps a
+    qualifying net result unknown; clicks and model estimates never enter this
+    calculation.
+    """
+    state = Path(state).expanduser()
+    window_end = now or datetime.now(timezone.utc)
+    if window_end.tzinfo is None:
+        window_end = window_end.replace(tzinfo=timezone.utc)
+    window_end = window_end.astimezone(timezone.utc)
+    window_start = window_end - timedelta(days=30)
+    transitions = latest_commission_transitions(state)
+    ledger_path = state / "commission-ledger.jsonl"
+    source_ledger_sha256 = (
+        hashlib.sha256(ledger_path.read_bytes()).hexdigest()
+        if ledger_path.is_file() else None
+    )
+    status_counts = {status: 0 for status in ("pending", "approved", "paid", "reversed")}
+    approved_net = {}
+    reversal_totals = {}
+    unknown_time_count = 0
+    unknown_fx_currencies = set()
+    in_window_rows = 0
+    unjoined_economic_rows = 0
+    economic_rows = []
+    for row in transitions.values():
+        event_time = parse_timestamp(row.get("created_at")) or parse_timestamp(row.get("observed_at"))
+        if event_time is None:
+            unknown_time_count += 1
+            continue
+        if not window_start <= event_time <= window_end:
+            continue
+        in_window_rows += 1
+        status = row.get("status")
+        if status in status_counts:
+            status_counts[status] += 1
+        placement = row.get("placement") if isinstance(row.get("placement"), dict) else {}
+        placement_id = placement.get("placement_id")
+        joined = placement.get("state") == "MATCHED" and isinstance(placement_id, str) and bool(placement_id)
+        economic_rows.append({
+            "provider": row.get("provider") or "unknown",
+            "provider_transaction_id": row.get("provider_transaction_id"),
+            "placement_id": placement_id if joined else None,
+            "placement_join_state": "MATCHED" if joined else "UNMATCHED",
+            "status": status,
+            "currency": row.get("currency"),
+            "gross_commission_minor": row.get("gross_commission_minor"),
+            "reversal_minor": row.get("reversal_minor"),
+            "net_commission_minor": row.get("net_commission_minor"),
+        })
+        currency = row.get("currency") or "UNKNOWN"
+        reversal = int(row.get("reversal_minor") or 0)
+        if status in {"approved", "paid", "reversed"} and not joined:
+            unjoined_economic_rows += 1
+            continue
+        if reversal:
+            reversal_totals[currency] = reversal_totals.get(currency, 0) + reversal
+        if status not in {"approved", "paid"}:
+            continue
+        net = int(row.get("net_commission_minor") or 0)
+        approved_net[currency] = approved_net.get(currency, 0) + net
+        if currency != "USD":
+            unknown_fx_currencies.add(currency)
+
+    cost_rows = _json_rows(state / "cost-ledger.jsonl")
+    cost_totals = {}
+    invalid_cost_rows = 0
+    for row in cost_rows:
+        if row.get("cost_basis") != "actual_billed":
+            invalid_cost_rows += 1
+            continue
+        cost_time = parse_timestamp(
+            row.get("occurred_at") or row.get("created_at") or row.get("observed_at")
+        )
+        if cost_time is None:
+            invalid_cost_rows += 1
+            continue
+        if not window_start <= cost_time <= window_end:
+            continue
+        amount = row.get("amount_minor")
+        currency = row.get("currency")
+        if not isinstance(amount, int) or amount < 0 or not isinstance(currency, str) or not currency:
+            invalid_cost_rows += 1
+            continue
+        cost_totals[currency] = cost_totals.get(currency, 0) + amount
+        if currency != "USD":
+            unknown_fx_currencies.add(currency)
+    coverage_path = state / "cost-ledger-coverage.json"
+    try:
+        coverage = json.loads(coverage_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        coverage = {}
+    coverage_start = parse_timestamp(coverage.get("window_start"))
+    coverage_end = parse_timestamp(coverage.get("window_end"))
+    cost_coverage_state = (
+        "COMPLETE"
+        if coverage.get("coverage_state") == "COMPLETE"
+        and coverage_start is not None
+        and coverage_end is not None
+        and coverage_start <= window_start
+        and coverage_end >= window_end
+        else "UNKNOWN"
+    )
+    has_qualifying_money = bool(approved_net or reversal_totals)
+    cost_unknown_reasons = []
+    if has_qualifying_money and not cost_rows:
+        cost_unknown_reasons.append("actual_billed_cost_ledger_missing")
+    if has_qualifying_money and invalid_cost_rows:
+        cost_unknown_reasons.append("actual_billed_cost_row_invalid")
+    if has_qualifying_money and cost_coverage_state != "COMPLETE":
+        cost_unknown_reasons.append("actual_billed_cost_coverage_unknown")
+    if has_qualifying_money and unjoined_economic_rows:
+        cost_unknown_reasons.append("economic_row_unjoined_to_placement")
+    cost_state = "KNOWN" if has_qualifying_money and not cost_unknown_reasons else "UNKNOWN"
+    if not has_qualifying_money:
+        cost_state = "UNKNOWN"
+    fx_state = "KNOWN" if not unknown_fx_currencies else "UNKNOWN"
+    unknown_reasons = []
+    if unknown_time_count:
+        unknown_reasons.append("economic_time_missing")
+    if unknown_fx_currencies:
+        unknown_reasons.append("fx_missing:" + ",".join(sorted(unknown_fx_currencies)))
+    unknown_reasons.extend(cost_unknown_reasons)
+    if not transitions:
+        money_state = "NO_TRANSACTIONS"
+    elif not in_window_rows:
+        money_state = "NO_TRANSACTIONS_IN_WINDOW"
+    elif not has_qualifying_money:
+        money_state = "OBSERVED_NON_MONEY_STATES"
+    else:
+        money_state = "TRANSACTIONS_OBSERVED"
+    net_state = "UNKNOWN" if has_qualifying_money and unknown_reasons else (
+        "KNOWN" if has_qualifying_money else "NO_APPROVED_OR_PAID_ROWS"
+    )
+    usd_net_minor = approved_net.get("USD", 0) - cost_totals.get("USD", 0)
+    if net_state != "KNOWN" or unknown_fx_currencies or any(currency != "USD" for currency in approved_net):
+        usd_net_minor_value = None
+    else:
+        usd_net_minor_value = usd_net_minor
+    threshold_state = (
+        "PASS" if usd_net_minor_value is not None and usd_net_minor_value >= ROLLING_NET_THRESHOLD_USD_MINOR
+        else "UNKNOWN" if net_state == "UNKNOWN" or unknown_fx_currencies
+        else "NOT_REACHED"
+    )
+    receipt = {
+        "schema_version": 1,
+        "receipt_type": "AFFILIATE_ROLLING_NET",
+        "provider": "portfolio",
+        "window": {
+            "start": window_start.isoformat(),
+            "end": window_end.isoformat(),
+            "days": 30,
+        },
+        "money_state": money_state,
+        "source_transition_count": len(transitions),
+        "in_window_transition_count": in_window_rows,
+        "source_ledger_sha256": source_ledger_sha256,
+        "economic_rows": economic_rows,
+        "unjoined_economic_transition_count": unjoined_economic_rows,
+        "status_counts": status_counts,
+        "approved_or_paid_net_minor_by_currency": approved_net,
+        "reversal_minor_by_currency": reversal_totals,
+        "known_real_cost_minor_by_currency": cost_totals,
+        "cost_state": cost_state,
+        "cost_coverage_state": cost_coverage_state,
+        "fx_state": fx_state,
+        "unknown_reasons": sorted(set(unknown_reasons)),
+        "net_state": net_state,
+        "approved_or_paid_net_usd": (
+            usd_net_minor_value / 100 if usd_net_minor_value is not None else None
+        ),
+        "threshold_usd": 10_000,
+        "threshold_state": threshold_state,
+        "observed_at": window_end.isoformat(),
+    }
+    receipt["receipt_sha256"] = hashlib.sha256(json.dumps(
+        receipt, sort_keys=True, separators=(",", ":")
+    ).encode()).hexdigest()
+    atomic_write(state / "rolling-net.json", receipt)
+    return receipt
+
+
 def capture_link_performance(args):
     try:
         from playwright.sync_api import sync_playwright
@@ -887,7 +1104,7 @@ def observe(args):
 def main():
     parser = argparse.ArgumentParser(prog="affiliate revenue")
     parser.add_argument(
-        "command", choices=("observe", "links", "capture", "reconcile", "ledger")
+        "command", choices=("observe", "links", "capture", "reconcile", "ledger", "net")
     )
     parser.add_argument("--cdp-host", default="127.0.0.1")
     parser.add_argument("--cdp-port", type=int, default=9324)
@@ -901,8 +1118,10 @@ def main():
         result = capture_reports(args)
     elif args.command == "reconcile":
         result = reconcile(args)
-    else:
+    elif args.command == "ledger":
         result = build_placement_ledger(args.state.expanduser())
+    else:
+        result = build_rolling_net(args.state.expanduser())
     print(json.dumps(result, sort_keys=True, separators=(",", ":")))
     return 0
 
