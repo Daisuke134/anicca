@@ -24,7 +24,7 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
   同じrunの明示されたresume cardだけを`RESUME_CARD`として続行する。別topicの選択には使わない。
 - `gates/topic-card-resume.json`はwrapperが作るowner-fence receiptであり、生成物ではない。
   pre-publication safe判定の許可リストに含め、Coconalaと同じく再開境界をレシートで保持する。
-- current releaseは`e43376872ae8...`へpublish済み。launchd bootstrap/readbackは引き続き
+- current releaseは`aa31d9d4dc97...`へpublish済み。launchd bootstrap/readbackは引き続き
   `141: Reentrancy avoided`であり、これはcurrent release publishの失敗ではない。記事URL、
   publisher-native readback、収益receiptはまだ0件なので、公開成功とは宣言しない。
 - `article-resume`はCoconala型のowner fence下で、同じrunのactive-four初期化を再開中である。
@@ -35,6 +35,14 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
   中断状態を「有効な未完runなし」と誤判定していた。`publication_resume.py`はこの
   dormant-only active-four stateを部分初期化として再開可能にし、installed pending laneで
   `initialization_pairs` 4件を再現できる。targetのnative URL/readbackと収益receiptはまだ0件。
+- Coconala型のrelease/state分離を実行時にも確認した。resume laneの解決済み
+  `ARTICLE_STATE_DIR`を子processへ明示exportし、managed stagingがimmutable releaseの
+  `skills/writer-agent/state/`へ書かないことを確認した。報告transportにも30秒上限を設け、
+  Telegram pending receipt `26454`を受領した後、owner fenceは解放された。
+- 同じrunの初期化結果はnote/ja=`ncbdb8a56bb20`、substack/ja=`212035682`、
+  x-article/ja=`https://x.com/compose/articles/edit/2090487802513506304`の3 intent。
+  substack/enは別publication identity未設定（`SUBSTACK_PUBLICATION_EN`なし）かつ通常DNS
+  失敗のためstable targetを作れず、`resumable=false`のまま公開を行わない。
 
 ### 2026-08-21 Coconala parity 再確認
 
