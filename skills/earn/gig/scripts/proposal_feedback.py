@@ -27,6 +27,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+from datetime import date
 from pathlib import Path
 from typing import Any, Callable
 
@@ -235,7 +236,7 @@ INDIVIDUALIZATION_INSTRUCTION = (
 
 
 def verified_fact_guidance(profile_path: Path) -> str:
-    """Render only explicitly allowlisted, evidenced professional facts."""
+    """Render allowlisted work facts plus non-sensitive derived application answers."""
     try:
         payload = json.loads(profile_path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
@@ -251,12 +252,30 @@ def verified_fact_guidance(profile_path: Path) -> str:
         evidence = str(row.get("evidence") or "").strip()
         if claim and evidence:
             claims.append((str(row["id"]), claim))
-    if not claims:
+    candidate = payload.get("candidate") if isinstance(payload, dict) else None
+    application_answers: list[str] = []
+    if isinstance(candidate, dict):
+        raw_dob = candidate.get("date_of_birth")
+        if isinstance(raw_dob, str):
+            try:
+                born = date.fromisoformat(raw_dob)
+                today = date.today()
+                age = today.year - born.year - ((today.month, today.day) < (born.month, born.day))
+                if 18 <= age <= 120:
+                    application_answers.append(f"年代: {age // 10 * 10}代")
+            except ValueError:
+                pass
+        address = candidate.get("mailing_address_ja")
+        prefecture = address.get("prefecture") if isinstance(address, dict) else None
+        if isinstance(prefecture, str) and prefecture.strip():
+            application_answers.append(f"居住都道府県: {prefecture.strip()}")
+    if not claims and not application_answers:
         return ""
     claims.sort()
     lines = [
         "提案文に使ってよい検証済みの職歴・能力（今回に関係するものだけ使う）:",
         *(f"  - [{fact_id}] {claim}" for fact_id, claim in claims),
+        *(f"  - [derived_application_answer] {answer}" for answer in application_answers),
         "この一覧と案件本文にない資格・本人属性・職歴・年数・数値実績・ポートフォリオを事実として足さない。",
         "一致する実績がなくても応募は止めず、近いtransferable experienceと、案件本文から今ここで作れる具体的なsample/進行planを示す。未作成物を作成済みとは書かない。",
     ]
