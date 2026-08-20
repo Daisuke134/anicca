@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
-"""Cut a release of this checkout and point the coconala launchd jobs at it.
+"""Cut a release of this checkout and publish it for the coconala launchd jobs.
 
 A lane never runs from a working tree: a git checkout changes under a job that
 is mid-pass, so every lane runs from an immutable copy under
-``~/gig/releases/life-manager/<sha>``. This builds that copy and rewrites the
-launchd jobs to use it.
+``~/gig/releases/life-manager/<sha>``.  The launchd definitions use the stable
+``~/gig/releases/life-manager/current`` path; publishing atomically moves that
+symlink after the immutable release has been built.
 
 The jobs themselves are data -- ``config/launchd-jobs.json`` -- rendered against
 per-machine values from ``~/.config/anicca/gig/install.json``. That is what lets
 a Mac that has never run this loop install the same four jobs, and lets this one
 keep the exact paths its lanes already use.
 
-launchd runs the definition it loaded, not the file on disk, so activation is
-always bootout + bootstrap, then a ``launchctl print`` readback that proves the
-loaded job really is the new release.
+launchd runs the definition it loaded, not the file on disk.  Activation loads
+the stable definition once.  Later watcher deploys only move ``current``; the
+next natural process start resolves the new release without a plist reload.
 
     gig_release.py build                 # release the current HEAD
     gig_release.py activate              # build if needed, then switch the four lanes
@@ -24,6 +25,7 @@ loaded job really is the new release.
 from __future__ import annotations
 
 import argparse
+import fcntl
 import json
 import os
 import plistlib
@@ -45,6 +47,9 @@ OVERRIDES = Path(
     os.environ.get("GIG_INSTALL_OVERRIDES", Path.home() / ".config/anicca/gig/install.json")
 )
 LAUNCH_AGENTS = Path.home() / "Library" / "LaunchAgents"
+RELEASE_ROOT = Path.home() / "gig" / "releases" / "life-manager"
+CURRENT_RELEASE = RELEASE_ROOT / "current"
+PUBLISH_LOCK = RELEASE_ROOT / ".publish.lock"
 # The browser owns the one authenticated session the lanes share. Reloading it
 # throws that session away, so it is never in the default set.
 DEFAULT_EXCLUDED = {"ai.anicca.hf-gig-browser", "ai.anicca.hf-gig-release-watch"}
@@ -134,7 +139,38 @@ def settings(release: Path) -> tuple[dict, dict[str, str]]:
 
 
 def release_dir(sha: str) -> Path:
-    return Path.home() / "gig" / "releases" / "life-manager" / sha
+    return RELEASE_ROOT / sha
+
+
+def current_sha() -> str:
+    """Return the published immutable SHA, or empty when no valid pointer exists."""
+    try:
+        resolved = CURRENT_RELEASE.resolve(strict=True)
+    except (FileNotFoundError, OSError):
+        return ""
+    if resolved.parent != RELEASE_ROOT.resolve() or not re.fullmatch(r"[0-9a-f]{40}", resolved.name):
+        return ""
+    return resolved.name
+
+
+def publish(release: Path) -> None:
+    """Atomically make a validated immutable release current, with one writer."""
+    release = release.resolve(strict=True)
+    if release.parent != RELEASE_ROOT.resolve() or not re.fullmatch(r"[0-9a-f]{40}", release.name):
+        raise SystemExit(f"refusing release outside {RELEASE_ROOT}: {release}")
+    marker = release / "skills" / "earn" / "gig" / "scripts" / "gig_paths.py"
+    if not marker.is_file():
+        raise SystemExit(f"incomplete release: {release}")
+    RELEASE_ROOT.mkdir(parents=True, exist_ok=True)
+    with PUBLISH_LOCK.open("a+") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        temporary = RELEASE_ROOT / f".current.{os.getpid()}"
+        try:
+            temporary.unlink(missing_ok=True)
+            temporary.symlink_to(release.name)
+            os.replace(temporary, CURRENT_RELEASE)
+        finally:
+            temporary.unlink(missing_ok=True)
 
 
 def build(sha: str) -> Path:
@@ -302,19 +338,22 @@ def main() -> int:
         git("fetch", "--quiet", "origin", "main")
         sha = git("rev-parse", "origin/main")
         wanted = {job["label"] for job in manifest["jobs"]} - DEFAULT_EXCLUDED
-        behind = [job for job in manifest["jobs"] if job["label"] in wanted
-                  and not next((a for a in loaded_program(job["label"])
-                                if a.endswith((".py", ".sh"))), "").startswith(
-                                    str(release_dir(sha)))]
-        if not behind:
+        behind = [
+            job for job in manifest["jobs"] if job["label"] in wanted
+            and not any(str(CURRENT_RELEASE) in arg for arg in loaded_program(job["label"]))
+        ]
+        if current_sha() == sha and not behind:
             return 0
         release = build(sha)
+        if current_sha() != sha:
+            publish(release)
         print(f"release {sha[:12]} -> {release}")
+        # SHA-specific definitions are migrated once. Stable definitions need no
+        # deploy-time reload: their next process start follows CURRENT_RELEASE.
+        _, stable_table = settings(CURRENT_RELEASE)
         for job in behind:
-            activate(
-                job, settings(release)[1], release, False,
-                skip_busy=job["label"] not in CONTINUOUS_RELOADABLE,
-            )
+            activate(job, stable_table, release, False,
+                     skip_busy=job["label"] not in CONTINUOUS_RELOADABLE)
         return 0
 
     sha = git("rev-parse", args.sha or "HEAD")
@@ -331,9 +370,11 @@ def main() -> int:
     if args.command == "build":
         return 0
 
+    if not args.dry_run:
+        publish(release)
     wanted = ({label.strip() for label in args.jobs.split(",")} if args.jobs
               else {job["label"] for job in manifest["jobs"]} - DEFAULT_EXCLUDED)
-    _, table = settings(release)
+    _, table = settings(CURRENT_RELEASE)
     failed = [job["label"] for job in manifest["jobs"] if job["label"] in wanted
               and not activate(job, table, release, args.dry_run)]
     if failed:

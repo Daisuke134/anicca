@@ -162,10 +162,10 @@ successful deployment. Apple's launchd contract makes `ProgramArguments` part of
 definition. GitHub's deployment concurrency contract permits only one writer for one deployment
 group. Apply those established patterns here; do not keep reloading SHA-specific job definitions.
 
-**Acceptance criteria.** All business-lane launchd definitions point to one stable installed launcher,
-never to `~/gig/releases/life-manager/<sha>/...`. A validated deployment atomically changes one
-`current` pointer; the launcher resolves it once, verifies that it is inside the release root and has
-the expected lane entrypoint, records desired/resolved SHA, and `exec`s that entrypoint. Only the
+**Acceptance criteria.** All business-lane launchd definitions point through one stable `current`
+path, never to `~/gig/releases/life-manager/<sha>/...`. A validated deployment atomically changes one
+`current` pointer after verifying that its target is inside the release root and has the expected
+lane code. Only the
 release watcher may publish the pointer, under one deployment lock. Publishing does not bootout,
 bootstrap, unload or reload the four business jobs. Rollback is the same pointer operation to the
 last known-good release. Cleanup retains current and previous releases and never removes a release
@@ -174,7 +174,7 @@ the desired SHA, and no old SHA may respawn afterward.
 
 **As-is → to-be.** As-is is `launchd plist -> immutable SHA entrypoint`, which couples job ownership
 to deployment and creates two competing truths (disk plist versus launchd's loaded definition).
-To-be is `fixed launchd plist -> fixed launcher -> atomic current pointer -> immutable SHA entrypoint`.
+To-be is `fixed launchd plist -> atomic current pointer -> immutable SHA entrypoint`.
 There is one repository (`life-manager` main), one release publisher, one active pointer and bounded
 rollback releases; old checkouts and branches are not runtime owners.
 
@@ -187,7 +187,7 @@ coverage is required.
 
 **Boundaries and execution.** Do not rewrite Apply, Negotiate, Storefront or Submission business
 logic in this slice; do not delete active releases; do not change customer-facing effects. First add
-the stable launcher and atomic validated publisher, then render all lane plists to that launcher,
+the atomic validated publisher, then render all lane plists through its stable `current` path,
 activate the fixed definitions once, capture two natural starts per lane, and only then garbage-collect
 inactive releases/checkouts. This item supersedes further SHA-specific plist reload attempts.
 

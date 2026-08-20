@@ -167,9 +167,10 @@ python3 skills/earn/gig/scripts/gig_release.py activate
 ```
 
 This cuts an immutable release of the current commit under
-`~/gig/releases/life-manager/<sha>/`, writes the four launchd jobs, loads them,
-and then reads the arguments back out of `launchctl` to prove that the jobs
-launchd is holding really are the ones it just installed.
+`~/gig/releases/life-manager/<sha>/`, atomically publishes it as
+`~/gig/releases/life-manager/current`, writes the four launchd jobs through that
+stable path, loads them, and reads their arguments back from `launchctl`. The
+one-time load installs a stable definition; later releases move only `current`.
 
 To also keep them following `main` by themselves:
 
@@ -282,15 +283,14 @@ Honest list. These are measured, not suspected.
 
 ## Keeping it running
 
-`gig_release.py watch` is what the release watcher runs. It fetches, fast-forwards
-`main`, and for every lane that is not already on the release for that commit it
-builds one and switches it — skipping any lane that is mid-pass, because booting
-a lane out in the middle drops its browser lease and strands its locks. The lane
-gets picked up on the next tick instead.
+`gig_release.py watch` is what the release watcher runs. It fetches `main`, builds
+the immutable release, and atomically moves `current`. Stable jobs resolve it on
+their next natural process start without a deploy-time reload. A legacy
+SHA-specific loaded definition is migrated once at a natural gap.
 
-Old releases accumulate under `~/gig/releases/`. They are ~50 MB each and safe to
-delete once no loaded job points at one; `gig_release.py status` prints exactly
-which ones are in use.
+Old releases accumulate under `~/gig/releases/`. They are ~50 MB each. Keep the
+current and previous release for rollback; never delete the `current` target or a
+release still used by a live process.
 
 Upgrade with `git pull --ff-only` followed by
 `python3 skills/earn/gig/scripts/gig_release.py activate`. To inspect generated
