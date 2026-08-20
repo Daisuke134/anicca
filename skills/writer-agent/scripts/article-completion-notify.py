@@ -4,10 +4,12 @@
 from __future__ import annotations
 
 import argparse
+import fcntl
 import hashlib
 import json
 import os
 import sys
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
@@ -35,6 +37,21 @@ LEGACY_EVENT_PREFIX = "article-exact8:"
 
 
 Transport = Callable[[str], str]
+
+
+@contextmanager
+def _outbox_lock(outbox: Path):
+    """Serialize one completion event's read/send/write sequence.
+
+    The publication owner normally supplies the outer fence. This narrow
+    lock also covers report retries and manual recovery calls so two workers
+    cannot both observe a prepared outbox and send the same message.
+    """
+    lock_path = outbox.with_name(f".{outbox.name}.lock")
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    with lock_path.open("a+", encoding="utf-8") as handle:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        yield
 
 
 def _canonical_event_id(value: Any) -> str:
@@ -134,32 +151,33 @@ def build_pending_message(event: dict[str, Any]) -> str:
 def deliver_pending(
     outbox: Path, event: dict[str, Any], transport: Transport,
 ) -> dict[str, Any]:
-    try:
-        current = json.loads(outbox.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        current = None
-    if isinstance(current, dict) and current.get("event_id") == event["event_id"]:
-        if current.get("status") == "sent" and current.get("message_id"):
-            return current
-        prepared = current
-    else:
-        prepared = {
-            **event,
-            "status": "prepared",
-            "prepared_at": datetime.now(timezone.utc).isoformat(),
+    with _outbox_lock(outbox):
+        try:
+            current = json.loads(outbox.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            current = None
+        if isinstance(current, dict) and current.get("event_id") == event["event_id"]:
+            if current.get("status") == "sent" and current.get("message_id"):
+                return current
+            prepared = current
+        else:
+            prepared = {
+                **event,
+                "status": "prepared",
+                "prepared_at": datetime.now(timezone.utc).isoformat(),
+            }
+            _atomic_write(outbox, prepared)
+        message_id = transport(build_pending_message(prepared))
+        if not isinstance(message_id, str) or not message_id.strip():
+            raise RuntimeError("Telegram transport returned no message ID")
+        sent = {
+            **prepared,
+            "status": "sent",
+            "message_id": message_id,
+            "sent_at": datetime.now(timezone.utc).isoformat(),
         }
-        _atomic_write(outbox, prepared)
-    message_id = transport(build_pending_message(prepared))
-    if not isinstance(message_id, str) or not message_id.strip():
-        raise RuntimeError("Telegram transport returned no message ID")
-    sent = {
-        **prepared,
-        "status": "sent",
-        "message_id": message_id,
-        "sent_at": datetime.now(timezone.utc).isoformat(),
-    }
-    _atomic_write(outbox, sent)
-    return sent
+        _atomic_write(outbox, sent)
+        return sent
 
 
 def deliver(
@@ -167,42 +185,43 @@ def deliver(
     event: dict[str, Any],
     transport: Transport,
 ) -> dict[str, Any]:
-    event = {**event, "event_id": _canonical_event_id(event["event_id"])}
-    try:
-        current = json.loads(outbox.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        current = None
-    identity = ("event_id", "run_id", "topic_id", "pairs")
-    if isinstance(current, dict):
-        current = {
-            **current,
-            "event_id": _canonical_event_id(current.get("event_id", "")),
+    with _outbox_lock(outbox):
+        event = {**event, "event_id": _canonical_event_id(event["event_id"])}
+        try:
+            current = json.loads(outbox.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            current = None
+        identity = ("event_id", "run_id", "topic_id", "pairs")
+        if isinstance(current, dict):
+            current = {
+                **current,
+                "event_id": _canonical_event_id(current.get("event_id", "")),
+            }
+            if any(current.get(key) != event.get(key) for key in identity):
+                raise ValueError(
+                    "completion notification outbox conflicts with completion event"
+                )
+            if current.get("status") == "sent" and current.get("message_id"):
+                return current
+            prepared = current
+        else:
+            prepared = {
+                **event,
+                "status": "prepared",
+                "prepared_at": datetime.now(timezone.utc).isoformat(),
+            }
+            _atomic_write(outbox, prepared)
+        message_id = transport(build_message(prepared))
+        if not isinstance(message_id, str) or not message_id.strip():
+            raise RuntimeError("Telegram transport returned no message ID")
+        sent = {
+            **prepared,
+            "status": "sent",
+            "message_id": message_id,
+            "sent_at": datetime.now(timezone.utc).isoformat(),
         }
-        if any(current.get(key) != event.get(key) for key in identity):
-            raise ValueError(
-                "completion notification outbox conflicts with completion event"
-            )
-        if current.get("status") == "sent" and current.get("message_id"):
-            return current
-        prepared = current
-    else:
-        prepared = {
-            **event,
-            "status": "prepared",
-            "prepared_at": datetime.now(timezone.utc).isoformat(),
-        }
-        _atomic_write(outbox, prepared)
-    message_id = transport(build_message(prepared))
-    if not isinstance(message_id, str) or not message_id.strip():
-        raise RuntimeError("Telegram transport returned no message ID")
-    sent = {
-        **prepared,
-        "status": "sent",
-        "message_id": message_id,
-        "sent_at": datetime.now(timezone.utc).isoformat(),
-    }
-    _atomic_write(outbox, sent)
-    return sent
+        _atomic_write(outbox, sent)
+        return sent
 
 
 def _ledger_rows(path: Path) -> list[dict[str, Any]]:

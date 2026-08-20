@@ -2,33 +2,30 @@
 
 状態: 実装順序を固定。公開成功を宣言する仕様ではない。
 
-## Current SSOT（2026-08-21 19:15 UTC 実測）
+## Current SSOT（2026-08-21 実測）
 
 - 実行構成は Coconala parity のまま。独自 executor／scheduler は追加せず、
   `gig_release.py`、immutable `~/gig/releases/life-manager/current`、
   `gig_disk_guard.py`、owner fence、外部 state `~/.local/state/life-manager/writer` を使う。
-- current release は `359c6dfe740f8c279310ea9b255fee84d5d969d4`。Substack の
-  API、公開 canonical、画像 CDN、receipt 再読戻しの全経路が exact allowlist の
-  shared transport を使う。通常 DNS を先に試し、DNS failure のときだけ `nslookup` の IPv4 を
-  TLS hostname に固定した `curl --resolve` へ fallback する。HTTP は 200/206 のみ、画像は
-  25MiB 上限、Content-Type が image の場合だけ受理し、Cookie は匿名公開読み戻しへ渡さない。
-- focused regression は 22 passed。fresh adversarial review は Critical/Important なしで SHIP。
-  対象は `substack_http.py`、`publication_remote.py`、`publication_resume.py` と transport／receipt
-  reread regression である。
-- `daily-2026-08-21` の Note 日本語は live receipt 済み。Substack 日本語も同じ記事を再公開せず、
-  `recover-ambiguous` が `skip-live`／`repaired=true` を返した。native readback は
-  `https://aniccabuddha.substack.com/p/1`、owner `aniccabuddha.substack.com`、本文一致、画像2枚の
-  SHA-256一致、`reality_gate=PASS`。これは売上・入金 receipt ではなく公開 receipt である。
-- 現在の未完了は `x-article/ja` の既存 draft intent。Substack EN は別 identity 未設定のため
-  `unavailable` quarantine のまま。planner は `READY` で pending は X 日本語 1件だけを返す。
-- launchd の `activate`／`print` は rc=141 `Reentrancy avoided`。symlink 切替は確認できるが、
-  loaded scheduler の所有者・argv・定期実行は証明しない。重複 executor は起動しない。
-- 空き容量は約 4.7GiB で、公開保護床 5GiB 未満。したがって次の外部公開は disk guard が
-  fail-closed で止める。保護対象の state／memory／rollback を削除して回復しない。
-- 残 TODO は順に、(1)保護対象を削除せず 5GiB 超へ安全に空き容量を戻す、(2)既存 launchd owner の
-  control-plane readback を取得して Life Manager current の実行を証明する、(3)既存 X draft を
-  same-ID・fresh adversarial review・native readback 付きで公開、(4)別の Substack EN identity と
-  credential が承認されるまで英語公開を行わない、(5)実 payment/publisher receipt だけを収益へ join する。
+  Coconalaの4 laneと同様、公開ownerは重複起動せず、外部作用の前にlock・state・receiptを確認する。
+- current release は `0f1b015f9102`。`daily-2026-08-21` は Note JA、Substack JA、X Article JA の
+  native live receiptを同一runで確認済み。URLは `https://note.com/anicca123/n/ncbdb8a56bb20`、
+  `https://aniccabuddha.substack.com/p/1`、`https://x.com/diceai0/article/2090526616854405173`。
+  これは公開receiptであり、売上・入金receiptではない。
+- Xの画像挿入失敗は、canonical publisherが外部macOS clipboard helperを直接呼んでいたことが原因だった。
+  その局所副作用だけをページ所有Clipboardへ差し替え、実ブラウザでHTML/PNG書込み、native readback、
+  同一run state更新を確認した。fresh adversarial reviewはCritical/ImportantなしでSHIP。
+- 完了通知はGateway CLIではなく、既存 `writer_report_worker.py` の直接Telegram Bot API transportを再利用する。
+  pending outboxの再送は実message ID `26606`、`status=sent` で確認した。本文は自然文で、公開と入金を分離し、
+  harness名の接頭辞を付けない。
+- Substack ENは別publication identityとcredentialが未設定のため `unavailable` quarantineのまま。
+  JA publicationへ英語を混載せず、英語用host・新draft・authenticated native readbackが揃うまで公開しない。
+- `launchctl activate`／`print`／bootstrap は全laneで rc=141 `Reentrancy avoided`。current symlink切替は確認できるが、
+  loaded schedulerの所有者・argv・定期実行は証明できない。重複executorは起動せず、既存ownerのreceiptだけを採用する。
+- 空き容量は実測で5GiB未満に戻ることがあり、disk guardは外部公開をfail-closedで止める。保護対象のstate／memory／rollbackは削除しない。
+- 残TODOは順に、(1)保護対象を削除せず5GiB超を安定維持、(2)launchd control-plane readbackを復旧してLife Manager currentの定期実行を証明、
+  (3)Substack ENの別identityとcredentialを承認済み経路で設定、(4)publisher/paymentの実receiptだけを収益ledgerへjoin、
+  (5)14日間の重複外部作用0と自然文Telegram deliveryを観測する。
 
 ## 目的
 
@@ -324,11 +321,11 @@ publication identity、読者、payout、ledgerを分ける。
 | 2 | DNSまたは承認済みnetwork transportを復旧 | 通常DNSは失敗。1.1.1.1解決＋`curl --resolve`ではNote／Substack／XがHTTP 200。publisher実行経路の再読戻しは未確認 | 一部完了 |
 | 3 | Writer runtimeを`skills/writer-agent`へ移しmanifestを生成 | SHA付きpath census、Life Manager current release、実行時の旧root read=0 | 完了（launchd readbackは別TODO。履歴・互換文字列のcensus 0ではない） |
 | 4 | demand→artifact→publisher adapterを同じstate schemaへ接続 | TECHi本文のtransport-success/interstitialを7日以内のhash検証済み外部receiptへbounded reuseするfocused checkはPASS。実時刻claim receiptは`READY_WITH_SOURCE_OUTAGE`、queue `0→1`、有効なpaid-demand cardを確認 | 完了（artifact消費は次の未完run） |
-| 5 | Note/Substack/Xの実公開とreadbackを同一runで完了 | 同一runにNote JAのnative live receiptと、Substack JA/EN・X Article JAのintentが残る。旧stateの同一hostはplannerがBLOCKEDとして明示する。`aniccaglobal`作成POSTはCAPTCHA要求のHTTP 401で未作成、別publicationの実host/credentialと新EN draftが未設定 | ブロッカー（EN publicationのCAPTCHA） |
+| 5 | Note/Substack/Xの実公開とreadbackを同一runで完了 | `daily-2026-08-21`はNote JA、Substack JA、X Article JAのnative live receiptを確認済み。Substack ENは同一host混載を避けて`unavailable` quarantine。別publicationの実host/credentialと新EN draftが未設定 | 一部完了（EN identity待ち） |
 | 6 | payment/publisher receipt collectorとmoney ledgerを接続 | artifact-level receipt | 未着手 |
-| 7 | neutral Telegram rendererを日次・失敗・完了へ接続 | message ID `26075`/`26087` + semantic hash | 一部完了 |
+| 7 | neutral Telegram rendererを日次・失敗・完了へ接続 | pending outboxを直接Bot APIで再送し、message ID `26606`と`status=sent`を確認。outbox lockで同時送信を直列化 | 一部完了（クラッシュ後のprovider重複はat-least-once境界として観測） |
 | 8 | adversarial verifierで重複公開・誤金額・偽URL・secret漏洩を反証 | fresh reviewでNote native receiptを確認し、Substack同一host／EN credential欠落をNO-GOとして反証。identity gateはcurrent releaseへ反映済み | 完了（別EN identity設定後に再検証） |
-| 9 | Life Manager release ownerをloadし、14個のWriter laneをCoconala parity manifestからbootstrap。旧5 CLI labelはrollback archiveへ退避し、shared fenceで旧ownerをdrain | release manifest renderは完了。残りはcurrent symlink公開、loaded ProgramArguments/env readback、owner drain、pause下bounded wake | 一部完了 |
+| 9 | Life Manager release ownerをloadし、14個のWriter laneをCoconala parity manifestからbootstrap。旧5 CLI labelはrollback archiveへ退避し、shared fenceで旧ownerをdrain | current symlinkは`0f1b015f9102`へ切替済み。全laneのbootstrap/readbackはrc=141 `Reentrancy avoided`で、loaded ProgramArguments/env、owner drain、定期wakeは未証明 | ブロッカー（launchd control-plane） |
 | 10 | rollback archiveと復元試験を検証し、Writer専用releaseだけをアーカイブ。`.openclaw`と`profitable-claude`全体は削除しない | archive hash + restore receipt + deletion-scope receipt | 未着手 |
 
 削除は最後の一件であり、現在は実行しない。
