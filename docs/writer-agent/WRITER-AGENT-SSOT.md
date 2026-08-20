@@ -505,6 +505,74 @@ format. Sources: https://help.x.com/en/using-x/articles,
 https://help.x.com/en/using-x/creator-revenue-sharing, and
 https://help.x.com/en/rules-and-policies/content-monetization-standards.
 
+### 2.6 Canonical article-to-body-to-account allocation
+
+One topic creates one research evidence set and one independently localized
+artifact per language. It does not create one identical full article copied to
+every site. `article_type`, `language`, `account_key`, `platform_role`,
+`payout_scope`, and `monthly_cap` are frozen before a publisher adapter runs.
+
+| Article type | Body contract | Account / platform | Economic role |
+|---|---|---|---|
+| `pillar_research` | Full evidence-led deep dive: reader problem, primary sources, mechanism, measured result, limits, and conclusion. JA and EN are separately written and quality-checked. | `substack_ja` → JA publication; `substack_en` → separate EN publication | Paid subscription/archive; direct recurring writing revenue |
+| `conversion_article` | Practical paid version with a useful free preview and a distinct paid section. It adds reader-useful procedure, evidence, or decision criteria; it is not a paywalled copy of the Substack body. | `note_ja` → existing verified `anicca123` creator account | One-time reader purchase; price and paywall are read back from note |
+| `discovery_derivative` | Shorter, free, platform-native derivative: technical steps and canonical links for Dev.to/Zenn; a concise hook and link for X. It omits private paid material and does not claim unverified results. | `devto_en`, `zenn_ja`, `x_ja`; `x_en` stays dormant until its reactivation gate passes | Discovery and owned-surface acquisition, not base revenue |
+| `product_chapter` | Chapterized evergreen material compiled only after several articles prove demand; each chapter has its own evidence and the book has a single spine. | `kdp_publisher` (language-specific book IDs) and `zenn_ja` Books when eligible | One-time book royalty/sale; never a daily posting quota |
+| `high_ticket_brief` | Buyer-specific brief: problem, scope, evidence, deliverable, exclusions, price, and acceptance terms. It is not mass-posted as a public article. | `linkedin_en` lead surface and verified publisher/editorial opportunity adapters | Contract or editorial fee, counted only from acceptance/payment receipt |
+| `member_letter` | Short recurring update, experiment result, or implementation note that gives an ongoing subscriber a reason to stay. | `substack_ja` / `substack_en` publication-specific sections | Recurring retention and churn learning |
+
+The following surfaces are not part of the first daily revenue set. `medium_en`
+and `medium_ja` are discovery/revenue-share experiments only after eligibility
+and policy review; Medium's API terms prohibit posting automatically generated
+content. Patreon and Gumroad are owned membership/checkout experiments after a
+receipt-backed conversion exists. LinkedIn is B2B discovery, not direct writer
+payout. Tagalog uses its own localized artifact and account only after native
+quality, payout, tax, and policy checks; it is not sent to KDP unless the
+platform's current supported-language list includes it.
+
+Substack language isolation is explicit: `substack/ja` resolves to
+`SUBSTACK_PUBLICATION_JA` and `substack/en` resolves to
+`SUBSTACK_PUBLICATION_EN`. One Substack login may own multiple publications,
+but each publication has a separate reader cohort, price, payout scope, and
+ledger; Substack currently requires a separate Stripe account per publication.
+The existing mixed `aniccabuddha.substack.com` posts remain historical and are
+not moved or deleted.
+
+Sources for the platform contracts: note paid articles and memberships
+(`https://note.com/monetization-guide`), Zenn paid Books
+(`https://zenn.dev/zenn/books/how-to-create-book/viewer/about`), Substack
+multiple publications and payment setup
+(`https://support.substack.com/hc/en-us/articles/360037824371-Can-I-create-multiple-publications-under-the-same-account`,
+`https://support.substack.com/hc/en-us/articles/360037459952-How-do-I-set-up-a-paid-publication`),
+DEV article creation (`https://developers.forem.com/api/v0`), X Articles
+eligibility (`https://help.x.com/en/using-x/articles`), and Medium API limits
+(`https://help.medium.com/hc/en-us/articles/214151487-Medium-API-Terms-of-Use`).
+
+### 2.7 Autonomous operation boundary
+
+After one-time setup, the installed loop may choose topics, write localized
+artifacts, publish to approved accounts, read authorized verification mail,
+retry isolated destinations, collect public/payment receipts, and report in
+natural language without a human approving each article. This is the intended
+no-human operating mode.
+
+The setup boundary remains explicit and cannot be automated by impersonation or
+policy evasion. The owner/provider must complete account ownership, payout
+identity, tax/KYC, passkey/phone checks, CAPTCHA, and any platform approval.
+The Agent may use a dedicated owner-controlled mailbox or authorized OAuth/Gmail
+route for verification and reader opt-ins. It must not harvest other people's
+mail, create disposable aliases to evade one-account limits, bypass CAPTCHA,
+or create a mass of look-alike accounts. A generated email identity is allowed
+only when the provider's rules and the owner-approved account registry permit
+it.
+
+The no-human claim is earned only after thirty consecutive installed operating
+days complete schedule, publication recovery, measurement, and reporting with
+zero manual execution or repair. Until then, the loop must say
+`setup-required`, `provider-pending`, or `unknown`, never claim a money-printing
+machine, and never count views, likes, paywall display, checkout starts, or
+estimated revenue as payment.
+
 ## 3. Revenue streams
 
 ### 3.1 Current stream ledger

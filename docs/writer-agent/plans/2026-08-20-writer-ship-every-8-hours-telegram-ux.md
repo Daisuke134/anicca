@@ -123,6 +123,7 @@ flowchart LR
 | A30 | `substack/ja`と`substack/en`のpublish adapterはpublication identityをpair単位で解決し、単一の`SUBSTACK_PUBLICATION` fallbackへ戻らない。既存混在記事は履歴として保持し、新規記事の言語・読者・receiptを混ぜない | pair-to-publication contract test |
 | A31 | $10Kのbase design targetは、EN Substack 500人、JA Substack 250人、note JA有料購入300件、KDP 100冊という単位とnet計算を保存する。これは予測ではなく、実receiptで置き換える学習目標である | target-vs-actual ledger test |
 | A32 | 記事種別を`pillar_research`、`conversion_article`、`discovery_derivative`、`product_chapter`、`high_ticket_brief`に分類し、platformごとの月間上限と学習指標を守る。同じ全文を別言語・別アカウントへ自動複製しない | article allocation and duplicate test |
+| A33 | 許可済みaccount registryとowner-controlled mailboxが揃った後は、topic選定・執筆・公開・receipt回収・報告を無人で継続する。未承認account作成、第三者メール収集、使い捨てaliasによる制限回避、CAPTCHA/KYC回避は拒否する | autonomous-run fixture accepts approved account and rejects unapproved identity/evasion |
 
 ## 3. As-Is / To-Be
 
@@ -228,7 +229,7 @@ verified commissions − refunds − fees − compute`で行う。例えば、�
 
 1. **Owned subscription**：SubstackまたはPatreonで、英語・日本語・Tagalogを別publication/segmentとして運営する。
 2. **Product**：長文を月次でbook/bundle化し、KDP、Zenn、Gumroad、noteへ対象言語・対象市場だけ出す。
-3. **Discovery**：Medium、LinkedIn、X、Dev.to、Zenn無料記事からowned listまたはproductへ送る。
+3. **Discovery**：LinkedIn、X、Dev.to、Zenn無料記事など、現在のprovider policyで許可された面からowned listまたはproductへ送る。Mediumは自動生成記事をAPIで投稿できないため、この無人laneには含めない。
 4. **High-ticket**：editorial fee、企業向け調査記事、ghostwritingを別streamで受注する。これはplatform viewではなく契約receiptで計上する。
 
 例として、`600 Substack paid × $12.66 = $7,596` と `350 KDP sales ×
@@ -240,12 +241,14 @@ $6.93 = $2,426`で約$10,022になるが、これは必要販売量を示す感�
 
 - **英語**はglobal discoveryとSubstack/KDPの基準言語。高単価の専門テーマを優先する。
 - **日本語**はnote、Zenn、KDP Japanのnative audienceへ出す。英語記事の機械翻訳をそのまま有料化しない。
-- **Tagalog**はMedium、Substack、Patreon、Gumroadなど対応する面を使う。KDPの現行supported-language listにないため、KDP販売は行わない。
+- **Tagalog**は、現行のpayout・native QA・provider policyを確認できた面だけを使う。Medium APIの自動生成記事投稿は対象外で、KDPの現行supported-language listにもないため、KDP販売は行わない。
 - 1つのtopicから言語ごとに別artifactを作り、native QA、タイトル、価格、CTA、法務・税務・payoutのreadbackを通す。全文同一の無差別cross-postは、品質低下・重複・platform policy違反のリスクがある。
 
 Mediumは公式更新でcontent mill、AI-generated article、attention baitを積極的に抑制すると説明している。したがって、投稿量を増やすこと自体が収益を増やすのではなく、各言語で人間に読まれる品質とmember readbackを増やすことが必要になる。<https://medium.com/blog/partner-program-changes-are-rolling-out-now-456306d16cb9>
 
 ### 3.4 Account・記事種別・$10K base allocation
+
+記事種別・本文形・account・platformの正本はWriter SSOT §2.6である。この表は、その配分を実行するための月間上限と学習指標を定義する。
 
 この表の金額は、税・返金・為替・computeを除く**設計目標**であり、予測では
 ない。実際の収益欄は必ずpublisherまたはpayment processorのreceiptで置き換える。
@@ -257,7 +260,7 @@ Mediumは公式更新でcontent mill、AI-generated article、attention baitを�
 | `substack_en` | 別publication identityと`SUBSTACK_PUBLICATION_EN`を作成し、readback後に有効化 | EN `pillar_research`、case study、how-to、member letter | 長文8＋member letter4 | 500 paid × $15、net約$6,330 | topic別paid conversion、churn、英語読者の継続 |
 | `note_ja` | 既存`anicca123` | JA `conversion_article`（Substack版と同じ全文ではなく実用追加部分を持つ） | 有料記事8 | 300購入 × ¥500、net約¥128,250（約$855） | 記事ごとの閲覧→購入率、返金、net/article |
 | `kdp_publisher` | 既存publisher accountを一つだけ使用。言語別book IDを分ける | EN/JA `product_chapter`、evergreen book | book 1冊/四半期、販売100冊/月を観測目標 | 100冊 × 約$6.93、約$693 | 言語別販売、ページ読了、net/book |
-| `medium_en` / `medium_ja` | discovery面。paid収益はbaseに入れない | EN/JA `discovery_derivative` | 各8 | $0（receiptができるまで） | 読了→owned購読クリック、topic別流入 |
+| `medium_en` / `medium_ja` | provider-policy gate専用。公式APIは自動生成コンテンツ投稿を禁止するため、無人API公開を行わない | EN/JA `discovery_derivative`（明示的に許可された経路だけ） | 0（許可が証明されるまで） | $0（receiptができるまで） | 読了→owned購読クリック、topic別流入 |
 | `devto_en` | 既存EN account | EN technical `discovery_derivative` | 4 | $0 | 技術読者→Substack/KDP導線 |
 | `zenn_ja` | 既存JA account | JA technical `discovery_derivative`、`product_chapter` | 記事4＋book 1冊/四半期 | $0（book receiptのみ別計上） | 技術テーマの読了→book購入 |
 | `linkedin_en` | 既存B2B profile/newsletter | EN `high_ticket_brief` | 8 | $0 | 問い合わせ、提案、契約化率 |
@@ -270,7 +273,7 @@ Mediumは公式更新でcontent mill、AI-generated article、attention baitを�
 1. まず一つの調査から、英語と日本語の別の`pillar_research`を作る。Tagalogはnative QAが通るテーマだけ別に書く。
 2. `substack_en`と`substack_ja`には、それぞれの読者に合わせた完全版を出す。英語と日本語を同じSubstack publicationへ新規投稿しない。
 3. `note_ja`には日本語の実用的な追加部分を持つ有料版を出す。同じ全文の単純コピーは禁止する。
-4. Medium、Dev.to、Zenn、LinkedIn、Xには目的別の短縮・技術・B2B派生版を出し、owned面へリンクする。
+4. Dev.to、Zenn、LinkedIn、Xには目的別の短縮・技術・B2B派生版を出し、owned面へリンクする。Mediumは公式に許可された非自動経路が確認できた場合だけ別gateで扱う。
 5. KDP、Gumroad、Zenn bookは、反応の良かった複数記事をまとめて商品化する。日々の投稿数を増やすための商品化はしない。
 
 Substackの実装は、`substack/ja → SUBSTACK_PUBLICATION_JA`、`substack/en →
@@ -299,6 +302,7 @@ SUBSTACK_PUBLICATION_EN`を必須とする。platformが同じloginで複数publ
 | 15 | Substack separation | `test_substack_language_pair_resolves_distinct_publications_and_ledgers()` | JA/EN audience mixing |
 | 16 | allocation target | `test_base_target_is_scenario_only_and_actuals_require_receipts()` | forecast counted as money |
 | 17 | article allocation | `test_one_topic_yields_language_native_role_bound_artifacts_without_duplicate_fulltext()` | blind cross-post |
+| 18 | autonomous boundary | `test_approved_account_run_is_autonomous_and_unapproved_identity_or_mail_harvest_is_rejected()` | account/policy evasion |
 
 | Item | Value |
 |---|---|
@@ -318,6 +322,7 @@ SUBSTACK_PUBLICATION_EN`を必須とする。platformが同じloginで複数publ
 - 新しいplatform adapter、派生商品、$10M scale controllerをP0に混ぜない。
 - 既存の`~/.cloak`、`~/.openclaw/state/*.jsonl`、credential、memoryを削除・上書きしない。
 - 旧SSOT履歴（`docs/loop-engineering/47-*`）を現行TODOとして復活させない。
+- account作成・KYC・CAPTCHA・電話確認・payout identityを自動で迂回しない。認証メールはownerが管理する専用mailboxまたは許可済みOAuth経路だけを読む。第三者のメールアドレスを収集して読者・登録・送信に流用しない。
 
 ## 6. Execution Steps（残TODOの順序）
 
@@ -364,8 +369,9 @@ A22を満たした後だけ、1変数・最大3本/日・7日間のcanaryを実�
 
 A22の安定性とA27のledgerが確認できた後、最初に`SUBSTACK_PUBLICATION_JA`と
 `SUBSTACK_PUBLICATION_EN`を別々に解決する。既存の混在publicationには新規ENを
-追加しない。次に英語＋日本語の2言語で、Substack（owned）、Medium/LinkedIn/
-Dev.to/Zenn（discovery）、KDP/note（product）を一面ずつ有効化する。account
+追加しない。次に英語＋日本語の2言語で、Substack（owned）、LinkedIn/Dev.to/
+Zenn/X（discovery）、KDP/note（product）を一面ずつ有効化する。Mediumは
+自動生成コンテンツをAPI投稿できないため、provider policy gateが通るまで有効化しない。account
 registryの月間上限を超えず、A31のtarget-vs-actualを同じ`artifact_id`で追跡する。
 各面は30日単位でreadback、paid conversion、net revenue、refund、compute、
 quality、policy incidentを比較し、receiptがない面はscaleしない。完了条件はA24〜A32。
@@ -373,7 +379,7 @@ quality、policy incidentを比較し、receiptがない面はscaleしない。�
 ### P1-4 Tagalogと二次収益面（条件付き）
 
 Substack EN/JAまたはnoteで言語別のconversionが確認できた後、Tagalogは2本/月の
-pilotから開始する。Medium、Substack、Patreon、Gumroadのpayout、native QA、
+pilotから開始する。Substack、Patreon、Gumroadのpayout、native QA、
 policy、返金処理を実測し、KDPへは送らない。PatreonとGumroadはbase $10Kに二重
 計上せず、既存の有料購読またはnoteの同じ顧客を別売上として再利用しない。
 
@@ -393,7 +399,11 @@ policy、返金処理を実測し、KDPへは送らない。PatreonとGumroadは
 | note公式 membership | https://note.com/lp/membership | 「MAU 9,123万」「会員数1,248万人」「収益を得た人20万人」／platform fee 10% | 日本のdiscovery規模、収益化母数、feeを別指標で保存 |
 | noteヘルプ, fees/payout | https://www.help-note.com/hc/ja/articles/360011358873-%E3%82%B3%E3%83%B3%E3%83%86%E3%83%B3%E3%83%84%E3%82%92%E8%B2%A9%E5%A3%B2%E3%81%99%E3%82%8B%E9%9A%9B%E3%81%AB%E5%BC%95%E3%81%8B%E3%82%8C%E3%82%8B%E6%89%8B%E6%95%B0%E6%96%99 / https://www.help-note.com/hc/ja/articles/23948492341785- | 決済手段別事務手数料、platform 10%、海外売上の受取は国内口座 | noteのnet計算と海外言語のpayout gate |
 | Substack About / pricing | https://substack.com/about / https://support.substack.com/hc/en-us/articles/360037607131-How-much-does-Substack-cost | 「5 million paid subscriptions」「90% goes to you」／paid時10%＋Stripe | owned subscriptionのnet ARPU感度 |
+| Substack multiple publications / paid setup | https://support.substack.com/hc/en-us/articles/360037824371-Can-I-create-multiple-publications-under-the-same-account / https://support.substack.com/hc/en-us/articles/360037459952-How-do-I-set-up-a-paid-publication / https://support.substack.com/hc/en-us/articles/360037825111-How-do-I-create-a-publication-on-Substack | 同一loginで複数publicationを所有できるが、publicationごとに読者・価格・ledgerを分離し、別Stripeを要求する | `substack_ja`/`substack_en`の言語・payout分離 |
+| DEV/Forem API | https://developers.forem.com/api/v0 | `POST /articles`で`body_markdown`、`published`、`canonical_url`等を受ける | `devto_en`のfree discovery adapter |
+| X Articles | https://help.x.com/en/using-x/articles | ArticlesはPremium等の対象accountに限り作成できる | `x_ja`のdiscoveryを先に実測し、`x_en`はgate後 |
 | Medium About / Partner Program | https://medium.com/about / https://medium.com/partner-program / https://help.medium.com/hc/en-us/articles/39121627791639-Medium-Partner-Program-eligibility | 「Over 100 million people ... every month」／paid member read time等で分配 | global discoveryとrevenue-shareを分離 |
+| Medium API Terms | https://help.medium.com/hc/en-us/articles/214151487-Medium-API-Terms-of-Use | APIで「automatically generated content」をpostする用途を禁止 | Mediumを無人API公開laneから除外し、別policy gateへ送る |
 | Medium quality update | https://medium.com/blog/partner-program-changes-are-rolling-out-now-456306d16cb9 | content mills、AI-generated articles、attention baitを抑制すると説明 | 量ではなく品質・member readbackをゲート |
 | Patreon pricing / payouts | https://support.patreon.com/hc/en-us/articles/11111747095181-Creator-fees-overview / https://support.patreon.com/hc/en-us/articles/39694936541965-Payouts-guide-for-creators-outside-of-the-US | 新規creator標準10%＋processing／日本・フィリピンを含むpayout表 | membershipの地域適合とfee計算 |
 | Amazon KDP pricing / languages | https://kdp.amazon.com/en_US/help/topic/G200634500 / https://kdp.amazon.com/en_US/help/topic/G200673300 | eBook 35%/70%／日本語対応、現行リストにTagalogなし | book販売のroyaltyとlanguage gate |
