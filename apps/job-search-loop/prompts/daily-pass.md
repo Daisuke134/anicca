@@ -26,6 +26,10 @@ Development/Partnerships, Technical Account Manager, AI Customer Success, and Sa
 Engineer. A generic sales, marketing, operations, product, or business role without
 quoted AI/LLM requirements is not eligible. Hard reject citizenship/clearance,
 non-Japan remote, known sub-floor pay, and unmet explicit minimum years.
+The deterministic daily driver exports `JOB_SEARCH_DAILY_WAKE_ID`; the ledger
+enforces one submission claim for that wake even if the model attempts multiple
+claims. Do not attempt a second claim after a claim or a definite
+`not_submitted` result; report the state and stop the wake.
 
 The private profile already contains the verified legal facts
 `legal_japan_work_authorization` and `legal_no_japan_sponsorship_required`: Daisuke is a

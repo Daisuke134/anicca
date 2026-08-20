@@ -132,6 +132,20 @@ raise SystemExit(0)
             )
             self.assertIn("job_search_loop.summary", json.dumps(calls))
 
+    def test_daily_driver_exports_one_candidate_wake_fence(self):
+        script = (APP_ROOT / "scripts" / "run-daily.sh").read_text(encoding="utf-8")
+        self.assertIn('export JOB_SEARCH_DAILY_WAKE_ID="$RUN_ID"', script)
+
+        result_schema = json.loads(
+            (APP_ROOT / "schemas" / "pass-result.v1.schema.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(result_schema["properties"]["submitted"]["maxItems"], 1)
+        self.assertEqual(
+            result_schema["properties"]["submit_unknown"]["maxItems"], 1
+        )
+
     def test_runner_config_is_job_scoped_and_contains_no_private_identity(self):
         config_path = REPO_ROOT / "runtime" / "agent-runner" / "config.json"
         config = json.loads(config_path.read_text(encoding="utf-8"))

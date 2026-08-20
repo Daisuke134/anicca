@@ -1,6 +1,7 @@
 import hashlib
 import inspect
 import json
+import os
 import tempfile
 import threading
 import unittest
@@ -126,6 +127,30 @@ class LedgerTests(unittest.TestCase):
             self._claim(self.ledger, third_id, "2026-07-28", "hash-3")
         )
         self.assertEqual(self.ledger.daily_slot_count("2026-07-28"), 2)
+
+    def test_daily_wake_id_allows_only_one_submission_claim(self):
+        original = os.environ.get("JOB_SEARCH_DAILY_WAKE_ID")
+        os.environ["JOB_SEARCH_DAILY_WAKE_ID"] = "daily-test-wake-1"
+        try:
+            self._ready()
+            first = self._claim(
+                self.ledger, self.application_id, "2026-07-28", "wake-hash-1"
+            )
+            self.assertIsNotNone(first)
+
+            second_id = self.ledger.add_application(
+                "Other", "GenAI Engineer", "https://jobs.example.com/wake-2"
+            )
+            self._ready(second_id)
+            self.assertIsNone(
+                self._claim(self.ledger, second_id, "2026-07-28", "wake-hash-2")
+            )
+            self.assertEqual(self.ledger.daily_slot_count("2026-07-28"), 1)
+        finally:
+            if original is None:
+                os.environ.pop("JOB_SEARCH_DAILY_WAKE_ID", None)
+            else:
+                os.environ["JOB_SEARCH_DAILY_WAKE_ID"] = original
 
     def test_not_submitted_releases_observable_daily_slot(self):
         self._ready()

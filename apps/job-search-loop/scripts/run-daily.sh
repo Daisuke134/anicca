@@ -7,6 +7,7 @@ source "$SCRIPT_DIR/runtime-paths.sh"
 RUN_ID="daily-$(date +%Y%m%d-%H%M%S)"
 EVIDENCE="$JOB_SEARCH_STATE_ROOT/evidence/$RUN_ID"
 TELEGRAM_OUTBOX="$JOB_SEARCH_STATE_ROOT/telegram-outbox.sqlite3"
+export JOB_SEARCH_DAILY_WAKE_ID="$RUN_ID"
 
 mkdir -p "$EVIDENCE" "$JOB_SEARCH_STATE_ROOT/logs"
 chmod 700 \

@@ -115,6 +115,12 @@ class Ledger:
                 status TEXT NOT NULL,
                 PRIMARY KEY (japan_day, slot)
             );
+            CREATE TABLE IF NOT EXISTS wake_claims (
+                wake_id TEXT PRIMARY KEY,
+                application_id TEXT NOT NULL REFERENCES applications(id),
+                intent_id TEXT NOT NULL REFERENCES submit_intents(intent_id),
+                claimed_at TEXT NOT NULL
+            );
             CREATE TABLE IF NOT EXISTS submission_attempts (
                 intent_id TEXT NOT NULL REFERENCES submit_intents(intent_id),
                 fence INTEGER NOT NULL,
@@ -1163,6 +1169,14 @@ class Ledger:
         if not snapshot_evaluation["claim_ready"]:
             raise ValueError("ATS snapshot is not claim-ready: application form not open")
         with self._transaction():
+            wake_id = os.environ.get("JOB_SEARCH_DAILY_WAKE_ID", "").strip()
+            if wake_id:
+                existing_wake = self.connection.execute(
+                    "SELECT 1 FROM wake_claims WHERE wake_id = ?",
+                    (wake_id,),
+                ).fetchone()
+                if existing_wake is not None:
+                    return None
             application = self.connection.execute(
                 "SELECT canonical_url FROM applications WHERE id = ?",
                 (application_id,),
@@ -1264,6 +1278,15 @@ class Ledger:
                         intent.slot,
                         claimed_at,
                     ),
+                )
+            if wake_id:
+                self.connection.execute(
+                    """
+                    INSERT INTO wake_claims
+                      (wake_id, application_id, intent_id, claimed_at)
+                    VALUES (?, ?, ?, ?)
+                    """,
+                    (wake_id, application_id, intent.intent_id, claimed_at),
                 )
             self.connection.execute(
                 """
