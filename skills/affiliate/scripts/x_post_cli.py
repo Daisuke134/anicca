@@ -170,10 +170,7 @@ def publish(args):
                 request_id = live_readback(ws, request_id, candidate, text)
                 public_url = candidate
         pending = unresolved_effect(state_root, "X_POST_PUBLISH", args.placement)
-        if public_url:
-            reconcile_effect(state_root, "X_POST_PUBLISH", args.placement, {
-                "state": "LIVE", "public_url": public_url, "content_sha256": fingerprint,
-            })
+        effect_job = None
         if not public_url:
             if pending:
                 cooldown = int(pending.get("cooldown", {}).get("seconds", 0))
@@ -182,9 +179,9 @@ def publish(args):
                     raise XPostError(
                         "unresolved X effect is in cooldown; retry will reconcile timeline"
                     )
-                job = resume_effect(state_root, "X_POST_PUBLISH", args.placement)
+                effect_job = resume_effect(state_root, "X_POST_PUBLISH", args.placement)
             else:
-                job = start_effect(
+                effect_job = start_effect(
                     state_root, "X_POST_PUBLISH", args.placement,
                     {"placement_id": args.placement, "content_sha256": fingerprint},
                     {"state": "NOT_FOUND", "handle": config["handle"], "timeline_rows": len(rows)}, 3600,
@@ -195,12 +192,12 @@ def publish(args):
                 "placement_id": args.placement,
                 "content_sha256": fingerprint,
                 "phase": "effect-possible",
-                "run_id": job["run_id"],
-                "job_id": job["job_id"],
-                "attempt": job["attempt"],
-                "action_fingerprint": job["action_fingerprint"],
-                "cooldown": job["cooldown"],
-                "last_verified_external_object": job["last_verified_external_object"],
+                "run_id": effect_job["run_id"],
+                "job_id": effect_job["job_id"],
+                "attempt": effect_job["attempt"],
+                "action_fingerprint": effect_job["action_fingerprint"],
+                "cooldown": effect_job["cooldown"],
+                "last_verified_external_object": effect_job["last_verified_external_object"],
                 "effect_started_at": datetime.now(timezone.utc).isoformat(),
             }
             atomic_write(receipt_path, fence)
@@ -240,10 +237,13 @@ def publish(args):
         "observed_at": datetime.now(timezone.utc).isoformat(),
     }
     atomic_write(receipt_path, receipt)
-    if "job" in locals():
-        verify_effect(state_root, job["job_id"], {
-            "state": "LIVE", "public_url": public_url, "content_sha256": fingerprint,
-        })
+    external = {
+        "state": "LIVE", "public_url": public_url, "content_sha256": fingerprint,
+    }
+    if effect_job:
+        verify_effect(state_root, effect_job["job_id"], external)
+    elif pending:
+        reconcile_effect(state_root, "X_POST_PUBLISH", args.placement, external)
     return receipt
 
 
