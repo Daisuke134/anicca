@@ -33,13 +33,28 @@ def _draft_publication_host(draft):
             return host
     return ""
 
+def _authenticated_draft_publication_host(draft):
+    direct = _draft_publication_host(draft)
+    if direct:
+        return direct
+    publication_id = draft.get("publication_id")
+    if not str(publication_id).isdigit():
+        return ""
+    try:
+        profile = m._request("GET", "/api/v1/publication")
+    except (OSError, ValueError, m.SubstackRepairRefused):
+        return ""
+    if not isinstance(profile, dict) or str(profile.get("id")) != str(publication_id):
+        return ""
+    return _publication_host(profile)
+
 def refresh(pair):
     state=m._state(); entry=state["pairs"][pair]; target=str(entry.get("target",""))
     if entry.get("status")!="intent" or not target.isdigit(): raise m.SubstackRepairRefused("persisted intent missing")
     old=m._request("GET",f"/api/v1/drafts/{target}")
     if not isinstance(old, dict) or str(old.get("id", "")) != target:
         raise m.SubstackRepairRefused("draft identity readback missing")
-    draft_publication=_draft_publication_host(old)
+    draft_publication=_authenticated_draft_publication_host(old)
     if not draft_publication:
         raise m.SubstackRepairRefused("draft publication identity readback missing")
     if draft_publication != m._publication():

@@ -629,6 +629,28 @@ def _substack_draft_publication(data: dict[str, Any]) -> str:
     return ""
 
 
+def _substack_authenticated_publication(
+    data: dict[str, Any], publication: str, headers: dict[str, str]
+) -> str:
+    """Resolve a draft's numeric publication_id through the authenticated host."""
+    direct = _substack_draft_publication(data)
+    if direct:
+        return direct
+    publication_id = data.get("publication_id")
+    if not str(publication_id).isdigit():
+        return ""
+    try:
+        profile = get_json(
+            f"https://{publication}/api/v1/publication",
+            headers,
+        )
+    except (OSError, ValueError, urllib.error.URLError, urllib.error.HTTPError):
+        return ""
+    if not isinstance(profile, dict) or str(profile.get("id")) != str(publication_id):
+        return ""
+    return _substack_publication_host(profile)
+
+
 def _expected_asset_descriptors(
     state: dict[str, Any], pair: str
 ) -> list[dict[str, Any]]:
@@ -1127,7 +1149,10 @@ def substack(
         f"https://{publication}/api/v1/drafts/{target}",
         {"User-Agent": "Mozilla/5.0", "Cookie": cookie},
     )
-    draft_publication = _substack_draft_publication(data)
+    request_headers = {"User-Agent": "Mozilla/5.0", "Cookie": cookie}
+    draft_publication = _substack_authenticated_publication(
+        data, publication, request_headers
+    )
     if not draft_publication:
         return {
             "status": "unknown",

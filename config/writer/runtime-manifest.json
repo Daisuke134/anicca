@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "runtime_root": "skills/writer-agent",
-  "runtime_tree_sha256": "9a964e8ed442b2113797d4719f27faa6ec87025bfd0efdee9f2bd3f00d0f08b3",
+  "runtime_tree_sha256": "ba85ec791257f9928b0edef5503ad06fda3e08352cacfbf1a87396419a458907",
   "runtime_file_count": 476,
   "hash_algorithm": "sha256(sorted relative path + NUL + file bytes + NUL; excludes state and cache directories)",
   "source": {
@@ -12,7 +12,7 @@
   },
   "active_release": {
     "path": "/Users/anicca/profitable-claude-releases/writer/e9ab21ea/writer-agent",
-    "tree_sha256": "b1fc5dd9f0f7e923e2cb8880b35424580af3ff1ff1ead9dcb4fe484b2cb7ef5c",
+    "tree_sha256": "3151d6b9ab49ecbe678c0402771b29801b972090f6fb029e8d531a696e267e01",
     "file_count": 475,
     "status": "currently-invoked-by-daily-and-resume"
   },
