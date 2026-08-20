@@ -238,6 +238,8 @@ def validate_semantic_judgement(
     official_context = payload.get("required_official_context")
     if state not in SEMANTIC_STATES or action not in SEMANTIC_ACTIONS:
         raise SemanticJudgementError("semantic_enum_invalid")
+    if state == "explicit_estimate_request" and action == "reply":
+        raise SemanticJudgementError("semantic_estimate_request_reply_conflict")
     if official_context not in SEMANTIC_OFFICIAL_CONTEXTS:
         raise SemanticJudgementError("semantic_official_context_invalid")
     all_ids = [row["message_id"] for row in rows]
