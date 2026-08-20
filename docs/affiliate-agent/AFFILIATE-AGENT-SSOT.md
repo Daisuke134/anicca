@@ -1310,8 +1310,8 @@ operation.
 This checkpoint supersedes older counts and zero-click statements in the
 historical evidence below. Read-only inspection of the installed state shows:
 
-- spec HEAD `0f29dc81f` is clean and pushed to both documentation remotes;
-  installed release `0f29dc81f` is the current immutable `skills/affiliate`
+- spec HEAD `cd7372f45` is clean and pushed to both documentation remotes;
+  installed release `cd7372f45` is the current immutable `skills/affiliate`
   runtime;
 - six expected launchd plists remain installed; three browser owners answer CDP
   `9324/9326/9327` with HTTP `200`, and three job owners retain 600-second intervals;
@@ -1398,6 +1398,14 @@ historical evidence below. Read-only inspection of the installed state shows:
   are part of the same replayable evidence chain. It is installed, but the
   post-install owner start again returned `141` and has not yet produced a
   newer `last-run`; no amount or click is inferred from this code-only change.
+- release `cd7372f45` removes the volatile placement-ledger SHA from the
+  Telegram dedupe identity while retaining it in the local rolling receipt and
+  `last-run`. The preceding wake created a second same-content rolling event
+  (`0a79a537…`) because of that volatility and its send ended
+  `SEND_TIMEOUT_UNKNOWN`; no provider message ID is claimed. The repair was
+  isolated-replayed successfully and leaves the pending row for the existing
+  owner to retry under its original UUID; no Telegram duplicate is treated as
+  money or as proof until a provider message ID is read back.
 - the existing owner retry at `2026-08-20T10:54:48Z` recovered that exact pending
   event without any publication, link, provider, or ledger mutation. The owner
   recorded message ID `26019` once for event UUID

@@ -330,3 +330,15 @@ owner start at approximately `2026-08-20T11:25Z` again returned `141` and no
 new wake was visible yet. This is evidence-chain hardening only, not a money
 event. The next owner readback must show the new placement-ledger hash before
 this slice is considered live-verified.
+
+The placement-ledger hash was initially included in the Telegram event identity,
+which made the `11:28` owner wake create same-content event UUID
+`0a79a537d618f563d5b604d7e003165ef8cb2e5116a754f70cd360fed30e806c`; its
+OpenClaw send ended `SEND_TIMEOUT_UNKNOWN` with no provider message ID. This
+was a duplicate-event risk, not a money event. Release
+`cd7372f45a7ae57a26489679d004d5e77708321d` removes only that volatile hash from
+the Telegram identity while retaining the hash in the local rolling receipt.
+An isolated replay with two different placement-ledger hashes now returns the
+same event UUID, and an already-sent UUID returns no new event. The pending row
+must be retried by the existing owner under its original UUID; no duplicate or
+Telegram receipt is claimed until message ID readback exists.
