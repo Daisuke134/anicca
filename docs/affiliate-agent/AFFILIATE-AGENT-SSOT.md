@@ -1311,16 +1311,17 @@ This checkpoint supersedes older counts and zero-click statements in the
 historical evidence below. Read-only inspection of the installed state shows:
 
 - source HEAD `0888ab4ca` is clean against its local upstream refs; installed
-  release `22e8876ad` is byte-identical for `skills/affiliate`;
+  release `088858bce` is the current immutable `skills/affiliate` runtime;
 - six expected launchd plists remain installed; three browser owners answer CDP
   `9324/9326/9327` with HTTP `200`, and three job owners retain 600-second intervals;
-- the canonical ledger contains 13 dedicated-link placements, 11 with owned
+- the canonical ledger contains 13 dedicated-link placements, all 13 with owned
   public URLs, and 28 provider-measured clicks; the latest click delta is zero;
 - PartnerStack remains authenticated and reports zero commission rows, so
   approved-or-paid net remains USD 0; actual cash cost remains unknown where no
   bill exists;
-- Telegram outbox and sent ledger both contain 88 events and the latest sent row
-  has a provider message ID, so no queued duplicate is visible;
+- Telegram outbox and sent ledger both contain 96 events and the latest sent row
+  has a provider message ID; no pending event is currently visible, and the
+  tiktok `PLACEMENT_LIVE` event is the next owner-generated receipt to flush;
 - the prior publication failure was `FileNotFoundError` for the missing allowed
   `.worktrees/affiliate-foundation-prod`, not a current `XPostError`. The
   existing `feature/affiliate-foundation-prod` branch was reconnected at that
@@ -1481,8 +1482,17 @@ historical evidence below. Read-only inspection of the installed state shows:
   unresolved effect fence without claiming `SENT`; it is installed as the
   current immutable release, but its owner retry has not yet produced a new
   Telegram message ID. The pending event is the older unattributed-click
-  report, not a commission receipt. A04's unchanged replay and Telegram
-  receipt proof remain open.
+  report, not a commission receipt. At this point A04/A05 and the next
+  placement receipt were still open.
+- the existing owner replay at `2026-08-20T10:20:05Z` returned
+  `ALREADY_LIVE`. Tiktok campaign, owned, X, and provider-link receipt hashes
+  stayed byte-identical to the pre-replay baseline; owned Git HEAD remained
+  `2250d31a6`, the provider link key remained `618843f9…`, the ledger remained
+  at 13 placements, and independent owned/X readback remained HTTP `200`. The
+  older unattributed-click Telegram event was sent as message `25997`, leaving
+  96 outbox/sent rows and no pending event at that moment. The next
+  owner-generated `PLACEMENT_LIVE` receipt is tracked under B08; no Telegram
+  receipt is treated as money.
 - the current launchd capability check at `2026-08-20T09:20:57Z` also fails
   outside the service label: `launchctl managername`, `launchctl print user/501`,
   and `launchctl print gui/501` all return `141: Reentrancy avoided`, while
@@ -1493,12 +1503,10 @@ historical evidence below. Read-only inspection of the installed state shows:
 Execution resumes in this order. Time/provider outcomes are gates, but every safe
 independent harness task continues:
 
-1. **P0 — Restore the real publication trajectory.** Restore/reconcile the
-   missing owned-publication checkout through the existing ownership contract,
-   then kick the existing launchd owner. Resume the same durable jobs for the two
-   non-public ledger rows; require owned and X public readback and unchanged-effect
-   replay. If a fresh `XPostError` is observed, reconcile its effect fingerprint
-   before any publish retry.
+1. **P0/A04/A05 — Publication recovery is complete.** Both formerly non-public
+   rows have owner-owned/X terminal receipts, independent public readback, and
+   unchanged replay with no new external effect. Continue only with the next
+   owner-generated Telegram receipt under B08; it is not money.
 2. **P1 — Close E1-H with the first real transaction.** Ingest the official
    provider transaction/settlement ID, currency, gross amount, status, observed
    time, and attribution keys; join the exact placement ID; replay twice without
@@ -1591,7 +1599,7 @@ an owned publishing identity when a provider requires them.
 
 | Surface | As-Is | To-Be |
 |---|---|---|
-| Publication | 13 dedicated placements, 11 public; current owned-publication root is missing | All unfinished jobs reconcile through the installed owner with exact owned/X readback and no duplicate effect |
+| Publication | 13 dedicated placements, all 13 public; current owned-publication root is connected | Every job reconciles through the installed owner with exact owned/X readback and no duplicate effect |
 | Money | 28 provider clicks and zero commission rows | Real transaction and settlement lifecycle joins exact placements and costs |
 | Learning | Experiments and source decisions are partial | One-variable mature cohorts determine 80/20 allocation |
 | Providers | ElevenLabs executable; HubSpot pending; others unproven | At least three independently executable, receipted providers; commerce lanes promoted only from mature evidence |
@@ -1603,7 +1611,7 @@ an owned publishing identity when a provider requires them.
 
 | # | To-Be | Required proof | Cover |
 |---:|---|---|---|
-| 1 | Same external effect is exact-once | Installed ambiguous-effect recovery plus unchanged replay | PARTIAL; close A05 |
+| 1 | Same external effect is exact-once | Installed ambiguous-effect recovery plus unchanged replay | COMPLETE for the current publication trajectory; retain as a regression gate |
 | 2 | Real money lifecycle is exact-once | Same non-empty provider row captured twice and recaptured fresh | OPEN; close B06 |
 | 3 | Net is truthful | Reversal, FX, known bill, and unknown-cost fixtures plus real row | OPEN; close C06 |
 | 4 | Repost produces attributable acquisition | Exposure → owned visit → provider click → transaction lineage | OPEN; close D07 |
@@ -1659,18 +1667,23 @@ receipt readback, SSOT state update, commit, and push to both canonical remotes.
   `PARTNERSTACK_PLACEMENT_LINK` jobs for both targets (job prefixes `a0e1bdc6b8b2`
   and `4c2f73d64cce`, action-fingerprint prefixes `ae651b22e844` and
   `e4e1e136accf`). No replacement job or external effect was created.
-- [ ] **A04** Kick the existing Affiliate launchd owner and require both jobs to
-  reach an exact terminal owned/X state or a typed durable failure. Current
-  blocker is `BLOCKED_EXTERNAL_141`: `launchctl kickstart`, `launchctl start`,
-  and `launchctl asuser ... kickstart` each returned macOS `141: Reentrancy
-  avoided`. The owner later resumed one existing trajectory and verified music
-  Git/X/Substack delivery, but tiktok still has no terminal owner/X receipt and
-  remains non-public. The owner later also failed closed on the stale legacy TTS
-  pricing marker before reaching tiktok; this is a harness repair gate, not an
-  XPostError or an external transaction. No fourth launcher, bootstrap/reload
-  mutation, parallel executor, manual publication, or success claim is permitted.
-- [ ] **A05** Replay the unchanged owner and prove placement count, public URLs,
-  Git commits, and X objects do not increase for already accepted effects.
+- [x] **A04** Kick the existing Affiliate launchd owner and require both jobs to
+  reach an exact terminal owned/X state or a typed durable failure. The music
+  trajectory was already terminal; the same tiktok job reached owned `LIVE` and
+  X `LIVE` at owner wake `2026-08-20T10:08:45Z` with owned HTTP `200`, X HTTP
+  `200`, title/disclosure/dedicated-link body checks, and X status
+  `2090380444655370568`. The earlier `141: Reentrancy avoided` launchctl result
+  did not authorize a fourth launcher or manual effect; the existing owner
+  eventually ran and produced the terminal receipts. No replacement job or
+  duplicate public effect exists.
+- [x] **A05** Replay the unchanged owner and prove placement count, public URLs,
+  Git commits, and X objects do not increase for already accepted effects. The
+  owner replay at `2026-08-20T10:20:05Z` returned `ALREADY_LIVE`; tiktok
+  campaign/owned/X receipt hashes, owned Git HEAD `2250d31a6`, PartnerStack link
+  key `618843f9…`, and 13-placement ledger count stayed unchanged. Independent
+  owned/X readback remained HTTP `200`. Telegram `PLACEMENT_LIVE` reporting is
+  tracked separately under B08; this replay gate does not count that report as
+  money.
 
 ##### B — Close the first real transaction path
 
@@ -1940,10 +1953,10 @@ The completed history remains in the evidence tables below. The following list i
 the milestone order. Section 9.0.1.1 is the canonical atomic order for the current
 cursor; later work MUST NOT jump ahead of an unmet gate.
 
-Current execution cursor: **P0, restore the installed owner’s missing owned-publication
-checkout and finish the two non-public rows; then E1-H, close the first real
-transaction path. M2.1-P is exceeded at 13 dedicated-link placements, 11 public,
-with 28 provider-measured clicks and zero commission rows.** M2.0 is closed for
+Current execution cursor: **E1-H, close the first real transaction path. P0/A04/A05
+publication recovery is complete through the existing owner, with 13 dedicated-link
+placements, 13 public, 28 provider-measured clicks, and zero commission rows.**
+M2.0 is closed for
 dedicated-link attribution: every existing revenue placement has one PartnerStack
 link and one canonical ledger row. Eleven of thirteen carry owned public URLs;
 the remaining two must pass source, composition, semantic policy, owned/X,

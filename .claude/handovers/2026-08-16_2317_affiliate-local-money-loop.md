@@ -2,15 +2,15 @@
 
 - SSOT: `docs/affiliate-agent/AFFILIATE-AGENT-SSOT.md`; resume from `Measured planning checkpoint and next TODOs`, then `Remaining autonomous money-loop work — canonical order`.
 - Development route: `/Users/anicca/anicca-project/.worktrees/affiliate-life-manager-spec`, branch `docs/affiliate-life-manager-spec`. Verified local starting HEAD/upstream refs were `0888ab4ca`, descended from required base `0a7debb58`; GitHub DNS was unavailable during the planning audit, so remote freshness and both pushes must be rechecked before execution.
-- Installed runtime: `/Users/anicca/.local/share/life-manager/affiliate/current` → release `22e8876ad561eef85827a73fa9f34dc534d7e771`; `git diff <installed-release> HEAD -- skills/affiliate` was empty. Any future `skills/affiliate` change requires immutable install and real owner replay.
+- Installed runtime: `/Users/anicca/.local/share/life-manager/affiliate/current` → release `088858bce2965f05783448b4b5f829fa053717ee`; `current` is byte-backed by that immutable release. Any future `skills/affiliate` change requires immutable install and real owner replay.
 - Repository decision: one Life Manager implementation at `skills/affiliate/`; no Affiliate-only repo, executor, ledger, `apps/api`, or Railway runtime. Private mutable state stays under `~/.local/state/life-manager/affiliate/`. OSS is the same proven Skill packaged for a clean Mac, never a rewrite.
 
 ## Current measured truth
 
 - Six Affiliate launchd plists exist: three keep-alive browser owners and source/composition/money jobs at 600-second intervals. CDP `9324`, `9326`, and `9327` each returned HTTP `200`; authenticated tabs showed ElevenLabs home, one exact Affiliate X status, and Impact home.
-- The canonical ledger contains **13 dedicated-link placements**, **11 owned public URLs**, and **28 provider-measured clicks**. Latest click delta is `0`.
+- The canonical ledger contains **13 dedicated-link placements**, **13 owned public URLs**, and **28 provider-measured clicks**. Latest click delta is `0`.
 - PartnerStack/ElevenLabs is `AUTHENTICATED`; the latest official capture has `commission_row_count=0`, `NO_LIVE_ROWS`, currency display `USD`, tax registration required, and payment-provider selection required. Pending/approved/paid/reversed are therefore zero observed rows. Approved-or-paid net is **USD 0**. Unknown real costs remain unknown.
-- Telegram outbox and sent ledger are both 88 rows. The latest sent receipt has a real provider message ID; no pending duplicate is visible.
+- Telegram outbox and sent ledger are both 96 rows after the owner retry; the latest Affiliate sent row has a real provider message ID and no pending event is currently visible. The tiktok `PLACEMENT_LIVE` event is the next owner-generated receipt to flush.
 - The first audit-shell DNS readback failed, so those earlier receipts were not
   promoted to public proof. After the owner resumed, independent DNS-resolved
   readback at `2026-08-20T09:01:49Z` returned HTTP 200 for the music owned page,
@@ -33,11 +33,12 @@ row still has no owned public URL or terminal owner/X receipt. No public effect
 was manually performed. Historical ambiguous X effects are already fenced and
 must never be republished.
 
-The next execution slice remains A04: let the existing 600-second launchd owner
-resume the same tiktok durable job, obtain owned/X public readback, and replay
-without a duplicate. If a fresh `XPostError` appears, reconcile its exact effect
-fingerprint before any publish retry. Do not create a parallel executor or
-manually publish.
+The publication slice A04/A05 is now complete. The existing owner reached the
+tiktok owned/X terminal receipts and an unchanged replay without a new commit,
+X object, link, or placement. The next execution slice is B01: capture the first
+non-empty official provider transaction artifact, retaining the exact provider
+transaction/settlement identifiers and truthful empty/unknown states. Do not
+create a parallel executor or manually publish.
 
 ## Ordered route to completion
 
@@ -203,7 +204,18 @@ preserves the event in the outbox and the unresolved effect fence without
 claiming `SENT`; it is installed as the current immutable release, but its
 owner retry has not yet produced a new Telegram message ID. The pending event
 is the older unattributed-click report, not a commission receipt. A04's
-unchanged replay and Telegram receipt proof remain open.
+unchanged replay and Telegram receipt proof remain open at this point in the
+timeline.
+
+The existing owner replay at `2026-08-20T10:20:05Z` then returned
+`ALREADY_LIVE`. Tiktok campaign, owned, X, and provider-link receipt hashes
+stayed byte-identical to the pre-replay baseline; owned Git HEAD remained
+`2250d31a6`, the provider link key remained `618843f9…`, the ledger remained at
+13 placements, and independent owned/X readback remained HTTP `200`. The
+older unattributed-click Telegram event was sent as message `25997`, leaving
+the outbox and sent ledger with 96 rows and no pending event at that moment.
+The next owner-generated `PLACEMENT_LIVE` receipt is tracked under B08; no
+Telegram receipt is treated as money.
 
 This handover records no Codex manual publication, provider write, or ledger
 mutation. The installed owner performed the verified music delivery described
