@@ -1,8 +1,8 @@
 # Affiliate local money loop handover
 
 - SSOT: `docs/affiliate-agent/AFFILIATE-AGENT-SSOT.md`; resume from `Measured planning checkpoint and next TODOs`, then `Remaining autonomous money-loop work — canonical order`.
-- Development route: `/Users/anicca/anicca-project/.worktrees/affiliate-life-manager-spec`, branch `docs/affiliate-life-manager-spec`. The branch remains descended from required base `0a7debb58`; latest source/runtime commit is `5c2284aa4`.
-- Installed runtime: `/Users/anicca/.local/share/life-manager/affiliate/current` → release `5c2284aa4484b619120fa9718a6f2ddd73a21bcf`; `current` is byte-backed by that immutable release. The existing owner naturally woke at `2026-08-20T16:03:43Z` through this `current` path, preserved 14 placements, observed the same 46 Repost post actions with `changed=false`, and kept revenue at cooldown with no money. The earlier changed observation sent Telegram `26355`; outbox/sent remain 106/106 with no pending event, and Codex milestone receipt `26396` records the repair. The source owner created the dedicated subtitle experiment; composition quarantined the malformed Google attachment at `16:24:22Z`, produced sealed subtitle/voice handoffs, and passed voice-changer policy at `17:15:24Z`. A source-set oscillation caused subtitle's `17:05:16Z` runner call to fail closed as `RUNNER_REJECTED / budget_blocked`; the source owner restored stable `5da2…` at `17:10:35Z`. Subtitle handoff/policy recovery, dedicated link, publication, provider transaction, and money remain open. Any future `skills/affiliate` change requires immutable install and real owner replay.
+- Development route: `/Users/anicca/anicca-project/.worktrees/affiliate-life-manager-spec`, branch `docs/affiliate-life-manager-spec`. The branch remains descended from required base `0a7debb58`; latest source/runtime commit is `02e3f5da7`.
+- Installed runtime: `/Users/anicca/.local/share/life-manager/affiliate/current` → release `02e3f5da789a23b893111f1ec5899fdcc47443e4`; `current` is byte-backed by that immutable release. The existing owner naturally woke at `2026-08-20T17:39:57Z` through this `current` path, preserved 15 Affiliate placements, observed 48 Repost post actions with `changed=false`, and kept revenue at cooldown with no money. The latest owner report is Telegram `26477`; the earlier changed observation is `26355`, and Codex milestone receipts `26396` and `26459` record the repairs. The source owner created the dedicated subtitle experiment; composition quarantined the malformed Google attachment, produced sealed subtitle/voice handoffs, and passed voice-changer and voice-isolator policy. A source-set oscillation caused subtitle's bounded `RUNNER_REJECTED / budget_blocked` receipt; at `2026-08-20T17:35:34Z` the existing owner reused the exact sealed `5da2…` evidence and rebuilt the subtitle handoff with no model rerun or public effect. Subtitle policy/public readback, dedicated-link publication, provider transaction, and money remain open. Any future `skills/affiliate` change requires immutable install and real owner replay.
 - A later existing-owner `launchctl kickstart` attempt at `2026-08-20T15:36:27Z` returned `141: Reentrancy avoided`; `last-run.json` stayed at the prior wake and no placement, provider, Telegram, or ledger mutation occurred. This is not a new owner proof and does not authorize a parallel executor; retain the natural owner receipt above as the runtime evidence.
 - Release `90b33832ce293865a20c07e64fc5d9be8131b214` also repairs composition
   starvation after source refresh: unreceipted inboxes now precede receipt-backed
@@ -16,17 +16,16 @@
   source-set SHA is `5da2a6a4beda152c9da4f60d9f4c4b5ff5c6399b18175b95c8a9601db7ec78bf`,
   result SHA is `ecb967667fd0c5e8b8fdbf77f6a59a25b348e2b25f3738affee27bb936f6225b`,
   and handoff SHA is `7c83e48921b98ee6b9c2e5181162cd1c6b406b4b656c0b96e1a5d6850a132c3e`.
-- Release `5c2284aa4484b619120fa9718a6f2ddd73a21bcf` adds two live-derived
-  guards: only a receipt whose source-set matches the current inbox receives
-  policy priority, and Crawl4AI's exact carousel UI line `Previous slideNext
-  slide` is removed before hashing. The source owner completed at
+- Release `02e3f5da789a23b893111f1ec5899fdcc47443e4` adds sealed-run recovery to
+  the two live-derived guards: only a receipt whose source-set matches the
+  current inbox receives policy priority, and a sealed `RUNNER_REJECTED` run is
+  reusable when the current bundle returns. The source owner completed at
   `2026-08-20T17:10:35Z` with the stable `5da2…` set after the intervening
-  `RUNNER_REJECTED / budget_blocked` receipt. The next composition wake must
-  reuse the sealed result and rebuild the subtitle handoff before policy; no
-  publication, provider transaction, or money was created or inferred.
-  No policy receipt, dedicated link, publication, provider transaction, or money
-  exists for it; the valid voice-isolator experiment is the next unreceipted
-  owner item.
+  `RUNNER_REJECTED / budget_blocked` receipt. The existing composition owner at
+  `2026-08-20T17:35:34Z` reused that sealed result and rebuilt the subtitle
+  handoff without another model pass or public effect. No policy receipt,
+  dedicated link, publication, provider transaction, or money exists for it;
+  the next owner policy wake is the next bounded item.
 - The next bounded P3 bridge is source-implemented but not yet installed: the
   Affiliate owner will read the existing Repost ledger only through
   `AFFILIATE_REPOST_STATE_DIR`, hash and count valid `posted.jsonl` actions, and
@@ -55,9 +54,9 @@
 ## Current measured truth
 
 - Six Affiliate launchd plists exist: three keep-alive browser owners and source/composition/money jobs at 600-second intervals. CDP `9324`, `9326`, and `9327` each returned HTTP `200`; authenticated tabs showed ElevenLabs home, one exact Affiliate X status, and Impact home.
-- The canonical ledger contains **14 dedicated-link placements**, **14 owned public URLs**, and **32 provider-link clicks**. The Instagram row is now `LIVE` through the existing owner’s owned-publication and X handoff; Telegram message `26282` is the owner receipt. The latest aggregate provider metric is 41 clicks with `+40` explicitly unattributed. Neither is money.
+- The canonical ledger contains **15 dedicated-link placements**, **15 matching Affiliate X/public URL placements**, and **32 provider-link clicks across 10 placements**. The latest aggregate provider metric is 41 clicks with `+40` explicitly unattributed. Repost has 48 valid post actions and 48 unjoined actions. None is money.
 - PartnerStack/ElevenLabs is `AUTHENTICATED`; the latest official capture has `commission_row_count=0`, `NO_LIVE_ROWS`, currency display `USD`, tax registration required, and payment-provider selection required. Pending/approved/paid/reversed are therefore zero observed rows. Approved-or-paid net is **USD 0**. Unknown real costs remain unknown.
-- Telegram outbox and sent ledger both have 103 rows with no pending event. The latest Impact rejection was sent by the existing owner as provider message `26218`; the prior acquisition decision was `26171`.
+- Telegram outbox and sent ledger both have 109 rows with no pending event. The latest owner report is provider message `26477`; the latest Impact rejection remains `26218`, and the prior acquisition decision is `26171`.
 - The first audit-shell DNS readback failed, so those earlier receipts were not
   promoted to public proof. After the owner resumed, independent DNS-resolved
   readback at `2026-08-20T09:01:49Z` returned HTTP 200 for the music owned page,
