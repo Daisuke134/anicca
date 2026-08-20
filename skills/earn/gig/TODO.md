@@ -284,7 +284,9 @@ definition and A0 acceptance is closed.
   `price_basis: buyer_explicit | planner_selected`; only `buyer_explicit` bypasses the competitive
   budget normalization, while official form bounds still clamp invalid values. Direct function
   readback proves the same ¥15,000 becomes ¥15,000 for `buyer_explicit` and ¥27,000 for the ordinary
-  selected-price path. Natural re-plan, form fill and official readback for `5217126` remain.
+  selected-price path. The first natural planner call on `af58c94f1` omitted the new field and was
+  rejected rather than submitted; `6c5159527` now states the exact seven-field JSON shape in the
+  prompt. Natural re-plan, form fill and official readback for `5217126` remain.
 - [ ] Prove the deployed failure report and form recovery on `5217126`. Its structured decision and
   proposal were present; execution failed with `cdp_Page.navigate_timeout_after_30s` at the browser
   boundary. The legacy `05b75fc29` formatter falsely reported “structured decision missing.” The
