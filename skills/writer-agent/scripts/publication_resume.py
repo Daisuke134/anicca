@@ -2632,7 +2632,13 @@ class PublicationStore:
         return True
 
     def _record_live_locked(
-        self, state: dict[str, Any], pair: str, live_url: str, evidence: dict[str, Any]
+        self,
+        state: dict[str, Any],
+        pair: str,
+        live_url: str,
+        evidence: dict[str, Any],
+        *,
+        reread_remote_assets: bool = True,
     ) -> dict[str, Any]:
         self._assert_pair_mutation_allowed(state, pair)
         if self._current_ledger_status_locked(state) == "complete":
@@ -2643,7 +2649,13 @@ class PublicationStore:
             raise InvariantError("safety is not ALLOW or immutable drafts changed")
         if not valid_http_url(live_url) or evidence.get("verified") is not True:
             raise InvariantError("remote verified live URL is required")
-        validate_receipt_evidence(state, pair, live_url, evidence)
+        validate_receipt_evidence(
+            state,
+            pair,
+            live_url,
+            evidence,
+            reread_remote_assets=reread_remote_assets,
+        )
         entry = state["pairs"][pair]
         protected = entry.get("existing_publication")
         if isinstance(protected, dict):
