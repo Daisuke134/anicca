@@ -561,9 +561,11 @@ if [ "$PUBLICATION_CONTRACT" = "active-four" ] && [ -n "$MISSING_DORMANT_SKIP_PA
   done <<< "$MISSING_DORMANT_SKIP_PAIRS"
 fi
 
-# The self-owned paid publication is an adjunct to active-four. Delivery/readback
-# runs under its own same-run lock in the background: a dirty landing checkout,
-# deploy propagation, or one failed readback must never delay the four active pairs.
+# The self-owned paid publication is an adjunct to active-four. It runs under
+# its own same-run lock but stays synchronous while the parent owner fence is
+# held; a background child could outlive this shell and publish after the fence
+# was released. Its failure is recorded and does not change the active-four
+# recovery scope.
 if [ -n "${ARTICLE_SELF_OWNED_LANDING_ROOT:-}" ] \
   && [ -n "${ARTICLE_SELF_OWNED_REMOTE:-}" ] \
   && [ -n "${ARTICLE_SELF_OWNED_BRANCH:-}" ]; then
@@ -580,7 +582,8 @@ if [ -n "${ARTICLE_SELF_OWNED_LANDING_ROOT:-}" ] \
       --remote "$ARTICLE_SELF_OWNED_REMOTE" \
       --branch "$ARTICLE_SELF_OWNED_BRANCH" \
       --base-url "${ARTICLE_SELF_OWNED_BASE_URL:-https://aniccaai.com}"
-  ) >>"$LOG" 2>&1 </dev/null &
+  ) >>"$LOG" 2>&1 </dev/null || \
+    echo "article-resume: self-owned worker remains pending" >>"$LOG"
 fi
 
 # A recognized note ambiguity is a deterministic state transition, not a
