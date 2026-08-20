@@ -498,29 +498,6 @@ python3 "$ARTICLE_ROOT/scripts/writer_unavailable_incident_bridge.py" \
   >>"$LOG" 2>&1 || \
   echo "article-resume: unavailable incident bridge failed closed" >>"$LOG"
 
-# SSOT Order 4. Claim at most one durable incident per tick and route it: a
-# known failure class to its deterministic runbook decision, an unknown one to
-# a Terra investigation. Blocking revenue-set work outranks non-blocking
-# distribution work, the claim carries a lease so two ticks cannot work the
-# same incident, and no runbook command or publisher effect runs here.
-#
-# This runs inside the held publication lock, so it must never buy lock time
-# with a model call: PRIORITY_PUBLICATION_READY is this worker's own backlog
-# signal, and while it is 1 the dispatcher completes the deterministic route
-# and its receipts but defers Terra to a tick that owes no publication work.
-# Order 4 repairs nothing this tick, so deferring the model costs no recovery.
-# Fail closed: repair routing must never delay or break the publication work
-# below.
-python3 "$ARTICLE_ROOT/scripts/writer_repair_dispatch.py" \
-  --state-root "$STATE_DIR" \
-  --scripts "$ARTICLE_ROOT/scripts" \
-  --registry "$ARTICLE_ROOT/config/repair-runbooks.json" \
-  --model-runner "$MODEL_RUNNER" \
-  --publication-backlog "$PRIORITY_PUBLICATION_READY" \
-  --observed-at "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" \
-  >>"$LOG" 2>&1 || \
-  echo "article-resume: repair routing failed closed" >>"$LOG"
-
 PLAN_ARGS=(--state-root "$STATE_DIR")
 [ -n "${ARTICLE_NOW:-}" ] && PLAN_ARGS+=(--now "$ARTICLE_NOW")
 PLAN="$(python3 "$PLANNER" "${PLAN_ARGS[@]}" 2>>"$LOG")" || {
@@ -529,8 +506,24 @@ PLAN="$(python3 "$PLANNER" "${PLAN_ARGS[@]}" 2>>"$LOG")" || {
 }
 [ "$(printf '%s' "$PLAN" | jq -r '.status')" = "READY" ] || {
   echo "article-resume: $(printf '%s' "$PLAN" | jq -c '.')" >>"$LOG"
+  # Coconala parity: the publication queue is the foreground consumer. Only
+  # an empty publication queue may hand this tick to self-heal. Release the
+  # publication lock before the bounded model step so repair investigation can
+  # never hold a publisher's critical section.
+  trap - EXIT
+  release_publication_lock || exit 1
+  python3 "$ARTICLE_ROOT/scripts/writer_repair_dispatch.py" \
+    --state-root "$STATE_DIR" \
+    --scripts "$ARTICLE_ROOT/scripts" \
+    --registry "$ARTICLE_ROOT/config/repair-runbooks.json" \
+    --model-runner "$MODEL_RUNNER" \
+    --publication-backlog "0" \
+    --observed-at "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" \
+    >>"$LOG" 2>&1 || \
+    echo "article-resume: repair routing failed closed" >>"$LOG"
   exit 0
 }
+echo "article-resume: publication queue foreground; self-heal deferred run=$(printf '%s' "$PLAN" | jq -r '.run_id // empty')" >>"$LOG"
 INITIALIZATION_COUNT="$(printf '%s' "$PLAN" | jq '.initialization_pairs | length')"
 ELIGIBLE_COUNT="$(printf '%s' "$PLAN" | jq '.eligible_pairs | length')"
 FIRST_INITIALIZATION="$(printf '%s' "$PLAN" | jq -r '.initialization_pairs[0] // empty')"

@@ -780,6 +780,7 @@ def test_resume_loop_dispatches_repair_routing_after_the_incident_bridge(
             "ARTICLE_RESUME_LOG": str(tmp_path / "resume.log"),
             "ARTICLE_MODEL_RUNNER": str(runtime / "model-runner.sh"),
             "ARTICLE_MODEL_SUPPORT": str(runtime / "model-runner-support.py"),
+            "ARTICLE_OWNER_FENCE_ACTIVE": "1",
             "TELEGRAM_BOT_TOKEN": "",
             "TELEGRAM_CHAT_ID": "",
         },
@@ -798,78 +799,20 @@ def test_resume_loop_dispatches_repair_routing_after_the_incident_bridge(
     assert "--publication-backlog 0" in lines[1]
 
 
-def test_resume_loop_tells_the_dispatcher_when_publication_work_is_pending(
-    tmp_path: Path,
-) -> None:
-    """The loop must hand its own PRIORITY_PUBLICATION_READY signal to the dispatcher.
-
-    Measured on the live host: every five-minute tick reaches
-    `deterministic=note/ja` with a pending revenue pair, so publication backlog
-    is the steady state. If the loop does not pass that signal, a Terra call
-    runs in front of the revenue publish on every such tick.
-    """
-    fake_root = tmp_path / "writer-agent"
-    state_dir = tmp_path / "state"
-    scripts = fake_root / "scripts"
-    runtime = fake_root / "runtime"
-    (state_dir / "runs").mkdir(parents=True)
-    scripts.mkdir(parents=True)
-    (scripts / "_shared").mkdir()
-    runtime.mkdir()
-    shutil.copy(ROOT / "scripts" / "article-resume-pending.sh", scripts)
-    shutil.copy(ROOT / "scripts" / "_shared" / "notifier.sh", scripts / "_shared")
-    (scripts / "article_daily_start_control.py").write_text(
-        'print(\'{"action":"skip-pending-worker"}\')\n'
+def test_resume_loop_plans_publication_before_self_heal() -> None:
+    """The Coconala-shaped foreground queue must precede repair routing."""
+    worker = (ROOT / "scripts" / "article-resume-pending.sh").read_text(
+        encoding="utf-8"
     )
-    for name in ("quality_feedback_recovery.py", "quality_repair_control.py"):
-        (scripts / name).write_text('print(\'{"status":"NONE"}\')\n')
-    (scripts / "recover-known-unavailable.py").write_text("raise SystemExit(0)\n")
-    calls = tmp_path / "calls"
-    (scripts / "writer_unavailable_incident_bridge.py").write_text(
-        f"open({str(calls)!r}, 'a').write('bridge\\n')\n"
+    planner = worker.index('PLAN="$(python3 "$PLANNER"')
+    dispatcher = worker.index(
+        'python3 "$ARTICLE_ROOT/scripts/writer_repair_dispatch.py"'
     )
-    (scripts / "writer_repair_dispatch.py").write_text(
-        "import sys\n"
-        f"open({str(calls)!r}, 'a').write('dispatch ' + ' '.join(sys.argv[1:]) + '\\n')\n"
-    )
-    # The priority probe (before the schedule decision) sees a pending revenue
-    # pair; the post-dispatch planner call then stops the tick so the test
-    # isolates exactly the dispatch branch.
-    counter = tmp_path / "planner-calls"
-    (scripts / "article_pending.py").write_text(
-        "import json, pathlib\n"
-        f"c = pathlib.Path({str(counter)!r})\n"
-        "n = int(c.read_text()) if c.is_file() else 0\n"
-        "c.write_text(str(n + 1))\n"
-        "print(json.dumps({'status':'READY','eligible_pairs':['note/ja'],"
-        "'initialization_pairs':[],'recovery_pairs':[]}) if n == 0 else"
-        " json.dumps({'status':'BLOCKED','reason':'test'}))\n"
-    )
-    (runtime / "model-runner.sh").write_text("#!/usr/bin/env bash\nexit 91\n")
-    (runtime / "model-runner.sh").chmod(0o755)
-    (runtime / "model-runner-support.py").write_text("raise SystemExit(0)\n")
-
-    result = subprocess.run(
-        ["bash", str(scripts / "article-resume-pending.sh")],
-        env={
-            **os.environ,
-            "ARTICLE_ROOT": str(fake_root),
-            "ARTICLE_STATE_DIR": str(state_dir),
-            "ARTICLE_LOCAL_DATE": "2026-08-07",
-            "ARTICLE_RESUME_LOG": str(tmp_path / "resume.log"),
-            "ARTICLE_MODEL_RUNNER": str(runtime / "model-runner.sh"),
-            "ARTICLE_MODEL_SUPPORT": str(runtime / "model-runner-support.py"),
-            "TELEGRAM_BOT_TOKEN": "",
-            "TELEGRAM_CHAT_ID": "",
-        },
-        capture_output=True, text=True, check=False,
-    )
-
-    assert result.returncode == 0, result.stderr
-    lines = calls.read_text().splitlines()
-    assert lines[0] == "bridge"
-    assert lines[1].startswith("dispatch ")
-    assert "--publication-backlog 1" in lines[1]
+    release = worker.rindex("release_publication_lock || exit 1", planner, dispatcher)
+    assert planner < dispatcher
+    assert release < dispatcher
+    assert '--publication-backlog "0"' in worker[dispatcher:]
+    assert "publication queue foreground; self-heal deferred" in worker
 
 
 def test_resume_loop_older_backlog_does_not_suppress_new_daily_schedule(

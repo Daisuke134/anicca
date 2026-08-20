@@ -13,6 +13,12 @@
   native live receiptを同一runで確認済み。URLは `https://note.com/anicca123/n/ncbdb8a56bb20`、
   `https://aniccabuddha.substack.com/p/1`、`https://x.com/diceai0/article/2090526616854405173`。
   これは公開receiptであり、売上・入金receiptではない。
+- Coconalaの公開owner順序をWriterにも固定した。`article-resume-pending.sh`は、まず
+  `article_pending.py`で公開キューを確定し、`READY`なら公開分岐をforegroundとしてself-heal
+  dispatchを次のtickへ延期する。`WAIT`/`BLOCKED`のときだけ公開lockを解放してから
+  `writer_repair_dispatch.py --publication-backlog 0`を実行する。これによりTerraの公式文書調査が
+  公開lockを保持せず、公開待ちの前にモデルが走る順序逆転を防ぐ。shell構文とCoconala parityの
+  順序ガードを含む16 focused tests、既存Note circuit/media wiring、planner、failure circuitをPASSした。
 - Xの画像挿入失敗は、canonical publisherが外部macOS clipboard helperを直接呼んでいたことが原因だった。
   その局所副作用だけをページ所有Clipboardへ差し替え、実ブラウザでHTML/PNG書込み、native readback、
   同一run state更新を確認した。fresh adversarial reviewはCritical/ImportantなしでSHIP。
