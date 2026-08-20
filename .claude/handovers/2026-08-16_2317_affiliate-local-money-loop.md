@@ -32,11 +32,16 @@ publish retry. Do not create a parallel executor or manually publish.
 1. P0: restore the real publication trajectory and close the two non-public rows.
 2. E1-H/P1: ingest the first official provider transaction/settlement ID, currency, status and attribution; join one exact placement; replay safely; preserve pending/approved/paid/reversed/reversal lineage; send one natural Telegram receipt.
 3. P2: join known real billed costs, preserve unknown, and build the canonical rolling-30-day approved-or-paid net view.
-4. P3: improve one measurable acquisition variable from first-party placement exposure/click evidence; add a channel only with exact publication, disclosure, denominator, click, and recovery receipts.
-5. P4: admit second and third executable English providers/offers from official terms through transaction/payout readback; never retry rejected applications unchanged.
+4. P3: turn the existing `@selawmqt` Repost loop into the bounded English Affiliate acquisition arm under one X effect owner; join every credited action through X exposure → owned article → provider click → transaction.
+5. P4: execute the admission-dependent three-provider target: HubSpot USD 4,680 gross, Semrush USD 4,200, and ElevenLabs USD 3,621.86 per rolling 30 days. This USD 12,501.86 gross target closes USD 10,000 net only when official approved/paid rows minus observed reversals and known real billed costs prove it. Unapproved providers contribute zero.
 6. P5: allocate 80% only from mature approved-net evidence and 20% exploration; turn newly observed failures into bounded same-job `SELF_HEALED` trajectories.
 7. P6: continue unattended until the ledger proves at least **USD 10,000 approved-or-paid net in one rolling 30-day period**, after reversals and known real billed costs. Pending, estimates, clicks, screenshots, tests, mocks, dry runs, model output, and unknown costs never count.
 8. P7: only after local proof, ship the same `skills/affiliate/` as a secret-free one-command macOS install with verifier, update/rollback/uninstall, redacted fixtures, and one scratch-Mac unattended reproduction. Public language never guarantees that users can “print money.”
 
 This handover records a planning-only turn. No harness repair, owner kickstart,
 manual publication, provider write, or ledger mutation was performed.
+
+Fresh `@selawmqt:9326` read-only revalidation of X's canonical Article route
+returned `Page not found` with zero editor controls. This is a current capability
+observation, not a permanent claim; Writer's working X Article belongs to the
+separate `@diceai0` identity and is not proof for the Affiliate account.

@@ -141,7 +141,7 @@ deployment adapter for these same contracts, not a second implementation.
 | Postiz | A Japanese integration exists, but the product decision excludes Postiz | Do not read, connect, or use it in the Agent; this is not a blocker |
 | X identity | Dedicated Affiliate CDP `9326` and authenticated `whoami` prove `@selawmqt`: 128 posts, 27 following, 0 followers. The semantic profile command changed the public name to `sela | AI Tools`, added an English practical-AI bio with affiliate-link disclosure, set `aniccaai.com`, and a second apply returned `changed=false + matches_config=true`. X rejected legacy `@aniccaen` as inactive | Preserve mixed historical posts, keep all future posts English-only, and never use Japanese `@aniccaxxx` or shared daily-driver `@diceai0`; the first post still requires a duplicate-post fence and public readback |
 | X publication | The first Affiliate X placement is `LIVE` at `https://x.com/selawmqt/status/2088728168534597644`. The canonical skill verifies `@selawmqt:9326`, requires disclosure plus one `LIVE` owned article URL, writes an effect-possible fence before the click, resolves X's `t.co` anchor through HTTP HEAD to the exact owned URL, and requires status-page readback before `LIVE`. X's April 2026 rules warn that scripted website automation may permanently suspend an account | The initial real publish created one new timeline row but failed closed because X replaced the canonical URL with a multiline shortened display, so raw input-text equality could not pass. Read-only inspection found exactly one disclosed new post and its `t.co` anchor resolved to the exact article URL. Release `90025a3551d75aa1110af63ead8dbd9d93eedc77` then reconciled the existing effect without clicking Publish again and wrote `X_POST_PUBLIC_READBACK`. Keep action caps and immediate account quarantine |
-| X Article EN | Writer Agent has a real public X Article and a production adapter based on `wshuyi/x-article-publisher-skill`, but Affiliate `@selawmqt:9326` exposes no Article navigation. Direct read-only access to the same canonical `/compose/articles` route used by Writer returned `Page not found`, with zero textarea/contenteditable controls | `CHANNEL_UNAVAILABLE`; do not parameterize or copy the Writer adapter until this account exposes the editor. Continue owned-site English articles plus normal disclosed X posts, which are both live-proven |
+| X Article EN | Writer Agent has a real public X Article on the separate `@diceai0` identity and a production adapter based on `wshuyi/x-article-publisher-skill`. Fresh authenticated read-only revalidation on Affiliate `@selawmqt:9326` reached the canonical `/compose/articles` route but returned `Page not found`, with zero textarea/contenteditable controls | `CHANNEL_CURRENTLY_UNAVAILABLE`, not a permanent product claim. Recheck capability after an account/entitlement change. Until then, owned English articles are the conversion assets and ordinary disclosed X posts/replies are the acquisition surface; another account's capability is not proof for `@selawmqt` |
 | English source scout | The canonical `sources capture --plan elevenlabs-en` command live-captured six immutable local artifacts: five ElevenLabs official web pages through CRWL and the official `elevenlabs/elevenlabs-python` repository through `gh` | Each receipt stores adapter, locator, locale, evidence class, license, body SHA-256, parser version, observed time, and expiry. The first live run returned `captured=6 + new=6`; after allowlisting stable GitHub fields, an immediate repeat returned `captured=6 + new=0`. Exact hashes are in Git-external `source-captures.jsonl`. CRWL `-q` failed because no LLM provider is configured, so the admitted route deliberately uses deterministic `md-fit` without an LLM. Authenticated X research readback is still missing |
 | ElevenAgents next-placement evidence | PartnerStack's authenticated Resources page lists pinned ElevenAPI, ElevenAgents, and ElevenCreative product guides with SEO/swipe copy. Rather than building a proprietary PDF downloader, the Agent selected ElevenAgents as the next buyer-intent product. Installed release `6f377563c` then captured its public official overview, quickstart, integration overview, and cost help page through CRWL as four immutable artifacts | Versioned plan `elevenagents-en` captured `4/4` sources with four new SHA-256-bound receipts. The 30-day product-doc artifacts and seven-day price artifact support a practical customer-support-agent evaluation article while keeping partner Resources as a selection signal, not copied article text |
 | First English content artifact | The versioned `elevenlabs-en-v1` template binds every price, rights, limitation, and case-study claim to five fresh official source captures. `affiliate content build` requires those support markers and the private executable link, then writes a mode-0600 Git-external artifact without printing its body or link. `content policy` verifies the artifact hash, exact fresh source hashes, disclosure before CTA, one owned HTTPS tracking link, and forbidden guarantees; `owned publish` independently requires the matching `PASS` receipt | Live build produced slug `elevenlabs-plans-for-solo-creators` and content SHA-256 `03089e860af9ed1e35a4656ebc045dd28d00dacc243739fe10b4f46f8e4822e9`. The first real policy attempt failed closed because a broad phrase matcher misclassified an explicit denial of guaranteed earnings. Narrowing the forbidden-claim set to affirmative guarantee phrases made the same artifact pass all five checks. Production commit `a333cf55044dbddf17f906150a173e1ee000aea1` passed Actions run `31906958939`; the installed publisher and CRWL independently read back the title, disclosure, buying checklist, evidence-refresh marker, and exact tracking link. The durable receipt is `LIVE` with rendered SHA-256 `3503c6bede5e059128be49acc90236b22b8014f46b88ca568adc527c09d64b8a`. No provider click or revenue is inferred |
@@ -1079,6 +1079,65 @@ monthly approved conversions are `ceil(10000 / N)`; required qualified visits ar
 computed only from the cohort's observed conversion rate. Before those receipts,
 the inputs remain `unknown`.
 
+### 9.0.0 Provider-specific flight plan to the USD 10,000 net gate
+
+The initial portfolio is Affiliate plus the existing `@selawmqt` Repost audience
+loop only. It does not depend on Writer, Gig, App, ebook, X platform payouts, or
+X Articles. Owned comparison/decision articles convert demand; Repost replies,
+quotes, and ordinary posts acquire an English buyer audience and route qualified
+visitors to those articles. X impressions and followers are never commission.
+
+Official current economics establish this admission-dependent target portfolio:
+
+| Provider | Current admission | Official economics used | Rolling-30-day approved gross target | Exact target cohort |
+|---|---|---|---:|---|
+| HubSpot Affiliate | `APPLICATION_PENDING`; contributes USD 0 until approved | 30% recurring for up to one year; Customer Platform Professional starts at USD 1,300/month | USD 4,680.00 | 12 active attributable Professional customers × USD 1,300 × 30% |
+| Semrush Affiliate | Not yet executable; contributes USD 0 until applied, approved, linked, and read back | Basic Semrush One commission USD 300 per eligible sale; higher tiers are not assumed | USD 4,200.00 | 14 eligible Semrush One sales × USD 300 |
+| ElevenLabs | `ACTIVE_LINK_VERIFIED + ACCEPTED + EARNING_ENABLED` | 22% of Starter/Creator/Pro/Scale payments and 11% of Business payments for the first 12 months; enterprise excluded | USD 3,621.86 | 15 Business + 20 Scale + 30 Pro + 4 Creator active attributable subscribers at current monthly list prices |
+| **Portfolio** | All three must be executable | No provider above 40% of target gross | **USD 12,501.86** | HubSpot 37.4%, Semrush 33.6%, ElevenLabs 29.0% |
+
+ElevenLabs arithmetic is `15×990×11% + 20×299×22% + 30×99×22% +
+4×22×22% = USD 3,621.86`. The portfolio deliberately targets USD 12,501.86
+approved gross, leaving USD 2,501.86 for observed reversals and known real billed
+cost before the USD 10,000 net gate. A3 closes only if the canonical ledger's
+actual rolling window still reports at least USD 10,000 approved-or-paid net.
+
+Sources and mutable terms:
+
+- ElevenLabs official affiliate terms: <https://elevenlabs.io/affiliates-terms>
+- ElevenLabs official pricing: <https://elevenlabs.io/pricing/api>
+- HubSpot official affiliate program: <https://www.hubspot.com/partners/affiliates>
+- HubSpot official Customer Platform pricing: <https://www.hubspot.com/pricing/suite>
+- Semrush official affiliate program: <https://www.semrush.com/lp/affiliate-program/en/>
+
+These numbers are a target equation, not a forecast or receivable. Terms are
+recaptured before every admission and material allocation. If HubSpot or Semrush
+rejects the application or changes terms, the Agent substitutes another approved
+provider only after official economics, allowed channels, executable link,
+transaction schema, and payout readback exist, then recomputes the portfolio with
+the same 40% concentration cap. Kit remains excluded because its real application
+was rejected.
+
+The Repost contribution is bounded and measurable:
+
+1. `@selawmqt` stays English-only and targets creators, developers, agencies, and
+   SMB operators who can buy the three admitted SaaS products.
+2. One X effect owner arbitrates Affiliate campaign posts and Repost engagement;
+   independent loops submit proposals but never concurrently drive the account.
+3. Initial cadence is at most four high-value buyer-conversation replies/quotes
+   and one original evidence post per day, plus at most three disclosed article
+   distribution posts per week. Direct affiliate links stay on owned articles.
+4. Every action carries `campaign_id`, provider/offer hypothesis, source post,
+   public readback, 24/48-hour exposure, owned-article visit identity, provider
+   click, and eventual transaction join. No join means no revenue credit.
+5. Repost allocation increases only after it produces more qualified article
+   visits and ultimately approved net per 1,000 X exposures than the control.
+
+The current Repost implementation is not yet this acquisition arm: it shares
+`@selawmqt`, runs hourly, has reply allocation set to zero, mixes Japanese copy,
+optimizes early views, and has no Affiliate transaction lineage. The first
+integration slice changes ownership and measurement before increasing volume.
+
 ### 9.0.1 Current truth and milestone queue
 
 This is the exact execution order from the current live state. Each production
@@ -1167,14 +1226,17 @@ independent harness task continues:
    unknown; compute FX with timestamped official rates; expose a canonical rolling
    30-day view that counts only approved-or-paid rows less reversals and known real
    cost, and refuses A3 when any material cost needed for net is unknown.
-4. **P3 — Improve measurable acquisition, not raw volume.** Use the existing 13
-   placements and provider click/exposure denominators for the next one-variable
-   experiment. Add a native channel only after publish, disclosure, exposure,
-   click, recovery, and placement join are independently measurable.
-5. **P4 — Add executable providers and diversify.** Continue current providers
-   while the Agent admits a second and third English offer through official terms,
-   application, auth, dedicated-link, report, transaction, reversal, and payout
-   readback. Never resubmit a rejected application unchanged.
+4. **P3 — Convert Repost into measurable Affiliate acquisition, not raw volume.**
+   Give `@selawmqt` one X effect owner, enforce English-only identity and bounded
+   cadence, and join each Repost/ordinary-post exposure through owned article,
+   provider click, and transaction. Use the existing 13 placements for the next
+   one-variable experiment; no transaction join means no revenue credit.
+5. **P4 — Execute the three-provider flight plan.** Continue ElevenLabs while the
+   Agent closes HubSpot's pending application and admits Semrush through official
+   terms, application, auth, dedicated-link, report, transaction, reversal, and
+   payout readback. Never count an unapproved provider or resubmit a rejected
+   application unchanged; recompute the target portfolio after any rejection or
+   terms change.
 6. **P5 — Close allocation and self-healing.** Allocate 80% only from mature
    approved-net evidence and 20% to bounded exploration; never promote from click,
    pending, estimate, or model score. Convert each newly observed recoverable
