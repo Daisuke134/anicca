@@ -198,11 +198,44 @@ def present_fields(text, schema):
     return found
 
 
+OPTIONAL_IDENTIFIER_KEYS = {
+    "provider_settlement_id": (
+        "settlement_id", "settlement_key", "settlementId",
+    ),
+    "provider_payout_id": (
+        "payout_id", "payout_key", "payoutId", "payment_id", "withdrawal_id",
+    ),
+}
+
+
+def _optional_identifier(row, keys):
+    for key in keys:
+        value = row.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return None
+
+
+def _currency_code(value):
+    if not isinstance(value, str) or not value.strip():
+        return None
+    code = value.strip().upper()
+    return code if re.fullmatch(r"[A-Z]{3}", code) else None
+
+
 def normalize_commission_row(row, currency="USD"):
     key = row.get("reward_key")
     provider_status = row.get("reward_status")
     if not isinstance(key, str) or not key or provider_status not in COMMISSION_STATUS:
         raise RevenueError("commission identity or status is invalid")
+    row_currency_value = next(
+        (row.get(name) for name in ("currency", "currency_code", "currency_iso")
+         if row.get(name) not in (None, "")),
+        currency,
+    )
+    row_currency = _currency_code(row_currency_value)
+    if row_currency is None:
+        raise RevenueError("commission currency is invalid")
     try:
         minor_decimal = Decimal(str(row["commission_amount"])) * 100
     except (KeyError, InvalidOperation, ValueError):
@@ -212,11 +245,11 @@ def normalize_commission_row(row, currency="USD"):
     gross_minor = int(minor_decimal)
     status = COMMISSION_STATUS[provider_status]
     reversal_minor = gross_minor if status == "reversed" else 0
-    return {
+    normalized = {
         "provider_transaction_id": key,
         "provider_status": provider_status,
         "status": status,
-        "currency": currency,
+        "currency": row_currency,
         "gross_commission_minor": gross_minor,
         "reversal_minor": reversal_minor,
         "net_commission_minor": gross_minor - reversal_minor,
@@ -235,6 +268,9 @@ def normalize_commission_row(row, currency="USD"):
             "landing_page_sha256": hash_optional(row.get("link_destination_path")),
         },
     }
+    for field, keys in OPTIONAL_IDENTIFIER_KEYS.items():
+        normalized[field] = _optional_identifier(row, keys)
+    return normalized
 
 
 def hash_optional(value):
@@ -865,6 +901,8 @@ def build_transition(row, source_hash, observed_at):
         "reversal_minor": row["reversal_minor"],
         "net_commission_minor": row["net_commission_minor"],
         "currency": row["currency"],
+        "provider_settlement_id": row.get("provider_settlement_id"),
+        "provider_payout_id": row.get("provider_payout_id"),
         # Attribution is part of the replay identity. A provider can expose a
         # reward before its sub-ID/link fingerprint is present; omitting this
         # binding would make the later exact placement match look like a
