@@ -2123,7 +2123,15 @@ async def _run_continuous_runtime(args: Any, evidence: Path) -> dict[str, Any]:
         return result
 
     async def reconcile() -> dict[str, Any]:
-        return await asyncio.to_thread(_run_reconciliation_once, args, evidence)
+        result = await asyncio.to_thread(_run_reconciliation_once, args, evidence)
+        run_id = str(result.get("run_id") or f"reconcile-{int(time.time())}")
+        report_dir = evidence / "continuous" / "reconciliation-reports" / run_id
+        report_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
+        await asyncio.to_thread(
+            _persist_continuous_worker_report, args,
+            report_dir / "result.json", result,
+        )
+        return result
 
     try:
         await supervise_replies(

@@ -146,7 +146,9 @@ The order to the end is:
    `reply_wake` created no row after report 7992 while the other lanes continued reporting. Every
    continuous worker result now enters the existing durable outbox: verified replies use the
    action/revision-keyed `reply_verified` path, while estimates, intentional no-send and blocked
-   outcomes use the run-keyed `reply_wake` path. Live provider ACK remains to be captured.
+   outcomes use the run-keyed `reply_wake` path. The five-minute reconciliation result uses that
+   same path, so an idle but healthy inbox remains owner-observable. Live provider ACK remains to
+   be captured.
    Completion still requires a
    durable disposition for every buyer-authored message: replied with official readback, estimate
    sent with official readback, intentionally no-send with a bounded policy reason, or still pending
