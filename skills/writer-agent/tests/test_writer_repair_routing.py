@@ -139,6 +139,47 @@ def test_reclassified_incident_is_adopted_in_place_with_lease_and_history() -> N
     assert [row["work_id"] for row in item["occurrences"]] == ["work-1", "work-2"]
 
 
+def test_identity_reclassification_releases_stale_claim_for_known_runbook() -> None:
+    work = {
+        "work_id": "identity-2",
+        "phase": "destination:substack/en",
+        "reason": "substack-publication-identity-conflict",
+        "error_signature": "substack-publication-identity-conflict",
+        "run_id": "daily-2026-08-21",
+        "artifact_id": "daily-2026-08-21__substack__en",
+        "destination": "substack/en",
+    }
+    stale = QUEUE._fingerprint(work, "process")
+    queue = {
+        "schema": QUEUE.SCHEMA,
+        "version": QUEUE.VERSION,
+        "items": {stale: {
+            "fingerprint": stale,
+            "failure_class": "process",
+            "classification": "process",
+            "state": "CLAIMED",
+            "lease_id": "old-terra-lease",
+            "attempt_count": 4,
+            "occurrences": [{"work_id": "identity-1"}],
+        }},
+    }
+
+    QUEUE.ingest(
+        queue,
+        {"schema": "writer.observability.slo-replay", "slo_work": [work]},
+        "2026-08-21T06:10:00Z",
+    )
+
+    assert len(queue["items"]) == 1
+    item = next(iter(queue["items"].values()))
+    assert item["failure_class"] == "publisher-identity"
+    assert item["state"] == "RETRY"
+    assert item["next_action"] == "CLAIM"
+    assert "lease_id" not in item
+    assert item["previous_lease_id"] == "old-terra-lease"
+    assert item["attempt_count"] == 4
+
+
 # --------------------------------------------------------------------------
 # 3. The router must resolve the run from the incident's own run_id
 # --------------------------------------------------------------------------

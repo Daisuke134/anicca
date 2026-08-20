@@ -122,6 +122,12 @@ SUPERSEDED_FAILURE_CLASSES: dict[str, tuple[str, ...]] = {
     "publisher-identity": ("process",),
 }
 
+# Identity conflicts are fail-closed publisher gates: the old process-class
+# investigation cannot publish or mutate the destination.  Release its stale
+# claim during taxonomy refinement so the known read-only runbook can actually
+# be selected on the next tick.  Other refinements keep their live lease.
+RELEASE_LEASE_ON_RECLASSIFY = {"publisher-identity"}
+
 
 def _digest(stable: dict[str, Any]) -> str:
     encoded = json.dumps(stable, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
@@ -203,6 +209,16 @@ def ingest(queue: dict[str, Any], replay: dict[str, Any], observed_at: str) -> d
                 reclassified["previous_fingerprint"] = previous
                 reclassified["failure_class"] = failure_class
                 reclassified["classification"] = failure_class
+                if (
+                    failure_class in RELEASE_LEASE_ON_RECLASSIFY
+                    and reclassified.get("state") == "CLAIMED"
+                ):
+                    reclassified["previous_state"] = "CLAIMED"
+                    reclassified["previous_lease_id"] = reclassified.get("lease_id")
+                    reclassified["state"] = "RETRY"
+                    reclassified["next_action"] = "CLAIM"
+                    reclassified["reclassified_at"] = observed_at
+                    reclassified.pop("lease_id", None)
                 items[fingerprint] = reclassified
                 existing = reclassified
                 break
