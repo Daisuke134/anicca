@@ -1178,24 +1178,34 @@ as durable commerce exploration, not invented dollars in that equation. X
 creator revenue is a useful second income stream but never affiliate commission
 and cannot close A3.
 
-**Amazon Associates Japan lane.** Official standard rates currently range from
+**Amazon Associates Japan lane.** The current official fee table ranges from
 0% to 10%; creator-relevant PC, camera, home-electronics, and musical-instrument
-categories are generally 2%, while books and stationery are 3%. Approval review
-requires at least three qualifying sales within 180 days after application.
-Payment is roughly 60 days after month end and bank transfer requires at least
-JPY 5,000. The lane therefore begins with evergreen creator-workstation,
-microphone/audio, and learning-resource decision pages, not a generic deal feed.
-Its measured equation is `approved net JPY = shipped eligible sales × actual
-category rate - returns - known real costs`; no assumed basket or rate is used.
+categories are 2%, while books and stationery are 3%. The current review page
+requires at least three qualifying sales within 180 days after application,
+excludes the associate's own orders, checks every submitted public site/SNS, and
+requires at least ten original public posts. Its SNS guidance says the organic
+follower/like floor is usually 500. A failed review is not replayed in place;
+any later submission must be a fresh, provider-compliant application with a new
+tagged link, never an unattended retry. Eligible sales are only counted after
+shipment. Payment is about 60 days after the month end; bank transfer requires
+at least JPY 5,000 (gift-card payment has a separate JPY 500 minimum). The lane
+therefore begins with evergreen creator-workstation, microphone/audio, and
+learning-resource decision pages, not a generic deal feed. Its measured equation
+is `approved net JPY = shipped eligible sales × actual category rate - returns -
+known real costs`; no assumed basket or rate is used.
 
-**Rakuten Affiliate lane.** Official marketplace economics are currently 2%–4%
-by category, with cart entry within 24 hours and purchase completion within 89
-days; the normal reward is capped at JPY 1,000 per item. A sale is initially
-variable and becomes money only after confirmation; current guidance states
-confirmation at the end of the following month and Rakuten Cash payment on the
-10th of the month after that. The same evergreen buyer-intent pages may compare
-Amazon and Rakuten only when each provider's disclosure, price-display, link,
-and attribution rules pass independently.
+**Rakuten Affiliate lane.** Rates are category-dependent; the current public
+guide's observed range is 2%–4%, with cart entry within 24 hours and purchase
+completion within 89 days. The normal reward is capped at JPY 1,000 per item.
+Provider reports distinguish `発生`, `確定`, `未確定`, and `破棄`: a sale is not
+money while variable/unconfirmed, and cancellation can discard it. Current
+guidance says the sale is confirmed at the end of the following month and paid
+as Rakuten Cash on the 10th of the month after that; one yen is usable, while
+full bank transfer requires screening and three consecutive months with at
+least JPY 3,001 confirmed each month (amounts above JPY 3,001 also require the
+specified Rakuten Card/Bank identity linkage). The same evergreen buyer-intent
+pages may compare Amazon and Rakuten only when each provider's disclosure,
+price-display, link, and attribution rules pass independently.
 
 Both commerce lanes follow one honest ramp:
 
@@ -1981,13 +1991,22 @@ receipt readback, SSOT state update, commit, and push to both canonical remotes.
 - [ ] **E03** Submit at most one Semrush application under a fenced semantic job
   and reconcile approval/rejection from authenticated readback.
 - [ ] **E04** Resume the existing Amazon Japan email-account intent without
-  duplicate account/application; classify auth, application, review, and payout state.
+  duplicate account/application; classify auth, application, review, and payout
+  state. Before any application effect, prove ten public original posts and the
+  applicable organic-SNS audience gate in a private receipt; do not submit while
+  the current account is `AUTH_RECOVERY_OTP_REQUIRED`.
 - [ ] **E05** After Amazon admission, acquire placement-specific tracking identities
-  and run ten evergreen canaries; satisfy three organic qualifying sales without self-purchase.
+  and run ten evergreen canaries; satisfy three shipped, organic qualifying sales
+  within 180 days without self-purchase, then read back the provider review and
+  payout thresholds. A click or an unshipped order never satisfies this gate.
 - [ ] **E06** Resume the existing Rakuten account intent without duplication;
-  classify membership, affiliate, identity, payment, report, and bank-transfer state.
+  classify membership, affiliate, identity, payment, report, and bank-transfer
+  state, including `発生`/`確定`/`未確定`/`破棄` and the 3,001-JPY bank-transfer
+  eligibility condition.
 - [ ] **E07** After Rakuten admission, acquire placement-specific tracking identities
-  and run ten evergreen canaries under current disclosure and attribution rules.
+  and run ten evergreen canaries under current disclosure and attribution rules;
+  join only confirmed rows after the published cancellation window and preserve
+  the per-item 1,000-JPY cap in the canonical ledger.
 - [ ] **E08** Implement a provider adapter only after that provider exposes an
   executable link plus click/order/commission/reversal/payout readback contract.
 - [ ] **E09** Keep Amazon and Rakuten at exploration allocation and USD 0 target

@@ -489,6 +489,23 @@ with a redirect-loop response, so the Impact-hosted terms/report artifact and a
 TTL-bound local capture remain unavailable without an admitted authenticated
 program; no application or executable link was attempted.
 
+Read-only official-source refresh at `2026-08-20T13:52:19Z` clarified the two
+commerce exploration gates. Amazon Japan's current fee table is 0%--10% by
+category (PC/camera/home-electronics/musical instruments 2%; books/stationery
+3%); review requires three qualifying sales within 180 days, excludes self
+orders, checks all submitted public surfaces, requires at least ten original
+public posts, and states that SNS usually needs about 500 organic followers or
+likes. Shipment is required before an eligible sale, payment is about 60 days
+after month end, and bank transfer requires JPY 5,000. Rakuten's public guide
+shows category-dependent rates, a JPY 1,000 per-item cap, `発生`/`確定`/`未確定`/
+`破棄` report states, confirmation at the following month end, and Rakuten Cash
+payment on the following month's 10th; one yen is usable, while bank transfer
+requires screening and three consecutive months at JPY 3,001 or more. These
+facts update the SSOT only; no login, application, link, public effect, order,
+or money was created. Both providers remain USD 0 until their own official
+approval, exact placement join, confirmed/paid receipt, reversal, and cost
+coverage are present.
+
 The Semrush admission-gate refresh was committed and pushed as
 `206b1145cc81d72137ff8fda53e08e94bd2d2b0e`. The immutable installer switched
 `current` to that release, then stopped at the known launchd browser bootstrap
