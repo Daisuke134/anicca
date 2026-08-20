@@ -2375,14 +2375,15 @@ the milestone order. Section 9.0.1.1 is the canonical atomic order for the curre
 cursor; later work MUST NOT jump ahead of an unmet gate.
 
 Current execution cursor: **E1-H, close the first real transaction path. P0/A04/A05
-publication recovery is complete through the existing owner, with 14 dedicated-link
-placements, 14 public, 32 provider-link clicks, aggregate 41 clicks including
-`+40` unattributed, and zero commission rows.**
+publication recovery is complete through the existing owner, with 17 dedicated-link
+placements, 17 public, 32 provider-link clicks, aggregate 41 clicks including
+`+40` unattributed, and zero commission rows. B01 is waiting for the first non-empty
+official provider transaction artifact.**
 M2.0 is closed for
 dedicated-link attribution: every existing revenue placement has one PartnerStack
-link and one canonical ledger row. Eleven of thirteen carry owned public URLs;
-the remaining two must pass source, composition, semantic policy, owned/X,
-public-readback, exposure, cost, and commission-lineage gates. Content volume
+link and one canonical ledger row. All 17 carry owned public URLs and matching X
+receipts; provider clicks, exposure, cost, and commission-lineage gates remain
+economic gates. Content volume
 without those measurement contracts does not advance the cursor.
 M0.1 is installed in release `e8d1b8ea1`: real launchd wake `7`
 returned `WAITING_FOR_BASELINE`, last exit `0`, and created zero model-evidence
