@@ -24,7 +24,7 @@ chmod +x "$BIN/uv"
 export UV_CALL_LOG="$TMP/uv-calls.log"
 UV_BIN="$BIN/uv" bash "$HELPER" "$PROJECT"
 [[ -x "$PROJECT/.venv/bin/python" ]]
-[[ "$(cat "$UV_CALL_LOG")" == "sync --locked" ]]
+[[ "$(cat "$UV_CALL_LOG")" == "sync --locked --no-dev" ]]
 
 : >"$UV_CALL_LOG"
 UV_BIN="$BIN/uv" bash "$HELPER" "$PROJECT"
@@ -40,5 +40,32 @@ if UV_BIN="$BIN/uv-fail" bash "$HELPER" "$PROJECT"; then
   echo "expected bootstrap failure to propagate" >&2
   exit 1
 fi
+
+# A failed uv sync may leave .venv/bin/python as a symlink into uv's shared
+# interpreter cache. The fallback must unlink only the project link, never
+# overwrite the cache target.
+PROJECT2="$TMP/note-mcp-symlink"
+mkdir -p "$PROJECT2/.venv/bin" "$PROJECT2/src" "$TMP/fallback-site"
+touch "$PROJECT2/pyproject.toml" "$PROJECT2/uv.lock"
+printf 'cache-sentinel\n' >"$TMP/cache-target"
+ln -s "$TMP/cache-target" "$PROJECT2/.venv/bin/python"
+cat >"$BIN/fallback-python" <<'SH'
+#!/usr/bin/env bash
+set -euo pipefail
+if [[ "${1:-}" == "-c" ]]; then
+  if [[ "$2" == *"site.getsitepackages"* ]]; then
+    printf '%s\n' "${FALLBACK_SITE:?}"
+  fi
+  exit 0
+fi
+exit 0
+SH
+chmod +x "$BIN/fallback-python"
+FALLBACK_SITE="$TMP/fallback-site" \
+  UV_BIN="$BIN/uv-fail" \
+  NOTE_MCP_FALLBACK_PYTHON="$BIN/fallback-python" \
+  bash "$HELPER" "$PROJECT2"
+[[ "$(cat "$TMP/cache-target")" == "cache-sentinel" ]]
+[[ ! -L "$PROJECT2/.venv/bin/python" ]]
 
 echo "PASS: note runtime bootstraps once and fails closed"

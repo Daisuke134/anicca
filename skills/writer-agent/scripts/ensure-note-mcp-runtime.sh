@@ -4,7 +4,9 @@ set -euo pipefail
 
 NOTE_MCP_DIR="${1:?usage: ensure-note-mcp-runtime.sh NOTE_MCP_DIR}"
 PY_VENV="$NOTE_MCP_DIR/.venv/bin/python"
-[[ -x "$PY_VENV" ]] && exit 0
+if [[ -x "$PY_VENV" ]] && "$PY_VENV" -c 'import fastmcp, note_mcp' >/dev/null 2>&1; then
+  exit 0
+fi
 
 [[ -f "$NOTE_MCP_DIR/pyproject.toml" ]] || {
   echo "FATAL: note-mcp pyproject.toml missing at $NOTE_MCP_DIR" >&2
@@ -22,10 +24,45 @@ UV_BIN="${UV_BIN:-$(command -v uv || true)}"
 }
 
 echo "note-mcp runtime missing; restoring from uv.lock" >&2
-(
+
+restore_shared_runtime() {
+  local fallback fallback_site
+  fallback="${NOTE_MCP_FALLBACK_PYTHON:-$HOME/.openclaw/skills/_shared/venv-cloak/bin/python3}"
+  [[ -x "$fallback" ]] || return 1
+  fallback_site="$($fallback -c 'import site; print(site.getsitepackages()[0])')" || return 1
+  PYTHONPATH="$NOTE_MCP_DIR/src:$fallback_site${PYTHONPATH:+:$PYTHONPATH}" \
+    "$fallback" -c 'import fastmcp, note_mcp' >/dev/null 2>&1 || return 1
+
+  mkdir -p "$(dirname "$PY_VENV")"
+  # uv may leave .venv/bin/python as a symlink to its interpreter cache. Do
+  # not follow that link when installing the fallback wrapper.
+  [[ -L "$PY_VENV" ]] && unlink "$PY_VENV"
+  cat >"$PY_VENV" <<'SH'
+#!/usr/bin/env bash
+set -euo pipefail
+NOTE_MCP_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
+FALLBACK="${NOTE_MCP_FALLBACK_PYTHON:-$HOME/.openclaw/skills/_shared/venv-cloak/bin/python3}"
+FALLBACK_SITE="$($FALLBACK -c 'import site; print(site.getsitepackages()[0])')"
+export PYTHONPATH="$NOTE_MCP_DIR/src:$FALLBACK_SITE${PYTHONPATH:+:$PYTHONPATH}"
+exec "$FALLBACK" "$@"
+SH
+  chmod +x "$PY_VENV"
+  echo "note-mcp runtime: using validated shared fallback $fallback" >&2
+}
+
+if ! (
   cd "$NOTE_MCP_DIR"
-  "$UV_BIN" sync --locked
-)
+  # The worker only needs the runtime dependency group. Installing the
+  # development group pulls mitmproxy/zstandard and can fail before Note
+  # readback is even possible on a clean host.
+  "$UV_BIN" sync --locked --no-dev
+); then
+  echo "note-mcp runtime: uv sync unavailable; trying shared runtime" >&2
+  restore_shared_runtime || {
+    echo "FATAL: neither locked runtime nor validated shared fallback is available" >&2
+    exit 6
+  }
+fi
 
 [[ -x "$PY_VENV" ]] || {
   echo "FATAL: uv sync completed without creating $PY_VENV" >&2
