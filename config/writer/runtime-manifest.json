@@ -7,7 +7,7 @@
   "source": {
     "repository": "/Users/anicca/profitable-claude",
     "path": "skills/article-writer",
-    "commit": "c71b104b",
+    "commit": "3f3813b7",
     "status": "source-of-truth-until-cutover"
   },
   "active_release": {
