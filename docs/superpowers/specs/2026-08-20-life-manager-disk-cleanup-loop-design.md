@@ -1,12 +1,14 @@
-# Life Manager Disk Cleanup Loop 仕様
+# Mac Host Storage Governor — Life Manager Disk Cleanup Loop 仕様
 
 状態: 設計確定。実装・production cutover・長時間観測は未完了。
 
 ## 1. Overview — What & Why
 
-Life Manager は、Mac mini 上の全loopがディスク枯渇でstate、receipt、session、
-成果物を壊さず継続できるよう、1つの `disk-cleanup` skill と1つのcleanup authorityを
-所有する。
+Life Manager は、Mac mini 上の全process、repository、agent、browser、build tool、
+media pipeline、package manager、VM、system cacheがディスク枯渇でstate、receipt、session、
+成果物を壊さず継続できるよう、host-wideな `disk-cleanup` skill と1つのcleanup authorityを
+所有する。Life Managerは回収対象の中心ではなく、Mac全体を監督するownerであり、
+Life Manager自身も他のagentやtoolと同じ1 producerとして計測される。
 
 現在は次の3つが別々に存在する。
 
@@ -20,7 +22,12 @@ Life Manager は、Mac mini 上の全loopがディスク枯渇でstate、receipt
 worktree、session、stateなどは正しく保護されるため、cleanup cadenceだけを増やしても
 容量は回復しない。
 
-本仕様は削除対象をLLMに自由判断させない。5分ごとのdeterministic passが、manifest、
+現sentinelとguardは異なるroot集合を走査する。どちらにも含まれないrootはgrowth attributionにも
+reclaim candidateにも現れない。このcoverage gapを残したままcadenceだけを増やしても、
+Mac全体の容量問題は解決しない。
+
+本仕様はData volumeと全local writable volumeをhost-wideに計測するが、削除対象をLLMに
+自由判断させない。5分ごとのdeterministic passが、manifest、
 owner、class、lease、open-path、再生成証明をすべて確認して回収する。1時間ごとの
 intelligence passは原因分析、未分類artifact、producer lifecycle defectを診断するが、
 未知のpathを削除する権限を持たない。
@@ -37,7 +44,9 @@ cleanup側もsingle-owner lockをMUSTで持つ。
 
 ```mermaid
 flowchart TD
-  P[Producer loops] -->|artifact + lease + finalizer| M[Lifecycle manifest]
+  X[All local writable volumes] --> C[Host-wide capacity census]
+  C --> O[Owner and growth attribution]
+  P[All host producers] -->|artifact + lease + finalizer| M[Lifecycle manifest]
   D[5-minute deterministic pass] --> M
   M --> G{All deletion proofs pass}
   G -->|No or unknown| K[Preserve and record reason]
@@ -46,7 +55,8 @@ flowchart TD
   H[Hourly intelligence pass] --> O[Observe growth and failures]
   O --> F[Repair producer lifecycle or propose manifest entry]
   F --> T[Test and promote deterministic rule]
-  L[Life Manager health owner] --> D
+  L[Life Manager host governor] --> C
+  L --> D
   L --> H
   L --> B[Backpressure and bounded resume]
 ```
@@ -55,7 +65,7 @@ flowchart TD
 
 | Component | Owns | MUST NOT own |
 |---|---|---|
-| Life Manager `disk-cleanup` skill | manifest contract、deterministic sweep、diagnostic report、backpressure | unknown pathの自由削除、credential、session本文 |
+| Life Manager host governor | Mac全volume census、manifest contract、deterministic sweep、diagnostic report、backpressure | Life Manager配下だけへのscope限定、unknown pathの自由削除 |
 | Producer loop | artifact登録、lease heartbeat、finalizer、終了時cleanup | machine-wide cleanup policy |
 | Deterministic pass | 証明済みartifactの回収、decision receipt | LLM判断、source/state/session削除 |
 | Intelligence pass | growth attribution、分類候補、producer defect、修正task | 直接削除、保護classの格下げ、自分の判断だけでmanifest mutation |
@@ -65,14 +75,34 @@ flowchart TD
 
 ### 2.1 Single authority
 
-1. Life Manager repositoryに `skills/self/disk-cleanup/` が存在し、全runtime entrypointを
-   manifest化する。
+1. Life Manager repositoryに `skills/self/disk-cleanup/` が存在し、Mac全体を1 hostとして
+   管理する全runtime entrypointをmanifest化する。
 2. productionでartifactを削除できるentrypointは1つだけである。
 3. legacy janitor/cleanerはparity確認後にdisableされ、削除ロジックを実行しない。
 4. sentinelは観測とbackpressureだけを行い、削除しない。
 5. schedulerは300秒間隔、atomic lock、bounded runtimeを持つ。同時実行数は常に1以下である。
 
-### 2.2 Fail-closed deletion contract
+### 2.2 Host-wide observation coverage
+
+1. 毎pass、`/System/Volumes/Data` と全local writable mounted volumeのtotal、used、free、
+   inode、mount stateを計測する。
+2. top-level censusはMac全体を次のowner familyへ分類する。
+   `system`、`user-home`、`agent-runtime`、`repository-worktree`、`browser`、`build`、
+   `package-cache`、`vm-container`、`media`、`logs-ledgers`、`downloads-trash`、`unknown`。
+3. censusは少なくとも次をcoverageに含める。
+   `/Users`、`/Library`、`/private/var/folders`、`/private/tmp`、`/Volumes`、全user home、
+   Xcode DerivedData/Archives/Simulator、Homebrew、npm/pnpm/yarn/bun、Cargo、Python/uv/pip、
+   Docker/Colima/Lima、browser profiles/code-sign clones、全repository/worktree、agent runtime、
+   generated media、logs、Trash、Downloads、APFS local snapshots、deleted-but-open files。
+4. root listは観測と削除で別々に手書きしない。1つのversioned host inventoryから、
+   observer viewとreclaimer viewを生成する。
+5. rootが未分類でもsizeとgrowthは `unknown` として必ず可視化する。未分類は削除しない。
+6. 5分passはfast censusと既知candidateだけを処理する。full host censusは1時間ごと、
+   PRESSURE遷移時、または2 GiB/hour以上の説明不能growth時に実行する。
+7. full census自身のtemporary file、log、ledgerにはhard size limitを持たせ、観測処理が
+   ENOSPCを悪化させない。
+
+### 2.3 Fail-closed deletion contract
 
 artifactを削除できるのは、次の条件がすべて真の場合だけである。
 
@@ -88,7 +118,7 @@ artifactを削除できるのは、次の条件がすべて真の場合だけで
 8. 回収後にpath absence、reclaimed bytes、free bytesをread backする。
 9. probe error、unknown class、unknown owner、missing proofはすべてpreserveになる。
 
-### 2.3 Permanently protected data
+### 2.4 Permanently protected data
 
 次を自動削除、移動、truncate、圧縮、class変更してはならない。
 
@@ -104,9 +134,10 @@ artifactを削除できるのは、次の条件がすべて真の場合だけで
 protected pathは容量不足時も削除しない。protected dataだけでreserveを回復できない場合、
 cleanupは成功を偽装せずcapacity incidentを発行し、write-heavy producerを停止する。
 
-### 2.4 Producer lifecycle contract
+### 2.5 Producer lifecycle contract
 
-新規または既存のwrite-heavy producerは、開始前に次を宣言する。
+Life Manager、OpenClaw、Claude、Codex、browser automation、Xcode、Docker、media renderer、
+package managerを含む新規または既存のwrite-heavy producerは、開始前に次を宣言する。
 
 ```json
 {
@@ -133,7 +164,7 @@ cleanupは成功を偽装せずcapacity incidentを発行し、write-heavy produ
 5. browser/code-sign clone、build、render、temporary cloneはproducer ownerを特定する。
 6. quota超過producerは新規artifact作成前に自分のexpired artifactを回収する。
 
-### 2.5 Cadence and tier state machine
+### 2.6 Cadence and tier state machine
 
 | Tier | Condition | Required action |
 |---|---|---|
@@ -149,16 +180,17 @@ cleanupは成功を偽装せずcapacity incidentを発行し、write-heavy produ
 4. stop flagは各producerのpreflightでMUST確認する。
 5. recoveryは一度に全loopを起動せず、owner単位でbounded redispatchする。
 
-### 2.6 Intelligence boundary
+### 2.7 Intelligence boundary
 
 hourly intelligence passは、次だけを出力する。
 
 - 直近1時間と24時間のfree-space delta
-- 上位growth rootとowner
+- 全local volumeの上位growth root、owner family、process owner
 - cleanupのeligible/preserved/error/reclaimed集計
 - `no-eligible-reclaim`、open-path、active-lease、missing-proofのstreak
 - quota/lease/finalizerを守らないproducer
 - manifest candidateと、その再生成証明
+- host inventory coverage gapと新規mount/unclassified root
 - 修正対象のproduction file、test、acceptance evidence
 
 intelligence passはpathを削除せず、manifestを直接変更せず、protected classを格下げしない。
@@ -170,7 +202,7 @@ intelligence passはpathを削除せず、manifestを直接変更せず、protec
 - 2 GiB/hour以上の未知growthを検出した。
 - 同じownerで3回連続のlease/finalizer defectを検出した。
 
-### 2.7 Reporting and audit
+### 2.8 Reporting and audit
 
 1. 1 passは `observed_at`、free before/after、tier、eligible count、reclaimed bytes、
    preserved reasons、owner、policy versionを1 receiptに記録する。
@@ -180,7 +212,7 @@ intelligence passはpathを削除せず、manifestを直接変更せず、protec
 4. 同じ状態とpayloadはdedupeする。
 5. report delivery failureはcleanupを失敗させないが、delivery failure receiptを残す。
 
-### 2.8 Production completion
+### 2.9 Production completion
 
 1. unit/integration testが全てpassする。
 2. fixtureでactive session、active lease、open file、dirty worktree、unpushed worktree、
@@ -191,12 +223,15 @@ intelligence passはpathを削除せず、manifestを直接変更せず、protec
 5. immediate replayはduplicate deletion 0、error 0である。
 6. 24時間連続でfree >= 11 GiB、protected deletion 0、duplicate cleanup owner 0を観測する。
 7. 7日間でENOSPC 0、state write failure 0、cleanup起因producer failure 0を観測する。
+8. host inventory coverage reportでlocal writable volume missing 0、required owner family missing 0、
+   1 GiB以上のunattributed root 0を観測する。
 
 ## 3. As-Is / To-Be
 
 | Area | As-Is | To-Be |
 |---|---|---|
-| Ownership | guard、sentinel、janitorに責務が分散 | Life Manager `disk-cleanup` skillが唯一の削除authority |
+| Scope | sentinelとguardが異なる限定rootを走査 | 全local writable volumeを1 inventoryで観測し、Mac全体をowner familyへ分類 |
+| Ownership | guard、sentinel、janitorに責務が分散 | Life Manager host governorが唯一の削除authority。Life Manager自身も1 producer |
 | Cadence | 60秒guard、60秒sentinel、1時間janitor | 5分deterministic、event-driven intelligence、1時間health audit |
 | Decision | manifest回収とlegacy path掃除が混在 | manifest proofのAND条件だけで削除 |
 | Intelligence | 人間がalert後に広く調査 | abnormal stateだけLunaが診断しproducer defectをtask化 |
@@ -233,6 +268,11 @@ intelligence passはpathを削除せず、manifestを直接変更せず、protec
 | 20 | recoveryをowner単位に直列化 | `test_recovery_redispatch_is_bounded_by_owner` | OK |
 | 21 | canary後のreplayがno-op | `test_production_canary_replay_has_zero_duplicate_effect` | OK |
 | 22 | legacy cleanup ownerをdisable | `test_legacy_cleanup_jobs_have_no_delete_authority` | OK |
+| 23 | 全local writable volumeを列挙 | `test_inventory_covers_all_local_writable_volumes` | OK |
+| 24 | required owner familyを網羅 | `test_host_inventory_covers_required_owner_families` | OK |
+| 25 | observerとreclaimerが同じinventoryを使用 | `test_observer_and_reclaimer_share_one_inventory` | OK |
+| 26 | unknown rootを可視化して保存 | `test_unknown_large_root_is_attributed_and_preserved` | OK |
+| 27 | full censusのdisk使用量をbounded化 | `test_full_census_respects_temp_log_and_ledger_limits` | OK |
 
 ### E2E judgment
 
@@ -246,7 +286,9 @@ intelligence passはpathを削除せず、manifestを直接変更せず、protec
 
 ### In scope
 
-- Life Manager `disk-cleanup` skillとruntime manifest
+- Life Managerが所有するMac host-wide `disk-cleanup` skillとruntime manifest
+- 全local writable volume、全user、system/user cache、repository、worktree、VM/container、
+  browser、build、media、log、download、snapshot、deleted-open fileの観測
 - 5分deterministic pass
 - abnormal-state intelligence pass
 - producer artifact/lease/finalizer contract
@@ -271,16 +313,16 @@ intelligence passはpathを削除せず、manifestを直接変更せず、protec
 
 | # | Work | Completion evidence | State |
 |---:|---|---|---|
-| 1 | 現在のguard/sentinel/janitor/plist/log/state/manifestをimmutable censusへ記録 | label、interval、program SHA、last exit、直近receipt、free bytes | 未着手 |
-| 2 | `skills/self/disk-cleanup/` にcanonical manifest/runner/health interfaceを定義 | missing path 0、schema validation PASS | 未着手 |
+| 1 | 全local volume、top-level root、guard/sentinel/janitor/plist/log/state/manifestをimmutable host censusへ記録 | mount/root/owner family、label、interval、program SHA、last exit、free bytes | 未着手 |
+| 2 | `skills/self/disk-cleanup/` にcanonical host inventory、manifest、runner、health interfaceを定義 | local writable volume missing 0、required owner family missing 0、schema PASS | 未着手 |
 | 3 | protected rootsとfail-closed validatorをTDDで固定 | Test Matrix 3–11 PASS | 未着手 |
 | 4 | exact-byte tier、hysteresis、single lock、300秒schedulerをTDD実装 | Test Matrix 2、12–14 PASS | 未着手 |
-| 5 | producer artifact/lease/finalizer helperを追加し、上位growth ownerへ接続 | active producerのlease readback、orphan lease fixture PASS | 未着手 |
+| 5 | Mac全体のproducer censusを作り、artifact/lease/finalizer helperを上位growth ownerへ接続 | 1 GiB以上のunattributed root 0、active lease readback、orphan lease fixture PASS | 未着手 |
 | 6 | 全write-heavy producerへ共通disk preflightを接続 | producer census missing consumer 0、Test Matrix 15 PASS | 未着手 |
 | 7 | bounded ops log、incident receipt、Telegram dedupeを実装 | Test Matrix 18–19 PASS、message ID | 未着手 |
 | 8 | intelligence input/output schemaとwake gateを実装 | deletion capability 0、Test Matrix 16–17 PASS | 未着手 |
 | 9 | owner単位のbounded recoveryを実装 | Test Matrix 20 PASS、duplicate redispatch 0 | 未着手 |
-| 10 | 全cleanup testとLife Manager regression suiteを実行 | failure 0、warning 0 | 未着手 |
+| 10 | 全cleanup test、host inventory test、Life Manager regression suiteを実行 | failure 0、warning 0、Test Matrix 23–27 PASS | 未着手 |
 | 11 | effect-free shadow passでlegacy ownerとcanonical ownerのdecision parityを比較 | protected mismatch 0、candidate mismatch説明済み | 未着手 |
 | 12 | 既知regenerable artifact 1件でproduction canaryを実行 | reclaimed bytes > 0、free bytes readback、protected deletion 0 | 未着手 |
 | 13 | immediate replayを実行 | duplicate effect 0、error 0 | 未着手 |
