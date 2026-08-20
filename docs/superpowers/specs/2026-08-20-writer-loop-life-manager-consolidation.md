@@ -8,7 +8,7 @@
   `gig_release.py`、immutable `~/gig/releases/life-manager/current`、
   `gig_disk_guard.py`、owner fence、外部 state `~/.local/state/life-manager/writer` を使う。
   Coconalaの4 laneと同様、公開ownerは重複起動せず、外部作用の前にlock・state・receiptを確認する。
-- current release は `bb21e5306`。`daily-2026-08-21` は Note JA、Substack JA、X Article JA の
+- current release は `971e4df68`。`daily-2026-08-21` は Note JA、Substack JA、X Article JA の
   native live receiptを同一runで確認済み。URLは `https://note.com/anicca123/n/ncbdb8a56bb20`、
   `https://aniccabuddha.substack.com/p/1`、`https://x.com/diceai0/article/2090526616854405173`。
   これは公開receiptであり、売上・入金receiptではない。
