@@ -1,8 +1,8 @@
 # Affiliate local money loop handover
 
 - SSOT: `docs/affiliate-agent/AFFILIATE-AGENT-SSOT.md`; resume from `Measured planning checkpoint and next TODOs`, then `Remaining autonomous money-loop work — canonical order`.
-- Development route: `/Users/anicca/anicca-project/.worktrees/affiliate-life-manager-spec`, branch `docs/affiliate-life-manager-spec`. The branch remains descended from required base `0a7debb58`; latest source/runtime commit is `9e8f7b90f4392966080edad9b29ff313d81318ae`.
-- Installed runtime: `/Users/anicca/.local/share/life-manager/affiliate/current` → release `9e8f7b90f4392966080edad9b29ff313d81318ae`; `current` is byte-backed by that immutable release. The existing owner naturally woke at `2026-08-20T14:34:34Z` through this `current` path, preserved the ledger, and kept the prior empty official revenue artifact while the revenue stage was `COOLDOWN` (no fresh provider capture). Any future `skills/affiliate` change requires immutable install and real owner replay.
+- Development route: `/Users/anicca/anicca-project/.worktrees/affiliate-life-manager-spec`, branch `docs/affiliate-life-manager-spec`. The branch remains descended from required base `0a7debb58`; latest source/runtime commit is `c8f6e4a1b`.
+- Installed runtime: `/Users/anicca/.local/share/life-manager/affiliate/current` → release `c8f6e4a1bb0657fb050ddd5781bdec085b13056f`; `current` is byte-backed by that immutable release. The existing owner naturally woke at `2026-08-20T14:45:03Z` through this `current` path, preserved the ledger, and kept the prior empty official revenue artifact while the revenue stage was `COOLDOWN` (no fresh provider capture). Any future `skills/affiliate` change requires immutable install and real owner replay.
 - Repository decision: one Life Manager implementation at `skills/affiliate/`; no Affiliate-only repo, executor, ledger, `apps/api`, or Railway runtime. Private mutable state stays under `~/.local/state/life-manager/affiliate/`. OSS is the same proven Skill packaged for a clean Mac, never a rewrite.
 
 ## Current measured truth
@@ -619,3 +619,14 @@ source byte equality passed; browser bootstrap still returned only the known
 `141: Reentrancy avoided`, so the next natural owner wake is required for
 installed proof. The official provider report remains empty and no money was
 created.
+The follow-up B01 repair is commit `c8f6e4a1b9c4a83b8789b5eaa5da4e8589b7b0f0`.
+It preserves row-provided ISO currency and optional provider settlement/payout
+identifiers, and includes those identifiers in replay identity so a later payout
+readback cannot be silently deduped. Existing revenue checks `8/8`, local-loop
+checks `16/16`, Python compilation, and a non-persistent currency/settlement
+identity fixture passed. The immutable installer switched `current`; source byte
+equality and all three CDP version endpoints passed, browser bootstrap again
+returned only `141: Reentrancy avoided`, and the existing owner naturally ran at
+`2026-08-20T14:45:03Z` with `ALREADY_LIVE`, revenue `COOLDOWN`, no fresh capture,
+zero observed rows, and no duplicate effect. The first official transaction and
+exact placement join remain open.
