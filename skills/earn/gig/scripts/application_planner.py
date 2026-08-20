@@ -24,8 +24,9 @@ MIN_PROPOSAL_CHARS = 200
 MAX_PROPOSAL_CHARS = 3000
 _ROOT_FIELDS = frozenset({"decisions"})
 _DECISION_FIELDS = frozenset({
-    "request_id", "business_class", "reason_codes", "proposal_text", "price_jpy", "deliver_date",
+    "request_id", "business_class", "reason_codes", "proposal_text", "price_jpy", "price_basis", "deliver_date",
 })
+PRICE_BASES = frozenset({"buyer_explicit", "planner_selected"})
 _DATE = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$")
 BUSINESS_CLASSES = frozenset({"submit_required", "hard_prohibited"})
 HARD_PROHIBITION_CLASSES = {
@@ -119,6 +120,7 @@ def validate_decisions(
             errors.append(f"decision[{index}]_reason_codes_invalid")
         proposal = row["proposal_text"]
         price = row["price_jpy"]
+        price_basis = row["price_basis"]
         date = row["deliver_date"]
         row_detail = detail_by_id.get(request_id) if isinstance(request_id, str) else None
         if business_class == "submit_required":
@@ -142,6 +144,8 @@ def validate_decisions(
                     )
             if isinstance(price, bool) or not isinstance(price, int) or price < 1:
                 errors.append(f"decision[{index}]_submit_required_price_required")
+            if price_basis not in PRICE_BASES:
+                errors.append(f"decision[{index}]_submit_required_price_basis_invalid")
             maximum = row_detail.get("budget_max_jpy") if isinstance(row_detail, dict) else None
             if (
                 isinstance(price, int)
@@ -224,7 +228,7 @@ def planner_prompt(envelope: dict) -> str:
         "When work is feasible, choose `submit_required`, leave reason_codes empty, and provide a concrete 200〜3000文字 proposal, honest price, and realistic\n"
         "deliver date. 納期には安全マージンとして日数を足さず、正直に実行可能な最短日を選ぶ。 "
         "When it is hard-prohibited, choose `hard_prohibited`, give concise reason codes, and set proposal,\n"
-        "price, and date to null. Reason from the listing as a whole; do not use a mechanical keyword rule.\n\n"
+        "price, price_basis, and date to null. Reason from the listing as a whole; do not use a mechanical keyword rule.\n\n"
         "Scope fidelity is a hard gate. Judge the work and participation the buyer actually requires; never make an\n"
         "infeasible request feasible by replacing it with a different remote, digital, advisory, documentary, or reduced\n"
         "deliverable in proposal_text. Before choosing submit_required, identify the buyer's required outcome, required\n"
@@ -261,6 +265,7 @@ def planner_prompt(envelope: dict) -> str:
         "低単価の単発でも、非同期で確実に完遂できるなら請けてよい。\n"
         "\n"
         "既知の budget_max_jpy がある案件では、price_jpy は budget_max_jpy を超えない。案件規模と競争状況に合う、\n"
+        "買い手が応募額・提案額・報酬額を具体的に指定している場合は、その額をprice_jpyへそのまま入れ、price_basisをbuyer_explicitにする。単なる予算範囲や相場は具体的指定ではない。それ以外はprice_basisをplanner_selectedにする。\n"
         "少し競争力のある価格を出す。budget_min_jpy と budget_max_jpy が両方 null の見積依頼（予算「応相談」「未定」）は、\n"
         "それだけで hard_prohibited にしない。ソフトウェア・コード・IT・システム・API・AI・自動化系は、scope と市場相場に応じて\n"
         "おおむね ¥50,000〜¥300,000 を目安に price_jpy を決める（小規模は下限寄り、広い・難しい・継続性のある案件は上限寄り）。\n"

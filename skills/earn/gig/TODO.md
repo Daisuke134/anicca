@@ -280,7 +280,11 @@ definition and A0 acceptance is closed.
 - [ ] Preserve an official exact price through the whole commercial path. Request `5217126` explicitly
   requires a ¥15,000 proposal and its durable planner result correctly contained ¥15,000, but the
   final application decision replaced it with ¥27,000. Exact buyer price instructions outrank category
-  normalization and must reach the form unchanged.
+  normalization and must reach the form unchanged. Source now requires the semantic planner to emit
+  `price_basis: buyer_explicit | planner_selected`; only `buyer_explicit` bypasses the competitive
+  budget normalization, while official form bounds still clamp invalid values. Direct function
+  readback proves the same ¥15,000 becomes ¥15,000 for `buyer_explicit` and ¥27,000 for the ordinary
+  selected-price path. Natural re-plan, form fill and official readback for `5217126` remain.
 - [ ] Prove the deployed failure report and form recovery on `5217126`. Its structured decision and
   proposal were present; execution failed with `cdp_Page.navigate_timeout_after_30s` at the browser
   boundary. The legacy `05b75fc29` formatter falsely reported “structured decision missing.” The

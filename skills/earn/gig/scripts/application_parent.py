@@ -235,9 +235,14 @@ def _target_offer_price(
 
 
 def commercial_offer_price(
-    detail: dict[str, object], *, planner_price_jpy: int
+    detail: dict[str, object], *, planner_price_jpy: int,
+    planner_price_basis: str = "planner_selected",
 ) -> int | None:
     """Own the final bid in code without inventing private competitor terms."""
+    if planner_price_basis == "buyer_explicit":
+        return _price_within_official_bounds(
+            int(planner_price_jpy), detail.get("visible_text")
+        )
     minimum = detail.get("budget_min_jpy")
     maximum = detail.get("budget_max_jpy")
     profitability_floor = (
@@ -311,7 +316,11 @@ def apply_commercial_offer_contract(
             rows.append(raw)
             continue
         detail = details[str(raw["request_id"])]
-        price = commercial_offer_price(detail, planner_price_jpy=int(raw["price_jpy"]))
+        price = commercial_offer_price(
+            detail,
+            planner_price_jpy=int(raw["price_jpy"]),
+            planner_price_basis=str(raw["price_basis"]),
+        )
         if price is None:
             continue
         row = dict(raw)
