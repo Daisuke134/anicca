@@ -235,8 +235,16 @@ The order to the end is:
    final CTA, FAQ chevrons and testimonial illustrations, used mismatched icon classes, and embedded
    both supplied marketing JPEGs whole instead of isolating the required illustration regions. The
    controller persisted the exhaustive finding and automatically started isolated v8 production.
-   v8 fresh review, one delivery effect, exact-room official readback and replay zero remain to be
-   proved.
+   The isolated v8 producer then completed and promoted a hash-bound package whose own acceptance
+   receipt is PASS: both layouts contain the complete source copy, final CTA, five FAQ chevrons,
+   three testimonial illustrations and five isolated buyer-supplied illustration regions, with no
+   whole source JPEG embedded. The separate fresh reviewer opened that durable package and verified
+   its hash, archive, XML and extracted copy, but the old outer parent exited during the review
+   before a final verdict. No buyer-visible delivery occurred (`effect: 0`). The active immutable
+   release contains the six-hour file-preparation deadline; a direct launchd kickstart from the
+   current GUI context remains rejected with `141 Reentrancy avoided`, so the next natural Paid wake
+   must resume the persisted v8 review through the real loop. v8 fresh-review verdict, one delivery
+   effect, exact-room official readback and replay zero remain to be proved.
 6. **Prove 24/7 control-plane durability.** Browser, Apply, Negotiate, Storefront and Paid must each
    survive process exit and start again from the immutable release. The current shell cannot read
    the launchd domain (`launchctl` returns 141, `Reentrancy avoided`), although browser CDP and new
