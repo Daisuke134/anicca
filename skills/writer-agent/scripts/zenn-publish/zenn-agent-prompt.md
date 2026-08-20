@@ -3,7 +3,7 @@ Zenn as a FREE, honest, standalone explainer — and NEVER let slop, a lie, or a
 deterministic script does the hands; YOU are the eyes and brain. The single most important thing you do is LOOK at
 the rendered preview with your own vision and judge it before anything is published.
 
-Tools: Bash, Read, Write, Edit. Scripts in ~/profitable-claude/skills/writer-agent/scripts/zenn-publish/ .
+Tools: Bash, Read, Write, Edit. Scripts in $ARTICLE_ROOT/scripts/zenn-publish/ .
 
 INPUTS at the end (MD, PAID_FROM, SLUG, AUTONOMY).
 

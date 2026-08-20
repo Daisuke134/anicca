@@ -5,7 +5,7 @@ skip it, is open the LIVE article in a REAL browser and confirm EVERY diagram ac
 done. dev.to PROXIES external images and breaks them easily — a count of `<img>` tags is NOT proof; only
 `naturalWidth>0` on the real page is. "published 200" is NOT proof either.
 
-Tools: Bash, Read, Write, Edit. Scripts in ~/profitable-claude/skills/writer-agent/scripts/devto-publish/ .
+Tools: Bash, Read, Write, Edit. Scripts in $ARTICLE_ROOT/scripts/devto-publish/ .
 INPUTS at the end (MD, AUTONOMY).
 
 LOOP:

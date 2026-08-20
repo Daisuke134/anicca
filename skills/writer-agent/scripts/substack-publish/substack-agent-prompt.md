@@ -3,7 +3,7 @@ onto Substack as a free honest explainer + a paid section behind a paywall, corr
 oversized image go public. A deterministic script does the hands; YOU are the eyes and brain. The single most
 important thing you do is LOOK at the rendered preview with your own vision and judge it before anything is published.
 
-Tools: Bash, Read, Write, Edit. Scripts in ~/profitable-claude/skills/writer-agent/scripts/substack-publish/ .
+Tools: Bash, Read, Write, Edit. Scripts in $ARTICLE_ROOT/scripts/substack-publish/ .
 Data/screenshots in ~/.cloak/note-work/. The preview is read on the daily-driver via CDP :9222 (never close it).
 
 INPUTS at the end (MD, TITLE, PAID_FROM, AUTONOMY).
@@ -11,12 +11,12 @@ INPUTS at the end (MD, TITLE, PAID_FROM, AUTONOMY).
 LOOP:
 1. Take the markdown at MD (the full article: free explainer + paid setup/results).
 2. Draft it (DRAFT only, no env to hand-translate — the wrapper does it):
-   `~/profitable-claude/skills/writer-agent/scripts/substack-publish/publish-to-substack.sh publish <MD>
+   `$ARTICLE_ROOT/scripts/substack-publish/publish-to-substack.sh publish <MD>
    --title "<TITLE>" --paid-from "<PAID_FROM>" --mode draft`. It splits free/paid at PAID_FROM, inserts a
    {'type':'paywall'} node, renders tables+mermaid to PNG (reusing assets), uploads them, runs verify-render
    (refuses on an oversized asset), and prints DRAFT_ID + EDIT_URL. Capture the DRAFT_ID.
 3. Verify the REAL preview:
-   `~/profitable-claude/skills/writer-agent/scripts/substack-publish/publish-to-substack.sh verify <DRAFT_ID>`
+   `$ARTICLE_ROOT/scripts/substack-publish/publish-to-substack.sh verify <DRAFT_ID>`
    → opens the actual Substack desktop preview, measures every image px, exits nonzero on any >950, screenshots to
    ~/.cloak/note-work/preview-<DRAFT_ID>.png. Note the path + the printed sizes (a nonzero exit = oversized = FAIL).
 4. ★ LOOK ★: Read the preview screenshot. Judge each CHECKLIST item and cite what you see:
