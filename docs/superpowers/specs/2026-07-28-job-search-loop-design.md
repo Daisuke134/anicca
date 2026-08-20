@@ -112,8 +112,8 @@ compensation, work authorization, or quantitative impact.
 | `muit_rm_summary` | Prompt-tuned agents that summarize company information for relationship managers | user statement |
 | `mufg_agentforce` | Contributed to MUFG’s Japan-first Agentforce for Financial Services deployment; never claim sole ownership | user statement + Salesforce public announcement |
 | `iclr_2026` | Attended ICLR 2026 in Rio, shared learnings internally, and appeared in the public MUIT paper-report video | user statement + public video |
-| `naist_2024_2026` | NAIST, 2024-04–2026-04; EEG and machine-learning research on mind-wandering detection | user statement + existing resumes |
-| `atr_research` | Conducted and presented mind-wandering research at ATR | user statement + existing resumes |
+| `naist_2024_2026` | Nara Institute of Science and Technology, 2024-04–2026-04; EEG and machine-learning research on mind-wandering detection | user statement + existing resumes |
+| `atr_research` | Conducted and presented mind-wandering research at Advanced Telecommunications Research Institute International during the same period | user statement + existing resumes |
 | `agent_club` | Founded a weekly lab/graduate-school session on Claude Code, Codex, Cursor, and AI-agent research workflows | user statement |
 | `anicca_consumer` | Built Swift/iOS consumer products and worked on consumer growth; Anicca reached USD 100 MRR | user statement; metric is candidate-asserted |
 | `life_manager` | Builds Life Manager, a consumer agent for financial, physical, and mental health workflows | user statement + public product page |
@@ -966,6 +966,16 @@ section; Life Manager and Portfolio are not included in this application variant
 must not invent formal PM,
 sales quota, people-management, or revenue ownership.
 
+The approved technical-business baseline is now promoted at the canonical private
+path `materials/business/Daisuke_Narita_AI_Business_Resume.pdf`. Its approved
+SHA-256 is `d1aefe5634a8fc37f667bca69842d07e3b4c8b8e8fc383a1c1d73cc9ff1338f4`.
+The corrected consumer-product bullet reads “45+ user ratings and a 4.5/5 average
+score”; it does not repeat “rating”. The prior artifact SHA
+`2e3ed9c27c7c4abc6dc6ff478c5718821d3d4ad4a5034c99f808841f41a1cd88` is retained in
+the private history archive, and historical ledger rows point to that archive so
+past submitted-resume evidence remains byte-identifiable. New routing resolves to
+the approved artifact.
+
 ### 7.1 Resume-refinement skill contract
 
 The versioned `skills/job-hunter/SKILL.md` is the provider-neutral resume-first
@@ -1259,7 +1269,7 @@ not start merely because their design is already written:
 | `JOB-AUTONOMY-CONTRACT-11A` | `completed` | PR #1364 / final CI `30473862095`; this specification states current truth, four resident drivers, verifier boundary, Telegram/Life Manager UX, human-only boundaries, local→cloud contract and the complete dependency order |
 | `JOB-OUTCOME-ATTRIBUTION-11B` | `completed` | PR #1374 / merge `683ba9562` / final CI `30502556044`; immutable content-addressed generations and DB-enforced immutable assignments/outcomes persist; one external receipt may prove multiple stages only for its bound application; negative silence requires a versioned observation policy; Gmail submission confirmation is attributed; 191 job-loop and 11 runner tests pass; the redacted CLI migrated the live 5-row ledger with unchanged state counts, zero unassigned rows and integrity `ok`; projection rebuild is deterministic |
 | `JOB-LEARNING-PASS-11C` | `completed` | PR #1376 / merge `1bdbc67d3` / final CI `30507559728`; health-status follow-up PR #1377 / merge `fd26398cc`. 203 job-loop + 11 runner tests pass. Sunday 09:15 JST launchd and persistent systemd drivers replay eight safety cases, deterministically assign future canonical job keys, evaluate authoritative interview outcomes, atomically promote/close/rollback with pointer-race fencing, and send one content-addressed Telegram report. The live ledger stayed integrity `ok` with unchanged 2 submitted / 1 submit-unknown / 2 not-submitted counts; its first 0/0-sample decision was correctly inconclusive, receipt `175d3b7be5db06f88dbdc9aaf9428dfbda3fe65245a497a1f377b6271255564c`, Telegram ACK `4530`; canonical LaunchAgent reached runs=4 / last exit=0 and the three-driver healthcheck reports learning `status=success` with both SQLite integrity checks `ok` |
-| `JOB-RESUME-MATERIALS-1R` | `pending_actionable` | Reopen the accepted resume baseline; generate engineering, technical-business, Japanese resume and Japanese rirekisho from the private truth ledger; enforce one-page/single-column/ATS-readable output, action→technical approach→evidence bullets, visual whitespace checks, extracted-text checks and SHA-256 receipts; resolve the TOEFL 95/96 conflict before publishing, retain verified TOEIC 910 plus DELE B1, and preserve the approved Mitsubishi UFJ Information Technology/A10 facts |
+| `JOB-RESUME-MATERIALS-1R` | `in_progress` | The approved technical-business baseline is promoted and historical evidence is preserved; remaining work is the unresolved language-evidence gate plus canonical engineering/Japanese/rirekisho refresh and verification. |
 | `JOB-SKILL-BUNDLE-1S` | `pending_after_1R` | Extract a harness-neutral `skills/job-hunter/SKILL.md` and `loops/job-hunter/` registry from the current app without changing behavior; Codex is the first adapter, Claude and generic providers consume the same input/output schemas, and parity tests prove no duplicate executor or side-effect ownership |
 | `JOB-HARNESS-PARITY-1H` | `pending_after_1S` | Add `claude-direct` and generic-provider candidates behind the same task-class schemas; preserve Codex-first selection, retry only transient provider failures, record provider/model/attempt evidence, and pass one fixed fixture through Codex, Claude and generic adapters without duplicate side effects |
 | `JOB-TELEGRAM-COVERAGE-1T` | `pending_after_1H` | Add one versioned event envelope and deterministic natural-language renderer; wire loop start/finish, model attempts/fallbacks, discovery/ranking, materials/ATS readiness, every external side effect, blockers, reconciliation, prep, learning and health into the fenced Telegram outbox; model failure must still produce a human-readable report and every delivery must have an ACK or durable `delivery_unknown` event |
@@ -1277,14 +1287,14 @@ slice has one owner, one acceptance result and one durable receipt.
 
 | Slice | Parent | Status | Done when |
 |---|---|---|---|
-| `JOB-RESUME-FACTS-1R-A` | 1R | `pending_actionable` | The private truth ledger records one exact TOEFL value, verified TOEIC 910 and DELE B1; full institution names and periods for Keio University (April 2020–April 2024), Nara Institute of Science and Technology (April 2024–April 2026), and concurrent Advanced Telecommunications Research Institute International research; the old accepted material baseline is explicitly reopened. |
-| `JOB-RESUME-EN-1R-B` | 1R | `pending_after_1R-A` | Engineering and technical-business English HTML/PDF variants render from the ledger with the new one-page hierarchy: Mitsubishi UFJ Information Technology first, two accomplishment blocks (three nested Agentforce deployment bullets, then one ICLR bullet), separate Research Experience and Education sections with full institution names and chronology, one banking customer term, A10 details, and Anicca last. |
+| `JOB-RESUME-FACTS-1R-A` | 1R | `in_progress` | Full institution names and periods are recorded. The remaining gate is evidence-backed resolution of the TOEIC 910 request versus the currently approved TOEFL iBT 96 / Duolingo English Test 140 / DELE B1 profile; no unverified TOEIC claim is emitted. |
+| `JOB-RESUME-EN-1R-B` | 1R | `in_progress` | The approved technical-business PDF is canonical and verified; the engineering variant still needs its canonical refresh before the English bundle is closed. Both variants must retain the one-page hierarchy, separate Research Experience/Education sections and full institution names. |
 | `JOB-RESUME-JA-1R-C` | 1R | `pending_after_1R-A` | Japanese 履歴書 and 職務経歴書 render from the same ledger with separate 学歴・職歴・研究 sections, full attendance periods, formal institution names, the language section, and grounded claims. |
 | `JOB-RESUME-VERIFY-1R-D` | 1R | `pending_after_1R-B-C` | Visual inspection, `pdftotext`, claim validation, ATS checks and SHA receipts pass for all four artifacts. |
-| `JOB-RESUME-SKILL-1R-E` | 1R | `in_progress` | `skills/job-hunter/SKILL.md`, its evidence-backed references, and resume-refinement eval prompts define intake, fact-bank construction, one approval gate, autonomous post-approval refinement, and provider-neutral outputs without private data. |
+| `JOB-RESUME-SKILL-1R-E` | 1R | `completed` | `skills/job-hunter/SKILL.md`, its evidence-backed references, and resume-refinement eval prompts define intake, fact-bank construction, one approval gate, autonomous post-approval refinement, and provider-neutral outputs without private data; focused material tests and JSON validation pass. |
 | `JOB-RESUME-ONBOARD-1R-F` | 1R | `pending_after_1R-E` | A first-run fixture accepts email, resume, and supplemental information; writes a private fact bank; records unresolved fields; and never guesses missing facts. |
 | `JOB-RESUME-REFINE-1R-G` | 1R | `pending_after_1R-F` | A fixed JD fixture produces a success profile, confidence-scored evidence mapping, separate project bullets, ATS-ready HTML/PDF, a before/after report, and exact hashes. |
-| `JOB-RESUME-APPROVAL-1R-H` | 1R | `pending_after_1R-G` | Explicit user approval promotes one baseline revision and its hashes; drafts, Telegram delivery, and silence cannot promote it. |
+| `JOB-RESUME-APPROVAL-1R-H` | 1R | `completed` | Daisuke explicitly approved the corrected technical-business baseline; revision SHA `d1aefe5634a8fc37f667bca69842d07e3b4c8b8e8fc383a1c1d73cc9ff1338f4` is promoted, the old SHA is archived for historical receipts, and Telegram delivery is not used as the approval signal. |
 | `JOB-RESUME-AUTOPILOT-1R-I` | 1R | `pending_after_1R-H` | The resident job loop reuses the approved baseline without recurring resume questions, reports each material event, and stops only for new factual/consent conflicts. |
 | `JOB-SKILL-CONTRACT-1S-A` | 1S | `pending_after_1R-D` | `skills/job-hunter/SKILL.md` has valid frontmatter, relative references, no private data and one contract test. |
 | `JOB-LOOP-REGISTRY-1S-B` | 1S | `pending_after_1S-A` | `loops/job-hunter/registry.yaml` maps each loop to exactly one schedule, task schema and evidence root. |
