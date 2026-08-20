@@ -1,8 +1,8 @@
 # Affiliate local money loop handover
 
 - SSOT: `docs/affiliate-agent/AFFILIATE-AGENT-SSOT.md`; resume from `Measured planning checkpoint and next TODOs`, then `Remaining autonomous money-loop work — canonical order`.
-- Development route: `/Users/anicca/anicca-project/.worktrees/affiliate-life-manager-spec`, branch `docs/affiliate-life-manager-spec`. The branch remains descended from required base `0a7debb58`; latest source/runtime commit is `be76c390d`.
-- Installed runtime: `/Users/anicca/.local/share/life-manager/affiliate/current` → release `be76c390d15b664326d2329d6af669b4696ad8db`; `current` is byte-backed by that immutable release. The existing owner naturally woke at `2026-08-20T14:55:19Z` through this `current` path, preserved the ledger, and kept the prior empty official revenue artifact while the revenue stage was `COOLDOWN` (no fresh provider capture). Any future `skills/affiliate` change requires immutable install and real owner replay.
+- Development route: `/Users/anicca/anicca-project/.worktrees/affiliate-life-manager-spec`, branch `docs/affiliate-life-manager-spec`. The branch remains descended from required base `0a7debb58`; latest source/runtime commit is `b4e943961`.
+- Installed runtime: `/Users/anicca/.local/share/life-manager/affiliate/current` → release `b4e943961d6755e1b04d700097983aa887c2b1fc`; `current` is byte-backed by that immutable release. The existing owner naturally woke at `2026-08-20T15:31:26Z` through this `current` path, preserved the ledger, observed 46 Repost post actions with 0 exact Affiliate campaign joins and 46 unjoined actions, sent Telegram `26355`, and kept revenue at cooldown with no money. Any future `skills/affiliate` change requires immutable install and real owner replay.
 - The next bounded P3 bridge is source-implemented but not yet installed: the
   Affiliate owner will read the existing Repost ledger only through
   `AFFILIATE_REPOST_STATE_DIR`, hash and count valid `posted.jsonl` actions, and
@@ -10,8 +10,8 @@
   Repost owner and it will persist `POST_ACTION_COUNT_ONLY / NO_REVENUE_CREDIT`.
   Read-only inspection of the real Repost state currently shows 46 valid post
   actions, 0 exact Affiliate campaign joins, 46 unjoined actions, and 0 invalid
-  rows. Installed owner proof and the later owned-visit/provider-click/transaction
-  join remain open.
+  rows. The installed b4e owner proof is complete for this observation bridge;
+  the later owned-visit/provider-click/transaction join remains open.
 - The first natural wake after installing `7598029bd` exposed an independent
   ordering fault: the PartnerStack `Custom links` Playwright selector timed out
   before the late Repost observer could write its receipt. No public effect or
