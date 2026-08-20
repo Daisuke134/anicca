@@ -1,8 +1,8 @@
 # Affiliate local money loop handover
 
 - SSOT: `docs/affiliate-agent/AFFILIATE-AGENT-SSOT.md`; resume from `Measured planning checkpoint and next TODOs`, then `Remaining autonomous money-loop work — canonical order`.
-- Development route: `/Users/anicca/anicca-project/.worktrees/affiliate-life-manager-spec`, branch `docs/affiliate-life-manager-spec`. The branch is clean/pushed and remains descended from required base `0a7debb58`; latest source/runtime commit is `792f483eb028cb1c7886f75571515e3616337297`.
-- Installed runtime: `/Users/anicca/.local/share/life-manager/affiliate/current` → release `792f483eb028cb1c7886f75571515e3616337297`; `current` is byte-backed by that immutable release. Any future `skills/affiliate` change requires immutable install and real owner replay.
+- Development route: `/Users/anicca/anicca-project/.worktrees/affiliate-life-manager-spec`, branch `docs/affiliate-life-manager-spec`. The branch is clean/pushed and remains descended from required base `0a7debb58`; latest source/runtime commit is `cc775c3744094edf99087023ae36f3deb0936640`.
+- Installed runtime: `/Users/anicca/.local/share/life-manager/affiliate/current` → release `cc775c3744094edf99087023ae36f3deb0936640`; `current` is byte-backed by that immutable release. Any future `skills/affiliate` change requires immutable install and real owner replay.
 - Repository decision: one Life Manager implementation at `skills/affiliate/`; no Affiliate-only repo, executor, ledger, `apps/api`, or Railway runtime. Private mutable state stays under `~/.local/state/life-manager/affiliate/`. OSS is the same proven Skill packaged for a clean Mac, never a rewrite.
 
 ## Current measured truth
@@ -450,3 +450,14 @@ rolling net `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`, and no
 Telegram pending row. No manual executor, provider capture, public effect, or
 money claim was created. Codex sent the readback milestone as Telegram message
 `26211`.
+
+Follow-up source commit `cc775c3744094edf99087023ae36f3deb0936640` repairs the
+Impact playbook drift: the authenticated page title `Impact - Welcome` is now a
+valid provider tab, and `HubSpot, Inc. application` plus `Declined` classifies as
+`REJECTED / DO_NOT_RESUBMIT`. A live CDP readback at
+`2026-08-20T13:20:15Z` and a temporary poll produced the expected state and a
+deterministic transition ID without touching production state. The installer
+switched `current` to cc775c374 but stopped at browser bootstrap
+`141: Reentrancy avoided`; the existing owner still needs to persist this
+rejection and emit its deduplicated program receipt. No HubSpot link, public
+effect, or money was created.
