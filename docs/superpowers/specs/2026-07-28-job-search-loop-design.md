@@ -1088,6 +1088,14 @@ hit host `No space left on device` while appending evidence. The host was restor
 by removing only 201 reproducible old release directories (active plus the newest
 10 retained); ledger, outbox, evidence and `.codex` sessions were not removed.
 
+A later one-shot canonical-wrapper verification from the same active release,
+`daily-20260820-213110`, completed with `rc=0`, Codex `gpt-5.6-terra`/medium,
+and Telegram ACK `26155`. It found no verified eligible posting
+(`no_eligible_job_found`) and therefore submitted nothing; discovery-provider
+failures and a browser fallback that reached Google sign-in were reported as
+blockers. This proves the current wrapper, browser lane, safety gates and report
+transport, but it does not prove resident cadence while launchd remains broken.
+
 The previous daily outbox row had been left at `send_started` by the superseded
 OpenClaw transport with the invalid placeholder destination `0000000000`; the
 transport returned `chat not found` before any delivery. A mode-0600 backup was
@@ -1368,7 +1376,7 @@ slice has one owner, one acceptance result and one durable receipt.
 
 | Slice | Parent | Status | Done when |
 |---|---|---|---|
-| `JOB-LOOP-CADENCE-2A` | 11 | `in_progress` | The resident acquisition owner uses a 30-minute LaunchAgent/systemd interval, processes at most one candidate per wake, preserves the ten-application Japan-day portfolio cap, and passes plist lint plus scheduler-template tests. The installed plist reads `StartInterval=1800`; the active release is `3a4caa720` and its direct canonical-wrapper pass completed with Codex/local-proxy, browser, ledger and Telegram evidence (`daily-20260820-210141`, schema-valid `rc=0`, report ACK `26116`; active-release transport proof ACK `26095`; direct document proof ACK `26091`). The installer and healthcheck now resolve `Aqua → gui/<uid>` or `Background → user/<uid>` and fail closed with rc75 when the manager context is unavailable. `launchctl print`, `kickstart`, and `bootout/bootstrap` readback remain blocked by macOS error 141 (`Reentrancy avoided`), while `launchctl managername` returns rc153. This is a host user-launchd/LaunchServices bootstrap failure; the loop is not marked live until the user GUI launchd domain is recovered and the plist is read back successfully. |
+| `JOB-LOOP-CADENCE-2A` | 11 | `in_progress` | The resident acquisition owner uses a 30-minute LaunchAgent/systemd interval, processes at most one candidate per wake, preserves the ten-application Japan-day portfolio cap, and passes plist lint plus scheduler-template tests. The installed plist reads `StartInterval=1800`; the active release is `3a4caa720` and its direct canonical-wrapper passes completed with Codex/local-proxy, browser, ledger and Telegram evidence (`daily-20260820-210141`, schema-valid `rc=0`, report ACK `26116`; one-shot `daily-20260820-213110`, `rc=0`, no eligible posting, report ACK `26155`; active-release transport proof ACK `26095`; direct document proof ACK `26091`). The installer and healthcheck now resolve `Aqua → gui/<uid>` or `Background → user/<uid>` and fail closed with rc75 when the manager context is unavailable. `launchctl print`, `kickstart`, and `bootout/bootstrap` readback remain blocked by macOS error 141 (`Reentrancy avoided`), while `launchctl managername` returns rc153. This is a host user-launchd/LaunchServices bootstrap failure; the loop is not marked live until the user GUI launchd domain is recovered and the plist is read back successfully. |
 | `JOB-RESUME-FACTS-1R-A` | 1R | `completed` | Full institution names and periods are recorded, and Daisuke confirmed TOEIC 910. The private truth ledger now records TOEFL iBT 96, TOEIC 910, Duolingo English Test 140 and DELE B1; no language claim remains unresolved. |
 | `JOB-RESUME-EN-1R-B` | 1R | `in_progress` | The approved technical-business PDF is canonical and verified; the engineering variant still needs its canonical refresh before the English bundle is closed. Both variants must retain the one-page hierarchy, separate Research Experience/Education sections and full institution names. |
 | `JOB-RESUME-JA-1R-C` | 1R | `pending_after_1R-A` | Japanese 履歴書 and 職務経歴書 render from the same ledger with separate 学歴・職歴・研究 sections, full attendance periods, formal institution names, the language section, and grounded claims. |
