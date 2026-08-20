@@ -151,6 +151,19 @@ def _relative_config_path(value: Any, field: str, default: str) -> Path:
     return path
 
 
+def _state_path(
+    skill_dir: Path, state_dir: Path | str | None, value: str | Path
+) -> Path:
+    """Resolve mutable receipts outside an immutable release when configured."""
+
+    if state_dir is None:
+        return skill_dir / value
+    relative = Path(value)
+    if relative.parts and relative.parts[0] == "state":
+        relative = Path(*relative.parts[1:])
+    return Path(state_dir) / relative
+
+
 def _configured_publisher_source(
     skill_dir: Path, config: Mapping[str, Any]
 ) -> tuple[str, dict[str, Any], Path]:
@@ -526,6 +539,7 @@ def configured_full_body_observations(
     config: Mapping[str, Any],
     *,
     observed_at: str,
+    state_dir: Path | str | None = None,
     fetcher: Any = None,
 ) -> list[dict[str, Any]]:
     """Capture one configured publisher page as a durable demand observation.
@@ -541,7 +555,7 @@ def configured_full_body_observations(
         _source_url(source.get("official_program_url")) or "",
         "rss",
     )
-    opportunity_database = skill_dir / "state/opportunities.sqlite3"
+    opportunity_database = _state_path(skill_dir, state_dir, "state/opportunities.sqlite3")
     if opportunity_database.exists():
         policy_rows = _read_only_rows(
             opportunity_database,
@@ -571,6 +585,7 @@ def configured_full_body_observations(
                 skill_dir,
                 config,
                 observed_at=observed_at,
+                state_dir=state_dir,
             )
         except DemandObservationError as cached_error:
             raise DemandObservationError(
@@ -599,11 +614,11 @@ def configured_full_body_observations(
         "evidence_units": evidence_units,
         "evidence_windows": evidence_windows,
     }
-    receipt_path = skill_dir / _relative_config_path(
+    receipt_path = _state_path(skill_dir, state_dir, _relative_config_path(
         config.get("demand_source_receipt"),
         "demand_source_receipt",
         "state/demand-source-bodies.json",
-    )
+    ))
     _atomic_json(
         receipt_path,
         {
@@ -627,6 +642,7 @@ def cached_full_body_observations(
     config: Mapping[str, Any],
     *,
     observed_at: str,
+    state_dir: Path | str | None = None,
     max_age_seconds: int = CACHED_PUBLISHER_MAX_AGE_SECONDS,
 ) -> list[dict[str, Any]]:
     """Reuse a recently verified publisher body during a bounded source outage.
@@ -638,11 +654,11 @@ def cached_full_body_observations(
 
     skill_dir = Path(skill_dir)
     source_id, source, _source_config = _configured_publisher_source(skill_dir, config)
-    receipt_path = skill_dir / _relative_config_path(
+    receipt_path = _state_path(skill_dir, state_dir, _relative_config_path(
         config.get("demand_source_receipt"),
         "demand_source_receipt",
         "state/demand-source-bodies.json",
-    )
+    ))
     if not receipt_path.exists() or receipt_path.is_symlink() or not receipt_path.is_file():
         raise DemandObservationError("demand source receipt is missing or not a regular file")
     try:

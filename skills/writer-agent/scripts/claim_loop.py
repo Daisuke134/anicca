@@ -1288,6 +1288,7 @@ def run_loop(
                     skill_dir,
                     config,
                     observed_at=observed_at,
+                    state_dir=state,
                 )
                 configured_urls = {
                     str(row.get("source_url"))
