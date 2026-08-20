@@ -1076,6 +1076,16 @@ def _paid_fence_open_for_thread(path: Path, thread_id: str) -> bool:
     ))
 
 
+def _close_paid_handoff(
+    database: Path, manifest: Path, fences_path: Path, thread_id: str,
+) -> list[dict[str, Any]]:
+    if not _paid_fence_open_for_thread(fences_path, thread_id):
+        return []
+    return ConnectorOutbox(database, manifest).close_paid_handoff(
+        thread_id, observed_at=int(time.time()),
+    )
+
+
 def _targeted_effect_result(
     lane: dict[str, Any], *, thread_id: str, action_id: int | None = None,
     expected_revision: int | None = None,
@@ -1297,9 +1307,16 @@ def _run_effect_pipeline(
             )
         raise
     if target and _paid_fence_open_for_thread(fences_path, thread_id):
-        return _targeted_pending(
-            thread_id, run_id, error="paid_talkroom_effect_refused", blocked=1,
+        closed = _close_paid_handoff(
+            Path(args.database), Path(args.manifest), fences_path, thread_id,
         )
+        return {
+            "status": "paid_handoff", "thread_id": thread_id, "run_id": run_id,
+            "replied": 0, "official_readback": 0, "duplicate_effect": 0,
+            "closed_without_send": len(closed), "blocked": 0, "pending": 0,
+            "events": [], "errors": [],
+            "closed_action_ids": [row["action_id"] for row in closed],
+        }
 
     estimate_result: dict[str, Any] = {
         "estimate_required": 0, "estimate_effect": 0,
@@ -1493,6 +1510,18 @@ def run_targeted_estimate(
         ):
             return _targeted_pending(thread_id, run_id, error="estimate_binding_changed")
         evidence.mkdir(parents=True, exist_ok=True, mode=0o700)
+        _orders, fences_path = _collect_fresh_orders_and_fence(args, evidence=evidence)
+        if _paid_fence_open_for_thread(fences_path, thread_id):
+            closed = _close_paid_handoff(
+                Path(args.database), Path(args.manifest), fences_path, thread_id,
+            )
+            return {
+                "status": "paid_handoff", "thread_id": thread_id, "run_id": run_id,
+                "estimate_required": 0, "estimate_effect": 0, "estimate_readback": 0,
+                "estimate_pending": 0, "estimate_failed": 0, "estimate_events": [],
+                "closed_without_send": len(closed), "pending": 0, "errors": [],
+                "closed_action_ids": [row["action_id"] for row in closed],
+            }
         snapshot_path = evidence / "marketplace-snapshot.json"
         command = [
             sys.executable, str(args.snapshot_script), "--output", str(snapshot_path),

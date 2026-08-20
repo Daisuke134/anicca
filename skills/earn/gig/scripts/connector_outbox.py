@@ -2408,6 +2408,42 @@ class ConnectorOutbox:
             self._append_closure_record(record)
         return result
 
+    def close_paid_handoff(self, thread_id: str, *, observed_at: int) -> list[dict[str, Any]]:
+        """Remove every unfinished pre-purchase action after an official purchase.
+
+        The caller owns the fresh marketplace proof.  Intents are deliberately
+        preserved as attempted-send evidence; paid ownership only removes these
+        actions from Negotiate projections and releases any held thread slot.
+        """
+        self._manifest(require_enabled=False)
+        thread_id = self._require_key("thread_id", thread_id)
+        observed_at = self._require_timestamp("observed_at", observed_at)
+        records: list[dict[str, Any]] = []
+        with self._write() as connection:
+            actions = connection.execute(
+                """SELECT * FROM connector_actions
+                   WHERE platform='coconala' AND thread_id=? AND dlq_at IS NULL
+                     AND state IN ('pending','claimed','intent_ready','reconcile_pending','blocked')
+                   ORDER BY action_id""",
+                (thread_id,),
+            ).fetchall()
+            for action in actions:
+                self._require_monotonic(action, observed_at)
+                records.append(self._dead_letter(
+                    connection, action, reason="nothing_to_say:paid_handoff",
+                    attempts=0, attempts_kind="nothing_to_say",
+                    now=observed_at, closure="nothing_to_say",
+                ))
+                connection.execute(
+                    """UPDATE connector_actions
+                       SET owner=NULL,lease_until=0,updated_at=? WHERE action_id=?""",
+                    (observed_at, int(action["action_id"])),
+                )
+                self._release_slot(connection, int(action["action_id"]))
+        for record in records:
+            self._append_closure_record(record)
+        return records
+
     def close_already_delivered(
         self,
         action_id: int,

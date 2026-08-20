@@ -432,6 +432,10 @@ action completes.
   discount, revise the existing pre-purchase estimate when needed, and require official readback of
   the revised amount. The Haru thread's manually revised and purchased ¥1,800 proposal is historical
   evidence only; the loop must demonstrate this behavior naturally on a future conversation.
+- [ ] When a buyer asks the seller to set a feasible commitment line, propose concrete controllable
+  work volume from the current conversation and verified application instead of repeating the
+  question. Separate controllable activity guarantees from outcome targets, then send the official
+  estimate only after the buyer accepts the resulting scope, quantity, price and delivery terms.
 - [ ] Permit terminal no-send only for illegality, safety, deception, or truthful inability to
   deliver. Ordinary ambiguity or a broad request must receive a clarifying reply or a scoped offer;
   generic `対応できません` is not a valid escape disposition.

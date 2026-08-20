@@ -63,7 +63,7 @@ NA15_CATEGORY_IDS = {
 }
 
 SEMANTIC_RECEIPT_VERSION = 1
-SEMANTIC_PROMPT_VERSION = "reply-negotiate-v20"
+SEMANTIC_PROMPT_VERSION = "reply-negotiate-v21"
 SEMANTIC_RUNNER_PROFILE = "reply-semantic-agent"
 SEMANTIC_COMPATIBLE_RUNNER_PROFILES = frozenset({
     "composition-agent", SEMANTIC_RUNNER_PROFILE,
@@ -171,6 +171,8 @@ def semantic_prompt(
 - buyerの「X円でお願いします」「X円でお願いできればと思います」は、その金額で進める明示承認です。sellerが続けて「X円で見積ります」「見積りを送るのでお待ちください」と受諾したcycleでは、buyerが「公式」という単語を使っていなくても公式見積り送付は承認済みです。未承認としてwaitにしません。
 - buyerが他候補の価格や希望上限を示して値下げ余地を尋ねた場合、それは拒否ではなくcurrent cycleの再交渉です。案件scope、数量、納期、現在のseller提案、buyer提示額を全て読み、合法・安全で履行可能かつ公式フォーム下限以上なら、競争力のある合計価格を柔軟に提示します。固定割引率、category相場、別案件の価格を機械適用しません。
 - buyerが競合価格を示した後にsellerが具体的な対抗価格で入札・見積りすると述べた場合、そのseller価格をcurrent cycleの新しい条件として扱います。既存の公式見積りが別価格なら、購入前かつ変更可能な範囲で同一scopeの見積り変更を選び、変更後の公式cardが確認できるまで完了扱いにしません。buyerがその新価格を承認した後はsend_estimateです。
+- buyerがsellerへ実現可能なコミットライン・数量・最低保証の提案を求めた場合、曖昧な再確認や単なる復唱で返しません。current conversation、matching application、verified factsからsellerが直接制御できる作業量を具体化してreplyします。リスト作成数・送信数・制作本数などの入力/活動量と、アポ獲得数・売上・反応率など第三者行動に依存する成果を区別し、根拠のない成果保証はせず目標値として明記します。根拠から一意に決められない最小項目だけclarifyします。
+- コミットラインの提案にbuyerが同意し、価格・scope・数量・購入プラン・購入起点納期が揃ったらsend_estimateです。同意前は具体案をreplyし、見積りを先走りません。
 - conversation_state=seller_lastは未処理buyer actionが本当に0の時だけで、evidence_message_idsは必ず空配列です。buyer evidenceを1件でも判断根拠に残すならseller_lastを返してはいけません。
 - send_estimateはbuyerが現在のcycleで購入または見積り送付を承認し、title、内容、数量、合計価格、購入プラン、購入起点の納期が一意な場合だけです。各fieldへ根拠buyer message IDを付けます。別cycleを混ぜません。
 - buyerが公式の見積り提案送付を明示的に求め、必要条件が一意ならnext_action=send_estimateです。金額・内容・納期を通常reply_bodyへ書いて見積り送付の代わりにしてはいけません。条件が不足する場合だけclarifyまたはrequired_official_contextで補います。
