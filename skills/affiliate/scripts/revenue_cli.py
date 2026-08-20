@@ -310,7 +310,12 @@ def placement_candidates(state):
             campaign = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, ValueError):
             continue
-        if campaign.get("state") != "X_LIVE" or not campaign.get("slug"):
+        if (
+            campaign.get("state") not in
+            {"MATERIALIZED", "OWNED_NOT_LIVE", "OWNED_LIVE", "X_LIVE"}
+            or not campaign.get("slug")
+            or not campaign.get("placement_id")
+        ):
             continue
         campaigns_by_slug[campaign["slug"]] = campaign
         placement_id = campaign.get("placement_id")
