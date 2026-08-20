@@ -2,7 +2,7 @@
 
 - SSOT: `docs/affiliate-agent/AFFILIATE-AGENT-SSOT.md`; resume from `Measured planning checkpoint and next TODOs`, then `Remaining autonomous money-loop work — canonical order`.
 - Development route: `/Users/anicca/anicca-project/.worktrees/affiliate-life-manager-spec`, branch `docs/affiliate-life-manager-spec`. The branch remains descended from required base `0a7debb58`; latest source/runtime commit is `90b33832c`.
-- Installed runtime: `/Users/anicca/.local/share/life-manager/affiliate/current` → release `90b33832ce293865a20c07e64fc5d9be8131b214`; `current` is byte-backed by that immutable release. The existing owner naturally woke at `2026-08-20T16:03:43Z` through this `current` path, preserved 14 placements, observed the same 46 Repost post actions with `changed=false`, and kept revenue at cooldown with no money. The earlier changed observation sent Telegram `26355`; outbox/sent remain 106/106 with no pending event. The source owner created the dedicated subtitle experiment plan at `15:58:49Z` and its inbox at `16:05:45Z`; the repaired composition owner naturally quarantined the malformed Google attachment at `16:24:22Z` as `EXPERIMENT_PLAN_MISMATCH`, leaving only the corrected experiment unreceipted. Corrected experiment composition/publication remains open. Any future `skills/affiliate` change requires immutable install and real owner replay.
+- Installed runtime: `/Users/anicca/.local/share/life-manager/affiliate/current` → release `90b33832ce293865a20c07e64fc5d9be8131b214`; `current` is byte-backed by that immutable release. The existing owner naturally woke at `2026-08-20T16:03:43Z` through this `current` path, preserved 14 placements, observed the same 46 Repost post actions with `changed=false`, and kept revenue at cooldown with no money. The earlier changed observation sent Telegram `26355`; outbox/sent remain 106/106 with no pending event, and Codex milestone receipt `26396` records the repair. The source owner created the dedicated subtitle experiment plan at `15:58:49Z` and its inbox at `16:05:45Z`; the repaired composition owner naturally quarantined the malformed Google attachment at `16:24:22Z` as `EXPERIMENT_PLAN_MISMATCH`, then produced a sealed `READY_FOR_POLICY` corrected subtitle handoff at `16:34:37Z`. Policy, dedicated link, publication, provider transaction, and money remain open; a separate valid voice-isolator experiment inbox is unreceipted. Any future `skills/affiliate` change requires immutable install and real owner replay.
 - A later existing-owner `launchctl kickstart` attempt at `2026-08-20T15:36:27Z` returned `141: Reentrancy avoided`; `last-run.json` stayed at the prior wake and no placement, provider, Telegram, or ledger mutation occurred. This is not a new owner proof and does not authorize a parallel executor; retain the natural owner receipt above as the runtime evidence.
 - Release `90b33832ce293865a20c07e64fc5d9be8131b214` also repairs composition
   starvation after source refresh: unreceipted inboxes now precede receipt-backed
@@ -11,6 +11,14 @@
   subtitle experiment is the only unreceipted inbox. No publication, provider
   transaction, Telegram event, or money was created or inferred. Its next owner
   composition readback remains open.
+- The corrected subtitle experiment then reached `READY_FOR_POLICY` at
+  `2026-08-20T16:34:37Z` through the existing composition owner. Its official
+  source-set SHA is `5da2a6a4beda152c9da4f60d9f4c4b5ff5c6399b18175b95c8a9601db7ec78bf`,
+  result SHA is `ecb967667fd0c5e8b8fdbf77f6a59a25b348e2b25f3738affee27bb936f6225b`,
+  and handoff SHA is `7c83e48921b98ee6b9c2e5181162cd1c6b406b4b656c0b96e1a5d6850a132c3e`.
+  No policy receipt, dedicated link, publication, provider transaction, or money
+  exists for it; the valid voice-isolator experiment is the next unreceipted
+  owner item.
 - The next bounded P3 bridge is source-implemented but not yet installed: the
   Affiliate owner will read the existing Repost ledger only through
   `AFFILIATE_REPOST_STATE_DIR`, hash and count valid `posted.jsonl` actions, and
