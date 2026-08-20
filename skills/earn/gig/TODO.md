@@ -128,7 +128,10 @@ The order to the end is:
    acknowledgement exposed `estimate_event_conflict`: an untouched stale estimate action blocked
    the newer normal message. Queue handoff now closes only a pending estimate with no intent/click,
    then atomically retries the newer buyer event; prepared or clicked estimates remain protected.
-   Completion still requires a
+   The live loop closed action 344 with `nothing_to_say:buyer_message_after_estimate`, created action
+   349 for the buyer's purchase acknowledgement, replied and officially read it back with matching
+   intent/card hash `7100055b48c6...`; buyer-to-seller latency was about 11m26s, inside the 30-minute
+   product SLO. Completion still requires a
    durable disposition for every buyer-authored message: replied with official readback, estimate
    sent with official readback, intentionally no-send with a bounded policy reason, or still pending
    with an observable retry owner. Missing from the queue is never a valid disposition.
