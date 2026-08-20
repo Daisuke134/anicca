@@ -136,6 +136,10 @@ raise SystemExit(0)
         script = (APP_ROOT / "scripts" / "run-daily.sh").read_text(encoding="utf-8")
         self.assertIn('export JOB_SEARCH_DAILY_WAKE_ID="$RUN_ID"', script)
 
+        prompt = (APP_ROOT / "prompts" / "daily-pass.md").read_text(encoding="utf-8")
+        self.assertIn("candidate-level transport", prompt)
+        self.assertIn("at least five", prompt)
+
         result_schema = json.loads(
             (APP_ROOT / "schemas" / "pass-result.v1.schema.json").read_text(
                 encoding="utf-8"

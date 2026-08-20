@@ -119,7 +119,14 @@ or account creation fails, record the exact non-secret blocker, release/avoid th
 slot, and continue to other eligible jobs instead of ending discovery. Never treat
 an invisible reCAPTCHA frame alone as a visible challenge; never bypass or answer an
 actual CAPTCHA. If the evaluator fails, returns not ready, or the application form
-never appears, record `not_submitted` without claiming a slot.
+never appears, record that candidate's exact blocker as `not_submitted` without
+claiming a slot, then immediately continue to the next distinct eligible official
+ATS URL. A committed page with zero posting text is a candidate-level transport
+failure, not proof that the discovery set is empty. Keep a queue of at least five
+distinct eligible official URLs when discovery returned them, and do not report
+`no_eligible_job_found` until those candidates are exhausted or a verified
+eligible candidate has been submitted/claimed. The one-candidate wake fence still
+prevents a second claim.
 
 Before any submit click, save the complete normalized official posting text in a
 private mode-0600 file beside `$JOB_SEARCH_BROWSER_OWNER_EVIDENCE`, determine the
