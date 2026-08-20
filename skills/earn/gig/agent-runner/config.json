@@ -175,23 +175,7 @@
           "provider": "codex",
           "model": "gpt-5.6-luna",
           "effort": "medium",
-          "timeout_seconds": 40
-        },
-        {
-          "provider": "claude-direct",
-          "model": "gpt-5.3-codex-spark",
-          "timeout_seconds": 40
-        },
-        {
-          "provider": "hermes",
-          "inference_provider": "gemini",
-          "model": "gemini-2.5-flash",
-          "profile": "gigapply",
-          "toolsets": [
-            "clarify"
-          ],
-          "required_capabilities": [],
-          "timeout_seconds": 40
+          "timeout_seconds": 120
         }
       ]
     },
