@@ -695,3 +695,19 @@ non-persistent receipt-field fixture passed. The immutable installer switched
 `2026-08-20T14:55:19Z` with `ALREADY_LIVE`, revenue `COOLDOWN`, no fresh capture,
 zero observed rows, no duplicate effect, and no pending Telegram event. The
 first official transaction and exact placement join remain open.
+
+E02 was revalidated read-only on `2026-08-21` against the official Semrush
+English program page and Japanese KB. They currently state 120-day last-click
+attribution, $10 eligible trials, product/tier sale commissions up to $450,
+first-purchase/new-user attribution, a 2+ hour report delay, Impact tracking,
+EFT/PayPal withdrawal, transaction locking 27 days after month end and payment
+21 days after locking, FTC disclosure, and self-referral/cookie-stuffing
+prohibition. The public admission gate still requires a relevant public
+property and generally at least 1,000 monthly unique visitors or significant
+organic social audience. The Impact terms/report route remains a redirect loop
+outside an authenticated program; CRWL independently failed with Chromium
+`bootstrap_check_in` 141 and scrapy failed DNS resolution for the English,
+Japanese, and official URLs. Therefore E02 stays `PARTIAL /
+WAITING_FOR_LOCAL_TERMS_CAPTURE`; no application, Semrush link, click, or money
+was created. Sources: <https://www.semrush.com/lp/affiliate-program/en/> and
+<https://ja.semrush.com/kb/97-affiliate-program>.
