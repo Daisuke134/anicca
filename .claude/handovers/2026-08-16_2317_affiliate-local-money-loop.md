@@ -444,6 +444,9 @@ keeping stable failure identity and no-public-effect wording. Isolated pin,
 budget, invalid-config, timeout, start-failure, and failure-priority/dedupe
 fixtures plus focused inventory/revenue/acquisition checks passed `15/15`. The
 installer switched `current` to this release but again stopped at browser
-bootstrap `141: Reentrancy avoided`; no post-switch owner wake is observed yet,
-and no manual executor, provider capture, public effect, or money claim was
-created.
+bootstrap `141: Reentrancy avoided`; the existing owner nevertheless woke
+naturally at `2026-08-20T13:09:27Z` and read back `ALREADY_LIVE`, 13 placements,
+rolling net `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`, and no
+Telegram pending row. No manual executor, provider capture, public effect, or
+money claim was created. Codex sent the readback milestone as Telegram message
+`26211`.
