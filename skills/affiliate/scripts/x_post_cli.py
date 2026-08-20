@@ -76,7 +76,9 @@ def timeline_posts(ws, request_id):
       text: tweet.querySelector('[data-testid="tweetText"]')?.innerText || '',
       url: tweet.querySelector('a[href*="/status/"]')?.href || '',
       outbound: [...tweet.querySelectorAll('[data-testid="tweetText"] a')]
-        .map(anchor => anchor.href || '')
+        .map(anchor => anchor.href || ''),
+      outbound_text: [...tweet.querySelectorAll('[data-testid="tweetText"] a')]
+        .map(anchor => anchor.innerText || '')
     })))()"""
     rows, request_id = evaluate(ws, request_id, expression)
     if not isinstance(rows, list):
@@ -104,9 +106,22 @@ def find_exact(rows, text, resolver=resolve_outbound):
     for row in rows:
         url = str(row.get("url", ""))
         outbound = [resolver(str(link)) for link in row.get("outbound", [])]
+        # X renders an owned article URL behind a t.co anchor.  The old
+        # resolver used a Python HEAD request for that anchor, which falsely
+        # failed closed when the Mac's DNS could not resolve t.co even though
+        # the browser had already rendered the exact destination text.  Keep
+        # the canonical resolver for known destinations and accept only the
+        # exact owned URL shown by the authenticated X DOM as a fallback.
+        visible_outbound = [
+            re.sub(r"\s+", "", str(link_text))
+            for link_text in row.get("outbound_text", [])
+        ]
+        owned_link_present = owned_url in outbound or any(
+            owned_url in link_text for link_text in visible_outbound
+        )
         if (
             str(row.get("text", "")).strip().startswith(prefix)
-            and owned_url in outbound
+            and owned_link_present
             and re.search(r"/status/[0-9]+", url)
         ):
             return url.split("?")[0]
