@@ -467,6 +467,9 @@ def main() -> int:
     sha = git("rev-parse", args.sha or "HEAD")
 
     if args.command == "status":
+        if not control_plane_available():
+            print("launchd readback unavailable; no loaded/not-loaded conclusion is safe")
+            return 0
         for job in manifest["jobs"]:
             argv = loaded_program(job["label"])
             script = next((a for a in argv if a.endswith((".py", ".sh"))), "(not loaded)")
