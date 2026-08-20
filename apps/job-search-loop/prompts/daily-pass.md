@@ -27,6 +27,14 @@ Engineer. A generic sales, marketing, operations, product, or business role with
 quoted AI/LLM requirements is not eligible. Hard reject citizenship/clearance,
 non-Japan remote, known sub-floor pay, and unmet explicit minimum years.
 
+The private profile already contains the verified legal facts
+`legal_japan_work_authorization` and `legal_no_japan_sponsorship_required`: Daisuke is a
+Japanese citizen with unrestricted authorization to work in Japan and does not require
+Japanese employment sponsorship. Reuse those fact IDs for Japan work-authorization,
+citizenship, and sponsorship questions without asking the user again. If a form asks for
+a different legal fact that is not present in the profile, fail closed and report the
+specific missing fact rather than guessing.
+
 Discovery must use at least three independent English/Japanese queries, covering
 engineering, technical-business, crypto, and consumer-agent role families, through:
 `apps/job-search-loop/scripts/multi-source-search.sh "<query>"`. This command always
