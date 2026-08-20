@@ -35,6 +35,10 @@ ALLOWED_PREPUBLICATION_FILES = {
     # exact in-progress card without selecting a second topic.
     "gates/topic-route-input.json",
     "gates/topic-route.json",
+    # The wrapper's resume owner-fence is also a durable pre-publication
+    # receipt. It records the exact queued card before generation begins and
+    # must survive a safe retry boundary without being mistaken for output.
+    "gates/topic-card-resume.json",
 }
 
 # Wrapper-owned runtime infrastructure inside the run dir. These are never

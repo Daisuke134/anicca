@@ -22,7 +22,9 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
 - resume cardは完全なpaid-demand cardとして再検証できる。claim-loopの最新receiptが
   `DEMAND_CARD_INVALID`（TECHi source outage）でも、新規topicのauthorityはfail-closedのまま、
   同じrunの明示されたresume cardだけを`RESUME_CARD`として続行する。別topicの選択には使わない。
-- current releaseは`fea6a4922be5...`へpublish済み。launchd bootstrap/readbackは引き続き
+- `gates/topic-card-resume.json`はwrapperが作るowner-fence receiptであり、生成物ではない。
+  pre-publication safe判定の許可リストに含め、Coconalaと同じく再開境界をレシートで保持する。
+- current releaseは`eab3443ea5ad...`へpublish済み。launchd bootstrap/readbackは引き続き
   `141: Reentrancy avoided`であり、これはcurrent release publishの失敗ではない。記事URL、
   publisher-native readback、収益receiptはまだ0件なので、公開成功とは宣言しない。
 
