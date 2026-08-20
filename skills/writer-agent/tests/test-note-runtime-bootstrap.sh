@@ -45,8 +45,9 @@ fi
 # interpreter cache. The fallback must unlink only the project link, never
 # overwrite the cache target.
 PROJECT2="$TMP/note-mcp-symlink"
-mkdir -p "$PROJECT2/.venv/bin" "$PROJECT2/src" "$TMP/fallback-site"
+mkdir -p "$PROJECT2/.venv/bin" "$PROJECT2/src/note_mcp" "$TMP/fallback-site"
 touch "$PROJECT2/pyproject.toml" "$PROJECT2/uv.lock"
+touch "$PROJECT2/src/note_mcp/__init__.py"
 printf 'cache-sentinel\n' >"$TMP/cache-target"
 ln -s "$TMP/cache-target" "$PROJECT2/.venv/bin/python"
 cat >"$BIN/fallback-python" <<'SH'
@@ -67,5 +68,19 @@ FALLBACK_SITE="$TMP/fallback-site" \
   bash "$HELPER" "$PROJECT2"
 [[ "$(cat "$TMP/cache-target")" == "cache-sentinel" ]]
 [[ ! -L "$PROJECT2/.venv/bin/python" ]]
+
+# A symlinked parent runtime is never mutated or accepted as a project env.
+PROJECT3="$TMP/note-mcp-parent-symlink"
+mkdir -p "$TMP/real-runtime/.venv/bin" "$PROJECT3/src/note_mcp"
+touch "$PROJECT3/pyproject.toml" "$PROJECT3/uv.lock" "$PROJECT3/src/note_mcp/__init__.py"
+ln -s "$TMP/real-runtime/.venv" "$PROJECT3/.venv"
+if FALLBACK_SITE="$TMP/fallback-site" \
+  UV_BIN="$BIN/uv-fail" \
+  NOTE_MCP_FALLBACK_PYTHON="$BIN/fallback-python" \
+  bash "$HELPER" "$PROJECT3"; then
+  echo "expected symlinked parent runtime to fail closed" >&2
+  exit 1
+fi
+[[ -L "$PROJECT3/.venv" ]]
 
 echo "PASS: note runtime bootstraps once and fails closed"

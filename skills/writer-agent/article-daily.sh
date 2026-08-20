@@ -122,6 +122,16 @@ disk_preflight() {
 
 disk_preflight
 
+# Cleanup is best-effort and can free less than the writer needs. Re-measure
+# before creating a run or invoking a model; the creator must share the same
+# 5 GiB fail-closed boundary as article-resume-pending.sh.
+POST_PREFLIGHT_FREE_BYTES="$(disk_free_bytes)"
+if [ "${POST_PREFLIGHT_FREE_BYTES:-0}" -lt "$DISK_LOW_THRESHOLD_BYTES" ]; then
+  echo "=== article-daily disk floor blocked after preflight free=${POST_PREFLIGHT_FREE_BYTES}bytes required=${DISK_LOW_THRESHOLD_BYTES}bytes $(date '+%F %T %Z') ===" >>"$LOG"
+  telegram_notify "Writer blocked: disk floor remains below 5 GiB (${POST_PREFLIGHT_FREE_BYTES} bytes free)" || true
+  exit 0
+fi
+
 # EXCLUSIVE LOCK (copied from capafy-autopublish/scripts/daily_loop.sh, 2026-07-12): every loop
 # that drives the shared daily-driver browser (CDP :9222) must hold one — capafy ran without a
 # lock and two schedulers raced on the same tab 5x in 90 minutes, each seeing the other's

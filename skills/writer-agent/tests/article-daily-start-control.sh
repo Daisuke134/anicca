@@ -8,5 +8,7 @@ grep -F 'article_daily_start_control.py' "$WRAPPER" >/dev/null
 grep -F 'skip-complete' "$WRAPPER" >/dev/null
 grep -F 'skip-pending-worker' "$WRAPPER" >/dev/null
 ! grep -F 'RESUME_EXISTING=' "$WRAPPER" >/dev/null
+grep -F 'disk floor blocked after preflight' "$WRAPPER" >/dev/null
+grep -F 'POST_PREFLIGHT_FREE_BYTES' "$WRAPPER" >/dev/null
 
 echo 'PASS: wrapper creates only a new daily run and leaves saved work to durable workers'
