@@ -503,7 +503,10 @@ def latest_commission_transitions(state):
         prior = latest.get(identity)
         if prior is None or key > prior[0]:
             latest[identity] = (key, row)
-    return {transaction_id: value for transaction_id, (_, value) in latest.items()}
+    # The provider namespace is part of the replay identity. Two admitted
+    # programs may legitimately expose the same transaction key; collapsing on
+    # the key alone would silently discard one provider's economic row.
+    return {identity: value for identity, (_, value) in latest.items()}
 
 
 def build_rolling_net(state, now=None):
