@@ -457,6 +457,34 @@ class LedgerTests(unittest.TestCase):
         )
         self.assertIsNotNone(intent)
 
+    def test_snapshot_route_requires_scheme_and_identity_query_match(self):
+        from job_search_loop.state import ats_snapshot_matches_application
+
+        application = "https://jobs.example.com/42?job=42"
+        self.assertFalse(
+            ats_snapshot_matches_application(
+                application, "https://jobs.example.com/42?job=99"
+            )
+        )
+        self.assertFalse(
+            ats_snapshot_matches_application(
+                "https://jobs.example.com/42",
+                "http://jobs.example.com/42/application",
+            )
+        )
+        self.assertFalse(
+            ats_snapshot_matches_application(
+                "https://jobs.example.com/42",
+                "//jobs.example.com/42/application",
+            )
+        )
+        self.assertTrue(
+            ats_snapshot_matches_application(
+                "https://jobs.example.com/42",
+                "https://jobs.example.com/42/application?utm_source=freehire.me",
+            )
+        )
+
     def test_workday_job_surface_is_ready_for_navigation_but_not_for_claim(self):
         fixture = (
             Path(__file__).parent

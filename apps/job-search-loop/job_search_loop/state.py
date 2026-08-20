@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import re
-from urllib.parse import urlsplit, urlunsplit
+from urllib.parse import parse_qsl, urlsplit, urlunsplit
 
 
 class InvalidTransition(ValueError):
@@ -55,16 +55,38 @@ def canonical_url(value: str) -> str:
 
 def ats_snapshot_matches_application(application_url: str, snapshot_url: str) -> bool:
     """Accept the same official page or its same-origin /application form route."""
-    application = canonical_url(application_url)
-    snapshot = canonical_url(snapshot_url)
-    if snapshot == application:
-        return True
-    application_parts = urlsplit(application)
-    snapshot_parts = urlsplit(snapshot)
-    if application_parts.netloc != snapshot_parts.netloc:
+    application_parts = urlsplit(application_url.strip())
+    snapshot_parts = urlsplit(snapshot_url.strip())
+    if not application_parts.scheme or not snapshot_parts.scheme:
+        return False
+    if application_parts.scheme.casefold() != snapshot_parts.scheme.casefold():
+        return False
+    if application_parts.netloc.casefold() != snapshot_parts.netloc.casefold():
         return False
     application_path = application_parts.path.rstrip("/") or "/"
-    return snapshot_parts.path == f"{application_path}/application"
+    snapshot_path = snapshot_parts.path.rstrip("/") or "/"
+    if snapshot_path not in {application_path, f"{application_path}/application"}:
+        return False
+
+    application_query = sorted(
+        (key.casefold(), value)
+        for key, value in parse_qsl(
+            application_parts.query, keep_blank_values=True
+        )
+    )
+    snapshot_query = sorted(
+        (key.casefold(), value)
+        for key, value in parse_qsl(snapshot_parts.query, keep_blank_values=True)
+    )
+    if application_query == snapshot_query:
+        return True
+
+    tracking_keys = {"gh_jid", "gh_src", "ref", "referrer", "source"}
+
+    def tracking_only(query: list[tuple[str, str]]) -> bool:
+        return all(key.startswith("utm_") or key in tracking_keys for key, _ in query)
+
+    return tracking_only(application_query) and tracking_only(snapshot_query)
 
 
 def canonical_job_id(company: str, title: str, url: str) -> str:
