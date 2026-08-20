@@ -9,15 +9,19 @@
   `gig_disk_guard.py`、owner fence、外部 state `~/.local/state/life-manager/writer` を使う。
   Coconalaの4 laneと同様、公開ownerは重複起動せず、外部作用の前にlock・state・receiptを確認する。
 - current immutable releaseはrelease watcherがHEADから切り替える。直近source commitは
-  `ead53a55a8b914c6a249bf4a91a5da95d5105d28`。`daily-2026-08-21` は
+  `d7f9755e96561b11e90be51c5bdfb857168bb51d`。`daily-2026-08-21` は
   Note JA、Substack JA、X Article JA の
   native live receiptを同一runで確認済み。URLは `https://note.com/anicca123/n/ncbdb8a56bb20`、
   `https://aniccabuddha.substack.com/p/1`、`https://x.com/diceai0/article/2090526616854405173`。
   これは公開receiptであり、売上・入金receiptではない。
 - Note復旧用runtimeは、開発専用mitmproxy依存を入れない`uv sync --locked --no-dev`を正本とし、
   DNS障害時だけ既存共有runtimeを`fastmcp`／`note_mcp` import検証後にsymlinkを追わないwrapperとして使う。
-  wrapperのcache target非破壊テスト、shell構文、関連14テストはPASSした。専用runtimeの外部downloadは
-  DNSで失敗したが、実行用wrapperのimportはcurrent hostでPASSしている。
+  対象checkoutの`src/note_mcp/__init__.py`をimportしていること、`.venv`親がsymlinkでないことも検証する。
+  wrapperのcache target／親symlink非破壊テスト、shell構文、関連14テストはPASSした。専用runtimeの外部
+  downloadはDNSで失敗したが、実行用wrapperのimportはcurrent hostでPASSしている。
+- daily creatorもpreflight cleanup後に5GiBを再測定し、まだ床未満ならrun／model／publisherを開始せず、
+  Telegramへ自然文の停止通知を出してrc=0で終了する。これでresumeだけが5GiBを守りcreatorが公開する
+  契約不整合を閉じた。
 - `2026-08-20T22:33:44Z`のread-onlyブラウザCDP readbackでは、Note key `n47735d9811e8`がHTTP 200、
   `status=published`、`price=500`、`is_limited=false`、`can_read=false`、eyecatch URLありだった。
   通常Python APIは同時刻のDNS失敗で接続できず、ブラウザreadbackのみを採用し、公開・入金receiptとは混同しない。
