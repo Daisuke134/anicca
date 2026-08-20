@@ -93,7 +93,7 @@ def _publish_instant_work_events(ledger_path: Path, pass_id: str) -> None:
             ],
             capture_output=True,
             text=True,
-            timeout=90,
+            timeout=240,
             check=False,
         )
     except (OSError, subprocess.SubprocessError):
