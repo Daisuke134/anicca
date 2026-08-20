@@ -220,7 +220,7 @@ def master_sections(profile: dict[str, Any]) -> list[dict[str, Any]]:
                 ("languages", None),
             ],
         ),
-        ("Consumer AI Product", [("anicca_consumer", "Built and shipped Anicca, a mobile affirmation app with 45+ ratings and a 4.5/5 rating.")]),
+        ("Consumer AI Product", [("anicca_consumer", "Built and shipped Anicca, a mobile affirmation app with 45+ user ratings and a 4.5/5 average score.")]),
     ]
     return [
         {
@@ -276,7 +276,7 @@ def business_sections(profile: dict[str, Any]) -> list[dict[str, Any]]:
         ),
         (
             "Consumer AI Product",
-            [("anicca_consumer", "Built and shipped Anicca, a mobile affirmation app with 45+ ratings and a 4.5/5 rating.")],
+            [("anicca_consumer", "Built and shipped Anicca, a mobile affirmation app with 45+ user ratings and a 4.5/5 average score.")],
         ),
     ]
     return [
