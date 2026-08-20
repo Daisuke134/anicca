@@ -303,6 +303,17 @@ def owner_event(state, wake_event, sent_event_ids=None):
                 f"{current.get('revenue_source_rows')} / no estimated revenue counted"
             ), current.get("publication_url") or latest_live_url(state),
                 scope="revenue")
+    if wake_event.get("acquisition_decision_state") == "DECISION_FAILED":
+        kind = "ACQUISITION_DECISION_FAILED"
+        failure_type = wake_event.get("acquisition_decision_failure_type") or "UNKNOWN"
+        baseline_sha256 = wake_event.get("acquisition_decision_baseline_sha256") or "UNKNOWN"
+        add(kind, {
+            "kind": kind,
+            "baseline_sha256": baseline_sha256,
+            "failure_type": failure_type,
+        }, f"acquisition decision failed: {failure_type} / no public effect", decision=(
+            "同じbaselineを再試行します。公開・provider transaction・収益は未発生"
+        ))
     if wake_event.get("acquisition_decision_changed"):
         kind = "ACQUISITION_DECISION_READY"
         add(kind, {
@@ -1899,6 +1910,7 @@ def wake(args):
         "devto_metrics_failure_type": devto_metrics.get("failure_type"),
         "acquisition_decision_state": acquisition_decision.get("state"),
         "acquisition_decision_changed": acquisition_decision.get("changed", False),
+        "acquisition_decision_baseline_sha256": acquisition_decision.get("baseline_sha256"),
         "acquisition_decision_id": acquisition_decision.get("decision_id"),
         "acquisition_decision_variable": acquisition_decision.get("selected_variable"),
         "acquisition_decision_hypothesis": acquisition_decision.get("hypothesis"),

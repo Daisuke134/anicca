@@ -41,6 +41,29 @@ def _write(path: Path, value: dict) -> None:
     os.replace(stage, path)
 
 
+def _failure(
+    state: Path,
+    baseline_sha256: str,
+    failure_type: str,
+    *,
+    runner_exit_code: int | None = None,
+    evidence_state: str = "NOT_STARTED",
+) -> dict:
+    payload = {
+        "schema_version": 1,
+        "receipt_type": "ACQUISITION_DECISION_FAILURE",
+        "state": "DECISION_FAILED",
+        "failure_type": failure_type,
+        "baseline_sha256": baseline_sha256,
+        "runner_exit_code": runner_exit_code,
+        "evidence_state": evidence_state,
+        "retryable": True,
+        "observed_at": datetime.now(timezone.utc).isoformat(),
+    }
+    _write(state / "acquisition-decision-failures" / f"{baseline_sha256}.json", payload)
+    return {**payload, "changed": False}
+
+
 def _economics(state: Path) -> tuple[dict, str | None]:
     path = state / "placement-ledger.json"
     if not path.is_file():
@@ -171,13 +194,33 @@ OBSERVED JSON:
                 "--escalation-reason", "One immutable real acquisition baseline needs one bounded improvement decision.",
                 "--read-only",
             ]
-            completed = subprocess.run(
-                command, input=prompt, text=True, stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL, env=environment, timeout=960, check=False,
-            )
+            try:
+                agent_runner.verify_codex_pin(Path(environment["AFFILIATE_CODEX_CAPABILITY_RECEIPT"]))
+            except agent_runner.PinError:
+                return _failure(state, baseline_sha256, "RUNNER_PIN_REJECTED")
+            try:
+                completed = subprocess.run(
+                    command, input=prompt, text=True, stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL, env=environment, timeout=960, check=False,
+                )
+            except subprocess.TimeoutExpired:
+                return _failure(state, baseline_sha256, "RUNNER_TIMEOUT")
+            except OSError:
+                return _failure(state, baseline_sha256, "RUNNER_START_FAILED")
             if completed.returncode != 0:
-                return {"state": "DECISION_FAILED", "changed": False,
-                        "failure_type": "RUNNER_REJECTED"}
+                failure_type = {
+                    2: "RUNNER_INVALID_CONFIG",
+                    75: "BUDGET_BLOCKED",
+                }.get(completed.returncode, "RUNNER_REJECTED")
+                evidence_state = (
+                    "SEALED" if (evidence_dir / "evidence-seal.json").is_file()
+                    else "UNSEALED"
+                )
+                return _failure(
+                    state, baseline_sha256, failure_type,
+                    runner_exit_code=completed.returncode,
+                    evidence_state=evidence_state,
+                )
         result, seal = _result(evidence_dir, context_sha256)
         decision_id = hashlib.sha256(
             f"{context_sha256}:{seal['result_sha256']}".encode()
