@@ -1,6 +1,6 @@
 # Affiliate Agent — Revenue, Runtime, and Architecture SSOT
 
-Last updated: 2026-08-16 JST
+Last updated: 2026-08-20 JST
 
 Implementation SSOT:
 
@@ -109,6 +109,24 @@ same-run recovery. Revenue targets are gates, not claims or forecasts.
 Affiliate commission belongs only to this Agent's ledger. Writer Agent revenue
 continues to mean direct payment for writing; shared research and editorial
 techniques do not merge the ledgers.
+
+### 0.2 Canonical repository and folder contract
+
+There is one implementation, not a private money loop plus an OSS rewrite.
+
+| Boundary | Canonical location | Contract |
+|---|---|---|
+| Public product source | Life Manager repository, `skills/affiliate/` | Provider adapters, research, composition handoff, policy, publication, reconciliation, learning, Telegram, installer, schemas, and privacy-safe verifier live together |
+| Product truth | `docs/affiliate-agent/AFFILIATE-AGENT-SSOT.md` | Current gates and ordered backlog; historical plans never override a newer measured checkpoint here |
+| Development route | `.worktrees/affiliate-life-manager-spec` on `docs/affiliate-life-manager-spec` | Spec and harness changes only; each meaningful slice is pushed to both Life Manager remotes |
+| Installed runtime | `~/.local/share/life-manager/affiliate/releases/<commit>` with `current` symlink | Immutable pushed release; launchd executes this copy, never a developer checkout |
+| Mutable/private state | `${LIFE_MANAGER_STATE_HOME:-~/.local/state/life-manager}/affiliate/` | Credentials, raw links, sessions, provider artifacts, jobs, outbox, and canonical ledger remain Git-external and mode-restricted |
+| Owned publication checkout | `.worktrees/affiliate-foundation-prod` | Existing publication effect target owned by the installed loop; Codex never publishes from the spec worktree or creates a parallel publisher |
+| OSS distribution | The same Life Manager `skills/affiliate/` tree | One-command macOS install, minimal authority intake, redacted examples, verifier, update/rollback/uninstall; never mutable state, secrets, raw links, or earnings claims without receipts |
+
+`apps/api/`, Railway, the shared Anicca checkout, Coconala/Gig state, and a new
+Affiliate-only repository are not homes for the local proof. Cloud is a later
+deployment adapter for these same contracts, not a second implementation.
 
 ## 1. Measured current state
 
@@ -1016,7 +1034,7 @@ workflow ideas are reimplemented against our own contracts and evidence.
 | J0/J1 | Japanese public placement/click lineage, then approved commission, each closed independently of English |
 | L0 | Any later locale has a separate identity/browser/provider/link/disclosure, at least one executable offer, native evidence review, and a receipted canary; Spanish is the first expansion candidate |
 | A2 | Four revenue-positive weeks, positive net margin, zero manual execution |
-| A3 | Three consecutive months at $10,000 gross affiliate commission with net, reversals, and attribution reported separately |
+| A3 | In one rolling 30-day window, provider-reconciled `approved` or `paid` commission minus reversals and known real billed costs is at least USD 10,000; unknown material cost keeps net unknown and cannot close the gate |
 | A4 | Diversified scale: no provider, offer, or channel exceeds 40% of net commission |
 | A5 | $10,000,000 cumulative or monthly target is defined explicitly and then met only by external receipts; never inferred from traffic |
 | A6 | $100,000,000 monthly net remains `HORIZON_OPEN` until one externally settled month passes FX, reversal, cost, concentration, policy, partner-capacity, and tenant-isolation audits; GMV and forecasts do not count |
@@ -1028,7 +1046,7 @@ Before that, revenue is `unknown`, not a fabricated conversion forecast.
 
 ## 9. Ordered implementation backlog
 
-### 9.0 One-line route to USD 10,000/month
+### 9.0 One-line route to USD 10,000 approved-or-paid net in rolling 30 days
 
 ```mermaid
 flowchart LR
@@ -1036,18 +1054,21 @@ flowchart LR
   E1 --> P10[10 comparable placements]
   P10 --> A2[A2: 4 profitable unattended weeks]
   A2 --> D[3+ providers and no concentration above 40%]
-  D --> A3[A3: 3 receipted months at USD 10k gross]
+  D --> A3[A3: rolling 30-day USD 10k approved-or-paid net]
 ```
 
 There is no honest fixed promise that a known number of posts produces USD
-10,000. After 30 days, the Agent computes the required portfolio from observed
+10,000. After mature first-party cohorts exist, the Agent computes the required portfolio from observed
 provider receipts. For example, USD 10,000 can equal 100 approved commissions at
 USD 100 net, 20 at USD 500 net, or a mixture. Those are arithmetic decompositions,
 not forecasts. The allocator increases only cohorts with positive approved net
 commission after reversals and cost, preserves 20% exploration, and limits any
-one provider, offer, or channel to 40% of net commission. A3 closes only after
-three external monthly receipts each reach USD 10,000 gross and the corresponding
-net, cost, reversal, and concentration views reconcile.
+one provider, offer, or channel to 40% of net commission. A3 closes only when
+the canonical ledger proves at least USD 10,000 in one rolling 30-day window from
+external `approved` or `paid` rows, after reversals and every known real billed
+cost. Pending rewards, estimates, clicks, screenshots, test rows, mocks, dry runs,
+model output, and unknown costs never close it. “USD 10k MRR” is product shorthand,
+not permission to convert non-recurring affiliate commission into subscription MRR.
 
 The Agent does not scale by increasing post count blindly. It closes the measured
 ladder in order: executable offer → attributable post-baseline click → approved
@@ -1106,6 +1127,69 @@ harness/tool/observation repair that lets the same job finish itself. Source-cod
 self-modification is not currently proven; current self-healing means durable
 resume, exact external reconciliation, typed recovery, and continued healthy-lane
 operation.
+
+#### Measured planning checkpoint and next TODOs
+
+This checkpoint supersedes older counts and zero-click statements in the
+historical evidence below. Read-only inspection of the installed state shows:
+
+- source HEAD `0888ab4ca` is clean against its local upstream refs; installed
+  release `22e8876ad` is byte-identical for `skills/affiliate`;
+- six expected launchd plists remain installed; three browser owners answer CDP
+  `9324/9326/9327` with HTTP `200`, and three job owners retain 600-second intervals;
+- the canonical ledger contains 13 dedicated-link placements, 11 with owned
+  public URLs, and 28 provider-measured clicks; the latest click delta is zero;
+- PartnerStack remains authenticated and reports zero commission rows, so
+  approved-or-paid net remains USD 0; actual cash cost remains unknown where no
+  bill exists;
+- Telegram outbox and sent ledger both contain 88 events and the latest sent row
+  has a provider message ID, so no queued duplicate is visible;
+- the current publication failure is `FileNotFoundError` for the missing allowed
+  `.worktrees/affiliate-foundation-prod`, not a current `XPostError`. Historical
+  ambiguous X effects remain safely fenced and MUST NOT be republished.
+
+Execution resumes in this order. Time/provider outcomes are gates, but every safe
+independent harness task continues:
+
+1. **P0 — Restore the real publication trajectory.** Restore/reconcile the
+   missing owned-publication checkout through the existing ownership contract,
+   then kick the existing launchd owner. Resume the same durable jobs for the two
+   non-public ledger rows; require owned and X public readback and unchanged-effect
+   replay. If a fresh `XPostError` is observed, reconcile its effect fingerprint
+   before any publish retry.
+2. **P1 — Close E1-H with the first real transaction.** Ingest the official
+   provider transaction/settlement ID, currency, gross amount, status, observed
+   time, and attribution keys; join the exact placement ID; replay twice without
+   duplication; append rather than overwrite pending/approved/paid/reversed and
+   reversal transitions; send one natural-language Telegram receipt.
+3. **P2 — Make cost and rolling-net truth executable.** Join real billed model,
+   channel, tool, and provider costs when receipts exist; preserve unknown as
+   unknown; compute FX with timestamped official rates; expose a canonical rolling
+   30-day view that counts only approved-or-paid rows less reversals and known real
+   cost, and refuses A3 when any material cost needed for net is unknown.
+4. **P3 — Improve measurable acquisition, not raw volume.** Use the existing 13
+   placements and provider click/exposure denominators for the next one-variable
+   experiment. Add a native channel only after publish, disclosure, exposure,
+   click, recovery, and placement join are independently measurable.
+5. **P4 — Add executable providers and diversify.** Continue current providers
+   while the Agent admits a second and third English offer through official terms,
+   application, auth, dedicated-link, report, transaction, reversal, and payout
+   readback. Never resubmit a rejected application unchanged.
+6. **P5 — Close allocation and self-healing.** Allocate 80% only from mature
+   approved-net evidence and 20% to bounded exploration; never promote from click,
+   pending, estimate, or model score. Convert each newly observed recoverable
+   failure into typed diagnosis, bounded repair, same-job resume, postcondition,
+   dedupe, and one `SELF_HEALED` Telegram receipt.
+7. **P6 — Prove the local money gate.** Keep the loop unattended until the
+   canonical ledger proves at least USD 10,000 approved-or-paid net in one rolling
+   30-day period after reversals and known real costs, with transaction/settlement
+   IDs joined replay-safely to exact placement IDs. No annualization or forecast.
+8. **P7 — OSS the proven loop.** Only after local proof, remove machine-specific
+   assumptions, add one-command clean-macOS install/update/rollback/uninstall,
+   minimal authorized credential intake, secret scanning, redacted fixture ledger,
+   deterministic verifier, provider/channel plugin contracts, and a scratch-Mac
+   unattended reproduction. Public claims state what receipts prove; they never
+   promise that anybody can guarantee or “print” money.
 
 #### Remaining autonomous money-loop work — canonical order
 
@@ -1239,13 +1323,15 @@ The completed history remains in the evidence tables below. The following list i
 the milestone order. Section 9.0.1.1 is the canonical atomic order for the current
 cursor; later work MUST NOT jump ahead of an unmet gate.
 
-Current execution cursor: **E1-H, close the first real transaction path; M2.1-P is met at ten
-comparable dedicated-link placements through the already-installed autonomous
-campaign path**. M2.0 is closed: every existing revenue placement now has one
-PartnerStack link, owned/X public readback, and one canonical ledger row. The
-next four campaigns must pass source, composition, semantic policy, owned/X,
-dedicated-link, public-readback, exposure, cost, and commission-lineage gates;
-content volume without those measurement contracts does not advance the cursor.
+Current execution cursor: **P0, restore the installed owner’s missing owned-publication
+checkout and finish the two non-public rows; then E1-H, close the first real
+transaction path. M2.1-P is exceeded at 13 dedicated-link placements, 11 public,
+with 28 provider-measured clicks and zero commission rows.** M2.0 is closed for
+dedicated-link attribution: every existing revenue placement has one PartnerStack
+link and one canonical ledger row. Eleven of thirteen carry owned public URLs;
+the remaining two must pass source, composition, semantic policy, owned/X,
+public-readback, exposure, cost, and commission-lineage gates. Content volume
+without those measurement contracts does not advance the cursor.
 M0.1 is installed in release `e8d1b8ea1`: real launchd wake `7`
 returned `WAITING_FOR_BASELINE`, last exit `0`, and created zero model-evidence
 files and zero decision receipts before eligibility. A first real Agent decision
@@ -1766,8 +1852,8 @@ External outcomes are gates, not TODOs:
 - **E1:** one non-test externally `approved` commission joined to a placement.
 - **A2:** four consecutive revenue-positive unattended weeks with positive net
   margin and at least one observed self-heal.
-- **A3:** three consecutive provider-reconciled USD 10,000 gross months with net,
-  reversals, costs, payout delay, and concentration shown separately.
+- **A3:** one provider-reconciled rolling 30-day window at or above USD 10,000
+  approved-or-paid net after reversals and known real billed costs.
 - **A4/A5/A6:** the same external-proof rule at USD 100,000, USD 1,000,000, and
   USD 10,000,000 monthly. No projection, creator screenshot, wait instruction,
   or annualized run rate closes a gate.
@@ -1845,9 +1931,9 @@ Revenue-led allocation begins only from approved-net receipts after E1.
     exposure/click lineage without making a profit claim. After E1, allocation
     additionally requires approved net commission per qualified impression and
     per content cost—not likes, views, or model scores.
-13. The USD 10,000 gate closes only after three consecutive provider-reconciled
-    months at or above USD 10,000 gross commission, while net, cash cost,
-    reversals, payout delay, and concentration are reported separately.
+13. The USD 10,000 gate closes only when one provider-reconciled rolling 30-day
+    window contains at least USD 10,000 `approved` or `paid` net commission after
+    reversals and known real billed costs. Unknown material cost keeps net unknown.
 14. Every installed-effect proof includes release SHA, launchd label/run count,
     terminal receipt, public/provider readback, replay result, and Telegram
     provider message ID when a report is due.
@@ -2171,10 +2257,11 @@ shared abstraction to make the diff appear smaller.
 - [ ] **A3-02** Allocate new campaign slots among mature cohorts by approved net
   economics while preserving policy, evidence freshness, action caps, and
   concentration limits.
-- [ ] **A3-03** Reconcile month one at or above USD 10,000 gross; report net,
-  reversals, costs, payout delay, and concentration separately.
-- [ ] **A3-04** Repeat for months two and three without resetting the ledger or
-  annualizing a partial period; then close A3.
+- [ ] **A3-03** Reconcile one rolling 30-day window at or above USD 10,000
+  approved-or-paid net after reversals and known real billed costs; refuse the
+  gate when a material cost is unknown.
+- [ ] **A3-04** Replay the exact window without duplicating transactions or status
+  transitions; report payout delay and concentration separately, then close A3.
 
 #### 6.1 Telegram contract
 
@@ -2930,8 +3017,9 @@ boundary.
 - [ ] **B21.1** Compute the observed commission/traffic requirement for USD 10,000,
   allocate 80% to mature winners and 20% to bounded experiments, and stop cohorts
   with negative approved unit economics.
-- **B21.2 — A3 external gate; not an implementation TODO.** Reconcile three consecutive months at USD 10,000 gross while
-  showing net, reversals, costs, payout timing, and concentration separately.
+- **B21.2 — A3 external gate; not an implementation TODO.** Reconcile one rolling
+  30-day window at USD 10,000 approved-or-paid net after reversals and known real
+  billed costs, with payout timing and concentration shown separately.
 
 #### F. Add locales, then package the already-proven loop
 
@@ -3203,14 +3291,14 @@ atomic replacement, matching Python's replacement contract
 |---|---|---|---|
 | U45 | CLOSED-EN | Installed Agent restored ElevenLabs from `SIGN_IN_REQUIRED` to `AUTHENTICATED`, verified the same login job, and the next wake required no recovery. Impact remains outside the active revenue lane | Reopen only if a future scheduled wake cannot repair the session within the bounded policy |
 | U46 | CLOSED-INSTALLED | Installed launchd replay observes both ElevenAgents and TTS receipts without duplicate Git or X effects. The TTS ambiguous first effect was fenced, reconciled from the timeline on the next wake, and then replayed with one job and one URL | Reopen only if a future campaign creates a second external object for the same placement fingerprint |
-| U47 | LIVE-OPEN | No real post-baseline click exists | Provider reports one attributable organic click; self-clicks/tests do not count |
+| U47 | CLOSED-PROVIDER | The canonical ledger now holds 28 provider-measured clicks across 13 dedicated links; the latest poll delta is zero | Reopen if link identity or placement attribution fails; clicks still do not imply commission |
 | U48 | LIVE-OPEN | No non-empty commission row has tested dedupe, status transition, or placement join | One real provider transaction replays twice without duplication and preserves pending/approved/reversed/paid lineage |
 | U49 | EXTERNAL | Payout is blocked by truthful tax registration and payment-provider selection | Authorized legal/tax/payment data completes provider readback; Agent never fabricates it |
 | U50 | EXTERNAL | HubSpot/Impact remains `APPLICATION_PENDING` | Authenticated provider or authorized email supplies a deduplicated approval/rejection transition |
 | U51 | EXTERNAL | Kit rejection lists possible causes but no applicant-specific cause | Materially improve audience/site/promotion evidence before any new application; unchanged retry forbidden |
 | U52 | LIVE-OPEN | X reach, throttling, suspension, and browser-enforcement risk are unknown | Observe real account/channel receipts and quarantine on defined policy/reach failures; risk cannot be eliminated |
 | U53 | LIVE-OPEN | Approval rate, conversion, reversal, payout delay, net commission, and provider capacity are unknown | Mature first-party cohorts and settlement receipts, not creator claims, supply these values |
-| U54 | LIVE-OPEN | Time and traffic required for `$10k/month` are unknowable before unit economics | Ten mature placements, three providers, four profitable unattended weeks, then three consecutive `$10k` months |
+| U54 | LIVE-OPEN | Time and traffic required for rolling-30-day USD 10,000 approved-or-paid net are unknowable before unit economics | Mature approved-net cohorts, three providers, four profitable unattended weeks, then one replay-safe qualifying rolling window |
 | U55 | DEFERRED-BY-GATE | Japanese provider acceptance, executable links, account identity, and native cohort are unproven | Start after English E0 with isolated browser/provider/content/ledger and J0/J1 canary |
 | U56 | DEFERRED-BY-GATE | Spanish and later locales have no owned identity, offer, or cohort | Admit only after English/Japanese proof and the same locale gate |
 | U57 | IRREDUCIBLE | CAPTCHA, biometric checks, KYC, tax attestations, contracts, and unavailable OTP ownership cannot be invented | Record `EXTERNAL_CHALLENGE`, continue independent work, resume only with authorized evidence |
@@ -3345,8 +3433,9 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   invoke the semantic planner; every write requires fresh rendered readback.
 - Browser retries are at-most-once: an ambiguous write is externally searched by
   content/action fingerprint before any retry.
-- The $10,000/month target closes only after three consecutive externally
-  receipted months; software completion cannot promise revenue.
+- The $10,000 target closes only from one externally reconciled rolling 30-day
+  window of approved-or-paid net after reversals and known real billed costs;
+  software completion cannot promise revenue.
 
 ### 11.2 Must be cleared by implementation tests
 
@@ -3402,8 +3491,9 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   `@aniccaen` is inactive. The account has 128 mixed-language historical posts
   and 0 followers, so rebranding and audience acquisition are required and
   organic distribution power remains unproven.
-- Four disclosed owned articles and four matching Affiliate X placements have
-  Agent `LIVE` readback. No post-baseline organic provider click exists yet.
+- Thirteen dedicated-link placements exist; eleven carry owned public URLs and
+  the provider ledger reports 28 clicks. Two publication rows and every real
+  commission transition remain open.
 - Amazon JP is `AUTH_RECOVERY_OTP_REQUIRED`; Rakuten remains `AUTH_REQUIRED`;
   Associates/affiliate acceptance is unknown.
 - English total addressable market and the claim that it is larger than Japanese
