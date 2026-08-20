@@ -942,13 +942,15 @@ top-level seven-step sequence.
 Current scheduler audit supersedes the earlier installation evidence. The legacy jobs remain out. OPS3a is now
 consolidated in canonical branch `feature/cfo-ops3a-canonical` at `4e079708e`, with a stable release and no
 feature-worktree absolute path in the installed plist. The stable CFO entrypoint loads with its lock-matched
-dependencies and the fresh financial focused gate is 19/19. The label is still not loaded: `launchctl print/list`
-returns `141: Reentrancy avoided`, `managerpid` cannot resolve, and the current session reports unavailable
-OpenDirectory/uid-501 resolution. A direct Moneytree MCP read succeeds, but the non-interactive Codex reader still
-fails closed because its chatgpt.com/MCP transport cannot establish DNS/TLS. Therefore no current hourly CFO
-Telegram finance receipt is claimed. OPS3b remains open until the existing launchd label runs one real Moneytree
-pass and a positive current provider message ID plus hourly path/schedule read-back are verified; no logout, reboot,
-or OS-service restart is part of this recovery.
+dependencies and the fresh financial focused gate is 19/19. The label is still not loaded: `launchctl print/list` and
+a single `launchctl bootstrap gui/501` attempt both return `141: Reentrancy avoided`, `managerpid` cannot resolve,
+and the current session reports unavailable OpenDirectory/uid-501 resolution. A direct Moneytree MCP read succeeds,
+but the non-interactive Codex reader still fails closed. The Homebrew CLI path returns no Moneytree MCP completion;
+the installed Codex appserver path was also tested with the reader's minimal environment and a bounded DNS CONNECT
+transport, but its `chatgpt.com` MCP `initialize` request timed out before any tool event. Therefore no current
+hourly CFO Telegram finance receipt is claimed. OPS3b remains open until the existing launchd label runs one real
+Moneytree pass and a positive current provider message ID plus hourly path/schedule read-back are verified; no
+logout, reboot, or OS-service restart is part of this recovery.
 
 Deferred after M1 by explicit owner decision: Binance Spot, trade history, Earn/funding sources, and their tax-lot
 ingestion. They are not unchecked M1 items and cannot become the active CFO item before CFO-1i closes.
