@@ -711,3 +711,13 @@ Japanese, and official URLs. Therefore E02 stays `PARTIAL /
 WAITING_FOR_LOCAL_TERMS_CAPTURE`; no application, Semrush link, click, or money
 was created. Sources: <https://www.semrush.com/lp/affiliate-program/en/> and
 <https://ja.semrush.com/kb/97-affiliate-program>.
+
+The existing owner then completed one new PartnerStack placement-link effect at
+`2026-08-21T03:56:04Z` for the voice-isolator experiment. Its journal is
+`EFFECT_STARTED → VERIFIED`, while the same campaign handoff/policy receipts
+remain `READY_FOR_POLICY`/`PASS`; the one-effect-per-wake fence therefore did not
+attempt publication in that wake. The canonical ledger is now 18 dedicated links,
+17 public placements, 32 provider clicks, and 15 `INSUFFICIENT_DENOMINATOR` rows.
+The next owner wake must resume this same job for owned/X readback. B01 is still
+cooldown/empty: no official transaction, settlement, payout, commission, or net
+was created.
