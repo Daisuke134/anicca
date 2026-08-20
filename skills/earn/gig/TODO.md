@@ -196,10 +196,14 @@ validated `current` publisher, stable plist rendering, continuous-owner migratio
 watcher when launchd readback is unavailable. The real watcher published
 `current -> 6e1ac2850ea5...` and naturally started Negotiate, Storefront and Paid through `current`;
 Storefront then produced a second natural `current` start and Paid produced a second natural receipt.
-Apply is still completing a real pass that began on legacy `05b75fc29`; do not kill it while it is
-submitting and recording official readbacks. A0 remains open until Apply naturally exits and restarts
-through `current`, Negotiate proves one isolated automatic recovery, and no SHA-specific process
-respawns afterward.
+Apply remains on the legacy loaded definition `05b75fc29` even though the published pointer is
+`current -> 32c516870095...`. Its periodic business pass exits, but the short brake-report process is
+also matched by `is_running`, so the watcher repeatedly calls it “still mid-pass” and never performs
+the one-time stable-definition migration. The existing bounded Apply brake produces durable
+`status: operator_brake / effect: 0` receipts and creates a safe migration window. The next slice must
+recognize only that exact brake-only PID/receipt as safe to replace, load the fixed `current` plist
+once, release the brake, and prove two natural Apply starts with no `05b75fc29` respawn. Negotiate,
+Storefront and Paid already run through `current`.
 
 #### A. Restore safe operating headroom
 
@@ -248,15 +252,17 @@ respawns afterward.
   formatter incorrectly called every transient failure a missing decision. Source now distinguishes
   decision failure from readback failure and retries official readback once on a fresh target without
   clicking submit again. Live exhaustive-pass proof remains.
-- [ ] Restore deterministic eligibility before another exhaustive pass. Request `5217691`
+- [ ] Restore semantic scope fidelity before another exhaustive pass. Request `5217691`
   (`発泡ウレタンで等身大の女性を製作したい`) had repeatedly been classified correctly as
   `physical_or_onsite`, but pass `gig-apply-direct-1787206162452874000-19745` re-planned it as
   `submit_required` and officially submitted ¥18,000. The official text asks for a Tokyo-resident
   sculptor to teach a life-size urethane build; the proposal improperly narrowed that into a remote
-  written procedure. Physical manufacture/repair/shipping, location residency and in-person teaching
-  must fail closed before model planning. Explicitly digital design files, drawings, 3D data, written
-  instructions or remote advice remain eligible only when the buyer's official text requests that
-  digital deliverable; the proposal may never invent a narrower deliverable to make a job eligible.
+  written procedure. Do not implement a keyword gate. Commit `32c516870` instead requires the planner
+  to compare the buyer's required outcome, means, place and participation with the proposal and forbids
+  inventing a remote substitute. Physical work remains eligible when the buyer explicitly requests a
+  digital design, drawing, data file, written guide or remote advice and no handling/presence is
+  required. Live natural planner proof remains; the isolated canary reached the real provider but
+  timed out at 240 seconds and is not acceptance evidence.
 - [ ] Preserve an official exact price through the whole commercial path. Request `5217126` explicitly
   requires a ¥15,000 proposal and its durable planner result correctly contained ¥15,000, but the
   final application decision replaced it with ¥27,000. Exact buyer price instructions outrank category
