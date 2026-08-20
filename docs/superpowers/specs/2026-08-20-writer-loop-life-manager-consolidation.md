@@ -9,11 +9,18 @@
   `gig_disk_guard.py`、owner fence、外部 state `~/.local/state/life-manager/writer` を使う。
   Coconalaの4 laneと同様、公開ownerは重複起動せず、外部作用の前にlock・state・receiptを確認する。
 - current immutable releaseはrelease watcherがHEADから切り替える。直近source commitは
-  `69387c329853a2852866a8f8c4f1fb1f0cb362ea`。`daily-2026-08-21` は
+  `ead53a55a8b914c6a249bf4a91a5da95d5105d28`。`daily-2026-08-21` は
   Note JA、Substack JA、X Article JA の
   native live receiptを同一runで確認済み。URLは `https://note.com/anicca123/n/ncbdb8a56bb20`、
   `https://aniccabuddha.substack.com/p/1`、`https://x.com/diceai0/article/2090526616854405173`。
   これは公開receiptであり、売上・入金receiptではない。
+- Note復旧用runtimeは、開発専用mitmproxy依存を入れない`uv sync --locked --no-dev`を正本とし、
+  DNS障害時だけ既存共有runtimeを`fastmcp`／`note_mcp` import検証後にsymlinkを追わないwrapperとして使う。
+  wrapperのcache target非破壊テスト、shell構文、関連14テストはPASSした。専用runtimeの外部downloadは
+  DNSで失敗したが、実行用wrapperのimportはcurrent hostでPASSしている。
+- `2026-08-20T22:33:44Z`のread-onlyブラウザCDP readbackでは、Note key `n47735d9811e8`がHTTP 200、
+  `status=published`、`price=500`、`is_limited=false`、`can_read=false`、eyecatch URLありだった。
+  通常Python APIは同時刻のDNS失敗で接続できず、ブラウザreadbackのみを採用し、公開・入金receiptとは混同しない。
 - Coconalaの公開owner順序をWriterにも固定した。`article-resume-pending.sh`は、まず
   `article_pending.py`で公開キューを確定する。`READY`でもself-healを1件だけ
   `--publication-backlog 1`でclaim/runbook receiptまで進め、通常のTerra調査は延期する。
@@ -42,6 +49,9 @@
 - `launchctl activate`／`print`／bootstrap は全laneで rc=141 `Reentrancy avoided`。current symlink切替は確認できるが、
   loaded schedulerの所有者・argv・定期実行は証明できない。重複executorは起動せず、既存ownerのreceiptだけを採用する。
 - 空き容量は実測で5GiB未満に戻ることがあり、disk guardは外部公開をfail-closedで止める。保護対象のstate／memory／rollbackは削除しない。
+- `2026-08-20T22:34:12Z`のcurrent release実行receiptは空き容量`4,474,318,848` bytes、要求
+  `5,368,709,120` bytesでdisk floor blocked、rc=0、lock=absentだった。既存Coconala parityのdisk guardを
+  overrideせず、この記事公開は安全に停止している。保護対象を削除して空きを作ることはしない。
 - `daily-2026-08-20` のX Articleは、原稿内の相対 `headline-image.png` / `body-diagram.png` 重複が
   `prepared/`で欠損扱いになる根因を `prep-x-md.py` で修正した。なお本当にimmutable画像が欠ける場合は、
   同一X編集URLの認証付き `not-live` readback、identity一致、ledger/journalの無作用、同一lock内のintent再確認を
