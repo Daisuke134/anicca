@@ -1244,7 +1244,7 @@ must accumulate in the live loop:
 | Order | Deliverable | Status | Completion evidence |
 |---:|---|---|---|
 | 0 | `JOB-CANONICAL-MERGE-1`: make Life Manager the only versioned source and preserve the live local loop | `completed` | PR #1273; 114 job-loop + 7 runner tests; all five CI checks passed in run `30444708546`; both canonical LaunchAgents last exit 0; 08:30 JST/900s schedules; three SQLite integrity checks `ok`; application and Telegram counts unchanged through cutover |
-| 1 | Technical-business resume bundle | `completed` | 53 tests; private A4 one-page PDF; ATS extraction and visual inspection; role-based resume routing |
+| 1 | Technical-business resume bundle | `completed` | 53-test baseline plus the approved corrected artifact; canonical private PDF SHA `d1aefe5634a8fc37f667bca69842d07e3b4c8b8e8fc383a1c1d73cc9ff1338f4`; ATS extraction, one-page verification, visual inspection and role-based routing pass; prior SHA is archived for historical receipts |
 | 2 | Role-specific application messages for Product, GTM, Partnerships and Customer Success | `completed` | Four strict templates; real-profile generation; fact/source validation; 59 tests |
 | 3 | Recruiter question auto-reply | `completed` | 68 tests; approved-answer and fail-closed policy; at-most-once outbox; real two-message same-thread Gmail round trip with private evidence |
 | 4 | Interview slot selection and confirmation | `completed` | 79 tests; explicit timezone/source validation; real busy-slot skip, private Calendar event, same-thread Gmail reply and retry-idempotency E2E; all test artifacts cleaned |
