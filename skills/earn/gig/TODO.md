@@ -427,6 +427,11 @@ action completes.
   the same official thread.
 - [ ] If a price is requested, send exactly one estimate through the existing lane and read back its
   amount and scope in the same official thread.
+- [ ] Treat a buyer's competing bid or desired ceiling as a semantic renegotiation signal. Choose a
+  deliverable, platform-valid competitive price from the whole current cycle without a hard-coded
+  discount, revise the existing pre-purchase estimate when needed, and require official readback of
+  the revised amount. The Haru thread's manually revised and purchased ¥1,800 proposal is historical
+  evidence only; the loop must demonstrate this behavior naturally on a future conversation.
 - [ ] Permit terminal no-send only for illegality, safety, deception, or truthful inability to
   deliver. Ordinary ambiguity or a broad request must receive a clarifying reply or a scoped offer;
   generic `対応できません` is not a valid escape disposition.
