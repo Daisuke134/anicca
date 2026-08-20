@@ -84,16 +84,19 @@ The order to the end is:
    The data volume now reads 15,819,068 KiB free and a 4 KiB gig-state write/fsync/read/remove probe
    succeeds. User media, research data, gig state, Codex sessions, registered worktrees, active
    toolchains, browser clones and applications remain untouched. The next slice prevents recurrence.
-2. **Apply is running but is not healthy-complete.** PID 24476 naturally started at 18:26 through
-   immutable release `8d5fb3bfd`; its parent and planner runner resolve to that same SHA. It observed
-   40 current requests, filtered 20 already applied and 15 bounded ineligible rows, and is judging
-   four details. The loop was not stopped or killed. The three preceding passes ended
+2. **Apply is working, but its historical reconciliation is not complete.** Natural pass
+   `gig-apply-direct-1787217964823259000-24476` finished `ok` through immutable release
+   `8d5fb3bfd`; its parent and planner runner resolved to that same SHA. It observed 40 requests,
+   submitted two and officially read back both with `failed: 0`: request `5223231` at ¥8,000 and
+   request `5223204` at ¥8,000. It also terminally classified `5223143` as video/animation and
+   `5223145` as physical/on-site. The loop finished naturally and was not stopped or killed. The
+   three preceding passes ended
    `parent_failed_rc_2` because the temporary required `price_basis` field made the old parent and
    new planner schemas disagree; that field and all code-owned price replacement are deleted.
    The semantic planner's single `price_jpy` is now the send price, with an explicit buyer amount
    preserved and otherwise a roughly 20%-below-budget competitive price. The terminal ledger still
-   exposes 30 durable unconfirmed intents. Apply is complete only after the current fixed pass has a
-   natural terminal receipt, request `5217126` reaches official readback at ¥15,000, all 30 intents
+   exposes 30 durable unconfirmed intents. Apply is complete only after request `5217126` reaches
+   official readback at ¥15,000, all 30 intents
    receive official terminal dispositions, and one exhaustive pass has `failed: 0` with no unowned
    pending candidate. → detailed evidence and atomic gates: section B.
 3. **Negotiate is accelerated but not complete.** One continuous process probes every 30 seconds
@@ -259,8 +262,10 @@ definition and A0 acceptance is closed.
   The latest terminal ledger exposes 30 such intents including `5222911`; they must receive terminal official
   dispositions rather than disappear from the denominator. Coverage remains open until that durable
   queue and the source traversal exhaust. Three passes on the temporary mixed price schema ended
-  `parent_failed_rc_2`; they are failure evidence, not coverage proof. Natural PID 24476 now runs
-  the deletion-based fixed release `8d5fb3bfd` with parent and planner pinned to the same SHA.
+  `parent_failed_rc_2`; they are failure evidence, not coverage proof. Natural fixed pass
+  `gig-apply-direct-1787217964823259000-24476` then finished `ok` through release `8d5fb3bfd` with
+  parent and planner pinned to the same SHA: 40 observed, two submitted, two officially read back
+  and zero failed. This proves current Apply execution; it does not erase the 30 historical intents.
 - [x] Restore semantic scope fidelity before another exhaustive pass. Request `5217691`
   (`発泡ウレタンで等身大の女性を製作したい`) had repeatedly been classified correctly as
   `physical_or_onsite`, but pass `gig-apply-direct-1787206162452874000-19745` re-planned it as
