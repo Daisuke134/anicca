@@ -2200,13 +2200,13 @@ class PublicationStore:
                 pair in {"x-article/ja", "x-article/en"}
                 and remote.get("status") == "unknown"
                 and remote.get("reason") in rule["errors"]
+                and _remote_identity_verified(state, pair, remote)
             ):
                 # A bounded same-ID recovery that still returns a recognized
-                # ambiguity has no safe publish action. Keeping it in
-                # recovery_pairs retries the same poison FIFO head every five
-                # minutes and starves newer runs. Quarantine the protected
-                # target without changing or publishing it; recovery remains
-                # an explicit clear/reinitialize operation.
+                # ambiguity has no safe publish action. Only an authenticated
+                # destination proof may quarantine it; a bare reason string
+                # from a wrong browser tab (for example a non-X redirect)
+                # must remain ambiguous rather than changing state.
                 reason = str(remote["reason"])
                 entry["status"] = "unavailable"
                 entry["error"] = (
