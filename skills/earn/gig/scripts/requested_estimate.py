@@ -1993,6 +1993,7 @@ def process_snapshot(
     runner: Path, schema: Path, workdir: Path, helper: Path | None,
     owner: str, hidden: bool = True, now: int | None = None,
     browser_factory: Any = None, composer: Any = None,
+    target_action_id: int | None = None,
 ) -> dict[str, Any]:
     """Run only requested-estimate items and return bounded detector metrics."""
     items = _estimate_items(snapshot)
@@ -2103,6 +2104,8 @@ def process_snapshot(
             f"estimate_reconcile_scan_failed:{type(error).__name__}"
         )
     for action in reconciliation_actions:
+        if target_action_id is not None and int(action["action_id"]) != target_action_id:
+            continue
         thread_id = str(action.get("thread_id") or "")
         if not thread_id or thread_id in processed_threads:
             continue

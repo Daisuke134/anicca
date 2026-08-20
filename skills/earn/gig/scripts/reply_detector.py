@@ -479,7 +479,10 @@ def _requested_estimate_module() -> Any:
     return module
 
 
-def run_requested_estimate(snapshot: dict[str, Any], *, args: Any, owner: str, now: int) -> dict[str, Any]:
+def run_requested_estimate(
+    snapshot: dict[str, Any], *, args: Any, owner: str, now: int,
+    target_action_id: int | None = None,
+) -> dict[str, Any]:
     """Run the estimate lane between collect and normal queue construction."""
     module = _requested_estimate_module()
     return module.process_snapshot(
@@ -493,6 +496,7 @@ def run_requested_estimate(snapshot: dict[str, Any], *, args: Any, owner: str, n
         owner=owner,
         hidden=False,
         now=now,
+        target_action_id=target_action_id,
     )
 
 
@@ -1460,6 +1464,16 @@ def run_targeted_thread(
         _owner_only(snapshot_path)
         snapshot = _targeted_snapshot(snapshot_path)
         _targeted_inquiry(snapshot, thread_id)
+        if binding.get("state") == "reconcile_pending":
+            return run_requested_estimate(
+                snapshot, args=argparse.Namespace(
+                    database=Path(args.database), manifest=Path(args.manifest),
+                    runner=Path(args.runner), estimate_schema=Path(args.estimate_schema),
+                    cdp_helper=Path(args.cdp_helper),
+                ),
+                owner=f"gig-estimate-targeted-{run_id}", now=int(time.time()),
+                target_action_id=action_id,
+            )
         return _run_effect_pipeline(
             args, snapshot=snapshot, evidence=evidence, run_id=run_id, target=binding,
         )
