@@ -7,7 +7,6 @@ import argparse
 import hashlib
 import json
 import os
-import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -26,6 +25,7 @@ from publication_contract_resolver import (  # noqa: E402
     PublicationContractError,
     resolve_publication_contract,
 )
+from writer_report_worker import telegram_api_transport  # noqa: E402
 
 REQUIRED_PAIRS = ACTIVE_PAIRS
 LEGACY_REQUIRED_PAIRS = LEGACY_EXACT8_PAIRS
@@ -266,40 +266,15 @@ def exact8_event(state_path: Path, ledger_path: Path) -> dict[str, Any] | None:
 
 
 def openclaw_transport(target: str) -> Transport:
-    if not target:
-        raise ValueError("Telegram target is required")
+    """Use the Writer-owned Telegram transport, not the gateway CLI.
 
-    def send(message: str) -> str:
-        timeout_seconds = float(
-            os.environ.get("ARTICLE_TELEGRAM_TIMEOUT_SECONDS", "30")
-        )
-        if timeout_seconds <= 0:
-            raise ValueError("ARTICLE_TELEGRAM_TIMEOUT_SECONDS must be positive")
-        result = subprocess.run(
-            [
-                "openclaw",
-                "message",
-                "send",
-                "--channel",
-                "telegram",
-                "--target",
-                target,
-                "--message",
-                message,
-                "--json",
-            ],
-            check=True,
-            capture_output=True,
-            text=True,
-            timeout=timeout_seconds,
-        )
-        value = json.loads(result.stdout)
-        message_id = str(value.get("messageId", "")).strip()
-        if value.get("dryRun") is True or not message_id:
-            raise RuntimeError("OpenClaw did not return a Telegram message receipt")
-        return message_id
-
-    return send
+    The completion owner already has a durable outbox. Reusing the report
+    worker's Bot API transport keeps that owner self-contained and avoids a
+    gateway reconnect hanging the publication worker after the external
+    receipt has been written. The function name remains for compatibility with
+    existing callers and fixtures.
+    """
+    return telegram_api_transport(target, env_file=Path.home() / ".openclaw/.env")
 
 
 def main() -> int:
@@ -351,8 +326,6 @@ def main() -> int:
         ValueError,
         RuntimeError,
         json.JSONDecodeError,
-        subprocess.CalledProcessError,
-        subprocess.TimeoutExpired,
     ) as error:
         print(f"completion notification pending: {error}", file=sys.stderr)
         return 75
