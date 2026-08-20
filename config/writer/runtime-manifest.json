@@ -1,18 +1,18 @@
 {
   "schema_version": 1,
   "runtime_root": "skills/writer-agent",
-  "runtime_tree_sha256": "a30bfc66f4a250da20462595e4f48bac4d69c80fcd20f890a132a30a847a66e2",
+  "runtime_tree_sha256": "8526906ff0000500ad1926a7e04a46cb9c615bdfdfab4cc2b51038341a635040",
   "runtime_file_count": 479,
   "hash_algorithm": "sha256(sorted relative path + NUL + file bytes + NUL; excludes state and cache directories)",
   "source": {
     "repository": "/Users/anicca/Projects/life-manager-main",
     "path": "skills/writer-agent",
-    "commit": "d34f2fe83f583b85140d967eaa248c54fa1dd136",
+    "commit": "b79cad7cbcac1f09fe17361078b3006269147247",
     "status": "Life Manager source-of-truth"
   },
   "active_release": {
     "path": "/Users/anicca/gig/releases/life-manager/current/skills/writer-agent",
-    "tree_sha256": "a30bfc66f4a250da20462595e4f48bac4d69c80fcd20f890a132a30a847a66e2",
+    "tree_sha256": "8526906ff0000500ad1926a7e04a46cb9c615bdfdfab4cc2b51038341a635040",
     "file_count": 479,
     "status": "Coconala-parity immutable release; launchd-load-pending"
   },
@@ -160,8 +160,8 @@
     "publication_effect": "blocked-and-fail-closed"
   },
   "last_validation": {
-    "release_sha": "d34f2fe83f583b85140d967eaa248c54fa1dd136",
-    "current_release": "/Users/anicca/gig/releases/life-manager/d34f2fe83f583b85140d967eaa248c54fa1dd136",
+    "release_sha": "b79cad7cbcac1f09fe17361078b3006269147247",
+    "current_release": "/Users/anicca/gig/releases/life-manager/b79cad7cbcac1f09fe17361078b3006269147247",
     "activate": "current symlink switched; all 18 bootstrap attempts failed with rc=141 Reentrancy avoided",
     "bounded_wake": {
       "creator_rc": 0,
