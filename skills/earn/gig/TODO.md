@@ -253,8 +253,10 @@ The order to the end is:
    finding covers every analogous instance in both layouts: three missing feature cards; shortened
    demand copy; altered risk/benefit/FAQ/testimonial/summary text; missing badges, chevrons, icons and
    final-CTA elements; unsupported sections; and false README dimensions. The controller persisted
-   round 2 and automatically launched isolated v10 production under the same live parent. v10 fresh
-   review, one delivery effect, exact-room official readback and replay zero remain to be proved.
+   round 2 and automatically launched isolated v10 production under the same live parent. That
+   parent remained alive past 35 minutes while still owning v10, directly proving that the old
+   generic 35-minute outer timeout no longer terminates the file workflow. v10 fresh review, one
+   delivery effect, exact-room official readback and replay zero remain to be proved.
 6. **Prove 24/7 control-plane durability.** Browser, Apply, Negotiate, Storefront and Paid must each
    survive process exit and start again from the immutable release. The current shell cannot read
    the launchd domain (`launchctl` returns 141, `Reentrancy avoided`), although browser CDP and new
