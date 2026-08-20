@@ -229,8 +229,13 @@ The order to the end is:
    the bounded file workflow permits three 60-minute production rounds plus three 30-minute fresh
    reviews. The parent therefore recorded `remote_resume` and exited while its v7 owner continued
    orphaned. File preparation now has a six-hour outer deadline, longer than every permitted inner
-   round combined; other Paid steps keep the generic bounded timeout. A fresh non-orphaned v7 run,
-   fresh review, one delivery effect, exact-room official readback and replay zero remain to be
+   round combined; other Paid steps keep the generic bounded timeout. A later non-orphaned v7 run
+   reached fresh review and proved real editable vector reconstruction and responsive reflow, but
+   was rejected before delivery: both layouts retained two wrong source phrases, omitted the full
+   final CTA, FAQ chevrons and testimonial illustrations, used mismatched icon classes, and embedded
+   both supplied marketing JPEGs whole instead of isolating the required illustration regions. The
+   controller persisted the exhaustive finding and automatically started isolated v8 production.
+   v8 fresh review, one delivery effect, exact-room official readback and replay zero remain to be
    proved.
 6. **Prove 24/7 control-plane durability.** Browser, Apply, Negotiate, Storefront and Paid must each
    survive process exit and start again from the immutable release. The current shell cannot read
