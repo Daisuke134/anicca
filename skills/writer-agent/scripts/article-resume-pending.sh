@@ -51,8 +51,10 @@ fi
 
 # A publisher must not create an irreversible external effect when its durable
 # receipt, circuit, or outbox cannot be persisted. Resume has no cleanup rights;
-# it fails closed until the host has the same 5 GiB safety floor as the creator.
-DISK_MIN_FREE_BYTES="${ARTICLE_RESUME_MIN_FREE_BYTES:-$((5 * 1024 * 1024 * 1024))}"
+# Coconala's canonical gig_disk_guard.py uses a 1 GiB floor. Keep direct
+# owner wakes identical to the launchd guard instead of inventing a second
+# Writer-only threshold.
+DISK_MIN_FREE_BYTES="${ARTICLE_RESUME_MIN_FREE_BYTES:-$((1 * 1024 * 1024 * 1024))}"
 disk_free_bytes() {
   local free_kb
   free_kb="$(df -Pk / 2>/dev/null | awk 'NR==2{print $4}')"
@@ -61,7 +63,7 @@ disk_free_bytes() {
 DISK_FREE_BYTES="$(disk_free_bytes)"
 if [ "${DISK_FREE_BYTES:-0}" -lt "$DISK_MIN_FREE_BYTES" ]; then
   echo "article-resume: disk floor blocked publication free=${DISK_FREE_BYTES}bytes required=${DISK_MIN_FREE_BYTES}bytes" >>"$LOG"
-  exit 0
+  exit 1
 fi
 
 process_owns_this_publication_lock() {

@@ -63,7 +63,9 @@ echo "=== article-daily run $(date '+%F %T %Z') ===" >>"$LOG"
 # with no floor check, / filling mid-pass means every one of those writes silently truncates
 # instead of failing loud. This is a plain host disk check the wrapper makes on its own -- never
 # something the LLM inside the pass decides or can skip.
-DISK_LOW_THRESHOLD_BYTES=$((5 * 1024 * 1024 * 1024)) # 5 GiB
+# Coconala's canonical gig_disk_guard.py uses a 1 GiB floor. Keep the
+# in-process check identical so direct owner wakes and launchd lanes agree.
+DISK_LOW_THRESHOLD_BYTES="${ARTICLE_DISK_MIN_FREE_BYTES:-$((1 * 1024 * 1024 * 1024))}"
 
 disk_free_bytes() {
   # macOS/APFS: -P forces single-line POSIX output regardless of filesystem-name length; -k
@@ -78,7 +80,7 @@ disk_preflight() {
   local before_bytes after_bytes freed_bytes actions
   before_bytes="$(disk_free_bytes)"
   if [ "${before_bytes:-0}" -ge "$DISK_LOW_THRESHOLD_BYTES" ]; then
-    echo "=== article-daily disk-preflight: free=${before_bytes}bytes (>= 5GiB threshold), no cleanup needed $(date '+%F %T %Z') ===" >>"$LOG"
+    echo "=== article-daily disk-preflight: free=${before_bytes}bytes (>= ${DISK_LOW_THRESHOLD_BYTES}bytes threshold), no cleanup needed $(date '+%F %T %Z') ===" >>"$LOG"
     return 0
   fi
 
@@ -124,12 +126,12 @@ disk_preflight
 
 # Cleanup is best-effort and can free less than the writer needs. Re-measure
 # before creating a run or invoking a model; the creator must share the same
-# 5 GiB fail-closed boundary as article-resume-pending.sh.
+# 1 GiB fail-closed boundary as article-resume-pending.sh and gig_disk_guard.py.
 POST_PREFLIGHT_FREE_BYTES="$(disk_free_bytes)"
 if [ "${POST_PREFLIGHT_FREE_BYTES:-0}" -lt "$DISK_LOW_THRESHOLD_BYTES" ]; then
   echo "=== article-daily disk floor blocked after preflight free=${POST_PREFLIGHT_FREE_BYTES}bytes required=${DISK_LOW_THRESHOLD_BYTES}bytes $(date '+%F %T %Z') ===" >>"$LOG"
-  telegram_notify "Writer blocked: disk floor remains below 5 GiB (${POST_PREFLIGHT_FREE_BYTES} bytes free)" || true
-  exit 0
+  telegram_notify "Writer blocked: disk floor remains below ${DISK_LOW_THRESHOLD_BYTES} bytes (${POST_PREFLIGHT_FREE_BYTES} bytes free)" || true
+  exit 1
 fi
 
 # EXCLUSIVE LOCK (copied from capafy-autopublish/scripts/daily_loop.sh, 2026-07-12): every loop
