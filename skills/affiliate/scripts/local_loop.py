@@ -352,7 +352,6 @@ def owner_event(state, wake_event, sent_event_ids=None):
         add(kind, {
             "kind": kind,
             "source_ledger_sha256": rolling_net.get("source_ledger_sha256"),
-            "placement_ledger_sha256": rolling_net.get("placement_ledger_sha256"),
             "source_transition_count": rolling_net.get("source_transition_count"),
             "status_counts": rolling_net.get("status_counts"),
             "approved_or_paid_net_minor_by_currency": rolling_net.get(
