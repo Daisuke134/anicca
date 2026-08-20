@@ -3581,8 +3581,74 @@ def _run_parent_pipeline(
     return results
 
 
+def _retained_planner_recovery(
+    effects: CdpParentEffects,
+    request_id: str,
+    intent: dict[str, object],
+    lease_fence: dict[str, object],
+) -> tuple[dict[str, object], dict[str, object]] | None:
+    lease = intent.get("lease_fence")
+    task = lease.get("task") if isinstance(lease, dict) else None
+    match = re.search(r"gig-apply-direct-[0-9]+-[0-9]+", str(task or ""))
+    if match is None:
+        return None
+    origin = effects.evidence_dir.parent.parent / match.group(0)
+    if not origin.is_dir() or origin.parent != effects.evidence_dir.parent.parent:
+        return None
+    for decision_path in sorted(origin.glob("*/application-intent-planner/**/*.result.json")):
+        try:
+            payload = json.loads(decision_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        rows = payload.get("decisions") if isinstance(payload, dict) else None
+        if not isinstance(rows, list):
+            continue
+        decision = next(
+            (row for row in rows if isinstance(row, dict) and row.get("request_id") == request_id),
+            None,
+        )
+        if decision is None:
+            continue
+        phase_dir = next(
+            (parent for parent in decision_path.parents if parent.parent == origin), None
+        )
+        if phase_dir is None:
+            continue
+        snapshot_path = phase_dir / "application-snapshot.json"
+        try:
+            snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        details = snapshot.get("request_details") if isinstance(snapshot, dict) else None
+        if not isinstance(details, list):
+            continue
+        detail = next(
+            (row for row in details if isinstance(row, dict) and row.get("request_id") == request_id),
+            None,
+        )
+        if detail is None:
+            continue
+        sub = _planner_subsnapshot(snapshot, [detail])
+        recovery_snapshot = snapshot_contract.build_envelope({
+            "pass_id": effects.pass_id,
+            "lease_fence": lease_fence,
+            "observed_at": sub["observed_at"],
+            "objective": sub["objective"],
+            "search_sources": sub["search_sources"],
+            "request_details": sub["request_details"],
+            "already_applied_ids": sub["already_applied_ids"],
+        })
+        decisions = {"decisions": [decision]}
+        if validate_decisions(recovery_snapshot, decisions):
+            continue
+        return recovery_snapshot, decisions
+    return None
+
+
 def reconcile_prepared_from_official_history(
-    *, effects: CdpParentEffects, intent_root: Path
+    *, effects: CdpParentEffects, intent_root: Path,
+    lease_fence: dict[str, object],
+    attempt_budget_path: Path | None = None,
 ) -> list[dict[str, object]]:
     """Confirm old prepared intents that the official applied page proves were sent.
 
@@ -3622,6 +3688,54 @@ def reconcile_prepared_from_official_history(
                 "business_class": DUPLICATE_FENCED,
                 "application": application,
             })
+    recovery_candidates: list[
+        tuple[bool, int, str, dict[str, object], dict[str, object], dict[str, object]]
+    ] = []
+    for request_id in prepared_ids - observed:
+        intent = store.read(request_id)
+        if (
+            intent is None
+            or intent.get("state") != fence.PREPARED
+            or intent.get("effect_phase") != fence.IRREVERSIBLE_ATTEMPT_STARTED
+            or effects.saved_nonlanding_submit_evidence(request_id, intent) is not True
+        ):
+            continue
+        retained = _retained_planner_recovery(effects, request_id, intent, lease_fence)
+        if retained is None:
+            continue
+        recovery_snapshot, recovery_decisions = retained
+        decision = recovery_decisions["decisions"][0]
+        assert isinstance(decision, dict)
+        recovery_candidates.append((
+            int(decision["price_jpy"]) == int(intent["price_jpy"]),
+            int(request_id), request_id, intent, recovery_snapshot, recovery_decisions,
+        ))
+    for _, _, request_id, intent, recovery_snapshot, recovery_decisions in sorted(
+        recovery_candidates
+    ):
+        original_detail = recovery_snapshot["request_details"][0]
+        fresh_detail = effects.reextract_detail(request_id)
+        if not _fresh_detail(original_detail, fresh_detail):
+            continue
+        with store.locked(request_id):
+            current = store._read_locked(request_id)
+            if current is None or current.get("cas") != intent.get("cas"):
+                continue
+            store.retire_prepared_locked(
+                request_id,
+                expected_cas=intent["cas"],
+                reason="effect_started_nonlanding_official_absent_and_fresh_form_present",
+            )
+        results.extend(commit_decisions(
+            recovery_snapshot,
+            recovery_decisions,
+            store=store,
+            effects=effects,
+            cap_override=1,
+            attempt_budget_path=attempt_budget_path,
+            attempt_budget_pass_id=effects.pass_id,
+        ))
+        break
     return results
 
 
@@ -3742,7 +3856,9 @@ def run_parent(
                 _publish_instant_work_events(ledger_path, pass_id)
             effects.ws_recycler = lease.recycle
             recovered_results = reconcile_prepared_from_official_history(
-                effects=effects, intent_root=intent_root
+                effects=effects, intent_root=intent_root,
+                lease_fence=lease.lease_fence,
+                attempt_budget_path=attempt_budget_path,
             )
             collector = CdpSnapshotCollector(
                 effects,
