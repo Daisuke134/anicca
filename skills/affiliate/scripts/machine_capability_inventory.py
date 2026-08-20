@@ -142,14 +142,20 @@ def inspect_codex_cli(entry):
     fd = open_at(executable, os.O_RDONLY | nofollow)
     try:
         digest, size, before = fd_hash(fd, True)
-        completed = subprocess.run(
-            [str(executable), "--version"],
-            capture_output=True,
-            text=True,
-            timeout=5,
-            check=False,
-            env={"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "LC_ALL": "C"},
-        )
+        with tempfile.TemporaryDirectory(prefix="affiliate-codex-version-") as isolated_home:
+            os.chmod(isolated_home, 0o700)
+            completed = subprocess.run(
+                [str(executable), "--version"],
+                capture_output=True,
+                text=True,
+                timeout=5,
+                check=False,
+                env={
+                    "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
+                    "HOME": isolated_home,
+                    "LC_ALL": "C",
+                },
+            )
         match = CODEX_VERSION.fullmatch(completed.stdout.strip())
         after = os.fstat(fd)
         current = os.lstat(executable)
