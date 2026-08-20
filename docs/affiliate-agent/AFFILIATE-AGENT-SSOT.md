@@ -1331,6 +1331,16 @@ historical evidence below. Read-only inspection of the installed state shows:
   `last-run.json` still contains the pre-repair `FileNotFoundError`. No public
   effect was manually performed. Historical ambiguous X effects remain safely
   fenced and MUST NOT be republished.
+- a one-time read-only diagnostic capture was run through the installed
+  `affiliate revenue capture` skill after the owner could not be kicked. The
+  official PartnerStack report at `2026-08-20T08:49:11Z` had
+  `commission_row_count=0`, `commission_row_state=EMPTY`,
+  `payout_row_state=EMPTY`, `tax_information_state=REQUIRED`,
+  `payment_provider_state=SELECTION_REQUIRED`, and `currency_display=USD`;
+  artifact SHA-256 is
+  `114723950748c3df0daf759a9aa5268d2d23f3e9086803bf44e0e71921bf8e5e`.
+  This is an empty provider report, not a transaction, settlement, payout, or
+  money proof; B01 remains open.
 
 Execution resumes in this order. Time/provider outcomes are gates, but every safe
 independent harness task continues:
@@ -1502,7 +1512,12 @@ receipt readback, SSOT state update, commit, and push to both canonical remotes.
   and `4c2f73d64cce`, action-fingerprint prefixes `ae651b22e844` and
   `e4e1e136accf`). No replacement job or external effect was created.
 - [ ] **A04** Kick the existing Affiliate launchd owner and require both jobs to
-  reach an exact terminal owned/X state or a typed durable failure.
+  reach an exact terminal owned/X state or a typed durable failure. Current
+  blocker is `BLOCKED_EXTERNAL_141`: `launchctl kickstart`, `launchctl start`,
+  and `launchctl asuser ... kickstart` each returned macOS `141: Reentrancy
+  avoided`; no fourth launcher, bootstrap/reload mutation, parallel executor,
+  manual publication, or success claim is permitted until the owner domain can
+  be read back safely.
 - [ ] **A05** Replay the unchanged owner and prove placement count, public URLs,
   Git commits, and X objects do not increase for already accepted effects.
 

@@ -48,10 +48,21 @@ Execution update: A01/A02 restored the exact owned-publication worktree at clean
 `feature/affiliate-foundation-prod` HEAD `d4170db1e`. A03 enumerated the two
 non-public rows (`music` and `tiktok-transcript-generator`) and matched each to
 an existing verified PartnerStack placement-link job in the private job journal;
-no replacement job was created. A04 remains open because both the required
-`launchctl kickstart` and one `launchctl start` fallback returned `141:
+no replacement job was created. A04 remains open because `launchctl kickstart`,
+`launchctl start`, and `launchctl asuser ... kickstart` returned `141:
 Reentrancy avoided`; the owner has not yet read the repaired root, so no public
 effect or success is claimed.
+
+Because the launchd owner could not be kicked, one installed read-only
+`affiliate revenue capture` diagnostic was run. The official PartnerStack report
+captured at `2026-08-20T08:49:11Z` was empty (`commission_row_count=0`,
+`commission_row_state=EMPTY`, `payout_row_state=EMPTY`), with
+`tax_information_state=REQUIRED`, `payment_provider_state=SELECTION_REQUIRED`,
+and `currency_display=USD`; artifact SHA-256 is
+`114723950748c3df0daf759a9aa5268d2d23f3e9086803bf44e0e71921bf8e5e`. This is
+not a transaction or money proof; B01 remains open. The typed A04 blocker is
+`BLOCKED_EXTERNAL_141`; no fourth launcher, bootstrap/reload mutation, parallel
+executor, or manual publication is allowed.
 
 This handover records a planning-only turn. No harness repair, owner kickstart,
 manual publication, provider write, or ledger mutation was performed.
