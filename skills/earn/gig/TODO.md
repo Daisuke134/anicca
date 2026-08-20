@@ -94,9 +94,14 @@ The order to the end is:
    `parent_failed_rc_2` because the temporary required `price_basis` field made the old parent and
    new planner schemas disagree; that field and all code-owned price replacement are deleted.
    The semantic planner's single `price_jpy` is now the send price, with an explicit buyer amount
-   preserved and otherwise a roughly 20%-below-budget competitive price. The terminal ledger still
-   exposes 30 durable unconfirmed intents. Apply is complete only after request `5217126` reaches
-   official readback at ¥15,000, all 30 intents
+   preserved and otherwise a roughly 20%-below-budget competitive price. Commit `bdd455645` closes
+   the reachability defect that only projected old intents into the terminal receipt: every natural
+   pass now gives every prepared durable ID to one bulk official-history readback before normal
+   discovery. Latest-release pass `gig-apply-direct-1787220410615879000-99166` put 150 prepared IDs
+   in that readback, observed the 20 official cards, and confirmed all 20 matching intents without a
+   submit click. It independently proves `5217126` absent from official history; its old started
+   intent still requires bounded absent recovery. Apply is complete only after request `5217126`
+   reaches official readback at ¥15,000, every remaining durable intent
    receive official terminal dispositions, and one exhaustive pass has `failed: 0` with no unowned
    pending candidate. → detailed evidence and atomic gates: section B.
 3. **Negotiate is accelerated but not complete.** One continuous process probes every 30 seconds
@@ -265,7 +270,11 @@ definition and A0 acceptance is closed.
   `parent_failed_rc_2`; they are failure evidence, not coverage proof. Natural fixed pass
   `gig-apply-direct-1787217964823259000-24476` then finished `ok` through release `8d5fb3bfd` with
   parent and planner pinned to the same SHA: 40 observed, two submitted, two officially read back
-  and zero failed. This proves current Apply execution; it does not erase the 30 historical intents.
+  and zero failed. Commit `bdd455645` then makes the historical queue executable instead of
+  report-only. Latest-release pass `gig-apply-direct-1787220410615879000-99166` supplied all 150
+  prepared IDs to one official-history scan and confirmed the 20 exact IDs displayed there without
+  clicking submit. `5217126` was explicitly absent, so it remains fenced until its retained
+  non-landing proof and fresh accepting form authorize retirement and a new ¥15,000 decision.
 - [x] Restore semantic scope fidelity before another exhaustive pass. Request `5217691`
   (`発泡ウレタンで等身大の女性を製作したい`) had repeatedly been classified correctly as
   `physical_or_onsite`, but pass `gig-apply-direct-1787206162452874000-19745` re-planned it as
@@ -290,6 +299,8 @@ definition and A0 acceptance is closed.
   may clamp it to a platform limit. Direct readback proves ¥15,000 remains ¥15,000. Natural re-plan,
   form fill and official readback for `5217126` remain. Apply now resolves the planner-runner symlink
   once at pass start, so a later `current` publish cannot mix an old parent schema with a new planner.
+  Pass `gig-apply-direct-1787220410615879000-99166` now proves the old ¥27,000 attempt is absent from
+  official history; the next atomic action is bounded retirement and natural ¥15,000 re-entry.
 - [ ] Prove the deployed failure report and form recovery on `5217126`. Its structured decision and
   proposal were present; execution failed with `cdp_Page.navigate_timeout_after_30s` at the browser
   boundary. The legacy `05b75fc29` formatter falsely reported “structured decision missing.” The
