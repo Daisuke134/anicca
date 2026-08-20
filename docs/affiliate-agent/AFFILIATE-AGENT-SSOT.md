@@ -234,6 +234,28 @@ The next eligible official capture is expected around `2026-08-21T09:06:19+0900`
 this wake changed no transaction, settlement, payout, commission, or money
 state. B01 remains `WAITING_FOR_PROVIDER_TRANSACTION`.
 
+### 1.1.4 Provider-failure retry-window repair and owner readback
+
+Release `0e818458c` makes `revenue_cycle_due()` honor the newest durable
+`revenue-cycle-failure.json` `retry_after` window. A later successful
+`revenue-cycle.json` completion supersedes an older failure receipt, so the
+owner returns to the normal hourly success cooldown without deleting the
+historical failure evidence. Existing `69/69` tests, compilation, and temporary
+failure-only/recovered-cycle boundary fixtures passed. Source and installed
+`local_loop.py` bytes match at SHA-256 `6fba105c…776b26`.
+
+After install, the existing owner produced a real wake at
+`2026-08-21T08:27:56+0900` with wake UUID `7cb9c0f3…636b7`. The owner correctly
+kept the revenue path in `COOLDOWN`; the official PartnerStack artifact stayed
+`f69af229…6734e3a` with `commission_row_count=0`, and the rolling net stayed
+`NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`. The placement ledger
+remained 20 exact rows. Telegram appended only a linked
+`NO_PENDING/ALREADY_DELIVERED` delivery receipt for already-sent message
+`26335` (delivery event `38e801bc…3e02d`), proving no duplicate external send
+or public effect. The launchctl command still returned macOS `141`, so this is
+an owner readback, not proof that all six labels are loaded. B01 remains
+`WAITING_FOR_PROVIDER_TRANSACTION`.
+
 ### 1.2.0 Audited executable boundary
 
 The installed ownership graph has six launchd labels: three persistent browser
