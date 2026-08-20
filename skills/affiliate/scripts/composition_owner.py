@@ -650,6 +650,23 @@ def build_policy(
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def inbox_priority(path: Path, state_root: Path) -> tuple[int, str]:
+    """Finish an existing handoff before spending a pass on another draft."""
+    receipt_path = state_root / "composition-receipts" / path.name
+    if not receipt_path.is_file():
+        return (1, path.name)
+    try:
+        receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return (2, path.name)
+    if receipt.get("state") == "READY_FOR_POLICY" and (
+        not SHA256.fullmatch(receipt.get("handoff_sha256", ""))
+        or not SHA256.fullmatch(receipt.get("policy_sha256", ""))
+    ):
+        return (0, path.name)
+    return (2, path.name)
+
+
 def wake(
     skill_root: Path, state_root: Path, run_model=run_model,
     handoff_builder=build_handoff, policy_builder=build_policy,
@@ -662,10 +679,7 @@ def wake(
             return {"state": "ALREADY_RUNNING"}
         paths = sorted(
             (state_root / "composition-inbox").glob("*.json"),
-            key=lambda path: (
-                (state_root / "composition-receipts" / path.name).is_file(),
-                path.name,
-            ),
+            key=lambda path: inbox_priority(path, state_root),
         )
         for path in paths:
             try:
