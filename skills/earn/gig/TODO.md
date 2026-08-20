@@ -122,7 +122,9 @@ The order to the end is:
    judgement. A live first click moved action 343 to `reconcile_pending`; its next pass exposed a
    second ordering defect where a new semantic candidate ran before delivery-unknown readback.
    Reconcile now exits directly through read-only official-card matching before any new estimate
-   candidate, form or click. Completion still requires action 343's one official estimate-card readback and a
+   candidate, form or click. Action 343 then reached `replied` revision 2: official thread
+   `10104078`, verified intent/card hash `267da3020abb...`, seller timestamp `1787242065`, and
+   intent state `verified`. The ¥9,000 estimate path is therefore closed. Completion still requires a
    durable disposition for every buyer-authored message: replied with official readback, estimate
    sent with official readback, intentionally no-send with a bounded policy reason, or still pending
    with an observable retry owner. Missing from the queue is never a valid disposition.
