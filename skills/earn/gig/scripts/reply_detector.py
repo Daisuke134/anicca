@@ -1479,7 +1479,7 @@ def run_targeted_estimate(
         if (
             binding is None or int(binding.get("action_id") or 0) != action_id
             or int(binding.get("revision") or 0) != expected_revision
-            or binding.get("state") != "pending"
+            or binding.get("state") not in {"pending", "reconcile_pending"}
         ):
             return _targeted_pending(thread_id, run_id, error="estimate_binding_changed")
         evidence.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -1660,7 +1660,11 @@ async def supervise_replies(
         if event_key in in_flight:
             return
         lifecycle = get_outbox().action_lifecycle_for_event(event_key, work["thread_id"])
-        if lifecycle is not None and lifecycle.get("state") != "pending":
+        allowed_states = (
+            {"pending", "reconcile_pending"} if work.get("kind") == "estimate"
+            else {"pending"}
+        )
+        if lifecycle is not None and lifecycle.get("state") not in allowed_states:
             return
         in_flight.add(event_key)
         await dispatch.put(work)
@@ -1700,7 +1704,11 @@ async def supervise_replies(
         # fallback detector can append a later fallback event to the same
         # durable action, so use the outbox's inbox-only projection here rather
         # than allowing that fallback row to hide the target.
-        for action in get_outbox().estimate_pending_actions():
+        estimate_actions = (
+            get_outbox().estimate_reconciliation_actions()
+            + get_outbox().estimate_pending_actions()
+        )
+        for action in estimate_actions:
             work = _supervisor_estimate_work_from_action(action)
             if work is not None:
                 await enqueue_work(work)
