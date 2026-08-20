@@ -1490,7 +1490,7 @@ def _prepare_source_census(args, root: Path, requirements_sha256: str, code_root
         for name in PAID_SOURCE_CENSUS_SKILLS:
             source_skill = code_root / "skills" / name
             if not (source_skill / "SKILL.md").is_file():
-                raise Failure("file_builder")
+                continue
             shutil.copytree(source_skill, approved_skills / name)
         coverage_sources = []
         overlay_cli = approved_skills / "music-score-omr" / "scripts" / "source_notehead_overlay.py"

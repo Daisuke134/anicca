@@ -169,8 +169,13 @@ The order to the end is:
    Do not shorten its cadence or split it merely for speed. Preserve independent production, fresh
    review, revision until the quality contract passes, and one fenced official delivery. Its process
    is alive.
-   The latest receipt is `completed / observed: 3 / effect: 0 / readback: 2 / failed: 0 /
-   pending: 1`. Prove a new natural paid order through validated artifact, one delivery
+   The latest receipt exposed `18169583=file_builder` before any builder evidence existed. Root
+   cause: the source-census controller required all three hardcoded optional skills
+   (`music-score-omr`, `buyma-work`, `ai-video-work`) even for an unrelated Illustrator/image
+   order, while none exists on main. The controller now copies only approved skills actually
+   present; absence of an unrelated skill no longer prevents the native-vision census or builder.
+   Live artifact creation and delivery readback remain to be captured. Prove a new natural paid
+   order through validated artifact, one delivery
    effect, exact-room official readback and replay zero.
 6. **Prove 24/7 control-plane durability.** Browser, Apply, Negotiate, Storefront and Paid must each
    survive process exit and start again from the immutable release. The current shell cannot read
