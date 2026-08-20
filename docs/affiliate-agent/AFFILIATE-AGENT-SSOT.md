@@ -1372,6 +1372,11 @@ historical evidence below. Read-only inspection of the installed state shows:
   `f3fe1efffafa5f1962990fe36d7854c3c8a196fa23f05fb7c308e9918690de92`.
   This proves no transaction was appended or replayed; it does not close A05's
   required owner replay.
+- after the completed music wake, one additional retry of the existing owner at
+  `2026-08-20T09:11:43Z` again returned `141: Reentrancy avoided`; no Affiliate
+  loop process was present afterward and the tiktok durable job-events remained
+  unchanged. This is the current `BLOCKED_EXTERNAL_141` readback, not a reason
+  to create a parallel executor.
 
 Execution resumes in this order. Time/provider outcomes are gates, but every safe
 independent harness task continues:

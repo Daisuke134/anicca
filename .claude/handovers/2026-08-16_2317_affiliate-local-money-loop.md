@@ -91,6 +91,11 @@ placement-ledger SHA-256 is
 `f3fe1efffafa5f1962990fe36d7854c3c8a196fa23f05fb7c308e9918690de92`. This
 does not close A05 because the unchanged owner replay has not been observed.
 
+After the completed music wake, one additional retry of the existing owner at
+`2026-08-20T09:11:43Z` again returned `141: Reentrancy avoided`; no Affiliate
+loop process was present afterward and tiktok job-events were unchanged. This
+remains `BLOCKED_EXTERNAL_141`; no parallel executor was created.
+
 This handover records no Codex manual publication, provider write, or ledger
 mutation. The installed owner performed the verified music delivery described
 above; Codex did not create a parallel executor.
