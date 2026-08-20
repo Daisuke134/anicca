@@ -1737,6 +1737,17 @@ historical evidence below. Read-only inspection of the installed state shows:
   non-empty row must still expose the provider reward key, lifecycle status,
   amount/currency, attribution key, and exact placement join before it can
   enter the ledger.
+- The immutable `e842fb875` release switched `current` successfully; installer
+  launchd bootstrap still returned the session-wide `141: Reentrancy avoided`,
+  but the existing owner naturally executed it at `2026-08-20T14:02:15Z`.
+  That real wake ran capture/reconcile and preserved `NO_TRANSACTIONS` with
+  zero appended transitions. The same durable Instagram transcript job then
+  acquired one verified, placement-specific provider link and stopped before
+  public effect (`WAITING_FOR_PLACEMENT_LINK` in the wake receipt): the ledger
+  is now 14 placements, 13 owned public URLs, 32 provider clicks, and one
+  private-link-only row. Commission statuses remain all zero, rolling net is
+  `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`, actual cost and
+  coverage remain unknown, and Telegram has no pending event.
 
 Execution resumes in this order. Time/provider outcomes are gates, but every safe
 independent harness task continues:

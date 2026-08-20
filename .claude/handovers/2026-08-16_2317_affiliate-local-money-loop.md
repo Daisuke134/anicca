@@ -549,3 +549,15 @@ of an external conversion/report row, not money and not a parser pass-through.
 The first row still must carry the official reward key, lifecycle status,
 amount/currency, attribution key, exact placement join, and replay-safe
 transition before B01 can close.
+
+The provider-namespace replay repair is installed as immutable release
+`e842fb8759a7f3ed315e5f2dce0817072d4afc9f`; source byte equality and all three
+CDP version endpoints passed. The installer again stopped at launchd bootstrap
+`141: Reentrancy avoided`, but the existing owner naturally ran that release at
+`2026-08-20T14:02:15Z`: PartnerStack capture/reconcile executed with zero
+commission rows and zero appended transitions, and rolling net stayed
+`NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`. The same durable
+Instagram transcript job acquired one verified private provider link and
+stopped before publication, leaving 14 placements, 13 owned public URLs, 32
+provider clicks, and one link-only row. No public effect, transaction, or money
+was created; the next wake owns the policy/publication handoff.
