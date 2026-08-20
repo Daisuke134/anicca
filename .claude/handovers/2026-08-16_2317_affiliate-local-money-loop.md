@@ -367,3 +367,7 @@ placement-ledger SHA
 The canonical ledger is still 13 placements, 32 provider-link clicks, and zero
 transactions. Telegram remained 101/101 with no pending event. B01's required
 first non-empty transaction is still open; this empty capture is not money.
+
+Codex sent the empty-capture milestone as Telegram message `26099`, including
+the official artifact hash, zero reconciliation counts, zero rolling net, and
+the next B01 gate. It contains no secret or raw tracking link.
