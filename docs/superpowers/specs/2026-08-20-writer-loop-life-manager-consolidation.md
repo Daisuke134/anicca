@@ -14,6 +14,11 @@
   native live receiptを同一runで確認済み。URLは `https://note.com/anicca123/n/ncbdb8a56bb20`、
   `https://aniccabuddha.substack.com/p/1`、`https://x.com/diceai0/article/2090526616854405173`。
   これは公開receiptであり、売上・入金receiptではない。
+- `2026-08-20T23:00:07Z`のcurrent release direct owner wakeは、plannerが`daily-2026-08-07`
+  の`note/ja`だけを回復対象として選択した。認証済みreadbackが曖昧だったため`REFUSED`、
+  failure circuitを開いて外部公開を追加せず、lockは終了後に不在となった。Telegramの自然文報告は
+  message ID `26780` で送信済み。`launchctl bootstrap`と`print`は同一contextでともにrc=141
+  `Reentrancy avoided`のため、macOS control-plane復旧なしに5分周期のscheduler証明はできない。
 - Note復旧用runtimeは、開発専用mitmproxy依存を入れない`uv sync --locked --no-dev`を正本とし、
   DNS障害時だけ既存共有runtimeを`fastmcp`／`note_mcp` import検証後にsymlinkを追わないwrapperとして使う。
   対象checkoutの`src/note_mcp/__init__.py`をimportしていること、`.venv`親がsymlinkでないことをuv実行前から検証する。
