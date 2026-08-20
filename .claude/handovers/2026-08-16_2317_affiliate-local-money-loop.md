@@ -760,6 +760,24 @@ remained ready. No direct loop executor was started and no external post or
 provider action was fabricated. This is an indispensable local launchd-session
 capability blocker for the next real X timeline readback and B01 capture; the
 smallest truthful recovery action is to recreate the user launchd session (log
-out/in) and then let the existing owner run. Until that readback exists, the
-X effect stays `EFFECT_STARTED / NOT_FOUND`, the split placement is not joined,
-and money stays `NO_TRANSACTIONS` / USD 0 with unknown costs.
+out/in) and then let the existing owner run. The authenticated job journal now
+records `VERIFIED/LIVE`, but the terminal `x-posts` public-readback receipt is
+still absent until the new release gets one successful final status-page readback;
+the placement is therefore not terminal `X_LIVE`, the split placement is not
+joined, and money stays `NO_TRANSACTIONS` / USD 0 with unknown costs.
+
+Before the second repair was installed, the existing owner resumed the same X job
+at approximately `2026-08-21T04:28Z` as attempt `2`; its authenticated timeline
+readback found the exact status URL and the job journal became `VERIFIED/LIVE`
+without creating another job. The subsequent `04:29:25 JST` final status-page
+readback was transiently not exact, so `last-run` truthfully stayed
+`PUBLICATION_FAILED / XPostError` and the `x-posts` file remained an effect fence
+without terminal `state`. Codex found the ordering defect: the publisher had
+verified the journal before `live_readback`, so a transient final failure could
+overstate X liveness. Release `ba2721b50a1439d3ae3f38ab39b3895bfce32c2c` now
+writes `X_POST_PUBLIC_READBACK / LIVE` and verifies or reconciles the journal only
+after that final readback. The guard fixture proves a failed final readback leaves
+`EFFECT_STARTED` and calls no reconcile; existing checks remain `25/25`. The
+release is installed with byte-equal `current`; the next existing owner wake must
+promote the current fence receipt without a new post. B01 remains
+`NO_TRANSACTIONS`, approved/paid net null, and costs unknown.

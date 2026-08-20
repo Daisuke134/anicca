@@ -2414,6 +2414,15 @@ plist `bootstrap` both returned the same `141: Reentrancy avoided`. No direct
 executor or manual provider/public effect was substituted. This is a local
 launchd-session capability blocker; the smallest truthful recovery is to recreate
 the user session (log out/in) and let the existing owner perform the readback.
+Before that release was installed, the existing owner did resume the same job at
+`2026-08-21T04:28Z` (attempt `2`, no new job) and its authenticated timeline
+returned the exact X status URL, so the journal is now `VERIFIED/LIVE`. The
+following final status-page readback at `04:29Z` failed transiently and left the
+`x-posts` receipt as an effect fence with no terminal `state`; therefore the
+placement is still not terminal `X_LIVE`. Release
+`ba2721b50a1439d3ae3f38ab39b3895bfce32c2c` moves journal verification after that
+final public readback. Its compile, existing `25/25` checks, and the temporary
+readback-failure guard passed; the immutable release is installed and byte-equal.
 M2.0 is closed for settled dedicated-link attribution: every settled revenue
 placement has one PartnerStack link and one canonical ledger row. The in-flight
 voice-isolator experiment remains explicitly split until its provider-link and owned
