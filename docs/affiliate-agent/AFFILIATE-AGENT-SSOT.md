@@ -1389,7 +1389,8 @@ historical evidence below. Read-only inspection of the installed state shows:
   passes all five TTS API sources. The first owner kick after installation at
   `2026-08-20T09:17:16Z` again returned `141: Reentrancy avoided`, no loop
   process started, and `last-run.json` still shows the pre-repair ContentError.
-  Therefore the code fix is installed/readable but not yet owner-E2E verified.
+  At that point the code fix was installed/readable but not yet owner-E2E
+  verified; the subsequent natural owner result is recorded below.
 - the existing owner then ran naturally at `2026-08-20T09:23:59Z` on the
   repaired release and passed the pricing-source gate, but failed closed at
   the next policy gate with `ContentError: affiliate article policy failed`.
@@ -1409,6 +1410,19 @@ historical evidence below. Read-only inspection of the installed state shows:
   `last-run.json` remains the pre-install policy failure. A04 is not closed
   until the existing owner naturally or successfully triggered runs this
   release and supplies the owned/X readback.
+- the existing owner then ran the installed release naturally: policy observed
+  at `2026-08-20T09:34:48Z` was `PASS` with all five checks true, and the wake
+  completed at `2026-08-20T09:35:32Z` as `ALREADY_LIVE` with the unchanged X
+  status `2088809159932465497`. The owned receipt is `LIVE` at the expected
+  article URL; independent DNS-resolved HTTP readback returned `200` for both
+  owned and X pages, with the owned title/disclosure and X status ID present.
+  Telegram delivered the natural owner receipt as message `25964`; revenue
+  remained `NO_TRANSACTIONS` with zero source rows and zero appended
+  transitions; the canonical ledger stayed at 13 placements. This closes the
+  source-refresh repair's owner-E2E and duplicate-free replay, but not A04:
+  `elevenlabs-discovered-tiktok-transcript-generator-en-1` still has
+  `public_url=null`, and its same durable composition run is
+  `budget_blocked` (`pass_token_budget_exceeded`) rather than replaced.
 - the current launchd capability check at `2026-08-20T09:20:57Z` also fails
   outside the service label: `launchctl managername`, `launchctl print user/501`,
   and `launchctl print gui/501` all return `141: Reentrancy avoided`, while

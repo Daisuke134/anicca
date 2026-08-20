@@ -134,8 +134,21 @@ immutable release `b4fa82c6e0321f85820f56a3e78b357856632a1e`; installed
 `content.py` compiles and the isolated stale-artifact replay passes policy.
 The post-install existing-owner kick at `2026-08-20T09:29:47Z` again returned
 `141: Reentrancy avoided`; no parallel executor or manual publication was
-created, and `last-run.json` remains the pre-install policy failure. A04 stays
-open for the next real owner readback.
+created, and `last-run.json` remained the pre-install policy failure at that
+moment.
+
+The existing owner then naturally ran the installed release. Its policy receipt
+at `2026-08-20T09:34:48Z` was `PASS` with all five checks true; the wake ended
+at `2026-08-20T09:35:32Z` as `ALREADY_LIVE` with the unchanged X status
+`2088809159932465497`. The owned receipt is `LIVE`; independent DNS-resolved
+HTTP readback returned `200` for both owned and X, and the body checks found the
+owned title/disclosure and X status ID. Telegram message `25964` is the owner
+receipt. Revenue stayed `NO_TRANSACTIONS` (`0` rows, `0` transitions), and the
+ledger stayed at 13 placements. This proves the source-refresh repair through
+the real owner and duplicate-free replay. A04 still remains open because the
+tiktok-transcript placement has no public URL; its same durable composition run
+is `budget_blocked` with `pass_token_budget_exceeded`, so no replacement was
+created.
 
 This handover records no Codex manual publication, provider write, or ledger
 mutation. The installed owner performed the verified music delivery described
