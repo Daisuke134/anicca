@@ -1649,6 +1649,15 @@ historical evidence below. Read-only inspection of the installed state shows:
   and its installed scripts contain the repair; the existing baseline already
   has a `READY` receipt, so no failure receipt was fabricated and no new owner
   wake was observed while launchd remained at `141`.
+- The existing owner then woke naturally at `2026-08-20T12:58:36Z` after the
+  installer response. It refreshed the official PartnerStack artifact at
+  `12:58:35.798870Z` (`commission_row_count=0`, `NO_LIVE_ROWS`, no payout rows,
+  artifact SHA `8418d228…af0c4`), wrote the rolling receipt as
+  `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`, and left Telegram
+  `102/102` with no pending row. The canonical ledger is 13 placements, 32
+  provider-link clicks, and zero transaction rows. Codex sent this milestone as
+  Telegram message `26199`; it contains no secret or raw tracking link. B01
+  remains the next external gate.
 
 Execution resumes in this order. Time/provider outcomes are gates, but every safe
 independent harness task continues:

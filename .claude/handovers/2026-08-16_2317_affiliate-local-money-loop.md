@@ -427,3 +427,12 @@ placements, 13 dedicated provider-link keys, 13 owned `LIVE` receipts, and 13
 X `LIVE` receipts. D01 and D03 are therefore closed in the SSOT. This is
 publication and denominator readiness only; every placement still has zero
 official transaction rows and no amount is money.
+
+The existing owner then woke naturally at `2026-08-20T12:58:36Z` despite the
+earlier launcher `141` responses. Official PartnerStack readback at
+`12:58:35.798870Z` remained empty (`commission_row_count=0`, `NO_LIVE_ROWS`, no
+payout rows; artifact SHA `8418d228…af0c4`). The owner rolling receipt stayed
+`NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`; the canonical ledger
+is 13 placements, 32 provider-link clicks, and zero transaction rows. Telegram
+outbox/sent are `102/102` with no pending row. Codex milestone message `26199`
+confirms this state without secrets or raw tracking links. B01 remains open.
