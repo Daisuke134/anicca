@@ -24,9 +24,17 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
   同じrunの明示されたresume cardだけを`RESUME_CARD`として続行する。別topicの選択には使わない。
 - `gates/topic-card-resume.json`はwrapperが作るowner-fence receiptであり、生成物ではない。
   pre-publication safe判定の許可リストに含め、Coconalaと同じく再開境界をレシートで保持する。
-- current releaseは`eab3443ea5ad...`へpublish済み。launchd bootstrap/readbackは引き続き
+- current releaseは`e43376872ae8...`へpublish済み。launchd bootstrap/readbackは引き続き
   `141: Reentrancy avoided`であり、これはcurrent release publishの失敗ではない。記事URL、
   publisher-native readback、収益receiptはまだ0件なので、公開成功とは宣言しない。
+- `article-resume`はCoconala型のowner fence下で、同じrunのactive-four初期化を再開中である。
+  `gates/topic-card-resume.json`はwrapper-owned receiptとして許可し、品質terminalの
+  `ADVISORY`（continuous policy）を保持したまま、note/ja・substack/ja・substack/en・
+  x-article/jaのtarget登録だけを行い、このtickでは公開しない。
+- active-four初期化が先に4件のdormant skipを永続化してからactive targetを登録するため、その
+  中断状態を「有効な未完runなし」と誤判定していた。`publication_resume.py`はこの
+  dormant-only active-four stateを部分初期化として再開可能にし、installed pending laneで
+  `initialization_pairs` 4件を再現できる。targetのnative URL/readbackと収益receiptはまだ0件。
 
 ### 2026-08-21 Coconala parity 再確認
 
