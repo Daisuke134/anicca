@@ -21,6 +21,10 @@ class TerraDefaultTest(unittest.TestCase):
                         {"provider": "codex", "model": "gpt-5.6-luna", "effort": "high"},
                         {"provider": "codex", "model": "gpt-5.6-terra", "effort": "medium"},
                     ]
+                if name in {"composition-agent", "browser-lane-agent"}:
+                    expected.append(
+                        {"provider": "claude", "model": "claude-sonnet-5"}
+                    )
                 self.assertEqual(candidates, expected)
 
     def test_a_restricted_candidate_carries_its_escalation_route(self):
