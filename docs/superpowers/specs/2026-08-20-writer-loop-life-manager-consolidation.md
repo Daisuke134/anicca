@@ -20,9 +20,11 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
   intentとして保持し、変更・公開していない。
 - 20:36 JSTのdeterministicな公開tickはNoteのpaid API証拠不足で停止し、失敗回路保存も空き容量不足になった。20:44 JSTの次tickはNoteを再照合して公開・読み戻しを記録した。
 - `launchctl bootstrap`/`kickstart` は `141: Reentrancy avoided`。plistがあることは稼働証拠ではない。
-- 実行releaseは `/Users/anicca/profitable-claude-releases/writer/e9ab21ea/writer-agent`、
-  stateは `/Users/anicca/profitable-claude/skills/writer-agent/state`。Life Manager checkoutは
-  `/Users/anicca/Projects/life-manager-main` で、Writer runtime treeの同期コピーは完了したが、旧releaseが実行ownerのままである。
+- Coconalaと同じrelease契約へ切り替える。実行releaseは
+  `/Users/anicca/gig/releases/life-manager/current/skills/writer-agent`、sourceは
+  `/Users/anicca/Projects/life-manager-main/skills/writer-agent`、mutable stateは
+  `~/.local/state/life-manager/writer` とする。launchdのloaded readbackはまだrc=141で、current
+  symlinkの公開後に14 Writer laneが実際にこのreleaseを読むことは未確認である。
 - 現在はstate rootの `.publication-paused` が存在し、次のlaunchd tickは外部公開を行わずに終了する。JAは `SUBSTACK_PUBLICATION_JA`、ENは別の `SUBSTACK_PUBLICATION_EN` を必須とし、ENの既存draft `211988987` は公開禁止である。
 - Telegramには初期化報告 `26065`、未完了報告 `26075`、Note公開を含む進捗報告 `26087` を送信済み。今後はdeterministic rendererだけが自然文を送る。実受取receiptは未確認。Substack公開はJA/EN identityが分離されるまで停止する。
 - pause gateはresume workerとdaily creatorの両方で直接実行し、ロック・planner・publisherより前に終了コード0となることを確認した。変更対象の構文確認と、固定一時領域でのスケジュール／完了通知テスト `37 passed` も確認済み。外部公開の新規成功や売上receiptはまだ無い。
@@ -39,6 +41,20 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
 - 同日23:40 JSTの再測定でも状態は変わらない。`article-resume.log`（23:40:14）、`writer-report.err`と`writer-money-sync.err`（23:40:31）が更新され、旧rootのresumeはpause gate、report/money syncは旧スクリプト不存在で終了した。Life Manager target stateには直近2時間の新しいrun／receiptがなく、`launchctl managerpid`は153、`gui/501`のreadbackは141である。よって「旧stale jobは起動して失敗、Life Managerの意図したloopは未load/readback、外部公開は未確認」を現在値とする。
 
 ## 目標構成
+
+### 実行トポロジー（Coconala parity）
+
+Writerは独自Supervisorを持たない。Coconalaで実稼働している次の契約をそのまま共有する。
+
+1. `skills/earn/gig/scripts/gig_release.py` が `git archive` でSHA固定releaseを作り、
+   `~/gig/releases/life-manager/current` を原子的に切り替える。
+2. `config/launchd-jobs.json` の14 Writer laneは、各自が同じ `gig_disk_guard.py` を先頭に置き、
+   creator、resume、demand、report、money、learningを別ownerとして実行する。
+3. codeはrelease、state/receipt/lockは `~/.local/state/life-manager/writer` に分離する。
+4. release watcherはlaneごとのloaded argvをreadbackし、実行中laneは自然なgapまでreloadしない。
+
+この構成で確認できないものは成功にしない。特にplistの存在、source checkoutのmtime、
+モデルprocessの生存だけでは稼働receiptにならない。
 
 ```mermaid
 flowchart LR
@@ -97,6 +113,7 @@ publication identity、読者、payout、ledgerを分ける。
 
 | # | 作業 | 完了証拠 | 状態 |
 |---:|---|---|---|
+| 0 | Coconalaのrelease/launchd/disk-guard契約をWriter 14 laneへ再利用 | `config/launchd-jobs.json`のWriter 14 lane、immutable release/current argv、旧rootなし、Coconala既存テストを含む48 passed | 完了（公開停止は維持） |
 | 1 | stale loaded定義をdrainし、launchd実行コンテキストを復旧してcreator/resumeを一度だけ起動 | 旧14定義＋retired 5 CLI labelのbootout/drain、loaded ProgramArguments/envの照合、Life Manager 14 labelのload/readback、pause下bounded wake、旧rootログの1 schedule interval再発0、実行receiptを取得 | ブロッカー（公開停止） |
 | 2 | DNSまたは承認済みnetwork transportを復旧 | 通常DNSは失敗。1.1.1.1解決＋`curl --resolve`ではNote／Substack／XがHTTP 200。publisher実行経路の再読戻しは未確認 | 一部完了 |
 | 3 | Writer runtimeを`skills/writer-agent`へ移しmanifestを生成 | SHA付きpath census、runtime 477 files、active release 476 files | 一部完了（tree同期・manifest・全14 labelのpath切替済み。launchd loadは未完了） |
@@ -105,7 +122,7 @@ publication identity、読者、payout、ledgerを分ける。
 | 6 | payment/publisher receipt collectorとmoney ledgerを接続 | artifact-level receipt | 未着手 |
 | 7 | neutral Telegram rendererを日次・失敗・完了へ接続 | message ID `26075`/`26087` + semantic hash | 一部完了 |
 | 8 | adversarial verifierで重複公開・誤金額・偽URL・secret漏洩を反証 | Note live境界とidentity gateのfresh review | 進行中 |
-| 9 | Life Manager ownerをloadし、14個のactive Writer関連LaunchAgent（creator、resume、retry、money、report、health、learning、opportunityを含む）のpath/state/lockをmanifest化し、旧5 CLI labelはrollback archiveへ退避。shared fenceで旧ownerをdrain後にdisable | 全14 installed plistがLife Manager code/target stateへreadback、rollback archive 2箇所、state parity。残りはowner fence + launchctl readback rc=141 + old/new drain + bounded wake | 一部完了 |
+| 9 | Life Manager release ownerをloadし、14個のWriter laneをCoconala parity manifestからbootstrap。旧5 CLI labelはrollback archiveへ退避し、shared fenceで旧ownerをdrain | release manifest renderは完了。残りはcurrent symlink公開、loaded ProgramArguments/env readback、owner drain、pause下bounded wake | 一部完了 |
 | 10 | rollback archiveと復元試験を検証し、Writer専用releaseだけをアーカイブ。`.openclaw`と`profitable-claude`全体は削除しない | archive hash + restore receipt + deletion-scope receipt | 未着手 |
 
 削除は最後の一件であり、現在は実行しない。

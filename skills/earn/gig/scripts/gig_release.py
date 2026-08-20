@@ -17,7 +17,7 @@ the stable definition once.  Later watcher deploys only move ``current``; the
 next natural process start resolves the new release without a plist reload.
 
     gig_release.py build                 # release the current HEAD
-    gig_release.py activate              # build if needed, then switch the four lanes
+    gig_release.py activate              # build if needed, then switch idle lanes
     gig_release.py activate --jobs ai.anicca.hf-gig-browser
     gig_release.py status
 """
@@ -63,6 +63,20 @@ JOB_PROCESS_MARKERS = {
     "ai.anicca.hf-gig-storefront-direct": "storefront_direct.py",
     "ai.anicca.hf-gig-paid-direct": "paid_direct.py",
     "ai.anicca.hf-gig-reply-detector": "reply_detector.py",
+    "ai.anicca.article-daily": "article-daily.sh",
+    "ai.anicca.article-resume": "article-resume-pending.sh",
+    "ai.anicca.article-zenn-retry": "zenn-deferred-worker.sh",
+    "ai.anicca.article-healthcheck": "article-healthcheck.sh",
+    "ai.anicca.writer-claim-loop": "claim_loop.py",
+    "ai.anicca.writer-money-sync": "money_sync.py",
+    "ai.anicca.writer-opportunity-discovery": "opportunity_discovery.py",
+    "ai.anicca.writer-opportunity-response": "opportunity_response.py",
+    "ai.anicca.writer-report": "writer_report_worker.py",
+    "ai.anicca.writer-sales-measure": "writer-sales-measure-worker.sh",
+    "ai.anicca.writer-craft-train": "craft-train.sh",
+    "ai.anicca.article-self-improve": "self-improve.sh",
+    "ai.anicca.article-audit-7day": "audit-7day.sh",
+    "ai.anicca.article-learn-whitelist": "learn-whitelist.sh",
 }
 
 
@@ -235,8 +249,12 @@ def collect_old_releases() -> list[str]:
 
 
 def plist_for(job: dict, table: dict[str, str]) -> dict:
-    manifest_env = json.loads(MANIFEST.read_text(encoding="utf-8"))["shared_env"]
-    env = render(dict(manifest_env), table) | render(dict(job.get("env", {})), table)
+    manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+    manifest_env = manifest["shared_env"]
+    env = render(dict(manifest_env), table)
+    if job.get("env_profile") == "writer":
+        env |= render(dict(manifest.get("writer_env", {})), table)
+    env |= render(dict(job.get("env", {})), table)
     log_dir = table["GIG_LOG_DIR"]
     out = {
         "Label": job["label"],

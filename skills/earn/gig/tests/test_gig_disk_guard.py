@@ -178,3 +178,30 @@ def test_manifest_wraps_only_four_business_lanes():
     for lane in {"browser", "release"}:
         program = jobs[lane]["program"]
         assert "gig_disk_guard.py" not in program
+
+
+def test_writer_lanes_render_from_immutable_release_and_life_manager_state():
+    import importlib.util
+
+    release_path = Path("/release")
+    release_script = GIG_ROOT / "scripts" / "gig_release.py"
+    spec = importlib.util.spec_from_file_location("gig_release_writer_test", release_script)
+    assert spec and spec.loader
+    release = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(release)
+    manifest, table = release.settings(release_path)
+    writer = [job for job in manifest["jobs"] if job.get("env_profile") == "writer"]
+
+    assert len(writer) == 14
+    for job in writer:
+        rendered = release.plist_for(job, table)
+        assert rendered["EnvironmentVariables"]["ARTICLE_ROOT"] == (
+            "/release/skills/writer-agent"
+        )
+        assert rendered["EnvironmentVariables"]["ARTICLE_STATE_DIR"] == (
+            str(Path.home() / ".local/state/life-manager/writer")
+        )
+        assert rendered["ProgramArguments"][1].endswith(
+            "/skills/earn/gig/scripts/gig_disk_guard.py"
+        )
+        assert all("profitable-claude" not in value for value in rendered["ProgramArguments"])

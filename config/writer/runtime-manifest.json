@@ -5,19 +5,19 @@
   "runtime_file_count": 477,
   "hash_algorithm": "sha256(sorted relative path + NUL + file bytes + NUL; excludes state and cache directories)",
   "source": {
-    "repository": "/Users/anicca/profitable-claude",
-    "path": "skills/article-writer",
-    "commit": "20223ab5",
-    "status": "source-of-truth-until-cutover"
+    "repository": "/Users/anicca/Projects/life-manager-main",
+    "path": "skills/writer-agent",
+    "commit": "f10631f5418754bf32e9f12a2a71c456da4ba387",
+    "status": "Life Manager source-of-truth"
   },
   "active_release": {
-    "path": "/Users/anicca/profitable-claude-releases/writer/e9ab21ea/writer-agent",
+    "path": "/Users/anicca/gig/releases/life-manager/current/skills/writer-agent",
     "tree_sha256": "bf3c13424037f0ac8ff3826c930da6902280264bca813288bbd06d02990a2257",
     "file_count": 476,
-    "status": "installed-path-cutover; launchd-load-unproven"
+    "status": "Coconala-parity immutable release; launchd-load-pending"
   },
   "state": {
-    "active": "/Users/anicca/profitable-claude/skills/writer-agent/state",
+    "active": "~/.local/state/life-manager/writer",
     "target": "~/.local/state/life-manager/writer",
     "credentials": "~/.config/life-manager/accounts",
     "owner_fence": "~/.local/state/life-manager/writer/owner-fence",
@@ -85,8 +85,8 @@
     "external_cli_labels": 0,
     "retired_external_cli_labels": 5,
     "source_tree_script_labels": 6,
-    "status": "path-cutover-complete-load-unproven",
-    "reason": "All 14 active Writer labels point at Life Manager code or an explicit Life Manager runtime path, and all mutable Writer state arguments point at ~/.local/state/life-manager/writer. launchctl readback is rc=141, so loaded state and bounded wake remain unproven."
+    "status": "release-manifest-rendered-load-pending",
+    "reason": "The Coconala release manifest now renders all 14 Writer labels against the immutable current release and ~/.local/state/life-manager/writer. launchctl readback is rc=141, so loaded state and bounded wake remain unproven."
   },
   "external_dependencies": {
     "writer_engine_cli": "/Users/anicca/.local/bin/writer",
