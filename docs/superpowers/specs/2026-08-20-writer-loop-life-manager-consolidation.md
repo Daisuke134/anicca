@@ -8,7 +8,8 @@
   `gig_release.py`、immutable `~/gig/releases/life-manager/current`、
   `gig_disk_guard.py`、owner fence、外部 state `~/.local/state/life-manager/writer` を使う。
   Coconalaの4 laneと同様、公開ownerは重複起動せず、外部作用の前にlock・state・receiptを確認する。
-- current release は `24c13c3e5`。`daily-2026-08-21` は Note JA、Substack JA、X Article JA の
+- current immutable release は `b88cf70d3f27b8ecf38fe2f0a349981519efb490`（公開コードの最新祖先は
+  `24c13c3e5`）。`daily-2026-08-21` は Note JA、Substack JA、X Article JA の
   native live receiptを同一runで確認済み。URLは `https://note.com/anicca123/n/ncbdb8a56bb20`、
   `https://aniccabuddha.substack.com/p/1`、`https://x.com/diceai0/article/2090526616854405173`。
   これは公開receiptであり、売上・入金receiptではない。
@@ -47,8 +48,18 @@
   `dscl . -read /Users/anicca`も`eServerError`であるため、これはWriterコードではなくmacOSのユーザーdirectory/control-plane障害として隔離する。
   OS serviceのkill/restartやユーザーdirectoryの書換えは行わず、既存ownerの直接receiptだけを採用する。
 - 空き容量は現在約5.68GiBでfloorを一時的に上回るが、過去tickで5GiB未満へ戻った実績があるため、disk guardのfail-closed境界は解除しない。
+- 06:11:52 JSTの実行では、Life Manager current配下の`article-resume-pending.sh`がowner fenceを通過して終了し、
+  `daily-2026-08-10`のSubstack JAを既存draft ID `210519352`から
+  `https://aniccabuddha.substack.com/p/ai14`へ公開・native readbackした。`article-resume.log`には
+  `rc=0`とTelegram message ID `26684`のdelivery receiptが残る。起動中のCoconala laneと同様に、
+  owner processのPPIDは1で、実行releaseはcurrent symlinkを指していた。
+- 同じ観測窓で、article-resumeの次の300秒周期起動はまだ観測できず、`launchctl print/kickstart`は引き続き
+  `141: Reentrancy avoided`である。したがって、このowner実行は「1回の実runtime receipt」として採用し、
+  5分周期のscheduler readbackや二重起動ゼロを完了とは扱わない。
+- 06:11:52 JSTの同一ログには、空き容量`5,256,216,576` bytes（要求`5,368,709,120` bytes）で
+  disk guardが公開をfail-closedにした記録もある。保護対象を削除せず、容量安定化までは外部公開を強行しない。
 - 残TODOは順に、(1)保護対象を削除せず空き容量5GiB超を安定維持、(2)launchd control-plane readbackを復旧して
-  Life Manager currentの定期実行を証明、(3)Substack ENの別identityとcredentialを承認済み経路で設定し、
+  Life Manager currentの5分周期実行を2回以上連続して証明、(3)Substack ENの別identityとcredentialを承認済み経路で設定し、
   英語記事を同一runの英語Publicationへnative publish/readbackする、(4)publisher/paymentの実receiptだけを
   収益ledgerへjoin、(5)14日間の重複外部作用0と自然文Telegram deliveryを観測する。
 
