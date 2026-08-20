@@ -170,7 +170,7 @@ live autonomous operation.
 
 | Surface | Current truth | What is not yet proven |
 |---|---|---|
-| Runtime | Immutable local release `9e8f7b90f4392966080edad9b29ff313d81318ae` is current. The existing owner naturally woke at `2026-08-20T14:34:34Z` through the `current` path after install, preserved 14 placements with 14 owned public URLs and 32 provider clicks, and returned the same zero-commission state without a duplicate effect. The new release adds late-placement attribution to replay identity; installed owner proof is now observed. Rolling net remains `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`; six owner plists remain installed, but launchd domain introspection and bootstrap return `141: Reentrancy avoided` in this session, so “all six loaded” is not claimed. The ten-minute money loop still owns bounded provider recovery/reconciliation, exact placement-link acquisition, provider polling, publication, metrics, economics, natural-language reporting, receipts, and Telegram | Attributable commission, paid payout, provider/channel diversification, and a clean all-owner launchd readback remain open |
+| Runtime | Immutable local release `9e8f7b90f4392966080edad9b29ff313d81318ae` is current. The existing owner naturally woke at `2026-08-20T14:34:34Z` through the `current` path after install, preserved 14 placements with 14 owned public URLs and 32 provider clicks, and returned `ALREADY_LIVE` without a duplicate effect. The revenue stage was `COOLDOWN`, so it kept the prior zero-row official artifact rather than claiming a fresh provider capture. The new release adds late-placement attribution to replay identity; installed owner proof is now observed. Rolling net remains `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`; six owner plists remain installed, but launchd domain introspection and bootstrap return `141: Reentrancy avoided` in this session, so “all six loaded” is not claimed. The ten-minute money loop still owns bounded provider recovery/reconciliation, exact placement-link acquisition, provider polling, publication, metrics, economics, natural-language reporting, receipts, and Telegram | Attributable commission, paid payout, provider/channel diversification, and a clean all-owner launchd readback remain open |
 | F1 migration | Implemented, reviewed, pushed, and re-run from final HEAD | It does not publish, browse, attribute, or earn |
 | F2 Agent brain | Commit `d9ad4acd7cb0474cf1a825a94cfb49e7847da22e` is pushed; root replay on 2026-08-06 passed focused 16/16, Python 3.9 compile/shell syntax, and 30/30 related regressions | Full-suite collection is blocked by legacy `test_affiliate_verify.py` import-time `sys.exit()`; fresh review and live-provider execution remain open, so F2 stays open |
 | Provider auth | ElevenLabs is `ACTIVE_LINK_VERIFIED`, earning-enabled, and `AUTHENTICATED`. HubSpot/Impact’s authenticated CDP and installed owner both read `HubSpot, Inc. application / Declined`; cc775c374 persists `REJECTED / DO_NOT_RESUBMIT` with transition `14d9b1aa…5cb6` and owner Telegram `26218`. No Google login, six-digit-code submission, phone call, or login-support Telegram effect exists in the Affiliate receipts. Kit is rejected; other providers remain non-executable | ElevenLabs is the only currently executable earning offer. HubSpot has no executable link after rejection; no commission, approved transaction, reversal, or payout is claimed |
@@ -1787,9 +1787,10 @@ historical evidence below. Read-only inspection of the installed state shows:
   to close installed proof. No provider row or money was fabricated.
 - The next natural owner wake at `2026-08-20T14:34:34Z` ran through the installed
   `9e8f7b90` `current` path and preserved `ALREADY_LIVE` without a duplicate
-  effect. Revenue remained `COOLDOWN`, the official PartnerStack report still
-  had zero rows, reconciliation appended zero transitions, and rolling net
-  remained `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`. This
+  effect. Revenue remained `COOLDOWN`, so the owner did not perform a fresh
+  provider capture; the prior official PartnerStack artifact still has zero
+  rows, reconciliation remains at zero appended transitions, and rolling net
+  remains `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`. This
   closes the installed B01 replay guard only; the first official transaction
   and exact placement join remain open.
 
