@@ -1310,7 +1310,7 @@ operation.
 This checkpoint supersedes older counts and zero-click statements in the
 historical evidence below. Read-only inspection of the installed state shows:
 
-- spec HEAD `649f474cf` is clean and pushed to both documentation remotes;
+- spec HEAD `37678582b` is clean and pushed to both documentation remotes;
   installed release `649f474cf175f19d21e363856c42bdf1d9bedd43` is the current
   immutable `skills/affiliate` runtime. The canonical installer atomically
   switched `current` and wrote the ownership receipt, then stopped at the
