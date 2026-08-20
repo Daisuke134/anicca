@@ -470,6 +470,30 @@ def owner_event(state, wake_event, sent_event_ids=None):
                 f"{current.get('revenue_source_rows')} / no estimated revenue counted"
             ), current.get("publication_url") or latest_live_url(state),
                 scope="revenue")
+    if wake_event.get("revenue_state") == "REVENUE_CYCLE_FAILED":
+        try:
+            failure = json.loads((state / "revenue-cycle-failure.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            failure = {}
+        stage = failure.get("stage") or "UNKNOWN"
+        failure_type = failure.get("failure_type") or "UNKNOWN"
+        return_code = failure.get("return_code")
+        retry_after = failure.get("retry_after")
+        kind = "REVENUE_CYCLE_FAILED"
+        add(kind, {
+            "kind": kind,
+            "provider": "elevenlabs",
+            "stage": stage,
+            "failure_type": failure_type,
+            "return_code": return_code,
+            "error_sha256": failure.get("error_sha256"),
+            "latest_source_artifact_sha256": failure.get("latest_source_artifact_sha256"),
+            "observed_at": failure.get("observed_at"),
+            "retry_after": retry_after,
+        }, (
+            f"provider capture failed closed / stage={stage} / type={failure_type} / "
+            "no transaction or estimated revenue counted"
+        ), wake_event.get("publication_url") or latest_live_url(state), scope="revenue")
     if wake_event.get("acquisition_decision_state") == "DECISION_FAILED":
         kind = "ACQUISITION_DECISION_FAILED"
         failure_type = wake_event.get("acquisition_decision_failure_type") or "UNKNOWN"
@@ -592,6 +616,8 @@ def owner_event(state, wake_event, sent_event_ids=None):
         if kind == "SELF_HEALED" and selected.get("scope") == "publication"
         else "次のwakeが同じ収益captureを再実行し、provider readbackを回復しました"
         if kind == "SELF_HEALED" and selected.get("scope") == "revenue"
+        else "provider captureの失敗を記録し、実取引なしで再試行を予約しました"
+        if kind == "REVENUE_CYCLE_FAILED"
         else "Impactの認証済み画面から、未解決だった同じlogin jobを完了しました"
         if kind == "SELF_HEALED"
         else "なし" if kind != "BLOCKED"
@@ -607,6 +633,8 @@ def owner_event(state, wake_event, sent_event_ids=None):
         if kind.startswith("PROGRAM_") or kind == "SELF_HEALED"
         else "同じrolling 30日net receiptを再計算し、実取引だけを監視"
         if kind == "AFFILIATE_ROLLING_NET"
+        else "同じ公式provider captureを既存ownerが再試行し、手動captureは行わない"
+        if kind == "REVENUE_CYCLE_FAILED"
         else "既存Repostの投稿アクションをowned記事・provider clickへ完全一致で結合"
         if kind == "REPOST_OBSERVED"
         else "provider transactionを待ち、sub-IDまたはlink fingerprintでplacementへ照合"
