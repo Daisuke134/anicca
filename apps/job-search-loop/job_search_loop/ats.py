@@ -39,7 +39,17 @@ def _control_text(control: dict[str, Any]) -> str:
 
 
 def _is_application_form(controls: list[dict[str, Any]]) -> bool:
-    has_email = any(_normalized(control.get("type")) == "email" for control in controls)
+    has_email = any(
+        _normalized(control.get("type")) == "email"
+        or (
+            _normalized(control.get("type")) in {"", "text"}
+            and any(
+                "email" in _normalized(control.get(field))
+                for field in ("label", "name", "text")
+            )
+        )
+        for control in controls
+    )
     has_resume = any(_normalized(control.get("type")) == "file" for control in controls)
     has_submit = any(
         "submit application" in _control_text(control)

@@ -213,6 +213,32 @@ class AtsReadinessTests(unittest.TestCase):
         self.assertTrue(result["claim_ready"])
         self.assertEqual(result["surface"], "generic_application")
 
+    def test_labeled_text_email_control_is_claim_ready(self):
+        result = evaluate_snapshot(
+            {
+                "version": 1,
+                "url": "https://job-boards.greenhouse.io/acme/jobs/42",
+                "navigation_committed": True,
+                "frames": [
+                    {
+                        "url": "https://job-boards.greenhouse.io/acme/jobs/42",
+                        "controls": [
+                            {"tag": "input", "type": "text", "label": "Email"},
+                            {"tag": "input", "type": "file", "label": "Attach"},
+                            {
+                                "tag": "button",
+                                "type": "submit",
+                                "text": "Submit application",
+                            },
+                        ],
+                    }
+                ],
+            }
+        )
+        self.assertTrue(result["ready"])
+        self.assertTrue(result["claim_ready"])
+        self.assertEqual(result["surface"], "generic_application")
+
 
 if __name__ == "__main__":
     unittest.main()
