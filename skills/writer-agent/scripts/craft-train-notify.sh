@@ -16,8 +16,10 @@
 # about whether the file moved.
 set -uo pipefail
 
-SKILL_DIR="${ARTICLE_SKILL_DIR:-$HOME/profitable-claude/skills/writer-agent}"
-JSONL="${CRAFT_TRAIN_JSONL:-$SKILL_DIR/state/craft-train.jsonl}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SKILL_DIR="${ARTICLE_SKILL_DIR:-$(cd "$SCRIPT_DIR/.." && pwd)}"
+STATE_DIR="${ARTICLE_STATE_DIR:-$SKILL_DIR/state}"
+JSONL="${CRAFT_TRAIN_JSONL:-$STATE_DIR/craft-train.jsonl}"
 TARGET="${CRAFT_TRAIN_TELEGRAM:-8547730585}"
 PY="${ARTICLE_PYTHON:-/opt/homebrew/bin/python3}"
 

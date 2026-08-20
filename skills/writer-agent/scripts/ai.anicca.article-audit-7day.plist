@@ -22,6 +22,14 @@
     <string>/Users/anicca/Projects/life-manager-main/skills/writer-agent/scripts/audit-7day.sh</string>
   </array>
 
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>ARTICLE_SKILL_DIR</key>
+    <string>/Users/anicca/Projects/life-manager-main/skills/writer-agent</string>
+    <key>ARTICLE_STATE_DIR</key>
+    <string>/Users/anicca/.local/state/life-manager/writer</string>
+  </dict>
+
   <key>StartCalendarInterval</key>
   <dict>
     <key>Weekday</key>

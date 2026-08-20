@@ -10,6 +10,11 @@
     <string>/bin/bash</string>
     <string>/Users/anicca/Projects/life-manager-main/skills/writer-agent/article-healthcheck.sh</string>
   </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>ARTICLE_HEALTHCHECK_STATE_DIR</key>
+    <string>/Users/anicca/.local/state/life-manager/writer/healthcheck</string>
+  </dict>
   <key>RunAtLoad</key>
   <false/>
   <key>StartInterval</key>

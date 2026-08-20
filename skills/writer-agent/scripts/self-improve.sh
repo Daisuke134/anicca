@@ -7,8 +7,9 @@ set -a
 . "$HOME/.openclaw/.env" 2>/dev/null || true
 set +a
 
-SKILL_DIR="${ARTICLE_SKILL_DIR:-$HOME/profitable-claude/skills/writer-agent}"
-STATE_DIR="$SKILL_DIR/state"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SKILL_DIR="${ARTICLE_SKILL_DIR:-$(cd "$SCRIPT_DIR/.." && pwd)}"
+STATE_DIR="${ARTICLE_STATE_DIR:-$SKILL_DIR/state}"
 LOG_DIR="$HOME/.openclaw/logs"
 mkdir -p "$STATE_DIR" "$LOG_DIR"
 
@@ -63,4 +64,4 @@ printf '%s\n' "$VERIFY_RESULT"
 # directly rather than waiting for the next five-minute interval.
 # Same executable as ai.anicca.writer-report; direct invocation is immediate
 # and also works in a local install before launchd registration.
-python3 "$SKILL_DIR/scripts/writer_report_worker.py" || true
+python3 "$SKILL_DIR/scripts/writer_report_worker.py" --state-dir "$STATE_DIR" || true

@@ -3,7 +3,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-STATE_DIR="$SCRIPT_DIR/../state"
+STATE_DIR="${ARTICLE_STATE_DIR:-$SCRIPT_DIR/../state}"
 LOCK_DIR="$STATE_DIR/.sales-measure.lock"
 LOCK_PID="$LOCK_DIR/pid"
 CLOAK_PYTHON="$HOME/.openclaw/skills/_shared/venv-cloak/bin/python3"

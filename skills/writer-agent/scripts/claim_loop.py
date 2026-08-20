@@ -254,10 +254,20 @@ def _validated_rendered_identity(
     return dict(value)
 
 
+def _state_path(skill_dir: Path, state_dir: Path | str | None, value: str) -> Path:
+    if state_dir is None:
+        return skill_dir / value
+    relative = Path(value)
+    if relative.parts and relative.parts[0] == "state":
+        relative = Path(*relative.parts[1:])
+    return Path(state_dir) / relative
+
+
 def _target_urls(
     skill_dir: Path,
     config: dict[str, Any],
     *,
+    state_dir: Path | str | None = None,
     recent_observations: list[Mapping[str, Any]] | None = None,
 ) -> list[str]:
     urls = config.get("x_article_urls", [])
@@ -270,7 +280,7 @@ def _target_urls(
     )
     if not isinstance(target_source, str) or Path(target_source).is_absolute():
         raise DemandObservationError("x_article_target_source must be a relative path")
-    target_file = skill_dir / target_source
+    target_file = _state_path(skill_dir, state_dir, target_source)
     raw_limit = config.get("x_article_target_limit", X_TARGET_LIMIT)
     if not isinstance(raw_limit, int) or isinstance(raw_limit, bool) or not 1 <= raw_limit <= 50:
         raise DemandObservationError("x_article_target_limit must be between 1 and 50")
@@ -314,24 +324,34 @@ def _target_urls(
     return list(dict.fromkeys(url.strip() for url in urls if url.strip()))
 
 
-def _x_article_receipt_store(skill_dir: Path, config: dict[str, Any]) -> Path:
+def _x_article_receipt_store(
+    skill_dir: Path,
+    config: dict[str, Any],
+    state_dir: Path | str | None = None,
+) -> Path:
     value = config.get("x_article_receipt_store", "state/x-article-bodies.json")
     if not isinstance(value, str) or Path(value).is_absolute():
         raise DemandObservationError("x_article_receipt_store must be a relative path")
-    return skill_dir / value
+    return _state_path(skill_dir, state_dir, value)
 
 
-def _article_daily_lock_path(skill_dir: Path, config: Mapping[str, Any]) -> Path:
+def _article_daily_lock_path(
+    skill_dir: Path,
+    config: Mapping[str, Any],
+    state_dir: Path | str | None = None,
+) -> Path:
     """Return the canonical publication/CDP lock used by article-daily.sh."""
 
     # The publication loop owns this exact path.  Never let a config value move
     # the capture process to an alternate lock that article-daily does not see.
     del config
-    return skill_dir / "state/.article-daily.lockdir"
+    return _state_path(skill_dir, state_dir, "state/.article-daily.lockdir")
 
 
-def _article_daily_recovery_lock_path(skill_dir: Path) -> Path:
-    return skill_dir / ARTICLE_DAILY_RECOVERY_LOCK_DIR
+def _article_daily_recovery_lock_path(
+    skill_dir: Path, state_dir: Path | str | None = None
+) -> Path:
+    return _state_path(skill_dir, state_dir, ARTICLE_DAILY_RECOVERY_LOCK_DIR)
 
 
 def _lock_identity(path: Path) -> tuple[int, int, int]:
@@ -493,10 +513,12 @@ def _claim_owned_lock(lock_path: Path) -> str:
 
 
 @contextmanager
-def _article_daily_recovery_mutex(skill_dir: Path):
+def _article_daily_recovery_mutex(
+    skill_dir: Path, state_dir: Path | str | None = None
+):
     """Serialize short lock acquisition/recovery across both Writer loops."""
 
-    mutex_path = _article_daily_recovery_lock_path(skill_dir)
+    mutex_path = _article_daily_recovery_lock_path(skill_dir, state_dir)
     mutex_path.parent.mkdir(parents=True, exist_ok=True)
     try:
         owner_token = _claim_owned_lock(mutex_path)
@@ -534,6 +556,7 @@ def _capture_with_article_daily_lock(
     config: Mapping[str, Any],
     url: str,
     capturer: Callable[[str], dict[str, Any]],
+    state_dir: Path | str | None = None,
 ) -> dict[str, Any]:
     """Capture only while holding article-daily.sh's non-blocking lockdir.
 
@@ -541,9 +564,9 @@ def _capture_with_article_daily_lock(
     browser.  A held lock is retryable state, not permission to open a second tab.
     """
 
-    lock_path = _article_daily_lock_path(skill_dir, config)
+    lock_path = _article_daily_lock_path(skill_dir, config, state_dir)
     owner_token: str | None = None
-    with _article_daily_recovery_mutex(skill_dir):
+    with _article_daily_recovery_mutex(skill_dir, state_dir):
         try:
             owner_token = _claim_owned_lock(lock_path)
         except FileExistsError as error:
@@ -577,9 +600,11 @@ def _capture_with_article_daily_lock(
 
 
 def _load_x_article_receipt(
-    skill_dir: Path, config: dict[str, Any]
+    skill_dir: Path,
+    config: dict[str, Any],
+    state_dir: Path | str | None = None,
 ) -> dict[str, Any] | None:
-    path = _x_article_receipt_store(skill_dir, config)
+    path = _x_article_receipt_store(skill_dir, config, state_dir)
     if not path.exists():
         return None
     try:
@@ -598,15 +623,18 @@ def _load_x_article_receipt(
 
 
 def _load_x_article_observations(
-    skill_dir: Path, config: dict[str, Any]
+    skill_dir: Path,
+    config: dict[str, Any],
+    state_dir: Path | str | None = None,
 ) -> list[dict[str, Any]]:
-    payload = _load_x_article_receipt(skill_dir, config)
+    payload = _load_x_article_receipt(skill_dir, config, state_dir)
     return list(payload["observations"]) if payload is not None else []
 
 
 def _load_verified_bootstrap_observations(
     skill_dir: Path,
     config: dict[str, Any],
+    state_dir: Path | str | None = None,
 ) -> list[dict[str, Any]]:
     """Load capture-verified bootstrap bodies retained before supply commits.
 
@@ -620,7 +648,7 @@ def _load_verified_bootstrap_observations(
     )
     if not isinstance(receipt_path, str) or Path(receipt_path).is_absolute():
         raise DemandObservationError("x_article_capture_receipt must be relative")
-    path = skill_dir / receipt_path
+    path = _state_path(skill_dir, state_dir, receipt_path)
     if not path.exists():
         return []
     try:
@@ -718,6 +746,7 @@ def _commit_x_article_observations(
     config: dict[str, Any],
     observations: list[dict[str, Any]],
     *,
+    state_dir: Path | str | None = None,
     supply: dict[str, Any] | None = None,
 ) -> bool:
     """Commit captured X bodies only after a valid demand card is durable."""
@@ -752,7 +781,7 @@ def _commit_x_article_observations(
     )
     target_set_sha256 = None
     if isinstance(target_source, str) and not Path(target_source).is_absolute():
-        target_path = skill_dir / target_source
+        target_path = _state_path(skill_dir, state_dir, target_source)
         if target_path.exists():
             try:
                 target_payload = json.loads(target_path.read_text(encoding="utf-8"))
@@ -779,7 +808,7 @@ def _commit_x_article_observations(
         separators=(",", ":"),
     ).encode("utf-8")
     _atomic_json(
-        _x_article_receipt_store(skill_dir, config),
+        _x_article_receipt_store(skill_dir, config, state_dir),
         {
             "version": 1,
             "committed_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
@@ -794,7 +823,7 @@ def _commit_x_article_observations(
     if isinstance(seed_receipt, str) and not Path(seed_receipt).is_absolute():
         urls = [str(row.get("source_url")) for row in observations]
         _atomic_json(
-            skill_dir / seed_receipt,
+            _state_path(skill_dir, state_dir, seed_receipt),
             {
                 "version": 1,
                 "consumed_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
@@ -810,13 +839,18 @@ def _x_article_observations(
     skill_dir: Path,
     config: dict[str, Any],
     *,
+    state_dir: Path | str | None = None,
     recent_observations: list[Mapping[str, Any]] | None = None,
     capturer: Callable[[str], dict[str, Any]],
 ) -> list[dict[str, Any]]:
     target_source = config.get(
         "x_article_target_source", "state/x-article-targets.json"
     )
-    target_file = skill_dir / target_source if isinstance(target_source, str) else None
+    target_file = (
+        _state_path(skill_dir, state_dir, target_source)
+        if isinstance(target_source, str)
+        else None
+    )
     recent_target_limit = config.get("x_article_target_limit", X_TARGET_LIMIT)
     if (
         not isinstance(recent_target_limit, int)
@@ -833,15 +867,16 @@ def _x_article_observations(
         and not target_file.exists()
         and not recent_targets
     ):
-        durable = _load_x_article_observations(skill_dir, config)
+        durable = _load_x_article_observations(skill_dir, config, state_dir)
         if durable:
             return durable
     urls = _target_urls(
         skill_dir,
         config,
+        state_dir=state_dir,
         recent_observations=recent_observations,
     )
-    prior_payload = _load_x_article_receipt(skill_dir, config)
+    prior_payload = _load_x_article_receipt(skill_dir, config, state_dir)
     prior_observations = (
         list(prior_payload["observations"])
         if prior_payload is not None
@@ -920,7 +955,9 @@ def _x_article_observations(
     )
     if not isinstance(receipt_path, str) or Path(receipt_path).is_absolute():
         raise DemandObservationError("x_article_capture_receipt must be relative")
-    verified_bootstrap = _load_verified_bootstrap_observations(skill_dir, config)
+    verified_bootstrap = _load_verified_bootstrap_observations(
+        skill_dir, config, state_dir
+    )
     candidate_urls = {target["url"] for target in recent_targets}
     if (
         verified_bootstrap
@@ -940,7 +977,7 @@ def _x_article_observations(
         and candidate_urls <= prior_failed_urls
     ):
         _atomic_json(
-            skill_dir / receipt_path,
+            _state_path(skill_dir, state_dir, receipt_path),
             {
                 "version": 1,
                 "observed_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
@@ -962,7 +999,7 @@ def _x_article_observations(
         return verified_bootstrap
     if not urls and prior_observations:
         _atomic_json(
-            skill_dir / receipt_path,
+            _state_path(skill_dir, state_dir, receipt_path),
             {
                 "version": 1,
                 "observed_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
@@ -984,6 +1021,7 @@ def _x_article_observations(
                 config,
                 url,
                 capturer,
+                state_dir,
             )
         except (XArticleCaptureError, OSError, RuntimeError) as error:
             skipped.append({"url": url, "reason": str(error)})
@@ -1079,7 +1117,7 @@ def _x_article_observations(
             },
         )
     _atomic_json(
-        skill_dir / receipt_path,
+        _state_path(skill_dir, state_dir, receipt_path),
         {
             "version": 1,
             "observed_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
@@ -1102,7 +1140,7 @@ def _x_article_observations(
     if not observations and skipped and recent_targets and not prior_observations:
         if verified_bootstrap:
             _atomic_json(
-                skill_dir / receipt_path,
+                _state_path(skill_dir, state_dir, receipt_path),
                 {
                     "version": 1,
                     "observed_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
@@ -1138,7 +1176,7 @@ def _x_article_observations(
             # Bootstrap successes are verified bodies too, but are kept separate
             # from the live candidate manifest until a demand card commits them.
             _atomic_json(
-                skill_dir / receipt_path,
+                _state_path(skill_dir, state_dir, receipt_path),
                 {
                     "version": 1,
                     "observed_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
@@ -1163,7 +1201,7 @@ def _x_article_observations(
             return observations
     if not observations and prior_observations:
         _atomic_json(
-            skill_dir / receipt_path,
+            _state_path(skill_dir, state_dir, receipt_path),
             {
                 "version": 1,
                 "observed_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
@@ -1213,6 +1251,7 @@ def _demand_summary(observations: list[dict[str, Any]]) -> dict[str, Any]:
 def run_loop(
     skill_dir: Path | str,
     *,
+    state_dir: Path | str | None = None,
     now: str,
     watcher: Callable[..., dict[str, Any]] = run_watch,
     refiller: Callable[..., dict[str, Any]] = refill_queue,
@@ -1226,7 +1265,7 @@ def run_loop(
     x_article_capturer: Callable[[str], dict[str, Any]] = capture_x_article_body,
 ) -> dict[str, Any]:
     skill_dir = Path(skill_dir)
-    state = skill_dir / "state"
+    state = Path(state_dir) if state_dir is not None else skill_dir / "state"
     observed_at = now
     config = json.loads((skill_dir / "config/claim-watch.json").read_text(encoding="utf-8")) \
         if watcher is run_watch else {"version": 1, "sources": []}
@@ -1282,6 +1321,7 @@ def run_loop(
             x_article_rows = _x_article_observations(
                 skill_dir,
                 config,
+                state_dir=state,
                 # X ClaimStore rows are bounded capture candidates only; they are
                 # appended to demand rows after the authenticated Article verifier.
                 recent_observations=[*demand_rows, *x_candidate_rows, *unverified_x_rows],
@@ -1318,6 +1358,7 @@ def run_loop(
                 skill_dir,
                 config,
                 x_article_rows,
+                state_dir=state,
                 supply=supply,
             )
         except DemandObservationError as error:
@@ -1348,6 +1389,7 @@ def run_loop(
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--skill-dir", type=Path, default=SCRIPT_DIR.parent)
+    parser.add_argument("--state-dir", type=Path)
     parser.add_argument("--floor", type=int, default=3)
     parser.add_argument(
         "--now",
@@ -1355,7 +1397,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
     now = args.now() if callable(args.now) else args.now
-    state = args.skill_dir / "state"
+    state = args.state_dir or args.skill_dir / "state"
     state.mkdir(parents=True, exist_ok=True)
     lock_path = state / ".claim-loop.lock"
     with lock_path.open("a+") as lock:
@@ -1368,6 +1410,7 @@ def main(argv: list[str] | None = None) -> int:
         run_id = f"claim-loop-{str(now).replace(':', '').replace('-', '')}"
         receipt = run_loop(
             args.skill_dir,
+            state_dir=state,
             now=now,
             floor=args.floor,
             chooser=lambda rows: model_choose(rows, runner=runner, run_id=run_id),

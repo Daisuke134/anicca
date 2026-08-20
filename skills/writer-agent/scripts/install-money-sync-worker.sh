@@ -29,7 +29,11 @@ cat >"$TMP_PLIST" <<PLIST
 <dict>
   <key>Label</key><string>$LABEL</string>
   <key>ProgramArguments</key>
-  <array><string>$PYTHON_BIN</string><string>$WORKER</string></array>
+  <array>
+    <string>$PYTHON_BIN</string><string>$WORKER</string>
+    <string>--state-dir</string><string>$HOME/.local/state/life-manager/writer</string>
+    <string>--db</string><string>$HOME/.local/state/life-manager/writer/money.sqlite3</string>
+  </array>
   <key>EnvironmentVariables</key>
   <dict>
     <key>PATH</key><string>$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>

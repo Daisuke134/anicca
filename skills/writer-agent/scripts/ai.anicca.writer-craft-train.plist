@@ -27,6 +27,16 @@
        but PATH must still reach homebrew python and git. -->
   <key>EnvironmentVariables</key>
   <dict>
+    <key>ARTICLE_SKILL_DIR</key>
+    <string>/Users/anicca/Projects/life-manager-main/skills/writer-agent</string>
+    <key>ARTICLE_STATE_DIR</key>
+    <string>/Users/anicca/.local/state/life-manager/writer</string>
+    <key>CRAFT_MD</key>
+    <string>/Users/anicca/Projects/life-manager-main/skills/writer-agent/reference/CRAFT.md</string>
+    <key>CRAFT_TRAIN_JSONL</key>
+    <string>/Users/anicca/.local/state/life-manager/writer/craft-train.jsonl</string>
+    <key>CRAFT_TRAIN_RUNS_ROOT</key>
+    <string>/Users/anicca/.local/state/life-manager/writer/runs</string>
     <key>PATH</key>
     <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
     <key>HOME</key>

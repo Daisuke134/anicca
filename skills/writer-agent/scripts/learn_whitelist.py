@@ -96,8 +96,9 @@ def _sha256(path: Path) -> str:
 
 def _completed_sources(
     skill_dir: Path,
+    state_dir: Path | None = None,
 ) -> list[tuple[str, str, str]]:
-    state_root = skill_dir / "state"
+    state_root = Path(state_dir) if state_dir is not None else skill_dir / "state"
     ledger = state_root / "articles.jsonl"
     sources = []
     for state_path in sorted(
@@ -215,10 +216,12 @@ def _commit(repo: Path, whitelist: Path, count: int) -> str:
 def learn(
     skill_dir: Path,
     *,
+    state_dir: Path | None = None,
     commit_changes: bool = True,
 ) -> dict[str, Any]:
     whitelist = skill_dir / "reference/language-whitelist.txt"
-    receipt = skill_dir / "state/learning/whitelist-receipt.json"
+    state_root = Path(state_dir) if state_dir is not None else skill_dir / "state"
+    receipt = state_root / "learning/whitelist-receipt.json"
     repo = skill_dir.parents[1]
     try:
         prior = json.loads(receipt.read_text(encoding="utf-8"))
@@ -249,7 +252,7 @@ def learn(
         return prior
     existing = set(validate_whitelist(whitelist))
     evidence: dict[str, list[str]] = {}
-    for run_id, ja, en in _completed_sources(skill_dir):
+    for run_id, ja, en in _completed_sources(skill_dir, state_root):
         candidates = shared_candidates(ja, en, existing=existing)
         if candidates:
             evidence[run_id] = candidates
@@ -315,12 +318,18 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--skill-dir", type=Path, default=SCRIPTS.parent)
     parser.add_argument(
+        "--state-dir",
+        type=Path,
+        default=os.environ.get("ARTICLE_STATE_DIR"),
+    )
+    parser.add_argument(
         "--test-no-commit",
         action="store_true",
         help=argparse.SUPPRESS,
     )
     args = parser.parse_args()
-    lock_path = args.skill_dir / "state/.whitelist-learning.lock"
+    state_root = Path(args.state_dir) if args.state_dir is not None else args.skill_dir / "state"
+    lock_path = state_root / ".whitelist-learning.lock"
     lock_path.parent.mkdir(parents=True, exist_ok=True)
     try:
         with lock_path.open("a+") as lock:
@@ -334,6 +343,7 @@ def main() -> int:
                 return 0
             result = learn(
                 args.skill_dir,
+                state_dir=state_root,
                 commit_changes=not args.test_no_commit,
             )
     except (

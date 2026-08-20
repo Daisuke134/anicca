@@ -29,7 +29,11 @@ cat >"$TMP_PLIST" <<PLIST
 <dict>
   <key>Label</key><string>$LABEL</string>
   <key>ProgramArguments</key>
-  <array><string>$PYTHON_BIN</string><string>$WORKER</string></array>
+  <array>
+    <string>$PYTHON_BIN</string><string>$WORKER</string>
+    <string>--skill-dir</string><string>$SCRIPT_DIR/..</string>
+    <string>--state-dir</string><string>$HOME/.local/state/life-manager/writer</string>
+  </array>
   <key>EnvironmentVariables</key>
   <dict>
     <key>ARTICLE_PROVIDER</key><string>codex</string>
@@ -37,6 +41,8 @@ cat >"$TMP_PLIST" <<PLIST
     <key>ARTICLE_CODEX_PROVIDER_BASE_URL</key><string>http://127.0.0.1:8317/v1</string>
     <key>ARTICLE_CODEX_PROVIDER_ENV_KEY</key><string>CLIPROXY_API_KEY</string>
     <key>ARTICLE_CODEX_PROVIDER_API_KEY_SOURCE</key><string>cliproxyapi</string>
+    <key>ARTICLE_SKILL_DIR</key><string>$SCRIPT_DIR/..</string>
+    <key>ARTICLE_STATE_DIR</key><string>$HOME/.local/state/life-manager/writer</string>
     <key>PATH</key><string>$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
   </dict>
   <key>StartInterval</key><integer>900</integer>

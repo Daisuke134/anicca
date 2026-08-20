@@ -28,6 +28,16 @@
     <string>/Users/anicca/Projects/life-manager-main/skills/writer-agent/scripts/self-improve.sh</string>
   </array>
 
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>ARTICLE_PROVIDER</key>
+    <string>codex</string>
+    <key>ARTICLE_SKILL_DIR</key>
+    <string>/Users/anicca/Projects/life-manager-main/skills/writer-agent</string>
+    <key>ARTICLE_STATE_DIR</key>
+    <string>/Users/anicca/.local/state/life-manager/writer</string>
+  </dict>
+
   <key>StartCalendarInterval</key>
   <dict>
     <key>Hour</key>
@@ -38,12 +48,6 @@
 
   <key>RunAtLoad</key>
   <false/>
-
-  <key>EnvironmentVariables</key>
-  <dict>
-    <key>ARTICLE_PROVIDER</key>
-    <string>codex</string>
-  </dict>
 
   <key>StandardOutPath</key>
   <string>/Users/anicca/.openclaw/logs/article-self-improve.out</string>

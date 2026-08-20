@@ -29,8 +29,9 @@
 # actually true, not just "true unless craft_train.py itself breaks".
 set -uo pipefail
 
-SKILL_DIR="${ARTICLE_SKILL_DIR:-$HOME/profitable-claude/skills/writer-agent}"
-CRAFT_MD="${CRAFT_MD:-$HOME/profitable-claude/skills/writing-craft/CRAFT.md}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SKILL_DIR="${ARTICLE_SKILL_DIR:-$(cd "$SCRIPT_DIR/.." && pwd)}"
+CRAFT_MD="${CRAFT_MD:-$SKILL_DIR/reference/CRAFT.md}"
 VENDOR_DIR="$SKILL_DIR/vendor/skillopt-writing"
 CLIPROXY_CONF="${CLIPROXY_CONF:-/opt/homebrew/etc/cliproxyapi.conf}"
 CLIPROXY_PORT="${CLIPROXY_PORT:-8317}"
@@ -39,8 +40,9 @@ PY="${ARTICLE_PYTHON:-/opt/homebrew/bin/python3}"
 command -v "$PY" >/dev/null 2>&1 || PY=python3
 SKILLOPT_PYTHON="${SKILLOPT_PYTHON:-$HOME/.venvs/skillopt/bin/python3}"
 
-JSONL="${CRAFT_TRAIN_JSONL:-$SKILL_DIR/state/craft-train.jsonl}"
-RUNS_ROOT="${CRAFT_TRAIN_RUNS_ROOT:-$SKILL_DIR/state/runs}"
+STATE_DIR="${ARTICLE_STATE_DIR:-$SKILL_DIR/state}"
+JSONL="${CRAFT_TRAIN_JSONL:-$STATE_DIR/craft-train.jsonl}"
+RUNS_ROOT="${CRAFT_TRAIN_RUNS_ROOT:-$STATE_DIR/runs}"
 CONFIG="$VENDOR_DIR/configs/writing/default.yaml"
 RUN_TRAIN="$VENDOR_DIR/run_train.py"
 OUT_ROOT="$VENDOR_DIR/runs/craft-train-$(date -u +%Y%m%dT%H%M%SZ)"

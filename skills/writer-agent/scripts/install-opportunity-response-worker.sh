@@ -29,7 +29,12 @@ cat >"$TMP_PLIST" <<PLIST
 <dict>
   <key>Label</key><string>$LABEL</string>
   <key>ProgramArguments</key>
-  <array><string>$PYTHON_BIN</string><string>$WORKER</string></array>
+  <array>
+    <string>$PYTHON_BIN</string><string>$WORKER</string>
+    <string>--db</string><string>$HOME/.local/state/life-manager/writer/opportunities.sqlite3</string>
+    <string>--receipt</string><string>$HOME/.local/state/life-manager/writer/opportunity-response-latest.json</string>
+    <string>--runner</string><string>$SCRIPT_DIR/../runtime/model-runner.sh</string>
+  </array>
   <key>EnvironmentVariables</key>
   <dict>
     <key>HOME</key><string>$HOME</string>

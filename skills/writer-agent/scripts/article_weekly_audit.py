@@ -287,11 +287,12 @@ def _telegram(target: str, message: str) -> str:
 def audit(
     skill_dir: Path,
     *,
+    state_dir: Path | None = None,
     today: date,
     target: str,
     notify: bool = True,
 ) -> dict[str, Any]:
-    state_root = skill_dir / "state"
+    state_root = Path(state_dir) if state_dir is not None else skill_dir / "state"
     ledger = state_root / "articles.jsonl"
     # The audit runs at 22:00, thirty minutes before today's learning cycle.
     # Audit the seven fully closed article/learning days through yesterday.
@@ -366,6 +367,11 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--skill-dir", type=Path, default=SCRIPTS.parent)
     parser.add_argument(
+        "--state-dir",
+        type=Path,
+        default=os.environ.get("ARTICLE_STATE_DIR"),
+    )
+    parser.add_argument(
         "--target",
         default=os.environ.get("TELEGRAM_TARGET_ID", "8547730585"),
     )
@@ -379,6 +385,7 @@ def main() -> int:
     try:
         result = audit(
             args.skill_dir,
+            state_dir=args.state_dir,
             today=(
                 date.fromisoformat(args.today)
                 if args.today
