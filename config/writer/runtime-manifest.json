@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "runtime_root": "skills/writer-agent",
+  "runtime_tree_sha256": "803524464930f8492d0ef893940bb363ea3079a5580a112bf099399e651fd0aa",
+  "runtime_file_count": 381,
+  "source": {
+    "repository": "/Users/anicca/profitable-claude",
+    "path": "skills/article-writer",
+    "commit": "38f71e61",
+    "status": "source-of-truth-until-cutover"
+  },
+  "active_release": {
+    "path": "/Users/anicca/profitable-claude-releases/writer/e9ab21ea/writer-agent",
+    "status": "currently-invoked-by-daily-and-resume"
+  },
+  "state": {
+    "active": "/Users/anicca/profitable-claude/skills/writer-agent/state",
+    "target": "~/.local/state/life-manager/writer",
+    "credentials": "~/.config/life-manager/accounts",
+    "owner_fence": "~/.local/state/life-manager/writer/owner-fence"
+  },
+  "launchd_labels": [
+    "ai.anicca.article-daily",
+    "ai.anicca.article-healthcheck",
+    "ai.anicca.article-resume",
+    "ai.anicca.article-zenn-retry",
+    "ai.anicca.article-self-improve",
+    "ai.anicca.article-audit-7day",
+    "ai.anicca.article-learn-whitelist"
+  ],
+  "launchd_sources": {
+    "ai.anicca.article-daily": "/Users/anicca/Library/LaunchAgents/ai.anicca.article-daily.plist",
+    "ai.anicca.article-healthcheck": "/Users/anicca/Library/LaunchAgents/ai.anicca.article-healthcheck.plist",
+    "ai.anicca.article-resume": "/Users/anicca/Library/LaunchAgents/ai.anicca.article-resume.plist",
+    "ai.anicca.article-zenn-retry": "/Users/anicca/Library/LaunchAgents/ai.anicca.article-zenn-retry.plist",
+    "ai.anicca.article-self-improve": "/Users/anicca/Library/LaunchAgents/ai.anicca.article-self-improve.plist",
+    "ai.anicca.article-audit-7day": "/Users/anicca/Library/LaunchAgents/ai.anicca.article-audit-7day.plist",
+    "ai.anicca.article-learn-whitelist": "/Users/anicca/Library/LaunchAgents/ai.anicca.article-learn-whitelist.plist"
+  },
+  "cutover": {
+    "status": "not-ready",
+    "reason": "shared owner fence, state parity, launchd drain, and bounded wake are not yet proven",
+    "publication_paused": true,
+    "legacy_roots_must_not_be_deleted": true
+  }
+}

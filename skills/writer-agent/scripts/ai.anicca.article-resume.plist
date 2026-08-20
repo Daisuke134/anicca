@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>ai.anicca.article-resume</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>/Users/anicca/profitable-claude/skills/article-writer/scripts/article-resume-pending.sh</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>ARTICLE_PROVIDER</key>
+    <string>codex</string>
+  </dict>
+  <key>RunAtLoad</key>
+  <false/>
+  <key>StartInterval</key>
+  <integer>300</integer>
+  <key>StandardOutPath</key>
+  <string>/Users/anicca/.openclaw/logs/article-resume.out</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/anicca/.openclaw/logs/article-resume.err</string>
+</dict>
+</plist>

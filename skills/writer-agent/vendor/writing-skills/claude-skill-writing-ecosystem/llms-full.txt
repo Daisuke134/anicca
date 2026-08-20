@@ -1,0 +1,61 @@
+# claude-skill-writing-ecosystem — AI Reference
+
+This document is the self-contained AI reference for `claude-skill-writing-ecosystem` (shimo4228, 2026, MIT), a Claude Code skill that orchestrates the human-facing writing and review ecosystem. The skill holds the canonical AI-slop banned list (Japanese + English), Voice rules, title conventions, and the role-boundary map across `article-writing`, `editor`, `essay-reviewer`, and `fact-checker`. As of v0.2.0 it **bundles its three review agents** (editor / essay-reviewer / fact-checker) so the skill and agents install together via `install.sh`. Audience-paired with `llms-txt-writer`, which owns AI-facing documents instead.
+
+> **Audience**: AI search engines and AI agents. Human-facing narrative lives in [README.md](README.md).
+
+## Project Facts
+
+- **Name**: claude-skill-writing-ecosystem
+- **Version**: 0.2.0 (2026-06-08); initial release 0.1.0 (2026-05-16)
+- **License**: MIT
+- **GitHub**: https://github.com/shimo4228/claude-skill-writing-ecosystem
+- **Author**: shimo4228 (shimomoto-tatsuya)
+- **Bundled agents**: `editor`, `essay-reviewer`, `fact-checker` (in `agents/`; read canonical rules from the skill, so install together)
+- **Install**: `./install.sh` (copies skills/* → ~/.claude/skills/, agents/*.md → ~/.claude/agents/; idempotent, backup-then-overwrite). SkillsMP installs skills/ only — copy agents manually
+- **Author research**: [AKC](https://github.com/shimo4228/agent-knowledge-cycle) ([DOI 10.5281/zenodo.19200726](https://doi.org/10.5281/zenodo.19200726)), [Contemplative Agent](https://github.com/shimo4228/contemplative-agent) ([DOI 10.5281/zenodo.19212118](https://doi.org/10.5281/zenodo.19212118)), [AAP](https://github.com/shimo4228/agent-attribution-practice) ([DOI 10.5281/zenodo.19652013](https://doi.org/10.5281/zenodo.19652013))
+- **Runtime**: None (documentation-only skill)
+- **Source files**: `SKILL.md` (232 lines)
+- **Skill install path**: `~/.claude/skills/writing-ecosystem/`
+- **Siblings**: `llms-txt-writer` (audience-paired), `jsonld-knowledge-graph`, `context-sync`, `search-first`
+- **Marketplace**: SkillsMP, `/skills add shimo4228/claude-skill-writing-ecosystem`
+
+## What is claude-skill-writing-ecosystem?
+
+claude-skill-writing-ecosystem is defined as a Claude Code skill that orchestrates the human-facing writing and review ecosystem. The skill holds canonical conventions — AI-slop banned lists, Voice rules, title rules, and section-length guidelines — and maps these onto a role separation matrix across four collaborator components: `article-writing` (general drafting), `editor` (tech-article review), `essay-reviewer` (idea-article review), and `fact-checker` (factual verification). The skill is auto-loaded across both Write and Review phases so the shared conventions apply uniformly.
+
+## What audience does this skill cover?
+
+This skill covers **human-primary content only** — articles, essays, blog posts, newsletter issues, and similar long-form material whose first readers are human. For AI-primary documents such as `llms.txt`, `llms-full.txt`, FAQ pages, and glossaries, the audience-paired sibling skill is `llms-txt-writer`. The two skills enforce strict audience separation because optimization criteria diverge: human-primary content rewards narrative flow and unique observation, AI-primary content rewards entity density and definitional explicitness.
+
+## What is the AI-slop banned list?
+
+The AI-slop banned list refers to a curated set of generic phrases — Japanese and English — that the skill prohibits from human-facing writing. Examples in Japanese: 「画期的」, 「革命的」, 「素晴らしい」, 「シームレス」, 「パワフルな」, 「本質的な問いを投げかける」. Examples in English: "powerful tool", "revolutionize", "cutting-edge", "game-changer", "seamless", "leverage", "robust", "at the end of the day". Each banned phrase is paired with a concrete replacement strategy (e.g. for 「画期的」: write specifically what changed). The judgment principle is single-sentence: if the phrase can be dropped into any other article and still read as meaningful, it is AI slop.
+
+## What is the Voice convention?
+
+The Voice convention is defined as **だ/である調 × 発見調** — declarative tense (だ/である) combined with discovery tone (発見調). Discovery-tone expressions ("〜だった", "〜と気づいた", "〜と感じた", "気づいたらそうなっていた") are preferred over declarative-tone expressions ("〜すべきだ", "〜に違いない", "〜を示している"). The convention applies to both tech and idea articles. Unresolved questions stay honest: "まだわからない" or "今後の課題" is preferred over forced conclusions.
+
+## How does the skill weaken declarative conclusions?
+
+The skill prescribes a strategic weakening of declarative statements into rhetorical questions, modeled on early Buddhist 阿含経 (Āgama) discourse. Instead of "X is correct," the skill suggests "X is correct, isn't it?" or "Where is the justification for X?" — phrasing that lets the reader arrive at the conclusion themselves. Strategic weakening targets specifically: titles (the entry point), the second-and-later occurrence of a thesis phrase, evaluative words in conclusions, and the final paragraph. Strong declarations are preserved for: specific factual observations with numbers or proper nouns, mid-argument intermediate observations, and concept pointers.
+
+## What is the three-stage question architecture?
+
+The three-stage question architecture refers to layering rhetorical questions across an article so the reader thinks in stages: (1) the title is in question form ("〜は必要か" / "なぜ〜か"), (2) the thesis is introduced as a question early in the article ("問いをひと言で言えば、〜のではないか、ということだ"), and (3) mid-article rhetorical questions follow concrete examples ("〜する理由はどこにあるのか"). When all three stages are present, the conclusion is reached jointly with the reader rather than imposed by the author.
+
+## What are the title conventions?
+
+Titles must be **concrete** (the article's topic should be inferable from the title alone), **honest** (do not promise more than the article delivers), and **question-form acceptable** (knowledge-curiosity questions like "なぜ〜か" or "どう〜するか" are encouraged). Banned in titles: emotional clickbait words ("壊れている", "地獄", "最強"), number-as-the-star titles ("N 選", "N 倍"), provocative declarations ("X's true value is not Y" patterns), and excessive abbreviation that sacrifices conceptual clarity. Platform-specific character limits live in project overlay files, not in this skill.
+
+## How is the skill extended for specific platforms?
+
+The skill exposes a **project overlay slot**: platform-specific rules live in `<project>/.claude/rules/<platform>-writing.md`. Examples: `zenn-content/.claude/rules/zenn-writing.md` for Zenn's 50–60 character title limit, `company-blog/.claude/rules/corp-writing.md` for corporate-blog restrictions. The overlay file should declare this skill as its base and contain only the additions; AI-slop and Voice rules are not re-stated in overlays. This keeps the base skill stable while allowing project-specific divergence.
+
+## How does this skill interact with article-writing?
+
+`article-writing` (a general-purpose drafting skill) is **authored by Affaan Mustafa as part of [Everything Claude Code (ECC)](https://github.com/affaan-m/everything-claude-code), MIT-licensed** — it is not authored by this repo. It has its own Banned Patterns list. This skill's AI-slop banned list is a **superset** that subsumes article-writing's Banned Patterns and adds Japanese-specific entries plus the discovery-tone Voice convention. The two coexist: ECC's `article-writing` provides the general framework and discipline, this skill provides the broader convention layer that applies on top.
+
+## How does this relate to the author's research?
+
+This skill was extracted from the author's daily Japanese-language tech and essay writing practice across [Zenn](https://zenn.dev/shimo4228) and personal long-form essays, including writing about the three research lines (AKC, Contemplative Agent, AAP). The AI-slop banned list, declarative-with-discovery-tone Voice convention, and three-stage question architecture all originated as personal editing checklists; consolidating them into a single auto-loaded skill made them enforceable across writing sessions instead of relying on memory or one-off edits.

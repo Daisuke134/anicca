@@ -1,0 +1,48 @@
+# claude-skill-writing-ecosystem
+
+> A Claude Code skill (documentation-only, MIT) that orchestrates the **human-facing writing & review ecosystem** — articles, essays, blog posts, newsletter issues. Holds the canonical AI-slop banned list (Japanese + English), Voice rules (だ/である × 発見調), title conventions, and the role-boundary map across `article-writing`, `editor`, `essay-reviewer`, and `fact-checker`. **Bundles its three review agents** (editor / essay-reviewer / fact-checker) so the skill and agents install together via `install.sh`. Audience-paired with `llms-txt-writer` (AI-facing documents).
+
+## Core documentation
+
+- [SKILL.md](skills/writing-ecosystem/SKILL.md): full skill specification — ecosystem map, AI-slop banned lists (JA + EN), Voice & Tone rules, three-stage question architecture, title conventions, project-overlay extension slot
+- [README.md](README.md): human-facing narrative (install, ecosystem map, audience boundary)
+- [CHANGELOG.md](CHANGELOG.md): release notes (v0.1.0 initial release)
+
+## Bundled agents
+
+- [editor](agents/editor.md): tech-article review — structure, code accuracy, AI slop, terminology
+- [essay-reviewer](agents/essay-reviewer.md): idea-article review — logical structure, argument overload, tone
+- [fact-checker](agents/fact-checker.md): web-verification of factual claims, paste-ready sources block
+
+## Install
+
+- [install.sh](install.sh): one-command bundler — copies skills/* → ~/.claude/skills/, agents/*.md → ~/.claude/agents/; idempotent, backup-then-overwrite, `--force` / `--dry-run`
+- SkillsMP `/skills add` installs skills/ only — agents must be copied manually (`cp agents/*.md ~/.claude/agents/`)
+- The `article-writing` drafting skill (Everything Claude Code, MIT) is referenced but not bundled
+
+## The role-separation matrix
+
+The skill enforces a 2D role separation across the writing ecosystem:
+
+|        | Write | Review: Quality | Review: Logic | Review: Facts |
+|---|---|---|---|---|
+| **Component** | `article-writing` skill | `editor` agent | `essay-reviewer` agent | `fact-checker` agent |
+| **Trigger** | drafting | tech-article review | idea-article review | before publication |
+
+The shared concerns (AI slop, Voice, title conventions) are owned by this skill (`writing-ecosystem`) and auto-loaded across write + review phases.
+
+## Audience boundary
+
+| Audience | Skill |
+|---|---|
+| Humans (articles, essays, blog posts) | `claude-skill-writing-ecosystem` (this one) |
+| AI search engines and agents (`llms.txt`, FAQ) | `llms-txt-writer` |
+
+The two skills do not overlap. Mixing audiences in one document makes both worse.
+
+## Sibling skills
+
+- [llms-txt-writer](https://github.com/shimo4228/llms-txt-writer): AI-facing documents (the audience-paired skill)
+- [jsonld-knowledge-graph](https://github.com/shimo4228/jsonld-knowledge-graph): JSON-LD knowledge graph design for stable concept-level structure
+- [context-sync](https://github.com/shimo4228/context-sync): project documentation audit
+- [search-first](https://github.com/shimo4228/search-first): research-before-coding workflow

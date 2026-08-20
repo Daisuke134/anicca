@@ -1,0 +1,962 @@
+[
+  {
+    "id": "hatena:https://ameblo.jp/kaneshiro-honest-clinic/entry-12973732266.html",
+    "subject": "あるクリニックがエアコンを廃止したこと",
+    "lang": "ja",
+    "title": "『当クリニックはエアコンを廃止しました』",
+    "metric_primary": 469.0,
+    "split": "train"
+  },
+  {
+    "id": "hatena:https://anond.hatelabo.jp/20260724152707",
+    "subject": "今年発表された、十分に注目されていない面白い小説の紹介",
+    "lang": "ja",
+    "title": "今年、一番面白い（のにいまいちプッシュが弱い）小説を激プッシュさせてほしい",
+    "metric_primary": 61.0,
+    "split": "train"
+  },
+  {
+    "id": "hatena:https://anond.hatelabo.jp/20260726005358",
+    "subject": "天皇制廃止論と、廃止した場合に生じうる社会的・制度的な影響について。",
+    "lang": "ja",
+    "title": "天皇制廃止すればいいって言ってる人って廃止して本当に困らないと思ってる？",
+    "metric_primary": 429.0,
+    "split": "train"
+  },
+  {
+    "id": "hatena:https://azukiazusa.dev/blog/hermes-agent-slack-workflow/",
+    "subject": "Hermes AgentとSlackを使い、LinearのチケットからDraft PRを作成する開発ワークフロー",
+    "lang": "ja",
+    "title": "Hermes Agent と Slack で設計し、Linear のチケットから Draft PR まで作成するワークフローの素振りをした",
+    "metric_primary": 73.0,
+    "split": "train"
+  },
+  {
+    "id": "hatena:https://azukiazusa.dev/blog/html-in-canvas-component-library-canvasui/",
+    "subject": "Canvas内にHTMLベースのUIを構築するためのコンポーネントライブラリ",
+    "lang": "ja",
+    "title": "HTML-in-Canvas コンポーネントライブラリ Canvas UI",
+    "metric_primary": 74.0,
+    "split": "train"
+  },
+  {
+    "id": "hatena:https://blog.shin1x1.com/entry/dont-let-go-of-understanding",
+    "subject": "物事を理解し続けることの重要性について",
+    "lang": "ja",
+    "title": "理解を手放さない - Shin x Blog",
+    "metric_primary": 90.0,
+    "split": "train"
+  },
+  {
+    "id": "hatena:https://eetimes.itmedia.co.jp/ee/articles/2607/24/news079.html",
+    "subject": "南鳥島周辺のレアアース泥の資源価値と日本での開発・活用可能性について",
+    "lang": "ja",
+    "title": "日本を資源大国へ　埋蔵量だけじゃない、南鳥島レアアース泥の価値",
+    "metric_primary": 48.0,
+    "split": "train"
+  },
+  {
+    "id": "hatena:https://finance.biggo.jp/news/bca88ca4-8438-4d70-b512-75cda1dd3bd1",
+    "subject": "フィールズ賞受賞者のツィマーマンがOpenAIに加わり、AI安全性の研究に取り組むことを発表した件",
+    "lang": "ja",
+    "title": "フィールズ賞新受賞者ツィマーマン、受賞会見で「転身」宣言：OpenAIに加わりAI安全性を研究へ — BigGo ファイナンス",
+    "metric_primary": 74.0,
+    "split": "train"
+  },
+  {
+    "id": "hatena:https://friday.gold/article/429186",
+    "subject": "森喜朗元首相の誕生日会の様子と、清和会関係者との関係",
+    "lang": "ja",
+    "title": "森喜朗･元首相「清和会のドン」の侘しき誕生日会 | FRIDAY（フライデー）",
+    "metric_primary": 96.0,
+    "split": "train"
+  },
+  {
+    "id": "hatena:https://kumanichi.com/articles/2017709",
+    "subject": "陸上自衛隊の情報収集活動における記録の必要性と、身分を隠した収集の憲法上の問題についての見解",
+    "lang": "ja",
+    "title": "陸自部隊の情報収集　「愛国心や性的嗜好は記録する必要ない」「身分隠して収集なら違憲の疑い」　木村草太・東京都立大教授に聞く｜熊本日日新聞社",
+    "metric_primary": 183.0,
+    "split": "train"
+  },
+  {
+    "id": "hatena:https://news.web.nhk/newsweb/na/na-k10015186551000",
+    "subject": "東京都世田谷区で落雷により電柱から火花が出た事案",
+    "lang": "ja",
+    "title": "落雷で電柱から火花 東京 世田谷 | NHKニュース",
+    "metric_primary": 142.0,
+    "split": "train"
+  },
+  {
+    "id": "hatena:https://newsdig.tbs.co.jp/articles/withbloomberg/2818417",
+    "subject": "クリスピー・クリーム・ドーナツによる食品ロス削減と持続可能な店舗運営の取り組み",
+    "lang": "ja",
+    "title": "「売れ残り」が「ブランド体験」に変わる クリスピー・クリーム・ドーナツのフードロス対策から学ぶ 持続可能な店舗運営 | TBS CROSS DIG with Bloomberg",
+    "metric_primary": 56.0,
+    "split": "train"
+  },
+  {
+    "id": "hatena:https://note.com/ganot/n/ned74462afe7e",
+    "subject": "作品『みいちゃんと山田さん』への反対運動を、哲学・政治思想・法律・人権の観点から論じる記事",
+    "lang": "ja",
+    "title": "『みいちゃんと山田さん』反対運動への所見｜Ganot/哲学,政治思想,法律と人権/記事作成にAI補助利用",
+    "metric_primary": 51.0,
+    "split": "train"
+  },
+  {
+    "id": "hatena:https://note.com/utss2020/n/n499023ec41fa",
+    "subject": "漫画『みいちゃんと山田さん』のアニメ化に伴って生じる問題について。",
+    "lang": "ja",
+    "title": "『みいちゃんと山田さん』のアニメ化がもたらす問題｜郡司 真子 Masako GUNJ I",
+    "metric_primary": 419.0,
+    "split": "train"
+  },
+  {
+    "id": "hatena:https://pc.watch.impress.co.jp/docs/news/2127831.html",
+    "subject": "AIの異常動作時に政府が停止できる法案に対する企業の賛否と署名状況",
+    "lang": "ja",
+    "title": "「AI暴走なら政府が停止」法案にNVIDIAら25社が反発、OpenAI・Anthropicは署名せず",
+    "metric_primary": 89.0,
+    "split": "train"
+  },
+  {
+    "id": "hatena:https://posfie.com/@DamDam347/p/yKk9PSJ",
+    "subject": "共産党やANTIFA、しばき隊系活動家による大谷翔平への批判やボイコット発言を扱う記事",
+    "lang": "ja",
+    "title": "共産党「大谷翔平、あまりに愚か」ANTIFA「大谷翔平ボイコットするわ」しばき隊系活動家「大谷翔平馬鹿野郎」",
+    "metric_primary": 84.0,
+    "split": "train"
+  },
+  {
+    "id": "hatena:https://posfie.com/@Elif87995911/p/t6LAinM",
+    "subject": "フジロックでのHi-STANDARDの反戦と音楽による団結を訴える発言への批判",
+    "lang": "ja",
+    "title": "フジロックで「右も左も戦争は嫌いだ、いがみ合うより音楽で団結」と訴えたハイスタが叩かれる",
+    "metric_primary": 383.0,
+    "split": "train"
+  },
+  {
+    "id": "hatena:https://posfie.com/@OOEDO4/p/5HTWVr3",
+    "subject": "漫画・アニメ『チ。―地球の運動について―』の描写と史実の関係をめぐる議論",
+    "lang": "ja",
+    "title": "「チ。 －地球の運動について－」と史実を巡る議論。「異世界ラノベなんかより遥かにタチが悪い」",
+    "metric_primary": 261.0,
+    "split": "train"
+  },
+  {
+    "id": "hatena:https://togetter.com/li/2724822",
+    "subject": "知床沖観光船沈没事故で乗客のカメラに記録された沈没前の映像データの復元",
+    "lang": "ja",
+    "title": "知床沖観光船沈没事故で乗客のカメラに残った荒れ狂う海と叫び声…沈没前の映像データを完全復元→「エンジニアの不屈の意志を感じる」「海水だろ？すげぇな」",
+    "metric_primary": 43.0,
+    "split": "train"
+  },
+  {
+    "id": "hatena:https://togetter.com/li/2724996",
+    "subject": "着付け教室で着物の購入を勧められるという認識と、それが着物業界に与える影響",
+    "lang": "ja",
+    "title": "Threadsで「着物を買わされない着付け教室ありませんか？」という投稿を見たけど、着付け教室＝着物を買わされるイメージがついてるの、業界全体の損失じゃない…？",
+    "metric_primary": 58.0,
+    "split": "train"
+  },
+  {
+    "id": "hatena:https://www.47news.jp/14684917.html",
+    "subject": "ロシアが北朝鮮に追加で3万人規模の兵士派遣を求めた可能性に関する報道",
+    "lang": "ja",
+    "title": "【速報】ロシア、北朝鮮に3万人追加派兵要求か",
+    "metric_primary": 132.0,
+    "split": "train"
+  },
+  {
+    "id": "hatena:https://www.47news.jp/14687549.html",
+    "subject": "女性天皇の容認に対する世論調査",
+    "lang": "ja",
+    "title": "【速報】女性天皇容認に賛成81％",
+    "metric_primary": 238.0,
+    "split": "train"
+  },
+  {
+    "id": "hatena:https://www.afpbb.com/articles/-/3645591",
+    "subject": "カザフスタン大統領がプーチン大統領に紛争の終結を求めた発言について",
+    "lang": "ja",
+    "title": "「若者が命を落としている」カザフ大統領、プーチン氏に紛争終結を進言",
+    "metric_primary": 55.0,
+    "split": "train"
+  },
+  {
+    "id": "hatena:https://www.cnn.co.jp/world/35250971.html",
+    "subject": "サウジアラビアで死刑判決を受けたエチオピア人移民の状況と、同国における年間数百人規模の死刑執行",
+    "lang": "ja",
+    "title": "「私は歩く死人」　サウジアラビアで死刑を待つエチオピア移民、執行は年間数百人",
+    "metric_primary": 94.0,
+    "split": "train"
+  },
+  {
+    "id": "hatena:https://www.nikkei.com/article/DGXZQOUA223GZ0S6A720C2000000/",
+    "subject": "日本と米国における生成AIの利用率と用途の違いを比較した内容",
+    "lang": "ja",
+    "title": "日本の生成AI利用まだ6割　仕事中心、7割超の米国は「友達」使い - 日本経済新聞",
+    "metric_primary": 124.0,
+    "split": "train"
+  },
+  {
+    "id": "hatena:https://www.sbbit.jp/article/cont1/186262",
+    "subject": "ニチレイの物流システムがサイバー攻撃を受けた後、10日で全面復旧した経緯と対応策",
+    "lang": "ja",
+    "title": "ニチレイ物流システムが全面復旧、なぜ10日でサイバー攻撃から復旧できたのか？",
+    "metric_primary": 167.0,
+    "split": "train"
+  },
+  {
+    "id": "hatena:https://www.tokyo-np.co.jp/article/503486",
+    "subject": "経団連が高市首相に時間外労働の上限規制撤廃に関する意見を伝える方針と、現行制度の上限水準について扱う記事",
+    "lang": "ja",
+    "title": "経団連、時間外労働の上限規制「撤廃の意見もある」と高市首相に伝達へ…現行の上限はほぼ「過労死ライン」：東京新聞デジタル",
+    "metric_primary": 223.0,
+    "split": "train"
+  },
+  {
+    "id": "hatena:https://www.zeiken.co.jp/zeikenpress/press/0001pp20190801/",
+    "subject": "株式会社はてなのコーポレート本部経理部長・堀内潤一氏の人物紹介",
+    "lang": "ja",
+    "title": "『読者の横顔』　株式会社はてな　コーポレート本部　経理部長　堀内潤一 氏 | ZEIKEN PRESS",
+    "metric_primary": 168.0,
+    "split": "train"
+  },
+  {
+    "id": "hatena:https://zenn.dev/u1/articles/claude5-rules-collapse-and-fix",
+    "subject": "Opus5の思考の浅さを感じる場合の対処法",
+    "lang": "ja",
+    "title": "Opus5が思考が浅いように感じる問題への対策",
+    "metric_primary": 262.0,
+    "split": "train"
+  },
+  {
+    "id": "qiita:0001f93221d4d7556271",
+    "subject": "人間を大規模言語モデルのように活用する考え方について",
+    "lang": "ja",
+    "title": "【永久0円】人間LLMのすすめ",
+    "metric_primary": 583.0,
+    "split": "train"
+  },
+  {
+    "id": "qiita:08eddaf8e9e7cec2f390",
+    "subject": "新人エンジニアが進捗報告時に思考停止してしまう状況について",
+    "lang": "ja",
+    "title": "新人エンジニアが進捗報告のたびに思考停止しちゃう話",
+    "metric_primary": 77.0,
+    "split": "train"
+  },
+  {
+    "id": "qiita:16fd0b847aa68c152e00",
+    "subject": "セキュリティを学習できる138のウェブサイトの紹介",
+    "lang": "ja",
+    "title": "セキュリティの勉強になるサイト138選(2026年版)",
+    "metric_primary": 329.0,
+    "split": "train"
+  },
+  {
+    "id": "qiita:2efad73069b54288deb4",
+    "subject": "ComfyUI、動画生成AI、Codexを用いたゲーム用スプライトアニメーション生成パイプラインの構築",
+    "lang": "ja",
+    "title": "ComfyUI × 動画生成AI × Codex で、ゲーム用スプライトアニメを量産するパイプラインを作った話",
+    "metric_primary": 84.0,
+    "split": "train"
+  },
+  {
+    "id": "qiita:3bd4696237ea64c38971",
+    "subject": "Claude CodeとCodex向けのサンドボックスの構築方法",
+    "lang": "ja",
+    "title": "Claude Code・Codex用に、超爆速で超安全なサンドボックスを作る方法",
+    "metric_primary": 43.0,
+    "split": "train"
+  },
+  {
+    "id": "qiita:3e4597bc50695fa9bf79",
+    "subject": "白色には多様な色合いがあることについて。",
+    "lang": "ja",
+    "title": "白って1600色あんねん！",
+    "metric_primary": 71.0,
+    "split": "train"
+  },
+  {
+    "id": "qiita:42b892805eb1d754109c",
+    "subject": "機械学習の基礎と入門方法",
+    "lang": "ja",
+    "title": "【徹底解説】文系でもわかる！機械学習に入門しよう",
+    "metric_primary": 47.0,
+    "split": "train"
+  },
+  {
+    "id": "qiita:4928640d01c78480962b",
+    "subject": "日本企業の業務システムで警告文や文字情報が多用される設計・運用上の背景",
+    "lang": "ja",
+    "title": "「日本企業風GitHub」のパロディに学ぶ、なぜJTC業務システムは「警告と文字」で埋め尽くされるのか",
+    "metric_primary": 263.0,
+    "split": "train"
+  },
+  {
+    "id": "qiita:4d2a551f89f6b4f94b01",
+    "subject": "Claude Code向け無料セキュリティ監査プラグインを使った脆弱性の自動検出と修正。",
+    "lang": "ja",
+    "title": "Claude Code の無料セキュリティ監査プラグインで脆弱性を自動検出・修正してみる",
+    "metric_primary": 57.0,
+    "split": "train"
+  },
+  {
+    "id": "qiita:4ed4994f8641e5a9e58e",
+    "subject": "Microsoft Copilot Studioで自律型エージェントを作成する方法",
+    "lang": "ja",
+    "title": "Copilot Studio の自律型エージェントの作成方法を整理してみた",
+    "metric_primary": 47.0,
+    "split": "train"
+  },
+  {
+    "id": "qiita:535a697aeaea41515de9",
+    "subject": "エラー対応の理由をAIに尋ねる方法について",
+    "lang": "ja",
+    "title": "エラー対応理由考えてる？コピペしてAIに聞いてるでしょ",
+    "metric_primary": 68.0,
+    "split": "train"
+  },
+  {
+    "id": "qiita:541051be6cbd4a90f2a6",
+    "subject": "AWS東京リージョンと大阪リージョンを閉域接続する3つの方法の通信速度比較",
+    "lang": "ja",
+    "title": "【実験】AWS 東京と大阪を閉域で繋ぐ3つの方法、実際どれくらい速さが違うのか",
+    "metric_primary": 52.0,
+    "split": "train"
+  },
+  {
+    "id": "qiita:5818688d20225aa8088a",
+    "subject": "Claude Codeの主要な機能や使い方をまとめた解説。",
+    "lang": "ja",
+    "title": "Claude Code、とりあえずこれ読んどけばOKなまとめ（2026年版）",
+    "metric_primary": 247.0,
+    "split": "train"
+  },
+  {
+    "id": "qiita:6102ef63dc60c7e6ee3d",
+    "subject": "AWS MCP Serverの利用が可能になったことについて。",
+    "lang": "ja",
+    "title": "AWS MCP Serverが普通に使えるようになったよ！",
+    "metric_primary": 57.0,
+    "split": "train"
+  },
+  {
+    "id": "qiita:636c7c15cd666e987a90",
+    "subject": "4万6812件のアカウントが退会させられたシステムの仕組みと運用について",
+    "lang": "ja",
+    "title": "「15歳とChatGPT」より、4万6812件が退会させられたシステムについて考えたい",
+    "metric_primary": 407.0,
+    "split": "train"
+  },
+  {
+    "id": "qiita:6eefccb7361f64607865",
+    "subject": "HonoとBunを使ったHTTPメソッド「QUERY」の実装",
+    "lang": "ja",
+    "title": "新しいHTTPメソッド「QUERY」をHono + Bunで実装してみる",
+    "metric_primary": 151.0,
+    "split": "train"
+  },
+  {
+    "id": "qiita:78d45bee1160d059c972",
+    "subject": "Agent Skillsを評価する3つのツールの比較",
+    "lang": "ja",
+    "title": "そのスキル、本当に効いてる？ Agent Skills を「評価」する3つのツールを比べてみた",
+    "metric_primary": 70.0,
+    "split": "train"
+  },
+  {
+    "id": "qiita:7ca90575c5fff758993e",
+    "subject": "エンジニアの間で共有されている知識、常識、文化を12項目紹介する内容",
+    "lang": "ja",
+    "title": "エンジニアがいつのまにか知っている知識・常識・文化 12本",
+    "metric_primary": 235.0,
+    "split": "train"
+  },
+  {
+    "id": "qiita:7d06434cf830df9c54ff",
+    "subject": "AgentCoreの最新機能を使ったRAGとAIエージェントの構築方法",
+    "lang": "ja",
+    "title": "【ハンズオン】AgentCore最新機能でRAG & AIエージェント構築に入門！",
+    "metric_primary": 85.0,
+    "split": "train"
+  },
+  {
+    "id": "qiita:88508215a8e22b169166",
+    "subject": "『アジャイルサムライ』の内容がAI時代にも通用する点と、作るコストに関する考え方の変化",
+    "lang": "ja",
+    "title": "15年前の『アジャイルサムライ』、AI時代に古びたのは\"作るコスト\"の教えだけだった",
+    "metric_primary": 86.0,
+    "split": "train"
+  },
+  {
+    "id": "qiita:8de518e172395d48a269",
+    "subject": "Web開発で使われる主要5言語の特徴と学習言語の選び方",
+    "lang": "ja",
+    "title": "「何の言語を学べばいいかわからない」と迷う方へ — Web開発の主要5言語を整理してみた",
+    "metric_primary": 80.0,
+    "split": "train"
+  },
+  {
+    "id": "qiita:a2463fab85ee9778847c",
+    "subject": "量子コンピュータを理解するための学習手順や必要な知識をまとめた内容",
+    "lang": "ja",
+    "title": "量子コンピュータを完全に理解したい人のためのロードマップ",
+    "metric_primary": 87.0,
+    "split": "train"
+  },
+  {
+    "id": "qiita:b9a128b0e71382979f08",
+    "subject": "新人が業務の優先順位を決める方法と、完璧主義をやめたことによる評価の変化",
+    "lang": "ja",
+    "title": "完璧主義を手放したら評価が変わった、新人の優先順位の付け方",
+    "metric_primary": 55.0,
+    "split": "train"
+  },
+  {
+    "id": "qiita:c146eb7c2885036c6b83",
+    "subject": "開発チームを改善するための提案で注意している5つの点",
+    "lang": "ja",
+    "title": "開発チームを良くしたい！改善提案で気をつけている5つのこと",
+    "metric_primary": 84.0,
+    "split": "train"
+  },
+  {
+    "id": "qiita:cc3be5930b972130885d",
+    "subject": "バイブコーディングを用いたアプリ開発とリリースの実体験",
+    "lang": "ja",
+    "title": "バイブコーディングで本当にアプリはリリースできるのか？エンジニアが実際にアプリをリリースして感じたこと",
+    "metric_primary": 167.0,
+    "split": "train"
+  },
+  {
+    "id": "qiita:cd426dbd97a66dea11cd",
+    "subject": "エンジニア向けにIPアドレスの基本概念や仕組みを解説する内容",
+    "lang": "ja",
+    "title": "エンジニアが知っておくべきIPアドレスの話",
+    "metric_primary": 77.0,
+    "split": "train"
+  },
+  {
+    "id": "qiita:d1151389d17e50ad5564",
+    "subject": "1Passwordのマスターパスワードをサービス側が受信しない仕組み",
+    "lang": "ja",
+    "title": "1Passwordは、あなたのマスターパスワードを一度も受信していません",
+    "metric_primary": 174.0,
+    "split": "train"
+  },
+  {
+    "id": "qiita:db3defd280f765c135ec",
+    "subject": "Claude CodeでHTMLを生成する際にCSSフレームワークを指定する方法と利点",
+    "lang": "ja",
+    "title": "Claude Code で HTML を出力する際に CSS フレームワークを指定すると便利",
+    "metric_primary": 61.0,
+    "split": "train"
+  },
+  {
+    "id": "qiita:de23144fdf7305a2e0c1",
+    "subject": "AWSのVPC内通信における盗聴可能性とTLSの必要性を脅威モデルで検証した内容",
+    "lang": "ja",
+    "title": "「VPC内通信もTLSにすべき？」と聞かれて ── そもそもAWS内で盗聴できるのか脅威モデルで確かめた話",
+    "metric_primary": 168.0,
+    "split": "train"
+  },
+  {
+    "id": "qiita:e9ce46596969983cdb4e",
+    "subject": "Windows標準OCRをショートカット「Windowsキー＋Shift＋T」で利用する方法",
+    "lang": "ja",
+    "title": "【Windows標準OCR】窓キー + Shift + T キー押してますか？",
+    "metric_primary": 107.0,
+    "split": "train"
+  },
+  {
+    "id": "qiita:e9ee8e26cfdc40a8c2f9",
+    "subject": "マルチエージェントに関する40本の論文を再実装した結果と得られた知見",
+    "lang": "ja",
+    "title": "マルチエージェントに関する論文を40本再実装してみて分かったこと",
+    "metric_primary": 140.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:46884883",
+    "subject": "The piece discusses using Claude as an AI assistant for organizing thoughts and reflection.",
+    "lang": "en",
+    "title": "Claude is a space to think",
+    "metric_primary": 493.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:46954920",
+    "subject": "The frequency of ethical-constraint violations by frontier AI agents under performance pressure.",
+    "lang": "en",
+    "title": "Frontier AI agents violate ethical constraints 30–50% of time, pressured by KPIs",
+    "metric_primary": 544.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:46961345",
+    "subject": "The launch of a developer platform for building and deploying AI agents by a former GitHub CEO.",
+    "lang": "en",
+    "title": "Ex-GitHub CEO launches a new developer platform for AI agents",
+    "metric_primary": 611.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:46978710",
+    "subject": "Whether Claude Code has undergone changes that reduce its capabilities or complexity.",
+    "lang": "en",
+    "title": "Claude Code is being dumbed down?",
+    "metric_primary": 1085.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:46988596",
+    "subject": "The piece examines how changing the coding harness affected the performance of 15 large language models.",
+    "lang": "en",
+    "title": "Improving 15 LLMs at Coding in One Afternoon. Only the Harness Changed",
+    "metric_primary": 832.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:46990729",
+    "subject": "An AI agent generated and published a negative article about the author.",
+    "lang": "en",
+    "title": "An AI agent published a hit piece on me",
+    "metric_primary": 2346.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:47009949",
+    "subject": "AIエージェントが筆者について批判的な記事を公開した後に起きた出来事",
+    "lang": "en",
+    "title": "An AI agent published a hit piece on me – more things have happened",
+    "metric_primary": 768.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:47148454",
+    "subject": "Claude Codeのリモート操作機能",
+    "lang": "en",
+    "title": "Claude Code Remote Control",
+    "metric_primary": 544.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:47169757",
+    "subject": "The choices Claude Code makes when carrying out coding tasks.",
+    "lang": "en",
+    "title": "What Claude Code chooses",
+    "metric_primary": 611.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:47204571",
+    "subject": "The process of moving to Claude while preserving existing work and context.",
+    "lang": "en",
+    "title": "Switch to Claude without starting over",
+    "metric_primary": 592.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:47230710",
+    "subject": "Donald Knuth’s account of decomposing a directed three-dimensional torus graph into three Hamiltonian cycles with assistance from Claude Opus 4.6.",
+    "lang": "en",
+    "title": "Claude's Cycles [pdf]",
+    "metric_primary": 841.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:47257394",
+    "subject": "The piece discusses large language models generating false or misleading information.",
+    "lang": "en",
+    "title": "The L in \"LLM\" Stands for Lying",
+    "metric_primary": 666.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:47282777",
+    "subject": "A 60-year-old person's renewed interest in programming through using Claude Code",
+    "lang": "en",
+    "title": "Tell HN: I'm 60 years old. Claude Code has re-ignited a passion",
+    "metric_primary": 1086.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:47322887",
+    "subject": "Methods for achieving a top ranking on the Hugging Face open LLM leaderboard using two gaming GPUs",
+    "lang": "en",
+    "title": "Show HN: How I topped the HuggingFace open LLM leaderboard on two gaming GPUs",
+    "metric_primary": 495.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:47388676",
+    "subject": "A visual reference comparing the architectures and specifications of open-weight large language models.",
+    "lang": "en",
+    "title": "LLM Architecture Gallery",
+    "metric_primary": 586.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:47394022",
+    "subject": "The author's process for writing software with large language models.",
+    "lang": "en",
+    "title": "How I write software with LLMs",
+    "metric_primary": 544.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:47404796",
+    "subject": "Leanstral is an open-source coding agent for code reliability and formal proof engineering.",
+    "lang": "en",
+    "title": "Leanstral: Open-source agent for trustworthy coding and formal proof engineering",
+    "metric_primary": 783.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:47441546",
+    "subject": "The release of three new Kitten text-to-speech models, including one smaller than 25 MB.",
+    "lang": "en",
+    "title": "Show HN: Three new Kitten TTS models – smallest less than 25MB",
+    "metric_primary": 561.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:47460525",
+    "subject": "An open-source AI agent for assisting with software development.",
+    "lang": "en",
+    "title": "OpenCode – Open source AI coding agent",
+    "metric_primary": 1274.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:47490070",
+    "subject": "A demonstration of an iPhone 17 Pro running a 400-billion-parameter large language model.",
+    "lang": "en",
+    "title": "iPhone 17 Pro Demonstrated Running a 400B LLM",
+    "metric_primary": 713.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:47495527",
+    "subject": "A reference guide to using Claude Code.",
+    "lang": "en",
+    "title": "Claude Code Cheat Sheet",
+    "metric_primary": 699.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:47584540",
+    "subject": "The accidental exposure of Claude Code’s source code through a source map file in the NPM registry.",
+    "lang": "en",
+    "title": "Claude Code's source code has been leaked via a map file in their NPM registry",
+    "metric_primary": 2095.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:47597085",
+    "subject": "Claude Codeの機能や仕組みを図解で説明する内容",
+    "lang": "en",
+    "title": "Claude Code Unpacked : A visual guide",
+    "metric_primary": 1128.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:47612724",
+    "subject": "An open-source local large language model server that uses AMD GPUs and NPUs.",
+    "lang": "en",
+    "title": "Lemonade by AMD: a fast and open source local LLM server using GPU and NPU",
+    "metric_primary": 572.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:47655408",
+    "subject": "A small language model implementation used to explain how language models work",
+    "lang": "en",
+    "title": "Show HN: I built a tiny LLM to demystify how language models work",
+    "metric_primary": 915.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:47679258",
+    "subject": "A technical report describing the capabilities, evaluations, risks, and safety measures of the Claude Mythos Preview model.",
+    "lang": "en",
+    "title": "System Card: Claude Mythos Preview [pdf]",
+    "metric_primary": 848.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:47733217",
+    "subject": "Weaknesses and vulnerabilities in prominent AI agent benchmarks.",
+    "lang": "en",
+    "title": "Exploiting the most prominent AI agent benchmarks",
+    "metric_primary": 588.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:47854477",
+    "subject": "Whether Anthropic may remove Claude Code from its Pro subscription plan.",
+    "lang": "en",
+    "title": "Claude Code to be removed from Anthropic's Pro plan?",
+    "metric_primary": 683.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:47878905",
+    "subject": "Recent reports about Claude Code quality and their findings.",
+    "lang": "en",
+    "title": "An update on recent Claude Code quality reports",
+    "metric_primary": 942.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:47892019",
+    "subject": "A user's reasons for cancelling Claude, including token limitations, reduced output quality, and unsatisfactory support.",
+    "lang": "en",
+    "title": "I cancelled Claude: Token issues, declining quality, and poor support",
+    "metric_primary": 971.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:47911524",
+    "subject": "An AI agent deleted a production database, and the piece presents the agent’s account of the incident.",
+    "lang": "en",
+    "title": "An AI agent deleted our production database. The agent's confession is below",
+    "metric_primary": 860.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:47933208",
+    "subject": "LocalSendというオープンソースのクロスプラットフォームファイル共有ソフトウェアについて",
+    "lang": "en",
+    "title": "Localsend: An open-source cross-platform alternative to AirDrop",
+    "metric_primary": 923.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:47963204",
+    "subject": "Claude Code’s handling of requests and charges when commits contain the term “OpenClaw”",
+    "lang": "en",
+    "title": "Claude Code refuses requests or charges extra if your commits mention \"OpenClaw\"",
+    "metric_primary": 1349.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:48024540",
+    "subject": "Using multi-token prediction drafters to accelerate inference in Gemma 4.",
+    "lang": "en",
+    "title": "Accelerating Gemma 4: faster inference with multi-token prediction drafters",
+    "metric_primary": 687.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:48037986",
+    "subject": "Increased Claude usage limits and a computing agreement with SpaceX",
+    "lang": "en",
+    "title": "Higher usage limits for Claude and a compute deal with SpaceX",
+    "metric_primary": 512.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:48071940",
+    "subject": "Using Claude Code to create and modify HTML-based websites or interfaces.",
+    "lang": "en",
+    "title": "Using Claude Code: The unreasonable effectiveness of HTML",
+    "metric_primary": 528.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:48130950",
+    "subject": "Using Claude AI in small businesses",
+    "lang": "en",
+    "title": "Claude for Small Business",
+    "metric_primary": 541.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:48164287",
+    "subject": "Zerostack, a Unix-inspired coding agent implemented entirely in Rust.",
+    "lang": "en",
+    "title": "Zerostack – A Unix-inspired coding agent written in pure Rust",
+    "metric_primary": 575.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:48188183",
+    "subject": "Recent developments in large language models over the past six months",
+    "lang": "en",
+    "title": "The last six months in LLMs in five minutes",
+    "metric_primary": 804.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:48192383",
+    "subject": "The use of guardrails to improve an 8B model’s performance on agentic tasks from 53% to 99%.",
+    "lang": "en",
+    "title": "Show HN: Forge – Guardrails take an 8B model from 53% to 99% on agentic tasks",
+    "metric_primary": 687.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:48234413",
+    "subject": "An article addressed to large language models.",
+    "lang": "en",
+    "title": "If you’re an LLM, please read this",
+    "metric_primary": 891.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:48237663",
+    "subject": "DeepSeek permanently lowers the price of its V4 Pro product.",
+    "lang": "en",
+    "title": "DeepSeek makes the V4 Pro price discount permanent",
+    "metric_primary": 621.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:48238896",
+    "subject": "Microsoft’s revocation of some Claude Code licenses.",
+    "lang": "en",
+    "title": "Microsoft starts canceling Claude Code licenses",
+    "metric_primary": 493.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:48256953",
+    "subject": "DeepSeek Reasonix, a coding agent designed for DeepSeek with caching and lower operating costs.",
+    "lang": "en",
+    "title": "DeepSeek reasonix, DeepSeek native coding agent with high caching and low cost",
+    "metric_primary": 729.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:48359232",
+    "subject": "Guidelines for using AI agents in Stanford’s CS336 course.",
+    "lang": "en",
+    "title": "AI Agent Guidelines for CS336 at Stanford",
+    "metric_primary": 503.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:48385906",
+    "subject": "The design and capabilities of Gemma 4 12B, a multimodal model without a separate encoder.",
+    "lang": "en",
+    "title": "Gemma 4 12B: A unified, encoder-free multimodal model",
+    "metric_primary": 1062.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:48403980",
+    "subject": "Anthropic’s open-source software framework for using AI to discover software vulnerabilities",
+    "lang": "en",
+    "title": "Anthropic's open-source framework for AI-powered vulnerability discovery",
+    "metric_primary": 539.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:48434312",
+    "subject": "The impact of LLMs on software engineering careers and how engineers can adapt.",
+    "lang": "en",
+    "title": "LLMs are eroding my software engineering career and I don't know what to do",
+    "metric_primary": 1151.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:48434436",
+    "subject": "A request for Anthropic to release an official Claude Desktop application for Linux.",
+    "lang": "en",
+    "title": "Anthropic, please ship an official Claude Desktop for Linux",
+    "metric_primary": 538.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:48484584",
+    "subject": "An AI agent behaving unexpectedly in Fedora and other environments.",
+    "lang": "en",
+    "title": "AI agent runs amok in Fedora and elsewhere",
+    "metric_primary": 552.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:48498573",
+    "subject": "Claude Fable’s tendency to take initiative and act without explicit prompting.",
+    "lang": "en",
+    "title": "Claude Fable is relentlessly proactive",
+    "metric_primary": 774.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:48500012",
+    "subject": "An AI agent’s attempt to scan the DN42 network resulted in financial losses for its operator.",
+    "lang": "en",
+    "title": "AI agent bankrupted their operator while trying to scan DN42",
+    "metric_primary": 1467.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:48511908",
+    "subject": "The role and future prospects of open-source artificial intelligence.",
+    "lang": "en",
+    "title": "Open source AI must win",
+    "metric_primary": 1603.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:48542100",
+    "subject": "開発者が日常のコーディングにClaudeやGPTの代わりにローカルモデルを利用した経験",
+    "lang": "en",
+    "title": "Ask HN: Has anyone replaced Claude/GPT with a local model for daily coding?",
+    "metric_primary": 1318.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:48618455",
+    "subject": "Identity verification procedures for Claude",
+    "lang": "en",
+    "title": "Identity verification on Claude",
+    "metric_primary": 866.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:48696585",
+    "subject": "The paper examines DSpark, a speculative decoding method for accelerating large language model inference.",
+    "lang": "en",
+    "title": "DSpark: Speculative decoding accelerates LLM inference [pdf]",
+    "metric_primary": 797.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:48708941",
+    "subject": "Using Claude Code to obtain an AI-assisted second opinion on MRI results.",
+    "lang": "en",
+    "title": "I used Claude Code to get a second opinion on my MRI",
+    "metric_primary": 566.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:48709670",
+    "subject": "Benchmark results comparing GLM 5.2 with Claude.",
+    "lang": "en",
+    "title": "GLM 5.2 beats Claude in our benchmarks",
+    "metric_primary": 1113.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:48734373",
+    "subject": "Claude Code requests include hidden steganographic markers.",
+    "lang": "en",
+    "title": "Claude Code is steganographically marking requests",
+    "metric_primary": 2445.0,
+    "split": "train"
+  },
+  {
+    "id": "hn:48740771",
+    "subject": "The U.S. Department of Commerce removing export controls on Claude Fable 5 and Mythos 5.",
+    "lang": "en",
+    "title": "Department of Commerce has lifted export controls on Claude Fable 5 and Mythos 5",
+    "metric_primary": 977.0,
+    "split": "train"
+  }
+]

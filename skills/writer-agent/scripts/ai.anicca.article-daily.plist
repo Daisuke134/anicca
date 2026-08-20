@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>ai.anicca.article-daily</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>/Users/anicca/profitable-claude/skills/article-writer/article-daily.sh</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>ARTICLE_AUTOPUBLISH</key>
+    <string>1</string>
+    <key>ARTICLE_PROVIDER</key>
+    <string>codex</string>
+  </dict>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key>
+    <integer>6</integer>
+    <key>Minute</key>
+    <integer>0</integer>
+  </dict>
+  <key>StandardOutPath</key>
+  <string>/Users/anicca/.openclaw/logs/article-daily.out</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/anicca/.openclaw/logs/article-daily.err</string>
+</dict>
+</plist>
