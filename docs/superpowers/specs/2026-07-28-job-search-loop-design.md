@@ -1232,6 +1232,28 @@ not start merely because their design is already written:
 | `LIFE-CAREER-CLOUD-13B` | `pending_after_local_e2e` | Per-tenant queues, encrypted state/materials, scoped OAuth, budgets and export/revocation reproduce the verified local semantics |
 | `LIFE-WHOLE-HEALTH-13C` | `pending_after_13B` | Career evidence informs Financial, Physical and Mental planning with explicit consent, visible unknowns and no medical or employment guarantee |
 
+### 11.3 Atomic execution slices
+
+The parent rows above are release gates. Only the first pending slice is active; each
+slice has one owner, one acceptance result and one durable receipt.
+
+| Slice | Parent | Status | Done when |
+|---|---|---|---|
+| `JOB-RESUME-FACTS-1R-A` | 1R | `pending_actionable` | The private truth ledger records one exact TOEFL value, verified TOEIC 910 and DELE B1; the old accepted material baseline is explicitly reopened. |
+| `JOB-RESUME-EN-1R-B` | 1R | `pending_after_1R-A` | Engineering and technical-business English HTML/PDF variants render from the ledger with the new one-page hierarchy. |
+| `JOB-RESUME-JA-1R-C` | 1R | `pending_after_1R-A` | Japanese 履歴書 and 職務経歴書 render from the same ledger with the language section and grounded claims. |
+| `JOB-RESUME-VERIFY-1R-D` | 1R | `pending_after_1R-B-C` | Visual inspection, `pdftotext`, claim validation, ATS checks and SHA receipts pass for all four artifacts. |
+| `JOB-SKILL-CONTRACT-1S-A` | 1S | `pending_after_1R-D` | `skills/job-hunter/SKILL.md` has valid frontmatter, relative references, no private data and one contract test. |
+| `JOB-LOOP-REGISTRY-1S-B` | 1S | `pending_after_1S-A` | `loops/job-hunter/registry.yaml` maps each loop to exactly one schedule, task schema and evidence root. |
+| `JOB-SKILL-PARITY-1S-C` | 1S | `pending_after_1S-B` | The extracted skill and current app produce identical state/evidence for fixed daily and inbox fixtures. |
+| `JOB-CLAUDE-CANDIDATE-1H-A` | 1H | `pending_after_1S-C` | Claude candidates exist for every live model task class with the same schema, timeout and transient-failure policy. |
+| `JOB-GENERIC-ADAPTER-1H-B` | 1H | `pending_after_1H-A` | A generic provider adapter consumes the same packet and emits the same validated result envelope. |
+| `JOB-HARNESS-FIXTURE-1H-C` | 1H | `pending_after_1H-B` | Codex, Claude and generic fixtures prove identical durable state and zero duplicate side effects. |
+| `JOB-TELEGRAM-EVENT-1T-A` | 1T | `pending_after_1H-C` | One versioned event envelope defines loop, model, decision, side-effect, blocker, completion and delivery fields. |
+| `JOB-TELEGRAM-PROSE-1T-B` | 1T | `pending_after_1T-A` | A deterministic locale-aware renderer turns every event into concise natural-language Telegram prose without raw JSON or secrets. |
+| `JOB-TELEGRAM-WIRING-1T-C` | 1T | `pending_after_1T-B` | Daily, inbox, prep, learning, browser and guardian paths emit the required event envelope through the fenced outbox. |
+| `JOB-TELEGRAM-E2E-1T-D` | 1T | `pending_after_1T-C` | A fixed end-to-end fixture proves one message per material event, ACK or `delivery_unknown`, dedupe and Life Manager/Telegram agreement. |
+
 ## 12. Verification
 
 Completion requires:
