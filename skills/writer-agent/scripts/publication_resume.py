@@ -1401,9 +1401,24 @@ class PublicationStore:
             )
             for row in self._ledger_rows_locked():
                 if row.get("run_id") == state.get("run_id") and row.get("platform") == "substack" and row.get("lang") == "en":
-                    raise InvariantError(
-                        "substack/en has a current-run ledger row; quarantine refused"
+                    no_effect_row = (
+                        row.get("topic_id") == state.get("topic_id")
+                        and row.get("published") is False
+                        and row.get("verified_logged_in") is False
+                        and not row.get("live_url")
+                        and not row.get("public_id")
+                        and not row.get("receipt")
+                        and not row.get("published_at")
+                        and not row.get("effect")
+                        and not row.get("readback")
+                        and row.get("reality_gate") in {None, ""}
+                        and isinstance(row.get("state"), str)
+                        and row["state"].startswith(("staged", "unavailable:"))
                     )
+                    if not no_effect_row:
+                        raise InvariantError(
+                            "substack/en has an effect-capable current-run ledger row; quarantine refused"
+                        )
             recorded_at = utc_now()
             entry.update(
                 {

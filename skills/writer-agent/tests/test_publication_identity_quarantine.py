@@ -136,6 +136,44 @@ def test_quarantine_refuses_live_readback_or_any_same_run_ledger_row(
         store.quarantine_identity_conflict("substack/en", "123", remote)
 
 
+def test_quarantine_allows_explicit_no_effect_staging_row(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    state_path, ledger, _ = _state(tmp_path)
+    ledger.write_text(
+        json.dumps(
+            {
+                "run_id": "daily-2026-08-21",
+                "topic_id": "topic-1",
+                "platform": "substack",
+                "lang": "en",
+                "state": "staged:pre-publication",
+                "published": False,
+                "verified_logged_in": False,
+                "live_url": None,
+                "public_id": None,
+                "receipt": None,
+                "published_at": None,
+                "reality_gate": None,
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    store = MODULE.PublicationStore(state_path, ledger)
+    monkeypatch.setattr(store, "_validate_layout", lambda *args, **kwargs: Path(tmp_path / "runs" / "daily-2026-08-21"))
+    remote = {
+        "status": "not-live",
+        "verified": True,
+        "destination_identity": "aniccabuddha.substack.com",
+        "identity_verified": True,
+        "identity_source": "protected-substack-authenticated-draft-api",
+        "source": "substack-draft-api",
+    }
+    result = store.quarantine_identity_conflict("substack/en", "123", remote)
+    assert result["status"] == "unavailable"
+
+
 def test_guard_cli_reaches_legacy_migration_before_normal_identity_validation(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

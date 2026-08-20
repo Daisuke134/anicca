@@ -201,6 +201,10 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
 - その拡張時、過去のdiagnostic tracebackを含むmalformed JSON receiptも検出した。旧rootを含まない
   malformed diagnosticはbyte-preservingでskipし、旧rootを含むmalformed controlは拒否するfail-closed
   境界を追加した。publication/media controlはparse可能なまま移行する。
+- migration後のledger readbackでは、過去runに外部作用のない`staged`/`unavailable`行が残ることが分かった。
+  authenticated exact-target not-live proofとtopic一致を併せ、published=false、verified_logged_in=false、
+  live_url/public_id/receipt/published_at/effect/readbackなしのno-effect行だけを許容する。それ以外の
+  EN rowはlive不確実性として拒否する。
 
 ## 目標構成
 
