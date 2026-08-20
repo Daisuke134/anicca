@@ -27,8 +27,8 @@
   loaded schedulerの所有者・argv・定期実行は証明できない。重複executorは起動せず、既存ownerのreceiptだけを採用する。
 - 空き容量は実測で5GiB未満に戻ることがあり、disk guardは外部公開をfail-closedで止める。保護対象のstate／memory／rollbackは削除しない。
 - 残TODOは順に、(1)保護対象を削除せず5GiB超を安定維持、(2)launchd control-plane readbackを復旧してLife Manager currentの定期実行を証明、
-  (3)Substack ENの別identityとcredentialを承認済み経路で設定、(4)publisher/paymentの実receiptだけを収益ledgerへjoin、
-  (5)14日間の重複外部作用0と自然文Telegram deliveryを観測する。
+  (3)Substack ENの別identityとcredentialを承認済み経路で設定、(4)古い`daily-2026-08-20`のX Articleを、欠損したimmutable画像のまま再試行せずbounded quarantineする、
+  (5)publisher/paymentの実receiptだけを収益ledgerへjoin、(6)14日間の重複外部作用0と自然文Telegram deliveryを観測する。
 
 ## 目的
 
@@ -324,7 +324,7 @@ publication identity、読者、payout、ledgerを分ける。
 | 2 | DNSまたは承認済みnetwork transportを復旧 | 通常DNSは失敗。1.1.1.1解決＋`curl --resolve`ではNote／Substack／XがHTTP 200。publisher実行経路の再読戻しは未確認 | 一部完了 |
 | 3 | Writer runtimeを`skills/writer-agent`へ移しmanifestを生成 | SHA付きpath census、Life Manager current release、実行時の旧root read=0 | 完了（launchd readbackは別TODO。履歴・互換文字列のcensus 0ではない） |
 | 4 | demand→artifact→publisher adapterを同じstate schemaへ接続 | TECHi本文のtransport-success/interstitialを7日以内のhash検証済み外部receiptへbounded reuseするfocused checkはPASS。実時刻claim receiptは`READY_WITH_SOURCE_OUTAGE`、queue `0→1`、有効なpaid-demand cardを確認 | 完了（artifact消費は次の未完run） |
-| 5 | Note/Substack/Xの実公開とreadbackを同一runで完了 | `daily-2026-08-21`はNote JA、Substack JA、X Article JAのnative live receiptを確認済み。Substack ENは同一host混載を避けて`unavailable` quarantine。別publicationの実host/credentialと新EN draftが未設定。identity衝突は既知runbookへルーティング済み | 一部完了（EN identity待ち） |
+| 5 | Note/Substack/Xの実公開とreadbackを同一runで完了 | `daily-2026-08-21`はNote JA、Substack JA、X Article JAのnative live receiptを確認済み。Substack ENは同一host混載を避けて`unavailable` quarantine。別publicationの実host/credentialと新EN draftが未設定。identity衝突は既知runbookへルーティング済み。旧`daily-2026-08-20`のXはimmutable画像欠落で安全拒否され、quarantine未実装 | 一部完了（EN identity＋旧X quarantine待ち） |
 | 6 | payment/publisher receipt collectorとmoney ledgerを接続 | artifact-level receipt | 未着手 |
 | 7 | neutral Telegram rendererを日次・失敗・完了へ接続 | pending outboxを直接Bot APIで再送し、message ID `26606`と`status=sent`を確認。outbox lockで同時送信を直列化 | 一部完了（クラッシュ後のprovider重複はat-least-once境界として観測） |
 | 8 | adversarial verifierで重複公開・誤金額・偽URL・secret漏洩を反証 | fresh reviewでNote native receiptを確認し、Substack同一host／EN credential欠落をNO-GOとして反証。identity gateはcurrent releaseへ反映済み | 完了（別EN identity設定後に再検証） |
