@@ -1058,7 +1058,7 @@ learning_driver_live + guardian_not_closed`, never as fully self-healing.
 ### 4.2B Runtime verification on 2026-08-20
 
 The canonical daily wrapper was run from immutable release
-`07f604d52a6a9c5b38032f377bf27ca2d5dc2493` after the installed LaunchAgent kick was
+`88a9da271c1e7146ddfbc07f5de8f48875e958dd` after the installed LaunchAgent kick was
 rejected with macOS error `141: Reentrancy avoided`. The pass connected to the
 existing Chrome CDP owner, selected Codex `gpt-5.6-terra` through the local proxy,
 and returned `rc=0` with schema-valid output. It truthfully recorded
@@ -1075,7 +1075,10 @@ delivered the original payload with ACK `26052`. The sender now reads
 environment and retries DNS through `dig @1.1.1.1` plus curl `--resolve` only when the
 normal resolver fails. The runner now also loads the Codex local-proxy key from the
 private `~/.cli-proxy-api-key` when a scheduler provides no inherited environment;
-an env-stripped schema probe returned `rc=0` through the proxy. Telegram transport is
+an env-stripped schema probe returned `rc=0` through the proxy. A second canonical
+daily pass from this release also returned `rc=0`, truthfully rejected three
+OpenAI Tokyo roles for explicit experience/strategy conflicts, and delivered report
+ACK `26082`. Telegram transport is
 therefore proven for the current runtime; the broader
 `JOB-TELEGRAM-COVERAGE-1T` event-envelope/coverage gate remains open. The learning
 lane now uses the same direct transport in production; its prior OpenClaw executable
