@@ -1461,6 +1461,28 @@ historical evidence below. Read-only inspection of the installed state shows:
   `OWNED_NOT_LIVE`, the owned receipt remains `DELIVERED` without a public URL,
   and no X receipt exists. The existing launchd owner must perform that
   readback, then reach X `LIVE`, with unchanged replay; A04 remains open.
+- after the DNS readback repair was installed as immutable release
+  `de63ee69057681606c8d508dcc7dd99947949208`, the existing owner wake at
+  `2026-08-20T10:08:45Z` advanced the same tiktok job to `X_LIVE`. The owned
+  receipt is `LIVE` at the exact slug, with rendered hash
+  `9f430685…a3bf`; the X receipt is `LIVE` at status
+  `2090380444655370568`. Independent DNS-resolved HTTP readback returned `200`
+  for both owned and X pages; the owned body contains the title, affiliate
+  disclosure, and dedicated-link anchor, while X contains the canonical status
+  ID. The campaign progress carries one existing provider link key
+  `618843f9…` and one X receipt; no second external effect was created.
+  Provider clicks for this placement remain `0`, the canonical ledger remains
+  13 placements, and official commission rows remain `0`, so approved-or-paid
+  net remains USD `0` and actual billed cost remains `UNKNOWN`.
+- the same wake could not flush its first pending Telegram event: OpenClaw
+  `message send` timed out after 30 seconds before returning a provider
+  message ID. The installed repair is commit `088858bce2965f05783448b4b5f829fa053717ee`
+  (`SEND_TIMEOUT_UNKNOWN`), which preserves the event in the outbox and the
+  unresolved effect fence without claiming `SENT`; it is installed as the
+  current immutable release, but its owner retry has not yet produced a new
+  Telegram message ID. The pending event is the older unattributed-click
+  report, not a commission receipt. A04's unchanged replay and Telegram
+  receipt proof remain open.
 - the current launchd capability check at `2026-08-20T09:20:57Z` also fails
   outside the service label: `launchctl managername`, `launchctl print user/501`,
   and `launchctl print gui/501` all return `141: Reentrancy avoided`, while
