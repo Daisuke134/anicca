@@ -92,7 +92,8 @@
     "writer_engine_cli": "/Users/anicca/.local/bin/writer",
     "writer_engine_root": "/Users/anicca/.local/lib/writer-engine",
     "writer_engine_state": "/Users/anicca/.local/share/writer-engine",
-    "status": "retained-for-source-and-rollback; not-invoked-by-active-writer-labels"
+    "status": "retained-for-source-and-rollback; not-invoked-by-installed-writer-labels",
+    "loaded_definition_warning": "stale in-memory launchd definitions still invoke old-root paths and fail with ENOENT or the old publication pause gate"
   },
   "owner_fence": {
     "path": "skills/writer-agent/scripts/writer_owner_fence.py",
@@ -137,7 +138,7 @@
   },
   "cutover": {
     "status": "not-ready",
-    "reason": "all 14 Writer plist paths now read back to Life Manager code and target state, but launchd readback is rc=141; owner drain and bounded wake are not yet proven",
+    "reason": "all 14 installed Writer plist paths now read back to Life Manager code and target state, but stale in-memory launchd definitions still fire old-root paths; launchd readback is rc=141, owner drain and bounded wake are not yet proven",
     "publication_paused": true,
     "legacy_roots_must_not_be_deleted": true
   },
