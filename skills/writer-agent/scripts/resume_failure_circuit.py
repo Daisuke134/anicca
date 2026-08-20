@@ -18,7 +18,40 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def context(state: Path, code_files: list[Path]) -> dict[str, str]:
+def state_identity_sha256(state: Path, pair: str) -> str:
+    """Hash one run/pair's immutable identity, not mutable sibling status."""
+    try:
+        value = json.loads(state.read_text(encoding="utf-8"))
+        pairs = value.get("pairs") if isinstance(value, dict) else {}
+        entry = pairs.get(pair) if isinstance(pairs, dict) else {}
+        entry = entry if isinstance(entry, dict) else {}
+        lang = entry.get("lang")
+        drafts = value.get("drafts") if isinstance(value, dict) else {}
+        draft = drafts.get(lang) if isinstance(drafts, dict) and isinstance(lang, str) else {}
+        identities = value.get("destination_identities") if isinstance(value, dict) else {}
+        media = value.get("media") if isinstance(value, dict) else {}
+        stable = {
+            "run_id": value.get("run_id") if isinstance(value, dict) else None,
+            "topic_id": value.get("topic_id") if isinstance(value, dict) else None,
+            "publication_contract": value.get("publication_contract") if isinstance(value, dict) else None,
+            "pair": pair,
+            "platform": entry.get("platform"),
+            "lang": entry.get("lang"),
+            "target_kind": entry.get("target_kind"),
+            "target": entry.get("target"),
+            "destination_identity": identities.get(pair) if isinstance(identities, dict) else None,
+            "media": media,
+            "draft_sha256": draft.get("sha256") if isinstance(draft, dict) else None,
+        }
+        encoded = json.dumps(
+            stable, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+        ).encode()
+        return hashlib.sha256(encoded).hexdigest()
+    except (OSError, TypeError, ValueError, json.JSONDecodeError):
+        return sha256(state)
+
+
+def context(state: Path, code_files: list[Path], pair: str) -> dict[str, str]:
     code_digest = hashlib.sha256()
     for path in code_files:
         code_digest.update(str(path).encode())
@@ -26,7 +59,7 @@ def context(state: Path, code_files: list[Path]) -> dict[str, str]:
         code_digest.update(path.read_bytes())
         code_digest.update(b"\0")
     return {
-        "state_sha256": sha256(state),
+        "state_sha256": state_identity_sha256(state, pair),
         "code_sha256": code_digest.hexdigest(),
     }
 
@@ -117,7 +150,7 @@ def main() -> int:
 
     value = read(args.circuit)
     pairs = value["pairs"]
-    current_context = context(args.state, args.code_file)
+    current_context = context(args.state, args.code_file, args.pair)
     row = pairs.get(args.pair)
 
     if args.command == "run":

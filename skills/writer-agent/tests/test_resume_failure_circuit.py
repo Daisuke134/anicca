@@ -30,7 +30,10 @@ def test_same_failure_opens_once_and_code_change_rearms(tmp_path: Path) -> None:
     code = tmp_path / "publisher.py"
     dependency = tmp_path / "eyecatch.py"
     error = tmp_path / "error.txt"
-    state.write_text('{"pairs":{"note/ja":{"status":"intent"}}}\n')
+    state.write_text(
+        '{"run_id":"daily-2026-08-21","pairs":{"note/ja":{"status":"intent"},'
+        '"substack/ja":{"status":"intent"}}}\n'
+    )
     code.write_text("version = 1\n")
     dependency.write_text("selector = 1\n")
     error.write_text("TimeoutError: upload button is absent\n")
@@ -79,6 +82,19 @@ def test_same_failure_opens_once_and_code_change_rearms(tmp_path: Path) -> None:
         "signature": "TimeoutError: upload button is absent",
     }
 
+    state.write_text(
+        '{"run_id":"daily-2026-08-21","pairs":{"note/ja":{"status":"intent"},'
+        '"substack/ja":{"status":"live"}}}\n'
+    )
+    assert invoke("check", *common) == {
+        "action": "block",
+        "count": 2,
+        "notify": False,
+        "pair": "note/ja",
+        "reason": "same-failure-circuit-open",
+        "signature": "TimeoutError: upload button is absent",
+    }
+
     code.write_text("version = 2\n")
     assert invoke("check", *common) == {
         "action": "run",
@@ -116,6 +132,34 @@ def test_success_clears_failure_history(tmp_path: Path) -> None:
         "action": "run",
         "pair": "note/ja",
         "reason": "no-failure",
+    }
+
+
+def test_same_pair_identity_change_rearms_open_circuit(tmp_path: Path) -> None:
+    circuit = tmp_path / "circuit.json"
+    state = tmp_path / "publication-state.json"
+    code = tmp_path / "publisher.py"
+    error = tmp_path / "error.txt"
+    state.write_text(
+        '{"run_id":"daily-2026-08-21","destination_identities":{"note/ja":"anicca123"},'
+        '"pairs":{"note/ja":{"target_kind":"note-key","target":"n-old"}}}\n'
+    )
+    code.write_text("version = 1\n")
+    error.write_text("TimeoutError: deterministic\n")
+    common = (
+        "--circuit", circuit, "--state", state,
+        "--code-file", code, "--pair", "note/ja",
+    )
+    invoke("failure", *common, "--error-file", error, "--threshold", 1)
+
+    state.write_text(
+        '{"run_id":"daily-2026-08-21","destination_identities":{"note/ja":"anicca123"},'
+        '"pairs":{"note/ja":{"target_kind":"note-key","target":"n-new"}}}\n'
+    )
+    assert invoke("check", *common) == {
+        "action": "run",
+        "pair": "note/ja",
+        "reason": "execution-context-changed",
     }
 
 

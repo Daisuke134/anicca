@@ -33,6 +33,8 @@ def test_worker_recovers_ambiguous_note_then_repairs_same_key(
     gates.mkdir(parents=True)
     for name in ("article-resume-pending.sh", "resume_failure_circuit.py"):
         shutil.copy(ROOT / "scripts" / name, scripts)
+    for name in ("publication_remote.py", "publication_resume.py"):
+        shutil.copy(ROOT / "scripts" / name, scripts)
     shutil.copy(ROOT / "scripts" / "publication_contract_resolver.py", scripts)
     shutil.copy(ROOT / "scripts" / "publication_contract.py", scripts)
     shutil.copy(ROOT / "scripts" / "_shared" / "notifier.sh", scripts / "_shared")
@@ -135,6 +137,8 @@ def test_worker_recovers_ambiguous_note_then_repairs_same_key(
         "ARTICLE_RESUME_LOG": str(log),
         "ARTICLE_MODEL_RUNNER": str(runtime / "model-runner.sh"),
         "ARTICLE_MODEL_SUPPORT": str(runtime / "model-runner-support.py"),
+        "ARTICLE_OWNER_FENCE_ACTIVE": "1",
+        "ARTICLE_RESUME_MIN_FREE_BYTES": "0",
         "CALLS": str(calls),
         "NOTE_MCP_DIR": str(note_mcp),
         "TELEGRAM_BOT_TOKEN": "",

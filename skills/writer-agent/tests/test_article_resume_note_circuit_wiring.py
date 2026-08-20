@@ -47,6 +47,21 @@ def test_worker_recovers_historic_unavailable_runs_before_planning() -> None:
     assert '--run-id' not in recovery
 
 
+def test_note_ambiguity_recovery_uses_the_same_failure_circuit() -> None:
+    worker = (ROOT / "scripts/article-resume-pending.sh").read_text(
+        encoding="utf-8"
+    )
+
+    recovery = worker.split(
+        '# A recognized note ambiguity', 1
+    )[1].split('# A missing managed target', 1)[0]
+    assert 'resume_failure_circuit.py" run' in recovery
+    assert '--circuit "$RUN_DIR/gates/resume-failure-circuit.json"' in recovery
+    assert '--pair "note/ja"' in recovery
+    assert '--code-file "$ARTICLE_ROOT/scripts/publication_remote.py"' in recovery
+    assert '--code-file "$ARTICLE_ROOT/scripts/publication_resume.py"' in recovery
+
+
 def executable(path: Path, body: str) -> None:
     path.write_text(body)
     path.chmod(0o755)
@@ -70,6 +85,8 @@ def test_note_resume_prioritizes_publication_and_uses_failure_circuit(
     shutil.copy(ROOT / "scripts" / "article-resume-pending.sh", scripts)
     shutil.copy(ROOT / "scripts" / "publication_contract_resolver.py", scripts)
     shutil.copy(ROOT / "scripts" / "publication_contract.py", scripts)
+    shutil.copy(ROOT / "scripts" / "publication_remote.py", scripts)
+    shutil.copy(ROOT / "scripts" / "publication_resume.py", scripts)
     shutil.copy(ROOT / "scripts" / "resume_failure_circuit.py", scripts)
     shutil.copy(ROOT / "scripts" / "_shared" / "notifier.sh", scripts / "_shared")
     (scripts / "note-publish" / "set-eyecatch-draft.py").write_text(
@@ -161,6 +178,8 @@ def test_note_resume_prioritizes_publication_and_uses_failure_circuit(
         "ARTICLE_RESUME_LOG": str(log),
         "ARTICLE_MODEL_RUNNER": str(runtime / "model-runner.sh"),
         "ARTICLE_MODEL_SUPPORT": str(runtime / "model-runner-support.py"),
+        "ARTICLE_OWNER_FENCE_ACTIVE": "1",
+        "ARTICLE_RESUME_MIN_FREE_BYTES": "0",
         "CALLS": str(calls),
         "BRIDGE_CALLS": str(bridge_calls),
         "TELEGRAM_BOT_TOKEN": "",

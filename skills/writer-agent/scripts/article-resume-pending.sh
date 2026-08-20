@@ -643,8 +643,18 @@ if [ "$(printf '%s' "$PLAN" | jq -r '.recovery_pairs[0] // empty')" = "note/ja" 
   export ARTICLE_LEDGER="$LEDGER_PATH"
   export ARTICLE_AUTOPUBLISH=1
   export ARTICLE_PUBLISH_PAIR="note/ja"
-  python3 "$ARTICLE_ROOT/scripts/publication-guard.py" \
-    recover-ambiguous --pair "note/ja" >>"$LOG" 2>&1
+  python3 "$ARTICLE_ROOT/scripts/resume_failure_circuit.py" run \
+    --circuit "$RUN_DIR/gates/resume-failure-circuit.json" \
+    --state "$STATE_PATH" \
+    --code-file "$ARTICLE_ROOT/scripts/article-resume-pending.sh" \
+    --code-file "$ARTICLE_ROOT/scripts/publication-guard.py" \
+    --code-file "$ARTICLE_ROOT/scripts/publication_remote.py" \
+    --code-file "$ARTICLE_ROOT/scripts/publication_resume.py" \
+    --pair "note/ja" \
+    --threshold "${ARTICLE_RESUME_FAILURE_THRESHOLD:-2}" \
+    --log "$LOG" \
+    -- python3 "$ARTICLE_ROOT/scripts/publication-guard.py" \
+      recover-ambiguous --pair "note/ja" >>"$LOG" 2>&1
   RC=$?
   echo "article-resume: run=$RUN_ID rc=$RC deterministic=recover-note/ja" >>"$LOG"
   exit "$RC"

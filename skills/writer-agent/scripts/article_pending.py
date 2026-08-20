@@ -198,7 +198,9 @@ def eligible_pairs(
     return eligible, schedule
 
 
-def _current_circuit_context(state: dict[str, Any], code_files: list[str]) -> dict[str, str] | None:
+def _current_circuit_context(
+    state: dict[str, Any], pair: str, code_files: list[str]
+) -> dict[str, str] | None:
     try:
         digest = hashlib.sha256()
         for raw_path in code_files:
@@ -208,8 +210,10 @@ def _current_circuit_context(state: dict[str, Any], code_files: list[str]) -> di
             digest.update(path.read_bytes())
             digest.update(b"\0")
         state_path = Path(str(state.get("state_path", "")))
+        from resume_failure_circuit import state_identity_sha256
+
         return {
-            "state_sha256": hashlib.sha256(state_path.read_bytes()).hexdigest(),
+            "state_sha256": state_identity_sha256(state_path, pair),
             "code_sha256": digest.hexdigest(),
         }
     except OSError:
@@ -245,7 +249,7 @@ def _open_resume_circuit_pairs(state: dict[str, Any]) -> tuple[set[str], bool]:
         if not isinstance(code_files, list) or not all(isinstance(item, str) for item in code_files):
             blocked.add(pair)
             continue
-        current = _current_circuit_context(state, code_files)
+        current = _current_circuit_context(state, pair, code_files)
         if current is None:
             return set(), True
         if row.get("state_sha256") == current["state_sha256"] and row.get("code_sha256") == current["code_sha256"]:
@@ -387,6 +391,7 @@ def plan_oldest(state_root: Path, now: datetime) -> dict[str, Any]:
         blocked_pairs = set(plan["pending_pairs"])
     if blocked_pairs:
         eligible = [pair for pair in eligible if pair not in blocked_pairs]
+        recovery_pairs = [pair for pair in recovery_pairs if pair not in blocked_pairs]
         for pair in sorted(blocked_pairs):
             schedule[pair] = {
                 "action": "BLOCK",
@@ -395,7 +400,7 @@ def plan_oldest(state_root: Path, now: datetime) -> dict[str, Any]:
     selected_recovery = next(
         (
             pair
-            for pair in ("devto/en", "x-article/ja", "x-post/ja")
+            for pair in ("note/ja", "devto/en", "x-article/ja", "x-post/ja")
             if pair in recovery_pairs and pair not in blocked_pairs
         ),
         "",
@@ -427,6 +432,9 @@ def plan_oldest(state_root: Path, now: datetime) -> dict[str, Any]:
                 candidate_eligible = [
                     pair for pair in candidate_eligible if pair not in candidate_blocked
                 ]
+                candidate_recovery = [
+                    pair for pair in candidate_recovery if pair not in candidate_blocked
+                ]
                 for pair in sorted(candidate_blocked):
                     candidate_schedule[pair] = {
                         "action": "BLOCK",
@@ -436,6 +444,7 @@ def plan_oldest(state_root: Path, now: datetime) -> dict[str, Any]:
                 (
                     pair
                     for pair in (
+                        "note/ja",
                         "devto/en",
                         "x-article/ja",
                         "x-post/ja",

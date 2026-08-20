@@ -1,4 +1,5 @@
 import importlib.util
+import json
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -39,3 +40,87 @@ def test_latest_active_six_run_precedes_old_legacy_backlog_after_midnight() -> N
         "20260802-000152",
         "daily-2026-07-24",
     ]
+
+
+def test_open_note_circuit_removes_recovery_and_allows_sibling(monkeypatch, tmp_path: Path) -> None:
+    """A repeated note failure freezes only note; the same run can ship Substack."""
+    import publication_resume
+
+    state_root = tmp_path / "state"
+    run_dir = state_root / "runs" / "daily-2026-08-21"
+    gates = run_dir / "gates"
+    gates.mkdir(parents=True)
+    state_path = gates / "publication-state.json"
+    state = {
+        "run_id": "daily-2026-08-21",
+        "created_at": "2026-08-21T06:00:00+09:00",
+        "publication_contract": "active-four",
+        "run_dir": str(run_dir),
+        "state_path": str(state_path),
+        "ledger_path": str(state_root / "articles.jsonl"),
+        "topic_id": "topic-test",
+    }
+    state_path.write_text(json.dumps(state), encoding="utf-8")
+    code_file = tmp_path / "note-publisher.py"
+    code_file.write_text("publisher-v1\n", encoding="utf-8")
+    code_context = article_pending._current_circuit_context(
+        state, "note/ja", [str(code_file)]
+    )
+    assert code_context is not None
+    circuit = gates / "resume-failure-circuit.json"
+    circuit.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "pairs": {
+                    "note/ja": {
+                        "open": True,
+                        "state_sha256": code_context["state_sha256"],
+                        "code_sha256": code_context["code_sha256"],
+                        "code_files": [str(code_file)],
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    class FakeStore:
+        def __init__(self, *_args: object) -> None:
+            pass
+
+        def worker_plan(self) -> dict:
+            return {
+                "resumable": True,
+                "run_id": state["run_id"],
+                "run_dir": state["run_dir"],
+                "topic_id": state["topic_id"],
+                "pending_pairs": ["substack/ja"],
+                "recovery_pairs": ["note/ja"],
+                "initialization_pairs": [],
+                "existing_pairs": {},
+            }
+
+        def initialization_plan(self) -> dict:
+            return {"initializable": False}
+
+        def read(self) -> dict:
+            return state
+
+    monkeypatch.setattr(publication_resume, "PublicationStore", FakeStore)
+    result = article_pending.plan_oldest(
+        state_root, datetime.fromisoformat("2026-08-21T07:00:00+09:00")
+    )
+
+    assert result["status"] == "READY"
+    assert result["eligible_pairs"] == ["substack/ja"]
+    assert result["recovery_pairs"] == []
+    assert result["blocked_pairs"] == ["note/ja"]
+    assert result["schedule"]["note/ja"]["reason"] == "same-failure-circuit-open"
+
+    code_file.write_text("publisher-v2\n", encoding="utf-8")
+    rearmed = article_pending.plan_oldest(
+        state_root, datetime.fromisoformat("2026-08-21T07:00:00+09:00")
+    )
+    assert rearmed["status"] == "READY"
+    assert "note/ja" in rearmed["eligible_pairs"]
