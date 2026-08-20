@@ -1095,6 +1095,8 @@ Official current economics establish this admission-dependent target portfolio:
 | HubSpot Affiliate | `APPLICATION_REJECTED`; contributes USD 0 and must not be resubmitted unchanged | 30% recurring for up to one year; Customer Platform Professional starts at USD 1,300/month; candidate economics only | USD 0 now | No eligible cohort while rejected |
 | Semrush Affiliate | Not yet executable; contributes USD 0 until applied, approved, linked, and read back | Basic Semrush One commission USD 300 per eligible sale; higher tiers are not assumed | USD 4,200.00 scenario only | 14 eligible Semrush One sales × USD 300, only after admission |
 | ElevenLabs | `ACTIVE_LINK_VERIFIED + ACCEPTED + EARNING_ENABLED` | 22% of Starter/Creator/Pro/Scale payments and 11% of Business payments for the first 12 months; enterprise excluded | USD 3,621.86 | 15 Business + 20 Scale + 30 Pro + 4 Creator active attributable subscribers at current monthly list prices |
+| Amazon Associates Japan | `AUTH_RECOVERY_OTP_REQUIRED`; no application or link is admitted | Official category rate 0%–10% (PC/camera/home-electronics/instruments 2%; books/stationery 3%); three shipped qualifying sales in 180 days plus public-content/SNS gates; payment about 60 days after month end | USD 0 now | Unknown until approved, shipped orders, currency, reversals, and real costs are observed |
+| Rakuten Affiliate | `AUTH_REQUIRED`; no application or link is admitted | Category-dependent observed range 2%–4%, JPY 1,000 per-item cap; confirmation following month end and Rakuten Cash following month 10th | USD 0 now | Unknown until authenticated confirmed rows, FX, reversals, and real costs are observed |
 | **Portfolio** | Current executable set is ElevenLabs only; HubSpot is rejected and Semrush is not admitted | No provider above 40% of target gross; current 10k equation is not computable from one live provider | **NOT COMPUTABLE NOW** | The USD 12,501.86 candidate scenario is not a money claim |
 
 ElevenLabs arithmetic is `15×990×11% + 20×299×22% + 30×99×22% +
@@ -1112,6 +1114,10 @@ Sources and mutable terms:
 - HubSpot official affiliate program: <https://www.hubspot.com/partners/affiliates>
 - HubSpot official Customer Platform pricing: <https://www.hubspot.com/pricing/suite>
 - Semrush official affiliate program: <https://www.semrush.com/lp/affiliate-program/en/>
+- Amazon Japan official fee schedule: <https://affiliate.amazon.co.jp/help/node/topic/GRXPHT8U84RAYDXZ>
+- Amazon Japan official application review: <https://affiliate.amazon.co.jp/help/node/topic/G8TW5AE9XL2VX9VM/>
+- Amazon Japan official payment timing: <https://affiliate.amazon.co.jp/help/node/topic/G63DR893K4DH55XZ>
+- Rakuten official confirmation/payment guide: <https://affiliate.rakuten.co.jp/guides/rank/>
 
 These numbers are a target equation, not a forecast or receivable. Terms are
 recaptured before every admission and material allocation. If HubSpot or Semrush
@@ -1172,8 +1178,8 @@ flowchart LR
   F --> I
 ```
 
-The USD 10,000 Affiliate gate remains the three-provider target above until
-approved-net evidence justifies a replacement. Amazon and Rakuten are admitted
+The USD 10,000 Affiliate gate remains the admission-dependent provider target
+above until approved-net evidence justifies a replacement. Amazon and Rakuten are admitted
 as durable commerce exploration, not invented dollars in that equation. X
 creator revenue is a useful second income stream but never affiliate commission
 and cannot close A3.
@@ -1771,7 +1777,7 @@ independent harness task continues:
    cadence, and join each Repost/ordinary-post exposure through owned article,
    provider click, and transaction. Use the existing 13 placements for the next
    one-variable experiment; no transaction join means no revenue credit.
-5. **P4 — Execute the three-provider flight plan and commerce admission.** Continue ElevenLabs while the
+5. **P4 — Execute the provider flight plan and commerce admission.** Continue ElevenLabs while the
    Agent preserves HubSpot's rejected application and admits Semrush through official
    terms, application, auth, dedicated-link, report, transaction, reversal, and
    payout readback. Never count an unapproved provider or resubmit a rejected
