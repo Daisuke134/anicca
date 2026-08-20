@@ -27,6 +27,6 @@ exec /usr/bin/curl -sS --max-time 30 "${RESOLVE_ARGS[@]}" \
   --data-urlencode "offset=0" \
   --data-urlencode "semantic_ratio=0" \
   --data-urlencode "posted_within_days=30" \
-  --data-urlencode "work_mode=remote" \
+  --data-urlencode "countries=JP" \
   -H 'Accept: application/json' \
   -H 'User-Agent: anicca-job-search/1.0'

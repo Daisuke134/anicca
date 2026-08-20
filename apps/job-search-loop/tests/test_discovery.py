@@ -134,6 +134,12 @@ exit {returncode}
             any("freehire-resolved-search.sh" in part for part in freehire.command)
         )
 
+        script = Path("apps/job-search-loop/scripts/freehire-resolved-search.sh").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn('--data-urlencode "countries=JP"', script)
+        self.assertNotIn('--data-urlencode "work_mode=remote"', script)
+
 
 if __name__ == "__main__":
     unittest.main()
