@@ -627,6 +627,7 @@ def daily_summary_event(state, wake_event, now=None):
     state_text = {
         "AUTHENTICATED": "ログイン済み",
         "APPLICATION_PENDING": "申請審査中",
+        "REJECTED": "申請却下",
         "CAPTCHA_CHALLENGE": "CAPTCHAの外部確認待ち",
         None: "状態未取得",
     }

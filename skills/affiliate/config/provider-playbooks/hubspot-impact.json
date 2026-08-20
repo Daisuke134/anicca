@@ -4,7 +4,7 @@
   "allowed_origins": ["https://app.impact.com"],
   "target": {
     "url_contains_any": ["/secure/member/home/", "/secure/device/auth.ihtml", "/login.user", "/loginError.user", "/password/change.ihtml"],
-    "title_contains_any": ["HubSpot, Inc.", "impact.com"]
+    "title_contains_any": ["HubSpot, Inc.", "impact.com", "Impact"]
   },
   "login": {
     "credential_section": "Impact",
@@ -38,6 +38,14 @@
         "You will be notified once there is a response."
       ],
       "next_action": "POLL_APPLICATION"
+    },
+    {
+      "state": "REJECTED",
+      "all_text": [
+        "HubSpot, Inc. application",
+        "Declined"
+      ],
+      "next_action": "DO_NOT_RESUBMIT"
     },
     {
       "state": "DEVICE_VERIFICATION_REQUIRED",
