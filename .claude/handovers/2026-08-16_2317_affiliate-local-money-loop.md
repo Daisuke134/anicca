@@ -1,8 +1,8 @@
 # Affiliate local money loop handover
 
 - SSOT: `docs/affiliate-agent/AFFILIATE-AGENT-SSOT.md`; resume from `Measured planning checkpoint and next TODOs`, then `Remaining autonomous money-loop work — canonical order`.
-- Development route: `/Users/anicca/anicca-project/.worktrees/affiliate-life-manager-spec`, branch `docs/affiliate-life-manager-spec`. The branch is clean/pushed and remains descended from required base `0a7debb58`; latest source/runtime commit is `cc775c3744094edf99087023ae36f3deb0936640`.
-- Installed runtime: `/Users/anicca/.local/share/life-manager/affiliate/current` → release `cc775c3744094edf99087023ae36f3deb0936640`; `current` is byte-backed by that immutable release. Any future `skills/affiliate` change requires immutable install and real owner replay.
+- Development route: `/Users/anicca/anicca-project/.worktrees/affiliate-life-manager-spec`, branch `docs/affiliate-life-manager-spec`. The branch is clean/pushed and remains descended from required base `0a7debb58`; latest source/runtime commit is `206b1145cc81d72137ff8fda53e08e94bd2d2b0e`.
+- Installed runtime: `/Users/anicca/.local/share/life-manager/affiliate/current` → release `206b1145cc81d72137ff8fda53e08e94bd2d2b0e`; `current` is byte-backed by that immutable release. Any future `skills/affiliate` change requires immutable install and real owner replay.
 - Repository decision: one Life Manager implementation at `skills/affiliate/`; no Affiliate-only repo, executor, ledger, `apps/api`, or Railway runtime. Private mutable state stays under `~/.local/state/life-manager/affiliate/`. OSS is the same proven Skill packaged for a clean Mac, never a rewrite.
 
 ## Current measured truth
@@ -482,3 +482,13 @@ missing, so E02 remains open and no application/link was submitted. The target
 table now labels HubSpot rejected and the former USD 12,501.86 three-provider
 mix as a scenario rather than current money; current executable provider count
 is one.
+
+The Semrush admission-gate refresh was committed and pushed as
+`206b1145cc81d72137ff8fda53e08e94bd2d2b0e`. The immutable installer switched
+`current` to that release, then stopped at the known launchd browser bootstrap
+`141: Reentrancy avoided`; no parallel executor was started. The existing owner
+naturally woke at `2026-08-20T13:30:33Z` and read back the same durable Impact
+`REJECTED / DO_NOT_RESUBMIT` transition, `ALREADY_LIVE` publication, 13
+placements, `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`, and no
+new Telegram event because the state was deduplicated. E02 remains open; B01 is
+still the next money gate.
