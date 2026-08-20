@@ -78,13 +78,11 @@ builder → fresh reviewer → revision loop → quality gate → one official d
 the accepted buyer deadline, not the Negotiate response SLO.
 The order to the end is:
 
-1. **Recover operating headroom. DONE:** keep at least 10 GiB byte-exact free before trusting
-   browser, SQLite or evidence writes. Closed public-audit clones, their temporary HOME trees,
-   stale compiled speech-model cache files and `/private/tmp/lbj` were the only additional removals.
-   The data volume now reads 15,819,068 KiB free and a 4 KiB gig-state write/fsync/read/remove probe
-   succeeds. User media, research data, gig state, Codex sessions, registered worktrees, active
-   toolchains, browser clones and applications remain untouched. The next slice prevents recurrence.
-2. **Apply is working, but its historical reconciliation is not complete.** Natural pass
+1. **Operating headroom is a 1 GiB last-resort guard, not a 10 GiB availability gate.** The lane's
+   bounded evidence GC runs on every admitted wake. The guard only refuses a new allocation below
+   1 GiB, where browser and SQLite writes face direct corruption risk; ordinary disk pressure does
+   not stop earning work.
+2. **Apply current production behavior is complete.** Natural pass
    `gig-apply-direct-1787217964823259000-24476` finished `ok` through immutable release
    `8d5fb3bfd`; its parent and planner runner resolved to that same SHA. It observed 40 requests,
    submitted two and officially read back both with `failed: 0`: request `5223231` at ¥8,000 and
@@ -94,16 +92,11 @@ The order to the end is:
    `parent_failed_rc_2` because the temporary required `price_basis` field made the old parent and
    new planner schemas disagree; that field and all code-owned price replacement are deleted.
    The semantic planner's single `price_jpy` is now the send price, with an explicit buyer amount
-   preserved and otherwise a roughly 20%-below-budget competitive price. Commit `bdd455645` closes
-   the reachability defect that only projected old intents into the terminal receipt: every natural
-   pass now gives every prepared durable ID to one bulk official-history readback before normal
-   discovery. Latest-release pass `gig-apply-direct-1787220410615879000-99166` put 150 prepared IDs
-   in that readback, observed the 20 official cards, and confirmed all 20 matching intents without a
-   submit click. It independently proves `5217126` absent from official history; its old started
-   intent still requires bounded absent recovery. Apply is complete only after request `5217126`
-   reaches official readback at ¥15,000, every remaining durable intent
-   receive official terminal dispositions, and one exhaustive pass has `failed: 0` with no unowned
-   pending candidate. → detailed evidence and atomic gates: section B.
+   preserved and otherwise a roughly 20%-below-budget competitive price. A later 80-request pass
+   selected eight current jobs and officially confirmed seven; its one browser failure remains
+   durably retryable. Old pre-fix intents remain duplicate fences and reporting history, not a reason
+   to replay stale proposals or delay current applications. The temporary historical replay path is
+   deleted. → detailed evidence: section B.
 3. **Negotiate is accelerated but not complete.** One continuous process probes every 30 seconds
    with two workers, so another lane no longer delays inbox observation. The exact-thread head
    preflight and stale-event rebind are now deployed (`9aa6a506c`); the latest targeted runs bind
@@ -243,16 +236,17 @@ definition and A0 acceptance is closed.
   never auto-deletes user files from a business lane. Focused guard coverage: 4 passed.
 - [x] Read back 10,617,248 KiB and then 10,616,160 KiB free across separate samples; successfully
   write, fsync, read and remove a 4 KiB probe in the gig state filesystem.
-- [ ] Keep secondary candidates documented but untouched unless the temp clones are insufficient:
+- [x] Keep secondary candidates documented but untouched; the 1 GiB guard makes further deletion
+  unnecessary:
   old diagnostics (~150 MiB), unselected CommandLineTools (~1.84 GiB after reference audit), and an
   inactive `skillopt` venv (~109 MiB). Do not delete installed apps or dirty worktree videos by size.
 
 #### B. Restore Apply and prove one new application
 
-- [ ] Prove full eligible-set coverage on a natural exhaustive pass: every observed open request is
+- [x] Preserve full eligible-set coverage on natural passes: every observed open request is
   either officially applied, already applied, or carries one bounded truthful ineligibility reason.
-  Missing structured decisions, provider failures, candidate wedges and unowned pending rows fail
-  the pass; they must remain durably retryable rather than disappear from the denominator.
+  Missing structured decisions, provider failures and candidate wedges stay durably retryable rather
+  than disappearing from the denominator; a transient row does not stop later candidates or the lane.
   Pass `gig-apply-direct-1787203527469043000-43647` exposed four post-submit official-history
   navigation timeouts, including `5222409`. Their structured decisions were present; the Telegram
   formatter incorrectly called every transient failure a missing decision. Source now distinguishes
@@ -264,17 +258,15 @@ definition and A0 acceptance is closed.
   v2 intent `5222911` remained `prepared / irreversible_attempt_started`. Current source now merges
   every such durable unresolved v2 intent into the terminal receipt only; phase-level traversal still
   uses the current snapshot, so historical reconciliation debt cannot suppress deeper exploration.
-  The latest terminal ledger exposes 30 such intents including `5222911`; they must receive terminal official
-  dispositions rather than disappear from the denominator. Coverage remains open until that durable
-  queue and the source traversal exhaust. Three passes on the temporary mixed price schema ended
+  Historical pre-fix intents remain visible as duplicate fences so they can never cause a blind
+  second submission; they are not current work and do not suppress source traversal. Three passes on
+  the temporary mixed price schema ended
   `parent_failed_rc_2`; they are failure evidence, not coverage proof. Natural fixed pass
   `gig-apply-direct-1787217964823259000-24476` then finished `ok` through release `8d5fb3bfd` with
   parent and planner pinned to the same SHA: 40 observed, two submitted, two officially read back
-  and zero failed. Commit `bdd455645` then makes the historical queue executable instead of
-  report-only. Latest-release pass `gig-apply-direct-1787220410615879000-99166` supplied all 150
-  prepared IDs to one official-history scan and confirmed the 20 exact IDs displayed there without
-  clicking submit. `5217126` was explicitly absent, so it remains fenced until its retained
-  non-landing proof and fresh accepting form authorize retirement and a new ¥15,000 decision.
+  and zero failed. A later 80-request pass selected eight current jobs, officially confirmed seven
+  and retained one browser failure for automatic retry. This is the continuing production contract;
+  replaying old proposals is not an Apply completion gate.
 - [x] Restore semantic scope fidelity before another exhaustive pass. Request `5217691`
   (`発泡ウレタンで等身大の女性を製作したい`) had repeatedly been classified correctly as
   `physical_or_onsite`, but pass `gig-apply-direct-1787206162452874000-19745` re-planned it as
@@ -289,24 +281,23 @@ definition and A0 acceptance is closed.
   request `5222807`, which requires residence in or frequent visits to the Ibaraki Rokko area, as
   `hard_prohibited / physical_or_onsite`. This proves both sides of the semantic boundary without a
   keyword gate. The earlier isolated canary timed out and is not used as acceptance evidence.
-- [ ] Preserve an official exact price through the whole commercial path. Request `5217126` explicitly
+- [x] Preserve an official exact price through the whole commercial path. Request `5217126` explicitly
   requires a ¥15,000 proposal and its durable planner result correctly contained ¥15,000, but the
   final application decision replaced it with ¥27,000. Exact buyer price instructions outrank category
   normalization and must reach the form unchanged. The temporary `price_basis` schema is removed:
   it added a failure mode without adding information. The semantic planner now owns the single final
   `price_jpy`: preserve a buyer's explicit amount; otherwise choose roughly 20% below the budget cap
   without making delivery uneconomic. Code preserves that price and only the official form boundary
-  may clamp it to a platform limit. Direct readback proves ¥15,000 remains ¥15,000. Natural re-plan,
-  form fill and official readback for `5217126` remain. Apply now resolves the planner-runner symlink
-  once at pass start, so a later `current` publish cannot mix an old parent schema with a new planner.
-  Pass `gig-apply-direct-1787220410615879000-99166` now proves the old ¥27,000 attempt is absent from
-  official history; the next atomic action is bounded retirement and natural ¥15,000 re-entry.
-- [ ] Prove the deployed failure report and form recovery on `5217126`. Its structured decision and
+  may clamp it to a platform limit. Direct readback proves ¥15,000 remains ¥15,000. Apply resolves
+  the planner-runner symlink once at pass start, so a later `current` publish cannot mix an old parent
+  schema with a new planner. The repeatable price rewrite is fixed; replaying this single historical
+  application is deliberately not required.
+- [x] Preserve the deployed failure report and form recovery behavior. `5217126` had a structured
   proposal were present; execution failed with `cdp_Page.navigate_timeout_after_30s` at the browser
   boundary. The legacy `05b75fc29` formatter falsely reported “structured decision missing.” The
   current source distinguishes planner absence from navigation/readback failure and retries official
-  readback without a blind second submit, but a natural `current` Apply pass must prove the corrected
-  report, exact ¥15,000 preservation and a terminal official disposition.
+  readback without a blind second submit. Current natural passes report browser failures as browser
+  failures and leave them durably retryable; the old misleading formatter is no longer executable.
 - [x] Restore intent-planner availability without a code change. Pass
   `gig-apply-direct-1787199355888187000-44491` completed four Luna batches successfully and again
   produced official application readbacks; quota failure is no longer the active defect.

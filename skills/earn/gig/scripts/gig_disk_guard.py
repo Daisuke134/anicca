@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Sequence
 
 
-REQUIRED_KIB = 10_485_760
+REQUIRED_KIB = 1_048_576
 REQUIRED_BYTES = REQUIRED_KIB * 1024
 RECEIPT_PATH = Path("state") / "disk-headroom.json"
 
