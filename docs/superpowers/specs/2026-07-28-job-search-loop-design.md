@@ -933,11 +933,12 @@ The default English resume is one ATS-friendly page, single column, text-first:
 
 1. Headline: Applied AI / Agent Engineer bridging regulated enterprise deployment and
    consumer AI products.
-2. MUIT experience with scoped Agentforce, Databricks, CRM, and RM-agent bullets.
-3. Anicca/Life Manager product and growth experience.
-4. NAIST/ATR research and weekly agent-practice community leadership.
-5. Selected public communication: ICLR 2026 MUIT report link.
-6. Education, languages, and selected earlier growth work.
+2. MUIT experience with scoped Agentforce, Databricks, CRM, RM-agent, and ICLR-as-MUIT-work bullets.
+3. NAIST/ATR research and weekly agent-practice community leadership.
+4. Education, languages, and selected earlier growth work.
+5. Anicca is the final consumer-product section; Life Manager and portfolio links are
+   omitted from the English application variants unless a target explicitly asks for
+   founder/product-portfolio evidence.
 
 Each tailored resume changes ordering and emphasis, not facts. PDFs are rendered and
 text-extracted in verification so ATS-visible text is checked before submission.
@@ -945,8 +946,12 @@ text-extracted in verification so ATS-visible text is checked before submission.
 The technical-business variant is also one ATS-friendly page. It keeps the same truth
 ledger while changing the headline and order to emphasize regulated-enterprise
 delivery, translating AI capabilities into user workflows, stakeholder alignment,
-product ownership, customer adoption, GTM/growth, and public communication. It must
-not invent formal PM, sales quota, people-management, or revenue ownership.
+product ownership, customer adoption, GTM/growth, and public communication. Its
+professional section is headed by MUIT (not MUFG), places the MUFG Agentforce
+contribution first, places the ICLR 2026 appearance under MUIT work, and describes
+Databricks observability without naming Genie Code. Anicca is the final consumer-AI
+section; Life Manager and Portfolio are not included in this application variant. It
+must not invent formal PM, sales quota, people-management, or revenue ownership.
 
 The Japanese variant is a one-page Japanese 職務経歴書 with fourteen grounded points
 covering MUIT/MUFG, Databricks, Agentforce, Anicca/Life Manager, NAIST/ATR,

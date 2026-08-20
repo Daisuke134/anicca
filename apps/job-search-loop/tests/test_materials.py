@@ -92,6 +92,7 @@ class MaterialTests(unittest.TestCase):
             "candidate": {"name": "Daisuke Narita"},
             "facts": [
                 {"id": "muit_agent_crm", "claim": "Deployed agents into a bank CRM."},
+                {"id": "muit_genie_logs", "claim": "Built a Databricks observability workflow."},
                 {"id": "muit_rm_summary", "claim": "Built RM-facing summaries."},
                 {"id": "mufg", "claim": "Contributed to MUFG production deployment."},
                 {"id": "anicca_consumer", "claim": "Built and grew Anicca."},
@@ -104,16 +105,23 @@ class MaterialTests(unittest.TestCase):
         sections = business_sections(profile)
         self.assertEqual(
             sections[0]["heading"],
-            "Regulated Enterprise AI Delivery — MUIT / MUFG (2025–Present)",
+            "MUIT — Applied AI / AI Agent Engineering (Apr 2025–Present)",
         )
         first_ids = [item["fact_ids"][0] for item in sections[0]["items"]]
-        self.assertEqual(first_ids, ["muit_agent_crm", "muit_rm_summary", "mufg"])
-        product_ids = {
-            item["fact_ids"][0] for item in sections[1]["items"]
-        }
         self.assertEqual(
-            product_ids,
-            {"anicca_consumer", "life_manager", "a10_marketing"},
+            first_ids,
+            ["mufg", "iclr", "muit_genie_logs", "muit_rm_summary"],
+        )
+        all_ids = {
+            item["fact_ids"][0]
+            for section in sections
+            for item in section["items"]
+        }
+        self.assertNotIn("life_manager", all_ids)
+        self.assertEqual(sections[-1]["heading"], "Consumer AI Product")
+        self.assertEqual(
+            [item["fact_ids"][0] for item in sections[-1]["items"]],
+            ["anicca_consumer"],
         )
 
     def test_resume_supports_business_specific_headline_without_invented_ownership(self):
@@ -188,6 +196,9 @@ class MaterialTests(unittest.TestCase):
             self.assertIn("AI Product, Solutions & Customer Strategy", extracted)
             self.assertIn("MUIT", extracted)
             self.assertIn("Anicca", extracted)
+            self.assertIn("ICLR 2026 report", extracted)
+            self.assertNotIn("Life Manager", extracted)
+            self.assertNotIn("Portfolio", extracted)
 
     def test_japanese_sections_ground_at_least_ten_translated_points(self):
         materials = importlib.import_module("job_search_loop.materials")

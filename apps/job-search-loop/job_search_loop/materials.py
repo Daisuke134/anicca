@@ -111,16 +111,19 @@ def master_sections(profile: dict[str, Any]) -> list[dict[str, Any]]:
     facts = {fact["id"]: fact["claim"] for fact in profile["facts"]}
     groups = [
         (
-            "Professional Experience — MUIT / MUFG (2025–Present)",
+            "MUIT — Applied AI / AI Agent Engineering (Apr 2025–Present)",
             [
-                ("muit_role_2025", None),
                 (
-                    "muit_agent_crm",
-                    "Deploys Salesforce Agentforce AI agents through MUIT into MUFG Bank's internal CRM used by sales professionals.",
+                    "mufg",
+                    "Contributed through MUIT to MUFG Bank's Japan-first production deployment of Salesforce Agentforce for Financial Services, integrating AI agents into the bank's internal CRM used by sales professionals.",
+                ),
+                (
+                    "iclr",
+                    "Represented MUIT at ICLR 2026 in Rio de Janeiro as part of MUIT work; synthesized frontier-AI research for an internal executive briefing and presented key findings through MUIT's official conference report.",
                 ),
                 (
                     "muit_genie_logs",
-                    "Built a Databricks / Genie Code observability workflow for AI-agent inputs, outputs, and responses; used it to investigate behavior and response quality.",
+                    "Built an observability workflow in Databricks to analyze AI-agent inputs, outputs, and responses to sales professionals; used it to investigate behavior and response quality.",
                 ),
                 (
                     "muit_rm_summary",
@@ -133,19 +136,11 @@ def master_sections(profile: dict[str, Any]) -> list[dict[str, Any]]:
             ],
         ),
         (
-            "Consumer AI Products",
-            [
-                ("anicca_consumer", "Built and shipped Anicca, a mobile affirmation app with 45+ ratings and a 4.5/5 rating."),
-                ("life_manager", "Builds Life Manager, an open-source agent system designed to run locally and coordinate everyday workflows with verified external actions."),
-            ],
-        ),
-        (
             "Research & Leadership — NAIST / ATR (2024–2026)",
             [
                 ("naist", "Applied EEG and machine learning to mind-wandering detection in NAIST master's research (April 2024–April 2026)."),
                 ("atr_research", "Conducted and presented mind-wandering research at ATR."),
                 ("agent_club", "Founded a weekly community teaching Claude Code, Codex, Cursor, and AI-agent workflows for research and daily work."),
-                ("iclr", "Represented MUIT at ICLR 2026, synthesized frontier-AI research for an internal briefing, and presented the findings through MUIT's official report."),
             ],
         ),
         ("Earlier Growth Experience", [("a10_marketing", "Managed a JPY 20M campaign budget, reduced CPA by 10%, and achieved record paid acquisition at A10 Lab.")]),
@@ -153,12 +148,13 @@ def master_sections(profile: dict[str, Any]) -> list[dict[str, Any]]:
             "Core Skills",
             [
                 ("muit_agent_crm", "Salesforce Agentforce · AI-agent deployment · CRM workflows"),
-                ("muit_genie_logs", "Databricks / Genie Code · AI observability · response-quality analysis"),
+                ("muit_genie_logs", "Databricks · AI observability · response-quality analysis"),
                 ("muit_rm_summary", "Prompt tuning · context engineering · relationship-manager workflows"),
                 ("anicca_consumer", "Swift / iOS · consumer AI products · product growth"),
             ],
         ),
         ("Education & Languages", [("education", None), ("languages", None)]),
+        ("Consumer AI Product", [("anicca_consumer", "Built and shipped Anicca, a mobile affirmation app with 45+ ratings and a 4.5/5 rating.")]),
     ]
     return [
         {
@@ -177,28 +173,33 @@ def business_sections(profile: dict[str, Any]) -> list[dict[str, Any]]:
     facts = {fact["id"]: fact["claim"] for fact in profile["facts"]}
     groups = [
         (
-            "Regulated Enterprise AI Delivery — MUIT / MUFG (2025–Present)",
-            [("muit_role_2025", None), ("muit_agent_crm", "Deploys Salesforce Agentforce AI agents through MUIT into MUFG Bank's internal CRM used by sales professionals."), ("muit_genie_logs", "Built a Databricks / Genie Code observability workflow for AI-agent inputs, outputs, and responses; used it to investigate behavior and response quality."), ("muit_rm_summary", "Supports prompt tuning and context engineering for deployed agents, including company-information summaries for relationship managers."), ("mufg", "Contributed to MUFG's Japan-first production deployment of Agentforce for Financial Services in a highly regulated banking environment.")],
+            "MUIT — Applied AI / AI Agent Engineering (Apr 2025–Present)",
+            [
+                ("mufg", "Contributed through MUIT to MUFG Bank's Japan-first production deployment of Salesforce Agentforce for Financial Services, integrating AI agents into the bank's internal CRM used by sales professionals."),
+                ("iclr", "Represented MUIT at ICLR 2026 in Rio de Janeiro as part of MUIT work; synthesized frontier-AI research for an internal executive briefing and presented key findings through MUIT's official conference report."),
+                ("muit_genie_logs", "Built an observability workflow in Databricks to analyze AI-agent inputs, outputs, and responses to sales professionals; used it to investigate behavior and response quality."),
+                ("muit_rm_summary", "Supported prompt tuning and context engineering for deployed AI agents, including company-information summaries for relationship managers."),
+            ],
         ),
         (
-            "Product, Customer & Growth",
-            [("anicca_consumer", "Built and shipped Anicca, a mobile affirmation app with 45+ ratings and a 4.5/5 rating."), ("life_manager", "Builds Life Manager, an open-source agent system designed to run locally and coordinate everyday workflows with verified external actions."), ("a10_marketing", "Managed a JPY 20M campaign budget, reduced CPA by 10%, and achieved record paid acquisition at A10 Lab.")],
-        ),
-        (
-            "Technical Leadership & Communication",
-            [("agent_club", "Founded a weekly community teaching Claude Code, Codex, Cursor, and AI-agent workflows for research and daily work."), ("iclr", "Represented MUIT at ICLR 2026, synthesized frontier-AI research for an internal briefing, and presented the findings through MUIT's official report.")],
-        ),
-        (
-            "Research & Education",
-            [("naist", "Applied EEG and machine learning to mind-wandering detection in NAIST master's research (April 2024–April 2026)."), ("atr_research", "Conducted and presented mind-wandering research at ATR."), ("education", None), ("languages", None)],
+            "Earlier Growth Experience",
+            [("a10_marketing", "Managed a JPY 20M campaign budget, reduced CPA by 10%, and achieved record paid acquisition at A10 Lab.")],
         ),
         (
             "Core Skills",
             [
                 ("muit_agent_crm", "Salesforce Agentforce · AI-agent deployment · CRM workflows"),
-                ("muit_genie_logs", "Databricks / Genie Code · AI observability · response-quality analysis"),
-                ("anicca_consumer", "Swift / iOS · consumer AI products · product growth"),
+                ("muit_genie_logs", "Databricks · AI observability · response-quality analysis"),
+                ("muit_rm_summary", "Prompt tuning · context engineering · relationship-manager workflows"),
             ],
+        ),
+        (
+            "Research & Education",
+            [("naist", "Applied EEG and machine learning to mind-wandering detection in NAIST master's research (April 2024–April 2026)."), ("atr_research", "Conducted and presented mind-wandering research at ATR."), ("agent_club", "Founded a weekly community teaching Claude Code, Codex, Cursor, and AI-agent workflows for research and daily work."), ("education", None), ("languages", None)],
+        ),
+        (
+            "Consumer AI Product",
+            [("anicca_consumer", "Built and shipped Anicca, a mobile affirmation app with 45+ ratings and a 4.5/5 rating.")],
         ),
     ]
     return [
@@ -355,9 +356,7 @@ def _render_pdf(
 
 def _public_links() -> list[tuple[str, str]]:
     return [
-        ("Portfolio", "https://aniccaai.com/dais"),
         ("ICLR 2026 report", "https://www.youtube.com/watch?v=biHAQ6aSQuc"),
-        ("Life Manager", "https://aniccaai.com/life-manager"),
     ]
 
 
