@@ -311,6 +311,20 @@ Immediate customer-remediation queue, in order:
    unperformed approach as sent. Attach the candidate file plus outreach ledger with one concise
    apology/summary message and leave formal delivery unchecked. Official attachment/readback and a
    replay with zero duplicate outreach are required; the manual apology is not completion.
+   Use the proven driver-recruitment funnel, not bulk unsolicited social DMs: multi-source local
+   discovery -> dedupe/enrich/score -> contact-permission check -> short mobile qualification ->
+   immediate LINE handoff -> referral expansion. Driver hiring case studies show that LINE/SMS or
+   Messenger, a short application, minimum qualification questions and immediate follow-up convert;
+   they do not justify indiscriminate outreach. X explicitly forbids automated bulk unsolicited DMs
+   and non-API browser automation, so an X profile may support discovery but counts as an outreach
+   action only when that person has explicitly invited contact. Prefer job-seeker pools, driver
+   communities with recruitment permission, public business/contact forms, referrals and other
+   opt-in routes. Reuse the OSS pipeline shape `collect -> dedupe -> enrich -> suppress -> score ->
+   export` from Dukotah/leadgen; evaluate KeeLead only as a source adapter, not as a wholesale new
+   subsystem. Sources: https://kuzen.io/case/detail/gojob,
+   https://markiteasy.com/blog/how-to-recruit-cdl-nemt-drivers/,
+   https://help.x.com/en/rules-and-policies/x-automation,
+   https://github.com/Dukotah/leadgen, https://github.com/Atum246/keelead.
 2. **haru haru9 / project 18169583.** Finish the current v10 producer/reviewer cycle, attach the
    accepted PC/responsive editable package in the exact room with formal delivery unchecked, read
    the attachment back officially and prove replay effect zero. Do not ask locality or copy questions
