@@ -187,7 +187,12 @@ The order to the end is:
    revision exposed a controller handoff bug: the owner prompt rendered its existing trusted census
    as `None` because the census path was resolved only before the review finding existed. Census
    resolution now runs on every build/revision entry and reuses the trusted receipt without another
-   model call. Live fresh
+   model call. The v3 revision fixed real missing modifier classes but remained blocked because its
+   owner had read the census before production and listed v2 as an input source. Review policy v18
+   now enforces two ordered phases: raw-source-only artifact construction and hash finalization,
+   followed by controller-census correspondence. Necessary wording overlap alone is not circular;
+   pre-hash census/prior-candidate access is, and is a repairable `needs_revision` when raw sources
+   are available. Live fresh
    review and delivery readback remain to be captured. Prove a new natural paid
    order through validated artifact, one delivery
    effect, exact-room official readback and replay zero.
