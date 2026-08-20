@@ -149,6 +149,7 @@
       "launchctl asuser 501 also returns 141: Reentrancy avoided",
       "dscacheutil cannot resolve user anicca and dscl returns eServerError",
       "log show cannot connect to logd",
+      "open -n -a /Applications/ChatGPT.app returns kLSNoExecutableErr (-10827)",
       "no Writer process is running"
     ],
     "interpretation": "The current Codex app-server is detached from a valid macOS GUI/user bootstrap; this prevents safe launchd load/readback and is outside Writer code.",
