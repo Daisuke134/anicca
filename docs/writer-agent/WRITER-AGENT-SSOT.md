@@ -1,6 +1,6 @@
 # Writer Agent — Revenue, UX, Runtime, and Roadmap SSOT
 
-Last updated: 2026-08-06 JST
+Last updated: 2026-08-20 JST
 
 This file is the only current source of truth for the Writer Agent's objective,
 user experience, revenue model, execution order, and remaining work. Historical
@@ -49,6 +49,16 @@ The order is:
 The machine cannot guarantee demand or revenue. It must guarantee continuous
 measurable attempts, honest receipts, bounded improvement, and automatic
 recovery.
+
+### 0.1.1 Active planning slice: daily shipping, control beats, and Telegram UX
+
+The current diagnosis and execution order for the broken Writer runtime is
+`docs/writer-agent/plans/2026-08-20-writer-ship-every-8-hours-telegram-ux.md`.
+It is the next implementation slice: restore one canonical runtime, restore
+demand supply and same-run resume, then prove the daily revenue set and
+receipt-backed Telegram reporting before enabling any 8-hour publishing
+canary. It does not replace the invariant revenue, safety, or platform-policy
+rules in this SSOT.
 
 ### 0.2 Open-source positioning and public-claim gate
 
