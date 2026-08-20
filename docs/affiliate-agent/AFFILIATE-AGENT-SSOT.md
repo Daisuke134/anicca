@@ -1145,7 +1145,13 @@ The Repost contribution is bounded and measurable:
 The current Repost implementation is not yet this acquisition arm: it shares
 `@selawmqt`, runs hourly, has reply allocation set to zero, mixes Japanese copy,
 optimizes early views, and has no Affiliate transaction lineage. The first
-integration slice changes ownership and measurement before increasing volume.
+integration slice changes ownership and measurement before increasing volume. The
+first source slice now adds a read-only Affiliate observer for the existing
+`/Users/anicca/loops/x-repost/posted.jsonl`: it records the file hash, valid post
+action count, exact `campaign-publications/*/x_url` joins, broken-edge count, and
+an explicit `POST_ACTION_COUNT_ONLY / NO_REVENUE_CREDIT` boundary. It does not
+start, edit, reply, quote, click, or publish through the Repost owner. Installed
+owner readback remains required before this bridge is marked live.
 
 #### Durable revenue portfolio: broad admission, narrow allocation
 
@@ -2063,6 +2069,11 @@ receipt readback, SSOT state update, commit, and push to both canonical remotes.
   commission state, reversal, and cost denominators without substituting one for another.
 - [ ] **D06** Put Affiliate and Repost proposals behind one `@selawmqt` English
   effect arbiter with a bounded cadence and disclosure/policy gate.
+- [ ] **D06.1** Let the existing Affiliate owner read the Repost `posted.jsonl`
+  ledger through an explicit `AFFILIATE_REPOST_STATE_DIR` boundary, persist one
+  replay-safe observation receipt, and report exact campaign-URL joins without
+  treating post actions as impressions, visits, clicks, or money. The source
+  observer and temporary mixed-join replay pass; installed owner proof is open.
 - [ ] **D07** Prove one Repost/original-X exposure joins through owned visit and
   provider click to an exact transaction, or persist the broken edge explicitly.
 - [ ] **D08** After cohort maturity, compute approved net per 1,000 qualified

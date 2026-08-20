@@ -83,6 +83,105 @@ def json_rows(path):
     return rows
 
 
+def observe_repost_acquisition(state):
+    """Read the existing Repost ledger without owning or creating its effects."""
+    configured = os.environ.get("AFFILIATE_REPOST_STATE_DIR")
+    source_state, raw, rows, invalid_row_count = "NOT_CONFIGURED", b"", [], 0
+    if configured:
+        posted_path = Path(configured).expanduser() / "posted.jsonl"
+        if posted_path.is_file():
+            source_state = "OBSERVED"
+            try:
+                raw = posted_path.read_bytes()
+                for line in raw.decode("utf-8").splitlines():
+                    if not line.strip():
+                        continue
+                    try:
+                        row = json.loads(line)
+                    except ValueError:
+                        invalid_row_count += 1
+                        continue
+                    if isinstance(row, dict):
+                        rows.append(row)
+                    else:
+                        invalid_row_count += 1
+            except (OSError, UnicodeDecodeError):
+                source_state, raw, rows, invalid_row_count = "UNAVAILABLE", b"", [], 0
+        else:
+            source_state = "UNAVAILABLE"
+
+    campaign_by_x_url = {}
+    for path in (state / "campaign-publications").glob("*.json"):
+        try:
+            campaign = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        x_url = campaign.get("x_url")
+        if isinstance(x_url, str) and x_url.startswith("https://x.com/"):
+            campaign_by_x_url[x_url] = campaign.get("plan_id")
+    joined_count = sum(
+        isinstance(row.get("post_url"), str) and row["post_url"] in campaign_by_x_url
+        for row in rows
+    )
+    post_action_count = len(rows)
+    unjoined_count = post_action_count - joined_count
+    source_file_sha256 = (
+        hashlib.sha256(raw).hexdigest() if source_state == "OBSERVED" else None
+    )
+    identity = {
+        "source_state": source_state,
+        "source_file_sha256": source_file_sha256,
+        "post_action_count": post_action_count,
+        "joined_campaign_count": joined_count,
+        "unjoined_post_action_count": unjoined_count,
+        "invalid_row_count": invalid_row_count,
+    }
+    transition_id = hashlib.sha256(
+        json.dumps(identity, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    join_state = (
+        "NOT_CONFIGURED" if source_state == "NOT_CONFIGURED" else
+        "UNKNOWN" if source_state == "UNAVAILABLE" else
+        "NO_ROWS" if not rows else
+        "ALL_EXACT_CAMPAIGN_URL_JOINED" if joined_count == post_action_count else
+        "PARTIAL_EXACT_CAMPAIGN_URL_JOINED" if joined_count else
+        "NO_EXACT_CAMPAIGN_URL_JOIN"
+    )
+    receipt = {
+        "schema_version": 1,
+        "receipt_type": "AFFILIATE_REPOST_OBSERVATION",
+        "transition_id": transition_id,
+        "observed_at": datetime.now(timezone.utc).isoformat(),
+        "source_state": source_state,
+        "source_file_sha256": source_file_sha256,
+        "post_action_count": post_action_count if source_state == "OBSERVED" else None,
+        "joined_campaign_count": joined_count if source_state == "OBSERVED" else None,
+        "unjoined_post_action_count": unjoined_count if source_state == "OBSERVED" else None,
+        "invalid_row_count": invalid_row_count if source_state == "OBSERVED" else None,
+        "join_state": join_state,
+        "denominator_state": "POST_ACTION_COUNT_ONLY",
+        "revenue_credit_state": "NO_REVENUE_CREDIT",
+    }
+    prior = {}
+    try:
+        prior = json.loads(
+            (state / "repost-observations" / "latest.json").read_text(encoding="utf-8")
+        )
+    except (OSError, ValueError):
+        pass
+    changed = prior.get("transition_id") != transition_id
+    if changed:
+        append_unique(
+            state / "repost-observations.jsonl", receipt, ("transition_id",)
+        )
+    atomic_json(state / "repost-observations" / "latest.json", receipt)
+    return {
+        **receipt,
+        "state": source_state,
+        "changed": changed,
+    }
+
+
 def latest_commission_rows(state):
     """Return one latest lifecycle row per provider transaction lineage."""
     latest = {}
@@ -347,6 +446,18 @@ def owner_event(state, wake_event, sent_event_ids=None):
             f"1つだけ変更します。仮説: {wake_event.get('acquisition_decision_hypothesis')} "
             f"次の実行: {wake_event.get('acquisition_decision_instruction')}"
         ))
+    repost = wake_event.get("repost_observation") or {}
+    if repost.get("changed") and repost.get("state") == "OBSERVED":
+        kind = "REPOST_OBSERVED"
+        add(kind, {
+            "kind": kind,
+            "transition_id": repost.get("transition_id"),
+        }, (
+            f"既存Repostの投稿アクション={repost.get('post_action_count')}件 / "
+            f"Affiliate campaign完全一致={repost.get('joined_campaign_count')}件 / "
+            f"未結合={repost.get('unjoined_post_action_count')}件 / "
+            "分母=投稿アクションのみ / revenue credit=0"
+        ))
     for transition in commission_transitions:
         kind = {
             "pending": "COMMISSION_PENDING", "approved": "COMMISSION_APPROVED",
@@ -451,15 +562,18 @@ def owner_event(state, wake_event, sent_event_ids=None):
         if kind.startswith("PROGRAM_") or kind == "SELF_HEALED"
         else "同じrolling 30日net receiptを再計算し、実取引だけを監視"
         if kind == "AFFILIATE_ROLLING_NET"
+        else "既存Repostの投稿アクションをowned記事・provider clickへ完全一致で結合"
+        if kind == "REPOST_OBSERVED"
         else "provider transactionを待ち、sub-IDまたはlink fingerprintでplacementへ照合"
         if kind in {"CLICK_DELTA", "UNATTRIBUTED_CLICK_DELTA", "PLACEMENT_LINK_VERIFIED"}
         else "buyer-intentを収集し、次の公開・収益照合を継続"
     )
     program = (
-        "ElevenLabs / PartnerStack"
+        "X Repost / Affiliate acquisition"
+        if kind == "REPOST_OBSERVED"
+        else "ElevenLabs / PartnerStack"
         if kind == "SELF_HEALED" and selected.get("scope") in {"publication", "revenue"}
-        else
-        "HubSpot / Impact"
+        else "HubSpot / Impact"
         if kind.startswith("PROGRAM_") or kind == "SELF_HEALED"
         else "ElevenLabs / PartnerStack"
     )
@@ -1863,6 +1977,18 @@ def wake(args):
             "total_page_views": None, "delta_page_views": None,
             "failure_type": type(error).__name__,
         }
+    try:
+        repost_observation = observe_repost_acquisition(state)
+    except Exception as error:
+        repost_observation = {
+            "state": "OBSERVATION_FAILED", "changed": False,
+            "failure_type": type(error).__name__,
+            "transition_id": None, "source_file_sha256": None,
+            "post_action_count": None, "joined_campaign_count": None,
+            "unjoined_post_action_count": None, "invalid_row_count": None,
+            "denominator_state": "POST_ACTION_COUNT_ONLY",
+            "revenue_credit_state": "NO_REVENUE_CREDIT",
+        }
     revenue = run_revenue_cycle(state, args.cdp_port) if provider["state"] == "AUTHENTICATED" else {
         "state": "PROVIDER_NOT_AUTHENTICATED", "source_rows": None, "appended_transitions": None,
     }
@@ -1938,6 +2064,15 @@ def wake(args):
         "devto_baseline_state": devto_metrics.get("baseline_state"),
         "devto_baseline_receipt_count": devto_metrics.get("baseline_receipt_count"),
         "devto_metrics_failure_type": devto_metrics.get("failure_type"),
+        "repost_observation": {
+            key: repost_observation.get(key)
+            for key in (
+                "state", "changed", "transition_id", "source_file_sha256",
+                "post_action_count", "joined_campaign_count",
+                "unjoined_post_action_count", "invalid_row_count", "join_state",
+                "denominator_state", "revenue_credit_state", "failure_type",
+            )
+        },
         "acquisition_decision_state": acquisition_decision.get("state"),
         "acquisition_decision_changed": acquisition_decision.get("changed", False),
         "acquisition_decision_baseline_sha256": acquisition_decision.get("baseline_sha256"),
