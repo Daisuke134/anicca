@@ -1451,11 +1451,16 @@ historical evidence below. Read-only inspection of the installed state shows:
   fingerprint `546…` and `rebound_from_handoff_fingerprint=c116…`; the
   existing PartnerStack link key `618843f9…` was deduplicated, and owned Git
   commit `2250d31a6` was delivered through the configured
-  `affiliate-foundation-prod` checkout to `origin/main`. Netlify/public
-  readback is still HTTP `404`, so the owner recorded `OWNED_NOT_LIVE`, sent
-  Telegram message `25979`, and did not create an X effect. The same durable
-  progress must be retried until owned `LIVE`, then X `LIVE`, with unchanged
-  replay; A04 remains open.
+  `affiliate-foundation-prod` checkout to `origin/main`. The first immediate
+  Netlify/public readback was HTTP `404`, so the owner recorded
+  `OWNED_NOT_LIVE`, sent Telegram message `25979`, and did not create an X
+  effect. A later independent DNS-resolved readback at `2026-08-20T10:01:12Z`
+  returned HTTP `200` for the exact owned slug and found the expected title,
+  affiliate disclosure, and dedicated-link anchor in the response body. The
+  durable receipts have not yet been advanced by the owner: progress remains
+  `OWNED_NOT_LIVE`, the owned receipt remains `DELIVERED` without a public URL,
+  and no X receipt exists. The existing launchd owner must perform that
+  readback, then reach X `LIVE`, with unchanged replay; A04 remains open.
 - the current launchd capability check at `2026-08-20T09:20:57Z` also fails
   outside the service label: `launchctl managername`, `launchctl print user/501`,
   and `launchctl print gui/501` all return `141: Reentrancy avoided`, while
