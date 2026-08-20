@@ -2515,11 +2515,23 @@ class PublicationStore:
                 and not active_keys
                 and pair_keys <= {"x-article/en", "x-post/ja"}
             )
+            # Active-four initialization records the four dormant skips before
+            # registering the four live targets. If the worker is interrupted
+            # in that publication-free window, the state is still a valid
+            # partial initialization boundary; do not strand it as "no valid
+            # incomplete run" before the first target can be registered.
+            dormant_only_active_four = (
+                not self._is_legacy_state(state)
+                and bool(pair_keys)
+                and not active_keys
+                and pair_keys <= set(DORMANT_PAIRS)
+            )
+            dormant_only = dormant_only_alias or dormant_only_active_four
             if (
                 not isinstance(pairs, dict)
                 or not pairs
-                or (not dormant_only_alias and not active_keys)
-                or (not dormant_only_alias and not active_keys < set(required))
+                or (not dormant_only and not active_keys)
+                or (not dormant_only and not active_keys < set(required))
                 or not pair_keys <= set(SUPPORTED_PAIRS)
                 or any(
                     pair not in DORMANT_PAIRS
