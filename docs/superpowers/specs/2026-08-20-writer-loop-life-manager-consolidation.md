@@ -11,17 +11,21 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
 
 ## 現在の実測
 
-- `daily-2026-08-20` はJA/EN原稿を生成し、active-fourの公開は0/4。
-- Noteは安定した下書きキー `ne6da5b602b4a`、Substack日英は下書きID
-  `211988979` / `211988987` を再照合できた。これは下書き・intentの証拠であり、公開URLではない。
+- `daily-2026-08-20` はJA/EN原稿を生成し、active-fourの公開は1/4。
+- Noteは安定キー `ne6da5b602b4a` を同じまま公開し、
+  `https://note.com/anicca123/n/ne6da5b602b4a` の公開後読み戻し、¥500の有料設定、
+  本文・画像・所有者を確認できた。Substack日英は下書きID
+  `211988979` / `211988987`、Xは編集URLを再照合できたが、まだintentである。
 - X日本語は編集URL `https://x.com/compose/articles/edit/2090392988765605888` を
   intentとして保持し、変更・公開していない。
-- 最後の再開tickは4件のintentを揃えて終了したが、deterministicな公開tickはまだ実行されていない。
+- 20:36 JSTのdeterministicな公開tickはNoteのpaid API証拠不足で停止し、失敗回路保存も空き容量不足になった。20:44 JSTの次tickはNoteを再照合して公開・読み戻しを記録した。
 - `launchctl bootstrap`/`kickstart` は `141: Reentrancy avoided`。plistがあることは稼働証拠ではない。
 - 実行releaseは `/Users/anicca/profitable-claude-releases/writer/e9ab21ea/writer-agent`、
   stateは `/Users/anicca/profitable-claude/skills/writer-agent/state`。Life Manager checkoutは
   `/Users/anicca/Projects/life-manager-main` だが、Writer runtime treeは未移行。
-- Telegramには状態報告を送信済み（最新の初期化報告 message ID `26065`）。旧経路には技術列挙の報告が残るため、今後はdeterministic rendererだけが自然文を送る。実受取receiptは未確認。
+- 現在はstate rootの `.publication-paused` が存在し、次のlaunchd tickは外部公開を行わずに終了する。JAは `SUBSTACK_PUBLICATION_JA`、ENは別の `SUBSTACK_PUBLICATION_EN` を必須とし、ENの既存draft `211988987` は公開禁止である。
+- Telegramには初期化報告 `26065`、未完了報告 `26075`、Note公開を含む進捗報告 `26087` を送信済み。今後はdeterministic rendererだけが自然文を送る。実受取receiptは未確認。Substack公開はJA/EN identityが分離されるまで停止する。
+- pause gateはresume workerとdaily creatorの両方で直接実行し、ロック・planner・publisherより前に終了コード0となることを確認した。変更対象の構文確認と、固定一時領域でのスケジュール／完了通知テスト `37 passed` も確認済み。外部公開の新規成功や売上receiptはまだ無い。
 
 ## 目標構成
 
@@ -82,14 +86,14 @@ publication identity、読者、payout、ledgerを分ける。
 
 | # | 作業 | 完了証拠 | 状態 |
 |---:|---|---|---|
-| 1 | launchd実行コンテキストを復旧し、creator/resumeを一度だけ起動 | `launchctl print`と終了receipt | 未完了 |
-| 2 | DNSまたは承認済みnetwork transportを復旧 | Note/SubstackのHTTP到達証拠 | 未完了 |
+| 1 | launchd実行コンテキストを復旧し、creator/resumeを一度だけ起動 | 20:44 JSTのresume logは取得済み。`launchctl print`のrc=141は未解消 | 一部完了 |
+| 2 | DNSまたは承認済みnetwork transportを復旧 | NoteのHTTP公開・読み戻しは取得済み。Substack/Xは未確認 | 一部完了 |
 | 3 | Writer runtimeを`skills/writer-agent`へ移しmanifestを生成 | SHA付きpath census | 未着手 |
 | 4 | demand→artifact→publisher adapterを同じstate schemaへ接続 | run/artifact parity | 未着手 |
-| 5 | Note/Substack/Xの実公開とreadbackを同一runで完了 | 4件のlive receipt | 未着手 |
+| 5 | Note/Substack/Xの実公開とreadbackを同一runで完了 | Note 1/4。Substack identityとXが未完了 | 進行中 |
 | 6 | payment/publisher receipt collectorとmoney ledgerを接続 | artifact-level receipt | 未着手 |
-| 7 | neutral Telegram rendererを日次・失敗・完了へ接続 | message ID + semantic hash | 一部実装 |
-| 8 | adversarial verifierで重複公開・誤金額・偽URL・secret漏洩を反証 | review receipt | 未着手 |
+| 7 | neutral Telegram rendererを日次・失敗・完了へ接続 | message ID `26075`/`26087` + semantic hash | 一部完了 |
+| 8 | adversarial verifierで重複公開・誤金額・偽URL・secret漏洩を反証 | Note live境界とidentity gateのfresh review | 進行中 |
 | 9 | Life Manager ownerをloadし、19個のWriter関連LaunchAgent（creator、resume、retry、money、report、health、learning、opportunityを含む）のpath/state/lockをmanifest化。shared fenceで旧ownerをdrain後にdisable | owner manifest + old/new parity + bounded wake | 未着手 |
 | 10 | rollback archiveと復元試験を検証し、Writer専用releaseだけをアーカイブ。`.openclaw`と`profitable-claude`全体は削除しない | archive hash + restore receipt + deletion-scope receipt | 未着手 |
 
