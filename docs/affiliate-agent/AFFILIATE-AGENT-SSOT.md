@@ -2384,9 +2384,10 @@ cursor; later work MUST NOT jump ahead of an unmet gate.
 
 Current execution cursor: **E1-H, close the first real transaction path. P0/A04/A05
 publication recovery is complete through the existing owner. The latest readback has
-18 canonical ledger rows, 18 provider-link keys, 18 owned public URLs, 32 provider
-clicks, 15 `INSUFFICIENT_DENOMINATOR` rows plus 3 observed Dev.to denominators,
-aggregate 41 clicks including `+40` unattributed, and zero commission rows. The
+19 canonical ledger rows, 19 provider-link keys, 18 owned public URLs, one
+link-only handoff, 32 provider clicks, 16 `INSUFFICIENT_DENOMINATOR` rows plus 3
+observed Dev.to denominators, aggregate 41 clicks including `+40` unattributed,
+and zero commission rows. The
 voice-isolator experiment is now one exact joined placement after its same job
 closed. B01 is waiting for the first non-empty official provider transaction
 artifact.**
@@ -2430,6 +2431,12 @@ canonical ledger, and sent Telegram `26594`. No second X object or job appeared.
 `launchctl` introspection still returned 141, but the existing owner produced this
 real wake. Revenue remains in the one-hour cooldown from the `04:29:23 JST`
 cycle; the next official capture is due around `05:29 JST`.
+The following natural wake at `2026-08-21T04:51:05Z` created and verified one
+new dedicated PartnerStack link for `elevenlabs-discovered-voice-design-en-1`;
+the effect is link-only and the publication gate is `WAITING_FOR_PLACEMENT_LINK`.
+It created no owned article, X post, transaction, or money. The ledger is now 19
+rows with 19 provider-link keys and 18 public URLs; the new row remains outside
+allocation until its public and provider measurement lineage closes.
 M2.0 is closed for settled dedicated-link attribution: every settled revenue
 placement has one PartnerStack link and one canonical ledger row. The
 voice-isolator experiment's provider-link and owned-publication identities are now

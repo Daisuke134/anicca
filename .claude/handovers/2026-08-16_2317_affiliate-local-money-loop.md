@@ -795,3 +795,13 @@ revenue cycle remains in its one-hour cooldown from `04:29:23 JST`; the next
 official PartnerStack capture is due around `05:29 JST`. B01 remains open with
 `commission_row_count=0`, `NO_TRANSACTIONS`, approved/paid net null, and unknown
 cost coverage.
+
+At `2026-08-21T04:51:05Z`, the same existing owner selected the next bounded
+English opportunity and created one verified PartnerStack link for
+`elevenlabs-discovered-voice-design-en-1` (provider key is retained only in the
+private receipt). The wake stopped at `WAITING_FOR_PLACEMENT_LINK` after that one
+effect; no owned article, X post, or provider transaction was created. Telegram
+owner receipt `26604` reports the state. The canonical ledger is now 19 rows,
+19 provider-link keys, 18 owned public URLs, 32 clicks, 16 insufficient plus 3
+observed Dev.to denominators, and zero commission statuses; all real cash costs
+remain unknown. The new row is not mature and cannot receive allocation credit.
