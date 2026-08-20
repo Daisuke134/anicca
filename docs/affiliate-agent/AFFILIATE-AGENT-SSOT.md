@@ -2450,6 +2450,18 @@ empty, `NO_LIVE_ROWS`), and `revenue-cycle.json` therefore remains the prior
 Telegram `26645` records the failure. The next atomic gate is an existing-owner
 retry and readback of the same capture path; no manual provider capture is
 substituted and no money is credited until the retry yields an official row.
+At `2026-08-21T05:45:32Z`, that existing owner retry recovered the capture path:
+the new hash-valid PartnerStack artifact is `7f330211…d097a89`, with zero
+commission rows, empty payout rows, and `NO_LIVE_ROWS`. Reconciliation read
+`source_rows=0`, appended/replayed `0/0`, and `money_state=NO_TRANSACTIONS`;
+the owner event is `NO_TRANSACTIONS` rather than `REVENUE_CYCLE_FAILED`. The
+canonical ledger remains 19 placements / 19 provider-link keys / 19 public URLs,
+32 provider clicks, 16 `INSUFFICIENT_DENOMINATOR` plus 3 `OBSERVED` rows, and
+zero pending/approved/paid/reversed statuses. Rolling net remains
+`NO_APPROVED_OR_PAID_ROWS`, `approved_or_paid_net_usd=null`,
+`threshold_state=NOT_REACHED`, and real costs `UNKNOWN`. The failure receipt is
+retained as historical evidence; the successful owner event and new artifact
+are the current truth. The next official capture is due around `06:45 JST`.
 M2.0 is closed for settled dedicated-link attribution: every settled revenue
 placement has one PartnerStack link and one canonical ledger row. The
 voice-isolator experiment's provider-link and owned-publication identities are now

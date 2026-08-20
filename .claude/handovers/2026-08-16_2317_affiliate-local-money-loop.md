@@ -815,6 +815,19 @@ the failure. The next atomic action is the existing owner's retry/readback of
 the same capture path; do not run a manual provider capture or treat the failure
 as proof of zero revenue.
 
+At `2026-08-21T05:45:32Z`, that existing owner retry recovered the capture path.
+The new hash-valid PartnerStack artifact is `7f330211…d097a89`, with zero
+commission rows, empty payout rows, and `NO_LIVE_ROWS`. Reconciliation read
+`source_rows=0`, appended/replayed `0/0`, and `money_state=NO_TRANSACTIONS`.
+The owner event is `NO_TRANSACTIONS`, not `REVENUE_CYCLE_FAILED`; the retained
+failure file is historical evidence only. Canonical state remains 19 placements,
+19 provider-link keys, 19 public URLs, 32 provider clicks, 16 insufficient plus
+3 observed denominators, zero pending/approved/paid/reversed statuses, and
+unknown real costs. Rolling net remains `NO_APPROVED_OR_PAID_ROWS` with null
+approved/paid USD net and `NOT_REACHED` for the $10,000 threshold. The next
+official capture is due around `06:45 JST`; B01 still waits for the first
+non-empty official transaction.
+
 At `2026-08-21T04:51:05Z`, the same existing owner selected the next bounded
 English opportunity and created one verified PartnerStack link for
 `elevenlabs-discovered-voice-design-en-1` (provider key is retained only in the
