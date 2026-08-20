@@ -1218,19 +1218,20 @@ def _run_effect_pipeline(
         raise ValueError("reply queue must be an object")
     if target:
         items = queue_value.get("items") if isinstance(queue_value.get("items"), list) else []
-        bound = None
-        for item in items:
-            if not isinstance(item, dict):
-                continue
-            candidate = _durable_event_action(
-                database, str(item.get("event_key") or ""), thread_id,
-            )
-            if (
-                candidate is not None
-                and int(candidate.get("action_id") or 0) == int(target["action_id"])
-            ):
-                bound = candidate
-                break
+        bound = target if estimate_required else None
+        if bound is None:
+            for item in items:
+                if not isinstance(item, dict):
+                    continue
+                candidate = _durable_event_action(
+                    database, str(item.get("event_key") or ""), thread_id,
+                )
+                if (
+                    candidate is not None
+                    and int(candidate.get("action_id") or 0) == int(target["action_id"])
+                ):
+                    bound = candidate
+                    break
         if bound is None:
             return _targeted_pending(thread_id, run_id, error="targeted_event_not_coalesced")
         # Re-read the durable binding after enqueue so a queue implementation
