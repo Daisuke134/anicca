@@ -219,10 +219,14 @@ submit_unknown on ambiguity; not_submitted when definitely before the click.
 submit_unknown is never retried.
 
 Use `job_search_loop.telegram.send_daily_report` for the daily report, passing the
-current Asia/Tokyo day. Report applied URLs, roles, exact state, blockers, discovery
-fallback outcome, and selected model route. The first report uses the stable daily
-key; a materially changed same-day catch-up sends one content-addressed correction,
-while an identical retry remains at-most-once. The deterministic daily driver
+current Asia/Tokyo day. The `database` argument MUST be the canonical
+`${JOB_SEARCH_STATE_ROOT:-${XDG_STATE_HOME:-$HOME/.local/state}/anicca/job-search}/telegram-outbox.sqlite3`
+used by the daily driver; do not invent or use a sibling `outbox.sqlite3` database.
+Report applied URLs, roles, exact state, blockers, discovery fallback outcome, and
+selected model route. The first report uses the stable daily key; a materially
+changed same-day catch-up sends one content-addressed correction, while an identical
+retry remains at-most-once. Read back the returned Telegram ACK and the canonical outbox status
+before reporting delivery. The deterministic daily driver
 separately sends the exact recorded resume as a Telegram document for every
 `submitted` application; do not substitute a different resume or claim delivery
 without its Telegram ACK. Do not evaluate or promote strategy inside this daily

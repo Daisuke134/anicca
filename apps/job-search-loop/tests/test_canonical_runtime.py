@@ -147,6 +147,9 @@ raise SystemExit(0)
         self.assertIn("required controls and questions", prompt)
         self.assertIn("exact verified profile fact", prompt)
         self.assertIn("unanswerable form never consumes", prompt)
+        self.assertIn("telegram-outbox.sqlite3", prompt)
+        self.assertIn("do not invent or use a sibling `outbox.sqlite3`", prompt)
+        self.assertIn("canonical outbox status", prompt)
 
         result_schema = json.loads(
             (APP_ROOT / "schemas" / "pass-result.v1.schema.json").read_text(

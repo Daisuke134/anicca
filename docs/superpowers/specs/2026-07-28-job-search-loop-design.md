@@ -1182,6 +1182,14 @@ leaves no current-day slot consumed by the unanswerable form. The new prompt gat
 now checks required controls and questions before every future claim, so the same
 candidate is skipped without consuming the wake fence.
 
+That pass also exposed a Telegram durability defect: ACK `26325` was delivered,
+but the model selected the legacy private `outbox.sqlite3` instead of the
+canonical daily-driver database `telegram-outbox.sqlite3`. The message was real,
+yet the canonical outbox could not prove it and could have allowed a duplicate.
+The daily prompt now pins the canonical path and requires ACK plus outbox-status
+readback before reporting delivery; this remains open until a subsequent canonical
+pass records its report in that database.
+
 The code path is now pushed through `a181d5fd9` and its preceding job-search
 changes: non-Workday Apply navigation (`a595ca29f`), event-before-state ordering
 for normal and late-confirmation transitions (`def1d1918`, `48fe67fd3`), labeled
