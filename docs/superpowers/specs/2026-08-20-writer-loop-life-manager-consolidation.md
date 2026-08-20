@@ -9,7 +9,7 @@
   `gig_disk_guard.py`、owner fence、外部 state `~/.local/state/life-manager/writer` を使う。
   Coconalaの4 laneと同様、公開ownerは重複起動せず、外部作用の前にlock・state・receiptを確認する。
 - current immutable releaseはrelease watcherがHEADから切り替える。直近source commitは
-  `d6461ff3b1a909cea5e6e0a25fac61e849457500`。`daily-2026-08-21` は
+  `309998181e53ffd7b01fef6e4d4469d3acada978`。`daily-2026-08-21` は
   Note JA、Substack JA、X Article JA の
   native live receiptを同一runで確認済み。URLは `https://note.com/anicca123/n/ncbdb8a56bb20`、
   `https://aniccabuddha.substack.com/p/1`、`https://x.com/diceai0/article/2090526616854405173`。
@@ -19,9 +19,9 @@
   対象checkoutの`src/note_mcp/__init__.py`をimportしていること、`.venv`親がsymlinkでないことをuv実行前から検証する。
   wrapperのcache target／親symlink非破壊テスト、shell構文、関連14テストはPASSした。専用runtimeの外部
   downloadはDNSで失敗したが、実行用wrapperのimportはcurrent hostでPASSしている。
-- daily creatorもpreflight cleanup後に5GiBを再測定し、まだ床未満ならrun／model／publisherを開始せず、
-  Telegramへ自然文の停止通知を出してrc=0で終了する。これでresumeだけが5GiBを守りcreatorが公開する
-  契約不整合を閉じた。
+- daily creatorもpreflight cleanup後にCoconala canonicalの1GiBを再測定し、まだ床未満ならrun／model／publisherを開始せず、
+  Telegramへ自然文の停止通知を出してrc=1で終了する。resumeと同じ失敗終了コードに揃え、creator・resume・launchd guardが
+  同じ1GiB契約を共有する。隔離HOMEで両ownerのrc=1、run未作成、lock不残留を`disk-floor-contract.sh`で確認した。
 - `2026-08-20T22:33:44Z`のread-onlyブラウザCDP readbackでは、Note key `n47735d9811e8`がHTTP 200、
   `status=published`、`price=500`、`is_limited=false`、`can_read=false`、eyecatch URLありだった。
   通常Python APIは同時刻のDNS失敗で接続できず、ブラウザreadbackのみを採用し、公開・入金receiptとは混同しない。
@@ -52,12 +52,11 @@
   これにより、identity未設定のENだけをPENDINGに残し、毎tickのTerra調査で公開ownerを消費しない。
 - `launchctl activate`／`print`／bootstrap は全laneで rc=141 `Reentrancy avoided`。current symlink切替は確認できるが、
   loaded schedulerの所有者・argv・定期実行は証明できない。重複executorは起動せず、既存ownerのreceiptだけを採用する。
-- 空き容量は実測で5GiB未満に戻ることがあり、disk guardは外部公開をfail-closedで止める。保護対象のstate／memory／rollbackは削除しない。
-- `2026-08-20T22:34:12Z`のcurrent release実行receiptは空き容量`4,474,318,848` bytes、要求
-  `5,368,709,120` bytesでdisk floor blocked、rc=0、lock=absentだった。既存Coconala parityのdisk guardを
-  overrideせず、この記事公開は安全に停止している。保護対象を削除して空きを作ることはしない。
-- `2026-08-20T22:43:23Z`のrelease `901be512b`からのresumeも空き容量`4,345,827,328` bytesで同じ
-  floor blocked、rc=0、lock=absentを返した。disk floorを迂回する公開は行っていない。
+- Writerのdisk floorはCoconalaの`gig_disk_guard.py`と同じ1GiBへ統一する。外部公開は1GiB未満で
+  fail-closedし、保護対象のstate／memory／rollbackは削除しない。過去の5GiB receiptsは履歴であり、現在の閾値ではない。
+- `2026-08-20T22:43:23Z`の旧release `901be512b`からのresumeは空き容量`4,345,827,328` bytesで
+  旧5GiB floor blocked、rc=0、lock=absentだった。Coconala canonical 1GiBへの統一後は、同じ空き容量を
+  安全境界内として扱い、外部作用は実receiptを要求したまま次段へ進める。
 - `daily-2026-08-20` のX Articleは、原稿内の相対 `headline-image.png` / `body-diagram.png` 重複が
   `prepared/`で欠損扱いになる根因を `prep-x-md.py` で修正した。なお本当にimmutable画像が欠ける場合は、
   同一X編集URLの認証付き `not-live` readback、identity一致、ledger/journalの無作用、同一lock内のintent再確認を
@@ -78,7 +77,8 @@
 - launchdは`launchctl print/kickstart`が引き続き`141: Reentrancy avoided`。同じ実行contextで`whoami`がUID `501`のみを返し、
   `dscl . -read /Users/anicca`も`eServerError`であるため、これはWriterコードではなくmacOSのユーザーdirectory/control-plane障害として隔離する。
   OS serviceのkill/restartやユーザーdirectoryの書換えは行わず、既存ownerの直接receiptだけを採用する。
-- 空き容量は現在約4.97GiBで5GiB floorを下回っている。過去tickでも変動しているため、disk guardのfail-closed境界は解除しない。
+- 過去receiptでは空き容量約4.97GiBが旧5GiB floorを下回っていた。現在はCoconala canonical 1GiBを
+  fail-closed境界とし、disk guardの実runtime receiptで判定する。
 - 06:11:52 JSTの実行では、Life Manager current配下の`article-resume-pending.sh`がowner fenceを通過して終了し、
   `daily-2026-08-10`のSubstack JAを既存draft ID `210519352`から
   `https://aniccabuddha.substack.com/p/ai14`へ公開・native readbackした。`article-resume.log`には
@@ -110,7 +110,7 @@
   兄弟公開の実証はcontrol-plane復旧後の残TODOとして保持する。
 - 06:11:52 JSTの同一ログには、空き容量`5,256,216,576` bytes（要求`5,368,709,120` bytes）で
   disk guardが公開をfail-closedにした記録もある。保護対象を削除せず、容量安定化までは外部公開を強行しない。
-- 残TODOは順に、(1)保護対象を削除せず空き容量5GiB超を安定維持、(2)launchd control-plane readbackを復旧して
+- 残TODOは順に、(1)保護対象を削除せず空き容量1GiB超を安定維持、(2)launchd control-plane readbackを復旧して
   Life Manager currentの新releaseで5分周期実行を2回以上連続して証明、(3)Substack ENの別identityとcredentialを承認済み経路で設定し、
   英語記事を同一runの英語Publicationへnative publish/readbackする、(4)publisher/paymentの実receiptだけを
   収益ledgerへjoin、(5)14日間の重複外部作用0と自然文Telegram deliveryを観測する。
