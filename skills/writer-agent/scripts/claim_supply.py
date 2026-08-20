@@ -602,7 +602,14 @@ def _normalize_model_demand_observation_ids(
 
     body_keys = {key for row in chosen if (key := body_key(row)) is not None}
     if len(body_keys) >= MIN_FULL_SOURCE_BODIES:
-        return {"observation_ids": chosen_ids, "added": [], "replaced": []}
+        normalized = dict(selected_card)
+        normalized["observation_ids"] = chosen_ids
+        normalized["_evidence_normalization"] = {
+            "added": [],
+            "replaced": [],
+            "reason": "model-selection-already-has-independent-full-body-receipts",
+        }
+        return normalized
 
     added: list[str] = []
     replaced: list[dict[str, str]] = []
