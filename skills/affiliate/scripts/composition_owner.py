@@ -679,6 +679,38 @@ def wake(
                 atomic_write(state_root / "composition-receipts" / path.name, receipt)
                 return receipt
             receipt_path = state_root / "composition-receipts" / path.name
+            experiment = bundle.get("experiment")
+            if isinstance(experiment, dict):
+                control_plan_id = experiment.get("control_plan_id")
+                plan_id = bundle.get("plan_id", "")
+                if not (
+                    isinstance(control_plan_id, str)
+                    and (
+                        plan_id == control_plan_id
+                        or plan_id.startswith(f"{control_plan_id}-experiment-")
+                    )
+                ):
+                    try:
+                        prior_mismatch = json.loads(receipt_path.read_text(encoding="utf-8"))
+                    except (OSError, ValueError):
+                        prior_mismatch = {}
+                    if (
+                        prior_mismatch.get("state") == "QUARANTINED"
+                        and prior_mismatch.get("failure_class") == "EXPERIMENT_PLAN_MISMATCH"
+                        and prior_mismatch.get("source_set_sha256") == bundle.get("source_set_sha256")
+                    ):
+                        continue
+                    receipt = {
+                        "schema_version": 1, "receipt_type": "COMPOSITION_RESULT",
+                        "state": "QUARANTINED", "plan_id": plan_id,
+                        "locale": bundle.get("locale"),
+                        "source_set_sha256": bundle.get("source_set_sha256"),
+                        "failure_class": "EXPERIMENT_PLAN_MISMATCH",
+                        "experiment_decision_id": experiment.get("decision_id"),
+                        "control_plan_id": control_plan_id,
+                    }
+                    atomic_write(receipt_path, receipt)
+                    return receipt
             try:
                 previous = json.loads(receipt_path.read_text(encoding="utf-8"))
             except (OSError, ValueError):

@@ -94,6 +94,12 @@ def pending_experiment(state_root, plans):
     used = {
         plan.get("experiment", {}).get("decision_id")
         for plan in plans if isinstance(plan.get("experiment"), dict)
+        and (
+            plan.get("plan_id") == plan.get("experiment", {}).get("control_plan_id")
+            or str(plan.get("plan_id", "")).startswith(
+                f"{plan.get('experiment', {}).get('control_plan_id')}-experiment-"
+            )
+        )
     }
     for path in sorted((state_root / "acquisition-decisions").glob("*.json")):
         decision = json.loads(path.read_text(encoding="utf-8"))
@@ -240,6 +246,8 @@ def discover_official_plan(root, state_root, now, opportunity_selector=select_op
         previous = json.loads(receipt_path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         previous = {}
+    plans = [load_plan(root, path.stem, state_root) for path in plan_paths(root, state_root)]
+    experiment = pending_experiment(state_root, plans)
     if previous.get("completed_day") == datetime.fromtimestamp(now, timezone.utc).date().isoformat():
         prior_plan = previous.get("plan_id")
         try:
@@ -250,8 +258,45 @@ def discover_official_plan(root, state_root, now, opportunity_selector=select_op
             )
         except (OSError, ValueError):
             publication = {}
-        if previous.get("state") != "CREATED" or publication.get("state") != "X_LIVE":
+        if experiment is None and (
+            previous.get("state") != "CREATED" or publication.get("state") != "X_LIVE"
+        ):
             return {**previous, "state": "COOLDOWN"}
+    if experiment is not None:
+        control = next((
+            plan for plan in plans
+            if plan.get("plan_id") == experiment["control_plan_id"]
+        ), None)
+        if control is None:
+            raise CaptureError("experiment control plan is unavailable")
+        short_id = re.sub(r"[^a-z0-9]+", "", experiment["decision_id"].lower())[:12]
+        if not short_id:
+            raise CaptureError("experiment decision id is invalid")
+        plan_id = f"{control['plan_id']}-experiment-{short_id}"
+        plan = {
+            **control,
+            "plan_id": plan_id,
+            "slug": f"{control['slug']}-experiment-{short_id}",
+            "experiment": experiment,
+        }
+        plan.pop("opportunity_decision", None)
+        plan_path = state_root / "discovered-source-plans" / f"{plan_id}.json"
+        if plan_path.is_file():
+            if json.loads(plan_path.read_text(encoding="utf-8")) != plan:
+                raise CaptureError("experiment plan conflict")
+        else:
+            atomic_write(plan_path, plan)
+        completed_day = datetime.fromtimestamp(now, timezone.utc).date().isoformat()
+        receipt = {
+            "schema_version": 1, "receipt_type": "OPPORTUNITY_DISCOVERY",
+            "state": "CREATED", "discovery_mode": "EXPERIMENT",
+            "completed_at": now, "completed_day": completed_day,
+            "plan_id": plan_id, "control_plan_id": experiment["control_plan_id"],
+            "experiment_id": experiment["decision_id"], "plan_path": str(plan_path),
+            "plan_sha256": hashlib.sha256(plan_path.read_bytes()).hexdigest(),
+        }
+        atomic_write(receipt_path, receipt)
+        return receipt
     index_raw = run_adapter({"adapter": "crwl", "url": DISCOVERY_INDEX})
     if DISCOVERY_SITEMAP not in index_raw:
         raise CaptureError("official English product sitemap is not indexed")
@@ -266,7 +311,6 @@ def discover_official_plan(root, state_root, now, opportunity_selector=select_op
         if family and url not in seen:
             observed.append((family, url))
             seen.add(url)
-    plans = [load_plan(root, path.stem, state_root) for path in plan_paths(root, state_root)]
     covered_urls = {
         source.get("url", "").rstrip("/")
         for plan in plans for source in plan.get("sources", [])
@@ -274,7 +318,6 @@ def discover_official_plan(root, state_root, now, opportunity_selector=select_op
     covered_families = {
         family for url in covered_urls if (family := product_family(url))
     }
-    experiment = pending_experiment(state_root, plans)
     candidates = [
         {"family": family, "url": url,
          "buyer_intent": f"Creators evaluating ElevenLabs {family.replace('-', ' ').title()} before paying"}
