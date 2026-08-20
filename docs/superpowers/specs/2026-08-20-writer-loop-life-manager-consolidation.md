@@ -35,6 +35,7 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
 - 旧`~/.local/bin/writer`を呼ぶ5 label（book/daily/learn daily/learn weekly/resume）はinstalled LaunchAgentsから退避し、rollback archiveを残した。旧engine processは0件だが、launchctl readbackはrc=141のため、過去にloadedだったかのreadbackは未取得である。
 - 停止範囲は現在、active releaseを呼ぶdaily/resumeとZenn deferred workerで実測済みである。別rootの`~/.local/bin/writer` legacy CLIについては、停止ゲートが適用されることをまだ証明していないため、停止中という表現をそのCLIへ拡張しない。
 - 現在の空き容量は約5.6GiBで、公開下限5GiBを上回る。ただし実行環境の通常DNSは名前解決に失敗し、1.1.1.1で解決したIPを`curl --resolve`に指定するとNote／Substack／XはHTTP 200になる。DNSを固定変更せず、Substackの言語identity・Xのmedia readback・Life Manager owner移行が確認できるまでpauseは解除しない。
+- 2026-08-20の追加診断では、`launchctl managerpid/list/print`（system、user/501、gui/501）と`launchctl asuser 501`がすべて`141: Reentrancy avoided`を返した。`dscacheutil`でaniccaユーザーを解決できず、`dscl`は`eServerError`、`log show`はlogdへ接続できなかった。Writerプロセスは0件である。これはplistやWriterコードの失敗ではなく、Codex app-serverが有効なmacOS GUI/user bootstrapから切り離された実行コンテキストであり、launchdのload/readbackを安全に証明できない状態である。公開pauseは維持する。
 
 ## 目標構成
 
@@ -95,7 +96,7 @@ publication identity、読者、payout、ledgerを分ける。
 
 | # | 作業 | 完了証拠 | 状態 |
 |---:|---|---|---|
-| 1 | launchd実行コンテキストを復旧し、creator/resumeを一度だけ起動 | 20:44 JSTのresume logは取得済み。`launchctl print`のrc=141は未解消 | 一部完了 |
+| 1 | launchd実行コンテキストを復旧し、creator/resumeを一度だけ起動 | Codex app-serverのGUI/user bootstrap喪失を復旧し、14 labelのload/readback、owner drain、bounded wake、実行receiptを取得 | ブロッカー（公開停止） |
 | 2 | DNSまたは承認済みnetwork transportを復旧 | 通常DNSは失敗。1.1.1.1解決＋`curl --resolve`ではNote／Substack／XがHTTP 200。publisher実行経路の再読戻しは未確認 | 一部完了 |
 | 3 | Writer runtimeを`skills/writer-agent`へ移しmanifestを生成 | SHA付きpath census、runtime 477 files、active release 476 files | 一部完了（tree同期・manifest・全14 labelのpath切替済み。launchd loadは未完了） |
 | 4 | demand→artifact→publisher adapterを同じstate schemaへ接続 | run/artifact parity | 未着手 |

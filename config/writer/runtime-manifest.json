@@ -140,5 +140,19 @@
     "reason": "all 14 Writer plist paths now read back to Life Manager code and target state, but launchd readback is rc=141; owner drain and bounded wake are not yet proven",
     "publication_paused": true,
     "legacy_roots_must_not_be_deleted": true
+  },
+  "runtime_blocker": {
+    "status": "codex-desktop-bootstrap-lost",
+    "observed": "2026-08-20",
+    "evidence": [
+      "launchctl managerpid/list/print for system, user/501, and gui/501 all return 141: Reentrancy avoided",
+      "launchctl asuser 501 also returns 141: Reentrancy avoided",
+      "dscacheutil cannot resolve user anicca and dscl returns eServerError",
+      "log show cannot connect to logd",
+      "no Writer process is running"
+    ],
+    "interpretation": "The current Codex app-server is detached from a valid macOS GUI/user bootstrap; this prevents safe launchd load/readback and is outside Writer code.",
+    "required_recovery": "Restore the desktop app/session so a fresh user bootstrap is available, then bootstrap and read back all 14 Life Manager labels before removing the publication pause.",
+    "publication_effect": "blocked-and-fail-closed"
   }
 }
