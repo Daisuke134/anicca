@@ -16,7 +16,7 @@
 #   exit 0 = at or above the floor, 1 = below it
 set -uo pipefail
 
-SKILL_DIR="${ARTICLE_SKILL_DIR:-$HOME/profitable-claude/skills/writer-agent}"
+SKILL_DIR="${ARTICLE_SKILL_DIR:-${ARTICLE_ROOT:-$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)}}"
 QUEUE_DIR="${ARTICLE_TOPIC_QUEUE:-$SKILL_DIR/state/topics/queue}"
 IDEAS_DIR="${ARTICLE_RAW_IDEAS:-$SKILL_DIR/state/raw-ideas}"
 # Three days of head room: enough to notice on a Friday and act by Monday.

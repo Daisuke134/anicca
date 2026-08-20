@@ -2,6 +2,6 @@
 # Verify the latest exact8 run and any due both-lane experiment application.
 set -euo pipefail
 
-SKILL_DIR="${ARTICLE_SKILL_DIR:-${ARTICLE_ROOT:-$HOME/profitable-claude/skills/writer-agent}}"
+SKILL_DIR="${ARTICLE_SKILL_DIR:-${ARTICLE_ROOT:-$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)}}"
 exec python3 "$SKILL_DIR/scripts/self_improve_control.py" verify \
   --skill-dir "$SKILL_DIR"

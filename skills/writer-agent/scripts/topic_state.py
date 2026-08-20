@@ -121,7 +121,7 @@ def main() -> int:
     parser.add_argument(
         "--skill-dir",
         type=Path,
-        default=Path.home() / "profitable-claude/skills/writer-agent",
+        default=Path(os.environ.get("ARTICLE_SKILL_DIR", Path(__file__).resolve().parents[1])),
     )
     args = parser.parse_args()
     print(json.dumps(initialize(args.skill_dir), ensure_ascii=False, separators=(",", ":")))

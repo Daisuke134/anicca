@@ -38,7 +38,7 @@ done
 # publisher helpers from an empty compatibility directory, so every managed
 # destination failed before it could create a draft.  Keep the old default only
 # for standalone/manual invocations.
-SKILL_DIR="${ARTICLE_SKILL_DIR:-${ARTICLE_ROOT:-$HOME/profitable-claude/skills/writer-agent}}"
+SKILL_DIR="${ARTICLE_SKILL_DIR:-${ARTICLE_ROOT:-$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)}}"
 if [[ ! -d "$SKILL_DIR/scripts" ]]; then
   echo "FATAL: writer skill scripts directory is missing: $SKILL_DIR/scripts" >&2
   exit 1

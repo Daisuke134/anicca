@@ -32,7 +32,7 @@
 # driver) rather than forcing an unsupported full-page use case onto a script built for something
 # else.
 set -uo pipefail
-MODEL_RUNNER="${ARTICLE_MODEL_RUNNER:-$HOME/profitable-claude/skills/writer-agent/runtime/model-runner.sh}"
+MODEL_RUNNER="${ARTICLE_MODEL_RUNNER:-${ARTICLE_ROOT:-$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)}/runtime/model-runner.sh}"
 
 PLATFORM=""
 URL=""

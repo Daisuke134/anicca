@@ -6,7 +6,6 @@ WRAPPER="$ROOT/skills/writer-agent/article-daily.sh"
 
 grep -F 'article_daily_start_control.py' "$WRAPPER" >/dev/null
 grep -F 'skip-complete' "$WRAPPER" >/dev/null
-grep -F 'skip-zenn-worker' "$WRAPPER" >/dev/null
 grep -F 'skip-pending-worker' "$WRAPPER" >/dev/null
 ! grep -F 'RESUME_EXISTING=' "$WRAPPER" >/dev/null
 

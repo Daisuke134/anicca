@@ -1,19 +1,19 @@
 {
   "schema_version": 1,
   "runtime_root": "skills/writer-agent",
-  "runtime_tree_sha256": "7db5fb4bbd409cf32c887d4a0230f14bc8db35ae22f71771450712a58f4839c8",
-  "runtime_file_count": 474,
+  "runtime_tree_sha256": "253aa0222f357126e48e91c0b69d89aa829796b14ab62d7931ff0c44d930fe26",
+  "runtime_file_count": 476,
   "hash_algorithm": "sha256(sorted relative path + NUL + file bytes + NUL; excludes state and cache directories)",
   "source": {
     "repository": "/Users/anicca/Projects/life-manager-main",
     "path": "skills/writer-agent",
-    "commit": "f10631f5418754bf32e9f12a2a71c456da4ba387",
+    "commit": "2224b11e9f4740b4a368351a6b52e44f292ce37b",
     "status": "Life Manager source-of-truth"
   },
   "active_release": {
     "path": "/Users/anicca/gig/releases/life-manager/current/skills/writer-agent",
-    "tree_sha256": "7db5fb4bbd409cf32c887d4a0230f14bc8db35ae22f71771450712a58f4839c8",
-    "file_count": 474,
+    "tree_sha256": "253aa0222f357126e48e91c0b69d89aa829796b14ab62d7931ff0c44d930fe26",
+    "file_count": 476,
     "status": "Coconala-parity immutable release; launchd-load-pending"
   },
   "state": {
@@ -85,8 +85,8 @@
     "external_cli_labels": 0,
     "retired_external_cli_labels": 5,
     "source_tree_script_labels": 6,
-    "status": "release-manifest-written-load-pending",
-    "reason": "The Coconala release manifest rendered and wrote all 14 Writer labels against the immutable current release and ~/.local/state/life-manager/writer. launchctl bootstrap/readback is rc=141, so loaded state remains unproven; direct pause-gated creator/resume wakes returned rc=0."
+    "status": "release-manifest-written-runtime-verified-load-pending",
+    "reason": "The Coconala release manifest renders all 14 Writer labels against the immutable current release and ~/.local/state/life-manager/writer. A current-release claim lane produced a FILLED queue receipt, and the creator pause gate returned rc=0. launchctl bootstrap/readback remains rc=141, so loaded scheduler state is unproven."
   },
   "external_dependencies": {
     "writer_engine_cli": "/Users/anicca/.local/bin/writer",
@@ -138,7 +138,7 @@
   },
   "cutover": {
     "status": "not-ready",
-    "reason": "all 14 generated Writer plist files now point to the immutable current release and target state, but launchd bootstrap/readback is rc=141; loaded owner, stale-old drain, and scheduler wake remain unproven",
+    "reason": "all 14 generated Writer plist files now point to the immutable current release and target state; current-release demand and creator gates are runtime-verified, but launchd bootstrap/readback is rc=141 and loaded owner, stale-old drain, and scheduler wake remain unproven",
     "publication_paused": true,
     "legacy_roots_must_not_be_deleted": true
   },
@@ -160,15 +160,15 @@
     "publication_effect": "blocked-and-fail-closed"
   },
   "last_validation": {
-    "release_sha": "4adf17f2d6812e1a88e684bb1bfe8d951b27fe76",
-    "current_release": "/Users/anicca/gig/releases/life-manager/4adf17f2d6812e1a88e684bb1bfe8d951b27fe76",
-    "activate": "plist files written; all 14 bootstrap attempts failed with rc=141 Reentrancy avoided",
+    "release_sha": "2224b11e9f4740b4a368351a6b52e44f292ce37b",
+    "current_release": "/Users/anicca/gig/releases/life-manager/2224b11e9f4740b4a368351a6b52e44f292ce37b",
+    "activate": "current symlink switched; all 14 bootstrap attempts failed with rc=141 Reentrancy avoided",
     "bounded_wake": {
       "creator_rc": 0,
       "resume_rc": 0,
       "publication_pause": true,
       "state_dir": "~/.local/state/life-manager/writer",
-      "observed_behavior": "both exited before planner/publisher and wrote target pause logs"
+      "observed_behavior": "creator exited before planner/publisher and wrote target pause log; claim lane produced FILLED queue_after=1 before this wake"
     }
   }
 }

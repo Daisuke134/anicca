@@ -21,7 +21,7 @@
 set -uo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-MODEL_RUNNER="${ARTICLE_MODEL_RUNNER:-$HOME/profitable-claude/skills/writer-agent/runtime/model-runner.sh}"
+MODEL_RUNNER="${ARTICLE_MODEL_RUNNER:-${ARTICLE_ROOT:-$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)}/runtime/model-runner.sh}"
 CTA_GATE="${ARTICLE_CTA_GATE:-$DIR/cta-gate.sh}"
 SOL_SAMPLE_GATE="${ARTICLE_SOL_SAMPLE_GATE:-$DIR/sol-quality-sample-gate.sh}"
 GATES_LOG="${ARTICLE_GATES_LOG:-}"

@@ -24,7 +24,7 @@ BLOCKER="${1:?usage: article-self-fix.sh \"<blocker + concrete fix hint>\"}"
 
 SOCK="/tmp/anicca-selffix-$LOOP-tmux.sock"
 SESSION="anicca-selffix-$LOOP"
-MODEL_RUNNER="${ARTICLE_MODEL_RUNNER:-$HOME/profitable-claude/skills/writer-agent/runtime/model-runner.sh}"
+MODEL_RUNNER="${ARTICLE_MODEL_RUNNER:-${ARTICLE_ROOT:-$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)}/runtime/model-runner.sh}"
 STATE="$HOME/.openclaw/state"; mkdir -p "$STATE"
 LOG="$HOME/.openclaw/logs/self-fix-$LOOP.log"; mkdir -p "$(dirname "$LOG")"
 RESULT="$STATE/.self-fix-$LOOP.result"       # the fixer writes SUCCESS/FAIL + evidence here

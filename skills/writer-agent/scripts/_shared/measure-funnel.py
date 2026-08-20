@@ -50,10 +50,10 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 DEFAULT_MANIFEST = os.path.expanduser(
-    "~/profitable-claude/skills/writer-agent/state/live-articles.json"
+    os.path.join(os.environ.get("ARTICLE_STATE_DIR", os.environ.get("WRITER_STATE_DIR", os.path.join(os.path.dirname(__file__), "..", "..", "state"))), "live-articles.json")
 )
 DEFAULT_OUT = os.path.expanduser(
-    "~/profitable-claude/skills/writer-agent/state/funnel.jsonl"
+    os.path.join(os.environ.get("ARTICLE_STATE_DIR", os.environ.get("WRITER_STATE_DIR", os.path.join(os.path.dirname(__file__), "..", "..", "state"))), "funnel.jsonl")
 )
 UA = "Mozilla/5.0"
 EXACT8 = (

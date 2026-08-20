@@ -6,12 +6,12 @@
 # directly against the committed files.
 set -uo pipefail
 
-ROOT="${PROFITABLE_CLAUDE_ROOT:-$HOME/profitable-claude}"
-CRAFT_DIR="$ROOT/skills/writing-craft"
+ROOT="${LIFE_MANAGER_ROOT:-$(cd "$(dirname "$0")/../../.." && pwd)}"
+CRAFT_DIR="$ROOT/skills/writer-agent/reference"
 CRAFT_MD="$CRAFT_DIR/CRAFT.md"
-X_POST="$CRAFT_DIR/formats/x-post.md"
+X_POST="${WRITING_CRAFT_X_POST:-$CRAFT_DIR/formats/x-post.md}"
 ARTICLE="$CRAFT_DIR/formats/article.md"
-LONGFORM="$CRAFT_DIR/formats/longform.md"
+LONGFORM="${WRITING_CRAFT_LONGFORM:-$CRAFT_DIR/formats/longform.md}"
 TITLE_RULES="$ROOT/skills/writer-agent/reference/title-best-practices.md"
 ARTICLE_DAILY="$ROOT/skills/writer-agent/article-daily.sh"
 
@@ -109,7 +109,7 @@ check "at least 4 ban sentences were extracted from title-best-practices.md sect
 check "no line in CRAFT.md or any adapter duplicates a title-ban sentence" "0" "$(echo "$DUP_CHECK" | awk '{print $2}')"
 
 # 4. article-daily.sh mentions CRAFT.md (STEP 3 REQUIRED READ wiring).
-MENTIONS="$(grep -c 'writing-craft/CRAFT.md' "$ARTICLE_DAILY")"
+MENTIONS="$(grep -cE 'reference/CRAFT.md|LEGACY_WRITING_CRAFT_ROOT' "$ARTICLE_DAILY")"
 check "article-daily.sh mentions CRAFT.md" "True" "$([ "$MENTIONS" -ge 1 ] && echo True || echo False)"
 
 printf '\n%s passed, %s failed\n' "$PASS" "$FAIL"

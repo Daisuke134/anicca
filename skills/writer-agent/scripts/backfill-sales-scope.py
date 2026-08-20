@@ -38,8 +38,8 @@ _SPEC.loader.exec_module(attribution)
 
 DEFAULT_STATE_DIR = Path(
     os.environ.get(
-        "WRITER_STATE_DIR",
-        os.path.expanduser("~/profitable-claude/skills/writer-agent/state"),
+        "ARTICLE_STATE_DIR",
+        os.environ.get("WRITER_STATE_DIR", Path(__file__).resolve().parents[1] / "state"),
     )
 )
 

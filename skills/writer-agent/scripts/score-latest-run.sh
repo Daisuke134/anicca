@@ -17,7 +17,7 @@
 # missing data point, not a broken loop.
 set -uo pipefail
 
-SKILL_DIR="${ARTICLE_SKILL_DIR:-$HOME/profitable-claude/skills/writer-agent}"
+SKILL_DIR="${ARTICLE_SKILL_DIR:-${ARTICLE_ROOT:-$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)}}"
 PY="${ARTICLE_PYTHON:-/opt/homebrew/bin/python3}"
 
 RUN_DIR=""

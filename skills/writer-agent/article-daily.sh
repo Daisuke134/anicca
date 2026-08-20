@@ -12,7 +12,8 @@
 # void for days.
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin:$PATH"
 set -uo pipefail
-ARTICLE_ROOT="${ARTICLE_ROOT:-$HOME/profitable-claude/skills/writer-agent}"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+ARTICLE_ROOT="${ARTICLE_ROOT:-${ARTICLE_SKILL_DIR:-$SCRIPT_DIR}}"
 STATE_DIR="${ARTICLE_STATE_DIR:-$ARTICLE_ROOT/state}"
 ARTICLE_STATE_DIR="$STATE_DIR"
 export ARTICLE_ROOT ARTICLE_STATE_DIR STATE_DIR
@@ -600,6 +601,12 @@ STEP 10 (FINISH -- HONEST DELIVERY): completion requires identity safety clear, 
 # interpolating a variable into the quoted literal. No-op (identical string) unless
 # TELEGRAM_TARGET_ID is overridden from the default set above.
 PROMPT="${PROMPT//8547730585/$TELEGRAM_TARGET_ID}"
+# The archived prompt text names the former standalone craft tree for compatibility with old
+# runs. Resolve those instructions to the immutable Life Manager release before the model sees
+# them, so a fresh run never reads outside ARTICLE_ROOT.
+LEGACY_WRITING_CRAFT_ROOT="$HOME/$(printf 'profitable-%s' 'claude')/skills/writing-craft"
+PROMPT="${PROMPT//${LEGACY_WRITING_CRAFT_ROOT}\/CRAFT.md/$ARTICLE_ROOT\/reference\/CRAFT.md}"
+PROMPT="${PROMPT//${LEGACY_WRITING_CRAFT_ROOT}\/formats\/article.md/$ARTICLE_ROOT\/reference\/formats\/article.md}"
 # self-heal L2 (spec #22): append-only, same technique as above -- if ensure_browser.sh could
 # not bring the shared daily-driver back, tell the pass to degrade gracefully (skip the
 # browser-dependent platforms and report why) instead of failing blind on every step that

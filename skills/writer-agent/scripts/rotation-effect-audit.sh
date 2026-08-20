@@ -12,7 +12,7 @@
 set -euo pipefail
 set -a; . "$HOME/.openclaw/.env" 2>/dev/null; set +a
 
-SKILL_DIR="$HOME/profitable-claude/skills/writer-agent"
+SKILL_DIR="${ARTICLE_SKILL_DIR:-${ARTICLE_ROOT:-$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)}}"
 RANK_DIR="$HOME/.openclaw/skills/anicca-seo-rank-monitor/state"
 
 RESULT=$(SKILL_DIR="$SKILL_DIR" RANK_DIR="$RANK_DIR" python3 <<'PY'

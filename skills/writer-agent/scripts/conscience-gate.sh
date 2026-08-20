@@ -4,7 +4,7 @@
 # stdout: {"verdict":"ALLOW|BLOCK","reasons":[...]}; exit 0=ALLOW, exit 1=BLOCK。
 set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-MODEL_RUNNER="${ARTICLE_MODEL_RUNNER:-$HOME/profitable-claude/skills/writer-agent/runtime/model-runner.sh}"
+MODEL_RUNNER="${ARTICLE_MODEL_RUNNER:-${ARTICLE_ROOT:-$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)}/runtime/model-runner.sh}"
 
 MD=""; LANG_A="ja"
 POSITIONAL=()

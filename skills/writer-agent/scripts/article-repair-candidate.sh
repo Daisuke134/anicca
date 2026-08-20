@@ -20,7 +20,7 @@
 set -uo pipefail
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin:$PATH"
 
-ARTICLE_ROOT="${ARTICLE_ROOT:-$HOME/profitable-claude/skills/writer-agent}"
+ARTICLE_ROOT="${ARTICLE_ROOT:-${ARTICLE_SKILL_DIR:-$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)}}"
 STATE_DIR="${ARTICLE_STATE_DIR:-$ARTICLE_ROOT/state}"
 LOG="${ARTICLE_REPAIR_LOG:-$HOME/.openclaw/logs/article-repair-candidate.log}"
 MODEL_RUNNER="${ARTICLE_MODEL_RUNNER:-$ARTICLE_ROOT/runtime/model-runner.sh}"

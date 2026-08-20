@@ -69,9 +69,10 @@ attribution = importlib.util.module_from_spec(_ATTRIBUTION_SPEC)
 assert _ATTRIBUTION_SPEC.loader is not None
 _ATTRIBUTION_SPEC.loader.exec_module(attribution)
 
-DEFAULT_OUT = os.path.expanduser(
-    "~/profitable-claude/skills/writer-agent/state/sales-ledger.jsonl"
+DEFAULT_STATE_DIR = Path(
+    os.environ.get("ARTICLE_STATE_DIR", os.environ.get("WRITER_STATE_DIR", Path(__file__).resolve().parents[1] / "state"))
 )
+DEFAULT_OUT = str(DEFAULT_STATE_DIR / "sales-ledger.jsonl")
 VENV_CLOAK_PYTHON = os.path.expanduser("~/.openclaw/skills/_shared/venv-cloak/bin/python3")
 
 NOTE_SALES_URL = "https://note.com/sitesettings/salesmanage"

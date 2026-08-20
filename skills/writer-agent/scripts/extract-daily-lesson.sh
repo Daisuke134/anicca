@@ -2,7 +2,8 @@
 set -uo pipefail
 T=$(TZ=Asia/Tokyo date +%Y-%m-%d)
 EXP="$HOME/.openclaw/workspace/experience-log/$T.jsonl"
-OUT="$HOME/profitable-claude/skills/writer-agent/state/daily-lesson-$T.md"
+STATE_DIR="${ARTICLE_STATE_DIR:-${ARTICLE_ROOT:-$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)}/state}"
+OUT="$STATE_DIR/daily-lesson-$T.md"
 if [ ! -s "$EXP" ]; then
   echo "EMPTY experience-log: $EXP" >&2
   exit 2

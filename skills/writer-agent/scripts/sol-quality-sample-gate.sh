@@ -4,7 +4,7 @@ set -uo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONTROL="${ARTICLE_SOL_TRIGGER_CONTROL:-$DIR/sol_trigger_control.py}"
-MODEL_RUNNER="${ARTICLE_MODEL_RUNNER:-$HOME/profitable-claude/skills/writer-agent/runtime/model-runner.sh}"
+MODEL_RUNNER="${ARTICLE_MODEL_RUNNER:-${ARTICLE_ROOT:-$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)}/runtime/model-runner.sh}"
 MD="${1:-}"
 LANG_A="${2:-}"
 
@@ -17,7 +17,7 @@ if [ -z "${ARTICLE_RUN_ID:-}" ] || [ -z "${ARTICLE_RUN_DIR:-}" ]; then
   exit 0
 fi
 
-STATE="${ARTICLE_SOL_SAMPLE_STATE:-$HOME/profitable-claude/skills/writer-agent/state/sol-quality-sample.json}"
+STATE="${ARTICLE_SOL_SAMPLE_STATE:-${ARTICLE_STATE_DIR:-${ARTICLE_ROOT:-$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)}/state}}/sol-quality-sample.json"
 GATES="$ARTICLE_RUN_DIR/gates"
 TRIGGER="$GATES/sol-trigger-$LANG_A.json"
 AUDIT="$GATES/sol-audit-$LANG_A.json"
