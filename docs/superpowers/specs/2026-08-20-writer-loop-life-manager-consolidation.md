@@ -8,7 +8,7 @@
   `gig_release.py`、immutable `~/gig/releases/life-manager/current`、
   `gig_disk_guard.py`、owner fence、外部 state `~/.local/state/life-manager/writer` を使う。
   Coconalaの4 laneと同様、公開ownerは重複起動せず、外部作用の前にlock・state・receiptを確認する。
-- current release は `971e4df68`。`daily-2026-08-21` は Note JA、Substack JA、X Article JA の
+- current release は `51e810bc4`。`daily-2026-08-21` は Note JA、Substack JA、X Article JA の
   native live receiptを同一runで確認済み。URLは `https://note.com/anicca123/n/ncbdb8a56bb20`、
   `https://aniccabuddha.substack.com/p/1`、`https://x.com/diceai0/article/2090526616854405173`。
   これは公開receiptであり、売上・入金receiptではない。
@@ -26,9 +26,14 @@
 - `launchctl activate`／`print`／bootstrap は全laneで rc=141 `Reentrancy avoided`。current symlink切替は確認できるが、
   loaded schedulerの所有者・argv・定期実行は証明できない。重複executorは起動せず、既存ownerのreceiptだけを採用する。
 - 空き容量は実測で5GiB未満に戻ることがあり、disk guardは外部公開をfail-closedで止める。保護対象のstate／memory／rollbackは削除しない。
+- `daily-2026-08-20` のX Articleは、原稿内の相対 `headline-image.png` / `body-diagram.png` 重複が
+  `prepared/`で欠損扱いになる根因を `prep-x-md.py` で修正した。なお本当にimmutable画像が欠ける場合は、
+  同一X編集URLの認証付き `not-live` readback、identity一致、ledger/journalの無作用、同一lock内のintent再確認を
+  全て満たした時だけ `unavailable` へ隔離する。probeだけで状態を上書きしない。
 - 残TODOは順に、(1)保護対象を削除せず5GiB超を安定維持、(2)launchd control-plane readbackを復旧してLife Manager currentの定期実行を証明、
-  (3)Substack ENの別identityとcredentialを承認済み経路で設定、(4)古い`daily-2026-08-20`のX Articleを、欠損したimmutable画像のまま再試行せずbounded quarantineする、
-  (5)publisher/paymentの実receiptだけを収益ledgerへjoin、(6)14日間の重複外部作用0と自然文Telegram deliveryを観測する。
+  (3)Substack ENの別identityとcredentialを承認済み経路で設定、(4)古い`daily-2026-08-20`のX Articleを新adapterで再確認し、
+  画像が実在する場合は同一ID publish/readback、欠損の場合はstrict quarantineを実測する、(5)publisher/paymentの実receiptだけを収益ledgerへjoin、
+  (6)14日間の重複外部作用0と自然文Telegram deliveryを観測する。
 
 ## 目的
 
