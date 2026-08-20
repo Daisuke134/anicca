@@ -76,3 +76,32 @@ def test_configured_publisher_receipt_uses_external_state_dir(tmp_path: Path) ->
         observed_at="2026-08-21T00:05:00Z",
     )
     assert cached[0]["reuse_reason"] == "official-source-unavailable"
+
+
+def test_configured_publisher_receipt_reuses_verified_body_after_untrusted_fetch(
+    tmp_path: Path,
+) -> None:
+    skill_dir = tmp_path / "release" / "skills" / "writer-agent"
+    state_dir = tmp_path / "state"
+    config = _config(skill_dir)
+
+    MODULE.configured_full_body_observations(
+        skill_dir,
+        config,
+        state_dir=state_dir,
+        observed_at="2026-08-21T00:00:00Z",
+        fetcher=lambda _source: _body(),
+    )
+
+    reused = MODULE.configured_full_body_observations(
+        skill_dir,
+        config,
+        state_dir=state_dir,
+        observed_at="2026-08-21T00:05:00Z",
+        fetcher=lambda _source: b"transport succeeded but the page is only an interstitial",
+    )
+
+    assert reused[0]["reuse_reason"] == "official-source-unavailable"
+    assert reused[0]["source_sha256"] == hashlib.sha256(
+        _body().decode("utf-8").encode("utf-8")
+    ).hexdigest()

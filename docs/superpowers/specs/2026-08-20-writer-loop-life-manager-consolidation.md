@@ -44,6 +44,20 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
   substack/enは別publication identity未設定（`SUBSTACK_PUBLICATION_EN`なし）かつ通常DNS
   失敗のためstable targetを作れず、`resumable=false`のまま公開を行わない。
 
+### 2026-08-21 Coconala parity の需要ソース再利用修正
+
+- `claim-loop-latest.json`の実receipt（`2026-08-20T17:24:26Z`）は、TECHiの取得がHTTP上は
+  成功しても本文がinterstitialで`techi.title`を含まず、`DEMAND_CARD_INVALID`として
+  queueを0件にしていた。既存の外部`demand-source-bodies.json`には、同日10:05 UTCに取得した
+  4 evidence unit付きのfull-bodyと一致するSHAが残っていた。
+- Coconalaと同じbounded reuse境界に合わせ、transport成功後の本文検証失敗も「信頼できない
+  capture」として扱い、7日以内のhash検証済み外部receiptへ戻す。キャッシュが無い、期限切れ、
+  SHA不一致の場合は従来どおりfail-closedで`DEMAND_CARD_INVALID`にする。モデルへ推測値や
+  excerptを渡す変更ではない。
+- focused checkは需要state pathとこの再利用回帰を2 passed、Python構文確認もPASS。sourceを
+  commit後、同じCoconala型disk-guard/owner-fence laneで`claim-loop-latest.json`を再生成し、
+  `DEMAND_CARD_INVALID`から`FILLED`または既存queueを保持する状態へ戻ることを実receiptで確認する。
+
 ### 2026-08-21 Coconala parity 再確認
 
 - Coconalaの実行実体は、常駐Supervisorではなく、launchdが
@@ -190,7 +204,7 @@ publication identity、読者、payout、ledgerを分ける。
 | 1 | stale loaded定義をdrainし、launchd実行コンテキストを復旧してcreator/resumeを一度だけ起動 | 旧14定義＋retired 5 CLI labelのbootout/drain、loaded ProgramArguments/envの照合、Life Manager 14 labelのload/readback、pause下bounded wake、旧rootログの1 schedule interval再発0、実行receiptを取得 | ブロッカー（公開停止） |
 | 2 | DNSまたは承認済みnetwork transportを復旧 | 通常DNSは失敗。1.1.1.1解決＋`curl --resolve`ではNote／Substack／XがHTTP 200。publisher実行経路の再読戻しは未確認 | 一部完了 |
 | 3 | Writer runtimeを`skills/writer-agent`へ移しmanifestを生成 | SHA付きpath census、Life Manager current release、実行時の旧root read=0 | 完了（launchd readbackは別TODO。履歴・互換文字列のcensus 0ではない） |
-| 4 | demand→artifact→publisher adapterを同じstate schemaへ接続 | demand `FILLED` queue 1、pause下creator gate。公開解除後のrun/artifact parityは未確認 | 一部完了 |
+| 4 | demand→artifact→publisher adapterを同じstate schemaへ接続 | TECHi本文のtransport-success/interstitialを7日以内のhash検証済み外部receiptへbounded reuseするfocused checkはPASS。再実行後のqueue→artifact parityは未確認 | 一部完了 |
 | 5 | Note/Substack/Xの実公開とreadbackを同一runで完了 | 同一runに3 intent（Note JA、Substack JA、X Article JA）を保持。Substack ENの別publication identityが未設定のため native URL/readbackは未確認 | ブロッカー（EN identity） |
 | 6 | payment/publisher receipt collectorとmoney ledgerを接続 | artifact-level receipt | 未着手 |
 | 7 | neutral Telegram rendererを日次・失敗・完了へ接続 | message ID `26075`/`26087` + semantic hash | 一部完了 |

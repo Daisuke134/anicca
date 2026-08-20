@@ -593,13 +593,33 @@ def configured_full_body_observations(
                 f"cached receipt unavailable: {cached_error}"
             ) from error
         return cached
-    body = _validate_publisher_body(
-        raw_body,
-        evidence_profile=str(source["evidence_profile"]),
-    )
-    evidence_units, evidence_windows = _publisher_evidence_artifacts(
-        body, str(source["evidence_profile"])
-    )
+    try:
+        body = _validate_publisher_body(
+            raw_body,
+            evidence_profile=str(source["evidence_profile"]),
+        )
+        evidence_units, evidence_windows = _publisher_evidence_artifacts(
+            body, str(source["evidence_profile"])
+        )
+    except DemandObservationError as error:
+        # The approved fetcher can return a transport-success page that is only
+        # a bot/interstitial shell.  Coconala's loop treats that as an unusable
+        # source capture and reuses a recent, independently hash-verified
+        # receipt; do the same here instead of converting one bad page into a
+        # whole-loop DEMAND_CARD_INVALID terminal.
+        try:
+            cached = cached_full_body_observations(
+                skill_dir,
+                config,
+                observed_at=observed_at,
+                state_dir=state_dir,
+            )
+        except DemandObservationError as cached_error:
+            raise DemandObservationError(
+                f"official demand source invalid: {source_id}; {error}; "
+                f"cached receipt unavailable: {cached_error}"
+            ) from error
+        return cached
     source_sha256 = hashlib.sha256(body.encode("utf-8")).hexdigest()
     observation = {
         "observation_id": f"demand-source:{source_id}:program",
