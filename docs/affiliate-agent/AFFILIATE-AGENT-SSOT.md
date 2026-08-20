@@ -1380,6 +1380,255 @@ This list contains implementation work only. Time passing, an organic visitor,
 provider approval, and commission settlement are observed acceptance gates, not
 tasks and not reasons to stop safe work.
 
+### 9.0.1.0 Atomic remaining TODO SSOT — current Mac to public OSS
+
+This section is the sole ordering authority for unfinished work. The P0–P7,
+M2–M5, E1/A2/A3, A12–A15, B16–B21, and phase lists below retain detailed
+contracts and historical evidence, but they MUST NOT independently reorder this
+queue. At most one implementation item is `IN_PROGRESS`. An external gate does
+not block safe later work that has no dependency on its outcome.
+
+#### 1. Overview
+
+The remaining product is one launchd-owned local business that autonomously
+researches, selects, composes, acquires dedicated links, publishes, observes,
+repairs, learns, allocates, and reports. It then becomes a reproducible OSS
+package without copying this Mac's secrets, sessions, raw tracking links, or
+revenue. The software minimizes onboarding, but MUST NOT claim email and a bank
+account replace legal identity, tax information, provider consent, KYC, 2FA, or
+an owned publishing identity when a provider requires them.
+
+#### 2. Acceptance criteria
+
+1. One installed ownership graph executes every recurring business action; Codex
+   and a human only design/repair the harness or satisfy an irreducible legal
+   identity challenge.
+2. Every external write has one durable semantic job, pre-write fence, exact
+   public/provider readback, unchanged-effect replay, and causal run/tool receipt.
+3. Every provider transaction and settlement ID joins replay-safely to the exact
+   placement and preserves `pending|approved|paid|reversed`, amount, currency,
+   reversal, provider denominator, and observation time.
+4. The canonical 30-day net view subtracts reversals and known real billed costs;
+   any material unknown cost keeps net and the money gate unknown.
+5. Allocation uses only mature approved-net evidence. Clicks, impressions,
+   pending rewards, screenshots, tests, estimates, and model output never become
+   money.
+6. Local Done requires one rolling 30-day window at or above USD 10,000
+   approved-or-paid Affiliate net with no provider, offer, or channel above 40%,
+   four revenue-positive unattended weeks, and one live self-heal.
+7. OSS Done requires a clean arm64 macOS user to install, configure legitimate
+   authority, reach pre-publication readiness, execute a permissioned canary,
+   uninstall, and verify isolation without receiving this Mac's private state.
+8. Public wording describes observed results and variability; it never guarantees
+   income or calls unverified output money printing.
+
+#### 3. As-Is / To-Be
+
+| Surface | As-Is | To-Be |
+|---|---|---|
+| Publication | 13 dedicated placements, 11 public; current owned-publication root is missing | All unfinished jobs reconcile through the installed owner with exact owned/X readback and no duplicate effect |
+| Money | 28 provider clicks and zero commission rows | Real transaction and settlement lifecycle joins exact placements and costs |
+| Learning | Experiments and source decisions are partial | One-variable mature cohorts determine 80/20 allocation |
+| Providers | ElevenLabs executable; HubSpot pending; others unproven | At least three independently executable, receipted providers; commerce lanes promoted only from mature evidence |
+| X/Repost | Shared account but disconnected optimization and mixed language | One English effect owner optimizes qualified visits and approved net while preserving platform policy |
+| Recovery | Several real resumptions proven; no universal trajectory/watchdog | Typed attempt, bounded repair, quarantine, same-job resume, and owner-readable recovery |
+| Packaging | Machine-specific launchd, profiles, paths, and private authority | Secret-free, plugin-based, one-command clean-Mac lifecycle with independent verifier |
+
+#### 4. Test and live-proof matrix
+
+| # | To-Be | Required proof | Cover |
+|---:|---|---|---|
+| 1 | Same external effect is exact-once | Installed ambiguous-effect recovery plus unchanged replay | PARTIAL; close A05 |
+| 2 | Real money lifecycle is exact-once | Same non-empty provider row captured twice and recaptured fresh | OPEN; close B06 |
+| 3 | Net is truthful | Reversal, FX, known bill, and unknown-cost fixtures plus real row | OPEN; close C06 |
+| 4 | Repost produces attributable acquisition | Exposure → owned visit → provider click → transaction lineage | OPEN; close D07 |
+| 5 | Allocation learns from money | Ten mature placements and one promote/revert decision | OPEN; close D08 |
+| 6 | Provider diversification works | Three live provider links, reports, reversals, and payout schemas | OPEN; close E10 |
+| 7 | Loop self-heals | One real isolated failure repairs and resumes without duplicate effect | OPEN; close F06 |
+| 8 | USD 10,000 gate is replay-safe | Exact rolling window recomputes identically from immutable inputs | OPEN; close G07 |
+| 9 | Clean-Mac OSS is isolated | Install/canary/update/rollback/uninstall on fresh macOS user | OPEN; close O12 |
+
+| E2E item | Value |
+|---|---|
+| UI change | No Life Manager iOS UI change; provider, browser, public web, X, ledger, launchd, and Telegram surfaces change |
+| Conclusion | Maestro not required. Real launchd/browser/public/provider/Telegram E2E and clean-Mac installation proof are mandatory |
+
+#### 5. Boundaries
+
+- MUST NOT create a second executor, scheduler, X effect owner, money ledger, or
+  public-posting agent.
+- MUST NOT manually edit the installed production worktree or let Codex perform
+  the loop's campaign selection, composition, link creation, publication, or
+  recurring observation.
+- MUST NOT touch Gig/Coconala identities, labels, profiles, ports, credentials,
+  locks, state, or ledgers.
+- MUST NOT bypass CAPTCHA, KYC, biometric verification, contracts, tax
+  attestations, unavailable OTP ownership, or a provider's approval decision.
+- MUST NOT activate a language, provider, channel, paid spend, cloud tenant, or
+  public income claim before its explicit gate below.
+- MUST NOT place secrets, raw tracking links, customer PII, private provider IDs,
+  or private ledger rows in Git, model context, Telegram, fixtures, or OSS output.
+
+#### 6. Atomic execution steps
+
+Each checked item requires source tests, installed-owner replay when applicable,
+receipt readback, SSOT state update, commit, and push to both canonical remotes.
+
+##### A — Restore one truthful publication trajectory
+
+- [ ] **A01** Resolve the configured owned-publication root from launchd and
+  private state; record one redacted precondition receipt.
+- [ ] **A02** Recreate or reconnect only the missing allowed publication checkout
+  through its ownership contract; prove clean expected branch/upstream.
+- [ ] **A03** Enumerate the two non-public placement jobs and bind each to its
+  existing job/effect fingerprint; create no replacement job.
+- [ ] **A04** Kick the existing Affiliate launchd owner and require both jobs to
+  reach an exact terminal owned/X state or a typed durable failure.
+- [ ] **A05** Replay the unchanged owner and prove placement count, public URLs,
+  Git commits, and X objects do not increase for already accepted effects.
+
+##### B — Close the first real transaction path
+
+- [ ] **B01** Capture the first non-empty official provider transaction artifact
+  privately with source hash, capture time, provider, and report scope.
+- [ ] **B02** Normalize its official transaction ID, status, gross/reversal minor
+  units, currency, event time, and available Link/Sub/tracking identifiers.
+- [ ] **B03** Resolve exactly one placement by provider identifier; persist
+  `UNATTRIBUTED` without revenue credit when the provider supplies no exact join.
+- [ ] **B04** Append the first economic transition without overwriting the raw
+  artifact or any earlier status.
+- [ ] **B05** Append each later `pending|approved|paid|reversed` transition under
+  the same provider transaction lineage.
+- [ ] **B06** Import the same artifact twice and a fresh recapture once; require
+  one transition per actual economic state and zero duplicate money.
+- [ ] **B07** Join the official settlement/payout ID when available; keep approved
+  commission distinct from paid cash.
+- [ ] **B08** Send one deduplicated natural-language Telegram receipt per actual
+  status transition, including placement, currency, reversal, and money caveat.
+
+##### C — Make costs, FX, and rolling net canonical
+
+- [ ] **C01** Define immutable bill records for model, browser/tool, hosting,
+  channel, provider, and paid-distribution cash charges.
+- [ ] **C02** Ingest only real invoice/API/bank bill amounts; store usage estimates
+  separately and preserve missing cash cost as `unknown`.
+- [ ] **C03** Join each attributable bill to run, campaign, placement, or shared
+  allocation basis without silently spreading an unknown total.
+- [ ] **C04** Store timestamped official FX source/rate for every non-USD economic
+  transition while retaining original amount and currency.
+- [ ] **C05** Compute one canonical rolling-30-day view from approved-or-paid
+  commission less reversals and known real costs; prevent approved/paid double count.
+- [ ] **C06** Prove reversal, late payment, FX, shared cost, duplicate transaction,
+  and material-unknown-cost cases; the last case MUST refuse the net gate.
+
+##### D — Finish comparable acquisition and learning
+
+- [ ] **D01** Resume campaign seven's existing composition job only when its JST
+  budget is eligible; create no replacement composition.
+- [ ] **D02** Require the marketing Agent to choose every later opportunity from a
+  fresh official candidate set plus canonical placement outcomes; remove fixed-order selection.
+- [ ] **D03** Grow the current six comparable English placements to ten through
+  the existing source→composition→policy→link→owned/X→readback path.
+- [ ] **D04** Persist one falsifiable Experiment receipt and one changed variable
+  for every new placement.
+- [ ] **D05** Record exact X exposure, owned-page visit, provider click, transaction,
+  commission state, reversal, and cost denominators without substituting one for another.
+- [ ] **D06** Put Affiliate and Repost proposals behind one `@selawmqt` English
+  effect arbiter with a bounded cadence and disclosure/policy gate.
+- [ ] **D07** Prove one Repost/original-X exposure joins through owned visit and
+  provider click to an exact transaction, or persist the broken edge explicitly.
+- [ ] **D08** After cohort maturity, compute approved net per 1,000 qualified
+  exposures and execute one receipted promote/revert decision from money evidence.
+
+##### E — Admit a durable provider portfolio
+
+- [ ] **E01** Poll HubSpot/Impact through the installed owner until one official
+  approval/rejection transition is read back; never resubmit the pending application.
+- [ ] **E02** Capture current Semrush official economics, allowed channels,
+  disclosure, reversal, tracking, report, tax, and payout terms with TTL.
+- [ ] **E03** Submit at most one Semrush application under a fenced semantic job
+  and reconcile approval/rejection from authenticated readback.
+- [ ] **E04** Resume the existing Amazon Japan email-account intent without
+  duplicate account/application; classify auth, application, review, and payout state.
+- [ ] **E05** After Amazon admission, acquire placement-specific tracking identities
+  and run ten evergreen canaries; satisfy three organic qualifying sales without self-purchase.
+- [ ] **E06** Resume the existing Rakuten account intent without duplication;
+  classify membership, affiliate, identity, payment, report, and bank-transfer state.
+- [ ] **E07** After Rakuten admission, acquire placement-specific tracking identities
+  and run ten evergreen canaries under current disclosure and attribution rules.
+- [ ] **E08** Implement a provider adapter only after that provider exposes an
+  executable link plus click/order/commission/reversal/payout readback contract.
+- [ ] **E09** Keep Amazon and Rakuten at exploration allocation and USD 0 target
+  credit until at least five approved orders and a mature reversal window establish EPC.
+- [ ] **E10** Maintain at least three executable, independently receipted providers
+  and recompute the target equation so none exceeds 40% of approved net.
+
+##### F — Complete owner observability and self-healing
+
+- [ ] **F01** Persist one canonical `RunReceipt` for every launchd wake with release,
+  timing, due work, stages, terminal state, and causal parent.
+- [ ] **F02** Persist one effect-classified `ToolAttemptReceipt` for every admitted
+  attempt, including prerequisite failure and no-effect outcomes.
+- [ ] **F03** Return typed owned/provider/browser/X failures with retry due-time and
+  effect certainty; remove broad root-cause-erasing terminal errors.
+- [ ] **F04** Add bounded retry, per-provider/channel quarantine, daily action/cost
+  caps, disk guard, browser-owner health, and watchdog inside the existing ownership graph.
+- [ ] **F05** Implement diagnose→one allowlisted repair→postcondition→same-job resume;
+  escalate or quarantine when the repair postcondition fails.
+- [ ] **F06** Observe one real recoverable failure and prove `SELF_HEALED`, continued
+  healthy lanes, exact public/provider state, Telegram receipt, and no duplicate effect.
+
+##### G — Prove the local USD 10,000 money gate
+
+- [ ] **G01** Prove ten mature comparable English placements with complete exposure,
+  click, approved-net, reversal, cost, and maturity records.
+- [ ] **G02** Prove four consecutive unattended revenue-positive weeks with positive
+  known net margin and zero human business execution.
+- [ ] **G03** Compute required qualified visits and approved conversions only from
+  observed mature conversion and approved-net commission.
+- [ ] **G04** Allocate 80% of new capacity among mature winners and exactly 20% to
+  bounded exploration; promote no click-only or pending-only cohort.
+- [ ] **G05** Keep provider, offer, and channel concentration at or below 40% of
+  approved net throughout the qualifying window.
+- [ ] **G06** Produce one rolling 30-day window at or above USD 10,000 approved-or-paid
+  Affiliate net after reversals and all known real costs, with no material unknown cost.
+- [ ] **G07** Rebuild and replay the window from immutable artifacts; require identical
+  transaction count, transitions, FX, costs, net, placement joins, and threshold result.
+
+##### O — Publish the proven loop as reproducible OSS
+
+- [ ] **O01** Freeze the exact local qualifying release, schema versions, migrations,
+  provider/channel contracts, and redacted capability manifest.
+- [ ] **O02** Remove machine-specific paths, account IDs, profiles, ports, labels,
+  session material, private links, and private receipts from the distributable package.
+- [ ] **O03** Define the truthful onboarding contract: email ownership, legal
+  identity, residency/tax data, payout rail, owned publishing identity, provider
+  consent, and provider-required KYC/2FA; bank and email alone MUST NOT be promised.
+- [ ] **O04** Implement one-command install with isolated directories, least-privilege
+  launchd labels, capability checks, secret references, and no bundled authority.
+- [ ] **O05** Implement provider and channel plugin manifests for terms TTL, effect
+  class, auth/KYC state, links, reports, transactions, reversals, payouts, and quarantine.
+- [ ] **O06** Implement health, update, schema migration, rollback, backup, and
+  uninstall commands with recoverable state handling.
+- [ ] **O07** Publish redacted fixtures covering transaction lifecycle, reversal,
+  unknown cost, duplicate effect, auth challenge, quarantine, and self-heal.
+- [ ] **O08** Publish a deterministic independent verifier that rejects screenshots,
+  estimates, pending-only rewards, unknown material cost, duplicate rows, and broken joins.
+- [ ] **O09** Run secret, license, dependency, raw-link, private-path, and personal-data
+  scans; block release on every unresolved finding.
+- [ ] **O10** Install on a clean arm64 macOS user without copying any source-Mac
+  session, Keychain item, browser profile, ledger, raw link, or receipt.
+- [ ] **O11** With explicit test-owner authority, reach pre-publication readiness and
+  execute one permissioned non-duplicate live canary through its installed owner.
+- [ ] **O12** Prove update→rollback→uninstall, cross-user isolation, privacy-safe
+  receipts, independent verification, and accurate public documentation before release.
+
+External outcomes are durable gates, not hidden implementation tasks: provider
+approval, organic traffic, a buyer transaction, commission approval, settlement,
+KYC/CAPTCHA/tax attestation, and the passage of an attribution/reversal window.
+When one is pending, the installed owner records its state and due observation;
+the implementation queue advances on every independent safe item.
+
 1. **DONE — M2.1-O — Correct owner observability.** Build the natural-language daily
    summary from the canonical placement ledger, not a partial provider report.
    Report canonical placements, dedicated links, measured clicks, unknown click
