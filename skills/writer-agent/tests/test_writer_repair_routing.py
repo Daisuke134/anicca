@@ -403,7 +403,8 @@ def _older_reporting_incident(fingerprint: str = "d" * 64) -> dict:
 
 def _dispatch(state: Path, tmp_path: Path, *, registry: Path | None = None,
               observed_at: str = "2026-08-07T08:00:00Z",
-              publication_backlog: str = "0") -> dict:
+              publication_backlog: str = "0",
+              defer_model_always: bool = False) -> dict:
     runner = tmp_path / "runtime" / "model-runner.sh"
     if not runner.exists():
         _fake_model_runner(runner, tmp_path / "model-calls")
@@ -416,6 +417,7 @@ def _dispatch(state: Path, tmp_path: Path, *, registry: Path | None = None,
             "--model-runner", str(runner),
             "--observed-at", observed_at,
             "--publication-backlog", publication_backlog,
+            *( ["--defer-model-always"] if defer_model_always else [] ),
         ],
         capture_output=True, text=True, check=False,
     )
@@ -670,6 +672,26 @@ def test_model_runs_when_the_routed_incident_is_itself_the_publication_blocker(
     assert stored["investigation_receipt"]["path"] == decision["investigation_receipt"]
 
 
+def test_foreground_publication_defers_even_a_circuit_owner(tmp_path: Path) -> None:
+    import importlib.util as _util
+
+    spec = _util.spec_from_file_location("writer_repair_dispatch", DISPATCH)
+    assert spec and spec.loader
+    module = _util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    progress = module.publication_progress(
+        {"run_id": "daily-2026-08-07", "destination": "note/ja"},
+        tmp_path,
+        True,
+        defer_model_always=True,
+    )
+
+    assert progress["decision"] == "DEFER_MODEL"
+    assert progress["reason"] == module.PUBLICATION_PRIORITY_REASON
+    assert progress["circuit_receipt"]["status"] == "deferred"
+
+
 def test_terra_budget_leaves_the_publication_tick_room_by_default(tmp_path: Path) -> None:
     """The bound must be a fraction of the 300s launchd interval, not most of it."""
     import importlib.util as _util
@@ -781,6 +803,7 @@ def test_resume_loop_dispatches_repair_routing_after_the_incident_bridge(
             "ARTICLE_MODEL_RUNNER": str(runtime / "model-runner.sh"),
             "ARTICLE_MODEL_SUPPORT": str(runtime / "model-runner-support.py"),
             "ARTICLE_OWNER_FENCE_ACTIVE": "1",
+            "ARTICLE_RESUME_MIN_FREE_BYTES": "1",
             "TELEGRAM_BOT_TOKEN": "",
             "TELEGRAM_CHAT_ID": "",
         },
@@ -811,6 +834,7 @@ def test_resume_loop_plans_publication_before_self_heal() -> None:
     release = worker.rindex("release_publication_lock || exit 1", planner, dispatcher)
     assert planner < dispatcher
     assert release < dispatcher
+    assert '--publication-backlog "1"' in worker[dispatcher:]
     assert '--publication-backlog "0"' in worker[dispatcher:]
     assert "publication queue foreground; self-heal deferred" in worker
 

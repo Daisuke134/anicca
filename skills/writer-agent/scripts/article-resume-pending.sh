@@ -524,6 +524,21 @@ PLAN="$(python3 "$PLANNER" "${PLAN_ARGS[@]}" 2>>"$LOG")" || {
   exit 0
 }
 echo "article-resume: publication queue foreground; self-heal deferred run=$(printf '%s' "$PLAN" | jq -r '.run_id // empty')" >>"$LOG"
+# Claim and receipt one incident even while publication is READY. The dispatcher
+# sees backlog=1 and defers ordinary Terra work, but still performs the durable
+# incident claim/runbook decision so a repeatedly failing publication lane cannot
+# starve self-heal forever. The circuit-owner exception remains the existing
+# bounded escape hatch for an incident that itself makes publication impossible.
+python3 "$ARTICLE_ROOT/scripts/writer_repair_dispatch.py" \
+  --state-root "$STATE_DIR" \
+  --scripts "$ARTICLE_ROOT/scripts" \
+  --registry "$ARTICLE_ROOT/config/repair-runbooks.json" \
+  --model-runner "$MODEL_RUNNER" \
+  --publication-backlog "1" \
+  --defer-model-always \
+  --observed-at "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" \
+  >>"$LOG" 2>&1 || \
+  echo "article-resume: foreground repair routing failed closed" >>"$LOG"
 INITIALIZATION_COUNT="$(printf '%s' "$PLAN" | jq '.initialization_pairs | length')"
 ELIGIBLE_COUNT="$(printf '%s' "$PLAN" | jq '.eligible_pairs | length')"
 FIRST_INITIALIZATION="$(printf '%s' "$PLAN" | jq -r '.initialization_pairs[0] // empty')"

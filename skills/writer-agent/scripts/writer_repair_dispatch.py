@@ -109,6 +109,7 @@ session = _module("writer_repair_investigation_session")
 
 def publication_progress(
     claimed: dict[str, Any], state_root: Path, backlog: bool,
+    *, defer_model_always: bool = False,
 ) -> dict[str, Any]:
     """Decide whether the model step may spend publication-lock time.
 
@@ -127,6 +128,16 @@ def publication_progress(
         result["routed_incident_blocks_publication"] = False
         result["decision"] = "RUN_MODEL"
         result["reason"] = "no publication backlog on this tick"
+        return result
+
+    if defer_model_always:
+        result["routed_incident_blocks_publication"] = False
+        result["decision"] = "DEFER_MODEL"
+        result["reason"] = PUBLICATION_PRIORITY_REASON
+        result["circuit_receipt"] = {
+            "status": "deferred",
+            "reason": "foreground publication owns this tick; Terra is deferred",
+        }
         return result
 
     run_id = str(claimed.get("run_id") or "")
@@ -595,6 +606,7 @@ def dispatch(
     *, state_root: Path, scripts: Path, registry_path: Path, model_runner: Path,
     observed_at: str, lease_id: str, terra_timeout: int,
     publication_backlog: bool, max_slices: int = DEFAULT_MAX_INVESTIGATION_SLICES,
+    defer_model_always: bool = False,
     max_routing_failures: int = DEFAULT_MAX_ROUTING_FAILURES,
     max_code_rearm_rounds: int = incidents.DEFAULT_MAX_CODE_REARM_ROUNDS,
 ) -> dict[str, Any]:
@@ -669,6 +681,7 @@ def dispatch(
             state_root=state_root, scripts=scripts, registry=registry,
             model_runner=model_runner, observed_at=observed_at, lease_id=lease_id,
             terra_timeout=terra_timeout, publication_backlog=publication_backlog,
+            defer_model_always=defer_model_always,
             max_slices=max_slices, deployed_commit=deployed_commit,
             fingerprint=fingerprint, claimed=claimed,
             attempt=attempt, outcome=outcome, self_heal=self_heal,
@@ -748,6 +761,7 @@ def _route_and_receipt(
     *, state_root: Path, scripts: Path, registry: dict[str, Any], model_runner: Path,
     observed_at: str, lease_id: str, terra_timeout: int,
     publication_backlog: bool, max_slices: int, deployed_commit: str | None,
+    defer_model_always: bool,
     fingerprint: str,
     claimed: dict[str, Any], attempt: dict[str, Any], outcome: dict[str, Any],
     self_heal: Path, queue_path: Path, started: float,
@@ -824,7 +838,10 @@ def _route_and_receipt(
             incidents.register_investigation(
                 queue, fingerprint, lease_id, receipt_path, observed_at
             )
-        progress = publication_progress(claimed, state_root, publication_backlog)
+        progress = publication_progress(
+            claimed, state_root, publication_backlog,
+            defer_model_always=defer_model_always,
+        )
         attempt["publication_progress"] = progress
         model = invoke_terra(
             model_runner,
@@ -928,6 +945,10 @@ def main() -> int:
     # tick still owes publication work, so no model time may be spent here.
     parser.add_argument("--publication-backlog", choices=("0", "1"), default="0")
     parser.add_argument(
+        "--defer-model-always", action="store_true",
+        help="defer Terra even when the routed incident owns an open circuit",
+    )
+    parser.add_argument(
         "--terra-timeout-seconds", type=int,
         default=int(os.environ.get(
             "ARTICLE_REPAIR_TERRA_TIMEOUT_SECONDS", DEFAULT_TERRA_TIMEOUT_SECONDS
@@ -969,6 +990,7 @@ def main() -> int:
         max_routing_failures=args.max_routing_failures,
         max_code_rearm_rounds=args.max_code_rearm_rounds,
         publication_backlog=args.publication_backlog == "1",
+        defer_model_always=args.defer_model_always,
     )
     print(json.dumps(outcome, ensure_ascii=False, separators=(",", ":")))
     return 0
