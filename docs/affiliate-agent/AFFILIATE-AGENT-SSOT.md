@@ -2383,14 +2383,35 @@ the milestone order. Section 9.0.1.1 is the canonical atomic order for the curre
 cursor; later work MUST NOT jump ahead of an unmet gate.
 
 Current execution cursor: **E1-H, close the first real transaction path. P0/A04/A05
-publication recovery is complete through the existing owner, with 18 dedicated-link
-placements, 17 public and one link-only handoff, 32 provider-link clicks, aggregate
-41 clicks including `+40` unattributed, and zero commission rows. B01 is waiting for
-the first non-empty official provider transaction artifact.**
-M2.0 is closed for
-dedicated-link attribution: every existing revenue placement has one PartnerStack
-link and one canonical ledger row. All 17 carry owned public URLs and matching X
-receipts; provider clicks, exposure, cost, and commission-lineage gates remain
+publication recovery is complete through the existing owner. The latest readback has
+19 canonical ledger rows, 18 provider-link keys, 18 owned public URLs, 32 provider
+clicks, 16 `INSUFFICIENT_DENOMINATOR` rows plus 3 observed Dev.to denominators,
+aggregate 41 clicks including `+40` unattributed, and zero commission rows. The
+voice-isolator experiment is still split into one provider-link row (`…-1`) and one
+owned-only row until its same job closes; this is not an exact placement join. B01 is
+waiting for the first non-empty official provider transaction artifact.**
+
+Latest X effect repair (2026-08-21T04:23 JST): the real owner left
+`X_POST_PUBLISH` job `e5399f85…` in `EFFECT_STARTED` after a timeline readback of
+`NOT_FOUND` for the voice-isolator experiment. Root cause was confirmed in the
+installed code: the next wake called `start_effect()` again and journal protection
+correctly refused it, so the effect could never reconcile. Release
+`4dc7c6be2d0fe9f9ad15ca4f56ff461b049474a6` now reads the timeline first, reconciles
+an exact public post by the same placement, and only after the 3,600-second fence
+cooldown resumes the same job identity; during cooldown it creates no new compose
+effect. Compile, existing journal/local-loop/revenue checks (`25/25`), and a
+non-persistent cooldown/attempt-2 fixture passed. The immutable `current` symlink,
+source bytes, and ownership receipt all match this release; launchd bootstrap still
+returns the known macOS `141: Reentrancy avoided`, while all three Affiliate CDP
+ports remain ready. The live job is therefore still pending external timeline
+readback, not counted as X `LIVE` and not counted as money. Official PartnerStack
+capture remains `commission_row_count=0`, `NO_TRANSACTIONS`, approved/paid net null,
+and actual cash cost `UNKNOWN`.
+M2.0 is closed for settled dedicated-link attribution: every settled revenue
+placement has one PartnerStack link and one canonical ledger row. The in-flight
+voice-isolator experiment remains explicitly split until its provider-link and owned
+publication identities are joined. Settled rows carry owned public URLs and matching
+X receipts; provider clicks, exposure, cost, and commission-lineage gates remain
 economic gates. Content volume
 without those measurement contracts does not advance the cursor.
 M0.1 is installed in release `e8d1b8ea1`: real launchd wake `7`

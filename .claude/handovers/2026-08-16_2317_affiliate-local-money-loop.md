@@ -721,3 +721,31 @@ attempt publication in that wake. The canonical ledger is now 18 dedicated links
 The next owner wake must resume this same job for owned/X readback. B01 is still
 cooldown/empty: no official transaction, settlement, payout, commission, or net
 was created.
+
+The next owner wake at `2026-08-21T04:06:43Z` resumed that same campaign and
+verified the owned Git push (`4c42cb1…`, state `DELIVERED`). The independent public
+readback remained unavailable, so the publication receipt stayed `OWNED_NOT_LIVE`
+and no X effect was attempted. At `2026-08-21T04:17:31Z`, the owner attempted the
+same X handoff after the public deploy receipt was promoted; its authenticated
+timeline readback returned `NOT_FOUND` and the durable job
+`e5399f85…` remained `EFFECT_STARTED`, producing the truthful
+`PUBLICATION_FAILED / XPostError` detail “X effect is ambiguous; retry will
+reconcile timeline.” The canonical ledger readback is 19 rows: 18 provider-link
+keys, 18 owned public URLs, 32 provider clicks, 16 insufficient plus 3 observed
+Dev.to denominators, and zero official commission rows. The experiment currently
+has a provider-link row with placement suffix `-1` and a separate owned-only row;
+it is not an exact placement join and no money is credited.
+
+Codex repaired the observed retry dead-end in `4dc7c6be2` and pushed it to both
+`origin/docs/affiliate-life-manager-spec` and `canonical/docs/affiliate-life-manager-spec`.
+The installed immutable release is the full SHA
+`4dc7c6be2d0fe9f9ad15ca4f56ff461b049474a6`, with `LOCAL_READY` ownership receipt
+and byte-equal `current` symlink. The repair reads the X timeline before any
+retry, reconciles an exact post by placement, resumes only the same unresolved
+job after its 3,600-second cooldown, and refuses a new compose effect while the
+fence is cooling down. Existing checks and the temporary journal fixture passed;
+the install stopped only at the known launchd `141: Reentrancy avoided` bootstrap
+warning, while CDP ports 9324/9326/9327 stayed ready. The next natural owner wake
+must verify cooldown readback without a duplicate post; once eligible around
+`05:17 JST`, it may resume that same job identity. B01 remains empty:
+`NO_TRANSACTIONS`, approved/paid net null, and actual cash cost unknown.
