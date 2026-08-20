@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Restore the paid contract on one persisted, unpublished Substack ID."""
-import argparse, importlib.util, json
+import argparse, importlib.util, json, os
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -104,5 +104,12 @@ def refresh(pair):
     return {"pair":pair,"target":target,"refreshed":True}
 def main():
     p=argparse.ArgumentParser();p.add_argument("--pair",required=True,choices=("substack/ja","substack/en"));a=p.parse_args()
+    lang=a.pair.rsplit("/", 1)[1]
+    cookie=os.environ.get(f"SUBSTACK_SESSION_COOKIE_{lang.upper()}", "").strip()
+    if not cookie and lang == "ja":
+        cookie=os.environ.get("SUBSTACK_SESSION_COOKIE", "").strip()
+    if not cookie:
+        raise SystemExit(f"SUBSTACK_SESSION_COOKIE_{lang.upper()} is required for managed Substack publication")
+    os.environ["SUBSTACK_SESSION_COOKIE"] = cookie
     print(json.dumps(refresh(a.pair),separators=(",",":")));return 0
 if __name__=="__main__": raise SystemExit(main())

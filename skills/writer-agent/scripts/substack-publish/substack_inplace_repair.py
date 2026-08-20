@@ -374,6 +374,14 @@ def main() -> int:
     )
     args = parser.parse_args()
     lang = args.pair.rsplit("/", 1)[1]
+    cookie = os.environ.get(f"SUBSTACK_SESSION_COOKIE_{lang.upper()}", "").strip()
+    if not cookie and lang == "ja":
+        cookie = os.environ.get("SUBSTACK_SESSION_COOKIE", "").strip()
+    if not cookie:
+        raise SubstackRepairRefused(
+            f"SUBSTACK_SESSION_COOKIE_{lang.upper()} is required for managed Substack publication"
+        )
+    os.environ["SUBSTACK_SESSION_COOKIE"] = cookie
     publication = os.environ.get(f"SUBSTACK_PUBLICATION_{lang.upper()}", "").strip().lower()
     if not publication:
         raise SubstackRepairRefused(

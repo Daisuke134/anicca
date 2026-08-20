@@ -37,8 +37,6 @@ case "$cmd" in
     # the live flip can carry an operator identifier. Any non-zero exit aborts the publish.
     python3 "$DIR/pii-gate.py" --stage publish-substack-wrapper "$MD" >&2 || exit $?
 
-    [ -n "${SUBSTACK_SESSION_COOKIE:-}" ] || { echo "FATAL: SUBSTACK_SESSION_COOKIE missing in ~/.openclaw/.env" >&2; exit 2; }
-
     PAIR=""
     case "${ARTICLE_PUBLISH_PAIR:-}" in substack/ja|substack/en) PAIR="$ARTICLE_PUBLISH_PAIR" ;; esac
     MANAGED=0
@@ -46,6 +44,20 @@ case "$cmd" in
     if [ "$MANAGED" -eq 1 ] && [ -z "$PAIR" ]; then
       echo "REFUSED: ARTICLE_PUBLISH_PAIR must be substack/ja or substack/en" >&2
       exit 4
+    fi
+    if [ "$MANAGED" -eq 1 ]; then
+      LANG="${PAIR##*/}"
+      LANG_UPPER="$(printf '%s' "$LANG" | tr '[:lower:]' '[:upper:]')"
+      COOKIE_KEY="SUBSTACK_SESSION_COOKIE_${LANG_UPPER}"
+      PAIR_COOKIE="$(printenv "$COOKIE_KEY" 2>/dev/null || true)"
+      if [ -z "$PAIR_COOKIE" ] && [ "$LANG" = "ja" ]; then
+        PAIR_COOKIE="${SUBSTACK_SESSION_COOKIE:-}"
+      fi
+      [ -n "$PAIR_COOKIE" ] || {
+        echo "REFUSED: $COOKIE_KEY is required for managed Substack publication" >&2
+        exit 4
+      }
+      export SUBSTACK_SESSION_COOKIE="$PAIR_COOKIE"
     fi
     if [ "$MANAGED" -eq 1 ]; then
       LANG="${PAIR##*/}"

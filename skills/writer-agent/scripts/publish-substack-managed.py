@@ -34,6 +34,12 @@ def main():
             raise SystemExit("SUBSTACK_PUBLICATION_JA is required before English publication")
         if publication == japanese_publication:
             raise SystemExit("English Substack publication must be distinct from Japanese publication")
+    cookie_key=f"SUBSTACK_SESSION_COOKIE_{lang.upper()}"
+    session_cookie=os.environ.get(cookie_key, "").strip()
+    if not session_cookie and lang == "ja":
+        session_cookie=os.environ.get("SUBSTACK_SESSION_COOKIE", "").strip()
+    if not session_cookie:
+        raise SystemExit(f"{cookie_key} is required for managed Substack publication")
     state_path=Path(os.environ["ARTICLE_PUBLICATION_STATE"]); state=json.loads(state_path.read_text())
     expected_identity=str(state.get("destination_identities", {}).get(pair, "")).strip().lower()
     if not expected_identity or expected_identity != publication:
@@ -56,6 +62,7 @@ def main():
         **os.environ,
         "SUBSTACK_MODE":"go",
         "SUBSTACK_PUBLICATION":publication,
+        "SUBSTACK_SESSION_COOKIE":session_cookie,
         # The wrapper is also callable outside this managed entrypoint. Pass
         # the pair-specific identity explicitly so it cannot fall back to the
         # legacy generic host after the refresh gate has passed.
