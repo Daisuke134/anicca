@@ -57,8 +57,9 @@ The current diagnosis and execution order for the broken Writer runtime is
 It is the next implementation slice: restore one canonical runtime, restore
 demand supply and same-run resume, then prove the daily revenue set and
 receipt-backed Telegram reporting before enabling any 8-hour publishing
-canary. It does not replace the invariant revenue, safety, or platform-policy
-rules in this SSOT.
+canary. Global platform expansion is conditional on the spec's role matrix,
+language/payout gates, and receipt-backed $10K ledger; it does not replace the
+invariant revenue, safety, or platform-policy rules in this SSOT.
 
 ### 0.2 Open-source positioning and public-claim gate
 
