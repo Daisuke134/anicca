@@ -208,7 +208,7 @@ Execute top to bottom. A checked diagnostic is evidence, not lane completion.
   be answered truthfully. Source prompt inspection passes; live request `5222525` remains the proof.
 - [x] Invalidate pre-fix ineligible decisions with cache schema v2 so the corrected planner actually
   re-evaluates `5222525` instead of suppressing it for the seven-day cache TTL.
-- [ ] Re-plan request `5222525` and prove it becomes an honest application answering all six requested
+- [x] Re-plan request `5222525` and prove it becomes an honest application answering all six requested
   fields, then obtain official submission readback and replay zero.
   Live pass `gig-apply-direct-1787202286379991000-66643` re-planned it as `submit_required`
   with the six truthful answers and obtained official applied-list readback (`missing_count=0`,
@@ -216,7 +216,10 @@ Execute top to bottom. A checked diagnostic is evidence, not lane completion.
   price with a ¥90,000 category median; source is corrected to preserve the planner price when the
   official form exposes no numeric bounds. Following pass
   `gig-apply-direct-1787203334368728000-39509` observed `5222525` in `already_applied_ids` and omitted
-  it from `request_details`, proving replay zero. Live corrected-price proof remains.
+  it from `request_details`, proving replay zero. Release `05b75fc29` then preserved every
+  no-official-bounds planner price unchanged (11/11) instead of applying a category median. The
+  already-submitted ¥90,000 offer is a one-off manual correction if desired; do not build an
+  automated historical-offer editor for it.
 - [ ] Preserve per-request structured decisions durably before execution. A transient batch/provider
   failure may leave a request pending for retry, but must not generate a misleading terminal refusal.
 - [ ] Repair the post-confirmation CDP boundary exposed by request `5222490`: the valid ¥90,000
