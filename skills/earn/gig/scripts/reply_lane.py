@@ -246,6 +246,7 @@ def process_queue(
     clock: Any,
     paid_talkroom_ids: Any,
     max_model_calls: int | None = None,
+    target_action_id: int | None = None,
 ) -> dict[str, Any]:
     """Process every current pending thread; repeated projections become no-ops."""
     if queue.get("status") == "collector_unhealthy":
@@ -284,6 +285,7 @@ def process_queue(
     reconciliations = {
         str(action["thread_id"]): action
         for action in controller.reconciliation_actions()
+        if target_action_id is None or int(action["action_id"]) == target_action_id
     }
     for thread_id, action in reconciliations.items():
         if thread_id in queued_threads:
@@ -686,6 +688,7 @@ def main() -> int:
     # one talkroom, the same fencing -- but the buyer has already paid, so the prompt is
     # an apology and a list of what is needed, not a sales message.
     parser.add_argument("--ask-buyer", action="store_true")
+    parser.add_argument("--target-action-id", type=int)
     args = parser.parse_args()
     if args.max_model_calls < 0:
         parser.error("--max-model-calls must be at least 0")
@@ -784,6 +787,7 @@ def main() -> int:
                 clock=lambda: int(time.time()),
                 paid_talkroom_ids=fenced_ids_from_file(args.fences),
                 max_model_calls=args.max_model_calls or None,
+                target_action_id=args.target_action_id,
             )
         _atomic_json(args.output, result)
     except Exception as error:

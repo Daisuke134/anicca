@@ -204,7 +204,7 @@ const read=async()=>sel?await Promise.all([...document.querySelectorAll(sel)].ma
  const message=a.__vue__?._props?.message||null,
  identityFields=message&&typeof message.body==='string'?{directMessagesRoomId:message.directMessagesRoomId??null,fromUserId:message.fromUserId??null,createdAt:message.createdAt??null,body:message.body}:null,
  unread=!!card?.querySelector('[aria-label*="未読"],[class*="unread"],[class*="Unread"]')||(typeof message?.unreadCount==='number'&&message.unreadCount>0);
- return {talkroom_url:url,title:'purchase_preorder_message',last_message_side:'',unread,preview_sha256:await digest(preview),last_message_identity_fields:identityFields};
+ return {talkroom_url:url,title:'purchase_preorder_message',counterparty_name:preview.split('\n')[0].trim().slice(0,100),last_message_side:'',unread,preview_sha256:await digest(preview),last_message_identity_fields:identityFields};
 })).then(rows=>rows.filter(Boolean)):[];
 while(pagesObserved<pageLimit){
  pagesObserved++;
@@ -2630,6 +2630,9 @@ def inquiries_from_dom(dom: dict[str, Any]) -> list[dict[str, Any]]:
         digest = str(card.get("preview_sha256") or "")
         if re.fullmatch(r"[0-9a-f]{64}", digest):
             row["preview_sha256"] = digest
+        name = safe_text(card.get("counterparty_name"), 100)
+        if name:
+            row["counterparty_name"] = name
         identity_fields = card.get("last_message_identity_fields")
         if isinstance(identity_fields, dict):
             identity_fields = {
@@ -2647,7 +2650,7 @@ def inquiries_from_dom(dom: dict[str, Any]) -> list[dict[str, Any]]:
 
 _HEAD_ONLY_INQUIRY_FIELDS = (
     "talkroom_id", "talkroom_url", "title", "reply_required", "next_action",
-    "unread", "last_message_side", "preview_sha256",
+    "unread", "last_message_side", "preview_sha256", "counterparty_name",
     "last_message_identity_sha256", "buyer_sent_at", "seller_sent_at",
     "last_message_at", "thread_read_at",
 )

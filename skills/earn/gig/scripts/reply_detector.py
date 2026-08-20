@@ -1554,6 +1554,50 @@ def run_targeted_estimate(
         return _targeted_failure(thread_id, run_id, "targeted_estimate", error)
 
 
+def run_targeted_reconcile(
+    args: Any, *, action_id: int, thread_id: str, evidence: Path, run_id: str,
+) -> dict[str, Any]:
+    """Read back one delivery-unknown reply without scanning every inbox page."""
+    try:
+        evidence.mkdir(parents=True, exist_ok=True, mode=0o700)
+        _orders, fences_path = _collect_fresh_orders_and_fence(args, evidence=evidence)
+        if _paid_fence_open_for_thread(fences_path, thread_id):
+            closed = _close_paid_handoff(
+                Path(args.database), Path(args.manifest), fences_path, thread_id,
+            )
+            return {
+                "status": "paid_handoff", "thread_id": thread_id, "run_id": run_id,
+                "replied": 0, "official_readback": 0, "closed_without_send": len(closed),
+                "pending": 0, "events": [], "errors": [],
+            }
+        queue_path = evidence / "reply-queue.json"
+        lane_path = evidence / "reply-lane-result.json"
+        _atomic_json(queue_path, {
+            "status": "queue_empty", "items": [], "semantic_ssot": True,
+        })
+        _run("reply_reconcile", [
+            sys.executable, str(args.lane_script), "--queue", str(queue_path),
+            "--database", str(args.database), "--manifest", str(args.manifest),
+            "--runner", str(args.runner), "--schema", str(args.schema),
+            "--cdp-helper", str(args.cdp_helper), "--max-model-calls", "0",
+            "--target-action-id", str(action_id), "--output", str(lane_path),
+            "--workdir", str(Path.home()), "--owner-prefix", f"gig-reconcile-{run_id}",
+            "--fences", str(fences_path),
+        ], accepted=(0, 2))
+        lane = json.loads(lane_path.read_text(encoding="utf-8"))
+        result = _targeted_effect_result(lane, thread_id=thread_id, action_id=action_id)
+        result["run_id"] = run_id
+        if result.get("status") in {"completed", "replied"}:
+            ConnectorOutbox(Path(args.database), Path(args.manifest)).revive_blocked_actions(
+                now=int(time.time()),
+            )
+        return result
+    except StepFailure as error:
+        return _targeted_failure(thread_id, run_id, error.step, error)
+    except Exception as error:
+        return _targeted_failure(thread_id, run_id, "targeted_reconcile", error)
+
+
 async def _supervisor_hook(hook: Any, *arguments: Any) -> Any:
     """Invoke a testable supervisor hook whether it is sync or async."""
     result = hook(*arguments)
@@ -1604,6 +1648,23 @@ def _supervisor_estimate_work_from_action(action: dict[str, Any]) -> dict[str, A
     return {
         "kind": "estimate", "action_id": action_id, "event_key": event_key,
         "thread_id": thread_id, "expected_revision": expected_revision,
+    }
+
+
+def _supervisor_reconcile_work_from_action(action: dict[str, Any]) -> dict[str, Any] | None:
+    action_id = _count(action.get("action_id"))
+    thread_id = str(action.get("thread_id") or "")
+    event_key = str(action.get("event_key") or "")
+    if (
+        action_id is None or action_id <= 0
+        or _TARGETED_THREAD_ID.fullmatch(thread_id) is None
+        or not event_key
+    ):
+        return None
+    return {
+        "kind": "reconcile", "action_id": action_id,
+        "event_key": event_key, "thread_id": thread_id,
+        "expected_revision": int(action["revision"]),
     }
 
 
@@ -1712,6 +1773,7 @@ async def supervise_replies(
         lifecycle = get_outbox().action_lifecycle_for_event(event_key, work["thread_id"])
         allowed_states = (
             {"pending", "reconcile_pending"} if work.get("kind") == "estimate"
+            else {"reconcile_pending"} if work.get("kind") == "reconcile"
             else {"pending"}
         )
         if lifecycle is not None and lifecycle.get("state") not in allowed_states:
@@ -1758,6 +1820,10 @@ async def supervise_replies(
         )
         for action in estimate_actions:
             work = _supervisor_estimate_work_from_action(action)
+            if work is not None:
+                await enqueue_work(work)
+        for action in get_outbox().reconciliation_actions():
+            work = _supervisor_reconcile_work_from_action(action)
             if work is not None:
                 await enqueue_work(work)
         for action in get_outbox().pending_targeted_actions():
@@ -1899,6 +1965,14 @@ async def _run_continuous_runtime(args: Any, evidence: Path) -> dict[str, Any]:
                 action_id=int(work["action_id"]), event_key=str(work["event_key"]),
                 thread_id=str(work["thread_id"]),
                 expected_revision=int(work["expected_revision"]),
+                evidence=worker_evidence, run_id=run_id,
+            )
+            _atomic_json(worker_evidence / "result.json", result)
+            return result
+        if work.get("kind") == "reconcile":
+            result = await asyncio.to_thread(
+                run_targeted_reconcile, args,
+                action_id=int(work["action_id"]), thread_id=str(work["thread_id"]),
                 evidence=worker_evidence, run_id=run_id,
             )
             _atomic_json(worker_evidence / "result.json", result)
