@@ -310,3 +310,15 @@ USD 10,000 rolling window is not reached.
 Codex sent milestone Telegram message `26047` with the same release, owner
 readback, zero-money result, and B01 next gate. The message contains no secret or
 raw tracking link.
+
+The canonical placement ledger repair is release
+`f15ca3ceb48fb0312f5041002b139cef98c0768c`, installed after the rolling-net
+owner proof. It reuses provider-scoped latest transitions and requires
+`placement.state=MATCHED` before per-placement commission counts or net totals
+are included. An isolated two-provider/same-transaction-ID fixture counted the
+one exact matched row and excluded the unmatched row; the existing revenue
+focused suite remains 8/8. The post-install owner trigger returned `141` and no
+new `last-run` receipt had appeared by `2026-08-20T11:23:30Z`; the previous
+`260e57098` owner proof remains valid for rolling-net wiring, while the new
+placement-ledger repair awaits its own existing-owner readback. B01 remains the
+next external gate and no money is counted.

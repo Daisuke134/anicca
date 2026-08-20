@@ -1310,8 +1310,8 @@ operation.
 This checkpoint supersedes older counts and zero-click statements in the
 historical evidence below. Read-only inspection of the installed state shows:
 
-- spec HEAD `260e57098` is clean and pushed to both documentation remotes;
-  installed release `260e57098` is the current immutable `skills/affiliate`
+- spec HEAD `f15ca3ceb` is clean and pushed to both documentation remotes;
+  installed release `f15ca3ceb` is the current immutable `skills/affiliate`
   runtime;
 - six expected launchd plists remain installed; three browser owners answer CDP
   `9324/9326/9327` with HTTP `200`, and three job owners retain 600-second intervals;
@@ -1386,6 +1386,13 @@ historical evidence below. Read-only inspection of the installed state shows:
   `72557ed6beb878b70a844c3e1fda8862e284af9a20b2287752e56b1e0b3fb8e6`; outbox
   and sent ledgers are both 100 rows with no pending event. This is owner-E2E
   wiring proof only; zero transactions and zero dollars remain.
+- release `f15ca3ceb` aligns `placement-ledger.json` with that receipt: latest
+  commission transitions are deduplicated by provider plus transaction ID and
+  only `MATCHED` placement joins enter per-placement status/net totals. An
+  isolated two-provider/same-ID fixture counted one matched row, excluded one
+  unmatched row, and existing focused checks remained 8/8. The release is
+  installed, but its post-install `start` returned `141`; the next owner wake
+  must provide the installed-readback receipt before this repair is marked live.
 - the existing owner retry at `2026-08-20T10:54:48Z` recovered that exact pending
   event without any publication, link, provider, or ledger mutation. The owner
   recorded message ID `26019` once for event UUID
