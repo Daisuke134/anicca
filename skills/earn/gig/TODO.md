@@ -98,12 +98,17 @@ The order to the end is:
    to replay stale proposals or delay current applications. The temporary historical replay path is
    deleted. → detailed evidence: section B.
    The live owner is not disabled: launchd evaluates it every 60 seconds and prevents overlapping
-   Apply passes. Current pass `gig-apply-direct-1787222243411098000-92199` is actively traversing
-   older source pages through immutable release `e2833feee`; Telegram is emitted at terminal
-   receipt, not for every page. The preceding terminal pass observed 40 jobs, submitted and
-   officially confirmed one (`5223314`, ¥8,000), failed zero, and delivered Telegram message
-   `25994`. A long exhaustive pass can therefore create several minutes of Telegram silence without
-   the lane being stopped.
+   Apply passes. Verified applications are designed to emit an immediate per-job Telegram report;
+   the terminal pass summary is additional evidence, not the only report. The immediate reporter's
+   outer process previously timed out after 90 seconds while its Telegram transport was allowed 180
+   seconds. Slow sends were killed after `send_started` and became
+   `executor_lost_after_send_start`. Release `1b72c4329` raises only the outer deadline to 240
+   seconds. Missing application `5217848` was recovered through the real reporter with provider ACK
+   `26036`; the following natural application `5223432` produced immediate ACK `26037`, official
+   application readback and terminal summary `26038`. A new natural Apply parent is now pinned to
+   immutable release `1b72c4329`. Telegram Web on this Mac currently presents its QR login screen,
+   so provider receipts and the operator's device remain the readback sources until the user logs
+   that browser in; production bot polling must never be stolen for readback.
 3. **Negotiate is accelerated but not complete.** One continuous process probes every 30 seconds
    with two workers, so another lane no longer delays inbox observation. The exact-thread head
    preflight and stale-event rebind are now deployed (`9aa6a506c`); the latest targeted runs bind
@@ -251,6 +256,12 @@ definition and A0 acceptance is closed.
 
 #### B. Restore Apply and prove one new application
 
+- [x] Restore immediate per-application Telegram reporting. The parent reporter deadline was 90
+  seconds while the inner provider deadline was 180 seconds, which killed valid slow sends and left
+  them `delivery_unknown`. Release `1b72c4329` makes the parent outlive the transport at 240 seconds;
+  its focused timeout/redrive suite passes 6/6. Known-missing application `5217848` was redriven once
+  and provider-ACKed as `26036`. Natural application `5223432` then reached official history and
+  immediate Telegram ACK `26037`; its pass summary followed as `26038`.
 - [x] Preserve full eligible-set coverage on natural passes: every observed open request is
   either officially applied, already applied, or carries one bounded truthful ineligibility reason.
   Missing structured decisions, provider failures and candidate wedges stay durably retryable rather
