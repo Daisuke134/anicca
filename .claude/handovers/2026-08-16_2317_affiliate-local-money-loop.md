@@ -371,3 +371,35 @@ first non-empty transaction is still open; this empty capture is not money.
 Codex sent the empty-capture milestone as Telegram message `26099`, including
 the official artifact hash, zero reconciliation counts, zero rolling net, and
 the next B01 gate. It contains no secret or raw tracking link.
+
+At `2026-08-20T12:46:27Z`, the fourth DEV.to baseline decision exposed a stale
+private machine receipt: it pinned removed Codex `0.147.0`, while the requested
+`/Users/anicca/.local/bin/codex` resolved to the current `0.148.0` release. The
+new binary's `--version` also wrote a benign no-HOME warning, which the strict
+inventory treated as rejection. Commit `649f474cf175f19d21e363856c42bdf1d9bedd43`
+changes only the verifier: it probes the fixed binary inside a temporary
+mode-0700 HOME and still rejects non-zero exit, stderr, version mismatch, or
+file mutation. Capability focused checks passed `6/6`; the existing revenue
+focused checks passed `8/8`. The private receipt now records Codex `0.148.0`
+at the canonical 0.148.0 release with SHA `b0308517…1e50`.
+
+The canonical `skills/affiliate/scripts/install-release.sh` then atomically
+created release `649f474cf175f19d21e363856c42bdf1d9bedd43`, switched `current`,
+and wrote its ownership receipt. Its first browser bootstrap retry stopped with
+`141: Reentrancy avoided`; no browser, provider, public, Telegram, or ledger
+effect was manually substituted. The existing loop owner nevertheless ran the
+new release at `2026-08-20T12:46:56Z`. Baseline SHA
+`c4012766…0072` now has acquisition decision `READY`, decision ID
+`99721872…89ad`, selected variable `title`, runner exit `0`, a sealed private
+evidence tree, and a verified Codex binary pin. `last-run.json` no longer says
+`RUNNER_REJECTED`; owner Telegram message `26171` is read back, and Telegram
+outbox/sent are both `102/102` with no pending row. This closes the capability
+and acquisition repair only.
+
+The same owner readback still finds the official PartnerStack report empty
+(`commission_row_count=0`, `NO_LIVE_ROWS`, no payout rows). The rolling receipt
+remains `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS`,
+`approved_or_paid_net_usd=null`, `cost_state=UNKNOWN`, and
+`threshold_state=NOT_REACHED`; no click, model token, estimate, pending reward,
+or Telegram receipt is money. B01 remains the next gate: capture the first
+official transaction/settlement artifact and join it exactly to one placement.

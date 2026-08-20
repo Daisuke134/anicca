@@ -157,7 +157,7 @@ deployment adapter for these same contracts, not a second implementation.
 | F0 current-Mac bootstrap | Runtime and browser capability GREEN; Keychain admission corrected; historical disabled release was `e3de264f4a9b1c5d34b49a913ff66ad6202dd318`; real provider admission remains open | CloakBrowser Chromium `145.0.7632.109` and pinned PBS CPython `3.14.7+20260814` are live-receipted. The original vault probe proved item existence only and incorrectly accepted an empty value. Admission now requires successful Keychain read plus non-empty bytes, without logging value, digest, or length. Provider refs are versioned in the program registry; Impact is `MISSING_OR_EMPTY`, so browser login remains disabled until official recovery and fresh-tab proof |
 | P0/F1 legacy migration | Complete | Runtime commits `84cac1e7`, `3494f8ff`, `5b1927dc`; migration 8/8, legacy verification 10/10, commission regression 6/6; remote `feature/affiliate-agent-runtime` at `5b1927dc` |
 | Legacy wrapper cutover | Blocked by design until Task 11 | F1 receipts `run.sh` and `affiliate-cli.sh` path/SHA-256/size while preserving their bytes; Task 11 must verify these receipts before scheduling the new orchestrator |
-| Mac-local runtime | Four Affiliate-owned launchd jobs isolate the loop, ElevenLabs browser, X browser, and Impact browser. Release `cc03800c3c83b9cc777ff2cc6df0d41d5db1dabf` is installed. It contains the live-proven Impact self-heal and PartnerStack payout-readiness capture | Impact replay returned `submitted=false` and the original login job is `VERIFIED`; no reset, duplicate application, or new job occurred. PartnerStack capture reads both payout summary and row detail. Process-boundary resume, selector-drift repair, X publish reconciliation, provider auth recovery, and payout blocker classification are live-proven. Attributable click, commission, and paid payout remain open |
+| Mac-local runtime | Six Affiliate-owned launchd plists preserve the loop, three browser owners, source refresh, and composition owner. The immutable current release is `649f474cf175f19d21e363856c42bdf1d9bedd43`; its loop owner produced a real acquisition `READY` receipt after the Codex capability repair. The installer’s browser bootstrap stage remains blocked by the session-wide macOS `141: Reentrancy avoided` response, so loaded-state introspection is still open | The capability/acquisition path is owner-E2E verified; attributable commission, paid payout, and a clean all-owner launchd readback remain open |
 | ElevenLabs isolated auth | Dedicated Affiliate CDP `9324` is authenticated from the Git-external private SSOT | Gmail readback identified the account used by the real reset and new-login notices; the private Login field, Password/Keychain mirror, and mode `0600` were reconciled without committing values. The semantic CDP resume then rendered `SIGN_IN_REQUIRED → AUTHENTICATED` at `/app/home`, with one successful submit and a sanitized receipt. No commission is inferred from login |
 | ElevenLabs PartnerStack metrics | The Agent created and email-verified the PartnerStack account/team, confirmed the Eleven Labs Inc. partnership, accepted program terms, and reached Overview, Commission Report, Commissions summary, and Payouts. Installed release `cc03800c3` live-read the summary only after `Total available funds` rendered, then returned `PAYOUT_BLOCKED_BY_TAX_SETUP`, `tax_information_state=REQUIRED`, and `payment_provider_state=SELECTION_REQUIRED` | The current aggregate remains one baseline click and zero post-baseline clicks, signups, or commission rows. The latest sanitized report artifact SHA-256 is `b101e1e515d81241c9f16bd41b8bc562b5a41c8e97b76c5afa784178b21fc39f`; it binds 23 commission fields, six payout fields, zero rows, and `NO_LIVE_ROWS`. Earning can continue, but withdrawal cannot be called ready until truthful tax registration and one provider are completed. Approved/reversed remain unknown rather than inferred zero |
 | ElevenAgents product link | The official PartnerStack destination selector exposed `https://elevenlabs.io/agents`. The Agent supplied the required title, internal description, destination, and custom slug, created exactly one product-specific link, and read it back from the rendered Links page | Installed release `6623f2e02` accepted the generated HTTPS URL only through stdin and stored it as `ElevenAgents affiliate link` in the mode-0600 Git-external private Markdown. Command output, receipts, SSOT, and Git contain state only, not the referral URL |
@@ -170,7 +170,7 @@ live autonomous operation.
 
 | Surface | Current truth | What is not yet proven |
 |---|---|---|
-| Runtime | Immutable local release `50d45beca58aac4dc2cf077d7ec1eb5f216e3c2f` is current. All six isolated Affiliate launchd owners are loaded; real money wake `15` and composition run `9` have last exit `0`. The ten-minute money loop owns bounded provider recovery/reconciliation, exact placement-link acquisition, HubSpot/Impact polling, generic policy-PASS owned/X publication, canonical DEV/Substack syndication, hourly external metrics capture, per-wake placement economics, economics-bound campaign decisions, natural-language reporting, receipts, and Telegram. The daily source owner owns official-sitemap opportunity discovery plus official-source refresh; the composition owner resumes existing due stages before new inbox work and consumes at most one credential-free due stage per wake | Ten comparable placements and provider/channel diversification remain open |
+| Runtime | Immutable local release `649f474cf175f19d21e363856c42bdf1d9bedd43` is current. The existing loop owner ran the new release and produced the fourth durable acquisition decision; six owner plists remain installed, but launchd domain introspection and bootstrap return `141: Reentrancy avoided` in this session, so “all six loaded” is not claimed. The ten-minute money loop still owns bounded provider recovery/reconciliation, exact placement-link acquisition, provider polling, publication, metrics, economics, natural-language reporting, receipts, and Telegram | Ten comparable placements, provider/channel diversification, and the first official transaction remain open |
 | F1 migration | Implemented, reviewed, pushed, and re-run from final HEAD | It does not publish, browse, attribute, or earn |
 | F2 Agent brain | Commit `d9ad4acd7cb0474cf1a825a94cfb49e7847da22e` is pushed; root replay on 2026-08-06 passed focused 16/16, Python 3.9 compile/shell syntax, and 30/30 related regressions | Full-suite collection is blocked by legacy `test_affiliate_verify.py` import-time `sys.exit()`; fresh review and live-provider execution remain open, so F2 stays open |
 | Provider auth | ElevenLabs is `ACTIVE_LINK_VERIFIED`, earning-enabled, and `AUTHENTICATED`. HubSpot/Impact's stored credential resumed the isolated browser from `SIGN_IN_REQUIRED`; exact rendered markers classify its existing application as `APPLICATION_PENDING / In Review`. The installed money owner now polls it without resubmission while ElevenLabs remains healthy. No Google login, six-digit-code submission, phone call, or login-support Telegram effect exists in the Affiliate receipts. Kit is rejected; other providers remain non-executable | ElevenLabs is the only currently executable earning offer. HubSpot has no executable link until official approval and link readback. No commission, approved transaction, reversal, or payout is claimed |
@@ -1310,9 +1310,13 @@ operation.
 This checkpoint supersedes older counts and zero-click statements in the
 historical evidence below. Read-only inspection of the installed state shows:
 
-- spec HEAD `cd7372f45` is clean and pushed to both documentation remotes;
-  installed release `cd7372f45` is the current immutable `skills/affiliate`
-  runtime;
+- spec HEAD `649f474cf` is clean and pushed to both documentation remotes;
+  installed release `649f474cf175f19d21e363856c42bdf1d9bedd43` is the current
+  immutable `skills/affiliate` runtime. The canonical installer atomically
+  switched `current` and wrote the ownership receipt, then stopped at the
+  existing browser owner's `launchctl bootstrap` with macOS
+  `141: Reentrancy avoided`; the loop owner nevertheless ran the new release
+  and is the only observed executor.
 - six expected launchd plists remain installed; three browser owners answer CDP
   `9324/9326/9327` with HTTP `200`, and three job owners retain 600-second intervals;
 - the canonical ledger contains 13 dedicated-link placements, all 13 with owned
@@ -1322,10 +1326,10 @@ historical evidence below. Read-only inspection of the installed state shows:
 - PartnerStack remains authenticated and reports zero commission rows, so
   approved-or-paid net remains USD 0; actual cash cost remains unknown where no
   bill exists;
-- Telegram outbox and sent ledger both contain 98 events with no pending row. The
-  tiktok `PLACEMENT_LIVE` event remains sent by the existing owner with provider
-  message ID `26004`; the newest `CLICK_DELTA` timeout was retried under the same
-  event UUID and sent as provider message ID `26019`;
+- Telegram outbox and sent ledger both contain 102 events with no pending row.
+  The latest acquisition decision receipt was reported by the existing owner as
+  Telegram provider message `26171`; no raw model output, secret, or tracking
+  link was included;
 - the prior publication failure was `FileNotFoundError` for the missing allowed
   `.worktrees/affiliate-foundation-prod`, not a current `XPostError`. The
   existing `feature/affiliate-foundation-prod` branch was reconnected at that
@@ -1603,6 +1607,34 @@ historical evidence below. Read-only inspection of the installed state shows:
   `id -un` returns the literal `501` rather than a username. The GUI/user
   launchd domain is therefore not readable from this session; no bootstrap,
   reload, OS-service restart, or parallel executor is an honest substitute.
+
+- The first acquisition decision for the fourth DEV.to baseline exposed a stale
+  private capability receipt: it pinned removed Codex `0.147.0`, while the
+  canonical `/Users/anicca/.local/bin/codex` resolved to the current
+  `0.148.0` release. The verifier also rejected `0.148.0` because its
+  `--version` call emitted a benign no-HOME warning. Commit `649f474cf`
+  changes only `machine_capability_inventory.py`: it runs the fixed binary's
+  version probe in a temporary mode-0700 HOME and still fails closed on
+  non-zero exit, stderr, version mismatch, or file mutation. Existing focused
+  checks passed `6/6` for the capability gate and `8/8` for revenue; the private
+  receipt now records canonical path
+  `/Users/anicca/.codex/packages/standalone/releases/0.148.0-aarch64-apple-darwin/bin/codex`,
+  version `0.148.0`, and SHA `b0308517…1e50`.
+- The existing owner then ran the atomically switched release at
+  `2026-08-20T12:46:56Z`. Baseline SHA
+  `c4012766…0072` produced a durable acquisition decision `READY`, decision ID
+  `99721872…89ad`, selected variable `title`, runner exit `0`, and a sealed
+  private evidence tree with a verified Codex binary pin. `last-run.json`
+  changed from `RUNNER_REJECTED` to `READY`; owner Telegram message `26171`
+  was read back and Telegram outbox/sent are both `102/102` with no pending
+  row. This closes the capability/acquisition harness repair, not a money gate.
+- The same owner readback still reports official PartnerStack
+  `commission_row_count=0`, `NO_LIVE_ROWS`, and no payout rows. The canonical
+  rolling receipt remains `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS`,
+  `approved_or_paid_net_usd=null`, `cost_state=UNKNOWN`, and
+  `threshold_state=NOT_REACHED`; the first official transaction and exact
+  placement join remain B01. No click, estimate, model token, pending reward,
+  or Telegram receipt is money.
 
 Execution resumes in this order. Time/provider outcomes are gates, but every safe
 independent harness task continues:
@@ -3953,7 +3985,7 @@ deterministic ElevenAgents `LIVE → X → revenue` path.
 | U02 | CLEARED | d150 and canonical `main` diverge; `agent_runner.py` and `config.json` differ, while three support files match | Base Affiliate on d150 and review later main changes explicitly; no blind latest-main copy |
 | U03 | CLEARED | Current Codex auth plus Terra-medium structured output works read-only | Preserve a sanitized installed canary receipt; it is capability proof, not economic proof |
 | U04 | CLEARED | Affiliate config binds `marketing-agent` to the single-candidate `affiliate-terra-high-strategy` route and `escalation-agent` to the fallback-free `affiliate-sol-one-use-repair` route. One read-only canary per route returned schema-valid output and recorded the selected model, high effort, route, duration, and provider-reported usage | Keep both routes explicit-escalation-only; the business loop cannot call either until U05–U10 close |
-| U05 | CLEARED | `machine_capability_inventory.py` now admits only the named `codex_cli` capability, records its canonical path/version/SHA, and `scripts/agent_runner.py` re-observes the same binary before every provider launch. The real Mac receipt pins Codex `0.147.0` SHA `19c4f144…d37`; a Terra-high read-only call stored the same pin beside its attempt receipt, while a corrupted SHA produced exit `1` with no provider attempt | All Affiliate model calls use the gate and a current private machine receipt; direct vendor-runner execution remains diagnostic-only |
+| U05 | CLEARED | `machine_capability_inventory.py` admits only the named `codex_cli` capability, records its canonical path/version/SHA, and `scripts/agent_runner.py` re-observes the same binary before every provider launch. The current Mac receipt pins Codex `0.148.0` at the canonical 0.148.0 release with SHA `b0308517…1e50`; the version probe runs in a temporary mode-0700 HOME so benign no-HOME warnings cannot masquerade as a stale pin. A corrupted SHA and a changed executable still fail closed with no provider attempt; the fourth real acquisition decision now sealed with runner exit `0` | All Affiliate model calls use the gate and a current private machine receipt; direct vendor-runner execution remains diagnostic-only |
 | U06 | CLEARED | `scripts/agent_runner.py` now discards the parent environment before importing d150 and admits only a fixed executable path, isolated Affiliate `HOME`/`CODEX_HOME`, auth-file path, locale/timezone, and named budget controls. A real Terra-high shell canary started with fake database/AWS/OpenAI/CDP secrets and reported all four names absent plus the isolated homes; evidence search found no sentinel and all canary artifacts were private | Keep this wrapper as the only production entrypoint; additions to the environment require an exact-name contract and a privacy canary |
 | U07 | CLEARED | The production wrapper now secures the complete evidence tree as directories `0700` and files `0600`, rejects symlinks, invalidates stale seals before invocation, validates the atomic d150 summary plus every attempt JSONL row, and atomically writes a hash-bound `evidence-seal.json`. Downstream verification rejects changed hashes or public modes. The real U06 Terra artifact was sealed and read back as `SEALED`, exit `0`; malformed and post-seal-tampered evidence failed closed | Treat only `verify_evidence_seal()` success as a usable Agent result; stdout/stderr remain raw diagnostic streams and may be partial after interruption |
 | U08 | GATED-BEFORE-MODEL-SELECTOR | Runner validation ignores `enum`, `additionalProperties`, limits, and several JSON Schema constraints | Add complete domain validation only before a model can choose runtime actions; the first earning pipeline uses deterministic stage order |
