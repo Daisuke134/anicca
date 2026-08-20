@@ -322,3 +322,11 @@ new `last-run` receipt had appeared by `2026-08-20T11:23:30Z`; the previous
 `260e57098` owner proof remains valid for rolling-net wiring, while the new
 placement-ledger repair awaits its own existing-owner readback. B01 remains the
 next external gate and no money is counted.
+
+Release `0f29dc81fabbe6d9271dddfe130463a56f879bbb` then bound
+`AFFILIATE_ROLLING_NET` to the exact `placement-ledger.json` SHA-256 in addition
+to the commission-ledger SHA-256. It is installed as current; the post-install
+owner start at approximately `2026-08-20T11:25Z` again returned `141` and no
+new wake was visible yet. This is evidence-chain hardening only, not a money
+event. The next owner readback must show the new placement-ledger hash before
+this slice is considered live-verified.
