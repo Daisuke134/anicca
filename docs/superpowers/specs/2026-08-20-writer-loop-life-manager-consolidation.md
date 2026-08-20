@@ -20,8 +20,8 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
 - current releaseは`513d8fc0c7434acac4a4c2f993b707b8b228729a`へ切り替え済み。
   sourceのfocused checkはidentity 2件＋需要state 2件がPASSし、source／current releaseの
   `publication_resume.py`に同一Substack hostを拒否するidentity gateが存在する。
-- 需要laneの実receiptは`2026-08-20T17:32:09Z`、`READY_WITH_SOURCE_OUTAGE`、観測231件、
-  queue `0→1`、TECHiの7日以内のhash検証済み本文SHA
+- 需要laneの最新実receiptは`2026-08-20T17:57:11Z`、`READY_WITH_SOURCE_OUTAGE`、観測231件、
+  queue `1→1`（既存カードを安全に保持）、TECHiの7日以内のhash検証済み本文SHA
   `6604de6f1e9378bc9f3e8c3c83f41c597751f879ccc1b988339aabb67453f20b`を再利用した。
   queueには`paid-demand-e2a3be56…`の有効なカードが存在する。これは需要供給の復旧であり、
   記事公開や売上のreceiptではない。
