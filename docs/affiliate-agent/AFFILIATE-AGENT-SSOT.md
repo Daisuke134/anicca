@@ -1138,6 +1138,124 @@ The current Repost implementation is not yet this acquisition arm: it shares
 optimizes early views, and has no Affiliate transaction lineage. The first
 integration slice changes ownership and measurement before increasing volume.
 
+#### Durable revenue portfolio: broad admission, narrow allocation
+
+The Agent researches many programs but does not publish every program it can
+log into. Email/password login reduces an authentication dependency; it does not
+prove program admission, permitted channels, executable links, profitable unit
+economics, or transaction readback. Expansion therefore follows two different
+rules:
+
+1. **Admission breadth:** research and prepare several independent providers in
+   parallel so one rejection, term change, account closure, or offer sunset does
+   not stop the business.
+2. **Allocation narrowness:** publish and scale only providers with current
+   official terms, channel permission, owned dedicated links, reportable
+   transactions/reversals/payouts, and mature approved-net evidence.
+
+This creates three economically separate lanes:
+
+```mermaid
+flowchart LR
+  A[Repost and original X posts] --> B[Owned evergreen decision articles]
+  B --> C[Recurring SaaS: high value]
+  B --> D[Amazon and Rakuten: broad evergreen commerce]
+  A --> E[X creator revenue: platform bonus]
+  C --> F[Affiliate canonical ledger]
+  D --> F
+  E --> G[Separate creator-payout ledger]
+  F --> H[USD 10k affiliate net gate]
+  G --> I[Financial Manager total cash view]
+  F --> I
+```
+
+The USD 10,000 Affiliate gate remains the three-provider target above until
+approved-net evidence justifies a replacement. Amazon and Rakuten are admitted
+as durable commerce exploration, not invented dollars in that equation. X
+creator revenue is a useful second income stream but never affiliate commission
+and cannot close A3.
+
+**Amazon Associates Japan lane.** Official standard rates currently range from
+0% to 10%; creator-relevant PC, camera, home-electronics, and musical-instrument
+categories are generally 2%, while books and stationery are 3%. Approval review
+requires at least three qualifying sales within 180 days after application.
+Payment is roughly 60 days after month end and bank transfer requires at least
+JPY 5,000. The lane therefore begins with evergreen creator-workstation,
+microphone/audio, and learning-resource decision pages, not a generic deal feed.
+Its measured equation is `approved net JPY = shipped eligible sales × actual
+category rate - returns - known real costs`; no assumed basket or rate is used.
+
+**Rakuten Affiliate lane.** Official marketplace economics are currently 2%–4%
+by category, with cart entry within 24 hours and purchase completion within 89
+days; the normal reward is capped at JPY 1,000 per item. A sale is initially
+variable and becomes money only after confirmation; current guidance states
+confirmation at the end of the following month and Rakuten Cash payment on the
+10th of the month after that. The same evergreen buyer-intent pages may compare
+Amazon and Rakuten only when each provider's disclosure, price-display, link,
+and attribution rules pass independently.
+
+Both commerce lanes follow one honest ramp:
+
+1. Resume the existing email-based account intent without creating duplicates;
+   classify `AUTHENTICATED`, application, approval, payment, and report states.
+2. Capture current official terms and permitted X/owned-site use; apply once
+   through an idempotent semantic job.
+3. Obtain one dedicated tracking identity per placement and verify destination
+   and disclosure without exposing raw links in Git or Telegram.
+4. Run ten one-variable evergreen placements per provider; ingest provider
+   clicks, orders, shipped/confirmed commission, returns/reversals, and payout ID.
+5. After at least five approved orders and a mature attribution/reversal window,
+   compute observed EPC, approved net per order, required qualified visits, and
+   content-refresh cost. Until then allocation remains exploratory and the
+   provider contributes USD 0 to the target equation.
+6. Promote only if mature approved net per 1,000 owned-page visits beats the
+   current marginal portfolio alternative. Never exceed the 40% provider cap.
+
+Mutable official sources:
+
+- Amazon Japan fee schedule: <https://affiliate.amazon.co.jp/help/node/topic/GRXPHT8U84RAYDXZ>
+- Amazon Japan application review: <https://affiliate.amazon.co.jp/help/node/topic/G8TW5AE9XL2VX9VM/>
+- Amazon Japan payment timing: <https://affiliate.amazon.co.jp/help/node/topic/G63DR893K4DH55XZ>
+- Rakuten rules and attribution: <https://affiliate.rakuten.co.jp/guideline/rule/>
+- Rakuten confirmation/payment flow: <https://affiliate.rakuten.co.jp/guides/rank/>
+
+**X creator-revenue lane.** The current official gate is active Premium (or an
+eligible organization plan), at least five million organic impressions in the
+last three months, at least 500 verified followers, supported country, compliant
+account, Stripe/X Money connection, and identity verification. Payouts are
+currently processed every two weeks with a USD 30 minimum, but X may change or
+cancel the program and does not publish a deterministic impression-to-dollar
+rate. Consequently, Repost optimizes qualified buyer conversations first;
+creator revenue is recorded only from an official payout/settlement ID and real
+fees in its separate ledger. Source:
+<https://help.x.com/en/using-x/creator-revenue-sharing>.
+
+Longevity means replacement capacity, not a promise that one program pays
+forever. The unattended owner recaptures material terms, link health, offer
+availability, account health, attribution window, reversal rate, and payout
+state; refreshes evergreen pages when facts or products change; holds an 80/20
+mature/exploration allocation; and substitutes a provider before concentration
+or sunset removes the business. Owned pages and an opt-in owned audience are the
+durable asset; X and each provider remain replaceable distribution and settlement
+rails.
+
+#### What the supplied X-team PDF contributes
+
+The supplied 27-page `Claude Code X自動運用チーム 完全設計図` is adopted as a
+content-team pattern, not as revenue evidence. Its Researcher, Writer, Engager,
+Analyst, and Director/constitution separation maps cleanly to Affiliate market
+research, evidence-bound composition, buyer-conversation acquisition, cohort
+analysis, and policy/allocation control. Its useful operating principle is the
+closed sequence `research → compose/engage → measure → improve` and reuse of
+proven voice/examples.
+
+The PDF's human final approval, impression/follower focus, promotional LINE
+funnel, and unsupported student-result claims are not copied. It provides no
+provider approval/link acquisition, effect idempotency, public readback,
+transaction/settlement join, pending/approved/paid/reversed lifecycle, reversal,
+currency, billed-cost, or canonical-net proof. This SSOT adds those missing money
+and safety contracts and keeps the existing launchd owner as executor.
+
 ### 9.0.1 Current truth and milestone queue
 
 This is the exact execution order from the current live state. Each production
@@ -1231,12 +1349,15 @@ independent harness task continues:
    cadence, and join each Repost/ordinary-post exposure through owned article,
    provider click, and transaction. Use the existing 13 placements for the next
    one-variable experiment; no transaction join means no revenue credit.
-5. **P4 — Execute the three-provider flight plan.** Continue ElevenLabs while the
+5. **P4 — Execute the three-provider flight plan and commerce admission.** Continue ElevenLabs while the
    Agent closes HubSpot's pending application and admits Semrush through official
    terms, application, auth, dedicated-link, report, transaction, reversal, and
    payout readback. Never count an unapproved provider or resubmit a rejected
-   application unchanged; recompute the target portfolio after any rejection or
-   terms change.
+   application unchanged. In parallel, resume the existing Amazon Japan and
+   Rakuten email-account intents, admit each through the same link/report/money
+   gates, and run bounded evergreen canaries. They remain USD 0 in the target
+   equation until mature approved-net receipts justify reallocation; recompute
+   the portfolio after any rejection, terms change, or observed superior cohort.
 6. **P5 — Close allocation and self-healing.** Allocate 80% only from mature
    approved-net evidence and 20% to bounded exploration; never promote from click,
    pending, estimate, or model score. Convert each newly observed recoverable
