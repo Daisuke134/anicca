@@ -23,6 +23,11 @@ from urllib.parse import urlparse
 
 _DNS_ERROR_TEXT = ("nodename", "name or service not known", "temporary failure")
 _FINAL_MARKER = "\n__SUBSTACK_FINAL_URL__="
+_CONTENT_TYPE_MARKER = "\n__SUBSTACK_CONTENT_TYPE__="
+_ASSET_HOSTS = {
+    "substack-post-media.s3.amazonaws.com",
+    "substackcdn.com",
+}
 
 
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -46,7 +51,11 @@ def _open(request: urllib.request.Request, timeout: int, *, follow_redirects: bo
 
 def _host(url: str) -> str:
     host = (urlparse(url).hostname or "").lower()
-    if host not in {"substack.com"} and not host.endswith(".substack.com"):
+    if (
+        host not in {"substack.com"}
+        and not host.endswith(".substack.com")
+        and host not in _ASSET_HOSTS
+    ):
         raise OSError("Substack transport received a non-Substack host")
     return host
 
@@ -90,6 +99,7 @@ def _curl(
     timeout: int,
     *,
     final_url: bool = False,
+    content_type: bool = False,
 ) -> tuple[bytes, str | None]:
     host = _host(url)
     ip = _resolve_ipv4(host)
@@ -114,6 +124,8 @@ def _curl(
             raise OSError("Substack public redirect readback cannot carry a Cookie header")
         config.extend(("location", 'proto-redir = "=https"'))
         config.append(f"write-out = {json.dumps(_FINAL_MARKER + '%{url_effective}')}" )
+    elif content_type:
+        config.append(f"write-out = {json.dumps(_CONTENT_TYPE_MARKER + '%{content_type}')}" )
     body_file = None
     try:
         if data is not None:
@@ -133,6 +145,11 @@ def _curl(
     if result.returncode != 0:
         raise OSError(f"Substack curl fallback failed with exit {result.returncode}")
     output = result.stdout
+    if content_type:
+        body, marker, value = output.rpartition(_CONTENT_TYPE_MARKER.encode())
+        if not marker:
+            raise OSError("Substack curl fallback did not return a content type")
+        return body, value.decode("utf-8", errors="replace")
     if not final_url:
         return output, None
     body, marker, resolved = output.rpartition(_FINAL_MARKER.encode())
@@ -189,3 +206,24 @@ def text_request(
             raise
     raw, resolved = _curl("GET", url, headers, None, timeout, final_url=final_url)
     return raw.decode("utf-8", errors="replace"), resolved
+
+
+def bytes_request(
+    url: str,
+    headers: dict[str, str] | None = None,
+    *,
+    timeout: int = 45,
+) -> tuple[bytes, str]:
+    """Read an allowlisted Substack asset with the same measured DNS fallback."""
+    request_headers = headers or {"User-Agent": "Mozilla/5.0"}
+    request = urllib.request.Request(url, headers=request_headers)
+    try:
+        with _open(request, timeout, follow_redirects=False) as response:
+            return response.read(), str(response.headers.get("Content-Type", "")).lower()
+    except urllib.error.URLError as error:
+        if not _dns_failure(error):
+            raise
+    raw, content_type = _curl(
+        "GET", url, request_headers, None, timeout, content_type=True
+    )
+    return raw, str(content_type or "").lower()

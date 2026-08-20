@@ -29,6 +29,7 @@ if str(SUBSTACK_HTTP_DIR) not in sys.path:
     sys.path.insert(0, str(SUBSTACK_HTTP_DIR))
 from substack_http import json_request as substack_json_request
 from substack_http import text_request as substack_text_request
+from substack_http import bytes_request as substack_bytes_request
 from media_integrity import (
     center_crop_content_proof,
     NOTE_EYECATCH_RATIO_WINDOW,
@@ -702,6 +703,16 @@ def _expected_asset_descriptors(
 
 
 def get_bytes(url: str) -> bytes:
+    host = (urlparse(url).hostname or "").lower()
+    if host in {"substack-post-media.s3.amazonaws.com", "substackcdn.com"}:
+        data, content_type = substack_bytes_request(
+            url, {"User-Agent": "Mozilla/5.0"}, timeout=30
+        )
+        if not content_type.startswith("image/"):
+            raise ValueError("public asset is not an image")
+        if len(data) > 25 * 1024 * 1024:
+            raise ValueError("public image exceeds verification limit")
+        return data
     request = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
     with urllib.request.urlopen(request, timeout=30) as response:
         content_type = str(response.headers.get("Content-Type", "")).lower()
