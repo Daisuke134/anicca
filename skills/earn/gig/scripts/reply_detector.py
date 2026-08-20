@@ -1779,7 +1779,7 @@ async def supervise_replies(
         if lifecycle is not None and lifecycle.get("state") not in allowed_states:
             return
         in_flight.add(event_key)
-        await dispatch.put((0 if work.get("kind") == "estimate" else 1, next(sequence), work))
+        await dispatch.put((0 if work.get("kind") in {"estimate", "reconcile"} else 1, next(sequence), work))
 
     async def enqueue_head_rows(rows: list[dict[str, Any]]) -> None:
         outbox = get_outbox()
