@@ -141,9 +141,12 @@ The order to the end is:
    of burning sends every 30 seconds. A current 30-row inbox-head audit found all 30 identities
    durably bound: 29 have official-readback or intentional-no-send terminal dispositions; action
    304 is the sole nonterminal row, blocked after five official server rejections with its bounded
-   backoff owner. No inbox identity is missing. Negotiate owner reporting is now the next defect:
-   `reply_wake` has created no Telegram row since report 7992 while Apply, Storefront and Paid
-   continue producing sent provider receipts.
+   backoff owner. No inbox identity is missing. The reporting gap came from the continuous runtime:
+   its workers persisted results but never called the legacy per-wake Telegram adapter, so
+   `reply_wake` created no row after report 7992 while the other lanes continued reporting. Every
+   continuous worker result now enters the existing durable outbox: verified replies use the
+   action/revision-keyed `reply_verified` path, while estimates, intentional no-send and blocked
+   outcomes use the run-keyed `reply_wake` path. Live provider ACK remains to be captured.
    Completion still requires a
    durable disposition for every buyer-authored message: replied with official readback, estimate
    sent with official readback, intentionally no-send with a bounded policy reason, or still pending

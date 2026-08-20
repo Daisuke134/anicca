@@ -464,6 +464,23 @@ def _persist_wake_report(args: Any, output: Path, result: dict[str, Any]) -> Non
                 pass
 
 
+def _persist_continuous_worker_report(
+    args: Any, output: Path, result: dict[str, Any],
+) -> None:
+    """Report every terminal continuous worker result through the durable outbox."""
+    events = result.get("events")
+    if isinstance(events, list) and events:
+        _atomic_json(output, result)
+        result["telegram_report"] = _telegram_report(args, output, "reply")
+        _atomic_json(output, result)
+        return
+    wake = {**_wake_result(
+        run_id=str(result.get("run_id") or f"continuous-{int(time.time())}"),
+        trigger="continuous", status=str(result.get("status") or "failed"),
+    ), **result}
+    _persist_wake_report(args, output, wake)
+
+
 def _owner_only(*paths: Path) -> None:
     for path in paths:
         if path.exists():
@@ -2061,7 +2078,10 @@ async def _run_continuous_runtime(args: Any, evidence: Path) -> dict[str, Any]:
         worker_evidence = evidence / "continuous" / "workers" / run_id
         if work.get("kind") == "blocked":
             result = await asyncio.to_thread(run_blocked_probe, args, work, worker_evidence)
-            _atomic_json(worker_evidence / "result.json", result)
+            await asyncio.to_thread(
+                _persist_continuous_worker_report,
+                args, worker_evidence / "result.json", result,
+            )
             return result
         if work.get("kind") == "estimate":
             result = await asyncio.to_thread(
@@ -2071,7 +2091,10 @@ async def _run_continuous_runtime(args: Any, evidence: Path) -> dict[str, Any]:
                 expected_revision=int(work["expected_revision"]),
                 evidence=worker_evidence, run_id=run_id,
             )
-            _atomic_json(worker_evidence / "result.json", result)
+            await asyncio.to_thread(
+                _persist_continuous_worker_report,
+                args, worker_evidence / "result.json", result,
+            )
             return result
         if work.get("kind") == "reconcile":
             result = await asyncio.to_thread(
@@ -2080,7 +2103,10 @@ async def _run_continuous_runtime(args: Any, evidence: Path) -> dict[str, Any]:
                 expected_revision=int(work["expected_revision"]),
                 evidence=worker_evidence, run_id=run_id,
             )
-            _atomic_json(worker_evidence / "result.json", result)
+            await asyncio.to_thread(
+                _persist_continuous_worker_report,
+                args, worker_evidence / "result.json", result,
+            )
             return result
         result = await asyncio.to_thread(
             run_targeted_thread, args,
@@ -2090,7 +2116,10 @@ async def _run_continuous_runtime(args: Any, evidence: Path) -> dict[str, Any]:
             evidence=worker_evidence,
             run_id=run_id,
         )
-        _atomic_json(worker_evidence / "result.json", result)
+        await asyncio.to_thread(
+            _persist_continuous_worker_report,
+            args, worker_evidence / "result.json", result,
+        )
         return result
 
     async def reconcile() -> dict[str, Any]:
