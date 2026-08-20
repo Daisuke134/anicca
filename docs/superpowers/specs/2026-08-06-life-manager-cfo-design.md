@@ -940,20 +940,22 @@ top-level seven-step sequence.
       owner-facing Product Stage 7 are closed.
 
 Current scheduler audit supersedes the earlier installation evidence. The legacy jobs remain out. OPS3a is now
-consolidated in canonical branch `feature/cfo-ops3a-canonical` at `4e079708e`, with a stable release and no
+consolidated in canonical branch `feature/cfo-ops3a-canonical` at `2dac47124`, with a stable release and no
 feature-worktree absolute path in the installed plist. The stable CFO entrypoint loads with its lock-matched
-dependencies and the fresh financial focused gate is 19/19. The label is still not loaded: `launchctl print/list` and
-a single `launchctl bootstrap gui/501` attempt both return `141: Reentrancy avoided`, `managerpid` cannot resolve,
-and the current session reports unavailable OpenDirectory/uid-501 resolution. A direct Moneytree MCP read succeeds,
-but the non-interactive Codex reader still fails closed. The Homebrew CLI path returns no Moneytree MCP completion;
-the installed Codex appserver path was also tested with the reader's minimal environment and a bounded DNS CONNECT
-transport, but its `chatgpt.com` MCP `initialize` request timed out before any tool event. A standalone Codex 0.148
-probe with `--ignore-user-config --enable apps` likewise produced no MCP completion within 35 seconds, so merely
-preferring `~/.local/bin/codex` is not a proven fix. A final 35-second probe also supplied the temporary
-`network.proxy_url` and `network.enabled` overrides explicitly; it still produced only MCP timeout markers and zero
-Moneytree completion events. Therefore no current hourly CFO Telegram finance receipt is claimed. OPS3b remains open
-until the existing launchd label runs one real Moneytree pass and a positive current provider message ID plus hourly
-path/schedule read-back are verified; no logout, reboot, or OS-service restart is part of this recovery.
+dependencies and the fresh financial focused gate is 19/19. The wrapper's Bash-3.2 JSON-prefix bug is fixed; `bash -n`,
+the literal-prefix guard, and a stable entrypoint run now preserve the real redacted result (`status=failed`,
+`reportingDate=2026-08-20`) instead of overwriting it with a null-date default. The label is still not loaded:
+`launchctl print/list` and the post-install `launchctl bootstrap gui/501` attempt return `141: Reentrancy avoided`,
+`managerpid` cannot resolve, and the current session reports unavailable OpenDirectory/uid-501 resolution. A direct
+Moneytree MCP read succeeds, but the non-interactive Codex reader still fails closed. The Homebrew CLI path returns no
+Moneytree MCP completion; the installed Codex appserver path was also tested with the reader's minimal environment and
+a bounded DNS CONNECT transport, but its `chatgpt.com` MCP `initialize` request timed out before any tool event. A
+standalone Codex 0.148 probe with `--ignore-user-config --enable apps` likewise produced no MCP completion within 35
+seconds, so merely preferring `~/.local/bin/codex` is not a proven fix. A final 35-second probe also supplied the
+temporary `network.proxy_url` and `network.enabled` overrides explicitly; it still produced only MCP timeout markers
+and zero Moneytree completion events. Therefore no current hourly CFO Telegram finance receipt is claimed. OPS3b
+remains open until the existing launchd label runs one real Moneytree pass and a positive current provider message ID
+plus hourly path/schedule read-back are verified; no logout, reboot, or OS-service restart is part of this recovery.
 
 Deferred after M1 by explicit owner decision: Binance Spot, trade history, Earn/funding sources, and their tax-lot
 ingestion. They are not unchecked M1 items and cannot become the active CFO item before CFO-1i closes.
