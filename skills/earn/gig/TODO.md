@@ -249,12 +249,12 @@ The order to the end is:
    the complete class-wide finding and automatically launched isolated v9 production under the
    fixed six-hour parent. v9 completed, promoted a hash-bound package and passed its producer-side
    render/archive checks, including embedded assets and width-aware card wrapping. Its fresh
-   reviewer then disproved that self-PASS while effect remained zero: both layouts still omit the
-   three feature cards, shorten the required demand callout, alter multiple risk/benefit/FAQ/
-   testimonial/summary phrases, and omit required final-CTA contact copy. The reviewer is completing
-   the full analogous-instance census before returning one bounded repair finding. Final v9 verdict,
-   the resulting revision, one delivery effect, exact-room official readback and replay zero remain
-   to be proved.
+   reviewer then disproved that self-PASS while effect remained zero. Its final `needs_revision`
+   finding covers every analogous instance in both layouts: three missing feature cards; shortened
+   demand copy; altered risk/benefit/FAQ/testimonial/summary text; missing badges, chevrons, icons and
+   final-CTA elements; unsupported sections; and false README dimensions. The controller persisted
+   round 2 and automatically launched isolated v10 production under the same live parent. v10 fresh
+   review, one delivery effect, exact-room official readback and replay zero remain to be proved.
 6. **Prove 24/7 control-plane durability.** Browser, Apply, Negotiate, Storefront and Paid must each
    survive process exit and start again from the immutable release. The current shell cannot read
    the launchd domain (`launchctl` returns 141, `Reentrancy avoided`), although browser CDP and new
