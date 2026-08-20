@@ -105,17 +105,29 @@ class MaterialTests(unittest.TestCase):
         sections = business_sections(profile)
         self.assertEqual(
             sections[0]["heading"],
-            "MUIT — Applied AI / AI Agent Engineering (Apr 2025–Present)",
+            "Mitsubishi UFJ Information Technology — Applied AI / AI Agent Engineering (Apr 2025–Present)",
         )
-        first_ids = [item["fact_ids"][0] for item in sections[0]["items"]]
+        accomplishments = sections[0]["items"]
         self.assertEqual(
-            first_ids,
-            ["mufg", "muit_genie_logs", "muit_rm_summary", "iclr"],
+            [item["heading"] for item in accomplishments],
+            [
+                "Salesforce Agentforce deployment",
+                "ICLR 2026 conference representation",
+            ],
+        )
+        self.assertEqual(
+            [item["fact_ids"][0] for item in accomplishments[0]["items"]],
+            ["mufg", "muit_genie_logs", "muit_rm_summary"],
+        )
+        self.assertEqual(
+            [item["fact_ids"][0] for item in accomplishments[1]["items"]],
+            ["iclr"],
         )
         all_ids = {
-            item["fact_ids"][0]
+            child["fact_ids"][0]
             for section in sections
             for item in section["items"]
+            for child in (item.get("items") or [item])
         }
         self.assertNotIn("life_manager", all_ids)
         self.assertEqual(sections[-1]["heading"], "Consumer AI Product")
@@ -194,7 +206,8 @@ class MaterialTests(unittest.TestCase):
             ).stdout
             self.assertIn("Pages:           1", info)
             self.assertIn("AI Product, Solutions & Customer Strategy", extracted)
-            self.assertIn("MUIT", extracted)
+            self.assertIn("Mitsubishi UFJ Information Technology", extracted)
+            self.assertNotIn("MUIT", extracted)
             self.assertIn("Anicca", extracted)
             self.assertIn("ICLR 2026 report", extracted)
             self.assertNotIn("Life Manager", extracted)

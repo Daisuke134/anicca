@@ -123,21 +123,24 @@ description or a user-approved variant policy justifies it.
 
 ### Current English business baseline
 
-The current MUIT business variant uses this order:
+The current Mitsubishi UFJ Information Technology business variant uses this order:
 
-1. MUIT — Applied AI / AI Agent Engineering (Apr 2025–Present)
+1. Mitsubishi UFJ Information Technology — Applied AI / AI Agent Engineering
+   (Apr 2025–Present)
 2. Earlier Growth Experience
 3. Research & Education
 4. Core Skills
 5. Consumer AI Product (last)
 
-Within MUIT, keep exactly three consecutive Agentforce CRM bullets—deployment,
-observability, and relationship-manager context engineering—followed by a fourth,
-separately labeled ICLR 2026 at MUIT bullet. This makes the two accomplishments
-visually distinct instead of scattering ICLR between project bullets. Keep one
-consistent banking customer term throughout the variant. Do not include Life Manager
-or Portfolio links in this application variant unless a target explicitly requests
-them.
+Within the current-role section, render exactly two accomplishment blocks:
+`Salesforce Agentforce deployment` contains three nested bullets (CRM deployment,
+Databricks workflow analysis, and relationship-manager context engineering), and
+`ICLR 2026 conference representation` contains one nested bullet. Do not turn the
+three deployment details into three separate accomplishment names or place ICLR
+inside that block. Use the full employer name `Mitsubishi UFJ Information Technology`
+in the resume instead of the `MUIT` abbreviation. Keep one consistent banking
+customer term throughout the variant. Do not include Life Manager or Portfolio links
+in this application variant unless a target explicitly requests them.
 
 ## Autonomous loop after approval
 

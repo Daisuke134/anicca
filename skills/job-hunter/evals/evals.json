@@ -7,9 +7,9 @@
       "expected_output": "A facts-pending result with source evidence, one targeted clarification, and no invented date."
     },
     {
-      "id": "muit-two-projects",
-      "prompt": "Tailor this resume for an AI solutions role. Keep the Agentforce CRM deployment and ICLR communication as two distinct MUIT bullets, use one banking customer term, and put the mobile product last.",
-      "expected_output": "A one-page ATS-safe draft and report with separate labeled bullets, canonical terminology, evidence IDs, and the mobile product last."
+      "id": "current-role-two-accomplishments",
+      "prompt": "Tailor this resume for an AI solutions role. Keep two accomplishment blocks under Mitsubishi UFJ Information Technology: Salesforce Agentforce deployment with three nested bullets, and ICLR 2026 conference representation with one nested bullet. Use one banking customer term, spell out the employer name, and put the mobile product last.",
+      "expected_output": "A one-page ATS-safe draft and report with the two-block hierarchy, nested evidence-backed bullets, canonical terminology, no MUIT abbreviation in the resume, and the mobile product last."
     },
     {
       "id": "approved-autopilot",

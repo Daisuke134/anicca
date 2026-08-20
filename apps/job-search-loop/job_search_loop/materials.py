@@ -29,6 +29,42 @@ def validate_claims(profile: dict[str, Any], items: list[dict[str, Any]]) -> Non
                 raise MaterialError("MUFG ownership wording is not approved")
 
 
+def _leaf_material_items(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    leaves: list[dict[str, Any]] = []
+    for item in items:
+        nested = item.get("items")
+        if isinstance(nested, list):
+            leaves.extend(_leaf_material_items(nested))
+        else:
+            leaves.append(item)
+    return leaves
+
+
+def _resolve_section_items(
+    facts: dict[str, str], items: list[Any]
+) -> list[dict[str, Any]]:
+    resolved: list[dict[str, Any]] = []
+    for item in items:
+        if isinstance(item, dict):
+            nested = []
+            for child in item["items"]:
+                fact_id = child["fact_ids"][0]
+                nested.append(
+                    {
+                        "text": child.get("text") or facts[fact_id],
+                        "fact_ids": child["fact_ids"],
+                    }
+                )
+            resolved.append({"heading": item["heading"], "items": nested})
+            continue
+        fact_id, text = item
+        if fact_id in facts:
+            resolved.append(
+                {"text": text or facts[fact_id], "fact_ids": [fact_id]}
+            )
+    return resolved
+
+
 def render_resume_html(
     profile: dict[str, Any],
     sections: list[dict[str, Any]],
@@ -44,19 +80,34 @@ def render_resume_html(
         "regulated enterprise deployment, research, and consumer AI products"
     ),
 ) -> str:
-    all_items = [item for section in sections for item in section.get("items", [])]
+    all_items = _leaf_material_items(
+        [item for section in sections for item in section.get("items", [])]
+    )
     validate_claims(profile, all_items)
     name = html.escape(display_name or profile["candidate"]["name"])
     body: list[str] = []
     for section in sections:
         heading = str(section["heading"])
         section_class = "skills" if "skill" in heading.casefold() else ""
-        body.append(
-            f'<section class="{section_class}"><h2>{html.escape(heading)}</h2><ul>'
-        )
-        for item in section.get("items", []):
-            body.append(f"<li>{html.escape(item['text'])}</li>")
-        body.append("</ul></section>")
+        body.append(f'<section class="{section_class}"><h2>{html.escape(heading)}</h2>')
+        flat_items = [
+            item for item in section.get("items", []) if not isinstance(item.get("items"), list)
+        ]
+        if flat_items:
+            body.append("<ul>")
+            for item in flat_items:
+                body.append(f"<li>{html.escape(item['text'])}</li>")
+            body.append("</ul>")
+        for accomplishment in section.get("items", []):
+            nested = accomplishment.get("items")
+            if not isinstance(nested, list):
+                continue
+            body.append('<div class="accomplishment">')
+            body.append(f"<h3>{html.escape(str(accomplishment['heading']))}</h3><ul>")
+            for item in nested:
+                body.append(f"<li>{html.escape(item['text'])}</li>")
+            body.append("</ul></div>")
+        body.append("</section>")
     link_html = " · ".join(
         f'<a href="{html.escape(url, quote=True)}">{html.escape(label)}</a>'
         for label, url in links
@@ -93,7 +144,9 @@ h1 {{ color: #0f2942; font-size: 24pt; letter-spacing: -.025em; line-height: 1.0
 h2 {{ color: #164e70; font-size: 10.2pt; text-transform: uppercase;
       letter-spacing: .075em; border-bottom: 1px solid #bfdbfe; margin: 8px 0 3px;
       padding-bottom: 1px; }}
+h3 {{ color: #1e4d70; font-size: 9.7pt; margin: 4px 0 1px; line-height: 1.2; }}
 p, ul {{ margin: 2px 0; }} ul {{ padding-left: 15px; }} li {{ margin: 2px 0; }}
+.accomplishment {{ margin: 3px 0 1px; }} .accomplishment ul {{ margin-top: 0; }}
 section.skills li {{ list-style: none; margin-left: -15px; padding-left: 0; }}
 a {{ color: #1d4ed8; text-decoration: none; }}
 html[lang="ja"] body {{ font-size: 8.8pt; line-height: 1.25; }}
@@ -111,24 +164,34 @@ def master_sections(profile: dict[str, Any]) -> list[dict[str, Any]]:
     facts = {fact["id"]: fact["claim"] for fact in profile["facts"]}
     groups = [
         (
-            "MUIT — Applied AI / AI Agent Engineering (Apr 2025–Present)",
+            "Mitsubishi UFJ Information Technology — Applied AI / AI Agent Engineering (Apr 2025–Present)",
             [
-                (
-                    "mufg",
-                    "Agentforce CRM deployment — Contributed through MUIT to MUFG Bank's Japan-first production deployment of Salesforce Agentforce for Financial Services, integrating AI agents into the bank's internal CRM used by relationship managers.",
-                ),
-                (
-                    "muit_genie_logs",
-                    "Agentforce observability — Built an observability workflow in Databricks to analyze AI-agent inputs, outputs, and responses to relationship managers; used it to investigate behavior and response quality.",
-                ),
-                (
-                    "muit_rm_summary",
-                    "Agentforce context engineering — Supported prompt tuning and context engineering for deployed agents, including company-information summaries for relationship managers.",
-                ),
-                (
-                    "iclr",
-                    "ICLR 2026 at MUIT — Represented MUIT in Rio de Janeiro as part of MUIT work; synthesized frontier-AI research for an internal executive briefing and presented key findings through MUIT's official conference report.",
-                ),
+                {
+                    "heading": "Salesforce Agentforce deployment",
+                    "items": [
+                        {
+                            "fact_ids": ["mufg"],
+                            "text": "Contributed through Mitsubishi UFJ Information Technology to MUFG Bank's Japan-first production deployment of Salesforce Agentforce for Financial Services, integrating AI agents into the bank's internal CRM used by relationship managers.",
+                        },
+                        {
+                            "fact_ids": ["muit_genie_logs"],
+                            "text": "Built a Databricks workflow to analyze AI-agent inputs, outputs, and responses to relationship managers, using it to investigate behavior and response quality.",
+                        },
+                        {
+                            "fact_ids": ["muit_rm_summary"],
+                            "text": "Supported prompt tuning and context engineering for deployed Salesforce Agentforce agents, including company-information summaries for relationship managers.",
+                        },
+                    ],
+                },
+                {
+                    "heading": "ICLR 2026 conference representation",
+                    "items": [
+                        {
+                            "fact_ids": ["iclr"],
+                            "text": "Represented Mitsubishi UFJ Information Technology in Rio de Janeiro at ICLR 2026 as part of company work; synthesized frontier-AI research for an internal executive briefing and presented key findings through its official conference report.",
+                        }
+                    ],
+                },
             ],
         ),
         (
@@ -144,7 +207,7 @@ def master_sections(profile: dict[str, Any]) -> list[dict[str, Any]]:
             "Core Skills",
             [
                 ("muit_agent_crm", "Salesforce Agentforce · AI-agent deployment · CRM workflows"),
-                ("muit_genie_logs", "Databricks · AI observability · relationship-manager response quality"),
+                ("muit_genie_logs", "Databricks · AI-agent behavior analysis · relationship-manager response quality"),
                 ("muit_rm_summary", "Prompt tuning · context engineering · relationship-manager workflows"),
                 ("anicca_consumer", "Swift / iOS · consumer AI products · product growth"),
             ],
@@ -155,11 +218,7 @@ def master_sections(profile: dict[str, Any]) -> list[dict[str, Any]]:
     return [
         {
             "heading": heading,
-            "items": [
-                {"text": text or facts[fact_id], "fact_ids": [fact_id]}
-                for fact_id, text in items
-                if fact_id in facts
-            ],
+            "items": _resolve_section_items(facts, items),
         }
         for heading, items in groups
     ]
@@ -169,12 +228,22 @@ def business_sections(profile: dict[str, Any]) -> list[dict[str, Any]]:
     facts = {fact["id"]: fact["claim"] for fact in profile["facts"]}
     groups = [
         (
-            "MUIT — Applied AI / AI Agent Engineering (Apr 2025–Present)",
+            "Mitsubishi UFJ Information Technology — Applied AI / AI Agent Engineering (Apr 2025–Present)",
             [
-                ("mufg", "Agentforce CRM deployment — Contributed through MUIT to MUFG Bank's Japan-first production deployment of Salesforce Agentforce for Financial Services, integrating AI agents into the bank's internal CRM used by relationship managers."),
-                ("muit_genie_logs", "Agentforce observability — Built an observability workflow in Databricks to analyze AI-agent inputs, outputs, and responses to relationship managers; used it to investigate behavior and response quality."),
-                ("muit_rm_summary", "Agentforce context engineering — Supported prompt tuning and context engineering for deployed AI agents, including company-information summaries for relationship managers."),
-                ("iclr", "ICLR 2026 at MUIT — Represented MUIT in Rio de Janeiro as part of MUIT work; synthesized frontier-AI research for an internal executive briefing and presented key findings through MUIT's official conference report."),
+                {
+                    "heading": "Salesforce Agentforce deployment",
+                    "items": [
+                        {"fact_ids": ["mufg"], "text": "Contributed through Mitsubishi UFJ Information Technology to MUFG Bank's Japan-first production deployment of Salesforce Agentforce for Financial Services, integrating AI agents into the bank's internal CRM used by relationship managers."},
+                        {"fact_ids": ["muit_genie_logs"], "text": "Built a Databricks workflow to analyze AI-agent inputs, outputs, and responses to relationship managers, using it to investigate behavior and response quality."},
+                        {"fact_ids": ["muit_rm_summary"], "text": "Supported prompt tuning and context engineering for deployed Salesforce Agentforce agents, including company-information summaries for relationship managers."},
+                    ],
+                },
+                {
+                    "heading": "ICLR 2026 conference representation",
+                    "items": [
+                        {"fact_ids": ["iclr"], "text": "Represented Mitsubishi UFJ Information Technology in Rio de Janeiro at ICLR 2026 as part of company work; synthesized frontier-AI research for an internal executive briefing and presented key findings through its official conference report."},
+                    ],
+                },
             ],
         ),
         (
@@ -189,7 +258,7 @@ def business_sections(profile: dict[str, Any]) -> list[dict[str, Any]]:
             "Core Skills",
             [
                 ("muit_agent_crm", "Salesforce Agentforce · AI-agent deployment · CRM workflows"),
-                ("muit_genie_logs", "Databricks · AI observability · relationship-manager response quality"),
+                ("muit_genie_logs", "Databricks · AI-agent behavior analysis · relationship-manager response quality"),
                 ("muit_rm_summary", "Prompt tuning · context engineering · relationship-manager workflows"),
             ],
         ),
@@ -201,11 +270,7 @@ def business_sections(profile: dict[str, Any]) -> list[dict[str, Any]]:
     return [
         {
             "heading": heading,
-            "items": [
-                {"text": text or facts[fact_id], "fact_ids": [fact_id]}
-                for fact_id, text in items
-                if fact_id in facts
-            ],
+            "items": _resolve_section_items(facts, items),
         }
         for heading, items in groups
     ]
@@ -213,12 +278,13 @@ def business_sections(profile: dict[str, Any]) -> list[dict[str, Any]]:
 
 JAPANESE_FACT_TEXT = {
     "muit_role_2025": (
-        "三菱UFJインフォメーションテクノロジー（MUIT）で、2025年4月から"
+        "三菱UFJインフォメーションテクノロジーで、2025年4月から"
         "応用AI・AIエージェント領域に従事。"
     ),
     "muit_agent_crm": "銀行のCRM環境へのAIエージェント導入に従事。",
     "muit_genie_logs": (
-        "Databricks Genie Codeを用い、エージェント出力ログの詳細分析を自動化。"
+        "Databricksでエージェントの入力・出力・顧客担当者向け応答を分析する"
+        "ワークフローを構築。"
     ),
     "muit_rm_summary": (
         "リレーションシップマネージャー向け企業情報要約エージェントの"
@@ -246,7 +312,8 @@ JAPANESE_FACT_TEXT = {
         "週次勉強会とコミュニティを研究室・大学院内で設立。"
     ),
     "iclr": (
-        "リオデジャネイロでICLR 2026に参加し、社内発表およびMUIT公式"
+        "リオデジャネイロでICLR 2026に参加し、社内発表および"
+        "三菱UFJインフォメーションテクノロジー公式"
         "YouTubeレポートで最新論文の学びを共有。"
     ),
     "a10_marketing": (
@@ -267,7 +334,7 @@ def japanese_sections(profile: dict[str, Any]) -> list[dict[str, Any]]:
     approved = {fact["id"] for fact in profile["facts"]}
     groups = [
         (
-            "職務経歴 — MUIT / MUFG（2025年4月〜現在）",
+            "職務経歴 — 三菱UFJインフォメーションテクノロジー / MUFG（2025年4月〜現在）",
             [
                 "muit_role_2025",
                 "muit_agent_crm",
@@ -366,7 +433,12 @@ def render_master(profile_path: Path, output_dir: Path) -> tuple[Path, Path]:
         links=_public_links(),
         headline="Applied AI & Agent Engineer",
         summary="regulated enterprise deployment, research, and consumer AI products",
-        required_ats_text=("Daisuke Narita", "MUIT", "NAIST", "Applied AI"),
+        required_ats_text=(
+            "Daisuke Narita",
+            "Mitsubishi UFJ Information Technology",
+            "NAIST",
+            "Applied AI",
+        ),
     )
 
 
@@ -385,7 +457,7 @@ def render_business(profile_path: Path, output_dir: Path) -> tuple[Path, Path]:
         ),
         required_ats_text=(
             "Daisuke Narita",
-            "MUIT",
+            "Mitsubishi UFJ Information Technology",
             "AI Product",
             "Customer",
             "Anicca",
@@ -425,7 +497,7 @@ def render_japanese(profile_path: Path, output_dir: Path) -> tuple[Path, Path]:
         required_ats_text=(
             display_name,
             "職務経歴書",
-            "MUIT",
+            "三菱UFJインフォメーションテクノロジー",
             "AIエージェント",
             "NAIST",
         ),

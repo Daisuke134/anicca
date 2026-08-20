@@ -933,10 +933,12 @@ The default English resume is one ATS-friendly page, single column, text-first:
 
 1. Headline: Applied AI / Agent Engineer bridging regulated enterprise deployment and
    consumer AI products.
-2. MUIT experience with exactly three consecutive Agentforce CRM bullets—deployment,
-   observability, and relationship-manager context engineering—followed by a fourth,
-   separately labeled ICLR-as-MUIT-work bullet; use `relationship managers`
-   consistently for the bank sales audience.
+2. Mitsubishi UFJ Information Technology experience with exactly two accomplishment
+   blocks: `Salesforce Agentforce deployment` contains three nested bullets for
+   CRM deployment, Databricks workflow analysis, and relationship-manager context
+   engineering; `ICLR 2026 conference representation` contains one nested bullet.
+   Spell out the employer name in the resume; do not use the `MUIT` abbreviation.
+   Use `relationship managers` consistently for the bank sales audience.
 3. NAIST/ATR research and weekly agent-practice community leadership.
 4. Earlier growth work, research/education, and core skills are separate sections in
    that order.
@@ -951,12 +953,13 @@ The technical-business variant is also one ATS-friendly page. It keeps the same 
 ledger while changing the headline and order to emphasize regulated-enterprise
 delivery, translating AI capabilities into user workflows, stakeholder alignment,
 product ownership, customer adoption, GTM/growth, and public communication. Its
-professional section is headed by MUIT (not MUFG), places the MUFG Agentforce CRM
-contribution first, follows it with the observability and context-engineering bullets,
-then places the ICLR 2026 appearance as the fourth, separate MUIT achievement. It
-uses `relationship managers` consistently and describes Databricks observability
-without naming Genie Code. Anicca is the final consumer-AI section; Life Manager and
-Portfolio are not included in this application variant. It must not invent formal PM,
+professional section is headed by Mitsubishi UFJ Information Technology (not MUFG),
+uses two visible accomplishment blocks, and places the three Agentforce deployment
+details under the first block before the single ICLR 2026 conference bullet under the
+second block. It uses `relationship managers` consistently and describes the
+Databricks workflow without naming Genie Code. Anicca is the final consumer-AI
+section; Life Manager and Portfolio are not included in this application variant. It
+must not invent formal PM,
 sales quota, people-management, or revenue ownership.
 
 ### 7.1 Resume-refinement skill contract
@@ -978,7 +981,8 @@ Telegram receives a natural-language event report. The skill never owns browser
 submission or creates a second executor.
 
 The Japanese variant is a one-page Japanese 職務経歴書 with fourteen grounded points
-covering MUIT/MUFG, Databricks, Agentforce, Anicca/Life Manager, NAIST/ATR,
+covering Mitsubishi UFJ Information Technology/MUFG, Databricks, Agentforce,
+Anicca/Life Manager, NAIST/ATR,
 agent-community leadership, ICLR communication, growth, education, and languages.
 The complete official posting text, not a person's name or presumed nationality,
 determines language: primarily Japanese postings use the Japanese PDF; English
@@ -1250,7 +1254,7 @@ not start merely because their design is already written:
 | `JOB-AUTONOMY-CONTRACT-11A` | `completed` | PR #1364 / final CI `30473862095`; this specification states current truth, four resident drivers, verifier boundary, Telegram/Life Manager UX, human-only boundaries, local→cloud contract and the complete dependency order |
 | `JOB-OUTCOME-ATTRIBUTION-11B` | `completed` | PR #1374 / merge `683ba9562` / final CI `30502556044`; immutable content-addressed generations and DB-enforced immutable assignments/outcomes persist; one external receipt may prove multiple stages only for its bound application; negative silence requires a versioned observation policy; Gmail submission confirmation is attributed; 191 job-loop and 11 runner tests pass; the redacted CLI migrated the live 5-row ledger with unchanged state counts, zero unassigned rows and integrity `ok`; projection rebuild is deterministic |
 | `JOB-LEARNING-PASS-11C` | `completed` | PR #1376 / merge `1bdbc67d3` / final CI `30507559728`; health-status follow-up PR #1377 / merge `fd26398cc`. 203 job-loop + 11 runner tests pass. Sunday 09:15 JST launchd and persistent systemd drivers replay eight safety cases, deterministically assign future canonical job keys, evaluate authoritative interview outcomes, atomically promote/close/rollback with pointer-race fencing, and send one content-addressed Telegram report. The live ledger stayed integrity `ok` with unchanged 2 submitted / 1 submit-unknown / 2 not-submitted counts; its first 0/0-sample decision was correctly inconclusive, receipt `175d3b7be5db06f88dbdc9aaf9428dfbda3fe65245a497a1f377b6271255564c`, Telegram ACK `4530`; canonical LaunchAgent reached runs=4 / last exit=0 and the three-driver healthcheck reports learning `status=success` with both SQLite integrity checks `ok` |
-| `JOB-RESUME-MATERIALS-1R` | `pending_actionable` | Reopen the accepted resume baseline; generate engineering, technical-business, Japanese resume and Japanese rirekisho from the private truth ledger; enforce one-page/single-column/ATS-readable output, action→technical approach→evidence bullets, visual whitespace checks, extracted-text checks and SHA-256 receipts; resolve the TOEFL 95/96 conflict before publishing, retain verified TOEIC 910 plus DELE B1, and preserve the approved MUIT/A10 facts |
+| `JOB-RESUME-MATERIALS-1R` | `pending_actionable` | Reopen the accepted resume baseline; generate engineering, technical-business, Japanese resume and Japanese rirekisho from the private truth ledger; enforce one-page/single-column/ATS-readable output, action→technical approach→evidence bullets, visual whitespace checks, extracted-text checks and SHA-256 receipts; resolve the TOEFL 95/96 conflict before publishing, retain verified TOEIC 910 plus DELE B1, and preserve the approved Mitsubishi UFJ Information Technology/A10 facts |
 | `JOB-SKILL-BUNDLE-1S` | `pending_after_1R` | Extract a harness-neutral `skills/job-hunter/SKILL.md` and `loops/job-hunter/` registry from the current app without changing behavior; Codex is the first adapter, Claude and generic providers consume the same input/output schemas, and parity tests prove no duplicate executor or side-effect ownership |
 | `JOB-HARNESS-PARITY-1H` | `pending_after_1S` | Add `claude-direct` and generic-provider candidates behind the same task-class schemas; preserve Codex-first selection, retry only transient provider failures, record provider/model/attempt evidence, and pass one fixed fixture through Codex, Claude and generic adapters without duplicate side effects |
 | `JOB-TELEGRAM-COVERAGE-1T` | `pending_after_1H` | Add one versioned event envelope and deterministic natural-language renderer; wire loop start/finish, model attempts/fallbacks, discovery/ranking, materials/ATS readiness, every external side effect, blockers, reconciliation, prep, learning and health into the fenced Telegram outbox; model failure must still produce a human-readable report and every delivery must have an ACK or durable `delivery_unknown` event |
@@ -1269,7 +1273,7 @@ slice has one owner, one acceptance result and one durable receipt.
 | Slice | Parent | Status | Done when |
 |---|---|---|---|
 | `JOB-RESUME-FACTS-1R-A` | 1R | `pending_actionable` | The private truth ledger records one exact TOEFL value, verified TOEIC 910 and DELE B1; the old accepted material baseline is explicitly reopened. |
-| `JOB-RESUME-EN-1R-B` | 1R | `pending_after_1R-A` | Engineering and technical-business English HTML/PDF variants render from the ledger with the new one-page hierarchy: MUIT first, separate Agentforce CRM and ICLR bullets, one banking customer term, A10 details, and Anicca last. |
+| `JOB-RESUME-EN-1R-B` | 1R | `pending_after_1R-A` | Engineering and technical-business English HTML/PDF variants render from the ledger with the new one-page hierarchy: Mitsubishi UFJ Information Technology first, two accomplishment blocks (three nested Agentforce deployment bullets, then one ICLR bullet), one banking customer term, A10 details, and Anicca last. |
 | `JOB-RESUME-JA-1R-C` | 1R | `pending_after_1R-A` | Japanese 履歴書 and 職務経歴書 render from the same ledger with the language section and grounded claims. |
 | `JOB-RESUME-VERIFY-1R-D` | 1R | `pending_after_1R-B-C` | Visual inspection, `pdftotext`, claim validation, ATS checks and SHA receipts pass for all four artifacts. |
 | `JOB-RESUME-SKILL-1R-E` | 1R | `in_progress` | `skills/job-hunter/SKILL.md`, its evidence-backed references, and resume-refinement eval prompts define intake, fact-bank construction, one approval gate, autonomous post-approval refinement, and provider-neutral outputs without private data. |
