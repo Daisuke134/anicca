@@ -355,11 +355,7 @@ def build_placement_ledger(state):
         row.get("placement_id"): row for row in dev_metrics.get("articles", [])
         if isinstance(row, dict) and row.get("placement_id")
     }
-    latest_transactions = {}
-    for transition in _json_rows(state / "commission-ledger.jsonl"):
-        transaction_id = transition.get("provider_transaction_id")
-        if transaction_id:
-            latest_transactions[transaction_id] = transition
+    latest_transactions = latest_commission_transitions(state)
     usage_rows = _json_rows(state / "telemetry" / "agent-usage.jsonl")
     rows = []
     for placement_id, candidate in sorted(candidates.items()):
@@ -367,7 +363,8 @@ def build_placement_ledger(state):
         dev = dev_rows.get(placement_id, {})
         transactions = [
             row for row in latest_transactions.values()
-            if (row.get("placement") or {}).get("placement_id") == placement_id
+            if (row.get("placement") or {}).get("state") == "MATCHED"
+            and (row.get("placement") or {}).get("placement_id") == placement_id
         ]
         approved = {}
         for row in transactions:
