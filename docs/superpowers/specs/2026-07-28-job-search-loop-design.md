@@ -40,7 +40,10 @@ existing claim, browser, confirmation, ledger and Telegram fences. The committed
 strategy caps the Japan day at ten applications (dream 2, strong-fit 5, adjacent 3);
 once that cap is reached, a wake exits before browser/model initialization and writes
 `daily_quota_reached`. The installed plist and the versioned launchd/systemd
-templates are verified to carry the same 30-minute interval.
+templates are verified to carry the same 30-minute interval. The plist is currently
+configured but not registered in the user GUI launchd domain because every readback
+and kick returns `141: Reentrancy avoided`; the direct wrapper evidence below does
+not promote this host scheduler to live.
 
 ### 1.1 `JOB-CANONICAL-MERGE-1`
 
