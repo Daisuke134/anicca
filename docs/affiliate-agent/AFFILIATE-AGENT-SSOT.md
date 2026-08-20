@@ -1401,6 +1401,14 @@ historical evidence below. Read-only inspection of the installed state shows:
   refresh an existing artifact whenever the current source-hash map differs;
   a temporary isolated replay proved the rebuilt artifact and all five policy
   checks pass without exposing or changing the real link.
+- the source-hash refresh is committed as `b4fa82c6e` and installed as
+  immutable release `b4fa82c6e0321f85820f56a3e78b357856632a1e`; installed
+  `content.py` compiles and the isolated stale-artifact replay reports
+  `fresh_sources_match_artifact=true` with policy `PASS`. A post-install kick
+  at `2026-08-20T09:29:47Z` still returned `141: Reentrancy avoided`, so
+  `last-run.json` remains the pre-install policy failure. A04 is not closed
+  until the existing owner naturally or successfully triggered runs this
+  release and supplies the owned/X readback.
 - the current launchd capability check at `2026-08-20T09:20:57Z` also fails
   outside the service label: `launchctl managername`, `launchctl print user/501`,
   and `launchctl print gui/501` all return `141: Reentrancy avoided`, while

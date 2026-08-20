@@ -129,6 +129,14 @@ repair changes only the builder's artifact-reuse condition to require the
 current source-hash map; an isolated replay proved source rebinding and
 five-check policy PASS. It is not yet installed or owner-E2E verified.
 
+The source-hash repair is now committed as `b4fa82c6e` and installed as
+immutable release `b4fa82c6e0321f85820f56a3e78b357856632a1e`; installed
+`content.py` compiles and the isolated stale-artifact replay passes policy.
+The post-install existing-owner kick at `2026-08-20T09:29:47Z` again returned
+`141: Reentrancy avoided`; no parallel executor or manual publication was
+created, and `last-run.json` remains the pre-install policy failure. A04 stays
+open for the next real owner readback.
+
 This handover records no Codex manual publication, provider write, or ledger
 mutation. The installed owner performed the verified music delivery described
 above; Codex did not create a parallel executor.
