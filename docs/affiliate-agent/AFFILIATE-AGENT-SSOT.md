@@ -1390,6 +1390,12 @@ historical evidence below. Read-only inspection of the installed state shows:
   `2026-08-20T09:17:16Z` again returned `141: Reentrancy avoided`, no loop
   process started, and `last-run.json` still shows the pre-repair ContentError.
   Therefore the code fix is installed/readable but not yet owner-E2E verified.
+- the current launchd capability check at `2026-08-20T09:20:57Z` also fails
+  outside the service label: `launchctl managername`, `launchctl print user/501`,
+  and `launchctl print gui/501` all return `141: Reentrancy avoided`, while
+  `id -un` returns the literal `501` rather than a username. The GUI/user
+  launchd domain is therefore not readable from this session; no bootstrap,
+  reload, OS-service restart, or parallel executor is an honest substitute.
 
 Execution resumes in this order. Time/provider outcomes are gates, but every safe
 independent harness task continues:

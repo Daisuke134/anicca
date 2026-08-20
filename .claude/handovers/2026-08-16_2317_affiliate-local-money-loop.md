@@ -111,6 +111,13 @@ all five TTS API sources. The first owner kick after installation at
 started, and `last-run.json` still shows the pre-repair ContentError. The code
 fix is therefore installed/readable but not owner-E2E verified.
 
+The current launchd capability check at `2026-08-20T09:20:57Z` also fails
+outside the service label: `launchctl managername`, `launchctl print user/501`,
+and `launchctl print gui/501` all return `141: Reentrancy avoided`, while
+`id -un` returns literal `501` rather than a username. The GUI/user launchd
+domain is not readable from this session; no bootstrap, reload, OS-service
+restart, or parallel executor is an honest substitute.
+
 This handover records no Codex manual publication, provider write, or ledger
 mutation. The installed owner performed the verified music delivery described
 above; Codex did not create a parallel executor.
