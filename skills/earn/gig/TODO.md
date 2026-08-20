@@ -152,7 +152,11 @@ The order to the end is:
    Telegram provider or spend their next-work capacity waiting for delivery. Stale work that loses
    its binding as `already_closed` is persisted but not presented as a buyer outcome. The real loop
    created new reports 9033 onward; reports 9036/9037/9038 reached provider ACKs 26441/26446/26445,
-   proving owner delivery after the twelve-hour reporting gap.
+   proving owner delivery after the twelve-hour reporting gap. The later Manledge commitment-line
+   question also closed naturally: action 351 replied with official readback in 2m08s. Its fresh
+   order snapshot already contained the ¥9,000 purchased order, so the loop correctly replied
+   without submitting a duplicate estimate. Estimate submission remains for agreed buyer intent
+   only while no paid fence exists.
    Completion still requires a
    durable disposition for every buyer-authored message: replied with official readback, estimate
    sent with official readback, intentionally no-send with a bounded policy reason, or still pending
