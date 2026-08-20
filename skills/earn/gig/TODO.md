@@ -597,6 +597,21 @@ iteration depth, artifact validation or duplicate-effect protection are regressi
 when it meets the agreed buyer deadline with quality and official delivery proof, not when it matches
 Negotiate's reply time.
 
+**Paid context and first-action contract — blocking production invariant.** A purchased talkroom is
+never a fresh conversation. Before generating any buyer-facing reply or artifact, Paid must compile
+one ordered context packet from the original application/proposal, every pre-purchase DM, the full
+talkroom history, the purchased-order scope, and every attachment. Information already present in
+any of those sources must never be requested again. The default first buyer-visible action after
+purchase is useful work: build and attach the best complete artifact supported by the accumulated
+context immediately, with the formal-delivery checkbox left off. A short progress message is not a
+substitute for the artifact. Ask a question only when one specific missing fact makes truthful
+production impossible; even then, produce and attach every non-blocked portion in parallel instead
+of waiting idle. The Manledge room violated this contract by asking about DM/requirements already
+supplied before purchase and thereby damaged trust. The haru haru9 room originally violated it by
+asking which locality to use despite the later buyer message already resolving 羽曳野, then waiting
+through repeated revision cycles without attaching usable work. Completion requires replayable
+evidence that both classes are impossible for future rooms, not one manual apology or delivery.
+
 - [x] Recheck the natural order boundary: the latest official orders pass observed 3 open cards,
   read back 2 already-owned/deduplicated states, and left 1 pending with `failed=0`. The pending
   room is an existing revision/owner-decision state, not a new artifact that can be safely built
@@ -616,6 +631,12 @@ Negotiate's reply time.
   machine leaves email unset, so its latest Paid report is `delivery_unknown` on the fallback;
   that is notification transport state, not paid-delivery proof.
 - [ ] Detect one new natural paid order from official state.
+- [ ] Compile and hash the complete application + pre-purchase DM + order + talkroom + attachment
+  context before any Paid reply or production decision; expose source receipts for every component.
+- [ ] Make artifact-first the purchased-room default: attach useful work on the first actionable
+  Paid pass, keep formal delivery unchecked, and never replace the artifact with a status message.
+- [ ] Prove already-known facts are never re-asked; a clarification is allowed only for one truly
+  production-blocking unknown while all non-blocked work is produced in parallel.
 - [ ] Build its requested artifact from the accepted scope.
 - [ ] Validate the artifact before delivery.
 - [ ] Deliver it exactly once.
