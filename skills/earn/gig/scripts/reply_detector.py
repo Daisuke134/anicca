@@ -1580,6 +1580,21 @@ def run_targeted_estimate(
         _run("collect", command)
         _owner_only(snapshot_path)
         snapshot = _targeted_snapshot(snapshot_path)
+        if binding.get("state") == "reconcile_pending":
+            reconcile_snapshot = dict(snapshot)
+            reconcile_snapshot.update({
+                "collector_mode": "direct-thread-only", "semantic_ssot": True,
+                "head_only": False,
+            })
+            return run_requested_estimate(
+                reconcile_snapshot, args=argparse.Namespace(
+                    database=Path(args.database), manifest=Path(args.manifest),
+                    runner=Path(args.runner), estimate_schema=Path(args.estimate_schema),
+                    cdp_helper=Path(args.cdp_helper),
+                ),
+                owner=f"gig-estimate-targeted-{run_id}", now=int(time.time()),
+                target_action_id=action_id,
+            )
         retry_snapshot = _retry_estimate_snapshot(
             Path(args.database), binding, event_key, snapshot, thread_id,
         )
@@ -1595,16 +1610,6 @@ def run_targeted_estimate(
         else:
             snapshot = retry_snapshot
         _targeted_inquiry(snapshot, thread_id)
-        if binding.get("state") == "reconcile_pending":
-            return run_requested_estimate(
-                snapshot, args=argparse.Namespace(
-                    database=Path(args.database), manifest=Path(args.manifest),
-                    runner=Path(args.runner), estimate_schema=Path(args.estimate_schema),
-                    cdp_helper=Path(args.cdp_helper),
-                ),
-                owner=f"gig-estimate-targeted-{run_id}", now=int(time.time()),
-                target_action_id=action_id,
-            )
         return _run_effect_pipeline(
             args, snapshot=snapshot, evidence=evidence, run_id=run_id,
         )

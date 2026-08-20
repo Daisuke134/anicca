@@ -119,7 +119,10 @@ The order to the end is:
    same semantic judgement even though the immutable prior estimate intent and source inbox event
    were already durable. The current slice reuses that intent only when a fresh head-only official
    read proves the source inbox identity is unchanged; a changed head falls back to fresh semantic
-   judgement. Completion still requires action 343's one official estimate-card readback and a
+   judgement. A live first click moved action 343 to `reconcile_pending`; its next pass exposed a
+   second ordering defect where a new semantic candidate ran before delivery-unknown readback.
+   Reconcile now exits directly through read-only official-card matching before any new estimate
+   candidate, form or click. Completion still requires action 343's one official estimate-card readback and a
    durable disposition for every buyer-authored message: replied with official readback, estimate
    sent with official readback, intentionally no-send with a bounded policy reason, or still pending
    with an observable retry owner. Missing from the queue is never a valid disposition.
