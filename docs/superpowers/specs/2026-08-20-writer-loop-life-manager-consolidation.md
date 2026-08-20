@@ -9,14 +9,14 @@
   `gig_disk_guard.py`、owner fence、外部 state `~/.local/state/life-manager/writer` を使う。
   Coconalaの4 laneと同様、公開ownerは重複起動せず、外部作用の前にlock・state・receiptを確認する。
 - current immutable releaseはrelease watcherがHEADから切り替える。直近source commitは
-  `d7f9755e96561b11e90be51c5bdfb857168bb51d`。`daily-2026-08-21` は
+  `d6461ff3b1a909cea5e6e0a25fac61e849457500`。`daily-2026-08-21` は
   Note JA、Substack JA、X Article JA の
   native live receiptを同一runで確認済み。URLは `https://note.com/anicca123/n/ncbdb8a56bb20`、
   `https://aniccabuddha.substack.com/p/1`、`https://x.com/diceai0/article/2090526616854405173`。
   これは公開receiptであり、売上・入金receiptではない。
 - Note復旧用runtimeは、開発専用mitmproxy依存を入れない`uv sync --locked --no-dev`を正本とし、
   DNS障害時だけ既存共有runtimeを`fastmcp`／`note_mcp` import検証後にsymlinkを追わないwrapperとして使う。
-  対象checkoutの`src/note_mcp/__init__.py`をimportしていること、`.venv`親がsymlinkでないことも検証する。
+  対象checkoutの`src/note_mcp/__init__.py`をimportしていること、`.venv`親がsymlinkでないことをuv実行前から検証する。
   wrapperのcache target／親symlink非破壊テスト、shell構文、関連14テストはPASSした。専用runtimeの外部
   downloadはDNSで失敗したが、実行用wrapperのimportはcurrent hostでPASSしている。
 - daily creatorもpreflight cleanup後に5GiBを再測定し、まだ床未満ならrun／model／publisherを開始せず、
