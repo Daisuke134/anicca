@@ -13,7 +13,12 @@ from pathlib import Path
 from typing import Any, Iterator, Mapping
 
 from .ats import evaluate_snapshot
-from .state import canonical_job_id, canonical_url, validate_transition
+from .state import (
+    ats_snapshot_matches_application,
+    canonical_job_id,
+    canonical_url,
+    validate_transition,
+)
 
 
 LEGACY_STRATEGY = {"capture_status": "legacy_unavailable"}
@@ -1187,7 +1192,9 @@ class Ledger:
             ).fetchone()
             if application is None:
                 raise KeyError(application_id)
-            if canonical_url(snapshot["url"]) != str(application["canonical_url"]):
+            if not ats_snapshot_matches_application(
+                str(application["canonical_url"]), snapshot["url"]
+            ):
                 raise ValueError("ATS snapshot URL does not match the application")
             existing = self.connection.execute(
                 "SELECT * FROM submit_intents WHERE application_id = ?",

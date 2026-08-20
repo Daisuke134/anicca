@@ -419,6 +419,44 @@ class LedgerTests(unittest.TestCase):
             )
         self.assertEqual(self.ledger.daily_slot_count("2026-07-29"), 0)
 
+    def test_same_origin_application_route_can_claim(self):
+        self._ready()
+        snapshot = Path(self.tempdir.name) / "application-route.json"
+        snapshot.write_text(
+            json.dumps(
+                {
+                    "version": 1,
+                    "url": "https://jobs.example.com/42/application",
+                    "navigation_committed": True,
+                    "frames": [
+                        {
+                            "url": "https://jobs.example.com/42/application",
+                            "controls": [
+                                {"tag": "input", "type": "email"},
+                                {"tag": "input", "type": "file"},
+                                {
+                                    "tag": "button",
+                                    "type": "submit",
+                                    "text": "Submit Application",
+                                },
+                            ],
+                        }
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+        intent = self.ledger.claim_submission(
+            self.application_id,
+            "2026-07-29",
+            "application-route",
+            resume_path=self.resume,
+            resume_sha256=self.resume_sha256,
+            ats_snapshot_path=snapshot,
+            ats_snapshot_sha256=hashlib.sha256(snapshot.read_bytes()).hexdigest(),
+        )
+        self.assertIsNotNone(intent)
+
     def test_workday_job_surface_is_ready_for_navigation_but_not_for_claim(self):
         fixture = (
             Path(__file__).parent

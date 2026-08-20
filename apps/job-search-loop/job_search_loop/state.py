@@ -53,6 +53,20 @@ def canonical_url(value: str) -> str:
     )
 
 
+def ats_snapshot_matches_application(application_url: str, snapshot_url: str) -> bool:
+    """Accept the same official page or its same-origin /application form route."""
+    application = canonical_url(application_url)
+    snapshot = canonical_url(snapshot_url)
+    if snapshot == application:
+        return True
+    application_parts = urlsplit(application)
+    snapshot_parts = urlsplit(snapshot)
+    if application_parts.netloc != snapshot_parts.netloc:
+        return False
+    application_path = application_parts.path.rstrip("/") or "/"
+    return snapshot_parts.path == f"{application_path}/application"
+
+
 def canonical_job_id(company: str, title: str, url: str) -> str:
     identity = "\n".join(
         (_normalize_text(company), _normalize_text(title), canonical_url(url))
