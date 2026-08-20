@@ -538,3 +538,14 @@ Rolling net remains `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`,
 approved-or-paid net is null, actual cost/coverage remain `UNKNOWN`, and
 Telegram has no pending event. This closes no money gate and creates no new
 external effect.
+
+B01 was checked without a new executor at `2026-08-20T13:57:45Z`: the existing
+revenue checks passed (`test_revenue_cli` 8/8, `test_local_loop` 16/16, and
+Python compilation). The latest official PartnerStack artifact remains
+`commission_row_count=0 / NO_LIVE_ROWS / payout_row_state=EMPTY` with USD
+display; reconciliation appended zero transitions and rolling net remains
+`NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`. This is the absence
+of an external conversion/report row, not money and not a parser pass-through.
+The first row still must carry the official reward key, lifecycle status,
+amount/currency, attribution key, exact placement join, and replay-safe
+transition before B01 can close.

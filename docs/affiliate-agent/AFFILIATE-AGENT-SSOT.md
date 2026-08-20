@@ -1728,6 +1728,15 @@ historical evidence below. Read-only inspection of the installed state shows:
   NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`, approved-or-paid net is null, and
   actual cost/coverage remain `UNKNOWN`; Telegram has no pending event. This
   closes no money gate and creates no new external effect.
+- A B01 parser/reconciliation check at `2026-08-20T13:57:45Z` passed the
+  existing revenue checks (`test_revenue_cli` 8/8, `test_local_loop` 16/16, and
+  Python compilation). The latest official PartnerStack report artifact remains
+  `commission_row_count=0 / NO_LIVE_ROWS / payout_row_state=EMPTY` with USD
+  display, and reconciliation appended zero transitions. This is an external
+  conversion/report absence, not a parser success disguised as money: the next
+  non-empty row must still expose the provider reward key, lifecycle status,
+  amount/currency, attribution key, and exact placement join before it can
+  enter the ledger.
 
 Execution resumes in this order. Time/provider outcomes are gates, but every safe
 independent harness task continues:
