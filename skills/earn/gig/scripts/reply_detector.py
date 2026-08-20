@@ -2068,6 +2068,15 @@ async def _run_continuous_runtime(args: Any, evidence: Path) -> dict[str, Any]:
     probe_number = 0
     report_queue: asyncio.Queue[tuple[Path, dict[str, Any]]] = asyncio.Queue()
 
+    async def enqueue_report(path: Path, result: dict[str, Any]) -> None:
+        # A stale supervisor work item can lose its binding before the worker
+        # opens it.  That is neither a buyer outcome nor a lane failure; the
+        # reconciliation health report remains the owner-visible idle signal.
+        if result.get("status") == "already_closed":
+            _atomic_json(path, result)
+            return
+        await report_queue.put((path, result))
+
     async def reporter() -> None:
         while not stop.is_set() or not report_queue.empty():
             try:
@@ -2092,7 +2101,7 @@ async def _run_continuous_runtime(args: Any, evidence: Path) -> dict[str, Any]:
         worker_evidence = evidence / "continuous" / "workers" / run_id
         if work.get("kind") == "blocked":
             result = await asyncio.to_thread(run_blocked_probe, args, work, worker_evidence)
-            await report_queue.put((worker_evidence / "result.json", result))
+            await enqueue_report(worker_evidence / "result.json", result)
             return result
         if work.get("kind") == "estimate":
             result = await asyncio.to_thread(
@@ -2102,7 +2111,7 @@ async def _run_continuous_runtime(args: Any, evidence: Path) -> dict[str, Any]:
                 expected_revision=int(work["expected_revision"]),
                 evidence=worker_evidence, run_id=run_id,
             )
-            await report_queue.put((worker_evidence / "result.json", result))
+            await enqueue_report(worker_evidence / "result.json", result)
             return result
         if work.get("kind") == "reconcile":
             result = await asyncio.to_thread(
@@ -2111,7 +2120,7 @@ async def _run_continuous_runtime(args: Any, evidence: Path) -> dict[str, Any]:
                 expected_revision=int(work["expected_revision"]),
                 evidence=worker_evidence, run_id=run_id,
             )
-            await report_queue.put((worker_evidence / "result.json", result))
+            await enqueue_report(worker_evidence / "result.json", result)
             return result
         result = await asyncio.to_thread(
             run_targeted_thread, args,
@@ -2121,7 +2130,7 @@ async def _run_continuous_runtime(args: Any, evidence: Path) -> dict[str, Any]:
             evidence=worker_evidence,
             run_id=run_id,
         )
-        await report_queue.put((worker_evidence / "result.json", result))
+        await enqueue_report(worker_evidence / "result.json", result)
         return result
 
     async def reconcile() -> dict[str, Any]:
