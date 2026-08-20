@@ -2272,6 +2272,7 @@ class PublicationStore:
                     pair,
                     str(remote.get("live_url", "")),
                     remote,
+                    reread_remote_assets=not pair.startswith("x-article/"),
                 )
             expected_identity = state.get(
                 "destination_identities", {}
@@ -2759,6 +2760,7 @@ class PublicationStore:
                         pair,
                         str(remote.get("live_url", "")),
                         remote,
+                        reread_remote_assets=not pair.startswith("x-article/"),
                     )
                 protected = entry.get("existing_publication", {})
                 return {
@@ -2792,7 +2794,13 @@ class PublicationStore:
                     self._write_locked(state)
                 return {"action": "skip-live", "live_url": live_url, "repaired": repaired}
             if remote.get("status") == "live" and remote.get("verified") is True:
-                return self._record_live_locked(state, pair, str(remote.get("live_url", "")), remote)
+                return self._record_live_locked(
+                    state,
+                    pair,
+                    str(remote.get("live_url", "")),
+                    remote,
+                    reread_remote_assets=not pair.startswith("x-article/"),
+                )
             if (
                 remote.get("status") == "not-live"
                 and remote.get("verified") is True
