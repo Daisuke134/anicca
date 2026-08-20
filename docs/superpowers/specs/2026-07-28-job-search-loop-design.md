@@ -1,11 +1,12 @@
 # Autonomous Job Search Loop Design
 
 **Date:** 2026-07-28
-**Last updated:** 2026-07-30
+**Last updated:** 2026-08-20
 **Owner:** Daisuke Narita
-**Status:** Local acquisition and inbox loops are live from the canonical Life
-Manager checkout; persistent learning orchestration, operations guardianship and
-the Life Manager Career surface remain in progress.
+**Status:** Local acquisition, inbox and learning loops are live from the canonical
+Life Manager checkout. Resume quality, harness-neutral skill extraction,
+operations guardianship, lifecycle closure and the Life Manager Career surface
+remain in progress.
 **Done when:** `Daisuke134/life-manager` is the only versioned source and the
 resident system can discover, qualify, tailor and submit up to two truthful eligible
 applications per Japan day; reconcile every later Gmail message; manage scheduling,
@@ -191,6 +192,62 @@ The canonical `runtime/agent-runner` owns model execution:
 
 All model outputs must validate against JSON Schema. A valid but schema-invalid response
 fails closed and does not silently switch providers.
+
+### 4.2A Harness-neutral skills and loops
+
+Life Manager is organized as **skills invoked by loops**, not as one model-specific
+application. A skill contains a reusable domain procedure; a loop owns its trigger,
+budget, lease and retry cadence; deterministic runtime code owns state transitions,
+evidence, idempotency and external side effects. No model may write the ledger,
+send a message or click an ATS control by narration alone.
+
+The canonical source tree is:
+
+```text
+life-manager/
+├── AGENTS.md                 # short map and precedence rules
+├── HEARTBEAT.md              # global loop contract and health semantics
+├── docs/
+│   ├── architecture/         # runtime, data boundaries, loop catalog, harnesses
+│   ├── specs/                # what/why, acceptance, test matrix, TODO order
+│   ├── plans/{active,completed}/
+│   └── generated/            # derived schemas/status; never hand-edit
+├── skills/                   # portable domain procedures; SKILL.md is the entrypoint
+│   ├── _shared/              # schemas, privacy, evidence, reporting helpers
+│   ├── job-hunter/           # target extraction from apps/job-search-loop
+│   │   ├── SKILL.md
+│   │   ├── references/       # writing, ATS, provider and policy references
+│   │   ├── scripts/          # deterministic CLI helpers
+│   │   ├── assets/           # templates only; no private profile/materials
+│   │   └── tests/
+│   └── <other-domain>/SKILL.md
+├── loops/                    # when/why to invoke skills
+│   ├── registry.yaml
+│   └── <domain>/{hourly,daily,inbox,learning,guardian}.yaml
+├── runtime/
+│   ├── agent-runner/         # provider routing and schema validation
+│   ├── loop/                 # leases, budgets, retries, health and dispatch
+│   └── monitor/              # freshness, integrity and remediation
+├── adapters/
+│   ├── harness/{codex,claude,generic}/
+│   ├── providers/{gmail,calendar,ats}/
+│   └── channels/{telegram,email,push}/
+├── apps/
+│   ├── job-search-loop/      # current production owner until skill parity is proven
+│   └── life-manager/         # UI/API and read-only Career projection
+└── schemas/{events,results,projections}/
+```
+
+`skills/` is the one versioned procedure source. Codex is the first harness
+(`codex` → `claude` → other compatible providers); Claude and other models receive
+the same skill, input packet and output schema through their adapters. Harness
+adapters may stage or symlink the canonical skill into their discovery directory,
+but may not fork its policy. The loop registry is the only scheduler entrypoint;
+launchd/systemd invoke a loop, never a second ad-hoc executor.
+
+The current `apps/job-search-loop/` remains the production owner until the proposed
+`skills/job-hunter/` and `loops/job-hunter/` pass behavior-parity tests. This avoids
+a directory move silently changing application, inbox or Telegram semantics.
 
 ### 4.3 Browser policy
 
@@ -1081,11 +1138,12 @@ closed loop to pass real E2E verification, not merely unit tests or a polished U
 | 3 — paid cloud | tenant-isolated managed drivers, encrypted state/materials, scoped OAuth, budgets, export and revocation |
 | 4 — whole-life coordination | evidence-backed Career inputs to Financial, Physical and Mental planning with separate consent boundaries |
 
-Phase 1 is the current implementation scope. Acquisition and follow-through are
-live; learning, guardian, lifecycle closure and `summary.v2` are the remaining local
-work. Phase 2 starts only after the local closed-loop verification gates pass. Career
-is a coordinating Life Manager surface, not permission to merge private health and
-employment evidence into one unrestricted data pool.
+Phase 1 is the current implementation scope. Acquisition, follow-through and
+learning are live; resume quality, harness-neutral skill extraction, guardian,
+lifecycle closure and `summary.v2` are the remaining local work. Phase 2 starts only
+after the local closed-loop verification gates pass. Career is a coordinating Life
+Manager surface, not permission to merge private health and employment evidence into
+one unrestricted data pool.
 
 ### 11.1 Ordered expansion backlog
 
@@ -1098,9 +1156,9 @@ for a naturally arriving email:
 
 - Runtime evidence pointer: Order 10 continues daily until one truthful confirmed
   submission exists for both Ashby and Workday.
-- Engineering pointer: 11A–11C are complete; 11D's deterministic resident guardian
-  is the first and only current implementation increment. 11E–11F and 13A–13C
-  follow it in the order below.
+- Engineering pointer: resume quality revision `1R` and harness-neutral skill
+  extraction `1S` are now first; 11A–11C remain complete, then 11D's deterministic
+  resident guardian, 11E–11F and 13A–13C follow in the order below.
 
 Orders 8 and 9, plus 10L's naturally occurring same-thread follow-up proof, wait for
 their respective private fact or external message.
@@ -1110,7 +1168,7 @@ must accumulate in the live loop:
 
 | Lane | Current evidence | Next completion gate |
 |---|---|---|
-| Engineering now | 11C merged in PR #1376 at `1bdbc67d3`, with health-status closure in PR #1377 at `fd26398cc`; the weekly learning driver, held-out replay, deterministic assignment, Wilson decision, rollback and hashed reporting have 203 passing job-loop tests and one real inconclusive receipt/Telegram ACK | Implement `JOB-GUARDIAN-PASS-11D` |
+| Engineering now | 11C merged in PR #1376 at `1bdbc67d3`, with health-status closure in PR #1377 at `fd26398cc`; the weekly learning driver, held-out replay, deterministic assignment, Wilson decision, rollback and hashed reporting have 203 passing job-loop tests and one real inconclusive receipt/Telegram ACK | Complete `JOB-RESUME-MATERIALS-1R`, then `JOB-SKILL-BUNDLE-1S` |
 | Resident runtime | Acquisition, inbox and learning LaunchAgents are healthy (`last_exit=0`) on the 08:30 JST, 900-second and Sunday 09:15 JST schedules; ledger and interview-prep integrity are `ok`; applications remain 2 `submitted`, 1 `submit_unknown`, 2 `not_submitted` | Keep running Order 10 until the projection truthfully contains one confirmed Ashby and one confirmed Workday submission; current confirmed adapters are 0/2 |
 | Private/external wait | No verified nationality/work-visa facts, real interview email, or naturally occurring later same-thread recruiting message has arrived | Close Order 8, Order 9 and the 10L E2E gate only when their authoritative input exists; none blocks 11B engineering |
 
@@ -1142,7 +1200,9 @@ not start merely because their design is already written:
 | `JOB-AUTONOMY-CONTRACT-11A` | `completed` | PR #1364 / final CI `30473862095`; this specification states current truth, four resident drivers, verifier boundary, Telegram/Life Manager UX, human-only boundaries, local→cloud contract and the complete dependency order |
 | `JOB-OUTCOME-ATTRIBUTION-11B` | `completed` | PR #1374 / merge `683ba9562` / final CI `30502556044`; immutable content-addressed generations and DB-enforced immutable assignments/outcomes persist; one external receipt may prove multiple stages only for its bound application; negative silence requires a versioned observation policy; Gmail submission confirmation is attributed; 191 job-loop and 11 runner tests pass; the redacted CLI migrated the live 5-row ledger with unchanged state counts, zero unassigned rows and integrity `ok`; projection rebuild is deterministic |
 | `JOB-LEARNING-PASS-11C` | `completed` | PR #1376 / merge `1bdbc67d3` / final CI `30507559728`; health-status follow-up PR #1377 / merge `fd26398cc`. 203 job-loop + 11 runner tests pass. Sunday 09:15 JST launchd and persistent systemd drivers replay eight safety cases, deterministically assign future canonical job keys, evaluate authoritative interview outcomes, atomically promote/close/rollback with pointer-race fencing, and send one content-addressed Telegram report. The live ledger stayed integrity `ok` with unchanged 2 submitted / 1 submit-unknown / 2 not-submitted counts; its first 0/0-sample decision was correctly inconclusive, receipt `175d3b7be5db06f88dbdc9aaf9428dfbda3fe65245a497a1f377b6271255564c`, Telegram ACK `4530`; canonical LaunchAgent reached runs=4 / last exit=0 and the three-driver healthcheck reports learning `status=success` with both SQLite integrity checks `ok` |
-| `JOB-GUARDIAN-PASS-11D` | `pending_actionable` | A deterministic scheduled guardian checks launchd/timer freshness, DB integrity, provider/browser health and leases; repairs only pre-side-effect failures; deduplicates alerts and persists remediation |
+| `JOB-RESUME-MATERIALS-1R` | `pending_actionable` | Reopen the accepted resume baseline; generate engineering, technical-business, Japanese resume and Japanese rirekisho from the private truth ledger; enforce one-page/single-column/ATS-readable output, action→technical approach→evidence bullets, visual whitespace checks, extracted-text checks and SHA-256 receipts; resolve the TOEFL 95/96 conflict before publishing and add verified TOEIC 910 plus DELE B1 |
+| `JOB-SKILL-BUNDLE-1S` | `pending_after_1R` | Extract a harness-neutral `skills/job-hunter/SKILL.md` and `loops/job-hunter/` registry from the current app without changing behavior; Codex is the first adapter, Claude and generic providers consume the same input/output schemas, and parity tests prove no duplicate executor or side-effect ownership |
+| `JOB-GUARDIAN-PASS-11D` | `pending_after_1S` | A deterministic scheduled guardian checks launchd/timer freshness, DB integrity, provider/browser health and leases; repairs only pre-side-effect failures; deduplicates alerts and persists remediation |
 | `JOB-LIFECYCLE-CLOSE-11E` | `pending_after_11D` | Follow-up cadence, every interview round, offers, negotiation support and accepted/declined/started outcomes are durable; only final identity/judgment actions require the user |
 | `JOB-CAREER-SUMMARY-11F` | `pending_after_11E` | Versioned `summary.v2` exposes Today, Pipeline, Interviews, Decisions, Learning and Health; its counts are rebuilt from the same events and match Telegram receipts |
 | `LIFE-CAREER-LOCAL-13A` | `pending_after_11F` | The local Life Manager Career surface reads `summary.v2`, shows the full timeline and provides pause/resume/goal controls without browser ownership |
@@ -1183,3 +1243,11 @@ Completion requires:
 13. The paid cloud gate additionally proves tenant isolation, scoped OAuth
     revocation, encrypted backup/restore, per-tenant budgets and portable export
     against the same behavioral suite.
+14. Every portable skill has valid `SKILL.md` frontmatter, relative references,
+    no private profile/materials, and a passing script/schema contract test.
+15. A fixed job fixture produces schema-compatible results through Codex-first,
+    Claude fallback and generic-provider adapters; provider substitution cannot
+    duplicate a ledger claim, browser action, Gmail send or Telegram delivery.
+16. Every registered loop maps to exactly one launchd/systemd entrypoint and a
+    forced run records one durable receipt; no direct model invocation bypasses the
+    loop registry.
