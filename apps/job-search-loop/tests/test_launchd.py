@@ -12,8 +12,7 @@ class LaunchdTests(unittest.TestCase):
             (root / "ai.anicca.job-search-learning.plist").read_bytes()
         )
         self.assertTrue(daily["RunAtLoad"])
-        self.assertEqual(daily["StartCalendarInterval"]["Hour"], 8)
-        self.assertEqual(daily["StartCalendarInterval"]["Minute"], 30)
+        self.assertEqual(daily["StartInterval"], 1800)
         self.assertEqual(inbox["StartInterval"], 900)
         self.assertTrue(learning["RunAtLoad"])
         self.assertEqual(
@@ -57,7 +56,8 @@ class LaunchdTests(unittest.TestCase):
         root = Path(__file__).parents[1]
         script = (root / "scripts" / "run-daily.sh").read_text(encoding="utf-8")
         self.assertIn("daily_slot_count", script)
-        self.assertIn('if [[ "$SLOT_COUNT" -ge "2" ]]', script)
+        self.assertIn('if [[ "$SLOT_COUNT" -ge "$DAILY_TARGET" ]]', script)
+        self.assertIn("daily_target", script)
         self.assertIn("daily_quota_reached", script)
 
     def test_healthcheck_covers_scheduler_ledger_and_private_state(self):

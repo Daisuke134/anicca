@@ -8,7 +8,7 @@ Life Manager checkout. Resume quality, harness-neutral skill extraction,
 operations guardianship, lifecycle closure and the Life Manager Career surface
 remain in progress.
 **Done when:** `Daisuke134/life-manager` is the only versioned source and the
-resident system can discover, qualify, tailor and submit up to two truthful eligible
+resident system can discover, qualify, tailor and submit up to ten truthful eligible
 applications per Japan day; reconcile every later Gmail message; manage scheduling,
 assessments, interview preparation, follow-up, offers and final outcomes; report
 every material event at most once; heal safe operational failures; and promote or
@@ -25,12 +25,22 @@ The loop optimizes for interviews, not raw submission count:
 
 | Objective | Rule |
 |---|---|
-| Daily application target | 2 unique, eligible, high-fit applications per Japan day |
+| Daily application target | 10 unique, eligible, high-fit applications per Japan day; one candidate per 30-minute wake |
 | Location | Tokyo on-site/hybrid, Japan-remote, or global remote that accepts Japan-based workers |
 | Compensation | Prefer JPY 7M–10M+; hard reject known compensation below JPY 5.5M |
 | Role families | Applied AI/agent/GenAI engineering; AI product and technical program management; solutions/consulting; AI business development and partnerships; technical account management, customer success and sales engineering; agentic fintech/crypto/consumer AI |
 | Hard exclusions | Citizenship or clearance requirements the candidate cannot meet; relocation-only roles outside Japan; already-applied roles; material skill fabrication |
-| Truthful zero | If fewer than two eligible jobs exist, submit the eligible count and report the shortfall; do not lower hard filters or claim success |
+| Truthful zero | If fewer than ten eligible jobs exist, submit the eligible count and report the shortfall; do not lower hard filters or claim success |
+
+### Current resident cadence contract
+
+The production `ai.anicca.job-search-daily` LaunchAgent is the single acquisition
+owner and is configured for an 1800-second wake. Each wake may process one candidate through the
+existing claim, browser, confirmation, ledger and Telegram fences. The committed
+strategy caps the Japan day at ten applications (dream 2, strong-fit 5, adjacent 3);
+once that cap is reached, a wake exits before browser/model initialization and writes
+`daily_quota_reached`. The installed plist and the versioned launchd/systemd
+templates are verified to carry the same 30-minute interval.
 
 ### 1.1 `JOB-CANONICAL-MERGE-1`
 
@@ -44,7 +54,7 @@ not job-selection policy or cloud architecture.
 | Legacy runner provenance | `Daisuke134/profitable-claude`, commit `191b205c03ae37d32b0125da4a1892924d585205` |
 | Versioned job runtime | `apps/job-search-loop/` |
 | Versioned model runner | `runtime/agent-runner/` |
-| Scheduling | Local macOS launchd only; daily 08:30 JST and inbox every 15 minutes |
+| Scheduling | Local macOS launchd every 30 minutes and inbox every 15 minutes |
 | Private data | Existing XDG profile, material, ledger, evidence, and outbox paths remain outside Git |
 | Cloud | Explicitly out of scope until the local loop is reliable enough for a paid product |
 
@@ -133,7 +143,7 @@ demographics, and generated application materials are never committed. Runtime p
 
 ```text
 launchd
-  ├─ daily-pass (08:30 JST, catch-up on wake)
+  ├─ daily-pass (every 30 minutes, catch-up on wake)
   │    ├─ discover: company ATS + public search
   │    ├─ normalize/dedupe
   │    ├─ qualify and rank
@@ -643,8 +653,8 @@ Scheduler ownership is platform-specific but application semantics stay shared:
 
 | Platform | User scheduler | Daily | Inbox |
 |---|---|---|---|
-| macOS | launchd LaunchAgents | 08:30 Asia/Tokyo | every 15 minutes |
-| Linux | systemd user timers | 08:30 Asia/Tokyo, persistent | every 15 minutes |
+| macOS | launchd LaunchAgents | every 30 minutes | every 15 minutes |
+| Linux | systemd user timers | every 30 minutes, persistent | every 15 minutes |
 
 The portable installer accepts an explicit `none` scheduler for test/local manual
 runs. Platform auto-detection supports only Darwin and Linux and fails closed on
@@ -729,7 +739,7 @@ say “run again.” Four independent drivers share durable contracts:
 
 | Driver | Trigger | Owns | Must never own |
 |---|---|---|---|
-| Acquisition | 08:30 JST daily, catch-up after wake | discovery, qualification, tailoring, two-slot submission budget, daily report | Gmail acknowledgement or strategy promotion |
+| Acquisition | every 30 minutes, catch-up after wake | discovery, qualification, tailoring, one-candidate wake and ten-slot daily portfolio, daily report | Gmail acknowledgement or strategy promotion |
 | Follow-through | every 15 minutes | confirmation reconciliation, recruiter replies, Calendar, assessments, prep, stage/outcome updates | blind submit retry or offer acceptance |
 | Learning | weekly eligibility check and after newly resolved outcomes | assignment, attribution, replay, comparison, promotion/rollback receipt | candidate facts, hard filters, side effects |
 | Guardian | frequent deterministic check | freshness, integrity, stale pre-side-effect leases, safe kick/retry, remediation queue | code rewriting or retry after an uncertain external side effect |
@@ -1028,7 +1038,7 @@ Live state measured on 2026-07-30:
 
 | Evidence | State |
 |---|---|
-| Daily LaunchAgent | idle after exit 0; 08:30 JST schedule |
+| Daily LaunchAgent | idle after exit 0; 1800-second schedule |
 | Inbox LaunchAgent | idle after exit 0; 900-second schedule |
 | Learning LaunchAgent | Sunday 09:15 JST plus RunAtLoad; canonical install and forced kicks reached runs=4 / last exit=0. The real ledger decision is `inconclusive / insufficient_resolved_applications`, baseline=0 and candidate=0 resolved, replay violations=0; receipt `175d3b7be5db06f88dbdc9aaf9428dfbda3fe65245a497a1f377b6271255564c`; Telegram ACK `4530`; identical retries reuse the same single outbox row and ACK |
 | Ledger | integrity `ok`; 2 submitted / 1 submit-unknown / 2 not-submitted |
@@ -1132,7 +1142,7 @@ Locally, the loop owns side effects and Life Manager is the truthful read/contro
 surface:
 
 ```text
-08:30  discover → verify → apply up to two → Telegram receipt + exact PDFs
+every 30 minutes  discover → verify → apply one → Telegram receipt + exact PDFs
 every 15 min  reconcile Gmail → act → Calendar/prep → event message
 weekly  join outcomes → evaluate one experiment → promote/keep/rollback
 always  guardian checks freshness/integrity and repairs safe failures
@@ -1289,6 +1299,7 @@ slice has one owner, one acceptance result and one durable receipt.
 
 | Slice | Parent | Status | Done when |
 |---|---|---|---|
+| `JOB-LOOP-CADENCE-2A` | 11 | `in_progress` | The resident acquisition owner uses a 30-minute LaunchAgent/systemd interval, processes at most one candidate per wake, preserves the ten-application Japan-day portfolio cap, and passes plist lint plus scheduler-template tests. The installed plist reads `StartInterval=1800`; `launchctl bootout/bootstrap` readback is still blocked by macOS error 141 (`Reentrancy avoided`). |
 | `JOB-RESUME-FACTS-1R-A` | 1R | `completed` | Full institution names and periods are recorded, and Daisuke confirmed TOEIC 910. The private truth ledger now records TOEFL iBT 96, TOEIC 910, Duolingo English Test 140 and DELE B1; no language claim remains unresolved. |
 | `JOB-RESUME-EN-1R-B` | 1R | `in_progress` | The approved technical-business PDF is canonical and verified; the engineering variant still needs its canonical refresh before the English bundle is closed. Both variants must retain the one-page hierarchy, separate Research Experience/Education sections and full institution names. |
 | `JOB-RESUME-JA-1R-C` | 1R | `pending_after_1R-A` | Japanese 履歴書 and 職務経歴書 render from the same ledger with separate 学歴・職歴・研究 sections, full attendance periods, formal institution names, the language section, and grounded claims. |

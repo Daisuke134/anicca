@@ -29,6 +29,8 @@ refresh_summary() {
     --day "$JAPAN_DAY" \
     --model-route "${AGENT_RUNNER_PROVIDER:-unconfigured}"
 }
+DAILY_TARGET=$("$JOB_SEARCH_JQ" -er '.daily_target | numbers | select(. >= 1)' \
+  "$JOB_SEARCH_APP_ROOT/config/strategy.default.json")
 SLOT_COUNT=$("$JOB_SEARCH_PYTHON" - "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" "$JAPAN_DAY" <<'PY'
 import sys
 from pathlib import Path
@@ -42,12 +44,13 @@ finally:
     ledger.close()
 PY
 )
-if [[ "$SLOT_COUNT" -ge "2" ]]; then
+if [[ "$SLOT_COUNT" -ge "$DAILY_TARGET" ]]; then
   "$JOB_SEARCH_JQ" -n \
     --arg status "daily_quota_reached" \
     --arg japan_day "$JAPAN_DAY" \
     --argjson slot_count "$SLOT_COUNT" \
-    '{status:$status,japan_day:$japan_day,slot_count:$slot_count}' \
+    --argjson daily_target "$DAILY_TARGET" \
+    '{status:$status,japan_day:$japan_day,slot_count:$slot_count,daily_target:$daily_target}' \
     >"$EVIDENCE/summary.json"
   chmod 600 "$EVIDENCE/summary.json"
   refresh_summary

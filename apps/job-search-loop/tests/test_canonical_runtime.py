@@ -100,7 +100,7 @@ raise SystemExit(0)
     def test_daily_full_quota_exits_without_browser_or_model(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            result, calls = self._run_daily_with_fake_python(root, 2, 99)
+            result, calls = self._run_daily_with_fake_python(root, 10, 99)
 
             self.assertEqual(result.returncode, 0, result.stderr)
             encoded = json.dumps(calls)
@@ -288,7 +288,7 @@ raise SystemExit(0)
                 learning["ProgramArguments"][0],
                 str(APP_ROOT / "scripts" / "run-learning.sh"),
             )
-            self.assertEqual(daily["StartCalendarInterval"], {"Hour": 8, "Minute": 30})
+            self.assertEqual(daily["StartInterval"], 1800)
             self.assertEqual(inbox["StartInterval"], 900)
             self.assertEqual(
                 learning["StartCalendarInterval"],
@@ -352,7 +352,7 @@ raise SystemExit(0)
                 str(APP_ROOT / "scripts" / "run-daily.sh"), daily_service
             )
             self.assertIn(str(REPO_ROOT), daily_service)
-            self.assertIn("OnCalendar=*-*-* 08:30:00 Asia/Tokyo", daily_timer)
+            self.assertIn("OnUnitActiveSec=30min", daily_timer)
             self.assertIn("Persistent=true", daily_timer)
             self.assertIn("OnUnitActiveSec=15min", inbox_timer)
             self.assertIn(
