@@ -7,7 +7,7 @@
   "source": {
     "repository": "/Users/anicca/profitable-claude",
     "path": "skills/article-writer",
-    "commit": "0902b290",
+    "commit": "c71b104b",
     "status": "source-of-truth-until-cutover"
   },
   "active_release": {
@@ -85,6 +85,7 @@
     "state_path": "~/.local/state/life-manager/writer/owner-fence",
     "status": "implemented-in-tree-not-installed",
     "pause_gates": ["article-daily", "article-resume", "zenn-deferred-worker"],
+    "fenced_workers": ["article-daily", "article-resume"],
     "legacy_cli_pause_proven": false
   },
   "cutover": {
