@@ -83,6 +83,29 @@ def json_rows(path):
     return rows
 
 
+def latest_commission_rows(state):
+    """Return one latest lifecycle row per provider transaction lineage."""
+    latest = {}
+    for index, row in enumerate(json_rows(state / "commission-ledger.jsonl")):
+        provider = row.get("provider") or "unknown"
+        transaction_id = row.get("provider_transaction_id")
+        if not isinstance(transaction_id, str) or not transaction_id:
+            continue
+        observed = row.get("observed_at")
+        try:
+            order_time = datetime.fromisoformat(
+                observed.replace("Z", "+00:00")
+            ) if isinstance(observed, str) and observed else None
+        except ValueError:
+            order_time = None
+        order = (order_time or datetime.min.replace(tzinfo=timezone.utc), index)
+        identity = (provider, transaction_id)
+        prior = latest.get(identity)
+        if prior is None or order > prior[0]:
+            latest[identity] = (order, row)
+    return [row for _, row in latest.values()]
+
+
 def latest_live_url(state):
     receipts = list((state / "x-posts").glob("*.json")) + list(
         (state / "owned-publications").glob("*.json")
@@ -547,13 +570,7 @@ def daily_summary_event(state, wake_event, now=None):
         )
     except (OSError, ValueError):
         devto_metrics = {}
-    commission_transitions = json_rows(state / "commission-ledger.jsonl")
-    latest_commissions = {}
-    for row in commission_transitions:
-        transaction_id = row.get("provider_transaction_id")
-        if transaction_id:
-            latest_commissions[transaction_id] = row
-    commissions = list(latest_commissions.values())
+    commissions = latest_commission_rows(state)
     status_counts = {
         status: sum(row.get("status") == status for row in commissions)
         for status in ("pending", "approved", "paid", "reversed")
