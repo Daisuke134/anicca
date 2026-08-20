@@ -1377,6 +1377,13 @@ historical evidence below. Read-only inspection of the installed state shows:
   loop process was present afterward and the tiktok durable job-events remained
   unchanged. This is the current `BLOCKED_EXTERNAL_141` readback, not a reason
   to create a parallel executor.
+- the next owner wake at `2026-08-20T09:12:53Z` reached the source-bound content
+  gate and failed closed with `ContentError: required source is stale or does
+  not support its claim`. The official TTS API pricing capture is within its
+  expiry and contains current separate v3, v2 Multilingual, and Flash/Turbo
+  price rows; the installed validator still required a removed combined legacy
+  sentence. The worktree repair changes only those validator markers; no
+  article body, provider credential, external link, or public effect is changed.
 
 Execution resumes in this order. Time/provider outcomes are gates, but every safe
 independent harness task continues:
@@ -1553,8 +1560,10 @@ receipt readback, SSOT state update, commit, and push to both canonical remotes.
   and `launchctl asuser ... kickstart` each returned macOS `141: Reentrancy
   avoided`. The owner later resumed one existing trajectory and verified music
   Git/X/Substack delivery, but tiktok still has no terminal owner/X receipt and
-  remains non-public. No fourth launcher, bootstrap/reload mutation, parallel
-  executor, manual publication, or success claim is permitted.
+  remains non-public. The owner later also failed closed on the stale legacy TTS
+  pricing marker before reaching tiktok; this is a harness repair gate, not an
+  XPostError or an external transaction. No fourth launcher, bootstrap/reload
+  mutation, parallel executor, manual publication, or success claim is permitted.
 - [ ] **A05** Replay the unchanged owner and prove placement count, public URLs,
   Git commits, and X objects do not increase for already accepted effects.
 

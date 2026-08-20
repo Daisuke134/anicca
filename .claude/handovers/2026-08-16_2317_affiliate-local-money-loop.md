@@ -96,6 +96,14 @@ After the completed music wake, one additional retry of the existing owner at
 loop process was present afterward and tiktok job-events were unchanged. This
 remains `BLOCKED_EXTERNAL_141`; no parallel executor was created.
 
+The next owner wake at `2026-08-20T09:12:53Z` reached the source-bound content
+gate and failed closed with `ContentError: required source is stale or does not
+support its claim`. The official TTS API pricing capture is unexpired and has
+separate current v3, v2 Multilingual, and Flash/Turbo rows; the installed
+validator still required a removed combined legacy sentence. The pending repair
+changes only validator markers in the canonical worktree; no article body,
+provider credential, external link, or public effect is changed.
+
 This handover records no Codex manual publication, provider write, or ledger
 mutation. The installed owner performed the verified music delivery described
 above; Codex did not create a parallel executor.

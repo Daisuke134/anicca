@@ -52,8 +52,9 @@ TTS_API_REQUIRED = {
         "Actual end-to-end latency will vary",
     ),
     "elevenlabs-api-pricing": (
-        "Text to Speech is billed per character.",
-        "$0.10 per 1,000 characters (Multilingual v2/v3) or $0.05 (Flash/Turbo)",
+        "### v3\nText to Speech\n$0.10\nPrice per 1K characters",
+        "v2 Multilingual\nText to Speech\n$0.10\nPrice per 1K characters",
+        "Flash / Turbo\nText to Speech\n$0.05\nPrice per 1K characters",
     ),
 }
 TTS_API_SLUG = "elevenlabs-text-to-speech-api-for-developers"
