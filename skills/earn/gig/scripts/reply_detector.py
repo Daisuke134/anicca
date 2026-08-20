@@ -1700,12 +1700,12 @@ async def supervise_replies(
         # fallback detector can append a later fallback event to the same
         # durable action, so use the outbox's inbox-only projection here rather
         # than allowing that fallback row to hide the target.
-        for action in get_outbox().pending_targeted_actions():
-            work = _supervisor_work_from_action(action)
-            if work is not None:
-                await enqueue_work(work)
         for action in get_outbox().estimate_pending_actions():
             work = _supervisor_estimate_work_from_action(action)
+            if work is not None:
+                await enqueue_work(work)
+        for action in get_outbox().pending_targeted_actions():
+            work = _supervisor_work_from_action(action)
             if work is not None:
                 await enqueue_work(work)
 
