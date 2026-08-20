@@ -1730,6 +1730,106 @@ class PublicationStore:
             self._write_locked(state)
             return {"cleared": True, "pair": pair}
 
+    def migrate_quarantined_substack_en_identity(
+        self, new_identity: str
+    ) -> dict[str, Any]:
+        """Resolve one legacy JA/EN identity conflation before reinitialization.
+
+        This is the Coconala-style identity rebind boundary: it is allowed only
+        for the explicitly quarantined, unpublished EN pair, with no effect-
+        capable current-run ledger row. It never changes a live receipt or a
+        persisted target; the next initialization tick must create a new EN
+        target under the configured authenticated publication.
+        """
+        identity = str(new_identity).strip().lower()
+        if not re.fullmatch(r"[a-z0-9-]+\.substack\.com", identity):
+            raise InvariantError("invalid new Substack EN publication identity")
+        with self._lock():
+            state = self._read_locked()
+            identities = state.get("destination_identities")
+            if not isinstance(identities, dict):
+                raise InvariantError("destination identities must be an object")
+            japanese = str(identities.get("substack/ja", "")).strip().lower()
+            english = str(identities.get("substack/en", "")).strip().lower()
+            if not japanese or japanese != english:
+                raise InvariantError("Substack identities are not a conflated legacy pair")
+            if identity == japanese:
+                raise InvariantError("new English Substack identity must differ from Japanese")
+            configured = configured_destination_identities().get("substack/en")
+            if configured != identity:
+                raise InvariantError(
+                    "new English Substack identity must match SUBSTACK_PUBLICATION_EN"
+                )
+            quarantine = state.get("identity_quarantine")
+            if not (
+                isinstance(quarantine, dict)
+                and quarantine.get("version") == 1
+                and quarantine.get("pair") == "substack/en"
+                and quarantine.get("reason") == IDENTITY_CONFLICT_REASON
+                and quarantine.get("previous_identity") == english
+            ):
+                raise InvariantError("Substack EN identity conflict is not quarantined")
+            reinitialization_pairs = state.get("reinitialization_pairs")
+            if not isinstance(reinitialization_pairs, list) or "substack/en" not in reinitialization_pairs:
+                raise InvariantError("substack/en is not awaiting identity reinitialization")
+            entry = state.get("pairs", {}).get("substack/en")
+            if entry is not None and (
+                not isinstance(entry, dict)
+                or entry.get("receipt")
+                or entry.get("status") != "unavailable"
+                or entry.get("error") != IDENTITY_CONFLICT_REASON
+            ):
+                raise InvariantError("Substack EN has a target or effect-capable state")
+            run_dir = Path(str(state.get("run_dir", "")))
+            expected_state = run_dir / "gates" / "publication-state.json"
+            expected_ledger = run_dir.parent.parent / "articles.jsonl"
+            if (
+                self.state_path.is_symlink()
+                or self.state_path.resolve(strict=False) != expected_state.resolve(strict=False)
+                or self.ledger_path.resolve(strict=False) != expected_ledger.resolve(strict=False)
+                or state.get("state_path") != str(self.state_path.resolve(strict=False))
+                or state.get("ledger_path") != str(self.ledger_path.resolve(strict=False))
+            ):
+                raise InvariantError("publication state or ledger is outside the canonical run boundary")
+            self._validate_layout(
+                str(state.get("run_id", "")),
+                run_dir,
+                {
+                    lang: Path(str(state.get("drafts", {}).get(lang, {}).get("path", "")))
+                    for lang in ("ja", "en")
+                },
+                None,
+                Path(str(state.get("media", {}).get("headline_image", {}).get("path", ""))),
+                [
+                    Path(str(item.get("path", "")))
+                    for item in state.get("media", {}).get("body_assets", [])
+                    if isinstance(item, dict)
+                ],
+                require_state=True,
+            )
+            for row in self._ledger_rows_locked():
+                if (
+                    row.get("run_id") == state.get("run_id")
+                    and row.get("platform") == "substack"
+                    and row.get("lang") == "en"
+                    and not _is_no_effect_ledger_row(row, state)
+                ):
+                    raise InvariantError("substack/en identity migration found an effect-capable ledger row")
+            recorded_at = utc_now()
+            identities["substack/en"] = identity
+            state["identity_migration"] = {
+                "version": 1,
+                "pair": "substack/en",
+                "previous_identity": english,
+                "new_identity": identity,
+                "reason": "configured-substack-en-identity",
+                "recorded_at": recorded_at,
+            }
+            if isinstance(entry, dict):
+                state["pairs"].pop("substack/en", None)
+            self._write_locked(state)
+            return dict(state["identity_migration"])
+
     def recover_stale_quality_receipt(self, pair: str) -> dict[str, Any]:
         """Reopen only an obsolete advisory-receipt rejection.
 

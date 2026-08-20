@@ -174,6 +174,42 @@ def test_quarantine_allows_explicit_no_effect_staging_row(
     assert result["status"] == "unavailable"
 
 
+def test_quarantined_en_identity_migrates_only_into_configured_reinitialization(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    state_path, ledger, _ = _state(tmp_path)
+    state = json.loads(state_path.read_text(encoding="utf-8"))
+    state["pairs"].pop("substack/en")
+    state["reinitialization_pairs"] = ["substack/en"]
+    state["identity_quarantine"] = {
+        "version": 1,
+        "pair": "substack/en",
+        "reason": MODULE.IDENTITY_CONFLICT_REASON,
+        "previous_identity": "aniccabuddha.substack.com",
+        "recorded_at": "2026-08-21T00:00:00Z",
+    }
+    state_path.write_text(json.dumps(state), encoding="utf-8")
+    monkeypatch.setenv("SUBSTACK_PUBLICATION_JA", "aniccabuddha.substack.com")
+    monkeypatch.setenv("SUBSTACK_PUBLICATION_EN", "aniccaai2026.substack.com")
+    store = MODULE.PublicationStore(state_path, ledger)
+    monkeypatch.setattr(
+        store,
+        "_validate_layout",
+        lambda *args, **kwargs: Path(tmp_path / "runs" / "daily-2026-08-21"),
+    )
+
+    result = store.migrate_quarantined_substack_en_identity(
+        "aniccaai2026.substack.com"
+    )
+
+    persisted = store.read()
+    assert result["previous_identity"] == "aniccabuddha.substack.com"
+    assert result["new_identity"] == "aniccaai2026.substack.com"
+    assert persisted["destination_identities"]["substack/en"] == "aniccaai2026.substack.com"
+    assert "substack/en" not in persisted["pairs"]
+    MODULE.validate_persisted_destination_identities(persisted)
+
+
 @pytest.mark.parametrize(
     "row_update",
     [

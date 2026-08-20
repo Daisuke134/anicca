@@ -114,12 +114,14 @@ def main() -> int:
     quarantine_identity.add_argument(
         "--pair", required=True, choices=("substack/en",)
     )
+    migrate_identity = sub.add_parser("migrate-substack-en-identity")
+    migrate_identity.add_argument("--identity", required=True)
     sub.add_parser("terminalize-invalid-x-post")
     sub.add_parser("plan")
     manual = sub.add_parser("manual-check")
     manual.add_argument("--pair", required=True, choices=SUPPORTED_PAIRS)
     args = parser.parse_args()
-    if args.command == "quarantine-identity-conflict":
+    if args.command in {"quarantine-identity-conflict", "migrate-substack-en-identity"}:
         # This is the one migration command whose purpose is to repair the
         # legacy equal-identity boundary; the method itself performs the
         # canonical path/layout and remote-proof checks before writing state.
@@ -203,6 +205,8 @@ def main() -> int:
         result = store.quarantine_identity_conflict(
             args.pair, str(entry["target"]), remote
         )
+    elif args.command == "migrate-substack-en-identity":
+        result = store.migrate_quarantined_substack_en_identity(args.identity)
     elif args.command == "terminalize-invalid-x-post":
         result = store.terminalize_invalid_x_post_length()
     elif args.command == "plan":
