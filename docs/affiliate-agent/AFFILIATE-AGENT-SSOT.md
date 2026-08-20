@@ -170,10 +170,10 @@ deployment adapter for these same contracts, not a second implementation.
 
 ### 1.2 Truth checkpoint: implemented versus still hypothetical
 
-Current override: the installed runtime is `cf7f19241`, not the older release
-identifier retained in historical table rows below. The 08:06 JST owner
-readback, new official artifact `f69af229…6734e3a`, and Telegram `26784`
-recovery receipt in section 1.1.2 are the current runtime truth; no official
+Current override: the installed runtime is `0e818458c`, not the older release
+identifier retained in historical table rows below. The 08:27 JST owner
+readback, official artifact `f69af229…6734e3a`, and Telegram delivery
+readback in section 1.1.4 are the current runtime truth; no official
 transaction or money exists.
 
 This table prevents tests, fixtures, screenshots, or plans from being reported as
