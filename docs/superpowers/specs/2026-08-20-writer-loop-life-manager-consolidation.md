@@ -26,7 +26,7 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
 - 現在はstate rootの `.publication-paused` が存在し、次のlaunchd tickは外部公開を行わずに終了する。JAは `SUBSTACK_PUBLICATION_JA`、ENは別の `SUBSTACK_PUBLICATION_EN` を必須とし、ENの既存draft `211988987` は公開禁止である。
 - Telegramには初期化報告 `26065`、未完了報告 `26075`、Note公開を含む進捗報告 `26087` を送信済み。今後はdeterministic rendererだけが自然文を送る。実受取receiptは未確認。Substack公開はJA/EN identityが分離されるまで停止する。
 - pause gateはresume workerとdaily creatorの両方で直接実行し、ロック・planner・publisherより前に終了コード0となることを確認した。変更対象の構文確認と、固定一時領域でのスケジュール／完了通知テスト `37 passed` も確認済み。外部公開の新規成功や売上receiptはまだ無い。
-- fresh adversarial reviewで空き容量約704MiB（公開下限5GiB未満）を確認したため、resumeにも同じfail-closedディスク判定を追加した。Substackの言語identity比較は正規化し、source circuitのpublisher timeoutをreleaseと同じ300秒へ揃え、間接ガード／readbackファイルも回路manifestへ含めた。EN/Xのidentity・media readbackが未確認なのでpauseは解除しない。
+- fresh adversarial reviewで空き容量は最新約382MiB（公開下限5GiB未満、直前は約704MiB）だったため、resumeにも同じfail-closedディスク判定を追加した。Substackの言語identity比較は正規化し、source circuitのpublisher timeoutをreleaseと同じ300秒へ揃え、間接ガード／readbackファイルも回路manifestへ含めた。EN/Xのidentity・media readbackが未確認なのでpauseは解除しない。
 
 ## 目標構成
 
