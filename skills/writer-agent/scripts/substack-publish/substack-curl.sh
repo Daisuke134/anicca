@@ -62,6 +62,9 @@ substack_curl() {
   rc=$?
   if [ "$rc" -ne 0 ] && grep -Eiq 'could not resolve host|could not resolve' "$error_file"; then
     ip="$(nslookup -type=A "$host" 2>/dev/null | awk '/^Address: / {print $2}' | tail -1)"
+    if ! [[ "$ip" =~ ^[0-9]+(\.[0-9]+){3}$ ]] && command -v dig >/dev/null 2>&1; then
+      ip="$(dig +short @1.1.1.1 "$host" A 2>/dev/null | awk '/^[0-9]+(\.[0-9]+){3}$/ {print; exit}')"
+    fi
     if [[ "$ip" =~ ^[0-9]+(\.[0-9]+){3}$ ]]; then
       build_config "${host}:443:${ip}"
       output="$(run_config)"
