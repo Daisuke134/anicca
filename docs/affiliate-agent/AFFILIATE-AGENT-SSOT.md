@@ -2439,6 +2439,17 @@ allocation until its public and provider measurement lineage closed. At
 `2026-08-21T05:13:04Z`, the owner completed that same job through owned and X
 exact readback, promoted the campaign to `X_LIVE`, and sent Telegram `26625`.
 The ledger is now 19/19/19; no commission or cost changed.
+At `2026-08-21T05:34:22Z`, the next existing owner wake reached the due
+revenue cycle, but its official PartnerStack `capture` subprocess returned
+`NONZERO_EXIT` (return code `1`). The durable failure receipt is
+`REVENUE_CYCLE_FAILED / stage=capture`; it did not create a new provider report,
+transaction, settlement, or ledger transition. The latest official artifact
+remains the prior hash-bound empty report (`commission_row_count=0`, payout rows
+empty, `NO_LIVE_ROWS`), and `revenue-cycle.json` therefore remains the prior
+`NO_TRANSACTIONS` result rather than being overwritten by an estimate. Owner
+Telegram `26645` records the failure. The next atomic gate is an existing-owner
+retry and readback of the same capture path; no manual provider capture is
+substituted and no money is credited until the retry yields an official row.
 M2.0 is closed for settled dedicated-link attribution: every settled revenue
 placement has one PartnerStack link and one canonical ledger row. The
 voice-isolator experiment's provider-link and owned-publication identities are now

@@ -804,6 +804,17 @@ public URLs; provider clicks remain 32, commission statuses remain all zero, and
 all real cash costs remain unknown. This campaign is now a comparable English
 placement, but it has no official transaction and cannot influence allocation.
 
+At `2026-08-21T05:34:22Z`, the next existing owner wake reached the due revenue
+cycle but the official PartnerStack `capture` subprocess returned
+`NONZERO_EXIT` with return code `1`. The durable receipt is
+`REVENUE_CYCLE_FAILED` at `stage=capture`; the latest hash-bound provider
+artifact is still the prior empty report, so this wake created no transaction,
+settlement, payout, commission transition, or money. `revenue-cycle.json` still
+records the last successful `NO_TRANSACTIONS` cycle and Telegram `26645` records
+the failure. The next atomic action is the existing owner's retry/readback of
+the same capture path; do not run a manual provider capture or treat the failure
+as proof of zero revenue.
+
 At `2026-08-21T04:51:05Z`, the same existing owner selected the next bounded
 English opportunity and created one verified PartnerStack link for
 `elevenlabs-discovered-voice-design-en-1` (provider key is retained only in the
