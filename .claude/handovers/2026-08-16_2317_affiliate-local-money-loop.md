@@ -1,8 +1,8 @@
 # Affiliate local money loop handover
 
 - SSOT: `docs/affiliate-agent/AFFILIATE-AGENT-SSOT.md`; resume from `Measured planning checkpoint and next TODOs`, then `Remaining autonomous money-loop work — canonical order`.
-- Development route: `/Users/anicca/anicca-project/.worktrees/affiliate-life-manager-spec`, branch `docs/affiliate-life-manager-spec`. The branch is clean/pushed and remains descended from required base `0a7debb58`; latest source/runtime commit is `206b1145cc81d72137ff8fda53e08e94bd2d2b0e`.
-- Installed runtime: `/Users/anicca/.local/share/life-manager/affiliate/current` → release `206b1145cc81d72137ff8fda53e08e94bd2d2b0e`; `current` is byte-backed by that immutable release. Any future `skills/affiliate` change requires immutable install and real owner replay.
+- Development route: `/Users/anicca/anicca-project/.worktrees/affiliate-life-manager-spec`, branch `docs/affiliate-life-manager-spec`. The branch is clean/pushed and remains descended from required base `0a7debb58`; latest source/runtime commit is `eb771cf61006276bac06ab0d044b9edf1043bb41`.
+- Installed runtime: `/Users/anicca/.local/share/life-manager/affiliate/current` → release `eb771cf61006276bac06ab0d044b9edf1043bb41`; `current` is byte-backed by that immutable release. Any future `skills/affiliate` change requires immutable install and real owner replay.
 - Repository decision: one Life Manager implementation at `skills/affiliate/`; no Affiliate-only repo, executor, ledger, `apps/api`, or Railway runtime. Private mutable state stays under `~/.local/state/life-manager/affiliate/`. OSS is the same proven Skill packaged for a clean Mac, never a rewrite.
 
 ## Current measured truth
@@ -492,3 +492,15 @@ naturally woke at `2026-08-20T13:30:33Z` and read back the same durable Impact
 placements, `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`, and no
 new Telegram event because the state was deduplicated. E02 remains open; B01 is
 still the next money gate.
+
+Source repair `eb771cf61006276bac06ab0d044b9edf1043bb41` changes only
+composition retry semantics: a stale preflight-only `RUNNER_REJECTED` with no
+evidence tree can retry the same durable job once after the capability receipt
+changes; budget-blocked and evidence-bearing failures remain terminal. Compile,
+the existing composition focused checks `4/4`, and private state verification
+passed. The immutable installer switched `current`; the main money owner then
+naturally woke at `2026-08-20T13:40:53Z` and retained `ALREADY_LIVE`, 13
+placements, and rolling zero. The existing composition label could not be
+started because `launchctl kickstart` and `launchctl start` both returned
+`141: Reentrancy avoided`, so owner-E2E of this retry remains open. No public
+effect, provider transaction, or money was created.
