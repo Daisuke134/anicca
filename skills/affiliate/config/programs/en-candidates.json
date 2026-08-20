@@ -129,9 +129,9 @@
       "decision": "DEFER_THRESHOLD_GATE",
       "program_url": "https://www.semrush.com/lp/affiliate-program/en/",
       "terms_url": null,
-      "commission": "$10 per eligible trial and $50-$300 per eligible sale at the basic tier",
+      "commission": "$10 per eligible trial; $50-$300 per eligible sale at the basic tier; up to $450 per sale at Platinum; 120-day last-click cookie",
       "next_action": "WAIT_FOR_1000_MONTHLY_VISITORS_OR_SIGNIFICANT_SOCIAL_AUDIENCE",
-      "evidence": "website(s) should have a minimum of 1,000 unique visitors in monthly traffic ... typically at least 1,000",
+      "evidence": "official program page requires at least 1,000 monthly unique visitors or significant organic social audience; current page also states 120-day last-click attribution, Impact reporting, EFT/PayPal payout, and no self-referrals; application remains deferred until the threshold gate",
       "credential_ref": "keychain://ai.anicca.affiliate.provider.impact/primary"
     },
     {

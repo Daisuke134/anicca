@@ -471,3 +471,14 @@ negative program transition. Rolling net remains
 is still 13 placements, 32 provider-link clicks, and zero transaction rows.
 No HubSpot link, public effect, or money was created. B01 remains the first
 official transaction gate.
+
+The current Semrush official page was read-only reviewed at
+`2026-08-20T13:28Z`: it states a 120-day last-click cookie, $10 per eligible
+trial, $50-$300 basic-tier sales with up to $450 loyalty tiers, a 1,000-monthly-
+unique-visitor or significant-organic-social threshold, Impact dashboard
+tracking, EFT/PayPal payout, FTC disclosure, and self-referral prohibition.
+The Impact-hosted terms/report artifact and TTL-bound local capture are still
+missing, so E02 remains open and no application/link was submitted. The target
+table now labels HubSpot rejected and the former USD 12,501.86 three-provider
+mix as a scenario rather than current money; current executable provider count
+is one.

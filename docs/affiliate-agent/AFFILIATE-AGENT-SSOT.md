@@ -1092,16 +1092,18 @@ Official current economics establish this admission-dependent target portfolio:
 
 | Provider | Current admission | Official economics used | Rolling-30-day approved gross target | Exact target cohort |
 |---|---|---|---:|---|
-| HubSpot Affiliate | `APPLICATION_PENDING`; contributes USD 0 until approved | 30% recurring for up to one year; Customer Platform Professional starts at USD 1,300/month | USD 4,680.00 | 12 active attributable Professional customers × USD 1,300 × 30% |
-| Semrush Affiliate | Not yet executable; contributes USD 0 until applied, approved, linked, and read back | Basic Semrush One commission USD 300 per eligible sale; higher tiers are not assumed | USD 4,200.00 | 14 eligible Semrush One sales × USD 300 |
+| HubSpot Affiliate | `APPLICATION_REJECTED`; contributes USD 0 and must not be resubmitted unchanged | 30% recurring for up to one year; Customer Platform Professional starts at USD 1,300/month; candidate economics only | USD 0 now | No eligible cohort while rejected |
+| Semrush Affiliate | Not yet executable; contributes USD 0 until applied, approved, linked, and read back | Basic Semrush One commission USD 300 per eligible sale; higher tiers are not assumed | USD 4,200.00 scenario only | 14 eligible Semrush One sales × USD 300, only after admission |
 | ElevenLabs | `ACTIVE_LINK_VERIFIED + ACCEPTED + EARNING_ENABLED` | 22% of Starter/Creator/Pro/Scale payments and 11% of Business payments for the first 12 months; enterprise excluded | USD 3,621.86 | 15 Business + 20 Scale + 30 Pro + 4 Creator active attributable subscribers at current monthly list prices |
-| **Portfolio** | All three must be executable | No provider above 40% of target gross | **USD 12,501.86** | HubSpot 37.4%, Semrush 33.6%, ElevenLabs 29.0% |
+| **Portfolio** | Current executable set is ElevenLabs only; HubSpot is rejected and Semrush is not admitted | No provider above 40% of target gross; current 10k equation is not computable from one live provider | **NOT COMPUTABLE NOW** | The USD 12,501.86 candidate scenario is not a money claim |
 
 ElevenLabs arithmetic is `15×990×11% + 20×299×22% + 30×99×22% +
-4×22×22% = USD 3,621.86`. The portfolio deliberately targets USD 12,501.86
-approved gross, leaving USD 2,501.86 for observed reversals and known real billed
-cost before the USD 10,000 net gate. A3 closes only if the canonical ledger's
-actual rolling window still reports at least USD 10,000 approved-or-paid net.
+4×22×22% = USD 3,621.86`, but it is a scenario, not observed revenue. The
+former USD 12,501.86 three-provider mix is invalid as a current allocation plan
+because HubSpot is rejected and Semrush is not admitted. Replace the rejected
+lane only after an approved, executable, independently receipted provider
+exists; A3 closes only if the canonical ledger's actual rolling window reports
+at least USD 10,000 approved-or-paid net after reversals and known real costs.
 
 Sources and mutable terms:
 
@@ -1219,6 +1221,7 @@ Mutable official sources:
 - Amazon Japan payment timing: <https://affiliate.amazon.co.jp/help/node/topic/G63DR893K4DH55XZ>
 - Rakuten rules and attribution: <https://affiliate.rakuten.co.jp/guideline/rule/>
 - Rakuten confirmation/payment flow: <https://affiliate.rakuten.co.jp/guides/rank/>
+- Semrush Affiliate Program: <https://www.semrush.com/lp/affiliate-program/en/>
 
 **X creator-revenue lane.** The current official gate is active Premium (or an
 eligible organization plan), at least five million organic impressions in the
@@ -1951,7 +1954,13 @@ receipt readback, SSOT state update, commit, and push to both canonical remotes.
   application. The existing owner persisted `REJECTED / DO_NOT_RESUBMIT` at
   `2026-08-20T13:19:48Z`, transition `14d9b1aa…5cb6`, and sent Telegram `26218`.
 - [ ] **E02** Capture current Semrush official economics, allowed channels,
-  disclosure, reversal, tracking, report, tax, and payout terms with TTL.
+  disclosure, reversal, tracking, report, tax, and payout terms with TTL. The
+  current official page was read at `2026-08-20T13:28Z`: it states a 120-day
+  last-click cookie, $10 trials, $50-$300 basic-tier sales (up to $450 loyalty),
+  1,000 monthly unique visitors or significant organic social audience, Impact
+  dashboard tracking, EFT/PayPal payout, and no self-referrals. The Impact-hosted
+  terms/report artifact and a TTL-bound local capture are still missing, so no
+  application or executable link is admitted.
 - [ ] **E03** Submit at most one Semrush application under a fenced semantic job
   and reconcile approval/rejection from authenticated readback.
 - [ ] **E04** Resume the existing Amazon Japan email-account intent without
