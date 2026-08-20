@@ -869,6 +869,16 @@ class XBrowserAdapter:
                 raise XRepairRefused("canonical X image inserter is unavailable")
             canonical = importlib.util.module_from_spec(canonical_spec)
             canonical_spec.loader.exec_module(canonical)
+            # Reuse the canonical DOM anchor/search/postcondition code, but
+            # replace only its OS-pasteboard side effect. The canonical module
+            # imports an older helper that calls AppKit directly; launchd has
+            # no reliable NSPasteboard server, while this authenticated X page
+            # already has clipboard-write permission.
+            canonical.copy_image_to_clipboard = (
+                lambda image_path, quality=85: browser_write_image(
+                    page, str(image_path)
+                )
+            )
             for image in sorted(
                 content_images,
                 key=lambda item: int(item.get("block_index", 0)),
