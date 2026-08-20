@@ -49,7 +49,11 @@ def render_resume_html(
     name = html.escape(display_name or profile["candidate"]["name"])
     body: list[str] = []
     for section in sections:
-        body.append(f"<section><h2>{html.escape(section['heading'])}</h2><ul>")
+        heading = str(section["heading"])
+        section_class = "skills" if "skill" in heading.casefold() else ""
+        body.append(
+            f'<section class="{section_class}"><h2>{html.escape(heading)}</h2><ul>'
+        )
         for item in section.get("items", []):
             body.append(f"<li>{html.escape(item['text'])}</li>")
         body.append("</ul></section>")
@@ -76,20 +80,29 @@ def render_resume_html(
     summary_html = html.escape(summary)
     return f"""<!doctype html>
 <html lang="{html.escape(document_language, quote=True)}"><head><meta charset="utf-8"><style>
-@page {{ size: A4; margin: 12mm 14mm; }}
+@page {{ size: A4; margin: 13mm 15mm 14mm; }}
 body {{ font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic",
        "Noto Sans CJK JP", "Helvetica Neue", Arial, sans-serif;
-       color: #111827; font-size: 9.2pt; line-height: 1.28; }}
-main {{ display: grid; grid-template-columns: 1fr; gap: 3px; }}
-h1 {{ font-size: 22pt; margin: 0; }} h2 {{ font-size: 11pt; text-transform: uppercase;
-letter-spacing: .08em; border-bottom: 1px solid #9ca3af; margin: 7px 0 3px; }}
-p, ul {{ margin: 2px 0; }} ul {{ padding-left: 17px; }} li {{ margin: 1.5px 0; }}
+       color: #172033; font-size: 9.35pt; line-height: 1.27; }}
+main {{ display: grid; grid-template-columns: 1fr; gap: 0; }}
+header {{ border-bottom: 1.5px solid #94a3b8; padding-bottom: 6px; margin-bottom: 2px; }}
+h1 {{ color: #0f2942; font-size: 24pt; letter-spacing: -.025em; line-height: 1.05; margin: 0; }}
+.headline {{ color: #1e4d70; font-size: 11pt; font-weight: 700; margin: 3px 0 1px; }}
+.summary {{ color: #475569; font-size: 9pt; margin: 0 0 4px; }}
+.contact, .links {{ color: #475569; font-size: 8.1pt; margin: 1px 0; }}
+h2 {{ color: #164e70; font-size: 10.2pt; text-transform: uppercase;
+      letter-spacing: .075em; border-bottom: 1px solid #bfdbfe; margin: 8px 0 3px;
+      padding-bottom: 1px; }}
+p, ul {{ margin: 2px 0; }} ul {{ padding-left: 15px; }} li {{ margin: 2px 0; }}
+section.skills li {{ list-style: none; margin-left: -15px; padding-left: 0; }}
 a {{ color: #1d4ed8; text-decoration: none; }}
-html[lang="ja"] body {{ font-size: 8.7pt; line-height: 1.25; }}
+html[lang="ja"] body {{ font-size: 8.8pt; line-height: 1.25; }}
+html[lang="ja"] h1 {{ font-size: 21pt; }}
 html[lang="ja"] h2 {{ text-transform: none; letter-spacing: .04em; }}
 </style></head><body><main>
-<header><h1>{name}</h1><p><strong>{headline_html}</strong> — {summary_html}</p>
-<p>{contact_html}</p><p>{link_html}</p></header>
+<header><h1>{name}</h1><p class="headline">{headline_html}</p>
+<p class="summary">{summary_html}</p><p class="contact">{contact_html}</p>
+<p class="links">{link_html}</p></header>
 {''.join(body)}
 </main></body></html>"""
 
@@ -98,30 +111,65 @@ def master_sections(profile: dict[str, Any]) -> list[dict[str, Any]]:
     facts = {fact["id"]: fact["claim"] for fact in profile["facts"]}
     groups = [
         (
-            "Enterprise AI — MUIT / MUFG (2025–Present)",
-            ["muit_agent_crm", "muit_genie_logs", "muit_rm_summary", "mufg"],
+            "Professional Experience — MUIT / MUFG (2025–Present)",
+            [
+                ("muit_role_2025", None),
+                (
+                    "muit_agent_crm",
+                    "Deploys Salesforce Agentforce AI agents through MUIT into MUFG Bank's internal CRM used by sales professionals.",
+                ),
+                (
+                    "muit_genie_logs",
+                    "Built a Databricks / Genie Code observability workflow for AI-agent inputs, outputs, and responses; used it to investigate behavior and response quality.",
+                ),
+                (
+                    "muit_rm_summary",
+                    "Supports prompt tuning and context engineering for deployed agents, including company-information summaries for relationship managers.",
+                ),
+                (
+                    "mufg",
+                    "Contributed to MUFG's Japan-first production deployment of Agentforce for Financial Services in a highly regulated banking environment.",
+                ),
+            ],
         ),
         (
             "Consumer AI Products",
-            ["anicca_consumer", "life_manager"],
+            [
+                ("anicca_consumer", "Built and shipped Anicca, a mobile affirmation app with 45+ ratings and a 4.5/5 rating."),
+                ("life_manager", "Builds Life Manager, an open-source agent system designed to run locally and coordinate everyday workflows with verified external actions."),
+            ],
         ),
         (
             "Research & Leadership — NAIST / ATR (2024–2026)",
-            ["naist", "atr_research", "agent_club", "iclr"],
+            [
+                ("naist", "Applied EEG and machine learning to mind-wandering detection in NAIST master's research (April 2024–April 2026)."),
+                ("atr_research", "Conducted and presented mind-wandering research at ATR."),
+                ("agent_club", "Founded a weekly community teaching Claude Code, Codex, Cursor, and AI-agent workflows for research and daily work."),
+                ("iclr", "Represented MUIT at ICLR 2026, synthesized frontier-AI research for an internal briefing, and presented the findings through MUIT's official report."),
+            ],
         ),
-        ("Earlier Growth Experience", ["a10_marketing"]),
-        ("Education & Languages", ["education", "languages"]),
+        ("Earlier Growth Experience", [("a10_marketing", "Managed a JPY 20M campaign budget, reduced CPA by 10%, and achieved record paid acquisition at A10 Lab.")]),
+        (
+            "Core Skills",
+            [
+                ("muit_agent_crm", "Salesforce Agentforce · AI-agent deployment · CRM workflows"),
+                ("muit_genie_logs", "Databricks / Genie Code · AI observability · response-quality analysis"),
+                ("muit_rm_summary", "Prompt tuning · context engineering · relationship-manager workflows"),
+                ("anicca_consumer", "Swift / iOS · consumer AI products · product growth"),
+            ],
+        ),
+        ("Education & Languages", [("education", None), ("languages", None)]),
     ]
     return [
         {
             "heading": heading,
             "items": [
-                {"text": facts[fact_id], "fact_ids": [fact_id]}
-                for fact_id in fact_ids
+                {"text": text or facts[fact_id], "fact_ids": [fact_id]}
+                for fact_id, text in items
                 if fact_id in facts
             ],
         }
-        for heading, fact_ids in groups
+        for heading, items in groups
     ]
 
 
@@ -130,37 +178,39 @@ def business_sections(profile: dict[str, Any]) -> list[dict[str, Any]]:
     groups = [
         (
             "Regulated Enterprise AI Delivery — MUIT / MUFG (2025–Present)",
-            [
-                "muit_role_2025",
-                "muit_agent_crm",
-                "muit_genie_logs",
-                "muit_rm_summary",
-                "mufg",
-            ],
+            [("muit_role_2025", None), ("muit_agent_crm", "Deploys Salesforce Agentforce AI agents through MUIT into MUFG Bank's internal CRM used by sales professionals."), ("muit_genie_logs", "Built a Databricks / Genie Code observability workflow for AI-agent inputs, outputs, and responses; used it to investigate behavior and response quality."), ("muit_rm_summary", "Supports prompt tuning and context engineering for deployed agents, including company-information summaries for relationship managers."), ("mufg", "Contributed to MUFG's Japan-first production deployment of Agentforce for Financial Services in a highly regulated banking environment.")],
         ),
         (
             "Product, Customer & Growth",
-            ["anicca_consumer", "life_manager", "a10_marketing"],
+            [("anicca_consumer", "Built and shipped Anicca, a mobile affirmation app with 45+ ratings and a 4.5/5 rating."), ("life_manager", "Builds Life Manager, an open-source agent system designed to run locally and coordinate everyday workflows with verified external actions."), ("a10_marketing", "Managed a JPY 20M campaign budget, reduced CPA by 10%, and achieved record paid acquisition at A10 Lab.")],
         ),
         (
             "Technical Leadership & Communication",
-            ["agent_club", "iclr"],
+            [("agent_club", "Founded a weekly community teaching Claude Code, Codex, Cursor, and AI-agent workflows for research and daily work."), ("iclr", "Represented MUIT at ICLR 2026, synthesized frontier-AI research for an internal briefing, and presented the findings through MUIT's official report.")],
         ),
         (
             "Research & Education",
-            ["naist", "atr_research", "education", "languages"],
+            [("naist", "Applied EEG and machine learning to mind-wandering detection in NAIST master's research (April 2024–April 2026)."), ("atr_research", "Conducted and presented mind-wandering research at ATR."), ("education", None), ("languages", None)],
+        ),
+        (
+            "Core Skills",
+            [
+                ("muit_agent_crm", "Salesforce Agentforce · AI-agent deployment · CRM workflows"),
+                ("muit_genie_logs", "Databricks / Genie Code · AI observability · response-quality analysis"),
+                ("anicca_consumer", "Swift / iOS · consumer AI products · product growth"),
+            ],
         ),
     ]
     return [
         {
             "heading": heading,
             "items": [
-                {"text": facts[fact_id], "fact_ids": [fact_id]}
-                for fact_id in fact_ids
+                {"text": text or facts[fact_id], "fact_ids": [fact_id]}
+                for fact_id, text in items
                 if fact_id in facts
             ],
         }
-        for heading, fact_ids in groups
+        for heading, items in groups
     ]
 
 
