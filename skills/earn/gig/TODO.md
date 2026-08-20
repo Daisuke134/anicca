@@ -165,8 +165,8 @@ group. Apply those established patterns here; do not keep reloading SHA-specific
 **Acceptance criteria.** All business-lane launchd definitions point through one stable `current`
 path, never to `~/gig/releases/life-manager/<sha>/...`. A validated deployment atomically changes one
 `current` pointer after verifying that its target is inside the release root and has the expected
-lane code. Only the
-release watcher may publish the pointer, under one deployment lock. Publishing does not bootout,
+lane code. Only the release controller (the watcher or an explicit activation using the same code)
+may publish the pointer, under one deployment lock. Publishing does not bootout,
 bootstrap, unload or reload the four business jobs. Rollback is the same pointer operation to the
 last known-good release. Cleanup retains current and previous releases and never removes a release
 referenced by the pointer or a live process. Two successive natural starts of every lane must resolve
@@ -190,6 +190,16 @@ logic in this slice; do not delete active releases; do not change customer-facin
 the atomic validated publisher, then render all lane plists through its stable `current` path,
 activate the fixed definitions once, capture two natural starts per lane, and only then garbage-collect
 inactive releases/checkouts. This item supersedes further SHA-specific plist reload attempts.
+
+**Current evidence.** Commits `9ff582293`, `11d122454` and `6e1ac2850` implement the atomic
+validated `current` publisher, stable plist rendering, continuous-owner migration and a fail-closed
+watcher when launchd readback is unavailable. The real watcher published
+`current -> 6e1ac2850ea5...` and naturally started Negotiate, Storefront and Paid through `current`;
+Storefront then produced a second natural `current` start and Paid produced a second natural receipt.
+Apply is still completing a real pass that began on legacy `05b75fc29`; do not kill it while it is
+submitting and recording official readbacks. A0 remains open until Apply naturally exits and restarts
+through `current`, Negotiate proves one isolated automatic recovery, and no SHA-specific process
+respawns afterward.
 
 #### A. Restore safe operating headroom
 
@@ -238,6 +248,25 @@ inactive releases/checkouts. This item supersedes further SHA-specific plist rel
   formatter incorrectly called every transient failure a missing decision. Source now distinguishes
   decision failure from readback failure and retries official readback once on a fresh target without
   clicking submit again. Live exhaustive-pass proof remains.
+- [ ] Restore deterministic eligibility before another exhaustive pass. Request `5217691`
+  (`発泡ウレタンで等身大の女性を製作したい`) had repeatedly been classified correctly as
+  `physical_or_onsite`, but pass `gig-apply-direct-1787206162452874000-19745` re-planned it as
+  `submit_required` and officially submitted ¥18,000. The official text asks for a Tokyo-resident
+  sculptor to teach a life-size urethane build; the proposal improperly narrowed that into a remote
+  written procedure. Physical manufacture/repair/shipping, location residency and in-person teaching
+  must fail closed before model planning. Explicitly digital design files, drawings, 3D data, written
+  instructions or remote advice remain eligible only when the buyer's official text requests that
+  digital deliverable; the proposal may never invent a narrower deliverable to make a job eligible.
+- [ ] Preserve an official exact price through the whole commercial path. Request `5217126` explicitly
+  requires a ¥15,000 proposal and its durable planner result correctly contained ¥15,000, but the
+  final application decision replaced it with ¥27,000. Exact buyer price instructions outrank category
+  normalization and must reach the form unchanged.
+- [ ] Prove the deployed failure report and form recovery on `5217126`. Its structured decision and
+  proposal were present; execution failed with `cdp_Page.navigate_timeout_after_30s` at the browser
+  boundary. The legacy `05b75fc29` formatter falsely reported “structured decision missing.” The
+  current source distinguishes planner absence from navigation/readback failure and retries official
+  readback without a blind second submit, but a natural `current` Apply pass must prove the corrected
+  report, exact ¥15,000 preservation and a terminal official disposition.
 - [x] Restore intent-planner availability without a code change. Pass
   `gig-apply-direct-1787199355888187000-44491` completed four Luna batches successfully and again
   produced official application readbacks; quota failure is no longer the active defect.
