@@ -150,7 +150,7 @@
       "dscacheutil cannot resolve user anicca and dscl returns eServerError",
       "log show cannot connect to logd",
       "open -n -a /Applications/ChatGPT.app returns kLSNoExecutableErr (-10827)",
-      "writer-claim-loop.err at 23:18:46, article-healthcheck.err at 23:22:17, article-zenn-retry.out at 23:21:29, and writer-money-sync/report errors at 23:25:30 show stale loaded jobs invoking /Users/anicca/profitable-claude",
+      "writer-claim-loop.err at 23:18:46, article-healthcheck.err at 23:27:17, article-zenn-retry.out at 23:26:29, article-resume.log at 23:30:13, and writer-money-sync/report errors at 23:25:30 show stale loaded jobs invoking /Users/anicca/profitable-claude",
       "stale claim/money/report/healthcheck jobs fail with ENOENT; stale Zenn job exits on the old publication pause gate",
       "no Writer process is running at the observation instant"
     ],
