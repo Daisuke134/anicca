@@ -78,6 +78,7 @@ COMMISSION_STATUS = {
     "approved": "approved",
     "scheduled": "approved",
     "declined": "reversed",
+    "reversed": "reversed",
     "paid": "paid",
 }
 
@@ -580,14 +581,21 @@ def build_rolling_net(state, now=None):
     unjoined_economic_rows = 0
     economic_rows = []
     for row in transitions.values():
-        event_time = parse_timestamp(row.get("created_at")) or parse_timestamp(row.get("observed_at"))
+        status = row.get("status")
+        # A reversal can be reported long after the original commission was
+        # created. Use the observation time for that lifecycle transition so a
+        # rolling window cannot silently miss a late clawback.
+        event_time = (
+            parse_timestamp(row.get("observed_at")) or parse_timestamp(row.get("created_at"))
+            if status == "reversed" else
+            parse_timestamp(row.get("created_at")) or parse_timestamp(row.get("observed_at"))
+        )
         if event_time is None:
             unknown_time_count += 1
             continue
         if not window_start <= event_time <= window_end:
             continue
         in_window_rows += 1
-        status = row.get("status")
         if status in status_counts:
             status_counts[status] += 1
         placement = row.get("placement") if isinstance(row.get("placement"), dict) else {}
@@ -611,12 +619,12 @@ def build_rolling_net(state, now=None):
             continue
         if reversal:
             reversal_totals[currency] = reversal_totals.get(currency, 0) + reversal
+        if status in {"approved", "paid", "reversed"} and currency != "USD":
+            unknown_fx_currencies.add(currency)
         if status not in {"approved", "paid"}:
             continue
         net = int(row.get("net_commission_minor") or 0)
         approved_net[currency] = approved_net.get(currency, 0) + net
-        if currency != "USD":
-            unknown_fx_currencies.add(currency)
 
     cost_rows = _json_rows(state / "cost-ledger.jsonl")
     cost_totals = {}
