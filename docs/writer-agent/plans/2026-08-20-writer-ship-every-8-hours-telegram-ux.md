@@ -93,8 +93,8 @@ flowchart LR
 |---:|---|---|
 | A16 | immediateは公開、売上、payout、failure、recovery、opportunity state changeだけ送る。同一semantic hashは再送しない | delivery receipt with message id |
 | A17 | 日次digestは売上0でも必ず1回送る。週次digestも必ず1回送る | daily/weekly message IDs |
-| A18 | 各メッセージ先頭は`Codex::: Writer | <state> | run=<id>`。本文は「起きたこと／証拠／お金の真実／次のowner／ユーザー操作」を含む | renderer contract test |
-| A19 | `PENDING`には対象、外部理由、最短retry時刻、durable owner、並行作業、Telegram event UUIDを含める。裸の`WAITING`と生stack traceを送らない | pending fixture |
+| A18 | owner向け本文は利用者の設定言語による自然文で始め、起きたこと・理由・実際の受取・次の自動行動・公開リンクを説明する。`Codex:::`、`Claude:::`、`exact8 COMPLETE`、生のstatus enum、内部run IDを本文の先頭や主文に出さない。技術詳細は任意の詳細リンクの先に置く | natural-language renderer contract test |
+| A19 | `PENDING`には対象、外部理由、最短retry時刻、durable owner、並行作業を自然文で含める。Telegram event UUIDはledgerと詳細リンクに保存し、主文へ出さない。裸の`WAITING`と生stack traceを送らない | pending fixture |
 | A20 | TelegramとWeb/Local UIは同じledger snapshotと`semantic_hash`を使う | snapshot parity receipt |
 
 ### 2.5 8時間 cadence gate
@@ -114,6 +114,16 @@ flowchart LR
 | A26 | 「最大市場」をMAU、登録会員、paid subscription、実受取の別指標で保存し、異なる指標を一つのランキングに混ぜない | market-metric provenance |
 | A27 | $10Kは`paid customers × net ARPU + verified one-time sales + verified commissions − refunds − fees − compute`で計算し、シナリオの仮定と実receiptを分離する | $10K ledger scenario |
 
+### 2.7 Language/account allocation gate
+
+| # | MUST | 完了receipt |
+|---:|---|---|
+| A28 | `account_key`ごとに、所有者、言語、platform role、記事種別、月間上限、収益stream、学習指標、payout scopeをregistryへ保存する。実アカウント名やcredentialはsecret storeから参照し、specやTelegramへ書かない | account allocation registry |
+| A29 | 現在の`aniccabuddha.substack.com`は既存のJA/EN混在記事を削除・移動せず`substack_ja_legacy`として扱い、新規EN記事を停止する。ENは別publication identity・別`SUBSTACK_PUBLICATION_EN`・別購読/売上台帳で開始する | Substack language isolation receipt |
+| A30 | `substack/ja`と`substack/en`のpublish adapterはpublication identityをpair単位で解決し、単一の`SUBSTACK_PUBLICATION` fallbackへ戻らない。既存混在記事は履歴として保持し、新規記事の言語・読者・receiptを混ぜない | pair-to-publication contract test |
+| A31 | $10Kのbase design targetは、EN Substack 500人、JA Substack 250人、note JA有料購入300件、KDP 100冊という単位とnet計算を保存する。これは予測ではなく、実receiptで置き換える学習目標である | target-vs-actual ledger test |
+| A32 | 記事種別を`pillar_research`、`conversion_article`、`discovery_derivative`、`product_chapter`、`high_ticket_brief`に分類し、platformごとの月間上限と学習指標を守る。同じ全文を別言語・別アカウントへ自動複製しない | article allocation and duplicate test |
+
 ## 3. As-Is / To-Be
 
 | 領域 | As-Is（実測） | To-Be（MUST） |
@@ -124,7 +134,8 @@ flowchart LR
 | publication | note/Substack/X/Zenn等が混在し、draft/intent/readbackが長期滞留 | revenue-setとfree-distributionを分離し、同じrunをdestination単位で再開 |
 | healing | healthcheck、repair、self-improveの入口が欠損 | 失敗signatureを保存し、同一artifactを修復・検証・resume |
 | money | money sync欠損。最後のreportは8/16で受取¥0/$0 | receipt-only ledger。未計測はunknown。MRR/one-timeを分離 |
-| Telegram | 旧workerの同一semantic hash空振りが続き、8/16以降のreport workerはENOENT | event delta、日次0円digest、週次経済digest、incident owner、message id、dedupe |
+| Telegram | live pair通知は`✅ substack/ja live`、completionは`[event] exact8 COMPLETE`、weekly auditは`status=PASS runs=...`のような技術短文。report workerはENOENT | ownerの設定言語で、自然文・公開リンク・金額の真実・次の自動行動を説明し、内部enum/ harness名は主文から隠す |
+| account | `run.sh`の`substack-ja`と`substack-en`が同じ`SUBSTACK_PUBLICATION`を既定値にする | JA legacyとEN dedicated publicationをpair単位で分離し、言語別receiptを学習 |
 | cadence | “毎日”はtriggerの存在であり、shipの証拠ではない | ship = public readback + artifact hash + payment observation（未入金は正直にunknown） |
 
 ### 3.1 理想の運用UX
@@ -132,33 +143,31 @@ flowchart LR
 Telegramは一つのDMを「操作画面」ではなく、**お金と未完了workのtruth surface**として使う。
 
 ```text
-Codex::: Writer | BLOCKED | run=daily-2026-08-20
+今朝の実行は、記事を作る前に止まりました。
 
-起きたこと: 06:00 triggerは起動したが、paid-demand cardが0件で生成前停止。
-証拠: demand-authority receipt / claim-loop ENOENT
-お金: 今回の受取は未発生。直近receipt以降は unknown（0とは扱わない）。
-次のowner: writer-claim-loop（供給復旧）→ article-daily（同run再開）
-再開: 供給receiptができ次第、次のscheduleを待たずにresume。
-あなたの操作: なし。
+需要カードの供給が空だったためです。自動復旧担当が供給を直し、同じ記事の作業を再開します。
+今回確認できた入金はありません。未確認の金額は0円とは扱っていません。
+公開リンク: https://example.invalid/status/daily-2026-08-20
+次の行動: 供給が戻り次第、次の予定時刻を待たずに続けます。あなたの操作は不要です。
 ```
 
-メッセージ種別は次の4つに固定する。
+メッセージ種別は次の4つに固定する。内部の状態名はledgerに保存するが、Telegramの本文には表示しない。
 
-1. **Immediate delta**: `LIVE`、`SALE`、`PAYOUT`、`INCIDENT_OPEN/UPDATE/RECOVERED`、機会の`SUBMITTED/ACCEPTED/DECLINED`だけ。
-2. **Daily digest（22:30 JST）**: 今日、月累計、MRR、通貨別gross/net/pending/unknown、記事ごとの全URL、readback、paywall、購入、refund、失敗、復旧、次の1件。
-3. **Weekly economics（月曜）**: stream別増減、one-time/MRR、conversion/churn、fee/compute/net margin、KEEP/REVERT、来週の一実験。
-4. **Pinned status**: 最新run、未完destination、owner、次のretry、受取truthを1枚に集約。変化がない限り新規メッセージを作らない。
+1. **公開・販売の変化**: 何が公開されたか、公開リンク、読者に見える状態、確認済みの受取。
+2. **日次報告（22:30 JST）**: 今日と月累計、継続購読と単発売上、確認済み・未確認・保留の金額、記事リンク、失敗、復旧、次の一件。
+3. **週次の振り返り（月曜）**: どの記事・言語・platformが読まれ、購読・購入につながったか、手数料と計算資源を引いた結果、次に試す一つの変更。
+4. **固定メッセージ**: 最新の公開記事、未完了の作業、次の自動行動、入金の真実を自然文でまとめる。変化がない限り新しいメッセージを作らない。
 
 UI上の色・語彙は次に固定する。
 
 | 状態 | 表示 | 意味 |
 |---|---|---|
-| `LIVE` | 緑 | 外部公開readbackが通った |
-| `EARNED` | 金 | 外部payment/publisher receiptがjoinした |
-| `PENDING` | 黄 | 外部理由があり、ownerとretryがある |
-| `UNKNOWN` | 灰 | 計測不足。0ではない |
-| `BLOCKED` | 赤 | 次の安全な自動行動が定義されている |
-| `TEST` | 紫 | test/dry-run。収益へ加算しない |
+| `LIVE` | 緑 | 「公開されました」 |
+| `EARNED` | 金 | 「入金を確認しました」 |
+| `PENDING` | 黄 | 「外部サービスの返答待ちです」 |
+| `UNKNOWN` | 灰 | 「まだ確認できていません」 |
+| `BLOCKED` | 赤 | 「自動復旧が必要です」 |
+| `TEST` | 紫 | 「試験結果です。売上には含めません」 |
 
 ### 3.2 8時間のcontrol beat
 
@@ -236,6 +245,39 @@ $6.93 = $2,426`で約$10,022になるが、これは必要販売量を示す感�
 
 Mediumは公式更新でcontent mill、AI-generated article、attention baitを積極的に抑制すると説明している。したがって、投稿量を増やすこと自体が収益を増やすのではなく、各言語で人間に読まれる品質とmember readbackを増やすことが必要になる。<https://medium.com/blog/partner-program-changes-are-rolling-out-now-456306d16cb9>
 
+### 3.4 Account・記事種別・$10K base allocation
+
+この表の金額は、税・返金・為替・computeを除く**設計目標**であり、予測では
+ない。実際の収益欄は必ずpublisherまたはpayment processorのreceiptで置き換える。
+`月間上限`は作成許可数で、未完runや品質・policy gateを無視して満たすノルマではない。
+
+| account_key | 現在／開始条件 | 言語・主な記事種別 | 月間上限 | $10K baseへの計上 | 学ぶこと |
+|---|---|---|---:|---:|---|
+| `substack_ja` | 現在の`aniccabuddha.substack.com`をJA legacy/currentとして維持。新規ENは禁止 | JA `pillar_research`、`conversion_article`、member letter | 長文8＋member letter4 | 250 paid × ¥1,500、net約¥320,625（約$2,138） | 無料→有料、継続、解約、テーマ別net ARPU |
+| `substack_en` | 別publication identityと`SUBSTACK_PUBLICATION_EN`を作成し、readback後に有効化 | EN `pillar_research`、case study、how-to、member letter | 長文8＋member letter4 | 500 paid × $15、net約$6,330 | topic別paid conversion、churn、英語読者の継続 |
+| `note_ja` | 既存`anicca123` | JA `conversion_article`（Substack版と同じ全文ではなく実用追加部分を持つ） | 有料記事8 | 300購入 × ¥500、net約¥128,250（約$855） | 記事ごとの閲覧→購入率、返金、net/article |
+| `kdp_publisher` | 既存publisher accountを一つだけ使用。言語別book IDを分ける | EN/JA `product_chapter`、evergreen book | book 1冊/四半期、販売100冊/月を観測目標 | 100冊 × 約$6.93、約$693 | 言語別販売、ページ読了、net/book |
+| `medium_en` / `medium_ja` | discovery面。paid収益はbaseに入れない | EN/JA `discovery_derivative` | 各8 | $0（receiptができるまで） | 読了→owned購読クリック、topic別流入 |
+| `devto_en` | 既存EN account | EN technical `discovery_derivative` | 4 | $0 | 技術読者→Substack/KDP導線 |
+| `zenn_ja` | 既存JA account | JA technical `discovery_derivative`、`product_chapter` | 記事4＋book 1冊/四半期 | $0（book receiptのみ別計上） | 技術テーマの読了→book購入 |
+| `linkedin_en` | 既存B2B profile/newsletter | EN `high_ticket_brief` | 8 | $0 | 問い合わせ、提案、契約化率 |
+| `x_ja` / `x_en` | discovery account。言語別artifactを別々に記録 | JA/EN short `discovery_derivative` | 各20 | $0 | 拡散→owned面へのクリック |
+| `patreon_locale_tier` / `gumroad_locale_store` | Substack/noteのconversionが確認できた後に有効化 | JA/EN/TL member post、bundle | 各4 member post／bundle1 | base外のupside | checkout、継続、返金、payout |
+| `tagalog_pilot` | payout・native QA・policy確認後のみ | TL `pillar_research`、`conversion_article` | 2 | base外。最初のreceiptまで予算0 | TL読者の実conversion。KDPへは送らない |
+
+#### 1つのテーマをどう配分するか
+
+1. まず一つの調査から、英語と日本語の別の`pillar_research`を作る。Tagalogはnative QAが通るテーマだけ別に書く。
+2. `substack_en`と`substack_ja`には、それぞれの読者に合わせた完全版を出す。英語と日本語を同じSubstack publicationへ新規投稿しない。
+3. `note_ja`には日本語の実用的な追加部分を持つ有料版を出す。同じ全文の単純コピーは禁止する。
+4. Medium、Dev.to、Zenn、LinkedIn、Xには目的別の短縮・技術・B2B派生版を出し、owned面へリンクする。
+5. KDP、Gumroad、Zenn bookは、反応の良かった複数記事をまとめて商品化する。日々の投稿数を増やすための商品化はしない。
+
+Substackの実装は、`substack/ja → SUBSTACK_PUBLICATION_JA`、`substack/en →
+SUBSTACK_PUBLICATION_EN`を必須とする。platformが同じloginで複数publicationを
+許す場合でも、publication identity、読者、購読、価格、payout、ledgerは分離する。
+既存混在記事を削除・移動して整合させることはしない。
+
 ## 4. Test Matrix
 
 | # | To-Be | Test name | Cover |
@@ -253,6 +295,10 @@ Mediumは公式更新でcontent mill、AI-generated article、attention baitを�
 | 11 | snapshot parity | `test_telegram_and_web_share_ledger_semantic_hash()` | divergent UX |
 | 12 | cadence gate | `test_eight_hour_canary_reverts_on_net_or_policy_regression()` | over-publishing |
 | 13 | live E2E | `test_live_trigger_to_public_readback_to_telegram_receipt()` | installed loop truth |
+| 14 | natural-language report | `test_owner_message_has_plain_sentence_and_public_link_without_harness_prefix()` | machine-only report / `Codex:::` leakage |
+| 15 | Substack separation | `test_substack_language_pair_resolves_distinct_publications_and_ledgers()` | JA/EN audience mixing |
+| 16 | allocation target | `test_base_target_is_scenario_only_and_actuals_require_receipts()` | forecast counted as money |
+| 17 | article allocation | `test_one_topic_yields_language_native_role_bound_artifacts_without_duplicate_fulltext()` | blind cross-post |
 
 | Item | Value |
 |---|---|
@@ -263,6 +309,9 @@ Mediumは公式更新でcontent mill、AI-generated article、attention baitを�
 
 - 8時間ごとの長文3本publishを、A22の実績前に開始しない。
 - 「市場が大きい」という理由だけで全platformへ全文を同時cross-postしない。各面のrole、言語、rate-limit、payout、readbackを満たしたものだけ有効化する。
+- Writer loopのTelegram本文に`Codex:::`、`Claude:::`、内部run ID、機械enumだけを置かない。利用者の設定言語による自然文と公開リンクを必須にする。
+- 日本語と英語の新規記事を一つのSubstack publicationへ混在させない。既存混在記事の削除・移動・改変はしない。
+- 月間上限や$10K base allocationを売上実績として表示しない。実receiptがないstreamは未確認またはbase外として表示する。
 - primary sessionが記事を手動公開して成功扱いにしない。
 - views、likes、impressions、paywall、checkout、推定収益を受取額にしない。
 - Zennの24時間投稿制限、各platformのpolicy、外部KYC・契約・決済承認を回避しない。
@@ -282,7 +331,10 @@ Mediumは公式更新でcontent mill、AI-generated article、attention baitを�
 
 ### P0-3 1日1本のrevenue-set E2E
 
-実際のlaunchd `ai.anicca.article-daily`をkickstartし、`note/ja`、`substack/ja`、`substack/en`を同一runでreadbackする。未完は`article-resume`が同じrunを所有する。完了条件はA7〜A11。
+実際のlaunchd `ai.anicca.article-daily`をkickstartし、`note/ja`と`substack/ja`を
+同一runでreadbackする。`substack/en`は専用publication identityのreadbackが通る
+まで明示的に保留し、混在中のJA publicationへ逃がさない。未完は
+`article-resume`が同じrunを所有する。完了条件はA7〜A11。
 
 ### P0-4 監視・収益・機会・学習workerを同じreleaseに戻す
 
@@ -290,7 +342,15 @@ Mediumは公式更新でcontent mill、AI-generated article、attention baitを�
 
 ### P0-5 Telegram UXを実装・実機確認
 
-`Codex:::` prefix、semantic-hash dedupe、message id、pinned status、zero-revenue daily、weekly economics、owner付きPENDINGを一つのrendererへ統合する。`openclaw message send --channel telegram --target 8547730585 --json`の実receiptを取得し、同じsnapshotのWeb/Local表示とhash一致を確認する。完了条件はA16〜A20。
+既存の`✅ substack/ja live`、`[event] exact8 COMPLETE`、`status=PASS runs=...`の短文を、利用者の設定言語による自然文へ変換するrendererへ統合する。本文は「何が起きたか」「なぜ起きたか」「公開リンク」「確認済みの入金または未確認」「次の自動行動」を含み、harness名・内部enum・内部run IDを主文に出さない。semantic-hash dedupe、message id、固定メッセージ、売上0の日次報告、週次経済報告、owner付き外部待ちを実装する。`openclaw message send --channel telegram --target 8547730585 --json`の実receiptを取得し、同じsnapshotのWeb/Local表示とhash一致を確認する。完了条件はA16〜A20。
+
+### P0-6 Account registryとSubstack言語分離
+
+`account_key`、言語、role、記事種別、月間上限、payout scope、学習指標を
+registryへ作る。`substack/ja`は`SUBSTACK_PUBLICATION_JA`、`substack/en`は
+`SUBSTACK_PUBLICATION_EN`からのみ解決し、単一publication fallbackを削除する。
+既存の混在記事を削除・移動せず、専用EN publicationの作成・ログイン・公開URL・
+購読対象・receipt collectorを実測する。完了条件はA28〜A30。
 
 ### P1-1 8時間control beatを有効化
 
@@ -302,12 +362,20 @@ A22を満たした後だけ、1変数・最大3本/日・7日間のcanaryを実�
 
 ### P1-3 Global platform lane（条件付き）
 
-A22の安定性とA27のledgerが確認できた後、まず英語＋日本語の2言語で
-Substack/Patreon（owned）、Medium/LinkedIn（discovery）、KDP/note/Zenn
-（product）を一面ずつ有効化する。TagalogはMedium/Substack/Patreon/Gumroad
-のpayoutとnative QAが確認できた後に追加し、KDPへは送らない。各面は
-30日単位で、readback、paid conversion、net revenue、refund、compute、
-quality、policy incidentを比較し、receiptがない面はscaleしない。
+A22の安定性とA27のledgerが確認できた後、最初に`SUBSTACK_PUBLICATION_JA`と
+`SUBSTACK_PUBLICATION_EN`を別々に解決する。既存の混在publicationには新規ENを
+追加しない。次に英語＋日本語の2言語で、Substack（owned）、Medium/LinkedIn/
+Dev.to/Zenn（discovery）、KDP/note（product）を一面ずつ有効化する。account
+registryの月間上限を超えず、A31のtarget-vs-actualを同じ`artifact_id`で追跡する。
+各面は30日単位でreadback、paid conversion、net revenue、refund、compute、
+quality、policy incidentを比較し、receiptがない面はscaleしない。完了条件はA24〜A32。
+
+### P1-4 Tagalogと二次収益面（条件付き）
+
+Substack EN/JAまたはnoteで言語別のconversionが確認できた後、Tagalogは2本/月の
+pilotから開始する。Medium、Substack、Patreon、Gumroadのpayout、native QA、
+policy、返金処理を実測し、KDPへは送らない。PatreonとGumroadはbase $10Kに二重
+計上せず、既存の有料購読またはnoteの同じ顧客を別売上として再利用しない。
 
 ## 7. 調査ソースと判断根拠
 

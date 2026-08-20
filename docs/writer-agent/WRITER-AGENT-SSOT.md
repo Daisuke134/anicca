@@ -61,6 +61,25 @@ canary. Global platform expansion is conditional on the spec's role matrix,
 language/payout gates, and receipt-backed $10K ledger; it does not replace the
 invariant revenue, safety, or platform-policy rules in this SSOT.
 
+### 0.1.2 Owner-facing language and publication identity
+
+Writer Loop Telegram reports are for ordinary users, OSS users, cloud users, and
+nontechnical family members. The loop writes in the owner's configured language,
+uses neutral natural sentences, and includes a public article or status link.
+It does not put a harness name, `Codex:::`/`Claude:::` prefix, raw event ID,
+internal run ID, status enum, or stack trace in the main message. Internal
+receipt IDs remain in the ledger and an optional details link.
+
+The current active publisher maps both `substack/ja` and `substack/en` to one
+`SUBSTACK_PUBLICATION` fallback (`aniccabuddha.substack.com`). This is a known
+language-mixing defect. Existing mixed posts remain historical and are not
+deleted or moved; new English posts stop on that publication. The target is
+`substack/ja -> SUBSTACK_PUBLICATION_JA` and
+`substack/en -> SUBSTACK_PUBLICATION_EN`, with separate publication identity,
+reader cohort, subscription, payout scope, and revenue ledger. The detailed
+account, article-type, monthly-cap, and $10K target matrix is in the active
+planning spec linked above.
+
 ### 0.2 Open-source positioning and public-claim gate
 
 The Writer must not call itself the "world's first autonomous Writer Agent."
@@ -1387,11 +1406,15 @@ Required fields by cadence:
 | Weekly | Always | Each stream versus prior week, one-time versus recurring, winning/losing article/topic, conversion and churn, fees/compute/net margin, opportunity pipeline, KEEP/REVERT decisions, and next week's single experiment |
 
 The renderer receives structured ledger data but speaks in ordinary language.
-It must never expose a raw stack trace or unexplained status code as the user
-message. It translates the failure, says what was attempted, identifies the
-durable retry owner, and links an optional technical receipt for experts. Every
-article entry includes all available public platform URLs, while drafts and
-failed readbacks are visibly labeled and never presented as public.
+The first sentence must say what happened in the owner's configured language;
+the main body must explain why, show the public link, state the actual received
+money or that it is not confirmed, and state the next automatic action. It must
+never expose a harness prefix, raw stack trace, unexplained status code, event
+ID, or internal run ID as the user message. It translates the failure, says
+what was attempted, identifies the durable retry owner, and links an optional
+technical receipt for experts. Every article entry includes all available public
+platform URLs, while drafts and failed readbacks are visibly labeled and never
+presented as public.
 
 ### 6.4 Visual contract
 
