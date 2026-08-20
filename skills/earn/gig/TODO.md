@@ -211,7 +211,13 @@ The order to the end is:
    and launched the exact next v5 producer from a temporary `paid-file-owner-*` staging root. That
    root contains requirements, raw buyer sources, non-proof context and state, but no controller
    census, prior candidate, review state, authorization or correspondence receipt. Live corrected
-   v5 review, one delivery effect, exact-room official readback and replay zero remain to be proved.
+   v5 then passed the isolated owner's own artifact validator but exposed two controller handoff
+   defects before promotion: relative manifest paths were resolved against the controller cwd, and
+   the copied runner summary still pointed at its deleted temporary result. Promotion now resolves
+   relative paths inside staging only and rewrites `result_path` to the copied durable evidence file;
+   both fixes preserve the physical read fence and keep buyer-visible effect at zero on failure.
+   Live corrected v5 review, one delivery effect, exact-room official readback and replay zero remain
+   to be proved.
 6. **Prove 24/7 control-plane durability.** Browser, Apply, Negotiate, Storefront and Paid must each
    survive process exit and start again from the immutable release. The current shell cannot read
    the launchd domain (`launchctl` returns 141, `Reentrancy avoided`), although browser CDP and new
