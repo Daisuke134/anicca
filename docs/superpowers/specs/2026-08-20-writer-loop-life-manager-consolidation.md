@@ -11,6 +11,36 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
 
 ## 現在の実測
 
+### 2026-08-21 latest: Coconala parity lane の実行結果と公開境界
+
+- Coconalaの実装を正本として、Writerは新しいexecutorや独自schedulerを追加しない。
+  既存の`gig_disk_guard.py`、owner fence、immutableな
+  `/Users/anicca/gig/releases/life-manager/current`、外部state
+  `~/.local/state/life-manager/writer`、launchdのlane本体だけを使う。
+- current releaseは`513d8fc0c7434acac4a4c2f993b707b8b228729a`へ切り替え済み。
+  sourceのfocused checkはidentity 2件＋需要state 2件がPASSし、source／current releaseの
+  `publication_resume.py`に同一Substack hostを拒否するidentity gateが存在する。
+- 需要laneの実receiptは`2026-08-20T17:32:09Z`、`READY_WITH_SOURCE_OUTAGE`、観測231件、
+  queue `0→1`、TECHiの7日以内のhash検証済み本文SHA
+  `6604de6f1e9378bc9f3e8c3c83f41c597751f879ccc1b988339aabb67453f20b`を再利用した。
+  queueには`paid-demand-e2a3be56…`の有効なカードが存在する。これは需要供給の復旧であり、
+  記事公開や売上のreceiptではない。
+- 既存resume workerが同じrunのNote JAだけを実公開し、stateの更新時刻は
+  `2026-08-20T17:36:23Z`。native readbackは
+  `https://note.com/anicca123/n/ncbdb8a56bb20`、所有者`anicca123`、公開時刻
+  `2026-08-21T02:36:20+09:00`、有料設定¥500、本文・画像・artifact SHA
+  `dae1d2fc17f9705e18e008c1188d2cb5c06fb6f0a6d7a813be1eb6b848da8156`を検証済みである。
+  ¥500は価格設定であり、販売または入金receiptではない。
+- 同じrunの`substack/ja`、`substack/en`、`x-article/ja`はintentのままで、native公開URL・
+  readback・入金receiptはない。旧stateには日英Substackが同じ
+  `aniccabuddha.substack.com`として保存されているが、新releaseはこのstateを公開前に拒否する。
+  `SUBSTACK_PUBLICATION_EN`と別アカウントのcredentialは未設定であり、英語Publicationを
+  推測したり、JA accountへ送ったりしない。
+- launchctlのcontrol-plane readbackは引き続きrc=141 `Reentrancy avoided`で、loaded schedulerの
+  稼働証拠とは扱わない。fresh adversarial reviewも、Noteの実receiptは認めたが、Substack
+  identity未設定のままの再開をNO-GOとした。従って現在の結論は「需要→queueとNote JAの
+  native receiptは実証済み、4 destinationの毎日公開と収益loopは未完了」である。
+
 ### 2026-08-21 latest Coconala parity recovery
 
 - 公開停止markerは現在存在しない。Creatorは`gig_disk_guard.py → article-daily.sh`の
@@ -216,11 +246,11 @@ publication identity、読者、payout、ledgerを分ける。
 | 1 | stale loaded定義をdrainし、launchd実行コンテキストを復旧してcreator/resumeを一度だけ起動 | 旧14定義＋retired 5 CLI labelのbootout/drain、loaded ProgramArguments/envの照合、Life Manager 14 labelのload/readback、pause下bounded wake、旧rootログの1 schedule interval再発0、実行receiptを取得 | ブロッカー（公開停止） |
 | 2 | DNSまたは承認済みnetwork transportを復旧 | 通常DNSは失敗。1.1.1.1解決＋`curl --resolve`ではNote／Substack／XがHTTP 200。publisher実行経路の再読戻しは未確認 | 一部完了 |
 | 3 | Writer runtimeを`skills/writer-agent`へ移しmanifestを生成 | SHA付きpath census、Life Manager current release、実行時の旧root read=0 | 完了（launchd readbackは別TODO。履歴・互換文字列のcensus 0ではない） |
-| 4 | demand→artifact→publisher adapterを同じstate schemaへ接続 | TECHi本文のtransport-success/interstitialを7日以内のhash検証済み外部receiptへbounded reuseするfocused checkはPASS。再実行後のqueue→artifact parityは未確認 | 一部完了 |
+| 4 | demand→artifact→publisher adapterを同じstate schemaへ接続 | TECHi本文のtransport-success/interstitialを7日以内のhash検証済み外部receiptへbounded reuseするfocused checkはPASS。実時刻claim receiptは`READY_WITH_SOURCE_OUTAGE`、queue `0→1`、有効なpaid-demand cardを確認 | 完了（artifact消費は次の未完run） |
 | 5 | Note/Substack/Xの実公開とreadbackを同一runで完了 | 同一runにNote JA、Substack JA、X Article JA、誤って同一hostのSubstack EN intentが残る。初期化gateは別`SUBSTACK_PUBLICATION_EN`必須へ修正済み。別publicationの実host/credentialが未設定のため native URL/readbackは未確認 | ブロッカー（EN identity） |
 | 6 | payment/publisher receipt collectorとmoney ledgerを接続 | artifact-level receipt | 未着手 |
 | 7 | neutral Telegram rendererを日次・失敗・完了へ接続 | message ID `26075`/`26087` + semantic hash | 一部完了 |
-| 8 | adversarial verifierで重複公開・誤金額・偽URL・secret漏洩を反証 | Note live境界とidentity gateのfresh review | 進行中 |
+| 8 | adversarial verifierで重複公開・誤金額・偽URL・secret漏洩を反証 | fresh reviewでNote native receiptを確認し、Substack同一host／EN credential欠落をNO-GOとして反証。identity gateはcurrent releaseへ反映済み | 完了（別EN identity設定後に再検証） |
 | 9 | Life Manager release ownerをloadし、14個のWriter laneをCoconala parity manifestからbootstrap。旧5 CLI labelはrollback archiveへ退避し、shared fenceで旧ownerをdrain | release manifest renderは完了。残りはcurrent symlink公開、loaded ProgramArguments/env readback、owner drain、pause下bounded wake | 一部完了 |
 | 10 | rollback archiveと復元試験を検証し、Writer専用releaseだけをアーカイブ。`.openclaw`と`profitable-claude`全体は削除しない | archive hash + restore receipt + deletion-scope receipt | 未着手 |
 
