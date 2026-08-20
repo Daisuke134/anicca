@@ -1310,8 +1310,8 @@ operation.
 This checkpoint supersedes older counts and zero-click statements in the
 historical evidence below. Read-only inspection of the installed state shows:
 
-- spec HEAD `361866f51` is clean and pushed to both documentation remotes;
-  installed release `088858bce` is the current immutable `skills/affiliate`
+- spec HEAD `260e57098` is clean and pushed to both documentation remotes;
+  installed release `260e57098` is the current immutable `skills/affiliate`
   runtime;
 - six expected launchd plists remain installed; three browser owners answer CDP
   `9324/9326/9327` with HTTP `200`, and three job owners retain 600-second intervals;
@@ -1365,6 +1365,27 @@ historical evidence below. Read-only inspection of the installed state shows:
   transition identity. This is implementation readiness only: because the live
   report still has zero rows, B02--B08 remain externally open and no fixture or
   test value is counted as money.
+- release `260e57098` adds the fail-closed `AFFILIATE_ROLLING_NET` receipt to the
+  existing owner wake. It deduplicates by `(provider, provider_transaction_id)`,
+  records exact in-window transaction-to-placement joins, preserves
+  pending/approved/paid/reversed counts and reversal minor units, binds the
+  source ledger SHA-256, rejects unmatched economic rows, and refuses a USD net
+  result when FX, real-billed-cost rows, or complete cost-window coverage are
+  unknown. A direct installed readback currently reports
+  `money_state=NO_TRANSACTIONS`, zero rows in every status,
+  `net_state=NO_APPROVED_OR_PAID_ROWS`, `threshold_state=NOT_REACHED`,
+  `cost_state=UNKNOWN`, and `cost_coverage_state=UNKNOWN`; no amount is counted.
+- post-install trigger attempts returned macOS `141: Reentrancy avoided`, but
+  the existing owner subsequently produced one real wake at
+  `2026-08-20T11:17:12Z` from release `260e57098`. `last-run.json` records
+  `rolling_net_state=ROLLING_NET_READY`, `money_state=NO_TRANSACTIONS`,
+  `net_state=NO_APPROVED_OR_PAID_ROWS`, `threshold_state=NOT_REACHED`,
+  `approved_or_paid_net_usd=null`, and both cost states `UNKNOWN`. The owner
+  sent the new natural-language `AFFILIATE_ROLLING_NET` receipt once as
+  Telegram message `26044` under event UUID
+  `72557ed6beb878b70a844c3e1fda8862e284af9a20b2287752e56b1e0b3fb8e6`; outbox
+  and sent ledgers are both 100 rows with no pending event. This is owner-E2E
+  wiring proof only; zero transactions and zero dollars remain.
 - the existing owner retry at `2026-08-20T10:54:48Z` recovered that exact pending
   event without any publication, link, provider, or ledger mutation. The owner
   recorded message ID `26019` once for event UUID
@@ -1755,6 +1776,9 @@ receipt readback, SSOT state update, commit, and push to both canonical remotes.
   transition while retaining original amount and currency.
 - [ ] **C05** Compute one canonical rolling-30-day view from approved-or-paid
   commission less reversals and known real costs; prevent approved/paid double count.
+  The fail-closed receipt and owner wiring are installed in `260e57098`; C05
+  remains open until a real provider row, exact placement join, complete cost
+  coverage, and owner-E2E replay prove the live window.
 - [ ] **C06** Prove reversal, late payment, FX, shared cost, duplicate transaction,
   and material-unknown-cost cases; the last case MUST refuse the net gate.
 

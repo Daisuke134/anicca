@@ -276,3 +276,33 @@ and `declined` to canonical statuses, retains USD minor/reversal units, and
 derives a stable transition identity for replay. This is harness readiness only;
 the official report has no live rows, so no fixture or test value advances B02,
 B03, or the USD 10,000 gate.
+
+At `2026-08-20T11:17:12Z`, release `260e57098209eaef8f412532af5284ed6a000d65`
+was installed as the immutable Affiliate runtime. The new `AFFILIATE_ROLLING_NET`
+receipt runs inside the existing owner wake and is fail-closed: it deduplicates
+by provider plus transaction ID, binds the commission-ledger SHA-256, lists
+in-window transaction-to-placement joins, preserves pending/approved/paid/
+reversed and reversal units, and refuses a qualifying USD net when an economic
+row is unjoined, FX is missing, real billed costs are missing/invalid, or the
+cost window is not explicitly complete. Direct installed readback found no
+`commission-ledger.jsonl` and returned `money_state=NO_TRANSACTIONS`, zero rows
+in every status, `net_state=NO_APPROVED_OR_PAID_ROWS`,
+`threshold_state=NOT_REACHED`, `approved_or_paid_net_usd=null`,
+`cost_state=UNKNOWN`, `cost_coverage_state=UNKNOWN`, and receipt SHA-256
+`3e77dc1a027bb1e436f14170945c4a84a9ebdaf6eeb3fa20641f42c1035df074`.
+
+The existing `ai.anicca.affiliate-loop` owner was the only runtime executor.
+`launchctl start`, `kickstart`, `asuser kickstart`, `bootstrap`, and a target-only
+bootout/bootstrap resync each returned macOS `141: Reentrancy avoided`, but the
+owner later produced one real wake from the new release. `last-run.json` records
+`rolling_net_state=ROLLING_NET_READY` and the same empty/unknown states above.
+The owner emitted one natural-language `AFFILIATE_ROLLING_NET` Telegram receipt
+as provider message `26044`, event UUID
+`72557ed6beb878b70a844c3e1fda8862e284af9a20b2287752e56b1e0b3fb8e6`; Telegram
+outbox and sent ledgers are both 100 rows with zero pending. No publication,
+provider-link, transaction, settlement, or ledger money effect was created.
+
+C05 is now executable wiring but remains open for the first real transaction,
+exact placement join, complete real-billed-cost coverage, and replay proof. B01
+remains the next external gate; current approved-or-paid net is USD 0 and the
+USD 10,000 rolling window is not reached.
