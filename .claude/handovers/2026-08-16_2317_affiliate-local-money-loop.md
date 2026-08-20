@@ -10,7 +10,7 @@
 - Six Affiliate launchd plists exist: three keep-alive browser owners and source/composition/money jobs at 600-second intervals. CDP `9324`, `9326`, and `9327` each returned HTTP `200`; authenticated tabs showed ElevenLabs home, one exact Affiliate X status, and Impact home.
 - The canonical ledger contains **13 dedicated-link placements**, **13 owned public URLs**, and **32 provider-link clicks**. The latest poll appended `+1` to music and `+1` to voice-cloning; the aggregate provider metric is 41 clicks with `+40` explicitly unattributed. Neither is money.
 - PartnerStack/ElevenLabs is `AUTHENTICATED`; the latest official capture has `commission_row_count=0`, `NO_LIVE_ROWS`, currency display `USD`, tax registration required, and payment-provider selection required. Pending/approved/paid/reversed are therefore zero observed rows. Approved-or-paid net is **USD 0**. Unknown real costs remain unknown.
-- Telegram outbox and sent ledger both have 102 rows with no pending event. The latest acquisition decision was sent by the existing owner as provider message `26171`; the latest empty-provider milestone was sent by Codex as message `26199`.
+- Telegram outbox and sent ledger both have 103 rows with no pending event. The latest Impact rejection was sent by the existing owner as provider message `26218`; the prior acquisition decision was `26171`.
 - The first audit-shell DNS readback failed, so those earlier receipts were not
   promoted to public proof. After the owner resumed, independent DNS-resolved
   readback at `2026-08-20T09:01:49Z` returned HTTP 200 for the music owned page,
@@ -461,3 +461,13 @@ switched `current` to cc775c374 but stopped at browser bootstrap
 `141: Reentrancy avoided`; the existing owner still needs to persist this
 rejection and emit its deduplicated program receipt. No HubSpot link, public
 effect, or money was created.
+
+The existing owner then woke at `2026-08-20T13:19:58Z` and completed E01. The
+production Impact receipt is `REJECTED / DO_NOT_RESUBMIT`, `changed=true`, with
+transition `14d9b1aa896bd493ad698b795248150f594cc67105276d025e5fb9051c765cb6`
+and marker hash `c335ed63…9274`; owner Telegram message `26218` reports the
+negative program transition. Rolling net remains
+`NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`; the canonical ledger
+is still 13 placements, 32 provider-link clicks, and zero transaction rows.
+No HubSpot link, public effect, or money was created. B01 remains the first
+official transaction gate.

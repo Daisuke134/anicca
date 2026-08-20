@@ -134,7 +134,7 @@ deployment adapter for these same contracts, not a second implementation.
 |---|---|---|
 | Amazon Associates Japan | Browser confirmed an existing Amazon.co.jp account for the private SSOT application email. No password exists in Chrome or macOS Keychain; password recovery sent an OTP to the masked matching mailbox, but no currently authenticated Gmail or macOS Mail authority could read it. No Associates application was submitted | `AUTH_RECOVERY_OTP_REQUIRED`; resume the same recovery intent only after authorized mail access is available, then inspect existing Associates state before creating any application |
 | Kit | A real PartnerStack application was submitted with truthful Anicca, website, `@selawmqt`, audience-size, channel, country, and region fields. Kit's authenticated application-email reply says it decided not to move forward. It lists four possible fit issues but does not identify one applicant-specific cause: creator-economy audience fit, prohibited promotion methods, inaccessible/insufficient website content, or insufficient promotion detail | `APPLICATION_REJECTED`; do not count approval or reapply unchanged. Reconsider only after an accessible content body, creator-helping-creator audience evidence, and a detailed organic promotion plan are live; coupon, cashback, and paid advertising remain excluded |
-| HubSpot / Impact | The official HubSpot flow created a real Impact account, verified the authorized Japanese mobile number and `aniccaai.com`, and the authenticated CDP `9327` now renders the existing `HubSpot, Inc. application` as `Declined`. Read-only inspection at `2026-08-20T13:20:15Z` classified `REJECTED / DO_NOT_RESUBMIT`; the rendered body hash is `c335ed63…9274`. The owner’s durable provider receipt is still stale until the next owner wake, so this browser fact is not promoted to a live transition yet | `APPLICATION_REJECTED` at the provider UI; do not resubmit unchanged and do not create a HubSpot link. Let the existing owner write the durable rejection transition, then continue with other executable programs |
+| HubSpot / Impact | The official HubSpot flow created a real Impact account, verified the authorized Japanese mobile number and `aniccaai.com`, and the authenticated CDP `9327` rendered the existing `HubSpot, Inc. application` as `Declined`. The installed owner persisted `REJECTED / DO_NOT_RESUBMIT` at `2026-08-20T13:19:48Z` with transition `14d9b1aa…5cb6`; owner wake `13:19:58Z` sent Telegram message `26218` and did not create a link | `APPLICATION_REJECTED` is now durable; never resubmit unchanged or create a HubSpot link. Continue with other executable programs |
 | Notion / PartnerStack | The official public page still advertises the program, but the live PartnerStack application renders that Notion stopped accepting new affiliates and that all applications are auto-declined for the time being | `PROGRAM_PAUSED`; do not submit a guaranteed rejection. Poll for a real admission-state change before applying |
 | ElevenLabs | The official affiliate entry reached ElevenLabs signup. The acceptance email instructs the approved affiliate to accept Terms, configure a payment provider, and share the referral link; it also grants Resources, Messages, and Reporting access. The authenticated PartnerStack UI proves accepted Terms, an active Eleven Labs Inc. partnership, and an executable default link. An anonymous browser followed that link to `elevenlabs.io` with PartnerStack referral parameters and cookies. The current Commissions page explicitly renders tax registration required, a tax-information CTA for withdrawals, and a choice of direct deposit, PayPal, or Stripe | `ACTIVE_LINK_VERIFIED + ACCEPTED + EARNING_ENABLED`; the funnel can run now. Payout is `PAYOUT_BLOCKED_BY_TAX_SETUP` and the payment provider is `SELECTION_REQUIRED`. Retain the exact link only in private runtime state and prefer a product-specific link when the article concerns one product |
 | Rakuten Affiliate | CDP rendered the public home page with `ログイン`; approval state is not observable | `AUTH_REQUIRED`, keep the provider adapter dormant |
@@ -157,7 +157,7 @@ deployment adapter for these same contracts, not a second implementation.
 | F0 current-Mac bootstrap | Runtime and browser capability GREEN; Keychain admission corrected; historical disabled release was `e3de264f4a9b1c5d34b49a913ff66ad6202dd318`; real provider admission remains open | CloakBrowser Chromium `145.0.7632.109` and pinned PBS CPython `3.14.7+20260814` are live-receipted. The original vault probe proved item existence only and incorrectly accepted an empty value. Admission now requires successful Keychain read plus non-empty bytes, without logging value, digest, or length. Provider refs are versioned in the program registry; Impact is `MISSING_OR_EMPTY`, so browser login remains disabled until official recovery and fresh-tab proof |
 | P0/F1 legacy migration | Complete | Runtime commits `84cac1e7`, `3494f8ff`, `5b1927dc`; migration 8/8, legacy verification 10/10, commission regression 6/6; remote `feature/affiliate-agent-runtime` at `5b1927dc` |
 | Legacy wrapper cutover | Blocked by design until Task 11 | F1 receipts `run.sh` and `affiliate-cli.sh` path/SHA-256/size while preserving their bytes; Task 11 must verify these receipts before scheduling the new orchestrator |
-| Mac-local runtime | Six Affiliate-owned launchd plists preserve the loop, three browser owners, source refresh, and composition owner. The immutable `current` release is `cc775c3744094edf99087023ae36f3deb0936640`; it contains the Impact rejection classifier plus the prior capability, typed acquisition-failure, and failure-event priority repairs. The installer’s browser bootstrap stage still returns session-wide macOS `141: Reentrancy avoided`; the preceding owner wake at `2026-08-20T13:09:27Z` read back the 792f483e runtime, while the cc775c374 owner readback remains open | Attributable commission, paid payout, Impact durable rejection, and a clean all-owner launchd readback remain open; no public effect or money is inferred |
+| Mac-local runtime | Six Affiliate-owned launchd plists preserve the loop, three browser owners, source refresh, and composition owner. The immutable `current` release is `cc775c3744094edf99087023ae36f3deb0936640`; it contains the Impact rejection classifier plus the prior capability, typed acquisition-failure, and failure-event priority repairs. The installer’s browser bootstrap stage still returns session-wide macOS `141: Reentrancy avoided`, but the existing owner naturally woke at `2026-08-20T13:19:58Z` and persisted the Impact rejection, `ALREADY_LIVE` publication, and rolling-net zero state | Attributable commission, paid payout, provider/channel diversification, and a clean all-owner launchd readback remain open; no public effect or money is inferred |
 | ElevenLabs isolated auth | Dedicated Affiliate CDP `9324` is authenticated from the Git-external private SSOT | Gmail readback identified the account used by the real reset and new-login notices; the private Login field, Password/Keychain mirror, and mode `0600` were reconciled without committing values. The semantic CDP resume then rendered `SIGN_IN_REQUIRED → AUTHENTICATED` at `/app/home`, with one successful submit and a sanitized receipt. No commission is inferred from login |
 | ElevenLabs PartnerStack metrics | The Agent created and email-verified the PartnerStack account/team, confirmed the Eleven Labs Inc. partnership, accepted program terms, and reached Overview, Commission Report, Commissions summary, and Payouts. Installed release `cc03800c3` live-read the summary only after `Total available funds` rendered, then returned `PAYOUT_BLOCKED_BY_TAX_SETUP`, `tax_information_state=REQUIRED`, and `payment_provider_state=SELECTION_REQUIRED` | The current aggregate remains one baseline click and zero post-baseline clicks, signups, or commission rows. The latest sanitized report artifact SHA-256 is `b101e1e515d81241c9f16bd41b8bc562b5a41c8e97b76c5afa784178b21fc39f`; it binds 23 commission fields, six payout fields, zero rows, and `NO_LIVE_ROWS`. Earning can continue, but withdrawal cannot be called ready until truthful tax registration and one provider are completed. Approved/reversed remain unknown rather than inferred zero |
 | ElevenAgents product link | The official PartnerStack destination selector exposed `https://elevenlabs.io/agents`. The Agent supplied the required title, internal description, destination, and custom slug, created exactly one product-specific link, and read it back from the rendered Links page | Installed release `6623f2e02` accepted the generated HTTPS URL only through stdin and stored it as `ElevenAgents affiliate link` in the mode-0600 Git-external private Markdown. Command output, receipts, SSOT, and Git contain state only, not the referral URL |
@@ -170,14 +170,14 @@ live autonomous operation.
 
 | Surface | Current truth | What is not yet proven |
 |---|---|---|
-| Runtime | Immutable local release `cc775c3744094edf99087023ae36f3deb0936640` is current. The existing loop owner naturally woke at `2026-08-20T13:09:27Z` after the prior switch: `ALREADY_LIVE`, 13 placements, rolling net `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`, and no Telegram pending row. The cc775c374 owner wake has not yet been observed; six owner plists remain installed, but launchd domain introspection and bootstrap return `141: Reentrancy avoided` in this session, so “all six loaded” is not claimed. The ten-minute money loop still owns bounded provider recovery/reconciliation, exact placement-link acquisition, provider polling, publication, metrics, economics, natural-language reporting, receipts, and Telegram | Attributable commission, paid payout, Impact durable rejection, provider/channel diversification, and a clean all-owner launchd readback remain open |
+| Runtime | Immutable local release `cc775c3744094edf99087023ae36f3deb0936640` is current. The existing loop owner naturally woke at `2026-08-20T13:19:58Z` after the final switch: Impact `REJECTED` with transition `14d9b1aa…5cb6`, `ALREADY_LIVE` publication, 13 placements, rolling net `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`, and Telegram message `26218`; six owner plists remain installed, but launchd domain introspection and bootstrap return `141: Reentrancy avoided` in this session, so “all six loaded” is not claimed. The ten-minute money loop still owns bounded provider recovery/reconciliation, exact placement-link acquisition, provider polling, publication, metrics, economics, natural-language reporting, receipts, and Telegram | Attributable commission, paid payout, provider/channel diversification, and a clean all-owner launchd readback remain open |
 | F1 migration | Implemented, reviewed, pushed, and re-run from final HEAD | It does not publish, browse, attribute, or earn |
 | F2 Agent brain | Commit `d9ad4acd7cb0474cf1a825a94cfb49e7847da22e` is pushed; root replay on 2026-08-06 passed focused 16/16, Python 3.9 compile/shell syntax, and 30/30 related regressions | Full-suite collection is blocked by legacy `test_affiliate_verify.py` import-time `sys.exit()`; fresh review and live-provider execution remain open, so F2 stays open |
-| Provider auth | ElevenLabs is `ACTIVE_LINK_VERIFIED`, earning-enabled, and `AUTHENTICATED`. HubSpot/Impact’s authenticated CDP now renders `HubSpot, Inc. application / Declined`; the installed cc775c374 playbook classifies `REJECTED / DO_NOT_RESUBMIT`, but its production provider receipt awaits the next owner wake. No Google login, six-digit-code submission, phone call, or login-support Telegram effect exists in the Affiliate receipts. Kit is rejected; other providers remain non-executable | ElevenLabs is the only currently executable earning offer. HubSpot has no executable link after rejection; no commission, approved transaction, reversal, or payout is claimed |
+| Provider auth | ElevenLabs is `ACTIVE_LINK_VERIFIED`, earning-enabled, and `AUTHENTICATED`. HubSpot/Impact’s authenticated CDP and installed owner both read `HubSpot, Inc. application / Declined`; cc775c374 persists `REJECTED / DO_NOT_RESUBMIT` with transition `14d9b1aa…5cb6` and owner Telegram `26218`. No Google login, six-digit-code submission, phone call, or login-support Telegram effect exists in the Affiliate receipts. Kit is rejected; other providers remain non-executable | ElevenLabs is the only currently executable earning offer. HubSpot has no executable link after rejection; no commission, approved transaction, reversal, or payout is claimed |
 | Publication | Seven owned Affiliate articles are `LIVE`; six matching disclosed `@selawmqt` X posts are `LIVE`. The latest distributed campaign is also on canonical DEV and at `https://aniccabuddha.substack.com/p/elevenlabs-audio-to-text-a-practical`. Anonymous Substack readback returns the full body, disclosure, and one tracking link; external job `3a7c7b28…78c2` is `VERIFIED`, Telegram message `20934` reports it, and replay is `COOLDOWN / NO_PENDING / exit 0`. A lost-target recovery defect created one additional title-only Substack duplicate at `https://aniccabuddha.substack.com/p/elevenlabs-audio-to-text-a-practical-ac1`; recurrence is fenced and the accepted operating decision is no cleanup action | Post-baseline provider click readback and every Japanese placement remain unproven |
 | Attribution | Public owned/X placement receipts and direct provider-link resolution are implemented | No post-baseline provider-side click or commission receipt exists yet; local clicks and estimates never count as money |
 | Revenue | No new Affiliate revenue receipt | Legacy watermark, fixtures, clicks, estimates, and creator screenshots do not count |
-| Telegram | Affiliate append-before-send, stable event dedupe, provider `messageId`, `SELF_HEALED`, `BLOCKED`, real `PLACEMENT_LIVE`, and one real-data natural-language daily summary are live-proven. The daily summary is bound to provider message ID `21046`; same-day real replay returns `NO_PENDING` without growing the sent ledger | `CLICK_DELTA` and commission events remain bound to their real external transitions |
+| Telegram | Affiliate append-before-send, stable event dedupe, provider `messageId`, `SELF_HEALED`, `BLOCKED`, real `PLACEMENT_LIVE`, program rejection, and one real-data natural-language daily summary are live-proven. The latest rejection receipt is provider message `26218`; outbox and sent ledgers are both 103 rows with no pending event | `CLICK_DELTA` and commission events remain bound to their real external transitions |
 | Autonomous operation | launchd ownership, isolated browsers, official-sitemap discovery/refresh, source-hash-bound composition, bounded Terra-high composition, same-ID recovery, policy, exact placement-link acquisition, publication/distribution, acquisition/revenue observation, placement economics, economics-bound one-variable allocation, typed observed-failure repair, receipts, and Telegram are live. Release `50d45beca` reconciled one stale Impact login job from fresh authenticated readback and replayed without mutation | Actual billed/tool/channel cash receipts, ten comparable placements, a post-baseline click, and positive money evidence remain absent. The loop has not yet earned a commission |
 
 ### 1.2.0 Audited executable boundary
@@ -1316,12 +1316,13 @@ historical evidence below. Read-only inspection of the installed state shows:
   the current immutable `skills/affiliate` release. The canonical installer
   atomically switched `current` and wrote its ownership receipt, then stopped at
   the existing browser owner's `launchctl bootstrap` with macOS
-  `141: Reentrancy avoided`. The preceding owner nevertheless woke naturally at
-  `2026-08-20T13:09:27Z`; that wake read back `ALREADY_LIVE`, 13 placements,
-  rolling-net `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`, and no
-  pending Telegram row. The cc775c374 owner wake remains open. The official
-  PartnerStack artifact remains the prior cooldown-safe empty capture at
-  `12:58:35.798870Z`, with zero commission and payout rows.
+  `141: Reentrancy avoided`. The existing owner nevertheless woke naturally at
+  `2026-08-20T13:19:58Z`; that wake read back Impact `REJECTED` with transition
+  `14d9b1aa…5cb6`, `ALREADY_LIVE`, 13 placements, rolling-net
+  `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`, and Telegram
+  message `26218`. Outbox and sent ledgers are both 103 rows with no pending
+  event. The official PartnerStack artifact remains the prior cooldown-safe
+  empty capture at `12:58:35.798870Z`, with zero commission and payout rows.
 - six expected launchd plists remain installed; three browser owners answer CDP
   `9324/9326/9327` with HTTP `200`, and three job owners retain 600-second intervals;
 - the canonical ledger contains 13 dedicated-link placements, all 13 with owned
@@ -1331,9 +1332,9 @@ historical evidence below. Read-only inspection of the installed state shows:
 - PartnerStack remains authenticated and reports zero commission rows, so
   approved-or-paid net remains USD 0; actual cash cost remains unknown where no
   bill exists;
-- Telegram outbox and sent ledger both contain 102 events with no pending row.
-  The latest acquisition decision receipt was reported by the existing owner as
-  Telegram provider message `26171`; no raw model output, secret, or tracking
+- Telegram outbox and sent ledger both contain 103 events with no pending row.
+  The latest Impact rejection receipt was reported by the existing owner as
+  Telegram provider message `26218`; no raw model output, secret, or tracking
   link was included;
 - the prior publication failure was `FileNotFoundError` for the missing allowed
   `.worktrees/affiliate-foundation-prod`, not a current `XPostError`. The
@@ -1685,6 +1686,12 @@ historical evidence below. Read-only inspection of the installed state shows:
   bootstrap `141`; the existing owner must still persist the rejection and send
   any deduplicated program transition. No HubSpot link, public effect, or money
   was created.
+- The existing owner then read back the repair at `2026-08-20T13:19:58Z`:
+  production `providers/hubspot-impact.json` is `REJECTED / DO_NOT_RESUBMIT`,
+  `changed=true`, transition `14d9b1aa…5cb6`, and marker hash
+  `c335ed63…9274`. Owner Telegram message `26218` reports the negative program
+  transition; no HubSpot link or public effect was created. E01 is now closed,
+  but B01 remains the first official commission transaction gate.
 
 Execution resumes in this order. Time/provider outcomes are gates, but every safe
 independent harness task continues:
@@ -1709,7 +1716,7 @@ independent harness task continues:
    provider click, and transaction. Use the existing 13 placements for the next
    one-variable experiment; no transaction join means no revenue credit.
 5. **P4 — Execute the three-provider flight plan and commerce admission.** Continue ElevenLabs while the
-   Agent closes HubSpot's pending application and admits Semrush through official
+   Agent preserves HubSpot's rejected application and admits Semrush through official
    terms, application, auth, dedicated-link, report, transaction, reversal, and
    payout readback. Never count an unapproved provider or resubmit a rejected
    application unchanged. In parallel, resume the existing Amazon Japan and
@@ -1788,7 +1795,7 @@ an owned publishing identity when a provider requires them.
 | Publication | 13 dedicated placements, all 13 public; current owned-publication root is connected | Every job reconciles through the installed owner with exact owned/X readback and no duplicate effect |
 | Money | 32 provider-link clicks, aggregate 41 with +40 unattributed, and zero commission rows | Real transaction and settlement lifecycle joins exact placements and costs |
 | Learning | Experiments and source decisions are partial | One-variable mature cohorts determine 80/20 allocation |
-| Providers | ElevenLabs executable; HubSpot pending; others unproven | At least three independently executable, receipted providers; commerce lanes promoted only from mature evidence |
+| Providers | ElevenLabs executable; HubSpot durably rejected; others unproven | At least three independently executable, receipted providers; commerce lanes promoted only from mature evidence |
 | X/Repost | Shared account but disconnected optimization and mixed language | One English effect owner optimizes qualified visits and approved net while preserving platform policy |
 | Recovery | Several real resumptions proven; no universal trajectory/watchdog | Typed attempt, bounded repair, quarantine, same-job resume, and owner-readable recovery |
 | Packaging | Machine-specific launchd, profiles, paths, and private authority | Secret-free, plugin-based, one-command clean-Mac lifecycle with independent verifier |
@@ -1939,8 +1946,10 @@ receipt readback, SSOT state update, commit, and push to both canonical remotes.
 
 ##### E — Admit a durable provider portfolio
 
-- [ ] **E01** Poll HubSpot/Impact through the installed owner until one official
-  approval/rejection transition is read back; never resubmit the pending application.
+- [x] **E01** Poll HubSpot/Impact through the installed owner until one official
+  approval/rejection transition is read back; never resubmit the pending
+  application. The existing owner persisted `REJECTED / DO_NOT_RESUBMIT` at
+  `2026-08-20T13:19:48Z`, transition `14d9b1aa…5cb6`, and sent Telegram `26218`.
 - [ ] **E02** Capture current Semrush official economics, allowed channels,
   disclosure, reversal, tracking, report, tax, and payout terms with TTL.
 - [ ] **E03** Submit at most one Semrush application under a fenced semantic job
@@ -4124,7 +4133,7 @@ atomic replacement, matching Python's replacement contract
 | U47 | CLOSED-PROVIDER | The canonical ledger now holds 32 provider-link clicks across 13 dedicated links; the latest poll appended +1 to music and +1 to voice-cloning, while aggregate +40 remains explicitly unattributed | Reopen if link identity or placement attribution fails; clicks still do not imply commission |
 | U48 | LIVE-OPEN | No non-empty commission row has tested dedupe, status transition, or placement join | One real provider transaction replays twice without duplication and preserves pending/approved/reversed/paid lineage |
 | U49 | EXTERNAL | Payout is blocked by truthful tax registration and payment-provider selection | Authorized legal/tax/payment data completes provider readback; Agent never fabricates it |
-| U50 | PARTIAL-CLOSED | Authenticated Impact CDP renders `HubSpot, Inc. application / Declined`; cc775c374 classifies `REJECTED / DO_NOT_RESUBMIT`, while the production provider receipt still needs the existing owner’s durable transition | Owner persists the rejection and sends one deduplicated `PROGRAM_REJECTED` receipt; no resubmission or link creation |
+| U50 | CLOSED-PROVIDER | Authenticated Impact CDP and the installed owner both read `HubSpot, Inc. application / Declined`; cc775c374 persists `REJECTED / DO_NOT_RESUBMIT` with transition `14d9b1aa…5cb6` and Telegram `26218` | Reopen only if Impact supplies a new official state; no resubmission or link creation |
 | U51 | EXTERNAL | Kit rejection lists possible causes but no applicant-specific cause | Materially improve audience/site/promotion evidence before any new application; unchanged retry forbidden |
 | U52 | LIVE-OPEN | X reach, throttling, suspension, and browser-enforcement risk are unknown | Observe real account/channel receipts and quarantine on defined policy/reach failures; risk cannot be eliminated |
 | U53 | LIVE-OPEN | Approval rate, conversion, reversal, payout delay, net commission, and provider capacity are unknown | Mature first-party cohorts and settlement receipts, not creator claims, supply these values |
