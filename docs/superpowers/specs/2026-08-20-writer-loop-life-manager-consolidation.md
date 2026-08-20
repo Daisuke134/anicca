@@ -4,6 +4,35 @@
 
 ## Current SSOT（2026-08-21 実測）
 
+### 最新の同一run実測（2026-08-21）
+
+- `daily-2026-08-21` は active-four の4件すべてを同じ不変原稿から native publish/readback まで完了した。
+  Note JA は `https://note.com/anicca123/n/ncbdb8a56bb20`、Substack JA は
+  `https://aniccabuddha.substack.com/p/1`、X Article JA は
+  `https://x.com/diceai0/article/2090526616854405173`、Substack EN は
+  `https://aniccaai2026.substack.com/p/stop-writing-first-and-selling-later` である。
+  ENの安定draft/public IDは `212079208`。state/ledgerの4行はすべて
+  `published=true`、`verified=true`、`reality_gate=PASS`である。
+- ENはJAと別publication identity・別session cookieを使う。`SUBSTACK_PUBLICATION_JA=aniccabuddha.substack.com`、
+  `SUBSTACK_PUBLICATION_EN=aniccaai2026.substack.com`をpairごとに解決し、ENにJAのhostまたはcookieを
+  fallbackしない。identity migration receiptで旧同一host stateを隔離してから、EN draftを同一IDで
+  publishした。EN native readbackは `destination_identity=aniccaai2026.substack.com`、
+  `identity_verified=true`、`content_verified=true`、`asset_verified=true`、`body_media_verified=true`、
+  preview画像の最大高さ382pxを確認した。英語と日本語を1つのSubstackへ混載しない。
+- Substack DNS解決が通常経路で失敗しても、publisherの既存curl境界内で`dig @1.1.1.1`を使う
+  再試行を許可し、別executorや別schedulerは作らない。今回のEN publishはこの同一publisher経路で
+  `PUBLISHED`と公開canonical URLを取得した。
+- 収益は公開receiptと分離する。最新のmoney readbackでは外部payment receiptは0件、Noteの
+  観測済みアカウント売上は¥0・購入0件、Substackのpaid subscribers/MRR/累計収益は明示的な数値を
+  得られず`unknown`である。価格設定、paywall、表示数、like、推定値は収益へ加算しない。したがって
+  現在の確定収益は¥0（外部receipt 0件）であり、MRRは不明である。
+- 公開完了時の標準Telegram通知はBot API transport失敗でpendingになったため、同じ実測内容を
+  自然文で再送し、`message_id`をreadbackしてdelivery receiptを保存する必要がある。`Codex:::`などの
+  harness接頭辞は付けない。
+- 直接owner wakeとrelease/current切替は実測済みだが、`launchctl print`/`kickstart`は現在もrc=141
+  `Reentrancy avoided`である。よって「公開処理は実行可能」と「5分周期schedulerがlive」を分け、
+  launchdのreadbackを回復するまでloop全体を常時稼働とは宣言しない。
+
 - 実行構成は Coconala parity のまま。独自 executor／scheduler は追加せず、
   `gig_release.py`、immutable `~/gig/releases/life-manager/current`、
   `gig_disk_guard.py`、owner fence、外部 state `~/.local/state/life-manager/writer` を使う。
@@ -116,9 +145,11 @@
 - 06:11:52 JSTの同一ログには、空き容量`5,256,216,576` bytes（要求`5,368,709,120` bytes）で
   disk guardが公開をfail-closedにした記録もある。保護対象を削除せず、容量安定化までは外部公開を強行しない。
 - 残TODOは順に、(1)保護対象を削除せず空き容量1GiB超を安定維持、(2)launchd control-plane readbackを復旧して
-  Life Manager currentの新releaseで5分周期実行を2回以上連続して証明、(3)Substack ENの別identityとcredentialを承認済み経路で設定し、
-  英語記事を同一runの英語Publicationへnative publish/readbackする、(4)publisher/paymentの実receiptだけを
-  収益ledgerへjoin、(5)14日間の重複外部作用0と自然文Telegram deliveryを観測する。
+  Life Manager currentの新releaseで5分周期実行を2回以上連続して証明、(3)標準完了通知のBot API送信を
+  自然文で成功させ、`message_id`と重複排除状態をreadback、(4)publisher/paymentの実receiptだけを
+  収益ledgerへjoinし、Note/Substackの現在値を次回tickでも再測定、(5)14日間の重複外部作用0と
+  需要カード→生成→JA/EN公開→native readback→Telegram報告の連続receiptを観測する。ENの別identity、
+  credential、同一run native publish/readbackは完了済みなので、未完TODOとして再登録しない。
 
 ## 目的
 
