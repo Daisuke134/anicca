@@ -3,6 +3,7 @@
 - SSOT: `docs/affiliate-agent/AFFILIATE-AGENT-SSOT.md`; resume from `Measured planning checkpoint and next TODOs`, then `Remaining autonomous money-loop work — canonical order`.
 - Development route: `/Users/anicca/anicca-project/.worktrees/affiliate-life-manager-spec`, branch `docs/affiliate-life-manager-spec`. The branch remains descended from required base `0a7debb58`; latest source/runtime commit is `b4e943961`.
 - Installed runtime: `/Users/anicca/.local/share/life-manager/affiliate/current` → release `b4e943961d6755e1b04d700097983aa887c2b1fc`; `current` is byte-backed by that immutable release. The existing owner naturally woke at `2026-08-20T15:31:26Z` through this `current` path, preserved the ledger, observed 46 Repost post actions with 0 exact Affiliate campaign joins and 46 unjoined actions, sent Telegram `26355`, and kept revenue at cooldown with no money. Any future `skills/affiliate` change requires immutable install and real owner replay.
+- A later existing-owner `launchctl kickstart` attempt at `2026-08-20T15:36:27Z` returned `141: Reentrancy avoided`; `last-run.json` stayed at the prior wake and no placement, provider, Telegram, or ledger mutation occurred. This is not a new owner proof and does not authorize a parallel executor; retain the natural owner receipt above as the runtime evidence.
 - The next bounded P3 bridge is source-implemented but not yet installed: the
   Affiliate owner will read the existing Repost ledger only through
   `AFFILIATE_REPOST_STATE_DIR`, hash and count valid `posted.jsonl` actions, and
