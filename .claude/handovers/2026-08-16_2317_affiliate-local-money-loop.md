@@ -154,7 +154,8 @@ publication progress remains `MATERIALIZED` with stale handoff fingerprint
 isolated replay verified that only this effect-free stale materialization
 rebinds; unchanged replay is `ALREADY_LIVE`, while any existing owned receipt
 remains `PUBLICATION_CONFLICT` with zero effect calls. The repair is in the
-worktree and is not yet installed or owner-E2E verified.
+worktree and is installed as immutable release `7147038b3`; the next owner
+result is recorded below.
 
 The next installed owner wake began at `2026-08-20T09:45:37Z` but exited before
 writing a wake receipt: Playwright raised `TimeoutError` while waiting for the
@@ -163,8 +164,18 @@ TTS and tiktok link receipts remained `VERIFIED`; no owned/X receipt or public
 effect was created, and the tiktok materialization was unchanged. The pending
 repair catches only this typed Playwright timeout, reuses the exact verified TTS
 local receipt with provider readback pending, and leaves unknown browser errors
-fail-closed. Compile and 19 focused tests pass; the repair is not yet installed
-or owner-E2E verified.
+fail-closed. Compile and 19 focused tests pass. It is installed in `7147038b3`;
+the exact timeout reuse branch has not been independently induced.
+
+The existing owner wake at `2026-08-20T09:57:02Z` executed the materialization
+repair. Tiktok progress now carries current handoff fingerprint `546…` and
+`rebound_from_handoff_fingerprint=c116…`; the existing PartnerStack link key
+`618843f9…` was deduplicated, and owned Git commit `2250d31a6` was delivered
+through the configured `affiliate-foundation-prod` checkout to `origin/main`.
+Netlify/public readback remains HTTP `404`, so the owner recorded
+`OWNED_NOT_LIVE`, sent Telegram `25979`, and created no X effect. The same
+durable progress must retry until owned `LIVE`, then X `LIVE`, with unchanged
+replay; A04 remains open.
 
 This handover records no Codex manual publication, provider write, or ledger
 mutation. The installed owner performed the verified music delivery described

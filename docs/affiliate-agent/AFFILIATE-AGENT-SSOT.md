@@ -1433,7 +1433,8 @@ historical evidence below. Read-only inspection of the installed state shows:
   its unchanged replay returned `ALREADY_LIVE` with one link/owned/X call, and
   a stale materialization with an existing owned receipt remained
   `PUBLICATION_CONFLICT` with zero effect calls. The repair is in the worktree
-  and is not yet installed or owner-E2E verified.
+  and is installed as immutable release `7147038b3`; the next owner result is
+  recorded below.
 - the next installed owner wake began at `2026-08-20T09:45:37Z` but exited
   before writing a wake receipt: Playwright raised a `TimeoutError` waiting for
   the PartnerStack `Custom links` control in `elevenlabs_link_action`. The
@@ -1442,8 +1443,19 @@ historical evidence below. Read-only inspection of the installed state shows:
   unchanged. The smallest repair is to reuse only the exact verified TTS local
   receipt on this typed Playwright timeout, mark provider readback pending, and
   continue the wake; unknown browser errors still fail closed. It is in the
-  worktree, with compile and 19 focused tests green, but not yet installed or
-  owner-E2E verified.
+  worktree, with compile and 19 focused tests green. It is installed in
+  `7147038b3`; a subsequent owner wake did not crash, but the exact timeout
+  reuse branch has not been independently induced.
+- the existing owner wake at `2026-08-20T09:57:02Z` executed the installed
+  materialization repair. The tiktok progress now carries current handoff
+  fingerprint `546…` and `rebound_from_handoff_fingerprint=c116…`; the
+  existing PartnerStack link key `618843f9…` was deduplicated, and owned Git
+  commit `2250d31a6` was delivered through the configured
+  `affiliate-foundation-prod` checkout to `origin/main`. Netlify/public
+  readback is still HTTP `404`, so the owner recorded `OWNED_NOT_LIVE`, sent
+  Telegram message `25979`, and did not create an X effect. The same durable
+  progress must be retried until owned `LIVE`, then X `LIVE`, with unchanged
+  replay; A04 remains open.
 - the current launchd capability check at `2026-08-20T09:20:57Z` also fails
   outside the service label: `launchctl managername`, `launchctl print user/501`,
   and `launchctl print gui/501` all return `141: Reentrancy avoided`, while
