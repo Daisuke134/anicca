@@ -2463,6 +2463,9 @@ zero pending/approved/paid/reversed statuses. Rolling net remains
 retained as historical evidence; the successful owner event and new artifact
 are the current truth. The next official capture is due around `06:45 JST`.
 The owner emitted the natural-language recovery receipt as Telegram `26654`.
+Post-recovery verification reran the existing Affiliate suite (`69` tests,
+`OK`); no runtime code changed in this slice, and installed `current` remains
+the byte-equal `ba2721b50…ce32c2c` release.
 M2.0 is closed for settled dedicated-link attribution: every settled revenue
 placement has one PartnerStack link and one canonical ledger row. The
 voice-isolator experiment's provider-link and owned-publication identities are now

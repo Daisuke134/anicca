@@ -828,6 +828,9 @@ approved/paid USD net and `NOT_REACHED` for the $10,000 threshold. The next
 official capture is due around `06:45 JST`; the owner emitted the
 natural-language recovery receipt as Telegram `26654`; B01 still waits for the
 first non-empty official transaction.
+The existing Affiliate suite was rerun after recovery (`69` tests, `OK`); no
+runtime code changed and installed `current` remains the byte-equal
+`ba2721b50…ce32c2c` release.
 
 At `2026-08-21T04:51:05Z`, the same existing owner selected the next bounded
 English opportunity and created one verified PartnerStack link for
