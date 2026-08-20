@@ -3,8 +3,11 @@
 **Date:** 2026-07-28
 **Last updated:** 2026-08-20
 **Owner:** Daisuke Narita
-**Status:** Local acquisition, inbox and learning loops are live from the canonical
-Life Manager checkout. Resume quality, harness-neutral skill extraction,
+**Status:** Local acquisition, inbox and learning drivers are implemented and
+verified by direct canonical-wrapper runs from the canonical Life Manager
+checkout. Their 30-minute/15-minute resident LaunchAgents are currently not live
+because the macOS user GUI launchd domain rejects registration/readback with
+`141: Reentrancy avoided`. Resume quality, harness-neutral skill extraction,
 operations guardianship, lifecycle closure and the Life Manager Career surface
 remain in progress.
 **Done when:** `Daisuke134/life-manager` is the only versioned source and the
@@ -1037,9 +1040,10 @@ inconclusive closure and safety/failure rollback insert an immutable hashed deci
 in the same transaction that compare-and-swaps the active-generation pointer. Gmail
 submission confirmation is wired to the confirmed-application outcome.
 
-The weekly driver is merged, installed from the canonical checkout and verified as
-a resident LaunchAgent. The guardian, lifecycle closure and `summary.v2` drivers
-remain absent.
+The weekly driver is merged and its canonical direct invocation is verified. A
+resident LaunchAgent is not claimed live while the current user GUI launchd domain
+rejects `print`, `kickstart`, and `bootstrap` with `141: Reentrancy avoided`. The
+guardian, lifecycle closure and `summary.v2` drivers remain absent.
 
 Live state measured on 2026-07-30:
 
@@ -1060,14 +1064,22 @@ learning_driver_live + guardian_not_closed`, never as fully self-healing.
 
 ### 4.2B Runtime verification on 2026-08-20
 
-The canonical daily wrapper was run from immutable release
-`88a9da271c1e7146ddfbc07f5de8f48875e958dd` after the installed LaunchAgent kick was
-rejected with macOS error `141: Reentrancy avoided`. The pass connected to the
-existing Chrome CDP owner, selected Codex `gpt-5.6-terra` through the local proxy,
-and returned `rc=0` with schema-valid output. It truthfully recorded
-`no_eligible_job_found`, with zero new submissions and the browser/provider outage
-as the blocker. The daily report received Telegram ACK `26057`; the two exact
-submitted-resume deliveries in the same pass received ACKs `8100` and `8493`.
+The installed LaunchAgent kick remains rejected with macOS error `141:
+Reentrancy avoided`, so the canonical wrapper was invoked directly from immutable
+release `9474fa1fc5fdc125ee949158b8cc520cb089056b`. The successful pass connected
+to the existing Chrome CDP owner, selected Codex `gpt-5.6-terra` through the local
+proxy, returned `rc=0` with schema-valid output, and delivered daily report ACK
+`26116`. It recorded zero new submissions because Sakana AI's official Google
+Form redirected to Google sign-in and never became ATS claim-ready; no slot was
+claimed. The exact submitted-resume deliveries in that pass remained sent with
+ACKs `8100` and `8493`.
+
+An earlier retry from the same release first saw a transient local-proxy
+`503 auth_unavailable`; a direct `/v1/responses` probe and an exact runner command
+then returned HTTP/rc 200/0. A subsequent browser pass reached the provider but
+hit host `No space left on device` while appending evidence. The host was restored
+by removing only 201 reproducible old release directories (active plus the newest
+10 retained); ledger, outbox, evidence and `.codex` sessions were not removed.
 
 The previous daily outbox row had been left at `send_started` by the superseded
 OpenClaw transport with the invalid placeholder destination `0000000000`; the
@@ -1082,7 +1094,8 @@ an env-stripped schema probe returned `rc=0` through the proxy. A second canonic
 daily pass from this release also returned `rc=0`, truthfully rejected three
 OpenAI Tokyo roles for explicit experience/strategy conflicts, and delivered report
 ACK `26082`. Telegram transport is
-therefore proven for the current runtime; the broader
+therefore proven for the current runtime; the active-release proof itself received
+ACK `26095`, and the broader
 `JOB-TELEGRAM-COVERAGE-1T` event-envelope/coverage gate remains open. The learning
 lane now uses the same direct transport in production; its prior OpenClaw executable
 is retained only as an explicit test/legacy override.
@@ -1294,7 +1307,7 @@ must accumulate in the live loop:
 | Lane | Current evidence | Next completion gate |
 |---|---|---|
 | Engineering now | 11C merged in PR #1376 at `1bdbc67d3`, with health-status closure in PR #1377 at `fd26398cc`; the weekly learning driver, held-out replay, deterministic assignment, Wilson decision, rollback and hashed reporting have 203 passing job-loop tests and one real inconclusive receipt/Telegram ACK | Complete `JOB-RESUME-MATERIALS-1R`, `JOB-SKILL-BUNDLE-1S`, `JOB-HARNESS-PARITY-1H` and `JOB-TELEGRAM-COVERAGE-1T` |
-| Resident runtime | Acquisition, inbox and learning LaunchAgents are healthy (`last_exit=0`) on the 08:30 JST, 900-second and Sunday 09:15 JST schedules; ledger and interview-prep integrity are `ok`; applications remain 2 `submitted`, 1 `submit_unknown`, 2 `not_submitted` | Keep running Order 10 until the projection truthfully contains one confirmed Ashby and one confirmed Workday submission; current confirmed adapters are 0/2 |
+| Resident runtime | The interval plists and templates are valid, but current GUI launchd registration/readback is blocked by `141: Reentrancy avoided`; direct canonical-wrapper runs still reach browser/provider/ledger/Telegram, with ledger and interview-prep integrity `ok` and applications at 2 `submitted`, 1 `submit_unknown`, 2 `not_submitted` | Recover the GUI launchd domain, prove plist readback plus a 30-minute kick, then keep running Order 10 until the projection truthfully contains one confirmed Ashby and one confirmed Workday submission; current confirmed adapters are 0/2 |
 | Private/external wait | Real interview email or naturally occurring later same-thread recruiting message has not arrived | Order 8 is closed from the verified private profile; Order 9 and the 10L E2E gate close only when their authoritative external input exists; neither blocks 11B engineering |
 
 | Order | Deliverable | Status | Completion evidence |
@@ -1343,7 +1356,7 @@ slice has one owner, one acceptance result and one durable receipt.
 
 | Slice | Parent | Status | Done when |
 |---|---|---|---|
-| `JOB-LOOP-CADENCE-2A` | 11 | `in_progress` | The resident acquisition owner uses a 30-minute LaunchAgent/systemd interval, processes at most one candidate per wake, preserves the ten-application Japan-day portfolio cap, and passes plist lint plus scheduler-template tests. The installed plist reads `StartInterval=1800`; a direct canonical-wrapper pass from active release `88a9da271` completed with Codex/local-proxy, browser, ledger and Telegram evidence (`daily-20260820-203919`, report ACK `26082`; direct document proof ACK `26091`). `launchctl kickstart` and `launchctl bootout/bootstrap` readback remain blocked by macOS error 141 (`Reentrancy avoided`). This is a host user-launchd/LaunchServices bootstrap failure, independently reproduced by a fresh Chromium `bootstrap_check_in` failure; the loop is not marked live until the user GUI launchd domain is recovered and the plist is read back successfully. |
+| `JOB-LOOP-CADENCE-2A` | 11 | `in_progress` | The resident acquisition owner uses a 30-minute LaunchAgent/systemd interval, processes at most one candidate per wake, preserves the ten-application Japan-day portfolio cap, and passes plist lint plus scheduler-template tests. The installed plist reads `StartInterval=1800`; the active release is `9474fa1fc` and its direct canonical-wrapper pass completed with Codex/local-proxy, browser, ledger and Telegram evidence (`daily-20260820-210141`, schema-valid `rc=0`, report ACK `26116`; active-release transport proof ACK `26095`; direct document proof ACK `26091`). `launchctl print`, `kickstart`, and `bootout/bootstrap` readback remain blocked by macOS error 141 (`Reentrancy avoided`). This is a host user-launchd/LaunchServices bootstrap failure; the loop is not marked live until the user GUI launchd domain is recovered and the plist is read back successfully. |
 | `JOB-RESUME-FACTS-1R-A` | 1R | `completed` | Full institution names and periods are recorded, and Daisuke confirmed TOEIC 910. The private truth ledger now records TOEFL iBT 96, TOEIC 910, Duolingo English Test 140 and DELE B1; no language claim remains unresolved. |
 | `JOB-RESUME-EN-1R-B` | 1R | `in_progress` | The approved technical-business PDF is canonical and verified; the engineering variant still needs its canonical refresh before the English bundle is closed. Both variants must retain the one-page hierarchy, separate Research Experience/Education sections and full institution names. |
 | `JOB-RESUME-JA-1R-C` | 1R | `pending_after_1R-A` | Japanese 履歴書 and 職務経歴書 render from the same ledger with separate 学歴・職歴・研究 sections, full attendance periods, formal institution names, the language section, and grounded claims. |
