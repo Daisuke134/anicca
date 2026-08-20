@@ -12,7 +12,14 @@ from pathlib import Path
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
-from job_journal import JobStateError, reconcile_effect, start_effect, verify_effect
+from job_journal import (
+    JobStateError,
+    reconcile_effect,
+    resume_effect,
+    start_effect,
+    unresolved_effect,
+    verify_effect,
+)
 from provider_cli import ProviderError, atomic_write, cdp_call, click, query_node, read_json
 from x_profile_cli import XProfileError, choose_x_target, connect, inspect, load_config
 
@@ -162,16 +169,26 @@ def publish(args):
             if candidate:
                 request_id = live_readback(ws, request_id, candidate, text)
                 public_url = candidate
+        pending = unresolved_effect(state_root, "X_POST_PUBLISH", args.placement)
         if public_url:
             reconcile_effect(state_root, "X_POST_PUBLISH", args.placement, {
                 "state": "LIVE", "public_url": public_url, "content_sha256": fingerprint,
             })
         if not public_url:
-            job = start_effect(
-                state_root, "X_POST_PUBLISH", args.placement,
-                {"placement_id": args.placement, "content_sha256": fingerprint},
-                {"state": "NOT_FOUND", "handle": config["handle"], "timeline_rows": len(rows)}, 3600,
-            )
+            if pending:
+                cooldown = int(pending.get("cooldown", {}).get("seconds", 0))
+                updated_at = int(pending.get("updated_at", 0))
+                if int(time.time()) - updated_at < cooldown:
+                    raise XPostError(
+                        "unresolved X effect is in cooldown; retry will reconcile timeline"
+                    )
+                job = resume_effect(state_root, "X_POST_PUBLISH", args.placement)
+            else:
+                job = start_effect(
+                    state_root, "X_POST_PUBLISH", args.placement,
+                    {"placement_id": args.placement, "content_sha256": fingerprint},
+                    {"state": "NOT_FOUND", "handle": config["handle"], "timeline_rows": len(rows)}, 3600,
+                )
             fence = {
                 "schema_version": 1,
                 "receipt_type": "X_POST_EFFECT_FENCE",
