@@ -1635,6 +1635,12 @@ historical evidence below. Read-only inspection of the installed state shows:
   `threshold_state=NOT_REACHED`; the first official transaction and exact
   placement join remain B01. No click, estimate, model token, pending reward,
   or Telegram receipt is money.
+- After the revenue cooldown elapsed at `2026-08-20T12:52Z`, one existing-owner
+  kickstart and read-only `launchctl` variants with/without XPC metadata all
+  returned `141: Reentrancy avoided`; `last-run.ts` and the PartnerStack report
+  stayed at the acquisition wake and the empty `11:51:46Z` artifact. No fourth
+  launcher, manual provider capture, OS-service restart, or public effect was
+  created. This is an external launchd observation gate, not money evidence.
 
 Execution resumes in this order. Time/provider outcomes are gates, but every safe
 independent harness task continues:

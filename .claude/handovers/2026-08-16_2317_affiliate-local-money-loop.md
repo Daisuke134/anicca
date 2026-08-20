@@ -403,3 +403,10 @@ remains `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS`,
 `threshold_state=NOT_REACHED`; no click, model token, estimate, pending reward,
 or Telegram receipt is money. B01 remains the next gate: capture the first
 official transaction/settlement artifact and join it exactly to one placement.
+
+After the revenue cooldown elapsed at `2026-08-20T12:52Z`, one existing-owner
+kickstart and read-only `launchctl` variants with and without XPC metadata all
+returned `141: Reentrancy avoided`; `last-run.ts` and the official report did
+not advance. No fourth launcher, manual provider capture, OS-service restart,
+or public effect was created. This is the current external launchd observation
+gate; B01 and the USD 10,000 threshold remain open.
