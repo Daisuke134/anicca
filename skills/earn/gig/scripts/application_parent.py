@@ -3199,6 +3199,50 @@ INELIGIBLE_CACHE_VERSION = 2
 PLANNER_CACHE_VERSION = 2
 INELIGIBLE_CACHE_TTL_SECONDS = 7 * 24 * 60 * 60
 
+PHYSICAL_OR_ONSITE_PATTERNS = (
+    re.compile(r"(?:都内|東京都|東京近郊).{0,12}(?:在住|居住).{0,40}(?:彫刻|製作|制作|作業|指導|教えて|来られる|訪問|対面)"),
+    re.compile(r"(?:彫刻|製作|制作|作業|指導).{0,40}(?:都内|東京都|東京近郊).{0,12}(?:在住|居住|来られる|訪問|対面)"),
+    re.compile(r"(?:現地調査|現地作業|現場作業|訪問して|対面で|直接伺|直接お会い)"),
+    re.compile(r"(?:梱包|発送|郵送|納品先へ配送|裁断|縫製|丈つめ|表面処理).{0,32}(?:作業|お願い|担当|必要|納品|発送)?"),
+    re.compile(r"(?:現物|実物|商品|衣装|ぬいぐるみ|フィギュア|模型).{0,32}(?:修復|加工|組み立て|組立|製作|制作|撮影|採寸|梱包|発送)"),
+    re.compile(r"(?:on[- ]?site|in[- ]person|ship(?:ping)? the physical|sew(?:ing)?|assemble the physical|repair the physical)", re.IGNORECASE),
+)
+
+
+def apply_deterministic_physical_gate(
+    snapshot: dict[str, object], decisions: dict[str, object]
+) -> dict[str, object]:
+    """Prevent a planner from redefining explicitly physical work as digital work."""
+    details = {
+        str(detail.get("request_id")): detail
+        for detail in snapshot.get("request_details", [])
+        if isinstance(detail, dict)
+    }
+    gated: list[dict[str, object]] = []
+    for value in decisions.get("decisions", []):
+        if not isinstance(value, dict):
+            gated.append(value)
+            continue
+        decision = dict(value)
+        detail = details.get(str(decision.get("request_id")))
+        visible_text = str(detail.get("visible_text") or "") if detail else ""
+        match = None
+        for pattern in PHYSICAL_OR_ONSITE_PATTERNS:
+            match = pattern.search(visible_text)
+            if match is not None:
+                break
+        if decision.get("business_class") == SUBMIT_REQUIRED and match is not None:
+            excerpt = match.group(0).strip()
+            decision.update({
+                "business_class": HARD_PROHIBITED,
+                "reason_codes": ["physical_or_onsite", excerpt],
+                "proposal_text": None,
+                "price_jpy": None,
+                "deliver_date": None,
+            })
+        gated.append(decision)
+    return {**decisions, "decisions": gated}
+
 
 def default_ineligible_cache_path() -> Path:
     return Path.home() / "gig" / "b2-ineligible-cache.json"
@@ -3844,6 +3888,7 @@ def run_parent(
         snapshot_path = evidence_dir / "application-snapshot.json"
         if not snapshot_path.exists():
             _atomic_json(snapshot_path, snapshot)
+        decisions = apply_deterministic_physical_gate(snapshot, decisions)
         decisions_path = evidence_dir / "application-decisions.json"
         _atomic_json(decisions_path, decisions)
         results = _run_parent_pipeline(
