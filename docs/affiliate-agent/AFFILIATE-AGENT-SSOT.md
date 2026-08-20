@@ -219,6 +219,21 @@ recovery receipt as Telegram `26784` (`SELF_HEALED`) with linked delivery event
 `7db20f65…6c854`. No transaction, settlement, payout, commission, or money
 changed; the prior `07:55:09+0900` links failure remains historical evidence.
 
+### 1.1.3 Latest owner wake after recovery
+
+The existing owner completed another real wake at `2026-08-21T08:17:13+0900`
+with wake UUID `3b448dc2…9dceca`. The Repost observer read 52 valid post
+actions, found `0` exact campaign-URL joins and `52` unjoined actions, and
+classified the result `NO_REVENUE_CREDIT`; no inferred attribution was created.
+The owner was inside the hourly revenue cooldown, so it did not fabricate or
+repeat a provider capture: `revenue_state=COOLDOWN`, while the latest official
+PartnerStack artifact remains `f69af229…6734e3a` with zero commission rows and
+empty payout rows. Telegram reported the observation as message `26794`
+(`REPOST_OBSERVED`), delivery event `d7173757…2166ac`, linked to the same wake.
+The next eligible official capture is expected around `2026-08-21T09:06:19+0900`;
+this wake changed no transaction, settlement, payout, commission, or money
+state. B01 remains `WAITING_FOR_PROVIDER_TRANSACTION`.
+
 ### 1.2.0 Audited executable boundary
 
 The installed ownership graph has six launchd labels: three persistent browser
