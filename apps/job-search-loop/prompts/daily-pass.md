@@ -121,12 +121,28 @@ PYTHONPATH=apps/job-search-loop \
 The secret-free receipt identifies the tenant and credential path. In the same
 browser process, call `job_search_loop.workday_credentials.load_credentials` and
 use the returned values only as `fill()` inputs for the email, password, and verify
-password controls; check the required consent and click the user-facing
-`Create Account` action. Never log, print, snapshot, report, or interpolate either
-value into a command. Recapture and reevaluate after the transition. If provisioning
-or account creation fails, record the exact non-secret blocker, release/avoid the
-slot, and continue to other eligible jobs instead of ending discovery. Never treat
-an invisible reCAPTCHA frame alone as a visible challenge; never bypass or answer an
+password controls; check the required consent and click the visible user-facing
+`Create Account` action. Workday renders the actual submit `<button>` with
+`aria-hidden="true"` and places a visible `div[role="button"]` overlay above it.
+Therefore click `[data-automation-id="click_filter"][aria-label="Create Account"]`
+(or the equivalent visible role/label), never the hidden
+`button[data-automation-id="createAccountSubmitButton"]`. The same rule applies
+to an existing-account login: click the visible `click_filter` labelled `Sign In`,
+never the hidden `signInSubmitButton`. Never fill
+`input[data-automation-id="beecatcher"]` / `name="website"`; it is the Workday
+honeypot and must remain blank. Workday's own `NoCaptchaButtonClickFilter` also
+holds a five-second human-timer after each account/auth form mounts. Wait at least
+six seconds after the form is visibly rendered before clicking `Create Account` or
+`Sign In`; this is a provider-required readiness condition, not a retry loop. Never
+log, print, snapshot, report, or interpolate credential values into a command. After
+the click, wait for the next Workday
+surface, recapture and reevaluate it; remaining on the same Create Account/Sign In
+surface is a failed transition, not account success. If the page reports email
+verification or another visible blocker, record that exact non-secret state and let
+the inbox pass reconcile it before another form attempt. If provisioning or account
+creation fails, record the exact non-secret blocker, release/avoid the slot, and
+continue to other eligible jobs instead of ending discovery. Never treat an
+invisible reCAPTCHA frame alone as a visible challenge; never bypass or answer an
 actual CAPTCHA. If the evaluator fails, returns not ready, or the application form
 never appears, record `not_submitted` without claiming a slot.
 
@@ -197,6 +213,13 @@ must pass `validate_application_message` before it is included in the intent has
 For Sales Engineering and other role families without an exact template key in
 `templates/application-messages.v1.json`, set `message_variant` to `none` and do
 not invent or call an unsupported message template.
+
+For every later Workday form action protected by `NoCaptchaButtonClickFilter`
+(`Save and Continue`, `Next`, or final `Submit`), wait at least six seconds after
+that form visibly mounts, then click only the visible `click_filter` user-facing
+control once. Never force-click the hidden button, call DOM `.click()`, or dispatch
+a synthetic event. Recapture after every transition; a same-surface result is
+`not_submitted`/a blocker and never a claim or success.
 
 Never bypass CAPTCHA. Never invent phone, address, work authorization, degree,
 experience years, demographic answers, or links. Optional demographics are declined
