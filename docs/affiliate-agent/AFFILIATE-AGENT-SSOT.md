@@ -606,6 +606,24 @@ read `unique_state=UNKNOWN`; no click, transaction, public effect, or money was
 invented. The next official link capture must populate observed unique counts
 where the provider supplies them.
 
+### 1.1.23 Official unique-click capture readback
+
+The next natural money-owner wake
+`e7761f0c4a605e90a06b17a43e32ef69194e26eb464aa3da034b7087be8f71ea` completed
+at `2026-08-21T12:22:26+0900` from the installed unique-click retention
+release. Link Performance artifact
+`6f922fd1f052882341360877ca88c9af83f6a54fc2d28cccd7f4121926dd399f` has 20
+placement rows, 34 provider clicks, and 32 unique provider clicks; all 20
+rows carry `unique_click_count_state=OBSERVED`. The exact placement ledger
+readback has the same `34 / 32` sums. PartnerStack Overview at
+`2026-08-21T12:21:58+0900` remains 43 aggregate clicks / 40 unique clicks,
+42 post-baseline clicks, 0 signups, 0 paid signups, `0%` conversion, and USD
+0 revenue/pending/paid amounts. Commission reconciliation remains 0 rows and
+the owner reports `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`;
+Telegram is deduped on the already delivered receipt. This closes the
+provider unique-click denominator retention gate only. X impressions and
+owned-page visits remain `UNKNOWN`, and no click or estimate is money.
+
 ### 1.2.0 Audited executable boundary
 
 The installed ownership graph has six launchd labels: three persistent browser
