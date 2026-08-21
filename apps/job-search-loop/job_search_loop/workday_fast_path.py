@@ -278,7 +278,6 @@ async def _choose(page: Any, locator: Any, value: str) -> bool:
     )
     if await prompt_option.count():
         await prompt_option.first.click(timeout=10_000)
-        await page.keyboard.press("Escape")
         return True
     for _ in range(10):
         option = page.get_by_role("option", name=value, exact=True)
@@ -300,7 +299,10 @@ async def _fill_step(
     profile: dict[str, Any],
     resume_path: Path,
 ) -> list[str]:
-    fields = await _field_metadata(page)
+    fields = sorted(
+        await _field_metadata(page),
+        key=lambda item: "how did you hear" in _context(item),
+    )
     values = _profile_values(profile)
     locator = page.locator(
         "input, textarea, select, [role='combobox'], [role='radio'], [role='checkbox']"
