@@ -218,11 +218,20 @@ class HostDiskGovernor:
                 preserve("path_missing_or_symlink")
                 continue
             state = self.lsof(path)
+            if deadline is not None and self.clock() >= deadline:
+                preserve("probe-budget-exhausted")
+                continue
             if state != "confirmed-closed":
                 result["errors"] += state == "probe-error"
                 preserve(state)
                 continue
+            if deadline is not None and self.clock() >= deadline:
+                preserve("probe-budget-exhausted")
+                continue
             before = _bytes(path)
+            if deadline is not None and self.clock() >= deadline:
+                preserve("probe-budget-exhausted")
+                continue
             try:
                 if path.is_dir():
                     shutil.rmtree(path)

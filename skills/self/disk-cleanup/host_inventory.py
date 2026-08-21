@@ -105,10 +105,10 @@ def _parse_df(output: str) -> list[dict[str, Any]]:
     return mounts
 
 
-def _mounts(run: Runner = _run) -> tuple[list[dict[str, Any]], list[str]]:
+def _mounts(run: Runner = _run, *, timeout: float = 5) -> tuple[list[dict[str, Any]], list[str]]:
     gaps: list[str] = []
     try:
-        result = run(["/bin/df", "-P"], timeout=5)
+        result = run(["/bin/df", "-P"], timeout=timeout)
     except (OSError, subprocess.TimeoutExpired) as exc:
         return [], [f"mount-census:{type(exc).__name__}"]
     if result.returncode != 0:
@@ -178,15 +178,20 @@ def _bounded_size(
         return None, "timeout", "size-timeout"
     except OSError as exc:
         return None, "error", f"size-error:{type(exc).__name__}"
-    if result.returncode != 0:
-        return None, "error", f"size-rc-{result.returncode}"
     fields = result.stdout.split()
-    if not fields:
-        return None, "error", "size-empty"
-    try:
-        return int(fields[0]) * 1024, "bounded-du", None
-    except ValueError:
-        return None, "error", "size-invalid"
+    parsed_size: int | None = None
+    if fields:
+        try:
+            parsed_size = int(fields[0]) * 1024
+        except ValueError:
+            parsed_size = None
+    if result.returncode != 0:
+        if parsed_size is not None:
+            return parsed_size, "bounded-du-partial", f"size-partial-rc-{result.returncode}"
+        return None, "error", f"size-rc-{result.returncode}"
+    if parsed_size is None:
+        return None, "error", "size-empty" if not fields else "size-invalid"
+    return parsed_size, "bounded-du", None
 
 
 def collect_host_inventory(
@@ -206,7 +211,14 @@ def collect_host_inventory(
         deadline = clock() + budget
     else:
         deadline = None
-    mounts, gaps = _mounts(run)
+    if full and deadline is not None:
+        mount_remaining = deadline - clock()
+        if mount_remaining <= 0:
+            mounts, gaps = [], ["inventory-budget-exhausted"]
+        else:
+            mounts, gaps = _mounts(run, timeout=min(5, mount_remaining))
+    else:
+        mounts, gaps = _mounts(run)
     roots: list[dict[str, Any]] = []
     root_gaps = list(gaps)
     for family, template in ROOT_FAMILIES:

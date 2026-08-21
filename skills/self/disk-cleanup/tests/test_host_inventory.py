@@ -138,3 +138,42 @@ def test_full_inventory_enforces_global_probe_budget(tmp_path: Path) -> None:
 
     assert sum(du_timeouts) <= 90
     assert any(gap.startswith("size-budget-exhausted:") for gap in payload["coverage"]["gaps"])
+
+
+def test_full_inventory_records_partial_du_size_on_permission_error(tmp_path: Path) -> None:
+    (tmp_path / "Projects").mkdir()
+
+    def partial_runner(
+        argv: list[str], *, timeout: float
+    ) -> subprocess.CompletedProcess[str]:
+        if argv[0].endswith("/du"):
+            return subprocess.CompletedProcess(argv, 1, f"64\t{argv[-1]}\n", "Operation not permitted")
+        return fake_runner(argv, timeout=timeout)
+
+    payload = collect_host_inventory(
+        home=tmp_path,
+        state_dir=tmp_path / "state",
+        full=True,
+        runner=partial_runner,
+    )
+
+    projects = next(root for root in payload["roots"] if root["path"] == str(tmp_path / "Projects"))
+    assert projects["size_bytes"] == 64 * 1024
+    assert projects["measurement"] == "bounded-du-partial"
+    assert f"size-partial-rc-1:{tmp_path / 'Projects'}" in payload["coverage"]["gaps"]
+
+
+def test_full_inventory_zero_budget_skips_mount_and_size_probes(tmp_path: Path) -> None:
+    def no_probe_runner(argv: list[str], *, timeout: float) -> subprocess.CompletedProcess[str]:
+        raise AssertionError(f"probe must not run with zero budget: {argv}")
+
+    payload = collect_host_inventory(
+        home=tmp_path,
+        state_dir=tmp_path / "state",
+        full=True,
+        runner=no_probe_runner,
+        budget_seconds=0,
+    )
+
+    assert payload["mounts"] == []
+    assert "inventory-budget-exhausted" in payload["coverage"]["gaps"]

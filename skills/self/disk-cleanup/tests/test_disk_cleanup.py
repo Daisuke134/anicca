@@ -207,3 +207,46 @@ def test_run_once_global_budget_preserves_candidate_and_does_not_advance_full_ma
     assert candidate.exists()
     assert result["preserved_reasons"] == {"probe-budget-exhausted": 1}
     assert not (tmp_path / "state" / "host-inventory-full.at").exists()
+
+
+def test_run_once_rechecks_budget_after_lsof_before_reclaim(tmp_path: Path, monkeypatch) -> None:
+    clock = [0.0]
+    candidate = tmp_path / "tmp" / "cfo-lsof-budget"
+    candidate.mkdir(parents=True)
+    monkeypatch.setattr(disk_cleanup.tempfile, "gettempdir", lambda: str(candidate.parent))
+
+    def fake_inventory(**kwargs):
+        assert kwargs["budget_seconds"] == 0
+        return {"coverage": {"mount_count": 0, "root_count": 0, "gaps": ["size-budget-exhausted:/tmp"]}}
+
+    monkeypatch.setattr(disk_cleanup, "collect_host_inventory", fake_inventory)
+
+    def lsof(_path: Path) -> str:
+        clock[0] = 106.0
+        return "confirmed-closed"
+
+    governor = HostDiskGovernor(
+        home=tmp_path,
+        state_dir=tmp_path / "state",
+        lsof=lsof,
+        usage=lambda: (12 * GiB, 100 * GiB),
+        clock=lambda: clock[0],
+    )
+    monkeypatch.setattr(
+        governor,
+        "discover_candidates",
+        lambda: [
+            {
+                "path": candidate,
+                "class": "ephemeral",
+                "owner": "temporary-run",
+                "discovery": "allowlisted",
+            }
+        ],
+    )
+
+    result = governor.run_once()
+
+    assert candidate.exists()
+    assert result["preserved_reasons"] == {"probe-budget-exhausted": 1}
+    assert not (tmp_path / "state" / "host-inventory-full.at").exists()
