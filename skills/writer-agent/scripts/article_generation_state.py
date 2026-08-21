@@ -72,6 +72,13 @@ def file_sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def manifest_sha256(manifest: list[dict[str, str]]) -> str:
+    payload = json.dumps(
+        manifest, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
 def _state_path(run_dir: Path) -> Path:
     return run_dir / "gates" / "generation-state.json"
 
@@ -543,6 +550,30 @@ def archive_interrupted(
         state["status"] = "interrupted-safe"
         state["updated_at"] = finished
         _atomic_write(state_path, state)
+        # Keep a durable, hash-bound proof outside the prunable run directory.
+        # The run state itself is useful during the next tick, but a retention
+        # pass may remove it after the archive is complete; the archive proof
+        # is what permits a safe new identity without guessing publication.
+        _atomic_write(archive_root / "generation-state.json", state)
+        _atomic_write(
+            archive_root / "generation-exhaustion-receipt.json",
+            {
+                "schema": "writer.generation-exhaustion-receipt",
+                "version": 1,
+                "run_id": run_id,
+                "attempt": attempt.get("attempt"),
+                "status": "interrupted-safe",
+                "return_code": return_code,
+                "charged_attempts": _charged_attempt_count(state),
+                "maximum_attempts": int(
+                    state.get("maximum_attempts", MAX_GENERATION_ATTEMPTS)
+                ),
+                "state_sha256": file_sha256(archive_root / "generation-state.json"),
+                "archive_manifest_sha256": manifest_sha256(manifest),
+                "publication_state_absent": True,
+                "public_ledger_rows": 0,
+            },
+        )
         return state
 
 

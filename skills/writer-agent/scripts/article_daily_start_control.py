@@ -292,13 +292,72 @@ def _exhausted_prepublication_archive(
     required = (
         "article-en.md", "article-ja.md", "headline-image.png",
         "body-diagram.png", "gates/quality-terminal-en.json",
-        "gates/quality-terminal-ja.json",
+        "gates/quality-terminal-ja.json", "generation-state.json",
+        "generation-exhaustion-receipt.json",
     )
     if any(
         not (latest / relative).is_file()
         or (latest / relative).is_symlink()
         for relative in required
     ):
+        return False
+    archived_state = _regular_json(latest / "generation-state.json")
+    receipt = _regular_json(latest / "generation-exhaustion-receipt.json")
+    if archived_state is None or receipt is None:
+        return False
+    attempts_state = archived_state.get("attempts")
+    if (
+        archived_state.get("version") != 1
+        or archived_state.get("run_id") != run_id
+        or archived_state.get("status") != "interrupted-safe"
+        or not isinstance(archived_state.get("prompt_sha256"), str)
+        or not isinstance(attempts_state, list)
+        or not attempts_state
+    ):
+        return False
+    final = attempts_state[-1]
+    if (
+        not isinstance(final, dict)
+        or final.get("status") != "interrupted-safe"
+        or final.get("return_code") not in {124, 130, 143}
+        or not isinstance(final.get("archive_manifest"), list)
+    ):
+        return False
+    maximum = archived_state.get("maximum_attempts")
+    if not isinstance(maximum, int) or maximum < 1:
+        return False
+    empty = sum(
+        1 for item in attempts_state
+        if isinstance(item, dict)
+        and item.get("status") == "interrupted-safe"
+        and item.get("archive_manifest") == []
+    )
+    charged = len(attempts_state) - min(
+        empty, int(archived_state.get("maximum_empty_interruption_recoveries", 0))
+    )
+    manifest_hash = hashlib.sha256(
+        json.dumps(
+            final["archive_manifest"], ensure_ascii=False,
+            sort_keys=True, separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
+    state_hash = hashlib.sha256(
+        (latest / "generation-state.json").read_bytes()
+    ).hexdigest()
+    if receipt != {
+        "schema": "writer.generation-exhaustion-receipt",
+        "version": 1,
+        "run_id": run_id,
+        "attempt": final.get("attempt"),
+        "status": "interrupted-safe",
+        "return_code": final.get("return_code"),
+        "charged_attempts": charged,
+        "maximum_attempts": maximum,
+        "state_sha256": state_hash,
+        "archive_manifest_sha256": manifest_hash,
+        "publication_state_absent": True,
+        "public_ledger_rows": 0,
+    }:
         return False
     return not any(
         path.name == "publication-state.json"

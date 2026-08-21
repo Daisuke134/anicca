@@ -1,3 +1,4 @@
+import hashlib
 import importlib.util
 import json
 import shutil
@@ -202,6 +203,48 @@ class ArticleStartPolicyTest(unittest.TestCase):
                 path = archive / relative
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_text("archived", encoding="utf-8")
+            manifest = [
+                {"path": relative, "sha256": hashlib.sha256(
+                    (archive / relative).read_bytes()
+                ).hexdigest()}
+                for relative in (
+                    "article-en.md", "article-ja.md", "headline-image.png",
+                    "body-diagram.png", "gates/quality-terminal-en.json",
+                    "gates/quality-terminal-ja.json",
+                )
+            ]
+            state_value = {
+                "version": 1,
+                "run_id": run.name,
+                "prompt_sha256": "a" * 64,
+                "status": "interrupted-safe",
+                "maximum_attempts": 3,
+                "maximum_empty_interruption_recoveries": 1,
+                "attempts": [
+                    {"attempt": 1, "status": "interrupted-safe", "return_code": 143, "archive_manifest": []},
+                    {"attempt": 2, "status": "interrupted-safe", "return_code": 143, "archive_manifest": manifest},
+                    {"attempt": 3, "status": "interrupted-safe", "return_code": 143, "archive_manifest": manifest},
+                    {"attempt": 4, "status": "interrupted-safe", "return_code": 124, "archive_manifest": manifest},
+                ],
+            }
+            state_path = archive / "generation-state.json"
+            state_path.write_text(json.dumps(state_value), encoding="utf-8")
+            state_hash = hashlib.sha256(state_path.read_bytes()).hexdigest()
+            manifest_hash = hashlib.sha256(
+                json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode()
+            ).hexdigest()
+            (archive / "generation-exhaustion-receipt.json").write_text(
+                json.dumps({
+                    "schema": "writer.generation-exhaustion-receipt",
+                    "version": 1, "run_id": run.name, "attempt": 4,
+                    "status": "interrupted-safe", "return_code": 124,
+                    "charged_attempts": 3, "maximum_attempts": 3,
+                    "state_sha256": state_hash,
+                    "archive_manifest_sha256": manifest_hash,
+                    "publication_state_absent": True, "public_ledger_rows": 0,
+                }),
+                encoding="utf-8",
+            )
             (state / "articles.jsonl").write_text("", encoding="utf-8")
 
             with patch.object(START, "validated_live_set", return_value=(False, None)):
