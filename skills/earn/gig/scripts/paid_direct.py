@@ -3246,6 +3246,21 @@ def _write_file_effect(args, item_path: Path, output: Path, prepared: dict[str, 
                 "stdout": browser_process.stdout[-4000:],
                 "stderr": browser_process.stderr[-4000:],
             })
+            if "artifact_is_about_the_deal_not_the_deliverable:" in browser_process.stderr:
+                authorization = _load(root / "context" / "paid-file-authorization.json")
+                finding = browser_process.stderr.rsplit(
+                    "artifact_is_about_the_deal_not_the_deliverable:", 1,
+                )[-1].strip().splitlines()[0]
+                _write(root / "context" / "paid-review-state.json", {
+                    "version": 1, "state": "REPAIR_PENDING", "mode": "file",
+                    "review_policy_version": PAID_FILE_POLICY_VERSION,
+                    "operator_policy_sha256": _text(authorization.get("operator_policy_sha256")),
+                    "buyer_feedback_sha256": feedback,
+                    "requirements_sha256": requirements_sha256,
+                    "artifact_sha256": manifest["package_sha256"],
+                    "round": int(authorization.get("review_round") or 0),
+                    "finding": finding,
+                })
             raise Failure("file_browser")
         browser = _json_line(browser_process.stdout, "file_browser")
         if browser.get("ok") is not True or not isinstance(browser.get("evidence"), dict):

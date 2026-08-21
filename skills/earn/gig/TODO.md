@@ -310,7 +310,9 @@ evidence. Independent production lanes continue running while development follow
      references; continue the same artifact line for at most ten review rounds; attach the accepted
      or round-ten artifact with concise text, official readback and formal delivery OFF.
    - [ ] Manledge `18169985`: reuse the already approved v9 hash, refresh only stale semantic routing,
-     attach it with official readback and formal delivery OFF; do not rebuild the approved artifact.
+     but honor the final artifact judge: v9 was correctly blocked as a confirmation/process document
+     rather than the requested listing/outreach deliverable. Persist that finding as `REPAIR_PENDING`,
+     build the next actual deliverable version, review it, then attach with formal delivery OFF.
    - [ ] X-post project `18171850`: produce the reusable template, four post drafts, hashtags,
      rationale and measurement plan from proposal + talkroom + attachments; review and attach it.
    - [ ] Review-article project `18171890`: produce the truthful 2,000–4,000-character review-stage
