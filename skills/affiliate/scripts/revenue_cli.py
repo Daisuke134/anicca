@@ -454,6 +454,10 @@ def build_placement_ledger(state):
             "public_url": candidate.get("public_url"),
             "provider_link_key": candidate.get("provider_link_key"),
             "exposure": {
+                "x_impressions": None,
+                "x_impressions_state": "UNKNOWN",
+                "owned_page_visits": None,
+                "owned_page_visits_state": "UNKNOWN",
                 "devto_page_views": dev.get("page_views_count"),
                 "devto_reactions": dev.get("public_reactions_count"),
                 "devto_comments": dev.get("comments_count"),

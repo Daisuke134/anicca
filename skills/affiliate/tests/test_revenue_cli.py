@@ -72,6 +72,10 @@ class RevenueCliTest(unittest.TestCase):
             self.assertIsNone(row["cost"]["model_actual_billed_usd"])
             self.assertEqual(row["unit_economics"]["actual_net_profit_state"], "UNKNOWN_COST")
             self.assertEqual(row["unit_economics"]["exposure_denominator_state"], "INSUFFICIENT_DENOMINATOR")
+            self.assertIsNone(row["exposure"]["x_impressions"])
+            self.assertEqual(row["exposure"]["x_impressions_state"], "UNKNOWN")
+            self.assertIsNone(row["exposure"]["owned_page_visits"])
+            self.assertEqual(row["exposure"]["owned_page_visits_state"], "UNKNOWN")
 
     def test_classifies_tax_and_provider_setup_without_bank_data(self):
         readiness = MODULE.payout_readiness(
