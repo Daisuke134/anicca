@@ -1785,13 +1785,13 @@ after the preceding numbered row, and no later row is started early:
 MKT-07 → MKT-08 → MKT-09 → MKT-10 → MKT-11 → MKT-11A → MKT-11B → MKT-12 →
 MKT-13`.
 
-Current TODO state: **MKT-01 done; MKT-02 done; MKT-03 done with the earlier generic row quarantined; MKT-03A contract done; MKT-03B partly done; MKT-04 seven-cycle gate removed; MKT-05 through MKT-08 done; MKT-09 is the active item; MKT-10 onward open**. Honne
+Current TODO state: **MKT-01 done; MKT-02 done; MKT-03 done with the earlier generic row quarantined; MKT-03A contract done; MKT-03B partly done; MKT-04 seven-cycle gate removed; MKT-05 through MKT-08 done; MKT-09 is blocked on its existing unknown effect; MKT-10 onward open**. Honne
 has TikTok/Instagram destinations only; YouTube remains an Anicca-only lane.
 
-**Active atomic item:** MKT-09 only. Anicca JA TikTok/Instagram, JP4 TikTok,
-and Honne JA TikTok canaries are proven; migrate the next retained Larry or
-ReelClaw account one at a time and do not enable the three-post policy until
-that account passes its own receipt.
+**Active atomic item:** MKT-09 reconciliation only. The existing `@anicca.he`
+effect must produce a caption-matching direct TikTok URL before any other
+Larry/ReelClaw account is started. Anicca JA TikTok/Instagram, JP4 TikTok, and
+Honne JA TikTok canaries remain proven; do not enable the three-post policy.
 
 | ID | Atomic action | Account/lane | Done evidence |
 |---|---|---|---|
