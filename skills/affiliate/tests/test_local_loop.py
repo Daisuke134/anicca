@@ -22,6 +22,16 @@ SPEC.loader.exec_module(MODULE)
 
 
 class LocalLoopTest(unittest.TestCase):
+    def test_owned_article_url_rejects_tracking_and_ambiguous_forms(self):
+        self.assertTrue(MODULE.is_owned_article_url("https://aniccaai.com/blog/alpha-guide"))
+        for value in (
+            "https://aniccaai.com/blog/alpha-guide?utm=tracking",
+            "https://user@aniccaai.com/blog/alpha-guide",
+            "https://aniccaai.com/blog/alpha-guide\nhttps://example.test",
+        ):
+            with self.subTest(value=value):
+                self.assertFalse(MODULE.is_owned_article_url(value))
+
     def test_repost_affiliate_placement_id_requires_exact_owned_url(self):
         with tempfile.TemporaryDirectory() as root:
             state = Path(root) / "affiliate"

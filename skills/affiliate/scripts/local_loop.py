@@ -513,6 +513,23 @@ def wake_event_uuid(event):
     ).hexdigest()
 
 
+def is_owned_article_url(value):
+    if not isinstance(value, str) or any(char.isspace() or ord(char) < 32 for char in value):
+        return False
+    try:
+        parsed = urlparse(value)
+        port = parsed.port
+    except ValueError:
+        return False
+    return (
+        parsed.scheme == "https"
+        and parsed.hostname == "aniccaai.com"
+        and parsed.path.startswith("/blog/")
+        and not parsed.username and not parsed.password and port is None
+        and not parsed.query and not parsed.fragment
+    )
+
+
 def observe_repost_acquisition(state):
     """Read the existing Repost ledger without owning or creating its effects."""
     configured = os.environ.get("AFFILIATE_REPOST_STATE_DIR")
@@ -561,7 +578,7 @@ def observe_repost_acquisition(state):
         if (
             campaign.get("state") == "X_LIVE"
             and isinstance(placement_id, str) and placement_id
-            and isinstance(owned_url, str) and owned_url.startswith("https://aniccaai.com/blog/")
+            and is_owned_article_url(owned_url)
         ):
             campaign_by_placement[placement_id] = owned_url
 
@@ -681,7 +698,7 @@ def create_repost_proposal(state):
         if not (
             campaign.get("state") == "X_LIVE"
             and isinstance(placement_id, str) and placement_id
-            and isinstance(owned_url, str) and owned_url.startswith("https://aniccaai.com/blog/")
+            and is_owned_article_url(owned_url)
         ):
             continue
         metrics = placement_rows.get(placement_id, {}).get("provider_clicks", {})
