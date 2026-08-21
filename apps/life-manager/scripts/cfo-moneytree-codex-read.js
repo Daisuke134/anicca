@@ -1,57 +1,75 @@
 "use strict";
 
-const { execFile } = require("node:child_process");
+const os = require("node:os");
 const path = require("node:path");
+const WebSocket = require("ws");
 const { adaptMoneytreeAccounts } = require("../lib/cfo-moneytree.js");
 const { deriveMoneytreeState, composeMoneytreeRead } = require("../lib/cfo-moneytree-state.js");
 
 const ERROR = "cfo_moneytree_codex_read_failed:unavailable";
 const CFO_CWD = path.resolve(__dirname, "..");
 const MAX_BUFFER = 2 * 1024 * 1024;
-const RUNTIME_KEYS = ["HOME", "PATH", "USER", "LOGNAME", "SHELL", "TMPDIR", "LANG", "LC_ALL", "LC_CTYPE"];
-const PROMPT = "Use the installed Moneytree App exactly once: call show_accounts with locale ja. Do not call any other tool. Do not summarize, transcribe, calculate, or print balances, account IDs, institution labels, credentials, or private fields. Stop after show_accounts.";
+const CALL_TIMEOUT_MS = 120000;
+const APP_SERVER = "codex_apps";
+const MONEYTREE_TOOL = "moneytree.show-accounts";
 
-function safeEnv(base) {
-  const env = {};
-  for (const key of RUNTIME_KEYS) if (typeof base[key] === "string") env[key] = base[key];
-  if (typeof base.CODEX_HOME === "string") env.CODEX_HOME = base.CODEX_HOME;
-  env.CODEX_INTERNAL_ORIGINATOR_OVERRIDE = "codex_exec";
-  return env;
+function appServerSocket(env) {
+  const explicit = env.CODEX_APP_SERVER_SOCKET;
+  if (typeof explicit === "string" && path.isAbsolute(explicit)) return explicit;
+  const codexHome = typeof env.CODEX_HOME === "string" && env.CODEX_HOME ? env.CODEX_HOME : path.join(env.HOME || os.homedir(), ".codex");
+  return path.join(codexHome, "app-server-control", "app-server-control.sock");
 }
 
-function accountsResult(stdout) {
-  if (typeof stdout !== "string" || Buffer.byteLength(stdout, "utf8") > MAX_BUFFER) throw new Error(ERROR);
-  const events = [];
-  for (const line of stdout.split(/\r?\n/)) {
-    if (!line.trim()) continue;
-    try { events.push(JSON.parse(line)); } catch { throw new Error(ERROR); }
-  }
-  const completed = events.filter((event) => event && event.type === "item.completed" && event.item && event.item.type === "mcp_tool_call");
-  if (completed.length !== 1) throw new Error(ERROR);
-  const content = completed[0].item.result && completed[0].item.result.structured_content;
+function validateAccounts(content) {
   if (!content || typeof content !== "object" || Array.isArray(content) || content.type !== "accounts" || !content.data || typeof content.data !== "object" || Array.isArray(content.data) || !content.data.accountGroups || typeof content.data.accountGroups !== "object" || Array.isArray(content.data.accountGroups)) throw new Error(ERROR);
   return content;
 }
 
-function invoke(execFileImpl, args, env) {
+function callMoneytreeApp(options = {}) {
   return new Promise((resolve, reject) => {
-    let child, started = false, ended = false, callbackCalled = false, callbackError, callbackStdout, settled = false;
-    const finish = () => {
-      if (!started || settled) return;
-      try {
-        if (!child || !child.stdin || typeof child.stdin.end !== "function") throw new Error(ERROR);
-        if (!ended) child.stdin.end(), ended = true;
-        if (!callbackCalled) return;
-        settled = true;
-        if (callbackError) reject(new Error(ERROR)); else resolve(callbackStdout);
-      } catch { settled = true; reject(new Error(ERROR)); }
+    const env = options.env && typeof options.env === "object" ? options.env : process.env;
+    const socket = appServerSocket(env);
+    if (!path.isAbsolute(socket)) return reject(new Error(ERROR));
+    const Client = options.WebSocketImpl || WebSocket;
+    let nextId = 1;
+    let settled = false;
+    const timer = setTimeout(() => finish(new Error(ERROR)), CALL_TIMEOUT_MS);
+    let ws;
+    const finish = (error, value) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      try { if (ws && typeof ws.close === "function") ws.close(); } catch {}
+      if (error) reject(error); else resolve(value);
+    };
+    const send = (method, params) => {
+      const id = nextId++;
+      ws.send(JSON.stringify({ jsonrpc: "2.0", id, method, params }));
+      return id;
     };
     try {
-      child = execFileImpl("codex", args, { cwd: CFO_CWD, env, shell: false, timeout: 120000, maxBuffer: MAX_BUFFER }, (error, stdout) => {
-        callbackCalled = true; callbackError = error; callbackStdout = stdout; finish();
+      ws = new Client(`ws+unix://${socket}:/rpc`, { perMessageDeflate: false });
+      ws.on("open", () => send("initialize", { clientInfo: { name: "life-manager-cfo-hourly", title: "Life Manager CFO hourly loop", version: "1.0.0" }, capabilities: { experimentalApi: true } }));
+      ws.on("message", (data) => {
+        if (Buffer.byteLength(String(data), "utf8") > MAX_BUFFER) return finish(new Error(ERROR));
+        let message;
+        try { message = JSON.parse(String(data)); } catch { return finish(new Error(ERROR)); }
+        if (message.error) return finish(new Error(ERROR));
+        if (message.id === 1) {
+          try { ws.send(JSON.stringify({ jsonrpc: "2.0", method: "initialized" })); send("thread/start", { cwd: options.cwd || CFO_CWD, model: "gpt-5.6-luna", approvalPolicy: "never", sandbox: "read-only", ephemeral: true, serviceName: "life-manager-cfo-hourly", config: { features: { apps: true } } }); } catch { finish(new Error(ERROR)); }
+        } else if (message.id === 2) {
+          const threadId = message.result && message.result.thread && message.result.thread.id;
+          if (typeof threadId !== "string" || !threadId) return finish(new Error(ERROR));
+          try { send("mcpServer/tool/call", { threadId, server: APP_SERVER, tool: MONEYTREE_TOOL, arguments: { locale: "ja" } }); } catch { finish(new Error(ERROR)); }
+        } else if (message.id === 3) {
+          const result = message.result;
+          if (!result || result.isError === true) return finish(new Error(ERROR));
+          try { finish(null, validateAccounts(result.structuredContent || result.structured_content)); } catch { finish(new Error(ERROR)); }
+        }
       });
-      started = true; finish();
-    } catch { reject(new Error(ERROR)); }
+      ws.on("error", () => finish(new Error(ERROR)));
+      ws.on("close", () => finish(new Error(ERROR)));
+    } catch { finish(new Error(ERROR)); }
   });
 }
 
@@ -62,8 +80,8 @@ async function readMoneytreeViaCodex(options = {}) {
     if (typeof referenceKey !== "string" || Buffer.byteLength(referenceKey, "utf8") < 32) throw new Error(ERROR);
     const rawNow = typeof options.now === "function" ? options.now() : (options.now || new Date());
     const observedAt = new Date(rawNow).toISOString();
-    const args = ["exec", "--ephemeral", "--json", "--model", "gpt-5.6-luna", "--sandbox", "read-only", "--cd", CFO_CWD, PROMPT];
-    const content = accountsResult(await invoke(options.execFileImpl || execFile, args, safeEnv(base)));
+    const call = options.callAppServer || callMoneytreeApp;
+    const content = await call({ env: base, cwd: CFO_CWD });
     const source = adaptMoneytreeAccounts({ accountsJson: JSON.stringify(content), observedAt, referenceKey });
     const state = deriveMoneytreeState({ signal: "interactive_success", observedAt, aggregationAsOf: null, aggregationFreshnessCutoff: null, liabilitiesExposed: false, liabilityCount: null });
     return composeMoneytreeRead({ source, state });
@@ -83,4 +101,4 @@ async function main(options = {}) {
 
 if (require.main === module) main().then((exitCode) => { process.exitCode = exitCode; });
 
-module.exports = { readMoneytreeViaCodex, main };
+module.exports = { callMoneytreeApp, readMoneytreeViaCodex, main };

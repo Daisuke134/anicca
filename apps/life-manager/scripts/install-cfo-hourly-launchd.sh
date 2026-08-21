@@ -15,6 +15,7 @@ if [[ ! "$CHAT_ID" =~ ^-?[0-9]{1,32}$ ]]; then
 fi
 
 HOME_DIR="${HOME:?HOME is required}"
+CODEX_HOME_VALUE="${CODEX_HOME:-$HOME_DIR/.codex}"
 SOURCE_REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 LOOP_TOML="$SOURCE_REPO_ROOT/loops/cfo-hourly/loop.toml"
 PYTHON_BIN=/opt/homebrew/bin/python3
@@ -237,6 +238,7 @@ sed \
   -e "s|__CFO_UID__|$UID_VALUE|g" \
   -e "s|__CFO_CHAT_ID__|$CHAT_ID|g" \
   -e "s|__HOME__|$HOME_DIR|g" \
+  -e "s|__CODEX_HOME__|$CODEX_HOME_VALUE|g" \
   "$TEMPLATE" >"$TMP_PLIST"
 /usr/bin/plutil -replace StartInterval -integer "$CFO_INTERVAL" "$TMP_PLIST"
 /usr/bin/plutil -lint "$TMP_PLIST"

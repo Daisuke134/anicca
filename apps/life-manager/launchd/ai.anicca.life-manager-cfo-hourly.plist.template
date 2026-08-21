@@ -13,6 +13,8 @@
   <dict>
     <key>HOME</key>
     <string>__HOME__</string>
+    <key>CODEX_HOME</key>
+    <string>__CODEX_HOME__</string>
     <key>PATH</key>
     <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
     <key>LIFE_MANAGER_APP_DIR</key>
