@@ -844,11 +844,23 @@ def terminal_quality_finished_at(
     quality = _regular_json(gates / "quality-self-heal.json")
     generation = _regular_json(gates / "generation-state.json")
     route = _regular_json(gates / "topic-route.json")
+    quality_advisory = bool(
+        quality
+        and quality.get("version") == 2
+        and quality.get("action") == "ready_to_freeze"
+        and quality.get("quality_advisory") is True
+        and quality.get("attempt") == 1
+    )
     if (
         quality is None
         or quality.get("version") != 2
-        or quality.get("action") != "block_freeze"
-        or int(quality.get("attempt", 0)) < 2
+        or (
+            not quality_advisory
+            and (
+                quality.get("action") != "block_freeze"
+                or int(quality.get("attempt", 0)) < 2
+            )
+        )
         or generation is None
         or generation.get("version") != 1
         or generation.get("run_id") != run_id
@@ -891,7 +903,10 @@ def terminal_quality_finished_at(
             or not article.is_file()
             or record.get("article_sha256")
             != hashlib.sha256(article.read_bytes()).hexdigest()
-            or record.get("evaluation_current") is not True
+            or (
+                record.get("evaluation_current") is not True
+                and not quality_advisory
+            )
             or record.get("identity_current") is not True
         ):
             return None

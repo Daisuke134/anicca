@@ -607,6 +607,25 @@ class ArticleStartPolicyTest(unittest.TestCase):
         )
         self.assertNotIn("publish_buttons", source)
 
+    def test_quality_advisory_run_releases_bounded_replacement(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for run_id in ("20260821-100000", "20260821-130847"):
+                (root / "runs" / run_id).mkdir(parents=True)
+            with patch.object(START, "validated_live_set", return_value=(False, None)), patch.object(
+                START, "proof", side_effect=START.QuarantineError("not duplicate")
+            ), patch.object(
+                START,
+                "generation_resume_plan",
+                return_value={"resumable": False},
+            ), patch.object(
+                START,
+                "terminal_quality_finished_at",
+                return_value=(object(), "topic-1", "explainer", {}),
+            ):
+                decision = START.decide(root, "2026-08-21")
+        self.assertEqual(decision["action"], "skip-quality-miss")
+
     def test_remote_live_finalize_rejects_monetization_drift(self):
         result = REMOTE.finalize_live(
             {},
