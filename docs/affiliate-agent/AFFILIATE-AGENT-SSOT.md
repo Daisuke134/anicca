@@ -551,9 +551,10 @@ current X error gate without deleting historical evidence or claiming a new
 public effect.
 
 The same readback closes the measurement diagnosis, not B01: PartnerStack
-Link Performance reports 13 rows, 43 provider clicks, 0 customers, 0
-transactions, USD 0 revenue, and USD 0 unpaid/fully-paid rewards; the latest
-commission artifact has 0 rows. Therefore the observed bottleneck is
+Link Performance reports 13 rows, 43 provider clicks / 40 unique clicks, 0
+customers, 0 transactions, USD 0 revenue, and USD 0 unpaid/fully-paid
+rewards; the latest commission artifact has 0 rows. Therefore the observed
+bottleneck is
 qualified acquisition-to-signup/conversion, while metrics, the append-only
 ledger, and Telegram reporting are wired. Clicks remain non-money and B01 is
 still `WAITING_FOR_PROVIDER_TRANSACTION`; no approved/paid row, settlement ID,
