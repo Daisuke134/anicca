@@ -547,6 +547,7 @@ def repost_consumption_state(repost_root, proposal_id, placement_id):
     if not path.is_file():
         return "UNCONSUMED_BY_SEPARATE_OWNER"
     latest = None
+    placements_by_proposal = {}
     try:
         for line in path.read_text(encoding="utf-8").splitlines():
             if not line.strip():
@@ -576,8 +577,19 @@ def repost_consumption_state(repost_root, proposal_id, placement_id):
             if row["state"] == "EFFECT_STARTED":
                 snapshot = row.get("proposal")
                 if not isinstance(snapshot, dict) or (
-                    snapshot.get("proposal_id") != row["proposal_id"]
+                    snapshot.get("receipt_type") != "AFFILIATE_REPOST_PROPOSAL"
+                    or snapshot.get("state") != "READY_FOR_EXISTING_REPOST_OWNER"
+                    or snapshot.get("proposal_id") != row["proposal_id"]
                     or snapshot.get("placement_id") != row["placement_id"]
+                    or snapshot.get("language") != "en"
+                    or snapshot.get("disclosure_required") is not True
+                    or snapshot.get("tracking_link_state") != "NOT_INCLUDED"
+                    or snapshot.get("revenue_credit_state") != "NO_REVENUE_CREDIT"
+                    or not is_owned_article_url(snapshot.get("owned_article_url"))
+                    or any(
+                        value is not None and not safe_proposal_text(value)
+                        for value in (snapshot.get("article_title"), snapshot.get("buyer_intent"))
+                    )
                 ):
                     return "CONSUMPTION_LEDGER_INVALID"
             elif row["state"] == "POSTED":
@@ -595,6 +607,10 @@ def repost_consumption_state(repost_root, proposal_id, placement_id):
                 ):
                     return "CONSUMPTION_LEDGER_INVALID"
             elif row.get("post_url") not in (None, ""):
+                return "CONSUMPTION_LEDGER_INVALID"
+            placements = placements_by_proposal.setdefault(row["proposal_id"], set())
+            placements.add(row["placement_id"])
+            if len(placements) > 1:
                 return "CONSUMPTION_LEDGER_INVALID"
             if row.get("proposal_id") == proposal_id:
                 latest = row
