@@ -1,5 +1,18 @@
 # Affiliate local money loop handover
 
+- Release `b65ef9e56aab1230ee85fb3fad0b56aa86da4c7f` is installed as immutable
+  `current`; source/installed `local_loop.py` bytes match and the Affiliate
+  suite is `94/94`. Existing owner wake
+  `7e06aaeb65dd62cc8e6ec96da8e2019b2d531c303cf153703983f29d9f05231c`
+  completed at `2026-08-21T18:50:51+0900`, exit `0`, and wrote exactly one
+  `AFFILIATE_REPOST_PROPOSAL` for the observed six-click voice-isolator
+  placement. It contains the exact placement ID, a public owned-article URL,
+  English/disclosure requirements, and no tracking link or post copy. Its
+  state is `READY_FOR_EXISTING_REPOST_OWNER / UNCONSUMED_BY_SEPARATE_OWNER /
+  NO_REVENUE_CREDIT`; Telegram event `014354…` was delivered as message `27485`.
+  This is a bounded exploration handoff, not a Repost publication, click,
+  transaction, or money event. Action cap remains `34/10`; B01 remains empty.
+
 - Existing money owner wake
   `9c0fa3b7d445cca5dfb0b234a57c515781eccb729ba02874d54814c096203f72`
   completed at `2026-08-21T18:44:17+0900`, exit `0`, and performed the next

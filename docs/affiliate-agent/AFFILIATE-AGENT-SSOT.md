@@ -1308,6 +1308,26 @@ the exact non-money receipt as Telegram `messageId=27478`.
 This is fresh B01 empty-state evidence only. No click, content asset, capture,
 or Telegram message is treated as commission, settlement, or net revenue.
 
+### 1.1.52 Affiliate-side Repost proposal contract live, owner consumption still open
+
+Release `b65ef9e56aab1230ee85fb3fad0b56aa86da4c7f` adds an append-only
+`AFFILIATE_REPOST_PROPOSAL` produced only by the existing Affiliate owner. It
+selects one `X_LIVE`, owned-article, dedicated-link placement as a bounded
+exploration without promoting it to a winner: no approved net exists. The
+proposal contains an exact placement ID, public owned-article URL, English and
+disclosure requirements, provider-click observation, and explicit
+`NO_REVENUE_CREDIT`; it excludes the tracking link and post copy.
+
+Existing owner wake
+`7e06aaeb65dd62cc8e6ec96da8e2019b2d531c303cf153703983f29d9f05231c`
+completed at `2026-08-21T18:50:51+0900`, exit `0`, and created one proposal for
+the observed six-click voice-isolator placement. Its truthful state is
+`READY_FOR_EXISTING_REPOST_OWNER / UNCONSUMED_BY_SEPARATE_OWNER /
+NO_REVENUE_CREDIT`; Telegram delivered the handoff receipt as `messageId=27485`.
+No Repost publication, click attribution, transaction, commission, or money
+was created. The separate Repost owner must consume this exact proposal and
+return an exact placement identity before D06 closes.
+
 ### 1.2.0 Audited executable boundary
 
 The installed ownership graph has six launchd labels: three persistent browser
