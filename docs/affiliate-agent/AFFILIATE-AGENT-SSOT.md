@@ -847,6 +847,37 @@ with exit `0`, revenue `COOLDOWN`, and Telegram `27179`; no new artifact,
 transaction, payout, or money exists. F03 is closed from this real failure and
 recovery; B01 remains open until a non-empty official transaction row appears.
 
+### 1.1.32 Reconciliation of the reported capture failure
+
+The Telegram report that says `REVENUE_CYCLE_FAILED` at `stage=capture` is a
+historical failure, not the current owner state. Its durable failure receipt is
+observed at `2026-08-21T14:35:54+0900` with `failure_type=NONZERO_EXIT`, return
+code `1`, and retry boundary `15:35:54+0900`. The receipt is retained as
+append-only evidence and is not rewritten into success or deleted.
+
+The existing `ai.anicca.affiliate-loop` owner then crossed that boundary and
+completed the official PartnerStack path at `15:37:53+0900` with exit `0` and
+`revenue_state=NO_TRANSACTIONS`. The hash-bound artifact observed at
+`15:37:17+0900` has USD display, `commission_row_count=0`, `NO_LIVE_ROWS`, an
+empty payout section, and no generic transaction ID; reconciliation read,
+appended, and replayed `0/0/0`. The later owner wake at `15:43:27+0900` kept the
+revenue path in its normal cooldown and delivered Telegram `27244`
+(`SELF_HEALED`) for the failed-to-recovered path with `transactions=0`; no
+estimated revenue was counted. The current launchd readback is `runs=239`,
+`last exit code=0`, and `run interval=600 seconds`.
+
+The economic truth therefore remains `NO_TRANSACTIONS /
+NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`, with approved, paid, pending, and
+reversed counts all zero and real cost coverage `UNKNOWN`. Current acquisition
+readback is 20 exact English placements, 44 aggregate provider clicks, zero
+signups, zero paid signups, and 58 observed Repost actions with 0 exact
+Affiliate campaign joins. Repost source state is `OBSERVED` from the existing
+home-loop ledger, so the zero join is an upstream shared-effect-owner gap, not a
+missing observer input. Clicks, post actions, estimates, screenshots, fixtures,
+and the recovery receipt are not money. B01 remains
+`WAITING_FOR_PROVIDER_TRANSACTION`; the next capture must be performed only by
+the existing owner after its durable cooldown, never by manual capture.
+
 ### 1.2.0 Audited executable boundary
 
 The installed ownership graph has six launchd labels: three persistent browser
@@ -3119,6 +3150,19 @@ completed at `15:43:27+0900` with exit `0`, revenue `COOLDOWN`, and Telegram
 event `53be1b70…15b67f8`. No provider/public effect or money changed. F01,
 F02, and F03 are closed; B01 remains open for the first non-empty official
 transaction row.
+
+**Current readback override (2026-08-21 15:51 JST):** the previously reported
+`REVENUE_CYCLE_FAILED` is the 14:35 historical failure above. It is superseded
+for retry purposes by the real 15:37 empty capture and the 15:43 `SELF_HEALED`
+delivery, while the failure artifact remains immutable evidence. The installed
+owner is healthy (`runs=239`, exit `0`, 600-second interval), but the next
+eligible capture has not produced a provider row: PartnerStack remains
+`commission_row_count=0`, `source_rows=0`, and rolling net remains
+`NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`. The latest live
+funnel readback is 44 aggregate clicks, 0 signups, 0 paid signups, and Repost
+58/0 exact joins; X impressions and owned-page visits remain `UNKNOWN`. No
+manual capture, direct publisher, or parallel executor is authorized.
+
 The next existing-owner wake `4376877990…` at `14:52:45+0900` also exited `0`,
 returned revenue `COOLDOWN`, and left Telegram `NO_PENDING`; no provider
 artifact or external effect changed. The public X receipt for
