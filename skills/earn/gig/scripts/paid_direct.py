@@ -148,9 +148,18 @@ def _collector(args, mode, output, evidence, item_path=None, item=None):
 def _collect_dm_context(args, item: dict[str, Any], root: Path, base: Path) -> None:
     """Bind the existing pre-purchase DM collector before any semantic paid work."""
     evidence = base / "preflight" / "direct-message.json"
+    thread_id = ""
+    try:
+        proposal = _load(root / "source" / "proposal" / f"offer-{_text(item.get('talkroom_id'))}.json")
+        matched = re.fullmatch(r"/mypage/direct_message/([0-9]{1,32})", _text(proposal.get("direct_message_reference")))
+        thread_id = matched.group(1) if matched else ""
+    except (OSError, TypeError, json.JSONDecodeError):
+        pass
     command = [sys.executable, str(args.dm_collector), "--project-root", str(root),
                "--buyer", _text(item.get("buyer")), "--observed-at", datetime.now().astimezone().isoformat(),
                "--cdp-helper", str(args.cdp_helper), "--evidence-output", str(evidence)]
+    if thread_id:
+        command += ["--thread-id", thread_id]
     result = _run_bounded(command)
     try:
         receipt = _json_line(result.stdout, "dm_context")
