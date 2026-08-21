@@ -33,6 +33,7 @@ The loop optimizes for interviews, not raw submission count:
 | Application objective | Attempt each new unique eligible role discovered on the configured recurring cadence; no artificial daily count cap. ATS/provider rate limits, duplicate protection, truth requirements and side-effect fences remain mandatory. |
 | Location | Tokyo on-site/hybrid, Japan-remote, or global remote that accepts Japan-based workers |
 | Compensation | Prefer JPY 7M–10M+; hard reject known compensation below JPY 5.5M |
+| Experience requirements | Do not pre-filter solely on a stated years-of-experience requirement; shoot the application when the ATS can be completed truthfully. Never invent years or other candidate facts; an unverified mandatory field blocks only that submission. |
 | Role families | Applied AI/agent/GenAI engineering; AI product and technical program management; solutions/consulting; AI business development and partnerships; technical account management, customer success and sales engineering; agentic fintech/crypto/consumer AI |
 | Hard exclusions | Citizenship or clearance requirements the candidate cannot meet; relocation-only roles outside Japan; already-applied roles; material skill fabrication |
 | Truthful zero | If fewer than two eligible jobs exist, submit the eligible count and report the shortfall; do not lower hard filters or claim success |
@@ -1088,7 +1089,7 @@ closed loop to pass real E2E verification, not merely unit tests or a polished U
 | Gmail/Calendar transient error | Retry the read or idempotent write with bounded backoff |
 | Invalid model JSON | Fail closed and retain raw evidence |
 | Daily model budget already exhausted | Retain the runner's `budget_blocked` summary and complete the scheduler pass with exit zero; do not report an application |
-| Missing profile fact | Skip the job or field; never infer |
+| Missing profile fact | Do not use a missing experience-year fact as a discovery filter; block only a submission whose mandatory field cannot be answered truthfully, and never infer |
 | Telegram uncertainty | Keep `delivery_unknown`; never blind-send duplicate |
 | Firecrawl/provider outage | Continue through every configured public provider, then official company/ATS pages in the existing browser |
 | Browser library unavailable | Use another installed Playwright transport against the same CDP owner; never launch a second browser |

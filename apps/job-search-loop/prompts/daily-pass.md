@@ -26,7 +26,11 @@ knowledge, such as AI Product Manager, Technical Program Manager, AI Business
 Development/Partnerships, Technical Account Manager, AI Customer Success, and Sales
 Engineer. A generic sales, marketing, operations, product, or business role without
 quoted AI/LLM requirements is not eligible. Hard reject citizenship/clearance,
-non-Japan remote, known sub-floor pay, and unmet explicit minimum years.
+non-Japan remote, and known sub-floor pay. Do not pre-filter a role solely because
+its stated experience-years requirement exceeds the private profile: shoot the
+application when the ATS can be completed truthfully. Never invent experience years
+or any other candidate fact; if an unverified fact is a mandatory form field, block
+only that submission and continue to the next role.
 
 Discovery must use at least three independent English/Japanese queries, covering
 engineering, technical-business, crypto, and consumer-agent role families, through:
