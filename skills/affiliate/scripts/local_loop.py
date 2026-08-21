@@ -48,6 +48,9 @@ QUARANTINABLE_EFFECTS = {
 EXTERNAL_ACTION_DAILY_CAP = 10
 EXTERNAL_COST_DAILY_CAP_MINOR = 500
 COST_BUDGET_JST = ZoneInfo("Asia/Tokyo")
+REPOST_PROPOSAL_ID_PATTERN = re.compile(r"^[0-9a-f]{64}$")
+REPOST_PLACEMENT_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]{2,80}$")
+REPOST_CONSUMPTION_STATES = {"EFFECT_STARTED", "POSTED", "UNVERIFIED", "NO_EFFECT"}
 
 
 def atomic_json(path, value):
@@ -552,6 +555,46 @@ def repost_consumption_state(repost_root, proposal_id, placement_id):
             if not isinstance(row, dict) or row.get("schema_version") != 1:
                 return "CONSUMPTION_LEDGER_INVALID"
             if row.get("receipt_type") != "X_REPOST_AFFILIATE_PROPOSAL_CONSUMPTION":
+                return "CONSUMPTION_LEDGER_INVALID"
+            if (
+                not isinstance(row.get("proposal_id"), str)
+                or not REPOST_PROPOSAL_ID_PATTERN.fullmatch(row["proposal_id"])
+                or not isinstance(row.get("placement_id"), str)
+                or not REPOST_PLACEMENT_ID_PATTERN.fullmatch(row["placement_id"])
+                or row.get("state") not in REPOST_CONSUMPTION_STATES
+                or not isinstance(row.get("observed_at"), str)
+            ):
+                return "CONSUMPTION_LEDGER_INVALID"
+            try:
+                observed = datetime.fromisoformat(row["observed_at"].replace("Z", "+00:00"))
+            except ValueError:
+                return "CONSUMPTION_LEDGER_INVALID"
+            if observed.tzinfo is None:
+                return "CONSUMPTION_LEDGER_INVALID"
+            if row.get("revenue_credit_state") != "NO_REVENUE_CREDIT_UNTIL_EXACT_AFFILIATE_JOIN":
+                return "CONSUMPTION_LEDGER_INVALID"
+            if row["state"] == "EFFECT_STARTED":
+                snapshot = row.get("proposal")
+                if not isinstance(snapshot, dict) or (
+                    snapshot.get("proposal_id") != row["proposal_id"]
+                    or snapshot.get("placement_id") != row["placement_id"]
+                ):
+                    return "CONSUMPTION_LEDGER_INVALID"
+            elif row["state"] == "POSTED":
+                post_url = row.get("post_url")
+                try:
+                    parsed = urlparse(post_url)
+                    port = parsed.port
+                except (TypeError, ValueError):
+                    return "CONSUMPTION_LEDGER_INVALID"
+                if not (
+                    parsed.scheme == "https" and parsed.hostname == "x.com"
+                    and not parsed.username and not parsed.password and port is None
+                    and not parsed.query and not parsed.fragment
+                    and re.fullmatch(r"/[A-Za-z0-9_]+/status/[0-9]+", parsed.path)
+                ):
+                    return "CONSUMPTION_LEDGER_INVALID"
+            elif row.get("post_url") not in (None, ""):
                 return "CONSUMPTION_LEDGER_INVALID"
             if row.get("proposal_id") == proposal_id:
                 latest = row
