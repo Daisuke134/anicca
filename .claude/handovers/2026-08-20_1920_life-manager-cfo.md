@@ -2,7 +2,7 @@
 
 ## Current resume evidence
 
-- `CFO-OPS3a`, `CFO-OPS3b`, `CFO-1j`, `CFO-2b.2`, `CFO-2b.3`, `CFO-2b.4`, `CFO-2b.5`, `CFO-2b.6`, `CFO-2b.7`, `CFO-2b.8`, and `CFO-2b.9` are closed in the canonical Life Manager worktree `/Users/anicca/Projects/life-manager-main/.worktrees/cfo-ops3a`, branch `feature/cfo-ops3a-canonical`. The latest canonical commit is `93c4119cb` (Moneytree LINK refresh boundary; reconciliation is `56821e03f`, Fleet adapter is `75739758e`, Proprietary Investing is `902858819`); the branch is clean and its remote head is verified.
+- `CFO-OPS3a`, `CFO-OPS3b`, `CFO-1j`, `CFO-2b.2`, `CFO-2b.3`, `CFO-2b.4`, `CFO-2b.5`, `CFO-2b.6`, `CFO-2b.7`, `CFO-2b.8`, and `CFO-2b.9` are closed in the canonical Life Manager worktree `/Users/anicca/Projects/life-manager-main/.worktrees/cfo-ops3a`, branch `feature/cfo-ops3a-canonical`. The latest canonical commit is `4ddb6ba83` (optional Moneytree LINK refresh wired into hourly loop/installer; refresh boundary is `93c4119cb`, reconciliation is `56821e03f`, Fleet adapter is `75739758e`, Proprietary Investing is `902858819`); the branch is clean and its remote head is verified.
 - The installed plist is a stable release path: label `ai.anicca.life-manager-cfo-hourly`, interval `3600`, entrypoint `/Users/anicca/.local/share/life-manager/cfo-hourly/current/skills/cfo/run.sh`; it contains no feature-worktree path. Stable CFO module-load is PASS and the focused financial gate is 19/19 when using the stable release dependencies. The latest post-install launchd pass completed `status=quiet`, `revision=4`, `appended=false`, `delivered=false`, exit code 0, and empty stderr because the same-hour dedupe contract prevented a duplicate. The preceding real report was `status=sent`, `revision=4`, `appended=true`, `delivered=true`; its same-hour dedupe contract remains covered by the earlier `status=quiet`, `revision=2`, `appended=false`, `delivered=false` run.
 - The latest category/recency release is `/Users/anicca/.local/share/life-manager/cfo-hourly/releases/20260821T154453-69723` (current symlink read back). The same-hour verification converged to `status=quiet`, `revision=6`, `appended=false`, `delivered=false`, exit code 0, and empty stderr; the next owner-hour is required to observe the first new Telegram receipt carrying the category/recency display.
 - `CFO-OPS3b` launchd management and shared Telegram transport are closed after recovery. The host-parity implementation is canonical in commit `6acff1585` on `feature/cfo-ops3a-canonical`, with local DNS hardening in `d013196ce` and ambiguous-request retry prevention in `5e1c0dfcc`: the persistent local Codex app-server reads the existing Moneytree App through `mcpServer/tool/call`, and the existing adapter returns a redacted success envelope. Canonical commit `a1d1e1ade` preserves valid balances when the optional transaction request fails. Read-back returned managerpid=1, manageruid=501, CFO label `print/list=0`, StartInterval=3600, and kickstart rc 0. The new owner-hour pass returned revision 5, status=sent, exit 0, empty stderr, and Supabase provider `message_id=27136`; read-only `getMe` verified `@AniccaLifeBot` / Local Life Manager (bot id `8613473574`). `CFO-1j` delivered twenty redacted transaction rows; follow-up commit `6faf0bd06` now retains provider-reported categories and latest returned transaction date while keeping bank-side freshness unknown.
@@ -12,7 +12,7 @@
 
 - Remaining-TODO SSOT: `/Users/anicca/anicca-project/.worktrees/cfo-resume-spec/docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md`, section `6. Execution Steps — Full Ordered TODO`.
 - Business child SSOT: `/Users/anicca/anicca-project/.worktrees/cfo-resume-spec/docs/superpowers/specs/2026-08-11-life-manager-cfo-business-instrumentation-design.md`, sections `3. Ordered work` and `13. Resume audit`.
-- Code worktree: `/Users/anicca/Projects/life-manager-main/.worktrees/cfo-ops3a`, branch `feature/cfo-ops3a-canonical`, verified HEAD `93c4119cb`. Its explicit push target is `origin HEAD:feature/cfo-ops3a-canonical`.
+- Code worktree: `/Users/anicca/Projects/life-manager-main/.worktrees/cfo-ops3a`, branch `feature/cfo-ops3a-canonical`, verified HEAD `4ddb6ba83`. Its explicit push target is `origin HEAD:feature/cfo-ops3a-canonical`.
 - Spec worktree: `/Users/anicca/anicca-project/.worktrees/cfo-resume-spec`, branch `feature/cfo-moneytree-daily-report`. This update is the current branch tip; after push, verify the exact tip with `git ls-remote`. Push target is `canonical HEAD:feature/cfo-moneytree-daily-report`.
 - Do not touch `/Users/anicca/anicca-project`: it is a separate dirty worktree with unrelated user changes.
 - Completed: Moneytree/MUFG source and real Telegram foundation; provider/local usage evidence; confirmed Anthropic subscription report; Life Manager business slice; Anicca RevenueCat gross; signed Apple Finance row normalizer; complete Apple Finance report boundary parser; Anicca iOS business-fact composer with separate RevenueCat gross coverage; safe Moneytree category/latest-returned-date display; Writer runtime consolidation and receipt projection; Affiliate runtime consolidation and receipt projection; Gig Work external/local receipt projection; x402 finalized external settlement projection; Employment, Capafy, and Proprietary Investing projections; canonical Fleet evidence adapter and reconciliation projection; optional Moneytree LINK refresh boundary. Apple migration evidence remains `f1986663b`; canonical CFO code is `93c4119cb`; focused Writer/Affiliate/Gig/x402/Polymarket/Fleet/reconciliation/refresh assertions and live reads pass.
@@ -87,11 +87,14 @@ starts within five minutes, and is limited to four calls per guest per UTC day. 
 client ID, redirect URI, state, and user authorization; client credentials do not grant guest data.
 
 Current plugin tools are read-only (`show_accounts`, `show_transactions`, `show_spending_summary`, `welcome`), and no
-Moneytree LINK client/token exists in the local env/state. Canonical commit `93c4119cb` adds a fail-closed optional
-`cfo-moneytree-refresh.js` boundary: no token means no network request; 202/401/403/429 are distinct; quota count is
-caller-owned; and the OAuth URL includes `request_refresh`. The hourly read remains truthful until a one-time LINK
-OAuth grant is supplied. Live loop revision 8 has provider message `27326`; the direct explanation was sent with
-provider message `27455`.
+Moneytree LINK client/token exists in the local env/state. Canonical commits `93c4119cb` and `4ddb6ba83` add and wire
+the fail-closed `cfo-moneytree-refresh.js` boundary: no token means no network request; 202/401/403/429 are distinct;
+the local guard is once per day; and the OAuth URL includes `request_refresh`. The stable release now uses
+`LIFE_MANAGER_ENV_FILE=/Users/anicca/.openclaw/.env`, remains on `StartInterval=3600`, and its final launchd readback
+exited `0` with `moneytreeRefresh={status:not_enabled,reason:refresh_opt_in_required}`. Two transient failed lines
+during symlink cutover were superseded by the final `quiet` pass. The hourly read remains truthful until a one-time LINK
+OAuth grant is supplied. Loop revision 9 has a shared-destination receipt; the direct explanation was sent as provider
+message `27455`.
 
 ## CFO-2c closure correction (2026-08-21)
 
