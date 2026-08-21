@@ -359,3 +359,9 @@ Canonical commit `efd4bc42b` adds the official Moneytree Web login link to both 
 `20260821T230403-79503` ran revision `21` successfully; Telegram receipt `27892`, exit `0`, stale latest transaction
 `2026-08-18`. Live checks pass 5/5 for payload explanation, app/Web sync, next-hour recheck, login URL, and lag date.
 The user can now open the repair path directly from Telegram; bank data remains stale until that owner action completes.
+
+The same-plugin OAuth attempt was exhausted read-only: `mcpServer/oauth/login(name=codex_apps)` failed Dynamic Client
+Registration before issuing an authorization URL; explicit `clientRegistration=cimd` failed because the authorization
+server does not advertise the required CIMD/token-endpoint-auth-none combination. No password/MFA/logout/token/account
+mutation occurred. The Telegram Web login link remains the only owner path for this connector; a separate static LINK
+client/grant is required for autonomous `request_refresh`.

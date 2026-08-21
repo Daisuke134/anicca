@@ -1614,3 +1614,13 @@ run completed revision `21`, `status=sent`, `delivered=true`, exit `0`, and `pro
 transaction `2026-08-18`; Telegram receipt is `message_id=27892`. Live renderer checks for payload explanation, sync
 instruction, next-hour recheck, exact login link, and lag date pass `5/5`. This makes the owner repair path one tap away;
 it does not claim a bank refresh before the owner logs in/synchronizes.
+
+### Moneytree plugin OAuth login audit (2026-08-21)
+
+To honor the request to log in through the same plugin, the running Codex App Server was asked to execute
+`mcpServer/oauth/login` for `codex_apps`. The default automatic registration path failed before an authorization URL
+was issued because the server attempted Dynamic Client Registration; an explicit `clientRegistration=cimd` retry also
+failed because the authorization server does not advertise CIMD with token-endpoint authentication method `none`.
+No browser authorization page, password, MFA, logout, token replacement, or account mutation occurred. This is a
+connector-registration boundary, not a loop failure. The remaining legitimate path is owner login at the Moneytree Web
+link already present in Telegram, or a separately provisioned static LINK client/grant with `request_refresh`.
