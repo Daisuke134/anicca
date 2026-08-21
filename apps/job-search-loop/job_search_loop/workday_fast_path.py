@@ -326,7 +326,16 @@ async def _fill_step(
             if _is_unknown_required(item, value):
                 blockers.append(label)
             elif value and kind == "radio" and _label(item) == value.casefold():
-                await element.check()
+                control_id = await element.get_attribute("id")
+                radio_label = (
+                    page.locator(f"label[for='{control_id}']")
+                    if control_id
+                    else page.get_by_text(value, exact=True)
+                )
+                if await radio_label.count() and await radio_label.first.is_visible():
+                    await radio_label.first.click(timeout=10_000)
+                else:
+                    await element.check(timeout=10_000)
             continue
         if (
             kind in {"button"}
