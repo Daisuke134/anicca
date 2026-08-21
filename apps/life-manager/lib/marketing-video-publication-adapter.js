@@ -23,20 +23,22 @@ const FORM_REF = /^form:\/\/([A-Za-z0-9][A-Za-z0-9._-]{0,127})$/;
 const LOCALE_REF = /^locale:\/\/([a-z]{2}(?:-[A-Z]{2})?)$/;
 const SLOT_REF = /^schedule-slot:\/\/(.+)$/;
 const CREATIVE_REF = /^creative:\/\/([A-Za-z0-9][A-Za-z0-9._-]{0,127})\/([A-Za-z0-9][A-Za-z0-9._-]{0,127})$/;
-const PLATFORM_REF = /^platform:\/\/(instagram|tiktok)$/;
+const PLATFORM_REF = /^platform:\/\/(instagram|tiktok|youtube)$/;
 const PROFILE_REF = /^profile:\/\/instagram\/[a-z0-9._-]+$/i;
 const SECRET_REF = /^secret:\/\/[a-z0-9][a-z0-9._-]*(?:\/[a-z0-9][a-z0-9._-]*)*$/i;
-const INTEGRATION_REF = /^integration:\/\/postiz\/tiktok\/[a-z0-9._-]+$/i;
-const EFFECT_KEY = /^marketing:video:([A-Za-z0-9][A-Za-z0-9._-]{0,127}):(instagram|tiktok):([A-Za-z0-9][A-Za-z0-9._-]{0,127}):([0-9a-f]{64}):([0-9a-f]{64})$/;
+const TIKTOK_INTEGRATION_REF = /^integration:\/\/postiz\/tiktok\/[a-z0-9._-]+$/i;
+const YOUTUBE_INTEGRATION_REF = /^integration:\/\/postiz\/youtube\/[a-z0-9._-]+$/i;
+const EFFECT_KEY = /^marketing:video:([A-Za-z0-9][A-Za-z0-9._-]{0,127}):(instagram|tiktok|youtube):([A-Za-z0-9][A-Za-z0-9._-]{0,127}):([0-9a-f]{64}):([0-9a-f]{64})$/;
 const INSTAGRAM_URL = /^https:\/\/www\.instagram\.com\/(?:reel|p)\/[A-Za-z0-9_-]+\/?$/;
 const TIKTOK_URL = /^https:\/\/www\.tiktok\.com\/@[^/]+\/video\/[0-9]+\/?$/;
+const YOUTUBE_URL = /^https:\/\/www\.youtube\.com\/(?:shorts\/[A-Za-z0-9_-]+|watch\?v=[A-Za-z0-9_-]+(?:&[^#]+)?)\/?$/;
 const PROVIDER_POST_ID = /^[A-Za-z0-9._:-]{1,200}$/;
 const PROVIDER_ROUTES = new Set([
   "instagram_file_script",
   "postiz",
   "direct_browser",
 ]);
-const REF_KEYS = [
+const COMMON_REF_KEYS = [
   "approval_ref",
   "caption_ref",
   "creative_ref",
@@ -48,9 +50,10 @@ const REF_KEYS = [
   "postiz_token_ref",
   "product_ref",
   "slot_ref",
-  "tiktok_integration_ref",
   "video_ref",
 ];
+const LEGACY_REF_KEYS = [...COMMON_REF_KEYS, "tiktok_integration_ref"].sort();
+const YOUTUBE_REF_KEYS = [...COMMON_REF_KEYS, "youtube_integration_ref"].sort();
 
 function required(value, label) {
   const text = String(value == null ? "" : value).trim();
@@ -117,19 +120,22 @@ function buildMarketingVideoPublicationJob(input = {}) {
     PLATFORM_REF,
     "marketing video publication platform",
   ).match[1];
+  if (platform === "youtube" && productId !== "anicca") {
+    throw new Error("Honne YouTube publication is forbidden");
+  }
   const videoRef = objectRef(input.videoRef, "marketing video publication video");
   const captionRef = objectRef(input.captionRef, "marketing video publication caption");
   const approvalRef = objectRef(input.approvalRef, "marketing video publication approval");
   const instagramProfileRef = matchRef(
-    input.instagramProfileRef,
+    platform === "youtube" ? (input.instagramProfileRef || "profile://instagram/unassigned") : input.instagramProfileRef,
     PROFILE_REF,
     "Instagram profile",
   ).text;
   const postizTokenRef = matchRef(input.postizTokenRef, SECRET_REF, "Postiz token").text;
-  const tiktokIntegrationRef = matchRef(
-    input.tiktokIntegrationRef,
-    INTEGRATION_REF,
-    "TikTok integration",
+  const integrationRef = matchRef(
+    input.youtubeIntegrationRef || input.postizIntegrationRef || input.tiktokIntegrationRef,
+    platform === "youtube" ? YOUTUBE_INTEGRATION_REF : TIKTOK_INTEGRATION_REF,
+    platform === "youtube" ? "YouTube integration" : "TikTok integration",
   ).text;
 
   const videoHash = OBJECT_REF.exec(videoRef)[1];
@@ -148,7 +154,9 @@ function buildMarketingVideoPublicationJob(input = {}) {
     approval_ref: approvalRef,
     instagram_profile_ref: instagramProfileRef,
     postiz_token_ref: postizTokenRef,
-    tiktok_integration_ref: tiktokIntegrationRef,
+    ...(platform === "youtube"
+      ? { youtube_integration_ref: integrationRef }
+      : { tiktok_integration_ref: integrationRef }),
   };
 
   // job_id and effect_key must agree: the database enforces UNIQUE (tenant_id, effect_key)
@@ -174,12 +182,7 @@ function buildMarketingVideoPublicationJob(input = {}) {
 
 function normalizeJob(job) {
   const refs = job && job.input_refs;
-  if (
-    !refs
-    || typeof refs !== "object"
-    || Array.isArray(refs)
-    || JSON.stringify(Object.keys(refs).sort()) !== JSON.stringify(REF_KEYS)
-  ) {
+  if (!refs || typeof refs !== "object" || Array.isArray(refs)) {
     throw new Error("marketing video publication job contract is invalid");
   }
   const product = PRODUCT_REF.exec(String(refs.product_ref || ""));
@@ -201,6 +204,10 @@ function normalizeJob(job) {
   ) {
     throw new Error("marketing video publication job contract is invalid");
   }
+  const expectedRefKeys = platformMatch[1] === "youtube" ? YOUTUBE_REF_KEYS : LEGACY_REF_KEYS;
+  if (JSON.stringify(Object.keys(refs).sort()) !== JSON.stringify(expectedRefKeys)) {
+    throw new Error("marketing video publication job contract is invalid");
+  }
   const input = {
     tenantId: String(job.tenant_id || ""),
     productId: product[1],
@@ -215,7 +222,12 @@ function normalizeJob(job) {
     approvalRef: refs.approval_ref,
     instagramProfileRef: refs.instagram_profile_ref,
     postizTokenRef: refs.postiz_token_ref,
-    tiktokIntegrationRef: refs.tiktok_integration_ref,
+    postizIntegrationRef: platformMatch[1] === "youtube"
+      ? refs.youtube_integration_ref
+      : refs.tiktok_integration_ref,
+    ...(platformMatch[1] === "youtube"
+      ? { youtubeIntegrationRef: refs.youtube_integration_ref }
+      : { tiktokIntegrationRef: refs.tiktok_integration_ref }),
   };
   let expected;
   try {
@@ -237,6 +249,15 @@ function normalizeJob(job) {
 
 function validIso(value) {
   return typeof value === "string" && Number.isFinite(Date.parse(value));
+}
+
+function validPublicUrl(platform, value) {
+  const pattern = platform === "instagram"
+    ? INSTAGRAM_URL
+    : platform === "tiktok"
+      ? TIKTOK_URL
+      : YOUTUBE_URL;
+  return pattern.test(String(value || ""));
 }
 
 function verifyMarketingVideoPublicationReceipt(receipt) {
@@ -263,8 +284,7 @@ function verifyMarketingVideoPublicationReceipt(receipt) {
   } catch {
     return false;
   }
-  const urlPattern = receipt.platform === "instagram" ? INSTAGRAM_URL : TIKTOK_URL;
-  if (!urlPattern.test(String(receipt.public_url || ""))) return false;
+  if (!validPublicUrl(receipt.platform, receipt.public_url)) return false;
   if (
     receipt.provider_reconciled !== undefined
     && typeof receipt.provider_reconciled !== "boolean"
@@ -461,9 +481,9 @@ async function executeMarketingVideoPublicationJob(job, deps = {}) {
     job.tenant_id,
     contract.postizTokenRef,
   );
-  const tiktokIntegration = await services.integrationProvider.get(
+  const platformIntegration = await services.integrationProvider.get(
     job.tenant_id,
-    contract.tiktokIntegrationRef,
+    contract.postizIntegrationRef,
   );
   const ledgerPath = services.ledgerPath(job.tenant_id, contract.productId);
   fs.mkdirSync(path.dirname(ledgerPath), { recursive: true, mode: 0o700 });
@@ -487,14 +507,14 @@ async function executeMarketingVideoPublicationJob(job, deps = {}) {
       instagramCredentialsPath: profile ? profile.credentialsPath : "",
       instagramProfileStatePath: profile ? profile.stateDir : "",
       postizToken,
-      tiktokIntegration,
+      tiktokIntegration: platformIntegration,
+      youtubeIntegration: platformIntegration,
     });
   } catch (error) {
     // Wrap instead of mutating the foreign error object.
     const message = error && error.message ? error.message : String(error);
     throw Object.assign(new Error(message, { cause: error }), { unknownEffect: true });
   }
-  const urlPattern = contract.platform === "instagram" ? INSTAGRAM_URL : TIKTOK_URL;
   const validResult = Boolean(
     result
     && typeof result === "object"
@@ -502,7 +522,7 @@ async function executeMarketingVideoPublicationJob(job, deps = {}) {
     && result.video_sha256 === videoHash
     && result.caption_sha256 === captionHash
     && result.platform === contract.platform
-    && urlPattern.test(String(result.public_url || "")),
+    && validPublicUrl(contract.platform, result.public_url),
   );
   if (!validResult) {
     const error = new Error("marketing video publication provider result contract mismatch");
@@ -563,8 +583,7 @@ function receiptFromRows(rows, contract, now) {
     && row.caption_sha256 === contract.captionSha256
     && row.platform === contract.platform
   ));
-  const pattern = contract.platform === "instagram" ? INSTAGRAM_URL : TIKTOK_URL;
-  const published = matching.filter((row) => pattern.test(String(row.public_url || ""))).at(-1);
+  const published = matching.filter((row) => validPublicUrl(contract.platform, row.public_url)).at(-1);
   if (!published) {
     // effect-reconciler.js requires a receipt object for the absent decision.
     return {

@@ -17,6 +17,8 @@ const VIDEO_HASH = "a".repeat(64);
 const CAPTION_HASH = "b".repeat(64);
 const APPROVAL_HASH = "c".repeat(64);
 const TT_URL = "https://www.tiktok.com/@honne_ai/video/7999999999999999999";
+const YT_SHORTS_URL = "https://www.youtube.com/shorts/AbCd_123";
+const YT_WATCH_URL = "https://www.youtube.com/watch?v=AbCd_123&t=2";
 
 function job(platform = "tiktok") {
   return buildMarketingVideoPublicationJob({
@@ -34,6 +36,25 @@ function job(platform = "tiktok") {
     instagramProfileRef: "profile://instagram/honne-ai-ja",
     postizTokenRef: "secret://postiz/api-key",
     tiktokIntegrationRef: "integration://postiz/tiktok/honne-ai-ja",
+  });
+}
+
+function youtubeJob(overrides = {}) {
+  return buildMarketingVideoPublicationJob({
+    tenantId: "tenant-a",
+    productId: "anicca",
+    formatId: "reelclaw",
+    form: "relationship-confession",
+    locale: "ja",
+    slot: "2026-07-30T12:30:00.000Z",
+    creativeId: "ANICCA-YT-001-aaaaaaaaaaaa",
+    platform: "youtube",
+    videoRef: `object://sha256/${VIDEO_HASH}`,
+    captionRef: `object://sha256/${CAPTION_HASH}`,
+    approvalRef: `object://sha256/${APPROVAL_HASH}`,
+    postizTokenRef: "secret://postiz/api-key",
+    youtubeIntegrationRef: "integration://postiz/youtube/anicca-main-ja",
+    ...overrides,
   });
 }
 
@@ -93,6 +114,86 @@ test("adapter plans independent Instagram and TikTok jobs for one product artifa
     ["platform://instagram", "platform://tiktok"],
   );
   assert.equal(new Set(jobs.map((value) => value.effect_key)).size, 2);
+});
+
+test("YouTube is an Anicca-only contract with its own Postiz integration ref", () => {
+  const value = youtubeJob();
+  assert.equal(value.input_refs.platform_ref, "platform://youtube");
+  assert.equal(value.input_refs.youtube_integration_ref, "integration://postiz/youtube/anicca-main-ja");
+  assert.equal(Object.hasOwn(value.input_refs, "tiktok_integration_ref"), false);
+  assert.match(value.effect_key, /:anicca:youtube:/);
+  assert.throws(
+    () => youtubeJob({ productId: "honne-ai", youtubeIntegrationRef: "integration://postiz/youtube/honne" }),
+    /Honne YouTube publication is forbidden/,
+  );
+});
+
+test("YouTube receipts require a direct Shorts or watch URL", () => {
+  for (const public_url of [YT_SHORTS_URL, YT_WATCH_URL]) {
+    assert.equal(verifyMarketingVideoPublicationReceipt({
+      schema_version: 1,
+      kind: "marketing_video_distribution",
+      status: "published",
+      product_id: "anicca",
+      format_id: "reelclaw",
+      form: "relationship-confession",
+      locale: "ja",
+      slot: "2026-07-30T12:30:00.000Z",
+      creative_id: "ANICCA-YT-001-aaaaaaaaaaaa",
+      platform: "youtube",
+      video_sha256: VIDEO_HASH,
+      caption_sha256: CAPTION_HASH,
+      public_url,
+      provider_post_id: "postiz-anicca-youtube-1",
+      provider_route: "postiz",
+      provider_reconciled: false,
+      published_at: "2026-07-30T12:30:02.000Z",
+    }), true);
+  }
+  assert.equal(verifyMarketingVideoPublicationReceipt({
+    schema_version: 1,
+    kind: "marketing_video_distribution",
+    status: "published",
+    product_id: "anicca",
+    format_id: "reelclaw",
+    form: "relationship-confession",
+    locale: "ja",
+    slot: "2026-07-30T12:30:00.000Z",
+    creative_id: "ANICCA-YT-001-aaaaaaaaaaaa",
+    platform: "youtube",
+    video_sha256: VIDEO_HASH,
+    caption_sha256: CAPTION_HASH,
+    public_url: "https://www.youtube.com/@anicca-jp",
+    published_at: "2026-07-30T12:30:02.000Z",
+  }), false);
+});
+
+test("shadow planning for Anicca YouTube creates no provider write", async () => {
+  let providerWrites = 0;
+  const adapter = createMarketingVideoPublicationLoopAdapter({
+    runDistribution: async () => {
+      providerWrites += 1;
+      throw new Error("provider must not run in shadow");
+    },
+  });
+  const jobs = await adapter.plan({
+    tenantId: "tenant-a",
+    productId: "anicca",
+    formatId: "reelclaw",
+    form: "relationship-confession",
+    locale: "ja",
+    slot: "2026-07-30T12:30:00.000Z",
+    creativeId: "ANICCA-YT-001-aaaaaaaaaaaa",
+    platform: "youtube",
+    videoRef: `object://sha256/${VIDEO_HASH}`,
+    captionRef: `object://sha256/${CAPTION_HASH}`,
+    approvalRef: `object://sha256/${APPROVAL_HASH}`,
+    postizTokenRef: "secret://postiz/api-key",
+    youtubeIntegrationRef: "integration://postiz/youtube/anicca-main-ja",
+  });
+  assert.equal(jobs.length, 1);
+  assert.equal(jobs[0].input_refs.platform_ref, "platform://youtube");
+  assert.equal(providerWrites, 0);
 });
 
 test("adapter publishes through tenant-scoped providers and returns product lineage plus public URL", async () => {
