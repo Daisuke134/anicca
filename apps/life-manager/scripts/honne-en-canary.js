@@ -1,17 +1,32 @@
 #!/usr/bin/env node
 "use strict";
 
+const path = require("node:path");
+
 const {
   buildHonneEnCanaryTelegramJob,
   claimExactCanaryJob,
   createMarketingLocalLedger,
   promoteHonneEnTikTokCanary,
+  PROMOTION_CONFIRMATION,
   SHADOW_HOLD_AVAILABLE_AT,
   verifyDirectPublicUrl,
 } = require("../lib/marketing-canary.js");
-const { verifyMarketingVideoPublicationReceipt } = require("../lib/marketing-video-publication-adapter.js");
-const { verifyMarketingLivenessReceipt } = require("../lib/marketing-liveness-adapter.js");
+const {
+  createMarketingVideoPublicationLoopAdapter,
+  verifyMarketingVideoPublicationReceipt,
+} = require("../lib/marketing-video-publication-adapter.js");
+const {
+  executeMarketingLivenessJob,
+  verifyMarketingLivenessReceipt,
+} = require("../lib/marketing-liveness-adapter.js");
+const { createContentObjectStore } = require("../lib/content-object-store.js");
 const { executeCapabilityJob } = require("./runtime-up.js");
+
+const HONNE_EN_TIKTOK_INTEGRATION_REF =
+  "integration://postiz/tiktok/cmoig11ew001zlv0yk6vqo1us";
+const HONNE_EN_TIKTOK_INTEGRATION_ID = "cmoig11ew001zlv0yk6vqo1us";
+const REAL_EXECUTORS = new WeakSet();
 
 function required(value, label) {
   const text = String(value == null ? "" : value).trim();
@@ -43,6 +58,28 @@ function fakeTransportEnabled(env, deps = {}) {
   }
   if (configured === "fake" || injected) return true;
   throw new Error("Honne EN canary requires an explicit fake transport gate");
+}
+
+function resolveCanaryTransport(env = {}, deps = {}) {
+  const configured = String(env.LM_HONNE_EN_CANARY_TRANSPORT || "").trim().toLowerCase();
+  if (configured === "postiz") {
+    if (env.LM_HONNE_EN_CANARY_CONFIRM !== PROMOTION_CONFIRMATION) {
+      throw new Error("Honne EN canary Postiz promotion confirmation is invalid");
+    }
+    if (
+      deps.fakeTransport === true
+      || deps.transport === "fake"
+      || deps.handlers
+      || deps.livenessHandlers
+      || (typeof deps.executeCapabilityJob === "function"
+        && !REAL_EXECUTORS.has(deps.executeCapabilityJob))
+    ) {
+      throw new Error("Honne EN Postiz canary cannot use fake transport");
+    }
+    return "postiz";
+  }
+  fakeTransportEnabled(env, deps);
+  return "fake";
 }
 
 function parseArgs(argv) {
@@ -82,6 +119,9 @@ async function readReceipt(store, tenantId, jobId) {
 function assertPublicationReceipt(receipt) {
   if (!verifyMarketingVideoPublicationReceipt(receipt) || receipt.provider_reconciled !== true) {
     throw new Error("Honne EN canary publication receipt is not reconciled");
+  }
+  if (!/^https:\/\/www\.tiktok\.com\/@honne_reveal\/video\/\d+\/?$/.test(receipt.public_url)) {
+    throw new Error("Honne EN canary publication receipt is not bound to @honne_reveal");
   }
   return receipt;
 }
@@ -138,10 +178,117 @@ function isPromotedPublicationJob(job) {
   );
 }
 
+function createRealCanaryExecutor(env) {
+  const tenantId = required(env.LM_RUNTIME_TENANT_ID, "LM_RUNTIME_TENANT_ID");
+  const dataDir = path.resolve(required(env.LM_DATA_DIR, "LM_DATA_DIR"));
+  const objectStore = createContentObjectStore({ objectDir: path.join(dataDir, "objects") });
+  const scoped = (requestTenantId, ref) => {
+    if (requestTenantId !== tenantId) throw new Error("Honne EN canary tenant scope mismatch");
+    return ref;
+  };
+  const secretProvider = {
+    async get(requestTenantId, ref) {
+      const scopedRef = scoped(requestTenantId, ref);
+      if (scopedRef === "secret://postiz/api-key") return required(env.LM_POSTIZ_API_KEY, "LM_POSTIZ_API_KEY");
+      if (scopedRef === "secret://telegram/bot-token") return required(env.LM_TELEGRAM_BOT_TOKEN, "LM_TELEGRAM_BOT_TOKEN");
+      throw new Error("Honne EN canary secret reference is not allowed");
+    },
+  };
+  const integrationRef = required(
+    env.LM_HONNE_EN_TIKTOK_INTEGRATION_REF,
+    "LM_HONNE_EN_TIKTOK_INTEGRATION_REF",
+  );
+  if (integrationRef !== HONNE_EN_TIKTOK_INTEGRATION_REF) {
+    throw new Error("Honne EN canary TikTok integration ref is not the measured route");
+  }
+  if (env.LM_HONNE_EN_TIKTOK_INTEGRATION !== HONNE_EN_TIKTOK_INTEGRATION_ID) {
+    throw new Error("Honne EN canary TikTok integration is not the measured route");
+  }
+  const integrationProvider = {
+    async get(requestTenantId, ref) {
+      if (scoped(requestTenantId, ref) !== integrationRef) {
+        throw new Error("Honne EN canary TikTok integration scope mismatch");
+      }
+      return required(env.LM_HONNE_EN_TIKTOK_INTEGRATION, "LM_HONNE_EN_TIKTOK_INTEGRATION");
+    },
+  };
+  const publication = createMarketingVideoPublicationLoopAdapter({
+    objectStore,
+    profileProvider: { get: async () => { throw new Error("Honne EN Instagram profile is unassigned"); } },
+    secretProvider,
+    integrationProvider,
+    ledgerPath: (requestTenantId, productId) => path.join(
+      dataDir,
+      "tenants",
+      encodeURIComponent(requestTenantId),
+      "marketing",
+      "video-publication",
+      encodeURIComponent(productId),
+      "distribution.jsonl",
+    ),
+  });
+  const chatProvider = {
+    async get(requestTenantId, ref) {
+      if (scoped(requestTenantId, ref) !== "telegram-chat://owner") {
+        throw new Error("Honne EN canary Telegram chat scope mismatch");
+      }
+      return required(env.LM_TELEGRAM_ALERT_CHAT_ID, "LM_TELEGRAM_ALERT_CHAT_ID");
+    },
+  };
+  const handlers = {
+    "marketing.video.publish": (job) => publication.execute(job),
+    "marketing.liveness.telegram": (job) => executeMarketingLivenessJob(job, {
+      secretProvider,
+      chatProvider,
+    }),
+  };
+  const executor = async (job, services) => executeCapabilityJob(job, { ...services, handlers });
+  REAL_EXECUTORS.add(executor);
+  return executor;
+}
+
+function assertRealCanaryEnvironment(env) {
+  for (const name of [
+    "LM_DATA_DIR",
+    "LM_POSTIZ_API_KEY",
+    "LM_TELEGRAM_BOT_TOKEN",
+    "LM_TELEGRAM_ALERT_CHAT_ID",
+    "LM_HONNE_EN_TIKTOK_INTEGRATION_REF",
+    "LM_HONNE_EN_TIKTOK_INTEGRATION",
+  ]) required(env[name], name);
+  if (env.LM_HONNE_EN_TIKTOK_INTEGRATION_REF !== HONNE_EN_TIKTOK_INTEGRATION_REF) {
+    throw new Error("Honne EN canary TikTok integration ref is not the measured route");
+  }
+  if (env.LM_HONNE_EN_TIKTOK_INTEGRATION !== HONNE_EN_TIKTOK_INTEGRATION_ID) {
+    throw new Error("Honne EN canary TikTok integration is not the measured route");
+  }
+}
+
+function assertRealCanaryJob(env, job) {
+  if (!job) return;
+  const refs = job.input_refs || {};
+  if (refs.instagram_profile_ref !== "profile://instagram/unassigned") {
+    throw new Error("Honne EN canary must keep Instagram unassigned");
+  }
+  if (refs.tiktok_integration_ref !== env.LM_HONNE_EN_TIKTOK_INTEGRATION_REF) {
+    throw new Error("Honne EN canary TikTok integration ref is not the measured route");
+  }
+  const objectStore = createContentObjectStore({
+    objectDir: path.join(path.resolve(env.LM_DATA_DIR), "objects"),
+  });
+  for (const name of ["video_ref", "caption_ref", "approval_ref"]) {
+    objectStore.resolve(refs[name]);
+  }
+}
+
 async function runHonneEnCanary(argv, deps = {}) {
   const args = parseArgs(argv);
   const env = deps.env || process.env;
-  fakeTransportEnabled(env, deps);
+  const transport = resolveCanaryTransport(env, deps);
+  if (transport === "postiz") assertRealCanaryEnvironment(env);
+  if (transport === "postiz" && (deps.verifyDirectPublicUrl || deps.fetchImpl)) {
+    throw new Error("Honne EN Postiz canary rejects injected URL verifier or fetcher");
+  }
   const tenantId = args.tenant;
   if (String(env.LM_RUNTIME_TENANT_ID || "").trim() !== tenantId) {
     throw new Error("Honne EN canary tenant does not match worker environment");
@@ -149,12 +296,14 @@ async function runHonneEnCanary(argv, deps = {}) {
   const store = resolveStore(deps, env);
   const workerId = String(env.LM_HONNE_EN_CANARY_WORKER_ID || "honne-en-canary").trim();
   const claim = deps.claimExactCanaryJob || claimExactCanaryJob;
-  const execute = deps.executeCapabilityJob || executeCapabilityJob;
+  const execute = deps.executeCapabilityJob
+    || (transport === "postiz" ? createRealCanaryExecutor(env) : executeCapabilityJob);
   const heartbeat = deps.heartbeatJob || ((input) => store.heartbeatJob(input));
   const complete = deps.completeJob || ((input) => store.completeJob(input));
   const fail = deps.failJob || ((input) => store.failJob(input));
   let publicationJob = await readStoredJob(store, tenantId, args.jobId);
   let publicationReceipt = await readStoredReceipt(store, tenantId, args.jobId);
+  if (transport === "postiz") assertRealCanaryJob(env, publicationJob);
   let publicationReplay = { created: false };
   if (publicationReceipt) {
     publicationReceipt = assertPublicationReceipt(
@@ -192,9 +341,9 @@ async function runHonneEnCanary(argv, deps = {}) {
     publicationReceipt = await (deps.readReceipt || readReceipt)(store, tenantId, args.jobId);
     publicationReplay = await store.enqueueJob(jobInput(publicationJob));
   }
-  const publicUrl = await (deps.verifyDirectPublicUrl || verifyDirectPublicUrl)(
+  const publicUrl = await (transport === "postiz" ? verifyDirectPublicUrl : (deps.verifyDirectPublicUrl || verifyDirectPublicUrl))(
     publicationReceipt.public_url,
-    deps.fetchImpl || globalThis.fetch,
+    transport === "postiz" ? globalThis.fetch : (deps.fetchImpl || globalThis.fetch),
   );
   const telegramJob = buildHonneEnCanaryTelegramJob({
     tenantId,
@@ -318,19 +467,20 @@ async function fakeExecuteCapabilityJob(job, services) {
 fakeExecuteCapabilityJob.fakeTransport = true;
 
 async function main(argv = process.argv.slice(2), env = process.env, deps = {}) {
-  const configured = String(env.LM_HONNE_EN_CANARY_TRANSPORT || "").trim().toLowerCase();
-  if (configured !== "fake") {
-    throw new Error(
-      "Honne EN canary CLI requires LM_HONNE_EN_CANARY_TRANSPORT=fake; external transport is disabled",
-    );
-  }
-  fakeTransportEnabled(env, deps);
+  const transport = resolveCanaryTransport(env, deps);
+  const store = deps.store || (transport === "postiz" ? resolveStore(deps, env) : undefined);
+  const execute = transport === "postiz"
+    ? (deps.executeCapabilityJob || createRealCanaryExecutor(env))
+    : (deps.executeCapabilityJob || fakeExecuteCapabilityJob);
   const result = await runHonneEnCanary(argv, {
     ...deps,
     env,
-    fakeTransport: true,
-    executeCapabilityJob: deps.executeCapabilityJob || fakeExecuteCapabilityJob,
-    verifyDirectPublicUrl: deps.verifyDirectPublicUrl || (async (url) => ({ status: 200, url })),
+    ...(store ? { store } : {}),
+    ...(transport === "fake" ? { fakeTransport: true } : {}),
+    executeCapabilityJob: execute,
+    ...(transport === "fake" ? {
+      verifyDirectPublicUrl: deps.verifyDirectPublicUrl || (async (url) => ({ status: 200, url })),
+    } : {}),
   });
   if (deps.stdout && typeof deps.stdout.write === "function") {
     deps.stdout.write(`${JSON.stringify(result)}\n`);
@@ -347,4 +497,12 @@ if (require.main === module) {
   });
 }
 
-module.exports = { main, parseArgs, readReceipt, readTelegramReceipt, runHonneEnCanary };
+module.exports = {
+  assertPublicationReceipt,
+  main,
+  parseArgs,
+  readReceipt,
+  readTelegramReceipt,
+  resolveCanaryTransport,
+  runHonneEnCanary,
+};

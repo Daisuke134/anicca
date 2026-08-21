@@ -319,10 +319,11 @@ function defaultLedgerPath(tenantId, productId, paths) {
   );
 }
 
-// Base allowlist for the distribution subprocess plus every LM_* variable
-// distribute.py reads (LM_DISTRIBUTION_LEDGER, LM_DISTRIBUTION_APPROVALS,
-// LM_INSTAGRAM_HANDLE, LM_INSTAGRAM_ACCOUNTS, LM_TIKTOK_INTEGRATION,
-// LM_TIKTOK_DIRECT_MIGRATION), and the non-LM_ variables the real chain reads:
+// Base allowlist for the distribution subprocess plus the exact LM_* variables
+// distribute.py reads (LM_DATA_DIR, LM_DISTRIBUTION_LEDGER,
+// LM_DISTRIBUTION_APPROVALS, LM_INSTAGRAM_HANDLE, LM_INSTAGRAM_ACCOUNTS,
+// LM_INSTAGRAM_POSTER, LM_TIKTOK_INTEGRATION, LM_TIKTOK_DIRECT_MIGRATION),
+// and the non-LM_ variables the real chain reads:
 // INSTAGRAPI_PYTHON (instagram_video.sh interpreter override) and CDP_HOST/CDP_PORT
 // (skills/earn/marketing-engine/poster.py:44,50,509). Never the full parent environment.
 const SUBPROCESS_ENV_KEYS = [
@@ -334,15 +335,20 @@ const SUBPROCESS_ENV_KEYS = [
   "INSTAGRAPI_PYTHON",
   "CDP_HOST",
   "CDP_PORT",
+  "LM_DATA_DIR",
+  "LM_TIKTOK_DIRECT_MIGRATION",
+  "LM_DISTRIBUTION_LEDGER",
+  "LM_DISTRIBUTION_APPROVALS",
+  "LM_INSTAGRAM_HANDLE",
+  "LM_INSTAGRAM_ACCOUNTS",
+  "LM_INSTAGRAM_POSTER",
+  "LM_TIKTOK_INTEGRATION",
 ];
 
 function subprocessEnv(postizToken) {
   const env = {};
   for (const key of SUBPROCESS_ENV_KEYS) {
     if (process.env[key] !== undefined) env[key] = process.env[key];
-  }
-  for (const key of Object.keys(process.env)) {
-    if (key.startsWith("LM_")) env[key] = process.env[key];
   }
   env.POSTIZ_API_KEY = postizToken;
   return env;
@@ -423,11 +429,14 @@ function defaultServices(deps) {
 async function executeMarketingVideoPublicationJob(job, deps = {}) {
   const contract = normalizeJob(job);
   const services = defaultServices(deps);
-  for (const [name, provider] of [
-    ["profile", services.profileProvider],
+  const requiredProviders = [
     ["secret", services.secretProvider],
     ["integration", services.integrationProvider],
-  ]) {
+  ];
+  if (contract.platform === "instagram") {
+    requiredProviders.unshift(["profile", services.profileProvider]);
+  }
+  for (const [name, provider] of requiredProviders) {
     if (!provider || typeof provider.get !== "function") {
       throw new Error(`marketing video publication ${name} provider is required`);
     }
@@ -437,20 +446,17 @@ async function executeMarketingVideoPublicationJob(job, deps = {}) {
   const videoPath = services.objectStore.resolve(contract.videoRef);
   const captionPath = services.objectStore.resolve(contract.captionRef);
   const approvalPath = services.objectStore.resolve(contract.approvalRef);
-  const profile = await services.profileProvider.get(
-    job.tenant_id,
-    contract.instagramProfileRef,
-  );
-  if (
+  const profile = contract.platform === "instagram"
+    ? await services.profileProvider.get(job.tenant_id, contract.instagramProfileRef)
+    : null;
+  if (contract.platform === "instagram" && (
     !profile
     || !profile.handle
     || !profile.accountsPath
     || !profile.settingsPath
     || !profile.credentialsPath
     || !profile.stateDir
-  ) {
-    throw new Error("marketing video publication Instagram profile is incomplete");
-  }
+  )) throw new Error("marketing video publication Instagram profile is incomplete");
   const postizToken = await services.secretProvider.get(
     job.tenant_id,
     contract.postizTokenRef,
@@ -475,11 +481,11 @@ async function executeMarketingVideoPublicationJob(job, deps = {}) {
       captionPath,
       approvalPath,
       ledgerPath,
-      instagramHandle: profile.handle,
-      instagramAccountsPath: profile.accountsPath,
-      instagramSettingsPath: profile.settingsPath,
-      instagramCredentialsPath: profile.credentialsPath,
-      instagramProfileStatePath: profile.stateDir,
+      instagramHandle: profile ? profile.handle : "",
+      instagramAccountsPath: profile ? profile.accountsPath : "",
+      instagramSettingsPath: profile ? profile.settingsPath : "",
+      instagramCredentialsPath: profile ? profile.credentialsPath : "",
+      instagramProfileStatePath: profile ? profile.stateDir : "",
       postizToken,
       tiktokIntegration,
     });

@@ -11,7 +11,13 @@ const {
   buildHonneEnCanaryTelegramJob,
   createMarketingLocalLedger,
 } = require("../lib/marketing-canary.js");
-const { main, parseArgs, runHonneEnCanary } = require("./honne-en-canary.js");
+const {
+  main,
+  parseArgs,
+  assertPublicationReceipt,
+  resolveCanaryTransport,
+  runHonneEnCanary,
+} = require("./honne-en-canary.js");
 
 const RECEIPT = {
   schema_version: 1,
@@ -54,6 +60,112 @@ test("canary args require exactly one tenant and publication job", () => {
     { tenant: "dais-local", jobId: "publication-job" },
   );
   assert.throws(() => parseArgs(["run", "--tenant", "dais-local"]), /--job-id/i);
+});
+
+test("Postiz canary transport requires the exact promotion confirmation", () => {
+  assert.equal(
+    resolveCanaryTransport({
+      LM_HONNE_EN_CANARY_TRANSPORT: "postiz",
+      LM_HONNE_EN_CANARY_CONFIRM: PROMOTION_CONFIRMATION,
+    }),
+    "postiz",
+  );
+  assert.throws(
+    () => resolveCanaryTransport({ LM_HONNE_EN_CANARY_TRANSPORT: "postiz" }),
+    /promotion confirmation/i,
+  );
+  assert.throws(
+    () => resolveCanaryTransport({
+      LM_HONNE_EN_CANARY_TRANSPORT: "postiz",
+      LM_HONNE_EN_CANARY_CONFIRM: PROMOTION_CONFIRMATION,
+    }, { fakeTransport: true }),
+    /fake transport/i,
+  );
+  assert.throws(
+    () => resolveCanaryTransport({
+      LM_HONNE_EN_CANARY_TRANSPORT: "postiz",
+      LM_HONNE_EN_CANARY_CONFIRM: PROMOTION_CONFIRMATION,
+    }, {
+      executeCapabilityJob: Object.assign(async () => {}, { postizTransport: true }),
+    }),
+    /fake transport|trusted|internal|Postiz/i,
+  );
+  const proxiedExecutor = new Proxy(async () => {}, {
+    get(target, property, receiver) {
+      if (typeof property === "symbol") return true;
+      return Reflect.get(target, property, receiver);
+    },
+  });
+  assert.throws(
+    () => resolveCanaryTransport({
+      LM_HONNE_EN_CANARY_TRANSPORT: "postiz",
+      LM_HONNE_EN_CANARY_CONFIRM: PROMOTION_CONFIRMATION,
+    }, { executeCapabilityJob: proxiedExecutor }),
+    /fake transport|trusted|internal|Postiz/i,
+  );
+});
+
+test("Honne EN canary receipt is bound to the @honne_reveal TikTok account", () => {
+  assert.throws(
+    () => assertPublicationReceipt({
+      ...RECEIPT,
+      public_url: "https://www.tiktok.com/@other_account/video/7999999999999999999",
+    }),
+    /honne_reveal|account|TikTok/i,
+  );
+});
+
+test("real Postiz canary checks the Life Manager secret boundary before claiming a job", async () => {
+  const store = createMarketingLocalLedger({
+    dataDir: fs.mkdtempSync(path.join(os.tmpdir(), "lm-canary-postiz-preflight-")),
+  });
+  await assert.rejects(
+    runHonneEnCanary(
+      ["run", "--tenant", "dais-local", "--job-id", "missing-job"],
+      {
+        env: {
+          LM_RUNTIME_TENANT_ID: "dais-local",
+          LM_DATA_DIR: store.dataDir,
+          LM_HONNE_EN_CANARY_TRANSPORT: "postiz",
+          LM_HONNE_EN_CANARY_CONFIRM: PROMOTION_CONFIRMATION,
+          LM_HONNE_EN_TIKTOK_INTEGRATION_REF: "integration://postiz/tiktok/cmoig11ew001zlv0yk6vqo1us",
+          LM_HONNE_EN_TIKTOK_INTEGRATION: "cmoig11ew001zlv0yk6vqo1us",
+          LM_TELEGRAM_BOT_TOKEN: "",
+          LM_TELEGRAM_ALERT_CHAT_ID: "",
+        },
+        store,
+      },
+    ),
+    /LM_POSTIZ_API_KEY/i,
+  );
+  assert.equal(await store.readJob({ tenantId: "dais-local", jobId: "missing-job" }), null);
+});
+
+test("real Postiz canary rejects injected URL verification", async () => {
+  const store = createMarketingLocalLedger({
+    dataDir: fs.mkdtempSync(path.join(os.tmpdir(), "lm-canary-postiz-verifier-")),
+  });
+  await assert.rejects(
+    runHonneEnCanary(
+      ["run", "--tenant", "dais-local", "--job-id", "missing-job"],
+      {
+        env: {
+          LM_RUNTIME_TENANT_ID: "dais-local",
+          LM_DATA_DIR: store.dataDir,
+          LM_HONNE_EN_CANARY_TRANSPORT: "postiz",
+          LM_HONNE_EN_CANARY_CONFIRM: PROMOTION_CONFIRMATION,
+          LM_POSTIZ_API_KEY: "provider-secret",
+          LM_TELEGRAM_BOT_TOKEN: "telegram-secret",
+          LM_TELEGRAM_ALERT_CHAT_ID: "owner-chat",
+          LM_HONNE_EN_TIKTOK_INTEGRATION_REF: "integration://postiz/tiktok/cmoig11ew001zlv0yk6vqo1us",
+          LM_HONNE_EN_TIKTOK_INTEGRATION: "cmoig11ew001zlv0yk6vqo1us",
+        },
+        store,
+        verifyDirectPublicUrl: async () => ({ status: 200, url: RECEIPT.public_url }),
+      },
+    ),
+    /verifier|fetcher|injection/i,
+  );
 });
 
 test("module canary invocation fails closed unless fake transport is explicit", async () => {

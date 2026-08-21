@@ -175,6 +175,38 @@ test("adapter publishes through tenant-scoped providers and returns product line
   );
 });
 
+test("TikTok-only publication does not resolve an unassigned Instagram profile", async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "lm-video-publish-tiktok-only-"));
+  let received;
+  const adapter = createMarketingVideoPublicationLoopAdapter({
+    objectStore: { resolve: (ref) => `/objects/${ref.slice(-64)}` },
+    secretProvider: { get: async () => "provider-token" },
+    integrationProvider: { get: async () => "integration-id" },
+    ledgerPath: () => path.join(root, "distribution.jsonl"),
+    runDistribution: async (input) => {
+      received = input;
+      return {
+        creative_id: "HJA-007-aaaaaaaaaaaa",
+        video_sha256: VIDEO_HASH,
+        caption_sha256: CAPTION_HASH,
+        platform: "tiktok",
+        public_url: TT_URL,
+        provider_post_id: "postiz-honne-HJA-007",
+        provider_route: "postiz",
+        provider_reconciled: true,
+      };
+    },
+  });
+
+  const execution = await adapter.execute(job());
+  assert.equal(execution.receipt.provider_reconciled, true);
+  assert.equal(received.instagramHandle, "");
+  assert.equal(received.instagramAccountsPath, "");
+  assert.equal(received.instagramSettingsPath, "");
+  assert.equal(received.instagramCredentialsPath, "");
+  assert.equal(received.instagramProfileStatePath, "");
+});
+
 // Mirrors exactly what skills/video/lm-distribution/distribute.py::_append_success writes,
 // including the FIX 1 lineage fields (format_id/form/locale/slot).
 function ledgerRow(overrides = {}) {
@@ -350,7 +382,11 @@ test("distribution subprocess receives an allowlisted environment, not the full 
     + "}));\n",
     { mode: 0o755 },
   );
+  process.env.LM_TIKTOK_DIRECT_MIGRATION = "0";
   process.env.LM_FAKE_FLAG = "1";
+  process.env.LM_TELEGRAM_BOT_TOKEN = "telegram-secret";
+  process.env.LM_TELEGRAM_ALERT_CHAT_ID = "owner-chat";
+  process.env.LM_POSTIZ_API_KEY = "postiz-secret";
   process.env.SECRET_CANARY = "leak-me";
   // Non-LM_ variables the real distribution chain reads: instagram_video.sh honors
   // INSTAGRAPI_PYTHON, and skills/earn/marketing-engine/poster.py reads CDP_HOST/CDP_PORT.
@@ -380,13 +416,21 @@ test("distribution subprocess receives an allowlisted environment, not the full 
     });
     assert.equal(result.postiz, "provider-token");
     assert.ok(result.env_keys.includes("PATH"));
-    assert.ok(result.env_keys.includes("LM_FAKE_FLAG"));
+    assert.ok(result.env_keys.includes("LM_TIKTOK_DIRECT_MIGRATION"));
+    assert.ok(!result.env_keys.includes("LM_FAKE_FLAG"));
+    assert.ok(!result.env_keys.includes("LM_TELEGRAM_BOT_TOKEN"));
+    assert.ok(!result.env_keys.includes("LM_TELEGRAM_ALERT_CHAT_ID"));
+    assert.ok(!result.env_keys.includes("LM_POSTIZ_API_KEY"));
     assert.ok(result.env_keys.includes("INSTAGRAPI_PYTHON"));
     assert.ok(result.env_keys.includes("CDP_HOST"));
     assert.ok(result.env_keys.includes("CDP_PORT"));
     assert.ok(!result.env_keys.includes("SECRET_CANARY"));
   } finally {
+    delete process.env.LM_TIKTOK_DIRECT_MIGRATION;
     delete process.env.LM_FAKE_FLAG;
+    delete process.env.LM_TELEGRAM_BOT_TOKEN;
+    delete process.env.LM_TELEGRAM_ALERT_CHAT_ID;
+    delete process.env.LM_POSTIZ_API_KEY;
     delete process.env.SECRET_CANARY;
     delete process.env.INSTAGRAPI_PYTHON;
     delete process.env.CDP_HOST;

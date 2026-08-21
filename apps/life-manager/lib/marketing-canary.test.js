@@ -164,6 +164,13 @@ test("direct URL verifier rejects profile, other-video, and external redirects",
   await assert.rejects(
     verifyDirectPublicUrl(URL, async () => ({
       status: 200,
+      url: "https://www.tiktok.com/@other_account/video/7999999999999999999",
+    })),
+    /direct TikTok URL|account/i,
+  );
+  await assert.rejects(
+    verifyDirectPublicUrl(URL, async () => ({
+      status: 200,
       url: "https://evil.example/@honne_reveal/video/7999999999999999999",
     })),
     /direct TikTok URL|publicly reachable/i,

@@ -78,6 +78,9 @@ async function claimExactCanaryJob(options = {}) {
 async function verifyDirectPublicUrl(url, fetchImpl = globalThis.fetch) {
   if (typeof fetchImpl !== "function") throw new Error("canary URL verifier is unavailable");
   const requested = parseDirectTikTokUrl(url);
+  if (requested.handle !== "honne_reveal") {
+    throw new Error("Honne EN canary direct TikTok URL account is not @honne_reveal");
+  }
   const response = await fetchImpl(url, {
     method: "GET",
     redirect: "follow",
@@ -88,6 +91,9 @@ async function verifyDirectPublicUrl(url, fetchImpl = globalThis.fetch) {
     throw new Error("Honne EN canary direct TikTok URL is not publicly reachable");
   }
   const finalUrl = parseDirectTikTokUrl(response.url);
+  if (requested.handle !== "honne_reveal" || finalUrl.handle !== requested.handle) {
+    throw new Error("Honne EN canary direct TikTok URL account changed");
+  }
   if (finalUrl.postId !== requested.postId) {
     throw new Error("Honne EN canary direct TikTok URL redirect changed the video");
   }
@@ -108,9 +114,9 @@ function parseDirectTikTokUrl(value) {
   ) {
     throw new Error("Honne EN canary direct TikTok URL is invalid");
   }
-  const match = /^\/@[^/]+\/video\/(\d+)\/?$/.exec(parsed.pathname);
+  const match = /^\/@([^/]+)\/video\/(\d+)\/?$/.exec(parsed.pathname);
   if (!match) throw new Error("Honne EN canary direct TikTok URL is invalid");
-  return { postId: match[1] };
+  return { handle: match[1], postId: match[2] };
 }
 
 function buildHonneEnCanaryTelegramJob(options = {}) {
@@ -122,6 +128,7 @@ function buildHonneEnCanaryTelegramJob(options = {}) {
     || receipt.locale !== "en"
     || receipt.platform !== "tiktok"
     || receipt.provider_reconciled !== true
+    || !/^https:\/\/www\.tiktok\.com\/@honne_reveal\/video\/\d+\/?$/.test(receipt.public_url)
   ) {
     throw new Error("Honne EN canary publication receipt is not reconciled");
   }
