@@ -174,3 +174,9 @@ read-only local check found one active gcloud identity, six visible projects, on
 Console reauthentication page has not been automated, no password has been read or submitted, and no CSV is fabricated.
 The first unfinished item remains CFO-2a3b.2: owner completes one-time Google Cloud Console reauthentication, then the
 loop acquires one default-filter Cost Table CSV and normalizes only the observed header/schema before CFO-2a3b.3 E2E.
+
+Additional official API search did not reveal a substitute: Google's [Cost Table documentation](https://cloud.google.com/billing/docs/how-to/cost-table)
+describes the console report and its CSV download, while the [Cloud Billing REST API](https://cloud.google.com/billing/docs/reference/rest)
+documents billing-account/project/service/SKU resources rather than invoice cost rows. The [BigQuery export schema](https://cloud.google.com/billing/docs/how-to/export-data-bigquery-tables)
+requires an actually configured export dataset and warns that initial data can lag by up to five days. No read-only API
+call was promoted into provider dimension evidence, and no export configuration was changed.
