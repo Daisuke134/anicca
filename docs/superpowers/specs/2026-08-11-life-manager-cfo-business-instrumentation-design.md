@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | `CFO-OPS3b`, `CFO-1j`, `CFO-2b.2`, `CFO-2b.3`, and `CFO-2b.4` are closed; `CFO-2b.5` is the next active business-instrumentation slice |
+| Status | `CFO-OPS3b`, `CFO-1j`, `CFO-2b.2`, `CFO-2b.3`, `CFO-2b.4`, and `CFO-2b.5` are closed; `CFO-2b.6` is the next active business-instrumentation slice |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Canonical target is local `/Users/anicca/Projects/life-manager-main/apps/life-manager`; existing `apps/life-call` code is migration evidence, not the final owner |
 | Role split | Sol specifies/verifies; Luna implements production code/tests |
@@ -64,7 +64,10 @@ Only the first unchecked business item is active after the parent spec's operati
       owned by canonical `skills/affiliate`; mutable state remains external and is never committed. The pure
       projection keeps provider-reported empty commission rows separate from Affiliate-wide revenue and records
       measured loop runtime while leaving amount, landed cash, profit, and ROI unknown/null.
-- [ ] **CFO-2b.5 — Gig Work**: marketplace/client receipts; never import `~/gig/earnings.jsonl` without receipt proof.
+- [x] **CFO-2b.5 — Gig Work**: marketplace/client receipts. The canonical 255-file runtime remains code-owned under
+      `skills/earn/gig`; the pure projection keeps the external Coconala snapshot, local earnings ledger, and runtime
+      receipt separate. It records the observed 3,198 JPY mismatch and leaves landed cash, costs, profit, and ROI
+      unknown/null until reconciliation.
 - [ ] **CFO-2b.6 — x402 Services**: finalized external on-chain sales; self-transfers are excluded.
 - [ ] **CFO-2b.7 — Employment Income**: payroll/bank receipt, kept as personal income rather than business revenue.
 - [ ] **CFO-2b.8 — Capafy Marketplace**: landed sales receipts and costs.
@@ -135,8 +138,41 @@ amounts, landed cash, direct API cost, capital, profit, and ROI null until recon
 - [x] Node syntax, manifest JSON, focused live assertions, canonical/release hash/count, state-absence, commit, and
       remote push read-back pass. No launchd, provider, Telegram, database, or mutable-state write occurred.
 
-The next active item is **CFO-2b.5 — Gig Work**. It must use marketplace/client receipt proof only; an earnings file
-without an external receipt remains unknown and cannot be converted to zero.
+The Affiliate closure is complete. The following section records the completed **CFO-2b.5 — Gig Work** slice; its
+external receipt and local-ledger mismatch remain visible rather than being converted to a guessed total.
+
+### CFO-2b.5 measured truth and completion evidence
+
+The canonical checkout already owns the tracked Gig Work runtime at `skills/earn/gig` (255 files; tree hash
+`41a7f01539681a93be927afb3c3b86efa85db0ce32d4b00d80ebe6e04f25d5e7`). Its mutable `~/gig` state, browser profile,
+credentials, and release artifacts were not copied into Git. The active immutable release is separately versioned and
+has a different tree hash, so `config/gig/runtime-manifest.json` records the install-time parity requirement rather
+than claiming a cutover.
+
+A read-only Coconala seller revenue snapshot observed at `2026-08-15T14:45:06+09:00` is an external receipt: the
+revenue page was navigated without login redirect, showed complete coverage, ten sales-history rows, cumulative service
+sales `129,636 JPY`, provider balance `0 JPY`, and pending payout request `5,460 JPY`. The local `~/gig/earnings.jsonl`
+contains eight settled rows with evidence pointers totaling `126,438 JPY`. The two sources therefore differ by `3,198
+JPY`; the projection keeps both and marks reconciliation `mismatch` instead of choosing either total. The external
+snapshot is stale relative to the current day, and provider balance is not bank-landed cash.
+
+The latest paid-lane runtime receipt observed at `2026-08-12T07:44:15Z` measured `468` seconds but ended
+`FAILED` with `truth_verified=false`; it is measured failed runtime evidence, not a successful paid-work claim.
+`apps/life-manager/lib/cfo-gig.js` recursively freezes a privacy-safe fact, emits no Coconala URLs/IDs/titles/raw rows,
+keeps direct/API/human cost and capital unknown, and leaves profit/ROI null until the external/local mismatch and payout
+state are reconciled.
+
+- [x] Canonical code already contains the 255-file Gig runtime; `config/gig/runtime-manifest.json` records its tree
+      hash, the separately versioned active release, seven existing launchd owners, and no mutable-state import.
+- [x] Live read-only projection preserves external `129636` JPY, local `126438` JPY, absolute mismatch `3198` JPY,
+      stale provider status, pending payout, provider balance `0` (not bank landing), and failed runtime `468` seconds.
+      Input snapshot/ledger mtimes and sizes remain unchanged; hostile malformed amount returns only
+      `cfo_gig_invalid:business_fact`.
+- [x] Node syntax, manifest JSON, focused live assertions, canonical hash/count, state-absence, commit, and remote push
+      read-back pass. No launchd, provider, Telegram, database, or mutable-state write occurred.
+
+The next active item is **CFO-2b.6 — x402 Services**. It must use finalized external on-chain customer settlement
+receipts only; self-transfers and internal moves remain excluded and unknown data cannot become zero.
 
 ## 4. Current measured truth
 
@@ -667,7 +703,8 @@ fact therefore preserves provider evidence and coverage labels instead of claimi
   one pre-existing TECH PLAY connector assertion (`expected status=absent`, observed `status=unavailable`); no CFO
   test failed. No loop, launchd, database, provider, or Telegram runtime effect was introduced by this pure slice.
 - The output keeps Apple settled Partner Share separate from RevenueCat gross, preserves payout/bank/API-cost absence
-  as unknown/null, freezes the result recursively, and emits no raw provider identifiers. `CFO-2b.3` and `CFO-2b.4` are closed; `CFO-2b.5` is now next.
+  as unknown/null, freezes the result recursively, and emits no raw provider identifiers. `CFO-2b.3`, `CFO-2b.4`, and
+  `CFO-2b.5` are closed; `CFO-2b.6` is now next.
 
 ### CFO-2b.2c implementation target
 
@@ -716,7 +753,7 @@ add a business-fact database table, renderer, API route, launchd wiring, or Tele
   `asOf=2026-08-21T05:04:12Z` matched the delivered balance parity. No raw account number, provider ID, description,
   category label, credential, or raw payload was persisted or sent. Shared transport and `CFO-1j` are closed; the LLM
   spending guardian remains disabled until its later verified-outgoing and reconciliation gates. `CFO-2b.2c` is closed and
-  `CFO-2b.4` is closed; `CFO-2b.5` is next.
+  `CFO-2b.4` and `CFO-2b.5` are closed; `CFO-2b.6` is next.
 - Provider-freshness correction (2026-08-21): two direct read-only calls at `2026-08-21T05:09:58Z` and
   `2026-08-21T05:11:43Z` returned the same provider-reported balance fingerprint as revision 5, so the loop is not
   serving a stale local cache; the Moneytree provider value itself had not changed. Moneytree's official [MUFG
@@ -732,7 +769,7 @@ add a business-fact database table, renderer, API route, launchd wiring, or Tele
   composer and focused boundary regressions. Focused tests pass `7/7`; the full package gate remains `846/847` with
   only the pre-existing TECH PLAY `absent` versus `unavailable` assertion. Apple settled Partner Share and RevenueCat
   gross remain separate; payout, bank landing, and missing API cost remain unknown/null. No loop or launchd behavior
-  changed. `CFO-2b.4` is closed; the next active item is `CFO-2b.5` Gig Work instrumentation.
+  changed. `CFO-2b.4` and `CFO-2b.5` are closed; the next active item is `CFO-2b.6` x402 Services instrumentation.
 
 - Moneytree display correction (2026-08-21): canonical commit `6faf0bd06` keeps the installed read-only provider
   boundary intact while retaining only safe provider categories and the latest returned transaction date in the
