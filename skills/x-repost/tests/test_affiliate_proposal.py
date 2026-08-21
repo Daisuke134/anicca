@@ -1,0 +1,51 @@
+from __future__ import annotations
+
+import importlib.util
+import json
+import tempfile
+import unittest
+from pathlib import Path
+
+
+SCRIPT = Path(__file__).parents[1] / "scripts" / "affiliate_proposal.py"
+SPEC = importlib.util.spec_from_file_location("affiliate_proposal", SCRIPT)
+MODULE = importlib.util.module_from_spec(SPEC)
+assert SPEC.loader is not None
+SPEC.loader.exec_module(MODULE)
+
+
+class AffiliateProposalTests(unittest.TestCase):
+    def test_select_and_record_are_exactly_once_without_tracking_link(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            proposal_path = root / "proposal.json"
+            consumed = root / "consumed.jsonl"
+            proposal_path.write_text(json.dumps({
+                "receipt_type": "AFFILIATE_REPOST_PROPOSAL",
+                "state": "READY_FOR_EXISTING_REPOST_OWNER",
+                "proposal_id": "a" * 64,
+                "placement_id": "voice-isolator-en-1",
+                "owned_article_url": "https://aniccaai.com/blog/voice-isolator",
+                "language": "en",
+                "disclosure_required": True,
+                "tracking_link_state": "NOT_INCLUDED",
+                "revenue_credit_state": "NO_REVENUE_CREDIT",
+            }))
+            selected = MODULE.select(proposal_path, consumed)
+            self.assertEqual(selected["state"], "READY")
+            self.assertNotIn("try.elevenlabs.io", json.dumps(selected))
+            posted = MODULE.record(
+                consumed, MODULE.read_json(proposal_path), "POSTED",
+                "https://x.com/selawmqt/status/123",
+            )
+            self.assertTrue(posted["changed"])
+            self.assertEqual(posted["revenue_credit_state"], "NO_REVENUE_CREDIT_UNTIL_EXACT_AFFILIATE_JOIN")
+            self.assertEqual(MODULE.select(proposal_path, consumed)["state"], "ALREADY_CONSUMED")
+            self.assertFalse(MODULE.record(
+                consumed, MODULE.read_json(proposal_path), "POSTED",
+                "https://x.com/selawmqt/status/123",
+            )["changed"])
+
+
+if __name__ == "__main__":
+    unittest.main()

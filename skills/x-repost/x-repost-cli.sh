@@ -32,6 +32,7 @@ REASONING_EFFORT="${X_REPOST_REASONING_EFFORT:-max}"
 HUMANIZER_SKILL="${X_REPOST_HUMANIZER:-$HOME/.openclaw/skills/jp-humanizer-pro/SKILL.md}"
 GUARD="$HOME/.config/ai/bin/browser-guard.sh"
 ENSURE_BROWSER="$HOME/anicca/skills/browser/ensure_provision_browser.sh"
+AFFILIATE_PROPOSAL="${AFFILIATE_REPOST_PROPOSAL_PATH:-$HOME/.local/state/life-manager/affiliate/repost-proposals/latest.json}"
 
 PASS_ID="$(date +%Y%m%dT%H%M%S)"
 EV="$STATE/evidence/$PASS_ID"
@@ -201,6 +202,67 @@ case "$CDP" in
      exit 0 ;;
 esac
 trap 'bash "$GUARD" release "$IDENTITY" >/dev/null 2>&1 || true' EXIT
+
+# ---------------------------------------------------------------- affiliate proposal (one exact owned article, no tracking link)
+# Affiliate can offer a policy-safe placement but cannot publish through this owner.
+# This owner remains the sole X executor and records its own exact post readback.
+AFFILIATE_CONSUMED="$STATE/affiliate-proposals-consumed.jsonl"
+AFFILIATE_PICK="$($PY "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL" --consumed "$AFFILIATE_CONSUMED" 2>/dev/null || echo '{"state":"NO_PROPOSAL"}')"
+AFFILIATE_STATE="$($PY -c 'import json,sys; print(json.load(sys.stdin).get("state","NO_PROPOSAL"))' <<<"$AFFILIATE_PICK" 2>/dev/null || echo NO_PROPOSAL)"
+if [ "$AFFILIATE_STATE" = "READY" ]; then
+  AFFILIATE_ID="$($PY -c 'import json,sys; print(json.load(sys.stdin)["proposal_id"])' <<<"$AFFILIATE_PICK")"
+  AFFILIATE_PLACEMENT="$($PY -c 'import json,sys; print(json.load(sys.stdin)["placement_id"])' <<<"$AFFILIATE_PICK")"
+  AFFILIATE_URL="$($PY -c 'import json,sys; print(json.load(sys.stdin)["owned_article_url"])' <<<"$AFFILIATE_PICK")"
+  cat >"$EV/post.txt" <<EOF
+Before paying for an AI workflow, check the practical constraints first.
+
+Affiliate link disclosure:
+$AFFILIATE_URL
+EOF
+  if ! "$PY" - "$EV/post.txt" <<'PYEOF'
+from pathlib import Path
+text = Path(__import__('sys').argv[1]).read_text(encoding='utf-8').strip()
+raise SystemExit(0 if text and len(text) <= 280 and 'Affiliate link disclosure:' in text else 1)
+PYEOF
+  then
+    report "❌ Affiliate proposal text failed the local disclosure/length gate"
+    finish 1 "affiliate proposal text invalid"
+  fi
+  "$UV" run --quiet "$SKILL/scripts/x_post.py" --cdp "$CDP" \
+    --text-file "$EV/post.txt" --mode original >"$EV/post.json" 2>>"$EV/post.err"
+  AFFILIATE_RC=$?
+  if [ "$AFFILIATE_RC" -eq 2 ]; then
+    "$PY" "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL" \
+      --consumed "$AFFILIATE_CONSUMED" --record UNVERIFIED >/dev/null
+    report "⚠️ Affiliate proposal was submitted but X readback is unresolved; proposal is fenced against duplicate publish"
+    finish 1 "affiliate proposal publish unverified"
+  fi
+  if [ "$AFFILIATE_RC" -ne 0 ]; then
+    report "❌ Affiliate proposal publish failed; proposal remains unconsumed"
+    finish 1 "affiliate proposal publish failed"
+  fi
+  AFFILIATE_POST_URL="$($PY -c 'import json,sys; print(json.load(open(sys.argv[1]))["post_url"])' "$EV/post.json")"
+  "$PY" "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL" \
+    --consumed "$AFFILIATE_CONSUMED" --record POSTED --post-url "$AFFILIATE_POST_URL" >/dev/null
+  X_REPOST_KIND="affiliate_original" X_REPOST_PROPOSAL_ID="$AFFILIATE_ID" \
+    X_REPOST_PLACEMENT_ID="$AFFILIATE_PLACEMENT" X_REPOST_OWNED_URL="$AFFILIATE_URL" \
+    "$PY" - "$POSTED" "$EV/post.txt" "$AFFILIATE_POST_URL" <<'PYEOF'
+import datetime, json, os, sys
+posted, text_file, post_url = sys.argv[1:4]
+row = {"posted_at": datetime.datetime.now().astimezone().isoformat(),
+       "kind": os.environ["X_REPOST_KIND"],
+       "source_url": os.environ["X_REPOST_OWNED_URL"],
+       "affiliate_proposal_id": os.environ["X_REPOST_PROPOSAL_ID"],
+       "affiliate_placement_id": os.environ["X_REPOST_PLACEMENT_ID"],
+       "affiliate_owned_article_url": os.environ["X_REPOST_OWNED_URL"],
+       "tone": "affiliate_disclosed", "text": open(text_file, encoding="utf-8").read().strip(),
+       "post_url": post_url}
+with open(posted, "a", encoding="utf-8") as stream:
+    stream.write(json.dumps(row, ensure_ascii=False) + "\n")
+PYEOF
+  report "✅ Affiliate proposal posted with exact placement handoff\nplacement: $AFFILIATE_PLACEMENT\npost: $AFFILIATE_POST_URL"
+  finish 0 "affiliate proposal published and read back"
+fi
 
 # ---------------------------------------------------------------- 1. recon
 if ! "$UV" run --quiet "$SKILL/scripts/x_collect.py" --cdp "$CDP" --mode recon \

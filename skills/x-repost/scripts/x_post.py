@@ -115,14 +115,17 @@ def find_permalink(pw, cdp: str, handle: str, needle: str, attempts: int = 6):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--cdp", required=True, help="leased CDP base URL from browser-guard.sh")
-    ap.add_argument("--source-url", required=True, help="the post being quoted or replied to")
+    ap.add_argument("--source-url", help="the post being quoted or replied to")
     ap.add_argument("--text-file", required=True, help="file holding the comment body")
     # A quote is a new post from an account with no followers, which asks the ranker to distribute
     # out-of-network content to nobody. A reply is rendered to the people already reading the
     # original, and "the author engaged your reply" is the single highest-weighted signal X
     # publishes (+75, against 0.5 for a like).
-    ap.add_argument("--mode", choices=["quote", "reply"], default="quote")
+    ap.add_argument("--mode", choices=["quote", "reply", "original"], default="quote")
     args = ap.parse_args()
+
+    if args.mode in {"quote", "reply"} and not args.source_url:
+        raise SystemExit("x_post: --source-url is required for quote or reply")
 
     text = open(args.text_file, encoding="utf-8").read().strip()
     if not text:
@@ -152,7 +155,7 @@ def main():
                 compose.click('[data-testid="tweetTextarea_0"]')
                 compose.keyboard.type(text, delay=18)
                 compose.wait_for_timeout(2000)
-            else:
+            elif args.mode == "quote":
                 compose.goto("https://x.com/compose/post", wait_until="domcontentloaded", timeout=60000)
                 compose.wait_for_selector('[data-testid="tweetTextarea_0"]', timeout=45000)
                 compose.click('[data-testid="tweetTextarea_0"]')
@@ -160,6 +163,12 @@ def main():
                 compose.keyboard.press("Enter")
                 compose.keyboard.type(args.source_url, delay=12)
                 compose.wait_for_timeout(6000)  # let X resolve the URL into the quoted-post card
+            else:
+                compose.goto("https://x.com/compose/post", wait_until="domcontentloaded", timeout=60000)
+                compose.wait_for_selector('[data-testid="tweetTextarea_0"]', timeout=45000)
+                compose.click('[data-testid="tweetTextarea_0"]')
+                compose.keyboard.type(text, delay=18)
+                compose.wait_for_timeout(2000)
 
             # Scope the button to the composer itself: x.com/home keeps an inline composer mounted
             # whose button carries a confusingly similar testid, and clicking the wrong one silently
