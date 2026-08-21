@@ -212,6 +212,7 @@ def _profile_values(profile: dict[str, Any]) -> dict[str, str]:
 def _known_value(item: dict[str, Any], profile: dict[str, Any], values: dict[str, str]) -> str | None:
     item_id = str(item.get("id") or "")
     name = str(item.get("name") or "")
+    labels = _label(item)
     context = _context(item)
     if item_id in values:
         return values[item_id]
