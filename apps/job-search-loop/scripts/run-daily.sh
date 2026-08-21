@@ -49,20 +49,47 @@ if [[ "$ASHBY_FAST_PATH_RC" -ne 0 ]]; then
 fi
 export JOB_SEARCH_ASHBY_FAST_PATH_RESULT="$ASHBY_FAST_PATH_RESULT"
 WORKDAY_FAST_PATH_RESULT="$EVIDENCE/workday-fast-path.json"
-set +e
-"$JOB_SEARCH_PYTHON" -m job_search_loop.workday_fast_path \
-  --endpoint "http://127.0.0.1:9222" \
-  --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
-  --profile "$JOB_SEARCH_PROFILE" \
-  --materials-root "${XDG_DATA_HOME:-$HOME/.local/share}/anicca/job-search/materials" \
-  --evidence-dir "$EVIDENCE/workday-fast-path" \
-  --store-path "${XDG_CONFIG_HOME:-$HOME/.config}/anicca/job-search/workday-accounts.json" \
-  --output "$WORKDAY_FAST_PATH_RESULT" \
-  --japan-day "$JAPAN_DAY"
-WORKDAY_FAST_PATH_RC=$?
-set -e
-if [[ "$WORKDAY_FAST_PATH_RC" -ne 0 ]]; then
-  printf '%s\n' "Workday fast path exited rc=$WORKDAY_FAST_PATH_RC; browser-lane fallback continues" >&2
+if [[ "${JOB_SEARCH_ENABLE_WORKDAY:-0}" == "1" ]]; then
+  set +e
+  "$JOB_SEARCH_PYTHON" -m job_search_loop.workday_fast_path \
+    --endpoint "http://127.0.0.1:9222" \
+    --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
+    --profile "$JOB_SEARCH_PROFILE" \
+    --materials-root "${XDG_DATA_HOME:-$HOME/.local/share}/anicca/job-search/materials" \
+    --evidence-dir "$EVIDENCE/workday-fast-path" \
+    --store-path "${XDG_CONFIG_HOME:-$HOME/.config}/anicca/job-search/workday-accounts.json" \
+    --output "$WORKDAY_FAST_PATH_RESULT" \
+    --japan-day "$JAPAN_DAY"
+  WORKDAY_FAST_PATH_RC=$?
+  set -e
+  if [[ "$WORKDAY_FAST_PATH_RC" -ne 0 ]]; then
+    printf '%s\n' "Workday fast path exited rc=$WORKDAY_FAST_PATH_RC; browser-lane fallback continues" >&2
+  fi
+else
+  "$JOB_SEARCH_PYTHON" - "$WORKDAY_FAST_PATH_RESULT" <<'PY'
+import json
+import os
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+path.write_text(
+    json.dumps(
+        {
+            "status": "parked",
+            "processed": [],
+            "excluded": [],
+            "owner": "ai.anicca.job-search-daily",
+            "reason": "ashby_first_gate",
+        },
+        ensure_ascii=False,
+    )
+    + "\n",
+    encoding="utf-8",
+)
+os.chmod(path, 0o600)
+PY
 fi
 export JOB_SEARCH_WORKDAY_FAST_PATH_RESULT="$WORKDAY_FAST_PATH_RESULT"
 MODEL_TIMEOUT_SECONDS="${JOB_SEARCH_BROWSER_TIMEOUT_SECONDS:-300}"
