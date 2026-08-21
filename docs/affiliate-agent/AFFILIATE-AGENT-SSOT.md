@@ -559,6 +559,20 @@ ledger, and Telegram reporting are wired. Clicks remain non-money and B01 is
 still `WAITING_FOR_PROVIDER_TRANSACTION`; no approved/paid row, settlement ID,
 or canonical net amount exists.
 
+### 1.1.20 D05 official analytics availability audit
+
+The read-only state audit found no official X Analytics, X impressions,
+owned-page-visit, or equivalent exposure artifact under the Affiliate state
+root. The current canonical placement ledger has 20 rows and all 20 rows carry
+`x_impressions_state=UNKNOWN` and `owned_page_visits_state=UNKNOWN`. The
+separate Dev.to metrics receipt is `OBSERVED` for 5 articles with total page
+views `40`, delta page views `0`, reactions `0`, and comments `0`; it is not an
+X impression denominator. The existing X browser owner is keep-alive and its
+CDP read-only surface exposed the current public status page, not an Analytics
+surface. No profile interaction, public effect, or external owner takeover was
+performed. D05 therefore remains open with truthful `UNKNOWN` values; public
+view estimates are not promoted to official exposure counts.
+
 ### 1.2.0 Audited executable boundary
 
 The installed ownership graph has six launchd labels: three persistent browser
