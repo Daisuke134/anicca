@@ -280,6 +280,12 @@ async def _choose(page: Any, locator: Any, value: str) -> bool:
         await prompt_option.first.click(timeout=10_000)
         return True
     for _ in range(10):
+        prompt_option = page.locator(
+            f"[data-automation-id='promptOption'][data-automation-label='{value}']"
+        )
+        if await prompt_option.count():
+            await prompt_option.first.click(timeout=10_000)
+            return True
         option = page.get_by_role("option", name=value, exact=True)
         if await option.count() == 0:
             option = page.locator("[role='option']").filter(has_text=value)
