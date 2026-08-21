@@ -339,7 +339,13 @@ async def _fill_step(
                               .some(element => element.offsetParent !== null)""",
                             timeout=15_000,
                         )
-                    await radio_label.first.click(timeout=10_000)
+                    custom_radio = radio_label.first.locator(
+                        "[data-automation-id='radioBtn']"
+                    )
+                    if await custom_radio.count() and await custom_radio.first.is_visible():
+                        await custom_radio.first.click(timeout=10_000)
+                    else:
+                        await radio_label.first.click(timeout=10_000)
                 else:
                     await element.check(timeout=10_000)
             continue
