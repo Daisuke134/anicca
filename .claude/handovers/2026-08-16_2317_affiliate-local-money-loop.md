@@ -1,5 +1,35 @@
 # Affiliate local money loop handover
 
+- Latest launchd/runtime verification: the existing `ai.anicca.affiliate-loop`
+  label now reads back through `launchctl print` with exit `0`, loaded,
+  `state=not running` after a completed wake, `runs=214`, `last exit code=0`,
+  and `run interval=600`. `ai.openclaw.gateway` is loaded/running at PID
+  `90373`, and `openclaw gateway status` reports connectivity `ok`. The earlier
+  `141: Reentrancy avoided` result was a historical management-plane failure;
+  no parallel executor was created.
+- Latest Telegram receipt-integrity repair: commit `5a8445ad7` is installed as
+  immutable `current`; source/installed `local_loop.py` SHA-256 is
+  `3ad64ff4c362d09ebce781275b30810ee95187d6ccbd007a39ec25ec7ef72680`, and
+  `70/70` tests plus compilation passed. The existing owner naturally woke at
+  `2026-08-21T13:04:33+0900` and delivered Repost event
+  `a8fe8036ba6a40fc9757324445aadbc6b2385c37dbbf9a66639644b81d859e23` as
+  provider message `27080`; delivery receipt
+  `c29f8e271117513a43b4cc14dc43e83fc652b6e33134831f37a5c630e0f44c09` binds
+  the same event UUID. The fix carries the actually-sent oldest pending outbox
+  UUID into the receipt, so a current wake cannot be mislabeled when an older
+  event is sent first.
+- Historical receipt integrity caveat: pre-fix receipt
+  `f11134d7b5c97a3011e76a43b398214caaef6d99137722525e8e52dfc6c166bf` labels
+  provider message `27069` as Repost `a8fe…`, while the private sent ledger
+  maps `27069` to daily summary `9652…`; the actual Repost body was later sent
+  once as `27080`. This is a receipt-join repair item, not evidence of a
+  duplicate public campaign, and it does not create money.
+- Current cursor remains E1-H/B01: 20 exact English placements, 20 dedicated
+  provider-link keys, 34 provider clicks, 32 unique clicks, 0 signups, 0 paid
+  signups, 0 official commission rows, Repost 56/0 exact joins, and rolling
+  net `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED` with costs
+  `UNKNOWN`. The first non-empty official provider transaction/settlement row
+  is still required; no click, estimate, pending reward, or fixture is money.
 - SSOT: `docs/affiliate-agent/AFFILIATE-AGENT-SSOT.md`; resume from `Measured planning checkpoint and next TODOs`, then `Remaining autonomous money-loop work — canonical order`.
 - Latest Telegram denominator-reporting slice: release `03a5f4b179be37d08d68602c21af652f69b9f33e` adds provider unique-click totals plus observed/unknown counts to the daily summary, and release `9542272cc3f229fbe8022ae7d43754b554710f34` versions that summary identity at schema `2` so one reporting-schema update can be sent without repeating the stable same-day event. Source/installed `local_loop.py` bytes match at SHA-256 `d9a4d2eb0dcad9575fabe892a85a63ae28a3f6f228823fac80d55c965408418e`; `69/69`, compilation, and diff checks passed. Before the schema-2 install, natural owner wake `aef022a3251621ac3aab29f4fb79c902ec2533cc0cd2a2729204644de51602ea` at `2026-08-21T12:32:57+0900` persisted 34 total / 32 unique clicks with 20/20 observed measurements, revenue `COOLDOWN`, and Telegram `NO_PENDING` on message `26335`. The schema-2 release is installed as `current`; its declared kick returned `141: Reentrancy avoided`, so a new Telegram body containing the unique line remains unproven until the next natural owner wake. No transaction or money is claimed.
 - Latest Telegram transport readback: the next natural owner wake `d7c0bb49e8853d2d96a8bf6be8845c858c7b20ed10731fd940c13cbc3df53059` completed at `2026-08-21T12:43:27+0900`, generated daily event `9652c809aad78f2ea143ca58706aecb8f2645e0224483ebb800179577fe5fa7d` with the redacted `34` total / `32` unique click line, and attempted the existing sender. The sender timed out after 30 seconds; delivery receipt `8e995d48300183ac5b5079bf5226393bd3c7463173e9779fa2dc53c87ece9d04` is `SEND_FAILED` with no provider message ID. The exact event remains in outbox for the next owner retry; no manual send or parallel executor was used. Telegram v2 is therefore generated but not yet delivered, and no transaction or money is claimed.
