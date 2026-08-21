@@ -1150,7 +1150,7 @@ must accumulate in the live loop:
 | Lane | Current evidence | Next completion gate |
 |---|---|---|
 | Engineering now | 11C is merged and the weekly learning driver remains green; 10N is fixed; 10O code is pushed in `e07b6887c` with 201 job-loop tests green | Close 10O's live queue-progress/Telegram-ACK gate, then add `JOB-GUARDIAN-PASS-11D` |
-| Resident runtime | `Aqua`/manager PID `1` is healthy; installed daily plist reports `StartInterval=1800`, last exit `0`; live pass `daily-20260821-140457` reported no submissions, left nine `materials_ready`, and delivered the daily report with Telegram ACK `27148`; ledger integrity is `ok` | Make each recurring wake advance to the next pending row and continue until the projection contains one confirmed Ashby and one confirmed Workday submission; current confirmed adapters are 0/2 |
+| Resident runtime | `Aqua`/manager PID `1` is healthy; installed daily plist reports `StartInterval=1800`, last exit `0`; live pass `daily-20260821-140457` reported no submissions, left nine `materials_ready`, and delivered the daily report with Telegram ACK `27148`; ledger integrity is `ok` | Make each recurring wake advance to the next pending row and continue until the projection contains one confirmed Ashby and one confirmed Workday submission; current confirmed adapters are 1/2 (Ashby only) |
 | Private/external wait | No verified nationality/work-visa facts, real interview email, or naturally occurring later same-thread recruiting message has arrived | Close Order 8, Order 9 and the 10L E2E gate only when their authoritative input exists; none blocks 11B engineering |
 
 | Order | Deliverable | Status | Completion evidence |
