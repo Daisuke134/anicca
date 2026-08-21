@@ -10,6 +10,7 @@ import re
 
 
 PRODUCT_LANGUAGE = {"ebook-ja": "ja", "ebook-en": "en"}
+PRODUCT_CTA = {"ebook-ja": "アニッチャ・リセットを読む", "ebook-en": "Read The Anicca Reset"}
 COMPONENTS = ("hook", "pain_angle", "teaching", "action", "cta")
 REQUIRED = {
     "schema_version", "product_id", "account_id", "language", "version",
@@ -52,6 +53,16 @@ def validate_writer_contract(script: dict) -> None:
         require(bool(re.search(r"[A-Za-z]{3}", body)), "English writer contract required")
 
 
+def preflight(script: dict) -> None:
+    require(script["cta"] == PRODUCT_CTA[script["product_id"]], "product CTA mismatch")
+    require(bool(script["campaign_id"].strip()) and bool(script["creative_id"].strip()), "campaign and creative required")
+    mechanisms = script["source_mechanism_ids"]
+    require(bool(mechanisms) and all(isinstance(item, str) and item.strip() for item in mechanisms), "source mechanism proof required")
+    require(script["declared_mutation"] in COMPONENTS, "multiple or unknown mutation")
+    banned = ("guaranteed cure", "治療を保証", "必ず治る", "diagnose", "診断します")
+    require(not any(term in script["body"].casefold() for term in banned), "unsupported ebook claim")
+
+
 def validate(script: dict, parent: dict | None = None) -> None:
     require(set(script) == REQUIRED, "script fields differ")
     require(script["schema_version"] == "marketing.ebook-script.v1", "script schema invalid")
@@ -63,6 +74,7 @@ def validate(script: dict, parent: dict | None = None) -> None:
     require(script["declared_mutation"] in COMPONENTS, "one declared component mutation required")
     require(isinstance(script["baseline"], bool), "baseline flag required")
     validate_writer_contract(script)
+    preflight(script)
     if script["baseline"]:
         require(script["parent_script_id"] is None, "baseline cannot have parent")
     else:
