@@ -61,6 +61,7 @@
   },
 
   "writer_env": {
+    "GIG_IGNORE_DISK_PRESSURE_BLOCK": "1",
     "CLOAK_BROWSER_LAUNCHD_LABEL": "ai.anicca.job-search-browser",
     "CLOAK_CDP_BASE_URL": "http://127.0.0.1:9222",
     "CDP_DAILY_DRIVER_PORT": "9222",

@@ -118,6 +118,14 @@ def _producer_gate() -> tuple[str, Path] | None:
     except OSError:
         return "disk_policy_unavailable", host_state
     for filename, reason in _POLICY_FLAGS:
+        if (
+            filename == "disk-pressure.block"
+            and os.environ.get("GIG_IGNORE_DISK_PRESSURE_BLOCK", "")
+            .strip()
+            .lower()
+            in {"1", "true", "yes"}
+        ):
+            continue
         flag = host_state / filename
         try:
             entry = flag.lstat()

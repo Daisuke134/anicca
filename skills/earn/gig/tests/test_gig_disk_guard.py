@@ -146,6 +146,48 @@ def test_life_manager_producer_flags_block_child_before_exec(
     assert receipt["readback"] == 0
 
 
+def test_writer_override_ignores_pressure_block_but_keeps_real_floor(
+    tmp_path, monkeypatch
+):
+    guard = _load_guard()
+    monkeypatch.setenv("GIG_STATE_DIR", str(tmp_path / "gig"))
+    monkeypatch.setenv("GIG_IGNORE_DISK_PRESSURE_BLOCK", "1")
+    host_state = Path.home() / ".openclaw" / "state"
+    (host_state / "disk-pressure.block").write_text("free=9GiB\n", encoding="utf-8")
+    monkeypatch.setattr(
+        guard.shutil,
+        "disk_usage",
+        lambda _path: guard.shutil._ntuple_diskusage(1, 1, guard.REQUIRED_BYTES * 8),
+    )
+    calls = []
+    monkeypatch.setattr(guard.os, "execvpe", lambda *args: calls.append(args))
+
+    assert guard.main(["/bin/echo", "writer-sentinel"]) == 0
+    assert calls and calls[0][1] == ["/bin/echo", "writer-sentinel"]
+
+
+def test_writer_override_does_not_bypass_real_disk_floor(
+    tmp_path, monkeypatch, capsys
+):
+    guard = _load_guard()
+    monkeypatch.setenv("GIG_STATE_DIR", str(tmp_path / "gig"))
+    monkeypatch.setenv("GIG_IGNORE_DISK_PRESSURE_BLOCK", "1")
+    host_state = Path.home() / ".openclaw" / "state"
+    host_state.mkdir(parents=True, exist_ok=True)
+    (host_state / "disk-pressure.block").write_text("free=9GiB\n", encoding="utf-8")
+    monkeypatch.setattr(
+        guard.shutil,
+        "disk_usage",
+        lambda _path: guard.shutil._ntuple_diskusage(1, 1, guard.REQUIRED_BYTES - 1),
+    )
+    monkeypatch.setattr(guard.os, "execvpe", lambda *_args: (_ for _ in ()).throw(
+        AssertionError("real low disk must still block Writer")
+    ))
+
+    assert guard.main(["/bin/echo", "writer-sentinel"]) == 1
+    assert json.loads(capsys.readouterr().out)["reason"] == "disk_headroom_low"
+
+
 def test_missing_host_control_state_fails_closed_before_exec(tmp_path, monkeypatch, capsys):
     guard = _load_guard()
     monkeypatch.setenv("GIG_STATE_DIR", str(tmp_path / "gig"))
