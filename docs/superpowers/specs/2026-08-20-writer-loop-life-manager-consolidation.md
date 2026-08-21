@@ -37,6 +37,10 @@
   失敗時はPublishクリックを行わない。集中32件、shell/compile、実ブラウザのDOM式readbackはPASSした。
 - 現行runの不変1300x70 assetは書き換えない。次のresume tickは同一X targetをnative preflightし、readability receiptと
   unavailable遷移を確認する。新しいrunはmedia commit時点で投影範囲外を拒否するため、同じflat画像を再度stagingしない。
+- `63cf0fc59`をcurrentへ反映した後のWriter 14 label readbackはcurrent SHA一致を確認したが、daily/resumeの入口は
+  共通`/Users/anicca/.openclaw/state/disk-writers.stop`で停止した。空きは約3.4GB、swap使用は約6.0GBで、
+  disk-sentinelの停止解除条件は空き11GB以上である。したがってこのtickではXの`media-readability.json`や
+  `unavailable`遷移を実行していない。stop flagを手動削除したり、guardを迂回してpublishすることはしない。
 
 ### ownerless repair handoff の回収実測
 
