@@ -355,6 +355,38 @@ class LocalLoopTest(unittest.TestCase):
             self.assertEqual(second["kind"], "REVENUE_CYCLE_FAILED")
             self.assertNotEqual(first["event_uuid"], second["event_uuid"])
 
+    def test_blocked_report_preserves_action_cap_disk_guard_and_money_state(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root)
+            MODULE.atomic_json(state / "rolling-net.json", {
+                "receipt_type": "AFFILIATE_ROLLING_NET",
+                "money_state": "NO_TRANSACTIONS",
+                "net_state": "NO_APPROVED_OR_PAID_ROWS",
+                "threshold_state": "NOT_REACHED",
+                "cost_state": "UNKNOWN",
+                "cost_coverage_state": "UNKNOWN",
+            })
+            wake = {
+                "status": "ACTION_CAP_BLOCKED",
+                "action_budget_state": "ACTION_CAP_BLOCKED",
+                "action_budget_used_attempts": 34,
+                "action_budget_daily_cap": 10,
+                "runtime_guard_state": "DISK_GUARD_BLOCKED",
+                "runtime_guard_free_bytes": 958054400,
+                "runtime_guard_floor_bytes": 10737418240,
+                "rolling_net_money_state": "NO_TRANSACTIONS",
+                "publication_url": "https://example.test/article",
+            }
+            first = MODULE.owner_event(state, wake)
+            blocked = MODULE.owner_event(state, wake, {first["event_uuid"]})
+
+            self.assertEqual(blocked["kind"], "BLOCKED")
+            self.assertIn("判断: external_action_cap=34/10", blocked["body"])
+            self.assertIn("runtime_disk=DISK_GUARD_BLOCKED", blocked["body"])
+            self.assertIn("NO_TRANSACTIONS / approved_or_paid_net=USD 0.00 / cost=UNKNOWN", blocked["body"])
+            self.assertIn("ディスク空きが10GiB以上かつJST日次capがCLEAR", blocked["body"])
+            self.assertNotIn("buyer-intentを収集", blocked["body"])
+
     def test_completed_generic_campaign_advances_to_tts_campaign(self):
         with tempfile.TemporaryDirectory() as root:
             state = Path(root)

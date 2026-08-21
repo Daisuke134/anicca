@@ -700,12 +700,16 @@ def owner_event(state, wake_event, sent_event_ids=None):
     impact_changed = wake_event.get("impact_changed", False)
     candidates = []
 
-    def add(kind, identity, money, public_url=None, article_url=None, decision=None, scope=None):
+    def add(
+        kind, identity, money, public_url=None, article_url=None, decision=None,
+        scope=None, recovery=None, next_job=None,
+    ):
         event_uuid = hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()
         candidates.append({
             "event_uuid": event_uuid, "kind": kind, "money": money,
             "public_url": public_url, "article_url": article_url,
-            "decision": decision, "scope": scope,
+            "decision": decision, "scope": scope, "recovery": recovery,
+            "next_job": next_job,
         })
 
     if wake_event.get("placement_link_changed") and wake_event.get("placement_link_state") == "VERIFIED":
@@ -942,8 +946,69 @@ def owner_event(state, wake_event, sent_event_ids=None):
         and wake_event.get("acquisition_decision_state") != "DECISION_FAILED"
     ):
         kind = "BLOCKED"
-        add(kind, {"kind": kind, "provider": "elevenlabs", "status": wake_event.get("status")},
-            "unknown", wake_event.get("publication_url") or latest_live_url(state))
+        blockers = []
+        action_state = wake_event.get("action_budget_state")
+        if action_state == "ACTION_CAP_BLOCKED":
+            blockers.append(
+                f"external_action_cap={wake_event.get('action_budget_used_attempts', 'UNKNOWN')}"
+                f"/{wake_event.get('action_budget_daily_cap', 'UNKNOWN')}"
+            )
+        guard_state = wake_event.get("runtime_guard_state")
+        if guard_state in {"DISK_GUARD_BLOCKED", "DISK_GUARD_UNKNOWN"}:
+            free_bytes = wake_event.get("runtime_guard_free_bytes")
+            floor_bytes = wake_event.get("runtime_guard_floor_bytes")
+            blockers.append(
+                f"runtime_disk={guard_state}"
+                f"(free={free_bytes if isinstance(free_bytes, int) else 'UNKNOWN'}"
+                f"/floor={floor_bytes if isinstance(floor_bytes, int) else 'UNKNOWN'} bytes)"
+            )
+        if not blockers:
+            blockers.append(f"status={wake_event.get('status') or 'UNKNOWN'}")
+        blocker_text = " / ".join(blockers)
+        no_transactions = (
+            cycle.get("state") == "NO_TRANSACTIONS"
+            or wake_event.get("rolling_net_money_state") == "NO_TRANSACTIONS"
+        )
+        money = (
+            "NO_TRANSACTIONS / approved_or_paid_net=USD 0.00 / cost=UNKNOWN / "
+            f"no money counted / blocker={blocker_text}"
+            if no_transactions else
+            f"money=UNKNOWN / no money counted / blocker={blocker_text}"
+        )
+        recovery = (
+            "外部作用は行わず、JST日次capとディスクfloorの回復を再確認します。"
+            "provider capture・ledger・Telegramの読取りは継続"
+            if action_state == "ACTION_CAP_BLOCKED" and guard_state == "DISK_GUARD_BLOCKED"
+            else "JST日次外部作用capがCLEARになるまで、公開・リンク作用を行わず読取りを継続"
+            if action_state == "ACTION_CAP_BLOCKED"
+            else "ディスク空きがfloorを満たすまで、新規生成・公開を行わず読取りを継続"
+            if guard_state in {"DISK_GUARD_BLOCKED", "DISK_GUARD_UNKNOWN"}
+            else "未解決の外部状態を再読取りし、作用なしで再試行を予約"
+        )
+        next_job = (
+            "ディスク空きが10GiB以上かつJST日次capがCLEARになった後、"
+            "同じdurable placement jobを既存ownerが再開（手動公開・captureはしない）"
+            if action_state == "ACTION_CAP_BLOCKED" and guard_state == "DISK_GUARD_BLOCKED"
+            else "JST日次capがCLEARになった後、同じdurable placement jobを既存ownerが再開"
+            if action_state == "ACTION_CAP_BLOCKED"
+            else "ディスク空きが10GiB以上になった後、同じdurable jobを既存ownerが再開"
+            if guard_state in {"DISK_GUARD_BLOCKED", "DISK_GUARD_UNKNOWN"}
+            else "未解決の外部状態を既存ownerが再読取り"
+        )
+        add(
+            kind,
+            {
+                "kind": kind, "provider": "elevenlabs", "status": wake_event.get("status"),
+                "action_budget_state": action_state,
+                "action_budget_used_attempts": wake_event.get("action_budget_used_attempts"),
+                "action_budget_daily_cap": wake_event.get("action_budget_daily_cap"),
+                "runtime_guard_state": guard_state,
+                "runtime_guard_free_bytes": wake_event.get("runtime_guard_free_bytes"),
+                "runtime_guard_floor_bytes": wake_event.get("runtime_guard_floor_bytes"),
+            },
+            money, wake_event.get("publication_url") or latest_live_url(state),
+            decision=blocker_text, recovery=recovery, next_job=next_job,
+        )
     selected = next(
         (candidate for candidate in candidates if candidate["event_uuid"] not in sent_event_ids),
         None,
@@ -951,7 +1016,7 @@ def owner_event(state, wake_event, sent_event_ids=None):
     if not selected:
         return None
     kind = selected["kind"]
-    recovery = (
+    recovery = selected.get("recovery") or (
         "次のwakeが同じpublicationを再開し、重複作用なしで進行を回復しました"
         if kind == "SELF_HEALED" and selected.get("scope") == "publication"
         else "次のwakeが同じ収益captureを再実行し、provider readbackを回復しました"
@@ -963,7 +1028,7 @@ def owner_event(state, wake_event, sent_event_ids=None):
         else "なし" if kind != "BLOCKED"
         else "未回復の外部状態があります"
     )
-    next_job = (
+    next_job = selected.get("next_job") or (
         "同じcampaignのpublic readbackと収益計測を継続"
         if kind == "SELF_HEALED" and selected.get("scope") == "publication"
         else "同じprovider transaction台帳を継続監視し、実取引だけをplacementへ照合"
