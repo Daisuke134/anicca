@@ -353,6 +353,17 @@ def _known_value(
     labels = _label(item)
     context = _context(item)
     romaji_parts = candidate.get("name_romaji_parts") or {}
+    if labels in {
+        "i'm a user",
+        "news article",
+        "job board",
+        "social media (linkedin, instagram, x etc)",
+        "in person event",
+        "referral",
+        "i was reached out to",
+        "other (please specify)",
+    }:
+        return "Company website"
     if "legal first" in context or "preferred first" in context:
         return str(romaji_parts.get("given") or "")
     if "legal last" in context or "preferred last" in context:
