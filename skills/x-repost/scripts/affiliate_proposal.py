@@ -16,6 +16,7 @@ from urllib.parse import urlparse
 
 PROPOSAL_ID = re.compile(r"^[0-9a-f]{64}$")
 PLACEMENT_ID = re.compile(r"^[a-z0-9][a-z0-9-]{2,80}$")
+CONSUMPTION_STATES = {"EFFECT_STARTED", "POSTED", "UNVERIFIED", "NO_EFFECT"}
 SAFE_FIELDS = (
     "receipt_type", "state", "proposal_id", "placement_id", "owned_article_url",
     "language", "disclosure_required", "tracking_link_state", "revenue_credit_state",
@@ -83,6 +84,23 @@ def rows(path: Path) -> list[dict]:
             raise ValueError("consumption ledger invalid") from error
         if not isinstance(value, dict):
             raise ValueError("consumption ledger invalid")
+        if (
+            value.get("schema_version") != 1
+            or value.get("receipt_type") != "X_REPOST_AFFILIATE_PROPOSAL_CONSUMPTION"
+            or not isinstance(value.get("proposal_id"), str)
+            or not PROPOSAL_ID.fullmatch(value["proposal_id"])
+            or not isinstance(value.get("placement_id"), str)
+            or not PLACEMENT_ID.fullmatch(value["placement_id"])
+            or value.get("state") not in CONSUMPTION_STATES
+            or not isinstance(value.get("observed_at"), str)
+        ):
+            raise ValueError("consumption ledger invalid")
+        try:
+            observed = datetime.fromisoformat(value["observed_at"].replace("Z", "+00:00"))
+            if observed.tzinfo is None:
+                raise ValueError
+        except ValueError as error:
+            raise ValueError("consumption ledger invalid") from error
         values.append(value)
     return values
 

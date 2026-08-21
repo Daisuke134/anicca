@@ -137,7 +137,7 @@ class AffiliateProposalTests(unittest.TestCase):
             claimed = MODULE.claim(consumed, proposal)
             self.assertNotIn("untrusted_tracking_url", claimed["proposal"])
             consumed.write_text(json.dumps({"proposal_id": "a" * 64, "state": "EFFECT_STARTED"}) + "\n")
-            self.assertEqual(MODULE.select(proposal_path, consumed)["state"], "BLOCKED_LEGACY_CLAIM")
+            self.assertEqual(MODULE.select(proposal_path, consumed)["state"], "BLOCKED_CONSUMPTION_LEDGER")
 
     def test_invalid_consumption_ledger_blocks_new_proposal(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -156,6 +156,33 @@ class AffiliateProposalTests(unittest.TestCase):
             }))
             consumed.write_text("{broken\n")
             self.assertEqual(MODULE.select(proposal_path, consumed)["state"], "BLOCKED_CONSUMPTION_LEDGER")
+
+    def test_unknown_state_or_invalid_timestamp_blocks_new_proposal(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            proposal_path = root / "proposal.json"
+            consumed = root / "consumed.jsonl"
+            proposal_path.write_text(json.dumps({
+                "receipt_type": "AFFILIATE_REPOST_PROPOSAL",
+                "state": "READY_FOR_EXISTING_REPOST_OWNER",
+                "proposal_id": "a" * 64,
+                "placement_id": "voice-isolator-en-1",
+                "owned_article_url": "https://aniccaai.com/blog/voice-isolator",
+                "language": "en", "disclosure_required": True,
+                "tracking_link_state": "NOT_INCLUDED",
+                "revenue_credit_state": "NO_REVENUE_CREDIT",
+            }))
+            for row in (
+                {"schema_version": 1, "receipt_type": "X_REPOST_AFFILIATE_PROPOSAL_CONSUMPTION",
+                 "proposal_id": "a" * 64, "placement_id": "voice-isolator-en-1",
+                 "state": "UNKNOWN", "observed_at": "2026-08-21T00:00:00+00:00"},
+                {"schema_version": 1, "receipt_type": "X_REPOST_AFFILIATE_PROPOSAL_CONSUMPTION",
+                 "proposal_id": "a" * 64, "placement_id": "voice-isolator-en-1",
+                 "state": "EFFECT_STARTED", "observed_at": "not-a-time"},
+            ):
+                consumed.write_text(json.dumps(row) + "\n")
+                self.assertEqual(MODULE.select(proposal_path, consumed)["state"], "BLOCKED_CONSUMPTION_LEDGER")
+                consumed.unlink()
 
 
 if __name__ == "__main__":

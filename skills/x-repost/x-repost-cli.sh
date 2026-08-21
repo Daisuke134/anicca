@@ -207,7 +207,10 @@ trap 'bash "$GUARD" release "$IDENTITY" >/dev/null 2>&1 || true' EXIT
 # Affiliate can offer a policy-safe placement but cannot publish through this owner.
 # This owner remains the sole X executor and records its own exact post readback.
 AFFILIATE_CONSUMED="$STATE/affiliate-proposals-consumed.jsonl"
-AFFILIATE_PICK="$($PY "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL" --consumed "$AFFILIATE_CONSUMED" 2>/dev/null || echo '{"state":"NO_PROPOSAL"}')"
+if ! AFFILIATE_PICK="$($PY "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL" --consumed "$AFFILIATE_CONSUMED" 2>>"$EV/affiliate-proposal.err")"; then
+  report "🛑 Affiliate proposal helper failed; no new Affiliate or generic X post is allowed"
+  finish 1 "affiliate proposal helper failed"
+fi
 AFFILIATE_STATE="$($PY -c 'import json,sys; print(json.load(sys.stdin).get("state","NO_PROPOSAL"))' <<<"$AFFILIATE_PICK" 2>/dev/null || echo NO_PROPOSAL)"
 if [ "$AFFILIATE_STATE" = "BLOCKED_LEGACY_CLAIM" ] || [ "$AFFILIATE_STATE" = "BLOCKED_CONSUMPTION_LEDGER" ]; then
   report "🛑 Affiliate proposal consumption state is unsafe; no new Affiliate or generic X post is allowed"
