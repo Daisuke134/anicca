@@ -342,6 +342,17 @@ Immediate customer-remediation queue, in order:
    final-contract score for revision-after-formal delivery. Remaining Manledge work is exactly 50
    permitted, truthfully receipted outreach actions, response/LINE handoff tracking, then formal
    delivery and replay-zero proof; the 100-candidate list must not be resent.
+   Manledge atomic status:
+   - [x] Reconstruct application, pre-purchase DM, purchased scope and complete talkroom context.
+   - [x] Identify the existing buyer-owned LOXAD LINE destination without asking again or creating
+     another brand identity.
+   - [x] Send and officially read back the 100-row candidate CSV once with formal delivery off.
+   - [ ] Perform 50 permitted outreach actions and persist destination, channel, timestamp, exact
+     message, outcome and reply state without claiming unsent outreach.
+   - [ ] Track interested candidates through qualification and the existing LOXAD LINE handoff;
+     record Web-meeting requests when they occur.
+   - [ ] Attach the completed outreach ledger, make one formal delivery, read it back officially and
+     prove replay causes zero duplicate outreach or delivery.
 2. **haru haru9 / project 18169583.** Finish the current v10 producer/reviewer cycle, attach the
    accepted PC/responsive editable package in the exact room with formal delivery unchecked, read
    the attachment back officially and prove replay effect zero. Do not ask locality or copy questions
