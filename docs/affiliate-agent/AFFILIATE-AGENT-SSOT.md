@@ -173,17 +173,20 @@ deployment adapter for these same contracts, not a second implementation.
 
 ### 1.2 Truth checkpoint: implemented versus still hypothetical
 
-Current override: the installed runtime is `b47dc853eec1b98ccac5b4fe1405986cd92b7a7d`,
+Current override: the installed runtime is `9542272cc3f229fbe8022ae7d43754b554710f34`,
 not the older release identifiers retained in historical table rows below. It
 includes exact Repost campaign matching through either `post_url` or
-`source_url`, the policy-budget queue starvation repair, and per-item policy-failure
-isolation described above, plus the source-selector budget-block retry guard
-described in section 1.1.13.
+`source_url`, the policy-budget queue starvation repair, per-item policy-failure
+isolation, provider unique-click retention, and versioned daily-summary Telegram
+receipts described above.
 The official empty artifact `b65723e65e3fe309dda373b1cd7edda0b6cfb8ae754c208f7da827154b9fecce`,
 unique-click readback, and Telegram delivery in section 1.1.23 are the latest
 money truth. The installed owner completed the due wake at 12:22 JST with
 34/32 placement clicks/unique clicks, 0 commission rows, and a deduplicated
-Telegram delivery; no official transaction or money exists.
+Telegram delivery; no official transaction or money exists. The installed
+daily-summary schema is version `2`, so a same-day schema change may produce one
+new deduplicated receipt; the first owner readback after this install is still
+pending.
 
 This table prevents tests, fixtures, screenshots, or plans from being reported as
 live autonomous operation.
@@ -632,6 +635,34 @@ owned-page visits remain `UNKNOWN`, and no click or estimate is money.
 Commission report artifact `b65723e65e3fe309dda373b1cd7edda0b6cfb8ae754c208f7da827154b9fecce`
 has 0 commission rows; reconciliation read/appended/replayed is `0/0/0`.
 The empty official artifact is not a transaction or money receipt.
+
+### 1.1.24 Unique-click Telegram summary readback
+
+Release `03a5f4b179be37d08d68602c21af652f69b9f33e` adds provider unique-click
+counts and observed/unknown denominators to the daily-summary receipt and its
+natural-language body without treating them as money. Release
+`9542272cc3f229fbe8022ae7d43754b554710f34` versions that summary identity at
+schema `2`, so a reporting-schema change can emit one same-day receipt without
+duplicating the stable daily event. Source and installed `local_loop.py` bytes
+match at SHA-256
+`d9a4d2eb0dcad9575fabe892a85a63ae28a3f6f228823fac80d55c965408418e`;
+the full `69/69` suite, compilation, and diff check passed.
+
+Before the schema-2 install, the existing owner completed wake
+`aef022a3251621ac3aab29f4fb79c902ec2533cc0cd2a2729204644de51602ea` at
+`2026-08-21T12:32:57+0900`; the persisted daily summary had 34 total provider
+clicks, 32 unique provider clicks, all 20 total-click measurements observed,
+and all 20 unique-click measurements observed. Revenue was `COOLDOWN`, the
+official commission artifact remained empty, and Telegram was
+`NO_PENDING` on the existing message `26335`.
+
+The schema-2 release is now the immutable `current` target. A declared kick of
+the existing `ai.anicca.affiliate-loop` returned macOS
+`141: Reentrancy avoided`, and no direct loop executor was started. Therefore
+the new Telegram body containing the unique-click line is **not yet live-proven**;
+the next natural owner wake must show the new daily event UUID, a provider
+message ID, and the redacted body before this reporting gate is closed. No
+transaction, settlement, payout, or money is inferred meanwhile.
 
 ### 1.2.0 Audited executable boundary
 
