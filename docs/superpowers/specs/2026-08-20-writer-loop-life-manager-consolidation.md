@@ -439,6 +439,7 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
 - target stateでは`claim-loop-latest.json`が11:04 JST、`reporting/latest.json`が11:00 JSTに更新され、recovery lockは`owner.pid=40373`（対応processなし）、publication lockは不在だった。A1〜A5を飛ばしてこのstale候補を削除・移動する操作は行わない。
 - 追加のread-only照合では、シェルの実効UIDは501だが`logname`はroot、`/etc/passwd`にはanicca/UID 501の行がなく、`dscl`/ユーザーplistのreadbackは権限エラーになった。`launchctl manageruid/name`と`variant/version`もそれぞれ153/141で、通常のユーザーdomainを所有する有効な実行contextがない。`launchctl help`が示すとおり、`user/<uid>`/`gui/<uid>`の変更は対象ユーザーまたはroot contextが必要なため、現セッションだけで安全にbootstrapできる証拠はない。
 - この診断ではlogout、reboot、`launchd`/loginwindow/opendirectorydのkill、bootstrap/bootout/kickstartを実行していない。A1は「agent-onlyで安全に復旧できる手段なし」のまま、外部コンソールまたは正しいroot/user sessionを得た後のreadbackが必要である。
+- 同じ時点でCoconala側には`paid_direct.py`、`reply_detector.py`、`storefront_direct.py`、`application_direct.py`が`PPID=1`で残っている一方、Writerの`article-daily`/`article-resume` processは観測できなかった。これは以前に起動されたexecution processがlauncherから孤立して存続している証拠であり、現在のlaunchd labelのloaded状態や次のscheduleが生きている証拠ではない。Coconalaだけ動いて見える理由とWriterが定期報告を返さない理由を、process_aliveとscheduler_recurrenceの別証拠として扱う。
 
 ## 目標構成
 
