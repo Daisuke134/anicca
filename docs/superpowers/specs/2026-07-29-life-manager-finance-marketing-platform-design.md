@@ -214,6 +214,7 @@ measurement.
 | Quarantine evidence | `jobs.json.pre-marketing-quarantine-20260801T0955.bak` and the final launchd logs align with a 2026-08-01 09:55 JST marketing quarantine | the exact actor and intent are unproven; do not mass-enable the old fleet |
 | Postiz account | `GET /public/v1/is-connected` returns `connected=true`; integrations return 29 total, 28 enabled, one disabled | cancellation is not the proximate cause |
 | Target TikTok integrations | Honne JA `@honnevideo`, Honne EN `@honne_reveal`, Anicca `@anicca.jp4`, and Anicca iOS `@anicca.jp` all return `disabled=false` | provider routing remains configured; TikTok-side publishing credentials remain unproven until a controlled canary |
+| JP4 provider recheck (2026-08-21 JST) | Postiz `GET /public/v1/integrations` returns JP4 `HTTP 200`, `disabled=false`; Postiz `GET /public/v1/analytics/cmn8x8hdv028uqx0y4gdfse5t` returns `HTTP 200` with Followers `122`, Videos `303`, and Views `12,510` | the JP4 token can answer read-only provider calls; this does not prove that TikTok accepts a new direct publication |
 | Life Manager replacement | generic generation/publication contracts exist, but no Life Manager-owned local marketing scheduler or worker process is currently running | migration code has not yet replaced production scheduling; Docker, Colima, Railway, and a database are not prerequisites |
 | Telegram observation | the post notifier repeatedly measures zero posts and sends zero publication messages; daily generic reports still send | zero-output silence must become a missed-expected-slot alert |
 | Shared learner | mining fails on judge/source ingestion; scoring skips because only three posts meet the 24-hour cohort and the minimum is ten | there is no closed self-improvement loop today |
@@ -1307,6 +1308,21 @@ failed attempt was reconciled as `absent` after a read-only Postiz target
 search returned no row and no local publication ledger row; its JSONL backup is
 retained outside Git.
 
+**MKT-07 provider recheck (2026-08-21 JST).** The failed JP4 effect remains
+terminal and is not retried. A fresh read-only Postiz detail fetch confirms the
+provider-owned error is `postSocialPending` `START_TO_CLOSE` timeout with
+`MAXIMUM_ATTEMPTS_REACHED`, and the row has neither `releaseId` nor
+`releaseURL`. The same integration answers Postiz analytics successfully, so
+the failure is publication-path/account state rather than a Life Manager
+asset, caption, or lineage mismatch. Postiz has no public API endpoint that
+completes a reconnect; its public OAuth route
+(`GET /public/v1/social/tiktok?refresh=cmn8x8hdv028uqx0y4gdfse5t`) generated a
+fresh TikTok authorization URL, but the existing browser session reached the
+TikTok `/login` page. No password, MFA, provider write, or old OpenClaw job was
+used. MKT-07 is therefore **blocked pending one owner-completed TikTok OAuth
+reconnect for `@anicca.jp4`**, after which a new effect (never the failed one)
+may be canaried and reconciled.
+
 **MKT-03 controlled canary (2026-08-21 JST — quarantined historical attempt).**
 One and only one Honne EN TikTok job was promoted from the shadow sentinel.
 Postiz returned a reconciled `PUBLISHED` receipt for
@@ -1764,7 +1780,7 @@ after the preceding numbered row, and no later row is started early:
 MKT-07 → MKT-08 → MKT-09 → MKT-10 → MKT-11 → MKT-11A → MKT-11B → MKT-12 →
 MKT-13`.
 
-Current TODO state: **MKT-01 done; MKT-02 done; MKT-03 done with the earlier generic row quarantined; MKT-03A contract done; MKT-03B is the active next item; MKT-04 seven-cycle gate removed; MKT-05 onward open**. Honne
+Current TODO state: **MKT-01 done; MKT-02 done; MKT-03 done with the earlier generic row quarantined; MKT-03A contract done; MKT-03B partly done; MKT-04 seven-cycle gate removed; MKT-05 and MKT-06 done; MKT-07 is the active blocked item; MKT-08 onward open**. Honne
 has TikTok/Instagram destinations only; YouTube remains an Anicca-only lane.
 
 **Active atomic item:** MKT-07 only. Anicca JA TikTok/Instagram and Honne JA
@@ -1781,7 +1797,7 @@ until the next selected lane passes its own receipt.
 | MKT-04 | Run Honne EN on-demand cycles one by one and prove seven consecutive receipts | Honne EN `@honne_reveal`, one explicit manual trigger per cycle | **removed by owner instruction** — retain the single HEN-006 receipt as evidence; no calendar trigger or seven-cycle wait remains |
 | MKT-05 | Repair the known hook, asset, poster-argument, and environment-boundary defects before any publication | Honne JA `@honnevideo` | **done —** migrated `honne-ja` ReelClaw pack runs through LM object refs only; no legacy hook/path/env/asset read reached the provider |
 | MKT-06 | Restore Honne JA on-demand publishing and record its account receipt | Honne JA `@honnevideo` | **done —** creative `HJA-011-ed3318c496f4` published at `https://www.tiktok.com/@honnevideo/video/7676425660641889537`, provider row `cmt2siqgp0009nt0yoi1qz7lf`, Telegram `message_id=27515`, replay 0; old `honne-ja-fresh` remains disabled |
-| MKT-07 | Repair and canary the JP4 lane | Anicca JP4 `@anicca.jp4` | **partly done / retry deferred —** the correct `AJ-CARD-002-7e24db967bf7` creative created Postiz row `cmt2snuzy0000qp0y8tjgf2i2`; it became `ERROR` with `postSocialPending` `START_TO_CLOSE` timeout and `MAXIMUM_ATTEMPTS_REACHED`, with no release URL/ID. `@anicca.jp4` browser profile readback had zero video links and no caption match, so the existing effect was reconciled `absent` with `public_url=unavailable`; no Telegram was sent. The next retry requires a clean Postiz integration preflight and a new effect; do not reuse this failed effect |
+| MKT-07 | Repair and canary the JP4 lane | Anicca JP4 `@anicca.jp4` | **blocked pending owner OAuth reconnect —** the correct `AJ-CARD-002-7e24db967bf7` creative created Postiz row `cmt2snuzy0000qp0y8tjgf2i2`; it became `ERROR` with `postSocialPending` `START_TO_CLOSE` timeout and `MAXIMUM_ATTEMPTS_REACHED`, with no release URL/ID. The effect was reconciled `absent` with `public_url=unavailable`; no Telegram was sent and the failed effect is not retryable. JP4 read-only analytics still returns HTTP 200, while the Postiz public OAuth reconnect URL lands at TikTok `/login` in the current browser. After the account owner completes that reconnect, run one new effect, verify the direct `/video/<id>` URL, send one natural Telegram receipt, and replay with zero new effects |
 | MKT-08 | Repair and canary the iOS lane | Anicca iOS `@anicca.jp` | one account-specific public URL, natural Telegram receipt, replay 0, and metrics |
 | MKT-09 | Migrate the remaining Larry/ReelClaw accounts one by one, preserving each measured account/locale contract | remaining Anicca/Honne accounts | each account passes one canary, direct receipt, metrics, and replay 0; no mass re-enable |
 | MKT-10 | Enable the three-posts-per-day policy only after the account canary and metrics health gate pass | every production-armed account | exactly the chosen daily policy, no duplicate effects, no silent misses |
