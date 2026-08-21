@@ -346,3 +346,11 @@ Read-only Supabase returned 404 for `lm_capital_mandates` and `capital_mandates`
 canonical earnings table has only two rows: Polymarket realized loss `-$3.15` and x402 income `$0.01`. The latest
 recommendation is `repair / evidence_incomplete_before_allocation / execute=false`. M5c is intentionally pending;
 no capital cycle is authorized without verified profit and explicit owner approval.
+
+## Stale-payload action fix and live E2E (2026-08-21)
+
+Canonical commit `e18c9a3e1` updated only the existing stale transaction warning: it now explains provider payload
+semantics, instructs the owner to open Moneytree app/Web to sync, and promises a next-hour recheck. Stable release
+`20260821T225757-59692` was installed; the real launchd run reached revision `20`, exit `0`, and shared Telegram
+receipt `27882`. Live renderer smoke passed payload/sync/recheck/lag/non-realtime assertions. The Moneytree payload itself
+is still unchanged at latest transaction `2026-08-18`; no fake realtime value was introduced.

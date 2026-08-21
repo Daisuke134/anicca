@@ -1590,3 +1590,17 @@ button was entered/clicked. The direct plugin read immediately before this attem
 provider balance `¥358,938`, 334 transactions, and newest transaction `2026-08-18`. The remaining freshness fix therefore
 needs one owner Moneytree Web login/synchronization or a separately authorized LINK `request_refresh` grant; the loop
 continues to fail closed and display the stale warning.
+
+### Stale-payload action fix and live E2E (2026-08-21)
+
+Canonical commit `e18c9a3e1` changes only the existing `transactionText` renderer. When the returned transaction date
+lags the reporting date, Japanese and English Telegram text now states that the payload is a provider snapshot, the
+balance is not realtime, the owner should open Moneytree app/Web to sync, and the next hourly read will recheck. No
+amount, date, credential, or provider behavior was changed.
+
+The stable installer staged release `20260821T225757-59692` and refreshed the existing label. The real post-install
+run completed `revision=20`, `status=sent`, `delivered=true`, `providerDataFreshness=stale`,
+`latestReturnedTransactionDate=2026-08-18`, exit `0`, and empty stderr. The shared Telegram provider receipt is
+`message_id=27882`. A fresh live renderer smoke asserted all five user-facing invariants: payload explanation, app/Web
+sync instruction, next-hour recheck, 2026-08-18 lag, and non-realtime warning. The actual bank-side value remains
+unchanged until Moneytree synchronization or LINK `request_refresh` owner authorization occurs.
