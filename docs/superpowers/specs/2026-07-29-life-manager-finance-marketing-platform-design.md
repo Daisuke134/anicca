@@ -1346,6 +1346,13 @@ replay and a second process replay both created zero publication or Telegram
 effects. The old generic canary remains quarantined evidence; no new provider
 write was made during reconciliation.
 
+The direct-URL resolver now keeps the yt-dlp path but falls back to the existing
+CDP browser profile DOM when TikTok's JavaScript page defeats yt-dlp. It matches
+the normalized caption against the newest profile links and still accepts only a
+native `/video/<id>` URL. The fallback was read-only verified against the same
+Honne EN caption and returned `7676388327427149077`; it never treats the Postiz
+`releaseId` suffix as the provider ID.
+
 **MKT-03A YouTube shadow contract (2026-08-21 JST — complete).** The generic
 Life Manager publication adapter now accepts an Anicca-only YouTube platform
 job with a platform-scoped `integration://postiz/youtube/...` reference. Receipt

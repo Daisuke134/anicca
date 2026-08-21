@@ -184,9 +184,11 @@ def resolve_profile_release_url(
     *,
     posted_after: int,
     runner=subprocess.run,
+    browser_resolver=None,
 ) -> str | None:
     if not re.fullmatch(r"https://www\.tiktok\.com/@[^/]+/?", profile_url):
         return None
+    caption_prefix = _normalized(caption)[:24].strip()
     try:
         proc = runner(
             [
@@ -202,31 +204,80 @@ def resolve_profile_release_url(
             timeout=60,
         )
     except OSError:
-        return None
-    if proc.returncode != 0:
-        return None
+        proc = None
+    if proc is not None and proc.returncode == 0:
+        try:
+            data = json.loads(proc.stdout)
+        except json.JSONDecodeError:
+            data = None
+        entries = data.get("entries", []) if isinstance(data, dict) else []
+        candidates = []
+        for row in entries:
+            if not isinstance(row, dict):
+                continue
+            url = row.get("url")
+            title = row.get("title") or row.get("description") or ""
+            timestamp = row.get("timestamp")
+            if (
+                isinstance(url, str)
+                and re.fullmatch(r"https://www\.tiktok\.com/@[^/]+/video/[0-9]+/?", url)
+                and isinstance(timestamp, (int, float))
+                and timestamp >= posted_after - 5
+                and _normalized(str(title)).startswith(caption_prefix)
+            ):
+                candidates.append((timestamp, url))
+        if candidates:
+            return max(candidates)[1]
+    resolver = browser_resolver or _resolve_profile_release_url_browser
+    return resolver(profile_url, caption, posted_after=posted_after, caption_prefix=caption_prefix)
+
+
+def _resolve_profile_release_url_browser(
+    profile_url: str,
+    caption: str,
+    *,
+    posted_after: int,
+    caption_prefix: str | None = None,
+) -> str | None:
+    """Read the newest profile DOM when yt-dlp cannot read TikTok's JS page."""
+    del caption, posted_after  # profile order is newest-first; exact caption is the join key.
     try:
-        data = json.loads(proc.stdout)
-    except json.JSONDecodeError:
+        from playwright.sync_api import sync_playwright
+    except ImportError:
         return None
-    entries = data.get("entries", []) if isinstance(data, dict) else []
-    caption_prefix = _normalized(caption)[:24]
-    candidates = []
-    for row in entries:
-        if not isinstance(row, dict):
-            continue
-        url = row.get("url")
-        title = row.get("title") or row.get("description") or ""
-        timestamp = row.get("timestamp")
-        if (
-            isinstance(url, str)
-            and re.fullmatch(r"https://www\.tiktok\.com/@[^/]+/video/[0-9]+/?", url)
-            and isinstance(timestamp, (int, float))
-            and timestamp >= posted_after - 5
-            and _normalized(str(title)).startswith(caption_prefix)
-        ):
-            candidates.append((timestamp, url))
-    return max(candidates)[1] if candidates else None
+    prefix = caption_prefix or ""
+    try:
+        host = os.environ.get("CDP_HOST", "127.0.0.1")
+        port = os.environ.get("CDP_PORT", "9222")
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.connect_over_cdp(f"http://{host}:{port}")
+            if not browser.contexts:
+                return None
+            page = browser.contexts[0].new_page()
+            try:
+                page.goto(profile_url, wait_until="domcontentloaded", timeout=45_000)
+                try:
+                    page.wait_for_load_state("networkidle", timeout=15_000)
+                except Exception:
+                    pass
+                rows = page.locator('a[href*="/video/"]').evaluate_all(
+                    "els => els.map(e => ({href:e.href, alt:e.querySelector('img')?.alt || ''}))",
+                )
+                for row in rows:
+                    url = row.get("href") if isinstance(row, dict) else None
+                    alt = row.get("alt") if isinstance(row, dict) else ""
+                    if (
+                        isinstance(url, str)
+                        and re.fullmatch(r"https://www\.tiktok\.com/@[^/]+/video/[0-9]+/?", url)
+                        and prefix
+                        and prefix in _normalized(str(alt))
+                    ):
+                        return url
+            finally:
+                page.close()
+    except Exception:
+        return None
+    return None
 
 
 def _request_json(request: urllib.request.Request, timeout: int = 90):
