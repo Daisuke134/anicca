@@ -62,7 +62,10 @@ function callMoneytreeBundle(options = {}) {
         if (Buffer.byteLength(String(data), "utf8") > MAX_BUFFER) return finish(new Error(ERROR));
         let message;
         try { message = JSON.parse(String(data)); } catch { return finish(new Error(ERROR)); }
-        if (message.error) return finish(new Error(ERROR));
+        if (message.error) {
+          if (message.id === 4 && accountContent) return finish(null, { accounts: accountContent, transactions: null });
+          return finish(new Error(ERROR));
+        }
         if (message.id === 1) {
           try { ws.send(JSON.stringify({ jsonrpc: "2.0", method: "initialized" })); send("thread/start", { cwd: options.cwd || CFO_CWD, model: "gpt-5.6-luna", approvalPolicy: "never", sandbox: "read-only", ephemeral: true, serviceName: "life-manager-cfo-hourly", config: { features: { apps: true } } }); } catch { finish(new Error(ERROR)); }
         } else if (message.id === 2) {
