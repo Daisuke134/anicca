@@ -1239,7 +1239,8 @@ single Honne EN TikTok canary; the Postiz credential remains outside Git and
 must never be copied into the manifest.
 
 **MKT-03 preflight (2026-08-21 JST — blocked before any external effect).**
-The read-only preflight found three independent prerequisites still absent:
+The read-only preflight records two external blockers and one local lineage
+precondition that is now satisfied:
 
 1. `apps/life-manager/scripts/honne-en-canary.js` now has an explicit
    `LM_HONNE_EN_CANARY_TRANSPORT=postiz` path, but it requires the exact
