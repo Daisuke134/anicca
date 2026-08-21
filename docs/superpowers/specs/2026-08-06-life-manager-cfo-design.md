@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | M2 — `CFO-OPS3a`, `CFO-OPS3b`, `CFO-1j`, `CFO-2b.2`, `CFO-2b.3`, `CFO-2b.4`, `CFO-2b.5`, `CFO-2b.6`, `CFO-2b.7`, `CFO-2b.8`, `CFO-2b.9`, `CFO-2c`, `CFO-2d`, `CFO-2d2`, `CFO-2d3`, `CFO-2e`, `CFO-4a`, and `CFO-4b` are closed; M3 tax/Binance is deferred and M4d tenant/browser parity is next |
+| Status | M2 — `CFO-OPS3a`, `CFO-OPS3b`, `CFO-1j`, `CFO-2b.2`, `CFO-2b.3`, `CFO-2b.4`, `CFO-2b.5`, `CFO-2b.6`, `CFO-2b.7`, `CFO-2b.8`, `CFO-2b.9`, `CFO-2c`, `CFO-2d`, `CFO-2d2`, `CFO-2d3`, `CFO-2e`, `CFO-4a`, `CFO-4b`, and `CFO-4d` are closed; M3/Binance and M4c are deferred, M4e tenant/load evidence is next |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
@@ -1278,8 +1278,9 @@ ingestion. They are not unchecked M1 items and cannot become the active CFO item
       or provider state mutated. M4c Binance/fixed-egress verification is deferred with Binance.
 - [ ] **CFO-4c** Verify Binance from fixed cloud egress and preserve its IP allowlist. **Deferred:** Binance remains
       explicitly skipped by the owner, so no credentials, IP allowlist, or verification claim is created.
-- [ ] **CFO-4d** Implement browser fallback against Steel profiles, one profile per tenant/provider; prove local and
-      cloud contract parity without placing browser state in prompts or DB rows.
+- [x] **CFO-4d** Implement browser fallback against Steel profiles, one profile per tenant/provider; prove local and
+      cloud contract parity without placing browser state in prompts or DB rows. Existing tenant/secret/runtime tests
+      and Steel/browser contract tests pass 36/36 and 83/83; no browser profile or provider state was copied.
 - [ ] **CFO-4e** Run tenant-isolation adversarial tests and a 100-user load/cost simulation from recorded adapter
       envelopes before onboarding user 2.
 
@@ -1431,3 +1432,11 @@ Canonical commit `126c6c803` adds `apps/life-manager/lib/cfo-cloud-scheduler.js`
 heartbeat, immutable completion/failure receipts, and bounded unknown reconciliation. Existing runtime scheduler/lease
 tests pass 13/13; no cloud job or provider was mutated. M4c Binance is deferred with Binance; M4d tenant/browser parity
 is next.
+
+### CFO-4d closure correction (2026-08-21)
+
+The existing canonical cloud/browser contracts prove tenant-scoped secrets, portable runtime roots, per-tenant runtime
+jobs, and one Steel browser session per tenant/provider. Read-only contract suites pass 36/36 for tenant/runtime/secret
+boundaries and 83/83 for Steel/browser/auth-continuity/privacy boundaries. No browser profile, cookie, provider
+credential, or cloud state was copied into the CFO release. Binance fixed-egress verification remains explicitly
+deferred; M4e isolation/load evidence is next.
