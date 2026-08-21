@@ -94,6 +94,16 @@
 - pause markerを再作成し、次のatomic actionはこの修正をcurrentへ反映してstart-controlの新identity readbackを確認し、
   その後にだけ新runでCodex-only canaryを一回実行することとする。
 
+### 旧Note retry drift の隔離実測（2026-08-21）
+
+- pause中の別tickで、旧`daily-2026-08-07/note/ja`が同じfailure circuitのまま`RETRY`へ再armされるdriftを検出した。
+  これは新canaryを奪うため、current publication-stateのidentity hashとopen circuit receiptを再計算した。
+- `writer_incident_queue.py circuit-wait`で、そのpairだけを`WAIT/WAIT_FOR_NEW_OCCURRENCE`へ戻し、circuit receipt SHAと
+  state identity SHAをqueue itemへ保存した。公開・修復runbook・paymentは実行していない。
+- run quarantine receiptをpruneが消す別故障も検出したため、`prune-article-runs.py`は`run-quarantine.json`を含むrunを保護する。
+  今後はqueueが参照する重複media証明をretentionで失わない。次のnew-identity canary前readbackは
+  `WAIT=14 / FAILED=7 / CLAIMED=1`を必須にする。
+
 ### launchd control-plane の外部照合と現在の原因判定（2026-08-21）
 
 - Appleの資料では、`~/Library/LaunchAgents`はログイン中ユーザー専用のLaunchAgent置き場であり、
