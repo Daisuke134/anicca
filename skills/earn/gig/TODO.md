@@ -967,6 +967,9 @@ Every reused semantic decision binds a digest of the compiled context's actual i
 size/SHA256 pairs, not volatile compilation timestamps. If attachments or messages arrive after the
 decision, the mismatch forces a new Sol decision before any owner starts; identical inputs reuse the
 decision, and an old `unresolved` claim may never survive after the missing source is collected.
+The project worker revalidates that decision after DM collection. If DM discovery adds or changes
+an input, it runs the Sol decision again in the same worker before choosing file/answer/remote mode;
+it may not fall through to `remote_resume` merely because the required context became more complete.
 The authenticated offer page is the exact bridge from a purchased order to its pre-purchase DM:
 persist its `/mypage/direct_message/<id>` reference in the project proposal, then have Paid refresh
 that one thread directly. A buyer-name scan incorrectly reported Haru's real DM `10102712` absent
