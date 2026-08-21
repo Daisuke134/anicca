@@ -110,7 +110,42 @@ Each of the six OpenClaw automations invokes the same deterministic command with
 
 One creative produces one final media hash and one campaign ID, then fans out to both product-locked platforms. Platform-native caption and hashtag formatting may differ, but the video, promise, CTA, creative ID, and campaign identity stay the same. Thus each product creates three videos and six platform publications per day; the portfolio creates six videos and twelve platform publications per day.
 
-### 3.3 New-video contract
+### 3.3 Script Engine contract
+
+The Script Engine is the decision brain of both loops. Watercolor and OmniAvatar present an already-approved script; neither renderer invents product claims, selects a CTA, or mutates the message independently. The general research and script-learning doctrine remains Spec 27 §5.1; this section locks the current JP/EN execution contract.
+
+Every script is immutable and carries:
+
+| Field | Contract |
+|---|---|
+| `script_id`, `parent_script_id`, version | preserve lineage; a published script is never edited in place |
+| product, account, language | JP and EN memory never pools as one audience |
+| source mechanism IDs/URLs | record the reusable mechanism without copying wording, footage, identity, or unsupported claims |
+| hook, pain angle, teaching/reframe, action, CTA IDs | make component-level learning possible |
+| hypothesis, declared mutation, baseline | exactly one primary variable differs from the parent |
+| campaign, creative, renderer IDs | join script to both native posts and the sale/refund outcome |
+| primary metric, maturity window, stop rule | prevent views or immature data from declaring a sales winner |
+
+```mermaid
+flowchart LR
+    Evidence[Mature social + money evidence] --> Bottleneck[Select deepest bottleneck]
+    Bottleneck --> Parent[Select one parent script]
+    Parent --> Mutation[Change one declared variable]
+    Mutation --> Script[Store immutable child script]
+    Script --> Render[Watercolor or OmniAvatar]
+    Render --> Publish[Postiz fan-out]
+    Publish --> Measure[6h · 24h · 72h · 7d + sales]
+    Measure --> Weights[Update exact next-run weights]
+    Weights --> Parent
+```
+
+The first seven live days form a structured baseline of 21 scripts per product. The engine varies one declared component per child and does not promote or retire from immature evidence. After baseline, each rolling 15-slot product window contains 12 exploitation scripts and three exploration scripts, preserving the 80/20 contract despite a three-per-day cadence.
+
+Decision priority is settled contribution/net revenue, paid order, checkout or qualified click, qualified engagement, then view/retention. Six hours is diagnostic, 24 hours is provisional, 72 hours is the primary social decision point, and seven days is final social maturity; a verified order/refund/revenue event writes through when received. Retirement requires at least three comparable mature observations from the same product, account, platform, and format. `insufficient` is not `lost`.
+
+Learning is closed only when the result changes the exact hook, pain-angle, teaching, action, or CTA weights consumed by the next selection. Writing a report or playbook row that the generator does not read is not learning. A mechanism may cross languages only as a challenger with a new culturally authored script and separate JP/EN evidence.
+
+### 3.4 New-video contract
 
 A normal slot is successful only when all three are new for that product:
 
@@ -220,19 +255,29 @@ Only the first unchecked item is active. Each item ends in a focused test, real 
 - [ ] **E2 — Add two product packs.** Encode canonical accounts, integrations, landing destinations, prices, three JST slots, renderer, claims, and stop rules. **Done:** schema and identity tests reject the old EN Instagram integration and `/jp` destination.
 - [ ] **E3 — Preflight four Postiz identities.** Read back all four integration profiles; reconnect EN TikTok without altering the other three. **Done:** four account/profile mappings are enabled and match this spec, or EN remains explicitly degraded with only Instagram eligible.
 - [ ] **E4 — Bind the approved OmniAvatar artifact and prove free capacity.** Recover Telegram artifact `4893` into durable evidence or reproduce the same `alexnasa/OmniAvatar` free path; record source/model revision, license chain, provider receipt, quota state, latency, input/output hashes, media probe, and the owner's quality approval. Then render three distinct daily fixtures through the intended free runtime. **Done:** all three complete at zero render cost with stable character/voice identity and no HeyGen request, subscription, source asset, or fallback.
-- [ ] **E5 — Build the shared resumable runner.** Implement observe, decide, render, preflight, intent, publish, reconcile, measure, attribute, learn, and report states with the unique publish key. **Done:** crash/restart and unknown-POST tests prove no duplicate create.
-- [ ] **E6 — Wrap Japanese watercolor.** Preserve its identity and expose only bounded experiment variables. **Done:** golden output and one-variable mutation characterization pass.
-- [ ] **E7 — Wrap English OmniAvatar monk.** Preserve the approved character and voice behind the free OmniAvatar adapter; no scheduler code enters the adapter. **Done:** a real render passes visual/audio preflight, produces a durable receipt, records zero render cost, and rejects any HeyGen configuration.
-- [ ] **E8 — Propagate campaign attribution.** Carry campaign ID from each destination through landing, Stripe Checkout metadata, completion, refund, and fulfillment. **Done:** one non-production checkout fixture and Stripe read-back bind the same campaign without counting test revenue.
-- [ ] **E9 — Implement Postiz stage/create/reconcile.** Persist intent and `postId`, isolate platform effects, and reconcile unknown outcomes before retry. **Done:** forced timeout and partial-platform tests produce zero duplicates and truthful degraded state.
-- [ ] **E10 — Connect free/native checkpoints and business truth.** Reuse the Marketing Engine's current native/Postiz analytics and product-scoped Stripe snapshots; exclude old Apify paths. **Done:** one actual native post and one no-sale business day render measured/null states correctly.
-- [ ] **E11 — Implement natural Telegram projections.** Add the four exact classes in §6 with event-UUID dedupe; routine checkpoints roll into the product digest. **Done:** real publication, daily-product, incident, and weekly-portfolio Bot sends return provider message IDs and exactly match ledger values without raw-log or checkpoint spam.
-- [ ] **E12 — Run non-publishing shadow turns.** Execute both products through decision, render, preflight, intent, metrics read, and report without provider create. **Done:** three consecutive shadow turns per product have no unowned state, identity ambiguity, or accidental external effect.
-- [ ] **E13 — Publish the JP canary.** One watercolor creative fans out through Postiz to JP TikTok and Instagram. **Done:** both native URLs and Postiz IDs reconcile, Telegram reports naturally, and no duplicate exists.
-- [ ] **E14 — Publish the EN canary.** One OmniAvatar creative fans out through Postiz to EN TikTok and Instagram; if EN TikTok remains disabled, Instagram publishes and the turn remains degraded. **Done:** all eligible native effects reconcile, render cost is zero, and the blocker is explicit.
-- [ ] **E15 — Enable six local OpenClaw slots.** Create six local command automations with exact timezone, non-overlap, bounded timeout, and failure alert. Verify no legacy monk publisher is loaded or enabled. **Done:** scheduler read-back matches §3.1 and each job calls only the shared runner.
-- [ ] **E16 — Complete the seven-day activation soak.** Monitor without passive waiting while independent fixes and checkpoint collection continue. **Done:** 42 unique videos exist—21 per product—with up to 84 platform receipts, duplicate external effects equal zero, every due checkpoint is measured or has a named status, daily Stripe truth exists, Telegram IDs exist, and at least one mature result changes a later decision input.
-- [ ] **E17 — Enter revenue scaling.** Keep cadence fixed until contribution is positive, then allocate more winning capacity within provider/account limits. **Done:** `ebook-ja` and `ebook-en` each independently show at least USD `$10,000` equivalent of actual rolling 30-day settled net revenue; the portfolio is at least `$20,000`, and neither target is closed by views, pace estimates, or the other product's revenue.
+- [ ] **E5 — Build and prove the product-isolated Script Engine.** Reuse Spec 27 §5.1 and complete S1–S9 in order. **Done:** mature evidence changes the exact next script input twice consecutively, while JP/EN memory, lineage, and one-variable causality remain intact.
+  - [ ] **S1 — Recover script history.** Bind retained JP/EN scripts to known creative, native-post, metric, click, and order evidence; duplicates and unknown ancestry remain explicit.
+  - [ ] **S2 — Enforce immutable schema.** Require every field in §3.3 before render; a posted script cannot be edited or published twice as “new.”
+  - [ ] **S3 — Lock two writer contracts.** JP uses the watercolor suffering → teaching → action → CTA form; EN uses culturally authored English pain → Anicca reframe → action → CTA and rejects literal translation.
+  - [ ] **S4 — Add deterministic preflight.** Reject semantic duplicates, missing proof/CTA/campaign, multiple declared mutations, unsupported ebook claims, wrong language/account, and empty parent lineage for non-baseline scripts.
+  - [ ] **S5 — Materialize two baseline queues.** Store 21 immutable scripts per product for the first seven days with balanced hook/angle/teaching/action/CTA coverage and one declared variable per child.
+  - [ ] **S6 — Select one mutation from the bottleneck.** Choose parent and changed component from the deepest mature reliable outcome; enforce 12 exploit/3 explore across each rolling 15 product slots.
+  - [ ] **S7 — Attribute outcomes to script components.** Join script → creative → two platform receipts → campaign → click/checkout/order/refund/net without pooling JP and EN.
+  - [ ] **S8 — Write component weights back.** Update the exact next-run hook/angle/teaching/action/CTA inputs; minimum-three-observation retirement and `insufficient` behavior are mandatory.
+  - [ ] **S9 — Prove two-turn learning.** Two consecutive fixture turns and then one real mature turn show that changed evidence changes the selected parent/mutation and visible script while replay is identical.
+- [ ] **E6 — Build the shared resumable runner.** Implement observe, script decision, render, preflight, intent, publish, reconcile, measure, attribute, learn, and report states with the unique publish key. **Done:** crash/restart and unknown-POST tests prove no duplicate create.
+- [ ] **E7 — Wrap Japanese watercolor.** Preserve its identity and render only an accepted immutable script; expose bounded visual experiment variables separately. **Done:** golden output and one-variable mutation characterization pass.
+- [ ] **E8 — Wrap English OmniAvatar monk.** Preserve the approved character and voice, render only an accepted immutable script through the free adapter, and keep scheduler logic outside it. **Done:** a real render passes visual/audio preflight, produces a durable receipt, records zero render cost, and rejects any HeyGen configuration.
+- [ ] **E9 — Propagate campaign attribution.** Carry campaign ID from each destination through landing, Stripe Checkout metadata, completion, refund, and fulfillment. **Done:** one non-production checkout fixture and Stripe read-back bind the same campaign without counting test revenue.
+- [ ] **E10 — Implement Postiz stage/create/reconcile.** Persist intent and `postId`, isolate platform effects, and reconcile unknown outcomes before retry. **Done:** forced timeout and partial-platform tests produce zero duplicates and truthful degraded state.
+- [ ] **E11 — Connect free/native checkpoints and business truth.** Reuse the Marketing Engine's current native/Postiz analytics and product-scoped Stripe snapshots; exclude old Apify paths. **Done:** one actual native post and one no-sale business day render measured/null states correctly.
+- [ ] **E12 — Implement natural Telegram projections.** Add the four exact classes in §6 with event-UUID dedupe; routine checkpoints roll into the product digest. **Done:** real publication, daily-product, incident, and weekly-portfolio Bot sends return provider message IDs and exactly match ledger values without raw-log or checkpoint spam.
+- [ ] **E13 — Run non-publishing shadow turns.** Execute both products through script decision, render, preflight, intent, metrics read, and report without provider create. **Done:** three consecutive shadow turns per product have no unowned state, identity ambiguity, accidental external effect, or undeclared script mutation.
+- [ ] **E14 — Publish the JP canary.** One watercolor creative fans out through Postiz to JP TikTok and Instagram. **Done:** both native URLs and Postiz IDs reconcile, Telegram reports the script hypothesis naturally, and no duplicate exists.
+- [ ] **E15 — Publish the EN canary.** One OmniAvatar creative fans out through Postiz to EN TikTok and Instagram; if EN TikTok remains disabled, Instagram publishes and the turn remains degraded. **Done:** all eligible native effects reconcile, render cost is zero, the script lineage is intact, and the blocker is explicit.
+- [ ] **E16 — Enable six local OpenClaw slots.** Create six local command automations with exact timezone, non-overlap, bounded timeout, and failure alert. Verify no legacy monk publisher is loaded or enabled. **Done:** scheduler read-back matches §3.1 and each job calls only the shared runner.
+- [ ] **E17 — Complete the seven-day activation soak.** Monitor without passive waiting while independent fixes and checkpoint collection continue. **Done:** 42 unique videos and scripts exist—21 per product—with up to 84 platform receipts, duplicate external effects equal zero, every due checkpoint is measured or has a named status, daily Stripe truth exists, Telegram IDs exist, and at least one mature result changes a later script input.
+- [ ] **E18 — Enter revenue scaling.** Keep cadence fixed until contribution is positive, then allocate more winning capacity within provider/account limits. **Done:** `ebook-ja` and `ebook-en` each independently show at least USD `$10,000` equivalent of actual rolling 30-day settled net revenue; the portfolio is at least `$20,000`, and neither target is closed by views, pace estimates, or the other product's revenue.
 
 ### 7.1 Contract test matrix
 
@@ -240,6 +285,9 @@ Only the first unchecked item is active. Each item ends in a focused test, real 
 |---|---|---|
 | Each product routes only to its two locked accounts and CTA | `test_ebook_product_account_routing` | exact four Postiz IDs and two destination paths match §3.2 |
 | One creative fans out without becoming two videos | `test_creative_fanout_preserves_identity` | TikTok/Instagram rows share media hash, creative ID, campaign ID, promise, and CTA |
+| A child script changes exactly one declared component | `test_script_lineage_and_single_mutation` | immutable parent/child diff matches the declared hook/angle/teaching/action/CTA mutation |
+| JP and EN script memory remains isolated | `test_script_learning_is_product_language_scoped` | an EN winner cannot change JP weights without a new JP challenger treatment |
+| Mature evidence changes the next consumed input | `test_script_weight_writeback_changes_next_turn` | two consecutive turns show evidence → weight hash → selected parent/mutation → visible script change |
 | Telegram emits exactly four natural message classes | `test_owner_report_four_classes_and_dedupe` | fixture equality plus real Bot message IDs; routine checkpoints create no chat spam |
 | JP and EN revenue cannot subsidize each other's target | `test_ebook_targets_are_product_isolated` | `$20k/$0` and `$0/$20k` fixtures both leave one target false; `$10k/$10k` passes both |
 | Pace, gross, views, or missing JP FX cannot close net target | `test_rolling_net_target_rejects_proxies` | only actual rolling 30-day settled net with recorded conversion passes |
@@ -252,7 +300,7 @@ Only the first unchecked item is active. Each item ends in a focused test, real 
 
 ## 8. Activation gates and rollback
 
-No recurring slot is enabled before E1–E12 pass. JP and EN canaries are independent. EN TikTok disconnection cannot block JP or EN Instagram, but it prevents claiming the full EN loop is healthy.
+No recurring slot is enabled before E1–E13 pass. JP and EN canaries are independent. EN TikTok disconnection cannot block JP or EN Instagram, but it prevents claiming the full EN loop is healthy.
 
 Rollback disables only the six new scheduler entries and preserves every intent, render, Postiz receipt, native URL, metric, sale, and Telegram event. It never deletes retained monk state. Scheduler disablement is not evidence deletion.
 
