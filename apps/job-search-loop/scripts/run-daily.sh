@@ -33,6 +33,7 @@ refresh_summary() {
   --endpoint "http://127.0.0.1:9222" \
   --output "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE"
 ASHBY_FAST_PATH_RESULT="$EVIDENCE/ashby-fast-path.json"
+ASHBY_BLOCKER_STATE="$JOB_SEARCH_STATE_ROOT/ashby-required-field-blockers.json"
 set +e
 "$JOB_SEARCH_PYTHON" -m job_search_loop.ashby_fast_path \
   --endpoint "http://127.0.0.1:9222" \
@@ -41,6 +42,7 @@ set +e
   --materials-root "${XDG_DATA_HOME:-$HOME/.local/share}/anicca/job-search/materials" \
   --evidence-dir "$EVIDENCE/ashby-fast-path" \
   --output "$ASHBY_FAST_PATH_RESULT" \
+  --blocker-state "$ASHBY_BLOCKER_STATE" \
   --japan-day "$JAPAN_DAY"
 ASHBY_FAST_PATH_RC=$?
 set -e
@@ -63,20 +65,35 @@ if [[ "$ASHBY_DISCOVERY_RC" -ne 0 ]]; then
   printf '%s\n' "Ashby deterministic discovery exited rc=$ASHBY_DISCOVERY_RC; existing queue continues" >&2
 fi
 ASHBY_DISCOVERED_FAST_PATH_RESULT="$EVIDENCE/ashby-fast-path-discovered.json"
-set +e
-"$JOB_SEARCH_PYTHON" -m job_search_loop.ashby_fast_path \
-  --endpoint "http://127.0.0.1:9222" \
-  --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
-  --profile "$JOB_SEARCH_PROFILE" \
-  --materials-root "${XDG_DATA_HOME:-$HOME/.local/share}/anicca/job-search/materials" \
-  --evidence-dir "$EVIDENCE/ashby-fast-path-discovered" \
-  --output "$ASHBY_DISCOVERED_FAST_PATH_RESULT" \
-  --japan-day "$JAPAN_DAY" \
-  --max-jobs 1
-ASHBY_DISCOVERED_FAST_PATH_RC=$?
-set -e
-if [[ "$ASHBY_DISCOVERED_FAST_PATH_RC" -ne 0 ]]; then
-  printf '%s\n' "Ashby discovered fast path exited rc=$ASHBY_DISCOVERED_FAST_PATH_RC; model fallback remains bounded" >&2
+ASHBY_DISCOVERY_COUNT=$("$JOB_SEARCH_JQ" -r '(.discovered // []) | length' "$ASHBY_DISCOVERY_RESULT")
+if [[ "$ASHBY_DISCOVERY_COUNT" -gt 0 ]]; then
+  set +e
+  "$JOB_SEARCH_PYTHON" -m job_search_loop.ashby_fast_path \
+    --endpoint "http://127.0.0.1:9222" \
+    --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
+    --profile "$JOB_SEARCH_PROFILE" \
+    --materials-root "${XDG_DATA_HOME:-$HOME/.local/share}/anicca/job-search/materials" \
+    --evidence-dir "$EVIDENCE/ashby-fast-path-discovered" \
+    --output "$ASHBY_DISCOVERED_FAST_PATH_RESULT" \
+    --blocker-state "$ASHBY_BLOCKER_STATE" \
+    --japan-day "$JAPAN_DAY" \
+    --max-jobs 1
+  ASHBY_DISCOVERED_FAST_PATH_RC=$?
+  set -e
+  if [[ "$ASHBY_DISCOVERED_FAST_PATH_RC" -ne 0 ]]; then
+    printf '%s\n' "Ashby discovered fast path exited rc=$ASHBY_DISCOVERED_FAST_PATH_RC; model fallback remains bounded" >&2
+  fi
+else
+  "$JOB_SEARCH_PYTHON" - "$ASHBY_DISCOVERED_FAST_PATH_RESULT" <<'PY'
+import json
+import os
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+path.write_text(json.dumps({"status": "no_work", "processed": [], "excluded": []}) + "\n", encoding="utf-8")
+os.chmod(path, 0o600)
+PY
 fi
 ASHBY_COMBINED_RESULT="$EVIDENCE/ashby-fast-path-combined.json"
 "$JOB_SEARCH_PYTHON" - \

@@ -72,6 +72,9 @@ provider-policy quarantine; `aria-hidden` native submit button → ordinary clic
 the visible `Submit Application` text. The repeatable loop is now
 `Ashby fast path → official-cache discovery (one Tokyo/Japan row) → Ashby fast path
 again → Telegram checkpoint → summary`, with model fallback disabled by default.
+An ElevenLabs form with unverified required experience questions is now stored as a
+profile-SHA-bound blocker. The immediate repeat skips it without reopening or
+clicking the form; a later profile revision re-enables exactly that row.
 The daily script now bounds the non-deterministic browser fallback at 300 seconds
 by default (`JOB_SEARCH_BROWSER_TIMEOUT_SECONDS` may lower or raise that bounded
 value); deterministic ATS fast paths run before it and retain their own evidence.
@@ -121,7 +124,7 @@ launchd (30 min)
 | No candidate in current cache | Report `no_work`; do not invoke an unbounded model search or invent a job |
 | Browser/CDP unavailable | No Ledger claim and no form action; browser owner launchd keeps/restarts only its dedicated profile, then the next wake retries |
 | Provider policy visible | Record the exact policy and quarantine the row; never bypass application limits or repeat it on every wake |
-| Required form fact unknown | Stop before submit with a durable blocker; continue to another candidate rather than guessing a fact |
+| Required form fact unknown | Store the exact non-secret fields keyed to the profile SHA-256; skip that row until the profile changes, then continue to another candidate rather than guessing a fact |
 | Submit click without authoritative confirmation | Record `submit_unknown`; never click it again; inbox/ATS reconciliation owns later confirmation |
 | Telegram transport outcome unknown | Keep the event `send_started`; never blindly resend; a later reconciliation may attach an authoritative ACK |
 | Model fallback | Disabled by default for Ashby. It can only be explicitly re-enabled after a bounded deterministic lane has no viable source |

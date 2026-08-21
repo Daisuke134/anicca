@@ -69,6 +69,25 @@ def _write_json(path: Path, value: Any) -> None:
     os.chmod(path, 0o600)
 
 
+def _load_required_field_blockers(path: Path) -> dict[str, dict[str, Any]]:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    rows = value.get("blockers") if isinstance(value, dict) else None
+    if not isinstance(rows, dict):
+        return {}
+    return {
+        str(application_id): dict(row)
+        for application_id, row in rows.items()
+        if isinstance(application_id, str) and isinstance(row, dict)
+    }
+
+
+def _save_required_field_blockers(path: Path, rows: dict[str, dict[str, Any]]) -> None:
+    _write_json(path, {"version": 1, "blockers": rows})
+
+
 async def _snapshot(page: Any) -> dict[str, Any]:
     frames: list[dict[str, Any]] = []
     for frame in page.frames:
@@ -636,6 +655,8 @@ async def _process_one(
 
 async def _run(args: argparse.Namespace) -> dict[str, Any]:
     profile = json.loads(args.profile.read_text(encoding="utf-8"))
+    profile_sha256 = hashlib.sha256(args.profile.read_bytes()).hexdigest()
+    required_field_blockers = _load_required_field_blockers(args.blocker_state)
     ledger = Ledger(args.ledger)
     exclusions = profile.get("candidate", {}).get("employer_exclusions", [])
     excluded = ledger.reject_excluded_employers(
@@ -655,12 +676,30 @@ async def _run(args: argparse.Namespace) -> dict[str, Any]:
         for row in [*pending, *retryable]
         if "ashbyhq.com" in str(row["canonical_url"])
     }
-    rows = list(rows_by_id.values())
+    skipped_blocked: list[dict[str, Any]] = []
+    rows: list[dict[str, Any]] = []
+    for row in rows_by_id.values():
+        application_id = str(row["application_id"])
+        blocker = required_field_blockers.get(application_id)
+        if blocker and blocker.get("profile_sha256") == profile_sha256:
+            skipped_blocked.append(
+                {
+                    "application_id": application_id,
+                    "company": row["company"],
+                    "title": row["title"],
+                    "status": "blocked",
+                    "blocker": "unchanged_unknown_required_field",
+                    "fields": list(blocker.get("fields") or [])[:12],
+                }
+            )
+            continue
+        rows.append(row)
     if args.max_jobs > 0:
         rows = rows[: args.max_jobs]
     result: dict[str, Any] = {
         "status": "no_work" if not rows else "completed",
         "processed": [],
+        "skipped_blocked": skipped_blocked,
         "excluded": excluded,
         "owner": "ai.anicca.job-search-daily",
     }
@@ -700,11 +739,21 @@ async def _run(args: argparse.Namespace) -> dict[str, Any]:
                         "error_type": type(error).__name__,
                     }
                 )
+            outcome = result["processed"][-1]
+            application_id = str(row["application_id"])
+            if outcome.get("blocker") == "unknown_required_field":
+                required_field_blockers[application_id] = {
+                    "profile_sha256": profile_sha256,
+                    "fields": list(outcome.get("fields") or [])[:12],
+                }
+            else:
+                required_field_blockers.pop(application_id, None)
     finally:
         if page is not None:
             await page.close()
         await pw.stop()
         ledger.close()
+    _save_required_field_blockers(args.blocker_state, required_field_blockers)
     _write_json(args.output, result)
     return result
 
@@ -719,6 +768,11 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--japan-day", required=True)
     parser.add_argument("--max-jobs", type=int, default=0)
+    parser.add_argument(
+        "--blocker-state",
+        type=Path,
+        default=Path.home() / ".local/state/anicca/job-search/ashby-required-field-blockers.json",
+    )
     args = parser.parse_args()
     args.evidence_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
     print(json.dumps(asyncio.run(_run(args)), ensure_ascii=False))
