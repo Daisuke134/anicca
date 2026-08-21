@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "runtime_root": "skills/earn/gig",
+  "runtime_tree_sha256": "41a7f01539681a93be927afb3c3b86efa85db0ce32d4b00d80ebe6e04f25d5e7",
+  "runtime_file_count": 255,
+  "hash_algorithm": "sha256(sorted relative path + NUL + file bytes + NUL; excludes state, cache, and __pycache__ directories)",
+  "canonical_census": {
+    "owner": "Daisuke134/life-manager",
+    "tracked_runtime_files": 255,
+    "mutable_state_imported": false,
+    "mutable_state_root": "~/gig",
+    "source_absolute_path_references": 0,
+    "source_plists_with_machine_path": 0,
+    "machine_paths_require_install_time_rendering": true
+  },
+  "source": {
+    "repository": "/Users/anicca/Projects/life-manager-main",
+    "path": "skills/earn/gig",
+    "commit": "5eb76d5847c5987a0fb0c4b475c5294c05706662",
+    "path_last_change": "ebdb31ba3230053b662f3f13e15c5f01467d8a85",
+    "status": "canonical tracked runtime"
+  },
+  "active_release": {
+    "path": "~/gig/releases/life-manager/current/skills/earn/gig",
+    "source_release_commit": "b9405dcea671ab2dbe6bb8f38714009bd7dd7355",
+    "tree_sha256": "9d5e4bf5fe35f21fac77b012f1e2f5ee981aa17039f67ffd60b37b1b4632e536",
+    "file_count": 255,
+    "status": "immutable release is separately versioned; canonical code and active release require install-time parity check"
+  },
+  "state": {
+    "active": "~/gig",
+    "target": "~/gig",
+    "credentials": "~/.config/anicca/gig",
+    "parity": "not imported; canonical integration is code-only"
+  },
+  "launchd_labels": [
+    "ai.anicca.hf-gig-apply-direct",
+    "ai.anicca.hf-gig-browser",
+    "ai.anicca.hf-gig-daily-report",
+    "ai.anicca.hf-gig-paid-direct",
+    "ai.anicca.hf-gig-release-watch",
+    "ai.anicca.hf-gig-reply-detector",
+    "ai.anicca.hf-gig-storefront-direct"
+  ],
+  "last_validation": {
+    "external_provider": "coconala",
+    "external_snapshot_observed_at": "2026-08-15T14:45:06+09:00",
+    "external_sales_row_count": 10,
+    "external_sales_total_jpy": "129636",
+    "external_balance_jpy": "0",
+    "external_pending_payout_jpy": "5460",
+    "local_earnings_row_count": 8,
+    "local_earnings_total_jpy": "126438",
+    "absolute_reconciliation_delta_jpy": "3198",
+    "latest_runtime_observed_at": "2026-08-12T07:44:15Z",
+    "latest_runtime_duration_ms": 468000,
+    "latest_runtime_state": "FAILED",
+    "latest_runtime_truth_verified": false,
+    "launchd_mutated": false,
+    "mutable_state_mutated": false
+  }
+}
