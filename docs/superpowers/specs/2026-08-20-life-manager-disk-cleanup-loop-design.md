@@ -4,7 +4,7 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
 実行authority: **Mac Host Storage Governor**  
 公開skill: **`disk-cleanup`**
 
-状態: Phase 1実装済み。Life Manager OSS skill、fail-closed governor、guard fallback、回帰テスト、旧cleanup ownerのcutover、正本5分labelのbootstrap/readback、MiB/GiB精度とswap telemetry、ULTRA時のexact-byte full-pass昇格、bootstrap health failureのcleanup内receipt契約、Gig/Writer共通producer preflight、Paid/Storefrontのin-flight effect gate/checkpoint、Writer provider-start gateは反映済み。host-wide census、hourly intelligence、Writerのin-flight drainを含む全producer backpressure、24時間/7日観測、141/153実機fixtureは未完了。UID 501/GUI bootstrapと`ai.anicca.life-manager-disk-cleanup`のload readbackは復旧済み。
+状態: Phase 1実装済み。Life Manager OSS skill、fail-closed governor、guard fallback、回帰テスト、旧cleanup ownerのcutover、正本5分labelのbootstrap/readback、MiB/GiB精度とswap telemetry、ULTRA時のexact-byte full-pass昇格、bootstrap health failureのcleanup内receipt契約、Gig/Writer共通producer preflight、Paid/Storefrontのin-flight effect gate/checkpoint、Writer provider-start gateは反映済み。supervisor non-stop/pause-resume契約、host-wide census、hourly intelligence、Writerのin-flight drainを含む全producer backpressure、24時間/7日観測、141/153実機fixtureは未完了。UID 501/GUI bootstrapと`ai.anicca.life-manager-disk-cleanup`のload readbackは復旧済み。
 
 ## 現行実装状況とOSS境界
 
@@ -208,6 +208,33 @@ swap=`0`、tier=`2`、stop/pressure flagは解除された。2026-08-21T11:59Z�
 維持している。これは一時的な回復であり、24時間/7日連続観測の開始・完了を意味しない。
 実装milestoneはOpenClaw Telegram ACK `messageId=27827`で送達した（直接bot経路はtoken未設定で失敗し、
 既存gateway経路へ1回retryして成功）。
+
+### 2026-08-22 protected producer saturation and non-stop supervisor contract
+
+現在のreadbackはfree=`4.9GiB`、swap=`0`、`disk-pressure.block`と`disk-writers.stop`が有効で、
+sentinelはtier=`4`である。これはcleanup loopが停止した証拠ではない。Life Manager receiptは約5分ごとに
+更新され、直近は`errors=0`、`evaluated=9`、`preserved_reasons={"open":9}`、
+`reclaimed=0`、`protected_deletions=0`である。1回のGUI/Directory Services timeoutは`gui-bootstrap-health-failure`
+として削除なしで記録され、その後receiptは復旧している。
+
+容量を再消費している一次証拠は次の通りである。
+
+- Codex app-server PID 595/1436が`~/.codex/logs_2.sqlite`（約1.43GiB）とWAL（約30MiB）をopenしている。
+- `~/gig/projects/18130722`は約6.8GiBで、`transaction_state`が完了ではなく取引中のprojectである。
+  `project_janitor.py --dry-run`は20 projectを走査し、回収可能0件を返す。source/workを消す契約ではない。
+- Paid/Codex/Chromiumが稼働中で、進行中producerの出力は重要session・buyer source・deliverableの一部である。
+
+したがって、`open`/in-progress artifactを削除して空きを見せることは禁止する。supervisor契約を次で固定する。
+
+1. `ai.anicca.life-manager-disk-cleanup`、`com.anicca.disk-sentinel`、`com.anicca.emergency-disk-guard`は、
+   tierがULTRAでもunload・disable・自己終了せず、次のwakeを必ず受け付ける。
+2. producerのpauseはloop停止ではなく、effect=0のpending/checkpointを保存して同じownerがresumeする状態である。
+3. pressure中もstate/receipt/checkpointの最小書込みを許可し、書込み不能時は保護されたreserve/sidecarへ
+   fail-closedで退避する契約を実装する。reserveがない状態を成功扱いしない。
+4. `free >= 11GiB`の回復readbackが揃うまでproducerを再開せず、supervisorだけが継続する。
+
+このreadback時点で「loopが止まらない」は未完了であり、現在は新規producer停止と安全な保護が実証済み、
+in-progress producerのdrainとCodex log budget/rotationが未実装である。
 
 ### OSS boundary
 
