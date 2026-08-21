@@ -1216,8 +1216,8 @@ missing after Apply), and Microsoft (application surface missing after Apply).
 The Citadel intent was released as `not_submitted` with no submit click; the pass
 returned zero submitted and zero `submit_unknown`. Telegram ACK `26861` is present
 with `status=sent` in the canonical `telegram-outbox.sqlite3`. This proves that a
-candidate blocker no longer ends the pass, while the separate Ashby Submit-control
-visibility issue remains the next active engineering slice.
+candidate blocker no longer ends the pass; the later bounded recovery and immutable
+retry evidence below address the Ashby transport and assignment-reuse follow-ups.
 
 The code path is now pushed through `a181d5fd9` and its preceding job-search
 changes: non-Workday Apply navigation (`a595ca29f`), event-before-state ordering
@@ -1235,6 +1235,25 @@ candidate-home tab and Gmail. This is not evidence that every Workday or other A
 account is logged in. The resident scheduler remains blocked by launchd
 `141: Reentrancy avoided`; direct hourly-wrapper execution and Telegram reporting
 remain available.
+
+The bounded Ashby recovery and immutable-retry follow-up were then verified against
+the real browser owner. Commit `8812eba3c` added one same-CDP-page reload for an
+Ashby page that committed with no observed posting text and an empty controls
+snapshot; the fresh snapshot is reevaluated before the candidate is classified as a
+transport blocker. Commit `92dbef4d4` added deterministic retry material reuse:
+an existing `not_submitted` application reads its immutable strategy assignment,
+resolves the stored resume variant with a required SHA-256 check, and never calls
+`LearningDriver.assign` or rebinds the assignment. Focused routing, ATS, ledger and
+canonical-runtime tests passed (47 tests). The canonical pass
+`daily-20260821-095343` then re-read Citadel AI's existing Japanese-resume
+assignment, reached the real Ashby application surface, and stopped before claim
+because the posting's required three-year cloud/backend experience was not an exact
+verified fact. Anthropic, Appier, xAI and Amazon were likewise stopped on explicit
+missing facts or minimums; no submit click and no `submit_unknown` occurred. The
+pass returned `verified_queue_exhausted_no_submission`, and Telegram ACK `26895`
+is `status=sent` in the canonical `telegram-outbox.sqlite3`. This closes the
+previous assignment-conflict blocker without weakening the no-fabrication gate;
+real Ashby and Workday confirmed-submission coverage remains unproven.
 
 ### 8.2 Outcome and attribution model
 
