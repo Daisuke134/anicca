@@ -30,7 +30,7 @@ The loop optimizes for interviews, not raw submission count:
 |---|---|
 | Daily application target | 10 unique admitted applications per Japan day that meet the salary/geography/employer gates; one candidate per hourly wake |
 | Location gates | Tokyo on-site or hybrid is preferred; San Francisco on-site is admitted only when the employer sponsors the required U.S. work visa; remote from Japan is admitted when the employer supports Japan employment, EOR or contracting. Apply to all three admitted modes. |
-| Compensation gate | Known annual compensation below JPY 8M is excluded; unknown compensation remains admitted; prefer JPY 15M–20M+ and prioritize JPY 30M+ when the role otherwise passes the gates |
+| Compensation gate | Known annual compensation below JPY 8M is excluded; unknown compensation remains admitted; every role at or above the floor is equally admitted for application. Compensation is compared when offers arrive, not used to skip an admitted application |
 | Role families | Engineering: applied AI, agents, GenAI, software, solutions and technical architecture; Business: AI product, technical program management, solutions/consulting, business development, partnerships, technical account management, customer success and sales engineering |
 | Employer exclusions | Do not discover, submit or follow up for Accenture, KPMG, Deloitte, Ernst & Young/EY, or PwC/PricewaterhouseCoopers because the recruiter is handling those applications |
 | Execution-safety exclusions | Duplicate/already-applied roles; closed or non-official application surfaces; legal/identity answers that would have to be false; CAPTCHA or manual identity challenges that require the applicant; material claim fabrication |
@@ -73,9 +73,9 @@ This policy is an asymmetric-upside decision: a speculative application costs on
 bounded wake and can create an interview path, while pre-rejecting the role makes
 that upside exactly zero. The loop therefore shoots its shot at every admitted ideal
 company role and lets the employer decide fit. The JPY 8M floor is retained because
-an offer below it cannot satisfy the user's stated employment objective; within the
-admitted pool, higher compensation is always prioritized. The system does not promise
-that the candidate meets the posting; it only promises that the application is truthful.
+an offer below it cannot satisfy the user's stated employment objective; above the
+floor, salary does not decide application order. The system does not promise that
+the candidate meets the posting; it only promises that the application is truthful.
 
 Every intended 3600-second wake is an application attempt, not a permission to
 stop after the first blocked candidate. The existing executor claims at most one
@@ -98,14 +98,16 @@ field never prevents the loop from trying the next ideal-company job. Until the 
 launchd domain is recovered and read back successfully, direct canonical-wrapper
 runs are fallback evidence only; they do not prove a resident hourly schedule.
 
-### ATS rail priority
+### ATS rail order (operational, not candidate priority)
 
 ATS rails are the submission surfaces, not interchangeable job boards. The loop uses
-one high-yield rail at a time before expanding discovery breadth:
+one high-yield rail at a time for operational reliability before expanding discovery
+breadth; this sequencing is not a preference between admitted candidates:
 
 1. **Ashby first.** It is the current confirmed adapter and has the simplest stable
-   application surface for many AI/startup employers. The queue prioritizes Tokyo,
-   then eligible remote and San Francisco-sponsorship roles hosted on Ashby.
+   application surface for many AI/startup employers. Tokyo is a tie-breaker for
+   queue order, but every admitted remote and San Francisco-sponsorship role remains
+   in the same application set.
 2. **Workday second.** It covers larger employers and uses a tenant-specific
    job → Apply choice → account/candidate-home → application progression. Salesforce
    uses Workday; its candidate-home/Apply progression is verified, but the durable
@@ -935,6 +937,21 @@ rebuildable from the event log. Canonical identity is:
 sha256(normalized_company + normalized_title + canonical_job_url)
 ```
 
+### 5.1.1 Application equality and offer choice
+
+All admitted roles are equal application opportunities once the salary, geography,
+role-family and employer-exclusion gates pass. Tokyo preference, ATS rail order and
+fit score are deterministic queue tie-breakers only; they never authorize skipping a
+matching role. A 9M role, a 30M role and a role with undisclosed compensation all
+receive an application attempt when they are otherwise admitted.
+
+After one or more offers arrive, the decision changes from throughput to judgment.
+The loop compares compensation and total package with role fit, demonstrated ability,
+level, work authorization, location, mission and growth. A higher-paying offer is
+preferred when the role is realistically performable and otherwise acceptable; a
+large number alone never forces acceptance of a role beyond the candidate's ability
+or legal/work-mode constraints.
+
 ### 5.2 Daily quota
 
 The daily pass claims at most `10 - confirmed_submissions_today`. A second launch,
@@ -1069,11 +1086,11 @@ Rules:
 
 - The score orders the queue; it never decides whether an ideal-company stretch role
   is admitted.
-- `75+`, `65–74`, and `<65` are priority bands for dream, strong-fit, adjacent and
-  stretch reporting. None is an automatic rejection band.
+- `75+`, `65–74`, and `<65` are reporting bands for dream, strong-fit, adjacent and
+  stretch explanations. None is an application-priority or automatic rejection band.
 - Unknown compensation earns neutral points and remains admitted. Known compensation
-  below the JPY 8M floor is excluded; JPY 15M–20M+ receives priority and JPY 30M+
-  receives the highest compensation priority.
+  below the JPY 8M floor is excluded. Above the floor, compensation does not create an
+  application priority; the score is retained for reporting and later offer comparison.
 - A model may explain a score but cannot invent facts or override execution-safety
   exclusions. The employer, not the loop's fit score, decides whether the candidate
   meets the stated requirements.
@@ -1657,7 +1674,7 @@ slice has one owner, one acceptance result and one durable receipt.
 | `JOB-STRETCH-ADMISSION-2B` | 11 | `pending_after_2A` | Replace requirement-fit rejection in the daily prompt, deterministic ranking/config and learning fixtures with stretch admission: explicit years, title, degree, skill and generic-role mismatch affect order/reporting only; the separate salary/geography/employer gates remain. A CEO role with a twenty-year requirement and Citadel's three-year role must remain in the application queue when those portfolio gates pass. Required form answers still use exact facts; an unanswerable mandatory field is an execution blocker after the form is reached, never a pre-filter. |
 | `JOB-TARGET-POLICY-2C` | 11 | `pending_after_2B` | Apply the private target policy in discovery, prompt, ranking/config and learning fixtures: known compensation below JPY 8M is excluded; unknown compensation remains admitted; Tokyo on-site/hybrid, San Francisco on-site with explicit visa sponsorship, and Japan-compatible remote are admitted; Business and Engineering families are included; Accenture, KPMG, Deloitte, Ernst & Young/EY and PwC/PricewaterhouseCoopers are excluded from discovery, submission and follow-up. |
 | `JOB-HOURLY-THROUGHPUT-2D` | 11 | `pending_after_2C` | After `JOB-STRETCH-ADMISSION-2B`, `JOB-TARGET-POLICY-2C` and `JOB-LOOP-CADENCE-2A` are live, observe three consecutive hourly wakes. Each wake must attempt discovery, continue after every candidate-level blocker across at least five distinct official URLs when needed, submit no more than one verified truthful application, and emit one Telegram event with durable outbox status plus ACK/readback. A truthful zero with exact execution blockers passes only when the admitted queue is exhausted; guessed years or other unsupported answers never pass. |
-| `JOB-ATS-RAIL-2E` | 10 | `pending_after_2D` | Freeze the first-pass rail order to Ashby → Workday. Prove the next three eligible Ashby applications first, then one confirmed Workday application; Salesforce remains a Workday candidate and must be tracked separately. Do not expand to additional discovery/provider websites until both rails have fresh receipts or the queue is exhausted with exact blockers. |
+| `JOB-ATS-RAIL-2E` | 10 | `pending_after_2D` | Freeze the operational rail order to Ashby → Workday without ranking admitted candidates by rail. Prove the next three eligible Ashby applications, then one confirmed Workday application; Salesforce remains a Workday candidate and must be tracked separately. Do not expand to additional discovery/provider websites until both rails have fresh receipts or the queue is exhausted with exact blockers. |
 | `JOB-EMPLOYER-FOLLOWUP-11E-A` | 11E | `pending_after_11D` | After an authoritative ATS submission or verified recruiter contact, send at most one deduplicated follow-up per application/touchpoint from the private `application_email` through authenticated Gmail, using only a verified employer address or existing thread, preserving thread context where available, recording Gmail ACK/`delivery_unknown`, and reporting the result to Telegram. |
 | `JOB-RESUME-FACTS-1R-A` | 1R | `completed` | Full institution names and periods are recorded, and Daisuke confirmed TOEIC 910. The private truth ledger now records TOEFL iBT 96, TOEIC 910, Duolingo English Test 140 and DELE B1; no language claim remains unresolved. |
 | `JOB-RESUME-EN-1R-B` | 1R | `frozen_user_approved` | Version 9 is approved; keep the existing canonical English artifacts unchanged unless Daisuke explicitly reopens resume work. |
