@@ -1431,6 +1431,20 @@ host free disk reaches its floor and the normal action budget permits it. This
 is a capacity gate, not evidence of an Affiliate post, click, conversion, or
 money result.
 
+### 1.1.58 Daily Affiliate action cap is disabled; all other safety gates remain
+
+User-directed release `b4c17e82f8084aac8d89cde752f89d51df9466a1` changes the
+Affiliate external-action budget from a daily count cap to the explicit receipt
+state `ACTION_CAP_DISABLED` with `daily_cap=null`. Existing owner readback
+retains its historical `used_attempts=10` but no longer returns
+`ACTION_CAP_BLOCKED`. This removes only that daily count gate.
+
+The runtime disk floor, known actual-cost cap, quarantine after repeated
+external failures, write-ahead effect journals, exact public readback, replay
+fences, disclosure checks, and money rules are unchanged. At the same
+readback, disk remains below its required floor, so no external Affiliate
+action is newly admitted and money remains `NO_TRANSACTIONS`.
+
 ### 1.2.0 Audited executable boundary
 
 The installed ownership graph has six launchd labels: three persistent browser

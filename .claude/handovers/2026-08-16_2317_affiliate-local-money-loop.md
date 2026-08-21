@@ -1,5 +1,13 @@
 # Affiliate local money loop handover
 
+- User-directed action-cap removal is installed in Affiliate release
+  `b4c17e82f8084aac8d89cde752f89d51df9466a1`. Existing owner readback writes
+  `ACTION_CAP_DISABLED`, `daily_cap=null`, and retains the historical count
+  `used_attempts=10`; only the daily external-action gate is removed. Runtime
+  disk guard, actual-cost cap, quarantine, effect journals, exact public
+  readback, and money accounting remain enforced. The current owner is still
+  blocked by disk, not the removed action cap.
+
 - Current hard blocker at `2026-08-22T08:39:44+0900`: host free disk is
   `3824836608` bytes, below the Affiliate `10737418240` byte floor, and the
   JST action budget is `ACTION_CAP_BLOCKED=10/10`. Existing cleanup/containment
