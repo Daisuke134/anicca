@@ -1136,8 +1136,12 @@ Telegram報告は、反復番号、確認済みゲート、未確認の品質警
 ### 2026-08-22 runtime readback
 
 同一run `20260821-130847` は公開state・delivery ledger rowなしで、quality recovery
-`status=terminal-blocked`、provider/research invocation `attempts=10`、quality assessmentは
-legacy initialの1回だけで停止している。現稿SHAはJA
+`status=terminal-blocked`、recovery invocation `attempts=10`、quality assessmentは
+legacy initialの1回だけで停止している。これはtoken/quota切れの証拠ではない。
+`provider-health.json`は`codex:agent=healthy`と`codex:judge=healthy`を記録し、quota・credit・weekly
+limitのエラーはない。停止理由は、recovery controllerの上限到達に、ディスク空き116MiBによる
+`no space left on device`、judge broker request timeout、`OSError`/`tee`、gate SHA不一致が重なった
+ことである。現稿SHAはJA
 `f01d253c5897622ba8589f1c583c8e964a5a8d467ecfda26d862675a9851fd04`、EN
 `739db6a439003625c51334784aaaa2d49da713b27f2c29d4855334aad9fa5535`で、feedback consumptionは
 このSHAに対してPASS、readerとidentityもこのSHAに一致する。一方editorial receiptはJA
@@ -1152,7 +1156,7 @@ read-only scanして優先するコードまで反映済みである。
 |---:|---|---|---|
 | Q1 | 5回品質反復のreceipt chainを実装する | attempt 2〜5のwrapper invocation receipt、unique plan SHA、draft変更、verdict意味一致、exact 5 validator。provider/researchの再試行は品質回数と分離し、最大10 invocationまで許可 | 完了（`quality_self_heal.py`、`quality_feedback_recovery.py`） |
 | Q2 | force境界をpublication resumeへ結合する | marker単体を拒否し、`validate_force_receipt()`とterminal identity/safetyを再検証 | 完了（focused 5件＋writer回帰46件、fresh adversarial review GO） |
-| Q3 | provider exhaustion後も同じrunのquality recoveryを安全に再開する | 既存10 invocation receiptを保持したまま、controllerがretryableへ戻し、現稿gateを再評価する。quality attempt数を水増ししない | 未完（現在 `terminal-blocked`、次の先頭TODO） |
+| Q3 | 混在したローカル障害後も同じrunのquality recoveryを安全に再開する | 既存10 invocation receiptを保持したまま、quota切れと誤分類せず、controllerがretryableへ戻し、現稿gateを再評価する。quality attempt数を水増ししない | 未完（現在 `terminal-blocked`、次の先頭TODO） |
 | Q4 | 現稿JA/ENのeditorial receiptをcurrent SHAへ更新する | high-escalation claimを勝手に削除せず、正規の次quality iterationでfresh judgeを実行し、JA/EN両方のreceipt・snapshotを作成 | Q3待ち |
 | Q5 | quality attempt 2〜5を同一runで完了する | 各回のdraft変更、invocation chain、feedback consumption、editorial/reader/identity snapshot、exact five validator | Q3/Q4待ち |
 | Q6 | 5回目のforce handoffを実runで検証する | `force_publish_advisory`、identity/safety/conscience/PII/duplicate/media/CTA/monetization/platform guardの全PASS | Q5待ち |
