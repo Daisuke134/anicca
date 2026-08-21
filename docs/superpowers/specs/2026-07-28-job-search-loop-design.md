@@ -6,7 +6,7 @@
 **Status:** The macOS launchd manager and the three canonical job-search LaunchAgents
 are healthy. Telegram uses the shared OpenClaw gateway. `JOB-LEDGER-EVENT-10N` is
 fixed. `JOB-SCHEDULER-POLICY-10O` is implemented and live at a 30-minute cadence,
-but its completion gate is still open. The live pass
+but its completion gate is still open.
 The execution order is explicit: **Ashby fast path → Ashby discovery/application →
 Telegram/Ledger reconciliation → Workday later**. Workday must not run ahead of the
 Ashby gate. In the latest catch-up, Ashby fast path reported `no_work` because there
@@ -23,7 +23,11 @@ focused ATS suite is green, and the new Workday preflight is wired into the exis
 launchd owner in commit `04989df62`. Ashby remains the primary adapter; Workday is a
 secondary adapter with deterministic navigation parked behind Ashby. The catch-up
 correction report was acknowledged by Telegram as message `27323`. Guardian and the
-Life Manager Career surface remain in progress.
+Life Manager Career surface remain in progress. The subsequent Ashby-first run
+`daily-20260821-181731` confirms the same boundary: Ashby fast path was `no_work`,
+Workday was `parked / ashby_first_gate`, and the Codex discovery fallback timed out
+after the bounded 300 seconds with no fresh result and no Ledger mutation. This is a
+discovery-lane timeout, not an Ashby login failure.
 The daily script now bounds the non-deterministic browser fallback at 300 seconds
 by default (`JOB_SEARCH_BROWSER_TIMEOUT_SECONDS` may lower or raise that bounded
 value); deterministic ATS fast paths run before it and retain their own evidence.
@@ -45,8 +49,8 @@ evidence, a fenced intent and authoritative confirmation.
 | Order | Atomic TODO | State | Evidence needed to close |
 |---:|---|---|---|
 | 1 | Keep the existing browser owner healthy at CDP `:9222` | `done` | `ai.anicca.job-search-browser` is enabled/running; `/json/version` responds; no second browser owner |
-| 2 | Run the existing 30-minute owner with Ashby fast path first | `in_progress` | A fresh evidence directory shows Ashby preflight before any Workday action; latest Ashby result was `no_work` |
-| 3 | Discover one new eligible Ashby role | `pending` | Official Ashby URL, source/query attribution, exclusion check, and Ledger row |
+| 2 | Run the existing 30-minute owner with Ashby fast path first | `in_progress` | `daily-20260821-181731` shows Ashby preflight before Workday; Workday is `parked / ashby_first_gate`; the 300-second discovery fallback timed out |
+| 3 | Replace the timed-out model discovery with a bounded Ashby discovery pass | `pending` | Direct Ashby board/search results produce at least one verified eligible official Ashby URL without waiting on a model timeout |
 | 4 | Reach Ashby claim-ready form and route the exact resume | `pending` | Fresh ATS snapshot/evaluation, routed resume path/hash, and immutable intent |
 | 5 | Click the real Ashby submit control once | `pending` | Ledger fence/attempt plus click-phase evidence; never retry `submit_unknown` |
 | 6 | Reconcile authoritative confirmation and send one Telegram report | `pending` | Gmail/ATS confirmation, Ledger transition, Telegram message ID, and same-day dedupe |
