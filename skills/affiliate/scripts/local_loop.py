@@ -559,11 +559,26 @@ def owner_event(state, wake_event, sent_event_ids=None):
         ), link_transition.get("public_url"))
     if isinstance(click_delta, int) and click_delta > 0:
         kind = "UNATTRIBUTED_CLICK_DELTA"
+        metrics_row = metrics.get("metrics")
+        if not isinstance(metrics_row, dict):
+            metrics_row = {}
+        signups = metrics_row.get("signups")
+        paid_signups = metrics_row.get("paid_signups")
+        conversion_rate = metrics_row.get("conversion_rate")
         add(kind, {
             "kind": kind, "provider": "elevenlabs",
             "metrics_sha256": metrics.get("metrics_sha256"),
-            "clicks": metrics.get("metrics", {}).get("clicks"),
-        }, f"aggregate post-baseline clicks=+{click_delta} / not attributable / commission not observed")
+            "clicks": metrics_row.get("clicks"),
+            "signups": signups,
+            "paid_signups": paid_signups,
+            "conversion_rate": conversion_rate,
+        }, (
+            f"aggregate post-baseline clicks=+{click_delta} / "
+            f"signups={signups if signups is not None else 'UNKNOWN'} / "
+            f"paid_signups={paid_signups if paid_signups is not None else 'UNKNOWN'} / "
+            f"conversion={conversion_rate if conversion_rate is not None else 'UNKNOWN'} / "
+            "not attributable / commission not observed"
+        ))
     if campaign:
         kind = "PLACEMENT_LIVE"
         add(kind, {"kind": kind, "plan_id": campaign.get("plan_id"), "x_url": campaign["x_url"]},
