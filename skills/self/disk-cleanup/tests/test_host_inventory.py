@@ -195,3 +195,13 @@ def test_inventory_classifies_permission_limited_root(tmp_path: Path, monkeypatc
     payload = collect_host_inventory(home=tmp_path, state_dir=tmp_path / "state")
 
     assert f"permission-limited:{protected}" in payload["coverage"]["gaps"]
+
+
+def test_inventory_reports_required_owner_family_coverage(tmp_path: Path) -> None:
+    payload = collect_host_inventory(home=tmp_path, state_dir=tmp_path / "state")
+
+    coverage = payload["coverage"]
+    assert coverage["required_owner_families"]
+    assert set(coverage["missing_owner_families"]).issubset(
+        set(coverage["required_owner_families"])
+    )

@@ -49,6 +49,7 @@ ROOT_FAMILIES = (
     ("volume", "/Volumes"),
     ("build-tool", "/opt/homebrew"),
 )
+REQUIRED_OWNER_FAMILIES = tuple(sorted({family for family, _ in ROOT_FAMILIES}))
 
 SIZE_PROBE_FAMILIES = {
     "repository-worktree",
@@ -246,6 +247,10 @@ def collect_host_inventory(
         roots.append(record)
         root_gaps.extend(record_gaps)
 
+    present_owner_families = sorted({root["owner_family"] for root in roots if root["exists"]})
+    missing_owner_families = sorted(
+        set(REQUIRED_OWNER_FAMILIES) - set(present_owner_families)
+    )
     payload: dict[str, Any] = {
         "schema_version": SCHEMA_VERSION,
         "policy_version": "cleanup-control-v1",
@@ -256,6 +261,9 @@ def collect_host_inventory(
         "coverage": {
             "mount_count": len(mounts),
             "root_count": len(roots),
+            "required_owner_families": list(REQUIRED_OWNER_FAMILIES),
+            "owner_families": present_owner_families,
+            "missing_owner_families": missing_owner_families,
             "gaps": sorted(set(root_gaps)),
             "unattributed_size_bytes": None,
             "complete": not root_gaps,
