@@ -1300,7 +1300,9 @@ ingestion. They are not unchecked M1 items and cannot become the active CFO item
       returns `blocked / business_not_verified_profitable / execute=false`; a policy pass still requires owner approval
       and does not start an executor. Reader and executor secret refs must be distinct. M5c real cycle remains pending.
 - [ ] **CFO-5c** Execute one bounded real cycle, reconcile the external receipt back into the next CFO snapshot,
-      and report realized P&L and cost.
+      and report realized P&L and cost. **Pending external approval:** read-only audit finds no capital-mandate table or
+      approval receipt and no verified profitable business; the ledger contains only realized loss `-$3.15` and x402
+      income `$0.01`. No real capital cycle is authorized or claimed.
 - [x] **CFO-5d** Add repair and stop-review workflows. Live shutdown remains gated when another session or human may
       own the same state. Canonical commit `fb8a97d3f` adds policy-only repair/stop-review decisions with execute=false.
 - [x] **CFO-5e** Add human/agent hiring only after expense authorization, deliverable acceptance, and payment receipt
@@ -1480,3 +1482,11 @@ with owner stop permission returns `stop-review` but `execute=false`; unresolved
 accepted only when expense authorization, deliverable acceptance, and payment receipt are all verified; otherwise it
 returns `blocked`. No shutdown, hiring, payment, wallet, or executor action occurred. M5c remains the only pending
 capital item and requires explicit owner approval plus a verified profitable business.
+
+### CFO-5c external-approval audit (2026-08-21)
+
+Read-only Supabase checks return 404 for both `lm_capital_mandates` and `capital_mandates`; no approval receipt exists.
+The canonical `lm_agent_earnings` table contains exactly two rows: `polymarket_cycle` realized loss `-$3.15` and
+`x402_sale` external income `$0.01`. The latest CFO recommendation is `repair / evidence_incomplete_before_allocation /
+execute=false`. M5c remains pending rather than being faked as complete; no capital, wallet, exchange, or executor
+action is permitted without a verified profitable business and explicit owner approval.

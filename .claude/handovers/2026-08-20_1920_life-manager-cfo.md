@@ -275,3 +275,10 @@ Canonical commit `fb8a97d3f` adds policy-only repair/stop-review and hiring-expe
 can return stop-review only with owner permission, unresolved state returns repair, and hiring is blocked unless expense,
 deliverable, and payment receipts are all verified. No shutdown, hiring, payment, wallet, or executor action occurred.
 M5c remains the only pending capital item.
+
+## CFO-5c external-approval audit (2026-08-21)
+
+Read-only Supabase returned 404 for `lm_capital_mandates` and `capital_mandates`; no approval receipt exists. The
+canonical earnings table has only two rows: Polymarket realized loss `-$3.15` and x402 income `$0.01`. The latest
+recommendation is `repair / evidence_incomplete_before_allocation / execute=false`. M5c is intentionally pending;
+no capital cycle is authorized without verified profit and explicit owner approval.
