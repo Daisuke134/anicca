@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | PAUSED — signed Apple Finance rows complete; parent `CFO-OPS3a`/`OPS3b` and `CFO-1j` are active first, then `CFO-2b.2b2` resumes |
+| Status | PAUSED — signed Apple Finance rows and parent `CFO-OPS3a`/`OPS3b` are complete; `CFO-1j` is active first, then `CFO-2b.2b2` resumes |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Canonical target is local `/Users/anicca/Projects/life-manager-main/apps/life-manager`; existing `apps/life-call` code is migration evidence, not the final owner |
 | Role split | Sol specifies/verifies; Luna implements production code/tests |
@@ -456,7 +456,7 @@ Rules:
 
 - Apple normalizer migration-evidence commit `f1986663b` remains present on its evidence branch. The canonical CFO
   owner is `/Users/anicca/Projects/life-manager-main/.worktrees/cfo-ops3a`, branch `feature/cfo-ops3a-canonical`:
-  OPS3a is `2dac47124`, host parity is `6acff1585`, DNS hardening is `d013196ce`, and ambiguous-request retry
+  OPS3a is `1c302e801`, host parity is `6acff1585`, DNS hardening is `d013196ce`, and ambiguous-request retry
   prevention is `5e1c0dfcc`; the stable release is the only installed
   CFO runtime. The spec worktree is `/Users/anicca/anicca-project/.worktrees/cfo-resume-spec` on
   `feature/cfo-moneytree-daily-report`. Never edit the dirty main worktree.
@@ -466,27 +466,24 @@ Rules:
   or empty `@opentelemetry/api` and `ws` directories, but the canonical stable release has lock-matched dependencies,
   module-load PASS, and the fresh financial focused gate is 19/19. The failed recovered-worktree gate is an
   environment/runtime recovery fact, not an Apple normalizer regression.
-- The installed plist points to the stable release and passes `plutil -lint`; it now carries
+- The installed plist points to the stable release and passes `plutil -lint`; it carries
   `LIFE_MANAGER_ENV_FILE=/Users/anicca/.openclaw/.env`, `CODEX_HOME=/Users/anicca/.codex`, and
-  `StartInterval=3600`. The hourly launchd label is still not loaded: `launchctl print/list/bootstrap gui/501`,
-  `launchctl asuser 501`, and `launchctl list ai.anicca.life-manager-cfo-hourly` return
-  `141: Reentrancy avoided`, `managerpid` cannot resolve, and the current session cannot resolve uid 501 through
-  OpenDirectory. The stable Moneytree reader now returns a redacted success envelope through the persistent local
-  app-server; an invalid socket fails closed. After `d013196ce`, the installed stable wrapper passed with only the
-  plist-equivalent environment (no external resolver injection): `status=sent`, `revision=2`, `appended=true`, and
-  `delivered=true`; the snapshot/claim and Telegram delivery receipt read back with provider `message_id=766`. After
-  `5e1c0dfcc`, the same-hour rerun returned `status=quiet`, `revision=2`, `appended=false`, `delivered=false`, with
-  no duplicate receipt. This is core-loop evidence, not launchd provenance. Authorized restart paths were attempted but
-  did not execute (`-10827`, `141`, and
-  `Operation not permitted`); no account mutation, logout, reboot, or OS-service restart occurred. Parent
-  `CFO-OPS3b` operational launchd/receipt and recent-transaction `CFO-1j` are first; once their real loop/receipt
-  gates pass, `CFO-2b.2b2` is the first business implementation slice.
+  `StartInterval=3600`. The old loaded job continued to point at the deleted `cfo-4d1-finalize` worktree and
+  failed on missing `@opentelemetry/api`; the installer wrote the new plist but did not refresh the loaded definition.
+  Canonical commit `1c302e801` now bootouts, bootstraps, enables, kickstarts, and reads back the exact service.
+  The existing Gateway context successfully loaded `ai.anicca.life-manager-cfo-hourly`, and read-back shows the stable
+  path, interval, and exit status 0 between hourly runs. The real fresh invocation returned
+  `status=sent`, `reportingDate=2026-08-21`, `revision=3`, `appended=true`, `delivered=true`; the launchd stderr log is
+  empty. The Supabase Telegram delivery receipt at `2026-08-21T03:34:13Z` is provider `message_id=770`. The current
+  assistant shell's direct `launchctl` still returns 141, but that is a context limitation, not a launchd-wide failure;
+  no reboot or OS-service restart was needed. `CFO-OPS3b` is closed; recent-transaction `CFO-1j` is now first, and
+  `CFO-2b.2b2` remains the first business implementation slice after it.
 - Host-parity decision (2026-08-21): the official Codex MCP/skills/plugins/App Server/SDK surfaces support sharing
   user config, skill roots, and installed Apps across local Codex clients, but a fresh `codex exec` is not the main
   ChatGPT conversation. The Moneytree bundle is present in local plugin cache and `codex app-server` reports it
   `enabled=true, callable=true` through `app/installed`; the persistent app-server `app/read` and direct
   `mcpServer/tool/call` now return the existing structured Moneytree result, which the adapter consumes without LLM
-  number copying. The remaining OPS3b blocker is GUI/user launchd; the current core-loop receipt is real but not
-  attributed to launchd. If this bridge later regresses,
+  number copying. The launchd provenance gate is now closed by the Gateway-context read-back and revision-3 receipt. If
+  this bridge later regresses,
   the canonical portable fallback is the official Moneytree LINK/API integration; no bespoke adapter or guessed
   finance number is accepted.
