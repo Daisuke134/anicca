@@ -779,6 +779,44 @@ class LocalLoopTest(unittest.TestCase):
                 [],
             )
 
+    def test_telegram_timeout_to_sent_creates_same_event_repair_receipt(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root)
+            MODULE.append(state / "telegram-outbox.jsonl", {
+                "event_uuid": "timeout-event", "kind": "BLOCKED", "body": "report",
+                "created_at": 1,
+            })
+            MODULE.append(state / "telegram-sent.jsonl", {
+                "event_uuid": "timeout-event", "message_id": "7645",
+            })
+            MODULE.append(state / "events.jsonl", {
+                "receipt_type": "AFFILIATE_TELEGRAM_DELIVERY",
+                "event_uuid": "timeout-delivery",
+                "telegram_event_uuid": "timeout-event",
+                "delivery_state": "SEND_TIMEOUT_UNKNOWN",
+                "provider_message_id": None,
+            })
+
+            first = MODULE.reconcile_telegram_delivery_history(
+                state, {"wake_event_uuid": "wake-1", "ts": 1},
+            )
+            second = MODULE.reconcile_telegram_delivery_history(
+                state, {"wake_event_uuid": "wake-2", "ts": 2},
+            )
+
+            repair_rows = [
+                json.loads(line)
+                for line in (state / "repair-receipts.jsonl").read_text().splitlines()
+            ]
+            self.assertEqual(len(repair_rows), 1)
+            repair = repair_rows[0]
+            self.assertEqual(repair["outcome"], "SELF_HEALED")
+            self.assertEqual(repair["repair"]["action"], "RESUME_SAME_TELEGRAM_SEND")
+            self.assertEqual(repair["repair"]["same_telegram_event_uuid"], "timeout-event")
+            self.assertEqual(repair["postcondition"]["provider_message_id"], "7645")
+            self.assertTrue(first)
+            self.assertEqual(second, [])
+
     def test_revenue_cycle_cooldown_is_independent_of_wake(self):
         with tempfile.TemporaryDirectory() as root:
             state = Path(root)

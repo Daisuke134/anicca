@@ -1631,6 +1631,44 @@ def reconcile_telegram_delivery_history(state, wake_event):
         if not telegram_uuid or message_id is None:
             continue
         message_id = str(message_id)
+        timeout_rows = [
+            row for row in delivery_rows
+            if row.get("telegram_event_uuid") == telegram_uuid
+            and row.get("delivery_state") == "SEND_TIMEOUT_UNKNOWN"
+        ]
+        if timeout_rows:
+            timeout = timeout_rows[-1]
+            repair_identity = {
+                "type": "AFFILIATE_REPAIR_RECEIPT",
+                "repair_kind": "TELEGRAM_SEND_RESUME",
+                "telegram_event_uuid": telegram_uuid,
+                "provider_message_id": message_id,
+            }
+            repair = {
+                "event": "affiliate_repair",
+                "receipt_type": "AFFILIATE_REPAIR_RECEIPT",
+                "schema_version": 1,
+                "event_uuid": hashlib.sha256(
+                    json.dumps(repair_identity, sort_keys=True, separators=(",", ":")).encode()
+                ).hexdigest(),
+                "repair_kind": "TELEGRAM_SEND_RESUME",
+                "diagnosis": {
+                    "failure_type": "SEND_TIMEOUT_UNKNOWN",
+                    "telegram_delivery_event_uuid": timeout.get("event_uuid"),
+                },
+                "repair": {
+                    "action": "RESUME_SAME_TELEGRAM_SEND",
+                    "same_telegram_event_uuid": telegram_uuid,
+                },
+                "postcondition": {
+                    "state": "SENT",
+                    "provider_message_id": message_id,
+                },
+                "outcome": "SELF_HEALED",
+                "observed_at": datetime.now(timezone.utc).isoformat(),
+            }
+            if append_unique(state / "repair-receipts.jsonl", repair, ("event_uuid",)):
+                repaired.append(repair)
         related = [
             row for row in delivery_rows
             if row.get("telegram_event_uuid") == telegram_uuid
