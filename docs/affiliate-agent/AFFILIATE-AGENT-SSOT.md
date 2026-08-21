@@ -3103,6 +3103,11 @@ official capture failure; the same placement then resumed as verified without
 duplication. Telegram is `SENT` on `27179` with no new public/provider effect.
 F01, F02, and F03 are closed; B01 remains open for the first non-empty official
 transaction row.
+The next existing-owner wake `4376877990…` at `14:52:45+0900` also exited `0`,
+returned revenue `COOLDOWN`, and left Telegram `NO_PENDING`; no provider
+artifact or external effect changed. The public X receipt for
+`2088809159932465497` remains `LIVE` with the same content hash, and the last
+five owner readbacks are `ALREADY_LIVE` with no `XPostError`.
 The prior bounded Telegram-history repair and its append-only retractions remain
 historical audit evidence and have no public or money effect.
 

@@ -26,6 +26,13 @@
   existing owner completed post-install wake `e3ce34fe…` at `14:41:48+0900`
   with `runs=231`, exit `0`, release-bound tool receipts, deduplicated
   `provider-link.elevenlabs=VERIFIED`, revenue `COOLDOWN`, and Telegram `27179`.
+- The next natural owner wake `4376877990…` completed at `14:52:45+0900` with
+  exit `0`, revenue `COOLDOWN`, and Telegram `NO_PENDING`; the old capture
+  failure remains the only provider failure receipt and no new artifact or
+  money was created. The public X receipt for
+  `2088809159932465497` is still `LIVE` with the same content hash; five
+  consecutive owner readbacks are `ALREADY_LIVE`, so the prior `XPostError`
+  is reconciled rather than merely hidden by cooldown.
 - The prior natural wake `afa4d937e6…` at `14:32:53+0900` recorded a real
   `provider-link.elevenlabs` `TimeoutError` as
   `BROWSER_TRANSIENT / RETRYABLE / effect=UNKNOWN`, due `14:38:14+0900`; the
