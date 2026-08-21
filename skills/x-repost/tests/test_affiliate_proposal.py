@@ -64,6 +64,7 @@ class AffiliateProposalTests(unittest.TestCase):
             "https://aniccaai.com/blog/voice-isolator?tag=hidden",
             "https://user@aniccaai.com/blog/voice-isolator",
             "https://aniccaai.com/blog/voice-isolator\nhttps://example.test",
+            "https://aniccaai.com/blog/%2e%2e/private",
         ):
             with self.subTest(url=url):
                 self.assertFalse(MODULE.valid({**base, "owned_article_url": url}))

@@ -49,7 +49,8 @@ def valid(proposal: dict) -> bool:
         proposal.get("tracking_link_state") == "NOT_INCLUDED",
         proposal.get("revenue_credit_state") == "NO_REVENUE_CREDIT",
         parsed.scheme == "https"
-        and parsed.hostname == "aniccaai.com" and parsed.path.startswith("/blog/")
+        and parsed.hostname == "aniccaai.com"
+        and bool(re.fullmatch(r"/blog/[a-z0-9][a-z0-9-]*", parsed.path))
         and not parsed.username and not parsed.password and port is None
         and not parsed.query and not parsed.fragment
     ))
