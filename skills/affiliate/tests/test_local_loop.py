@@ -205,6 +205,28 @@ class LocalLoopTest(unittest.TestCase):
             self.assertIn("transactions=0", event["body"])
             self.assertNotIn("Impact", event["body"])
 
+    def test_revenue_recovery_ignores_intermediate_cooldown_wake(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root)
+            MODULE.append(state / "events.jsonl", {
+                "ts": 10, "revenue_state": "REVENUE_CYCLE_FAILED",
+            })
+            MODULE.append(state / "events.jsonl", {
+                "ts": 20, "revenue_state": "COOLDOWN",
+            })
+            wake = {
+                "ts": 30, "revenue_state": "NO_TRANSACTIONS",
+                "revenue_source_rows": 0, "publication_url": None,
+                "status": "READY_FOR_PUBLICATION",
+            }
+            MODULE.append(state / "events.jsonl", wake)
+
+            event = MODULE.owner_event(state, wake)
+
+            self.assertEqual(event["kind"], "SELF_HEALED")
+            self.assertIn("同じ収益captureを再実行", event["body"])
+            self.assertIn("transactions=0", event["body"])
+
     def test_revenue_failure_report_is_typed_and_new_attempts_are_not_collapsed(self):
         with tempfile.TemporaryDirectory() as root:
             state = Path(root)

@@ -681,22 +681,26 @@ def owner_event(state, wake_event, sent_event_ids=None):
             }, "publication retry recovered / commission not observed yet",
                 current.get("publication_url") or latest_live_url(state),
                 scope="publication")
-    for previous, current in zip(wake_history, wake_history[1:]):
-        if (
-            previous.get("revenue_state") == "REVENUE_CYCLE_FAILED"
-            and current.get("revenue_state")
-            in {"NO_TRANSACTIONS", "TRANSACTIONS_RECONCILED"}
-        ):
-            kind = "SELF_HEALED"
-            add(kind, {
-                "kind": kind, "scope": "revenue",
-                "failed_at": previous.get("ts"),
-                "recovered_state": current.get("revenue_state"),
-            }, (
-                "revenue capture recovered / transactions="
-                f"{current.get('revenue_source_rows')} / no estimated revenue counted"
-            ), current.get("publication_url") or latest_live_url(state),
-                scope="revenue")
+    latest_revenue_failure = None
+    for row in wake_history[:-1]:
+        if row.get("revenue_state") == "REVENUE_CYCLE_FAILED":
+            latest_revenue_failure = row
+        elif row.get("revenue_state") in {"NO_TRANSACTIONS", "TRANSACTIONS_RECONCILED"}:
+            latest_revenue_failure = None
+    if (
+        latest_revenue_failure is not None
+        and wake_event.get("revenue_state") in {"NO_TRANSACTIONS", "TRANSACTIONS_RECONCILED"}
+    ):
+        kind = "SELF_HEALED"
+        add(kind, {
+            "kind": kind, "scope": "revenue",
+            "failed_at": latest_revenue_failure.get("ts"),
+            "recovered_state": wake_event.get("revenue_state"),
+        }, (
+            "revenue capture recovered / transactions="
+            f"{wake_event.get('revenue_source_rows')} / no estimated revenue counted"
+        ), wake_event.get("publication_url") or latest_live_url(state),
+            scope="revenue")
     if wake_event.get("revenue_state") == "REVENUE_CYCLE_FAILED":
         try:
             failure = json.loads((state / "revenue-cycle-failure.json").read_text(encoding="utf-8"))
