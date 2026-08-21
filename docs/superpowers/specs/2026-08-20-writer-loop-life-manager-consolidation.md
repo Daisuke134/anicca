@@ -649,6 +649,32 @@ publication identity、読者、payout、ledgerを分ける。
 
 各行は一つの外部状態または証拠だけを変える。前行の完了証拠がない限り、次行を開始しない。
 
+### A1復旧後のCoconala parity実行順
+
+「Coconalaのように24/7で動かす」は、別のWriter supervisorを追加することではなく、同じ
+`gig_release.py`、immutable `current`、`gig_disk_guard.py`、ユーザーLaunchAgent domainを使い、
+loaded definitionまで読み戻すことを意味する。現在はA1の前提がないため、以下を実行していない。
+
+1. 正しいGUIログインまたはroot管理contextで`id -un=anicca`、`launchctl managername/uid/pid`、
+   `dscl . -read /Users/501 RecordName`を読み取り、UID 501のuser recordを確定する。Directory Servicesの
+   recordを推測で作らず、launchd/loginwindow/opendirectorydをkillしない。
+2. `gig_release.py status`と`launchctl print gui/501/<label>`で、CoconalaとWriterの全labelについて、
+   loaded ProgramArguments、EnvironmentVariables、PID、stateをsnapshotする。plistファイルだけを
+   正しいと扱わない。
+3. Writer 14件とretired CLI 5件を、loaded argvが旧rootを指すものだけに限定してdrainする。実行中PID、
+   owner fence、publication lockが消えたことをreadbackしてから次へ進む。
+4. `~/Library/LaunchAgents`のcurrent plistを`launchctl bootstrap gui/501`で一件ずつ読み込み、14件すべての
+   loaded argv/envが`/Users/anicca/gig/releases/life-manager/current`と
+   `~/.local/state/life-manager/writer`を指すことを再読する。失敗したlabelを成功扱いにしない。
+5. `owner.pid=40373`はPID、start token、pathを照合してstaleを確定し、既存の所有権検証付きcleanupだけで
+   回復する。raw `rm`は使わない。
+6. publication pause中に既存launchd labelの`article-daily`と`article-resume`を各1回だけkickstartし、
+   run ID、PID、終了receipt、lock消滅を記録する。pause下で外部公開が0件であることを確認する。
+7. pauseを解除し、resume/report/moneyの300秒tick、claimの900秒tick、dailyの06:00 calendar wakeを
+   2回以上連続観測する。process生存だけでなく、current argv、durable receipt、重複外部作用0を必須にする。
+8. 同一runのNote JA、Substack JA/EN、X Article JAのpublisher-native readback、Telegram自然文delivery、
+   実payment/publisher receiptを順に確認する。これが揃うまで「24/7公開中」や「$10K達成」とは報告しない。
+
 | ID | 原子作業 | 完了証拠 | 状態 |
 |---:|---|---|---|
 | A1 | 有効なmacOS GUI／user bootstrapを復旧する | `id -un=anicca`、有効な`managername`/`managerpid`、`dscl`と`log show`が同じ実行contextで成功。個別のlaunchd/loginwindow/opendirectoryd killは行わない | ブロッカー・診断済み。socket/env/bsexec/SSHを試してもrc=141/153、正しい外部管理contextが必要 |
