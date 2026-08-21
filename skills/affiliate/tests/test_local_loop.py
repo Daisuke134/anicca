@@ -22,6 +22,86 @@ SPEC.loader.exec_module(MODULE)
 
 
 class LocalLoopTest(unittest.TestCase):
+    def test_cost_budget_deduplicates_actual_usd_rows_and_blocks_at_cap(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root)
+            now = datetime.now(ZoneInfo("Asia/Tokyo")).isoformat()
+            for row in (
+                {"cost_id": "bill-1", "cost_basis": "actual_billed", "occurred_at": now,
+                 "currency": "USD", "amount_minor": 300},
+                {"cost_id": "bill-2", "cost_basis": "actual_billed", "created_at": now,
+                 "currency": "USD", "amount_minor": 200},
+                {"cost_id": "bill-1", "cost_basis": "actual_billed", "observed_at": now,
+                 "currency": "USD", "amount_minor": 300},
+            ):
+                MODULE.append(state / "cost-ledger.jsonl", row)
+            snapshot = MODULE.cost_budget_snapshot(state, cap_minor=500)
+            self.assertEqual(snapshot["state"], "COST_CAP_BLOCKED")
+            self.assertEqual(snapshot["known_actual_minor_by_currency"], {"USD": 500})
+            self.assertEqual(snapshot["known_actual_usd_minor"], 500)
+            self.assertEqual(snapshot["unknown_rows"], 0)
+            self.assertEqual(
+                json.loads((state / "cost-budget.json").read_text())["receipt_type"],
+                "AFFILIATE_EXTERNAL_COST_BUDGET",
+            )
+
+    def test_cost_budget_excludes_estimates_invalid_rows_and_non_usd_as_unknown(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root)
+            now = datetime.now(ZoneInfo("Asia/Tokyo")).isoformat()
+            for row in (
+                {"cost_id": "bill-1", "cost_basis": "actual_billed", "occurred_at": now,
+                 "currency": "USD", "amount_minor": 100},
+                {"cost_id": "estimate-1", "cost_basis": "estimate", "occurred_at": now,
+                 "currency": "USD", "amount_minor": 900},
+                {"cost_basis": "actual_billed", "occurred_at": now,
+                 "currency": "USD", "amount_minor": 200},
+                {"cost_id": "bill-eur", "cost_basis": "actual_billed", "occurred_at": now,
+                 "currency": "EUR", "amount_minor": 900},
+                {"cost_id": "bill-bad", "cost_basis": "actual_billed", "occurred_at": now,
+                 "currency": "USD", "amount_minor": -1},
+            ):
+                MODULE.append(state / "cost-ledger.jsonl", row)
+            snapshot = MODULE.cost_budget_snapshot(state, cap_minor=500)
+            self.assertEqual(snapshot["state"], "COST_CAP_UNKNOWN")
+            self.assertEqual(snapshot["known_actual_usd_minor"], 100)
+            self.assertEqual(snapshot["known_actual_minor_by_currency"], {"USD": 100})
+            self.assertEqual(snapshot["unknown_rows"], 4)
+
+    def test_cost_budget_snapshot_does_not_use_network(self):
+        with tempfile.TemporaryDirectory() as root, patch.object(
+            MODULE.urllib.request, "urlopen", side_effect=AssertionError("network")
+        ) as urlopen:
+            state = Path(root)
+            now = datetime.now(ZoneInfo("Asia/Tokyo")).isoformat()
+            MODULE.append(state / "cost-ledger.jsonl", {
+                "receipt_id": "bill-1", "cost_basis": "actual_billed",
+                "observed_at": now, "currency": "USD", "amount_minor": 1,
+            })
+            snapshot = MODULE.cost_budget_snapshot(state)
+            self.assertEqual(snapshot["state"], "CLEAR")
+            urlopen.assert_not_called()
+
+    def test_cost_cap_blocked_report_is_typed_and_stable(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root)
+            MODULE.atomic_json(state / "rolling-net.json", {})
+            wake = {
+                "status": "READY_FOR_PUBLICATION",
+                "cost_budget_state": "COST_CAP_BLOCKED",
+                "cost_budget_known_actual_usd_minor": 500,
+                "cost_budget_cap_minor": 500,
+                "rolling_net_money_state": "NO_TRANSACTIONS",
+                "publication_url": "https://example.test/article",
+            }
+            blocked = MODULE.owner_event(state, wake)
+            self.assertEqual(blocked["kind"], "BLOCKED")
+            self.assertIn("external_cost_cap=USD 5.00/USD 5.00", blocked["body"])
+            self.assertIn("no money counted", blocked["body"])
+            self.assertTrue(blocked.get("dedupe_key", "").startswith(
+                "BLOCKED:COST_CAP_BLOCKED"
+            ))
+
     def test_action_budget_counts_only_non_no_effect_attempts_for_jst_day(self):
         with tempfile.TemporaryDirectory() as root:
             state = Path(root)

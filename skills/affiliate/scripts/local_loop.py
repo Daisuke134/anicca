@@ -13,7 +13,7 @@ import sys
 import tempfile
 import time
 import urllib.request
-from datetime import datetime, timezone
+from datetime import datetime, time as datetime_time, timedelta, timezone
 from pathlib import Path
 from urllib.parse import urlparse
 from types import SimpleNamespace
@@ -46,6 +46,8 @@ QUARANTINABLE_EFFECTS = {
     "EXTERNAL_WRITE", "PROVIDER_LINK_WRITE", "PUBLICATION_WRITE",
 }
 EXTERNAL_ACTION_DAILY_CAP = 10
+EXTERNAL_COST_DAILY_CAP_MINOR = 500
+COST_BUDGET_JST = ZoneInfo("Asia/Tokyo")
 
 
 def atomic_json(path, value):
@@ -163,6 +165,109 @@ def action_budget_snapshot(state_root, cap=EXTERNAL_ACTION_DAILY_CAP):
     return receipt
 
 
+def _cost_timestamp(value):
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        try:
+            return datetime.fromtimestamp(value, timezone.utc)
+        except (OverflowError, OSError, ValueError):
+            return None
+    if not isinstance(value, str) or not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def _next_jst_day_epoch():
+    now = datetime.now(COST_BUDGET_JST)
+    next_day = datetime.combine(
+        now.date() + timedelta(days=1), datetime_time.min, tzinfo=COST_BUDGET_JST,
+    )
+    return int(next_day.timestamp())
+
+
+def cost_budget_snapshot(state_root, cap_minor=EXTERNAL_COST_DAILY_CAP_MINOR):
+    """Snapshot known actual USD bills for the current JST day."""
+    now = datetime.now(COST_BUDGET_JST)
+    day = now.date().isoformat()
+    ledger = state_root / "cost-ledger.jsonl"
+    rows = []
+    unknown_rows = 1 if not ledger.is_file() else 0
+    if ledger.is_file():
+        try:
+            lines = ledger.read_text(encoding="utf-8").splitlines()
+        except OSError:
+            lines = []
+            unknown_rows += 1
+        for line in lines:
+            try:
+                rows.append(json.loads(line))
+            except (TypeError, ValueError):
+                unknown_rows += 1
+    seen_ids = set()
+    known = {}
+    valid_rows = 0
+    for row in rows:
+        if not isinstance(row, dict):
+            unknown_rows += 1
+            continue
+        timestamp = next(
+            (parsed for field in ("occurred_at", "created_at", "observed_at")
+             if (parsed := _cost_timestamp(row.get(field))) is not None),
+            None,
+        )
+        if timestamp is not None and timestamp.astimezone(COST_BUDGET_JST).date().isoformat() != day:
+            continue
+        identifier = next(
+            (value.strip() for field in ("cost_id", "event_id", "receipt_id")
+             if isinstance((value := row.get(field)), str) and value.strip()),
+            None,
+        )
+        if identifier is not None and identifier in seen_ids:
+            continue
+        if identifier is not None:
+            seen_ids.add(identifier)
+        amount = row.get("amount_minor")
+        valid = (
+            row.get("cost_basis") == "actual_billed"
+            and timestamp is not None
+            and timestamp.astimezone(COST_BUDGET_JST).date().isoformat() == day
+            and identifier is not None
+            and row.get("currency") == "USD"
+            and isinstance(amount, int)
+            and not isinstance(amount, bool)
+            and amount >= 0
+        )
+        if not valid:
+            unknown_rows += 1
+            continue
+        valid_rows += 1
+        known["USD"] = known.get("USD", 0) + amount
+    known_usd = known.get("USD", 0)
+    state = (
+        "COST_CAP_BLOCKED" if known_usd >= cap_minor else
+        "CLEAR" if valid_rows > 0 and unknown_rows == 0 else
+        "COST_CAP_UNKNOWN"
+    )
+    receipt = {
+        "schema_version": 1,
+        "receipt_type": "AFFILIATE_EXTERNAL_COST_BUDGET",
+        "state": state,
+        "day": day,
+        "cap_minor": cap_minor,
+        "known_actual_minor_by_currency": known,
+        "known_actual_usd_minor": known_usd,
+        "unknown_rows": unknown_rows,
+        "observed_at": datetime.now(timezone.utc).isoformat(),
+    }
+    atomic_json(state_root / "cost-budget.json", receipt)
+    return receipt
+
+
 def installed_release_sha():
     """Return the immutable release SHA, or an explicit source-checkout marker."""
     candidate = Path(__file__).resolve().parents[1].name
@@ -251,7 +356,7 @@ def _tool_outcome(result, failure_type=None):
         "COOLDOWN", "NO_PENDING", "NO_TRANSACTIONS", "NOT_RUN", "WAITING_FOR_PLACEMENT_LINK",
         "BROWSER_UNAVAILABLE", "SIGN_IN_REQUIRED", "AUTH_REQUIRED", "ELIGIBILITY_BLOCKED",
         "DISK_GUARD_BLOCKED", "DISK_GUARD_UNKNOWN", "QUARANTINED",
-        "ACTION_CAP_BLOCKED",
+        "ACTION_CAP_BLOCKED", "COST_CAP_BLOCKED",
     }:
         return "NO_EFFECT"
     return "COMPLETED"
@@ -942,12 +1047,33 @@ def owner_event(state, wake_event, sent_event_ids=None):
             "NO_TRANSACTIONS / gross=unknown / net=unknown / cost=unknown",
             wake_event.get("publication_url") or latest_live_url(state))
     if (
-        wake_event.get("status") not in ("READY_FOR_PUBLICATION",)
+        (
+            wake_event.get("status") not in ("READY_FOR_PUBLICATION",)
+            or wake_event.get("cost_budget_state") == "COST_CAP_BLOCKED"
+        )
         and wake_event.get("acquisition_decision_state") != "DECISION_FAILED"
     ):
         kind = "BLOCKED"
         blockers = []
         action_state = wake_event.get("action_budget_state")
+        cost_state = wake_event.get("cost_budget_state")
+        cost_blocked = cost_state == "COST_CAP_BLOCKED"
+        if cost_blocked:
+            known_minor = wake_event.get("cost_budget_known_actual_usd_minor")
+            cap_minor = wake_event.get("cost_budget_cap_minor")
+            known_text = (
+                f"USD {known_minor / 100:,.2f}"
+                if isinstance(known_minor, int) and not isinstance(known_minor, bool)
+                else "UNKNOWN"
+            )
+            cap_text = (
+                f"USD {cap_minor / 100:,.2f}"
+                if isinstance(cap_minor, int) and not isinstance(cap_minor, bool)
+                else "UNKNOWN"
+            )
+            blockers.append(
+                f"external_cost_cap={known_text}/{cap_text}"
+            )
         if action_state == "ACTION_CAP_BLOCKED":
             blockers.append(
                 f"external_action_cap={wake_event.get('action_budget_used_attempts', 'UNKNOWN')}"
@@ -965,7 +1091,10 @@ def owner_event(state, wake_event, sent_event_ids=None):
         if not blockers:
             blockers.append(f"status={wake_event.get('status') or 'UNKNOWN'}")
         blocker_text = " / ".join(blockers)
-        blocker_key = "BLOCKED:" + "|".join((action_state or "CLEAR", guard_state or "CLEAR"))
+        blocker_key = "BLOCKED:" + "|".join(
+            (("COST_CAP_BLOCKED",) if cost_blocked else ())
+            + (action_state or "CLEAR", guard_state or "CLEAR")
+        )
         no_transactions = (
             cycle.get("state") == "NO_TRANSACTIONS"
             or wake_event.get("rolling_net_money_state") == "NO_TRANSACTIONS"
@@ -977,6 +1106,10 @@ def owner_event(state, wake_event, sent_event_ids=None):
             f"money=UNKNOWN / no money counted / blocker={blocker_text}"
         )
         recovery = (
+            "外部作用は行わず、既知actual_billedのJST日次cost cap回復を再確認します。"
+            "provider capture・ledger・Telegramの読取りは継続"
+            if cost_blocked
+            else
             "外部作用は行わず、JST日次capとディスクfloorの回復を再確認します。"
             "provider capture・ledger・Telegramの読取りは継続"
             if action_state == "ACTION_CAP_BLOCKED" and guard_state == "DISK_GUARD_BLOCKED"
@@ -987,6 +1120,9 @@ def owner_event(state, wake_event, sent_event_ids=None):
             else "未解決の外部状態を再読取りし、作用なしで再試行を予約"
         )
         next_job = (
+            "既知actual_billed costが次のJST日次capを下回った後、同じdurable placement jobを既存ownerが再開"
+            if cost_blocked
+            else
             "ディスク空きが10GiB以上かつJST日次capがCLEARになった後、"
             "同じdurable placement jobを既存ownerが再開（手動公開・captureはしない）"
             if action_state == "ACTION_CAP_BLOCKED" and guard_state == "DISK_GUARD_BLOCKED"
@@ -1062,7 +1198,10 @@ def owner_event(state, wake_event, sent_event_ids=None):
         f"回復: {recovery}",
         f"次: {next_job}",
     ))
-    return {"event_uuid": selected["event_uuid"], "kind": kind, "body": body, "created_at": int(time.time())}
+    result = {"event_uuid": selected["event_uuid"], "kind": kind, "body": body, "created_at": int(time.time())}
+    if kind == "BLOCKED" and selected.get("dedupe_key", "").startswith("BLOCKED:COST_CAP_BLOCKED"):
+        result["dedupe_key"] = selected["dedupe_key"]
+    return result
 
 
 def daily_summary_event(state, wake_event, now=None):
@@ -1373,6 +1512,7 @@ def telegram_dedupe_key(row):
     if isinstance(row.get("dedupe_key"), str) and row["dedupe_key"]:
         return row["dedupe_key"]
     body = row.get("body") if isinstance(row.get("body"), str) else ""
+    cost = "COST_CAP_BLOCKED" if "external_cost_cap=" in body else "CLEAR"
     action = "ACTION_CAP_BLOCKED" if "external_action_cap=" in body else "CLEAR"
     if "runtime_disk=DISK_GUARD_BLOCKED" in body:
         guard = "DISK_GUARD_BLOCKED"
@@ -1380,9 +1520,11 @@ def telegram_dedupe_key(row):
         guard = "DISK_GUARD_UNKNOWN"
     else:
         guard = "CLEAR"
-    if action == "CLEAR" and guard == "CLEAR":
-        return "BLOCKED:LEGACY"
-    return f"BLOCKED:{action}|{guard}"
+    if cost == "CLEAR":
+        if action == "CLEAR" and guard == "CLEAR":
+            return "BLOCKED:LEGACY"
+        return f"BLOCKED:{action}|{guard}"
+    return f"BLOCKED:{cost}|{action}|{guard}"
 
 
 def supersede_telegram_rows(state, outbox, sent_by_id):
@@ -2776,12 +2918,18 @@ def _wake_once(args, started_at, run_id):
     )
     quarantine = quarantine_snapshot(state)
     action_budget = action_budget_snapshot(state)
+    cost_budget = cost_budget_snapshot(state)
     attempt_counts = {}
 
     def refresh_action_budget():
         nonlocal action_budget
         action_budget = action_budget_snapshot(state)
         return action_budget
+
+    def refresh_cost_budget():
+        nonlocal cost_budget
+        cost_budget = cost_budget_snapshot(state)
+        return cost_budget
 
     def admit(tool, effect_class, preconditions, operation, wake_event_uuid=None):
         attempt_counts[tool] = attempt_counts.get(tool, 0) + 1
@@ -2806,6 +2954,39 @@ def _wake_once(args, started_at, run_id):
                 wake_event_uuid=wake_event_uuid,
             )
             return result
+        if effect_class in QUARANTINABLE_EFFECTS:
+            current_cost = refresh_cost_budget()
+            if current_cost["state"] == "COST_CAP_BLOCKED":
+                retry_after = _next_jst_day_epoch()
+                result = {
+                    "state": "COST_CAP_BLOCKED",
+                    "cost_budget_state": current_cost["state"],
+                    "cost_budget_known_actual_usd_minor": current_cost[
+                        "known_actual_usd_minor"
+                    ],
+                    "cost_budget_cap_minor": current_cost["cap_minor"],
+                    "cost_budget_unknown_rows": current_cost["unknown_rows"],
+                    "action_budget_state": action_budget.get("state"),
+                    "action_budget_used_attempts": action_budget.get("used_attempts"),
+                    "action_budget_daily_cap": action_budget.get("daily_cap"),
+                    "changed": False,
+                    "deduplicated": False,
+                    "public_url": None,
+                    "channel": None,
+                    "program": None,
+                    "placement": preconditions.get("placement"),
+                    "transition_id": None,
+                    "failure_class": "COST_CAP",
+                    "retry_state": "RETRYABLE",
+                    "retry_after": retry_after,
+                }
+                append_tool_attempt_receipt(
+                    state, run_id, tool, effect_class, attempt_counts[tool],
+                    preconditions, time.time(), result=result,
+                    failure_class="COST_CAP", retry_due_at=retry_after,
+                    retry_state="RETRYABLE", wake_event_uuid=wake_event_uuid,
+                )
+                return result
         if effect_class in QUARANTINABLE_EFFECTS and refresh_action_budget()["state"] != "CLEAR":
             result = {
                 "state": action_budget["state"],
@@ -2838,9 +3019,11 @@ def _wake_once(args, started_at, run_id):
         except BaseException:
             if effect_class in QUARANTINABLE_EFFECTS:
                 refresh_action_budget()
+                refresh_cost_budget()
             raise
         if effect_class in QUARANTINABLE_EFFECTS:
             refresh_action_budget()
+            refresh_cost_budget()
         return result
 
     lock = (state / ".wake.lock").open("a+")
@@ -3144,6 +3327,15 @@ def _wake_once(args, started_at, run_id):
         "action_budget_state": action_budget.get("state"),
         "action_budget_used_attempts": action_budget.get("used_attempts"),
         "action_budget_daily_cap": action_budget.get("daily_cap"),
+        "cost_budget_state": cost_budget.get("state"),
+        "cost_budget_known_actual_minor_by_currency": cost_budget.get(
+            "known_actual_minor_by_currency"
+        ),
+        "cost_budget_known_actual_usd_minor": cost_budget.get(
+            "known_actual_usd_minor"
+        ),
+        "cost_budget_cap_minor": cost_budget.get("cap_minor"),
+        "cost_budget_unknown_rows": cost_budget.get("unknown_rows"),
         "provider_changed": provider["changed"],
         "provider_state": provider["state"],
         "provider_transition_id": provider["transition_id"],
