@@ -245,6 +245,14 @@ def priority(item: dict[str, Any]) -> tuple[int, str, str]:
 # evidence-gated recovery that the loop performs for itself.
 STRANDED_TERMINAL_MODEL_STATUSES = {"TIMEOUT"}
 
+# A completed routing/investigation receipt is a handoff, not a live lease.
+# These are the only model states that can be moved to WAIT after proving the
+# dispatch owner has exited.  CHECKPOINTED is intentionally absent: it must
+# remain RETRYable through the normal checkpoint path, never be guessed dead.
+ORPHANED_TERMINAL_MODEL_STATUSES = {
+    "COMPLETED", "ALREADY_INVESTIGATED", "EXHAUSTED", "FAILED", "TIMEOUT",
+}
+
 
 def reclaim_stranded(
     queue: dict[str, Any], self_heal: Path, state_root: Path, observed_at: str,
@@ -303,6 +311,151 @@ def reclaim_stranded(
     if reclaimed:
         queue["updated_at"] = observed_at
     return reclaimed
+
+
+def _live_dispatch_owner_pids(state_root: Path) -> list[int]:
+    """Return other Writer repair-dispatch PIDs for this exact state root.
+
+    A lease is never reclaimed from elapsed time.  The process table is only
+    used as the negative proof needed by the receipt-gated recovery below;
+    failure to read it is fail-closed (an empty list is not returned).
+    """
+    try:
+        result = subprocess.run(
+            ["ps", "-axo", "pid=,command="],
+            capture_output=True, text=True, check=False,
+        )
+    except OSError:
+        return [-1]
+    if result.returncode != 0:
+        return [-1]
+    state_token = str(state_root.resolve())
+    owners: list[int] = []
+    for line in result.stdout.splitlines():
+        match = re.match(r"\s*(\d+)\s+(.*)$", line)
+        if match is None:
+            continue
+        pid = int(match.group(1))
+        command = match.group(2)
+        if pid == os.getpid():
+            continue
+        if "writer_repair_dispatch.py" not in command:
+            continue
+        # A launchd shell or a developer's `zsh -lc` can contain the Python
+        # command as text while the child is running.  Count only the Python
+        # interpreter process, not that parent shell, as a live owner.
+        executable = command.split(None, 1)[0] if command.split(None, 1) else ""
+        if not Path(executable).name.startswith("python"):
+            continue
+        if state_token not in command:
+            continue
+        owners.append(pid)
+    return owners
+
+
+def _read_receipt(path: Path) -> dict[str, Any] | None:
+    if not path.is_file() or path.is_symlink():
+        return None
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return value if isinstance(value, dict) else None
+
+
+def _receipt_proof(path: Path) -> dict[str, Any]:
+    return {"path": str(path.resolve()), "sha256": _sha256(path)}
+
+
+def recover_orphaned_handoffs(
+    queue: dict[str, Any], self_heal: Path, state_root: Path, observed_at: str,
+) -> list[dict[str, Any]]:
+    """Move only ownerless, receipt-backed CLAIMED handoffs to WAIT.
+
+    The current Writer loop previously retained leases after a process exit.
+    That state is invisible to ``select()`` and can block the whole repair
+    lane.  Recovery is deliberately conservative: one live dispatch process or
+    one missing/mismatched receipt leaves the item CLAIMED.  No runbook,
+    model, publisher, or external service is called here.
+    """
+    if _live_dispatch_owner_pids(state_root):
+        return []
+    recovered: list[dict[str, Any]] = []
+    for fingerprint, item in queue.get("items", {}).items():
+        if not isinstance(item, dict) or item.get("state") != "CLAIMED":
+            continue
+        lease_id = str(item.get("lease_id") or "")
+        if not lease_id:
+            continue
+        attempt_path = self_heal / "repair-attempts" / f"{fingerprint}-{lease_id}.json"
+        attempt = _read_receipt(attempt_path)
+        if (
+            attempt is None
+            or attempt.get("schema") != "writer.self-heal.repair-attempt"
+            or attempt.get("version") != 1
+            or attempt.get("fingerprint") != fingerprint
+            or attempt.get("lease_id") != lease_id
+        ):
+            continue
+        model = attempt.get("model")
+        model_status = model.get("status") if isinstance(model, dict) else None
+        route = attempt.get("route")
+        proof: dict[str, Any] = {"attempt_receipt": _receipt_proof(attempt_path)}
+        if route == "KNOWN":
+            decision_path = self_heal / "runbook-decisions" / f"{fingerprint}-{lease_id}.json"
+            decision = _read_receipt(decision_path)
+            if (
+                decision is None
+                or decision.get("schema") != "writer.self-heal.runbook-decision"
+                or decision.get("version") != 1
+                or decision.get("fingerprint") != fingerprint
+                or decision.get("lease_id") != lease_id
+                or decision.get("route") != "KNOWN"
+                or decision.get("executed") is not False
+                or decision.get("next_action") != "EXECUTE_BOUNDED_RUNBOOK"
+            ):
+                continue
+            proof["decision_receipt"] = _receipt_proof(decision_path)
+            handoff_kind = "known-runbook"
+        elif (
+            route == "UNKNOWN"
+            and model_status in ORPHANED_TERMINAL_MODEL_STATUSES
+        ):
+            investigation_path = self_heal / "investigations" / f"{fingerprint}-{lease_id}.json"
+            investigation_receipt = _read_receipt(investigation_path)
+            if (
+                investigation_receipt is None
+                or investigation_receipt.get("schema")
+                != "writer.self-heal.unknown-investigation"
+                or investigation_receipt.get("version") != 1
+                or investigation_receipt.get("fingerprint") != fingerprint
+            ):
+                continue
+            proof["investigation_receipt"] = _receipt_proof(investigation_path)
+            handoff_kind = "unknown-investigation"
+        else:
+            continue
+        try:
+            incidents.wait_for_owner_recovery(
+                queue, fingerprint, lease_id, attempt_path, observed_at,
+                handoff_kind=handoff_kind,
+                handoff_status=str(model_status or "unknown"),
+                proof=proof,
+            )
+        except (OSError, ValueError, json.JSONDecodeError):
+            # A receipt that changes under us is not evidence.  Leave the
+            # lease claimed and let the next owner re-read it under the lock.
+            continue
+        recovered.append({
+            "fingerprint": fingerprint,
+            "lease_id": lease_id,
+            "handoff_kind": handoff_kind,
+            "model_status": model_status,
+            "attempt_receipt": str(attempt_path),
+        })
+    if recovered:
+        queue["updated_at"] = observed_at
+    return recovered
 
 
 def select(queue: dict[str, Any]) -> dict[str, Any] | None:
@@ -621,6 +774,12 @@ def dispatch(
         # exclusive lock that guards selection, so a reclaim and a claim can
         # never interleave.
         reclaimed = reclaim_stranded(queue, self_heal, state_root, observed_at)
+        # A completed handoff can still be stranded CLAIMED if its old owner
+        # died after writing the receipts. Release only with owner-aware,
+        # receipt-gated proof; ambiguous claims remain fail-closed.
+        recovered_orphaned = recover_orphaned_handoffs(
+            queue, self_heal, state_root, observed_at,
+        )
         # A deploy is a new input. Without this, every incident exhausted under
         # the old code stays dead forever and a shipped repair can never be
         # validated by the thing it repaired.
@@ -632,6 +791,7 @@ def dispatch(
             return {
                 "status": "NO_ACTIONABLE_INCIDENT", "observed_at": observed_at,
                 "reclaimed_stranded_leases": reclaimed,
+                "recovered_orphaned_handoffs": recovered_orphaned,
                 "rearmed_on_new_code": rearmed,
                 "deployed_commit": deployed_commit,
             }
@@ -672,6 +832,8 @@ def dispatch(
     }
     if reclaimed:
         outcome["reclaimed_stranded_leases"] = reclaimed
+    if recovered_orphaned:
+        outcome["recovered_orphaned_handoffs"] = recovered_orphaned
     if rearmed:
         outcome["rearmed_on_new_code"] = rearmed
     attempt["deployed_commit"] = deployed_commit
@@ -753,6 +915,8 @@ def dispatch(
             result["reason"] = reason
         if reclaimed:
             result["reclaimed_stranded_leases"] = reclaimed
+        if recovered_orphaned:
+            result["recovered_orphaned_handoffs"] = recovered_orphaned
         return result
     return outcome
 
@@ -933,6 +1097,31 @@ def _tool(path: Path) -> dict[str, Any]:
     return {"path": str(path), "sha256": _sha256(path)}
 
 
+def recover_claims_only(
+    *, state_root: Path, observed_at: str,
+) -> dict[str, Any]:
+    """Run only the local owner-aware lease recovery gate.
+
+    ``article-resume-pending.sh`` invokes this mode while publication is
+    paused.  It cannot select an incident, invoke Codex, execute a runbook, or
+    call a publisher; it only makes receipt-backed ownerless claims visible as
+    WAIT so the emergency brake can later be lifted safely.
+    """
+    self_heal = state_root / "self-heal"
+    queue_path = self_heal / "incident-queue.json"
+    if not queue_path.is_file():
+        return {"status": "NO_INCIDENT_QUEUE", "observed_at": observed_at}
+    with _queue_lock(queue_path) as queue:
+        recovered = recover_orphaned_handoffs(
+            queue, self_heal, state_root, observed_at,
+        )
+    return {
+        "status": "CLAIMS_RECOVERED" if recovered else "NO_RECOVERABLE_CLAIMS",
+        "observed_at": observed_at,
+        "recovered_orphaned_handoffs": recovered,
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--state-root", required=True, type=Path)
@@ -940,6 +1129,10 @@ def main() -> int:
     parser.add_argument("--registry", required=True, type=Path)
     parser.add_argument("--model-runner", required=True, type=Path)
     parser.add_argument("--observed-at", required=True)
+    parser.add_argument(
+        "--recover-claims-only", action="store_true",
+        help="recover only receipt-backed ownerless claims; never select or publish",
+    )
     parser.add_argument("--lease-id")
     # The reconciler's own PRIORITY_PUBLICATION_READY signal. "1" means this
     # tick still owes publication work, so no model time may be spent here.
@@ -977,6 +1170,12 @@ def main() -> int:
     args = parser.parse_args()
     if not (args.state_root / "self-heal" / "incident-queue.json").is_file():
         print(json.dumps({"status": "NO_INCIDENT_QUEUE"}, separators=(",", ":")))
+        return 0
+    if args.recover_claims_only:
+        outcome = recover_claims_only(
+            state_root=args.state_root, observed_at=args.observed_at,
+        )
+        print(json.dumps(outcome, ensure_ascii=False, separators=(",", ":")))
         return 0
     outcome = dispatch(
         state_root=args.state_root,

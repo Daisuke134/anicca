@@ -277,6 +277,18 @@ def ingest(queue: dict[str, Any], replay: dict[str, Any], observed_at: str) -> d
             existing["state"] = "OPEN"
             existing["next_action"] = "CLAIM"
             existing["regression_count"] = int(existing.get("regression_count", 0)) + 1
+        elif existing.get("state") == "WAIT" and is_new_occurrence:
+            # WAIT is the terminal state for an ownerless handoff recovered
+            # from a prior occurrence.  A new observation is a new trigger,
+            # not permission to re-run the same stale work forever.
+            existing["state"] = "OPEN"
+            existing["next_action"] = "CLAIM"
+            existing["rearmed_at"] = observed_at
+            existing["rearmed_by"] = {
+                "kind": "new-occurrence-after-owner-recovery",
+                "observed_at": observed_at,
+            }
+            existing["rearm_count"] = int(existing.get("rearm_count", 0)) + 1
         elif (
             existing.get("state") == "FAILED"
             and isinstance(existing.get("exhausted"), dict)
@@ -389,6 +401,64 @@ def continue_investigation(
         "sha256": hashlib.sha256(attempt_receipt.read_bytes()).hexdigest(),
     }
     item["next_action"] = next_action
+    item["released_at"] = observed_at
+    item.pop("lease_id", None)
+    queue["updated_at"] = observed_at
+    return item
+
+
+def wait_for_owner_recovery(
+    queue: dict[str, Any], fingerprint: str, lease_id: str,
+    attempt_receipt: Path, observed_at: str, *,
+    handoff_kind: str, handoff_status: str, proof: dict[str, Any],
+) -> dict[str, Any]:
+    """Release an ownerless terminal handoff into a durable WAIT state.
+
+    A CLAIMED item is normally a live handoff to Order 5 or a completed
+    investigation.  If the process that held it has exited, retaining the
+    lease makes the incident permanently invisible to ``select()``.  This
+    transition is deliberately narrower than lease expiry: the matching
+    attempt receipt and its terminal handoff evidence must already exist, and
+    the caller must have proved that no dispatch owner is alive.
+
+    WAIT is terminal for the current occurrence.  ``ingest`` reopens it only
+    when a genuinely new occurrence arrives, so a recovered stale handoff does
+    not consume a repair tick on every launchd wake.
+    """
+    item = queue["items"].get(fingerprint)
+    if item is None:
+        raise ValueError("unknown incident fingerprint")
+    if item.get("state") != "CLAIMED" or item.get("lease_id") != lease_id:
+        raise ValueError("incident is not claimed by this lease")
+    if not attempt_receipt.is_file() or attempt_receipt.is_symlink():
+        raise ValueError("repair attempt receipt is required")
+    receipt = json.loads(attempt_receipt.read_text(encoding="utf-8"))
+    if (
+        receipt.get("schema") != "writer.self-heal.repair-attempt"
+        or receipt.get("version") != 1
+        or receipt.get("fingerprint") != fingerprint
+        or receipt.get("lease_id") != lease_id
+    ):
+        raise ValueError("repair attempt receipt does not match incident lease")
+    if not handoff_kind or not handoff_status:
+        raise ValueError("owner recovery must name its handoff evidence")
+    item["state"] = "WAIT"
+    item["last_attempt_receipt"] = {
+        "path": str(attempt_receipt.resolve()),
+        "sha256": hashlib.sha256(attempt_receipt.read_bytes()).hexdigest(),
+    }
+    item["lease_recovery"] = {
+        "kind": handoff_kind,
+        "model_status": handoff_status,
+        "reason": (
+            "the matching terminal handoff receipt exists and no live Writer "
+            "repair-dispatch owner was found; release the stale lease without "
+            "executing publication or a runbook"
+        ),
+        "observed_at": observed_at,
+        "proof": proof,
+    }
+    item["next_action"] = "WAIT_FOR_NEW_OCCURRENCE"
     item["released_at"] = observed_at
     item.pop("lease_id", None)
     queue["updated_at"] = observed_at

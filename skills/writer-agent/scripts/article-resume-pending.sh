@@ -16,6 +16,7 @@ ARTICLE_PROVIDER_COOLDOWN_SECONDS="300"
 LOG="${ARTICLE_RESUME_LOG:-$HOME/.openclaw/logs/article-resume.log}"
 MODEL_RUNNER="${ARTICLE_MODEL_RUNNER:-$ARTICLE_ROOT/runtime/model-runner.sh}"
 MODEL_SUPPORT="${ARTICLE_MODEL_SUPPORT:-$ARTICLE_ROOT/runtime/model-runner-support.py}"
+REPAIR_DISPATCH="$ARTICLE_ROOT/scripts/writer_repair_dispatch.py"
 QUALITY_REPAIR_CONTROL="${ARTICLE_QUALITY_REPAIR_CONTROL:-$ARTICLE_ROOT/scripts/quality_repair_control.py}"
 QUALITY_FEEDBACK_CONTROL="${ARTICLE_QUALITY_FEEDBACK_CONTROL:-$ARTICLE_ROOT/scripts/quality_feedback_recovery.py}"
 PLANNER="$ARTICLE_ROOT/scripts/article_pending.py"
@@ -41,6 +42,20 @@ mkdir -p "$(dirname "$LOG")"
 # while a prior failure is being verified.
 PUBLICATION_PAUSE_FILE="${ARTICLE_PUBLICATION_PAUSE_FILE:-$STATE_DIR/.publication-paused}"
 if [ -f "$PUBLICATION_PAUSE_FILE" ]; then
+  # The emergency brake blocks every external effect, but it must not freeze
+  # the local repair queue forever.  This narrow mode only releases
+  # receipt-backed claims whose Python owner is gone; it cannot select an
+  # incident, invoke Codex, execute a runbook, or call a publisher.
+  if [ -f "$STATE_DIR/self-heal/incident-queue.json" ]; then
+    python3 "$REPAIR_DISPATCH" \
+      --state-root "$STATE_DIR" \
+      --scripts "$ARTICLE_ROOT/scripts" \
+      --registry "$ARTICLE_ROOT/config/repair-runbooks.json" \
+      --model-runner "$MODEL_RUNNER" \
+      --observed-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+      --recover-claims-only >>"$LOG" 2>&1 || \
+      echo "article-resume: paused claim recovery failed closed" >>"$LOG"
+  fi
   echo "article-resume: publication paused file=$PUBLICATION_PAUSE_FILE" >>"$LOG"
   exit 0
 fi
