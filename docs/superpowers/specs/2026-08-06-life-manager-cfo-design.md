@@ -2,13 +2,13 @@
 
 | Field | Value |
 |---|---|
-| Status | M2 — `CFO-OPS3a`, `CFO-OPS3b`, and `CFO-1j` are closed; `CFO-2b.2b2` is next |
+| Status | M2 — `CFO-OPS3a`, `CFO-OPS3b`, `CFO-1j`, and `CFO-2b.2b2` are closed; `CFO-2b.2c` is next |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
 | Existing foundations | `apps/life-call`, interactive Moneytree App access, Fleet telemetry, `lm_api_cost`, and the canonical `lm_agent_earnings` source (the panel's `lm_financial_ledger` name is a stale alias) |
 | Canonical repository | `Daisuke134/life-manager` at `/Users/anicca/Projects/life-manager-main`; CFO code, skill, loop, launchd template, tests, and specs converge there |
-| First active item | **CFO-2b.2b2 moves the proven one-off Apple Finance report boundary into the smallest durable parser and reconciles report-level Partner Share coverage with RevenueCat. `CFO-2a3b` remains externally blocked by Google reauthentication.** |
+| First active item | **CFO-2b.2c composes the Anicca iOS business fact from reconciled revenue, payout coverage, attributed local token usage, and still-missing production API-cost coverage. `CFO-2a3b` remains externally blocked by Google reauthentication.** |
 
 ## 1. Overview — What and Why
 
@@ -1172,7 +1172,9 @@ ingestion. They are not unchecked M1 items and cannot become the active CFO item
       `docs/superpowers/specs/2026-08-11-life-manager-cfo-subscription-receipts-design.md`.
 - [ ] **CFO-2b** Instrument each existing earning loop in registry order: revenue receipt, landed cash, direct
       cost, tokens, API USD, human USD, capital employed, and evidence. Ordered child SSOT:
-      `docs/superpowers/specs/2026-08-11-life-manager-cfo-business-instrumentation-design.md`.
+      `docs/superpowers/specs/2026-08-11-life-manager-cfo-business-instrumentation-design.md`. The Anicca iOS
+      report-boundary sub-slice `CFO-2b.2b2` is closed in canonical commit `363c1c2bd`; `CFO-2b.2c` is the
+      first active item.
 - [ ] **CFO-2c** Reconcile per-business totals to provider statements and Fleet totals; upgrade Fleet observations to
       raw positions, recognized earnings, and provider/ledger-confirmed burn only when matching evidence exists.
 - [ ] **CFO-2d** Report contribution profit, runway, ROI, and evidence completeness; unknown is distinct from zero.

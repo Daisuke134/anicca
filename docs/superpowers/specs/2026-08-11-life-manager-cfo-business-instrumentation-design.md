@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | `CFO-OPS3b` shared transport and `CFO-1j` are closed; `CFO-2b.2b2` is the next active business-instrumentation slice |
+| Status | `CFO-OPS3b`, `CFO-1j`, and `CFO-2b.2b2` are closed; `CFO-2b.2c` is the next active business-instrumentation slice |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Canonical target is local `/Users/anicca/Projects/life-manager-main/apps/life-manager`; existing `apps/life-call` code is migration evidence, not the final owner |
 | Role split | Sol specifies/verifies; Luna implements production code/tests |
@@ -51,7 +51,7 @@ Only the first unchecked business item is active after the parent spec's operati
   - [ ] **2b.2b** Read Apple Finance Detail as the authoritative settled Partner Share source and reconcile the
         RevenueCat receipt set without turning an unavailable fiscal period into zero.
     - [x] **2b.2b1** Normalize one allowlisted Anicca Finance Detail sale/return row into signed Partner Share.
-    - [ ] **2b.2b2** Parse one complete fiscal report, prove its metadata/header/footer boundary, and reconcile its
+    - [x] **2b.2b2** Parse one complete fiscal report, prove its metadata/header/footer boundary, and reconcile its
           closed Anicca totals with RevenueCat without treating the current unavailable report as zero.
   - [ ] **2b.2c** Compose the Anicca iOS business fact from reconciled revenue, payout coverage, attributed local
         token usage, and the still-missing production API-cost coverage.
@@ -449,9 +449,76 @@ Rules:
   reports, passed all 24 original data rows through the committed boundary, accepted 18 Anicca rows, ignored six
   other-app rows, observed 17 sales and one signed return, and produced 18 unique opaque IDs. The exact fiscal and
   currency totals above matched; the privacy gate passed; payout, MUFG landing, profit, and FX remain unknown.
-- `CFO-2b.2b2` remains the next business-instrumentation slice after `CFO-1j`: move the proven one-off report boundary
-  into the smallest durable parser and reconcile report-level Apple Partner Share coverage with RevenueCat without
-  converting absence to zero.
+- `CFO-2b.2b2` is now closed after `CFO-1j`: the proven one-off report boundary is a canonical durable parser with
+  separate report-level Apple Partner Share and RevenueCat gross coverage; absence remains unavailable, never zero.
+
+## 12.2 CFO-2b.2b2 slice brief — complete fiscal report boundary
+
+This slice moves the proven one-off boundary into the canonical Life Manager owner. The production owner is a new
+`apps/life-manager/lib/cfo-anicca-ios-earning.js` module; the migration-only `apps/life-call` copy remains evidence and
+is not imported at runtime. The module keeps the already-closed pure RevenueCat and single-row Apple normalizers and
+adds `parseAniccaIosAppleFinanceReport(raw, { revenueCatReceipts })`. The parser has no file/API/environment/clock read,
+state write, scheduler, Telegram action, or dependency.
+
+The intended slice is two files with no database, launchd, or report-renderer change. The canonical repository had no
+owner for the migration normalizers, so this slice necessarily copied those proven normalizers into the new owner;
+the committed result is 271 production lines and 103 test lines (374 additions), with no follow-on scope added. A
+missing or incomplete Apple fiscal report is an unavailable source, never an observed zero.
+
+The parser accepts only a complete tab-separated report with this fixed boundary:
+
+1. exactly three non-empty `key<TAB>value` metadata lines (`fiscal_month`, `report_type=FINANCE_DETAIL`, and
+   `report_status=COMPLETE`),
+2. one header containing each required detailed-report field exactly once (`Start Date`, `End Date`, `Transaction Date`,
+   `Settlement Date`, `Apple Identifier`, `SKU`, `Quantity`, `Partner Share`, `Extended Partner Share`,
+   `Partner Share Currency`, `Sale or Return`) and any provider columns are ignored,
+3. one or more dense data rows, and
+4. the final three footer lines `Total_Rows`, `Total_Amount`, and `Total_Units`; `Total_Rows` must equal the number of
+   original data rows before Anicca filtering. Every row receives its 1-based original `row_ordinal`; no raw row or
+   provider title/vendor/country/customer field crosses the normalizer boundary.
+
+The result exposes only the fiscal month, verified boundary counts, signed Anicca Partner Share totals grouped by
+currency, and a RevenueCat coverage state. `revenueCatReceipts=null` yields `revenuecat_coverage_status=unavailable`
+and `revenuecat_gross=null`; an explicitly supplied empty array is `observed_empty`. Supplied normalized RevenueCat
+receipts are aggregated as provider gross and kept separate from Apple settled Partner Share, with
+`reconciliation_status=gross_vs_partner_share_separate`; the parser never subtracts, converts FX, or claims that the
+two provider totals are equal. Apple payout, bank landing, profit, and API cost remain `unknown`.
+
+Apple documents that financial reports contain monthly proceeds and final unit sales, and that detailed rows expose
+Partner Share, Extended Partner Share, Partner Share Currency, and Sale or Return: [Financial report fields — Apple
+Developer](https://developer.apple.com/help/app-store-connect/reference/reporting/financial-report-fields). The fiscal
+period is an Apple fiscal month (`YYYY-MM`), not an invented calendar-month conversion: [Download finance reports —
+Apple Developer](https://developer.apple.com/documentation/appstoreconnectapi/get-v1-financereports).
+
+### CFO-2b.2b2 acceptance
+
+- [x] A complete synthetic report proves the three metadata lines, exact header, dense data rows, footer row-count, and
+      original-row ordinal boundary; two Anicca rows normalize into signed totals and another app row is ignored.
+- [x] A normalized RevenueCat set is reported as gross coverage beside (not merged into) Apple Partner Share; omitted
+      RevenueCat evidence is `null`/`unavailable`, and no unavailable fiscal period becomes zero.
+- [x] Missing/duplicated metadata, missing/duplicated required header, blank/ragged data, missing footer, row-count
+      mismatch, malformed row, hostile object, and raw provider identity fail closed with one redacted fixed error.
+- [x] Inputs remain unchanged, output is recursively frozen, no raw Apple/RevenueCat identifiers escape, and focused
+      tests, syntax, diff, and exact two-file scope pass. No loop, launchd, database, or Telegram effect occurs.
+
+### CFO-2b.2b2 completion evidence
+
+- Canonical commit `363c1c2bdcaa897d7e30e3f3b9e090afd194c33f` adds only
+  `apps/life-manager/lib/cfo-anicca-ios-earning.js` and its focused test; remote
+  `origin/feature/cfo-ops3a-canonical` resolves to the same tip. The module is the canonical owner; the
+  `apps/life-call` copy remains migration evidence and is not imported.
+- The in-memory synthetic report passed the three metadata lines, required header (with an ignored provider column),
+  three original rows, signed JPY `425` and GBP `-17.39` Anicca totals, and ignored the other-app row without emitting
+  its provider identity. RevenueCat gross `JPY 500` stays separate; omitted evidence is `null`/`unavailable`.
+- Focused Node tests pass `4/4`; `node --check` and `git diff --check` pass; the fresh adversarial Sol review is
+  `ship`. Regression coverage rejects reversed/invalid Start/End dates, raw or extra-key RevenueCat objects, bad UTC
+  or source IDs, zero/exponent/over-32-character amounts, malformed boundaries, and privacy leakage. Inputs remain
+  unchanged and output is recursively frozen.
+- The full `npm test` gate observed `846/847` passing with one unrelated pre-existing TECH PLAY connector assertion
+  (`expected status=absent`, observed `status=unavailable`); it is not caused by this two-file parser and is not
+  reported as a green full-suite result. No launchd, loop, database, or Telegram runtime effect occurred in this slice.
+- No current Apple fiscal report was available for a live read, so no current-period zero, payout, bank landing, API
+  cost, FX conversion, profit, or ROI is claimed. `CFO-2b.2c` is now the next active item.
 
 ## 13. Resume audit
 
@@ -463,7 +530,8 @@ Rules:
   `feature/cfo-moneytree-daily-report`. Never edit the dirty main worktree.
 - The canonical code branch is pushed to `origin/feature/cfo-ops3a-canonical`; the spec branch is pushed to
   `canonical/feature/cfo-moneytree-daily-report`. Verify exact tips with `git ls-remote` after each push.
-- Fresh `normalizeAniccaIosAppleFinanceRow` focused tests pass 5/5. The migration-evidence worktree still has invalid
+- Fresh `normalizeAniccaIosAppleFinanceRow` focused tests pass 5/5. The canonical report-boundary slice is now
+  `363c1c2bdcaa897d7e30e3f3b9e090afd194c33f`; its focused tests pass 4/4. The migration-evidence worktree still has invalid
   or empty `@opentelemetry/api` and `ws` directories, but the canonical stable release has lock-matched dependencies,
   module-load PASS, and the fresh financial focused gate is 19/19. The failed recovered-worktree gate is an
   environment/runtime recovery fact, not an Apple normalizer regression.
@@ -492,7 +560,7 @@ Rules:
   category coverage explicitly unavailable, and visible partial pagination. An immediate real read at
   `asOf=2026-08-21T05:04:12Z` matched the delivered balance parity. No raw account number, provider ID, description,
   category label, credential, or raw payload was persisted or sent. Shared transport and `CFO-1j` are closed; the LLM
-  spending guardian remains disabled until its later verified-outgoing and reconciliation gates. `CFO-2b.2b2` is next.
+  spending guardian remains disabled until its later verified-outgoing and reconciliation gates. `CFO-2b.2c` is next.
 - Provider-freshness correction (2026-08-21): two direct read-only calls at `2026-08-21T05:09:58Z` and
   `2026-08-21T05:11:43Z` returned the same provider-reported balance fingerprint as revision 5, so the loop is not
   serving a stale local cache; the Moneytree provider value itself had not changed. Moneytree's official [MUFG
