@@ -849,7 +849,11 @@ a later successful example.
   `カントリーロード_ハンドベル3パート譜_v15.pdf` (1,448,789 bytes) in that exact room; the
   on-disk artifact independently hashes to the manifest-bound SHA256
   `40e1e15059782403a35f107d71070e6a351bcd9a29971bb558a66968ef9bcdbd`.
-- [ ] P23 — Read formal delivery back in the exact official talkroom.
+- [x] P23 — Read formal delivery back in the exact official talkroom. Production formal evidence
+  for talkroom `18130722` records `send_performed: true`, then reads the same official room back as
+  `納品確認待ち` with its formal control disabled and seller attachment
+  `tekokoro-no12-company-review-v2.mp4`. The receipt is bound to formal key/artifact SHA256
+  `e862954d76278b6f6311692f735406626743e6d494d41f90c9511d4b7410992a`.
 - [ ] P24 — Replay and prove zero duplicate replies, attachments and formal deliveries.
 - [ ] P25 — Resume the next transition after an executor/reviewer process exits.
 - [ ] P26 — Resume the same transition after a machine/login restart.
