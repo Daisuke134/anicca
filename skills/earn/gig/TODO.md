@@ -309,9 +309,13 @@ The latest natural receipt is nevertheless `status=failed`, `observed=7`, `actio
 `readback=2`, `failed=4`, `pending=1`; parallel artifact production therefore does not yet prove
 parallel buyer delivery. X-post talkroom `18171850` remains the sole closed item in the current
 four-client set: approved v1 has already been sent and officially read back with formal delivery OFF.
-Review-article talkroom `18171890` now has approved v4
-`645b3db845c779f597457e53330d419ca583dcc70a78876ee3b4e7800b2af08a`, but its current delivery attempt
-still fails `file_validation`. Manledge `18169985` now has acceptance-PASS v20
+Review-article talkroom `18171890` has locally acceptance-PASS v4
+`645b3db845c779f597457e53330d419ca583dcc70a78876ee3b4e7800b2af08a`, but direct artifact inspection
+proves it is only a buyer-review draft: all three required screenshots are absent, four firsthand-use
+passages remain unresolved, and the artifact itself says it is not publishable until the seller performs
+the required real use, captures privacy-redacted images, and completes the required human editing. The
+generic acceptance path incorrectly treated those missing buyer-visible inputs as PASS checks rather than
+a durable blocker; its current delivery attempt also fails `file_validation`. Manledge `18169985` now has acceptance-PASS v20
 `2cd506a57a6a791d53751e89cb68859fdd5e950768cbc5961cf23e2cc0b45fe8`, but delivery fails at
 `file_browser`. Haru `18169583` now has acceptance-PASS v31
 `bceca32db8a9272330fd12798d44da06e14aab51e83e17d81e030aa37665d185` in
@@ -334,9 +338,12 @@ official DOM/readback receipt; local artifact PASS, process liveness or Telegram
      keep formal delivery OFF.
    - [x] X-post project `18171850`: approved v1 was attached and officially read back with formal
      delivery OFF.
-   - [ ] Review-article project `18171890`: submit the already approved v4 article, repair its
-     `file_validation` handoff without regenerating the artifact, obtain official readback and keep
-     formal delivery OFF.
+   - [ ] Review-article project `18171890`: do not represent v4 as a publishable completed article.
+     Repair the generic acceptance boundary so missing contract-required screenshots, firsthand-use
+     passages and required human editing cannot pass merely because the draft lists them as unresolved;
+     persist the exact non-delegable seller action as a durable blocker. Only then repair the
+     `file_validation` handoff, send the truthful buyer-review-stage artifact if that bounded effect is
+     still contract-valid, obtain official readback and keep formal delivery OFF.
    - [ ] Treat ten reviews as a ceiling, not a quota: when a fresh reviewer returns
      `undeterminable` with no independently repairable defect, immediately ship the best truthful
      bounded artifact with formal delivery OFF instead of regenerating it until round ten.
