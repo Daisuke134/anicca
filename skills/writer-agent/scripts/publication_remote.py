@@ -393,7 +393,15 @@ def _visible_text(value: str) -> str:
     value = re.sub(r"<[^>]+>", " ", value)
     value = re.sub(r"!\[([^]]*)\]\([^)]+\)", r"\1", value)
     value = re.sub(r"\[([^]]+)\]\([^)]+\)", r"\1", value)
-    value = re.sub(r"^[ \t]*(?:#{1,6}|>|[-+*]|\d+[.)])[ \t]+", "", value)
+    while True:
+        cleaned = re.sub(
+            r"^[ \t]*(?:#{1,6}|>|[-+*]|\d+[.)])[ \t]+",
+            "",
+            value,
+        )
+        if cleaned == value:
+            break
+        value = cleaned
     value = re.sub(r"[`*_~]", "", value)
     return " ".join(value.split())
 
@@ -413,6 +421,7 @@ def _source_blocks(source: str) -> list[str]:
         if (
             not stripped
             or stripped.startswith("<!--")
+            or stripped in {">", "-", "+", "*"}
             or re.fullmatch(r"(?:\|?\s*:?-{3,}:?\s*)+\|?", stripped)
             or stripped.startswith("```")
         ):
