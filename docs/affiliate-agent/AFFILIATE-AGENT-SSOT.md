@@ -763,7 +763,7 @@ diagnostic facts only; they are not money.
 The first unfinished economic gate is still **B01/E1-H**: the existing owner
 must capture a non-empty official provider transaction/settlement artifact.
 The ordered remaining work is B01–B08/E1-H, then C01–C06, D05–D06/D08,
-E02–E10, F01–F06, G01–G07/A2–A3, and only after the local USD 10,000 proof
+E02–E10, F04–F05, G01–G07/A2–A3, and only after the local USD 10,000 proof
 O01–O12/M4.1 for OSS. Section 9.0.1.0 is the sole atomic ordering authority;
 no later provider expansion or OSS work can bypass the first real row and the
 canonical net gate.
@@ -915,6 +915,23 @@ Repost `OBSERVED`, and Telegram `NO_PENDING`. The Impact receipt remained
 provider link, public effect, transaction, or money was created. Rolling net
 remains `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`, with real
 cost coverage `UNKNOWN`.
+
+### 1.1.34 Capture-path self-heal gate closure
+
+F06 is now **COMPLETE for one isolated provider-capture failure only**. The
+existing owner observed the real `2026-08-21T14:35:54+0900`
+`REVENUE_CYCLE_FAILED / stage=capture / failure_type=NONZERO_EXIT / return_code=1`
+receipt, retained its `retry_after=15:35:54+0900`, and did not count an
+estimate. After that durable boundary, the same owner re-ran the allowlisted
+official PartnerStack capture at `15:37:53+0900`; the hash-valid USD-display
+artifact read `commission_row_count=0`, `NO_LIVE_ROWS`, empty payout rows, and
+reconciliation `0/0/0`, with no provider/public duplicate effect. The next
+owner wake at `15:43:27+0900` resumed healthy lanes and delivered Telegram
+`27244` (`SELF_HEALED`, `transactions=0`, no estimated revenue); delivery event
+`cf24b8c0…e85eb71` binds sent event `53be1b70…15b67f8`. Launchd remained exit `0`
+with its 600-second interval. This closes the single observed capture retry
+proof, not the universal watchdog/diagnose-repair work in F04/F05, and it does
+not close B01 or create money.
 
 ### 1.2.0 Audited executable boundary
 
@@ -2719,7 +2736,7 @@ an owned publishing identity when a provider requires them.
 | 4 | Repost produces attributable acquisition | Exposure → owned visit → provider click → transaction lineage | OPEN; close D07 |
 | 5 | Allocation learns from money | Ten mature placements and one promote/revert decision | OPEN; close D08 |
 | 6 | Provider diversification works | Three live provider links, reports, reversals, and payout schemas | OPEN; close E10 |
-| 7 | Loop self-heals | One real isolated failure repairs and resumes without duplicate effect | OPEN; close F06 |
+| 7 | Loop self-heals | One real isolated capture failure repairs and resumes without duplicate effect | COMPLETE for capture path; universal F04/F05 healer remains OPEN |
 | 8 | USD 10,000 gate is replay-safe | Exact rolling window recomputes identically from immutable inputs | OPEN; close G07 |
 | 9 | Clean-Mac OSS is isolated | Install/canary/update/rollback/uninstall on fresh macOS user | OPEN; close O12 |
 
@@ -2984,8 +3001,11 @@ receipt readback, SSOT state update, commit, and push to both canonical remotes.
   caps, disk guard, browser-owner health, and watchdog inside the existing ownership graph.
 - [ ] **F05** Implement diagnose→one allowlisted repair→postcondition→same-job resume;
   escalate or quarantine when the repair postcondition fails.
-- [ ] **F06** Observe one real recoverable failure and prove `SELF_HEALED`, continued
-  healthy lanes, exact public/provider state, Telegram receipt, and no duplicate effect.
+- [x] **F06** Observe one real recoverable capture failure and prove `SELF_HEALED`,
+  continued healthy lanes, exact public/provider state, Telegram receipt, and no
+  duplicate effect. The 14:35 failure, 15:37 official empty recapture, 15:43
+  Telegram `27244`, linked delivery receipt, and exit-0 owner readback are
+  recorded in §1.1.34. This does not close F04/F05.
 
 ##### G — Prove the local USD 10,000 money gate
 
@@ -3253,9 +3273,10 @@ acceptance contract; this summary does not reorder them):
 4. **E02–E10 / M2.2–M2.3-D:** admit Semrush, Amazon Japan, and Rakuten only
    through official terms/auth/link/report gates; reach three executable,
    independently receipted providers and enforce the 40% concentration cap.
-5. **F03–F06:** add typed retry/quarantine/watchdog, one allowlisted repair with
-   same-job resume, and one live recoverable failure with exact no-duplicate
-   `SELF_HEALED` evidence. F01 and F02 are closed by the live owner proof above.
+5. **F04–F05:** add the universal typed retry/quarantine/watchdog and
+   diagnose→one-allowlisted-repair→postcondition→same-job-resume path across
+   the remaining stages. F01–F03 are closed, and F06 is closed for the one
+   observed capture path; the broader healer is still open.
 6. **G01–G07 / A2–A3:** prove mature comparable cohorts, four unattended
    positive weeks, observed traffic/conversion requirements, 80/20 allocation,
    <=40% concentration, then the replayed rolling 30-day USD 10,000 net gate
@@ -5331,7 +5352,7 @@ atomic replacement, matching Python's replacement contract
 | U41 | OPEN-BEFORE-CODE | Model/token/content/browser costs do not join placement economics | Record provider-reported usage and cost basis separately from actual cash cost; compute net only from comparable bases |
 | U42 | OPEN-BEFORE-CODE | Failed/rejected attempts are not uniformly durable, creating survivorship bias | Persist every admitted attempt and terminal reason, including no-effect and policy rejection |
 | U43 | CLOSED-INSTALLED | Installed source and composition owners refresh/discover official plans, create source-bound handoffs and policy receipts, and the money owner consumes them through owned/X/DEV/Substack readback, revenue poll, and Telegram without secret/model authority crossing | Reopen only if a new campaign breaks this installed lineage or requires manual earning execution |
-| U44 | PARTIAL-CLOSED | Provider auth, ambiguous X publication, and Substack response-loss have each resumed the same job without repeating the accepted target. No single injected whole-pipeline fault has proven every stage | Do not build a synthetic broad healer before E1; the next observed recoverable failure MUST produce typed diagnosis, one allowlisted repair, same-job resume, dedupe, and `SELF_HEALED` proof |
+| U44 | PARTIAL-CLOSED | Provider auth, ambiguous X publication, Substack response-loss, and one real PartnerStack capture failure have each resumed the same job without repeating the accepted target. Capture now has typed failure, durable retry boundary, official postcondition, and linked `SELF_HEALED`; a universal whole-pipeline healer is still unproven | Do not build a synthetic broad healer before E1; F04/F05 must add typed diagnosis, one allowlisted repair, postcondition, same-job resume, dedupe, quarantine, and owner health across the remaining stages |
 
 #### Live-only and irreducible uncertainties
 

@@ -1,5 +1,17 @@
 # Affiliate local money loop handover
 
+- F06 is now closed only for the observed provider-capture path. The existing
+  owner retained the real `2026-08-21T14:35:54+0900` capture failure
+  (`NONZERO_EXIT`, return code `1`, retry boundary `15:35:54+0900`), then at
+  `15:37:53+0900` re-ran the same official PartnerStack capture and read a
+  hash-valid USD-display empty artifact (`commission_row_count=0`,
+  `NO_LIVE_ROWS`, payout empty, reconciliation `0/0/0`). The following
+  `15:43:27+0900` wake resumed healthy lanes and delivered Telegram `27244`
+  (`SELF_HEALED`, `transactions=0`) with delivery `cf24b8c0…e85eb71` bound to
+  sent event `53be1b70…15b67f8`; launchd exit remained `0` and no duplicate
+  public/provider effect or money was created. F04/F05 universal
+  watchdog/diagnose-repair work remains open; B01 still waits for the first
+  non-empty official provider transaction row.
 - The rejected-provider guard is now installed. Commit
   `c75dacc605bd7f0e0162e4da66ae2936dc3da7e0` is immutable `current`; source and
   installed `en-candidates.json` bytes match, and HubSpot reads
