@@ -188,6 +188,15 @@ def _save_refresh_cursor(path: Path, next_index: int) -> None:
     os.chmod(path, 0o600)
 
 
+def _blocked_boards(path: Path) -> set[str]:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError, json.JSONDecodeError):
+        return set()
+    boards = value.get("boards") if isinstance(value, dict) else []
+    return {str(board).casefold() for board in boards if isinstance(board, str)}
+
+
 def _fresh_jobs(
     cached_jobs: list[dict[str, Any]], refresh_state: Path, board_batch: int
 ) -> tuple[list[dict[str, Any]], list[str], int, list[str]]:
@@ -217,6 +226,7 @@ def discover_one(
     prompt_path: Path,
     refresh_state: Path,
     board_batch: int,
+    board_blocker_state: Path,
     max_jobs: int = 1,
 ) -> dict[str, Any]:
     profile = json.loads(profile_path.read_text(encoding="utf-8"))
@@ -244,6 +254,7 @@ def discover_one(
             )
             if _board_slug(str(row[0]))
         }
+        limited_boards.update(_blocked_boards(board_blocker_state))
         cached_jobs = _read_jobs(cache_path)
         live_jobs, refresh_errors, board_count, queried_boards = _fresh_jobs(
             cached_jobs, refresh_state, board_batch
@@ -320,6 +331,11 @@ def main() -> int:
         default=Path.home() / ".local/state/anicca/job-search/ashby-live-board-cursor.json",
     )
     parser.add_argument("--board-batch", type=int, default=12)
+    parser.add_argument(
+        "--board-blocker-state",
+        type=Path,
+        default=Path.home() / ".local/state/anicca/job-search/ashby-board-blockers.json",
+    )
     args = parser.parse_args()
     result = discover_one(
         cache_path=args.cache,
@@ -329,6 +345,7 @@ def main() -> int:
         prompt_path=args.prompt,
         refresh_state=args.refresh_state,
         board_batch=args.board_batch,
+        board_blocker_state=args.board_blocker_state,
         max_jobs=args.max_jobs,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True, mode=0o700)

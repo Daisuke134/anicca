@@ -99,6 +99,24 @@ def _save_required_field_blockers(path: Path, rows: dict[str, dict[str, Any]]) -
     _write_json(path, {"version": 1, "blockers": rows})
 
 
+def _load_blocked_boards(path: Path) -> set[str]:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return set()
+    boards = value.get("boards") if isinstance(value, dict) else []
+    return {str(board).casefold() for board in boards if isinstance(board, str)}
+
+
+def _save_blocked_boards(path: Path, boards: set[str]) -> None:
+    _write_json(path, {"version": 1, "boards": sorted(boards)})
+
+
+def _board_slug(url: str) -> str:
+    parts = urlsplit(url).path.strip("/").split("/")
+    return parts[0].casefold() if len(parts) >= 2 else ""
+
+
 async def _snapshot(page: Any) -> dict[str, Any]:
     frames: list[dict[str, Any]] = []
     for frame in page.frames:
@@ -482,6 +500,10 @@ async def _fill_known_fields(
 
 
 async def _has_visible_captcha(page: Any) -> bool:
+    if await page.locator(
+        "iframe[src*='recaptcha'], textarea[name='g-recaptcha-response']"
+    ).count():
+        return True
     try:
         text = await page.locator("body").inner_text(timeout=3_000)
     except Exception:
@@ -823,6 +845,7 @@ async def _run(args: argparse.Namespace) -> dict[str, Any]:
     profile_sha256 = hashlib.sha256(args.profile.read_bytes()).hexdigest()
     mapper_sha256 = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
     required_field_blockers = _load_required_field_blockers(args.blocker_state)
+    blocked_boards = _load_blocked_boards(args.board_blocker_state)
     ledger = Ledger(args.ledger)
     exclusions = profile.get("candidate", {}).get("employer_exclusions", [])
     excluded = ledger.reject_excluded_employers(
@@ -846,6 +869,17 @@ async def _run(args: argparse.Namespace) -> dict[str, Any]:
     rows: list[dict[str, Any]] = []
     for row in rows_by_id.values():
         application_id = str(row["application_id"])
+        if _board_slug(str(row["canonical_url"])) in blocked_boards:
+            skipped_blocked.append(
+                {
+                    "application_id": application_id,
+                    "company": row["company"],
+                    "title": row["title"],
+                    "status": "blocked",
+                    "blocker": "captcha_board_quarantined",
+                }
+            )
+            continue
         blocker = required_field_blockers.get(application_id)
         if (
             blocker
@@ -919,12 +953,15 @@ async def _run(args: argparse.Namespace) -> dict[str, Any]:
                 }
             else:
                 required_field_blockers.pop(application_id, None)
+            if outcome.get("blocker") == "visible_captcha":
+                blocked_boards.add(_board_slug(str(row["canonical_url"])))
     finally:
         if page is not None:
             await page.close()
         await pw.stop()
         ledger.close()
     _save_required_field_blockers(args.blocker_state, required_field_blockers)
+    _save_blocked_boards(args.board_blocker_state, blocked_boards)
     _write_json(args.output, result)
     return result
 
@@ -943,6 +980,11 @@ def main() -> int:
         "--blocker-state",
         type=Path,
         default=Path.home() / ".local/state/anicca/job-search/ashby-required-field-blockers.json",
+    )
+    parser.add_argument(
+        "--board-blocker-state",
+        type=Path,
+        default=Path.home() / ".local/state/anicca/job-search/ashby-board-blockers.json",
     )
     args = parser.parse_args()
     args.evidence_dir.mkdir(parents=True, exist_ok=True, mode=0o700)

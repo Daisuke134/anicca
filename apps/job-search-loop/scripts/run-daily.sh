@@ -34,6 +34,7 @@ refresh_summary() {
   --output "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE"
 ASHBY_FAST_PATH_RESULT="$EVIDENCE/ashby-fast-path.json"
 ASHBY_BLOCKER_STATE="$JOB_SEARCH_STATE_ROOT/ashby-required-field-blockers.json"
+ASHBY_BOARD_BLOCKER_STATE="$JOB_SEARCH_STATE_ROOT/ashby-board-blockers.json"
 set +e
 "$JOB_SEARCH_PYTHON" -m job_search_loop.ashby_fast_path \
   --endpoint "http://127.0.0.1:9222" \
@@ -43,6 +44,7 @@ set +e
   --evidence-dir "$EVIDENCE/ashby-fast-path" \
   --output "$ASHBY_FAST_PATH_RESULT" \
   --blocker-state "$ASHBY_BLOCKER_STATE" \
+  --board-blocker-state "$ASHBY_BOARD_BLOCKER_STATE" \
   --japan-day "$JAPAN_DAY"
 ASHBY_FAST_PATH_RC=$?
 set -e
@@ -58,6 +60,7 @@ set +e
   --materials-root "${XDG_DATA_HOME:-$HOME/.local/share}/anicca/job-search/materials" \
   --prompt "$JOB_SEARCH_APP_ROOT/prompts/daily-pass.md" \
   --refresh-state "$JOB_SEARCH_STATE_ROOT/ashby-live-board-cursor.json" \
+  --board-blocker-state "$ASHBY_BOARD_BLOCKER_STATE" \
   --board-batch 12 \
   --output "$ASHBY_DISCOVERY_RESULT" \
   --max-jobs 1
@@ -78,6 +81,7 @@ if [[ "$ASHBY_DISCOVERY_COUNT" -gt 0 ]]; then
     --evidence-dir "$EVIDENCE/ashby-fast-path-discovered" \
     --output "$ASHBY_DISCOVERED_FAST_PATH_RESULT" \
     --blocker-state "$ASHBY_BLOCKER_STATE" \
+    --board-blocker-state "$ASHBY_BOARD_BLOCKER_STATE" \
     --japan-day "$JAPAN_DAY" \
     --max-jobs 1
   ASHBY_DISCOVERED_FAST_PATH_RC=$?
