@@ -693,6 +693,10 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
   Telegram delivery receiptを確認する。
 - fresh adversarial v2 reviewはPASSした。既存3 target以外のregister-intent呼び出しはなく、current-run live ledgerがある
   場合はguardを呼ばず拒否し、実canaryの同一media SHAは`InvariantError`で拒否されることをreadbackした。
+- 同日start-controlを止めていた`20260821-054500`は、重複media（headline/bodyの同一SHA）、全active pairのno-live、no-effect
+  ledgerを毎回再計算する。`run-quarantine.json`は監査用にproofだけを保存し、start gateはreceiptを権威にせずfresh proofでのみ
+  `new`へ進める。`created_at`など任意欄、state/ledger pathまたは`run/gates` symlink、pair/ledgerのreceipt・public_id・
+  published_at・existing_publicationは拒否し、publication-state/ledgerは変更しない。
 
 ## 目標構成
 
@@ -916,7 +920,8 @@ loaded definitionと自然tickまで読み戻すことを意味する。A1のcon
 | A9 | control-plane復旧後の新規same-run公開を検証する | 新しいrunでNote JA、Substack JA、Substack EN、X Article JAの各native URL・本文・owner・artifact/media hashをreadbackし、Telegram送信receiptを取得 | A7/A8待ち |
 | A9a | 同日完了runの新規記事解放と重複防止をreleaseへ反映する | current releaseでstart-control 6件、publication identity 15件、schedule miss 2件がPASS。実launchdで完了runから新run `20260821-043922`を作成し、provider cooldownで公開前停止、重複外部作用0を確認 | 部分完了（新run解放・重複防止・Codex-only retry配線はPASS。公開E2EはA9d待ち） |
 | A9c | WriterのCodex-only retryを実装する | `ARTICLE_PROVIDER=codex`固定。cooldown既定値を300秒へ変更し、同一immutable runを最大3回だけcheckpoint再開するfixture。Codex cooldown中にClaude/Hermesを起動しない、公開state/ledger後のreplay 0、3回 exhausted後に新runを増殖させない | 実装・契約検証完了（model-runner 7件、resume circuit 6件、start-control 6件、candidate wiring 19件、publication identity 15件、topic-card resume 9件、state routing、duplicate-media guard、構文/manifest/diff check、fresh v2 adversarial review PASS） |
-| A9d | Codex-only Writer公開canaryを行う | current releaseをlaunchdへ反映し、pause解除後の新runでCodex attempt receipt、Note JA、Substack JA/EN、X Article JAの4 native URL、本文・media hash、Telegram delivery receiptを取得。Codex timeout時は同じrunの次tickへ安全にhandoffする | 部分完了（既存`daily-2026-08-21`は4媒体native live＋`article-run-complete rc=0`。別canary`20260821-054500`は旧state permission errorと重複mediaでfail-closed凍結。pause解除後のclean canary、連続tick、Telegram deliveryは未実施） |
+| A9d | Codex-only Writer公開canaryを行う | current releaseをlaunchdへ反映し、pause解除後の新runでCodex attempt receipt、Note JA、Substack JA/EN、X Article JAの4 native URL、本文・media hash、Telegram delivery receiptを取得。Codex timeout時は同じrunの次tickへ安全にhandoffする | 部分完了（既存`daily-2026-08-21`は4媒体native live＋`article-run-complete rc=0`。別canary`20260821-054500`はduplicate-media proof付きquarantine対象。pause解除後のclean canary、連続tick、Telegram deliveryは未実施） |
+| A9e | invalid duplicate-media runを安全に隔離する | 対象runの同一media SHA、全active pairが`unavailable`またはdormant `skipped`、no-effect ledgerを再計算し、proof-bound `run-quarantine.json`を作成。start-controlが同日`new`を返し、state/ledger不変をreadback | 実装・fixture 11件PASS。実canaryのX intentを同じtargetの`unavailable`へ安全に遷移し、receipt作成とcurrent release反映を行う |
 | A9b | 1日複数回の正式scheduleを追加する | 06:00/14:00/22:00などのcalendar wake、各slotのunique run ID、同日異記事、連続2周期のnative receiptを実測 | 未着手。現在は06:00のまま |
 | A10 | 実payment/publisher receiptをmoney ledgerへ接続する | receipt ID、金額、通貨、destination identity、artifact/run IDをjoin。未取得は`unknown`のまま保持 | 未着手 |
 | A11 | 14日間の運用観測を完了する | 重複外部作用0、同一run resume、自然文の成功/失敗報告、revenue ledger整合を連続receiptで確認 | A9/A10待ち |

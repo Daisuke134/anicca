@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import shutil
 import sys
 import tempfile
 import unittest
@@ -27,9 +28,99 @@ RESUME = load(
     "publication_resume",
     ROOT / "skills/writer-agent/scripts/publication_resume.py",
 )
+QUARANTINE = load(
+    "quarantine_invalid_run",
+    ROOT / "skills/writer-agent/scripts/quarantine_invalid_run.py",
+)
 
 
 class ArticleStartPolicyTest(unittest.TestCase):
+    def _duplicate_media_run(self, root: Path, *, live: bool = False, status: str | None = None):
+        run = root / "runs" / "daily-2026-08-21"
+        gates = run / "gates"
+        gates.mkdir(parents=True)
+        headline = run / "headline-image.png"
+        body = run / "body-diagram.png"
+        headline.write_bytes(b"same-media")
+        body.write_bytes(b"same-media")
+        state_path = gates / "publication-state.json"
+        pairs = {
+            f"{platform}/{lang}": {"status": "unavailable"}
+            for platform, lang in START.ACTIVE_REQUIRED
+        }
+        pairs["note/ja"]["status"] = status or ("live" if live else "unavailable")
+        state_path.write_text(
+            json.dumps(
+                {
+                    "version": 1,
+                    "publication_contract": "active-four",
+                    "run_id": run.name,
+                    "run_dir": str(run.resolve()),
+                    "state_path": str(state_path.resolve()),
+                    "ledger_path": str((root / "articles.jsonl").resolve()),
+                    "media": {
+                        "headline_image": {"path": str(headline)},
+                        "body_assets": [{"path": str(body)}],
+                    },
+                    "pairs": pairs,
+                }
+            ),
+            encoding="utf-8",
+        )
+        (root / "articles.jsonl").write_text("", encoding="utf-8")
+        return run
+
+    def test_duplicate_media_quarantine_releases_same_day_start(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            run = self._duplicate_media_run(root)
+            receipt = QUARANTINE.quarantine(root, run.name)
+            with patch.object(START, "validated_live_set", return_value=(False, None)):
+                decision = START.decide(root, "2026-08-21")
+        self.assertEqual(receipt["reason"], "duplicate-media")
+        self.assertEqual(decision["action"], "new")
+        self.assertEqual(decision["reason"], "same-jst-day-invalid-media-proof")
+
+    def test_quarantine_refuses_live_pair(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            run = self._duplicate_media_run(root, live=True)
+            with self.assertRaises(QUARANTINE.QuarantineError):
+                QUARANTINE.quarantine(root, run.name)
+
+    def test_quarantine_refuses_ambiguous_pair(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            run = self._duplicate_media_run(root, status="ambiguous")
+            with self.assertRaises(QUARANTINE.QuarantineError):
+                QUARANTINE.quarantine(root, run.name)
+            with patch.object(START, "validated_live_set", return_value=(False, None)):
+                self.assertEqual(START.decide(root, "2026-08-21")["action"], "block-incomplete")
+
+    def test_quarantine_receipt_tamper_does_not_authorize_or_block_fresh_proof(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            run = self._duplicate_media_run(root)
+            QUARANTINE.quarantine(root, run.name)
+            receipt = run / "gates" / "run-quarantine.json"
+            tampered = json.loads(receipt.read_text(encoding="utf-8"))
+            tampered["created_at"] = "forged"
+            receipt.write_text(json.dumps(tampered), encoding="utf-8")
+            self.assertFalse(QUARANTINE.receipt_is_valid(run, run.name))
+            with patch.object(START, "validated_live_set", return_value=(False, None)):
+                self.assertEqual(START.decide(root, "2026-08-21")["action"], "new")
+
+    def test_quarantine_gates_symlink_stays_blocked(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            run = self._duplicate_media_run(root)
+            shutil.rmtree(run / "gates")
+            outside = root / "outside"
+            outside.mkdir()
+            (run / "gates").symlink_to(outside, target_is_directory=True)
+            with self.assertRaises(QUARANTINE.QuarantineError):
+                QUARANTINE.quarantine(root, run.name)
+
     def test_completed_active_four_releases_new_run_same_day(self):
         with tempfile.TemporaryDirectory() as tmp:
             state = Path(tmp)

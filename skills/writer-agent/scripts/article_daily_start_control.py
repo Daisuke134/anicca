@@ -26,6 +26,7 @@ from publication_contract_resolver import (
     PublicationContractError,
     resolve_publication_contract,
 )
+from quarantine_invalid_run import QuarantineError, proof
 
 
 REQUIRED = {
@@ -590,6 +591,21 @@ def decide(state_dir: Path | str, local_date: str) -> dict[str, str]:
             "action": "skip-zenn-worker",
             "run_id": run_id,
             "reason": "same-jst-day-exact7-valid-pending",
+        }
+
+    # Recompute the immutable invalid-media/no-live proof at every decision.  The
+    # optional quarantine receipt is audit evidence only; a hand-written receipt
+    # cannot release the gate without this fresh proof.
+    try:
+        proof(state_dir, run_id)
+    except (OSError, QuarantineError):
+        pass
+    else:
+        return {
+            "action": "new",
+            "run_id": "",
+            "previous_run_id": run_id,
+            "reason": "same-jst-day-invalid-media-proof",
         }
 
     state_path = run_dir / "gates" / "publication-state.json"
