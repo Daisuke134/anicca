@@ -1,5 +1,20 @@
 # Affiliate local money loop handover
 
+- Repost consumption is deployed through its existing owner, not a parallel
+  executor. Repost source branch `feat/repost-affiliate-integration` release
+  `752f374f85355bfecf8424ac1dc9e03eb344e1d1` passed fresh adversarial review
+  after claim/crash, canonical-URL, exact-readback, semantic-ledger, and secret
+  boundary repairs. Its immutable `~/loops/current` release is atomically
+  switched; only the three existing x-repost launchd labels use that root.
+  Affiliate release `9c6132255687e23d29bd11ad02dddd6ff2e3d2f3` is installed
+  and byte-matched, requiring exact placement ID plus canonical owned URL for
+  the later join. Existing `ai.anicca.x-repost-pass` was safe-kickstarted at
+  `2026-08-21T19:57:55+0900`, exit `0`, and truthfully returned its daily
+  `12/12` ceiling: `posted.jsonl` stayed `58→58`, no proposal-consumption
+  ledger exists, and no X/affiliate/provider/money effect occurred. The first
+  eligible next-JST owner pass will consume or safely terminalize the proposal;
+  only a readback X permalink plus exact join can change `NO_REVENUE_CREDIT`.
+
 - Release `b65ef9e56aab1230ee85fb3fad0b56aa86da4c7f` is installed as immutable
   `current`; source/installed `local_loop.py` bytes match and the Affiliate
   suite is `94/94`. Existing owner wake

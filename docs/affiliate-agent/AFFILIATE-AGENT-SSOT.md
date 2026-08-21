@@ -1328,6 +1328,29 @@ No Repost publication, click attribution, transaction, commission, or money
 was created. The separate Repost owner must consume this exact proposal and
 return an exact placement identity before D06 closes.
 
+### 1.1.53 Existing Repost owner now consumes Affiliate proposals, first live post deferred by its own cap
+
+The separate Repost source has a dedicated worktree branch
+`feat/repost-affiliate-integration`; immutable release
+`752f374f85355bfecf8424ac1dc9e03eb344e1d1` is cut to `~/loops/current` after
+fresh read-only adversarial review. The release adds only an input branch to
+the existing `ai.anicca.x-repost-pass`: it validates canonical owned-article
+proposal fields, writes a pre-effect claim with an allowlisted snapshot, blocks
+on corrupted/legacy consumption state, reconciles an unfinished claim by exact
+full post text and owned URL before any new post, and appends a fsync'ed
+placement-ID row only after public permalink readback. Unknown or unresolved
+effects terminalize without a retry; the normal generic pass remains protected
+by the same hourly/daily ledger.
+
+Affiliate release `9c6132255687e23d29bd11ad02dddd6ff2e3d2f3` is installed and
+byte-matched. Its observer recognizes a Repost row only when the exact
+Affiliate placement ID, `source_url`, and canonical owned URL all agree.
+Existing Repost owner readback at `2026-08-21T19:57:55+0900` exited `0` under
+its normal daily ceiling: `posted.jsonl` remained `58→58`, no consumption row
+exists, and no X/Provider/Money effect occurred. The next eligible JST pass
+owns the first attempt; until it returns an exact permalink and the Affiliate
+observer joins it, state remains `UNCONSUMED / NO_REVENUE_CREDIT`.
+
 ### 1.2.0 Audited executable boundary
 
 The installed ownership graph has six launchd labels: three persistent browser
