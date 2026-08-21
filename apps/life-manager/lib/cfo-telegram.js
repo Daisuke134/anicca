@@ -21,9 +21,10 @@ const SOURCE_KEYS = new Set(["sourceId", "label", "status", "asOf", "amountMinor
 const EXCLUDED_KEYS = new Set(["label", "reason"]);
 const REPAIR_KEYS = new Set(["sourceLabel", "freshReread", "reconciled"]);
 const ACTION_KEYS = new Set(["kind", "sourceLabel", "retryLabel", "nextRetryAt"]); const ACTION_LABELS = Object.freeze({ reconsent: "接続後に自動再確認", provider_outage: "30分後に自動再確認" }); const RFC3339 = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
-const TRANSACTION_KEYS = new Set(["schemaVersion", "sourceId", "asOf", "pagePartial", "categoryCoverage", "transactions"]);
-const TRANSACTION_ROW_KEYS = new Set(["bookingDate", "amountMinor", "flow", "verificationStatus"]);
+const TRANSACTION_KEYS = new Set(["schemaVersion", "sourceId", "asOf", "pagePartial", "categoryCoverage", "latestBookingDate", "transactions"]);
+const TRANSACTION_ROW_KEYS = new Set(["bookingDate", "amountMinor", "flow", "verificationStatus", "category"]);
 const TRANSACTION_FLOWS = new Set(["inflow", "outflow", "neutral"]);
+const CATEGORY_COVERAGE = new Set(["unavailable", "partial", "provider_reported"]);
 const BUTTONS = Object.freeze({
   // Keep emitted buttons inside the canonical callback owner's view set. AI-cost text remains
   // available in the summary/detail renderer, but no unsupported callback route is generated.
@@ -64,11 +65,11 @@ function timestamp(value) {
 function validateTransactions(value) {
   if (value === null) return null;
   exact(value, TRANSACTION_KEYS, [...TRANSACTION_KEYS]);
-  if (value.schemaVersion !== 1 || value.sourceId !== "moneytree_mufg" || !timestamp(value.asOf) || typeof value.pagePartial !== "boolean" || value.categoryCoverage !== "unavailable" || !Array.isArray(value.transactions)) fail("invalid_transactions");
+  if (value.schemaVersion !== 1 || value.sourceId !== "moneytree_mufg" || !timestamp(value.asOf) || typeof value.pagePartial !== "boolean" || !CATEGORY_COVERAGE.has(value.categoryCoverage) || (value.latestBookingDate !== null && (typeof value.latestBookingDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value.latestBookingDate))) || !Array.isArray(value.transactions)) fail("invalid_transactions");
   value.transactions.forEach((row) => {
     exact(row, TRANSACTION_ROW_KEYS, [...TRANSACTION_ROW_KEYS]);
     date(row.bookingDate);
-    if (!Number.isSafeInteger(row.amountMinor) || !TRANSACTION_FLOWS.has(row.flow) || row.verificationStatus !== "provider_reported") fail("invalid_transaction");
+    if (!Number.isSafeInteger(row.amountMinor) || !TRANSACTION_FLOWS.has(row.flow) || row.verificationStatus !== "provider_reported" || (row.category !== null && (typeof row.category !== "string" || row.category.length === 0 || row.category.length > 128 || row.category.trim() !== row.category))) fail("invalid_transaction");
   });
   return value;
 }
@@ -87,15 +88,15 @@ function transactionText(locale, value) {
     ? "\n\n💳 最近の取引\n取得できませんでした。現在の取引は不明です。"
     : "\n\n💳 Recent transactions\nCould not read them. Current activity is unknown.";
   const direction = locale === "ja" ? { inflow: "入金", outflow: "支出", neutral: "中立" } : { inflow: "In", outflow: "Out", neutral: "Neutral" };
-  const category = locale === "ja" ? "カテゴリ: 未取得" : "Category: unavailable";
   const rows = value.transactions.length === 0
     ? (locale === "ja" ? "最近の取引はありません" : "No recent transactions")
-    : value.transactions.map((row) => `${direction[row.flow]}\t${escapeHtml(row.bookingDate)}\t${formatAmount(locale, Math.abs(row.amountMinor))}\t${category}`).join("\n");
+    : value.transactions.map((row) => `${direction[row.flow]}\t${escapeHtml(row.bookingDate)}\t${formatAmount(locale, Math.abs(row.amountMinor))}\t${row.category === null ? (locale === "ja" ? "カテゴリ: 未取得" : "Category: unavailable") : `${locale === "ja" ? "カテゴリ: " : "Category: "}${escapeHtml(row.category)}`}`).join("\n");
   const page = value.pagePartial
     ? (locale === "ja" ? "表示は取得範囲の一部です（続きあり）" : "This is a partial page (more may exist)")
     : (locale === "ja" ? "取得範囲内の取引を表示しています" : "All transactions in the retrieved range are shown");
+  const latest = value.latestBookingDate === null ? "" : (locale === "ja" ? `\nMoneytree取得結果で最新の取引日: ${escapeHtml(value.latestBookingDate)}（銀行側更新時刻は不明）` : `\nLatest transaction date in the Moneytree result: ${escapeHtml(value.latestBookingDate)} (bank-side update time unknown)`);
   const title = locale === "ja" ? "💳 最近の取引（実測）" : "💳 Recent transactions (Measured)";
-  return `\n\n${title}\n${rows}\n${page}`;
+  return `\n\n${title}\n${rows}\n${page}${latest}`;
 }
 function validateSnapshot(snapshot) {
   exact(snapshot, ROOT_KEYS, [...ROOT_KEYS].filter((key) => key !== "aiCost"));

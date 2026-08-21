@@ -31,6 +31,11 @@ function validateTransactions(content) {
   return content;
 }
 
+function categoryName(row) {
+  const value = row && row.category_name;
+  return typeof value === "string" && value.length > 0 && value.length <= 128 && value.trim() === value ? value : null;
+}
+
 function callMoneytreeBundle(options = {}) {
   return new Promise((resolve, reject) => {
     const env = options.env && typeof options.env === "object" ? options.env : process.env;
@@ -146,8 +151,9 @@ async function readMoneytreeBundleViaCodex(options = {}) {
           sourceId: normalized.sourceId,
           asOf: normalized.asOf,
           pagePartial: normalized.pagePartial,
-          categoryCoverage: "unavailable",
-          transactions: normalized.transactions.map(({ bookingDate, amountMinor, flow, verificationStatus }) => ({ bookingDate, amountMinor, flow, verificationStatus })),
+          categoryCoverage: transactions.data.transactions.length === 0 ? "unavailable" : transactions.data.transactions.every((row) => categoryName(row) !== null) ? "provider_reported" : transactions.data.transactions.some((row) => categoryName(row) !== null) ? "partial" : "unavailable",
+          latestBookingDate: normalized.transactions.reduce((latest, row) => latest === null || row.bookingDate > latest ? row.bookingDate : latest, null),
+          transactions: normalized.transactions.map(({ bookingDate, amountMinor, flow, verificationStatus }, index) => ({ bookingDate, amountMinor, flow, verificationStatus, category: categoryName(transactions.data.transactions[index]) })),
         }));
       } catch { transactionView = null; }
     }
