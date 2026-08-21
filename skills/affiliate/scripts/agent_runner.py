@@ -5,7 +5,9 @@ import json
 import hashlib
 import os
 import sys
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
@@ -37,6 +39,22 @@ PASSTHROUGH_ENV = (
     "ANICCA_BUDGET_DAY_TZ",
     "ANICCA_USAGE_LEDGER",
 )
+
+
+def budget_retry_after(summary: dict) -> str | None:
+    """Return the next JST budget boundary without exposing provider data."""
+    budget = summary.get("budget") if isinstance(summary, dict) else None
+    day = budget.get("day") if isinstance(budget, dict) else None
+    if not isinstance(day, str):
+        return None
+    try:
+        boundary = datetime.fromisoformat(day).replace(
+            hour=0, minute=0, second=0, microsecond=0,
+            tzinfo=ZoneInfo("Asia/Tokyo"),
+        ) + timedelta(days=1)
+    except ValueError:
+        return None
+    return boundary.astimezone(timezone.utc).isoformat()
 
 
 def _owner_path(value: str, owner_home: Path) -> Path:

@@ -816,6 +816,9 @@ def wake(
                             "policy_budget_daily_limit_tokens": budget.get(
                                 "daily_limit_tokens"
                             ),
+                            "policy_budget_retry_after": agent_runner.budget_retry_after(
+                                blocked.summary
+                            ),
                         })
                         atomic_write(receipt_path, previous)
                         blocked_result = {
@@ -831,6 +834,7 @@ def wake(
                             "policy_budget_reason", "policy_budget_reservation_tokens",
                             "policy_budget_daily_consumed_tokens",
                             "policy_budget_daily_limit_tokens",
+                            "policy_budget_retry_after",
                         ):
                             previous.pop(key, None)
                         previous.update({
@@ -844,6 +848,7 @@ def wake(
                         "policy_budget_reason", "policy_budget_reservation_tokens",
                         "policy_budget_daily_consumed_tokens",
                         "policy_budget_daily_limit_tokens",
+                        "policy_budget_retry_after",
                     ):
                         previous.pop(key, None)
                     atomic_write(receipt_path, previous)

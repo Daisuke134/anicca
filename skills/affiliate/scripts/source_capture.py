@@ -591,6 +591,7 @@ def refresh_all(root, state_root, now=None, cooldown_seconds=86400):
             "budget_reservation_tokens": budget.get("reservation_tokens"),
             "budget_daily_consumed_tokens": budget.get("daily_consumed_tokens"),
             "budget_daily_limit_tokens": budget.get("daily_limit_tokens"),
+            "budget_retry_after": agent_runner.budget_retry_after(error.summary),
         }
         atomic_write(state_root / "opportunity-discovery.json", discovery)
     except (CaptureError, OSError, ValueError, KeyError, subprocess.SubprocessError) as error:

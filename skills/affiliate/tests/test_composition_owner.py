@@ -14,6 +14,18 @@ SCRIPT = Path(__file__).parents[1] / "scripts" / "composition_owner.py"
 
 
 class CompositionOwnerTests(unittest.TestCase):
+    def test_budget_retry_after_is_next_jst_midnight(self) -> None:
+        spec = importlib.util.spec_from_file_location("affiliate_composition_owner", SCRIPT)
+        module = importlib.util.module_from_spec(spec)
+        assert spec.loader is not None
+        spec.loader.exec_module(module)
+        self.assertEqual(
+            module.agent_runner.budget_retry_after({
+                "budget": {"day": "2026-08-21"},
+            }),
+            "2026-08-21T15:00:00+00:00",
+        )
+
     def test_budget_retry_becomes_due_on_a_new_jst_day(self) -> None:
         spec = importlib.util.spec_from_file_location("affiliate_composition_owner", SCRIPT)
         module = importlib.util.module_from_spec(spec)
