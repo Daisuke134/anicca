@@ -432,6 +432,12 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
 - 外部サービスに触れない隔離実行で、通常取得とstale recovery/publication lockの再取得をそれぞれexpected-dateによる生成前終了まで進め、終了コード0、lock directory 0件、run directory 0件、外部publish 0件を確認した。別の隔離実行ではlive ownerのPID/start tokenを保持し、別ownerのlockを削除しないことを確認した。`bash -n`、`git diff --check`、article-daily start control、disk-floor contractもPASSである。
 - これはA6の実行時state recovery完了ではない。macOS launchd control-planeがreadback不能なため、実stateの`owner.pid=40373`を削除・移動せず、A1〜A5復旧後に同じ所有権検証を通したruntime receiptを取得する。
 
+### 2026-08-21 post-release control-plane readback
+
+- `33f0eb197`をpush後、release watcherは`/Users/anicca/gig/releases/life-manager/current`を同じimmutable releaseへ切り替え、release内の`article-daily.sh`と作業ツリーのSHA-256一致を確認した。watcherの判定は「current published、launchd readback unavailable、legacy jobs left running」である。
+- 反映直後のreadbackでも`launchctl managername`/`managerpid`はrc=153、`launchctl print gui/501/ai.anicca.article-daily`はrc=141 (`Reentrancy avoided`)で、Writerの定期プロセスは観測できなかった。これはprocess不在だけで停止を断定せず、loaded definitionと自然tick未証明として扱う。
+- target stateでは`claim-loop-latest.json`が11:04 JST、`reporting/latest.json`が11:00 JSTに更新され、recovery lockは`owner.pid=40373`（対応processなし）、publication lockは不在だった。A1〜A5を飛ばしてこのstale候補を削除・移動する操作は行わない。
+
 ## 目標構成
 
 ### 実行トポロジー（Coconala parity）
@@ -519,7 +525,7 @@ publication identity、読者、payout、ledgerを分ける。
 
 この表は過去のmilestone状態を保持する履歴である。現在の実行順序は次の原子TODOを正本とする。
 
-## Current atomic remaining TODO（2026-08-21 10:19 JST）
+## Current atomic remaining TODO（2026-08-21 11:06 JST）
 
 各行は一つの外部状態または証拠だけを変える。前行の完了証拠がない限り、次行を開始しない。
 
