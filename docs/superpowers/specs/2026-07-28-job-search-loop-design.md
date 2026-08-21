@@ -167,6 +167,9 @@ than the mutable checkout. Release `ec1340835b2a3d981b61a040c09279ff374a83b8` pa
 its archive checksum, became `current`, and its first run discovered ElevenLabs'
 Forward Deployed Engineer - Software Engineer - Denmark, clicked submit once, and
 recorded Telegram ACK `27560`.
+The next release-owned wake discovered ElevenLabs' Forward Deployed Engineer -
+Software Engineer - Germany, clicked submit once, and recorded the run-local
+Telegram ACK `27565`.
 
 Build a local-first job application operating system around the useful parts of
 `MadsLorentzen/ai-job-search`, without treating job descriptions as instructions and
