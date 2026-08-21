@@ -4,7 +4,7 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
 実行authority: **Mac Host Storage Governor**  
 公開skill: **`disk-cleanup`**
 
-状態: Phase 1実装済み。Life Manager OSS skill、fail-closed governor、guard fallback、回帰テスト、旧cleanup ownerのcutover、正本5分labelのbootstrap/readback、MiB/GiB精度とswap telemetry、ULTRA時のexact-byte full-pass昇格は反映済み。host-wide census、hourly intelligence、全producer backpressure、24時間/7日観測、bootstrap health failureのcleanup内receipt契約は未完了。UID 501/GUI bootstrapと`ai.anicca.life-manager-disk-cleanup`のload readbackは復旧済み。
+状態: Phase 1実装済み。Life Manager OSS skill、fail-closed governor、guard fallback、回帰テスト、旧cleanup ownerのcutover、正本5分labelのbootstrap/readback、MiB/GiB精度とswap telemetry、ULTRA時のexact-byte full-pass昇格、bootstrap health failureのcleanup内receipt契約は反映済み。host-wide census、hourly intelligence、全producer backpressure、24時間/7日観測、141/153実機fixtureは未完了。UID 501/GUI bootstrapと`ai.anicca.life-manager-disk-cleanup`のload readbackは復旧済み。
 
 ## 現行実装状況とOSS境界
 
@@ -488,10 +488,10 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 | # | Work | Completion evidence | State |
 |---:|---|---|---|
 | 1 | 全local volume、top-level root、guard/sentinel/janitor/plist/log/state/manifestをimmutable host censusへ記録 | mount/root/owner family、label、interval、program SHA、last exit、free bytes | 部分完了: bounded `host-inventory.json`はmount 9/root 23を実測。full gapは4件まで縮小し、permission/owner attributionが残る |
-| 2 | `skills/self/disk-cleanup/` にcanonical host inventory、manifest、runner、health interfaceを定義 | local writable volume missing 0、required owner family missing 0、schema PASS | 部分完了: inventory schema、atomic writer、fast/full mode、hourly marker、19 tests、90秒census/90秒governor budgetは実装。local writable missing 0とhealth readbackは未完了 |
+| 2 | `skills/self/disk-cleanup/` にcanonical host inventory、manifest、runner、health interfaceを定義 | local writable volume missing 0、required owner family missing 0、schema PASS | 部分完了: inventory schema、atomic writer、fast/full mode、hourly marker、20 tests、90秒census/90秒governor budgetは実装。local writable missing 0とhealth readbackは未完了 |
 | 3 | protected rootsとfail-closed validatorをTDDで固定 | Test Matrix 3–11 PASS | 部分完了: Life Manager governorとAnicca回帰testで主要保護を確認。全Matrix 3–11の統合証跡は未完了 |
 | 4 | exact-byte tier、hysteresis、single lock、300秒schedulerをTDD実装 | Test Matrix 2、12–14 PASS | 部分完了: exact-byte tier、atomic lock、300秒plist、pressure/recovery floor、hourly full-pass marker、ULTRA時のcritical full-pass promotion、hourly/explicit fullのcooldown、marker fail-closed、bounded fast/full pass、正本labelのbootstrap/readbackは実装・unit/live PASS。24時間観測は未完了 |
-| 4a | GUI bootstrap health failureを観測専用fail-closedに固定 | Test Matrix 28–29 PASS、141/153 fixture receipt、復旧後readback | 部分完了: `launchctl-safe preflight`でUID/Directory Services/`gui/501`をreadbackし、cutover前にPASSを確認。cleanup内のhealth-failure receiptと141/153実機fixtureは未完了 |
+| 4a | GUI bootstrap health failureを観測専用fail-closedに固定 | Test Matrix 28–29 PASS、141/153 fixture receipt、復旧後readback | 部分完了: cleanup内preflight、atomic `gui-bootstrap-health-failure` receipt、UID/Directory Services/`gui/501`の実機PASSを実装。141/153 failure fixtureとstale app-server分離の実機証跡は未完了 |
 | 5 | Mac全体のproducer censusを作り、artifact/lease/finalizer helperを上位growth ownerへ接続 | 1 GiB以上のunattributed root 0、active lease readback、orphan lease fixture PASS | 部分完了: Chrome/Chromium cloneと`cfo-*`のallow-list discoveryは実装。host-wide census、lease heartbeat/finalizer接続は未完了 |
 | 6 | 全write-heavy producerへ共通disk preflightを接続 | producer census missing consumer 0、Test Matrix 15 PASS | 未完了: pressure blockは生成するが、全producerの共通preflight/drain接続は未完了 |
 | 7 | bounded ops log、incident receipt、Telegram dedupeを実装 | Test Matrix 18–19 PASS、message ID | 部分完了: ledger rotationとlast receipt、milestone送信は実装。ops log/incident receiptの正式分離とdedupe契約は未完了 |
@@ -512,7 +512,7 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 
 1. **host-wide censusを完成** — bounded `host-inventory.json`の残り4件（Library/TCC、system temp、`.Trash`のpermission gap）をowner/permission receiptとして分類し、全local writable volume、必須owner family、1 GiB以上のunknown rootを同一versioned inventoryへ記録し、missing 0を出す。
 2. **OSS contract testを完成** — protected roots、lease、open-path、probe error、dirty/unpushed worktree、unknown classの統合fixtureを追加し、Test Matrix 3–11をPASSにする。
-3. **bootstrap health契約を実装** — `dscl` UID readback、`launchctl print gui/501`、対象label存在をpreflightし、141/153/UID failureでは削除・plist変更・bootstrap・restart・killを行わず、`gui-bootstrap-health-failure` receiptだけをatomic writeする。stale app-server終了はcleanupから分離する。installer preflightは実装済みだが、cleanup内receiptと実機fixtureを追加する。
+3. **bootstrap health契約を完成** — `dscl` UID readback、`launchctl print gui/501`、対象label存在のpreflightと、141/153/UID failure時のatomic `gui-bootstrap-health-failure` receiptは実装済み。残りは141/153 failure fixtureとstale app-server終了をcleanupから分離した実機receiptの検証。
 5. **producer lifecycleを接続** — 上位growth owner（browser、build、media、VM/container、package manager、agent runtime、`~/gig/releases`）をcensusし、artifact登録、lease heartbeat、finalizer、quotaを実装する。旧`disk-reclaim`の安全なrelease proofはこのmanifestへ移植してから再有効化する。
 6. **全producerにbackpressureを接続** — PREVENTIVE/PRESSURE/CRITICAL/ULTRAのpreflight、drain、checkpoint、bounded resumeを同じcontractで適用し、consumer missing 0にする。
 7. **audit/reportingを完成** — bounded ops log、immutable incident receipt、Telegram状態遷移dedupe、delivery-failure receiptを実装し、message IDをreadbackする。`disk-sentinel`のTelegram送信は現状`notify-failed`で、Gatewayのactive disk/health/recovery/janitor cronは0件、旧`anicca-disk-hourly`（ID `79b05373…`）も`enabled=false`だった。guard/sentinelソースに存在しない日本語alertの発行元は未特定のため、Claude/外部watcherを含む重複alertのowner attributionとdedupeを追加する。

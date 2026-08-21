@@ -250,3 +250,43 @@ def test_run_once_rechecks_budget_after_lsof_before_reclaim(tmp_path: Path, monk
     assert candidate.exists()
     assert result["preserved_reasons"] == {"probe-budget-exhausted": 1}
     assert not (tmp_path / "state" / "host-inventory-full.at").exists()
+
+
+def test_bootstrap_health_failure_is_observation_only(tmp_path: Path, monkeypatch) -> None:
+    candidate = tmp_path / "tmp" / "cfo-health-failure"
+    candidate.mkdir(parents=True)
+    monkeypatch.setattr(disk_cleanup.tempfile, "gettempdir", lambda: str(candidate.parent))
+    monkeypatch.setattr(
+        disk_cleanup,
+        "collect_host_inventory",
+        lambda **_kwargs: (_ for _ in ()).throw(AssertionError("inventory must not run")),
+    )
+
+    governor = HostDiskGovernor(
+        home=tmp_path,
+        state_dir=tmp_path / "state",
+        bootstrap_health=lambda: {
+            "status": "failure",
+            "error_code": "launchctl-141",
+            "domain": "gui/501",
+            "label": "ai.anicca.life-manager-disk-cleanup",
+        },
+        lsof=lambda _path: (_ for _ in ()).throw(AssertionError("lsof must not run")),
+        usage=lambda: (12 * GiB, 100 * GiB),
+    )
+    monkeypatch.setattr(
+        governor,
+        "discover_candidates",
+        lambda: [{"path": candidate, "class": "ephemeral", "owner": "temporary-run"}],
+    )
+
+    result = governor.run_once()
+
+    assert result["reason"] == "gui-bootstrap-health-failure"
+    assert result["evaluated"] == 0
+    assert result["reclaimed"] == 0
+    assert candidate.exists()
+    receipt = json.loads((tmp_path / "state" / "last-receipt.json").read_text())
+    assert receipt["reason"] == "gui-bootstrap-health-failure"
+    assert receipt["health"]["error_code"] == "launchctl-141"
+    assert not (tmp_path / "state" / "host-inventory-full.at").exists()

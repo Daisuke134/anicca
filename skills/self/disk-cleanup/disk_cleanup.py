@@ -10,8 +10,11 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import pwd
+import re
 import shutil
 import subprocess
+import sys
 import tempfile
 import time
 from pathlib import Path
@@ -24,6 +27,8 @@ FULL_INVENTORY_INTERVAL_SECONDS = 3600
 GOVERNOR_BUDGET_SECONDS = 90
 LSOF_TIMEOUT_SECONDS = 15
 POST_SWEEP_RESERVE_SECONDS = 30
+HEALTH_CHECK_TIMEOUT_SECONDS = 5
+CANONICAL_LABEL = "ai.anicca.life-manager-disk-cleanup"
 THRESHOLDS = ((20 * GiB, "NORMAL"), (11 * GiB, "PREVENTIVE"), (6 * GiB, "PRESSURE"), (3 * GiB, "CRITICAL"))
 
 
@@ -78,6 +83,102 @@ def _default_lsof(path: Path) -> str:
     return "probe-error"
 
 
+def _default_bootstrap_health(home: Path, state_dir: Path) -> dict[str, object]:
+    """Read-only Directory Services and launchd preflight for the real Mac user."""
+    if sys.platform != "darwin" or home.resolve() != Path.home().resolve():
+        return {"status": "not-applicable"}
+
+    try:
+        uid = os.getuid()
+        username = pwd.getpwuid(uid).pw_name
+    except (KeyError, OSError) as exc:
+        return {
+            "status": "failure",
+            "error_code": "uid-resolution",
+            "detail": type(exc).__name__,
+            "domain": f"gui/{os.getuid()}",
+            "label": CANONICAL_LABEL,
+        }
+
+    marker = state_dir / "host-inventory-full.at"
+    try:
+        known_good_marker: str | None = marker.read_text(encoding="utf-8").strip() or None
+    except OSError:
+        known_good_marker = None
+
+    dscl_path = f"/Users/{username}"
+    try:
+        dscl = subprocess.run(
+            ["/usr/bin/dscl", ".", "-read", dscl_path, "UniqueID", "NFSHomeDirectory"],
+            capture_output=True,
+            text=True,
+            timeout=HEALTH_CHECK_TIMEOUT_SECONDS,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return {
+            "status": "failure",
+            "error_code": "dscl-unavailable",
+            "detail": type(exc).__name__,
+            "domain": f"gui/{uid}",
+            "label": CANONICAL_LABEL,
+            "known_good_marker": known_good_marker,
+        }
+    if dscl.returncode != 0:
+        return {
+            "status": "failure",
+            "error_code": f"dscl-rc-{dscl.returncode}",
+            "domain": f"gui/{uid}",
+            "label": CANONICAL_LABEL,
+            "known_good_marker": known_good_marker,
+        }
+    uid_match = re.search(r"^UniqueID:\s*(\d+)\s*$", dscl.stdout, re.MULTILINE)
+    home_match = re.search(r"^NFSHomeDirectory:\s*(\S+)\s*$", dscl.stdout, re.MULTILINE)
+    if not uid_match or int(uid_match.group(1)) != uid or not home_match or home_match.group(1) != str(home):
+        return {
+            "status": "failure",
+            "error_code": "uid-readback-mismatch",
+            "domain": f"gui/{uid}",
+            "label": CANONICAL_LABEL,
+            "known_good_marker": known_good_marker,
+        }
+
+    domain = f"gui/{uid}"
+    target = f"{domain}/{CANONICAL_LABEL}"
+    try:
+        launchctl = subprocess.run(
+            ["/bin/launchctl", "print", target],
+            capture_output=True,
+            text=True,
+            timeout=HEALTH_CHECK_TIMEOUT_SECONDS,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return {
+            "status": "failure",
+            "error_code": "launchctl-unavailable",
+            "detail": type(exc).__name__,
+            "domain": domain,
+            "label": CANONICAL_LABEL,
+            "known_good_marker": known_good_marker,
+        }
+    if launchctl.returncode != 0:
+        return {
+            "status": "failure",
+            "error_code": f"launchctl-{launchctl.returncode}",
+            "domain": domain,
+            "label": CANONICAL_LABEL,
+            "known_good_marker": known_good_marker,
+        }
+    return {
+        "status": "ok",
+        "uid": uid,
+        "domain": domain,
+        "label": CANONICAL_LABEL,
+        "known_good_marker": known_good_marker,
+    }
+
+
 class HostDiskGovernor:
     def __init__(
         self,
@@ -87,6 +188,7 @@ class HostDiskGovernor:
         lsof: Callable[[Path], str] = _default_lsof,
         usage: Callable[[], tuple[int, int]] | None = None,
         clock: Callable[[], float] = time.monotonic,
+        bootstrap_health: Callable[[], dict[str, object]] | None = None,
     ) -> None:
         self.home = (home or Path.home()).resolve()
         self.state_dir = (state_dir or self.home / ".openclaw/state").resolve()
@@ -95,6 +197,9 @@ class HostDiskGovernor:
         self.lsof = lsof
         self.usage = usage or self._usage
         self.clock = clock
+        self.bootstrap_health = bootstrap_health or (
+            lambda: _default_bootstrap_health(self.home, self.state_dir)
+        )
 
     def _full_inventory_due(self) -> bool:
         try:
@@ -319,9 +424,29 @@ class HostDiskGovernor:
                     )
         return candidates
 
-    def run_once(self) -> dict[str, int | str]:
+    def run_once(self) -> dict[str, object]:
         deadline = self.clock() + GOVERNOR_BUDGET_SECONDS
         free_before, _ = self.usage()
+        try:
+            health = self.bootstrap_health()
+        except Exception as exc:  # fail closed if the preflight itself is broken
+            health = {"status": "failure", "error_code": "health-check-exception", "detail": type(exc).__name__}
+        if health.get("status") not in {"ok", "not-applicable"}:
+            result: dict[str, object] = {
+                "tier": classify_tier(free_before),
+                "evaluated": 0,
+                "reclaimed": 0,
+                "preserved": 0,
+                "errors": 1,
+                "protected_deletions": 0,
+                "reason": "gui-bootstrap-health-failure",
+                "health": health,
+                "free_before": free_before,
+                "free_after": free_before,
+                "preserved_reasons": {"gui-bootstrap-health-failure": 1},
+            }
+            self._receipt(result)
+            return result
         result = self.sweep(
             self.discover_candidates(),
             write_receipt=False,
