@@ -49,6 +49,8 @@ guard総数は5件へ下がり、freeは約4.8 GiBへ戻った。
 だけをTERMし、ファイルは削除していない。再起動時の再発を防ぐため、
 `~/Library/LaunchAgents/ai.anicca.disk-autoprune.plist.disabled-20260821`へ退避した。
 実行scriptが存在しない旧`ai.anicca.disk-reclaim.plist`も同じ方式で退避した。
+さらに旧`disk-autoprune.sh`本体はバックアップを保持したまま、canonical emergency guardへ委譲する
+compatibility shimへ置き換えた。旧無制限`du`とcache削除へ戻る実行経路は残していない。
 
 Anicca側では、通常minute guardから巨大な`~/gig`を除外し、`EMERGENCY_GUARD_FULL_PASS=1`のhourly
 compatibility passだけが`~/gig`を走査するようにした。変更後の実測ログは`11:30:49 LOW DISK`、
