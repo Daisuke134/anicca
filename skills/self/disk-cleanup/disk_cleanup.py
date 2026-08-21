@@ -17,10 +17,11 @@ import time
 from pathlib import Path
 from typing import Callable
 
-from host_inventory import collect_host_inventory
+from host_inventory import FULL_INVENTORY_BUDGET_SECONDS, collect_host_inventory
 
 GiB = 1024**3
 FULL_INVENTORY_INTERVAL_SECONDS = 3600
+GOVERNOR_BUDGET_SECONDS = 105
 THRESHOLDS = ((20 * GiB, "NORMAL"), (11 * GiB, "PREVENTIVE"), (6 * GiB, "PRESSURE"), (3 * GiB, "CRITICAL"))
 
 
@@ -74,6 +75,7 @@ class HostDiskGovernor:
         state_dir: Path | None = None,
         lsof: Callable[[Path], str] = _default_lsof,
         usage: Callable[[], tuple[int, int]] | None = None,
+        clock: Callable[[], float] = time.monotonic,
     ) -> None:
         self.home = (home or Path.home()).resolve()
         self.state_dir = (state_dir or self.home / ".openclaw/state").resolve()
@@ -81,6 +83,7 @@ class HostDiskGovernor:
         self.full_inventory_marker = self.state_dir / "host-inventory-full.at"
         self.lsof = lsof
         self.usage = usage or self._usage
+        self.clock = clock
 
     def _full_inventory_due(self) -> bool:
         try:
@@ -172,7 +175,13 @@ class HostDiskGovernor:
         temporary.write_text(json.dumps(payload, ensure_ascii=False, sort_keys=True) + "\n")
         os.replace(temporary, self.state_dir / "last-receipt.json")
 
-    def sweep(self, candidates: list[dict], *, write_receipt: bool = True) -> dict[str, int | str]:
+    def sweep(
+        self,
+        candidates: list[dict],
+        *,
+        write_receipt: bool = True,
+        deadline: float | None = None,
+    ) -> dict[str, int | str]:
         free_before, _ = self.usage()
         result: dict[str, int | str] = {
             "tier": classify_tier(free_before),
@@ -190,6 +199,9 @@ class HostDiskGovernor:
 
         for item in candidates:
             path = Path(item["path"]).expanduser()
+            if deadline is not None and self.clock() >= deadline:
+                preserve("probe-budget-exhausted")
+                continue
             if self._protected(path):
                 preserve("protected_path")
                 continue
@@ -279,8 +291,13 @@ class HostDiskGovernor:
         return candidates
 
     def run_once(self) -> dict[str, int | str]:
+        deadline = self.clock() + GOVERNOR_BUDGET_SECONDS
         free_before, _ = self.usage()
-        result = self.sweep(self.discover_candidates(), write_receipt=False)
+        result = self.sweep(
+            self.discover_candidates(),
+            write_receipt=False,
+            deadline=deadline,
+        )
         free_after = int(result["free_after"])
         pressure_file = self.state_dir / "disk-pressure.block"
         if free_after < 11 * GiB:
@@ -301,12 +318,22 @@ class HostDiskGovernor:
             os.environ.get("EMERGENCY_GUARD_FULL_PASS") == "1" or self._full_inventory_due()
         )
         try:
-            inventory = collect_host_inventory(
-                home=self.home,
-                state_dir=self.state_dir,
-                full=full_inventory,
-            )
+            inventory_kwargs = {
+                "home": self.home,
+                "state_dir": self.state_dir,
+                "full": full_inventory,
+            }
             if full_inventory:
+                inventory_kwargs["budget_seconds"] = min(
+                    FULL_INVENTORY_BUDGET_SECONDS,
+                    max(0.0, deadline - self.clock()),
+                )
+            inventory = collect_host_inventory(**inventory_kwargs)
+            inventory_budget_exhausted = any(
+                gap.startswith("size-budget-exhausted:")
+                for gap in inventory["coverage"]["gaps"]
+            )
+            if full_inventory and not inventory_budget_exhausted:
                 self._mark_full_inventory()
             result["inventory_mode"] = "full" if full_inventory else "fast"
             result["inventory_mounts"] = int(inventory["coverage"]["mount_count"])

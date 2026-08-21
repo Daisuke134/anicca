@@ -196,11 +196,16 @@ def collect_host_inventory(
     full: bool = False,
     runner: Callable[..., subprocess.CompletedProcess[str]] | None = None,
     clock: Callable[[], float] = time.monotonic,
+    budget_seconds: float | None = None,
 ) -> dict[str, Any]:
     """Collect and atomically persist a read-only, bounded host census."""
 
     run = runner or _run
-    deadline = clock() + FULL_INVENTORY_BUDGET_SECONDS if full else None
+    if full:
+        budget = FULL_INVENTORY_BUDGET_SECONDS if budget_seconds is None else max(0.0, budget_seconds)
+        deadline = clock() + budget
+    else:
+        deadline = None
     mounts, gaps = _mounts(run)
     roots: list[dict[str, Any]] = []
     root_gaps = list(gaps)
