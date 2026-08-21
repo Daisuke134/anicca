@@ -13,11 +13,13 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE / "brain"))
 sys.path.insert(0, str(HERE / "gates"))
 sys.path.insert(0, str(HERE / "render_eval"))
+sys.path.insert(0, str(HERE / "measure"))
 sys.path.insert(0, str(HERE.parents[2]))
 from script_ledger import ScriptLedger, preflight  # noqa: E402
 from ebook_packs import load_ebook_packs  # noqa: E402
 from watercolor_candidate import render as render_watercolor  # noqa: E402
 from skills._shared.telegram import TelegramClient  # noqa: E402
+from attribution import campaign_token  # noqa: E402
 
 
 def require(value: bool, message: str) -> None:
@@ -75,7 +77,7 @@ def stage_intents(receipt: dict) -> list[dict]:
     return [{"product_id": receipt["product_id"], "creative_id": receipt["creative_id"],
              "script_id": receipt["script_id"], "renderer_id": receipt["renderer_id"],
              "asset_path": render["output"], "asset_sha256": render["sha256"],
-             "campaign_id": receipt["creative_id"], "account_id": account["account_id"],
+             "campaign_id": receipt["creative_id"], "attribution_token": campaign_token(receipt["product_id"], receipt["creative_id"]), "account_id": account["account_id"],
              "integration_id": account["integration_id"], "state": "awaiting_visual_approval",
              "external_effects": []} for account in receipt["accounts"]]
 
