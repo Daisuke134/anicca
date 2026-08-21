@@ -162,7 +162,8 @@ actual CAPTCHA. If the evaluator fails, returns not ready, or the application fo
 never appears, record that candidate's exact blocker as `not_submitted` without
 claiming a slot, then immediately continue to the next distinct eligible official
 ATS URL. A committed page with zero posting text is a candidate-level transport
-failure, not proof that the discovery set is empty. If the provider is Ashby, the
+failure, not proof that the discovery set is empty. If the provider is Ashby or
+Workday, the
 page has no observed posting text, and the committed snapshot controls are empty,
 before recording the blocker perform one bounded recovery in the same CDP page:
 reload the same canonical official URL with `wait_until="commit"`, recapture all

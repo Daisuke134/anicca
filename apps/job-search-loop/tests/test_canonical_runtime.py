@@ -155,6 +155,7 @@ raise SystemExit(0)
         self.assertIn("Submit Application", prompt)
         self.assertIn("click it once and capture confirmation evidence", prompt)
         self.assertIn("one bounded recovery", prompt)
+        self.assertIn("Ashby or\nWorkday", prompt)
         self.assertIn("same CDP page", prompt)
         self.assertIn("same canonical official URL", prompt)
         self.assertIn(
