@@ -119,14 +119,31 @@ def _record_feedback_invocation(
     path = run_dir / "gates" / f"quality-feedback-invocation-attempt-{quality_attempt}.json"
     if path.exists() or path.is_symlink():
         existing = _read_json(path)
+        if path.is_symlink() or not path.is_file() or not isinstance(existing, dict):
+            raise QualityFeedbackRecoveryError("feedback-invocation-receipt-conflict")
+        if existing == value and _receipt_hash(existing) == value["receipt_sha256"]:
+            return
         if (
-            path.is_symlink()
-            or not path.is_file()
-            or existing != value
-            or _receipt_hash(existing or {}) != value["receipt_sha256"]
+            existing.get("version") != 1
+            or existing.get("run_id") != run_dir.name
+            or existing.get("quality_attempt") != quality_attempt
+            or not isinstance(existing.get("recovery_attempt"), int)
+            or existing.get("recovery_attempt", 0) < 1
+            or existing.get("receipt_sha256") != _receipt_hash(existing)
         ):
             raise QualityFeedbackRecoveryError("feedback-invocation-receipt-conflict")
-        return
+        # A provider can die after rewriting drafts but before quality_self_heal
+        # records the next attempt. Preserve that real invocation, then let the
+        # next bounded recovery own the canonical receipt for this quality attempt.
+        archived = run_dir / "gates" / (
+            f"quality-feedback-invocation-attempt-{quality_attempt}-"
+            f"recovery-{existing.get('recovery_attempt', 'unknown')}.json"
+        )
+        if archived.exists():
+            if archived.is_symlink() or not archived.is_file() or _read_json(archived) != existing:
+                raise QualityFeedbackRecoveryError("feedback-invocation-archive-conflict")
+        else:
+            shutil.copy2(path, archived)
     _atomic_write(path, value)
 
 

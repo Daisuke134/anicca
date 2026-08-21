@@ -20,6 +20,7 @@ def load(name: str, path: Path):
 
 QUALITY = load("quality_self_heal_force", SCRIPTS / "quality_self_heal.py")
 RESUME = load("publication_resume_force", SCRIPTS / "publication_resume.py")
+RECOVERY = load("quality_feedback_recovery_force", SCRIPTS / "quality_feedback_recovery.py")
 
 
 def _write(path: Path, value: dict):
@@ -183,3 +184,23 @@ def test_duplicate_feedback_plan_is_rejected(tmp_path, monkeypatch):
                 QUALITY.assess(run, drafts)
             return
         QUALITY.assess(run, drafts)
+
+
+def test_failed_feedback_invocation_is_archived_before_retry(tmp_path, monkeypatch):
+    run = _quality_fixture(tmp_path)
+    monkeypatch.setenv("ARTICLE_PUBLICATION_POLICY", "continuous")
+    drafts = _set_quality_gates(run, 1)
+    QUALITY.assess(run, drafts)
+    state = {
+        "prompt_sha256": hashlib.sha256(b"prompt").hexdigest(),
+        "feedback_sha256": hashlib.sha256(b"plan").hexdigest(),
+    }
+    RECOVERY._record_feedback_invocation(run, state, recovery_attempt=1, owner_pid=12001)
+    RECOVERY._record_feedback_invocation(run, state, recovery_attempt=2, owner_pid=12002)
+    canonical = json.loads(
+        (run / "gates/quality-feedback-invocation-attempt-2.json").read_text()
+    )
+    assert canonical["recovery_attempt"] == 2
+    archived = run / "gates/quality-feedback-invocation-attempt-2-recovery-1.json"
+    assert archived.is_file()
+    assert json.loads(archived.read_text())["recovery_attempt"] == 1
