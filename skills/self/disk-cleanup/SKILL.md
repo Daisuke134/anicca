@@ -22,7 +22,10 @@ allow-listed regenerable artifact after an open-path probe confirms
 - Every pass atomically writes `host-inventory.json`: local `df` mounts and
   bounded owner-family metadata. The hourly/full compatibility pass may run a
   timeout-bounded `du` probe for allow-listed families; gaps are recorded as
-  unknown and never become deletion candidates.
+  unknown and never become deletion candidates. The fallback adapter keeps a
+  separate `cleanup-full-pass.at` marker so one bounded full cleanup occurs at
+  most once per hour; a missing or stale marker is fail-closed toward
+  observation/probe bounds, never toward deleting unknown paths.
 - Receipts are bounded and the high-volume cleanup ledger is rotated before it
   can consume the reserve.
 
@@ -36,9 +39,10 @@ The installer renders the user-specific plist, validates it with `plutil`, and
 registers `ai.anicca.life-manager-disk-cleanup` at a 300-second interval. If
 the macOS launchd user domain is temporarily unavailable, the existing
 emergency guard invokes `disk_cleanup.py` as its single fallback owner. The
-legacy hourly label is only a compatibility trigger: when the host adapter is
-installed it invokes the same emergency guard with `EMERGENCY_GUARD_FULL_PASS=1`
-so deferred worktree inspection is not permanently skipped.
+legacy hourly label is only a compatibility trigger: the guard's
+`cleanup-full-pass.at` marker (or explicit `EMERGENCY_GUARD_FULL_PASS=1`) opts
+into the bounded full pass so deferred worktree inspection is not permanently
+skipped.
 
 Run the tests with:
 
