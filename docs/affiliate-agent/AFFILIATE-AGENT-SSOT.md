@@ -462,6 +462,25 @@ capture, not a transaction or money receipt. B01 remains
 `WAITING_FOR_PROVIDER_TRANSACTION`; no status row, settlement ID, reversal, or
 known cost exists to join yet.
 
+### 1.1.15 Funnel diagnosis after the empty B01 capture
+
+The latest owner/provider readback separates instrumentation from demand. The
+official PartnerStack Overview receipt observed at
+`2026-08-21T02:16:20+0000` reports 43 aggregate clicks (baseline 1, delta 42),
+but `signups=0`, `paid_signups=0`, `conversion_rate=0%`, and revenue/approved/
+paid/pending values of zero. The Link Performance path has 20 exact placement
+link rows and 34 provider clicks; the official commission report still has no
+rows. The Affiliate ledger has 20 public placements and 20 dedicated links,
+while the separate Repost owner observed 54 actions with 0 exact Affiliate URL
+joins and `NO_REVENUE_CREDIT`. Telegram owner delivery is healthy and
+replay-safe: the money wake deduplicated on message `26335` and wrote a linked
+delivery receipt. Therefore the current failure class is
+`ACQUISITION_TO_PROVIDER_CONVERSION_UNOBSERVED`, not a ledger or Telegram
+arithmetic defect. Clicks are exposure evidence only; no signup, commission,
+approved/paid status, or net is inferred. B01 remains open and the next growth
+work must improve qualified audience/placement reach or provider conversion
+while retaining exact denominator and transaction gates.
+
 ### 1.2.0 Audited executable boundary
 
 The installed ownership graph has six launchd labels: three persistent browser
