@@ -50,6 +50,7 @@ test("agent-economy launchd declaration uses the immutable release and continuou
       "earn/taskmarket", "x402_sell", "report", "cook",
     ]);
     assert.equal(plist.EnvironmentVariables.ANICCA_ECONOMY_RECONCILE, "1");
+    assert.equal(plist.EnvironmentVariables.ANICCA_ECONOMY_CREATE_EVM_WALLET, "1");
     assert.equal(plist.ProgramArguments.join(" ").includes(".worktrees"), false);
   } finally {
     rmSync(root, { recursive: true, force: true });

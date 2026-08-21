@@ -31,6 +31,9 @@ Franklin/BlockRun x402 is the primary self-funded compute rail. OpenRouter is op
 already has credits; this skill does not automate a browser credit purchase. A free model is an emergency
 floor, never evidence that the agent is profitable.
 
+The release-backed `agent-economy` daemon may create one empty owner-only EVM wallet under its own runtime
+home. Creation moves no funds; funding remains an explicit external action.
+
 ## Money rules
 
 1. Treat only externally verified receipts as revenue.

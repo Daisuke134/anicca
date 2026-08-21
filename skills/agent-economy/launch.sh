@@ -14,4 +14,7 @@ esac
 }
 
 export ANICCA_REPO="$REPO"
+if [ "${ANICCA_ECONOMY_CREATE_EVM_WALLET:-0}" = "1" ]; then
+  /usr/bin/env node "$REPO/runtime/compute-proxy/ensure-wallet.mjs" >/dev/null
+fi
 exec /bin/bash "$REPO/runtime/anicca-daemon.sh"
