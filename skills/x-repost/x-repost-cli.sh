@@ -29,6 +29,7 @@ IDENTITY="${X_REPOST_BROWSER_IDENTITY:-x:anicca}"
 # x-repost is Codex-only: Claude's subscription ceiling must not be able to stall this loop.
 MODEL="${X_REPOST_MODEL:-gpt-5.6-luna}"
 REASONING_EFFORT="${X_REPOST_REASONING_EFFORT:-max}"
+TELEGRAM_SEND_TIMEOUT="${X_REPOST_TELEGRAM_SEND_TIMEOUT:-20}"
 HUMANIZER_SKILL="${X_REPOST_HUMANIZER:-$HOME/.openclaw/skills/jp-humanizer-pro/SKILL.md}"
 GUARD="$HOME/.config/ai/bin/browser-guard.sh"
 ENSURE_BROWSER="$HOME/anicca/skills/browser/ensure_provision_browser.sh"
@@ -47,7 +48,7 @@ log() { echo "$(date '+%F %T') x-repost[$PASS_ID]: $*"; }
 # response is kept: telegram-notify.sh discards it, and a report whose messageId was thrown away
 # cannot be told apart from one that never arrived.
 send_telegram() {
-  openclaw message send --channel telegram --target "${TELEGRAM_ALERT_CHAT_ID:-0000000000}" \
+  timeout "$TELEGRAM_SEND_TIMEOUT" openclaw message send --channel telegram --target "${TELEGRAM_ALERT_CHAT_ID:-0000000000}" \
     -m "$1" --json >>"$EV/telegram.jsonl" 2>&1
 }
 
@@ -277,7 +278,7 @@ PYEOF
   AFFILIATE_PLACEMENT="$($PY -c 'import json,sys; print(json.load(sys.stdin)["placement_id"])' <<<"$AFFILIATE_PICK")"
   AFFILIATE_URL="$($PY -c 'import json,sys; print(json.load(sys.stdin)["owned_article_url"])' <<<"$AFFILIATE_PICK")"
   if ! "$PY" "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL_INPUT" \
-    --render >"$EV/post.txt"; then
+    --consumed "$AFFILIATE_CONSUMED" --render >"$EV/post.txt"; then
     report "❌ Affiliate proposal text failed the local disclosure/length gate"
     finish 1 "affiliate proposal text invalid"
   fi
