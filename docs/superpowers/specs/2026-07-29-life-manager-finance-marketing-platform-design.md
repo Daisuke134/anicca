@@ -1754,6 +1754,10 @@ MKT-13`.
 Current TODO state: **MKT-01 done; MKT-02 done; MKT-03 done with the earlier generic row quarantined; MKT-03A contract done; MKT-03B onward open**. Honne
 has TikTok/Instagram destinations only; YouTube remains an Anicca-only lane.
 
+**Active atomic item:** MKT-04 only. Do not begin MKT-03B, Honne JA, Anicca,
+three-post policy, or metrics/learning work until the Honne EN seven-cycle gate
+is complete.
+
 | ID | Atomic action | Account/lane | Done evidence |
 |---|---|---|---|
 | MKT-01 | **done —** Port I-3 claim, receipt, Telegram dedupe, and replay state from PostgreSQL/`pg` to the Life Manager-owned local JSONL/atomic-file ledger | all lanes | direct local process restarts cleanly; 32/32 focused tests; 149/149 runtime-adapter tests; 8/8 runtime-path tests; live/dead lock recovery stress 20/20; duplicate claim/effect/notification count is 0; expired external effects reconcile instead of retrying |
