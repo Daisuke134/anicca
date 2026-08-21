@@ -154,6 +154,14 @@ raise SystemExit(0)
         self.assertIn("case-insensitive visible text", prompt)
         self.assertIn("Submit Application", prompt)
         self.assertIn("click it once and capture confirmation evidence", prompt)
+        self.assertIn("one bounded recovery", prompt)
+        self.assertIn("same CDP page", prompt)
+        self.assertIn("same canonical official URL", prompt)
+        self.assertIn(
+            "Do not open a second browser, use arbitrary sleeps, or change the canonical job identity.",
+            prompt,
+        )
+        self.assertIn("fresh snapshot is still empty", prompt)
         self.assertIn("telegram-outbox.sqlite3", prompt)
         self.assertIn("do not invent or use a sibling `outbox.sqlite3`", prompt)
         self.assertIn("canonical outbox status", prompt)
