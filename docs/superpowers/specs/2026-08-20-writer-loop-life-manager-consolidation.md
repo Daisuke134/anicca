@@ -541,8 +541,9 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
 - 12:04 JSTのclaim workerは`status=READY`、queue `1→1`、新規topic `0`、source `OK 3 / unavailable 1`
   で一回実行された。12:10 JSTのreport stateは`report_articles_scope=today`、
   `verified_revenue_event_count=0`、`payout_receipts=[]`であり、同じ状態のTelegram内容はdedupeされた。
-  `article-resume`は旧`daily-2026-08-07`のNote ambiguity circuitを`BLOCK`し、今回tickの新規公開は
-  増えていない。したがって「Coconalaが生きているからWriterの5分/日次loopも生きている」とは推論しない。
+  保存済みstateでは旧`daily-2026-08-07`のNote ambiguity circuitがopenのままで、articlesの最終更新は
+  08:30 JST以降増えていない。12:10にresumeが実行されたとは推測せず、「Coconalaが生きているから
+  Writerの5分/日次loopも生きている」とも推論しない。
 - Web一次資料でも、AppleはLaunchAgentを`~/Library/LaunchAgents`へ置き、`launchctl`で管理する契約を示して
   いる（[Apple Support](https://support.apple.com/guide/terminal/script-management-with-launchd-apdc6c1077b-5d5d-4d35-9c19-60f2397b2369/mac)）。
   Appleの`launchctl` man pageは`gui/<uid>`をGUI domain、`user/<uid>`をuser domainとし、実行contextに
