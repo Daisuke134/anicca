@@ -3096,7 +3096,7 @@ def _run_remote_repair(args, item_path: Path, root: Path, feedback: str, base: P
         raise Failure("remote_resume") from error
 
 def _prepare_one(args, item_path: Path, output: Path) -> int:
-    room = ""; root = None
+    room = ""; root = None; diagnostic_stage = "load_item"
     try:
         item = _load(item_path); room, feedback = _text(item.get("talkroom_id")), _text(item.get("buyer_feedback_sha256"))
         # Also refuse here, not only in the parent loop. A guard that sits on one call path while
@@ -3105,19 +3105,25 @@ def _prepare_one(args, item_path: Path, output: Path) -> int:
             _write(output, {"status": "reserved_for_owner", "talkroom_id": room,
                             "effect": 0, "readback": 0, "failed": 0})
             return 0
+        diagnostic_stage = "resolve_project"
         root = _paid_project_root(args, item)
         base = args.evidence_dir / "paid-direct" / room
         preflight = base / "preflight" / "selected-talkroom-snapshot.json"
+        diagnostic_stage = "preflight_collect"
         _run(_collector(args, "selected-talkroom-only", preflight, preflight.parent, item_path, item), "remote_resume")
+        diagnostic_stage = "preflight_validate"
         preflight_row = _row(_load(preflight), room)
         if _text(preflight_row.get("buyer_feedback_sha256")) != feedback: raise Failure("remote_resume")
+        diagnostic_stage = "dm_context"
         _collect_dm_context(args, {**item, **preflight_row}, root, base)
+        diagnostic_stage = "semantic_decision"
         try:
             semantic = _current_paid_decision(root, item)
         except (AttributeError, KeyError, OSError, ValueError, TypeError, json.JSONDecodeError):
             semantic = _paid_decision(args, item_path, root, base)
         file_mode = semantic.get("decision") == "actionable" and semantic.get("mode") == "file"
         if file_mode:
+            diagnostic_stage = "file_prepare"
             try:
                 prepared = _prepare_file(args, item_path, root, item, base, feedback)
             except ValueError as error:
@@ -3166,7 +3172,16 @@ def _prepare_one(args, item_path: Path, output: Path) -> int:
                                 "failed_step": None, "effect": 0, "readback": 0,
                                 "_paid_prepare_status": "pending"})
                 return 0
-        _write(output, {"status": "failed", "talkroom_id": room, "failed": 1, "failed_step": error.step if isinstance(error, Failure) else "remote_resume", "effect": 0, "readback": 0}); return 1
+        cause = error.__cause__
+        _write(output, {
+            "status": "failed", "talkroom_id": room, "failed": 1,
+            "failed_step": error.step if isinstance(error, Failure) else "remote_resume",
+            "diagnostic_stage": diagnostic_stage,
+            "error_type": type(error).__name__,
+            "cause_type": type(cause).__name__ if cause is not None else None,
+            "cause_detail": str(cause)[:500] if cause is not None else None,
+            "effect": 0, "readback": 0,
+        }); return 1
 
 
 def _write_file_effect(args, item_path: Path, output: Path, prepared: dict[str, Any]) -> int:
