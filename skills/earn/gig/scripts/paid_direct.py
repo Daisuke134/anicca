@@ -3186,6 +3186,7 @@ def _prepare_one(args, item_path: Path, output: Path) -> int:
             "failed_step": error.step if isinstance(error, Failure) else "remote_resume",
             "diagnostic_stage": diagnostic_stage,
             "error_type": type(error).__name__,
+            "error_detail": str(error)[:500],
             "cause_type": type(cause).__name__ if cause is not None else None,
             "cause_detail": str(cause)[:500] if cause is not None else None,
             "effect": 0, "readback": 0,
