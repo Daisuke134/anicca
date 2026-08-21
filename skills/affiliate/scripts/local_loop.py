@@ -148,7 +148,11 @@ def observe_repost_acquisition(state):
         if isinstance(x_url, str) and x_url.startswith("https://x.com/"):
             campaign_by_x_url[x_url] = campaign.get("plan_id")
     joined_count = sum(
-        isinstance(row.get("post_url"), str) and row["post_url"] in campaign_by_x_url
+        any(
+            isinstance(row.get(field), str)
+            and row[field] in campaign_by_x_url
+            for field in ("post_url", "source_url")
+        )
         for row in rows
     )
     post_action_count = len(rows)
