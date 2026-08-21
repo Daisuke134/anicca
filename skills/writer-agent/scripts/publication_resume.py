@@ -1349,6 +1349,13 @@ class PublicationStore:
                 if any(current.get(key) != payload.get(key) for key in immutable):
                     raise InvariantError("refusing to replace another run/topic/draft state")
                 return current
+            published_hashes = self._published_artifact_hashes(self._ledger_rows_locked())
+            for lang, path in drafts.items():
+                digest = sha256(Path(path))
+                if (lang, digest) in published_hashes:
+                    raise InvariantError(
+                        f"refusing duplicate published artifact for lang={lang} sha256={digest}"
+                    )
             self._write_locked(payload)
             return payload
 
@@ -2599,6 +2606,43 @@ class PublicationStore:
                 rows.append(value)
         return rows
 
+    @staticmethod
+    def _published_artifact_hashes(rows: list[dict[str, Any]]) -> set[tuple[str, str]]:
+        return {
+            (str(row.get("lang")), str(row.get("artifact_sha256")))
+            for row in rows
+            if row.get("published") is True
+            and row.get("lang") in {"ja", "en"}
+            and re.fullmatch(r"[0-9a-f]{64}", str(row.get("artifact_sha256", "")))
+        }
+
+    def _assert_no_duplicate_published_artifact_locked(
+        self, state: dict[str, Any], pair: str
+    ) -> None:
+        """Enforce the cross-run article identity fence at every publish boundary.
+
+        Initialization performs the same check for a new state, but an existing
+        state must not bypass it simply because a publisher resumed later.  The
+        current run may legitimately publish one immutable article to several
+        destinations; a different run may not publish that language/hash again.
+        """
+
+        artifact_sha256 = _expected_artifact_hash(state, pair)
+        if not re.fullmatch(r"[0-9a-f]{64}", artifact_sha256):
+            raise InvariantError("immutable publication artifact hash is missing")
+        lang = str(state.get("pairs", {}).get(pair, {}).get("lang", ""))
+        for row in self._ledger_rows_locked():
+            if (
+                row.get("published") is True
+                and row.get("run_id") != state.get("run_id")
+                and row.get("lang") == lang
+                and row.get("artifact_sha256") == artifact_sha256
+            ):
+                raise InvariantError(
+                    "refusing duplicate published artifact at publication boundary "
+                    f"for lang={lang} sha256={artifact_sha256}"
+                )
+
     def _current_ledger_receipts_locked(self, state: dict[str, Any]) -> dict[str, str]:
         """Return verified pair receipts; reject duplicate or malformed current-run rows."""
         current = [
@@ -2745,6 +2789,7 @@ class PublicationStore:
             raise InvariantError("terminal publication state is immutable")
         if pair not in state.get("pairs", {}):
             raise InvariantError(f"no persisted intent for {pair}")
+        self._assert_no_duplicate_published_artifact_locked(state, pair)
         if state["safety_status"] != "ALLOW" or not self._drafts_intact(state):
             raise InvariantError("safety is not ALLOW or immutable drafts changed")
         if not valid_http_url(live_url) or evidence.get("verified") is not True:
@@ -2848,6 +2893,7 @@ class PublicationStore:
                 raise InvariantError("publication is blocked by safety or changed draft")
             if not self._all_intents_valid(state, allow_ambiguous=True):
                 raise InvariantError(self._intent_requirement_message(state))
+            self._assert_no_duplicate_published_artifact_locked(state, pair)
             if state["pairs"][pair].get("status") in {
                 "ambiguous",
                 "unavailable",

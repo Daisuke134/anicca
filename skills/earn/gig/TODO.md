@@ -917,6 +917,9 @@ review again, and attach only after approval. Never ask Haru another question fo
 `REPAIR_PENDING` is a continuation, not a low-priority failure: every Paid wake orders those rooms
 ahead of fresh or buyer-wait work, then preserves deadline order within the same state class. This
 prevents a rejected artifact from remaining unsent while unrelated orders consume the whole pass.
+An explicit full-inbox `dm_thread_not_found` receipt is also incremental: the next wake enumerates
+the inbox but opens only thread identities absent from the prior verified miss. Reopening all 134
+known nonmatching threads on every Haru repair delayed artifact continuation without adding context.
 
 **Paid continuation and effect contract — blocking production invariant.** Every purchased order
 has exactly one loaded continuation owner from purchase through formal readback. Builder/reviewer

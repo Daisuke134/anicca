@@ -856,7 +856,7 @@ def test_resume_loop_older_backlog_does_not_suppress_new_daily_schedule(
     )
     (fake_root / "article-daily.sh").chmod(0o755)
     (scripts / "article_daily_start_control.py").write_text(
-        "print('{\"action\":\"new\"}')\n"
+        "print('{\"action\":\"new\",\"reason\":\"no-same-jst-day-run\"}')\n"
     )
     (scripts / "article_pending.py").write_text(
         "import json\n"

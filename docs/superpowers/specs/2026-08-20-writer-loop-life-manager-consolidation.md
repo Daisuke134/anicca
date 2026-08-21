@@ -558,6 +558,31 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
   agent-onlyの安全な修復は未発見である。current releaseのpublishとdisk定義の維持だけを続け、
   loaded stateを推測で成功扱いにしない。
 
+### 2026-08-21 launchd control-plane recovery and same-day publication policy (13:21 JST)
+
+- 通常のGUIセッション復旧後、`id -un=anicca`、UID 501、`launchctl managername=Aqua`、
+  `manageruid=501`、`managerpid=1`、`launchctl print gui/501`を同じcontextからreadbackできた。
+  以前の`153`/`141 Reentrancy avoided`は解消し、A1のcontrol-plane前提は満たされた。
+- `article-daily`と`article-resume`は`gui/501`へloadedされ、current releaseのargv/envを指す。
+  `article-resume`は300秒interval、`article-daily`は06:00 calendarである。既存ownerが実行中の間に
+  `article-daily`をkickstartした最初の試行はowner fenceの`article-resume`を検出して`EX_TEMPFAIL=75`
+  で安全停止し、owner終了後の再試行はlaunchd `last exit code=0`になった。stale lockのraw削除は行っていない。
+- `daily-2026-08-21`は同一runのactive-four（Note JA、Substack JA/EN、X Article JA）をすべて
+  `status=live`、`reality_gate=PASS`、`verified=true`、artifact/media hash一致として保持する。
+  4つのcanonical URLはHTTP 200、`article-run-complete.py --armed 1`はrc=0、completion Telegramは
+  Bot API受理の`message_id=26880`である。これは既存runの完了receiptであり、control-plane復旧後に
+  新しい記事を追加公開した証拠ではない。money stateはverified revenue event 0件、payout receipt 0件である。
+- 旧start-controlはactive-four完了をlegacy exact8未完として`block-incomplete:all-complete`に誤分類し、
+  同日二本目を止めていた。現在は、canonicalな`publication-state.json`のcontractを検証したうえで、
+  `active-four`または`legacy-exact8`の完了runだけに`new-after-complete:*`を返し、新しいrun directoryを
+  atomic `mkdir`で予約する。legacy exact8の途中4件、欠落・不正state、未完runは新runに進まない。
+- `article-resume-pending.sh`は`no-same-jst-day-run`のschedule missだけを06:00 catch-upとして`article-daily.sh`へ渡し、
+  `new-after-complete:*`を5分周期の新規記事起動に使わない。これにより、完了run→5分tick→無限新規記事の連鎖を止める。
+- `PublicationStore`は新state初期化時だけでなく、`guard`と`record_live`の公開境界でも、別run・同言語・同artifact SHA-256の
+  published receiptを拒否する。異なるrunは別artifactだけを許可し、同じ記事を複数platformへ配る同一runの動作は許可する。
+- focused regressionはstart-control 6件、publication identity 15件、schedule miss 2件、shell syntax/`git diff --check`をPASSした。
+  現在の06:00 scheduleは維持し、14:00/22:00など複数回/日のcalendar追加は別TODOとする。これはコード検証であり、release後の新規記事公開receiptや24/7連続観測を意味しない。
+
 ## 目標構成
 
 ### 実行トポロジー（Coconala parity）
@@ -736,7 +761,7 @@ Profitable Cloud、Open Cloudの生存に依存させない。
 manifest snapshot、`launchctl print gui/$UID/<Writer label>`、既存receipt readbackである。
 実Macの故障fixtureではOS serviceを故意に壊さず、command runnerをstubして141/153を再現する。
 
-## Current atomic remaining TODO（2026-08-21 12:10 JST）
+## Current atomic remaining TODO（2026-08-21 同日上限解除slice後）
 
 各行は一つの外部状態または証拠だけを変える。前行の完了証拠がない限り、次行を開始しない。
 
@@ -744,7 +769,8 @@ manifest snapshot、`launchctl print gui/$UID/<Writer label>`、既存receipt re
 
 「Coconalaのように24/7で動かす」は、別のWriter supervisorを追加することではなく、同じ
 `gig_release.py`、immutable `current`、`gig_disk_guard.py`、ユーザーLaunchAgent domainを使い、
-loaded definitionまで読み戻すことを意味する。現在はA1の前提がないため、以下を実行していない。
+loaded definitionと自然tickまで読み戻すことを意味する。A1のcontrol-plane前提は復旧済みだが、
+全14 label・新releaseのE2E・複数calendarの連続観測は未完了である。
 
 1. 正しいGUIログインまたはroot管理contextで`id -un=anicca`、`launchctl managername/uid/pid`、
    `dscl . -read /Users/501 RecordName`を読み取り、UID 501のuser recordを確定する。Directory Servicesの
@@ -768,15 +794,17 @@ loaded definitionまで読み戻すことを意味する。現在はA1の前提�
 
 | ID | 原子作業 | 完了証拠 | 状態 |
 |---:|---|---|---|
-| A1 | 有効なmacOS GUI／user bootstrapを復旧する | `id -un=anicca`、有効な`managername`/`managerpid`、`dscl`と`log show`が同じ実行contextで成功。個別のlaunchd/loginwindow/opendirectoryd killは行わない | ブロッカー・診断済み。socket/env/bsexec/SSHを試してもrc=141/153、正しい外部管理contextが必要 |
-| A2 | 復旧したcontrol-planeから全14 Writer labelをreadbackする | `launchctl print gui/501/<label>`でlabel、owner、ProgramArguments、EnvironmentVariables、state rootを取得 | A1待ち |
+| A1 | 有効なmacOS GUI／user bootstrapを復旧する | `id -un=anicca`、UID 501、`managername=Aqua`、`manageruid=501`、`managerpid=1`、`launchctl print gui/501`を同じcontextでreadback。個別のlaunchd/loginwindow/opendirectoryd killは行わない | 完了（以前の153/141は解消） |
+| A2 | 復旧したcontrol-planeから全14 Writer labelをreadbackする | `launchctl print gui/501/<label>`でlabel、owner、ProgramArguments、EnvironmentVariables、state rootを取得 | 一部完了（article-daily/article-resumeのみ。残り12件は未確認） |
 | A3 | stale定義とcurrent定義の対応表を確定する | 各labelについて旧root/current、PID、owner fence、rollback pathを1行receiptへ保存。推測でstale判定しない | A2待ち |
 | A4 | stale Writer 14件とretired CLI 5件をbootoutし、旧ownerをdrainする | 旧root process=0、owner fence不在、旧root logの新規schedule interval再発=0をreadback | A3待ち |
 | A5 | Life Manager currentの14 plistだけをbootstrapする | 14件すべてのloaded argv/envが`/Users/anicca/gig/releases/life-manager/current`と`~/.local/state/life-manager/writer`を指す | A4待ち |
 | A6 | 残存Writer owner fenceを検証・回復する | `owner.pid=40373`のstale候補を実ownerと照合し、正当なowner不在を確認してから、重複起動なしの回復receiptを保存 | A5待ち（source cleanup修正済み、runtime receipt未取得） |
 | A7 | pause下でcreator/resumeを各1回だけkickstartする | 1回ずつのPID、run ID、終了コード、lock消滅、Telegram自然文receiptを取得。公開はpauseで外部作用0 | A6待ち |
-| A8 | 5分周期の自然tickを2回連続で検証する | 2回ともcurrent argv、単一owner、run/receipt更新、重複外部作用0を確認。`process_alive`だけでは完了にしない | A7待ち。12:04のclaim/report一回は観測済みだが連続tickではない |
-| A9 | control-plane復旧後の新規same-run公開を検証する | Note JA、Substack JA、Substack EN、X Article JAの各native URL・本文・owner・artifact/media hashを同一runでreadbackし、Telegram送信receiptを取得 | A8待ち |
+| A8 | 5分周期の自然tickを2回連続で検証する | 2回ともcurrent argv、単一owner、run/receipt更新、重複外部作用0を確認。`process_alive`だけでは完了にしない | A7待ち。既存runの一回receiptはあるが連続tickではない |
+| A9 | control-plane復旧後の新規same-run公開を検証する | 新しいrunでNote JA、Substack JA、Substack EN、X Article JAの各native URL・本文・owner・artifact/media hashをreadbackし、Telegram送信receiptを取得 | A7/A8待ち |
+| A9a | 同日完了runの新規記事解放と重複防止をreleaseへ反映する | current releaseでstart-control 6件、publication identity 15件、schedule miss 2件がPASS。完了runの次tickが新規作成せず、別runでは別artifactだけを許可 | 実装済み・release/E2E待ち |
+| A9b | 1日複数回の正式scheduleを追加する | 06:00/14:00/22:00などのcalendar wake、各slotのunique run ID、同日異記事、連続2周期のnative receiptを実測 | 未着手。現在は06:00のまま |
 | A10 | 実payment/publisher receiptをmoney ledgerへ接続する | receipt ID、金額、通貨、destination identity、artifact/run IDをjoin。未取得は`unknown`のまま保持 | 未着手 |
 | A11 | 14日間の運用観測を完了する | 重複外部作用0、同一run resume、自然文の成功/失敗報告、revenue ledger整合を連続receiptで確認 | A9/A10待ち |
 | A12 | rollback検証後にWriter専用旧releaseだけをアーカイブする | archive hash、restore receipt、削除対象scope receipt。`.openclaw`と`/Users/anicca/profitable-claude`全体は削除しない | A11待ち |

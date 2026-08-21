@@ -185,6 +185,7 @@ PRE_START_DECISION="$(python3 "$START_CONTROL" \
   --state-dir "$STATE_DIR" --local-date "$LOCAL_DATE" 2>>"$LOG" || \
   printf '%s' '{"action":"block-incomplete","reason":"start-control-error"}')"
 PRE_START_ACTION="$(printf '%s' "$PRE_START_DECISION" | jq -r '.action // empty')"
+PRE_START_REASON="$(printf '%s' "$PRE_START_DECISION" | jq -r '.reason // empty')"
 # A persisted publication backlog is the foreground availability contract.
 # Inspect it before today's schedule decision so midnight and quality work
 # cannot starve an older immutable active-four run.
@@ -243,9 +244,9 @@ PY
 fi
 # The 06:00 calendar job remains the normal creator. If the host was asleep,
 # launchd was unloaded, or that event was otherwise missed, the five-minute
-# reconciler must start today's one run as soon as the scheduled hour has
-# passed. Before 06:00 it does nothing; a catch-up never creates tomorrow's
-# article early.
+# reconciler may catch up only the explicit no-run schedule miss. A completed
+# run is a normal release for a future calendar tick, not a missed-schedule
+# signal; otherwise every 300-second tick would create another article.
 LOCAL_HOUR="${ARTICLE_LOCAL_HOUR:-$(TZ=Asia/Tokyo date +%H)}"
 DAILY_SCHEDULE_HOUR="${ARTICLE_DAILY_SCHEDULE_HOUR:-6}"
 case "$LOCAL_HOUR" in
@@ -259,6 +260,7 @@ esac
 LOCAL_HOUR_VALUE="${LOCAL_HOUR#0}"
 [ -n "$LOCAL_HOUR_VALUE" ] || LOCAL_HOUR_VALUE=0
 if [ "$PRE_START_ACTION" = "new" ] \
+  && [ "$PRE_START_REASON" = "no-same-jst-day-run" ] \
   && [ "$PRIORITY_PUBLICATION_READY" -ne 1 ]; then
   if [ "$LOCAL_HOUR_VALUE" -lt "$DAILY_SCHEDULE_HOUR" ]; then
     echo "article-resume: daily schedule not due date=$LOCAL_DATE hour=$LOCAL_HOUR" >>"$LOG"

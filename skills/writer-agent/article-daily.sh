@@ -311,17 +311,42 @@ else
 fi
 release_recovery_lock
 
-# SAME-JST-DAY START CONTROL: a manual kickstart shortly before 06:00 must not create one
-# article and let the calendar trigger create another. Durable active-four/resume state,
-# rather than elapsed time, selects skip, worker ownership, same-run resume, or a new run.
+# START CONTROL: durable active-four/resume state prevents replaying one unfinished run, while
+# a completed run releases the scheduler to allocate a fresh immutable run for another article.
+# This is deliberately not a one-article-per-JST-day quota.
 START_CONTROL="$ARTICLE_ROOT/scripts/article_daily_start_control.py"
 TODAY_JST="$(TZ=Asia/Tokyo date +%F)"
+ALLOCATED_NEW_RUN_ID=""
+reserve_new_run_id() {
+  local run_id="$1"
+  if mkdir "$STATE_DIR/runs/$run_id" 2>/dev/null; then
+    ALLOCATED_NEW_RUN_ID="$run_id"
+    return 0
+  fi
+  return 1
+}
+allocate_new_run_id() {
+  local candidate
+  mkdir -p "$STATE_DIR/runs"
+  while :; do
+    candidate="$(date -u '+%Y%m%d-%H%M%S')"
+    if reserve_new_run_id "$candidate"; then
+      printf '%s' "$candidate"
+      return 0
+    fi
+    # The state directory is shared by launchd workers. A collision is rare,
+    # but never reuse an existing run path or let mkdir -p merge two runs.
+    sleep 1
+  done
+}
 START_DECISION="$(python3 "$START_CONTROL" --state-dir "$STATE_DIR" --local-date "$TODAY_JST" 2>>"$LOG" || printf '%s' '{"action":"block-incomplete","reason":"start-control-error"}')"
 START_ACTION="$(printf '%s' "$START_DECISION" | jq -r '.action // "block-incomplete"')"
 START_RUN_ID="$(printf '%s' "$START_DECISION" | jq -r '.run_id // empty')"
+START_REASON="$(printf '%s' "$START_DECISION" | jq -r '.reason // empty')"
 if [ -n "${ARTICLE_EXPECTED_NEW_DAILY_DATE:-}" ] \
   && { [ "$TODAY_JST" != "$ARTICLE_EXPECTED_NEW_DAILY_DATE" ] \
-    || [ "$START_ACTION" != "new" ]; }; then
+    || [ "$START_ACTION" != "new" ] \
+    || [ "$START_REASON" != "no-same-jst-day-run" ]; }; then
   echo "=== article-daily missed-schedule catch-up no longer owns a new run expected_date=$ARTICLE_EXPECTED_NEW_DAILY_DATE decision=$START_DECISION; no generation side effect ===" >>"$LOG"
   exit 0
 fi
@@ -337,30 +362,43 @@ if [ -n "${ARTICLE_EXPECTED_RUN_ID:-}" ] \
   echo "=== article-daily expected recovery run mismatch expected=$ARTICLE_EXPECTED_RUN_ID decision=$START_DECISION; no generation side effect ===" >>"$LOG"
   exit 0
 fi
+if [ "$START_ACTION" = "new" ] && [ -z "$START_RUN_ID" ]; then
+  START_RUN_ID="$(allocate_new_run_id)"
+  ALLOCATED_NEW_RUN_ID="$START_RUN_ID"
+  START_DECISION="$(printf '%s' "$START_DECISION" | jq --arg run_id "$START_RUN_ID" '. + {run_id:$run_id}')"
+  echo "=== article-daily start control: completed prior run released a new run=$START_RUN_ID reason=$(printf '%s' "$START_DECISION" | jq -r '.reason // "new-article"') $(date '+%F %T %Z') ===" >>"$LOG"
+fi
 RESUME_GENERATION=0
 if [ "$ARTICLE_PUBLICATION_POLICY" = "continuous" ] \
   && [ "$START_ACTION" = "skip-quality-miss" ]; then
   PREVIOUS_QUALITY_RUN="$START_RUN_ID"
   START_ACTION="new"
-  START_RUN_ID="$(date -u '+%Y%m%d-%H%M%S')"
+  START_RUN_ID="$(allocate_new_run_id)"
+  ALLOCATED_NEW_RUN_ID="$START_RUN_ID"
   START_DECISION="$(jq -cn --arg run_id "$START_RUN_ID" --arg replaced "$PREVIOUS_QUALITY_RUN" \
     '{action:"new",run_id:$run_id,replaced_run_id:$replaced,reason:"continuous-publication-after-quality-advisory"}')"
   echo "=== article-daily continuous policy: quality replacement limit is advisory; starting run=$START_RUN_ID after=$PREVIOUS_QUALITY_RUN $(date '+%F %T %Z') ===" >>"$LOG"
 fi
 case "$START_ACTION" in
   skip-complete)
-    echo "=== article-daily same-day guard: active-four already complete run=$START_RUN_ID; no second article $(date '+%F %T %Z') ===" >>"$LOG"
-    touch "$HOME/.openclaw/state/.article-loop-last-pass" 2>/dev/null || true
-    exit 0
+    # Compatibility with an older start-control helper: a completed run is no longer a
+    # same-day stop. Allocate a new identity and continue through the normal topic selector.
+    PREVIOUS_COMPLETE_RUN="$START_RUN_ID"
+    START_ACTION="new"
+    START_RUN_ID="$(allocate_new_run_id)"
+    ALLOCATED_NEW_RUN_ID="$START_RUN_ID"
+    START_DECISION="$(jq -cn --arg run_id "$START_RUN_ID" --arg previous "$PREVIOUS_COMPLETE_RUN" \
+      '{action:"new",run_id:$run_id,previous_run_id:$previous,reason:"completed-run-new-article-allowed"}')"
+    echo "=== article-daily start control: legacy completed-run stop lifted previous=$PREVIOUS_COMPLETE_RUN new=$START_RUN_ID $(date '+%F %T %Z') ===" >>"$LOG"
     ;;
   skip-pending-worker)
-    echo "=== article-daily same-day guard: pending active-four run remains resume-worker-owned run=$START_RUN_ID; no second article $(date '+%F %T %Z') ===" >>"$LOG"
+    echo "=== article-daily start control: pending active-four run remains resume-worker-owned run=$START_RUN_ID; no concurrent article $(date '+%F %T %Z') ===" >>"$LOG"
     exit 0
     ;;
   resume-generation)
     RESUME_GENERATION=1
     START_REASON="$(printf '%s' "$START_DECISION" | jq -r '.reason // "unknown"')"
-    echo "=== article-daily same-day guard: safely resuming pre-publication generation run=$START_RUN_ID reason=$START_REASON with immutable prompt $(date '+%F %T %Z') ===" >>"$LOG"
+    echo "=== article-daily start control: safely resuming pre-publication generation run=$START_RUN_ID reason=$START_REASON with immutable prompt $(date '+%F %T %Z') ===" >>"$LOG"
     ;;
   new)
     ;;
@@ -368,13 +406,28 @@ case "$START_ACTION" in
     echo "=== article-daily quality replacement: new run=$START_RUN_ID replaces=$(printf '%s' "$START_DECISION" | jq -r '.replaced_run_id') $(date '+%F %T %Z') ===" >>"$LOG"
     ;;
   *)
-    echo "=== article-daily same-day guard BLOCK: $START_DECISION; no duplicate article $(date '+%F %T %Z') ===" >>"$LOG"
+    echo "=== article-daily start control BLOCK: $START_DECISION; no unsafe duplicate or ambiguous run $(date '+%F %T %Z') ===" >>"$LOG"
     if command -v telegram_notify >/dev/null 2>&1; then
-      telegram_notify "article-daily blocked a duplicate article because today's saved run is not mechanically resumable: $START_DECISION" >>"$LOG" 2>&1 || true
+      telegram_notify "article-daily stopped because the saved run is ambiguous or not safely resumable: $START_DECISION" >>"$LOG" 2>&1 || true
     fi
     exit 0
     ;;
 esac
+
+# Quality replacement IDs are selected by the start controller from a trusted
+# terminal timestamp. Reserve that exact path atomically as well; if another
+# owner already claimed it, use the same collision-safe allocator rather than
+# merging into an existing run directory.
+if [ "$START_ACTION" = "new-quality-replacement" ] \
+  && [ "$ALLOCATED_NEW_RUN_ID" != "$START_RUN_ID" ]; then
+  if ! reserve_new_run_id "$START_RUN_ID"; then
+    PREVIOUS_QUALITY_RUN="$START_RUN_ID"
+    START_RUN_ID="$(allocate_new_run_id)"
+    ALLOCATED_NEW_RUN_ID="$START_RUN_ID"
+    START_DECISION="$(printf '%s' "$START_DECISION" | jq --arg run_id "$START_RUN_ID" '. + {run_id:$run_id}')"
+    echo "=== article-daily quality replacement ID collision; reserved new=$START_RUN_ID previous_candidate=$PREVIOUS_QUALITY_RUN $(date '+%F %T %Z') ===" >>"$LOG"
+  fi
+fi
 
 # RUN RECORD (spec docs/loop-engineering/47-writer-loop-quality-and-self-improvement.md, meta-harness
 # ablation: the single most important thing to keep is the raw trace of every pass, not a summary of
@@ -385,7 +438,25 @@ esac
 RUNS_ROOT="$STATE_DIR/runs"
 RUN_TS="${START_RUN_ID:-daily-$TODAY_JST}"
 RUN_DIR="$RUNS_ROOT/$RUN_TS"
-mkdir -p "$RUN_DIR/gates"
+if [ "$ALLOCATED_NEW_RUN_ID" = "$RUN_TS" ]; then
+  mkdir "$RUN_DIR/gates" 2>/dev/null || {
+    echo "=== article-daily reserved run could not create gates run=$RUN_TS; refusing merge ===" >>"$LOG"
+    exit 1
+  }
+else
+  # Existing directories are permitted only for an explicitly resumable run
+  # selected by start control. A new run never uses mkdir -p on an existing path.
+  [ -d "$RUN_DIR" ] || {
+    echo "=== article-daily expected existing run is missing run=$RUN_TS; refusing merge ===" >>"$LOG"
+    exit 1
+  }
+  if [ ! -d "$RUN_DIR/gates" ]; then
+    mkdir "$RUN_DIR/gates" 2>/dev/null || {
+      echo "=== article-daily existing run gates creation failed run=$RUN_TS ===" >>"$LOG"
+      exit 1
+    }
+  fi
+fi
 if [ "$START_ACTION" = "new-quality-replacement" ]; then
   QUALITY_REPLACEMENT_TMP="$RUN_DIR/gates/.quality-replacement.json.$$"
   printf '%s' "$START_DECISION" | jq -c '{

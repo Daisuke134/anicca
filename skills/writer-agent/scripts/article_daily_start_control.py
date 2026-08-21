@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
-"""Choose a safe daily start without creating a second JST-day article.
+"""Choose a safe start without replaying an unfinished or published run.
 
 The launchd wrapper asks this before it allocates a new RUN_TS.  Decisions are based on
-durable run/ledger artifacts, never wall-clock proximity to the 06:00 trigger.
+durable run/ledger artifacts, never wall-clock proximity to the 06:00 trigger.  A completed
+run does not reserve the rest of the JST day: the caller may allocate a fresh run identity
+for another topic.  Duplicate protection remains bound to the immutable run/topic/artifact
+and publisher receipts.
 """
 
 from __future__ import annotations
@@ -18,6 +21,12 @@ from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
 
+from publication_contract import ACTIVE_PAIRS
+from publication_contract_resolver import (
+    PublicationContractError,
+    resolve_publication_contract,
+)
+
 
 REQUIRED = {
     ("note", "ja"),
@@ -28,6 +37,9 @@ REQUIRED = {
     ("x-article", "ja"),
     ("x-article", "en"),
     ("x-post", "ja"),
+}
+ACTIVE_REQUIRED = {
+    (pair.split("/", 1)[0], pair.split("/", 1)[1]) for pair in ACTIVE_PAIRS
 }
 WITHOUT_ZENN = REQUIRED - {("zenn-article", "ja")}
 PENDING_ZENN_STATUSES = {"pending", "live-recorded"}
@@ -161,6 +173,29 @@ def _regular_json(path: Path) -> dict[str, Any] | None:
     except (OSError, json.JSONDecodeError, TypeError):
         return None
     return value if isinstance(value, dict) else None
+
+
+def persisted_publication_contract(run_dir: Path) -> str | None:
+    """Read the run's explicit contract before classifying a completed ledger.
+
+    The active-four subset is not evidence that a legacy exact-eight run is
+    complete: an old run can have published the same four current destinations
+    while its four legacy destinations are still pending.  Missing or malformed
+    state therefore stays fail-closed instead of being treated as a new run.
+    """
+
+    state = _regular_json(run_dir / "gates" / "publication-state.json")
+    if state is None:
+        return None
+    try:
+        return resolve_publication_contract(
+            run_dir / "gates" / "publication-state.json",
+            run_dir.parent.parent / "articles.jsonl",
+            run_dir.name,
+            state=state,
+        )
+    except (PublicationContractError, TypeError, ValueError):
+        return None
 
 
 def _preflight_only_run(run_dir: Path, rows: list[dict[str, Any]], run_id: str) -> bool:
@@ -521,13 +556,33 @@ def decide(state_dir: Path | str, local_date: str) -> dict[str, str]:
     if not run_ids:
         return {"action": "new", "reason": "no-same-jst-day-run"}
 
-    # Only the newest same-day run can own today's obligation.  Looking through it to an older
-    # exact8 (or starting a third run) would hide a newer partial/ambiguous publication.
+    # Only the newest same-day run can own an unfinished obligation.  Once its
+    # persisted contract is complete, return `new` so the wrapper can allocate
+    # a fresh run identity for another article today. Looking through a newer
+    # partial/ambiguous run would still hide unsafe publication state.
     run_id = run_ids[0]
     run_dir = runs_dir / run_id
+    contract = persisted_publication_contract(run_dir)
     exact_eight, _ = validated_live_set(rows, run_id, REQUIRED)
-    if exact_eight:
-        return {"action": "skip-complete", "run_id": run_id, "reason": "same-jst-day-exact8"}
+    if contract == "legacy-exact8" and exact_eight:
+        return {
+            "action": "new",
+            "run_id": "",
+            "previous_run_id": run_id,
+            "reason": "new-after-complete:legacy-exact8",
+        }
+    # Only an explicit active-four publication state can release the same-day
+    # start gate after four receipts.  A legacy exact-eight run with the same
+    # four rows is still incomplete and must remain resumable/blocking.
+    if contract == "active-four":
+        active_four, _ = validated_live_set(rows, run_id, ACTIVE_REQUIRED)
+        if active_four:
+            return {
+                "action": "new",
+                "run_id": "",
+                "previous_run_id": run_id,
+                "reason": "new-after-complete:active-four",
+            }
     exact_seven, topic_id = validated_live_set(rows, run_id, WITHOUT_ZENN)
     pending = run_dir / "gates" / "zenn-deferred.json"
     if exact_seven and valid_zenn_pending(pending, run_id, topic_id):

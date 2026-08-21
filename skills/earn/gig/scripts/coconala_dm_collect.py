@@ -508,12 +508,12 @@ def _thread_id_of(url: str) -> str:
 def collect(
     *, helper: Path, project_root: Path, buyer: str, thread_id: str | None,
     observed_at: str, owner: str | None = None, fetch_attachments: bool = True,
-    require_known_thread: bool = False,
+    require_known_thread: bool = False, previously_inspected: list[str] | None = None,
 ) -> dict[str, Any]:
     """Find, read and store the buyer's DM thread for one project."""
     root = Path(project_root).expanduser()
     identity = thread_id or known_thread_id(root)
-    inspected: list[str] = []
+    inspected = list(dict.fromkeys(previously_inspected or []))
     if identity is None and require_known_thread:
         # Discovery opens every thread in the inbox, once per pass, forever, for an order
         # that may simply have no DM. The hourly loop asks for the cheap path: refresh a
@@ -523,6 +523,8 @@ def collect(
     if identity is None:
         inbox = _read_dom(helper, INBOX_URL, collector_module().MESSAGES_EXPRESSION, owner)
         for candidate in inbox_thread_ids(inbox):
+            if candidate in inspected:
+                continue
             inspected.append(candidate)
             dom = _read_dom(
                 helper, THREAD_URL.format(thread_id=candidate), DM_THREAD_EXPRESSION, owner,
@@ -563,6 +565,18 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if not args.buyer and not args.thread_id and not args.require_known_thread:
         raise SystemExit("either --buyer or --thread-id is required")
+    previously_inspected: list[str] = []
+    if args.evidence_output is not None:
+        try:
+            previous = json.loads(args.evidence_output.read_text(encoding="utf-8"))
+            if (previous.get("error") == "dm_thread_not_found"
+                    and previous.get("buyer") == args.buyer
+                    and isinstance(previous.get("threads_inspected"), list)):
+                previously_inspected = [
+                    canonical_thread_id(value) for value in previous["threads_inspected"]
+                ]
+        except (OSError, ValueError, TypeError, json.JSONDecodeError):
+            pass
     result = collect(
         helper=args.cdp_helper,
         project_root=args.project_root,
@@ -572,6 +586,7 @@ def main(argv: list[str] | None = None) -> int:
         owner=args.owner,
         fetch_attachments=not args.no_attachments,
         require_known_thread=args.require_known_thread,
+        previously_inspected=previously_inspected,
     )
     if args.evidence_output is not None:
         _atomic_json(args.evidence_output, result)
