@@ -1189,26 +1189,28 @@ Manager must never read the OpenClaw map, credentials, or assets at runtime.
 
 | Product/channel | TikTok | Instagram | YouTube | Current truth |
 |---|---|---|---|---|
-| Honne EN | `@honne_reveal` (`cmoig11ew001zlv0yk6vqo1us`) | live Postiz target not yet frozen | no Honne YouTube target recorded | TikTok canary first |
-| Honne JA | `@honnevideo` | live Postiz target not yet frozen | no Honne YouTube target recorded | known recovery slots only |
+| Honne EN | `@honne_reveal` (`cmoig11ew001zlv0yk6vqo1us`) | live Postiz target not yet frozen | **not used** | TikTok + Instagram only |
+| Honne JA | `@honnevideo` | live Postiz target not yet frozen | **not used** | TikTok + Instagram only |
 | Anicca JP4 | `@anicca.jp4` | live Postiz target not yet frozen | no dedicated target recorded | one lane at a time |
 | Anicca iOS / main JA | `@anicca.jp` | live Postiz target not yet frozen | historical candidate `@anicca-jp` (`cmn1oukj9012nnq0yqhouc3ib`) | live registry required |
 | Anicca EN / main | not in the incident canary | live Postiz target not yet frozen | historical candidate `@anicca-ai` (`cmmzukbkw04ulp30yfvijrwio`) | separate product pack |
 | Affirmation pack | not an Anicca iOS lane | not an Anicca iOS lane | historical candidate `@anicca-affirmation-video` (`cmn8ymq6c02oio70y5ea1trv8`) | do not mix rewards |
 
 The three YouTube handles and IDs above are candidates copied from the old
-redacted map, not a production assignment. There is no recorded Honne YouTube
-integration. A YouTube lane stays disabled until its live Postiz integration,
-product, locale, account, and direct public URL are all recorded in the Life
-Manager manifest. A shared YouTube channel cannot silently serve two product
-packs; if a channel is intentionally shared, its campaign and reward joins must
-still remain product-scoped.
+redacted map, not a production assignment. YouTube is an **Anicca-only**
+destination in this recovery. Honne has no YouTube job, account, campaign,
+metric gate, or TODO; do not create or assign one. An Anicca YouTube lane stays
+disabled until its live Postiz integration, product, locale, account, and direct
+public URL are all recorded in the Life Manager manifest. A shared Anicca
+YouTube channel cannot silently serve two product packs; if it is intentionally
+shared, its campaign and reward joins must still remain product-scoped.
 
-Postiz is retained for all three requested surfaces (Instagram, TikTok,
-YouTube). The current generic publication contract accepts only `instagram` and
-`tiktok`; adding `youtube` requires a separate contract change, provider-specific
-settings, a direct URL verifier (`/shorts/<id>`, `/watch?v=<id>`, or an equivalent
-verified public URL), and shadow tests before any YouTube write.
+Postiz is retained for Honne TikTok/Instagram and Anicca
+TikTok/Instagram/YouTube. The current generic publication contract accepts only
+`instagram` and `tiktok`; adding `youtube` requires a separate contract change,
+provider-specific settings, a direct URL verifier (`/shorts/<id>`,
+`/watch?v=<id>`, or an equivalent verified public URL), and shadow tests before
+any Anicca YouTube write.
 
 ### 8.9 Telegram marketing reporting contract
 
@@ -1538,14 +1540,19 @@ schedulers or revive known-broken producers:
 This is the remaining operational list for returning the existing mobile
 marketing fleet. It does not create a second scheduler and it does not enable
 the quarantined OpenClaw fleet. Only the first unchecked item is active.
+This table is the complete start-to-end sequence; the `A`/`B` rows run directly
+after the preceding numbered row, and no later row is started early:
+`MKT-01 → MKT-02 → MKT-03 → MKT-03A → MKT-03B → MKT-04 → MKT-05 → MKT-06 →
+MKT-07 → MKT-08 → MKT-09 → MKT-10 → MKT-11 → MKT-11A → MKT-11B → MKT-12 →
+MKT-13`.
 
 | ID | Atomic action | Account/lane | Done evidence |
 |---|---|---|---|
 | MKT-01 | Port I-3 claim, receipt, Telegram dedupe, and replay state from PostgreSQL/`pg` to the Life Manager-owned local JSONL/atomic-file ledger | all lanes | direct local process restarts cleanly; duplicate claim/effect/notification count is 0 |
-| MKT-02 | Read the live Postiz integration registry and freeze a redacted multi-platform lane manifest containing integration ID, provider, profile, locale, product, and disabled state | Honne/Anicca TikTok, Instagram, and YouTube lanes | every target account has exactly one verified provider route; historical IDs and unknown profiles remain blocked rather than guessed |
+| MKT-02 | Read the live Postiz integration registry and freeze a redacted multi-platform lane manifest containing integration ID, provider, profile, locale, product, and disabled state | Honne TikTok/Instagram; Anicca TikTok/Instagram/YouTube | every target account has exactly one verified provider route; Honne has no YouTube row; historical IDs and unknown profiles remain blocked rather than guessed |
 | MKT-03 | Run one controlled publication using the Life Manager route, reconcile `PUBLISHED`, verify the direct TikTok `/video/<id>` URL, and send one Telegram receipt | Honne EN `@honne_reveal` | one real public URL, one matching Telegram receipt, and replay creates no new effect |
-| MKT-03A | Extend the generic publication contract and direct-URL verifier to YouTube while keeping Postiz as the provider | selected Anicca/Honne YouTube integration | shadow performs zero provider writes; a verified `/shorts/<id>`, `/watch?v=<id>`, or equivalent public URL is required before canary |
-| MKT-03B | Run one controlled Postiz fan-out canary for the same creative on TikTok, Instagram, and YouTube, each with its own effect key and receipt | one selected production-armed product lane | three provider receipts, three direct public URLs, three metric join keys, one natural-language Telegram summary, and replay creates 0 new effects |
+| MKT-03A | Extend the generic publication contract and direct-URL verifier to YouTube while keeping Postiz as the provider | selected **Anicca** YouTube integration only | shadow performs zero provider writes; a verified `/shorts/<id>`, `/watch?v=<id>`, or equivalent public URL is required before canary |
+| MKT-03B | Run one controlled Postiz fan-out canary with one effect key per platform, one selected product lane at a time: Anicca on TikTok/Instagram/YouTube or Honne on TikTok/Instagram | one selected production-armed product lane | Anicca: three receipts/URLs; Honne: two receipts/URLs; each has a metric join key, one natural-language Telegram summary, and replay creates 0 new effects |
 | MKT-04 | Run the retained Honne EN cadence and prove seven consecutive expected cycles | Honne EN: 07:00 / 11:00 / 20:30 Asia/Tokyo | every expected slot has one generation, publication, direct URL, notification, and observation receipt |
 | MKT-05 | Repair the known hook, asset, poster-argument, and environment-boundary defects before any publication | Honne JA `@honnevideo` | one clean shadow run and one controlled canary; no OpenClaw path/env/asset read |
 | MKT-06 | Restore the retained Honne JA slots, then record and prove a third daily slot in the Life Manager lane manifest | Honne JA: current recovery slots 12:30 / 21:30; third slot is not invented until the lane manifest records it | three expected slots/day pass seven cycles; old `honne-ja-fresh` remains disabled until separately proven |
@@ -1553,9 +1560,9 @@ the quarantined OpenClaw fleet. Only the first unchecked item is active.
 | MKT-08 | Repair and canary the iOS lane, then run its three daily slots | Anicca iOS `@anicca.jp` | one account-specific public URL per canary, metrics receipt, and seven-cycle evidence |
 | MKT-09 | Migrate the remaining Larry/ReelClaw accounts one by one, preserving each measured account/locale/cadence contract | remaining Anicca/Honne accounts | each account passes shadow → canary → seven cycles; no mass re-enable |
 | MKT-10 | Enable the three-posts-per-day policy only after the account’s canary and seven-cycle gate pass | every production-armed account | exactly three expected slots/day, no duplicate effects, no missed-slot silence |
-| MKT-11 | Collect Postiz TikTok/Instagram/YouTube post metrics at 2h/24h/72h/7d and join App Store Connect, RevenueCat, and product analytics by creative lineage | every published account | social metrics and app metrics are separate rows with the §8.10 join keys; unavailable remains `null`/unavailable and never becomes 0 |
+| MKT-11 | Collect Postiz TikTok/Instagram metrics for Honne and TikTok/Instagram/YouTube metrics for Anicca at 2h/24h/72h/7d, then join App Store Connect, RevenueCat, and product analytics by creative lineage | every published account | social metrics and app metrics are separate rows with the §8.10 join keys; unavailable remains `null`/unavailable and never becomes 0 |
 | MKT-11A | Emit the three natural-language Telegram tiers from the same immutable snapshot used by the panel | every production-armed product/account/platform | per-post/missed receipt, daily app/account digest, and weekly Honne-vs-Anicca review contain no raw logs and dedupe on replay |
-| MKT-11B | Compute attribution coverage and separate verified TikTok/Instagram/YouTube-attributed installs from partial/unattributed installs | every product and campaign | each report shows campaign ID, observation window, source status, and confidence; timing alone never becomes causal attribution |
+| MKT-11B | Compute attribution coverage and separate verified platform-attributed installs from partial/unattributed installs; include YouTube only for Anicca | every product and campaign | each report shows campaign ID, observation window, source status, and confidence; timing alone never becomes causal attribution |
 | MKT-12 | Run bounded learning: change one hook/format/CTA variable, keep or revert from receipts, and prove the next run consumed the decision | Honne and Anicca separately | one-variable challenger, keep/revert receipt, and next-run consumption receipt |
 | MKT-13 | Retire legacy ownership only after every retained platform lane passes the seven-cycle gate | entire mobile fleet | Life Manager is sole scheduler; Postiz remains the selected provider; old disabled state remains archived rollback evidence |
 
