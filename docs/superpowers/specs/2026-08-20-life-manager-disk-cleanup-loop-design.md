@@ -451,6 +451,7 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 | 2 | `skills/self/disk-cleanup/` にcanonical host inventory、manifest、runner、health interfaceを定義 | local writable volume missing 0、required owner family missing 0、schema PASS | 部分完了: inventory schema、atomic writer、fast/full mode、hourly marker、9 testsは実装。local writable missing 0とhealth readbackは未完了 |
 | 3 | protected rootsとfail-closed validatorをTDDで固定 | Test Matrix 3–11 PASS | 部分完了: Life Manager governorとAnicca回帰testで主要保護を確認。全Matrix 3–11の統合証跡は未完了 |
 | 4 | exact-byte tier、hysteresis、single lock、300秒schedulerをTDD実装 | Test Matrix 2、12–14 PASS | 部分完了: exact-byte tier、atomic lock、300秒plist、pressure/recovery floor、hourly full-pass marker、bounded fast/full passは実装・unit PASS。launchd正式bootstrapは未完了 |
+| 4a | GUI bootstrap health failureを観測専用fail-closedに固定 | Test Matrix 28–29 PASS、141/153 fixture receipt、復旧後readback | 未完了: `dscl`/`launchctl`の復旧手順は確認済みだが、cleanup/installerのhealth interface、141/153 receipt、label load gateは未実装 |
 | 5 | Mac全体のproducer censusを作り、artifact/lease/finalizer helperを上位growth ownerへ接続 | 1 GiB以上のunattributed root 0、active lease readback、orphan lease fixture PASS | 部分完了: Chrome/Chromium cloneと`cfo-*`のallow-list discoveryは実装。host-wide census、lease heartbeat/finalizer接続は未完了 |
 | 6 | 全write-heavy producerへ共通disk preflightを接続 | producer census missing consumer 0、Test Matrix 15 PASS | 未完了: pressure blockは生成するが、全producerの共通preflight/drain接続は未完了 |
 | 7 | bounded ops log、incident receipt、Telegram dedupeを実装 | Test Matrix 18–19 PASS、message ID | 部分完了: ledger rotationとlast receipt、milestone送信は実装。ops log/incident receiptの正式分離とdedupe契約は未完了 |
@@ -472,16 +473,17 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 1. **host-wide censusを完成** — bounded `host-inventory.json`の11件のgapを解消し、全local writable volume、必須owner family、1 GiB以上のunknown rootを同一versioned inventoryへ記録し、missing 0を出す。
 2. **OSS contract testを完成** — protected roots、lease、open-path、probe error、dirty/unpushed worktree、unknown classの統合fixtureを追加し、Test Matrix 3–11をPASSにする。
 3. **launchd正式bootstrapを復旧** — UID/GUI domain readbackの復旧後に、`ai.anicca.life-manager-disk-cleanup`をuser domainへ登録し、`StartInterval=300`、single lock、bounded runtime、kickstart/readbackを実測する。対象labelのload readbackが取れないままDONEにしない。旧autoprune/reclaimの退避ファイルはrollback用に保持する。
-4. **producer lifecycleを接続** — 上位growth owner（browser、build、media、VM/container、package manager、agent runtime、`~/gig/releases`）をcensusし、artifact登録、lease heartbeat、finalizer、quotaを実装する。旧`disk-reclaim`の安全なrelease proofはこのmanifestへ移植してから再有効化する。
-5. **全producerにbackpressureを接続** — PREVENTIVE/PRESSURE/CRITICAL/ULTRAのpreflight、drain、checkpoint、bounded resumeを同じcontractで適用し、consumer missing 0にする。
-6. **audit/reportingを完成** — bounded ops log、immutable incident receipt、Telegram状態遷移dedupe、delivery-failure receiptを実装し、message IDをreadbackする。
-7. **hourly intelligenceを完成** — input/output schema、異常時wake gate、growth attribution、producer defect task化を実装する。intelligenceは削除・manifest mutationを持たないことをtestで固定する。
-8. **owner単位recoveryを完成** — reserve回復後のredispatchをownerごとに直列化し、checkpoint、retry上限、duplicate redispatch 0を証明する。
-9. **shadow parityと全テストを完了** — legacy shimとcanonical governorのeffect-free decision parityをreceipt化し、Test Matrix 18–27、Life Manager regressionをPASSにする。
-10. **canaryとreplayを完了** — closedな既知regenerable artifactを1件だけ回収し、reclaimed/free readback、protected deletion 0、immediate replay duplicate 0をproduction receiptへ保存する。
-11. **旧authorityをcutover** — 旧janitor/cleaner plistのdelete authorityをdisableし、canonical labelだけをloadする。rollback plistと復元手順を同じcommit/receiptへ保存する。
-12. **容量を回復して観測** — growth ownerを特定してfree spaceを11 GiB以上へ戻し、24時間（ENOSPC 0、protected deletion 0、duplicate owner 0）を連続観測する。
-13. **7日観測とrollbackを閉じる** — 7日間のstate write failure 0、cleanup起因producer failure 0を確認し、rollback restore testと最終Telegram完了message IDを保存する。
+4. **bootstrap health契約を実装** — `dscl` UID readback、`launchctl print gui/501`、対象label存在をpreflightし、141/153/UID failureでは削除・plist変更・bootstrap・restart・killを行わず、`gui-bootstrap-health-failure` receiptだけをatomic writeする。stale app-server終了はcleanupから分離する。
+5. **producer lifecycleを接続** — 上位growth owner（browser、build、media、VM/container、package manager、agent runtime、`~/gig/releases`）をcensusし、artifact登録、lease heartbeat、finalizer、quotaを実装する。旧`disk-reclaim`の安全なrelease proofはこのmanifestへ移植してから再有効化する。
+6. **全producerにbackpressureを接続** — PREVENTIVE/PRESSURE/CRITICAL/ULTRAのpreflight、drain、checkpoint、bounded resumeを同じcontractで適用し、consumer missing 0にする。
+7. **audit/reportingを完成** — bounded ops log、immutable incident receipt、Telegram状態遷移dedupe、delivery-failure receiptを実装し、message IDをreadbackする。
+8. **hourly intelligenceを完成** — input/output schema、異常時wake gate、growth attribution、producer defect task化を実装する。intelligenceは削除・manifest mutationを持たないことをtestで固定する。
+9. **owner単位recoveryを完成** — reserve回復後のredispatchをownerごとに直列化し、checkpoint、retry上限、duplicate redispatch 0を証明する。
+10. **shadow parityと全テストを完了** — legacy shimとcanonical governorのeffect-free decision parityをreceipt化し、Test Matrix 18–29、Life Manager regressionをPASSにする。
+11. **canaryとreplayを完了** — closedな既知regenerable artifactを1件だけ回収し、reclaimed/free readback、protected deletion 0、immediate replay duplicate 0をproduction receiptへ保存する。
+12. **旧authorityをcutover** — 旧janitor/cleaner plistのdelete authorityをdisableし、canonical labelだけをloadする。rollback plistと復元手順を同じcommit/receiptへ保存する。
+13. **容量を回復して観測** — growth ownerを特定してfree spaceを11 GiB以上へ戻し、24時間（ENOSPC 0、protected deletion 0、duplicate owner 0）を連続観測する。
+14. **7日観測とrollbackを閉じる** — 7日間のstate write failure 0、cleanup起因producer failure 0を確認し、rollback restore testと最終Telegram完了message IDを保存する。
 
 ### Required verification commands
 
@@ -491,6 +493,7 @@ python3 -m pytest skills/self/loop-scale/tests -q
 python3 -m py_compile skills/self/disk-cleanup/disk_cleanup.py
 bash -n skills/self/disk-cleanup/install-launchd.sh skills/self/disk-cleanup/legacy-disk-janitor.sh
 plutil -lint skills/self/disk-cleanup/launchd/*.plist
+dscl . -read /Users/anicca UniqueID NFSHomeDirectory
 launchctl print gui/$(id -u)/ai.anicca.life-manager-disk-cleanup
 df -k /System/Volumes/Data
 ```
