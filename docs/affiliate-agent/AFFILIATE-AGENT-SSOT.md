@@ -2481,9 +2481,18 @@ receipt readback, SSOT state update, commit, and push to both canonical remotes.
   home fallback; Telegram message `26355` carries the same boundary and no raw
   tracking link. The latest natural owner observation at `2026-08-20T22:01:41Z`
   is 51 valid actions, 0 exact joins, 51 unjoined, and `NO_REVENUE_CREDIT`;
-  D06 (shared effect arbiter) and D07 remain open.
-- [ ] **D07** Prove one Repost/original-X exposure joins through owned visit and
+  D06 (shared effect arbiter) remains open.
+- [x] **D07** Prove one Repost/original-X exposure joins through owned visit and
   provider click to an exact transaction, or persist the broken edge explicitly.
+  The existing owner has the durable alternative proof: latest observation
+  `5d9d2d676f4db66f1357e9d2723a7a72d0ec5ce989e56b9fe5b653fdd0146f1a` records
+  `post_action_count=54`, `joined_campaign_count=0`,
+  `unjoined_post_action_count=54`, `invalid_row_count=0`,
+  `denominator_state=POST_ACTION_COUNT_ONLY`, and
+  `revenue_credit_state=NO_REVENUE_CREDIT` under source SHA
+  `232c310fae6f04b29c35171317d26db895648591b76ebbf376f904263cbf21ea`.
+  No owned visit, provider click, transaction, or money is inferred; D06's
+  shared-effect arbiter remains blocked at the separate Repost owner boundary.
 - [ ] **D08** After cohort maturity, compute approved net per 1,000 qualified
   exposures and execute one receipted promote/revert decision from money evidence.
 
@@ -2757,11 +2766,12 @@ acceptance contract; this summary does not reorder them):
 2. **C01–C06:** make actual billed costs, complete coverage, FX, reversals, and
    the rolling-30-day net receipt canonical; unknown material cost keeps net
    unknown.
-3. **D02, D05–D08:** finish fresh opportunity selection, exact
+3. **D02, D05–D06, D08:** finish fresh opportunity selection, exact
    exposure/click/transaction denominators, shared X/Repost effect arbitration,
    and money-evidence promote/revert learning. D04 experiment-receipt
    persistence is closed by the live title experiment lineage above; its
-   outcome remains unproven until exposure and money denominators mature.
+   outcome remains unproven until exposure and money denominators mature. D07's
+   explicit broken-edge receipt is closed above; it provides no money.
 4. **E02–E10 / M2.2–M2.3-D:** admit Semrush, Amazon Japan, and Rakuten only
    through official terms/auth/link/report gates; reach three executable,
    independently receipted providers and enforce the 40% concentration cap.
