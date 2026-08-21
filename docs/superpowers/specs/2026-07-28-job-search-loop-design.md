@@ -11,7 +11,7 @@ because the macOS user GUI launchd domain rejects registration/readback with
 guardianship, lifecycle closure and the Life Manager Career surface
 remain in progress; resume version 9 is explicitly approved and frozen.
 **Done when:** `Daisuke134/life-manager` is the only versioned source and the
-resident system can discover, qualify, tailor and submit up to ten truthful eligible
+resident system can discover, qualify, tailor and submit up to ten truthful admitted
 applications per Japan day; reconcile every later Gmail message; manage scheduling,
 assessments, interview preparation, follow-up, offers and final outcomes; report
 every material event at most once; heal safe operational failures; and promote or
@@ -28,19 +28,19 @@ The loop optimizes for interviews, not raw submission count:
 
 | Objective | Rule |
 |---|---|
-| Daily application target | 10 unique, eligible, high-fit applications per Japan day; one candidate per hourly wake |
-| Location | Tokyo on-site/hybrid, Japan-remote, or global remote that accepts Japan-based workers |
-| Compensation | Prefer JPY 7M–10M+; hard reject known compensation below JPY 5.5M |
-| Role families | Applied AI/agent/GenAI engineering; AI product and technical program management; solutions/consulting; AI business development and partnerships; technical account management, customer success and sales engineering; agentic fintech/crypto/consumer AI |
-| Hard exclusions | Citizenship or clearance requirements the candidate cannot meet; relocation-only roles outside Japan; already-applied roles; material skill fabrication |
-| Truthful zero | If fewer than ten eligible jobs exist, submit the eligible count and report the shortfall; do not lower hard filters or claim success |
+| Daily application target | 10 unique admitted applications per Japan day; one candidate per hourly wake |
+| Location | Tokyo on-site/hybrid, Japan-remote, or global remote that accepts Japan-based workers are ordering preferences, not fit-based rejection rules |
+| Compensation | Prefer JPY 7M–10M+; compensation mismatch never prevents a stretch attempt |
+| Role families | Applied AI/agent/GenAI engineering; AI product and technical program management; solutions/consulting; AI business development and partnerships; technical account management, customer success and sales engineering; agentic fintech/crypto/consumer AI; other roles at an explicitly targeted ideal company |
+| Execution-safety exclusions | Duplicate/already-applied roles; closed or non-official application surfaces; legal/identity answers that would have to be false; CAPTCHA or manual identity challenges that require the applicant; material claim fabrication |
+| Truthful zero | If fewer than ten admitted jobs have a truthfully executable official form, submit the admitted count and report the exact execution blocker; never reduce ambition because of fit or stated hiring requirements |
 
 ### Current resident cadence contract
 
 The production `ai.anicca.job-search-daily` LaunchAgent is the single acquisition
 owner and is configured for a 3600-second wake. Each wake may process one candidate through the
 existing claim, browser, confirmation, ledger and Telegram fences. The committed
-strategy caps the Japan day at ten applications (dream 2, strong-fit 5, adjacent 3);
+strategy caps the Japan day at ten applications (dream 2, strong-fit 5, adjacent/stretch 3);
 once that cap is reached, a wake exits before browser/model initialization and writes
 `daily_quota_reached`. The installed plist and the versioned launchd/systemd
 templates are verified to carry the same hourly interval. The Life Manager
@@ -57,23 +57,40 @@ On this host `launchctl managername` itself fails (`153`/`141`), so the helper
 correctly refuses to register or report a resident service until the bootstrap
 namespace is healthy.
 
-### Hourly throughput and truth contract
+### Stretch application and hourly throughput contract
+
+Requirement fit is not an admission gate. Every role at an ideal target company is
+an admitted stretch candidate even when the posting asks for more years, a higher
+title, a different degree, a skill not yet demonstrated, or a compensation/location
+profile that does not match. A CEO role at an ideal company that lists twenty years
+of CEO experience is still attempted. The requirement is recorded as a visible
+stretch signal and may affect ordering and the Telegram explanation, but it never
+causes a silent pre-submit rejection.
+
+This policy is an asymmetric-upside decision: a speculative application costs one
+bounded wake and can create an interview path, while pre-rejecting the role makes
+that upside exactly zero. The loop therefore shoots its shot at every admitted ideal
+company role and lets the employer decide fit. The system does not promise that the
+candidate meets the posting; it only promises that the application is truthful.
 
 Every intended 3600-second wake is an application attempt, not a permission to
 stop after the first blocked candidate. The existing executor claims at most one
 unique application per wake and keeps the Japan-day cap of ten, then continues
 through distinct official ATS URLs after `not_submitted`, an ATS transport failure,
 an unmet requirement, or an unknown submit result. A candidate-level blocker is
-never a terminal wake result. When no truthful eligible candidate remains, the
-wake records `no_eligible_job_found` with the exact blockers and sends the normal
-Telegram report; it does not manufacture a submission.
+never a terminal wake result. When no admitted candidate has a truthfully
+executable official form remaining, the wake records `no_eligible_job_found` with
+the exact execution blockers and sends the normal Telegram report; it does not
+manufacture a submission.
 
 The exact-fact gate is absolute. The loop must not guess an experience duration
 (including a default such as “1–3 years”), Python or client-facing experience,
 employer motivation, legal status, or any other required answer. A general
 attestation such as “has experience” is not evidence for a specific years or skill
-claim. This preserves truthful applications while ensuring that one uncertain
-field never prevents the loop from trying the next job. Until the user GUI
+claim. An unmet requirement is therefore a stretch signal, not a reason to omit the
+job; an unanswered mandatory field is an execution blocker only after the form is
+reached. This preserves truthful applications while ensuring that one uncertain
+field never prevents the loop from trying the next ideal-company job. Until the user GUI
 launchd domain is recovered and read back successfully, direct canonical-wrapper
 runs are fallback evidence only; they do not prove a resident hourly schedule.
 
@@ -695,9 +712,10 @@ all Workday/ATS accounts are authenticated.
 
 The same truth boundary applies to queue continuation: a broad experience
 attestation is not evidence for a specific Python skill, client-facing duty,
-minimum-years threshold, legal answer, or employer-specific motivation. Those
-questions remain candidate blockers until their own exact fact or approved material
-exists.
+minimum-years threshold, legal answer, or employer-specific motivation. A posting's
+requirement remains a stretch signal; only a mandatory form question that asks for
+one of those exact facts becomes a candidate execution blocker until its own exact
+fact or approved material exists.
 
 ### 4.6 Portable local installation
 
@@ -1009,12 +1027,15 @@ The deterministic score is 0–100:
 
 Rules:
 
-- `75+`: eligible for autonomous application.
-- `65–74`: retain for weekly review/learning, do not auto-submit.
-- `<65`: reject.
-- Unknown compensation earns neutral points; known compensation below the hard floor
-  is rejected.
-- A model may explain a score but cannot change deterministic hard filters.
+- The score orders the queue; it never decides whether an ideal-company stretch role
+  is admitted.
+- `75+`, `65–74`, and `<65` are priority bands for dream, strong-fit, adjacent and
+  stretch reporting. None is an automatic rejection band.
+- Unknown compensation earns neutral points. Known compensation below the target is
+  a visible stretch signal, not a reason to omit the application.
+- A model may explain a score but cannot invent facts or override execution-safety
+  exclusions. The employer, not the loop's fit score, decides whether the candidate
+  meets the stated requirements.
 
 ## 7. Resume and material policy
 
@@ -1333,6 +1354,12 @@ the canonical outbox `status=sent` were confirmed. The Workday adapter still has
 no confirmed real submission; the next runtime objective remains a newly exposed
 truthful Workday or other ATS application surface.
 
+These `daily-20260821-*` receipts are historical evidence from the former
+requirement-fit gate. They remain immutable audit records, but they do not authorize
+future pre-submit rejection for years, title, degree, skill, compensation or generic
+role mismatch. Once `JOB-STRETCH-ADMISSION-2B` is implemented, those signals are
+reported as stretch reasons and the official form is attempted instead.
+
 ### 8.2 Outcome and attribution model
 
 Every application receives one immutable `strategy_generation_id` and the exact
@@ -1584,7 +1611,8 @@ slice has one owner, one acceptance result and one durable receipt.
 | Slice | Parent | Status | Done when |
 |---|---|---|---|
 | `JOB-LOOP-CADENCE-2A` | 11 | `in_progress` | The resident acquisition owner uses an hourly LaunchAgent/systemd interval, processes at most one candidate per wake, preserves the ten-application Japan-day portfolio cap, and passes plist lint plus scheduler-template tests. The source and installed plist read `StartInterval=3600`, the systemd timer reads `OnUnitActiveSec=1h`, and `loops/job-hunter/` plus `bin/plistgen.py` generate the same hourly label and CLI. Commit `4c113ca21` adds a DNS-safe public FreeHire fallback; real `countries=JP` discovery returned ten Japan jobs with Workday/Greenhouse/Amazon ATS URLs. Commit `c956d4ebe` adds a `JOB_SEARCH_DAILY_WAKE_ID` ledger fence (`wake_claims` plus `BEGIN IMMEDIATE`) and result-schema `maxItems=1`; 30 focused tests pass. Commit `8e8aa7400` requires a broken official ATS page to be recorded as candidate-level `not_submitted` and the queue to continue across at least five distinct eligible URLs. Canonical pass `daily-20260820-225831` completed with runner `rc=0`, browser owner ready, no ledger claim, and Telegram report ACK `26261`; Appier/PayPay Card Greenhouse and Amazon read-only probes returned body text and Apply controls, while Asurion Workday/Liquid AI Ashby returned committed navigation with zero body text. The private Workday credential store contains tenants for CrowdStrike, NVIDIA and Salesforce, and the existing Chrome CDP has a Salesforce Workday candidate-home page plus Gmail; this does not prove every ATS is authenticated. The installer and healthcheck resolve `Aqua → gui/<uid>` or `Background → user/<uid>` and fail closed with rc75 when the manager context is unavailable. An explicitly authorized userspace reboot retry returned rc141 (`Reentrancy avoided`); `launchctl print`, `kickstart`, and `bootout/bootstrap` readback remain blocked by the same error, while `launchctl managername` returns rc153. This is a host user-launchd/LaunchServices bootstrap failure; the loop is not marked live until the user GUI launchd domain is recovered and the plist is read back successfully. |
-| `JOB-HOURLY-THROUGHPUT-2B` | 11 | `pending_after_2A` | After `JOB-LOOP-CADENCE-2A` is live, observe three consecutive hourly wakes. Each wake must attempt discovery, continue after every candidate-level blocker across at least five distinct official URLs when needed, submit no more than one verified truthful application, and emit one Telegram event with durable outbox status plus ACK/readback. A truthful zero with exact blockers passes when the queue is exhausted; guessed years or other unsupported answers never pass. |
+| `JOB-STRETCH-ADMISSION-2B` | 11 | `pending_after_2A` | Replace requirement-fit rejection in the daily prompt, deterministic ranking/config and learning fixtures with stretch admission: explicit years, title, degree, skill, compensation and generic-role mismatch affect order/reporting only. A CEO role with a twenty-year requirement and Citadel's three-year role must remain in the application queue. Required form answers still use exact facts; an unanswerable mandatory field is an execution blocker after the form is reached, never a pre-filter. |
+| `JOB-HOURLY-THROUGHPUT-2C` | 11 | `pending_after_2B` | After `JOB-STRETCH-ADMISSION-2B` and `JOB-LOOP-CADENCE-2A` are live, observe three consecutive hourly wakes. Each wake must attempt discovery, continue after every candidate-level blocker across at least five distinct official URLs when needed, submit no more than one verified truthful application, and emit one Telegram event with durable outbox status plus ACK/readback. A truthful zero with exact execution blockers passes only when the admitted queue is exhausted; guessed years or other unsupported answers never pass. |
 | `JOB-RESUME-FACTS-1R-A` | 1R | `completed` | Full institution names and periods are recorded, and Daisuke confirmed TOEIC 910. The private truth ledger now records TOEFL iBT 96, TOEIC 910, Duolingo English Test 140 and DELE B1; no language claim remains unresolved. |
 | `JOB-RESUME-EN-1R-B` | 1R | `frozen_user_approved` | Version 9 is approved; keep the existing canonical English artifacts unchanged unless Daisuke explicitly reopens resume work. |
 | `JOB-RESUME-JA-1R-C` | 1R | `frozen_user_approved` | Resume version 9 is approved; Japanese artifact refinement is not an active TODO and requires an explicit reopen request. |
