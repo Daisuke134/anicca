@@ -656,13 +656,19 @@ and all 20 unique-click measurements observed. Revenue was `COOLDOWN`, the
 official commission artifact remained empty, and Telegram was
 `NO_PENDING` on the existing message `26335`.
 
-The schema-2 release is now the immutable `current` target. A declared kick of
-the existing `ai.anicca.affiliate-loop` returned macOS
-`141: Reentrancy avoided`, and no direct loop executor was started. Therefore
-the new Telegram body containing the unique-click line is **not yet live-proven**;
-the next natural owner wake must show the new daily event UUID, a provider
-message ID, and the redacted body before this reporting gate is closed. No
-transaction, settlement, payout, or money is inferred meanwhile.
+The schema-2 release is now the immutable `current` target. The next natural
+owner wake `d7c0bb49e8853d2d96a8bf6be8845c858c7b20ed10731fd940c13cbc3df53059`
+completed at `2026-08-21T12:43:27+0900` and generated daily event
+`9652c809aad78f2ea143ca58706aecb8f2645e0224483ebb800179577fe5fa7d`; its
+redacted body contains the observed `34` total / `32` unique provider clicks.
+The existing Telegram sender attempted that exact event but timed out after its
+30-second boundary, producing delivery receipt
+`8e995d48300183ac5b5079bf5226393bd3c7463173e9779fa2dc53c87ece9d04` with
+`SEND_FAILED` and no provider message ID. The event remains in the outbox for
+the existing owner's retry; no manual send or parallel executor was used. The
+next natural wake must deliver this same event UUID once and provide a real
+message ID before the Telegram reporting gate is closed. No transaction,
+settlement, payout, or money is inferred meanwhile.
 
 ### 1.2.0 Audited executable boundary
 
