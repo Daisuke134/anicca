@@ -17,6 +17,10 @@ grep -F 'POST_PREFLIGHT_FREE_BYTES' "$WRAPPER" >/dev/null
 grep -F 'CANONICAL_DISK_HEADROOM_KIB=524288' "$WRAPPER" >/dev/null
 grep -F 'GIG_DISK_HEADROOM_KIB="${GIG_DISK_HEADROOM_KIB:-$CANONICAL_DISK_HEADROOM_KIB}"' "$WRAPPER" >/dev/null
 grep -F 'DISK_LOW_THRESHOLD_BYTES="${ARTICLE_DISK_MIN_FREE_BYTES:-$((GIG_DISK_HEADROOM_KIB * 1024))}"' "$WRAPPER" >/dev/null
+grep -F 'writer_capacity_preflight' "$WRAPPER" >/dev/null
+grep -F 'Life Manager 11GiB floor' "$WRAPPER" >/dev/null
+grep -F 'disk-writers.stop' "$WRAPPER" >/dev/null
+grep -F 'disk-pressure.block' "$WRAPPER" >/dev/null
 grep -F 'DISK_MIN_FREE_BYTES="${ARTICLE_RESUME_MIN_FREE_BYTES:-${ARTICLE_DISK_MIN_FREE_BYTES:-$((GIG_DISK_HEADROOM_KIB * 1024))}}"' "$ROOT/skills/writer-agent/scripts/article-resume-pending.sh" >/dev/null
 grep -F 'CANONICAL_DISK_HEADROOM_KIB=524288' "$ROOT/skills/writer-agent/scripts/article-resume-pending.sh" >/dev/null
 grep -F 'PRE_START_REASON" = "no-same-jst-day-run"' "$ROOT/skills/writer-agent/scripts/article-resume-pending.sh" >/dev/null

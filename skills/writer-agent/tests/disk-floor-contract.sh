@@ -9,7 +9,7 @@ trap 'rm -rf "$TMP"' EXIT
 
 # Force the real host below an intentionally high threshold in an isolated
 # HOME/state tree. Both owners must fail before creating a run or publication.
-mkdir -p "$TMP/home" "$TMP/state/runs"
+mkdir -p "$TMP/home" "$TMP/home/.openclaw/state" "$TMP/state/runs"
 mkdir -p "$TMP/home/.openclaw/skills/_shared/scripts"
 cat >"$TMP/home/.openclaw/skills/_shared/scripts/telegram-notify.sh" <<'SH'
 telegram_notify() { :; }

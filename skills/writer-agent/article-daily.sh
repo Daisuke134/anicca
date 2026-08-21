@@ -920,6 +920,39 @@ GENERATION_ARGS=(--run-dir "$RUN_DIR" --run-id "$RUN_TS" --prompt-file "$PROMPT_
 # agent cannot accidentally bypass the per-run attempt controller by delaying STEP 4.9.
 export ARTICLE_RUN_DIR="$RUN_DIR"
 
+writer_capacity_preflight() {
+  local free_kib flag control_dir="$HOME/.openclaw/state"
+  free_kib="$(df -Pk / 2>/dev/null | awk 'NR==2{print $4}')"
+  case "$free_kib" in
+    ''|*[!0-9]*)
+      echo "=== article-daily provider gate BLOCK: disk capacity unavailable ===" >>"$LOG"
+      return 78
+      ;;
+  esac
+  if [ "$free_kib" -lt $((11 * 1048576)) ]; then
+    echo "=== article-daily provider gate BLOCK: free=${free_kib}KiB below Life Manager 11GiB floor ===" >>"$LOG"
+    return 78
+  fi
+  if [ ! -d "$control_dir" ] || [ ! -r "$control_dir" ] || [ ! -x "$control_dir" ]; then
+    echo "=== article-daily provider gate BLOCK: control directory unavailable=$control_dir ===" >>"$LOG"
+    return 78
+  fi
+  for flag in "$control_dir/disk-writers.stop" "$control_dir/disk-pressure.block"; do
+    if [ -L "$flag" ] || { [ -e "$flag" ] && [ ! -f "$flag" ]; }; then
+      echo "=== article-daily provider gate BLOCK: non-regular control flag=$flag ===" >>"$LOG"
+      return 78
+    fi
+    if [ -f "$flag" ]; then
+      echo "=== article-daily provider gate BLOCK: control flag=$flag ===" >>"$LOG"
+      return 78
+    fi
+  done
+  return 0
+}
+if ! writer_capacity_preflight; then
+  exit 78
+fi
+
 # Judge broker: nested judge/vision calls inside the bounded agent sandbox cannot
 # start a provider process, so this unsandboxed sidecar serves their request files
 # from the run-scoped state tree through the same model boundary.

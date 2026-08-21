@@ -4,7 +4,7 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
 実行authority: **Mac Host Storage Governor**  
 公開skill: **`disk-cleanup`**
 
-状態: Phase 1実装済み。Life Manager OSS skill、fail-closed governor、guard fallback、回帰テスト、旧cleanup ownerのcutover、正本5分labelのbootstrap/readback、MiB/GiB精度とswap telemetry、ULTRA時のexact-byte full-pass昇格、bootstrap health failureのcleanup内receipt契約、Gig/Writer共通producer preflight、Paid/Storefrontのin-flight effect gate/checkpointは反映済み。host-wide census、hourly intelligence、Writerを含む全producer backpressure、24時間/7日観測、141/153実機fixtureは未完了。UID 501/GUI bootstrapと`ai.anicca.life-manager-disk-cleanup`のload readbackは復旧済み。
+状態: Phase 1実装済み。Life Manager OSS skill、fail-closed governor、guard fallback、回帰テスト、旧cleanup ownerのcutover、正本5分labelのbootstrap/readback、MiB/GiB精度とswap telemetry、ULTRA時のexact-byte full-pass昇格、bootstrap health failureのcleanup内receipt契約、Gig/Writer共通producer preflight、Paid/Storefrontのin-flight effect gate/checkpoint、Writer provider-start gateは反映済み。host-wide census、hourly intelligence、Writerのin-flight drainを含む全producer backpressure、24時間/7日観測、141/153実機fixtureは未完了。UID 501/GUI bootstrapと`ai.anicca.life-manager-disk-cleanup`のload readbackは復旧済み。
 
 ## 現行実装状況とOSS境界
 
@@ -199,7 +199,8 @@ tar.gz archiveへ保存し、archive一覧を検証してから元位置を回�
 effect直前gate、期限付きoperator brakeのreadback、item単位atomic checkpoint、child pending集計、
 `effect=1` failureの`delivery_unknown`遷移を接続し、focused test **9 passed**を得た。Storefrontは
 blank-draft、prepare、listing mutation、retire、publishのeffect boundaryを接続し、focused test
-**27 passed**を得た。Writerのin-flight boundaryと、全producer共通のbounded resumeは未完了である。
+**27 passed**を得た。Writerにはprovider開始前の11GiB/stop/pressure gateとshell regressionを追加したが、
+長時間model passのin-flight drain/checkpointは未完了である。全producer共通のbounded resumeも未完了である。
 
 その後のsentinel readbackでは、2026-08-21T11:32Zにfree=`10.52GiB`、11:36Zに`11.26GiB`へ回復し、
 swap=`0`、tier=`2`、stop/pressure flagは解除された。2026-08-21T11:59Zの直接readbackは
@@ -543,7 +544,7 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 | 4 | exact-byte tier、hysteresis、single lock、300秒schedulerをTDD実装 | Test Matrix 2、12–14 PASS | 部分完了: exact-byte tier、atomic lock、300秒plist、pressure/recovery floor、hourly full-pass marker、ULTRA時のcritical full-pass promotion、hourly/explicit fullのcooldown、marker fail-closed、bounded fast/full pass、正本labelのbootstrap/readbackは実装・unit/live PASS。24時間観測は未完了 |
 | 4a | GUI bootstrap health failureを観測専用fail-closedに固定 | Test Matrix 28–29 PASS、141/153 fixture receipt、復旧後readback | 部分完了: cleanup内preflight、atomic `gui-bootstrap-health-failure` receipt、UID/Directory Services/`gui/501`の実機PASSを実装。141/153 failure fixtureとstale app-server分離の実機証跡は未完了 |
 | 5 | Mac全体のproducer censusを作り、artifact/lease/finalizer helperを上位growth ownerへ接続 | 1 GiB以上のunattributed root 0、active lease readback、orphan lease fixture PASS | 部分完了: Chrome/Chromium cloneと`cfo-*`のallow-list discoveryは実装。host-wide census、lease heartbeat/finalizer接続は未完了 |
-| 6 | 全write-heavy producerへ共通disk preflightを接続 | producer census missing consumer 0、Test Matrix 15 PASS | 部分完了: `gig_disk_guard.py`をGig 4 laneとWriter laneの共通入口へ接続し、Paid/Storefrontにはeffect直前gateとatomic/attempt checkpointを追加。Gig/guard 11件、Paid 9件、Storefront 27件のfocused testと実機readbackをPASS。Writerのin-flight boundary、browser/build/media/VM/package/agent等の全producer接続は未完了 |
+| 6 | 全write-heavy producerへ共通disk preflightを接続 | producer census missing consumer 0、Test Matrix 15 PASS | 部分完了: `gig_disk_guard.py`をGig 4 laneとWriter laneの共通入口へ接続し、Paid/Storefrontにはeffect直前gateとatomic/attempt checkpoint、Writerにはprovider-start 11GiB gateを追加。Gig/guard 11件、Paid 9件、Storefront 27件、Writer shell regressionをPASS。Writerのin-flight drain、browser/build/media/VM/package/agent等の全producer接続は未完了 |
 | 7 | bounded ops log、incident receipt、Telegram dedupeを実装 | Test Matrix 18–19 PASS、message ID | 部分完了: ledger rotationとlast receipt、milestone送信は実装。ops log/incident receiptの正式分離とdedupe契約は未完了 |
 | 8 | intelligence input/output schemaとwake gateを実装 | deletion capability 0、Test Matrix 16–17 PASS | 未完了: deterministic cleanupにLLM削除権限はないが、hourly intelligence schema/wake gateは未実装 |
 | 9 | owner単位のbounded recoveryを実装 | Test Matrix 20 PASS、duplicate redispatch 0 | 未完了: owner単位のcheckpoint、redispatch、重複抑止は未実装 |
@@ -564,7 +565,7 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 2. **OSS contract testを完成** — protected roots、lease、open-path、probe error、dirty/unpushed worktree、unknown classの統合fixtureを追加し、Test Matrix 3–11をPASSにする。
 3. **bootstrap health契約を完成** — `dscl` UID readback、`launchctl print gui/501`、対象label存在のpreflightと、141/153/UID failure時のatomic `gui-bootstrap-health-failure` receiptは実装済み。残りは141/153 failure fixtureとstale app-server終了をcleanupから分離した実機receiptの検証。
 5. **producer lifecycleを接続** — 上位growth owner（browser、build、media、VM/container、package manager、agent runtime、`~/gig/releases`）をcensusし、artifact登録、lease heartbeat、finalizer、quotaを実装する。旧`disk-reclaim`の安全なrelease proofはこのmanifestへ移植してから再有効化する。
-6. **全producerにbackpressureを接続** — Gig/Writerの共通入口とPaid/Storefrontのin-flight effect boundaryは接続済み。残るWriterの長時間処理、browser、build、media、VM/container、package manager、agent runtime等へPREVENTIVE/PRESSURE/CRITICAL/ULTRAのpreflight、drain、checkpoint、bounded resumeを同じcontractで適用し、consumer missing 0にする。
+6. **全producerにbackpressureを接続** — Gig/Writerの共通入口、Paid/Storefrontのin-flight effect boundary、Writer provider-start gateは接続済み。残るWriterの長時間処理、browser、build、media、VM/container、package manager、agent runtime等へPREVENTIVE/PRESSURE/CRITICAL/ULTRAのpreflight、drain、checkpoint、bounded resumeを同じcontractで適用し、consumer missing 0にする。
 7. **audit/reportingを完成** — bounded ops log、immutable incident receipt、Telegram状態遷移dedupe、delivery-failure receiptを実装し、message IDをreadbackする。sentinelはstable event key、payload SHA-256、atomic claim、pending→sent receipt、120秒send timeout、30分dedupeを実装した。Gatewayのactive disk/health/recovery/janitor cronは0件、旧`anicca-disk-hourly`（ID `79b05373…`）も`enabled=false`だった。正式message IDのreadback、delivery-failure receiptの集計、guard/sentinelソースに存在しない日本語alertの発行元は未特定のため、Claude/外部watcherを含むowner attributionを追加する。
 8. **hourly intelligenceを完成** — input/output schema、異常時wake gate、growth attribution、producer defect task化を実装する。intelligenceは削除・manifest mutationを持たないことをtestで固定する。
 9. **owner単位recoveryを完成** — reserve回復後のredispatchをownerごとに直列化し、checkpoint、retry上限、duplicate redispatch 0を証明する。
