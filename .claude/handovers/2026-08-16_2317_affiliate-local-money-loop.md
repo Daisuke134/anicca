@@ -57,6 +57,27 @@
   artifact, transaction ledger, settlement state, public effect, and money are
   unchanged. The next atomic readback is the first eligible owner capture;
   manual capture remains prohibited.
+- The eligible existing-owner wake
+  `535aa5e142ab91decb9269f6c3aef9c34e6d659bba3678961e09dc5a6433ca3a`
+  completed at `15:37:53+0900` with `runs=237`, exit `0`, and revenue
+  `NO_TRANSACTIONS`. Official PartnerStack artifact
+  `b749e1753ef038dd728207082ef9d29a76cd4c4fb6115c049dc5e2d13d48e3d9` was
+  observed at `15:37:17+0900`; it is USD-display, `commission_row_count=0`,
+  `NO_LIVE_ROWS`, empty payout rows, and no generic transaction ID.
+  Reconciliation read/appended/replayed `0/0/0`; rolling net remains
+  `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`, with all four
+  status counts zero, approved/paid net null, and real costs `UNKNOWN`. This
+  is a real recovered empty capture, not money.
+- Release `a1767577a0187cac8e601bc8761a0b2cf838beff` is now immutable `current`;
+  source/installed `local_loop.py` SHA-256 is
+  `8289ee06bad0ae4e3e7c837f817e2e915df08cfccb7776fec1620661020a2e19`.
+  The full suite is `79/79`, focused local-loop is `26/26`, and
+  compilation/diff checks pass. Its owner wake
+  `47c80af47325c9c0b31dfd9538568640fd3c4213c74684492da93abe4c16c1d6`
+  completed at `15:43:27+0900` with exit `0`, revenue `COOLDOWN`, and Telegram
+  `27244` `SELF_HEALED`; the receipt body says the same capture recovered with
+  `transactions=0` and no estimated revenue. No new provider/public effect or
+  money was created; B01 still waits for the first non-empty official row.
 - The prior natural wake `afa4d937e6…` at `14:32:53+0900` recorded a real
   `provider-link.elevenlabs` `TimeoutError` as
   `BROWSER_TRANSIENT / RETRYABLE / effect=UNKNOWN`, due `14:38:14+0900`; the
