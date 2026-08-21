@@ -59,7 +59,8 @@ def preflight(script: dict) -> None:
     mechanisms = script["source_mechanism_ids"]
     require(bool(mechanisms) and all(isinstance(item, str) and item.strip() for item in mechanisms), "source mechanism proof required")
     require(script["declared_mutation"] in COMPONENTS, "multiple or unknown mutation")
-    banned = ("guaranteed cure", "治療を保証", "必ず治る", "diagnose", "診断します")
+    banned = ("guaranteed cure", "治療を保証", "必ず治る", "diagnose", "診断します",
+              "insomnia", "sleep better", "no more anxiety", "不眠を治", "不安をなく")
     require(not any(term in script["body"].casefold() for term in banned), "unsupported ebook claim")
 
 
