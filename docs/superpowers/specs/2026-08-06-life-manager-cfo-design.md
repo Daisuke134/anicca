@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | M2 — `CFO-OPS3a`, `CFO-OPS3b`, `CFO-1j`, `CFO-2b.2`, `CFO-2b.3`, `CFO-2b.4`, `CFO-2b.5`, `CFO-2b.6`, `CFO-2b.7`, `CFO-2b.8`, `CFO-2b.9`, `CFO-2c`, `CFO-2d`, `CFO-2d2`, `CFO-2d3`, `CFO-2e`, `CFO-4a`, `CFO-4b`, and `CFO-4d` are closed; M3/Binance and M4c are deferred, M4e tenant/load evidence is next |
+| Status | M2 — `CFO-OPS3a`, `CFO-OPS3b`, `CFO-1j`, `CFO-2b.2`, `CFO-2b.3`, `CFO-2b.4`, `CFO-2b.5`, `CFO-2b.6`, `CFO-2b.7`, `CFO-2b.8`, `CFO-2b.9`, `CFO-2c`, `CFO-2d`, `CFO-2d2`, `CFO-2d3`, `CFO-2e`, `CFO-4a`, `CFO-4b`, `CFO-4d`, and `CFO-4e` are closed; M3/Binance and M4c are deferred, M5 policy is next |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
@@ -1281,8 +1281,10 @@ ingestion. They are not unchecked M1 items and cannot become the active CFO item
 - [x] **CFO-4d** Implement browser fallback against Steel profiles, one profile per tenant/provider; prove local and
       cloud contract parity without placing browser state in prompts or DB rows. Existing tenant/secret/runtime tests
       and Steel/browser contract tests pass 36/36 and 83/83; no browser profile or provider state was copied.
-- [ ] **CFO-4e** Run tenant-isolation adversarial tests and a 100-user load/cost simulation from recorded adapter
-      envelopes before onboarding user 2.
+- [x] **CFO-4e** Run tenant-isolation adversarial tests and a 100-user load/cost simulation from recorded adapter
+      envelopes before onboarding user 2. Canonical commit `eb71ec797` simulates 100 tenants × 3 redacted envelopes:
+      status pass, 0 cross-tenant violations, 0 secret leaks, 0 external calls, 0 financial side effects. Combined
+      tenant/runtime/secret and Steel/browser suites remain 36/36 and 83/83. No second user or cloud state was created.
 
 ### M5 — Controlled capital allocation
 
@@ -1440,3 +1442,10 @@ jobs, and one Steel browser session per tenant/provider. Read-only contract suit
 boundaries and 83/83 for Steel/browser/auth-continuity/privacy boundaries. No browser profile, cookie, provider
 credential, or cloud state was copied into the CFO release. Binance fixed-egress verification remains explicitly
 deferred; M4e isolation/load evidence is next.
+
+### CFO-4e closure correction (2026-08-21)
+
+Canonical commit `eb71ec797` adds the redacted tenant load simulation. It ran 100 tenants × 3 envelopes with
+`status=pass`, zero cross-tenant violations, zero secret leaks, zero external calls, and zero financial side effects.
+The existing isolation/Steel suites pass 36/36 and 83/83. This is recorded-envelope evidence, not a claim that 100
+cloud tenants were provisioned. M3/Binance and M4c remain deferred; M5 controlled-capital policy is next.
