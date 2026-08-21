@@ -1,5 +1,21 @@
 # Affiliate local money loop handover
 
+- After the disk-cleanup owner recovered host headroom, the existing Affiliate
+  owner was kickstarted once through launchd (no parallel executor). Wake
+  `1707ffd5c84b6ec4bb48612fd9899730ef0c0a4b12b7f9a916c1f1fa242af8e0`
+  completed at `2026-08-21T18:05:01+0900`, exit `0`. Its readback is
+  `runtime_guard=CLEAR` (`18359980032` bytes free versus the 10 GiB floor),
+  `ACTION_CAP_BLOCKED` (`34/10` JST attempts), provider `AUTHENTICATED`,
+  revenue `COOLDOWN`, and rolling net
+  `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / USD 0.00 / cost=UNKNOWN`.
+  The owner sent the current cap-only typed blocker as Telegram event
+  `069ea3…` with provider message `27412`; no duplicate public/provider effect
+  occurred. The separate disk-cleanup owner read back `evaluated=5`,
+  `reclaimed=0`, all five candidates `open`, and host free space above the
+  floor; no Affiliate state, ledger, credential, or worktree was deleted. The
+  report containing `runtime_disk=DISK_GUARD_BLOCKED` is therefore historical;
+  the remaining blocker is the JST action cap until its normal day boundary.
+
 - Release `94f07b3fde9b6cbcbc3066c14ee841cfdd2ef5fe` is installed as immutable
   `current`; the Affiliate suite is `89/89`, and source/installed
   `local_loop.py` bytes match. The existing money owner wake

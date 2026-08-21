@@ -1162,6 +1162,33 @@ This closes only the Telegram timeout repair sub-behavior. It does not close
 B01's required non-empty official transaction/settlement row, real billed-cost
 evidence/caps, universal F05 repair coverage, or the USD 10,000 gate.
 
+### 1.1.45 Current cap-only blocker after disk headroom recovery
+
+The separate existing disk-cleanup owner was observed after the prior Affiliate
+wake. Its append-only readback reached host headroom above the Affiliate floor;
+the latest sweep evaluated five explicitly allowlisted candidates, reclaimed
+zero bytes, and preserved all five because they were open. It did not touch
+Affiliate state, ledgers, credentials, or either worktree. The Affiliate
+`runtime-guard.json` then read `state=CLEAR`, `free_bytes=18359980032`, and
+`floor_bytes=10737418240`.
+
+The existing Affiliate owner was kickstarted once through its registered
+launchd label. Wake
+`1707ffd5c84b6ec4bb48612fd9899730ef0c0a4b12b7f9a916c1f1fa242af8e0` completed
+at `2026-08-21T18:05:01+0900` with exit `0`. It kept
+`ACTION_CAP_BLOCKED` at `34/10` JST external attempts, provider
+`AUTHENTICATED`, revenue `COOLDOWN`, and official PartnerStack
+`NO_TRANSACTIONS`; rolling net is
+`NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS`, approved-or-paid net is USD
+0.00, and real cost is `UNKNOWN`. It sent one current cap-only `BLOCKED`
+receipt (`069ea3…→Telegram messageId=27412`) and created no new public,
+provider-link, or transaction effect. The earlier report containing both
+`ACTION_CAP_BLOCKED` and `DISK_GUARD_BLOCKED` is historical, not current state.
+
+This closes only the live disk-recovery/readback observation. The JST cap,
+real billed-cost cap, B01 non-empty provider transaction, universal F05, and
+USD 10,000 gates remain open.
+
 ### 1.2.0 Audited executable boundary
 
 The installed ownership graph has six launchd labels: three persistent browser
@@ -3234,7 +3261,8 @@ receipt readback, SSOT state update, commit, and push to both canonical remotes.
   live-proven in §1.1.42; timeout retry and blocker dedupe are live-proven in
   §1.1.43; Telegram timeout repair receipts are live-proven in §1.1.44. Real
   billed-cost caps and the remaining universal repair/watchdog behavior remain
-  open.
+  open; §1.1.45 confirms the disk guard can clear without deleting protected
+  Affiliate state.
 - [ ] **F05** Implement diagnose→one allowlisted repair→postcondition→same-job resume;
   escalate or quarantine when the repair postcondition fails.
 - [x] **F06** Observe one real recoverable capture failure and prove `SELF_HEALED`,
