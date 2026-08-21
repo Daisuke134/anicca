@@ -2764,52 +2764,6 @@ def commit_decisions(
                         # reconciliation and continue with the next candidate.
                         results.append(submission_failure_result(request_id, retry_error))
                         continue
-                if not exact_id_observed and attempt_budget_path is not None:
-                    # A visible click can occasionally fail to land after Chromium restarts.
-                    # Retry once in this wake only after three independent facts prove there
-                    # is still no effect: exact official-history absence, the saved
-                    # non-landing screenshot, and a fresh accepting form. The shared budget
-                    # counts the second irreversible click just like the first.
-                    proof = getattr(effects, "saved_nonlanding_submit_evidence", None)
-                    fresh_detail = effects.reextract_detail(request_id)
-                    if (
-                        callable(proof)
-                        and proof(request_id, intent) is True
-                        and _fresh_detail(detail, fresh_detail)
-                        and _reserve_submit_attempt(
-                            attempt_budget_path,
-                            pass_id=attempt_budget_pass_id,
-                            cap=cap,
-                        )
-                    ):
-                        try:
-                            effects.open_form(request_id)
-                            retry_price = effects.adjust_offer_price(
-                                request_id, int(decision["price_jpy"])
-                            )
-                            effects.fill_form(
-                                request_id,
-                                str(decision["proposal_text"]),
-                                retry_price,
-                                str(decision["deliver_date"]),
-                            )
-                            retry_decision = dict(decision, price_jpy=retry_price)
-                            if not _offer_matches_readback(
-                                retry_decision, effects.readback_form(request_id)
-                            ):
-                                raise ParentContractError("same_wake_retry_form_readback_mismatch")
-                            effects.click_confirm(request_id)
-                            effects.click_submit(request_id)
-                            exact_id_observed = effects.authoritative_exact_id_readback(
-                                request_id
-                            )
-                            decision = retry_decision
-                        except ReadbackScanTimeout as error:
-                            results.append(readback_inconclusive_result(request_id, error))
-                            continue
-                        except Exception as error:
-                            results.append(submission_failure_result(request_id, error))
-                            continue
                 if not exact_id_observed:
                     results.append({
                         "request_id": request_id,
