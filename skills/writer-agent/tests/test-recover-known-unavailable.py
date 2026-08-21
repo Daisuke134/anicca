@@ -288,3 +288,118 @@ def test_recovers_historic_stale_quality_rejections_without_touching_gates(
         "guard:recover-stale-quality --pair substack/ja",
         "guard:recover-stale-quality --pair substack/en",
     ]
+
+
+def test_rearms_permission_failure_with_same_stable_targets_only(tmp_path: Path) -> None:
+    root = tmp_path / "state"
+    path = state_file(root)
+    state = json.loads(path.read_text(encoding="utf-8"))
+    state["pairs"] = {
+        "note/ja": {
+            "status": "unavailable",
+            "error": "tracked-state-directory-permission-after-draft-create",
+            "target_kind": "note-key",
+            "target": "n1e88460f58b2",
+        },
+        "substack/ja": {
+            "status": "unavailable",
+            "error": "tracked-state-directory-permission-after-draft-create",
+            "target_kind": "substack-draft-id",
+            "target": "212110259",
+        },
+        "substack/en": {
+            "status": "unavailable",
+            "error": "tracked-state-directory-permission-after-draft-create",
+            "target_kind": "substack-draft-id",
+            "target": "212110268",
+        },
+    }
+    path.write_text(json.dumps(state), encoding="utf-8")
+    (root / "articles.jsonl").write_text("", encoding="utf-8")
+    (path.parent / "platform-dispatch-results.jsonl").write_text(
+        "\n".join(
+            json.dumps(
+                {
+                    "platform": platform,
+                    "lang": lang,
+                    "status": "failed",
+                    "raw_output": "mkdir: /release/skills/writer-agent/state: Permission denied",
+                }
+            )
+            for platform, lang in (("note", "ja"), ("substack", "ja"), ("substack", "en"))
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    calls = tmp_path / "calls"
+    guard = tmp_path / "guard"
+    guard.write_text(
+        'import os, sys\n'
+        'with open(os.environ["CALLS"], "a", encoding="utf-8") as out:\n'
+        '    out.write("guard:" + " ".join(sys.argv[1:]) + "\\n")\n',
+        encoding="utf-8",
+    )
+    subprocess.run(
+        ["python3", str(SCRIPT), "--state-root", str(root), "--run-id", "daily-2026-07-29"],
+        env={**os.environ, "CALLS": str(calls), "ARTICLE_PUBLICATION_GUARD": str(guard)},
+        check=True,
+    )
+    assert calls.read_text(encoding="utf-8").splitlines() == [
+        "guard:register-intent --pair note/ja --target-kind note-key --target n1e88460f58b2",
+        "guard:register-intent --pair substack/ja --target-kind substack-draft-id --target 212110259",
+        "guard:register-intent --pair substack/en --target-kind substack-draft-id --target 212110268",
+    ]
+
+
+def test_permission_failure_recovery_refuses_live_ledger(tmp_path: Path) -> None:
+    root = tmp_path / "state"
+    path = state_file(root)
+    state = json.loads(path.read_text(encoding="utf-8"))
+    state["pairs"] = {
+        "note/ja": {
+            "status": "unavailable",
+            "error": "tracked-state-directory-permission-after-draft-create",
+            "target_kind": "note-key",
+            "target": "n1e88460f58b2",
+        }
+    }
+    path.write_text(json.dumps(state), encoding="utf-8")
+    (root / "articles.jsonl").write_text(
+        json.dumps(
+            {
+                "run_id": "daily-2026-07-29",
+                "platform": "note",
+                "lang": "ja",
+                "published": True,
+                "live_url": "https://note.com/anicca123/n/n1e88460f58b2",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (path.parent / "platform-dispatch-results.jsonl").write_text(
+        json.dumps(
+            {
+                "platform": "note",
+                "lang": "ja",
+                "status": "failed",
+                "raw_output": "mkdir: /release/skills/writer-agent/state: Permission denied",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    calls = tmp_path / "calls"
+    guard = tmp_path / "guard"
+    guard.write_text(
+        'import os, sys\n'
+        'with open(os.environ["CALLS"], "a", encoding="utf-8") as out:\n'
+        '    out.write("called\\n")\n',
+        encoding="utf-8",
+    )
+    subprocess.run(
+        ["python3", str(SCRIPT), "--state-root", str(root), "--run-id", "daily-2026-07-29"],
+        env={**os.environ, "CALLS": str(calls), "ARTICLE_PUBLICATION_GUARD": str(guard)},
+        check=True,
+    )
+    assert not calls.exists()

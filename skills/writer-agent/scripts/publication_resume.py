@@ -1158,6 +1158,7 @@ class PublicationStore:
         if not body_assets:
             raise InvariantError("at least one body media asset is required")
         resolved_assets: set[Path] = set()
+        media_hashes = {sha256(headline_image)}
         for asset in body_assets:
             self._reject_parent_traversal(asset, "body media path")
             self._require_regular_file(asset, "body media")
@@ -1168,6 +1169,10 @@ class PublicationStore:
                 raise InvariantError("body media is outside the canonical run boundary")
             if resolved_asset in resolved_assets:
                 raise InvariantError("duplicate body media asset")
+            digest = sha256(resolved_asset)
+            if digest in media_hashes:
+                raise InvariantError("duplicate media bytes between headline and body")
+            media_hashes.add(digest)
             resolved_assets.add(resolved_asset)
         if (resolved_run / "gates/media-create-required.json").exists():
             try:
@@ -2508,6 +2513,8 @@ class PublicationStore:
         if not isinstance(body_assets, list) or not body_assets:
             return False
         resolved_assets: set[Path] = set()
+        headline_digest = str(headline.get("sha256", ""))
+        media_hashes = {headline_digest}
         for asset in body_assets:
             if not isinstance(asset, dict):
                 return False
@@ -2519,8 +2526,10 @@ class PublicationStore:
                 or path.resolve() == headline_path.resolve()
                 or path.resolve() in resolved_assets
                 or sha256(path) != asset.get("sha256")
+                or str(asset.get("sha256", "")) in media_hashes
             ):
                 return False
+            media_hashes.add(str(asset.get("sha256", "")))
             resolved_assets.add(path.resolve())
         return True
 

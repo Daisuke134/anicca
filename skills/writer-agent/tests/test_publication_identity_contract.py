@@ -37,3 +37,39 @@ def test_substack_identity_conflation_fails_closed() -> None:
         MODULE.configured_destination_identities(
             {"SUBSTACK_PUBLICATION_JA": "aniccabuddha.substack.com"}
         )
+
+
+def test_headline_and_body_media_must_have_distinct_bytes(tmp_path: Path) -> None:
+    run = tmp_path / "runs" / "daily-2026-08-21"
+    gates = run / "gates"
+    gates.mkdir(parents=True)
+    ledger = tmp_path / "articles.jsonl"
+    state = gates / "publication-state.json"
+    draft = (
+        "---\ntitle: Article\ntags: [writer]\n---\n\n"
+        "# Article\n\n"
+        "<!-- canonical-media:start -->\n"
+        "![](headline-image.png)\n\n"
+        "```mermaid\nflowchart LR\nA-->B\n```\n"
+        "![](body-diagram.png)\n"
+        "<!-- canonical-media:end -->\n"
+    )
+    ja = run / "article-ja.md"
+    en = run / "article-en.md"
+    ja.write_text(draft, encoding="utf-8")
+    en.write_text(draft, encoding="utf-8")
+    headline = run / "headline-image.png"
+    body = run / "body-diagram.png"
+    headline.write_bytes(b"same-bytes")
+    body.write_bytes(b"same-bytes")
+    store = MODULE.PublicationStore(state, ledger)
+    with pytest.raises(MODULE.InvariantError, match="duplicate media bytes"):
+        store._validate_layout(
+            run.name,
+            run,
+            {"ja": ja, "en": en},
+            None,
+            headline,
+            [body],
+            require_state=False,
+        )

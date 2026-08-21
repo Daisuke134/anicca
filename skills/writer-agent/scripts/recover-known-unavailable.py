@@ -20,6 +20,8 @@ NOTE_S3_UPLOAD_ERROR = "note-body-image-s3-403-embedded-0-of-1"
 SUBSTACK_BROWSER_ERROR = "substack_editor_redirect_own_eyes_unverified"
 SUBSTACK_PROBE_TIMEOUT_SECONDS = 45
 ZENN_STAGE_TIMEOUT_ERROR = "zenn-stage-timeout-no-dispatch-result"
+TRACKED_STATE_DIRECTORY_ERROR = "tracked-state-directory-permission-after-draft-create"
+TRACKED_STATE_PAIRS = ("note/ja", "substack/ja", "substack/en")
 
 
 def run(command: list[str], *, env: dict[str, str], timeout: int = 180) -> bool:
@@ -56,6 +58,72 @@ def managed_env(state: dict[str, Any], state_path: Path) -> dict[str, str] | Non
     }
 
 
+def _tracked_state_failure_proven(
+    state: dict[str, Any], pair: str, entry: dict[str, Any]
+) -> bool:
+    """Prove that staging returned a stable draft before only state archival failed.
+
+    This rule is deliberately narrower than a generic unavailable recovery: it
+    accepts one exact dispatch error, an existing target of the platform's
+    canonical kind, no receipt, and no current-run live ledger row. The next
+    managed worker therefore reuses that target; it never creates another draft.
+    """
+    if pair not in TRACKED_STATE_PAIRS or entry.get("status") != "unavailable":
+        return False
+    if entry.get("error") != TRACKED_STATE_DIRECTORY_ERROR or entry.get("receipt"):
+        return False
+    target_kind = str(entry.get("target_kind", ""))
+    target = str(entry.get("target", ""))
+    expected_kind = {
+        "note/ja": "note-key",
+        "substack/ja": "substack-draft-id",
+        "substack/en": "substack-draft-id",
+    }[pair]
+    if target_kind != expected_kind:
+        return False
+    if pair == "note/ja":
+        if re.fullmatch(r"[A-Za-z0-9_-]{4,200}", target) is None:
+            return False
+    elif re.fullmatch(r"[0-9]{1,30}", target) is None:
+        return False
+
+    ledger = Path(str(state.get("ledger_path", "")))
+    try:
+        for line in ledger.read_text(encoding="utf-8").splitlines():
+            row = json.loads(line)
+            if not isinstance(row, dict):
+                return False
+            if (
+                row.get("run_id") == state.get("run_id")
+                and f"{row.get('platform')}/{row.get('lang')}" == pair
+                and (
+                    row.get("published") is True
+                    or bool(row.get("live_url"))
+                    or row.get("reality_gate") == "PASS"
+                    or row.get("receipt")
+                )
+            ):
+                return False
+    except (OSError, UnicodeError, json.JSONDecodeError, TypeError):
+        return False
+
+    results = Path(str(state.get("run_dir", ""))) / "gates" / "platform-dispatch-results.jsonl"
+    try:
+        rows = [json.loads(line) for line in results.read_text(encoding="utf-8").splitlines() if line]
+    except (OSError, UnicodeError, json.JSONDecodeError, TypeError):
+        return False
+    matches = [
+        row for row in rows
+        if isinstance(row, dict)
+        and row.get("platform") == pair.split("/", 1)[0]
+        and row.get("lang") == pair.split("/", 1)[1]
+    ]
+    if len(matches) != 1 or matches[0].get("status") != "failed":
+        return False
+    raw = str(matches[0].get("raw_output", ""))
+    return "writer-agent/state: Permission denied" in raw
+
+
 def recover_state(state_path: Path, *, allow_zenn_intent: bool = False) -> None:
     try:
         state = json.loads(state_path.read_text(encoding="utf-8"))
@@ -73,6 +141,28 @@ def recover_state(state_path: Path, *, allow_zenn_intent: bool = False) -> None:
     guard = os.environ.get(
         "ARTICLE_PUBLICATION_GUARD", str(SCRIPT_DIR / "publication-guard.py")
     )
+
+    # A release is immutable, so the old run.sh wrote its post-draft metadata
+    # into the release and failed after Note/Substack had already returned a
+    # stable draft. Re-arm only that exact, no-live-receipt shape with the same
+    # target. Do not clear the pair (which would authorize a new create).
+    for pair in TRACKED_STATE_PAIRS:
+        entry = pairs.get(pair, {})
+        if isinstance(entry, dict) and _tracked_state_failure_proven(state, pair, entry):
+            run(
+                [
+                    "python3",
+                    guard,
+                    "register-intent",
+                    "--pair",
+                    pair,
+                    "--target-kind",
+                    str(entry["target_kind"]),
+                    "--target",
+                    str(entry["target"]),
+                ],
+                env=env,
+            )
 
     # Before 9efbf289, a continuous-policy terminal receipt with an
     # editorial/reader ADVISORY was rejected by the later intent boundary,
