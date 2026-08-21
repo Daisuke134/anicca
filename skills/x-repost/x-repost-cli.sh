@@ -251,7 +251,7 @@ $AFFILIATE_HOOK
 $AFFILIATE_DETAIL
 Check fit, limits, and price before paying.
 
-Affiliate link disclosure:
+Affiliate disclosure: I may earn a commission if you subscribe through this link.
 $AFFILIATE_URL
 EOF
   if ! "$PY" - "$EV/post.txt" <<'PYEOF'
