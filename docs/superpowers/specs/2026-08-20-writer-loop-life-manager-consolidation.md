@@ -445,12 +445,12 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
 
 - 最新`origin/main=6ca268753d86bbaab51c2093fcef283ca34fcd49`をrelease watcherでimmutable `current`へ公開した。Coconala parityの`gig_release.py`でrenderしたWriter 14 labelのdesired plistと、`~/Library/LaunchAgents`のinstalled plistを比較したところ、ProgramArguments/env/pathは一致したが、rendererが`StartCalendarInterval`を出力していなかったため、5つのcalendar scheduleはinstalled plistから消えていた。したがって先の`disk-desired=PASS`はrenderer自身の欠落を見逃した不十分な比較であり、schedule健全性の証拠にはしない。
 - `article_daily_start_control.py`の現在判定は`block-incomplete`（`daily-2026-08-21`は`all-complete`）で、production stateにはrecovery lockの停止中候補`owner.pid=40373`だけが残り、publication lockはない。Writer processがないことも再確認した。
-- installed definitionのdisk parityは修正対象ではない。launchd readbackが不能なままproduction stale lockを直接掃除したり、scriptを直接起動したりすると、未読の旧loaded definitionとの同時起動を作るため、この一件では実stateを変更せずA1〜A5のcontrol-plane復旧後にA6を実施する。
+- renderer修正前のdisk parityは不十分だった。現在はlaunchd loaded stateを触らず、修正済みrendererから5つのcalendar値だけを14 installed plistへatomic反映し、全14件のplistlib完全一致を確認した。production stale lockの直接削除やscriptの直接起動は、未読の旧loaded definitionとの同時起動を作り得るため、A1〜A5のcontrol-plane復旧後にA6を実施する。
 
 ### 2026-08-21 calendar renderer correction
 
 - `gig_release.py:plist_for`がmanifestの`StartCalendarInterval`をコピーしない欠陥を修正した。focused renderで`article-daily` 06:00、`writer-craft-train` 23:10、`article-self-improve` 22:30、日曜22:00のaudit、日曜03:00のwhitelistを読み戻し、既存の7件のgig disk-guard testも含めてPASSした。
-- この修正をreleaseへ載せた後、installed 14 plistの5 calendar値をdiskへ反映する。launchdのloaded stateは別証拠なので、bootstrap/readbackが復旧するまで「定期実行中」とは宣言しない。
+- `c217cdace11a`をcurrentへ公開し、installed 14 plistへ5 calendar値を反映した。`article-daily` 06:00、craft 23:10、self-improve 22:30、日曜audit 22:00、日曜whitelist 03:00がdisk上に存在する。launchdのloaded stateは別証拠なので、bootstrap/readbackが復旧するまで「定期実行中」とは宣言しない。
 
 ## 目標構成
 
