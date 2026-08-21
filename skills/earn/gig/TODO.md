@@ -947,6 +947,9 @@ workspaces are keyed by the accumulated requirements digest; an abrupt process d
 workspace for the next wake to resume, while a normal success/failure removes it.
 The read-only targeted refresh is also project-scoped: up to four fresh hidden CDP targets run in
 parallel before the existing project workers, and one refresh failure degrades only that talkroom.
+When a purchased request exposes both its original request id and a talkroom id, an existing
+talkroom project containing the authenticated accumulated requirements is canonical. The resolver
+must not select an empty request-id twin and strand article, copy or other new Paid work as pending.
 The authenticated offer page is the exact bridge from a purchased order to its pre-purchase DM:
 persist its `/mypage/direct_message/<id>` reference in the project proposal, then have Paid refresh
 that one thread directly. A buyer-name scan incorrectly reported Haru's real DM `10102712` absent

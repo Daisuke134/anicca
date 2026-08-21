@@ -25,11 +25,25 @@ def _resolved_project_identity(base: str | Path, item: dict[str, Any]) -> str:
     file only qualifies when its request id agrees with its directory name;
     otherwise it cannot safely bind a new queue observation to that project.
     """
-    if str(item.get("request_id") or "").strip():
-        return project_identity(item)
-
     talkroom_id = str(item.get("talkroom_id") or "").strip()
     if not talkroom_id:
+        return project_identity(item)
+
+    # A purchase starts with a request id but its complete post-purchase context is collected
+    # under the talkroom id.  Once that talkroom project exists, it is the canonical project;
+    # preferring the older request id here creates an empty twin that can never be delivered.
+    direct = Path(base) / talkroom_id
+    requirements = direct / "requirements" / "live-buyer-reply.json"
+    if direct.is_dir() and not direct.is_symlink() and requirements.is_file() and not requirements.is_symlink():
+        try:
+            identity = json.loads(requirements.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            identity = {}
+        if (isinstance(identity, dict)
+                and str(identity.get("talkroom_id") or "").strip() == talkroom_id):
+            return talkroom_id
+
+    if str(item.get("request_id") or "").strip():
         return project_identity(item)
 
     state_matches: set[str] = set()
