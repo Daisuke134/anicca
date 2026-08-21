@@ -295,8 +295,11 @@ Dev.to articles have observed metrics totaling 40 page views, 17 of 20 placement
 exposure denominators remain insufficient, and Repost has 53 actions with
 `0` exact Affiliate campaign joins. Therefore content/distribution is not yet
 delivering a measurable qualified buyer path from Repost or owned content to a
-provider conversion. Clicks are exposure evidence, never money. B01 remains
-open and no provider transaction, payout, or commission is claimed.
+provider conversion. The read-only Repost ledger confirms all 53 observed
+`source_url` values are X-hosted but none equals any of the 20 known Affiliate
+campaign X URLs; the zero is therefore an upstream campaign-selection/join
+gap, not a hidden transaction. Clicks are exposure evidence, never money. B01
+remains open and no provider transaction, payout, or commission is claimed.
 
 ### 1.1.7 Exact Repost source-url join guard
 
