@@ -335,9 +335,8 @@ async def _fill_step(
                 if await radio_label.count() and await radio_label.first.is_visible():
                     if control_id:
                         await page.wait_for_function(
-                            """id => !document.querySelector(`label[for="${id}"]`)
-                              ?.closest('[aria-busy="true"]')""",
-                            arg=control_id,
+                            """() => ![...document.querySelectorAll('[aria-busy="true"]')]
+                              .some(element => element.offsetParent !== null)""",
                             timeout=15_000,
                         )
                     await radio_label.first.click(timeout=10_000)
