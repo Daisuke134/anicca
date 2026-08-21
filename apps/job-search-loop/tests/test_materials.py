@@ -7,6 +7,7 @@ from pathlib import Path
 from job_search_loop.materials import (
     MaterialError,
     business_sections,
+    master_sections,
     render_business,
     render_resume_html,
     secure_material_paths,
@@ -151,6 +152,51 @@ class MaterialTests(unittest.TestCase):
             [item["fact_ids"][0] for item in sections[-1]["items"]],
             ["anicca_consumer"],
         )
+
+    def test_engineering_resume_keeps_two_muit_accomplishments_and_hobby_last(self):
+        profile = {
+            "candidate": {"name": "Daisuke Narita"},
+            "facts": [
+                {"id": "mufg", "claim": "Contributed to MUFG deployment."},
+                {"id": "muit_genie_logs", "claim": "Built a Databricks workflow."},
+                {"id": "muit_rm_summary", "claim": "Supported prompt tuning."},
+                {"id": "iclr", "claim": "Presented an ICLR report."},
+                {"id": "a10_marketing", "claim": "Marketing intern at A10 Lab."},
+                {"id": "naist", "claim": "NAIST research."},
+                {"id": "atr_research", "claim": "ATR research."},
+                {"id": "agent_club", "claim": "Founded an AI community."},
+                {"id": "education", "claim": "Keio University."},
+                {"id": "education_naist", "claim": "NAIST master's studies."},
+                {"id": "languages", "claim": "TOEFL 96; TOEIC 910; DELE B1."},
+                {"id": "anicca_consumer", "claim": "Built Anicca."},
+                {"id": "life_manager", "claim": "Builds Life Manager."},
+            ],
+        }
+        sections = master_sections(profile)
+        accomplishments = sections[0]["items"]
+        self.assertEqual(
+            [item["heading"] for item in accomplishments],
+            ["Salesforce Agentforce deployment", "ICLR 2026 conference representation"],
+        )
+        self.assertEqual(
+            [item["fact_ids"][0] for item in accomplishments[0]["items"]],
+            ["mufg", "muit_genie_logs", "muit_rm_summary"],
+        )
+        self.assertEqual(
+            [item["fact_ids"][0] for item in accomplishments[1]["items"]],
+            ["iclr"],
+        )
+        skills = next(section for section in sections if section["heading"] == "Skills")
+        self.assertNotIn("anicca_consumer", [item["fact_ids"][0] for item in skills["items"]])
+        self.assertEqual(sections[-1]["heading"], "Consumer AI Product")
+        all_text = " ".join(
+            item["text"]
+            for section in sections
+            for item in section["items"]
+            for item in (item.get("items") or [item])
+        )
+        self.assertNotIn("Genie Code", all_text)
+        self.assertNotIn("Life Manager", all_text)
 
     def test_resume_supports_business_specific_headline_without_invented_ownership(self):
         html = render_resume_html(

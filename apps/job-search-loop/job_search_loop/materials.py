@@ -216,7 +216,6 @@ def master_sections(profile: dict[str, Any]) -> list[dict[str, Any]]:
                 ("muit_agent_crm", "Salesforce Agentforce · AI-agent deployment · CRM workflows"),
                 ("muit_genie_logs", "Databricks · AI-agent behavior analysis · relationship-manager response quality"),
                 ("muit_rm_summary", "Prompt tuning · context engineering · relationship-manager workflows"),
-                ("anicca_consumer", "Swift / iOS · consumer AI products · product growth"),
                 ("languages", None),
             ],
         ),
