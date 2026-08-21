@@ -12,9 +12,11 @@ and is not an incident-recovery gate.
 **Current implementation cursor:** the portable contracts, bounded
 financial-report adapter, shared adapter registry, generic video publication
 adapter/chain, and one historical Honne JA shadow receipt are proven in code.
-The checked-in `runtime-up`/I-3 execution path still requires compose and
-PostgreSQL, so it is not accepted as the local incident runtime until the
-direct-process/file-ledger port is complete.
+The checked-in `runtime-up` path still contains the historical compose/
+PostgreSQL adapter, but MKT-01 now provides the accepted direct-process/
+file-ledger path for the incident canary. A real provider canary remains
+gated on MKT-02 and MKT-03; the historical database path is not used by the
+local recovery runtime.
 The current production incident is separate from those proofs: as measured on
 2026-08-20 JST, every relevant OpenClaw marketing cron is disabled in the live
 SQLite scheduler, every Larry/ReelClaw LaunchAgent is explicitly disabled and
@@ -43,9 +45,10 @@ the local OS after an explicit cutover gate). Its durable state is owned by a
 Life Manager data root (`LM_DATA_DIR`, default
 `~/.local/state/life-manager`) using append-only JSONL ledgers and atomic
 claim/lease/receipt files. No database, container runtime, Railway service, or
-OpenClaw folder/env/assets is a prerequisite. The existing I-3 SQL/`pg`
-implementation is a contract prototype only; it must be ported to this local
-ledger before any real canary or Telegram send.
+OpenClaw folder/env/assets is a prerequisite. MKT-01 ports the I-3 claim,
+receipt, replay, and Telegram-dedupe boundary to this local ledger. External
+provider/Telegram sends remain gated until the lane manifest and controlled
+canary slices; no real send was performed by MKT-01.
 
 ## 1. Executive decision
 
@@ -1065,10 +1068,13 @@ design text is not an instruction to start Docker, Colima, Railway, or
 PostgreSQL. The recovery control plane is a direct local Life Manager process
 with Life Manager-owned append-only JSONL ledgers and atomic filesystem
 claims/receipts under `LM_DATA_DIR` (default
-`~/.local/state/life-manager`). The current I-3 SQL/`pg` path is therefore not
-live-ready: its focused fake-transport contract tests may remain evidence, but
-the adapter must be replaced by the local-ledger implementation before a
-controlled canary. No OpenClaw path, env file, asset, or state may be read.
+`~/.local/state/life-manager`). MKT-01 now owns the I-3 claim/receipt/replay
+boundary through this local ledger: live/dead lock ownership is fail-closed,
+partial JSONL tails recover without accepting mid-file corruption, heartbeat
+markers survive crash ordering, and expired external effects enter
+`reconciling`/`unknown_effect` instead of retrying a possibly-posted effect.
+The old SQL/`pg` path is not used by this incident runtime. No OpenClaw path,
+env file, asset, or state may be read.
 
 **Distribution actually in use.** `GET api.postiz.com/public/v1/integrations` returns
 **29 live integrations** (16 TikTok, 7 Instagram, 3 YouTube, 1 X). `anicca-larry`'s
@@ -1528,7 +1534,7 @@ schedulers or revive known-broken producers:
 | I-0 | Freeze incident truth and preserve rollback | live OpenClaw SQLite, launchd disabled overrides, Postiz connectivity/integrations, last public URLs, logs, and quarantine backup are read back without changing state | **done** |
 | I-1 | Add expected-slot liveness and Telegram incident reporting in Life Manager | independent liveness service + durable message jobs; fake Telegram proves direct reconciled artifact URL, truthful unavailable miss, replay dedupe, and zero jobs for disabled/default-off/shadow; changed runtime scope scans 0 legacy dependencies | **implementation done; repository-wide scan remains blocked by the pre-existing Connector photo transport at `outbound-guardian.js:176`** |
 | I-2 | Wire the generic Life Manager video chain to a default-off Honne EN schedule | exact 07:00/11:00/20:30 Asia/Tokyo slots generate durable jobs with no OpenClaw path or env read; shadow performs zero provider writes | **done** — `LM_HONNE_EN_SHADOW_ENABLED=false`; generation and publication lineage preserve Honne EN product/locale/creative/account refs; publication jobs are durable but claim-ineligible at the explicit-promotion sentinel, replay creates zero duplicates, and the EN status grid reports passed slots without receipts as missed. Runtime adapters and runtime-up suites pass; changed runtime scope has zero legacy references. The repository-wide scan still exposes only the pre-existing `outbound-guardian.js:176` OpenClaw media fallback recorded by I-1. |
-| I-3 | Run one controlled Honne EN canary from Life Manager | one real TikTok publication reconciles as `PUBLISHED`, its direct `/video/<id>` URL returns publicly, Telegram receives the same URL, replay produces no duplicate | **local-ledger port required before canary** — focused fake-transport tests cover one-job promotion, tenant/job/capability claim, Postiz `PUBLISHED` + direct-URL reconciliation, public 2xx verification, Telegram completion receipt, and replay dedupe; however the current implementation persists claims/receipts through PostgreSQL/`pg`, which is rejected for this local-only recovery. Port the adapter to Life Manager-owned JSONL/atomic files, then run the direct local process. No external post or Telegram send was attempted |
+| I-3 | Run one controlled Honne EN canary from Life Manager | one real TikTok publication reconciles as `PUBLISHED`, its direct `/video/<id>` URL returns publicly, Telegram receives the same URL, replay produces no duplicate | **local-ledger port complete; controlled canary pending** — MKT-01 now persists jobs, leases, claims, receipts, and replay state under the Life Manager data root. Focused MKT tests pass 32/32; runtime-adapter suite passes 149/149; runtime paths pass 8/8; the target production scope has 0 PostgreSQL/`pg`/OpenClaw references. External-effect lease expiry is `reconciling`/`unknown_effect` with no automatic retry, and fake transport is required. No external post or Telegram send was attempted |
 | I-4 | Prove seven consecutive Honne EN expected cycles | every slot has exactly one verified generation, publication, URL, notification, and initial observation receipt; any miss/duplicate resets the counter | open |
 | I-5 | Repair and migrate Anicca video/slideshow producers one lane at a time | missing hook sources, blank IDs, poster arguments, and secret boundaries are fixed behind Life Manager contracts; each lane passes shadow, canary, and seven expected cycles | open |
 | I-6 | Migrate Honne JA, then remaining Larry/ReelClaw routes | each retained route preserves product/locale/account/cadence behavior and no longer reads OpenClaw or another repository at runtime | open |
@@ -1546,9 +1552,12 @@ after the preceding numbered row, and no later row is started early:
 MKT-07 → MKT-08 → MKT-09 → MKT-10 → MKT-11 → MKT-11A → MKT-11B → MKT-12 →
 MKT-13`.
 
+Current TODO state: **MKT-01 done; MKT-02 active; MKT-03 onward open**. Honne
+has TikTok/Instagram destinations only; YouTube remains an Anicca-only lane.
+
 | ID | Atomic action | Account/lane | Done evidence |
 |---|---|---|---|
-| MKT-01 | Port I-3 claim, receipt, Telegram dedupe, and replay state from PostgreSQL/`pg` to the Life Manager-owned local JSONL/atomic-file ledger | all lanes | direct local process restarts cleanly; duplicate claim/effect/notification count is 0 |
+| MKT-01 | **done —** Port I-3 claim, receipt, Telegram dedupe, and replay state from PostgreSQL/`pg` to the Life Manager-owned local JSONL/atomic-file ledger | all lanes | direct local process restarts cleanly; 32/32 focused tests; 149/149 runtime-adapter tests; 8/8 runtime-path tests; live/dead lock recovery stress 20/20; duplicate claim/effect/notification count is 0; expired external effects reconcile instead of retrying |
 | MKT-02 | Read the live Postiz integration registry and freeze a redacted multi-platform lane manifest containing integration ID, provider, profile, locale, product, and disabled state | Honne TikTok/Instagram; Anicca TikTok/Instagram/YouTube | every target account has exactly one verified provider route; Honne has no YouTube row; historical IDs and unknown profiles remain blocked rather than guessed |
 | MKT-03 | Run one controlled publication using the Life Manager route, reconcile `PUBLISHED`, verify the direct TikTok `/video/<id>` URL, and send one Telegram receipt | Honne EN `@honne_reveal` | one real public URL, one matching Telegram receipt, and replay creates no new effect |
 | MKT-03A | Extend the generic publication contract and direct-URL verifier to YouTube while keeping Postiz as the provider | selected **Anicca** YouTube integration only | shadow performs zero provider writes; a verified `/shorts/<id>`, `/watch?v=<id>`, or equivalent public URL is required before canary |

@@ -1,6 +1,9 @@
 "use strict";
 
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
 const test = require("node:test");
 
 const {
@@ -8,6 +11,7 @@ const {
   SHADOW_HOLD_AVAILABLE_AT,
   buildHonneEnCanaryTelegramJob,
   claimExactCanaryJob,
+  createMarketingLocalLedger,
   promoteHonneEnTikTokCanary,
   verifyDirectPublicUrl,
 } = require("./marketing-canary.js");
@@ -38,29 +42,45 @@ function receipt(overrides = {}) {
   };
 }
 
-test("promotion is exact, one-job, and rejects a second promotion", async () => {
-  const calls = [];
-  let eligible = true;
-  const query = async (sql, params) => {
-    calls.push({ sql, params });
-    if (sql.includes("SELECT")) {
-      return { rows: eligible ? [{ job_id: "canary-job" }] : [] };
-    }
-    eligible = false;
-    return { rows: [{ job_id: "canary-job", available_at: "now" }] };
+function localLedger() {
+  return createMarketingLocalLedger({
+    dataDir: fs.mkdtempSync(path.join(os.tmpdir(), "lm-canary-test-")),
+    now: () => "2026-08-21T02:00:00.000Z",
+  });
+}
+
+function publicationJob(overrides = {}) {
+  return {
+    job_id: "canary-job",
+    tenant_id: "dais-local",
+    loop_id: "marketing.video",
+    capability: "marketing.video.publish",
+    effect_class: "publish",
+    effect_key: "marketing:video:honne-ai:tiktok:creative:video:caption",
+    input_refs: {
+      product_ref: "product://honne-ai",
+      locale_ref: "locale://en",
+      platform_ref: "platform://tiktok",
+    },
+    max_attempts: 3,
+    available_at: SHADOW_HOLD_AVAILABLE_AT,
+    ...overrides,
   };
+}
+
+test("promotion is exact, one-job, and rejects a second promotion", async () => {
+  const store = localLedger();
+  await store.enqueueJob(publicationJob());
   const promoted = await promoteHonneEnTikTokCanary({
-    query,
+    store,
     tenantId: "dais-local",
     jobId: "canary-job",
     confirmation: PROMOTION_CONFIRMATION,
   });
   assert.equal(promoted.job_id, "canary-job");
-  assert.equal(calls.length, 2);
-  assert.equal(calls[0].params[2], SHADOW_HOLD_AVAILABLE_AT);
   await assert.rejects(
     promoteHonneEnTikTokCanary({
-      query,
+      store,
       tenantId: "dais-local",
       jobId: "canary-job",
       confirmation: PROMOTION_CONFIRMATION,
@@ -88,23 +108,28 @@ test("Telegram receipt job refuses an unavailable or unreconciled publication", 
 });
 
 test("exact canary claim updates only the selected eligible job", async () => {
-  let sql = "";
-  let params;
+  const store = localLedger();
+  await store.enqueueJob(publicationJob({ available_at: "2026-08-21T02:00:00.000Z" }));
   const job = await claimExactCanaryJob({
+    store,
     tenantId: "dais-local",
     jobId: "canary-job",
     capability: "marketing.video.publish",
     workerId: "canary-worker",
-    query: async (text, values) => {
-      sql = text;
-      params = values;
-      return { rows: [{ job_id: "canary-job", status: "running", attempt: 1 }] };
-    },
   });
   assert.equal(job.status, "running");
-  assert.match(sql, /WHERE tenant_id = \$1/);
-  assert.match(sql, /AND job_id = \$2/);
-  assert.deepEqual(params.slice(0, 4), ["dais-local", "canary-job", "marketing.video.publish", "canary-worker"]);
+  assert.equal(job.tenant_id, "dais-local");
+  assert.equal(job.capability, "marketing.video.publish");
+  await assert.rejects(
+    claimExactCanaryJob({
+      store,
+      tenantId: "dais-local",
+      jobId: "canary-job",
+      capability: "marketing.video.publish",
+      workerId: "second-worker",
+    }),
+    /did not claim exactly/i,
+  );
 });
 
 test("direct URL verifier rejects non-public responses and accepts a public response", async () => {
@@ -116,7 +141,38 @@ test("direct URL verifier rejects non-public responses and accepts a public resp
     verifyDirectPublicUrl(URL, async () => ({ status: 302 })),
     /publicly reachable/i,
   );
-  const result = await verifyDirectPublicUrl(URL, async () => ({ status: 200 }));
+  const result = await verifyDirectPublicUrl(URL, async () => ({ status: 200, url: URL }));
   assert.equal(result.status, 200);
   assert.equal(result.url, URL);
+});
+
+test("direct URL verifier rejects profile, other-video, and external redirects", async () => {
+  await assert.rejects(
+    verifyDirectPublicUrl(URL, async () => ({
+      status: 200,
+      url: "https://www.tiktok.com/@honne_reveal",
+    })),
+    /direct TikTok URL|publicly reachable/i,
+  );
+  await assert.rejects(
+    verifyDirectPublicUrl(URL, async () => ({
+      status: 200,
+      url: "https://www.tiktok.com/@honne_reveal/video/1234567890",
+    })),
+    /direct TikTok URL|publicly reachable/i,
+  );
+  await assert.rejects(
+    verifyDirectPublicUrl(URL, async () => ({
+      status: 200,
+      url: "https://evil.example/@honne_reveal/video/7999999999999999999",
+    })),
+    /direct TikTok URL|publicly reachable/i,
+  );
+  await assert.rejects(
+    verifyDirectPublicUrl("https://www.tiktok.com/@honne_reveal", async () => ({
+      status: 200,
+      url: "https://www.tiktok.com/@honne_reveal",
+    })),
+    /direct TikTok URL/i,
+  );
 });

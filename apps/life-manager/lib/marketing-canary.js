@@ -4,8 +4,12 @@ const {
   verifyMarketingVideoPublicationReceipt,
 } = require("./marketing-video-publication-adapter.js");
 const { buildMarketingLivenessJob } = require("./marketing-liveness-adapter.js");
+const {
+  createMarketingLocalLedger,
+  SHADOW_HOLD_AVAILABLE_AT: LOCAL_SHADOW_HOLD_AVAILABLE_AT,
+} = require("./marketing-local-ledger.js");
 
-const SHADOW_HOLD_AVAILABLE_AT = "9999-12-31T23:59:59.000Z";
+const SHADOW_HOLD_AVAILABLE_AT = LOCAL_SHADOW_HOLD_AVAILABLE_AT;
 const PROMOTION_CONFIRMATION = "PROMOTE_HONNE_EN_TIKTOK_CANARY";
 const CANARY_LEASE_SECONDS = 180;
 
@@ -15,53 +19,41 @@ function required(value, label) {
   return text;
 }
 
+function localStore(options = {}) {
+  const store = options.store || options.ledger;
+  if (store) {
+    for (const method of ["promoteJob", "claimJob"]) {
+      if (typeof store[method] !== "function") throw new Error("Honne EN canary local store is unavailable");
+    }
+    return store;
+  }
+  return createMarketingLocalLedger({
+    dataDir: options.dataDir,
+    env: options.env,
+    now: options.now,
+  });
+}
+
 async function promoteHonneEnTikTokCanary(options = {}) {
   if (options.confirmation !== PROMOTION_CONFIRMATION) {
     throw new Error("Honne EN canary promotion confirmation is invalid");
   }
-  if (typeof options.query !== "function") {
-    throw new Error("Honne EN canary promotion store is unavailable");
-  }
   const tenantId = required(options.tenantId, "Honne EN canary tenant");
   const jobId = required(options.jobId, "Honne EN canary job id");
-  const selected = await options.query(`
-    SELECT job_id, tenant_id, capability, effect_class, status, available_at, input_refs
-    FROM public.lm_runtime_jobs
-    WHERE tenant_id = $1
-      AND job_id = $2
-      AND capability = 'marketing.video.publish'
-      AND effect_class = 'publish'
-      AND status = 'queued'
-      AND available_at = $3::timestamptz
-      AND input_refs->>'product_ref' = 'product://honne-ai'
-      AND input_refs->>'locale_ref' = 'locale://en'
-      AND input_refs->>'platform_ref' = 'platform://tiktok'
-    LIMIT 1
-  `, [tenantId, jobId, SHADOW_HOLD_AVAILABLE_AT]);
-  if (!selected || selected.rows.length !== 1) {
-    throw new Error("Honne EN canary job is not an eligible shadow TikTok job");
+  const store = localStore(options);
+  try {
+    return await store.promoteJob({
+      tenantId,
+      jobId,
+      confirmation: PROMOTION_CONFIRMATION,
+    });
+  } catch (error) {
+    if (/confirmation/i.test(String(error && error.message))) throw error;
+    throw new Error("Honne EN canary job is not an eligible shadow TikTok job", { cause: error });
   }
-  const promoted = await options.query(`
-    UPDATE public.lm_runtime_jobs
-    SET available_at = clock_timestamp(), updated_at = clock_timestamp()
-    WHERE tenant_id = $1
-      AND job_id = $2
-      AND capability = 'marketing.video.publish'
-      AND status = 'queued'
-      AND available_at = $3::timestamptz
-      AND input_refs->>'product_ref' = 'product://honne-ai'
-      AND input_refs->>'locale_ref' = 'locale://en'
-      AND input_refs->>'platform_ref' = 'platform://tiktok'
-    RETURNING job_id, available_at
-  `, [tenantId, jobId, SHADOW_HOLD_AVAILABLE_AT]);
-  if (!promoted || promoted.rows.length !== 1) {
-    throw new Error("Honne EN canary promotion lost its idempotent claim");
-  }
-  return promoted.rows[0];
 }
 
 async function claimExactCanaryJob(options = {}) {
-  if (typeof options.query !== "function") throw new Error("canary claim store is unavailable");
   const tenantId = required(options.tenantId, "canary claim tenant");
   const jobId = required(options.jobId, "canary claim job id");
   const capability = required(options.capability, "canary claim capability");
@@ -70,30 +62,22 @@ async function claimExactCanaryJob(options = {}) {
   if (!Number.isInteger(leaseSeconds) || leaseSeconds < 30 || leaseSeconds > 900) {
     throw new Error("canary claim lease is invalid");
   }
-  const result = await options.query(`
-    UPDATE public.lm_runtime_jobs
-    SET status = 'running',
-        attempt = attempt + 1,
-        lease_owner = $4,
-        lease_expires_at = clock_timestamp() + make_interval(secs => $5::double precision),
-        last_error_code = NULL,
-        updated_at = clock_timestamp()
-    WHERE tenant_id = $1
-      AND job_id = $2
-      AND capability = $3
-      AND status = 'queued'
-      AND available_at <= clock_timestamp()
-      AND attempt < max_attempts
-    RETURNING *
-  `, [tenantId, jobId, capability, workerId, leaseSeconds]);
-  if (!result || result.rows.length !== 1) {
+  const result = await localStore(options).claimJob({
+    tenantId,
+    jobId,
+    capability,
+    workerId,
+    leaseSeconds,
+  });
+  if (!result) {
     throw new Error("canary did not claim exactly the selected job");
   }
-  return result.rows[0];
+  return result;
 }
 
 async function verifyDirectPublicUrl(url, fetchImpl = globalThis.fetch) {
   if (typeof fetchImpl !== "function") throw new Error("canary URL verifier is unavailable");
+  const requested = parseDirectTikTokUrl(url);
   const response = await fetchImpl(url, {
     method: "GET",
     redirect: "follow",
@@ -103,7 +87,30 @@ async function verifyDirectPublicUrl(url, fetchImpl = globalThis.fetch) {
   if (!response || response.status < 200 || response.status >= 300) {
     throw new Error("Honne EN canary direct TikTok URL is not publicly reachable");
   }
-  return { status: response.status, url };
+  const finalUrl = parseDirectTikTokUrl(response.url);
+  if (finalUrl.postId !== requested.postId) {
+    throw new Error("Honne EN canary direct TikTok URL redirect changed the video");
+  }
+  return { status: response.status, url: response.url };
+}
+
+function parseDirectTikTokUrl(value) {
+  let parsed;
+  try { parsed = new URL(String(value || "")); } catch { throw new Error("Honne EN canary direct TikTok URL is invalid"); }
+  if (
+    parsed.protocol !== "https:"
+    || parsed.hostname !== "www.tiktok.com"
+    || parsed.port
+    || parsed.username
+    || parsed.password
+    || parsed.search
+    || parsed.hash
+  ) {
+    throw new Error("Honne EN canary direct TikTok URL is invalid");
+  }
+  const match = /^\/@[^/]+\/video\/(\d+)\/?$/.exec(parsed.pathname);
+  if (!match) throw new Error("Honne EN canary direct TikTok URL is invalid");
+  return { postId: match[1] };
 }
 
 function buildHonneEnCanaryTelegramJob(options = {}) {
@@ -141,6 +148,7 @@ module.exports = {
   SHADOW_HOLD_AVAILABLE_AT,
   buildHonneEnCanaryTelegramJob,
   claimExactCanaryJob,
+  createMarketingLocalLedger,
   promoteHonneEnTikTokCanary,
   verifyDirectPublicUrl,
 };
