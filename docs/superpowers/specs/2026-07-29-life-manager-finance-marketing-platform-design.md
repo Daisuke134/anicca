@@ -1455,16 +1455,21 @@ must not expose secrets or OpenClaw paths.
 **2026-08-21 legacy-report observation.** The owner-visible line beginning
 `📤 user6721125412040 · tiktok` with the caption fragment and
 `https://www.tiktok.com/@honne_reveal` is not a Life Manager receipt. It is
-the disabled legacy `marketing-engine/report/notify_posts.py` projection: it
-uses the Postiz integration name as the account label and forwards the
-provider's profile-only `releaseURL`, so it is neither natural language nor a
-verified publication link. The corresponding
-`ai.anicca.marketing-post-notify` LaunchAgent is not running and remains
-untouched as rollback evidence. Life Manager's shared Telegram renderer now
-produces a sentence with product/locale/platform/account/slot, explicit
-status, `Public URL`, and `Retry`, and its regression test rejects that raw
-legacy shape. The full MKT-11A daily/weekly snapshot projection remains open;
-this closes only the per-post renderer boundary.
+the legacy `marketing-engine/report/notify_posts.py` projection: it uses the
+Postiz integration name as the account label and forwards the provider's
+profile-only `releaseURL`, so it is neither natural language nor a verified
+publication link. The corresponding
+`ai.anicca.marketing-post-notify` LaunchAgent was loaded but inactive with
+`StartInterval=1800`; its prior log contains raw-notifier sends. On
+2026-08-21 JST it was explicitly disabled through
+`bin/launchctl-safe disable gui/501/ai.anicca.marketing-post-notify` after the
+control-plane preflight passed. No kickstart, stop, restart, bootout, or
+deletion was performed; the plist and logs remain rollback evidence. Life
+Manager's shared Telegram renderer produces a sentence with
+product/locale/platform/account/slot, explicit status, `Public URL`, and
+`Retry`, and its regression test rejects that raw legacy shape. The full
+MKT-11A daily/weekly snapshot projection remains open; this closes only the
+per-post renderer boundary and quarantines the raw legacy sender.
 
 ### 8.10 Social metrics, app metrics, and attribution
 
