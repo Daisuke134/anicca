@@ -13,6 +13,12 @@ PROTECTED = {"waiting", "pending", "live-recorded"}
 
 
 def is_protected(run_dir: Path) -> bool:
+    # A duplicate-media quarantine is the durable proof that its repair queue
+    # items must never be retried.  Retention may not delete that proof while
+    # the queue still points at the run.
+    quarantine = run_dir / "gates/run-quarantine.json"
+    if quarantine.is_file() and not quarantine.is_symlink():
+        return True
     artifact = run_dir / "gates/zenn-deferred.json"
     if not artifact.is_file():
         return False

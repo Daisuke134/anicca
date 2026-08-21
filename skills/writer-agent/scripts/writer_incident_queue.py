@@ -510,6 +510,58 @@ def wait_for_quarantined_run(
     return item
 
 
+def wait_for_open_circuit(
+    queue: dict[str, Any], fingerprint: str, circuit_path: Path,
+    publication_state_path: Path, observed_at: str,
+) -> dict[str, Any]:
+    """Keep a rearmed incident WAIT while its pair circuit is open.
+
+    A code rearm can make an old RETRY visible even though the same run/pair
+    circuit still blocks publication.  The circuit and state hashes are the
+    proof; no elapsed-time or hand-edited queue transition is accepted.
+    """
+    item = queue["items"].get(fingerprint)
+    if item is None:
+        raise ValueError("unknown incident fingerprint")
+    if item.get("state") not in {"OPEN", "RETRY"}:
+        raise ValueError("incident is not actionable")
+    if item.get("destination") != "note/ja":
+        raise ValueError("circuit wait is restricted to note/ja")
+    if not circuit_path.is_file() or circuit_path.is_symlink():
+        raise ValueError("failure circuit receipt is required")
+    if not publication_state_path.is_file() or publication_state_path.is_symlink():
+        raise ValueError("publication state is required")
+    circuit = json.loads(circuit_path.read_text(encoding="utf-8"))
+    from resume_failure_circuit import state_identity_sha256
+
+    state_sha = state_identity_sha256(publication_state_path, "note/ja")
+    pair = circuit.get("pairs", {}).get("note/ja") if isinstance(circuit, dict) else None
+    if (
+        not isinstance(pair, dict)
+        or pair.get("open") is not True
+        or not isinstance(pair.get("count"), int)
+        or pair.get("count") < 1
+        or pair.get("state_sha256") != state_sha
+    ):
+        raise ValueError("note/ja failure circuit is not open for current state")
+    item["state"] = "WAIT"
+    item["next_action"] = "WAIT_FOR_NEW_OCCURRENCE"
+    item["circuit_block"] = {
+        "pair": "note/ja",
+        "observed_at": observed_at,
+        "circuit": {
+            "path": str(circuit_path.resolve()),
+            "sha256": hashlib.sha256(circuit_path.read_bytes()).hexdigest(),
+            "count": pair["count"],
+        },
+        "publication_state_sha256": state_sha,
+    }
+    item["released_at"] = observed_at
+    item.pop("lease_id", None)
+    queue["updated_at"] = observed_at
+    return item
+
+
 # §9.3.1 escalation, taken from Flagger, Argo Rollouts, SapFix and the
 # circuit-breaker pattern rather than invented: bounded attempts, then degrade
 # to the safest known state, then stop and wait for a genuinely new trigger.
@@ -870,6 +922,10 @@ def main() -> int:
     candidate_parser.add_argument("--fingerprint", required=True)
     candidate_parser.add_argument("--lease-id", required=True)
     candidate_parser.add_argument("--candidate-receipt", required=True, type=Path)
+    circuit_parser = sub.add_parser("circuit-wait")
+    circuit_parser.add_argument("--fingerprint", required=True)
+    circuit_parser.add_argument("--circuit", required=True, type=Path)
+    circuit_parser.add_argument("--publication-state", required=True, type=Path)
     args = parser.parse_args()
     lock_path = args.queue.with_name(f".{args.queue.name}.lock")
     lock_path.parent.mkdir(parents=True, exist_ok=True)
@@ -905,6 +961,11 @@ def main() -> int:
             result = register_characterization(
                 queue, args.fingerprint, args.lease_id,
                 args.characterization_receipt, args.observed_at,
+            )
+        elif args.command == "circuit-wait":
+            result = wait_for_open_circuit(
+                queue, args.fingerprint, args.circuit,
+                args.publication_state, args.observed_at,
             )
         else:
             result = register_candidate(
