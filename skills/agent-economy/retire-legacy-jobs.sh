@@ -17,7 +17,10 @@ for label in \
   ai.anicca.x402-acquisition-controller \
   ai.anicca.x402-experiment-franklin1; do
   "$SAFE" bootout "$DOMAIN/$label" 2>/dev/null || true
+  if "$SAFE" print "$DOMAIN/$label" >/dev/null 2>&1; then
+    echo "agent-economy: legacy label remains loaded: $label" >&2
+    exit 1
+  fi
 done
 
 echo "agent-economy: retired legacy job labels"
-
