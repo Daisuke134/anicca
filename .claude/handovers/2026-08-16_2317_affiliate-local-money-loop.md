@@ -47,6 +47,16 @@
   created. The release now reports safe typed failure class/retry state in a
   future `REVENUE_CYCLE_FAILED` receipt and keeps distinct observed failure
   attempts as distinct replay-safe Telegram events. B01 remains open.
+- The next natural owner wake
+  `69154408b0b512c82966efe00186def902b6b7c009ec8d67f7cd31c61a1b75cd`
+  completed at `15:18:57+0900` with `runs=235`, exit `0`, and the same
+  `a860408e` release. Its `revenue.capture` ToolAttemptReceipt is
+  `COOLDOWN / READ_ONLY_CONFIRMED`; the durable failure's
+  `retry_after=15:35:54+0900` correctly prevented an early provider attempt.
+  Telegram `27218` is `SENT`, outbox/sent are `139/139`, and the official
+  artifact, transaction ledger, settlement state, public effect, and money are
+  unchanged. The next atomic readback is the first eligible owner capture;
+  manual capture remains prohibited.
 - The prior natural wake `afa4d937e6…` at `14:32:53+0900` recorded a real
   `provider-link.elevenlabs` `TimeoutError` as
   `BROWSER_TRANSIENT / RETRYABLE / effect=UNKNOWN`, due `14:38:14+0900`; the

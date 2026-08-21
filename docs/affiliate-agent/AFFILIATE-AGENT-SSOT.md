@@ -3112,7 +3112,14 @@ cooldown; no new transaction, settlement, public effect, or money was created.
 Release `a860408e` also makes future `REVENUE_CYCLE_FAILED` bodies report only
 safe typed failure class/retry state and gives each distinct durable failure
 attempt its own replay-safe event identity. F01, F02, and F03 are closed; B01
-remains open for the first non-empty official transaction row.
+remains open for the first non-empty official transaction row. The next natural
+owner wake `69154408b0b512c82966efe00186def902b6b7c009ec8d67f7cd31c61a1b75cd`
+completed at `15:18:57+0900` with `runs=235`, exit `0`, and the same release.
+Its `revenue.capture` ToolAttemptReceipt is `COOLDOWN` with
+`READ_ONLY_CONFIRMED`; the durable failure's `retry_after=15:35:54+0900`
+correctly prevented an early provider attempt. Telegram `27218` is sent,
+outbox/sent are `139/139`, and no artifact, transaction, settlement, public
+effect, or money changed.
 The next existing-owner wake `4376877990…` at `14:52:45+0900` also exited `0`,
 returned revenue `COOLDOWN`, and left Telegram `NO_PENDING`; no provider
 artifact or external effect changed. The public X receipt for
