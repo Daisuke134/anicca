@@ -278,6 +278,7 @@ async def _choose(page: Any, locator: Any, value: str) -> bool:
     )
     if await prompt_option.count():
         await prompt_option.first.click(timeout=10_000)
+        await page.keyboard.press("Escape")
         return True
     for _ in range(10):
         option = page.get_by_role("option", name=value, exact=True)
