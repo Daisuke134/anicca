@@ -829,7 +829,11 @@ a later successful example.
   `file_verifier` failure. `_prepare_one` now returns a pending transition when that durable state
   exists; the parent records `pending` and performs no write effect instead of converting the
   bounded round limit into a failed pass.
-- [ ] P19 — Attach useful progress with formal delivery off while accepted scope remains.
+- [x] P19 — Attach useful progress with formal delivery off while accepted scope remains. The
+  prepared and presend decisions must both remain `progress`; the browser rejects either queue or
+  payload unless `formal_delivery_checkbox` is exactly false, and Paid succeeds only after the
+  exact message plus attachment is read back from that official talkroom. Natural-send proof stays
+  in P31.
 - [ ] P20 — Enable formal delivery only after the complete accepted scope passes.
 - [ ] P21 — Give reply, attachment and formal delivery independent durable effect keys.
 - [ ] P22 — Read the attachment back in the exact official talkroom.
