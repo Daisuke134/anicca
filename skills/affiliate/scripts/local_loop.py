@@ -45,7 +45,7 @@ QUARANTINE_FAILURE_THRESHOLD = 3
 QUARANTINABLE_EFFECTS = {
     "EXTERNAL_WRITE", "PROVIDER_LINK_WRITE", "PUBLICATION_WRITE",
 }
-EXTERNAL_ACTION_DAILY_CAP = 10
+EXTERNAL_ACTION_DAILY_CAP = None
 EXTERNAL_COST_DAILY_CAP_MINOR = 500
 COST_BUDGET_JST = ZoneInfo("Asia/Tokyo")
 REPOST_PROPOSAL_ID_PATTERN = re.compile(r"^[0-9a-f]{64}$")
@@ -158,7 +158,9 @@ def action_budget_snapshot(state_root, cap=EXTERNAL_ACTION_DAILY_CAP):
     receipt = {
         "schema_version": 1,
         "receipt_type": "AFFILIATE_EXTERNAL_ACTION_BUDGET",
-        "state": "ACTION_CAP_BLOCKED" if used >= cap else "CLEAR",
+        "state": "ACTION_CAP_DISABLED" if cap is None else (
+            "ACTION_CAP_BLOCKED" if used >= cap else "CLEAR"
+        ),
         "day": day,
         "used_attempts": used,
         "daily_cap": cap,
@@ -3270,7 +3272,7 @@ def _wake_once(args, started_at, run_id):
                     retry_state="RETRYABLE", wake_event_uuid=wake_event_uuid,
                 )
                 return result
-        if effect_class in QUARANTINABLE_EFFECTS and refresh_action_budget()["state"] != "CLEAR":
+        if effect_class in QUARANTINABLE_EFFECTS and refresh_action_budget()["state"] == "ACTION_CAP_BLOCKED":
             result = {
                 "state": action_budget["state"],
                 "action_budget_state": action_budget["state"],

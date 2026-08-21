@@ -354,6 +354,12 @@ class LocalLoopTest(unittest.TestCase):
             self.assertEqual(snapshot["used_attempts"], 2)
             self.assertEqual(snapshot["state"], "ACTION_CAP_BLOCKED")
 
+    def test_action_budget_can_be_explicitly_disabled(self):
+        with tempfile.TemporaryDirectory() as root:
+            snapshot = MODULE.action_budget_snapshot(Path(root), cap=None)
+            self.assertEqual(snapshot["state"], "ACTION_CAP_DISABLED")
+            self.assertIsNone(snapshot["daily_cap"])
+
     def test_quarantine_requires_three_consecutive_external_failures(self):
         with tempfile.TemporaryDirectory() as root:
             state = Path(root)
