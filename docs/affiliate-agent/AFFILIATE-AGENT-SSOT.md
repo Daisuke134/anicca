@@ -418,7 +418,10 @@ money was created. That live replay did not exercise the new per-item failure
 branch because the remaining later items were already live or policy-terminal;
 the branch remains fixture-proven only. Source and installed
 `composition_owner.py` bytes match at SHA-256
-`1e466903…688136535`. B01 remains `WAITING_FOR_PROVIDER_TRANSACTION`.
+`1e466903…688136535`. Codex sent this state and next action through the
+existing Telegram path as provider message `26928`; it contains no secret or
+raw tracking link and is outside the money ledger. B01 remains
+`WAITING_FOR_PROVIDER_TRANSACTION`.
 
 ### 1.2.0 Audited executable boundary
 
