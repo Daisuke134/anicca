@@ -17,16 +17,19 @@ release is `96f49a0ff5ba29557f5725dd2bc55c8750facc1d`; launchd remains hourly at
 waits for the exact visible `Job Boards` prompt before keyboard selection, but
 the latest wake still stopped at `application_surface_not_found` after the
 provider surface transition. No Rakuten submit request, completion UI, or
-receipt evidence is present in that run. The active atomic task is to make the
-Workday surface transition stable, advance every Workday step, and require a
-provider completion UI before the ledger may report `submitted`. A Workday wake
-processes every pending/retryable row; one blocked row must not terminate the
-rest of that provider queue.
+receipt evidence is present in that run. **Architecture decision (2026-08-22):
+all ATS form interaction is model-based browser work.** Deterministic code may
+gate safety, deduplicate, route materials, detect CAPTCHA/provider limits, and
+write evidence, but it must hand a row to the existing browser-lane agent when
+the provider surface is variable or unrecognized; it must not terminate the row
+merely because a fixed evaluator did not match. A Workday wake processes every
+pending/retryable row; one blocked row must not terminate the rest of that
+provider queue.
 **Handover state:** active immutable release is
 `96f49a0ff5ba29557f5725dd2bc55c8750facc1d`; launchd uses
 `StartInterval=3600`. The latest completed Workday receipt is
-`daily-20260822-072511`: Rakuten is `blocked` with
-`application_surface_not_found`, and Telegram checkpoint `28132` was sent.
+`daily-20260822-082615`: Rakuten is `blocked` with
+`application_surface_not_found`, and Telegram checkpoint `28150` was sent.
 There is no provider submit request, completion UI, or receipt evidence in that
 run. The earlier `daily-20260822-000400` wake captured the root cause of the
 radio exception: after source keyboard interaction, Workday dynamically
@@ -35,10 +38,11 @@ fix re-looks up each field by stable provider `id`, then `name` or label. Live
 CDP evidence also showed the source multiselect renders all options before
 filtering; the keyboard sequence now waits for the exact visible
 `data-automation-label="Job Boards"` option or fails closed. Focused regressions
-cover both stable re-lookup and exact-prompt gating. The next release wake must
-prove the Workday surface transition and Save and Continue advance to step 2,
-then continue the remaining steps; do not claim submission from a click,
-response, or ledger row alone.
+cover both stable re-lookup and exact-prompt gating. Those deterministic fixes
+are not sufficient by themselves: the next implementation must enable the
+model-based browser handoff at the surface boundary, then prove the Workday
+surface transition and Save and Continue advance to step 2. Do not claim
+submission from a click, response, or ledger row alone.
 
 ### Universal-application architecture (target)
 
@@ -57,9 +61,12 @@ Greenhouse and Lever, then company-specific fallbacks only where their native
 surface differs. A provider-specific loading overlay, custom control, login,
 CAPTCHA, form question, or confirmation wording is an adapter gap to repair;
 it never counts as an application and never silences the Telegram report.
-The execution order is explicit: **Ashby fast path → Ashby discovery/application →
-Workday fast path → Telegram/Ledger reconciliation**. Workday runs on the same
-hourly owner wake; it is no longer parked behind Ashby. A user-confirmed
+The execution order is explicit: **safety preflight/discovery → model-based
+browser interaction per eligible row → Telegram/Ledger reconciliation**. Ashby
+and Workday deterministic paths are preflight accelerators and evidence writers;
+they are not allowed to suppress the browser agent when a real form is present or
+when a fixed surface evaluator returns `application_surface_not_found`. Workday
+runs on the same hourly owner wake; it is no longer parked behind Ashby. A user-confirmed
 Salesforce application is held in the private manual-completed URL set and is never
 reapplied by the loop. In the latest catch-up, Ashby fast path reported `no_work` because there
 was no retryable Ashby row; the run was stopped before its Workday stage after the
@@ -72,8 +79,8 @@ Deloitte, Ernst & Young/EY, and PwC remain one hard exclusion set; historical
 terminal evidence is preserved and never reopened. The Workday evaluator accepts
 its production `input type=text` email field when labelled `Email Address*`; the
 focused ATS suite is green, and the new Workday preflight is wired into the existing
-launchd owner in commit `04989df62`. Ashby remains the primary adapter; Workday is a
-secondary adapter with deterministic navigation parked behind Ashby. The catch-up
+launchd owner in commit `04989df62`. Ashby remains the primary discovery lane;
+Workday is a model-driven browser lane with deterministic safety checks. The catch-up
 correction report was acknowledged by Telegram as message `27323`. Guardian and the
 Life Manager Career surface remain in progress. The subsequent Ashby-first run
 `daily-20260821-181731` confirms the same boundary: Ashby fast path was `no_work`,
@@ -146,9 +153,11 @@ The mapper also recognizes approved current-location and GitHub-portfolio fields
 LangChain's Solutions Engineer (Chicago) form reached the real submit click and is
 fenced as `submit_unknown`; its direct Telegram application report was acknowledged
 as message `27539`.
-The daily script now bounds the non-deterministic browser fallback at 300 seconds
-by default (`JOB_SEARCH_BROWSER_TIMEOUT_SECONDS` may lower or raise that bounded
-value); deterministic ATS fast paths run before it and retain their own evidence.
+The daily script now bounds the model-based browser lane at 300 seconds by
+default (`JOB_SEARCH_BROWSER_TIMEOUT_SECONDS` may lower or raise that bounded
+value). It is a required form-operator lane, not an optional fallback: the
+deterministic preflight runs first, then hands each eligible row to the model
+agent and retains the same row-local evidence.
 
 **Done when:** `Daisuke134/life-manager` is the only versioned source and the
 resident system can discover, qualify, tailor and submit truthful eligible
@@ -167,9 +176,10 @@ evidence, a fenced intent and authoritative confirmation.
 | Order | Atomic TODO | State | Evidence needed to close |
 |---:|---|---|---|
 | 1 | Keep the existing browser owner healthy at CDP `:9222` | `done` | `ai.anicca.job-search-browser` is enabled/running; `/json/version` responds; no second browser owner |
-| 2 | Run the existing hourly owner with Ashby then every pending Workday row | `in_progress` | The owner enables `JOB_SEARCH_ENABLE_WORKDAY=1`; no one-row Workday cap remains and each lane writes its own evidence and checkpoint. Latest owner wake exited 0 and emitted Telegram ACK `28132`. |
+| 2 | Run the existing hourly owner with safety gates, model browser work, and every pending Workday row | `in_progress` | The owner enables `JOB_SEARCH_ENABLE_WORKDAY=1`; one row is handed to `browser-lane-agent` after preflight and each lane writes its own evidence/checkpoint. Latest owner wake exited 0 and emitted Telegram ACK `28150`, but model handoff is not yet enabled. |
+| 2a | Make model-based browser handoff mandatory on every eligible ATS form | `pending_implementation` | `JOB_SEARCH_ENABLE_MODEL_FALLBACK=1` (or equivalent mandatory route) in the immutable launchd release; a deterministic `application_surface_not_found` result hands the same row/CDP page to the model agent and records row-local evidence |
 | 3 | Replace the timed-out model discovery with a bounded Ashby discovery pass | `completed` | CLI/owner commit `12ea0d89a`; live discovery selected ElevenLabs after browser/cache verification and wrote immutable attribution |
-| 4 | Make Rakuten's Workday surface transition and `source--source` control stable | `in_progress` | One real `Save and Continue` progress receipt to step 2; latest `daily-20260822-072511` remains `application_surface_not_found` |
+| 4 | Make Rakuten's Workday surface transition and `source--source` control stable | `in_progress` | One real `Save and Continue` progress receipt to step 2; latest `daily-20260822-082615` remains `application_surface_not_found` |
 | 5 | Continue other Workday rows even if Rakuten blocks | `in_progress` | One wake emits a separate receipt for every pending/retryable Workday row; latest Rakuten receipt is isolated, but the queue-wide receipt set is not yet closed |
 | 6 | Complete all subsequent Workday steps with grounded profile answers and exact resume | `pending_after_4` | Per-step snapshots plus one visible final Submit control |
 | 7 | Click Workday Submit once and preserve the completion UI | `pending_after_6` | Provider submission request and saved provider completion screenshot |
@@ -180,16 +190,15 @@ evidence, a fenced intent and authoritative confirmation.
 
 ### 1.1 Repeatable-loop robustness contract
 
-The current production loop is intentionally deterministic before adaptive:
+The production loop uses deterministic safety gates before model-based browser
+interaction:
 
 ```text
 launchd (hourly)
   → CDP browser health evidence
-  → existing Ashby queue
-  → live official Ashby board refresh plus discovery of one Tokyo/Japan or Remote row
-  → fenced Ashby form/submit action
-  → existing Workday queue excluding user-confirmed URLs
-  → fenced Workday form/submit action
+  → discovery, hard exclusions, duplicate/profile/CAPTCHA safety gates
+  → model-based browser agent per eligible Ashby row
+  → model-based browser agent per eligible Workday row
   → durable Ledger + Telegram checkpoint + summary
 ```
 
@@ -201,7 +210,54 @@ launchd (hourly)
 | Required form fact unknown | Store the exact non-secret fields keyed to the profile SHA-256 and mapper revision; skip that row until profile facts or the grounded mapper change, then continue to another candidate rather than guessing a fact |
 | Submit click without authoritative confirmation | Record `submit_unknown`; never click it again; inbox/ATS reconciliation owns later confirmation |
 | Telegram transport outcome unknown | Keep legacy outbox events `send_started`; never blindly resend them. The Ashby wake itself uses the proven launchd-safe OpenClaw CLI and stores that run's returned message ID in evidence, so every run has an independently observable delivery attempt |
-| Model fallback | Disabled by default for Ashby. It can only be explicitly re-enabled after a bounded deterministic lane has no viable source |
+| Model browser lane | Mandatory for every eligible ATS form. A deterministic surface mismatch hands the same row and existing CDP page to `browser-lane-agent`; it must not silently terminate the row. |
+
+### 1.2 Model-based browser loop contract (2026-08-22 decision)
+
+The browser agent is the primary form operator for Ashby, Workday, and future ATS
+providers. The deterministic adapter remains a safety rail, not the source of
+truth about every provider DOM.
+
+```text
+claim one eligible row
+  → attach to the existing authenticated CDP browser owner
+  → observe screenshot + accessible controls + page text
+  → choose the visible user-facing control by semantic label/role
+  → fill only profile/truth-ledger facts or grounded resume material
+  → wait for the next rendered surface and save a step snapshot
+  → continue until final Submit or a row-local blocker
+  → accept submitted only from completion UI or authoritative receipt email
+```
+
+The agent must satisfy all of these rules:
+
+1. It may use ordinary visible clicks, keyboard input, scrolling, and condition
+   waits. It may not dispatch hidden DOM events, force-click hidden controls, or
+   bypass CAPTCHA/provider limits.
+2. It must not rely on `nth(index)` as the identity of a field. It re-reads the
+   current page after every navigation or dynamic form update and targets the
+   visible label, role, name, or stable provider identifier.
+3. Questions are not assumed identical across companies. Common fields may be
+   mapped from the profile; company-specific questions are classified from the
+   live wording. Missing facts, legal questions, or unsupported free-text claims
+   become a blocker for that row, never a guessed answer.
+4. Every action boundary writes sanitized evidence: current URL, surface,
+   visible control summary, action, result, and screenshot/hash where available.
+   Private profile values and credentials are redacted.
+5. A browser-agent timeout before a submit click is `not_submitted`/`blocked`.
+   A submit click without completion UI or receipt is `submit_unknown` and is
+   fenced from retry. Only completion UI or an exact authoritative receipt may
+   transition the ledger to `submitted`.
+6. The outer owner catches agent failure per row, writes that row's outcome, and
+   continues the remaining eligible queue. One blocked row never aborts the
+   provider batch.
+
+Runtime routing is explicit: `browser-lane-agent` is the task class; the model
+router may select Luna for routine interaction and Terra for a complex or
+unrecognized surface, but both use the same evidence and submission contract.
+`JOB_SEARCH_ENABLE_MODEL_FALLBACK=0` is therefore not a valid production default
+for the Workday lane; enabling this handoff and proving it through launchd is an
+implementation TODO below.
 
 The healthcheck now requires a running dedicated browser/CDP, a fresh completed
 Ashby evidence bundle, and that bundle's Telegram message ID. Its live output after
@@ -563,8 +619,11 @@ workday_job
 | `none` | false | false | Stop before claim |
 
 The Ledger accepts only `claim_ready=true`. It does not encode Workday-specific
-surface names; the evaluator owns that policy. This prevents future navigation-only
-surfaces from accidentally consuming quota.
+surface names; the evaluator remains a safety signal, but it is no longer allowed
+to terminate an eligible row on a surface mismatch. The model-based browser lane
+must observe and classify the current visible page before the row is marked
+blocked. This prevents a navigation-only surface from consuming quota while still
+handling provider DOM variation.
 
 10B does not create a Workday account or answer application questions. The private
 profile currently contains no verified nationality, citizenship, visa, or work
