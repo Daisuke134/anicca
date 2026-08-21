@@ -83,7 +83,7 @@ function formatChange(locale, value) {
   if (value === null) return CFO_STRINGS[locale].unknown;
   return `${value >= 0 ? "+" : "-"}${formatAmount(locale, Math.abs(value))}`;
 }
-function transactionText(locale, value) {
+function transactionText(locale, value, reportingDate) {
   if (value === null) return locale === "ja"
     ? "\n\n💳 最近の取引\n取得できませんでした。現在の取引は不明です。"
     : "\n\n💳 Recent transactions\nCould not read them. Current activity is unknown.";
@@ -94,7 +94,13 @@ function transactionText(locale, value) {
   const page = value.pagePartial
     ? (locale === "ja" ? "表示は取得範囲の一部です（続きあり）" : "This is a partial page (more may exist)")
     : (locale === "ja" ? "取得範囲内の取引を表示しています" : "All transactions in the retrieved range are shown");
-  const latest = value.latestBookingDate === null ? "" : (locale === "ja" ? `\nMoneytree取得結果で最新の取引日: ${escapeHtml(value.latestBookingDate)}（銀行側更新時刻は不明）` : `\nLatest transaction date in the Moneytree result: ${escapeHtml(value.latestBookingDate)} (bank-side update time unknown)`);
+  const latestDate = value.latestBookingDate;
+  const lagDays = latestDate && /^\d{4}-\d{2}-\d{2}$/.test(reportingDate || "")
+    ? Math.floor((Date.parse(`${reportingDate}T00:00:00Z`) - Date.parse(`${latestDate}T00:00:00Z`)) / 86400000)
+    : null;
+  const latest = latestDate === null ? "" : locale === "ja"
+    ? `\n⚠️ Moneytree返却データの最新取引は${escapeHtml(latestDate)}${Number.isSafeInteger(lagDays) && lagDays > 0 ? `（${lagDays}日前）` : ""}。残高はリアルタイムではありません。銀行側更新時刻は不明です。`
+    : `\n⚠️ The latest transaction returned by Moneytree is ${escapeHtml(latestDate)}${Number.isSafeInteger(lagDays) && lagDays > 0 ? ` (${lagDays} days old)` : ""}. The balance is not realtime; bank-side update time is unknown.`;
   const title = locale === "ja" ? "💳 最近の取引（実測）" : "💳 Recent transactions (Measured)";
   return `\n\n${title}\n${rows}\n${page}${latest}`;
 }
@@ -196,7 +202,7 @@ function renderCfoTelegram({ locale, view, snapshot, transactions }) {
   const accounts = snapshot.sources.map((source) => `${safeLabel(source.label)}\t${formatAmount(locale, source.amountMinor)}${marks.open}${freshness[source.status]}${marks.close}`).join("\n");
   const evidence = snapshot.sources.map((source) => `${evidenceLabel(locale, source.verificationStatus)} ${escapeHtml(source.asOf)}${strings.updated}`).join("\n");
   const why = `${strings.confirmedAssets} − ${strings.confirmedLiabilities} = ${strings.confirmedDifference} ${formatAmount(locale, snapshot.totals.netWorthMinor)}\n${strings.excluded}${marks.colon}${excluded}`;
-  const activity = view === "summary" && transactions !== undefined ? transactionText(locale, transactions) : "";
+  const activity = view === "summary" && transactions !== undefined ? transactionText(locale, transactions, snapshot.reportingDate) : "";
   const text = view === "summary" ? `${title}\n\n${totals}${exclusions}\n\n${sourceText}${repair}${ai ? `\n${ai}` : ""}\n${strings.noAction}${activity}`
     : view === "accounts" ? `${title}\n\n${accounts}\n${snapshot.state === "action_required" ? strings.actionBody : strings.noAction}`
       : view === "accuracy" ? `${title}\n\n${evidence}\n${strings.excluded}${marks.colon}${excluded}` : `${title}\n\n${why}`;
