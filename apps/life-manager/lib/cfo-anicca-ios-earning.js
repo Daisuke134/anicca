@@ -268,4 +268,166 @@ function parseAniccaIosAppleFinanceReport(raw, options = {}) {
   }
 }
 
-module.exports = { normalizeAniccaIosRevenueCatEvent, normalizeAniccaIosAppleFinanceRow, parseAniccaIosAppleFinanceReport };
+const BUSINESS_FACT_TOP_KEYS = ["earning", "token_usage", "direct_api_cost"];
+const BUSINESS_EARNING_KEYS = ["status", "fiscal_month", "apple_partner_share_totals", "revenuecat_coverage_status", "revenuecat_gross_totals", "reconciliation_status", "payout_status", "bank_landed_status"];
+const BUSINESS_TOKEN_KEYS = ["status", "event_count", "total_tokens", "coverage_exceptions"];
+const BUSINESS_DIRECT_KEYS = ["status", "event_count", "estimated_usd"];
+const BUSINESS_APPLE_TOTAL_KEYS = ["currency", "row_count", "amount_decimal"];
+const BUSINESS_RC_TOTAL_KEYS = ["currency", "receipt_count", "amount_decimal"];
+const BUSINESS_TOKEN_EXCEPTIONS = new Set(["missing_usage", "runner_identity_collision", "unattributed_usage"]);
+
+function businessDataObject(value, allowedKeys) {
+  if (value === null || typeof value !== "object" || Array.isArray(value) || isProxy(value) || Object.getPrototypeOf(value) !== Object.prototype) throw Error();
+  const keys = Reflect.ownKeys(value), descriptors = Object.getOwnPropertyDescriptors(value);
+  if (keys.length !== allowedKeys.length || keys.some(key => typeof key !== "string" || !allowedKeys.includes(key))) throw Error();
+  for (const key of allowedKeys) {
+    const descriptor = descriptors[key];
+    if (!descriptor || !descriptor.enumerable || !Object.prototype.hasOwnProperty.call(descriptor, "value") || Object.prototype.hasOwnProperty.call(descriptor, "get") || Object.prototype.hasOwnProperty.call(descriptor, "set")) throw Error();
+  }
+  return descriptors;
+}
+
+function businessDenseArray(value) {
+  if (!Array.isArray(value) || isProxy(value) || Object.getPrototypeOf(value) !== Array.prototype) throw Error();
+  const keys = Reflect.ownKeys(value), descriptors = Object.getOwnPropertyDescriptors(value), length = value.length;
+  const lengthDescriptor = descriptors.length;
+  if (!lengthDescriptor || !Object.prototype.hasOwnProperty.call(lengthDescriptor, "value") || lengthDescriptor.enumerable || !Number.isSafeInteger(length) || length < 0 || keys.length !== length + 1 || keys.some(key => key !== "length" && (typeof key !== "string" || !/^(0|[1-9][0-9]*)$/.test(key) || Number(key) >= length))) throw Error();
+  for (let index = 0; index < length; index += 1) {
+    const descriptor = descriptors[String(index)];
+    if (!descriptor || !descriptor.enumerable || !Object.prototype.hasOwnProperty.call(descriptor, "value") || Object.prototype.hasOwnProperty.call(descriptor, "get") || Object.prototype.hasOwnProperty.call(descriptor, "set")) throw Error();
+  }
+}
+
+function businessSafeInteger(value, nullable = false) {
+  if (nullable && value === null) return;
+  if (!Number.isSafeInteger(value) || value < 0) throw Error();
+}
+
+function businessDecimal(value, signed = false, maxLength = 32) {
+  const pattern = signed ? /^-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$/ : /^(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$/;
+  if (typeof value !== "string" || value.length < 1 || value.length > maxLength || !pattern.test(value) || (signed && /^-0(?:\.0*)?$/.test(value))) throw Error();
+}
+
+function businessAggregateDecimal(value, signed = false) {
+  businessDecimal(value, signed, 128);
+}
+
+function businessCurrency(value) {
+  if (typeof value !== "string" || !/^[A-Z]{3}$/.test(value)) throw Error();
+}
+
+function businessTotals(value, kind) {
+  if (value === null) throw Error();
+  businessDenseArray(value);
+  const keys = kind === "apple" ? BUSINESS_APPLE_TOTAL_KEYS : BUSINESS_RC_TOTAL_KEYS;
+  let previousCurrency = null;
+  const totals = [];
+  for (const item of value) {
+    businessDataObject(item, keys);
+    businessCurrency(item.currency);
+    if (previousCurrency !== null && previousCurrency >= item.currency) throw Error();
+    previousCurrency = item.currency;
+    if (kind === "apple") {
+      businessSafeInteger(item.row_count);
+      if (item.row_count < 1) throw Error();
+      businessAggregateDecimal(item.amount_decimal, true);
+    } else {
+      businessSafeInteger(item.receipt_count);
+      if (item.receipt_count < 1) throw Error();
+      businessAggregateDecimal(item.amount_decimal, false);
+      if (/^0(?:\.0*)?$/.test(item.amount_decimal)) throw Error();
+    }
+    totals.push({ currency: item.currency, [kind === "apple" ? "row_count" : "receipt_count"]: kind === "apple" ? item.row_count : item.receipt_count, amount_decimal: item.amount_decimal });
+  }
+  return totals;
+}
+
+function composeAniccaIosBusinessFact(input) {
+  try {
+    businessDataObject(input, BUSINESS_FACT_TOP_KEYS);
+    const earning = input.earning, tokenUsage = input.token_usage, directApiCost = input.direct_api_cost;
+    businessDataObject(earning, BUSINESS_EARNING_KEYS);
+    if (earning.status !== "complete" && earning.status !== "unavailable") throw Error();
+    if (earning.status === "complete") {
+      if (typeof earning.fiscal_month !== "string" || !/^[0-9]{4}-(0[1-9]|1[0-2])$/.test(earning.fiscal_month)) throw Error();
+      if (earning.apple_partner_share_totals === null) throw Error();
+      businessTotals(earning.apple_partner_share_totals, "apple");
+    } else if (earning.fiscal_month !== null || earning.apple_partner_share_totals !== null) throw Error();
+    if (!["unavailable", "observed_empty", "provider_reported"].includes(earning.revenuecat_coverage_status)) throw Error();
+    if (earning.revenuecat_coverage_status === "unavailable") {
+      if (earning.revenuecat_gross_totals !== null) throw Error();
+    } else if (earning.revenuecat_coverage_status === "observed_empty") {
+      if (!Array.isArray(earning.revenuecat_gross_totals)) throw Error();
+      businessDenseArray(earning.revenuecat_gross_totals);
+      if (earning.revenuecat_gross_totals.length !== 0) throw Error();
+    } else {
+      if (!Array.isArray(earning.revenuecat_gross_totals) || earning.revenuecat_gross_totals.length === 0) throw Error();
+      businessTotals(earning.revenuecat_gross_totals, "revenuecat");
+    }
+    const expectedReconciliation = earning.revenuecat_coverage_status === "unavailable" ? "revenuecat_unavailable" : "gross_vs_partner_share_separate";
+    if (earning.reconciliation_status !== expectedReconciliation || earning.payout_status !== "unknown" || earning.bank_landed_status !== "unknown") throw Error();
+    businessDataObject(tokenUsage, BUSINESS_TOKEN_KEYS);
+    if (!["covered", "partial", "unavailable"].includes(tokenUsage.status)) throw Error();
+    if (tokenUsage.status === "unavailable") {
+      if (tokenUsage.event_count !== null || tokenUsage.total_tokens !== null) throw Error();
+    } else {
+      businessSafeInteger(tokenUsage.event_count);
+      businessSafeInteger(tokenUsage.total_tokens);
+    }
+    businessDenseArray(tokenUsage.coverage_exceptions);
+    if (tokenUsage.status !== "partial" && tokenUsage.coverage_exceptions.length !== 0) throw Error();
+    let previousException = null;
+    const tokenExceptions = [];
+    for (const exception of tokenUsage.coverage_exceptions) {
+      if (typeof exception !== "string" || !BUSINESS_TOKEN_EXCEPTIONS.has(exception) || (previousException !== null && previousException >= exception)) throw Error();
+      previousException = exception;
+      tokenExceptions.push(exception);
+    }
+    businessDataObject(directApiCost, BUSINESS_DIRECT_KEYS);
+    if (!["covered", "partial", "unavailable"].includes(directApiCost.status)) throw Error();
+    if (directApiCost.status === "unavailable") {
+      if (directApiCost.event_count !== null || directApiCost.estimated_usd !== null) throw Error();
+    } else {
+      businessSafeInteger(directApiCost.event_count);
+      businessDecimal(directApiCost.estimated_usd, false);
+    }
+    const appleTotals = earning.apple_partner_share_totals === null ? null : businessTotals(earning.apple_partner_share_totals, "apple");
+    const revenueCatTotals = earning.revenuecat_gross_totals === null ? null : businessTotals(earning.revenuecat_gross_totals, "revenuecat");
+    const exceptions = ["apple_payout_unknown", "bank_landed_unknown", "capital_unknown", "human_cost_unknown", "profit_disabled_until_reconciliation"];
+    if (earning.status === "unavailable") exceptions.push("apple_report_unavailable");
+    if (earning.revenuecat_coverage_status === "unavailable") exceptions.push("revenuecat_unavailable");
+    if (directApiCost.status === "partial") exceptions.push("direct_api_cost_partial");
+    if (directApiCost.status === "unavailable") exceptions.push("direct_api_cost_unavailable");
+    if (tokenUsage.status === "partial") exceptions.push("token_usage_partial");
+    if (tokenUsage.status === "unavailable") exceptions.push("token_usage_unavailable");
+    exceptions.push(...tokenExceptions);
+    exceptions.sort();
+    const result = {
+      schema_version: 1,
+      financial_unit_id: "anicca_ios",
+      period: { fiscal_month: earning.fiscal_month },
+      status: "partial",
+      revenue: {
+        apple_partner_share: { coverage_status: earning.status === "complete" ? "complete" : "unavailable", totals: appleTotals },
+        revenuecat_gross: { coverage_status: earning.revenuecat_coverage_status, totals: revenueCatTotals },
+        reconciliation_status: earning.reconciliation_status,
+        payout_status: earning.payout_status,
+        bank_landed_status: earning.bank_landed_status,
+      },
+      cost: {
+        direct_api: { coverage_status: directApiCost.status, event_count: directApiCost.event_count, estimated_usd: directApiCost.estimated_usd, evidence_status: directApiCost.status === "unavailable" ? "unavailable" : "locally_estimated" },
+        token_usage: { coverage_status: tokenUsage.status, event_count: tokenUsage.event_count, total_tokens: tokenUsage.total_tokens, evidence_status: tokenUsage.status === "unavailable" ? "unavailable" : "runtime_reported_subtotal" },
+        human: { coverage_status: "unknown", amount: null },
+      },
+      capital: { coverage_status: "unknown", amount: null },
+      profit: null,
+      roi: null,
+      coverage_exceptions: exceptions,
+    };
+    return freeze(result);
+  } catch {
+    throw new Error("cfo_anicca_ios_earning_invalid:business_fact");
+  }
+}
+
+module.exports = { normalizeAniccaIosRevenueCatEvent, normalizeAniccaIosAppleFinanceRow, parseAniccaIosAppleFinanceReport, composeAniccaIosBusinessFact };
