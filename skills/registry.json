@@ -179,6 +179,20 @@
       "argsExample": { "action": "execute" },
       "riskNote": "Operational compute purchase, not speculative capital: no stake, position, or principal is deployed. The execution path is independently fail-closed on a $0.07 per-image quote cap, $0.14 daily spend cap, $0.25 Base-USDC float floor, 20x minimum net-reward/cost ratio, duplicate-submission check, and official post-submit readback."
     },
+    "agent-economy": {
+      "track": "A",
+      "dir": "skills/agent-economy",
+      "entrypoint": "run.sh",
+      "status": "dormant",
+      "owner": "agent-economy",
+      "spec": "docs/superpowers/specs/2026-08-21-agent-economy-design.md",
+      "summary": "Read-first control skill for verified external revenue, receipt reconciliation, treasury policy, self-funded compute, and shelter graduation. It does not broadcast a payment when called.",
+      "toolDescription": "Reconcile delayed receipts and report verified external realized net. This is read-first bookkeeping: it does not choose a trade, buy compute, post a bounty, or move money. Use the existing earn/taskmarket or x402_sell slots for revenue actions.",
+      "argsExample": {},
+      "risk": "safe",
+      "alwaysAvailable": false,
+      "riskNote": "Read-only default; receipt reconciliation appends only terminal receipt corrections and never rewrites the earn ledger."
+    },
     "token_launch": {
       "track": "A",
       "dir": "skills/earn",
