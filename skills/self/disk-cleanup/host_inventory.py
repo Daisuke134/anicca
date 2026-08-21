@@ -154,6 +154,8 @@ def _children(path: Path) -> tuple[dict[str, Any], list[str]]:
                         record["files_seen"] += 1
                 except OSError:
                     gaps.append(f"stat-error:{entry.path}")
+    except PermissionError:
+        gaps.append(f"permission-limited:{path}")
     except OSError as exc:
         gaps.append(f"scan-error:{path}:{type(exc).__name__}")
     return record, gaps
@@ -187,7 +189,13 @@ def _bounded_size(
             parsed_size = None
     if result.returncode != 0:
         if parsed_size is not None:
-            return parsed_size, "bounded-du-partial", f"size-partial-rc-{result.returncode}"
+            error_text = (result.stderr or "").lower()
+            gap = (
+                "size-permission-partial"
+                if "permission" in error_text or "not permitted" in error_text
+                else f"size-partial-rc-{result.returncode}"
+            )
+            return parsed_size, "bounded-du-partial", gap
         return None, "error", f"size-rc-{result.returncode}"
     if parsed_size is None:
         return None, "error", "size-empty" if not fields else "size-invalid"

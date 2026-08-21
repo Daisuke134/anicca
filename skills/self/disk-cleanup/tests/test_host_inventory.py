@@ -6,6 +6,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
 
+import host_inventory  # noqa: E402
 from host_inventory import collect_host_inventory  # noqa: E402
 
 
@@ -160,7 +161,7 @@ def test_full_inventory_records_partial_du_size_on_permission_error(tmp_path: Pa
     projects = next(root for root in payload["roots"] if root["path"] == str(tmp_path / "Projects"))
     assert projects["size_bytes"] == 64 * 1024
     assert projects["measurement"] == "bounded-du-partial"
-    assert f"size-partial-rc-1:{tmp_path / 'Projects'}" in payload["coverage"]["gaps"]
+    assert f"size-permission-partial:{tmp_path / 'Projects'}" in payload["coverage"]["gaps"]
 
 
 def test_full_inventory_zero_budget_skips_mount_and_size_probes(tmp_path: Path) -> None:
@@ -177,3 +178,20 @@ def test_full_inventory_zero_budget_skips_mount_and_size_probes(tmp_path: Path) 
 
     assert payload["mounts"] == []
     assert "inventory-budget-exhausted" in payload["coverage"]["gaps"]
+
+
+def test_inventory_classifies_permission_limited_root(tmp_path: Path, monkeypatch) -> None:
+    protected = tmp_path / "Library"
+    protected.mkdir()
+    real_scandir = host_inventory.os.scandir
+
+    def permission_scandir(path):
+        if Path(path) == protected:
+            raise PermissionError("operation not permitted")
+        return real_scandir(path)
+
+    monkeypatch.setattr(host_inventory.os, "scandir", permission_scandir)
+
+    payload = collect_host_inventory(home=tmp_path, state_dir=tmp_path / "state")
+
+    assert f"permission-limited:{protected}" in payload["coverage"]["gaps"]
