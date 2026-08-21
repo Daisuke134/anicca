@@ -32083,3 +32083,9 @@
 {"ts":1787332410,"wake_id":"00MT37KIIL2B4514D2BD164DCD","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1787332595,"wake_id":"00MT37OGVD9255597525274AF1","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1787332723,"wake_id":"00MT37R7K400F28C91ADD34E25","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787332857,"wake_id":"00MT37U3J61BD8063C10FB47A8","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787333000,"wake_id":"00MT37X5AQ981002B2BEC042BE","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787333130,"wake_id":"00MT37ZXHJE622B4D2D12941D3","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787333292,"wake_id":"00MT383EXTB63829FC05654D72","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787333507,"wake_id":"00MT3880WB069D70EBDD754BDE","kind":"skill_missing","sleep_s":120,"model":"auto","slot":"run_skill","result":"run_skill skill not found"}
+{"ts":1787333692,"wake_id":"00MT38BZI4414CFD50597A4356","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
