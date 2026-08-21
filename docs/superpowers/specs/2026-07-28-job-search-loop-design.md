@@ -63,6 +63,15 @@ Enterprise Solutions Engineer - Singapore, reached its real Ashby submit click, 
 recorded another terminal `submit_unknown`. Its fast-path checkpoint was sent with
 Telegram ACK `27475`; `resume-deliver-after` and `summary.v1` completed, and no model
 fallback or Workday navigation occurred.
+
+**Ashby active gate has no Gog/Gmail dependency.** Gog is only a later confirmation
+rail for already-clicked `submit_unknown` rows. The Ashby CLI failure sequence and
+its fixes are: empty retry queue plus model discovery timeout → deterministic
+official-cache discovery; visible five-applications/90-days provider rule → durable
+provider-policy quarantine; `aria-hidden` native submit button → ordinary click on
+the visible `Submit Application` text. The repeatable loop is now
+`Ashby fast path → official-cache discovery (one Tokyo/Japan row) → Ashby fast path
+again → Telegram checkpoint → summary`, with model fallback disabled by default.
 The daily script now bounds the non-deterministic browser fallback at 300 seconds
 by default (`JOB_SEARCH_BROWSER_TIMEOUT_SECONDS` may lower or raise that bounded
 value); deterministic ATS fast paths run before it and retain their own evidence.
