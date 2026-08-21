@@ -15,6 +15,13 @@ Read:
 - ${XDG_CONFIG_HOME:-$HOME/.config}/anicca/job-search/profile.json
 - apps/job-search-loop/config/strategy.default.json
 
+Never print, `cat`, or `sed` the private profile, credentials, or raw provider
+transcripts into stdout/stderr. If a value is needed, query only the one required
+non-secret field with a redacting filter and keep the command output minimal. The
+deterministic Ashby fast path owns name/contact/resume fields and the bounded
+motivation/desired-compensation questions; trust its result file and do not repeat
+or restate any answer it filled.
+
 Before processing the queue, read `$JOB_SEARCH_ASHBY_FAST_PATH_RESULT` when it
 exists. It is a deterministic preflight owned by this same daily process. Do not
 repeat a row that it marked `submitted`, `submit_unknown`, `not_submitted`, or
