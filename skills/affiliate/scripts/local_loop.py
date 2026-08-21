@@ -45,6 +45,7 @@ QUARANTINE_FAILURE_THRESHOLD = 3
 QUARANTINABLE_EFFECTS = {
     "EXTERNAL_WRITE", "PROVIDER_LINK_WRITE", "PUBLICATION_WRITE",
 }
+EXTERNAL_ACTION_DAILY_CAP = 10
 
 
 def atomic_json(path, value):
@@ -129,6 +130,36 @@ def quarantine_snapshot(state_root, threshold=QUARANTINE_FAILURE_THRESHOLD):
         "observed_at": datetime.now(timezone.utc).isoformat(),
     }
     atomic_json(state_root / "quarantine.json", receipt)
+    return receipt
+
+
+def action_budget_snapshot(state_root, cap=EXTERNAL_ACTION_DAILY_CAP):
+    """Count non-no-effect external attempts in the current JST day."""
+    day = datetime.now(ZoneInfo("Asia/Tokyo")).date().isoformat()
+    used = 0
+    for row in json_rows(state_root / "tool-attempt-receipts.jsonl"):
+        if row.get("effect_class") not in QUARANTINABLE_EFFECTS:
+            continue
+        if row.get("effect_certainty") == "NO_EFFECT":
+            continue
+        try:
+            observed_day = datetime.fromisoformat(
+                str(row.get("finished_at", "")).replace("Z", "+00:00")
+            ).astimezone(ZoneInfo("Asia/Tokyo")).date().isoformat()
+        except (TypeError, ValueError):
+            continue
+        if observed_day == day:
+            used += 1
+    receipt = {
+        "schema_version": 1,
+        "receipt_type": "AFFILIATE_EXTERNAL_ACTION_BUDGET",
+        "state": "ACTION_CAP_BLOCKED" if used >= cap else "CLEAR",
+        "day": day,
+        "used_attempts": used,
+        "daily_cap": cap,
+        "observed_at": datetime.now(timezone.utc).isoformat(),
+    }
+    atomic_json(state_root / "action-budget.json", receipt)
     return receipt
 
 
@@ -220,6 +251,7 @@ def _tool_outcome(result, failure_type=None):
         "COOLDOWN", "NO_PENDING", "NO_TRANSACTIONS", "NOT_RUN", "WAITING_FOR_PLACEMENT_LINK",
         "BROWSER_UNAVAILABLE", "SIGN_IN_REQUIRED", "AUTH_REQUIRED", "ELIGIBILITY_BLOCKED",
         "DISK_GUARD_BLOCKED", "DISK_GUARD_UNKNOWN", "QUARANTINED",
+        "ACTION_CAP_BLOCKED",
     }:
         return "NO_EFFECT"
     return "COMPLETED"
@@ -2563,7 +2595,13 @@ def _wake_once(args, started_at, run_id):
                getattr(args, "impact_cdp_port", 9327)),
     )
     quarantine = quarantine_snapshot(state)
+    action_budget = action_budget_snapshot(state)
     attempt_counts = {}
+
+    def refresh_action_budget():
+        nonlocal action_budget
+        action_budget = action_budget_snapshot(state)
+        return action_budget
 
     def admit(tool, effect_class, preconditions, operation, wake_event_uuid=None):
         attempt_counts[tool] = attempt_counts.get(tool, 0) + 1
@@ -2588,11 +2626,42 @@ def _wake_once(args, started_at, run_id):
                 wake_event_uuid=wake_event_uuid,
             )
             return result
-        return attempt_tool(
-            state, run_id, tool, effect_class, preconditions, operation,
-            attempt=attempt_counts[tool],
-            wake_event_uuid=wake_event_uuid,
-        )
+        if effect_class in QUARANTINABLE_EFFECTS and refresh_action_budget()["state"] != "CLEAR":
+            result = {
+                "state": action_budget["state"],
+                "action_budget_state": action_budget["state"],
+                "used_attempts": action_budget["used_attempts"],
+                "daily_cap": action_budget["daily_cap"],
+                "changed": False,
+                "deduplicated": False,
+                "public_url": None,
+                "channel": None,
+                "program": None,
+                "placement": preconditions.get("placement"),
+                "transition_id": None,
+                "retry_state": "RETRYABLE",
+                "retry_after": int(time.time()) + 3600,
+            }
+            append_tool_attempt_receipt(
+                state, run_id, tool, effect_class, attempt_counts[tool],
+                preconditions, time.time(), result=result,
+                failure_class="ACTION_CAP", retry_due_at=result["retry_after"],
+                retry_state="RETRYABLE", wake_event_uuid=wake_event_uuid,
+            )
+            return result
+        try:
+            result = attempt_tool(
+                state, run_id, tool, effect_class, preconditions, operation,
+                attempt=attempt_counts[tool],
+                wake_event_uuid=wake_event_uuid,
+            )
+        except BaseException:
+            if effect_class in QUARANTINABLE_EFFECTS:
+                refresh_action_budget()
+            raise
+        if effect_class in QUARANTINABLE_EFFECTS:
+            refresh_action_budget()
+        return result
 
     lock = (state / ".wake.lock").open("a+")
     try:
@@ -2892,6 +2961,9 @@ def _wake_once(args, started_at, run_id):
         "owner_health_cdp": health.get("cdp"),
         "quarantine_state": quarantine.get("state"),
         "quarantined_tools": quarantine.get("tools"),
+        "action_budget_state": action_budget.get("state"),
+        "action_budget_used_attempts": action_budget.get("used_attempts"),
+        "action_budget_daily_cap": action_budget.get("daily_cap"),
         "provider_changed": provider["changed"],
         "provider_state": provider["state"],
         "provider_transition_id": provider["transition_id"],

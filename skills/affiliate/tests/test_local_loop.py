@@ -22,6 +22,21 @@ SPEC.loader.exec_module(MODULE)
 
 
 class LocalLoopTest(unittest.TestCase):
+    def test_action_budget_counts_only_non_no_effect_attempts_for_jst_day(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root)
+            now = datetime.now().astimezone().isoformat()
+            for certainty in ("UNKNOWN", "EFFECT_CONFIRMED", "NO_EFFECT"):
+                MODULE.append(state / "tool-attempt-receipts.jsonl", {
+                    "tool": "publication.advance",
+                    "effect_class": "PUBLICATION_WRITE",
+                    "effect_certainty": certainty,
+                    "finished_at": now,
+                })
+            snapshot = MODULE.action_budget_snapshot(state, cap=2)
+            self.assertEqual(snapshot["used_attempts"], 2)
+            self.assertEqual(snapshot["state"], "ACTION_CAP_BLOCKED")
+
     def test_quarantine_requires_three_consecutive_external_failures(self):
         with tempfile.TemporaryDirectory() as root:
             state = Path(root)
