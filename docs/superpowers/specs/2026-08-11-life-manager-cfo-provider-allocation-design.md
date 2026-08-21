@@ -180,3 +180,8 @@ describes the console report and its CSV download, while the [Cloud Billing REST
 documents billing-account/project/service/SKU resources rather than invoice cost rows. The [BigQuery export schema](https://cloud.google.com/billing/docs/how-to/export-data-bigquery-tables)
 requires an actually configured export dataset and warns that initial data can lag by up to five days. No read-only API
 call was promoted into provider dimension evidence, and no export configuration was changed.
+
+The existing CDP browser was opened to the Google Cloud Console billing URL read-only. It redirected to
+`https://accounts.google.com/v3/signin/identifier`; no password, Prompt approval, Console setting, or CSV download was
+performed. The tab remains at the owner-authentication boundary. The next action is owner sign-in once, followed by a
+guarded default-filter Cost Table download and observed-schema normalization.

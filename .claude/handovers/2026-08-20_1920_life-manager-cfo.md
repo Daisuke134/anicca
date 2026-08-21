@@ -87,6 +87,8 @@ wrapper for raw MCP would therefore not produce a refresh or a portable credenti
 `CFO-2a3b.2` revalidation also ran read-only: gcloud has one active identity, six projects, one open billing account,
 and no BigQuery dataset rows for the configured project. No real Cost Table CSV or standard export is present. The only
 remaining source step is the owner's one-time Cloud Console reauthentication; no password or fabricated CSV is used.
+The existing CDP browser now has a Google Cloud Console tab at the Google sign-in screen
+(`accounts.google.com/v3/signin/identifier`); no password, Prompt approval, Console setting, or CSV download occurred.
 
 The post-audit real loop verification used the existing launchd label only: `launchctl kickstart -k` returned `0`,
 `runs=3`, final exit code `0`, and stderr empty. It persisted revision `16` and the shared-destination Telegram

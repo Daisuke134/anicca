@@ -1526,6 +1526,10 @@ the configured project. No Cost Table CSV or standard export exists in private C
 item remains real source acquisition after one-time Google Cloud Console reauthentication; no password is read/submitted
 and no fabricated provider dimension rows are accepted.
 
+The existing CDP browser was opened to the Google Cloud Console billing URL and reached the Google sign-in screen
+(`accounts.google.com/v3/signin/identifier`). No password, Prompt approval, Console setting, or CSV download was
+performed; the owner-authentication boundary remains the only source gate for CFO-2a3b.2.
+
 ### Moneytree MCP loop E2E after source audit (2026-08-21 20:00 JST)
 
 The existing `ai.anicca.life-manager-cfo-hourly` label was kicked once with `launchctl kickstart -k`; the command
