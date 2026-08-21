@@ -2516,9 +2516,12 @@ English rows, 20 dedicated provider-link keys, 20 owned public URLs, and 34
 provider-link clicks; the aggregate PartnerStack overview has 43 clicks (42
 post-baseline) and zero commission/payout money. Three Dev.to exposure
 denominators are observed and the remaining 17 are
-`INSUFFICIENT_DENOMINATOR`. Repost observes 52 valid actions with 0 exact
-Affiliate campaign joins and 52 unjoined actions, so it grants no revenue credit.
-The installed `0e818458c` owner completed the 09:10 capture with
+`INSUFFICIENT_DENOMINATOR`. Repost observed 52 valid actions at the 09:10
+capture and 53 at the 09:20 replay, with 0 exact Affiliate campaign joins and
+no revenue credit. The installed `297c713844064418260055860ccf324e6db9122f`
+release is byte-equal to source; its post-install existing-owner kick returned
+`141: Reentrancy avoided`, so the last owner readback remains pre-install. The
+owner completed the 09:10 capture with
 `revenue_state=NO_TRANSACTIONS`, `source_rows=0`, and `appended_transitions=0`;
 official artifact `0c0b1af1…5aa5d3f3` has zero commission/payout rows and
 rolling net remains `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`.
