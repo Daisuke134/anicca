@@ -194,10 +194,27 @@ def _tool_effect_certainty(result, effect_class, failure_type=None):
     return "UNKNOWN"
 
 
+def _classify_tool_failure(error):
+    """Return a typed failure class and bounded retry window without error text."""
+    name = type(error).__name__
+    module = type(error).__module__
+    if name == "TimeoutError" or module.startswith("playwright."):
+        return "BROWSER_TRANSIENT", 300
+    if isinstance(error, ProviderError):
+        return "PROVIDER_TRANSIENT", 900
+    if isinstance(error, JobStateError):
+        return "OWNED_JOURNAL", 1800
+    if isinstance(error, (OSError, subprocess.SubprocessError)):
+        return "RUNTIME_TRANSIENT", 600
+    if isinstance(error, (ValueError, KeyError, json.JSONDecodeError)):
+        return "CONTRACT", None
+    return "UNKNOWN", None
+
+
 def append_tool_attempt_receipt(
     state, scheduler_run_id, tool, effect_class, attempt, preconditions,
     started_at, result=None, failure_type=None, retry_due_at=None,
-    wake_event_uuid=None,
+    failure_class=None, retry_state=None, wake_event_uuid=None,
 ):
     """Persist one redacted, replay-safe receipt for an admitted tool attempt."""
     finished_at = time.time()
@@ -229,6 +246,8 @@ def append_tool_attempt_receipt(
         "duration_ms": max(0, int(round((finished_at - started_at) * 1000))),
         "outcome": _tool_outcome(result, failure_type),
         "failure_type": failure_type,
+        "failure_class": failure_class,
+        "retry_state": retry_state or ("RETRYABLE" if retry_due_at else "NOT_RETRYABLE"),
         "retry_due_at": retry_due_at if isinstance(retry_due_at, (int, float)) else None,
         "effect_certainty": _tool_effect_certainty(result, effect_class, failure_type),
         "postcondition": {
@@ -253,9 +272,13 @@ def attempt_tool(
     try:
         result = operation()
     except BaseException as error:
+        failure_class, retry_seconds = _classify_tool_failure(error)
         append_tool_attempt_receipt(
             state, scheduler_run_id, tool, effect_class, attempt, preconditions,
             started_at, failure_type=type(error).__name__,
+            failure_class=failure_class,
+            retry_state="RETRYABLE" if retry_seconds else "NOT_RETRYABLE",
+            retry_due_at=(time.time() + retry_seconds) if retry_seconds else None,
             wake_event_uuid=wake_event_uuid,
         )
         raise

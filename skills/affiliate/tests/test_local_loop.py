@@ -450,6 +450,9 @@ class LocalLoopTest(unittest.TestCase):
             row = json.loads((state / "tool-attempt-receipts.jsonl").read_text())
             self.assertEqual(row["outcome"], "FAILED")
             self.assertEqual(row["failure_type"], "TimeoutError")
+            self.assertEqual(row["failure_class"], "BROWSER_TRANSIENT")
+            self.assertEqual(row["retry_state"], "RETRYABLE")
+            self.assertGreater(row["retry_due_at"], 0)
             self.assertEqual(row["effect_certainty"], "UNKNOWN")
 
     def test_telegram_outbox_precedes_send_and_deduplicates_message_id(self):
