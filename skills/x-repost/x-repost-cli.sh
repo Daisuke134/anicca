@@ -33,6 +33,7 @@ HUMANIZER_SKILL="${X_REPOST_HUMANIZER:-$HOME/.openclaw/skills/jp-humanizer-pro/S
 GUARD="$HOME/.config/ai/bin/browser-guard.sh"
 ENSURE_BROWSER="$HOME/anicca/skills/browser/ensure_provision_browser.sh"
 AFFILIATE_PROPOSAL="${AFFILIATE_REPOST_PROPOSAL_PATH:-$HOME/.local/state/life-manager/affiliate/repost-proposals/latest.json}"
+AFFILIATE_CONSUMED="$STATE/affiliate-proposals-consumed.jsonl"
 
 PASS_ID="$(date +%Y%m%dT%H%M%S)"
 EV="$STATE/evidence/$PASS_ID"
@@ -173,6 +174,31 @@ for line in lines:
 print(hour, day)
 PYEOF
 )"
+AFFILIATE_TODAY_COUNT="$($PY - "$AFFILIATE_CONSUMED" "$TODAY" <<'PYEOF'
+import json, sys
+from datetime import datetime
+path, today = sys.argv[1:3]
+ids = set()
+try:
+    lines = open(path, encoding="utf-8").read().splitlines()
+except OSError:
+    lines = []
+for line in lines:
+    try:
+        row = json.loads(line)
+    except json.JSONDecodeError:
+        continue
+    if not isinstance(row, dict) or not row.get("proposal_id"):
+        continue
+    try:
+        observed = datetime.fromisoformat(str(row.get("observed_at", "")).replace("Z", "+00:00"))
+    except ValueError:
+        continue
+    if observed.tzinfo is not None and observed.astimezone().date().isoformat() == today:
+        ids.add(row["proposal_id"])
+print(len(ids))
+PYEOF
+)"
 if [ "${HOUR_COUNT:-0}" -gt 0 ]; then
   log "already published this hour ($THIS_HOUR) -- nothing to do"
   touch "$STATE/.last-pass"
@@ -181,7 +207,9 @@ fi
 # An Affiliate proposal is a reserved conversion attempt for this existing owner. Let it reach
 # the proposal branch even when generic reposts already consumed the daily runaway brake; the
 # proposal itself is still recorded in the same posted ledger and therefore consumes the slot.
-if [ "${TODAY_COUNT:-0}" -ge "${X_REPOST_DAILY_MAX:-12}" ] && [ ! -s "$AFFILIATE_PROPOSAL" ]; then
+if [ "${TODAY_COUNT:-0}" -ge "${X_REPOST_DAILY_MAX:-12}" ] && {
+  [ ! -s "$AFFILIATE_PROPOSAL" ] || [ "${AFFILIATE_TODAY_COUNT:-0}" -ge 1 ];
+}; then
   log "daily ceiling reached ($TODAY_COUNT/${X_REPOST_DAILY_MAX:-12}) -- nothing to do"
   touch "$STATE/.last-pass"
   exit 0
@@ -209,7 +237,6 @@ trap 'bash "$GUARD" release "$IDENTITY" >/dev/null 2>&1 || true' EXIT
 # ---------------------------------------------------------------- affiliate proposal (one exact owned article, no tracking link)
 # Affiliate can offer a policy-safe placement but cannot publish through this owner.
 # This owner remains the sole X executor and records its own exact post readback.
-AFFILIATE_CONSUMED="$STATE/affiliate-proposals-consumed.jsonl"
 if ! AFFILIATE_PICK="$($PY "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL" --consumed "$AFFILIATE_CONSUMED" 2>>"$EV/affiliate-proposal.err")"; then
   report "🛑 Affiliate proposal helper failed; no new Affiliate or generic X post is allowed"
   finish 1 "affiliate proposal helper failed"
@@ -218,6 +245,10 @@ AFFILIATE_STATE="$($PY -c 'import json,sys; print(json.load(sys.stdin).get("stat
 if [ "$AFFILIATE_STATE" = "BLOCKED_LEGACY_CLAIM" ] || [ "$AFFILIATE_STATE" = "BLOCKED_CONSUMPTION_LEDGER" ]; then
   report "🛑 Affiliate proposal consumption state is unsafe; no new Affiliate or generic X post is allowed"
   finish 1 "affiliate proposal consumption state blocked"
+fi
+if [ "$AFFILIATE_STATE" = "READY" ] && [ "${AFFILIATE_TODAY_COUNT:-0}" -ge 1 ]; then
+  log "Affiliate daily ceiling reached (${AFFILIATE_TODAY_COUNT}/1) -- defer new proposal"
+  AFFILIATE_STATE="NO_PROPOSAL"
 fi
 if [ "$AFFILIATE_STATE" = "READY" ] || [ "$AFFILIATE_STATE" = "RECONCILE" ]; then
   AFFILIATE_PROPOSAL_INPUT="$EV/affiliate-proposal.json"
