@@ -19,6 +19,7 @@
       "skills/capafy-autopublish",
       "skills/self/capafy-loop"
     ],
+    "commit": "5637819f1",
     "status": "canonical tracked runtime"
   },
   "active_runtime": {
@@ -38,7 +39,7 @@
   ],
   "last_validation": {
     "provider": "capafy",
-    "provider_observed_at": "2026-08-21T08:39:00Z",
+    "provider_observed_at": "2026-08-21T08:37:57Z",
     "sales_coverage": "verified_external_read",
     "sales_lookback_days": 90,
     "trend_request_count": 13,
