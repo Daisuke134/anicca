@@ -22,6 +22,29 @@ SPEC.loader.exec_module(MODULE)
 
 
 class LocalLoopTest(unittest.TestCase):
+    def test_quarantine_requires_three_consecutive_external_failures(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root)
+            for number in range(3):
+                MODULE.append(state / "tool-attempt-receipts.jsonl", {
+                    "tool": "provider-link.elevenlabs",
+                    "effect_class": "PROVIDER_LINK_WRITE",
+                    "outcome": "FAILED",
+                    "failure_type": "TimeoutError",
+                })
+            snapshot = MODULE.quarantine_snapshot(state)
+            self.assertEqual(snapshot["state"], "QUARANTINED")
+            self.assertEqual(
+                snapshot["tools"]["provider-link.elevenlabs"]["consecutive_failures"],
+                3,
+            )
+            MODULE.append(state / "tool-attempt-receipts.jsonl", {
+                "tool": "provider-link.elevenlabs",
+                "effect_class": "PROVIDER_LINK_WRITE",
+                "outcome": "COMPLETED",
+            })
+            self.assertEqual(MODULE.quarantine_snapshot(state)["state"], "CLEAR")
+
     def test_owner_health_redacts_and_persists_label_and_cdp_state(self):
         class Result:
             returncode = 0

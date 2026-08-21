@@ -41,6 +41,10 @@ AFFILIATE_OWNER_LABELS = (
     "ai.anicca.affiliate-composition",
     RUN_OWNER_LABEL,
 )
+QUARANTINE_FAILURE_THRESHOLD = 3
+QUARANTINABLE_EFFECTS = {
+    "EXTERNAL_WRITE", "PROVIDER_LINK_WRITE", "PUBLICATION_WRITE",
+}
 
 
 def atomic_json(path, value):
@@ -92,6 +96,40 @@ def json_rows(path):
         except ValueError:
             continue
     return rows
+
+
+def quarantine_snapshot(state_root, threshold=QUARANTINE_FAILURE_THRESHOLD):
+    """Quarantine only external tools with a consecutive failure streak."""
+    streaks = {}
+    last_failure = {}
+    for row in json_rows(state_root / "tool-attempt-receipts.jsonl"):
+        tool = row.get("tool")
+        if row.get("effect_class") not in QUARANTINABLE_EFFECTS or not tool:
+            continue
+        if row.get("outcome") == "FAILED":
+            streaks[tool] = streaks.get(tool, 0) + 1
+            last_failure[tool] = row.get("failure_type")
+        else:
+            streaks[tool] = 0
+            last_failure.pop(tool, None)
+    tools = {
+        tool: {
+            "consecutive_failures": streaks[tool],
+            "last_failure_type": last_failure.get(tool),
+        }
+        for tool in sorted(streaks)
+        if streaks[tool] >= threshold
+    }
+    receipt = {
+        "schema_version": 1,
+        "receipt_type": "AFFILIATE_QUARANTINE_SNAPSHOT",
+        "state": "QUARANTINED" if tools else "CLEAR",
+        "failure_threshold": threshold,
+        "tools": tools,
+        "observed_at": datetime.now(timezone.utc).isoformat(),
+    }
+    atomic_json(state_root / "quarantine.json", receipt)
+    return receipt
 
 
 def installed_release_sha():
@@ -181,7 +219,7 @@ def _tool_outcome(result, failure_type=None):
     if state in {
         "COOLDOWN", "NO_PENDING", "NO_TRANSACTIONS", "NOT_RUN", "WAITING_FOR_PLACEMENT_LINK",
         "BROWSER_UNAVAILABLE", "SIGN_IN_REQUIRED", "AUTH_REQUIRED", "ELIGIBILITY_BLOCKED",
-        "DISK_GUARD_BLOCKED", "DISK_GUARD_UNKNOWN",
+        "DISK_GUARD_BLOCKED", "DISK_GUARD_UNKNOWN", "QUARANTINED",
     }:
         return "NO_EFFECT"
     return "COMPLETED"
@@ -2524,10 +2562,32 @@ def _wake_once(args, started_at, run_id):
         ports=(args.cdp_port, getattr(args, "x_cdp_port", 9326),
                getattr(args, "impact_cdp_port", 9327)),
     )
+    quarantine = quarantine_snapshot(state)
     attempt_counts = {}
 
     def admit(tool, effect_class, preconditions, operation, wake_event_uuid=None):
         attempt_counts[tool] = attempt_counts.get(tool, 0) + 1
+        if effect_class in QUARANTINABLE_EFFECTS and tool in quarantine.get("tools", {}):
+            result = {
+                "state": "QUARANTINED",
+                "quarantine_state": "QUARANTINED",
+                "quarantined_tool": tool,
+                "changed": False,
+                "deduplicated": False,
+                "public_url": None,
+                "channel": None,
+                "program": None,
+                "placement": preconditions.get("placement"),
+                "transition_id": None,
+                "retry_state": "NOT_RETRYABLE",
+            }
+            append_tool_attempt_receipt(
+                state, run_id, tool, effect_class, attempt_counts[tool],
+                preconditions, time.time(), result=result,
+                failure_class="QUARANTINE", retry_state="NOT_RETRYABLE",
+                wake_event_uuid=wake_event_uuid,
+            )
+            return result
         return attempt_tool(
             state, run_id, tool, effect_class, preconditions, operation,
             attempt=attempt_counts[tool],
@@ -2830,6 +2890,8 @@ def _wake_once(args, started_at, run_id):
         "owner_health_state": health.get("state"),
         "owner_health_labels": health.get("labels"),
         "owner_health_cdp": health.get("cdp"),
+        "quarantine_state": quarantine.get("state"),
+        "quarantined_tools": quarantine.get("tools"),
         "provider_changed": provider["changed"],
         "provider_state": provider["state"],
         "provider_transition_id": provider["transition_id"],
