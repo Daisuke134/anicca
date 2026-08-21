@@ -4,6 +4,22 @@
 
 ## Current SSOT（2026-08-21 実測）
 
+### 2026-08-21 X Article anchor canary と次の実行境界（19:58 JST）
+
+- 新canary `20260821-103056` は、同一不変原稿から Note JA、Substack JA、Substack EN の
+  stable draft target（`nb45df049b220`、`212131716`、`212131731`）を作成した。いずれも
+  publisher-native readback は `not-live` の下書きであり、公開URL・live ledger row・payment receiptは増えていない。
+- X Article JAの初期化は、`after_text` がMarkdownリンクを含む80文字で切られ、HTML側の可視テキストと一致しない
+  ため `ANCHOR NOT FOUND` で停止した。旧releaseのresumeは同じrunでX targetを再利用できず、原稿を再生成せずに
+  初期化だけを再試行し、`x-article/ja` intent未登録のままrc=0で終了した。既存3件のintentと4件のdormant skipは不変である。
+- `49a47c444`でXアンカーを共有純粋ヘルパーへ固定した。Markdownリンクの可視ラベル／後続テキストを候補にし、
+  `p/h/li/blockquote`の終端（listは`</ul>`/`</ol>`まで）を使って、実parsed canaryは2画像を保持する5チャンクへ分割できる。
+  `e89d89aa5`で画像ファイル不在、3回貼り付け失敗、最終画像数不一致をすべて非ゼロ終了にした。集中22件、既存修復配線、
+  py_compile、実parsed payload検証はPASS。静かな画像欠落を許す実行経路は残さない。
+- 次の一手は、停止中ownerがないことを確認して`e89d89aa5`をLife Manager currentへ反映し、既存launchdの
+  `article-resume`を1回だけkickstartして、同一runのX初期化が実targetを返すかをnative readbackすること。
+  X targetが得られるまで、Note/Substackを先に公開してactive-four契約を部分完了扱いにしない。
+
 ### ownerless repair handoff の回収実測
 
 - `eeb25ca90`をLife Managerのimmutable releaseへ反映し、14 Writer labelの`current` argvを再読した。
@@ -1056,9 +1072,9 @@ loaded definitionと自然tickまで読み戻すことを意味する。A1のcon
 | A9 | control-plane復旧後の新規same-run公開を検証する | 新しいrunでNote JA、Substack JA、Substack EN、X Article JAの各native URL・本文・owner・artifact/media hashをreadbackし、Telegram送信receiptを取得 | A7/A8待ち |
 | A9a | 同日完了runの新規記事解放と重複防止をreleaseへ反映する | current releaseでstart-control 6件、publication identity 15件、schedule miss 2件がPASS。実launchdで完了runから新run `20260821-043922`を作成し、provider cooldownで公開前停止、重複外部作用0を確認 | 部分完了（新run解放・重複防止・Codex-only retry配線はPASS。公開E2EはA9d待ち） |
 | A9c | WriterのCodex-only retryを実装する | `ARTICLE_PROVIDER=codex`固定。cooldown既定値を300秒へ変更し、同一immutable runを最大3回だけcheckpoint再開するfixture。Codex cooldown中にClaude/Hermesを起動しない、公開state/ledger後のreplay 0、3回 exhausted後に新runを増殖させない | 実装・契約検証完了（model-runner 7件、resume circuit 6件、start-control 6件、candidate wiring 19件、publication identity 15件、topic-card resume 9件、state routing、duplicate-media guard、構文/manifest/diff check、fresh v2 adversarial review PASS） |
-| A9d | Codex-only Writer公開canaryを行う | current releaseをlaunchdへ反映し、pause解除後の新runでCodex attempt receipt、Note JA、Substack JA/EN、X Article JAの4 native URL、本文・media hash、Telegram delivery receiptを取得。Codex timeout時は同じrunの次tickへ安全にhandoffする | 部分完了（既存`daily-2026-08-21`は4媒体native live＋`article-run-complete rc=0`。`20260821-054500`はduplicate-media quarantine完了。`20260821-072939`はdisk floor低下前にSIGTERMしpublication前で安全停止。clean canary・連続tick・Telegram deliveryは未実施） |
+| A9d | Codex-only Writer公開canaryを行う | current releaseをlaunchdへ反映し、pause解除後の新runでCodex attempt receipt、Note JA、Substack JA/EN、X Article JAの4 native URL、本文・media hash、Telegram delivery receiptを取得。Codex timeout時は同じrunの次tickへ安全にhandoffする | 部分完了（既存`daily-2026-08-21`は4媒体native live＋`article-run-complete rc=0`。`20260821-054500`はduplicate-media quarantine完了。`20260821-072939`はdisk floor低下前にSIGTERMしpublication前で安全停止。`20260821-103056`はNote/Substackの下書き3件、X anchor初期化失敗を実測。`e89d89aa5`修正をcurrentへ反映して同一runを再開するまで未完） |
 | A9e | invalid duplicate-media runを安全に隔離する | 対象runの同一media SHA、全active pairが`unavailable`またはdormant `skipped`、no-effect ledgerを再計算し、proof-bound `run-quarantine.json`を作成。start-controlが同日`new`を返し、対象pair以外とledgerの不変をreadback | 完了（実装・fixture 13件、focused 43件、契約・構文・diff check PASS。実canaryのX intentを同じtargetの`unavailable`へ共有lock下で遷移、receipt作成、ledger不変、start-control=`new`、current release=`cdb611300`を実測） |
-| A9f | disk floor復帰後にclean canaryを再開する | `gig_disk_guard`とarticle wrapperが同じ512MiB floorをPASSし、pause解除→既存daily kickstart→新runの4 native receipt、Telegram message ID、2連続tickを取得。floor未達なら生成・公開を開始しない | pause再設定中（`20260821-072939` attempt-4はbounded timeoutで安全archive、start-controlは`same-jst-day-exhausted-prepublication-archive`の新identityを返す。`c33f8c5f6` current反映後の新run Codex-only canary・4媒体公開は未実施） |
+| A9f | disk floor復帰後にclean canaryを再開する | `gig_disk_guard`とarticle wrapperが同じ512MiB floorをPASSし、pause解除→既存daily kickstart→新runの4 native receipt、Telegram message ID、2連続tickを取得。floor未達なら生成・公開を開始しない | 進行中（`20260821-072939` attempt-4はbounded timeoutで安全archive、start-controlは`same-jst-day-exhausted-prepublication-archive`の新identityを返した。`20260821-103056`は3 draft intentを作成し、X anchor fixをpush済み。`e89d89aa5` current反映→X初期化→4媒体native readbackが次の原子作業） |
 | A9g | 旧backlogを外部作用なしで扱う | 旧runのlive pairを保持したまま、未解決pairだけを現行code/state identityのfailure circuitへopenし、plannerが`WAIT`かつ`recovery_pairs=[]`を返す。新規runの公開を旧targetが先取りしない | 完了（Note circuitを現行code/state SHAで再open、receipt-backed handoff 11件をWAIT化し、さらにduplicate-media runの3件をqueue quarantine付きWAITへ隔離。planner `WAIT/blocked_pairs=[note/ja]/recovery_pairs=[]`） |
 | A9h | receiptのない旧CLAIMEDを安全に扱う | receipt-backed owner proofがないclaimは自動で盗まず、状態・所有者・次の監査を自然文receiptへ記録。新しいreceiptまたは明示的なOrder 5 ownerが現れた場合だけqueue state machineで再開 | 未完（`32446a…` credential incident 1件をfail-closedでCLAIMED維持。clean canaryの公開対象ではないが、repair queueの完全な可観測性に必要） |
 | A9b | 1日複数回の正式scheduleを追加する | 06:00/14:00/22:00などのcalendar wake、各slotのunique run ID、同日異記事、連続2周期のnative receiptを実測 | 未着手。現在は06:00のまま |
