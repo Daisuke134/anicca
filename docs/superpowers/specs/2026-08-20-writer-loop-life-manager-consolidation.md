@@ -521,8 +521,37 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
   完了したとは扱わない。
 - fresh adversarial auditもpublication receiptとしてはPASS、12:00 JST tickの新規公開証拠としては
   FAILと判定した。4件の対象run行はartifact／実PNG hash、canonical identity、content/media flagsまで
- 一致するが、公開時刻は02:36〜08:30 JSTでreporting tickより前であり、money event・non-test payout・
+  一致するが、公開時刻は02:36〜08:30 JSTでreporting tickより前であり、money event・non-test payout・
   subscription contractは0件だった。
+
+### 2026-08-21 launchd namespace probe（12:10 JST）
+
+- `launchctl managername`、`manageruid`、`managerpid`、`print gui/501`、`print system`、
+  `print-cache`、`dumpstate`を同じ実行context、`env -u XPC_SERVICE_NAME`、両方の
+  `/private/tmp/com.apple.launchd.*/Listeners` socket、既存Coconala PIDの`bsexec`で再試行した。
+  すべてmanager系はrc=153、domain/readback系はrc=141 (`Reentrancy avoided`)であり、別namespaceへ
+  逃がしてもloaded definitionを取得できなかった。`id`はuid 501を返すが`id -un`は数値501、
+  `logname`はroot、`dscl . -read /Users/501 RecordName`は`eServerError`、`sudo`/localhost SSHは
+  UID 501のpasswd/Directory Services record不在で拒否された。
+- `~/Library/LaunchAgents`の14 Writer plistは、renderer修正後の`ProgramArguments`、current
+  release path、state root、5つの`StartCalendarInterval`を含めてdesired renderと完全一致する。
+  これはdisk定義の証拠であり、launchdが旧plistをloadedしているか、次のcalendar/interval wakeが
+  存在するかの証拠ではない。Coconalaの`paid_direct.py`、`reply_detector.py`、`storefront_direct.py`、
+  `application_direct.py`がPPID=1で残るのも、過去に起動されたprocessの生存証拠に留まる。
+- 12:04 JSTのclaim workerは`status=READY`、queue `1→1`、新規topic `0`、source `OK 3 / unavailable 1`
+  で一回実行された。12:10 JSTのreport stateは`report_articles_scope=today`、
+  `verified_revenue_event_count=0`、`payout_receipts=[]`であり、同じ状態のTelegram内容はdedupeされた。
+  `article-resume`は旧`daily-2026-08-07`のNote ambiguity circuitを`BLOCK`し、今回tickの新規公開は
+  増えていない。したがって「Coconalaが生きているからWriterの5分/日次loopも生きている」とは推論しない。
+- Web一次資料でも、AppleはLaunchAgentを`~/Library/LaunchAgents`へ置き、`launchctl`で管理する契約を示して
+  いる（[Apple Support](https://support.apple.com/guide/terminal/script-management-with-launchd-apdc6c1077b-5d5d-4d35-9c19-60f2397b2369/mac)）。
+  Appleの`launchctl` man pageは`gui/<uid>`をGUI domain、`user/<uid>`をuser domainとし、実行contextに
+  応じた管理を要求する（[Apple OSS launchctl man page](https://github.com/apple-oss-distributions/launchd/blob/main/man/launchctl.1)）。
+  非ログインcontextでdomainが誤るとbootstrapできない実例も確認できる（[apple/container #2008](https://github.com/apple/container/issues/2008)）。
+- このprobeではlogout、reboot、launchd/loginwindow/opendirectorydのkill、bootstrap、bootout、kickstart、
+  stale lockの削除を行っていない。A1は「正しいGUI/userまたはroot管理contextが外部に必要」のままであり、
+  agent-onlyの安全な修復は未発見である。current releaseのpublishとdisk定義の維持だけを続け、
+  loaded stateを推測で成功扱いにしない。
 
 ## 目標構成
 
@@ -611,20 +640,20 @@ publication identity、読者、payout、ledgerを分ける。
 
 この表は過去のmilestone状態を保持する履歴である。現在の実行順序は次の原子TODOを正本とする。
 
-## Current atomic remaining TODO（2026-08-21 12:00 JST）
+## Current atomic remaining TODO（2026-08-21 12:10 JST）
 
 各行は一つの外部状態または証拠だけを変える。前行の完了証拠がない限り、次行を開始しない。
 
 | ID | 原子作業 | 完了証拠 | 状態 |
 |---:|---|---|---|
-| A1 | 有効なmacOS GUI／user bootstrapを復旧する | `id -un=anicca`、有効な`managername`/`managerpid`、`dscl`と`log show`が同じ実行contextで成功。個別のlaunchd/loginwindow/opendirectoryd killは行わない | ブロッカー・診断済み。安全なagent-only復旧手段なし |
+| A1 | 有効なmacOS GUI／user bootstrapを復旧する | `id -un=anicca`、有効な`managername`/`managerpid`、`dscl`と`log show`が同じ実行contextで成功。個別のlaunchd/loginwindow/opendirectoryd killは行わない | ブロッカー・診断済み。socket/env/bsexec/SSHを試してもrc=141/153、正しい外部管理contextが必要 |
 | A2 | 復旧したcontrol-planeから全14 Writer labelをreadbackする | `launchctl print gui/501/<label>`でlabel、owner、ProgramArguments、EnvironmentVariables、state rootを取得 | A1待ち |
 | A3 | stale定義とcurrent定義の対応表を確定する | 各labelについて旧root/current、PID、owner fence、rollback pathを1行receiptへ保存。推測でstale判定しない | A2待ち |
 | A4 | stale Writer 14件とretired CLI 5件をbootoutし、旧ownerをdrainする | 旧root process=0、owner fence不在、旧root logの新規schedule interval再発=0をreadback | A3待ち |
 | A5 | Life Manager currentの14 plistだけをbootstrapする | 14件すべてのloaded argv/envが`/Users/anicca/gig/releases/life-manager/current`と`~/.local/state/life-manager/writer`を指す | A4待ち |
 | A6 | 残存Writer owner fenceを検証・回復する | `owner.pid=40373`のstale候補を実ownerと照合し、正当なowner不在を確認してから、重複起動なしの回復receiptを保存 | A5待ち（source cleanup修正済み、runtime receipt未取得） |
 | A7 | pause下でcreator/resumeを各1回だけkickstartする | 1回ずつのPID、run ID、終了コード、lock消滅、Telegram自然文receiptを取得。公開はpauseで外部作用0 | A6待ち |
-| A8 | 5分周期の自然tickを2回連続で検証する | 2回ともcurrent argv、単一owner、run/receipt更新、重複外部作用0を確認。`process_alive`だけでは完了にしない | A7待ち |
+| A8 | 5分周期の自然tickを2回連続で検証する | 2回ともcurrent argv、単一owner、run/receipt更新、重複外部作用0を確認。`process_alive`だけでは完了にしない | A7待ち。12:04のclaim/report一回は観測済みだが連続tickではない |
 | A9 | control-plane復旧後の新規same-run公開を検証する | Note JA、Substack JA、Substack EN、X Article JAの各native URL・本文・owner・artifact/media hashを同一runでreadbackし、Telegram送信receiptを取得 | A8待ち |
 | A10 | 実payment/publisher receiptをmoney ledgerへ接続する | receipt ID、金額、通貨、destination identity、artifact/run IDをjoin。未取得は`unknown`のまま保持 | 未着手 |
 | A11 | 14日間の運用観測を完了する | 重複外部作用0、同一run resume、自然文の成功/失敗報告、revenue ledger整合を連続receiptで確認 | A9/A10待ち |
