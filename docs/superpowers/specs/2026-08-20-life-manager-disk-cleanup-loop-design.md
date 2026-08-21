@@ -121,7 +121,8 @@ Life Manager governorは`host-inventory.json`を毎pass atomic writeする。実
 9件、root 23件、coverage gap 15件を記録し、unknown sizeを削除候補へ昇格させなかった。
 fallback passは`host-inventory-full.at`を使い、launchd user domain障害中も1時間ごとにfull censusを発火する。
 隔離stateでのfull readbackは約60秒、mode=`full`、mount 9件、root 23件、gap 11件だった。
-productionの追加managed-home familyは次回full marker更新後に反映される。
+production fallbackのfull receipt（2026-08-21T09:21:29Z）はgap 10件、preserved 6件、
+protected deletion 0件だった。productionの追加managed-home familyは次回full marker更新後に反映される。
 Anicca cleanup controlのgit/lsof/du probeにも15秒timeoutを設定し、さらにguard外側のgovernor、
 runtime-manifest、sweep subprocessにも120秒（kill-after 10秒）のtimeoutを設定した。timeoutは
 error/preserveとして扱い、runtime-manifest失敗時はhourly markerを進めない。これによりfull passの
