@@ -670,6 +670,34 @@ next natural wake must deliver this same event UUID once and provide a real
 message ID before the Telegram reporting gate is closed. No transaction,
 settlement, payout, or money is inferred meanwhile.
 
+### 1.1.25 Current loop-health diagnosis
+
+The loop is **partially healthy, not fully closed and not completely stopped**.
+The existing launchd owner naturally executed `d7c0bb49…` from the immutable
+release, authenticated the provider, preserved 20 exact placement rows, and
+recorded the official empty commission report. The canonical ledger therefore
+measures 34 provider clicks / 32 unique clicks with 20/20 observed click
+denominators; X impressions and owned-page visits remain `UNKNOWN`, and every
+real cash cost remains `UNKNOWN`.
+
+The immediate broken edge is Telegram transport, not click arithmetic or the
+provider ledger: the v2 summary was generated and append-before-send persisted,
+but `flush_telegram` returned `SEND_FAILED` with no provider message ID. A
+read-only `openclaw gateway status` showed the LaunchAgent as not loaded while
+the loopback gateway remained listening and its connectivity probe was `ok`;
+the gateway log at the same wake records `unsupported channel: telegram`. This
+is observed channel/service capability drift; the exact configuration cause is
+not promoted beyond that evidence. The same event UUID remains pending for the
+existing owner retry, so no manual send or shared-gateway restart is allowed in
+this slice.
+
+The economic bottleneck is separate: the latest official PartnerStack artifact
+has `commission_row_count=0`, aggregate metrics show `signups=0` and
+`paid_signups=0`, and rolling net is
+`NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`. Thus the current
+absence of money is an observed acquisition-to-conversion gap, not proof that
+the ledger or reporting calculation fabricated zero.
+
 ### 1.2.0 Audited executable boundary
 
 The installed ownership graph has six launchd labels: three persistent browser
