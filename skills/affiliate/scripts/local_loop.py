@@ -33,6 +33,14 @@ SYSTEME_LOGIN = "https://systeme.io/en/login"
 ELEVENLABS_HOME = "https://elevenlabs.io/app/home"
 RUN_OWNER_LABEL = "ai.anicca.affiliate-loop"
 RELEASE_SHA_PATTERN = re.compile(r"^[0-9a-f]{40}$")
+AFFILIATE_OWNER_LABELS = (
+    "ai.anicca.affiliate-browser",
+    "ai.anicca.affiliate-impact-browser",
+    "ai.anicca.affiliate-x-browser",
+    "ai.anicca.affiliate-source-refresh",
+    "ai.anicca.affiliate-composition",
+    RUN_OWNER_LABEL,
+)
 
 
 def atomic_json(path, value):
@@ -1511,6 +1519,43 @@ def browser_ready(port, attempts=15):
     return False
 
 
+def owner_health(state_root, ports=(9324, 9326, 9327), runner=subprocess.run):
+    """Read launchd/CDP health and persist one redacted watchdog snapshot."""
+    uid = str(os.getuid())
+    labels = {}
+    for label in AFFILIATE_OWNER_LABELS:
+        try:
+            result = runner(
+                ["launchctl", "print", f"gui/{uid}/{label}"],
+                capture_output=True, text=True, timeout=5, check=False,
+            )
+        except (OSError, subprocess.SubprocessError):
+            result = None
+        output = result.stdout if result and result.returncode == 0 else ""
+        state_match = re.search(r"(?m)^\s*state = ([^\n]+)", output)
+        runs_match = re.search(r"(?m)^\s*runs = ([^\n]+)", output)
+        exit_match = re.search(r"(?m)^\s*last exit code = ([^\n]+)", output)
+        labels[label] = {
+            "state": state_match.group(1).strip() if state_match else "NOT_LOADED",
+            "runs": runs_match.group(1).strip() if runs_match else None,
+            "last_exit_code": exit_match.group(1).strip() if exit_match else None,
+        }
+    cdp = {str(port): {"state": "READY" if browser_ready(port) else "UNAVAILABLE"}
+           for port in ports}
+    label_ok = all(row["state"] in {"running", "not running"} for row in labels.values())
+    cdp_ok = all(row["state"] == "READY" for row in cdp.values())
+    receipt = {
+        "schema_version": 1,
+        "receipt_type": "AFFILIATE_OWNER_HEALTH",
+        "state": "HEALTHY" if label_ok and cdp_ok else "DEGRADED",
+        "labels": labels,
+        "cdp": cdp,
+        "observed_at": datetime.now(timezone.utc).isoformat(),
+    }
+    atomic_json(state_root / "owner-health.json", receipt)
+    return receipt
+
+
 def provider_poll(state, cdp_port, attempts=15, provider="elevenlabs"):
     args = SimpleNamespace(
         provider=provider,
@@ -2474,6 +2519,11 @@ def _wake_once(args, started_at, run_id):
     state = args.state.expanduser()
     state.mkdir(mode=0o700, parents=True, exist_ok=True)
     guard = runtime_guard(state)
+    health = owner_health(
+        state,
+        ports=(args.cdp_port, getattr(args, "x_cdp_port", 9326),
+               getattr(args, "impact_cdp_port", 9327)),
+    )
     attempt_counts = {}
 
     def admit(tool, effect_class, preconditions, operation, wake_event_uuid=None):
@@ -2777,6 +2827,9 @@ def _wake_once(args, started_at, run_id):
         "runtime_guard_free_bytes": guard.get("free_bytes"),
         "runtime_guard_floor_bytes": guard.get("floor_bytes"),
         "runtime_guard_receipt_persist_state": guard.get("receipt_persist_state"),
+        "owner_health_state": health.get("state"),
+        "owner_health_labels": health.get("labels"),
+        "owner_health_cdp": health.get("cdp"),
         "provider_changed": provider["changed"],
         "provider_state": provider["state"],
         "provider_transition_id": provider["transition_id"],

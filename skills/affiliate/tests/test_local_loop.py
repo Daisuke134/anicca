@@ -22,6 +22,23 @@ SPEC.loader.exec_module(MODULE)
 
 
 class LocalLoopTest(unittest.TestCase):
+    def test_owner_health_redacts_and_persists_label_and_cdp_state(self):
+        class Result:
+            returncode = 0
+            stdout = "state = running\nruns = 3\nlast exit code = 0\n"
+
+        with tempfile.TemporaryDirectory() as root, patch.object(
+            MODULE, "browser_ready", return_value=True,
+        ):
+            health = MODULE.owner_health(
+                Path(root), ports=(1,), runner=lambda *args, **kwargs: Result(),
+            )
+            self.assertEqual(health["state"], "HEALTHY")
+            self.assertEqual(health["labels"]["ai.anicca.affiliate-loop"]["runs"], "3")
+            self.assertEqual(health["cdp"]["1"]["state"], "READY")
+            stored = json.loads((Path(root) / "owner-health.json").read_text())
+            self.assertEqual(stored["receipt_type"], "AFFILIATE_OWNER_HEALTH")
+
     def test_runtime_disk_guard_is_truthful_and_fail_closed(self):
         with tempfile.TemporaryDirectory() as root:
             state = Path(root)
