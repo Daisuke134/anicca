@@ -799,7 +799,11 @@ a later successful example.
   Decision v7 and the answer owner permit at most one bounded question only after every cumulative
   source proves the fact absent and that absence prevents truthful work. The fresh verifier rejects
   both answered questions and questions used to postpone useful non-blocked work.
-- [ ] P11 — Produce every non-blocked portion while that clarification is pending.
+- [x] P11 — Produce every non-blocked portion while that clarification is pending. Semantic
+  decision v7 routes a partially blocked file task to artifact work with only the genuinely absent
+  fact in `unresolved`. File policy v20 requires the owner and fresh reviewer to ship a useful,
+  honest bounded artifact now, while rejecting placeholders, invented facts and false full-scope
+  PASS claims.
 - [ ] P12 — Generate a useful artifact on the first actionable purchased-order transition.
 - [ ] P13 — Reject acknowledgement/status text as a successful Paid effect; an actionable file
   cycle succeeds only after an artifact attachment is officially read back.
