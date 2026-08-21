@@ -178,7 +178,10 @@ if [ "${HOUR_COUNT:-0}" -gt 0 ]; then
   touch "$STATE/.last-pass"
   exit 0
 fi
-if [ "${TODAY_COUNT:-0}" -ge "${X_REPOST_DAILY_MAX:-12}" ]; then
+# An Affiliate proposal is a reserved conversion attempt for this existing owner. Let it reach
+# the proposal branch even when generic reposts already consumed the daily runaway brake; the
+# proposal itself is still recorded in the same posted ledger and therefore consumes the slot.
+if [ "${TODAY_COUNT:-0}" -ge "${X_REPOST_DAILY_MAX:-12}" ] && [ ! -s "$AFFILIATE_PROPOSAL" ]; then
   log "daily ceiling reached ($TODAY_COUNT/${X_REPOST_DAILY_MAX:-12}) -- nothing to do"
   touch "$STATE/.last-pass"
   exit 0
@@ -348,6 +351,14 @@ PYEOF
   fi
   report "✅ Affiliate proposal posted with exact placement handoff\nplacement: $AFFILIATE_PLACEMENT\npost: $AFFILIATE_POST_URL"
   finish 0 "affiliate proposal published and read back"
+fi
+
+# The daily ceiling remains a hard brake for the ordinary repost path. A READY/RECONCILE Affiliate
+# proposal would have exited above; any other proposal state must not let generic posting bypass it.
+if [ "${TODAY_COUNT:-0}" -ge "${X_REPOST_DAILY_MAX:-12}" ]; then
+  log "daily ceiling reached ($TODAY_COUNT/${X_REPOST_DAILY_MAX:-12}) -- nothing to do"
+  touch "$STATE/.last-pass"
+  exit 0
 fi
 
 # ---------------------------------------------------------------- 1. recon
