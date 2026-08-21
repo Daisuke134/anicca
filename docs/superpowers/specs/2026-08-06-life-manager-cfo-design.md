@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | M2 — `CFO-OPS3a`, `CFO-OPS3b`, `CFO-1j`, `CFO-2b.2`, `CFO-2b.3`, `CFO-2b.4`, `CFO-2b.5`, `CFO-2b.6`, `CFO-2b.7`, `CFO-2b.8`, `CFO-2b.9`, and `CFO-2c` are closed; `CFO-2d` is next |
+| Status | M2 — `CFO-OPS3a`, `CFO-OPS3b`, `CFO-1j`, `CFO-2b.2`, `CFO-2b.3`, `CFO-2b.4`, `CFO-2b.5`, `CFO-2b.6`, `CFO-2b.7`, `CFO-2b.8`, `CFO-2b.9`, `CFO-2c`, and `CFO-2d` are closed; `CFO-2d2` is next |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
@@ -1235,10 +1235,11 @@ ingestion. They are not unchecked M1 items and cannot become the active CFO item
       pure reconciliation projection that keeps measured API cost and usage coverage separate from business/Fleet join
       status; the resulting `incomplete_fleet_read` state is the explicit closure, with unknown values retained. No
       profit or ROI is claimed. `CFO-2d` is next.
-- [ ] **CFO-2d** Report contribution profit, runway, ROI, and evidence completeness; unknown is distinct from zero.
+- [x] **CFO-2d** Report contribution profit, runway, ROI, and evidence completeness; unknown is distinct from zero.
       Canonical commit `6b7c61a85` adds the fail-closed profit projection. Current reconciliation inputs produce
       partial evidence, `contribution_profit=null`, `roi=null`, `runway=unknown`, and advice disabled; `CFO-2d2` owns
-      the readable Telegram rendering and delivery receipt.
+      the readable Telegram rendering and delivery receipt. The projection itself is closed as the truthful
+      `unknown/partial` boundary; no current evidence supports a numeric profit, ROI, or runway claim.
 - [ ] **CFO-2d2** Deliver the real Telegram summary, account/business/accuracy/why drill-downs, deduped message
       receipt, stale-source alert, and non-technical readability E2E. Business profit, total-cost, and cost-based
       advice remain disabled until CFO-2b and CFO-2c are complete and tests 16–18 and 22–28 pass.
@@ -1344,3 +1345,12 @@ Telegram were not mutated. CFO-2c remains open for business/provider statement r
 Official Moneytree evidence was re-read after the stale `2026-08-18` payload report. Moneytree's [MUFG update policy](https://help.getmoneytree.com/ja/articles/5182442-%E4%B8%89%E8%8F%B1ufj%E9%8A%80%E8%A1%8C%E5%80%8B%E4%BA%BA%E5%8F%A3%E5%BA%A7%E3%81%AE%E6%9B%B4%E6%96%B0%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6) limits personal MUFG refreshes to once per day for paid members and once per week for free members. The official [LINK profile refresh API](https://docs.link.getmoneytree.com/v2023-07-03/reference/post-link-profile-refresh.md) exists: it requires OAuth `request_refresh`, returns `202` for asynchronous acceptance, starts within about five minutes in most cases, and is limited to four calls per guest per UTC day. The official [OAuth flow](https://docs.link.getmoneytree.com/v2023-07-03/docs/obtaining-an-access-token.md) requires a registered `client_id`, redirect URI, state, and one-time user authorization; `client_credentials` is not the guest-data flow.
 
 The current Moneytree plugin exposes only `show_accounts`, `show_transactions`, `show_spending_summary`, and `welcome`; local environment/state contains no Moneytree LINK client/token. Canonical commits `93c4119cb` and `4ddb6ba83` add `apps/life-manager/lib/cfo-moneytree-refresh.js` and wire it into the hourly loop/installer: it never calls the network without an access token, uses a durable once-per-day local guard, handles 202/401/403/429, and builds the documented OAuth authorization URL. The stable release now points to `~/.openclaw/.env`, has `StartInterval=3600`, exits 0, and reports `moneytreeRefresh.status=not_enabled` while no token is configured. The existing read remains truthful until the owner supplies a registered LINK OAuth grant; no guessed credential, refresh token, or bank password is accepted. Loop revision 9 has a shared-destination receipt; the explanation of this correction was sent as provider message `27455`.
+
+### CFO-2d closure correction (2026-08-21)
+
+`CFO-2d` is closed as a truthful projection boundary in canonical commit `6b7c61a85`. `apps/life-manager/lib/cfo-profit.js`
+emits contribution profit, ROI, runway, and per-business evidence completeness only when reconciled revenue, landed
+cash, cost, capital, cash, and burn are verified. Current live evidence is partial: `contribution_profit=null`,
+`roi=null`, `runway=unknown`, and `advice_status=disabled`; the Proprietary Investing `-$3.15` activity remains an
+evidence line, not profit. `CFO-2d2` is the next active item for business-summary rendering, drill-downs, and Telegram
+receipt/readability E2E.

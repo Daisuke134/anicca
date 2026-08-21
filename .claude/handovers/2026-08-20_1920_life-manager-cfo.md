@@ -36,7 +36,7 @@
 - Staging recovery (2026-08-21): one staging attempt failed with `npm ENOSPC` because sixteen generated releases occupied roughly 5.3GB. No runtime/state was lost; the regenerated npx cache (`~/.npm/_npx`, 621MB) was removed, the stable release was restaged successfully, and available disk returned to about 707MB. Keep release retention bounded before the next install.
 - GitHub DNS was transiently unavailable during the audit; the canonical CFO branch is now pushed at `5eb76d584`, and the exact canonical spec tip is verified with `git ls-remote` after this push.
 - Canonical product repository: `/Users/anicca/Projects/life-manager-main`, origin `Daisuke134/life-manager.git`, branch `main` at audit HEAD `f116abd1524e7b33a0590c6167307152aa896df8`. It already owns `apps/life-manager`, `skills`, `loops`, CFO Telegram callback, and financial-report runtime. Its main worktree has an unrelated user edit in `skills/earn/gig/tests/test_reply_concurrency.py`; never edit or reset that worktree. Create a dedicated CFO worktree/branch from fetched `origin/main` before migration.
-- Current next action: implement `CFO-2d` profit/ROI/evidence reporting. `CFO-2c` is closed as a fail-closed reconciliation boundary; provider/Fleet joins, landed cash, business costs, profit, and ROI remain unknown where evidence is missing. `CFO-2b.9` is closed with realized investing P&L only. Employment Income and Capafy Marketplace are closed with no bank landing or cost-based profit claim. The Moneytree bank-side refresh/metadata path remains an explicit provider-capability follow-up; the current report does not claim realtime. Do not revive `life-manager-v0`, `cfo-daily`, or the separate financial-report loop.
+- Current next action: implement `CFO-2d2` Telegram business summary/drill-down readability and delivery E2E. `CFO-2d` is closed as a truthful projection boundary: current profit/ROI/runway remain unknown/null. `CFO-2c` is closed as a fail-closed reconciliation boundary; provider/Fleet joins, landed cash, and business costs remain unknown where evidence is missing. `CFO-2b.9` is closed with realized investing P&L only. Employment Income and Capafy Marketplace are closed with no bank landing or cost-based profit claim. The Moneytree LINK refresh path is wired but opt-in pending OAuth; the current report does not claim realtime. Do not revive `life-manager-v0`, `cfo-daily`, or the separate financial-report loop.
 - Writer consolidation gate (read-only/evidence, 2026-08-21): canonical `skills/writer-agent` now owns the exact 492-file runtime from Life Manager `main` commit `09c7525d4`; `config/writer/runtime-manifest.json` records tree hash `54ef7251…` and 77 absolute-path references requiring install-time rendering. Mutable state under `~/.local/state/life-manager/writer` was not imported. `apps/life-manager/lib/cfo-writer.js` projects Note `provider_verified_zero` (0 JPY), Substack `unknown`, measured wall-seconds `1238.525368`, and `measurement_unknown_count=4982` while keeping Writer-wide total/profit/ROI null. No launchd cutover or Writer Telegram write occurred.
 - Affiliate consolidation gate (read-only/evidence, 2026-08-21): canonical `skills/affiliate` owns the proven 80-file runtime from commit `c75dacc60`; `config/affiliate/runtime-manifest.json` records tree hash `affac691…` and no mutable-state import. The live PartnerStack receipt is provider-reported empty (`commission_row_count=0`), payout is blocked by tax setup, tax information is required, and payment-provider selection is required; these remain coverage states, not an Affiliate-wide zero. The latest loop run succeeded in `62.565` measured seconds with terminal `READY_FOR_PUBLICATION`. `apps/life-manager/lib/cfo-affiliate.js` preserves amount/landed-cash/API-cost/capital/profit/ROI as unknown/null. No launchd cutover or Affiliate state/Telegram write occurred.
 - No Binance work: it remains explicitly deferred/skipped for the current product path. No payout, MUFG landing, profit, ROI, or tax amount is currently claimed from Apple evidence.
@@ -46,11 +46,11 @@
 
 ## Current ordered TODO
 
-1. `CFO-2d` is the single active item: publish contribution profit, runway, ROI, and evidence completeness only from
-   reconciled fields. Keep every unavailable field unknown/null; no realized investing loss becomes profit or ROI.
+1. `CFO-2d2` is the single active item: render the business/evidence Telegram summary, drill-downs, deduped receipt,
+   stale-source alert, and readability E2E. Keep every unavailable field unknown/null.
 2. `CFO-2a3b`: complete one-time Google Cloud reauthentication and acquire the real Cost Table when the external
    owner action is available; this remains blocked and never accepts a fabricated CSV.
-3. `CFO-2d2`, `CFO-2d3`, `CFO-2e`: publish contribution profit,
+3. `CFO-2d3`, `CFO-2e`: enable the verified-outgoing-only spending guardian and deterministic recommendations;
    runway, ROI, evidence completeness, readable Telegram drill-downs; then enable the verified-outgoing-only spending
    guardian and deterministic recommendations.
 4. M3 tax evidence/reserve (`CFO-3a`–`3e`), M4 cloud/multi-tenant parity (`CFO-4a`–`4e`), and M5 controlled capital
@@ -95,6 +95,13 @@ exited `0` with `moneytreeRefresh={status:not_enabled,reason:refresh_opt_in_requ
 during symlink cutover were superseded by the final `quiet` pass. The hourly read remains truthful until a one-time LINK
 OAuth grant is supplied. Loop revision 9 has a shared-destination receipt; the direct explanation was sent as provider
 message `27455`.
+
+## CFO-2d closure correction (2026-08-21)
+
+The fail-closed `apps/life-manager/lib/cfo-profit.js` projection is closed in canonical commit `6b7c61a85`.
+Current reconciliation evidence produces `status=partial`, `contribution_profit=null`, `roi=null`,
+`runway=unknown`, and `advice_status=disabled`; the `-$3.15` investment activity remains evidence, not profit. The
+next active item is `CFO-2d2`, which must render business/evidence details through the shared Telegram destination.
 
 ## CFO-2c closure correction (2026-08-21)
 
