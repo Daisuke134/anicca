@@ -165,6 +165,10 @@ rather than a false `submit_unknown`; only an explicit confirmation becomes
 For every future submit it also records whether an Ashby POST/PUT request began after
 the user-facing click. Telegram checkpoints include this `submit request observed`
 proof without exposing request URLs or payloads.
+Release `16c6db89f1dc570c1cbc22b1103e8cdc0aa927fc` proved this transport evidence:
+ElevenLabs' Enterprise Solutions Engineer - Sweden emitted an observed Ashby request
+after the submit click, remained appropriately `submit_unknown` without an
+authoritative confirmation, and produced Telegram ACK `27594`.
 
 The remaining robustness work is ordered, not parallelized: cache freshness, provider-capacity detection, non-Ashby fallback, confirmation reconciliation, then full lifecycle/guardian/OSS.
 
