@@ -956,9 +956,10 @@ spam.
                                  v
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │ 4. PUBLISH                                                                      │
-│ Two lanes today: Postiz API (TikTok/YouTube/X) + agent-owned instagrapi (IG)    │
-│ → provider post_id → exact public URL. Replace either lane without touching     │
-│ the contracts. Postiz stays until the free lanes are green (§8.7).              │
+│ Postiz remains the primary provider for TikTok, Instagram, YouTube, and X.      │
+│ → provider post_id → exact public URL. The current IG fallback is temporary;   │
+│ YouTube support is not wired into the generic LM adapter yet. Do not replace    │
+│ Postiz or enable a local publisher until the same receipts/metrics gates pass.  │
 └────────────────────────────────┬────────────────────────────────────────────────┘
                                  v
 ┌─────────────────────────────────────────────────────────────────────────────────┐
@@ -976,7 +977,7 @@ spam.
                                  │
                  ┌───────────────┴────────────────┐
                  v                                v
-      Telegram: raw public URLs + result    Panel: read-only receipts,
+      Telegram: natural-language receipts    Panel: read-only receipts,
       + app/revenue delta + source health   funnels, learning and failures
                  │                                │
                  └───────────────┬────────────────┘
@@ -1072,12 +1073,13 @@ controlled canary. No OpenClaw path, env file, asset, or state may be read.
 **Distribution actually in use.** `GET api.postiz.com/public/v1/integrations` returns
 **29 live integrations** (16 TikTok, 7 Instagram, 3 YouTube, 1 X). `anicca-larry`'s
 `post-to-tiktok.js` posts through that API with `POSTIZ_API_KEY`. Instagram
-additionally has an agent-owned lane (account created by `ig-account-create`, posted
-by `marketing-engine/poster.py` over instagrapi). **Decision: keep Postiz until the
-free lanes are proven** — cutting it now kills 19 accounts. The free replacement is
-*not* the official APIs for TikTok (an unaudited Content Posting API client can only
-post privately, and the audit is a human review); it is agent-owned accounts plus
-browser/session upload, mirroring what Instagram already does.
+additionally has an agent-owned fallback lane (account created by
+`ig-account-create`, posted by `marketing-engine/poster.py` over instagrapi).
+**Decision: keep Postiz as the primary provider for this recovery and do not
+schedule a Postiz exit.** Cutting it now would strand the existing accounts. Any
+future local replacement is optional and must pass a separate provider
+parity/cutover gate; it is not a reason to read OpenClaw or re-enable legacy jobs.
+The fallback remains evidence of historical operation, not a new production owner.
 
 **How shared the engine really is.** One provisioning path is genuinely shared; the
 posting and config paths are not yet:
@@ -1178,6 +1180,100 @@ The repository-wide scanner still reports the pre-existing Connector photo
 transport at `apps/life-manager/lib/outbound-guardian.js:176`; that unrelated
 cutover blocker is not hidden or allowlisted by I-1.
 
+### 8.8 Platform and account matrix
+
+Postiz remains the publishing control plane for the recovery. The old
+2026-06-03 Postiz map is historical evidence only (it listed 30 integrations);
+the live registry is authoritative and must be refreshed by MKT-02. Life
+Manager must never read the OpenClaw map, credentials, or assets at runtime.
+
+| Product/channel | TikTok | Instagram | YouTube | Current truth |
+|---|---|---|---|---|
+| Honne EN | `@honne_reveal` (`cmoig11ew001zlv0yk6vqo1us`) | live Postiz target not yet frozen | no Honne YouTube target recorded | TikTok canary first |
+| Honne JA | `@honnevideo` | live Postiz target not yet frozen | no Honne YouTube target recorded | known recovery slots only |
+| Anicca JP4 | `@anicca.jp4` | live Postiz target not yet frozen | no dedicated target recorded | one lane at a time |
+| Anicca iOS / main JA | `@anicca.jp` | live Postiz target not yet frozen | historical candidate `@anicca-jp` (`cmn1oukj9012nnq0yqhouc3ib`) | live registry required |
+| Anicca EN / main | not in the incident canary | live Postiz target not yet frozen | historical candidate `@anicca-ai` (`cmmzukbkw04ulp30yfvijrwio`) | separate product pack |
+| Affirmation pack | not an Anicca iOS lane | not an Anicca iOS lane | historical candidate `@anicca-affirmation-video` (`cmn8ymq6c02oio70y5ea1trv8`) | do not mix rewards |
+
+The three YouTube handles and IDs above are candidates copied from the old
+redacted map, not a production assignment. There is no recorded Honne YouTube
+integration. A YouTube lane stays disabled until its live Postiz integration,
+product, locale, account, and direct public URL are all recorded in the Life
+Manager manifest. A shared YouTube channel cannot silently serve two product
+packs; if a channel is intentionally shared, its campaign and reward joins must
+still remain product-scoped.
+
+Postiz is retained for all three requested surfaces (Instagram, TikTok,
+YouTube). The current generic publication contract accepts only `instagram` and
+`tiktok`; adding `youtube` requires a separate contract change, provider-specific
+settings, a direct URL verifier (`/shorts/<id>`, `/watch?v=<id>`, or an equivalent
+verified public URL), and shadow tests before any YouTube write.
+
+### 8.9 Telegram marketing reporting contract
+
+The ledger is machine-readable; Telegram is always a natural-language
+projection of that ledger. Raw JSON, `label exit=N`, raw log tails, and a bare
+profile URL are not reports. Every message names the product, locale, platform,
+account, expected slot, observation window, status, retry state, and source
+health. The three tiers are:
+
+| Tier | Cadence | Required content |
+|---|---|---|
+| Publication/incident receipt | immediately after reconciliation or a missed slot | product + locale + platform + account + slot; `published`/`missed`; direct public URL or `unavailable`; provider post ID; retry state; campaign ID |
+| App/account digest | daily | every production-armed lane, expected/published/missed/duplicate counts, social metrics, attributed installs, activation, trials, paid users, proceeds/MRR, and unavailable sources |
+| Portfolio review | weekly | Honne and Anicca separately; platform/account winners and failures, attribution coverage, retention/revenue movement, source failures, one keep/revert decision, and the next bounded change |
+
+The natural-language message is generated from a deterministic snapshot hash so
+the panel and Telegram can be reconciled. `unavailable`, `partial`, and
+`conflict` are written as words with their source/error; they are never printed
+as zero. A rerun with the same snapshot and effect key sends no duplicate
+message. A production message must identify itself as `Life Manager:::` and
+must not expose secrets or OpenClaw paths.
+
+### 8.10 Social metrics, app metrics, and attribution
+
+Every observation row has the immutable join keys
+`product_id`, `locale`, `platform`, `account_id`, `integration_id`,
+`provider_post_id`, `public_url`, `campaign_id`, `creative_id`, `slot`,
+`observed_at`, and `window`. The metric value also carries `source`, `status`,
+and `error`.
+
+| Surface | Metrics collected when the provider exposes them |
+|---|---|
+| TikTok | delivery, views, hold/completion, likes, comments, saves/shares, profile/link clicks |
+| Instagram | delivery, reach/plays, likes, comments, saves/shares, profile/link clicks |
+| YouTube | delivery, views, watch time/average duration, likes, comments, subscribers, link clicks |
+| App | store clicks, installs, activation, trial start, paid receipt, renewal, proceeds, monthly-equivalent MRR |
+
+The attribution chain is:
+
+`publication URL → platform/account → campaign link → store click → install → activation → trial → paid receipt → renewal`.
+
+The campaign link layer uses the existing Apple `pt`/`ct` contract or an
+equivalent first-party smart-link contract. A TikTok spike is not treated as
+causal merely because installs rose on the same day. Reports show verified
+attributed installs, partial/unattributed installs, attribution coverage, and
+the observation window separately. RevenueCat/App Store Connect/product
+analytics are the financial and app truth; Postiz is the social publication and
+post-metric source. Missing provider data remains `null`/unavailable.
+
+### 8.11 OSS reference research (learn first, copy only after license review)
+
+The following repositories are reference material, not new runtime dependencies:
+
+| Repository | Useful pattern | Decision |
+|---|---|---|
+| [`gitroomhq/postiz-app`](https://github.com/gitroomhq/postiz-app) (AGPL-3.0) | scheduler, provider adapters, analytics, self-hosted/hosted parity | keep using Postiz API; do not vendor-copy into Life Manager without AGPL review |
+| [`gitroomhq/postiz-agent`](https://github.com/gitroomhq/postiz-agent) (AGPL-3.0) | integration discovery, YouTube/TikTok/Instagram settings, post and analytics commands | copy the discovery/checklist ideas only; Life Manager keeps its own local ledger |
+| [`grovs-io/grovs-iOS`](https://github.com/grovs-io/grovs-iOS) (MIT) | iOS smart links, deferred deep links, StoreKit 2 revenue attribution | evaluate for the campaign-link join; do not add before the incident canary |
+| [`zmsp/AppRankly`](https://github.com/zmsp/AppRankly) (AGPL-3.0) | App Store/Play installs, retention, ASO and report vocabulary | study metric definitions only; its Docker/database deployment is not the local recovery runtime |
+| [`nowork-studio/NotFair`](https://github.com/nowork-studio/NotFair) (MIT) | measured baseline, one action per observation window, rollback and local receipts | reuse the bounded-learning pattern, not its agent runtime |
+| [`loopmark-opensource/loopmark-agent`](https://github.com/loopmark-opensource/loopmark-agent) (MIT) | content/funnel decomposition | reference only; it does not provide reliable social-follower analytics |
+
+OSS adoption must preserve Life Manager's local-first boundary, product/locale
+isolation, truthful unavailable states, and the no-mass-reenable incident gate.
+
 **Ordered remainder for this engine** (mirrors the harness task list):
 
 | # | Work | Gate | State |
@@ -1185,14 +1281,14 @@ cutover blocker is not hidden or allowlisted by I-1.
 | 1 | Hook-variation gate + background pool | a hook repeated inside the exclusion window cannot render | **done** — the gate skipped the pinned hook on a real run and picked the next pooled one; background rotation is tested but enabled per variant via `bg_pool` |
 | 2 | Per-account attribution (Apple `pt`/`ct` campaign links) | one publication URL joined to installs and then to a paid event | **link layer done** — three accounts hold store-verified links (http=200), a bogus app id is refused; the install/paid join is unproven until posts run |
 | 3 | Repair the ebook checkout | one real purchase reaches the ledger | the 401 was the **expired test key**; the live key answers 200. Product, $19 price, payment link and a post-purchase PDF redirect now exist — the remaining gap is traffic, not plumbing |
-| 4 | Three-tier Telegram reporting | per-post message carries the tappable public URL; one daily money digest; one weekly review | open — the wrapper still sends `label exit=N` plus a raw log tail, and must also name every ERROR-state post |
+| 4 | Three-tier Telegram reporting | every publication/miss, daily app/account digest, and weekly portfolio review is natural language and names every ERROR-state post | open — replace `label exit=N` and raw log tails with the §8.9 snapshot projection |
 | 5 | Put each account's campaign link in its bio | link visible on IG/TikTok/YouTube profiles | open |
 | 6 | Reward scoring at 2h/24h/72h/7–35d, then kill/scale rules | a daily record of what was killed and what was scaled | **partly done** — engagement-depth scoring runs daily and refuses tiny cohorts; install/paid depth waits on Apple's report data |
 | 7 | Apply the same variation gate + fresh hook pool to ReelClaw video | `hookPool-ja.txt` (static since 2026-03-17) is replaced by mined hooks under the gate | open |
 | 8 | Point `clip` at `load_manifest.sh` + `poster.py` | one posting path for every loop | open |
 | 9 | Product packs for aniccaios / honne / ebook EN / ebook JA | a new product runs with a manifest and zero engine edits | open |
 | 10 | Scale accounts 1 → 5 → 50 at 2–3 posts/day | 10–20 posts/day per product, warmup respected | blocked on 4 and 6 — volume before measurement reproduces the 10M-views/5-signups failure |
-| 11 | Free posting lanes for TikTok/YouTube, then drop Postiz | 19 accounts publish without the subscription | deferred deliberately; Postiz stays until the free lanes are green |
+| 11 | Keep Postiz as the primary provider while evaluating optional local replacement | selected Instagram/TikTok/YouTube lanes publish with verified provider URLs and metrics | **deferred** — no Postiz exit is part of incident recovery; any later replacement needs a new parity/cutover gate |
 
 ## 9. `$10k MRR` operating model
 
@@ -1217,6 +1313,16 @@ These are target mechanics, not forecasts. The first growth gate is not
 4. Improve the weakest measured funnel step.
 5. Scale publishing only after a challenger beats its product-specific
    baseline without retention or revenue regression.
+
+Honne and Anicca are reported as separate products first:
+
+`MRR_product = active paid monthly-equivalent receipts × net monthly ARPU`.
+
+The portfolio total is the sum of verified product receipts. A target of
+`$10k` combined is different from `$10k` for Honne plus `$10k` for Anicca; the
+latter is a `$20k` portfolio target. Social views and likes are acquisition
+signals, not MRR, and a TikTok/Instagram/YouTube spike is not credited to a
+product until the campaign-to-install-to-paid join is verified.
 
 ## 10. To-Be Life Manager UI/UX
 
@@ -1436,8 +1542,10 @@ the quarantined OpenClaw fleet. Only the first unchecked item is active.
 | ID | Atomic action | Account/lane | Done evidence |
 |---|---|---|---|
 | MKT-01 | Port I-3 claim, receipt, Telegram dedupe, and replay state from PostgreSQL/`pg` to the Life Manager-owned local JSONL/atomic-file ledger | all lanes | direct local process restarts cleanly; duplicate claim/effect/notification count is 0 |
-| MKT-02 | Read the Postiz integration registry and freeze a redacted lane manifest containing integration ID, provider, profile, locale, and disabled state | Honne EN, Honne JA, Anicca JP4, Anicca iOS | every target account has exactly one verified provider route; unknown IDs remain blocked rather than guessed |
+| MKT-02 | Read the live Postiz integration registry and freeze a redacted multi-platform lane manifest containing integration ID, provider, profile, locale, product, and disabled state | Honne/Anicca TikTok, Instagram, and YouTube lanes | every target account has exactly one verified provider route; historical IDs and unknown profiles remain blocked rather than guessed |
 | MKT-03 | Run one controlled publication using the Life Manager route, reconcile `PUBLISHED`, verify the direct TikTok `/video/<id>` URL, and send one Telegram receipt | Honne EN `@honne_reveal` | one real public URL, one matching Telegram receipt, and replay creates no new effect |
+| MKT-03A | Extend the generic publication contract and direct-URL verifier to YouTube while keeping Postiz as the provider | selected Anicca/Honne YouTube integration | shadow performs zero provider writes; a verified `/shorts/<id>`, `/watch?v=<id>`, or equivalent public URL is required before canary |
+| MKT-03B | Run one controlled Postiz fan-out canary for the same creative on TikTok, Instagram, and YouTube, each with its own effect key and receipt | one selected production-armed product lane | three provider receipts, three direct public URLs, three metric join keys, one natural-language Telegram summary, and replay creates 0 new effects |
 | MKT-04 | Run the retained Honne EN cadence and prove seven consecutive expected cycles | Honne EN: 07:00 / 11:00 / 20:30 Asia/Tokyo | every expected slot has one generation, publication, direct URL, notification, and observation receipt |
 | MKT-05 | Repair the known hook, asset, poster-argument, and environment-boundary defects before any publication | Honne JA `@honnevideo` | one clean shadow run and one controlled canary; no OpenClaw path/env/asset read |
 | MKT-06 | Restore the retained Honne JA slots, then record and prove a third daily slot in the Life Manager lane manifest | Honne JA: current recovery slots 12:30 / 21:30; third slot is not invented until the lane manifest records it | three expected slots/day pass seven cycles; old `honne-ja-fresh` remains disabled until separately proven |
@@ -1445,9 +1553,11 @@ the quarantined OpenClaw fleet. Only the first unchecked item is active.
 | MKT-08 | Repair and canary the iOS lane, then run its three daily slots | Anicca iOS `@anicca.jp` | one account-specific public URL per canary, metrics receipt, and seven-cycle evidence |
 | MKT-09 | Migrate the remaining Larry/ReelClaw accounts one by one, preserving each measured account/locale/cadence contract | remaining Anicca/Honne accounts | each account passes shadow → canary → seven cycles; no mass re-enable |
 | MKT-10 | Enable the three-posts-per-day policy only after the account’s canary and seven-cycle gate pass | every production-armed account | exactly three expected slots/day, no duplicate effects, no missed-slot silence |
-| MKT-11 | Collect Postiz post metrics at 2h/24h/72h/7d and join App Store Connect, RevenueCat, and product analytics by creative lineage | every published account | measured values remain measured; unavailable remains `null`/unavailable and never becomes 0 |
+| MKT-11 | Collect Postiz TikTok/Instagram/YouTube post metrics at 2h/24h/72h/7d and join App Store Connect, RevenueCat, and product analytics by creative lineage | every published account | social metrics and app metrics are separate rows with the §8.10 join keys; unavailable remains `null`/unavailable and never becomes 0 |
+| MKT-11A | Emit the three natural-language Telegram tiers from the same immutable snapshot used by the panel | every production-armed product/account/platform | per-post/missed receipt, daily app/account digest, and weekly Honne-vs-Anicca review contain no raw logs and dedupe on replay |
+| MKT-11B | Compute attribution coverage and separate verified TikTok/Instagram/YouTube-attributed installs from partial/unattributed installs | every product and campaign | each report shows campaign ID, observation window, source status, and confidence; timing alone never becomes causal attribution |
 | MKT-12 | Run bounded learning: change one hook/format/CTA variable, keep or revert from receipts, and prove the next run consumed the decision | Honne and Anicca separately | one-variable challenger, keep/revert receipt, and next-run consumption receipt |
-| MKT-13 | Retire legacy ownership only after every retained account passes the seven-cycle gate | entire mobile fleet | Life Manager is sole scheduler; old disabled state remains archived rollback evidence |
+| MKT-13 | Retire legacy ownership only after every retained platform lane passes the seven-cycle gate | entire mobile fleet | Life Manager is sole scheduler; Postiz remains the selected provider; old disabled state remains archived rollback evidence |
 
 The product-growth sequence after incident recovery remains: (1) close and prove
 marketing, (2) use App Store Connect, RevenueCat, Mixpanel/PostHog, reviews, and
@@ -1520,8 +1630,9 @@ Cloud becomes Dais's scheduler owner only after:
 | Portability | contract suite passing unchanged in local and cloud modes; tenant export/import reconciliation |
 | Reliability | expected jobs with valid receipts; duplicate effects; stale sources |
 | Variety | unique hook fingerprints; format concentration; duplicate rejection rate |
-| Acquisition | attributed installs per 1,000 impressions and per publication |
+| Acquisition | per-product/locale/platform/account views, clicks, attributed installs per 1,000 impressions, and attribution coverage |
 | Monetization | install→trial, trial→paid, paid retention, MRR, proceeds |
+| Reporting | natural-language Telegram receipt/digest/review coverage; snapshot-hash parity; duplicate messages |
 | Learning | scorable observations, kept challengers, reverted regressions, consumed weight receipts |
 | Finance | reconciled net worth coverage, classified income coverage, source freshness |
 | Product | users whose measured monthly benefit/revenue exceeds subscription cost |
