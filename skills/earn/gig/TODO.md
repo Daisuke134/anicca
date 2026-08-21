@@ -838,7 +838,12 @@ a later successful example.
   the current buyer-side approval identity to exactly match semantic approval evidence, a valid
   fresh-reviewed file authorization, zero delivery blockers, and unchanged presend feedback. A
   prepared progress action may never escalate to formal during sparse presend readback.
-- [ ] P21 — Give reply, attachment and formal delivery independent durable effect keys.
+- [x] P21 — Give reply, attachment and formal delivery independent durable effect keys. Every
+  official browser evidence manifest and DOM receipt now persists content-addressed
+  `coconala:reply:<talkroom>:<message_sha256>` and, when present,
+  `coconala:attachment:<talkroom>:<file_sha256>` keys. Formal delivery retains its append-only
+  ledger identity `coconala:formal:<project>:<file_sha256>` and exposes the same value as
+  `formal_effect_key`; the three effect classes cannot cross-dedupe.
 - [ ] P22 — Read the attachment back in the exact official talkroom.
 - [ ] P23 — Read formal delivery back in the exact official talkroom.
 - [ ] P24 — Replay and prove zero duplicate replies, attachments and formal deliveries.

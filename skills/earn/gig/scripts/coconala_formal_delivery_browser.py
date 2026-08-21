@@ -746,7 +746,8 @@ def persist(contract: dict[str, Any], verified: dict[str, Any], screenshot: byte
         raise RuntimeError("formal_authoritative_readback_missing")
     mode = delivery_mode(verified)
     row = {
-        "event_key": contract["event_key"], "event": "FORMAL_DELIVERY_CONFIRMED",
+        "event_key": contract["event_key"], "formal_effect_key": contract["event_key"],
+        "event": "FORMAL_DELIVERY_CONFIRMED",
         "captured_at": captured_at, "project_id": contract["project_id"], "talkroom_id": contract["talkroom_id"],
         "artifact_path": str(contract["artifact"]), "artifact_bytes": contract["artifact"].stat().st_size,
         "artifact_sha256": contract["artifact_sha256"], "acceptance_path": str(contract["acceptance"]),
@@ -781,6 +782,7 @@ def persist(contract: dict[str, Any], verified: dict[str, Any], screenshot: byte
             "size_bytes": contract["artifact"].stat().st_size,
             "message": str(matched.get("text") or ""),
         },
+        "formal_effect_key": contract["event_key"],
     }
     queue_outer = {
         "sent": True,
@@ -796,6 +798,7 @@ def persist(contract: dict[str, Any], verified: dict[str, Any], screenshot: byte
         "acceptance_delta": contract["acceptance_delta"],
         "screenshot_path": str(queue_screenshot_path),
         "live_dom_path": str(queue_dom_path),
+        "formal_effect_key": contract["event_key"],
     }
     collector.atomic_json(queue_dom_path, queue_live)
     collector.atomic_json(queue_manifest_path, queue_outer)

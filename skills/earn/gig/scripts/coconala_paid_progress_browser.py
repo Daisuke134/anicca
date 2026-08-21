@@ -175,6 +175,18 @@ def _sha256_file(target: Path) -> str:
     return digest.hexdigest()
 
 
+def effect_keys(talkroom_id: str, message: str, attachment_sha256: str | None = None) -> dict[str, str]:
+    """Stable, channel-specific identities; reply and file effects never dedupe each other."""
+    keys = {
+        "reply_effect_key": (
+            f"coconala:reply:{talkroom_id}:{hashlib.sha256(message.encode('utf-8')).hexdigest()}"
+        )
+    }
+    if attachment_sha256:
+        keys["attachment_effect_key"] = f"coconala:attachment:{talkroom_id}:{attachment_sha256}"
+    return keys
+
+
 def snapshot_answer_attachment(contract: AnswerContract, evidence_dir: Path) -> tuple[AnswerContract, Path | None]:
     if contract.attachment_path is None:
         return contract, None
@@ -511,6 +523,7 @@ def persist_answer_evidence(
     manifest_path = evidence_dir / "paid-queue-evidence.json"
     collector.secure_write_bytes(screenshot_path, screenshot)
     captured_at = datetime.now(timezone.utc).isoformat()
+    keys = effect_keys(contract.talkroom_id, contract.message, contract.attachment_sha256)
     outer = {
         "sent": True,
         "mode": "answer",
@@ -522,6 +535,7 @@ def persist_answer_evidence(
         "message_sha256": hashlib.sha256(contract.message.encode("utf-8")).hexdigest(),
         "screenshot_path": str(screenshot_path),
         "live_dom_path": str(live_dom_path),
+        **keys,
     }
     if contract.attachment_path is not None:
         outer["latest_seller_attachment"] = {
@@ -545,6 +559,7 @@ def persist_answer_evidence(
         # no timestamps, so ordering is the only available proof that our answer sits below
         # the buyer's message. Consumed by paid_thread_state.py.
         "messages": verified.get("messages") or [],
+        **keys,
     }
     collector.atomic_json(live_dom_path, live)
     collector.atomic_json(manifest_path, outer)
@@ -878,6 +893,7 @@ def persist_evidence(
     manifest_path = evidence_dir / "paid-queue-evidence.json"
     collector.secure_write_bytes(screenshot_path, screenshot)
     captured_at = datetime.now(timezone.utc).isoformat()
+    keys = effect_keys(contract.talkroom_id, contract.message, contract.package_sha256)
     outer = {
         "mode": "revision_after_formal" if revision_after_formal else "progress",
         "sent": True,
@@ -892,6 +908,7 @@ def persist_evidence(
         "acceptance_delta": contract.acceptance_delta,
         "screenshot_path": str(screenshot_path),
         "live_dom_path": str(live_dom_path),
+        **keys,
     }
     live = {
         "mode": "revision_after_formal" if revision_after_formal else "progress",
@@ -909,6 +926,7 @@ def persist_evidence(
             "size_bytes": contract.artifact_path.stat().st_size,
             "message": str(matched.get("text") or ""),
         },
+        **keys,
     }
     collector.atomic_json(live_dom_path, live)
     collector.atomic_json(manifest_path, outer)
