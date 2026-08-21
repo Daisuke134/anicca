@@ -6,6 +6,7 @@ import hashlib
 import json
 import pathlib
 import sqlite3
+import re
 
 
 PRODUCT_LANGUAGE = {"ebook-ja": "ja", "ebook-en": "en"}
@@ -37,6 +38,20 @@ def script_id(script: dict) -> str:
     return "script." + hashlib.sha256(canonical(value).encode()).hexdigest()[:24]
 
 
+def validate_writer_contract(script: dict) -> None:
+    body = script["body"].casefold() if script["language"] == "en" else script["body"]
+    cursor = -1
+    for key in ("hook", "pain_angle", "teaching", "action", "cta"):
+        value = script[key].casefold() if script["language"] == "en" else script[key]
+        next_cursor = body.find(value, cursor + 1)
+        require(next_cursor >= 0, f"writer contract missing {key}")
+        cursor = next_cursor
+    if script["language"] == "ja":
+        require(bool(re.search(r"[ぁ-んァ-ン一-龯]", body)), "Japanese writer contract required")
+    else:
+        require(bool(re.search(r"[A-Za-z]{3}", body)), "English writer contract required")
+
+
 def validate(script: dict, parent: dict | None = None) -> None:
     require(set(script) == REQUIRED, "script fields differ")
     require(script["schema_version"] == "marketing.ebook-script.v1", "script schema invalid")
@@ -47,6 +62,7 @@ def validate(script: dict, parent: dict | None = None) -> None:
     require(isinstance(script["source_mechanism_ids"], list), "source mechanisms required")
     require(script["declared_mutation"] in COMPONENTS, "one declared component mutation required")
     require(isinstance(script["baseline"], bool), "baseline flag required")
+    validate_writer_contract(script)
     if script["baseline"]:
         require(script["parent_script_id"] is None, "baseline cannot have parent")
     else:
