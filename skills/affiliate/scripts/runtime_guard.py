@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from provider_cli import atomic_write
 
 
-RUNTIME_DISK_FLOOR_BYTES = 10 * 1024 ** 3
+RUNTIME_DISK_FLOOR_BYTES = 1024 ** 3
 
 
 def runtime_guard(state_root, floor_bytes=RUNTIME_DISK_FLOOR_BYTES):
