@@ -381,3 +381,8 @@ data, and includes it in LINK Kit's required scope list. The supported fix is a 
 user-authorized `request_refresh` OAuth grant, followed by asynchronous refresh and the existing read adapter. The
 ChatGPT plugin bearer credential is read-only and cannot be upgraded by the loop; provider-limited near-realtime is the
 maximum guarantee.
+
+Token gate: official LINK OAuth requires a Moneytree-issued `client_id`, registered `redirect_uri`, and code+PKCE
+consent. The local credential SSOT is mode `600` but has only a `postiz` entry; no Moneytree LINK client/access/refresh
+token exists. The canonical refresh adapter is prepared and fails closed with missing credentials. The ChatGPT plugin
+bearer token is connector-owned and is not extracted or reused as a separate LINK grant.

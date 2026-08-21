@@ -1653,3 +1653,14 @@ obtain a user-authorized OAuth grant containing `request_refresh`, call the offi
 provider quotas, wait for the provider job, then reuse the existing read adapter. The current ChatGPT plugin bearer scope
 cannot be upgraded by the loop and is not that LINK client. “Realtime” therefore means provider-limited near-realtime,
 not a tick-by-tick bank feed.
+
+### LINK token acquisition gate (2026-08-21)
+
+Moneytree's official OAuth guide supports `code + PKCE`, but requires a Moneytree-issued `client_id` and a registered
+`redirect_uri`; the authorization request must explicitly include the requested scopes. The local credential SSOT
+`~/.local/share/anicca/credentials.json` is mode `600` and currently contains only a `postiz` service entry—no
+Moneytree LINK client, access token, or refresh token. The loop's `cfo-moneytree-refresh.js` boundary is ready for a
+`request_refresh` token but correctly returns `request_refresh_credentials_missing` without one. The ChatGPT plugin's
+connector-owned bearer token is not exported or repurposed as a different LINK client grant. Therefore token acquisition
+requires registering/provisioning a legitimate LINK client and completing its PKCE consent once; no credential is guessed
+or extracted from the plugin.
