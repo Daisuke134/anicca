@@ -199,17 +199,31 @@ for line in lines:
 print(len(ids))
 PYEOF
 )"
+# Read and validate the proposal ledger before the daily generic-post gate. An unresolved
+# EFFECT_STARTED claim must remain recoverable even when generic reposts already hit their brake.
+if ! AFFILIATE_PICK="$($PY "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL" --consumed "$AFFILIATE_CONSUMED" 2>>"$EV/affiliate-proposal.err")"; then
+  report "🛑 Affiliate proposal helper failed; no new Affiliate or generic X post is allowed"
+  finish 1 "affiliate proposal helper failed"
+fi
+AFFILIATE_STATE="$($PY -c 'import json,sys; print(json.load(sys.stdin).get("state","NO_PROPOSAL"))' <<<"$AFFILIATE_PICK" 2>/dev/null || echo NO_PROPOSAL)"
+if [ "$AFFILIATE_STATE" = "BLOCKED_LEGACY_CLAIM" ] || [ "$AFFILIATE_STATE" = "BLOCKED_CONSUMPTION_LEDGER" ]; then
+  report "🛑 Affiliate proposal consumption state is unsafe; no new Affiliate or generic X post is allowed"
+  finish 1 "affiliate proposal consumption state blocked"
+fi
+if [ "$AFFILIATE_STATE" = "READY" ] && [ "${AFFILIATE_TODAY_COUNT:-0}" -ge 1 ]; then
+  log "Affiliate daily ceiling reached (${AFFILIATE_TODAY_COUNT}/1) -- defer new proposal"
+  AFFILIATE_STATE="NO_PROPOSAL"
+fi
 if [ "${HOUR_COUNT:-0}" -gt 0 ]; then
   log "already published this hour ($THIS_HOUR) -- nothing to do"
   touch "$STATE/.last-pass"
   exit 0
 fi
-# An Affiliate proposal is a reserved conversion attempt for this existing owner. Let it reach
-# the proposal branch even when generic reposts already consumed the daily runaway brake; the
-# proposal itself is still recorded in the same posted ledger and therefore consumes the slot.
-if [ "${TODAY_COUNT:-0}" -ge "${X_REPOST_DAILY_MAX:-12}" ] && {
-  [ ! -s "$AFFILIATE_PROPOSAL" ] || [ "${AFFILIATE_TODAY_COUNT:-0}" -ge 1 ];
-}; then
+# An Affiliate READY/RECONCILE branch is evaluated above. Only those states may pass the generic
+# daily brake; all ordinary repost work remains capped exactly as before.
+if [ "${TODAY_COUNT:-0}" -ge "${X_REPOST_DAILY_MAX:-12}" ] \
+  && [ "$AFFILIATE_STATE" != "READY" ] \
+  && [ "$AFFILIATE_STATE" != "RECONCILE" ]; then
   log "daily ceiling reached ($TODAY_COUNT/${X_REPOST_DAILY_MAX:-12}) -- nothing to do"
   touch "$STATE/.last-pass"
   exit 0
@@ -237,19 +251,6 @@ trap 'bash "$GUARD" release "$IDENTITY" >/dev/null 2>&1 || true' EXIT
 # ---------------------------------------------------------------- affiliate proposal (one exact owned article, no tracking link)
 # Affiliate can offer a policy-safe placement but cannot publish through this owner.
 # This owner remains the sole X executor and records its own exact post readback.
-if ! AFFILIATE_PICK="$($PY "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL" --consumed "$AFFILIATE_CONSUMED" 2>>"$EV/affiliate-proposal.err")"; then
-  report "🛑 Affiliate proposal helper failed; no new Affiliate or generic X post is allowed"
-  finish 1 "affiliate proposal helper failed"
-fi
-AFFILIATE_STATE="$($PY -c 'import json,sys; print(json.load(sys.stdin).get("state","NO_PROPOSAL"))' <<<"$AFFILIATE_PICK" 2>/dev/null || echo NO_PROPOSAL)"
-if [ "$AFFILIATE_STATE" = "BLOCKED_LEGACY_CLAIM" ] || [ "$AFFILIATE_STATE" = "BLOCKED_CONSUMPTION_LEDGER" ]; then
-  report "🛑 Affiliate proposal consumption state is unsafe; no new Affiliate or generic X post is allowed"
-  finish 1 "affiliate proposal consumption state blocked"
-fi
-if [ "$AFFILIATE_STATE" = "READY" ] && [ "${AFFILIATE_TODAY_COUNT:-0}" -ge 1 ]; then
-  log "Affiliate daily ceiling reached (${AFFILIATE_TODAY_COUNT}/1) -- defer new proposal"
-  AFFILIATE_STATE="NO_PROPOSAL"
-fi
 if [ "$AFFILIATE_STATE" = "READY" ] || [ "$AFFILIATE_STATE" = "RECONCILE" ]; then
   AFFILIATE_PROPOSAL_INPUT="$EV/affiliate-proposal.json"
   if ! "$PY" - "$AFFILIATE_PICK" "$AFFILIATE_PROPOSAL_INPUT" <<'PYEOF'
