@@ -767,7 +767,12 @@ a later successful example.
   `projects/18169985/source/dm/`; the regenerated packet reports `dm` in `sources_present` and
   names that exact thread in `read_these_first` (packet SHA256
   `5c0e3522c7817b3c59ea0b6846743cd5b249a1c783791dc6496d17619284f184`).
-- [ ] P5 — Bind purchased scope, agreed price and deadline to the same context packet.
+- [x] P5 — Bind purchased scope, agreed price and deadline to the same context packet. The
+  existing `order` section now keeps the official order label, agreed `price_jpy`, marketplace
+  contract identity and `delivery_date` together. Production proof on Manledge reads scope
+  `新規事業での配達ドライバー確保のアポイント獲得をお願いします。`, `9000`,
+  `offer:6331348`, and `2026-08-25` from one section; packet SHA256 is
+  `47280faaff6c534fe0e64902bfbb9440da2f418f58ac4e80b75f21857aee7241`.
 - [ ] P6 — Bind the complete append-only talkroom history to the same context packet.
 - [ ] P7 — Bind every buyer attachment and its content receipt to the same context packet.
 - [ ] P8 — Persist one context digest plus source receipts before semantic work begins.

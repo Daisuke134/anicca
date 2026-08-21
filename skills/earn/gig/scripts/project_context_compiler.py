@@ -280,6 +280,12 @@ def _order_section(root: Path, queue: dict[str, Any] | None) -> dict[str, Any]:
     price = queue.get("price_jpy")
     if isinstance(price, int) and not isinstance(price, bool):
         section["price_jpy"] = price
+    contract_id = str(queue.get("contract_id") or queue.get("source_contract_id") or "").strip()
+    if contract_id:
+        section["contract_id"] = contract_id
+    delivery_date = str(queue.get("delivery_date") or "").strip()
+    if delivery_date:
+        section["delivery_date"] = delivery_date
     if not title:
         section["looked_in"] = looked_in
     return section
