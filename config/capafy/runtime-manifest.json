@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "runtime_roots": [
+    "skills/capafy-autopublish",
+    "skills/self/capafy-loop"
+  ],
+  "runtime_tree_sha256": "b97ceffbe506312067a1bc55282613c9645cb482735ebb585041a6c211e12af4",
+  "runtime_file_count": 395,
+  "hash_algorithm": "sha256(sorted tracked relative path + NUL + file bytes + NUL)",
+  "canonical_census": {
+    "owner": "Daisuke134/life-manager",
+    "mutable_state_imported": false,
+    "source_absolute_path_references": 0,
+    "machine_paths_require_install_time_rendering": true
+  },
+  "source": {
+    "repository": "/Users/anicca/Projects/life-manager-main",
+    "paths": [
+      "skills/capafy-autopublish",
+      "skills/self/capafy-loop"
+    ],
+    "status": "canonical tracked runtime"
+  },
+  "active_runtime": {
+    "path": "~/anicca/skills/self/capafy-loop",
+    "status": "host runtime observed as evidence only; mutable state is not imported"
+  },
+  "state": {
+    "active": "~/anicca/skills/self/capafy-loop/state/capafy-earn-ledger.jsonl",
+    "observed_state_mtime": "2026-08-20T23:10:28Z",
+    "parity": "read-only comparison to live provider; state is not authoritative"
+  },
+  "launchd_labels": [
+    "ai.anicca.capafy-loop-daily",
+    "ai.anicca.capafy-loop-healthcheck",
+    "ai.anicca.capafy-goal-monitor-hourly",
+    "ai.anicca.capafy-outcome-monitor"
+  ],
+  "last_validation": {
+    "provider": "capafy",
+    "provider_observed_at": "2026-08-21T08:39:00Z",
+    "sales_coverage": "verified_external_read",
+    "sales_lookback_days": 90,
+    "trend_request_count": 13,
+    "trend_row_count": 90,
+    "paid_sales_day_count": 2,
+    "order_count": 5,
+    "gross_sales_usd": "19.98",
+    "net_sales_usd": "19.98",
+    "refund_amount_usd": "0.00",
+    "latest_order_date": "2026-08-12",
+    "latest_paid_sale_date": "2026-08-08",
+    "payout_coverage": "verified_external_read",
+    "payout_record_count": 2,
+    "paid_payout_record_count": 0,
+    "balance_pending_usd": "0.00",
+    "balance_confirmed_usd": "6.40",
+    "balance_payout_usd": "8.00",
+    "total_payout_usd": "0.00",
+    "payout_status": "provider_reported_unpaid",
+    "bank_landed_status": "unknown",
+    "launchd_observation": {
+      "ai.anicca.capafy-loop-daily": {"last_exit_code": 0, "runs": 2},
+      "ai.anicca.capafy-loop-healthcheck": {"last_exit_code": 1, "runs": 521},
+      "ai.anicca.capafy-goal-monitor-hourly": {"last_exit_code": 2, "runs": 560},
+      "ai.anicca.capafy-outcome-monitor": {"last_exit_code": 0, "runs": 2596}
+    },
+    "loop_state_mutated": false,
+    "launchd_mutated": false,
+    "mutable_state_mutated": false
+  }
+}
