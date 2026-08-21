@@ -1294,6 +1294,12 @@ contains successful receipts with message IDs `4421` and `26925`; replay reads
 the same outbox and does not resend. This proves that the other loop's transport
 is healthy, not that its bot/chat credential belongs to Life Manager.
 
+No transport copy is needed: Life Manager already owns the equivalent direct
+Bot API helper at `apps/life-manager/lib/telegram.js` and the durable
+`marketing-liveness-adapter.js` path that renders the required natural-language
+receipt and validates the provider message ID. Copying job-search code would
+create a second sender, not remove the binding blocker.
+
 The shared shell helper `skills/_shared/send-telegram.sh` is not a safe source
 for this recovery because its fallback reads `$HOME/.openclaw/.env`. Life Manager
 must not import that file, the job-search secret file, or any other sibling-loop
