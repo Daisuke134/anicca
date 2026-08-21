@@ -1,5 +1,6 @@
 import json
 import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -22,11 +23,12 @@ def test_tier_boundaries_use_bytes() -> None:
     assert classify_tier(3 * GiB - 1) == "ULTRA"
 
 
-def test_closed_regenerable_artifact_is_reclaimed(tmp_path: Path) -> None:
+def test_closed_regenerable_artifact_is_reclaimed(tmp_path: Path, monkeypatch) -> None:
     state = tmp_path / "state"
     candidate = tmp_path / "tmp" / "cfo-complete"
     candidate.mkdir(parents=True)
     (candidate / "payload").write_bytes(b"x" * 64)
+    monkeypatch.setattr(disk_cleanup.tempfile, "gettempdir", lambda: str(candidate.parent))
     governor = HostDiskGovernor(
         home=tmp_path,
         state_dir=state,
@@ -34,7 +36,9 @@ def test_closed_regenerable_artifact_is_reclaimed(tmp_path: Path) -> None:
         usage=lambda: (0, 1),
     )
 
-    result = governor.sweep([{"path": candidate, "class": "ephemeral", "owner": "cfo"}])
+    result = governor.sweep(
+        [{"path": candidate, "class": "ephemeral", "owner": "temporary-run", "discovery": "allowlisted"}]
+    )
 
     assert result["reclaimed"] > 0
     assert not candidate.exists()
@@ -42,10 +46,11 @@ def test_closed_regenerable_artifact_is_reclaimed(tmp_path: Path) -> None:
     assert receipt["protected_deletions"] == 0
 
 
-def test_open_or_protected_artifact_is_preserved(tmp_path: Path) -> None:
+def test_open_or_protected_artifact_is_preserved(tmp_path: Path, monkeypatch) -> None:
     state = tmp_path / "state"
-    open_candidate = tmp_path / "tmp" / "open"
+    open_candidate = tmp_path / "tmp" / "cfo-open"
     open_candidate.mkdir(parents=True)
+    monkeypatch.setattr(disk_cleanup.tempfile, "gettempdir", lambda: str(open_candidate.parent))
     protected = tmp_path / ".codex" / "logs.sqlite"
     protected.parent.mkdir()
     protected.write_bytes(b"x" * 64)
@@ -58,7 +63,12 @@ def test_open_or_protected_artifact_is_preserved(tmp_path: Path) -> None:
 
     result = governor.sweep(
         [
-            {"path": open_candidate, "class": "ephemeral", "owner": "browser"},
+            {
+                "path": open_candidate,
+                "class": "ephemeral",
+                "owner": "temporary-run",
+                "discovery": "allowlisted",
+            },
             {"path": protected, "class": "ephemeral", "owner": "unknown"},
         ]
     )
@@ -68,6 +78,44 @@ def test_open_or_protected_artifact_is_preserved(tmp_path: Path) -> None:
     assert protected.exists()
     assert result["preserved"] == 2
     assert result["protected_deletions"] == 0
+
+
+def test_unproved_candidate_is_preserved(tmp_path: Path) -> None:
+    candidate = tmp_path / "important"
+    candidate.write_bytes(b"do-not-delete")
+    governor = HostDiskGovernor(
+        home=tmp_path,
+        state_dir=tmp_path / "state",
+        lsof=lambda _path: "confirmed-closed",
+        usage=lambda: (0, 1),
+    )
+
+    result = governor.sweep([{"path": candidate, "class": "ephemeral", "owner": "operator"}])
+
+    assert candidate.exists()
+    assert result["preserved_reasons"] == {"unknown_artifact": 1}
+
+
+def test_lsof_stderr_is_probe_error(monkeypatch) -> None:
+    class Result:
+        returncode = 1
+        stdout = ""
+        stderr = "permission denied"
+
+    monkeypatch.setattr(disk_cleanup.subprocess, "run", lambda *args, **kwargs: Result())
+    assert disk_cleanup._default_lsof(Path("/tmp/unknown")) == "probe-error"
+
+
+def test_cli_candidate_is_rejected(tmp_path: Path) -> None:
+    script = Path(__file__).parents[1] / "disk_cleanup.py"
+    result = subprocess.run(
+        [sys.executable, str(script), "--home", str(tmp_path), "--candidate", str(tmp_path / "important")],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode != 0
+    assert "--candidate is disabled" in result.stderr or "--candidate is disabled" in result.stdout
 
 
 def test_lock_is_atomic(tmp_path: Path) -> None:

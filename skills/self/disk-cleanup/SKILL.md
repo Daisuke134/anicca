@@ -16,6 +16,9 @@ allow-listed regenerable artifact after an open-path probe confirms
   databases, credentials, cookies, source, and `state/*.jsonl` are preserved.
 - Unknown paths, active leases, symlinks, open paths, and probe errors are
   preserved and recorded.
+- `sweep()` accepts only candidates carrying internal allow-list discovery proof
+  for the exact regenerable families; the CLI `--candidate` escape hatch is
+  rejected so an arbitrary path cannot be promoted by an operator flag.
 - The 5-minute pass has one atomic lock and no LLM deletion authority.
 - Pressure is asserted below 11 GiB and is not cleared until the recovery floor
   is reached; the 20 GiB threshold starts preventive containment.
@@ -26,6 +29,8 @@ allow-listed regenerable artifact after an open-path probe confirms
   separate `cleanup-full-pass.at` marker so one bounded full cleanup occurs at
   most once per hour; a missing or stale marker is fail-closed toward
   observation/probe bounds, never toward deleting unknown paths.
+- The host adapter bounds the governor, runtime-manifest, and sweep subprocesses;
+  timeout is a preserve/error result and never advances the full-pass marker.
 - Receipts are bounded and the high-volume cleanup ledger is rotated before it
   can consume the reserve.
 

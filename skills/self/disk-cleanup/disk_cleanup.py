@@ -61,7 +61,7 @@ def _default_lsof(path: Path) -> str:
         return "probe-error"
     if result.stdout.strip():
         return "open"
-    if result.returncode == 1 and not result.stdout.strip():
+    if result.returncode == 1 and not result.stdout.strip() and not result.stderr.strip():
         return "confirmed-closed"
     return "probe-error"
 
@@ -140,6 +140,31 @@ class HostDiskGovernor:
             return True
         return any(token in path.name.lower() for token in ("cookie", "login data", "auth.json"))
 
+    def _allowlisted_candidate(self, path: Path, item: dict) -> bool:
+        """Require discovery proof and an exact regenerable path family."""
+        if item.get("discovery") != "allowlisted":
+            return False
+        try:
+            resolved = path.resolve()
+            temporary = Path(tempfile.gettempdir()).resolve()
+        except OSError:
+            return False
+        if item.get("class") == "ephemeral" and item.get("owner") == "temporary-run":
+            return (
+                resolved.parent == temporary
+                and resolved.name.startswith("cfo-")
+                and resolved.name != "cfo-"
+            )
+        if item.get("class") == "regenerable_output" and item.get("owner") == "browser":
+            clone_root = temporary.parent / "X"
+            return (
+                resolved.parent.parent == clone_root
+                and resolved.parent.name
+                in {"com.google.Chrome.code_sign_clone", "org.chromium.Chromium.code_sign_clone"}
+                and resolved.name.startswith("code_sign_clone.")
+            )
+        return False
+
     def _receipt(self, payload: dict) -> None:
         self.state_dir.mkdir(parents=True, exist_ok=True)
         payload.setdefault("observed_at", time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
@@ -170,6 +195,9 @@ class HostDiskGovernor:
                 continue
             if item.get("class") not in {"ephemeral", "regenerable_output"}:
                 preserve("unknown_class")
+                continue
+            if not self._allowlisted_candidate(path, item):
+                preserve("unknown_artifact")
                 continue
             if item.get("lease") and Path(item["lease"]).exists():
                 preserve("active_lease")
@@ -225,7 +253,12 @@ class HostDiskGovernor:
                 for child in sorted(collection.glob("code_sign_clone.*")):
                     if child.is_dir() and not child.is_symlink():
                         candidates.append(
-                            {"path": child, "class": "regenerable_output", "owner": "browser"}
+                            {
+                                "path": child,
+                                "class": "regenerable_output",
+                                "owner": "browser",
+                                "discovery": "allowlisted",
+                            }
                         )
         # These are owned one-shot test/build homes. The prefix is the proof;
         # arbitrary /private/tmp directories remain unknown and are preserved.
@@ -235,7 +268,14 @@ class HostDiskGovernor:
                     child.name.startswith(prefix)
                     for prefix in ("cfo-",)
                 ):
-                    candidates.append({"path": child, "class": "ephemeral", "owner": "temporary-run"})
+                    candidates.append(
+                        {
+                            "path": child,
+                            "class": "ephemeral",
+                            "owner": "temporary-run",
+                            "discovery": "allowlisted",
+                        }
+                    )
         return candidates
 
     def run_once(self) -> dict[str, int | str]:
@@ -289,16 +329,15 @@ def _parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = _parse_args()
+    if args.candidate:
+        raise SystemExit(
+            "--candidate is disabled; cleanup candidates must come from the allow-listed discovery"
+        )
     governor = HostDiskGovernor(home=args.home, state_dir=args.state_dir)
     if not governor.acquire_lock():
         return 0
     try:
-        candidates = governor.discover_candidates()
-        candidates.extend(
-            {"path": path, "class": "ephemeral", "owner": "operator"}
-            for path in args.candidate
-        )
-        print(json.dumps(governor.run_once() if not args.candidate else governor.sweep(candidates), sort_keys=True))
+        print(json.dumps(governor.run_once(), sort_keys=True))
     finally:
         governor.release_lock()
     return 0
