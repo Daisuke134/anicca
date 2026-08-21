@@ -928,6 +928,17 @@ valid version even if the reviewer still requests changes. Never discard it, swi
 approach, ask Haru another question for known facts, or leave it unsent. Formal delivery remains off
 until the buyer explicitly approves. `REPAIR_PENDING` may continue iterations one through four but
 must become a shipment on iteration five.
+The resulting v26 shipment exposed a separate visual-contract failure after the buyer replied
+`こちらのデザイン、イラストなどが一切ないのですが。。。`. The ZIP did contain both supplied
+illustrations in `assets/` and visibly embedded them in the lower PC layout, but the owner replaced
+the supplied first-page design language with a materially different white/green card layout. The
+reviewer did not catch that because `_file_review_images` supported images and PDFs but returned no
+candidate frames for ZIP artifacts; its own log recorded that no candidate/reference review images
+were attached. An owner claim or asset presence is not visual correspondence. Every visual ZIP must
+be safely expanded into its rendered review images, and the reviewer must receive those candidate
+images together with every buyer-supplied visual reference. Missing candidate/reference pairs block
+only that iteration; they never authorize a blind PASS. Buyer feedback starts the next artifact
+revision cycle from the existing artifact, with formal delivery still off.
 The authenticated offer page is the exact bridge from a purchased order to its pre-purchase DM:
 persist its `/mypage/direct_message/<id>` reference in the project proposal, then have Paid refresh
 that one thread directly. A buyer-name scan incorrectly reported Haru's real DM `10102712` absent

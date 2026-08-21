@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Recover verified paid remote answers through existing delivery boundaries."""
 from __future__ import annotations
-import argparse, fcntl, hashlib, json, os, re, shutil, stat, subprocess, sys, tempfile, time
+import argparse, fcntl, hashlib, json, os, re, shutil, stat, subprocess, sys, tempfile, time, zipfile
 from contextlib import contextmanager
 from datetime import date, datetime
 from pathlib import Path
@@ -626,6 +626,36 @@ def _file_review_images(root: Path, artifact_sha256: str, finding: str = "",
     suffix = artifact.suffix.casefold()
     if suffix in {".jpg", ".jpeg", ".png", ".webp"}:
         return [artifact]
+    if suffix == ".zip":
+        review_dir = root / "evidence" / "controller-artifact-review" / artifact_sha256
+        try:
+            review_dir.mkdir(parents=True, exist_ok=True)
+            for stale in review_dir.glob("candidate-*"):
+                if not stale.is_symlink() and stale.is_file():
+                    stale.unlink()
+            with zipfile.ZipFile(artifact) as archive:
+                names = [name for name in archive.namelist()
+                         if Path(name).suffix.casefold() in {".jpg", ".jpeg", ".png", ".webp"}
+                         and not name.endswith("/")]
+                rendered = [name for name in names if "/png/" in f"/{name.casefold()}"
+                            and "/assets/" not in f"/{name.casefold()}"]
+                selected = (rendered or names)[:limit]
+                pages = []
+                for index, name in enumerate(selected, start=1):
+                    target = review_dir / f"candidate-{index:02d}{Path(name).suffix.casefold()}"
+                    target.write_bytes(archive.read(name))
+                    pages.append(target)
+            if not pages:
+                raise Failure("file_visual_evidence")
+            _write(review_dir / "review-manifest.json", {
+                "version": 1, "artifact_path": str(artifact),
+                "artifact_sha256": artifact_sha256,
+                "pages": [{"entry": name, "path": str(page), "sha256": _file_snapshot(page)[1]}
+                          for name, page in zip(selected, pages)],
+            })
+            return pages
+        except (OSError, ValueError, zipfile.BadZipFile) as error:
+            raise Failure("file_visual_evidence") from error
     if suffix != ".pdf":
         return []
 
@@ -832,6 +862,10 @@ def _file_reference_images(root: Path, manifest: dict[str, Any], limit: int = 4)
                 collect(child)
 
     collect(value)
+    requirements = _load(root / "requirements" / "live-buyer-reply.json")
+    for attachment in requirements.get("attachments", []) if isinstance(requirements, dict) else []:
+        if isinstance(attachment, dict) and isinstance(attachment.get("source_path"), str):
+            raw_paths.append(attachment["source_path"])
     images: list[Path] = []
     for raw in raw_paths:
         try:
@@ -2149,11 +2183,18 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
     review_images: list[Path] = []
     reference_images: list[Path] = []
     visual_snapshots: dict[str, tuple[int, str]] = {}
+    state_matches_cycle = (
+        isinstance(review_state, dict)
+        and review_state.get("review_policy_version") == PAID_FILE_POLICY_VERSION
+        and review_state.get("operator_policy_sha256") == operator_policy_sha256
+        and review_state.get("buyer_feedback_sha256") == feedback
+        and review_state.get("requirements_sha256") == requirements_sha256
+    )
     prior_round = (int(review_state.get("round", 0))
-                   if isinstance(review_state, dict)
+                   if state_matches_cycle
                    and review_state.get("state") in {"REPAIR_PENDING", "MAX_REVIEW_SHIP"} else 0)
     legacy_version = re.fullmatch(r"v(\d+)", _text(resumed[0].get("artifact_version"))) if resumed else None
-    if legacy_version and int(legacy_version.group(1)) >= MAX_FILE_REVIEW_ITERATIONS:
+    if state_matches_cycle and legacy_version and int(legacy_version.group(1)) >= MAX_FILE_REVIEW_ITERATIONS:
         prior_round = MAX_FILE_REVIEW_ITERATIONS
     start_round = min(prior_round + 1, MAX_FILE_REVIEW_ITERATIONS)
     shipment_basis = "reviewer_approved"
