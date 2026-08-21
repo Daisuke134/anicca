@@ -244,6 +244,8 @@ def _known_value(item: dict[str, Any], profile: dict[str, Any], values: dict[str
         return str(value) if value else None
     if "how did you hear" in context:
         return "Job Boards"
+    if "previously worked" in context or "former worker" in context:
+        return "No"
     if "country phone code" in context:
         return "+81"
     return None
@@ -269,6 +271,8 @@ async def _choose(page: Any, locator: Any, value: str) -> bool:
         except Exception:
             return False
     await locator.click(timeout=10_000)
+    if tag == "input":
+        await locator.press("ArrowDown")
     for _ in range(10):
         option = page.get_by_role("option", name=value, exact=True)
         if await option.count() == 0:
