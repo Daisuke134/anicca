@@ -62,12 +62,12 @@ class LocalLoopTest(unittest.TestCase):
                         "plan_id": "published-en",
                         "provider_link_key": "link-alpha",
                         "public_url": "https://example.test/published",
-                        "provider_clicks": {"count": 0},
+                        "provider_clicks": {"count": 0, "unique_count": 0},
                     },
                     {
                         "placement_id": "beta-en-1",
                         "provider_link_key": "link-beta",
-                        "provider_clicks": {"count": None},
+                        "provider_clicks": {"count": None, "unique_count": None},
                     },
                 ],
             })
@@ -102,6 +102,9 @@ class LocalLoopTest(unittest.TestCase):
             self.assertEqual(summary["placement_count"], 2)
             self.assertEqual(summary["provider_click_measurement_count"], 1)
             self.assertEqual(summary["provider_click_unknown_count"], 1)
+            self.assertEqual(summary["provider_unique_clicks"], 0)
+            self.assertEqual(summary["provider_unique_click_measurement_count"], 1)
+            self.assertEqual(summary["provider_unique_click_unknown_count"], 1)
             self.assertEqual(summary["composition_budget_blocked_count"], 1)
             self.assertEqual(
                 summary["composition_budget_blocked_campaigns"],

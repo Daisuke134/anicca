@@ -768,6 +768,12 @@ def daily_summary_event(state, wake_event, now=None):
         click_measurement_count = len(observed_clicks)
         click_unknown_count = max(dedicated_link_count - click_measurement_count, 0)
         link_clicks = sum(observed_clicks)
+        observed_unique_clicks = [
+            row.get("provider_clicks", {}).get("unique_count")
+            for row in placements
+            if isinstance(row.get("provider_clicks"), dict)
+            and isinstance(row.get("provider_clicks", {}).get("unique_count"), int)
+        ]
     else:
         placements = link_report_placements
         dedicated_link_count = len(placements)
@@ -779,6 +785,16 @@ def daily_summary_event(state, wake_event, now=None):
         click_measurement_count = len(observed_clicks)
         click_unknown_count = max(dedicated_link_count - click_measurement_count, 0)
         link_clicks = sum(observed_clicks)
+        observed_unique_clicks = [
+            row.get("current_unique_click_count")
+            for row in placements
+            if isinstance(row.get("current_unique_click_count"), int)
+        ]
+    unique_click_measurement_count = len(observed_unique_clicks)
+    unique_click_unknown_count = max(
+        dedicated_link_count - unique_click_measurement_count, 0
+    )
+    unique_link_clicks = sum(observed_unique_clicks)
     try:
         devto_metrics = json.loads(
             (state / "distribution-metrics" / "devto.json").read_text(encoding="utf-8")
@@ -825,6 +841,9 @@ def daily_summary_event(state, wake_event, now=None):
         "provider_link_clicks": link_clicks,
         "provider_click_measurement_count": click_measurement_count,
         "provider_click_unknown_count": click_unknown_count,
+        "provider_unique_clicks": unique_link_clicks,
+        "provider_unique_click_measurement_count": unique_click_measurement_count,
+        "provider_unique_click_unknown_count": unique_click_unknown_count,
         "devto_article_count": devto_metrics.get("article_count"),
         "devto_page_views": devto_metrics.get("total_page_views"),
         "devto_page_view_delta": devto_metrics.get("delta_page_views"),
@@ -897,6 +916,12 @@ def daily_summary_event(state, wake_event, now=None):
             "0件として扱っていません。"
             if click_unknown_count
             else "全専用リンクの配信面別クリック値をproviderから観測できています。"
+        ),
+        (
+            f"uniqueクリックは観測済み{unique_link_clicks}件です。"
+            f"残り{unique_click_unknown_count}本はprovider未観測で、分母を推測していません。"
+            if unique_click_unknown_count
+            else f"uniqueクリックは配信面別に{unique_link_clicks}件をproviderから観測できています。"
         ),
         (
             f"DEVではAffiliate記事{devto_metrics.get('article_count', 0)}本が"
