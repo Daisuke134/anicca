@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | M2 — `CFO-OPS3a`, `CFO-OPS3b`, `CFO-1j`, `CFO-2b.2`, `CFO-2b.3`, `CFO-2b.4`, `CFO-2b.5`, `CFO-2b.6`, `CFO-2b.7`, `CFO-2b.8`, and `CFO-2b.9` are closed; `CFO-2c` is next |
+| Status | M2 — `CFO-OPS3a`, `CFO-OPS3b`, `CFO-1j`, `CFO-2b.2`, `CFO-2b.3`, `CFO-2b.4`, `CFO-2b.5`, `CFO-2b.6`, `CFO-2b.7`, `CFO-2b.8`, `CFO-2b.9`, and `CFO-2c` are closed; `CFO-2d` is next |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
@@ -1228,12 +1228,13 @@ ingestion. They are not unchecked M1 items and cannot become the active CFO item
       pure projection rejects inconsistent empty/unknown/receipt shapes and keeps unrealized P&L out of realized P&L.
       Syntax, focused Polymarket receipt tests `12/12`, live projection, manifest JSON, state non-mutation, commit, and
       remote push read-back pass. No launchd, trade, provider, database, or Telegram write occurred.
-- [ ] **CFO-2c** Reconcile per-business totals to provider statements and Fleet totals; upgrade Fleet observations to
+- [x] **CFO-2c** Reconcile per-business totals to provider statements and Fleet totals; upgrade Fleet observations to
       raw positions, recognized earnings, and provider/ledger-confirmed burn only when matching evidence exists. The
       Fleet adapter boundary is now canonical in commit `75739758e`; the business/provider reconciliation gate remains
       open because the live Fleet leaderboard currently has no registered rows. Canonical commit `56821e03f` adds a
       pure reconciliation projection that keeps measured API cost and usage coverage separate from business/Fleet join
-      status; it does not close CFO-2c while attribution remains unknown.
+      status; the resulting `incomplete_fleet_read` state is the explicit closure, with unknown values retained. No
+      profit or ROI is claimed. `CFO-2d` is next.
 - [ ] **CFO-2d** Report contribution profit, runway, ROI, and evidence completeness; unknown is distinct from zero.
 - [ ] **CFO-2d2** Deliver the real Telegram summary, account/business/accuracy/why drill-downs, deduped message
       receipt, stale-source alert, and non-technical readability E2E. Business profit, total-cost, and cost-based
@@ -1316,7 +1317,8 @@ unattributed/43 missing/29 runner-collision groups, and 11,710 events with 789 u
 runner-collision groups. `lm_api_cost` read 45,950 rows with measured estimate `$1.58240957`; no business attribution
 exists, so the full amount is marked unattributed rather than assigned. Reconciliation status is
 `incomplete_fleet_read`; profit and ROI remain null. Syntax, smoke projection, live read, and diff checks pass. CFO-2c
-stays open until provider statements and Fleet rows can be joined with matching ownership/period evidence.
+closes as a fail-closed reconciliation boundary: provider/Fleet joins remain unknown until matching ownership/period
+evidence exists. `CFO-2d` is the next active item and must not turn these unknowns into zero or profit.
 
 ### CFO-2c Fleet boundary progress (2026-08-21)
 
