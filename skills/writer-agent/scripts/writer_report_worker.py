@@ -5,10 +5,15 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import ipaddress
 import json
 import os
+import re
+import socket
+import subprocess
 import sys
 import urllib.parse
+import urllib.error
 import urllib.request
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -177,6 +182,74 @@ def telegram_api_transport(
         raise RuntimeError("Telegram Bot API token is unavailable")
     endpoint = f"https://api.telegram.org/bot{token}/sendMessage"
 
+    def resolve_ipv4() -> str:
+        for command in (
+            ("/usr/bin/dig", "+short", "@1.1.1.1", "api.telegram.org", "A"),
+            ("/usr/bin/nslookup", "-type=A", "api.telegram.org"),
+        ):
+            try:
+                result = subprocess.run(
+                    command, capture_output=True, text=True, timeout=5, check=False,
+                )
+            except (OSError, subprocess.SubprocessError):
+                continue
+            values = re.findall(r"(?<!\d)(?:\d{1,3}\.){3}\d{1,3}(?!\d)", result.stdout)
+            for value in values:
+                try:
+                    ipaddress.ip_address(value)
+                except ValueError:
+                    continue
+                return value
+        raise RuntimeError("Telegram DNS fallback could not resolve api.telegram.org")
+
+    def curl_resolve_send(body: bytes) -> str:
+        ip = resolve_ipv4()
+        config = "\n".join((
+            "silent",
+            "show-error",
+            "fail-with-body",
+            "max-time = 15",
+            'request = "POST"',
+            f'resolve = "api.telegram.org:443:{ip}"',
+            f"url = {json.dumps(endpoint)}",
+            'header = "Content-Type: application/x-www-form-urlencoded"',
+            f"data = {json.dumps(body.decode('utf-8'))}",
+            "",
+        ))
+        try:
+            result = subprocess.run(
+                ("/usr/bin/curl", "--config", "-"),
+                input=config,
+                capture_output=True,
+                text=True,
+                timeout=20,
+                check=False,
+            )
+            if result.returncode != 0:
+                raise RuntimeError("Telegram Bot API transport failed")
+            value = json.loads(result.stdout)
+        except (OSError, subprocess.SubprocessError, json.JSONDecodeError):
+            raise RuntimeError("Telegram Bot API transport failed") from None
+        message_id = str(value.get("result", {}).get("message_id", "")).strip()
+        if value.get("ok") is not True or not message_id:
+            raise RuntimeError("Telegram Bot API transport failed")
+        return message_id
+
+    def is_dns_failure(error: BaseException) -> bool:
+        reason = getattr(error, "reason", error)
+        if not isinstance(reason, socket.gaierror):
+            return False
+        dns_errnos = {
+            value
+            for value in (
+                getattr(socket, "EAI_AGAIN", None),
+                getattr(socket, "EAI_NONAME", None),
+                getattr(socket, "EAI_NODATA", None),
+            )
+            if value is not None
+        }
+        return reason.errno in dns_errnos
+
     def send(message: str) -> str:
         body = urllib.parse.urlencode({"chat_id": target, "text": message}).encode("utf-8")
         request = urllib.request.Request(endpoint, data=body, method="POST")
@@ -186,11 +259,15 @@ def telegram_api_transport(
             message_id = str(value.get("result", {}).get("message_id", "")).strip()
             if value.get("ok") is not True or not message_id:
                 raise ValueError("provider returned no message ID")
+            return message_id
+        except urllib.error.URLError as error:
+            if is_dns_failure(error):
+                return curl_resolve_send(body)
+            raise RuntimeError("Telegram Bot API transport failed") from None
         except Exception:
             # Provider exceptions can contain the token-bearing request URL.
             # Keep both the durable outbox and all logs free of that secret.
             raise RuntimeError("Telegram Bot API transport failed") from None
-        return message_id
 
     return send
 

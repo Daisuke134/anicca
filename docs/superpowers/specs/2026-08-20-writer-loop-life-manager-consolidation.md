@@ -26,9 +26,9 @@
   観測済みアカウント売上は¥0・購入0件、Substackのpaid subscribers/MRR/累計収益は明示的な数値を
   得られず`unknown`である。価格設定、paywall、表示数、like、推定値は収益へ加算しない。したがって
   現在の確定収益は¥0（外部receipt 0件）であり、MRRは不明である。
-- 公開完了時の標準Telegram通知はBot API transport失敗でpendingになったため、同じ実測内容を
-  自然文で再送し、`message_id`をreadbackしてdelivery receiptを保存する必要がある。`Codex:::`などの
-  harness接頭辞は付けない。
+- 公開完了時の標準Telegram通知は通常DNSで失敗したため、Bot API transportへ公開DNSの解決と
+  `curl --resolve` fallbackを追加した。自然文の同一run報告を送信し、`message_id=26880`、
+  `status=sent`、outboxのdelivery receiptをreadbackした。`Codex:::`などのharness接頭辞は付けない。
 - 直接owner wakeとrelease/current切替は実測済みだが、`launchctl print`/`kickstart`は現在もrc=141
   `Reentrancy avoided`である。よって「公開処理は実行可能」と「5分周期schedulerがlive」を分け、
   launchdのreadbackを回復するまでloop全体を常時稼働とは宣言しない。
@@ -145,9 +145,8 @@
 - 06:11:52 JSTの同一ログには、空き容量`5,256,216,576` bytes（要求`5,368,709,120` bytes）で
   disk guardが公開をfail-closedにした記録もある。保護対象を削除せず、容量安定化までは外部公開を強行しない。
 - 残TODOは順に、(1)保護対象を削除せず空き容量1GiB超を安定維持、(2)launchd control-plane readbackを復旧して
-  Life Manager currentの新releaseで5分周期実行を2回以上連続して証明、(3)標準完了通知のBot API送信を
-  自然文で成功させ、`message_id`と重複排除状態をreadback、(4)publisher/paymentの実receiptだけを
-  収益ledgerへjoinし、Note/Substackの現在値を次回tickでも再測定、(5)14日間の重複外部作用0と
+  Life Manager currentの新releaseで5分周期実行を2回以上連続して証明、(3)publisher/paymentの実receiptだけを
+  収益ledgerへjoinし、Note/Substackの現在値を次回tickでも再測定、(4)14日間の重複外部作用0と
   需要カード→生成→JA/EN公開→native readback→Telegram報告の連続receiptを観測する。ENの別identity、
   credential、同一run native publish/readbackは完了済みなので、未完TODOとして再登録しない。
 
