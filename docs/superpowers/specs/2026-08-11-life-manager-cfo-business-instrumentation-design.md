@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | `CFO-OPS3b`, `CFO-1j`, and `CFO-2b.2` (including `2b.2b2` and `2b.2c`) are closed; `CFO-2b.3` is the next active business-instrumentation slice |
+| Status | `CFO-OPS3b`, `CFO-1j`, `CFO-2b.2`, and `CFO-2b.3` are closed; `CFO-2b.4` is the next active business-instrumentation slice |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Canonical target is local `/Users/anicca/Projects/life-manager-main/apps/life-manager`; existing `apps/life-call` code is migration evidence, not the final owner |
 | Role split | Sol specifies/verifies; Luna implements production code/tests |
@@ -56,7 +56,10 @@ Only the first unchecked business item is active after the parent spec's operati
           closed Anicca totals with RevenueCat without treating the current unavailable report as zero.
   - [x] **2b.2c** Compose the Anicca iOS business fact from reconciled revenue, payout coverage, attributed local
         token usage, and the still-missing production API-cost coverage.
-- [ ] **CFO-2b.3 — Writer Agent**: publisher receipts and its measured runtime cost.
+- [x] **CFO-2b.3 — Writer Agent**: publisher receipts and its measured runtime cost. The proven 492-file runtime is
+      owned by canonical `skills/writer-agent`; mutable state remains external and is never committed. The pure
+      projection preserves publisher amounts as unknown/null, keeps verified Note zeroes channel-scoped, records
+      measured wall time, and leaves Writer-wide revenue, profit, and ROI null until reconciliation.
 - [ ] **CFO-2b.4 — Affiliate Agent**: network commission receipts and runtime cost.
 - [ ] **CFO-2b.5 — Gig Work**: marketplace/client receipts; never import `~/gig/earnings.jsonl` without receipt proof.
 - [ ] **CFO-2b.6 — x402 Services**: finalized external on-chain sales; self-transfers are excluded.
@@ -66,10 +69,10 @@ Only the first unchecked business item is active after the parent spec's operati
 
 ### CFO-2b.3 measured truth and entry gate
 
-The current Writer runtime is not yet owned by the canonical Life Manager repository: its release is outside the
-checkout at `/Users/anicca/gig/releases/life-manager/current/skills/writer-agent` and its mutable state is outside the
-repository at `~/.local/state/life-manager/writer`. The canonical checkout has no `skills/writer-agent` owner yet, so
-this item cannot safely invent a second collector or import mutable state by path.
+The Writer release remains available at `/Users/anicca/gig/releases/life-manager/current/skills/writer-agent` and its
+mutable state remains outside the repository at `~/.local/state/life-manager/writer`. The canonical checkout now owns
+the same proven runtime under `skills/writer-agent`; the state directory was not copied and no second collector was
+created.
 
 The latest read-only Writer report (`generated_at=2026-08-21T15:32:54.341895+09:00`, scope `today`) observed one
 revenue-capable Note article with provider-verified `purchases=0` and `net_received=0 JPY`, plus verified compute
@@ -77,10 +80,31 @@ wall-time `1238.525368` seconds. Four revenue-capable Substack articles had no p
 evidence; two X Article entries are discovery-only. The report's receipt arrays are empty for all seven entries and
 `measurement_unknown_count=4982`. These observations are channel-scoped facts, not a whole-Writer revenue zero.
 
-The next implementation slice is therefore the existing Writer consolidation gate: copy the proven runtime into the
-canonical `skills/writer-agent` owner, generate its manifest/path census, then add a pure receipt projection that keeps
-unconfirmed publisher/payment amounts `unknown`/`null` and preserves verified Note zeroes only as channel observations.
-Until that gate closes, `CFO-2b.3` remains the single active item and no Writer amount is admitted to CFO profit or ROI.
+The consolidation gate closed in canonical commit `1a87f0d1d`: `config/writer/runtime-manifest.json` records 492 files and
+tree hash `54ef72514f49a9f9440313dcd6e358c7b5700176cedeb1c578bda6dbf6b3f47e`, with 77 source absolute-path references
+and 10 machine-path plists requiring install-time rendering. `apps/life-manager/lib/cfo-writer.js` projects the
+read-only report without returning titles, URLs, provider IDs, or raw receipts. A live read at
+`2026-08-21T16:26:18.503948+09:00` produced Note `provider_verified_zero` (0 JPY), Substack `unknown`, measured
+wall-time `1238.525368` seconds, `measurement_unknown_count=4982`, and null Writer-wide total/profit/ROI. The branch
+is pushed as `feature/cfo-ops3a-canonical`; no launchd cutover or mutable-state migration occurred in this slice.
+
+### CFO-2b.3 completion evidence
+
+- [x] Canonical runtime import is an exact `git archive` copy of Life Manager `main` at
+      `09c7525d4bba2efd99e3c55123bc3aaca814d5f3`; 492 files hash to
+      `54ef72514f49a9f9440313dcd6e358c7b5700176cedeb1c578bda6dbf6b3f47e` and no `state/`, `runs/`, `reporting/`,
+      or `money.sqlite3` path was copied.
+- [x] Pure `composeWriterBusinessFact` verification against the real read-only `reporting/latest.json` preserves
+      unknown/null, freezes the result, emits no provider IDs/URLs/titles, and leaves whole-Writer `total`, `profit`,
+      and `roi` null. Hostile malformed input returns only `cfo_writer_invalid:business_fact`.
+- [x] Node syntax, focused projection assertions, manifest JSON, canonical/release tree hash/count, state-absence,
+      and push read-back pass. The only broad diff warnings are pre-existing whitespace in imported Writer source;
+      the new CFO/manifest diff is clean.
+- [x] No launchd, database, provider, Telegram, or mutable-state write occurred. Existing CFO hourly launchd remains
+      the sole Moneytree loop and is unchanged by this Writer slice.
+
+The next active item is **CFO-2b.4 — Affiliate Agent**. It must find a real network commission receipt and measured
+runtime evidence; absent provider/auth evidence remains unknown and cannot be converted to zero.
 
 ## 4. Current measured truth
 
@@ -611,7 +635,7 @@ fact therefore preserves provider evidence and coverage labels instead of claimi
   one pre-existing TECH PLAY connector assertion (`expected status=absent`, observed `status=unavailable`); no CFO
   test failed. No loop, launchd, database, provider, or Telegram runtime effect was introduced by this pure slice.
 - The output keeps Apple settled Partner Share separate from RevenueCat gross, preserves payout/bank/API-cost absence
-  as unknown/null, freezes the result recursively, and emits no raw provider identifiers. `CFO-2b.3` is now next.
+  as unknown/null, freezes the result recursively, and emits no raw provider identifiers. `CFO-2b.3` is closed; `CFO-2b.4` is now next.
 
 ### CFO-2b.2c implementation target
 
@@ -660,7 +684,7 @@ add a business-fact database table, renderer, API route, launchd wiring, or Tele
   `asOf=2026-08-21T05:04:12Z` matched the delivered balance parity. No raw account number, provider ID, description,
   category label, credential, or raw payload was persisted or sent. Shared transport and `CFO-1j` are closed; the LLM
   spending guardian remains disabled until its later verified-outgoing and reconciliation gates. `CFO-2b.2c` is closed and
-  `CFO-2b.3` is next.
+  `CFO-2b.4` is next.
 - Provider-freshness correction (2026-08-21): two direct read-only calls at `2026-08-21T05:09:58Z` and
   `2026-08-21T05:11:43Z` returned the same provider-reported balance fingerprint as revision 5, so the loop is not
   serving a stale local cache; the Moneytree provider value itself had not changed. Moneytree's official [MUFG
@@ -676,7 +700,7 @@ add a business-fact database table, renderer, API route, launchd wiring, or Tele
   composer and focused boundary regressions. Focused tests pass `7/7`; the full package gate remains `846/847` with
   only the pre-existing TECH PLAY `absent` versus `unavailable` assertion. Apple settled Partner Share and RevenueCat
   gross remain separate; payout, bank landing, and missing API cost remain unknown/null. No loop or launchd behavior
-  changed. The next active item is `CFO-2b.3` Writer Agent instrumentation.
+  changed. The next active item is `CFO-2b.4` Affiliate Agent instrumentation.
 
 - Moneytree display correction (2026-08-21): canonical commit `6faf0bd06` keeps the installed read-only provider
   boundary intact while retaining only safe provider categories and the latest returned transaction date in the
