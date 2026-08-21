@@ -298,6 +298,31 @@ remain unchecked below. Work moved to Paid too early because Manledge action 338
 buyers remains an urgent customer-remediation exception and must be delivered without pausing the
 independent Negotiate owner, but it does not advance the development cursor past Negotiate.
 
+**Autonomous continuation contract.** Codex, the operator and an ad-hoc browser script are never the
+durable owner of customer work. Every external effect and every remaining obligation must be written
+before the current process exits, and the loaded Paid owner must resume the exact next transition on
+its next wake. The common state machine is `discover -> permission-check -> contact -> reply ->
+marketplace/LINE handoff -> ledger -> formal delivery -> official readback -> replay-zero`. A wake
+may advance multiple independent records, but each record has one effect key and one provider or
+official receipt; a PID, drafted message, button click or local row without receipt is not progress.
+Missing permission for one channel suppresses only that channel and continues every other safe
+route. A buyer is asked once only when a new non-delegable legal/account authority is genuinely
+required; the loop persists that dependency, continues all non-blocked work and consumes the reply
+without a human or Codex re-entering the workflow.
+
+Purchased work is artifact-first. Every actionable buyer request or material work milestone MUST
+produce and attach the best truthful artifact supported by the accumulated context, accompanied by
+one concise message. Text-only replies are limited to receipt acknowledgement, scheduling, a direct
+buyer question whose answer requires no artifact, or the single non-delegable authority request
+above. They are never a substitute for starting, revising or submitting the work. Formal delivery
+remains off until the full accepted scope passes its quality gate; progress artifacts remain useful,
+versioned and deduplicated meanwhile.
+
+Outbound prospect email is also a loop-owned provider adapter, not a personal Gmail browser task.
+The one-session installer must configure sender identity, authentication, reply mailbox, unsubscribe
+identity and a real send/readback probe before outreach is enabled. Only a provider-accepted receipt
+increments `sent`; delivery-unknown remains retry-owned and never becomes a fabricated contact.
+
 Immediate customer-remediation queue, in order:
 
 1. **Manledge / request 5200847 / thread 10104078.** Reconstruct the original application, all
@@ -353,6 +378,9 @@ Immediate customer-remediation queue, in order:
      record Web-meeting requests when they occur.
    - [ ] Attach the completed outreach ledger, make one formal delivery, read it back officially and
      prove replay causes zero duplicate outreach or delivery.
+   - [ ] Move the current `1 sent / 49 remaining` state, listing-authority dependency, candidate
+     suppressions and mail-provider dependency under the loaded Paid continuation owner; prove a
+     fresh wake resumes without Codex, the operator or a one-off script and does not replay row 1.
    Contact-permission audit: all 100 submitted profiles were rechecked against current first-party
    pages. Three expose a real general/business-contact invitation, but none explicitly invites
    automated recruitment; existence of a DM button is not consent. Wider first-party research found
@@ -715,6 +743,22 @@ asking which locality to use despite the later buyer message already resolving ç
 through repeated revision cycles without attaching usable work. Completion requires replayable
 evidence that both classes are impossible for future rooms, not one manual apology or delivery.
 
+**Paid continuation and effect contract â€” blocking production invariant.** Every purchased order
+has exactly one loaded continuation owner from purchase through formal readback. Builder/reviewer
+processes may exit, the Mac may reboot and a provider may be temporarily unavailable; none of those
+events may erase the next transition or turn the operator/Codex into the worker. The owner persists
+artifact version, buyer context identity, permission decisions, outbound effect keys, provider
+receipts, reply state, handoff state, outstanding authority and the next due action. It resumes from
+that state until the full accepted scope is formally delivered. Email/contact-form/social adapters
+share the same receipt and replay fence. A sent count is the number of unique provider-accepted
+effects, never the number of candidates selected or messages drafted.
+
+The acceptance proof must include one natural purchased order where the loop: (1) attaches useful
+work on its first actionable transition, (2) exits and resumes from durable state, (3) sends at least
+one approved external effect through its configured provider, (4) incorporates a reply or authority
+decision, (5) submits the completed artifact exactly once, and (6) replays with zero duplicate
+messages, outreach or delivery. No manual/Codex effect may be used as that proof.
+
 - [x] Recheck the natural order boundary: the latest official orders pass observed 3 open cards,
   read back 2 already-owned/deduplicated states, and left 1 pending with `failed=0`. The pending
   room is an existing revision/owner-decision state, not a new artifact that can be safely built
@@ -744,6 +788,8 @@ evidence that both classes are impossible for future rooms, not one manual apolo
 - [ ] Validate the artifact before delivery.
 - [ ] Deliver it exactly once.
 - [ ] Read the delivery back in the exact official room and prove replay creates no second delivery.
+- [ ] Prove the loaded continuation owner resumes an interrupted multi-step order without Codex or
+  operator work, including provider-receipted outbound mail/contact and zero replayed effects.
 
 #### F. Prove four-lane 24/7 control-plane durability
 
