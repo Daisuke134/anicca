@@ -642,6 +642,15 @@ async def _process_one(
         if await submit.count() == 0 or not await submit.first.is_visible():
             ledger.complete_submission(intent.intent_id, intent.fence, "not_submitted")
             return {"application_id": application_id, "status": "not_submitted", "blocker": "submit_control_missing"}
+        submit_requests: list[str] = []
+
+        def observe_request(request: Any) -> None:
+            if request.method not in {"POST", "PUT"}:
+                return
+            if "ashbyhq.com" in request.url.casefold():
+                submit_requests.append(request.url)
+
+        page.on("request", observe_request)
         await submit.first.click()
         clicked = True
         confirmed = await _submitted_confirmation(page)
@@ -652,12 +661,14 @@ async def _process_one(
         else:
             outcome = "submit_unknown"
         ledger.complete_submission(intent.intent_id, intent.fence, outcome)
+        page.remove_listener("request", observe_request)
         return {
             "application_id": application_id,
             "company": row["company"],
             "title": row["title"],
             "status": outcome,
             "url": url,
+            "submit_request_observed": bool(submit_requests),
             "answered_fields": [
                 _safe_text(
                     fields[index].get("labels")
@@ -669,6 +680,10 @@ async def _process_one(
             ],
         }
     except Exception as error:
+        try:
+            page.remove_listener("request", observe_request)
+        except Exception:
+            pass
         try:
             ledger.complete_submission(
                 intent.intent_id,

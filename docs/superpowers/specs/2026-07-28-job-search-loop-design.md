@@ -162,6 +162,9 @@ After an Ashby submit click, the fast path now checks visible `aria-invalid` and
 alert validation errors. A client-side rejection becomes `not_submitted` (retryable)
 rather than a false `submit_unknown`; only an explicit confirmation becomes
 `submitted`, and the remaining ambiguous case stays fenced as `submit_unknown`.
+For every future submit it also records whether an Ashby POST/PUT request began after
+the user-facing click. Telegram checkpoints include this `submit request observed`
+proof without exposing request URLs or payloads.
 
 The remaining robustness work is ordered, not parallelized: cache freshness, provider-capacity detection, non-Ashby fallback, confirmation reconciliation, then full lifecycle/guardian/OSS.
 

@@ -219,7 +219,12 @@ for row in processed:
     title = str(row.get("title") or "unknown role")
     status = str(row.get("status") or "unknown")
     blocker = str(row.get("blocker") or "")
-    details.append(f"{company} — {title}: {status}" + (f" ({blocker})" if blocker else ""))
+    request_observed = row.get("submit_request_observed") is True
+    details.append(
+        f"{company} — {title}: {status}"
+        + (" (submit request observed)" if request_observed else "")
+        + (f" ({blocker})" if blocker else "")
+    )
 if not details:
     details.append(f"no row processed ({ashby.get('status', 'unknown')})")
 workday_status = str(workday.get("status") or "unknown")
