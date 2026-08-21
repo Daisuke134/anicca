@@ -36,6 +36,7 @@ async function requestMoneytreeRefresh(options = {}) {
     const token = accessToken(options.accessToken);
     if (!token) return Object.freeze({ status: "unavailable", reason: "request_refresh_credentials_missing", observedAt });
     const requestCount = options.dailyRequestCount;
+    if (requestCount === null) return Object.freeze({ status: "unavailable", reason: "refresh_quota_unknown", observedAt });
     if (!Number.isSafeInteger(requestCount) || requestCount < 0 || requestCount > MAX_DAILY_REQUESTS) fail();
     if (requestCount >= MAX_DAILY_REQUESTS) return Object.freeze({ status: "rate_limited", reason: "daily_quota_exhausted", observedAt, dailyLimit: MAX_DAILY_REQUESTS });
     const fetchImpl = options.fetchImpl || globalThis.fetch;

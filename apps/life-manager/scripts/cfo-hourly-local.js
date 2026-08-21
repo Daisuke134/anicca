@@ -2,6 +2,7 @@
 
 const os = require("node:os");
 const path = require("node:path");
+const fs = require("node:fs");
 const http = require("node:http");
 const https = require("node:https");
 const { Resolver } = require("node:dns").promises;
@@ -16,6 +17,7 @@ const { runLocalAgentUsageCollection } = require("../lib/cfo-local-agent-usage-r
 const { makeGogMail } = require("../lib/transport/mail-gog.js");
 const { captureLatestGoogleCloudInvoice } = require("../lib/cfo-google-invoice-local-source.js");
 const { captureLatestAnthropicSubscriptionReceipt } = require("../lib/cfo-anthropic-receipt-local-source.js");
+const { requestMoneytreeRefresh } = require("../lib/cfo-moneytree-refresh.js");
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const rpc = createCfoSupabaseRpc("cfo_hourly_local_failed:");
@@ -93,6 +95,41 @@ function installDnsFetch(env) {
 function pick(options, name, fallback) { return typeof options[name] === "function" ? options[name] : fallback; }
 function ownerDate(value) { const parts = new Intl.DateTimeFormat("en", { timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(value); const get = (type) => parts.find((part) => part.type === type).value; return `${get("year")}-${get("month")}-${get("day")}`; }
 function ownerHour(value) { const parts = new Intl.DateTimeFormat("en", { timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", hourCycle: "h23" }).formatToParts(value); const get = (type) => parts.find((part) => part.type === type).value; return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}`; }
+function refreshQuotaPath(env) { return path.join(env.CFO_STATE_DIR || path.join(os.homedir(), ".local", "state", "life-manager", "cfo-hourly"), "moneytree-refresh-quota.json"); }
+function readRefreshQuota(env, date) {
+  const file = refreshQuotaPath(env);
+  try {
+    const value = JSON.parse(fs.readFileSync(file, "utf8"));
+    if (!value || value.date !== date) return { file, count: 0 };
+    if (!Number.isSafeInteger(value.acceptedCount) || value.acceptedCount < 0 || value.acceptedCount > 4) return { file, count: null };
+    return { file, count: value.acceptedCount };
+  } catch (error) { return error && error.code === "ENOENT" ? { file, count: 0 } : { file, count: null }; }
+}
+function recordRefreshQuota(quota, date) {
+  const directory = path.dirname(quota.file), temporary = `${quota.file}.${process.pid}.tmp`;
+  fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
+  fs.writeFileSync(temporary, `${JSON.stringify({ date, acceptedCount: quota.count + 1 })}\n`, { encoding: "utf8", mode: 0o600, flag: "wx" });
+  try { fs.renameSync(temporary, quota.file); } catch (error) { try { fs.unlinkSync(temporary); } catch {} throw error; }
+}
+async function maybeRefreshMoneytree(env, fetchImpl, clock, options = {}) {
+  if (String(env.MONEYTREE_LINK_REFRESH_ENABLED || "").toLowerCase() !== "true") return { status: "not_enabled", reason: "refresh_opt_in_required" };
+  const date = ownerDate(clock), quota = readRefreshQuota(env, date);
+  if (quota.count === null) return { status: "unavailable", reason: "refresh_quota_unknown" };
+  // MUFG's official policy is at most once per day for paid personal accounts;
+  // the local guard is stricter than LINK's generic four-call guest quota.
+  if (quota.count >= 1) return { status: "not_requested", reason: "provider_daily_policy_guard" };
+  const result = await (options.requestMoneytreeRefresh || requestMoneytreeRefresh)({
+    accessToken: env.MONEYTREE_LINK_ACCESS_TOKEN,
+    baseUrl: env.MONEYTREE_LINK_BASE_URL,
+    dailyRequestCount: quota.count,
+    observedAt: clock.toISOString(),
+    fetchImpl,
+  });
+  if (result.status === "accepted") {
+    try { recordRefreshQuota(quota, date); } catch { return { status: "accepted", reason: "provider_refresh_queued_quota_persist_failed", httpStatus: 202 }; }
+  }
+  return result;
+}
 function config(options, env, fallbackFetch) {
   const value = { uid: options.uid || options.ownerUid || env.LM_CFO_UID || env.LM_UID || env.LM_OWNER_UID, chatId: options.chatId || options.telegramChatId || env.TELEGRAM_ALERT_CHAT_ID || env.LM_CFO_TELEGRAM_CHAT_ID || env.LM_ADMIN_TELEGRAM_CHAT_ID, telegramToken: options.telegramToken || env.TELEGRAM_BOT_TOKEN || env.LM_TELEGRAM_BOT_TOKEN, supaUrl: options.supaUrl || env.SUPABASE_URL, supaKey: options.supaKey || env.SUPABASE_SERVICE_ROLE_KEY, uidSecret: env.LM_UID_SECRET, fetchImpl: options.fetchImpl || fallbackFetch || globalThis.fetch };
   if (Object.values(value).some((item) => typeof item !== "string" && item !== value.fetchImpl) || typeof value.fetchImpl !== "function") throw new Error("config");
@@ -144,6 +181,8 @@ async function runHourlyCfo(options = {}) {
     if (!Number.isFinite(clock.getTime())) throw new Error("clock");
     reportingDate = ownerDate(clock);
     const value = config(options, env, installDnsFetch(env)), rpcOptions = { supaUrl: value.supaUrl, supaKey: value.supaKey, fetchImpl: value.fetchImpl };
+    let moneytreeRefresh;
+    try { moneytreeRefresh = await maybeRefreshMoneytree(env, value.fetchImpl, clock, options); } catch { moneytreeRefresh = { status: "failed", reason: "refresh_boundary_failed" }; }
     const reader = pick(options, "readMoneytreeViaCodex", readMoneytreeViaCodex), customBundleReader = typeof options.readMoneytreeBundleViaCodex === "function" ? options.readMoneytreeBundleViaCodex : null;
     const legacyReaderRequested = typeof options.readMoneytreeViaCodex === "function" || typeof options.callAppServer === "function";
     const bundleReader = customBundleReader || (!legacyReaderRequested ? readMoneytreeBundleViaCodex : null);
@@ -174,7 +213,7 @@ async function runHourlyCfo(options = {}) {
     const latestRaw = typeof options.latestSnapshot === "function" ? await options.latestSnapshot({ uid: value.uid, reportingDate, runId: run.run_id, ...rpcOptions }) : await latestSnapshot({ uid: value.uid, reportingDate, ...value }, render);
     const latest = latestRaw ? validateRow(latestRaw, reportingDate, render) : null;
     if (latest && (latest.run_id !== run.run_id || latest.reporting_date !== reportingDate)) throw new Error("snapshot");
-    const providerData = providerDataState(reportingDate, transactionView);
+    const providerData = { ...providerDataState(reportingDate, transactionView), moneytreeRefresh };
     if (!latest && recovery.status === "action_required") return summary("retry", reportingDate, null, false, false, false, providerData);
     const nextRevision = latest ? latest.revision + 1 : 1;
     const currentBundle = buildCfoDailyReportFromRecovery({ revision: nextRevision, recovery });
