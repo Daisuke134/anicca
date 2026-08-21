@@ -4,6 +4,35 @@
 
 ## Current SSOT（2026-08-21 実測）
 
+### launchd control-plane の外部照合と現在の原因判定（2026-08-21）
+
+- Appleの資料では、`~/Library/LaunchAgents`はログイン中ユーザー専用のLaunchAgent置き場であり、
+  `StartInterval=300`は5分周期の正規設定である。したがってLife Managerの`StartInterval`自体は
+  異常の説明にならない（Apple Support: https://support.apple.com/guide/terminal/script-management-with-launchd-apdc6c1077b-5d5d-4d35-9c19-60f2397b2369/mac、
+  Apple Developer: https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPSystemStartup/Chapters/CreatinglaunchdJobs.html）。
+- Web上の独立した同型事例では、WindowServer/loginwindowの再起動後にGUI bootstrapを失ったプロセスで
+  `id -un`が数値UID、`dscl`がDirectory Services接続失敗、`launchctl asuser 501`が
+  `Reentrancy avoided`、`log`がlogd接続失敗になることが報告されている。これは今回のMacの観測値と
+  一致するが、WindowServerが今回の発火元だったとは断定しない（OpenAI Codex issue:
+  https://github.com/openai/codex/issues/36696）。
+- 今回のMacはmacOS 15.6 (24G84)、PID 1は`/sbin/launchd`だが、`id -un`は`501`、
+  `launchctl managername`はrc=153、`managerpid`はrc=153、`launchctl print system`・
+  `print user/501`・`print gui/501`・`asuser 501`はすべてrc=141 `Reentrancy avoided`、
+  `dscl . -read /Users/anicca`は`eServerError`、`log show`はlogd接続失敗である。これは
+  Writer固有のplistエラーではなく、ユーザーbootstrap／Directory Services／logdのホスト障害である。
+- installed plistは14件すべてLife Manager current releaseと外部stateを指すが、過去のWriterログには
+  loaded定義が`/Users/anicca/profitable-claude`や旧releaseを呼び続けた証拠が残る。つまり現在は
+  「ファイル上のdesired stateはLife Manager」「launchdメモリ上のloaded stateはstale」の切替不一致であり、
+  stale定義のdrain前にcurrent plistを再bootstrapできない。Life Manager以外のjob-searchやgigの
+  specにも同じrc=141が記録されており、このMac全体のcontrol-plane症状である。
+- 復旧はrepo内で新executorを作ることではない。安全な順序は、(1)有効なコンソールGUIセッションを
+  回復（必要ならユーザーlogout/loginまたはMac再起動。ただしlaunchd/loginwindow/opendirectorydを個別killしない）、
+  (2)`id -un`が`anicca`、`launchctl managername`が有効なAqua/GUI manager、`dscl`と`log show`が成功することを確認、
+  (3)旧14 Writer定義とretired 5 CLI labelをbootoutしてstale ownerをdrain、(4)14件のLife Manager plistを
+  `bootstrap gui/501`し、各loaded `ProgramArguments`/environmentを`print`でreadback、(5)pauseを解除する前に
+  creator/resumeを一度だけkickstartして同一run receiptを確認、である。現在は(1)のホスト復旧前なので、
+  bootout/bootstrapを強行せず、公開処理を常時稼働とは宣言しない。
+
 ### 最新の同一run実測（2026-08-21）
 
 - `daily-2026-08-21` は active-four の4件すべてを同じ不変原稿から native publish/readback まで完了した。
