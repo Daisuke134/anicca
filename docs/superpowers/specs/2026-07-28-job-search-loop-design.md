@@ -152,6 +152,9 @@ The healthcheck now requires a running dedicated browser/CDP, a fresh completed
 Ashby evidence bundle, and that bundle's Telegram message ID. Its live output after
 the release cutover reports daily/inbox/learning exit health, both SQLite integrity
 checks `ok`, and a fresh Ashby result with an acknowledged checkpoint.
+`ai.anicca.job-search-health` runs this same check every five minutes. A healthy pass
+writes a private receipt only; a failed pass sends one Codex-prefixed Telegram alert
+with an ACK receipt and leaves the health evidence for diagnosis.
 
 After an Ashby submit click, the fast path now checks visible `aria-invalid` and
 alert validation errors. A client-side rejection becomes `not_submitted` (retryable)
