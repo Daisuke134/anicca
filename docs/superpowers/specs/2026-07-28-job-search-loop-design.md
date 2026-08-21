@@ -155,6 +155,8 @@ checks `ok`, and a fresh Ashby result with an acknowledged checkpoint.
 `ai.anicca.job-search-health` runs this same check every five minutes. A healthy pass
 writes a private receipt only; a failed pass sends one Codex-prefixed Telegram alert
 with an ACK receipt and leaves the health evidence for diagnosis.
+Release `70bb26d28bd213eae11832602287179a25c4065d` activated this monitor; its
+initial five-minute health receipt is `healthy` with launchd exit code 0.
 
 After an Ashby submit click, the fast path now checks visible `aria-invalid` and
 alert validation errors. A client-side rejection becomes `not_submitted` (retryable)
