@@ -139,7 +139,9 @@ class MachineCapabilityInventoryTests(unittest.TestCase):
             root = Path(temporary)
             executable = root / "codex"
             executable.write_text(
-                "#!/bin/sh\nprintf 'codex-cli 9.8.7\\n'\n",
+                "#!/bin/sh\n"
+                "if [ -z \"${CODEX_HOME:-}\" ]; then printf 'temporary HOME warning\\n' >&2; fi\n"
+                "printf 'codex-cli 9.8.7\\n'\n",
                 encoding="utf-8",
             )
             executable.chmod(0o755)

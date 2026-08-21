@@ -142,8 +142,21 @@ def inspect_codex_cli(entry):
     fd = open_at(executable, os.O_RDONLY | nofollow)
     try:
         digest, size, before = fd_hash(fd, True)
-        with tempfile.TemporaryDirectory(prefix="affiliate-codex-version-") as isolated_home:
+        isolated_home = (
+            Path.home()
+            / ".local"
+            / "state"
+            / "life-manager"
+            / "affiliate"
+            / "machine"
+            / "codex-version-home"
+        )
+        isolated_home.mkdir(mode=0o700, parents=True, exist_ok=True)
+        codex_home = isolated_home / ".codex"
+        codex_home.mkdir(mode=0o700, exist_ok=True)
+        try:
             os.chmod(isolated_home, 0o700)
+            os.chmod(codex_home, 0o700)
             completed = subprocess.run(
                 [str(executable), "--version"],
                 capture_output=True,
@@ -152,10 +165,13 @@ def inspect_codex_cli(entry):
                 check=False,
                 env={
                     "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
-                    "HOME": isolated_home,
+                    "HOME": str(isolated_home),
+                    "CODEX_HOME": str(codex_home),
                     "LC_ALL": "C",
                 },
             )
+        except OSError:
+            raise InventoryError
         match = CODEX_VERSION.fullmatch(completed.stdout.strip())
         after = os.fstat(fd)
         current = os.lstat(executable)
