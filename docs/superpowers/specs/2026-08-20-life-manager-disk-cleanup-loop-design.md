@@ -4,7 +4,7 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
 実行authority: **Mac Host Storage Governor**  
 公開skill: **`disk-cleanup`**
 
-状態: Phase 1実装済み。Life Manager OSS skill、fail-closed governor、guard fallback、回帰テストは反映済み。host-wide census、hourly intelligence、全producer backpressure、cleanup labelの正式bootstrap、24時間/7日観測、bootstrap health failureのfail-closed契約は未完了。UID 501/GUI bootstrap自体は復旧readback済みだが、正本cleanup labelのロードreadbackは未達。
+状態: Phase 1実装済み。Life Manager OSS skill、fail-closed governor、guard fallback、回帰テスト、旧cleanup ownerのcutover、正本5分labelのbootstrap/readback、MiB/GiB精度とswap telemetryは反映済み。host-wide census、hourly intelligence、全producer backpressure、24時間/7日観測、bootstrap health failureのcleanup内receipt契約は未完了。UID 501/GUI bootstrapと`ai.anicca.life-manager-disk-cleanup`のload readbackは復旧済み。
 
 ## 現行実装状況とOSS境界
 
@@ -15,10 +15,10 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
 | OSS skill | 実装済み | `skills/self/disk-cleanup/disk_cleanup.py`、`SKILL.md`、`tests/`、`install-launchd.sh`、`launchd/*.plist` |
 | fail-closed deletion | 部分実装 | protected root、unknown class、unproved candidate、active lease、symlink、open-path、probe errorをpreserveする実装と12件のLife Manager unit test。versioned manifest、owner必須、remote rebuild proofの統合契約は未完了 |
 | clone coverage | 実装済み | Chrome (`com.google.Chrome.code_sign_clone`) と Chromium (`org.chromium.Chromium.code_sign_clone`) の両collectionをallow-list discovery |
-| cadence | 部分実装 | OSS plistは`StartInterval=300`。通常passはbounded fast pass、`cleanup-full-pass.at`の1時間マーカー（または互換の`EMERGENCY_GUARD_FULL_PASS=1`）だけがbounded full cleanupを発火する。UID 501/`gui/501`のreadbackは復旧したが、`ai.anicca.life-manager-disk-cleanup`は現在そのdomainに見つからず、正式bootstrapは未達。`com.anicca.emergency-disk-guard`はfallbackとして登録されている |
+| cadence | 部分実装 | OSS plistは`StartInterval=300`。通常passはbounded fast pass、`cleanup-full-pass.at`の1時間マーカー（または互換の`EMERGENCY_GUARD_FULL_PASS=1`）だけがbounded full cleanupを発火する。`ai.anicca.life-manager-disk-cleanup`は`gui/501`へbootstrap済みで、`StartInterval=300`、single lock、kickstart/readbackを実測。`com.anicca.emergency-disk-guard`と`com.anicca.disk-sentinel`は60秒fallback/観測として登録されている |
 | runtime guard | 部分実装 | 通常の5分guardは`~/anicca-project/work`と`~/.openclaw/external`だけをbounded fast passし、host inventoryを毎回atomic writeする。Life Managerの`host-inventory-full.at`とfallbackの`cleanup-full-pass.at`を別々に管理し、各1時間 cadenceでfull census/cleanupを発火する。root size/unknown attributionは未完了 |
 | ledger/receipt | 部分実装 | cleanup ledgerを32 MiBでrotateし、約282 MiBから56 KiB + gzip archiveへ縮小。bounded operational logとimmutable incident receiptの正式分離は未完了 |
-| production recovery | 未完了 | 非リポジトリreceipt storm、3分超のworktree remote inspection、旧autopruneの無制限home `du` は封じた。131件のstale session guardだけを安全にTERMし、unknownな3件は保存した。旧autoprune/reclaim plistは`.disabled-20260821`へ可逆退避した。cleanでremote同期済みの`cfo-resume-spec` worktreeだけを`git worktree remove`で回収し、freeは5.8→7.7 GiBへ改善した。なお11 GiB未満で、24時間/7日観測とcanonical cleanup labelのload readbackは未達。UID/GUI bootstrap readbackだけは復旧済み |
+| production recovery | 未完了 | 非リポジトリreceipt storm、3分超のworktree remote inspection、旧autopruneの無制限home `du` は封じた。旧autoprune/reclaim/janitorをbootout＋disableし、plistは`.disabled-20260821`へ可逆退避した。正本5分labelはload readback済み。直近はfree約1.04GiB、swap約16GiB中15–16GiB使用、cleanup receiptは`evaluated=0/reclaimed=0/protected_deletions=0`で安全候補なし。重要なCodex/OpenClaw sessionとVM swapfileは保持しており、24時間/7日観測は未開始 |
 
 ### 2026-08-21 incident fix evidence
 
@@ -73,7 +73,7 @@ cleanupがplistを変更した証拠もない。
 |---|---|---|
 | Directory Service | `dscl . -read /Users/anicca ...` → `eServerError` | `UniqueID: 501`、`NFSHomeDirectory: /Users/anicca`、rc=0 |
 | GUI bootstrap | `launchctl` → `141: Reentrancy avoided`（一部操作は153） | `launchctl print gui/501`成功。creator=`loginwindow` |
-| cleanup authority | receiptはno-op | 正本labelは`gui/501`に未登録。emergency guardは登録済み、60秒間隔、last exit 0 |
+| cleanup authority | receiptはno-op | 正本labelは`gui/501`へ登録済み、5分間隔、last exit 0。emergency guardは60秒fallbackとして登録済み |
 | disk effect | 回収なし | cleanup由来の削除なし。容量はproducerの書込みと他の状態に依存 |
 
 根因は、GUIログインセッションから孤立した古いCodex app-serverが、UID 501のDirectory
@@ -93,10 +93,22 @@ Servicesとlaunchd bootstrap domainへの接続を保持したままになった
 5. stale app-serverの終了はcleanupの権限ではない。GUI/session ownerの復旧手順として別のrunbookで扱い、
    cleanupはその完了をreadbackするだけである。
 
-このincidentで、cleanupが何も削除していないことと、cleanup labelが現在ロードされていることは別の
-命題である。復旧後も`ai.anicca.life-manager-disk-cleanup`のload readbackが取れない限り、正式な
-5分authorityの稼働とは判定しない。`com.anicca.emergency-disk-guard`の登録・実行はfallbackの証拠であり、
-正本labelのbootstrap完了の証拠ではない。
+このincidentで、cleanupが何も削除していないことと、cleanup labelがロードされていることは別の
+命題である。2026-08-21 16:19 JSTに`ai.anicca.life-manager-disk-cleanup`の`gui/501` load readbackを
+取得し、5分authorityの稼働を確認した。`com.anicca.emergency-disk-guard`の登録・実行は引き続きfallbackの
+証拠であり、正本labelの代替ではない。
+
+### 2026-08-21 0GB表示 / swap pressure incident
+
+`df -k`のData/VM共有APFS poolは、警告時にavailable=`552288` KiB（約`539.3MiB`）まで低下していた。
+従来のsentinel/guardは`FREE_KB / 1048576`を整数表示していたため、実値が0GiB未満のとき通知が
+`0GB`になった。これは表示だけの誤報ではなく、APFS containerのfree約1.1GB、VM volumeのswap使用
+約15.3–16.3GiB/16.9GiBと一致する実容量圧力だった。
+
+修正後はsentinelとguardがMiB/GiB精度のfree label、`vm.swapusage`、`free_before/after`を同じreceiptへ
+記録する。`~/.codex`の約8.2GB増加はgrowth alertとして観測するが、session/transcript/stateを永久保護し、
+現行app-serverがDB/WAL/HTTPS接続を開いているためkill・削除しない。manifestにない未知rootは回収せず、
+`evaluated=0/reclaimed=0/protected_deletions=0`をfailureとして残し、stop flag/backpressureを維持する。
 
 ### 2026-08-21 bounded host census and safe reclaim evidence
 
@@ -361,7 +373,7 @@ intelligence passはpathを削除せず、manifestを直接変更せず、protec
 |---|---|---|
 | Scope | sentinelとguardが異なる限定rootを走査 | 全local writable volumeを1 inventoryで観測し、Mac全体をowner familyへ分類 |
 | Ownership | guard、sentinel、janitorに責務が分散 | Life Manager host governorが唯一の削除authority。Life Manager自身も1 producer |
-| Cadence | emergency guardは60秒、sentinelは60秒。legacy janitorはcanonical governor shim。旧autoprune/reclaim plistは可逆退避済み | OSSは5分deterministicを定義済み。UID/GUI bootstrapは復旧したが、canonical cleanup labelのload readbackが未達のため、現productionはemergency guard fallback。event-driven/hourly intelligenceは未実装 |
+| Cadence | emergency guardは60秒、sentinelは60秒。旧autoprune/reclaim/janitorはbootout＋disable済みで、rollback plistを保持 | OSSは5分deterministicを定義済み。正本cleanup labelは`gui/501`へload/readback済み。event-driven/hourly intelligenceは未実装 |
 | Decision | manifest回収とlegacy path掃除が混在 | manifest proofのAND条件だけで削除 |
 | Intelligence | 人間がalert後に広く調査 | abnormal stateだけLunaが診断しproducer defectをtask化 |
 | Sessions | path規則により一部保護 | session/transcript/state/identityをpermanent protected contract化 |
@@ -450,8 +462,8 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 | 1 | 全local volume、top-level root、guard/sentinel/janitor/plist/log/state/manifestをimmutable host censusへ記録 | mount/root/owner family、label、interval、program SHA、last exit、free bytes | 部分完了: bounded `host-inventory.json`はmount 9/root 17を実測。11件のgap、root size timeout、writable-volume attributionが残る |
 | 2 | `skills/self/disk-cleanup/` にcanonical host inventory、manifest、runner、health interfaceを定義 | local writable volume missing 0、required owner family missing 0、schema PASS | 部分完了: inventory schema、atomic writer、fast/full mode、hourly marker、9 testsは実装。local writable missing 0とhealth readbackは未完了 |
 | 3 | protected rootsとfail-closed validatorをTDDで固定 | Test Matrix 3–11 PASS | 部分完了: Life Manager governorとAnicca回帰testで主要保護を確認。全Matrix 3–11の統合証跡は未完了 |
-| 4 | exact-byte tier、hysteresis、single lock、300秒schedulerをTDD実装 | Test Matrix 2、12–14 PASS | 部分完了: exact-byte tier、atomic lock、300秒plist、pressure/recovery floor、hourly full-pass marker、bounded fast/full passは実装・unit PASS。launchd正式bootstrapは未完了 |
-| 4a | GUI bootstrap health failureを観測専用fail-closedに固定 | Test Matrix 28–29 PASS、141/153 fixture receipt、復旧後readback | 未完了: `dscl`/`launchctl`の復旧手順は確認済みだが、cleanup/installerのhealth interface、141/153 receipt、label load gateは未実装 |
+| 4 | exact-byte tier、hysteresis、single lock、300秒schedulerをTDD実装 | Test Matrix 2、12–14 PASS | 部分完了: exact-byte tier、atomic lock、300秒plist、pressure/recovery floor、hourly full-pass marker、bounded fast/full pass、正本labelのbootstrap/readbackは実装・unit/live PASS。24時間観測は未完了 |
+| 4a | GUI bootstrap health failureを観測専用fail-closedに固定 | Test Matrix 28–29 PASS、141/153 fixture receipt、復旧後readback | 部分完了: `launchctl-safe preflight`でUID/Directory Services/`gui/501`をreadbackし、cutover前にPASSを確認。cleanup内のhealth-failure receiptと141/153実機fixtureは未完了 |
 | 5 | Mac全体のproducer censusを作り、artifact/lease/finalizer helperを上位growth ownerへ接続 | 1 GiB以上のunattributed root 0、active lease readback、orphan lease fixture PASS | 部分完了: Chrome/Chromium cloneと`cfo-*`のallow-list discoveryは実装。host-wide census、lease heartbeat/finalizer接続は未完了 |
 | 6 | 全write-heavy producerへ共通disk preflightを接続 | producer census missing consumer 0、Test Matrix 15 PASS | 未完了: pressure blockは生成するが、全producerの共通preflight/drain接続は未完了 |
 | 7 | bounded ops log、incident receipt、Telegram dedupeを実装 | Test Matrix 18–19 PASS、message ID | 部分完了: ledger rotationとlast receipt、milestone送信は実装。ops log/incident receiptの正式分離とdedupe契約は未完了 |
@@ -461,7 +473,7 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 | 11 | effect-free shadow passでlegacy ownerとcanonical ownerのdecision parityを比較 | protected mismatch 0、candidate mismatch説明済み | 未完了: legacy scriptはshim化済みだが、effect-free parity receiptは未作成 |
 | 12 | 既知regenerable artifact 1件でproduction canaryを実行 | reclaimed bytes > 0、free bytes readback、protected deletion 0 | 部分完了: closed `cfo-*`とclone候補の実E2E回収・readbackを確認。正式canary receiptは未完了 |
 | 13 | immediate replayを実行 | duplicate effect 0、error 0 | 部分完了: guard replayで保護対象削除0を確認。正式なproduction replay receiptは未完了 |
-| 14 | legacy janitor/cleanerの削除authorityをdisableし、canonical labelだけをload | loaded delete owner 1、rollback plist保存 | 部分完了: legacy janitorはLife Manager governor shimで直接削除しない。hourly shimは`cleanup-full-pass.at`を持つcanonical guardのfull passへ委譲する。旧autoprune/reclaim plistは`.disabled-20260821`へ退避済み。UID/GUI domain readbackは復旧したが、canonical label単独loadのreadbackは未完了 |
+| 14 | legacy janitor/cleanerの削除authorityをdisableし、canonical labelだけをload | loaded delete owner 1、rollback plist保存 | 完了: `ai.anicca.disk-autoprune`、`ai.anicca.disk-reclaim`、`ai.anicca.disk-janitor`を`gui/501`からbootout＋disableし、plistを`.disabled-20260821`へ保持。`ai.anicca.life-manager-disk-cleanup`は5分間隔でload/readback済み。sentinelとemergency guardは観測/fallbackとして残す |
 | 15 | 24時間連続観測 | free >= 11 GiB、ENOSPC 0、protected deletion 0 | 未完了: 現在free < 11 GiBでpressure blockが残り、観測開始条件未達 |
 | 16 | 7日間連続観測とproducer lifecycle audit | state write failure 0、cleanup起因producer failure 0 | 未完了: 24時間観測後に開始 |
 | 17 | rollback restore testと最終production receiptを保存 | prior label復元可能、final receipt、Telegram完了message ID | 未完了: launchd cutover、rollback実演、最終receiptが未完了 |
@@ -472,8 +484,7 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 
 1. **host-wide censusを完成** — bounded `host-inventory.json`の11件のgapを解消し、全local writable volume、必須owner family、1 GiB以上のunknown rootを同一versioned inventoryへ記録し、missing 0を出す。
 2. **OSS contract testを完成** — protected roots、lease、open-path、probe error、dirty/unpushed worktree、unknown classの統合fixtureを追加し、Test Matrix 3–11をPASSにする。
-3. **launchd正式bootstrapを復旧** — UID/GUI domain readbackの復旧後に、`ai.anicca.life-manager-disk-cleanup`をuser domainへ登録し、`StartInterval=300`、single lock、bounded runtime、kickstart/readbackを実測する。対象labelのload readbackが取れないままDONEにしない。旧autoprune/reclaimの退避ファイルはrollback用に保持する。
-4. **bootstrap health契約を実装** — `dscl` UID readback、`launchctl print gui/501`、対象label存在をpreflightし、141/153/UID failureでは削除・plist変更・bootstrap・restart・killを行わず、`gui-bootstrap-health-failure` receiptだけをatomic writeする。stale app-server終了はcleanupから分離する。
+3. **bootstrap health契約を実装** — `dscl` UID readback、`launchctl print gui/501`、対象label存在をpreflightし、141/153/UID failureでは削除・plist変更・bootstrap・restart・killを行わず、`gui-bootstrap-health-failure` receiptだけをatomic writeする。stale app-server終了はcleanupから分離する。installer preflightは実装済みだが、cleanup内receiptと実機fixtureを追加する。
 5. **producer lifecycleを接続** — 上位growth owner（browser、build、media、VM/container、package manager、agent runtime、`~/gig/releases`）をcensusし、artifact登録、lease heartbeat、finalizer、quotaを実装する。旧`disk-reclaim`の安全なrelease proofはこのmanifestへ移植してから再有効化する。
 6. **全producerにbackpressureを接続** — PREVENTIVE/PRESSURE/CRITICAL/ULTRAのpreflight、drain、checkpoint、bounded resumeを同じcontractで適用し、consumer missing 0にする。
 7. **audit/reportingを完成** — bounded ops log、immutable incident receipt、Telegram状態遷移dedupe、delivery-failure receiptを実装し、message IDをreadbackする。
@@ -481,9 +492,8 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 9. **owner単位recoveryを完成** — reserve回復後のredispatchをownerごとに直列化し、checkpoint、retry上限、duplicate redispatch 0を証明する。
 10. **shadow parityと全テストを完了** — legacy shimとcanonical governorのeffect-free decision parityをreceipt化し、Test Matrix 18–29、Life Manager regressionをPASSにする。
 11. **canaryとreplayを完了** — closedな既知regenerable artifactを1件だけ回収し、reclaimed/free readback、protected deletion 0、immediate replay duplicate 0をproduction receiptへ保存する。
-12. **旧authorityをcutover** — 旧janitor/cleaner plistのdelete authorityをdisableし、canonical labelだけをloadする。rollback plistと復元手順を同じcommit/receiptへ保存する。
-13. **容量を回復して観測** — growth ownerを特定してfree spaceを11 GiB以上へ戻し、24時間（ENOSPC 0、protected deletion 0、duplicate owner 0）を連続観測する。
-14. **7日観測とrollbackを閉じる** — 7日間のstate write failure 0、cleanup起因producer failure 0を確認し、rollback restore testと最終Telegram完了message IDを保存する。
+12. **容量を回復して観測** — 重要sessionを削除せず、growth owner/再生成候補を特定してfree spaceを11 GiB以上へ戻し、24時間（ENOSPC 0、protected deletion 0、duplicate owner 0）を連続観測する。swapfileの直接削除と重要app-server killは禁止。
+13. **7日観測とrollbackを閉じる** — 7日間のstate write failure 0、cleanup起因producer failure 0を確認し、rollback restore testと最終Telegram完了message IDを保存する。
 
 ### Required verification commands
 
