@@ -1229,7 +1229,9 @@ ingestion. They are not unchecked M1 items and cannot become the active CFO item
       Syntax, focused Polymarket receipt tests `12/12`, live projection, manifest JSON, state non-mutation, commit, and
       remote push read-back pass. No launchd, trade, provider, database, or Telegram write occurred.
 - [ ] **CFO-2c** Reconcile per-business totals to provider statements and Fleet totals; upgrade Fleet observations to
-      raw positions, recognized earnings, and provider/ledger-confirmed burn only when matching evidence exists.
+      raw positions, recognized earnings, and provider/ledger-confirmed burn only when matching evidence exists. The
+      Fleet adapter boundary is now canonical in commit `75739758e`; the business/provider reconciliation gate remains
+      open because the live Fleet leaderboard currently has no registered rows.
 - [ ] **CFO-2d** Report contribution profit, runway, ROI, and evidence completeness; unknown is distinct from zero.
 - [ ] **CFO-2d2** Deliver the real Telegram summary, account/business/accuracy/why drill-downs, deduped message
       receipt, stale-source alert, and non-technical readability E2E. Business profit, total-cost, and cost-based
@@ -1297,3 +1299,19 @@ deposits are not revenue. AutoHedge, PM, and Reinvest launchd labels were observ
 execution. The projection, manifest, live read, hostile-boundary checks, and existing Polymarket tests pass; the
 canonical remote branch resolves to `902858819aa8b4bdd16d2893c7bfa42d91983ac4`. No launchd, provider, database, or
 Telegram write occurred.
+
+### CFO-2c Fleet boundary progress (2026-08-21)
+
+The proven Fleet source validator and dashboard adapter from migration evidence commit `8d3f4e07c` are now owned by
+canonical `apps/life-manager` in commit `75739758e`, with `config/fleet/runtime-manifest.json`. The adapter admits only
+registered wallet rows, keeps the Fleet organizational scope separate from personal Moneytree assets, labels nominal
+stablecoin inflow as non-revenue, and leaves unverified valuation/inflow/burn unknown rather than zero.
+
+A live read of `https://aniccaai.com/.netlify/functions/dashboard-sync` at `2026-08-21T09:06:30.415Z` returned a
+successful response with source update `2026-08-21T09:06:30.257Z` but `leaderboard_count=0`. The read-only Supabase
+registry had six rows; four supported-chain registrations were eligible for the adapter, and all four were absent from
+the dashboard result. The normalized result is partial with `registeredWalletCount=4`, `presentWalletCount=0`, four
+`missing_registered_wallet` exceptions, and unknown wallet valuation, nominal inflow, and burn. No root total, wallet
+identifier, host, geo, model, signature, credential, or raw provider row was persisted or sent. Smoke mapping,
+unknown handling, hostile scope rejection, syntax, manifest parse, and diff checks pass; state, launchd, provider, and
+Telegram were not mutated. CFO-2c remains open for business/provider statement reconciliation and Fleet attribution.
