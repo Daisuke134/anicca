@@ -15,8 +15,8 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
 | OSS skill | 実装済み | `skills/self/disk-cleanup/disk_cleanup.py`、`SKILL.md`、`tests/`、`install-launchd.sh`、`launchd/*.plist` |
 | fail-closed deletion | 部分実装 | protected root、unknown class、unproved candidate、active lease、symlink、open-path、probe errorをpreserveする実装と12件のLife Manager unit test。versioned manifest、owner必須、remote rebuild proofの統合契約は未完了 |
 | clone coverage | 実装済み | Chrome (`com.google.Chrome.code_sign_clone`) と Chromium (`org.chromium.Chromium.code_sign_clone`) の両collectionをallow-list discovery |
-| cadence | 部分実装 | OSS plistは`StartInterval=300`。通常passはbounded fast pass、`cleanup-full-pass.at`の1時間マーカー（または互換の`EMERGENCY_GUARD_FULL_PASS=1`）がbounded full cleanupを発火する。Data volumeの空きがexact-byteで3GiB未満なら、fresh markerでもそのpassをfullへ昇格し、worktree starvationを防ぐ。`ai.anicca.life-manager-disk-cleanup`は`gui/501`へbootstrap済みで、`StartInterval=300`、single lock、kickstart/readbackを実測。`com.anicca.emergency-disk-guard`と`com.anicca.disk-sentinel`は60秒fallback/観測として登録されている |
-| runtime guard | 部分実装 | 通常の5分guardは`~/anicca-project/work`と`~/.openclaw/external`だけをbounded fast passし、host inventoryを毎回atomic writeする。Life Managerの`host-inventory-full.at`とfallbackの`cleanup-full-pass.at`を別々に管理し、各1時間 cadenceでfull census/cleanupを発火する。ULTRA時はfallback guardがexact-byte critical promotionを行う。root size/unknown attributionは未完了 |
+| cadence | 部分実装 | OSS plistは`StartInterval=300`。通常passはbounded fast pass、`cleanup-full-pass.at`の1時間マーカー（または互換の`EMERGENCY_GUARD_FULL_PASS=1`）がbounded full cleanupを発火する。Data volumeの空きがexact-byteで3GiB未満なら、fresh markerでもそのpassをfullへ昇格し、worktree starvationを防ぐ。critical full pass後は5分cooldownで逐次full-pass stormを抑制する。`ai.anicca.life-manager-disk-cleanup`は`gui/501`へbootstrap済みで、`StartInterval=300`、single lock、kickstart/readbackを実測。`com.anicca.emergency-disk-guard`と`com.anicca.disk-sentinel`は60秒fallback/観測として登録されている |
+| runtime guard | 部分実装 | 通常の5分guardは`~/anicca-project/work`と`~/.openclaw/external`だけをbounded fast passし、host inventoryを毎回atomic writeする。Life Managerの`host-inventory-full.at`とfallbackの`cleanup-full-pass.at`を別々に管理し、各1時間 cadenceでfull census/cleanupを発火する。ULTRA時はfallback guardがexact-byte critical promotionを行い、`cleanup-critical-full-pass.at`の5分cooldown中はfast passへ戻る。root size/unknown attributionは未完了 |
 | ledger/receipt | 部分実装 | cleanup ledgerを32 MiBでrotateし、約282 MiBから56 KiB + gzip archiveへ縮小。bounded operational logとimmutable incident receiptの正式分離は未完了 |
 | production recovery | 未完了 | 非リポジトリreceipt storm、3分超のworktree remote inspection、旧autopruneの無制限home `du` は封じた。旧autoprune/reclaim/janitorをbootout＋disableし、plistは`.disabled-20260821`へ可逆退避した。正本5分labelはload readback済み。直近はfree約1.04GiB、swap約16GiB中15–16GiB使用、cleanup receiptは`evaluated=0/reclaimed=0/protected_deletions=0`で安全候補なし。重要なCodex/OpenClaw sessionとVM swapfileは保持しており、24時間/7日観測は未開始 |
 
@@ -140,9 +140,10 @@ live readbackで空きが1 GiB未満でも`fast_pass`がworktree collectionをde
 remote-recoverable候補を評価しない状態を再現した。guardはData volumeのexact-byte free KiBを
 `ULTRA_GB=3`と比較し、critical時だけ現在のpassをfullへ昇格する。昇格後も`git fetch`、clean、
 unlocked、closed、remote head、revalidationの既存条件を維持し、protected rootやactive sessionは
-削除しない。Anicca cleanup-control regressionは**60 passed**、source/runtime SHA-256は一致し、
+削除しない。critical昇格後は専用markerの5分cooldownを適用し、毎分のgit fetch/lsof stormを
+起こさない。Anicca cleanup-control regressionは**61 passed**、source/runtime SHA-256は一致し、
 live ledgerではdirty/open/recent/head-not-on-remoteをpreserveした。これはworktree starvationを
-解消する証拠であり、reserve 11 GiB回復・swap解放・24時間観測の完了ではない。
+解消し、連続full-passを抑制する証拠であり、reserve 11 GiB回復・swap解放・24時間観測の完了ではない。
 
 ### OSS boundary
 
