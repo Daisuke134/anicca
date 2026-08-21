@@ -77,7 +77,7 @@ function callMoneytreeBundle(options = {}) {
             const accounts = validateAccounts(result.structuredContent || result.structured_content);
             accountContent = accounts;
             if (options.includeTransactions === false) return finish(null, { accounts, transactions: null });
-            if (typeof threadIdValue === "string" && threadIdValue) send("mcpServer/tool/call", { threadId: threadIdValue, server: APP_SERVER, tool: MONEYTREE_TRANSACTIONS_TOOL, arguments: { locale: "ja", limit: 20 } });
+            if (typeof threadIdValue === "string" && threadIdValue) send("mcpServer/tool/call", { threadId: threadIdValue, server: APP_SERVER, tool: MONEYTREE_TRANSACTIONS_TOOL, arguments: { locale: "ja", limit: 20, sort_key: "date", sort_order: "desc" } });
             else return finish(new Error(ERROR));
           } catch { finish(new Error(ERROR)); }
         } else if (message.id === 4) {
