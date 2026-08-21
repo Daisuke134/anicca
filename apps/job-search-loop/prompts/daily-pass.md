@@ -252,4 +252,10 @@ owner. The separate resident weekly learning driver owns replay, Wilson evaluati
 promotion/rollback and its content-addressed Telegram decision report. This daily
 owner owns only the returned deterministic prospective assignment.
 
+After sending, read the newest row from the dedicated outbox whose `event_key`
+starts with `job-search-daily:<Asia/Tokyo day>` and whose status is `sent`; return
+that row's `telegram_message_id` as `report_message_id`. A same-day correction has
+its own content-addressed key, so never report the older base-key message ID when a
+newer correction was acknowledged.
+
 Return only JSON matching the supplied schema.
