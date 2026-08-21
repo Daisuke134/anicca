@@ -236,9 +236,20 @@ PYEOF
   AFFILIATE_ID="$($PY -c 'import json,sys; print(json.load(sys.stdin)["proposal_id"])' <<<"$AFFILIATE_PICK")"
   AFFILIATE_PLACEMENT="$($PY -c 'import json,sys; print(json.load(sys.stdin)["placement_id"])' <<<"$AFFILIATE_PICK")"
   AFFILIATE_URL="$($PY -c 'import json,sys; print(json.load(sys.stdin)["owned_article_url"])' <<<"$AFFILIATE_PICK")"
+  AFFILIATE_TITLE="$($PY -c 'import json,sys; print(json.load(sys.stdin).get("article_title") or "")' <<<"$AFFILIATE_PICK")"
+  AFFILIATE_INTENT="$($PY -c 'import json,sys; print(json.load(sys.stdin).get("buyer_intent") or "")' <<<"$AFFILIATE_PICK")"
   AFFILIATE_SLUG="${AFFILIATE_URL##*/}"
+  if [ -n "$AFFILIATE_TITLE" ] || [ -n "$AFFILIATE_INTENT" ]; then
+    AFFILIATE_HOOK="${AFFILIATE_INTENT:-$AFFILIATE_TITLE}"
+    AFFILIATE_DETAIL="${AFFILIATE_TITLE:-Check fit, limits, and price before paying.}"
+  else
+    AFFILIATE_HOOK="Before paying for an AI workflow"
+    AFFILIATE_DETAIL="${AFFILIATE_SLUG//-/ }"
+  fi
   cat >"$EV/post.txt" <<EOF
-Before paying for an AI workflow: ${AFFILIATE_SLUG//-/ }.
+$AFFILIATE_HOOK
+$AFFILIATE_DETAIL
+Check fit, limits, and price before paying.
 
 Affiliate link disclosure:
 $AFFILIATE_URL

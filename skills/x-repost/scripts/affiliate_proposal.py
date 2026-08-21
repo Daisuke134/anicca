@@ -20,6 +20,7 @@ CONSUMPTION_STATES = {"EFFECT_STARTED", "POSTED", "UNVERIFIED", "NO_EFFECT"}
 SAFE_FIELDS = (
     "receipt_type", "state", "proposal_id", "placement_id", "owned_article_url",
     "language", "disclosure_required", "tracking_link_state", "revenue_credit_state",
+    "article_title", "buyer_intent",
 )
 
 
@@ -39,6 +40,14 @@ def valid(proposal: dict) -> bool:
     url = proposal.get("owned_article_url")
     if not isinstance(url, str) or any(char.isspace() or ord(char) < 32 for char in url):
         return False
+    for field in ("article_title", "buyer_intent"):
+        value = proposal.get(field)
+        if value is not None and (
+            not isinstance(value, str) or not 0 < len(value) <= 240
+            or any(char in value for char in "\r\n")
+            or "http" in value.casefold()
+        ):
+            return False
     try:
         parsed = urlparse(url)
         port = parsed.port
@@ -66,7 +75,7 @@ def valid(proposal: dict) -> bool:
 def canonical(proposal: dict) -> dict:
     if not valid(proposal):
         raise ValueError("invalid proposal")
-    return {field: proposal[field] for field in SAFE_FIELDS}
+    return {field: proposal.get(field) for field in SAFE_FIELDS}
 
 
 def rows(path: Path) -> list[dict]:
