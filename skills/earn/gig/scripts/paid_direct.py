@@ -981,6 +981,11 @@ def _context_input_snapshot(root: Path, context: Path) -> dict[str, tuple[int, s
     return snapshots
 
 
+def _context_inputs_sha256(snapshots: dict[str, tuple[int, str]]) -> str:
+    payload = json.dumps(snapshots, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(payload.encode()).hexdigest()
+
+
 def _revalidate_file_snapshots(snapshots: dict[str, tuple[int, str]]) -> None:
     for raw, expected in snapshots.items():
         if _file_snapshot(Path(raw)) != expected:
@@ -1024,12 +1029,14 @@ def _decision_prompt(context: Path, context_sha256: str, feedback: str,
 
 def _cached_paid_decision(root: Path, receipt: Any, prompt: Path,
                           prompt_sha256: str, schema_sha256: str, context_sha256: str,
-                          feedback: str, requirements: str, identity: dict[str, str]) -> dict[str, Any]:
+                          context_inputs_sha256: str, feedback: str, requirements: str,
+                          identity: dict[str, str]) -> dict[str, Any]:
     if (not isinstance(receipt, dict)
             or receipt.get("schema_version") != PAID_DECISION_SCHEMA_VERSION
             or receipt.get("prompt_version") != PAID_DECISION_PROMPT_VERSION
             or receipt.get("schema_sha256") != schema_sha256
             or receipt.get("context_sha256") != context_sha256
+            or receipt.get("context_inputs_sha256") != context_inputs_sha256
             or receipt.get("prompt_sha256") != prompt_sha256
             or not isinstance(receipt.get("runner"), dict)):
         raise ValueError("stale paid decision receipt")
@@ -1085,6 +1092,7 @@ def _paid_decision(args, item_path: Path, root: Path, base: Path) -> dict[str, A
     context_snapshot = context.read_bytes()
     context_sha256 = hashlib.sha256(context_snapshot).hexdigest()
     context_inputs = _context_input_snapshot(root, context)
+    context_inputs_sha256 = _context_inputs_sha256(context_inputs)
     if (paid_remote_result.requirements_digest(root, feedback) != requirements
             or _latest_official_identity(root, talkroom_id) != identity):
         raise Failure("paid_work_decision")
@@ -1097,7 +1105,8 @@ def _paid_decision(args, item_path: Path, root: Path, base: Path) -> dict[str, A
     try:
         receipt = None if receipt_path.is_symlink() or not _regular_file(receipt_path) else _load(receipt_path)
         return _cached_paid_decision(root, receipt, prompt, prompt_sha256,
-                                     schema_sha256, context_sha256, feedback, requirements, identity)
+                                     schema_sha256, context_sha256, context_inputs_sha256,
+                                     feedback, requirements, identity)
     except (AttributeError, Failure, OSError, ValueError, TypeError, json.JSONDecodeError):
         pass
 
@@ -1147,6 +1156,7 @@ def _paid_decision(args, item_path: Path, root: Path, base: Path) -> dict[str, A
         receipt = {"schema_version": PAID_DECISION_SCHEMA_VERSION,
                    "prompt_version": PAID_DECISION_PROMPT_VERSION, "schema_sha256": schema_sha256,
                    "prompt_sha256": prompt_sha256, "context_sha256": context_sha256,
+                   "context_inputs_sha256": context_inputs_sha256,
                    "runner": runner_proof, **value}
         _write(receipt_path, receipt)
         return value
@@ -1460,7 +1470,9 @@ def _paid_project_root(args, item: dict[str, Any]) -> Path:
 def _current_paid_decision(root: Path, item: dict[str, Any]) -> dict[str, Any]:
     receipt = _load(root / "context" / "paid-work-decision.json")
     context = root / "context" / "current.json"
-    if receipt.get("context_sha256") != _file_snapshot(context)[1]:
+    if receipt.get("context_inputs_sha256") != _context_inputs_sha256(
+        _context_input_snapshot(root, context)
+    ):
         raise ValueError("stale paid decision context")
     value = {key: receipt[key] for key in PAID_DECISION_FIELDS}
     feedback = _text(item.get("buyer_feedback_sha256"))
