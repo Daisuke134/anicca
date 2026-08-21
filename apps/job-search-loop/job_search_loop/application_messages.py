@@ -28,7 +28,7 @@ PROHIBITED_OWNERSHIP = (
 
 MOTIVATION_FACT_IDS = (
     "muit_agent_crm",
-    "muit_genie_logs",
+    "muit_rm_summary",
 )
 
 
