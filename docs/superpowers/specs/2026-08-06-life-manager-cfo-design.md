@@ -944,20 +944,22 @@ consolidated in canonical branch `feature/cfo-ops3a-canonical` at `2dac47124`, w
 feature-worktree absolute path in the installed plist. The stable CFO entrypoint loads with its lock-matched
 dependencies and the fresh financial focused gate is 19/19. The wrapper's Bash-3.2 JSON-prefix bug is fixed; `bash -n`,
 the literal-prefix guard, and a stable entrypoint run now preserve the real redacted result (`status=failed`,
-`reportingDate=2026-08-20`) instead of overwriting it with a null-date default. The label is still not loaded:
-`launchctl print/list` and the post-install `launchctl bootstrap gui/501` attempt return `141: Reentrancy avoided`,
-`managerpid` cannot resolve, and the current session reports unavailable OpenDirectory/uid-501 resolution. A direct
-Moneytree MCP read succeeds, but the non-interactive Codex reader still fails closed. The current interactive host
-also returns `isError=false` for Moneytree `show_accounts` and `show_transactions`; that connector context is not
-available to the launchd Node subprocess. The Homebrew CLI path returns no
-Moneytree MCP completion; the installed Codex appserver path was also tested with the reader's minimal environment and
-a bounded DNS CONNECT transport, but its `chatgpt.com` MCP `initialize` request timed out before any tool event. A
-standalone Codex 0.148 probe with `--ignore-user-config --enable apps` likewise produced no MCP completion within 35
-seconds, so merely preferring `~/.local/bin/codex` is not a proven fix. A final 35-second probe also supplied the
-temporary `network.proxy_url` and `network.enabled` overrides explicitly; it still produced only MCP timeout markers
-and zero Moneytree completion events. Therefore no current hourly CFO Telegram finance receipt is claimed. OPS3b
-remains open until the existing launchd label runs one real Moneytree pass and a positive current provider message ID
-plus hourly path/schedule read-back are verified.
+`reportingDate=2026-08-20`) instead of overwriting it with a null-date default. The host-parity implementation is now
+canonical at `6acff1585` on `feature/cfo-ops3a-canonical`; its stable release is
+`/Users/anicca/.local/share/life-manager/cfo-hourly/current`, and the installed plist contains no feature-worktree
+path. The installed reader uses the persistent local Codex app-server, the same `CODEX_HOME=/Users/anicca/.codex`,
+and the existing Apps host rather than spawning a fresh `codex exec` subprocess. A real Moneytree structured
+`mcpServer/tool/call` completes and the existing adapter consumes it; the stable redacted reader result is
+`ok=true`, `sourceId` present, `accountCount` present, and `partial=true` without printing provider values. The
+invalid-socket probe remains fail-closed (`ok=false`, `partial=true`).
+
+The label is still not loaded: `launchctl print/list`, `launchctl asuser 501 ...`, and the post-install
+`launchctl bootstrap gui/501` attempt return `141: Reentrancy avoided`; `managerpid` cannot resolve, and the current
+session cannot resolve uid 501 through OpenDirectory. The plist itself now passes `plutil -lint`, points at the
+stable release, has `CODEX_HOME=/Users/anicca/.codex`, `LIFE_MANAGER_ENV_FILE=/Users/anicca/.openclaw/.env`, and
+`StartInterval=3600`. No current hourly CFO Telegram finance receipt is claimed. OPS3b remains open only until the
+existing launchd label runs one real Moneytree pass, produces a positive current provider `message_id`, and proves
+the hourly path/schedule read-back.
 
 ### Codex host-parity audit (2026-08-21)
 
@@ -973,10 +975,13 @@ The official Codex documentation establishes the boundary that the runtime must 
   ChatGPT conversation.
 
 The local audit found the Moneytree bundle in the Codex remote-plugin cache and `codex app-server` returned the
-Moneytree app as `enabled=true, callable=true` from `app/installed`. The actual `app/list` and tool-call probes still
-failed at the `chatgpt.com` backend transport (DNS/CA/timeout), so this is not evidence that a Moneytree tool is
-missing. It is evidence that the launchd subprocess is not yet using a proven authenticated path to the existing Codex
-Apps host. No account values or credentials are written to this spec.
+Moneytree app as `enabled=true, callable=true` from `app/installed`. Earlier CLI and bounded fresh-subprocess probes
+timed out at the `chatgpt.com` transport; they are retained as historical evidence, not as the current bridge. On
+2026-08-21, the persistent app-server WebSocket path was exercised with the installed `ws` dependency: `app/read`
+returned the existing Moneytree tools, and a direct `mcpServer/tool/call` for the existing Moneytree account tool
+returned `isError=false` with the structured `accounts` result. The production reader then passed that structured
+result to the existing adapter and returned the redacted `ok=true` envelope. This closes the OPS3b host-parity
+subgate without an LLM copying a financial number, bespoke connector, credential copy, or raw provider persistence.
 
 **OPS3b host-parity gate:** before adding a Life Manager-specific Moneytree connector, run the loop through the local
 Codex app-server/SDK using the same `CODEX_HOME`, `~/.codex/config.toml`, auth context, user/repository skill roots,
@@ -994,9 +999,11 @@ On 2026-08-21, authorized restart paths were attempted but no restart occurred: 
 error `-10827`, `launchctl reboot system` returned `141: Reentrancy avoided`, `/sbin/reboot` returned
 `Operation not permitted`, and the Terminal helper was unavailable (`kLSNoExecutableErr -10827`). A read-only preflight
 found 240 LaunchAgents (238 valid and two invalid: `ai.anicca.cfo-daily.plist` and
-`ai.anicca.fleet-daily.plist`); the invalid/legacy CFO jobs remain intentionally out. No account-directory mutation,
-logout, reboot, or OS-service restart occurred. The post-fix install remains read-back clean (`plutil -lint` PASS and
-the stable wrapper `bash -n` PASS), but `launchctl list ai.anicca.life-manager-cfo-hourly` still returns 141.
+`ai.anicca.fleet-daily.plist`); the invalid/legacy CFO jobs remain intentionally out. A second read-only
+`launchctl asuser 501`/`pid/15509`/`user/501` probe returned the same `141` and could not obtain an audit UID. No
+account-directory mutation, logout, reboot, or OS-service restart occurred. The post-fix install remains read-back
+clean (`plutil -lint` PASS, stable wrapper `bash -n` PASS, and the stable Moneytree reader PASS), but
+`launchctl list ai.anicca.life-manager-cfo-hourly` still returns 141.
 
 Deferred after M1 by explicit owner decision: Binance Spot, trade history, Earn/funding sources, and their tax-lot
 ingestion. They are not unchecked M1 items and cannot become the active CFO item before CFO-1i closes.
@@ -1010,13 +1017,16 @@ ingestion. They are not unchecked M1 items and cannot become the active CFO item
       `loops/cfo-hourly` for the loop entrypoint/state contract, and a repository-owned launchd template/installer.
       No installed plist may point at an expendable feature worktree. Closed in canonical commit `2dac47124`;
       stable release/module-load and focused financial tests are verified, while launchd execution remains OPS3b.
-- [ ] **CFO-OPS3b** Restore the consolidated local hourly CFO. First prove the host-parity gate above: the loop must
-      use the same `CODEX_HOME`, Codex config/auth, user/repository skills, and installed Apps/plugin state through a
-      local app-server/SDK path, then complete one real Moneytree `mcp_tool_call`. Only after that proof, install/reload
-      **only** `ai.anicca.life-manager-cfo-hourly`, verify focused/CFO/full tests, and prove one current Telegram
-      provider message ID plus hourly schedule/path read-back. If host parity cannot be made stable, use the official
-      Moneytree LINK/API fallback and document the decision. Do not revive `life-manager-v0`, `cfo-daily`, or the
-      separate financial-report loop, and do not add a bespoke Moneytree connector before this gate is resolved.
+- [ ] **CFO-OPS3b** Restore the consolidated local hourly CFO. The host-parity gate is closed by canonical commit
+      `6acff1585`: the local app-server path uses the same `CODEX_HOME`, Codex config/auth, user/repository skills,
+      and installed Apps/plugin state, completes one real Moneytree `mcpServer/tool/call`, and passes the structured
+      result to the existing adapter without an LLM copying financial numbers. The remaining gate is operational:
+      load **only** `ai.anicca.life-manager-cfo-hourly`, verify the stable path and 3600-second schedule, execute the
+      real loop read, prove a current Telegram provider message ID, and perform hourly path/schedule read-back. The
+      current GUI/user launchd domain returns `141: Reentrancy avoided`, so no receipt is claimed. If the host bridge
+      later regresses, use the official Moneytree LINK/API fallback and document the decision. Do not revive
+      `life-manager-v0`, `cfo-daily`, or the separate financial-report loop, and do not add a bespoke Moneytree
+      connector before this gate is resolved.
 - [ ] **CFO-1j** Add the recent-transaction concierge view from the existing Moneytree transaction adapter. Every
       displayed row is a verified redacted transaction with direction/date/amount/category coverage; incomplete
       pagination stays visible. This slice reports recent activity but gives no spending accusation or advice.
