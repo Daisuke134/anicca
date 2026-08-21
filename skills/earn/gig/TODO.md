@@ -773,7 +773,11 @@ a later successful example.
   `新規事業での配達ドライバー確保のアポイント獲得をお願いします。`, `9000`,
   `offer:6331348`, and `2026-08-25` from one section; packet SHA256 is
   `47280faaff6c534fe0e64902bfbb9440da2f418f58ac4e80b75f21857aee7241`.
-- [ ] P6 — Bind the complete append-only talkroom history to the same context packet.
+- [x] P6 — Bind the complete append-only talkroom history to the same context packet. The
+  existing compiler retains the full `source/talkroom/messages.jsonl` ledger and names it in
+  `read_these_first` rather than truncating history into the prompt. Production Manledge proof is
+  15 ledger rows with 15 unique marketplace message identities (buyer 7, seller 6, system 2),
+  and the compiled talkroom receipt independently reports `message_count: 15`.
 - [ ] P7 — Bind every buyer attachment and its content receipt to the same context packet.
 - [ ] P8 — Persist one context digest plus source receipts before semantic work begins.
 - [ ] P9 — Suppress any question whose answer already exists in the bound context.
