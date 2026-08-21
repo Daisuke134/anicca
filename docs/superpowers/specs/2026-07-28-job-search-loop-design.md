@@ -7,6 +7,16 @@
 are healthy. Telegram uses the shared OpenClaw gateway. `JOB-LEDGER-EVENT-10N` is
 fixed. `JOB-SCHEDULER-POLICY-10O` is implemented and live at an hourly cadence,
 but its completion gate is still open.
+**Current execution truth supersedes earlier historical run notes below:** the
+hourly owner, browser, and Telegram checkpoint run. Ashby boards tested so far
+are quarantined when their real form exposes reCAPTCHA or an explicit provider
+limit; no such row is counted as submitted. Workday is enabled every wake and
+the user-confirmed Salesforce FDE URL is excluded from reapplication. Rakuten
+reaches Workday My Information, but its custom previous-employment radio is
+still intercepted by a provider loading overlay; no Rakuten submit request,
+completion UI, or receipt email exists. The active atomic task is to make that
+one user-facing control stable, advance every Workday step, and require a
+provider completion UI before the ledger may report `submitted`.
 The execution order is explicit: **Ashby fast path → Ashby discovery/application →
 Workday fast path → Telegram/Ledger reconciliation**. Workday runs on the same
 hourly owner wake; it is no longer parked behind Ashby. A user-confirmed
@@ -119,12 +129,12 @@ evidence, a fenced intent and authoritative confirmation.
 | 1 | Keep the existing browser owner healthy at CDP `:9222` | `done` | `ai.anicca.job-search-browser` is enabled/running; `/json/version` responds; no second browser owner |
 | 2 | Run the existing hourly owner with Ashby then Workday fast paths | `in_progress` | The owner enables `JOB_SEARCH_ENABLE_WORKDAY=1` by default; each lane writes its own evidence and checkpoint |
 | 3 | Replace the timed-out model discovery with a bounded Ashby discovery pass | `completed` | CLI/owner commit `12ea0d89a`; live discovery selected ElevenLabs after browser/cache verification and wrote immutable attribution |
-| 4 | Reach Ashby claim-ready form and route the exact resume | `in_progress` | ElevenLabs reached a real final form with the routed resume; Cohere is durably blocked by its provider limit |
-| 5 | Click the real Ashby submit control once | `completed_for_two_roles` | Two ElevenLabs real Submit Application clicks are fenced as terminal `submit_unknown`; the aria-hidden native-button case uses only a visible text locator; never retry either |
-| 6 | Reconcile authoritative confirmation and send one Telegram report | `in_progress` | Telegram ACKs `27467`, `27480`, and `27475` are recorded; Gmail/ATS confirmation for the ElevenLabs clicks and same-day dedupe remain |
-| 7 | Prove the next wake skips the terminal Ashby row and processes another eligible row | `in_progress` | Consecutive deterministic wakes processed distinct ElevenLabs URLs without reopening terminal rows; one more readback/dedupe check remains |
-| 8 | Run Workday every wake without reapplying user-confirmed URLs | `in_progress` | `workday-manual-completed.json` skips Salesforce FDE JR355047; next proof is one distinct Workday completion UI plus receipt email |
-| 9 | Continue inbox replies, interview scheduling, preparation and outcome tracking | `pending_after_8` | Real Gmail thread, Calendar readback, interview/offer state, and Telegram receipts |
+| 4 | Make the Rakuten custom previous-employment radio stable and advance My Information | `in_progress` | One real `Save and Continue` progress receipt; no timeout or forced click |
+| 5 | Complete all subsequent Workday steps with grounded profile answers and exact resume | `pending_after_4` | Per-step snapshots plus one visible final Submit control |
+| 6 | Click Workday Submit once and preserve the completion UI | `pending_after_5` | Provider submission request and saved provider completion screenshot |
+| 7 | Reconcile the receipt email/ATS confirmation and send one Telegram proof | `pending_after_6` | Immutable message/ATS confirmation bound to the exact application |
+| 8 | Continue every hourly wake without reapplying user-confirmed URLs | `in_progress` | `workday-manual-completed.json` skips Salesforce FDE JR355047; repeated wake processes another eligible Workday row |
+| 9 | Continue inbox replies, interview scheduling, preparation and outcome tracking | `pending_after_7` | Real Gmail thread, Calendar readback, interview/offer state, and Telegram receipts |
 | 10 | Finish guardian/self-healing, Career surface, and OSS/cloud distribution | `pending_after_9` | Health repair evidence, `summary.v2` parity, tenant isolation, export/revocation, and clean install E2E |
 
 ### 1.1 Repeatable-loop robustness contract
