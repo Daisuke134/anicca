@@ -681,7 +681,8 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
   `recover-known-unavailable.py`、`publication_resume.py`のSHAが一致する。loaded `article-daily`と`article-resume`は
   Life Manager current、`ARTICLE_STATE_DIR=/Users/anicca/.local/state/life-manager/writer`、Codex、cooldown 300秒をreadbackした。
 - canary `20260821-054500`は、Note/各Substackに同一draft IDを保持したままstate directory permission errorで`unavailable`、
-  X Article JAは既存edit URLの`intent`で停止している。headlineとbodyのSHAはともに
+  X Article JAは既存edit URLを保持したまま、通常publisherのmedia検査を通らないため専用の共有lock下隔離遷移で
+  `unavailable`に記録した。外部公開・target変更はない。headlineとbodyのSHAはともに
   `516ddf632dd891e20e93b48eb3e163528c68cf3c6bb999c75a4008e1db5bcc4e`で、重複mediaのためrecovery guardが拒否した。
   state SHAはrecovery前後で不変であり、このrunは公開禁止のまま保持する。
 - 既存の別run `daily-2026-08-21`は、headline `9473e1285b68d9aa21119e07a45c67540d081d1a439753f4cbaef3dfd4409b7b`、
@@ -694,9 +695,15 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
 - fresh adversarial v2 reviewはPASSした。既存3 target以外のregister-intent呼び出しはなく、current-run live ledgerがある
   場合はguardを呼ばず拒否し、実canaryの同一media SHAは`InvariantError`で拒否されることをreadbackした。
 - 同日start-controlを止めていた`20260821-054500`は、重複media（headline/bodyの同一SHA）、全active pairのno-live、no-effect
-  ledgerを毎回再計算する。`run-quarantine.json`は監査用にproofだけを保存し、start gateはreceiptを権威にせずfresh proofでのみ
-  `new`へ進める。`created_at`など任意欄、state/ledger pathまたは`run/gates` symlink、pair/ledgerのreceipt・public_id・
-  published_at・existing_publicationは拒否し、publication-state/ledgerは変更しない。
+  ledgerを毎回再計算する。専用隔離はcanonical state/ledger path、run/gates境界、共有publication lock、pairのeffectなしを
+  再確認してから対象pairだけを`unavailable`へ遷移し、その後`run-quarantine.json`をfresh proofから保存する。
+  start gateはreceiptを権威にせずfresh proofでのみ`new`へ進める。`created_at`など任意欄、state/ledger pathまたは
+  `run/gates` symlink、pair/ledgerのreceipt・public_id・published_at・existing_publication、同一run ledgerの
+  `published`欠落・非booleanは拒否する。実canaryではstate SHAが
+  `d7c9694427030ac845c9cbff5e0aa4d625e3e8b967d830168a4d1d7e3c83de4a`
+  から`5a758caf20a8023734572bff1087f4191c11343dd0dc2ff955fbde39131d5cf5`へ遷移し、ledger SHA
+  `e39fb52e0266b82dea09cb5551dfa4b630e189357f9486571f2584a3ec44f5e7`は不変、start-controlは
+  `action=new, reason=same-jst-day-invalid-media-proof`を返した。
 
 ## 目標構成
 
@@ -921,7 +928,7 @@ loaded definitionと自然tickまで読み戻すことを意味する。A1のcon
 | A9a | 同日完了runの新規記事解放と重複防止をreleaseへ反映する | current releaseでstart-control 6件、publication identity 15件、schedule miss 2件がPASS。実launchdで完了runから新run `20260821-043922`を作成し、provider cooldownで公開前停止、重複外部作用0を確認 | 部分完了（新run解放・重複防止・Codex-only retry配線はPASS。公開E2EはA9d待ち） |
 | A9c | WriterのCodex-only retryを実装する | `ARTICLE_PROVIDER=codex`固定。cooldown既定値を300秒へ変更し、同一immutable runを最大3回だけcheckpoint再開するfixture。Codex cooldown中にClaude/Hermesを起動しない、公開state/ledger後のreplay 0、3回 exhausted後に新runを増殖させない | 実装・契約検証完了（model-runner 7件、resume circuit 6件、start-control 6件、candidate wiring 19件、publication identity 15件、topic-card resume 9件、state routing、duplicate-media guard、構文/manifest/diff check、fresh v2 adversarial review PASS） |
 | A9d | Codex-only Writer公開canaryを行う | current releaseをlaunchdへ反映し、pause解除後の新runでCodex attempt receipt、Note JA、Substack JA/EN、X Article JAの4 native URL、本文・media hash、Telegram delivery receiptを取得。Codex timeout時は同じrunの次tickへ安全にhandoffする | 部分完了（既存`daily-2026-08-21`は4媒体native live＋`article-run-complete rc=0`。別canary`20260821-054500`はduplicate-media proof付きquarantine対象。pause解除後のclean canary、連続tick、Telegram deliveryは未実施） |
-| A9e | invalid duplicate-media runを安全に隔離する | 対象runの同一media SHA、全active pairが`unavailable`またはdormant `skipped`、no-effect ledgerを再計算し、proof-bound `run-quarantine.json`を作成。start-controlが同日`new`を返し、state/ledger不変をreadback | 実装・fixture 11件PASS。実canaryのX intentを同じtargetの`unavailable`へ安全に遷移し、receipt作成とcurrent release反映を行う |
+| A9e | invalid duplicate-media runを安全に隔離する | 対象runの同一media SHA、全active pairが`unavailable`またはdormant `skipped`、no-effect ledgerを再計算し、proof-bound `run-quarantine.json`を作成。start-controlが同日`new`を返し、対象pair以外とledgerの不変をreadback | 完了（実装・fixture 13件、focused 38件、契約・構文・diff check PASS。実canaryのX intentを同じtargetの`unavailable`へ共有lock下で遷移、receipt作成、ledger不変、start-control=`new`を実測。current release反映は次のrelease操作で閉じる） |
 | A9b | 1日複数回の正式scheduleを追加する | 06:00/14:00/22:00などのcalendar wake、各slotのunique run ID、同日異記事、連続2周期のnative receiptを実測 | 未着手。現在は06:00のまま |
 | A10 | 実payment/publisher receiptをmoney ledgerへ接続する | receipt ID、金額、通貨、destination identity、artifact/run IDをjoin。未取得は`unknown`のまま保持 | 未着手 |
 | A11 | 14日間の運用観測を完了する | 重複外部作用0、同一run resume、自然文の成功/失敗報告、revenue ledger整合を連続receiptで確認 | A9/A10待ち |

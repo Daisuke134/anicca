@@ -97,6 +97,40 @@ class ArticleStartPolicyTest(unittest.TestCase):
             with patch.object(START, "validated_live_set", return_value=(False, None)):
                 self.assertEqual(START.decide(root, "2026-08-21")["action"], "block-incomplete")
 
+    def test_terminalize_invalid_pair_under_shared_lock_then_quarantine(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            run = self._duplicate_media_run(root)
+            state_path = run / "gates" / "publication-state.json"
+            state = json.loads(state_path.read_text(encoding="utf-8"))
+            state["pairs"]["x-article/ja"] = {
+                "status": "intent",
+                "target": "https://x.example/draft/1",
+            }
+            state_path.write_text(json.dumps(state), encoding="utf-8")
+            before_ledger = (root / "articles.jsonl").read_bytes()
+            entry = QUARANTINE.terminalize_pair(
+                root, run.name, "x-article/ja", "duplicate-media-quarantine"
+            )
+            receipt = QUARANTINE.quarantine(root, run.name)
+            after = json.loads(state_path.read_text(encoding="utf-8"))
+            after_ledger = (root / "articles.jsonl").read_bytes()
+        self.assertEqual(entry["status"], "unavailable")
+        self.assertEqual(after["pairs"]["x-article/ja"]["target"], "https://x.example/draft/1")
+        self.assertEqual(after_ledger, before_ledger)
+        self.assertEqual(receipt["reason"], "duplicate-media")
+
+    def test_quarantine_rejects_ambiguous_same_run_ledger_publication_flag(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            run = self._duplicate_media_run(root)
+            (root / "articles.jsonl").write_text(
+                json.dumps({"run_id": run.name, "published": "false"}) + "\n",
+                encoding="utf-8",
+            )
+            with self.assertRaises(QUARANTINE.QuarantineError):
+                QUARANTINE.quarantine(root, run.name)
+
     def test_quarantine_receipt_tamper_does_not_authorize_or_block_fresh_proof(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
