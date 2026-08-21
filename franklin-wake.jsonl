@@ -32206,3 +32206,10 @@
 {"ts":1787350421,"wake_id":"00MT3IAJMR954D54E5F14F4223","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1787350583,"wake_id":"00MT3IE0ZIAA7FB5990528404D","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1787350715,"wake_id":"00MT3IGUBUDB4BA8BC2F14483C","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1787350786,"wake_id":"00MT3IIDE2BCA8B33EAD184AC0","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787350922,"wake_id":"00MT3ILAGM2DB75908C1F34F60","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: new Solana trading signal API [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced for the model to t"}
+{"ts":1787351051,"wake_id":"00MT3IO1XUB55DB8B717BD49D7","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787351201,"wake_id":"00MT3IR9NI044F5F478C4F40DE","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787351353,"wake_id":"00MT3IUIEN5DD28A169CD64C7B","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787351479,"wake_id":"00MT3IX8BW0390615E6C4541E7","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787351610,"wake_id":"00MT3J00Z772ED5CB6D5E74D07","kind":"narrate","sleep_s":120,"model":"auto"}
