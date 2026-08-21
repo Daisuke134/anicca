@@ -548,6 +548,7 @@ def repost_consumption_state(repost_root, proposal_id, placement_id):
         return "UNCONSUMED_BY_SEPARATE_OWNER"
     latest = None
     placements_by_proposal = {}
+    states_by_proposal = {}
     try:
         for line in path.read_text(encoding="utf-8").splitlines():
             if not line.strip():
@@ -612,6 +613,12 @@ def repost_consumption_state(repost_root, proposal_id, placement_id):
             placements.add(row["placement_id"])
             if len(placements) > 1:
                 return "CONSUMPTION_LEDGER_INVALID"
+            prior_states = states_by_proposal.setdefault(row["proposal_id"], [])
+            if prior_states:
+                prior = prior_states[-1]
+                if prior != "EFFECT_STARTED" or row["state"] not in REPOST_CONSUMPTION_STATES - {"EFFECT_STARTED"}:
+                    return "CONSUMPTION_LEDGER_INVALID"
+            prior_states.append(row["state"])
             if row.get("proposal_id") == proposal_id:
                 latest = row
     except (OSError, UnicodeDecodeError, ValueError):

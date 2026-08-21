@@ -186,6 +186,44 @@ class LocalLoopTest(unittest.TestCase):
                 second = MODULE.create_repost_proposal(state)
             self.assertEqual(second["repost_delivery_state"], "CONSUMPTION_LEDGER_INVALID")
 
+    def test_repost_consumption_terminal_state_is_absorbing(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root)
+            repost = state / "repost"
+            campaign_dir = state / "campaign-publications"
+            campaign_dir.mkdir(parents=True)
+            MODULE.atomic_json(campaign_dir / "alpha-en.json", {
+                "state": "X_LIVE", "plan_id": "alpha-en",
+                "placement_id": "alpha-en-1", "created_at": "2026-08-21T00:00:00+00:00",
+                "owned_url": "https://aniccaai.com/blog/alpha-guide",
+            })
+            MODULE.atomic_json(state / "placement-ledger.json", {"placements": [{
+                "placement_id": "alpha-en-1", "provider_clicks": {"count": 3},
+            }]})
+            first = MODULE.create_repost_proposal(state)
+            snapshot = json.loads((state / "repost-proposals" / "latest.json").read_text())
+            rows = [
+                {"schema_version": 1, "receipt_type": "X_REPOST_AFFILIATE_PROPOSAL_CONSUMPTION",
+                 "proposal_id": first["proposal_id"], "placement_id": "alpha-en-1",
+                 "state": "EFFECT_STARTED", "proposal": snapshot,
+                 "observed_at": "2026-08-21T14:32:32+00:00",
+                 "revenue_credit_state": "NO_REVENUE_CREDIT_UNTIL_EXACT_AFFILIATE_JOIN"},
+                {"schema_version": 1, "receipt_type": "X_REPOST_AFFILIATE_PROPOSAL_CONSUMPTION",
+                 "proposal_id": first["proposal_id"], "placement_id": "alpha-en-1",
+                 "state": "UNVERIFIED", "observed_at": "2026-08-21T14:33:32+00:00",
+                 "revenue_credit_state": "NO_REVENUE_CREDIT_UNTIL_EXACT_AFFILIATE_JOIN"},
+                {"schema_version": 1, "receipt_type": "X_REPOST_AFFILIATE_PROPOSAL_CONSUMPTION",
+                 "proposal_id": first["proposal_id"], "placement_id": "alpha-en-1",
+                 "state": "EFFECT_STARTED", "proposal": snapshot,
+                 "observed_at": "2026-08-21T14:34:32+00:00",
+                 "revenue_credit_state": "NO_REVENUE_CREDIT_UNTIL_EXACT_AFFILIATE_JOIN"},
+            ]
+            for row in rows:
+                MODULE.append(repost / "affiliate-proposals-consumed.jsonl", row)
+            with patch.dict(MODULE.os.environ, {"AFFILIATE_REPOST_STATE_DIR": str(repost)}):
+                second = MODULE.create_repost_proposal(state)
+            self.assertEqual(second["repost_delivery_state"], "CONSUMPTION_LEDGER_INVALID")
+
     def test_cost_budget_deduplicates_actual_usd_rows_and_blocks_at_cap(self):
         with tempfile.TemporaryDirectory() as root:
             state = Path(root)
