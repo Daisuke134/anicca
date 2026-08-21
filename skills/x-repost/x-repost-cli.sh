@@ -257,7 +257,7 @@ EOF
   if ! "$PY" - "$EV/post.txt" <<'PYEOF'
 from pathlib import Path
 text = Path(__import__('sys').argv[1]).read_text(encoding='utf-8').strip()
-raise SystemExit(0 if text and len(text) <= 280 and 'Affiliate link disclosure:' in text else 1)
+raise SystemExit(0 if text and len(text) <= 280 and 'Affiliate disclosure: I may earn a commission' in text else 1)
 PYEOF
   then
     report "❌ Affiliate proposal text failed the local disclosure/length gate"
