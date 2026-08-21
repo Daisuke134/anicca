@@ -691,6 +691,34 @@ function createMarketingLocalLedger(options = {}) {
     });
   }
 
+  function retryJob(input = {}) {
+    const tenantId = identifier(input.tenantId ?? input.tenant_id, "local ledger tenant id");
+    const jobId = identifier(input.jobId ?? input.job_id, "local ledger job id");
+    return withLock(() => {
+      const state = snapshot();
+      const job = jobFor(state, tenantId, jobId);
+      if (!job || job.status !== "failed" || job.unknown_effect === true) {
+        throw new Error("local ledger job is not safely retryable");
+      }
+      if (job.attempt >= job.max_attempts) throw new Error("local ledger job retry limit reached");
+      const observedAt = nowInstant(now);
+      const queued = {
+        ...job,
+        status: "queued",
+        available_at: observedAt,
+        error_code: null,
+        failed_at: null,
+        updated_at: observedAt,
+        lease_owner: null,
+        lease_expires_at: null,
+      };
+      try { fs.unlinkSync(path.join(claimsDirectory, `${keyFor(tenantId, jobId)}.json`)); }
+      catch (error) { if (error.code !== "ENOENT") throw error; }
+      append(jobsFile, { schema_version: 1, kind: "job", event: "retry", job: queued });
+      return clone(queued);
+    });
+  }
+
   function resolveReconciliation(input = {}) {
     const tenantId = identifier(input.tenantId ?? input.tenant_id, "local ledger tenant id");
     const jobId = identifier(input.jobId ?? input.job_id, "local ledger job id");
@@ -777,6 +805,7 @@ function createMarketingLocalLedger(options = {}) {
     heartbeatJob: async (input) => heartbeatJob(input),
     completeJob: async (input) => completeJob(input),
     failJob: async (input) => failJob(input),
+    retryJob: async (input) => retryJob(input),
     resolveReconciliation: async (input) => resolveReconciliation(input),
     readJob: async (input) => readJob(input),
     readReceipt: async (input) => readReceipt(input),

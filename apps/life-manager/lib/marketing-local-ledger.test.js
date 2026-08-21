@@ -464,6 +464,31 @@ test("local ledger retains truthful unavailable receipts and unknown failures wi
   assert.equal(failed.status, "failed");
   assert.equal(failed.unknown_effect, true);
   assert.equal(await restarted.readReceipt({ tenantId: "dais-local", jobId: "unknown-job" }), null);
+  await assert.rejects(
+    () => restarted.retryJob({ tenantId: "dais-local", jobId: "unknown-job" }),
+    /not safely retryable/i,
+  );
+
+  await restarted.enqueueJob(job({
+    job_id: "known-failure-job",
+    effect_key: "tiktok:honne-ai:en:known-failure",
+    available_at: "2026-08-21T02:00:00.000Z",
+  }));
+  const knownClaim = await restarted.claimJob({
+    tenantId: "dais-local", jobId: "known-failure-job",
+    capability: "marketing.video.publish", workerId: "canary-worker", leaseSeconds: 180,
+  });
+  await restarted.failJob({
+    tenantId: "dais-local", jobId: "known-failure-job", attempt: knownClaim.attempt,
+    workerId: "canary-worker", errorCode: "provider_preflight", unknownEffect: false,
+  });
+  const requeued = await restarted.retryJob({ tenantId: "dais-local", jobId: "known-failure-job" });
+  assert.equal(requeued.status, "queued");
+  const retryClaim = await restarted.claimJob({
+    tenantId: "dais-local", jobId: "known-failure-job",
+    capability: "marketing.video.publish", workerId: "retry-worker", leaseSeconds: 180,
+  });
+  assert.equal(retryClaim.attempt, 2);
 
   const reconciledReceipt = {
     schema_version: 1,
