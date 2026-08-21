@@ -148,8 +148,19 @@ def record(consumed_path: Path, proposal: dict, state: str, post_url: str | None
     if not valid(proposal):
         raise ValueError("invalid proposal")
     if state == "POSTED":
-        parsed = urlparse(post_url or "")
-        if parsed.hostname != "x.com" or not re.fullmatch(r"/[A-Za-z0-9_]+/status/[0-9]+", parsed.path):
+        if not isinstance(post_url, str) or any(char.isspace() or ord(char) < 32 for char in post_url):
+            raise ValueError("invalid published X URL")
+        try:
+            parsed = urlparse(post_url)
+            port = parsed.port
+        except ValueError:
+            raise ValueError("invalid published X URL")
+        if not (
+            parsed.scheme == "https" and parsed.hostname == "x.com"
+            and not parsed.username and not parsed.password and port is None
+            and not parsed.query and not parsed.fragment
+            and re.fullmatch(r"/[A-Za-z0-9_]+/status/[0-9]+", parsed.path)
+        ):
             raise ValueError("invalid published X URL")
     row = {
         "schema_version": 1,

@@ -24,29 +24,48 @@ class Node:
 
 
 class Article:
+    def __init__(self, text: str, visible_url: str) -> None:
+        self.text, self.visible_url = text, visible_url
+
     def query_selector(self, selector: str):
         if selector == 'div[data-testid="tweetText"]':
-            return Node(text="Before paying for an AI workflow: voice isolator.\n\nAffiliate link disclosure:\nhttps://aniccaai.com/blog/voice-isolator")
+            return Node(text=self.text)
         if 'status/' in selector:
             return Node(href="/selawmqt/status/123")
         return None
 
     def query_selector_all(self, selector: str):
-        return [Node(text="aniccaai.com/blog/voice-isolator", href="https://t.co/example")]
+        return [Node(text=self.visible_url, href="https://t.co/example")]
 
 
 class Page:
+    def __init__(self, articles) -> None:
+        self.articles = articles
+
     def query_selector_all(self, selector: str):
-        return [Article()]
+        return self.articles
 
 
 class XPostTests(unittest.TestCase):
     def test_multiline_original_requires_exact_prefix_and_owned_url(self) -> None:
+        text = "Before paying for an AI workflow: voice isolator.\n\nAffiliate link disclosure:\nhttps://aniccaai.com/blog/voice-isolator"
         found = MODULE.scan_timeline(
-            Page(), "selawmqt", "Before paying for an AI workflow: voice isolator.",
-            "https://aniccaai.com/blog/voice-isolator",
+            Page([Article(text, "aniccaai.com/blog/voice-isolator")]), "selawmqt",
+            "Before paying for an AI workflow: voice isolator.",
+            "https://aniccaai.com/blog/voice-isolator", text,
         )
         self.assertEqual(found, "https://x.com/selawmqt/status/123")
+
+    def test_original_rejects_similar_prefix_or_longer_url(self) -> None:
+        text = "Before paying for an AI workflow: voice isolator.\n\nAffiliate link disclosure:\nhttps://aniccaai.com/blog/voice-isolator"
+        found = MODULE.scan_timeline(
+            Page([Article(
+                "Before paying for an AI workflow: voice isolator. extra\n\nAffiliate link disclosure:\nhttps://aniccaai.com/blog/voice-isolator-plus",
+                "aniccaai.com/blog/voice-isolator-plus",
+            )]), "selawmqt", "Before paying for an AI workflow: voice isolator.",
+            "https://aniccaai.com/blog/voice-isolator", text,
+        )
+        self.assertIsNone(found)
 
 
 if __name__ == "__main__":

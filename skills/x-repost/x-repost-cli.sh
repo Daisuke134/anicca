@@ -255,6 +255,8 @@ with open(posted, "a+", encoding="utf-8") as stream:
            "post_url": post_url}
     stream.seek(0, 2)
     stream.write(json.dumps(row, ensure_ascii=False) + "\n")
+    stream.flush()
+    os.fsync(stream.fileno())
 PYEOF
   }
   if [ "$AFFILIATE_STATE" = "RECONCILE" ]; then
@@ -263,14 +265,23 @@ PYEOF
     AFFILIATE_RC=$?
     if [ "$AFFILIATE_RC" -eq 0 ] && [ "$($PY -c 'import json,sys; print(json.load(open(sys.argv[1])).get("posted"))' "$EV/post.json")" = "True" ]; then
       AFFILIATE_POST_URL="$($PY -c 'import json,sys; print(json.load(open(sys.argv[1]))["post_url"])' "$EV/post.json")"
-      append_affiliate_post "$AFFILIATE_POST_URL"
-      "$PY" "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL" \
-        --consumed "$AFFILIATE_CONSUMED" --record POSTED --post-url "$AFFILIATE_POST_URL" >/dev/null
+      if ! append_affiliate_post "$AFFILIATE_POST_URL"; then
+        report "❌ Affiliate post read back but posted ledger append failed; proposal remains claimed"
+        finish 1 "affiliate posted ledger append failed"
+      fi
+      if ! "$PY" "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL" \
+        --consumed "$AFFILIATE_CONSUMED" --record POSTED --post-url "$AFFILIATE_POST_URL" >/dev/null; then
+        report "❌ Affiliate post read back but terminal consumption receipt failed; proposal remains claimed"
+        finish 1 "affiliate terminal receipt failed"
+      fi
       report "✅ Affiliate proposal recovered from exact X readback\nplacement: $AFFILIATE_PLACEMENT\npost: $AFFILIATE_POST_URL"
       finish 0 "affiliate proposal reconciled without duplicate publish"
     fi
-    "$PY" "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL" \
-      --consumed "$AFFILIATE_CONSUMED" --record UNVERIFIED >/dev/null
+    if ! "$PY" "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL" \
+      --consumed "$AFFILIATE_CONSUMED" --record UNVERIFIED >/dev/null; then
+      report "❌ Affiliate unresolved-effect receipt failed; proposal remains claimed"
+      finish 1 "affiliate unresolved receipt failed"
+    fi
     report "⚠️ Affiliate proposal could not be recovered by exact X readback; it is terminally unverified and will not be reposted"
     finish 0 "affiliate proposal reconciliation unresolved"
   fi
@@ -290,15 +301,24 @@ PYEOF
     finish 1 "affiliate proposal publish unverified"
   fi
   if [ "$AFFILIATE_RC" -ne 0 ]; then
-    "$PY" "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL" \
-      --consumed "$AFFILIATE_CONSUMED" --record NO_EFFECT >/dev/null
+    if ! "$PY" "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL" \
+      --consumed "$AFFILIATE_CONSUMED" --record NO_EFFECT >/dev/null; then
+      report "❌ Affiliate no-effect receipt failed; proposal remains claimed"
+      finish 1 "affiliate no-effect receipt failed"
+    fi
     report "⚠️ Affiliate proposal had no confirmed X effect; terminal no-effect was recorded and generic acquisition can continue"
     finish 0 "affiliate proposal no effect"
   fi
   AFFILIATE_POST_URL="$($PY -c 'import json,sys; print(json.load(open(sys.argv[1]))["post_url"])' "$EV/post.json")"
-  append_affiliate_post "$AFFILIATE_POST_URL"
-  "$PY" "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL" \
-    --consumed "$AFFILIATE_CONSUMED" --record POSTED --post-url "$AFFILIATE_POST_URL" >/dev/null
+  if ! append_affiliate_post "$AFFILIATE_POST_URL"; then
+    report "❌ Affiliate post read back but posted ledger append failed; proposal remains claimed"
+    finish 1 "affiliate posted ledger append failed"
+  fi
+  if ! "$PY" "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL" \
+    --consumed "$AFFILIATE_CONSUMED" --record POSTED --post-url "$AFFILIATE_POST_URL" >/dev/null; then
+    report "❌ Affiliate post read back but terminal consumption receipt failed; proposal remains claimed"
+    finish 1 "affiliate terminal receipt failed"
+  fi
   report "✅ Affiliate proposal posted with exact placement handoff\nplacement: $AFFILIATE_PLACEMENT\npost: $AFFILIATE_POST_URL"
   finish 0 "affiliate proposal published and read back"
 fi
