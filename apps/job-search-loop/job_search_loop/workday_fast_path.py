@@ -242,7 +242,7 @@ def _known_value(item: dict[str, Any], profile: dict[str, Any], values: dict[str
     if "start date" in context or "when can you start" in context:
         value = candidate.get("start_date")
         return str(value) if value else None
-    if "how did you hear" in context:
+    if "how did you hear" in context or "how did you hear" in labels:
         return "Job Boards"
     if "previously worked" in context or "former worker" in context:
         return "No"
