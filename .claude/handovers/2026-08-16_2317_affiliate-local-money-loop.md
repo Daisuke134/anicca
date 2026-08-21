@@ -1,5 +1,26 @@
 # Affiliate local money loop handover
 
+- Release `94f07b3fde9b6cbcbc3066c14ee841cfdd2ef5fe` is installed as immutable
+  `current`; the Affiliate suite is `89/89`, and source/installed
+  `local_loop.py` bytes match. The existing money owner wake
+  `337bd3aa01189cbf92f2bb1836d6559888ad308e39fe316de8626cdbc7c1b837`
+  completed at `2026-08-21T17:48:29+0900`, launchd `runs=256`, exit `0`.
+  It read back owner health `HEALTHY`, quarantine `CLEAR`,
+  `ACTION_CAP_BLOCKED` (`34/10` JST attempts), and
+  `DISK_GUARD_BLOCKED` (free `565284864` bytes versus the 10 GiB floor).
+  Official PartnerStack remains `NO_TRANSACTIONS`; approved-or-paid counted
+  net is USD 0.00 and real costs are `UNKNOWN`. A prior Telegram delivery
+  timeout is now reconciled by one append-only
+  `AFFILIATE_REPAIR_RECEIPT`: diagnosis `SEND_TIMEOUT_UNKNOWN`, repair
+  `RESUME_SAME_TELEGRAM_SEND`, same event `74f…`, postcondition `SENT`,
+  provider message `27370`, outcome `SELF_HEALED`. Telegram is `NO_PENDING`
+  and no duplicate blocker was sent; `telegram-superseded.jsonl` has two
+  equivalent dynamic rows. The generic report event `33f…→27354` predates the
+  typed blocker repair; it is not current money evidence and must not be
+  interpreted as a transaction. This closes only the Telegram timeout repair
+  sub-behavior; B01, real billed-cost evidence/caps, universal F05, and the
+  USD 10,000 gate remain open.
+
 - Release `6de69fcabfced2a92f548a6c9f219524a939b571` is installed as immutable
   `current`; the Affiliate suite is `88/88`, and source/installed
   `local_loop.py` bytes match. The release makes typed `BLOCKED` report

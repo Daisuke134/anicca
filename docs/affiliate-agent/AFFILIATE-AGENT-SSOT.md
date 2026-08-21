@@ -1136,6 +1136,32 @@ This closes the Telegram timeout retry and blocker dedupe sub-behaviors only;
 it does not close B01, cost caps, F05 diagnose→repair→postcondition, provider
 transaction/settlement evidence, or the USD 10,000 gate.
 
+### 1.1.44 F05 Telegram timeout repair receipt readback
+
+Release `94f07b3fde9b6cbcbc3066c14ee841cfdd2ef5fe` is installed as immutable
+`current`; the Affiliate suite is `89/89`, compilation and `git diff --check`
+pass, and source/installed `local_loop.py` bytes match. The existing money
+owner wake `337bd3aa01189cbf92f2bb1836d6559888ad308e39fe316de8626cdbc7c1b837`
+completed at `2026-08-21T17:48:29+0900`, launchd `runs=256`, exit `0`. It read
+back owner health `HEALTHY`, quarantine `CLEAR`, `ACTION_CAP_BLOCKED` (`34/10`),
+and `DISK_GUARD_BLOCKED` (free `565284864` bytes versus the 10 GiB floor).
+PartnerStack remains `NO_TRANSACTIONS`; approved-or-paid counted net is USD
+0.00 and real costs remain `UNKNOWN`.
+
+The wake appended exactly one `AFFILIATE_REPAIR_RECEIPT` for the earlier
+Telegram `SEND_TIMEOUT_UNKNOWN`: `repair_kind=TELEGRAM_SEND_RESUME`,
+`repair.action=RESUME_SAME_TELEGRAM_SEND`, same Telegram event `74f…`,
+postcondition `state=SENT`, provider `messageId=27370`, and
+`outcome=SELF_HEALED`. Telegram readback is `NO_PENDING`, and the
+`telegram-superseded.jsonl` ledger contains two equivalent dynamic blocker
+rows without claiming duplicate delivery. The older generic event
+`33f…→27354` was emitted before the typed blocker repair; it is stale
+notification history, not a transaction or current blocker description.
+
+This closes only the Telegram timeout repair sub-behavior. It does not close
+B01's required non-empty official transaction/settlement row, real billed-cost
+evidence/caps, universal F05 repair coverage, or the USD 10,000 gate.
+
 ### 1.2.0 Audited executable boundary
 
 The installed ownership graph has six launchd labels: three persistent browser
@@ -3206,7 +3232,9 @@ receipt readback, SSOT state update, commit, and push to both canonical remotes.
   repeated-failure quarantine are installed and live-proven in §§1.1.39–1.1.41;
   the JST external-action cap and typed blocked-report repair are installed and
   live-proven in §1.1.42; timeout retry and blocker dedupe are live-proven in
-  §1.1.43. Real billed-cost caps and repair/watchdog behavior remain open.
+  §1.1.43; Telegram timeout repair receipts are live-proven in §1.1.44. Real
+  billed-cost caps and the remaining universal repair/watchdog behavior remain
+  open.
 - [ ] **F05** Implement diagnose→one allowlisted repair→postcondition→same-job resume;
   escalate or quarantine when the repair postcondition fails.
 - [x] **F06** Observe one real recoverable capture failure and prove `SELF_HEALED`,
