@@ -2,13 +2,13 @@
 
 | Field | Value |
 |---|---|
-| Status | M2 — `CFO-OPS3a` is closed; `CFO-OPS3b` launchd management is closed, but shared Telegram transport revalidation is pending before `CFO-1j` |
+| Status | M2 — `CFO-OPS3a`, `CFO-OPS3b`, and `CFO-1j` are closed; `CFO-2b.2b2` is next |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
 | Existing foundations | `apps/life-call`, interactive Moneytree App access, Fleet telemetry, `lm_api_cost`, and the canonical `lm_agent_earnings` source (the panel's `lm_financial_ledger` name is a stale alias) |
 | Canonical repository | `Daisuke134/life-manager` at `/Users/anicca/Projects/life-manager-main`; CFO code, skill, loop, launchd template, tests, and specs converge there |
-| First active item | **CFO-OPS3b revalidates one real hourly receipt through the shared `@AniccaLifeBot` destination. Only then does CFO-1j show recent verified transactions. `CFO-2a3b` remains externally blocked by Google reauthentication.** |
+| First active item | **CFO-2b.2b2 moves the proven one-off Apple Finance report boundary into the smallest durable parser and reconciles report-level Partner Share coverage with RevenueCat. `CFO-2a3b` remains externally blocked by Google reauthentication.** |
 
 ## 1. Overview — What and Why
 
@@ -1021,6 +1021,45 @@ existing dedupe contract, so it did not create a duplicate message. No post-fix 
 the next real hourly pass and confirm its provider bot/receipt before closing this transport subgate or advancing to
 `CFO-1j`.
 
+### CFO-OPS3b shared transport and CFO-1j closure (2026-08-21 14:01–14:05 JST)
+
+Canonical transaction reader/display landed through `a1d1e1ade` (after `86a121e87`, `074086088`,
+`b9e8b4116`). Freshness-honesty wording landed in `c806254b8`. The installer restaged stable release
+`20260821T142520-86514` and refreshed the same launchd label. Read-back: managerpid=1,
+manageruid=501, plist lint PASS, StartInterval=3600, exit 0, stderr empty.
+
+The new owner-hour pass returned `status=sent`, `revision=5`, `appended=true`, `delivered=true`. Supabase recorded
+provider `message_id=27136` at `2026-08-21T05:02:44Z`. Read-only `getMe` of `TELEGRAM_BOT_TOKEN` identifies
+`@AniccaLifeBot` / Local Life Manager / bot id `8613473574`. The shared transport subgate is closed; no reboot,
+logout, or duplicate same-hour send was used.
+
+The same message showed twenty provider-reported redacted rows with direction, booking date, amount, explicit
+category-unavailable coverage, and visible partial pagination. An immediate real Moneytree read at
+`asOf=2026-08-21T05:04:12Z` matched the delivered report's balance parity. No raw account number, provider ID,
+description, category label, credential, or raw payload was persisted or sent. `CFO-1j` is closed; advice remains
+disabled until the later financial-safety gates.
+
+### Moneytree provider-freshness boundary (2026-08-21 14:09–14:12 JST)
+
+Two read-only calls through the installed Codex Moneytree App returned the same provider-reported balance
+fingerprint as revision 5 while their local observation times advanced from `2026-08-21T05:09:58Z` to
+`2026-08-21T05:11:43Z`; the latest transaction booking date remained `2026-08-18`. The existing launchd loop therefore
+is executing the read path, but a read call does not itself force a bank-side refresh. Its `asOf` is the retrieval time,
+not proof that the bank has updated the value.
+
+Moneytree's official [MUFG personal-account update policy](https://help.getmoneytree.com/ja/articles/5182442-%E4%B8%89%E8%8F%B1ufj%E9%8A%80%E8%A1%8C%E5%80%8B%E4%BA%BA%E5%8F%A3%E5%BA%A7%E3%81%AE%E6%9B%B4%E6%96%B0%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6)
+states that MUFG personal accounts are limited to at most once daily for paid members and once weekly for free
+members. Moneytree's [data-refresh notice](https://help.getmoneytree.com/ja/articles/10001685-%E3%83%87%E3%83%BC%E3%82%BF%E6%9B%B4%E6%96%B0%E7%AE%A1%E7%90%86%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6%E3%81%AE%E3%81%8A%E7%9F%89%E3%82%89%E3%81%9B)
+also says bank-side timing can create display delay and that Grow enables nearly real-time updates. The official
+[LINK refresh endpoint](https://docs.link.getmoneytree.com/v2023-07-03/reference/post-link-profile-refresh.md)
+requires the `request_refresh` OAuth scope, is rate-limited, and may still be constrained by the financial institution.
+
+The installed Codex Moneytree App currently exposes read tools (`show-accounts` and `show-transactions`) but no
+refresh operation or bank-side update timestamp. Until an authorized LINK refresh path or an equivalent provider
+metadata surface is available, the CFO must say **Moneytree取得時刻／銀行側更新時刻は不明** and must not call the
+value realtime/latest. This wording is live in `c806254b8` and installed in stable release `20260821T142520-86514`.
+This is a provider-capability boundary, not a launchd cache defect; no guessed connector or credential copy is allowed.
+
 ### Codex host-parity audit (2026-08-21)
 
 The official Codex documentation establishes the boundary that the runtime must preserve:
@@ -1082,20 +1121,19 @@ ingestion. They are not unchecked M1 items and cannot become the active CFO item
       `loops/cfo-hourly` for the loop entrypoint/state contract, and a repository-owned launchd template/installer.
       No installed plist may point at an expendable feature worktree. Closed in canonical commit `1c302e801`;
       stable release/module-load, focused financial tests, and launchd execution are verified.
-- [ ] **CFO-OPS3b** Restore and continuously verify the consolidated local hourly CFO. Launchd management/provenance is
-      closed by the recovery audit, but the shared Telegram transport subgate remains open. The host-parity gate is closed by
-      canonical commit `6acff1585`; DNS hardening is in `d013196ce` and ambiguous-request retry prevention is in
-      `5e1c0dfcc`. Commit `1c302e801` makes the installer refresh the loaded label with bootout/bootstrap/enable/
-      kickstart. The 13:10–13:12 JST recovery audit returned `managerpid=1`, `manageruid=501`, label `print/list=0`,
-      and kickstart rc 0. The previous real pass produced revision 4 and Telegram `message_id=771`, but the destination
-      bot was the Cloud Life Manager bot. Canonical commit `2935c4bed` now prefers the shared-loop bot and the stable
-      plist carries `TELEGRAM_ALERT_CHAT_ID=8547730585`; the post-install same-hour pass was `status=quiet`, exit code
-      0, and empty stderr. Observe one new shared-bot Moneytree→Telegram receipt, then close OPS3b and start CFO-1j.
+- [x] **CFO-OPS3b** Restore and continuously verify the consolidated local hourly CFO. Launchd management/provenance and
+      the shared Telegram transport are closed. Canonical commit `a1d1e1ade` preserves valid balances when the optional
+      transaction request fails, and the stable release is installed under the shared `@AniccaLifeBot` destination.
+      The real owner-hour pass returned `status=sent`, revision 5, exit code 0, empty stderr, and provider
+      `message_id=27136`; managerpid=1, manageruid=501, `StartInterval=3600`, and plist lint are all verified.
       Do not revive `life-manager-v0`, `cfo-daily`, or the separate financial-report loop, and do not add a bespoke
       Moneytree connector.
-- [ ] **CFO-1j** Add the recent-transaction concierge view from the existing Moneytree transaction adapter. Every
-      displayed row is a verified redacted transaction with direction/date/amount/category coverage; incomplete
-      pagination stays visible. This slice reports recent activity but gives no spending accusation or advice.
+- [x] **CFO-1j** Add the recent-transaction concierge view from the existing Moneytree transaction adapter. The real
+      receipt displayed twenty verified redacted rows with direction/date/amount, explicit category-unavailable
+      coverage, and visible incomplete pagination. This slice reports recent activity but gives no spending accusation,
+      LLM suggestion, or advice; the safety-gated guardian remains a later `CFO-2d3` item. `asOf` is explicitly a
+      local Moneytree retrieval time, not a bank-side freshness guarantee (`c806254b8`); the provider refresh/metadata
+      boundary is documented above.
 
 - [x] **CFO-2a** Normalize existing `lm_api_cost` rows into the canonical financial-unit event contract without
       rewriting the source table. Only the four current Life Manager kinds are attributed; unknown kinds remain

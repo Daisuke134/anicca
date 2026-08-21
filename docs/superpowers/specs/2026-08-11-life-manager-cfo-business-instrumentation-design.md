@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | Launchd management for `CFO-OPS3b` is closed, but shared Telegram transport revalidation is pending; `CFO-1j` waits, then `CFO-2b.2b2` resumes |
+| Status | `CFO-OPS3b` shared transport and `CFO-1j` are closed; `CFO-2b.2b2` is the next active business-instrumentation slice |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Canonical target is local `/Users/anicca/Projects/life-manager-main/apps/life-manager`; existing `apps/life-call` code is migration evidence, not the final owner |
 | Role split | Sol specifies/verifies; Luna implements production code/tests |
@@ -485,13 +485,31 @@ Rules:
   stable plist carries `TELEGRAM_ALERT_CHAT_ID=8547730585`. The immediate same-hour run completed `status=quiet`, exit
   code 0, and empty stderr under the dedupe contract. `CFO-OPS3b` launchd management is closed, but one new shared-bot
   receipt is still required before closing the transport subgate; `CFO-1j` waits.
+- Closure evidence (2026-08-21 14:01–14:05 JST): canonical code is `a1d1e1ade`, and the stable launchd pass returned
+  `status=sent`, revision 5, `appended=true`, `delivered=true`, exit code 0, and empty stderr. Supabase receipt
+  `message_id=27136` at `2026-08-21T05:02:44Z` was read-only verified as `@AniccaLifeBot` / Local Life Manager
+  (bot id `8613473574`). The delivered report contained twenty redacted Moneytree rows with direction/date/amount,
+  category coverage explicitly unavailable, and visible partial pagination. An immediate real read at
+  `asOf=2026-08-21T05:04:12Z` matched the delivered balance parity. No raw account number, provider ID, description,
+  category label, credential, or raw payload was persisted or sent. Shared transport and `CFO-1j` are closed; the LLM
+  spending guardian remains disabled until its later verified-outgoing and reconciliation gates. `CFO-2b.2b2` is next.
+- Provider-freshness correction (2026-08-21): two direct read-only calls at `2026-08-21T05:09:58Z` and
+  `2026-08-21T05:11:43Z` returned the same provider-reported balance fingerprint as revision 5, so the loop is not
+  serving a stale local cache; the Moneytree provider value itself had not changed. Moneytree's official [MUFG
+  update policy](https://help.getmoneytree.com/ja/articles/5182442-%E4%B8%89%E8%8F%B1ufj%E9%8A%80%E8%A1%8C%E5%80%8B%E4%BA%BA%E5%8F%A3%E5%BA%A7%E3%81%AE%E6%9B%B4%E6%96%B0%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6)
+  limits personal-account refreshes to at most daily for paid members and weekly for free members. The existing
+  Codex App exposes no refresh operation or bank-side update timestamp; its `asOf` is retrieval time only. The
+  [official LINK refresh API](https://docs.link.getmoneytree.com/v2023-07-03/reference/post-link-profile-refresh.md)
+  requires `request_refresh` OAuth scope and is rate-limited. The CFO therefore removes realtime/latest wording and
+  reports `Moneytree取得時刻／銀行側更新時刻は不明`; the wording fix is canonical commit `c806254b8` and is installed
+  in stable release `20260821T142520-86514`. It will not call the value realtime/latest until an authorized
+  refresh/metadata path exists.
 - Host-parity decision (2026-08-21): the official Codex MCP/skills/plugins/App Server/SDK surfaces support sharing
   user config, skill roots, and installed Apps across local Codex clients, but a fresh `codex exec` is not the main
   ChatGPT conversation. The Moneytree bundle is present in local plugin cache and `codex app-server` reports it
   `enabled=true, callable=true` through `app/installed`; the persistent app-server `app/read` and direct
   `mcpServer/tool/call` now return the existing structured Moneytree result, which the adapter consumes without LLM
-  number copying. The launchd provenance and continuity gate is closed; the Telegram bot-identity subgate is tracked in
-  the transport audit above and must pass before `CFO-1j`.
+  number copying. The launchd provenance, continuity, shared-bot transport, and `CFO-1j` gates are closed.
   If
   this bridge later regresses,
   the canonical portable fallback is the official Moneytree LINK/API integration; no bespoke adapter or guessed
