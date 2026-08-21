@@ -664,8 +664,11 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
   route入力が存在するrunは従来どおり厳密なcard復元を行い、card不一致・route不正・publication-state存在はfail-closedのままにする。
   9ケースの回帰テスト（空中断skip、matching card復元、不一致拒否、public row、ledger/generation/routeのsymlink、malformed ledger）と
   focused 20件、Codex契約7件、shell構文をPASSした。
-- この修正はまだrelease watcherへ反映していない。次はfresh adversarial read-only反証、current releaseへのpush、
-  pause下readback、承認境界を明示した短時間canaryで同一run attempt 2と4媒体native receiptを確認する。
+- fresh adversarial read-only反証は、symlink、nonregular、malformed ledger、public row後のmalformed行を全て
+  fail-closedと確認してPASSした。`654cec69b`をpushし、release watcher後のcurrentは
+  `/Users/anicca/gig/releases/life-manager/654cec69bdfe5fa03b1b18645353fb778b5f5f16`となり、
+  source/currentの`article-daily.sh` SHA一致、loaded daily/resumeのcurrent argv、Codex、cooldown=300をreadbackした。
+  pauseは維持している。次は承認境界を明示した短時間canaryで同一run attempt 2と4媒体native receiptを確認する。
 
 ## 目標構成
 
@@ -889,7 +892,7 @@ loaded definitionと自然tickまで読み戻すことを意味する。A1のcon
 | A9 | control-plane復旧後の新規same-run公開を検証する | 新しいrunでNote JA、Substack JA、Substack EN、X Article JAの各native URL・本文・owner・artifact/media hashをreadbackし、Telegram送信receiptを取得 | A7/A8待ち |
 | A9a | 同日完了runの新規記事解放と重複防止をreleaseへ反映する | current releaseでstart-control 6件、publication identity 15件、schedule miss 2件がPASS。実launchdで完了runから新run `20260821-043922`を作成し、provider cooldownで公開前停止、重複外部作用0を確認 | 部分完了（新run解放・重複防止・Codex-only retry配線はPASS。公開E2EはA9d待ち） |
 | A9c | WriterのCodex-only retryを実装する | `ARTICLE_PROVIDER=codex`固定。cooldown既定値を300秒へ変更し、同一immutable runを最大3回だけcheckpoint再開するfixture。Codex cooldown中にClaude/Hermesを起動しない、公開state/ledger後のreplay 0、3回 exhausted後に新runを増殖させない | 実装・契約検証完了（model-runner 7件、resume circuit 6件、start-control 6件、candidate wiring 19件、publication identity 15件、topic-card resume 9件、構文/manifest/diff check PASS。launchd canary待ち） |
-| A9d | Codex-only Writer公開canaryを行う | current releaseをlaunchdへ反映し、pause解除後の新runでCodex attempt receipt、Note JA、Substack JA/EN、X Article JAの4 native URL、本文・media hash、Telegram delivery receiptを取得。Codex timeout時は同じrunの次tickへ安全にhandoffする | 部分完了（loaded env、pause canary、stale fence回収、topic選択前同一run resume修正はPASS。fresh反証・release反映・pause解除後の4媒体公開canaryは未実施） |
+| A9d | Codex-only Writer公開canaryを行う | current releaseをlaunchdへ反映し、pause解除後の新runでCodex attempt receipt、Note JA、Substack JA/EN、X Article JAの4 native URL、本文・media hash、Telegram delivery receiptを取得。Codex timeout時は同じrunの次tickへ安全にhandoffする | 部分完了（loaded env、pause canary、stale fence回収、topic選択前同一run resume修正、fresh反証、654cec69 release反映はPASS。pause解除後の4媒体公開canaryは未実施） |
 | A9b | 1日複数回の正式scheduleを追加する | 06:00/14:00/22:00などのcalendar wake、各slotのunique run ID、同日異記事、連続2周期のnative receiptを実測 | 未着手。現在は06:00のまま |
 | A10 | 実payment/publisher receiptをmoney ledgerへ接続する | receipt ID、金額、通貨、destination identity、artifact/run IDをjoin。未取得は`unknown`のまま保持 | 未着手 |
 | A11 | 14日間の運用観測を完了する | 重複外部作用0、同一run resume、自然文の成功/失敗報告、revenue ledger整合を連続receiptで確認 | A9/A10待ち |
