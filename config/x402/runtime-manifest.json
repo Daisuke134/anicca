@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "runtime_root": "skills/earn/x402-sell",
+  "runtime_tree_sha256": "de0780f1f811bdd6a213c9cfd34e69f36c22120a4066f230f9a591ee806d661b",
+  "runtime_file_count": 56,
+  "hash_algorithm": "sha256(sorted relative path + NUL + file bytes + NUL; excludes state, cache, and __pycache__ directories)",
+  "canonical_census": {
+    "owner": "Daisuke134/life-manager",
+    "tracked_runtime_files": 56,
+    "mutable_state_imported": false,
+    "mutable_state_root": "~/anicca/skills/earn/x402-sell/state",
+    "source_absolute_path_references": 0,
+    "source_plists_with_machine_path": 1,
+    "machine_paths_require_install_time_rendering": true
+  },
+  "source": {
+    "repository": "/Users/anicca/Projects/life-manager-main",
+    "path": "skills/earn/x402-sell",
+    "commit": "68ed7f76a826e06c59b63c2f76bda5fef40bd800",
+    "path_last_change": "58e304c819f9eca41b5c245691e73d3abe0f9f5a",
+    "status": "canonical tracked runtime"
+  },
+  "active_runtime": {
+    "path": "~/.anicca-founder/skills/earn/x402-sell",
+    "tree_sha256_excluding_state_and_logs": "8dcc92dee794783920075587e3f9bcfd2ad62a2da09c2121b29a921a51f1f9f2",
+    "file_count_excluding_state_and_logs": 143,
+    "status": "separate host runtime observed as evidence only; not imported or made canonical"
+  },
+  "state": {
+    "active": "~/anicca/skills/earn/x402-sell/state",
+    "target": "~/anicca/skills/earn/x402-sell/state",
+    "credentials": "~/.anicca-founder/skills/earn/x402-sell",
+    "parity": "not imported; canonical integration is code-only"
+  },
+  "launchd_labels": [
+    "ai.anicca.life-manager-x402-ledger",
+    "ai.anicca.x402-sale-observer",
+    "ai.anicca.x402-settlement-recorder",
+    "ai.anicca.x402-acquisition-controller"
+  ],
+  "launchd_observation": {
+    "ai.anicca.life-manager-x402-ledger": {
+      "installed_program": "main-worktree/apps/life-manager/scripts/x402-sale-ledger-boot.sh",
+      "start_interval_seconds": 300,
+      "last_exit_code": 1,
+      "status": "runtime-failure-observed; no launchd mutation in this slice"
+    }
+  },
+  "last_validation": {
+    "external_provider": "base_mainnet_usdc",
+    "ledger_scope": "owned_payto_external_inflow_ledger",
+    "ledger_row_count": 3,
+    "finalized_external_row_count": 3,
+    "external_usdc_atomic_total": "30000",
+    "latest_settlement_observed_at": "2026-08-13T20:11:54.265Z",
+    "chain_verification": "3_of_3_passed_base_finalized_receipt_and_transfer_checks",
+    "self_transfers_counted_as_revenue": false,
+    "internal_moves_counted_as_revenue": false,
+    "direct_api_cost": "unknown",
+    "capital": "unknown",
+    "profit": "unknown_until_cost_and_scope_reconciliation",
+    "roi": "unknown_until_cost_and_scope_reconciliation",
+    "launchd_mutated": false,
+    "mutable_state_mutated": false
+  }
+}
