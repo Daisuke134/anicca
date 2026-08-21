@@ -21,7 +21,8 @@ EDITORIAL_FORMS = {
     "opinion",
     "report",
 }
-MAX_REROUTES = 1
+MAX_REROUTES = 5
+MAX_ITERATIONS = 5
 CURRENT_VERSION = 2
 
 
@@ -223,9 +224,12 @@ def assess(run_dir: Path, drafts: dict[str, Path]) -> dict[str, Any]:
             for lang in ("ja", "en")
         )
     )
-    identity_safe = all(quality[lang]["identity"] == "PASS" for lang in ("ja", "en"))
-    if publication_policy == "continuous" and identity_safe:
-        action = "ready_to_freeze"
+    identity_safe = all(
+        quality[lang]["identity"] == "PASS" for lang in ("ja", "en")
+    )
+    iteration = len(history) + 1
+    if failed_languages and iteration >= MAX_ITERATIONS and identity_safe:
+        action = "force_publish_advisory"
     elif form_not_changed:
         action = "block_freeze"
     elif rerouted_drafts_not_changed:
@@ -254,9 +258,14 @@ def assess(run_dir: Path, drafts: dict[str, Path]) -> dict[str, Any]:
         "quality": quality,
         "publication_policy": publication_policy,
     }
-    if publication_policy == "continuous" and identity_safe and failed_languages:
-        decision["quality_advisory"] = True
-        decision["reason"] = "quality_recorded_publish_continues"
+    if action == "force_publish_advisory":
+        decision.update(
+            {
+                "force_publish_after_iterations": MAX_ITERATIONS,
+                "quality_advisory": True,
+                "reason": "quality_iteration_limit_reached",
+            }
+        )
     if action == "reroute":
         decision.update(
             {
@@ -310,7 +319,7 @@ def main() -> int:
         {"ja": args.draft_ja, "en": args.draft_en},
     )
     print(json.dumps(decision, ensure_ascii=False, separators=(",", ":")))
-    if decision["action"] == "ready_to_freeze":
+    if decision["action"] in {"ready_to_freeze", "force_publish_advisory"}:
         return 0
     if decision["action"] == "evaluate_reroute":
         return 76

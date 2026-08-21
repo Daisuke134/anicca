@@ -15,7 +15,7 @@ import sys
 from typing import Any
 
 
-MAX_INVOCATIONS = 2
+MAX_INVOCATIONS = 5
 MAX_PUBLICATION_HANDOFFS = 2
 STATE_NAME = "quality-feedback-recovery-state.json"
 
@@ -108,8 +108,26 @@ def _feedback_for_terminal(gates: Path, run_id: str) -> dict[str, Any] | None:
     if (
         quality is None
         or quality.get("version") != 2
-        or quality.get("action") != "block_freeze"
-        or int(quality.get("attempt", 0)) < 2
+        or quality.get("action") not in {
+            "block_freeze", "ready_to_freeze", "reroute", "evaluate_reroute",
+            "force_publish_advisory",
+        }
+        or (
+            quality.get("action") == "block_freeze"
+            and int(quality.get("attempt", 0)) < 1
+        )
+        or (
+            quality.get("action") == "ready_to_freeze"
+            and quality.get("quality_advisory") is not True
+        )
+        or (
+            quality.get("action") == "force_publish_advisory"
+            and (
+                quality.get("quality_advisory") is not True
+                or quality.get("force_publish_after_iterations") != 5
+            )
+        )
+        or quality.get("publication_policy") != "continuous"
         or not isinstance(quality.get("quality"), dict)
     ):
         return None
@@ -136,7 +154,14 @@ def _feedback_for_terminal(gates: Path, run_id: str) -> dict[str, Any] | None:
 
 def _publication_handoff_ready(run_dir: Path) -> bool:
     quality = _read_json(run_dir / "gates/quality-self-heal.json")
-    if quality is None or quality.get("action") != "ready_to_freeze":
+    if quality is None:
+        return False
+    force = (
+        quality.get("action") == "force_publish_advisory"
+        and quality.get("force_publish_after_iterations") == 5
+        and quality.get("quality_advisory") is True
+    )
+    if quality.get("action") != "ready_to_freeze" and not force:
         return False
     languages = quality.get("quality")
     if not isinstance(languages, dict):
@@ -148,7 +173,11 @@ def _publication_handoff_ready(run_dir: Path) -> bool:
             draft.is_symlink()
             or not draft.is_file()
             or not isinstance(receipt, dict)
-            or receipt.get("ready") is not True
+            or (
+                not force
+                and receipt.get("ready") is not True
+            )
+            or receipt.get("identity") != "PASS"
             or receipt.get("article_sha256") != _sha256(draft)
         ):
             return False
@@ -161,15 +190,40 @@ def plan(run_dir: Path | str, ledger: Path | str) -> dict[str, Any]:
     gates = run_dir / "gates"
     if not run_dir.is_dir() or not gates.is_dir():
         return _refused("run-directory-missing")
-    if (gates / "publication-state.json").exists():
+    publication_state = gates / "publication-state.json"
+    if publication_state.exists() or publication_state.is_symlink():
         return _refused("publication-state-exists")
     if _ledger_has_delivery_row(ledger, run_dir.name):
         return _refused("ledger-row-exists")
     replacement = _read_json(gates / "quality-replacement.json")
-    if (
-        replacement is None
-        or replacement.get("replacement_run_id") != run_dir.name
-        or not isinstance(replacement.get("replaced_run_id"), str)
+    quality = _read_json(gates / "quality-self-heal.json")
+    advisory_candidate = bool(
+        isinstance(quality, dict)
+        and quality.get("version") == 2
+        and quality.get("publication_policy") == "continuous"
+        and quality.get("action") in {
+            "ready_to_freeze", "reroute", "evaluate_reroute", "block_freeze",
+            "force_publish_advisory",
+        }
+        and (
+            quality.get("action") != "ready_to_freeze"
+            or quality.get("quality_advisory") is True
+        )
+        and (
+            quality.get("action") != "force_publish_advisory"
+            or (
+                quality.get("quality_advisory") is True
+                and quality.get("force_publish_after_iterations") == 5
+            )
+        )
+    )
+    if not (
+        (
+            replacement is not None
+            and replacement.get("replacement_run_id") == run_dir.name
+            and isinstance(replacement.get("replaced_run_id"), str)
+        )
+        or advisory_candidate
     ):
         return _refused("not-a-quality-replacement")
     prior_repair = _read_json(gates / "quality-repair-state.json")
@@ -304,7 +358,7 @@ Hard boundaries:
 - Rewrite both drafts from the researched evidence and a new outline. Then run the deterministic, editorial, identity, and reader gates for both current hashes.
 - Run quality_self_heal.py assess. A missing or incomplete consumption receipt must remain block_freeze.
 - Run `python3 {script} verify --run-dir "$ARTICLE_RUN_DIR"` and require status=PASS.
-- Only after assess returns ready_to_freeze and verify returns PASS, read ORIGINAL_PROMPT and continue STEP 4.8 through STEP 20 for this same run. Note remains ¥500 and both Substack posts remain paid-only. Require authenticated and public readback.
+- Repeat this recovery on the same run no more than five total quality iterations. Before iteration five, do not stage or publish. After iteration five, assess may return force_publish_advisory; that permits publication only when identity/safety/conscience, CTA, media, duplicate, and platform guards pass. If assess returns ready_to_freeze, every language record must be ready=true. In either case, verify must return PASS before reading ORIGINAL_PROMPT and continuing STEP 4.8 through STEP 20. Note remains ¥500 and both Substack posts remain paid-only. Require authenticated and public readback.
 """
 
 
@@ -618,7 +672,23 @@ def record_result(
         status = "retryable-incomplete"
     elif (
         quality is not None
-        and quality.get("action") == "ready_to_freeze"
+        and quality.get("action") in {"ready_to_freeze", "force_publish_advisory"}
+        and isinstance(quality.get("quality"), dict)
+        and all(
+            isinstance(quality["quality"].get(lang), dict)
+            and (
+                quality["quality"][lang].get("ready") is True
+                or (
+                    quality.get("action") == "force_publish_advisory"
+                    and quality["quality"][lang].get("identity") == "PASS"
+                )
+            )
+            for lang in ("ja", "en")
+        )
+        and (
+            quality.get("action") != "force_publish_advisory"
+            or quality.get("force_publish_after_iterations") == 5
+        )
         and validate_consumption(run_dir).get("status") == "PASS"
     ):
         status = "terminal-ready-not-published"
