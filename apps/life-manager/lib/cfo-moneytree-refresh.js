@@ -1,5 +1,7 @@
 "use strict";
 
+const { CFO_SECRET_REFS, readCfoSecret } = require("./cfo-secret-ref.js");
+
 const ERROR = "cfo_moneytree_refresh_invalid:request";
 const PRODUCTION = "https://jp-api.getmoneytree.com";
 const STAGING = "https://jp-api-staging.getmoneytree.com";
@@ -33,7 +35,10 @@ async function requestMoneytreeRefresh(options = {}) {
     if (!plain(options)) fail();
     const observedAt = options.observedAt == null ? new Date().toISOString() : options.observedAt;
     if (!iso(observedAt)) fail();
-    const token = accessToken(options.accessToken);
+    let token = accessToken(options.accessToken);
+    if (!token && options.secretProvider && options.tenantId) {
+      try { token = accessToken(await readCfoSecret(options.secretProvider, options.tenantId, options.accessTokenRef || CFO_SECRET_REFS.moneytree_link_refresh_token)); } catch { token = null; }
+    }
     if (!token) return Object.freeze({ status: "unavailable", reason: "request_refresh_credentials_missing", observedAt });
     const requestCount = options.dailyRequestCount;
     if (requestCount === null) return Object.freeze({ status: "unavailable", reason: "refresh_quota_unknown", observedAt });
