@@ -194,19 +194,17 @@ def _profile_values(profile: dict[str, Any]) -> dict[str, str]:
     address = candidate.get("mailing_address") or {}
     address_ja = candidate.get("mailing_address_ja") or {}
     values = {
-        "name--legalName--lastNameLocal": str(kanji.get("family") or ""),
-        "name--legalName--firstNameLocal": str(kanji.get("given") or ""),
-        "name--legalName--lastName": str(romaji.get("family") or ""),
-        "name--legalName--firstName": str(romaji.get("given") or ""),
-        "address--postalCode": str(address.get("postal_code") or ""),
-        "address--cityLocal": str(address_ja.get("municipality") or ""),
-        "address--addressLine1Local": str(address_ja.get("street_building") or ""),
-        "address--city": str(address.get("city") or ""),
-        "address--addressLine1": str(address.get("address_line_1") or ""),
-        "phoneNumber--phoneNumber": str(candidate.get("phone") or ""),
-        "phoneNumber--countryPhoneCode": "+81",
-        "source--source": "Job Boards",
-        "address--countryRegion": str(address.get("state_region") or address_ja.get("prefecture") or ""),
+        "legalName--lastNameLocal": str(kanji.get("family") or ""),
+        "legalName--firstNameLocal": str(kanji.get("given") or ""),
+        "legalName--lastName": str(romaji.get("family") or ""),
+        "legalName--firstName": str(romaji.get("given") or ""),
+        "postalCode": str(address.get("postal_code") or ""),
+        "cityLocal": str(address_ja.get("municipality") or ""),
+        "addressLine1Local": str(address_ja.get("street_building") or ""),
+        "city": str(address.get("city") or ""),
+        "addressLine1": str(address.get("address_line_1") or ""),
+        "phoneNumber": str(candidate.get("phone") or ""),
+        "countryRegion": str(address.get("state_region") or address_ja.get("prefecture") or ""),
     }
     return {key: value for key, value in values.items() if value}
 
@@ -246,6 +244,8 @@ def _known_value(item: dict[str, Any], profile: dict[str, Any], values: dict[str
         return str(value) if value else None
     if "how did you hear" in context:
         return "Job Boards"
+    if "country phone code" in context:
+        return "+81"
     return None
 
 
@@ -318,7 +318,12 @@ async def _fill_step(
             elif value and kind == "radio" and _label(item) == value.casefold():
                 await element.check()
             continue
-        if kind in {"button"} or role == "combobox" or item_id in {"source--source", "address--countryRegion", "country--country"}:
+        if (
+            kind in {"button"}
+            or role == "combobox"
+            or "how did you hear" in _context(item)
+            or item_id in {"source--source", "address--countryRegion", "country--country"}
+        ):
             if value and not await _choose(page, element, value):
                 if item.get("required"):
                     blockers.append(label)
