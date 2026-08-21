@@ -153,7 +153,8 @@ def _approved(path: Path, creative_id: str, video_hash: str, caption_hash: str) 
 
     Two shapes exist. A per-video receipt names one creative AND the digests of the exact video and
     caption that were shown for approval, so re-cutting the video or rewriting the caption silently
-    invalidates it. A standing receipt (`scope: "standing"`) records the 2026-07-26 Dais ruling that
+    invalidates it. A standing receipt (`scope: "standing"`) or the Life Manager approval object
+    (`approval_mode: "standing_policy_no_additional_gate"`) records the 2026-07-26 Dais ruling that
     removed the preview gate: the daily pipeline's own renders are authorised from then on without a
     per-video receipt. Anything unreadable, unparseable or unmatched is not an approval.
     """
@@ -161,17 +162,32 @@ def _approved(path: Path, creative_id: str, video_hash: str, caption_hash: str) 
         raw = Path(path).read_text(encoding="utf-8")
     except OSError:
         return None
-    for line in raw.splitlines():
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            row = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        if not isinstance(row, dict):
-            continue
+    records = []
+    try:
+        document = json.loads(raw)
+    except json.JSONDecodeError:
+        document = None
+    if isinstance(document, dict):
+        records.append(document)
+    else:
+        for line in raw.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if isinstance(row, dict):
+                records.append(row)
+    for row in records:
         if row.get("scope") == "standing":
+            return row
+        if (
+            row.get("status") == "approved"
+            and row.get("approval_mode") == "standing_policy_no_additional_gate"
+            and row.get("creative_id") == creative_id
+        ):
             return row
         if (
             row.get("creative_id") == creative_id
