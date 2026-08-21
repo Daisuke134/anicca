@@ -148,6 +148,11 @@ launchd (30 min)
 | Telegram transport outcome unknown | Keep legacy outbox events `send_started`; never blindly resend them. The Ashby wake itself uses the proven launchd-safe OpenClaw CLI and stores that run's returned message ID in evidence, so every run has an independently observable delivery attempt |
 | Model fallback | Disabled by default for Ashby. It can only be explicitly re-enabled after a bounded deterministic lane has no viable source |
 
+The healthcheck now requires a running dedicated browser/CDP, a fresh completed
+Ashby evidence bundle, and that bundle's Telegram message ID. Its live output after
+the release cutover reports daily/inbox/learning exit health, both SQLite integrity
+checks `ok`, and a fresh Ashby result with an acknowledged checkpoint.
+
 The remaining robustness work is ordered, not parallelized: cache freshness, provider-capacity detection, non-Ashby fallback, confirmation reconciliation, then full lifecycle/guardian/OSS.
 
 Within a live board batch, Forward Deployed and Solutions Engineer roles rank first,
