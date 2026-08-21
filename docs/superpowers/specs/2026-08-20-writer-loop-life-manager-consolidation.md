@@ -22,9 +22,10 @@
   Writer固有のplistエラーではなく、ユーザーbootstrap／Directory Services／logdのホスト障害である。
 - installed plistは14件すべてLife Manager current releaseと外部stateを指すが、過去のWriterログには
   loaded定義が`/Users/anicca/profitable-claude`や旧releaseを呼び続けた証拠が残る。つまり現在は
-  「ファイル上のdesired stateはLife Manager」「launchdメモリ上のloaded stateはstale」の切替不一致であり、
-  stale定義のdrain前にcurrent plistを再bootstrapできない。Life Manager以外のjob-searchやgigの
-  specにも同じrc=141が記録されており、このMac全体のcontrol-plane症状である。
+  「ファイル上のdesired stateはLife Manager」「launchdメモリ上のloaded stateはreadback不能で、
+  過去にはstale定義が存在した」という切替不一致である。現在のloaded ownerを全件staleと断定せず、
+  readbackでcurrent/staleを分ける。Life Manager以外のjob-searchやgigのspecにも同じrc=141が記録されており、
+  このMac全体のcontrol-plane症状である。
 - 復旧はrepo内で新executorを作ることではない。安全な順序は、(1)有効なコンソールGUIセッションを
   回復（必要ならユーザーlogout/loginまたはMac再起動。ただしlaunchd/loginwindow/opendirectorydを個別killしない）、
   (2)`id -un`が`anicca`、`launchctl managername`が有効なAqua/GUI manager、`dscl`と`log show`が成功することを確認、
@@ -32,6 +33,23 @@
   `bootstrap gui/501`し、各loaded `ProgramArguments`/environmentを`print`でreadback、(5)pauseを解除する前に
   creator/resumeを一度だけkickstartして同一run receiptを確認、である。現在は(1)のホスト復旧前なので、
   bootout/bootstrapを強行せず、公開処理を常時稼働とは宣言しない。
+
+### execution plane と launchd control-plane の区別（2026-08-21 10:19 JST）
+
+- 直近の実測では、Coconalaの`storefront_direct.py`、`application_direct.py`、
+  `reply_detector.py --continuous`、`paid_direct.py`が生存し、いずれもPPID=1だった。
+  これはCoconalaのexecution planeが動いている直接証拠であり、「launchd全体が停止した」とは言わない。
+- 同じ観測窓で`launchctl managerpid`はrc=153、`launchctl list`はrc=141だった。
+  これはこのセッションからのmanager RPC／bootstrap readbackが失敗している証拠であって、
+  既に起動したworkerの内部pollingや、別の有効な起動経路まで停止した証拠ではない。
+  launchdは一度起動したworkerを、`launchctl`の読出しが毎tick成功しなくても実行し続けられる。
+- `paid_direct.py`の親は`life-manager/current`だが、子の一部はimmutableな旧release
+  `e537b55e1917ea3ac8b80b5e3d684060af5d5dcb`を指していた。したがって「プロセスが生きている」ことと
+  「現在のplist・current release・正しいjob labelから起動されている」ことを別の受入条件にする。
+- Writer stateには`.article-daily.recovery.lockdir/owner.pid=40373`が残る一方、PID 40373は現在存在しない。
+  これはstale owner fence候補であり、GUI/bootstrapとowner readbackを確認するまで削除しない。
+- 以後の判定語を固定する。`process_alive`はexecution evidence、`launchctl_readback`はcontrol-plane
+  evidence、`scheduler_recurrence`は自然tickの連続receiptであり、前二者を同じ成功に数えない。
 
 ### 最新の同一run実測（2026-08-21）
 
@@ -464,7 +482,7 @@ publication identity、読者、payout、ledgerを分ける。
    `/Users/anicca/profitable-claude`全体もWriter以外の稼働loopを含むため削除対象外とし、最後に
    可能なのは参照census・復元試験・shared fence確認を通ったWriter専用releaseのアーカイブだけである。
 
-## Atomic TODO（この順番以外を先に進めない）
+## Milestone gate history
 
 | # | 作業 | 完了証拠 | 状態 |
 |---:|---|---|---|
@@ -480,4 +498,25 @@ publication identity、読者、payout、ledgerを分ける。
 | 9 | Life Manager release ownerをloadし、14個のWriter laneをCoconala parity manifestからbootstrap。旧5 CLI labelはrollback archiveへ退避し、shared fenceで旧ownerをdrain | current symlinkは`767f8c03891e`へ切替済み。全laneのbootstrap/readbackはrc=141 `Reentrancy avoided`で、loaded ProgramArguments/env、owner drain、定期wakeは未証明 | ブロッカー（launchd control-plane） |
 | 10 | rollback archiveと復元試験を検証し、Writer専用releaseだけをアーカイブ。`.openclaw`と`profitable-claude`全体は削除しない | archive hash + restore receipt + deletion-scope receipt | 未着手 |
 
-削除は最後の一件であり、現在は実行しない。
+この表は過去のmilestone状態を保持する履歴である。現在の実行順序は次の原子TODOを正本とする。
+
+## Current atomic remaining TODO（2026-08-21 10:19 JST）
+
+各行は一つの外部状態または証拠だけを変える。前行の完了証拠がない限り、次行を開始しない。
+
+| ID | 原子作業 | 完了証拠 | 状態 |
+|---:|---|---|---|
+| A1 | 有効なmacOS GUI／user bootstrapを復旧する | `id -un=anicca`、有効な`managername`/`managerpid`、`dscl`と`log show`が同じ実行contextで成功。個別のlaunchd/loginwindow/opendirectoryd killは行わない | ブロッカー・未実行 |
+| A2 | 復旧したcontrol-planeから全14 Writer labelをreadbackする | `launchctl print gui/501/<label>`でlabel、owner、ProgramArguments、EnvironmentVariables、state rootを取得 | A1待ち |
+| A3 | stale定義とcurrent定義の対応表を確定する | 各labelについて旧root/current、PID、owner fence、rollback pathを1行receiptへ保存。推測でstale判定しない | A2待ち |
+| A4 | stale Writer 14件とretired CLI 5件をbootoutし、旧ownerをdrainする | 旧root process=0、owner fence不在、旧root logの新規schedule interval再発=0をreadback | A3待ち |
+| A5 | Life Manager currentの14 plistだけをbootstrapする | 14件すべてのloaded argv/envが`/Users/anicca/gig/releases/life-manager/current`と`~/.local/state/life-manager/writer`を指す | A4待ち |
+| A6 | 残存Writer owner fenceを検証・回復する | `owner.pid=40373`のstale候補を実ownerと照合し、正当なowner不在を確認してから、重複起動なしの回復receiptを保存 | A5待ち |
+| A7 | pause下でcreator/resumeを各1回だけkickstartする | 1回ずつのPID、run ID、終了コード、lock消滅、Telegram自然文receiptを取得。公開はpauseで外部作用0 | A6待ち |
+| A8 | 5分周期の自然tickを2回連続で検証する | 2回ともcurrent argv、単一owner、run/receipt更新、重複外部作用0を確認。`process_alive`だけでは完了にしない | A7待ち |
+| A9 | control-plane復旧後の新規same-run公開を検証する | Note JA、Substack JA、Substack EN、X Article JAの各native URL・本文・owner・artifact/media hashを同一runでreadbackし、Telegram送信receiptを取得 | A8待ち |
+| A10 | 実payment/publisher receiptをmoney ledgerへ接続する | receipt ID、金額、通貨、destination identity、artifact/run IDをjoin。未取得は`unknown`のまま保持 | 未着手 |
+| A11 | 14日間の運用観測を完了する | 重複外部作用0、同一run resume、自然文の成功/失敗報告、revenue ledger整合を連続receiptで確認 | A9/A10待ち |
+| A12 | rollback検証後にWriter専用旧releaseだけをアーカイブする | archive hash、restore receipt、削除対象scope receipt。`.openclaw`と`/Users/anicca/profitable-claude`全体は削除しない | A11待ち |
+
+削除はA12の最後であり、現在は実行しない。
