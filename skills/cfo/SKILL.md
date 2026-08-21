@@ -10,8 +10,10 @@ This skill runs one repository-owned CFO pass and exits. It is the operator-faci
   when installed; a checked-out canonical app directory may be used for verification before staging.
 - Credentials are read from `LIFE_MANAGER_ENV_FILE` (default:
   `~/.local/state/life-manager/.env`) and are never printed or written to loop state.
-- `LM_CFO_UID`, `LM_CFO_TELEGRAM_CHAT_ID`, `LM_TELEGRAM_BOT_TOKEN`, `SUPABASE_URL`,
-  `SUPABASE_SERVICE_ROLE_KEY`, and `LM_UID_SECRET` keep the same contract as the hourly runner.
+- `LM_CFO_UID`, `TELEGRAM_ALERT_CHAT_ID`, `TELEGRAM_BOT_TOKEN`, `SUPABASE_URL`,
+  `SUPABASE_SERVICE_ROLE_KEY`, and `LM_UID_SECRET` are the shared-loop contract. The legacy
+  `LM_CFO_TELEGRAM_CHAT_ID` and `LM_TELEGRAM_BOT_TOKEN` names remain accepted as fallbacks for
+  standalone Life Manager installations; when both token families exist, the shared-loop bot is used.
 - State is outside the code release at `CFO_STATE_DIR` (default: `~/loops/cfo-hourly`). The wrapper
   records only the runner's redacted status envelope in `last-result.json`.
 - A failure produces a fixed redacted status envelope and a non-zero exit. It never invents a
