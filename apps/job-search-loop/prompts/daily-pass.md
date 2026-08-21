@@ -61,6 +61,15 @@ In addition to the role-family queries, run these exact high-recall Japan querie
 `AI engineer Tokyo Japan` and `AI agent engineer Tokyo Japan`. Preserve their
 discovery evidence and include their official ATS URLs in the candidate queue.
 
+If the first verified queue is exhausted without a claim or `submit_unknown`, run
+one expansion discovery wave before returning `no_eligible_job_found`. Use at least
+these fresh queries, dedupe by canonical official URL, and append their distinct
+official ATS URLs to the same queue: `AI solutions engineer Tokyo Japan`, `AI customer success manager AI Japan`, and `technical account manager AI Japan`.
+Run the same multi-source command and browser fallback rules for this wave, then
+evaluate at least five additional distinct URLs when discovery provides them. A
+provider outage still does not end the wave; only an exhausted expansion queue may
+permit the final zero-eligible result.
+
 For every employer ATS navigation, do not wait for `domcontentloaded` or
 `networkidle`. Use the existing CDP page and:
 
