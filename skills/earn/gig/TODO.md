@@ -795,7 +795,10 @@ a later successful example.
   question; the answer owner forbids known-fact questions, and the independent Sol verifier must
   block any candidate question answered anywhere in those sources. This remains semantic and
   buyer-agnostic: no keyword, buyer name or job-category router is introduced.
-- [ ] P10 — Permit one clarification only for a genuinely absent fact that blocks truthful work.
+- [x] P10 — Permit one clarification only for a genuinely absent fact that blocks truthful work.
+  Decision v7 and the answer owner permit at most one bounded question only after every cumulative
+  source proves the fact absent and that absence prevents truthful work. The fresh verifier rejects
+  both answered questions and questions used to postpone useful non-blocked work.
 - [ ] P11 — Produce every non-blocked portion while that clarification is pending.
 - [ ] P12 — Generate a useful artifact on the first actionable purchased-order transition.
 - [ ] P13 — Reject acknowledgement/status text as a successful Paid effect; an actionable file
