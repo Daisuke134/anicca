@@ -79,6 +79,11 @@ The automatic verification wake `daily-20260821-191115` exited cleanly: the bloc
 ElevenLabs row was skipped, cache discovery returned `no_work`, the second fast path
 did not run on the same row, Workday remained `parked / ashby_first_gate`, and the
 fast-path Telegram checkpoint retained ACK `27475`.
+The next live-refresh wake `daily-20260821-191823` queried seven official Ashby
+boards, skipped Cohere due to its recorded provider policy, discovered ElevenLabs'
+Enterprise Solutions Engineer - Poland, clicked the real submit control once, and
+recorded `submit_unknown`; its distinct run-ID Telegram checkpoint was acknowledged
+as message `27523`.
 The daily script now bounds the non-deterministic browser fallback at 300 seconds
 by default (`JOB_SEARCH_BROWSER_TIMEOUT_SECONDS` may lower or raise that bounded
 value); deterministic ATS fast paths run before it and retain their own evidence.
