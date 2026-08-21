@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | M2 — `CFO-OPS3a`, `CFO-OPS3b`, `CFO-1j`, `CFO-2b.2`, `CFO-2b.3`, `CFO-2b.4`, `CFO-2b.5`, `CFO-2b.6`, `CFO-2b.7`, `CFO-2b.8`, `CFO-2b.9`, `CFO-2c`, `CFO-2d`, and `CFO-2d2` are closed; `CFO-2d3` is next |
+| Status | M2 — `CFO-OPS3a`, `CFO-OPS3b`, `CFO-1j`, `CFO-2b.2`, `CFO-2b.3`, `CFO-2b.4`, `CFO-2b.5`, `CFO-2b.6`, `CFO-2b.7`, `CFO-2b.8`, `CFO-2b.9`, `CFO-2c`, `CFO-2d`, `CFO-2d2`, and `CFO-2d3` are closed; `CFO-2e` is next |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
@@ -1245,9 +1245,12 @@ ingestion. They are not unchecked M1 items and cannot become the active CFO item
       advice remain disabled until CFO-2b and CFO-2c are complete and tests 16–18 and 22–28 pass. Canonical commit
       `bf2297019` adds the read-only nine-business observer, business summary rendering, and `business` callback view;
       real revision 11 delivery and business-view edit callback are verified; `CFO-2d3` is next.
-- [ ] **CFO-2d3** Add the spending-guardian rule engine: verified direction, transfer/repayment/refund exclusion,
+- [x] **CFO-2d3** Add the spending-guardian rule engine: verified direction, transfer/repayment/refund exclusion,
       category budget, protected-cash/runway impact, business-cost-to-landed-revenue join, one-item ranking,
       seven-day cooldown, correction receipt, and inline-button E2E. Tests 32–36 MUST pass before enabling it.
+      Canonical commit `16a69e2ef` adds the deterministic read-only guardian and wires its decision into the hourly
+      result. The current live Moneytree rows produce `suppress / budget_unknown` because no owner-approved category
+      budget exists; no suggestion or external action is enabled. `CFO-2e` is next.
 - [ ] **CFO-2e** Add deterministic `increase / hold / repair / stop-review` recommendations. No execution.
 
 ### M3 — Japan tax evidence and reserve
@@ -1374,3 +1377,22 @@ spending guardian is enabled. `CFO-2d2` is closed and `CFO-2d3` is next.
 The stable hourly report contains the Moneytree stale warning, measured x402 `$0.01`, measured investing `-$3.15`,
 explicit unknown profit/ROI/cost/landed-cash fields, and all nine registered business units. The real Telegram edit
 callback rendered the business drill-down from revision 11; provider receipt `message_id=27489` confirms delivery.
+
+### CFO-2d3 closure and external docs audit (2026-08-21)
+
+Canonical commit `16a69e2ef` adds `apps/life-manager/lib/cfo-spending-guardian.js` and wires its redacted decision into
+the hourly result. The guardian admits only provider-reported outgoing rows, excludes transfer/card-repayment/refund,
+requires a non-null category and owner-approved budget, requires verified protected cash for a suggestion, ranks one
+material overage, and suppresses the same category for seven days. A real Moneytree read of 20 rows had categories but
+no budgets; stable revision 14 therefore returned `spendingGuardian={decision:suppress,reason:budget_unknown,suggestion:null}`
+and delivered with provider message `27504`. No advice, click action, or money movement occurred.
+
+The external-doc search was expanded through Context7 CLI, official Moneytree LINK docs, `crwl`, and GitHub `gh`/raw.
+The official [account metadata reference](https://docs.link.getmoneytree.com/v2023-07-03/docs/account-metadata.md) defines
+`last_aggregated_at` as the latest attempted aggregation and `last_aggregated_success` as the latest successful
+financial-data update; the current plugin account schema exposes neither. The official [synchronization timing
+guide](https://docs.link.getmoneytree.com/v2023-07-03/docs/when-is-moneytree-data-synchronized.md) confirms app/web
+open, Request Refresh, and provider background jobs as the three sync paths. The official [Codex app-server source
+README](https://github.com/openai/codex/blob/main/codex-rs/app-server/README.md) documents the local Unix control socket
+and `mcpServer/tool/call`; the canonical loop uses that exact path. Context7 MCP lookup was quota-limited, so the
+official GitHub source and Moneytree docs were used as the fallback rather than stopping. `CFO-2e` is next.
