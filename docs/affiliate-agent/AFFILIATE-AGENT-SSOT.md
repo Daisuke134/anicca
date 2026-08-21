@@ -954,6 +954,21 @@ actions / `0` exact Affiliate joins / `NO_REVENUE_CREDIT`. No provider
 transaction, settlement, payout, public duplicate, or money exists; B01 is
 still `WAITING_FOR_PROVIDER_TRANSACTION`.
 
+### 1.1.36 Campaign-seven budget replay guard
+
+The existing source-refresh and composition owners were replayed at
+`2026-08-21T16:42+0900` and both exited `0` (`runs=246` and `runs=257`, each
+with `StartInterval=600`). The durable campaign-seven job
+`elevenlabs-discovered-translate-video-en` retained the same source-set SHA
+`43c3385a…f335d`, result SHA `e1b87cca…eaf52`, and handoff SHA
+`d16d8fdd…efce`; its receipt remains `READY_FOR_POLICY` with
+`policy_budget_state=BLOCKED`, JST day `2026-08-21`, consumed `88026` of
+`98304`, and reservation `24576`. Opportunity discovery remains durably
+`BUDGET_BLOCKED` at `70650/65536`; no source/publication/provider-link,
+transaction, or money effect was created. This is a bounded queue guard and
+will be retried by the existing owners on the next eligible JST budget day;
+manual/model bypass is not allowed.
+
 ### 1.2.0 Audited executable boundary
 
 The installed ownership graph has six launchd labels: three persistent browser

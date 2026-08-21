@@ -1,5 +1,14 @@
 # Affiliate local money loop handover
 
+- Existing source-refresh/composition owner replay at approximately
+  `2026-08-21T16:42+0900` exited `0` (`runs=246` / `runs=257`, interval `600`).
+  Campaign seven `elevenlabs-discovered-translate-video-en` kept its exact
+  source/result/handoff lineage (`43c3385a…f335d` / `e1b87cca…eaf52` /
+  `d16d8fdd…efce`) and remains `READY_FOR_POLICY / policy_budget_state=BLOCKED`
+  for JST `2026-08-21` (`88026/98304`, reservation `24576`). Opportunity
+  discovery remains `BUDGET_BLOCKED` (`70650/65536`). No public/provider-link,
+  transaction, or money effect occurred; the same durable job is owner-driven
+  for the next eligible JST budget day.
 - The next eligible existing-owner capture completed at `2026-08-21T16:38:42+0900`
   as wake `be783caa…`, with launchd `runs=245`, exit `0`, provider
   `AUTHENTICATED`, publication `ALREADY_LIVE`, and revenue `NO_TRANSACTIONS`.
