@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | M2 — `CFO-OPS3a`, `CFO-OPS3b`, `CFO-1j`, `CFO-2b.2`, `CFO-2b.3`, `CFO-2b.4`, `CFO-2b.5`, `CFO-2b.6`, `CFO-2b.7`, `CFO-2b.8`, `CFO-2b.9`, `CFO-2c`, and `CFO-2d` are closed; `CFO-2d2` is next |
+| Status | M2 — `CFO-OPS3a`, `CFO-OPS3b`, `CFO-1j`, `CFO-2b.2`, `CFO-2b.3`, `CFO-2b.4`, `CFO-2b.5`, `CFO-2b.6`, `CFO-2b.7`, `CFO-2b.8`, `CFO-2b.9`, `CFO-2c`, and `CFO-2d` are closed; `CFO-2d2` is active |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
@@ -1242,7 +1242,9 @@ ingestion. They are not unchecked M1 items and cannot become the active CFO item
       `unknown/partial` boundary; no current evidence supports a numeric profit, ROI, or runway claim.
 - [ ] **CFO-2d2** Deliver the real Telegram summary, account/business/accuracy/why drill-downs, deduped message
       receipt, stale-source alert, and non-technical readability E2E. Business profit, total-cost, and cost-based
-      advice remain disabled until CFO-2b and CFO-2c are complete and tests 16–18 and 22–28 pass.
+      advice remain disabled until CFO-2b and CFO-2c are complete and tests 16–18 and 22–28 pass. Canonical commit
+      `bf2297019` adds the read-only nine-business observer, business summary rendering, and `business` callback view;
+      final real callback E2E remains open.
 - [ ] **CFO-2d3** Add the spending-guardian rule engine: verified direction, transfer/repayment/refund exclusion,
       category budget, protected-cash/runway impact, business-cost-to-landed-revenue join, one-item ranking,
       seven-day cooldown, correction receipt, and inline-button E2E. Tests 32–36 MUST pass before enabling it.
@@ -1354,3 +1356,14 @@ cash, cost, capital, cash, and burn are verified. Current live evidence is parti
 `roi=null`, `runway=unknown`, and `advice_status=disabled`; the Proprietary Investing `-$3.15` activity remains an
 evidence line, not profit. `CFO-2d2` is the next active item for business-summary rendering, drill-downs, and Telegram
 receipt/readability E2E.
+
+### CFO-2d2 progress (2026-08-21)
+
+Canonical commits `a2d7283ed` and `bf2297019` add the read-only business observer, business summary renderer, and
+`business` callback view. The stable hourly loop now observes the canonical `lm_agent_earnings` table, keeps all nine
+registered units in stable order, and appends a measured business section to the Moneytree report. Live revision 11
+contains nine businesses: x402 Services has one verified external-income receipt `$0.01`, Proprietary Investing has
+one verified realized-P&L receipt `-$3.15`, and the other units remain unknown; contribution profit and ROI remain null.
+The persisted snapshot is redacted and the real delivery receipt is provider `message_id=27489` at
+`2026-08-21T09:53:25Z`. Summary/business rendering and callback-data smoke checks pass. A real Telegram button callback
+read/edit E2E is still required before closing CFO-2d2; no advice or spending guardian is enabled.
