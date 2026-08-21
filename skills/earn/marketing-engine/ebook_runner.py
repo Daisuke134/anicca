@@ -12,8 +12,12 @@ import sys
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE / "brain"))
 sys.path.insert(0, str(HERE / "gates"))
+sys.path.insert(0, str(HERE / "render_eval"))
+sys.path.insert(0, str(HERE.parents[2]))
 from script_ledger import ScriptLedger, preflight  # noqa: E402
 from ebook_packs import load_ebook_packs  # noqa: E402
+from watercolor_candidate import render as render_watercolor  # noqa: E402
+from skills._shared.telegram import TelegramClient  # noqa: E402
 
 
 def require(value: bool, message: str) -> None:
@@ -22,7 +26,7 @@ def require(value: bool, message: str) -> None:
 
 
 def run(*, engine: Path, product: str, slot_at: str, script_id: str, ledger_path: Path,
-        state_root: Path) -> dict:
+        state_root: Path, render_output: Path | None = None, telegram_preview: bool = False) -> dict:
     packs = load_ebook_packs(engine)
     pack = next((item for item in packs.values() if item["product_id"] == product), None)
     require(pack is not None, "ebook product pack missing")
@@ -42,9 +46,25 @@ def run(*, engine: Path, product: str, slot_at: str, script_id: str, ledger_path
     path = state_root / f"{receipt['run_id']}.json"
     encoded = json.dumps(receipt, ensure_ascii=False, sort_keys=True, indent=2) + "\n"
     if path.exists():
-        require(path.read_text(encoding="utf-8") == encoded, "conflicting run replay")
+        existing = json.loads(path.read_text(encoding="utf-8"))
+        require(all(existing.get(key) == receipt[key] for key in receipt if key not in {"state", "external_effects"}), "conflicting run replay")
+        if existing.get("state") == "rendered":
+            return existing
     else:
         path.write_text(encoded, encoding="utf-8")
+    if render_output is not None:
+        require(product == "ebook-ja", "EN rendering remains blocked on free OmniAvatar runtime")
+        clips = [Path("/Users/anicca/anicca-monk-factory/state") / name for name in (
+            "jp_kling_clip_02.mp4", "jp_kling_clip_03.mp4", "jp_kling_clip_05.mp4",
+            "jp_kling_clip_07.mp4", "jp_kling_clip_08.mp4", "jp_kling_clip_10.mp4")]
+        rendered = render_watercolor(script=script["body"], output=render_output, clips=clips)
+        receipt.update({"state": "rendered", "render": rendered})
+        if telegram_preview:
+            message = TelegramClient.from_env().send_video(
+                rendered["output"], caption=(f"OpenClaw::: Ebook Seller JA candidate — {script['hook']} | "
+                                             f"free watercolor | SHA {rendered['sha256']} | not posted yet"))
+            receipt["telegram_preview"] = message
+        path.write_text(json.dumps(receipt, ensure_ascii=False, sort_keys=True, indent=2) + "\n", encoding="utf-8")
     return receipt
 
 
@@ -55,10 +75,13 @@ def main() -> None:
     parser.add_argument("--script-id", required=True)
     parser.add_argument("--ledger", type=Path, required=True)
     parser.add_argument("--state-root", type=Path, required=True)
+    parser.add_argument("--render-output", type=Path)
+    parser.add_argument("--telegram-preview", action="store_true")
     args = parser.parse_args()
     print(json.dumps(run(engine=HERE, product=args.product, slot_at=args.slot_at,
                          script_id=args.script_id, ledger_path=args.ledger,
-                         state_root=args.state_root), ensure_ascii=False, sort_keys=True))
+                         state_root=args.state_root, render_output=args.render_output,
+                         telegram_preview=args.telegram_preview), ensure_ascii=False, sort_keys=True))
 
 
 if __name__ == "__main__":
