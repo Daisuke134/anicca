@@ -353,6 +353,31 @@ Immediate customer-remediation queue, in order:
      record Web-meeting requests when they occur.
    - [ ] Attach the completed outreach ledger, make one formal delivery, read it back officially and
      prove replay causes zero duplicate outreach or delivery.
+   Contact-permission audit: all 100 submitted profiles were rechecked against current first-party
+   pages. Three expose a real general/business-contact invitation, but none explicitly invites
+   automated recruitment; existence of a DM button is not consent. Wider first-party research found
+   two additional Osaka delivery creators with work-request channels. X forbids unsolicited bulk or
+   automated DMs and non-API browser scripting; Instagram/TikTok likewise do not permit automated
+   cold outreach. Therefore the loop must not turn the 100-row discovery file into 50 fake or
+   policy-violating sends. The compliant 50-person acquisition path is an opt-in recruitment pool:
+   client-authorized Hello Work direct requests, or a truthful client-authorized listing on the free
+   driver community DriverTalk, followed by Jimoty/engage when needed. Those external listings must
+   identify the real contracting entity and the seller as recruitment support; they must not
+   impersonate LOXAD or create a buyer-owned account without authority. Ask the buyer once for this
+   listing authority while sending individualized first contacts only to the verified work-contact
+   channels. Sources: https://help.x.com/en/rules-and-policies/x-automation,
+   https://www.hellowork.mhlw.go.jp/enterprise/mem_search.html,
+   https://lp.drivertalk.jp/, https://jmty.jp/osaka/rec-dis/g-1882,
+   https://en-gage.net/expense/.
+   The buyer-facing authority request was sent once and officially read back in talkroom `18169985`
+   with formal delivery off. One individualized first contact was then actually submitted through a
+   candidate's first-party work-request form; the form returned its explicit sent confirmation and
+   ledger row 1 stores the destination, timestamp, message hash and pending reply state. The current
+   outreach count is therefore `1 sent / 49 remaining`, not 50. Gmail-only work contacts remain
+   unsent because the required Google-login skill points to a missing canonical instruction file;
+   neither credential recovery nor an unverified local mail relay may replace that authentication
+   boundary. Continue from buyer listing authority or a restored approved email adapter, never by
+   replaying row 1 or converting uninvited social profiles into sends.
 2. **haru haru9 / project 18169583.** Finish the current v10 producer/reviewer cycle, attach the
    accepted PC/responsive editable package in the exact room with formal delivery unchecked, read
    the attachment back officially and prove replay effect zero. Do not ask locality or copy questions
