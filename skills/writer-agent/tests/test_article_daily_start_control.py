@@ -186,6 +186,33 @@ class ArticleStartPolicyTest(unittest.TestCase):
             decision["reason"], "new-after-complete:active-four"
         )
 
+    def test_exhausted_prepublication_archive_releases_new_identity(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            state = Path(tmp)
+            run = state / "runs" / "20260821-072939"
+            (run / "gates" / "judge-broker").mkdir(parents=True)
+            (run / "gates" / "judge-broker" / "heartbeat").write_text("x")
+            archive = state / "interrupted-generation" / run.name / "attempt-4"
+            (archive / "gates").mkdir(parents=True)
+            for relative in (
+                "article-en.md", "article-ja.md", "headline-image.png",
+                "body-diagram.png", "gates/quality-terminal-en.json",
+                "gates/quality-terminal-ja.json",
+            ):
+                path = archive / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text("archived", encoding="utf-8")
+            (state / "articles.jsonl").write_text("", encoding="utf-8")
+
+            with patch.object(START, "validated_live_set", return_value=(False, None)):
+                decision = START.decide(state, "2026-08-21")
+
+        self.assertEqual(decision["action"], "new")
+        self.assertEqual(decision["run_id"], "")
+        self.assertEqual(
+            decision["reason"], "same-jst-day-exhausted-prepublication-archive"
+        )
+
     def test_legacy_exact8_partial_active_subset_stays_blocked(self):
         with tempfile.TemporaryDirectory() as tmp:
             state = Path(tmp)

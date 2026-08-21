@@ -245,6 +245,68 @@ def _preflight_only_run(run_dir: Path, rows: list[dict[str, Any]], run_id: str) 
     } == {"strategy-consumption.json"}
 
 
+def _exhausted_prepublication_archive(
+    state_dir: Path, run_dir: Path, run_id: str, rows: list[dict[str, Any]],
+) -> bool:
+    """Release a run only after its bounded generation archive is complete.
+
+    A timeout archive can move the immutable prompt and generation state out of
+    the run directory.  Once all charged attempts are exhausted, that old run
+    cannot be resumed; a new identity is safe only when the run contains no
+    publication/ledger row and the latest archive has the complete
+    pre-publication artifact set with no symlink or publication-state file.
+    """
+    for row in rows:
+        if row.get("run_id") != run_id:
+            continue
+        if (
+            row.get("published") is True
+            or bool(row.get("draft_url"))
+            or bool(row.get("live_url"))
+            or row.get("state") == "live"
+            or row.get("reality_gate") == "PASS"
+        ):
+            return False
+    if run_dir.is_symlink() or not run_dir.is_dir():
+        return False
+    for path in run_dir.rglob("*"):
+        if path.is_symlink():
+            return False
+        relative = str(path.relative_to(run_dir))
+        if path.is_file() and not relative.startswith(
+            ("gates/judge-broker/", "gates/.attempts/", "gates/media-candidates/")
+        ):
+            return False
+    archive_parent = state_dir / "interrupted-generation" / run_id
+    attempts = sorted(
+        (
+            path for path in archive_parent.iterdir()
+            if path.is_dir() and path.name.startswith("attempt-")
+            and path.name.removeprefix("attempt-").isdigit()
+        ),
+        key=lambda path: int(path.name.removeprefix("attempt-")),
+    ) if archive_parent.is_dir() and not archive_parent.is_symlink() else []
+    if not attempts:
+        return False
+    latest = attempts[-1]
+    required = (
+        "article-en.md", "article-ja.md", "headline-image.png",
+        "body-diagram.png", "gates/quality-terminal-en.json",
+        "gates/quality-terminal-ja.json",
+    )
+    if any(
+        not (latest / relative).is_file()
+        or (latest / relative).is_symlink()
+        for relative in required
+    ):
+        return False
+    return not any(
+        path.name == "publication-state.json"
+        for path in latest.rglob("*")
+        if path.is_file() or path.is_symlink()
+    )
+
+
 def _unpublished_quality_audit(row: dict[str, Any]) -> bool:
     state = row.get("state")
     legacy = row.get("platform") == "quality" and row.get("published") is False
@@ -638,6 +700,13 @@ def decide(state_dir: Path | str, local_date: str) -> dict[str, str]:
             "action": "resume-generation",
             "run_id": run_id,
             "reason": reason,
+        }
+    if _exhausted_prepublication_archive(state_dir, run_dir, run_id, rows):
+        return {
+            "action": "new",
+            "run_id": "",
+            "previous_run_id": run_id,
+            "reason": "same-jst-day-exhausted-prepublication-archive",
         }
     if _preflight_only_run(run_dir, rows, run_id):
         return {
