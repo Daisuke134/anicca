@@ -5,11 +5,11 @@
 **Owner:** Daisuke Narita
 **Status:** The macOS launchd manager and the three canonical job-search LaunchAgents
 are healthy. Telegram uses the shared OpenClaw gateway. `JOB-LEDGER-EVENT-10N` is
-fixed. `JOB-SCHEDULER-POLICY-10O` is implemented and live at a 30-minute cadence,
+fixed. `JOB-SCHEDULER-POLICY-10O` is implemented and live at an hourly cadence,
 but its completion gate is still open.
 The execution order is explicit: **Ashby fast path → Ashby discovery/application →
 Workday fast path → Telegram/Ledger reconciliation**. Workday runs on the same
-30-minute owner wake; it is no longer parked behind Ashby. A user-confirmed
+hourly owner wake; it is no longer parked behind Ashby. A user-confirmed
 Salesforce application is held in the private manual-completed URL set and is never
 reapplied by the loop. In the latest catch-up, Ashby fast path reported `no_work` because there
 was no retryable Ashby row; the run was stopped before its Workday stage after the
@@ -117,7 +117,7 @@ evidence, a fenced intent and authoritative confirmation.
 | Order | Atomic TODO | State | Evidence needed to close |
 |---:|---|---|---|
 | 1 | Keep the existing browser owner healthy at CDP `:9222` | `done` | `ai.anicca.job-search-browser` is enabled/running; `/json/version` responds; no second browser owner |
-| 2 | Run the existing 30-minute owner with Ashby then Workday fast paths | `in_progress` | The owner enables `JOB_SEARCH_ENABLE_WORKDAY=1` by default; each lane writes its own evidence and checkpoint |
+| 2 | Run the existing hourly owner with Ashby then Workday fast paths | `in_progress` | The owner enables `JOB_SEARCH_ENABLE_WORKDAY=1` by default; each lane writes its own evidence and checkpoint |
 | 3 | Replace the timed-out model discovery with a bounded Ashby discovery pass | `completed` | CLI/owner commit `12ea0d89a`; live discovery selected ElevenLabs after browser/cache verification and wrote immutable attribution |
 | 4 | Reach Ashby claim-ready form and route the exact resume | `in_progress` | ElevenLabs reached a real final form with the routed resume; Cohere is durably blocked by its provider limit |
 | 5 | Click the real Ashby submit control once | `completed_for_two_roles` | Two ElevenLabs real Submit Application clicks are fenced as terminal `submit_unknown`; the aria-hidden native-button case uses only a visible text locator; never retry either |
@@ -132,7 +132,7 @@ evidence, a fenced intent and authoritative confirmation.
 The current production loop is intentionally deterministic before adaptive:
 
 ```text
-launchd (30 min)
+launchd (hourly)
   → CDP browser health evidence
   → existing Ashby queue
   → live official Ashby board refresh plus discovery of one Tokyo/Japan or Remote row
