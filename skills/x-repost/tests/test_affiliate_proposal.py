@@ -117,6 +117,28 @@ class AffiliateProposalTests(unittest.TestCase):
             proposal_path.unlink()
             self.assertEqual(MODULE.select(proposal_path, consumed)["state"], "RECONCILE")
 
+    def test_legacy_claim_blocks_new_proposal_and_snapshot_drops_extras(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            proposal_path = root / "proposal.json"
+            consumed = root / "consumed.jsonl"
+            proposal = {
+                "receipt_type": "AFFILIATE_REPOST_PROPOSAL",
+                "state": "READY_FOR_EXISTING_REPOST_OWNER",
+                "proposal_id": "f" * 64,
+                "placement_id": "voice-isolator-en-1",
+                "owned_article_url": "https://aniccaai.com/blog/voice-isolator",
+                "language": "en", "disclosure_required": True,
+                "tracking_link_state": "NOT_INCLUDED",
+                "revenue_credit_state": "NO_REVENUE_CREDIT",
+                "untrusted_tracking_url": "https://example.test/secret",
+            }
+            proposal_path.write_text(json.dumps(proposal))
+            claimed = MODULE.claim(consumed, proposal)
+            self.assertNotIn("untrusted_tracking_url", claimed["proposal"])
+            consumed.write_text(json.dumps({"proposal_id": "a" * 64, "state": "EFFECT_STARTED"}) + "\n")
+            self.assertEqual(MODULE.select(proposal_path, consumed)["state"], "BLOCKED_LEGACY_CLAIM")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -209,6 +209,10 @@ trap 'bash "$GUARD" release "$IDENTITY" >/dev/null 2>&1 || true' EXIT
 AFFILIATE_CONSUMED="$STATE/affiliate-proposals-consumed.jsonl"
 AFFILIATE_PICK="$($PY "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL" --consumed "$AFFILIATE_CONSUMED" 2>/dev/null || echo '{"state":"NO_PROPOSAL"}')"
 AFFILIATE_STATE="$($PY -c 'import json,sys; print(json.load(sys.stdin).get("state","NO_PROPOSAL"))' <<<"$AFFILIATE_PICK" 2>/dev/null || echo NO_PROPOSAL)"
+if [ "$AFFILIATE_STATE" = "BLOCKED_LEGACY_CLAIM" ]; then
+  report "🛑 An older Affiliate proposal effect has no safe snapshot; no new Affiliate or generic X post is allowed"
+  finish 1 "affiliate legacy claim unresolved"
+fi
 if [ "$AFFILIATE_STATE" = "READY" ] || [ "$AFFILIATE_STATE" = "RECONCILE" ]; then
   AFFILIATE_PROPOSAL_INPUT="$EV/affiliate-proposal.json"
   if ! "$PY" - "$AFFILIATE_PICK" "$AFFILIATE_PROPOSAL_INPUT" <<'PYEOF'
@@ -317,13 +321,28 @@ PYEOF
     finish 1 "affiliate proposal publish unverified"
   fi
   if [ "$AFFILIATE_RC" -ne 0 ]; then
+    AFFILIATE_SAFE_NO_EFFECT="$($PY - "$EV/post.json" <<'PYEOF'
+import json, sys
+try:
+    value = json.load(open(sys.argv[1]))
+    print(value.get("posted") is False)
+except Exception:
+    print(False)
+PYEOF
+ )"
+    AFFILIATE_TERMINAL="NO_EFFECT"
+    [ "$AFFILIATE_SAFE_NO_EFFECT" = "True" ] || AFFILIATE_TERMINAL="UNVERIFIED"
     if ! "$PY" "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL_INPUT" \
-      --consumed "$AFFILIATE_CONSUMED" --record NO_EFFECT >/dev/null; then
-      report "❌ Affiliate no-effect receipt failed; proposal remains claimed"
-      finish 1 "affiliate no-effect receipt failed"
+      --consumed "$AFFILIATE_CONSUMED" --record "$AFFILIATE_TERMINAL" >/dev/null; then
+      report "❌ Affiliate terminal receipt failed; proposal remains claimed"
+      finish 1 "affiliate terminal receipt failed"
     fi
-    report "⚠️ Affiliate proposal had no confirmed X effect; terminal no-effect was recorded and generic acquisition can continue"
-    finish 0 "affiliate proposal no effect"
+    if [ "$AFFILIATE_TERMINAL" = "NO_EFFECT" ]; then
+      report "⚠️ Affiliate proposal had a confirmed no-effect outcome; terminal no-effect was recorded"
+      finish 0 "affiliate proposal no effect"
+    fi
+    report "⚠️ Affiliate proposal ended with an unknown X effect; terminally unverified and never reposted"
+    finish 1 "affiliate proposal unknown effect"
   fi
   AFFILIATE_POST_URL="$($PY -c 'import json,sys; print(json.load(open(sys.argv[1]))["post_url"])' "$EV/post.json")"
   if ! append_affiliate_post "$AFFILIATE_POST_URL"; then

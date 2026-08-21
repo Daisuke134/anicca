@@ -16,6 +16,10 @@ from urllib.parse import urlparse
 
 PROPOSAL_ID = re.compile(r"^[0-9a-f]{64}$")
 PLACEMENT_ID = re.compile(r"^[a-z0-9][a-z0-9-]{2,80}$")
+SAFE_FIELDS = (
+    "receipt_type", "state", "proposal_id", "placement_id", "owned_article_url",
+    "language", "disclosure_required", "tracking_link_state", "revenue_credit_state",
+)
 
 
 def read_json(path: Path) -> dict:
@@ -29,6 +33,8 @@ def read_json(path: Path) -> dict:
 
 
 def valid(proposal: dict) -> bool:
+    if not isinstance(proposal, dict):
+        return False
     url = proposal.get("owned_article_url")
     if not isinstance(url, str) or any(char.isspace() or ord(char) < 32 for char in url):
         return False
@@ -56,6 +62,12 @@ def valid(proposal: dict) -> bool:
     ))
 
 
+def canonical(proposal: dict) -> dict:
+    if not valid(proposal):
+        raise ValueError("invalid proposal")
+    return {field: proposal[field] for field in SAFE_FIELDS}
+
+
 def rows(path: Path) -> list[dict]:
     try:
         lines = path.read_text(encoding="utf-8").splitlines()
@@ -79,14 +91,18 @@ def select(proposal_path: Path, consumed_path: Path) -> dict:
         proposal_id = row.get("proposal_id")
         if isinstance(proposal_id, str):
             latest_by_proposal[proposal_id] = row
+    legacy = [row for row in latest_by_proposal.values()
+              if row.get("state") == "EFFECT_STARTED" and not valid(row.get("proposal"))]
+    if legacy:
+        return {"state": "BLOCKED_LEGACY_CLAIM"}
     unresolved = [row for row in latest_by_proposal.values()
-                  if row.get("state") == "EFFECT_STARTED" and valid(row.get("proposal"))]
+                  if row.get("state") == "EFFECT_STARTED"]
     if unresolved:
         pending = min(unresolved, key=lambda row: row.get("observed_at", ""))
         snapshot = pending["proposal"]
         return {
             "state": "RECONCILE",
-            "proposal": snapshot,
+            "proposal": canonical(snapshot),
             "proposal_id": snapshot["proposal_id"],
             "placement_id": snapshot["placement_id"],
             "owned_article_url": snapshot["owned_article_url"],
@@ -111,7 +127,7 @@ def select(proposal_path: Path, consumed_path: Path) -> dict:
         }
     return {
         "state": "READY",
-        "proposal": proposal,
+        "proposal": canonical(proposal),
         "proposal_id": proposal["proposal_id"],
         "placement_id": proposal["placement_id"],
         "owned_article_url": proposal["owned_article_url"],
@@ -156,7 +172,7 @@ def claim(consumed_path: Path, proposal: dict) -> dict:
         "proposal_id": proposal["proposal_id"],
         "placement_id": proposal["placement_id"],
         "state": "EFFECT_STARTED",
-        "proposal": proposal,
+        "proposal": canonical(proposal),
         "observed_at": datetime.now(timezone.utc).isoformat(),
         "revenue_credit_state": "NO_REVENUE_CREDIT_UNTIL_EXACT_AFFILIATE_JOIN",
     }
