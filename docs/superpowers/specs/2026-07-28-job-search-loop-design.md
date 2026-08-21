@@ -27,7 +27,13 @@ Life Manager Career surface remain in progress. The subsequent Ashby-first run
 `daily-20260821-181731` confirms the same boundary: Ashby fast path was `no_work`,
 Workday was `parked / ashby_first_gate`, and the Codex discovery fallback timed out
 after the bounded 300 seconds with no fresh result and no Ledger mutation. This is a
-discovery-lane timeout, not an Ashby login failure.
+discovery-lane timeout, not an Ashby login failure. Browser inspection of Cohere's
+official Ashby posting then proved a live Tokyo Apply surface. Its form explicitly
+states a provider policy of no more than five applications in any 90-day span; the
+fast path correctly stopped before claim/submit with
+`provider_application_limit_visible` rather than bypassing the ATS policy. Fast-path
+checkpoints now send Telegram before model fallback (commit `85ce59025`), so a model
+timeout cannot suppress the report.
 The daily script now bounds the non-deterministic browser fallback at 300 seconds
 by default (`JOB_SEARCH_BROWSER_TIMEOUT_SECONDS` may lower or raise that bounded
 value); deterministic ATS fast paths run before it and retain their own evidence.
@@ -50,8 +56,8 @@ evidence, a fenced intent and authoritative confirmation.
 |---:|---|---|---|
 | 1 | Keep the existing browser owner healthy at CDP `:9222` | `done` | `ai.anicca.job-search-browser` is enabled/running; `/json/version` responds; no second browser owner |
 | 2 | Run the existing 30-minute owner with Ashby fast path first | `in_progress` | `daily-20260821-181731` shows Ashby preflight before Workday; Workday is `parked / ashby_first_gate`; the 300-second discovery fallback timed out |
-| 3 | Replace the timed-out model discovery with a bounded Ashby discovery pass | `pending` | Direct Ashby board/search results produce at least one verified eligible official Ashby URL without waiting on a model timeout |
-| 4 | Reach Ashby claim-ready form and route the exact resume | `pending` | Fresh ATS snapshot/evaluation, routed resume path/hash, and immutable intent |
+| 3 | Replace the timed-out model discovery with a bounded Ashby discovery pass | `in_progress` | Browser/API cache found and Ledger-attributed Cohere Tokyo FDE `adb1aa642b3953f408d2ab9919c37c00b55ea3926c715eb8404ff923de614e46`; next pass must use the same bounded source path |
+| 4 | Reach Ashby claim-ready form and route the exact resume | `blocked_by_provider_policy` | Cohere's real form is reachable, but it visibly states a five-applications/90-day provider limit; no claim or resume upload may bypass it |
 | 5 | Click the real Ashby submit control once | `pending` | Ledger fence/attempt plus click-phase evidence; never retry `submit_unknown` |
 | 6 | Reconcile authoritative confirmation and send one Telegram report | `pending` | Gmail/ATS confirmation, Ledger transition, Telegram message ID, and same-day dedupe |
 | 7 | Prove the next wake skips the terminal Ashby row and processes another eligible row | `pending` | Two consecutive owner runs with queue progress and no duplicate claim |
