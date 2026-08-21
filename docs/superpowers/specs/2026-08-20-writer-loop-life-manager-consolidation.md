@@ -51,6 +51,18 @@
 - 以後の判定語を固定する。`process_alive`はexecution evidence、`launchctl_readback`はcontrol-plane
   evidence、`scheduler_recurrence`は自然tickの連続receiptであり、前二者を同じ成功に数えない。
 
+### A1 control-plane復旧の安全な試行結果（2026-08-21 10:29 JST）
+
+- 同じexecution contextでの再測定でも`managername/managerpid`はrc=153、`print gui/501`はrc=141、
+  `dscl . -read /Users/anicca`は`eServerError`だった。Coconalaのcurrent workerはその間も生存していた。
+- `launchctl reboot userspace`はrc=141で状態変化なし。`sudo`は「uid 501がpasswd databaseに存在しない」、
+  `su`とroot SSHも同じユーザー解決失敗で起動できない。`/etc/passwd`にrootはあるがaniccaはなく、
+  Directory Servicesが回復していない。
+- 自動ログイン設定は確認できず、`launchctl reboot logout`は未実行である。launchctlの公式仕様でもlogoutは
+  未保存データを失うリスクがあるため、手動ログインを保証できない現状では実行しない。
+- よってA1は「診断済み・安全なagent-only復旧手段なし」のブロッカーとして保持する。Coconala worker、
+  Writer state、旧releaseは停止・削除していない。
+
 ### 最新の同一run実測（2026-08-21）
 
 - `daily-2026-08-21` は active-four の4件すべてを同じ不変原稿から native publish/readback まで完了した。
@@ -506,7 +518,7 @@ publication identity、読者、payout、ledgerを分ける。
 
 | ID | 原子作業 | 完了証拠 | 状態 |
 |---:|---|---|---|
-| A1 | 有効なmacOS GUI／user bootstrapを復旧する | `id -un=anicca`、有効な`managername`/`managerpid`、`dscl`と`log show`が同じ実行contextで成功。個別のlaunchd/loginwindow/opendirectoryd killは行わない | ブロッカー・未実行 |
+| A1 | 有効なmacOS GUI／user bootstrapを復旧する | `id -un=anicca`、有効な`managername`/`managerpid`、`dscl`と`log show`が同じ実行contextで成功。個別のlaunchd/loginwindow/opendirectoryd killは行わない | ブロッカー・診断済み。安全なagent-only復旧手段なし |
 | A2 | 復旧したcontrol-planeから全14 Writer labelをreadbackする | `launchctl print gui/501/<label>`でlabel、owner、ProgramArguments、EnvironmentVariables、state rootを取得 | A1待ち |
 | A3 | stale定義とcurrent定義の対応表を確定する | 各labelについて旧root/current、PID、owner fence、rollback pathを1行receiptへ保存。推測でstale判定しない | A2待ち |
 | A4 | stale Writer 14件とretired CLI 5件をbootoutし、旧ownerをdrainする | 旧root process=0、owner fence不在、旧root logの新規schedule interval再発=0をreadback | A3待ち |
