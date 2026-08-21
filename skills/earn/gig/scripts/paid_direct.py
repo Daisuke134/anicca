@@ -3113,13 +3113,10 @@ def _prepare_one(args, item_path: Path, output: Path) -> int:
         if _text(preflight_row.get("buyer_feedback_sha256")) != feedback: raise Failure("remote_resume")
         _collect_dm_context(args, {**item, **preflight_row}, root, base)
         try:
-            _current_paid_decision(root, item)
+            semantic = _current_paid_decision(root, item)
         except (AttributeError, KeyError, OSError, ValueError, TypeError, json.JSONDecodeError):
-            _paid_decision(args, item_path, root, base)
-        try:
-            file_mode = _file_mode(root, item)
-        except (AttributeError, KeyError, OSError, ValueError, TypeError, json.JSONDecodeError):
-            file_mode = False
+            semantic = _paid_decision(args, item_path, root, base)
+        file_mode = semantic.get("decision") == "actionable" and semantic.get("mode") == "file"
         if file_mode:
             try:
                 prepared = _prepare_file(args, item_path, root, item, base, feedback)
