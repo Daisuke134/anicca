@@ -942,7 +942,9 @@ only that iteration; they never authorize a blind PASS. Buyer feedback starts th
 revision cycle from the existing artifact, with formal delivery still off. Paid source census,
 owner and blind-audit workspaces live under `~/gig/runtime/<talkroom>/`, outside both the
 machine-wide temp tree and the sandbox-denied durable project: unrelated cleanup may never delete
-an active job's workspace, while the isolated owner can still access its own staging tree.
+an active job's workspace, while the isolated owner can still access its own staging tree. Owner
+workspaces are keyed by the accumulated requirements digest; an abrupt process death leaves the
+workspace for the next wake to resume, while a normal success/failure removes it.
 The read-only targeted refresh is also project-scoped: up to four fresh hidden CDP targets run in
 parallel before the existing project workers, and one refresh failure degrades only that talkroom.
 The authenticated offer page is the exact bridge from a purchased order to its pre-purchase DM:

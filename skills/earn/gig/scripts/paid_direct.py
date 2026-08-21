@@ -104,11 +104,22 @@ def _write(path: Path, value: Any) -> None:
     os.replace(temporary, path)
 
 
-def _project_workspace(root: Path, prefix: str) -> tempfile.TemporaryDirectory:
-    """Keep active Paid work outside the machine-wide temp tree cleaned by other loops."""
+@contextmanager
+def _project_workspace(root: Path, prefix: str, *, resume: bool = False) -> Iterator[str]:
+    """Keep active Paid work outside shared temp and resume it after abrupt worker death."""
     runtime = root.parent.parent / "runtime" / root.name
     runtime.mkdir(parents=True, exist_ok=True)
-    return tempfile.TemporaryDirectory(prefix=prefix, dir=runtime)
+    candidates = ([path for path in runtime.glob(f"{prefix}*")
+                   if resume and path.is_dir() and not path.is_symlink()]
+                  if resume else [])
+    workspace = max(candidates, key=lambda path: path.stat().st_mtime_ns, default=None)
+    if workspace is None:
+        workspace = Path(tempfile.mkdtemp(prefix=prefix, dir=runtime))
+    workspace.resolve().relative_to(runtime.resolve())
+    try:
+        yield str(workspace)
+    finally:
+        shutil.rmtree(workspace, ignore_errors=True)
 
 def _text(value: Any) -> str: return str(value or "").strip()
 
@@ -2027,9 +2038,19 @@ def _promote_staged_file_bundle(staging: Path, root: Path, expected_version: str
 
 def _run_isolated_file_owner(args, root: Path, context: Path, prompt_text: str,
                              owner_evidence: Path) -> int:
-    with _project_workspace(root, "paid-file-owner-") as temporary:
+    decision = _load(root / "context" / "paid-work-decision.json")
+    requirements_sha256 = _text(decision.get("requirements_sha256"))
+    if not re.fullmatch(r"[0-9a-f]{64}", requirements_sha256):
+        raise Failure("file_builder")
+    with _project_workspace(
+        root, f"paid-file-owner-{requirements_sha256[:12]}-", resume=True,
+    ) as temporary:
         staging = Path(temporary)
-        prior_artifact = _prepare_file_owner_staging(root, context, staging)
+        if (staging / "state.json").is_file():
+            prior_candidates = sorted((staging / "work" / "prior-artifact").glob("*"))
+            prior_artifact = prior_candidates[0] if len(prior_candidates) == 1 else None
+        else:
+            prior_artifact = _prepare_file_owner_staging(root, context, staging)
         prompt = staging / "owner.prompt.txt"
         versions = [int(match.group(1)) for path in (root / "delivery").iterdir()
                     if (match := re.search(r"(?:^|-)v(\d+)(?:\D|$)", path.name))]
