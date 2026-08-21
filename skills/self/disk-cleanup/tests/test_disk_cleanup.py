@@ -4,6 +4,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).parents[1]))
 
 import disk_cleanup  # noqa: E402
@@ -12,6 +14,15 @@ from disk_cleanup import (  # noqa: E402
     HostDiskGovernor,
     classify_tier,
 )
+
+
+@pytest.fixture(autouse=True)
+def stub_bootstrap_health_for_governor_unit_tests(monkeypatch) -> None:
+    monkeypatch.setattr(
+        disk_cleanup,
+        "_default_bootstrap_health",
+        lambda _home, _state_dir: {"status": "not-applicable"},
+    )
 
 
 def test_tier_boundaries_use_bytes() -> None:

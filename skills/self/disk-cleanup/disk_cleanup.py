@@ -85,7 +85,7 @@ def _default_lsof(path: Path) -> str:
 
 def _default_bootstrap_health(home: Path, state_dir: Path) -> dict[str, object]:
     """Read-only Directory Services and launchd preflight for the real Mac user."""
-    if sys.platform != "darwin" or home.resolve() != Path.home().resolve():
+    if sys.platform != "darwin":
         return {"status": "not-applicable"}
 
     try:
