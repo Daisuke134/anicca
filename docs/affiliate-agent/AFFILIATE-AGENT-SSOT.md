@@ -624,6 +624,10 @@ Telegram is deduped on the already delivered receipt. This closes the
 provider unique-click denominator retention gate only. X impressions and
 owned-page visits remain `UNKNOWN`, and no click or estimate is money.
 
+Commission report artifact `b65723e65e3fe309dda373b1cd7edda0b6cfb8ae754c208f7da827154b9fecce`
+has 0 commission rows; reconciliation read/appended/replayed is `0/0/0`.
+The empty official artifact is not a transaction or money receipt.
+
 ### 1.2.0 Audited executable boundary
 
 The installed ownership graph has six launchd labels: three persistent browser
