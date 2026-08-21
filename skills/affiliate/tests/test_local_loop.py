@@ -28,6 +28,7 @@ class LocalLoopTest(unittest.TestCase):
             "https://aniccaai.com/blog/alpha-guide?utm=tracking",
             "https://user@aniccaai.com/blog/alpha-guide",
             "https://aniccaai.com/blog/alpha-guide\nhttps://example.test",
+            "https://aniccaai.com/blog/%2e%2e/private",
         ):
             with self.subTest(value=value):
                 self.assertFalse(MODULE.is_owned_article_url(value))

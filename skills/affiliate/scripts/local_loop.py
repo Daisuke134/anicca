@@ -524,7 +524,7 @@ def is_owned_article_url(value):
     return (
         parsed.scheme == "https"
         and parsed.hostname == "aniccaai.com"
-        and parsed.path.startswith("/blog/")
+        and bool(re.fullmatch(r"/blog/[a-z0-9][a-z0-9-]*", parsed.path))
         and not parsed.username and not parsed.password and port is None
         and not parsed.query and not parsed.fragment
     )
