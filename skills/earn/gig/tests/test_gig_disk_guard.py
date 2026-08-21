@@ -8,10 +8,22 @@ import sys
 from types import SimpleNamespace
 from pathlib import Path
 
+import pytest
+
 
 GIG_ROOT = Path(__file__).resolve().parents[1]
 GUARD_PATH = GIG_ROOT / "scripts" / "gig_disk_guard.py"
 MANIFEST_PATH = GIG_ROOT / "config" / "launchd-jobs.json"
+
+
+@pytest.fixture(autouse=True)
+def _isolated_host_control_state(tmp_path, monkeypatch):
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.delenv("GIG_HOST_STATE_DIR", raising=False)
+    monkeypatch.delenv("DISK_CONTROL_STATE_DIR", raising=False)
+    monkeypatch.delenv("OPENCLAW_STATE_DIR", raising=False)
+    monkeypatch.delenv("LIFE_MANAGER_HOST_STATE_DIR", raising=False)
+    (tmp_path / ".openclaw" / "state").mkdir(parents=True)
 
 
 def _load_guard():
@@ -99,6 +111,82 @@ def test_disk_measurement_exception_fails_closed_without_exec(tmp_path, monkeypa
         "required_bytes": guard.REQUIRED_BYTES,
         "status": "failed",
     }
+
+
+@pytest.mark.parametrize(
+    ("flag_name", "reason", "payload"),
+    (
+        ("disk-writers.stop", "disk_writers_stop", "tier=4\n"),
+        ("disk-pressure.block", "disk_pressure_block", "free=7.5GiB\n"),
+    ),
+)
+def test_life_manager_producer_flags_block_child_before_exec(
+    tmp_path, monkeypatch, capsys, flag_name, reason, payload,
+):
+    guard = _load_guard()
+    monkeypatch.setenv("GIG_STATE_DIR", str(tmp_path / "gig"))
+    host_state = Path.home() / ".openclaw" / "state"
+    (host_state / flag_name).write_text(payload, encoding="utf-8")
+    monkeypatch.setattr(
+        guard.shutil,
+        "disk_usage",
+        lambda _path: guard.shutil._ntuple_diskusage(1, 1, guard.REQUIRED_BYTES * 8),
+    )
+    monkeypatch.setattr(guard.os, "execvpe", lambda *_args: (_ for _ in ()).throw(
+        AssertionError("stop flag must block the producer before exec")
+    ))
+
+    assert guard.main(["/bin/echo", "child-sentinel"]) == 1
+
+    receipt = json.loads(capsys.readouterr().out)
+    assert receipt["reason"] == reason
+    assert receipt["gate"] == "life-manager-producer-preflight"
+    assert receipt["flag_path"] == str(host_state / flag_name)
+    assert receipt["effect"] == 0
+    assert receipt["readback"] == 0
+
+
+def test_missing_host_control_state_fails_closed_before_exec(tmp_path, monkeypatch, capsys):
+    guard = _load_guard()
+    monkeypatch.setenv("GIG_STATE_DIR", str(tmp_path / "gig"))
+    host_state = tmp_path / "missing-control-state"
+    monkeypatch.setenv("OPENCLAW_STATE_DIR", str(host_state))
+    monkeypatch.setattr(
+        guard.shutil,
+        "disk_usage",
+        lambda _path: guard.shutil._ntuple_diskusage(1, 1, guard.REQUIRED_BYTES * 8),
+    )
+    monkeypatch.setattr(guard.os, "execvpe", lambda *_args: (_ for _ in ()).throw(
+        AssertionError("missing control state must fail closed")
+    ))
+
+    assert guard.main(["/bin/echo", "child-sentinel"]) == 1
+
+    receipt = json.loads(capsys.readouterr().out)
+    assert receipt["reason"] == "disk_policy_unavailable"
+    assert receipt["gate"] == "life-manager-producer-preflight"
+    assert receipt["flag_path"] == str(host_state)
+
+
+def test_dangling_policy_flag_fails_closed_before_exec(tmp_path, monkeypatch, capsys):
+    guard = _load_guard()
+    host_state = Path.home() / ".openclaw" / "state"
+    (host_state / "disk-writers.stop").symlink_to(host_state / "gone")
+    monkeypatch.setenv("GIG_STATE_DIR", str(tmp_path / "gig"))
+    monkeypatch.setattr(
+        guard.shutil,
+        "disk_usage",
+        lambda _path: guard.shutil._ntuple_diskusage(1, 1, guard.REQUIRED_BYTES * 8),
+    )
+    monkeypatch.setattr(guard.os, "execvpe", lambda *_args: (_ for _ in ()).throw(
+        AssertionError("dangling policy flag must fail closed")
+    ))
+
+    assert guard.main(["/bin/echo", "child-sentinel"]) == 1
+
+    receipt = json.loads(capsys.readouterr().out)
+    assert receipt["reason"] == "disk_policy_unavailable"
+    assert receipt["flag_path"] == str(host_state / "disk-writers.stop")
 
 
 def test_receipt_fsyncs_parent_directory_after_atomic_replace(tmp_path, monkeypatch):
