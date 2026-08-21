@@ -2,8 +2,8 @@
 
 const path = require("node:path");
 const fs = require("node:fs");
-const os = require("node:os");
 const { spawnSync } = require("node:child_process");
+const { resolveDataRoot } = require("./runtime-paths.js");
 
 const OUTBOUND_CAPABILITY = "outbound.event.apply";
 const SAFE_WAKE_ID = /^[A-Za-z0-9][A-Za-z0-9:._-]{2,159}$/;
@@ -173,7 +173,7 @@ async function notifyOpenClawPhoto(bytes, options = {}) {
   const remove = options.rmSync || fs.rmSync;
   let directory;
   try {
-    const mediaRoot = path.join(os.homedir(), ".openclaw", "media");
+    const mediaRoot = path.join(resolveDataRoot(options.env || process.env), "media");
     fs.mkdirSync(mediaRoot, { recursive: true, mode: 0o700 });
     const rootStat = fs.lstatSync(mediaRoot);
     if (

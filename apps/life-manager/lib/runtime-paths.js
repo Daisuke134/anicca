@@ -1,5 +1,6 @@
 "use strict";
 
+const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 
@@ -27,6 +28,33 @@ function absoluteRoot(env, name) {
   return resolved;
 }
 
+function canonicalDataRoot(resolved) {
+  let current = resolved;
+  const missing = [];
+  while (true) {
+    let stat;
+    try {
+      stat = fs.lstatSync(current);
+    } catch (error) {
+      if (error && error.code === "ENOENT") {
+        const parent = path.dirname(current);
+        if (parent === current) return resolved;
+        missing.unshift(path.basename(current));
+        current = parent;
+        continue;
+      }
+      throw new Error("Life Manager data root cannot be inspected");
+    }
+    let real;
+    try {
+      real = fs.realpathSync(current);
+    } catch {
+      throw new Error("Life Manager data root symlink cannot be resolved");
+    }
+    return path.join(real, ...missing);
+  }
+}
+
 // The portable Life Manager data root: LM_DATA_DIR when set, otherwise the
 // XDG-style default the launchd installers already create
 // (<home>/.local/state/life-manager). Never a legacy runtime root.
@@ -43,6 +71,10 @@ function resolveDataRoot(env = {}) {
     resolved = path.resolve(home, ".local", "state", "life-manager");
   }
   if (LEGACY_SEGMENT.test(resolved) || hasLegacyAniccaRoot(resolved)) {
+    throw new Error("Life Manager data root resolves beneath a forbidden legacy runtime root");
+  }
+  const canonical = canonicalDataRoot(resolved);
+  if (LEGACY_SEGMENT.test(canonical) || hasLegacyAniccaRoot(canonical)) {
     throw new Error("Life Manager data root resolves beneath a forbidden legacy runtime root");
   }
   return resolved;

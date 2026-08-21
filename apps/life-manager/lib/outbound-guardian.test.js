@@ -3,6 +3,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
+const os = require("node:os");
 const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 
@@ -93,8 +94,10 @@ test("report Gateway delivery hides failure stderr and still requires a positive
 test("OpenClaw photo delivery uses Gateway send with a private temporary PNG and returns a positive message ID", async () => {
   const bytes = Buffer.alloc(5_000, 0x61);
   Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(bytes);
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "lm-outbound-photo-root-"));
   let mediaPath;
   const receipt = await notifyOpenClawPhoto(bytes, {
+    env: { LM_DATA_DIR: dataDir },
     telegramTarget: "123456789",
     caption: "registered evidence",
     idempotencyKey: "connector-evidence:abc123",
@@ -111,7 +114,7 @@ test("OpenClaw photo delivery uses Gateway send with a private temporary PNG and
       assert.equal(params.forceDocument, true);
       assert.equal(params.idempotencyKey, "connector-evidence:abc123");
       mediaPath = params.mediaUrl;
-      assert.match(mediaPath, /\/\.openclaw\/media\/connector-telegram-photo-/);
+      assert.match(mediaPath, new RegExp(`${dataDir}/media/connector-telegram-photo-`));
       assert.equal(fs.statSync(path.dirname(mediaPath)).mode & 0o777, 0o700);
       assert.equal(fs.statSync(mediaPath).mode & 0o777, 0o600);
       assert.deepEqual(fs.readFileSync(mediaPath), bytes);
@@ -143,6 +146,34 @@ test("OpenClaw photo delivery rejects malformed target or idempotency key before
     }), /Telegram photo delivery invalid/);
     assert.equal(spawns, 0);
   }
+});
+
+test("photo delivery refuses a legacy Life Manager data root before spawning", async () => {
+  const bytes = Buffer.from("not-an-image");
+  let spawns = 0;
+  await assert.rejects(() => notifyOpenClawPhoto(bytes, {
+    env: { LM_DATA_DIR: path.join(os.tmpdir(), ".openclaw") },
+    telegramTarget: "123456789",
+    idempotencyKey: "connector-evidence:legacy-root",
+    spawnSync() { spawns += 1; },
+  }), /Telegram photo delivery failed/);
+  assert.equal(spawns, 0);
+});
+
+test("photo delivery refuses a Life Manager root symlinked into a legacy root", async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "lm-outbound-symlink-"));
+  const legacy = path.join(root, ".openclaw");
+  const linked = path.join(root, "data");
+  fs.mkdirSync(legacy);
+  fs.symlinkSync(legacy, linked, "dir");
+  let spawns = 0;
+  await assert.rejects(() => notifyOpenClawPhoto(Buffer.from("not-an-image"), {
+    env: { LM_DATA_DIR: linked },
+    telegramTarget: "123456789",
+    idempotencyKey: "connector-evidence:symlink-root",
+    spawnSync() { spawns += 1; },
+  }), /Telegram photo delivery failed/);
+  assert.equal(spawns, 0);
 });
 
 test("OpenClaw photo delivery sanitizes failures, requires a positive top-level message ID, and removes media", async () => {
