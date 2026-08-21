@@ -1,6 +1,6 @@
 # Affiliate local money loop handover
 
-- Current installed runtime is immutable release
+- Pre-repair installed runtime (historical) was immutable release
   `b9b73047a1b76ebf219472d8022f24f846a7f060`; source and installed
   `scripts/local_loop.py` bytes match at SHA-256
   `a0b5db86c90a1105ad437369d68d0ee6b066c894075f60c26719a22bb874c027`.
@@ -16,7 +16,27 @@
   remains `NO_PENDING` on message `27069` with private outbox/sent `135/135`,
   and no public/provider effect changed. F01 and F02 are closed; F03 schema is
   installed but still awaits a real typed failure/retry readback; B01 remains
-  open.
+  open at that historical point; the current installed release and F03 proof
+  are recorded in the next bullets.
+- Current installed runtime is now immutable release
+  `557e814275a00de39fa7f45b1692608728790ec4`; source and installed
+  `scripts/local_loop.py` bytes match at SHA-256
+  `f0fa03daf9a6b359d5d081403de5df43b5d55d085e5a059e579c3aca8748e84a`.
+  The existing suite is `76/76`, compilation and diff checks pass, and the
+  existing owner completed post-install wake `e3ce34fe…` at `14:41:48+0900`
+  with `runs=231`, exit `0`, release-bound tool receipts, deduplicated
+  `provider-link.elevenlabs=VERIFIED`, revenue `COOLDOWN`, and Telegram `27179`.
+- The prior natural wake `afa4d937e6…` at `14:32:53+0900` recorded a real
+  `provider-link.elevenlabs` `TimeoutError` as
+  `BROWSER_TRANSIENT / RETRYABLE / effect=UNKNOWN`, due `14:38:14+0900`; the
+  same placement resumed as `VERIFIED / deduplicated=true` on the next owner
+  wake. That wake's official PartnerStack `capture` also failed closed at
+  `14:35:54+0900` with `NONZERO_EXIT` / return code `1`; the previous empty
+  artifact remained unchanged, Telegram message `27174` reported no money,
+  and retry is due `15:35:54+0900`. Release `557e81427` now preserves this
+  provider failure class and retry time in future durable failure and tool
+  receipts. B01 remains open: no transaction, settlement, payout, or money
+  exists.
 - Latest launchd management-plane readback at `2026-08-21T14:17:46+0900`
   returned exit `0` for both `launchctl print` and `launchctl list` on the
   registered `ai.anicca.affiliate-loop` label. The label is idle after its

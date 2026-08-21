@@ -173,35 +173,41 @@ deployment adapter for these same contracts, not a second implementation.
 
 ### 1.2 Truth checkpoint: implemented versus still hypothetical
 
-Current override: the installed runtime is `b9b73047a1b76ebf219472d8022f24f846a7f060`,
+Current override: the installed runtime is `557e814275a00de39fa7f45b1692608728790ec4`,
 not the older release identifiers retained in historical table rows below. Its
 source and installed `scripts/local_loop.py` bytes match at SHA-256
-`a0b5db86c90a1105ad437369d68d0ee6b066c894075f60c26719a22bb874c027`; the
-existing suite is `75/75`, compilation and diff checks pass. It includes the
+`f0fa03daf9a6b359d5d081403de5df43b5d55d085e5a059e579c3aca8748e84a`; the
+existing suite is `76/76`, compilation and diff checks pass. It includes the
 prior exact Repost matching, policy/source budget guards, per-item failure
 isolation, provider denominator retention, bounded Telegram reconciliation,
 versioned daily summaries, a canonical append-only `AFFILIATE_RUN_RECEIPT`
 for every launchd wake, and redacted effect-classified
 `AFFILIATE_TOOL_ATTEMPT` receipts for each admitted owner-stage tool. Tool
-failures are typed with bounded retry due-time and effect certainty. The
-post-install registered-owner wake
-`b389bfbf3c24206ad347bfb7222c77d9d2b843fe84e50eb9fe6d9f2131cf1a6b` joins
-`last-run.wake_event_uuid` to the RunReceipt `run_id`, records
-`terminal_state=READY_FOR_PUBLICATION`, `run_state=SUCCEEDED`, and
-`causal_parent.trigger=launchd`; its 21 ToolAttemptReceipt rows all carry the
-exact release SHA, unique `(scheduler_run_id, tool, attempt)` keys, typed retry
-fields, and no URL,
-credential, or secret. `launchctl print` reads `runs=228`, `last exit code=0`,
-and `StartInterval=600`. Telegram remains `NO_PENDING` on message `27069` with
-outbox/sent `135/135`, and no public/provider effect changed.
+failures are typed with bounded retry due-time and effect certainty; revenue
+cycle results now propagate their durable failure class and retry window into
+the ToolAttemptReceipt instead of erasing them. The post-install registered-
+owner wake `e3ce34fe584563269988e22c841af08fc19bdcdc63a12a07eb8dbe621ae6fd24`
+completed with `runs=231`, `last exit code=0`, 21 release-bound tool rows, and
+Telegram message `27179`; its provider link was `VERIFIED` and deduplicated,
+and no public/provider effect changed.
 
-The official empty artifact `e60af92707514598ed9c0b0c6bd5b8be9578d04bfbf969e829d455ec73a31c5f`
-observed at `13:32:51+0900` remains the latest money truth. Revenue stayed in
-cooldown on the post-install wake; the artifact has `commission_row_count=0`,
-`NO_LIVE_ROWS`, payout `EMPTY`, and reconciliation `0/0/0`. No official
+The natural wake immediately before that install recorded a real
+`provider-link.elevenlabs` `TimeoutError` as
+`BROWSER_TRANSIENT / RETRYABLE / effect=UNKNOWN`, with retry due at
+`14:38:14+0900`; the same owner later resumed the job and verified the link
+without duplication. Its official revenue `capture` then failed closed at
+`14:35:54+0900` with `NONZERO_EXIT` (return code `1`), leaving the prior
+hash-bound artifact unchanged and reserving the next capture for
+`15:35:54+0900`. The current runtime repair will preserve this provider failure
+class and retry state in both receipts on the next capture failure; the existing
+failure row predates the install and remains historical. The official empty artifact
+`e60af92707514598ed9c0b0c6bd5b8be9578d04bfbf969e829d455ec73a31c5f` observed at
+`13:32:51+0900` remains the latest money truth: `commission_row_count=0`,
+`NO_LIVE_ROWS`, payout `EMPTY`, reconciliation `0/0/0`, and rolling net
+`NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`. No official
 transaction, approved/paid commission, reversal, settlement, payout, known-cost
-net, or USD 10,000 proof exists. F01 and F02 are live-proven and closed; B01
-remains `WAITING_FOR_PROVIDER_TRANSACTION`.
+net, or USD 10,000 proof exists. F01, F02, and F03 are live-proven and closed;
+B01 remains `WAITING_FOR_PROVIDER_TRANSACTION`.
 
 This table prevents tests, fixtures, screenshots, or plans from being reported as
 live autonomous operation.
@@ -815,6 +821,26 @@ its one-shot wake, retains `runs=228`, `last exit code=0`, and
 result is not a current owner failure; it remains historical evidence only.
 This closes the launchd scheduling/readback concern, but it does not close B01:
 the official commission artifact is still empty and no money is claimed.
+
+### 1.1.31 Latest typed failure/retry and capture repair
+
+The natural owner wake `afa4d937e6…` at `14:32:53+0900` produced the first
+live typed browser failure after the observability release: the
+`provider-link.elevenlabs` attempt ended `FAILED` with
+`failure_type=TimeoutError`, `failure_class=BROWSER_TRANSIENT`,
+`retry_state=RETRYABLE`, a due time of `14:38:14+0900`, and
+`effect_certainty=UNKNOWN`. The subsequent existing-owner wake
+`ab604b32b9…` at `14:41:48+0900` resumed the same placement and read back
+`VERIFIED` with `deduplicated=true`, proving no second link effect. The same
+first wake's official revenue capture returned `REVENUE_CYCLE_FAILED` at
+`stage=capture`, `failure_type=NONZERO_EXIT`, return code `1`; Telegram sent
+message `27174` with no transaction or estimated revenue. Release `557e81427`
+now carries `failure_class=PROVIDER_TRANSIENT`, `retry_state=RETRYABLE`, and
+the durable `retry_after` into both receipts for a future capture failure; its
+post-install wake completed
+with exit `0`, revenue `COOLDOWN`, and Telegram `27179`; no new artifact,
+transaction, payout, or money exists. F03 is closed from this real failure and
+recovery; B01 remains open until a non-empty official transaction row appears.
 
 ### 1.2.0 Audited executable boundary
 
@@ -2871,8 +2897,15 @@ receipt readback, SSOT state update, commit, and push to both canonical remotes.
   receipts are replay-safe, contain no raw URLs or credentials, and classify
   deduplicated external work as `NO_EFFECT`; this is observability proof, not
   revenue proof.
-- [ ] **F03** Return typed owned/provider/browser/X failures with retry due-time and
-  effect certainty; remove broad root-cause-erasing terminal errors.
+- [x] **F03** Return typed owned/provider/browser/X failures with retry due-time and
+  effect certainty; remove broad root-cause-erasing terminal errors. The
+  natural owner wake `afa4d937e6…` recorded a real
+  `provider-link.elevenlabs` `TimeoutError` as
+  `BROWSER_TRANSIENT / RETRYABLE / UNKNOWN` with a retry due-time; the next
+  owner wake resumed the same placement as `VERIFIED / deduplicated=true` with
+  no duplicate effect. Release `557e81427` additionally propagates
+  `REVENUE_CYCLE_FAILED`'s provider class and durable retry time into the
+  admitted-tool receipt; no money is implied.
 - [ ] **F04** Add bounded retry, per-provider/channel quarantine, daily action/cost
   caps, disk guard, browser-owner health, and watchdog inside the existing ownership graph.
 - [ ] **F05** Implement diagnose→one allowlisted repair→postcondition→same-job resume;
@@ -3059,28 +3092,27 @@ cursor; later work MUST NOT jump ahead of an unmet gate.
 
 Current execution cursor (latest owner readback): **E1-H, close the first real
 transaction path.** Publication recovery and the ten-placement readiness gate
-are complete through the existing owner. Release `b9b73047a` is installed at
+are complete through the existing owner. Release `557e81427` is installed at
 `current`; its installed/source `local_loop.py` bytes match (SHA-256
-`a0b5db86…74c027`) and the existing suite is `75/75` with compilation and diff
+`f0fa03da…8e84a`) and the existing suite is `76/76` with compilation and diff
 checks clean. The existing `ai.anicca.affiliate-loop` owner completed the
-post-install wake `b389bfbf…` with `runs=228`, `last exit code=0`, and
-`StartInterval=600`; its canonical RunReceipt joins exactly to
-`last-run.wake_event_uuid`, and 21 ToolAttemptReceipt rows join through the
-same scheduler run ID. All rows carry the installed release SHA, typed retry
-fields, and contain no secrets or raw links. Telegram remains `NO_PENDING` on
-`27069`, with outbox and sent `135/135`, so the owner replay added no external
-send. F01 and F02 are closed; F03 has its schema installed but still needs a
-real typed failure/retry readback.
+post-install wake `e3ce34fe…` with `runs=231`, `last exit code=0`, and
+`StartInterval=600`; its 21 ToolAttemptReceipt rows carry the new release SHA.
+The preceding natural wake recorded a real typed browser timeout and a closed
+official capture failure; the same placement then resumed as verified without
+duplication. Telegram is `SENT` on `27179` with no new public/provider effect.
+F01, F02, and F03 are closed; B01 remains open for the first non-empty official
+transaction row.
 The prior bounded Telegram-history repair and its append-only retractions remain
 historical audit evidence and have no public or money effect.
 
 The canonical ledger still has 20 English rows, 20 dedicated provider-link
 keys, 20 owned public URLs, 34 provider-link clicks, and 32 unique provider
-clicks; the aggregate PartnerStack overview remains 43 clicks (42
+clicks; the aggregate PartnerStack overview now reads 44 clicks (43
 post-baseline), with 0 signups, 0 paid signups, and zero commission/payout
 money. Dev.to remains 40 total views across five articles and is not an X
 denominator; X impressions and owned-page visits are `UNKNOWN`. Repost
-observed 56 valid actions at the latest capture, with 0 exact Affiliate
+observed 57 valid actions at the latest capture, with 0 exact Affiliate
 campaign joins and no revenue credit. The pre-fix receipt `f111…` remains
 historical evidence of the old misbinding, while the post-fix Repost delivery
 is exact. The latest official artifact remains empty and rolling net remains
