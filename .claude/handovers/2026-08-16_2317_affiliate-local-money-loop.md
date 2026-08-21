@@ -27,6 +27,17 @@
   transaction, or money was created. F04 action/cost caps/quarantine and F05
   repair postconditions remain open; B01 still waits for a non-empty official
   PartnerStack transaction row.
+- Release `4d6ad03e08be65ac5d43b45c1e1c039423878566` adds the per-tool
+  repeated-failure quarantine and is installed as `current`. Existing owner
+  wake `53583cb7…` completed at `2026-08-21T17:15:56+0900`, exit `0`; the
+  quarantine snapshot is `CLEAR` at threshold `3` because provider-link
+  failures are separated by successful readbacks. The wake kept owner health
+  `HEALTHY`, disk `DISK_GUARD_BLOCKED` (`1611776000` bytes free vs 10 GiB),
+  provider `AUTHENTICATED`, link `VERIFIED`, publication `ALREADY_LIVE`,
+  revenue `COOLDOWN`, rolling net `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS /
+  NOT_REACHED`, costs `UNKNOWN`, Telegram `NO_PENDING`, and Repost `58/0`
+  exact joins. This is no-effect containment only; daily action/cost caps and
+  F05 repair postconditions remain open, and B01 still has no transaction.
 - Commit `43335da00` is installed as immutable `current`; source/installed
   budget scripts match and the suite is `80/80`. Source-refresh/composition
   replays at `16:49+0900` exited `0` (`runs=247` / `runs=258`), and campaign

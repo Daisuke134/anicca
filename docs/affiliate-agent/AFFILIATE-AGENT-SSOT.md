@@ -1062,6 +1062,28 @@ and channel quarantine, daily action/cost caps, and F05's one-repair
 postcondition remain open. B01 is still waiting for the first official
 non-empty PartnerStack transaction row.
 
+### 1.1.41 F04 repeated-failure quarantine installed and clear
+
+Release `4d6ad03e08be65ac5d43b45c1e1c039423878566` is installed and the
+existing money owner replayed wake
+`53583cb773d971c6e69b6473e1444dce37404078cb53822a6a6ff9a9d1556716` at
+`2026-08-21T17:15:56+0900`, launchd `runs=251`, exit `0`. The new append-only
+quarantine snapshot has threshold `3`, state `CLEAR`, and no quarantined
+tools: the historical provider-link timeouts are separated by successful
+readbacks, so the provider is not incorrectly disabled. The wake preserved
+owner health `HEALTHY`, disk guard `DISK_GUARD_BLOCKED` (free
+`1611776000` bytes vs 10 GiB), provider `AUTHENTICATED`, link `VERIFIED`,
+publication `ALREADY_LIVE`, revenue `COOLDOWN`, rolling net
+`NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`, cost coverage
+`UNKNOWN`, Telegram `NO_PENDING`, and Repost `58` actions / `0` exact joins /
+`NO_REVENUE_CREDIT`.
+
+For any external-write tool, three consecutive typed failures now produce a
+no-effect `QUARANTINED` result for that tool only; a later successful or
+no-effect receipt resets the streak. This closes the F04 quarantine
+sub-behavior only. Daily action/cost caps and F05's allowlisted repair plus
+postcondition remain open; B01 still has no official transaction row.
+
 ### 1.2.0 Audited executable boundary
 
 The installed ownership graph has six launchd labels: three persistent browser
@@ -3128,9 +3150,9 @@ receipt readback, SSOT state update, commit, and push to both canonical remotes.
   admitted-tool receipt; no money is implied.
 - [ ] **F04** Add bounded retry, per-provider/channel quarantine, daily action/cost
   caps, disk guard, browser-owner health, and watchdog inside the existing ownership graph.
-  **Partial:** the 10 GiB disk guard and read-only owner-health observation are
-  installed and live-proven in §§1.1.39–1.1.40; action/cost caps, quarantine,
-  and repair/watchdog behavior remain open.
+  **Partial:** the 10 GiB disk guard, read-only owner-health observation, and
+  repeated-failure quarantine are installed and live-proven in §§1.1.39–1.1.41;
+  daily action/cost caps and repair/watchdog behavior remain open.
 - [ ] **F05** Implement diagnose→one allowlisted repair→postcondition→same-job resume;
   escalate or quarantine when the repair postcondition fails.
 - [x] **F06** Observe one real recoverable capture failure and prove `SELF_HEALED`,
