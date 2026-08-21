@@ -61,6 +61,9 @@
   `monetization_verified=true`、`asset_verified=true`、`eyecatch_verified=true`、`body_media_verified=true`を返した。
   しかしresumeの実行中に空きが`10.62GiB`まで低下し、`disk-pressure.block`が再生成されたため、publication-stateの
   `note/ja=ambiguous`をliveへ書くstate mutationはまだ行っていない。これは外部の公開事実とlocal receiptの遅延を分けた状態である。
+- 既存`com.anicca.emergency-disk-guard`を1回kickしたが、allowlist候補7件は全て`open`で、reclaim 0 bytes・
+  `no-eligible-reclaim`となった。その後の空きは`9.5GiB`、swap使用`508MB`で、Writerは再びpressure gate下にある。
+  guardの連打、pressure flagの手動削除、protected storeの推測削除は行わない。
 
 ### ownerless repair handoff の回収実測
 
