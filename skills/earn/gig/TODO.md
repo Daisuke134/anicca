@@ -778,7 +778,11 @@ a later successful example.
   `read_these_first` rather than truncating history into the prompt. Production Manledge proof is
   15 ledger rows with 15 unique marketplace message identities (buyer 7, seller 6, system 2),
   and the compiled talkroom receipt independently reports `message_count: 15`.
-- [ ] P7 — Bind every buyer attachment and its content receipt to the same context packet.
+- [x] P7 — Bind every buyer attachment and its content receipt to the same context packet. Haru's
+  official talkroom exposes exactly three buyer files (`image.png`, `kaitori-area_img2-2.jpg`,
+  `kaitori-area_img1.jpg`; 1,575,075 / 799,982 / 1,070,716 bytes). The project holds exactly those
+  three files, recomputed disk SHA256 equals every `source_refs` receipt, and all three absolute
+  paths appear in `combined_context.buyer_attachments` and `read_these_first`.
 - [ ] P8 — Persist one context digest plus source receipts before semantic work begins.
 - [ ] P9 — Suppress any question whose answer already exists in the bound context.
 - [ ] P10 — Permit one clarification only for a genuinely absent fact that blocks truthful work.
