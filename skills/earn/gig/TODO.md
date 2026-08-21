@@ -750,7 +750,15 @@ a later successful example.
 - [x] P2 — Give every collected order one stable marketplace identity. The same receipt contains
   five unique numeric `talkroom_id` values and five matching unique `contract_id` values of the
   form `talkroom:<talkroom_id>`; no local sequence or capture timestamp participates in identity.
-- [ ] P3 — Bind the original application/proposal to each purchased order's context packet.
+- [x] P3 — Bind the original application/proposal to each purchased order's context packet. The
+  selected-talkroom collector now follows the already-observed official `offer_reference`, stores
+  its authenticated body under `source/proposal/`, and the context compiler includes it in
+  `sources_present` and `read_these_first`. Live Haru proof read
+  `/direct_offers/edit/6332954`, persisted 1,489 bytes at
+  `source/proposal/offer-18169583.json`, and compiled context digest
+  `c3c751c400c264e2d098569db4a10d4c625c75049a5f2020850d42a6481df316` with
+  `proposal_read_first=true`. Orders without an official application/offer retain explicit absence;
+  the loop never invents one.
 - [ ] P4 — Bind every pre-purchase DM to the same context packet.
 - [ ] P5 — Bind purchased scope, agreed price and deadline to the same context packet.
 - [ ] P6 — Bind the complete append-only talkroom history to the same context packet.
