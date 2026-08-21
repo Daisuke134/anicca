@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | M2 — `CFO-OPS3a`, `CFO-OPS3b`, `CFO-1j`, `CFO-2b.2`, `CFO-2b.3`, `CFO-2b.4`, `CFO-2b.5`, `CFO-2b.6`, `CFO-2b.7`, `CFO-2b.8`, `CFO-2b.9`, `CFO-2c`, `CFO-2d`, `CFO-2d2`, `CFO-2d3`, `CFO-2e`, `CFO-4a`, `CFO-4b`, `CFO-4d`, `CFO-4e`, `CFO-5a`, `CFO-5a2`, and `CFO-5b` are closed; M3/Binance and M4c are deferred, M5c is next |
+| Status | M2 — `CFO-OPS3a`, `CFO-OPS3b`, `CFO-1j`, `CFO-2b.2`, `CFO-2b.3`, `CFO-2b.4`, `CFO-2b.5`, `CFO-2b.6`, `CFO-2b.7`, `CFO-2b.8`, `CFO-2b.9`, `CFO-2c`, `CFO-2d`, `CFO-2d2`, `CFO-2d3`, `CFO-2e`, `CFO-4a`, `CFO-4b`, `CFO-4d`, `CFO-4e`, `CFO-5a`, `CFO-5a2`, `CFO-5b`, `CFO-5d`, and `CFO-5e` are closed; M3/Binance and M4c are deferred, M5c real cycle is pending |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
@@ -1301,10 +1301,11 @@ ingestion. They are not unchecked M1 items and cannot become the active CFO item
       and does not start an executor. Reader and executor secret refs must be distinct. M5c real cycle remains pending.
 - [ ] **CFO-5c** Execute one bounded real cycle, reconcile the external receipt back into the next CFO snapshot,
       and report realized P&L and cost.
-- [ ] **CFO-5d** Add repair and stop-review workflows. Live shutdown remains gated when another session or human may
-      own the same state.
-- [ ] **CFO-5e** Add human/agent hiring only after expense authorization, deliverable acceptance, and payment receipt
-      are represented in the same ledger.
+- [x] **CFO-5d** Add repair and stop-review workflows. Live shutdown remains gated when another session or human may
+      own the same state. Canonical commit `fb8a97d3f` adds policy-only repair/stop-review decisions with execute=false.
+- [x] **CFO-5e** Add human/agent hiring only after expense authorization, deliverable acceptance, and payment receipt
+      are represented in the same ledger. The same commit blocks incomplete expense/deliverable/payment evidence and
+      never performs hiring or payment.
 
 ### Verification commands for the planning slice
 
@@ -1471,3 +1472,11 @@ executor secret references, tenant/business identity, an owner-approved mandate,
 The current partial/unknown evidence returns `blocked / business_not_verified_profitable / execute=false`; a complete
 policy returns only `ready_for_owner_approval` and still `execute=false`. No executor, wallet key, trade, transfer, or
 hiring action was called. M5c is pending a verified profitable business and explicit owner approval.
+
+### CFO-5d/5e closure correction (2026-08-21)
+
+Canonical commit `fb8a97d3f` adds policy-only repair/stop-review and hiring-expense receipt gates. A failed executor
+with owner stop permission returns `stop-review` but `execute=false`; unresolved state returns `repair`. Hiring is
+accepted only when expense authorization, deliverable acceptance, and payment receipt are all verified; otherwise it
+returns `blocked`. No shutdown, hiring, payment, wallet, or executor action occurred. M5c remains the only pending
+capital item and requires explicit owner approval plus a verified profitable business.
