@@ -8,7 +8,7 @@ import urllib.request
 
 def draft(*, language: str, hook: str, pain_angle: str, teaching: str, action: str, cta: str,
           model: str = "qwen2.5:1.5b") -> dict:
-    prompt = ("Return JSON only with body. Preserve these exact components in this order: "
+    prompt = ("Return JSON only in this exact shape: {\"body\":\"...\"}. Preserve these exact components in this order: "
               f"hook={hook!r}; pain={pain_angle!r}; teaching={teaching!r}; action={action!r}; cta={cta!r}. "
               "Write an original short-video script. No medical, therapeutic, guaranteed, sleep, or anxiety claims. "
               f"Language={language}.")
