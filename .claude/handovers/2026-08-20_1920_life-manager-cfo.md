@@ -366,6 +366,11 @@ server does not advertise the required CIMD/token-endpoint-auth-none combination
 mutation occurred. The Telegram Web login link remains the only owner path for this connector; a separate static LINK
 client/grant is required for autonomous `request_refresh`.
 
+Owner-directed correction: canonical commit `3935fdbbd` removed the Web login link and additional-login request from
+stale warnings. The report now says the connected plugin read succeeded, identifies the provider snapshot, and promises
+the next hourly recheck. Stable release `20260821T232013-61241` produced revision `22`, exit `0`, and Telegram receipt
+`27911`; live renderer checks pass 5/5 with no login URL. The loop continues to use the same plugin credential context.
+
 Credential audit: no `MONEYTREE_*`/`MT_LINK_*` environment entries, Moneytree-related Keychain service, or Moneytree
 LINK client/token exists in the bounded CFO state/config paths. The App Server bearer token is connector-owned and is not
 a Web password or exportable `request_refresh` grant. No secret value was searched, printed, copied, or submitted.

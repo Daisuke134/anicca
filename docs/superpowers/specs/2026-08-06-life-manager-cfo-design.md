@@ -1615,6 +1615,15 @@ transaction `2026-08-18`; Telegram receipt is `message_id=27892`. Live renderer 
 instruction, next-hour recheck, exact login link, and lag date pass `5/5`. This makes the owner repair path one tap away;
 it does not claim a bank refresh before the owner logs in/synchronizes.
 
+### Connected-plugin wording correction (2026-08-21)
+
+At the owner's direction, canonical commit `3935fdbbd` removes the Moneytree Web login link and all additional-login
+requests from the stale warning. Japanese and English now explicitly say the connected Moneytree plugin read succeeded,
+the response is a provider snapshot rather than realtime bank data, and the same loop will recheck next hour. No
+credential, URL, amount, or provider behavior changed. Stable release `20260821T232013-61241` ran revision `22` with
+`status=sent`, `delivered=true`, exit `0`, `providerDataFreshness=stale`, and latest transaction `2026-08-18`;
+Telegram receipt is `message_id=27911`. Live renderer checks pass `5/5`, including the absence of the login URL.
+
 ### Moneytree plugin OAuth login audit (2026-08-21)
 
 To honor the request to log in through the same plugin, the running Codex App Server was asked to execute
