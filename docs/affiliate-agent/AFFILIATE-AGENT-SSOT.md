@@ -173,19 +173,24 @@ deployment adapter for these same contracts, not a second implementation.
 
 ### 1.2 Truth checkpoint: implemented versus still hypothetical
 
-Current override: the installed runtime is `2b0052bedd82b2cb0ccba0d3990e913a616ce566`,
+Current override: the installed runtime is `b47dc853eec1b98ccac5b4fe1405986cd92b7a7d`,
 not the older release identifiers retained in historical table rows below. It
 includes exact Repost campaign matching through either `post_url` or
 `source_url`, the policy-budget queue starvation repair, and per-item policy-failure
 isolation described above, plus the source-selector budget-block retry guard
 described in section 1.1.13.
-The official artifact `c179a393…e3b5792c` and Telegram readback in section
-1.1.14 are the latest money truth. The installed owner completed the due wake
-at 11:17 JST with an empty official report and a deduplicated Telegram delivery;
-no official transaction or money exists.
+The official empty artifact `b65723e65e3fe309dda373b1cd7edda0b6cfb8ae754c208f7da827154b9fecce`,
+unique-click readback, and Telegram delivery in section 1.1.23 are the latest
+money truth. The installed owner completed the due wake at 12:22 JST with
+34/32 placement clicks/unique clicks, 0 commission rows, and a deduplicated
+Telegram delivery; no official transaction or money exists.
 
 This table prevents tests, fixtures, screenshots, or plans from being reported as
 live autonomous operation.
+
+The `Current override` paragraph immediately above is authoritative for the
+installed release; runtime identifiers in the table below are retained as
+historical evidence and are not a competing current-state claim.
 
 | Surface | Current truth | What is not yet proven |
 |---|---|---|
