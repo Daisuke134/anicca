@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | `CFO-OPS3b`, `CFO-1j`, and `CFO-2b.2b2` are closed; `CFO-2b.2c` is the next active business-instrumentation slice |
+| Status | `CFO-OPS3b`, `CFO-1j`, and `CFO-2b.2` (including `2b.2b2` and `2b.2c`) are closed; `CFO-2b.3` is the next active business-instrumentation slice |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Canonical target is local `/Users/anicca/Projects/life-manager-main/apps/life-manager`; existing `apps/life-call` code is migration evidence, not the final owner |
 | Role split | Sol specifies/verifies; Luna implements production code/tests |
@@ -45,15 +45,16 @@ Only the first unchecked business item is active after the parent spec's operati
   - [x] **2b.1c** Compose one closed Life Manager monthly coverage fact from the existing revenue, direct-cost,
         local-usage, and shared-subscription evidence. With no paid Stripe receipt, reversal/payout work is not
         applicable; the first future paid receipt changes coverage to partial and blocks profit until reconciliation.
-- [ ] **CFO-2b.2 — Anicca iOS**: Apple/RevenueCat receipts, payout state, attributed API cost.
+- [x] **CFO-2b.2 — Anicca iOS**: Apple/RevenueCat receipts, payout state, attributed API cost; unavailable payout/API
+      cost remains explicit unknown/null in the composed fact.
   - [x] **2b.2a** Normalize positive production App Store purchase/renewal events already stored by the RevenueCat
         webhook into privacy-safe provider-reported gross receipts.
-  - [ ] **2b.2b** Read Apple Finance Detail as the authoritative settled Partner Share source and reconcile the
+  - [x] **2b.2b** Read Apple Finance Detail as the authoritative settled Partner Share source and reconcile the
         RevenueCat receipt set without turning an unavailable fiscal period into zero.
     - [x] **2b.2b1** Normalize one allowlisted Anicca Finance Detail sale/return row into signed Partner Share.
     - [x] **2b.2b2** Parse one complete fiscal report, prove its metadata/header/footer boundary, and reconcile its
           closed Anicca totals with RevenueCat without treating the current unavailable report as zero.
-  - [ ] **2b.2c** Compose the Anicca iOS business fact from reconciled revenue, payout coverage, attributed local
+  - [x] **2b.2c** Compose the Anicca iOS business fact from reconciled revenue, payout coverage, attributed local
         token usage, and the still-missing production API-cost coverage.
 - [ ] **CFO-2b.3 — Writer Agent**: publisher receipts and its measured runtime cost.
 - [ ] **CFO-2b.4 — Affiliate Agent**: network commission receipts and runtime cost.
@@ -518,7 +519,7 @@ Apple Developer](https://developer.apple.com/documentation/appstoreconnectapi/ge
   (`expected status=absent`, observed `status=unavailable`); it is not caused by this two-file parser and is not
   reported as a green full-suite result. No launchd, loop, database, or Telegram runtime effect occurred in this slice.
 - No current Apple fiscal report was available for a live read, so no current-period zero, payout, bank landing, API
-  cost, FX conversion, profit, or ROI is claimed. `CFO-2b.2c` is now the next active item.
+  cost, FX conversion, profit, or ROI is claimed. The subsequent `CFO-2b.2c` slice is recorded below as closed.
 
 ## 12.3 CFO-2b.2c slice brief — Anicca iOS business fact composition
 
@@ -572,15 +573,27 @@ fact therefore preserves provider evidence and coverage labels instead of claimi
 
 ### CFO-2b.2c acceptance
 
-- [ ] A complete parser projection composes a frozen partial Anicca iOS fact with Apple signed totals and RevenueCat
+- [x] A complete parser projection composes a frozen partial Anicca iOS fact with Apple signed totals and RevenueCat
       gross side by side; local token usage remains a reported subtotal and unavailable API cost remains `null`, never
       zero.
-- [ ] An unavailable Apple report composes an explicit unavailable period with `apple_partner_share_totals=null`;
+- [x] An unavailable Apple report composes an explicit unavailable period with `apple_partner_share_totals=null`;
       no current-period revenue, payout, landed cash, profit, or ROI is inferred.
-- [ ] Wrong statuses, missing/extra keys, negative/unsafe counts, malformed decimal, unsorted/unknown exceptions,
+- [x] Wrong statuses, missing/extra keys, negative/unsafe counts, malformed decimal, unsorted/unknown exceptions,
       inconsistent nullability, hostile objects, and raw provider identity fail closed with one fixed redacted error.
-- [ ] Inputs remain unchanged, output is recursively frozen, no raw identifier escapes, and focused tests, syntax, diff,
+- [x] Inputs remain unchanged, output is recursively frozen, no raw identifier escapes, and focused tests, syntax, diff,
       and exact two-file scope pass. No loop, launchd, database, or Telegram effect occurs.
+
+### CFO-2b.2c completion evidence
+
+- Canonical commit `4b715d94d` adds `composeAniccaIosBusinessFact` and focused regressions to the existing two-file
+  owner; `origin/feature/cfo-ops3a-canonical` resolves to the exact commit. Input/event decimals remain capped at 32
+  characters, while parser-produced Apple/RevenueCat aggregate totals accept up to 128 characters; a parser-to-composer
+  regression proves two valid 32-character RevenueCat events can produce and compose a 33-character gross aggregate.
+- Focused Node tests pass `7/7`; `node --check` and `git diff --check` pass. The full `npm test` gate is `846/847` with
+  one pre-existing TECH PLAY connector assertion (`expected status=absent`, observed `status=unavailable`); no CFO
+  test failed. No loop, launchd, database, provider, or Telegram runtime effect was introduced by this pure slice.
+- The output keeps Apple settled Partner Share separate from RevenueCat gross, preserves payout/bank/API-cost absence
+  as unknown/null, freezes the result recursively, and emits no raw provider identifiers. `CFO-2b.3` is now next.
 
 ### CFO-2b.2c implementation target
 
@@ -628,7 +641,8 @@ add a business-fact database table, renderer, API route, launchd wiring, or Tele
   category coverage explicitly unavailable, and visible partial pagination. An immediate real read at
   `asOf=2026-08-21T05:04:12Z` matched the delivered balance parity. No raw account number, provider ID, description,
   category label, credential, or raw payload was persisted or sent. Shared transport and `CFO-1j` are closed; the LLM
-  spending guardian remains disabled until its later verified-outgoing and reconciliation gates. `CFO-2b.2c` is next.
+  spending guardian remains disabled until its later verified-outgoing and reconciliation gates. `CFO-2b.2c` is closed and
+  `CFO-2b.3` is next.
 - Provider-freshness correction (2026-08-21): two direct read-only calls at `2026-08-21T05:09:58Z` and
   `2026-08-21T05:11:43Z` returned the same provider-reported balance fingerprint as revision 5, so the loop is not
   serving a stale local cache; the Moneytree provider value itself had not changed. Moneytree's official [MUFG
@@ -640,6 +654,11 @@ add a business-fact database table, renderer, API route, launchd wiring, or Tele
   reports `Moneytree取得時刻／銀行側更新時刻は不明`; the wording fix is canonical commit `c806254b8` and is installed
   in stable release `20260821T142520-86514`. It will not call the value realtime/latest until an authorized
   refresh/metadata path exists.
+- `CFO-2b.2c` closure (2026-08-21): canonical code commit `4b715d94d` adds the pure Anicca iOS business-fact
+  composer and focused boundary regressions. Focused tests pass `7/7`; the full package gate remains `846/847` with
+  only the pre-existing TECH PLAY `absent` versus `unavailable` assertion. Apple settled Partner Share and RevenueCat
+  gross remain separate; payout, bank landing, and missing API cost remain unknown/null. No loop or launchd behavior
+  changed. The next active item is `CFO-2b.3` Writer Agent instrumentation.
 - Host-parity decision (2026-08-21): the official Codex MCP/skills/plugins/App Server/SDK surfaces support sharing
   user config, skill roots, and installed Apps across local Codex clients, but a fresh `codex exec` is not the main
   ChatGPT conversation. The Moneytree bundle is present in local plugin cache and `codex app-server` reports it
