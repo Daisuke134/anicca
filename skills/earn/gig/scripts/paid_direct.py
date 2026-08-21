@@ -103,6 +103,13 @@ def _write(path: Path, value: Any) -> None:
     temporary.write_text(json.dumps(value, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
     os.replace(temporary, path)
 
+
+def _project_workspace(root: Path, prefix: str) -> tempfile.TemporaryDirectory:
+    """Keep active Paid work outside the machine-wide temp tree cleaned by other loops."""
+    runtime = root / ".runtime"
+    runtime.mkdir(parents=True, exist_ok=True)
+    return tempfile.TemporaryDirectory(prefix=prefix, dir=runtime)
+
 def _text(value: Any) -> str: return str(value or "").strip()
 
 def _comparison_key(value: str) -> str: return " ".join(value.split())
@@ -727,7 +734,7 @@ def _prepare_blind_output_audit(
     except (AttributeError, KeyError, OSError, TypeError, ValueError, json.JSONDecodeError) as error:
         raise Failure("file_visual_evidence") from error
 
-    with tempfile.TemporaryDirectory(prefix="paid-output-audit-") as temporary:
+    with _project_workspace(root, "paid-output-audit-") as temporary:
         isolated = Path(temporary)
         copied: list[Path] = []
         for blind_id, source, _sha256, _expected, _role in crops:
@@ -1539,7 +1546,7 @@ def _prepare_source_census(args, root: Path, requirements_sha256: str, code_root
     existing = _trusted_source_census(root, requirements_sha256)
     if existing is not None:
         return existing[0]
-    with tempfile.TemporaryDirectory(prefix="paid-source-census-") as temporary:
+    with _project_workspace(root, "paid-source-census-") as temporary:
         isolated = Path(temporary)
         copied_sources: list[dict[str, str]] = []
         for index, source in enumerate(sources):
@@ -2020,7 +2027,7 @@ def _promote_staged_file_bundle(staging: Path, root: Path, expected_version: str
 
 def _run_isolated_file_owner(args, root: Path, context: Path, prompt_text: str,
                              owner_evidence: Path) -> int:
-    with tempfile.TemporaryDirectory(prefix="paid-file-owner-") as temporary:
+    with _project_workspace(root, "paid-file-owner-") as temporary:
         staging = Path(temporary)
         prior_artifact = _prepare_file_owner_staging(root, context, staging)
         prompt = staging / "owner.prompt.txt"
