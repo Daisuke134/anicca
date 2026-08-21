@@ -106,7 +106,7 @@ function transactionText(locale, value, reportingDate) {
   return `\n\n${title}\n${rows}\n${page}${latest}`;
 }
 function validateSnapshot(snapshot) {
-  exact(snapshot, ROOT_KEYS, [...ROOT_KEYS].filter((key) => key !== "aiCost"));
+  exact(snapshot, ROOT_KEYS, [...ROOT_KEYS].filter((key) => key !== "aiCost" && key !== "business"));
   if (snapshot.schemaVersion !== 1) fail("invalid_schema_version");
   date(snapshot.reportingDate);
   if (!Number.isSafeInteger(snapshot.revision) || snapshot.revision < 1) fail("invalid_revision");
