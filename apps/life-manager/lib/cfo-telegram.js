@@ -100,8 +100,8 @@ function transactionText(locale, value, reportingDate) {
     ? Math.floor((Date.parse(`${reportingDate}T00:00:00Z`) - Date.parse(`${latestDate}T00:00:00Z`)) / 86400000)
     : null;
   const latest = latestDate === null ? "" : locale === "ja"
-    ? `\n⚠️ Moneytreeのペイロードはプロバイダーのスナップショットです。Moneytree返却データの最新取引は${escapeHtml(latestDate)}${Number.isSafeInteger(lagDays) && lagDays > 0 ? `（${lagDays}日前）` : ""}。残高はリアルタイムではありません。銀行側更新時刻は不明です。オーナーはMoneytreeアプリ／Webを開いて同期してください。次回の毎時読み取りで再確認します。\n<a href="https://myaccount.getmoneytree.com/login">Moneytree Webを開く</a>`
-    : `\n⚠️ The Moneytree payload is a provider snapshot. The latest transaction returned by Moneytree is ${escapeHtml(latestDate)}${Number.isSafeInteger(lagDays) && lagDays > 0 ? ` (${lagDays} days old)` : ""}. The balance is not realtime; bank-side update time is unknown. The owner should open the Moneytree app/Web to sync. The next hourly read will recheck.\n<a href="https://myaccount.getmoneytree.com/login">Open Moneytree Web</a>`;
+    ? `\n⚠️ 接続済みMoneytreeプラグインの読み取りは成功しています。Moneytree返却データの最新取引は${escapeHtml(latestDate)}${Number.isSafeInteger(lagDays) && lagDays > 0 ? `（${lagDays}日前）` : ""}。これはプロバイダーのスナップショットで、残高はリアルタイムではありません。銀行側更新時刻は不明です。ループは次回の毎時読み取りで再確認します。ループは追加のログインを要求しません。`
+    : `\n⚠️ The connected Moneytree plugin read succeeded. The latest transaction returned by Moneytree is ${escapeHtml(latestDate)}${Number.isSafeInteger(lagDays) && lagDays > 0 ? ` (${lagDays} days old)` : ""}. This is a provider snapshot. The balance is not realtime; bank-side update time is unknown. The loop will recheck on the next hourly read. The loop does not request an additional login.`;
   const title = locale === "ja" ? "💳 最近の取引（実測）" : "💳 Recent transactions (Measured)";
   return `\n\n${title}\n${rows}\n${page}${latest}`;
 }
