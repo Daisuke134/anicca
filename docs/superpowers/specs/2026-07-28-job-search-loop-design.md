@@ -18,8 +18,9 @@ Deloitte, Ernst & Young/EY, and PwC remain one hard exclusion set; historical
 terminal evidence is preserved and never reopened. The Workday evaluator accepts
 its production `input type=text` email field when labelled `Email Address*`; the
 focused ATS suite is green. Ashby remains the primary adapter; Workday is a
-secondary adapter under repair. Guardian and the Life Manager Career surface remain
-in progress.
+secondary adapter under repair. The catch-up correction report was acknowledged by
+Telegram as message `27323`. Guardian and the Life Manager Career surface remain in
+progress.
 **Done when:** `Daisuke134/life-manager` is the only versioned source and the
 resident system can discover, qualify, tailor and submit truthful eligible
 applications on the configured recurring cadence without a product-imposed daily
