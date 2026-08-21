@@ -33,6 +33,12 @@ claims. A claim or `submit_unknown` ends the wake. A candidate-level
 next distinct eligible URL in the queue. Stop the wake only after a claim,
 `submit_unknown`, or exhaustion of the verified candidate queue.
 
+A candidate-level blocker is never a terminal pass result. Do not return the final JSON after recording one blocked candidate. Keep the verified candidate queue in
+memory, append the exact blocker, and immediately probe the next distinct official
+ATS URL. The final JSON may contain many `blocked` entries, but it is allowed only
+after a claim, `submit_unknown`, or exhaustion of the queue (with at least five
+distinct eligible official URLs attempted when discovery returned that many).
+
 The private profile already contains the verified legal facts
 `legal_japan_work_authorization` and `legal_no_japan_sponsorship_required`: Daisuke is a
 Japanese citizen with unrestricted authorization to work in Japan and does not require
@@ -119,6 +125,11 @@ candidate-level `not_submitted`; then continue to the next distinct eligible
 official ATS URL. This pre-claim gate must run even when the ATS evaluator says
 `claim_ready=true`, so an unanswerable form never consumes the one-claim wake
 fence or a daily slot.
+
+Never broaden a general attestation such as “has experience” into a specific
+Python skill, client-facing duty, minimum-years threshold, legal answer, or
+employer-specific motivation. Those answers require their own exact verified fact
+or approved material; otherwise the candidate is blocked and the queue continues.
 
 Do not choose `Autofill with Resume` before resume routing, and do not improvise an
 account password or expose credentials in evidence. At a verified

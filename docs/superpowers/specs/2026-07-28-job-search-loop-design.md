@@ -667,10 +667,17 @@ Acceptance and test matrix:
 | 2 | Missing verified facts fail closed without guessed answers or submit | Anthropic wake `daily-20260820-234421`, outcome `not_submitted`, Telegram ACK `26307` |
 | 3 | A candidate-level blocker releases the candidate and permits queue continuation | canonical prompt candidate-level continuation assertions; daily slot projection remained empty |
 | 4 | ATS claim-ready, URL identity, Ledger event ordering and confirmation paths remain green | `test_ats.py` + `test_canonical_runtime.py` (23 tests, 6 subtests); `test_ledger.py` + `test_submission_confirmation.py` (28 tests) |
+| 5 | A candidate blocker cannot end the pass; the final JSON is delayed until claim, `submit_unknown`, or queue exhaustion | canonical prompt contract now requires immediate probing of the next distinct official ATS URL and at least five attempts when discovery provides five |
 
 This slice is bounded to truthful pre-claim gating. It does not add facts to the
 profile, answer Python on the candidate's behalf, bypass CAPTCHA, or claim that
 all Workday/ATS accounts are authenticated.
+
+The same truth boundary applies to queue continuation: a broad experience
+attestation is not evidence for a specific Python skill, client-facing duty,
+minimum-years threshold, legal answer, or employer-specific motivation. Those
+questions remain candidate blockers until their own exact fact or approved material
+exists.
 
 ### 4.6 Portable local installation
 
