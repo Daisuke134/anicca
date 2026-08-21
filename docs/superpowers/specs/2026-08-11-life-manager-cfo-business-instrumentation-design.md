@@ -64,6 +64,24 @@ Only the first unchecked business item is active after the parent spec's operati
 - [ ] **CFO-2b.8 — Capafy Marketplace**: landed sales receipts and costs.
 - [ ] **CFO-2b.9 — Proprietary Investing**: realized reconciled P&L only; deposits/internal moves are excluded.
 
+### CFO-2b.3 measured truth and entry gate
+
+The current Writer runtime is not yet owned by the canonical Life Manager repository: its release is outside the
+checkout at `/Users/anicca/gig/releases/life-manager/current/skills/writer-agent` and its mutable state is outside the
+repository at `~/.local/state/life-manager/writer`. The canonical checkout has no `skills/writer-agent` owner yet, so
+this item cannot safely invent a second collector or import mutable state by path.
+
+The latest read-only Writer report (`generated_at=2026-08-21T15:32:54.341895+09:00`, scope `today`) observed one
+revenue-capable Note article with provider-verified `purchases=0` and `net_received=0 JPY`, plus verified compute
+wall-time `1238.525368` seconds. Four revenue-capable Substack articles had no payment receipt and empty gross/net
+evidence; two X Article entries are discovery-only. The report's receipt arrays are empty for all seven entries and
+`measurement_unknown_count=4982`. These observations are channel-scoped facts, not a whole-Writer revenue zero.
+
+The next implementation slice is therefore the existing Writer consolidation gate: copy the proven runtime into the
+canonical `skills/writer-agent` owner, generate its manifest/path census, then add a pure receipt projection that keeps
+unconfirmed publisher/payment amounts `unknown`/`null` and preserves verified Note zeroes only as channel observations.
+Until that gate closes, `CFO-2b.3` remains the single active item and no Writer amount is admitted to CFO profit or ROI.
+
 ## 4. Current measured truth
 
 - The canonical Life Manager Stripe link resolves to six Checkout Sessions and zero paid sessions. This is a
