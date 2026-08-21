@@ -286,7 +286,8 @@ class ModelRunnerContractTests(unittest.TestCase):
             self.assertEqual(
                 self._capture(sandbox, "agent"),
                 ["exec", "--ephemeral", *model, "--sandbox", "danger-full-access",
-                 "-C", str(sandbox / "model-root"), "--add-dir", os.environ["HOME"], "-"],
+                 "-C", str(sandbox / "model-root"), "--ignore-user-config", "--ignore-rules",
+                 "--add-dir", os.environ["HOME"], "-"],
             )
             self.assertEqual(
                 self._capture(sandbox, "judge"),

@@ -421,11 +421,12 @@ invoke_provider() {
         -c "sandbox_workspace_write.network_access=false"
       )
     fi
-    if [ "$MODE" = "agent" ]; then
-      command+=(--add-dir "$HOME")
-    else
-      command+=(--ignore-user-config --ignore-rules)
-    fi
+    # The Writer prompt is the only orchestration surface.  Do not inherit
+    # the operator's Codex MCP/skill/rules graph: that graph started unrelated
+    # CodeGraph, CUA, and Premiere services inside a daily canary and held the
+    # owner fence without reaching a publication boundary.
+    command+=(--ignore-user-config --ignore-rules)
+    [ "$MODE" = "agent" ] && command+=(--add-dir "$HOME")
     if [ "$CODEX_SESSION_MODE" = "1" ]; then
       # C1: events as JSONL and the final message in its own file, so the
       # outcome is read from the stream instead of a binary exit status.
