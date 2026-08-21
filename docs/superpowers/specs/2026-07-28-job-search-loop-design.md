@@ -154,6 +154,9 @@ Within a live board batch, Forward Deployed and Solutions Engineer roles rank fi
 then customer-facing technical roles, then product roles; recency breaks ties. This
 keeps the every-wake application cadence while favoring the requested technical and
 technical-business job families.
+Release `cfb570c6b6eba42ea6da538b2ee38fdd917e7202` activated that ranking. Its first
+wake selected ElevenLabs' Forward Deployed Engineer - Software Engineer - North
+America, clicked submit once, and wrote run-local Telegram ACK `27568`.
 
 The direct OpenClaw transport now uses its short `-m` message argument and a
 20-second bounded wait; the post-change delivery verification returned Telegram ACK
