@@ -1060,6 +1060,16 @@ metadata surface is available, the CFO must say **Moneytree取得時刻／銀行
 value realtime/latest. This wording is live in `c806254b8` and installed in stable release `20260821T142520-86514`.
 This is a provider-capability boundary, not a launchd cache defect; no guessed connector or credential copy is allowed.
 
+### CFO-1j display correction (2026-08-21)
+
+The installed Moneytree read still returns the same provider payload (MUFG balance `358938`, latest returned
+transaction date `2026-08-18`), so the loop does not claim a realtime bank value. Canonical commit `6faf0bd06`
+preserves the provider's safe `category_name` field as `category` and records `latestBookingDate` in the redacted
+transaction view. The hourly Telegram text now shows provider-reported categories (for example `振替` and `利子所得`)
+and explicitly prints the latest returned transaction date with **銀行側更新時刻は不明**. Raw descriptions, account
+numbers, provider IDs, and credentials remain excluded. This is a display/diagnostic correction; it does not invent a
+refresh operation and does not enable spending advice before `CFO-2d3`.
+
 ### Codex host-parity audit (2026-08-21)
 
 The official Codex documentation establishes the boundary that the runtime must preserve:

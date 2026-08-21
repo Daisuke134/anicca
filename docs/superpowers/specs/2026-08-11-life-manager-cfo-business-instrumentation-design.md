@@ -677,6 +677,12 @@ add a business-fact database table, renderer, API route, launchd wiring, or Tele
   only the pre-existing TECH PLAY `absent` versus `unavailable` assertion. Apple settled Partner Share and RevenueCat
   gross remain separate; payout, bank landing, and missing API cost remain unknown/null. No loop or launchd behavior
   changed. The next active item is `CFO-2b.3` Writer Agent instrumentation.
+
+- Moneytree display correction (2026-08-21): canonical commit `6faf0bd06` keeps the installed read-only provider
+  boundary intact while retaining only safe provider categories and the latest returned transaction date in the
+  redacted hourly view. Live read parity remains `¥358,938` with latest returned transaction date `2026-08-18`;
+  the Telegram text states that the bank-side update time is unknown. No refresh credential, raw description, account
+  number, or spending advice was added; `CFO-2d3` remains the advice gate.
 - Host-parity decision (2026-08-21): the official Codex MCP/skills/plugins/App Server/SDK surfaces support sharing
   user config, skill roots, and installed Apps across local Codex clients, but a fresh `codex exec` is not the main
   ChatGPT conversation. The Moneytree bundle is present in local plugin cache and `codex app-server` reports it
