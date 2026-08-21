@@ -1236,6 +1236,9 @@ ingestion. They are not unchecked M1 items and cannot become the active CFO item
       status; the resulting `incomplete_fleet_read` state is the explicit closure, with unknown values retained. No
       profit or ROI is claimed. `CFO-2d` is next.
 - [ ] **CFO-2d** Report contribution profit, runway, ROI, and evidence completeness; unknown is distinct from zero.
+      Canonical commit `6b7c61a85` adds the fail-closed profit projection. Current reconciliation inputs produce
+      partial evidence, `contribution_profit=null`, `roi=null`, `runway=unknown`, and advice disabled; `CFO-2d2` owns
+      the readable Telegram rendering and delivery receipt.
 - [ ] **CFO-2d2** Deliver the real Telegram summary, account/business/accuracy/why drill-downs, deduped message
       receipt, stale-source alert, and non-technical readability E2E. Business profit, total-cost, and cost-based
       advice remain disabled until CFO-2b and CFO-2c are complete and tests 16–18 and 22–28 pass.
@@ -1335,3 +1338,9 @@ the dashboard result. The normalized result is partial with `registeredWalletCou
 identifier, host, geo, model, signature, credential, or raw provider row was persisted or sent. Smoke mapping,
 unknown handling, hostile scope rejection, syntax, manifest parse, and diff checks pass; state, launchd, provider, and
 Telegram were not mutated. CFO-2c remains open for business/provider statement reconciliation and Fleet attribution.
+
+### Moneytree refresh capability correction (2026-08-21)
+
+Official Moneytree evidence was re-read after the stale `2026-08-18` payload report. Moneytree's [MUFG update policy](https://help.getmoneytree.com/ja/articles/5182442-%E4%B8%89%E8%8F%B1ufj%E9%8A%80%E8%A1%8C%E5%80%8B%E4%BA%BA%E5%8F%A3%E5%BA%A7%E3%81%AE%E6%9B%B4%E6%96%B0%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6) limits personal MUFG refreshes to once per day for paid members and once per week for free members. The official [LINK profile refresh API](https://docs.link.getmoneytree.com/v2023-07-03/reference/post-link-profile-refresh.md) exists: it requires OAuth `request_refresh`, returns `202` for asynchronous acceptance, starts within about five minutes in most cases, and is limited to four calls per guest per UTC day. The official [OAuth flow](https://docs.link.getmoneytree.com/v2023-07-03/docs/obtaining-an-access-token.md) requires a registered `client_id`, redirect URI, state, and one-time user authorization; `client_credentials` is not the guest-data flow.
+
+The current Moneytree plugin exposes only `show_accounts`, `show_transactions`, `show_spending_summary`, and `welcome`; local environment/state contains no Moneytree LINK client/token. Canonical commit `93c4119cb` therefore adds `apps/life-manager/lib/cfo-moneytree-refresh.js`: a fail-closed optional boundary that never calls the network without an access token, requires a caller-owned quota count, handles 202/401/403/429, and builds the documented OAuth authorization URL. The existing hourly loop remains read-only until the owner supplies a registered LINK OAuth grant; no guessed credential, refresh token, or bank password is accepted. Current live loop receipt remains provider message `27326` (revision 8); the explanation of this correction was sent as provider message `27455`.
