@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | `CFO-OPS3b`, `CFO-1j`, `CFO-2b.2`, `CFO-2b.3`, `CFO-2b.4`, `CFO-2b.5`, `CFO-2b.6`, `CFO-2b.7`, and `CFO-2b.8` are closed; `CFO-2b.9` is the next active business-instrumentation slice |
+| Status | `CFO-OPS3b`, `CFO-1j`, `CFO-2b.2`, `CFO-2b.3`, `CFO-2b.4`, `CFO-2b.5`, `CFO-2b.6`, `CFO-2b.7`, `CFO-2b.8`, and `CFO-2b.9` are closed; `CFO-2c` is next |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Canonical target is local `/Users/anicca/Projects/life-manager-main/apps/life-manager`; existing `apps/life-call` code is migration evidence, not the final owner |
 | Role split | Sol specifies/verifies; Luna implements production code/tests |
@@ -71,7 +71,7 @@ Only the first unchecked business item is active after the parent spec's operati
 - [x] **CFO-2b.6 — x402 Services**: finalized external on-chain sales; self-transfers and internal moves are excluded.
 - [x] **CFO-2b.7 — Employment Income**: payroll/bank receipt, kept as personal income rather than business revenue.
 - [x] **CFO-2b.8 — Capafy Marketplace**: landed sales receipts and costs.
-- [ ] **CFO-2b.9 — Proprietary Investing**: realized reconciled P&L only; deposits/internal moves are excluded.
+- [x] **CFO-2b.9 — Proprietary Investing**: realized reconciled P&L only; deposits/internal moves are excluded.
 
 ### CFO-2b.3 measured truth and entry gate
 
@@ -883,3 +883,26 @@ add a business-fact database table, renderer, API route, launchd wiring, or Tele
   this bridge later regresses,
   the canonical portable fallback is the official Moneytree LINK/API integration; no bespoke adapter or guessed
   finance number is accepted.
+
+### CFO-2b.9 closure (2026-08-21)
+
+`CFO-2b.9` is closed in canonical commit `902858819`; `CFO-2c` is now the next active item. The canonical
+`config/investing/runtime-manifest.json` covers 80 tracked runtime files across the Polymarket, Hyperliquid, Solana,
+investment-adapter, and receipt-recorder paths. The tracked mutable `.last-trade-ts` file, host state, credentials,
+and release artifacts were excluded. Host `ai.anicca.autohedge`, `ai.anicca.pm-decision-loop`,
+`ai.anicca.pm-live-trade`, and `ai.anicca.reinvest` labels were observed read-only; no trade or launchd action was
+started.
+
+A live read-only query of `lm_agent_earnings` returned two rows in total: one `polymarket_cycle` realized-loss row and
+one unrelated `x402_sale` income row. The investing projection admitted only the Polymarket row and returned one
+verified realized receipt: profit `$0.00`, loss `$3.15`, fees `$0.00`, net realized P&L `-$3.15`, latest realization
+`2026-07-27T04:05:43+00:00`. It keeps open positions, unrealized P&L, capital, deposit/withdrawal/internal-move
+counts, bank landing, direct/API/human costs, contribution profit, and ROI unknown/null. Deposits, withdrawals, and
+internal moves are explicitly excluded from revenue; unrealized mark-to-market is never added to realized P&L.
+
+The pure `apps/life-manager/lib/cfo-investing.js` projection recursively freezes its output, rejects malformed or
+inconsistent verified/empty/unknown receipt shapes, and leaves `profit`/`roi` null until CFO-2c reconciliation. The
+live projection and hostile-boundary checks pass; `node --check`, manifest JSON parse, `git diff --check`, and the
+existing Polymarket receipt/recorder tests pass `12/12`. State hashes/mtime remained untouched; no launchd, trade,
+provider, database, or Telegram write occurred. Canonical remote read-back resolves `origin/feature/cfo-ops3a-canonical`
+to `902858819aa8b4bdd16d2893c7bfa42d91983ac4`.

@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | M2 — `CFO-OPS3a`, `CFO-OPS3b`, `CFO-1j`, `CFO-2b.2`, `CFO-2b.3`, `CFO-2b.4`, `CFO-2b.5`, `CFO-2b.6`, `CFO-2b.7`, and `CFO-2b.8` are closed; `CFO-2b.9` is next |
+| Status | M2 — `CFO-OPS3a`, `CFO-OPS3b`, `CFO-1j`, `CFO-2b.2`, `CFO-2b.3`, `CFO-2b.4`, `CFO-2b.5`, `CFO-2b.6`, `CFO-2b.7`, `CFO-2b.8`, and `CFO-2b.9` are closed; `CFO-2c` is next |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
@@ -1218,6 +1218,16 @@ ingestion. They are not unchecked M1 items and cannot become the active CFO item
       cumulative paid `$0.00`, with two below-threshold payout records. The projection keeps bank landing, costs,
       capital, profit, and ROI unknown/null, separates buyer sales from seller balance, and records launchd health
       failures without mutating launchd or Capafy state. `CFO-2b.9` is the first active item.
+- [x] **CFO-2b.9** Instrument Proprietary Investing realized reconciled P&L. Canonical commit `902858819` adds
+      `apps/life-manager/lib/cfo-investing.js` and `config/investing/runtime-manifest.json`. A live read of the
+      append-only `lm_agent_earnings` source found one verified `polymarket_cycle` realized-loss row: profit `$0.00`,
+      loss `$3.15`, fees `$0.00`, net realized P&L `-$3.15`, latest realization `2026-07-27`. Open positions,
+      unrealized P&L, capital, deposits/withdrawals/internal moves, bank landing, direct/API/human cost, profit, and
+      ROI remain unknown/null; deposits and internal moves are excluded from revenue. The canonical 80-file investing
+      runtime manifest excludes mutable state and records AutoHedge/PM/Reinvest host loops as observation-only. The
+      pure projection rejects inconsistent empty/unknown/receipt shapes and keeps unrealized P&L out of realized P&L.
+      Syntax, focused Polymarket receipt tests `12/12`, live projection, manifest JSON, state non-mutation, commit, and
+      remote push read-back pass. No launchd, trade, provider, database, or Telegram write occurred.
 - [ ] **CFO-2c** Reconcile per-business totals to provider statements and Fleet totals; upgrade Fleet observations to
       raw positions, recognized earnings, and provider/ledger-confirmed burn only when matching evidence exists.
 - [ ] **CFO-2d** Report contribution profit, runway, ROI, and evidence completeness; unknown is distinct from zero.
@@ -1274,3 +1284,16 @@ git status --short
 Implementation commands and exact tests MUST be added to the implementation plan for CFO-1a after inspecting
 the selected provider SDKs and current `apps/life-call` migration/test conventions. This document defines what
 must become true; it does not pretend implementation has started.
+
+### CFO-2b.9 closure correction (2026-08-21)
+
+`CFO-2b.9` is closed in canonical commit `902858819`; `CFO-2c` is the next active item. The canonical investing
+manifest records 80 tracked runtime files and excludes mutable state, credentials, and host release artifacts. The
+live append-only `lm_agent_earnings` read contained one `polymarket_cycle` realized-loss receipt: `$0.00` realized
+profit, `$3.15` realized loss, `$0.00` fees, and net realized P&L `-$3.15` at the latest realization on 2026-07-27.
+The unrelated x402 income row was not attributed to investing. Open positions, unrealized P&L, capital, deposits,
+withdrawals, internal moves, bank landing, direct/API/human cost, profit, and ROI remain unknown/null; transfers and
+deposits are not revenue. AutoHedge, PM, and Reinvest launchd labels were observed without mutation or trade
+execution. The projection, manifest, live read, hostile-boundary checks, and existing Polymarket tests pass; the
+canonical remote branch resolves to `902858819aa8b4bdd16d2893c7bfa42d91983ac4`. No launchd, provider, database, or
+Telegram write occurred.
