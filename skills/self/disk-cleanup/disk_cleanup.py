@@ -284,12 +284,41 @@ class HostDiskGovernor:
             )
         return False
 
-    def _receipt(self, payload: dict) -> None:
+    def _receipt(self, payload: dict, filename: str = "last-receipt.json") -> None:
         self.state_dir.mkdir(parents=True, exist_ok=True)
         payload.setdefault("observed_at", time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
-        temporary = self.state_dir / ".last-receipt.tmp"
+        target = self.state_dir / filename
+        temporary = self.state_dir / f".{filename}.tmp"
         temporary.write_text(json.dumps(payload, ensure_ascii=False, sort_keys=True) + "\n")
-        os.replace(temporary, self.state_dir / "last-receipt.json")
+        os.replace(temporary, target)
+
+    def _canary_receipt(self, payload: dict[str, object]) -> None:
+        """Keep the initial effect and the immediate replay in one receipt."""
+        target = self.state_dir / "canary-last-receipt.json"
+        if payload.get("reason") == "canary-path-missing":
+            try:
+                previous = json.loads(target.read_text(encoding="utf-8"))
+            except (FileNotFoundError, OSError, ValueError):
+                previous = None
+            if isinstance(previous, dict) and previous.get("canary_path") == payload.get("canary_path"):
+                initial = previous.get("initial", previous)
+                envelope = {
+                    "schema_version": "life-manager-canary-receipt-v1",
+                    "phase": "replay",
+                    "canary_path": payload.get("canary_path"),
+                    "initial": initial,
+                    "replay": payload,
+                }
+                self._receipt(envelope, "canary-last-receipt.json")
+                return
+        if payload.get("removed") is True:
+            payload = {
+                "schema_version": "life-manager-canary-receipt-v1",
+                "phase": "initial",
+                "canary_path": payload.get("canary_path"),
+                "initial": payload,
+            }
+        self._receipt(payload, "canary-last-receipt.json")
 
     def sweep(
         self,
@@ -499,17 +528,135 @@ class HostDiskGovernor:
         result["free_before"] = free_before
         return result
 
+    def run_canary(self, path: Path) -> dict[str, object]:
+        """Reclaim one exact, allow-listed temporary canary and record replay proof."""
+        deadline = self.clock() + GOVERNOR_BUDGET_SECONDS
+        free_before, _ = self.usage()
+        canary_path = str(path.expanduser().resolve())
+        health = self.bootstrap_health()
+        if health.get("status") not in {"ok", "not-applicable"}:
+            result: dict[str, object] = {
+                "tier": classify_tier(free_before),
+                "evaluated": 0,
+                "reclaimed": 0,
+                "preserved": 0,
+                "errors": 1,
+                "protected_deletions": 0,
+                "reason": "gui-bootstrap-health-failure",
+                "health": health,
+                "canary_path": canary_path,
+                "before_bytes": 0,
+                "after_bytes": 0,
+                "removed": False,
+                "duplicate_effect": 0,
+            }
+            self._canary_receipt(result)
+            return result
+
+        try:
+            requested = path.expanduser()
+            resolved = requested.resolve()
+            temporary = Path(tempfile.gettempdir()).resolve()
+        except OSError:
+            resolved = Path(canary_path)
+            temporary = Path(tempfile.gettempdir()).resolve()
+            requested = path.expanduser()
+        if (
+            requested.is_symlink()
+            or resolved.parent != temporary
+            or not resolved.name.startswith("cfo-")
+            or resolved.name == "cfo-"
+        ):
+            result = {
+                "tier": classify_tier(free_before),
+                "evaluated": 0,
+                "reclaimed": 0,
+                "preserved": 0,
+                "errors": 0,
+                "protected_deletions": 0,
+                "reason": "canary-path-not-allowlisted",
+                "canary_path": canary_path,
+                "before_bytes": 0,
+                "after_bytes": 0,
+                "removed": False,
+                "duplicate_effect": 0,
+            }
+            self._canary_receipt(result)
+            return result
+        if not resolved.exists():
+            result = {
+                "tier": classify_tier(free_before),
+                "evaluated": 0,
+                "reclaimed": 0,
+                "preserved": 0,
+                "errors": 0,
+                "protected_deletions": 0,
+                "reason": "canary-path-missing",
+                "canary_path": canary_path,
+                "before_bytes": 0,
+                "after_bytes": 0,
+                "removed": False,
+                "duplicate_effect": 0,
+            }
+            self._canary_receipt(result)
+            return result
+
+        before = _bytes(resolved, deadline=deadline, clock=self.clock)
+        if before is None:
+            result = {
+                "tier": classify_tier(free_before),
+                "evaluated": 0,
+                "reclaimed": 0,
+                "preserved": 1,
+                "errors": 0,
+                "protected_deletions": 0,
+                "reason": "canary-budget-exhausted",
+                "canary_path": canary_path,
+                "before_bytes": 0,
+                "after_bytes": 0,
+                "removed": False,
+                "duplicate_effect": 0,
+            }
+            self._canary_receipt(result)
+            return result
+
+        candidate = {
+            "path": resolved,
+            "class": "ephemeral",
+            "owner": "temporary-run",
+            "discovery": "allowlisted",
+        }
+        result = dict(self.sweep([candidate], write_receipt=False, deadline=deadline))
+        removed = not resolved.exists() and not resolved.is_symlink()
+        after = 0 if removed else (_bytes(resolved, deadline=deadline, clock=self.clock) or 0)
+        result.update(
+            {
+                "canary_path": canary_path,
+                "before_bytes": before,
+                "after_bytes": after,
+                "removed": removed,
+                "duplicate_effect": 0,
+            }
+        )
+        if not removed and "reason" not in result:
+            result["reason"] = "canary-preserved"
+        self._canary_receipt(result)
+        return result
+
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--home", type=Path, default=Path.home())
     parser.add_argument("--state-dir", type=Path)
     parser.add_argument("--candidate", action="append", type=Path, default=[])
+    parser.add_argument("--canary", type=Path)
     return parser.parse_args()
 
 
 def main() -> int:
     args = _parse_args()
+    if args.candidate and args.canary:
+        raise SystemExit("--candidate and --canary cannot be combined")
     if args.candidate:
         raise SystemExit(
             "--candidate is disabled; cleanup candidates must come from the allow-listed discovery"
@@ -518,7 +665,8 @@ def main() -> int:
     if not governor.acquire_lock():
         return 0
     try:
-        print(json.dumps(governor.run_once(), sort_keys=True))
+        result = governor.run_canary(args.canary) if args.canary else governor.run_once()
+        print(json.dumps(result, sort_keys=True))
     finally:
         governor.release_lock()
     return 0

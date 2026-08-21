@@ -301,3 +301,54 @@ def test_bootstrap_health_failure_is_observation_only(tmp_path: Path, monkeypatc
     assert receipt["reason"] == "gui-bootstrap-health-failure"
     assert receipt["health"]["error_code"] == "launchctl-141"
     assert not (tmp_path / "state" / "host-inventory-full.at").exists()
+
+
+def test_exact_canary_reclaims_one_regenerable_path_and_replay_is_noop(
+    tmp_path: Path, monkeypatch
+) -> None:
+    temp_root = tmp_path / "tmp"
+    canary = temp_root / "cfo-life-manager-canary"
+    canary.mkdir(parents=True)
+    (canary / "payload").write_bytes(b"canary" * 1024)
+    monkeypatch.setattr(disk_cleanup.tempfile, "gettempdir", lambda: str(temp_root))
+
+    governor = HostDiskGovernor(
+        home=tmp_path,
+        state_dir=tmp_path / "state",
+        bootstrap_health=lambda: {"status": "not-applicable"},
+        lsof=lambda _path: "confirmed-closed",
+        usage=lambda: (12 * GiB, 100 * GiB),
+    )
+
+    first = governor.run_canary(canary)
+    replay = governor.run_canary(canary)
+
+    assert first["canary_path"] == str(canary.resolve())
+    assert first["removed"] is True
+    assert first["before_bytes"] > 0
+    assert first["after_bytes"] == 0
+    assert first["reclaimed"] == first["before_bytes"]
+    assert replay["reason"] == "canary-path-missing"
+    assert replay["duplicate_effect"] == 0
+    receipt = json.loads((tmp_path / "state" / "canary-last-receipt.json").read_text())
+    assert receipt["canary_path"] == str(canary.resolve())
+    assert receipt["initial"]["removed"] is True
+    assert receipt["initial"]["reclaimed"] == first["before_bytes"]
+    assert receipt["replay"]["duplicate_effect"] == 0
+
+
+def test_exact_canary_rejects_path_outside_temp_root(tmp_path: Path) -> None:
+    outside = tmp_path / "important"
+    outside.write_text("preserve", encoding="utf-8")
+    governor = HostDiskGovernor(
+        home=tmp_path,
+        state_dir=tmp_path / "state",
+        bootstrap_health=lambda: {"status": "not-applicable"},
+        lsof=lambda _path: (_ for _ in ()).throw(AssertionError("lsof must not run")),
+        usage=lambda: (12 * GiB, 100 * GiB),
+    )
+
+    result = governor.run_canary(outside)
+
+    assert result["reason"] == "canary-path-not-allowlisted"
+    assert outside.exists()
