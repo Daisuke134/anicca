@@ -63,6 +63,16 @@ def _is_apply_control(control: dict[str, Any]) -> bool:
     )
 
 
+def _is_ashby_apply_control(control: dict[str, Any]) -> bool:
+    """Recognize Ashby's job-page CTA before the application form opens."""
+    text = _normalized(control.get("text"))
+    role = _normalized(control.get("role"))
+    tag = _normalized(control.get("tag"))
+    return text == "apply for this job" and (
+        role in {"button", "link"} or tag in {"a", "button"}
+    )
+
+
 def _has_exact_text(controls: list[dict[str, Any]], value: str) -> bool:
     expected = value.casefold()
     return any(_normalized(control.get("text")) == expected for control in controls)
@@ -159,6 +169,17 @@ def evaluate_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
                             else "generic_application"
                         )
                     ),
+                    "frame_index": frame_index,
+                }
+            )
+            return base
+        if provider == "ashby" and any(
+            _is_ashby_apply_control(control) for control in controls
+        ):
+            base.update(
+                {
+                    "ready": True,
+                    "surface": "ashby_job",
                     "frame_index": frame_index,
                 }
             )

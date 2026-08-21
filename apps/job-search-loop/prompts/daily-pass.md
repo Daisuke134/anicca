@@ -73,10 +73,13 @@ chmod 600 "<private_snapshot_path>" "<private_evaluation_path>"
 ```
 
 Continue browser progression only when the evaluation says `ready=true`; call
-`Ledger.claim_submission` only when it also says `claim_ready=true`. Advance Workday
-one evaluated surface at a time:
+`Ledger.claim_submission` only when it also says `claim_ready=true`. Advance Ashby
+and Workday one evaluated surface at a time:
 
 ```text
+ashby_job
+  → click the visible “Apply for this Job” control
+  → recapture and reevaluate
 workday_job
   → click the ordinary Apply navigation control
   → recapture and reevaluate

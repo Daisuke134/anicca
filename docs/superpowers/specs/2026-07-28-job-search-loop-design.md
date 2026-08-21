@@ -243,7 +243,7 @@ URLs, and user-facing control metadata. It returns:
 provider: ashby | workday | generic
 ready: boolean
 claim_ready: boolean
-surface: ashby_application | workday_job | workday_apply_choice |
+surface: ashby_job | ashby_application | workday_job | workday_apply_choice |
          workday_account_create | workday_application |
          generic_application | none
 frame_index: integer | null
@@ -314,6 +314,7 @@ workday_job
 | `workday_account_create` | true | false | Use only an approved private identity/credential path |
 | `workday_sign_in` | true | false | Use the existing private account; never expose credentials |
 | `workday_application` | true | true | Claim only on the final submit-bearing application surface |
+| `ashby_job` | true | false | Click the visible `Apply for this Job` CTA, recapture, and reevaluate |
 | `ashby_application` / `generic_application` | true | true | Existing claim rules apply |
 | `none` | false | false | Stop before claim |
 
