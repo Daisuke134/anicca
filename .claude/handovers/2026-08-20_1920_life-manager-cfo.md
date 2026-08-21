@@ -365,3 +365,7 @@ Registration before issuing an authorization URL; explicit `clientRegistration=c
 server does not advertise the required CIMD/token-endpoint-auth-none combination. No password/MFA/logout/token/account
 mutation occurred. The Telegram Web login link remains the only owner path for this connector; a separate static LINK
 client/grant is required for autonomous `request_refresh`.
+
+Credential audit: no `MONEYTREE_*`/`MT_LINK_*` environment entries, Moneytree-related Keychain service, or Moneytree
+LINK client/token exists in the bounded CFO state/config paths. The App Server bearer token is connector-owned and is not
+a Web password or exportable `request_refresh` grant. No secret value was searched, printed, copied, or submitted.

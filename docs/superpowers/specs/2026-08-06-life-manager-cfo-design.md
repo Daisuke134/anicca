@@ -1624,3 +1624,12 @@ failed because the authorization server does not advertise CIMD with token-endpo
 No browser authorization page, password, MFA, logout, token replacement, or account mutation occurred. This is a
 connector-registration boundary, not a loop failure. The remaining legitimate path is owner login at the Moneytree Web
 link already present in Telegram, or a separately provisioned static LINK client/grant with `request_refresh`.
+
+### Credential availability audit (2026-08-21)
+
+The bounded safe credential audit found no `MONEYTREE_*` or `MT_LINK_*` values in the installed environment, no
+Moneytree/MT LINK generic-password Keychain service, and no Moneytree LINK client/token in the CFO state root. The
+connected App Server bearer token remains owned by the plugin runtime and is not a Moneytree Web password or an
+exportable `request_refresh` grant. No password was searched for, printed, copied, or submitted. Autonomous Web login
+therefore cannot be completed from this Mac without an owner-provided login action or a formally provisioned static LINK
+client/grant; the loop remains safe and truthful.
