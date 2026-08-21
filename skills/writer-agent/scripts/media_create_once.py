@@ -116,6 +116,8 @@ def verify(run_dir: Path) -> dict[str, object]:
             for field in ("byte_length", "width", "height")
         ):
             raise MediaCreateRefused(f"media-create-asset-invalid:{asset['kind']}")
+        if asset["kind"] == "body" and int(descriptor["height"]) < 110:
+            raise MediaCreateRefused("media-create-body-too-flat-for-x")
         expected_receipt: dict[str, object] = {
             "version": 1,
             "status": "committed",
@@ -140,6 +142,8 @@ def commit(candidate: Path, destination: Path, receipt: Path, kind: str) -> dict
         for field in ("byte_length", "width", "height")
     ):
         raise MediaCreateRefused("candidate-not-decodable-image")
+    if kind == "body" and int(descriptor["height"]) < 110:
+        raise MediaCreateRefused("candidate-body-too-flat-for-x")
     payload: dict[str, object] = {
         "version": 1,
         "status": "committed",

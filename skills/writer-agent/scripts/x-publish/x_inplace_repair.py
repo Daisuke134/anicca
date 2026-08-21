@@ -42,6 +42,8 @@ EDIT_RE = re.compile(
 )
 CANONICAL_MEDIA_START = "<!-- canonical-media:start -->"
 CANONICAL_MEDIA_END = "<!-- canonical-media:end -->"
+X_BODY_MIN_HEIGHT = 110
+X_BODY_MAX_HEIGHT = 650
 
 
 def _normalized_title(value: str) -> str:
@@ -86,6 +88,49 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _body_media_readability(paths: list[Path]) -> dict[str, Any]:
+    """Measure immutable body media before any X editor mutation."""
+    try:
+        from PIL import Image
+    except ImportError as error:
+        raise XRepairRefused("X media readability decoder is unavailable") from error
+    images: list[dict[str, Any]] = []
+    violations: list[str] = []
+    for path in paths:
+        if not path.is_file():
+            violations.append(f"missing:{path}")
+            continue
+        try:
+            with Image.open(path) as image:
+                width, height = image.size
+        except Exception as error:
+            violations.append(f"decode:{path}:{error}")
+            continue
+        row = {
+            "path": str(path),
+            "sha256": sha256(path),
+            "width": int(width),
+            "height": int(height),
+        }
+        images.append(row)
+        if height < X_BODY_MIN_HEIGHT:
+            violations.append(
+                f"too-flat:{path}:height={height}:min={X_BODY_MIN_HEIGHT}"
+            )
+        elif height > X_BODY_MAX_HEIGHT:
+            violations.append(
+                f"too-tall:{path}:height={height}:max={X_BODY_MAX_HEIGHT}"
+            )
+    return {
+        "version": 1,
+        "status": "PASS" if not violations else "FAIL",
+        "min_height": X_BODY_MIN_HEIGHT,
+        "max_height": X_BODY_MAX_HEIGHT,
+        "images": images,
+        "violations": violations,
+    }
+
+
 def _atomic_json(path: Path, value: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
@@ -126,9 +171,9 @@ def _guard(
         arguments.extend(
             ["--target-kind", "x-draft-url", "--target", target]
         )
-    if command == "quarantine-missing-media":
+    if command in {"quarantine-missing-media", "mark-unavailable"}:
         if not reason:
-            raise XRepairRefused("missing-media quarantine reason is required")
+            raise XRepairRefused("unavailable reason is required")
         arguments.extend(["--reason", reason])
     result = subprocess.run(
         arguments,
@@ -823,6 +868,14 @@ class XBrowserAdapter:
             sha256(Path(str(image["path"])))
             for image in content_images
         ]
+        readability = _body_media_readability(
+            [Path(str(image["path"])) for image in content_images]
+        )
+        if readability["status"] != "PASS":
+            raise XRepairRefused(
+                "X body media readability gate failed: "
+                + "; ".join(str(item) for item in readability["violations"])
+            )
         manager, _browser, page = self._page()
         try:
             page.goto(
@@ -1090,6 +1143,26 @@ def repair(
             f"X guard did not authorize {expected_action}"
         )
     work = state_path.parent / "x-inplace-repair" / language
+    readability = _body_media_readability(
+        [Path(str(item["path"])) for item in body_assets]
+    )
+    _atomic_json(work / "media-readability.json", readability)
+    if readability["status"] != "PASS":
+        if decision.get("action") != "publish":
+            raise XRepairRefused(
+                "X body media readability failed after a live/protected preflight"
+            )
+        reason = "x-article body media readability failed: " + "; ".join(
+            str(item) for item in readability["violations"]
+        )
+        unavailable = _guard("mark-unavailable", pair, reason=reason)
+        return {
+            "action": "quarantined-unreadable-media",
+            "pair": pair,
+            "reason": reason,
+            "media_receipt": str(work / "media-readability.json"),
+            "state": unavailable,
+        }
     adapted = _adapt_source(
         state,
         pair,

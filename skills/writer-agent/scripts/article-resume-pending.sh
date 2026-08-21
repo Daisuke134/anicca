@@ -598,6 +598,30 @@ LEDGER_PATH="$(printf '%s' "$PLAN" | jq -r '.ledger_path')"
 case "$RUN_ID" in daily-????-??-??|????????-??????) ;; *) echo "article-resume: invalid run id" >>"$LOG"; exit 1 ;; esac
 [ -d "$RUN_DIR" ] && [ -f "$STATE_PATH" ] || exit 1
 
+# X Article staging uses the shared authenticated job-search browser on CDP :9222.
+# The Coconala browser on :9223 is a different profile and must never satisfy this
+# preflight by accident.
+if [ "$FIRST_INITIALIZATION" = "x-article/ja" ] || [ "$FIRST_INITIALIZATION" = "x-article/en" ] \
+  || [ "$(printf '%s' "$PLAN" | jq -r '.eligible_pairs[0] // empty')" = "x-article/ja" ]; then
+  BROWSER_GUARD="${LIFE_MANAGER_REPO:-$(cd "$ARTICLE_ROOT/../.." && pwd)}/skills/browser/ensure_browser.sh"
+  if [ ! -x "$BROWSER_GUARD" ]; then
+    echo "article-resume: X browser guard missing at $BROWSER_GUARD" >>"$LOG"
+    exit 1
+  fi
+  WRITER_CDP_ENDPOINT="${WRITER_CDP_URL:-http://127.0.0.1:9222}"
+  WRITER_CDP_ENDPOINT_PORT="${WRITER_CDP_PORT:-9222}"
+  WRITER_CDP_ENDPOINT_PROFILE="${WRITER_CDP_PROFILE:-$HOME/.cloak/profiles/job-search-daily}"
+  WRITER_BROWSER_OWNER_LABEL="${WRITER_BROWSER_LAUNCHD_LABEL:-ai.anicca.job-search-browser}"
+  CLOAK_CDP_BASE_URL="$WRITER_CDP_ENDPOINT" \
+  CDP_DAILY_DRIVER_PORT="$WRITER_CDP_ENDPOINT_PORT" \
+  CDP_DAILY_DRIVER_PROFILE="$WRITER_CDP_ENDPOINT_PROFILE" \
+  CLOAK_BROWSER_LAUNCHD_LABEL="$WRITER_BROWSER_OWNER_LABEL" \
+  bash "$BROWSER_GUARD" >>"$LOG" 2>&1 || {
+    echo "article-resume: X browser preflight failed closed" >>"$LOG"
+    exit 1
+  }
+fi
+
 notify_pending() {
   python3 "$ARTICLE_ROOT/scripts/article-completion-notify.py" \
     --state "$STATE_PATH" --ledger "$LEDGER_PATH" \

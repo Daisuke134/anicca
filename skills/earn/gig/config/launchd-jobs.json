@@ -61,6 +61,14 @@
   },
 
   "writer_env": {
+    "CLOAK_BROWSER_LAUNCHD_LABEL": "ai.anicca.job-search-browser",
+    "CLOAK_CDP_BASE_URL": "http://127.0.0.1:9222",
+    "CDP_DAILY_DRIVER_PORT": "9222",
+    "CDP_DAILY_DRIVER_PROFILE": "{{HOME}}/.cloak/profiles/job-search-daily",
+    "WRITER_BROWSER_LAUNCHD_LABEL": "ai.anicca.job-search-browser",
+    "WRITER_CDP_URL": "http://127.0.0.1:9222",
+    "WRITER_CDP_PORT": "9222",
+    "WRITER_CDP_PROFILE": "{{HOME}}/.cloak/profiles/job-search-daily",
     "ARTICLE_ROOT": "{{RELEASE}}/skills/writer-agent",
     "ARTICLE_SKILL_DIR": "{{RELEASE}}/skills/writer-agent",
     "ARTICLE_STATE_DIR": "{{WRITER_STATE_DIR}}",

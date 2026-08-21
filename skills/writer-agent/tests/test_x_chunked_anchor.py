@@ -44,6 +44,8 @@ def test_missing_anchor_fails_closed():
 
 def test_browser_chunker_fails_closed_on_media_loss():
     source = CHUNKED.read_text(encoding="utf-8")
+    assert '[data-testid="empty_state_button_text"]' in source
+    assert 'if i in (6, 15, 24): open_editor()' in source
     assert 'raise SystemExit(f"IMAGE MISSING: {v}")' in source
     assert 'raise SystemExit(f"IMG PASTE FAILED after retries: {v}")' in source
     assert "IMAGE COUNT MISMATCH" in source

@@ -11,20 +11,26 @@ cis=sorted(d["content_images"], key=lambda c:c["block_index"])
 chunks=build_chunks(html, cis)
 print("chunks:",len(chunks),"images:",sum(1 for k,_ in chunks if k=='img'))
 
-DETECT="""()=>{const t=[...document.querySelectorAll('textarea')].find(e=>{const a=((e.getAttribute('aria-label')||'')+(e.placeholder||'')).toLowerCase();const b=e.getBoundingClientRect();return a.includes('title')||(b.height>40&&b.width>300&&b.y<700&&b.x>900);});if(!t)return null;const b=t.getBoundingClientRect();return {x:Math.round(b.x+b.width/2),y:Math.round(b.y+b.height/2)};}"""
+DETECT="""()=>{const t=[...document.querySelectorAll('textarea')].find(e=>{const a=((e.getAttribute('aria-label')||'')+' '+(e.getAttribute('placeholder')||'')).toLowerCase();const b=e.getBoundingClientRect();return a.includes('title')||(b.height>40&&b.width>300&&b.y<700&&b.x>900);});if(!t)return null;const b=t.getBoundingClientRect();return {x:Math.round(b.x+b.width/2),y:Math.round(b.y+b.height/2)};}"""
 p=sync_playwright().start(); b=p.chromium.connect_over_cdp(os.environ.get("WRITER_CDP_URL", "http://localhost:9222")); pg=b.contexts[0].new_page()
+def open_editor():
+    button=pg.locator('[data-testid="empty_state_button_text"]')
+    if button.count():
+        button.first.click()
+        return
+    pg.evaluate("""()=>{const b=[...document.querySelectorAll('button,a,div[role=button],span')].find(x=>(x.textContent||'').trim()==='Write');if(b)b.click();}""")
 def upwait():
     for _ in range(20):
         if not pg.evaluate("()=>/Uploading|アップロード|正在上传/.test(document.body.innerText)"): break
         time.sleep(1)
 try:
     pg.goto("https://x.com/compose/articles",wait_until="domcontentloaded",timeout=50000); time.sleep(5)
-    pg.evaluate("""()=>{const b=[...document.querySelectorAll('button,a,div[role=button],span')].find(x=>(x.textContent||'').trim()==='Write');if(b)b.click();}""")
+    open_editor()
     pos2=None
     for i in range(30):
         pos2=pg.evaluate(DETECT)
         if pos2: break
-        if i==12: pg.evaluate("""()=>{const b=[...document.querySelectorAll('button,a,div[role=button],span')].find(x=>(x.textContent||'').trim()==='Write');if(b)b.click();}""")
+        if i in (6, 15, 24): open_editor()
         time.sleep(1)
     if not pos2: raise SystemExit("no editor")
     pg.mouse.click(pos2['x'],pos2['y']); time.sleep(0.6); pg.keyboard.type(TITLE,delay=6); time.sleep(1.5)

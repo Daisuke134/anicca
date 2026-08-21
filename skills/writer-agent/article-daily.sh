@@ -521,7 +521,18 @@ python3 "$ARTICLE_ROOT/scripts/strategy_runtime.py" \
 # zero hits, before this line existed. Runs exactly once, inside the lock this script already
 # holds, so it can never race the 5-min ai.anicca.article-healthcheck poller, which
 # deliberately does not touch the browser at all for this same reason.
-BROWSER_STATUS="$(bash "$HOME/anicca/skills/browser/ensure_browser.sh" 2>>"$LOG" | tail -1)"
+BROWSER_GUARD="${LIFE_MANAGER_REPO:-$(cd "$ARTICLE_ROOT/../.." && pwd)}/skills/browser/ensure_browser.sh"
+if [ -x "$BROWSER_GUARD" ]; then
+  BROWSER_STATUS="$(
+    CLOAK_CDP_BASE_URL="${WRITER_CDP_URL:-http://127.0.0.1:9222}" \
+    CDP_DAILY_DRIVER_PORT="${WRITER_CDP_PORT:-9222}" \
+    CDP_DAILY_DRIVER_PROFILE="${WRITER_CDP_PROFILE:-$HOME/.cloak/profiles/job-search-daily}" \
+    CLOAK_BROWSER_LAUNCHD_LABEL="${WRITER_BROWSER_LAUNCHD_LABEL:-ai.anicca.job-search-browser}" \
+    bash "$BROWSER_GUARD" 2>>"$LOG" | tail -1
+  )"
+else
+  BROWSER_STATUS="FAILED: browser guard missing at $BROWSER_GUARD"
+fi
 echo "=== article-daily ensure_browser: ${BROWSER_STATUS:-EMPTY} ===" >>"$LOG"
 
 # PRE-PUBLICATION RESUME CARD RECOVERY: the first pass legitimately claims its demand card
@@ -895,7 +906,7 @@ PROMPT="$PROMPT
 
 TELEGRAM REPORT LANGUAGE: every Telegram progress or delivery message sent by this loop must be neutral natural language that a non-technical family member can understand. Do not add harness labels or prefixes such as Codex::: or Claude:::; start directly with the report.
 
-MEDIA CREATE-ONCE OVERRIDE (mandatory; supersedes STEP 3's direct-save wording): the wrapper has already armed an immutable two-asset boundary. Never pass canonical headline-image.png or body-diagram.png directly to an image generator or renderer. Create every output under \$ARTICLE_RUN_DIR/gates/media-candidates/ with a distinct candidate filename. Generate one headline candidate, then run python3 ARTICLE_ROOT_PLACEHOLDER/scripts/media_create_once.py commit --candidate <candidate> --destination \"\$ARTICLE_RUN_DIR/headline-image.png\" --receipt \"\$ARTICLE_RUN_DIR/gates/headline-image-create.json\" --kind headline. Render one body diagram candidate, then run python3 ARTICLE_ROOT_PLACEHOLDER/scripts/media_create_once.py commit --candidate <candidate> --destination \"\$ARTICLE_RUN_DIR/body-diagram.png\" --receipt \"\$ARTICLE_RUN_DIR/gates/body-diagram-create.json\" --kind body. A response-loss replay of the exact same commit is allowed; a different second candidate is refused and must never trigger another generator call. Before any gate or publication init, run python3 ARTICLE_ROOT_PLACEHOLDER/scripts/media_create_once.py verify --run-dir \"\$ARTICLE_RUN_DIR\"."
+MEDIA CREATE-ONCE OVERRIDE (mandatory; supersedes STEP 3's direct-save wording): the wrapper has already armed an immutable two-asset boundary. Never pass canonical headline-image.png or body-diagram.png directly to an image generator or renderer. Create every output under \$ARTICLE_RUN_DIR/gates/media-candidates/ with a distinct candidate filename. Generate one headline candidate, then run python3 ARTICLE_ROOT_PLACEHOLDER/scripts/media_create_once.py commit --candidate <candidate> --destination \"\$ARTICLE_RUN_DIR/headline-image.png\" --receipt \"\$ARTICLE_RUN_DIR/gates/headline-image-create.json\" --kind headline. Render one body diagram candidate with a readable canvas height of at least 110px (X rejects shorter diagrams as squished-flat), then run python3 ARTICLE_ROOT_PLACEHOLDER/scripts/media_create_once.py commit --candidate <candidate> --destination \"\$ARTICLE_RUN_DIR/body-diagram.png\" --receipt \"\$ARTICLE_RUN_DIR/gates/body-diagram-create.json\" --kind body. A response-loss replay of the exact same commit is allowed; a different second candidate is refused and must never trigger another generator call. Before any gate or publication init, run python3 ARTICLE_ROOT_PLACEHOLDER/scripts/media_create_once.py verify --run-dir \"\$ARTICLE_RUN_DIR\"."
 
 # RUN RECORD (spec 47): replace only while writing a new immutable prompt, after every optional
 # addendum has been appended. Bash 3.2's in-memory global replacement becomes superlinear on this
