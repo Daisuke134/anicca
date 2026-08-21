@@ -55,3 +55,45 @@ def test_full_inventory_uses_bounded_du_only_for_allowlisted_families(tmp_path: 
     measurements = {root["measurement"] for root in payload["roots"]}
     assert "bounded-du" in measurements
     assert all(root["measurement"] in {"bounded-du", "metadata-only"} for root in payload["roots"])
+
+
+def test_full_inventory_allows_slow_allowlisted_root_with_bounded_timeout(tmp_path: Path) -> None:
+    (tmp_path / "Projects").mkdir()
+
+    def timeout_sensitive_runner(
+        argv: list[str], *, timeout: float
+    ) -> subprocess.CompletedProcess[str]:
+        if argv[0].endswith("/du") and timeout < 10:
+            raise subprocess.TimeoutExpired(argv, timeout)
+        return fake_runner(argv, timeout=timeout)
+
+    payload = collect_host_inventory(
+        home=tmp_path,
+        state_dir=tmp_path / "state",
+        full=True,
+        runner=timeout_sensitive_runner,
+    )
+
+    projects = next(root for root in payload["roots"] if root["path"] == str(tmp_path / "Projects"))
+    assert projects["measurement"] == "bounded-du"
+    assert f"size-timeout:{tmp_path / 'Projects'}" not in payload["coverage"]["gaps"]
+
+
+def test_full_inventory_gives_homebrew_a_longer_bounded_probe(tmp_path: Path) -> None:
+    du_calls: list[tuple[str, float]] = []
+
+    def recording_runner(
+        argv: list[str], *, timeout: float
+    ) -> subprocess.CompletedProcess[str]:
+        if argv[0].endswith("/du"):
+            du_calls.append((argv[-1], timeout))
+        return fake_runner(argv, timeout=timeout)
+
+    collect_host_inventory(
+        home=tmp_path,
+        state_dir=tmp_path / "state",
+        full=True,
+        runner=recording_runner,
+    )
+
+    assert ("/opt/homebrew", 30) in du_calls

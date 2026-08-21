@@ -13,7 +13,12 @@ from typing import Any, Callable
 
 
 SCHEMA_VERSION = "life-manager-host-inventory-v1"
-DU_TIMEOUT_SECONDS = 3
+# Full census is hourly and runs behind the governor's outer 120-second bound.
+# A 3-second probe systematically missed otherwise bounded repository roots
+# (measured 5–9s on the Mac mini), leaving their size unattributed. Ten seconds
+# keeps the probe bounded while allowing those roots to be measured.
+DU_TIMEOUT_SECONDS = 10
+BUILD_TOOL_DU_TIMEOUT_SECONDS = 30
 MAX_CHILDREN_PER_ROOT = 512
 
 # These are observation families, not deletion roots.  A missing or unreadable
@@ -154,8 +159,9 @@ def _children(path: Path) -> tuple[dict[str, Any], list[str]]:
 
 
 def _bounded_size(path: Path, run: Runner = _run) -> tuple[int | None, str, str | None]:
+    timeout = BUILD_TOOL_DU_TIMEOUT_SECONDS if path == Path("/opt/homebrew") else DU_TIMEOUT_SECONDS
     try:
-        result = run(["/usr/bin/du", "-x", "-sk", str(path)], timeout=DU_TIMEOUT_SECONDS)
+        result = run(["/usr/bin/du", "-x", "-sk", str(path)], timeout=timeout)
     except subprocess.TimeoutExpired:
         return None, "timeout", "size-timeout"
     except OSError as exc:
