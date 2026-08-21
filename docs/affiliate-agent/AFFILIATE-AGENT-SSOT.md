@@ -173,20 +173,19 @@ deployment adapter for these same contracts, not a second implementation.
 
 ### 1.2 Truth checkpoint: implemented versus still hypothetical
 
-Current override: the installed runtime is `9542272cc3f229fbe8022ae7d43754b554710f34`,
+Current override: the installed runtime is `088f36982ae9ec6c643d7fa6d9a299701dbb377b`,
 not the older release identifiers retained in historical table rows below. It
 includes exact Repost campaign matching through either `post_url` or
 `source_url`, the policy-budget queue starvation repair, per-item policy-failure
-isolation, provider unique-click retention, and versioned daily-summary Telegram
-receipts described above.
-The official empty artifact `b65723e65e3fe309dda373b1cd7edda0b6cfb8ae754c208f7da827154b9fecce`
-and unique-click readback in section 1.1.23 are the latest money truth; section
-1.1.24 is the latest Telegram transport truth. The installed owner completed the due wake at 12:22 JST with
+isolation, provider unique-click retention, bounded Telegram-history
+reconciliation, and versioned daily-summary Telegram receipts described above.
+The official empty artifact `e60af92707514598ed9c0b0c6bd5b8be9578d04bfbf969e829d455ec73a31c5f`
+observed at `13:32:51+0900` is the latest money truth. The existing owner
+completed the next wake at `13:36:24+0900` inside the one-hour cooldown with
 34/32 placement clicks/unique clicks, 0 commission rows, and a deduplicated
 Telegram delivery; no official transaction or money exists. The installed
-daily-summary schema is version `2`, so a same-day schema change may produce one
-new deduplicated receipt; the first owner readback after this install is still
-pending.
+daily-summary schema is version `2`, and the outbox/sent ledgers remain
+`133/133`.
 
 This table prevents tests, fixtures, screenshots, or plans from being reported as
 live autonomous operation.
@@ -197,8 +196,8 @@ historical evidence and are not a competing current-state claim.
 
 | Surface | Current truth | What is not yet proven |
 |---|---|---|
-| Runtime | Immutable local release `2d51ca39af8d429a6dac63c7c6eb1b71a0a822a8` is current. `local_loop.py` remains byte-equal at SHA-256 `2e673b819b664d4421f9a4656fc5f0379bdf61a42bcbe87c0ab51631de471f26`; `composition_owner.py` remains byte-equal at SHA-256 `1e466903…688136535`; `source_capture.py` is byte-equal at SHA-256 `a1519071161940de3cdc8b774dbb63218b2ff3e07c76d89f1264ee10eb0d7e44`. The release appends `AFFILIATE_TELEGRAM_DELIVERY` rows carrying enqueue, attempt, delivery result, failure subtype, and provider message ID, matches Repost campaigns by exact `post_url` or `source_url`, prevents bounded policy/source budget blocks from starving later work, isolates per-item policy-build failures, and includes provider signup/conversion fields in unattributed-click receipts. Existing suite `69/69`, compilation, and no-network fixtures passed. The composition owner live-proved `POLICY_BUDGET_BLOCKED` at `10:27:55+0900`; the source owner live-proved `BUDGET_BLOCKED` at `10:45:59+0900`; the money owner live-proved the empty official capture at `11:17:15+0900` and reporting replay at `11:29:55+0900`. Browser introspection and kick still return `141: Reentrancy avoided`; no transaction or money exists. | Repost action → owned visit → provider click → transaction lineage, attributable approved/paid commission, paid payout, provider/channel diversification, the remaining experiment queue, all-owner load/readback, and B01 official transaction capture remain open |
-| Latest runtime delta | The existing composition owner replayed the installed release at `10:27:55+0900` and returned `POLICY_BUDGET_BLOCKED` for the durable `translate-video` item without a public effect. The source owner then live-proved `BUDGET_BLOCKED` at `10:45:59+0900`. The latest money owner completed wake `4c85497daf19dd379825cdfb5a37739eb39f45d4179f7305374660cf6a49533e` at `11:17:15+0900`, captured PartnerStack artifact `c179a393…e3b5792c`, and reconciled `0` source rows with `0` appended and `0` replayed transitions; Repost was 54/0 exact joins. | The official report is still empty (`NO_LIVE_ROWS`, payout `EMPTY`); rolling net is `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`, so B01 remains open |
+| Runtime | Immutable local release `088f36982ae9ec6c643d7fa6d9a299701dbb377b` is current. Installed/source `local_loop.py` bytes match at SHA-256 `7d9c401b4785dc2f39ac367887d0ceb9b1e481cb9b7328c022d1bc186100e3c3`; the existing suite is `72/72`, compilation and diff checks pass. The release appends `AFFILIATE_TELEGRAM_DELIVERY` rows carrying enqueue, attempt, delivery result, failure subtype, and provider message ID, matches Repost campaigns by exact `post_url` or `source_url`, prevents bounded policy/source budget blocks from starving later work, isolates per-item policy-build failures, includes provider signup/conversion fields, and bounds historical Telegram reconciliation to evidence-backed rows. The existing owner completed wake `823d355c…` at `13:36:24+0900`; `launchctl print` reads `runs=221`, `last exit code=0`, and `StartInterval=600`, while the Gateway is loaded/running with a successful probe. No transaction or money exists. | Repost action → owned visit → provider click → transaction lineage, attributable approved/paid commission, paid payout, provider/channel diversification, the remaining experiment queue, and the B01 official transaction capture remain open |
+| Latest runtime delta | The existing money owner was kickstarted through the registered label and completed the same durable path at `13:36:24+0900`. Because the last official PartnerStack capture at `13:32:51+0900` was still inside its one-hour cooldown, the wake correctly reported `revenue_state=COOLDOWN` and did not create a new report or transition. It retained 20 placements, Repost `56/0` exact joins, Telegram `NO_PENDING` on the already-sent `27069`, and outbox/sent `133/133`; no external effect or money changed. | The latest official artifact remains `e60af927…e31c5f` with `commission_row_count=0`, `NO_LIVE_ROWS`, payout `EMPTY`, and reconciliation `0/0/0`; rolling net is `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`, so B01 remains open |
 | F1 migration | Implemented, reviewed, pushed, and re-run from final HEAD | It does not publish, browse, attribute, or earn |
 | F2 Agent brain | Commit `d9ad4acd7cb0474cf1a825a94cfb49e7847da22e` is pushed; root replay on 2026-08-06 passed focused 16/16, Python 3.9 compile/shell syntax, and 30/30 related regressions | Full-suite collection is blocked by legacy `test_affiliate_verify.py` import-time `sys.exit()`; fresh review and live-provider execution remain open, so F2 stays open |
 | Provider auth | ElevenLabs is `ACTIVE_LINK_VERIFIED`, earning-enabled, and `AUTHENTICATED`. HubSpot/Impact’s authenticated CDP and installed owner both read `HubSpot, Inc. application / Declined`; cc775c374 persists `REJECTED / DO_NOT_RESUBMIT` with transition `14d9b1aa…5cb6` and owner Telegram `26218`. No Google login, six-digit-code submission, phone call, or login-support Telegram effect exists in the Affiliate receipts. Kit is rejected; other providers remain non-executable | ElevenLabs is the only currently executable earning offer. HubSpot has no executable link after rejection; no commission, approved transaction, reversal, or payout is claimed |
@@ -730,6 +729,27 @@ E02–E10, F01–F06, G01–G07/A2–A3, and only after the local USD 10,000 pro
 O01–O12/M4.1 for OSS. Section 9.0.1.0 is the sole atomic ordering authority;
 no later provider expansion or OSS work can bypass the first real row and the
 canonical net gate.
+
+### 1.1.27 Latest owner wake after B01 recheck
+
+The registered Affiliate owner was kickstarted at `2026-08-21T13:36:04+0900`
+and completed wake `823d355c…` at `13:36:24+0900`. `launchctl print` reads the
+same loaded label with `runs=221`, `last exit code=0`, and a 600-second
+interval. The Gateway remains loaded/running with a successful loopback probe.
+The owner correctly stayed inside the one-hour revenue cooldown: the latest
+official PartnerStack artifact remains `e60af927…e31c5f`, observed at
+`13:32:51+0900`, with `commission_row_count=0`, `NO_LIVE_ROWS`, payout
+`EMPTY`, and reconciliation `0/0/0`. No new capture, transaction, settlement,
+commission, or money was created by the recheck.
+
+The same wake retained 20 exact English placements, 34 provider clicks, 32
+unique provider clicks, and Repost `56` actions with `0` exact Affiliate joins.
+Telegram was `NO_PENDING` on existing provider message `27069`; the private
+outbox and sent ledgers remain `133/133`. This closes another installed
+cooldown/replay readback only. B01 remains `WAITING_FOR_PROVIDER_TRANSACTION`;
+the next executable work is qualified acquisition/conversion improvement or
+an authenticated, provider-approved additional lane, while all money gates
+remain fail-closed.
 
 ### 1.2.0 Audited executable boundary
 

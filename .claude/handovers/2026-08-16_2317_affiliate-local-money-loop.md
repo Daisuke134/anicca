@@ -20,6 +20,14 @@
   duplicate external send. T01b is therefore closed; the old `141` management
   result and earlier transport timeout remain historical evidence, not the
   current owner state.
+- The next registered-owner recheck completed at `2026-08-21T13:36:24+0900`
+  (`wake_event_uuid=823d355c…`) with `runs=221`, `last exit code=0`, and the
+  same 600-second interval. It correctly returned `revenue_state=COOLDOWN`
+  because the last official PartnerStack capture at `13:32:51+0900` was still
+  inside the one-hour window. The latest artifact remains `e60af927…e31c5f`,
+  `commission_row_count=0`, `NO_LIVE_ROWS`, payout `EMPTY`, reconciliation
+  `0/0/0`; no transaction or money was created. Telegram stayed
+  `NO_PENDING` on message `27069`, and outbox/sent remain `133/133`.
 
 - Latest launchd/runtime verification: the existing `ai.anicca.affiliate-loop`
   label now reads back through `launchctl print` with exit `0`, loaded,
