@@ -244,6 +244,8 @@ def _known_value(item: dict[str, Any], profile: dict[str, Any], values: dict[str
     if "start date" in context or "when can you start" in context:
         value = candidate.get("start_date")
         return str(value) if value else None
+    if "how did you hear" in context:
+        return "Job Boards"
     return None
 
 
@@ -313,7 +315,7 @@ async def _fill_step(
             # Optional demographics and unknown prior-employer answers remain untouched.
             if _is_unknown_required(item, value):
                 blockers.append(label)
-            elif value and kind == "radio" and str(item.get("label") or "").casefold() == value.casefold():
+            elif value and kind == "radio" and _label(item) == value.casefold():
                 await element.check()
             continue
         if kind in {"button"} or role == "combobox" or item_id in {"source--source", "address--countryRegion", "country--country"}:
