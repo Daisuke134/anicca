@@ -530,6 +530,15 @@ def is_owned_article_url(value):
     )
 
 
+def safe_proposal_text(value, max_length=240):
+    return (
+        isinstance(value, str)
+        and 0 < len(value) <= max_length
+        and not any(char.isspace() and char in "\r\n" or ord(char) < 32 for char in value)
+        and "http" not in value.casefold()
+    )
+
+
 def observe_repost_acquisition(state):
     """Read the existing Repost ledger without owning or creating its effects."""
     configured = os.environ.get("AFFILIATE_REPOST_STATE_DIR")
@@ -703,11 +712,33 @@ def create_repost_proposal(state):
             continue
         metrics = placement_rows.get(placement_id, {}).get("provider_clicks", {})
         click_count = metrics.get("count") if isinstance(metrics, dict) else None
+        article_title = None
+        buyer_intent = None
+        slug = campaign.get("slug")
+        if isinstance(slug, str):
+            try:
+                content = json.loads((state / "content" / f"{slug}.json").read_text(encoding="utf-8"))
+                article_title = content.get("title")
+            except (OSError, ValueError):
+                pass
+        plan_paths = [
+            state / "discovered-source-plans" / f"{campaign.get('plan_id')}.json",
+            Path(__file__).resolve().parents[1] / "config" / "source-plans" / f"{campaign.get('plan_id')}.json",
+        ]
+        for plan_path in plan_paths:
+            if buyer_intent is not None or not plan_path.is_file():
+                continue
+            try:
+                buyer_intent = json.loads(plan_path.read_text(encoding="utf-8")).get("buyer_intent")
+            except (OSError, ValueError):
+                buyer_intent = None
         candidates.append({
             "placement_id": placement_id,
             "plan_id": campaign.get("plan_id"),
             "owned_article_url": owned_url,
             "provider_click_count": click_count if isinstance(click_count, int) else None,
+            "article_title": article_title if safe_proposal_text(article_title) else None,
+            "buyer_intent": buyer_intent if safe_proposal_text(buyer_intent) else None,
             "created_at": campaign.get("created_at") or "",
         })
     if not candidates:
@@ -738,6 +769,8 @@ def create_repost_proposal(state):
         "language": "en",
         "disclosure_required": True,
         "provider_click_count": selected["provider_click_count"],
+        "article_title": selected["article_title"],
+        "buyer_intent": selected["buyer_intent"],
         "selection_state": "BOUNDED_EXPLORATION_NO_APPROVED_NET",
         "repost_delivery_state": "UNCONSUMED_BY_SEPARATE_OWNER",
         "revenue_credit_state": "NO_REVENUE_CREDIT",
