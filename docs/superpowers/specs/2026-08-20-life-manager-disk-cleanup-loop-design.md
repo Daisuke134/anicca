@@ -15,8 +15,8 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
 | OSS skill | 実装済み | `skills/self/disk-cleanup/disk_cleanup.py`、`SKILL.md`、`tests/`、`install-launchd.sh`、`launchd/*.plist` |
 | fail-closed deletion | 部分実装 | protected root、unknown class、unproved candidate、active lease、symlink、open-path、probe errorをpreserveする実装と12件のLife Manager unit test。versioned manifest、owner必須、remote rebuild proofの統合契約は未完了 |
 | clone coverage | 実装済み | Chrome (`com.google.Chrome.code_sign_clone`) と Chromium (`org.chromium.Chromium.code_sign_clone`) の両collectionをallow-list discovery |
-| cadence | 部分実装 | OSS plistは`StartInterval=300`。通常passはbounded fast pass、`cleanup-full-pass.at`の1時間マーカー（または互換の`EMERGENCY_GUARD_FULL_PASS=1`）がbounded full cleanupを発火する。Data volumeの空きがexact-byteで3GiB未満なら、fresh markerでもそのpassをfullへ昇格し、worktree starvationを防ぐ。critical full pass後は5分cooldownで逐次full-pass stormを抑制する。`ai.anicca.life-manager-disk-cleanup`は`gui/501`へbootstrap済みで、`StartInterval=300`、single lock、kickstart/readbackを実測。`com.anicca.emergency-disk-guard`と`com.anicca.disk-sentinel`は60秒fallback/観測として登録されている |
-| runtime guard | 部分実装 | 通常の5分guardは`~/anicca-project/work`と`~/.openclaw/external`だけをbounded fast passし、host inventoryを毎回atomic writeする。Life Managerの`host-inventory-full.at`とfallbackの`cleanup-full-pass.at`を別々に管理し、各1時間 cadenceでfull census/cleanupを発火する。ULTRA時はfallback guardがexact-byte critical promotionを行い、`cleanup-critical-full-pass.at`の5分cooldown中はfast passへ戻る。root size/unknown attributionは未完了 |
+| cadence | 部分実装 | OSS plistは`StartInterval=300`。通常passはbounded fast pass、`cleanup-full-pass.at`の1時間マーカー（または互換の`EMERGENCY_GUARD_FULL_PASS=1`）がbounded full cleanupを発火する。Data volumeの空きがexact-byteで3GiB未満なら、fresh markerでもそのpassをfullへ昇格し、worktree starvationを防ぐ。critical full pass後は5分cooldownで逐次full-pass stormを抑制し、hourly/explicit fullも同じcooldownを受ける。不正・未来のtimestamp receiptはdue扱い、cooldown設定が不正ならfullを許可せずfastへfail-closedし、critical markerを書けない場合もfastへfail-closedする。`ai.anicca.life-manager-disk-cleanup`は`gui/501`へbootstrap済みで、`StartInterval=300`、single lock、kickstart/readbackを実測。`com.anicca.emergency-disk-guard`と`com.anicca.disk-sentinel`は60秒fallback/観測として登録されている |
+| runtime guard | 部分実装 | 通常の5分guardは`~/anicca-project/work`と`~/.openclaw/external`だけをbounded fast passし、host inventoryを毎回atomic writeする。Life Managerの`host-inventory-full.at`とfallbackの`cleanup-full-pass.at`を別々に管理し、各1時間 cadenceでfull census/cleanupを発火する。ULTRA時はfallback guardがexact-byte critical promotionを行い、`cleanup-critical-full-pass.at`の5分cooldown中はfast passへ戻る。hourly/explicit fullの失敗・timeout後も次回はfast passへ戻り、critical receipt書込み失敗もgig rootを追加しない。root size/unknown attributionは未完了 |
 | ledger/receipt | 部分実装 | cleanup ledgerを32 MiBでrotateし、約282 MiBから56 KiB + gzip archiveへ縮小。bounded operational logとimmutable incident receiptの正式分離は未完了 |
 | production recovery | 未完了 | 非リポジトリreceipt storm、3分超のworktree remote inspection、旧autopruneの無制限home `du` は封じた。旧autoprune/reclaim/janitorをbootout＋disableし、plistは`.disabled-20260821`へ可逆退避した。正本5分labelはload readback済み。直近はfree約1.04GiB、swap約16GiB中15–16GiB使用、cleanup receiptは`evaluated=0/reclaimed=0/protected_deletions=0`で安全候補なし。重要なCodex/OpenClaw sessionとVM swapfileは保持しており、24時間/7日観測は未開始 |
 
@@ -141,9 +141,12 @@ remote-recoverable候補を評価しない状態を再現した。guardはData v
 `ULTRA_GB=3`と比較し、critical時だけ現在のpassをfullへ昇格する。昇格後も`git fetch`、clean、
 unlocked、closed、remote head、revalidationの既存条件を維持し、protected rootやactive sessionは
 削除しない。critical昇格後は専用markerの5分cooldownを適用し、毎分のgit fetch/lsof stormを
-起こさない。Anicca cleanup-control regressionは**61 passed**、source/runtime SHA-256は一致し、
-live ledgerではdirty/open/recent/head-not-on-remoteをpreserveした。これはworktree starvationを
-解消し、連続full-passを抑制する証拠であり、reserve 11 GiB回復・swap解放・24時間観測の完了ではない。
+起こさない。hourly/explicit fullが失敗・timeoutしてもcritical markerが次回をfastへ戻し、timestampの
+不正値・未来値はdueとして現在値へ更新する一方、cooldown設定の不正値とmarker書込み失敗はfullを
+許可せずfastへfail-closedする。Anicca cleanup-control regressionは**63 passed**、
+source/runtime SHA-256は一致し、live ledgerではdirty/open/recent/head-not-on-remoteをpreserveした。
+これはworktree starvationを解消し、連続full-passを抑制する証拠であり、reserve 11 GiB回復・swap解放・
+24時間観測の完了ではない。
 
 ### OSS boundary
 
@@ -154,8 +157,9 @@ receipt、runtime manifestの実データはrepositoryへ入れず、install時�
 LLMは削除権限を持たず、unknown pathを削除するための自由なshell実行も公開契約に含めない。
 
 実装済みcommitはLife Managerの `c3e6cf6ff`（hourly markerとallow-listed fail-closed契約まで）を参照する。
-Anicca側のguard integrationは作業branchの`7363a95dc`までローカルで検証済みだが、GitHub pushは
-DNS解決失敗で未達である。これらのcommitは実装の到達点であり、production DONEの証明ではない。
+Anicca側のguard integrationは`2bf4388a`（critical cooldown receipt fail-closed、tests 63 passed）まで
+GitHubへpush済みで、稼働スクリプトのSHA-256も一致する。これらのcommitは実装の到達点であり、
+production DONEの証明ではない。
 
 ## 1. Overview — What & Why
 
@@ -478,14 +482,14 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 | 1 | 全local volume、top-level root、guard/sentinel/janitor/plist/log/state/manifestをimmutable host censusへ記録 | mount/root/owner family、label、interval、program SHA、last exit、free bytes | 部分完了: bounded `host-inventory.json`はmount 9/root 17を実測。11件のgap、root size timeout、writable-volume attributionが残る |
 | 2 | `skills/self/disk-cleanup/` にcanonical host inventory、manifest、runner、health interfaceを定義 | local writable volume missing 0、required owner family missing 0、schema PASS | 部分完了: inventory schema、atomic writer、fast/full mode、hourly marker、9 testsは実装。local writable missing 0とhealth readbackは未完了 |
 | 3 | protected rootsとfail-closed validatorをTDDで固定 | Test Matrix 3–11 PASS | 部分完了: Life Manager governorとAnicca回帰testで主要保護を確認。全Matrix 3–11の統合証跡は未完了 |
-| 4 | exact-byte tier、hysteresis、single lock、300秒schedulerをTDD実装 | Test Matrix 2、12–14 PASS | 部分完了: exact-byte tier、atomic lock、300秒plist、pressure/recovery floor、hourly full-pass marker、ULTRA時のcritical full-pass promotion、bounded fast/full pass、正本labelのbootstrap/readbackは実装・unit/live PASS。24時間観測は未完了 |
+| 4 | exact-byte tier、hysteresis、single lock、300秒schedulerをTDD実装 | Test Matrix 2、12–14 PASS | 部分完了: exact-byte tier、atomic lock、300秒plist、pressure/recovery floor、hourly full-pass marker、ULTRA時のcritical full-pass promotion、hourly/explicit fullのcooldown、marker fail-closed、bounded fast/full pass、正本labelのbootstrap/readbackは実装・unit/live PASS。24時間観測は未完了 |
 | 4a | GUI bootstrap health failureを観測専用fail-closedに固定 | Test Matrix 28–29 PASS、141/153 fixture receipt、復旧後readback | 部分完了: `launchctl-safe preflight`でUID/Directory Services/`gui/501`をreadbackし、cutover前にPASSを確認。cleanup内のhealth-failure receiptと141/153実機fixtureは未完了 |
 | 5 | Mac全体のproducer censusを作り、artifact/lease/finalizer helperを上位growth ownerへ接続 | 1 GiB以上のunattributed root 0、active lease readback、orphan lease fixture PASS | 部分完了: Chrome/Chromium cloneと`cfo-*`のallow-list discoveryは実装。host-wide census、lease heartbeat/finalizer接続は未完了 |
 | 6 | 全write-heavy producerへ共通disk preflightを接続 | producer census missing consumer 0、Test Matrix 15 PASS | 未完了: pressure blockは生成するが、全producerの共通preflight/drain接続は未完了 |
 | 7 | bounded ops log、incident receipt、Telegram dedupeを実装 | Test Matrix 18–19 PASS、message ID | 部分完了: ledger rotationとlast receipt、milestone送信は実装。ops log/incident receiptの正式分離とdedupe契約は未完了 |
 | 8 | intelligence input/output schemaとwake gateを実装 | deletion capability 0、Test Matrix 16–17 PASS | 未完了: deterministic cleanupにLLM削除権限はないが、hourly intelligence schema/wake gateは未実装 |
 | 9 | owner単位のbounded recoveryを実装 | Test Matrix 20 PASS、duplicate redispatch 0 | 未完了: owner単位のcheckpoint、redispatch、重複抑止は未実装 |
-| 10 | 全cleanup test、host inventory test、Life Manager regression suiteを実行 | failure 0、warning 0、Test Matrix 23–27 PASS | 部分完了: Life Manager disk-cleanup 12 tests、Anicca cleanup regression 56 tests、shell/plist lintはPASS。Matrix 23–27は未完了 |
+| 10 | 全cleanup test、host inventory test、Life Manager regression suiteを実行 | failure 0、warning 0、Test Matrix 23–27 PASS | 部分完了: Life Manager disk-cleanup 12 tests、Anicca cleanup regression **63 tests**、shell/plist lintはPASS。Matrix 23–27は未完了 |
 | 11 | effect-free shadow passでlegacy ownerとcanonical ownerのdecision parityを比較 | protected mismatch 0、candidate mismatch説明済み | 未完了: legacy scriptはshim化済みだが、effect-free parity receiptは未作成 |
 | 12 | 既知regenerable artifact 1件でproduction canaryを実行 | reclaimed bytes > 0、free bytes readback、protected deletion 0 | 部分完了: closed `cfo-*`とclone候補の実E2E回収・readbackを確認。正式canary receiptは未完了 |
 | 13 | immediate replayを実行 | duplicate effect 0、error 0 | 部分完了: guard replayで保護対象削除0を確認。正式なproduction replay receiptは未完了 |
