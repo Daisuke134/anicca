@@ -54,12 +54,12 @@
       "id": "hubspot-impact",
       "priority": 5,
       "network": "Impact",
-      "decision": "APPLICATION_PENDING",
+      "decision": "APPLICATION_REJECTED",
       "program_url": "https://www.hubspot.com/partners/affiliates",
       "terms_url": "https://legal.hubspot.com/marketing-affiliate-program-agreement",
       "commission": "30% monthly recurring commission for up to one year",
-      "next_action": "POLL_WITHOUT_REAPPLYING",
-      "evidence": "we will review it within 2-3 business days",
+      "next_action": "DO_NOT_RESUBMIT_UNCHANGED",
+      "evidence": "Authenticated Impact readback renders the existing HubSpot, Inc. application as Declined; the owner persists REJECTED and must not resubmit unchanged",
       "credential_ref": "keychain://ai.anicca.affiliate.provider.impact/primary"
     },
     {
