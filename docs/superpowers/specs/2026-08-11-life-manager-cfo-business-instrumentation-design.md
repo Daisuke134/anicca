@@ -456,7 +456,8 @@ Rules:
 
 - Apple normalizer migration-evidence commit `f1986663b` remains present on its evidence branch. The canonical CFO
   owner is `/Users/anicca/Projects/life-manager-main/.worktrees/cfo-ops3a`, branch `feature/cfo-ops3a-canonical`:
-  OPS3a is `2dac47124`, host parity is `6acff1585`, and DNS hardening is `d013196ce`; the stable release is the only installed
+  OPS3a is `2dac47124`, host parity is `6acff1585`, DNS hardening is `d013196ce`, and ambiguous-request retry
+  prevention is `5e1c0dfcc`; the stable release is the only installed
   CFO runtime. The spec worktree is `/Users/anicca/anicca-project/.worktrees/cfo-resume-spec` on
   `feature/cfo-moneytree-daily-report`. Never edit the dirty main worktree.
 - The canonical code branch is pushed to `origin/feature/cfo-ops3a-canonical`; the spec branch is pushed to
@@ -473,8 +474,9 @@ Rules:
   OpenDirectory. The stable Moneytree reader now returns a redacted success envelope through the persistent local
   app-server; an invalid socket fails closed. After `d013196ce`, the installed stable wrapper passed with only the
   plist-equivalent environment (no external resolver injection): `status=sent`, `revision=2`, `appended=true`, and
-  `delivered=true`; the snapshot/claim and Telegram delivery receipt read back with provider `message_id=766`. This
-  is core-loop evidence, not launchd provenance. On 2026-08-21,
+  `delivered=true`; the snapshot/claim and Telegram delivery receipt read back with provider `message_id=766`. After
+  `5e1c0dfcc`, the same-hour rerun returned `status=quiet`, `revision=2`, `appended=false`, `delivered=false`, with
+  no duplicate receipt. This is core-loop evidence, not launchd provenance. On 2026-08-21,
   authorized restart paths were attempted but did not execute (`-10827`, `141`, and
   `Operation not permitted`); no account mutation, logout, reboot, or OS-service restart occurred. Parent
   `CFO-OPS3b` operational launchd/receipt and recent-transaction `CFO-1j` are first; once their real loop/receipt
