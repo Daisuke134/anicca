@@ -17,7 +17,10 @@ from typing import Any
 
 # Provider/research retries are separate from the five quality assessments.
 # A transient transport outage must not consume the quality iteration budget.
-MAX_INVOCATIONS = 10
+# Recovery/provider retries are separate from the five quality assessments.
+# A bounded terminal block caused by local infrastructure must be reopenable
+# without deleting its receipts or consuming a quality iteration.
+MAX_INVOCATIONS = 20
 MAX_PUBLICATION_HANDOFFS = 2
 STATE_NAME = "quality-feedback-recovery-state.json"
 
@@ -353,6 +356,11 @@ def plan(run_dir: Path | str, ledger: Path | str) -> dict[str, Any]:
         prompt = Path(str(state.get("prompt_path", "")))
         attempts = int(state.get("attempts", 0))
         publication_attempts = int(state.get("publication_attempts", 0))
+        quality_attempt_count = sum(
+            1
+            for path in gates.glob("quality-self-heal-attempt-*.json")
+            if path.is_file() and not path.is_symlink()
+        )
         if (
             state.get("status")
             in {"terminal-blocked", "terminal-ready-not-published"}
@@ -394,6 +402,25 @@ def plan(run_dir: Path | str, ledger: Path | str) -> dict[str, Any]:
             return {
                 "status": "READY",
                 "reason": "prepared-quality-feedback-recovery",
+                "run_id": run_dir.name,
+                "run_dir": str(run_dir),
+                "prompt_path": str(prompt),
+                "prompt_sha256": state["prompt_sha256"],
+                "attempts": attempts,
+            }
+        defect = _read_json(gates / "quality-feedback-recovery-defect.json")
+        if (
+            state.get("status") == "terminal-blocked"
+            and attempts < MAX_INVOCATIONS
+            and quality_attempt_count < 5
+            and isinstance(defect, dict)
+            and defect.get("status") == "blocked"
+            and prompt.is_file()
+            and state.get("prompt_sha256") == _sha256(prompt)
+        ):
+            return {
+                "status": "READY",
+                "reason": "reopen-quality-feedback-recovery-after-infrastructure-block",
                 "run_id": run_dir.name,
                 "run_dir": str(run_dir),
                 "prompt_path": str(prompt),
@@ -587,6 +614,7 @@ def mark_invoking(
     decision = plan(run_dir, ledger)
     if decision.get("status") != "READY" or decision.get("reason") not in {
         "prepared-quality-feedback-recovery",
+        "reopen-quality-feedback-recovery-after-infrastructure-block",
         "orphaned-quality-feedback-recovery",
         "prepared-quality-publication-handoff",
         "orphaned-quality-publication-handoff",
