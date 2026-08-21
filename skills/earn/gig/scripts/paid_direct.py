@@ -18,6 +18,7 @@ import step_result_status  # noqa: E402
 from telegram_outbox import TelegramOutbox, dispatch_one  # noqa: E402
 from telegram_report import OpenClawTelegramTransport  # noqa: E402
 from gig_paths import BROWSER_DIR, REPO_ROOT, RUNNER_DIR  # noqa: E402
+from gig_disk_guard import disk_headroom_ok  # noqa: E402
 
 DEFAULT_STEP_TIMEOUT_SECONDS = 2100
 TARGETED_READBACK_TIMEOUT_SECONDS = 180
@@ -3237,6 +3238,9 @@ def _write_file_effect(args, item_path: Path, output: Path, prepared: dict[str, 
                        "--evidence-dir", str(browser_evidence), "--default-tab-helper", str(args.cdp_helper)]
             if revision_after_formal:
                 command.append("--revision-after-formal")
+        disk_reason = _effect_gate_reason(args)
+        if disk_reason is not None:
+            return _write_disk_pending(output, room, disk_reason, "before_file_browser_effect")
         browser = _json_line(_run(command, "file_browser"), "file_browser")
         if browser.get("ok") is not True or not isinstance(browser.get("evidence"), dict):
             raise Failure("file_browser")
@@ -3298,6 +3302,10 @@ def _write_one(args, item_path: Path, output: Path) -> int:
             _write(output, {"status": "reserved_for_owner", "talkroom_id": _text(prepared.get("talkroom_id")),
                             "effect": 0, "readback": 0, "failed": 0})
             return 0
+        disk_reason = _effect_gate_reason(args)
+        if disk_reason is not None:
+            return _write_disk_pending(output, _text(prepared.get("talkroom_id")), disk_reason,
+                                       "before_paid_effect")
         if prepared.get("_paid_mode") == "file":
             return _write_file_effect(args, item_path, output, prepared)
         room, feedback = _text(item.get("talkroom_id")), _text(item.get("buyer_feedback_sha256"))
@@ -3360,6 +3368,9 @@ def _write_one(args, item_path: Path, output: Path) -> int:
             result = {"talkroom_id": room, "send_performed": False, "deduplicated": True,
                       "formal_delivery_checkbox": False, "evidence_paths": {"answer_snapshot": str(answer_snapshot), "official_readback": str(presend), "presend_readback": str(presend)}}
             _write(output, {"status": "completed", "effect": 0, "readback": 1, "failed": 0, "item": result}); return 0
+        disk_reason = _effect_gate_reason(args)
+        if disk_reason is not None:
+            return _write_disk_pending(output, room, disk_reason, "before_answer_browser_effect")
         browser = _json_line(_run([sys.executable, str(args.answer_browser), "--queue-item", str(item_path), "--answer-file", str(answer_snapshot),
                                    "--evidence-dir", str(answer_dir), "--default-tab-helper", str(args.cdp_helper)], "answer_browser"), "answer_browser")
         if browser.get("ok") is not True or not isinstance(browser.get("evidence"), dict): raise Failure("answer_browser")
@@ -3425,16 +3436,51 @@ def _run_paid_item(args, room: str, item_file: Path, prepared_file: Path,
     if prepare.returncode or prepared.get("_paid_prepare_status") != "prepared":
         step = _text(prepared.get("failed_step")) or "remote_resume"
         return {"talkroom_id": room, "status": "failed", "failed_step": step}, 0, 0, 1, step
+    checkpoint = effect_file.with_name(effect_file.stem + "-checkpoint.json")
+    try:
+        _write(checkpoint, {
+            "status": "pending", "talkroom_id": room, "effect": 0,
+            "readback": 0, "checkpoint": "before_paid_effect",
+            "prepared_file": str(prepared_file), "reason": "effect_not_started",
+        })
+    except OSError:
+        return {"talkroom_id": room, "status": "failed", "failed_step": "disk_checkpoint"}, 0, 0, 1, "disk_checkpoint"
+    gate_reason = _effect_gate_reason(args)
+    if gate_reason is not None:
+        if not _update_disk_checkpoint(
+                checkpoint, status="pending", checkpoint="before_paid_effect", reason=gate_reason):
+            return {"talkroom_id": room, "status": "failed", "failed_step": "disk_checkpoint"}, 0, 0, 1, "disk_checkpoint"
+        return {"talkroom_id": room, "status": "pending", "checkpoint": "before_paid_effect",
+                "reason": gate_reason}, 0, 0, 0, ""
     process = _run_bounded(_effect_command(args, prepared_file, effect_file), env=_fresh_child_env(args))
     try:
         value = _load(effect_file)
     except (OSError, json.JSONDecodeError):
         value = {"status": "failed", "failed_step": "writer_lock", "effect": 0, "readback": 0}
+    if process.returncode == 0 and value.get("status") == "pending":
+        if not _update_disk_checkpoint(
+                checkpoint, status="pending", checkpoint=value.get("checkpoint", "before_paid_effect"),
+                reason=value.get("reason", "disk_pressure"), effect=0,
+                readback=int(value.get("readback") == 1)):
+            return {"talkroom_id": room, "status": "failed", "failed_step": "disk_checkpoint"}, 0, 0, 1, "disk_checkpoint"
+        return {"talkroom_id": room, "status": "pending",
+                "checkpoint": value.get("checkpoint", "before_paid_effect"),
+                "reason": value.get("reason", "disk_pressure")}, 0, 0, 0, ""
     if process.returncode or value.get("status") != "completed":
         step = _text(value.get("failed_step")) or "writer_lock"
+        observed_effect = int(value.get("effect") == 1)
+        checkpoint_state = "delivery_unknown" if process.returncode or observed_effect else "effect_rejected"
+        if not _update_disk_checkpoint(
+                checkpoint, status=checkpoint_state, checkpoint="effect_observed" if observed_effect else checkpoint_state,
+                reason=step, effect=observed_effect, readback=int(value.get("readback") == 1)):
+            step = "disk_checkpoint"
         return ({"talkroom_id": room, "status": "failed", "failed_step": step},
-                int(value.get("effect") == 1), int(value.get("readback") == 1), 1, step)
+                observed_effect, int(value.get("readback") == 1), 1, step)
     item_result = value.get("item") or {}
+    try:
+        checkpoint.unlink(missing_ok=True)
+    except OSError:
+        pass
     row = {"talkroom_id": room, "status": "completed", **{
         key: item_result[key] for key in (
             "send_performed", "deduplicated", "formal_delivery_checkbox", "remote_repaired",
@@ -3494,6 +3540,22 @@ def _lock(path: Path) -> Iterator[bool]:
         yield True
     finally: fcntl.flock(handle.fileno(), fcntl.LOCK_UN); handle.close()
 
+
+def _operator_brake_status(path: Path | None = None) -> str:
+    """Use the shared expiring brake contract; an expired record is not a held brake."""
+    environment = os.environ.copy()
+    if path is not None:
+        environment["GIG_OPERATOR_BRAKE_FILE"] = str(path)
+    try:
+        completed = subprocess.run(
+            [str(HERE / "gig_brake.sh"), "status"], stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+            timeout=5, check=False, env=environment,
+        )
+    except Exception:
+        return "failed"
+    return {0: "held", 1: "free"}.get(completed.returncode, "failed")
+
 def _unique_orders(items: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], int]:
     """Keep only the freshest observation for each structural talkroom identity."""
     by_room: dict[str, dict[str, Any]] = {}
@@ -3527,20 +3589,95 @@ def _paid_queue_priority(args, item: dict[str, Any]) -> tuple[int, str, str]:
     return repair_rank, _text(item.get("delivery_date")) or "9999-12-31", _text(item.get("talkroom_id"))
 
 
+def _disk_gate_reason() -> str | None:
+    """Return a durable reason when pressure forbids starting another paid item."""
+    try:
+        return None if disk_headroom_ok() else "disk_pressure"
+    except Exception as error:  # fail closed when the host policy cannot be read
+        return f"disk_preflight_error:{type(error).__name__}"
+
+
+def _effect_gate_reason(args) -> str | None:
+    """Check host pressure and the operator brake at the irreversible-effect boundary."""
+    reason = _disk_gate_reason()
+    if reason is not None:
+        return reason
+    brake = getattr(args, "operator_brake", None)
+    if brake is None:
+        return None
+    brake_status = _operator_brake_status(brake)
+    return {
+        "held": "operator_brake",
+        "free": None,
+        "failed": "operator_brake_check_failed",
+    }.get(brake_status, "operator_brake_check_failed")
+
+
+def _write_disk_pending(output: Path, room: str, reason: str, checkpoint: str) -> int:
+    """Persist a no-effect checkpoint when pressure reaches an in-flight boundary."""
+    _write(output, {
+        "status": "pending", "talkroom_id": room, "failed": 0,
+        "effect": 0, "readback": 0, "send_performed": False,
+        "checkpoint": checkpoint, "reason": reason,
+    })
+    return 0
+
+
+def _persist_disk_checkpoint(args, room: str, item: dict[str, Any], reason: str,
+                             checkpoint: str) -> str:
+    """Write a deterministic per-room pending marker before any queue mutation."""
+    path = args.evidence_dir / "paid-direct" / "items" / f"item-{room}-disk-checkpoint.json"
+    _write(path, {
+        "version": 1, "status": "pending", "talkroom_id": room,
+        "buyer_feedback_sha256": _text(item.get("buyer_feedback_sha256")),
+        "effect": 0, "readback": 0, "checkpoint": checkpoint,
+        "reason": reason,
+    })
+    return str(path)
+
+
+def _parent_disk_block(args, room: str, item: dict[str, Any], reason: str,
+                       checkpoint: str) -> dict[str, Any]:
+    try:
+        path = _persist_disk_checkpoint(args, room, item, reason, checkpoint)
+    except OSError:
+        return {
+            "talkroom_id": room, "status": "failed", "failed_step": "disk_checkpoint",
+            "effect": 0, "readback": 0, "reason": reason,
+        }
+    return {
+        "talkroom_id": room, "status": "disk_pressure", "send_performed": False,
+        "deduplicated": False, "checkpoint": checkpoint, "reason": reason,
+        "checkpoint_path": path,
+    }
+
+
+def _update_disk_checkpoint(path: Path, **updates: Any) -> bool:
+    """Atomically advance a per-item checkpoint; return false if durability is unavailable."""
+    try:
+        current = _load(path) if path.is_file() else {}
+        if not isinstance(current, dict):
+            current = {}
+        current.update(updates)
+        _write(path, current)
+    except (OSError, TypeError, ValueError, json.JSONDecodeError):
+        return False
+    return True
+
+
 def run_once(args, output: Path) -> int:
     # An operator must be able to stand this lane down without unloading launchd. This is the
     # one lane that can press an irreversible formal-delivery control, so it checks the brake
     # before it takes the writer lock or observes anything.
     empty = {"observed": 0, "actionable": 0, "effect": 0, "readback": 0,
              "failed": 0, "pending": 0, "oldest": None, "items": []}
-    try:
-        brake_held = args.operator_brake.exists()
-    except OSError as error:
+    brake_status = _operator_brake_status(args.operator_brake)
+    if brake_status == "failed":
         _write(output, {"status": "failed", "failed": 1,
-                        "failed_step": f"operator_brake_check_failed:{error}",
+                        "failed_step": "operator_brake_check_failed",
                         **{key: value for key, value in empty.items() if key != "failed"}})
         return 1
-    if brake_held:
+    if brake_status == "held":
         _write(output, {"status": "operator_brake",
                         "operator_brake_file": str(args.operator_brake), **empty})
         return 0
@@ -3576,6 +3713,7 @@ def run_once(args, output: Path) -> int:
             max_workers=PAID_MAX_PARALLEL_PROJECTS, thread_name_prefix="paid-project",
         )
         jobs = []
+        disk_blocked_reason: str | None = None
         for item in targeted_items:
             room = _text(item.get("talkroom_id"))
             # Reserved rooms are refreshed, then dropped. Placing this guard before the read-back
@@ -3619,6 +3757,15 @@ def run_once(args, output: Path) -> int:
                               "evidence_paths": {"official_readback": official}}
                 readback += 1
                 continue
+            if disk_blocked_reason is None:
+                disk_blocked_reason = _effect_gate_reason(args)
+            if disk_blocked_reason is not None:
+                rows[room] = _parent_disk_block(
+                    args, room, item, disk_blocked_reason, "before_project_queue_mutation",
+                )
+                if rows[room].get("status") == "failed":
+                    failed, failed_step = failed + 1, "disk_checkpoint"
+                continue
             room, resolved = _text(item.get("talkroom_id")), _recoverable(args, item)
             if resolved is None:
                 try:
@@ -3655,6 +3802,15 @@ def run_once(args, output: Path) -> int:
                 "room_contract_kind", "price_jpy", "price_source", "buyer",
             ) if key in item}
             private.update(project_root=str(root))
+            if disk_blocked_reason is None:
+                disk_blocked_reason = _effect_gate_reason(args)
+            if disk_blocked_reason is not None:
+                rows[room] = _parent_disk_block(
+                    args, room, item, disk_blocked_reason, "before_paid_item",
+                )
+                if rows[room].get("status") == "failed":
+                    failed, failed_step = failed + 1, "disk_checkpoint"
+                continue
             item_file = args.evidence_dir / "paid-direct" / "items" / f"item-{room}.json"
             effect_file = item_file.with_name(item_file.stem + "-result.json")
             _write(item_file, private)
@@ -3674,10 +3830,21 @@ def run_once(args, output: Path) -> int:
             if item_step:
                 failed_step = item_step
         dates = [_text(item.get("delivery_date")) for item in items if _text(item.get("delivery_date"))]
-        result = {"status": "failed" if failed else "completed", "observed": len(items),
+        if any(
+                isinstance(row, dict)
+                and row.get("status") == "pending"
+                and row.get("checkpoint") in {
+                    "before_paid_effect", "before_file_browser_effect", "before_answer_browser_effect",
+                }
+                for row in rows.values()
+        ):
+            disk_blocked_reason = disk_blocked_reason or "disk_pressure"
+        result_status = "failed" if failed else ("pending" if disk_blocked_reason else "completed")
+        result = {"status": result_status, "observed": len(items),
                   "duplicate_dropped": duplicate_dropped, "actionable": actionable,
                   "effect": effect, "readback": readback, "failed": failed,
-                  "pending": sum(rows[_text(item["talkroom_id"])].get("status") == "pending" for item in items),
+                  "pending": sum(rows[_text(item["talkroom_id"])].get("status") in {"pending", "disk_pressure"}
+                                 for item in items),
                   "oldest": min(dates, default=None),
                   "items": [rows[_text(item["talkroom_id"])] for item in items]}
         if failed_step: result["failed_step"] = failed_step
