@@ -1189,6 +1189,53 @@ This closes only the live disk-recovery/readback observation. The JST cap,
 real billed-cost cap, B01 non-empty provider transaction, universal F05, and
 USD 10,000 gates remain open.
 
+### 1.1.46 F04 known actual-billed daily cost cap
+
+Release `f736fad607bf23d362eeafaef4c71f078d058f14` added the private,
+append-safe `AFFILIATE_EXTERNAL_COST_BUDGET` receipt and a USD 5.00 daily
+known-cost cap for external writes. Only current-JST rows from the canonical
+`cost-ledger.jsonl` with `cost_basis=actual_billed`, an explicit stable cost ID,
+valid nonnegative USD minor units, and a valid timestamp contribute to the
+known total. Duplicate IDs are counted once. Estimates, missing IDs, malformed
+rows, non-USD rows, and a missing ledger remain `UNKNOWN` and are never treated
+as zero. `COST_CAP_BLOCKED` denies the external operation and schedules the same
+job for the next JST day; `COST_CAP_UNKNOWN` observes without claiming coverage.
+
+The release was installed and live-read by the existing owner. The current
+`cost-budget.json` is `COST_CAP_UNKNOWN`, `known_actual_usd_minor=0`,
+`cap_minor=500`, and `unknown_rows=1` because no canonical actual-billed cost
+ledger exists. This is not a zero-cost claim. The owner wake kept
+`ACTION_CAP_BLOCKED` and therefore created no public/provider effect; official
+PartnerStack remains `NO_TRANSACTIONS`, rolling net remains
+`NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS`, and real cost remains UNKNOWN.
+Focused plus full suite evidence is `93/93`; this closes only the known-cost
+cap behavior, not complete cost coverage or the money gate.
+
+### 1.1.47 Codex capability probe repair and same-baseline resume
+
+Release `15ca7f7c10a5cff47a1cff7a569cad355593e288` changes the capability probe
+to use a mode-700 private `CODEX_HOME` under Affiliate machine state instead of
+a temporary HOME that made Codex 0.148.0 emit a helper-alias warning on stderr.
+The probe remains fail-closed on nonzero exit, stderr, format, or binary
+mutation. A real installed probe passed and refreshed the private pin to the
+current canonical Codex `0.149.0` with a new SHA-bound receipt; the installed
+`agent_runner.verify_codex_pin` passed.
+
+The same existing owner then resumed baseline
+`3041e3f2…` after the prior `RUNNER_PIN_REJECTED` failure. Wake
+`61507cfa…` exited `0` and wrote `acquisition_decision_state=READY`,
+`decision_id=eb047695…`, plan `elevenlabs-discovered-voice-cloning-en`,
+placement `elevenlabs-discovered-voice-cloning-en-1`, and one selected
+`title` variable. Telegram delivered the source-bounded
+`ACQUISITION_DECISION_READY` event as provider `messageId=27448`. Because the
+JST external-action cap remained `34/10`, no link, publication, transaction,
+commission, or money was created. The failed event `b797…→27433` is retained as
+history; the same durable baseline now has a truthful READY postcondition.
+
+This closes the current Codex pin failure path only. B01's non-empty official
+transaction, real cost coverage, universal F05, and USD 10,000 gates remain
+open.
+
 ### 1.2.0 Audited executable boundary
 
 The installed ownership graph has six launchd labels: three persistent browser
@@ -3262,7 +3309,9 @@ receipt readback, SSOT state update, commit, and push to both canonical remotes.
   §1.1.43; Telegram timeout repair receipts are live-proven in §1.1.44. Real
   billed-cost caps and the remaining universal repair/watchdog behavior remain
   open; §1.1.45 confirms the disk guard can clear without deleting protected
-  Affiliate state.
+  Affiliate state, and §1.1.46 confirms known-cost cap admission while
+  preserving UNKNOWN. The current probe repair and same-baseline resume are in
+  §1.1.47.
 - [ ] **F05** Implement diagnose→one allowlisted repair→postcondition→same-job resume;
   escalate or quarantine when the repair postcondition fails.
 - [x] **F06** Observe one real recoverable capture failure and prove `SELF_HEALED`,

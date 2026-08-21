@@ -1,5 +1,26 @@
 # Affiliate local money loop handover
 
+- Release `15ca7f7c10a5cff47a1cff7a569cad355593e288` is installed as immutable
+  `current`; the full Affiliate suite is `93/93`, compile and `git diff --check`
+  pass, and source/installed `local_loop.py` plus
+  `machine_capability_inventory.py` bytes match. The release includes the
+  known actual-billed daily cost boundary and the Codex probe-home repair. A
+  private capability re-observation passed with the current canonical Codex
+  `0.149.0` and a new hash-bound receipt; no secret or auth material was
+  emitted. Existing owner wake
+  `61507cfa19392950bff1eb63d220932cc97de9d95d41f686810732ab2c87364b`
+  completed at `2026-08-21T18:24:33+0900`, launchd exit `0`, with provider
+  `AUTHENTICATED`, `ACTION_CAP_BLOCKED` (`34/10`), disk `CLEAR`,
+  `COST_CAP_UNKNOWN` (known actual USD 0, missing cost ledger = UNKNOWN),
+  revenue `COOLDOWN`, and rolling net
+  `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS`. The same durable acquisition
+  baseline that had `RUNNER_PIN_REJECTED` (`b797…→27433`) now returned
+  `READY` for the voice-cloning placement with one title decision; the owner
+  sent `ACQUISITION_DECISION_READY` as `30cd…→Telegram message 27448`. The
+  action cap prevented any new public/provider effect. This closes the
+  observed Codex-pin failure path and proves unknown cost is not coerced to
+  zero; B01, cap reset, universal F05, and the USD 10,000 gate remain open.
+
 - After the disk-cleanup owner recovered host headroom, the existing Affiliate
   owner was kickstarted once through launchd (no parallel executor). Wake
   `1707ffd5c84b6ec4bb48612fd9899730ef0c0a4b12b7f9a916c1f1fa242af8e0`
