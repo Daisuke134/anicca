@@ -458,6 +458,7 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
 - 一方、`article-resume`は11:25:15 JSTにPID 81389、PPID 1、current releaseの`writer_owner_fence.py`として起動し、`article-resume-pending.sh`を実行した。ログはSubstack EN draft `212037498`の認証付き未公開readbackと不変hash検証を記録し、「公開は一切していない」「次の300秒tickが公開を担当」と明記している。プロセスは観測中に終了し、native publish URL・公開完了receipt・入金receiptは増えていない。`writer-money-sync`もPPID 1で起動したが、最新money readbackは外部payment receipt 0件のままである。
 - この実行痕跡は、Coconala laneと同じく過去にlaunchdから起動されたworkerが実行平面に残る可能性を示すが、loaded label、current argv/env、次回の自然tickを証明しない。Appleのlaunchd説明でも、`~/Library/LaunchAgents`はユーザー単位の定義場所であり、管理対象の確認・操作は`launchctl`のdomainで行う契約である（[Apple Support: Script management with launchd](https://support.apple.com/guide/terminal/script-management-with-launchd-apdc6c1077b-5d5d-4d35-9c19-60f2397b2369/mac)）。
 - `owner-fence/owner.json`は現在`article-resume`のPID 81389を記録し、観測終了後に実ownerが消滅した。recovery lockの`owner.pid=40373`・`owner.start=Fri Aug 21 01:56:52 2026`は変わらず、A1〜A5を飛ばして削除・移動していない。logout、reboot、launchd/loginwindow/opendirectorydのkill、bootstrap/bootout/kickstartも行っていない。
+- `writer-report.out.log`は133件のJSON結果を保持し、12件は`status=sent`のTelegram delivery receipt、直近の複数tickは同一semantic hashで`deliveries=[]`だった。これは同一内容・同一状態のdedupeであり、送信transport failureではない。新しい公開・入金・障害差分が発生していないため、report workerが同じ文面を毎回再送していないことを「Telegram loop停止」とは扱わない。
 - 結論は「disk上の14 plistと5 calendar scheduleは修復済み」「一回のWriter worker実行は観測」「launchd loaded stateと5分周期の再発は未証明」であり、Writerを常時公開中とは宣言しない。A1（正しいGUI/user contextでcontrol-plane readbackを復旧）が引き続き先頭TODOである。
 
 ## 目標構成
@@ -547,7 +548,7 @@ publication identity、読者、payout、ledgerを分ける。
 
 この表は過去のmilestone状態を保持する履歴である。現在の実行順序は次の原子TODOを正本とする。
 
-## Current atomic remaining TODO（2026-08-21 11:27 JST）
+## Current atomic remaining TODO（2026-08-21 11:32 JST）
 
 各行は一つの外部状態または証拠だけを変える。前行の完了証拠がない限り、次行を開始しない。
 
