@@ -944,8 +944,8 @@ consolidated in canonical branch `feature/cfo-ops3a-canonical` at `2dac47124`, w
 feature-worktree absolute path in the installed plist. The stable CFO entrypoint loads with its lock-matched
 dependencies and the fresh financial focused gate is 19/19. The wrapper's Bash-3.2 JSON-prefix bug is fixed; `bash -n`,
 the literal-prefix guard, and a stable entrypoint run now preserve the real redacted result (`status=failed`,
-`reportingDate=2026-08-20`) instead of overwriting it with a null-date default. The host-parity implementation is now
-canonical at `6acff1585` on `feature/cfo-ops3a-canonical`; its stable release is
+`reportingDate=2026-08-20`) instead of overwriting it with a null-date default. The host-parity implementation is
+canonical at `6acff1585` on `feature/cfo-ops3a-canonical`, with local DNS hardening in `d013196ce`; its stable release is
 `/Users/anicca/.local/share/life-manager/cfo-hourly/current`, and the installed plist contains no feature-worktree
 path. The installed reader uses the persistent local Codex app-server, the same `CODEX_HOME=/Users/anicca/.codex`,
 and the existing Apps host rather than spawning a fresh `codex exec` subprocess. A real Moneytree structured
@@ -957,9 +957,11 @@ The label is still not loaded: `launchctl print/list`, `launchctl asuser 501 ...
 `launchctl bootstrap gui/501` attempt return `141: Reentrancy avoided`; `managerpid` cannot resolve, and the current
 session cannot resolve uid 501 through OpenDirectory. The plist itself now passes `plutil -lint`, points at the
 stable release, has `CODEX_HOME=/Users/anicca/.codex`, `LIFE_MANAGER_ENV_FILE=/Users/anicca/.openclaw/.env`, and
-`StartInterval=3600`. No current hourly CFO Telegram finance receipt is claimed. OPS3b remains open only until the
-existing launchd label runs one real Moneytree pass, produces a positive current provider `message_id`, and proves
-the hourly path/schedule read-back.
+`StartInterval=3600`. After `d013196ce`, the installed stable `skills/cfo/run.sh` ran with only the plist-equivalent
+environment (no external resolver injection) and returned `status=sent`, `revision=2`, `appended=true`, and
+`delivered=true`; the Supabase snapshot/claim and Telegram delivery receipt read back with provider `message_id=766`.
+This is a real core-loop receipt, not a launchd provenance claim. OPS3b remains open only until the existing launchd
+label itself runs one real Moneytree pass and its hourly path/schedule read-back is proven.
 
 ### Codex host-parity audit (2026-08-21)
 
@@ -1002,8 +1004,9 @@ found 240 LaunchAgents (238 valid and two invalid: `ai.anicca.cfo-daily.plist` a
 `ai.anicca.fleet-daily.plist`); the invalid/legacy CFO jobs remain intentionally out. A second read-only
 `launchctl asuser 501`/`pid/15509`/`user/501` probe returned the same `141` and could not obtain an audit UID. No
 account-directory mutation, logout, reboot, or OS-service restart occurred. The post-fix install remains read-back
-clean (`plutil -lint` PASS, stable wrapper `bash -n` PASS, and the stable Moneytree reader PASS), but
-`launchctl list ai.anicca.life-manager-cfo-hourly` still returns 141.
+clean (`plutil -lint` PASS, stable wrapper `bash -n` PASS, and the stable Moneytree reader PASS). The installed stable
+wrapper E2E also passed with a real provider receipt (`message_id=766`), while `launchctl list
+ai.anicca.life-manager-cfo-hourly` still returns 141; the receipt is therefore not attributed to launchd.
 
 Deferred after M1 by explicit owner decision: Binance Spot, trade history, Earn/funding sources, and their tax-lot
 ingestion. They are not unchecked M1 items and cannot become the active CFO item before CFO-1i closes.
@@ -1018,13 +1021,14 @@ ingestion. They are not unchecked M1 items and cannot become the active CFO item
       No installed plist may point at an expendable feature worktree. Closed in canonical commit `2dac47124`;
       stable release/module-load and focused financial tests are verified, while launchd execution remains OPS3b.
 - [ ] **CFO-OPS3b** Restore the consolidated local hourly CFO. The host-parity gate is closed by canonical commit
-      `6acff1585`: the local app-server path uses the same `CODEX_HOME`, Codex config/auth, user/repository skills,
+      `6acff1585`; DNS hardening is in `d013196ce`. The local app-server path uses the same `CODEX_HOME`, Codex config/auth, user/repository skills,
       and installed Apps/plugin state, completes one real Moneytree `mcpServer/tool/call`, and passes the structured
       result to the existing adapter without an LLM copying financial numbers. The remaining gate is operational:
       load **only** `ai.anicca.life-manager-cfo-hourly`, verify the stable path and 3600-second schedule, execute the
-      real loop read, prove a current Telegram provider message ID, and perform hourly path/schedule read-back. The
-      current GUI/user launchd domain returns `141: Reentrancy avoided`, so no receipt is claimed. If the host bridge
-      later regresses, use the official Moneytree LINK/API fallback and document the decision. Do not revive
+      real loop read from launchd, and perform hourly path/schedule read-back. The installed stable wrapper E2E has
+      produced a real current provider receipt (`message_id=766`), but it is not launchd evidence. The current GUI/user
+      launchd domain returns `141: Reentrancy avoided`, so the scheduler gate remains open. If the host bridge later
+      regresses, use the official Moneytree LINK/API fallback and document the decision. Do not revive
       `life-manager-v0`, `cfo-daily`, or the separate financial-report loop, and do not add a bespoke Moneytree
       connector before this gate is resolved.
 - [ ] **CFO-1j** Add the recent-transaction concierge view from the existing Moneytree transaction adapter. Every
