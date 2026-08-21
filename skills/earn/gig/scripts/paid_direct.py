@@ -3291,6 +3291,16 @@ def _unique_orders(items: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], i
     return list(by_room.values()), len(items) - len(by_room)
 
 
+def _paid_queue_priority(args, item: dict[str, Any]) -> tuple[int, str, str]:
+    """Resume rejected artifacts before starting or revisiting other paid work."""
+    try:
+        state = _load(_paid_project_root(args, item) / "context" / "paid-review-state.json")
+        repair_rank = 0 if state.get("state") == "REPAIR_PENDING" else 1
+    except (Failure, OSError, ValueError, TypeError, json.JSONDecodeError):
+        repair_rank = 1
+    return repair_rank, _text(item.get("delivery_date")) or "9999-12-31", _text(item.get("talkroom_id"))
+
+
 def run_once(args, output: Path) -> int:
     # An operator must be able to stand this lane down without unloading launchd. This is the
     # one lane that can press an irreversible formal-delivery control, so it checks the brake
@@ -3316,7 +3326,7 @@ def run_once(args, output: Path) -> int:
             items, duplicate_dropped = _unique_orders(observed_items)
         except Failure as error:
             _write(output, {"status": "failed", "observed": 0, "actionable": 0, "effect": 0, "readback": 0, "failed": 1, "pending": 0, "oldest": None, "failed_step": error.step, "items": []}); return 1
-        items.sort(key=lambda item: (_text(item.get("delivery_date")) or "9999-12-31", _text(item.get("talkroom_id"))))
+        items.sort(key=lambda item: _paid_queue_priority(args, item))
         rows: dict[str, dict[str, Any]] = {}
         actionable = 0
         failed = effect = readback = 0; failed_step = ""

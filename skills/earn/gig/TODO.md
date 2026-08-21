@@ -914,6 +914,9 @@ is `REPAIR_PENDING`, yet the lane surfaced terminal-looking `failed_step=file_ve
 bounded review rounds and did not attach a corrected artifact. The generic fix is: preserve the
 finding, start the next wake at repair, regenerate every affected editable/rendered/package output,
 review again, and attach only after approval. Never ask Haru another question for these known facts.
+`REPAIR_PENDING` is a continuation, not a low-priority failure: every Paid wake orders those rooms
+ahead of fresh or buyer-wait work, then preserves deadline order within the same state class. This
+prevents a rejected artifact from remaining unsent while unrelated orders consume the whole pass.
 
 **Paid continuation and effect contract — blocking production invariant.** Every purchased order
 has exactly one loaded continuation owner from purchase through formal readback. Builder/reviewer
