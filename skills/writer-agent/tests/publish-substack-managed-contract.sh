@@ -18,7 +18,7 @@ PY
 fi
 SH
 chmod +x "$TMP/fake"; : >"$TMP/a.md"
-CALL_LOG="$TMP/calls" ARTICLE_RUN_DIR="$TMP/run" ARTICLE_PUBLICATION_STATE="$TMP/state.json" ARTICLE_PUBLISH_PAIR=substack/ja SUBSTACK_PUBLICATION_JA=test-ja.substack.com SUBSTACK_WRAPPER_COMMAND="$TMP/fake" SUBSTACK_REFRESH_COMMAND="$TMP/fake" python3 "$ROOT/scripts/publish-substack-managed.py"
+CALL_LOG="$TMP/calls" ARTICLE_RUN_DIR="$TMP/run" ARTICLE_PUBLICATION_STATE="$TMP/state.json" ARTICLE_PUBLISH_PAIR=substack/ja SUBSTACK_PUBLICATION_JA=test-ja.substack.com SUBSTACK_SESSION_COOKIE_JA=test-cookie SUBSTACK_WRAPPER_COMMAND="$TMP/fake" SUBSTACK_REFRESH_COMMAND="$TMP/fake" python3 "$ROOT/scripts/publish-substack-managed.py"
 grep -Fx -- '--pair substack/ja' "$TMP/calls"
 grep -Fx 'enable-publish' "$TMP/calls"
 grep -Fx "publish $TMP/a.md --title 題 --subtitle 説明 --mode go" "$TMP/calls"
