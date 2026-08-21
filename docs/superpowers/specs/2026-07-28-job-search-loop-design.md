@@ -50,6 +50,11 @@ Software Engineer - Singapore and initially exposed an Ashby `aria-hidden` nativ
 submit button. The adapter now clicks the visible `Submit Application` text fallback
 without force/DOM dispatch; the live retry reached the real click and recorded
 `submit_unknown` as well.
+The fully automatic run `daily-20260821-184654` then discovered ElevenLabs'
+Enterprise Solutions Engineer - Singapore, reached its real Ashby submit click, and
+recorded another terminal `submit_unknown`. Its fast-path checkpoint was sent with
+Telegram ACK `27475`; `resume-deliver-after` and `summary.v1` completed, and no model
+fallback or Workday navigation occurred.
 The daily script now bounds the non-deterministic browser fallback at 300 seconds
 by default (`JOB_SEARCH_BROWSER_TIMEOUT_SECONDS` may lower or raise that bounded
 value); deterministic ATS fast paths run before it and retain their own evidence.
@@ -75,8 +80,8 @@ evidence, a fenced intent and authoritative confirmation.
 | 3 | Replace the timed-out model discovery with a bounded Ashby discovery pass | `completed` | CLI/owner commit `12ea0d89a`; live discovery selected ElevenLabs after browser/cache verification and wrote immutable attribution |
 | 4 | Reach Ashby claim-ready form and route the exact resume | `in_progress` | ElevenLabs reached a real final form with the routed resume; Cohere is durably blocked by its provider limit |
 | 5 | Click the real Ashby submit control once | `completed_for_two_roles` | Two ElevenLabs real Submit Application clicks are fenced as terminal `submit_unknown`; the aria-hidden native-button case uses only a visible text locator; never retry either |
-| 6 | Reconcile authoritative confirmation and send one Telegram report | `in_progress` | Telegram ACK `27467` is recorded; Gmail/ATS confirmation for ElevenLabs and same-day dedupe remain |
-| 7 | Prove the next wake skips the terminal Ashby row and processes another eligible row | `pending` | Two consecutive owner runs with queue progress and no duplicate claim |
+| 6 | Reconcile authoritative confirmation and send one Telegram report | `in_progress` | Telegram ACKs `27467`, `27480`, and `27475` are recorded; Gmail/ATS confirmation for the ElevenLabs clicks and same-day dedupe remain |
+| 7 | Prove the next wake skips the terminal Ashby row and processes another eligible row | `in_progress` | Consecutive deterministic wakes processed distinct ElevenLabs URLs without reopening terminal rows; one more readback/dedupe check remains |
 | 8 | Resume Workday only after Ashby items 3–7 close | `parked` | Grounded source/previous-employer answers or an explicit durable skip; then one confirmed Workday submission |
 | 9 | Continue inbox replies, interview scheduling, preparation and outcome tracking | `pending_after_8` | Real Gmail thread, Calendar readback, interview/offer state, and Telegram receipts |
 | 10 | Finish guardian/self-healing, Career surface, and OSS/cloud distribution | `pending_after_9` | Health repair evidence, `summary.v2` parity, tenant isolation, export/revocation, and clean install E2E |
