@@ -543,6 +543,21 @@ class LocalLoopTest(unittest.TestCase):
             self.assertFalse(MODULE.revenue_cycle_due(state, now=4599))
             self.assertTrue(MODULE.revenue_cycle_due(state, now=4600))
 
+    def test_revenue_failure_preserves_typed_retry_metadata(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root)
+            result = MODULE.revenue_failure(
+                state, "capture", "NONZERO_EXIT", 1, "provider capture failed"
+            )
+            receipt = json.loads(
+                (state / "revenue-cycle-failure.json").read_text()
+            )
+            self.assertEqual(result["failure_class"], "PROVIDER_TRANSIENT")
+            self.assertEqual(result["retry_state"], "RETRYABLE")
+            self.assertGreater(result["retry_after"], receipt["observed_at"])
+            self.assertEqual(receipt["failure_class"], "PROVIDER_TRANSIENT")
+            self.assertEqual(receipt["retry_state"], "RETRYABLE")
+
     def test_placement_receipt_is_exactly_once_and_hides_tracking_link(self):
         with tempfile.TemporaryDirectory() as root:
             root = Path(root)

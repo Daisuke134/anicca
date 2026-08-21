@@ -179,7 +179,9 @@ def _tool_outcome(result, failure_type=None):
 
 def _tool_effect_certainty(result, effect_class, failure_type=None):
     if failure_type or not isinstance(result, dict):
-        return "UNKNOWN" if effect_class in _TOOL_EXTERNAL_EFFECTS else "NO_EFFECT"
+        if effect_class in _TOOL_EXTERNAL_EFFECTS:
+            return "UNKNOWN"
+        return "READ_ONLY_CONFIRMED" if effect_class == "READ_ONLY" else "NO_EFFECT"
     state = result.get("state")
     if result.get("deduplicated") is True:
         return "NO_EFFECT"
@@ -209,6 +211,17 @@ def _classify_tool_failure(error):
     if isinstance(error, (ValueError, KeyError, json.JSONDecodeError)):
         return "CONTRACT", None
     return "UNKNOWN", None
+
+
+def _classify_revenue_failure(failure_type):
+    """Map the durable revenue-cycle failure contract to retry metadata."""
+    classes = {
+        "TIMEOUT": "BROWSER_TRANSIENT",
+        "NONZERO_EXIT": "PROVIDER_TRANSIENT",
+        "INVALID_JSON": "CONTRACT",
+    }
+    failure_class = classes.get(failure_type, "UNKNOWN")
+    return failure_class, 3_600 if failure_class != "CONTRACT" else None
 
 
 def append_tool_attempt_receipt(
@@ -282,9 +295,13 @@ def attempt_tool(
             wake_event_uuid=wake_event_uuid,
         )
         raise
+    result = result if isinstance(result, dict) else {}
     append_tool_attempt_receipt(
         state, scheduler_run_id, tool, effect_class, attempt, preconditions,
-        started_at, result=result, wake_event_uuid=wake_event_uuid,
+        started_at, result=result, failure_type=result.get("failure_type"),
+        failure_class=result.get("failure_class"),
+        retry_due_at=result.get("retry_due_at") or result.get("retry_after"),
+        retry_state=result.get("retry_state"), wake_event_uuid=wake_event_uuid,
     )
     return result
 
@@ -2113,6 +2130,9 @@ def revenue_cycle_due(state, now=None, cooldown_seconds=3600):
 
 def revenue_failure(state, stage, failure_type, return_code, error_text):
     now = int(time.time())
+    failure_class, retry_seconds = _classify_revenue_failure(failure_type)
+    retry_state = "RETRYABLE" if retry_seconds else "NOT_RETRYABLE"
+    retry_after = now + retry_seconds if retry_seconds else None
     try:
         latest = json.loads(
             (state / "provider-reports" / "partnerstack" / "latest.json").read_text(
@@ -2128,14 +2148,24 @@ def revenue_failure(state, stage, failure_type, return_code, error_text):
         "state": "REVENUE_CYCLE_FAILED",
         "stage": stage,
         "failure_type": failure_type,
+        "failure_class": failure_class,
+        "retry_state": retry_state,
         "return_code": return_code,
         "error_sha256": hashlib.sha256(error_text.encode()).hexdigest(),
         "latest_source_artifact_sha256": source_hash,
         "observed_at": now,
-        "retry_after": now + 3_600,
+        "retry_after": retry_after,
     }
     atomic_json(state / "revenue-cycle-failure.json", failure)
-    return {"state": failure["state"], "source_rows": None, "appended_transitions": None}
+    return {
+        "state": failure["state"],
+        "source_rows": None,
+        "appended_transitions": None,
+        "failure_type": failure_type,
+        "failure_class": failure_class,
+        "retry_state": retry_state,
+        "retry_after": retry_after,
+    }
 
 
 def run_revenue_cycle(state, cdp_port):
