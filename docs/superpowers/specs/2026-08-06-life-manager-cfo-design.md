@@ -1642,3 +1642,14 @@ connected App Server bearer token remains owned by the plugin runtime and is not
 exportable `request_refresh` grant. No password was searched for, printed, copied, or submitted. Autonomous Web login
 therefore cannot be completed from this Mac without an owner-provided login action or a formally provisioned static LINK
 client/grant; the loop remains safe and truthful.
+
+### Official SDK confirmation of the realtime-capable path (2026-08-21)
+
+The official [Moneytree LINK iOS SDK README](https://github.com/moneytree/moneytree-link-ios-sdk/blob/master/README.md)
+defines `MTLClientScopeRequestRefresh` as allowing an application to manually request Moneytree to retrieve up-to-date
+financial-institution data, and lists it among the required LINK Kit scopes. The SDK also exposes token refresh handling
+through `getTokenAndRefreshAsNeeded`. This confirms the correct architecture: register/use a Moneytree LINK client,
+obtain a user-authorized OAuth grant containing `request_refresh`, call the official asynchronous refresh endpoint within
+provider quotas, wait for the provider job, then reuse the existing read adapter. The current ChatGPT plugin bearer scope
+cannot be upgraded by the loop and is not that LINK client. “Realtime” therefore means provider-limited near-realtime,
+not a tick-by-tick bank feed.

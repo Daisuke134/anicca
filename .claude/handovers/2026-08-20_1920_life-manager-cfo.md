@@ -374,3 +374,10 @@ the next hourly recheck. Stable release `20260821T232013-61241` produced revisio
 Credential audit: no `MONEYTREE_*`/`MT_LINK_*` environment entries, Moneytree-related Keychain service, or Moneytree
 LINK client/token exists in the bounded CFO state/config paths. The App Server bearer token is connector-owned and is not
 a Web password or exportable `request_refresh` grant. No secret value was searched, printed, copied, or submitted.
+
+GitHub official SDK search found the missing capability boundary: `moneytree/moneytree-link-ios-sdk` documents
+`MTLClientScopeRequestRefresh` as the scope that lets an application manually request up-to-date financial-institution
+data, and includes it in LINK Kit's required scope list. The supported fix is a separately registered LINK client and
+user-authorized `request_refresh` OAuth grant, followed by asynchronous refresh and the existing read adapter. The
+ChatGPT plugin bearer credential is read-only and cannot be upgraded by the loop; provider-limited near-realtime is the
+maximum guarantee.
