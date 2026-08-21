@@ -1604,3 +1604,13 @@ run completed `revision=20`, `status=sent`, `delivered=true`, `providerDataFresh
 `message_id=27882`. A fresh live renderer smoke asserted all five user-facing invariants: payload explanation, app/Web
 sync instruction, next-hour recheck, 2026-08-18 lag, and non-realtime warning. The actual bank-side value remains
 unchanged until Moneytree synchronization or LINK `request_refresh` owner authorization occurs.
+
+### Moneytree Web action link fix and live E2E (2026-08-21)
+
+Canonical commit `efd4bc42b` adds a static HTML link to the official Moneytree Web login in the Japanese and English
+stale warnings: `https://myaccount.getmoneytree.com/login`. The link contains no client ID, token, account data, or
+credentials. The stable release `20260821T230403-79503` was staged and the existing launchd label reloaded. The real
+run completed revision `21`, `status=sent`, `delivered=true`, exit `0`, and `providerDataFreshness=stale` with latest
+transaction `2026-08-18`; Telegram receipt is `message_id=27892`. Live renderer checks for payload explanation, sync
+instruction, next-hour recheck, exact login link, and lag date pass `5/5`. This makes the owner repair path one tap away;
+it does not claim a bank refresh before the owner logs in/synchronizes.

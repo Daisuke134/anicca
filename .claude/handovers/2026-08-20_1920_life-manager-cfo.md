@@ -354,3 +354,8 @@ semantics, instructs the owner to open Moneytree app/Web to sync, and promises a
 `20260821T225757-59692` was installed; the real launchd run reached revision `20`, exit `0`, and shared Telegram
 receipt `27882`. Live renderer smoke passed payload/sync/recheck/lag/non-realtime assertions. The Moneytree payload itself
 is still unchanged at latest transaction `2026-08-18`; no fake realtime value was introduced.
+
+Canonical commit `efd4bc42b` adds the official Moneytree Web login link to both stale warning locales. Stable release
+`20260821T230403-79503` ran revision `21` successfully; Telegram receipt `27892`, exit `0`, stale latest transaction
+`2026-08-18`. Live checks pass 5/5 for payload explanation, app/Web sync, next-hour recheck, login URL, and lag date.
+The user can now open the repair path directly from Telegram; bank data remains stale until that owner action completes.
