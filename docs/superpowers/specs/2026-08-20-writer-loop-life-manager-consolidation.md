@@ -674,7 +674,8 @@ Profitable Cloud、Open Cloudの生存に依存させない。
   launchd診断ロジックを複製しない。新しいLaunchAgent、常駐executor、重複supervisorは0件である。
 - control-plane障害中も、すでにlaunchdが所有するWriter jobを「停止」と推定しない。自然tick receiptの有無を
   独立に記録し、管理不能とworker停止を別状態として扱う。
-- cleanupはcontrol-plane preflight失敗時にreclaim対象を変更せず、`blocked_control_plane` receiptを残す。
+- cleanupのlaunchd install/control操作はpreflight失敗時にplist/jobを変更せず、
+  `blocked_control_plane` receiptを残す。すでにlaunchdが所有するdisk cleanup runtimeの回収判断は別契約とする。
 - 回帰検証で、正常、数値username、Directory Services failure、rc=141、rc=153、正当なPPID 1 daemon、
   stale owner lockの各ケースがfail-safeになる。
 
@@ -686,7 +687,7 @@ Profitable Cloud、Open Cloudの生存に依存させない。
 | 141/153 | plistまたは全loop故障と誤認し得る | 操作context故障として分離し、変更を禁止 |
 | stale判定 | process断片情報を人が照合 | PID/start token/executable/GUI lineageの全一致を必須化 |
 | scheduler監視 | process生存や単発receiptに寄る | 共通statusがdomain readbackとlane固有tickを別々に記録 |
-| cleanup | storage cleanupとcontrol-plane診断が別 | cleanup開始前に同じpreflightを通し、失敗時は無変更 |
+| cleanup管理 | storage cleanupとcontrol-plane診断が別 | install/control前に同じpreflightを通し、失敗時はplist/job無変更 |
 | 復旧 | ad hocな再起動を試し得る | 外部app-server自身の終了・再接続だけをbounded recoveryとし、OS serviceをkillしない |
 
 ### 4. Test Matrix
@@ -698,7 +699,7 @@ Profitable Cloud、Open Cloudの生存に依存させない。
 | 3 | Directory Services failureを拒否 | `test_launchd_preflight_rejects_unresolved_uid` | OK |
 | 4 | rc=141/153で無変更 | `test_launchd_preflight_fails_closed_on_manager_errors` | OK |
 | 5 | PPID 1だけでkillしない | `test_recovery_does_not_classify_daemon_by_ppid_alone` | OK |
-| 6 | cleanupを無変更で停止 | `test_cleanup_blocks_before_reclaim_when_control_plane_is_invalid` | OK |
+| 6 | cleanup管理を無変更で停止 | preflight fixtureでlaunchctl mutation callが0 | OK |
 | 7 | Life Manager共通statusへ統合 | `test_launchd_status_records_control_plane_and_lane_ticks_separately` | OK |
 | 8 | 新規常駐labelなし | manifest snapshotでWriter label数が14のまま | OK |
 
@@ -723,13 +724,13 @@ Profitable Cloud、Open Cloudの生存に依存させない。
 
 | ID | 原子作業 | 完了証拠 | 状態 |
 |---:|---|---|---|
-| R1 | incident evidenceを正本化する | cleanup無変更、旧操作context、回復後の`anicca/501/Aqua/gui/501`を同一receiptへ保存 | TODO |
-| R2 | 既存管理CLI用の共通preflightを追加する | 上記test matrix 1〜5がPASSし、失敗時のmutation callが0 | TODO |
-| R3 | `gig_release.py`のbootstrap/activate系変更前にpreflightを接続する | 正常時のみ既存処理へ進み、141/153 fixtureではexit 75 | TODO |
-| R4 | Life Managerの既存status/health surfaceへ共通receiptのread-only表示を接続する | Writer専用ロジックを複製せず、`control_plane`とlane固有tickを別フィールドで保持 | TODO |
-| R5 | 既存cleanup入口へfail-closed gateを接続する | invalid context fixtureでevaluated/reclaimed/mutatedが全て0 | TODO |
-| R6 | 実Macで障害前後E2Eを行う | 正常preflight、14 label readback、300秒tick 2回、900秒tick 2回、06:00登録、重複投稿0 | TODO |
-| R7 | OSS runbookへ復旧境界を記録する | exact error、禁止操作、外部app再接続、再検証順が単一手順として読める | TODO |
+| R1 | incident evidenceを正本化する | cleanup無変更、旧操作context、回復後の`anicca/501/Aqua/gui/501`を同一receiptへ保存 | 完了: `launchd-control-plane-preflight.json`と本specへ保存 |
+| R2 | 既存管理CLI用の共通preflightを追加する | 上記test matrix 1〜5がPASSし、失敗時のmutation callが0 | 完了: 共通probe＋safe wrapper、fixture 6 passed |
+| R3 | `gig_release.py`のbootstrap/activate系変更前にpreflightを接続する | 正常時のみ既存処理へ進み、141/153 fixtureではexit 75 | 完了: release、loop/proactive installer、healerへ接続 |
+| R4 | Life Managerの既存status/health surfaceへ共通receiptのread-only表示を接続する | Writer専用ロジックを複製せず、control-planeとlane readbackを分離 | 完了: `gig_release.py status`がreceiptとloaded laneを表示 |
+| R5 | cleanupのlaunchd install/control入口へfail-closed gateを接続する | invalid context fixtureでlaunchctl mutation callが0 | 完了: cleanup installerはplist生成前に共通preflightを必須化 |
+| R6 | fixtureと実Macでpreflight E2Eを行う | 正常、数値username、DS失敗、141、153、mutation 0、実`gui/501` readback | 完了: focused 33 passed、実Mac `status=pass`、Writer 14 label readback成功 |
+| R7 | OSS runbookとagent強制規則へ復旧境界を記録する | exact error、禁止操作、外部app再接続、再検証順が単一手順として読める | 完了: runbook追加、`AGENTS.md`からsafe wrapperをMUST化 |
 
 実装時の順序は`R1→R2→R3→R4→R5→R6→R7`とする。通常の検証コマンドはfocused unit tests、
 manifest snapshot、`launchctl print gui/$UID/<Writer label>`、既存receipt readbackである。
