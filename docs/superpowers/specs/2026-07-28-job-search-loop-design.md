@@ -33,11 +33,13 @@ field controls, but `_fill_step` reused stale `nth(index)` metadata. A radio
 control for `candidateIsPreviousWorker` then received the candidate name and
 raised `Input of type "radio" cannot be filled`. The next fix re-looks up each
 field by stable provider `id`, then `name` or label, while preserving the
-manual fill/ArrowDown/Enter source interaction. Its focused regression must
-prove that a reordered DOM cannot redirect a fill to another control. The next
-release wake must prove Save and Continue advances to step 2, then continue the
-remaining steps; do not claim submission from a click, response, or ledger row
-alone.
+manual fill/ArrowDown/Enter source interaction. Live CDP evidence then showed
+that the source multiselect renders all prompt options before filtering; the
+keyboard sequence must wait for the exact visible
+`data-automation-label="Job Boards"` option or fail closed. Focused regressions
+now cover both stable re-lookup and exact-prompt gating. The next release wake
+must prove Save and Continue advances to step 2, then continue the remaining
+steps; do not claim submission from a click, response, or ledger row alone.
 
 ### Universal-application architecture (target)
 

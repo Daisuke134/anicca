@@ -293,6 +293,16 @@ async def _choose(page: Any, locator: Any, value: str) -> bool:
     await locator.click(timeout=10_000)
     if tag == "input":
         await locator.fill(value)
+        prompt_option = page.locator(
+            "[data-automation-id='promptOption'][data-automation-label="
+            f"{json.dumps(value)}]"
+        )
+        for _ in range(10):
+            if await prompt_option.count() and await prompt_option.first.is_visible():
+                break
+            await page.wait_for_timeout(500)
+        else:
+            return False
         await locator.press("ArrowDown")
         await locator.press("Enter")
         return True
