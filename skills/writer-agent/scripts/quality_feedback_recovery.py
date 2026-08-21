@@ -15,7 +15,9 @@ import sys
 from typing import Any
 
 
-MAX_INVOCATIONS = 5
+# Provider/research retries are separate from the five quality assessments.
+# A transient transport outage must not consume the quality iteration budget.
+MAX_INVOCATIONS = 10
 MAX_PUBLICATION_HANDOFFS = 2
 STATE_NAME = "quality-feedback-recovery-state.json"
 

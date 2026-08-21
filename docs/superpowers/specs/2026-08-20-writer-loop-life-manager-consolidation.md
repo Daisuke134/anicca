@@ -1135,7 +1135,7 @@ Telegram報告は、反復番号、確認済みゲート、未確認の品質警
 
 | 品質ID | 原子作業 | 完了証拠 | 状態 |
 |---:|---|---|---|
-| Q1 | 5回品質反復のreceipt chainを実装する | attempt 2〜5のwrapper invocation receipt、unique plan SHA、draft変更、verdict意味一致、exact 5 validator | 完了（`quality_self_heal.py`、`quality_feedback_recovery.py`） |
+| Q1 | 5回品質反復のreceipt chainを実装する | attempt 2〜5のwrapper invocation receipt、unique plan SHA、draft変更、verdict意味一致、exact 5 validator。provider/researchの再試行は品質回数と分離し、最大10 invocationまで許可 | 完了（`quality_self_heal.py`、`quality_feedback_recovery.py`） |
 | Q2 | force境界をpublication resumeへ結合する | marker単体を拒否し、`validate_force_receipt()`とterminal identity/safetyを再検証 | 完了（focused 5件＋writer回帰46件、fresh adversarial review GO） |
 | Q3 | 実run 130847の同一run recoveryを新releaseで継続する | attempt receipt、feedback consumption、quality verify PASS、forceまたはreadyのcanonical handoff | 未完（現在のforeground recoveryを監視中） |
 | Q4 | force後の4面native publicationとTelegram readbackを取得する | Note、Substack JA/EN、X Article JAのURL・本文・owner・media、publisher/payment receipt、自然文Telegram | Q3待ち |
