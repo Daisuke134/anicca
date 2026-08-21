@@ -7,6 +7,7 @@ import os
 import json
 import subprocess
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -19,6 +20,7 @@ class ModelRunnerContractTests(unittest.TestCase):
     def make_environment(self, sandbox: Path, fake_codex: Path) -> dict[str, str]:
         environment = os.environ.copy()
         environment.pop("ARTICLE_MODEL_REASONING_EFFORT", None)
+        environment.pop("ARTICLE_PROVIDER_COOLDOWN_SECONDS", None)
         environment.update(
             {
                 "ARTICLE_PROVIDER": "codex",
@@ -30,6 +32,93 @@ class ModelRunnerContractTests(unittest.TestCase):
             }
         )
         return environment
+
+    def test_codex_cooldown_does_not_fallback_to_claude(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            sandbox = Path(temporary)
+            codex_calls = sandbox / "codex-calls.txt"
+            claude_calls = sandbox / "claude-calls.txt"
+            fake_codex = sandbox / "codex"
+            fake_claude = sandbox / "claude"
+            fake_codex.write_text(
+                "#!/usr/bin/env bash\nprintf 'CODEX\n' >>\"$CODEX_CALLS\"\ncat >/dev/null\n",
+                encoding="utf-8",
+            )
+            fake_claude.write_text(
+                "#!/usr/bin/env bash\nprintf 'CLAUDE\n' >>\"$CLAUDE_CALLS\"\ncat >/dev/null\n",
+                encoding="utf-8",
+            )
+            fake_codex.chmod(0o755)
+            fake_claude.chmod(0o755)
+            prompt = sandbox / "prompt.txt"
+            prompt.write_text("do not invoke while cooling down", encoding="utf-8")
+            health = sandbox / "provider-health.json"
+            health.write_text(
+                json.dumps(
+                    {
+                        "version": 1,
+                        "entries": {
+                            "codex:agent": {
+                                "status": "retryable",
+                                "unhealthy_until": int(time.time()) + 600,
+                            }
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+            environment = self.make_environment(sandbox, fake_codex)
+            environment.update(
+                {
+                    "ARTICLE_RUN_ID": "codex-cooldown-contract",
+                    "ARTICLE_CLAUDE_BIN": str(fake_claude),
+                    "CODEX_CALLS": str(codex_calls),
+                    "CLAUDE_CALLS": str(claude_calls),
+                }
+            )
+
+            result = subprocess.run(
+                [str(RUNNER), "agent", "--prompt-file", str(prompt)],
+                env=environment,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 75, result.stderr)
+            self.assertFalse(codex_calls.exists())
+            self.assertFalse(claude_calls.exists())
+
+    def test_retryable_default_cooldown_is_five_minutes(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            sandbox = Path(temporary)
+            fake_codex = sandbox / "codex"
+            fake_codex.write_text(
+                "#!/usr/bin/env bash\ncat >/dev/null\nexit 124\n",
+                encoding="utf-8",
+            )
+            fake_codex.chmod(0o755)
+            prompt = sandbox / "prompt.txt"
+            prompt.write_text("timeout", encoding="utf-8")
+            environment = self.make_environment(sandbox, fake_codex)
+            environment["ARTICLE_RUN_ID"] = "codex-default-cooldown-contract"
+            before = int(time.time())
+
+            result = subprocess.run(
+                [str(RUNNER), "agent", "--prompt-file", str(prompt)],
+                env=environment,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 75, result.stderr)
+            entry = json.loads(
+                (sandbox / "provider-health.json").read_text(encoding="utf-8")
+            )["entries"]["codex:agent"]
+            remaining = int(entry["unhealthy_until"]) - int(time.time())
+            self.assertGreaterEqual(remaining, 295)
+            self.assertLessEqual(int(entry["unhealthy_until"]) - before, 305)
 
     def test_codex_defaults_to_terra_medium_and_preserves_prompt_stdin(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

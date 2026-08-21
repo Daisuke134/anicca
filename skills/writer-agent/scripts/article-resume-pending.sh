@@ -9,6 +9,10 @@ set -a; . "$HOME/.openclaw/.env" 2>/dev/null; set +a
 
 ARTICLE_ROOT="${ARTICLE_ROOT:-${ARTICLE_SKILL_DIR:-$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)}}"
 STATE_DIR="${ARTICLE_STATE_DIR:-$ARTICLE_ROOT/state}"
+# The Writer production lane has one provider and one retry cadence.  Do not
+# let a stale shell/.env value widen the provider set or restore the old wait.
+ARTICLE_PROVIDER="codex"
+ARTICLE_PROVIDER_COOLDOWN_SECONDS="300"
 LOG="${ARTICLE_RESUME_LOG:-$HOME/.openclaw/logs/article-resume.log}"
 MODEL_RUNNER="${ARTICLE_MODEL_RUNNER:-$ARTICLE_ROOT/runtime/model-runner.sh}"
 MODEL_SUPPORT="${ARTICLE_MODEL_SUPPORT:-$ARTICLE_ROOT/runtime/model-runner-support.py}"
@@ -25,7 +29,8 @@ ARTICLE_SKILL_DIR="$ARTICLE_ROOT"
 # unset in a launchd environment, exporting the still-empty parameter leaves
 # nested managed publishers to fall back to the immutable release's state/.
 ARTICLE_STATE_DIR="$STATE_DIR"
-export ARTICLE_ROOT ARTICLE_STATE_DIR STATE_DIR ARTICLE_SKILL_DIR
+export ARTICLE_ROOT ARTICLE_STATE_DIR STATE_DIR ARTICLE_SKILL_DIR \
+  ARTICLE_PROVIDER ARTICLE_PROVIDER_COOLDOWN_SECONDS
 mkdir -p "$(dirname "$LOG")"
 
 [ -d "$STATE_DIR/runs" ] || exit 0
@@ -312,7 +317,7 @@ if [ "$PRIORITY_PUBLICATION_READY" -ne 1 ] \
     echo "article-resume: bounded quality feedback prompt missing" >>"$LOG"
     exit 1
   fi
-  PROVIDER="${ARTICLE_PROVIDER:-auto}"
+  PROVIDER="${ARTICLE_PROVIDER:-codex}"
   HEALTH_FILE="${ARTICLE_PROVIDER_HEALTH:-$STATE_DIR/provider-health.json}"
   PROVIDER_READY=0
   for CANDIDATE in $([ "$PROVIDER" = "auto" ] && printf 'codex claude' || printf '%s' "$PROVIDER"); do
@@ -392,7 +397,7 @@ if [ "$PRIORITY_PUBLICATION_READY" -ne 1 ] \
     echo "article-resume: bounded quality repair prompt missing" >>"$LOG"
     exit 1
   fi
-  PROVIDER="${ARTICLE_PROVIDER:-auto}"
+  PROVIDER="${ARTICLE_PROVIDER:-codex}"
   HEALTH_FILE="${ARTICLE_PROVIDER_HEALTH:-$STATE_DIR/provider-health.json}"
   PROVIDER_READY=0
   for CANDIDATE in $([ "$PROVIDER" = "auto" ] && printf 'codex claude' || printf '%s' "$PROVIDER"); do
@@ -466,7 +471,7 @@ fi
 if [ "$PRIORITY_PUBLICATION_READY" -ne 1 ] \
   && [ "$START_ACTION" = "resume-generation" ]; then
   GENERATION_RUN_ID="$START_RUN_ID"
-  PROVIDER="${ARTICLE_PROVIDER:-auto}"
+  PROVIDER="${ARTICLE_PROVIDER:-codex}"
   HEALTH_FILE="${ARTICLE_PROVIDER_HEALTH:-$STATE_DIR/provider-health.json}"
   PROVIDER_READY=0
   for CANDIDATE in $([ "$PROVIDER" = "auto" ] && printf 'codex claude' || printf '%s' "$PROVIDER"); do

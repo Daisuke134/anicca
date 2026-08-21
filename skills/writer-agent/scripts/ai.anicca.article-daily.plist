@@ -19,6 +19,8 @@
     <string>1</string>
     <key>ARTICLE_PROVIDER</key>
     <string>codex</string>
+    <key>ARTICLE_PROVIDER_COOLDOWN_SECONDS</key>
+    <string>300</string>
     <key>ARTICLE_CODEX_PROVIDER_ID</key>
     <string>local_proxy</string>
     <key>ARTICLE_CODEX_PROVIDER_BASE_URL</key>
