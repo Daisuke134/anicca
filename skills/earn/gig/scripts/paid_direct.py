@@ -21,6 +21,7 @@ from gig_paths import BROWSER_DIR, REPO_ROOT, RUNNER_DIR  # noqa: E402
 
 DEFAULT_STEP_TIMEOUT_SECONDS = 2100
 TARGETED_READBACK_TIMEOUT_SECONDS = 180
+DM_CONTEXT_TIMEOUT_SECONDS = 180
 # One prepare child owns up to three 60-minute production rounds plus three 30-minute reviews.
 # Its outer deadline must not expire before those already-bounded inner steps can settle.
 FILE_PREPARE_TIMEOUT_SECONDS = 21600
@@ -182,7 +183,7 @@ def _collect_dm_context(args, item: dict[str, Any], root: Path, base: Path) -> N
                "--cdp-helper", str(args.cdp_helper), "--evidence-output", str(evidence)]
     if thread_id:
         command += ["--thread-id", thread_id]
-    result = _run_bounded(command)
+    result = _run_bounded(command, timeout=DM_CONTEXT_TIMEOUT_SECONDS)
     try:
         receipt = _json_line(result.stdout, "dm_context")
     except Failure:

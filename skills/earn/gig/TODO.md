@@ -963,6 +963,8 @@ context. When the authenticated offer has no DM reference and discovery returns 
 the loop records `dm_collection_unavailable` and continues only if proposal, full talkroom history
 and accumulated requirements are all present; it never invents a DM or blocks an otherwise
 buildable artifact merely to ask the buyer again.
+DM discovery itself is bounded to 180 seconds. A browser process that exceeds that bound becomes the
+same durable unavailable receipt and cannot hold its independent project worker for 35 minutes.
 Every reused semantic decision binds a digest of the compiled context's actual input file
 size/SHA256 pairs, not volatile compilation timestamps. If attachments or messages arrive after the
 decision, the mismatch forces a new Sol decision before any owner starts; identical inputs reuse the
