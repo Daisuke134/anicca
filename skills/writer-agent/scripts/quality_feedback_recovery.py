@@ -15,7 +15,9 @@ import sys
 from typing import Any
 
 
-MAX_INVOCATIONS = 2
+# Provider/research retries are separate from the five quality assessments.
+# A transient transport outage must not consume the quality iteration budget.
+MAX_INVOCATIONS = 10
 MAX_PUBLICATION_HANDOFFS = 2
 STATE_NAME = "quality-feedback-recovery-state.json"
 
@@ -44,6 +46,107 @@ def _atomic_write(path: Path, value: dict[str, Any]) -> None:
         encoding="utf-8",
     )
     os.replace(temporary, path)
+
+
+def _receipt_hash(value: dict[str, Any]) -> str:
+    unsigned = {key: item for key, item in value.items() if key != "receipt_sha256"}
+    return hashlib.sha256(
+        json.dumps(unsigned, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode(
+            "utf-8"
+        )
+    ).hexdigest()
+
+
+def _quality_attempt_count(run_dir: Path) -> int:
+    return sum(
+        1
+        for path in (run_dir / "gates").glob("quality-self-heal-attempt-*.json")
+        if path.is_file() and not path.is_symlink()
+    )
+
+
+def _record_feedback_invocation(
+    run_dir: Path,
+    state: dict[str, Any],
+    *,
+    recovery_attempt: int,
+    owner_pid: int,
+) -> None:
+    """Persist the wrapper's hash-bound proof that a new model call was launched."""
+    quality_attempt = _quality_attempt_count(run_dir) + 1
+    if quality_attempt <= 1:
+        return
+    prompt_sha256 = str(state.get("prompt_sha256", ""))
+    feedback_plan_sha256 = str(state.get("feedback_sha256", ""))
+    if not re.fullmatch(r"[0-9a-f]{64}", prompt_sha256) or not re.fullmatch(
+        r"[0-9a-f]{64}", feedback_plan_sha256
+    ):
+        raise QualityFeedbackRecoveryError("feedback-invocation-input-hash-invalid")
+    started_at = str(state.get("started_at", ""))
+    iteration_feedback_plan_sha256 = hashlib.sha256(
+        json.dumps(
+            {
+                "quality_attempt": quality_attempt,
+                "recovery_attempt": recovery_attempt,
+                "prompt_sha256": prompt_sha256,
+                "feedback_plan_sha256": feedback_plan_sha256,
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
+    previous_path = run_dir / "gates" / (
+        f"quality-feedback-invocation-attempt-{quality_attempt - 1}.json"
+    )
+    previous_receipt_sha256 = None
+    if quality_attempt > 2:
+        previous = _read_json(previous_path)
+        if previous is None or previous.get("receipt_sha256") != _receipt_hash(previous):
+            raise QualityFeedbackRecoveryError("previous-feedback-invocation-invalid")
+        previous_receipt_sha256 = _sha256(previous_path)
+    value = {
+        "version": 1,
+        "run_id": run_dir.name,
+        "quality_attempt": quality_attempt,
+        "recovery_attempt": recovery_attempt,
+        "owner_pid": owner_pid,
+        "started_at": started_at,
+        "prompt_sha256": prompt_sha256,
+        "feedback_plan_sha256": feedback_plan_sha256,
+        "iteration_feedback_plan_sha256": iteration_feedback_plan_sha256,
+        "previous_feedback_invocation_sha256": previous_receipt_sha256,
+    }
+    value["receipt_sha256"] = _receipt_hash(value)
+    path = run_dir / "gates" / f"quality-feedback-invocation-attempt-{quality_attempt}.json"
+    if path.exists() or path.is_symlink():
+        existing = _read_json(path)
+        if path.is_symlink() or not path.is_file() or not isinstance(existing, dict):
+            raise QualityFeedbackRecoveryError("feedback-invocation-receipt-conflict")
+        if existing == value and _receipt_hash(existing) == value["receipt_sha256"]:
+            return
+        if (
+            existing.get("version") != 1
+            or existing.get("run_id") != run_dir.name
+            or existing.get("quality_attempt") != quality_attempt
+            or not isinstance(existing.get("recovery_attempt"), int)
+            or existing.get("recovery_attempt", 0) < 1
+            or existing.get("receipt_sha256") != _receipt_hash(existing)
+        ):
+            raise QualityFeedbackRecoveryError("feedback-invocation-receipt-conflict")
+        # A provider can die after rewriting drafts but before quality_self_heal
+        # records the next attempt. Preserve that real invocation, then let the
+        # next bounded recovery own the canonical receipt for this quality attempt.
+        archived = run_dir / "gates" / (
+            f"quality-feedback-invocation-attempt-{quality_attempt}-"
+            f"recovery-{existing.get('recovery_attempt', 'unknown')}.json"
+        )
+        if archived.exists():
+            if archived.is_symlink() or not archived.is_file() or _read_json(archived) != existing:
+                raise QualityFeedbackRecoveryError("feedback-invocation-archive-conflict")
+        else:
+            shutil.copy2(path, archived)
+    _atomic_write(path, value)
 
 
 def _refused(reason: str) -> dict[str, str]:
@@ -108,8 +211,26 @@ def _feedback_for_terminal(gates: Path, run_id: str) -> dict[str, Any] | None:
     if (
         quality is None
         or quality.get("version") != 2
-        or quality.get("action") != "block_freeze"
-        or int(quality.get("attempt", 0)) < 2
+        or quality.get("action") not in {
+            "block_freeze", "ready_to_freeze", "reroute", "evaluate_reroute",
+            "force_publish_advisory",
+        }
+        or (
+            quality.get("action") == "block_freeze"
+            and int(quality.get("attempt", 0)) < 1
+        )
+        or (
+            quality.get("action") == "ready_to_freeze"
+            and quality.get("quality_advisory") is not True
+        )
+        or (
+            quality.get("action") == "force_publish_advisory"
+            and (
+                quality.get("quality_advisory") is not True
+                or quality.get("force_publish_after_iterations") != 5
+            )
+        )
+        or quality.get("publication_policy") != "continuous"
         or not isinstance(quality.get("quality"), dict)
     ):
         return None
@@ -136,7 +257,28 @@ def _feedback_for_terminal(gates: Path, run_id: str) -> dict[str, Any] | None:
 
 def _publication_handoff_ready(run_dir: Path) -> bool:
     quality = _read_json(run_dir / "gates/quality-self-heal.json")
-    if quality is None or quality.get("action") != "ready_to_freeze":
+    if quality is None:
+        return False
+    force = (
+        quality.get("action") == "force_publish_advisory"
+        and quality.get("force_publish_after_iterations") == 5
+        and quality.get("quality_advisory") is True
+    )
+    if force:
+        try:
+            from quality_self_heal import validate_force_receipt
+
+            if not validate_force_receipt(
+                run_dir,
+                {
+                    lang: run_dir / f"article-{lang}.md"
+                    for lang in ("ja", "en")
+                },
+            ):
+                return False
+        except Exception:
+            return False
+    if quality.get("action") != "ready_to_freeze" and not force:
         return False
     languages = quality.get("quality")
     if not isinstance(languages, dict):
@@ -148,7 +290,11 @@ def _publication_handoff_ready(run_dir: Path) -> bool:
             draft.is_symlink()
             or not draft.is_file()
             or not isinstance(receipt, dict)
-            or receipt.get("ready") is not True
+            or (
+                not force
+                and receipt.get("ready") is not True
+            )
+            or receipt.get("identity") != "PASS"
             or receipt.get("article_sha256") != _sha256(draft)
         ):
             return False
@@ -161,15 +307,40 @@ def plan(run_dir: Path | str, ledger: Path | str) -> dict[str, Any]:
     gates = run_dir / "gates"
     if not run_dir.is_dir() or not gates.is_dir():
         return _refused("run-directory-missing")
-    if (gates / "publication-state.json").exists():
+    publication_state = gates / "publication-state.json"
+    if publication_state.exists() or publication_state.is_symlink():
         return _refused("publication-state-exists")
     if _ledger_has_delivery_row(ledger, run_dir.name):
         return _refused("ledger-row-exists")
     replacement = _read_json(gates / "quality-replacement.json")
-    if (
-        replacement is None
-        or replacement.get("replacement_run_id") != run_dir.name
-        or not isinstance(replacement.get("replaced_run_id"), str)
+    quality = _read_json(gates / "quality-self-heal.json")
+    advisory_candidate = bool(
+        isinstance(quality, dict)
+        and quality.get("version") == 2
+        and quality.get("publication_policy") == "continuous"
+        and quality.get("action") in {
+            "ready_to_freeze", "reroute", "evaluate_reroute", "block_freeze",
+            "force_publish_advisory",
+        }
+        and (
+            quality.get("action") != "ready_to_freeze"
+            or quality.get("quality_advisory") is True
+        )
+        and (
+            quality.get("action") != "force_publish_advisory"
+            or (
+                quality.get("quality_advisory") is True
+                and quality.get("force_publish_after_iterations") == 5
+            )
+        )
+    )
+    if not (
+        (
+            replacement is not None
+            and replacement.get("replacement_run_id") == run_dir.name
+            and isinstance(replacement.get("replaced_run_id"), str)
+        )
+        or advisory_candidate
     ):
         return _refused("not-a-quality-replacement")
     prior_repair = _read_json(gates / "quality-repair-state.json")
@@ -302,9 +473,10 @@ Hard boundaries:
 - Use primary sources where available. Never fabricate a quote, result, price, or experience.
 - Write gates/quality-feedback-consumption.json with version=1, the exact feedback_plan_sha256, current JA/EN draft SHA-256 values, and exact-one item for every feedback ID. Each item needs feedback_id, source_name, https source_url, concrete evidence, and languages. Every source_url must appear in the final Sources block of each listed language.
 - Rewrite both drafts from the researched evidence and a new outline. Then run the deterministic, editorial, identity, and reader gates for both current hashes.
+- The recovery wrapper records a signed invocation receipt for this quality iteration; do not reuse a previous prompt, feedback plan, or draft bytes.
 - Run quality_self_heal.py assess. A missing or incomplete consumption receipt must remain block_freeze.
 - Run `python3 {script} verify --run-dir "$ARTICLE_RUN_DIR"` and require status=PASS.
-- Only after assess returns ready_to_freeze and verify returns PASS, read ORIGINAL_PROMPT and continue STEP 4.8 through STEP 20 for this same run. Note remains ¥500 and both Substack posts remain paid-only. Require authenticated and public readback.
+- Repeat this recovery on the same run no more than five total quality iterations. Before iteration five, do not stage or publish. After iteration five, assess may return force_publish_advisory; that permits publication only when identity/safety/conscience, CTA, media, duplicate, and platform guards pass. If assess returns ready_to_freeze, every language record must be ready=true. In either case, verify must return PASS before reading ORIGINAL_PROMPT and continuing STEP 4.8 through STEP 20. Note remains ¥500 and both Substack posts remain paid-only. Require authenticated and public readback.
 """
 
 
@@ -322,7 +494,7 @@ EN_SHA256={hashes["en"]}
 
 Hard boundaries:
 - Do not rewrite either frozen draft, research again, create another run, or choose another topic.
-- Recheck both draft hashes, quality-self-heal action=ready_to_freeze, and quality-feedback verification PASS before any side effect.
+- Recheck both draft hashes, quality-self-heal action=ready_to_freeze or a valid five-iteration force_publish_advisory receipt, and quality-feedback verification PASS before any side effect.
 - Read ORIGINAL_PROMPT and execute only STEP 4.8 through STEP 20 for this same run.
 - Reconcile existing publication and ledger receipts before every publish action. Never duplicate a remote post.
 - Note remains ¥500 and both Substack posts remain paid-only.
@@ -491,6 +663,12 @@ def mark_invoking(
         }
     )
     _atomic_write(state_path, state)
+    _record_feedback_invocation(
+        run_dir,
+        state,
+        recovery_attempt=attempts,
+        owner_pid=owner_pid,
+    )
     return state
 
 
@@ -618,7 +796,23 @@ def record_result(
         status = "retryable-incomplete"
     elif (
         quality is not None
-        and quality.get("action") == "ready_to_freeze"
+        and quality.get("action") in {"ready_to_freeze", "force_publish_advisory"}
+        and isinstance(quality.get("quality"), dict)
+        and all(
+            isinstance(quality["quality"].get(lang), dict)
+            and (
+                quality["quality"][lang].get("ready") is True
+                or (
+                    quality.get("action") == "force_publish_advisory"
+                    and quality["quality"][lang].get("identity") == "PASS"
+                )
+            )
+            for lang in ("ja", "en")
+        )
+        and (
+            quality.get("action") != "force_publish_advisory"
+            or quality.get("force_publish_after_iterations") == 5
+        )
         and validate_consumption(run_dir).get("status") == "PASS"
     ):
         status = "terminal-ready-not-published"
