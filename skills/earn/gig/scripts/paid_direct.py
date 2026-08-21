@@ -81,6 +81,7 @@ PAID_DECISION_MODEL = "gpt-5.6-sol"
 PAID_FILE_MODEL = "gpt-5.6-sol"
 PAID_FILE_POLICY_VERSION = "paid-file-build-review-v20"
 MAX_FILE_REVIEW_ITERATIONS = 10
+PAID_MAX_PARALLEL_PROJECTS = 8
 PAID_SOURCE_CENSUS_VERSION = "paid-source-census-v4"
 # The skills a paid order may be built with. A skill the lane cannot see is a skill it will
 # reimplement badly under time pressure, so the BUYMA and video contracts belong here now that both
@@ -3533,7 +3534,9 @@ def run_once(args, output: Path) -> int:
         actionable = 0
         failed = effect = readback = 0; failed_step = ""
         targeted_items = []
-        with ThreadPoolExecutor(max_workers=4, thread_name_prefix="paid-refresh") as refresh_executor:
+        with ThreadPoolExecutor(
+            max_workers=PAID_MAX_PARALLEL_PROJECTS, thread_name_prefix="paid-refresh",
+        ) as refresh_executor:
             refresh_jobs = [
                 (item, refresh_executor.submit(_targeted, args, item, index))
                 for index, item in enumerate(items)
@@ -3546,7 +3549,9 @@ def run_once(args, output: Path) -> int:
                     step = error.step if isinstance(error, Failure) else "targeted_readback"
                     failed, failed_step = failed + 1, step
                     rows[room] = {"talkroom_id": room, "status": "failed", "failed_step": step}
-        executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="paid-project")
+        executor = ThreadPoolExecutor(
+            max_workers=PAID_MAX_PARALLEL_PROJECTS, thread_name_prefix="paid-project",
+        )
         jobs = []
         for item in targeted_items:
             room = _text(item.get("talkroom_id"))

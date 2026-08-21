@@ -950,7 +950,7 @@ Artifact version and review iteration are independent counters. A high historica
 advance the review cap; only `paid-review-state.round` for the exact feedback/requirements cycle
 counts toward the maximum of ten. A buyer-visible progress artifact does not suppress a durable
 `REPAIR_PENDING` cycle: the next wake revises and submits again until approval or round ten.
-The read-only targeted refresh is also project-scoped: up to four fresh hidden CDP targets run in
+The read-only targeted refresh is also project-scoped: up to eight fresh hidden CDP targets run in
 parallel before the existing project workers, and one refresh failure degrades only that talkroom.
 Each target is bounded to one 180-second attempt, so long histories can finish without restarting
 their work at 90 seconds while one wedged browser target still cannot hold every other independent
@@ -972,7 +972,8 @@ an input, it runs the Sol decision again in the same worker before choosing file
 it may not fall through to `remote_resume` merely because the required context became more complete.
 The parent initializes any missing durable state and submits the project immediately; it never runs
 a bootstrap Sol decision inline. Decision, DM refresh, build and review therefore remain inside each
-of the maximum four independent project workers rather than serializing queue construction.
+of the maximum eight independent project workers rather than serializing queue construction; the
+current seven Paid rooms can all progress simultaneously.
 The authenticated offer page is the exact bridge from a purchased order to its pre-purchase DM:
 persist its `/mypage/direct_message/<id>` reference in the project proposal, then have Paid refresh
 that one thread directly. A buyer-name scan incorrectly reported Haru's real DM `10102712` absent
