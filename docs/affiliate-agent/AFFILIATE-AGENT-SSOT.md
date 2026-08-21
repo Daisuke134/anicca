@@ -173,11 +173,12 @@ deployment adapter for these same contracts, not a second implementation.
 
 ### 1.2 Truth checkpoint: implemented versus still hypothetical
 
-Current override: the installed runtime is `557e814275a00de39fa7f45b1692608728790ec4`,
+Current override: the installed runtime is `a860408e737cc0a02a465c880656e6e86afd788c`,
 not the older release identifiers retained in historical table rows below. Its
 source and installed `scripts/local_loop.py` bytes match at SHA-256
-`f0fa03daf9a6b359d5d081403de5df43b5d55d085e5a059e579c3aca8748e84a`; the
-existing suite is `76/76`, compilation and diff checks pass. It includes the
+`9eaa2bc9ea7d5b4901fdffd31c0b587031dfd5563b228c47dc5a280bbf455b1d`; the
+full suite is `77/77`, the focused local-loop suite is `24/24`, and compilation
+and diff checks pass. It includes the
 prior exact Repost matching, policy/source budget guards, per-item failure
 isolation, provider denominator retention, bounded Telegram reconciliation,
 versioned daily summaries, a canonical append-only `AFFILIATE_RUN_RECEIPT`
@@ -185,11 +186,15 @@ for every launchd wake, and redacted effect-classified
 `AFFILIATE_TOOL_ATTEMPT` receipts for each admitted owner-stage tool. Tool
 failures are typed with bounded retry due-time and effect certainty; revenue
 cycle results now propagate their durable failure class and retry window into
-the ToolAttemptReceipt instead of erasing them. The post-install registered-
-owner wake `e3ce34fe584563269988e22c841af08fc19bdcdc63a12a07eb8dbe621ae6fd24`
-completed with `runs=231`, `last exit code=0`, 21 release-bound tool rows, and
-Telegram message `27179`; its provider link was `VERIFIED` and deduplicated,
-and no public/provider effect changed.
+the ToolAttemptReceipt instead of erasing them. Release `a860408e` additionally
+keeps safe failure class/retry state in future `REVENUE_CYCLE_FAILED` Telegram
+bodies and distinguishes later observed failure attempts by durable identity.
+The post-install registered-owner wake
+`f273838c9f9c94266e0c86dd82392f096a850e8abb394fce24790df0ebc038be` completed
+at `15:08:26+0900` with `runs=234`, `last exit code=0`, provider
+`AUTHENTICATED`, placement-link `VERIFIED`, publication `ALREADY_LIVE`,
+revenue `COOLDOWN`, rolling net `NO_APPROVED_OR_PAID_ROWS`, and Telegram
+message `27207`; no public/provider effect or money changed.
 
 The natural wake immediately before that install recorded a real
 `provider-link.elevenlabs` `TimeoutError` as
@@ -3092,17 +3097,22 @@ cursor; later work MUST NOT jump ahead of an unmet gate.
 
 Current execution cursor (latest owner readback): **E1-H, close the first real
 transaction path.** Publication recovery and the ten-placement readiness gate
-are complete through the existing owner. Release `557e81427` is installed at
+are complete through the existing owner. Release `a860408e737cc0a02a465c880656e6e86afd788c` is installed at
 `current`; its installed/source `local_loop.py` bytes match (SHA-256
-`f0fa03da…8e84a`) and the existing suite is `76/76` with compilation and diff
-checks clean. The existing `ai.anicca.affiliate-loop` owner completed the
-post-install wake `e3ce34fe…` with `runs=231`, `last exit code=0`, and
-`StartInterval=600`; its 21 ToolAttemptReceipt rows carry the new release SHA.
-The preceding natural wake recorded a real typed browser timeout and a closed
-official capture failure; the same placement then resumed as verified without
-duplication. Telegram is `SENT` on `27179` with no new public/provider effect.
-F01, F02, and F03 are closed; B01 remains open for the first non-empty official
-transaction row.
+`9eaa2bc9…f455b1d`), the full suite is `77/77`, the focused local-loop suite is
+`24/24`, and compilation/diff checks are clean. The existing
+`ai.anicca.affiliate-loop` owner completed wake
+`f273838c9f9c94266e0c86dd82392f096a850e8abb394fce24790df0ebc038be` at
+`15:08:26+0900` with `runs=234`, `last exit code=0`, and `StartInterval=600`.
+Its release-bound receipts show provider `AUTHENTICATED`, placement-link
+`VERIFIED`, publication `ALREADY_LIVE`, revenue `COOLDOWN`, and rolling net
+`NO_APPROVED_OR_PAID_ROWS`; Telegram message `27207` is `SENT`. No provider
+capture ran on that wake because the prior official cycle was still inside its
+cooldown; no new transaction, settlement, public effect, or money was created.
+Release `a860408e` also makes future `REVENUE_CYCLE_FAILED` bodies report only
+safe typed failure class/retry state and gives each distinct durable failure
+attempt its own replay-safe event identity. F01, F02, and F03 are closed; B01
+remains open for the first non-empty official transaction row.
 The next existing-owner wake `4376877990…` at `14:52:45+0900` also exited `0`,
 returned revenue `COOLDOWN`, and left Telegram `NO_PENDING`; no provider
 artifact or external effect changed. The public X receipt for

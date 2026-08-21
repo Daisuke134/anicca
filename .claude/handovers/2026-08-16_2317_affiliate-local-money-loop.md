@@ -33,6 +33,20 @@
   `2088809159932465497` is still `LIVE` with the same content hash; five
   consecutive owner readbacks are `ALREADY_LIVE`, so the prior `XPostError`
   is reconciled rather than merely hidden by cooldown.
+- Current installed runtime is now immutable release
+  `a860408e737cc0a02a465c880656e6e86afd788c`; source and installed
+  `scripts/local_loop.py` bytes match at SHA-256
+  `9eaa2bc9ea7d5b4901fdffd31c0b587031dfd5563b228c47dc5a280bbf455b1d`.
+  The full suite is `77/77`, the focused local-loop suite is `24/24`, and
+  compilation/diff checks pass. The existing owner wake
+  `f273838c9f9c94266e0c86dd82392f096a850e8abb394fce24790df0ebc038be`
+  completed at `15:08:26+0900` with exit `0`, provider `AUTHENTICATED`,
+  placement-link `VERIFIED`, publication `ALREADY_LIVE`, revenue `COOLDOWN`,
+  and Telegram `SENT` as message `27207`; outbox/sent are `138/138`. No new
+  provider artifact, transaction, settlement, public effect, or money was
+  created. The release now reports safe typed failure class/retry state in a
+  future `REVENUE_CYCLE_FAILED` receipt and keeps distinct observed failure
+  attempts as distinct replay-safe Telegram events. B01 remains open.
 - The prior natural wake `afa4d937e6…` at `14:32:53+0900` recorded a real
   `provider-link.elevenlabs` `TimeoutError` as
   `BROWSER_TRANSIENT / RETRYABLE / effect=UNKNOWN`, due `14:38:14+0900`; the
