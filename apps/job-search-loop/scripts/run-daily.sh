@@ -32,6 +32,22 @@ refresh_summary() {
 "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_owner \
   --endpoint "http://127.0.0.1:9222" \
   --output "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE"
+ASHBY_FAST_PATH_RESULT="$EVIDENCE/ashby-fast-path.json"
+set +e
+"$JOB_SEARCH_PYTHON" -m job_search_loop.ashby_fast_path \
+  --endpoint "http://127.0.0.1:9222" \
+  --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
+  --profile "$JOB_SEARCH_PROFILE" \
+  --materials-root "${XDG_DATA_HOME:-$HOME/.local/share}/anicca/job-search/materials" \
+  --evidence-dir "$EVIDENCE/ashby-fast-path" \
+  --output "$ASHBY_FAST_PATH_RESULT" \
+  --japan-day "$JAPAN_DAY"
+ASHBY_FAST_PATH_RC=$?
+set -e
+if [[ "$ASHBY_FAST_PATH_RC" -ne 0 ]]; then
+  printf '%s\n' "Ashby fast path exited rc=$ASHBY_FAST_PATH_RC; browser-lane fallback continues" >&2
+fi
+export JOB_SEARCH_ASHBY_FAST_PATH_RESULT="$ASHBY_FAST_PATH_RESULT"
 set +e
 "$JOB_SEARCH_PYTHON" "$JOB_SEARCH_RUNNER" \
   --task-class browser-lane-agent \

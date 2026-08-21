@@ -9,6 +9,23 @@ class InvalidTransition(ValueError):
     pass
 
 
+DEFAULT_EMPLOYER_EXCLUSIONS = frozenset(
+    {
+        "Accenture",
+        "KPMG",
+        "Deloitte",
+        "Ernst & Young",
+        "EY",
+        "PwC",
+        "PricewaterhouseCoopers",
+        "OpenAI",
+        "Anthropic",
+        "Palantir",
+        "Cursor",
+    }
+)
+
+
 TRANSITIONS = {
     "discovered": frozenset({"qualified", "rejected"}),
     "qualified": frozenset({"materials_ready", "rejected"}),
@@ -19,6 +36,7 @@ TRANSITIONS = {
     "not_submitted": frozenset({"submit_claimed", "rejected"}),
     "submitted": frozenset(
         {
+            "email_sent",
             "recruiter_contact",
             "screening",
             "assessment",
@@ -28,6 +46,10 @@ TRANSITIONS = {
             "offer",
         }
     ),
+    # Legacy recruiting-outreach rows recorded a delivery-correction event
+    # between the original submission and their later terminal reconciliation.
+    # Keep that append-only history valid without reopening or retrying it.
+    "email_sent": frozenset({"submit_unknown", "rejected", "withdrawn"}),
     "recruiter_contact": frozenset(
         {"screening", "assessment", "interview", "rejected", "withdrawn", "offer"}
     ),
@@ -43,6 +65,23 @@ TRANSITIONS = {
 
 def _normalize_text(value: str) -> str:
     return re.sub(r"[^a-z0-9]+", " ", value.casefold()).strip()
+
+
+def is_excluded_employer(
+    company: str, exclusions: frozenset[str] = DEFAULT_EMPLOYER_EXCLUSIONS
+) -> bool:
+    """Return true when a company matches a hard employer exclusion.
+
+    Prefix matching covers ATS display names such as ``OpenAI Research`` while
+    keeping unrelated names that merely contain an excluded word out.
+    """
+    normalized = _normalize_text(str(company))
+    return any(
+        normalized == _normalize_text(alias)
+        or normalized.startswith(f"{_normalize_text(alias)} ")
+        for alias in exclusions
+        if _normalize_text(alias)
+    )
 
 
 def canonical_url(value: str) -> str:

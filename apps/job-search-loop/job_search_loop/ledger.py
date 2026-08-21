@@ -13,7 +13,13 @@ from pathlib import Path
 from typing import Any, Iterator, Mapping
 
 from .ats import evaluate_snapshot
-from .state import canonical_job_id, canonical_url, validate_transition
+from .state import (
+    DEFAULT_EMPLOYER_EXCLUSIONS,
+    canonical_job_id,
+    canonical_url,
+    is_excluded_employer,
+    validate_transition,
+)
 
 
 LEGACY_STRATEGY = {"capture_status": "legacy_unavailable"}
@@ -43,6 +49,10 @@ AUTHORITATIVE_EVIDENCE_SOURCES = frozenset(
 
 
 class FenceError(RuntimeError):
+    pass
+
+
+class ExcludedEmployerError(ValueError):
     pass
 
 
@@ -470,6 +480,8 @@ class Ledger:
         )
 
     def add_application(self, company: str, title: str, url: str) -> str:
+        if is_excluded_employer(company):
+            raise ExcludedEmployerError(f"employer is excluded: {company}")
         application_id = canonical_job_id(company, title, url)
         with self._transaction():
             existing = self.connection.execute(
@@ -528,6 +540,8 @@ class Ledger:
         prompt_sha256: str,
         material_sha256: str,
     ) -> str:
+        if is_excluded_employer(company):
+            raise ExcludedEmployerError(f"employer is excluded: {company}")
         text_values = {
             "strategy_generation_id": strategy_generation_id,
             "source": source,
@@ -643,6 +657,48 @@ class Ledger:
                 ),
             )
         return application_id
+
+    def reject_excluded_employers(
+        self, exclusions: set[str] | frozenset[str] | None = None
+    ) -> list[dict[str, str]]:
+        """Quarantine pre-submit rows for every hard-excluded employer.
+
+        Terminal history (``submitted`` and ``submit_unknown``) is immutable
+        evidence and is deliberately not changed.  The default exclusions are
+        always applied; the private profile can add aliases for this run.
+        """
+        names = frozenset(DEFAULT_EMPLOYER_EXCLUSIONS)
+        if exclusions:
+            names = names | frozenset(str(value) for value in exclusions)
+        rows = self.connection.execute(
+            """
+            SELECT id, company, title, current_state
+            FROM applications
+            WHERE current_state IN ('discovered', 'qualified', 'materials_ready', 'not_submitted')
+            ORDER BY created_at, rowid
+            """
+        ).fetchall()
+        rejected: list[dict[str, str]] = []
+        with self._transaction():
+            for row in rows:
+                company = str(row["company"])
+                if not is_excluded_employer(company, names):
+                    continue
+                application_id = str(row["id"])
+                self._transition_in_transaction(
+                    application_id,
+                    "rejected",
+                    {"reason": "employer_excluded", "company": company},
+                )
+                rejected.append(
+                    {
+                        "application_id": application_id,
+                        "company": company,
+                        "title": str(row["title"]),
+                        "from_state": str(row["current_state"]),
+                    }
+                )
+        return rejected
 
     def strategy_assignment(self, application_id: str) -> dict[str, Any]:
         row = self.connection.execute(

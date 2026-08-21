@@ -13,6 +13,7 @@ from zoneinfo import ZoneInfo
 from .calendar_sync import event_key
 from .interview_prep import PrepStore
 from .recruiter_reply import send_reply_once
+from .state import is_excluded_employer
 
 
 IDENTIFIER_PATTERN = re.compile(r"^[A-Za-z0-9_-]{1,1024}$")
@@ -406,6 +407,11 @@ def confirm_interview_slot(
     gmail_executable: str = "/opt/homebrew/bin/gog",
     allow_self_recipient: bool = False,
 ) -> dict[str, Any]:
+    if is_excluded_employer(company):
+        return {
+            "status": "blocked",
+            "blocker": "employer_excluded",
+        }
     slots = normalize_candidate_slots(raw_slots, now=now)
     existing = find_interview_event(
         account=account,
