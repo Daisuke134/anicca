@@ -1,20 +1,21 @@
 # Affiliate local money loop handover
 
 - Current installed runtime is immutable release
-  `90378f6d901e6ddb5966210f1a4a9aa0c332de2d`; source and installed
+  `b9b73047a1b76ebf219472d8022f24f846a7f060`; source and installed
   `scripts/local_loop.py` bytes match at SHA-256
-  `bcdc5d4ce508fc57a44b081a0775df4dab07ac899d3175f9155d8de16611a6ab`.
+  `a0b5db86c90a1105ad437369d68d0ee6b066c894075f60c26719a22bb874c027`.
   The release persists one append-only `AFFILIATE_RUN_RECEIPT` for every
   launchd wake plus redacted `AFFILIATE_TOOL_ATTEMPT` rows for admitted tools;
   receipts include release, timing, preconditions, outcome, retry, effect
   certainty, postcondition, and numeric usage, without URLs, credentials, or
   secrets. The registered owner completed wake
-  `f98f6d6e3991c858bf79ce59b2f59193aab277a829dbe633602270ab53547f60` at
-  `2026-08-21T13:47:17+0900`; its 21 tool rows carry the exact release SHA and
-  unique scheduler/tool/attempt keys. `launchctl print` reads `runs=227`,
-  `last exit code=0`, and `StartInterval=600`. Telegram remains `NO_PENDING`
-  on message `27069` with private outbox/sent `135/135`, and no public/provider
-  effect changed. F01 and F02 are closed by live owner readback; B01 remains
+  `b389bfbf3c24206ad347bfb7222c77d9d2b843fe84e50eb9fe6d9f2131cf1a6b` at
+  `2026-08-21T14:12:10+0900`; its 21 tool rows carry the exact release SHA,
+  unique scheduler/tool/attempt keys, and typed retry fields. `launchctl print`
+  reads `runs=228`, `last exit code=0`, and `StartInterval=600`. Telegram
+  remains `NO_PENDING` on message `27069` with private outbox/sent `135/135`,
+  and no public/provider effect changed. F01 and F02 are closed; F03 schema is
+  installed but still awaits a real typed failure/retry readback; B01 remains
   open.
 - Prior bounded Telegram-history repair was installed as immutable release
   `088f36982ae9ec6c643d7fa6d9a299701dbb377b`; source and installed
