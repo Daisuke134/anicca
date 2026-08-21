@@ -1540,3 +1540,43 @@ result is `providerDataFreshness=stale`, `latestReturnedTransactionDate=2026-08-
 fresh read-only Moneytree bundle produced the visible warning: latest transaction is three days old, balance is not
 realtime, and bank-side update time is unknown. This closes the loop-source/Telegram E2E audit; it does not close the
 external Moneytree refresh owner action.
+
+### What “payload” means and why it is not realtime (2026-08-21)
+
+The Moneytree plugin is a reader, not the bank connection itself. A tool call returns a structured JSON response—the
+**payload**—containing the balance and transaction rows that Moneytree currently has stored for the connected financial
+service. The loop receives that response over the authenticated `codex_apps` App Server bridge, validates it, normalizes
+it, and renders the report; it does not manufacture or reuse a local cached amount.
+
+```mermaid
+flowchart LR
+  B[Bank aggregation] --> M[Moneytree stored snapshot]
+  M --> P[Plugin JSON payload]
+  P --> L[Loop normalization]
+  L --> T[Telegram report]
+  Q[Request Refresh] -.separate operation.-> B
+```
+
+Revision 17 read the plugin successfully at `2026-08-21T11:33:29.800Z` and persisted `source.freshness=fresh`.
+That means **the read request succeeded**. The same run recorded `providerDataFreshness=stale` and
+`latestReturnedTransactionDate=2026-08-18`, meaning **the data inside the payload predates the reporting date**. The
+provider-reported balance is still `¥358,938`, but it is not a realtime bank balance. The shared Telegram receipt for
+this run is `message_id=27620`.
+
+The installed plugin schema exposes only read operations (`show-accounts`, `show-transactions`,
+`show-spending-summary`, `welcome`) and no bank-refresh operation or bank-side aggregation timestamp. Moneytree's
+[synchronization guide](https://docs.link.getmoneytree.com/v2023-07-03/docs/when-is-moneytree-data-synchronized.md) lists
+app/Web open, LINK `Request Refresh`, and provider background jobs as separate synchronization paths. The
+[Request Refresh API](https://docs.link.getmoneytree.com/v2023-07-03/reference/post-link-profile-refresh.md) requires
+the `request_refresh` OAuth scope, which the installed plugin does not expose. Connected plugin access therefore proves
+consented read access, not that the bank synchronized immediately before the read.
+
+### Remaining TODO (current ordered state)
+
+1. **CFO-2a3b.2:** owner signs in once in the already-open Google Cloud Console tab; acquire one default-filter Cost
+   Table CSV (or an actually enabled standard export), normalize its observed schema, and run CFO-2a3b.3 E2E.
+2. **Moneytree freshness owner action:** use Moneytree app/Web synchronization or an authorized LINK `request_refresh`
+   grant. Until then keep the stale warning and never label the balance realtime.
+3. **M5c:** only after verified profitable business evidence and explicit owner approval, run one bounded capital cycle;
+   current recommendation remains `execute=false`.
+4. **M3 tax/Binance and M4c Binance:** explicitly deferred by owner; no credentials or execution are being added.

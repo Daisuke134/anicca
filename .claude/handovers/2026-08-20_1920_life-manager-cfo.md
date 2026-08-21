@@ -99,6 +99,20 @@ realtime and the bank-side update time is unknown. The loop itself is healthy; o
 remains open.
 Codex milestone summary was sent to the same Telegram destination with provider `message_id=27589`.
 
+## Payload semantics and latest loop receipt (2026-08-21)
+
+“Payload” means the structured JSON returned by the connected Moneytree reader: the provider's currently stored
+balance/transaction snapshot. It is not the bank itself, and a successful read does not trigger bank aggregation. The
+latest real loop (revision `17`, Telegram receipt `27620`) received the payload at `2026-08-21T11:33:29.800Z` and
+correctly recorded internal read success (`source.freshness=fresh`) alongside `providerDataFreshness=stale` and latest
+transaction `2026-08-18`. The `fresh`/`stale` difference is intentional: fresh means the plugin response arrived and
+validated; stale means the provider data inside that response predates the owner reporting date. The plugin has no
+refresh tool or bank-side aggregation timestamp, so the report must not call the `¥358,938` balance realtime.
+
+Current ordered TODO: (1) CFO-2a3b.2 owner Google Console sign-in, real Cost Table CSV/export, and E2E; (2) Moneytree
+app/Web or LINK `request_refresh` owner action; (3) M5c only after verified profitable business and explicit approval;
+(4) M3 tax/Binance and M4c Binance deferred.
+
 ## CFO-2c Fleet boundary progress (2026-08-21)
 
 Canonical commit `75739758e1d16bd2f56462375936f314ec45c2dd` adds the proven Fleet validator/adapter and manifest under
