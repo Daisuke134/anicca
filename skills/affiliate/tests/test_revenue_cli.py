@@ -64,6 +64,15 @@ class RevenueCliTest(unittest.TestCase):
             (state / "distribution-metrics" / "devto.json").write_text(json.dumps({
                 "articles": [{"placement_id": "alpha-en-1", "page_views_count": 0}],
             }))
+            (state / "provider-reports" / "partnerstack-links").mkdir(parents=True)
+            (state / "provider-reports" / "partnerstack-links" / "latest.json").write_text(
+                json.dumps({"observed_at": "provider-time", "placements": [{
+                    "placement_id": "alpha-en-1", "current_click_count": 3,
+                    "delta_click_count": 1, "current_unique_click_count": 2,
+                    "delta_unique_click_count": 1,
+                    "unique_click_count_state": "OBSERVED",
+                }]})
+            )
 
             row = MODULE.build_placement_ledger(state)["placements"][0]
 
@@ -76,6 +85,9 @@ class RevenueCliTest(unittest.TestCase):
             self.assertEqual(row["exposure"]["x_impressions_state"], "UNKNOWN")
             self.assertIsNone(row["exposure"]["owned_page_visits"])
             self.assertEqual(row["exposure"]["owned_page_visits_state"], "UNKNOWN")
+            self.assertEqual(row["provider_clicks"]["count"], 3)
+            self.assertEqual(row["provider_clicks"]["unique_count"], 2)
+            self.assertEqual(row["provider_clicks"]["unique_state"], "OBSERVED")
 
     def test_classifies_tax_and_provider_setup_without_bank_data(self):
         readiness = MODULE.payout_readiness(

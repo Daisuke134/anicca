@@ -466,6 +466,9 @@ def build_placement_ledger(state):
             "provider_clicks": {
                 "count": link.get("current_click_count"),
                 "delta": link.get("delta_click_count"),
+                "unique_count": link.get("current_unique_click_count"),
+                "unique_delta": link.get("delta_unique_click_count"),
+                "unique_state": link.get("unique_click_count_state", "UNKNOWN"),
                 "observed_at": link_report.get("observed_at") if link else None,
             },
             "commission": {
@@ -822,6 +825,11 @@ def capture_link_performance(args):
         row["placement_id"]: row["current_click_count"]
         for row in previous.get("placements", [])
     }
+    previous_unique_counts = {
+        row["placement_id"]: row.get("current_unique_click_count")
+        for row in previous.get("placements", [])
+        if row.get("placement_id")
+    }
     candidates = [
         candidate for candidate in placement_candidates(state)
         if candidate.get("provider_link_key")
@@ -840,6 +848,21 @@ def capture_link_performance(args):
         delta = current - baseline
         if delta < 0:
             raise RevenueError("PartnerStack click count regressed")
+        raw_unique = matches[0].get("unique_click_count") if matches else 0
+        current_unique = (
+            raw_unique if isinstance(raw_unique, int) and not isinstance(raw_unique, bool)
+            and raw_unique >= 0 else None
+        )
+        baseline_unique = previous_unique_counts.get(candidate["placement_id"])
+        if current_unique is not None:
+            if not isinstance(baseline_unique, int) or isinstance(baseline_unique, bool):
+                baseline_unique = current_unique
+            unique_delta = current_unique - baseline_unique
+            if unique_delta < 0:
+                raise RevenueError("PartnerStack unique click count regressed")
+        else:
+            baseline_unique = None
+            unique_delta = None
         path_hash = hash_optional(matches[0].get("link_path")) if matches else None
         row = {
             "provider_link_key": candidate.get("provider_link_key"),
@@ -849,6 +872,12 @@ def capture_link_performance(args):
             "baseline_click_count": baseline,
             "current_click_count": current,
             "delta_click_count": delta,
+            "baseline_unique_click_count": baseline_unique,
+            "current_unique_click_count": current_unique,
+            "delta_unique_click_count": unique_delta,
+            "unique_click_count_state": (
+                "OBSERVED" if current_unique is not None else "UNKNOWN"
+            ),
         }
         placements.append(row)
         if delta > 0 and row["provider_link_key"] and path_hash:
@@ -862,6 +891,8 @@ def capture_link_performance(args):
                 "schema_version": 1, "receipt_type": "CLICK_TRANSITION",
                 "transition_id": transition_id, **identity,
                 "delta_click_count": delta, "public_url": row["public_url"],
+                "observed_unique_click_count": current_unique,
+                "delta_unique_click_count": unique_delta,
                 "observed_at": datetime.now(timezone.utc).isoformat(),
             }
             if append_unique(state / "click-ledger.jsonl", transition, ("transition_id",)):
