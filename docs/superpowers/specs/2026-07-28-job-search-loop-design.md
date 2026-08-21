@@ -178,6 +178,9 @@ launchd-versus-interactive delivery drift. The minimal-environment live send was
 acknowledged as Telegram message `27548`.
 The direct per-wake CLI is additionally capped at 90 seconds, so a stalled gateway
 records a failed receipt without holding the 30-minute application owner hostage.
+Release `d7b6171b10ce95a174f018cbcd60347437e9c525` validated that final delivery
+bound: it discovered ElevenLabs' Forward Deployed Engineer - Software Engineer -
+Sweden, clicked submit once, and wrote Telegram ACK `27588` before exiting.
 The end-to-end wake `daily-20260821-194207` validated the repaired path: it refreshed
 nine official boards, discovered ElevenLabs' Forward Deployed Software Engineer -
 UAE, clicked the real Ashby submit control once, recorded `submit_unknown`, and wrote
