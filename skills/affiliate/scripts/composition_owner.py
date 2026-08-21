@@ -822,6 +822,23 @@ def wake(
                             **previous, "state": "POLICY_BUDGET_BLOCKED"
                         }
                         continue
+                    except CompositionError:
+                        # A malformed or stale policy input must not starve
+                        # unrelated inbox items. Quarantine this item as a
+                        # durable terminal receipt; no public effect has run.
+                        for key in (
+                            "policy_budget_state", "policy_budget_day",
+                            "policy_budget_reason", "policy_budget_reservation_tokens",
+                            "policy_budget_daily_consumed_tokens",
+                            "policy_budget_daily_limit_tokens",
+                        ):
+                            previous.pop(key, None)
+                        previous.update({
+                            "state": "FAILED",
+                            "failure_class": "POLICY_BUILD_FAILED",
+                        })
+                        atomic_write(receipt_path, previous)
+                        continue
                     for key in (
                         "policy_budget_state", "policy_budget_day",
                         "policy_budget_reason", "policy_budget_reservation_tokens",
