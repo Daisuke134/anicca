@@ -16,7 +16,9 @@ reaches Workday My Information, but its custom previous-employment radio is
 still intercepted by a provider loading overlay; no Rakuten submit request,
 completion UI, or receipt email exists. The active atomic task is to make that
 one user-facing control stable, advance every Workday step, and require a
-provider completion UI before the ledger may report `submitted`.
+provider completion UI before the ledger may report `submitted`. A Workday wake
+processes every pending/retryable row; one blocked row must not terminate the
+rest of that provider queue.
 
 ### Universal-application architecture (target)
 
@@ -145,14 +147,15 @@ evidence, a fenced intent and authoritative confirmation.
 | Order | Atomic TODO | State | Evidence needed to close |
 |---:|---|---|---|
 | 1 | Keep the existing browser owner healthy at CDP `:9222` | `done` | `ai.anicca.job-search-browser` is enabled/running; `/json/version` responds; no second browser owner |
-| 2 | Run the existing hourly owner with Ashby then Workday fast paths | `in_progress` | The owner enables `JOB_SEARCH_ENABLE_WORKDAY=1` by default; each lane writes its own evidence and checkpoint |
+| 2 | Run the existing hourly owner with Ashby then every pending Workday row | `in_progress` | The owner enables `JOB_SEARCH_ENABLE_WORKDAY=1`; no one-row Workday cap remains and each lane writes its own evidence and checkpoint |
 | 3 | Replace the timed-out model discovery with a bounded Ashby discovery pass | `completed` | CLI/owner commit `12ea0d89a`; live discovery selected ElevenLabs after browser/cache verification and wrote immutable attribution |
 | 4 | Make the Rakuten custom previous-employment radio stable and advance My Information | `in_progress` | One real `Save and Continue` progress receipt; no timeout or forced click |
-| 5 | Complete all subsequent Workday steps with grounded profile answers and exact resume | `pending_after_4` | Per-step snapshots plus one visible final Submit control |
-| 6 | Click Workday Submit once and preserve the completion UI | `pending_after_5` | Provider submission request and saved provider completion screenshot |
-| 7 | Reconcile the receipt email/ATS confirmation and send one Telegram proof | `pending_after_6` | Immutable message/ATS confirmation bound to the exact application |
-| 8 | Continue every hourly wake without reapplying user-confirmed URLs | `in_progress` | `workday-manual-completed.json` skips Salesforce FDE JR355047; repeated wake processes another eligible Workday row |
-| 9 | Continue inbox replies, interview scheduling, preparation and outcome tracking | `pending_after_7` | Real Gmail thread, Calendar readback, interview/offer state, and Telegram receipts |
+| 5 | Continue other Workday rows even if Rakuten blocks | `in_progress` | One wake emits a separate receipt for every pending/retryable Workday row |
+| 6 | Complete all subsequent Workday steps with grounded profile answers and exact resume | `pending_after_4` | Per-step snapshots plus one visible final Submit control |
+| 7 | Click Workday Submit once and preserve the completion UI | `pending_after_6` | Provider submission request and saved provider completion screenshot |
+| 8 | Reconcile the receipt email/ATS confirmation and send one Telegram proof | `pending_after_7` | Immutable message/ATS confirmation bound to the exact application |
+| 9 | Continue every hourly wake without reapplying user-confirmed URLs | `in_progress` | `workday-manual-completed.json` skips Salesforce FDE JR355047; repeated wake processes every eligible Workday row |
+| 10 | Continue inbox replies, interview scheduling, preparation and outcome tracking | `pending_after_8` | Real Gmail thread, Calendar readback, interview/offer state, and Telegram receipts |
 | 10 | Finish guardian/self-healing, Career surface, and OSS/cloud distribution | `pending_after_9` | Health repair evidence, `summary.v2` parity, tenant isolation, export/revocation, and clean install E2E |
 
 ### 1.1 Repeatable-loop robustness contract
