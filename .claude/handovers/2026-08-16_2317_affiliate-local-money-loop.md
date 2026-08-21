@@ -76,8 +76,10 @@
   `47c80af47325c9c0b31dfd9538568640fd3c4213c74684492da93abe4c16c1d6`
   completed at `15:43:27+0900` with exit `0`, revenue `COOLDOWN`, and Telegram
   `27244` `SELF_HEALED`; the receipt body says the same capture recovered with
-  `transactions=0` and no estimated revenue. No new provider/public effect or
-  money was created; B01 still waits for the first non-empty official row.
+  `transactions=0` and no estimated revenue. Delivery receipt
+  `cf24b8c0…e85eb71` binds sent event `53be1b70…15b67f8`. No new
+  provider/public effect or money was created; B01 still waits for the first
+  non-empty official row.
 - The prior natural wake `afa4d937e6…` at `14:32:53+0900` recorded a real
   `provider-link.elevenlabs` `TimeoutError` as
   `BROWSER_TRANSIENT / RETRYABLE / effect=UNKNOWN`, due `14:38:14+0900`; the

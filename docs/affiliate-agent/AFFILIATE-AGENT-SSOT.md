@@ -3115,8 +3115,9 @@ is null, all four status counts are zero, and real costs remain `UNKNOWN`.
 After installing `a1767577a`, owner wake
 `47c80af47325c9c0b31dfd9538568640fd3c4213c74684492da93abe4c16c1d6`
 completed at `15:43:27+0900` with exit `0`, revenue `COOLDOWN`, and Telegram
-`27244` `SELF_HEALED`; no provider/public effect or money changed. F01, F02,
-and F03 are closed; B01 remains open for the first non-empty official
+`27244` `SELF_HEALED`; delivery receipt `cf24b8c0…e85eb71` binds the sent
+event `53be1b70…15b67f8`. No provider/public effect or money changed. F01,
+F02, and F03 are closed; B01 remains open for the first non-empty official
 transaction row.
 The next existing-owner wake `4376877990…` at `14:52:45+0900` also exited `0`,
 returned revenue `COOLDOWN`, and left Telegram `NO_PENDING`; no provider
