@@ -1785,12 +1785,12 @@ after the preceding numbered row, and no later row is started early:
 MKT-07 → MKT-08 → MKT-09 → MKT-10 → MKT-11 → MKT-11A → MKT-11B → MKT-12 →
 MKT-13`.
 
-Current TODO state: **MKT-01 done; MKT-02 done; MKT-03 done with the earlier generic row quarantined; MKT-03A contract done; MKT-03B partly done; MKT-04 seven-cycle gate removed; MKT-05 and MKT-06 done; MKT-07 is the active blocked item; MKT-08 onward open**. Honne
+Current TODO state: **MKT-01 done; MKT-02 done; MKT-03 done with the earlier generic row quarantined; MKT-03A contract done; MKT-03B partly done; MKT-04 seven-cycle gate removed; MKT-05 through MKT-07 done; MKT-08 is the active item; MKT-09 onward open**. Honne
 has TikTok/Instagram destinations only; YouTube remains an Anicca-only lane.
 
-**Active atomic item:** MKT-07 only. Anicca JA TikTok/Instagram and Honne JA
-TikTok canaries are proven; do not enable other lanes or the three-post policy
-until the next selected lane passes its own receipt.
+**Active atomic item:** MKT-08 only. Anicca JA TikTok/Instagram, JP4 TikTok,
+and Honne JA TikTok canaries are proven; do not enable other lanes or the
+three-post policy until the next selected lane passes its own receipt.
 
 | ID | Atomic action | Account/lane | Done evidence |
 |---|---|---|---|
@@ -1802,7 +1802,7 @@ until the next selected lane passes its own receipt.
 | MKT-04 | Run Honne EN on-demand cycles one by one and prove seven consecutive receipts | Honne EN `@honne_reveal`, one explicit manual trigger per cycle | **removed by owner instruction** — retain the single HEN-006 receipt as evidence; no calendar trigger or seven-cycle wait remains |
 | MKT-05 | Repair the known hook, asset, poster-argument, and environment-boundary defects before any publication | Honne JA `@honnevideo` | **done —** migrated `honne-ja` ReelClaw pack runs through LM object refs only; no legacy hook/path/env/asset read reached the provider |
 | MKT-06 | Restore Honne JA on-demand publishing and record its account receipt | Honne JA `@honnevideo` | **done —** creative `HJA-011-ed3318c496f4` published at `https://www.tiktok.com/@honnevideo/video/7676425660641889537`, provider row `cmt2siqgp0009nt0yoi1qz7lf`, Telegram `message_id=27515`, replay 0; old `honne-ja-fresh` remains disabled |
-| MKT-07 | Repair and canary the JP4 lane | Anicca JP4 `@anicca.jp4` | **blocked pending owner OAuth reconnect —** the correct `AJ-CARD-002-7e24db967bf7` creative created Postiz row `cmt2snuzy0000qp0y8tjgf2i2`; it became `ERROR` with `postSocialPending` `START_TO_CLOSE` timeout and `MAXIMUM_ATTEMPTS_REACHED`, with no release URL/ID. The effect was reconciled `absent` with `public_url=unavailable`; no Telegram was sent and the failed effect is not retryable. JP4 read-only analytics still returns HTTP 200, while the Postiz public OAuth reconnect URL lands at TikTok `/login` in the current browser. After the account owner completes that reconnect, run one new effect, verify the direct `/video/<id>` URL, send one natural Telegram receipt, and replay with zero new effects |
+| MKT-07 | Repair and canary the JP4 lane | Anicca JP4 `@anicca.jp4` | **done —** the failed `AJ-CARD-002-7e24db967bf7` effect remains reconciled `absent` and was never retried. A new Life Manager-only `AJ-CARD-003-5639e14832ad` nudge-card effect used the approved card media `5639e148…`, JP4 approval `97f2c5fb…`, and Postiz row `cmt328uot00s2qk0y23e8ptii`. Postiz's numeric release suffix was not trusted: caption/profile readback verified `https://www.tiktok.com/@anicca.jp4/video/7676495865816632583` (HTTP 200). Natural Telegram receipt `message_id=27939` carried that same direct URL; replay created zero publication and zero message effects. The JP4 runner rejects any non-pack media, wrong approval, wrong integration, or terminal job before claim |
 | MKT-08 | Repair and canary the iOS lane | Anicca iOS `@anicca.jp` | one account-specific public URL, natural Telegram receipt, replay 0, and metrics |
 | MKT-09 | Migrate the remaining Larry/ReelClaw accounts one by one, preserving each measured account/locale contract | remaining Anicca/Honne accounts | each account passes one canary, direct receipt, metrics, and replay 0; no mass re-enable |
 | MKT-10 | Enable the three-posts-per-day policy only after the account canary and metrics health gate pass | every production-armed account | exactly the chosen daily policy, no duplicate effects, no silent misses |
