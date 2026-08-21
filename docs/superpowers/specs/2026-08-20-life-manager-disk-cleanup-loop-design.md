@@ -158,6 +158,16 @@ source/runtime SHA-256は一致し、live ledgerではdirty/open/recent/head-not
 これはworktree starvationを解消し、連続full-passを抑制する証拠であり、reserve 11 GiB回復・swap解放・
 24時間観測の完了ではない。
 
+### 2026-08-21 producer ledger pressure controls
+
+実測growth ownerは`heartbeat_log.jsonl`約180MiBとStripe `events.jsonl`約346MiBだった。
+heartbeat ledgerは64MiB閾値、flock、atomic rename、gzip archive、orphan recoveryを実装し、
+runtime SHAをcanonicalと一致させた。Stripe listenerは128MiB閾値、owner-PID lock、active appendと
+rotationの直列化、orphan recovery、archive名衝突回避を実装した。両方とも元eventを削除せずarchiveへ
+保持する。heartbeatの初回rotationは180,297,803 bytes→3,259,576-byte archive、active 0 bytesを
+readbackした。Stripeの現行346MiB ledgerは次のlistener write時にrotationするため、production archive
+readbackは未取得である。
+
 ### OSS boundary
 
 公開するdeterministic cleanupの正本はLife Manager repositoryの
