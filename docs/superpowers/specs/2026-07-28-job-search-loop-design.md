@@ -39,6 +39,12 @@ kept `send_started` and is not blindly retried.
 The deterministic Ashby fast path then quarantined the Cohere row as `rejected` with
 payload reason `provider_application_limit_visible`, so later wakes do not revisit
 the same impossible submission.
+The bounded discovery CLI is now wired into the owner (commit `12ea0d89a`): it reads
+the official ATS cache, selects one untried Tokyo/Japan Ashby posting, attributes it,
+and immediately runs the Ashby fast path. A live run discovered ElevenLabs' Product
+Marketing - Agents - Government role, clicked its real Submit Application control,
+and recorded terminal `submit_unknown`; Telegram report ACK is `27467`. The model
+fallback is disabled by default for this gate, so discovery cannot stall the cadence.
 The daily script now bounds the non-deterministic browser fallback at 300 seconds
 by default (`JOB_SEARCH_BROWSER_TIMEOUT_SECONDS` may lower or raise that bounded
 value); deterministic ATS fast paths run before it and retain their own evidence.
@@ -60,11 +66,11 @@ evidence, a fenced intent and authoritative confirmation.
 | Order | Atomic TODO | State | Evidence needed to close |
 |---:|---|---|---|
 | 1 | Keep the existing browser owner healthy at CDP `:9222` | `done` | `ai.anicca.job-search-browser` is enabled/running; `/json/version` responds; no second browser owner |
-| 2 | Run the existing 30-minute owner with Ashby fast path first | `in_progress` | `daily-20260821-181731` shows Ashby preflight before Workday; Workday is `parked / ashby_first_gate`; the 300-second discovery fallback timed out |
-| 3 | Replace the timed-out model discovery with a bounded Ashby discovery pass | `in_progress` | Browser/API cache found and Ledger-attributed Cohere Tokyo FDE `adb1aa642b3953f408d2ab9919c37c00b55ea3926c715eb8404ff923de614e46`; next pass must use the same bounded source path |
-| 4 | Reach Ashby claim-ready form and route the exact resume | `blocked_by_provider_policy` | Cohere's real form is reachable, but it visibly states a five-applications/90-day provider limit; fast path now quarantines the row as `rejected` with that reason, with no claim or resume upload bypass |
-| 5 | Click the real Ashby submit control once | `pending` | Ledger fence/attempt plus click-phase evidence; never retry `submit_unknown` |
-| 6 | Reconcile authoritative confirmation and send one Telegram report | `pending` | Gmail/ATS confirmation, Ledger transition, Telegram message ID, and same-day dedupe |
+| 2 | Run the existing 30-minute owner with Ashby fast path first | `in_progress` | `daily-20260821-181731` proved the order; the new owner adds deterministic discovery and disables model fallback by default |
+| 3 | Replace the timed-out model discovery with a bounded Ashby discovery pass | `completed` | CLI/owner commit `12ea0d89a`; live discovery selected ElevenLabs after browser/cache verification and wrote immutable attribution |
+| 4 | Reach Ashby claim-ready form and route the exact resume | `in_progress` | ElevenLabs reached a real final form with the routed resume; Cohere is durably blocked by its provider limit |
+| 5 | Click the real Ashby submit control once | `completed_for_one_role` | ElevenLabs real Submit Application click is fenced as terminal `submit_unknown`; never retry it |
+| 6 | Reconcile authoritative confirmation and send one Telegram report | `in_progress` | Telegram ACK `27467` is recorded; Gmail/ATS confirmation for ElevenLabs and same-day dedupe remain |
 | 7 | Prove the next wake skips the terminal Ashby row and processes another eligible row | `pending` | Two consecutive owner runs with queue progress and no duplicate claim |
 | 8 | Resume Workday only after Ashby items 3–7 close | `parked` | Grounded source/previous-employer answers or an explicit durable skip; then one confirmed Workday submission |
 | 9 | Continue inbox replies, interview scheduling, preparation and outcome tracking | `pending_after_8` | Real Gmail thread, Calendar readback, interview/offer state, and Telegram receipts |
