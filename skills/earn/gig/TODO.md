@@ -298,6 +298,23 @@ remain unchecked below. Work moved to Paid too early because Manledge action 338
 buyers remains an urgent customer-remediation exception and must be delivered without pausing the
 independent Negotiate owner, but it does not advance the development cursor past Negotiate.
 
+**Ponytail decision and current development cursor.** Do not create a separate email project,
+one-off Manledge/Haru executor, new agent layer or parallel implementation track. Reuse the existing
+four lanes and make the smallest changes inside their durable owners. Finish in this order:
+**Negotiate total coverage -> Negotiate sub-30-minute latency -> generic context-complete Paid
+continuation -> natural Paid proof using the already-open Manledge/Haru orders -> Storefront ->
+four-lane durability -> OSS third-device acceptance**. Manledge and Haru are production records the
+generic Paid owner must consume; they are not manual development steps and Codex must not stand in
+for the loop while waiting for a buyer reply.
+
+Negotiate optimizes lexicographically: **coverage before speed**. Every buyer-authored message must
+enter a durable per-thread queue and reach exactly one official disposition: replied with readback,
+estimate submitted with readback, safely terminal with a recorded reason, or retry-owned with a next
+attempt. Missing/skipped messages must be zero before latency is called complete. Independent threads
+may run concurrently, while one thread remains serial to prevent stale-context replies and duplicate
+effects. After coverage is zero-miss, every newly actionable buyer message must receive official
+readback within 30 minutes under a natural loop wake.
+
 **Autonomous continuation contract.** Codex, the operator and an ad-hoc browser script are never the
 durable owner of customer work. Every external effect and every remaining obligation must be written
 before the current process exits, and the loaded Paid owner must resume the exact next transition on
@@ -318,12 +335,14 @@ above. They are never a substitute for starting, revising or submitting the work
 remains off until the full accepted scope passes its quality gate; progress artifacts remain useful,
 versioned and deduplicated meanwhile.
 
-Outbound prospect email is also a loop-owned provider adapter, not a personal Gmail browser task.
-The one-session installer must configure sender identity, authentication, reply mailbox, unsubscribe
-identity and a real send/readback probe before outreach is enabled. Only a provider-accepted receipt
-increments `sent`; delivery-unknown remains retry-owned and never becomes a fabricated contact.
+Outbound prospect email is an internal Paid provider adapter, not a separate milestone, agent or
+personal Gmail browser task. The Paid installer configures it only when the installed workload needs
+email: sender identity, authentication, reply mailbox, unsubscribe identity and a real send/readback
+probe. Only a provider-accepted receipt increments `sent`; delivery-unknown remains retry-owned and
+never becomes a fabricated contact. Failure of this adapter blocks only its dependent effects, not
+other orders or lanes.
 
-Immediate customer-remediation queue, in order:
+Existing paid liabilities consumed by the generic Paid owner (not a manual development queue):
 
 1. **Manledge / request 5200847 / thread 10104078.** Reconstruct the original application, all
    pre-purchase DM, purchase scope and talkroom before acting. Deliver a real spreadsheet/CSV of 100
@@ -410,8 +429,9 @@ Immediate customer-remediation queue, in order:
    accepted PC/responsive editable package in the exact room with formal delivery unchecked, read
    the attachment back officially and prove replay effect zero. Do not ask locality or copy questions
    already resolved by the buyer's 羽曳野 instruction and attachments.
-3. Return the single development cursor to the first unchecked Negotiate item and close every item
-   before declaring Negotiate complete or beginning Storefront development completion.
+3. These records do not move the development cursor. Close Negotiate coverage and latency first;
+   then prove the generic Paid owner naturally resumes both records from durable state without
+   Codex/manual execution, including waiting safely when no new buyer message exists.
 
 #### A0. Stabilize release activation before more lane fixes
 
@@ -727,6 +747,15 @@ fenced official submission with exact-room readback. Speed changes that reduce r
 iteration depth, artifact validation or duplicate-effect protection are regressions. Paid is complete
 when it meets the agreed buyer deadline with quality and official delivery proof, not when it matches
 Negotiate's reply time.
+
+**Submission model route.** Keep the current production routing: the artifact executor is
+`gpt-5.6-sol` at medium reasoning and the independent reviewer is a fresh, isolated
+`gpt-5.6-sol` context with no authority to submit. Using the same model does not merge the roles or
+their context. Do not add a model migration now: buyer-visible artifacts are the product, this route
+already exists, and replacing the executor or reviewer with a cheaper model adds work without closing
+the current defect. A cheaper route may replace either role only after a measured accepted-artifact
+evaluation proves equal quality, revision count and deadline performance. Deterministic validators
+and existing bounded artifact judges remain separate from these two LLM roles.
 
 **Paid context and first-action contract — blocking production invariant.** A purchased talkroom is
 never a fresh conversation. Before generating any buyer-facing reply or artifact, Paid must compile
