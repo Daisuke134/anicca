@@ -29,7 +29,7 @@ The loop optimizes for interviews, not raw submission count:
 | Objective | Rule |
 |---|---|
 | Daily application target | 10 unique admitted applications per Japan day that meet the salary/geography/employer gates; one candidate per hourly wake |
-| Location gates | Tokyo on-site or hybrid; San Francisco on-site only when the employer sponsors the required U.S. work visa; remote from Japan when the employer supports Japan employment, EOR or contracting |
+| Location gates | Tokyo on-site or hybrid is preferred; San Francisco on-site is admitted only when the employer sponsors the required U.S. work visa; remote from Japan is admitted when the employer supports Japan employment, EOR or contracting. Apply to all three admitted modes. |
 | Compensation gate | Known annual compensation below JPY 8M is excluded; unknown compensation remains admitted; prefer JPY 15M–20M+ and prioritize JPY 30M+ when the role otherwise passes the gates |
 | Role families | Engineering: applied AI, agents, GenAI, software, solutions and technical architecture; Business: AI product, technical program management, solutions/consulting, business development, partnerships, technical account management, customer success and sales engineering |
 | Employer exclusions | Do not discover, submit or follow up for Accenture, KPMG, Deloitte, Ernst & Young/EY, or PwC/PricewaterhouseCoopers because the recruiter is handling those applications |
@@ -97,6 +97,28 @@ reached. This preserves truthful applications while ensuring that one uncertain
 field never prevents the loop from trying the next ideal-company job. Until the user GUI
 launchd domain is recovered and read back successfully, direct canonical-wrapper
 runs are fallback evidence only; they do not prove a resident hourly schedule.
+
+### ATS rail priority
+
+ATS rails are the submission surfaces, not interchangeable job boards. The loop uses
+one high-yield rail at a time before expanding discovery breadth:
+
+1. **Ashby first.** It is the current confirmed adapter and has the simplest stable
+   application surface for many AI/startup employers. The queue prioritizes Tokyo,
+   then eligible remote and San Francisco-sponsorship roles hosted on Ashby.
+2. **Workday second.** It covers larger employers and uses a tenant-specific
+   job → Apply choice → account/candidate-home → application progression. Salesforce
+   uses Workday; its candidate-home/Apply progression is verified, but the durable
+   ledger still has no confirmed Salesforce/Workday submission.
+3. **Other ATS/provider expansion only after the Ashby/Workday queue is exhausted or
+   both rails are unavailable.** The loop does not add many discovery websites merely
+   to increase provider count; it first proves throughput and confirmed receipts on
+   these two rails.
+
+Public search sources may supply leads, but the side effect always occurs on the
+employer's official Ashby, Workday or fallback ATS page. A 9M role passes the JPY 8M
+floor, and a role with no salary shown remains admitted rather than being rejected
+on an invented low estimate.
 
 ### 1.1 `JOB-CANONICAL-MERGE-1`
 
@@ -1635,6 +1657,7 @@ slice has one owner, one acceptance result and one durable receipt.
 | `JOB-STRETCH-ADMISSION-2B` | 11 | `pending_after_2A` | Replace requirement-fit rejection in the daily prompt, deterministic ranking/config and learning fixtures with stretch admission: explicit years, title, degree, skill and generic-role mismatch affect order/reporting only; the separate salary/geography/employer gates remain. A CEO role with a twenty-year requirement and Citadel's three-year role must remain in the application queue when those portfolio gates pass. Required form answers still use exact facts; an unanswerable mandatory field is an execution blocker after the form is reached, never a pre-filter. |
 | `JOB-TARGET-POLICY-2C` | 11 | `pending_after_2B` | Apply the private target policy in discovery, prompt, ranking/config and learning fixtures: known compensation below JPY 8M is excluded; unknown compensation remains admitted; Tokyo on-site/hybrid, San Francisco on-site with explicit visa sponsorship, and Japan-compatible remote are admitted; Business and Engineering families are included; Accenture, KPMG, Deloitte, Ernst & Young/EY and PwC/PricewaterhouseCoopers are excluded from discovery, submission and follow-up. |
 | `JOB-HOURLY-THROUGHPUT-2D` | 11 | `pending_after_2C` | After `JOB-STRETCH-ADMISSION-2B`, `JOB-TARGET-POLICY-2C` and `JOB-LOOP-CADENCE-2A` are live, observe three consecutive hourly wakes. Each wake must attempt discovery, continue after every candidate-level blocker across at least five distinct official URLs when needed, submit no more than one verified truthful application, and emit one Telegram event with durable outbox status plus ACK/readback. A truthful zero with exact execution blockers passes only when the admitted queue is exhausted; guessed years or other unsupported answers never pass. |
+| `JOB-ATS-RAIL-2E` | 10 | `pending_after_2D` | Freeze the first-pass rail order to Ashby → Workday. Prove the next three eligible Ashby applications first, then one confirmed Workday application; Salesforce remains a Workday candidate and must be tracked separately. Do not expand to additional discovery/provider websites until both rails have fresh receipts or the queue is exhausted with exact blockers. |
 | `JOB-EMPLOYER-FOLLOWUP-11E-A` | 11E | `pending_after_11D` | After an authoritative ATS submission or verified recruiter contact, send at most one deduplicated follow-up per application/touchpoint from the private `application_email` through authenticated Gmail, using only a verified employer address or existing thread, preserving thread context where available, recording Gmail ACK/`delivery_unknown`, and reporting the result to Telegram. |
 | `JOB-RESUME-FACTS-1R-A` | 1R | `completed` | Full institution names and periods are recorded, and Daisuke confirmed TOEIC 910. The private truth ledger now records TOEFL iBT 96, TOEIC 910, Duolingo English Test 140 and DELE B1; no language claim remains unresolved. |
 | `JOB-RESUME-EN-1R-B` | 1R | `frozen_user_approved` | Version 9 is approved; keep the existing canonical English artifacts unchanged unless Daisuke explicitly reopens resume work. |
