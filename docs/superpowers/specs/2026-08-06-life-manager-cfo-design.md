@@ -1509,3 +1509,14 @@ the `request_refresh` OAuth scope and is asynchronous/rate-limited. No refresh o
 is exposed by the installed plugin, so the CFO remains truthful only by reporting the three-day provider lag and
 `Moneytree取得時刻／銀行側更新時刻は不明`. The remaining external action is owner-authorized Moneytree refresh/reconnect
 or a LINK OAuth grant; no credential or connection deletion is automated.
+
+### Moneytree MCP loop E2E after source audit (2026-08-21 20:00 JST)
+
+The existing `ai.anicca.life-manager-cfo-hourly` label was kicked once with `launchctl kickstart -k`; the command
+returned `0`, the label completed with `last exit code=0`, `runs=3`, and the real launchd stderr remained empty. The
+run persisted revision `16` and the shared-destination Telegram receipt is provider `message_id=27583`. Its redacted
+result is `providerDataFreshness=stale`, `latestReturnedTransactionDate=2026-08-18`, and
+`moneytreeRefresh={status:not_enabled,reason:refresh_opt_in_required}`. Re-rendering the persisted snapshot with a
+fresh read-only Moneytree bundle produced the visible warning: latest transaction is three days old, balance is not
+realtime, and bank-side update time is unknown. This closes the loop-source/Telegram E2E audit; it does not close the
+external Moneytree refresh owner action.

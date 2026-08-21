@@ -77,6 +77,14 @@ metadata. Until the owner performs a Moneytree app/Web refresh/reconnect or supp
 hourly report must keep `providerDataFreshness=stale`, show the three-day lag, and say
 `Moneytree取得時刻／銀行側更新時刻は不明`; no raw token, bank password, or connection deletion is automated.
 
+The post-audit real loop verification used the existing launchd label only: `launchctl kickstart -k` returned `0`,
+`runs=3`, final exit code `0`, and stderr empty. It persisted revision `16` and the shared-destination Telegram
+receipt is provider `message_id=27583`. The result recorded `providerDataFreshness=stale`,
+`latestReturnedTransactionDate=2026-08-18`, and `moneytreeRefresh.status=not_enabled` because no LINK OAuth grant is
+configured. Fresh read + renderer verification shows the three-day lag warning and explicitly says the balance is not
+realtime and the bank-side update time is unknown. The loop itself is healthy; only the external provider refresh path
+remains open.
+
 ## CFO-2c Fleet boundary progress (2026-08-21)
 
 Canonical commit `75739758e1d16bd2f56462375936f314ec45c2dd` adds the proven Fleet validator/adapter and manifest under
