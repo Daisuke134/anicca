@@ -2,15 +2,16 @@
 
 const { editMessageText, answerCallbackQuery } = require("./telegram.js");
 
-const VIEWS = new Set(["summary", "accounts", "accuracy", "why"]);
-const CALLBACK = /^cfo:(summary|accounts|accuracy|why):(\d{8}):([1-9]\d*)$/;
+const VIEWS = new Set(["summary", "accounts", "accuracy", "why", "business"]);
+const CALLBACK = /^cfo:(summary|accounts|accuracy|why|business):(\d{8}):([1-9]\d*)$/;
 const RETRY = "読み込めませんでした。もう一度お試しください";
 const STATUSES = new Set(["fresh", "stale", "unavailable"]), EVIDENCE = new Set(["provider_billed", "provider_reported", "locally_estimated", "unavailable"]);
 const BUTTONS = {
-  summary: [["accounts", "口座を見る"], ["accuracy", "正確さを見る"]],
+  summary: [["accounts", "口座を見る"], ["business", "仕事を見る"], ["accuracy", "正確さを見る"]],
   accounts: [["summary", "概要に戻る"], ["accuracy", "正確さを見る"]],
   accuracy: [["summary", "概要に戻る"], ["why", "なぜこの金額？"]],
   why: [["summary", "概要に戻る"]],
+  business: [["summary", "概要に戻る"], ["accuracy", "数字の確かさ"]],
 };
 const plain = (v) => v !== null && typeof v === "object" && !Array.isArray(v) && Object.getPrototypeOf(v) === Object.prototype;
 const nonEmpty = (v) => typeof v === "string" && v.length > 0 && v.trim() === v;
@@ -30,10 +31,16 @@ function messageId(value) {
   return Number.isSafeInteger(n) && n > 0 ? n : null;
 }
 function format(value) { return value === null ? "不明" : `¥${new Intl.NumberFormat("ja-JP").format(value)}`; }
+function validateBusiness(value) {
+  if (value === undefined) return;
+  if (!plain(value) || value.schemaVersion !== 1 || typeof value.observedAt !== "string" || !Number.isFinite(Date.parse(value.observedAt)) || value.status !== "partial" || !["partial", "unknown"].includes(value.evidenceStatus) || !Array.isArray(value.businesses) || !Array.isArray(value.exceptions)) throw new Error("invalid_business");
+  value.businesses.forEach((item) => { if (!plain(item) || typeof item.financialUnitId !== "string" || typeof item.label !== "string" || !["observed", "unknown"].includes(item.providerReceiptStatus) || !Number.isSafeInteger(item.providerReceiptCount) || item.providerReceiptCount < 0 || !Array.isArray(item.activity) || item.landedCashStatus !== "unknown" || item.costStatus !== "unknown" || item.contributionProfit !== null || item.roi !== null) throw new Error("invalid_business"); item.activity.forEach((entry) => { if (!plain(entry) || !["external_income", "realized_pnl", "fee"].includes(entry.kind) || entry.currency !== "USD" || typeof entry.amountDecimal !== "string" || !/^-?(?:0|[1-9]\d*)(?:\.\d{1,8})?$/.test(entry.amountDecimal) || entry.evidenceStatus !== "verified_append_only_ledger") throw new Error("invalid_business"); }); });
+}
 function validate(snapshot, parsed) {
   if (!plain(snapshot) || snapshot.schemaVersion !== 1 || snapshot.currency !== "JPY" || snapshot.reportingDate !== parsed.date || snapshot.revision !== parsed.revision ||
       !plain(snapshot.totals) || !Array.isArray(snapshot.sources) || snapshot.sources.length === 0) throw new Error("invalid_snapshot");
   for (const key of ["assetsMinor", "liabilitiesMinor", "netWorthMinor", "changeMinor"]) if (!Object.prototype.hasOwnProperty.call(snapshot.totals, key) || !amount(snapshot.totals[key])) throw new Error("invalid_amount");
+  validateBusiness(snapshot.business);
   for (const source of snapshot.sources) {
     if (!plain(source) || typeof source.label !== "string" || !source.label || typeof source.asOf !== "string" || !source.asOf || !STATUSES.has(source.status) || !EVIDENCE.has(source.verificationStatus) || !amount(source.amountMinor) || (source.amountMinor !== null && ["locally_estimated", "unavailable"].includes(source.verificationStatus)) || (source.status === "unavailable" && (source.amountMinor !== null || source.verificationStatus !== "unavailable")) || (source.status === "fresh" && (source.amountMinor === null || source.verificationStatus === "unavailable"))) throw new Error("invalid_source");
   }
@@ -42,6 +49,16 @@ function validate(snapshot, parsed) {
 }
 function keyboard(snapshot, view) {
   return { inline_keyboard: BUTTONS[view].map(([next, text]) => [{ text, callback_data: `cfo:${next}:${snapshot.reportingDate.replaceAll("-", "")}:${snapshot.revision}` }]) };
+}
+function businessText(snapshot) {
+  const business = snapshot.business;
+  if (!business || !Array.isArray(business.businesses)) return "💼 今月の仕事\nまだbusiness readを接続していません";
+  const rows = business.businesses.map((item) => {
+    const activity = Array.isArray(item.activity) && item.activity.length
+      ? item.activity.map((entry) => `${entry.kind}:${entry.amountDecimal} USD`).join(" / ") : "不明";
+    return `${label(item.label)}\t${activity}\t利益 不明`;
+  }).join("\n");
+  return `💼 今月の仕事（実測範囲）\n${rows}\n利益：不明\nROI：不明\n根拠：${business.evidenceStatus === "partial" ? "一部実測・照合未完了" : "不明"}`;
 }
 function render(snapshot, view) {
   if (!VIEWS.has(view)) throw new Error("invalid_view");
@@ -58,7 +75,7 @@ function render(snapshot, view) {
   // refreshed its data. Keep the warning visible in every interactive view.
   const sourceText = snapshot.state === "action_required" ? "" : sources.map((s) => `⚠️ Moneytree（${label(s.label)}）${html(s.asOf)}${s.status === "fresh" ? retrievalNote : s.status === "stale" ? "（ローカル取得時刻。データが古い可能性・銀行側データの新しさは不明）" : "（取得できず。銀行側データの新しさは不明）"}`).join("\n");
   const summary = `${title}\n\n確認できた資産\t${format(totals.assetsMinor)}\n確認できた負債\t${format(totals.liabilitiesMinor)}\n差し引き\t${format(totals.netWorthMinor)}\n前回から\t${format(totals.changeMinor)}\n\n${sourceText}\n合計に入れていません：${excluded}${action}`;
-  const text = view === "summary" ? summary : view === "accounts" ? `${title}\n\n${accounts}` : view === "accuracy" ? `${title}\n\n${evidence}\n合計に入れていません：${excluded}` : `${title}\n\n確認できた資産 − 確認できた負債 = 差し引き ${format(totals.netWorthMinor)}\n合計に入れていません：${excluded}`;
+  const text = view === "summary" ? `${summary}${snapshot.business ? `\n\n${businessText(snapshot)}` : ""}` : view === "accounts" ? `${title}\n\n${accounts}` : view === "accuracy" ? `${title}\n\n${evidence}\n合計に入れていません：${excluded}` : view === "business" ? businessText(snapshot) : `${title}\n\n確認できた資産 − 確認できた負債 = 差し引き ${format(totals.netWorthMinor)}\n合計に入れていません：${excluded}`;
   return { text, reply_markup: keyboard(snapshot, view) };
 }
 async function handleCfoTelegramCallback(input, options = {}) {

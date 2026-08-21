@@ -6,7 +6,7 @@ const { CFO_STRINGS } = require("./i18n.js");
 const { handleCfoTelegramCallback } = require("./cfo-telegram-callback.js");
 
 const STATES = new Set(["complete", "partial", "recovered", "action_required"]);
-const VIEWS = new Set(["summary", "accounts", "accuracy", "why", "ai_cost"]);
+const VIEWS = new Set(["summary", "accounts", "accuracy", "why", "business", "ai_cost"]);
 const STATUSES = new Set(["fresh", "stale", "unavailable"]);
 const EVIDENCE = Object.freeze({
   provider_billed: { ja: "確定", en: "Confirmed" },
@@ -14,7 +14,7 @@ const EVIDENCE = Object.freeze({
   locally_estimated: { ja: "推定", en: "Estimated" },
   unavailable: { ja: "不明", en: "Unknown" },
 });
-const ROOT_KEYS = new Set(["schemaVersion", "reportingDate", "revision", "state", "currency", "totals", "sources", "excluded", "repair", "action", "aiCost"]);
+const ROOT_KEYS = new Set(["schemaVersion", "reportingDate", "revision", "state", "currency", "totals", "sources", "excluded", "repair", "action", "aiCost", "business"]);
 const AI_COST_KEYS = ["provider", "plan", "amount", "currency", "billingPeriodStart", "billingPeriodEnd", "evidenceStatus", "unavailableProviders"];
 const TOTAL_KEYS = new Set(["assetsMinor", "liabilitiesMinor", "netWorthMinor", "changeMinor"]);
 const SOURCE_KEYS = new Set(["sourceId", "label", "status", "asOf", "amountMinor", "verificationStatus"]);
@@ -28,13 +28,14 @@ const CATEGORY_COVERAGE = new Set(["unavailable", "partial", "provider_reported"
 const BUTTONS = Object.freeze({
   // Keep emitted buttons inside the canonical callback owner's view set. AI-cost text remains
   // available in the summary/detail renderer, but no unsupported callback route is generated.
-  summary: [["accounts", "口座を見る", "View accounts"], ["accuracy", "正確さを見る", "View accuracy"]],
+  summary: [["accounts", "口座を見る", "View accounts"], ["business", "仕事を見る", "View businesses"], ["accuracy", "正確さを見る", "View accuracy"]],
   accounts: [["summary", "概要に戻る", "Back to summary"], ["accuracy", "正確さを見る", "View accuracy"]],
   accuracy: [["summary", "概要に戻る", "Back to summary"], ["why", "なぜこの金額？", "Why this amount?"]],
   why: [["summary", "概要に戻る", "Back to summary"]],
+  business: [["summary", "概要に戻る", "Back to summary"], ["accuracy", "数字の確かさ", "Evidence"]],
   ai_cost: [["summary", "概要に戻る", "Back to summary"]],
 });
-const CALLBACK = /^cfo:(summary|accounts|accuracy|why|ai_cost):(\d{8}):([1-9]\d*)$/;
+const CALLBACK = /^cfo:(summary|accounts|accuracy|why|business|ai_cost):(\d{8}):([1-9]\d*)$/;
 const RETRY_TOAST = "読み込めませんでした。もう一度お試しください";
 
 function fail(reason) { throw new Error(`cfo_telegram_invalid:${reason}`); }
@@ -124,6 +125,7 @@ function validateSnapshot(snapshot) {
     if (source.status === "fresh" && (source.amountMinor === null || source.verificationStatus === "unavailable")) fail("inconsistent_source");
   });
   if (!Array.isArray(snapshot.excluded)) fail("invalid_excluded");
+  validateBusiness(snapshot.business);
   snapshot.excluded.forEach((item) => { exact(item, EXCLUDED_KEYS, ["label"]); label(item.label); if (item.reason !== undefined) label(item.reason); });
   if (snapshot.repair !== null) {
     exact(snapshot.repair, REPAIR_KEYS, [...REPAIR_KEYS]);
@@ -156,6 +158,19 @@ function callbackData({ view, reportingDate, revision }) {
   if (Buffer.byteLength(value, "utf8") > 64) fail("callback_too_long");
   return value;
 }
+function validateBusiness(value) {
+  if (value === undefined) return;
+  exact(value, new Set(["schemaVersion", "observedAt", "status", "evidenceStatus", "businesses", "exceptions"]), ["schemaVersion", "observedAt", "status", "evidenceStatus", "businesses", "exceptions"]);
+  if (value.schemaVersion !== 1 || !timestamp(value.observedAt) || value.status !== "partial" || !["partial", "unknown"].includes(value.evidenceStatus) || !Array.isArray(value.businesses) || !Array.isArray(value.exceptions)) fail("invalid_business");
+  value.exceptions.forEach((item) => { if (typeof item !== "string" || item.length === 0 || item.length > 128) fail("invalid_business"); });
+  const ids = new Set();
+  value.businesses.forEach((business) => {
+    exact(business, new Set(["financialUnitId", "label", "providerReceiptStatus", "providerReceiptCount", "activity", "landedCashStatus", "costStatus", "contributionProfit", "roi"]), ["financialUnitId", "label", "providerReceiptStatus", "providerReceiptCount", "activity", "landedCashStatus", "costStatus", "contributionProfit", "roi"]);
+    if (ids.has(business.financialUnitId) || typeof business.financialUnitId !== "string" || business.financialUnitId.length === 0 || typeof business.label !== "string" || business.label.length === 0 || !["observed", "unknown"].includes(business.providerReceiptStatus) || !Number.isSafeInteger(business.providerReceiptCount) || business.providerReceiptCount < 0 || !Array.isArray(business.activity) || business.landedCashStatus !== "unknown" || business.costStatus !== "unknown" || business.contributionProfit !== null || business.roi !== null) fail("invalid_business");
+    ids.add(business.financialUnitId);
+    business.activity.forEach((item) => { exact(item, new Set(["kind", "currency", "amountDecimal", "evidenceStatus"]), ["kind", "currency", "amountDecimal", "evidenceStatus"]); if (!["external_income", "realized_pnl", "fee"].includes(item.kind) || item.currency !== "USD" || !/^-?(?:0|[1-9]\d*)(?:\.\d{1,8})?$/.test(item.amountDecimal) || item.evidenceStatus !== "verified_append_only_ledger") fail("invalid_business"); });
+  });
+}
 function parseCfoCallback(value) {
   const match = CALLBACK.exec(String(value || ""));
   if (!match) return null;
@@ -169,6 +184,17 @@ function nonEmpty(value) { return typeof value === "string" && value.length > 0 
 // parseCfoCallback is retained for pure callback-data tests; HTTP handling belongs to the
 // canonical cfo-telegram-callback.js module imported above.
 function aiCostText(locale, value, detail = false) { if (!detail) return locale === "ja" ? `AI費用\nClaude $${value.amount} / 月（領収書確認済み）\nCodex 請求額未確認` : `AI costs\nClaude $${value.amount} / month (receipt confirmed)\nCodex amount not confirmed`; return locale === "ja" ? `AI費用\nClaude Max 20x\n支払 $${value.amount}\n期間 ${value.billingPeriodStart}〜${value.billingPeriodEnd}\n根拠 領収書確認済み\nCodex 請求額未確認\nAPI換算 まだ計算していません` : `AI costs\nClaude Max 20x\nPaid $${value.amount}\nPeriod ${value.billingPeriodStart}–${value.billingPeriodEnd}\nEvidence receipt confirmed\nCodex amount not confirmed\nAPI equivalent not calculated yet`; }
+function businessText(locale, value) {
+  if (value === undefined) return locale === "ja" ? "💼 仕事の収支\nまだbusiness readを接続していません" : "💼 Business P&L\nBusiness read is not connected yet";
+  const unknown = locale === "ja" ? "不明" : "Unknown";
+  const rows = value.businesses.map((business) => {
+    const activity = business.activity.length ? business.activity.map((item) => `${item.kind}:${item.amountDecimal} USD`).join(" / ") : unknown;
+    return `${escapeHtml(business.label)}\t${activity}\t${unknown}`;
+  }).join("\n");
+  const header = locale === "ja" ? "💼 今月の仕事（実測範囲）" : "💼 Businesses (measured scope)";
+  const note = locale === "ja" ? `\n利益：${unknown}\nROI：${unknown}\n根拠：${value.evidenceStatus === "partial" ? "一部実測・照合未完了" : unknown}` : `\nProfit: ${unknown}\nROI: ${unknown}\nEvidence: ${value.evidenceStatus}`;
+  return `${header}\n${rows}${note}`;
+}
 function extra(locale, snapshot, view) {
   return { reply_markup: { inline_keyboard: BUTTONS[view].filter(([next]) => next !== "ai_cost" || Object.prototype.hasOwnProperty.call(snapshot, "aiCost")).map(([next, ja, en]) => [{ text: locale === "ja" ? ja : en, callback_data: callbackData({ view: next, reportingDate: snapshot.reportingDate, revision: snapshot.revision }) }]) } };
 }
@@ -182,7 +208,9 @@ function renderCfoTelegram({ locale, view, snapshot, transactions }) {
   const strings = CFO_STRINGS[locale];
   const hasAiCost = Object.prototype.hasOwnProperty.call(snapshot, "aiCost");
   if (view === "ai_cost") { if (!hasAiCost) fail("invalid_ai_cost"); return { text: aiCostText(locale, snapshot.aiCost, true), extra: extra(locale, snapshot, view) }; }
+  if (view === "business") return { text: businessText(locale, snapshot.business), extra: extra(locale, snapshot, view) };
   const ai = hasAiCost ? aiCostText(locale, snapshot.aiCost) : "";
+  const business = Object.prototype.hasOwnProperty.call(snapshot, "business") ? businessText(locale, snapshot.business) : "";
   if (snapshot.state === "action_required" && view === "summary") return { text: `${strings.actionTitle}\n\n${strings.actionBody}${ai ? `\n\n${ai}` : ""}\n${strings.actionRetry}`, extra: extra(locale, snapshot, view) };
   const freshness = locale === "ja"
     ? { fresh: "取得済み／銀行側データの新しさは不明", stale: "取得済み／データが古い可能性・銀行側データの新しさは不明", unavailable: "取得できず／銀行側データの新しさは不明" }
@@ -203,7 +231,7 @@ function renderCfoTelegram({ locale, view, snapshot, transactions }) {
   const evidence = snapshot.sources.map((source) => `${evidenceLabel(locale, source.verificationStatus)} ${escapeHtml(source.asOf)}${strings.updated}`).join("\n");
   const why = `${strings.confirmedAssets} − ${strings.confirmedLiabilities} = ${strings.confirmedDifference} ${formatAmount(locale, snapshot.totals.netWorthMinor)}\n${strings.excluded}${marks.colon}${excluded}`;
   const activity = view === "summary" && transactions !== undefined ? transactionText(locale, transactions, snapshot.reportingDate) : "";
-  const text = view === "summary" ? `${title}\n\n${totals}${exclusions}\n\n${sourceText}${repair}${ai ? `\n${ai}` : ""}\n${strings.noAction}${activity}`
+  const text = view === "summary" ? `${title}\n\n${totals}${exclusions}\n\n${sourceText}${repair}${ai ? `\n${ai}` : ""}${business ? `\n\n${business}` : ""}\n${strings.noAction}${activity}`
     : view === "accounts" ? `${title}\n\n${accounts}\n${snapshot.state === "action_required" ? strings.actionBody : strings.noAction}`
       : view === "accuracy" ? `${title}\n\n${evidence}\n${strings.excluded}${marks.colon}${excluded}` : `${title}\n\n${why}`;
   return { text, extra: extra(locale, snapshot, view) };
