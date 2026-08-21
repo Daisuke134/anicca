@@ -1133,6 +1133,15 @@ policy、Note ¥500、Substack paid-only、native authenticated/public readback�
 同一原稿・同一fingerprint・同一iteration planの水増し、receipt欠落・改ざん、6回目の評価は拒否する。
 Telegram報告は、反復番号、確認済みゲート、未確認の品質警告、次の自動handoffを自然文で記録する。
 
+### 日次公開契約
+
+「毎日公開済み」は、日ごとのrun生成だけでは成立しない。各日（または設定された各schedule
+slot）について、同一runのNote JA、Substack JA、Substack EN、X Article JAがpublisher-native
+URL、本文、identity、media readbackを返し、delivery ledgerとTelegram message receiptが残ることを
+必要条件とする。launchdのtickが起動しただけ、draftが保存された、view/likeが増えた、または
+Telegram APIが受理しただけでは公開済みとは数えない。公開できない日には、未公開理由と次の自動
+再開を自然文で報告し、公開成功に見せかけない。
+
 ### 2026-08-22 runtime readback
 
 同一run `20260821-130847` は公開state・delivery ledger rowなしで、quality recovery
@@ -1151,6 +1160,7 @@ limitのエラーはない。停止理由は、recovery controllerの上限到�
 使用中のAug 11/19/20 sessionとChrome code-sign cloneは削除していない。current releaseは
 `7391af5afbbe82f1a5c67a4a0d535b77174513ed`で、日付境界を越えた未公開quality runをresume workerが
 read-only scanして優先するコードまで反映済みである。
+日次公開契約については、現在のrunに4面native live receiptとdelivery ledgerがないため未達である。
 
 | 品質ID | 原子作業 | 完了証拠 | 状態 |
 |---:|---|---|---|
@@ -1161,6 +1171,7 @@ read-only scanして優先するコードまで反映済みである。
 | Q5 | quality attempt 2〜5を同一runで完了する | 各回のdraft変更、invocation chain、feedback consumption、editorial/reader/identity snapshot、exact five validator | Q3/Q4待ち |
 | Q6 | 5回目のforce handoffを実runで検証する | `force_publish_advisory`、identity/safety/conscience/PII/duplicate/media/CTA/monetization/platform guardの全PASS | Q5待ち |
 | Q7 | force後の4面native publicationとTelegram readbackを取得する | Note、Substack JA/EN、X Article JAのURL・本文・owner・media、publisher/payment receipt、自然文Telegram | Q6待ち |
+| Q8 | 毎日の公開を2日以上連続で実測する | 各日または各slotに4面native live receipt、delivery ledger、Telegram message receipt、重複外部作用0 | Q7待ち。現在は未達 |
 
 ### A1復旧後のCoconala parity実行順
 
