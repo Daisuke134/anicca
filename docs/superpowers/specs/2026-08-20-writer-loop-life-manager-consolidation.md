@@ -588,6 +588,14 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
   `publication-state.json`、published ledger row、公開URL、completion receiptは0件だった。retentionが空runを削除したため、
   これは「新run作成と重複防止」のE2E証拠であり、記事公開成功や24/7稼働の証拠ではない。provider cooldown解除後の新run→4媒体
   native readbackが次の実行TODOになる。
+- cooldownは同日ガードでもlaunchd停止でもなく、provider単位・mode単位の一時的な再試行抑制である。
+  `model-runner`が`codex:agent`のtimeoutを記録すると、`provider-health.json`の`unhealthy_until`へ
+  `ARTICLE_PROVIDER_COOLDOWN_SECONDS`（既定21,600秒=6時間）を設定し、期限までprovider呼び出しを拒否する。
+  今回のreadback（14:16:55 JST）では`last_failure_at=2026-08-20T23:18:40Z`、`error_class=timeout`、
+  `unhealthy_until=2026-08-21 14:18:40 JST`、eligibility=`cooldown`だった。したがってarticle-dailyは
+  provider呼び出し・生成・公開の前に`provider-failed-safe`で終了し、重複や空の公開receiptを作らない。
+  `unhealthy_until <= now`になれば、状態を手編集せず、次のlaunchd natural tickまたは明示したkickstartが通常再試行する。
+  cooldown解除後に同じrunで4媒体native receiptが揃うまで、公開成功・24/7稼働・収益を報告しない。
 
 ## 目標構成
 
@@ -809,7 +817,7 @@ loaded definitionと自然tickまで読み戻すことを意味する。A1のcon
 | A7 | pause下でcreator/resumeを各1回だけkickstartする | 1回ずつのPID、run ID、終了コード、lock消滅、Telegram自然文receiptを取得。公開はpauseで外部作用0 | A6待ち |
 | A8 | 5分周期の自然tickを2回連続で検証する | 2回ともcurrent argv、単一owner、run/receipt更新、重複外部作用0を確認。`process_alive`だけでは完了にしない | A7待ち。既存runの一回receiptはあるが連続tickではない |
 | A9 | control-plane復旧後の新規same-run公開を検証する | 新しいrunでNote JA、Substack JA、Substack EN、X Article JAの各native URL・本文・owner・artifact/media hashをreadbackし、Telegram送信receiptを取得 | A7/A8待ち |
-| A9a | 同日完了runの新規記事解放と重複防止をreleaseへ反映する | current releaseでstart-control 6件、publication identity 15件、schedule miss 2件がPASS。実launchdで完了runから新run `20260821-043922`を作成し、provider cooldownで公開前停止、重複外部作用0を確認 | 部分完了（provider cooldown解除後の公開E2E待ち） |
+| A9a | 同日完了runの新規記事解放と重複防止をreleaseへ反映する | current releaseでstart-control 6件、publication identity 15件、schedule miss 2件がPASS。実launchdで完了runから新run `20260821-043922`を作成し、provider cooldownで公開前停止、重複外部作用0を確認。cooldown解除後は状態を手編集せず自然tick/kickstartで再試行し、4媒体native receiptを取得する | 部分完了（`codex:agent` cooldownの14:18:40 JST解除後に公開E2E待ち） |
 | A9b | 1日複数回の正式scheduleを追加する | 06:00/14:00/22:00などのcalendar wake、各slotのunique run ID、同日異記事、連続2周期のnative receiptを実測 | 未着手。現在は06:00のまま |
 | A10 | 実payment/publisher receiptをmoney ledgerへ接続する | receipt ID、金額、通貨、destination identity、artifact/run IDをjoin。未取得は`unknown`のまま保持 | 未着手 |
 | A11 | 14日間の運用観測を完了する | 重複外部作用0、同一run resume、自然文の成功/失敗報告、revenue ledger整合を連続receiptで確認 | A9/A10待ち |
