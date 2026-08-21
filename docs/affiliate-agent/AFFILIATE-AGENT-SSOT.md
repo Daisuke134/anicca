@@ -173,30 +173,33 @@ deployment adapter for these same contracts, not a second implementation.
 
 ### 1.2 Truth checkpoint: implemented versus still hypothetical
 
-Current override: the installed runtime is `75dd88931b50fc6f30e18b4226f33cfea7fa1389`,
+Current override: the installed runtime is `90378f6d901e6ddb5966210f1a4a9aa0c332de2d`,
 not the older release identifiers retained in historical table rows below. Its
 source and installed `scripts/local_loop.py` bytes match at SHA-256
-`3970a0fcfd0b74283fa2c442802d73f41ff197c4ae96ad18f797ecd2bc5c01ce`; the
-existing suite is `73/73`, compilation and diff checks pass. It includes the
+`bcdc5d4ce508fc57a44b081a0775df4dab07ac899d3175f9155d8de16611a6ab`; the
+existing suite is `75/75`, compilation and diff checks pass. It includes the
 prior exact Repost matching, policy/source budget guards, per-item failure
 isolation, provider denominator retention, bounded Telegram reconciliation,
-versioned daily summaries, and a canonical append-only `AFFILIATE_RUN_RECEIPT`
-for every launchd wake. The post-install registered-owner wake
-`2c66ae7cfe1aafeb72e12615e43c3e3388b0597e9d1ee60733bd8fba61555146` joins
-`last-run.wake_event_uuid` to the receipt `run_id`, records
+versioned daily summaries, a canonical append-only `AFFILIATE_RUN_RECEIPT`
+for every launchd wake, and redacted effect-classified
+`AFFILIATE_TOOL_ATTEMPT` receipts for each admitted owner-stage tool. The
+post-install registered-owner wake
+`f98f6d6e3991c858bf79ce59b2f59193aab277a829dbe633602270ab53547f60` joins
+`last-run.wake_event_uuid` to the RunReceipt `run_id`, records
 `terminal_state=READY_FOR_PUBLICATION`, `run_state=SUCCEEDED`, and
-`causal_parent.trigger=launchd`; the receipt contains no URL, tracking link,
-credential, or secret. `launchctl print` reads `runs=223`, `last exit code=0`,
+`causal_parent.trigger=launchd`; its 21 ToolAttemptReceipt rows all carry the
+exact release SHA, unique `(scheduler_run_id, tool, attempt)` keys, and no URL,
+credential, or secret. `launchctl print` reads `runs=227`, `last exit code=0`,
 and `StartInterval=600`. Telegram remains `NO_PENDING` on message `27069` with
-outbox/sent `133/133`, and no public/provider effect changed.
+outbox/sent `135/135`, and no public/provider effect changed.
 
 The official empty artifact `e60af92707514598ed9c0b0c6bd5b8be9578d04bfbf969e829d455ec73a31c5f`
 observed at `13:32:51+0900` remains the latest money truth. Revenue stayed in
 cooldown on the post-install wake; the artifact has `commission_row_count=0`,
 `NO_LIVE_ROWS`, payout `EMPTY`, and reconciliation `0/0/0`. No official
 transaction, approved/paid commission, reversal, settlement, payout, known-cost
-net, or USD 10,000 proof exists. F01 is live-proven and closed; B01 remains
-`WAITING_FOR_PROVIDER_TRANSACTION`.
+net, or USD 10,000 proof exists. F01 and F02 are live-proven and closed; B01
+remains `WAITING_FOR_PROVIDER_TRANSACTION`.
 
 This table prevents tests, fixtures, screenshots, or plans from being reported as
 live autonomous operation.
@@ -778,6 +781,23 @@ check found one unique run ID; forbidden URL/tracking/credential/secret markers
 were absent. `last-run` and the receipt join exactly, while Telegram remains
 `NO_PENDING` and private outbox/sent remain `133/133`. This closes F01 only;
 it does not create a provider transaction or money.
+
+### 1.1.29 Latest ToolAttemptReceipt owner proof
+
+Release `90378f6d901e6ddb5966210f1a4a9aa0c332de2d` is installed and its source
+and installed `local_loop.py` bytes match at SHA-256
+`bcdc5d4ce508fc57a44b081a0775df4dab07ac899d3175f9155d8de16611a6ab`. The
+registered owner wake
+`f98f6d6e3991c858bf79ce59b2f59193aab277a829dbe633602270ab53547f60` completed
+with `runs=227`, `last exit code=0`, and `revenue_state=COOLDOWN`. Its
+`scheduler_run_id=e79f26c7…` has 21 admitted-tool receipts covering browser,
+provider, link, publication, distribution, acquisition, ledger, revenue,
+Repost observation, and Telegram stages. Every row carries the exact release
+SHA; `(scheduler_run_id, tool, attempt)` is unique; the deduplicated provider
+link is `NO_EFFECT`, the Telegram retry is `NO_EFFECT`, and no HTTP URL,
+password, secret, or cookie value appears. The wake's RunReceipt joins exactly
+to `last-run.wake_event_uuid`; Telegram remains `NO_PENDING` and outbox/sent
+remain `135/135`. This closes F02 observability only, not B01 or money.
 
 ### 1.2.0 Audited executable boundary
 
@@ -2826,8 +2846,14 @@ receipt readback, SSOT state update, commit, and push to both canonical remotes.
   `last-run.wake_event_uuid`; launchd exited `0`, the receipt is redacted, and
   no duplicate Telegram/public/provider effect occurred. This is owner
   observability proof, not revenue proof.
-- [ ] **F02** Persist one effect-classified `ToolAttemptReceipt` for every admitted
-  attempt, including prerequisite failure and no-effect outcomes.
+- [x] **F02** Persist one effect-classified `ToolAttemptReceipt` for every admitted
+  attempt, including prerequisite failure and no-effect outcomes. Release
+  `90378f6d9` writes 21 redacted receipts in the live owner wake, with release
+  SHA, stage/tool/attempt, input fingerprint, preconditions, timing, outcome,
+  failure, retry, effect certainty, postcondition, and numeric usage. The
+  receipts are replay-safe, contain no raw URLs or credentials, and classify
+  deduplicated external work as `NO_EFFECT`; this is observability proof, not
+  revenue proof.
 - [ ] **F03** Return typed owned/provider/browser/X failures with retry due-time and
   effect certainty; remove broad root-cause-erasing terminal errors.
 - [ ] **F04** Add bounded retry, per-provider/channel quarantine, daily action/cost
@@ -3016,15 +3042,17 @@ cursor; later work MUST NOT jump ahead of an unmet gate.
 
 Current execution cursor (latest owner readback): **E1-H, close the first real
 transaction path.** Publication recovery and the ten-placement readiness gate
-are complete through the existing owner. Release `75dd88931` is installed at
+are complete through the existing owner. Release `90378f6d9` is installed at
 `current`; its installed/source `local_loop.py` bytes match (SHA-256
-`3970a0fc…c5c01ce`) and the existing suite is `73/73` with compilation and diff
+`bcdc5d4c…11a6ab`) and the existing suite is `75/75` with compilation and diff
 checks clean. The existing `ai.anicca.affiliate-loop` owner completed the
-post-install wake `2c66ae7c…` with `runs=223`, `last exit code=0`, and
+post-install wake `f98f6d6e…` with `runs=227`, `last exit code=0`, and
 `StartInterval=600`; its canonical RunReceipt joins exactly to
-`last-run.wake_event_uuid`, records `run_state=SUCCEEDED`, and contains no
+`last-run.wake_event_uuid`, and 21 ToolAttemptReceipt rows join through the
+same scheduler run ID. All rows carry the installed release SHA and contain no
 secrets or raw links. Telegram remains `NO_PENDING` on `27069`, with outbox and
-sent `133/133`, so the owner replay added no external send. F01 is closed.
+sent `135/135`, so the owner replay added no external send. F01 and F02 are
+closed.
 The prior bounded Telegram-history repair and its append-only retractions remain
 historical audit evidence and have no public or money effect.
 
@@ -3063,10 +3091,9 @@ acceptance contract; this summary does not reorder them):
 4. **E02–E10 / M2.2–M2.3-D:** admit Semrush, Amazon Japan, and Rakuten only
    through official terms/auth/link/report gates; reach three executable,
    independently receipted providers and enforce the 40% concentration cap.
-5. **F02–F06:** add canonical tool receipts, typed retry/quarantine/watchdog,
-   one allowlisted repair with same-job resume, and one live recoverable failure
-   with exact no-duplicate `SELF_HEALED` evidence. F01 is closed by the live
-   owner proof above.
+5. **F03–F06:** add typed retry/quarantine/watchdog, one allowlisted repair with
+   same-job resume, and one live recoverable failure with exact no-duplicate
+   `SELF_HEALED` evidence. F01 and F02 are closed by the live owner proof above.
 6. **G01–G07 / A2–A3:** prove mature comparable cohorts, four unattended
    positive weeks, observed traffic/conversion requirements, 80/20 allocation,
    <=40% concentration, then the replayed rolling 30-day USD 10,000 net gate
