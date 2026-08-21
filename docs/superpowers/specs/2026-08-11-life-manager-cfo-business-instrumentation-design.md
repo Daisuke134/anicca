@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | PAUSED — signed Apple Finance rows and parent `CFO-OPS3a`/`OPS3b` are complete; `CFO-1j` is active first, then `CFO-2b.2b2` resumes |
+| Status | PAUSED — signed Apple Finance rows are complete, but parent `CFO-OPS3b` launchd management is not currently verified; `CFO-1j` waits, then `CFO-2b.2b2` resumes |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Canonical target is local `/Users/anicca/Projects/life-manager-main/apps/life-manager`; existing `apps/life-call` code is migration evidence, not the final owner |
 | Role split | Sol specifies/verifies; Luna implements production code/tests |
@@ -471,19 +471,19 @@ Rules:
   `StartInterval=3600`. The old loaded job continued to point at the deleted `cfo-4d1-finalize` worktree and
   failed on missing `@opentelemetry/api`; the installer wrote the new plist but did not refresh the loaded definition.
   Canonical commit `1c302e801` now bootouts, bootstraps, enables, kickstarts, and reads back the exact service.
-  The existing Gateway context successfully loaded `ai.anicca.life-manager-cfo-hourly`, and read-back shows the stable
-  path, interval, and exit status 0 between hourly runs. The real fresh invocation returned
-  `status=sent`, `reportingDate=2026-08-21`, `revision=3`, `appended=true`, `delivered=true`; the launchd stderr log is
-  empty. The Supabase Telegram delivery receipt at `2026-08-21T03:34:13Z` is provider `message_id=770`. The current
-  assistant shell's direct `launchctl` still returns 141, but that is a context limitation, not a launchd-wide failure;
-  no reboot or OS-service restart was needed. `CFO-OPS3b` is closed; recent-transaction `CFO-1j` is now first, and
-  `CFO-2b.2b2` remains the first business implementation slice after it.
+  The existing Gateway context successfully loaded `ai.anicca.life-manager-cfo-hourly` once, and the real invocation
+  returned `status=sent`, `reportingDate=2026-08-21`, `revision=3`, `appended=true`, `delivered=true`; the launchd
+  stderr log was empty. The Supabase Telegram delivery receipt at `2026-08-21T03:34:13Z` is provider `message_id=770`.
+  A fresh audit now returns `managerpid/manageruid=153` and label `print/list=141: Reentrancy avoided`; no newer
+  stdout, result, or Telegram receipt exists. The previous pass is real historical evidence, but current launchd
+  management and hourly continuity are unverified. `CFO-OPS3b` is reopened; `CFO-1j` and `CFO-2b.2b2` wait.
 - Host-parity decision (2026-08-21): the official Codex MCP/skills/plugins/App Server/SDK surfaces support sharing
   user config, skill roots, and installed Apps across local Codex clients, but a fresh `codex exec` is not the main
   ChatGPT conversation. The Moneytree bundle is present in local plugin cache and `codex app-server` reports it
   `enabled=true, callable=true` through `app/installed`; the persistent app-server `app/read` and direct
   `mcpServer/tool/call` now return the existing structured Moneytree result, which the adapter consumes without LLM
-  number copying. The launchd provenance gate is now closed by the Gateway-context read-back and revision-3 receipt. If
+  number copying. The launchd provenance gate passed once but is currently reopened by the `153/141` management audit.
+  If
   this bridge later regresses,
   the canonical portable fallback is the official Moneytree LINK/API integration; no bespoke adapter or guessed
   finance number is accepted.
