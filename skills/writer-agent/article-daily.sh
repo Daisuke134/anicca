@@ -922,6 +922,7 @@ export ARTICLE_RUN_DIR="$RUN_DIR"
 
 writer_capacity_preflight() {
   local free_kib flag control_dir="$HOME/.openclaw/state"
+  local required_kib="${GIG_DISK_HEADROOM_KIB:-524288}"
   free_kib="$(df -Pk / 2>/dev/null | awk 'NR==2{print $4}')"
   case "$free_kib" in
     ''|*[!0-9]*)
@@ -929,8 +930,14 @@ writer_capacity_preflight() {
       return 78
       ;;
   esac
-  if [ "$free_kib" -lt $((11 * 1048576)) ]; then
-    echo "=== article-daily provider gate BLOCK: free=${free_kib}KiB below Life Manager 11GiB floor ===" >>"$LOG"
+  case "$required_kib" in
+    ''|*[!0-9]*|0)
+      echo "=== article-daily provider gate BLOCK: disk floor configuration invalid ===" >>"$LOG"
+      return 78
+      ;;
+  esac
+  if [ "$free_kib" -lt "$required_kib" ]; then
+    echo "=== article-daily provider gate BLOCK: free=${free_kib}KiB below Life Manager ${required_kib}KiB floor ===" >>"$LOG"
     return 78
   fi
   if [ ! -d "$control_dir" ] || [ ! -r "$control_dir" ] || [ ! -x "$control_dir" ]; then
@@ -941,6 +948,10 @@ writer_capacity_preflight() {
     if [ -L "$flag" ] || { [ -e "$flag" ] && [ ! -f "$flag" ]; }; then
       echo "=== article-daily provider gate BLOCK: non-regular control flag=$flag ===" >>"$LOG"
       return 78
+    fi
+    if [ -f "$flag" ] && [ "$flag" = "$control_dir/disk-pressure.block" ] \
+      && [ "${GIG_IGNORE_DISK_PRESSURE_BLOCK:-}" = "1" ]; then
+      continue
     fi
     if [ -f "$flag" ]; then
       echo "=== article-daily provider gate BLOCK: control flag=$flag ===" >>"$LOG"
