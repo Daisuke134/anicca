@@ -860,7 +860,12 @@ a later successful example.
 - [ ] P27 — Persist buyer-wait as an owned state rather than ending the workflow.
 - [ ] P28 — Consume a later buyer reply and resume without Codex/operator execution.
 - [ ] P29 — Resume the existing Manledge liability through the generic Paid owner.
-- [ ] P30 — Resume the existing Haru liability through the generic Paid owner.
+- [x] P30 — Resume the existing Haru liability through the generic Paid owner. The live
+  `57ac9eb159e0` Paid owner recognized the legacy v26 artifact as already beyond five review
+  iterations, performed no v27 build and no additional review, authorized the unchanged artifact
+  SHA256 `6ed990f395e0d19c15e46a383a0b0f54f39ec77ec42c6b34efbf5dcc5d16e497` with
+  `shipment_basis=max_review_iterations`, selected `delivery_action=progress` with
+  `formal_delivery_checkbox=false`, and returned exact-room `effect=1`, `readback=1`, `failed=0`.
 - [ ] P31 — Prove one natural order end to end from complete context through one formal delivery and
   replay-zero.
 
