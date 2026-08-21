@@ -809,7 +809,10 @@ a later successful example.
   `_prepare_one → _prepare_file → _build_and_authorize_file`; write phase is unreachable until
   the buyer-facing artifact, manifest, acceptance receipt and fresh-review authorization all
   exist. The final natural-order proof remains P31 rather than being conflated with this contract.
-- [ ] P13 — Reject acknowledgement/status text as a successful Paid effect; an actionable file
+- [x] P13 — Reject acknowledgement/status text as a successful Paid effect; an actionable file
+  request must remain `mode=file`. The owner explicitly rejects plans, status reports, transaction
+  summaries and promises as deliverables; the fresh reviewer rejects the same class, and write
+  phase reports success only after the exact attachment is visible in the official talkroom.
   cycle succeeds only after an artifact attachment is officially read back.
 - [x] P14 — Build the artifact with the configured `gpt-5.6-sol` executor. Haru's live
   `agent-PAID_FILE_OWNER/summary.json` proves the selected model and a produced v18 package.
