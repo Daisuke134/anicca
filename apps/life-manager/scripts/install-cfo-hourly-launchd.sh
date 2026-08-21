@@ -16,6 +16,7 @@ fi
 
 HOME_DIR="${HOME:?HOME is required}"
 CODEX_HOME_VALUE="${CODEX_HOME:-$HOME_DIR/.codex}"
+DOMAIN="gui/$(id -u)"
 SOURCE_REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 LOOP_TOML="$SOURCE_REPO_ROOT/loops/cfo-hourly/loop.toml"
 PYTHON_BIN=/opt/homebrew/bin/python3
@@ -243,5 +244,14 @@ sed \
 /usr/bin/plutil -replace StartInterval -integer "$CFO_INTERVAL" "$TMP_PLIST"
 /usr/bin/plutil -lint "$TMP_PLIST"
 /usr/bin/install -m 600 "$TMP_PLIST" "$TARGET"
+
+# Refresh the loaded job as well as the on-disk plist. Without bootout/bootstrap,
+# launchd keeps the previous definition (and can continue executing an old worktree).
+SERVICE="$DOMAIN/$CFO_LABEL"
+launchctl bootout "$SERVICE" 2>/dev/null || true
+launchctl bootstrap "$DOMAIN" "$TARGET"
+launchctl enable "$SERVICE"
+launchctl kickstart -k "$SERVICE"
+launchctl print "$SERVICE" >/dev/null
 echo "$TARGET"
 echo "$CURRENT_LINK/apps/life-manager"
