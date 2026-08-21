@@ -396,6 +396,42 @@ async def _submitted_confirmation(page: Any) -> bool:
     return False
 
 
+def _provider_limit_result(
+    *,
+    application_id: str,
+    company: str,
+    title: str,
+    ledger: Ledger,
+) -> dict[str, Any]:
+    """Quarantine an ATS-policy-blocked row so every wake does not repeat it."""
+
+    try:
+        ledger.transition(
+            application_id,
+            "rejected",
+            {
+                "reason": "provider_application_limit_visible",
+                "provider": "ashby",
+            },
+        )
+    except Exception as error:
+        return {
+            "application_id": application_id,
+            "company": company,
+            "title": title,
+            "status": "blocked",
+            "blocker": "provider_application_limit_transition_failed",
+            "error_type": type(error).__name__,
+        }
+    return {
+        "application_id": application_id,
+        "company": company,
+        "title": title,
+        "status": "rejected",
+        "blocker": "provider_application_limit_visible",
+    }
+
+
 async def _process_one(
     page: Any,
     row: dict[str, Any],
@@ -417,26 +453,24 @@ async def _process_one(
     posting_path.write_text(posting_text, encoding="utf-8")
     os.chmod(posting_path, 0o600)
     if PROVIDER_LIMIT_RE.search(posting_text):
-        return {
-            "application_id": application_id,
-            "company": row["company"],
-            "title": row["title"],
-            "status": "blocked",
-            "blocker": "provider_application_limit_visible",
-        }
+        return _provider_limit_result(
+            application_id=application_id,
+            company=str(row["company"]),
+            title=str(row["title"]),
+            ledger=ledger,
+        )
     snapshot, evaluation = await _wait_for_surface(page)
     if evaluation["surface"] == "ashby_job":
         await _click_apply(page)
         snapshot, evaluation = await _wait_for_surface(page)
     form_text = await _body_text(page)
     if PROVIDER_LIMIT_RE.search(form_text):
-        return {
-            "application_id": application_id,
-            "company": row["company"],
-            "title": row["title"],
-            "status": "blocked",
-            "blocker": "provider_application_limit_visible",
-        }
+        return _provider_limit_result(
+            application_id=application_id,
+            company=str(row["company"]),
+            title=str(row["title"]),
+            ledger=ledger,
+        )
     if not evaluation["claim_ready"]:
         return {
             "application_id": application_id,
