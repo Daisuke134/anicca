@@ -739,6 +739,48 @@ action completes.
 
 #### E. Prove natural Paid delivery
 
+**Paid atomic execution checklist.** Close in order; do not replace an earlier unchecked item with
+a later successful example.
+
+- [x] P1 — Collect every currently open purchased order from the authenticated official
+  `/mypage/received_orders/open` list. Fresh natural evidence at
+  `~/gig/evidence/paid-direct-live/orders/orders-only-snapshot.json` observed five official cards
+  and emitted five orders with `coverage_complete=true`, `login_redirect=false` and exact
+  `cards_count == len(orders)`.
+- [x] P2 — Give every collected order one stable marketplace identity. The same receipt contains
+  five unique numeric `talkroom_id` values and five matching unique `contract_id` values of the
+  form `talkroom:<talkroom_id>`; no local sequence or capture timestamp participates in identity.
+- [ ] P3 — Bind the original application/proposal to each purchased order's context packet.
+- [ ] P4 — Bind every pre-purchase DM to the same context packet.
+- [ ] P5 — Bind purchased scope, agreed price and deadline to the same context packet.
+- [ ] P6 — Bind the complete append-only talkroom history to the same context packet.
+- [ ] P7 — Bind every buyer attachment and its content receipt to the same context packet.
+- [ ] P8 — Persist one context digest plus source receipts before semantic work begins.
+- [ ] P9 — Suppress any question whose answer already exists in the bound context.
+- [ ] P10 — Permit one clarification only for a genuinely absent fact that blocks truthful work.
+- [ ] P11 — Produce every non-blocked portion while that clarification is pending.
+- [ ] P12 — Generate a useful artifact on the first actionable purchased-order transition.
+- [ ] P13 — Reject acknowledgement/status text as a substitute for an artifact.
+- [ ] P14 — Build the artifact with the configured `gpt-5.6-sol` executor.
+- [ ] P15 — Review it in a fresh isolated `gpt-5.6-sol` context.
+- [ ] P16 — Keep the reviewer read-only and unable to submit.
+- [ ] P17 — Return reviewer findings to the executor as a bounded revision.
+- [ ] P18 — Repeat until the artifact quality gate passes or a truthful blocker is durable.
+- [ ] P19 — Attach useful progress with formal delivery off while accepted scope remains.
+- [ ] P20 — Enable formal delivery only after the complete accepted scope passes.
+- [ ] P21 — Give reply, attachment and formal delivery independent durable effect keys.
+- [ ] P22 — Read the attachment back in the exact official talkroom.
+- [ ] P23 — Read formal delivery back in the exact official talkroom.
+- [ ] P24 — Replay and prove zero duplicate replies, attachments and formal deliveries.
+- [ ] P25 — Resume the next transition after an executor/reviewer process exits.
+- [ ] P26 — Resume the same transition after a machine/login restart.
+- [ ] P27 — Persist buyer-wait as an owned state rather than ending the workflow.
+- [ ] P28 — Consume a later buyer reply and resume without Codex/operator execution.
+- [ ] P29 — Resume the existing Manledge liability through the generic Paid owner.
+- [ ] P30 — Resume the existing Haru liability through the generic Paid owner.
+- [ ] P31 — Prove one natural order end to end from complete context through one formal delivery and
+  replay-zero.
+
 **Accepted architecture — do not optimize Paid for lower latency.** A production worker builds the
 buyer-requested artifact, a fresh reviewer checks it independently, the worker incorporates review
 findings and repeats until the quality gate passes, and only then does the delivery owner perform one
