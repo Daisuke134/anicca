@@ -90,6 +90,10 @@ relevant boards and found Harvey's Senior Product Marketing Manager, Solutions r
 The Ashby mapper recognizes separate legal/preferred first/last-name controls and
 the approved Mitsubishi UFJ Information Technology current-employer fact; the real
 Harvey submit click is fenced as `submit_unknown`, with Telegram ACK `27527`.
+The mapper also recognizes approved current-location and GitHub-portfolio fields.
+LangChain's Solutions Engineer (Chicago) form reached the real submit click and is
+fenced as `submit_unknown`; its direct Telegram application report was acknowledged
+as message `27539`.
 The daily script now bounds the non-deterministic browser fallback at 300 seconds
 by default (`JOB_SEARCH_BROWSER_TIMEOUT_SECONDS` may lower or raise that bounded
 value); deterministic ATS fast paths run before it and retain their own evidence.

@@ -362,6 +362,10 @@ def _known_value(
         for fact in profile.get("facts", []):
             if fact.get("id") == "muit_role_2025":
                 return "Mitsubishi UFJ Information Technology"
+    if "where are you currently located" in context or "current location" in context:
+        return str(candidate.get("base") or "")
+    if "portfolio" in context:
+        return str(candidate.get("github_url") or candidate.get("linkedin_url") or "")
     return None
 
 
