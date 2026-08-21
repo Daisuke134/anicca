@@ -46,15 +46,12 @@
 
 ## Current ordered TODO
 
-1. `CFO-2d2` is the single active item: render the business/evidence Telegram summary, drill-downs, deduped receipt,
-   stale-source alert, and readability E2E. Keep every unavailable field unknown/null.
+1. `M5c` is the only remaining capital item: execute one bounded real cycle only after a verified profitable business
+   and explicit owner approval. Until then no executor, wallet, trade, transfer, hiring, or payment action is allowed.
 2. `CFO-2a3b`: complete one-time Google Cloud reauthentication and acquire the real Cost Table when the external
    owner action is available; this remains blocked and never accepts a fabricated CSV.
-3. `CFO-2d3`, `CFO-2e`: enable the verified-outgoing-only spending guardian and deterministic recommendations;
-   runway, ROI, evidence completeness, readable Telegram drill-downs; then enable the verified-outgoing-only spending
-   guardian and deterministic recommendations.
-4. M3 tax evidence/reserve (`CFO-3a`–`3e`), M4 cloud/multi-tenant parity (`CFO-4a`–`4e`), and M5 controlled capital
-   allocation (`CFO-5a`–`5e`) remain deferred until the local CFO path and business instrumentation are closed.
+3. M3 tax/Binance (`CFO-3a`–`3e`) and M4c Binance fixed-egress remain explicitly deferred; M4a/b/d/e and M5a/b/d/e
+   policy boundaries are closed.
 
 Only one item is active at a time; every later item waits for the current evidence, tests, commit, and push.
 
