@@ -1749,7 +1749,7 @@ schedulers or revive known-broken producers:
 | I-3 | Run one controlled Honne EN canary from Life Manager using the migrated approved pack | one real TikTok publication reconciles as `PUBLISHED`, its direct `/video/<id>` URL returns publicly, Telegram receives the same URL, replay produces no duplicate | **done** — approved-pack creative `HEN-005-154a1508e0a8` reconciled the existing Postiz row `cmt2nc8gj00x5ph0yodvxq4dm` to `https://www.tiktok.com/@honne_reveal/video/7676388327427149077`; direct readback returned HTTP 200, Telegram receipt `message_id=27358` carried the same URL, and initial/second replay created zero new effects. The earlier generic row at `7676366077437233172` remains quarantined rollback evidence. No OpenClaw or legacy launchd job was changed. |
 | I-4 | Prove seven consecutive Honne EN cycles | every explicit run has one verified generation, publication, URL, notification, and replay receipt | **removed by owner instruction** — one correct on-demand HEN-006 receipt remains evidence; the extra seven-cycle gate and calendar wait add no value to the immediate recovery and are deleted. The format, URL, Telegram, and idempotency guards remain |
 | I-5 | Repair and migrate Anicca video/slideshow producers one lane at a time | missing hook sources, blank IDs, poster arguments, and secret boundaries are fixed behind Life Manager contracts; each lane passes one canary with direct receipt and metrics | open |
-| I-6 | Migrate Honne JA, then remaining Larry/ReelClaw routes | each retained route preserves product/locale/account/cadence behavior and no longer reads OpenClaw or another repository at runtime | open |
+| I-6 | Migrate Honne JA, then remaining Larry/ReelClaw routes | each retained route preserves product/locale/account behavior and no longer reads OpenClaw or another repository at runtime | **partly done —** Honne JA `@honnevideo` now has one LM-owned ReelClaw canary with direct URL, Telegram, and replay evidence; remaining routes stay open |
 | I-7 | Close observation and bounded learning | 2h/24h/72h/7d/35d metrics join artifact→publication→account→campaign→install→trial→paid→proceeds; unavailable is not zero; one variable changes per challenger and keep/revert is consumed by the next run | open |
 | I-8 | Retire legacy marketing ownership | only after every retained lane passes its canary, direct receipt, metrics, and replay; OpenClaw/legacy launch state remains disabled as rollback history and Life Manager is the sole owner | open |
 
@@ -1767,9 +1767,9 @@ MKT-13`.
 Current TODO state: **MKT-01 done; MKT-02 done; MKT-03 done with the earlier generic row quarantined; MKT-03A contract done; MKT-03B is the active next item; MKT-04 seven-cycle gate removed; MKT-05 onward open**. Honne
 has TikTok/Instagram destinations only; YouTube remains an Anicca-only lane.
 
-**Active atomic item:** MKT-03B continuation only. The Anicca JA TikTok leg is
-now proven; do not enable other lanes or the three-post policy until the
-remaining selected-platform legs pass their own receipts.
+**Active atomic item:** MKT-07 only. Anicca JA TikTok/Instagram and Honne JA
+TikTok canaries are proven; do not enable other lanes or the three-post policy
+until the next selected lane passes its own receipt.
 
 | ID | Atomic action | Account/lane | Done evidence |
 |---|---|---|---|
@@ -1779,8 +1779,8 @@ remaining selected-platform legs pass their own receipts.
 | MKT-03A | **done —** Extend the generic publication contract and direct-URL verifier to YouTube while keeping Postiz as the provider | selected **Anicca** YouTube integration only | adapter accepts Anicca-only YouTube jobs with `youtube_integration_ref`; `/shorts/<id>` and `/watch?v=<id>` receipts pass while profile URLs fail; shadow plan creates one job and provider writes remain 0; both live candidates stay disabled |
 | MKT-03B | Run one controlled Postiz fan-out canary with one effect key per platform, one selected product lane at a time: Anicca on TikTok/Instagram/YouTube or Honne on TikTok/Instagram | one selected production-armed product lane | **partly done —** the Anicca iOS JA `reelclaw-card` `card-ja/v4` creative `AJ-CARD-001-35a15c7ce990` now has verified TikTok `https://www.tiktok.com/@anicca.jp/video/7676422253638176020` (row `cmt2s158o02kyph0yvht8d8wd`, Telegram `27500`) and Instagram `https://www.instagram.com/reel/DcTFx_UjSio/` (row `cmt2sfjcx02bapj0ymsu4tapf`, Telegram `27510`); both replayed with zero new effects. The earlier `lm_wake` row remains quarantined. YouTube remains disabled and metrics/attribution remain open |
 | MKT-04 | Run Honne EN on-demand cycles one by one and prove seven consecutive receipts | Honne EN `@honne_reveal`, one explicit manual trigger per cycle | **removed by owner instruction** — retain the single HEN-006 receipt as evidence; no calendar trigger or seven-cycle wait remains |
-| MKT-05 | Repair the known hook, asset, poster-argument, and environment-boundary defects before any publication | Honne JA `@honnevideo` | one clean LM-owned on-demand run and one controlled canary; no OpenClaw path/env/asset read |
-| MKT-06 | Restore Honne JA on-demand publishing and record its account receipt | Honne JA `@honnevideo` | one product/locale/account-bound public URL, natural Telegram receipt, replay 0, and metrics; old `honne-ja-fresh` remains disabled |
+| MKT-05 | Repair the known hook, asset, poster-argument, and environment-boundary defects before any publication | Honne JA `@honnevideo` | **done —** migrated `honne-ja` ReelClaw pack runs through LM object refs only; no legacy hook/path/env/asset read reached the provider |
+| MKT-06 | Restore Honne JA on-demand publishing and record its account receipt | Honne JA `@honnevideo` | **done —** creative `HJA-011-ed3318c496f4` published at `https://www.tiktok.com/@honnevideo/video/7676425660641889537`, provider row `cmt2siqgp0009nt0yoi1qz7lf`, Telegram `message_id=27515`, replay 0; old `honne-ja-fresh` remains disabled |
 | MKT-07 | Repair and canary the JP4 lane | Anicca JP4 `@anicca.jp4` | one account-specific public URL, natural Telegram receipt, replay 0, and metrics |
 | MKT-08 | Repair and canary the iOS lane | Anicca iOS `@anicca.jp` | one account-specific public URL, natural Telegram receipt, replay 0, and metrics |
 | MKT-09 | Migrate the remaining Larry/ReelClaw accounts one by one, preserving each measured account/locale contract | remaining Anicca/Honne accounts | each account passes one canary, direct receipt, metrics, and replay 0; no mass re-enable |
