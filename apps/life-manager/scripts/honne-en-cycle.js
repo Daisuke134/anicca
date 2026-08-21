@@ -11,7 +11,8 @@ const {
   verifyMarketingVideoGenerationReceipt,
 } = require("../lib/marketing-video-generation-adapter.js");
 const { buildMarketingVideoPublicationJob } = require("../lib/marketing-video-publication-adapter.js");
-const { PROMOTION_CONFIRMATION, runHonneEnCanary } = require("./honne-en-canary.js");
+const { PROMOTION_CONFIRMATION } = require("../lib/marketing-canary.js");
+const { runHonneEnCanary } = require("./honne-en-canary.js");
 
 const TENANT = "dais-local";
 const PRODUCT = "honne-ai";
