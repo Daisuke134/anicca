@@ -209,12 +209,13 @@ trap 'bash "$GUARD" release "$IDENTITY" >/dev/null 2>&1 || true' EXIT
 AFFILIATE_CONSUMED="$STATE/affiliate-proposals-consumed.jsonl"
 AFFILIATE_PICK="$($PY "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL" --consumed "$AFFILIATE_CONSUMED" 2>/dev/null || echo '{"state":"NO_PROPOSAL"}')"
 AFFILIATE_STATE="$($PY -c 'import json,sys; print(json.load(sys.stdin).get("state","NO_PROPOSAL"))' <<<"$AFFILIATE_PICK" 2>/dev/null || echo NO_PROPOSAL)"
-if [ "$AFFILIATE_STATE" = "READY" ]; then
+if [ "$AFFILIATE_STATE" = "READY" ] || [ "$AFFILIATE_STATE" = "RECONCILE" ]; then
   AFFILIATE_ID="$($PY -c 'import json,sys; print(json.load(sys.stdin)["proposal_id"])' <<<"$AFFILIATE_PICK")"
   AFFILIATE_PLACEMENT="$($PY -c 'import json,sys; print(json.load(sys.stdin)["placement_id"])' <<<"$AFFILIATE_PICK")"
   AFFILIATE_URL="$($PY -c 'import json,sys; print(json.load(sys.stdin)["owned_article_url"])' <<<"$AFFILIATE_PICK")"
+  AFFILIATE_SLUG="${AFFILIATE_URL##*/}"
   cat >"$EV/post.txt" <<EOF
-Before paying for an AI workflow, check the practical constraints first.
+Before paying for an AI workflow: ${AFFILIATE_SLUG//-/ }.
 
 Affiliate link disclosure:
 $AFFILIATE_URL
@@ -227,6 +228,55 @@ PYEOF
   then
     report "❌ Affiliate proposal text failed the local disclosure/length gate"
     finish 1 "affiliate proposal text invalid"
+  fi
+  append_affiliate_post() {
+    X_REPOST_KIND="affiliate_original" X_REPOST_PROPOSAL_ID="$AFFILIATE_ID" \
+      X_REPOST_PLACEMENT_ID="$AFFILIATE_PLACEMENT" X_REPOST_OWNED_URL="$AFFILIATE_URL" \
+      "$PY" - "$POSTED" "$EV/post.txt" "$1" <<'PYEOF'
+import datetime, fcntl, json, os, sys
+posted, text_file, post_url = sys.argv[1:4]
+proposal_id = os.environ["X_REPOST_PROPOSAL_ID"]
+with open(posted, "a+", encoding="utf-8") as stream:
+    fcntl.flock(stream, fcntl.LOCK_EX)
+    stream.seek(0)
+    for line in stream:
+        try:
+            if json.loads(line).get("affiliate_proposal_id") == proposal_id:
+                raise SystemExit(0)
+        except json.JSONDecodeError:
+            continue
+    row = {"posted_at": datetime.datetime.now().astimezone().isoformat(),
+           "kind": os.environ["X_REPOST_KIND"],
+           "source_url": os.environ["X_REPOST_OWNED_URL"],
+           "affiliate_proposal_id": proposal_id,
+           "affiliate_placement_id": os.environ["X_REPOST_PLACEMENT_ID"],
+           "affiliate_owned_article_url": os.environ["X_REPOST_OWNED_URL"],
+           "tone": "affiliate_disclosed", "text": open(text_file, encoding="utf-8").read().strip(),
+           "post_url": post_url}
+    stream.seek(0, 2)
+    stream.write(json.dumps(row, ensure_ascii=False) + "\n")
+PYEOF
+  }
+  if [ "$AFFILIATE_STATE" = "RECONCILE" ]; then
+    "$UV" run --quiet "$SKILL/scripts/x_post.py" --cdp "$CDP" \
+      --text-file "$EV/post.txt" --mode reconcile >"$EV/post.json" 2>>"$EV/post.err"
+    AFFILIATE_RC=$?
+    if [ "$AFFILIATE_RC" -eq 0 ] && [ "$($PY -c 'import json,sys; print(json.load(open(sys.argv[1])).get("posted"))' "$EV/post.json")" = "True" ]; then
+      AFFILIATE_POST_URL="$($PY -c 'import json,sys; print(json.load(open(sys.argv[1]))["post_url"])' "$EV/post.json")"
+      append_affiliate_post "$AFFILIATE_POST_URL"
+      "$PY" "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL" \
+        --consumed "$AFFILIATE_CONSUMED" --record POSTED --post-url "$AFFILIATE_POST_URL" >/dev/null
+      report "✅ Affiliate proposal recovered from exact X readback\nplacement: $AFFILIATE_PLACEMENT\npost: $AFFILIATE_POST_URL"
+      finish 0 "affiliate proposal reconciled without duplicate publish"
+    fi
+    report "⚠️ Affiliate proposal has an unresolved prior effect; no retry without exact X readback"
+    finish 0 "affiliate proposal remains unresolved"
+  fi
+  AFFILIATE_CLAIM="$($PY "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL" --consumed "$AFFILIATE_CONSUMED" --claim 2>/dev/null || echo '{}')"
+  AFFILIATE_CLAIMED="$($PY -c 'import json,sys; print(json.load(sys.stdin).get("changed", False))' <<<"$AFFILIATE_CLAIM" 2>/dev/null || echo False)"
+  if [ "$AFFILIATE_CLAIMED" != "True" ]; then
+    log "affiliate proposal was claimed by another pass; skipping"
+    finish 0 "affiliate proposal already claimed"
   fi
   "$UV" run --quiet "$SKILL/scripts/x_post.py" --cdp "$CDP" \
     --text-file "$EV/post.txt" --mode original >"$EV/post.json" 2>>"$EV/post.err"
@@ -242,24 +292,9 @@ PYEOF
     finish 1 "affiliate proposal publish failed"
   fi
   AFFILIATE_POST_URL="$($PY -c 'import json,sys; print(json.load(open(sys.argv[1]))["post_url"])' "$EV/post.json")"
+  append_affiliate_post "$AFFILIATE_POST_URL"
   "$PY" "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL" \
     --consumed "$AFFILIATE_CONSUMED" --record POSTED --post-url "$AFFILIATE_POST_URL" >/dev/null
-  X_REPOST_KIND="affiliate_original" X_REPOST_PROPOSAL_ID="$AFFILIATE_ID" \
-    X_REPOST_PLACEMENT_ID="$AFFILIATE_PLACEMENT" X_REPOST_OWNED_URL="$AFFILIATE_URL" \
-    "$PY" - "$POSTED" "$EV/post.txt" "$AFFILIATE_POST_URL" <<'PYEOF'
-import datetime, json, os, sys
-posted, text_file, post_url = sys.argv[1:4]
-row = {"posted_at": datetime.datetime.now().astimezone().isoformat(),
-       "kind": os.environ["X_REPOST_KIND"],
-       "source_url": os.environ["X_REPOST_OWNED_URL"],
-       "affiliate_proposal_id": os.environ["X_REPOST_PROPOSAL_ID"],
-       "affiliate_placement_id": os.environ["X_REPOST_PLACEMENT_ID"],
-       "affiliate_owned_article_url": os.environ["X_REPOST_OWNED_URL"],
-       "tone": "affiliate_disclosed", "text": open(text_file, encoding="utf-8").read().strip(),
-       "post_url": post_url}
-with open(posted, "a", encoding="utf-8") as stream:
-    stream.write(json.dumps(row, ensure_ascii=False) + "\n")
-PYEOF
   report "✅ Affiliate proposal posted with exact placement handoff\nplacement: $AFFILIATE_PLACEMENT\npost: $AFFILIATE_POST_URL"
   finish 0 "affiliate proposal published and read back"
 fi

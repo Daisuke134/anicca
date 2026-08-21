@@ -48,11 +48,17 @@ def get_page(browser):
     return ctx.pages[0] if ctx.pages else ctx.new_page()
 
 
-def scan_timeline(page, handle: str, needle: str):
+def scan_timeline(page, handle: str, needle: str, expected_url: str | None = None):
+    expected_visible = (expected_url or "").removeprefix("https://")
     for art in page.query_selector_all('article[data-testid="tweet"]'):
         text_el = art.query_selector('div[data-testid="tweetText"]')
         body = text_el.inner_text() if text_el else ""
-        if needle and needle in body.replace("\n", ""):
+        if needle and body.replace("\n", "").strip().startswith(needle):
+            visible_links = []
+            for anchor in art.query_selector_all('div[data-testid="tweetText"] a'):
+                visible_links.extend((anchor.get_attribute("href") or "", anchor.inner_text() or ""))
+            if expected_visible and not any(expected_visible in link for link in visible_links):
+                continue
             link = art.query_selector(f'a[href*="/{handle}/status/"]')
             href = link.get_attribute("href") if link else ""
             if href:
@@ -85,7 +91,7 @@ def find_reply_permalink(pw, cdp: str, source_url: str, handle: str, needle: str
     return None
 
 
-def find_permalink(pw, cdp: str, handle: str, needle: str, attempts: int = 6):
+def find_permalink(pw, cdp: str, handle: str, needle: str, expected_url: str | None = None, attempts: int = 6):
     """Read the account timeline back and return the permalink of the post we just made.
 
     Reconnects on every attempt instead of holding one page handle. The browser can die
@@ -101,7 +107,7 @@ def find_permalink(pw, cdp: str, handle: str, needle: str, attempts: int = 6):
             try:
                 page.goto(f"https://x.com/{handle}", wait_until="domcontentloaded", timeout=60000)
                 page.wait_for_timeout(5000)
-                found = scan_timeline(page, handle, needle)
+                found = scan_timeline(page, handle, needle, expected_url)
                 if found:
                     return found
             finally:
@@ -121,7 +127,7 @@ def main():
     # out-of-network content to nobody. A reply is rendered to the people already reading the
     # original, and "the author engaged your reply" is the single highest-weighted signal X
     # publishes (+75, against 0.5 for a like).
-    ap.add_argument("--mode", choices=["quote", "reply", "original"], default="quote")
+    ap.add_argument("--mode", choices=["quote", "reply", "original", "reconcile"], default="quote")
     args = ap.parse_args()
 
     if args.mode in {"quote", "reply"} and not args.source_url:
@@ -131,7 +137,20 @@ def main():
     if not text:
         raise SystemExit("x_post: refusing to publish an empty comment")
 
-    needle = "".join(text.split("\n")[0])[:24]
+    urls = re.findall(r"https://[^\s]+", text)
+    expected_url = urls[0].rstrip(".,)") if args.mode in {"original", "reconcile"} and len(urls) == 1 else None
+    if args.mode in {"original", "reconcile"} and not expected_url:
+        raise SystemExit("x_post: original post requires exactly one URL")
+    needle = " ".join(text.split(expected_url, 1)[0].split()) if expected_url else "".join(text.split("\n")[0])[:24]
+    if args.mode == "reconcile":
+        with sync_playwright() as pw:
+            browser = pw.chromium.connect_over_cdp(args.cdp)
+            handle = ensure_logged_in(get_page(browser))
+            permalink = find_permalink(pw, args.cdp, handle, needle, expected_url)
+        json.dump({"posted": bool(permalink), "mode": args.mode, "handle": handle,
+                   "post_url": permalink, "source_url": None}, sys.stdout, ensure_ascii=False)
+        print()
+        return
     with sync_playwright() as pw:
         browser = pw.chromium.connect_over_cdp(args.cdp)
         ctx = browser.contexts[0] if browser.contexts else browser.new_context()
@@ -214,7 +233,7 @@ def main():
         elif args.mode == "reply":
             permalink = find_reply_permalink(pw, args.cdp, args.source_url, handle, needle)
         else:
-            permalink = find_permalink(pw, args.cdp, handle, needle)
+            permalink = find_permalink(pw, args.cdp, handle, needle, expected_url)
 
     if not published:
         # The composer never emptied and the draft was discarded: nothing reached X. The caller

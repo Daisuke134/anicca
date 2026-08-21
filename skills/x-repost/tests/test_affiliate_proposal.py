@@ -34,6 +34,10 @@ class AffiliateProposalTests(unittest.TestCase):
             selected = MODULE.select(proposal_path, consumed)
             self.assertEqual(selected["state"], "READY")
             self.assertNotIn("try.elevenlabs.io", json.dumps(selected))
+            claimed = MODULE.claim(consumed, MODULE.read_json(proposal_path))
+            self.assertTrue(claimed["changed"])
+            self.assertEqual(claimed["state"], "EFFECT_STARTED")
+            self.assertEqual(MODULE.select(proposal_path, consumed)["state"], "RECONCILE")
             posted = MODULE.record(
                 consumed, MODULE.read_json(proposal_path), "POSTED",
                 "https://x.com/selawmqt/status/123",
@@ -45,6 +49,24 @@ class AffiliateProposalTests(unittest.TestCase):
                 consumed, MODULE.read_json(proposal_path), "POSTED",
                 "https://x.com/selawmqt/status/123",
             )["changed"])
+
+    def test_rejects_query_userinfo_and_second_url(self) -> None:
+        base = {
+            "receipt_type": "AFFILIATE_REPOST_PROPOSAL",
+            "state": "READY_FOR_EXISTING_REPOST_OWNER",
+            "proposal_id": "b" * 64,
+            "placement_id": "voice-isolator-en-1",
+            "language": "en", "disclosure_required": True,
+            "tracking_link_state": "NOT_INCLUDED",
+            "revenue_credit_state": "NO_REVENUE_CREDIT",
+        }
+        for url in (
+            "https://aniccaai.com/blog/voice-isolator?tag=hidden",
+            "https://user@aniccaai.com/blog/voice-isolator",
+            "https://aniccaai.com/blog/voice-isolator\nhttps://example.test",
+        ):
+            with self.subTest(url=url):
+                self.assertFalse(MODULE.valid({**base, "owned_article_url": url}))
 
 
 if __name__ == "__main__":

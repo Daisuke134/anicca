@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import fcntl
 import json
 import os
 import re
@@ -29,7 +30,13 @@ def read_json(path: Path) -> dict:
 
 def valid(proposal: dict) -> bool:
     url = proposal.get("owned_article_url")
-    parsed = urlparse(url) if isinstance(url, str) else None
+    if not isinstance(url, str) or any(char.isspace() or ord(char) < 32 for char in url):
+        return False
+    try:
+        parsed = urlparse(url)
+        port = parsed.port
+    except ValueError:
+        return False
     return all((
         proposal.get("receipt_type") == "AFFILIATE_REPOST_PROPOSAL",
         proposal.get("state") == "READY_FOR_EXISTING_REPOST_OWNER",
@@ -41,8 +48,10 @@ def valid(proposal: dict) -> bool:
         proposal.get("disclosure_required") is True,
         proposal.get("tracking_link_state") == "NOT_INCLUDED",
         proposal.get("revenue_credit_state") == "NO_REVENUE_CREDIT",
-        parsed is not None and parsed.scheme == "https"
-        and parsed.hostname == "aniccaai.com" and parsed.path.startswith("/blog/"),
+        parsed.scheme == "https"
+        and parsed.hostname == "aniccaai.com" and parsed.path.startswith("/blog/")
+        and not parsed.username and not parsed.password and port is None
+        and not parsed.query and not parsed.fragment
     ))
 
 
@@ -69,8 +78,17 @@ def select(proposal_path: Path, consumed_path: Path) -> dict:
         return {"state": "NO_PROPOSAL"}
     if not valid(proposal):
         return {"state": "INVALID_PROPOSAL"}
-    if any(row.get("proposal_id") == proposal["proposal_id"] for row in rows(consumed_path)):
+    prior = [row for row in rows(consumed_path) if row.get("proposal_id") == proposal["proposal_id"]]
+    if any(row.get("state") in {"POSTED", "UNVERIFIED", "NO_EFFECT"} for row in prior):
         return {"state": "ALREADY_CONSUMED", "proposal_id": proposal["proposal_id"]}
+    if any(row.get("state") == "EFFECT_STARTED" for row in prior):
+        return {
+            "state": "RECONCILE",
+            "proposal_id": proposal["proposal_id"],
+            "placement_id": proposal["placement_id"],
+            "owned_article_url": proposal["owned_article_url"],
+            "language": "en",
+        }
     return {
         "state": "READY",
         "proposal_id": proposal["proposal_id"],
@@ -80,15 +98,54 @@ def select(proposal_path: Path, consumed_path: Path) -> dict:
     }
 
 
+def _append_once(consumed_path: Path, proposal_id: str, row: dict, *, require_claim: bool) -> dict:
+    consumed_path.parent.mkdir(parents=True, exist_ok=True)
+    with consumed_path.open("a+", encoding="utf-8") as stream:
+        fcntl.flock(stream, fcntl.LOCK_EX)
+        stream.seek(0)
+        prior = []
+        for line in stream:
+            try:
+                value = json.loads(line)
+            except ValueError:
+                continue
+            if isinstance(value, dict) and value.get("proposal_id") == proposal_id:
+                prior.append(value)
+        terminal = next((value for value in reversed(prior)
+                         if value.get("state") in {"POSTED", "UNVERIFIED", "NO_EFFECT"}), None)
+        if terminal is not None:
+            return {**terminal, "changed": False}
+        if require_claim and not any(value.get("state") == "EFFECT_STARTED" for value in prior):
+            raise ValueError("proposal was not claimed")
+        if not require_claim and prior:
+            return {**prior[-1], "changed": False}
+        stream.seek(0, os.SEEK_END)
+        stream.write(json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n")
+        stream.flush()
+        os.fsync(stream.fileno())
+    return {**row, "changed": True}
+
+
+def claim(consumed_path: Path, proposal: dict) -> dict:
+    if not valid(proposal):
+        raise ValueError("invalid proposal")
+    row = {
+        "schema_version": 1,
+        "receipt_type": "X_REPOST_AFFILIATE_PROPOSAL_CONSUMPTION",
+        "proposal_id": proposal["proposal_id"],
+        "placement_id": proposal["placement_id"],
+        "state": "EFFECT_STARTED",
+        "observed_at": datetime.now(timezone.utc).isoformat(),
+        "revenue_credit_state": "NO_REVENUE_CREDIT_UNTIL_EXACT_AFFILIATE_JOIN",
+    }
+    return _append_once(consumed_path, proposal["proposal_id"], row, require_claim=False)
+
+
 def record(consumed_path: Path, proposal: dict, state: str, post_url: str | None) -> dict:
     if state not in {"POSTED", "UNVERIFIED"}:
         raise ValueError("invalid consumption state")
     if not valid(proposal):
         raise ValueError("invalid proposal")
-    existing = next((row for row in rows(consumed_path)
-                     if row.get("proposal_id") == proposal["proposal_id"]), None)
-    if existing is not None:
-        return {**existing, "changed": False}
     if state == "POSTED":
         parsed = urlparse(post_url or "")
         if parsed.hostname != "x.com" or not re.fullmatch(r"/[A-Za-z0-9_]+/status/[0-9]+", parsed.path):
@@ -103,12 +160,7 @@ def record(consumed_path: Path, proposal: dict, state: str, post_url: str | None
         "observed_at": datetime.now(timezone.utc).isoformat(),
         "revenue_credit_state": "NO_REVENUE_CREDIT_UNTIL_EXACT_AFFILIATE_JOIN",
     }
-    consumed_path.parent.mkdir(parents=True, exist_ok=True)
-    with consumed_path.open("a", encoding="utf-8") as stream:
-        stream.write(json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n")
-        stream.flush()
-        os.fsync(stream.fileno())
-    return {**row, "changed": True}
+    return _append_once(consumed_path, proposal["proposal_id"], row, require_claim=True)
 
 
 def main() -> int:
@@ -116,8 +168,12 @@ def main() -> int:
     parser.add_argument("--proposal", type=Path, required=True)
     parser.add_argument("--consumed", type=Path, required=True)
     parser.add_argument("--record", choices=("POSTED", "UNVERIFIED"))
+    parser.add_argument("--claim", action="store_true")
     parser.add_argument("--post-url")
     args = parser.parse_args()
+    if args.claim:
+        print(json.dumps(claim(args.consumed, read_json(args.proposal)), sort_keys=True))
+        return 0
     if not args.record:
         print(json.dumps(select(args.proposal, args.consumed), sort_keys=True))
         return 0
