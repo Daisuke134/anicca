@@ -1231,7 +1231,9 @@ ingestion. They are not unchecked M1 items and cannot become the active CFO item
 - [ ] **CFO-2c** Reconcile per-business totals to provider statements and Fleet totals; upgrade Fleet observations to
       raw positions, recognized earnings, and provider/ledger-confirmed burn only when matching evidence exists. The
       Fleet adapter boundary is now canonical in commit `75739758e`; the business/provider reconciliation gate remains
-      open because the live Fleet leaderboard currently has no registered rows.
+      open because the live Fleet leaderboard currently has no registered rows. Canonical commit `56821e03f` adds a
+      pure reconciliation projection that keeps measured API cost and usage coverage separate from business/Fleet join
+      status; it does not close CFO-2c while attribution remains unknown.
 - [ ] **CFO-2d** Report contribution profit, runway, ROI, and evidence completeness; unknown is distinct from zero.
 - [ ] **CFO-2d2** Deliver the real Telegram summary, account/business/accuracy/why drill-downs, deduped message
       receipt, stale-source alert, and non-technical readability E2E. Business profit, total-cost, and cost-based
@@ -1299,6 +1301,22 @@ deposits are not revenue. AutoHedge, PM, and Reinvest launchd labels were observ
 execution. The projection, manifest, live read, hostile-boundary checks, and existing Polymarket tests pass; the
 canonical remote branch resolves to `902858819aa8b4bdd16d2893c7bfa42d91983ac4`. No launchd, provider, database, or
 Telegram write occurred.
+
+### CFO-2c business/provider reconciliation progress (2026-08-21)
+
+Canonical commit `56821e03f` adds `apps/life-manager/lib/cfo-reconciliation.js`. It validates a fixed business-unit
+list, redacted provider receipts, the canonical Fleet source result, local usage-chain summaries, and the measured
+`lm_api_cost` aggregate without writing any source. It reports a per-business provider receipt status, keeps landed
+cash/capital/cost/profit/ROI unknown until a comparable join exists, and refuses to call nominal Fleet inflow revenue.
+
+Live read at `2026-08-21T09:14:43.327Z` admitted one x402 external-income receipt `$0.01` and one Proprietary
+Investing realized-P&L receipt `-$3.15`; both remain `fleet_join_status=unknown`. The Fleet source still had four
+registered and zero present rows. The two local usage chains were `ready` but partial: 2,740 events with 1,271
+unattributed/43 missing/29 runner-collision groups, and 11,710 events with 789 unattributed/3,393 missing/433
+runner-collision groups. `lm_api_cost` read 45,950 rows with measured estimate `$1.58240957`; no business attribution
+exists, so the full amount is marked unattributed rather than assigned. Reconciliation status is
+`incomplete_fleet_read`; profit and ROI remain null. Syntax, smoke projection, live read, and diff checks pass. CFO-2c
+stays open until provider statements and Fleet rows can be joined with matching ownership/period evidence.
 
 ### CFO-2c Fleet boundary progress (2026-08-21)
 
