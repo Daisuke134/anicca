@@ -74,6 +74,22 @@
 - 次のatomic actionはこのreleaseをcurrentへ反映し、pause下のCodex-only canaryで無関係なMCP processが0件、
   timeout時もowner fenceが解放されることを確認する。
 
+### bounded timeout 後の新canary identity 解放実測（2026-08-21）
+
+- 最終attempt 4はCodex-only argvのまま900秒bounded executionに到達し、`rc=124`で
+  `interrupted-safe` archiveへ保存された。attempt 1の空archive免除を含めたcharged countは3/3となり、
+  同一runを追加kickしない境界になった。publication-state、live URL、公開ledger row、payment eventは0件である。
+- timeout後もowner fenceは解放され、`reader-testing-gate`等のrun-specific孤児processは0件になった。
+  ただし保存済みarchiveのため旧runのprompt/stateはrun directory外へ移され、従来start-controlは
+  `same-jst-day-unclassified-run`で停止した。
+- `article_daily_start_control.py`へ、公開state・公開ledger・live/draft URLが無く、run内にsymlinkや未知fileがなく、
+  最新`interrupted-generation/attempt-*`に日英本文・media・quality terminal receiptが揃う場合だけ、
+  `same-jst-day-exhausted-prepublication-archive`として空の新run identityを返す分岐を追加した。
+  fixture 14件、bounded/model focused checks、構文、diff checkはPASS。これは手書きstateの再開ではなく、
+  同一runのarchiveと無作用証拠に束縛された新canaryの割当である。
+- pause markerを再作成し、次のatomic actionはこの修正をcurrentへ反映してstart-controlの新identity readbackを確認し、
+  その後にだけ新runでCodex-only canaryを一回実行することとする。
+
 ### launchd control-plane の外部照合と現在の原因判定（2026-08-21）
 
 - Appleの資料では、`~/Library/LaunchAgents`はログイン中ユーザー専用のLaunchAgent置き場であり、
@@ -1025,7 +1041,7 @@ loaded definitionと自然tickまで読み戻すことを意味する。A1のcon
 | A9c | WriterのCodex-only retryを実装する | `ARTICLE_PROVIDER=codex`固定。cooldown既定値を300秒へ変更し、同一immutable runを最大3回だけcheckpoint再開するfixture。Codex cooldown中にClaude/Hermesを起動しない、公開state/ledger後のreplay 0、3回 exhausted後に新runを増殖させない | 実装・契約検証完了（model-runner 7件、resume circuit 6件、start-control 6件、candidate wiring 19件、publication identity 15件、topic-card resume 9件、state routing、duplicate-media guard、構文/manifest/diff check、fresh v2 adversarial review PASS） |
 | A9d | Codex-only Writer公開canaryを行う | current releaseをlaunchdへ反映し、pause解除後の新runでCodex attempt receipt、Note JA、Substack JA/EN、X Article JAの4 native URL、本文・media hash、Telegram delivery receiptを取得。Codex timeout時は同じrunの次tickへ安全にhandoffする | 部分完了（既存`daily-2026-08-21`は4媒体native live＋`article-run-complete rc=0`。`20260821-054500`はduplicate-media quarantine完了。`20260821-072939`はdisk floor低下前にSIGTERMしpublication前で安全停止。clean canary・連続tick・Telegram deliveryは未実施） |
 | A9e | invalid duplicate-media runを安全に隔離する | 対象runの同一media SHA、全active pairが`unavailable`またはdormant `skipped`、no-effect ledgerを再計算し、proof-bound `run-quarantine.json`を作成。start-controlが同日`new`を返し、対象pair以外とledgerの不変をreadback | 完了（実装・fixture 13件、focused 43件、契約・構文・diff check PASS。実canaryのX intentを同じtargetの`unavailable`へ共有lock下で遷移、receipt作成、ledger不変、start-control=`new`、current release=`cdb611300`を実測） |
-| A9f | disk floor復帰後にclean canaryを再開する | `gig_disk_guard`とarticle wrapperが同じ512MiB floorをPASSし、pause解除→既存daily kickstart→新runの4 native receipt、Telegram message ID、2連続tickを取得。floor未達なら生成・公開を開始しない | pause再設定中（`20260821-072939` attempt-2はCodex user-config MCP起動を検出してpublication前TERM、`interrupted-safe` archive。`5090c5cbe`のMCP隔離＋900秒bounded agentはsource tests PASS、current反映後のCodex-only canary・4媒体公開は未実施） |
+| A9f | disk floor復帰後にclean canaryを再開する | `gig_disk_guard`とarticle wrapperが同じ512MiB floorをPASSし、pause解除→既存daily kickstart→新runの4 native receipt、Telegram message ID、2連続tickを取得。floor未達なら生成・公開を開始しない | pause再設定中（`20260821-072939` attempt-4はbounded timeoutで安全archive、start-controlは`same-jst-day-exhausted-prepublication-archive`の新identityを返す。`c33f8c5f6` current反映後の新run Codex-only canary・4媒体公開は未実施） |
 | A9g | 旧backlogを外部作用なしで扱う | 旧runのlive pairを保持したまま、未解決pairだけを現行code/state identityのfailure circuitへopenし、plannerが`WAIT`かつ`recovery_pairs=[]`を返す。新規runの公開を旧targetが先取りしない | 完了（Note circuitを現行code/state SHAで再open、receipt-backed handoff 11件をWAIT化し、さらにduplicate-media runの3件をqueue quarantine付きWAITへ隔離。planner `WAIT/blocked_pairs=[note/ja]/recovery_pairs=[]`） |
 | A9h | receiptのない旧CLAIMEDを安全に扱う | receipt-backed owner proofがないclaimは自動で盗まず、状態・所有者・次の監査を自然文receiptへ記録。新しいreceiptまたは明示的なOrder 5 ownerが現れた場合だけqueue state machineで再開 | 未完（`32446a…` credential incident 1件をfail-closedでCLAIMED維持。clean canaryの公開対象ではないが、repair queueの完全な可観測性に必要） |
 | A9b | 1日複数回の正式scheduleを追加する | 06:00/14:00/22:00などのcalendar wake、各slotのunique run ID、同日異記事、連続2周期のnative receiptを実測 | 未着手。現在は06:00のまま |
