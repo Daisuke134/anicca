@@ -303,9 +303,9 @@ Do not advance the development cursor until every unchecked item in the current 
 evidence. Independent production lanes continue running while development follows this order.
 
 1. **Paid/Submission — finish first.**
-   - [ ] Deploy and read back Paid ignoring the shared 20 GiB preventive `disk-pressure.block` while
-     retaining `disk-writers.stop`, the 512 MiB last-resort guard and the expiring operator brake;
-     an expired audit file or healthy 10+ GiB headroom must not stop earning.
+   - [ ] Deploy and read back Paid ignoring shared preventive `disk-pressure.block` (20 GiB) and
+     `disk-writers.stop` (10/11 GiB hysteresis), while retaining the 512 MiB last-resort guard and
+     expiring operator brake; an expired audit file or healthy 10+ GiB headroom must not stop earning.
    - [ ] Haru `18169583`: finish v28's buyer-feedback-aware visual review against all latest buyer
      references; continue the same artifact line for at most ten review rounds; attach the accepted
      or round-ten artifact with concise text, official readback and formal delivery OFF.

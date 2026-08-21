@@ -119,6 +119,14 @@ def _producer_gate() -> tuple[str, Path] | None:
         return "disk_policy_unavailable", host_state
     for filename, reason in _POLICY_FLAGS:
         if (
+            filename == "disk-writers.stop"
+            and os.environ.get("GIG_IGNORE_DISK_WRITERS_STOP", "")
+            .strip()
+            .lower()
+            in {"1", "true", "yes"}
+        ):
+            continue
+        if (
             filename == "disk-pressure.block"
             and os.environ.get("GIG_IGNORE_DISK_PRESSURE_BLOCK", "")
             .strip()
