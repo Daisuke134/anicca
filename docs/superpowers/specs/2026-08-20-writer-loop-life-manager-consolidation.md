@@ -597,6 +597,28 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
   `unhealthy_until <= now`になれば、状態を手編集せず、次のlaunchd natural tickまたは明示したkickstartが通常再試行する。
   cooldown解除後に同じrunで4媒体native receiptが揃うまで、公開成功・24/7稼働・収益を報告しない。
 
+### 2026-08-21 provider-routing parity review（14:30 JST）
+
+- 前項のcooldown説明だけでは根本原因を表していなかった。Coconalaの実装は
+  `skills/earn/gig/agent-runner/agent_runner.py`を共有し、`config.json`のtask classごとに
+  `codex → claude-direct → hermes`（task classにより候補数は異なる）の候補列を持つ。候補ごとの
+  timeout、schema、capability、attempt receiptを記録し、`transient_timeout`、quota、unavailable、
+  transient authだけを次候補へ渡す。実際の`attempts.jsonl`にも`claude-direct` quota失敗から
+  `hermes`へ進んだ記録、Codex timeout後にHermesがschema-validで完了した記録がある。
+- Coconalaのlive launchd readbackは、`ai.anicca.hf-gig-reply-detector`が`KeepAlive`・30秒poll・
+  `active count=1`、`ai.anicca.hf-gig-apply-direct`が60秒interval・`runs=191`・last exit 0で、
+  Composer/Plannerはprovider候補を持つ。一方で`paid-direct`と`storefront-direct`のログには
+  disk headroom不足、`reply-detector`には旧release argv、`storefront-direct`にはlast exit 1がある。
+  したがって「launchd processがrunning」と「外部effectが成功」は分離し、Coconalaを無条件の成功証拠にしない。
+- Writerのloaded environmentは`ARTICLE_PROVIDER=codex`であり、`skills/writer-agent/runtime/model-runner.sh`
+  に`auto = codex, claude`の候補列が存在しても、pinされたproductionではCodex一候補になる。さらに
+  `mode=agent`のprovider failureは、すでにartifactや外部作用が始まった可能性を理由に同じpromptを別providerへ
+  replayせず、rc=75で終了する。今回のcooldownはこの単一provider routingの結果として表面化した。
+- よって「cooldownが解けるまで待つ」だけではCoconala parityにならない。正しい修正は、Writerにも
+  **provider候補の事前eligibility/fallback**と、provider途中失敗後に同一runのcheckpointから安全に継続する
+  **replay防止handoff**を導入すること。公開境界のartifact hash、same-run ledger、native readbackを維持し、
+  cooldown stateの手編集や、外部effect後のblind replay、単純な`ARTICLE_PROVIDER=auto`切替だけでは完了にしない。
+
 ## 目標構成
 
 ### 実行トポロジー（Coconala parity）
@@ -817,7 +839,9 @@ loaded definitionと自然tickまで読み戻すことを意味する。A1のcon
 | A7 | pause下でcreator/resumeを各1回だけkickstartする | 1回ずつのPID、run ID、終了コード、lock消滅、Telegram自然文receiptを取得。公開はpauseで外部作用0 | A6待ち |
 | A8 | 5分周期の自然tickを2回連続で検証する | 2回ともcurrent argv、単一owner、run/receipt更新、重複外部作用0を確認。`process_alive`だけでは完了にしない | A7待ち。既存runの一回receiptはあるが連続tickではない |
 | A9 | control-plane復旧後の新規same-run公開を検証する | 新しいrunでNote JA、Substack JA、Substack EN、X Article JAの各native URL・本文・owner・artifact/media hashをreadbackし、Telegram送信receiptを取得 | A7/A8待ち |
-| A9a | 同日完了runの新規記事解放と重複防止をreleaseへ反映する | current releaseでstart-control 6件、publication identity 15件、schedule miss 2件がPASS。実launchdで完了runから新run `20260821-043922`を作成し、provider cooldownで公開前停止、重複外部作用0を確認。cooldown解除後は状態を手編集せず自然tick/kickstartで再試行し、4媒体native receiptを取得する | 部分完了（`codex:agent` cooldownの14:18:40 JST解除後に公開E2E待ち） |
+| A9a | 同日完了runの新規記事解放と重複防止をreleaseへ反映する | current releaseでstart-control 6件、publication identity 15件、schedule miss 2件がPASS。実launchdで完了runから新run `20260821-043922`を作成し、provider cooldownで公開前停止、重複外部作用0を確認 | 部分完了（新run解放と重複防止はPASS。provider-routing parityと公開E2EはA9c待ち） |
+| A9c | WriterをCoconala parityのprovider routingへ移行する | cooldown中のCodexを事前skipし、Claude候補へ切り替える単体fixture。provider途中timeoutでは同一run checkpointからのみ再開し、公開境界後のblind replayが0。pause下の実canaryで候補順、attempt receipt、run ID、artifact hash、外部effect 0をreadback | 未着手（A9aの次の先頭TODO） |
+| A9d | provider routing修正後のWriter公開canaryを行う | current releaseをlaunchdへ反映し、pause解除後の新runでNote JA、Substack JA/EN、X Article JAの4 native URL、本文・media hash、Telegram delivery receiptを取得。Codex単独cooldownによるrc=75で終わらない | A9c待ち |
 | A9b | 1日複数回の正式scheduleを追加する | 06:00/14:00/22:00などのcalendar wake、各slotのunique run ID、同日異記事、連続2周期のnative receiptを実測 | 未着手。現在は06:00のまま |
 | A10 | 実payment/publisher receiptをmoney ledgerへ接続する | receipt ID、金額、通貨、destination identity、artifact/run IDをjoin。未取得は`unknown`のまま保持 | 未着手 |
 | A11 | 14日間の運用観測を完了する | 重複外部作用0、同一run resume、自然文の成功/失敗報告、revenue ledger整合を連続receiptで確認 | A9/A10待ち |
