@@ -167,6 +167,8 @@ rotationの直列化、orphan recovery、archive名衝突回避を実装した�
 保持する。heartbeatの初回rotationは180,297,803 bytes→3,259,576-byte archive、active 0 bytesを
 readbackした。Stripeもproduction rotationをreadbackし、345,871,539 bytes→15MiB gzip archive、
 active 32KiBへ縮小した。両方ともevent lineをarchiveへ保持している。
+sentinelのwriter stop flagはtier3（free<10GiB）でraiseし、11GiB recovery floorまで保持する
+よう更新した。これによりPRESSURE帯のwrite-heavy producerを先にdrainする。
 
 ### OSS boundary
 
