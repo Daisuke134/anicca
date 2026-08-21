@@ -28,12 +28,13 @@ The loop optimizes for interviews, not raw submission count:
 
 | Objective | Rule |
 |---|---|
-| Daily application target | 10 unique admitted applications per Japan day; one candidate per hourly wake |
-| Location | Tokyo on-site/hybrid, Japan-remote, or global remote that accepts Japan-based workers are ordering preferences, not fit-based rejection rules |
-| Compensation | Prefer JPY 7M–10M+; compensation mismatch never prevents a stretch attempt |
-| Role families | Applied AI/agent/GenAI engineering; AI product and technical program management; solutions/consulting; AI business development and partnerships; technical account management, customer success and sales engineering; agentic fintech/crypto/consumer AI; other roles at an explicitly targeted ideal company |
+| Daily application target | 10 unique admitted applications per Japan day that meet the salary/geography/employer gates; one candidate per hourly wake |
+| Location gates | Tokyo on-site or hybrid; San Francisco on-site only when the employer sponsors the required U.S. work visa; remote from Japan when the employer supports Japan employment, EOR or contracting |
+| Compensation gate | Known annual compensation below JPY 8M is excluded; unknown compensation remains admitted; prefer JPY 15M–20M+ and prioritize JPY 30M+ when the role otherwise passes the gates |
+| Role families | Engineering: applied AI, agents, GenAI, software, solutions and technical architecture; Business: AI product, technical program management, solutions/consulting, business development, partnerships, technical account management, customer success and sales engineering |
+| Employer exclusions | Do not discover, submit or follow up for Accenture, KPMG, Deloitte, Ernst & Young/EY, or PwC/PricewaterhouseCoopers because the recruiter is handling those applications |
 | Execution-safety exclusions | Duplicate/already-applied roles; closed or non-official application surfaces; legal/identity answers that would have to be false; CAPTCHA or manual identity challenges that require the applicant; material claim fabrication |
-| Truthful zero | If fewer than ten admitted jobs have a truthfully executable official form, submit the admitted count and report the exact execution blocker; never reduce ambition because of fit or stated hiring requirements |
+| Truthful zero | If fewer than ten admitted jobs have a truthfully executable official form, submit the admitted count and report the exact execution blocker; never reduce ambition because of experience fit or stated hiring requirements |
 
 ### Current resident cadence contract
 
@@ -61,17 +62,20 @@ namespace is healthy.
 
 Requirement fit is not an admission gate. Every role at an ideal target company is
 an admitted stretch candidate even when the posting asks for more years, a higher
-title, a different degree, a skill not yet demonstrated, or a compensation/location
-profile that does not match. A CEO role at an ideal company that lists twenty years
-of CEO experience is still attempted. The requirement is recorded as a visible
-stretch signal and may affect ordering and the Telegram explanation, but it never
-causes a silent pre-submit rejection.
+title, a different degree, or a skill not yet demonstrated. A CEO role at an ideal
+company that lists twenty years of CEO experience is still attempted. The requirement
+is recorded as a visible stretch signal and may affect ordering and the Telegram
+explanation, but it never causes a silent pre-submit rejection. The salary floor,
+target geography and recruiter-owned employer exclusions are separate portfolio
+gates, not judgments about the candidate's ability.
 
 This policy is an asymmetric-upside decision: a speculative application costs one
 bounded wake and can create an interview path, while pre-rejecting the role makes
 that upside exactly zero. The loop therefore shoots its shot at every admitted ideal
-company role and lets the employer decide fit. The system does not promise that the
-candidate meets the posting; it only promises that the application is truthful.
+company role and lets the employer decide fit. The JPY 8M floor is retained because
+an offer below it cannot satisfy the user's stated employment objective; within the
+admitted pool, higher compensation is always prioritized. The system does not promise
+that the candidate meets the posting; it only promises that the application is truthful.
 
 Every intended 3600-second wake is an application attempt, not a permission to
 stop after the first blocked candidate. The existing executor claims at most one
@@ -911,8 +915,8 @@ sha256(normalized_company + normalized_title + canonical_job_url)
 
 ### 5.2 Daily quota
 
-The daily pass claims at most `2 - confirmed_submissions_today`. A second launch,
-crash recovery, or model retry sees the prior claim and cannot exceed two confirmed
+The daily pass claims at most `10 - confirmed_submissions_today`. A second launch,
+crash recovery, or model retry sees the prior claim and cannot exceed ten confirmed
 submissions. `submit_unknown` consumes a temporary quota slot until reconciled to
 avoid duplicate applications.
 
@@ -948,6 +952,20 @@ Prep behavior:
 Every pack includes role/company thesis, likely interviewer interests from public
 evidence, five candidate stories grounded in `fact_id`s, technical/domain questions,
 questions to ask, and logistics.
+
+#### Outbound employer follow-up email
+
+The official ATS application is always the primary path. After a confirmed
+submission, or when a verified recruiter/employer address is present in the official
+posting or an authenticated Gmail thread, the loop may send a concise follow-up from
+the candidate's private `application_email` account. It must use the existing
+authenticated `gog` transport, preserve the original thread when one exists, and
+otherwise create one deterministic application follow-up key. Recipient identity,
+company, role, application state and source evidence are required before sending.
+Each application/touchpoint is at-most-once, the send result receives an authoritative
+Gmail ACK or durable `delivery_unknown` state, and Telegram reports the outcome. No
+bulk outreach, guessed recruiter address, or follow-up is sent for an excluded
+employer.
 
 ### 5.4 Assessments and take-homes
 
@@ -1031,8 +1049,9 @@ Rules:
   is admitted.
 - `75+`, `65–74`, and `<65` are priority bands for dream, strong-fit, adjacent and
   stretch reporting. None is an automatic rejection band.
-- Unknown compensation earns neutral points. Known compensation below the target is
-  a visible stretch signal, not a reason to omit the application.
+- Unknown compensation earns neutral points and remains admitted. Known compensation
+  below the JPY 8M floor is excluded; JPY 15M–20M+ receives priority and JPY 30M+
+  receives the highest compensation priority.
 - A model may explain a score but cannot invent facts or override execution-safety
   exclusions. The employer, not the loop's fit score, decides whether the candidate
   meets the stated requirements.
@@ -1356,9 +1375,11 @@ truthful Workday or other ATS application surface.
 
 These `daily-20260821-*` receipts are historical evidence from the former
 requirement-fit gate. They remain immutable audit records, but they do not authorize
-future pre-submit rejection for years, title, degree, skill, compensation or generic
-role mismatch. Once `JOB-STRETCH-ADMISSION-2B` is implemented, those signals are
-reported as stretch reasons and the official form is attempted instead.
+future pre-submit rejection for years, title, degree, skill or generic-role mismatch.
+The new JPY 8M compensation floor and target geography/employer policy are separate
+portfolio gates. Once `JOB-STRETCH-ADMISSION-2B` and `JOB-TARGET-POLICY-2C` are
+implemented, the former fit signals are reported as stretch reasons and the official
+form is attempted instead.
 
 ### 8.2 Outcome and attribution model
 
@@ -1597,7 +1618,7 @@ not start merely because their design is already written:
 | `JOB-HARNESS-PARITY-1H` | `pending_after_1S` | Add `claude-direct` and generic-provider candidates behind the same task-class schemas; preserve Codex-first selection, retry only transient provider failures, record provider/model/attempt evidence, and pass one fixed fixture through Codex, Claude and generic adapters without duplicate side effects |
 | `JOB-TELEGRAM-COVERAGE-1T` | `pending_after_1H` | Add one versioned event envelope and deterministic natural-language renderer; wire loop start/finish, model attempts/fallbacks, discovery/ranking, materials/ATS readiness, every external side effect, blockers, reconciliation, prep, learning and health into the fenced Telegram outbox; model failure must still produce a human-readable report and every delivery must have an ACK or durable `delivery_unknown` event |
 | `JOB-GUARDIAN-PASS-11D` | `pending_after_1T` | A deterministic scheduled guardian checks launchd/timer freshness, DB integrity, provider/browser health and leases; repairs only pre-side-effect failures; deduplicates alerts and persists remediation |
-| `JOB-LIFECYCLE-CLOSE-11E` | `pending_after_11D` | Follow-up cadence, every interview round, offers, negotiation support and accepted/declined/started outcomes are durable; only final identity/judgment actions require the user |
+| `JOB-LIFECYCLE-CLOSE-11E` | `pending_after_11D` | Official ATS submission, private-address employer follow-up cadence, every interview round, offers, negotiation support and accepted/declined/started outcomes are durable; only final identity/judgment actions require the user |
 | `JOB-CAREER-SUMMARY-11F` | `pending_after_11E` | Versioned `summary.v2` exposes Today, Pipeline, Interviews, Decisions, Learning and Health; its counts are rebuilt from the same events and match Telegram receipts |
 | `LIFE-CAREER-LOCAL-13A` | `pending_after_11F` | The local Life Manager Career surface reads `summary.v2`, shows the full timeline and provides pause/resume/goal controls without browser ownership |
 | `LIFE-CAREER-CLOUD-13B` | `pending_after_local_e2e` | Per-tenant queues, encrypted state/materials, scoped OAuth, budgets and export/revocation reproduce the verified local semantics |
@@ -1611,8 +1632,10 @@ slice has one owner, one acceptance result and one durable receipt.
 | Slice | Parent | Status | Done when |
 |---|---|---|---|
 | `JOB-LOOP-CADENCE-2A` | 11 | `in_progress` | The resident acquisition owner uses an hourly LaunchAgent/systemd interval, processes at most one candidate per wake, preserves the ten-application Japan-day portfolio cap, and passes plist lint plus scheduler-template tests. The source and installed plist read `StartInterval=3600`, the systemd timer reads `OnUnitActiveSec=1h`, and `loops/job-hunter/` plus `bin/plistgen.py` generate the same hourly label and CLI. Commit `4c113ca21` adds a DNS-safe public FreeHire fallback; real `countries=JP` discovery returned ten Japan jobs with Workday/Greenhouse/Amazon ATS URLs. Commit `c956d4ebe` adds a `JOB_SEARCH_DAILY_WAKE_ID` ledger fence (`wake_claims` plus `BEGIN IMMEDIATE`) and result-schema `maxItems=1`; 30 focused tests pass. Commit `8e8aa7400` requires a broken official ATS page to be recorded as candidate-level `not_submitted` and the queue to continue across at least five distinct eligible URLs. Canonical pass `daily-20260820-225831` completed with runner `rc=0`, browser owner ready, no ledger claim, and Telegram report ACK `26261`; Appier/PayPay Card Greenhouse and Amazon read-only probes returned body text and Apply controls, while Asurion Workday/Liquid AI Ashby returned committed navigation with zero body text. The private Workday credential store contains tenants for CrowdStrike, NVIDIA and Salesforce, and the existing Chrome CDP has a Salesforce Workday candidate-home page plus Gmail; this does not prove every ATS is authenticated. The installer and healthcheck resolve `Aqua → gui/<uid>` or `Background → user/<uid>` and fail closed with rc75 when the manager context is unavailable. An explicitly authorized userspace reboot retry returned rc141 (`Reentrancy avoided`); `launchctl print`, `kickstart`, and `bootout/bootstrap` readback remain blocked by the same error, while `launchctl managername` returns rc153. This is a host user-launchd/LaunchServices bootstrap failure; the loop is not marked live until the user GUI launchd domain is recovered and the plist is read back successfully. |
-| `JOB-STRETCH-ADMISSION-2B` | 11 | `pending_after_2A` | Replace requirement-fit rejection in the daily prompt, deterministic ranking/config and learning fixtures with stretch admission: explicit years, title, degree, skill, compensation and generic-role mismatch affect order/reporting only. A CEO role with a twenty-year requirement and Citadel's three-year role must remain in the application queue. Required form answers still use exact facts; an unanswerable mandatory field is an execution blocker after the form is reached, never a pre-filter. |
-| `JOB-HOURLY-THROUGHPUT-2C` | 11 | `pending_after_2B` | After `JOB-STRETCH-ADMISSION-2B` and `JOB-LOOP-CADENCE-2A` are live, observe three consecutive hourly wakes. Each wake must attempt discovery, continue after every candidate-level blocker across at least five distinct official URLs when needed, submit no more than one verified truthful application, and emit one Telegram event with durable outbox status plus ACK/readback. A truthful zero with exact execution blockers passes only when the admitted queue is exhausted; guessed years or other unsupported answers never pass. |
+| `JOB-STRETCH-ADMISSION-2B` | 11 | `pending_after_2A` | Replace requirement-fit rejection in the daily prompt, deterministic ranking/config and learning fixtures with stretch admission: explicit years, title, degree, skill and generic-role mismatch affect order/reporting only; the separate salary/geography/employer gates remain. A CEO role with a twenty-year requirement and Citadel's three-year role must remain in the application queue when those portfolio gates pass. Required form answers still use exact facts; an unanswerable mandatory field is an execution blocker after the form is reached, never a pre-filter. |
+| `JOB-TARGET-POLICY-2C` | 11 | `pending_after_2B` | Apply the private target policy in discovery, prompt, ranking/config and learning fixtures: known compensation below JPY 8M is excluded; unknown compensation remains admitted; Tokyo on-site/hybrid, San Francisco on-site with explicit visa sponsorship, and Japan-compatible remote are admitted; Business and Engineering families are included; Accenture, KPMG, Deloitte, Ernst & Young/EY and PwC/PricewaterhouseCoopers are excluded from discovery, submission and follow-up. |
+| `JOB-HOURLY-THROUGHPUT-2D` | 11 | `pending_after_2C` | After `JOB-STRETCH-ADMISSION-2B`, `JOB-TARGET-POLICY-2C` and `JOB-LOOP-CADENCE-2A` are live, observe three consecutive hourly wakes. Each wake must attempt discovery, continue after every candidate-level blocker across at least five distinct official URLs when needed, submit no more than one verified truthful application, and emit one Telegram event with durable outbox status plus ACK/readback. A truthful zero with exact execution blockers passes only when the admitted queue is exhausted; guessed years or other unsupported answers never pass. |
+| `JOB-EMPLOYER-FOLLOWUP-11E-A` | 11E | `pending_after_11D` | After an authoritative ATS submission or verified recruiter contact, send at most one deduplicated follow-up per application/touchpoint from the private `application_email` through authenticated Gmail, using only a verified employer address or existing thread, preserving thread context where available, recording Gmail ACK/`delivery_unknown`, and reporting the result to Telegram. |
 | `JOB-RESUME-FACTS-1R-A` | 1R | `completed` | Full institution names and periods are recorded, and Daisuke confirmed TOEIC 910. The private truth ledger now records TOEFL iBT 96, TOEIC 910, Duolingo English Test 140 and DELE B1; no language claim remains unresolved. |
 | `JOB-RESUME-EN-1R-B` | 1R | `frozen_user_approved` | Version 9 is approved; keep the existing canonical English artifacts unchanged unless Daisuke explicitly reopens resume work. |
 | `JOB-RESUME-JA-1R-C` | 1R | `frozen_user_approved` | Resume version 9 is approved; Japanese artifact refinement is not an active TODO and requires an explicit reopen request. |
