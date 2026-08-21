@@ -469,7 +469,9 @@ Rules:
 - The installed plist now points to the stable release and passes `plutil -lint`; the hourly launchd label is still not
   loaded. `launchctl print/list/bootstrap gui/501` and `launchctl list ai.anicca.life-manager-cfo-hourly` return
   `141: Reentrancy avoided`, `managerpid` cannot resolve, and the current session cannot resolve uid 501 through
-  OpenDirectory. Direct Moneytree MCP read-only evidence succeeds, but the canonical non-interactive reader fails
+  OpenDirectory. Direct Moneytree MCP read-only evidence succeeds, and the current interactive host separately
+  returns `isError=false` for both Moneytree `show_accounts` and `show_transactions`; the canonical non-interactive
+  reader still fails
   closed after bounded CLI/appserver probes, so no current hourly Telegram finance report or provider `message_id` is
   claimed. On 2026-08-21, authorized restart paths were attempted but did not execute (`-10827`, `141`, and
   `Operation not permitted`); no account mutation, logout, reboot, or OS-service restart occurred. Parent

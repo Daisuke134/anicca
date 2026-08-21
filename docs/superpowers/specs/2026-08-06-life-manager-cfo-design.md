@@ -947,7 +947,9 @@ the literal-prefix guard, and a stable entrypoint run now preserve the real reda
 `reportingDate=2026-08-20`) instead of overwriting it with a null-date default. The label is still not loaded:
 `launchctl print/list` and the post-install `launchctl bootstrap gui/501` attempt return `141: Reentrancy avoided`,
 `managerpid` cannot resolve, and the current session reports unavailable OpenDirectory/uid-501 resolution. A direct
-Moneytree MCP read succeeds, but the non-interactive Codex reader still fails closed. The Homebrew CLI path returns no
+Moneytree MCP read succeeds, but the non-interactive Codex reader still fails closed. The current interactive host
+also returns `isError=false` for Moneytree `show_accounts` and `show_transactions`; that connector context is not
+available to the launchd Node subprocess. The Homebrew CLI path returns no
 Moneytree MCP completion; the installed Codex appserver path was also tested with the reader's minimal environment and
 a bounded DNS CONNECT transport, but its `chatgpt.com` MCP `initialize` request timed out before any tool event. A
 standalone Codex 0.148 probe with `--ignore-user-config --enable apps` likewise produced no MCP completion within 35
