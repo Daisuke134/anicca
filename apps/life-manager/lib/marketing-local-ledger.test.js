@@ -464,6 +464,35 @@ test("local ledger retains truthful unavailable receipts and unknown failures wi
   assert.equal(failed.status, "failed");
   assert.equal(failed.unknown_effect, true);
   assert.equal(await restarted.readReceipt({ tenantId: "dais-local", jobId: "unknown-job" }), null);
+
+  const reconciledReceipt = {
+    schema_version: 1,
+    kind: "marketing_video_distribution",
+    status: "published",
+    public_url: PUBLIC_URL,
+    provider_reconciled: true,
+  };
+  const reconciled = await restarted.resolveReconciliation({
+    tenantId: "dais-local",
+    jobId: "unknown-job",
+    attempt: unknownClaim.attempt,
+    decision: "present",
+    receipt: reconciledReceipt,
+  });
+  assert.equal(reconciled.status, "completed");
+  assert.equal(reconciled.reconciled_from_unknown, true);
+  assert.deepEqual(
+    await restarted.readReceipt({ tenantId: "dais-local", jobId: "unknown-job" }),
+    reconciledReceipt,
+  );
+  const replay = await restarted.resolveReconciliation({
+    tenantId: "dais-local",
+    jobId: "unknown-job",
+    attempt: unknownClaim.attempt,
+    decision: "present",
+    receipt: reconciledReceipt,
+  });
+  assert.equal(replay.status, "completed");
 });
 
 test("expired running claim is recovered once after restart and remains bounded", async () => {

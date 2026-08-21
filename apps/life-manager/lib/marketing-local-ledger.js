@@ -691,6 +691,71 @@ function createMarketingLocalLedger(options = {}) {
     });
   }
 
+  function resolveReconciliation(input = {}) {
+    const tenantId = identifier(input.tenantId ?? input.tenant_id, "local ledger tenant id");
+    const jobId = identifier(input.jobId ?? input.job_id, "local ledger job id");
+    const attempt = Number(input.attempt);
+    if (!Number.isSafeInteger(attempt) || attempt < 1) {
+      throw new Error("local ledger reconciliation attempt invalid");
+    }
+    const decision = String(input.decision || "").trim();
+    if (!["present", "absent"].includes(decision)) {
+      throw new Error("local ledger reconciliation decision invalid");
+    }
+    const receipt = input.receipt;
+    if (!receipt || typeof receipt !== "object" || Array.isArray(receipt)) {
+      throw new Error("local ledger reconciliation receipt invalid");
+    }
+    if (Buffer.byteLength(JSON.stringify(receipt)) > 16_384) {
+      throw new Error("local ledger reconciliation receipt too large");
+    }
+    return withLock(() => {
+      const state = snapshot();
+      const job = jobFor(state, tenantId, jobId);
+      if (!job || job.attempt !== attempt) {
+        throw new Error("local ledger reconciliation lost job");
+      }
+      const retained = receiptFor(state, tenantId, jobId);
+      if (retained !== null) {
+        if (!isDeepStrictEqual(retained, receipt)) {
+          throw new Error("local ledger reconciliation receipt collision");
+        }
+        return clone(job);
+      }
+      if (![
+        "failed",
+        "reconciling",
+      ].includes(job.status) || job.unknown_effect !== true || !job.effect_key) {
+        throw new Error("local ledger job is not awaiting reconciliation");
+      }
+      const observedAt = nowInstant(now);
+      const receiptPath = path.join(receiptsDirectory, `${keyFor(tenantId, jobId)}.json`);
+      atomicJson(receiptPath, { schema_version: 1, tenant_id: tenantId, job_id: jobId, receipt });
+      append(receiptsFile, {
+        schema_version: 1,
+        kind: "receipt",
+        tenant_id: tenantId,
+        job_id: jobId,
+        attempt,
+        receipt: clone(receipt),
+      });
+      const completed = {
+        ...job,
+        status: "completed",
+        unknown_effect: false,
+        reconciliation_decision: decision,
+        reconciled_from_unknown: true,
+        reconciled_at: observedAt,
+        completed_at: observedAt,
+        updated_at: observedAt,
+        lease_owner: null,
+        lease_expires_at: null,
+      };
+      append(jobsFile, { schema_version: 1, kind: "job", event: "reconcile_complete", job: completed });
+      return clone(completed);
+    });
+  }
+
   function readJob(input = {}) {
     const tenantId = identifier(input.tenantId ?? input.tenant_id, "local ledger tenant id");
     const jobId = identifier(input.jobId ?? input.job_id, "local ledger job id");
@@ -712,6 +777,7 @@ function createMarketingLocalLedger(options = {}) {
     heartbeatJob: async (input) => heartbeatJob(input),
     completeJob: async (input) => completeJob(input),
     failJob: async (input) => failJob(input),
+    resolveReconciliation: async (input) => resolveReconciliation(input),
     readJob: async (input) => readJob(input),
     readReceipt: async (input) => readReceipt(input),
   });
