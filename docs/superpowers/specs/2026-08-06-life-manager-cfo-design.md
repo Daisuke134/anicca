@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | M2 — `CFO-OPS3a`, `CFO-OPS3b`, `CFO-1j`, `CFO-2b.2`, `CFO-2b.3`, `CFO-2b.4`, `CFO-2b.5`, `CFO-2b.6`, `CFO-2b.7`, `CFO-2b.8`, `CFO-2b.9`, `CFO-2c`, `CFO-2d`, `CFO-2d2`, and `CFO-2d3` are closed; `CFO-2e` is next |
+| Status | M2 — `CFO-OPS3a`, `CFO-OPS3b`, `CFO-1j`, `CFO-2b.2`, `CFO-2b.3`, `CFO-2b.4`, `CFO-2b.5`, `CFO-2b.6`, `CFO-2b.7`, `CFO-2b.8`, `CFO-2b.9`, `CFO-2c`, `CFO-2d`, `CFO-2d2`, `CFO-2d3`, and `CFO-2e` are closed; M3 tax evidence is deferred and M4 cloud parity is next |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
@@ -1251,7 +1251,10 @@ ingestion. They are not unchecked M1 items and cannot become the active CFO item
       Canonical commit `16a69e2ef` adds the deterministic read-only guardian and wires its decision into the hourly
       result. The current live Moneytree rows produce `suppress / budget_unknown` because no owner-approved category
       budget exists; no suggestion or external action is enabled. `CFO-2e` is next.
-- [ ] **CFO-2e** Add deterministic `increase / hold / repair / stop-review` recommendations. No execution.
+- [x] **CFO-2e** Add deterministic `increase / hold / repair / stop-review` recommendations. No execution. Canonical
+      commit `2c3a89dce` wires the recommendation into the hourly result and business Telegram view. Current
+      reconciliation produces `repair / evidence_incomplete_before_allocation / execute=false`; stable revision 15
+      delivered provider message `27516`. M3 Binance/tax evidence remains explicitly deferred; M4 cloud parity is next.
 
 ### M3 — Japan tax evidence and reserve
 
@@ -1396,3 +1399,10 @@ open, Request Refresh, and provider background jobs as the three sync paths. The
 README](https://github.com/openai/codex/blob/main/codex-rs/app-server/README.md) documents the local Unix control socket
 and `mcpServer/tool/call`; the canonical loop uses that exact path. Context7 MCP lookup was quota-limited, so the
 official GitHub source and Moneytree docs were used as the fallback rather than stopping. `CFO-2e` is next.
+
+### CFO-2e closure correction (2026-08-21)
+
+Canonical commit `2c3a89dce` adds the deterministic recommendation boundary. Stable revision 15 contains
+`kind=repair`, `reason=evidence_incomplete_before_allocation`, `execute=false`, and `ownerActionRequired=true`; it
+was delivered with provider message `27516`. No recommendation calls an executor, changes a budget, trades, transfers,
+or spends money. M3 Binance/tax evidence is explicitly deferred; M4 cloud/multi-tenant parity is next.
