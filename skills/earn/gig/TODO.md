@@ -78,9 +78,9 @@ builder → fresh reviewer → revision loop → quality gate → one official d
 the accepted buyer deadline, not the Negotiate response SLO.
 The order to the end is:
 
-1. **Operating headroom is a 1 GiB last-resort guard, not a 10 GiB availability gate.** The lane's
+1. **Operating headroom is a configurable 512 MiB last-resort guard, not an availability gate.** The lane's
    bounded evidence GC runs on every admitted wake. The guard only refuses a new allocation below
-   1 GiB, where browser and SQLite writes face direct corruption risk; ordinary disk pressure does
+   512 MiB by default; `GIG_DISK_HEADROOM_KIB` may raise it per device. Ordinary disk pressure does
    not stop earning work.
 2. **Apply current production behavior is complete.** Natural pass
    `gig-apply-direct-1787217964823259000-24476` finished `ok` through immutable release
@@ -514,13 +514,14 @@ definition and A0 acceptance is closed.
   cleanup now restores owner-write permission inside its exact temporary root before removal, so
   immutable release copies cannot strand the clone. Ad-hoc audit clone commands are not accepted.
 - [x] Add `scripts/gig_disk_guard.py` before browser/SQLite/evidence work in Apply, Negotiate,
-  Storefront and Paid. Below 10,485,760 KiB it emits `state/disk-headroom.json` with
+  Storefront and Paid. Below the configurable floor (`GIG_DISK_HEADROOM_KIB`, default 524,288 KiB)
+  it emits `state/disk-headroom.json` with
   `failed: 1 / effect: 0 / readback: 0` and skips the child; at the exact threshold it preserves
   the child argv and environment. It fails closed when free-space measurement is unavailable and
   never auto-deletes user files from a business lane. Focused guard coverage: 4 passed.
 - [x] Read back 10,617,248 KiB and then 10,616,160 KiB free across separate samples; successfully
   write, fsync, read and remove a 4 KiB probe in the gig state filesystem.
-- [x] Keep secondary candidates documented but untouched; the 1 GiB guard makes further deletion
+- [x] Keep secondary candidates documented but untouched; the last-resort guard makes further deletion
   unnecessary:
   old diagnostics (~150 MiB), unselected CommandLineTools (~1.84 GiB after reference audit), and an
   inactive `skillopt` venv (~109 MiB). Do not delete installed apps or dirty worktree videos by size.
