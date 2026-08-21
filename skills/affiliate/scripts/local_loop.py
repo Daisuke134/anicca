@@ -1138,6 +1138,70 @@ def append_telegram_delivery_receipt(state, wake_event, telegram_event, delivery
     return receipt
 
 
+def reconcile_telegram_delivery_history(state, wake_event):
+    """Reconcile sent-ledger message IDs into append-only canonical receipts."""
+    sent_rows = json_rows(state / "telegram-sent.jsonl")
+    outbox = {
+        row.get("event_uuid"): row
+        for row in json_rows(state / "telegram-outbox.jsonl")
+        if row.get("event_uuid")
+    }
+    delivery_rows = [
+        row for row in json_rows(state / "events.jsonl")
+        if row.get("receipt_type") == "AFFILIATE_TELEGRAM_DELIVERY"
+    ]
+    exact_receipt_pairs = {
+        (row.get("telegram_event_uuid"), str(row.get("provider_message_id")))
+        for row in delivery_rows
+        if row.get("delivery_state") == "SENT" and row.get("provider_message_id") is not None
+    }
+    message_to_event = {
+        str(row.get("message_id")): row.get("event_uuid")
+        for row in sent_rows
+        if row.get("event_uuid") and row.get("message_id") is not None
+    }
+    repaired = []
+    for sent in sent_rows:
+        telegram_uuid = sent.get("event_uuid")
+        message_id = sent.get("message_id")
+        if not telegram_uuid or message_id is None:
+            continue
+        message_id = str(message_id)
+        if (telegram_uuid, message_id) in exact_receipt_pairs:
+            continue
+        superseded = []
+        for row in delivery_rows:
+            same_event = row.get("telegram_event_uuid") == telegram_uuid
+            same_message = str(row.get("provider_message_id")) == message_id
+            expected_event = message_to_event.get(message_id)
+            misbound = same_message and expected_event and expected_event != row.get("telegram_event_uuid")
+            if same_event or misbound:
+                superseded.append(row.get("event_uuid"))
+        identity = {
+            "type": "AFFILIATE_TELEGRAM_DELIVERY_RECONCILIATION",
+            "telegram_event_uuid": telegram_uuid,
+            "provider_message_id": message_id,
+        }
+        event = {
+            "event": "affiliate_telegram_delivery_reconciliation",
+            "receipt_type": identity["type"],
+            "schema_version": 1,
+            "event_uuid": hashlib.sha256(
+                json.dumps(identity, sort_keys=True, separators=(",", ":")).encode()
+            ).hexdigest(),
+            "reconciled_at_wake_uuid": wake_event_uuid(wake_event),
+            "telegram_event_uuid": telegram_uuid,
+            "telegram_kind": outbox.get(telegram_uuid, {}).get("kind"),
+            "provider_message_id": message_id,
+            "reconciliation_state": "RECONCILED_FROM_SENT_LEDGER",
+            "superseded_receipt_event_uuids": sorted(filter(None, superseded)),
+            "observed_at": datetime.now(timezone.utc).isoformat(),
+        }
+        if append_unique(state / "events.jsonl", event, ("event_uuid",)):
+            repaired.append(event)
+    return repaired
+
+
 def elevenlabs_link(path, field="Default affiliate link"):
     if not path.is_file() or path.stat().st_mode & 0o077:
         return None
@@ -2397,6 +2461,9 @@ def wake(args):
         "ts": int(time.time()),
     }
     event["wake_event_uuid"] = wake_event_uuid(event)
+    event["telegram_history_reconciled_count"] = len(
+        reconcile_telegram_delivery_history(state, event)
+    )
     append(state / "events.jsonl", event)
     atomic_json(state / "last-run.json", event)
     telegram_event = next_telegram_event(state, event)

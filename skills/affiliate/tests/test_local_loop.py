@@ -410,6 +410,33 @@ class LocalLoopTest(unittest.TestCase):
             self.assertEqual(receipt["telegram_event_uuid"], "old-event")
             self.assertEqual(receipt["telegram_kind"], "AFFILIATE_DAILY_SUMMARY")
 
+    def test_telegram_history_reconciliation_is_append_only_and_idempotent(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root)
+            old = {"event_uuid": "old-event", "kind": "AFFILIATE_DAILY_SUMMARY"}
+            MODULE.append(state / "telegram-outbox.jsonl", {
+                **old, "body": "old", "created_at": 1,
+            })
+            MODULE.append(state / "telegram-sent.jsonl", {
+                "event_uuid": "old-event", "message_id": "7642",
+            })
+            MODULE.append(state / "events.jsonl", {
+                "receipt_type": "AFFILIATE_TELEGRAM_DELIVERY",
+                "event_uuid": "misbound", "telegram_event_uuid": "other-event",
+                "delivery_state": "SENT", "provider_message_id": "7642",
+            })
+            first = MODULE.reconcile_telegram_delivery_history(
+                state, {"wake_event_uuid": "wake-1", "ts": 1},
+            )
+            second = MODULE.reconcile_telegram_delivery_history(
+                state, {"wake_event_uuid": "wake-2", "ts": 2},
+            )
+            self.assertEqual(len(first), 1)
+            self.assertEqual(second, [])
+            self.assertEqual(first[0]["telegram_event_uuid"], "old-event")
+            self.assertEqual(first[0]["provider_message_id"], "7642")
+            self.assertEqual(first[0]["superseded_receipt_event_uuids"], ["misbound"])
+
     def test_revenue_cycle_cooldown_is_independent_of_wake(self):
         with tempfile.TemporaryDirectory() as root:
             state = Path(root)
