@@ -286,24 +286,23 @@ Execute top to bottom. A checked diagnostic is evidence, not lane completion.
 
 Operationally the four launchd lanes remain independent and may run concurrently, but development
 completion has exactly one cursor and may not jump forward because a later lane has live customer
-work. The non-skippable order is **Apply → Negotiate → Paid → Storefront → four-lane durability →
-OSS third-device acceptance**. A successful example, live PID, local ledger row, Telegram report or
+work. Apply remains live and is rechecked in the final four-lane audit. The current non-skippable
+development order is **Paid/Submission → Negotiate → Storefront → four-lane durability → OSS
+third-device acceptance**. A successful example, live PID, local ledger row, Telegram report or
 partial readback never closes a lane while any unchecked acceptance item in that lane remains.
 
 Current truth: Apply has a live verified application path but its final maximal-coverage/replay
-receipt remains part of the four-lane audit. **Negotiate is not complete**: competitive repricing,
-bounded terminal no-send, replay-zero and a new natural sub-30-minute official reply/estimate proof
-remain unchecked below. Work moved to Paid too early because Manledge action 338 and Addres88 action
-276 were incorrectly treated as lane completion rather than two examples. Paid work already owed to
-buyers remains an urgent customer-remediation exception and must be delivered without pausing the
-independent Negotiate owner, but it does not advance the development cursor past Negotiate.
+receipt remains part of the four-lane audit. **Paid/Submission is the active development cursor**
+because purchased orders are not reliably receiving context-complete artifacts. Negotiate remains
+live independently but is not complete: total coverage, competitive repricing, bounded terminal
+no-send, replay-zero and a new natural sub-30-minute official reply/estimate proof remain unchecked.
 
 **Ponytail decision and current development cursor.** Do not create a separate email project,
 one-off Manledge/Haru executor, new agent layer or parallel implementation track. Reuse the existing
 four lanes and make the smallest changes inside their durable owners. Finish in this order:
-**Negotiate total coverage -> Negotiate sub-30-minute latency -> generic context-complete Paid
-continuation -> natural Paid proof using the already-open Manledge/Haru orders -> Storefront ->
-four-lane durability -> OSS third-device acceptance**. Manledge and Haru are production records the
+**generic context-complete Paid continuation -> natural Paid proof using already-open purchased
+orders -> Negotiate total coverage -> Negotiate sub-30-minute latency -> Storefront -> four-lane
+durability -> OSS third-device acceptance**. Manledge and Haru are production records the
 generic Paid owner must consume; they are not manual development steps and Codex must not stand in
 for the loop while waiting for a buyer reply.
 
@@ -429,9 +428,9 @@ Existing paid liabilities consumed by the generic Paid owner (not a manual devel
    accepted PC/responsive editable package in the exact room with formal delivery unchecked, read
    the attachment back officially and prove replay effect zero. Do not ask locality or copy questions
    already resolved by the buyer's 羽曳野 instruction and attachments.
-3. These records do not move the development cursor. Close Negotiate coverage and latency first;
-   then prove the generic Paid owner naturally resumes both records from durable state without
-   Codex/manual execution, including waiting safely when no new buyer message exists.
+3. Use these records only as natural evidence for the generic Paid owner. It must resume them from
+   durable state without Codex/manual execution, including waiting safely when no new buyer message
+   exists. After this generic Paid proof passes, move the cursor to Negotiate coverage and latency.
 
 #### A0. Stabilize release activation before more lane fixes
 
