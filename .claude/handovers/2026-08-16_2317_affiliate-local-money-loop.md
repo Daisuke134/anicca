@@ -1,5 +1,15 @@
 # Affiliate local money loop handover
 
+- Commit `43335da00` is installed as immutable `current`; source/installed
+  budget scripts match and the suite is `80/80`. Source-refresh/composition
+  replays at `16:49+0900` exited `0` (`runs=247` / `runs=258`), and campaign
+  seven now carries `policy_budget_retry_after=2026-08-21T15:00:00Z` (00:00 JST
+  on Aug 22) with unchanged source/result/handoff hashes. Affiliate wake
+  `b982e496…` completed at `16:49:56+0900`, exit `0`, link
+  `VERIFIED/deduplicated=true`, publication `ALREADY_LIVE`, revenue
+  `COOLDOWN`, Telegram `NO_PENDING`; no public/provider effect, transaction,
+  or money changed. Source discovery stayed in its prior 24-hour cooldown, so
+  its older budget-block receipt was not rewritten.
 - Existing source-refresh/composition owner replay at approximately
   `2026-08-21T16:42+0900` exited `0` (`runs=246` / `runs=257`, interval `600`).
   Campaign seven `elevenlabs-discovered-translate-video-en` kept its exact

@@ -969,6 +969,22 @@ transaction, or money effect was created. This is a bounded queue guard and
 will be retried by the existing owners on the next eligible JST budget day;
 manual/model bypass is not allowed.
 
+### 1.1.37 Installed budget-boundary receipt repair
+
+Commit `43335da002eec6b1c65f74991f89e289dd52e999` is installed as immutable
+`current`; source and installed `agent_runner.py`, `composition_owner.py`, and
+`source_capture.py` bytes match, and the suite is `80/80`. The existing source
+and composition owners replayed at `16:49+0900` with exit `0` (`runs=247` and
+`runs=258`). Campaign seven now records the explicit
+`policy_budget_retry_after=2026-08-21T15:00:00+00:00` (2026-08-22 00:00 JST)
+while preserving its source/result/handoff hashes. The Affiliate owner replay
+`b982e496…` on the same release completed at `16:49:56+0900` with exit `0`,
+provider-link `VERIFIED/deduplicated=true`, publication `ALREADY_LIVE`, revenue
+`COOLDOWN`, rolling-net `READY`, and Telegram `NO_PENDING`; no public/provider
+effect, transaction, or money changed. The source discovery receipt was not
+rewritten because its owner remained in its existing 24-hour cooldown; its
+older budget block therefore has no newly observed retry timestamp yet.
+
 ### 1.2.0 Audited executable boundary
 
 The installed ownership graph has six launchd labels: three persistent browser
