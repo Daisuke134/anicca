@@ -508,6 +508,7 @@ if [ "$RESUME_GENERATION" -eq 1 ]; then
 import hashlib
 import json
 import os
+import stat
 import sys
 from pathlib import Path
 
@@ -519,6 +520,8 @@ publication_state = gates / "publication-state.json"
 receipt_path = gates / "topic-card-resume.json"
 queue = state_dir / "topics" / "queue"
 in_progress = state_dir / "topics" / "in-progress"
+topic_route_path = gates / "topic-route.json"
+ledger = state_dir / "articles.jsonl"
 
 def write_receipt(payload: dict) -> None:
     if receipt_path.is_symlink() or (receipt_path.exists() and not receipt_path.is_file()):
@@ -541,9 +544,88 @@ def fail(reason: str) -> None:
     write_receipt({"version": 1, "run_id": run_id, "action": "blocked", "reason": reason})
     raise SystemExit(f"topic-card resume blocked: {reason}")
 
+def path_status(path: Path) -> str:
+    try:
+        mode = path.lstat().st_mode
+    except FileNotFoundError:
+        return "absent"
+    except OSError:
+        return "unreadable"
+    if stat.S_ISLNK(mode):
+        return "symlink"
+    if stat.S_ISREG(mode):
+        return "regular"
+    return "nonregular"
+
 if publication_state.exists() or publication_state.is_symlink():
     fail("publication-state-exists")
-if route_path.is_symlink() or not route_path.is_file():
+route_status = path_status(route_path)
+if route_status == "symlink":
+    fail("topic-route-input-symlink")
+if route_status == "unreadable":
+    fail("topic-route-input-unreadable")
+if route_status == "nonregular":
+    fail("topic-route-input-nonregular")
+if route_status == "absent":
+    # A SIGTERM before topic selection has no card to restore.  Resume the same
+    # immutable prompt only when the generation journal proves that exact empty
+    # boundary; every route-bearing or ambiguous run remains fail-closed.
+    generation_path = gates / "generation-state.json"
+    if path_status(generation_path) != "regular":
+        fail("generation-state-missing-or-symlink")
+    if path_status(ledger) != "regular":
+        fail("ledger-missing-or-symlink")
+    try:
+        generation = json.loads(generation_path.read_text(encoding="utf-8"))
+    except (OSError, TypeError, ValueError, json.JSONDecodeError):
+        fail("generation-state-invalid")
+    if not isinstance(generation, dict):
+        fail("generation-state-invalid")
+    attempts = generation.get("attempts")
+    latest = attempts[-1] if isinstance(attempts, list) and attempts else None
+    empty_interruption = (
+        generation.get("version") == 1
+        and generation.get("run_id") == run_id
+        and generation.get("status") == "interrupted-safe"
+        and isinstance(latest, dict)
+        and latest.get("status") == "interrupted-safe"
+        and latest.get("boundary") == "archived-prepublication-artifacts"
+        and latest.get("archive_manifest") == []
+        and path_status(topic_route_path) == "absent"
+    )
+    public_row = False
+    try:
+        ledger_lines = ledger.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        fail("ledger-invalid")
+    for line in ledger_lines:
+        if not line.strip():
+            continue
+        try:
+            row = json.loads(line)
+        except (TypeError, json.JSONDecodeError):
+            fail("ledger-invalid")
+        if not isinstance(row, dict):
+            fail("ledger-invalid")
+        if (
+            row.get("run_id") == run_id
+            and (
+                row.get("published") is True
+                or bool(row.get("live_url"))
+                or row.get("state") == "live"
+                or row.get("reality_gate") == "PASS"
+            )
+        ):
+            public_row = True
+    if empty_interruption and not public_row:
+        write_receipt({
+            "version": 1,
+            "run_id": run_id,
+            "action": "skip-pre-topic-recovery",
+            "reason": "empty-pre-topic-interruption",
+        })
+        print("topic-card resume: skipped pre-topic recovery")
+        raise SystemExit(0)
     fail("topic-route-input-missing")
 try:
     route = json.loads(route_path.read_text(encoding="utf-8"))
@@ -599,12 +681,18 @@ PYEOF
     echo "=== article-daily topic-card resume failed closed ===" >>"$LOG"
     exit 75
   fi
-  RESUME_CARD_BASENAME="$(jq -r '.basename // empty' "$RUN_DIR/gates/topic-card-resume.json" 2>/dev/null || true)"
-  if [ -z "$RESUME_CARD_BASENAME" ] || [[ "$RESUME_CARD_BASENAME" == */* ]]; then
-    echo "=== article-daily topic-card resume selector binding failed closed ===" >>"$LOG"
-    exit 75
+  RESUME_CARD_ACTION="$(jq -r '.action // empty' "$RUN_DIR/gates/topic-card-resume.json" 2>/dev/null || true)"
+  if [ "$RESUME_CARD_ACTION" = "skip-pre-topic-recovery" ]; then
+    unset ARTICLE_RESUME_CARD_BASENAME
+    echo "=== article-daily topic-card resume skipped: empty pre-topic interruption ===" >>"$LOG"
+  else
+    RESUME_CARD_BASENAME="$(jq -r '.basename // empty' "$RUN_DIR/gates/topic-card-resume.json" 2>/dev/null || true)"
+    if [ -z "$RESUME_CARD_BASENAME" ] || [[ "$RESUME_CARD_BASENAME" == */* ]]; then
+      echo "=== article-daily topic-card resume selector binding failed closed ===" >>"$LOG"
+      exit 75
+    fi
+    export ARTICLE_RESUME_CARD_BASENAME="$RESUME_CARD_BASENAME"
   fi
-  export ARTICLE_RESUME_CARD_BASENAME="$RESUME_CARD_BASENAME"
 fi
 
 # DEMAND AUTHORITY PREFLIGHT: this is a wrapper-side gate, before PROMPT construction,
