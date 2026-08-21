@@ -468,8 +468,19 @@ async def _run(args: argparse.Namespace) -> dict[str, Any]:
         if isinstance(exclusions, list)
         else None
     )
-    rows = ledger.pending_materials_ready_applications()
-    rows = [row for row in rows if "ashbyhq.com" in str(row["canonical_url"])]
+    # A definite pre-click ``not_submitted`` is retryable: Ledger releases its
+    # slot and increments the fence on the next claim.  ``submit_unknown`` is
+    # intentionally absent from this list and is reconciled only by inbox/ATS
+    # evidence.  Without this union, a safe pre-click Ashby blocker could never
+    # be retried by the deterministic path on a later cadence.
+    pending = ledger.pending_materials_ready_applications()
+    retryable = ledger.retryable_applications()
+    rows_by_id = {
+        str(row["application_id"]): row
+        for row in [*pending, *retryable]
+        if "ashbyhq.com" in str(row["canonical_url"])
+    }
+    rows = list(rows_by_id.values())
     if args.max_jobs > 0:
         rows = rows[: args.max_jobs]
     result: dict[str, Any] = {
