@@ -434,7 +434,7 @@ class LocalLoopTest(unittest.TestCase):
             ).read_text().splitlines()]
             self.assertEqual(len(rows), 1)
             self.assertEqual(rows[0]["outcome"], "COMPLETED")
-            self.assertEqual(rows[0]["effect_certainty"], "EFFECT_CONFIRMED")
+            self.assertEqual(rows[0]["effect_certainty"], "NO_EFFECT")
             self.assertEqual(rows[0]["usage"], {"requests": 1})
             self.assertNotIn("secret", (state / "tool-attempt-receipts.jsonl").read_text())
             self.assertNotIn("https://", (state / "tool-attempt-receipts.jsonl").read_text())

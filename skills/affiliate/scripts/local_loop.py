@@ -181,6 +181,8 @@ def _tool_effect_certainty(result, effect_class, failure_type=None):
     if failure_type or not isinstance(result, dict):
         return "UNKNOWN" if effect_class in _TOOL_EXTERNAL_EFFECTS else "NO_EFFECT"
     state = result.get("state")
+    if result.get("deduplicated") is True:
+        return "NO_EFFECT"
     if result.get("changed") or result.get("sent") or state in {
         "LIVE", "X_LIVE", "VERIFIED", "SENT", "SELF_HEALED",
     }:
