@@ -1490,3 +1490,22 @@ The canonical `lm_agent_earnings` table contains exactly two rows: `polymarket_c
 `x402_sale` external income `$0.01`. The latest CFO recommendation is `repair / evidence_incomplete_before_allocation /
 execute=false`. M5c remains pending rather than being faked as complete; no capital, wallet, exchange, or executor
 action is permitted without a verified profitable business and explicit owner approval.
+
+### Moneytree MCP source and freshness audit (2026-08-21)
+
+The running local Codex App Server was queried read-only through its Unix control socket. `app/installed` reports the
+Moneytree connector `enabled=true, callable=true`; `mcpServerStatus/list` reports `codex_apps` with
+`authStatus=bearerToken` and only read-only Moneytree tools (`welcome`, `show-accounts`, `show-transactions`, and
+`show-spending-summary`). An ephemeral thread called `mcpServer/tool/call` through that same server and returned
+`isError=false`, one account, provider balance `¥358,938`, and 334 transactions; the newest returned transaction is
+`2026-08-18` while the reporting date is `2026-08-21`. Therefore the hourly loop is using the same authenticated
+Moneytree tool; the stale value is the provider payload, not a local loop cache.
+
+Moneytree's [ChatGPT/MCP FAQ](https://help.getmoneytree.com/ja/articles/16010554-moneytree-mcp-%E3%82%88%E3%81%8F%E3%81%82%E3%82%8B%E8%B3%AA%E5%95%8F-faq)
+describes the ChatGPT integration as a read path, while the [synchronization guide](https://docs.link.getmoneytree.com/v2023-07-03/docs/when-is-moneytree-data-synchronized.md)
+lists app/web open, LINK `Request Refresh`, and Moneytree background jobs as the synchronization paths. The
+[LINK refresh endpoint](https://docs.link.getmoneytree.com/v2023-07-03/reference/post-link-profile-refresh.md) requires
+the `request_refresh` OAuth scope and is asynchronous/rate-limited. No refresh operation or bank-side update timestamp
+is exposed by the installed plugin, so the CFO remains truthful only by reporting the three-day provider lag and
+`Moneytree取得時刻／銀行側更新時刻は不明`. The remaining external action is owner-authorized Moneytree refresh/reconnect
+or a LINK OAuth grant; no credential or connection deletion is automated.

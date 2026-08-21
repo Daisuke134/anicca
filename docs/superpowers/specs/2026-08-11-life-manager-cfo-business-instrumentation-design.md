@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | `CFO-OPS3b`, `CFO-1j`, `CFO-2b.2`, `CFO-2b.3`, `CFO-2b.4`, `CFO-2b.5`, `CFO-2b.6`, `CFO-2b.7`, `CFO-2b.8`, and `CFO-2b.9` are closed; `CFO-2c` is next |
+| Status | Business instrumentation through `CFO-2e` is closed; the Moneytree MCP freshness owner action and `M5c` remain pending |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Canonical target is local `/Users/anicca/Projects/life-manager-main/apps/life-manager`; existing `apps/life-call` code is migration evidence, not the final owner |
 | Role split | Sol specifies/verifies; Luna implements production code/tests |
@@ -906,3 +906,25 @@ live projection and hostile-boundary checks pass; `node --check`, manifest JSON 
 existing Polymarket receipt/recorder tests pass `12/12`. State hashes/mtime remained untouched; no launchd, trade,
 provider, database, or Telegram write occurred. Canonical remote read-back resolves `origin/feature/cfo-ops3a-canonical`
 to `902858819aa8b4bdd16d2893c7bfa42d91983ac4`.
+
+### Moneytree MCP source and freshness audit (2026-08-21)
+
+The running local Codex App Server was queried read-only through its Unix control socket. `app/installed` reports the
+Moneytree connector `enabled=true, callable=true`; `mcpServerStatus/list` reports server `codex_apps` with
+`authStatus=bearerToken` and exactly four Moneytree tools: `moneytree.welcome`, `moneytree.show-accounts`,
+`moneytree.show-transactions`, and `moneytree.show-spending-summary`. Every tool is annotated
+`readOnlyHint=true`; no refresh tool is exposed. An ephemeral app-server thread then called the same
+`mcpServer/tool/call` path used by the installed loop and returned `isError=false`, one account, provider-reported
+balance `¥358,938`, and 334 transactions covering `2026-05-21` through `2026-08-21`; the newest returned transaction
+is dated `2026-08-18`. This proves the loop is using the same authenticated Moneytree tool rather than an old local
+cache, but it also proves that a read call does not force a bank-side aggregation.
+
+Moneytree's [ChatGPT/MCP FAQ](https://help.getmoneytree.com/ja/articles/16010554-moneytree-mcp-%E3%82%88%E3%81%8F%E3%81%82%E3%82%8B%E8%B3%AA%E5%95%8F-faq)
+limits the ChatGPT integration to reading the connected financial data, and the current plugin manifest/schema has no
+update operation. The [synchronization guide](https://docs.link.getmoneytree.com/v2023-07-03/docs/when-is-moneytree-data-synchronized.md)
+defines app/web open, LINK `Request Refresh`, and Moneytree background jobs as the three synchronization paths; the
+[LINK refresh endpoint](https://docs.link.getmoneytree.com/v2023-07-03/reference/post-link-profile-refresh.md) requires
+the `request_refresh` OAuth scope and returns asynchronous `202`. Until an authorized LINK grant or provider metadata
+surface is available, the CFO must keep `providerDataFreshness=stale`, show the three-day lag, and say
+`Moneytree取得時刻／銀行側更新時刻は不明`; it must not call `¥358,938` realtime. The only remaining Moneytree action is
+an owner-authorized provider refresh/reconnect; no bank credential, token, or connection deletion is automated.

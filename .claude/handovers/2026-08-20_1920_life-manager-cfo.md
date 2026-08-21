@@ -46,14 +46,36 @@
 
 ## Current ordered TODO
 
-1. `M5c` is the only remaining capital item: execute one bounded real cycle only after a verified profitable business
+1. Moneytree freshness is an external owner action: the loop already calls the authenticated `codex_apps`
+   `moneytree.show-accounts/show-transactions` tools, but those tools are read-only and returned a provider payload
+   whose newest transaction is `2026-08-18` on reporting date `2026-08-21`. Use Moneytree app/Web synchronization or an
+   owner-authorized LINK OAuth `request_refresh` grant; until then keep `providerDataFreshness=stale` and never call the
+   provider balance realtime. No bank credential, token, or connection deletion is automated.
+2. `M5c` is the only remaining capital item: execute one bounded real cycle only after a verified profitable business
    and explicit owner approval. Until then no executor, wallet, trade, transfer, hiring, or payment action is allowed.
-2. `CFO-2a3b`: complete one-time Google Cloud reauthentication and acquire the real Cost Table when the external
+3. `CFO-2a3b`: complete one-time Google Cloud reauthentication and acquire the real Cost Table when the external
    owner action is available; this remains blocked and never accepts a fabricated CSV.
-3. M3 tax/Binance (`CFO-3a`–`3e`) and M4c Binance fixed-egress remain explicitly deferred; M4a/b/d/e and M5a/b/d/e
+4. M3 tax/Binance (`CFO-3a`–`3e`) and M4c Binance fixed-egress remain explicitly deferred; M4a/b/d/e and M5a/b/d/e
    policy boundaries are closed.
 
 Only one item is active at a time; every later item waits for the current evidence, tests, commit, and push.
+
+## Moneytree MCP source parity correction (2026-08-21)
+
+The running local Codex App Server was queried through its Unix control socket without changing configuration. It reports
+Moneytree `enabled=true, callable=true`; `codex_apps` has `authStatus=bearerToken` and four Moneytree tools only:
+`welcome`, `show-accounts`, `show-transactions`, and `show-spending-summary`. All are read-only. An ephemeral thread
+called `mcpServer/tool/call` on the same server and returned one account, provider balance `¥358,938`, and 334
+transactions; newest transaction `2026-08-18`. The installed loop uses this same path, so the three-day lag is in the
+Moneytree provider payload, not a stale local cache or wrong Telegram destination.
+
+The official [Moneytree MCP/ChatGPT FAQ](https://help.getmoneytree.com/ja/articles/16010554-moneytree-mcp-%E3%82%88%E3%81%8F%E3%81%82%E3%82%8B%E8%B3%AA%E5%95%8F-faq)
+documents the read integration; the [sync guide](https://docs.link.getmoneytree.com/v2023-07-03/docs/when-is-moneytree-data-synchronized.md)
+lists app/web open, LINK `Request Refresh`, and provider background jobs; the [refresh API](https://docs.link.getmoneytree.com/v2023-07-03/reference/post-link-profile-refresh.md)
+requires `request_refresh` OAuth and returns asynchronous `202`. The plugin exposes neither refresh nor bank-side update
+metadata. Until the owner performs a Moneytree app/Web refresh/reconnect or supplies an authorized LINK grant, the
+hourly report must keep `providerDataFreshness=stale`, show the three-day lag, and say
+`Moneytree取得時刻／銀行側更新時刻は不明`; no raw token, bank password, or connection deletion is automated.
 
 ## CFO-2c Fleet boundary progress (2026-08-21)
 
