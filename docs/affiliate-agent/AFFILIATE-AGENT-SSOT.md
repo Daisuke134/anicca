@@ -985,6 +985,30 @@ effect, transaction, or money changed. The source discovery receipt was not
 rewritten because its owner remained in its existing 24-hour cooldown; its
 older budget block therefore has no newly observed retry timestamp yet.
 
+### 1.1.38 Latest existing-owner recovery readback
+
+After the documented capture-path failure, the existing owner was triggered
+through the three installed Affiliate launchd labels only. The latest money
+owner wake `ef2f8823c44ea9eccb7c034c5f495b3848fc998f5c624c66554b77d93cb52ff2`
+completed at `2026-08-21T16:54:39+0900`; launchd remained on the `600`-second
+interval with last exit `0`. The readback is provider `AUTHENTICATED`, the
+existing placement link `VERIFIED/deduplicated=true`, publication
+`ALREADY_LIVE`, revenue `COOLDOWN` (the prior eligible capture was the real
+empty official capture at `16:38:42+0900`), rolling net
+`NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`, and Telegram
+`NO_PENDING`. Repost now reports `58` valid actions, `0` exact Affiliate joins,
+and `NO_REVENUE_CREDIT`; no public/provider duplicate effect occurred.
+
+This is a recovery and scheduling readback, not B01 evidence. The latest
+official PartnerStack artifact remains `commission_row_count=0`,
+`NO_LIVE_ROWS`, payout `EMPTY`, and reconciliation `0/0/0`; all four money
+status counts remain zero, settlement/payout IDs are absent, and real cost
+coverage is `UNKNOWN`. B01 therefore remains
+`WAITING_FOR_PROVIDER_TRANSACTION`. The next safe implementation item is the
+universal F04/F05 owner guard or another independent measurement/provider gate;
+manual capture, test payments, estimates, and direct executors remain
+forbidden.
+
 ### 1.2.0 Audited executable boundary
 
 The installed ownership graph has six launchd labels: three persistent browser

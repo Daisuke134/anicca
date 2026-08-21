@@ -10,6 +10,18 @@
   `COOLDOWN`, Telegram `NO_PENDING`; no public/provider effect, transaction,
   or money changed. Source discovery stayed in its prior 24-hour cooldown, so
   its older budget-block receipt was not rewritten.
+- Existing owners were then triggered again through launchd only. The latest
+  Affiliate wake `ef2f8823…` completed at `2026-08-21T16:54:39+0900` with
+  launchd exit `0`, provider `AUTHENTICATED`, placement link
+  `VERIFIED/deduplicated=true`, publication `ALREADY_LIVE`, revenue
+  `COOLDOWN`, rolling net `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS /
+  NOT_REACHED`, and Telegram `NO_PENDING`. Repost readback is `58` valid
+  actions, `0` exact Affiliate joins, `NO_REVENUE_CREDIT`. This only confirms
+  recovery/cooldown behavior; the official PartnerStack artifact still has
+  zero commission rows and empty payout rows, reconciliation `0/0/0`, no
+  settlement/payout ID, and cost coverage `UNKNOWN`. B01 remains
+  `WAITING_FOR_PROVIDER_TRANSACTION`; no manual capture, test payment, or
+  duplicate effect was used.
 - Existing source-refresh/composition owner replay at approximately
   `2026-08-21T16:42+0900` exited `0` (`runs=246` / `runs=257`, interval `600`).
   Campaign seven `elevenlabs-discovered-translate-video-en` kept its exact
