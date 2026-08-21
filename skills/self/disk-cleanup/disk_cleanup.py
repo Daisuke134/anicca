@@ -21,7 +21,9 @@ from host_inventory import FULL_INVENTORY_BUDGET_SECONDS, collect_host_inventory
 
 GiB = 1024**3
 FULL_INVENTORY_INTERVAL_SECONDS = 3600
-GOVERNOR_BUDGET_SECONDS = 105
+GOVERNOR_BUDGET_SECONDS = 90
+LSOF_TIMEOUT_SECONDS = 15
+POST_SWEEP_RESERVE_SECONDS = 30
 THRESHOLDS = ((20 * GiB, "NORMAL"), (11 * GiB, "PREVENTIVE"), (6 * GiB, "PRESSURE"), (3 * GiB, "CRITICAL"))
 
 
@@ -32,13 +34,22 @@ def classify_tier(free_bytes: int) -> str:
     return "ULTRA"
 
 
-def _bytes(path: Path) -> int:
+def _bytes(
+    path: Path,
+    *,
+    deadline: float | None = None,
+    clock: Callable[[], float] = time.monotonic,
+) -> int | None:
+    if deadline is not None and clock() >= deadline:
+        return None
     if not path.exists() and not path.is_symlink():
         return 0
     if path.is_file() or path.is_symlink():
         return path.stat().st_size
     total = 0
     for root, dirs, files in os.walk(path, topdown=True, followlinks=False):
+        if deadline is not None and clock() >= deadline:
+            return None
         dirs[:] = [d for d in dirs if not (Path(root) / d).is_symlink()]
         for name in files:
             item = Path(root) / name
@@ -217,6 +228,9 @@ class HostDiskGovernor:
             if not path.exists() or path.is_symlink():
                 preserve("path_missing_or_symlink")
                 continue
+            if deadline is not None and self.clock() + LSOF_TIMEOUT_SECONDS + POST_SWEEP_RESERVE_SECONDS >= deadline:
+                preserve("probe-budget-exhausted")
+                continue
             state = self.lsof(path)
             if deadline is not None and self.clock() >= deadline:
                 preserve("probe-budget-exhausted")
@@ -228,8 +242,14 @@ class HostDiskGovernor:
             if deadline is not None and self.clock() >= deadline:
                 preserve("probe-budget-exhausted")
                 continue
-            before = _bytes(path)
-            if deadline is not None and self.clock() >= deadline:
+            if deadline is not None and self.clock() + POST_SWEEP_RESERVE_SECONDS >= deadline:
+                preserve("probe-budget-exhausted")
+                continue
+            before = _bytes(path, deadline=deadline, clock=self.clock)
+            if before is None:
+                preserve("probe-budget-exhausted")
+                continue
+            if deadline is not None and self.clock() + POST_SWEEP_RESERVE_SECONDS >= deadline:
                 preserve("probe-budget-exhausted")
                 continue
             try:
