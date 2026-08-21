@@ -1,7 +1,7 @@
 # Autonomous Job Search Loop Design
 
 **Date:** 2026-07-28
-**Last updated:** 2026-08-21
+**Last updated:** 2026-08-22
 **Owner:** Daisuke Narita
 **Status:** The macOS launchd manager and the three canonical job-search LaunchAgents
 are healthy. Telegram uses the shared OpenClaw gateway. `JOB-LEDGER-EVENT-10N` is
@@ -11,35 +11,34 @@ but its completion gate is still open.
 hourly owner, browser, and Telegram checkpoint run. Ashby boards tested so far
 are quarantined when their real form exposes reCAPTCHA or an explicit provider
 limit; no such row is counted as submitted. Workday is enabled every wake and
-the user-confirmed Salesforce FDE URL is excluded from reapplication. Rakuten
-reaches Workday My Information, but its custom previous-employment radio is
-still intercepted by a provider loading overlay; no Rakuten submit request,
-completion UI, or receipt email exists. The active atomic task is to make that
-one user-facing control stable, advance every Workday step, and require a
+the user-confirmed Salesforce FDE URL is excluded from reapplication. The active
+release is `96f49a0ff5ba29557f5725dd2bc55c8750facc1d`; launchd remains hourly at
+`StartInterval=3600`. Rakuten's source control now uses stable field lookup and
+waits for the exact visible `Job Boards` prompt before keyboard selection, but
+the latest wake still stopped at `application_surface_not_found` after the
+provider surface transition. No Rakuten submit request, completion UI, or
+receipt evidence is present in that run. The active atomic task is to make the
+Workday surface transition stable, advance every Workday step, and require a
 provider completion UI before the ledger may report `submitted`. A Workday wake
 processes every pending/retryable row; one blocked row must not terminate the
 rest of that provider queue.
 **Handover state:** active immutable release is
-`63adf180bdaf6e5dbbd35d4967e2c3df24b7f7ca`; launchd uses
-`StartInterval=3600`. The latest completed Workday receipt still reports
-Rakuten My Information blocked on `How Did You Hear About Us?`; no provider
-submit request, completion UI, or receipt email exists. Production wake
-`daily-20260821-234345` reproduced that exact block and sent Telegram checkpoint
-`27895`. The first candidate fix waited for a prompt node, but production
-`daily-20260821-235543` still blocked and checkpointed `27948`; that wait was
-removed. The decisive live wake `daily-20260822-000400` captured the root
-cause: after the source keyboard interaction, Workday dynamically reordered
-field controls, but `_fill_step` reused stale `nth(index)` metadata. A radio
-control for `candidateIsPreviousWorker` then received the candidate name and
-raised `Input of type "radio" cannot be filled`. The next fix re-looks up each
-field by stable provider `id`, then `name` or label, while preserving the
-manual fill/ArrowDown/Enter source interaction. Live CDP evidence then showed
-that the source multiselect renders all prompt options before filtering; the
-keyboard sequence must wait for the exact visible
-`data-automation-label="Job Boards"` option or fail closed. Focused regressions
-now cover both stable re-lookup and exact-prompt gating. The next release wake
-must prove Save and Continue advances to step 2, then continue the remaining
-steps; do not claim submission from a click, response, or ledger row alone.
+`96f49a0ff5ba29557f5725dd2bc55c8750facc1d`; launchd uses
+`StartInterval=3600`. The latest completed Workday receipt is
+`daily-20260822-072511`: Rakuten is `blocked` with
+`application_surface_not_found`, and Telegram checkpoint `28132` was sent.
+There is no provider submit request, completion UI, or receipt evidence in that
+run. The earlier `daily-20260822-000400` wake captured the root cause of the
+radio exception: after source keyboard interaction, Workday dynamically
+reordered controls while `_fill_step` reused stale `nth(index)` metadata. The
+fix re-looks up each field by stable provider `id`, then `name` or label. Live
+CDP evidence also showed the source multiselect renders all options before
+filtering; the keyboard sequence now waits for the exact visible
+`data-automation-label="Job Boards"` option or fails closed. Focused regressions
+cover both stable re-lookup and exact-prompt gating. The next release wake must
+prove the Workday surface transition and Save and Continue advance to step 2,
+then continue the remaining steps; do not claim submission from a click,
+response, or ledger row alone.
 
 ### Universal-application architecture (target)
 
@@ -168,10 +167,10 @@ evidence, a fenced intent and authoritative confirmation.
 | Order | Atomic TODO | State | Evidence needed to close |
 |---:|---|---|---|
 | 1 | Keep the existing browser owner healthy at CDP `:9222` | `done` | `ai.anicca.job-search-browser` is enabled/running; `/json/version` responds; no second browser owner |
-| 2 | Run the existing hourly owner with Ashby then every pending Workday row | `in_progress` | The owner enables `JOB_SEARCH_ENABLE_WORKDAY=1`; no one-row Workday cap remains and each lane writes its own evidence and checkpoint |
+| 2 | Run the existing hourly owner with Ashby then every pending Workday row | `in_progress` | The owner enables `JOB_SEARCH_ENABLE_WORKDAY=1`; no one-row Workday cap remains and each lane writes its own evidence and checkpoint. Latest owner wake exited 0 and emitted Telegram ACK `28132`. |
 | 3 | Replace the timed-out model discovery with a bounded Ashby discovery pass | `completed` | CLI/owner commit `12ea0d89a`; live discovery selected ElevenLabs after browser/cache verification and wrote immutable attribution |
-| 4 | Make the Rakuten custom previous-employment radio stable and advance My Information | `in_progress` | One real `Save and Continue` progress receipt; no timeout or forced click |
-| 5 | Continue other Workday rows even if Rakuten blocks | `in_progress` | One wake emits a separate receipt for every pending/retryable Workday row |
+| 4 | Make Rakuten's Workday surface transition and `source--source` control stable | `in_progress` | One real `Save and Continue` progress receipt to step 2; latest `daily-20260822-072511` remains `application_surface_not_found` |
+| 5 | Continue other Workday rows even if Rakuten blocks | `in_progress` | One wake emits a separate receipt for every pending/retryable Workday row; latest Rakuten receipt is isolated, but the queue-wide receipt set is not yet closed |
 | 6 | Complete all subsequent Workday steps with grounded profile answers and exact resume | `pending_after_4` | Per-step snapshots plus one visible final Submit control |
 | 7 | Click Workday Submit once and preserve the completion UI | `pending_after_6` | Provider submission request and saved provider completion screenshot |
 | 8 | Reconcile the receipt email/ATS confirmation and send one Telegram proof | `pending_after_7` | Immutable message/ATS confirmation bound to the exact application |
