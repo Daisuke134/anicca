@@ -99,7 +99,12 @@ function config(options, env, fallbackFetch) {
   if (!value.uid || !value.chatId || !value.telegramToken || !value.supaUrl || !value.supaKey || typeof value.uidSecret !== "string" || value.uidSecret.length < 32) throw new Error("config");
   return value;
 }
-function summary(status, reportingDate, revision, appended = false, delivered = false, recovered = false) { return { status, reportingDate, revision, appended, delivered, recovered }; }
+function providerDataState(reportingDate, transactions) {
+  const latest = transactions && typeof transactions.latestBookingDate === "string" ? transactions.latestBookingDate : null;
+  if (!latest || !/^\d{4}-\d{2}-\d{2}$/.test(reportingDate)) return { providerDataFreshness: "unknown", latestReturnedTransactionDate: latest };
+  return { providerDataFreshness: latest < reportingDate ? "stale" : "unknown", latestReturnedTransactionDate: latest };
+}
+function summary(status, reportingDate, revision, appended = false, delivered = false, recovered = false, providerData = {}) { return { status, reportingDate, revision, appended, delivered, recovered, ...providerData }; }
 function ordered(value) { return Array.isArray(value) ? value.map(ordered) : value && typeof value === "object" ? Object.fromEntries(Object.keys(value).sort().map((key) => [key, ordered(value[key])])) : value; }
 function facts(report) { return JSON.stringify(ordered({ state: report.state, action: report.action && { kind: report.action.kind }, currency: report.currency, totals: report.totals, sources: report.sources.map(({ sourceId, status, amountMinor, verificationStatus }) => ({ sourceId, status, amountMinor, verificationStatus })), excluded: report.excluded, aiCost: report.aiCost || null })); }
 function sameFacts(left, right) { return facts(left) === facts(right); }
@@ -169,14 +174,15 @@ async function runHourlyCfo(options = {}) {
     const latestRaw = typeof options.latestSnapshot === "function" ? await options.latestSnapshot({ uid: value.uid, reportingDate, runId: run.run_id, ...rpcOptions }) : await latestSnapshot({ uid: value.uid, reportingDate, ...value }, render);
     const latest = latestRaw ? validateRow(latestRaw, reportingDate, render) : null;
     if (latest && (latest.run_id !== run.run_id || latest.reporting_date !== reportingDate)) throw new Error("snapshot");
-    if (!latest && recovery.status === "action_required") return summary("retry", reportingDate, null, false, false, false);
+    const providerData = providerDataState(reportingDate, transactionView);
+    if (!latest && recovery.status === "action_required") return summary("retry", reportingDate, null, false, false, false, providerData);
     const nextRevision = latest ? latest.revision + 1 : 1;
     const currentBundle = buildCfoDailyReportFromRecovery({ revision: nextRevision, recovery });
     const aiCost = await selectAiCost(options, { ...value, reportingDate }, latest, render), candidateReport = reportWithAiCost(currentBundle.report, aiCost);
     if (latest && sameFacts(latest.report_payload, candidateReport) && ownerHour(new Date(latest.created_at)) === ownerHour(clock)) {
       const delivered = await delivery({ uid: value.uid, telegramToken: value.telegramToken, chatId: value.chatId, snapshotPublicRef: latest.public_ref, snapshot: latest.report_payload });
       if (!delivered || !["sent", "already_sent", "reconcile"].includes(delivered.status)) throw new Error("delivery");
-      return summary(delivered.status === "sent" ? "sent" : delivered.status === "reconcile" ? "retry" : "quiet", reportingDate, latest.revision, false, delivered.status === "sent", recovery.status === "recovered");
+      return summary(delivered.status === "sent" ? "sent" : delivered.status === "reconcile" ? "retry" : "quiet", reportingDate, latest.revision, false, delivered.status === "sent", recovery.status === "recovered", providerData);
     }
     const report = candidateReport;
     renderSnapshot(report);
@@ -185,8 +191,8 @@ async function runHourlyCfo(options = {}) {
     if (!receipt || receipt.reporting_date !== reportingDate || receipt.run_id !== run.run_id || receipt.revision !== nextRevision || !UUID.test(receipt.public_ref)) throw new Error("receipt");
     const delivered = await delivery({ uid: value.uid, telegramToken: value.telegramToken, chatId: value.chatId, snapshotPublicRef: receipt.public_ref, snapshot: report });
     if (!delivered || !["sent", "already_sent", "reconcile"].includes(delivered.status)) throw new Error("delivery");
-    return summary(delivered.status === "sent" ? "sent" : delivered.status === "reconcile" ? "retry" : "quiet", reportingDate, nextRevision, true, delivered.status === "sent", recovery.status === "recovered");
-  } catch { return summary("failed", reportingDate, null, false, false, false); }
+    return summary(delivered.status === "sent" ? "sent" : delivered.status === "reconcile" ? "retry" : "quiet", reportingDate, nextRevision, true, delivered.status === "sent", recovery.status === "recovered", providerData);
+  } catch { return summary("failed", reportingDate, null, false, false, false, providerDataState(reportingDate, null)); }
 }
 const unavailableBilling = Object.freeze({ status: "unavailable", confirmedCount: 0, unresolvedCount: 0, unavailableCount: 1 });
 const exactObject = (value, keys) => { try { return value && typeof value === "object" && !Array.isArray(value) && Object.getPrototypeOf(value) === Object.prototype && Reflect.ownKeys(value).length === keys.length && keys.every(key => { const descriptor = Object.getOwnPropertyDescriptor(value, key); return descriptor && descriptor.enumerable && Object.hasOwn(value, key) && Object.hasOwn(descriptor, "value"); }); } catch { return false; } };
