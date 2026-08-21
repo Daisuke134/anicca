@@ -546,7 +546,9 @@ async def _run(args: argparse.Namespace) -> dict[str, Any]:
         if "myworkdayjobs.com" in str(row["canonical_url"])
         and canonical_url(str(row["canonical_url"])) not in manual_completed
     }
-    rows = list(rows_by_id.values())[: max(1, args.max_jobs)]
+    rows = list(rows_by_id.values())
+    if args.max_jobs > 0:
+        rows = rows[:args.max_jobs]
     result: dict[str, Any] = {"status": "no_work" if not rows else "completed", "processed": [], "excluded": excluded, "owner": "ai.anicca.job-search-daily"}
     if not rows:
         _write_json(args.output, result)
