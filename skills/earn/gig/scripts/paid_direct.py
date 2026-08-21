@@ -106,7 +106,7 @@ def _write(path: Path, value: Any) -> None:
 
 def _project_workspace(root: Path, prefix: str) -> tempfile.TemporaryDirectory:
     """Keep active Paid work outside the machine-wide temp tree cleaned by other loops."""
-    runtime = root / ".runtime"
+    runtime = root.parent.parent / "runtime" / root.name
     runtime.mkdir(parents=True, exist_ok=True)
     return tempfile.TemporaryDirectory(prefix=prefix, dir=runtime)
 
