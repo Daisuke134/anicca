@@ -425,6 +425,13 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
 - authenticated draftのbylineはこのpublicationでは`draft_bylines`ではなく`postBylines[].user_id`で返ることを実測した。
   refreshは両方のreadback形を同じ所有user IDへ正規化し、タイトルとbylineが一致しない限りmedia upload/PUTへ進まない。
 
+### 2026-08-21 stale owner lock cleanup correction
+
+- source-level reproductionで、`article-daily.sh`がrecovery lockの`owner.token`だけを消してから`rmdir`するため、`owner.pid`/`owner.start`が残り、次のwakeを偽のstale ownerとして扱う不具合を確認した。さらにpublication lockの終了trapが生成開始時に上書きされ、早期終了時にrecovery/publicationの後始末が分岐していた。
+- `release_recovery_lock`はtoken一致時に3つのowner metadataを消してからdirectoryを閉じ、recovery/publication双方を所有PIDとstart tokenで検証する`cleanup_article_locks`へ統合した。生成用judge brokerを止めるtrapも同じcleanupを呼ぶため、終了trapの上書きでlockが残らない。
+- 外部サービスに触れない隔離実行で、通常取得とstale recovery/publication lockの再取得をそれぞれexpected-dateによる生成前終了まで進め、終了コード0、lock directory 0件、run directory 0件、外部publish 0件を確認した。別の隔離実行ではlive ownerのPID/start tokenを保持し、別ownerのlockを削除しないことを確認した。`bash -n`、`git diff --check`、article-daily start control、disk-floor contractもPASSである。
+- これはA6の実行時state recovery完了ではない。macOS launchd control-planeがreadback不能なため、実stateの`owner.pid=40373`を削除・移動せず、A1〜A5復旧後に同じ所有権検証を通したruntime receiptを取得する。
+
 ## 目標構成
 
 ### 実行トポロジー（Coconala parity）
@@ -523,7 +530,7 @@ publication identity、読者、payout、ledgerを分ける。
 | A3 | stale定義とcurrent定義の対応表を確定する | 各labelについて旧root/current、PID、owner fence、rollback pathを1行receiptへ保存。推測でstale判定しない | A2待ち |
 | A4 | stale Writer 14件とretired CLI 5件をbootoutし、旧ownerをdrainする | 旧root process=0、owner fence不在、旧root logの新規schedule interval再発=0をreadback | A3待ち |
 | A5 | Life Manager currentの14 plistだけをbootstrapする | 14件すべてのloaded argv/envが`/Users/anicca/gig/releases/life-manager/current`と`~/.local/state/life-manager/writer`を指す | A4待ち |
-| A6 | 残存Writer owner fenceを検証・回復する | `owner.pid=40373`のstale候補を実ownerと照合し、正当なowner不在を確認してから、重複起動なしの回復receiptを保存 | A5待ち |
+| A6 | 残存Writer owner fenceを検証・回復する | `owner.pid=40373`のstale候補を実ownerと照合し、正当なowner不在を確認してから、重複起動なしの回復receiptを保存 | A5待ち（source cleanup修正済み、runtime receipt未取得） |
 | A7 | pause下でcreator/resumeを各1回だけkickstartする | 1回ずつのPID、run ID、終了コード、lock消滅、Telegram自然文receiptを取得。公開はpauseで外部作用0 | A6待ち |
 | A8 | 5分周期の自然tickを2回連続で検証する | 2回ともcurrent argv、単一owner、run/receipt更新、重複外部作用0を確認。`process_alive`だけでは完了にしない | A7待ち |
 | A9 | control-plane復旧後の新規same-run公開を検証する | Note JA、Substack JA、Substack EN、X Article JAの各native URL・本文・owner・artifact/media hashを同一runでreadbackし、Telegram送信receiptを取得 | A8待ち |

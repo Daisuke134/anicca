@@ -164,6 +164,7 @@ export ARTICLE_PROVIDER_HEALTH ARTICLE_MODEL_RUNNER ARTICLE_SKILL_DIR
 # canonical CDP lock is acquired; it is never held for the model/publication pass.
 RECOVERY_LOCK_DIR="$STATE_DIR/.article-daily.recovery.lockdir"
 RECOVERY_LOCK_OWNER="$RECOVERY_LOCK_DIR/owner.token"
+LOCK_DIR="$STATE_DIR/.article-daily.lockdir"
 RECOVERY_LOCK_TOKEN="article-daily-$$-${RANDOM:-0}-$(date +%s)"
 process_start_token() {
   ps -p "$1" -o lstart= 2>/dev/null | sed 's/^[[:space:]]*//'
@@ -194,9 +195,28 @@ release_recovery_lock() {
     current_owner="$(cat "$RECOVERY_LOCK_OWNER" 2>/dev/null || true)"
   fi
   if [ "$current_owner" = "$RECOVERY_LOCK_TOKEN" ]; then
-    rm -f "$RECOVERY_LOCK_OWNER" 2>/dev/null || true
+    # Remove every metadata file before rmdir; leaving pid/start behind makes
+    # every later wake see a false stale recovery owner.
+    rm -f "$RECOVERY_LOCK_OWNER" \
+      "$RECOVERY_LOCK_DIR/owner.pid" \
+      "$RECOVERY_LOCK_DIR/owner.start" 2>/dev/null || true
     rmdir "$RECOVERY_LOCK_DIR" 2>/dev/null || true
   fi
+}
+release_publication_lock() {
+  local owner_pid expected_start actual_start
+  [ -d "$LOCK_DIR" ] || return 0
+  owner_pid="$(cat "$LOCK_DIR/owner.pid" 2>/dev/null || true)"
+  expected_start="$(cat "$LOCK_DIR/owner.start" 2>/dev/null || true)"
+  actual_start="$(process_start_token "$$")"
+  [ "$owner_pid" = "$$" ] || return 0
+  [ -n "$expected_start" ] && [ "$expected_start" = "$actual_start" ] || return 0
+  rm -f "$LOCK_DIR/owner.pid" "$LOCK_DIR/owner.start" 2>/dev/null || true
+  rmdir "$LOCK_DIR" 2>/dev/null || true
+}
+cleanup_article_locks() {
+  release_publication_lock
+  release_recovery_lock
 }
 if mkdir "$RECOVERY_LOCK_DIR" 2>/dev/null; then
   printf '%s' "$RECOVERY_LOCK_TOKEN" >"$RECOVERY_LOCK_OWNER"
@@ -241,11 +261,9 @@ else
   printf '%s' "$RECOVERY_LOCK_TOKEN" >"$RECOVERY_LOCK_OWNER"
   write_lock_owner "$RECOVERY_LOCK_DIR"
 fi
-trap 'release_recovery_lock' EXIT
-LOCK_DIR="$STATE_DIR/.article-daily.lockdir"
+trap 'cleanup_article_locks' EXIT
 if mkdir "$LOCK_DIR" 2>/dev/null; then
   write_lock_owner "$LOCK_DIR"
-  trap 'rm -f "$LOCK_DIR/owner.pid" "$LOCK_DIR/owner.start"; rmdir "$LOCK_DIR" 2>/dev/null' EXIT
 else
   # stale-lock guard: a valid live owner always wins; a dead owner is quarantined
   # after start-token and directory-identity checks, regardless of lock age.
@@ -284,7 +302,6 @@ else
     rm -f "$STALE_QUARANTINE/owner.token" "$STALE_QUARANTINE/owner.pid" "$STALE_QUARANTINE/owner.start" 2>/dev/null || true
     if rmdir "$STALE_QUARANTINE" 2>/dev/null && mkdir "$LOCK_DIR" 2>/dev/null; then
       write_lock_owner "$LOCK_DIR"
-      trap 'rm -f "$LOCK_DIR/owner.pid" "$LOCK_DIR/owner.start"; rmdir "$LOCK_DIR" 2>/dev/null' EXIT
     else
       [ ! -e "$LOCK_DIR" ] && mv "$STALE_QUARANTINE" "$LOCK_DIR" 2>/dev/null || true
       release_recovery_lock
@@ -708,7 +725,11 @@ export ARTICLE_RUN_DIR="$RUN_DIR"
 # from the run-scoped state tree through the same model boundary.
 ARTICLE_MODEL_LOG="$LOG" bash "$ARTICLE_ROOT/runtime/judge-broker.sh" "$RUN_DIR" &
 JUDGE_BROKER_PID=$!
-trap 'kill "$JUDGE_BROKER_PID" 2>/dev/null; rmdir "$LOCK_DIR" 2>/dev/null' EXIT
+cleanup_generation_exit() {
+  kill "$JUDGE_BROKER_PID" 2>/dev/null || true
+  cleanup_article_locks
+}
+trap 'cleanup_generation_exit' EXIT
 if [ "$RESUME_GENERATION" -eq 1 ]; then
   [ -f "$PROMPT_FILE" ] || {
     echo "=== article-daily generation resume BLOCK: immutable prompt is missing ===" >>"$LOG"
