@@ -949,8 +949,12 @@ writer_capacity_preflight() {
       echo "=== article-daily provider gate BLOCK: non-regular control flag=$flag ===" >>"$LOG"
       return 78
     fi
-    if [ -f "$flag" ] && [ "$flag" = "$control_dir/disk-pressure.block" ] \
-      && [ "${GIG_IGNORE_DISK_PRESSURE_BLOCK:-}" = "1" ]; then
+    if [ -f "$flag" ] && {
+      { [ "$flag" = "$control_dir/disk-pressure.block" ] \
+        && [ "${GIG_IGNORE_DISK_PRESSURE_BLOCK:-}" = "1" ]; } \
+      || { [ "$flag" = "$control_dir/disk-writers.stop" ] \
+        && [ "${GIG_IGNORE_DISK_WRITERS_STOP:-}" = "1" ]; };
+    }; then
       continue
     fi
     if [ -f "$flag" ]; then

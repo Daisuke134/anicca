@@ -166,6 +166,27 @@ def test_writer_override_ignores_pressure_block_but_keeps_real_floor(
     assert calls and calls[0][1] == ["/bin/echo", "writer-sentinel"]
 
 
+def test_writer_override_ignores_shared_stop_but_keeps_real_floor(
+    tmp_path, monkeypatch
+):
+    guard = _load_guard()
+    monkeypatch.setenv("GIG_STATE_DIR", str(tmp_path / "gig"))
+    monkeypatch.setenv("GIG_IGNORE_DISK_PRESSURE_BLOCK", "1")
+    monkeypatch.setenv("GIG_IGNORE_DISK_WRITERS_STOP", "1")
+    host_state = Path.home() / ".openclaw" / "state"
+    (host_state / "disk-writers.stop").write_text("tier=4\n", encoding="utf-8")
+    monkeypatch.setattr(
+        guard.shutil,
+        "disk_usage",
+        lambda _path: guard.shutil._ntuple_diskusage(1, 1, guard.REQUIRED_BYTES * 8),
+    )
+    calls = []
+    monkeypatch.setattr(guard.os, "execvpe", lambda *args: calls.append(args))
+
+    assert guard.main(["/bin/echo", "writer-sentinel"]) == 0
+    assert calls and calls[0][1] == ["/bin/echo", "writer-sentinel"]
+
+
 def test_writer_override_does_not_bypass_real_disk_floor(
     tmp_path, monkeypatch, capsys
 ):
