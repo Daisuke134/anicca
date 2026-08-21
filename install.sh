@@ -29,6 +29,7 @@ ANICCA_HOME="$LIFE_MANAGER_HOME"
 export LIFE_MANAGER_HOME ANICCA_HOME
 LIFE_MANAGER_INSTALL_DAEMON="${LIFE_MANAGER_INSTALL_DAEMON:-1}"
 LIFE_MANAGER_INSTALL_DEPS="${LIFE_MANAGER_INSTALL_DEPS:-1}"
+LIFE_MANAGER_DEPS_ROOT="${LIFE_MANAGER_DEPS_ROOT:-$HOME/loops/.life-manager-deps}"
 REGISTRY="$REPO_ROOT/skills/registry.json"
 
 case "$LIFE_MANAGER_INSTALL_DAEMON" in 0|1) ;; *)
@@ -67,9 +68,24 @@ echo
 # ─── 2. frozen dependencies ────────────────────────────────────────────
 cyan "[2/6] installing frozen dependencies…"
 if [ "$LIFE_MANAGER_INSTALL_DEPS" = "1" ]; then
-  (cd "$REPO_ROOT" && npm ci --no-audit --no-fund)
-  (cd "$REPO_ROOT/apps/life-manager" && npm ci --no-audit --no-fund)
-  green "  ✓ root + apps/life-manager npm lockfiles installed"
+  if [ -w "$REPO_ROOT" ] && [ -f "$REPO_ROOT/package-lock.json" ]; then
+    (cd "$REPO_ROOT" && npm ci --no-audit --no-fund)
+    (cd "$REPO_ROOT/apps/life-manager" && npm ci --no-audit --no-fund)
+    mkdir -p "$HOME/loops"
+    ln -sfn "$REPO_ROOT/node_modules" "$HOME/loops/node_modules"
+    green "  ✓ root + apps/life-manager npm lockfiles installed"
+  else
+    # Immutable cut-loop releases cannot receive node_modules. Install the exact root lockfile into
+    # a writable durable dependency root, then expose it through the release-parent lookup path so
+    # ESM package imports from any ~/loops/releases/<sha> resolve without mutating the release.
+    mkdir -p "$LIFE_MANAGER_DEPS_ROOT"
+    cp "$REPO_ROOT/package.json" "$LIFE_MANAGER_DEPS_ROOT/package.json"
+    cp "$REPO_ROOT/package-lock.json" "$LIFE_MANAGER_DEPS_ROOT/package-lock.json"
+    (cd "$LIFE_MANAGER_DEPS_ROOT" && npm ci --no-audit --no-fund --ignore-scripts)
+    mkdir -p "$HOME/loops"
+    ln -sfn "$LIFE_MANAGER_DEPS_ROOT/node_modules" "$HOME/loops/node_modules"
+    green "  ✓ immutable-release dependencies installed at $LIFE_MANAGER_DEPS_ROOT"
+  fi
 else
   yellow "  • dependency install disabled by LIFE_MANAGER_INSTALL_DEPS=0"
 fi
