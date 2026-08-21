@@ -946,6 +946,8 @@ def _file_review_disposition(verdict: Any) -> str:
         return "approve"
     if verdict == "needs_revision":
         return "repair"
+    if verdict == "undeterminable":
+        return "ship_bounded"
     return "block"
 
 
@@ -2007,9 +2009,13 @@ def _validate_file_authorization(root: Path, stable: Path, feedback: str,
                 and review_state.get("buyer_feedback_sha256") == feedback
                 and review_state.get("requirements_sha256") == requirements_sha256)
             or (result.get("verdict") != "deliverable"
-                and receipt.get("shipment_basis") != "max_review_iterations")
+                and receipt.get("shipment_basis") not in {
+                    "max_review_iterations", "bounded_undeterminable",
+                })
             or (receipt.get("shipment_basis") == "max_review_iterations"
                 and receipt.get("review_round") != MAX_FILE_REVIEW_ITERATIONS)
+            or (receipt.get("shipment_basis") == "bounded_undeterminable"
+                and result.get("verdict") != "undeterminable")
             or not _text(result.get("reason"))
             or summary.get("task_label") != "paid-file-verifier"
             or summary.get("task_class") != "escalation-agent"
@@ -2433,6 +2439,9 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
         if disposition == "approve" and _text(verdict.get("reason")):
             break
         finding = _text(verdict.get("reason")) or "The reviewer did not prove the artifact deliverable."
+        if disposition == "ship_bounded":
+            shipment_basis = "bounded_undeterminable"
+            break
         if review_round == MAX_FILE_REVIEW_ITERATIONS:
             shipment_basis = "max_review_iterations"
             _write(root / "context" / "paid-review-state.json", {
@@ -2491,7 +2500,10 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
     })
     _write(root / "context" / "paid-review-state.json", {
         "version": 1,
-        "state": "APPROVED" if shipment_basis == "reviewer_approved" else "MAX_REVIEW_SHIP",
+        "state": ({
+            "reviewer_approved": "APPROVED",
+            "bounded_undeterminable": "BOUNDED_REVIEW_SHIP",
+        }.get(shipment_basis, "MAX_REVIEW_SHIP")),
         "mode": "file",
         "review_policy_version": PAID_FILE_POLICY_VERSION,
         "operator_policy_sha256": operator_policy_sha256,

@@ -318,6 +318,9 @@ evidence. Independent production lanes continue running while development follow
    - [ ] Review-article project `18171890`: produce the truthful 2,000–4,000-character review-stage
      article from the available context, clearly bound any missing firsthand claims/screenshots,
      review and attach it instead of asking the buyer to repeat known requirements.
+   - [ ] Treat ten reviews as a ceiling, not a quota: when a fresh reviewer returns
+     `undeterminable` with no independently repairable defect, immediately ship the best truthful
+     bounded artifact with formal delivery OFF instead of regenerating it until round ten.
    - [ ] Read back first-artifact staging without a prior `paid-work-result.json`: new projects must
      create v1 from complete context, while existing projects alone receive a prior artifact to resume.
    - [ ] Classify and close every other purchased room as buyer-waiting, formally complete,
