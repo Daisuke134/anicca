@@ -212,6 +212,8 @@ def append_tool_attempt_receipt(
     receipt = {
         "schema_version": 1,
         "receipt_type": "AFFILIATE_TOOL_ATTEMPT",
+        "release_sha": installed_release_sha(),
+        "owner_label": RUN_OWNER_LABEL,
         "scheduler_run_id": scheduler_run_id,
         "run_id": scheduler_run_id,
         "wake_event_uuid": wake_event_uuid,

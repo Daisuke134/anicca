@@ -407,6 +407,8 @@ class LocalLoopTest(unittest.TestCase):
                 for line in (state / "run-receipts.jsonl").read_text().splitlines()
             ]
             self.assertEqual(len(rows), 1)
+            self.assertEqual(rows[0]["release_sha"], "SOURCE_CHECKOUT")
+            self.assertEqual(rows[0]["owner_label"], MODULE.RUN_OWNER_LABEL)
             self.assertEqual(rows[0]["duration_ms"], 1500)
             self.assertEqual(rows[0]["causal_parent"]["owner_label"], MODULE.RUN_OWNER_LABEL)
 
