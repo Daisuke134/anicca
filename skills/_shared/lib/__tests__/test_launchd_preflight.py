@@ -26,9 +26,17 @@ def runner_for(overrides=None):
 
 
 def test_accepts_resolved_aqua_domain():
-    result = probe(runner_for())
+    calls = []
+    base = runner_for()
+
+    def recording_runner(argv, **kwargs):
+        calls.append(tuple(argv))
+        return base(argv, **kwargs)
+
+    result = probe(recording_runner)
     assert result["status"] == "pass"
     assert result["mutation_allowed"] is True
+    assert not any(argv[1:2] and argv[1] in {"bootstrap", "bootout", "kickstart", "load", "unload"} for argv in calls)
 
 
 def test_rejects_numeric_username_before_directory_services_lookup():

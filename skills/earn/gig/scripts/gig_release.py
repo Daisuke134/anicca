@@ -51,6 +51,7 @@ RELEASE_ROOT = Path.home() / "gig" / "releases" / "life-manager"
 CURRENT_RELEASE = RELEASE_ROOT / "current"
 PUBLISH_LOCK = RELEASE_ROOT / ".publish.lock"
 LAUNCHD_PREFLIGHT = REPO_ROOT / "skills" / "_shared" / "lib" / "launchd_preflight.py"
+LAUNCHD_PREFLIGHT_RECEIPT = Path.home() / ".local/state/life-manager/launchd-control-plane-preflight.json"
 # The browser owns the one authenticated session the lanes share. Reloading it
 # throws that session away, so it is never in the default set.
 DEFAULT_EXCLUDED = {"ai.anicca.hf-gig-browser", "ai.anicca.hf-gig-release-watch"}
@@ -488,6 +489,7 @@ def main() -> int:
         if not require_control_plane():
             print("launchd readback unavailable; no loaded/not-loaded conclusion is safe")
             return 75
+        print(f"control-plane pass receipt={LAUNCHD_PREFLIGHT_RECEIPT}")
         for job in manifest["jobs"]:
             argv = loaded_program(job["label"])
             script = next((a for a in argv if a.endswith((".py", ".sh"))), "(not loaded)")
