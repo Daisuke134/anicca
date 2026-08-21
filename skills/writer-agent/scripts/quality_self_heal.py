@@ -65,6 +65,44 @@ def _receipt_hash(payload: dict[str, Any]) -> str:
     ).hexdigest()
 
 
+def _hex_digest(value: Any) -> bool:
+    return isinstance(value, str) and re.fullmatch(r"[0-9a-f]{64}", value) is not None
+
+
+def _feedback_invocation_path(run_dir: Path, attempt: int) -> Path:
+    return run_dir / "gates" / f"quality-feedback-invocation-attempt-{attempt}.json"
+
+
+def _load_feedback_invocation(
+    run_dir: Path, attempt: int
+) -> tuple[dict[str, Any], str] | None:
+    """Load the wrapper-written invocation proof for a non-initial iteration."""
+    if attempt == 1:
+        return None
+    path = _feedback_invocation_path(run_dir, attempt)
+    if path.is_symlink() or not path.is_file():
+        raise QualitySelfHealError("quality feedback invocation receipt is missing")
+    value = _read_json(path)
+    if not isinstance(value, dict):
+        raise QualitySelfHealError("quality feedback invocation receipt is malformed")
+    if (
+        value.get("version") != 1
+        or value.get("run_id") != run_dir.name
+        or value.get("quality_attempt") != attempt
+        or not isinstance(value.get("recovery_attempt"), int)
+        or value.get("recovery_attempt", 0) < 1
+        or not _hex_digest(value.get("prompt_sha256"))
+        or not _hex_digest(value.get("feedback_plan_sha256"))
+        or not _hex_digest(value.get("iteration_feedback_plan_sha256"))
+        or not isinstance(value.get("owner_pid"), int)
+        or value.get("owner_pid", 0) <= 0
+        or not isinstance(value.get("started_at"), str)
+        or value.get("receipt_sha256") != _receipt_hash(value)
+    ):
+        raise QualitySelfHealError("quality feedback invocation receipt is invalid")
+    return value, _sha256(path)
+
+
 def _snapshot_receipts(
     run_dir: Path, attempt: int, quality: dict[str, Any]
 ) -> dict[str, dict[str, str]]:
@@ -109,6 +147,42 @@ def _snapshot_receipts(
                 or observed.get("article_sha256") != record.get("article_sha256")
             ):
                 raise QualitySelfHealError("quality receipt snapshot hash binding failed")
+            editorial_pass = observed.get("verdict") == "PASS" if kind == "editorial" else None
+            reader_pass = (
+                observed.get("status") == "pass"
+                and (
+                    observed.get("exit_code") == 0
+                    or (
+                        isinstance(observed.get("payload"), dict)
+                        and observed["payload"].get("verdict") == "PASS"
+                    )
+                )
+                if kind == "reader"
+                else None
+            )
+            identity_pass = observed.get("verdict") == "PASS" if kind == "identity" else None
+            expected = {
+                "editorial": record.get("editorial") == "PASS",
+                "reader": record.get("reader") == "PASS",
+                "identity": record.get("identity") == "PASS",
+            }[kind]
+            observed_pass = {
+                "editorial": editorial_pass,
+                "reader": reader_pass,
+                "identity": identity_pass,
+            }[kind]
+            if observed_pass != expected:
+                raise QualitySelfHealError("quality receipt verdict binding failed")
+    if attempt > 1:
+        invocation = _load_feedback_invocation(run_dir, attempt)
+        assert invocation is not None
+        source = _feedback_invocation_path(run_dir, attempt)
+        target = destination / "quality-feedback-invocation.json"
+        if target.exists() or target.is_symlink():
+            if target.is_symlink() or not target.is_file() or _sha256(target) != invocation[1]:
+                raise QualitySelfHealError("quality invocation snapshot conflicts with current receipt")
+        else:
+            shutil.copy2(source, target)
     return snapshots
 
 
@@ -196,6 +270,9 @@ def _history(run_dir: Path) -> list[dict[str, Any]]:
         key=lambda path: path.name,
     )
     previous_hash: str | None = None
+    previous_drafts: tuple[str, str] | None = None
+    iteration_plan_hashes: set[str] = set()
+    previous_invocation_digest: str | None = None
     for index, path in enumerate(paths, start=1):
         if path.is_symlink() or not path.is_file():
             raise QualitySelfHealError("quality attempt receipt is not regular")
@@ -248,8 +325,59 @@ def _history(run_dir: Path) -> list[dict[str, Any]]:
                 observed = _read_json(path)
                 if observed is None or observed.get("article_sha256") != record.get("article_sha256"):
                     raise QualitySelfHealError("quality receipt snapshot article hash mismatch")
+                expected = {
+                    "editorial": record.get("editorial") == "PASS",
+                    "reader": record.get("reader") == "PASS",
+                    "identity": record.get("identity") == "PASS",
+                }[kind]
+                observed_pass = {
+                    "editorial": observed.get("verdict") == "PASS",
+                    "reader": (
+                        observed.get("status") == "pass"
+                        and (
+                            observed.get("exit_code") == 0
+                            or (
+                                isinstance(observed.get("payload"), dict)
+                                and observed["payload"].get("verdict") == "PASS"
+                            )
+                        )
+                    ),
+                    "identity": observed.get("verdict") == "PASS",
+                }[kind]
+                if observed_pass != expected:
+                    raise QualitySelfHealError("quality receipt verdict binding failed")
+        drafts = tuple(languages[lang]["article_sha256"] for lang in ("ja", "en"))
+        if index > 1:
+            if drafts == previous_drafts or value.get("fingerprint") == rows[-1].get("fingerprint"):
+                raise QualitySelfHealError("quality iteration reused the previous draft")
+            invocation = _load_feedback_invocation(run_dir, index)
+            assert invocation is not None
+            invocation_value, invocation_digest = invocation
+            if value.get("feedback_invocation_sha256") != invocation_digest:
+                raise QualitySelfHealError("quality invocation receipt binding failed")
+            if (
+                invocation_value.get("previous_feedback_invocation_sha256")
+                != previous_invocation_digest
+            ):
+                raise QualitySelfHealError("quality invocation chain is invalid")
+            snapshot_path = run_dir / "gates" / f"quality-attempt-{index}" / "quality-feedback-invocation.json"
+            if (
+                snapshot_path.is_symlink()
+                or not snapshot_path.is_file()
+                or _sha256(snapshot_path) != invocation_digest
+            ):
+                raise QualitySelfHealError("quality invocation snapshot is tampered")
+            if invocation_value["iteration_feedback_plan_sha256"] in iteration_plan_hashes:
+                raise QualitySelfHealError("quality feedback plan was reused")
+            iteration_plan_hashes.add(invocation_value["iteration_feedback_plan_sha256"])
+            if value.get("feedback_plan_sha256") != invocation_value["feedback_plan_sha256"]:
+                raise QualitySelfHealError("quality feedback plan binding failed")
+            previous_invocation_digest = invocation_digest
+        elif value.get("feedback_invocation_sha256") is not None:
+            raise QualitySelfHealError("initial quality attempt has an invocation receipt")
         rows.append(value)
         previous_hash = value["receipt_sha256"]
+        previous_drafts = drafts
     return rows
 
 
@@ -323,6 +451,22 @@ def assess(run_dir: Path, drafts: dict[str, Path]) -> dict[str, Any]:
         if consumption.is_file() and not consumption.is_symlink()
         else None
     )
+    history = _history(run_dir)
+    attempt = len(history) + 1
+    invocation = _load_feedback_invocation(run_dir, attempt)
+    if history:
+        previous = history[-1].get("quality", {})
+        current_hashes = tuple(quality[lang]["article_sha256"] for lang in ("ja", "en"))
+        previous_hashes = tuple(
+            previous.get(lang, {}).get("article_sha256")
+            for lang in ("ja", "en")
+        ) if isinstance(previous, dict) else ()
+        if current_hashes == previous_hashes:
+            raise QualitySelfHealError("quality iteration must rewrite the draft")
+        if invocation is not None and invocation[0]["iteration_feedback_plan_sha256"] in {
+            row.get("feedback_iteration_plan_sha256") for row in history
+        }:
+            raise QualitySelfHealError("quality feedback plan was reused")
     fingerprint = hashlib.sha256(
         json.dumps(
             {
@@ -333,12 +477,12 @@ def assess(run_dir: Path, drafts: dict[str, Path]) -> dict[str, Any]:
                 },
                 "quality": quality,
                 "quality_feedback_consumption_sha256": consumption_sha256,
+                "quality_feedback_invocation_sha256": invocation[1] if invocation else None,
                 "publication_policy": publication_policy,
             },
             sort_keys=True,
         ).encode("utf-8")
     ).hexdigest()
-    history = _history(run_dir)
     if history and history[-1].get("fingerprint") == fingerprint:
         return history[-1]
     if len(history) >= MAX_ITERATIONS:
@@ -378,7 +522,7 @@ def assess(run_dir: Path, drafts: dict[str, Path]) -> dict[str, Any]:
     identity_safe = all(
         quality[lang]["identity"] == "PASS" for lang in ("ja", "en")
     )
-    iteration = len(history) + 1
+    iteration = attempt
     if failed_languages and iteration >= MAX_ITERATIONS and identity_safe:
         action = "force_publish_advisory"
     elif form_not_changed:
@@ -409,8 +553,15 @@ def assess(run_dir: Path, drafts: dict[str, Path]) -> dict[str, Any]:
         "reroutes_used": len(reroutes),
         "quality": quality,
         "publication_policy": publication_policy,
+        "feedback_invocation_sha256": invocation[1] if invocation else None,
+        "feedback_plan_sha256": (
+            invocation[0].get("feedback_plan_sha256") if invocation else None
+        ),
+        "feedback_iteration_plan_sha256": (
+            invocation[0].get("iteration_feedback_plan_sha256") if invocation else None
+        ),
+        "quality_feedback_consumption_sha256": consumption_sha256,
     }
-    attempt = len(history) + 1
     decision["receipt_snapshots"] = _snapshot_receipts(run_dir, attempt, quality)
     if action == "force_publish_advisory":
         decision.update(

@@ -1117,9 +1117,28 @@ Profitable Cloud、Open Cloudの生存に依存させない。
 manifest snapshot、`launchctl print gui/$UID/<Writer label>`、既存receipt readbackである。
 実Macの故障fixtureではOS serviceを故意に壊さず、command runnerをstubして141/153を再現する。
 
-## Current atomic remaining TODO（2026-08-21 同日上限解除slice後）
+## Current atomic remaining TODO（2026-08-21 5回品質反復・強制公開境界後）
 
 各行は一つの外部状態または証拠だけを変える。前行の完了証拠がない限り、次行を開始しない。
+
+### 品質反復と強制公開の正本契約
+
+同一runの品質反復は最大5回とする。1回目は通常評価、2〜5回目は同じrunの
+feedback recovery実行証跡を必須とする。各回は前回と異なるJA/EN原稿SHAペア、親wrapperの
+起動receipt、uniqueなiteration feedback-plan SHA、editorial/reader/identity receiptの
+snapshotを保存し、receipt SHA chainで連結する。5回目にeditorialまたはreaderだけがFAILでも、
+`action=force_publish_advisory`をpublication handoffへ渡せる。ただしこれは品質閾値のみに対する
+最終救済であり、identity PASS、conscience ALLOW、PII、重複、media、CTA、monetization、platform
+policy、Note ¥500、Substack paid-only、native authenticated/public readbackは必須のまま残る。
+同一原稿・同一fingerprint・同一iteration planの水増し、receipt欠落・改ざん、6回目の評価は拒否する。
+Telegram報告は、反復番号、確認済みゲート、未確認の品質警告、次の自動handoffを自然文で記録する。
+
+| 品質ID | 原子作業 | 完了証拠 | 状態 |
+|---:|---|---|---|
+| Q1 | 5回品質反復のreceipt chainを実装する | attempt 2〜5のwrapper invocation receipt、unique plan SHA、draft変更、verdict意味一致、exact 5 validator | 完了（`quality_self_heal.py`、`quality_feedback_recovery.py`） |
+| Q2 | force境界をpublication resumeへ結合する | marker単体を拒否し、`validate_force_receipt()`とterminal identity/safetyを再検証 | 完了（focused 5件＋writer回帰46件、fresh adversarial review GO） |
+| Q3 | 実run 130847の同一run recoveryを新releaseで継続する | attempt receipt、feedback consumption、quality verify PASS、forceまたはreadyのcanonical handoff | 未完（現在のforeground recoveryを監視中） |
+| Q4 | force後の4面native publicationとTelegram readbackを取得する | Note、Substack JA/EN、X Article JAのURL・本文・owner・media、publisher/payment receipt、自然文Telegram | Q3待ち |
 
 ### A1復旧後のCoconala parity実行順
 

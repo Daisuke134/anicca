@@ -46,6 +46,90 @@ def _atomic_write(path: Path, value: dict[str, Any]) -> None:
     os.replace(temporary, path)
 
 
+def _receipt_hash(value: dict[str, Any]) -> str:
+    unsigned = {key: item for key, item in value.items() if key != "receipt_sha256"}
+    return hashlib.sha256(
+        json.dumps(unsigned, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode(
+            "utf-8"
+        )
+    ).hexdigest()
+
+
+def _quality_attempt_count(run_dir: Path) -> int:
+    return sum(
+        1
+        for path in (run_dir / "gates").glob("quality-self-heal-attempt-*.json")
+        if path.is_file() and not path.is_symlink()
+    )
+
+
+def _record_feedback_invocation(
+    run_dir: Path,
+    state: dict[str, Any],
+    *,
+    recovery_attempt: int,
+    owner_pid: int,
+) -> None:
+    """Persist the wrapper's hash-bound proof that a new model call was launched."""
+    quality_attempt = _quality_attempt_count(run_dir) + 1
+    if quality_attempt <= 1:
+        return
+    prompt_sha256 = str(state.get("prompt_sha256", ""))
+    feedback_plan_sha256 = str(state.get("feedback_sha256", ""))
+    if not re.fullmatch(r"[0-9a-f]{64}", prompt_sha256) or not re.fullmatch(
+        r"[0-9a-f]{64}", feedback_plan_sha256
+    ):
+        raise QualityFeedbackRecoveryError("feedback-invocation-input-hash-invalid")
+    started_at = str(state.get("started_at", ""))
+    iteration_feedback_plan_sha256 = hashlib.sha256(
+        json.dumps(
+            {
+                "quality_attempt": quality_attempt,
+                "recovery_attempt": recovery_attempt,
+                "prompt_sha256": prompt_sha256,
+                "feedback_plan_sha256": feedback_plan_sha256,
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
+    previous_path = run_dir / "gates" / (
+        f"quality-feedback-invocation-attempt-{quality_attempt - 1}.json"
+    )
+    previous_receipt_sha256 = None
+    if quality_attempt > 2:
+        previous = _read_json(previous_path)
+        if previous is None or previous.get("receipt_sha256") != _receipt_hash(previous):
+            raise QualityFeedbackRecoveryError("previous-feedback-invocation-invalid")
+        previous_receipt_sha256 = _sha256(previous_path)
+    value = {
+        "version": 1,
+        "run_id": run_dir.name,
+        "quality_attempt": quality_attempt,
+        "recovery_attempt": recovery_attempt,
+        "owner_pid": owner_pid,
+        "started_at": started_at,
+        "prompt_sha256": prompt_sha256,
+        "feedback_plan_sha256": feedback_plan_sha256,
+        "iteration_feedback_plan_sha256": iteration_feedback_plan_sha256,
+        "previous_feedback_invocation_sha256": previous_receipt_sha256,
+    }
+    value["receipt_sha256"] = _receipt_hash(value)
+    path = run_dir / "gates" / f"quality-feedback-invocation-attempt-{quality_attempt}.json"
+    if path.exists() or path.is_symlink():
+        existing = _read_json(path)
+        if (
+            path.is_symlink()
+            or not path.is_file()
+            or existing != value
+            or _receipt_hash(existing or {}) != value["receipt_sha256"]
+        ):
+            raise QualityFeedbackRecoveryError("feedback-invocation-receipt-conflict")
+        return
+    _atomic_write(path, value)
+
+
 def _refused(reason: str) -> dict[str, str]:
     return {"status": "REFUSED", "reason": reason}
 
@@ -370,6 +454,7 @@ Hard boundaries:
 - Use primary sources where available. Never fabricate a quote, result, price, or experience.
 - Write gates/quality-feedback-consumption.json with version=1, the exact feedback_plan_sha256, current JA/EN draft SHA-256 values, and exact-one item for every feedback ID. Each item needs feedback_id, source_name, https source_url, concrete evidence, and languages. Every source_url must appear in the final Sources block of each listed language.
 - Rewrite both drafts from the researched evidence and a new outline. Then run the deterministic, editorial, identity, and reader gates for both current hashes.
+- The recovery wrapper records a signed invocation receipt for this quality iteration; do not reuse a previous prompt, feedback plan, or draft bytes.
 - Run quality_self_heal.py assess. A missing or incomplete consumption receipt must remain block_freeze.
 - Run `python3 {script} verify --run-dir "$ARTICLE_RUN_DIR"` and require status=PASS.
 - Repeat this recovery on the same run no more than five total quality iterations. Before iteration five, do not stage or publish. After iteration five, assess may return force_publish_advisory; that permits publication only when identity/safety/conscience, CTA, media, duplicate, and platform guards pass. If assess returns ready_to_freeze, every language record must be ready=true. In either case, verify must return PASS before reading ORIGINAL_PROMPT and continuing STEP 4.8 through STEP 20. Note remains ¥500 and both Substack posts remain paid-only. Require authenticated and public readback.
@@ -390,7 +475,7 @@ EN_SHA256={hashes["en"]}
 
 Hard boundaries:
 - Do not rewrite either frozen draft, research again, create another run, or choose another topic.
-- Recheck both draft hashes, quality-self-heal action=ready_to_freeze, and quality-feedback verification PASS before any side effect.
+- Recheck both draft hashes, quality-self-heal action=ready_to_freeze or a valid five-iteration force_publish_advisory receipt, and quality-feedback verification PASS before any side effect.
 - Read ORIGINAL_PROMPT and execute only STEP 4.8 through STEP 20 for this same run.
 - Reconcile existing publication and ledger receipts before every publish action. Never duplicate a remote post.
 - Note remains ¥500 and both Substack posts remain paid-only.
@@ -559,6 +644,12 @@ def mark_invoking(
         }
     )
     _atomic_write(state_path, state)
+    _record_feedback_invocation(
+        run_dir,
+        state,
+        recovery_attempt=attempts,
+        owner_pid=owner_pid,
+    )
     return state
 
 

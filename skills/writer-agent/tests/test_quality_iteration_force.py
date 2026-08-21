@@ -24,115 +24,162 @@ RESUME = load("publication_resume_force", SCRIPTS / "publication_resume.py")
 
 def _write(path: Path, value: dict):
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(value), encoding="utf-8")
+    path.write_text(json.dumps(value, separators=(",", ":")), encoding="utf-8")
+
+
+def _set_quality_gates(run: Path, iteration: int) -> dict[str, Path]:
+    drafts = {}
+    for lang in ("ja", "en"):
+        draft = run / f"article-{lang}.md"
+        draft.write_text(f"# {lang}\niteration {iteration}\nnew evidence {iteration}\n", encoding="utf-8")
+        digest = hashlib.sha256(draft.read_bytes()).hexdigest()
+        drafts[lang] = draft
+        _write(run / "gates" / f"editorial-{lang}.json", {
+            "verdict": "FAIL",
+            "article_sha256": digest,
+            "fixes": [f"rewrite-{iteration}"],
+        })
+        _write(run / "gates" / f"reader-testing-gate-{lang}.terminal.json", {
+            "status": "revision-required",
+            "exit_code": 1,
+            "article_sha256": digest,
+            "payload": {"verdict": "FAIL", "unanswered_questions": ["question"]},
+        })
+        _write(run / "gates" / f"identity-{lang}.json", {
+            "verdict": "PASS",
+            "article_sha256": digest,
+        })
+    return drafts
+
+
+def _record_invocation(run: Path, attempt: int, recovery_attempt: int) -> None:
+    gates = run / "gates"
+    value = {
+        "version": 1,
+        "run_id": run.name,
+        "quality_attempt": attempt,
+        "recovery_attempt": recovery_attempt,
+        "owner_pid": 10000 + recovery_attempt,
+        "started_at": f"2026-08-21T00:00:0{recovery_attempt}Z",
+        "prompt_sha256": hashlib.sha256(f"prompt-{recovery_attempt}".encode()).hexdigest(),
+        "feedback_plan_sha256": hashlib.sha256(b"feedback-plan").hexdigest(),
+        "iteration_feedback_plan_sha256": hashlib.sha256(
+            f"feedback-plan-{attempt}".encode()
+        ).hexdigest(),
+        "previous_feedback_invocation_sha256": None,
+    }
+    if attempt > 2:
+        previous = json.loads(
+            (gates / f"quality-feedback-invocation-attempt-{attempt - 1}.json").read_text()
+        )
+        value["previous_feedback_invocation_sha256"] = hashlib.sha256(
+            (gates / f"quality-feedback-invocation-attempt-{attempt - 1}.json").read_bytes()
+        ).hexdigest()
+    value["receipt_sha256"] = QUALITY._receipt_hash(value)
+    _write(gates / f"quality-feedback-invocation-attempt-{attempt}.json", value)
 
 
 def _quality_fixture(tmp_path: Path):
     run = tmp_path / "run"
     gates = run / "gates"
     gates.mkdir(parents=True)
-    hashes = {}
-    for lang in ("ja", "en"):
-        draft = run / f"article-{lang}.md"
-        draft.write_text(f"# {lang}\nbody\n", encoding="utf-8")
-        digest = hashlib.sha256(draft.read_bytes()).hexdigest()
-        hashes[lang] = digest
-        _write(gates / f"editorial-{lang}.json", {
-            "verdict": "FAIL", "article_sha256": digest, "fixes": ["fix"]
-        })
-        _write(gates / f"reader-testing-gate-{lang}.terminal.json", {
-            "status": "revision-required",
-            "article_sha256": digest,
-            "payload": {"unanswered_questions": ["question"]},
-        })
-        _write(gates / f"identity-{lang}.json", {
-            "verdict": "PASS", "article_sha256": digest
-        })
+    _set_quality_gates(run, 1)
     _write(gates / "topic-route.json", {
         "topic_id": "topic-1", "editorial_form": "explainer"
     })
-    previous = None
-    for index in range(1, 5):
-        snapshot_dir = gates / f"quality-attempt-{index}"
-        snapshot_dir.mkdir()
-        snapshot_digests = {}
-        for lang in ("ja", "en"):
-            snapshot_digests[lang] = {}
-            for kind, filename in {
-                "editorial": f"editorial-{lang}.json",
-                "reader": f"reader-testing-gate-{lang}.terminal.json",
-                "identity": f"identity-{lang}.json",
-            }.items():
-                source = gates / filename
-                target = snapshot_dir / filename
-                target.write_bytes(source.read_bytes())
-                snapshot_digests[lang][kind] = hashlib.sha256(
-                    target.read_bytes()
-                ).hexdigest()
-        payload = {
-            "run_id": run.name,
-            "attempt": index,
-            "fingerprint": f"old-{index}",
-            "action": "reroute",
-            "forbidden_editorial_form": "explainer",
-            "publication_policy": "continuous",
-            "quality": {
-                lang: {"article_sha256": hashes[lang]}
-                for lang in ("ja", "en")
-            },
-            "receipt_snapshots": snapshot_digests,
-            "previous_receipt_sha256": previous,
-        }
-        payload["receipt_sha256"] = QUALITY._receipt_hash(payload)
-        _write(gates / f"quality-self-heal-attempt-{index}.json", payload)
-        previous = payload["receipt_sha256"]
-    return run, hashes
+    return run
+
+
+def _advance_to_force(run: Path, monkeypatch) -> dict:
+    monkeypatch.setenv("ARTICLE_PUBLICATION_POLICY", "continuous")
+    drafts = _set_quality_gates(run, 1)
+    first = QUALITY.assess(run, drafts)
+    assert first["attempt"] == 1
+    for attempt in range(2, 6):
+        drafts = _set_quality_gates(run, attempt)
+        _record_invocation(run, attempt, attempt - 1)
+        result = QUALITY.assess(run, drafts)
+        if attempt < 5:
+            assert result["action"] in {"block_freeze", "reroute", "evaluate_reroute"}
+    assert result["attempt"] == 5
+    return {"run": run, "drafts": drafts, "result": result}
+
+
+def _write_advisory_terminals(run: Path, drafts: dict[str, Path]) -> None:
+    for lang, draft in drafts.items():
+        _write(run / "gates" / f"quality-terminal-{lang}.json", {
+            "status": "terminal",
+            "lang": lang,
+            "article_sha256": hashlib.sha256(draft.read_bytes()).hexdigest(),
+            "editorial_gate": "ADVISORY",
+            "reader_gate": "ADVISORY",
+            "identity_gate": "PASS",
+            "safety_gate": "ALLOW",
+        })
 
 
 def test_fifth_quality_iteration_emits_force_publish_advisory(tmp_path, monkeypatch):
-    run, _hashes = _quality_fixture(tmp_path)
-    monkeypatch.setenv("ARTICLE_PUBLICATION_POLICY", "continuous")
-    result = QUALITY.assess(
-        run,
-        {"ja": run / "article-ja.md", "en": run / "article-en.md"},
-    )
+    run = _quality_fixture(tmp_path)
+    state = _advance_to_force(run, monkeypatch)
+    result = state["result"]
     assert result["action"] == "force_publish_advisory"
     assert result["force_publish_after_iterations"] == 5
     assert result["quality_advisory"] is True
+    assert QUALITY.validate_force_receipt(run, state["drafts"])
 
 
 def test_advisory_quality_requires_force_marker_before_init(tmp_path, monkeypatch):
-    run, _hashes = _quality_fixture(tmp_path)
-    gates = run / "gates"
-    drafts = {lang: run / f"article-{lang}.md" for lang in ("ja", "en")}
-    for lang in ("ja", "en"):
-        draft = drafts[lang]
-        digest = hashlib.sha256(draft.read_bytes()).hexdigest()
-        _write(gates / f"quality-terminal-{lang}.json", {
-            "status": "terminal", "lang": lang, "article_sha256": digest,
-            "editorial_gate": "ADVISORY", "reader_gate": "ADVISORY",
-            "identity_gate": "PASS", "safety_gate": "ALLOW",
-        })
+    run = _quality_fixture(tmp_path)
     monkeypatch.setenv("ARTICLE_PUBLICATION_POLICY", "continuous")
+    drafts = _set_quality_gates(run, 1)
+    _write_advisory_terminals(run, drafts)
     with pytest.raises(RESUME.InvariantError, match="five-iteration force receipt"):
         RESUME.require_quality_terminals(run, drafts)
-    QUALITY.assess(run, drafts)
-    receipts = RESUME.require_quality_terminals(run, drafts)
+    state = _advance_to_force(run, monkeypatch)
+    _write_advisory_terminals(run, state["drafts"])
+    receipts = RESUME.require_quality_terminals(run, state["drafts"])
     assert receipts["ja"]["editorial_gate"] == "ADVISORY"
 
 
 def test_force_receipt_rejects_missing_or_tampered_chain_link(tmp_path, monkeypatch):
-    run, _hashes = _quality_fixture(tmp_path)
-    drafts = {lang: run / f"article-{lang}.md" for lang in ("ja", "en")}
-    for lang in ("ja", "en"):
-        digest = hashlib.sha256(drafts[lang].read_bytes()).hexdigest()
-        _write(run / "gates" / f"quality-terminal-{lang}.json", {
-            "status": "terminal", "lang": lang, "article_sha256": digest,
-            "editorial_gate": "ADVISORY", "reader_gate": "ADVISORY",
-            "identity_gate": "PASS", "safety_gate": "ALLOW",
-        })
-    monkeypatch.setenv("ARTICLE_PUBLICATION_POLICY", "continuous")
-    QUALITY.assess(run, drafts)
+    run = _quality_fixture(tmp_path)
+    state = _advance_to_force(run, monkeypatch)
+    drafts = state["drafts"]
     (run / "gates" / "quality-self-heal-attempt-3.json").unlink()
-    with pytest.raises(RESUME.InvariantError, match="five-iteration force receipt"):
-        RESUME.require_quality_terminals(run, drafts)
+    assert not QUALITY.validate_force_receipt(run, drafts)
+
+
+def test_same_draft_cannot_consume_another_quality_iteration(tmp_path, monkeypatch):
+    run = _quality_fixture(tmp_path)
+    monkeypatch.setenv("ARTICLE_PUBLICATION_POLICY", "continuous")
+    drafts = _set_quality_gates(run, 1)
+    QUALITY.assess(run, drafts)
+    _record_invocation(run, 2, 1)
+    with pytest.raises(QUALITY.QualitySelfHealError, match="rewrite the draft"):
+        QUALITY.assess(run, drafts)
+
+
+def test_duplicate_feedback_plan_is_rejected(tmp_path, monkeypatch):
+    run = _quality_fixture(tmp_path)
+    monkeypatch.setenv("ARTICLE_PUBLICATION_POLICY", "continuous")
+    drafts = _set_quality_gates(run, 1)
+    QUALITY.assess(run, drafts)
+    for attempt in (2, 3):
+        drafts = _set_quality_gates(run, attempt)
+        _record_invocation(run, attempt, attempt - 1)
+        if attempt == 3:
+            invocation = json.loads(
+                (run / "gates" / "quality-feedback-invocation-attempt-2.json").read_text()
+            )
+            duplicate = json.loads(
+                (run / "gates" / "quality-feedback-invocation-attempt-3.json").read_text()
+            )
+            duplicate["iteration_feedback_plan_sha256"] = invocation[
+                "iteration_feedback_plan_sha256"
+            ]
+            duplicate["receipt_sha256"] = QUALITY._receipt_hash(duplicate)
+            _write(run / "gates" / "quality-feedback-invocation-attempt-3.json", duplicate)
+            with pytest.raises(QUALITY.QualitySelfHealError, match="feedback plan was reused"):
+                QUALITY.assess(run, drafts)
+            return
+        QUALITY.assess(run, drafts)
