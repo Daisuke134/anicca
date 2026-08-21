@@ -1219,3 +1219,11 @@ Completion requires:
 13. The paid cloud gate additionally proves tenant isolation, scoped OAuth
     revocation, encrypted backup/restore, per-tenant budgets and portable export
     against the same behavioral suite.
+14. `JOB-LEDGER-EVENT-10N` proves that every attributed application transition
+    appends its matching event and updates state atomically; a live rerun reaches
+    `qualified` and `materials_ready` without bypassing the claim fence.
+15. `JOB-SCHEDULER-POLICY-10O` proves the configured recurring cadence, no
+    product-imposed daily count cap, exact URL deduplication, ATS/provider
+    throttling, and no duplicate external side effect across repeated wakes.
+16. Telegram delivery uses the OpenClaw CLI, records a real `messageId` ACK in the
+    outbox, and leaves no raw bot token in LaunchAgent environment or evidence.
