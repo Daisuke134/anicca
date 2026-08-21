@@ -677,7 +677,7 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
 - `27396412d`で、draft作成後に旧immutable release pathへstateを書けなかった場合だけ、ledgerのlive receiptと
   dispatch raw errorを照合して同じNote/Substackのtargetへ限定recoveryするようにした。別runのlive row、target不一致、
   raw error不一致は再利用を拒否する。publication init/readbackもheadlineとbodyの同一byteを拒否する。
-- release currentは`27396412dd7eb6a07785f79dc0095546341d3db1`で、sourceとcurrentの`run.sh`、
+- 最新readback時のrelease currentは`fd7dceaff12a229a5b0296bccc434de8dc225957`で、Writer修正を含むsourceとcurrentの`run.sh`、
   `recover-known-unavailable.py`、`publication_resume.py`のSHAが一致する。loaded `article-daily`と`article-resume`は
   Life Manager current、`ARTICLE_STATE_DIR=/Users/anicca/.local/state/life-manager/writer`、Codex、cooldown 300秒をreadbackした。
 - canary `20260821-054500`は、Note/各Substackに同一draft IDを保持したままstate directory permission errorで`unavailable`、
