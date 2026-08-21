@@ -790,7 +790,11 @@ a later successful example.
   `47280faaff6c534fe0e64902bfbb9440da2f418f58ac4e80b75f21857aee7241`, buyer event
   `7fdfbc41…`, and 23 byte/SHA256 source receipts under receipt SHA256
   `b2025e5001f705964a823df5b392f0d3b98ca5576a0402edd862fda14278bd85`.
-- [ ] P9 — Suppress any question whose answer already exists in the bound context.
+- [x] P9 — Suppress any question whose answer already exists in the bound context. Semantic
+  decision v7 requires a complete packet plus `read_these_first` search before choosing a
+  question; the answer owner forbids known-fact questions, and the independent Sol verifier must
+  block any candidate question answered anywhere in those sources. This remains semantic and
+  buyer-agnostic: no keyword, buyer name or job-category router is introduced.
 - [ ] P10 — Permit one clarification only for a genuinely absent fact that blocks truthful work.
 - [ ] P11 — Produce every non-blocked portion while that clarification is pending.
 - [ ] P12 — Generate a useful artifact on the first actionable purchased-order transition.

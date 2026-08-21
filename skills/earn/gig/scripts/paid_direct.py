@@ -74,7 +74,7 @@ OWNER_WORKED_TALKROOMS = {
     "18151989",  # jedbyJUNKYアメーバnote — デザインテンプレート利用許諾契約書
 }
 PAID_DECISION_SCHEMA_VERSION = 3
-PAID_DECISION_PROMPT_VERSION = "paid-semantic-decision-v6"
+PAID_DECISION_PROMPT_VERSION = "paid-semantic-decision-v7"
 PAID_DECISION_MODEL = "gpt-5.6-sol"
 PAID_FILE_MODEL = "gpt-5.6-sol"
 PAID_FILE_POLICY_VERSION = "paid-file-build-review-v19"
@@ -914,7 +914,9 @@ def _decision_prompt(context: Path, context_sha256: str, feedback: str,
         "blocked when no such adapter is present. Answer mode is for the Coconala talkroom: use it when a text response "
         "itself completely satisfies the request, or when one indispensable missing "
         "buyer input must be requested before work can continue. In the latter case ask one bounded question that names "
-        "exactly what is missing. Use await_buyer only after that exact question has already been sent and no newer buyer "
+        "exactly what is missing. Before choosing any question, search the complete compiled context and every "
+        "read_these_first source; asking for any fact already present there is forbidden. Use await_buyer only after that "
+        "exact question has already been sent and no newer buyer "
         "reply exists. Use file whenever satisfying the request requires a seller-produced local artifact, "
         "including initial delivery, revision, and resubmission of an artifact already present on disk. A file delivery "
         "may also include an accompanying Coconala message. Do not choose remote merely because the response describes "
@@ -2654,7 +2656,9 @@ def _run_consultation_review(args, item_path: Path, root: Path, feedback: str, b
             f"{root / 'context/paid-work-decision.json'}. The answer must satisfy that decision's required_output and "
             f"required_effect without contradicting primary evidence. {attachment_instruction} "
             "Write a concrete, safe Japanese answer to the exact current buyer request. Distinguish proved facts from "
-            "uncertainty, invent nothing, and ask at most one genuinely necessary question. Resolve every previous "
+            "uncertainty and invent nothing. Never ask for a fact available anywhere in current.json or any "
+            "read_these_first source. Ask at most one question only when the absent fact is indispensable to truthful "
+            "work; otherwise answer or produce the non-blocked work now. Resolve every previous "
             f"fresh-review issue: {json.dumps(issues, ensure_ascii=False)}. Return blocked only when no safe answer can be sent.",
             encoding="utf-8",
         )
@@ -2693,7 +2697,9 @@ def _run_consultation_review(args, item_path: Path, root: Path, feedback: str, b
             f"reviewed_attachments is internal review evidence: return exactly this list and no other project files: "
             f"{json.dumps(expected, ensure_ascii=False)}. It does not mean those files will be sent to the buyer. "
             "Attack omissions, unsafe instructions, invented facts, recipient/stage mistakes, failure to answer the exact "
-            "latest request, and attachment mismatch. Return the exact candidate customer_message and attachments on PASS; "
+            "latest request, and attachment mismatch. If the candidate asks any question, search the entire cumulative "
+            "context and every read_these_first source for its answer; block the candidate when that answer already exists "
+            "or when useful non-blocked work could be produced without it. Return the exact candidate customer_message and attachments on PASS; "
             "otherwise status=blocked with concrete repair issues. Candidate: "
             + json.dumps(owner, ensure_ascii=False, sort_keys=True),
             encoding="utf-8",
