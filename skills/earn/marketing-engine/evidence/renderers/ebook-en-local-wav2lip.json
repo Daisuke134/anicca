@@ -1,0 +1,15 @@
+{
+  "schema_version": "marketing.renderer-attempt.v1",
+  "renderer_id": "wav2lip-local-mps",
+  "product_id": "ebook-en",
+  "source_repo": "https://github.com/codescv/Easy-Wav2Lip-MacOS",
+  "source_revision": "474f3758220413de0e9ce6112743e2dd7c2bf930",
+  "input_image_sha256": "d5e744167f5f653d30f0e4c377ffe9a802f8502e683783aaebd580abab1754e0",
+  "output_path": "/tmp/ebook-en-local-wav2lip.mp4",
+  "output_sha256": "f5b22d39fca1987a21364baf2b844ce3f097293ec151d4f3a8020ebbce3f4053",
+  "media": {"codec": "H.264/AAC", "width": 1536, "height": 2752, "duration_seconds": 5.224989},
+  "render_cost_usd": 0,
+  "external_effects": [],
+  "telegram_preview_message_id": 27461,
+  "status": "rendered_local_mps"
+}

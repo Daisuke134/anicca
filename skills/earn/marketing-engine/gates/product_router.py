@@ -137,7 +137,7 @@ def _validate_account(row: dict, path: pathlib.Path, products: dict, renderers: 
                     f"YouTube provider settings invalid: {path}")
     if "watercolor-monk" in row["allowed_renderer_ids"]:
         require(row["product_id"] == "ebook-ja", "watercolor renderer is restricted to ebook-ja")
-    if "omniavatar-monk" in row["allowed_renderer_ids"]:
+    if "wav2lip-local-mps" in row["allowed_renderer_ids"]:
         require(row["product_id"] == "ebook-en", "monk renderer is restricted to ebook-en")
 
 
