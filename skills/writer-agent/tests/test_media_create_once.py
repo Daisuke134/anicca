@@ -19,7 +19,7 @@ def _png(path: Path, height: int) -> None:
 def test_body_candidate_below_x_readability_floor_is_refused(tmp_path):
     candidate = tmp_path / "candidate.png"
     _png(candidate, 70)
-    with pytest.raises(media.MediaCreateRefused, match="too-flat-for-x"):
+    with pytest.raises(media.MediaCreateRefused, match="outside-x-render-range"):
         media.commit(
             candidate,
             tmp_path / "body-diagram.png",
@@ -30,11 +30,11 @@ def test_body_candidate_below_x_readability_floor_is_refused(tmp_path):
 
 def test_body_candidate_at_x_readability_floor_commits(tmp_path):
     candidate = tmp_path / "candidate.png"
-    _png(candidate, 110)
+    _png(candidate, 244)
     receipt = media.commit(
         candidate,
         tmp_path / "body-diagram.png",
         tmp_path / "body-receipt.json",
         "body",
     )
-    assert receipt["height"] == 110
+    assert receipt["height"] == 244

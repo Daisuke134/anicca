@@ -42,6 +42,7 @@ EDIT_RE = re.compile(
 )
 CANONICAL_MEDIA_START = "<!-- canonical-media:start -->"
 CANONICAL_MEDIA_END = "<!-- canonical-media:end -->"
+X_RENDER_WIDTH = 587
 X_BODY_MIN_HEIGHT = 110
 X_BODY_MAX_HEIGHT = 650
 
@@ -113,19 +114,22 @@ def _body_media_readability(paths: list[Path]) -> dict[str, Any]:
             "height": int(height),
         }
         images.append(row)
-        if height < X_BODY_MIN_HEIGHT:
+        projected_height = round(X_RENDER_WIDTH * height / width, 2) if width else 0
+        row["projected_height"] = projected_height
+        if projected_height < X_BODY_MIN_HEIGHT:
             violations.append(
-                f"too-flat:{path}:height={height}:min={X_BODY_MIN_HEIGHT}"
+                f"too-flat:{path}:source={width}x{height}:projected={projected_height}:min={X_BODY_MIN_HEIGHT}"
             )
-        elif height > X_BODY_MAX_HEIGHT:
+        elif projected_height > X_BODY_MAX_HEIGHT:
             violations.append(
-                f"too-tall:{path}:height={height}:max={X_BODY_MAX_HEIGHT}"
+                f"too-tall:{path}:source={width}x{height}:projected={projected_height}:max={X_BODY_MAX_HEIGHT}"
             )
     return {
         "version": 1,
         "status": "PASS" if not violations else "FAIL",
         "min_height": X_BODY_MIN_HEIGHT,
         "max_height": X_BODY_MAX_HEIGHT,
+        "render_width": X_RENDER_WIDTH,
         "images": images,
         "violations": violations,
     }
@@ -847,6 +851,7 @@ class XBrowserAdapter:
         source: str,
         cover: str,
         protected: dict[str, Any] | None = None,
+        readability_receipt: Path | None = None,
     ) -> dict[str, Any]:
         match = EDIT_RE.fullmatch(target)
         if not match:
@@ -999,6 +1004,36 @@ class XBrowserAdapter:
                 raise XRepairRefused(
                     f"X body image count is {actual_images}, "
                     f"expected {expected_images}"
+                )
+            rendered_sizes = page.evaluate(
+                """()=>{const c=document.querySelector('[data-testid=composer]');
+                    return c ? [...c.querySelectorAll('img')].map(im=>{const b=im.getBoundingClientRect();
+                    return {width:Math.round(b.width),height:Math.round(b.height)}}) : [];}"""
+            )
+            rendered_violations = [
+                f"rendered={row['width']}x{row['height']}"
+                for row in rendered_sizes
+                if row["height"] < X_BODY_MIN_HEIGHT
+                or row["height"] > X_BODY_MAX_HEIGHT
+            ]
+            if rendered_violations:
+                if readability_receipt is not None:
+                    _atomic_json(
+                        readability_receipt,
+                        {
+                            "version": 1,
+                            "status": "FAIL",
+                            "min_height": X_BODY_MIN_HEIGHT,
+                            "max_height": X_BODY_MAX_HEIGHT,
+                            "render_width": X_RENDER_WIDTH,
+                            "images": rendered_sizes,
+                            "violations": rendered_violations,
+                            "stage": "native-editor",
+                        },
+                    )
+                raise XRepairRefused(
+                    "X rendered media readability gate failed: "
+                    + "; ".join(rendered_violations)
                 )
             publish = page.get_by_text(
                 re.compile(r"^(Publish|Update|公開する|更新)$")
@@ -1278,6 +1313,7 @@ def repair(
         str(adapted),
         str(cover),
         protected if isinstance(protected, dict) else None,
+        readability_receipt=work / "media-readability.json",
     )
     inserted_hashes = evidence.get("inserted_image_sha256", [])
     required_body_hashes = [
