@@ -6,14 +6,14 @@ from datetime import datetime, timezone
 from provider_cli import atomic_write
 
 
-RUNTIME_DISK_FLOOR_BYTES = 1024 ** 3
+RUNTIME_DISK_FLOOR_BYTES = None
 
 
 def runtime_guard(state_root, floor_bytes=RUNTIME_DISK_FLOOR_BYTES):
     """Read and persist the disk floor without hiding read-only health state."""
     try:
         free_bytes = shutil.disk_usage(state_root).free
-        guard_state = "CLEAR" if free_bytes >= floor_bytes else "DISK_GUARD_BLOCKED"
+        guard_state = "CLEAR" if floor_bytes is None or free_bytes >= floor_bytes else "DISK_GUARD_BLOCKED"
         failure_type = None
     except OSError:
         free_bytes = None

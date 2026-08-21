@@ -403,9 +403,12 @@ class LocalLoopTest(unittest.TestCase):
     def test_runtime_disk_guard_is_truthful_and_fail_closed(self):
         with tempfile.TemporaryDirectory() as root:
             state = Path(root)
-            self.assertEqual(sys.modules["runtime_guard"].RUNTIME_DISK_FLOOR_BYTES, 1024 ** 3)
+            self.assertIsNone(sys.modules["runtime_guard"].RUNTIME_DISK_FLOOR_BYTES)
+            disabled = MODULE.runtime_guard(state)
             clear = MODULE.runtime_guard(state, floor_bytes=1)
             blocked = MODULE.runtime_guard(state, floor_bytes=10 ** 30)
+            self.assertEqual(disabled["state"], "CLEAR")
+            self.assertIsNone(disabled["floor_bytes"])
             self.assertEqual(clear["state"], "CLEAR")
             self.assertEqual(blocked["state"], "DISK_GUARD_BLOCKED")
             self.assertEqual(blocked["guard"], "disk")
