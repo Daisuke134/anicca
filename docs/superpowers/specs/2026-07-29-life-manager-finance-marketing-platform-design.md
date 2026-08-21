@@ -1250,7 +1250,10 @@ precondition that is now satisfied:
 2. The Life Manager process environment and the guarded Life Manager data
    boundary contain neither `LM_TELEGRAM_BOT_TOKEN` nor
    `LM_TELEGRAM_ALERT_CHAT_ID`. OpenClaw environment files are not read or
-   used as a fallback, so a Telegram receipt cannot be delivered yet.
+   used as a fallback, so a Telegram receipt cannot be delivered yet. A
+   read-only check also found no non-OpenClaw Telegram binding in the
+   Life Manager-owned config/state and no `LM_DATA_DIR/.env`; no credential
+   value was read.
 3. The Life Manager-owned marketing data root now contains one tenant-scoped
    Honne EN candidate, still held in shadow: pack
    `object://sha256/adcdebe26b73d71911b0e89eab9dfb3e4e7155cc976841d339fbf1ac9df7aa3c`,
