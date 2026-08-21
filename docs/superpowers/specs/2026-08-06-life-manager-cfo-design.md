@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | M2 — `CFO-OPS3a`, `CFO-OPS3b`, `CFO-1j`, `CFO-2b.2`, `CFO-2b.3`, `CFO-2b.4`, `CFO-2b.5`, `CFO-2b.6`, `CFO-2b.7`, `CFO-2b.8`, `CFO-2b.9`, `CFO-2c`, `CFO-2d`, `CFO-2d2`, `CFO-2d3`, `CFO-2e`, `CFO-4a`, `CFO-4b`, `CFO-4d`, and `CFO-4e` are closed; M3/Binance and M4c are deferred, M5 policy is next |
+| Status | M2 — `CFO-OPS3a`, `CFO-OPS3b`, `CFO-1j`, `CFO-2b.2`, `CFO-2b.3`, `CFO-2b.4`, `CFO-2b.5`, `CFO-2b.6`, `CFO-2b.7`, `CFO-2b.8`, `CFO-2b.9`, `CFO-2c`, `CFO-2d`, `CFO-2d2`, `CFO-2d3`, `CFO-2e`, `CFO-4a`, `CFO-4b`, `CFO-4d`, `CFO-4e`, `CFO-5a`, and `CFO-5a2` are closed; M3/Binance and M4c are deferred, M5b is next |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
@@ -1288,10 +1288,13 @@ ingestion. They are not unchecked M1 items and cannot become the active CFO item
 
 ### M5 — Controlled capital allocation
 
-- [ ] **CFO-5a** Define mandate policy, spend/loss caps, expiry, allowed venues/assets, tax effect, and receipt.
-- [ ] **CFO-5a2** Enforce non-investable reserves before every mandate: estimated tax reserve, owner-configured
+- [x] **CFO-5a** Define mandate policy, spend/loss caps, expiry, allowed venues/assets, tax effect, and receipt.
+      Canonical commit `916653fd6` adds the policy-only mandate gate. It never executes; unknown policy evidence returns
+      `repair` with `execute=false`.
+- [x] **CFO-5a2** Enforce non-investable reserves before every mandate: estimated tax reserve, owner-configured
       emergency cash floor, minimum operating runway, liquidity floor, and per-business/per-asset concentration
-      caps. Unknown reserve data fails closed.
+      caps. Unknown reserve data fails closed. The same gate rejects expired/over-cap/disallowed venue/asset mandates
+      and a verified amount above `available − operating floor − tax reserve`; no live capital was touched. M5b is next.
 - [ ] **CFO-5b** Attach one sandboxed executor to one existing profitable business; keep reader credentials separate.
 - [ ] **CFO-5c** Execute one bounded real cycle, reconcile the external receipt back into the next CFO snapshot,
       and report realized P&L and cost.
@@ -1449,3 +1452,11 @@ Canonical commit `eb71ec797` adds the redacted tenant load simulation. It ran 10
 `status=pass`, zero cross-tenant violations, zero secret leaks, zero external calls, and zero financial side effects.
 The existing isolation/Steel suites pass 36/36 and 83/83. This is recorded-envelope evidence, not a claim that 100
 cloud tenants were provisioned. M3/Binance and M4c remain deferred; M5 controlled-capital policy is next.
+
+### CFO-5a/5a2 closure correction (2026-08-21)
+
+Canonical commit `916653fd6` adds `apps/life-manager/lib/cfo-capital-mandate.js`. It validates tenant/business/mandate
+identity, venue/asset allowlists, spend/loss caps, expiry, receipt status, and non-investable reserve floors. Unknown
+reserve or receipt evidence returns `repair`; a passing policy still returns `hold` with `execute=false` and owner
+approval required. Smoke cases for unknown reserve, valid policy, and cap exceeded pass. No executor, wallet, exchange,
+trade, transfer, or hiring path was called. M5b is next; controlled execution remains prohibited until later gates.
