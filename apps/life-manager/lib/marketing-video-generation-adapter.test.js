@@ -56,6 +56,13 @@ test("generic video generation job is deterministic, tenant-bound, and reference
   assert.doesNotMatch(JSON.stringify(value), /\.openclaw|profitable-claude|\/Users\//);
 });
 
+test("mobile product packs reject the Life Manager wake/demo format", () => {
+  assert.throws(
+    () => job({ productId: "anicca-ios", formatId: "anicca-wake" }),
+    /cannot use format/i,
+  );
+});
+
 test("adapter selects the least-recent hook and creates immutable copy plus video lineage", async () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "lm-video-generation-"));
   const objects = path.join(root, "objects");

@@ -16,6 +16,7 @@ const LANE_STATES = new Set([ARMED, "disabled", "default-off", "shadow"]);
 const SLOT = /^([01]\d|2[0-3]):([0-5]\d)$/;
 const IDENTIFIER = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
 const LOCALE = /^[a-z]{2}(?:-[A-Z]{2})?$/;
+const ACCOUNT = /^@?[A-Za-z0-9._-]{1,127}$/;
 const SECRET_REF = /^secret:\/\/[a-z0-9][a-z0-9._-]*(?:\/[a-z0-9][a-z0-9._-]*)*$/i;
 const CHAT_REF = /^telegram-chat:\/\/[a-z0-9][a-z0-9._-]*$/i;
 const LIVENESS_REF = /^marketing-liveness:\/\/(.+)$/;
@@ -42,6 +43,7 @@ function normalizeLane(input = {}) {
     product: required(input.product, "marketing liveness product"),
     locale: required(input.locale, "marketing liveness locale"),
     platform: required(input.platform, "marketing liveness platform"),
+    ...(input.account ? { account: String(input.account).trim() } : {}),
     time_zone: required(input.time_zone, "marketing liveness time zone"),
     slots: Array.isArray(input.slots) ? [...new Set(input.slots.map(String))].sort() : [],
     after: exactInstant(input.after, "marketing liveness start"),
@@ -52,7 +54,8 @@ function normalizeLane(input = {}) {
     || !IDENTIFIER.test(lane.product)
     || !LOCALE.test(lane.locale)
     || !LANE_STATES.has(lane.state)
-    || !["instagram", "tiktok"].includes(lane.platform)
+    || !["instagram", "tiktok", "youtube"].includes(lane.platform)
+    || (lane.account !== undefined && !ACCOUNT.test(lane.account))
     || lane.slots.length < 1
     || lane.slots.some((slot) => !SLOT.test(slot))
     || !Number.isInteger(lane.grace_minutes)
@@ -127,6 +130,7 @@ function livenessPayload(lane, slot, receipt) {
     status: receipt ? "published" : "missed",
     public_url: receipt ? receipt.public_url : "unavailable",
     retry_state: receipt ? "not_required" : "unavailable",
+    ...(lane.account ? { account: lane.account } : {}),
   };
 }
 
@@ -147,12 +151,15 @@ function parsePayloadRef(ref) {
     !IDENTIFIER.test(payload.lane)
     || !IDENTIFIER.test(payload.product)
     || !LOCALE.test(payload.locale)
-    || !["instagram", "tiktok"].includes(payload.platform)
+    || !["instagram", "tiktok", "youtube"].includes(payload.platform)
+    || (payload.account !== undefined && !ACCOUNT.test(String(payload.account)))
     || !["published", "missed"].includes(payload.status)
     || (payload.status === "published" && !(
       payload.platform === "tiktok"
         ? /^https:\/\/www\.tiktok\.com\/@[^/]+\/video\/[0-9]+\/?$/.test(payload.public_url)
-        : /^https:\/\/www\.instagram\.com\/(?:reel|p)\/[A-Za-z0-9_-]+\/?$/.test(payload.public_url)
+        : payload.platform === "instagram"
+          ? /^https:\/\/www\.instagram\.com\/(?:reel|p)\/[A-Za-z0-9_-]+\/?$/.test(payload.public_url)
+          : /^https:\/\/www\.youtube\.com\/(?:shorts\/[A-Za-z0-9_-]+|watch\?v=[A-Za-z0-9_-]+(?:&[^#]+)?)\/?$/.test(payload.public_url)
     ))
     || (payload.status === "missed" && payload.public_url !== "unavailable")
     || (payload.status === "published" && payload.retry_state !== "not_required")
@@ -206,12 +213,15 @@ function planMarketingLivenessJobs(input = {}) {
 }
 
 function renderMessage(payload) {
-  const accountHandle = String(payload.public_url || "").match(
-    payload.platform === "tiktok"
-      ? /^https:\/\/www\.tiktok\.com\/@([^/]+)\/video\//
-      : /^https:\/\/www\.instagram\.com\/(?:reel|p)\/([^/]+)/,
-  )?.[1];
-  const account = accountHandle ? `@${accountHandle}` : `the configured ${payload.lane} account`;
+  const accountPattern = payload.platform === "tiktok"
+    ? /^https:\/\/www\.tiktok\.com\/@([^/]+)\/video\//
+    : payload.platform === "instagram"
+      ? /^https:\/\/www\.instagram\.com\/(?:reel|p)\/([^/]+)/
+      : null;
+  const accountHandle = accountPattern
+    ? String(payload.public_url || "").match(accountPattern)?.[1]
+    : null;
+  const account = payload.account || (accountHandle ? `@${accountHandle}` : `the configured ${payload.lane} account`);
   if (payload.status === "published") {
     return `Life Manager::: ${payload.product} (locale ${payload.locale}) has a verified ${payload.platform} publication for the ${payload.slot} slot on ${account}. The status is published, the direct public URL is ${payload.public_url}, and the retry state is ${payload.retry_state}.`;
   }

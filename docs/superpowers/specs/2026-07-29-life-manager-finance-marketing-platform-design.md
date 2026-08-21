@@ -1047,6 +1047,28 @@ zero.
 Each pack owns JA and EN audiences separately. Existing Larry and ReelClaw
 producers become adapters behind the same artifact/publication contracts.
 
+**2026-08-21 asset-lineage correction.** The legacy asset inventory was read
+without starting any legacy job. The retained mobile mapping is:
+
+| Product | Approved legacy family | Locale/media family | Destination rule |
+|---|---|---|---|
+| Honne AI | ReelClaw Honne demo | `honne-en` / `honne-ja` | TikTok only; EN `@honne_reveal`, JA `@honnevideo` |
+| Anicca iOS | Larry slideshow plus ReelClaw card/widget | Larry account variants; `card-en/ja`; `widget-en/ja` | only the current Life Manager lane manifest assignments |
+
+The `lm_wake_EN.mp4` and `lm_wake_JA.mp4` files are Life Manager wake/demo
+artifacts, not one of these mobile marketing packs. They must not be selected
+for Honne or Anicca iOS publication. A one-time migration may copy a legacy
+pack into the Life Manager object store, but the runtime must resolve only
+object references under `LM_DATA_DIR` and never read the legacy directory,
+environment, or scheduler.
+
+The one-time local import now exists for both Honne locales: EN pack
+`object://sha256/0c28dee02059c6853c614c897bb8d47820aeeaa951432c8953577d8cde617706`
+with media `de63fa6b…`, `c8ccd06d…`, `154a1508…`, and JA pack
+`object://sha256/d550a0a6732134ea23292818f3cf389db6f31d6ad699652c9eccb7b6a92486ab`
+with media `b11d8841…`, `7658b813…`, `ced745f2…`, `ed3318c4…`. These refs
+are local evidence only; no OpenClaw path is part of the runtime contract.
+
 ### 8.7 Measured state of the shared marketing engine (2026-07-30)
 
 Everything below was read off the running system, not inferred. It supersedes any
@@ -1284,9 +1306,9 @@ failed attempt was reconciled as `absent` after a read-only Postiz target
 search returned no row and no local publication ledger row; its JSONL backup is
 retained outside Git.
 
-**MKT-03 controlled canary (2026-08-21 JST — complete).** One and only one
-Honne EN TikTok job was promoted from the shadow sentinel. Postiz returned a
-reconciled `PUBLISHED` receipt for
+**MKT-03 controlled canary (2026-08-21 JST — quarantined historical attempt).**
+One and only one Honne EN TikTok job was promoted from the shadow sentinel.
+Postiz returned a reconciled `PUBLISHED` receipt for
 `https://www.tiktok.com/@honne_reveal/video/7676366077437233172`, and a direct
 HTTP readback returned `200` with the same account and numeric video ID. The
 natural-language Telegram receipt used the same URL and returned
@@ -1294,8 +1316,12 @@ natural-language Telegram receipt used the same URL and returned
 status, public URL, and retry state. The canary process replay returned
 `publication_replay_created=false`, `telegram_created=false`, and
 `telegram_replay_created=false`; a second process replay returned the same
-message ID with all three duplicate flags false. No other lane was enabled and
-no OpenClaw or legacy launchd job was touched.
+message ID with all three duplicate flags false. However, the creative was a
+generic Life Manager 12-second object rather than the migrated `honne-en`
+ReelClaw pack. The row, receipt, and replay evidence remain preserved as
+rollback evidence, but this attempt does not satisfy the approved-pack gate;
+the next action is a new effect using the imported pack. No other lane was
+enabled and no OpenClaw or legacy launchd job was touched.
 
 **MKT-03A YouTube shadow contract (2026-08-21 JST — complete).** The generic
 Life Manager publication adapter now accepts an Anicca-only YouTube platform
@@ -1307,6 +1333,19 @@ existing Instagram/TikTok job reference shape remains backward compatible.
 Both live Postiz YouTube candidates remain explicitly `disabled` and no
 provider write or scheduler change occurred. MKT-03B is the first provider
 canary and remains open.
+
+**MKT-03B asset/direct-URL correction (2026-08-21 JST).** The first Anicca
+fan-out attempt used the Life Manager wake/demo object rather than the approved
+Larry/ReelClaw mobile pack. The TikTok row is visible at
+`https://www.tiktok.com/@anicca.jp/video/7676379526930156821`; its thumbnail is
+the same FaceTime wake render, so it is quarantined evidence and not an
+accepted Anicca iOS canary. Postiz returned an internal release id ending in
+`7676378097071163413`, which is **not** the native TikTok video id; the native
+URL was found by public profile/caption/time readback. The adapter now refuses
+to treat a numeric `releaseId` as a verified public URL and must resolve the
+provider profile before recording a direct TikTok receipt. The remaining MKT-03B
+canary must use the migrated approved pack and a native direct URL; no retry of
+the quarantined creative is allowed.
 
 **Telegram binding discovery (2026-08-21 JST — transport and LM ownership
 complete for I-3).** The canonical job-search loop remains the existing working reference for
@@ -1589,9 +1628,10 @@ ledger real-loop duplicate1, exact-five, and 251/251 cutover health are read bac
 `OSS-MERGE-1` PR #1268 is merged as canonical `8d47689d3…`; that exact `main`
 commit passes a clean fresh clone, 647/647 app tests, all eight evals, panel
 privacy, the seven-source manifest, and the single canonical runner contract.
-The current incident subcursor is I-3: one explicitly promoted Honne EN
-controlled canary under Order 11. I-2 leaves every Honne EN publication job
-claim-ineligible until that promotion; it does not activate the lane.
+The current incident subcursor is I-3: rerun one explicitly promoted Honne EN
+controlled canary under Order 11 with the migrated approved ReelClaw pack.
+I-2 leaves every Honne EN publication job claim-ineligible until that
+promotion; it does not activate the lane.
 
 | Order | Deliverable | Exit evidence |
 |---:|---|---|
@@ -1649,7 +1689,7 @@ schedulers or revive known-broken producers:
 | I-0 | Freeze incident truth and preserve rollback | live OpenClaw SQLite, launchd disabled overrides, Postiz connectivity/integrations, last public URLs, logs, and quarantine backup are read back without changing state | **done** |
 | I-1 | Add expected-slot liveness and Telegram incident reporting in Life Manager | independent liveness service + durable message jobs; fake Telegram proves direct reconciled artifact URL, truthful unavailable miss, replay dedupe, and zero jobs for disabled/default-off/shadow; changed runtime scope scans 0 legacy dependencies | **implementation done; repository-wide scan passes with zero violations** |
 | I-2 | Wire the generic Life Manager video chain to a default-off Honne EN schedule | exact 07:00/11:00/20:30 Asia/Tokyo slots generate durable jobs with no OpenClaw path or env read; shadow performs zero provider writes | **done** — `LM_HONNE_EN_SHADOW_ENABLED=false`; generation and publication lineage preserve Honne EN product/locale/creative/account refs; publication jobs are durable but claim-ineligible at the explicit-promotion sentinel, replay creates zero duplicates, and the EN status grid reports passed slots without receipts as missed. Runtime adapters and runtime-up suites pass; changed runtime scope has zero legacy references. The repository-wide scan passes with zero violations. |
-| I-3 | Run one controlled Honne EN canary from Life Manager | one real TikTok publication reconciles as `PUBLISHED`, its direct `/video/<id>` URL returns publicly, Telegram receives the same URL, replay produces no duplicate | **done** — one promoted `@honne_reveal` job returned `PUBLISHED` at `https://www.tiktok.com/@honne_reveal/video/7676366077437233172`; direct readback was HTTP 200; Telegram receipt used the same URL with `message_id=27226`; publication and Telegram replay created zero new effects. The first pre-provider approval-shape failure was reconciled as `absent`; the failed-ledger backup remains outside Git. No OpenClaw or legacy launchd job was changed. |
+| I-3 | Run one controlled Honne EN canary from Life Manager using the migrated approved pack | one real TikTok publication reconciles as `PUBLISHED`, its direct `/video/<id>` URL returns publicly, Telegram receives the same URL, replay produces no duplicate | **quarantined** — the historical row/receipt/replay at `https://www.tiktok.com/@honne_reveal/video/7676366077437233172` (`message_id=27226`) is real and duplicate-safe but used a generic LM wake/demo object, not the approved `honne-en` ReelClaw pack; preserve it and rerun with a new effect. No OpenClaw or legacy launchd job was changed. |
 | I-4 | Prove seven consecutive Honne EN expected cycles | every slot has exactly one verified generation, publication, URL, notification, and initial observation receipt; any miss/duplicate resets the counter | open |
 | I-5 | Repair and migrate Anicca video/slideshow producers one lane at a time | missing hook sources, blank IDs, poster arguments, and secret boundaries are fixed behind Life Manager contracts; each lane passes shadow, canary, and seven expected cycles | open |
 | I-6 | Migrate Honne JA, then remaining Larry/ReelClaw routes | each retained route preserves product/locale/account/cadence behavior and no longer reads OpenClaw or another repository at runtime | open |
@@ -1667,16 +1707,16 @@ after the preceding numbered row, and no later row is started early:
 MKT-07 → MKT-08 → MKT-09 → MKT-10 → MKT-11 → MKT-11A → MKT-11B → MKT-12 →
 MKT-13`.
 
-Current TODO state: **MKT-01 done; MKT-02 done; MKT-03 done; MKT-03A done; MKT-03B onward open**. Honne
+Current TODO state: **MKT-01 done; MKT-02 done; MKT-03 quarantined and must be rerun with the approved Honne pack; MKT-03A contract done; MKT-03B onward open**. Honne
 has TikTok/Instagram destinations only; YouTube remains an Anicca-only lane.
 
 | ID | Atomic action | Account/lane | Done evidence |
 |---|---|---|---|
 | MKT-01 | **done —** Port I-3 claim, receipt, Telegram dedupe, and replay state from PostgreSQL/`pg` to the Life Manager-owned local JSONL/atomic-file ledger | all lanes | direct local process restarts cleanly; 32/32 focused tests; 149/149 runtime-adapter tests; 8/8 runtime-path tests; live/dead lock recovery stress 20/20; duplicate claim/effect/notification count is 0; expired external effects reconcile instead of retrying |
 | MKT-02 | **done —** Read the live Postiz integration registry and freeze a redacted multi-platform lane manifest containing integration ID, provider, profile, locale, product, and disabled state | Honne TikTok/Instagram; Anicca TikTok/Instagram/YouTube | live GET `HTTP 200` with 29 rows; manifest `marketing-lane-manifest:9867179bbb8db1cbd434800562a92c40935b353789c2c60de4027dba9895790c` at the Life Manager data root, mode `0600`; eight explicit routes validate and all remain non-production; Honne Instagram is recorded as unassigned because no live profile exists; no provider write |
-| MKT-03 | **done —** Run one controlled publication using the Life Manager route, reconcile `PUBLISHED`, verify the direct TikTok `/video/<id>` URL, and send one Telegram receipt | Honne EN `@honne_reveal` | one `PUBLISHED` receipt and direct `https://www.tiktok.com/@honne_reveal/video/7676366077437233172` HTTP 200; natural-language Telegram receipt `message_id=27226` carries the same URL and required fields; first failed pre-provider attempt was reconciled `absent`; canary replay and second-process replay create 0 new publication or message effects |
+| MKT-03 | **quarantined —** Run one controlled publication using the Life Manager route, reconcile `PUBLISHED`, verify the direct TikTok `/video/<id>` URL, and send one Telegram receipt | Honne EN `@honne_reveal` | the row and Telegram receipt exist (`https://www.tiktok.com/@honne_reveal/video/7676366077437233172`, `message_id=27226`, replay effects 0), but the creative used a non-approved generic 12-second object instead of the migrated `honne-en` ReelClaw pack; retain it as rollback/evidence and rerun this gate with the approved pack |
 | MKT-03A | **done —** Extend the generic publication contract and direct-URL verifier to YouTube while keeping Postiz as the provider | selected **Anicca** YouTube integration only | adapter accepts Anicca-only YouTube jobs with `youtube_integration_ref`; `/shorts/<id>` and `/watch?v=<id>` receipts pass while profile URLs fail; shadow plan creates one job and provider writes remain 0; both live candidates stay disabled |
-| MKT-03B | Run one controlled Postiz fan-out canary with one effect key per platform, one selected product lane at a time: Anicca on TikTok/Instagram/YouTube or Honne on TikTok/Instagram | one selected production-armed product lane | Anicca: three receipts/URLs; Honne: two receipts/URLs; each has a metric join key, one natural-language Telegram summary, and replay creates 0 new effects |
+| MKT-03B | Run one controlled Postiz fan-out canary with one effect key per platform, one selected product lane at a time: Anicca on TikTok/Instagram/YouTube or Honne on TikTok/Instagram | one selected production-armed product lane | **open —** the Anicca attempt used the quarantined `lm_wake` artifact and its initially derived TikTok URL was not native-provider verified; migrate the approved Larry/ReelClaw pack, then produce direct native URLs, metric joins, one natural-language Telegram summary, and replay with 0 new effects |
 | MKT-04 | Run the retained Honne EN cadence and prove seven consecutive expected cycles | Honne EN: 07:00 / 11:00 / 20:30 Asia/Tokyo | every expected slot has one generation, publication, direct URL, notification, and observation receipt |
 | MKT-05 | Repair the known hook, asset, poster-argument, and environment-boundary defects before any publication | Honne JA `@honnevideo` | one clean shadow run and one controlled canary; no OpenClaw path/env/asset read |
 | MKT-06 | Restore the retained Honne JA slots, then record and prove a third daily slot in the Life Manager lane manifest | Honne JA: current recovery slots 12:30 / 21:30; third slot is not invented until the lane manifest records it | three expected slots/day pass seven cycles; old `honne-ja-fresh` remains disabled until separately proven |

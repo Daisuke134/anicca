@@ -5,6 +5,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const { buildRuntimeJob } = require("./runtime-job-store.js");
+const { assertMarketingProductFormat } = require("./marketing-format-policy.js");
 
 const ADAPTER_ID = "marketing-video-generation";
 const LOOP_ID = "marketing.video.generate";
@@ -83,6 +84,7 @@ function buildMarketingVideoGenerationJob(input = {}) {
   const tenantId = identifier(input.tenantId, "marketing video tenant");
   const productId = identifier(input.productId, "marketing video product");
   const formatId = identifier(input.formatId, "marketing video format");
+  assertMarketingProductFormat(productId, formatId);
   const localeId = locale(input.locale);
   const slot = exactInstant(input.slot, "marketing video slot");
   const mediaRefs = Array.isArray(input.mediaRefs)
@@ -188,6 +190,7 @@ function normalizeMarketingVideoPack(value, expected) {
   }
   const productId = identifier(value.product_id, "marketing video pack product");
   const formatId = identifier(value.format_id, "marketing video pack format");
+  assertMarketingProductFormat(productId, formatId);
   const localeId = locale(value.locale);
   if (
     productId !== expected.productId

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Publish one exact Life Manager creative contract to Instagram and TikTok."""
+"""Publish one exact Life Manager creative contract through Postiz."""
 
 from __future__ import annotations
 
@@ -40,6 +40,10 @@ class DistributionConfig:
         form: str = "",
         locale: str = "",
         slot: str = "",
+        instagram_integration: str = "",
+        postiz_adapter: Path | None = None,
+        youtube_adapter: Path | None = None,
+        youtube_integration: str = "",
     ):
         self.creative_id = creative_id
         self.video = Path(video)
@@ -47,6 +51,7 @@ class DistributionConfig:
         self.ledger = Path(ledger)
         self.instagram_adapter = Path(instagram_adapter)
         self.tiktok_adapter = Path(tiktok_adapter)
+        self.youtube_adapter = Path(youtube_adapter) if youtube_adapter is not None else self.tiktok_adapter
         self.instagram_handle = instagram_handle
         self.instagram_accounts = Path(instagram_accounts)
         self.instagram_settings = (
@@ -59,6 +64,9 @@ class DistributionConfig:
             Path(instagram_profile_state) if instagram_profile_state is not None else None
         )
         self.tiktok_integration = tiktok_integration
+        self.instagram_integration = instagram_integration
+        self.postiz_adapter = Path(postiz_adapter) if postiz_adapter is not None else Path(__file__).with_name("postiz_video.py")
+        self.youtube_integration = youtube_integration
         self.approvals = Path(approvals)
         self.env = dict(env or os.environ)
         self.format_id = format_id
@@ -111,18 +119,22 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def _validate(config: DistributionConfig) -> tuple[str, str]:
+def _validate(config: DistributionConfig, platform: str) -> tuple[str, str]:
     if not config.creative_id.strip():
         raise DistributionError("creative_id is required")
     for name, path in (("video", config.video), ("caption", config.caption)):
         if not path.is_file() or path.stat().st_size == 0:
             raise DistributionError(f"{name} must be a non-empty file")
-    for name, path in (
-        ("instagram adapter", config.instagram_adapter),
-        ("tiktok adapter", config.tiktok_adapter),
-    ):
-        if not path.is_file():
-            raise DistributionError(f"{name} is missing")
+    adapter = {
+        "instagram": (
+            "Instagram Postiz adapter" if config.instagram_integration.strip() else "instagram adapter",
+            config.postiz_adapter if config.instagram_integration.strip() else config.instagram_adapter,
+        ),
+        "tiktok": ("tiktok adapter", config.tiktok_adapter),
+        "youtube": ("youtube adapter", config.youtube_adapter),
+    }.get(platform)
+    if adapter is None or not adapter[1].is_file():
+        raise DistributionError(f"{adapter[0] if adapter else platform + ' adapter'} is missing")
     caption_text = config.caption.read_text(encoding="utf-8").strip()
     if not caption_text:
         raise DistributionError("caption must contain text")
@@ -219,13 +231,28 @@ def _valid_public_url(platform: str, value) -> bool:
         return bool(re.fullmatch(r"https://www\.instagram\.com/(?:reel|p)/[A-Za-z0-9_-]+/?", value))
     if platform == "tiktok":
         return bool(re.fullmatch(r"https://www\.tiktok\.com/@[^/]+/video/[0-9]+/?", value))
+    if platform == "youtube":
+        return bool(re.fullmatch(
+            r"https://www\.youtube\.com/(?:shorts/[A-Za-z0-9_-]+|watch\?v=[A-Za-z0-9_-]+(?:&[^#]+)?)/?",
+            value,
+        ))
     return False
 
 
 def _run_json(argv: list[str], env: Mapping[str, str]) -> dict:
     proc = subprocess.run(argv, text=True, capture_output=True, env=dict(env), timeout=900)
     if proc.returncode != 0:
-        raise DistributionError(f"adapter failed with exit {proc.returncode}")
+        lines = [line for line in proc.stdout.splitlines() if line.strip()]
+        detail = None
+        if lines:
+            try:
+                payload = json.loads(lines[-1])
+            except json.JSONDecodeError:
+                payload = None
+            if isinstance(payload, dict):
+                detail = payload.get("error") or payload.get("message")
+        suffix = f": {detail}" if isinstance(detail, str) and detail else ""
+        raise DistributionError(f"adapter failed with exit {proc.returncode}{suffix}")
     lines = [line for line in proc.stdout.splitlines() if line.strip()]
     if not lines:
         raise DistributionError("adapter returned no JSON")
@@ -292,9 +319,11 @@ def _append_success(
 
 
 def distribute_platform(config: DistributionConfig, platform: str) -> dict:
-    if platform not in {"instagram", "tiktok"}:
-        raise DistributionError("platform must be instagram or tiktok")
-    video_hash, caption_hash = _validate(config)
+    if platform not in {"instagram", "tiktok", "youtube"}:
+        raise DistributionError("platform must be instagram, tiktok, or youtube")
+    if platform == "youtube" and not config.youtube_integration.strip():
+        raise DistributionError("YouTube integration is required")
+    video_hash, caption_hash = _validate(config, platform)
     # Fail closed BEFORE any adapter runs: without an approval for these exact bytes nothing is posted.
     approval = _approved(config.approvals, config.creative_id, video_hash, caption_hash)
     if approval is None:
@@ -319,38 +348,67 @@ def distribute_platform(config: DistributionConfig, platform: str) -> dict:
         }
 
     if platform == "instagram":
-        instagram_argv = [
-                str(config.instagram_adapter),
-                "--video",
-                str(config.video),
-                "--caption-file",
-                str(config.caption),
-                "--handle",
-                config.instagram_handle,
-                "--accounts-path",
-                str(config.instagram_accounts),
-        ]
-        if config.instagram_settings is not None:
-            instagram_argv.extend(["--settings-path", str(config.instagram_settings)])
-        if config.instagram_credentials is not None:
-            instagram_argv.extend(["--credentials-path", str(config.instagram_credentials)])
-        if config.instagram_profile_state is not None:
-            instagram_argv.extend(["--profile-state-dir", str(config.instagram_profile_state)])
-        instagram_argv.append("--live")
-        result = _run_json(instagram_argv, config.env)
+        if config.instagram_integration.strip():
+            result = _run_json(
+                [
+                    str(config.postiz_adapter),
+                    "--video",
+                    str(config.video),
+                    "--caption-file",
+                    str(config.caption),
+                    "--integration",
+                    config.instagram_integration,
+                    "--platform",
+                    "instagram",
+                ],
+                config.env,
+            )
+            instagram_url = result.get("post_url")
+            if result.get("state") != "PUBLISHED" or not _valid_public_url("instagram", instagram_url):
+                raise DistributionError("Instagram Postiz did not return a PUBLISHED direct public URL")
+            published = _append_success(
+                config,
+                platform="instagram",
+                public_url=instagram_url,
+                video_hash=video_hash,
+                caption_hash=caption_hash,
+                provider_id=result.get("post_id"),
+                adapter_result=result,
+            )
+        else:
+            instagram_argv = [
+                    str(config.instagram_adapter),
+                    "--video",
+                    str(config.video),
+                    "--caption-file",
+                    str(config.caption),
+                    "--handle",
+                    config.instagram_handle,
+                    "--accounts-path",
+                    str(config.instagram_accounts),
+            ]
+            if config.instagram_settings is not None:
+                instagram_argv.extend(["--settings-path", str(config.instagram_settings)])
+            if config.instagram_credentials is not None:
+                instagram_argv.extend(["--credentials-path", str(config.instagram_credentials)])
+            if config.instagram_profile_state is not None:
+                instagram_argv.extend(["--profile-state-dir", str(config.instagram_profile_state)])
+            instagram_argv.append("--live")
+            result = _run_json(instagram_argv, config.env)
         instagram_url = result.get("post_url")
-        if result.get("outcome") != "published" or not _valid_public_url("instagram", instagram_url):
-            raise DistributionError("Instagram did not return a published public URL")
-        published = _append_success(
-            config,
-            platform="instagram",
-            public_url=instagram_url,
-            video_hash=video_hash,
-            caption_hash=caption_hash,
-            provider_id=result.get("code"),
-            adapter_result=result,
-        )
-    else:
+        if not config.instagram_integration.strip():
+            if result.get("outcome") != "published" or not _valid_public_url("instagram", instagram_url):
+                raise DistributionError("Instagram did not return a published public URL")
+            published = _append_success(
+                config,
+                platform="instagram",
+                public_url=instagram_url,
+                video_hash=video_hash,
+                caption_hash=caption_hash,
+                provider_id=result.get("code"),
+                adapter_result=result,
+            )
+    elif platform == "tiktok":
         result = _run_json(
             [
                 str(config.tiktok_adapter),
@@ -370,6 +428,33 @@ def distribute_platform(config: DistributionConfig, platform: str) -> dict:
             config,
             platform="tiktok",
             public_url=tiktok_url,
+            video_hash=video_hash,
+            caption_hash=caption_hash,
+            provider_id=result.get("post_id"),
+            adapter_result=result,
+        )
+    else:
+        result = _run_json(
+            [
+                str(config.youtube_adapter),
+                "--video",
+                str(config.video),
+                "--caption-file",
+                str(config.caption),
+                "--integration",
+                config.youtube_integration,
+                "--platform",
+                "youtube",
+            ],
+            config.env,
+        )
+        youtube_url = result.get("post_url")
+        if result.get("state") != "PUBLISHED" or not _valid_public_url("youtube", youtube_url):
+            raise DistributionError("YouTube did not return a PUBLISHED direct public URL")
+        published = _append_success(
+            config,
+            platform="youtube",
+            public_url=youtube_url,
             video_hash=video_hash,
             caption_hash=caption_hash,
             provider_id=result.get("post_id"),
@@ -426,7 +511,7 @@ def main() -> int:
     here = Path(__file__).resolve().parent
     parser = argparse.ArgumentParser()
     parser.add_argument("--creative-id", required=True)
-    parser.add_argument("--platform", choices=("instagram", "tiktok", "both"), default="both")
+    parser.add_argument("--platform", choices=("instagram", "tiktok", "youtube", "both"), default="both")
     parser.add_argument("--video", type=Path, required=True)
     parser.add_argument("--caption-file", type=Path)
     parser.add_argument(
@@ -453,6 +538,16 @@ def main() -> int:
         type=Path,
         default=default_tiktok_adapter(here, os.environ),
     )
+    parser.add_argument(
+        "--youtube-adapter",
+        type=Path,
+        default=here / "postiz_video.py",
+    )
+    parser.add_argument(
+        "--postiz-adapter",
+        type=Path,
+        default=here / "postiz_video.py",
+    )
     parser.add_argument("--instagram-handle", default=os.environ.get("LM_INSTAGRAM_HANDLE", "anicca.affirms2"))
     parser.add_argument(
         "--instagram-accounts",
@@ -467,6 +562,7 @@ def main() -> int:
     parser.add_argument("--instagram-settings", type=Path)
     parser.add_argument("--instagram-credentials", type=Path)
     parser.add_argument("--instagram-profile-state", type=Path)
+    parser.add_argument("--instagram-integration", default=os.environ.get("LM_INSTAGRAM_INTEGRATION", ""))
     parser.add_argument(
         "--approvals",
         type=Path,
@@ -479,6 +575,10 @@ def main() -> int:
     parser.add_argument(
         "--tiktok-integration",
         default=os.environ.get("LM_TIKTOK_INTEGRATION", "cmpc6cr6g00d8lg0yfythzz9f"),
+    )
+    parser.add_argument(
+        "--youtube-integration",
+        default=os.environ.get("LM_YOUTUBE_INTEGRATION", ""),
     )
     parser.add_argument("--format-id", default="")
     parser.add_argument("--form", default="")
@@ -497,17 +597,21 @@ def main() -> int:
             ledger=args.ledger,
             instagram_adapter=args.instagram_adapter,
             tiktok_adapter=args.tiktok_adapter,
+            youtube_adapter=args.youtube_adapter,
             instagram_handle=args.instagram_handle,
             instagram_accounts=args.instagram_accounts,
             instagram_settings=args.instagram_settings,
             instagram_credentials=args.instagram_credentials,
             instagram_profile_state=args.instagram_profile_state,
             tiktok_integration=args.tiktok_integration,
+            youtube_integration=args.youtube_integration,
             approvals=args.approvals,
             format_id=args.format_id,
             form=args.form,
             locale=args.locale,
             slot=args.slot,
+            instagram_integration=args.instagram_integration,
+            postiz_adapter=args.postiz_adapter,
         )
     result = (
         distribute(config)

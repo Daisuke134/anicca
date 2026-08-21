@@ -20,7 +20,7 @@ const TT_URL = "https://www.tiktok.com/@honne_ai/video/7999999999999999999";
 const YT_SHORTS_URL = "https://www.youtube.com/shorts/AbCd_123";
 const YT_WATCH_URL = "https://www.youtube.com/watch?v=AbCd_123&t=2";
 
-function job(platform = "tiktok") {
+function job(platform = "tiktok", overrides = {}) {
   return buildMarketingVideoPublicationJob({
     tenantId: "tenant-a",
     productId: "honne-ai",
@@ -36,6 +36,7 @@ function job(platform = "tiktok") {
     instagramProfileRef: "profile://instagram/honne-ai-ja",
     postizTokenRef: "secret://postiz/api-key",
     tiktokIntegrationRef: "integration://postiz/tiktok/honne-ai-ja",
+    ...overrides,
   });
 }
 
@@ -88,6 +89,13 @@ test("generic video publication job binds product, slot, exact bytes, and one pl
   assert.doesNotMatch(
     JSON.stringify(value),
     /\.openclaw|profitable-claude|\/Users\/|provider-token/,
+  );
+});
+
+test("mobile publication rejects a Life Manager wake/demo format", () => {
+  assert.throws(
+    () => job("tiktok", { formatId: "anicca-wake" }),
+    /cannot use format/i,
   );
 });
 

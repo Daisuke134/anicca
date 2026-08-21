@@ -9,6 +9,7 @@ const { spawnSync } = require("node:child_process");
 const { buildRuntimeJob } = require("./runtime-job-store.js");
 const { createContentObjectStore } = require("./content-object-store.js");
 const { resolveRuntimePaths } = require("./runtime-paths.js");
+const { assertMarketingProductFormat } = require("./marketing-format-policy.js");
 
 const ADAPTER_ID = "marketing-video-publication";
 const LOOP_ID = "marketing.video.publish";
@@ -26,6 +27,7 @@ const CREATIVE_REF = /^creative:\/\/([A-Za-z0-9][A-Za-z0-9._-]{0,127})\/([A-Za-z
 const PLATFORM_REF = /^platform:\/\/(instagram|tiktok|youtube)$/;
 const PROFILE_REF = /^profile:\/\/instagram\/[a-z0-9._-]+$/i;
 const SECRET_REF = /^secret:\/\/[a-z0-9][a-z0-9._-]*(?:\/[a-z0-9][a-z0-9._-]*)*$/i;
+const INSTAGRAM_INTEGRATION_REF = /^integration:\/\/postiz\/instagram\/[a-z0-9._-]+$/i;
 const TIKTOK_INTEGRATION_REF = /^integration:\/\/postiz\/tiktok\/[a-z0-9._-]+$/i;
 const YOUTUBE_INTEGRATION_REF = /^integration:\/\/postiz\/youtube\/[a-z0-9._-]+$/i;
 const EFFECT_KEY = /^marketing:video:([A-Za-z0-9][A-Za-z0-9._-]{0,127}):(instagram|tiktok|youtube):([A-Za-z0-9][A-Za-z0-9._-]{0,127}):([0-9a-f]{64}):([0-9a-f]{64})$/;
@@ -53,6 +55,7 @@ const COMMON_REF_KEYS = [
   "video_ref",
 ];
 const LEGACY_REF_KEYS = [...COMMON_REF_KEYS, "tiktok_integration_ref"].sort();
+const INSTAGRAM_REF_KEYS = [...COMMON_REF_KEYS, "instagram_integration_ref"].sort();
 const YOUTUBE_REF_KEYS = [...COMMON_REF_KEYS, "youtube_integration_ref"].sort();
 
 function required(value, label) {
@@ -111,6 +114,7 @@ function buildMarketingVideoPublicationJob(input = {}) {
   const tenantId = identifier(input.tenantId, "marketing video publication tenant");
   const productId = identifier(input.productId, "marketing video publication product");
   const formatId = identifier(input.formatId, "marketing video publication format");
+  assertMarketingProductFormat(productId, formatId);
   const form = identifier(input.form, "marketing video publication form");
   const localeId = locale(input.locale);
   const slot = exactInstant(input.slot, "marketing video publication slot");
@@ -120,7 +124,7 @@ function buildMarketingVideoPublicationJob(input = {}) {
     PLATFORM_REF,
     "marketing video publication platform",
   ).match[1];
-  if (platform === "youtube" && productId !== "anicca") {
+  if (platform === "youtube" && !["anicca", "anicca-ios"].includes(productId)) {
     throw new Error("Honne YouTube publication is forbidden");
   }
   const videoRef = objectRef(input.videoRef, "marketing video publication video");
@@ -132,10 +136,23 @@ function buildMarketingVideoPublicationJob(input = {}) {
     "Instagram profile",
   ).text;
   const postizTokenRef = matchRef(input.postizTokenRef, SECRET_REF, "Postiz token").text;
+  const modernInstagramIntegration = input.instagramIntegrationRef || input.postizInstagramIntegrationRef;
   const integrationRef = matchRef(
-    input.youtubeIntegrationRef || input.postizIntegrationRef || input.tiktokIntegrationRef,
-    platform === "youtube" ? YOUTUBE_INTEGRATION_REF : TIKTOK_INTEGRATION_REF,
-    platform === "youtube" ? "YouTube integration" : "TikTok integration",
+    platform === "youtube"
+      ? input.youtubeIntegrationRef || input.postizIntegrationRef || input.tiktokIntegrationRef
+      : platform === "instagram"
+        ? modernInstagramIntegration || input.postizIntegrationRef || input.tiktokIntegrationRef
+        : input.postizIntegrationRef || input.tiktokIntegrationRef,
+    platform === "youtube"
+      ? YOUTUBE_INTEGRATION_REF
+      : platform === "instagram" && modernInstagramIntegration
+        ? INSTAGRAM_INTEGRATION_REF
+        : TIKTOK_INTEGRATION_REF,
+    platform === "youtube"
+      ? "YouTube integration"
+      : platform === "instagram" && modernInstagramIntegration
+        ? "Instagram integration"
+        : "TikTok integration",
   ).text;
 
   const videoHash = OBJECT_REF.exec(videoRef)[1];
@@ -156,7 +173,9 @@ function buildMarketingVideoPublicationJob(input = {}) {
     postiz_token_ref: postizTokenRef,
     ...(platform === "youtube"
       ? { youtube_integration_ref: integrationRef }
-      : { tiktok_integration_ref: integrationRef }),
+      : platform === "instagram" && modernInstagramIntegration
+        ? { instagram_integration_ref: integrationRef }
+        : { tiktok_integration_ref: integrationRef }),
   };
 
   // job_id and effect_key must agree: the database enforces UNIQUE (tenant_id, effect_key)
@@ -204,8 +223,14 @@ function normalizeJob(job) {
   ) {
     throw new Error("marketing video publication job contract is invalid");
   }
-  const expectedRefKeys = platformMatch[1] === "youtube" ? YOUTUBE_REF_KEYS : LEGACY_REF_KEYS;
-  if (JSON.stringify(Object.keys(refs).sort()) !== JSON.stringify(expectedRefKeys)) {
+  const platform = platformMatch[1];
+  const refKeys = JSON.stringify(Object.keys(refs).sort());
+  const expectedRefKeys = platform === "youtube"
+    ? [YOUTUBE_REF_KEYS]
+    : platform === "instagram"
+      ? [INSTAGRAM_REF_KEYS, LEGACY_REF_KEYS]
+      : [LEGACY_REF_KEYS];
+  if (!expectedRefKeys.some((keys) => refKeys === JSON.stringify(keys))) {
     throw new Error("marketing video publication job contract is invalid");
   }
   const input = {
@@ -222,12 +247,16 @@ function normalizeJob(job) {
     approvalRef: refs.approval_ref,
     instagramProfileRef: refs.instagram_profile_ref,
     postizTokenRef: refs.postiz_token_ref,
-    postizIntegrationRef: platformMatch[1] === "youtube"
+    postizIntegrationRef: platform === "youtube"
       ? refs.youtube_integration_ref
-      : refs.tiktok_integration_ref,
-    ...(platformMatch[1] === "youtube"
+      : platform === "instagram" && refs.instagram_integration_ref
+        ? refs.instagram_integration_ref
+        : refs.tiktok_integration_ref,
+    ...(platform === "youtube"
       ? { youtubeIntegrationRef: refs.youtube_integration_ref }
-      : { tiktokIntegrationRef: refs.tiktok_integration_ref }),
+      : platform === "instagram" && refs.instagram_integration_ref
+        ? { instagramIntegrationRef: refs.instagram_integration_ref }
+        : { tiktokIntegrationRef: refs.tiktok_integration_ref }),
   };
   let expected;
   try {
@@ -363,6 +392,7 @@ const SUBPROCESS_ENV_KEYS = [
   "LM_INSTAGRAM_ACCOUNTS",
   "LM_INSTAGRAM_POSTER",
   "LM_TIKTOK_INTEGRATION",
+  "LM_YOUTUBE_INTEGRATION",
 ];
 
 function subprocessEnv(postizToken) {
@@ -394,7 +424,9 @@ function runDistributionProcess(input) {
     "--instagram-settings", input.instagramSettingsPath,
     "--instagram-credentials", input.instagramCredentialsPath,
     "--instagram-profile-state", input.instagramProfileStatePath,
+    "--instagram-integration", input.instagramIntegration,
     "--tiktok-integration", input.tiktokIntegration,
+    "--youtube-integration", input.youtubeIntegration,
   ], {
     cwd: repoRoot,
     env: subprocessEnv(input.postizToken),
@@ -403,7 +435,17 @@ function runDistributionProcess(input) {
     maxBuffer: 4 * 1024 * 1024,
   });
   if (result.status !== 0) {
-    const error = new Error(`marketing video publication distribution failed with exit ${result.status}`);
+    const lines = String(result.stdout || "").split(/\r?\n/).filter(Boolean);
+    let detail = "";
+    if (lines.length) {
+      try {
+        const payload = JSON.parse(lines[lines.length - 1]);
+        if (payload && typeof payload.error === "string" && payload.error.trim()) {
+          detail = `: ${payload.error.trim()}`;
+        }
+      } catch {}
+    }
+    const error = new Error(`marketing video publication distribution failed with exit ${result.status}${detail}`);
     error.unknownEffect = true;
     throw error;
   }
@@ -453,7 +495,7 @@ async function executeMarketingVideoPublicationJob(job, deps = {}) {
     ["secret", services.secretProvider],
     ["integration", services.integrationProvider],
   ];
-  if (contract.platform === "instagram") {
+  if (contract.platform === "instagram" && services.profileProvider) {
     requiredProviders.unshift(["profile", services.profileProvider]);
   }
   for (const [name, provider] of requiredProviders) {
@@ -466,10 +508,10 @@ async function executeMarketingVideoPublicationJob(job, deps = {}) {
   const videoPath = services.objectStore.resolve(contract.videoRef);
   const captionPath = services.objectStore.resolve(contract.captionRef);
   const approvalPath = services.objectStore.resolve(contract.approvalRef);
-  const profile = contract.platform === "instagram"
+  const profile = contract.platform === "instagram" && services.profileProvider
     ? await services.profileProvider.get(job.tenant_id, contract.instagramProfileRef)
     : null;
-  if (contract.platform === "instagram" && (
+  if (contract.platform === "instagram" && services.profileProvider && (
     !profile
     || !profile.handle
     || !profile.accountsPath
@@ -507,6 +549,7 @@ async function executeMarketingVideoPublicationJob(job, deps = {}) {
       instagramCredentialsPath: profile ? profile.credentialsPath : "",
       instagramProfileStatePath: profile ? profile.stateDir : "",
       postizToken,
+      instagramIntegration: platformIntegration,
       tiktokIntegration: platformIntegration,
       youtubeIntegration: platformIntegration,
     });
