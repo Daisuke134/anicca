@@ -84,6 +84,7 @@ receipt is provider `message_id=27583`. The result recorded `providerDataFreshne
 configured. Fresh read + renderer verification shows the three-day lag warning and explicitly says the balance is not
 realtime and the bank-side update time is unknown. The loop itself is healthy; only the external provider refresh path
 remains open.
+Codex milestone summary was sent to the same Telegram destination with provider `message_id=27589`.
 
 ## CFO-2c Fleet boundary progress (2026-08-21)
 
