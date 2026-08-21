@@ -6,9 +6,13 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import pathlib
 import subprocess
 import tempfile
+
+
+FFMPEG = os.environ.get("FFMPEG_BIN", "/opt/homebrew/opt/ffmpeg-full/bin/ffmpeg")
 
 
 def ass_time(seconds: float) -> str:
@@ -40,6 +44,24 @@ def duration(path: pathlib.Path) -> float:
     return float(result.stdout.strip())
 
 
+def subtitle_filter(ass: pathlib.Path, phrases: list[str], segment: float, work: pathlib.Path) -> str:
+    filters = subprocess.run([FFMPEG, "-filters"], capture_output=True, text=True, check=True).stdout
+    if "subtitles" in filters:
+        path = str(ass).replace(":", r"\:").replace("'", r"\'")
+        return f"subtitles=filename='{path}'"
+    lines: list[str] = []
+    for index, phrase in enumerate(phrases):
+        textfile = work / f"caption-{index}.txt"
+        textfile.write_text(wrap_ja(phrase).replace(r"\N", "\n"), encoding="utf-8")
+        start, end = index * segment, (index + 1) * segment
+        lines.append(
+            "drawtext=fontfile='/System/Library/Fonts/Hiragino Sans GB.ttc'"
+            f":textfile='{textfile}':fontcolor=white:fontsize=50:borderw=3:bordercolor=0x141414"
+            f":x=(w-text_w)/2:y=h-180:enable='between(t,{start:.3f},{end:.3f})'"
+        )
+    return ",".join(lines)
+
+
 def render(*, script: str, output: pathlib.Path, clips: list[pathlib.Path],
            voice: str = "Kyoko", voice_rate: int = 165,
            caption_style_id: str = "ass.watercolor.safe-v1") -> dict:
@@ -47,7 +69,7 @@ def render(*, script: str, output: pathlib.Path, clips: list[pathlib.Path],
         raise ValueError("all cached motion clips must exist")
     if caption_style_id != "ass.watercolor.safe-v1":
         raise ValueError("unsupported caption style")
-    output = pathlib.Path(output)
+    output = pathlib.Path(output).resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="watercolor-preview-") as raw:
         work = pathlib.Path(raw)
@@ -79,14 +101,17 @@ Format: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text
         while len(enough) * 5 < audio_duration + 5:
             enough.extend(clips)
         listing.write_text("".join(f"file '{path}'\n" for path in enough), encoding="utf-8")
-        ass_filter = str(ass).replace(":", r"\:").replace("'", r"\'")
-        subprocess.run([
-            "ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-f", "concat",
+        video_filter = subtitle_filter(ass, phrases, segment, work)
+        command = [
+            FFMPEG, "-hide_banner", "-loglevel", "error", "-y", "-f", "concat",
             "-safe", "0", "-i", str(listing), "-i", str(audio),
-            "-vf", f"subtitles='{ass_filter}'", "-c:v", "libx264", "-preset", "veryfast",
+            "-vf", video_filter, "-c:v", "libx264", "-preset", "veryfast",
             "-pix_fmt", "yuv420p", "-r", "30", "-c:a", "aac", "-b:a", "128k",
             "-shortest", "-movflags", "+faststart", str(output)
-        ], check=True, capture_output=True)
+        ]
+        completed = subprocess.run(command, capture_output=True, text=True)
+        if completed.returncode:
+            raise RuntimeError(f"ffmpeg render failed: {completed.stderr.strip()}")
     digest = hashlib.sha256(output.read_bytes()).hexdigest()
     return {"status": "rendered_preview", "output": str(output), "sha256": digest,
             "duration": round(duration(output), 3), "external_cost_usd": 0,
