@@ -153,6 +153,11 @@ Ashby evidence bundle, and that bundle's Telegram message ID. Its live output af
 the release cutover reports daily/inbox/learning exit health, both SQLite integrity
 checks `ok`, and a fresh Ashby result with an acknowledged checkpoint.
 
+After an Ashby submit click, the fast path now checks visible `aria-invalid` and
+alert validation errors. A client-side rejection becomes `not_submitted` (retryable)
+rather than a false `submit_unknown`; only an explicit confirmation becomes
+`submitted`, and the remaining ambiguous case stays fenced as `submit_unknown`.
+
 The remaining robustness work is ordered, not parallelized: cache freshness, provider-capacity detection, non-Ashby fallback, confirmation reconciliation, then full lifecycle/guardian/OSS.
 
 Within a live board batch, Forward Deployed and Solutions Engineer roles rank first,

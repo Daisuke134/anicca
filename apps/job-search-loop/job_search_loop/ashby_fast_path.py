@@ -54,6 +54,11 @@ CAPTCHA_RE = re.compile(
     r"i(?:'|’)m not a robot|verify you are human|captcha challenge|security check",
     re.IGNORECASE,
 )
+FORM_ERROR_RE = re.compile(
+    r"this field is required|answer is required|please enter|invalid email|"
+    r"please complete|required field",
+    re.IGNORECASE,
+)
 
 
 def _safe_text(value: Any, maximum: int = 240) -> str:
@@ -428,6 +433,17 @@ async def _submitted_confirmation(page: Any) -> bool:
     return False
 
 
+async def _visible_validation_error(page: Any) -> bool:
+    try:
+        invalid = page.locator("[aria-invalid='true']")
+        if await invalid.count():
+            return True
+        alerts = await page.locator("[role='alert']").all_inner_texts()
+    except Exception:
+        return False
+    return any(FORM_ERROR_RE.search(text or "") for text in alerts)
+
+
 def _provider_limit_result(
     *,
     application_id: str,
@@ -629,7 +645,12 @@ async def _process_one(
         await submit.first.click()
         clicked = True
         confirmed = await _submitted_confirmation(page)
-        outcome = "submitted" if confirmed else "submit_unknown"
+        if confirmed:
+            outcome = "submitted"
+        elif await _visible_validation_error(page):
+            outcome = "not_submitted"
+        else:
+            outcome = "submit_unknown"
         ledger.complete_submission(intent.intent_id, intent.fence, outcome)
         return {
             "application_id": application_id,
