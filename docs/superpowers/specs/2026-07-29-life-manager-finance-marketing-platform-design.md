@@ -1259,6 +1259,10 @@ The read-only preflight found three independent prerequisites still absent:
    executor is module-owned, its distribution child process receives only the
    explicit non-secret environment allowlist, and the publication receipt plus
    final redirect must remain on `@honne_reveal` with the same numeric video id.
+   The local inventory readback found only Anicca/Life Manager media under
+   `state/lm-video` (its captions point to `aniccaai.com/life-manager`), and no
+   Honne EN import pack or tenant-scoped marketing object refs. The only local
+   approval record is a standing policy entry, not a job-scoped approval object.
 
 No Postiz write, TikTok publication, Telegram send, lane enablement, or legacy
 OpenClaw scheduler action was performed. MKT-03 remains **active**; the next
