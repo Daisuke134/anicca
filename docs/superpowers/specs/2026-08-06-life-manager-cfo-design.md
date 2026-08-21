@@ -1060,6 +1060,15 @@ metadata surface is available, the CFO must say **Moneytree取得時刻／銀行
 value realtime/latest. This wording is live in `c806254b8` and installed in stable release `20260821T142520-86514`.
 This is a provider-capability boundary, not a launchd cache defect; no guessed connector or credential copy is allowed.
 
+### CFO-1j freshness warning correction (2026-08-21)
+
+Canonical commit `24ac6598a` changes both the hourly report and its callback detail view to render
+`⚠️ Moneytree` even when the internal retrieval status is `fresh`. The status still means that the
+read tool succeeded; it does not mean the bank refreshed its data. The visible text keeps the local
+retrieval timestamp and **銀行側データの新しさは不明**, so a successful provider read cannot be
+mistaken for a realtime bank balance. No provider, state, launchd, Telegram destination, or financial
+amount behavior changed.
+
 ### CFO-1j display correction (2026-08-21)
 
 The installed Moneytree read still returns the same provider payload (MUFG balance `358938`, latest returned

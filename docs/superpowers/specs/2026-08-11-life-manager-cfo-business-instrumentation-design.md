@@ -683,6 +683,9 @@ add a business-fact database table, renderer, API route, launchd wiring, or Tele
   redacted hourly view. Live read parity remains `¥358,938` with latest returned transaction date `2026-08-18`;
   the Telegram text states that the bank-side update time is unknown. No refresh credential, raw description, account
   number, or spending advice was added; `CFO-2d3` remains the advice gate.
+- Moneytree freshness warning (2026-08-21): canonical commit `24ac6598a` makes the hourly and callback source
+  lines `⚠️ Moneytree` even when retrieval succeeded. `fresh` is an internal read-success state, not realtime
+  proof; the report continues to show local retrieval time and bank-side freshness unknown.
 - Host-parity decision (2026-08-21): the official Codex MCP/skills/plugins/App Server/SDK surfaces support sharing
   user config, skill roots, and installed Apps across local Codex clients, but a fresh `codex exec` is not the main
   ChatGPT conversation. The Moneytree bundle is present in local plugin cache and `codex app-server` reports it
