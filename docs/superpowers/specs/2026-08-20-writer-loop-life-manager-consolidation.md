@@ -103,6 +103,9 @@
 - run quarantine receiptをpruneが消す別故障も検出したため、`prune-article-runs.py`は`run-quarantine.json`を含むrunを保護する。
   今後はqueueが参照する重複media証明をretentionで失わない。次のnew-identity canary前readbackは
   `WAIT=14 / FAILED=7 / CLAIMED=1`を必須にする。
+- 同じ実行でquality-self-healが非terminalのrunもprune対象から漏れていたため、品質回復receiptを持つrunを
+  recovery完了まで保護する修正を追加した。prune fixtureは保護3件・削除1件でPASS。これにより、非PASS品質gate後の
+  drafts/evidenceを同一run recovery workerが読む前に消さない。
 
 ### launchd control-plane の外部照合と現在の原因判定（2026-08-21）
 
