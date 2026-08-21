@@ -302,6 +302,17 @@ no-send, replay-zero and a new natural sub-30-minute official reply/estimate pro
 Do not advance the development cursor until every unchecked item in the current stage has official
 evidence. Independent production lanes continue running while development follows this order.
 
+**Live handover state.** The loaded Paid owner is running from an immutable release with up to eight
+independent project workers and ignores only the shared preventive 10/20 GiB disk flags; its 512 MiB
+last-resort guard and expiring operator brake remain active. X-post talkroom `18171850` is the sole
+closed item in the current four-client set: v1 has `effect=1`, official `readback=1`, `failed=0`, and
+formal delivery OFF. Review-article talkroom `18171890` has approved v4
+`645b3db845c779f597457e53330d419ca583dcc70a78876ee3b4e7800b2af08a` but no buyer-visible version;
+its latest prepare failed `file_validation`. Manledge `18169985` has v14 and remains
+`REPAIR_PENDING` round 4 for unproved DriverTalk UI-field claims. Haru `18169583` has v30 and remains
+`REPAIR_PENDING` round 3 for reference-fidelity defects; buyer-visible state is still v27. Current
+Paid completion is therefore one officially delivered/read-back artifact out of four, not four.
+
 1. **Paid/Submission — finish first.**
    - [ ] Deploy and read back Paid ignoring shared preventive `disk-pressure.block` (20 GiB) and
      `disk-writers.stop` (10/11 GiB hysteresis), while retaining the 512 MiB last-resort guard and
