@@ -167,13 +167,13 @@ async def _click_surface(page: Any, name: str) -> bool:
             if await candidate.is_visible():
                 visible_overlay.append(candidate)
         if len(visible_overlay) == 1:
-            await visible_overlay[0].click(timeout=10_000)
+            await visible_overlay[0].click(timeout=10_000, no_wait_after=True)
             return True
         button = await _visible_exact(page, "button", label)
         if button is None:
             button = await _visible_exact(page, "link", label)
         if button is not None:
-            await button.click(timeout=10_000)
+            await button.click(timeout=10_000, no_wait_after=True)
             return True
     return False
 
