@@ -18,7 +18,7 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
 | cadence | 部分実装 | OSS plistは`StartInterval=300`。通常passはbounded fast pass、`cleanup-full-pass.at`の1時間マーカー（または互換の`EMERGENCY_GUARD_FULL_PASS=1`）がbounded full cleanupを発火する。Data volumeの空きがexact-byteで3GiB未満なら、fresh markerでもそのpassをfullへ昇格し、worktree starvationを防ぐ。critical full pass後は5分cooldownで逐次full-pass stormを抑制し、hourly/explicit fullも同じcooldownを受ける。不正・未来のtimestamp receiptはdue扱い、cooldown設定が不正ならfullを許可せずfastへfail-closedし、critical markerを書けない場合もfastへfail-closedする。`ai.anicca.life-manager-disk-cleanup`は`gui/501`へbootstrap済みで、`StartInterval=300`、single lock、kickstart/readbackを実測。`com.anicca.emergency-disk-guard`と`com.anicca.disk-sentinel`は60秒fallback/観測として登録されている |
 | runtime guard | 部分実装 | 通常の5分guardは`~/anicca-project/work`と`~/.openclaw/external`だけをbounded fast passし、host inventoryを毎回atomic writeする。Life Managerの`host-inventory-full.at`とfallbackの`cleanup-full-pass.at`を別々に管理し、各1時間 cadenceでfull census/cleanupを発火する。ULTRA時はfallback guardがexact-byte critical promotionを行い、`cleanup-critical-full-pass.at`の5分cooldown中はfast passへ戻る。hourly/explicit fullの失敗・timeout後も次回はfast passへ戻り、critical receipt書込み失敗もgig rootを追加しない。root size/unknown attributionは未完了 |
 | ledger/receipt | 部分実装 | cleanup ledgerを32 MiBでrotateし、約282 MiBから56 KiB + gzip archiveへ縮小。bounded operational logとimmutable incident receiptの正式分離は未完了 |
-| production recovery | 未完了 | 非リポジトリreceipt storm、3分超のworktree remote inspection、旧autopruneの無制限home `du` は封じた。旧autoprune/reclaim/janitorをbootout＋disableし、plistは`.disabled-20260821`へ可逆退避した。正本5分labelはload readback済み。直近はfree約0.50GiB、swap約17.3GiB使用、cleanup receiptは`evaluated=0/reclaimed=0/protected_deletions=0`で安全候補なし。重要なCodex/OpenClaw sessionとVM swapfileは保持しており、24時間/7日観測は未開始 |
+| production recovery | 未完了 | 非リポジトリreceipt storm、3分超のworktree remote inspection、旧autopruneの無制限home `du` は封じた。旧autoprune/reclaim/janitorをbootout＋disableし、plistは`.disabled-20260821`へ可逆退避した。正本5分labelはload readback済み。swap縮小後の直近readbackはfree約15.5GiB、swap使用約0.9GiB、cleanup receiptは`evaluated=6/reclaimed=0/protected_deletions=0/preserved=open`で、安全削除なしに11GiB reserveを回復した。重要なCodex/OpenClaw sessionとVM swapfileは保持しており、24時間/7日観測は未開始 |
 
 ### 2026-08-21 incident fix evidence
 
@@ -118,10 +118,10 @@ manifestから除去した。回帰testで`.codex/.tmp`の再登録をfail-close
 ### 2026-08-21 bounded host census and safe reclaim evidence
 
 Life Manager governorは`host-inventory.json`を毎pass atomic writeする。実機のfast readbackはmount
-9件、root 23件、coverage gap 18件を記録し、unknown sizeを削除候補へ昇格させなかった。
+9件、root 23件、coverage gap 15件を記録し、unknown sizeを削除候補へ昇格させなかった。
 fallback passは`host-inventory-full.at`を使い、launchd user domain障害中も1時間ごとにfull censusを発火する。
-直近のfull readbackは約11秒、mode=`full`、mount 9件、root 17件、gap 11件で、追加した
-managed-home familyは次回full marker更新後に反映される。
+隔離stateでのfull readbackは約60秒、mode=`full`、mount 9件、root 23件、gap 11件だった。
+productionの追加managed-home familyは次回full marker更新後に反映される。
 Anicca cleanup controlのgit/lsof/du probeにも15秒timeoutを設定し、さらにguard外側のgovernor、
 runtime-manifest、sweep subprocessにも120秒（kill-after 10秒）のtimeoutを設定した。timeoutは
 error/preserveとして扱い、runtime-manifest失敗時はhourly markerを進めない。これによりfull passの
@@ -494,7 +494,7 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 | 12 | 既知regenerable artifact 1件でproduction canaryを実行 | reclaimed bytes > 0、free bytes readback、protected deletion 0 | 部分完了: closed `cfo-*`とclone候補の実E2E回収・readbackを確認。正式canary receiptは未完了 |
 | 13 | immediate replayを実行 | duplicate effect 0、error 0 | 部分完了: guard replayで保護対象削除0を確認。正式なproduction replay receiptは未完了 |
 | 14 | legacy janitor/cleanerの削除authorityをdisableし、canonical labelだけをload | loaded delete owner 1、rollback plist保存 | 完了: `ai.anicca.disk-autoprune`、`ai.anicca.disk-reclaim`、`ai.anicca.disk-janitor`を`gui/501`からbootout＋disableし、plistを`.disabled-20260821`へ保持。`ai.anicca.life-manager-disk-cleanup`は5分間隔でload/readback済み。sentinelとemergency guardは観測/fallbackとして残す |
-| 15 | 24時間連続観測 | free >= 11 GiB、ENOSPC 0、protected deletion 0 | 未完了: 現在free < 11 GiBでpressure blockが残り、観測開始条件未達 |
+| 15 | 24時間連続観測 | free >= 11 GiB、ENOSPC 0、protected deletion 0 | 未完了: 一点readbackではfree約15.5GiBまで回復したが、24時間連続条件は未達 |
 | 16 | 7日間連続観測とproducer lifecycle audit | state write failure 0、cleanup起因producer failure 0 | 未完了: 24時間観測後に開始 |
 | 17 | rollback restore testと最終production receiptを保存 | prior label復元可能、final receipt、Telegram完了message ID | 未完了: launchd cutover、rollback実演、最終receiptが未完了 |
 
