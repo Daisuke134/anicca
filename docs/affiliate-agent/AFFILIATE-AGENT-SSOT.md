@@ -875,7 +875,12 @@ NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`, with approved, paid, pending, and
 reversed counts all zero and real cost coverage `UNKNOWN`. Current acquisition
 readback is 20 exact English placements, 44 aggregate provider clicks, zero
 signups, zero paid signups, and 58 observed Repost actions with 0 exact
-Affiliate campaign joins. Repost source state is `OBSERVED` from the existing
+Affiliate campaign joins. The first exact post-baseline provider click is now
+also live-proven: Link Performance transition `564b1e8b…` binds
+`elevenlabs-discovered-voice-changer-en-1`, baseline `5` → current `6`, delta
+`+1` (unique `+1`), and Telegram `27238` delivery event
+`f9ef527a…`; this closes E0 only and does not create money. Repost source state
+is `OBSERVED` from the existing
 home-loop ledger, so the zero join is an upstream shared-effect-owner gap, not a
 missing observer input. Clicks, post actions, estimates, screenshots, fixtures,
 and the recovery receipt are not money. B01 remains
@@ -4210,6 +4215,15 @@ shared abstraction to make the diff appear smaller.
   reconciles the row to its placement, sends one `CLICK_DELTA`, stores the provider
   message ID, and replays without duplication. That live receipt closes E0.
 
+  **Live closure:** the existing owner produced this receipt at
+  `2026-08-21T06:36:45Z`: Link Performance transition `564b1e8b…` for the exact
+  placement `elevenlabs-discovered-voice-changer-en-1` moved baseline `5` to
+  current `6` (`delta_click_count=1`, `delta_unique_click_count=1`). The same
+  owner sent Telegram `27238`, and delivery receipt `f9ef527a…` binds it to wake
+  `535aa5e…` without a duplicate send. E0 is therefore **CLOSED-INSTALLED**;
+  E1-H/B01 remains open because the official Commission Report still has zero
+  transaction rows.
+
 ##### Phase E1 — Prove the first approved commission
 
 - [x] **E1-01** Continue capturing provider Commission Report artifacts after E0;
@@ -5256,7 +5270,7 @@ atomic replacement, matching Python's replacement contract
 | U23 | PARTIAL-CLOSED | Six `@selawmqt` placements have exact public readback and ambiguous-effect recovery under the job journal. X failure classes and account-risk quarantine are not uniform | Add a typed failure/quarantine contract only after the next observed X failure; preserve current exact target/readback fence |
 | U24 | CLOSED-IN-SOURCE | Revenue transition identity is provider + provider transaction ID + provider status + gross/reversal/net minor units + row-provided currency + optional settlement/payout IDs + attribution + placement-join receipt. The timestamp-varying source artifact hash remains immutable lineage outside the identity, so the same row re-captured from a new artifact deduplicates while a real economic-state, settlement, payout, or late exact-join change remains a new transition | Installed loop replay remains required when the first non-empty provider row exists; an empty report cannot prove live-row behavior |
 | U25 | CLOSED-INSTALLED | Revenue cycle persists the failed `observe`, `capture`, or `reconcile` stage, typed timeout/nonzero-exit/invalid-JSON class, return code, redacted output hash, latest provider artifact hash, observation time, and one-hour retry boundary. Raw stderr/stdout and provider data never enter the failure receipt. Installed release `44a04dcd15bada580f6701625ce18b275d5e6086` preserved the healthy cooldown path, all other lanes, and exit `0` | A future real failure must retain the same typed receipt and recover without resetting healthy work |
-| U26 | CONTRACT-CLOSED-PROOF-OPEN | Aggregate click `1` is baseline-only. Section 9.0.1.1 fixes the next contract: one PartnerStack custom link per placement plus Link Performance baseline/delta; aggregate Overview never closes E0 | Implement E0-B01–B10, then close proof only from one positive provider link-row delta; never infer attribution from aggregate totals |
+| U26 | CLOSED-INSTALLED | Aggregate Overview deltas remain unattributed, but the exact PartnerStack Link Performance row now has a positive post-baseline delta: placement `elevenlabs-discovered-voice-changer-en-1`, baseline `5`, current `6`, delta `+1` / unique `+1`, transition `564b1e8b…`, Telegram `27238` with delivery `f9ef527a…` | Reopen only if a later replay duplicates this transition or loses its exact placement/Telegram join; aggregate-only deltas still never close E0 |
 | U27 | CLOSED-INSTALLED | `loop placement` always prints only the redacted placement receipt. The `--print-url` argument and the conditional stdout path are absent; installed release `3b8b14992fdaa0af4e1ba9ecf2db3e3288033cc5` rejects that legacy flag with exit `2` instead of exposing the private referral URL | Keep all referral URLs in private Markdown/browser state and hashes only in receipts |
 | U28 | OPEN-BEFORE-CODE | Private Markdown can update before a later Keychain failure, with no rollback receipt | Make the two-store operation resumable/reconcilable and report partial state without secret values |
 | U29 | CLOSED-INSTALLED | `AFFILIATE_LANDING_ROOT` is an explicit launchd environment value and the installed publisher accepts only that clean configured root | Reopen only if install/readback loses the configured root or publication scans an unconfigured repository |
