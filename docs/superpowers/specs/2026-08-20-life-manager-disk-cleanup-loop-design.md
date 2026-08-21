@@ -501,8 +501,8 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 | 9 | owner単位のbounded recoveryを実装 | Test Matrix 20 PASS、duplicate redispatch 0 | 未完了: owner単位のcheckpoint、redispatch、重複抑止は未実装 |
 | 10 | 全cleanup test、host inventory test、Life Manager regression suiteを実行 | failure 0、warning 0、Test Matrix 23–27 PASS | 部分完了: Life Manager disk-cleanup 12 tests、Anicca cleanup regression **63 tests**、shell/plist lintはPASS。Matrix 23–27は未完了 |
 | 11 | effect-free shadow passでlegacy ownerとcanonical ownerのdecision parityを比較 | protected mismatch 0、candidate mismatch説明済み | 未完了: legacy scriptはshim化済みだが、effect-free parity receiptは未作成 |
-| 12 | 既知regenerable artifact 1件でproduction canaryを実行 | reclaimed bytes > 0、free bytes readback、protected deletion 0 | 実装完了: exact-path `--canary`経路、allowlisted `cfo-*` validator、bytes/absence、bootstrap health、atomic canary receiptを実装。production実artifactの実行receiptは未取得 |
-| 13 | immediate replayを実行 | duplicate effect 0、error 0 | 実装完了: 同一exact pathのmissing/no-op replayと、initial/replayを同一receiptへ保持するcontractを実装。production実artifactのreplay receiptは未取得 |
+| 12 | 既知regenerable artifact 1件でproduction canaryを実行 | reclaimed bytes > 0、free bytes readback、protected deletion 0 | 完了: 2026-08-21T10:23:23Zに`cfo-*` exact pathを1件だけ回収。before/reclaimed 196,608 bytes、after 0、removed=true、free 7,252,918,272→7,253,106,688 bytes、protected_deletions=0、canonical lock保持をreadback |
+| 13 | immediate replayを実行 | duplicate effect 0、error 0 | 完了: 同じexact pathのreplayは`canary-path-missing`、`duplicate_effect=0`、error=0。`canary-last-receipt.json`はinitial/replay両phaseを保持 |
 | 14 | legacy janitor/cleanerの削除authorityをdisableし、canonical labelだけをload | loaded delete owner 1、rollback plist保存 | 完了: `ai.anicca.disk-autoprune`、`ai.anicca.disk-reclaim`、`ai.anicca.disk-janitor`を`gui/501`からbootout＋disableし、plistを`.disabled-20260821`へ保持。`ai.anicca.life-manager-disk-cleanup`は5分間隔でload/readback済み。sentinelとemergency guardは観測/fallbackとして残す |
 | 15 | 24時間連続観測 | free >= 11 GiB、ENOSPC 0、protected deletion 0 | 未完了: 一点readbackではfree約15.5GiBまで回復したが、24時間連続条件は未達 |
 | 16 | 7日間連続観測とproducer lifecycle audit | state write failure 0、cleanup起因producer failure 0 | 未完了: 24時間観測後に開始 |
@@ -521,7 +521,7 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 8. **hourly intelligenceを完成** — input/output schema、異常時wake gate、growth attribution、producer defect task化を実装する。intelligenceは削除・manifest mutationを持たないことをtestで固定する。
 9. **owner単位recoveryを完成** — reserve回復後のredispatchをownerごとに直列化し、checkpoint、retry上限、duplicate redispatch 0を証明する。
 10. **shadow parityと全テストを完了** — legacy shimとcanonical governorのeffect-free decision parityをreceipt化し、Test Matrix 18–29、Life Manager regressionをPASSにする。
-11. **canaryとreplayを完了** — 実装済みのexact-path canary経路でclosedな既知regenerable artifactを1件だけ回収し、reclaimed/free readback、protected deletion 0、initial/replay duplicate 0をproduction receiptへ保存する。
+11. **canaryとreplayを閉じた** — exact-path canary、bytes/free readback、protected deletion 0、initial/replay duplicate 0をproduction receiptへ保存済み。今後は同経路の長期観測だけを残す。
 12. **容量を回復して観測** — 重要sessionを削除せず、growth owner/再生成候補を特定してfree spaceを11 GiB以上へ戻し、24時間（ENOSPC 0、protected deletion 0、duplicate owner 0）を連続観測する。swapfileの直接削除と重要app-server killは禁止。
 13. **7日観測とrollbackを閉じる** — 7日間のstate write failure 0、cleanup起因producer failure 0を確認し、rollback restore testと最終Telegram完了message IDを保存する。
 
