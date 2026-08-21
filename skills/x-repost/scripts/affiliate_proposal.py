@@ -73,13 +73,32 @@ def rows(path: Path) -> list[dict]:
 
 
 def select(proposal_path: Path, consumed_path: Path) -> dict:
+    all_rows = rows(consumed_path)
+    latest_by_proposal = {}
+    for row in all_rows:
+        proposal_id = row.get("proposal_id")
+        if isinstance(proposal_id, str):
+            latest_by_proposal[proposal_id] = row
+    unresolved = [row for row in latest_by_proposal.values()
+                  if row.get("state") == "EFFECT_STARTED" and valid(row.get("proposal"))]
+    if unresolved:
+        pending = min(unresolved, key=lambda row: row.get("observed_at", ""))
+        snapshot = pending["proposal"]
+        return {
+            "state": "RECONCILE",
+            "proposal": snapshot,
+            "proposal_id": snapshot["proposal_id"],
+            "placement_id": snapshot["placement_id"],
+            "owned_article_url": snapshot["owned_article_url"],
+            "language": "en",
+        }
     try:
         proposal = read_json(proposal_path)
     except ValueError:
         return {"state": "NO_PROPOSAL"}
     if not valid(proposal):
         return {"state": "INVALID_PROPOSAL"}
-    prior = [row for row in rows(consumed_path) if row.get("proposal_id") == proposal["proposal_id"]]
+    prior = [row for row in all_rows if row.get("proposal_id") == proposal["proposal_id"]]
     if any(row.get("state") in {"POSTED", "UNVERIFIED", "NO_EFFECT"} for row in prior):
         return {"state": "ALREADY_CONSUMED", "proposal_id": proposal["proposal_id"]}
     if any(row.get("state") == "EFFECT_STARTED" for row in prior):
@@ -92,6 +111,7 @@ def select(proposal_path: Path, consumed_path: Path) -> dict:
         }
     return {
         "state": "READY",
+        "proposal": proposal,
         "proposal_id": proposal["proposal_id"],
         "placement_id": proposal["placement_id"],
         "owned_article_url": proposal["owned_article_url"],
@@ -136,6 +156,7 @@ def claim(consumed_path: Path, proposal: dict) -> dict:
         "proposal_id": proposal["proposal_id"],
         "placement_id": proposal["placement_id"],
         "state": "EFFECT_STARTED",
+        "proposal": proposal,
         "observed_at": datetime.now(timezone.utc).isoformat(),
         "revenue_credit_state": "NO_REVENUE_CREDIT_UNTIL_EXACT_AFFILIATE_JOIN",
     }

@@ -210,6 +210,22 @@ AFFILIATE_CONSUMED="$STATE/affiliate-proposals-consumed.jsonl"
 AFFILIATE_PICK="$($PY "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL" --consumed "$AFFILIATE_CONSUMED" 2>/dev/null || echo '{"state":"NO_PROPOSAL"}')"
 AFFILIATE_STATE="$($PY -c 'import json,sys; print(json.load(sys.stdin).get("state","NO_PROPOSAL"))' <<<"$AFFILIATE_PICK" 2>/dev/null || echo NO_PROPOSAL)"
 if [ "$AFFILIATE_STATE" = "READY" ] || [ "$AFFILIATE_STATE" = "RECONCILE" ]; then
+  AFFILIATE_PROPOSAL_INPUT="$EV/affiliate-proposal.json"
+  if ! "$PY" - "$AFFILIATE_PICK" "$AFFILIATE_PROPOSAL_INPUT" <<'PYEOF'
+import json, os, sys
+payload, target = json.loads(sys.argv[1]), sys.argv[2]
+proposal = payload.get("proposal")
+if not isinstance(proposal, dict):
+    raise SystemExit(1)
+with open(target, "w", encoding="utf-8") as stream:
+    json.dump(proposal, stream, sort_keys=True)
+    stream.flush()
+    os.fsync(stream.fileno())
+PYEOF
+  then
+    report "❌ Affiliate proposal snapshot could not be materialized"
+    finish 1 "affiliate proposal snapshot failed"
+  fi
   AFFILIATE_ID="$($PY -c 'import json,sys; print(json.load(sys.stdin)["proposal_id"])' <<<"$AFFILIATE_PICK")"
   AFFILIATE_PLACEMENT="$($PY -c 'import json,sys; print(json.load(sys.stdin)["placement_id"])' <<<"$AFFILIATE_PICK")"
   AFFILIATE_URL="$($PY -c 'import json,sys; print(json.load(sys.stdin)["owned_article_url"])' <<<"$AFFILIATE_PICK")"
@@ -269,7 +285,7 @@ PYEOF
         report "❌ Affiliate post read back but posted ledger append failed; proposal remains claimed"
         finish 1 "affiliate posted ledger append failed"
       fi
-      if ! "$PY" "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL" \
+      if ! "$PY" "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL_INPUT" \
         --consumed "$AFFILIATE_CONSUMED" --record POSTED --post-url "$AFFILIATE_POST_URL" >/dev/null; then
         report "❌ Affiliate post read back but terminal consumption receipt failed; proposal remains claimed"
         finish 1 "affiliate terminal receipt failed"
@@ -277,7 +293,7 @@ PYEOF
       report "✅ Affiliate proposal recovered from exact X readback\nplacement: $AFFILIATE_PLACEMENT\npost: $AFFILIATE_POST_URL"
       finish 0 "affiliate proposal reconciled without duplicate publish"
     fi
-    if ! "$PY" "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL" \
+    if ! "$PY" "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL_INPUT" \
       --consumed "$AFFILIATE_CONSUMED" --record UNVERIFIED >/dev/null; then
       report "❌ Affiliate unresolved-effect receipt failed; proposal remains claimed"
       finish 1 "affiliate unresolved receipt failed"
@@ -285,7 +301,7 @@ PYEOF
     report "⚠️ Affiliate proposal could not be recovered by exact X readback; it is terminally unverified and will not be reposted"
     finish 0 "affiliate proposal reconciliation unresolved"
   fi
-  AFFILIATE_CLAIM="$($PY "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL" --consumed "$AFFILIATE_CONSUMED" --claim 2>/dev/null || echo '{}')"
+  AFFILIATE_CLAIM="$($PY "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL_INPUT" --consumed "$AFFILIATE_CONSUMED" --claim 2>/dev/null || echo '{}')"
   AFFILIATE_CLAIMED="$($PY -c 'import json,sys; print(json.load(sys.stdin).get("changed", False))' <<<"$AFFILIATE_CLAIM" 2>/dev/null || echo False)"
   if [ "$AFFILIATE_CLAIMED" != "True" ]; then
     log "affiliate proposal was claimed by another pass; skipping"
@@ -295,13 +311,13 @@ PYEOF
     --text-file "$EV/post.txt" --mode original >"$EV/post.json" 2>>"$EV/post.err"
   AFFILIATE_RC=$?
   if [ "$AFFILIATE_RC" -eq 2 ]; then
-    "$PY" "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL" \
+    "$PY" "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL_INPUT" \
       --consumed "$AFFILIATE_CONSUMED" --record UNVERIFIED >/dev/null
     report "⚠️ Affiliate proposal was submitted but X readback is unresolved; proposal is fenced against duplicate publish"
     finish 1 "affiliate proposal publish unverified"
   fi
   if [ "$AFFILIATE_RC" -ne 0 ]; then
-    if ! "$PY" "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL" \
+    if ! "$PY" "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL_INPUT" \
       --consumed "$AFFILIATE_CONSUMED" --record NO_EFFECT >/dev/null; then
       report "❌ Affiliate no-effect receipt failed; proposal remains claimed"
       finish 1 "affiliate no-effect receipt failed"
@@ -314,7 +330,7 @@ PYEOF
     report "❌ Affiliate post read back but posted ledger append failed; proposal remains claimed"
     finish 1 "affiliate posted ledger append failed"
   fi
-  if ! "$PY" "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL" \
+  if ! "$PY" "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL_INPUT" \
     --consumed "$AFFILIATE_CONSUMED" --record POSTED --post-url "$AFFILIATE_POST_URL" >/dev/null; then
     report "❌ Affiliate post read back but terminal consumption receipt failed; proposal remains claimed"
     finish 1 "affiliate terminal receipt failed"

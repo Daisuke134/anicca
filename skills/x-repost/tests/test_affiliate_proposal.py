@@ -90,6 +90,33 @@ class AffiliateProposalTests(unittest.TestCase):
             self.assertTrue(result["changed"])
             self.assertEqual(MODULE.select(proposal_path, consumed)["state"], "ALREADY_CONSUMED")
 
+    def test_unfinished_claim_precedes_newer_latest_proposal(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            proposal_path = root / "proposal.json"
+            consumed = root / "consumed.jsonl"
+            first = {
+                "receipt_type": "AFFILIATE_REPOST_PROPOSAL",
+                "state": "READY_FOR_EXISTING_REPOST_OWNER",
+                "proposal_id": "d" * 64,
+                "placement_id": "voice-isolator-en-1",
+                "owned_article_url": "https://aniccaai.com/blog/voice-isolator",
+                "language": "en", "disclosure_required": True,
+                "tracking_link_state": "NOT_INCLUDED",
+                "revenue_credit_state": "NO_REVENUE_CREDIT",
+            }
+            second = {**first, "proposal_id": "e" * 64,
+                      "placement_id": "voice-design-en-1",
+                      "owned_article_url": "https://aniccaai.com/blog/voice-design"}
+            MODULE.claim(consumed, first)
+            proposal_path.write_text(json.dumps(second))
+            selected = MODULE.select(proposal_path, consumed)
+            self.assertEqual(selected["state"], "RECONCILE")
+            self.assertEqual(selected["proposal_id"], first["proposal_id"])
+            self.assertEqual(selected["owned_article_url"], first["owned_article_url"])
+            proposal_path.unlink()
+            self.assertEqual(MODULE.select(proposal_path, consumed)["state"], "RECONCILE")
+
 
 if __name__ == "__main__":
     unittest.main()
