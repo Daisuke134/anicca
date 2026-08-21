@@ -10,6 +10,15 @@ from pathlib import Path
 from .outbox import Outbox
 
 
+def _transport_env() -> dict[str, str]:
+    """Make the Homebrew Node runtime available to launchd-owned OpenClaw calls."""
+
+    value = dict(os.environ)
+    existing = value.get("PATH", "/usr/bin:/bin")
+    value["PATH"] = f"/opt/homebrew/bin:/opt/homebrew/opt/node/bin:{existing}"
+    return value
+
+
 def send_daily_report(
     *,
     database: Path,
@@ -77,6 +86,7 @@ def send_once(
             capture_output=True,
             text=True,
             timeout=20,
+            env=_transport_env(),
         )
         if completed.returncode != 0:
             raise RuntimeError(f"Telegram transport failed rc={completed.returncode}")
@@ -146,6 +156,7 @@ def send_document_once(
             capture_output=True,
             text=True,
             timeout=20,
+            env=_transport_env(),
         )
         if completed.returncode != 0:
             raise RuntimeError(
