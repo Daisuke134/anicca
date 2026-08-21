@@ -8,7 +8,7 @@ Owner: Dais
 
 Marketing execution SSOT: `27-MARKETING-ENGINE-END-TO-END.md`
 
-Current dual-ebook activation SSOT: `28-EBOOK-SELLER-DUAL-MONK-LOOPS.md`. Spec 28 governs the local three-times-daily JP watercolor and EN Anicca monk loops, Postiz/Telegram closure, and the owner-approved HeyGen choice. It supersedes this document's renderer choice only for those current ebook loops; the revenue doctrine here remains authoritative.
+Current dual-ebook activation SSOT: `28-EBOOK-SELLER-DUAL-MONK-LOOPS.md`. Spec 28 governs the local three-times-daily JP watercolor and EN Anicca monk loops, Postiz/Telegram closure, and the owner-approved free OmniAvatar choice. It supersedes this document's renderer choice only for those current ebook loops; the revenue doctrine here remains authoritative. HeyGen is unavailable and prohibited for new execution or fallback.
 
 Live execution: Gates 1–13 are complete. Gate 14's scorer, CLI, mutation safety, exact tactic/renderer aggregation, immutable treatments, and ten-item production queue are built and verified; only native publication, checkpoint maturity, and real outcome write-back are time-dependent. That clock does **not** block independent implementation. The active build lane is now Gate 15 plus Gate 16A and the unfinished Mobile App Scaler/Ebook Seller actuators, while Gate 14 observations accrue in a background monitor. The first production watercolor post is TikTok ID `7669159327655054613` at `https://www.tiktok.com/@obou_anicca/video/7669159327655054613`, bound to immutable publication `publication.babf5c938cba5dc0d5c02b68` and experiment `experiment.preview-gate12`. Gate 13 added all ten attribution result records; its 15-minute query reported deterministic qualified clicks `0` and kept nine immature results null. Gate 14 then wrote decision `writeback.7da73ad427f5617d8ce7404e`: at 23 minutes, eligible experiments `0`, winner/loser/mutation `0`, and no hook/playbook hash change. The mature updater enforces EWMA alpha 0.3, at least three real observations before retirement, a 20% active exploration floor, exact experiment-plan mapping before tactic results, and renderer aggregation only from the bound cohort. Final frozen cohort v3 has ten exact, unique-hook plans/treatments rendered, visually checked, and queued daily at 20:15 JST from 2026-08-02 through 2026-08-11; queued/provider state is not relabeled as native publication. The last two hooks came from two bounded competitor INTEL passes with exact TikTok/transcript/media/judgment evidence. Rejected and earlier v1/v2 assets were never posted and remain outside the accepted selection. Full verification passes 281 tests plus 47 subtests. No fixture or legacy post can substitute. Exact contracts/evidence are in spec 27 §§3.12–3.14.
 
@@ -227,11 +227,11 @@ Do not multiply apps before the two seed apps have working attribution and repea
 | Test | Result | Decision |
 |---|---|---|
 | ByteDance LatentSync through `fffiloni/LatentSync` HF ZeroGPU; existing monk base + fresh audio | TECHNICAL PASS: 70 seconds wall time; output H.264 1080×1920 + AAC, 3.2 seconds, 1,029,960 bytes; Telegram video message `4887`. OWNER QUALITY FAIL: explicitly rejected as visually unacceptable | **REJECT production**. Retain only as historical evidence; do not send or publish it again |
-| OmniAvatar through `alexnasa/OmniAvatar` HF ZeroGPU; same owned monk image + five-second audio | PASS: 101.4 seconds wall time; output H.264 400×720 + AAC, 5.04 seconds, 204,350 bytes; Telegram video message `4893`; sampled frames preserve identity | **BENCHMARK challenger**. Not production until the fixed ten-clip, license-chain, and business-lift gates pass |
+| OmniAvatar through `alexnasa/OmniAvatar` HF ZeroGPU; same owned monk image + five-second audio | PASS: 101.4 seconds wall time; output H.264 400×720 + AAC, 5.04 seconds, 204,350 bytes; Telegram video message `4893`; sampled frames preserve identity | Historical benchmark, now **owner-approved as the current `ebook-en` primary renderer by Spec 28**. Spec 28 E4 governs durable evidence, license chain, and zero-cost three-renders/day capacity |
 | HeadAudio on this M4: clone, `npm ci`, Jest, webpack | PASS: 4 suites/5 tests; median processor prediction 0.028 ms/frame; production bundle built | Use as local audio-to-viseme engine for the watercolor renderer. Before vendoring, remove/upgrade high-risk dev dependencies reported by `npm audit`; ship only the audited runtime bundle |
 | Rhubarb Lip Sync v1.14 macOS release on this M4 | FAIL: official binary is x86_64 and exits `bad CPU type`; arm64 source configure then fails on missing Boost | Not the baseline. Reconsider only if an arm64 artifact is built in CI and passes the same JP/EN fixture set |
 
-The LatentSync sample was technically valid but owner-rejected for quality. The OmniAvatar sample advances to comparison only; one clip does not prove production quality. The ten-clip gate in step 17 remains mandatory.
+The LatentSync sample was technically valid but owner-rejected for quality. The owner later inspected and accepted the OmniAvatar artifact as good enough for current `ebook-en` production. Spec 28 E4 therefore preserves that quality decision and measures only durable provenance, license chain, and free three-renders/day capacity; the general ten-clip challenger gate still applies to other products or renderers.
 
 ### 7.3 Locked three-tier renderer architecture
 
@@ -262,7 +262,7 @@ Tier A is the stable JP/EN production format. Tier B and Tier C are optional tre
 |---|---|---|
 | [HeadAudio](https://github.com/met4citizen/HeadAudio) | MIT; audio-driven visemes; language-independent input; documented M2/16 GB browser measurements; passed tests/build on our M4 | **ADOPT** for local watercolor mouth motion |
 | [LatentSync](https://github.com/bytedance/LatentSync) | Apache-2.0; 1.5 needs 8 GB VRAM, 1.6 needs 18 GB locally; HF inference technically succeeded but the owner rejected the visual output | **REJECT production**; historical benchmark only |
-| [OmniAvatar](https://github.com/Omni-Avatar/OmniAvatar) | audio-driven human animation; our five-second HF ZeroGPU inference succeeded in 101.4 seconds | **BENCHMARK**; require the commercial-license-chain and ten-clip/business gates before promotion |
+| [OmniAvatar](https://github.com/Omni-Avatar/OmniAvatar) | audio-driven human animation; our five-second HF ZeroGPU inference succeeded in 101.4 seconds | **ADOPT for current `ebook-en` under Spec 28**; E4 must bind the exact license chain and prove three zero-cost daily renders. Other product adoption still requires its own gate |
 | [MuseTalk](https://github.com/TMElyralab/MuseTalk) | MIT code; model allows commercial use; JP/EN/Chinese; CUDA; 4 GB path takes about five minutes for eight seconds on RTX 3050 Ti | **BENCHMARK**, not the M4 baseline |
 | [LongCat-Video-Avatar 1.5](https://github.com/meituan-longcat/LongCat-Video) | MIT; audio-image/video continuation; INT8 and eight-step distillation; official avatar examples use two GPUs and issues report 48 GB OOM | **QUALITY CHALLENGER** on explicit GPU only |
 | [InfiniteTalk](https://github.com/MeiGen-AI/InfiniteTalk) | Apache-2.0 model; image/video input; unlimited-length V2V; low-VRAM/quantized modes; CUDA | **QUALITY CHALLENGER** for long form on explicit GPU |
@@ -393,7 +393,7 @@ protocol or truth rules.
           |-- slideshow / ReelClaw / MoneyPrinterTurbo
           |-- JP watercolor accounts -> ebook-ja only
           |-- EN monk accounts -> ebook-en only
-          |-- JP/EN OmniAvatar: challenger only when gated
+          |-- EN OmniAvatar: current primary under Spec 28; other use remains gated
           `-- GPU challenger only inside a bounded experiment
           |
 DAY     ASC/KDP/Gumroad/Postiz/browser actuators perform leased actions once

@@ -1562,7 +1562,7 @@ Creative engines are reusable treatments:
 | Slideshow | hook on slide 1, proof/steps, product bridge, CTA | any product |
 | ReelClaw/card/widget | app UI, notification, quote, or proof card | any product with a visual proof asset |
 | MoneyPrinterTurbo | fast faceless narrative video | any product |
-| OmniAvatar | multilingual monk/avatar delivery | current EN challenger for `ebook-en`; reusable only in another product's dedicated account |
+| OmniAvatar | multilingual monk/avatar delivery | owner-approved current `ebook-en` primary under Spec 28; reuse requires another product's dedicated account and its own gate |
 | Watercolor monk | Japanese watercolor story/teaching wrapper | **`ebook-ja` only on the current watercolor accounts** |
 
 The Japanese watercolor/Daily Dhamma series is part of the `ebook-ja` acquisition system, not an `aniccaios` campaign. Its TikTok and Instagram accounts promote the Japanese ebook only. The English monk accounts promote `ebook-en` only. Shared code may render for any product, but the account manifest rejects a publication whose `product_id` does not match its locked product.
@@ -1656,7 +1656,7 @@ Current verified local state supersedes the earlier declared-count-only inventor
 | Mobile-app demo stitcher (`ReelClaw`) | `reelclaw-{ja,en}-{card,widget}-*`; `reelclaw-anicca-{ja,en}-{card,widget}-*` | Import demo assets, hook/video mapping, language, card/widget form, destination identity, and stitch procedure into one `app-demo-stitch` producer. “ReelClaw” becomes an adapter name, not an agent or scheduler. |
 | Honne demo/video | `reelclaw-honne-ja`, `reelclaw-honne-ja-fresh`, `reelclaw-honne-en`; historical `reelclaw-honne-{ja,en}-*` | Import as Honne product/account profiles using the same generic demo-stitch contract. JP and EN evidence remain separate cohorts. |
 | Japanese ebook watercolor | `watercolor-jp-morning`, `watercolor-jp-noon`, `watercolor-jp-evening`; OpenClaw `watercolor-jp-0700`, `watercolor-jp-2000`, `watercolor-monk-noon` | Import locked watercolor character/voice/reference assets, script bank and rotation state into one `watercolor-monk` producer for `ebook-ja`. Three legacy clocks become cadence entries in the product manifest. |
-| English ebook fixed-avatar monk | `monk-factory-en-0800`, `monk-factory-en-1400`, `monk-factory-en-2100`, `monk-factory-en-recovery`, `yangmun-monk-noon`, `yangmun-monk-evening` | Import owned avatar identity, voice, script bank, caption style, backgrounds, history, and destinations. Do not migrate HeyGen execution or its recovery cron. The provider-neutral `avatar-monk` producer uses a stable faceless/slideshow safety lane; OmniAvatar remains a challenger until the existing ten-clip, license-chain, visual-quality, cost, reliability, and business-lift gates pass. |
+| English ebook fixed-avatar monk | `monk-factory-en-0800`, `monk-factory-en-1400`, `monk-factory-en-2100`, `monk-factory-en-recovery`, `yangmun-monk-noon`, `yangmun-monk-evening` | Import owned avatar identity, voice, script bank, caption style, backgrounds, history, and destinations. Do not migrate HeyGen execution or its recovery cron. Spec 28 promotes the owner-approved OmniAvatar artifact as the current `ebook-en` primary and requires a measured free execution path; other renderer/product promotion still uses the general comparison gates here. |
 | Active legacy 4.7 slideshow | OpenClaw `4.7-slideshow-morning`; disabled `4.7-slideshow-ja-morning` | Import the account, slideshow format, history and successful creative receipts only. Do not migrate the Apify dependency or model-owned OpenClaw prompt. Free research adapters and the canonical decision stage replace them. The currently unmapped `anicca-en` destination must be resolved before any handoff. |
 | Upstream learning/research | `larry-strategy-updater`, `larry-trend-hunter-{ja,en}`, `larry-library-filler`, `anicca-pattern-jsonl-refiller` | Import evidence and useful mechanism history. Retire the independent clocks and old `50K views`/`<1K twice` mutation policy; canonical attribution and business-aware bounded learning replace them. |
 | Truth/reporting | `marketing-owner-events`, `marketing-owner-daily`, `marketing-owner-weekly`, `marketing-metrics-daily`, `marketing-score-daily`, `marketing-dashboard`, plus legacy `marketing-post-metrics` | Keep the verified collectors/reporters as stages, remove duplicate/paid legacy collectors, and invoke them from one supervisor/queue contract. Reporting never owns creative generation. |
@@ -1895,7 +1895,7 @@ Verified on 2026-08-01:
 Decision:
 
 1. Production safety lane: faceless/slideshow/local watercolor; no GPU or third-party avatar availability required.
-2. Current avatar challenger: OmniAvatar through ZeroGPU, benchmark only until the ten-clip and commercial-license-chain gates pass.
+2. Current `ebook-en` avatar renderer: owner-approved OmniAvatar through a measured free path under Spec 28; its E4 gate binds provenance/license evidence and proves zero-cost three-renders/day capacity. For other products it remains a challenger.
 3. LongCat 1.5: bounded paid/credited multi-GPU quality test, not the free daily lane.
 4. LatentSync: rejected treatment retained only as historical evidence; do not send or publish it again.
 5. If no avatar beats faceless on accepted-output rate and attributed revenue per production dollar, disable avatar generation. Marketing continues.
@@ -2488,7 +2488,7 @@ Primary-source alignment:
 
 ### 15.9 Atomic implementation plan — execution order is locked
 
-For the current `ebook-ja` watercolor and `ebook-en` Anicca monk activation, `28-EBOOK-SELLER-DUAL-MONK-LOOPS.md` is the execution SSOT. Its local six-slot cadence, Postiz/Telegram closure, and owner-approved HeyGen decision supersede B6/B7 renderer and scheduling details for those two loops. This document remains the general Marketing Engine and eventual migration SSOT.
+For the current `ebook-ja` watercolor and `ebook-en` Anicca monk activation, `28-EBOOK-SELLER-DUAL-MONK-LOOPS.md` is the execution SSOT. Its local six-slot cadence, Postiz/Telegram closure, and owner-approved free OmniAvatar decision supersede B6/B7 renderer and scheduling details for those two loops. HeyGen is not subscribed and cannot be used. This document remains the general Marketing Engine and eventual migration SSOT.
 
 **Goal:** Four seed products run a truthful, free-to-measure, self-improving daily marketing loop from Life Manager without an OpenClaw or profitable-claude runtime dependency.
 
@@ -2517,7 +2517,7 @@ Each checkbox is one independently testable slice. Every behavior slice follows 
 - [ ] **B4 — Wrap Larry as `slideshow-listicle`.** Import its fixed strings, backgrounds, safe frames, body/history rules, platform settings, and receipts behind the common generator contract. Remove account/schedule knowledge from the adapter. **Done:** characterization fixtures render the same approved baseline and a declared variable change produces a new semantic signature.
 - [ ] **B5 — Wrap ReelClaw as `app-demo-stitch`.** Import hook/demo selection, face/demo composition, captions, and visual preflight. Detect source/final hashes so the observed 58-runs/11-unique-artifacts failure cannot pass as improvement. **Done:** repeated final hashes fail preflight and a valid hook/demo mutation is visible in the artifact manifest.
 - [ ] **B6 — Wrap watercolor as the Japanese ebook producer.** Preserve the Japanese watercolor identity and rendering craft while exposing hook, script, background, pacing, caption, CTA, and destination as bounded experiment variables. **Done:** golden-frame tests preserve identity and a one-variable experiment changes only the declared field.
-- [ ] **B7 — Wrap the fixed-avatar English ebook producer.** Preserve avatar identity, replace paid HeyGen execution with the already-proven free avatar renderer discovered in the legacy assets, and expose script/background/pacing/caption/CTA variables. **Done:** a real local render passes lip-sync/visual preflight without a paid call and preserves avatar identity.
+- [ ] **B7 — Wrap the fixed-avatar English ebook producer.** Preserve avatar identity, use the owner-approved OmniAvatar artifact through a measured free execution path, prohibit HeyGen, and expose script/background/pacing/caption/CTA variables. **Done:** a real OmniAvatar render passes lip-sync/visual preflight at zero render cost and preserves avatar identity.
 - [ ] **B8 — Add publisher and model boundaries.** Make Postiz a replaceable publisher adapter and Luna the low-cost execution-model adapter; neither owns product state, schedules, metrics, or learning. Keep the in-house account lane quarantined. **Done:** adapter contract tests swap fake/Postiz and fake/Luna without changing a product worker.
 
 #### Phase C — autonomous loop, learning, and self-healing

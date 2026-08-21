@@ -13,7 +13,7 @@ Related doctrine: `26-MOBILE-APP-EBOOK-10K-LOOPS.md`, `27-MARKETING-ENGINE-END-T
 Run one local Ebook Seller skill with two configuration-driven product packs:
 
 1. `ebook-ja-watercolor`: Japanese watercolor monk, selling at `/achan`.
-2. `ebook-en-anicca-monk`: English Anicca monk, rendered through HeyGen, selling at `/monk`.
+2. `ebook-en-anicca-monk`: English Anicca monk, rendered with OmniAvatar through a measured free execution path, selling at `/monk`.
 
 Each product creates three genuinely new videos per day. Each video fans out through Postiz to that product's TikTok and Instagram accounts. Therefore the daily contract is six unique videos and up to twelve native platform publications—not twelve independently generated videos.
 
@@ -56,7 +56,9 @@ The implementation begins from these local read-backs, not assumptions:
 | Direct sales | Product-scoped Stripe snapshots through the latest measured day show zero paid orders for both products | Baseline is zero; views are never relabeled as revenue |
 | Native metrics | Exact Postiz analytics read-back works for an actual JP Instagram publication | Reuse the current native metrics lane; do not use the failed Apify collector |
 
-The owner has selected HeyGen for the current English Anicca monk after a successful proof. This decision supersedes the no-HeyGen renderer choice in Spec 26 §7 and Spec 27 B7 for these two live ebook loops only. Because the durable proof receipt has not yet been bound to the new ledger, implementation must either locate and bind it or perform one real canary before enabling recurring EN slots. No inferred proof is accepted.
+The owner inspected the existing OmniAvatar output and approved its quality as good enough for the current English Anicca monk. Existing evidence identifies the `alexnasa/OmniAvatar` ZeroGPU run, a 5.04-second 400×720 H.264/AAC output, and Telegram receipt `4893`; this owner decision promotes OmniAvatar from challenger to the primary EN renderer for this loop. Implementation binds that accepted artifact to the durable ledger or reproduces the same free path before recurring EN activation.
+
+HeyGen is explicitly outside this architecture: there is no subscription, no HeyGen API call, no paid fallback, and no new HeyGen-derived source asset. A provider outage or free-quota exhaustion becomes a bounded OmniAvatar retry and natural-language Telegram incident; it never authorizes a silent renderer substitution. The EN recurring schedule starts only after the intended free path proves that it can deliver three distinct daily renders at zero render cost.
 
 ## 3. Ideal architecture
 
@@ -65,9 +67,10 @@ flowchart LR
     Clock[Local OpenClaw clock\n6 JST slots] --> Runner[One Ebook Seller runner]
     Runner --> Decide[Observe + choose\none variable]
     Decide --> JP[JP watercolor adapter]
-    Decide --> EN[EN HeyGen adapter]
+    Decide --> EN[EN OmniAvatar adapter]
     JP --> Guard[Preflight + immutable intent]
-    EN --> Guard
+    EN --> Free[Measured free runtime]
+    Free --> Guard
     Guard --> Postiz[Postiz publisher adapter]
     Postiz --> TT[TikTok receipt]
     Postiz --> IG[Instagram receipt]
@@ -92,7 +95,7 @@ All times are `Asia/Tokyo` and intentionally staggered:
 | `ebook-ja-watercolor` | 07:00 | 12:30 | 20:00 |
 | `ebook-en-anicca-monk` | 08:00 | 14:00 | 21:00 |
 
-Each of the six OpenClaw automations invokes the same deterministic command with `product_id` and `slot_at`. It does not embed business prompts. Timeout must exceed the measured HeyGen render ceiling with a bounded margin. Failure alerting is enabled. A job cannot overlap another turn for the same product.
+Each of the six OpenClaw automations invokes the same deterministic command with `product_id` and `slot_at`. It does not embed business prompts. Timeout must exceed the measured OmniAvatar render ceiling with a bounded margin. Failure alerting is enabled. A job cannot overlap another turn for the same product.
 
 ### 3.2 New-video contract
 
@@ -198,17 +201,17 @@ Only the first unchecked item is active. Each item ends in a focused test, real 
 - [ ] **E1 — Characterize retained producers.** Inventory exact JP watercolor and EN monk scripts, assets, voices, captions, output manifests, and state without moving `~/anicca-monk-factory`. **Done:** one known-good fixture per product reproduces its expected identity and all missing dependencies are named.
 - [ ] **E2 — Add two product packs.** Encode canonical accounts, integrations, landing destinations, prices, three JST slots, renderer, claims, and stop rules. **Done:** schema and identity tests reject the old EN Instagram integration and `/jp` destination.
 - [ ] **E3 — Preflight four Postiz identities.** Read back all four integration profiles; reconnect EN TikTok without altering the other three. **Done:** four account/profile mappings are enabled and match this spec, or EN remains explicitly degraded with only Instagram eligible.
-- [ ] **E4 — Bind the HeyGen proof.** Attach the owner's successful EN proof to a durable render receipt, or run one real canary with provider job ID, cost/quota, latency, media hash, visual preflight, and character/voice identity. **Done:** the exact adapter input/output contract is reproducible and bounded.
+- [ ] **E4 — Bind the approved OmniAvatar artifact and prove free capacity.** Recover Telegram artifact `4893` into durable evidence or reproduce the same `alexnasa/OmniAvatar` free path; record source/model revision, license chain, provider receipt, quota state, latency, input/output hashes, media probe, and the owner's quality approval. Then render three distinct daily fixtures through the intended free runtime. **Done:** all three complete at zero render cost with stable character/voice identity and no HeyGen request, subscription, source asset, or fallback.
 - [ ] **E5 — Build the shared resumable runner.** Implement observe, decide, render, preflight, intent, publish, reconcile, measure, attribute, learn, and report states with the unique publish key. **Done:** crash/restart and unknown-POST tests prove no duplicate create.
 - [ ] **E6 — Wrap Japanese watercolor.** Preserve its identity and expose only bounded experiment variables. **Done:** golden output and one-variable mutation characterization pass.
-- [ ] **E7 — Wrap English HeyGen monk.** Preserve the proven character and voice behind a provider adapter; no scheduler code enters the adapter. **Done:** a real render passes visual/audio preflight and produces a durable receipt.
+- [ ] **E7 — Wrap English OmniAvatar monk.** Preserve the approved character and voice behind the free OmniAvatar adapter; no scheduler code enters the adapter. **Done:** a real render passes visual/audio preflight, produces a durable receipt, records zero render cost, and rejects any HeyGen configuration.
 - [ ] **E8 — Propagate campaign attribution.** Carry campaign ID from each destination through landing, Stripe Checkout metadata, completion, refund, and fulfillment. **Done:** one non-production checkout fixture and Stripe read-back bind the same campaign without counting test revenue.
 - [ ] **E9 — Implement Postiz stage/create/reconcile.** Persist intent and `postId`, isolate platform effects, and reconcile unknown outcomes before retry. **Done:** forced timeout and partial-platform tests produce zero duplicates and truthful degraded state.
 - [ ] **E10 — Connect free/native checkpoints and business truth.** Reuse the Marketing Engine's current native/Postiz analytics and product-scoped Stripe snapshots; exclude old Apify paths. **Done:** one actual native post and one no-sale business day render measured/null states correctly.
 - [ ] **E11 — Implement natural Telegram projections.** Add per-slot, checkpoint, incident, and daily product messages with event-UUID dedupe. **Done:** a real Bot send returns a provider message ID and matches ledger values.
 - [ ] **E12 — Run non-publishing shadow turns.** Execute both products through decision, render, preflight, intent, metrics read, and report without provider create. **Done:** three consecutive shadow turns per product have no unowned state, identity ambiguity, or accidental external effect.
 - [ ] **E13 — Publish the JP canary.** One watercolor creative fans out through Postiz to JP TikTok and Instagram. **Done:** both native URLs and Postiz IDs reconcile, Telegram reports naturally, and no duplicate exists.
-- [ ] **E14 — Publish the EN canary.** One HeyGen creative fans out through Postiz to EN TikTok and Instagram; if EN TikTok remains disabled, Instagram publishes and the turn remains degraded. **Done:** all eligible native effects reconcile and the blocker is explicit.
+- [ ] **E14 — Publish the EN canary.** One OmniAvatar creative fans out through Postiz to EN TikTok and Instagram; if EN TikTok remains disabled, Instagram publishes and the turn remains degraded. **Done:** all eligible native effects reconcile, render cost is zero, and the blocker is explicit.
 - [ ] **E15 — Enable six local OpenClaw slots.** Create six local command automations with exact timezone, non-overlap, bounded timeout, and failure alert. Verify no legacy monk publisher is loaded or enabled. **Done:** scheduler read-back matches §3.1 and each job calls only the shared runner.
 - [ ] **E16 — Complete the seven-day activation soak.** Monitor without passive waiting while independent fixes and checkpoint collection continue. **Done:** 42 unique videos exist—21 per product—with up to 84 platform receipts, duplicate external effects equal zero, every due checkpoint is measured or has a named status, daily Stripe truth exists, Telegram IDs exist, and at least one mature result changes a later decision input.
 - [ ] **E17 — Enter revenue scaling.** Keep cadence fixed until contribution is positive, then allocate more winning capacity within provider/account limits. **Done:** the first combined $10k monthly net revenue run-rate is supported by settled receipts and refunds/fees, never extrapolated views.
@@ -221,9 +224,9 @@ Rollback disables only the six new scheduler entries and preserves every intent,
 
 Best case: four Postiz identities are healthy, six new videos ship daily, early clicks/orders identify one profitable mechanism, and capacity scales after contribution turns positive.
 
-Base case: JP runs fully while EN Instagram proves the HeyGen lane and EN TikTok reconnects; the system remains truthful and continues all unaffected work.
+Base case: JP runs fully while EN Instagram proves the free OmniAvatar lane and EN TikTok reconnects; the system remains truthful and continues all unaffected work.
 
-Worst case: HeyGen or Postiz has an outage. Durable intents prevent duplicates, unaffected platforms continue, the incident is reported naturally, and business snapshots remain correct.
+Worst case: the free OmniAvatar runtime has no capacity or Postiz has an outage. Durable intents prevent duplicates, unaffected work continues, the incident is reported naturally, and business snapshots remain correct. The system does not purchase or invoke HeyGen.
 
 ## 9. Rejected architectures
 
@@ -235,7 +238,7 @@ Worst case: HeyGen or Postiz has an outage. Durable intents prevent duplicates, 
 
 The strongest objection to the selected architecture is that “temporary” OpenClaw scheduling may persist. The mitigation is structural: no business state or decision logic is stored in OpenClaw, so replacing the clock later is a bounded manifest change.
 
-The most likely way this spec is wrong is that the successful HeyGen proof or the remembered account mapping does not match the currently usable credential and character asset. E3 and E4 resolve that with real read-back before any recurring side effect.
+The most likely way this spec is wrong is that the available free OmniAvatar quota cannot sustain three distinct daily production renders even though the approved artifact quality is sufficient. E4 measures that capacity before recurring activation without reopening the owner's quality decision or falling back to HeyGen.
 
 ## 10. Primary-source alignment
 
@@ -243,3 +246,5 @@ The most likely way this spec is wrong is that the successful HeyGen proof or th
 - Postiz, “Get analytics data for a specific published post”: <https://docs.postiz.com/public-api/analytics/post>. Analytics are accepted only after exact native identity reconciliation.
 - OpenClaw Cron Jobs, “The scheduler persists jobs, wakes the agent at the right time”: <https://docs.openclaw.ai/automation/cron-jobs>. OpenClaw is used only as the local clock and delivery surface.
 - Google Cloud idempotency, “オペレーションを複数回行っても、1 回だけ行った場合と同じ最終的な効果”: <https://cloud.google.com/discover/idempotency?hl=ja>. Because POST is not inherently idempotent, intent persistence and reconciliation precede retries.
+- OmniAvatar's official repository declares Apache-2.0 and grants a “no-charge, royalty-free, irrevocable copyright license”: <https://github.com/Omni-Avatar/OmniAvatar/blob/main/LICENSE.txt>. E4 still records the exact code, weight, Space, and owned-input license chain used by production.
+- Hugging Face documents that existing “ZeroGPU Spaces are available to use for free to all users”: <https://huggingface.co/docs/hub/spaces-zerogpu>. Free access is not treated as a capacity SLA; E4 measures the real three-render daily budget.
