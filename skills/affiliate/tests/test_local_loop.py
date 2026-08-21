@@ -437,6 +437,19 @@ class LocalLoopTest(unittest.TestCase):
             self.assertEqual(first[0]["provider_message_id"], "7642")
             self.assertEqual(first[0]["superseded_receipt_event_uuids"], ["misbound"])
 
+    def test_telegram_history_reconciliation_skips_unsubstantiated_old_sent_rows(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root)
+            MODULE.append(state / "telegram-sent.jsonl", {
+                "event_uuid": "old-event", "message_id": "7643",
+            })
+            self.assertEqual(
+                MODULE.reconcile_telegram_delivery_history(
+                    state, {"wake_event_uuid": "wake-1", "ts": 1},
+                ),
+                [],
+            )
+
     def test_revenue_cycle_cooldown_is_independent_of_wake(self):
         with tempfile.TemporaryDirectory() as root:
             state = Path(root)

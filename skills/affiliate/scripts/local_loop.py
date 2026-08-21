@@ -1153,7 +1153,8 @@ def reconcile_telegram_delivery_history(state, wake_event):
     exact_receipt_pairs = {
         (row.get("telegram_event_uuid"), str(row.get("provider_message_id")))
         for row in delivery_rows
-        if row.get("delivery_state") == "SENT" and row.get("provider_message_id") is not None
+        if row.get("delivery_state") in {"SENT", "NO_PENDING"}
+        and row.get("provider_message_id") is not None
     }
     message_to_event = {
         str(row.get("message_id")): row.get("event_uuid")
@@ -1167,6 +1168,13 @@ def reconcile_telegram_delivery_history(state, wake_event):
         if not telegram_uuid or message_id is None:
             continue
         message_id = str(message_id)
+        related = [
+            row for row in delivery_rows
+            if row.get("telegram_event_uuid") == telegram_uuid
+            or str(row.get("provider_message_id")) == message_id
+        ]
+        if not related:
+            continue
         if (telegram_uuid, message_id) in exact_receipt_pairs:
             continue
         superseded = []
@@ -1195,6 +1203,38 @@ def reconcile_telegram_delivery_history(state, wake_event):
             "provider_message_id": message_id,
             "reconciliation_state": "RECONCILED_FROM_SENT_LEDGER",
             "superseded_receipt_event_uuids": sorted(filter(None, superseded)),
+            "observed_at": datetime.now(timezone.utc).isoformat(),
+        }
+        if append_unique(state / "events.jsonl", event, ("event_uuid",)):
+            repaired.append(event)
+    for prior in json_rows(state / "events.jsonl"):
+        if prior.get("receipt_type") != "AFFILIATE_TELEGRAM_DELIVERY_RECONCILIATION":
+            continue
+        telegram_uuid = prior.get("telegram_event_uuid")
+        message_id = str(prior.get("provider_message_id"))
+        related = [
+            row for row in delivery_rows
+            if row.get("telegram_event_uuid") == telegram_uuid
+            or str(row.get("provider_message_id")) == message_id
+        ]
+        if related:
+            continue
+        identity = {
+            "type": "AFFILIATE_TELEGRAM_DELIVERY_RECONCILIATION_RETRACTION",
+            "reconciliation_event_uuid": prior.get("event_uuid"),
+        }
+        event = {
+            "event": "affiliate_telegram_delivery_reconciliation",
+            "receipt_type": identity["type"],
+            "schema_version": 1,
+            "event_uuid": hashlib.sha256(
+                json.dumps(identity, sort_keys=True, separators=(",", ":")).encode()
+            ).hexdigest(),
+            "reconciled_at_wake_uuid": wake_event_uuid(wake_event),
+            "telegram_event_uuid": telegram_uuid,
+            "provider_message_id": message_id,
+            "reconciliation_state": "RETRACTED_INSUFFICIENT_BASE_EVIDENCE",
+            "superseded_reconciliation_event_uuid": prior.get("event_uuid"),
             "observed_at": datetime.now(timezone.utc).isoformat(),
         }
         if append_unique(state / "events.jsonl", event, ("event_uuid",)):
