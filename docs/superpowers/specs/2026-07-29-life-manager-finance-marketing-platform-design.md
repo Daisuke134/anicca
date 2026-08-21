@@ -1218,6 +1218,21 @@ provider-specific settings, a direct URL verifier (`/shorts/<id>`,
 `/watch?v=<id>`, or an equivalent verified public URL), and shadow tests before
 any Anicca YouTube write.
 
+**MKT-02 cursor (2026-08-21 JST).** The Life Manager-side registry boundary is
+implemented as a secret-free deterministic manifest normalizer and atomic
+writer. It accepts only explicit assignments and strict `verified=true` routes,
+rejects missing/duplicate, alias-conflicting, historical, or ambiguous routes,
+keeps `disabled`/`default-off`/`shadow` lanes non-production, forbids Honne
+YouTube, and allows an Anicca YouTube row only as explicitly disabled until the
+MKT-03A direct-URL contract exists. The read-only live request reached Postiz
+with the documented `GET /public/v1/integrations` route but returned `401 No
+API Key`: no Life
+Manager-owned Postiz credential is present in this checkout/runtime, so no
+live manifest artifact was generated and no integration ID was guessed. The
+next gate is to provide the authorized Life Manager secret reference, rerun the
+GET, and freeze the redacted target manifest; no provider write is part of
+MKT-02.
+
 ### 8.9 Telegram marketing reporting contract
 
 The ledger is machine-readable; Telegram is always a natural-language
@@ -1558,7 +1573,7 @@ has TikTok/Instagram destinations only; YouTube remains an Anicca-only lane.
 | ID | Atomic action | Account/lane | Done evidence |
 |---|---|---|---|
 | MKT-01 | **done —** Port I-3 claim, receipt, Telegram dedupe, and replay state from PostgreSQL/`pg` to the Life Manager-owned local JSONL/atomic-file ledger | all lanes | direct local process restarts cleanly; 32/32 focused tests; 149/149 runtime-adapter tests; 8/8 runtime-path tests; live/dead lock recovery stress 20/20; duplicate claim/effect/notification count is 0; expired external effects reconcile instead of retrying |
-| MKT-02 | Read the live Postiz integration registry and freeze a redacted multi-platform lane manifest containing integration ID, provider, profile, locale, product, and disabled state | Honne TikTok/Instagram; Anicca TikTok/Instagram/YouTube | every target account has exactly one verified provider route; Honne has no YouTube row; historical IDs and unknown profiles remain blocked rather than guessed |
+| MKT-02 | **implementation ready; live registry pending** — Read the live Postiz integration registry and freeze a redacted multi-platform lane manifest containing integration ID, provider, profile, locale, product, and disabled state | Honne TikTok/Instagram; Anicca TikTok/Instagram/YouTube | strict assignment/verification, alias-conflict, platform-profile, YouTube-disabled, endpoint, writer-root, and secret-free tests pass; live GET is still blocked by missing Life Manager credential (`401 No API Key`), so target artifact and route IDs remain unclaimed; Honne has no YouTube row and historical/unknown profiles are not guessed |
 | MKT-03 | Run one controlled publication using the Life Manager route, reconcile `PUBLISHED`, verify the direct TikTok `/video/<id>` URL, and send one Telegram receipt | Honne EN `@honne_reveal` | one real public URL, one matching Telegram receipt, and replay creates no new effect |
 | MKT-03A | Extend the generic publication contract and direct-URL verifier to YouTube while keeping Postiz as the provider | selected **Anicca** YouTube integration only | shadow performs zero provider writes; a verified `/shorts/<id>`, `/watch?v=<id>`, or equivalent public URL is required before canary |
 | MKT-03B | Run one controlled Postiz fan-out canary with one effect key per platform, one selected product lane at a time: Anicca on TikTok/Instagram/YouTube or Honne on TikTok/Instagram | one selected production-armed product lane | Anicca: three receipts/URLs; Honne: two receipts/URLs; each has a metric join key, one natural-language Telegram summary, and replay creates 0 new effects |
