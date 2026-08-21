@@ -1075,6 +1075,10 @@ transaction date. When the provider payload is behind (the live read is `2026-08
 This is a warning derived from provider dates; it does not infer a missing transaction or change the reported
 balance.
 
+Canonical commit `aa7eb7b7e` also places `providerDataFreshness` and `latestReturnedTransactionDate` in the
+redacted loop result. A Telegram `sent` status now remains explicitly separate from provider freshness; the
+observed result is `providerDataFreshness=stale` when the latest returned transaction predates the reporting date.
+
 ### CFO-1j display correction (2026-08-21)
 
 The installed Moneytree read still returns the same provider payload (MUFG balance `358938`, latest returned

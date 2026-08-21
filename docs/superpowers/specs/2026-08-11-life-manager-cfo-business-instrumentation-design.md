@@ -690,6 +690,9 @@ add a business-fact database table, renderer, API route, launchd wiring, or Tele
   returned transaction date and visibly warns when the provider payload is behind (2026-08-21 vs 2026-08-18:
   3 days). It never invents a transaction, refreshes credentials, or converts the stale payload into a realtime
   claim.
+- Loop result truth (2026-08-21): canonical commit `aa7eb7b7e` adds redacted `providerDataFreshness` and
+  `latestReturnedTransactionDate` fields to the hourly result. `status=sent` only means Telegram delivery; a stale
+  Moneytree payload is reported as `providerDataFreshness=stale` rather than hidden behind a generic success.
 - Host-parity decision (2026-08-21): the official Codex MCP/skills/plugins/App Server/SDK surfaces support sharing
   user config, skill roots, and installed Apps across local Codex clients, but a fresh `codex exec` is not the main
   ChatGPT conversation. The Moneytree bundle is present in local plugin cache and `codex app-server` reports it
