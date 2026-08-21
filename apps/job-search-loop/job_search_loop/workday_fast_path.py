@@ -542,7 +542,7 @@ async def _run(args: argparse.Namespace) -> dict[str, Any]:
             try:
                 result["processed"].append(await _process_one(page, row, profile=profile, materials_root=args.materials_root, ledger=ledger, evidence_dir=args.evidence_dir, japan_day=args.japan_day, store_path=args.store_path))
             except Exception as error:
-                result["processed"].append({"application_id": row["application_id"], "company": row["company"], "title": row["title"], "status": "blocked", "blocker": "fast_path_exception", "error_type": type(error).__name__})
+                result["processed"].append({"application_id": row["application_id"], "company": row["company"], "title": row["title"], "status": "blocked", "blocker": "fast_path_exception", "error_type": type(error).__name__, "error": _safe_text(str(error), 500)})
     finally:
         if page is not None:
             await page.close()
