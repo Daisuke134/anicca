@@ -25,7 +25,8 @@ def run_create_intent(*, engine: pathlib.Path, output_path: pathlib.Path,
                       account_id: str, hook_id: str, renderer_id: str, adapter: str,
                       asset_path: pathlib.Path, caption: str, attribution_token: str,
                       scheduled_at: str, visual_approval_id: str,
-                      now: str | None = None) -> dict:
+                      now: str | None = None, script_db_path: pathlib.Path | None = None,
+                      script_id: str | None = None) -> dict:
     import sys
     gates = pathlib.Path(engine) / "gates"
     if str(gates) not in sys.path:
@@ -53,6 +54,16 @@ def run_create_intent(*, engine: pathlib.Path, output_path: pathlib.Path,
     owned_url = f"https://aniccaai.com/go/{attribution_token}"
     if owned_url not in normalized_caption:
         raise ValueError("owned attribution URL missing from caption")
+    if (script_db_path is None) != (script_id is None):
+        raise ValueError("script receipt and script ledger must be supplied together")
+    if script_id is not None:
+        brain = pathlib.Path(engine) / "brain"
+        if str(brain) not in sys.path:
+            sys.path.insert(0, str(brain))
+        from script_ledger import ScriptLedger
+        script = ScriptLedger(script_db_path).get(script_id)
+        if (script["product_id"], script["account_id"], script["creative_id"], script["renderer_id"]) != (product_id, account_id, creative_id, renderer_id):
+            raise ValueError("script receipt does not bind this publication")
 
     intent = build_intent(
         experiment_id=experiment_id, creative_id=creative_id,
@@ -63,7 +74,7 @@ def run_create_intent(*, engine: pathlib.Path, output_path: pathlib.Path,
         integration_id=account["publisher_integration_id"],
         platform=account["platform"], native_handle=account["native_handle"],
         provider_settings=account["publisher_settings"],
-        visual_approval_id=visual_approval_id)
+        visual_approval_id=visual_approval_id, script_id=script_id)
     current = parse_time(now) if now is not None else dt.datetime.now(dt.timezone.utc)
     if current.tzinfo is None:
         raise ValueError("timestamp timezone required")

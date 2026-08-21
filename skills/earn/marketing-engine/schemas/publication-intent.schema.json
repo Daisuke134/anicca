@@ -24,6 +24,7 @@
     "platform":{"enum":["tiktok","instagram","youtube"]},
     "native_handle":{"type":"string","minLength":1},
     "provider_settings":{"type":"object","required":["__type"],"properties":{"__type":{"type":"string","minLength":1}}},
-    "visual_approval_id":{"type":"string","pattern":"^visual\\.accepted\\."}
+    "visual_approval_id":{"type":"string","pattern":"^visual\\.accepted\\."},
+    "script_id":{"type":"string","pattern":"^script\\."}
   }
 }

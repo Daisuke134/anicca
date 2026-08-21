@@ -45,7 +45,7 @@ def _intent_causal(intent: dict) -> list[str]:
         "experiment_id", "creative_id", "product_id", "account_id", "hook_id",
         "renderer_id", "adapter", "asset_sha256", "caption_sha256", "scheduled_at",
         "integration_id", "platform", "native_handle",
-    )] + [_provider_settings_json(intent["provider_settings"])]
+    )] + [_provider_settings_json(intent["provider_settings"]), str(intent.get("script_id") or "")]
 
 
 def validate_intent(intent: dict) -> None:
@@ -76,7 +76,7 @@ def build_intent(*, experiment_id: str, creative_id: str, product_id: str,
                  scheduled_at: str, integration_id: str, platform: str,
                  native_handle: str,
                  provider_settings: dict,
-                 visual_approval_id: str) -> dict:
+                 visual_approval_id: str, script_id: str | None = None) -> dict:
     asset = pathlib.Path(asset_path).resolve()
     require(asset.is_file(), "publication asset missing")
     normalized = normalize_caption(caption)
@@ -89,7 +89,7 @@ def build_intent(*, experiment_id: str, creative_id: str, product_id: str,
     provider_settings_json = _provider_settings_json(provider_settings)
     causal = [experiment_id, creative_id, product_id, account_id, hook_id, renderer_id,
               adapter, file_sha256(asset), caption_sha256(normalized), scheduled_at,
-              integration_id, platform, native_handle, provider_settings_json]
+              integration_id, platform, native_handle, provider_settings_json, str(script_id or "")]
     return {
         "schema_version": "marketing.publication-intent.v2",
         "publish_key": stable_id("publication", causal),
@@ -103,6 +103,7 @@ def build_intent(*, experiment_id: str, creative_id: str, product_id: str,
         "native_handle": native_handle,
         "provider_settings": provider_settings,
         "visual_approval_id": visual_approval_id,
+        **({"script_id": script_id} if script_id else {}),
     }
 
 
