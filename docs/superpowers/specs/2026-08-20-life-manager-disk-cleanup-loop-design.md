@@ -206,6 +206,8 @@ blank-draft、prepare、listing mutation、retire、publishのeffect boundaryを
 swap=`0`、tier=`2`、stop/pressure flagは解除された。2026-08-21T11:59Zの直接readbackは
 `11,779,736 KiB`（約11.23GiB）で、Life Manager receiptも`errors=0`、`protected_deletions=0`を
 維持している。これは一時的な回復であり、24時間/7日連続観測の開始・完了を意味しない。
+実装milestoneはOpenClaw Telegram ACK `messageId=27827`で送達した（直接bot経路はtoken未設定で失敗し、
+既存gateway経路へ1回retryして成功）。
 
 ### OSS boundary
 
