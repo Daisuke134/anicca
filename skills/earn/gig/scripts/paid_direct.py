@@ -1459,6 +1459,9 @@ def _paid_project_root(args, item: dict[str, Any]) -> Path:
 
 def _current_paid_decision(root: Path, item: dict[str, Any]) -> dict[str, Any]:
     receipt = _load(root / "context" / "paid-work-decision.json")
+    context = root / "context" / "current.json"
+    if receipt.get("context_sha256") != _file_snapshot(context)[1]:
+        raise ValueError("stale paid decision context")
     value = {key: receipt[key] for key in PAID_DECISION_FIELDS}
     feedback = _text(item.get("buyer_feedback_sha256"))
     requirements = paid_remote_result.requirements_digest(root, feedback)

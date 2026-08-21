@@ -961,6 +961,9 @@ context. When the authenticated offer has no DM reference and discovery returns 
 the loop records `dm_collection_unavailable` and continues only if proposal, full talkroom history
 and accumulated requirements are all present; it never invents a DM or blocks an otherwise
 buildable artifact merely to ask the buyer again.
+Every reused semantic decision must bind the current compiled-context SHA256. If attachments or
+messages arrive after the decision, the mismatch invalidates it and forces a new Sol decision before
+any owner starts; an old `unresolved` claim may never survive after the missing source is collected.
 The authenticated offer page is the exact bridge from a purchased order to its pre-purchase DM:
 persist its `/mypage/direct_message/<id>` reference in the project proposal, then have Paid refresh
 that one thread directly. A buyer-name scan incorrectly reported Haru's real DM `10102712` absent
