@@ -1,5 +1,15 @@
 # Affiliate local money loop handover
 
+- Current diagnosis: provider clicks total 39 across 20 placements, but the
+  latest official PartnerStack artifact is `commission_row_count=0`, payout
+  `EMPTY`, and `NO_LIVE_ROWS`. The economic blocker is no buyer conversion into
+  an official transaction. The current operational blocker is the 5.26 GiB
+  free-disk reading below the 10 GiB Affiliate floor. Repost has 64 ordinary
+  actions but zero exact Affiliate joins; the sole Affiliate proposal is
+  terminal `UNVERIFIED` and cannot be retried. The existing launchd owners own
+  every business effect; Codex only repairs/verifies the harness and triggers
+  those owners.
+
 - User-directed action-cap removal is installed in Affiliate release
   `b4c17e82f8084aac8d89cde752f89d51df9466a1`. Existing owner readback writes
   `ACTION_CAP_DISABLED`, `daily_cap=null`, and retains the historical count

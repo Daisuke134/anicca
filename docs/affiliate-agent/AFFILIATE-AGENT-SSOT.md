@@ -1445,6 +1445,32 @@ fences, disclosure checks, and money rules are unchanged. At the same
 readback, disk remains below its required floor, so no external Affiliate
 action is newly admitted and money remains `NO_TRANSACTIONS`.
 
+### 1.1.59 The money blocker is zero buyer conversion, with disk as the current execution blocker
+
+The current provider ledger has 20 placements and 39 provider clicks, but the
+latest official PartnerStack artifact has `commission_row_count=0`, payout
+`EMPTY`, and normalizer `NO_LIVE_ROWS`. The canonical rolling receipt therefore
+has zero pending, approved, paid, and reversed transactions; approved-or-paid
+USD net is unknown rather than zero because real cost coverage is unknown. The
+largest economic blocker is consequently **no official buyer conversion**, not
+the removed daily action cap.
+
+The current execution blocker is host capacity: free disk is `5264781312`
+bytes, below the `10737418240` byte runtime floor, so the existing Affiliate
+owners correctly fail closed before creating another placement. The Repost
+owner has 64 observed actions, but exact Affiliate joins remain `0/64`; its
+ordinary English posts are audience-growth activity, not Affiliate delivery.
+The one Affiliate proposal is terminal `UNVERIFIED` and cannot be retried.
+
+The real launchd owners—not Codex—own research, selection, composition, policy,
+dedicated-link creation, owned publishing, Repost/X publication, provider
+capture, reconciliation, and Telegram delivery. Codex owns only harness
+design/repair, immutable release installation, safe owner triggering, and
+readback verification. Codex does not manually publish, create referral links,
+click links, create transactions, or count money. The next owner action MUST
+resume the durable composition job after the disk floor is restored, then prove
+a new exact placement join and an official provider transaction.
+
 ### 1.2.0 Audited executable boundary
 
 The installed ownership graph has six launchd labels: three persistent browser
