@@ -171,9 +171,9 @@ deployment adapter for these same contracts, not a second implementation.
 ### 1.2 Truth checkpoint: implemented versus still hypothetical
 
 Current override: the installed runtime is `0e818458c`, not the older release
-identifier retained in historical table rows below. The 08:27 JST owner
-readback, official artifact `f69af229…6734e3a`, and Telegram delivery
-readback in section 1.1.4 are the current runtime truth; no official
+identifier retained in historical table rows below. The 09:10 JST owner
+readback, new official artifact `0c0b1af1…5aa5d3f3`, and Telegram delivery
+readback in section 1.1.6 are the current runtime truth; no official
 transaction or money exists.
 
 This table prevents tests, fixtures, screenshots, or plans from being reported as
@@ -269,6 +269,31 @@ official artifact `f69af229…6734e3a`. Telegram appended only
 message `26335`; no public effect, provider capture, transaction, or money
 changed. This is another replay/readback proof, not a live retry-branch proof;
 B01 remains `WAITING_FOR_PROVIDER_TRANSACTION`.
+
+### 1.1.6 Latest official capture and funnel diagnosis
+
+The existing authenticated owner completed the due official capture at
+`2026-08-21T09:10:09+0900` with wake UUID `6ac36ba7…e30d341`. PartnerStack
+produced new artifact `0c0b1af1…5aa5d3f3`; the report was hash-valid but empty:
+`commission_row_count=0`, `payout_row_state=EMPTY`, and
+`normalizer_state=NO_LIVE_ROWS`. Reconciliation appended `0` transitions, and
+rolling net remained `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`.
+
+The measurement path is working: the authenticated overview reports 43 provider
+clicks (42 post-baseline), the dedicated Link Performance report has 20 rows
+and 34 total provider-link clicks, and the owner records the official artifact,
+reconciliation, and rolling-net receipts. Telegram is also working: the latest
+delivery row is `ALREADY_DELIVERED / NO_PENDING` for already-sent message
+`26335`, so unchanged state is intentionally deduplicated rather than resent.
+
+The current bottleneck is the funnel, not ledger arithmetic: the provider reports
+`signups=0`, `conversion_rate=0%`, `revenue=0`, and no commission rows; only five
+Dev.to articles have observed metrics totaling 40 page views, 17 of 20 placement
+exposure denominators remain insufficient, and Repost has 52 actions with
+`0` exact Affiliate campaign joins. Therefore content/distribution is not yet
+delivering a measurable qualified buyer path from Repost or owned content to a
+provider conversion. Clicks are exposure evidence, never money. B01 remains
+open and no provider transaction, payout, or commission is claimed.
 
 ### 1.2.0 Audited executable boundary
 
@@ -2475,10 +2500,11 @@ post-baseline) and zero commission/payout money. Three Dev.to exposure
 denominators are observed and the remaining 17 are
 `INSUFFICIENT_DENOMINATOR`. Repost observes 52 valid actions with 0 exact
 Affiliate campaign joins and 52 unjoined actions, so it grants no revenue credit.
-The installed `0e818458c` owner remains `COOLDOWN` after the 08:27 readback;
-official artifact `f69af229…6734e3a` has zero rows and rolling net remains
-`NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`. B01 is waiting for
-the first non-empty official provider transaction artifact.**
+The installed `0e818458c` owner completed the 09:10 capture with
+`revenue_state=NO_TRANSACTIONS`, `source_rows=0`, and `appended_transitions=0`;
+official artifact `0c0b1af1…5aa5d3f3` has zero commission/payout rows and
+rolling net remains `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`.
+B01 is waiting for the first non-empty official provider transaction artifact.**
 
 Current atomic remaining queue (the checkboxes in this section are the detailed
 acceptance contract; this summary does not reorder them):
