@@ -636,7 +636,12 @@ def build_snapshot(*, state_dir: Path, now: datetime) -> dict[str, Any]:
         row for row in artifacts
         if _parse_time(str(row["published_at"])).astimezone(JST).date() == local_now.date()
     ]
-    report_articles = today_articles or [row for row in artifacts if row["run_id"] == latest_run]
+    if today_articles:
+        report_articles = today_articles
+        report_articles_scope = "today"
+    else:
+        report_articles = [row for row in artifacts if row["run_id"] == latest_run]
+        report_articles_scope = "latest_saved_run" if report_articles else "none"
     snapshot = {
         "schema_version": 1,
         "generated_at": _iso(local_now),
@@ -650,6 +655,7 @@ def build_snapshot(*, state_dir: Path, now: datetime) -> dict[str, Any]:
         },
         "articles": artifacts,
         "report_articles": report_articles,
+        "report_articles_scope": report_articles_scope,
         "opportunities": _opportunities(state_dir / "opportunities.sqlite3"),
         "commercial": commercial,
         "learning": _learning(state_dir),
@@ -793,6 +799,29 @@ def _incident_lines(snapshot: dict[str, Any]) -> list[str]:
     return lines
 
 
+def _interpretation(snapshot: dict[str, Any], period: dict[str, Any]) -> str:
+    if period["verified_revenue_event_count"]:
+        return "閲覧数ではなく、外部receiptで確認できた受取だけを収益として集計しました。"
+    timeline = snapshot.get("incident_timeline")
+    publication = timeline.get("publication_truth") if isinstance(timeline, dict) else None
+    public_count = publication.get("public_count") if isinstance(publication, dict) else None
+    if isinstance(public_count, int) and public_count > 0:
+        return (
+            f"保存済みの最新観測runには公開URLが{public_count}件あります。"
+            "これは今回のtickで新規公開したreceiptとは別です。"
+            "外部receipt付きの受取はまだ0で、閲覧数を収益とは数えていません。"
+        )
+    if public_count == 0:
+        return (
+            "保存済みの最新観測runでは公開URLを確認していません。"
+            "外部receipt付きの受取もまだ0で、閲覧数を収益とは数えていません。"
+        )
+    return (
+        "保存済みの公開receiptを確認できません。"
+        "外部receipt付きの受取もまだ0で、閲覧数を収益とは数えていません。"
+    )
+
+
 def render_message(snapshot: dict[str, Any], *, cadence: str) -> str:
     if cadence not in {"immediate", "hourly", "daily", "weekly"}:
         raise ValueError("unsupported report cadence")
@@ -826,6 +855,10 @@ def render_message(snapshot: dict[str, Any], *, cadence: str) -> str:
     lines.extend(["", "入金元:"])
     lines.extend(_stream_lines(period) or ["• 外部receipt付きの受取はまだありません"])
     lines.extend(["", "記事:"])
+    if snapshot.get("report_articles_scope") == "latest_saved_run":
+        lines.append(
+            "（以下の公開URLは保存済みの過去runのreceiptです。今回tickの新規公開ではありません。）"
+        )
     for article in snapshot["report_articles"]:
         metric = article["metrics"].get("views", {})
         views = (
@@ -852,10 +885,7 @@ def render_message(snapshot: dict[str, Any], *, cadence: str) -> str:
     lines.extend(_commercial_lines(snapshot))
     lines.extend(_incident_lines(snapshot))
     lines.extend(_learning_lines(snapshot))
-    if period["verified_revenue_event_count"]:
-        interpretation = "閲覧数ではなく、外部receiptで確認できた受取だけを収益として集計しました。"
-    else:
-        interpretation = "公開は動いていますが、外部receipt付きの受取はまだ0です。閲覧数を収益とは数えていません。"
+    interpretation = _interpretation(snapshot, period)
     lines.extend(["", f"解釈: {interpretation}", "次: Writerが公開・機会探索・収益確認を継続します。", "あなたの操作: なし。"])
     return "\n".join(lines)
 

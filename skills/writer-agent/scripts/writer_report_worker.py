@@ -31,6 +31,7 @@ Transport = Callable[[str], str]
 MAX_TELEGRAM_CHARS = 4096
 SAFE_CHUNK_CHARS = 3800
 SEMANTIC_SCHEMA_VERSION = 4
+REPORT_TEXT_SCHEMA_VERSION = 2
 
 
 def _atomic(path: Path, value: dict[str, Any] | str) -> None:
@@ -89,6 +90,8 @@ def _semantic_hash(snapshot: dict[str, Any]) -> str:
         "money": article.get("money"),
     } for article in snapshot["articles"]]
     stable = {
+        "report_text_schema_version": REPORT_TEXT_SCHEMA_VERSION,
+        "report_articles_scope": snapshot.get("report_articles_scope"),
         "money": visible_money,
         "articles": visible_articles,
         "opportunities": [{
