@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | M2 — `CFO-OPS3a`, `CFO-OPS3b`, `CFO-1j`, `CFO-2b.2`, `CFO-2b.3`, `CFO-2b.4`, `CFO-2b.5`, `CFO-2b.6`, `CFO-2b.7`, `CFO-2b.8`, `CFO-2b.9`, `CFO-2c`, `CFO-2d`, `CFO-2d2`, `CFO-2d3`, `CFO-2e`, `CFO-4a`, `CFO-4b`, `CFO-4d`, `CFO-4e`, `CFO-5a`, and `CFO-5a2` are closed; M3/Binance and M4c are deferred, M5b is next |
+| Status | M2 — `CFO-OPS3a`, `CFO-OPS3b`, `CFO-1j`, `CFO-2b.2`, `CFO-2b.3`, `CFO-2b.4`, `CFO-2b.5`, `CFO-2b.6`, `CFO-2b.7`, `CFO-2b.8`, `CFO-2b.9`, `CFO-2c`, `CFO-2d`, `CFO-2d2`, `CFO-2d3`, `CFO-2e`, `CFO-4a`, `CFO-4b`, `CFO-4d`, `CFO-4e`, `CFO-5a`, `CFO-5a2`, and `CFO-5b` are closed; M3/Binance and M4c are deferred, M5c is next |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
@@ -1295,7 +1295,10 @@ ingestion. They are not unchecked M1 items and cannot become the active CFO item
       emergency cash floor, minimum operating runway, liquidity floor, and per-business/per-asset concentration
       caps. Unknown reserve data fails closed. The same gate rejects expired/over-cap/disallowed venue/asset mandates
       and a verified amount above `available − operating floor − tax reserve`; no live capital was touched. M5b is next.
-- [ ] **CFO-5b** Attach one sandboxed executor to one existing profitable business; keep reader credentials separate.
+- [x] **CFO-5b** Attach one sandboxed executor to one existing profitable business; keep reader credentials separate.
+      Canonical commit `113471fbd` adds the executor separation boundary. Current partial/unknown business evidence
+      returns `blocked / business_not_verified_profitable / execute=false`; a policy pass still requires owner approval
+      and does not start an executor. Reader and executor secret refs must be distinct. M5c real cycle remains pending.
 - [ ] **CFO-5c** Execute one bounded real cycle, reconcile the external receipt back into the next CFO snapshot,
       and report realized P&L and cost.
 - [ ] **CFO-5d** Add repair and stop-review workflows. Live shutdown remains gated when another session or human may
@@ -1460,3 +1463,11 @@ identity, venue/asset allowlists, spend/loss caps, expiry, receipt status, and n
 reserve or receipt evidence returns `repair`; a passing policy still returns `hold` with `execute=false` and owner
 approval required. Smoke cases for unknown reserve, valid policy, and cap exceeded pass. No executor, wallet, exchange,
 trade, transfer, or hiring path was called. M5b is next; controlled execution remains prohibited until later gates.
+
+### CFO-5b closure correction (2026-08-21)
+
+Canonical commit `113471fbd` adds `apps/life-manager/lib/cfo-executor-boundary.js`. It requires separate reader and
+executor secret references, tenant/business identity, an owner-approved mandate, and verified positive business profit.
+The current partial/unknown evidence returns `blocked / business_not_verified_profitable / execute=false`; a complete
+policy returns only `ready_for_owner_approval` and still `execute=false`. No executor, wallet key, trade, transfer, or
+hiring action was called. M5c is pending a verified profitable business and explicit owner approval.
