@@ -930,11 +930,14 @@ class Ledger:
     ) -> None:
         from_state = self.current_state(application_id)
         validate_transition(from_state, to_state)
+        # The applications_state_requires_event trigger validates the new state
+        # against the latest event. Append first, then mutate the projection in
+        # the same transaction so the trigger observes the matching event.
+        self._append_event(application_id, from_state, to_state, payload)
         self.connection.execute(
             "UPDATE applications SET current_state = ? WHERE id = ?",
             (to_state, application_id),
         )
-        self._append_event(application_id, from_state, to_state, payload)
 
     def transition(
         self,
