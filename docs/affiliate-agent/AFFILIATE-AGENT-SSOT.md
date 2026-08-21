@@ -329,6 +329,14 @@ and the Affiliate `last-run` advanced at 09:30 and 09:41, so the registered
 cadence continues to execute even though loaded-label readback is unavailable.
 No OS service was restarted or killed, and no all-owner-load claim is made.
 
+The same read-only slice found the composition log unchanged since
+`2026-08-21T07:07:29+0900`; its durable composition receipts are 18
+`READY_FOR_POLICY`, 3 `QUARANTINED`, and 1 `FAILED`, while source refresh at
+09:43 remains `COOLDOWN / plans=[]`. A declared kick of the existing
+`ai.anicca.affiliate-composition` at 09:44 returned `141` and changed no
+artifact or public state. Thus the content supply is not advancing, which is a
+real upstream funnel constraint; no manual composition was substituted.
+
 ### 1.2.0 Audited executable boundary
 
 The installed ownership graph has six launchd labels: three persistent browser
