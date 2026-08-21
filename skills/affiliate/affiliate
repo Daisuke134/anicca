@@ -1,0 +1,37 @@
+#!/bin/sh
+set -eu
+
+if [ "${1:-}" != "provider" ] && [ "${1:-}" != "programs" ] && [ "${1:-}" != "loop" ] && [ "${1:-}" != "x" ] && [ "${1:-}" != "sources" ] && [ "${1:-}" != "compose" ] && [ "${1:-}" != "content" ] && [ "${1:-}" != "owned" ] && [ "${1:-}" != "revenue" ] && [ "${1:-}" != "distribution" ]; then
+  echo "usage: affiliate {provider|programs|loop|x|sources|compose|content|owned|revenue|distribution} ..." >&2
+  exit 2
+fi
+group=$1
+shift
+if [ -n "${AFFILIATE_PYTHON:-}" ]; then
+  python_bin=$AFFILIATE_PYTHON
+elif command -v python3 >/dev/null 2>&1; then
+  python_bin=$(command -v python3)
+else
+  echo "affiliate: python3 is required; run bootstrap/install.sh" >&2
+  exit 1
+fi
+case "$group" in
+  provider) script=provider_cli.py ;;
+  programs) script=program_registry.py ;;
+  loop) script=local_loop.py ;;
+  sources) script=source_capture.py ;;
+  compose) script=composition_owner.py ;;
+  content) script=content.py ;;
+  owned) script=owned_publish.py ;;
+  revenue) script=revenue_cli.py ;;
+  distribution) script=devto_publish.py ;;
+  x)
+    if [ "${1:-}" = "post" ]; then
+      shift
+      script=x_post_cli.py
+    else
+      script=x_profile_cli.py
+    fi
+    ;;
+esac
+exec "$python_bin" "$(dirname "$0")/scripts/$script" "$@"

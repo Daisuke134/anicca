@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "provider": "hubspot-impact",
+  "allowed_origins": ["https://app.impact.com"],
+  "target": {
+    "url_contains_any": ["/secure/member/home/", "/secure/device/auth.ihtml", "/login.user", "/loginError.user", "/password/change.ihtml"],
+    "title_contains_any": ["HubSpot, Inc.", "impact.com", "Impact"]
+  },
+  "login": {
+    "credential_section": "Impact",
+    "username_selector": "input[type='email'],input[type='text']",
+    "username_submit_selector": "button",
+    "username_submit_text_any": ["次へ", "Next", "Continue"],
+    "password_selector": "input[type='password']",
+    "password_submit_selector": "button,input[type='submit']",
+    "password_submit_text_any": ["サインイン", "Sign in", "Log in"],
+    "submit_selector": "button[type='submit'],input[type='submit']"
+  },
+  "password_reset": {
+    "credential_section": "Impact",
+    "path": "/password/change.ihtml",
+    "password_selector": "input[type='password']",
+    "submit_selector": "button[type='submit'],input[type='submit']"
+  },
+  "device_verification": {
+    "messages_sender": "0120640050",
+    "max_age_seconds": 600,
+    "code_selector": "input[placeholder='Enter your code']",
+    "submit_selector": "button,input[type='submit']",
+    "submit_text_any": ["Verify", "確認"]
+  },
+  "states": [
+    {
+      "state": "APPLICATION_PENDING",
+      "all_text": [
+        "HubSpot, Inc. application",
+        "In Review",
+        "You will be notified once there is a response."
+      ],
+      "next_action": "POLL_APPLICATION"
+    },
+    {
+      "state": "REJECTED",
+      "all_text": [
+        "HubSpot, Inc. application",
+        "Declined"
+      ],
+      "next_action": "DO_NOT_RESUBMIT"
+    },
+    {
+      "state": "DEVICE_VERIFICATION_REQUIRED",
+      "url_contains": "/secure/device/auth.ihtml",
+      "all_text": ["Enter your code"],
+      "next_action": "READ_MESSAGES_AND_VERIFY"
+    },
+    {
+      "state": "SIGN_IN_REQUIRED",
+      "url_contains": "/login",
+      "all_text": [],
+      "next_action": "RESUME_CREDENTIAL"
+    }
+  ],
+  "fallback_state": "UNKNOWN_RENDERED_STATE",
+  "fallback_next_action": "RESEARCH_AND_UPDATE_PLAYBOOK"
+}

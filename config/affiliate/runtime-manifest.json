@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "runtime_root": "skills/affiliate",
+  "runtime_tree_sha256": "affac6915ff1e7ef98f9b8d0827129b9aff25301cdfcdfa720581bae9dc0133d",
+  "runtime_file_count": 80,
+  "hash_algorithm": "sha256(sorted relative path + NUL + file bytes + NUL; excludes state, cache, and __pycache__ directories)",
+  "canonical_census": {
+    "owner": "Daisuke134/life-manager",
+    "tracked_runtime_files": 80,
+    "mutable_state_imported": false,
+    "mutable_state_root": "~/.local/state/life-manager/affiliate",
+    "source_absolute_path_references": 4,
+    "source_plists_with_machine_path": 1,
+    "machine_paths_require_install_time_rendering": true
+  },
+  "source": {
+    "repository": "/Users/anicca/Projects/life-manager-main",
+    "path": "skills/affiliate",
+    "commit": "c75dacc605bd7f0e0162e4da66ae2936dc3da7e0",
+    "status": "proven Affiliate runtime source-of-truth"
+  },
+  "active_release": {
+    "path": "~/.local/share/life-manager/affiliate/current",
+    "tree_sha256": "affac6915ff1e7ef98f9b8d0827129b9aff25301cdfcdfa720581bae9dc0133d",
+    "file_count": 80,
+    "status": "immutable release matches canonical source excluding generated __pycache__"
+  },
+  "state": {
+    "active": "~/.local/state/life-manager/affiliate",
+    "target": "~/.local/state/life-manager/affiliate",
+    "credentials": "~/.config/life-manager/accounts",
+    "parity": "not imported; canonical integration is code-only"
+  },
+  "launchd_labels": [
+    "ai.anicca.affiliate-loop",
+    "ai.anicca.affiliate-composition"
+  ],
+  "launchd_sources": {
+    "ai.anicca.affiliate-loop": "~/Library/LaunchAgents/ai.anicca.affiliate-loop.plist",
+    "ai.anicca.affiliate-composition": "~/Library/LaunchAgents/ai.anicca.affiliate-composition.plist"
+  },
+  "last_validation": {
+    "release_sha": "c75dacc605bd7f0e0162e4da66ae2936dc3da7e0",
+    "provider": "partnerstack",
+    "provider_observed_at": "2026-08-21T07:38:41.835406+00:00",
+    "commission_row_state": "EMPTY",
+    "commission_row_count": 0,
+    "payout_readiness": "PAYOUT_BLOCKED_BY_TAX_SETUP",
+    "tax_information_state": "REQUIRED",
+    "payment_provider_state": "SELECTION_REQUIRED",
+    "latest_loop_observed_at": "2026-08-21T07:38:57.477360+00:00",
+    "latest_loop_duration_ms": 62565,
+    "latest_loop_state": "SUCCEEDED",
+    "latest_loop_terminal_state": "READY_FOR_PUBLICATION",
+    "launchd_mutated": false,
+    "mutable_state_mutated": false
+  }
+}

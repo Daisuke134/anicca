@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "plan_id": "elevenlabs-en",
+  "locale": "en",
+  "offer_id": "elevenlabs-creator",
+  "buyer_intent": "Solo creators comparing AI voice plans before paying",
+  "slug": "elevenlabs-plans-for-solo-creators",
+  "sources": [
+    {"id": "elevenlabs-affiliate", "adapter": "crwl", "url": "https://elevenlabs.io/affiliates", "evidence_class": "official_terms", "license": "PROPRIETARY_REFERENCE_ONLY", "freshness_days": 7},
+    {"id": "elevenlabs-pricing", "adapter": "crwl", "url": "https://elevenlabs.io/pricing", "evidence_class": "official_price", "license": "PROPRIETARY_REFERENCE_ONLY", "freshness_days": 1},
+    {"id": "elevenlabs-tts", "adapter": "crwl", "url": "https://elevenlabs.io/docs/overview/capabilities/text-to-speech", "evidence_class": "official_product", "license": "PROPRIETARY_REFERENCE_ONLY", "freshness_days": 30},
+    {"id": "elevenlabs-alec", "adapter": "crwl", "url": "https://elevenlabs.io/blog/alec-wilcock-on-becoming-a-top-affiliate-for-elevenlabs", "evidence_class": "first_person_case", "license": "PROPRIETARY_REFERENCE_ONLY", "freshness_days": 90},
+    {"id": "elevenlabs-greg", "adapter": "crwl", "url": "https://elevenlabs.io/blog/greg-preece-on-youtube-monetisation-with-the-elevenlabs-affiliate-program", "evidence_class": "first_person_case", "license": "PROPRIETARY_REFERENCE_ONLY", "freshness_days": 90},
+    {"id": "elevenlabs-python", "adapter": "gh", "repo": "elevenlabs/elevenlabs-python", "evidence_class": "official_oss", "license": "MIT", "freshness_days": 30}
+  ]
+}
