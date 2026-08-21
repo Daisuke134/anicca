@@ -17,7 +17,7 @@ const { runLocalAgentUsageCollection } = require("../lib/cfo-local-agent-usage-r
 const { makeGogMail } = require("../lib/transport/mail-gog.js");
 const { captureLatestGoogleCloudInvoice } = require("../lib/cfo-google-invoice-local-source.js");
 const { captureLatestAnthropicSubscriptionReceipt } = require("../lib/cfo-anthropic-receipt-local-source.js");
-const { requestMoneytreeRefresh } = require("../lib/cfo-moneytree-refresh.js");
+const { requestMoneytreeRefresh, hasMoneytreeLinkCredentials } = require("../lib/cfo-moneytree-refresh.js");
 const { observeCfoBusiness } = require("../lib/cfo-business-observer.js");
 const { decideSpendingGuardian } = require("../lib/cfo-spending-guardian.js");
 const { decideCfoRecommendation } = require("../lib/cfo-recommendation.js");
@@ -115,7 +115,10 @@ function recordRefreshQuota(quota, date) {
   try { fs.renameSync(temporary, quota.file); } catch (error) { try { fs.unlinkSync(temporary); } catch {} throw error; }
 }
 async function maybeRefreshMoneytree(env, fetchImpl, clock, options = {}) {
-  if (String(env.MONEYTREE_LINK_REFRESH_ENABLED || "").toLowerCase() !== "true") return { status: "not_enabled", reason: "refresh_opt_in_required" };
+  const configured = String(env.MONEYTREE_LINK_REFRESH_ENABLED || "").toLowerCase();
+  const credentialFile = env.MONEYTREE_LINK_CREDENTIALS_PATH;
+  if (configured === "false") return { status: "disabled", reason: "refresh_disabled" };
+  if (configured !== "true" && !hasMoneytreeLinkCredentials(credentialFile)) return { status: "not_enabled", reason: "refresh_opt_in_required" };
   const date = ownerDate(clock), quota = readRefreshQuota(env, date);
   if (quota.count === null) return { status: "unavailable", reason: "refresh_quota_unknown" };
   // MUFG's official policy is at most once per day for paid personal accounts;
@@ -124,6 +127,7 @@ async function maybeRefreshMoneytree(env, fetchImpl, clock, options = {}) {
   const result = await (options.requestMoneytreeRefresh || requestMoneytreeRefresh)({
     accessToken: env.MONEYTREE_LINK_ACCESS_TOKEN,
     baseUrl: env.MONEYTREE_LINK_BASE_URL,
+    credentialsPath: credentialFile,
     dailyRequestCount: quota.count,
     observedAt: clock.toISOString(),
     fetchImpl,
