@@ -29,7 +29,7 @@ guardではworktree remote inspectionを`fast_pass_deferred`として保留す�
 shimは同じhost guardを呼び、guard側の`cleanup-full-pass.at`（または明示的な
 `EMERGENCY_GUARD_FULL_PASS=1`）で保留処理を永続的に飢餓させない。
 
-実測証拠はAnicca cleanup test **54 passed**、Life Manager disk-cleanup test **9 passed**、guardの
+実測証拠はAnicca cleanup test **55 passed**、Life Manager disk-cleanup test **9 passed**、guardの
 実E2E約9秒（`errors=0`、`protected_deletions=0`、lock残留なし、初回free約5.2 GiB）である。
 その後のlive readbackではfree約2.2 GiB、tier=`ULTRA`、`reclaimed=0`、`preserved_reasons={"open":1}`
 となった。openなChrome code-sign clone約706 MiBとActions Runner診断ログ約291 MiBは、実行中のため
@@ -87,7 +87,7 @@ receipt、runtime manifestの実データはrepositoryへ入れず、install時�
 LLMは削除権限を持たず、unknown pathを削除するための自由なshell実行も公開契約に含めない。
 
 実装済みcommitはLife Managerの `857e12e8b`（hourly full-pass marker契約まで）を参照する。
-Anicca側のguard integrationは作業branchの`561be2627`までローカルで検証済みだが、GitHub pushは
+Anicca側のguard integrationは作業branchの`69276e769`までローカルで検証済みだが、GitHub pushは
 DNS解決失敗で未達である。これらのcommitは実装の到達点であり、production DONEの証明ではない。
 
 ## 1. Overview — What & Why
@@ -413,7 +413,7 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 | 7 | bounded ops log、incident receipt、Telegram dedupeを実装 | Test Matrix 18–19 PASS、message ID | 部分完了: ledger rotationとlast receipt、milestone送信は実装。ops log/incident receiptの正式分離とdedupe契約は未完了 |
 | 8 | intelligence input/output schemaとwake gateを実装 | deletion capability 0、Test Matrix 16–17 PASS | 未完了: deterministic cleanupにLLM削除権限はないが、hourly intelligence schema/wake gateは未実装 |
 | 9 | owner単位のbounded recoveryを実装 | Test Matrix 20 PASS、duplicate redispatch 0 | 未完了: owner単位のcheckpoint、redispatch、重複抑止は未実装 |
-| 10 | 全cleanup test、host inventory test、Life Manager regression suiteを実行 | failure 0、warning 0、Test Matrix 23–27 PASS | 部分完了: Life Manager disk-cleanup 9 tests、Anicca cleanup regression 54 tests、shell/plist lintはPASS。Matrix 23–27は未完了 |
+| 10 | 全cleanup test、host inventory test、Life Manager regression suiteを実行 | failure 0、warning 0、Test Matrix 23–27 PASS | 部分完了: Life Manager disk-cleanup 9 tests、Anicca cleanup regression 55 tests、shell/plist lintはPASS。Matrix 23–27は未完了 |
 | 11 | effect-free shadow passでlegacy ownerとcanonical ownerのdecision parityを比較 | protected mismatch 0、candidate mismatch説明済み | 未完了: legacy scriptはshim化済みだが、effect-free parity receiptは未作成 |
 | 12 | 既知regenerable artifact 1件でproduction canaryを実行 | reclaimed bytes > 0、free bytes readback、protected deletion 0 | 部分完了: closed `cfo-*`とclone候補の実E2E回収・readbackを確認。正式canary receiptは未完了 |
 | 13 | immediate replayを実行 | duplicate effect 0、error 0 | 部分完了: guard replayで保護対象削除0を確認。正式なproduction replay receiptは未完了 |
