@@ -515,6 +515,27 @@ were `OBSERVED`, and Repost stayed at 54 actions with 0 exact joins and
 `NO_PENDING` on already-sent message `26335`. This is a replay/cooldown proof,
 not transaction or money evidence.
 
+### 1.1.18 Unknown exposure denominator schema replay
+
+Release `a6226f15c2f376d15f5c81e22369892259c1d10e` adds explicit fields to each
+placement ledger row for exposure sources not currently available from an
+official analytics read: `x_impressions=null` with
+`x_impressions_state=UNKNOWN`, and `owned_page_visits=null` with
+`owned_page_visits_state=UNKNOWN`. Source and installed `revenue_cli.py` bytes
+match at SHA-256
+`9ff28617a94645d95f4ebf1ff0d758749ac90fc6f9f705dc6f69e54133dbad59`;
+the targeted regression, full `69/69` suite, and compilation passed. The
+existing owner started from the immutable release and completed wake
+`d4beb584901a11076f29d1f884a566a419090b015ab3e7da19cb736514677716` at
+`2026-08-21T11:50:42+0900`; the ledger readback has 20 rows with these fields
+present and unknown, while provider remains `AUTHENTICATED`, revenue remains
+`COOLDOWN`, and rolling net remains
+`NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`. Repost observed
+55 actions, 0 exact joins, and `NO_REVENUE_CREDIT`; the existing Telegram owner
+sent message `27018`. This closes the unknown-vs-zero schema edge only; D05
+still needs official X/owned analytics values before it can claim exact
+denominators, and B01 remains open.
+
 ### 1.2.0 Audited executable boundary
 
 The installed ownership graph has six launchd labels: three persistent browser
