@@ -31777,3 +31777,9 @@
 {"ts":1787287601,"wake_id":"00MT2GW39SA2D726DBB38641C3","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1787287742,"wake_id":"00MT2GZ3Y91412B818B54C4C02","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1787287922,"wake_id":"00MT2H2YXRC869677D89D34179","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787288056,"wake_id":"00MT2H5UM53B55488EEB6F462D","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1787288214,"wake_id":"00MT2H98KYCD161F295AE14C45","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787288404,"wake_id":"00MT2HDBEFC756BD20EC8443B2","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1787288563,"wake_id":"00MT2HGPYE6F7BBA71461A43B6","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787288745,"wake_id":"00MT2HKM0X5ECB0F4B7F2D40E3","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787288888,"wake_id":"00MT2HNOAN1E31410D4BB949D1","kind":"narrate","sleep_s":120,"model":"auto"}
