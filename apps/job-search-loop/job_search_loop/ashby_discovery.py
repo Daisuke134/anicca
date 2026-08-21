@@ -13,8 +13,11 @@ import hashlib
 import json
 import os
 import re
+from datetime import datetime
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
+from urllib.request import Request, urlopen
 
 from .ledger import Ledger
 from .learning import LearningDriver
@@ -45,7 +48,14 @@ def _role_family(title: str) -> str:
     ) else "applied_ai"
 
 
-def _candidate_jobs(jobs: list[dict[str, Any]], seen: set[str]) -> list[dict[str, Any]]:
+def _board_slug(url: str) -> str:
+    parts = urlsplit(url).path.strip("/").split("/")
+    return parts[0] if len(parts) >= 2 else ""
+
+
+def _candidate_jobs(
+    jobs: list[dict[str, Any]], seen: set[str], limited_boards: set[str]
+) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for job in jobs:
         company = str(job.get("company") or "").strip()
@@ -56,15 +66,91 @@ def _candidate_jobs(jobs: list[dict[str, Any]], seen: set[str]) -> list[dict[str
         )
         if str(job.get("ats") or "").casefold() != "ashby":
             continue
+        if job.get("isListed") is False:
+            continue
         if not company or not title or not ASHBY_RE.fullmatch(url):
             continue
-        if is_excluded_employer(company) or url.casefold() in seen:
+        if (
+            is_excluded_employer(company)
+            or url.casefold() in seen
+            or _board_slug(url).casefold() in limited_boards
+        ):
             continue
-        if not JAPAN_RE.search(location) or not ROLE_RE.search(title):
+        if not (JAPAN_RE.search(location) or job.get("is_remote") is True):
+            continue
+        if not ROLE_RE.search(title):
             continue
         rows.append({**job, "company": company, "title": title, "url": url})
     rows.sort(key=lambda row: int(row.get("posted_at_ms") or 0), reverse=True)
     return rows
+
+
+def _japan_board_slugs(jobs: list[dict[str, Any]]) -> dict[str, str]:
+    boards: dict[str, str] = {}
+    for job in jobs:
+        if str(job.get("ats") or "").casefold() != "ashby":
+            continue
+        location = " ".join(
+            [str(job.get("location") or ""), *[str(x) for x in (job.get("secondary_locations") or [])]]
+        )
+        if not JAPAN_RE.search(location):
+            continue
+        path = urlsplit(str(job.get("url") or "")).path.strip("/").split("/")
+        if len(path) < 2 or not path[0]:
+            continue
+        boards.setdefault(path[0], str(job.get("company") or path[0]))
+    return boards
+
+
+def _posted_at_ms(value: Any) -> int:
+    if not isinstance(value, str):
+        return 0
+    try:
+        return int(datetime.fromisoformat(value.replace("Z", "+00:00")).timestamp() * 1000)
+    except ValueError:
+        return 0
+
+
+def _live_board_jobs(slug: str, company: str) -> list[dict[str, Any]]:
+    request = Request(
+        f"https://api.ashbyhq.com/posting-api/job-board/{slug}?includeCompensation=true",
+        headers={"User-Agent": "Mozilla/5.0 job-search-loop/1.0", "Accept": "application/json"},
+    )
+    with urlopen(request, timeout=15) as response:
+        value = json.load(response)
+    source = value.get("jobs") if isinstance(value, dict) else None
+    if not isinstance(source, list):
+        return []
+    rows: list[dict[str, Any]] = []
+    for job in source:
+        if not isinstance(job, dict):
+            continue
+        rows.append(
+            {
+                "ats": "ashby",
+                "company": company,
+                "title": job.get("title"),
+                "url": job.get("jobUrl"),
+                "location": job.get("location"),
+                "secondary_locations": job.get("secondaryLocations") or [],
+                "is_remote": job.get("isRemote") is True,
+                "isListed": job.get("isListed"),
+                "description": job.get("descriptionPlain") or "",
+                "posted_at_ms": _posted_at_ms(job.get("publishedAt")),
+            }
+        )
+    return rows
+
+
+def _fresh_jobs(cached_jobs: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[str]]:
+    rows: list[dict[str, Any]] = []
+    errors: list[str] = []
+    for slug, company in sorted(_japan_board_slugs(cached_jobs).items()):
+        try:
+            rows.extend(_live_board_jobs(slug, company))
+        except Exception as error:
+            errors.append(f"{slug}:{type(error).__name__}")
+    return rows, errors
 
 
 def discover_one(
@@ -89,7 +175,21 @@ def discover_one(
             str(row[0]).casefold()
             for row in ledger.connection.execute("SELECT canonical_url FROM applications")
         }
-        jobs = _candidate_jobs(_read_jobs(cache_path), seen)
+        limited_boards = {
+            _board_slug(str(row[0])).casefold()
+            for row in ledger.connection.execute(
+                """
+                SELECT applications.canonical_url
+                FROM applications
+                JOIN events ON events.application_id = applications.id
+                WHERE events.payload_json LIKE '%provider_application_limit_visible%'
+                """
+            )
+            if _board_slug(str(row[0]))
+        }
+        cached_jobs = _read_jobs(cache_path)
+        live_jobs, refresh_errors = _fresh_jobs(cached_jobs)
+        jobs = _candidate_jobs([*live_jobs, *cached_jobs], seen, limited_boards)
         baseline = json.loads(
             (Path(__file__).resolve().parents[1] / "config" / "strategy.default.json").read_text()
         )
@@ -134,7 +234,13 @@ def discover_one(
                     "state": "materials_ready",
                 }
             )
-        return {"status": "discovered" if discovered else "no_work", "discovered": discovered}
+        return {
+            "status": "discovered" if discovered else "no_work",
+            "discovered": discovered,
+            "live_board_count": len(_japan_board_slugs(cached_jobs)),
+            "live_refresh_errors": refresh_errors,
+            "provider_limited_boards": sorted(limited_boards),
+        }
     finally:
         ledger.close()
 

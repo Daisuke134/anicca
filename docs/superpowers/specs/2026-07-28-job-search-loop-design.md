@@ -118,19 +118,19 @@ The current production loop is intentionally deterministic before adaptive:
 launchd (30 min)
   → CDP browser health evidence
   → existing Ashby queue
-  → official-cache discovery of one new Tokyo/Japan Ashby row
+  → live official Ashby board refresh plus discovery of one Tokyo/Japan or Remote row
   → fenced Ashby form/submit action
   → durable Ledger + Telegram checkpoint + summary
 ```
 
 | Failure class | Required loop behavior |
 |---|---|
-| No candidate in current cache | Report `no_work`; do not invoke an unbounded model search or invent a job |
+| No candidate in current cache | Refresh the known official Ashby boards, then report `no_work`; do not invoke an unbounded model search or invent a job |
 | Browser/CDP unavailable | No Ledger claim and no form action; browser owner launchd keeps/restarts only its dedicated profile, then the next wake retries |
 | Provider policy visible | Record the exact policy and quarantine the row; never bypass application limits or repeat it on every wake |
 | Required form fact unknown | Store the exact non-secret fields keyed to the profile SHA-256; skip that row until the profile changes, then continue to another candidate rather than guessing a fact |
 | Submit click without authoritative confirmation | Record `submit_unknown`; never click it again; inbox/ATS reconciliation owns later confirmation |
-| Telegram transport outcome unknown | Keep the event `send_started`; never blindly resend; a later reconciliation may attach an authoritative ACK |
+| Telegram transport outcome unknown | Keep the event `send_started`; never blindly resend; a later reconciliation may attach an authoritative ACK. Every wake includes its run ID in the checkpoint message, so every run has an independently observable delivery attempt |
 | Model fallback | Disabled by default for Ashby. It can only be explicitly re-enabled after a bounded deterministic lane has no viable source |
 
 The remaining robustness work is ordered, not parallelized: cache freshness, provider-capacity detection, non-Ashby fallback, confirmation reconciliation, then full lifecycle/guardian/OSS.

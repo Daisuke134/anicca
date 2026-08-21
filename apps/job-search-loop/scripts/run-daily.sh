@@ -194,6 +194,7 @@ set +e
   "$WORKDAY_FAST_PATH_RESULT" \
   "$TELEGRAM_OUTBOX" \
   "$JAPAN_DAY" \
+  "$RUN_ID" \
   "$FAST_PATH_REPORT" <<'PY'
 import json
 import sys
@@ -201,7 +202,7 @@ from pathlib import Path
 
 from job_search_loop.telegram import send_daily_report
 
-ashby_path, workday_path, outbox_path, japan_day, receipt_path = map(Path, sys.argv[1:])
+ashby_path, workday_path, outbox_path, japan_day, run_id, receipt_path = map(Path, sys.argv[1:])
 
 def read(path: Path) -> dict:
     try:
@@ -228,7 +229,7 @@ workday_status = str(workday.get("status") or "unknown")
 workday_reason = str(workday.get("reason") or "")
 message = (
     "Codex::: "
-    f"{japan_day} JST fast-path checkpoint. Ashby ran first: "
+    f"{japan_day} JST {run_id.name} fast-path checkpoint. Ashby ran first: "
     + "; ".join(details)
     + f". Workday is {workday_status}"
     + (f" ({workday_reason})" if workday_reason else "")
