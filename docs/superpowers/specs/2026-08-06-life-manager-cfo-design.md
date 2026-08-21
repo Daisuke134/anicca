@@ -2,13 +2,13 @@
 
 | Field | Value |
 |---|---|
-| Status | M2 — `CFO-OPS3a` and `CFO-OPS3b` are closed; `CFO-1j` is the first active item |
+| Status | M2 — `CFO-OPS3a` is closed; `CFO-OPS3b` launchd management is closed, but shared Telegram transport revalidation is pending before `CFO-1j` |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
 | Existing foundations | `apps/life-call`, interactive Moneytree App access, Fleet telemetry, `lm_api_cost`, and the canonical `lm_agent_earnings` source (the panel's `lm_financial_ledger` name is a stale alias) |
 | Canonical repository | `Daisuke134/life-manager` at `/Users/anicca/Projects/life-manager-main`; CFO code, skill, loop, launchd template, tests, and specs converge there |
-| First active item | **CFO-1j shows recent verified Moneytree transactions with redacted fields and no advice. `CFO-2a3b` remains externally blocked by Google reauthentication.** |
+| First active item | **CFO-OPS3b revalidates one real hourly receipt through the shared `@AniccaLifeBot` destination. Only then does CFO-1j show recent verified transactions. `CFO-2a3b` remains externally blocked by Google reauthentication.** |
 
 ## 1. Overview — What and Why
 
@@ -1001,8 +1001,25 @@ That real invocation read Moneytree through the existing adapter and wrote `stat
 `revision=4`, `appended=true`, `delivered=true` to `last-result.json` and stdout. stderr is empty. The Supabase
 delivery receipt created at `2026-08-21T04:11:34.816497Z` is provider `message_id=771`. `providerBilling` is
 `unavailable` for this run and remains unknown; it is not treated as zero. This closes the launchd provenance and
-continuity gate. No fake, dry, mock, or manually duplicated Telegram report was used. `CFO-1j` is now the first active
-item.
+continuity gate for the launchd layer. No fake, dry, mock, or manually duplicated Telegram report was used. At that
+point `CFO-1j` was the first active item; the later transport audit below supersedes that status until the shared-bot
+receipt is observed.
+
+### CFO Telegram destination audit (2026-08-21 13:20–13:22 JST)
+
+The previous real receipt `message_id=771` was delivered by the wrong bot family for the owner's requested UX:
+read-only Telegram `getMe` identifies `LM_TELEGRAM_BOT_TOKEN` as `@LifeManagerBotbot` (Cloud Life Manager, bot id
+`8834419975`), while the other local loops use `TELEGRAM_BOT_TOKEN` as `@AniccaLifeBot` (bot id `8613473574`).
+Both paths target chat `8547730585`, so the defect is bot identity/transport selection, not the destination chat.
+
+Canonical commit `2935c4bed` changes the CFO config to prefer the shared-loop `TELEGRAM_BOT_TOKEN` and
+`TELEGRAM_ALERT_CHAT_ID`, while retaining `LM_TELEGRAM_BOT_TOKEN` and `LM_CFO_TELEGRAM_CHAT_ID` as portable fallbacks.
+The stable release was restaged and the installed plist now contains `TELEGRAM_ALERT_CHAT_ID=8547730585`; the
+per-user launchd read-back is valid (`managerpid=1`, `manageruid=501`, label `print/list=0`, `StartInterval=3600`).
+The immediate same-hour invocation completed with `status=quiet`, `revision=4`, exit code 0, and empty stderr by the
+existing dedupe contract, so it did not create a duplicate message. No post-fix shared-bot receipt exists yet; observe
+the next real hourly pass and confirm its provider bot/receipt before closing this transport subgate or advancing to
+`CFO-1j`.
 
 ### Codex host-parity audit (2026-08-21)
 
@@ -1065,14 +1082,17 @@ ingestion. They are not unchecked M1 items and cannot become the active CFO item
       `loops/cfo-hourly` for the loop entrypoint/state contract, and a repository-owned launchd template/installer.
       No installed plist may point at an expendable feature worktree. Closed in canonical commit `1c302e801`;
       stable release/module-load, focused financial tests, and launchd execution are verified.
-- [x] **CFO-OPS3b** Restore and continuously verify the consolidated local hourly CFO. The host-parity gate is closed by
+- [ ] **CFO-OPS3b** Restore and continuously verify the consolidated local hourly CFO. Launchd management/provenance is
+      closed by the recovery audit, but the shared Telegram transport subgate remains open. The host-parity gate is closed by
       canonical commit `6acff1585`; DNS hardening is in `d013196ce` and ambiguous-request retry prevention is in
       `5e1c0dfcc`. Commit `1c302e801` makes the installer refresh the loaded label with bootout/bootstrap/enable/
       kickstart. The 13:10–13:12 JST recovery audit returned `managerpid=1`, `manageruid=501`, label `print/list=0`,
-      and kickstart rc 0. The next real pass produced revision 4, `status=sent`, `appended=true`, `delivered=true`,
-      Telegram `message_id=771`, empty stderr, and exit code 0; `StartInterval=3600` and the stable release path
-      remain installed. Do not revive `life-manager-v0`, `cfo-daily`, or the separate financial-report loop, and do not
-      add a bespoke Moneytree connector.
+      and kickstart rc 0. The previous real pass produced revision 4 and Telegram `message_id=771`, but the destination
+      bot was the Cloud Life Manager bot. Canonical commit `2935c4bed` now prefers the shared-loop bot and the stable
+      plist carries `TELEGRAM_ALERT_CHAT_ID=8547730585`; the post-install same-hour pass was `status=quiet`, exit code
+      0, and empty stderr. Observe one new shared-bot Moneytree→Telegram receipt, then close OPS3b and start CFO-1j.
+      Do not revive `life-manager-v0`, `cfo-daily`, or the separate financial-report loop, and do not add a bespoke
+      Moneytree connector.
 - [ ] **CFO-1j** Add the recent-transaction concierge view from the existing Moneytree transaction adapter. Every
       displayed row is a verified redacted transaction with direction/date/amount/category coverage; incomplete
       pagination stays visible. This slice reports recent activity but gives no spending accusation or advice.

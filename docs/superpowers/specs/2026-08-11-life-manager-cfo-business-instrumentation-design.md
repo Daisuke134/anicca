@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | `CFO-OPS3b` is closed after launchd recovery and a new real Telegram receipt; `CFO-1j` is active first, then `CFO-2b.2b2` resumes |
+| Status | Launchd management for `CFO-OPS3b` is closed, but shared Telegram transport revalidation is pending; `CFO-1j` waits, then `CFO-2b.2b2` resumes |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Canonical target is local `/Users/anicca/Projects/life-manager-main/apps/life-manager`; existing `apps/life-call` code is migration evidence, not the final owner |
 | Role split | Sol specifies/verifies; Luna implements production code/tests |
@@ -479,14 +479,19 @@ Rules:
   returned success. `launchctl kickstart -k gui/501/ai.anicca.life-manager-cfo-hourly` returned rc 0; the completed
   real run returned `status=sent`, `reportingDate=2026-08-21`, `revision=4`, `appended=true`, `delivered=true`, with
   exit code 0 and empty stderr. The new Supabase Telegram receipt at `2026-08-21T04:11:34.816497Z` is provider
-  `message_id=771`. `providerBilling` is unavailable for this run and remains unknown, not zero. `CFO-OPS3b` is
-  closed; `CFO-1j` is active first and `CFO-2b.2b2` waits.
+  `message_id=771`. `providerBilling` is unavailable for this run and remains unknown, not zero. A later audit identified
+  that this receipt used the Cloud Life Manager bot rather than the shared local-loop bot. Canonical code commit
+  `2935c4bed` now prefers `TELEGRAM_BOT_TOKEN`/`TELEGRAM_ALERT_CHAT_ID` and keeps the `LM_*` names as fallbacks; the
+  stable plist carries `TELEGRAM_ALERT_CHAT_ID=8547730585`. The immediate same-hour run completed `status=quiet`, exit
+  code 0, and empty stderr under the dedupe contract. `CFO-OPS3b` launchd management is closed, but one new shared-bot
+  receipt is still required before closing the transport subgate; `CFO-1j` waits.
 - Host-parity decision (2026-08-21): the official Codex MCP/skills/plugins/App Server/SDK surfaces support sharing
   user config, skill roots, and installed Apps across local Codex clients, but a fresh `codex exec` is not the main
   ChatGPT conversation. The Moneytree bundle is present in local plugin cache and `codex app-server` reports it
   `enabled=true, callable=true` through `app/installed`; the persistent app-server `app/read` and direct
   `mcpServer/tool/call` now return the existing structured Moneytree result, which the adapter consumes without LLM
-  number copying. The launchd provenance and continuity gate is now closed by the recovery audit above.
+  number copying. The launchd provenance and continuity gate is closed; the Telegram bot-identity subgate is tracked in
+  the transport audit above and must pass before `CFO-1j`.
   If
   this bridge later regresses,
   the canonical portable fallback is the official Moneytree LINK/API integration; no bespoke adapter or guessed
