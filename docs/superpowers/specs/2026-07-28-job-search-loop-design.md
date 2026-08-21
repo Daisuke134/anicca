@@ -54,6 +54,10 @@ Inbox reconciliation now loads `GOG_KEYRING_PASSWORD` through the private env lo
 before invoking `gog`; the pre-fix failure was a launchd no-TTY password prompt, not
 an expired Google authorization. Commit `78d2e8dc5` is verified by a real read-only
 Gmail search after loading that value without printing it.
+The following inbox run passed the four already-fetched candidate messages directly
+to the model without a second OAuth read. It durably processed the Palantir message
+as a hard-employer-exclusion block and left the other three unacknowledged for a
+later exact-safe outcome; no Gmail/OAuth resolution failure recurred.
 The fully automatic run `daily-20260821-184654` then discovered ElevenLabs'
 Enterprise Solutions Engineer - Singapore, reached its real Ashby submit click, and
 recorded another terminal `submit_unknown`. Its fast-path checkpoint was sent with
