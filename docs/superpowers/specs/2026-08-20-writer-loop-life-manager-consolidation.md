@@ -101,6 +101,14 @@
   publicationは実行されず、runはrc=0で安全終了した。これはcapacity/launchd failureではなく、PASS品質端末がないための
   fail-closed停止である。
 
+- 品質ADVISORY runを同日`same-jst-day-unclassified-run`で永久停止させないため、start-controlはhash-boundな
+  `quality-self-heal.action=ready_to_freeze`、日英記事SHA、editorial/reader receipt、conscience ALLOW、無公開ledgerを
+  検証した場合に`skip-quality-miss`へ解放する。実機readbackは`20260821-130847`から`20260821-132859`への
+  `continuous-publication-after-quality-advisory`を返した。
+- `132859`の初回wakeはclaim-loopの`MODEL_UNAVAILABLE/queue_after=0`で生成前停止したが、既存claim-loopを1回kickして
+  `claim-supply-latest.status=FILLED/queue_after=1`へ回復した。再kick後は同じrunでCodex生成へ進み、現在は品質・公開の
+  readback待ちである。claim supply失敗を「公開済み」や「需要なし」と解釈しない。
+
 ### ownerless repair handoff の回収実測
 
 - `eeb25ca90`をLife Managerのimmutable releaseへ反映し、14 Writer labelの`current` argvを再読した。
