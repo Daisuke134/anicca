@@ -34,6 +34,7 @@ function format(value) { return value === null ? "不明" : `¥${new Intl.Number
 function validateBusiness(value) {
   if (value === undefined) return;
   if (!plain(value) || value.schemaVersion !== 1 || typeof value.observedAt !== "string" || !Number.isFinite(Date.parse(value.observedAt)) || value.status !== "partial" || !["partial", "unknown"].includes(value.evidenceStatus) || !Array.isArray(value.businesses) || !Array.isArray(value.exceptions)) throw new Error("invalid_business");
+  if (value.recommendation !== undefined && (!plain(value.recommendation) || value.recommendation.schemaVersion !== 1 || !Number.isFinite(Date.parse(value.recommendation.observedAt)) || !["increase", "hold", "repair", "stop-review"].includes(value.recommendation.kind) || typeof value.recommendation.reason !== "string" || value.recommendation.execute !== false || typeof value.recommendation.ownerActionRequired !== "boolean" || !Array.isArray(value.recommendation.coverageExceptions))) throw new Error("invalid_business");
   value.businesses.forEach((item) => { if (!plain(item) || typeof item.financialUnitId !== "string" || typeof item.label !== "string" || !["observed", "unknown"].includes(item.providerReceiptStatus) || !Number.isSafeInteger(item.providerReceiptCount) || item.providerReceiptCount < 0 || !Array.isArray(item.activity) || item.landedCashStatus !== "unknown" || item.costStatus !== "unknown" || item.contributionProfit !== null || item.roi !== null) throw new Error("invalid_business"); item.activity.forEach((entry) => { if (!plain(entry) || !["external_income", "realized_pnl", "fee"].includes(entry.kind) || entry.currency !== "USD" || typeof entry.amountDecimal !== "string" || !/^-?(?:0|[1-9]\d*)(?:\.\d{1,8})?$/.test(entry.amountDecimal) || entry.evidenceStatus !== "verified_append_only_ledger") throw new Error("invalid_business"); }); });
 }
 function validate(snapshot, parsed) {
@@ -58,7 +59,8 @@ function businessText(snapshot) {
       ? item.activity.map((entry) => `${entry.kind}:${entry.amountDecimal} USD`).join(" / ") : "不明";
     return `${label(item.label)}\t${activity}\t利益 不明`;
   }).join("\n");
-  return `💼 今月の仕事（実測範囲）\n${rows}\n利益：不明\nROI：不明\n根拠：${business.evidenceStatus === "partial" ? "一部実測・照合未完了" : "不明"}`;
+  const recommendation = business.recommendation ? `\nCFO判断：${business.recommendation.kind === "repair" ? "修復（証拠不足）" : business.recommendation.kind}` : "";
+  return `💼 今月の仕事（実測範囲）\n${rows}\n利益：不明\nROI：不明\n根拠：${business.evidenceStatus === "partial" ? "一部実測・照合未完了" : "不明"}${recommendation}`;
 }
 function render(snapshot, view) {
   if (!VIEWS.has(view)) throw new Error("invalid_view");

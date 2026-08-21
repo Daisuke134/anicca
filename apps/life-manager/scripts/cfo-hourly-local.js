@@ -20,6 +20,7 @@ const { captureLatestAnthropicSubscriptionReceipt } = require("../lib/cfo-anthro
 const { requestMoneytreeRefresh } = require("../lib/cfo-moneytree-refresh.js");
 const { observeCfoBusiness } = require("../lib/cfo-business-observer.js");
 const { decideSpendingGuardian } = require("../lib/cfo-spending-guardian.js");
+const { decideCfoRecommendation } = require("../lib/cfo-recommendation.js");
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const rpc = createCfoSupabaseRpc("cfo_hourly_local_failed:");
@@ -226,13 +227,23 @@ async function runHourlyCfo(options = {}) {
         history: [],
       });
     } catch { spendingGuardian = { decision: "suppress", reason: "guardian_boundary_failed", suggestion: null }; }
-    const providerData = { ...providerDataState(reportingDate, transactionView), moneytreeRefresh, spendingGuardian };
-    if (!latest && recovery.status === "action_required") return summary("retry", reportingDate, null, false, false, false, providerData);
     const nextRevision = latest ? latest.revision + 1 : 1;
     const currentBundle = buildCfoDailyReportFromRecovery({ revision: nextRevision, recovery });
     const aiCost = await selectAiCost(options, { ...value, reportingDate }, latest, render);
     let business = null;
     try { business = await (options.observeCfoBusiness || observeCfoBusiness)({ supaUrl: value.supaUrl, supaKey: value.supaKey, fetchImpl: value.fetchImpl, observedAt: clock.toISOString() }); } catch {}
+    let recommendation;
+    try {
+      recommendation = decideCfoRecommendation({
+        observedAt: clock.toISOString(),
+        profit: { status: "partial", contribution_profit: null, roi: null, coverage_exceptions: business && Array.isArray(business.exceptions) ? business.exceptions : ["business_observer_unknown"] },
+        reconciliation: { reconciliation_status: "incomplete_fleet_read" },
+        guardian: spendingGuardian,
+      });
+      if (business) business = { ...business, recommendation };
+    } catch { recommendation = { schemaVersion: 1, observedAt: clock.toISOString(), kind: "repair", reason: "recommendation_boundary_failed", execute: false, ownerActionRequired: true, coverageExceptions: ["recommendation_boundary_failed"] }; }
+    const providerData = { ...providerDataState(reportingDate, transactionView), moneytreeRefresh, spendingGuardian, recommendation };
+    if (!latest && recovery.status === "action_required") return summary("retry", reportingDate, null, false, false, false, providerData);
     const candidateReport = reportWithAiCost(currentBundle.report, aiCost, business);
     if (latest && sameFacts(latest.report_payload, candidateReport) && ownerHour(new Date(latest.created_at)) === ownerHour(clock)) {
       const delivered = await delivery({ uid: value.uid, telegramToken: value.telegramToken, chatId: value.chatId, snapshotPublicRef: latest.public_ref, snapshot: latest.report_payload });

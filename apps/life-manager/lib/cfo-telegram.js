@@ -160,9 +160,10 @@ function callbackData({ view, reportingDate, revision }) {
 }
 function validateBusiness(value) {
   if (value === undefined) return;
-  exact(value, new Set(["schemaVersion", "observedAt", "status", "evidenceStatus", "businesses", "exceptions"]), ["schemaVersion", "observedAt", "status", "evidenceStatus", "businesses", "exceptions"]);
+  exact(value, new Set(["schemaVersion", "observedAt", "status", "evidenceStatus", "businesses", "exceptions", "recommendation"]), ["schemaVersion", "observedAt", "status", "evidenceStatus", "businesses", "exceptions"]);
   if (value.schemaVersion !== 1 || !timestamp(value.observedAt) || value.status !== "partial" || !["partial", "unknown"].includes(value.evidenceStatus) || !Array.isArray(value.businesses) || !Array.isArray(value.exceptions)) fail("invalid_business");
   value.exceptions.forEach((item) => { if (typeof item !== "string" || item.length === 0 || item.length > 128) fail("invalid_business"); });
+  if (value.recommendation !== undefined && (!plain(value.recommendation) || value.recommendation.schemaVersion !== 1 || !timestamp(value.recommendation.observedAt) || !["increase", "hold", "repair", "stop-review"].includes(value.recommendation.kind) || typeof value.recommendation.reason !== "string" || value.recommendation.execute !== false || typeof value.recommendation.ownerActionRequired !== "boolean" || !Array.isArray(value.recommendation.coverageExceptions))) fail("invalid_business");
   const ids = new Set();
   value.businesses.forEach((business) => {
     exact(business, new Set(["financialUnitId", "label", "providerReceiptStatus", "providerReceiptCount", "activity", "landedCashStatus", "costStatus", "contributionProfit", "roi"]), ["financialUnitId", "label", "providerReceiptStatus", "providerReceiptCount", "activity", "landedCashStatus", "costStatus", "contributionProfit", "roi"]);
@@ -192,7 +193,8 @@ function businessText(locale, value) {
     return `${escapeHtml(business.label)}\t${activity}\t${unknown}`;
   }).join("\n");
   const header = locale === "ja" ? "💼 今月の仕事（実測範囲）" : "💼 Businesses (measured scope)";
-  const note = locale === "ja" ? `\n利益：${unknown}\nROI：${unknown}\n根拠：${value.evidenceStatus === "partial" ? "一部実測・照合未完了" : unknown}` : `\nProfit: ${unknown}\nROI: ${unknown}\nEvidence: ${value.evidenceStatus}`;
+  const recommendation = value.recommendation ? `\nCFO判断：${value.recommendation.kind === "repair" ? "修復（証拠不足）" : value.recommendation.kind}` : "";
+  const note = locale === "ja" ? `\n利益：${unknown}\nROI：${unknown}\n根拠：${value.evidenceStatus === "partial" ? "一部実測・照合未完了" : unknown}${recommendation}` : `\nProfit: ${unknown}\nROI: ${unknown}\nEvidence: ${value.evidenceStatus}${recommendation}`;
   return `${header}\n${rows}${note}`;
 }
 function extra(locale, snapshot, view) {
