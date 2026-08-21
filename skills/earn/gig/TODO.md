@@ -760,12 +760,20 @@ a later successful example.
 - [ ] P10 — Permit one clarification only for a genuinely absent fact that blocks truthful work.
 - [ ] P11 — Produce every non-blocked portion while that clarification is pending.
 - [ ] P12 — Generate a useful artifact on the first actionable purchased-order transition.
-- [ ] P13 — Reject acknowledgement/status text as a substitute for an artifact.
-- [ ] P14 — Build the artifact with the configured `gpt-5.6-sol` executor.
-- [ ] P15 — Review it in a fresh isolated `gpt-5.6-sol` context.
-- [ ] P16 — Keep the reviewer read-only and unable to submit.
-- [ ] P17 — Return reviewer findings to the executor as a bounded revision.
-- [ ] P18 — Repeat until the artifact quality gate passes or a truthful blocker is durable.
+- [ ] P13 — Reject acknowledgement/status text as a successful Paid effect; an actionable file
+  cycle succeeds only after an artifact attachment is officially read back.
+- [x] P14 — Build the artifact with the configured `gpt-5.6-sol` executor. Haru's live
+  `agent-PAID_FILE_OWNER/summary.json` proves the selected model and a produced v18 package.
+- [x] P15 — Review it in a fresh isolated `gpt-5.6-sol` context. Haru's live
+  `agent-PAID_FILE_VERIFY/summary.json` and result prove an independent rejection of the producer's
+  false PASS after finding four source-copy substitutions.
+- [x] P16 — Keep the reviewer read-only and unable to submit. The production verifier command uses
+  `--read-only`; only the fenced delivery owner owns marketplace mutation.
+- [ ] P17 — Persist every reviewer finding and return it to the executor as the next bounded
+  revision, including all analogous defects in the same failure class.
+- [ ] P18 — Treat an in-pass review-round limit as durable `REPAIR_PENDING`, never terminal
+  `file_verifier` failure; the next wake must prioritize and resume the same context/finding until
+  the quality gate passes or a truthful external blocker is durable.
 - [ ] P19 — Attach useful progress with formal delivery off while accepted scope remains.
 - [ ] P20 — Enable formal delivery only after the complete accepted scope passes.
 - [ ] P21 — Give reply, attachment and formal delivery independent durable effect keys.
@@ -812,6 +820,25 @@ supplied before purchase and thereby damaged trust. The haru haru9 room original
 asking which locality to use despite the later buyer message already resolving 羽曳野, then waiting
 through repeated revision cycles without attaching usable work. Completion requires replayable
 evidence that both classes are impossible for future rooms, not one manual apology or delivery.
+
+**Purchased-talkroom output contract.** Before buyer approval, every actionable Paid cycle is an
+artifact cycle: compile the complete context, build or repair useful work, independently review it,
+then attach it with one concise message and formal delivery off. Text-only acknowledgement, plan,
+promise, progress report or `対応します` is not a successful effect. A clarification is allowed only
+when one fact is absent from every bound source and its absence makes all truthful production
+impossible; if any portion is buildable, attach that portion in the same action. After buyer
+feedback, repeat the artifact cycle. Only explicit buyer approval of the completed accepted scope
+permits one fenced formal delivery. Prompt guidance is defense in depth; code must enforce the mode,
+attachment readback, durable repair state and effect fence.
+
+**Haru live failure and required repair.** Talkroom `18169583` is not awaiting buyer input. The Sol
+executor produced `habikino-renewal-v18.zip` and self-reported PASS, but the fresh Sol reviewer proved
+four buyer-source substitutions across PC/responsive outputs: `物件の状況→物件の状態`,
+`相続した実家→相談した実家`, and two removals of the middle dot from `リ・ホーム`. The durable state
+is `REPAIR_PENDING`, yet the lane surfaced terminal-looking `failed_step=file_verifier` after its
+bounded review rounds and did not attach a corrected artifact. The generic fix is: preserve the
+finding, start the next wake at repair, regenerate every affected editable/rendered/package output,
+review again, and attach only after approval. Never ask Haru another question for these known facts.
 
 **Paid continuation and effect contract — blocking production invariant.** Every purchased order
 has exactly one loaded continuation owner from purchase through formal readback. Builder/reviewer
