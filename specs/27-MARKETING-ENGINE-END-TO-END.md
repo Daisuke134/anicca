@@ -2488,6 +2488,8 @@ Primary-source alignment:
 
 ### 15.9 Atomic implementation plan — execution order is locked
 
+For the current `ebook-ja` watercolor and `ebook-en` Anicca monk activation, `28-EBOOK-SELLER-DUAL-MONK-LOOPS.md` is the execution SSOT. Its local six-slot cadence, Postiz/Telegram closure, and owner-approved HeyGen decision supersede B6/B7 renderer and scheduling details for those two loops. This document remains the general Marketing Engine and eventual migration SSOT.
+
 **Goal:** Four seed products run a truthful, free-to-measure, self-improving daily marketing loop from Life Manager without an OpenClaw or profitable-claude runtime dependency.
 
 **Architecture:** Preserve the current external publisher until an account-scoped lease handoff succeeds. Move proven contracts into one Life Manager engine, make every stage consume immutable product/account/experiment identities, then cut over one account at a time after shadow equivalence and a native receipt.
