@@ -46,7 +46,7 @@ class ProductRegistryTest(unittest.TestCase):
         expected_provider = {
             "instagram.anicca_en": "instagram-standalone",
             "instagram.anicca_encards": "instagram-standalone",
-            "instagram.obou_anicca": None,
+            "instagram.obou_anicca": "instagram-standalone",
             "tiktok.anicca_jp": "tiktok",
             "tiktok.honne_reveal": "tiktok",
             "tiktok.honnevideo": "tiktok",
