@@ -196,6 +196,21 @@ def _is_workday_application_step(controls: list[dict[str, Any]]) -> bool:
     return has_save and has_profile_control
 
 
+def _is_workday_review(controls: list[dict[str, Any]]) -> bool:
+    """Recognize Workday's final review surface without claiming a click."""
+
+    for control in controls:
+        text = _normalized(control.get("text"))
+        role = _normalized(control.get("role"))
+        tag = _normalized(control.get("tag"))
+        automation_id = _normalized(control.get("automation_id"))
+        if text != "submit" or not (role in {"button", "link"} or tag in {"a", "button"}):
+            continue
+        if not automation_id or "submit" in automation_id or "footer" in automation_id:
+            return True
+    return False
+
+
 def _validate_snapshot(snapshot: Any) -> dict[str, Any]:
     if not isinstance(snapshot, dict):
         raise ValueError("snapshot must be an object")
@@ -237,6 +252,16 @@ def evaluate_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
 
     for frame_index, frame in enumerate(value["frames"]):
         controls = frame["controls"]
+        if provider == "workday" and _is_workday_review(controls):
+            base.update(
+                {
+                    "ready": True,
+                    "claim_ready": True,
+                    "surface": "workday_review",
+                    "frame_index": frame_index,
+                }
+            )
+            return base
         if _is_application_form(controls):
             base.update(
                 {
@@ -294,7 +319,10 @@ def evaluate_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
                     }
                 )
                 return base
-            if _is_workday_sign_in_entry(controls):
+            # A normal Workday job page can expose one generic ``Sign In``
+            # header link.  It is not the application auth-entry surface;
+            # require the committed application route before classifying it.
+            if "/apply" in value["url"].casefold() and _is_workday_sign_in_entry(controls):
                 base.update(
                     {
                         "ready": True,
