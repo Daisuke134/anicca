@@ -573,6 +573,21 @@ surface. No profile interaction, public effect, or external owner takeover was
 performed. D05 therefore remains open with truthful `UNKNOWN` values; public
 view estimates are not promoted to official exposure counts.
 
+### 1.1.21 Current durable composition retry readback
+
+The existing composition owner ran again at `2026-08-21T11:58:20+0900` and
+re-read the same `elevenlabs-discovered-translate-video-en` job. Its durable
+receipt remains `POLICY_BUDGET_BLOCKED` for JST day `2026-08-21`; source-set
+SHA `43c3385a5b8fde3cbb4beb6faaacc7b7fb9cbef7eb1535fb00cbd61605bf335d`,
+result SHA `e1b87cca36e8053254068fa32313c97c9efd42e66d0f691cfe195d2fa39eaf52`,
+and handoff SHA
+`d16d8fdddb2b6869046b1d5af766446476c0c9280aecc4f9b479a8ad67daefce` are
+unchanged. The owner did not consume another policy pass, create a public
+effect, create a provider link, or create money. The unchanged
+`READY_FOR_POLICY` lineage remains retryable on the next eligible JST budget
+day; campaign-seven resume must continue through this durable owner job, not a
+manual composition or parallel executor.
+
 ### 1.2.0 Audited executable boundary
 
 The installed ownership graph has six launchd labels: three persistent browser
