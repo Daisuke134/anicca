@@ -13,6 +13,7 @@ requirement can be written:
 | source | why it is here |
 |---|---|
 | ``source/posting/`` | what the buyer wrote before paying (91000002: 枚数 4枚) |
+| ``source/proposal/`` | what the seller offered before the buyer purchased |
 | ``source/dm/`` | the thread the material arrived in, plus its attachment index |
 | ``requirements/live-buyer-reply.json`` | the current request AND everything accumulated |
 | our own messages | on 2026-08-06 15:46 we promised this buyer a draft and forgot |
@@ -194,6 +195,26 @@ def _posting_section(root: Path) -> dict[str, Any] | None:
             "body_bytes": document.get("body_bytes"),
             "body": _clip(body, POSTING_CHARS),
         }
+    return None
+
+
+def _proposal_section(root: Path) -> dict[str, Any] | None:
+    directory = root / "source" / "proposal"
+    try:
+        files = sorted(path for path in directory.glob("offer-*.json") if path.is_file())
+    except OSError:
+        return None
+    for path in files:
+        document = _json(path)
+        body = str(document.get("body") or "")
+        if body:
+            return {
+                "path": str(path),
+                "url": document.get("url"),
+                "title": _clip(document.get("title"), 200),
+                "body_bytes": document.get("body_bytes"),
+                "body": _clip(body, POSTING_CHARS),
+            }
     return None
 
 
@@ -484,6 +505,9 @@ def combined_context(
     posting = _posting_section(root)
     if posting is not None:
         body["posting"] = posting
+    proposal = _proposal_section(root)
+    if proposal is not None:
+        body["proposal"] = proposal
     dm_thread = _dm_section(root)
     if dm_thread is not None:
         body["dm"] = dm_thread
@@ -501,13 +525,13 @@ def combined_context(
         body["buyer_attachments"] = attachments
     body["read_these_first"] = [
         str(section["path"])
-        for section in (posting, requirements, talkroom)
+        for section in (posting, proposal, requirements, talkroom)
         if isinstance(section, dict) and section.get("path")
     ] + [
         str(thread["path"]) for thread in (dm_thread or {}).get("threads", [])
     ] + [row["path"] for row in attachments]
     body["sources_present"] = sorted(
-        key for key in ("posting", "dm", "requirements", "talkroom", "our_commitments")
+        key for key in ("posting", "proposal", "dm", "requirements", "talkroom", "our_commitments")
         if key in body
     )
     return _fit(body)

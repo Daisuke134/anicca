@@ -96,6 +96,30 @@ def install_project_posting(project_id: str, projects_root: Path) -> dict[str, A
         return None
 
 
+def persist_project_proposal(
+    project_id: str, talkroom_id: str, projects_root: Path, offer: dict[str, Any], observed_at: str,
+) -> Path | None:
+    """Persist the seller's pre-purchase offer inside the purchased project."""
+    body = str(offer.get("body") or "").strip()
+    if not body:
+        return None
+    root = projects_root / project_id / "source" / "proposal"
+    secure_directory(root)
+    path = root / f"offer-{safe_name(talkroom_id)}.json"
+    atomic_json(path, {
+        "version": 1,
+        "source": "authenticated_coconala_offer_page",
+        "observed_at": observed_at,
+        "talkroom_id": talkroom_id,
+        "request_id": offer.get("request_id"),
+        "url": urlsplit(str(offer.get("url") or "")).path,
+        "title": str(offer.get("title") or "").strip(),
+        "body": body,
+        "body_bytes": len(body.encode("utf-8")),
+    })
+    return path
+
+
 def _retainer_module():
     """Load retainer_thread lazily so this collector keeps its import shape."""
     global _RETAINER_MODULE
@@ -259,7 +283,7 @@ INBOX_COVERAGE_EXPRESSION = DIRECT_INBOX_COVERAGE_EXPRESSION
 TALKROOM_EXPRESSION = r'''(async()=>{const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));let jump=null;for(let i=0;i<40&&!jump;i++){jump=[...document.querySelectorAll('button')].find(x=>(x.innerText||'').includes('最新のメッセージに移動'));if(!jump)await wait(100)}if(jump){jump.click();await new Promise(resolve=>setTimeout(resolve,1000))}for(let i=0;i<100&&document.querySelectorAll('.d-talkroomMessage').length===0;i++){await wait(100)}const messages=[...document.querySelectorAll('.d-talkroomMessage')];const last=messages[messages.length-1];if(last)last.scrollIntoView({block:'center'});const formalDelivery=document.querySelector('.d-messageFormButtonArea_item-deliveryCheck input[type=checkbox]');const composeTextarea=document.querySelector('textarea[placeholder="メッセージを入力"]');const currentStep=(document.querySelector('.d-talkroomStep_label-current')?.innerText||'').trim();const transactionState=currentStep==='進行中'?'取引中':(currentStep==='納品送付'?'納品確認待ち':(currentStep==='取引完了'?'取引完了':'unknown'));const subscriptionControl=[...document.querySelectorAll('a,button')].some(x=>(x.innerText||'').trim()==='定期購入を終了する');const fileType=n=>{const x=(n||'').toLowerCase();if(x.endsWith('.png'))return'image/png';if(x.endsWith('.jpg')||x.endsWith('.jpeg'))return'image/jpeg';if(x.endsWith('.pdf'))return'application/pdf';if(x.endsWith('.zip'))return'application/zip';return'application/octet-stream'};return JSON.stringify({url:location.href,title:document.title,transaction_state:transactionState,talkroom_step_label:currentStep,delivery_date:((document.body.innerText.match(/納品予定日(?:が登録されました。)?[：:"「]*\s*(20\d{2}\/\d{2}\/\d{2})/)||[])[1]||null),auto_cancel_notice:((document.body.innerText.match(/[^\n]*\d+\u6642\u9593\u4ee5\u5185[^\n]*\u81ea\u52d5\u7684\u306b\u53d6\u5f15\u304c\u30ad\u30e3\u30f3\u30bb\u30eb[^\n]*(?:\n[^\n]*\u671f\u9650[^\n]*)?/)||[])[0]||null),formal_delivery_control_checked:!!(formalDelivery&&formalDelivery.checked),formal_delivery_control_disabled:!!(formalDelivery&&formalDelivery.disabled),subscription_control_present:subscriptionControl,compose_draft_length:(composeTextarea&&composeTextarea.value||'').length,compose_draft_text:(composeTextarea&&composeTextarea.value||'').slice(0,500).replace(/[\uD800-\uDBFF]$/,''),checked_checkbox_count:document.querySelectorAll('input[type=checkbox]:checked').length,offer_url:([...(document.querySelectorAll("a[href*='/mypage/offers/'],a[href*='/direct_offers/edit/'],a[href*='/customize/offers/']"))][0]||{}).href||null,messages:messages.map(m=>{const side=m.classList.contains('d-talkroomMessage-isOthers')?'buyer':((m.innerText||'').trim().startsWith('自分')?'seller':'system');const text=(m.querySelector('.d-normalMessage')?.innerText||'').trim();const attachments=[...m.querySelectorAll('.d-talkroomMessage_attachedFilesItem')].map((f,i)=>{const filename=(f.querySelector('.tooltip-content')?.innerText||f.querySelector('.d-attachedFileName')?.innerText||'attachment').replace(/\s+/g,' ').trim();const size_text=(f.querySelector('.d-attachedFileSize')?.innerText||'').trim();const href=f.querySelector('a[href]')?.href||null;return{filename,content_type:fileType(filename),size_text,href,reference:`message:${m.id||'unknown'}:attachment:${i}`}});return{side,text,attachments}})})})()'''
 TALKROOM_FULL_EXPRESSION = r'''(async()=>{const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));for(let i=0;i<100&&document.querySelectorAll('.d-talkroomMessage').length===0;i++)await wait(100);let previous=-1,stable=0,iterations=0;for(;iterations<80&&stable<5;iterations++){const rows=[...document.querySelectorAll('.d-talkroomMessage')];const first=rows[0];if(first){first.scrollIntoView({block:'start'});let node=first.parentElement;while(node){if(node.scrollHeight>node.clientHeight)node.scrollTop=0;node=node.parentElement}}window.scrollTo(0,0);await wait(250);const count=document.querySelectorAll('.d-talkroomMessage').length;if(count===previous)stable++;else{previous=count;stable=0}}const messages=[...document.querySelectorAll('.d-talkroomMessage')];const formalDelivery=document.querySelector('.d-messageFormButtonArea_item-deliveryCheck input[type=checkbox]');const composeTextarea=document.querySelector('textarea[placeholder="メッセージを入力"]');const currentStep=(document.querySelector('.d-talkroomStep_label-current')?.innerText||'').trim();const transactionState=currentStep==='進行中'?'取引中':(currentStep==='納品送付'?'納品確認待ち':(currentStep==='取引完了'?'取引完了':'unknown'));const subscriptionControl=[...document.querySelectorAll('a,button')].some(x=>(x.innerText||'').trim()==='定期購入を終了する');const fileType=n=>{const x=(n||'').toLowerCase();if(x.endsWith('.png'))return'image/png';if(x.endsWith('.jpg')||x.endsWith('.jpeg'))return'image/jpeg';if(x.endsWith('.pdf'))return'application/pdf';if(x.endsWith('.zip'))return'application/zip';return'application/octet-stream'};return JSON.stringify({url:location.href,title:document.title,transaction_state:transactionState,talkroom_step_label:currentStep,delivery_date:((document.body.innerText.match(/納品予定日(?:が登録されました。)?[：:"「]*\s*(20\d{2}\/\d{2}\/\d{2})/)||[])[1]||null),auto_cancel_notice:((document.body.innerText.match(/[^\n]*\d+\u6642\u9593\u4ee5\u5185[^\n]*\u81ea\u52d5\u7684\u306b\u53d6\u5f15\u304c\u30ad\u30e3\u30f3\u30bb\u30eb[^\n]*(?:\n[^\n]*\u671f\u9650[^\n]*)?/)||[])[0]||null),formal_delivery_control_checked:!!(formalDelivery&&formalDelivery.checked),formal_delivery_control_disabled:!!(formalDelivery&&formalDelivery.disabled),subscription_control_present:subscriptionControl,compose_draft_length:(composeTextarea&&composeTextarea.value||'').length,compose_draft_text:(composeTextarea&&composeTextarea.value||'').slice(0,500).replace(/[\uD800-\uDBFF]$/,''),checked_checkbox_count:document.querySelectorAll('input[type=checkbox]:checked').length,offer_url:([...(document.querySelectorAll("a[href*='/mypage/offers/'],a[href*='/direct_offers/edit/'],a[href*='/customize/offers/']"))][0]||{}).href||null,history_complete:stable>=5,history_iterations:iterations,message_count:messages.length,messages:messages.map(m=>{const side=m.classList.contains('d-talkroomMessage-isOthers')?'buyer':((m.innerText||'').trim().startsWith('自分')?'seller':'system');const text=(m.querySelector('.d-normalMessage')?.innerText||'').trim();const sentAt=(m.querySelector('time,.d-talkroomMessage_time,[class*=time]')?.innerText||'').trim()||null;const messageId=m.id||m.getAttribute('data-message-id')||null;const attachments=[...m.querySelectorAll('.d-talkroomMessage_attachedFilesItem')].map((f,i)=>{const filename=(f.querySelector('.tooltip-content')?.innerText||f.querySelector('.d-attachedFileName')?.innerText||'attachment').replace(/\s+/g,' ').trim();const size_text=(f.querySelector('.d-attachedFileSize')?.innerText||'').trim();const href=f.querySelector('a[href]')?.href||null;return{filename,content_type:fileType(filename),size_text,href,reference:`message:${messageId||'unknown'}:attachment:${i}`}});return{message_id:messageId,side,sent_at:sentAt,text,attachments}})})})()'''
 TALKROOM_ATTACHMENT_EXPRESSION = r'''(async()=>{const limit=16*1024*1024;let used=0;const rows=[];const enc=bytes=>{let s='';for(let i=0;i<bytes.length;i+=32768)s+=String.fromCharCode(...bytes.subarray(i,i+32768));return btoa(s)};const messages=[...document.querySelectorAll('.d-talkroomMessage')];for(const m of messages){if(!m.classList.contains('d-talkroomMessage-isOthers'))continue;const files=[...m.querySelectorAll('.d-talkroomMessage_attachedFilesItem')];for(let i=0;i<files.length;i++){const f=files[i];const a=f.querySelector('a[href]');const row={reference:`message:${m.id||'unknown'}:attachment:${i}`,capture_error:null};if(!a?.href){row.capture_error='attachment_href_missing';rows.push(row);continue}try{const response=await fetch(a.href,{credentials:'include'});if(!response.ok)throw new Error(`http_${response.status}`);const buffer=await response.arrayBuffer();if(used+buffer.byteLength>limit){row.capture_error='attachment_capture_limit';rows.push(row);continue}used+=buffer.byteLength;row.content_type=response.headers.get('content-type')||null;row.size_bytes=buffer.byteLength;row.data_base64=enc(new Uint8Array(buffer))}catch(error){row.capture_error=String(error?.message||error).slice(0,160)}rows.push(row)}}return JSON.stringify(rows)})()'''
-OFFER_EXPRESSION = r'''JSON.stringify({url:location.href,title:document.title,request_id:((document.body.innerText.match(/No\.(\d+)/)||[])[1]||(([...document.querySelectorAll("a[href*='/requests/']")].map(a=>a.href).join(' ').match(/\/requests\/(\d+)/)||[])[1])||null)})'''
+OFFER_EXPRESSION = r'''JSON.stringify({url:location.href,title:document.title,request_id:((document.body.innerText.match(/No\.(\d+)/)||[])[1]||(([...document.querySelectorAll("a[href*='/requests/']")].map(a=>a.href).join(' ').match(/\/requests\/(\d+)/)||[])[1])||null),body:(document.body.innerText||'').trim().slice(0,20000)})'''
 TRANSIENT_NAVIGATION_ERROR = "authenticated tab did not finish navigation"
 NAVIGATION_RETRY_ATTEMPTS = 2
 NAVIGATION_READY_STATES = frozenset({"interactive", "complete"})
@@ -3262,6 +3286,19 @@ def main() -> int:
             talkroom["evidence_sha256"] = sha256_file(talkroom_path)
             atomic_json(args.evidence_dir / f"talkroom-preflight-{safe_name(talkroom_id)}.json", history)
             install_project_posting(project_id, args.projects_root)
+            offer = None
+            if talkroom.get("offer_reference"):
+                offer_url = f"https://coconala.com{talkroom['offer_reference']}"
+                offer = inspect_page_with_retry(
+                    args.cdp_helper, offer_url, OFFER_EXPRESSION,
+                    screenshot(args.evidence_dir / f"offer-{safe_name(talkroom_id)}.png"),
+                    hidden=hidden,
+                )
+                persist_project_proposal(project_id, talkroom_id, args.projects_root, offer, observed_at)
+                atomic_json(args.evidence_dir / f"offer-{safe_name(talkroom_id)}.json", {
+                    "request_id": offer.get("request_id"),
+                    "url": urlsplit(str(offer.get("url") or "")).path,
+                })
             feedback = persist_latest_paid_buyer_reply(
                 complete_talkroom, project_id, args.projects_root, observed_at,
                 source_talkroom_id=talkroom_id,
@@ -3273,7 +3310,7 @@ def main() -> int:
                 talkroom["buyer_feedback_message_identities"] = feedback.get("feedback_message_identities", [])
                 talkroom["buyer_feedback_stage"] = feedback["stage"]
             merged_order = dict(selected_order or {})
-            enrich_order(merged_order, talkroom, None)
+            enrich_order(merged_order, talkroom, offer)
             merged_order["selection_stage"] = "targeted"
             merged_order["targeted_readback_required"] = False
             receipt = source_receipt(
@@ -3807,6 +3844,9 @@ def main() -> int:
                     args.cdp_helper, offer_url, OFFER_EXPRESSION,
                     screenshot(args.evidence_dir / f"offer-{safe_name(order['talkroom_id'])}.png"),
                     hidden=hidden,
+                )
+                persist_project_proposal(
+                    project_id, str(order["talkroom_id"]), args.projects_root, offer, observed_at,
                 )
                 offer = {"request_id": offer.get("request_id"), "url": urlsplit(str(offer.get("url") or "")).path}
                 atomic_json(args.evidence_dir / f"offer-{safe_name(order['talkroom_id'])}.json", offer)
