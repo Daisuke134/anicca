@@ -47,7 +47,85 @@ set -e
 if [[ "$ASHBY_FAST_PATH_RC" -ne 0 ]]; then
   printf '%s\n' "Ashby fast path exited rc=$ASHBY_FAST_PATH_RC; browser-lane fallback continues" >&2
 fi
-export JOB_SEARCH_ASHBY_FAST_PATH_RESULT="$ASHBY_FAST_PATH_RESULT"
+ASHBY_DISCOVERY_RESULT="$EVIDENCE/ashby-discovery.json"
+set +e
+"$JOB_SEARCH_PYTHON" -m job_search_loop.ashby_discovery \
+  --cache "$JOB_SEARCH_STATE_ROOT/official-ats-board-cache.v1.json" \
+  --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
+  --profile "$JOB_SEARCH_PROFILE" \
+  --materials-root "${XDG_DATA_HOME:-$HOME/.local/share}/anicca/job-search/materials" \
+  --prompt "$JOB_SEARCH_APP_ROOT/prompts/daily-pass.md" \
+  --output "$ASHBY_DISCOVERY_RESULT" \
+  --max-jobs 1
+ASHBY_DISCOVERY_RC=$?
+set -e
+if [[ "$ASHBY_DISCOVERY_RC" -ne 0 ]]; then
+  printf '%s\n' "Ashby deterministic discovery exited rc=$ASHBY_DISCOVERY_RC; existing queue continues" >&2
+fi
+ASHBY_DISCOVERED_FAST_PATH_RESULT="$EVIDENCE/ashby-fast-path-discovered.json"
+set +e
+"$JOB_SEARCH_PYTHON" -m job_search_loop.ashby_fast_path \
+  --endpoint "http://127.0.0.1:9222" \
+  --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
+  --profile "$JOB_SEARCH_PROFILE" \
+  --materials-root "${XDG_DATA_HOME:-$HOME/.local/share}/anicca/job-search/materials" \
+  --evidence-dir "$EVIDENCE/ashby-fast-path-discovered" \
+  --output "$ASHBY_DISCOVERED_FAST_PATH_RESULT" \
+  --japan-day "$JAPAN_DAY" \
+  --max-jobs 1
+ASHBY_DISCOVERED_FAST_PATH_RC=$?
+set -e
+if [[ "$ASHBY_DISCOVERED_FAST_PATH_RC" -ne 0 ]]; then
+  printf '%s\n' "Ashby discovered fast path exited rc=$ASHBY_DISCOVERED_FAST_PATH_RC; model fallback remains bounded" >&2
+fi
+ASHBY_COMBINED_RESULT="$EVIDENCE/ashby-fast-path-combined.json"
+"$JOB_SEARCH_PYTHON" - \
+  "$ASHBY_FAST_PATH_RESULT" \
+  "$ASHBY_DISCOVERED_FAST_PATH_RESULT" \
+  "$ASHBY_DISCOVERY_RESULT" \
+  "$ASHBY_COMBINED_RESULT" <<'PY'
+import json
+import os
+import sys
+from pathlib import Path
+
+first_path, second_path, discovery_path, output_path = map(Path, sys.argv[1:])
+
+def read(path: Path) -> dict:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {"status": "failed", "processed": [], "excluded": []}
+    return value if isinstance(value, dict) else {"status": "failed", "processed": [], "excluded": []}
+
+first, second, discovery = read(first_path), read(second_path), read(discovery_path)
+processed = [
+    row
+    for result in (first, second)
+    for row in (result.get("processed") or [])
+    if isinstance(row, dict)
+]
+excluded = [
+    row
+    for result in (first, second)
+    for row in (result.get("excluded") or [])
+    if isinstance(row, dict)
+]
+combined = {
+    "status": "completed" if processed else first.get("status", "no_work"),
+    "processed": processed,
+    "excluded": excluded,
+    "discovery": {
+        "status": discovery.get("status"),
+        "discovered_count": len(discovery.get("discovered") or []),
+    },
+    "owner": "ai.anicca.job-search-daily",
+}
+output_path.write_text(json.dumps(combined, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
+os.chmod(output_path, 0o600)
+PY
+export JOB_SEARCH_ASHBY_FAST_PATH_RESULT="$ASHBY_COMBINED_RESULT"
+export JOB_SEARCH_ASHBY_DISCOVERY_RESULT="$ASHBY_DISCOVERY_RESULT"
 WORKDAY_FAST_PATH_RESULT="$EVIDENCE/workday-fast-path.json"
 if [[ "${JOB_SEARCH_ENABLE_WORKDAY:-0}" == "1" ]]; then
   set +e
@@ -152,6 +230,15 @@ FAST_PATH_REPORT_RC=$?
 set -e
 if [[ "$FAST_PATH_REPORT_RC" -ne 0 ]]; then
   printf '%s\n' "fast-path Telegram report failed; browser/model lane continues" >&2
+fi
+if [[ "${JOB_SEARCH_ENABLE_MODEL_FALLBACK:-0}" != "1" ]]; then
+  "$JOB_SEARCH_PYTHON" -m job_search_loop.application_reporting deliver \
+    --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
+    --outbox "$TELEGRAM_OUTBOX" \
+    --media-root "$JOB_SEARCH_TELEGRAM_MEDIA" \
+    --output "$EVIDENCE/resume-deliver-after.json"
+  refresh_summary
+  exit 0
 fi
 MODEL_TIMEOUT_SECONDS="${JOB_SEARCH_BROWSER_TIMEOUT_SECONDS:-300}"
 set +e
