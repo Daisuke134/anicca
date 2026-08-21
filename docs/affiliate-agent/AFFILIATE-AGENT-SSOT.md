@@ -501,6 +501,20 @@ was `COOLDOWN` for this wake; rolling net stayed
 conversion-stage observability only; no transaction, settlement, or money was
 created, and B01 remains `WAITING_FOR_PROVIDER_TRANSACTION`.
 
+### 1.1.17 Natural cooldown readback
+
+The existing owner completed wake
+`5d9d2d676f4db66f1357e9d2723a7a72d0ec5ce989e56b9fe5b653fdd0146f1a` at
+`2026-08-21T11:40:24+0900` from installed release `2d51ca39a`. Provider stayed
+`AUTHENTICATED`; the hourly revenue gate correctly returned `COOLDOWN` with no
+source or appended transitions. The placement ledger stayed at 20, the
+placement link stayed `VERIFIED`, distribution stayed `COOLDOWN`, DEV metrics
+were `OBSERVED`, and Repost stayed at 54 actions with 0 exact joins and
+`NO_REVENUE_CREDIT`. Rolling net remained
+`NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`; Telegram was
+`NO_PENDING` on already-sent message `26335`. This is a replay/cooldown proof,
+not transaction or money evidence.
+
 ### 1.2.0 Audited executable boundary
 
 The installed ownership graph has six launchd labels: three persistent browser
