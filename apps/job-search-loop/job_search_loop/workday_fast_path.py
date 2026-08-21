@@ -328,6 +328,22 @@ async def _confirmation(page: Any) -> bool:
 async def _login(page: Any, job_url: str, store_path: Path) -> str | None:
     snapshot, evaluation = await _wait_surface(page)
     surface = evaluation.get("surface")
+    if surface == "workday_account_create":
+        # A fresh dedicated profile can land on Workday's account-creation
+        # shell even when the tenant already has a private account.  Switch to
+        # the explicit form link, never provision a second account.
+        sign_in_link = page.locator("[data-automation-id='signInLink']")
+        visible_links: list[Any] = []
+        for index in range(await sign_in_link.count()):
+            candidate = sign_in_link.nth(index)
+            if await candidate.is_visible():
+                visible_links.append(candidate)
+        if len(visible_links) != 1:
+            return "workday_account_sign_in_link_missing"
+        await visible_links[0].click(timeout=10_000)
+        await page.wait_for_timeout(1_000)
+        snapshot, evaluation = await _wait_surface(page)
+        surface = evaluation.get("surface")
     if surface == "workday_sign_in_entry":
         if not await _click_surface(page, "Sign In"):
             # A transient Workday auth-entry shell can win the first snapshot
