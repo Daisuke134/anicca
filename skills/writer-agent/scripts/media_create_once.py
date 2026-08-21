@@ -128,9 +128,14 @@ def verify(run_dir: Path) -> dict[str, object]:
         if asset["kind"] == "body":
             projected = _body_projection(descriptor)
             if not X_BODY_MIN_HEIGHT <= projected <= X_BODY_MAX_HEIGHT:
-                raise MediaCreateRefused(
-                    "media-create-body-outside-x-render-range"
-                )
+                # A run that already has publication-state.json predates this
+                # X readability contract. Keep its immutable boundary readable
+                # so the X repair worker can persist a receipt and quarantine
+                # the exact unpublished pair; new runs fail at commit above.
+                if not (run / "gates" / "publication-state.json").is_file():
+                    raise MediaCreateRefused(
+                        "media-create-body-outside-x-render-range"
+                    )
         expected_receipt: dict[str, object] = {
             "version": 1,
             "status": "committed",
