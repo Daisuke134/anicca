@@ -2,13 +2,13 @@
 
 | Field | Value |
 |---|---|
-| Status | M2 — `CFO-OPS3a`, `CFO-OPS3b`, `CFO-1j`, `CFO-2b.2`, and `CFO-2b.3` are closed; `CFO-2b.4` is next |
+| Status | M2 — `CFO-OPS3a`, `CFO-OPS3b`, `CFO-1j`, `CFO-2b.2`, `CFO-2b.3`, and `CFO-2b.4` are closed; `CFO-2b.5` is next |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
 | Existing foundations | `apps/life-call`, interactive Moneytree App access, Fleet telemetry, `lm_api_cost`, and the canonical `lm_agent_earnings` source (the panel's `lm_financial_ledger` name is a stale alias) |
 | Canonical repository | `Daisuke134/life-manager` at `/Users/anicca/Projects/life-manager-main`; CFO code, skill, loop, launchd template, tests, and specs converge there |
-| First active item | **CFO-2b.4 instruments Affiliate Agent commission receipts and measured runtime cost. `CFO-2a3b` remains externally blocked by Google reauthentication.** |
+| First active item | **CFO-2b.5 instruments Gig Work marketplace/client receipts and measured runtime cost. `CFO-2a3b` remains externally blocked by Google reauthentication.** |
 
 ## 1. Overview — What and Why
 
@@ -414,7 +414,7 @@ the API expense confirmed.
 | `life_manager_saas` | Life Manager | Stripe/provider receipts | `ai.anicca.life-manager-*` | Product and web runtime exist; verified revenue is read only from receipts |
 | `anicca_ios` | Anicca iOS | Apple/RevenueCat receipts | iOS + API services | Separate subscription business; legacy CFO estimates are quarantined |
 | `writer_agent` | Writer Agent | Publisher/payment receipts | `ai.anicca.writer-*` | Canonical runtime and channel projection are present; no Writer-wide revenue is asserted until an external receipt and reconciliation |
-| `affiliate_agent` | Affiliate Agent | Network commission receipt | Affiliate SSOT/runtime | Legacy core is dead and provider auth is incomplete; no verified new revenue is asserted |
+| `affiliate_agent` | Affiliate Agent | Network commission receipt | Affiliate SSOT/runtime | Canonical 80-file runtime and privacy-safe channel projection are present; provider-reported commission rows are empty and no Affiliate-wide revenue is asserted |
 | `gig_work` | Gig Work | Marketplace/client payment receipt | `ai.anicca.hf-gig-*`, outcome watcher | Live work runtime; revenue requires landed external payment |
 | `x402_services` | x402 Services | On-chain customer settlement | `ai.anicca.x402-*` | Transfers/swaps between owned assets are not revenue |
 | `capafy_marketplace` | Capafy Marketplace | Capafy sales receipt | `ai.anicca.capafy-*`, Capafy provisioner | Building; revenue requires a canonical landed sales receipt |
@@ -1202,8 +1202,8 @@ ingestion. They are not unchecked M1 items and cannot become the active CFO item
 - [ ] **CFO-2b** Instrument each existing earning loop in registry order: revenue receipt, landed cash, direct
       cost, tokens, API USD, human USD, capital employed, and evidence. Ordered child SSOT:
       `docs/superpowers/specs/2026-08-11-life-manager-cfo-business-instrumentation-design.md`. The Anicca iOS
-      sub-slices through `CFO-2b.2c` and Writer Agent `CFO-2b.3` are closed in canonical commit `1a87f0d1d`;
-      `CFO-2b.4` is the first active item.
+      sub-slices through `CFO-2b.2c`, Writer Agent `CFO-2b.3`, and Affiliate Agent `CFO-2b.4` are closed in canonical
+      commits `1a87f0d1d` and `5eb76d584`; `CFO-2b.5` is the first active item.
 - [ ] **CFO-2c** Reconcile per-business totals to provider statements and Fleet totals; upgrade Fleet observations to
       raw positions, recognized earnings, and provider/ledger-confirmed burn only when matching evidence exists.
 - [ ] **CFO-2d** Report contribution profit, runway, ROI, and evidence completeness; unknown is distinct from zero.
