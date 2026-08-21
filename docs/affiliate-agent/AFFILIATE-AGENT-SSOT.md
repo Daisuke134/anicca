@@ -318,6 +318,17 @@ bootstrap and kick command still returned `141: Reentrancy avoided`. This is
 installed replay evidence only, not a live `source_url` match; the next
 bounded action is still B01 through the real owner.
 
+### 1.1.8 Launchd introspection scope
+
+At `2026-08-21T09:43+0900`, read-only `/bin/launchctl print` returned
+`141: Reentrancy avoided` for the system domain, the existing X Repost owner,
+and `ai.anicca.affiliate-loop`; `/bin/launchctl list` exited `0` but returned
+no rows. This is therefore a session-wide launchd introspection failure, not
+evidence that only the Affiliate label is broken. PID 1 is still `/sbin/launchd`
+and the Affiliate `last-run` advanced at 09:30 and 09:41, so the registered
+cadence continues to execute even though loaded-label readback is unavailable.
+No OS service was restarted or killed, and no all-owner-load claim is made.
+
 ### 1.2.0 Audited executable boundary
 
 The installed ownership graph has six launchd labels: three persistent browser
