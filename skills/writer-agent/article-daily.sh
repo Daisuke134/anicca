@@ -68,9 +68,27 @@ echo "=== article-daily run $(date '+%F %T %Z') ===" >>"$LOG"
 # something the LLM inside the pass decides or can skip.
 # Coconala's canonical gig_disk_guard.py defaults to 524288 KiB. Keep the
 # in-process check identical so direct owner wakes and launchd lanes agree.
-GIG_DISK_HEADROOM_KIB="${GIG_DISK_HEADROOM_KIB:-524288}"
+CANONICAL_DISK_HEADROOM_KIB=524288
+GIG_DISK_HEADROOM_KIB="${GIG_DISK_HEADROOM_KIB:-$CANONICAL_DISK_HEADROOM_KIB}"
 export GIG_DISK_HEADROOM_KIB
+case "$GIG_DISK_HEADROOM_KIB" in
+  ''|*[!0-9]*|0)
+    echo "=== article-daily disk floor configuration invalid ===" >>"$LOG"
+    exit 1
+    ;;
+esac
 DISK_LOW_THRESHOLD_BYTES="${ARTICLE_DISK_MIN_FREE_BYTES:-$((GIG_DISK_HEADROOM_KIB * 1024))}"
+case "$DISK_LOW_THRESHOLD_BYTES" in
+  ''|*[!0-9]*|0)
+    echo "=== article-daily disk floor configuration invalid ===" >>"$LOG"
+    exit 1
+    ;;
+esac
+if [ "$GIG_DISK_HEADROOM_KIB" -lt "$CANONICAL_DISK_HEADROOM_KIB" ] \
+  || [ "$DISK_LOW_THRESHOLD_BYTES" -lt "$((CANONICAL_DISK_HEADROOM_KIB * 1024))" ]; then
+  echo "=== article-daily disk floor configuration below canonical minimum ===" >>"$LOG"
+  exit 1
+fi
 
 disk_free_bytes() {
   # macOS/APFS: -P forces single-line POSIX output regardless of filesystem-name length; -k

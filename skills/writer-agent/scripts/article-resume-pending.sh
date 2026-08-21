@@ -59,9 +59,27 @@ fi
 # Coconala's canonical gig_disk_guard.py defaults to 524288 KiB. Keep direct
 # owner wakes identical to the launchd guard instead of inventing a second
 # Writer-only threshold.
-GIG_DISK_HEADROOM_KIB="${GIG_DISK_HEADROOM_KIB:-524288}"
+CANONICAL_DISK_HEADROOM_KIB=524288
+GIG_DISK_HEADROOM_KIB="${GIG_DISK_HEADROOM_KIB:-$CANONICAL_DISK_HEADROOM_KIB}"
 export GIG_DISK_HEADROOM_KIB
+case "$GIG_DISK_HEADROOM_KIB" in
+  ''|*[!0-9]*|0)
+    echo "article-resume: disk floor configuration invalid" >>"$LOG"
+    exit 1
+    ;;
+esac
 DISK_MIN_FREE_BYTES="${ARTICLE_RESUME_MIN_FREE_BYTES:-${ARTICLE_DISK_MIN_FREE_BYTES:-$((GIG_DISK_HEADROOM_KIB * 1024))}}"
+case "$DISK_MIN_FREE_BYTES" in
+  ''|*[!0-9]*|0)
+    echo "article-resume: disk floor configuration invalid" >>"$LOG"
+    exit 1
+    ;;
+esac
+if [ "$GIG_DISK_HEADROOM_KIB" -lt "$CANONICAL_DISK_HEADROOM_KIB" ] \
+  || [ "$DISK_MIN_FREE_BYTES" -lt "$((CANONICAL_DISK_HEADROOM_KIB * 1024))" ]; then
+  echo "article-resume: disk floor configuration below canonical minimum" >>"$LOG"
+  exit 1
+fi
 disk_free_bytes() {
   local free_kb
   free_kb="$(df -Pk / 2>/dev/null | awk 'NR==2{print $4}')"

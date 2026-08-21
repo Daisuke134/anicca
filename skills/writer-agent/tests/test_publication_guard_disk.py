@@ -57,6 +57,31 @@ def test_publication_guard_requires_managed_state_path(monkeypatch: pytest.Monke
         GUARD.assert_disk_headroom()
 
 
+@pytest.mark.parametrize("value", ["0", "1", "536870911", "-1", "not-a-number"])
+def test_publication_guard_rejects_floor_below_canonical_or_invalid(
+    monkeypatch: pytest.MonkeyPatch,
+    value: str,
+) -> None:
+    monkeypatch.setenv("ARTICLE_PUBLICATION_STATE", "/var/lib/life-manager/writer/state.json")
+    monkeypatch.setenv("ARTICLE_DISK_MIN_FREE_BYTES", value)
+    monkeypatch.setattr(GUARD.shutil, "disk_usage", lambda _path: SimpleNamespace(free=10**12))
+    with pytest.raises(GUARD.InvariantError, match="disk_headroom_configuration_invalid"):
+        GUARD.assert_disk_headroom()
+
+
+@pytest.mark.parametrize("value", ["1", "524287"])
+def test_publication_guard_rejects_gig_floor_below_canonical(
+    monkeypatch: pytest.MonkeyPatch,
+    value: str,
+) -> None:
+    monkeypatch.setenv("ARTICLE_PUBLICATION_STATE", "/var/lib/life-manager/writer/state.json")
+    monkeypatch.delenv("ARTICLE_DISK_MIN_FREE_BYTES", raising=False)
+    monkeypatch.setenv("GIG_DISK_HEADROOM_KIB", value)
+    monkeypatch.setattr(GUARD.shutil, "disk_usage", lambda _path: SimpleNamespace(free=10**12))
+    with pytest.raises(GUARD.InvariantError, match="disk_headroom_configuration_invalid"):
+        GUARD.assert_disk_headroom()
+
+
 def test_preflight_disk_gate_runs_before_store_creation(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("ARTICLE_AUTOPUBLISH", "1")
     monkeypatch.setenv("ARTICLE_PUBLICATION_STATE", "/var/lib/life-manager/writer/state.json")

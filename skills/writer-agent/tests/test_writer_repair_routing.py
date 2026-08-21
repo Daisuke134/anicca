@@ -425,6 +425,19 @@ def _dispatch(state: Path, tmp_path: Path, *, registry: Path | None = None,
     return json.loads(result.stdout.strip().splitlines()[-1])
 
 
+def _fake_df_env(tmp_path: Path) -> str:
+    """Give resume subprocess fixtures deterministic headroom."""
+    env_file = tmp_path / "df-env.sh"
+    env_file.write_text(
+        "df() {\n"
+        "  printf '%s\\n' "
+        "'Filesystem 1024-blocks Used Available Capacity Mounted on' "
+        "'/dev/test 999999999 0 1000000 1% /'\n"
+        "}\n"
+    )
+    return str(env_file)
+
+
 def test_dispatch_claims_the_blocking_revenue_set_incident_before_an_older_distribution_one(
     tmp_path: Path,
 ) -> None:
@@ -803,7 +816,8 @@ def test_resume_loop_dispatches_repair_routing_after_the_incident_bridge(
             "ARTICLE_MODEL_RUNNER": str(runtime / "model-runner.sh"),
             "ARTICLE_MODEL_SUPPORT": str(runtime / "model-runner-support.py"),
             "ARTICLE_OWNER_FENCE_ACTIVE": "1",
-            "ARTICLE_RESUME_MIN_FREE_BYTES": "1",
+            "ARTICLE_RESUME_MIN_FREE_BYTES": "536870912",
+            "BASH_ENV": _fake_df_env(tmp_path),
             "TELEGRAM_BOT_TOKEN": "",
             "TELEGRAM_CHAT_ID": "",
         },
@@ -875,7 +889,8 @@ def test_resume_loop_older_backlog_does_not_suppress_new_daily_schedule(
             "ARTICLE_LOCAL_DATE": "2026-08-21",
             "ARTICLE_LOCAL_HOUR": "06",
             "ARTICLE_DAILY_SCHEDULE_HOUR": "6",
-            "ARTICLE_RESUME_MIN_FREE_BYTES": "1",
+            "ARTICLE_RESUME_MIN_FREE_BYTES": "536870912",
+            "BASH_ENV": _fake_df_env(tmp_path),
             "ARTICLE_RESUME_LOG": str(log),
         },
         capture_output=True,
@@ -931,7 +946,8 @@ def test_resume_loop_future_or_unknown_backlog_still_suppresses_new_daily(
                 "ARTICLE_LOCAL_DATE": "2026-08-21",
                 "ARTICLE_LOCAL_HOUR": "06",
                 "ARTICLE_DAILY_SCHEDULE_HOUR": "6",
-                "ARTICLE_RESUME_MIN_FREE_BYTES": "1",
+                "ARTICLE_RESUME_MIN_FREE_BYTES": "536870912",
+                "BASH_ENV": _fake_df_env(case),
                 "ARTICLE_RESUME_LOG": str(case / "resume.log"),
             },
             capture_output=True,

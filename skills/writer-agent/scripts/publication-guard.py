@@ -18,6 +18,9 @@ from publication_resume import (
 SUPPORTED_PAIRS,
 )
 
+CANONICAL_DISK_HEADROOM_KIB = 524_288
+CANONICAL_DISK_HEADROOM_BYTES = CANONICAL_DISK_HEADROOM_KIB * 1024
+
 
 def assert_disk_headroom() -> None:
     """Keep every external publication boundary on Coconala's disk floor."""
@@ -33,6 +36,14 @@ def assert_disk_headroom() -> None:
         available = shutil.disk_usage(state_root).free
     except OSError as error:
         raise InvariantError("disk_headroom_unavailable") from error
+    try:
+        configured_kib = int(
+            os.environ.get("GIG_DISK_HEADROOM_KIB", str(CANONICAL_DISK_HEADROOM_KIB))
+        )
+    except ValueError as error:
+        raise InvariantError("disk_headroom_configuration_invalid") from error
+    if configured_kib < CANONICAL_DISK_HEADROOM_KIB:
+        raise InvariantError("disk_headroom_configuration_invalid")
     configured_bytes = os.environ.get("ARTICLE_DISK_MIN_FREE_BYTES", "")
     if configured_bytes:
         try:
@@ -40,10 +51,9 @@ def assert_disk_headroom() -> None:
         except ValueError as error:
             raise InvariantError("disk_headroom_configuration_invalid") from error
     else:
-        try:
-            required = int(os.environ.get("GIG_DISK_HEADROOM_KIB", "524288")) * 1024
-        except ValueError as error:
-            raise InvariantError("disk_headroom_configuration_invalid") from error
+        required = configured_kib * 1024
+    if required < CANONICAL_DISK_HEADROOM_BYTES:
+        raise InvariantError("disk_headroom_configuration_invalid")
     if available < required:
         raise InvariantError(
             f"disk_headroom_low available={available} required={required}"

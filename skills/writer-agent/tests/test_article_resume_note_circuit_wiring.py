@@ -67,6 +67,19 @@ def executable(path: Path, body: str) -> None:
     path.chmod(0o755)
 
 
+def _fake_df_env(tmp_path: Path) -> str:
+    """Give subprocess fixtures deterministic headroom without changing production guards."""
+    env_file = tmp_path / "df-env.sh"
+    env_file.write_text(
+        "df() {\n"
+        "  printf '%s\\n' "
+        "'Filesystem 1024-blocks Used Available Capacity Mounted on' "
+        "'/dev/test 999999999 0 1000000 1% /'\n"
+        "}\n"
+    )
+    return str(env_file)
+
+
 def test_note_resume_prioritizes_publication_and_uses_failure_circuit(
     tmp_path: Path,
 ) -> None:
@@ -179,7 +192,8 @@ def test_note_resume_prioritizes_publication_and_uses_failure_circuit(
         "ARTICLE_MODEL_RUNNER": str(runtime / "model-runner.sh"),
         "ARTICLE_MODEL_SUPPORT": str(runtime / "model-runner-support.py"),
         "ARTICLE_OWNER_FENCE_ACTIVE": "1",
-        "ARTICLE_RESUME_MIN_FREE_BYTES": "0",
+        "ARTICLE_RESUME_MIN_FREE_BYTES": "536870912",
+        "BASH_ENV": _fake_df_env(tmp_path),
         "CALLS": str(calls),
         "BRIDGE_CALLS": str(bridge_calls),
         "TELEGRAM_BOT_TOKEN": "",

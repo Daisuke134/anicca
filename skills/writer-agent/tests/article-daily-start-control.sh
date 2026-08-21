@@ -14,9 +14,11 @@ grep -F 'START_REASON' "$WRAPPER" >/dev/null
 ! grep -F 'RESUME_EXISTING=' "$WRAPPER" >/dev/null
 grep -F 'disk floor blocked after preflight' "$WRAPPER" >/dev/null
 grep -F 'POST_PREFLIGHT_FREE_BYTES' "$WRAPPER" >/dev/null
-grep -F 'GIG_DISK_HEADROOM_KIB="${GIG_DISK_HEADROOM_KIB:-524288}"' "$WRAPPER" >/dev/null
+grep -F 'CANONICAL_DISK_HEADROOM_KIB=524288' "$WRAPPER" >/dev/null
+grep -F 'GIG_DISK_HEADROOM_KIB="${GIG_DISK_HEADROOM_KIB:-$CANONICAL_DISK_HEADROOM_KIB}"' "$WRAPPER" >/dev/null
 grep -F 'DISK_LOW_THRESHOLD_BYTES="${ARTICLE_DISK_MIN_FREE_BYTES:-$((GIG_DISK_HEADROOM_KIB * 1024))}"' "$WRAPPER" >/dev/null
 grep -F 'DISK_MIN_FREE_BYTES="${ARTICLE_RESUME_MIN_FREE_BYTES:-${ARTICLE_DISK_MIN_FREE_BYTES:-$((GIG_DISK_HEADROOM_KIB * 1024))}}"' "$ROOT/skills/writer-agent/scripts/article-resume-pending.sh" >/dev/null
+grep -F 'CANONICAL_DISK_HEADROOM_KIB=524288' "$ROOT/skills/writer-agent/scripts/article-resume-pending.sh" >/dev/null
 grep -F 'PRE_START_REASON" = "no-same-jst-day-run"' "$ROOT/skills/writer-agent/scripts/article-resume-pending.sh" >/dev/null
 
 echo 'PASS: wrapper creates only a new daily run and leaves saved work to durable workers'
