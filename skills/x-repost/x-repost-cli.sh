@@ -269,8 +269,10 @@ PYEOF
       report "✅ Affiliate proposal recovered from exact X readback\nplacement: $AFFILIATE_PLACEMENT\npost: $AFFILIATE_POST_URL"
       finish 0 "affiliate proposal reconciled without duplicate publish"
     fi
-    report "⚠️ Affiliate proposal has an unresolved prior effect; no retry without exact X readback"
-    finish 0 "affiliate proposal remains unresolved"
+    "$PY" "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL" \
+      --consumed "$AFFILIATE_CONSUMED" --record UNVERIFIED >/dev/null
+    report "⚠️ Affiliate proposal could not be recovered by exact X readback; it is terminally unverified and will not be reposted"
+    finish 0 "affiliate proposal reconciliation unresolved"
   fi
   AFFILIATE_CLAIM="$($PY "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL" --consumed "$AFFILIATE_CONSUMED" --claim 2>/dev/null || echo '{}')"
   AFFILIATE_CLAIMED="$($PY -c 'import json,sys; print(json.load(sys.stdin).get("changed", False))' <<<"$AFFILIATE_CLAIM" 2>/dev/null || echo False)"
