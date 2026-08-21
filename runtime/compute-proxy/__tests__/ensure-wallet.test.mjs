@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { chmodSync, readFileSync, statSync } from "node:fs";
 import { mkdtemp, writeFile } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -29,4 +30,14 @@ test("ensureWallet rejects an existing malformed wallet instead of replacing it"
   await writeFile(walletPath, JSON.stringify({ address: "not-an-address", privateKey: "bad" }));
   chmodSync(walletPath, 0o600);
   await assert.rejects(() => ensureWallet({ home }), /wallet address|private key/u);
+});
+
+test("the stable symlink-style CLI path executes the main entrypoint", async () => {
+  const home = await mkdtemp(join(tmpdir(), "agent-economy-wallet-cli-"));
+  const result = spawnSync(process.execPath, [new URL("../ensure-wallet.mjs", import.meta.url).pathname], {
+    encoding: "utf8",
+    env: { ...process.env, ANICCA_HOME: home },
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout.trim(), /^0x[0-9a-fA-F]{40}$/u);
 });

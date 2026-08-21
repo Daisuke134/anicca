@@ -1,7 +1,6 @@
 // ensure-wallet.mjs — create/read one per-instance EVM identity without funding or broadcasting.
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
 const KEY_RE = /^0x[0-9a-fA-F]{64}$/u;
@@ -56,7 +55,9 @@ export async function ensureWallet({ home, generatePrivateKeyImpl = generatePriv
   }
 }
 
-const isMain = process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
+// `launch.sh` invokes this file through ~/loops/current, a symlink to an immutable release. Compare
+// the basename rather than realpath so the CLI path remains executable through that stable link.
+const isMain = process.argv[1] && path.basename(process.argv[1]) === "ensure-wallet.mjs";
 if (isMain) {
   ensureWallet({ home: process.env.ANICCA_HOME || process.env.HOME && path.join(process.env.HOME, ".anicca") })
     .then(({ address }) => process.stdout.write(`${address}\n`))
