@@ -209,6 +209,7 @@
         "CLOAK_BROWSER_OWNER": "gig-paid-direct",
         "CLOAK_CONTEXT_LEASES_FILE": "{{CLOAK_VAULT_DIR}}/gig-leases.json",
         "CDP_LOCK_DIR": "{{GIG_STATE_DIR}}/.cdp-gig.lock",
+        "GIG_IGNORE_DISK_PRESSURE_BLOCK": "1",
         "GIG_OPERATOR_BRAKE_FILE": "{{GIG_BRAKE_DIR}}/paid.operator.brake",
         "GIG_SANDBOX_DENY": "{{GIG_SANDBOX_DENY}}"
       },

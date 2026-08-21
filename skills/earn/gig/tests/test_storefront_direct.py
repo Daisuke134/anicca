@@ -142,6 +142,7 @@ def test_invalid_official_contract_fails_before_downstream_work_and_releases_lea
 def test_storefront_brake_prevents_lease_and_observation(tmp_path, monkeypatch):
     args = _args(tmp_path)
     args.operator_brake.write_text("held")
+    monkeypatch.setattr(direct, "_operator_brake_status", lambda _path: "held")
     blocked = lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError())
     monkeypatch.setattr(direct, "_preflight_storefront_bundle", blocked)
     monkeypatch.setattr(direct, "_lease", blocked)
@@ -151,6 +152,19 @@ def test_storefront_brake_prevents_lease_and_observation(tmp_path, monkeypatch):
 
     assert code == 0, row
     assert row["status"] == "operator_brake" and row["effect"] == 0
+
+
+@pytest.mark.parametrize(
+    ("brake_status", "expected"),
+    (("held", "operator_brake"), ("free", None), ("failed", "operator_brake_check_failed")),
+)
+def test_storefront_effect_gate_combines_disk_and_expiring_brake(monkeypatch, tmp_path,
+                                                                 brake_status, expected):
+    args = _args(tmp_path)
+    monkeypatch.setattr(direct, "disk_headroom_ok", lambda: True)
+    monkeypatch.setattr(direct, "_operator_brake_status", lambda _path: brake_status)
+
+    assert direct._effect_gate_reason(args) == expected
 
 
 def test_incremental_storefront_wake_validates_inventory_releases_lease_and_persists(tmp_path, monkeypatch):
@@ -286,6 +300,14 @@ def test_direct_source_has_no_legacy_or_cross_lane_dependency():
     for forbidden in ("ai.hermes.gateway", "gig_pass.sh", "b0_objective", "b0_result_gate",
                       "shuppin.jsonl", "/operator.brake", "application_parent"):
         assert forbidden not in source
+    assert "before_new_listing_draft" in source
+    assert "pending_effect is None" in source
+    assert "effect_already_this_wake" in source
+    assert "draft_effect_this_wake" in source
+    assert "retire_attempted_this_wake" in source
+    assert "retire_effect_this_wake" in source
+    assert source.index("before_blank_draft_create") < source.index("create_or_claim_blank_draft")
+    assert source.index("before_new_listing_publish") < source.index("publish_draft")
 
 
 def test_launchagent_is_immutable_dedicated_and_storefront_braked(monkeypatch):
