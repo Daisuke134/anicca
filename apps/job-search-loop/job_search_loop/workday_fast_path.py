@@ -218,6 +218,8 @@ def _known_value(item: dict[str, Any], profile: dict[str, Any], values: dict[str
         return values[item_id]
     if name in values:
         return values[name]
+    if item_id == "source--source":
+        return "Job Boards"
     candidate = profile.get("candidate") or {}
     if "email" in context:
         value = candidate.get("application_email")
