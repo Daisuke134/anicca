@@ -1255,6 +1255,28 @@ accepts one bounded disclosed Affiliate proposal and returns an exact placement
 identity, its volume is excluded from visits, clicks, revenue, allocation, and
 money. B01 still requires an organic official provider transaction.
 
+### 1.1.49 Same-job title experiment is composed and policy-budget deferred
+
+The repaired `RUNNER_PIN_REJECTED` baseline produced one bounded experiment for
+`elevenlabs-discovered-voice-cloning-en`: retain the control placement and all
+CTA/link/distribution fields, change only the title, and evaluate the next
+24-hour DEV baseline. The existing source owner completed the source set at
+`2026-08-21T18:27:36+0900`; the existing composition owner completed its
+hash-bound `READY_FOR_POLICY` handoff at `18:34:23+0900`.
+
+The next same owner wake ran the policy stage and persisted
+`POLICY_BUDGET_BLOCKED` at `18:35:17+0900`. The policy budget records
+`88026/98304` consumed JST tokens and a required `24576` reservation, with
+`policy_budget_retry_after=2026-08-21T15:00:00Z` (00:00 JST Aug 22). It retains
+the experiment control, source-set and handoff hashes and must resume that same
+job; no replacement draft may be generated. Disk guard is `CLEAR`, while the
+Affiliate external-action cap remains `34/10`. No provider link, publication,
+click, transaction, commission, or money was created.
+
+This proves source→decision→experiment→composition continuity, not a revenue
+result. Policy completion, public readback, provider metrics, B01, cost coverage,
+and the USD 10,000 gate remain open.
+
 ### 1.2.0 Audited executable boundary
 
 The installed ownership graph has six launchd labels: three persistent browser

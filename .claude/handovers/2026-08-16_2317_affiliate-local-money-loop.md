@@ -1,5 +1,19 @@
 # Affiliate local money loop handover
 
+- The repaired acquisition path created one bounded follow-up experiment without
+  public side effects. Existing source owner readback at `2026-08-21T18:27:36+0900`
+  captured the `voice-cloning` title experiment source set; existing composition
+  owner at `18:34:23+0900` created the hash-bound
+  `READY_FOR_POLICY` handoff. Its next policy stage at `18:35:17+0900` returned
+  `POLICY_BUDGET_BLOCKED`: policy consumed `88026/98304` JST tokens and the
+  required `24576` reservation cannot fit. The durable experiment keeps its
+  control placement, one title-only change, source set, handoff hash, and
+  `policy_budget_retry_after=2026-08-21T15:00:00Z` (00:00 JST Aug 22). Disk is
+  `CLEAR`; action cap remains `34/10`; no provider link, publication, click,
+  transaction, or money was created. The installed owner will resume the same
+  experiment at the eligible budget boundary; no replacement composition is
+  allowed.
+
 - Current Repost readback confirms the acquisition gap is structural, not a
   metrics parser defect. The separate `posted.jsonl` has `58` valid rows, all
   third-party X quote-post candidates; neither their `source_url` nor `post_url`
