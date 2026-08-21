@@ -47,13 +47,14 @@ function render(snapshot, view) {
   if (!VIEWS.has(view)) throw new Error("invalid_view");
   const totals = snapshot.totals, sources = snapshot.sources;
   const excluded = (snapshot.excluded || []).map((item) => `${label(item.label)}${item.reason ? `（${label(item.reason)}）` : ""}`).join("、") || "なし";
-  const freshness = (s) => s.amountMinor === null ? "不明" : s.status === "fresh" ? "最新" : s.status === "stale" ? "古い" : "不明";
+  const freshness = (s) => s.amountMinor === null ? "取得できず／銀行側データの新しさは不明" : s.status === "fresh" ? "取得済み／銀行側データの新しさは不明" : s.status === "stale" ? "取得済み／データが古い可能性・銀行側データの新しさは不明" : "取得できず／銀行側データの新しさは不明";
   const evidenceLabel = (s) => s.verificationStatus === "provider_billed" ? "確定" : s.verificationStatus === "provider_reported" ? "実測" : s.verificationStatus === "locally_estimated" ? "推定" : "不明";
   const accounts = sources.map((s) => `${label(s.label)}\t${format(s.amountMinor)}（${freshness(s)}）`).join("\n");
-  const evidence = sources.map((s) => `${evidenceLabel(s)} ${html(s.asOf)}`).join("\n");
+  const retrievalNote = "（ローカル取得時刻。銀行側データの新しさは不明）";
+  const evidence = sources.map((s) => `${evidenceLabel(s)} ${html(s.asOf)}${retrievalNote}`).join("\n");
   const title = snapshot.state === "partial" ? "⚠️ 確認できた範囲のお金" : "💰 今日のお金";
   const action = snapshot.state === "action_required" ? "" : "\n\n今すること：ありません";
-  const sourceText = snapshot.state === "action_required" ? "" : sources.map((s) => `${s.status === "fresh" ? "✅" : "⚠️"} Moneytree（${label(s.label)}）${html(s.asOf)}${s.status === "fresh" ? "更新" : "確認できず"}`).join("\n");
+  const sourceText = snapshot.state === "action_required" ? "" : sources.map((s) => `${s.status === "fresh" ? "✅" : "⚠️"} Moneytree（${label(s.label)}）${html(s.asOf)}${s.status === "fresh" ? retrievalNote : s.status === "stale" ? "（ローカル取得時刻。データが古い可能性・銀行側データの新しさは不明）" : "（取得できず。銀行側データの新しさは不明）"}`).join("\n");
   const summary = `${title}\n\n確認できた資産\t${format(totals.assetsMinor)}\n確認できた負債\t${format(totals.liabilitiesMinor)}\n差し引き\t${format(totals.netWorthMinor)}\n前回から\t${format(totals.changeMinor)}\n\n${sourceText}\n合計に入れていません：${excluded}${action}`;
   const text = view === "summary" ? summary : view === "accounts" ? `${title}\n\n${accounts}` : view === "accuracy" ? `${title}\n\n${evidence}\n合計に入れていません：${excluded}` : `${title}\n\n確認できた資産 − 確認できた負債 = 差し引き ${format(totals.netWorthMinor)}\n合計に入れていません：${excluded}`;
   return { text, reply_markup: keyboard(snapshot, view) };

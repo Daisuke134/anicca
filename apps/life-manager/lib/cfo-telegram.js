@@ -177,7 +177,9 @@ function renderCfoTelegram({ locale, view, snapshot, transactions }) {
   if (view === "ai_cost") { if (!hasAiCost) fail("invalid_ai_cost"); return { text: aiCostText(locale, snapshot.aiCost, true), extra: extra(locale, snapshot, view) }; }
   const ai = hasAiCost ? aiCostText(locale, snapshot.aiCost) : "";
   if (snapshot.state === "action_required" && view === "summary") return { text: `${strings.actionTitle}\n\n${strings.actionBody}${ai ? `\n\n${ai}` : ""}\n${strings.actionRetry}`, extra: extra(locale, snapshot, view) };
-  const freshness = locale === "ja" ? { fresh: "最新", stale: "古い", unavailable: "不明" } : { fresh: "Fresh", stale: "Stale", unavailable: "Unknown" };
+  const freshness = locale === "ja"
+    ? { fresh: "取得済み／銀行側データの新しさは不明", stale: "取得済み／データが古い可能性・銀行側データの新しさは不明", unavailable: "取得できず／銀行側データの新しさは不明" }
+    : { fresh: "Retrieved; bank-side freshness unknown", stale: "Retrieved; may be stale; bank-side freshness unknown", unavailable: "Unavailable; bank-side freshness unknown" };
   const marks = locale === "ja" ? { colon: "：", open: "（", close: "）", join: "、" } : { colon: ": ", open: " (", close: ")", join: ", " };
   const safeLabel = (value) => escapeHtml(String(value).replace(/\d[\d -]{2,}\d/g, "••••"));
   const sourceText = snapshot.sources.map((source) => `✅ Moneytree${locale === "ja" ? "（" : " ("}${safeLabel(source.label)}${locale === "ja" ? "）" : ")"} ${escapeHtml(source.asOf)}${strings.updated}`).join("\n");
@@ -188,7 +190,7 @@ function renderCfoTelegram({ locale, view, snapshot, transactions }) {
   const exclusions = ["partial", "recovered"].includes(snapshot.state) ? `\n${strings.excluded}${marks.colon}${excluded}` : "";
   const repair = snapshot.state === "recovered" ? `\n${strings.recovered}` : "";
   const accounts = snapshot.sources.map((source) => `${safeLabel(source.label)}\t${formatAmount(locale, source.amountMinor)}${marks.open}${freshness[source.status]}${marks.close}`).join("\n");
-  const evidence = snapshot.sources.map((source) => `${evidenceLabel(locale, source.verificationStatus)} ${escapeHtml(source.asOf)}`).join("\n");
+  const evidence = snapshot.sources.map((source) => `${evidenceLabel(locale, source.verificationStatus)} ${escapeHtml(source.asOf)}${strings.updated}`).join("\n");
   const why = `${strings.confirmedAssets} − ${strings.confirmedLiabilities} = ${strings.confirmedDifference} ${formatAmount(locale, snapshot.totals.netWorthMinor)}\n${strings.excluded}${marks.colon}${excluded}`;
   const activity = view === "summary" && transactions !== undefined ? transactionText(locale, transactions) : "";
   const text = view === "summary" ? `${title}\n\n${totals}${exclusions}\n\n${sourceText}${repair}${ai ? `\n${ai}` : ""}\n${strings.noAction}${activity}`
