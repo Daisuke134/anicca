@@ -1,5 +1,19 @@
 # Affiliate local money loop handover
 
+- Release `fe7b589bf9009cbc79a3183de65452a138d86f6b` is installed as immutable
+  `current`; the Affiliate suite is `82/82`, and source/installed bytes match
+  for the shared `runtime_guard.py`, `local_loop.py`, `source_capture.py`, and
+  `composition_owner.py`. Real free disk at `2026-08-21T17:06:51+0900` was
+  `329588736` bytes against the 10 GiB floor. Existing source/composition
+  owners (`runs=250`/`261`) exited `0` with durable
+  `DISK_GUARD_BLOCKED / RUNTIME_DISK_GUARD` and created no new source,
+  composition, provider-link, or publication effect. Money owner wake
+  `2924b6a9…` completed at `17:07:19+0900`, exit `0`, provider
+  `AUTHENTICATED`, link `VERIFIED`, publication `ALREADY_LIVE`, revenue
+  `COOLDOWN`, rolling net `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS /
+  NOT_REACHED`, costs `UNKNOWN`, Telegram `NO_PENDING`, and Repost `58/0`
+  exact joins with `NO_REVENUE_CREDIT`. This is only the F04 disk-floor
+  sub-behavior; B01 remains open with an empty official PartnerStack report.
 - Commit `43335da00` is installed as immutable `current`; source/installed
   budget scripts match and the suite is `80/80`. Source-refresh/composition
   replays at `16:49+0900` exited `0` (`runs=247` / `runs=258`), and campaign

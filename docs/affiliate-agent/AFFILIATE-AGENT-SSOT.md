@@ -1009,6 +1009,35 @@ universal F04/F05 owner guard or another independent measurement/provider gate;
 manual capture, test payments, estimates, and direct executors remain
 forbidden.
 
+### 1.1.39 F04 disk-floor slice installed and read back
+
+Release `fe7b589bf9009cbc79a3183de65452a138d86f6b` is installed as immutable
+`current`; the full Affiliate suite is `82/82`, and source/installed bytes
+match for `runtime_guard.py` (`da3ea7a1…75dfce`), `local_loop.py`
+(`c9468f9f…16775`), `source_capture.py` (`1982b71e…931fd`), and
+`composition_owner.py` (`8ce7ca38…b1ec0`). The shared runtime guard reads the
+10 GiB floor and persists a redacted receipt. At `2026-08-21T17:06:51+0900`
+the real filesystem had `329588736` free bytes, so both the source-refresh
+owner (`runs=250`) and composition owner (`runs=261`) returned exit `0` with
+`DISK_GUARD_BLOCKED / RUNTIME_DISK_GUARD`; no new crawl, model generation,
+source artifact, composition, link, or publication was attempted.
+
+The money owner (`runs=249`) then completed wake
+`2924b6a988d11622a951ff975d3674ec28762de4a0e2b68d94de85b88ceb17dd2` at
+`2026-08-21T17:07:19+0900`, exit `0`, with the same persisted disk guard but
+provider `AUTHENTICATED`, link `VERIFIED`, publication `ALREADY_LIVE`, revenue
+`COOLDOWN`, rolling net `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS /
+NOT_REACHED`, cost coverage `UNKNOWN`, Telegram `NO_PENDING`, and Repost
+`58` actions / `0` exact joins / `NO_REVENUE_CREDIT`. The guard therefore
+continues health, provider observation, ledger, and reporting while refusing
+new research/model work under the real low-disk condition.
+
+This closes only the F04 disk-floor sub-behavior. Per-provider/channel
+quarantine, daily action/cost caps, browser-owner watchdog, and F05
+diagnose→one repair→postcondition→same-job resume remain open. It does not
+close B01: the official PartnerStack report is still empty, with no
+transaction, settlement, payout, or money.
+
 ### 1.2.0 Audited executable boundary
 
 The installed ownership graph has six launchd labels: three persistent browser
@@ -3075,6 +3104,8 @@ receipt readback, SSOT state update, commit, and push to both canonical remotes.
   admitted-tool receipt; no money is implied.
 - [ ] **F04** Add bounded retry, per-provider/channel quarantine, daily action/cost
   caps, disk guard, browser-owner health, and watchdog inside the existing ownership graph.
+  **Partial:** the 10 GiB disk guard is installed and live-proven in §1.1.39;
+  the other caps, quarantine, health, and watchdog sub-behaviors remain open.
 - [ ] **F05** Implement diagnose→one allowlisted repair→postcondition→same-job resume;
   escalate or quarantine when the repair postcondition fails.
 - [x] **F06** Observe one real recoverable capture failure and prove `SELF_HEALED`,
