@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | M2 — `CFO-OPS3a`, `CFO-OPS3b`, `CFO-1j`, `CFO-2b.2`, `CFO-2b.3`, `CFO-2b.4`, `CFO-2b.5`, `CFO-2b.6`, `CFO-2b.7`, `CFO-2b.8`, `CFO-2b.9`, `CFO-2c`, `CFO-2d`, `CFO-2d2`, `CFO-2d3`, and `CFO-2e` are closed; M3 tax evidence is deferred and M4b cloud scheduling is next |
+| Status | M2 — `CFO-OPS3a`, `CFO-OPS3b`, `CFO-1j`, `CFO-2b.2`, `CFO-2b.3`, `CFO-2b.4`, `CFO-2b.5`, `CFO-2b.6`, `CFO-2b.7`, `CFO-2b.8`, `CFO-2b.9`, `CFO-2c`, `CFO-2d`, `CFO-2d2`, `CFO-2d3`, `CFO-2e`, `CFO-4a`, and `CFO-4b` are closed; M3 tax/Binance is deferred and M4d tenant/browser parity is next |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
@@ -1271,8 +1271,13 @@ ingestion. They are not unchecked M1 items and cannot become the active CFO item
       commit `f2a7a64bd` adds the CFO secret-reference catalog and delegates local/cloud resolution to the existing
       Keychain/Vault provider. Raw token values remain outside repository, snapshots, Telegram, and logs. No leaked
       credential was found in the canonical CFO branch; Moneytree LINK OAuth remains unconfigured by owner choice.
-- [ ] **CFO-4b** Add durable per-owner scheduling with concurrency 1, retry, timeout, and immutable run receipts.
-- [ ] **CFO-4c** Verify Binance from fixed cloud egress and preserve its IP allowlist.
+- [x] **CFO-4b** Add durable per-owner scheduling with concurrency 1, retry, timeout, and immutable run receipts.
+      Canonical commit `126c6c803` adds the CFO adapter over the existing `lm_runtime_jobs` lease/receipt store. It
+      uses tenant-bound reference-only input, `cfo.read` capability, max-attempts, atomic claim, heartbeat, completion,
+      failure, and unknown reconciliation aging. Existing runtime contract tests pass 13/13; no cloud job was claimed
+      or provider state mutated. M4c Binance/fixed-egress verification is deferred with Binance.
+- [ ] **CFO-4c** Verify Binance from fixed cloud egress and preserve its IP allowlist. **Deferred:** Binance remains
+      explicitly skipped by the owner, so no credentials, IP allowlist, or verification claim is created.
 - [ ] **CFO-4d** Implement browser fallback against Steel profiles, one profile per tenant/provider; prove local and
       cloud contract parity without placing browser state in prompts or DB rows.
 - [ ] **CFO-4e** Run tenant-isolation adversarial tests and a 100-user load/cost simulation from recorded adapter
@@ -1418,3 +1423,11 @@ local-Keychain/cloud-Vault `secret-provider`; the CFO refresh adapter accepts th
 secret values. Smoke resolution with a tenant-scoped fake provider passed; malformed/raw references fail closed. The
 12-factor [Config](https://12factor.net/config) guidance requires credentials outside source, and the Moneytree OAuth
 docs warn refresh tokens are password-like and must not enter logs/URLs. `CFO-4b` durable cloud scheduling is next.
+
+### CFO-4b closure correction (2026-08-21)
+
+Canonical commit `126c6c803` adds `apps/life-manager/lib/cfo-cloud-scheduler.js` over the existing tenant-bound
+`lm_runtime_jobs` store. The adapter creates reference-only `cfo.read` jobs, max-attempts, atomic claim/lease,
+heartbeat, immutable completion/failure receipts, and bounded unknown reconciliation. Existing runtime scheduler/lease
+tests pass 13/13; no cloud job or provider was mutated. M4c Binance is deferred with Binance; M4d tenant/browser parity
+is next.
