@@ -25,10 +25,13 @@ guardではworktree remote inspectionを`fast_pass_deferred`として保留す�
 shimは同じhost guardを`EMERGENCY_GUARD_FULL_PASS=1`で呼び、保留処理を永続的に飢餓させない。
 
 実測証拠はAnicca cleanup test **51 passed**、Life Manager disk-cleanup test **6 passed**、guardの
-実E2E約9秒（`errors=0`、`protected_deletions=0`、lock残留なし、free約5.2 GiB）である。これはloopが
-常時稼働している証明ではない。`launchctl print gui/501/ai.anicca.life-manager-disk-cleanup` と
-`com.anicca.emergency-disk-guard` は現在も`141: Reentrancy avoided`であり、正式なuser launchd
-domainのbootstrap/readback、24時間、7日観測が残る。
+実E2E約9秒（`errors=0`、`protected_deletions=0`、lock残留なし、初回free約5.2 GiB）である。
+その後のlive readbackではfree約2.2 GiB、tier=`ULTRA`、`reclaimed=0`、`preserved_reasons={"open":1}`
+となった。openなChrome code-sign clone約706 MiBとActions Runner診断ログ約291 MiBは、実行中のため
+削除しない。これはloopが常時稼働している証明ではない。guardのログは毎分更新される一方、
+`launchctl print gui/501/ai.anicca.life-manager-disk-cleanup` と `com.anicca.emergency-disk-guard`
+は現在も`141: Reentrancy avoided`であり、正式なuser launchd domainのbootstrap/readback、24時間、
+7日観測が残る。
 
 ### OSS boundary
 
