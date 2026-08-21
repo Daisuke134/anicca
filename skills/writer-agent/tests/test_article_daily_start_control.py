@@ -8,6 +8,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+from PIL import Image
+
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "skills/writer-agent/scripts"))
@@ -28,6 +30,10 @@ START = load(
 RESUME = load(
     "publication_resume",
     ROOT / "skills/writer-agent/scripts/publication_resume.py",
+)
+REMOTE = load(
+    "publication_remote",
+    ROOT / "skills/writer-agent/scripts/publication_remote.py",
 )
 QUARANTINE = load(
     "quarantine_invalid_run",
@@ -311,6 +317,309 @@ class ArticleStartPolicyTest(unittest.TestCase):
                 decision = START.decide(state, "2026-08-21")
 
         self.assertEqual(decision["action"], "skip-pending-worker")
+
+    def _x_readability_release_fixture(self, root: Path):
+        run = root / "runs" / "20260821-103056"
+        repair = run / "gates" / "x-inplace-repair" / "ja"
+        repair.mkdir(parents=True)
+        body = run / "body.png"
+        Image.new("RGB", (1300, 70), "white").save(body, format="PNG")
+        body_path = str(body.resolve())
+        body_sha = hashlib.sha256(body.read_bytes()).hexdigest()
+        live_urls = {
+            "note/ja": "https://note.com/anicca123/n/n1",
+            "substack/ja": "https://aniccabuddha.substack.com/p/j1",
+            "substack/en": "https://aniccaai2026.substack.com/p/e1",
+        }
+        pairs = {
+            pair: {
+                "status": "live",
+                "receipt": {"live_url": url, "evidence": {}},
+            }
+            for pair, url in live_urls.items()
+        }
+        pairs["x-article/ja"] = {
+            "platform": "x-article",
+            "lang": "ja",
+            "status": "unavailable",
+            "target_kind": "x-draft-url",
+            "target": "https://x.com/compose/articles/edit/2090758197418291200",
+            "error": "x-article body media readability failed: too-flat:body",
+        }
+        state = {
+            "publication_contract": "active-four",
+            "run_id": run.name,
+            "topic_id": "topic-1",
+            "destination_identities": {
+                "note/ja": "anicca123",
+                "substack/ja": "aniccabuddha.substack.com",
+                "substack/en": "aniccaai2026.substack.com",
+                "x-article/ja": "diceai0",
+            },
+            "drafts": {"ja": {"sha256": "a" * 64}, "en": {"sha256": "b" * 64}},
+            "pairs": pairs,
+            "media": {"body_assets": [{"path": str(body), "sha256": body_sha}]},
+        }
+        state_path = run / "gates" / "publication-state.json"
+        state_path.write_text(json.dumps(state), encoding="utf-8")
+        readability = {
+            "version": 1,
+            "status": "FAIL",
+            "run_id": run.name,
+            "pair": "x-article/ja",
+            "target": pairs["x-article/ja"]["target"],
+            "target_kind": "x-draft-url",
+            "readback_status": "not-live",
+            "readback_verified": True,
+            "content_verified": True,
+            "artifact_sha256": "a" * 64,
+            "destination_identity": "diceai0",
+            "identity_verified": True,
+            "identity_source": "x-authenticated-edit-url",
+            "render_width": 587,
+            "min_height": 110,
+            "max_height": 650,
+            "violations": [f"too-flat:{body_path}:source=1300x70:projected=31.61:min=110"],
+            "images": [{
+                "path": body_path, "sha256": body_sha, "width": 1300,
+                "height": 70, "projected_height": 31.61,
+            }],
+        }
+        (repair / "media-readability.json").write_text(
+            json.dumps(readability), encoding="utf-8"
+        )
+        rows = [
+            {
+                "run_id": run.name,
+                "topic_id": "topic-1",
+                "platform": pair.split("/", 1)[0],
+                "lang": pair.split("/", 1)[1],
+                "published": True,
+                "reality_gate": "PASS",
+                "live_url": url,
+            }
+            for pair, url in live_urls.items()
+        ]
+        for row in rows:
+            pair = f"{row['platform']}/{row['lang']}"
+            row.update(
+                {
+                    "verified": True,
+                    "public_id": pair,
+                    "published_at": "2026-08-21T12:00:00Z",
+                    "content_verified": True,
+                    "asset_verified": True,
+                    "body_media_verified": True,
+                    "destination_identity": state["destination_identities"][pair],
+                    "identity_verified": True,
+                    "identity_source": "test-remote-readback",
+                }
+            )
+        (root / "articles.jsonl").write_text(
+            "".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8"
+        )
+        return run, state, rows
+
+    @staticmethod
+    def _fake_remote_probe(pair, target, state):
+        if pair == "x-article/ja":
+            return {
+                "status": "not-live",
+                "verified": True,
+                "target": target,
+                "content_verified": True,
+                "artifact_sha256": state["drafts"]["ja"]["sha256"],
+                "destination_identity": "diceai0",
+                "identity_verified": True,
+                "identity_source": "x-authenticated-edit-url",
+            }
+        entry = state["pairs"][pair]
+        result = {
+            "status": "live",
+            "verified": True,
+            "live_url": entry["receipt"]["live_url"],
+            "public_id": pair,
+            "published_at": "2026-08-21T12:00:00Z",
+            "content_verified": True,
+            "asset_verified": True,
+            "body_media_verified": True,
+            "destination_identity": state["destination_identities"][pair],
+            "identity_verified": True,
+            "identity_source": "test-remote-readback",
+        }
+        if pair == "note/ja":
+            result.update({"monetization_verified": True, "price": 500})
+        else:
+            result.update(
+                {
+                    "monetization_verified": True,
+                    "audience": "only_paid",
+                    "paywall_verified": True,
+                }
+            )
+        return result
+
+    def test_unavailable_x_readability_proof_releases_new_run(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            run, state, rows = self._x_readability_release_fixture(root)
+            with patch.dict(sys.modules, {"publication_resume": RESUME, "publication_remote": REMOTE}), patch.object(
+                RESUME.PublicationStore,
+                "validate_managed_boundary",
+                return_value=state,
+            ), patch.object(RESUME, "validate_receipt_evidence"), patch.object(
+                REMOTE, "probe", side_effect=self._fake_remote_probe
+            ), patch.object(
+                START, "validated_live_set", return_value=(False, None)
+            ), patch.object(START, "proof", side_effect=START.QuarantineError("not duplicate")):
+                decision = START.decide(root, "2026-08-21")
+        self.assertEqual(decision["action"], "new")
+        self.assertEqual(decision["reason"], "same-jst-day-unavailable-x-readability")
+
+    def test_unavailable_x_readability_tamper_stays_blocked(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            run, state, rows = self._x_readability_release_fixture(root)
+            rows[0]["effect"] = 1
+            rows[1]["payout"] = 1
+            (root / "articles.jsonl").write_text(
+                "".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8"
+            )
+            with patch.dict(sys.modules, {"publication_resume": RESUME, "publication_remote": REMOTE}), patch.object(
+                RESUME.PublicationStore,
+                "validate_managed_boundary",
+                return_value=state,
+            ), patch.object(RESUME, "validate_receipt_evidence"), patch.object(
+                REMOTE, "probe", side_effect=self._fake_remote_probe
+            ), patch.object(
+                START, "validated_live_set", return_value=(False, None)
+            ), patch.object(START, "proof", side_effect=START.QuarantineError("not duplicate")), patch.object(
+                START, "publication_plan", return_value={"resumable": True}
+            ):
+                decision = START.decide(root, "2026-08-21")
+        self.assertEqual(decision["action"], "skip-pending-worker")
+
+    def test_unavailable_x_readability_duplicate_live_row_stays_blocked(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            run, state, rows = self._x_readability_release_fixture(root)
+            rows.append(dict(rows[0]))
+            (root / "articles.jsonl").write_text(
+                "".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8"
+            )
+            with patch.dict(sys.modules, {"publication_resume": RESUME, "publication_remote": REMOTE}), patch.object(
+                RESUME.PublicationStore,
+                "validate_managed_boundary",
+                return_value=state,
+            ), patch.object(RESUME, "validate_receipt_evidence"), patch.object(
+                REMOTE, "probe", side_effect=self._fake_remote_probe
+            ), patch.object(
+                START, "validated_live_set", return_value=(False, None)
+            ), patch.object(START, "proof", side_effect=START.QuarantineError("not duplicate")), patch.object(
+                START, "publication_plan", return_value={"resumable": True}
+            ):
+                decision = START.decide(root, "2026-08-21")
+        self.assertEqual(decision["action"], "skip-pending-worker")
+
+    def test_unavailable_x_readability_unknown_state_effect_stays_blocked(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            run, state, rows = self._x_readability_release_fixture(root)
+            state["pairs"]["x-article/ja"]["effect"] = 1
+            (run / "gates" / "publication-state.json").write_text(
+                json.dumps(state), encoding="utf-8"
+            )
+            with patch.dict(sys.modules, {"publication_resume": RESUME, "publication_remote": REMOTE}), patch.object(
+                RESUME.PublicationStore,
+                "validate_managed_boundary",
+                return_value=state,
+            ), patch.object(RESUME, "validate_receipt_evidence"), patch.object(
+                REMOTE, "probe", side_effect=self._fake_remote_probe
+            ), patch.object(
+                START, "validated_live_set", return_value=(False, None)
+            ), patch.object(START, "proof", side_effect=START.QuarantineError("not duplicate")), patch.object(
+                START, "publication_plan", return_value={"resumable": True}
+            ):
+                decision = START.decide(root, "2026-08-21")
+        self.assertEqual(decision["action"], "skip-pending-worker")
+
+    def test_unavailable_x_readability_target_rebind_stays_blocked(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            run, state, rows = self._x_readability_release_fixture(root)
+            state["pairs"]["x-article/ja"]["target"] = (
+                "https://x.com/compose/articles/edit/2090758197418291201"
+            )
+            (run / "gates" / "publication-state.json").write_text(
+                json.dumps(state), encoding="utf-8"
+            )
+            with patch.dict(sys.modules, {"publication_resume": RESUME, "publication_remote": REMOTE}), patch.object(
+                RESUME.PublicationStore,
+                "validate_managed_boundary",
+                return_value=state,
+            ), patch.object(RESUME, "validate_receipt_evidence"), patch.object(
+                REMOTE, "probe", side_effect=self._fake_remote_probe
+            ), patch.object(
+                START, "validated_live_set", return_value=(False, None)
+            ), patch.object(START, "proof", side_effect=START.QuarantineError("not duplicate")), patch.object(
+                START, "publication_plan", return_value={"resumable": True}
+            ):
+                decision = START.decide(root, "2026-08-21")
+        self.assertEqual(decision["action"], "skip-pending-worker")
+
+    def test_unavailable_x_readability_monetization_drift_stays_blocked(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            run, state, rows = self._x_readability_release_fixture(root)
+
+            def drift_probe(pair, target, current_state):
+                result = self._fake_remote_probe(pair, target, current_state)
+                if pair == "note/ja":
+                    result["monetization_verified"] = False
+                    result["price"] = 0
+                return result
+
+            with patch.dict(sys.modules, {"publication_resume": RESUME, "publication_remote": REMOTE}), patch.object(
+                RESUME.PublicationStore,
+                "validate_managed_boundary",
+                return_value=state,
+            ), patch.object(RESUME, "validate_receipt_evidence"), patch.object(
+                REMOTE, "probe", side_effect=drift_probe
+            ), patch.object(
+                START, "validated_live_set", return_value=(False, None)
+            ), patch.object(START, "proof", side_effect=START.QuarantineError("not duplicate")), patch.object(
+                START, "publication_plan", return_value={"resumable": True}
+            ):
+                decision = START.decide(root, "2026-08-21")
+        self.assertEqual(decision["action"], "skip-pending-worker")
+
+    def test_malformed_ledger_blocks_before_same_day_release(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            run, _state, _rows = self._x_readability_release_fixture(Path(tmp))
+            (root / "articles.jsonl").write_text('{"published":true}\nnot-json\n', encoding="utf-8")
+            decision = START.decide(root, "2026-08-21")
+        self.assertEqual(decision, {"action": "block-incomplete", "run_id": "", "reason": "ledger-invalid"})
+
+    def test_x_remote_fallback_cannot_self_assert_authenticated_draft(self):
+        source = (ROOT / "skills/writer-agent/scripts/publication_remote.py").read_text(
+            encoding="utf-8"
+        )
+        self.assertNotIn("publish_buttons", source)
+
+    def test_remote_live_finalize_rejects_monetization_drift(self):
+        result = REMOTE.finalize_live(
+            {},
+            "note/ja",
+            "nb-test",
+            {
+                "status": "live",
+                "verified": True,
+                "content_verified": True,
+                "monetization_verified": False,
+            },
+        )
+        self.assertEqual(result["reason"], "note-monetization-readback-failed")
 
     def test_invalid_publication_state_contract_never_releases_new_run(self):
         with tempfile.TemporaryDirectory() as tmp:

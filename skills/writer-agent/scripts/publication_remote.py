@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import html
+import hashlib
 import os
 import re
 import sys
@@ -75,6 +76,17 @@ def finalize_live(
         return observed
     if observed.get("content_verified") is not True:
         return {"status": "unknown", "reason": "canonical-content-readback-failed"}
+    if pair == "note/ja" and not (
+        observed.get("monetization_verified") is True
+        and observed.get("price") == 500
+    ):
+        return {"status": "unknown", "reason": "note-monetization-readback-failed"}
+    if pair.startswith("substack/") and not (
+        observed.get("monetization_verified") is True
+        and observed.get("audience") == "only_paid"
+        and observed.get("paywall_verified") is True
+    ):
+        return {"status": "unknown", "reason": "substack-monetization-readback-failed"}
     if pair != "x-post/ja" and observed.get("asset_verified") is not True:
         return {"status": "unknown", "reason": "public-asset-readback-failed"}
     if any(observed.get(flag) is not True for flag in DESTINATION_PROOF_FLAGS[pair]):
@@ -1198,7 +1210,10 @@ def substack(
     publication = _expected_identity(state or {}, pair)
     if not publication:
         return {"status": "unknown", "reason": "missing-protected-substack-identity"}
-    cookie = os.environ.get("SUBSTACK_SESSION_COOKIE", "")
+    cookie = os.environ.get(
+        "SUBSTACK_SESSION_COOKIE_EN" if pair == "substack/en" else "SUBSTACK_SESSION_COOKIE_JA",
+        "",
+    ).strip() or os.environ.get("SUBSTACK_SESSION_COOKIE", "")
     if not cookie:
         return {"status": "unknown", "reason": "missing-substack-cookie"}
     data = get_json(
@@ -1256,6 +1271,13 @@ def substack(
             ),
             "",
         )
+        try:
+            from substack_paid_payload import verify_paid_draft_response
+
+            verify_paid_draft_response(data)
+            monetization_verified = True
+        except Exception:
+            monetization_verified = False
         readable_body, structured_urls = substack_body_readback(body)
         remote = readable_body + "\n" + public_html
         body_urls = [
@@ -1285,6 +1307,9 @@ def substack(
                 "content_verified": content_matches(
                     remote, _artifact_path(state, pair)
                 ),
+                "monetization_verified": monetization_verified,
+                "audience": data.get("audience"),
+                "paywall_verified": monetization_verified,
                 "asset_verified": body_ok,
                 "body_media_verified": body_ok,
                 "asset_urls": [proof["remote_url"] for proof in proofs],
@@ -1697,9 +1722,38 @@ def x_article(
             profile_href=profile_href,
             account=account,
         ):
+            if state is None:
+                return {
+                    "status": "unknown",
+                    "reason": "managed-state-required-for-x-draft-readback",
+                }
+            artifact = _artifact_path(state, pair)
+            try:
+                editor_title = title_fields.first.input_value()
+                editor_body = composer.first.inner_text()
+            except Exception:
+                return {
+                    "status": "unknown",
+                    "reason": "x-draft-content-readback-failed",
+                }
+            content_verified = x_content_matches(
+                f"{editor_title}\n{editor_body}", artifact
+            )
+            if not content_verified:
+                return {
+                    "status": "unknown",
+                    "reason": "x-draft-content-mismatch",
+                    "target": target,
+                    "destination_identity": account,
+                    "identity_verified": True,
+                    "identity_source": "x-authenticated-edit-url",
+                }
             return {
                 "status": "not-live",
                 "verified": True,
+                "target": target,
+                "content_verified": True,
+                "artifact_sha256": hashlib.sha256(artifact.read_bytes()).hexdigest(),
                 "destination_identity": account,
                 "identity_verified": True,
                 "identity_source": "x-authenticated-edit-url",
@@ -1913,13 +1967,11 @@ def x_article(
                 if gap is not None:
                     return gap
             return result
-        publish_buttons = page.locator("button,div[role=button]").filter(has_text="Publish").count()
-        if publish_buttons and "Published" not in body:
-            return {"status": "not-live", "verified": True, "source": "x-cdp"}
         if x_status_page_is_missing(body, account):
             return {
                 "status": "not-live",
                 "verified": True,
+                "target": target,
                 "source": "x-authenticated-missing-status-page",
                 "identity_source": "x-authenticated-account-navbar",
                 "identity_verified": True,

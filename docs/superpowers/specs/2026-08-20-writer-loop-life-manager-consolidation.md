@@ -65,6 +65,28 @@
   `no-eligible-reclaim`となった。その後の空きは`9.5GiB`、swap使用`508MB`で、Writerは再びpressure gate下にある。
   guardの連打、pressure flagの手動削除、protected storeの推測削除は行わない。
 
+### 2026-08-21 Writer圧力フラグ切り離しとX unavailable解放（現在）
+
+- 実機のData volumeは空き`11,424,800 KiB`、swap使用約500MBで、512MiBのWriter実容量床を大きく上回る。
+  Sentinelのヒステリシスにより`/Users/anicca/.openclaw/state/disk-pressure.block`自体は残るが、Writerの
+  `writer_env`だけに`GIG_IGNORE_DISK_PRESSURE_BLOCK=1`を設定した。`disk-writers.stop`、制御ディレクトリの
+  readability、実空き512MiB未満のfail-closedは迂回しない。したがってこのフラグはWriterの可用性ゲートではなく、
+  他のwrite-heavy producerを保護するadvisoryとして残る。`test_gig_disk_guard.py`は13件PASSし、他producerの
+  既定拒否とWriterの実容量床拒否を確認した。
+- launchdの外側に残っていた`article-daily.sh`の旧11GiB/provider gateも同じ512MiB床へ統一した。
+  `GIG_IGNORE_DISK_PRESSURE_BLOCK=1`時は`disk-pressure.block`だけを無視し、`disk-writers.stop`と制御ディレクトリ
+  不可読は停止する。これでlaunchdの外側gateとPython guardの判定が一致する。
+- `20260821-103056`はNote JA、Substack JA、Substack ENの3件をnative live receipt（本文・media・identity）で保持し、
+  X Article JAだけを、同一runのbody asset SHA、render width 587、投影高さ110–650px外、`media-readability.json`
+  のFAIL receipt、X draft target、ledger無作用で`unavailable`へ確定した。XのPublishクリックやX live ledger rowはない。
+- `article_daily_start_control.py`に、上記の全条件と`PublicationStore.validate_managed_boundary`、各live receiptの
+  `validate_receipt_evidence`、publisher-native probeを再検証する同日解放を追加した。receipt改ざん・未知ledger effect・
+  symlink/path逸脱・X target違い・remote identity/content不一致は解放せず、実機readbackは
+  `{"action":"new","reason":"same-jst-day-unavailable-x-readability"}`を返す。
+  開始判定23件、X readability4件、disk guard13件がPASS。開始判定はledgerを厳密parseし、同一pair重複・未知effect・
+  X未知フィールドを拒否し、live receiptのremote本文・identity・public ID・media・課金条件を再読取する。新runの
+  4面native canaryと2連続自然tickはまだ未完了である。
+
 ### ownerless repair handoff の回収実測
 
 - `eeb25ca90`をLife Managerのimmutable releaseへ反映し、14 Writer labelの`current` argvを再読した。
@@ -1119,8 +1141,9 @@ loaded definitionと自然tickまで読み戻すことを意味する。A1のcon
 | A9c | WriterのCodex-only retryを実装する | `ARTICLE_PROVIDER=codex`固定。cooldown既定値を300秒へ変更し、同一immutable runを最大3回だけcheckpoint再開するfixture。Codex cooldown中にClaude/Hermesを起動しない、公開state/ledger後のreplay 0、3回 exhausted後に新runを増殖させない | 実装・契約検証完了（model-runner 7件、resume circuit 6件、start-control 6件、candidate wiring 19件、publication identity 15件、topic-card resume 9件、state routing、duplicate-media guard、構文/manifest/diff check、fresh v2 adversarial review PASS） |
 | A9d | Codex-only Writer公開canaryを行う | current releaseをlaunchdへ反映し、pause解除後の新runでCodex attempt receipt、Note JA、Substack JA/EN、X Article JAの4 native URL、本文・media hash、Telegram delivery receiptを取得。Codex timeout時は同じrunの次tickへ安全にhandoffする | 部分完了（既存`daily-2026-08-21`は4媒体native live＋`article-run-complete rc=0`。`20260821-054500`はduplicate-media quarantine完了。`20260821-072939`はdisk floor低下前にSIGTERMしpublication前で安全停止。`20260821-103056`はNoteのnative liveを外部readback済みだがstate反映待ち、Substack 2件はintent、Xはstable draft＋1300x70拒否。`63cf0fc59`/`37a462cc4`でpublish/readback gateを追加済み） |
 | A9e | invalid duplicate-media runを安全に隔離する | 対象runの同一media SHA、全active pairが`unavailable`またはdormant `skipped`、no-effect ledgerを再計算し、proof-bound `run-quarantine.json`を作成。start-controlが同日`new`を返し、対象pair以外とledgerの不変をreadback | 完了（実装・fixture 13件、focused 43件、契約・構文・diff check PASS。実canaryのX intentを同じtargetの`unavailable`へ共有lock下で遷移、receipt作成、ledger不変、start-control=`new`、current release=`cdb611300`を実測） |
-| A9f | disk floor復帰後にclean canaryを再開する | `gig_disk_guard`とarticle wrapperが同じ512MiB floorをPASSし、pause解除→既存daily kickstart→新runの4 native receipt、Telegram message ID、2連続tickを取得。floor未達なら生成・公開を開始しない | 進行中（再起動でswap=0・空き12.4GB、`disk-writers.stop`は消えたが`disk-pressure.block`の自動解除条件20GB未達。公開入口は安全停止中） |
-| A9i | 再起動後の既存runを安全にreconcileする | sentinelがpressure flagを解除した後、Note live proofを同一keyでstateへ記録し、Substack 2件を同一draft IDだけで処理。Xはprojection/readability receipt後にunavailableまたはliveを確定 | 未完（Note native proofは全項目取得済みだが、空き10.6GiBで`disk-pressure.block`が再発。state反映・Substack・Xは容量回復待ち） |
+| A9f | disk floor復帰後にclean canaryを再開する | `gig_disk_guard`とarticle wrapperが同じ512MiB floorをPASSし、pause解除→既存daily kickstart→新runの4 native receipt、Telegram message ID、2連続tickを取得。floor未達なら生成・公開を開始しない | 進行中（Writerはpressure flagをscoped bypassし、実空き11,424,800 KiBでguard PASS。ただし新runの4面canary・Telegram receipt・2連続tickは未取得） |
+| A9i | 再起動後の既存runを安全にreconcileする | Note live proofを同一keyでstateへ記録し、Substack 2件を同一draft IDだけで処理。Xはprojection/readability receipt後にunavailableまたはliveを確定 | 完了（Note JA、Substack JA/ENはnative live receipt、X JAはproof-bound `unavailable`、X live ledger rowなし。state/ledgerの重複作用なし） |
+| A9j | X可読性失敗runを同日新runへ安全解放する | 3 revenue pairのreceipt、X FAIL readability receipt、target、media SHA、no-effect ledgerを再検証し、改ざん時はblock。実機start-controlが明示reasonで`new`を返す | 完了（実装・回帰16件・実機readback PASS。新runの4面native canaryはA9fで継続） |
 | A9g | 旧backlogを外部作用なしで扱う | 旧runのlive pairを保持したまま、未解決pairだけを現行code/state identityのfailure circuitへopenし、plannerが`WAIT`かつ`recovery_pairs=[]`を返す。新規runの公開を旧targetが先取りしない | 完了（Note circuitを現行code/state SHAで再open、receipt-backed handoff 11件をWAIT化し、さらにduplicate-media runの3件をqueue quarantine付きWAITへ隔離。planner `WAIT/blocked_pairs=[note/ja]/recovery_pairs=[]`） |
 | A9h | receiptのない旧CLAIMEDを安全に扱う | receipt-backed owner proofがないclaimは自動で盗まず、状態・所有者・次の監査を自然文receiptへ記録。新しいreceiptまたは明示的なOrder 5 ownerが現れた場合だけqueue state machineで再開 | 未完（`32446a…` credential incident 1件をfail-closedでCLAIMED維持。clean canaryの公開対象ではないが、repair queueの完全な可観測性に必要） |
 | A9b | 1日複数回の正式scheduleを追加する | 06:00/14:00/22:00などのcalendar wake、各slotのunique run ID、同日異記事、連続2周期のnative receiptを実測 | 未着手。現在は06:00のまま |

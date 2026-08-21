@@ -1177,9 +1177,45 @@ def repair(
         raise XRepairRefused(
             f"X guard did not authorize {expected_action}"
         )
+    remote_proof = decision.get("remote")
+    if expected_action == "publish" and not (
+        isinstance(remote_proof, dict)
+        and remote_proof.get("status") == "not-live"
+        and remote_proof.get("verified") is True
+        and remote_proof.get("content_verified") is True
+        and remote_proof.get("artifact_sha256") == sha256(source)
+        and remote_proof.get("target") == target
+        and remote_proof.get("destination_identity") == expected_identity
+        and remote_proof.get("identity_verified") is True
+        and remote_proof.get("identity_source") == "x-authenticated-edit-url"
+    ):
+        raise XRepairRefused("X draft target/content readback proof is incomplete")
     work = state_path.parent / "x-inplace-repair" / language
     readability = _body_media_readability(
         [Path(str(item["path"])) for item in body_assets]
+    )
+    readability.update(
+        {
+            "run_id": state["run_id"],
+            "pair": pair,
+            "target": target,
+            "target_kind": "x-draft-url",
+            "readback_status": "not-live" if decision.get("action") == "publish" else "protected-live",
+            "readback_verified": True,
+            "content_verified": (
+                remote_proof.get("content_verified") is True
+                if isinstance(remote_proof, dict)
+                else False
+            ),
+            "artifact_sha256": (
+                remote_proof.get("artifact_sha256")
+                if isinstance(remote_proof, dict)
+                else None
+            ),
+            "destination_identity": expected_identity,
+            "identity_verified": True,
+            "identity_source": "x-authenticated-edit-url",
+        }
     )
     _atomic_json(work / "media-readability.json", readability)
     if readability["status"] != "PASS":

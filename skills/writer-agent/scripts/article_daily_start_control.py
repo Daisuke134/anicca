@@ -44,6 +44,18 @@ ACTIVE_REQUIRED = {
 }
 WITHOUT_ZENN = REQUIRED - {("zenn-article", "ja")}
 PENDING_ZENN_STATUSES = {"pending", "live-recorded"}
+X_READABILITY_ERROR_PREFIX = "x-article body media readability failed:"
+X_EDIT_URL_RE = re.compile(r"https://x\.com/compose/articles/edit/[0-9]{8,}")
+LEDGER_ALLOWED_KEYS = {
+    "ts", "run_id", "topic_id", "topic", "platform", "lang", "live_url",
+    "state", "verified_logged_in", "published", "reality_gate", "verified",
+    "public_id", "published_at", "stable_target", "artifact_sha256", "language",
+    "content_verified", "asset_hashes", "asset_urls", "asset_proofs",
+    "asset_verified", "eyecatch_verified", "body_media_verified",
+    "cover_verified", "timeline_verified", "emoji_verified", "status_id",
+    "native_asset_count", "source", "readback_source", "destination_identity",
+    "identity_verified", "identity_source",
+}
 
 
 def run_jst_date(run_id: str) -> str | None:
@@ -80,6 +92,26 @@ def ledger_rows(path: Path) -> list[dict[str, Any]]:
             continue
         if isinstance(value, dict):
             rows.append(value)
+    return rows
+
+
+def strict_ledger_rows(path: Path) -> list[dict[str, Any]] | None:
+    """Parse the publication ledger without discarding damaged evidence."""
+    if path.is_symlink():
+        return None
+    if not path.exists():
+        return []
+    rows: list[dict[str, Any]] = []
+    try:
+        for line in path.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            value = json.loads(line)
+            if not isinstance(value, dict):
+                return None
+            rows.append(value)
+    except (OSError, UnicodeError, json.JSONDecodeError, TypeError):
+        return None
     return rows
 
 
@@ -150,6 +182,262 @@ def publication_plan(state_path: Path, ledger_path: Path) -> dict[str, Any]:
     from publication_resume import PublicationStore  # pylint: disable=import-outside-toplevel
 
     return PublicationStore(state_path, ledger_path).plan()
+
+
+def unavailable_x_readability_release(
+    state_dir: Path, run_dir: Path, run_id: str, rows: list[dict[str, Any]]
+) -> bool:
+    """Release one active-four run only after a proof-bound X media failure.
+
+    The three revenue receipts must be intact and the X pair must be an exact,
+    no-effect unavailable terminal.  This is deliberately stricter than the
+    normal resume plan so a forged receipt cannot authorize another article.
+    """
+    state_path = run_dir / "gates" / "publication-state.json"
+    if run_dir.is_symlink() or not run_dir.is_dir() or state_path.is_symlink():
+        return False
+    state = _regular_json(state_path)
+    if (
+        state is None
+        or state.get("publication_contract") != "active-four"
+        or state.get("run_id") != run_id
+        or not isinstance(state.get("topic_id"), str)
+        or not state["topic_id"].strip()
+    ):
+        return False
+    scripts = Path(__file__).resolve().parent
+    if str(scripts) not in sys.path:
+        sys.path.insert(0, str(scripts))
+    try:
+        from publication_resume import PublicationStore, validate_receipt_evidence
+
+        state = PublicationStore(
+            state_path, state_dir / "articles.jsonl"
+        ).validate_managed_boundary(run_dir)
+    except Exception:
+        return False
+
+    pairs = state.get("pairs")
+    if not isinstance(pairs, dict):
+        return False
+    x_entry = pairs.get("x-article/ja")
+    allowed_x_keys = {
+        "platform", "lang", "target_kind", "target", "status", "intent_at",
+        "error", "unavailable_at",
+    }
+    if not (
+        isinstance(x_entry, dict)
+        and set(x_entry) <= allowed_x_keys
+        and x_entry.get("platform") == "x-article"
+        and x_entry.get("lang") == "ja"
+        and x_entry.get("status") == "unavailable"
+        and x_entry.get("target_kind") == "x-draft-url"
+        and isinstance(x_entry.get("target"), str)
+        and X_EDIT_URL_RE.fullmatch(x_entry["target"])
+        and isinstance(x_entry.get("error"), str)
+        and x_entry["error"].startswith(X_READABILITY_ERROR_PREFIX)
+        and all(
+            x_entry.get(key) is None or x_entry.get(key) == ""
+            for key in ("receipt", "live_url", "public_id", "published_at")
+        )
+    ):
+        return False
+
+    readability = _regular_json(
+        run_dir / "gates" / "x-inplace-repair" / "ja" / "media-readability.json"
+    )
+    body_assets = state.get("media", {}).get("body_assets")
+    if not (
+        isinstance(readability, dict)
+        and readability.get("version") == 1
+        and readability.get("status") == "FAIL"
+        and readability.get("render_width") == 587
+        and readability.get("min_height") == 110
+        and readability.get("max_height") == 650
+        and isinstance(readability.get("violations"), list)
+        and readability["violations"]
+        and any(
+            isinstance(item, str) and (item.startswith("too-flat:") or item.startswith("too-tall:"))
+            for item in readability["violations"]
+        )
+        and isinstance(body_assets, list)
+        and body_assets
+        and isinstance(readability.get("images"), list)
+        and len(readability["images"]) == len(body_assets)
+    ):
+        return False
+    expected_media: dict[Path, str] = {}
+    for item in body_assets:
+        if not isinstance(item, dict) or not isinstance(item.get("path"), str):
+            return False
+        try:
+            expected_media[Path(item["path"]).resolve(strict=True)] = str(item["sha256"])
+        except (KeyError, OSError, RuntimeError):
+            return False
+    seen_media: set[Path] = set()
+    for item in readability["images"]:
+        if not isinstance(item, dict) or not isinstance(item.get("path"), str):
+            return False
+        try:
+            path = Path(item["path"]).resolve(strict=True)
+        except (OSError, RuntimeError):
+            return False
+        if path.parent != run_dir.resolve() or path in seen_media or path not in expected_media:
+            return False
+        try:
+            digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        except OSError:
+            return False
+        if digest != expected_media[path] or item.get("sha256") != digest:
+            return False
+        seen_media.add(path)
+    if seen_media != set(expected_media):
+        return False
+    try:
+        repair_path = scripts / "x-publish" / "x_inplace_repair.py"
+        if str(repair_path.parent) not in sys.path:
+            sys.path.insert(0, str(repair_path.parent))
+        repair_spec = importlib.util.spec_from_file_location(
+            "writer_x_inplace_repair_for_start", repair_path
+        )
+        if repair_spec is None or repair_spec.loader is None:
+            return False
+        repair_module = importlib.util.module_from_spec(repair_spec)
+        repair_spec.loader.exec_module(repair_module)
+        recomputed = repair_module._body_media_readability(
+            [Path(item["path"]).resolve(strict=True) for item in body_assets]
+        )
+    except Exception:
+        return False
+    media_receipt_keys = (
+        "version", "status", "min_height", "max_height", "render_width",
+        "images", "violations",
+    )
+    if any(readability.get(key) != recomputed.get(key) for key in media_receipt_keys):
+        return False
+    if not (
+        readability.get("run_id") == run_id
+        and readability.get("pair") == "x-article/ja"
+        and readability.get("target") == x_entry.get("target")
+        and readability.get("target_kind") == "x-draft-url"
+        and readability.get("readback_status") == "not-live"
+        and readability.get("readback_verified") is True
+        and readability.get("content_verified") is True
+        and readability.get("artifact_sha256")
+        == state.get("drafts", {}).get("ja", {}).get("sha256")
+        and readability.get("destination_identity")
+        == state.get("destination_identities", {}).get("x-article/ja")
+        and readability.get("identity_verified") is True
+        and readability.get("identity_source") == "x-authenticated-edit-url"
+    ):
+        return False
+
+    revenue_pairs = {"note/ja", "substack/ja", "substack/en"}
+    seen_pairs: set[str] = set()
+    try:
+        from publication_remote import probe
+    except Exception:
+        return False
+    x_readback = probe("x-article/ja", str(x_entry["target"]), state)
+    if not (
+        isinstance(x_readback, dict)
+        and x_readback.get("status") == "not-live"
+        and x_readback.get("verified") is True
+        and x_readback.get("target") == x_entry.get("target")
+        and x_readback.get("content_verified") is True
+        and x_readback.get("artifact_sha256")
+        == state.get("drafts", {}).get("ja", {}).get("sha256")
+        and x_readback.get("destination_identity")
+        == state.get("destination_identities", {}).get("x-article/ja")
+        and x_readback.get("identity_verified") is True
+        and x_readback.get("identity_source") == "x-authenticated-edit-url"
+    ):
+        return False
+    for row in rows:
+        if row.get("run_id") != run_id:
+            continue
+        pair = f"{row.get('platform', '')}/{row.get('lang', '')}"
+        if pair not in revenue_pairs or row.get("topic_id") != state.get("topic_id"):
+            return False
+        if not set(row) <= LEDGER_ALLOWED_KEYS:
+            return False
+        if pair in seen_pairs:
+            return False
+        if row.get("published") is not True or row.get("reality_gate") != "PASS":
+            return False
+        if any(
+            row.get(key) not in (None, "", False, 0)
+            for key in ("effect", "money", "amount", "payment", "charge")
+        ):
+            return False
+        entry = pairs.get(pair)
+        receipt = entry.get("receipt") if isinstance(entry, dict) else None
+        evidence = receipt.get("evidence") if isinstance(receipt, dict) else None
+        live_url = receipt.get("live_url") if isinstance(receipt, dict) else None
+        if not (
+            isinstance(entry, dict)
+            and entry.get("status") == "live"
+            and isinstance(receipt, dict)
+            and isinstance(evidence, dict)
+            and isinstance(live_url, str)
+            and row.get("live_url") == live_url
+        ):
+            return False
+        remote = probe(pair, str(entry.get("target", "")), state)
+        if not (
+            isinstance(remote, dict)
+            and remote.get("status") == "live"
+            and remote.get("verified") is True
+            and remote.get("live_url") == live_url
+            and remote.get("public_id")
+            and remote.get("content_verified") is True
+            and remote.get("identity_verified") is True
+            and remote.get("destination_identity")
+            == state.get("destination_identities", {}).get(pair)
+            and isinstance(remote.get("identity_source"), str)
+            and remote.get("asset_verified") is True
+            and remote.get("body_media_verified") is True
+            and (
+                (
+                    pair == "note/ja"
+                    and remote.get("monetization_verified") is True
+                    and remote.get("price") == 500
+                )
+                or (
+                    pair.startswith("substack/")
+                    and remote.get("monetization_verified") is True
+                    and remote.get("audience") == "only_paid"
+                    and remote.get("paywall_verified") is True
+                )
+            )
+        ):
+            return False
+        try:
+            for candidate in (evidence, remote, row):
+                validate_receipt_evidence(
+                    state, pair, live_url, candidate, reread_remote_assets=False
+                )
+        except Exception:
+            return False
+        protected_receipt_keys = (
+            "verified", "public_id", "published_at", "stable_target",
+            "artifact_sha256", "language", "content_verified", "asset_hashes",
+            "asset_urls", "asset_proofs", "asset_verified", "body_media_verified",
+            "eyecatch_verified", "destination_identity", "identity_verified",
+            "identity_source",
+        )
+        if any(
+            key in evidence and evidence.get(key) != remote.get(key)
+            for key in protected_receipt_keys
+        ):
+            return False
+        if any(
+            key in remote and (key not in row or row.get(key) != remote.get(key))
+            for key in protected_receipt_keys
+        ):
+            return False
+        seen_pairs.add(pair)
+    return seen_pairs == revenue_pairs and len(seen_pairs) == 3
 
 
 def generation_resume_plan(run_dir: Path, ledger_path: Path) -> dict[str, Any]:
@@ -662,7 +950,9 @@ def decide(state_dir: Path | str, local_date: str) -> dict[str, str]:
     state_dir = Path(state_dir)
     runs_dir = state_dir / "runs"
     ledger = state_dir / "articles.jsonl"
-    rows = ledger_rows(ledger)
+    rows = strict_ledger_rows(ledger)
+    if rows is None:
+        return {"action": "block-incomplete", "run_id": "", "reason": "ledger-invalid"}
     if not runs_dir.is_dir():
         return {"action": "new", "reason": "no-same-jst-day-run"}
 
@@ -727,6 +1017,14 @@ def decide(state_dir: Path | str, local_date: str) -> dict[str, str]:
             "run_id": "",
             "previous_run_id": run_id,
             "reason": "same-jst-day-invalid-media-proof",
+        }
+
+    if unavailable_x_readability_release(state_dir, run_dir, run_id, rows):
+        return {
+            "action": "new",
+            "run_id": "",
+            "previous_run_id": run_id,
+            "reason": "same-jst-day-unavailable-x-readability",
         }
 
     state_path = run_dir / "gates" / "publication-state.json"

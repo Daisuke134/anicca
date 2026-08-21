@@ -2973,7 +2973,12 @@ class PublicationStore:
                 and remote.get("verified") is True
                 and _remote_identity_verified(state, pair, remote)
             ):
-                return {"action": "publish", "pair": pair, "target": entry["target"]}
+                return {
+                    "action": "publish",
+                    "pair": pair,
+                    "target": entry["target"],
+                    "remote": remote,
+                }
             entry["status"] = "ambiguous"
             entry["error"] = str(remote.get("reason") or "remote-state-unknown")
             self._write_locked(state)
