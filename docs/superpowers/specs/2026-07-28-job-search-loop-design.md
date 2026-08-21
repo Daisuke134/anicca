@@ -1281,6 +1281,38 @@ canonical outbox. This closes the early-zero discovery gap while preserving the
 truthful candidate gate; confirmed Ashby and Workday submissions remain the next
 runtime objective.
 
+Commit `f0e1950e1` broadens that same expansion wave with three business-track
+queries: `AI customer success manager AI Japan`, `AI business development
+representative Japan`, and `AI partnerships manager Japan`. The canonical pass
+`daily-20260821-102011` completed the six initial plus six expansion queries,
+continued through Anthropic, Citadel, Appier, Amazon, Liquid AI, Rakuten, Trend
+Micro, Thomson Reuters and BSI candidates, and made no claim or submit click.
+The exact verified blockers included explicit minimum-year requirements and ATS
+surfaces that did not expose an evaluated application form. Telegram ACK `26925`
+was read back with canonical outbox `status=sent`.
+
+Commit `4da9448fe` localizes Workday surface detection and hardens the transition
+wait. The evaluator now recognizes Japanese `手動で応募` / `自分の前回の応募情報を使用`
+choice controls and Japanese account creation labels (`E メール アドレス`, two
+password controls, `新しいパスワードの確認`, `アカウントの作成`) without requiring
+a consent checkbox that the page does not render. The prompt waits for route-specific
+controls instead of the first global navigation button and allows one same-CDP-page
+reload of a same-job `/apply/` route when only global navigation is visible. A
+read-only replay of the real BSI Workday page at
+`evidence/bsi-recheck-20260821/controls.json` produced
+`workday_account_create`, `ready=true`, `claim_ready=false`, with zero account
+creation, form input, upload, claim or submit side effects. The focused ATS and
+canonical-runtime suite passed 25 tests.
+
+The post-push canonical pass `daily-20260821-103912` exited successfully with
+`no_eligible_job_found`, `submitted=[]`, and `submit_unknown=[]`. It truthfully
+rechecked Anthropic's explicit four-year requirement and Citadel's explicit
+three-year cloud/backend requirement, then exhausted the current verified queue
+without inventing years or Python/client-facing facts. Telegram ACK `26940` and
+the canonical outbox `status=sent` were confirmed. The Workday adapter still has
+no confirmed real submission; the next runtime objective remains a newly exposed
+truthful Workday or other ATS application surface.
+
 ### 8.2 Outcome and attribution model
 
 Every application receives one immutable `strategy_generation_id` and the exact
