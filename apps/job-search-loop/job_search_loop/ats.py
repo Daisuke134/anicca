@@ -174,6 +174,28 @@ def _is_workday_sign_in_entry(controls: list[dict[str, Any]]) -> bool:
     return sign_in_count == 1 and not has_auth_fields
 
 
+def _is_workday_application_step(controls: list[dict[str, Any]]) -> bool:
+    """Recognize a rendered multi-step Workday form before final submit.
+
+    Workday first exposes only the step shell while its profile controls load.
+    Once ``Save and Continue`` and at least one My Information field are
+    present, the model/browser lane may fill this step; it is never claimable.
+    """
+
+    has_save = _has_exact_text(controls, "Save and Continue")
+    profile_markers = (
+        "how did you hear",
+        "legal name",
+        "phone number",
+    )
+    has_profile_control = any(
+        _normalized(control.get("tag")) in {"input", "textarea", "select"}
+        and any(marker in _control_text(control) for marker in profile_markers)
+        for control in controls
+    )
+    return has_save and has_profile_control
+
+
 def _validate_snapshot(snapshot: Any) -> dict[str, Any]:
     if not isinstance(snapshot, dict):
         raise ValueError("snapshot must be an object")
@@ -277,6 +299,15 @@ def evaluate_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
                     {
                         "ready": True,
                         "surface": "workday_sign_in_entry",
+                        "frame_index": frame_index,
+                    }
+                )
+                return base
+            if _is_workday_application_step(controls):
+                base.update(
+                    {
+                        "ready": True,
+                        "surface": "workday_application_step",
                         "frame_index": frame_index,
                     }
                 )

@@ -120,6 +120,11 @@ workday_account_create
     the account and recapture/reevaluate
 workday_application
   → claim only when the final submit-bearing form is present
+workday_application_step
+  → wait until My Information controls (not only the step shell) are visibly
+    present, fill only approved profile values, wait at least six seconds after
+    `Save and Continue` mounts, click the visible `Save and Continue` once, then
+    recapture and reevaluate the next step
 ```
 
 Do not choose `Autofill with Resume` before resume routing, and do not improvise an
