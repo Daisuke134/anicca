@@ -163,6 +163,21 @@ async def _visible_exact(page: Any, role: str, name: str) -> Any | None:
     return visible[0] if len(visible) == 1 else None
 
 
+def _field_element(page: Any, item: dict[str, Any], locator: Any | None = None) -> Any:
+    item_id = str(item.get("id") or "")
+    if item_id:
+        return page.locator(f"#{item_id}")
+    name = str(item.get("name") or "")
+    if name:
+        return page.locator(f"[name={json.dumps(name)}]").first
+    labels = [str(value).strip() for value in item.get("labels") or [] if str(value).strip()]
+    if labels:
+        return page.get_by_label(labels[0], exact=True).first
+    if locator is None:
+        raise ValueError("field metadata has no stable locator")
+    return locator.nth(int(item["index"]))
+
+
 async def _click_surface(page: Any, name: str) -> bool:
     # Workday sometimes exposes an <a role="button"> and sometimes a visible
     # click_filter overlay.  Both are user-facing and must be ordinary clicks.
@@ -278,16 +293,6 @@ async def _choose(page: Any, locator: Any, value: str) -> bool:
     await locator.click(timeout=10_000)
     if tag == "input":
         await locator.fill(value)
-        options = page.locator(
-            "[data-automation-id='promptLeafNode'], "
-            "[data-automation-id='promptOption'], [role='option']"
-        )
-        for _ in range(10):
-            if await options.count():
-                break
-            await page.wait_for_timeout(500)
-        else:
-            return False
         await locator.press("ArrowDown")
         await locator.press("Enter")
         return True
@@ -333,8 +338,7 @@ async def _fill_step(
     )
     blockers: list[str] = []
     for item in fields:
-        index = int(item["index"])
-        element = locator.nth(index)
+        element = _field_element(page, item, locator)
         kind = str(item.get("type") or "").casefold()
         role = str(item.get("role") or "").casefold()
         item_id = str(item.get("id") or "")

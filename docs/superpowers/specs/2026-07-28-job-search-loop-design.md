@@ -25,13 +25,19 @@ rest of that provider queue.
 Rakuten My Information blocked on `How Did You Hear About Us?`; no provider
 submit request, completion UI, or receipt email exists. Production wake
 `daily-20260821-234345` reproduced that exact block and sent Telegram checkpoint
-`27895`. The source input is a Workday prompt whose options render after text
-entry. The previous input branch returned immediately after
-fill/ArrowDown/Enter and therefore bypassed the existing prompt-option wait.
-The focused regression now requires a visible Workday prompt node before those
-keyboard actions. The next release wake must prove that Save and Continue
-advances to step 2, then continue the remaining steps; do not claim submission
-from a click, response, or ledger row alone.
+`27895`. The first candidate fix waited for a prompt node, but production
+`daily-20260821-235543` still blocked and checkpointed `27948`; that wait was
+removed. The decisive live wake `daily-20260822-000400` captured the root
+cause: after the source keyboard interaction, Workday dynamically reordered
+field controls, but `_fill_step` reused stale `nth(index)` metadata. A radio
+control for `candidateIsPreviousWorker` then received the candidate name and
+raised `Input of type "radio" cannot be filled`. The next fix re-looks up each
+field by stable provider `id`, then `name` or label, while preserving the
+manual fill/ArrowDown/Enter source interaction. Its focused regression must
+prove that a reordered DOM cannot redirect a fill to another control. The next
+release wake must prove Save and Continue advances to step 2, then continue the
+remaining steps; do not claim submission from a click, response, or ledger row
+alone.
 
 ### Universal-application architecture (target)
 

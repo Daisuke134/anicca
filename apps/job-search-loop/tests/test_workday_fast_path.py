@@ -1,50 +1,24 @@
 import unittest
 
-from job_search_loop.workday_fast_path import _choose
+from job_search_loop.workday_fast_path import _field_element
 
 
-class _PromptOptions:
-    async def count(self):
-        return 1
-
-
-class _Page:
-    def __init__(self, events):
-        self.events = events
+class _PageForField:
+    def __init__(self):
+        self.calls = []
 
     def locator(self, selector):
-        self.events.append(("options", selector))
-        return _PromptOptions()
-
-
-class _Input:
-    def __init__(self, events):
-        self.events = events
-
-    async def evaluate(self, script):
-        return "input"
-
-    async def click(self, **kwargs):
-        self.events.append(("click",))
-
-    async def fill(self, value):
-        self.events.append(("fill", value))
-
-    async def press(self, key):
-        self.events.append(("press", key))
+        self.calls.append(("locator", selector))
+        return selector
 
 
 class WorkdayFastPathTests(unittest.IsolatedAsyncioTestCase):
-    async def test_source_input_waits_for_prompt_before_keyboard_selection(self):
-        events = []
+    def test_field_relookup_uses_stable_id_after_dom_reorder(self):
+        page = _PageForField()
 
-        selected = await _choose(_Page(events), _Input(events), "Job Boards")
+        _field_element(page, {"id": "source--source", "index": 2})
 
-        self.assertTrue(selected)
-        self.assertLess(
-            next(i for i, event in enumerate(events) if event[0] == "options"),
-            next(i for i, event in enumerate(events) if event == ("press", "ArrowDown")),
-        )
+        self.assertEqual(page.calls, [("locator", "#source--source")])
 
 
 if __name__ == "__main__":
