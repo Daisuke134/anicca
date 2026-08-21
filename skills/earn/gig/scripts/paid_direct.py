@@ -2057,7 +2057,8 @@ def _prepare_file_owner_staging(root: Path, context: Path, staging: Path) -> Pat
     shutil.copyfile(root / "state.json", staging / "state.json")
     for name in ("delivery", "acceptance", "work", "evidence"):
         (staging / name).mkdir()
-    manifest = _load(root / "delivery" / "paid-work-result.json")
+    prior_manifest = root / "delivery" / "paid-work-result.json"
+    manifest = _load(prior_manifest) if _regular_file(prior_manifest) else {}
     prior = Path(_text(manifest.get("artifact_path"))) if isinstance(manifest, dict) else Path()
     if prior.is_file():
         prior.resolve().relative_to(root.resolve())
