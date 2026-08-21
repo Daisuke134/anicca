@@ -21,6 +21,24 @@
 - 回収実装の専用回帰4件はPASS。pause中のlaunchd readbackは`runs=1 / last exit=0`で、
   `CLAIMS_RECOVERED` receiptが`article-resume.log`へ保存されている。clean canaryと自然周期の連続証明は未実施である。
 
+### duplicate-media run の修復キュー隔離とディスク床復旧実測（2026-08-21）
+
+- `afda38795`をLife Managerのimmutable releaseへ反映し、Writer 14 labelを同一`current`へ
+  切り替えた。公開停止markerは維持し、公開・Codex・runbook・publisherをこのtickでは実行していない。
+- 最初の`article-resume` kickstartは、空き容量`394,588 KiB`で512MiB床を下回ったため、disk guardが
+  Writer本体を起動せず`exit=1`で停止した。これはpublication failureではなくcapacity preflight failureである。
+- state-lifecycleで`transient-log`に分類された5つのlaunchd/wrapper logだけを対象に、各末尾8MiBを
+  同じinodeへ保持し、合計`168,553,950 bytes`を回収した。state、ledger、receipt、credential、source、
+  publication targetは変更していない。直後の空きは`555,316 KiB`で512MiB床を上回ったが、余裕は小さく、
+  安定回復や11GiB reserve回復とは扱わない。
+- 既存`article-resume`を再度kickstartし、`runs=2 / last exit=0`をreadbackした。pause markerの下で
+  `--recover-claims-only`が実行され、run `20260821-054500`の`note/ja`、`substack/ja`、`substack/en`
+  の3件を、SHA付き`run-quarantine.json`に束縛した`WAIT/WAIT_FOR_NEW_OCCURRENCE`へ隔離した。
+  別runのincidentや、receiptのない旧credential claim `32446a…`は変更していない。
+- 実キューは`WAIT=14 / FAILED=7 / CLAIMED=1`となった。旧claimの自動回収、重複media runの再試行、
+  外部draftへの再送は行わず、clean canary `20260821-072939`のpublication-state・ledger・native URLも
+  作成されていない。fresh adversarial reviewがGOを返すまでpauseを解除しない。
+
 ### launchd control-plane の外部照合と現在の原因判定（2026-08-21）
 
 - Appleの資料では、`~/Library/LaunchAgents`はログイン中ユーザー専用のLaunchAgent置き場であり、
@@ -972,8 +990,8 @@ loaded definitionと自然tickまで読み戻すことを意味する。A1のcon
 | A9c | WriterのCodex-only retryを実装する | `ARTICLE_PROVIDER=codex`固定。cooldown既定値を300秒へ変更し、同一immutable runを最大3回だけcheckpoint再開するfixture。Codex cooldown中にClaude/Hermesを起動しない、公開state/ledger後のreplay 0、3回 exhausted後に新runを増殖させない | 実装・契約検証完了（model-runner 7件、resume circuit 6件、start-control 6件、candidate wiring 19件、publication identity 15件、topic-card resume 9件、state routing、duplicate-media guard、構文/manifest/diff check、fresh v2 adversarial review PASS） |
 | A9d | Codex-only Writer公開canaryを行う | current releaseをlaunchdへ反映し、pause解除後の新runでCodex attempt receipt、Note JA、Substack JA/EN、X Article JAの4 native URL、本文・media hash、Telegram delivery receiptを取得。Codex timeout時は同じrunの次tickへ安全にhandoffする | 部分完了（既存`daily-2026-08-21`は4媒体native live＋`article-run-complete rc=0`。`20260821-054500`はduplicate-media quarantine完了。`20260821-072939`はdisk floor低下前にSIGTERMしpublication前で安全停止。clean canary・連続tick・Telegram deliveryは未実施） |
 | A9e | invalid duplicate-media runを安全に隔離する | 対象runの同一media SHA、全active pairが`unavailable`またはdormant `skipped`、no-effect ledgerを再計算し、proof-bound `run-quarantine.json`を作成。start-controlが同日`new`を返し、対象pair以外とledgerの不変をreadback | 完了（実装・fixture 13件、focused 43件、契約・構文・diff check PASS。実canaryのX intentを同じtargetの`unavailable`へ共有lock下で遷移、receipt作成、ledger不変、start-control=`new`、current release=`cdb611300`を実測） |
-| A9f | disk floor復帰後にclean canaryを再開する | `gig_disk_guard`とarticle wrapperが同じ512MiB floorをPASSし、pause解除→既存daily kickstart→新runの4 native receipt、Telegram message ID、2連続tickを取得。floor未達なら生成・公開を開始しない | 実行可能だがpause維持（current=`eeb25ca90`、空き容量は512MiB超、`20260821-072939`はpublication前安全停止。clean canary・連続tick・Telegram deliveryは未実施） |
-| A9g | 旧backlogを外部作用なしで扱う | 旧runのlive pairを保持したまま、未解決pairだけを現行code/state identityのfailure circuitへopenし、plannerが`WAIT`かつ`recovery_pairs=[]`を返す。新規runの公開を旧targetが先取りしない | 完了（Note circuitを現行code/state SHAで再open、11件のreceipt-backed handoffをWAIT化、planner `WAIT/blocked_pairs=[note/ja]/recovery_pairs=[]`） |
+| A9f | disk floor復帰後にclean canaryを再開する | `gig_disk_guard`とarticle wrapperが同じ512MiB floorをPASSし、pause解除→既存daily kickstart→新runの4 native receipt、Telegram message ID、2連続tickを取得。floor未達なら生成・公開を開始しない | pause維持中（current=`afda38795`、一時的に512MiB超へ復帰。`20260821-072939`はpublication前安全停止、`20260821-054500`の3修復項目は隔離済み。clean canary・連続tick・Telegram deliveryは未実施） |
+| A9g | 旧backlogを外部作用なしで扱う | 旧runのlive pairを保持したまま、未解決pairだけを現行code/state identityのfailure circuitへopenし、plannerが`WAIT`かつ`recovery_pairs=[]`を返す。新規runの公開を旧targetが先取りしない | 完了（Note circuitを現行code/state SHAで再open、receipt-backed handoff 11件をWAIT化し、さらにduplicate-media runの3件をqueue quarantine付きWAITへ隔離。planner `WAIT/blocked_pairs=[note/ja]/recovery_pairs=[]`） |
 | A9h | receiptのない旧CLAIMEDを安全に扱う | receipt-backed owner proofがないclaimは自動で盗まず、状態・所有者・次の監査を自然文receiptへ記録。新しいreceiptまたは明示的なOrder 5 ownerが現れた場合だけqueue state machineで再開 | 未完（`32446a…` credential incident 1件をfail-closedでCLAIMED維持。clean canaryの公開対象ではないが、repair queueの完全な可観測性に必要） |
 | A9b | 1日複数回の正式scheduleを追加する | 06:00/14:00/22:00などのcalendar wake、各slotのunique run ID、同日異記事、連続2周期のnative receiptを実測 | 未着手。現在は06:00のまま |
 | A10 | 実payment/publisher receiptをmoney ledgerへ接続する | receipt ID、金額、通貨、destination identity、artifact/run IDをjoin。未取得は`unknown`のまま保持 | 未着手 |
