@@ -1410,6 +1410,27 @@ write-ahead state transition, and immutable placement history before it reports
 this state. The only route toward B01 remains a future verified placement
 permalink followed by an official non-empty PartnerStack transaction row.
 
+### 1.1.57 Runtime capacity blocks the next placement; generic Repost reach is not revenue
+
+At `2026-08-22T08:39:44+0900`, the host has `3824836608` free bytes against
+the Affiliate runtime floor of `10737418240`. The existing composition owner
+therefore fails closed as `DISK_GUARD_BLOCKED`; the same JST action budget is
+`ACTION_CAP_BLOCKED=10/10`. Existing cleanup/containment evaluated ten
+candidates and retained them because they were open. A closed 5.3 GiB temporary
+MuseTalk model-check directory was removed, but that did not restore the floor.
+No protected state, credential, ledger, or another loop's active resource was
+manually deleted.
+
+The existing Repost owner continues ordinary English audience posts after the
+JST boundary, but their rows have no `affiliate_placement_id`; Affiliate exact
+join remains zero and they receive no Affiliate revenue credit. PartnerStack
+still reports no official commission transaction; rolling net is
+`NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / cost=UNKNOWN`. The next action
+MUST be the existing composition owner resuming the same durable job only after
+host free disk reaches its floor and the normal action budget permits it. This
+is a capacity gate, not evidence of an Affiliate post, click, conversion, or
+money result.
+
 ### 1.2.0 Audited executable boundary
 
 The installed ownership graph has six launchd labels: three persistent browser

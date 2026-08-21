@@ -1,5 +1,18 @@
 # Affiliate local money loop handover
 
+- Current hard blocker at `2026-08-22T08:39:44+0900`: host free disk is
+  `3824836608` bytes, below the Affiliate `10737418240` byte floor, and the
+  JST action budget is `ACTION_CAP_BLOCKED=10/10`. Existing cleanup/containment
+  retained all ten discovered candidates as open; a closed 5.3 GiB temporary
+  MuseTalk model-check directory was removed, but other protected/open host
+  workloads still keep the floor unmet. Do not bypass either guard or manually
+  delete protected loop state. PartnerStack remains zero official commission
+  rows and rolling net remains `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS /
+  cost=UNKNOWN`. Existing Repost has added ordinary English posts only; none
+  carries an Affiliate placement ID, so exact join and revenue credit remain
+  zero. Resume with the existing composition owner only after host free space
+  exceeds the floor and the normal action budget permits it.
+
 - Existing Repost owner pass `20260821T232941` used the bounded Affiliate
   reservation after generic reposts had reached their 12-post ceiling. It
   wrote `EFFECT_STARTED` for proposal
