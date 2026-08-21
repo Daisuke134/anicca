@@ -54,7 +54,9 @@ function render(snapshot, view) {
   const evidence = sources.map((s) => `${evidenceLabel(s)} ${html(s.asOf)}${retrievalNote}`).join("\n");
   const title = snapshot.state === "partial" ? "⚠️ 確認できた範囲のお金" : "💰 今日のお金";
   const action = snapshot.state === "action_required" ? "" : "\n\n今すること：ありません";
-  const sourceText = snapshot.state === "action_required" ? "" : sources.map((s) => `${s.status === "fresh" ? "✅" : "⚠️"} Moneytree（${label(s.label)}）${html(s.asOf)}${s.status === "fresh" ? retrievalNote : s.status === "stale" ? "（ローカル取得時刻。データが古い可能性・銀行側データの新しさは不明）" : "（取得できず。銀行側データの新しさは不明）"}`).join("\n");
+  // `fresh` means the provider read succeeded; it does not prove the bank has
+  // refreshed its data. Keep the warning visible in every interactive view.
+  const sourceText = snapshot.state === "action_required" ? "" : sources.map((s) => `⚠️ Moneytree（${label(s.label)}）${html(s.asOf)}${s.status === "fresh" ? retrievalNote : s.status === "stale" ? "（ローカル取得時刻。データが古い可能性・銀行側データの新しさは不明）" : "（取得できず。銀行側データの新しさは不明）"}`).join("\n");
   const summary = `${title}\n\n確認できた資産\t${format(totals.assetsMinor)}\n確認できた負債\t${format(totals.liabilitiesMinor)}\n差し引き\t${format(totals.netWorthMinor)}\n前回から\t${format(totals.changeMinor)}\n\n${sourceText}\n合計に入れていません：${excluded}${action}`;
   const text = view === "summary" ? summary : view === "accounts" ? `${title}\n\n${accounts}` : view === "accuracy" ? `${title}\n\n${evidence}\n合計に入れていません：${excluded}` : `${title}\n\n確認できた資産 − 確認できた負債 = 差し引き ${format(totals.netWorthMinor)}\n合計に入れていません：${excluded}`;
   return { text, reply_markup: keyboard(snapshot, view) };

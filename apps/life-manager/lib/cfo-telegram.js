@@ -183,7 +183,10 @@ function renderCfoTelegram({ locale, view, snapshot, transactions }) {
     : { fresh: "Retrieved; bank-side freshness unknown", stale: "Retrieved; may be stale; bank-side freshness unknown", unavailable: "Unavailable; bank-side freshness unknown" };
   const marks = locale === "ja" ? { colon: "：", open: "（", close: "）", join: "、" } : { colon: ": ", open: " (", close: ")", join: ", " };
   const safeLabel = (value) => escapeHtml(String(value).replace(/\d[\d -]{2,}\d/g, "••••"));
-  const sourceText = snapshot.sources.map((source) => `✅ Moneytree${locale === "ja" ? "（" : " ("}${safeLabel(source.label)}${locale === "ja" ? "）" : ")"} ${escapeHtml(source.asOf)}${strings.updated}`).join("\n");
+  // A successful plugin read proves retrieval, not bank-side freshness. Keep the
+  // warning visible even when the internal source status is `fresh` so the report
+  // cannot be mistaken for a realtime bank balance.
+  const sourceText = snapshot.sources.map((source) => `⚠️ Moneytree${locale === "ja" ? "（" : " ("}${safeLabel(source.label)}${locale === "ja" ? "）" : ")"} ${escapeHtml(source.asOf)}${strings.updated}`).join("\n");
   const totals = `${strings.confirmedAssets}\t${formatAmount(locale, snapshot.totals.assetsMinor)}\n${strings.confirmedLiabilities}\t${formatAmount(locale, snapshot.totals.liabilitiesMinor)}\n${strings.confirmedDifference}\t${formatAmount(locale, snapshot.totals.netWorthMinor)}\n${strings.change}\t${formatChange(locale, snapshot.totals.changeMinor)}`;
   const title = ["partial", "recovered"].includes(snapshot.state) ? strings.partialTitle : strings.title;
   const excludedItems = [...snapshot.excluded, ...snapshot.sources.filter((source) => source.status !== "fresh").map((source) => ({ label: source.label }))];
