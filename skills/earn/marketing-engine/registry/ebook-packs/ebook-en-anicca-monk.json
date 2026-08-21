@@ -3,7 +3,7 @@
   "product_id": "ebook-en",
   "pack_id": "ebook-en-anicca-monk",
   "language": "en",
-  "renderer_id": "wav2lip-local-mps",
+  "renderer_id": "omniavatar-monk",
   "destination_url": "https://aniccaai.com/monk",
   "price": {"amount": 10.99, "currency": "USD"},
   "slots_jst": ["08:00", "14:00", "21:00"],

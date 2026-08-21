@@ -13,7 +13,7 @@ Related doctrine: `26-MOBILE-APP-EBOOK-10K-LOOPS.md`, `27-MARKETING-ENGINE-END-T
 Run one local Ebook Seller skill with two configuration-driven product packs:
 
 1. `ebook-ja-watercolor`: Japanese watercolor monk, selling at `/achan`.
-2. `ebook-en-anicca-monk`: English Anicca monk, rendered locally with a measured free Apple-MPS lip-sync path, selling at `/monk`.
+2. `ebook-en-anicca-monk`: English Anicca monk, rendered with OmniAvatar through a measured free execution path, selling at `/monk`.
 
 Each product creates three genuinely new videos per day. Each video fans out through Postiz to that product's TikTok and Instagram accounts. Therefore the daily contract is six unique videos and up to twelve native platform publications—not twelve independently generated videos.
 
@@ -60,7 +60,7 @@ The implementation begins from these local read-backs, not assumptions:
 | Direct sales | Product-scoped Stripe snapshots through the latest measured day show zero paid orders for both products | Baseline is zero; views are never relabeled as revenue |
 | Native metrics | Exact Postiz analytics read-back works for an actual JP Instagram publication | Reuse the current native metrics lane; do not use the failed Apify collector |
 
-The owner inspected the existing OmniAvatar output and approved its quality as good enough for the current English Anicca monk. The public Space is not reliable, so the loop now preserves the owned monk identity through the locally verified `Easy-Wav2Lip-MacOS` Apple-MPS path. Its first zero-cost local render is a 5.22-second H.264/AAC output delivered to Telegram as `27461`; recurring EN activation requires three distinct local renders.
+The owner inspected the existing OmniAvatar output and approved its quality as good enough for the current English Anicca monk. The rejected local Wav2Lip proof is not acceptable for publication. EN remains OmniAvatar-only and recurring activation requires a measured free OmniAvatar path that produces three distinct local-or-free-GPU renders.
 
 HeyGen is explicitly outside this architecture: there is no subscription, no HeyGen API call, no paid fallback, and no new HeyGen-derived source asset. The EN recurring schedule uses the locally verified Wav2Lip MPS path; any local renderer failure becomes a bounded same-path retry and natural-language Telegram incident, never a silent provider substitution. The EN recurring schedule starts only after this free path proves three distinct daily renders at zero render cost.
 
@@ -71,7 +71,7 @@ flowchart LR
     Clock[Local OpenClaw clock\n6 JST slots] --> Runner[One Ebook Seller runner]
     Runner --> Decide[Observe + choose\none variable]
     Decide --> JP[JP watercolor adapter]
-    Decide --> EN[EN local Wav2Lip MPS adapter]
+    Decide --> EN[EN OmniAvatar adapter]
     JP --> Guard[Preflight + immutable intent]
     EN --> Free[Measured free runtime]
     Free --> Guard
@@ -132,7 +132,7 @@ flowchart LR
     Bottleneck --> Parent[Select one parent script]
     Parent --> Mutation[Change one declared variable]
     Mutation --> Script[Store immutable child script]
-    Script --> Render[Watercolor or local Wav2Lip MPS]
+    Script --> Render[Watercolor or OmniAvatar]
     Render --> Publish[Postiz fan-out]
     Publish --> Measure[6h · 24h · 72h · 7d + sales]
     Measure --> Weights[Update exact next-run weights]
@@ -257,7 +257,7 @@ Only the first unchecked item is active. Each item ends in a focused test, real 
   - **Current evidence:** JP has a retained 91.04-second fixture, current mutable script state, historical captions, and eleven cached Kling clips. A new 16.2-second free local preview (720×1280 H.264/AAC, SHA-256 `9c748bd84c4acb0c48b320af6db566f95f80cb6f1241681366064f14cdbe56bd`) renders successfully and is delivered to Telegram as message `27359`; it still lacks an immutable historical run manifest, historical voice/audio identity, and a visual comparison against the 91.04-second fixture. EN has the owner-approved Telegram `4893` OmniAvatar result and a retained candidate identity image, but its exact source-image hash and media file are not yet durably bound; the current public Space's API returns an undisclosed application exception and its browser UI renders blank. E1 remains active until both fixtures are reproducible.
 - [x] **E2 — Add two product packs.** Canonical JP/EN pack manifests now lock accounts, Postiz integrations, destinations, prices, three JST slots, renderer, claims, and stop rules; the fail-closed loader rejects any mismatch with the account/product registry. **Evidence:** `ebook_packs.py` read-back and product-routing validation pass; JP Instagram is bound to the observed `cmooplxmu04tpmd0y4h3cpk33` integration rather than its stale mapping-pending record.
 - [x] **E3 — Preflight four Postiz identities.** Live Postiz read-back matches JP TikTok `@obou_anicca`, JP Instagram `@obou.anicca`, and EN Instagram `@anicca.en`; EN TikTok `@monk_anicca` is explicitly disabled. No reconnect or publish was attempted, so EN remains degraded with Instagram as its only eligible destination. **Evidence:** `evidence/postiz/ebook-e3-integrations.json`.
-- [x] **E4 — Prove a free EN renderer path.** `Easy-Wav2Lip-MacOS` runs locally on Apple MPS with the owned monk image and local audio. The first output is 5.22 seconds, 1536×2752 H.264/AAC, SHA-256 `f5b22d39fca1987a21364baf2b844ce3f097293ec151d4f3a8020ebbce3f4053`, zero cost, zero external effects, and Telegram preview `27461`. **Remaining capacity proof:** render three distinct EN scripts through this exact local path before schedule enablement. HeyGen and paid fallback remain forbidden.
+- [ ] **E4 — Bind the approved OmniAvatar artifact and prove free capacity.** The local Wav2Lip test is rejected for insufficient lip-sync quality and is excluded from publication. Repair or replace the public OmniAvatar execution path while preserving the approved monk identity; record source/model revision, provider receipt, input/output hashes, media probe, and approval. Then render three distinct EN fixtures at zero cost. HeyGen and paid fallback remain forbidden.
   - [ ] **E4.1 — Compare the broken Space to a known inference fix.** The official repo's open PR #89 targets the observed class: PyTorch/Numpy dependency mismatch, single-GPU `xfuser` initialization, distributed backend, and FFmpeg resolution. It is **unmerged** and originates from external fork `puppydog-io/OmniAvatar`, so it is evidence of a repair hypothesis—not a patch to trust. Record the exact base revision and reproduce the official sample before selecting any minimal changes.
   - [ ] **E4.2 — Build the free 1.3B repair lane.** Start from the official 1.3B model/inference configuration, apply only the verified PR #89 fixes needed by the sample, and run it on a free ZeroGPU Space. Ollama is excluded from this lane because it is an LLM runtime, not a Wan/OmniAvatar diffusion-video runtime.
   - [ ] **E4.3 — Prove before enablement.** Run the official sample, then the owner image/audio, then three distinct EN scripts. Every success needs output hash, media probe, latency, zero-cost provider receipt, and Telegram candidate video; any failure keeps EN disabled and emits one deduped incident.
@@ -273,7 +273,7 @@ Only the first unchecked item is active. Each item ends in a focused test, real 
   - [ ] **S9 — Prove two-turn learning.** Two consecutive fixture turns and then one real mature turn show that changed evidence changes the selected parent/mutation and visible script while replay is identical.
 - [ ] **E6 — Build the shared resumable runner.** `ebook_runner.py` validates the canonical pack, JST slot, immutable product-scoped script receipt, and both fan-out accounts, then records a replay-safe receipt. JA renders through the owned local watercolor adapter and can send the actual candidate video and provider receipt before any Postiz create. Rendered receipts now stage two zero-effect intent prerequisites—one for each canonical account—while explicitly awaiting separate visual approvals. EN remains blocked before render by the free OmniAvatar runtime. Publish, reconcile, measure, attribute, and learning remain to be connected. **Done:** crash/restart and unknown-POST tests prove no duplicate create.
 - [x] **E7 — Wrap Japanese watercolor.** The shared runner renders only an immutable product-scoped JP script with locked Kyoko voice, cached watercolor clips, and caption style. A baseline and action-only mutation produce distinct 720×1280 H.264/AAC hashes at zero cost, and both preview videos are delivered to Telegram before publication. **Evidence:** `evidence/renderers/ebook-e7-ja-action-mutation.json`.
-- [ ] **E8 — Wrap English local monk avatar.** Replace the unavailable public OmniAvatar adapter with the verified local Wav2Lip MPS adapter, preserve the owned monk identity and voice, render only accepted immutable scripts, and keep scheduler logic outside it. **Done:** three real local renders pass visual/audio preflight, produce durable receipts, record zero cost, and reject any HeyGen configuration.
+- [ ] **E8 — Wrap English OmniAvatar monk.** Preserve the approved character and voice, render only accepted immutable scripts through the repaired free OmniAvatar adapter, and keep scheduler logic outside it. **Done:** three real renders pass visual/audio preflight, produce durable receipts, record zero cost, and reject any HeyGen configuration.
 - [ ] **E9 — Propagate campaign attribution.** The shared runner now stages the existing canonical product+creative attribution token for each fan-out platform intent; it is the token required in the owned redirect URL and later Stripe evidence. Landing, Stripe Checkout metadata, completion, refund, and fulfillment remain to be exercised. **Done:** one non-production checkout fixture and Stripe read-back bind the same campaign without counting test revenue.
 - [ ] **E10 — Implement Postiz stage/create/reconcile.** Persist intent and `postId`, isolate platform effects, and reconcile unknown outcomes before retry. **Done:** forced timeout and partial-platform tests produce zero duplicates and truthful degraded state.
 - [ ] **E11 — Connect free/native checkpoints and business truth.** Reuse the Marketing Engine's current native/Postiz analytics and product-scoped Stripe snapshots; exclude old Apify paths. **Done:** one actual native post and one no-sale business day render measured/null states correctly.
