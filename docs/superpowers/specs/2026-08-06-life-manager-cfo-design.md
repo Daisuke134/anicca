@@ -1580,3 +1580,13 @@ consented read access, not that the bank synchronized immediately before the rea
 3. **M5c:** only after verified profitable business evidence and explicit owner approval, run one bounded capital cycle;
    current recommendation remains `execute=false`.
 4. **M3 tax/Binance and M4c Binance:** explicitly deferred by owner; no credentials or execution are being added.
+
+### Moneytree Web synchronization attempt (2026-08-21 22:51 JST)
+
+To use the official app/Web synchronization path, the existing browser opened the Moneytree connector URL in a new
+tab. It redirected to `https://myaccount.getmoneytree.com/login`, proving that the plugin's authenticated App Server
+bearer context is not a logged-in Moneytree Web session. No Moneytree password, token, MFA, account deletion, or refresh
+button was entered/clicked. The direct plugin read immediately before this attempt still returned one MUFG account with
+provider balance `¥358,938`, 334 transactions, and newest transaction `2026-08-18`. The remaining freshness fix therefore
+needs one owner Moneytree Web login/synchronization or a separately authorized LINK `request_refresh` grant; the loop
+continues to fail closed and display the stale warning.

@@ -113,6 +113,12 @@ Current ordered TODO: (1) CFO-2a3b.2 owner Google Console sign-in, real Cost Tab
 app/Web or LINK `request_refresh` owner action; (3) M5c only after verified profitable business and explicit approval;
 (4) M3 tax/Binance and M4c Binance deferred.
 
+Moneytree Web synchronization was attempted read-only at 2026-08-21 22:51 JST by opening the connector URL in a new
+browser tab. It redirected to `myaccount.getmoneytree.com/login`; the plugin's App Server bearer context does not grant
+a Moneytree Web session. No password, token, MFA, account deletion, or refresh button was used. The direct plugin read
+remains one MUFG account, provider balance `¥358,938`, 334 transactions, newest `2026-08-18`; the stale warning remains
+correct until owner Web login/sync or a separately authorized LINK `request_refresh` grant.
+
 ## CFO-2c Fleet boundary progress (2026-08-21)
 
 Canonical commit `75739758e1d16bd2f56462375936f314ec45c2dd` adds the proven Fleet validator/adapter and manifest under
