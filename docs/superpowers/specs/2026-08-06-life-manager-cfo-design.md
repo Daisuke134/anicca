@@ -8,7 +8,7 @@
 | Runtime order | local first, Steel cloud second |
 | Existing foundations | `apps/life-call`, interactive Moneytree App access, Fleet telemetry, `lm_api_cost`, and the canonical `lm_agent_earnings` source (the panel's `lm_financial_ledger` name is a stale alias) |
 | Canonical repository | `Daisuke134/life-manager` at `/Users/anicca/Projects/life-manager-main`; CFO code, skill, loop, launchd template, tests, and specs converge there |
-| First active item | **CFO-2b.9 instruments Proprietary Investing realized reconciled P&L. `CFO-2a3b` remains externally blocked by Google reauthentication.** |
+| First active item | **CFO-2a3b.2 acquires one real Google Cloud Cost Table or enabled standard export; it remains externally blocked by one-time Console reauthentication.** |
 
 ## 1. Overview — What and Why
 
@@ -1189,9 +1189,9 @@ ingestion. They are not unchecked M1 items and cannot become the active CFO item
       `docs/superpowers/specs/2026-08-11-life-manager-cfo-provider-billing-reconciliation-design.md` at commit
       `46f185327`.
 - [ ] **CFO-2a3b** Confirm only provider-supported billing dimensions. Shared-project business costs use a versioned
-      allocation rule, `provider_billed_allocated`, and a visible unallocated remainder. The pure exact allocation
-      contract is complete. Real Cost Table acquisition remains blocked only by one-time Google Cloud Console
-      reauthentication; no fabricated CSV is accepted. Child SSOT:
+      allocation rule, `provider_billed_allocated`, and a visible unallocated remainder. CFO-2a3b.1's pure exact
+      allocation contract is complete; CFO-2a3b.2 real Cost Table acquisition remains blocked only by one-time Google
+      Cloud Console reauthentication; no fabricated CSV is accepted. Child SSOT:
       `docs/superpowers/specs/2026-08-11-life-manager-cfo-provider-allocation-design.md` at commit `46f185327`.
 - [x] **CFO-2a3c** Reconcile actual Codex/Claude subscription receipts separately from the versioned
       `api_equivalent_forecast`; after API migration reconcile actual provider billing exports. Official Anthropic
@@ -1509,6 +1509,22 @@ the `request_refresh` OAuth scope and is asynchronous/rate-limited. No refresh o
 is exposed by the installed plugin, so the CFO remains truthful only by reporting the three-day provider lag and
 `Moneytree取得時刻／銀行側更新時刻は不明`. The remaining external action is owner-authorized Moneytree refresh/reconnect
 or a LINK OAuth grant; no credential or connection deletion is automated.
+
+The official [Moneytree MCP concepts](https://mcp.getmoneytree.com/docs/concepts) specify a remote Streamable HTTP
+server at `https://mcp.getmoneytree.com/mcp` with OAuth 2.0 and static pre-registered clients only (ChatGPT App and
+Claude Connector). Its [tool index](https://mcp.getmoneytree.com/docs/tools/) lists read tools only; protected-resource
+metadata exposes account, transaction, investment, points, and subscription read scopes, but no `request_refresh`.
+The direct MCP endpoint returns HTTP 401 without its bearer token. Replacing the existing Codex App wrapper with raw
+MCP therefore cannot create a refresh capability or a portable unauthenticated loop.
+
+### CFO-2a3b.2 source revalidation (2026-08-21)
+
+The canonical child SSOT is now present at
+`docs/superpowers/specs/2026-08-11-life-manager-cfo-provider-allocation-design.md`. A fresh read-only host check
+reports one active gcloud identity, six visible projects, one open billing account, and no BigQuery dataset rows for
+the configured project. No Cost Table CSV or standard export exists in private CFO state. The first formal unchecked
+item remains real source acquisition after one-time Google Cloud Console reauthentication; no password is read/submitted
+and no fabricated provider dimension rows are accepted.
 
 ### Moneytree MCP loop E2E after source audit (2026-08-21 20:00 JST)
 

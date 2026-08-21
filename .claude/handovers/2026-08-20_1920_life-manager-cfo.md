@@ -46,15 +46,16 @@
 
 ## Current ordered TODO
 
-1. Moneytree freshness is an external owner action: the loop already calls the authenticated `codex_apps`
+1. `CFO-2a3b.2` is the first formal unchecked CFO item: acquire one real default-filter Google Cloud Cost Table CSV or
+   an enabled standard export after the owner's one-time Cloud Console reauthentication. The pure allocation contract
+   (`CFO-2a3b.1`) is already closed; no fabricated CSV or browser-only guessed rows are accepted.
+2. Moneytree freshness is an external owner action: the loop already calls the authenticated `codex_apps`
    `moneytree.show-accounts/show-transactions` tools, but those tools are read-only and returned a provider payload
    whose newest transaction is `2026-08-18` on reporting date `2026-08-21`. Use Moneytree app/Web synchronization or an
    owner-authorized LINK OAuth `request_refresh` grant; until then keep `providerDataFreshness=stale` and never call the
    provider balance realtime. No bank credential, token, or connection deletion is automated.
-2. `M5c` is the only remaining capital item: execute one bounded real cycle only after a verified profitable business
+3. `M5c` is the only remaining capital item: execute one bounded real cycle only after a verified profitable business
    and explicit owner approval. Until then no executor, wallet, trade, transfer, hiring, or payment action is allowed.
-3. `CFO-2a3b`: complete one-time Google Cloud reauthentication and acquire the real Cost Table when the external
-   owner action is available; this remains blocked and never accepts a fabricated CSV.
 4. M3 tax/Binance (`CFO-3a`–`3e`) and M4c Binance fixed-egress remain explicitly deferred; M4a/b/d/e and M5a/b/d/e
    policy boundaries are closed.
 
@@ -76,6 +77,16 @@ requires `request_refresh` OAuth and returns asynchronous `202`. The plugin expo
 metadata. Until the owner performs a Moneytree app/Web refresh/reconnect or supplies an authorized LINK grant, the
 hourly report must keep `providerDataFreshness=stale`, show the three-day lag, and say
 `Moneytree取得時刻／銀行側更新時刻は不明`; no raw token, bank password, or connection deletion is automated.
+
+The official [Moneytree MCP concepts](https://mcp.getmoneytree.com/docs/concepts) confirm the raw server is remote
+Streamable HTTP with OAuth 2.0 and static pre-registered clients only (ChatGPT App/Claude Connector). Its [tool index](https://mcp.getmoneytree.com/docs/tools/)
+contains read tools only; protected-resource metadata advertises account/transaction/investment/points/subscription
+read scopes and no `request_refresh`. A direct unauthenticated `/mcp` read returns 401. Swapping the existing App Server
+wrapper for raw MCP would therefore not produce a refresh or a portable credential-free loop.
+
+`CFO-2a3b.2` revalidation also ran read-only: gcloud has one active identity, six projects, one open billing account,
+and no BigQuery dataset rows for the configured project. No real Cost Table CSV or standard export is present. The only
+remaining source step is the owner's one-time Cloud Console reauthentication; no password or fabricated CSV is used.
 
 The post-audit real loop verification used the existing launchd label only: `launchctl kickstart -k` returned `0`,
 `runs=3`, final exit code `0`, and stderr empty. It persisted revision `16` and the shared-destination Telegram
