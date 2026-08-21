@@ -17,6 +17,24 @@ still intercepted by a provider loading overlay; no Rakuten submit request,
 completion UI, or receipt email exists. The active atomic task is to make that
 one user-facing control stable, advance every Workday step, and require a
 provider completion UI before the ledger may report `submitted`.
+
+### Universal-application architecture (target)
+
+The loop becomes broad by adding an adapter per ATS, not by treating a click or
+an HTTP response as a submission. Every adapter implements the same contract:
+
+```text
+discover official job → open existing authenticated browser context
+→ identify provider surface → fill profile/resume/grounded answers
+→ click only visible native controls → capture completion UI
+→ reconcile ATS/email receipt → Telegram proof
+```
+
+Adapters currently exist for Ashby and Workday. The next adapters are
+Greenhouse and Lever, then company-specific fallbacks only where their native
+surface differs. A provider-specific loading overlay, custom control, login,
+CAPTCHA, form question, or confirmation wording is an adapter gap to repair;
+it never counts as an application and never silences the Telegram report.
 The execution order is explicit: **Ashby fast path → Ashby discovery/application →
 Workday fast path → Telegram/Ledger reconciliation**. Workday runs on the same
 hourly owner wake; it is no longer parked behind Ashby. A user-confirmed
