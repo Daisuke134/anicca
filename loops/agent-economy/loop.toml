@@ -8,6 +8,7 @@ ANICCA_REPO     = "~/loops/current"
 ANICCA_HOME     = "~/loops/agent-economy"
 ANICCA_INSTANCE = "agent-economy"
 ANICCA_SLOT_ALLOWLIST = "earn/taskmarket,x402_sell,report,cook"
+ANICCA_ECONOMY_RECONCILE = "1"
 
 [jobs.daemon]
 program    = "skills/agent-economy/launch.sh"

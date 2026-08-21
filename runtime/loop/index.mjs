@@ -42,6 +42,7 @@ import { summarizeSkillResult } from './result-summary.mjs';
 import { redactPrivateKeyPatterns } from './env-filter.mjs';
 import { liveSlotNames } from './prompt.mjs';
 import { isAllowedSlot } from './slot-allowlist.mjs';
+import { shouldReconcile, MONEY_TRUTH_RECONCILE_INTERVAL_MS } from './money-truth-wire.mjs';
 import { classifyLayer, capFailureDetail } from './harness-health.mjs';
 import {
   filterCatalog,
@@ -336,6 +337,7 @@ let loopDetectStreak = 0;
 let loopDetectSlot = null;
 let shuttingDown = false;
 let currentChildKiller = null; // called to kill in-flight skill on SIGTERM
+let moneyTruthReconcileAtMs = 0;
 
 // ── SIGTERM handler (REQ-006) ─────────────────────────────────────────────────
 
@@ -427,6 +429,8 @@ async function runOneWake() {
 
   const wakeId = ulid();
   const ts = Math.floor(Date.now() / 1000);
+
+  await reconcileMoneyTruthIfDue();
 
   // 0. franklin-alwaysact-skill-router REQ-501: identity+flag gate, freshly re-evaluated EVERY wake.
   const { engaged: alwaysActEngagedThisWake, identityMatch: alwaysActIdentityMatch, flagReason: alwaysActFlagReason } = await resolveAlwaysActGate();
@@ -794,6 +798,37 @@ async function runOneWake() {
   await safeAppend(LEDGER_PATH, safeRecord);
 
   await sleepSecs(sleepS);
+}
+
+// Receipt reconciliation is opt-in per immutable release so legacy bodies do not unexpectedly add
+// RPC traffic. It is read-first, append-only, and fail-soft: a missing/failed receipt remains
+// unverified and the next interval retries it.
+async function reconcileMoneyTruthIfDue() {
+  const nowMs = Date.now();
+  if (!shouldReconcile({
+    enabled: process.env.ANICCA_ECONOMY_RECONCILE,
+    lastRunMs: moneyTruthReconcileAtMs,
+    nowMs,
+    intervalMs: MONEY_TRUTH_RECONCILE_INTERVAL_MS,
+  })) return;
+  moneyTruthReconcileAtMs = nowMs;
+  try {
+    const { reconcileLedger } = await import('../../skills/agent-economy/lib/money-truth.mjs');
+    const { receiptStatus } = await import('../../skills/_shared/lib/verify-tx.mjs');
+    const ledgerPath = defaultEarnLedgerPath(config);
+    const correctionPath = path.join(path.dirname(ledgerPath), 'receipt-reconciliations.jsonl');
+    const result = await reconcileLedger({
+      ledgerPath,
+      correctionPath,
+      fetchReceipt: (tx) => receiptStatus(tx),
+      nowTs: Math.floor(nowMs / 1000),
+    });
+    if (result.persisted_corrections > 0) {
+      process.stderr.write(`[loop] reconciled ${result.persisted_corrections} delayed external receipt(s)\n`);
+    }
+  } catch (error) {
+    process.stderr.write(`[loop] money-truth reconciliation skipped: ${error?.message || error}\n`);
+  }
 }
 
 // ── franklin-alwaysact-skill-router: the always-act-engaged wake (REQ-505/506/508/511/513) ────────
