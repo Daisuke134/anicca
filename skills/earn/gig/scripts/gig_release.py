@@ -234,8 +234,13 @@ def collect_old_releases() -> list[str]:
     )
     if processes.returncode != 0:
         return []
+    loaded_excluded_argv = [
+        arg for label in DEFAULT_EXCLUDED for arg in loaded_program(label)
+    ]
     for release in releases:
-        if str(release) in processes.stdout:
+        if str(release) in processes.stdout or any(
+            str(release) in arg for arg in loaded_excluded_argv
+        ):
             protected.add(release)
     rollback = next((path for path in releases if path not in protected), None)
     if rollback:
