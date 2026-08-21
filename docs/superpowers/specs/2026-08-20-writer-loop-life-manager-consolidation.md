@@ -544,6 +544,10 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
   保存済みstateでは旧`daily-2026-08-07`のNote ambiguity circuitがopenのままで、articlesの最終更新は
   08:30 JST以降増えていない。12:10にresumeが実行されたとは推測せず、「Coconalaが生きているから
   Writerの5分/日次loopも生きている」とも推論しない。
+- 現stateに対する純粋な`article_pending.py`計画（12:20 JST）は、未完runが旧`daily-2026-08-07`の
+  Note circuitだけであるため`WAIT`を返した。隔離fixtureのresume regressionは、旧backlogが新しいdaily
+  scheduleを抑制しないケースと、未来・不正runを重複防止のため抑制するケースの`2 passed`を確認した。
+  これはplanner契約の証拠であり、productionで新runが生成された証拠ではない。
 - Web一次資料でも、AppleはLaunchAgentを`~/Library/LaunchAgents`へ置き、`launchctl`で管理する契約を示して
   いる（[Apple Support](https://support.apple.com/guide/terminal/script-management-with-launchd-apdc6c1077b-5d5d-4d35-9c19-60f2397b2369/mac)）。
   Appleの`launchctl` man pageは`gui/<uid>`をGUI domain、`user/<uid>`をuser domainとし、実行contextに
