@@ -107,7 +107,8 @@ def run_receipt_stages(event):
 
 
 def append_run_receipt(state, event, started_at, finished_at=None, run_id=None,
-                       terminal_state=None, failure_type=None):
+                       terminal_state=None, failure_type=None,
+                       scheduler_run_id=None):
     """Persist one replay-safe canonical receipt for a scheduler wake."""
     finished_at = time.time() if finished_at is None else finished_at
     run_id = run_id or event.get("wake_event_uuid")
@@ -118,6 +119,7 @@ def append_run_receipt(state, event, started_at, finished_at=None, run_id=None,
         "receipt_type": "AFFILIATE_RUN_RECEIPT",
         "run_id": run_id,
         "wake_event_uuid": event.get("wake_event_uuid"),
+        "scheduler_run_id": scheduler_run_id or run_id,
         "release_sha": installed_release_sha(),
         "owner_label": RUN_OWNER_LABEL,
         "causal_parent": {
@@ -145,6 +147,119 @@ def append_run_receipt(state, event, started_at, finished_at=None, run_id=None,
     return append_unique(
         state / "run-receipts.jsonl", receipt, ("run_id", "terminal_state")
     )
+
+
+_TOOL_EXTERNAL_EFFECTS = {
+    "EXTERNAL_WRITE", "MESSAGE_SEND", "PROVIDER_LINK_WRITE", "PUBLICATION_WRITE",
+}
+
+
+def _safe_usage(value):
+    if not isinstance(value, dict):
+        return {}
+    return {
+        str(key): number
+        for key, number in value.items()
+        if isinstance(key, str) and isinstance(number, (int, float))
+        and not isinstance(number, bool)
+    }
+
+
+def _tool_outcome(result, failure_type=None):
+    state = result.get("state") if isinstance(result, dict) else None
+    if failure_type or (isinstance(state, str) and state.endswith("_FAILED")):
+        return "FAILED"
+    if state in {
+        "COOLDOWN", "NO_PENDING", "NO_TRANSACTIONS", "NOT_RUN", "WAITING_FOR_PLACEMENT_LINK",
+        "BROWSER_UNAVAILABLE", "SIGN_IN_REQUIRED", "AUTH_REQUIRED", "ELIGIBILITY_BLOCKED",
+    }:
+        return "NO_EFFECT"
+    return "COMPLETED"
+
+
+def _tool_effect_certainty(result, effect_class, failure_type=None):
+    if failure_type or not isinstance(result, dict):
+        return "UNKNOWN" if effect_class in _TOOL_EXTERNAL_EFFECTS else "NO_EFFECT"
+    state = result.get("state")
+    if result.get("changed") or result.get("sent") or state in {
+        "LIVE", "X_LIVE", "VERIFIED", "SENT", "SELF_HEALED",
+    }:
+        return "EFFECT_CONFIRMED"
+    if effect_class == "READ_ONLY":
+        return "READ_ONLY_CONFIRMED"
+    if _tool_outcome(result) == "NO_EFFECT":
+        return "NO_EFFECT"
+    return "UNKNOWN"
+
+
+def append_tool_attempt_receipt(
+    state, scheduler_run_id, tool, effect_class, attempt, preconditions,
+    started_at, result=None, failure_type=None, retry_due_at=None,
+    wake_event_uuid=None,
+):
+    """Persist one redacted, replay-safe receipt for an admitted tool attempt."""
+    finished_at = time.time()
+    result = result if isinstance(result, dict) else {}
+    state_value = result.get("state")
+    safe_preconditions = {
+        str(key): value for key, value in (preconditions or {}).items()
+        if isinstance(key, str) and isinstance(value, (str, int, float, bool, type(None)))
+    }
+    input_fingerprint = hashlib.sha256(json.dumps({
+        "tool": tool, "preconditions": safe_preconditions,
+    }, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    failure_type = failure_type or result.get("failure_type")
+    receipt = {
+        "schema_version": 1,
+        "receipt_type": "AFFILIATE_TOOL_ATTEMPT",
+        "scheduler_run_id": scheduler_run_id,
+        "run_id": scheduler_run_id,
+        "wake_event_uuid": wake_event_uuid,
+        "tool": tool,
+        "attempt": attempt,
+        "effect_class": effect_class,
+        "input_fingerprint": input_fingerprint,
+        "preconditions": safe_preconditions,
+        "started_at": datetime.fromtimestamp(started_at, timezone.utc).isoformat(),
+        "finished_at": datetime.fromtimestamp(finished_at, timezone.utc).isoformat(),
+        "duration_ms": max(0, int(round((finished_at - started_at) * 1000))),
+        "outcome": _tool_outcome(result, failure_type),
+        "failure_type": failure_type,
+        "retry_due_at": retry_due_at if isinstance(retry_due_at, (int, float)) else None,
+        "effect_certainty": _tool_effect_certainty(result, effect_class, failure_type),
+        "postcondition": {
+            "state": state_value,
+            "changed": result.get("changed") if isinstance(result.get("changed"), bool) else None,
+            "deduplicated": result.get("deduplicated") if isinstance(result.get("deduplicated"), bool) else None,
+        },
+        "usage": _safe_usage(result.get("usage") or result.get("provider_usage")),
+    }
+    return append_unique(
+        state / "tool-attempt-receipts.jsonl", receipt,
+        ("scheduler_run_id", "tool", "attempt"),
+    )
+
+
+def attempt_tool(
+    state, scheduler_run_id, tool, effect_class, preconditions, operation,
+    attempt=1, wake_event_uuid=None,
+):
+    """Run an admitted stage and persist success, failure, or no-effect evidence."""
+    started_at = time.time()
+    try:
+        result = operation()
+    except BaseException as error:
+        append_tool_attempt_receipt(
+            state, scheduler_run_id, tool, effect_class, attempt, preconditions,
+            started_at, failure_type=type(error).__name__,
+            wake_event_uuid=wake_event_uuid,
+        )
+        raise
+    append_tool_attempt_receipt(
+        state, scheduler_run_id, tool, effect_class, attempt, preconditions,
+        started_at, result=result, wake_event_uuid=wake_event_uuid,
+    )
+    return result
 
 
 def wake_event_rows(state):
@@ -2273,6 +2388,7 @@ def wake(args):
             run_id=run_id,
             terminal_state="FAILED",
             failure_type=type(error).__name__,
+            scheduler_run_id=run_id,
         )
         raise
 
@@ -2280,6 +2396,16 @@ def wake(args):
 def _wake_once(args, started_at, run_id):
     state = args.state.expanduser()
     state.mkdir(mode=0o700, parents=True, exist_ok=True)
+    attempt_counts = {}
+
+    def admit(tool, effect_class, preconditions, operation, wake_event_uuid=None):
+        attempt_counts[tool] = attempt_counts.get(tool, 0) + 1
+        return attempt_tool(
+            state, run_id, tool, effect_class, preconditions, operation,
+            attempt=attempt_counts[tool],
+            wake_event_uuid=wake_event_uuid,
+        )
+
     lock = (state / ".wake.lock").open("a+")
     try:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -2290,12 +2416,16 @@ def _wake_once(args, started_at, run_id):
             started_at,
             run_id=run_id,
             terminal_state="ALREADY_RUNNING",
+            scheduler_run_id=run_id,
         )
         lock.close()
         print('{"state":"ALREADY_RUNNING"}')
         return 0
     try:
-        repost_observation = observe_repost_acquisition(state)
+        repost_observation = admit(
+            "repost.observe", "READ_ONLY", {"owner": "existing-x-repost"},
+            lambda: observe_repost_acquisition(state),
+        )
     except Exception as error:
         repost_observation = {
             "state": "OBSERVATION_FAILED", "changed": False,
@@ -2306,24 +2436,41 @@ def _wake_once(args, started_at, run_id):
             "denominator_state": "POST_ACTION_COUNT_ONLY",
             "revenue_credit_state": "NO_REVENUE_CREDIT",
         }
-    link = elevenlabs_link(args.private_markdown.expanduser())
-    browser = browser_ready(args.cdp_port)
-    provider = provider_poll(state, args.cdp_port) if browser else {
-        "state": "BROWSER_UNAVAILABLE", "changed": False, "transition_id": None,
-    }
+    link = admit(
+        "tracking-link.read", "READ_ONLY", {"provider": "elevenlabs"},
+        lambda: {"state": "AVAILABLE" if elevenlabs_link(args.private_markdown.expanduser()) else "MISSING"},
+    ).get("state") == "AVAILABLE"
+    browser = admit(
+        "browser.provider-ready", "READ_ONLY", {"cdp_port": args.cdp_port},
+        lambda: {"state": "READY" if browser_ready(args.cdp_port) else "UNAVAILABLE"},
+    ).get("state") == "READY"
+    provider = admit(
+        "provider.poll.elevenlabs", "READ_ONLY", {"browser_ready": browser},
+        lambda: provider_poll(state, args.cdp_port) if browser else {
+            "state": "BROWSER_UNAVAILABLE", "changed": False, "transition_id": None,
+        },
+    )
     recovery_state = "NOT_NEEDED"
     if provider["state"] == "SIGN_IN_REQUIRED":
         try:
-            provider = recover_provider(state, args.cdp_port, args.private_markdown.expanduser())
+            provider = admit(
+                "provider.recover.elevenlabs", "EXTERNAL_WRITE",
+                {"provider_state": provider.get("state")},
+                lambda: recover_provider(state, args.cdp_port, args.private_markdown.expanduser()),
+            )
             recovery_state = "RECOVERED" if provider["state"] == "AUTHENTICATED" else provider["state"]
         except (ProviderError, JobStateError, OSError, ValueError, KeyError, json.JSONDecodeError):
             recovery_state = "RECOVERY_FAILED"
     placement_link = {"state": "NOT_RUN", "placement": TTS_PLACEMENT, "deduplicated": None}
     if provider["state"] == "AUTHENTICATED":
         try:
-            placement_link = elevenlabs_link_action(
-                state, args.cdp_port, args.private_markdown.expanduser(),
-                TTS_PLACEMENT, create=True,
+            placement_link = admit(
+                "provider-link.elevenlabs", "PROVIDER_LINK_WRITE",
+                {"provider_state": provider.get("state"), "placement": TTS_PLACEMENT},
+                lambda: elevenlabs_link_action(
+                    state, args.cdp_port, args.private_markdown.expanduser(),
+                    TTS_PLACEMENT, create=True,
+                ),
             )
         except (JobStateError, OSError, RuntimeError, ValueError, KeyError, json.JSONDecodeError) as error:
             placement_link = {
@@ -2365,13 +2512,24 @@ def _wake_once(args, started_at, run_id):
     }
     impact_recovery_state = "NOT_NEEDED"
     impact_port = getattr(args, "impact_cdp_port", 9327)
-    if browser_ready(impact_port):
-        impact = provider_poll(state, impact_port, provider="hubspot-impact")
+    impact_browser = admit(
+        "browser.impact-ready", "READ_ONLY", {"cdp_port": impact_port},
+        lambda: {"state": "READY" if browser_ready(impact_port) else "UNAVAILABLE"},
+    ).get("state") == "READY"
+    if impact_browser:
+        impact = admit(
+            "provider.poll.hubspot-impact", "READ_ONLY", {"browser_ready": True},
+            lambda: provider_poll(state, impact_port, provider="hubspot-impact"),
+        )
         if impact["state"] == "SIGN_IN_REQUIRED":
             try:
-                impact = recover_provider(
-                    state, impact_port, args.private_markdown.expanduser(),
-                    provider="hubspot-impact",
+                impact = admit(
+                    "provider.recover.hubspot-impact", "EXTERNAL_WRITE",
+                    {"provider_state": impact.get("state")},
+                    lambda: recover_provider(
+                        state, impact_port, args.private_markdown.expanduser(),
+                        provider="hubspot-impact",
+                    ),
                 )
                 impact_recovery_state = (
                     "RECOVERED" if impact["state"] in {
@@ -2383,9 +2541,13 @@ def _wake_once(args, started_at, run_id):
     application = {"state": "NOT_RUN", "program": "getresponse"}
     if provider["state"] == "AUTHENTICATED" and placement_link_ready and not placement_link_changed:
         try:
-            application = apply_getresponse(
-                state, args.cdp_port,
-                Path("~/.config/anicca/job-search/profile.json"),
+            application = admit(
+                "provider.application.getresponse", "EXTERNAL_WRITE",
+                {"provider_state": provider.get("state"), "link_ready": placement_link_ready},
+                lambda: apply_getresponse(
+                    state, args.cdp_port,
+                    Path("~/.config/anicca/job-search/profile.json"),
+                ),
             )
         except (JobStateError, OSError, RuntimeError, ValueError, KeyError, json.JSONDecodeError) as error:
             application = {
@@ -2396,12 +2558,20 @@ def _wake_once(args, started_at, run_id):
     systeme_verification = {"state": "NOT_RUN"}
     if provider["state"] == "AUTHENTICATED" and placement_link_ready and not placement_link_changed:
         try:
-            systeme_verification = verify_systeme_email(
-                state, args.cdp_port, args.private_markdown.expanduser(),
+            systeme_verification = admit(
+                "provider.verify.systeme-io", "READ_ONLY",
+                {"provider_state": provider.get("state")},
+                lambda: verify_systeme_email(
+                    state, args.cdp_port, args.private_markdown.expanduser(),
+                ),
             )
             if systeme_verification["state"] == "EMAIL_VERIFIED":
-                systeme = resume_systeme_provider(
-                    state, args.cdp_port, args.private_markdown.expanduser(),
+                systeme = admit(
+                    "provider.resume.systeme-io", "EXTERNAL_WRITE",
+                    {"verification_state": systeme_verification.get("state")},
+                    lambda: resume_systeme_provider(
+                        state, args.cdp_port, args.private_markdown.expanduser(),
+                    ),
                 )
             else:
                 systeme = {
@@ -2422,9 +2592,13 @@ def _wake_once(args, started_at, run_id):
             )),
         )
         publication = (
-            advance_known_publication(
-                state, landing_root.expanduser(), getattr(args, "x_cdp_port", 9326),
-                args.private_markdown.expanduser(), args.cdp_port,
+            admit(
+                "publication.advance", "PUBLICATION_WRITE",
+                {"link_ready": placement_link_ready, "link_changed": placement_link_changed},
+                lambda: advance_known_publication(
+                    state, landing_root.expanduser(), getattr(args, "x_cdp_port", 9326),
+                    args.private_markdown.expanduser(), args.cdp_port,
+                ),
             )
             if placement_link_ready and not placement_link_changed
             else {"state": "WAITING_FOR_PLACEMENT_LINK", "public_url": None}
@@ -2436,8 +2610,11 @@ def _wake_once(args, started_at, run_id):
             "failure_detail": str(error)[:600],
         }
     try:
-        liveness = sweep_publication_liveness(
-            state, getattr(args, "x_cdp_port", 9326),
+        liveness = admit(
+            "publication.liveness", "READ_ONLY", {"channel": "x"},
+            lambda: sweep_publication_liveness(
+                state, getattr(args, "x_cdp_port", 9326),
+            ),
         )
     except Exception as error:
         liveness = {
@@ -2451,9 +2628,16 @@ def _wake_once(args, started_at, run_id):
                 "changed": False, "channel": None,
             }
         else:
-            distribution = advance_devto_distribution(state)
+            distribution = admit(
+                "distribution.devto", "PUBLICATION_WRITE", {"link_ready": placement_link_ready},
+                lambda: advance_devto_distribution(state),
+            )
             if not distribution.get("changed"):
-                distribution = advance_substack_distribution(state)
+                distribution = admit(
+                    "distribution.substack", "PUBLICATION_WRITE",
+                    {"devto_changed": bool(distribution.get("changed"))},
+                    lambda: advance_substack_distribution(state),
+                )
     except Exception as error:
         distribution = {
             "state": "DISTRIBUTION_FAILED", "public_url": None,
@@ -2461,21 +2645,37 @@ def _wake_once(args, started_at, run_id):
             "failure_detail": str(error)[:600],
         }
     try:
-        devto_metrics = observe_devto_acquisition(state)
+        devto_metrics = admit(
+            "acquisition.observe-devto", "READ_ONLY", {"channel": "devto"},
+            lambda: observe_devto_acquisition(state),
+        )
     except Exception as error:
         devto_metrics = {
             "state": "OBSERVATION_FAILED", "article_count": None,
             "total_page_views": None, "delta_page_views": None,
             "failure_type": type(error).__name__,
         }
-    revenue = run_revenue_cycle(state, args.cdp_port) if provider["state"] == "AUTHENTICATED" else {
-        "state": "PROVIDER_NOT_AUTHENTICATED", "source_rows": None, "appended_transitions": None,
-    }
-    placement_ledger = refresh_placement_ledger(state)
-    rolling_net = refresh_rolling_net(state)
+    revenue = admit(
+        "revenue.capture", "READ_ONLY", {"provider_state": provider.get("state")},
+        lambda: run_revenue_cycle(state, args.cdp_port) if provider["state"] == "AUTHENTICATED" else {
+            "state": "PROVIDER_NOT_AUTHENTICATED", "source_rows": None, "appended_transitions": None,
+        },
+    )
+    placement_ledger = admit(
+        "ledger.placement-refresh", "LEDGER_ONLY", {"revenue_state": revenue.get("state")},
+        lambda: refresh_placement_ledger(state),
+    )
+    rolling_net = admit(
+        "ledger.rolling-net", "LEDGER_ONLY", {"placement_ledger_state": placement_ledger.get("state")},
+        lambda: refresh_rolling_net(state),
+    )
     try:
-        acquisition_decision = advance_acquisition_decision(
-            Path(__file__).resolve().parent.parent, state
+        acquisition_decision = admit(
+            "acquisition.decision", "READ_ONLY",
+            {"rolling_net_state": rolling_net.get("state")},
+            lambda: advance_acquisition_decision(
+                Path(__file__).resolve().parent.parent, state
+            ),
         )
     except Exception as error:
         acquisition_decision = {
@@ -2592,13 +2792,25 @@ def _wake_once(args, started_at, run_id):
         "ts": int(time.time()),
     }
     event["wake_event_uuid"] = wake_event_uuid(event)
-    event["telegram_history_reconciled_count"] = len(
-        reconcile_telegram_delivery_history(state, event)
+
+    def reconcile_history():
+        rows = reconcile_telegram_delivery_history(state, event)
+        return {"state": "RECONCILED" if rows else "NO_CHANGE", "changed": bool(rows), "count": len(rows)}
+
+    telegram_history = admit(
+        "telegram.reconcile-history", "LEDGER_ONLY", {"wake_event_uuid": event["wake_event_uuid"]},
+        reconcile_history,
+        wake_event_uuid=event["wake_event_uuid"],
     )
+    event["telegram_history_reconciled_count"] = telegram_history.get("count", 0)
     append(state / "events.jsonl", event)
     atomic_json(state / "last-run.json", event)
     telegram_event = next_telegram_event(state, event)
-    telegram = flush_telegram(state, telegram_event)
+    telegram = admit(
+        "telegram.send", "MESSAGE_SEND", {"event_kind": telegram_event.get("kind")},
+        lambda: flush_telegram(state, telegram_event),
+        wake_event_uuid=event["wake_event_uuid"],
+    )
     delivery_receipt = append_telegram_delivery_receipt(
         state, event, telegram_event, telegram,
     )
@@ -2613,6 +2825,7 @@ def _wake_once(args, started_at, run_id):
         started_at,
         run_id=event["wake_event_uuid"],
         terminal_state=event.get("status") or "UNKNOWN",
+        scheduler_run_id=run_id,
     )
     lock.close()
     print(json.dumps(event, sort_keys=True, separators=(",", ":")))

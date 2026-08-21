@@ -410,6 +410,46 @@ class LocalLoopTest(unittest.TestCase):
             self.assertEqual(rows[0]["duration_ms"], 1500)
             self.assertEqual(rows[0]["causal_parent"]["owner_label"], MODULE.RUN_OWNER_LABEL)
 
+    def test_tool_attempt_receipt_is_redacted_append_only_and_effect_classified(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root)
+            result = {
+                "state": "VERIFIED", "changed": False, "deduplicated": True,
+                "usage": {"requests": 1, "secret": "must-not-copy"},
+            }
+            self.assertTrue(MODULE.append_tool_attempt_receipt(
+                state, "scheduler-1", "provider-link.elevenlabs",
+                "PROVIDER_LINK_WRITE", 1, {"placement": "tts"}, 10.0,
+                result=result,
+            ))
+            self.assertFalse(MODULE.append_tool_attempt_receipt(
+                state, "scheduler-1", "provider-link.elevenlabs",
+                "PROVIDER_LINK_WRITE", 1, {"placement": "tts"}, 10.0,
+                result=result,
+            ))
+            rows = [json.loads(line) for line in (
+                state / "tool-attempt-receipts.jsonl"
+            ).read_text().splitlines()]
+            self.assertEqual(len(rows), 1)
+            self.assertEqual(rows[0]["outcome"], "COMPLETED")
+            self.assertEqual(rows[0]["effect_certainty"], "EFFECT_CONFIRMED")
+            self.assertEqual(rows[0]["usage"], {"requests": 1})
+            self.assertNotIn("secret", (state / "tool-attempt-receipts.jsonl").read_text())
+            self.assertNotIn("https://", (state / "tool-attempt-receipts.jsonl").read_text())
+
+    def test_tool_attempt_failure_records_unknown_external_effect(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root)
+            with self.assertRaises(TimeoutError):
+                MODULE.attempt_tool(
+                    state, "scheduler-2", "telegram.send", "MESSAGE_SEND", {},
+                    lambda: (_ for _ in ()).throw(TimeoutError("provider timeout")),
+                )
+            row = json.loads((state / "tool-attempt-receipts.jsonl").read_text())
+            self.assertEqual(row["outcome"], "FAILED")
+            self.assertEqual(row["failure_type"], "TimeoutError")
+            self.assertEqual(row["effect_certainty"], "UNKNOWN")
+
     def test_telegram_outbox_precedes_send_and_deduplicates_message_id(self):
         with tempfile.TemporaryDirectory() as root:
             state = Path(root)
