@@ -195,7 +195,13 @@ async def _field_metadata(page: Any) -> list[dict[str, Any]]:
                     : [];
                   let node = element;
                   let context = '';
+                  const group = element.closest('fieldset, [role="radiogroup"]');
+                  const groupText = (group?.innerText || '').trim();
+                  if (groupText.length >= 12 && groupText.length <= 700) {
+                    context = groupText;
+                  }
                   for (let i = 0; i < 5 && node; i += 1) {
+                    if (context) break;
                     const text = (node.innerText || '').trim();
                     if (text.length >= 12 && text.length <= 700) {
                       context = text;
@@ -369,15 +375,44 @@ def _known_value(
         for fact in profile.get("facts", []):
             if fact.get("id") == "application_source_job_board_20260807":
                 return "Company website"
+    if "if other" in context and "specify" in context:
+        return "Company website"
     if "current or most recent employer" in context:
         for fact in profile.get("facts", []):
             if fact.get("id") == "muit_role_2025":
                 return "Mitsubishi UFJ Information Technology"
     if "where are you currently located" in context or "current location" in context:
         return str(candidate.get("base") or "")
+    if "country you're currently residing" in context:
+        return "Japan"
     if "portfolio" in context:
         return str(candidate.get("github_url") or candidate.get("linkedin_url") or "")
     return None
+
+
+async def _select_combobox(page: Any, element: Any, value: str) -> bool:
+    try:
+        await element.click()
+        await element.fill(value)
+        option = page.get_by_role("option", name=value, exact=True)
+        if await option.count() == 0:
+            option = page.get_by_text(value, exact=True)
+        await option.first.click(timeout=3_000)
+        return True
+    except Exception:
+        return False
+
+
+async def _select_radio(element: Any, item: dict[str, Any], value: str) -> bool:
+    label = _label(item)
+    target = value.casefold()
+    if target in label or (target == "company website" and "other" in label):
+        try:
+            await element.check()
+            return True
+        except Exception:
+            return False
+    return False
 
 
 async def _fill_known_fields(
@@ -411,7 +446,15 @@ async def _fill_known_fields(
             if item.get("required"):
                 blockers.append(_safe_text(label or item.get("placeholder") or kind))
             continue
-        if kind in {"checkbox", "radio"} or role in {"checkbox", "radio"}:
+        if kind == "radio" or role == "radio":
+            if not await _select_radio(element, item, value):
+                blockers.append(_safe_text(label or item.get("context") or "radio"))
+            continue
+        if role == "combobox":
+            if not await _select_combobox(page, element, value):
+                blockers.append(_safe_text(label or item.get("context") or "combobox"))
+            continue
+        if kind == "checkbox" or role == "checkbox":
             continue
         await element.fill(value)
     return blockers
