@@ -85,8 +85,12 @@
 - `article_daily_start_control.py`へ、公開state・公開ledger・live/draft URLが無く、run内にsymlinkや未知fileがなく、
   最新`interrupted-generation/attempt-*`に日英本文・media・quality terminal receiptが揃う場合だけ、
   `same-jst-day-exhausted-prepublication-archive`として空の新run identityを返す分岐を追加した。
-  fixture 14件、bounded/model focused checks、構文、diff checkはPASS。これは手書きstateの再開ではなく、
-  同一runのarchiveと無作用証拠に束縛された新canaryの割当である。
+- reviewerの反証を受け、6ファイル存在だけでは解放しないように修正した。archive内の
+  `generation-state.json`と`generation-exhaustion-receipt.json`を必須化し、state SHA、manifest SHA、
+  最終return code、charged/max attempt数、公開state/ledger不在を完全一致で再計算する。
+  実runで`state_sha256=e784cbde…`、`archive_manifest_sha256=473876d7…`、`charged=3/max=3`を生成し、
+  start-controlは同じ`new`を返した。fixture 15件、bounded/model focused checks、構文、diff checkはPASS。
+  これは手書きstateの再開ではなく、同一runのarchive・生成state・無作用証拠に束縛された新canaryの割当である。
 - pause markerを再作成し、次のatomic actionはこの修正をcurrentへ反映してstart-controlの新identity readbackを確認し、
   その後にだけ新runでCodex-only canaryを一回実行することとする。
 
