@@ -29,6 +29,14 @@ class CompositionError(Exception):
     pass
 
 
+class PolicyBudgetBlocked(CompositionError):
+    """The policy owner could not reserve its bounded daily budget yet."""
+
+    def __init__(self, summary: dict):
+        self.summary = summary
+        super().__init__("policy audit budget blocked")
+
+
 def budget_retry_is_due(skill_root: Path, state_root: Path, bundle: dict, now=None) -> bool:
     run_id = f"{bundle['plan_id']}-{bundle['source_set_sha256'][:16]}"
     try:
@@ -588,6 +596,14 @@ def run_policy_audit(
         except (OSError, subprocess.TimeoutExpired):
             raise CompositionError
         if completed.returncode != 0:
+            try:
+                summary = json.loads(
+                    (evidence_dir / "summary.json").read_text(encoding="utf-8")
+                )
+            except (OSError, TypeError, ValueError, json.JSONDecodeError):
+                raise CompositionError
+            if isinstance(summary, dict) and summary.get("status") == "budget_blocked":
+                raise PolicyBudgetBlocked(summary)
             raise CompositionError
     try:
         seal = agent_runner.verify_evidence_seal(
@@ -691,6 +707,7 @@ def wake(
             (state_root / "composition-inbox").glob("*.json"),
             key=lambda path: inbox_priority(path, state_root),
         )
+        blocked_result = None
         for path in paths:
             try:
                 bundle = load_bundle(path)
@@ -778,9 +795,40 @@ def wake(
                     previous.get("state") == "READY_FOR_POLICY"
                     and not SHA256.fullmatch(previous.get("policy_sha256", ""))
                 ):
-                    previous["policy_sha256"] = policy_builder(
-                        skill_root, state_root, bundle, previous
-                    )
+                    try:
+                        previous["policy_sha256"] = policy_builder(
+                            skill_root, state_root, bundle, previous
+                        )
+                    except PolicyBudgetBlocked as blocked:
+                        budget = blocked.summary.get("budget", {})
+                        if not isinstance(budget, dict):
+                            budget = {}
+                        previous.update({
+                            "policy_budget_state": "BLOCKED",
+                            "policy_budget_day": budget.get("day"),
+                            "policy_budget_reason": budget.get("reason"),
+                            "policy_budget_reservation_tokens": budget.get(
+                                "reservation_tokens"
+                            ),
+                            "policy_budget_daily_consumed_tokens": budget.get(
+                                "daily_consumed_tokens"
+                            ),
+                            "policy_budget_daily_limit_tokens": budget.get(
+                                "daily_limit_tokens"
+                            ),
+                        })
+                        atomic_write(receipt_path, previous)
+                        blocked_result = {
+                            **previous, "state": "POLICY_BUDGET_BLOCKED"
+                        }
+                        continue
+                    for key in (
+                        "policy_budget_state", "policy_budget_day",
+                        "policy_budget_reason", "policy_budget_reservation_tokens",
+                        "policy_budget_daily_consumed_tokens",
+                        "policy_budget_daily_limit_tokens",
+                    ):
+                        previous.pop(key, None)
                     atomic_write(receipt_path, previous)
                     return previous
                 continue
@@ -800,7 +848,7 @@ def wake(
                 )
             atomic_write(receipt_path, receipt)
             return receipt
-        return {"state": "IDLE"}
+        return blocked_result or {"state": "IDLE"}
 
 
 def main() -> int:
