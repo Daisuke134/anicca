@@ -253,6 +253,8 @@ ORPHANED_TERMINAL_MODEL_STATUSES = {
     "COMPLETED", "ALREADY_INVESTIGATED", "EXHAUSTED", "FAILED", "TIMEOUT",
 }
 
+ACTIVE_PUBLICATION_PAIRS = {"note/ja", "substack/ja", "substack/en", "x-article/ja"}
+
 
 def reclaim_stranded(
     queue: dict[str, Any], self_heal: Path, state_root: Path, observed_at: str,
@@ -456,6 +458,86 @@ def recover_orphaned_handoffs(
     if recovered:
         queue["updated_at"] = observed_at
     return recovered
+
+
+def _quarantine_receipt_for_run(
+    state_root: Path, run_id: str,
+) -> Path | None:
+    """Return a proof-bound duplicate-media quarantine receipt, if valid."""
+    run_dir = state_root / "runs" / run_id
+    gates = run_dir / "gates"
+    state_path = gates / "publication-state.json"
+    receipt_path = gates / "run-quarantine.json"
+    if (
+        run_dir.is_symlink() or not run_dir.is_dir()
+        or gates.is_symlink() or not gates.is_dir()
+        or state_path.is_symlink() or not state_path.is_file()
+    ):
+        return None
+    receipt = _read_receipt(receipt_path)
+    state = _read_receipt(state_path)
+    if (
+        receipt is None or state is None
+        or receipt.get("type") != "run-quarantine"
+        or receipt.get("version") != 1
+        or receipt.get("reason") != "duplicate-media"
+        or receipt.get("run_id") != run_id
+        or receipt.get("state_sha256") != _sha256(state_path)
+        or state.get("run_id") != run_id
+        or state.get("publication_contract") != "active-four"
+        or state.get("state_path") != str(state_path)
+    ):
+        return None
+    pairs = state.get("pairs")
+    if not isinstance(pairs, dict) or not ACTIVE_PUBLICATION_PAIRS.issubset(pairs):
+        return None
+    for pair in ACTIVE_PUBLICATION_PAIRS:
+        entry = pairs.get(pair)
+        if not isinstance(entry, dict) or entry.get("status") not in {"unavailable", "skipped"}:
+            return None
+        if any(
+            entry.get(key) not in (None, "", {}, [])
+            for key in ("live_url", "public_id", "receipt", "published_at", "effect", "readback", "existing_publication")
+        ):
+            return None
+    if not isinstance(receipt.get("headline_sha256"), str):
+        return None
+    if not isinstance(receipt.get("body_sha256"), list) or not receipt["body_sha256"]:
+        return None
+    return receipt_path
+
+
+def quarantine_invalid_run_handoffs(
+    queue: dict[str, Any], state_root: Path, observed_at: str,
+) -> list[dict[str, Any]]:
+    """Hide OPEN/RETRY repair items for a proof-bound quarantined run."""
+    quarantined: list[dict[str, Any]] = []
+    receipts: dict[str, Path | None] = {}
+    for fingerprint, item in queue.get("items", {}).items():
+        if not isinstance(item, dict) or item.get("state") not in {"OPEN", "RETRY"}:
+            continue
+        run_id = str(item.get("run_id") or "")
+        if not run_id:
+            continue
+        if run_id not in receipts:
+            receipts[run_id] = _quarantine_receipt_for_run(state_root, run_id)
+        receipt_path = receipts[run_id]
+        if receipt_path is None:
+            continue
+        try:
+            incidents.wait_for_quarantined_run(
+                queue, fingerprint, run_id, receipt_path, observed_at,
+            )
+        except (OSError, ValueError, json.JSONDecodeError):
+            continue
+        quarantined.append({
+            "fingerprint": fingerprint,
+            "run_id": run_id,
+            "quarantine_receipt": str(receipt_path),
+        })
+    if quarantined:
+        queue["updated_at"] = observed_at
+    return quarantined
 
 
 def select(queue: dict[str, Any]) -> dict[str, Any] | None:
@@ -766,10 +848,18 @@ def dispatch(
     self_heal = state_root / "self-heal"
     queue_path = self_heal / "incident-queue.json"
 
+    quarantined_run_handoffs: list[dict[str, Any]] = []
     reclaimed: list[dict[str, Any]] = []
+    recovered_orphaned: list[dict[str, Any]] = []
     rearmed: list[dict[str, Any]] = []
     deployed_commit = session.read_deployed_commit(state_root)
     with _queue_lock(queue_path) as queue:
+        # A duplicate-media run may have created remote drafts before its
+        # local state was quarantined.  Hide only its receipt-backed OPEN/RETRY
+        # repair items so a later canary cannot retry those drafts.
+        quarantined_run_handoffs = quarantine_invalid_run_handoffs(
+            queue, state_root, observed_at,
+        )
         # Recover leases the pre-checkpoint code stranded, under the same
         # exclusive lock that guards selection, so a reclaim and a claim can
         # never interleave.
@@ -790,6 +880,7 @@ def dispatch(
         if chosen is None:
             return {
                 "status": "NO_ACTIONABLE_INCIDENT", "observed_at": observed_at,
+                "quarantined_run_handoffs": quarantined_run_handoffs,
                 "reclaimed_stranded_leases": reclaimed,
                 "recovered_orphaned_handoffs": recovered_orphaned,
                 "rearmed_on_new_code": rearmed,
@@ -832,6 +923,8 @@ def dispatch(
     }
     if reclaimed:
         outcome["reclaimed_stranded_leases"] = reclaimed
+    if quarantined_run_handoffs:
+        outcome["quarantined_run_handoffs"] = quarantined_run_handoffs
     if recovered_orphaned:
         outcome["recovered_orphaned_handoffs"] = recovered_orphaned
     if rearmed:
@@ -915,6 +1008,8 @@ def dispatch(
             result["reason"] = reason
         if reclaimed:
             result["reclaimed_stranded_leases"] = reclaimed
+        if quarantined_run_handoffs:
+            result["quarantined_run_handoffs"] = quarantined_run_handoffs
         if recovered_orphaned:
             result["recovered_orphaned_handoffs"] = recovered_orphaned
         return result
@@ -1100,24 +1195,32 @@ def _tool(path: Path) -> dict[str, Any]:
 def recover_claims_only(
     *, state_root: Path, observed_at: str,
 ) -> dict[str, Any]:
-    """Run only the local owner-aware lease recovery gate.
+    """Run only local recovery gates that cannot create external effects.
 
     ``article-resume-pending.sh`` invokes this mode while publication is
     paused.  It cannot select an incident, invoke Codex, execute a runbook, or
-    call a publisher; it only makes receipt-backed ownerless claims visible as
-    WAIT so the emergency brake can later be lifted safely.
+    call a publisher; it only isolates receipt-backed quarantined runs and
+    makes receipt-backed ownerless claims visible as WAIT so the emergency
+    brake can later be lifted safely.
     """
     self_heal = state_root / "self-heal"
     queue_path = self_heal / "incident-queue.json"
     if not queue_path.is_file():
         return {"status": "NO_INCIDENT_QUEUE", "observed_at": observed_at}
     with _queue_lock(queue_path) as queue:
+        quarantined = quarantine_invalid_run_handoffs(
+            queue, state_root, observed_at,
+        )
         recovered = recover_orphaned_handoffs(
             queue, self_heal, state_root, observed_at,
         )
     return {
-        "status": "CLAIMS_RECOVERED" if recovered else "NO_RECOVERABLE_CLAIMS",
+        "status": (
+            "CLAIMS_RECOVERED"
+            if recovered or quarantined else "NO_RECOVERABLE_CLAIMS"
+        ),
         "observed_at": observed_at,
+        "quarantined_run_handoffs": quarantined,
         "recovered_orphaned_handoffs": recovered,
     }
 

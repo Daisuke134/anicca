@@ -465,6 +465,51 @@ def wait_for_owner_recovery(
     return item
 
 
+def wait_for_quarantined_run(
+    queue: dict[str, Any], fingerprint: str, run_id: str,
+    quarantine_receipt: Path, observed_at: str,
+) -> dict[str, Any]:
+    """Remove a non-publishable run's repair item from the actionable set.
+
+    A duplicate-media run may have created remote drafts before its local
+    state was quarantined.  Its queue items must not be allowed to retry those
+    drafts, but the quarantine receipt is not a publication success.  WAIT is
+    therefore the terminal state for this occurrence; a new observed failure
+    can still reopen it through ``ingest``.
+    """
+    item = queue["items"].get(fingerprint)
+    if item is None:
+        raise ValueError("unknown incident fingerprint")
+    if item.get("run_id") != run_id:
+        raise ValueError("quarantine run does not match incident")
+    if item.get("state") not in {"OPEN", "RETRY"}:
+        raise ValueError("only an actionable incident may be quarantined")
+    if not quarantine_receipt.is_file() or quarantine_receipt.is_symlink():
+        raise ValueError("run quarantine receipt is required")
+    receipt = json.loads(quarantine_receipt.read_text(encoding="utf-8"))
+    if (
+        receipt.get("type") != "run-quarantine"
+        or receipt.get("version") != 1
+        or receipt.get("run_id") != run_id
+        or receipt.get("reason") != "duplicate-media"
+    ):
+        raise ValueError("run quarantine receipt does not match incident")
+    item["state"] = "WAIT"
+    item["queue_quarantine"] = {
+        "reason": "duplicate-media-run-isolated",
+        "observed_at": observed_at,
+        "receipt": {
+            "path": str(quarantine_receipt.resolve()),
+            "sha256": hashlib.sha256(quarantine_receipt.read_bytes()).hexdigest(),
+        },
+    }
+    item["next_action"] = "WAIT_FOR_NEW_OCCURRENCE"
+    item["released_at"] = observed_at
+    item.pop("lease_id", None)
+    queue["updated_at"] = observed_at
+    return item
+
+
 # §9.3.1 escalation, taken from Flagger, Argo Rollouts, SapFix and the
 # circuit-breaker pattern rather than invented: bounded attempts, then degrade
 # to the safest known state, then stop and wait for a genuinely new trigger.

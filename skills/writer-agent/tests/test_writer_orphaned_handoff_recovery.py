@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import json
 from pathlib import Path
@@ -163,3 +164,73 @@ def test_wait_reopens_only_on_a_new_occurrence() -> None:
     QUEUE.ingest(queue, replay, "2026-08-21T08:00:00Z")
 
     assert queue["items"][fingerprint]["state"] == "OPEN"
+
+
+def test_duplicate_media_quarantine_hides_only_same_run_actionable_items(
+    tmp_path: Path, monkeypatch,
+) -> None:
+    state = tmp_path / "state"
+    run_id = "20260821-054500"
+    gates = state / "runs" / run_id / "gates"
+    gates.mkdir(parents=True)
+    state_path = gates / "publication-state.json"
+    state_value = {
+        "run_id": run_id,
+        "publication_contract": "active-four",
+        "state_path": str(state_path),
+        "pairs": {
+            pair: {"status": "unavailable"}
+            for pair in DISPATCH.ACTIVE_PUBLICATION_PAIRS
+        },
+    }
+    state_path.write_text(json.dumps(state_value))
+    quarantine = gates / "run-quarantine.json"
+    quarantine.write_text(json.dumps({
+        "type": "run-quarantine", "version": 1,
+        "reason": "duplicate-media", "run_id": run_id,
+        "state_sha256": hashlib.sha256(state_path.read_bytes()).hexdigest(),
+        "headline_sha256": "a" * 64, "body_sha256": ["a" * 64],
+    }))
+    first, second = "e" * 64, "f" * 64
+    queue = {
+        "schema": "writer.self-heal.incident-queue", "version": 1,
+        "items": {
+            first: {"fingerprint": first, "run_id": run_id, "state": "RETRY"},
+            second: {"fingerprint": second, "run_id": run_id, "state": "OPEN"},
+            "g" * 64: {"fingerprint": "g" * 64, "run_id": "other", "state": "OPEN"},
+        },
+    }
+    monkeypatch.setattr(DISPATCH, "_live_dispatch_owner_pids", lambda _: [])
+
+    result = DISPATCH.quarantine_invalid_run_handoffs(
+        queue, state, "2026-08-21T08:00:00Z",
+    )
+
+    assert {row["fingerprint"] for row in result} == {first, second}
+    assert queue["items"][first]["state"] == "WAIT"
+    assert queue["items"][second]["state"] == "WAIT"
+    assert queue["items"]["g" * 64]["state"] == "OPEN"
+    assert queue["items"][first]["queue_quarantine"]["reason"] == (
+        "duplicate-media-run-isolated"
+    )
+
+
+def test_quarantine_proof_refuses_a_live_pair(tmp_path: Path) -> None:
+    state = tmp_path / "state"
+    run_id = "20260821-054500"
+    gates = state / "runs" / run_id / "gates"
+    gates.mkdir(parents=True)
+    state_path = gates / "publication-state.json"
+    state_path.write_text(json.dumps({
+        "run_id": run_id, "publication_contract": "active-four",
+        "state_path": str(state_path),
+        "pairs": {pair: {"status": "live"} for pair in DISPATCH.ACTIVE_PUBLICATION_PAIRS},
+    }))
+    (gates / "run-quarantine.json").write_text(json.dumps({
+        "type": "run-quarantine", "version": 1,
+        "reason": "duplicate-media", "run_id": run_id,
+        "state_sha256": hashlib.sha256(state_path.read_bytes()).hexdigest(),
+        "headline_sha256": "a" * 64, "body_sha256": ["a" * 64],
+    }))
+
+    assert DISPATCH._quarantine_receipt_for_run(state, run_id) is None
