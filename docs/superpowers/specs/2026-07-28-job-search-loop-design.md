@@ -176,6 +176,8 @@ Node. The transport now supplies the Homebrew bin/node paths only to its child
 process and isolates that child from the launchd here-doc stdin, eliminating the
 launchd-versus-interactive delivery drift. The minimal-environment live send was
 acknowledged as Telegram message `27548`.
+The direct per-wake CLI is additionally capped at 20 seconds, so a stalled gateway
+records a failed receipt without holding the 30-minute application owner hostage.
 The end-to-end wake `daily-20260821-194207` validated the repaired path: it refreshed
 nine official boards, discovered ElevenLabs' Forward Deployed Software Engineer -
 UAE, clicked the real Ashby submit control once, recorded `submit_unknown`, and wrote
