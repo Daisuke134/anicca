@@ -11,18 +11,14 @@ const {
   verifyMarketingVideoGenerationReceipt,
 } = require("../lib/marketing-video-generation-adapter.js");
 const { buildMarketingVideoPublicationJob } = require("../lib/marketing-video-publication-adapter.js");
-const { HONNE_EN_SLOTS } = require("../lib/honne-en-shadow-runtime.js");
-const { marketingVideoDueSlot } = require("../lib/honne-ja-shadow-schedule.js");
 const { PROMOTION_CONFIRMATION, runHonneEnCanary } = require("./honne-en-canary.js");
 
 const TENANT = "dais-local";
 const PRODUCT = "honne-ai";
 const FORMAT = "reelclaw";
 const LOCALE = "en";
-const TIME_ZONE = "Asia/Tokyo";
 const INTEGRATION_ID = "cmoig11ew001zlv0yk6vqo1us";
 const INTEGRATION_REF = `integration://postiz/tiktok/${INTEGRATION_ID}`;
-const MAX_LATE_MS = 20 * 60 * 1000;
 
 function required(value, label) {
   const text = String(value == null ? "" : value).trim();
@@ -37,12 +33,11 @@ function parseArgs(argv) {
   return argv[1] ? String(argv[2]) : null;
 }
 
-function dueSlot(slot, nowMs) {
-  const slotMs = Date.parse(String(slot || ""));
-  if (!Number.isFinite(slotMs) || new Date(slotMs).toISOString() !== slot) throw new Error("honne EN cycle slot is invalid");
-  if (slotMs > nowMs || nowMs - slotMs > MAX_LATE_MS) throw new Error("honne EN cycle slot is not within its due window");
-  if (marketingVideoDueSlot(slotMs + 60_000, TIME_ZONE, HONNE_EN_SLOTS) !== slot) throw new Error("honne EN cycle slot is off cadence");
-  return slot;
+function runSlot(slot, nowMs) {
+  const value = slot || new Date(nowMs).toISOString();
+  const slotMs = Date.parse(String(value));
+  if (!Number.isFinite(slotMs) || new Date(slotMs).toISOString() !== value) throw new Error("honne EN cycle run timestamp is invalid");
+  return value;
 }
 
 function historyProvider(dataDir) {
@@ -84,7 +79,7 @@ async function runHonneEnCycle(argv, deps = {}) {
   const tenantId = required(env.LM_RUNTIME_TENANT_ID, "LM_RUNTIME_TENANT_ID");
   if (tenantId !== TENANT) throw new Error("honne EN cycle tenant is invalid");
   const nowMs = deps.nowMs == null ? Date.now() : deps.nowMs;
-  const slot = dueSlot(requestedSlot || marketingVideoDueSlot(nowMs, TIME_ZONE, HONNE_EN_SLOTS), nowMs);
+  const slot = runSlot(requestedSlot, nowMs);
   const packRef = required(env.LM_HONNE_EN_PACK_REF, "LM_HONNE_EN_PACK_REF");
   const mediaRefs = required(env.LM_HONNE_EN_MEDIA_REFS, "LM_HONNE_EN_MEDIA_REFS").split(",").map((value) => value.trim()).filter(Boolean);
   const approvalRef = required(env.LM_HONNE_EN_PUBLICATION_APPROVAL_REF, "LM_HONNE_EN_PUBLICATION_APPROVAL_REF");
@@ -116,4 +111,4 @@ async function runHonneEnCycle(argv, deps = {}) {
 
 if (require.main === module) runHonneEnCycle(process.argv.slice(2)).then((result) => process.stdout.write(`${JSON.stringify(result)}\n`)).catch((error) => { process.stderr.write(`${error.message}\n`); process.exitCode = 1; });
 
-module.exports = { dueSlot, parseArgs, runHonneEnCycle };
+module.exports = { parseArgs, runHonneEnCycle, runSlot };
