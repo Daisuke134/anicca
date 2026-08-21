@@ -22,7 +22,8 @@ import sys
 
 messages = pathlib.Path(__file__).with_suffix(".messages")
 prior = json.loads(messages.read_text()) if messages.exists() else []
-prior.append(sys.argv[sys.argv.index("--message") + 1])
+flag = "-m" if "-m" in sys.argv else "--message"
+prior.append(sys.argv[sys.argv.index(flag) + 1])
 messages.write_text(json.dumps(prior))
 print(json.dumps({"messageId": str(700 + len(prior))}))
 """,

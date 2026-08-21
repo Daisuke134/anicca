@@ -69,14 +69,14 @@ def send_once(
                 "telegram",
                 "--target",
                 target,
-                "--message",
+                "-m",
                 outbox.payload(event_key),
                 "--json",
             ],
             check=False,
             capture_output=True,
             text=True,
-            timeout=60,
+            timeout=20,
         )
         if completed.returncode != 0:
             raise RuntimeError(f"Telegram transport failed rc={completed.returncode}")
@@ -135,7 +135,7 @@ def send_document_once(
                 "telegram",
                 "--target",
                 target,
-                "--message",
+                "-m",
                 outbox.payload(event_key),
                 "--media",
                 str(staged),
@@ -145,7 +145,7 @@ def send_document_once(
             check=False,
             capture_output=True,
             text=True,
-            timeout=60,
+            timeout=20,
         )
         if completed.returncode != 0:
             raise RuntimeError(

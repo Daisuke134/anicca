@@ -146,6 +146,10 @@ launchd (30 min)
 
 The remaining robustness work is ordered, not parallelized: cache freshness, provider-capacity detection, non-Ashby fallback, confirmation reconciliation, then full lifecycle/guardian/OSS.
 
+The direct OpenClaw transport now uses its short `-m` message argument and a
+20-second bounded wait; the post-change delivery verification returned Telegram ACK
+`27535` in 7.6 seconds.
+
 Build a local-first job application operating system around the useful parts of
 `MadsLorentzen/ai-job-search`, without treating job descriptions as instructions and
 without fabricating candidate claims.
