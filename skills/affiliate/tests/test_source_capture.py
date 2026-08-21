@@ -83,8 +83,14 @@ class SourceCaptureTest(unittest.TestCase):
                 }))
             state = Path(directory) / "state"
             with mock.patch.object(MODULE, "capture", return_value=[]):
-                receipt = MODULE.refresh_all(root, state, now=1000, cooldown_seconds=86400)
-                replay = MODULE.refresh_all(root, state, now=1001, cooldown_seconds=86400)
+                receipt = MODULE.refresh_all(
+                    root, state, now=1000, cooldown_seconds=86400,
+                    disk_floor_bytes=1,
+                )
+                replay = MODULE.refresh_all(
+                    root, state, now=1001, cooldown_seconds=86400,
+                    disk_floor_bytes=1,
+                )
             self.assertEqual(receipt["state"], "COMPLETE")
             self.assertEqual([row["plan_id"] for row in receipt["plans"]], ["alpha-en", "beta-en"])
             self.assertTrue((state / "composition-inbox" / "alpha-en.json").is_file())

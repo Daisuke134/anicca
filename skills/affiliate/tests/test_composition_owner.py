@@ -86,15 +86,15 @@ class CompositionOwnerTests(unittest.TestCase):
 
             first = module.wake(
                 root, state, run_model=run_model, handoff_builder=build_handoff,
-                policy_builder=build_policy,
+                policy_builder=build_policy, disk_floor_bytes=1,
             )
             second = module.wake(
                 root, state, run_model=run_model, handoff_builder=build_handoff,
-                policy_builder=build_policy,
+                policy_builder=build_policy, disk_floor_bytes=1,
             )
             third = module.wake(
                 root, state, run_model=run_model, handoff_builder=build_handoff,
-                policy_builder=build_policy,
+                policy_builder=build_policy, disk_floor_bytes=1,
             )
 
             self.assertEqual(first["state"], "READY_FOR_POLICY")
@@ -149,6 +149,7 @@ class CompositionOwnerTests(unittest.TestCase):
                 root, state, run_model=run_model,
                 handoff_builder=mock.Mock(return_value="c" * 64),
                 policy_builder=mock.Mock(return_value="d" * 64),
+                disk_floor_bytes=1,
             )
 
             # The already-live campaign is skipped despite its stale hash, so the

@@ -26,6 +26,7 @@ from job_journal import (
 from provider_cli import ProviderError, observe, poll, read_login_credentials, resume
 from program_registry import TTS_PLACEMENT, apply_getresponse, elevenlabs_link_action
 from acquisition_decision import advance as advance_acquisition_decision
+from runtime_guard import runtime_guard
 
 
 SYSTEME_LOGIN = "https://systeme.io/en/login"
@@ -172,6 +173,7 @@ def _tool_outcome(result, failure_type=None):
     if state in {
         "COOLDOWN", "NO_PENDING", "NO_TRANSACTIONS", "NOT_RUN", "WAITING_FOR_PLACEMENT_LINK",
         "BROWSER_UNAVAILABLE", "SIGN_IN_REQUIRED", "AUTH_REQUIRED", "ELIGIBILITY_BLOCKED",
+        "DISK_GUARD_BLOCKED", "DISK_GUARD_UNKNOWN",
     }:
         return "NO_EFFECT"
     return "COMPLETED"
@@ -2471,6 +2473,7 @@ def wake(args):
 def _wake_once(args, started_at, run_id):
     state = args.state.expanduser()
     state.mkdir(mode=0o700, parents=True, exist_ok=True)
+    guard = runtime_guard(state)
     attempt_counts = {}
 
     def admit(tool, effect_class, preconditions, operation, wake_event_uuid=None):
@@ -2770,6 +2773,10 @@ def _wake_once(args, started_at, run_id):
     event = {
         "event": "affiliate_wake",
         "provider": "elevenlabs",
+        "runtime_guard_state": guard.get("state"),
+        "runtime_guard_free_bytes": guard.get("free_bytes"),
+        "runtime_guard_floor_bytes": guard.get("floor_bytes"),
+        "runtime_guard_receipt_persist_state": guard.get("receipt_persist_state"),
         "provider_changed": provider["changed"],
         "provider_state": provider["state"],
         "provider_transition_id": provider["transition_id"],

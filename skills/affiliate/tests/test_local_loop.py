@@ -22,6 +22,25 @@ SPEC.loader.exec_module(MODULE)
 
 
 class LocalLoopTest(unittest.TestCase):
+    def test_runtime_disk_guard_is_truthful_and_fail_closed(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root)
+            clear = MODULE.runtime_guard(state, floor_bytes=1)
+            blocked = MODULE.runtime_guard(state, floor_bytes=10 ** 30)
+            self.assertEqual(clear["state"], "CLEAR")
+            self.assertEqual(blocked["state"], "DISK_GUARD_BLOCKED")
+            self.assertEqual(blocked["guard"], "disk")
+            self.assertEqual(blocked["floor_bytes"], 10 ** 30)
+            self.assertEqual(blocked["receipt_persist_state"], "PERSISTED")
+            stored = json.loads((state / "runtime-guard.json").read_text())
+            self.assertEqual(stored["state"], "DISK_GUARD_BLOCKED")
+
+    def test_disk_guard_outcome_is_no_effect(self):
+        self.assertEqual(
+            MODULE._tool_outcome({"state": "DISK_GUARD_BLOCKED"}),
+            "NO_EFFECT",
+        )
+
     def test_daily_summary_has_stable_jst_day_identity_and_money_stage(self):
         with tempfile.TemporaryDirectory() as root:
             state = Path(root)

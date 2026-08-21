@@ -17,6 +17,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import agent_runner
 import machine_capability_inventory as inventory
+from runtime_guard import RUNTIME_DISK_FLOOR_BYTES, runtime_guard
 
 
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
@@ -696,8 +697,22 @@ def inbox_priority(path: Path, state_root: Path) -> tuple[int, str]:
 def wake(
     skill_root: Path, state_root: Path, run_model=run_model,
     handoff_builder=build_handoff, policy_builder=build_policy,
+    disk_floor_bytes=RUNTIME_DISK_FLOOR_BYTES,
 ) -> dict:
     state_root.mkdir(parents=True, exist_ok=True, mode=0o700)
+    guard = runtime_guard(state_root, disk_floor_bytes)
+    if guard["state"] != "CLEAR":
+        receipt = {
+            "schema_version": 1,
+            "receipt_type": "COMPOSITION_RESULT",
+            "state": guard["state"],
+            "failure_class": "RUNTIME_DISK_GUARD",
+            "guard": guard,
+        }
+        atomic_write(
+            state_root / "composition-receipts" / "runtime-guard.json", receipt,
+        )
+        return receipt
     with (state_root / ".composition.lock").open("a+") as lock:
         try:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
