@@ -255,6 +255,8 @@ def _known_value(item: dict[str, Any], profile: dict[str, Any], values: dict[str
 
 
 def _is_unknown_required(item: dict[str, Any], value: str | None) -> bool:
+    if str(item.get("id") or "") == "source--source":
+        return False
     if not item.get("required"):
         return False
     if str(item.get("name") or "") == "candidateIsPreviousWorker":
