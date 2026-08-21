@@ -22,6 +22,36 @@ SPEC.loader.exec_module(MODULE)
 
 
 class LocalLoopTest(unittest.TestCase):
+    def test_repost_affiliate_placement_id_requires_exact_owned_url(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root) / "affiliate"
+            repost = Path(root) / "repost"
+            repost.mkdir()
+            MODULE.atomic_json(state / "campaign-publications" / "alpha-en.json", {
+                "state": "X_LIVE", "plan_id": "alpha-en",
+                "placement_id": "alpha-en-1",
+                "owned_url": "https://aniccaai.com/blog/alpha-guide",
+                "x_url": "https://x.com/selawmqt/status/1",
+            })
+            MODULE.append(repost / "posted.jsonl", {
+                "post_url": "https://x.com/selawmqt/status/2",
+                "source_url": "https://aniccaai.com/blog/alpha-guide",
+                "affiliate_placement_id": "alpha-en-1",
+                "affiliate_owned_article_url": "https://aniccaai.com/blog/alpha-guide",
+            })
+            MODULE.append(repost / "posted.jsonl", {
+                "post_url": "https://x.com/selawmqt/status/3",
+                "source_url": "https://aniccaai.com/blog/other-guide",
+                "affiliate_placement_id": "alpha-en-1",
+                "affiliate_owned_article_url": "https://aniccaai.com/blog/alpha-guide",
+            })
+            with patch.dict(MODULE.os.environ, {"AFFILIATE_REPOST_STATE_DIR": str(repost)}):
+                observed = MODULE.observe_repost_acquisition(state)
+            self.assertEqual(observed["joined_campaign_count"], 1)
+            self.assertEqual(observed["placement_id_join_count"], 1)
+            self.assertEqual(observed["unjoined_post_action_count"], 1)
+            self.assertEqual(observed["revenue_credit_state"], "NO_REVENUE_CREDIT")
+
     def test_repost_proposal_is_exactly_once_and_never_contains_tracking_link(self):
         with tempfile.TemporaryDirectory() as root:
             state = Path(root)

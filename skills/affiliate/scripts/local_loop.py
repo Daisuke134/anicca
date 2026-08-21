@@ -547,6 +547,7 @@ def observe_repost_acquisition(state):
             source_state = "UNAVAILABLE"
 
     campaign_by_x_url = {}
+    campaign_by_placement = {}
     for path in (state / "campaign-publications").glob("*.json"):
         try:
             campaign = json.loads(path.read_text(encoding="utf-8"))
@@ -555,13 +556,37 @@ def observe_repost_acquisition(state):
         x_url = campaign.get("x_url")
         if isinstance(x_url, str) and x_url.startswith("https://x.com/"):
             campaign_by_x_url[x_url] = campaign.get("plan_id")
-    joined_count = sum(
-        any(
+        placement_id = campaign.get("placement_id")
+        owned_url = campaign.get("owned_url")
+        if (
+            campaign.get("state") == "X_LIVE"
+            and isinstance(placement_id, str) and placement_id
+            and isinstance(owned_url, str) and owned_url.startswith("https://aniccaai.com/blog/")
+        ):
+            campaign_by_placement[placement_id] = owned_url
+
+    def exact_join(row):
+        if any(
             isinstance(row.get(field), str)
             and row[field] in campaign_by_x_url
             for field in ("post_url", "source_url")
-        )
-        for row in rows
+        ):
+            return "CAMPAIGN_X_URL"
+        placement_id = row.get("affiliate_placement_id")
+        owned_url = row.get("affiliate_owned_article_url")
+        if (
+            isinstance(placement_id, str)
+            and isinstance(owned_url, str)
+            and row.get("source_url") == owned_url
+            and campaign_by_placement.get(placement_id) == owned_url
+        ):
+            return "AFFILIATE_PLACEMENT_ID"
+        return None
+
+    join_methods = [exact_join(row) for row in rows]
+    joined_count = sum(method is not None for method in join_methods)
+    placement_id_join_count = sum(
+        method == "AFFILIATE_PLACEMENT_ID" for method in join_methods
     )
     post_action_count = len(rows)
     unjoined_count = post_action_count - joined_count
@@ -574,6 +599,7 @@ def observe_repost_acquisition(state):
         "source_file_sha256": source_file_sha256,
         "post_action_count": post_action_count,
         "joined_campaign_count": joined_count,
+        "placement_id_join_count": placement_id_join_count,
         "unjoined_post_action_count": unjoined_count,
         "invalid_row_count": invalid_row_count,
     }
@@ -598,6 +624,7 @@ def observe_repost_acquisition(state):
         "source_file_sha256": source_file_sha256,
         "post_action_count": post_action_count if source_state == "OBSERVED" else None,
         "joined_campaign_count": joined_count if source_state == "OBSERVED" else None,
+        "placement_id_join_count": placement_id_join_count if source_state == "OBSERVED" else None,
         "unjoined_post_action_count": unjoined_count if source_state == "OBSERVED" else None,
         "invalid_row_count": invalid_row_count if source_state == "OBSERVED" else None,
         "join_state": join_state,
