@@ -17,7 +17,9 @@ async function deliverCfoTelegram(input, options = {}) {
   const record = options.record || recordCfoTelegramDelivery;
   const rpcOptions = { supaUrl: options.supaUrl, supaKey: options.supaKey };
   if (Object.prototype.hasOwnProperty.call(options, "fetchImpl")) rpcOptions.fetchImpl = options.fetchImpl;
-  const rendered = render({ locale: "ja", view: "summary", snapshot: input.snapshot });
+  const renderInput = { locale: "ja", view: "summary", snapshot: input.snapshot };
+  if (Object.prototype.hasOwnProperty.call(input, "transactions")) renderInput.transactions = input.transactions;
+  const rendered = render(renderInput);
   const claimed = await claim({
     uid: input.uid,
     snapshotPublicRef: input.snapshotPublicRef,

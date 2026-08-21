@@ -82,8 +82,8 @@ function callMoneytreeBundle(options = {}) {
           } catch { finish(new Error(ERROR)); }
         } else if (message.id === 4) {
           const result = message.result;
-          if (!result || result.isError === true) return finish(new Error(ERROR));
-          try { finish(null, { accounts: accountContent, transactions: validateTransactions(result.structuredContent || result.structured_content) }); } catch { finish(new Error(ERROR)); }
+          if (!result || result.isError === true) return finish(null, { accounts: accountContent, transactions: null });
+          try { finish(null, { accounts: accountContent, transactions: validateTransactions(result.structuredContent || result.structured_content) }); } catch { finish(null, { accounts: accountContent, transactions: null }); }
         }
       });
       ws.on("error", () => finish(new Error(ERROR)));
@@ -129,20 +129,25 @@ async function readMoneytreeBundleViaCodex(options = {}) {
     const content = await call({ env: base, cwd: CFO_CWD });
     const accounts = content && content.accounts;
     const transactions = content && content.transactions;
-    if (!accounts || !transactions) throw new Error(ERROR);
+    if (!accounts) throw new Error(ERROR);
     const accountsJson = JSON.stringify(accounts);
     const source = adaptMoneytreeAccounts({ accountsJson, observedAt, referenceKey });
-    const normalized = adaptMoneytreeTransactions({ accountsJson, transactionsJson: JSON.stringify(transactions), observedAt, referenceKey });
     const state = deriveMoneytreeState({ signal: "interactive_success", observedAt, aggregationAsOf: null, aggregationFreshnessCutoff: null, liabilitiesExposed: false, liabilityCount: null });
     const moneytreeRead = composeMoneytreeRead({ source, state });
-    const transactionView = freeze(structuredClone({
-      schemaVersion: 1,
-      sourceId: normalized.sourceId,
-      asOf: normalized.asOf,
-      pagePartial: normalized.pagePartial,
-      categoryCoverage: "unavailable",
-      transactions: normalized.transactions.map(({ bookingDate, amountMinor, flow, verificationStatus }) => ({ bookingDate, amountMinor, flow, verificationStatus })),
-    }));
+    let transactionView = null;
+    if (transactions) {
+      try {
+        const normalized = adaptMoneytreeTransactions({ accountsJson, transactionsJson: JSON.stringify(transactions), observedAt, referenceKey });
+        transactionView = freeze(structuredClone({
+          schemaVersion: 1,
+          sourceId: normalized.sourceId,
+          asOf: normalized.asOf,
+          pagePartial: normalized.pagePartial,
+          categoryCoverage: "unavailable",
+          transactions: normalized.transactions.map(({ bookingDate, amountMinor, flow, verificationStatus }) => ({ bookingDate, amountMinor, flow, verificationStatus })),
+        }));
+      } catch { transactionView = null; }
+    }
     return freeze({ moneytreeRead, transactions: transactionView });
   } catch { throw new Error(ERROR); }
 }

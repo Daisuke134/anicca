@@ -5,7 +5,7 @@ const path = require("node:path");
 const http = require("node:http");
 const https = require("node:https");
 const { Resolver } = require("node:dns").promises;
-const { readMoneytreeViaCodex } = require("./cfo-moneytree-codex-read.js");
+const { readMoneytreeViaCodex, readMoneytreeBundleViaCodex } = require("./cfo-moneytree-codex-read.js");
 const { recoverMoneytreeRead } = require("../lib/cfo-moneytree-recovery.js");
 const { resolveCfoDailyRun } = require("../lib/cfo-daily-run.js");
 const { buildCfoDailyReportFromRecovery } = require("../lib/cfo-recovery-snapshot.js");
@@ -139,11 +139,33 @@ async function runHourlyCfo(options = {}) {
     if (!Number.isFinite(clock.getTime())) throw new Error("clock");
     reportingDate = ownerDate(clock);
     const value = config(options, env, installDnsFetch(env)), rpcOptions = { supaUrl: value.supaUrl, supaKey: value.supaKey, fetchImpl: value.fetchImpl };
-    const reader = pick(options, "readMoneytreeViaCodex", readMoneytreeViaCodex), recover = pick(options, "recoverMoneytreeRead", recoverMoneytreeRead);
-    const recovery = await recover({ reportingDate, observedAt: clock.toISOString() }, { read: async () => { try { return { ok: true, moneytreeRead: await reader({ env, now: () => clock }) }; } catch { return { ok: false, kind: "timeout" }; } }, repair: pick(options, "repair", async () => true), wait: pick(options, "wait", (milliseconds) => new Promise((resolveWait) => setTimeout(resolveWait, milliseconds))) });
+    const reader = pick(options, "readMoneytreeViaCodex", readMoneytreeViaCodex), customBundleReader = typeof options.readMoneytreeBundleViaCodex === "function" ? options.readMoneytreeBundleViaCodex : null;
+    const legacyReaderRequested = typeof options.readMoneytreeViaCodex === "function" || typeof options.callAppServer === "function";
+    const bundleReader = customBundleReader || (!legacyReaderRequested ? readMoneytreeBundleViaCodex : null);
+    let transactionView;
+    const recovery = await (pick(options, "recoverMoneytreeRead", recoverMoneytreeRead))({ reportingDate, observedAt: clock.toISOString() }, { read: async () => {
+      try {
+        if (bundleReader) {
+          const bundle = await bundleReader({ env, now: () => clock });
+          if (!bundle || !bundle.moneytreeRead) throw new Error("moneytree_bundle");
+          transactionView = bundle.transactions === undefined ? null : bundle.transactions;
+          return { ok: true, moneytreeRead: bundle.moneytreeRead };
+        }
+        return { ok: true, moneytreeRead: await reader({ env, now: () => clock }) };
+      } catch { return { ok: false, kind: "timeout" }; }
+    }, repair: pick(options, "repair", async () => true), wait: pick(options, "wait", (milliseconds) => new Promise((resolveWait) => setTimeout(resolveWait, milliseconds))) });
     const resolve = pick(options, "resolveCfoDailyRun", resolveCfoDailyRun), run = await resolve({ uid: value.uid }, rpcOptions);
     if (!run || run.reporting_date !== reportingDate || !UUID.test(run.run_id)) throw new Error("run");
     const render = pick(options, "renderCfoTelegram", renderCfoTelegram), send = pick(options, "deliverCfoTelegram", deliverCfoTelegram);
+    const renderSnapshot = (snapshot) => {
+      const input = { locale: "ja", view: "summary", snapshot };
+      if (transactionView !== undefined) input.transactions = transactionView;
+      render(input);
+    };
+    const delivery = (input) => {
+      if (transactionView !== undefined) input.transactions = transactionView;
+      return send(input, rpcOptions);
+    };
     const latestRaw = typeof options.latestSnapshot === "function" ? await options.latestSnapshot({ uid: value.uid, reportingDate, runId: run.run_id, ...rpcOptions }) : await latestSnapshot({ uid: value.uid, reportingDate, ...value }, render);
     const latest = latestRaw ? validateRow(latestRaw, reportingDate, render) : null;
     if (latest && (latest.run_id !== run.run_id || latest.reporting_date !== reportingDate)) throw new Error("snapshot");
@@ -152,16 +174,16 @@ async function runHourlyCfo(options = {}) {
     const currentBundle = buildCfoDailyReportFromRecovery({ revision: nextRevision, recovery });
     const aiCost = await selectAiCost(options, { ...value, reportingDate }, latest, render), candidateReport = reportWithAiCost(currentBundle.report, aiCost);
     if (latest && sameFacts(latest.report_payload, candidateReport) && ownerHour(new Date(latest.created_at)) === ownerHour(clock)) {
-      const delivered = await send({ uid: value.uid, telegramToken: value.telegramToken, chatId: value.chatId, snapshotPublicRef: latest.public_ref, snapshot: latest.report_payload }, rpcOptions);
+      const delivered = await delivery({ uid: value.uid, telegramToken: value.telegramToken, chatId: value.chatId, snapshotPublicRef: latest.public_ref, snapshot: latest.report_payload });
       if (!delivered || !["sent", "already_sent", "reconcile"].includes(delivered.status)) throw new Error("delivery");
       return summary(delivered.status === "sent" ? "sent" : delivered.status === "reconcile" ? "retry" : "quiet", reportingDate, latest.revision, false, delivered.status === "sent", recovery.status === "recovered");
     }
     const report = candidateReport;
-    render({ locale: "ja", view: "summary", snapshot: report });
+    renderSnapshot(report);
     const append = latest ? pick(options, "appendCfoDailySnapshotRevision", appendRevision) : pick(options, "appendCfoDailySnapshot", appendInitial);
     const receipt = await append(latest ? { uid: value.uid, reportingDate, runId: run.run_id, revision: nextRevision, supersedesRevision: latest.revision, report, sourceBundle: currentBundle.sourceBundle } : { uid: value.uid, reportingDate, runId: run.run_id, moneytreeRead: recovery.moneytreeRead, report, sourceBundle: currentBundle.sourceBundle }, rpcOptions);
     if (!receipt || receipt.reporting_date !== reportingDate || receipt.run_id !== run.run_id || receipt.revision !== nextRevision || !UUID.test(receipt.public_ref)) throw new Error("receipt");
-    const delivered = await send({ uid: value.uid, telegramToken: value.telegramToken, chatId: value.chatId, snapshotPublicRef: receipt.public_ref, snapshot: report }, rpcOptions);
+    const delivered = await delivery({ uid: value.uid, telegramToken: value.telegramToken, chatId: value.chatId, snapshotPublicRef: receipt.public_ref, snapshot: report });
     if (!delivered || !["sent", "already_sent", "reconcile"].includes(delivered.status)) throw new Error("delivery");
     return summary(delivered.status === "sent" ? "sent" : delivered.status === "reconcile" ? "retry" : "quiet", reportingDate, nextRevision, true, delivered.status === "sent", recovery.status === "recovered");
   } catch { return summary("failed", reportingDate, null, false, false, false); }

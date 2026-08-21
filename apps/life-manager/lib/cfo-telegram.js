@@ -21,6 +21,9 @@ const SOURCE_KEYS = new Set(["sourceId", "label", "status", "asOf", "amountMinor
 const EXCLUDED_KEYS = new Set(["label", "reason"]);
 const REPAIR_KEYS = new Set(["sourceLabel", "freshReread", "reconciled"]);
 const ACTION_KEYS = new Set(["kind", "sourceLabel", "retryLabel", "nextRetryAt"]); const ACTION_LABELS = Object.freeze({ reconsent: "接続後に自動再確認", provider_outage: "30分後に自動再確認" }); const RFC3339 = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
+const TRANSACTION_KEYS = new Set(["schemaVersion", "sourceId", "asOf", "pagePartial", "categoryCoverage", "transactions"]);
+const TRANSACTION_ROW_KEYS = new Set(["bookingDate", "amountMinor", "flow", "verificationStatus"]);
+const TRANSACTION_FLOWS = new Set(["inflow", "outflow", "neutral"]);
 const BUTTONS = Object.freeze({
   // Keep emitted buttons inside the canonical callback owner's view set. AI-cost text remains
   // available in the summary/detail renderer, but no unsupported callback route is generated.
@@ -58,6 +61,17 @@ function date(value) {
 function timestamp(value) {
   const m = typeof value === "string" && RFC3339.exec(value); if (!m) return false; const year = +m[1], month = +m[2], day = +m[3], hour = +m[4], minute = +m[5], second = +m[6], zone = m[8], zh = zone === "Z" ? 0 : +zone.slice(1, 3), zm = zone === "Z" ? 0 : +zone.slice(4), local = new Date(0), end = new Date(0), fraction = m[7] ? +(m[7].slice(1) + "000").slice(0, 3) : 0; local.setUTCFullYear(year, month - 1, day); local.setUTCHours(hour, minute, second, fraction); end.setUTCFullYear(year, month, 0); if (month < 1 || month > 12 || day < 1 || day > end.getUTCDate() || hour > 23 || minute > 59 || second > 59 || zh > 23 || zm > 59) return false; const offset = zone === "Z" ? 0 : (zone[0] === "-" ? -1 : 1) * (zh * 60 + zm), ms = local.getTime() - offset * 60000; return Number.isFinite(ms) && Date.parse(value) === ms;
 }
+function validateTransactions(value) {
+  if (value === null) return null;
+  exact(value, TRANSACTION_KEYS, [...TRANSACTION_KEYS]);
+  if (value.schemaVersion !== 1 || value.sourceId !== "moneytree_mufg" || !timestamp(value.asOf) || typeof value.pagePartial !== "boolean" || value.categoryCoverage !== "unavailable" || !Array.isArray(value.transactions)) fail("invalid_transactions");
+  value.transactions.forEach((row) => {
+    exact(row, TRANSACTION_ROW_KEYS, [...TRANSACTION_ROW_KEYS]);
+    date(row.bookingDate);
+    if (!Number.isSafeInteger(row.amountMinor) || !TRANSACTION_FLOWS.has(row.flow) || row.verificationStatus !== "provider_reported") fail("invalid_transaction");
+  });
+  return value;
+}
 function escapeHtml(value) { return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
 function formatAmount(locale, value) {
   if (value === null) return CFO_STRINGS[locale].unknown;
@@ -67,6 +81,21 @@ function formatAmount(locale, value) {
 function formatChange(locale, value) {
   if (value === null) return CFO_STRINGS[locale].unknown;
   return `${value >= 0 ? "+" : "-"}${formatAmount(locale, Math.abs(value))}`;
+}
+function transactionText(locale, value) {
+  if (value === null) return locale === "ja"
+    ? "\n\n💳 最近の取引\n取得できませんでした。現在の取引は不明です。"
+    : "\n\n💳 Recent transactions\nCould not read them. Current activity is unknown.";
+  const direction = locale === "ja" ? { inflow: "入金", outflow: "支出", neutral: "中立" } : { inflow: "In", outflow: "Out", neutral: "Neutral" };
+  const category = locale === "ja" ? "カテゴリ: 未取得" : "Category: unavailable";
+  const rows = value.transactions.length === 0
+    ? (locale === "ja" ? "最近の取引はありません" : "No recent transactions")
+    : value.transactions.map((row) => `${direction[row.flow]}\t${escapeHtml(row.bookingDate)}\t${formatAmount(locale, Math.abs(row.amountMinor))}\t${category}`).join("\n");
+  const page = value.pagePartial
+    ? (locale === "ja" ? "表示は取得範囲の一部です（続きあり）" : "This is a partial page (more may exist)")
+    : (locale === "ja" ? "取得範囲内の取引を表示しています" : "All transactions in the retrieved range are shown");
+  const title = locale === "ja" ? "💳 最近の取引（実測）" : "💳 Recent transactions (Measured)";
+  return `\n\n${title}\n${rows}\n${page}`;
 }
 function validateSnapshot(snapshot) {
   exact(snapshot, ROOT_KEYS, [...ROOT_KEYS].filter((key) => key !== "aiCost"));
@@ -136,12 +165,13 @@ function aiCostText(locale, value, detail = false) { if (!detail) return locale 
 function extra(locale, snapshot, view) {
   return { reply_markup: { inline_keyboard: BUTTONS[view].filter(([next]) => next !== "ai_cost" || Object.prototype.hasOwnProperty.call(snapshot, "aiCost")).map(([next, ja, en]) => [{ text: locale === "ja" ? ja : en, callback_data: callbackData({ view: next, reportingDate: snapshot.reportingDate, revision: snapshot.revision }) }]) } };
 }
-function renderCfoTelegram({ locale, view, snapshot }) {
+function renderCfoTelegram({ locale, view, snapshot, transactions }) {
   validateAiCost(snapshot);
   if (!CFO_STRINGS[locale]) fail("unsupported_locale");
   if (!VIEWS.has(view)) fail("unsupported_view");
   snapshot = sanitize(snapshot);
   validateSnapshot(snapshot);
+  if (transactions !== undefined) validateTransactions(transactions);
   const strings = CFO_STRINGS[locale];
   const hasAiCost = Object.prototype.hasOwnProperty.call(snapshot, "aiCost");
   if (view === "ai_cost") { if (!hasAiCost) fail("invalid_ai_cost"); return { text: aiCostText(locale, snapshot.aiCost, true), extra: extra(locale, snapshot, view) }; }
@@ -160,7 +190,8 @@ function renderCfoTelegram({ locale, view, snapshot }) {
   const accounts = snapshot.sources.map((source) => `${safeLabel(source.label)}\t${formatAmount(locale, source.amountMinor)}${marks.open}${freshness[source.status]}${marks.close}`).join("\n");
   const evidence = snapshot.sources.map((source) => `${evidenceLabel(locale, source.verificationStatus)} ${escapeHtml(source.asOf)}`).join("\n");
   const why = `${strings.confirmedAssets} − ${strings.confirmedLiabilities} = ${strings.confirmedDifference} ${formatAmount(locale, snapshot.totals.netWorthMinor)}\n${strings.excluded}${marks.colon}${excluded}`;
-  const text = view === "summary" ? `${title}\n\n${totals}${exclusions}\n\n${sourceText}${repair}${ai ? `\n${ai}` : ""}\n${strings.noAction}`
+  const activity = view === "summary" && transactions !== undefined ? transactionText(locale, transactions) : "";
+  const text = view === "summary" ? `${title}\n\n${totals}${exclusions}\n\n${sourceText}${repair}${ai ? `\n${ai}` : ""}\n${strings.noAction}${activity}`
     : view === "accounts" ? `${title}\n\n${accounts}\n${snapshot.state === "action_required" ? strings.actionBody : strings.noAction}`
       : view === "accuracy" ? `${title}\n\n${evidence}\n${strings.excluded}${marks.colon}${excluded}` : `${title}\n\n${why}`;
   return { text, extra: extra(locale, snapshot, view) };
