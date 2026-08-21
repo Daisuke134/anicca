@@ -22,6 +22,11 @@ from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 from playwright.async_api import async_playwright
 
 from .ats import evaluate_snapshot
+from .application_messages import (
+    MessageError,
+    application_question_kind,
+    build_application_question_answer,
+)
 from .ledger import Ledger
 from .resume_routing import select_resume
 from .state import canonical_url
@@ -225,7 +230,89 @@ def _role_family(title: str, posting: str) -> str:
     return "applied_ai"
 
 
-def _known_value(item: dict[str, Any], profile: dict[str, Any]) -> str | None:
+def _job_source_span(posting_text: str) -> str | None:
+    """Select one short, visible job-page sentence for motivation grounding."""
+
+    compact = " ".join(str(posting_text or "").split())
+    if not compact:
+        return None
+    suspicious = (
+        "ignore previous",
+        "system message",
+        "developer message",
+        "instructions to the assistant",
+    )
+    sentences = re.split(r"(?<=[.!?])\s+", compact)
+    for sentence in sentences:
+        candidate = sentence.strip(" \u00a0\t\r\n")
+        if not 40 <= len(candidate) <= 500:
+            continue
+        if any(token in candidate.casefold() for token in suspicious):
+            continue
+        if not re.search(
+            r"agent|ai|technical|support|customer|developer|platform|automation|engineering",
+            candidate,
+            re.IGNORECASE,
+        ):
+            continue
+        return candidate
+    return None
+
+
+def _is_free_text_field(item: dict[str, Any]) -> bool:
+    tag = str(item.get("tag") or "").casefold()
+    kind = str(item.get("type") or "").casefold()
+    role = str(item.get("role") or "").casefold()
+    if tag == "textarea":
+        return True
+    if tag != "input" or role in {"checkbox", "radio"}:
+        return False
+    return kind in {"", "text", "search", "url", "tel", "number", "email"}
+
+
+def _question_answers(
+    fields: list[dict[str, Any]],
+    *,
+    profile: dict[str, Any],
+    company: str,
+    role: str,
+    posting_text: str,
+) -> dict[int, dict[str, Any]]:
+    source_span = _job_source_span(posting_text)
+    answers: dict[int, dict[str, Any]] = {}
+    for item in fields:
+        if not _is_free_text_field(item):
+            continue
+        question = _context(item)
+        if application_question_kind(question) is None:
+            continue
+        try:
+            answer = build_application_question_answer(
+                profile,
+                question_source_span=question,
+                company=company,
+                role=role,
+                job_source_span=source_span,
+            )
+        except MessageError:
+            # The caller will report the field as an unknown required control;
+            # no claim is created and no guessed answer reaches the ATS.
+            continue
+        answers[int(item["index"])] = answer
+    return answers
+
+
+def _known_value(
+    item: dict[str, Any],
+    profile: dict[str, Any],
+    *,
+    question_answers: dict[int, dict[str, Any]] | None = None,
+) -> str | None:
+    index = item.get("index")
+    if question_answers is not None and index is not None:
+        answer = question_answers.get(int(index))
+        if answer is not None:
+            return str(answer["answer"])
     candidate = profile.get("candidate", {})
     labels = _label(item)
     context = _context(item)
@@ -250,7 +337,13 @@ def _known_value(item: dict[str, Any], profile: dict[str, Any]) -> str | None:
     return None
 
 
-async def _fill_known_fields(page: Any, fields: list[dict[str, Any]], profile: dict[str, Any], resume: Path) -> list[str]:
+async def _fill_known_fields(
+    page: Any,
+    fields: list[dict[str, Any]],
+    profile: dict[str, Any],
+    resume: Path,
+    question_answers: dict[int, dict[str, Any]],
+) -> list[str]:
     locator = page.locator(FIELD_SELECTOR)
     blockers: list[str] = []
     for item in fields:
@@ -262,7 +355,11 @@ async def _fill_known_fields(page: Any, fields: list[dict[str, Any]], profile: d
         if kind == "file" and ("resume" in label or item.get("id") == "_systemfield_resume"):
             await element.set_input_files(str(resume))
             continue
-        value = _known_value(item, profile)
+        value = _known_value(
+            item,
+            profile,
+            question_answers=question_answers,
+        )
         if value is None:
             if item.get("required"):
                 blockers.append(_safe_text(label or item.get("context") or item.get("placeholder") or kind))
@@ -355,6 +452,13 @@ async def _process_one(
         materials_root=materials_root,
     )
     fields = await _field_metadata(page)
+    question_answers = _question_answers(
+        fields,
+        profile=profile,
+        company=str(row["company"]),
+        role=str(row["title"]),
+        posting_text=posting_text,
+    )
     captcha_visible = await _has_visible_captcha(page)
     if captcha_visible:
         return {
@@ -372,7 +476,11 @@ async def _process_one(
         label = _label(item)
         if kind == "file" and ("resume" in label or item.get("id") == "_systemfield_resume"):
             continue
-        if _known_value(item, profile) is None:
+        if _known_value(
+            item,
+            profile,
+            question_answers=question_answers,
+        ) is None:
             blockers.append(_safe_text(label or item.get("context") or item.get("placeholder") or kind))
     if blockers:
         return {
@@ -383,6 +491,16 @@ async def _process_one(
             "blocker": "unknown_required_field",
             "fields": blockers[:12],
         }
+    answer_fingerprint = None
+    if question_answers:
+        answer_fingerprint = hashlib.sha256(
+            json.dumps(
+                question_answers,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode()
+        ).hexdigest()
     claim_path = evidence_dir / f"ats-{application_id[:16]}-claim.json"
     _write_json(claim_path, snapshot)
     claim_sha256 = hashlib.sha256(claim_path.read_bytes()).hexdigest()
@@ -391,6 +509,8 @@ async def _process_one(
         "resume_sha256": resume["resume_sha256"],
         "role_family": role_family,
     }
+    if answer_fingerprint:
+        payload["application_answers_sha256"] = answer_fingerprint
     payload_hash = hashlib.sha256(
         json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
     ).hexdigest()
@@ -412,7 +532,13 @@ async def _process_one(
         }
     clicked = False
     try:
-        fill_blockers = await _fill_known_fields(page, fields, profile, Path(resume["resume_path"]))
+        fill_blockers = await _fill_known_fields(
+            page,
+            fields,
+            profile,
+            Path(resume["resume_path"]),
+            question_answers,
+        )
         captcha_visible = await _has_visible_captcha(page)
         if fill_blockers or captcha_visible:
             ledger.complete_submission(intent.intent_id, intent.fence, "not_submitted")
@@ -439,6 +565,15 @@ async def _process_one(
             "title": row["title"],
             "status": outcome,
             "url": url,
+            "answered_fields": [
+                _safe_text(
+                    fields[index].get("labels")
+                    or fields[index].get("context")
+                    or fields[index].get("placeholder")
+                )
+                for index in sorted(question_answers)
+                if 0 <= index < len(fields)
+            ],
         }
     except Exception as error:
         try:
