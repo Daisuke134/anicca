@@ -82,3 +82,10 @@ def test_launchd_is_five_minutes_and_single_owner() -> None:
     text = plist.read_text()
     assert "<integer>300</integer>" in text
     assert "disk_cleanup.py" in text
+
+
+def test_legacy_hourly_trigger_delegates_to_the_same_host_guard() -> None:
+    script = Path(__file__).parents[1] / "legacy-disk-janitor.sh"
+    text = script.read_text()
+    assert "EMERGENCY_GUARD_FULL_PASS=1" in text
+    assert "disk_cleanup.py" in text

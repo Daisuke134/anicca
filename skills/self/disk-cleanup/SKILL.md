@@ -31,7 +31,10 @@ skills/self/disk-cleanup/install-launchd.sh
 The installer renders the user-specific plist, validates it with `plutil`, and
 registers `ai.anicca.life-manager-disk-cleanup` at a 300-second interval. If
 the macOS launchd user domain is temporarily unavailable, the existing
-emergency guard invokes `disk_cleanup.py` as its single fallback owner.
+emergency guard invokes `disk_cleanup.py` as its single fallback owner. The
+legacy hourly label is only a compatibility trigger: when the host adapter is
+installed it invokes the same emergency guard with `EMERGENCY_GUARD_FULL_PASS=1`
+so deferred worktree inspection is not permanently skipped.
 
 Run the tests with:
 
