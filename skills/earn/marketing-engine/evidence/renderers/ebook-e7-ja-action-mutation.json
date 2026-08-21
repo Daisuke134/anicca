@@ -1,0 +1,14 @@
+{
+  "schema_version": "marketing.renderer-mutation.v1",
+  "product_id": "ebook-ja",
+  "renderer_id": "watercolor-monk",
+  "baseline_script_id": "script.611ef3326f0a717107d37c0c",
+  "baseline_media_sha256": "3c41a0081c2e1d1190dde1936b3c7de601133c4259ae28613f580b39ec183325",
+  "mutation_script_id": "script.b805a4041f0325e7bd129dc0",
+  "declared_changed_component": "action",
+  "mutation_media_sha256": "35cfaad61497fa20d23888da5d0cfaa4ed0dc173f4b3e4a9cd7da7f44b76b2d2",
+  "media": {"codec": "H.264/AAC", "width": 720, "height": 1280, "duration_seconds": 9.458503},
+  "render_cost_usd": 0,
+  "external_effects": [],
+  "telegram_preview_message_id": 27387
+}
