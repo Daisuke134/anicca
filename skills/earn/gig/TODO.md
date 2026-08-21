@@ -954,6 +954,11 @@ parallel before the existing project workers, and one refresh failure degrades o
 When a purchased request exposes both its original request id and a talkroom id, an existing
 talkroom project containing the authenticated accumulated requirements is canonical. The resolver
 must not select an empty request-id twin and strand article, copy or other new Paid work as pending.
+Pre-purchase DM collection is attempted and any discovered thread/attachment remains mandatory
+context. When the authenticated offer has no DM reference and discovery returns no usable receipt,
+the loop records `dm_collection_unavailable` and continues only if proposal, full talkroom history
+and accumulated requirements are all present; it never invents a DM or blocks an otherwise
+buildable artifact merely to ask the buyer again.
 The authenticated offer page is the exact bridge from a purchased order to its pre-purchase DM:
 persist its `/mypage/direct_message/<id>` reference in the project proposal, then have Paid refresh
 that one thread directly. A buyer-name scan incorrectly reported Haru's real DM `10102712` absent

@@ -184,13 +184,30 @@ def _collect_dm_context(args, item: dict[str, Any], root: Path, base: Path) -> N
     try:
         receipt = _json_line(result.stdout, "dm_context")
     except Failure:
-        raise Failure("dm_context")
+        receipt = {
+            "ok": False,
+            "error": "dm_collection_unavailable",
+            "returncode": result.returncode,
+            "talkroom_id": _text(item.get("talkroom_id")),
+        }
+        _write(evidence, receipt)
     if receipt.get("ok") is True:
         return
     # A verified full-inbox miss is the explicit no-pre-purchase-DM state. Browser,
     # parser, identity and attachment failures must not silently compile partial context.
-    if receipt.get("error") != "dm_thread_not_found":
+    if receipt.get("error") not in {
+        "dm_thread_not_found", "dm_thread_unknown", "dm_collection_unavailable",
+    }:
         raise Failure("dm_context")
+    # A missing DM must remain a visible context gap, but it cannot suppress work already
+    # fully specified by the authenticated proposal, talkroom and accumulated requirements.
+    for required in (
+        root / "source" / "proposal" / f"offer-{_text(item.get('talkroom_id'))}.json",
+        root / "source" / "talkroom" / "messages.jsonl",
+        root / "requirements" / "live-buyer-reply.json",
+    ):
+        if not required.is_file() or required.is_symlink():
+            raise Failure("dm_context")
 
 def _row(snapshot: dict[str, Any], room: str) -> dict[str, Any]:
     for value in snapshot.get("orders", []):
