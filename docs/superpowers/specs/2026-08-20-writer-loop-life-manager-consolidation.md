@@ -656,8 +656,8 @@ Codex app-serverが現在のAqua login sessionから孤立し、UID 501のDirect
 `launchctl print gui/501`が同じcontextで回復した。cleanup receiptは`evaluated=0`、`reclaimed=0`で、
 cleanupがlaunchd定義またはstateを変更した証拠はない。
 
-再発防止は新しい常駐supervisorを追加せず、既存の管理CLIと既存のWriter healthcheckに同じ
-control-plane preflightを再利用する。管理contextが壊れている場合はplist、lock、launchd jobを変更せず
+再発防止は新しい常駐supervisorを追加せず、Life Managerの全launchd laneが使う既存の管理CLIへ
+共通control-plane preflightを一度だけ実装する。管理contextが壊れている場合はplist、lock、launchd jobを変更せず
 fail closedし、正確な診断receiptを残す。Writerの自然周期はlaunchdが所有し、Codex、ChatGPT、
 Profitable Cloud、Open Cloudの生存に依存させない。
 
@@ -670,8 +670,8 @@ Profitable Cloud、Open Cloudの生存に依存させない。
 - PPID 1だけではstale processと判定しない。PID、start token、executable、親GUI session、preflight失敗の
   全条件が一致しないプロセスを終了しない。
 - 回復後は同じpreflightを再実行し、成功receiptを得てから既存Writer labelだけを操作する。
-- 既存`article-healthcheck`の300秒tickが、creator receiptに加えてscheduler domain readbackの成否を報告する。
-  新しいLaunchAgent、常駐executor、重複supervisorは0件である。
+- Life Managerの既存status/health surfaceが共通preflight receiptをread-onlyで参照し、lane固有healthcheckへ
+  launchd診断ロジックを複製しない。新しいLaunchAgent、常駐executor、重複supervisorは0件である。
 - control-plane障害中も、すでにlaunchdが所有するWriter jobを「停止」と推定しない。自然tick receiptの有無を
   独立に記録し、管理不能とworker停止を別状態として扱う。
 - cleanupはcontrol-plane preflight失敗時にreclaim対象を変更せず、`blocked_control_plane` receiptを残す。
@@ -685,7 +685,7 @@ Profitable Cloud、Open Cloudの生存に依存させない。
 | 管理操作 | `launchctl`の個別結果を後から解釈 | 全変更前に共通preflightを一度実行 |
 | 141/153 | plistまたは全loop故障と誤認し得る | 操作context故障として分離し、変更を禁止 |
 | stale判定 | process断片情報を人が照合 | PID/start token/executable/GUI lineageの全一致を必須化 |
-| scheduler監視 | process生存や単発receiptに寄る | 既存healthcheckがdomain readbackと自然tickを別々に記録 |
+| scheduler監視 | process生存や単発receiptに寄る | 共通statusがdomain readbackとlane固有tickを別々に記録 |
 | cleanup | storage cleanupとcontrol-plane診断が別 | cleanup開始前に同じpreflightを通し、失敗時は無変更 |
 | 復旧 | ad hocな再起動を試し得る | 外部app-server自身の終了・再接続だけをbounded recoveryとし、OS serviceをkillしない |
 
@@ -699,7 +699,7 @@ Profitable Cloud、Open Cloudの生存に依存させない。
 | 4 | rc=141/153で無変更 | `test_launchd_preflight_fails_closed_on_manager_errors` | OK |
 | 5 | PPID 1だけでkillしない | `test_recovery_does_not_classify_daemon_by_ppid_alone` | OK |
 | 6 | cleanupを無変更で停止 | `test_cleanup_blocks_before_reclaim_when_control_plane_is_invalid` | OK |
-| 7 | 既存healthcheckへ統合 | `test_writer_healthcheck_records_scheduler_and_worker_separately` | OK |
+| 7 | Life Manager共通statusへ統合 | `test_launchd_status_records_control_plane_and_lane_ticks_separately` | OK |
 | 8 | 新規常駐labelなし | manifest snapshotでWriter label数が14のまま | OK |
 
 | Item | Value |
@@ -726,7 +726,7 @@ Profitable Cloud、Open Cloudの生存に依存させない。
 | R1 | incident evidenceを正本化する | cleanup無変更、旧操作context、回復後の`anicca/501/Aqua/gui/501`を同一receiptへ保存 | TODO |
 | R2 | 既存管理CLI用の共通preflightを追加する | 上記test matrix 1〜5がPASSし、失敗時のmutation callが0 | TODO |
 | R3 | `gig_release.py`のbootstrap/activate系変更前にpreflightを接続する | 正常時のみ既存処理へ進み、141/153 fixtureではexit 75 | TODO |
-| R4 | 既存`article-healthcheck`へread-only scheduler probeを接続する | 300秒receiptが`control_plane`と`worker_tick`を別フィールドで保持 | TODO |
+| R4 | Life Managerの既存status/health surfaceへ共通receiptのread-only表示を接続する | Writer専用ロジックを複製せず、`control_plane`とlane固有tickを別フィールドで保持 | TODO |
 | R5 | 既存cleanup入口へfail-closed gateを接続する | invalid context fixtureでevaluated/reclaimed/mutatedが全て0 | TODO |
 | R6 | 実Macで障害前後E2Eを行う | 正常preflight、14 label readback、300秒tick 2回、900秒tick 2回、06:00登録、重複投稿0 | TODO |
 | R7 | OSS runbookへ復旧境界を記録する | exact error、禁止操作、外部app再接続、再検証順が単一手順として読める | TODO |
