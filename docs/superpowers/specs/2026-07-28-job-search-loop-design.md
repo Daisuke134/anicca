@@ -155,7 +155,9 @@ The direct OpenClaw transport now uses its short `-m` message argument and a
 `27535` in 7.6 seconds.
 Launchd uses a minimal system PATH, while the OpenClaw launcher requires Homebrew
 Node. The transport now supplies the Homebrew bin/node paths only to its child
-process, eliminating the launchd-versus-interactive delivery drift.
+process and isolates that child from the launchd here-doc stdin, eliminating the
+launchd-versus-interactive delivery drift. The minimal-environment live send was
+acknowledged as Telegram message `27548`.
 
 Build a local-first job application operating system around the useful parts of
 `MadsLorentzen/ai-job-search`, without treating job descriptions as instructions and

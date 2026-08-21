@@ -87,6 +87,7 @@ def send_once(
             text=True,
             timeout=20,
             env=_transport_env(),
+            stdin=subprocess.DEVNULL,
         )
         if completed.returncode != 0:
             raise RuntimeError(f"Telegram transport failed rc={completed.returncode}")
@@ -157,6 +158,7 @@ def send_document_once(
             text=True,
             timeout=20,
             env=_transport_env(),
+            stdin=subprocess.DEVNULL,
         )
         if completed.returncode != 0:
             raise RuntimeError(
