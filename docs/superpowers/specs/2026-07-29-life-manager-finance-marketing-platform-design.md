@@ -1377,6 +1377,19 @@ provider profile before recording a direct TikTok receipt. The remaining MKT-03B
 canary must use the migrated approved pack and a native direct URL; no retry of
 the quarantined creative is allowed.
 
+**Wrong-content root cause and permanent guard.** The Anicca canary's Postiz
+account and API route were correct; Life Manager supplied the wrong bytes. The
+generic canary accepted `format_id=anicca-wake` because the earlier generation
+and publication contracts checked hashes and provider references but did not
+enforce the product's approved format family. That let the Life Manager
+`lm_wake_JA` demo pass the provider boundary. The guard is now fail-closed in
+both adapters: Anicca accepts only Larry/ReelClaw families, Honne accepts only
+the migrated Honne ReelClaw family, and unknown formats are rejected before any
+Postiz call. Runtime inputs are LM object refs only; every future lane must
+pass the same one-lane canary, native URL, Telegram, replay, and seven-cycle
+gates. The original wrong Anicca row remains quarantine evidence and is never
+reused.
+
 **Telegram binding discovery (2026-08-21 JST — transport and LM ownership
 complete for I-3).** The canonical job-search loop remains the existing working reference for
 the natural-language/report transport: `apps/job-search-loop/job_search_loop/telegram.py`
