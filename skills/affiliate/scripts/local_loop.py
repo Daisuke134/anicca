@@ -539,6 +539,36 @@ def safe_proposal_text(value, max_length=240):
     )
 
 
+def repost_consumption_state(repost_root, proposal_id, placement_id):
+    path = Path(repost_root).expanduser() / "affiliate-proposals-consumed.jsonl"
+    if not path.is_file():
+        return "UNCONSUMED_BY_SEPARATE_OWNER"
+    latest = None
+    try:
+        for line in path.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            row = json.loads(line)
+            if not isinstance(row, dict) or row.get("schema_version") != 1:
+                return "CONSUMPTION_LEDGER_INVALID"
+            if row.get("receipt_type") != "X_REPOST_AFFILIATE_PROPOSAL_CONSUMPTION":
+                return "CONSUMPTION_LEDGER_INVALID"
+            if row.get("proposal_id") == proposal_id:
+                latest = row
+    except (OSError, UnicodeDecodeError, ValueError):
+        return "CONSUMPTION_LEDGER_UNAVAILABLE"
+    if latest is None:
+        return "UNCONSUMED_BY_SEPARATE_OWNER"
+    if latest.get("placement_id") != placement_id:
+        return "CONSUMPTION_LEDGER_MISMATCH"
+    return {
+        "EFFECT_STARTED": "EFFECT_STARTED_BY_SEPARATE_OWNER",
+        "POSTED": "POSTED_BY_SEPARATE_OWNER",
+        "UNVERIFIED": "UNVERIFIED_BY_SEPARATE_OWNER",
+        "NO_EFFECT": "NO_EFFECT_BY_SEPARATE_OWNER",
+    }.get(latest.get("state"), "CONSUMPTION_LEDGER_INVALID")
+
+
 def observe_repost_acquisition(state):
     """Read the existing Repost ledger without owning or creating its effects."""
     configured = os.environ.get("AFFILIATE_REPOST_STATE_DIR")
@@ -757,6 +787,12 @@ def create_repost_proposal(state):
     proposal_id = hashlib.sha256(json.dumps(
         proposal_identity, sort_keys=True, separators=(",", ":")
     ).encode()).hexdigest()
+    repost_root = os.environ.get("AFFILIATE_REPOST_STATE_DIR") or str(
+        Path.home() / "loops" / "x-repost"
+    )
+    delivery_state = repost_consumption_state(
+        repost_root, proposal_id, selected["placement_id"]
+    )
     receipt = {
         "schema_version": 1,
         "receipt_type": "AFFILIATE_REPOST_PROPOSAL",
@@ -772,7 +808,7 @@ def create_repost_proposal(state):
         "article_title": selected["article_title"],
         "buyer_intent": selected["buyer_intent"],
         "selection_state": "BOUNDED_EXPLORATION_NO_APPROVED_NET",
-        "repost_delivery_state": "UNCONSUMED_BY_SEPARATE_OWNER",
+        "repost_delivery_state": delivery_state,
         "revenue_credit_state": "NO_REVENUE_CREDIT",
         "tracking_link_state": "NOT_INCLUDED",
     }
