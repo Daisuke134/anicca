@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "runtime_root": "apps/job-search-loop",
+  "runtime_tree_sha256": "62be72a491bff1ab84d939dae989244e1ef89f09bd06c145f49259b2293196c9",
+  "runtime_file_count": 115,
+  "hash_algorithm": "sha256(sorted relative path + NUL + file bytes + NUL; excludes state, cache, and __pycache__ directories)",
+  "canonical_census": {
+    "owner": "Daisuke134/life-manager",
+    "mutable_state_imported": false,
+    "source_absolute_path_references": 0,
+    "machine_paths_require_install_time_rendering": true
+  },
+  "source": {
+    "repository": "/Users/anicca/Projects/life-manager-main",
+    "path": "apps/job-search-loop",
+    "status": "canonical tracked runtime"
+  },
+  "active_runtime": {
+    "path": "~/.local/share/anicca/job-search/current",
+    "status": "host runtime observed as evidence only; mutable state is not imported"
+  },
+  "state": {
+    "active": "~/.local/state/anicca/job-search",
+    "parity": "read-only aggregate observed; private state is not imported"
+  },
+  "launchd_labels": [
+    "ai.anicca.job-search-daily",
+    "ai.anicca.job-search-inbox",
+    "ai.anicca.job-search-learning"
+  ],
+  "last_validation": {
+    "provider": "job_search",
+    "provider_observed_at": "2026-08-21T07:59:50.000Z",
+    "application_count": 68,
+    "confirmed_application_count": 9,
+    "offer_count": 0,
+    "accepted_count": 0,
+    "started_count": 0,
+    "application_state_counts": {
+      "discovered": 3,
+      "materials_ready": 1,
+      "rejected": 23,
+      "submit_unknown": 35,
+      "submitted": 6
+    },
+    "payroll_receipt_count": 0,
+    "bank_receipt_count": 0,
+    "payroll_amount_jpy": null,
+    "bank_landed_amount_jpy": null,
+    "income_status": "no_payroll_or_bank_receipt",
+    "job_search_ledger_readonly": true,
+    "launchd_mutated": false,
+    "mutable_state_mutated": false
+  }
+}
