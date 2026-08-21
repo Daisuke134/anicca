@@ -236,30 +236,8 @@ PYEOF
   AFFILIATE_ID="$($PY -c 'import json,sys; print(json.load(sys.stdin)["proposal_id"])' <<<"$AFFILIATE_PICK")"
   AFFILIATE_PLACEMENT="$($PY -c 'import json,sys; print(json.load(sys.stdin)["placement_id"])' <<<"$AFFILIATE_PICK")"
   AFFILIATE_URL="$($PY -c 'import json,sys; print(json.load(sys.stdin)["owned_article_url"])' <<<"$AFFILIATE_PICK")"
-  AFFILIATE_TITLE="$($PY -c 'import json,sys; print(json.load(sys.stdin).get("article_title") or "")' <<<"$AFFILIATE_PICK")"
-  AFFILIATE_INTENT="$($PY -c 'import json,sys; print(json.load(sys.stdin).get("buyer_intent") or "")' <<<"$AFFILIATE_PICK")"
-  AFFILIATE_SLUG="${AFFILIATE_URL##*/}"
-  if [ -n "$AFFILIATE_TITLE" ] || [ -n "$AFFILIATE_INTENT" ]; then
-    AFFILIATE_HOOK="${AFFILIATE_INTENT:-$AFFILIATE_TITLE}"
-    AFFILIATE_DETAIL="${AFFILIATE_TITLE:-Check fit, limits, and price before paying.}"
-  else
-    AFFILIATE_HOOK="Before paying for an AI workflow"
-    AFFILIATE_DETAIL="${AFFILIATE_SLUG//-/ }"
-  fi
-  cat >"$EV/post.txt" <<EOF
-$AFFILIATE_HOOK
-$AFFILIATE_DETAIL
-Check fit, limits, and price before paying.
-
-Affiliate disclosure: I may earn a commission if you subscribe through this link.
-$AFFILIATE_URL
-EOF
-  if ! "$PY" - "$EV/post.txt" <<'PYEOF'
-from pathlib import Path
-text = Path(__import__('sys').argv[1]).read_text(encoding='utf-8').strip()
-raise SystemExit(0 if text and len(text) <= 280 and 'Affiliate disclosure: I may earn a commission' in text else 1)
-PYEOF
-  then
+  if ! "$PY" "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL_INPUT" \
+    --render >"$EV/post.txt"; then
     report "❌ Affiliate proposal text failed the local disclosure/length gate"
     finish 1 "affiliate proposal text invalid"
   fi

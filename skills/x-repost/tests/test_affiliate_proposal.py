@@ -184,6 +184,24 @@ class AffiliateProposalTests(unittest.TestCase):
                 self.assertEqual(MODULE.select(proposal_path, consumed)["state"], "BLOCKED_CONSUMPTION_LEDGER")
                 consumed.unlink()
 
+    def test_post_text_is_bounded_and_keeps_disclosure_and_url(self) -> None:
+        proposal = {
+            "receipt_type": "AFFILIATE_REPOST_PROPOSAL",
+            "state": "READY_FOR_EXISTING_REPOST_OWNER",
+            "proposal_id": "a" * 64,
+            "placement_id": "voice-isolator-en-1",
+            "owned_article_url": "https://aniccaai.com/blog/voice-isolator",
+            "language": "en", "disclosure_required": True,
+            "tracking_link_state": "NOT_INCLUDED",
+            "revenue_credit_state": "NO_REVENUE_CREDIT",
+            "article_title": "Title " * 40,
+            "buyer_intent": "Intent " * 30,
+        }
+        text = MODULE.post_text(proposal)
+        self.assertLessEqual(len(text), 280)
+        self.assertIn("Affiliate disclosure: I may earn a commission", text)
+        self.assertIn("https://aniccaai.com/blog/voice-isolator", text)
+
 
 if __name__ == "__main__":
     unittest.main()

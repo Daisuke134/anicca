@@ -78,6 +78,22 @@ def canonical(proposal: dict) -> dict:
     return {field: proposal.get(field) for field in SAFE_FIELDS}
 
 
+def post_text(proposal: dict) -> str:
+    proposal = canonical(proposal)
+    url = proposal["owned_article_url"]
+    disclosure = "Affiliate disclosure: I may earn a commission if you subscribe through this link."
+    intent = " ".join((proposal.get("buyer_intent") or "").split())
+    title = " ".join((proposal.get("article_title") or "").split())
+    slug = url.rsplit("/", 1)[-1].replace("-", " ")
+    for intent_limit, title_limit in ((120, 100), (80, 70), (40, 40), (0, 0)):
+        hook = intent[:intent_limit].rstrip() if intent_limit else "Before paying for an AI workflow"
+        detail = title[:title_limit].rstrip() if title_limit else slug
+        text = f"{hook}\n{detail}\nCheck fit, limits, and price before paying.\n\n{disclosure}\n{url}"
+        if len(text) <= 280:
+            return text
+    raise ValueError("affiliate proposal copy exceeds X limit")
+
+
 def rows(path: Path) -> list[dict]:
     if not path.exists():
         return []
@@ -253,10 +269,14 @@ def main() -> int:
     parser.add_argument("--consumed", type=Path, required=True)
     parser.add_argument("--record", choices=("POSTED", "UNVERIFIED", "NO_EFFECT"))
     parser.add_argument("--claim", action="store_true")
+    parser.add_argument("--render", action="store_true")
     parser.add_argument("--post-url")
     args = parser.parse_args()
     if args.claim:
         print(json.dumps(claim(args.consumed, read_json(args.proposal)), sort_keys=True))
+        return 0
+    if args.render:
+        print(post_text(read_json(args.proposal)), end="")
         return 0
     if not args.record:
         print(json.dumps(select(args.proposal, args.consumed), sort_keys=True))
