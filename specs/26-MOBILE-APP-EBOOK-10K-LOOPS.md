@@ -8,7 +8,7 @@ Owner: Dais
 
 Marketing execution SSOT: `27-MARKETING-ENGINE-END-TO-END.md`
 
-Current dual-ebook activation SSOT: `28-EBOOK-SELLER-DUAL-MONK-LOOPS.md`. Spec 28 governs the local three-times-daily JP watercolor and EN Anicca monk loops, Postiz/Telegram closure, and the owner-approved free OmniAvatar choice. It supersedes this document's renderer choice only for those current ebook loops; the revenue doctrine here remains authoritative. HeyGen is unavailable and prohibited for new execution or fallback.
+Current dual-ebook activation SSOT: `28-EBOOK-SELLER-DUAL-MONK-LOOPS.md`. Spec 28 governs the local three-times-daily JP watercolor and EN Anicca monk loops, Postiz/Telegram closure, the owner-approved free OmniAvatar choice, and the current revenue target: each ebook must independently reach USD `$10,000` equivalent of rolling 30-day settled net revenue, for at least `$20,000` combined. It supersedes the older gross target and renderer choice only for those current ebook loops; the general scaling doctrine here remains authoritative. HeyGen is unavailable and prohibited for new execution or fallback.
 
 Live execution: Gates 1–13 are complete. Gate 14's scorer, CLI, mutation safety, exact tactic/renderer aggregation, immutable treatments, and ten-item production queue are built and verified; only native publication, checkpoint maturity, and real outcome write-back are time-dependent. That clock does **not** block independent implementation. The active build lane is now Gate 15 plus Gate 16A and the unfinished Mobile App Scaler/Ebook Seller actuators, while Gate 14 observations accrue in a background monitor. The first production watercolor post is TikTok ID `7669159327655054613` at `https://www.tiktok.com/@obou_anicca/video/7669159327655054613`, bound to immutable publication `publication.babf5c938cba5dc0d5c02b68` and experiment `experiment.preview-gate12`. Gate 13 added all ten attribution result records; its 15-minute query reported deterministic qualified clicks `0` and kept nine immature results null. Gate 14 then wrote decision `writeback.7da73ad427f5617d8ce7404e`: at 23 minutes, eligible experiments `0`, winner/loser/mutation `0`, and no hook/playbook hash change. The mature updater enforces EWMA alpha 0.3, at least three real observations before retirement, a 20% active exploration floor, exact experiment-plan mapping before tactic results, and renderer aggregation only from the bound cohort. Final frozen cohort v3 has ten exact, unique-hook plans/treatments rendered, visually checked, and queued daily at 20:15 JST from 2026-08-02 through 2026-08-11; queued/provider state is not relabeled as native publication. The last two hooks came from two bounded competitor INTEL passes with exact TikTok/transcript/media/judgment evidence. Rejected and earlier v1/v2 assets were never posted and remain outside the accepted selection. Full verification passes 281 tests plus 47 subtests. No fixture or legacy post can substitute. Exact contracts/evidence are in spec 27 §§3.12–3.14.
 
@@ -60,7 +60,7 @@ live minimal receipt before redirecting. See spec 27 §3.5.
 Run two revenue loops from one shared INTEL and MEASURE organ:
 
 1. **Mobile App Scaler** — scale `aniccaios` and `honne` to **$10,000 gross MRR each**.
-2. **Ebook Seller** — scale the initial Japanese ebook and initial English ebook to **$10,000 monthly gross revenue each** across KDP and direct sales, then replicate the proven recipe into more languages, accounts, and titles.
+2. **Ebook Seller** — scale the initial Japanese ebook and initial English ebook independently to **$10,000 equivalent rolling 30-day settled net revenue each** across KDP and direct sales, for at least `$20,000` combined, then replicate the proven recipe into more languages, accounts, and titles.
 
 The marketing organ is shared, but public accounts are product-dedicated. One account promotes exactly one product; one product may have many accounts. The English monk accounts promote `ebook-en`; the Japanese watercolor accounts promote `ebook-ja`. Creative engines and learning infrastructure are reusable, but an account never rotates between unrelated products. See spec 27 for the locked account map.
 
@@ -101,9 +101,9 @@ Net proceeds after store commission are a separate KPI. Never label gross MRR as
 
 ### Ebooks
 
-Ebooks are purchases, not recurring subscriptions; the target is monthly gross revenue. Track contribution margin per order after storefront fees/royalties.
+Ebooks are purchases, not recurring subscriptions; the current JP and EN target is rolling 30-day settled net revenue under Spec 28. Track gross and contribution per order separately after refunds, storefront fees/royalties, payment fees, and known variable fulfillment cost.
 
-At a $9.99 average gross selling price, $10,000 gross monthly revenue is about 1,001 orders/month or 33.4 orders/day **per language product**. KDP royalty and Gumroad/direct contribution are reported separately from gross revenue. After the first JP and EN products clear the gate, the agent may expand the same validated mechanism into additional titles, accounts, Spanish and other culturally adapted editions; literal translation alone is not a new validated product.
+At a `$9.99` average gross selling price, 1,001 orders/month is only the gross lower bound; the settled-net `$10,000` target requires more orders. KDP royalty and direct-sale economics are reported separately and then joined without double counting. After both JP and EN independently clear the gate, the agent may expand the same validated mechanism into additional titles, accounts, Spanish and other culturally adapted editions; literal translation alone is not a new validated product.
 
 ### 2.3 Scale ladder: $10k to $10M
 
@@ -413,7 +413,7 @@ The owner no longer watches browser automation, refills a HeyGen queue, reads so
 Visible benefits:
 
 - Two apps have separate, complete funnels and a mathematical route to $10k gross MRR each.
-- The initial JP and EN ebook products each have dedicated accounts, two storefront paths, and content-to-order attribution toward $10k monthly gross revenue per language product; only proven recipes expand into a portfolio.
+- The initial JP and EN ebook products each have dedicated accounts, two storefront paths, and content-to-order attribution toward `$10k` rolling 30-day settled net revenue per language product; only proven recipes expand into a portfolio.
 - The monk becomes an owned, consistent multilingual character instead of a HeyGen rental dependency.
 - Routine avatar output has a zero-render-cost local path; paid GPU is spent only on a measured challenger or fallback.
 - Every action is leased/idempotent; duplicate posts, duplicate publication actions, and cron collisions become measurable failures instead of silent damage.

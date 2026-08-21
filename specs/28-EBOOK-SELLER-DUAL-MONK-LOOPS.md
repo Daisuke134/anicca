@@ -23,18 +23,22 @@ Do not restore the six legacy jobs as the architecture. Their useful assets and 
 
 ## 1. Outcome and truthful revenue target
 
-Ebooks are one-time purchases. They do not create subscription MRR. The first north-star is:
+Ebooks are one-time purchases. They do not create subscription MRR. Each product has its own non-transferable north-star:
 
-> Combined `ebook-ja` + `ebook-en` monthly **net revenue run-rate of USD $10,000 equivalent**, calculated from settled direct-sale and authenticated marketplace receipts, after refunds and payment fees.
+| Product | Verified target | Portfolio effect |
+|---|---|---|
+| `ebook-ja` | rolling 30-calendar-day settled net revenue of USD `$10,000` equivalent | contributes `$10,000`; EN revenue cannot fill its gap |
+| `ebook-en` | rolling 30-calendar-day settled net revenue of USD `$10,000` | contributes `$10,000`; JP revenue cannot fill its gap |
+| Both passed | both independent targets are true in the same reporting period | rolling 30-day portfolio net is at least USD `$20,000` equivalent |
 
-The stretch target inherited from Spec 26 remains $10,000 monthly gross revenue for each product. Product-local currency results remain separate until a recorded FX rate and timestamp are available.
+Achievement uses actual settled direct-sale and authenticated marketplace receipts after refunds, payment/storefront fees, and known variable fulfillment costs. The first seven complete days may show `pace_30d = settled_net_7d × 30 / 7`, but pace is labeled an estimate and never closes the target. Japanese revenue is reported in JPY plus USD equivalent using the receipt or settlement FX rate; missing FX keeps the USD target unverified rather than inventing a conversion.
 
-At the current direct prices, before fees and refunds:
+At the current direct prices, before fees and refunds, order counts are only gross lower bounds:
 
-| Product | Current price | Gross sales needed per month | Approximate daily pace |
-|---|---:|---:|---:|
-| English ebook | USD 10.99 | 910 | 30/day |
-| Japanese ebook | JPY 1,580 | 1,000 for JPY 1.58m | 33/day |
+| Product | Current price | Gross lower-bound equation |
+|---|---:|---|
+| English ebook | USD 10.99 | `ceil(10,000 / 10.99) = 910` gross orders; the net target requires more |
+| Japanese ebook | JPY 1,580 | `ceil(USD 10,000 / settled net USD-equivalent per order)`; no fixed count without recorded FX and fees |
 
 Publishing volume is an input, not success. A loop is closed only when a native publication is reconciled, due metrics are observed, a business outcome is attributed or explicitly unavailable, and the next creative decision consumes that evidence.
 
@@ -97,7 +101,16 @@ All times are `Asia/Tokyo` and intentionally staggered:
 
 Each of the six OpenClaw automations invokes the same deterministic command with `product_id` and `slot_at`. It does not embed business prompts. Timeout must exceed the measured OmniAvatar render ceiling with a bounded margin. Failure alerting is enabled. A job cannot overlap another turn for the same product.
 
-### 3.2 New-video contract
+### 3.2 Content-to-account publication matrix
+
+| Product | Three daily creative videos | Postiz destinations for every video | CTA destination |
+|---|---|---|---|
+| `ebook-ja-watercolor` | Original Japanese watercolor monk story: a concrete suffering hook → short impermanence teaching → one immediately doable action → ebook CTA | TikTok `@obou_anicca` (`cmo5s4edx00vgn10ygnu34a0n`) and Instagram `@obou.anicca` (`cmooplxmu04tpmd0y4h3cpk33`) | `https://aniccaai.com/achan?campaign=<campaign_id>` |
+| `ebook-en-anicca-monk` | Original English Anicca Monk delivery using the owner-approved OmniAvatar identity: a concrete pain hook → impermanence reframe → one immediately doable action → ebook CTA; it is culturally authored, not a literal JP translation | TikTok `@monk_anicca` (`cmo5rwq2p00twn10yrsdglng3`) and Instagram `@anicca.en` (`cmn8y95rg02d2qx0y09bbk5pb`) | `https://aniccaai.com/monk?campaign=<campaign_id>` |
+
+One creative produces one final media hash and one campaign ID, then fans out to both product-locked platforms. Platform-native caption and hashtag formatting may differ, but the video, promise, CTA, creative ID, and campaign identity stay the same. Thus each product creates three videos and six platform publications per day; the portfolio creates six videos and twelve platform publications per day.
+
+### 3.3 New-video contract
 
 A normal slot is successful only when all three are new for that product:
 
@@ -180,16 +193,21 @@ Volume remains three videos per product per day until positive contribution is m
 
 Runtime messages begin with `OpenClaw::: Ebook Seller` so the source is audible and unmistakable. They are concise natural language, never raw stdout.
 
-Per-slot completion reports include product, slot, creative/hypothesis, native links or named platform failure, next checkpoint time, and whether the turn is healthy or degraded. A turn cannot say “posted successfully” without Postiz `postId` and a reconciled native URL.
+Telegram receives exactly four natural-language message classes:
 
-Checkpoint reports include the exact metrics, checkpoint age/status, change from the previous mature comparable result, and the next decision if evidence is sufficient. Daily product digests include:
+1. **Publication receipt — immediate, one message per creative.** Product, slot, one-sentence content/hook, declared experiment variable, campaign ID, render method/cost, both platform statuses, both native links or named failure, and next checkpoint time. A turn cannot say “posted successfully” without Postiz `postId` and a reconciled native URL.
+2. **Daily product digest — once per product at 23:30 JST.** Routine 6h/24h/72h/7d checkpoint rows stay in the ledger and are summarized instead of generating per-platform chat spam. Each of the two daily messages includes:
 
 - created videos out of 3;
 - TikTok and Instagram native receipts out of 3 each;
 - paid orders, refunds, gross and net revenue with source status;
+- rolling 30-day settled net, seven-day pace when valid, exact gap to that product's `$10,000` target, and target status;
 - best and worst mature creative, or why no comparison is valid;
 - the next single experiment;
 - incidents with durable owner and recovery state.
+
+3. **Health incident — immediate and deduplicated.** Product/account/stage, what succeeded, what failed, duplicate risk, bounded retry time, and durable repair owner. One repeated fault does not create hourly spam.
+4. **Weekly portfolio decision — Sunday 23:45 JST.** JP and EN remain separate: actual rolling 30-day net, `$10k` gap, evidence quality, promoted/stopped experiments, current `$0/$1k/$3k/$10k` gate, and next bounded allocation. The portfolio reports `$20k` only when both products independently pass `$10k`.
 
 Telegram provider message IDs are stored and deduplicated by event UUID. A send failure receives one bounded retry and cannot block durable publication or metrics truth.
 
@@ -208,13 +226,29 @@ Only the first unchecked item is active. Each item ends in a focused test, real 
 - [ ] **E8 — Propagate campaign attribution.** Carry campaign ID from each destination through landing, Stripe Checkout metadata, completion, refund, and fulfillment. **Done:** one non-production checkout fixture and Stripe read-back bind the same campaign without counting test revenue.
 - [ ] **E9 — Implement Postiz stage/create/reconcile.** Persist intent and `postId`, isolate platform effects, and reconcile unknown outcomes before retry. **Done:** forced timeout and partial-platform tests produce zero duplicates and truthful degraded state.
 - [ ] **E10 — Connect free/native checkpoints and business truth.** Reuse the Marketing Engine's current native/Postiz analytics and product-scoped Stripe snapshots; exclude old Apify paths. **Done:** one actual native post and one no-sale business day render measured/null states correctly.
-- [ ] **E11 — Implement natural Telegram projections.** Add per-slot, checkpoint, incident, and daily product messages with event-UUID dedupe. **Done:** a real Bot send returns a provider message ID and matches ledger values.
+- [ ] **E11 — Implement natural Telegram projections.** Add the four exact classes in §6 with event-UUID dedupe; routine checkpoints roll into the product digest. **Done:** real publication, daily-product, incident, and weekly-portfolio Bot sends return provider message IDs and exactly match ledger values without raw-log or checkpoint spam.
 - [ ] **E12 — Run non-publishing shadow turns.** Execute both products through decision, render, preflight, intent, metrics read, and report without provider create. **Done:** three consecutive shadow turns per product have no unowned state, identity ambiguity, or accidental external effect.
 - [ ] **E13 — Publish the JP canary.** One watercolor creative fans out through Postiz to JP TikTok and Instagram. **Done:** both native URLs and Postiz IDs reconcile, Telegram reports naturally, and no duplicate exists.
 - [ ] **E14 — Publish the EN canary.** One OmniAvatar creative fans out through Postiz to EN TikTok and Instagram; if EN TikTok remains disabled, Instagram publishes and the turn remains degraded. **Done:** all eligible native effects reconcile, render cost is zero, and the blocker is explicit.
 - [ ] **E15 — Enable six local OpenClaw slots.** Create six local command automations with exact timezone, non-overlap, bounded timeout, and failure alert. Verify no legacy monk publisher is loaded or enabled. **Done:** scheduler read-back matches §3.1 and each job calls only the shared runner.
 - [ ] **E16 — Complete the seven-day activation soak.** Monitor without passive waiting while independent fixes and checkpoint collection continue. **Done:** 42 unique videos exist—21 per product—with up to 84 platform receipts, duplicate external effects equal zero, every due checkpoint is measured or has a named status, daily Stripe truth exists, Telegram IDs exist, and at least one mature result changes a later decision input.
-- [ ] **E17 — Enter revenue scaling.** Keep cadence fixed until contribution is positive, then allocate more winning capacity within provider/account limits. **Done:** the first combined $10k monthly net revenue run-rate is supported by settled receipts and refunds/fees, never extrapolated views.
+- [ ] **E17 — Enter revenue scaling.** Keep cadence fixed until contribution is positive, then allocate more winning capacity within provider/account limits. **Done:** `ebook-ja` and `ebook-en` each independently show at least USD `$10,000` equivalent of actual rolling 30-day settled net revenue; the portfolio is at least `$20,000`, and neither target is closed by views, pace estimates, or the other product's revenue.
+
+### 7.1 Contract test matrix
+
+| To-Be | Test name | Required evidence |
+|---|---|---|
+| Each product routes only to its two locked accounts and CTA | `test_ebook_product_account_routing` | exact four Postiz IDs and two destination paths match §3.2 |
+| One creative fans out without becoming two videos | `test_creative_fanout_preserves_identity` | TikTok/Instagram rows share media hash, creative ID, campaign ID, promise, and CTA |
+| Telegram emits exactly four natural message classes | `test_owner_report_four_classes_and_dedupe` | fixture equality plus real Bot message IDs; routine checkpoints create no chat spam |
+| JP and EN revenue cannot subsidize each other's target | `test_ebook_targets_are_product_isolated` | `$20k/$0` and `$0/$20k` fixtures both leave one target false; `$10k/$10k` passes both |
+| Pace, gross, views, or missing JP FX cannot close net target | `test_rolling_net_target_rejects_proxies` | only actual rolling 30-day settled net with recorded conversion passes |
+
+| E2E item | Judgment |
+|---|---|
+| UI change | none |
+| Maestro | not required; this is a local service, publisher, ledger, and Telegram flow |
+| Real E2E | required: exact Postiz/native receipts, real Telegram Bot message IDs, and product-scoped Stripe read-back |
 
 ## 8. Activation gates and rollback
 
