@@ -84,6 +84,12 @@ boards, skipped Cohere due to its recorded provider policy, discovered ElevenLab
 Enterprise Solutions Engineer - Poland, clicked the real submit control once, and
 recorded `submit_unknown`; its distinct run-ID Telegram checkpoint was acknowledged
 as message `27523`.
+Live board rotation now excludes hard employer exclusions and board-level provider
+limits before selecting a role. It broadened the official source set to eleven
+relevant boards and found Harvey's Senior Product Marketing Manager, Solutions role.
+The Ashby mapper recognizes separate legal/preferred first/last-name controls and
+the approved Mitsubishi UFJ Information Technology current-employer fact; the real
+Harvey submit click is fenced as `submit_unknown`, with Telegram ACK `27527`.
 The daily script now bounds the non-deterministic browser fallback at 300 seconds
 by default (`JOB_SEARCH_BROWSER_TIMEOUT_SECONDS` may lower or raise that bounded
 value); deterministic ATS fast paths run before it and retain their own evidence.
@@ -133,7 +139,7 @@ launchd (30 min)
 | No candidate in current cache | Refresh the known official Ashby boards, then report `no_work`; do not invoke an unbounded model search or invent a job |
 | Browser/CDP unavailable | No Ledger claim and no form action; browser owner launchd keeps/restarts only its dedicated profile, then the next wake retries |
 | Provider policy visible | Record the exact policy and quarantine the row; never bypass application limits or repeat it on every wake |
-| Required form fact unknown | Store the exact non-secret fields keyed to the profile SHA-256; skip that row until the profile changes, then continue to another candidate rather than guessing a fact |
+| Required form fact unknown | Store the exact non-secret fields keyed to the profile SHA-256 and mapper revision; skip that row until profile facts or the grounded mapper change, then continue to another candidate rather than guessing a fact |
 | Submit click without authoritative confirmation | Record `submit_unknown`; never click it again; inbox/ATS reconciliation owns later confirmation |
 | Telegram transport outcome unknown | Keep the event `send_started`; never blindly resend; a later reconciliation may attach an authoritative ACK. Every wake includes its run ID in the checkpoint message, so every run has an independently observable delivery attempt |
 | Model fallback | Disabled by default for Ashby. It can only be explicitly re-enabled after a bounded deterministic lane has no viable source |

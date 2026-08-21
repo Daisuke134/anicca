@@ -57,6 +57,8 @@ set +e
   --profile "$JOB_SEARCH_PROFILE" \
   --materials-root "${XDG_DATA_HOME:-$HOME/.local/share}/anicca/job-search/materials" \
   --prompt "$JOB_SEARCH_APP_ROOT/prompts/daily-pass.md" \
+  --refresh-state "$JOB_SEARCH_STATE_ROOT/ashby-live-board-cursor.json" \
+  --board-batch 12 \
   --output "$ASHBY_DISCOVERY_RESULT" \
   --max-jobs 1
 ASHBY_DISCOVERY_RC=$?

@@ -85,21 +85,32 @@ def _candidate_jobs(
     return rows
 
 
-def _japan_board_slugs(jobs: list[dict[str, Any]]) -> dict[str, str]:
-    boards: dict[str, str] = {}
+def _board_slugs(jobs: list[dict[str, Any]]) -> list[tuple[str, str]]:
+    boards: dict[str, tuple[str, bool]] = {}
     for job in jobs:
         if str(job.get("ats") or "").casefold() != "ashby":
+            continue
+        if is_excluded_employer(str(job.get("company") or "")):
+            continue
+        if not ROLE_RE.search(str(job.get("title") or "")):
             continue
         location = " ".join(
             [str(job.get("location") or ""), *[str(x) for x in (job.get("secondary_locations") or [])]]
         )
-        if not JAPAN_RE.search(location):
-            continue
         path = urlsplit(str(job.get("url") or "")).path.strip("/").split("/")
         if len(path) < 2 or not path[0]:
             continue
-        boards.setdefault(path[0], str(job.get("company") or path[0]))
-    return boards
+        slug = path[0]
+        japan_priority = bool(JAPAN_RE.search(location))
+        current = boards.get(slug)
+        if current is None or (japan_priority and not current[1]):
+            boards[slug] = (str(job.get("company") or slug), japan_priority)
+    return [
+        (slug, company)
+        for slug, (company, _japan_priority) in sorted(
+            boards.items(), key=lambda item: (not item[1][1], item[0])
+        )
+    ]
 
 
 def _posted_at_ms(value: Any) -> int:
@@ -142,15 +153,40 @@ def _live_board_jobs(slug: str, company: str) -> list[dict[str, Any]]:
     return rows
 
 
-def _fresh_jobs(cached_jobs: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[str]]:
+def _refresh_cursor(path: Path, count: int) -> int:
+    if count <= 0:
+        return 0
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+        return int(value.get("next_index", 0)) % count
+    except (OSError, ValueError, TypeError, json.JSONDecodeError):
+        return 0
+
+
+def _save_refresh_cursor(path: Path, next_index: int) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    path.write_text(json.dumps({"version": 1, "next_index": next_index}) + "\n", encoding="utf-8")
+    os.chmod(path, 0o600)
+
+
+def _fresh_jobs(
+    cached_jobs: list[dict[str, Any]], refresh_state: Path, board_batch: int
+) -> tuple[list[dict[str, Any]], list[str], int, list[str]]:
     rows: list[dict[str, Any]] = []
     errors: list[str] = []
-    for slug, company in sorted(_japan_board_slugs(cached_jobs).items()):
+    boards = _board_slugs(cached_jobs)
+    if not boards:
+        return rows, errors, 0, []
+    batch = max(1, min(board_batch, len(boards)))
+    start = _refresh_cursor(refresh_state, len(boards))
+    selected = [boards[(start + offset) % len(boards)] for offset in range(batch)]
+    for slug, company in selected:
         try:
             rows.extend(_live_board_jobs(slug, company))
         except Exception as error:
             errors.append(f"{slug}:{type(error).__name__}")
-    return rows, errors
+    _save_refresh_cursor(refresh_state, (start + batch) % len(boards))
+    return rows, errors, len(boards), [slug for slug, _company in selected]
 
 
 def discover_one(
@@ -160,6 +196,8 @@ def discover_one(
     profile_path: Path,
     materials_root: Path,
     prompt_path: Path,
+    refresh_state: Path,
+    board_batch: int,
     max_jobs: int = 1,
 ) -> dict[str, Any]:
     profile = json.loads(profile_path.read_text(encoding="utf-8"))
@@ -188,7 +226,9 @@ def discover_one(
             if _board_slug(str(row[0]))
         }
         cached_jobs = _read_jobs(cache_path)
-        live_jobs, refresh_errors = _fresh_jobs(cached_jobs)
+        live_jobs, refresh_errors, board_count, queried_boards = _fresh_jobs(
+            cached_jobs, refresh_state, board_batch
+        )
         jobs = _candidate_jobs([*live_jobs, *cached_jobs], seen, limited_boards)
         baseline = json.loads(
             (Path(__file__).resolve().parents[1] / "config" / "strategy.default.json").read_text()
@@ -237,7 +277,8 @@ def discover_one(
         return {
             "status": "discovered" if discovered else "no_work",
             "discovered": discovered,
-            "live_board_count": len(_japan_board_slugs(cached_jobs)),
+            "live_board_count": board_count,
+            "queried_boards": queried_boards,
             "live_refresh_errors": refresh_errors,
             "provider_limited_boards": sorted(limited_boards),
         }
@@ -254,6 +295,12 @@ def main() -> int:
     parser.add_argument("--prompt", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--max-jobs", type=int, default=1)
+    parser.add_argument(
+        "--refresh-state",
+        type=Path,
+        default=Path.home() / ".local/state/anicca/job-search/ashby-live-board-cursor.json",
+    )
+    parser.add_argument("--board-batch", type=int, default=12)
     args = parser.parse_args()
     result = discover_one(
         cache_path=args.cache,
@@ -261,6 +308,8 @@ def main() -> int:
         profile_path=args.profile,
         materials_root=args.materials_root,
         prompt_path=args.prompt,
+        refresh_state=args.refresh_state,
+        board_batch=args.board_batch,
         max_jobs=args.max_jobs,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True, mode=0o700)

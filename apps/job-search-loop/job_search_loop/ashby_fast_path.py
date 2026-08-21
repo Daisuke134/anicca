@@ -335,6 +335,11 @@ def _known_value(
     candidate = profile.get("candidate", {})
     labels = _label(item)
     context = _context(item)
+    romaji_parts = candidate.get("name_romaji_parts") or {}
+    if "legal first" in context or "preferred first" in context:
+        return str(romaji_parts.get("given") or "")
+    if "legal last" in context or "preferred last" in context:
+        return str(romaji_parts.get("family") or "")
     if labels in {"name", "full name"} or "legal name" in context:
         return str(candidate.get("name") or "")
     if "preferred name" in context:
@@ -353,6 +358,10 @@ def _known_value(
         for fact in profile.get("facts", []):
             if fact.get("id") == "application_source_job_board_20260807":
                 return "Company website"
+    if "current or most recent employer" in context:
+        for fact in profile.get("facts", []):
+            if fact.get("id") == "muit_role_2025":
+                return "Mitsubishi UFJ Information Technology"
     return None
 
 
@@ -656,6 +665,7 @@ async def _process_one(
 async def _run(args: argparse.Namespace) -> dict[str, Any]:
     profile = json.loads(args.profile.read_text(encoding="utf-8"))
     profile_sha256 = hashlib.sha256(args.profile.read_bytes()).hexdigest()
+    mapper_sha256 = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
     required_field_blockers = _load_required_field_blockers(args.blocker_state)
     ledger = Ledger(args.ledger)
     exclusions = profile.get("candidate", {}).get("employer_exclusions", [])
@@ -681,7 +691,11 @@ async def _run(args: argparse.Namespace) -> dict[str, Any]:
     for row in rows_by_id.values():
         application_id = str(row["application_id"])
         blocker = required_field_blockers.get(application_id)
-        if blocker and blocker.get("profile_sha256") == profile_sha256:
+        if (
+            blocker
+            and blocker.get("profile_sha256") == profile_sha256
+            and blocker.get("mapper_sha256") == mapper_sha256
+        ):
             skipped_blocked.append(
                 {
                     "application_id": application_id,
@@ -744,6 +758,7 @@ async def _run(args: argparse.Namespace) -> dict[str, Any]:
             if outcome.get("blocker") == "unknown_required_field":
                 required_field_blockers[application_id] = {
                     "profile_sha256": profile_sha256,
+                    "mapper_sha256": mapper_sha256,
                     "fields": list(outcome.get("fields") or [])[:12],
                 }
             else:
