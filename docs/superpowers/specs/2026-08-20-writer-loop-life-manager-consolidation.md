@@ -459,6 +459,8 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
 - この実行痕跡は、Coconala laneと同じく過去にlaunchdから起動されたworkerが実行平面に残る可能性を示すが、loaded label、current argv/env、次回の自然tickを証明しない。Appleのlaunchd説明でも、`~/Library/LaunchAgents`はユーザー単位の定義場所であり、管理対象の確認・操作は`launchctl`のdomainで行う契約である（[Apple Support: Script management with launchd](https://support.apple.com/guide/terminal/script-management-with-launchd-apdc6c1077b-5d5d-4d35-9c19-60f2397b2369/mac)）。
 - `owner-fence/owner.json`は現在`article-resume`のPID 81389を記録し、観測終了後に実ownerが消滅した。recovery lockの`owner.pid=40373`・`owner.start=Fri Aug 21 01:56:52 2026`は変わらず、A1〜A5を飛ばして削除・移動していない。logout、reboot、launchd/loginwindow/opendirectorydのkill、bootstrap/bootout/kickstartも行っていない。
 - `writer-report.out.log`は133件のJSON結果を保持し、12件は`status=sent`のTelegram delivery receipt、直近の複数tickは同一semantic hashで`deliveries=[]`だった。これは同一内容・同一状態のdedupeであり、送信transport failureではない。新しい公開・入金・障害差分が発生していないため、report workerが同じ文面を毎回再送していないことを「Telegram loop停止」とは扱わない。
+- 11:34 JSTのtarget-state readbackでは`claim-loop-latest.json`（`status=READY`、queue `1→1`、observations `231`、source totalsはOK 3 / unavailable 1）と`reporting/latest.json`（生成時刻11:34:47、記事98件）が更新された。`money.payout_receipts`は0件で、観測値・価格設定・閲覧を入金receiptへ変換していない。これは需要・報告workerの一回の実行証拠であり、article-dailyの新規公開証拠ではない。
+- 実行中のCoconala PID（`application_direct`、`reply_detector`、`storefront_direct`、`paid_direct`）を`launchctl bsexec`しても`gui/501`・`user/501`のprintは全てrc=141だった。localhost SSHで同じUIDの新しいsessionを作る試行も`No user exists for uid 501`で拒否された。したがって、別workerのbootstrap namespaceへ逃がしてもreadbackは復旧せず、UID 501のDirectory Services/user recordまたはGUI bootstrapを外部の正しいmacOS管理contextで復旧する必要がある。現セッションからuser recordを作成・serviceをkill/restartする操作は行わない。
 - 結論は「disk上の14 plistと5 calendar scheduleは修復済み」「一回のWriter worker実行は観測」「launchd loaded stateと5分周期の再発は未証明」であり、Writerを常時公開中とは宣言しない。A1（正しいGUI/user contextでcontrol-plane readbackを復旧）が引き続き先頭TODOである。
 
 ## 目標構成
@@ -548,7 +550,7 @@ publication identity、読者、payout、ledgerを分ける。
 
 この表は過去のmilestone状態を保持する履歴である。現在の実行順序は次の原子TODOを正本とする。
 
-## Current atomic remaining TODO（2026-08-21 11:32 JST）
+## Current atomic remaining TODO（2026-08-21 11:36 JST）
 
 各行は一つの外部状態または証拠だけを変える。前行の完了証拠がない限り、次行を開始しない。
 
