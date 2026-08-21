@@ -70,9 +70,8 @@ async function resolvedFetch(input, init, env) {
   const resolver = new Resolver(), configured = String(env && env.LM_CFO_DNS_SERVERS || "").split(",").map(value => value.trim()).filter(Boolean);
   resolver.setServers(configured.length ? configured : ["1.1.1.1", "8.8.8.8"]);
   const addresses = await resolver.resolve4(target.hostname);
-  let lastError = new Error("cfo_dns_request");
-  for (const address of addresses) try { return await resolvedRequest(target, address, init); } catch (error) { lastError = error; }
-  throw lastError;
+  if (!addresses.length) throw new Error("cfo_dns_request");
+  return resolvedRequest(target, addresses[0], init);
 }
 function makeDnsFetch(nativeFetch) {
   return async (input, init) => {
