@@ -783,7 +783,13 @@ a later successful example.
   `kaitori-area_img1.jpg`; 1,575,075 / 799,982 / 1,070,716 bytes). The project holds exactly those
   three files, recomputed disk SHA256 equals every `source_refs` receipt, and all three absolute
   paths appear in `combined_context.buyer_attachments` and `read_these_first`.
-- [ ] P8 — Persist one context digest plus source receipts before semantic work begins.
+- [x] P8 — Persist one context digest plus source receipts before semantic work begins. The
+  compiler atomically writes `context/current.json`, then fsync-appends
+  `context/context-read-receipts.jsonl`; only after that returns does `_paid_decision` construct
+  or run its semantic prompt. Manledge's latest receipt binds context SHA256
+  `47280faaff6c534fe0e64902bfbb9440da2f418f58ac4e80b75f21857aee7241`, buyer event
+  `7fdfbc41…`, and 23 byte/SHA256 source receipts under receipt SHA256
+  `b2025e5001f705964a823df5b392f0d3b98ca5576a0402edd862fda14278bd85`.
 - [ ] P9 — Suppress any question whose answer already exists in the bound context.
 - [ ] P10 — Permit one clarification only for a genuinely absent fact that blocks truthful work.
 - [ ] P11 — Produce every non-blocked portion while that clarification is pending.
