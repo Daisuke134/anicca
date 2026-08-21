@@ -1,5 +1,23 @@
 # Affiliate local money loop handover
 
+- Existing Repost owner pass `20260821T232941` used the bounded Affiliate
+  reservation after generic reposts had reached their 12-post ceiling. It
+  wrote `EFFECT_STARTED` for proposal
+  `7d7ebae323b231def15d347ccc34d22fbb413cabcecf387d0b3b4779f778a296`, then
+  X accepted the compose action but six exact-timeline readbacks found no
+  permalink. The owner therefore wrote terminal `UNVERIFIED`, no Affiliate
+  `posted.jsonl` row, and no retry is permitted. This is neither a verified
+  post nor a click, transaction, commission, or money event. Repost release
+  `5bfe89900af9bf66296cc6fc0f46a4bd123e0871` is installed; it reserves at most
+  one READY Affiliate proposal per JST day, preserves generic/hourly brakes,
+  bounds Telegram sends, and never releases a browser lease it did not acquire.
+  Affiliate release `aabed6fe99b9bf82c0e526a37f3f924ef953b1d8` is installed
+  and observed the terminal state as
+  `UNVERIFIED_BY_SEPARATE_OWNER / NO_REVENUE_CREDIT`, with `0/58` exact joins
+  and rolling net still `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS /
+  cost=UNKNOWN`. Later source commits harden the consumption-ledger parser
+  before the next install; no raw tracking link is in any receipt.
+
 - At `2026-08-21T23:13:51+0900`, the installed Affiliate release is
   `b694746b02a1c220b6a271d15392e90c7156a90a` and the installed Repost release
   is `2c18fb2fac824683fc6fb37fe607068b3c30bf83`. The latest durable proposal

@@ -1387,6 +1387,29 @@ post-midnight safe trigger of the existing Repost owner, then exact
 exposure, pending reward, or estimate still cannot close B01 or count toward
 the USD 10,000 gate.
 
+### 1.1.56 First Repost proposal attempt is terminally unverified, not money
+
+After the generic Repost owner had reached its ordinary 12-post daily brake,
+immutable Repost release `5bfe89900af9bf66296cc6fc0f46a4bd123e0871` let one
+validated Affiliate `READY` proposal use its separate one-per-JST-day reserved
+attempt. Pass `20260821T232941` wrote its fsync'ed `EFFECT_STARTED` claim for
+proposal `7d7ebae323b231def15d347ccc34d22fbb413cabcecf387d0b3b4779f778a296`
+and the exact placement `elevenlabs-discovered-voice-isolator-en-1` before the
+X call. X accepted the compose action, but all six exact-timeline readbacks
+failed to find a matching permalink. The owner wrote a terminal `UNVERIFIED`
+receipt with no `post_url`, no Affiliate `posted.jsonl` row, and no retry.
+
+This is an unknown external X effect, not a verified post. It creates no
+placement join, provider click, transaction, commission, or money credit.
+Affiliate release `aabed6fe99b9bf82c0e526a37f3f924ef953b1d8` is installed and
+reads the terminal as `UNVERIFIED_BY_SEPARATE_OWNER` while retaining
+`NO_REVENUE_CREDIT`; the observed Repost join remains `0/58` and rolling net is
+`NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / cost=UNKNOWN`. The next local
+hardening release validates every consumption row, canonical claim snapshot,
+write-ahead state transition, and immutable placement history before it reports
+this state. The only route toward B01 remains a future verified placement
+permalink followed by an official non-empty PartnerStack transaction row.
+
 ### 1.2.0 Audited executable boundary
 
 The installed ownership graph has six launchd labels: three persistent browser
