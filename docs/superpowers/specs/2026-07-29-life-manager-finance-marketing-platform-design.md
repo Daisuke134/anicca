@@ -1298,7 +1298,10 @@ The shared shell helper `skills/_shared/send-telegram.sh` is not a safe source
 for this recovery because its fallback reads `$HOME/.openclaw/.env`. Life Manager
 must not import that file, the job-search secret file, or any other sibling-loop
 credential. No Life Manager-owned Telegram binding is present in the guarded
-state, so the next atomic action is to provision a Life Manager-owned secret
+state: read-only filesystem metadata confirms `~/.openclaw/.env` exists with
+mode `0600`, while `~/.local/state/life-manager/.env` does not exist; the
+contents of the former were not read. The next atomic action is to provision a
+Life Manager-owned secret
 reference (`secret://telegram/bot-token`) and owner chat reference, then verify
 the Bot API identity with a redacted `getMe` preflight before the canary. The
 credential value is not copied into Git, state, logs, or this spec.
