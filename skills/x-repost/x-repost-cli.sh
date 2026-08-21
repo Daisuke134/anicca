@@ -34,6 +34,7 @@ GUARD="$HOME/.config/ai/bin/browser-guard.sh"
 ENSURE_BROWSER="$HOME/anicca/skills/browser/ensure_provision_browser.sh"
 AFFILIATE_PROPOSAL="${AFFILIATE_REPOST_PROPOSAL_PATH:-$HOME/.local/state/life-manager/affiliate/repost-proposals/latest.json}"
 AFFILIATE_CONSUMED="$STATE/affiliate-proposals-consumed.jsonl"
+BROWSER_LEASED=0
 
 PASS_ID="$(date +%Y%m%dT%H%M%S)"
 EV="$STATE/evidence/$PASS_ID"
@@ -101,7 +102,10 @@ finish() {
   # Heartbeat marks "a pass ran to a decision", not "a post shipped" -- a legitimately quiet day
   # (no worthwhile candidate) must not read as a dead loop to the healthcheck.
   [ "$rc" -eq 0 ] && touch "$STATE/.last-pass"
-  bash "$GUARD" release "$IDENTITY" >/dev/null 2>&1 || true
+  if [ "$BROWSER_LEASED" -eq 1 ]; then
+    bash "$GUARD" release "$IDENTITY" >/dev/null 2>&1 || true
+    BROWSER_LEASED=0
+  fi
   exit "$rc"
 }
 
@@ -199,6 +203,10 @@ for line in lines:
 print(len(ids))
 PYEOF
 )"
+set -a
+# shellcheck source=/dev/null
+. "$HOME/.openclaw/.env" 2>/dev/null
+set +a
 # Read and validate the proposal ledger before the daily generic-post gate. An unresolved
 # EFFECT_STARTED claim must remain recoverable even when generic reposts already hit their brake.
 if ! AFFILIATE_PICK="$($PY "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL" --consumed "$AFFILIATE_CONSUMED" 2>>"$EV/affiliate-proposal.err")"; then
@@ -229,10 +237,6 @@ if [ "${TODAY_COUNT:-0}" -ge "${X_REPOST_DAILY_MAX:-12}" ] \
   exit 0
 fi
 
-set -a
-# shellcheck source=/dev/null
-. "$HOME/.openclaw/.env" 2>/dev/null
-set +a
 if [ -z "${TWITTER_AUTH_TOKEN:-}" ]; then
   report "❌ TWITTER_AUTH_TOKEN unset — cannot restore the X session"
   finish 1 "TWITTER_AUTH_TOKEN unset"
@@ -246,7 +250,8 @@ case "$CDP" in
      report "⚠️ ブラウザ($IDENTITY)を確保できずパスを見送り: $(tail -1 "$EV/browser.err" 2>/dev/null)"
      exit 0 ;;
 esac
-trap 'bash "$GUARD" release "$IDENTITY" >/dev/null 2>&1 || true' EXIT
+BROWSER_LEASED=1
+trap '[ "$BROWSER_LEASED" -eq 1 ] && bash "$GUARD" release "$IDENTITY" >/dev/null 2>&1 || true' EXIT
 
 # ---------------------------------------------------------------- affiliate proposal (one exact owned article, no tracking link)
 # Affiliate can offer a policy-safe placement but cannot publish through this owner.
