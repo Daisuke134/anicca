@@ -1351,6 +1351,18 @@ exists, and no X/Provider/Money effect occurred. The next eligible JST pass
 owns the first attempt; until it returns an exact permalink and the Affiliate
 observer joins it, state remains `UNCONSUMED / NO_REVENUE_CREDIT`.
 
+### 1.1.54 One-by-one safe owner trigger readback
+
+At `2026-08-21T22:50+0900`, the existing Repost owner was triggered first and
+exited `0` at its normal daily ceiling: `posted.jsonl=58`,
+`affiliate-proposals-consumed.jsonl=0`, and no X effect. The existing Affiliate
+money owner was then triggered and exited `0` with `ACTION_CAP_BLOCKED=34/10`;
+its readback persisted `0/58` exact Repost joins and `NO_REVENUE_CREDIT`, while
+the official PartnerStack report remained `NO_LIVE_ROWS` and rolling net stayed
+`NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS`. No public, provider-link,
+transaction, or money effect occurred. The next eligible JST day is still the
+first proposal-consumption attempt.
+
 ### 1.2.0 Audited executable boundary
 
 The installed ownership graph has six launchd labels: three persistent browser

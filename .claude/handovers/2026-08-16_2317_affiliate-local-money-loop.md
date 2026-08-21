@@ -1,5 +1,14 @@
 # Affiliate local money loop handover
 
+- On-demand safe triggers were executed one-by-one through the existing owners
+  at `2026-08-21T22:50+0900`. Repost exited `0` at its ordinary `12/12` daily
+  ceiling (`posted.jsonl` stayed `58`, proposal consumption `0`). Affiliate
+  exited `0` with `ACTION_CAP_BLOCKED=34/10`, refreshed the Repost observation as
+  `0/58` exact joins / `NO_REVENUE_CREDIT`, and kept rolling net
+  `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS`; official PartnerStack remains
+  `NO_LIVE_ROWS`. No public, provider-link, transaction, or money effect was
+  created. The next JST day boundary remains the first eligible proposal pass.
+
 - Repost consumption is deployed through its existing owner, not a parallel
   executor. Repost source branch `feat/repost-affiliate-integration` release
   `752f374f85355bfecf8424ac1dc9e03eb344e1d1` passed fresh adversarial review
