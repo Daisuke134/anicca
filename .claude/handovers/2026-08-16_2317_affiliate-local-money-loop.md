@@ -1,5 +1,15 @@
 # Affiliate local money loop handover
 
+- Public discoverability is not the immediate defect: read-only checks of three
+  Affiliate articles return HTTP 200 with `index, follow` robots and canonical
+  URLs. The observed conversion/trust defects are instead thin current assets
+  (about 281–324 words under the existing 800-character minimum) and a shared
+  blog footer that still points to legacy `@aniccaxxx` rather than the active
+  Affiliate identity `@selawmqt`. The footer source belongs to the separate
+  owned-publication checkout; Affiliate must not edit or deploy it directly.
+  Preserve this as `CONTENT_TRUST_DRIFT` for that owner, rather than claiming
+  search indexing or raw link mechanics caused the zero commissions.
+
 - The repaired acquisition path created one bounded follow-up experiment without
   public side effects. Existing source owner readback at `2026-08-21T18:27:36+0900`
   captured the `voice-cloning` title experiment source set; existing composition

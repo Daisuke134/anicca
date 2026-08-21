@@ -1277,6 +1277,22 @@ This proves source→decision→experiment→composition continuity, not a reven
 result. Policy completion, public readback, provider metrics, B01, cost coverage,
 and the USD 10,000 gate remain open.
 
+### 1.1.50 Public acquisition audit: indexed pages, but thin assets and stale identity footer
+
+Read-only public checks of three Affiliate decision articles confirm HTTP 200,
+`index, follow` robots, and canonical URLs. Search accessibility is therefore
+not the currently observed cause of zero commissions. The articles are only
+about 281–324 words under the current composition contract's 800-character
+minimum, which is a thin decision asset for high-intent comparison traffic.
+
+The same public readback identifies a trust drift: the shared blog footer points
+to legacy `@aniccaxxx`, while Affiliate's authenticated X identity is
+`@selawmqt`. The source of that footer belongs to the separate owned-publication
+checkout, so Affiliate must not directly edit or deploy it. Record this as
+`CONTENT_TRUST_DRIFT` for the publication owner; do not misclassify it as an
+indexing failure, create a manual public edit, or expose a tracking link. B01
+still requires an organic official provider transaction.
+
 ### 1.2.0 Audited executable boundary
 
 The installed ownership graph has six launchd labels: three persistent browser
