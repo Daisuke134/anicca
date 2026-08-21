@@ -975,6 +975,10 @@ decision, and an old `unresolved` claim may never survive after the missing sour
 The project worker revalidates that decision after DM collection. If DM discovery adds or changes
 an input, it runs the Sol decision again in the same worker before choosing file/answer/remote mode;
 it may not fall through to `remote_resume` merely because the required context became more complete.
+It revalidates once more after a potentially long build/review and before delivery mode selection.
+An official receipt refresh may update context during review; the loop refreshes only the semantic
+decision and reuses the already approved hash-bound artifact instead of failing `file_validation` or
+rebuilding it.
 The parent initializes any missing durable state and submits the project immediately; it never runs
 a bootstrap Sol decision inline. Decision, DM refresh, build and review therefore remain inside each
 of the maximum eight independent project workers rather than serializing queue construction; the

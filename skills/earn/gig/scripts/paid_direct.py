@@ -2504,7 +2504,10 @@ def _prepare_file(args, item_path: Path, root: Path, item: dict[str, Any], base:
         )
         repaired = True
     evidence, blockers = delivery_queue.delivery_gate(item, args.delivery_evidence_dir, args.projects_root)
-    semantic = _current_paid_decision(root, item)
+    try:
+        semantic = _current_paid_decision(root, item)
+    except (AttributeError, KeyError, OSError, ValueError, TypeError, json.JSONDecodeError):
+        semantic = _paid_decision(args, item_path, root, base)
     cadence = {**item, **{key: evidence[key] for key in (
         "project_root", "requirements_path", "artifact_path", "artifact_version",
         "acceptance_evidence_path", "acceptance_status", "package_sha256",
