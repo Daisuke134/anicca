@@ -396,7 +396,9 @@ or metric defect. D06 remains open as `BLOCKED_EXTERNAL_SHARED_EFFECT_OWNER`:
 the allowed Affiliate worktree cannot edit the separate Repost loop, and no
 manual or parallel X publisher is a truthful substitute. Existing Affiliate
 placements and official measurement remain intact; no post, click, transaction,
-or money was created by this inspection.
+or money was created by this inspection. Codex sent this blocker and the empty
+B01 capture as a natural-language Telegram receipt with provider message `26916`;
+it contains no secret or raw tracking link and is outside the money ledger.
 
 ### 1.2.0 Audited executable boundary
 
