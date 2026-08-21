@@ -2,13 +2,13 @@
 
 | Field | Value |
 |---|---|
-| Status | M2 RECOVERY — `CFO-OPS3a` is closed; `CFO-OPS3b` has a launchd-management regression and must be reverified before `CFO-1j` |
+| Status | M2 — `CFO-OPS3a` and `CFO-OPS3b` are closed; `CFO-1j` is the first active item |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
 | Existing foundations | `apps/life-call`, interactive Moneytree App access, Fleet telemetry, `lm_api_cost`, and the canonical `lm_agent_earnings` source (the panel's `lm_financial_ledger` name is a stale alias) |
 | Canonical repository | `Daisuke134/life-manager` at `/Users/anicca/Projects/life-manager-main`; CFO code, skill, loop, launchd template, tests, and specs converge there |
-| First active item | **CFO-OPS3b restores launchd management and proves a new hourly Moneytree→Telegram receipt. Only then does CFO-1j show recent verified transactions. `CFO-2a3b` remains externally blocked by Google reauthentication.** |
+| First active item | **CFO-1j shows recent verified Moneytree transactions with redacted fields and no advice. `CFO-2a3b` remains externally blocked by Google reauthentication.** |
 
 ## 1. Overview — What and Why
 
@@ -988,6 +988,22 @@ OPS3b is reopened: the latest result is a real successful historical pass, not p
 reporting hourly. The next action is to regain a valid per-user launchd management context, read back the existing
 label, then observe one new real Moneytree and Telegram receipt. Do not advance to CFO-1j until that gate passes.
 
+### CFO-OPS3b recovery audit (2026-08-21 13:10–13:12 JST)
+
+The per-user launchd management context recovered without changing the installed plist or creating a second
+executor: `launchctl managerpid` returned `1`, `manageruid` returned `501`, and both `launchctl print` and
+`launchctl list` for `gui/501/ai.anicca.life-manager-cfo-hourly` returned success. The existing label was kicked with
+`launchctl kickstart -k` (rc 0). Its read-back after completion is `runs=3`, `last exit code=0`,
+`run interval=3600 seconds`, and the stable release path; the service is normally `not running` between interval
+invocations.
+
+That real invocation read Moneytree through the existing adapter and wrote `status=sent`, `reportingDate=2026-08-21`,
+`revision=4`, `appended=true`, `delivered=true` to `last-result.json` and stdout. stderr is empty. The Supabase
+delivery receipt created at `2026-08-21T04:11:34.816497Z` is provider `message_id=771`. `providerBilling` is
+`unavailable` for this run and remains unknown; it is not treated as zero. This closes the launchd provenance and
+continuity gate. No fake, dry, mock, or manually duplicated Telegram report was used. `CFO-1j` is now the first active
+item.
+
 ### Codex host-parity audit (2026-08-21)
 
 The official Codex documentation establishes the boundary that the runtime must preserve:
@@ -1032,9 +1048,10 @@ found 240 LaunchAgents (238 valid and two invalid: `ai.anicca.cfo-daily.plist` a
 `launchctl bootstrap user/501` attempt returned the same `141`. No
 account-directory mutation, logout, reboot, or OS-service restart occurred. The post-fix install remains read-back
 clean (`plutil -lint` PASS, stable wrapper `bash -n` PASS, and the stable Moneytree reader PASS). The current
-assistant shell still returns 141 for direct `launchctl list`, but the existing Gateway context successfully refreshed
-and read back the same service. The fresh provider receipt is therefore attributed to launchd: `message_id=770` for
-revision 3.
+assistant shell at that pre-recovery audit still returned 141 for direct `launchctl list`, but the existing Gateway
+context successfully refreshed and read back the same service. The fresh provider receipt is therefore attributed to
+launchd: `message_id=770` for revision 3. The subsequent 13:10–13:12 recovery audit supersedes that limitation and
+returns valid manager and label read-back with receipt `message_id=771`.
 
 Deferred after M1 by explicit owner decision: Binance Spot, trade history, Earn/funding sources, and their tax-lot
 ingestion. They are not unchecked M1 items and cannot become the active CFO item before CFO-1i closes.
@@ -1048,14 +1065,14 @@ ingestion. They are not unchecked M1 items and cannot become the active CFO item
       `loops/cfo-hourly` for the loop entrypoint/state contract, and a repository-owned launchd template/installer.
       No installed plist may point at an expendable feature worktree. Closed in canonical commit `1c302e801`;
       stable release/module-load, focused financial tests, and launchd execution are verified.
-- [ ] **CFO-OPS3b** Restore and continuously verify the consolidated local hourly CFO. The host-parity gate is closed by
+- [x] **CFO-OPS3b** Restore and continuously verify the consolidated local hourly CFO. The host-parity gate is closed by
       canonical commit `6acff1585`; DNS hardening is in `d013196ce` and ambiguous-request retry prevention is in
       `5e1c0dfcc`. Commit `1c302e801` makes the installer refresh the loaded label with bootout/bootstrap/enable/
-      kickstart. One real pass at 12:34 JST produced revision 3 and Telegram `message_id=770`, but the current
-      management audit returns `managerpid/manageruid=153` and label `print/list=141: Reentrancy avoided`; no later
-      receipt is observed. First regain a valid per-user launchd management context, then read back the stable path and
-      `StartInterval=3600` and observe one new real Moneytree→Telegram pass. Do not revive `life-manager-v0`,
-      `cfo-daily`, or the separate financial-report loop, and do not add a bespoke Moneytree connector.
+      kickstart. The 13:10–13:12 JST recovery audit returned `managerpid=1`, `manageruid=501`, label `print/list=0`,
+      and kickstart rc 0. The next real pass produced revision 4, `status=sent`, `appended=true`, `delivered=true`,
+      Telegram `message_id=771`, empty stderr, and exit code 0; `StartInterval=3600` and the stable release path
+      remain installed. Do not revive `life-manager-v0`, `cfo-daily`, or the separate financial-report loop, and do not
+      add a bespoke Moneytree connector.
 - [ ] **CFO-1j** Add the recent-transaction concierge view from the existing Moneytree transaction adapter. Every
       displayed row is a verified redacted transaction with direction/date/amount/category coverage; incomplete
       pagination stays visible. This slice reports recent activity but gives no spending accusation or advice.
