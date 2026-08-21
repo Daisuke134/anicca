@@ -68,6 +68,18 @@ def run(*, engine: Path, product: str, slot_at: str, script_id: str, ledger_path
     return receipt
 
 
+def stage_intents(receipt: dict) -> list[dict]:
+    """Create zero-effect per-platform intent prerequisites from a rendered receipt."""
+    require(receipt.get("state") == "rendered", "rendered receipt required")
+    render = receipt.get("render") or {}
+    return [{"product_id": receipt["product_id"], "creative_id": receipt["creative_id"],
+             "script_id": receipt["script_id"], "renderer_id": receipt["renderer_id"],
+             "asset_path": render["output"], "asset_sha256": render["sha256"],
+             "campaign_id": receipt["creative_id"], "account_id": account["account_id"],
+             "integration_id": account["integration_id"], "state": "awaiting_visual_approval",
+             "external_effects": []} for account in receipt["accounts"]]
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--product", required=True, choices=("ebook-ja", "ebook-en"))
