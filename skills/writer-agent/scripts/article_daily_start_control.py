@@ -784,7 +784,14 @@ def terminal_quality_finished_at(
 ) -> tuple[datetime, str, str, dict[str, Any]] | None:
     """Return a trusted terminal timestamp for an unpublished quality block."""
     gates = run_dir / "gates"
-    if (gates / "publication-state.json").exists():
+    publication_state = gates / "publication-state.json"
+    if (
+        run_dir.is_symlink()
+        or gates.is_symlink()
+        or not gates.is_dir()
+        or publication_state.exists()
+        or publication_state.is_symlink()
+    ):
         return None
     # A terminal quality block deliberately writes one unpublished `quality`
     # carry-over row so the rejected topic and feedback remain auditable.  That
@@ -850,6 +857,7 @@ def terminal_quality_finished_at(
         and quality.get("action") == "ready_to_freeze"
         and quality.get("quality_advisory") is True
         and quality.get("attempt") == 1
+        and quality.get("publication_policy") == "continuous"
     )
     if (
         quality is None
@@ -908,6 +916,19 @@ def terminal_quality_finished_at(
                 and not quality_advisory
             )
             or record.get("identity_current") is not True
+        ):
+            return None
+        identity_path = gates / f"identity-{lang}.json"
+        identity = _regular_json(identity_path)
+        conscience_path = gates / f"conscience-{lang}.json"
+        conscience = _regular_json(conscience_path)
+        if not (
+            identity is not None
+            and identity.get("verdict") == "PASS"
+            and identity.get("article_sha256") == record.get("article_sha256")
+            and conscience is not None
+            and conscience.get("verdict") == "ALLOW"
+            and conscience.get("reasons") == []
         ):
             return None
         if lang in failed_set:

@@ -626,6 +626,98 @@ class ArticleStartPolicyTest(unittest.TestCase):
                 decision = START.decide(root, "2026-08-21")
         self.assertEqual(decision["action"], "skip-quality-miss")
 
+    def _quality_advisory_fixture(self, root: Path):
+        run = root / "runs" / "20260821-130847"
+        gates = run / "gates"
+        gates.mkdir(parents=True)
+        hashes = {}
+        for lang in ("ja", "en"):
+            article = run / f"article-{lang}.md"
+            article.write_text(f"# {lang}\nbody\n", encoding="utf-8")
+            hashes[lang] = hashlib.sha256(article.read_bytes()).hexdigest()
+            (gates / f"editorial-{lang}.json").write_text(
+                json.dumps({"article_sha256": hashes[lang], "fixes": ["fix"]}),
+                encoding="utf-8",
+            )
+            (gates / f"reader-testing-gate-{lang}.terminal.json").write_text(
+                json.dumps({
+                    "article_sha256": hashes[lang],
+                    "payload": {"unanswered_questions": ["question"]},
+                }),
+                encoding="utf-8",
+            )
+            (gates / f"identity-{lang}.json").write_text(
+                json.dumps({"verdict": "PASS", "article_sha256": hashes[lang]}),
+                encoding="utf-8",
+            )
+            (gates / f"conscience-{lang}.json").write_text(
+                json.dumps({"verdict": "ALLOW", "reasons": []}),
+                encoding="utf-8",
+            )
+        quality = {
+            "version": 2,
+            "attempt": 1,
+            "action": "ready_to_freeze",
+            "quality_advisory": True,
+            "publication_policy": "continuous",
+            "failed_languages": ["ja", "en"],
+            "quality": {
+                lang: {
+                    "article_sha256": hashes[lang],
+                    "editorial": "FAIL",
+                    "reader": "FAIL",
+                    "identity": "PASS",
+                    "evaluation_current": True,
+                    "identity_current": True,
+                    "ready": False,
+                }
+                for lang in ("ja", "en")
+            },
+        }
+        (gates / "quality-self-heal.json").write_text(json.dumps(quality), encoding="utf-8")
+        (gates / "generation-state.json").write_text(
+            json.dumps({
+                "version": 1,
+                "run_id": run.name,
+                "status": "provider-returned",
+                "attempts": [{
+                    "status": "provider-returned",
+                    "return_code": 0,
+                    "finished_at": "2026-08-21T12:00:00Z",
+                }],
+            }),
+            encoding="utf-8",
+        )
+        (gates / "topic-route.json").write_text(
+            json.dumps({"topic_id": "topic-1", "editorial_form": "explainer"}),
+            encoding="utf-8",
+        )
+        return run, gates
+
+    def test_quality_advisory_release_requires_conscience_and_identity_receipts(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            run, gates = self._quality_advisory_fixture(root)
+            self.assertIsNotNone(START.terminal_quality_finished_at(run, run.name, []))
+            (gates / "conscience-ja.json").write_text(
+                json.dumps({"verdict": "BLOCK", "reasons": ["bad"]}), encoding="utf-8"
+            )
+            self.assertIsNone(START.terminal_quality_finished_at(run, run.name, []))
+            (gates / "conscience-ja.json").write_text(
+                json.dumps({"verdict": "ALLOW", "reasons": []}), encoding="utf-8"
+            )
+            (gates / "identity-en.json").write_text(
+                json.dumps({"verdict": "PASS", "article_sha256": "0" * 64}), encoding="utf-8"
+            )
+            self.assertIsNone(START.terminal_quality_finished_at(run, run.name, []))
+
+    def test_quality_advisory_release_rejects_dangling_publication_state_symlink(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            run, gates = self._quality_advisory_fixture(root)
+            (gates / "publication-state.json").symlink_to(gates / "missing-state.json")
+            self.assertIsNone(START.terminal_quality_finished_at(run, run.name, []))
+
     def test_remote_live_finalize_rejects_monetization_drift(self):
         result = REMOTE.finalize_live(
             {},
