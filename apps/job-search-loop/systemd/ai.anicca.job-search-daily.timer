@@ -1,8 +1,9 @@
 [Unit]
-Description=Run Anicca job search daily at 08:30 Japan time
+Description=Run Anicca job search every 30 minutes
 
 [Timer]
-OnCalendar=*-*-* 08:30:00 Asia/Tokyo
+OnBootSec=30min
+OnUnitActiveSec=30min
 Persistent=true
 Unit=ai.anicca.job-search-daily.service
 

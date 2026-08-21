@@ -4,7 +4,7 @@ from pathlib import Path
 
 
 class LaunchdTests(unittest.TestCase):
-    def test_plists_have_separate_bounded_schedules(self):
+    def test_plists_have_separate_recurring_schedules(self):
         root = Path(__file__).parents[1] / "launchd"
         daily = plistlib.loads((root / "ai.anicca.job-search-daily.plist").read_bytes())
         inbox = plistlib.loads((root / "ai.anicca.job-search-inbox.plist").read_bytes())
@@ -12,8 +12,7 @@ class LaunchdTests(unittest.TestCase):
             (root / "ai.anicca.job-search-learning.plist").read_bytes()
         )
         self.assertTrue(daily["RunAtLoad"])
-        self.assertEqual(daily["StartCalendarInterval"]["Hour"], 8)
-        self.assertEqual(daily["StartCalendarInterval"]["Minute"], 30)
+        self.assertEqual(daily["StartInterval"], 1800)
         self.assertEqual(inbox["StartInterval"], 900)
         self.assertTrue(learning["RunAtLoad"])
         self.assertEqual(
@@ -53,12 +52,11 @@ class LaunchdTests(unittest.TestCase):
             script.index('if [[ "$NEW_COUNT"'),
         )
 
-    def test_daily_shell_skips_model_when_submission_quota_is_full(self):
+    def test_daily_shell_has_no_product_daily_quota_gate(self):
         root = Path(__file__).parents[1]
         script = (root / "scripts" / "run-daily.sh").read_text(encoding="utf-8")
-        self.assertIn("daily_slot_count", script)
-        self.assertIn('if [[ "$SLOT_COUNT" -ge "2" ]]', script)
-        self.assertIn("daily_quota_reached", script)
+        self.assertNotIn("daily_slot_count", script)
+        self.assertNotIn("daily_quota_reached", script)
 
     def test_healthcheck_covers_scheduler_ledger_and_private_state(self):
         root = Path(__file__).parents[1]

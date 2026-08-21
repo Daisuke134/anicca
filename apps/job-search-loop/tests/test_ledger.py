@@ -106,7 +106,7 @@ class LedgerTests(unittest.TestCase):
         )
         self.assertEqual(len(self.ledger.events(self.application_id)), 3)
 
-    def test_daily_quota_counts_submitted_and_unknown(self):
+    def test_daily_slots_are_audit_sequence_without_product_cap(self):
         self._ready()
         first = self._claim(
             self.ledger, self.application_id, "2026-07-28", "hash-1"
@@ -122,10 +122,10 @@ class LedgerTests(unittest.TestCase):
             "Third", "AI Product Engineer", "https://jobs.example.com/44"
         )
         self._ready(third_id)
-        self.assertIsNone(
-            self._claim(self.ledger, third_id, "2026-07-28", "hash-3")
-        )
-        self.assertEqual(self.ledger.daily_slot_count("2026-07-28"), 2)
+        third = self._claim(self.ledger, third_id, "2026-07-28", "hash-3")
+        self.assertIsNotNone(third)
+        self.assertEqual(third.slot, 3)
+        self.assertEqual(self.ledger.daily_slot_count("2026-07-28"), 3)
 
     def test_not_submitted_releases_observable_daily_slot(self):
         self._ready()
@@ -249,7 +249,7 @@ class LedgerTests(unittest.TestCase):
             [(1, "legacy-hash", "not_submitted")],
         )
 
-    def test_concurrent_claims_never_exceed_two(self):
+    def test_concurrent_claims_allocate_unique_unbounded_slots(self):
         ids = [self.application_id]
         for index in range(1, 5):
             ids.append(
@@ -285,7 +285,9 @@ class LedgerTests(unittest.TestCase):
         for thread in threads:
             thread.join()
         self.ledger = Ledger(self.db)
-        self.assertEqual(sum(value is not None for value in results), 2)
+        claimed = [value for value in results if value is not None]
+        self.assertEqual(len(claimed), 5)
+        self.assertEqual({value.slot for value in claimed}, {1, 2, 3, 4, 5})
 
     def test_snapshot_hash_mismatch_cannot_claim_or_consume_slot(self):
         self._ready()

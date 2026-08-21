@@ -97,24 +97,15 @@ raise SystemExit(0)
         ]
         return result, recorded
 
-    def test_daily_full_quota_exits_without_browser_or_model(self):
+    def test_daily_runs_even_when_prior_slots_exist(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             result, calls = self._run_daily_with_fake_python(root, 2, 99)
 
-            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(result.returncode, 99, result.stderr)
             encoded = json.dumps(calls)
-            self.assertNotIn("job_search_loop.browser_owner", encoded)
-            self.assertNotIn("agent_runner.py", encoded)
-            summaries = list((root / "state" / "evidence").glob("daily-*/summary.json"))
-            self.assertEqual(len(summaries), 1)
-            self.assertEqual(
-                json.loads(summaries[0].read_text(encoding="utf-8"))["status"],
-                "daily_quota_reached",
-            )
-            projection = root / "state" / "summary.v1.json"
-            self.assertTrue(projection.is_file())
-            self.assertEqual(projection.stat().st_mode & 0o777, 0o600)
+            self.assertIn("job_search_loop.browser_owner", encoded)
+            self.assertIn("agent_runner.py", encoded)
 
     def test_daily_success_refreshes_durable_summary_projection(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -288,7 +279,7 @@ raise SystemExit(0)
                 learning["ProgramArguments"][0],
                 str(APP_ROOT / "scripts" / "run-learning.sh"),
             )
-            self.assertEqual(daily["StartCalendarInterval"], {"Hour": 8, "Minute": 30})
+            self.assertEqual(daily["StartInterval"], 1800)
             self.assertEqual(inbox["StartInterval"], 900)
             self.assertEqual(
                 learning["StartCalendarInterval"],
@@ -352,7 +343,8 @@ raise SystemExit(0)
                 str(APP_ROOT / "scripts" / "run-daily.sh"), daily_service
             )
             self.assertIn(str(REPO_ROOT), daily_service)
-            self.assertIn("OnCalendar=*-*-* 08:30:00 Asia/Tokyo", daily_timer)
+            self.assertIn("OnBootSec=30min", daily_timer)
+            self.assertIn("OnUnitActiveSec=30min", daily_timer)
             self.assertIn("Persistent=true", daily_timer)
             self.assertIn("OnUnitActiveSec=15min", inbox_timer)
             self.assertIn(

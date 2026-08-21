@@ -1098,6 +1098,41 @@ class Ledger:
             for row in rows
         ]
 
+    def pending_materials_ready_applications(self) -> list[dict[str, Any]]:
+        """Return attributed jobs ready for a first submit claim.
+
+        A materials-ready row with no submit intent is durable work left by a
+        previous pass.  The resident daily owner consumes these rows before
+        discovering new URLs so a recovered application cannot be stranded by
+        the discovery order.
+        """
+        rows = self.connection.execute(
+            """
+            SELECT
+              applications.id AS application_id,
+              applications.company,
+              applications.title,
+              applications.canonical_url
+            FROM applications
+            WHERE applications.current_state = 'materials_ready'
+              AND NOT EXISTS (
+                SELECT 1
+                FROM submit_intents
+                WHERE submit_intents.application_id = applications.id
+              )
+            ORDER BY applications.created_at, applications.rowid
+            """
+        ).fetchall()
+        return [
+            {
+                "application_id": str(row["application_id"]),
+                "company": str(row["company"]),
+                "title": str(row["title"]),
+                "canonical_url": str(row["canonical_url"]),
+            }
+            for row in rows
+        ]
+
     def submission_attempts(self, application_id: str) -> list[dict[str, Any]]:
         rows = self.connection.execute(
             """
@@ -1188,16 +1223,15 @@ class Ledger:
                 return None
             if existing is None and current_state != "materials_ready":
                 return None
-            used = {
-                int(row["slot"])
-                for row in self.connection.execute(
-                    "SELECT slot FROM daily_slots WHERE japan_day = ?",
-                    (japan_day,),
-                ).fetchall()
-            }
-            slot = next((candidate for candidate in (1, 2) if candidate not in used), None)
-            if slot is None:
-                return None
+            # Slots are an append-only per-day audit sequence, not a quota.
+            # BEGIN IMMEDIATE serializes concurrent claimers, so max+1 is
+            # deterministic and cannot allocate the same slot twice.
+            row = self.connection.execute(
+                "SELECT COALESCE(MAX(slot), 0) AS max_slot "
+                "FROM daily_slots WHERE japan_day = ?",
+                (japan_day,),
+            ).fetchone()
+            slot = int(row["max_slot"]) + 1
             claimed_at = _now()
             intent = SubmitIntent(
                 intent_id=(
