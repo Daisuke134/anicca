@@ -2,6 +2,9 @@
 
 const os = require("node:os");
 const path = require("node:path");
+const http = require("node:http");
+const https = require("node:https");
+const { Resolver } = require("node:dns").promises;
 const { readMoneytreeViaCodex } = require("./cfo-moneytree-codex-read.js");
 const { recoverMoneytreeRead } = require("../lib/cfo-moneytree-recovery.js");
 const { resolveCfoDailyRun } = require("../lib/cfo-daily-run.js");
@@ -19,11 +22,80 @@ const rpc = createCfoSupabaseRpc("cfo_hourly_local_failed:");
 const AI_COST_KEYS = ["provider", "plan", "amount", "currency", "billingPeriodStart", "billingPeriodEnd", "evidenceStatus", "unavailableProviders"];
 const RECEIPT_KEYS = ["schema_version", "provider", "plan", "billing_period_start", "billing_period_end", "subtotal", "tax", "total", "currency", "paid_date", "source_hash", "evidence_status"];
 
+const DNS_FAILURES = new Set(["ENOTFOUND", "EAI_AGAIN", "EAI_FAIL", "EAI_NODATA"]);
+let cfoDnsFetch = null;
+let cfoDnsEnv = process.env;
+
+function dnsFailure(error) { for (let current = error; current; current = current.cause) if (DNS_FAILURES.has(current.code) || (typeof current.message === "string" && [...DNS_FAILURES].some(code => current.message.includes(code)))) return true; return false; }
+function requestHeaders(value) {
+  const result = {};
+  if (!value) return result;
+  if (typeof value.forEach === "function") value.forEach((item, key) => { result[key] = item; });
+  else if (Array.isArray(value)) value.forEach(([key, item]) => { result[key] = item; });
+  else Object.entries(value).forEach(([key, item]) => { result[key] = item; });
+  return result;
+}
+function requestBody(value) {
+  if (value == null) return null;
+  if (typeof value === "string" || Buffer.isBuffer(value) || value instanceof Uint8Array) return value;
+  if (value instanceof ArrayBuffer) return Buffer.from(value);
+  throw new Error("cfo_dns_body");
+}
+function resolvedRequest(target, address, init = {}) {
+  const method = String(init.method || "GET").toUpperCase(), headers = requestHeaders(init.headers), body = requestBody(init.body);
+  if (!Object.keys(headers).some(key => key.toLowerCase() === "host")) headers.host = target.host;
+  const transport = target.protocol === "https:" ? https : target.protocol === "http:" ? http : null;
+  if (!transport) throw new Error("cfo_dns_protocol");
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const finish = (error, response) => { if (settled) return; settled = true; error ? reject(error) : resolve(response); };
+    let request;
+    try {
+      request = transport.request({ protocol: target.protocol, hostname: address, port: target.port || undefined, path: `${target.pathname}${target.search}`, method, headers, ...(target.protocol === "https:" ? { servername: target.hostname } : {}) }, response => {
+        const chunks = [];
+        response.on("data", chunk => chunks.push(Buffer.from(chunk)));
+        response.once("error", error => finish(error));
+        response.once("end", () => {
+          const text = Buffer.concat(chunks).toString("utf8"), status = Number(response.statusCode) || 0;
+          finish(null, { ok: status >= 200 && status < 300, status, text: async () => text, json: async () => JSON.parse(text) });
+        });
+      });
+      request.once("error", error => finish(error));
+      request.end(body == null ? undefined : body);
+    } catch (error) { finish(error); }
+  });
+}
+async function resolvedFetch(input, init, env) {
+  const target = new URL(typeof input === "string" || input instanceof URL ? input : input && input.url);
+  const resolver = new Resolver(), configured = String(env && env.LM_CFO_DNS_SERVERS || "").split(",").map(value => value.trim()).filter(Boolean);
+  resolver.setServers(configured.length ? configured : ["1.1.1.1", "8.8.8.8"]);
+  const addresses = await resolver.resolve4(target.hostname);
+  let lastError = new Error("cfo_dns_request");
+  for (const address of addresses) try { return await resolvedRequest(target, address, init); } catch (error) { lastError = error; }
+  throw lastError;
+}
+function makeDnsFetch(nativeFetch) {
+  return async (input, init) => {
+    try { return await nativeFetch(input, init); } catch (error) {
+      if (!dnsFailure(error)) throw error;
+      return resolvedFetch(input, init, cfoDnsEnv);
+    }
+  };
+}
+function installDnsFetch(env) {
+  cfoDnsEnv = env || process.env;
+  if (typeof globalThis.fetch !== "function") return globalThis.fetch;
+  if (globalThis.fetch === cfoDnsFetch) return cfoDnsFetch;
+  cfoDnsFetch = makeDnsFetch(globalThis.fetch);
+  globalThis.fetch = cfoDnsFetch;
+  return cfoDnsFetch;
+}
+
 function pick(options, name, fallback) { return typeof options[name] === "function" ? options[name] : fallback; }
 function ownerDate(value) { const parts = new Intl.DateTimeFormat("en", { timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(value); const get = (type) => parts.find((part) => part.type === type).value; return `${get("year")}-${get("month")}-${get("day")}`; }
 function ownerHour(value) { const parts = new Intl.DateTimeFormat("en", { timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", hourCycle: "h23" }).formatToParts(value); const get = (type) => parts.find((part) => part.type === type).value; return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}`; }
-function config(options, env) {
-  const value = { uid: options.uid || options.ownerUid || env.LM_CFO_UID || env.LM_UID || env.LM_OWNER_UID, chatId: options.chatId || options.telegramChatId || env.LM_CFO_TELEGRAM_CHAT_ID || env.LM_ADMIN_TELEGRAM_CHAT_ID, telegramToken: options.telegramToken || env.LM_TELEGRAM_BOT_TOKEN, supaUrl: options.supaUrl || env.SUPABASE_URL, supaKey: options.supaKey || env.SUPABASE_SERVICE_ROLE_KEY, uidSecret: env.LM_UID_SECRET, fetchImpl: options.fetchImpl || globalThis.fetch };
+function config(options, env, fallbackFetch) {
+  const value = { uid: options.uid || options.ownerUid || env.LM_CFO_UID || env.LM_UID || env.LM_OWNER_UID, chatId: options.chatId || options.telegramChatId || env.LM_CFO_TELEGRAM_CHAT_ID || env.LM_ADMIN_TELEGRAM_CHAT_ID, telegramToken: options.telegramToken || env.LM_TELEGRAM_BOT_TOKEN, supaUrl: options.supaUrl || env.SUPABASE_URL, supaKey: options.supaKey || env.SUPABASE_SERVICE_ROLE_KEY, uidSecret: env.LM_UID_SECRET, fetchImpl: options.fetchImpl || fallbackFetch || globalThis.fetch };
   if (Object.values(value).some((item) => typeof item !== "string" && item !== value.fetchImpl) || typeof value.fetchImpl !== "function") throw new Error("config");
   if (!value.uid || !value.chatId || !value.telegramToken || !value.supaUrl || !value.supaKey || typeof value.uidSecret !== "string" || value.uidSecret.length < 32) throw new Error("config");
   return value;
@@ -67,7 +139,7 @@ async function runHourlyCfo(options = {}) {
     const env = options.env || process.env, clock = new Date(typeof options.now === "function" ? options.now() : (options.now || new Date()));
     if (!Number.isFinite(clock.getTime())) throw new Error("clock");
     reportingDate = ownerDate(clock);
-    const value = config(options, env), rpcOptions = { supaUrl: value.supaUrl, supaKey: value.supaKey, fetchImpl: value.fetchImpl };
+    const value = config(options, env, installDnsFetch(env)), rpcOptions = { supaUrl: value.supaUrl, supaKey: value.supaKey, fetchImpl: value.fetchImpl };
     const reader = pick(options, "readMoneytreeViaCodex", readMoneytreeViaCodex), recover = pick(options, "recoverMoneytreeRead", recoverMoneytreeRead);
     const recovery = await recover({ reportingDate, observedAt: clock.toISOString() }, { read: async () => { try { return { ok: true, moneytreeRead: await reader({ env, now: () => clock }) }; } catch { return { ok: false, kind: "timeout" }; } }, repair: pick(options, "repair", async () => true), wait: pick(options, "wait", (milliseconds) => new Promise((resolveWait) => setTimeout(resolveWait, milliseconds))) });
     const resolve = pick(options, "resolveCfoDailyRun", resolveCfoDailyRun), run = await resolve({ uid: value.uid }, rpcOptions);
