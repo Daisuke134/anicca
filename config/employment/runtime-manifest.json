@@ -13,6 +13,7 @@
   "source": {
     "repository": "/Users/anicca/Projects/life-manager-main",
     "path": "apps/job-search-loop",
+    "commit": "ce5e5a345",
     "status": "canonical tracked runtime"
   },
   "active_runtime": {
