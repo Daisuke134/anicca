@@ -46,6 +46,9 @@ test("agent-economy launchd declaration uses the immutable release and continuou
     assert.equal(plist.StartCalendarInterval, undefined);
     assert.equal(plist.EnvironmentVariables.ANICCA_REPO, current);
     assert.equal(plist.EnvironmentVariables.ANICCA_HOME, join(home, "loops", "agent-economy"));
+    assert.deepEqual(plist.EnvironmentVariables.ANICCA_SLOT_ALLOWLIST.split(","), [
+      "earn/taskmarket", "x402_sell", "report", "cook",
+    ]);
     assert.equal(plist.ProgramArguments.join(" ").includes(".worktrees"), false);
   } finally {
     rmSync(root, { recursive: true, force: true });
