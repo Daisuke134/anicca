@@ -78,6 +78,7 @@ PAID_DECISION_PROMPT_VERSION = "paid-semantic-decision-v7"
 PAID_DECISION_MODEL = "gpt-5.6-sol"
 PAID_FILE_MODEL = "gpt-5.6-sol"
 PAID_FILE_POLICY_VERSION = "paid-file-build-review-v20"
+MAX_FILE_REVIEW_ITERATIONS = 5
 PAID_SOURCE_CENSUS_VERSION = "paid-source-census-v4"
 # The skills a paid order may be built with. A skill the lane cannot see is a skill it will
 # reimplement badly under time pressure, so the BUYMA and video contracts belong here now that both
@@ -1844,7 +1845,7 @@ def _blocked_file_bundle_for_recheck(
     root: Path,
     review_state: dict[str, Any],
 ) -> tuple[dict[str, Any], dict[str, tuple[int, str]]] | None:
-    """Return the exact previously blocked artifact for review before any rebuild.
+    """Return the exact previously blocked artifact for review before any revision.
 
     New buyer context can resolve a blocker, add a repairable requirement, or merely add
     urgency.  None of those cases authorizes discarding the old safety decision and
@@ -1887,7 +1888,10 @@ def _validate_file_authorization(root: Path, stable: Path, feedback: str,
             or receipt.get("verifier_summary_sha256") != hashlib.sha256((verifier / "summary.json").read_bytes()).hexdigest()
             or receipt.get("verifier_result_sha256") != hashlib.sha256(result_path.read_bytes()).hexdigest()
             or receipt.get("reviewer_model") != PAID_FILE_MODEL
-            or result.get("verdict") != "deliverable"
+            or (result.get("verdict") != "deliverable"
+                and receipt.get("shipment_basis") != "max_review_iterations")
+            or (receipt.get("shipment_basis") == "max_review_iterations"
+                and receipt.get("review_round") != MAX_FILE_REVIEW_ITERATIONS)
             or not _text(result.get("reason"))
             or summary.get("task_label") != "paid-file-verifier"
             or summary.get("task_class") != "escalation-agent"
@@ -2061,7 +2065,7 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
             and review_state.get("buyer_feedback_sha256") == feedback
             and review_state.get("requirements_sha256") == requirements_sha256):
         finding = (_text(review_state.get("finding"))
-                   or "The prior reviewer withheld deliverable authorization; rebuild and prove the corrected artifact.")
+                   or "The prior reviewer requested changes; revise the existing artifact line.")
     if (resumed is not None and isinstance(review_state, dict)
             and review_state.get("state") == "REVIEW_BLOCKED"
             and review_state.get("mode") == "file"
@@ -2070,7 +2074,8 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
             and review_state.get("buyer_feedback_sha256") == feedback
             and review_state.get("requirements_sha256") == requirements_sha256
             and review_state.get("artifact_sha256") == resumed[1]["artifact"][1]):
-        raise Failure("file_review_blocked")
+        finding = (_text(review_state.get("finding"))
+                   or "The prior reviewer could not approve the artifact; revise the same artifact line.")
     if resumed is None:
         blocked_bundle = _blocked_file_bundle_for_recheck(root, review_state)
         if blocked_bundle is not None:
@@ -2124,7 +2129,12 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
     verifier_evidence = root / "evidence" / "agent-PAID_FILE_VERIFY"
     verdict: dict[str, Any] = {}
     proof: dict[str, Any] = {}
-    for review_round in range(1, 4):
+    prior_round = (int(review_state.get("round", 0))
+                   if isinstance(review_state, dict)
+                   and review_state.get("state") == "REPAIR_PENDING" else 0)
+    start_round = min(prior_round + 1, MAX_FILE_REVIEW_ITERATIONS)
+    shipment_basis = "reviewer_approved"
+    for review_round in range(start_round, MAX_FILE_REVIEW_ITERATIONS + 1):
         if resumed is None or finding:
             correction = (" A fresh reviewer rejected the prior artifact. Create a corrected next version that resolves "
                           f"this finding: {finding}" if finding else "")
@@ -2232,7 +2242,7 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
             "the corrected artifact in the next round, then return undeterminable only if the blocker remains. If required "
             "provenance is absent and no independently repairable defect remains, return undeterminable, never needs_revision. "
             "If visual evidence is insufficient, return undeterminable; "
-            "undeterminable and the semantic refusal verdicts never authorize a rebuild. Return only artifact_judgement "
+            "undeterminable and semantic refusal verdicts never authorize discarding the artifact. Return only artifact_judgement "
             "schema; verdict=deliverable only when every non-overridden accumulated requirement is proved by direct evidence.",
             encoding="utf-8",
         )
@@ -2255,16 +2265,17 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
         if disposition == "approve" and _text(verdict.get("reason")):
             break
         finding = _text(verdict.get("reason")) or "The reviewer did not prove the artifact deliverable."
-        if disposition != "repair":
+        if review_round == MAX_FILE_REVIEW_ITERATIONS:
+            shipment_basis = "max_review_iterations"
             _write(root / "context" / "paid-review-state.json", {
-                "version": 1, "state": "REVIEW_BLOCKED", "mode": "file",
+                "version": 1, "state": "MAX_REVIEW_SHIP", "mode": "file",
                 "review_policy_version": PAID_FILE_POLICY_VERSION,
                 "operator_policy_sha256": operator_policy_sha256,
                 "buyer_feedback_sha256": feedback, "requirements_sha256": requirements_sha256,
                 "artifact_sha256": snapshots["artifact"][1], "round": review_round,
                 "verdict": _text(verdict.get("verdict")), "finding": finding,
             })
-            raise Failure("file_review_blocked")
+            break
         _write(root / "context" / "paid-review-state.json", {
             "version": 1, "state": "REPAIR_PENDING", "mode": "file",
             "review_policy_version": PAID_FILE_POLICY_VERSION,
@@ -2273,9 +2284,6 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
             "artifact_sha256": snapshots["artifact"][1], "round": review_round, "finding": finding,
         })
         resumed = None
-    else:
-        raise Failure("file_verifier")
-
     current_manifest, current_snapshots = _file_bundle_snapshots(root)
     if (current_manifest != manifest or current_snapshots != snapshots
             or _requirements_snapshot(root) != requirements_before
@@ -2308,11 +2316,15 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
         **({"source_correspondence_sha256": snapshots["source_correspondence"][1]}
            if "source_correspondence" in snapshots else {}),
         "reviewer_model": PAID_FILE_MODEL,
+        "shipment_basis": shipment_basis,
+        "review_round": review_round,
         "verifier_summary_sha256": proof["summary_sha256"],
         "verifier_result_sha256": proof["result_sha256"],
     })
     _write(root / "context" / "paid-review-state.json", {
-        "version": 1, "state": "APPROVED", "mode": "file",
+        "version": 1,
+        "state": "APPROVED" if shipment_basis == "reviewer_approved" else "MAX_REVIEW_SHIP",
+        "mode": "file",
         "review_policy_version": PAID_FILE_POLICY_VERSION,
         "operator_policy_sha256": operator_policy_sha256,
         "buyer_feedback_sha256": feedback, "requirements_sha256": requirements_sha256,

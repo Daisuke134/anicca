@@ -864,13 +864,16 @@ a later successful example.
 - [ ] P31 — Prove one natural order end to end from complete context through one formal delivery and
   replay-zero.
 
-**Accepted architecture — do not optimize Paid for lower latency.** A production worker builds the
-buyer-requested artifact, a fresh reviewer checks it independently, the worker incorporates review
-findings and repeats until the quality gate passes, and only then does the delivery owner perform one
-fenced official submission with exact-room readback. Speed changes that reduce review independence,
-iteration depth, artifact validation or duplicate-effect protection are regressions. Paid is complete
-when it meets the agreed buyer deadline with quality and official delivery proof, not when it matches
-Negotiate's reply time.
+**Accepted architecture — ship within five reviews.** A production worker builds the buyer-requested
+artifact and a fresh reviewer supplies bounded improvement feedback. The worker may revise the same
+artifact line for at most five review iterations; there is no discard-and-rebuild or alternative-
+approach branch. A deliverable verdict ships immediately. On iteration five, the best structurally
+valid artifact ships as progress even when the reviewer still requests changes. Review is an
+improvement signal, never an unbounded shipping gate. Every pre-approval shipment uses one concise
+message and leaves formal delivery off. Corrupt, unreadable, secret-leaking or technically unsendable
+files remain blocked because they are not artifacts that can truthfully be shipped. Independent
+projects run without waiting for another project's build or review; only effects in the same
+talkroom are serialized and deduplicated.
 
 **Submission model route.** Keep the current production routing: the artifact executor is
 `gpt-5.6-sol` at medium reasoning and the independent reviewer is a fresh, isolated
@@ -897,8 +900,11 @@ through repeated revision cycles without attaching usable work. Completion requi
 evidence that both classes are impossible for future rooms, not one manual apology or delivery.
 
 **Purchased-talkroom output contract.** Before buyer approval, every actionable Paid cycle is an
-artifact cycle: compile the complete context, build or repair useful work, independently review it,
-then attach it with one concise message and formal delivery off. Text-only acknowledgement, plan,
+artifact cycle: compile the complete context, build or revise useful work, independently review it,
+then attach it with one concise message and formal delivery off. Review may improve the current
+artifact for no more than five iterations and may never prevent the fifth structurally valid version
+from being attached. The fifth version is not discarded or rebuilt through another approach.
+Text-only acknowledgement, plan,
 promise, progress report or `対応します` is not a successful effect. A clarification is allowed only
 when one fact is absent from every bound source and its absence makes all truthful production
 impossible; if any portion is buildable, attach that portion in the same action. After buyer
@@ -911,12 +917,12 @@ executor produced `habikino-renewal-v18.zip` and self-reported PASS, but the fre
 four buyer-source substitutions across PC/responsive outputs: `物件の状況→物件の状態`,
 `相続した実家→相談した実家`, and two removals of the middle dot from `リ・ホーム`. The durable state
 is `REPAIR_PENDING`, yet the lane surfaced terminal-looking `failed_step=file_verifier` after its
-bounded review rounds and did not attach a corrected artifact. The generic fix is: preserve the
-finding, start the next wake at repair, regenerate every affected editable/rendered/package output,
-review again, and attach only after approval. Never ask Haru another question for these known facts.
-`REPAIR_PENDING` is a continuation, not a low-priority failure: every Paid wake orders those rooms
-ahead of fresh or buyer-wait work, then preserves deadline order within the same state class. This
-prevents a rejected artifact from remaining unsent while unrelated orders consume the whole pass.
+bounded review rounds and did not attach the artifact. The generic fix is: preserve the finding,
+revise the same artifact line for no more than five iterations, and attach the fifth structurally
+valid version even if the reviewer still requests changes. Never discard it, switch to an alternative
+approach, ask Haru another question for known facts, or leave it unsent. Formal delivery remains off
+until the buyer explicitly approves. `REPAIR_PENDING` may continue iterations one through four but
+must become a shipment on iteration five.
 The authenticated offer page is the exact bridge from a purchased order to its pre-purchase DM:
 persist its `/mypage/direct_message/<id>` reference in the project proposal, then have Paid refresh
 that one thread directly. A buyer-name scan incorrectly reported Haru's real DM `10102712` absent
