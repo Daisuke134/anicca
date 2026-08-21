@@ -702,14 +702,14 @@ def owner_event(state, wake_event, sent_event_ids=None):
 
     def add(
         kind, identity, money, public_url=None, article_url=None, decision=None,
-        scope=None, recovery=None, next_job=None,
+        scope=None, recovery=None, next_job=None, dedupe_key=None,
     ):
         event_uuid = hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()
         candidates.append({
             "event_uuid": event_uuid, "kind": kind, "money": money,
             "public_url": public_url, "article_url": article_url,
             "decision": decision, "scope": scope, "recovery": recovery,
-            "next_job": next_job,
+            "next_job": next_job, "dedupe_key": dedupe_key,
         })
 
     if wake_event.get("placement_link_changed") and wake_event.get("placement_link_state") == "VERIFIED":
@@ -965,6 +965,7 @@ def owner_event(state, wake_event, sent_event_ids=None):
         if not blockers:
             blockers.append(f"status={wake_event.get('status') or 'UNKNOWN'}")
         blocker_text = " / ".join(blockers)
+        blocker_key = "BLOCKED:" + "|".join((action_state or "CLEAR", guard_state or "CLEAR"))
         no_transactions = (
             cycle.get("state") == "NO_TRANSACTIONS"
             or wake_event.get("rolling_net_money_state") == "NO_TRANSACTIONS"
@@ -998,16 +999,11 @@ def owner_event(state, wake_event, sent_event_ids=None):
         add(
             kind,
             {
-                "kind": kind, "provider": "elevenlabs", "status": wake_event.get("status"),
-                "action_budget_state": action_state,
-                "action_budget_used_attempts": wake_event.get("action_budget_used_attempts"),
-                "action_budget_daily_cap": wake_event.get("action_budget_daily_cap"),
-                "runtime_guard_state": guard_state,
-                "runtime_guard_free_bytes": wake_event.get("runtime_guard_free_bytes"),
-                "runtime_guard_floor_bytes": wake_event.get("runtime_guard_floor_bytes"),
+                "kind": kind, "provider": "elevenlabs", "dedupe_key": blocker_key,
             },
             money, wake_event.get("publication_url") or latest_live_url(state),
             decision=blocker_text, recovery=recovery, next_job=next_job,
+            dedupe_key=blocker_key,
         )
     selected = next(
         (candidate for candidate in candidates if candidate["event_uuid"] not in sent_event_ids),
@@ -1370,19 +1366,100 @@ def find_message_id(value):
     return None
 
 
+def telegram_dedupe_key(row):
+    """Return a stable state key for owner reports whose measurements may drift."""
+    if not isinstance(row, dict) or row.get("kind") != "BLOCKED":
+        return None
+    if isinstance(row.get("dedupe_key"), str) and row["dedupe_key"]:
+        return row["dedupe_key"]
+    body = row.get("body") if isinstance(row.get("body"), str) else ""
+    action = "ACTION_CAP_BLOCKED" if "external_action_cap=" in body else "CLEAR"
+    if "runtime_disk=DISK_GUARD_BLOCKED" in body:
+        guard = "DISK_GUARD_BLOCKED"
+    elif "runtime_disk=DISK_GUARD_UNKNOWN" in body:
+        guard = "DISK_GUARD_UNKNOWN"
+    else:
+        guard = "CLEAR"
+    if action == "CLEAR" and guard == "CLEAR":
+        return "BLOCKED:LEGACY"
+    return f"BLOCKED:{action}|{guard}"
+
+
+def supersede_telegram_rows(state, outbox, sent_by_id):
+    """Exclude equivalent pending reports without claiming a provider delivery."""
+    superseded_path = state / "telegram-superseded.jsonl"
+    superseded_ids = {
+        row.get("event_uuid") for row in json_rows(superseded_path)
+        if row.get("event_uuid")
+    }
+    sent_keys = {
+        telegram_dedupe_key(outbox_row)
+        for event_uuid in sent_by_id
+        for outbox_row in outbox
+        if outbox_row.get("event_uuid") == event_uuid
+    }
+    sent_keys.discard(None)
+    candidates_by_key = {}
+    for index, row in enumerate(outbox):
+        key = telegram_dedupe_key(row)
+        if key:
+            candidates_by_key.setdefault(key, []).append((index, row))
+    for key, candidates in candidates_by_key.items():
+        if key in sent_keys:
+            keep = None
+        else:
+            keep = max(
+                candidates,
+                key=lambda item: (item[1].get("created_at") or 0, item[0]),
+            )[1]
+        for _, row in candidates:
+            if row.get("event_uuid") == (keep or {}).get("event_uuid"):
+                continue
+            event_uuid = row.get("event_uuid")
+            if not event_uuid or event_uuid in sent_by_id or event_uuid in superseded_ids:
+                continue
+            canonical = (
+                next((item[1].get("event_uuid") for item in candidates if item[1] is keep), None)
+                if keep else next((item[1].get("event_uuid") for item in candidates if item[1].get("event_uuid") in sent_by_id), None)
+            )
+            receipt = {
+                "schema_version": 1,
+                "receipt_type": "AFFILIATE_TELEGRAM_SUPERSEDED",
+                "event_uuid": hashlib.sha256(json.dumps({
+                    "event_uuid": event_uuid, "dedupe_key": key,
+                    "canonical_event_uuid": canonical,
+                }, sort_keys=True, separators=(",", ":")).encode()).hexdigest(),
+                "superseded_event_uuid": event_uuid,
+                "canonical_event_uuid": canonical,
+                "dedupe_key": key,
+                "reason": "EQUIVALENT_REPORT_ALREADY_DELIVERED" if key in sent_keys else "NEWER_EQUIVALENT_REPORT",
+                "observed_at": datetime.now(timezone.utc).isoformat(),
+            }
+            append_unique(superseded_path, receipt, ("event_uuid",))
+            superseded_ids.add(event_uuid)
+    return superseded_ids
+
+
 def flush_telegram(state, event, runner=subprocess.run):
     requested_event_uuid = event.get("event_uuid") if event else None
     if event:
         append_unique(state / "telegram-outbox.jsonl", event, ("event_uuid",))
-    sent_ids = {row.get("event_uuid") for row in json_rows(state / "telegram-sent.jsonl")}
-    sent_by_id = {row.get("event_uuid"): row for row in json_rows(state / "telegram-sent.jsonl")}
-    for row in json_rows(state / "telegram-outbox.jsonl"):
+    outbox = json_rows(state / "telegram-outbox.jsonl")
+    sent_rows = json_rows(state / "telegram-sent.jsonl")
+    sent_ids = {row.get("event_uuid") for row in sent_rows}
+    sent_by_id = {row.get("event_uuid"): row for row in sent_rows}
+    superseded_ids = supersede_telegram_rows(state, outbox, sent_by_id)
+    for row in outbox:
         if row.get("event_uuid") in sent_by_id:
             sent = sent_by_id[row["event_uuid"]]
             reconcile_effect(state, "TELEGRAM_SEND", row["event_uuid"], {
                 "state": "SENT", "event_uuid": row["event_uuid"], "message_id": sent.get("message_id"),
             })
-    pending = [row for row in json_rows(state / "telegram-outbox.jsonl") if row.get("event_uuid") not in sent_ids]
+    pending = [
+        row for row in outbox
+        if row.get("event_uuid") not in sent_ids
+        and row.get("event_uuid") not in superseded_ids
+    ]
     if not pending:
         return {
             "state": "NO_PENDING", "sent": 0,

@@ -387,6 +387,29 @@ class LocalLoopTest(unittest.TestCase):
             self.assertIn("ディスク空きが10GiB以上かつJST日次capがCLEAR", blocked["body"])
             self.assertNotIn("buyer-intentを収集", blocked["body"])
 
+    def test_blocked_report_identity_ignores_drifting_measurements(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root)
+            base = {
+                "status": "ACTION_CAP_BLOCKED",
+                "action_budget_state": "ACTION_CAP_BLOCKED",
+                "action_budget_used_attempts": 34,
+                "action_budget_daily_cap": 10,
+                "runtime_guard_state": "DISK_GUARD_BLOCKED",
+                "runtime_guard_floor_bytes": 10737418240,
+                "rolling_net_money_state": "NO_TRANSACTIONS",
+                "publication_url": "https://example.test/article",
+            }
+            first = MODULE.owner_event(
+                state, {**base, "runtime_guard_free_bytes": 958054400},
+            )
+            second = MODULE.owner_event(
+                state, {**base, "runtime_guard_free_bytes": 838873088},
+            )
+            self.assertEqual(first["kind"], "BLOCKED")
+            self.assertEqual(first["event_uuid"], second["event_uuid"])
+            self.assertNotEqual(first["body"], second["body"])
+
     def test_completed_generic_campaign_advances_to_tts_campaign(self):
         with tempfile.TemporaryDirectory() as root:
             state = Path(root)
@@ -677,6 +700,44 @@ class LocalLoopTest(unittest.TestCase):
             self.assertEqual(delivery["sent_event_uuid"], "old-event")
             self.assertEqual(receipt["telegram_event_uuid"], "old-event")
             self.assertEqual(receipt["telegram_kind"], "AFFILIATE_DAILY_SUMMARY")
+
+    def test_telegram_supersedes_pending_equivalent_blocker_after_delivery(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root)
+            body = (
+                "Life Manager Affiliate::: Affiliate loop report\n"
+                "実行: BLOCKED\n"
+                "お金: NO_TRANSACTIONS / approved_or_paid_net=USD 0.00 / cost=UNKNOWN / "
+                "blocker=external_action_cap=34/10 / runtime_disk=DISK_GUARD_BLOCKED"
+            )
+            MODULE.append(state / "telegram-outbox.jsonl", {
+                "event_uuid": "typed-sent", "kind": "BLOCKED", "body": body,
+                "created_at": 1,
+            })
+            MODULE.append(state / "telegram-outbox.jsonl", {
+                "event_uuid": "typed-pending", "kind": "BLOCKED", "body": body + "(free=1)",
+                "created_at": 2,
+            })
+            MODULE.append(state / "telegram-sent.jsonl", {
+                "event_uuid": "typed-sent", "message_id": "7644",
+            })
+            calls = []
+
+            def should_not_send(command, **kwargs):
+                calls.append(command)
+                raise AssertionError("equivalent pending blocker must not be sent again")
+
+            with patch.object(MODULE.shutil, "which", return_value="/opt/homebrew/bin/openclaw"):
+                result = MODULE.flush_telegram(state, None, runner=should_not_send)
+
+            self.assertEqual(result["state"], "NO_PENDING")
+            self.assertEqual(calls, [])
+            superseded = json.loads(
+                (state / "telegram-superseded.jsonl").read_text().splitlines()[0]
+            )
+            self.assertEqual(superseded["superseded_event_uuid"], "typed-pending")
+            self.assertEqual(superseded["canonical_event_uuid"], "typed-sent")
+            self.assertEqual(superseded["reason"], "EQUIVALENT_REPORT_ALREADY_DELIVERED")
 
     def test_telegram_history_reconciliation_is_append_only_and_idempotent(self):
         with tempfile.TemporaryDirectory() as root:
