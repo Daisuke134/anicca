@@ -28,7 +28,7 @@ cleanup passを占有していた。Anicca側はclone候補を実体のある`.g
 guardではworktree remote inspectionを`fast_pass_deferred`として保留する。Life Managerのlegacy hourly
 shimは同じhost guardを`EMERGENCY_GUARD_FULL_PASS=1`で呼び、保留処理を永続的に飢餓させない。
 
-実測証拠はAnicca cleanup test **51 passed**、Life Manager disk-cleanup test **6 passed**、guardの
+実測証拠はAnicca cleanup test **53 passed**、Life Manager disk-cleanup test **6 passed**、guardの
 実E2E約9秒（`errors=0`、`protected_deletions=0`、lock残留なし、初回free約5.2 GiB）である。
 その後のlive readbackではfree約2.2 GiB、tier=`ULTRA`、`reclaimed=0`、`preserved_reasons={"open":1}`
 となった。openなChrome code-sign clone約706 MiBとActions Runner診断ログ約291 MiBは、実行中のため
@@ -53,7 +53,9 @@ guard総数は5件へ下がり、freeは約4.8 GiBへ戻った。
 Anicca側では、通常minute guardから巨大な`~/gig`を除外し、`EMERGENCY_GUARD_FULL_PASS=1`のhourly
 compatibility passだけが`~/gig`を走査するようにした。変更後の実測ログは`11:30:49 LOW DISK`、
 `11:30:50 runtime manifest ready`で、従来の約3分16秒から約1秒へ短縮した。recovery health checkの
-独自cache削除と重複日本語alertも廃止し、容量変更とalertのauthorityをLife Managerへ一本化した。
+独自cache削除と重複日本語alertも廃止し、未接続だった`runtime/recovery-health-check.sh`も同じ観測専用
+contractへ揃えた。容量変更とalertのauthorityをLife Managerへ一本化した。回帰testは両sourceから旧日本語
+alertと広範囲cache削除が消えていることを固定した。
 ただしfreeはなお5.9 GiBで、`launchctl` readbackは`141: Reentrancy avoided`のままである。
 
 ### OSS boundary
