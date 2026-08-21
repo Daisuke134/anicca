@@ -78,7 +78,9 @@ serve_one() {
   # every later safety gate). Bound each execution; timeout is a failed
   # response the gate can classify, never a silent stall.
   local exec_timeout timeout_bin
-  exec_timeout="${ARTICLE_JUDGE_BROKER_EXEC_TIMEOUT:-300}"
+  # Keep one stalled judge below the five-minute launchd cadence. A timeout
+  # is returned as a failed gate; it never fabricates a verdict.
+  exec_timeout="${ARTICLE_JUDGE_BROKER_EXEC_TIMEOUT:-120}"
   timeout_bin="$(command -v gtimeout || command -v timeout || true)"
   while :; do
     tries=$((tries + 1))
