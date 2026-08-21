@@ -321,7 +321,13 @@ Immediate customer-remediation queue, in order:
    communities with recruitment permission, public business/contact forms, referrals and other
    opt-in routes. Reuse the OSS pipeline shape `collect -> dedupe -> enrich -> suppress -> score ->
    export` from Dukotah/leadgen; evaluate KeeLead only as a source adapter, not as a wholesale new
-   subsystem. Sources: https://kuzen.io/case/detail/gojob,
+   subsystem. The buyer did not include an official LINE URL in the application, pre-purchase DM or
+   purchased talkroom, but live readback of the buyer-owned LOXAD X profile and pinned post resolves
+   both public short links to the same existing official destination,
+   `https://line.me/R/ti/p/@810akrtq`. Use that destination; do not ask the buyer to resend it and do
+   not create a second LOXAD-branded LINE identity. Sources: https://x.com/LOXAD_official,
+   https://x.com/LOXAD_official/status/2088109682447810938,
+   https://kuzen.io/case/detail/gojob,
    https://markiteasy.com/blog/how-to-recruit-cdl-nemt-drivers/,
    https://help.x.com/en/rules-and-policies/x-automation,
    https://github.com/Dukotah/leadgen, https://github.com/Atum246/keelead.
