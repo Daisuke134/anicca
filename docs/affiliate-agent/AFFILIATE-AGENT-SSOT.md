@@ -3306,11 +3306,15 @@ receipt readback, SSOT state update, commit, and push to both canonical remotes.
 - [ ] **D05** Record exact X exposure, owned-page visit, provider click, transaction,
   commission state, reversal, and cost denominators without substituting one for another.
 - [ ] **D06** Put Affiliate and Repost proposals behind one `@selawmqt` English
-  effect arbiter with a bounded cadence and disclosure/policy gate. The current
-  installed Repost owner has no Affiliate-proposal input and only consumes its
-  external candidate harvester, so this remains
-  `BLOCKED_EXTERNAL_SHARED_EFFECT_OWNER`; do not edit the separate loop or post
-  manually from Affiliate.
+  effect arbiter with a bounded cadence and disclosure/policy gate. **Partial:**
+  release `752f374f` now lets the existing Repost owner consume one canonical,
+  disclosure-required Affiliate proposal with an effect claim, exact X readback,
+  and exact placement-ID ledger row; Affiliate release `9c613225` accepts that
+  row only when its owned URL also matches. The first live attempt is deferred
+  by the Repost owner's ordinary JST daily ceiling (`12/12`), so D06 remains
+  open until that existing owner produces one exact public readback and the
+  Affiliate observer records its join. No manual post or parallel executor is
+  permitted.
 - [x] **D06.1** Let the existing Affiliate owner read the Repost `posted.jsonl`
   ledger through an explicit `AFFILIATE_REPOST_STATE_DIR` boundary, persist one
   replay-safe observation receipt, and report exact campaign-URL joins without
