@@ -112,9 +112,9 @@
   対象checkoutの`src/note_mcp/__init__.py`をimportしていること、`.venv`親がsymlinkでないことをuv実行前から検証する。
   wrapperのcache target／親symlink非破壊テスト、shell構文、関連14テストはPASSした。専用runtimeの外部
   downloadはDNSで失敗したが、実行用wrapperのimportはcurrent hostでPASSしている。
-- daily creatorもpreflight cleanup後にCoconala canonicalの1GiBを再測定し、まだ床未満ならrun／model／publisherを開始せず、
+- daily creatorもpreflight cleanup後にCoconala canonicalの512MiBを再測定し、まだ床未満ならrun／model／publisherを開始せず、
   Telegramへ自然文の停止通知を出してrc=1で終了する。resumeと同じ失敗終了コードに揃え、creator・resume・launchd guardが
-  同じ1GiB契約を共有する。隔離HOMEで両ownerのrc=1、run未作成、lock不残留を`disk-floor-contract.sh`で確認した。
+  同じ512MiB契約を共有する。隔離HOMEで両ownerのrc=1、run未作成、lock不残留を`disk-floor-contract.sh`で確認した。
 - `2026-08-20T22:33:44Z`のread-onlyブラウザCDP readbackでは、Note key `n47735d9811e8`がHTTP 200、
   `status=published`、`price=500`、`is_limited=false`、`can_read=false`、eyecatch URLありだった。
   通常Python APIは同時刻のDNS失敗で接続できず、ブラウザreadbackのみを採用し、公開・入金receiptとは混同しない。
@@ -145,10 +145,10 @@
   これにより、identity未設定のENだけをPENDINGに残し、毎tickのTerra調査で公開ownerを消費しない。
 - `launchctl activate`／`print`／bootstrap は全laneで rc=141 `Reentrancy avoided`。current symlink切替は確認できるが、
   loaded schedulerの所有者・argv・定期実行は証明できない。重複executorは起動せず、既存ownerのreceiptだけを採用する。
-- Writerのdisk floorはCoconalaの`gig_disk_guard.py`と同じ1GiBへ統一する。外部公開は1GiB未満で
+- Writerのdisk floorはCoconalaの`gig_disk_guard.py`既定値（`GIG_DISK_HEADROOM_KIB=524288`、512MiB）へ統一する。外部公開は512MiB未満で
   fail-closedし、保護対象のstate／memory／rollbackは削除しない。過去の5GiB receiptsは履歴であり、現在の閾値ではない。
 - `2026-08-20T22:43:23Z`の旧release `901be512b`からのresumeは空き容量`4,345,827,328` bytesで
-  旧5GiB floor blocked、rc=0、lock=absentだった。Coconala canonical 1GiBへの統一後は、同じ空き容量を
+  旧5GiB floor blocked、rc=0、lock=absentだった。Coconala canonical 512MiBへの統一後は、同じ空き容量を
   安全境界内として扱い、外部作用は実receiptを要求したまま次段へ進める。
 - `daily-2026-08-20` のX Articleは、原稿内の相対 `headline-image.png` / `body-diagram.png` 重複が
   `prepared/`で欠損扱いになる根因を `prep-x-md.py` で修正した。なお本当にimmutable画像が欠ける場合は、
@@ -170,7 +170,7 @@
 - launchdは`launchctl print/kickstart`が引き続き`141: Reentrancy avoided`。同じ実行contextで`whoami`がUID `501`のみを返し、
   `dscl . -read /Users/anicca`も`eServerError`であるため、これはWriterコードではなくmacOSのユーザーdirectory/control-plane障害として隔離する。
   OS serviceのkill/restartやユーザーdirectoryの書換えは行わず、既存ownerの直接receiptだけを採用する。
-- 過去receiptでは空き容量約4.97GiBが旧5GiB floorを下回っていた。現在はCoconala canonical 1GiBを
+- 過去receiptでは空き容量約4.97GiBが旧5GiB floorを下回っていた。現在はCoconala canonical 512MiBを
   fail-closed境界とし、disk guardの実runtime receiptで判定する。
 - 06:11:52 JSTの実行では、Life Manager current配下の`article-resume-pending.sh`がowner fenceを通過して終了し、
   `daily-2026-08-10`のSubstack JAを既存draft ID `210519352`から
@@ -203,7 +203,7 @@
   兄弟公開の実証はcontrol-plane復旧後の残TODOとして保持する。
 - 06:11:52 JSTの同一ログには、空き容量`5,256,216,576` bytes（要求`5,368,709,120` bytes）で
   disk guardが公開をfail-closedにした記録もある。保護対象を削除せず、容量安定化までは外部公開を強行しない。
-- 残TODOは順に、(1)保護対象を削除せず空き容量1GiB超を安定維持、(2)launchd control-plane readbackを復旧して
+- 残TODOは順に、(1)保護対象を削除せず空き容量512MiB超を安定維持、(2)launchd control-plane readbackを復旧して
   Life Manager currentの新releaseで5分周期実行を2回以上連続して証明、(3)publisher/paymentの実receiptだけを
   収益ledgerへjoinし、Note/Substackの現在値を次回tickでも再測定、(4)14日間の重複外部作用0と
   需要カード→生成→JA/EN公開→native readback→Telegram報告の連続receiptを観測する。ENの別identity、
@@ -723,6 +723,13 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
   path選択・missing path・store未生成回帰を含むfocused 43件、resume circuit 5件、Codex contract 7件、shell契約、
   pycompile、diff checkがPASSした。currentのsource/current SHAは一致し、pause markerは維持、空き容量はrelease cleanup後
   約1.52GiBへ回復したが、まだclean canaryと連続tickは未実施である。
+- 16:50 JSTのclean canaryでは、release cleanup後の空き約0.92GiBに対してWriter wrapperが旧1GiB floorで開始を拒否した。
+  run・publication-state・ledger・native URLは増えず、pause markerを復元した。Coconalaの実sourceは
+  `REQUIRED_KIB=int(os.environ.get("GIG_DISK_HEADROOM_KIB", "524288"))`であるため、1GiB設定はCoconala parityではない。
+  `a607172bf`でdaily、resume、publication preflightを同じ`GIG_DISK_HEADROOM_KIB`へ揃え、既定512MiB、任意の
+  `ARTICLE_DISK_MIN_FREE_BYTES` override、512MiB未満・正の低値・非数値設定のfail-closedを実装した。focused 51件、
+  resume circuit 5件、Codex contract 7件、disk-floor/start-control契約、shell構文、pycompile、diff checkがPASSし、
+  敵対的レビューもPASSした。公開再開はpause維持のまま、current反映後に行う。
 
 ## 目標構成
 
@@ -948,7 +955,7 @@ loaded definitionと自然tickまで読み戻すことを意味する。A1のcon
 | A9c | WriterのCodex-only retryを実装する | `ARTICLE_PROVIDER=codex`固定。cooldown既定値を300秒へ変更し、同一immutable runを最大3回だけcheckpoint再開するfixture。Codex cooldown中にClaude/Hermesを起動しない、公開state/ledger後のreplay 0、3回 exhausted後に新runを増殖させない | 実装・契約検証完了（model-runner 7件、resume circuit 6件、start-control 6件、candidate wiring 19件、publication identity 15件、topic-card resume 9件、state routing、duplicate-media guard、構文/manifest/diff check、fresh v2 adversarial review PASS） |
 | A9d | Codex-only Writer公開canaryを行う | current releaseをlaunchdへ反映し、pause解除後の新runでCodex attempt receipt、Note JA、Substack JA/EN、X Article JAの4 native URL、本文・media hash、Telegram delivery receiptを取得。Codex timeout時は同じrunの次tickへ安全にhandoffする | 部分完了（既存`daily-2026-08-21`は4媒体native live＋`article-run-complete rc=0`。`20260821-054500`はduplicate-media quarantine完了。`20260821-072939`はdisk floor低下前にSIGTERMしpublication前で安全停止。clean canary・連続tick・Telegram deliveryは未実施） |
 | A9e | invalid duplicate-media runを安全に隔離する | 対象runの同一media SHA、全active pairが`unavailable`またはdormant `skipped`、no-effect ledgerを再計算し、proof-bound `run-quarantine.json`を作成。start-controlが同日`new`を返し、対象pair以外とledgerの不変をreadback | 完了（実装・fixture 13件、focused 43件、契約・構文・diff check PASS。実canaryのX intentを同じtargetの`unavailable`へ共有lock下で遷移、receipt作成、ledger不変、start-control=`new`、current release=`cdb611300`を実測） |
-| A9f | disk floor復帰後にclean canaryを再開する | `gig_disk_guard`とarticle wrapperが同じ1GiB floorをPASSし、pause解除→既存daily kickstart→新runの4 native receipt、Telegram message ID、2連続tickを取得。floor未達なら生成・公開を開始しない | 実行可能（release cleanup後の空き約1.52GiB、pause markerは維持。`20260821-072939`はpublication前interrupted-safe。clean canary・連続tick・Telegram deliveryは未実施） |
+| A9f | disk floor復帰後にclean canaryを再開する | `gig_disk_guard`とarticle wrapperが同じ512MiB floorをPASSし、pause解除→既存daily kickstart→新runの4 native receipt、Telegram message ID、2連続tickを取得。floor未達なら生成・公開を開始しない | 実行可能（実測空き約1.52GiB、pause markerは維持。旧1GiB設定のcanaryはpublication前に安全停止。`20260821-072939`はpublication-state・ledger・native URLなし。floor統一・focused検証・敵対的レビュー完了、clean canary・連続tick・Telegram deliveryは未実施） |
 | A9g | 旧backlogを外部作用なしで扱う | 旧runのlive pairを保持したまま、未解決pairだけを現行code/state identityのfailure circuitへopenし、plannerが`WAIT`かつ`recovery_pairs=[]`を返す。新規runの公開を旧targetが先取りしない | 完了（`daily-2026-08-07` Note JA circuit open count=1、planner readback `WAIT/blocked_pairs=[note/ja]`） |
 | A9b | 1日複数回の正式scheduleを追加する | 06:00/14:00/22:00などのcalendar wake、各slotのunique run ID、同日異記事、連続2周期のnative receiptを実測 | 未着手。現在は06:00のまま |
 | A10 | 実payment/publisher receiptをmoney ledgerへ接続する | receipt ID、金額、通貨、destination identity、artifact/run IDをjoin。未取得は`unknown`のまま保持 | 未着手 |
