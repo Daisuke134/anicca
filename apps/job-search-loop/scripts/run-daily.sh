@@ -220,9 +220,15 @@ for row in processed:
     status = str(row.get("status") or "unknown")
     blocker = str(row.get("blocker") or "")
     request_observed = row.get("submit_request_observed") is True
+    response_statuses = [
+        int(value)
+        for value in (row.get("submit_response_statuses") or [])
+        if isinstance(value, int)
+    ]
     details.append(
         f"{company} — {title}: {status}"
         + (" (submit request observed)" if request_observed else "")
+        + (f" (Ashby response {response_statuses})" if response_statuses else "")
         + (f" ({blocker})" if blocker else "")
     )
 if not details:

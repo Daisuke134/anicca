@@ -643,6 +643,7 @@ async def _process_one(
             ledger.complete_submission(intent.intent_id, intent.fence, "not_submitted")
             return {"application_id": application_id, "status": "not_submitted", "blocker": "submit_control_missing"}
         submit_requests: list[str] = []
+        submit_response_statuses: list[int] = []
 
         def observe_request(request: Any) -> None:
             if request.method not in {"POST", "PUT"}:
@@ -650,7 +651,13 @@ async def _process_one(
             if "ashbyhq.com" in request.url.casefold():
                 submit_requests.append(request.url)
 
+        def observe_response(response: Any) -> None:
+            request = response.request
+            if request.method in {"POST", "PUT"} and "ashbyhq.com" in request.url.casefold():
+                submit_response_statuses.append(response.status)
+
         page.on("request", observe_request)
+        page.on("response", observe_response)
         await submit.first.click()
         clicked = True
         confirmed = await _submitted_confirmation(page)
@@ -662,6 +669,7 @@ async def _process_one(
             outcome = "submit_unknown"
         ledger.complete_submission(intent.intent_id, intent.fence, outcome)
         page.remove_listener("request", observe_request)
+        page.remove_listener("response", observe_response)
         return {
             "application_id": application_id,
             "company": row["company"],
@@ -669,6 +677,7 @@ async def _process_one(
             "status": outcome,
             "url": url,
             "submit_request_observed": bool(submit_requests),
+            "submit_response_statuses": submit_response_statuses,
             "answered_fields": [
                 _safe_text(
                     fields[index].get("labels")
@@ -682,6 +691,7 @@ async def _process_one(
     except Exception as error:
         try:
             page.remove_listener("request", observe_request)
+            page.remove_listener("response", observe_response)
         except Exception:
             pass
         try:

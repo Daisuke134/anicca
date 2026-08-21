@@ -164,7 +164,7 @@ rather than a false `submit_unknown`; only an explicit confirmation becomes
 `submitted`, and the remaining ambiguous case stays fenced as `submit_unknown`.
 For every future submit it also records whether an Ashby POST/PUT request began after
 the user-facing click. Telegram checkpoints include this `submit request observed`
-proof without exposing request URLs or payloads.
+proof and any Ashby response status codes without exposing request URLs or payloads.
 Release `16c6db89f1dc570c1cbc22b1103e8cdc0aa927fc` proved this transport evidence:
 ElevenLabs' Enterprise Solutions Engineer - Sweden emitted an observed Ashby request
 after the submit click, remained appropriately `submit_unknown` without an
