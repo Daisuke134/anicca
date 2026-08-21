@@ -344,8 +344,7 @@ def test_the_repair_label_is_neither_role_and_cannot_publish() -> None:
     value = plistlib.loads(PLIST.read_bytes())
     assert value["Label"] == LABEL
     assert value["ProgramArguments"][-1] == str(
-        Path("/Users/anicca/profitable-claude/skills/writer-agent/scripts")
-        / "article-repair-candidate.sh"
+        ROOT / "scripts" / "article-repair-candidate.sh"
     )
     assert value["RunAtLoad"] is False
     # It is not the creator and not the recovery owner.

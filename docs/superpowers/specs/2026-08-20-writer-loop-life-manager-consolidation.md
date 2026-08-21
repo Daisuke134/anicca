@@ -487,6 +487,19 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
   再確認した。Writer全体suiteで残る1件は、今回のfixtureとは無関係な旧`profitable-claude` pathを
   期待する既存plistテストであり、次の独立TODOとして残す。
 
+### 2026-08-21 repair-candidate path test correction（12:00 JST）
+
+- `ai.anicca.article-repair-candidate.plist`は既にLife Manager checkout内のdriverへ更新済みだったが、
+  `test_writer_repair_candidate_wiring.py`だけが旧`/Users/anicca/profitable-claude`を固定期待していた。
+  期待値を同じWriter source treeの`ROOT/scripts/article-repair-candidate.sh`から導出し、machine固有の
+  旧rootをテストから除去した。Label、RunAtLoad=false、creator/resume非該当、
+  `ARTICLE_AUTOPUBLISH`不在の安全契約は維持している。
+- 対象testは`1 passed`、R6隣接を含む`2 passed`、ネットワークを使わない残り17件もPASSし、fresh
+  adversarial reviewはSHIP判定だった。ファイルの構文・差分確認もPASSした。
+- 同ファイルの並行実行とshell end-to-endの2件は、テスト内のoffline getter注入を経由せず実際の
+  source URLをfetchするため、現在のDNS障害で`UnresolvableSourcesError`になった。今回のportable
+  path修正とは独立であり、外部公開やproduction repair workerは起動していない。
+
 ## 目標構成
 
 ### 実行トポロジー（Coconala parity）
@@ -574,7 +587,7 @@ publication identity、読者、payout、ledgerを分ける。
 
 この表は過去のmilestone状態を保持する履歴である。現在の実行順序は次の原子TODOを正本とする。
 
-## Current atomic remaining TODO（2026-08-21 11:56 JST）
+## Current atomic remaining TODO（2026-08-21 12:00 JST）
 
 各行は一つの外部状態または証拠だけを変える。前行の完了証拠がない限り、次行を開始しない。
 
