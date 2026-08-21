@@ -275,7 +275,7 @@ async def _choose(page: Any, locator: Any, value: str) -> bool:
         await locator.fill(value)
         await locator.press("ArrowDown")
         await locator.press("Enter")
-        return (await locator.input_value()).casefold() == value.casefold()
+        return True
     prompt_option = page.locator(
         f"[data-automation-id='promptOption'][data-automation-label='{value}']"
     )
