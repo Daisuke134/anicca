@@ -1,0 +1,10 @@
+{
+  "schema_version": "marketing.postiz-integration-readback.v1",
+  "read_at": "2026-08-21T00:00:00Z",
+  "integrations": [
+    {"id": "cmo5s4edx00vgn10ygnu34a0n", "platform": "tiktok", "handle": "obou_anicca", "enabled": true},
+    {"id": "cmooplxmu04tpmd0y4h3cpk33", "platform": "instagram-standalone", "handle": "obou.anicca", "enabled": true},
+    {"id": "cmo5rwq2p00twn10yrsdglng3", "platform": "tiktok", "handle": "monk_anicca", "enabled": false, "degradation": "Postiz integration is disabled; no reconnect or publish was attempted"},
+    {"id": "cmn8y95rg02d2qx0y09bbk5pb", "platform": "instagram-standalone", "handle": "anicca.en", "enabled": true}
+  ]
+}
