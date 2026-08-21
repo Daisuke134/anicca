@@ -1,5 +1,18 @@
 # Affiliate local money loop handover
 
+- Current reconciliation at `2026-08-21T15:51:24+0900`: the user-visible
+  `REVENUE_CYCLE_FAILED / stage=capture` report is the historical
+  `14:35:54+0900` `NONZERO_EXIT` receipt. The existing owner crossed its
+  `15:35:54+0900` retry boundary and completed the official PartnerStack path at
+  `15:37:53+0900` with `NO_TRANSACTIONS`; the hash-bound artifact was USD-display,
+  `commission_row_count=0`, `NO_LIVE_ROWS`, empty payout, and reconciliation
+  `0/0/0`. The following owner wake at `15:43:27+0900` sent Telegram `27244`
+  `SELF_HEALED` with `transactions=0`, and launchd now reads `runs=239`, exit
+  `0`, interval `600`. No transaction, settlement, payout, commission, or money
+  exists. Current funnel readback is 20 exact English placements, 44 aggregate
+  clicks, 0 signups, 0 paid signups, and Repost `58/0` exact campaign joins;
+  exposure and real costs remain `UNKNOWN`. B01 remains the first non-empty
+  official provider row; only the existing owner may capture after cooldown.
 - Pre-repair installed runtime (historical) was immutable release
   `b9b73047a1b76ebf219472d8022f24f846a7f060`; source and installed
   `scripts/local_loop.py` bytes match at SHA-256
