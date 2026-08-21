@@ -520,6 +520,74 @@ Apple Developer](https://developer.apple.com/documentation/appstoreconnectapi/ge
 - No current Apple fiscal report was available for a live read, so no current-period zero, payout, bank landing, API
   cost, FX conversion, profit, or ROI is claimed. `CFO-2b.2c` is now the next active item.
 
+## 12.3 CFO-2b.2c slice brief — Anicca iOS business fact composition
+
+This slice adds one pure `composeAniccaIosBusinessFact(input)` function to the canonical
+`apps/life-manager/lib/cfo-anicca-ios-earning.js` owner and its focused test. It consumes only sanitized projections
+from the completed Apple Finance/RevenueCat parser and the existing local usage/API-cost ledgers. It performs no
+provider read, file/API/environment/clock read, persistence, scheduler, Telegram action, FX conversion, pricing,
+allocation, or LLM call.
+
+The exact input has three keys:
+
+```json
+{
+  "earning": {
+    "status": "complete|unavailable",
+    "fiscal_month": "YYYY-MM|null",
+    "apple_partner_share_totals": "null|[{currency,row_count,amount_decimal}]",
+    "revenuecat_coverage_status": "unavailable|observed_empty|provider_reported",
+    "revenuecat_gross_totals": "null|[{currency,receipt_count,amount_decimal}]",
+    "reconciliation_status": "revenuecat_unavailable|gross_vs_partner_share_separate",
+    "payout_status": "unknown",
+    "bank_landed_status": "unknown"
+  },
+  "token_usage": {
+    "status": "covered|partial|unavailable",
+    "event_count": "safe integer|null",
+    "total_tokens": "safe integer|null",
+    "coverage_exceptions": "sorted unique known exception strings"
+  },
+  "direct_api_cost": {
+    "status": "covered|partial|unavailable",
+    "event_count": "safe integer|null",
+    "estimated_usd": "canonical non-negative decimal|null"
+  }
+}
+```
+
+`earning` is the parser's safe projection, not raw Apple/RevenueCat input. A complete report requires fiscal month and
+Apple totals; an unavailable report requires both to be `null`. RevenueCat `null`/`unavailable` stays unavailable and
+an observed empty array stays empty. The composer never merges RevenueCat gross with Apple settled Partner Share,
+subtracts costs, converts FX, or treats an unavailable fiscal period as zero. The output is recursively frozen and
+contains only the business fact: period, separate revenue coverages, payout/bank status, direct API/token cost
+coverages, unknown human cost/capital, `profit=null`, `roi=null`, and sorted coverage exceptions. Raw provider IDs,
+SKU/product/customer/account/prompt/row data and secrets cannot cross the boundary.
+
+Apple's detailed report fields define Partner Share, Extended Partner Share, Partner Share Currency, and Sale or
+Return, while RevenueCat's `price_in_purchased_currency` remains provider purchase-currency evidence that can be
+unknown or zero/negative in webhook data: [Apple financial report fields](https://developer.apple.com/help/app-store-connect/reference/reporting/financial-report-fields),
+[RevenueCat webhook event fields](https://www.revenuecat.com/docs/integrations/webhooks/event-types-and-fields). The
+fact therefore preserves provider evidence and coverage labels instead of claiming cash or profit.
+
+### CFO-2b.2c acceptance
+
+- [ ] A complete parser projection composes a frozen partial Anicca iOS fact with Apple signed totals and RevenueCat
+      gross side by side; local token usage remains a reported subtotal and unavailable API cost remains `null`, never
+      zero.
+- [ ] An unavailable Apple report composes an explicit unavailable period with `apple_partner_share_totals=null`;
+      no current-period revenue, payout, landed cash, profit, or ROI is inferred.
+- [ ] Wrong statuses, missing/extra keys, negative/unsafe counts, malformed decimal, unsorted/unknown exceptions,
+      inconsistent nullability, hostile objects, and raw provider identity fail closed with one fixed redacted error.
+- [ ] Inputs remain unchanged, output is recursively frozen, no raw identifier escapes, and focused tests, syntax, diff,
+      and exact two-file scope pass. No loop, launchd, database, or Telegram effect occurs.
+
+### CFO-2b.2c implementation target
+
+Keep this slice to the existing two-file owner/test surface and reuse the current frozen decimal/shape helpers. Do not
+add a business-fact database table, renderer, API route, launchd wiring, or Telegram copy; those belong only after
+`CFO-2c` reconciliation and `CFO-2d` reporting.
+
 ## 13. Resume audit
 
 - Apple normalizer migration-evidence commit `f1986663b` remains present on its evidence branch. The canonical CFO
