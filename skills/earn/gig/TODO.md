@@ -302,33 +302,41 @@ no-send, replay-zero and a new natural sub-30-minute official reply/estimate pro
 Do not advance the development cursor until every unchecked item in the current stage has official
 evidence. Independent production lanes continue running while development follows this order.
 
-**Live handover state.** The loaded Paid owner is running from an immutable release with up to eight
-independent project workers and ignores only the shared preventive 10/20 GiB disk flags; its 512 MiB
-last-resort guard and expiring operator brake remain active. X-post talkroom `18171850` is the sole
-closed item in the current four-client set: v1 has `effect=1`, official `readback=1`, `failed=0`, and
-formal delivery OFF. Review-article talkroom `18171890` has approved v4
-`645b3db845c779f597457e53330d419ca583dcc70a78876ee3b4e7800b2af08a` but no buyer-visible version;
-its latest prepare failed `file_validation`. Manledge `18169985` has v14 and remains
-`REPAIR_PENDING` round 4 for unproved DriverTalk UI-field claims. Haru `18169583` has v30 and remains
-`REPAIR_PENDING` round 3 for reference-fidelity defects; buyer-visible state is still v27. Current
-Paid completion is therefore one officially delivered/read-back artifact out of four, not four.
+**Live handover state.** The loaded Paid owner uses an immutable release with up to eight independent
+project workers. Its launchd environment ignores the shared preventive `disk-pressure.block` and
+`disk-writers.stop` flags while retaining the 512 MiB last-resort guard and expiring operator brake.
+The latest natural receipt is nevertheless `status=failed`, `observed=7`, `actionable=3`, `effect=0`,
+`readback=2`, `failed=4`, `pending=1`; parallel artifact production therefore does not yet prove
+parallel buyer delivery. X-post talkroom `18171850` remains the sole closed item in the current
+four-client set: approved v1 has already been sent and officially read back with formal delivery OFF.
+Review-article talkroom `18171890` now has approved v4
+`645b3db845c779f597457e53330d419ca583dcc70a78876ee3b4e7800b2af08a`, but its current delivery attempt
+still fails `file_validation`. Manledge `18169985` now has acceptance-PASS v20
+`2cd506a57a6a791d53751e89cb68859fdd5e950768cbc5961cf23e2cc0b45fe8`, but delivery fails at
+`file_browser`. Haru `18169583` now has acceptance-PASS v31
+`bceca32db8a9272330fd12798d44da06e14aab51e83e17d81e030aa37665d185` in
+`BOUNDED_REVIEW_SHIP` round 4, but the latest pass fails `targeted_readback`; v31 is not yet proven
+buyer-visible. Paid completion is therefore still one officially delivered/read-back artifact out of
+four, not four.
+
+**E2E judgment.** This work changes no owned application UI, so Maestro is not applicable. Completion
+requires the real launchd owner to act through the authenticated Coconala browser and an exact-room
+official DOM/readback receipt; local artifact PASS, process liveness or Telegram alone is insufficient.
 
 1. **Paid/Submission — finish first.**
-   - [ ] Deploy and read back Paid ignoring shared preventive `disk-pressure.block` (20 GiB) and
+   - [x] Deploy and read back Paid ignoring shared preventive `disk-pressure.block` (20 GiB) and
      `disk-writers.stop` (10/11 GiB hysteresis), while retaining the 512 MiB last-resort guard and
      expiring operator brake; an expired audit file or healthy 10+ GiB headroom must not stop earning.
-   - [ ] Haru `18169583`: finish v28's buyer-feedback-aware visual review against all latest buyer
-     references; continue the same artifact line for at most ten review rounds; attach the accepted
-     or round-ten artifact with concise text, official readback and formal delivery OFF.
-   - [ ] Manledge `18169985`: reuse the already approved v9 hash, refresh only stale semantic routing,
-     but honor the final artifact judge: v9 was correctly blocked as a confirmation/process document
-     rather than the requested listing/outreach deliverable. Persist that finding as `REPAIR_PENDING`,
-     build the next actual deliverable version, review it, then attach with formal delivery OFF.
-   - [ ] X-post project `18171850`: produce the reusable template, four post drafts, hashtags,
-     rationale and measurement plan from proposal + talkroom + attachments; review and attach it.
-   - [ ] Review-article project `18171890`: produce the truthful 2,000–4,000-character review-stage
-     article from the available context, clearly bound any missing firsthand claims/screenshots,
-     review and attach it instead of asking the buyer to repeat known requirements.
+   - [ ] Haru `18169583`: submit the already acceptance-PASS v31 ZIP with concise text, recover exact-room
+     `targeted_readback`, prove the v31 hash buyer-visible and keep formal delivery OFF.
+   - [ ] Manledge `18169985`: submit the already acceptance-PASS v20 deliverable, repair the
+     `file_browser` attachment path without regenerating the artifact, obtain official readback and
+     keep formal delivery OFF.
+   - [x] X-post project `18171850`: approved v1 was attached and officially read back with formal
+     delivery OFF.
+   - [ ] Review-article project `18171890`: submit the already approved v4 article, repair its
+     `file_validation` handoff without regenerating the artifact, obtain official readback and keep
+     formal delivery OFF.
    - [ ] Treat ten reviews as a ceiling, not a quota: when a fresh reviewer returns
      `undeterminable` with no independently repairable defect, immediately ship the best truthful
      bounded artifact with formal delivery OFF instead of regenerating it until round ten.
