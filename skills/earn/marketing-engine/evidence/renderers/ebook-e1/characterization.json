@@ -1,0 +1,307 @@
+{
+  "schema_version": "ebook-producer-characterization.v1",
+  "products": {
+    "ebook-ja": {
+      "status": "retained_fixture_not_yet_replayed",
+      "historical_fixture": {
+        "path": "/Users/anicca/anicca-monk-factory/renders/jp_20260801_070000_final.mp4",
+        "exists": true,
+        "bytes": 19760373,
+        "sha256": "d428cf531ee8afe3d06bcdc0d354e288b1ee253866e44297b8a2b3a2a4c161b7",
+        "probe": {
+          "programs": [],
+          "stream_groups": [],
+          "streams": [
+            {
+              "codec_name": "h264",
+              "width": 720,
+              "height": 1280
+            },
+            {
+              "codec_name": "aac"
+            }
+          ],
+          "format": {
+            "duration": "91.040000",
+            "size": "19760373"
+          }
+        }
+      },
+      "current_mutable_script_state": {
+        "path": "/Users/anicca/anicca-monk-factory/state/current_jp.json",
+        "exists": true,
+        "bytes": 4115,
+        "sha256": "4a5ebf527f0fc7b31117007ebba99b9f42e57ceb6ed8df5cdfcf03f764e6a643"
+      },
+      "historical_fixture_captions": {
+        "path": "/Users/anicca/anicca-monk-factory/renders/jp_20260801_070000/subs.ass",
+        "exists": true,
+        "bytes": 3517,
+        "sha256": "d5822a324ebf50947a6f78586056385fd190d43a2e209d170d625967b119ef40"
+      },
+      "locked_motion_clips": [
+        {
+          "path": "/Users/anicca/anicca-monk-factory/state/jp_kling_clip_02.mp4",
+          "exists": true,
+          "bytes": 6210876,
+          "sha256": "d9f283c93d153a3d4b890a711ec9fc3bc712428581090674dc6461dcb17e39ea",
+          "probe": {
+            "programs": [],
+            "stream_groups": [],
+            "streams": [
+              {
+                "codec_name": "h264",
+                "width": 720,
+                "height": 1280
+              }
+            ],
+            "format": {
+              "duration": "5.041667",
+              "size": "6210876"
+            }
+          }
+        },
+        {
+          "path": "/Users/anicca/anicca-monk-factory/state/jp_kling_clip_03.mp4",
+          "exists": true,
+          "bytes": 3841303,
+          "sha256": "d54f0807a5bb8806b4808671f1d15f79101f77fb178c87e620dfed3ff4276f37",
+          "probe": {
+            "programs": [],
+            "stream_groups": [],
+            "streams": [
+              {
+                "codec_name": "h264",
+                "width": 720,
+                "height": 1280
+              }
+            ],
+            "format": {
+              "duration": "5.041667",
+              "size": "3841303"
+            }
+          }
+        },
+        {
+          "path": "/Users/anicca/anicca-monk-factory/state/jp_kling_clip_04.mp4",
+          "exists": true,
+          "bytes": 4710020,
+          "sha256": "259cd0793cf42443a628748e16496813fb9c82ba241d805be7e33585198e9961",
+          "probe": {
+            "programs": [],
+            "stream_groups": [],
+            "streams": [
+              {
+                "codec_name": "h264",
+                "width": 720,
+                "height": 1280
+              }
+            ],
+            "format": {
+              "duration": "5.041667",
+              "size": "4710020"
+            }
+          }
+        },
+        {
+          "path": "/Users/anicca/anicca-monk-factory/state/jp_kling_clip_05.mp4",
+          "exists": true,
+          "bytes": 6464663,
+          "sha256": "a3a2ec9a9b79f565bb953b773c06cb38ce5f759cdb328c4ae357f7636dda43f7",
+          "probe": {
+            "programs": [],
+            "stream_groups": [],
+            "streams": [
+              {
+                "codec_name": "h264",
+                "width": 720,
+                "height": 1280
+              }
+            ],
+            "format": {
+              "duration": "5.041667",
+              "size": "6464663"
+            }
+          }
+        },
+        {
+          "path": "/Users/anicca/anicca-monk-factory/state/jp_kling_clip_06.mp4",
+          "exists": true,
+          "bytes": 2080077,
+          "sha256": "69ff4d1deadfd316a77571814e1549d3eafefcb5ee01f5e61a606b58eb56ebc8",
+          "probe": {
+            "programs": [],
+            "stream_groups": [],
+            "streams": [
+              {
+                "codec_name": "h264",
+                "width": 720,
+                "height": 1280
+              }
+            ],
+            "format": {
+              "duration": "5.041667",
+              "size": "2080077"
+            }
+          }
+        },
+        {
+          "path": "/Users/anicca/anicca-monk-factory/state/jp_kling_clip_07.mp4",
+          "exists": true,
+          "bytes": 7130207,
+          "sha256": "217116469b084951305ca83b80e3ae17d1feca892cc1ed304deaf05ab0a92a5e",
+          "probe": {
+            "programs": [],
+            "stream_groups": [],
+            "streams": [
+              {
+                "codec_name": "h264",
+                "width": 720,
+                "height": 1280
+              }
+            ],
+            "format": {
+              "duration": "5.041667",
+              "size": "7130207"
+            }
+          }
+        },
+        {
+          "path": "/Users/anicca/anicca-monk-factory/state/jp_kling_clip_08.mp4",
+          "exists": true,
+          "bytes": 6692732,
+          "sha256": "1c4353470a93b8cb2927956170c2bc0dcdebc9fb43682e72192fb6699893abe5",
+          "probe": {
+            "programs": [],
+            "stream_groups": [],
+            "streams": [
+              {
+                "codec_name": "h264",
+                "width": 720,
+                "height": 1280
+              }
+            ],
+            "format": {
+              "duration": "5.041667",
+              "size": "6692732"
+            }
+          }
+        },
+        {
+          "path": "/Users/anicca/anicca-monk-factory/state/jp_kling_clip_09.mp4",
+          "exists": true,
+          "bytes": 3599582,
+          "sha256": "5fbffd08d5f4abeb15bb7e036bcfd5f8af09b3698956c9ec5c9ceed4187ff6ec",
+          "probe": {
+            "programs": [],
+            "stream_groups": [],
+            "streams": [
+              {
+                "codec_name": "h264",
+                "width": 720,
+                "height": 1280
+              }
+            ],
+            "format": {
+              "duration": "5.041667",
+              "size": "3599582"
+            }
+          }
+        },
+        {
+          "path": "/Users/anicca/anicca-monk-factory/state/jp_kling_clip_10.mp4",
+          "exists": true,
+          "bytes": 2725975,
+          "sha256": "2ed8e0b23f25f0bfff64ea7fef6d55d7cfcce0fa06479014683f4e214e832655",
+          "probe": {
+            "programs": [],
+            "stream_groups": [],
+            "streams": [
+              {
+                "codec_name": "h264",
+                "width": 720,
+                "height": 1280
+              }
+            ],
+            "format": {
+              "duration": "5.041667",
+              "size": "2725975"
+            }
+          }
+        },
+        {
+          "path": "/Users/anicca/anicca-monk-factory/state/jp_kling_clip_12.mp4",
+          "exists": true,
+          "bytes": 2176000,
+          "sha256": "322b32f510f360fe0c7ec4acdbf800c8b0e184be6bed0b76065c26dd9128ea69",
+          "probe": {
+            "programs": [],
+            "stream_groups": [],
+            "streams": [
+              {
+                "codec_name": "h264",
+                "width": 720,
+                "height": 1280
+              }
+            ],
+            "format": {
+              "duration": "5.041667",
+              "size": "2176000"
+            }
+          }
+        },
+        {
+          "path": "/Users/anicca/anicca-monk-factory/state/jp_kling_clip_13.mp4",
+          "exists": true,
+          "bytes": 3179536,
+          "sha256": "46d69ad6e61ba7c1a8ab816d3fe39f9095d262ce9da8ec8e8b4cca74023682b2",
+          "probe": {
+            "programs": [],
+            "stream_groups": [],
+            "streams": [
+              {
+                "codec_name": "h264",
+                "width": 720,
+                "height": 1280
+              }
+            ],
+            "format": {
+              "duration": "5.041667",
+              "size": "3179536"
+            }
+          }
+        }
+      ],
+      "missing_dependencies": [
+        "immutable run manifest binding the historical fixture to its script and exact clip order",
+        "voice provider, voice ID, and audio hash for the historical fixture",
+        "fresh no-network replay with media/hash and visual-identity comparison"
+      ]
+    },
+    "ebook-en": {
+      "status": "blocked_free_runtime_reproduction",
+      "retained_candidate_reference_image": {
+        "path": "/Users/anicca/anicca-monk-factory/characters/en/icon_v2_full.png",
+        "exists": true,
+        "bytes": 4060889,
+        "sha256": "d5e744167f5f653d30f0e4c377ffe9a802f8502e683783aaebd580abab1754e0"
+      },
+      "approved_artifact": {
+        "telegram_message_id": "4893",
+        "space": "alexnasa/OmniAvatar",
+        "space_revision": "e6a7899449e8a16003b0b01046ea6d29dbbd00c5",
+        "repository_revision": "1536bf31abaec74364fb7d5883470d5b23ffa7f8",
+        "known_result": "5.04s, 400x720, H.264/AAC, owner-approved"
+      },
+      "missing_dependencies": [
+        "durable local copy of Telegram artifact 4893",
+        "proof that Telegram artifact 4893 used the retained candidate image hash",
+        "working public Space session path that accepts orientation state and returns a render receipt"
+      ],
+      "explicitly_excluded": [
+        "HeyGen",
+        "paid renderer fallback"
+      ]
+    }
+  }
+}
