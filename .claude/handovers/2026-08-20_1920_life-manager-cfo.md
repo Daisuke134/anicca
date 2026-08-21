@@ -25,6 +25,10 @@
   marker to `⚠️ Moneytree` for every successful read. This removes the misleading realtime implication while
   retaining the provider-reported amount and the explicit local-retrieval/bank-side-unknown wording. The next
   owner-hour receipt must confirm this text in the actual shared-destination Telegram message.
+- Provider lag warning (2026-08-21): canonical commit `c9fddf0bd` adds a date-gap warning at the top of the
+  transaction section. The live provider result is latest transaction 2026-08-18 for reporting date 2026-08-21,
+  so the text says the payload is 3 days old and the balance is not realtime. This is diagnostic only; the
+  underlying provider read and amount remain unchanged until an authorized Moneytree refresh path exists.
 - GitHub DNS was transiently unavailable during the audit; the canonical CFO branch is now pushed at `6faf0bd06`, and the exact canonical spec tip is verified with `git ls-remote` after this push.
 - Canonical product repository: `/Users/anicca/Projects/life-manager-main`, origin `Daisuke134/life-manager.git`, branch `main` at audit HEAD `f116abd1524e7b33a0590c6167307152aa896df8`. It already owns `apps/life-manager`, `skills`, `loops`, CFO Telegram callback, and financial-report runtime. Its main worktree has an unrelated user edit in `skills/earn/gig/tests/test_reply_concurrency.py`; never edit or reset that worktree. Create a dedicated CFO worktree/branch from fetched `origin/main` before migration.
 - Current next action: implement `CFO-2b.3`, instrumenting Writer Agent publisher receipts and measured runtime cost in registry order. Keep payout/API-cost absence unknown, not zero. The Moneytree bank-side refresh/metadata path remains an explicit provider-capability follow-up; the current report does not claim realtime. Do not revive `life-manager-v0`, `cfo-daily`, or the separate financial-report loop.

@@ -686,6 +686,10 @@ add a business-fact database table, renderer, API route, launchd wiring, or Tele
 - Moneytree freshness warning (2026-08-21): canonical commit `24ac6598a` makes the hourly and callback source
   lines `⚠️ Moneytree` even when retrieval succeeded. `fresh` is an internal read-success state, not realtime
   proof; the report continues to show local retrieval time and bank-side freshness unknown.
+- Moneytree lag warning (2026-08-21): canonical commit `c9fddf0bd` compares the reporting date with the latest
+  returned transaction date and visibly warns when the provider payload is behind (2026-08-21 vs 2026-08-18:
+  3 days). It never invents a transaction, refreshes credentials, or converts the stale payload into a realtime
+  claim.
 - Host-parity decision (2026-08-21): the official Codex MCP/skills/plugins/App Server/SDK surfaces support sharing
   user config, skill roots, and installed Apps across local Codex clients, but a fresh `codex exec` is not the main
   ChatGPT conversation. The Moneytree bundle is present in local plugin cache and `codex app-server` reports it

@@ -1069,6 +1069,12 @@ retrieval timestamp and **銀行側データの新しさは不明**, so a succes
 mistaken for a realtime bank balance. No provider, state, launchd, Telegram destination, or financial
 amount behavior changed.
 
+Canonical commit `c9fddf0bd` additionally computes the gap between the reporting date and the latest returned
+transaction date. When the provider payload is behind (the live read is `2026-08-18` for reporting date
+`2026-08-21`), the transaction section starts with **返却データは3日前／残高はリアルタイムではない**.
+This is a warning derived from provider dates; it does not infer a missing transaction or change the reported
+balance.
+
 ### CFO-1j display correction (2026-08-21)
 
 The installed Moneytree read still returns the same provider payload (MUFG balance `358938`, latest returned
