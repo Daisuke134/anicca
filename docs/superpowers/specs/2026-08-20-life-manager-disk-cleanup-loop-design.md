@@ -88,7 +88,7 @@ compatibility shimだけを置く。ユーザー固有のhome path、process sta
 receipt、runtime manifestの実データはrepositoryへ入れず、install時にlocal stateへrenderする。
 LLMは削除権限を持たず、unknown pathを削除するための自由なshell実行も公開契約に含めない。
 
-実装済みcommitはLife Managerの `857e12e8b`（hourly full-pass marker契約まで）を参照する。
+実装済みcommitはLife Managerの `c3e6cf6ff`（hourly markerとallow-listed fail-closed契約まで）を参照する。
 Anicca側のguard integrationは作業branchの`7363a95dc`までローカルで検証済みだが、GitHub pushは
 DNS解決失敗で未達である。これらのcommitは実装の到達点であり、production DONEの証明ではない。
 
