@@ -834,7 +834,10 @@ a later successful example.
   payload unless `formal_delivery_checkbox` is exactly false, and Paid succeeds only after the
   exact message plus attachment is read back from that official talkroom. Natural-send proof stays
   in P31.
-- [ ] P20 — Enable formal delivery only after the complete accepted scope passes.
+- [x] P20 — Enable formal delivery only after the complete accepted scope passes. Formal requires
+  the current buyer-side approval identity to exactly match semantic approval evidence, a valid
+  fresh-reviewed file authorization, zero delivery blockers, and unchanged presend feedback. A
+  prepared progress action may never escalate to formal during sparse presend readback.
 - [ ] P21 — Give reply, attachment and formal delivery independent durable effect keys.
 - [ ] P22 — Read the attachment back in the exact official talkroom.
 - [ ] P23 — Read formal delivery back in the exact official talkroom.
