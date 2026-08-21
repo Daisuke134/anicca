@@ -33,7 +33,9 @@ states a provider policy of no more than five applications in any 90-day span; t
 fast path correctly stopped before claim/submit with
 `provider_application_limit_visible` rather than bypassing the ATS policy. Fast-path
 checkpoints now send Telegram before model fallback (commit `85ce59025`), so a model
-timeout cannot suppress the report.
+timeout cannot suppress the report. The direct gateway report for this provider
+block was acknowledged with Telegram message `27462`; the timed-out outbox event is
+kept `send_started` and is not blindly retried.
 The daily script now bounds the non-deterministic browser fallback at 300 seconds
 by default (`JOB_SEARCH_BROWSER_TIMEOUT_SECONDS` may lower or raise that bounded
 value); deterministic ATS fast paths run before it and retain their own evidence.
