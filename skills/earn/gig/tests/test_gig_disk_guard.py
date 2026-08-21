@@ -205,3 +205,14 @@ def test_writer_lanes_render_from_immutable_release_and_life_manager_state():
             "/skills/earn/gig/scripts/gig_disk_guard.py"
         )
         assert all("profitable-claude" not in value for value in rendered["ProgramArguments"])
+        if "StartCalendarInterval" in job:
+            assert rendered["StartCalendarInterval"] == job["StartCalendarInterval"]
+        else:
+            assert "StartCalendarInterval" not in rendered
+
+    for job in manifest["jobs"]:
+        rendered = release.plist_for(job, table)
+        if "StartCalendarInterval" in job:
+            assert rendered["StartCalendarInterval"] == job["StartCalendarInterval"]
+        else:
+            assert "StartCalendarInterval" not in rendered

@@ -264,7 +264,10 @@ def plist_for(job: dict, table: dict[str, str]) -> dict:
         "StandardOutPath": f"{log_dir}/{job['log_basename']}.out.log",
         "StandardErrorPath": f"{log_dir}/{job['log_basename']}.err.log",
     }
-    for key in ("StartInterval", "ThrottleInterval", "RunAtLoad", "KeepAlive", "ProcessType"):
+    for key in (
+        "StartInterval", "StartCalendarInterval", "ThrottleInterval",
+        "RunAtLoad", "KeepAlive", "ProcessType",
+    ):
         if key in job:
             out[key] = job[key]
     return out
