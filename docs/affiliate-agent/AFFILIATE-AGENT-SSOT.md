@@ -589,6 +589,23 @@ effect, create a provider link, or create money. The unchanged
 day; campaign-seven resume must continue through this durable owner job, not a
 manual composition or parallel executor.
 
+### 1.1.22 Provider unique-click denominator retention replay
+
+Release `b47dc853eec1b98ccac5b4fe1405986cd92b7a7d` preserves PartnerStack
+`unique_click_count` and its delta/state in the link-performance receipt,
+click transition, and placement ledger without adding it to economics. Source
+and installed `revenue_cli.py` bytes match at SHA-256
+`8f75c9f32c7724c38784e4d10c0a7afe163ae6591317ac5214d892f71686f5da`; the
+full `69/69` suite and compilation passed. The existing owner naturally ran
+wake `dab0413c155b4ef1dec392e1ad56fa7c024c8fa235d4841c4f564794dec1b777` at
+`2026-08-21T12:11:33+0900` with 20 placements, `ALREADY_LIVE`, provider
+`AUTHENTICATED`, revenue `COOLDOWN`, and rolling net
+`NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`. The pre-change
+Link Performance receipt has no unique fields, so all 20 ledger rows correctly
+read `unique_state=UNKNOWN`; no click, transaction, public effect, or money was
+invented. The next official link capture must populate observed unique counts
+where the provider supplies them.
+
 ### 1.2.0 Audited executable boundary
 
 The installed ownership graph has six launchd labels: three persistent browser
