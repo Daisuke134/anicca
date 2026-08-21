@@ -58,3 +58,32 @@
 
   Run: `git add loops/agent-economy/loop.toml bin/plistgen.py test/agent-economy-control-plane.test.mjs docs/superpowers/specs/2026-08-21-agent-economy-design.md docs/superpowers/plans/2026-08-21-agent-economy-control-plane.md && git commit -m "fix: anchor agent economy loop to immutable release" && git push -u origin feat/agent-economy-implementation`
 
+### Task 2: Retire stale launchd jobs during the final release cut
+
+**Files:**
+- Create: `skills/agent-economy/retire-legacy-jobs.sh`
+- Test: `test/agent-economy-legacy-retire.test.mjs`
+
+**Interfaces:**
+- Consumes: `AGENT_ECONOMY_RETIRE_LEGACY=1` and the existing `bin/launchctl-safe` preflight boundary.
+- Produces: bootout requests for only the obsolete citizen-refill and x402 experiment labels; default invocation exits 2 without mutation.
+
+- [ ] **Step 1: Write a default-off retirement contract test**
+
+  Assert all three legacy labels are present in the script and that invoking it with `AGENT_ECONOMY_RETIRE_LEGACY=0` exits 2 with a disabled message.
+
+- [ ] **Step 2: Run the test to verify it fails before the script exists**
+
+  Run: `node --test test/agent-economy-legacy-retire.test.mjs`
+
+- [ ] **Step 3: Add the preflight-gated retirement wrapper**
+
+  Require the explicit flag, run `bin/launchctl-safe preflight`, and bootout only the three fixed labels. Do not delete plist files or kill processes directly.
+
+- [ ] **Step 4: Run the retirement contract, syntax, and focused agent-economy suite**
+
+  Run: `node --test test/agent-economy-legacy-retire.test.mjs`, `bash -n skills/agent-economy/retire-legacy-jobs.sh`, and `npm run test:agent-economy`.
+
+- [ ] **Step 5: Commit and push**
+
+  Run: `git add skills/agent-economy/retire-legacy-jobs.sh test/agent-economy-legacy-retire.test.mjs package.json docs/superpowers/plans/2026-08-21-agent-economy-control-plane.md && git commit -m "ops: gate retirement of stale economy jobs" && git push`
