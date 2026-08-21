@@ -35,7 +35,8 @@ try:
             if not v.strip(): continue
             browser_write_html(pg, v); pg.keyboard.press("Meta+v"); time.sleep(2.0)
         else:
-            if not os.path.exists(v): print("img missing",v); continue
+            if not os.path.exists(v):
+                raise SystemExit(f"IMAGE MISSING: {v}")
             n0=pg.evaluate("()=>document.querySelector('[data-testid=composer]').querySelectorAll('img').length")
             ok=False
             for attempt in range(3):
@@ -43,13 +44,19 @@ try:
                 if pg.evaluate("()=>document.querySelector('[data-testid=composer]').querySelectorAll('img').length")>n0:
                     ok=True; break
                 time.sleep(1.0)
-            if not ok: print("IMG PASTE FAILED after retries:",v)
+            if not ok:
+                raise SystemExit(f"IMG PASTE FAILED after retries: {v}")
     # cover
     fis=pg.query_selector_all('input[type=file]')
     if fis and THUMB and os.path.exists(THUMB):
         fis[0].set_input_files(THUMB); time.sleep(5)
         pg.evaluate("""()=>{const a=[...document.querySelectorAll('button,div[role=button],span')].find(x=>['Apply','適用','保存','Save'].includes((x.textContent||'').trim()));if(a)a.click();}"""); time.sleep(3)
     nimg=pg.evaluate("()=>document.querySelector('[data-testid=composer]').querySelectorAll('img').length")
+    expected_images=sum(1 for k,_ in chunks if k=='img')
+    if nimg != expected_images:
+        raise SystemExit(
+            f"IMAGE COUNT MISMATCH: expected={expected_images} actual={nimg}"
+        )
     print("imgs in composer:",nimg)
     print("DRAFT_URL:",DRAFT)
     pg.close()

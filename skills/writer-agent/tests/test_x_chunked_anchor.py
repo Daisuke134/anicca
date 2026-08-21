@@ -3,6 +3,7 @@ from pathlib import Path
 
 
 MODULE = Path(__file__).parents[1] / "scripts" / "x-publish" / "x_anchor.py"
+CHUNKED = MODULE.with_name("x_chunked.py")
 SPEC = importlib.util.spec_from_file_location("x_anchor", MODULE)
 assert SPEC and SPEC.loader
 x_anchor = importlib.util.module_from_spec(SPEC)
@@ -39,3 +40,10 @@ def test_missing_anchor_fails_closed():
         assert str(error).startswith("ANCHOR NOT FOUND:")
     else:
         raise AssertionError("missing image anchor must not be silently dropped")
+
+
+def test_browser_chunker_fails_closed_on_media_loss():
+    source = CHUNKED.read_text(encoding="utf-8")
+    assert 'raise SystemExit(f"IMAGE MISSING: {v}")' in source
+    assert 'raise SystemExit(f"IMG PASTE FAILED after retries: {v}")' in source
+    assert "IMAGE COUNT MISMATCH" in source
