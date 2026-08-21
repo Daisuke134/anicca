@@ -14,6 +14,19 @@
   NOT_REACHED`, costs `UNKNOWN`, Telegram `NO_PENDING`, and Repost `58/0`
   exact joins with `NO_REVENUE_CREDIT`. This is only the F04 disk-floor
   sub-behavior; B01 remains open with an empty official PartnerStack report.
+- Release `4adde6961dda21ac1ee84d478f352165d882f5df` adds the read-only owner
+  watchdog snapshot and is installed as `current`. Existing owner wake
+  `f25ff216…` completed at `2026-08-21T17:12:26+0900`, exit `0`; the durable
+  `AFFILIATE_OWNER_HEALTH` receipt reports all six Affiliate labels loaded and
+  CDP `9324/9326/9327` READY on Chrome `145.0.7632.109`. The same wake reports
+  disk `DISK_GUARD_BLOCKED` (`1626869760` bytes free vs 10 GiB), provider
+  `AUTHENTICATED`, link `VERIFIED`, publication `ALREADY_LIVE`, revenue
+  `COOLDOWN`, rolling net `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS /
+  NOT_REACHED`, costs `UNKNOWN`, Telegram `NO_PENDING`, and Repost `58/0`
+  exact joins. This is health observation only; no restart, second executor,
+  transaction, or money was created. F04 action/cost caps/quarantine and F05
+  repair postconditions remain open; B01 still waits for a non-empty official
+  PartnerStack transaction row.
 - Commit `43335da00` is installed as immutable `current`; source/installed
   budget scripts match and the suite is `80/80`. Source-refresh/composition
   replays at `16:49+0900` exited `0` (`runs=247` / `runs=258`), and campaign

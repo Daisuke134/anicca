@@ -1038,6 +1038,30 @@ diagnose→one repair→postcondition→same-job resume remain open. It does not
 close B01: the official PartnerStack report is still empty, with no
 transaction, settlement, payout, or money.
 
+### 1.1.40 F04 owner-health watchdog observation installed
+
+Release `4adde6961dda21ac1ee84d478f352165d882f5df` is installed as immutable
+`current` and was replayed by the existing owners. The money wake
+`f25ff2160dc6d36ee226ac0fb2816b487b069a896fa960c5f25bc7a8f20acdc1` completed
+at `2026-08-21T17:12:26+0900` with launchd `runs=250`, exit `0`, and an
+`AFFILIATE_OWNER_HEALTH` receipt: all six Affiliate labels are loaded
+(`running` for the three browser owners and `not running` after successful
+completion for the three ten-minute owners), and CDP ports `9324`, `9326`, and
+`9327` are all `READY` on Chrome `145.0.7632.109`. The same wake reports the
+real disk guard `DISK_GUARD_BLOCKED` (free `1626869760` bytes versus the
+10 GiB floor), provider `AUTHENTICATED`, link `VERIFIED`, publication
+`ALREADY_LIVE`, revenue `COOLDOWN`, rolling net
+`NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`, cost coverage
+`UNKNOWN`, Telegram `NO_PENDING`, and Repost `58` actions / `0` exact joins /
+`NO_REVENUE_CREDIT`.
+
+This closes F04's read-only owner-health observation sub-behavior, not the
+repair/watchdog action. A missing label or CDP would currently be reported as
+`DEGRADED`; no automatic restart or second executor is created. Per-provider
+and channel quarantine, daily action/cost caps, and F05's one-repair
+postcondition remain open. B01 is still waiting for the first official
+non-empty PartnerStack transaction row.
+
 ### 1.2.0 Audited executable boundary
 
 The installed ownership graph has six launchd labels: three persistent browser
@@ -3104,8 +3128,9 @@ receipt readback, SSOT state update, commit, and push to both canonical remotes.
   admitted-tool receipt; no money is implied.
 - [ ] **F04** Add bounded retry, per-provider/channel quarantine, daily action/cost
   caps, disk guard, browser-owner health, and watchdog inside the existing ownership graph.
-  **Partial:** the 10 GiB disk guard is installed and live-proven in §1.1.39;
-  the other caps, quarantine, health, and watchdog sub-behaviors remain open.
+  **Partial:** the 10 GiB disk guard and read-only owner-health observation are
+  installed and live-proven in §§1.1.39–1.1.40; action/cost caps, quarantine,
+  and repair/watchdog behavior remain open.
 - [ ] **F05** Implement diagnose→one allowlisted repair→postcondition→same-job resume;
   escalate or quarantine when the repair postcondition fails.
 - [x] **F06** Observe one real recoverable capture failure and prove `SELF_HEALED`,
