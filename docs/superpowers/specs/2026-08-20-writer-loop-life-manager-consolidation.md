@@ -4,6 +4,23 @@
 
 ## Current SSOT（2026-08-21 実測）
 
+### ownerless repair handoff の回収実測
+
+- `eeb25ca90`をLife Managerのimmutable releaseへ反映し、14 Writer labelの`current` argvを再読した。
+  公開停止markerは維持したままである。
+- `article-resume`を既存launchd labelから停止中に1回kickstartした。新しい
+  `--recover-claims-only`経路は、Codex・runbook・publisherを呼ばず、receiptと所有者不在を両方確認した
+  11件の旧`CLAIMED` handoffを`WAIT/WAIT_FOR_NEW_OCCURRENCE`へ移した。既存queueの同一lock内で
+  更新し、attempt・investigation・runbook receiptのSHAを記録した。
+- receiptが存在しない旧credential incident `32446a…` は、所有者不在だけでは回収せず`CLAIMED`のまま残した。
+  これは安全側の未完了であり、時刻だけを根拠にleaseを盗まない。公開対象の旧
+  `daily-2026-08-07/note/ja` handoffはWAIT化済みである。
+- 現行releaseのcode/state SHAでNote failure circuitを再openし、`article_pending.py`は
+  `WAIT`、`recovery_pairs=[]`、`eligible_pairs=[]`、`blocked_pairs=[note/ja]`を返す。
+  回収tickではpublication-state、ledger row、native URL、外部公開effectは増えていない。
+- 回収実装の専用回帰4件はPASS。pause中のlaunchd readbackは`runs=1 / last exit=0`で、
+  `CLAIMS_RECOVERED` receiptが`article-resume.log`へ保存されている。clean canaryと自然周期の連続証明は未実施である。
+
 ### launchd control-plane の外部照合と現在の原因判定（2026-08-21）
 
 - Appleの資料では、`~/Library/LaunchAgents`はログイン中ユーザー専用のLaunchAgent置き場であり、
@@ -955,8 +972,9 @@ loaded definitionと自然tickまで読み戻すことを意味する。A1のcon
 | A9c | WriterのCodex-only retryを実装する | `ARTICLE_PROVIDER=codex`固定。cooldown既定値を300秒へ変更し、同一immutable runを最大3回だけcheckpoint再開するfixture。Codex cooldown中にClaude/Hermesを起動しない、公開state/ledger後のreplay 0、3回 exhausted後に新runを増殖させない | 実装・契約検証完了（model-runner 7件、resume circuit 6件、start-control 6件、candidate wiring 19件、publication identity 15件、topic-card resume 9件、state routing、duplicate-media guard、構文/manifest/diff check、fresh v2 adversarial review PASS） |
 | A9d | Codex-only Writer公開canaryを行う | current releaseをlaunchdへ反映し、pause解除後の新runでCodex attempt receipt、Note JA、Substack JA/EN、X Article JAの4 native URL、本文・media hash、Telegram delivery receiptを取得。Codex timeout時は同じrunの次tickへ安全にhandoffする | 部分完了（既存`daily-2026-08-21`は4媒体native live＋`article-run-complete rc=0`。`20260821-054500`はduplicate-media quarantine完了。`20260821-072939`はdisk floor低下前にSIGTERMしpublication前で安全停止。clean canary・連続tick・Telegram deliveryは未実施） |
 | A9e | invalid duplicate-media runを安全に隔離する | 対象runの同一media SHA、全active pairが`unavailable`またはdormant `skipped`、no-effect ledgerを再計算し、proof-bound `run-quarantine.json`を作成。start-controlが同日`new`を返し、対象pair以外とledgerの不変をreadback | 完了（実装・fixture 13件、focused 43件、契約・構文・diff check PASS。実canaryのX intentを同じtargetの`unavailable`へ共有lock下で遷移、receipt作成、ledger不変、start-control=`new`、current release=`cdb611300`を実測） |
-| A9f | disk floor復帰後にclean canaryを再開する | `gig_disk_guard`とarticle wrapperが同じ512MiB floorをPASSし、pause解除→既存daily kickstart→新runの4 native receipt、Telegram message ID、2連続tickを取得。floor未達なら生成・公開を開始しない | 実行可能（実測空き約1.52GiB、pause markerは維持。旧1GiB設定のcanaryはpublication前に安全停止。`20260821-072939`はpublication-state・ledger・native URLなし。floor統一・focused検証・敵対的レビュー完了、clean canary・連続tick・Telegram deliveryは未実施） |
-| A9g | 旧backlogを外部作用なしで扱う | 旧runのlive pairを保持したまま、未解決pairだけを現行code/state identityのfailure circuitへopenし、plannerが`WAIT`かつ`recovery_pairs=[]`を返す。新規runの公開を旧targetが先取りしない | 完了（`daily-2026-08-07` Note JA circuit open count=1、planner readback `WAIT/blocked_pairs=[note/ja]`） |
+| A9f | disk floor復帰後にclean canaryを再開する | `gig_disk_guard`とarticle wrapperが同じ512MiB floorをPASSし、pause解除→既存daily kickstart→新runの4 native receipt、Telegram message ID、2連続tickを取得。floor未達なら生成・公開を開始しない | 実行可能だがpause維持（current=`eeb25ca90`、空き容量は512MiB超、`20260821-072939`はpublication前安全停止。clean canary・連続tick・Telegram deliveryは未実施） |
+| A9g | 旧backlogを外部作用なしで扱う | 旧runのlive pairを保持したまま、未解決pairだけを現行code/state identityのfailure circuitへopenし、plannerが`WAIT`かつ`recovery_pairs=[]`を返す。新規runの公開を旧targetが先取りしない | 完了（Note circuitを現行code/state SHAで再open、11件のreceipt-backed handoffをWAIT化、planner `WAIT/blocked_pairs=[note/ja]/recovery_pairs=[]`） |
+| A9h | receiptのない旧CLAIMEDを安全に扱う | receipt-backed owner proofがないclaimは自動で盗まず、状態・所有者・次の監査を自然文receiptへ記録。新しいreceiptまたは明示的なOrder 5 ownerが現れた場合だけqueue state machineで再開 | 未完（`32446a…` credential incident 1件をfail-closedでCLAIMED維持。clean canaryの公開対象ではないが、repair queueの完全な可観測性に必要） |
 | A9b | 1日複数回の正式scheduleを追加する | 06:00/14:00/22:00などのcalendar wake、各slotのunique run ID、同日異記事、連続2周期のnative receiptを実測 | 未着手。現在は06:00のまま |
 | A10 | 実payment/publisher receiptをmoney ledgerへ接続する | receipt ID、金額、通貨、destination identity、artifact/run IDをjoin。未取得は`unknown`のまま保持 | 未着手 |
 | A11 | 14日間の運用観測を完了する | 重複外部作用0、同一run resume、自然文の成功/失敗報告、revenue ledger整合を連続receiptで確認 | A9/A10待ち |
