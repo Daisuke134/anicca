@@ -383,10 +383,32 @@ class LocalLoopTest(unittest.TestCase):
             with patch.object(MODULE.shutil, "which", return_value="/opt/homebrew/bin/openclaw"):
                 first = MODULE.flush_telegram(state, event, runner=runner)
                 second = MODULE.flush_telegram(state, event, runner=runner)
-            self.assertEqual(first, {"state": "SENT", "sent": 1, "message_id": "7640"})
+            self.assertEqual(first, {
+                "state": "SENT", "sent": 1, "message_id": "7640",
+                "sent_event_uuid": "event-1",
+            })
             self.assertEqual(second["state"], "NO_PENDING")
             self.assertEqual(len(calls), 1)
             self.assertEqual(json.loads((state / "telegram-sent.jsonl").read_text())["message_id"], "7640")
+
+    def test_telegram_receipt_binds_the_event_actually_sent(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root)
+            old = {"event_uuid": "old-event", "kind": "AFFILIATE_DAILY_SUMMARY", "body": "old", "created_at": 1}
+            current = {"event_uuid": "current-event", "kind": "REPOST_OBSERVED", "body": "current", "created_at": 2}
+            MODULE.append(state / "telegram-outbox.jsonl", old)
+
+            def runner(command, **kwargs):
+                return subprocess.CompletedProcess(command, 0, '{"messageId":"7641"}', "")
+
+            with patch.object(MODULE.shutil, "which", return_value="/opt/homebrew/bin/openclaw"):
+                delivery = MODULE.flush_telegram(state, current, runner=runner)
+            receipt = MODULE.append_telegram_delivery_receipt(
+                state, {"wake_event_uuid": "wake-1", "ts": 1}, current, delivery,
+            )
+            self.assertEqual(delivery["sent_event_uuid"], "old-event")
+            self.assertEqual(receipt["telegram_event_uuid"], "old-event")
+            self.assertEqual(receipt["telegram_kind"], "AFFILIATE_DAILY_SUMMARY")
 
     def test_revenue_cycle_cooldown_is_independent_of_wake(self):
         with tempfile.TemporaryDirectory() as root:

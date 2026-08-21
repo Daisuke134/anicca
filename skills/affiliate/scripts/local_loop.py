@@ -1001,10 +1001,14 @@ def flush_telegram(state, event, runner=subprocess.run):
         return {
             "state": "NO_PENDING", "sent": 0,
             "message_id": (sent_by_id.get(requested_event_uuid) or {}).get("message_id"),
+            "sent_event_uuid": requested_event_uuid if requested_event_uuid in sent_by_id else None,
         }
     openclaw = shutil.which("openclaw")
     if not openclaw:
-        return {"state": "TRANSPORT_UNAVAILABLE", "sent": 0, "message_id": None}
+        return {
+            "state": "TRANSPORT_UNAVAILABLE", "sent": 0, "message_id": None,
+            "sent_event_uuid": pending[0]["event_uuid"],
+        }
     row = pending[0]
     # A send that failed before it could be recorded leaves an unresolved effect
     # that the reconcile pass above can never clear, because that pass only
@@ -1021,7 +1025,10 @@ def flush_telegram(state, event, runner=subprocess.run):
             {"state": "NOT_SENT", "event_uuid": row["event_uuid"]}, 60,
         )
     except JobStateError:
-        return {"state": "RECONCILE_REQUIRED", "sent": 0, "message_id": None}
+        return {
+            "state": "RECONCILE_REQUIRED", "sent": 0, "message_id": None,
+            "sent_event_uuid": row["event_uuid"],
+        }
     try:
         completed = runner(
             [openclaw, "message", "send", "--channel", "telegram", "--target", "8547730585",
@@ -1032,16 +1039,25 @@ def flush_telegram(state, event, runner=subprocess.run):
         # The provider may have accepted the send before the CLI timed out.
         # Keep the write-ahead effect unresolved and the event pending; never
         # claim SENT or invent a message ID from a transport timeout.
-        return {"state": "SEND_TIMEOUT_UNKNOWN", "sent": 0, "message_id": None}
+        return {
+            "state": "SEND_TIMEOUT_UNKNOWN", "sent": 0, "message_id": None,
+            "sent_event_uuid": row["event_uuid"],
+        }
     except OSError:
-        return {"state": "TRANSPORT_UNAVAILABLE", "sent": 0, "message_id": None}
+        return {
+            "state": "TRANSPORT_UNAVAILABLE", "sent": 0, "message_id": None,
+            "sent_event_uuid": row["event_uuid"],
+        }
     try:
         response = json.loads(completed.stdout)
     except ValueError:
         response = None
     message_id = find_message_id(response)
     if completed.returncode or not message_id:
-        return {"state": "SEND_FAILED", "sent": 0, "message_id": None}
+        return {
+            "state": "SEND_FAILED", "sent": 0, "message_id": None,
+            "sent_event_uuid": row["event_uuid"],
+        }
     append_unique(state / "telegram-sent.jsonl", {
         "event_uuid": row["event_uuid"], "message_id": message_id,
         "sent_at": int(time.time()),
@@ -1049,12 +1065,24 @@ def flush_telegram(state, event, runner=subprocess.run):
     verify_effect(state, job["job_id"], {
         "state": "SENT", "event_uuid": row["event_uuid"], "message_id": message_id,
     })
-    return {"state": "SENT", "sent": 1, "message_id": message_id}
+    return {
+        "state": "SENT", "sent": 1, "message_id": message_id,
+        "sent_event_uuid": row["event_uuid"],
+    }
 
 
 def append_telegram_delivery_receipt(state, wake_event, telegram_event, delivery):
     """Persist Telegram enqueue/attempt/result beside the wake that caused it."""
     wake_uuid = wake_event.get("wake_event_uuid") or wake_event_uuid(wake_event)
+    sent_event_uuid = delivery.get("sent_event_uuid")
+    if sent_event_uuid and sent_event_uuid != telegram_event.get("event_uuid"):
+        telegram_event = next(
+            (
+                row for row in json_rows(state / "telegram-outbox.jsonl")
+                if row.get("event_uuid") == sent_event_uuid
+            ),
+            telegram_event,
+        )
     telegram_uuid = (
         telegram_event.get("event_uuid")
         if isinstance(telegram_event, dict) else None
@@ -2376,7 +2404,7 @@ def wake(args):
     delivery_receipt = append_telegram_delivery_receipt(
         state, event, telegram_event, telegram,
     )
-    event["telegram_event_uuid"] = telegram_event.get("event_uuid")
+    event["telegram_event_uuid"] = delivery_receipt.get("telegram_event_uuid")
     event["telegram_state"] = telegram["state"]
     event["telegram_message_id"] = telegram["message_id"]
     event["telegram_delivery_receipt_event_uuid"] = delivery_receipt["event_uuid"]
