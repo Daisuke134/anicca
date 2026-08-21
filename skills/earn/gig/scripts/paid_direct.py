@@ -171,6 +171,23 @@ def _collector(args, mode, output, evidence, item_path=None, item=None):
 def _collect_dm_context(args, item: dict[str, Any], root: Path, base: Path) -> None:
     """Bind the existing pre-purchase DM collector before any semantic paid work."""
     evidence = base / "preflight" / "direct-message.json"
+    required_sources = (
+        root / "source" / "proposal" / f"offer-{_text(item.get('talkroom_id'))}.json",
+        root / "source" / "talkroom" / "messages.jsonl",
+        root / "requirements" / "live-buyer-reply.json",
+    )
+    try:
+        previous = _load(evidence)
+        recent_unavailable = (
+            previous.get("error") in {
+                "dm_thread_not_found", "dm_thread_unknown", "dm_collection_unavailable",
+            }
+            and time.time() - evidence.stat().st_mtime < 3600
+        )
+    except (AttributeError, OSError, TypeError, ValueError, json.JSONDecodeError):
+        recent_unavailable = False
+    if recent_unavailable and all(path.is_file() and not path.is_symlink() for path in required_sources):
+        return
     thread_id = ""
     try:
         proposal = _load(root / "source" / "proposal" / f"offer-{_text(item.get('talkroom_id'))}.json")
@@ -204,11 +221,7 @@ def _collect_dm_context(args, item: dict[str, Any], root: Path, base: Path) -> N
         raise Failure("dm_context")
     # A missing DM must remain a visible context gap, but it cannot suppress work already
     # fully specified by the authenticated proposal, talkroom and accumulated requirements.
-    for required in (
-        root / "source" / "proposal" / f"offer-{_text(item.get('talkroom_id'))}.json",
-        root / "source" / "talkroom" / "messages.jsonl",
-        root / "requirements" / "live-buyer-reply.json",
-    ):
+    for required in required_sources:
         if not required.is_file() or required.is_symlink():
             raise Failure("dm_context")
 
@@ -3390,14 +3403,20 @@ def _fresh_child_env(args):
 
 def _run_paid_item(args, room: str, item_file: Path, prepared_file: Path,
                    effect_file: Path) -> tuple[dict[str, Any], int, int, int, str]:
-    prepare = _run_bounded(
-        _prepare_command(args, item_file, prepared_file),
-        env=_fresh_child_env(args), timeout=FILE_PREPARE_TIMEOUT_SECONDS,
-    )
-    try:
-        prepared = _load(prepared_file)
-    except (OSError, json.JSONDecodeError):
-        prepared = {"status": "failed", "failed_step": "remote_resume"}
+    prepared = {"status": "failed", "failed_step": "remote_resume"}
+    for attempt in range(2):
+        prepare = _run_bounded(
+            _prepare_command(args, item_file, prepared_file),
+            env=_fresh_child_env(args), timeout=FILE_PREPARE_TIMEOUT_SECONDS,
+        )
+        try:
+            prepared = _load(prepared_file)
+        except (OSError, json.JSONDecodeError):
+            prepared = {"status": "failed", "failed_step": "remote_resume"}
+        if (attempt == 0 and prepare.returncode
+                and prepared.get("failed_step") == "remote_resume"):
+            continue
+        break
     if prepare.returncode == 0 and prepared.get("_paid_prepare_status") == "pending":
         return {"talkroom_id": room, "status": "pending"}, 0, 0, 0, ""
     if prepare.returncode or prepared.get("_paid_prepare_status") != "prepared":
