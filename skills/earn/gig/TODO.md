@@ -943,8 +943,9 @@ revision cycle from the existing artifact, with formal delivery still off. Paid 
 owner and blind-audit workspaces live under `~/gig/runtime/<talkroom>/`, outside both the
 machine-wide temp tree and the sandbox-denied durable project: unrelated cleanup may never delete
 an active job's workspace, while the isolated owner can still access its own staging tree. Owner
-workspaces are keyed by the accumulated requirements digest; an abrupt process death leaves the
-workspace for the next wake to resume, while a normal success/failure removes it.
+workspaces are keyed by the accumulated requirements digest and stable context-input digest; an
+abrupt process death leaves the workspace for the next wake to resume, while a new attachment gets
+a fresh workspace and a normal success/failure removes it.
 Artifact version and review iteration are independent counters. A high historical `vN` may never
 advance the review cap; only `paid-review-state.round` for the exact feedback/requirements cycle
 counts toward the maximum of ten. A buyer-visible progress artifact does not suppress a durable

@@ -2081,10 +2081,13 @@ def _run_isolated_file_owner(args, root: Path, context: Path, prompt_text: str,
                              owner_evidence: Path) -> int:
     decision = _load(root / "context" / "paid-work-decision.json")
     requirements_sha256 = _text(decision.get("requirements_sha256"))
-    if not re.fullmatch(r"[0-9a-f]{64}", requirements_sha256):
+    context_inputs_sha256 = _text(decision.get("context_inputs_sha256"))
+    if (not re.fullmatch(r"[0-9a-f]{64}", requirements_sha256)
+            or not re.fullmatch(r"[0-9a-f]{64}", context_inputs_sha256)):
         raise Failure("file_builder")
     with _project_workspace(
-        root, f"paid-file-owner-{requirements_sha256[:12]}-", resume=True,
+        root, f"paid-file-owner-{requirements_sha256[:12]}-{context_inputs_sha256[:12]}-",
+        resume=True,
     ) as temporary:
         staging = Path(temporary)
         if (staging / "state.json").is_file():
