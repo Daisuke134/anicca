@@ -288,8 +288,10 @@ PYEOF
     finish 1 "affiliate proposal publish unverified"
   fi
   if [ "$AFFILIATE_RC" -ne 0 ]; then
-    report "❌ Affiliate proposal publish failed; proposal remains unconsumed"
-    finish 1 "affiliate proposal publish failed"
+    "$PY" "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL" \
+      --consumed "$AFFILIATE_CONSUMED" --record NO_EFFECT >/dev/null
+    report "⚠️ Affiliate proposal had no confirmed X effect; terminal no-effect was recorded and generic acquisition can continue"
+    finish 0 "affiliate proposal no effect"
   fi
   AFFILIATE_POST_URL="$($PY -c 'import json,sys; print(json.load(open(sys.argv[1]))["post_url"])' "$EV/post.json")"
   append_affiliate_post "$AFFILIATE_POST_URL"

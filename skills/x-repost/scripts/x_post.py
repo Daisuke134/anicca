@@ -15,6 +15,7 @@ so every other outcome exits non-zero and the caller must not record a post.
 import argparse
 import json
 import os
+import re
 import sys
 import time
 
@@ -53,7 +54,7 @@ def scan_timeline(page, handle: str, needle: str, expected_url: str | None = Non
     for art in page.query_selector_all('article[data-testid="tweet"]'):
         text_el = art.query_selector('div[data-testid="tweetText"]')
         body = text_el.inner_text() if text_el else ""
-        if needle and body.replace("\n", "").strip().startswith(needle):
+        if needle and " ".join(body.split()).startswith(needle):
             visible_links = []
             for anchor in art.query_selector_all('div[data-testid="tweetText"] a'):
                 visible_links.extend((anchor.get_attribute("href") or "", anchor.inner_text() or ""))

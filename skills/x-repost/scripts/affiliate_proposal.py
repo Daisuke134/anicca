@@ -143,7 +143,7 @@ def claim(consumed_path: Path, proposal: dict) -> dict:
 
 
 def record(consumed_path: Path, proposal: dict, state: str, post_url: str | None) -> dict:
-    if state not in {"POSTED", "UNVERIFIED"}:
+    if state not in {"POSTED", "UNVERIFIED", "NO_EFFECT"}:
         raise ValueError("invalid consumption state")
     if not valid(proposal):
         raise ValueError("invalid proposal")
@@ -168,7 +168,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--proposal", type=Path, required=True)
     parser.add_argument("--consumed", type=Path, required=True)
-    parser.add_argument("--record", choices=("POSTED", "UNVERIFIED"))
+    parser.add_argument("--record", choices=("POSTED", "UNVERIFIED", "NO_EFFECT"))
     parser.add_argument("--claim", action="store_true")
     parser.add_argument("--post-url")
     args = parser.parse_args()

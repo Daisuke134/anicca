@@ -69,6 +69,27 @@ class AffiliateProposalTests(unittest.TestCase):
             with self.subTest(url=url):
                 self.assertFalse(MODULE.valid({**base, "owned_article_url": url}))
 
+    def test_no_effect_terminal_does_not_wedge_the_proposal(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            proposal_path = root / "proposal.json"
+            consumed = root / "consumed.jsonl"
+            proposal = {
+                "receipt_type": "AFFILIATE_REPOST_PROPOSAL",
+                "state": "READY_FOR_EXISTING_REPOST_OWNER",
+                "proposal_id": "c" * 64,
+                "placement_id": "voice-isolator-en-1",
+                "owned_article_url": "https://aniccaai.com/blog/voice-isolator",
+                "language": "en", "disclosure_required": True,
+                "tracking_link_state": "NOT_INCLUDED",
+                "revenue_credit_state": "NO_REVENUE_CREDIT",
+            }
+            proposal_path.write_text(json.dumps(proposal))
+            MODULE.claim(consumed, proposal)
+            result = MODULE.record(consumed, proposal, "NO_EFFECT", None)
+            self.assertTrue(result["changed"])
+            self.assertEqual(MODULE.select(proposal_path, consumed)["state"], "ALREADY_CONSUMED")
+
 
 if __name__ == "__main__":
     unittest.main()
