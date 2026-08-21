@@ -169,6 +169,11 @@ raise SystemExit(0)
         self.assertIn("Ashby or\nWorkday", prompt)
         self.assertIn("same CDP page", prompt)
         self.assertIn("same canonical official URL", prompt)
+        self.assertIn("same-job `/apply/` route", prompt)
+        self.assertIn("only global navigation controls", prompt)
+        self.assertIn("route-specific controls for up to 20 seconds", prompt)
+        self.assertIn("reload that current committed application URL once", prompt)
+        self.assertIn("if a required consent checkbox is present", prompt)
         self.assertIn(
             "Do not open a second browser, use arbitrary sleeps, or change the canonical job identity.",
             prompt,

@@ -38,16 +38,22 @@ def _control_text(control: dict[str, Any]) -> str:
     )
 
 
+def _is_email_control(control: dict[str, Any]) -> bool:
+    control_type = _normalized(control.get("type"))
+    if control_type == "email":
+        return True
+    if control_type not in {"", "text"}:
+        return False
+    return any(
+        marker in _normalized(control.get(field))
+        for field in ("label", "name", "text")
+        for marker in ("email", "メール")
+    )
+
+
 def _is_application_form(controls: list[dict[str, Any]]) -> bool:
     has_email = any(
-        _normalized(control.get("type")) == "email"
-        or (
-            _normalized(control.get("type")) in {"", "text"}
-            and any(
-                "email" in _normalized(control.get(field))
-                for field in ("label", "name", "text")
-            )
-        )
+        _is_email_control(control)
         for control in controls
     )
     has_resume = any(_normalized(control.get("type")) == "file" for control in controls)
@@ -86,7 +92,7 @@ def _has_exact_text(controls: list[dict[str, Any]], value: str) -> bool:
 
 
 def _is_workday_apply_choice(controls: list[dict[str, Any]]) -> bool:
-    return all(
+    english_labels = all(
         _has_exact_text(controls, text)
         for text in (
             "Autofill with Resume",
@@ -94,18 +100,30 @@ def _is_workday_apply_choice(controls: list[dict[str, Any]]) -> bool:
             "Use My Last Application",
         )
     )
+    japanese_labels = all(
+        _has_exact_text(controls, text)
+        for text in ("手動で応募", "自分の前回の応募情報を使用")
+    )
+    return english_labels or japanese_labels
 
 
 def _is_workday_account_create(controls: list[dict[str, Any]]) -> bool:
-    combined = " ".join(_control_text(control) for control in controls)
     password_count = sum(
         _normalized(control.get("type")) == "password" for control in controls
     )
-    has_consent = any(
-        _normalized(control.get("type")) == "checkbox" for control in controls
+    has_email = any(_is_email_control(control) for control in controls)
+    has_password_confirmation = any(
+        marker in _control_text(control)
+        for control in controls
+        for marker in (
+            "verify new password",
+            "password confirmation",
+            "新しいパスワードの確認",
+            "パスワードの確認",
+        )
     )
     has_create_action = any(
-        _normalized(control.get("text")) == "create account"
+        _normalized(control.get("text")) in {"create account", "アカウントの作成"}
         and (
             _normalized(control.get("role")) == "button"
             or _normalized(control.get("tag")) == "button"
@@ -113,10 +131,9 @@ def _is_workday_account_create(controls: list[dict[str, Any]]) -> bool:
         for control in controls
     )
     return (
-        "email address" in combined
-        and "verify new password" in combined
+        has_email
+        and has_password_confirmation
         and password_count >= 2
-        and has_consent
         and has_create_action
     )
 

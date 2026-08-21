@@ -160,6 +160,31 @@ class AtsReadinessTests(unittest.TestCase):
             },
         )
 
+    def test_workday_localized_apply_choice_is_ready_for_navigation(self):
+        result = evaluate_snapshot(
+            {
+                "version": 1,
+                "url": "https://wd3.myworkdaysite.com/ja-JP/recruiting/example/job/role",
+                "navigation_committed": True,
+                "frames": [
+                    {
+                        "url": "https://wd3.myworkdaysite.com/ja-JP/recruiting/example/job/role",
+                        "controls": [
+                            {"tag": "a", "role": "button", "text": "手動で応募"},
+                            {
+                                "tag": "a",
+                                "role": "button",
+                                "text": "自分の前回の応募情報を使用",
+                            },
+                        ],
+                    }
+                ],
+            }
+        )
+        self.assertEqual(result["surface"], "workday_apply_choice")
+        self.assertTrue(result["ready"])
+        self.assertFalse(result["claim_ready"])
+
     def test_workday_create_account_is_ready_but_not_claim_ready(self):
         self.assertEqual(
             evaluate_snapshot(load_fixture("workday-create-account-surface.json")),
@@ -187,6 +212,45 @@ class AtsReadinessTests(unittest.TestCase):
         self.assertFalse(result["ready"])
         self.assertFalse(result["claim_ready"])
         self.assertEqual(result["surface"], "none")
+
+    def test_workday_localized_create_account_without_consent_is_ready(self):
+        result = evaluate_snapshot(
+            {
+                "version": 1,
+                "url": "https://wd3.myworkdaysite.com/ja-JP/recruiting/example/job/role/apply/applyManually",
+                "navigation_committed": True,
+                "frames": [
+                    {
+                        "url": "https://wd3.myworkdaysite.com/ja-JP/recruiting/example/job/role/apply/applyManually",
+                        "controls": [
+                            {
+                                "tag": "input",
+                                "type": "text",
+                                "label": "E メール アドレス*",
+                            },
+                            {
+                                "tag": "input",
+                                "type": "password",
+                                "label": "パスワード*",
+                            },
+                            {
+                                "tag": "input",
+                                "type": "password",
+                                "label": "新しいパスワードの確認*",
+                            },
+                            {
+                                "tag": "button",
+                                "type": "submit",
+                                "text": "アカウントの作成",
+                            },
+                        ],
+                    }
+                ],
+            }
+        )
+        self.assertEqual(result["surface"], "workday_account_create")
+        self.assertTrue(result["ready"])
+        self.assertFalse(result["claim_ready"])
 
     def test_generic_application_surface_is_claim_ready(self):
         snapshot = {

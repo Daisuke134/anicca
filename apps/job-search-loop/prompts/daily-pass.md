@@ -106,10 +106,14 @@ one evaluated surface at a time:
 ```text
 workday_job
   → click the ordinary Apply navigation control
-  → recapture and reevaluate
+  → wait for the transitioned Workday surface (not a global navigation button),
+    then recapture and reevaluate
 workday_apply_choice
   → click Apply Manually
-  → recapture and reevaluate
+  → wait for controls tied to the new route, not the first visible global
+    navigation button; an email field plus password fields or a localized
+    `アカウントの作成` action are valid readiness signals, then recapture and
+    reevaluate
 workday_account_create
   → do not claim; provision/reuse the tenant's private credential, then create
     the account and recapture/reevaluate
@@ -161,7 +165,8 @@ PYTHONPATH=apps/job-search-loop \
 The secret-free receipt identifies the tenant and credential path. In the same
 browser process, call `job_search_loop.workday_credentials.load_credentials` and
 use the returned values only as `fill()` inputs for the email, password, and verify
-password controls; check the required consent and click the user-facing
+password controls; if a required consent checkbox is present, check that checkbox,
+then click the user-facing
 `Create Account` action. Never log, print, snapshot, report, or interpolate either
 value into a command. Recapture and reevaluate after the transition. If provisioning
 or account creation fails, record the exact non-secret blocker, release/avoid the
@@ -185,6 +190,15 @@ distinct eligible official URLs when discovery returned them, and do not report
 eligible candidate has been submitted/claimed. The one-candidate wake fence still
 prevents a second claim, but it does not prevent probing replacement candidates
 before the first successful claim.
+
+A Workday application-route page can briefly expose only global navigation while
+the account or application form hydrates. If the current committed URL is a
+same-job `/apply/` route and the evaluator reports no surface with only global navigation controls, wait for route-specific controls for up to 20 seconds. If
+they still do not appear, reload that current committed application URL once in
+the same CDP page, recapture, and reevaluate; this is the one bounded recovery
+for that transition. Do not return to search, open a second browser, or change
+the canonical job identity. If the second capture still has no route-specific
+surface, record `application_surface_not_found` and continue to the next URL.
 
 Before any submit click, save the complete normalized official posting text in a
 private mode-0600 file beside `$JOB_SEARCH_BROWSER_OWNER_EVIDENCE`, determine the
