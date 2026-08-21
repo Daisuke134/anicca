@@ -169,6 +169,10 @@ Release `16c6db89f1dc570c1cbc22b1103e8cdc0aa927fc` proved this transport evidenc
 ElevenLabs' Enterprise Solutions Engineer - Sweden emitted an observed Ashby request
 after the submit click, remained appropriately `submit_unknown` without an
 authoritative confirmation, and produced Telegram ACK `27594`.
+Release `5c6827807b7e02e80069f107a6ae49383ca1109a` additionally observed six Ashby
+2xx response statuses after the Italy FDE submit click, with Telegram ACK `27602`.
+The Ledger remains `submit_unknown` until the ATS confirmation surface or email is
+authoritative.
 
 The remaining robustness work is ordered, not parallelized: cache freshness, provider-capacity detection, non-Ashby fallback, confirmation reconciliation, then full lifecycle/guardian/OSS.
 
