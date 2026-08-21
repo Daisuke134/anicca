@@ -1363,6 +1363,30 @@ the official PartnerStack report remained `NO_LIVE_ROWS` and rolling net stayed
 transaction, or money effect occurred. The next eligible JST day is still the
 first proposal-consumption attempt.
 
+### 1.1.55 Buyer-intent repost copy is installed; conversion and money remain unproven
+
+The latest immutable Repost release is `2c18fb2fac824683fc6fb37fe607068b3c30bf83`
+and the Affiliate proposal producer is installed at
+`b694746b02a1c220b6a271d15392e90c7156a90a`. The current proposal carries the
+exact placement `elevenlabs-discovered-voice-isolator-en-1`, title
+`How to Evaluate ElevenLabs Voice Isolator Before You Subscribe`, and buyer
+intent `Creators evaluating ElevenLabs Voice Isolator before paying`. The
+existing Repost owner renders bounded English copy with that context, an
+explicit commission disclosure, and the canonical owned article URL; it does
+not receive a raw tracking link or permission to claim revenue.
+
+The proposal remains
+`READY_FOR_EXISTING_REPOST_OWNER / UNCONSUMED_BY_SEPARATE_OWNER /
+NO_REVENUE_CREDIT`. At the latest real readback (`2026-08-21T23:13:51+0900`),
+the action budget is `ACTION_CAP_BLOCKED=34/10`, Repost has `0/58` exact joins,
+PartnerStack has `commission_row_count=0` / `NO_LIVE_ROWS`, and rolling net is
+`NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / cost=UNKNOWN`. This closes only
+the copy/disclosure contract. The next bounded step is the first normal
+post-midnight safe trigger of the existing Repost owner, then exact
+`proposal_id + placement_id + owned_article_url` readback. A post, click,
+exposure, pending reward, or estimate still cannot close B01 or count toward
+the USD 10,000 gate.
+
 ### 1.2.0 Audited executable boundary
 
 The installed ownership graph has six launchd labels: three persistent browser

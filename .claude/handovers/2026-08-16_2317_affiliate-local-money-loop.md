@@ -1,5 +1,24 @@
 # Affiliate local money loop handover
 
+- At `2026-08-21T23:13:51+0900`, the installed Affiliate release is
+  `b694746b02a1c220b6a271d15392e90c7156a90a` and the installed Repost release
+  is `2c18fb2fac824683fc6fb37fe607068b3c30bf83`. The latest durable proposal
+  is still `READY_FOR_EXISTING_REPOST_OWNER / UNCONSUMED_BY_SEPARATE_OWNER /
+  NO_REVENUE_CREDIT`, with placement
+  `elevenlabs-discovered-voice-isolator-en-1`, title
+  `How to Evaluate ElevenLabs Voice Isolator Before You Subscribe`, and
+  bounded buyer intent `Creators evaluating ElevenLabs Voice Isolator before
+  paying`. The Repost renderer now carries that context, an explicit affiliate
+  disclosure, and the canonical owned URL, but no external effect is claimed
+  until the existing owner writes a terminal consumption row plus an exact
+  public permalink. At the same readback, the JST action budget is still
+  `ACTION_CAP_BLOCKED=34/10`, Repost observation is `0/58` exact joins, the
+  official PartnerStack report is empty, and rolling net is
+  `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / cost=UNKNOWN`. Do not bypass
+  the cap or count this proposal as money; the first next action is the normal
+  post-midnight safe kick of the existing Repost owner, followed by Affiliate
+  readback.
+
 - On-demand safe triggers were executed one-by-one through the existing owners
   at `2026-08-21T22:50+0900`. Repost exited `0` at its ordinary `12/12` daily
   ceiling (`posted.jsonl` stayed `58`, proposal consumption `0`). Affiliate
