@@ -3,6 +3,11 @@ set -euo pipefail
 
 SCRIPT_DIR="${0:A:h}"
 source "$SCRIPT_DIR/runtime-paths.sh"
+source "$SCRIPT_DIR/private-env.sh"
+job_search_load_private_env GOG_KEYRING_PASSWORD || {
+  print -u2 "job-search inbox: GOG_KEYRING_PASSWORD is unavailable"
+  exit 78
+}
 
 RUN_ID="inbox-$(date +%Y%m%d-%H%M%S)"
 EVIDENCE="$JOB_SEARCH_STATE_ROOT/evidence/$RUN_ID"
