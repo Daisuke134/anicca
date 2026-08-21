@@ -1416,6 +1416,20 @@ as zero. A rerun with the same snapshot and effect key sends no duplicate
 message. A production message must identify itself as `Life Manager:::` and
 must not expose secrets or OpenClaw paths.
 
+**2026-08-21 legacy-report observation.** The owner-visible line beginning
+`📤 user6721125412040 · tiktok` with the caption fragment and
+`https://www.tiktok.com/@honne_reveal` is not a Life Manager receipt. It is
+the disabled legacy `marketing-engine/report/notify_posts.py` projection: it
+uses the Postiz integration name as the account label and forwards the
+provider's profile-only `releaseURL`, so it is neither natural language nor a
+verified publication link. The corresponding
+`ai.anicca.marketing-post-notify` LaunchAgent is not running and remains
+untouched as rollback evidence. Life Manager's shared Telegram renderer now
+produces a sentence with product/locale/platform/account/slot, explicit
+status, `Public URL`, and `Retry`, and its regression test rejects that raw
+legacy shape. The full MKT-11A daily/weekly snapshot projection remains open;
+this closes only the per-post renderer boundary.
+
 ### 8.10 Social metrics, app metrics, and attribution
 
 Every observation row has the immutable join keys

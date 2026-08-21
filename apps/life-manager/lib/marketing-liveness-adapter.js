@@ -222,10 +222,15 @@ function renderMessage(payload) {
     ? String(payload.public_url || "").match(accountPattern)?.[1]
     : null;
   const account = payload.account || (accountHandle ? `@${accountHandle}` : `the configured ${payload.lane} account`);
+  const product = { "honne-ai": "Honne AI", "anicca-ios": "Anicca iOS", anicca: "Anicca" }[payload.product]
+    || payload.product;
+  const locale = { en: "English", ja: "Japanese" }[payload.locale] || payload.locale;
+  const platform = { tiktok: "TikTok", instagram: "Instagram", youtube: "YouTube" }[payload.platform]
+    || payload.platform;
   if (payload.status === "published") {
-    return `Life Manager::: ${payload.product} (locale ${payload.locale}) has a verified ${payload.platform} publication for the ${payload.slot} slot on ${account}. The status is published, the direct public URL is ${payload.public_url}, and the retry state is ${payload.retry_state}.`;
+    return `Life Manager::: ${product}'s ${locale} post was published on ${platform} for ${account} in the ${payload.slot} slot. Status: published. Public URL: ${payload.public_url}. Retry: ${payload.retry_state}.`;
   }
-  return `Life Manager::: ${payload.product} (locale ${payload.locale}) has no verified ${payload.platform} publication for the ${payload.slot} slot on ${account}. The status is missed, the public URL is unavailable, and the retry state is unavailable.`;
+  return `Life Manager::: ${product}'s ${locale} post was not published on ${platform} for ${account} in the ${payload.slot} slot. Status: missed. Public URL: unavailable. Retry: unavailable.`;
 }
 
 async function executeMarketingLivenessJob(job, deps = {}) {

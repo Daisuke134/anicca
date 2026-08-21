@@ -54,11 +54,12 @@ test("production-armed slot emits a fake-transport receipt with the verified dir
   });
   assert.equal(sent.length, 1);
   assert.match(sent[0].text, /^Life Manager:::/);
-  assert.match(sent[0].text, /honne-ai \(locale en\) has a verified tiktok publication/);
-  assert.match(sent[0].text, /2026-08-20T02:00:00.000Z slot on @honne_reveal/);
-  assert.match(sent[0].text, /status is published/);
-  assert.match(sent[0].text, /https:\/\/www\.tiktok\.com\/@honne_reveal\/video\/7668814897594779655/);
-  assert.match(sent[0].text, /retry state is not_required/);
+  assert.match(sent[0].text, /Honne AI's English post was published on TikTok/);
+  assert.match(sent[0].text, /2026-08-20T02:00:00.000Z slot/);
+  assert.match(sent[0].text, /Status: published/);
+  assert.match(sent[0].text, /Public URL: https:\/\/www\.tiktok\.com\/@honne_reveal\/video\/7668814897594779655/);
+  assert.match(sent[0].text, /Retry: not_required/);
+  assert.doesNotMatch(sent[0].text, /📤 user6721125412040|https:\/\/www\.tiktok\.com\/@honne_reveal$/);
   assert.doesNotMatch(sent[0].text, /product:|locale:|platform:/);
   assert.equal(verifyMarketingLivenessReceipt(result.receipt), true);
 });
@@ -80,7 +81,8 @@ test("miss alert identity is stable so rerun enqueues and sends only once", asyn
       sendTelegram: async (_token, _chat, text) => {
         sends += 1;
         assert.match(text, /^Life Manager:::/);
-        assert.match(text, /status is missed, the public URL is unavailable, and the retry state is unavailable/);
+        assert.match(text, /Honne AI's English post was not published on TikTok/);
+        assert.match(text, /Status: missed\. Public URL: unavailable\. Retry: unavailable/);
         return { ok: true, result: { message_id: 702 } };
       },
     });
