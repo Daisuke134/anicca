@@ -205,6 +205,39 @@ class LocalLoopTest(unittest.TestCase):
             self.assertIn("transactions=0", event["body"])
             self.assertNotIn("Impact", event["body"])
 
+    def test_revenue_failure_report_is_typed_and_new_attempts_are_not_collapsed(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root)
+            MODULE.atomic_json(state / "revenue-cycle-failure.json", {
+                "stage": "capture", "failure_type": "NONZERO_EXIT",
+                "failure_class": "PROVIDER_TRANSIENT", "retry_state": "RETRYABLE",
+                "retry_after": 200, "observed_at": 100,
+                "error_sha256": "e" * 64,
+            })
+            first = MODULE.owner_event(state, {
+                "ts": 101, "revenue_state": "REVENUE_CYCLE_FAILED",
+                "status": "READY_FOR_PUBLICATION", "publication_url": None,
+            })
+            self.assertEqual(first["kind"], "REVENUE_CYCLE_FAILED")
+            self.assertIn("class=PROVIDER_TRANSIENT", first["body"])
+            self.assertIn("retry=RETRYABLE", first["body"])
+            self.assertNotIn("e" * 64, first["body"])
+
+            MODULE.atomic_json(state / "revenue-cycle-failure.json", {
+                "stage": "capture", "failure_type": "NONZERO_EXIT",
+                "failure_class": "PROVIDER_TRANSIENT", "retry_state": "RETRYABLE",
+                "retry_after": 300, "observed_at": 200,
+                "error_sha256": "f" * 64,
+            })
+            second = MODULE.owner_event(
+                state,
+                {"ts": 201, "revenue_state": "REVENUE_CYCLE_FAILED",
+                 "status": "READY_FOR_PUBLICATION", "publication_url": None},
+                {first["event_uuid"]},
+            )
+            self.assertEqual(second["kind"], "REVENUE_CYCLE_FAILED")
+            self.assertNotEqual(first["event_uuid"], second["event_uuid"])
+
     def test_completed_generic_campaign_advances_to_tts_campaign(self):
         with tempfile.TemporaryDirectory() as root:
             state = Path(root)

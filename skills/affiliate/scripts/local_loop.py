@@ -704,6 +704,8 @@ def owner_event(state, wake_event, sent_event_ids=None):
             failure = {}
         stage = failure.get("stage") or "UNKNOWN"
         failure_type = failure.get("failure_type") or "UNKNOWN"
+        failure_class = failure.get("failure_class") or "UNKNOWN"
+        retry_state = failure.get("retry_state") or "UNKNOWN"
         return_code = failure.get("return_code")
         retry_after = failure.get("retry_after")
         kind = "REVENUE_CYCLE_FAILED"
@@ -712,13 +714,16 @@ def owner_event(state, wake_event, sent_event_ids=None):
             "provider": "elevenlabs",
             "stage": stage,
             "failure_type": failure_type,
+            "failure_class": failure_class,
+            "retry_state": retry_state,
+            "retry_after": retry_after,
             "return_code": return_code,
             "error_sha256": failure.get("error_sha256"),
             "latest_source_artifact_sha256": failure.get("latest_source_artifact_sha256"),
             "observed_at": failure.get("observed_at"),
-            "retry_after": retry_after,
         }, (
             f"provider capture failed closed / stage={stage} / type={failure_type} / "
+            f"class={failure_class} / retry={retry_state} / "
             "no transaction or estimated revenue counted"
         ), wake_event.get("publication_url") or latest_live_url(state), scope="revenue")
     if wake_event.get("acquisition_decision_state") == "DECISION_FAILED":
