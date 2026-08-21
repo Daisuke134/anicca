@@ -1,0 +1,17 @@
+# Agent economy resident loop. Absolute paths are generated from ~/loops/current by plistgen.
+name      = "agent-economy"
+state_dir = "~/loops/agent-economy"
+state_env = "ANICCA_HOME"
+
+[env]
+ANICCA_REPO     = "~/loops/current"
+ANICCA_HOME     = "~/loops/agent-economy"
+ANICCA_INSTANCE = "agent-economy"
+
+[jobs.daemon]
+program    = "skills/agent-economy/launch.sh"
+label      = "ai.anicca.agent-economy-loop"
+keep_alive = true
+run_at_load = true
+throttle_seconds = 30
+

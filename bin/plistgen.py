@@ -63,8 +63,8 @@ def build(loop: dict, job_name: str, job: dict, home: Path, current: Path, logs:
         # read-only release and must not be the place a ledger accumulates.
         env[loop.get("state_env", f"{name.upper().replace('-', '_')}_STATE_DIR")] = \
             expand(loop["state_dir"], home)
-    env.update({k: str(v) for k, v in (loop.get("env") or {}).items()})
-    env.update({k: str(v) for k, v in (job.get("env") or {}).items()})
+    env.update({k: expand(str(v), home) for k, v in (loop.get("env") or {}).items()})
+    env.update({k: expand(str(v), home) for k, v in (job.get("env") or {}).items()})
 
     plist = {
         "Label": label,
@@ -77,7 +77,15 @@ def build(loop: dict, job_name: str, job: dict, home: Path, current: Path, logs:
         "StandardErrorPath": str(logs / f"{name}-{job_name}.err.log"),
     }
 
-    if "interval_seconds" in job:
+    continuous = bool(job.get("keep_alive", False))
+    has_cadence = "interval_seconds" in job or "calendar" in job
+    if continuous and has_cadence:
+        raise SystemExit(f"{label}: continuous jobs cannot also define interval_seconds or calendar")
+    if continuous:
+        plist["KeepAlive"] = True
+        if job.get("run_at_load", True):
+            plist["RunAtLoad"] = True
+    elif "interval_seconds" in job:
         plist["StartInterval"] = int(job["interval_seconds"])
     elif "calendar" in job:
         cal = job["calendar"]
