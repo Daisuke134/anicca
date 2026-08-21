@@ -1110,6 +1110,32 @@ This closes action-cap enforcement and blocker-report classification only. It
 does not close B01: the official PartnerStack report is still empty, no
 transaction/settlement/payout exists, and real billed costs remain unknown.
 
+### 1.1.43 F04 blocked-report dedupe and timeout recovery readback
+
+Release `6de69fcabfced2a92f548a6c9f219524a939b571` is installed as immutable
+`current`; the Affiliate suite is `88/88`, compilation and `git diff --check`
+pass, and source/installed `local_loop.py` bytes match. `BLOCKED` report UUIDs
+now depend on the blocker-state pair only, not drifting free-byte or attempt
+measurements. The append-only `telegram-superseded.jsonl` ledger records an
+equivalent unsent report as superseded without treating it as delivered.
+
+The existing owner wake
+`e654ab72f5606575e0bbfeb66642820c4feba510c277f554587d7b16d2570d9d` completed
+at `2026-08-21T17:43:24+0900`, launchd `runs=255`, exit `0`. It preserved
+`ACTION_CAP_BLOCKED` (`34/10`), `DISK_GUARD_BLOCKED` (`467292160` free bytes
+versus `10737418240`), owner health `HEALTHY`, and quarantine `CLEAR`. The
+previous timeout event `74f…` was delivered by the existing owner as Telegram
+message `27370`; the later dynamic duplicate `e588…` was not sent and is
+recorded as `EQUIVALENT_REPORT_ALREADY_DELIVERED` pointing to `74f…`. A
+separate durable `SELF_HEALED` event was delivered as message `27382`. The
+official PartnerStack capture remains `NO_TRANSACTIONS`, rolling net remains
+`NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS`, counted approved-or-paid net is
+USD 0.00, and real costs remain `UNKNOWN`.
+
+This closes the Telegram timeout retry and blocker dedupe sub-behaviors only;
+it does not close B01, cost caps, F05 diagnose→repair→postcondition, provider
+transaction/settlement evidence, or the USD 10,000 gate.
+
 ### 1.2.0 Audited executable boundary
 
 The installed ownership graph has six launchd labels: three persistent browser
@@ -3179,8 +3205,8 @@ receipt readback, SSOT state update, commit, and push to both canonical remotes.
   **Partial:** the 10 GiB disk guard, read-only owner-health observation, and
   repeated-failure quarantine are installed and live-proven in §§1.1.39–1.1.41;
   the JST external-action cap and typed blocked-report repair are installed and
-  live-proven in §1.1.42. Real billed-cost caps and repair/watchdog behavior
-  remain open.
+  live-proven in §1.1.42; timeout retry and blocker dedupe are live-proven in
+  §1.1.43. Real billed-cost caps and repair/watchdog behavior remain open.
 - [ ] **F05** Implement diagnose→one allowlisted repair→postcondition→same-job resume;
   escalate or quarantine when the repair postcondition fails.
 - [x] **F06** Observe one real recoverable capture failure and prove `SELF_HEALED`,

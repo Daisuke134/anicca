@@ -1,5 +1,22 @@
 # Affiliate local money loop handover
 
+- Release `6de69fcabfced2a92f548a6c9f219524a939b571` is installed as immutable
+  `current`; the Affiliate suite is `88/88`, and source/installed
+  `local_loop.py` bytes match. The release makes typed `BLOCKED` report
+  identity stable across drifting disk/counter measurements and records
+  equivalent unsent reports in append-only `telegram-superseded.jsonl` without
+  claiming delivery. Existing owner wake
+  `e654ab72f5606575e0bbfeb66642820c4feba510c277f554587d7b16d2570d9d` completed
+  at `2026-08-21T17:43:24+0900`, launchd `runs=255`, exit `0`; old pending
+  blocker `e588…` was superseded by already delivered `74f…→27370`, while an
+  unrelated durable `SELF_HEALED` report was delivered as `27382`. No duplicate
+  blocker message was sent. The same wake remains `ACTION_CAP_BLOCKED` (`34/10`)
+  and `DISK_GUARD_BLOCKED` (free `467292160` bytes vs 10 GiB), with owner
+  health `HEALTHY`, quarantine `CLEAR`, official PartnerStack
+  `NO_TRANSACTIONS`, approved-or-paid counted net USD 0.00, and costs
+  `UNKNOWN`. This closes blocker-report dedupe only; B01, cost caps, F05
+  repair postconditions, and the USD 10,000 gate remain open.
+
 - Release `83127c9b814a7baa2a4fdd679697341d76a46269` is installed as immutable
   `current` after the daily external-action-cap and Telegram blocked-report
   repairs. The existing money owner wake `aa033716178ce6ce238d008b5cd733ae4d5f3e420c8f7f3891cb64d8f5adc6d7`
