@@ -20,6 +20,7 @@ from telegram_report import OpenClawTelegramTransport  # noqa: E402
 from gig_paths import BROWSER_DIR, REPO_ROOT, RUNNER_DIR  # noqa: E402
 
 DEFAULT_STEP_TIMEOUT_SECONDS = 2100
+TARGETED_READBACK_TIMEOUT_SECONDS = 90
 # One prepare child owns up to three 60-minute production rounds plus three 30-minute reviews.
 # Its outer deadline must not expire before those already-bounded inner steps can settle.
 FILE_PREPARE_TIMEOUT_SECONDS = 21600
@@ -79,7 +80,7 @@ PAID_DECISION_PROMPT_VERSION = "paid-semantic-decision-v7"
 PAID_DECISION_MODEL = "gpt-5.6-sol"
 PAID_FILE_MODEL = "gpt-5.6-sol"
 PAID_FILE_POLICY_VERSION = "paid-file-build-review-v20"
-MAX_FILE_REVIEW_ITERATIONS = 5
+MAX_FILE_REVIEW_ITERATIONS = 10
 PAID_SOURCE_CENSUS_VERSION = "paid-source-census-v4"
 # The skills a paid order may be built with. A skill the lane cannot see is a skill it will
 # reimplement badly under time pressure, so the BUYMA and video contracts belong here now that both
@@ -1395,7 +1396,10 @@ def _targeted(args, item, index):
     _write(item_path, item)
     for attempt in range(2):
         try:
-            _run(_collector(args, "selected-talkroom-only", snapshot, base, item_path, item), "targeted_readback")
+            _run(
+                _collector(args, "selected-talkroom-only", snapshot, base, item_path, item),
+                "targeted_readback", timeout=TARGETED_READBACK_TIMEOUT_SECONDS,
+            )
             break
         except Failure:
             if attempt:

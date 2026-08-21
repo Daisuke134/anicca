@@ -870,10 +870,10 @@ a later successful example.
 - [ ] P31 — Prove one natural order end to end from complete context through one formal delivery and
   replay-zero.
 
-**Accepted architecture — ship within five reviews.** A production worker builds the buyer-requested
+**Accepted architecture — ship within ten reviews.** A production worker builds the buyer-requested
 artifact and a fresh reviewer supplies bounded improvement feedback. The worker may revise the same
-artifact line for at most five review iterations; there is no discard-and-rebuild or alternative-
-approach branch. A deliverable verdict ships immediately. On iteration five, the best structurally
+artifact line for at most ten review iterations; there is no discard-and-rebuild or alternative-
+approach branch. A deliverable verdict ships immediately. On iteration ten, the best structurally
 valid artifact ships as progress even when the reviewer still requests changes. Review is an
 improvement signal, never an unbounded shipping gate. Every pre-approval shipment uses one concise
 message and leaves formal delivery off. Corrupt, unreadable, secret-leaking or technically unsendable
@@ -908,8 +908,8 @@ evidence that both classes are impossible for future rooms, not one manual apolo
 **Purchased-talkroom output contract.** Before buyer approval, every actionable Paid cycle is an
 artifact cycle: compile the complete context, build or revise useful work, independently review it,
 then attach it with one concise message and formal delivery off. Review may improve the current
-artifact for no more than five iterations and may never prevent the fifth structurally valid version
-from being attached. The fifth version is not discarded or rebuilt through another approach.
+artifact for no more than ten iterations and may never prevent the tenth structurally valid version
+from being attached. The tenth version is not discarded or rebuilt through another approach.
 Text-only acknowledgement, plan,
 promise, progress report or `対応します` is not a successful effect. A clarification is allowed only
 when one fact is absent from every bound source and its absence makes all truthful production
@@ -924,11 +924,11 @@ four buyer-source substitutions across PC/responsive outputs: `物件の状況�
 `相続した実家→相談した実家`, and two removals of the middle dot from `リ・ホーム`. The durable state
 is `REPAIR_PENDING`, yet the lane surfaced terminal-looking `failed_step=file_verifier` after its
 bounded review rounds and did not attach the artifact. The generic fix is: preserve the finding,
-revise the same artifact line for no more than five iterations, and attach the fifth structurally
+revise the same artifact line for no more than ten iterations, and attach the tenth structurally
 valid version even if the reviewer still requests changes. Never discard it, switch to an alternative
 approach, ask Haru another question for known facts, or leave it unsent. Formal delivery remains off
-until the buyer explicitly approves. `REPAIR_PENDING` may continue iterations one through four but
-must become a shipment on iteration five.
+until the buyer explicitly approves. `REPAIR_PENDING` may continue iterations one through nine but
+must become a shipment on iteration ten.
 The resulting v26 shipment exposed a separate visual-contract failure after the buyer replied
 `こちらのデザイン、イラストなどが一切ないのですが。。。`. The ZIP did contain both supplied
 illustrations in `assets/` and visibly embedded them in the lower PC layout, but the owner replaced
@@ -947,10 +947,12 @@ workspaces are keyed by the accumulated requirements digest; an abrupt process d
 workspace for the next wake to resume, while a normal success/failure removes it.
 Artifact version and review iteration are independent counters. A high historical `vN` may never
 advance the review cap; only `paid-review-state.round` for the exact feedback/requirements cycle
-counts toward the maximum of five. A buyer-visible progress artifact does not suppress a durable
-`REPAIR_PENDING` cycle: the next wake revises and submits again until approval or round five.
+counts toward the maximum of ten. A buyer-visible progress artifact does not suppress a durable
+`REPAIR_PENDING` cycle: the next wake revises and submits again until approval or round ten.
 The read-only targeted refresh is also project-scoped: up to four fresh hidden CDP targets run in
 parallel before the existing project workers, and one refresh failure degrades only that talkroom.
+Each target attempt is bounded to 90 seconds with one retry, so one wedged browser target cannot
+hold every other independent project behind the generic 35-minute step timeout.
 When a purchased request exposes both its original request id and a talkroom id, an existing
 talkroom project containing the authenticated accumulated requirements is canonical. The resolver
 must not select an empty request-id twin and strand article, copy or other new Paid work as pending.
