@@ -1658,9 +1658,18 @@ not a tick-by-tick bank feed.
 
 Moneytree's official OAuth guide supports `code + PKCE`, but requires a Moneytree-issued `client_id` and a registered
 `redirect_uri`; the authorization request must explicitly include the requested scopes. The local credential SSOT
-`~/.local/share/anicca/credentials.json` is mode `600` and currently contains only a `postiz` service entry—no
-Moneytree LINK client, access token, or refresh token. The loop's `cfo-moneytree-refresh.js` boundary is ready for a
+`~/.local/share/anicca/credentials.json` is mode `600` and contains the user-provided `moneytree_link` login credential,
+but no Moneytree LINK client, access token, or refresh token. The loop's `cfo-moneytree-refresh.js` boundary is ready for a
 `request_refresh` token but correctly returns `request_refresh_credentials_missing` without one. The ChatGPT plugin's
 connector-owned bearer token is not exported or repurposed as a different LINK client grant. Therefore token acquisition
 requires registering/provisioning a legitimate LINK client and completing its PKCE consent once; no credential is guessed
 or extracted from the plugin.
+
+### Moneytree Web login and OpenAI scope verification (2026-08-21)
+
+Using the user-provided credential stored only in the local credential SSOT, the Moneytree Web login succeeded. The
+authenticated My Account authorized-applications view lists `OpenAI` and visibly grants balance, investment-balance,
+and transaction-detail sharing. It does not grant `request_refresh`. A fresh read through the same connected plugin after
+login still returned balance `¥358,938`, 334 transactions, and newest transaction `2026-08-18`. No disconnect, revocation,
+password change, or scope change was performed. This proves the stale payload is not caused by failed login; the connected
+OpenAI integration has read scopes only, so a separate LINK client/grant is still required for provider refresh.

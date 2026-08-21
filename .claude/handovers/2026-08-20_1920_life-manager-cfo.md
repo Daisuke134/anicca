@@ -383,6 +383,12 @@ ChatGPT plugin bearer credential is read-only and cannot be upgraded by the loop
 maximum guarantee.
 
 Token gate: official LINK OAuth requires a Moneytree-issued `client_id`, registered `redirect_uri`, and code+PKCE
-consent. The local credential SSOT is mode `600` but has only a `postiz` entry; no Moneytree LINK client/access/refresh
-token exists. The canonical refresh adapter is prepared and fails closed with missing credentials. The ChatGPT plugin
+consent. The local credential SSOT is mode `600` and now has the user-provided `moneytree_link` login credential, but no
+Moneytree LINK client/access/refresh token exists. The canonical refresh adapter is prepared and fails closed with
+missing credentials. The ChatGPT plugin
 bearer token is connector-owned and is not extracted or reused as a separate LINK grant.
+
+Moneytree Web login then succeeded with that local credential. My Account lists OpenAI with balance/investment-balance/
+transaction-detail sharing only; no `request_refresh`. The same plugin read after login remains `¥358,938`, 334
+transactions, latest `2026-08-18`. No disconnect, revocation, password change, or scope change occurred. Login is not the
+cause of the stale provider payload; a separate LINK refresh client/grant remains the required near-realtime path.
