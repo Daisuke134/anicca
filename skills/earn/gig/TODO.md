@@ -297,6 +297,75 @@ because purchased orders are not reliably receiving context-complete artifacts. 
 live independently but is not complete: total coverage, competitive repricing, bounded terminal
 no-send, replay-zero and a new natural sub-30-minute official reply/estimate proof remain unchecked.
 
+#### Remaining TODO snapshot — authoritative order to the end
+
+Do not advance the development cursor until every unchecked item in the current stage has official
+evidence. Independent production lanes continue running while development follows this order.
+
+1. **Paid/Submission — finish first.**
+   - [ ] Let the disk-cleanup-owned Paid brake reach its recorded release condition, then deploy and
+     read back the shared expiring-brake contract so an expired audit file cannot stop earning.
+   - [ ] Haru `18169583`: finish v28's buyer-feedback-aware visual review against all latest buyer
+     references; continue the same artifact line for at most ten review rounds; attach the accepted
+     or round-ten artifact with concise text, official readback and formal delivery OFF.
+   - [ ] Manledge `18169985`: reuse the already approved v9 hash, refresh only stale semantic routing,
+     attach it with official readback and formal delivery OFF; do not rebuild the approved artifact.
+   - [ ] X-post project `18171850`: produce the reusable template, four post drafts, hashtags,
+     rationale and measurement plan from proposal + talkroom + attachments; review and attach it.
+   - [ ] Review-article project `18171890`: produce the truthful 2,000–4,000-character review-stage
+     article from the available context, clearly bound any missing firsthand claims/screenshots,
+     review and attach it instead of asking the buyer to repeat known requirements.
+   - [ ] Classify and close every other purchased room as buyer-waiting, formally complete,
+     generic-loop actionable or explicitly reserved with a durable reason; no silent `pending`,
+     `remote_resume`, `file_validation` or missing project state remains.
+   - [ ] Prove one natural multi-project pass with all actionable projects running independently,
+     every effect officially read back, formal delivery OFF before buyer approval, and replay-zero.
+
+2. **Negotiate — coverage before latency.**
+   - [ ] Account for every buyer-authored message with exactly one durable disposition: replied,
+     estimate sent, safely terminal, or retry-owned. Missing/skipped messages must be zero.
+   - [ ] Use Job Description + seller proposal + complete DM/thread context for every reply; never
+     ask again for facts already present and never use a text-only acknowledgement when an estimate
+     or concrete answer is due.
+   - [ ] Send or revise one competitive estimate when the buyer requests/agrees to it, preserve
+     explicit buyer prices, deduplicate effects and obtain official card/thread readback.
+   - [ ] Prove a new natural actionable buyer message reaches official reply/estimate readback in
+     under 30 minutes, then prove replay-zero.
+
+3. **Storefront.**
+   - [ ] Make every public listing, price, scope, FAQ and option match an actually purchasable live
+     product; remove contract-only ¥3,000/¥5,000 options that are not sold or publish them truthfully.
+   - [ ] Persist storefront attribution from official facts captured during Negotiate rather than
+     requiring the buyer to paste a listing URL.
+   - [ ] Prove one natural official listing create/update receipt and replay-zero.
+
+4. **Four-lane durability on this device.**
+   - [ ] Re-audit Apply maximal coverage and duplicate fences, then obtain a new natural official
+     application receipt without reviving historical replay work.
+   - [ ] Verify Apply, Negotiate, Paid and Storefront are all loaded, independently scheduled,
+     bounded on browser/model/disk failures, self-cleaning, owner-reported and able to resume after
+     restart without split-brain checkouts or an expired brake.
+   - [ ] Observe natural official receipts for application, buyer reply/estimate, listing effect and
+     paid delivery, followed by no duplicate effect on replay.
+
+5. **OSS third-device acceptance and onboarding.**
+   - [ ] From a clean third-party/friend device, run `./install.sh coconala` without this seller's
+     checkout, credentials, customer state or private bundle.
+   - [ ] Complete one front-loaded setup session covering account recovery/signup, email verification,
+     SMS, seller identity, eKYC, required consents and domestic payout account while keeping secrets,
+     OTPs, documents and bank data out of Git, logs, prompts and reports.
+   - [ ] Start all four lanes with email as the default notification adapter; prove no external effect
+     before authentication and one natural official receipt per lane after activation.
+   - [ ] Prove a real marketplace balance withdrawal arrives at the registered bank without another
+     setup step. Do not call balance, estimates, views, tests or dry runs revenue.
+   - [ ] Re-run public-tree/history secret and customer-data audits, clean-clone commands and README
+     verification at the final commit; keep the MIT package explicit that income is not guaranteed.
+
+6. **Bounded follow-up after the product proof.**
+   - [ ] Qualify the current CloakBrowser major against the real marketplace before upgrading it.
+   - [ ] Merge the already-pushed legacy profitable-claude removal branch after its unrelated merge
+     clears, then verify no reachable Coconala skill, loop, launchd job or runtime import remains there.
+
 **Ponytail decision and current development cursor.** Do not create a separate email project,
 one-off Manledge/Haru executor, new agent layer or parallel implementation track. Reuse the existing
 four lanes and make the smallest changes inside their durable owners. Finish in this order:
@@ -968,6 +1037,10 @@ same durable unavailable receipt and cannot hold its independent project worker 
 That unavailable receipt is reused for one hour while proposal, talkroom and requirements remain
 present. A project that returns `remote_resume` immediately after stabilizing its decision retries
 prepare once inside the same worker, without waiting for the next five-minute wake.
+Remaining brake acceptance: deploy and read back Paid using the shared `gig_brake.sh status`
+contract rather than raw file existence. A held lease must stop all effects, malformed/unknown
+status must fail closed, and the owner's recorded expiry must free the lane even when the expired
+file remains as an audit record.
 Every reused semantic decision binds a digest of the compiled context's actual input file
 size/SHA256 pairs, not volatile compilation timestamps. If attachments or messages arrive after the
 decision, the mismatch forces a new Sol decision before any owner starts; identical inputs reuse the
