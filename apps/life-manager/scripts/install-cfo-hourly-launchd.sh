@@ -95,7 +95,7 @@ for file in \
   cfo-google-invoice-local-source.js cfo-local-agent-capture-reconciliation.js cfo-local-agent-usage-attribution.js \
   cfo-local-agent-usage-batch-store.js cfo-local-agent-usage-chain.js cfo-local-agent-usage-collector.js \
   cfo-local-agent-usage-cursor.js cfo-local-agent-usage-runner.js cfo-moneytree-recovery.js cfo-moneytree-state.js \
-  cfo-moneytree.js cfo-moneytree-refresh.js cfo-business-observer.js cfo-provider-billing-reconciliation.js cfo-recovery-snapshot.js cfo-registry.js cfo-supabase-rpc.js \
+  cfo-moneytree.js cfo-moneytree-refresh.js cfo-business-observer.js cfo-spending-guardian.js cfo-provider-billing-reconciliation.js cfo-recovery-snapshot.js cfo-registry.js cfo-supabase-rpc.js \
   cfo-telegram-callback.js cfo-telegram-delivery.js cfo-telegram-send.js cfo-telegram.js ledger.js telegram.js i18n.js; do
   copy_file "apps/life-manager/lib/$file"
 done

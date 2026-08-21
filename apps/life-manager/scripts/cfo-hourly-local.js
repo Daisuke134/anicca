@@ -19,6 +19,7 @@ const { captureLatestGoogleCloudInvoice } = require("../lib/cfo-google-invoice-l
 const { captureLatestAnthropicSubscriptionReceipt } = require("../lib/cfo-anthropic-receipt-local-source.js");
 const { requestMoneytreeRefresh } = require("../lib/cfo-moneytree-refresh.js");
 const { observeCfoBusiness } = require("../lib/cfo-business-observer.js");
+const { decideSpendingGuardian } = require("../lib/cfo-spending-guardian.js");
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const rpc = createCfoSupabaseRpc("cfo_hourly_local_failed:");
@@ -214,7 +215,18 @@ async function runHourlyCfo(options = {}) {
     const latestRaw = typeof options.latestSnapshot === "function" ? await options.latestSnapshot({ uid: value.uid, reportingDate, runId: run.run_id, ...rpcOptions }) : await latestSnapshot({ uid: value.uid, reportingDate, ...value }, render);
     const latest = latestRaw ? validateRow(latestRaw, reportingDate, render) : null;
     if (latest && (latest.run_id !== run.run_id || latest.reporting_date !== reportingDate)) throw new Error("snapshot");
-    const providerData = { ...providerDataState(reportingDate, transactionView), moneytreeRefresh };
+    let spendingGuardian;
+    try {
+      spendingGuardian = decideSpendingGuardian({
+        reportingDate,
+        observedAt: clock.toISOString(),
+        transactions: transactionView && Array.isArray(transactionView.transactions) ? transactionView.transactions : [],
+        budgets: {},
+        protectedCash: { status: "unknown", amountMinor: null, floorMinor: null },
+        history: [],
+      });
+    } catch { spendingGuardian = { decision: "suppress", reason: "guardian_boundary_failed", suggestion: null }; }
+    const providerData = { ...providerDataState(reportingDate, transactionView), moneytreeRefresh, spendingGuardian };
     if (!latest && recovery.status === "action_required") return summary("retry", reportingDate, null, false, false, false, providerData);
     const nextRevision = latest ? latest.revision + 1 : 1;
     const currentBundle = buildCfoDailyReportFromRecovery({ revision: nextRevision, recovery });
