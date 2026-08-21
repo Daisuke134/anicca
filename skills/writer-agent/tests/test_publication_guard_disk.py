@@ -9,6 +9,7 @@ import pytest
 
 
 SCRIPT = Path(__file__).parents[1] / "scripts" / "publication-guard.py"
+FLOOR_BYTES = 524_288 * 1024
 sys.path.insert(0, str(SCRIPT.parent))
 SPEC = importlib.util.spec_from_file_location("publication_guard_disk", SCRIPT)
 GUARD = importlib.util.module_from_spec(SPEC)
@@ -18,14 +19,14 @@ SPEC.loader.exec_module(GUARD)
 
 def test_publication_guard_refuses_below_coconala_floor(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("ARTICLE_PUBLICATION_STATE", "/var/lib/life-manager/writer/state.json")
-    monkeypatch.setattr(GUARD.shutil, "disk_usage", lambda _path: SimpleNamespace(free=1_073_741_823))
+    monkeypatch.setattr(GUARD.shutil, "disk_usage", lambda _path: SimpleNamespace(free=FLOOR_BYTES - 1))
     with pytest.raises(GUARD.InvariantError, match="disk_headroom_low"):
         GUARD.assert_disk_headroom()
 
 
 def test_publication_guard_allows_at_floor(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("ARTICLE_PUBLICATION_STATE", "/var/lib/life-manager/writer/state.json")
-    monkeypatch.setattr(GUARD.shutil, "disk_usage", lambda _path: SimpleNamespace(free=1_073_741_824))
+    monkeypatch.setattr(GUARD.shutil, "disk_usage", lambda _path: SimpleNamespace(free=FLOOR_BYTES))
     GUARD.assert_disk_headroom()
 
 
@@ -59,7 +60,7 @@ def test_publication_guard_requires_managed_state_path(monkeypatch: pytest.Monke
 def test_preflight_disk_gate_runs_before_store_creation(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("ARTICLE_AUTOPUBLISH", "1")
     monkeypatch.setenv("ARTICLE_PUBLICATION_STATE", "/var/lib/life-manager/writer/state.json")
-    monkeypatch.setattr(GUARD.shutil, "disk_usage", lambda _path: SimpleNamespace(free=1_073_741_823))
+    monkeypatch.setattr(GUARD.shutil, "disk_usage", lambda _path: SimpleNamespace(free=FLOOR_BYTES - 1))
     store_created = False
 
     def fail_if_store_created(*_args: object, **_kwargs: object) -> object:

@@ -56,10 +56,12 @@ fi
 
 # A publisher must not create an irreversible external effect when its durable
 # receipt, circuit, or outbox cannot be persisted. Resume has no cleanup rights;
-# Coconala's canonical gig_disk_guard.py uses a 1 GiB floor. Keep direct
+# Coconala's canonical gig_disk_guard.py defaults to 524288 KiB. Keep direct
 # owner wakes identical to the launchd guard instead of inventing a second
 # Writer-only threshold.
-DISK_MIN_FREE_BYTES="${ARTICLE_RESUME_MIN_FREE_BYTES:-$((1 * 1024 * 1024 * 1024))}"
+GIG_DISK_HEADROOM_KIB="${GIG_DISK_HEADROOM_KIB:-524288}"
+export GIG_DISK_HEADROOM_KIB
+DISK_MIN_FREE_BYTES="${ARTICLE_RESUME_MIN_FREE_BYTES:-${ARTICLE_DISK_MIN_FREE_BYTES:-$((GIG_DISK_HEADROOM_KIB * 1024))}}"
 disk_free_bytes() {
   local free_kb
   free_kb="$(df -Pk / 2>/dev/null | awk 'NR==2{print $4}')"

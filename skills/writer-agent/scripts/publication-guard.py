@@ -20,7 +20,7 @@ SUPPORTED_PAIRS,
 
 
 def assert_disk_headroom() -> None:
-    """Keep every external publication boundary on the Coconala 1 GiB floor."""
+    """Keep every external publication boundary on Coconala's disk floor."""
     state_path = os.environ.get("ARTICLE_PUBLICATION_STATE", "")
     state_dir = os.environ.get("ARTICLE_STATE_DIR", "")
     if state_path:
@@ -33,7 +33,17 @@ def assert_disk_headroom() -> None:
         available = shutil.disk_usage(state_root).free
     except OSError as error:
         raise InvariantError("disk_headroom_unavailable") from error
-    required = 1 * 1024 * 1024 * 1024
+    configured_bytes = os.environ.get("ARTICLE_DISK_MIN_FREE_BYTES", "")
+    if configured_bytes:
+        try:
+            required = int(configured_bytes)
+        except ValueError as error:
+            raise InvariantError("disk_headroom_configuration_invalid") from error
+    else:
+        try:
+            required = int(os.environ.get("GIG_DISK_HEADROOM_KIB", "524288")) * 1024
+        except ValueError as error:
+            raise InvariantError("disk_headroom_configuration_invalid") from error
     if available < required:
         raise InvariantError(
             f"disk_headroom_low available={available} required={required}"

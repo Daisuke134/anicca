@@ -66,9 +66,11 @@ echo "=== article-daily run $(date '+%F %T %Z') ===" >>"$LOG"
 # with no floor check, / filling mid-pass means every one of those writes silently truncates
 # instead of failing loud. This is a plain host disk check the wrapper makes on its own -- never
 # something the LLM inside the pass decides or can skip.
-# Coconala's canonical gig_disk_guard.py uses a 1 GiB floor. Keep the
+# Coconala's canonical gig_disk_guard.py defaults to 524288 KiB. Keep the
 # in-process check identical so direct owner wakes and launchd lanes agree.
-DISK_LOW_THRESHOLD_BYTES="${ARTICLE_DISK_MIN_FREE_BYTES:-$((1 * 1024 * 1024 * 1024))}"
+GIG_DISK_HEADROOM_KIB="${GIG_DISK_HEADROOM_KIB:-524288}"
+export GIG_DISK_HEADROOM_KIB
+DISK_LOW_THRESHOLD_BYTES="${ARTICLE_DISK_MIN_FREE_BYTES:-$((GIG_DISK_HEADROOM_KIB * 1024))}"
 
 disk_free_bytes() {
   # macOS/APFS: -P forces single-line POSIX output regardless of filesystem-name length; -k
@@ -129,7 +131,7 @@ disk_preflight
 
 # Cleanup is best-effort and can free less than the writer needs. Re-measure
 # before creating a run or invoking a model; the creator must share the same
-# 1 GiB fail-closed boundary as article-resume-pending.sh and gig_disk_guard.py.
+# fail-closed boundary as article-resume-pending.sh and gig_disk_guard.py.
 POST_PREFLIGHT_FREE_BYTES="$(disk_free_bytes)"
 if [ "${POST_PREFLIGHT_FREE_BYTES:-0}" -lt "$DISK_LOW_THRESHOLD_BYTES" ]; then
   echo "=== article-daily disk floor blocked after preflight free=${POST_PREFLIGHT_FREE_BYTES}bytes required=${DISK_LOW_THRESHOLD_BYTES}bytes $(date '+%F %T %Z') ===" >>"$LOG"
