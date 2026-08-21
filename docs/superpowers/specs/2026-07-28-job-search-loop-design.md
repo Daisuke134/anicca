@@ -1267,6 +1267,20 @@ submit click and no `submit_unknown` occurred; Telegram ACK `26901` is
 `status=sent` in the canonical outbox. This proves Workday surface detection and
 fact-gated continuation but does not yet prove a confirmed Workday submission.
 
+Commit `3e8bf51fd` adds a bounded expansion discovery wave after the first verified
+queue is exhausted without a claim or `submit_unknown`. The wave runs the same
+provider/browser fallback rules, dedupes canonical URLs, and evaluates at least
+five additional official URLs before allowing a zero-eligible result. The real
+pass `daily-20260821-100905` executed six initial plus three expansion queries and
+evaluated twelve distinct candidates. The expansion surfaced KnowBe4, SpaceXAI,
+Box, New Relic, Veeam, Ultra Tendency and an Amazon technical-sales role; each was
+stopped on an explicit missing fact/minimum or lack of a quoted AI/LLM requirement.
+No claim, submit click or `submit_unknown` occurred. The result was
+`no_eligible_job_found`, and Telegram ACK `26912` is `status=sent` in the
+canonical outbox. This closes the early-zero discovery gap while preserving the
+truthful candidate gate; confirmed Ashby and Workday submissions remain the next
+runtime objective.
+
 ### 8.2 Outcome and attribution model
 
 Every application receives one immutable `strategy_generation_id` and the exact
