@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import sys
 from pathlib import Path
 
@@ -14,8 +15,26 @@ from publication_resume import (
     DORMANT_PAIRS,
     InvariantError,
     PublicationStore,
-    SUPPORTED_PAIRS,
+SUPPORTED_PAIRS,
 )
+
+
+def assert_disk_headroom() -> None:
+    """Keep every external publication boundary on the Coconala 1 GiB floor."""
+    state_root = Path(
+        os.environ.get("ARTICLE_STATE_DIR")
+        or os.environ.get("GIG_STATE_DIR")
+        or (Path.home() / "gig")
+    )
+    try:
+        available = shutil.disk_usage(state_root).free
+    except OSError as error:
+        raise InvariantError("disk_headroom_unavailable") from error
+    required = 1 * 1024 * 1024 * 1024
+    if available < required:
+        raise InvariantError(
+            f"disk_headroom_low available={available} required={required}"
+        )
 
 
 def store_from_env(*, validate_boundary: bool = True) -> PublicationStore:
@@ -214,6 +233,7 @@ def main() -> int:
     elif args.command == "preflight":
         if os.environ.get("ARTICLE_REMOTE_FIXTURE"):
             raise InvariantError("production remote fixture injection is forbidden")
+        assert_disk_headroom()
         entry = store.read().get("pairs", {}).get(args.pair)
         if not entry:
             raise InvariantError(f"no pre-registered stable intent for {args.pair}")

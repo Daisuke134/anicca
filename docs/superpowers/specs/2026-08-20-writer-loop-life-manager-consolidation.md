@@ -713,6 +713,10 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
 - 旧`daily-2026-08-07`はX Articleが既にliveなのでrun全体はquarantineしない。Note JAだけを現行release/code/state identityで
   `resume-failure-circuit open`（count=1）へ記録し、plannerは`WAIT`、`blocked_pairs=[note/ja]`、`recovery_pairs=[]`を返す。
   resumeが古いNote targetへ先に外部作用する経路を閉じ、fresh canaryの再試行はdisk floor回復後に行う。
+- 生成中に空き容量がfloorを割っても公開境界を通過しないよう、`publication-guard.py preflight`にも
+  `disk_headroom_low` fail-closed checkを追加した。これによりwrapper開始時のguardを通過した後に容量が減った場合も、
+  Note/Substack/X/Zenn/Dev.toの共通preflightで外部作用を止める。floor境界のfocused testを含む40件、resume circuit 5件、
+  Codex contract 7件、shell構文、pycompile、diff checkがPASSした。
 
 ## 目標構成
 
