@@ -2,7 +2,7 @@
 
 ## Current resume evidence
 
-- `CFO-OPS3a`, `CFO-OPS3b`, `CFO-1j`, `CFO-2b.2`, `CFO-2b.3`, `CFO-2b.4`, `CFO-2b.5`, and `CFO-2b.6` are closed in the canonical Life Manager worktree `/Users/anicca/Projects/life-manager-main/.worktrees/cfo-ops3a`, branch `feature/cfo-ops3a-canonical`. The latest canonical commit is `00c39a1a5` (x402 finalized external settlement projection and runtime manifest); the branch is clean and its remote head is verified.
+- `CFO-OPS3a`, `CFO-OPS3b`, `CFO-1j`, `CFO-2b.2`, `CFO-2b.3`, `CFO-2b.4`, `CFO-2b.5`, `CFO-2b.6`, and `CFO-2b.7` are closed in the canonical Life Manager worktree `/Users/anicca/Projects/life-manager-main/.worktrees/cfo-ops3a`, branch `feature/cfo-ops3a-canonical`. The latest canonical commit is `14852e3c2` (Employment Income projection and runtime manifest); the branch is clean and its remote head is verified.
 - The installed plist is a stable release path: label `ai.anicca.life-manager-cfo-hourly`, interval `3600`, entrypoint `/Users/anicca/.local/share/life-manager/cfo-hourly/current/skills/cfo/run.sh`; it contains no feature-worktree path. Stable CFO module-load is PASS and the focused financial gate is 19/19 when using the stable release dependencies. The latest post-install launchd pass completed `status=quiet`, `revision=4`, `appended=false`, `delivered=false`, exit code 0, and empty stderr because the same-hour dedupe contract prevented a duplicate. The preceding real report was `status=sent`, `revision=4`, `appended=true`, `delivered=true`; its same-hour dedupe contract remains covered by the earlier `status=quiet`, `revision=2`, `appended=false`, `delivered=false` run.
 - The latest category/recency release is `/Users/anicca/.local/share/life-manager/cfo-hourly/releases/20260821T154453-69723` (current symlink read back). The same-hour verification converged to `status=quiet`, `revision=6`, `appended=false`, `delivered=false`, exit code 0, and empty stderr; the next owner-hour is required to observe the first new Telegram receipt carrying the category/recency display.
 - `CFO-OPS3b` launchd management and shared Telegram transport are closed after recovery. The host-parity implementation is canonical in commit `6acff1585` on `feature/cfo-ops3a-canonical`, with local DNS hardening in `d013196ce` and ambiguous-request retry prevention in `5e1c0dfcc`: the persistent local Codex app-server reads the existing Moneytree App through `mcpServer/tool/call`, and the existing adapter returns a redacted success envelope. Canonical commit `a1d1e1ade` preserves valid balances when the optional transaction request fails. Read-back returned managerpid=1, manageruid=501, CFO label `print/list=0`, StartInterval=3600, and kickstart rc 0. The new owner-hour pass returned revision 5, status=sent, exit 0, empty stderr, and Supabase provider `message_id=27136`; read-only `getMe` verified `@AniccaLifeBot` / Local Life Manager (bot id `8613473574`). `CFO-1j` delivered twenty redacted transaction rows; follow-up commit `6faf0bd06` now retains provider-reported categories and latest returned transaction date while keeping bank-side freshness unknown.
@@ -36,7 +36,7 @@
 - Staging recovery (2026-08-21): one staging attempt failed with `npm ENOSPC` because sixteen generated releases occupied roughly 5.3GB. No runtime/state was lost; the regenerated npx cache (`~/.npm/_npx`, 621MB) was removed, the stable release was restaged successfully, and available disk returned to about 707MB. Keep release retention bounded before the next install.
 - GitHub DNS was transiently unavailable during the audit; the canonical CFO branch is now pushed at `5eb76d584`, and the exact canonical spec tip is verified with `git ls-remote` after this push.
 - Canonical product repository: `/Users/anicca/Projects/life-manager-main`, origin `Daisuke134/life-manager.git`, branch `main` at audit HEAD `f116abd1524e7b33a0590c6167307152aa896df8`. It already owns `apps/life-manager`, `skills`, `loops`, CFO Telegram callback, and financial-report runtime. Its main worktree has an unrelated user edit in `skills/earn/gig/tests/test_reply_concurrency.py`; never edit or reset that worktree. Create a dedicated CFO worktree/branch from fetched `origin/main` before migration.
-- Current next action: implement `CFO-2b.7`, instrumenting Employment Income as personal payroll/bank income, separate from business revenue. Keep payout/API-cost absence unknown, not zero. The Moneytree bank-side refresh/metadata path remains an explicit provider-capability follow-up; the current report does not claim realtime. Do not revive `life-manager-v0`, `cfo-daily`, or the separate financial-report loop.
+- Current next action: implement `CFO-2b.8`, instrumenting Capafy Marketplace receipts and landed cash. Keep payout/API-cost absence unknown, not zero. Employment Income is closed as personal payroll/bank income with no receipt admitted. The Moneytree bank-side refresh/metadata path remains an explicit provider-capability follow-up; the current report does not claim realtime. Do not revive `life-manager-v0`, `cfo-daily`, or the separate financial-report loop.
 - Writer consolidation gate (read-only/evidence, 2026-08-21): canonical `skills/writer-agent` now owns the exact 492-file runtime from Life Manager `main` commit `09c7525d4`; `config/writer/runtime-manifest.json` records tree hash `54ef7251…` and 77 absolute-path references requiring install-time rendering. Mutable state under `~/.local/state/life-manager/writer` was not imported. `apps/life-manager/lib/cfo-writer.js` projects Note `provider_verified_zero` (0 JPY), Substack `unknown`, measured wall-seconds `1238.525368`, and `measurement_unknown_count=4982` while keeping Writer-wide total/profit/ROI null. No launchd cutover or Writer Telegram write occurred.
 - Affiliate consolidation gate (read-only/evidence, 2026-08-21): canonical `skills/affiliate` owns the proven 80-file runtime from commit `c75dacc60`; `config/affiliate/runtime-manifest.json` records tree hash `affac691…` and no mutable-state import. The live PartnerStack receipt is provider-reported empty (`commission_row_count=0`), payout is blocked by tax setup, tax information is required, and payment-provider selection is required; these remain coverage states, not an Affiliate-wide zero. The latest loop run succeeded in `62.565` measured seconds with terminal `READY_FOR_PUBLICATION`. `apps/life-manager/lib/cfo-affiliate.js` preserves amount/landed-cash/API-cost/capital/profit/ROI as unknown/null. No launchd cutover or Affiliate state/Telegram write occurred.
 - No Binance work: it remains explicitly deferred/skipped for the current product path. No payout, MUFG landing, profit, ROI, or tax amount is currently claimed from Apple evidence.
@@ -46,12 +46,11 @@
 
 ## Current ordered TODO
 
-1. `CFO-2b.7` is the single active item: instrument Employment Income as personal payroll/bank income, separate from
-   business revenue. Keep every unavailable field unknown/null and require a real payroll/bank receipt; no estimated
-   income is admitted.
+1. `CFO-2b.8` is the single active item: instrument Capafy Marketplace receipts and landed cash. Keep every unavailable
+   field unknown/null and require a real provider receipt; no estimated sales are admitted.
 2. `CFO-2a3b`: complete one-time Google Cloud reauthentication and acquire the real Cost Table when the external
    owner action is available; this remains blocked and never accepts a fabricated CSV.
-3. After x402 Services, `CFO-2b.7` through `CFO-2b.9`: instrument Employment, Capafy, and
+3. After Employment, `CFO-2b.8` through `CFO-2b.9`: instrument Capafy and
    Proprietary Investing in registry order with receipts, landed cash, direct/runtime cost, capital, and evidence.
 4. `CFO-2c`, `CFO-2d`, `CFO-2d2`, `CFO-2d3`, `CFO-2e`: reconcile provider/Fleet totals; publish contribution profit,
    runway, ROI, evidence completeness, readable Telegram drill-downs; then enable the verified-outgoing-only spending
@@ -84,7 +83,8 @@ mutable-state write occurred.
 
 ## x402 Services closure correction (2026-08-21)
 
-`CFO-2b.6` is closed in canonical code commit `00c39a1a5`; the next active item is `CFO-2b.7` Employment Income.
+`CFO-2b.6` is closed in canonical code commit `00c39a1a5`; Employment Income `CFO-2b.7` is now closed and the next
+active item is `CFO-2b.8` Capafy Marketplace.
 The canonical `skills/earn/x402-sell` runtime contains 56 tracked files at tree hash
 `de0780f1f811bdd6a213c9cfd34e69f36c22120a4066f230f9a591ee806d661b`; `config/x402/runtime-manifest.json` records the
 source tree, the separate `~/.anicca-founder` runtime, and the fact that mutable state was not imported.
@@ -99,5 +99,25 @@ cost, capital, profit, and ROI unknown/null, and rejects a verified zero-amount 
 
 The existing `ai.anicca.life-manager-x402-ledger` launchd label is currently installed against the main-worktree
 script with a last observed exit code of `1`; this is recorded as a runtime failure and was not changed in this slice.
-No launchd, provider, database, Telegram, or mutable-state write occurred. The next one active item is Employment
-Income; x402 service-wide reconciliation and cost closure remain later CFO-2c/CFO-2d work.
+No launchd, provider, database, Telegram, or mutable-state write occurred. The next one active item is Capafy
+Marketplace; x402 service-wide reconciliation and cost closure remain later CFO-2c/CFO-2d work.
+
+## Employment Income closure correction (2026-08-21)
+
+`CFO-2b.7` is closed in canonical code commit `14852e3c2`; the next active item is `CFO-2b.8` Capafy Marketplace.
+The canonical `apps/job-search-loop` runtime contains 115 tracked files at tree hash
+`62be72a491bff1ab84d939dae989244e1ef89f09bd06c145f49259b2293196c9`; `config/employment/runtime-manifest.json`
+records the source commit and explicitly excludes private job-search state, credentials, browser profiles, and release
+artifacts.
+
+A read-only aggregate of `~/.local/state/anicca/job-search/ledger.sqlite3` observed 68 application records and 9
+positive `confirmed_application` outcomes. Current application states are discovered `3`, materials-ready `1`,
+rejected `23`, submit-unknown `35`, and submitted `6`; offer, accepted, and started outcomes are all `0`. No payroll,
+salary-payment, bank-landing, or employment-income receipt table exists in the ledger. Employment projection therefore
+reports personal income with `coverage_status=no_payroll_receipt`, payroll/bank receipt counts `0`, null amounts,
+unknown landed cash, and null profit/ROI. Job-posting compensation and desired compensation are excluded; a hostile
+unsubstantiated `7000000` JPY amount is rejected with `cfo_employment_invalid:business_fact`.
+
+Canonical syntax, manifest, state non-mutation, commit, and remote push read-back pass. Existing
+`ai.anicca.job-search-daily`, `ai.anicca.job-search-inbox`, and `ai.anicca.job-search-learning` launchd labels were
+observed only; no launchd, provider, Telegram, database, or mutable-state write occurred.

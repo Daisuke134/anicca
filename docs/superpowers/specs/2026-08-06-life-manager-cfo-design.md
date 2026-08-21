@@ -2,13 +2,13 @@
 
 | Field | Value |
 |---|---|
-| Status | M2 — `CFO-OPS3a`, `CFO-OPS3b`, `CFO-1j`, `CFO-2b.2`, `CFO-2b.3`, `CFO-2b.4`, `CFO-2b.5`, and `CFO-2b.6` are closed; `CFO-2b.7` is next |
+| Status | M2 — `CFO-OPS3a`, `CFO-OPS3b`, `CFO-1j`, `CFO-2b.2`, `CFO-2b.3`, `CFO-2b.4`, `CFO-2b.5`, `CFO-2b.6`, and `CFO-2b.7` are closed; `CFO-2b.8` is next |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
 | Existing foundations | `apps/life-call`, interactive Moneytree App access, Fleet telemetry, `lm_api_cost`, and the canonical `lm_agent_earnings` source (the panel's `lm_financial_ledger` name is a stale alias) |
 | Canonical repository | `Daisuke134/life-manager` at `/Users/anicca/Projects/life-manager-main`; CFO code, skill, loop, launchd template, tests, and specs converge there |
-| First active item | **CFO-2b.7 instruments Employment Income as personal payroll/bank income. `CFO-2a3b` remains externally blocked by Google reauthentication.** |
+| First active item | **CFO-2b.8 instruments Capafy Marketplace receipts. `CFO-2a3b` remains externally blocked by Google reauthentication.** |
 
 ## 1. Overview — What and Why
 
@@ -1203,8 +1203,14 @@ ingestion. They are not unchecked M1 items and cannot become the active CFO item
       cost, tokens, API USD, human USD, capital employed, and evidence. Ordered child SSOT:
       `docs/superpowers/specs/2026-08-11-life-manager-cfo-business-instrumentation-design.md`. The Anicca iOS
       sub-slices through `CFO-2b.2c`, Writer Agent `CFO-2b.3`, Affiliate Agent `CFO-2b.4`, Gig Work `CFO-2b.5`,
-      and x402 Services `CFO-2b.6` are closed in canonical commits `1a87f0d1d`, `5eb76d584`, `68ed7f76a`, and
-      `00c39a1a5`; `CFO-2b.7` is the first active item.
+      x402 Services `CFO-2b.6`, and Employment Income `CFO-2b.7` are closed in canonical commits `1a87f0d1d`,
+      `5eb76d584`, `68ed7f76a`, `00c39a1a5`, and `14852e3c2`; `CFO-2b.8` is the first active item.
+- [x] **CFO-2b.7** Instrument Employment Income as personal payroll/bank income. Canonical commit `14852e3c2`
+      adds `apps/life-manager/lib/cfo-employment.js` and `config/employment/runtime-manifest.json`. The live
+      job-search ledger observed 68 application records and 9 confirmed applications, with offer/accepted/started
+      all `0`; no payroll or bank receipt source exists. The projection keeps payroll amount, bank-landed amount,
+      landed cash, costs, capital, profit, and ROI unknown/null, and rejects an unsubstantiated compensation amount.
+      No launchd, provider, Telegram, database, or mutable-state write occurred.
 - [ ] **CFO-2c** Reconcile per-business totals to provider statements and Fleet totals; upgrade Fleet observations to
       raw positions, recognized earnings, and provider/ledger-confirmed burn only when matching evidence exists.
 - [ ] **CFO-2d** Report contribution profit, runway, ROI, and evidence completeness; unknown is distinct from zero.

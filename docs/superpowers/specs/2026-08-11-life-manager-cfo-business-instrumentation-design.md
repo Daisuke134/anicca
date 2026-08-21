@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | `CFO-OPS3b`, `CFO-1j`, `CFO-2b.2`, `CFO-2b.3`, `CFO-2b.4`, `CFO-2b.5`, and `CFO-2b.6` are closed; `CFO-2b.7` is the next active business-instrumentation slice |
+| Status | `CFO-OPS3b`, `CFO-1j`, `CFO-2b.2`, `CFO-2b.3`, `CFO-2b.4`, `CFO-2b.5`, `CFO-2b.6`, and `CFO-2b.7` are closed; `CFO-2b.8` is the next active business-instrumentation slice |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Canonical target is local `/Users/anicca/Projects/life-manager-main/apps/life-manager`; existing `apps/life-call` code is migration evidence, not the final owner |
 | Role split | Sol specifies/verifies; Luna implements production code/tests |
@@ -69,7 +69,7 @@ Only the first unchecked business item is active after the parent spec's operati
       receipt separate. It records the observed 3,198 JPY mismatch and leaves landed cash, costs, profit, and ROI
       unknown/null until reconciliation.
 - [x] **CFO-2b.6 — x402 Services**: finalized external on-chain sales; self-transfers and internal moves are excluded.
-- [ ] **CFO-2b.7 — Employment Income**: payroll/bank receipt, kept as personal income rather than business revenue.
+- [x] **CFO-2b.7 — Employment Income**: payroll/bank receipt, kept as personal income rather than business revenue.
 - [ ] **CFO-2b.8 — Capafy Marketplace**: landed sales receipts and costs.
 - [ ] **CFO-2b.9 — Proprietary Investing**: realized reconciled P&L only; deposits/internal moves are excluded.
 
@@ -194,8 +194,8 @@ using the fixed error `cfo_x402_invalid:business_fact`. The input state file has
 
 The existing `ai.anicca.life-manager-x402-ledger` launchd label is currently installed against the main-worktree
 script and its last observed exit code is `1`; this slice records that runtime failure and does not mutate launchd.
-The next active item is **CFO-2b.7 — Employment Income**; it must keep payroll/bank receipts as personal income,
-separate from business revenue, and retain unknown data as unknown.
+The next active item is **CFO-2b.8 — Capafy Marketplace**; Employment Income is closed with payroll/bank receipts
+kept as personal income, separate from business revenue, and unknown data retained as unknown.
 
 - [x] Canonical x402 runtime and manifest are present; no mutable state, credentials, or separate founder runtime was
       copied into the repository.
@@ -203,6 +203,32 @@ separate from business revenue, and retain unknown data as unknown.
       external total is `$0.03` with no self-transfer revenue admitted.
 - [x] Pure projection, privacy boundary, state non-mutation, hostile zero rejection, syntax, manifest, commit, and
       remote push read-back pass. No launchd, provider, database, or Telegram runtime mutation occurred.
+
+### CFO-2b.7 measured truth and completion evidence
+
+Canonical commit `14852e3c2` adds the pure employment-income boundary `apps/life-manager/lib/cfo-employment.js`
+and `config/employment/runtime-manifest.json`. The manifest records the tracked `apps/job-search-loop` runtime as
+115 files with tree hash `62be72a491bff1ab84d939dae989244e1ef89f09bd06c145f49259b2293196c9`; private job-search
+state, credentials, browser profiles, and release artifacts were not imported.
+
+A read-only aggregate of `~/.local/state/anicca/job-search/ledger.sqlite3` observed 68 application records and 9
+positive `confirmed_application` funnel outcomes. The current-state counts are discovered `3`, materials-ready `1`,
+rejected `23`, submit-unknown `35`, and submitted `6`; no positive offer, accepted, or started outcome exists. The
+ledger has no payroll, salary-payment, bank-landing, or employment-income receipt table. The projection therefore
+uses `coverage_status=no_payroll_receipt`, receipt counts `0`, and null payroll/bank amounts; it never promotes job
+posting compensation, desired compensation, or an application state into earned income.
+
+The live projection returned `financial_unit_id=employment_income`, `status=partial`, personal-income scope,
+`landed_cash_status=unknown`, `profit=null`, and `roi=null`; it recursively freezes its output and rejects a hostile
+unsubstantiated `7000000` JPY payroll amount with `cfo_employment_invalid:business_fact`. Canonical syntax, manifest,
+state non-mutation, commit, and remote push read-back pass. Existing `ai.anicca.job-search-daily`,
+`ai.anicca.job-search-inbox`, and `ai.anicca.job-search-learning` launchd labels were observed but not modified.
+The next active item is **CFO-2b.8 — Capafy Marketplace**.
+
+- [x] Employment runtime and manifest are canonical; mutable state and secrets were not copied.
+- [x] Application funnel and receipt absence were measured read-only without exposing private rows.
+- [x] Pure projection, hostile amount rejection, syntax, manifest, state non-mutation, commit, and push verification
+      pass; no launchd, provider, Telegram, database, or mutable-state write occurred.
 
 ## 4. Current measured truth
 
@@ -734,7 +760,7 @@ fact therefore preserves provider evidence and coverage labels instead of claimi
   test failed. No loop, launchd, database, provider, or Telegram runtime effect was introduced by this pure slice.
 - The output keeps Apple settled Partner Share separate from RevenueCat gross, preserves payout/bank/API-cost absence
   as unknown/null, freezes the result recursively, and emits no raw provider identifiers. `CFO-2b.3`, `CFO-2b.4`, and
-  `CFO-2b.5` and `CFO-2b.6` are closed; `CFO-2b.7` is now next.
+  `CFO-2b.5`, `CFO-2b.6`, and `CFO-2b.7` are closed; `CFO-2b.8` is now next.
 
 ### CFO-2b.2c implementation target
 
@@ -783,7 +809,7 @@ add a business-fact database table, renderer, API route, launchd wiring, or Tele
   `asOf=2026-08-21T05:04:12Z` matched the delivered balance parity. No raw account number, provider ID, description,
   category label, credential, or raw payload was persisted or sent. Shared transport and `CFO-1j` are closed; the LLM
   spending guardian remains disabled until its later verified-outgoing and reconciliation gates. `CFO-2b.2c` is closed and
-  `CFO-2b.4`, `CFO-2b.5`, and `CFO-2b.6` are closed; `CFO-2b.7` is next.
+  `CFO-2b.4`, `CFO-2b.5`, `CFO-2b.6`, and `CFO-2b.7` are closed; `CFO-2b.8` is next.
 - Provider-freshness correction (2026-08-21): two direct read-only calls at `2026-08-21T05:09:58Z` and
   `2026-08-21T05:11:43Z` returned the same provider-reported balance fingerprint as revision 5, so the loop is not
   serving a stale local cache; the Moneytree provider value itself had not changed. Moneytree's official [MUFG
@@ -799,7 +825,8 @@ add a business-fact database table, renderer, API route, launchd wiring, or Tele
   composer and focused boundary regressions. Focused tests pass `7/7`; the full package gate remains `846/847` with
   only the pre-existing TECH PLAY `absent` versus `unavailable` assertion. Apple settled Partner Share and RevenueCat
   gross remain separate; payout, bank landing, and missing API cost remain unknown/null. No loop or launchd behavior
-  changed. `CFO-2b.4`, `CFO-2b.5`, and `CFO-2b.6` are closed; the next active item is `CFO-2b.7` Employment Income.
+  changed. `CFO-2b.4`, `CFO-2b.5`, `CFO-2b.6`, and `CFO-2b.7` are closed; the next active item is `CFO-2b.8`
+  Capafy Marketplace.
 
 - Moneytree display correction (2026-08-21): canonical commit `6faf0bd06` keeps the installed read-only provider
   boundary intact while retaining only safe provider categories and the latest returned transaction date in the
