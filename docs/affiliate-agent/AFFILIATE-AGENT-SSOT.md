@@ -933,6 +933,27 @@ with its 600-second interval. This closes the single observed capture retry
 proof, not the universal watchdog/diagnose-repair work in F04/F05, and it does
 not close B01 or create money.
 
+### 1.1.35 Latest eligible capture readback
+
+At the next eligible cooldown boundary, the existing `ai.anicca.affiliate-loop`
+owner completed wake `be783caaeb858bafd035c6ded92ecf29c837a9276653a45caad790ef3d58f13c`
+at `2026-08-21T16:38:42+0900`; launchd read `runs=245`, `last exit code=0`,
+and `run interval=600`. The official PartnerStack artifact observed at
+`16:38:41+0900` is
+`c1002bb6a8971fd1df4e53d2312ebcaeacbe749ebfc4a1b7e8456ba95c76da00`; it is
+USD-display, `commission_row_count=0`, `NO_LIVE_ROWS`, and payout `EMPTY`.
+Reconciliation read `source_rows=0`, appended `0`, replayed `0`, and
+`money_state=NO_TRANSACTIONS`. The owner readback stayed
+`provider=AUTHENTICATED`, `publication=ALREADY_LIVE`, and
+`revenue=NO_TRANSACTIONS`; Telegram `27297` is a delivered `SELF_HEALED`
+receipt bound to delivery event `596659365feb4e3a16645fd69706865e2799be26a4c487b36c0579eac60e5dd5`,
+with no estimated revenue. Rolling net remains
+`NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`, all four status
+counts are `0`, and real cost coverage is `UNKNOWN`. Repost remains `58`
+actions / `0` exact Affiliate joins / `NO_REVENUE_CREDIT`. No provider
+transaction, settlement, payout, public duplicate, or money exists; B01 is
+still `WAITING_FOR_PROVIDER_TRANSACTION`.
+
 ### 1.2.0 Audited executable boundary
 
 The installed ownership graph has six launchd labels: three persistent browser

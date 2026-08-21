@@ -1,5 +1,16 @@
 # Affiliate local money loop handover
 
+- The next eligible existing-owner capture completed at `2026-08-21T16:38:42+0900`
+  as wake `be783caa…`, with launchd `runs=245`, exit `0`, provider
+  `AUTHENTICATED`, publication `ALREADY_LIVE`, and revenue `NO_TRANSACTIONS`.
+  Official PartnerStack artifact `c1002bb6…da00` was observed at `16:38:41+0900`
+  with `commission_row_count=0`, `NO_LIVE_ROWS`, payout `EMPTY`, and
+  reconciliation `0/0/0`; Telegram `27297` is delivered `SELF_HEALED` through
+  delivery event `59665936…e5dd`. Rolling net remains
+  `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`, all money status
+  counts are zero, costs are `UNKNOWN`, and Repost remains `58/0` exact joins.
+  No transaction, settlement, payout, duplicate effect, or money exists; B01
+  remains the first non-empty official provider-row gate.
 - F06 is now closed only for the observed provider-capture path. The existing
   owner retained the real `2026-08-21T14:35:54+0900` capture failure
   (`NONZERO_EXIT`, return code `1`, retry boundary `15:35:54+0900`), then at
