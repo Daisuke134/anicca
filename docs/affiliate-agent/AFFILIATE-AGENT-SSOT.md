@@ -2436,8 +2436,18 @@ receipt readback, SSOT state update, commit, and push to both canonical remotes.
   the real owner through dedicated link, owned publication, X readback, and
   unchanged replay. Current ledger readback still contains exactly one live
   `...youtube-transcript-generator-en-1` placement.
-- [ ] **D02** Require the marketing Agent to choose every later opportunity from a
+- [x] **D02** Require the marketing Agent to choose every later opportunity from a
   fresh official candidate set plus canonical placement outcomes; remove fixed-order selection.
+  The real opportunity-decision run sealed source-set SHA
+  `ee8bef209252ff6f533029704e844398fc2a6838737d07ac9e6f57b89594e61f`,
+  selected the uncovered `instagram-transcript-generator` family, and cited
+  the fresh candidate family/buyer-intent fields, covered-family set,
+  provider-link/click fields, and `revenue_truth` that no approved commission
+  exists. Its falsifiable success metric is
+  `commission.status_counts.approved >= 1` for the new placement. The selected
+  campaign is live through the normal policy/publication path; its current
+  approved count is still `0`, so this closes selection lineage only, not
+  profitability or allocation.
 - [x] **D03** Grow the current six comparable English placements to ten through
   the existing source→composition→policy→link→owned/X→readback path. The
   historical unattended owner run produced placements 8–10; current canonical
@@ -2766,10 +2776,10 @@ acceptance contract; this summary does not reorder them):
 2. **C01–C06:** make actual billed costs, complete coverage, FX, reversals, and
    the rolling-30-day net receipt canonical; unknown material cost keeps net
    unknown.
-3. **D02, D05–D06, D08:** finish fresh opportunity selection, exact
+3. **D05–D06, D08:** finish exact
    exposure/click/transaction denominators, shared X/Repost effect arbitration,
-   and money-evidence promote/revert learning. D04 experiment-receipt
-   persistence is closed by the live title experiment lineage above; its
+   and money-evidence promote/revert learning. D02 fresh selection and D04
+   experiment-receipt persistence are closed by the live lineages above; their
    outcome remains unproven until exposure and money denominators mature. D07's
    explicit broken-edge receipt is closed above; it provides no money.
 4. **E02–E10 / M2.2–M2.3-D:** admit Semrush, Amazon Japan, and Rakuten only
