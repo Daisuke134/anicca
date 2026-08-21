@@ -1,5 +1,9 @@
 # Mac Host Storage Governor — Life Manager Disk Cleanup Loop 仕様
 
+OSS公開名: **Life Manager Disk Cleanup Loop**  
+実行authority: **Mac Host Storage Governor**  
+公開skill: **`disk-cleanup`**
+
 状態: Phase 1実装済み。Life Manager OSS skill、fail-closed governor、guard fallback、回帰テストは反映済み。host-wide census、hourly intelligence、全producer backpressure、launchd正式bootstrap、24時間/7日観測は未完了。
 
 ## 現行実装状況とOSS境界
@@ -12,9 +16,9 @@
 | fail-closed deletion | 部分実装 | protected root、unknown class、active lease、symlink、open-path、probe errorをpreserveする実装と5件のLife Manager unit test。versioned manifest、owner必須、remote rebuild proofの統合契約は未完了 |
 | clone coverage | 実装済み | Chrome (`com.google.Chrome.code_sign_clone`) と Chromium (`org.chromium.Chromium.code_sign_clone`) の両collectionをallow-list discovery |
 | cadence | 部分実装 | OSS plistは`StartInterval=300`。通常guardはbounded fast pass、互換hourly triggerは同じguardの`EMERGENCY_GUARD_FULL_PASS=1`へ委譲する。ただしこのMacではuser launchd bootstrapが`141: Reentrancy avoided`で未成立し、既存emergency guardがfallbackとして実行中 |
-| runtime guard | 部分実装 | runtime manifestの動的rootをproducer outputへ限定し、guard runtime manifest約5秒、full guard約34秒まで短縮。正式なhost-wide inventoryは未完了 |
+| runtime guard | 部分実装 | 通常の5分guardは`~/anicca-project/work`と`~/.openclaw/external`だけをbounded fast passし、今回の実測はruntime manifest完了まで約1秒。`~/gig`を含むfull passはhourly compatibility triggerだけが実行し、正式なhost-wide inventoryは未完了 |
 | ledger/receipt | 部分実装 | cleanup ledgerを32 MiBでrotateし、約282 MiBから56 KiB + gzip archiveへ縮小。bounded operational logとimmutable incident receiptの正式分離は未完了 |
-| production recovery | 未完了 | 非リポジトリreceipt stormと3分超のworktree remote inspectionは修正済み。guard実E2Eは約9秒、`errors=0`、`protected_deletions=0`、`not_a_git_repository`増加なし、freeは約5.2 GiBまでread backできた。ただし11 GiB未満で、24時間/7日観測の開始条件とuser launchd復旧条件を満たしていない |
+| production recovery | 未完了 | 非リポジトリreceipt storm、3分超のworktree remote inspection、旧autopruneの無制限home `du` は封じた。131件のstale session guardだけを安全にTERMし、unknownな3件は保存した。旧autoprune/reclaim plistは`.disabled-20260821`へ可逆退避した。通常guardの実測は約1秒、freeは5.9 GiBだが11 GiB未満で、24時間/7日観測とuser launchd復旧条件は未達 |
 
 ### 2026-08-21 incident fix evidence
 
@@ -32,6 +36,25 @@ shimは同じhost guardを`EMERGENCY_GUARD_FULL_PASS=1`で呼び、保留処理�
 `launchctl print gui/501/ai.anicca.life-manager-disk-cleanup` と `com.anicca.emergency-disk-guard`
 は現在も`141: Reentrancy avoided`であり、正式なuser launchd domainのbootstrap/readback、24時間、
 7日観測が残る。
+
+### 2026-08-21 incident prevention evidence
+
+同日後半の実測では、`cozempic.cli guard` が138件まで孤児化し、そのうち131件が6時間以上古いClaude
+transcriptと1対1に対応していた。session UUID、transcript、親PID=1、6時間超のstale条件をすべて満たす
+131件だけへTERMを送り、transcriptやsource、session stateは削除していない。unknownな3件は保存した。
+guard総数は5件へ下がり、freeは約4.8 GiBへ戻った。
+
+旧`ai.anicca.disk-autoprune`（毎時17分）は、0 GiB incidentの報告後に全homeの`du | sort | head`を
+50分以上実行し続けていた。これはcleanup passを塞ぎ、容量警告を遅延させる直接原因だった。プロセスgroup
+だけをTERMし、ファイルは削除していない。再起動時の再発を防ぐため、
+`~/Library/LaunchAgents/ai.anicca.disk-autoprune.plist.disabled-20260821`へ退避した。
+実行scriptが存在しない旧`ai.anicca.disk-reclaim.plist`も同じ方式で退避した。
+
+Anicca側では、通常minute guardから巨大な`~/gig`を除外し、`EMERGENCY_GUARD_FULL_PASS=1`のhourly
+compatibility passだけが`~/gig`を走査するようにした。変更後の実測ログは`11:30:49 LOW DISK`、
+`11:30:50 runtime manifest ready`で、従来の約3分16秒から約1秒へ短縮した。recovery health checkの
+独自cache削除と重複日本語alertも廃止し、容量変更とalertのauthorityをLife Managerへ一本化した。
+ただしfreeはなお5.9 GiBで、`launchctl` readbackは`141: Reentrancy avoided`のままである。
 
 ### OSS boundary
 
@@ -275,7 +298,7 @@ intelligence passはpathを削除せず、manifestを直接変更せず、protec
 |---|---|---|
 | Scope | sentinelとguardが異なる限定rootを走査 | 全local writable volumeを1 inventoryで観測し、Mac全体をowner familyへ分類 |
 | Ownership | guard、sentinel、janitorに責務が分散 | Life Manager host governorが唯一の削除authority。Life Manager自身も1 producer |
-| Cadence | emergency guardは60秒、sentinelは60秒。legacy janitorはloaded configを残すが、実行scriptはLife Manager governor shim | OSSは5分deterministicを定義済み。user launchd bootstrapが未成立のため、現productionはemergency guard fallback。event-driven/hourly intelligenceは未実装 |
+| Cadence | emergency guardは60秒、sentinelは60秒。legacy janitorはcanonical governor shim。旧autoprune/reclaim plistは可逆退避済み | OSSは5分deterministicを定義済み。user launchd bootstrapが未成立のため、現productionはemergency guard fallback。event-driven/hourly intelligenceは未実装 |
 | Decision | manifest回収とlegacy path掃除が混在 | manifest proofのAND条件だけで削除 |
 | Intelligence | 人間がalert後に広く調査 | abnormal stateだけLunaが診断しproducer defectをtask化 |
 | Sessions | path規則により一部保護 | session/transcript/state/identityをpermanent protected contract化 |
@@ -372,7 +395,7 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 | 11 | effect-free shadow passでlegacy ownerとcanonical ownerのdecision parityを比較 | protected mismatch 0、candidate mismatch説明済み | 未完了: legacy scriptはshim化済みだが、effect-free parity receiptは未作成 |
 | 12 | 既知regenerable artifact 1件でproduction canaryを実行 | reclaimed bytes > 0、free bytes readback、protected deletion 0 | 部分完了: closed `cfo-*`とclone候補の実E2E回収・readbackを確認。正式canary receiptは未完了 |
 | 13 | immediate replayを実行 | duplicate effect 0、error 0 | 部分完了: guard replayで保護対象削除0を確認。正式なproduction replay receiptは未完了 |
-| 14 | legacy janitor/cleanerの削除authorityをdisableし、canonical labelだけをload | loaded delete owner 1、rollback plist保存 | 部分完了: legacy janitorはLife Manager governor shimで直接削除しない。hourly shimはcanonical guardのfull passへ委譲する。旧plistのloaded config disableとcanonical label単独loadは未完了 |
+| 14 | legacy janitor/cleanerの削除authorityをdisableし、canonical labelだけをload | loaded delete owner 1、rollback plist保存 | 部分完了: legacy janitorはLife Manager governor shimで直接削除しない。hourly shimはcanonical guardのfull passへ委譲する。旧autoprune/reclaim plistは`.disabled-20260821`へ退避済み。user domainのloaded config disableとcanonical label単独loadは`launchctl` 141のため未完了 |
 | 15 | 24時間連続観測 | free >= 11 GiB、ENOSPC 0、protected deletion 0 | 未完了: 現在free < 11 GiBでpressure blockが残り、観測開始条件未達 |
 | 16 | 7日間連続観測とproducer lifecycle audit | state write failure 0、cleanup起因producer failure 0 | 未完了: 24時間観測後に開始 |
 | 17 | rollback restore testと最終production receiptを保存 | prior label復元可能、final receipt、Telegram完了message ID | 未完了: launchd cutover、rollback実演、最終receiptが未完了 |
@@ -383,8 +406,8 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 
 1. **host-wide censusを完成** — 全local writable volume、必須owner family、1 GiB以上のunknown rootを同一versioned inventoryへ記録し、missing 0を出す。
 2. **OSS contract testを完成** — protected roots、lease、open-path、probe error、dirty/unpushed worktree、unknown classの統合fixtureを追加し、Test Matrix 3–11をPASSにする。
-3. **launchd正式bootstrapを復旧** — `ai.anicca.life-manager-disk-cleanup`をuser domainへ登録し、`StartInterval=300`、single lock、bounded runtime、kickstart/readbackを実測する。`141: Reentrancy avoided`を未解決のままDONEにしない。
-4. **producer lifecycleを接続** — 上位growth owner（browser、build、media、VM/container、package manager、agent runtime）をcensusし、artifact登録、lease heartbeat、finalizer、quotaを実装する。
+3. **launchd正式bootstrapを復旧** — `ai.anicca.life-manager-disk-cleanup`をuser domainへ登録し、`StartInterval=300`、single lock、bounded runtime、kickstart/readbackを実測する。`141: Reentrancy avoided`を未解決のままDONEにしない。旧autoprune/reclaimの退避ファイルはrollback用に保持する。
+4. **producer lifecycleを接続** — 上位growth owner（browser、build、media、VM/container、package manager、agent runtime、`~/gig/releases`）をcensusし、artifact登録、lease heartbeat、finalizer、quotaを実装する。旧`disk-reclaim`の安全なrelease proofはこのmanifestへ移植してから再有効化する。
 5. **全producerにbackpressureを接続** — PREVENTIVE/PRESSURE/CRITICAL/ULTRAのpreflight、drain、checkpoint、bounded resumeを同じcontractで適用し、consumer missing 0にする。
 6. **audit/reportingを完成** — bounded ops log、immutable incident receipt、Telegram状態遷移dedupe、delivery-failure receiptを実装し、message IDをreadbackする。
 7. **hourly intelligenceを完成** — input/output schema、異常時wake gate、growth attribution、producer defect task化を実装する。intelligenceは削除・manifest mutationを持たないことをtestで固定する。
