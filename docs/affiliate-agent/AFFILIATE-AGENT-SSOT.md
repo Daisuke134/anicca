@@ -1293,6 +1293,21 @@ checkout, so Affiliate must not directly edit or deploy it. Record this as
 indexing failure, create a manual public edit, or expose a tracking link. B01
 still requires an organic official provider transaction.
 
+### 1.1.51 Fresh B01 official empty-state capture
+
+Existing money owner wake
+`9c0fa3b7d445cca5dfb0b234a57c515781eccb729ba02874d54814c096203f72`
+completed at `2026-08-21T18:44:17+0900`, exit `0`, and performed the next due
+official PartnerStack capture. The new artifact reports
+`commission_row_count=0`, `commission_row_state=EMPTY`,
+`payout_row_state=EMPTY`, and `normalizer_state=NO_LIVE_ROWS`; reconciliation
+appended zero transitions. The rolling receipt remains
+`NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / cost=UNKNOWN`, and the owner sent
+the exact non-money receipt as Telegram `messageId=27478`.
+
+This is fresh B01 empty-state evidence only. No click, content asset, capture,
+or Telegram message is treated as commission, settlement, or net revenue.
+
 ### 1.2.0 Audited executable boundary
 
 The installed ownership graph has six launchd labels: three persistent browser

@@ -1,5 +1,16 @@
 # Affiliate local money loop handover
 
+- Existing money owner wake
+  `9c0fa3b7d445cca5dfb0b234a57c515781eccb729ba02874d54814c096203f72`
+  completed at `2026-08-21T18:44:17+0900`, exit `0`, and performed the next
+  due official PartnerStack capture. The fresh report is still
+  `commission_row_count=0`, `commission_row_state=EMPTY`, `payout_row_state=EMPTY`,
+  `normalizer_state=NO_LIVE_ROWS`; reconciliation appended `0` transitions and
+  rolling net remains `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / cost=UNKNOWN`.
+  The owner sent the exact readback as Telegram message `27478`. This is fresh
+  B01 empty-state proof only; clicks, content, the capture, and the message are
+  not money.
+
 - Public discoverability is not the immediate defect: read-only checks of three
   Affiliate articles return HTTP 200 with `index, follow` robots and canonical
   URLs. The observed conversion/trust defects are instead thin current assets
