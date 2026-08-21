@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | M2 — `CFO-OPS3a`, `CFO-OPS3b`, `CFO-1j`, `CFO-2b.2`, `CFO-2b.3`, `CFO-2b.4`, `CFO-2b.5`, `CFO-2b.6`, `CFO-2b.7`, `CFO-2b.8`, `CFO-2b.9`, `CFO-2c`, `CFO-2d`, `CFO-2d2`, `CFO-2d3`, and `CFO-2e` are closed; M3 tax evidence is deferred and M4 cloud parity is next |
+| Status | M2 — `CFO-OPS3a`, `CFO-OPS3b`, `CFO-1j`, `CFO-2b.2`, `CFO-2b.3`, `CFO-2b.4`, `CFO-2b.5`, `CFO-2b.6`, `CFO-2b.7`, `CFO-2b.8`, `CFO-2b.9`, `CFO-2c`, `CFO-2d`, `CFO-2d2`, `CFO-2d3`, and `CFO-2e` are closed; M3 tax evidence is deferred and M4b cloud scheduling is next |
 | Owner | Life Manager financial organ |
 | Product scope | Dais first, multi-tenant after local E2E |
 | Runtime order | local first, Steel cloud second |
@@ -1267,7 +1267,10 @@ ingestion. They are not unchecked M1 items and cannot become the active CFO item
 
 ### M4 — Cloud parity and multi-tenancy
 
-- [ ] **CFO-4a** Move provider credentials behind tenant-scoped secret references; rotate leaked/test credentials.
+- [x] **CFO-4a** Move provider credentials behind tenant-scoped secret references; rotate leaked/test credentials. Canonical
+      commit `f2a7a64bd` adds the CFO secret-reference catalog and delegates local/cloud resolution to the existing
+      Keychain/Vault provider. Raw token values remain outside repository, snapshots, Telegram, and logs. No leaked
+      credential was found in the canonical CFO branch; Moneytree LINK OAuth remains unconfigured by owner choice.
 - [ ] **CFO-4b** Add durable per-owner scheduling with concurrency 1, retry, timeout, and immutable run receipts.
 - [ ] **CFO-4c** Verify Binance from fixed cloud egress and preserve its IP allowlist.
 - [ ] **CFO-4d** Implement browser fallback against Steel profiles, one profile per tenant/provider; prove local and
@@ -1406,3 +1409,12 @@ Canonical commit `2c3a89dce` adds the deterministic recommendation boundary. Sta
 `kind=repair`, `reason=evidence_incomplete_before_allocation`, `execute=false`, and `ownerActionRequired=true`; it
 was delivered with provider message `27516`. No recommendation calls an executor, changes a budget, trades, transfers,
 or spends money. M3 Binance/tax evidence is explicitly deferred; M4 cloud/multi-tenant parity is next.
+
+### CFO-4a closure correction (2026-08-21)
+
+Canonical commit `f2a7a64bd` adds `apps/life-manager/lib/cfo-secret-ref.js`, a tenant-id and `secret://` reference
+catalog for Supabase, Telegram, and Moneytree LINK credentials. It delegates value resolution to the existing
+local-Keychain/cloud-Vault `secret-provider`; the CFO refresh adapter accepts that provider and never returns or logs
+secret values. Smoke resolution with a tenant-scoped fake provider passed; malformed/raw references fail closed. The
+12-factor [Config](https://12factor.net/config) guidance requires credentials outside source, and the Moneytree OAuth
+docs warn refresh tokens are password-like and must not enter logs/URLs. `CFO-4b` durable cloud scheduling is next.
