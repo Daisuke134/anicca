@@ -293,6 +293,12 @@ def _reported_file_progress_cycle(args, item: dict[str, Any]) -> Path | None:
         receipt = _load(root / "context" / "paid-file-authorization.json")
         feedback = _text(item.get("buyer_feedback_sha256")) or _text(receipt.get("buyer_feedback_sha256"))
         requirements_sha256 = paid_remote_result.requirements_digest(root, feedback)
+        review_state = _load(root / "context" / "paid-review-state.json")
+        if (isinstance(review_state, dict)
+                and review_state.get("state") == "REPAIR_PENDING"
+                and review_state.get("buyer_feedback_sha256") == feedback
+                and review_state.get("requirements_sha256") == requirements_sha256):
+            return None
         if receipt.get("version") == 2:
             stable = delivery_queue.evidence_path(args.delivery_evidence_dir, item)
             _validate_file_authorization(root, stable, feedback, requirements_sha256)
@@ -1928,6 +1934,7 @@ def _validate_file_authorization(root: Path, stable: Path, feedback: str,
     summary = _runner_summary(verifier)
     result_path = _consultation_result_path(verifier, summary)
     result = _load(result_path)
+    review_state = _load(root / "context" / "paid-review-state.json")
     if (not isinstance(receipt, dict) or receipt.get("version") != 4
             or receipt.get("buyer_feedback_sha256") != feedback
             or receipt.get("requirements_sha256") != requirements_sha256
@@ -1941,6 +1948,10 @@ def _validate_file_authorization(root: Path, stable: Path, feedback: str,
             or receipt.get("verifier_summary_sha256") != hashlib.sha256((verifier / "summary.json").read_bytes()).hexdigest()
             or receipt.get("verifier_result_sha256") != hashlib.sha256(result_path.read_bytes()).hexdigest()
             or receipt.get("reviewer_model") != PAID_FILE_MODEL
+            or (isinstance(review_state, dict)
+                and review_state.get("state") == "REPAIR_PENDING"
+                and review_state.get("buyer_feedback_sha256") == feedback
+                and review_state.get("requirements_sha256") == requirements_sha256)
             or (result.get("verdict") != "deliverable"
                 and receipt.get("shipment_basis") != "max_review_iterations")
             or (receipt.get("shipment_basis") == "max_review_iterations"
@@ -2222,9 +2233,6 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
     prior_round = (int(review_state.get("round", 0))
                    if state_matches_cycle
                    and review_state.get("state") in {"REPAIR_PENDING", "MAX_REVIEW_SHIP"} else 0)
-    legacy_version = re.fullmatch(r"v(\d+)", _text(resumed[0].get("artifact_version"))) if resumed else None
-    if state_matches_cycle and legacy_version and int(legacy_version.group(1)) >= MAX_FILE_REVIEW_ITERATIONS:
-        prior_round = MAX_FILE_REVIEW_ITERATIONS
     start_round = min(prior_round + 1, MAX_FILE_REVIEW_ITERATIONS)
     shipment_basis = "reviewer_approved"
     review_rounds = range(start_round, MAX_FILE_REVIEW_ITERATIONS + 1)

@@ -945,6 +945,10 @@ machine-wide temp tree and the sandbox-denied durable project: unrelated cleanup
 an active job's workspace, while the isolated owner can still access its own staging tree. Owner
 workspaces are keyed by the accumulated requirements digest; an abrupt process death leaves the
 workspace for the next wake to resume, while a normal success/failure removes it.
+Artifact version and review iteration are independent counters. A high historical `vN` may never
+advance the review cap; only `paid-review-state.round` for the exact feedback/requirements cycle
+counts toward the maximum of five. A buyer-visible progress artifact does not suppress a durable
+`REPAIR_PENDING` cycle: the next wake revises and submits again until approval or round five.
 The read-only targeted refresh is also project-scoped: up to four fresh hidden CDP targets run in
 parallel before the existing project workers, and one refresh failure degrades only that talkroom.
 When a purchased request exposes both its original request id and a talkroom id, an existing
