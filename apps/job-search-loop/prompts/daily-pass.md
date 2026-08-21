@@ -131,6 +131,12 @@ Python skill, client-facing duty, minimum-years threshold, legal answer, or
 employer-specific motivation. Those answers require their own exact verified fact
 or approved material; otherwise the candidate is blocked and the queue continues.
 
+On a claim-ready final form, locate the user-facing submit control by
+case-insensitive visible text. `Submit application`, `Submit Application`, and
+equivalent capitalization are the same control; do not use a case-sensitive exact
+text locator that misses a visible button. After filling verified fields, wait for
+that control to be visible, then click it once and capture confirmation evidence.
+
 Do not choose `Autofill with Resume` before resume routing, and do not improvise an
 account password or expose credentials in evidence. At a verified
 `workday_account_create` surface, run:
