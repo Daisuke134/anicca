@@ -227,6 +227,26 @@ class LocalLoopTest(unittest.TestCase):
             self.assertIn("同じ収益captureを再実行", event["body"])
             self.assertIn("transactions=0", event["body"])
 
+    def test_revenue_recovery_is_delivered_on_later_wake_if_success_wake_missed_it(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root)
+            for row in (
+                {"ts": 10, "revenue_state": "REVENUE_CYCLE_FAILED"},
+                {"ts": 20, "revenue_state": "COOLDOWN"},
+                {"ts": 30, "revenue_state": "NO_TRANSACTIONS", "revenue_source_rows": 0},
+            ):
+                MODULE.append(state / "events.jsonl", row)
+            wake = {
+                "ts": 40, "revenue_state": "COOLDOWN",
+                "status": "READY_FOR_PUBLICATION", "publication_url": None,
+            }
+            MODULE.append(state / "events.jsonl", wake)
+
+            event = MODULE.owner_event(state, wake)
+
+            self.assertEqual(event["kind"], "SELF_HEALED")
+            self.assertIn("transactions=0", event["body"])
+
     def test_revenue_failure_report_is_typed_and_new_attempts_are_not_collapsed(self):
         with tempfile.TemporaryDirectory() as root:
             state = Path(root)

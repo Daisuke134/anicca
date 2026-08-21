@@ -682,24 +682,33 @@ def owner_event(state, wake_event, sent_event_ids=None):
                 current.get("publication_url") or latest_live_url(state),
                 scope="publication")
     latest_revenue_failure = None
+    latest_revenue_recovery = None
     for row in wake_history[:-1]:
         if row.get("revenue_state") == "REVENUE_CYCLE_FAILED":
             latest_revenue_failure = row
+            latest_revenue_recovery = None
         elif row.get("revenue_state") in {"NO_TRANSACTIONS", "TRANSACTIONS_RECONCILED"}:
-            latest_revenue_failure = None
+            if latest_revenue_failure is not None:
+                latest_revenue_recovery = row
+    recovery_event = (
+        wake_event
+        if wake_event.get("revenue_state") in {"NO_TRANSACTIONS", "TRANSACTIONS_RECONCILED"}
+        else latest_revenue_recovery
+    )
     if (
         latest_revenue_failure is not None
-        and wake_event.get("revenue_state") in {"NO_TRANSACTIONS", "TRANSACTIONS_RECONCILED"}
+        and recovery_event is not None
     ):
         kind = "SELF_HEALED"
         add(kind, {
             "kind": kind, "scope": "revenue",
             "failed_at": latest_revenue_failure.get("ts"),
-            "recovered_state": wake_event.get("revenue_state"),
+            "recovered_at": recovery_event.get("ts"),
+            "recovered_state": recovery_event.get("revenue_state"),
         }, (
             "revenue capture recovered / transactions="
-            f"{wake_event.get('revenue_source_rows')} / no estimated revenue counted"
-        ), wake_event.get("publication_url") or latest_live_url(state),
+            f"{recovery_event.get('revenue_source_rows')} / no estimated revenue counted"
+        ), recovery_event.get("publication_url") or latest_live_url(state),
             scope="revenue")
     if wake_event.get("revenue_state") == "REVENUE_CYCLE_FAILED":
         try:
