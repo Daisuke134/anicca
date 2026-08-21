@@ -19,6 +19,10 @@ allow-listed regenerable artifact after an open-path probe confirms
 - The 5-minute pass has one atomic lock and no LLM deletion authority.
 - Pressure is asserted below 11 GiB and is not cleared until the recovery floor
   is reached; the 20 GiB threshold starts preventive containment.
+- Every pass atomically writes `host-inventory.json`: local `df` mounts and
+  bounded owner-family metadata. The hourly/full compatibility pass may run a
+  timeout-bounded `du` probe for allow-listed families; gaps are recorded as
+  unknown and never become deletion candidates.
 - Receipts are bounded and the high-volume cleanup ledger is rotated before it
   can consume the reserve.
 

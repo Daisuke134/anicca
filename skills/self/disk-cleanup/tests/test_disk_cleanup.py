@@ -5,6 +5,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
 
+import disk_cleanup  # noqa: E402
 from disk_cleanup import (  # noqa: E402
     GiB,
     HostDiskGovernor,
@@ -89,3 +90,26 @@ def test_legacy_hourly_trigger_delegates_to_the_same_host_guard() -> None:
     text = script.read_text()
     assert "EMERGENCY_GUARD_FULL_PASS=1" in text
     assert "disk_cleanup.py" in text
+
+
+def test_run_once_records_inventory_summary(tmp_path: Path, monkeypatch) -> None:
+    def fake_inventory(**_kwargs):
+        return {"coverage": {"mount_count": 1, "root_count": 2, "gaps": ["size-deferred"]}}
+
+    monkeypatch.setattr(disk_cleanup, "collect_host_inventory", fake_inventory)
+    governor = HostDiskGovernor(
+        home=tmp_path,
+        state_dir=tmp_path / "state",
+        lsof=lambda _path: "confirmed-closed",
+        usage=lambda: (12 * GiB, 100 * GiB),
+    )
+
+    result = governor.run_once()
+
+    assert result["inventory_mode"] == "full"
+    assert (tmp_path / "state" / "host-inventory-full.at").exists()
+    assert result["inventory_mounts"] == 1
+    assert result["inventory_roots"] == 2
+    assert result["inventory_gaps"] == 1
+    receipt = json.loads((tmp_path / "state" / "last-receipt.json").read_text())
+    assert receipt["inventory_roots"] == 2

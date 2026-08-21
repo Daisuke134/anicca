@@ -17,7 +17,10 @@ import time
 from pathlib import Path
 from typing import Callable
 
+from host_inventory import collect_host_inventory
+
 GiB = 1024**3
+FULL_INVENTORY_INTERVAL_SECONDS = 3600
 THRESHOLDS = ((20 * GiB, "NORMAL"), (11 * GiB, "PREVENTIVE"), (6 * GiB, "PRESSURE"), (3 * GiB, "CRITICAL"))
 
 
@@ -75,8 +78,22 @@ class HostDiskGovernor:
         self.home = (home or Path.home()).resolve()
         self.state_dir = (state_dir or self.home / ".openclaw/state").resolve()
         self.lock_dir = self.state_dir / ".life-manager-disk-cleanup.lock"
+        self.full_inventory_marker = self.state_dir / "host-inventory-full.at"
         self.lsof = lsof
         self.usage = usage or self._usage
+
+    def _full_inventory_due(self) -> bool:
+        try:
+            last = int(self.full_inventory_marker.read_text().strip())
+        except (FileNotFoundError, OSError, ValueError):
+            return True
+        return int(time.time()) - last >= FULL_INVENTORY_INTERVAL_SECONDS
+
+    def _mark_full_inventory(self) -> None:
+        self.state_dir.mkdir(parents=True, exist_ok=True)
+        temporary = self.full_inventory_marker.with_name(f".{self.full_inventory_marker.name}.tmp")
+        temporary.write_text(str(int(time.time())) + "\n")
+        os.replace(temporary, self.full_inventory_marker)
 
     def _usage(self) -> tuple[int, int]:
         usage = shutil.disk_usage("/System/Volumes/Data" if Path("/System/Volumes/Data").exists() else "/")
@@ -130,7 +147,7 @@ class HostDiskGovernor:
         temporary.write_text(json.dumps(payload, ensure_ascii=False, sort_keys=True) + "\n")
         os.replace(temporary, self.state_dir / "last-receipt.json")
 
-    def sweep(self, candidates: list[dict]) -> dict[str, int | str]:
+    def sweep(self, candidates: list[dict], *, write_receipt: bool = True) -> dict[str, int | str]:
         free_before, _ = self.usage()
         result: dict[str, int | str] = {
             "tier": classify_tier(free_before),
@@ -184,7 +201,8 @@ class HostDiskGovernor:
         result["free_before"] = free_before
         result["free_after"] = free_after
         result["preserved_reasons"] = reasons
-        self._receipt(result)
+        if write_receipt:
+            self._receipt(result)
         return result
 
     def discover_candidates(self) -> list[dict]:
@@ -222,7 +240,7 @@ class HostDiskGovernor:
 
     def run_once(self) -> dict[str, int | str]:
         free_before, _ = self.usage()
-        result = self.sweep(self.discover_candidates())
+        result = self.sweep(self.discover_candidates(), write_receipt=False)
         free_after = int(result["free_after"])
         pressure_file = self.state_dir / "disk-pressure.block"
         if free_after < 11 * GiB:
@@ -239,6 +257,24 @@ class HostDiskGovernor:
             )
         elif free_after >= 20 * GiB:
             pressure_file.unlink(missing_ok=True)
+        full_inventory = (
+            os.environ.get("EMERGENCY_GUARD_FULL_PASS") == "1" or self._full_inventory_due()
+        )
+        try:
+            inventory = collect_host_inventory(
+                home=self.home,
+                state_dir=self.state_dir,
+                full=full_inventory,
+            )
+            if full_inventory:
+                self._mark_full_inventory()
+            result["inventory_mode"] = "full" if full_inventory else "fast"
+            result["inventory_mounts"] = int(inventory["coverage"]["mount_count"])
+            result["inventory_roots"] = int(inventory["coverage"]["root_count"])
+            result["inventory_gaps"] = len(inventory["coverage"]["gaps"])
+        except (OSError, RuntimeError, ValueError, KeyError) as exc:
+            result["inventory_error"] = type(exc).__name__
+        self._receipt(result)
         result["free_before"] = free_before
         return result
 
