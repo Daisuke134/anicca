@@ -57,6 +57,10 @@
 - 次の原子順序は、(1) sentinelが`disk-pressure.block`を自動解除する20GiB回復、(2)同一Note keyのlive receipt反映、
   (3)Substack JA/ENの同一draft ID native publish/readback、(4)X同一edit IDのreadability receiptとunavailable遷移、
   (5)Xを含む新runでprojection-valid body mediaを使った4媒体canary、で固定する。
+- `37a462cc4`反映後の同一Note probeは、`status=live`、`content_verified=true`、`authenticated_content_verified=true`、
+  `monetization_verified=true`、`asset_verified=true`、`eyecatch_verified=true`、`body_media_verified=true`を返した。
+  しかしresumeの実行中に空きが`10.62GiB`まで低下し、`disk-pressure.block`が再生成されたため、publication-stateの
+  `note/ja=ambiguous`をliveへ書くstate mutationはまだ行っていない。これは外部の公開事実とlocal receiptの遅延を分けた状態である。
 
 ### ownerless repair handoff の回収実測
 
@@ -1113,7 +1117,7 @@ loaded definitionと自然tickまで読み戻すことを意味する。A1のcon
 | A9d | Codex-only Writer公開canaryを行う | current releaseをlaunchdへ反映し、pause解除後の新runでCodex attempt receipt、Note JA、Substack JA/EN、X Article JAの4 native URL、本文・media hash、Telegram delivery receiptを取得。Codex timeout時は同じrunの次tickへ安全にhandoffする | 部分完了（既存`daily-2026-08-21`は4媒体native live＋`article-run-complete rc=0`。`20260821-054500`はduplicate-media quarantine完了。`20260821-072939`はdisk floor低下前にSIGTERMしpublication前で安全停止。`20260821-103056`はNoteのnative liveを外部readback済みだがstate反映待ち、Substack 2件はintent、Xはstable draft＋1300x70拒否。`63cf0fc59`/`37a462cc4`でpublish/readback gateを追加済み） |
 | A9e | invalid duplicate-media runを安全に隔離する | 対象runの同一media SHA、全active pairが`unavailable`またはdormant `skipped`、no-effect ledgerを再計算し、proof-bound `run-quarantine.json`を作成。start-controlが同日`new`を返し、対象pair以外とledgerの不変をreadback | 完了（実装・fixture 13件、focused 43件、契約・構文・diff check PASS。実canaryのX intentを同じtargetの`unavailable`へ共有lock下で遷移、receipt作成、ledger不変、start-control=`new`、current release=`cdb611300`を実測） |
 | A9f | disk floor復帰後にclean canaryを再開する | `gig_disk_guard`とarticle wrapperが同じ512MiB floorをPASSし、pause解除→既存daily kickstart→新runの4 native receipt、Telegram message ID、2連続tickを取得。floor未達なら生成・公開を開始しない | 進行中（再起動でswap=0・空き12.4GB、`disk-writers.stop`は消えたが`disk-pressure.block`の自動解除条件20GB未達。公開入口は安全停止中） |
-| A9i | 再起動後の既存runを安全にreconcileする | sentinelがpressure flagを解除した後、Note live proofを同一keyでstateへ記録し、Substack 2件を同一draft IDだけで処理。Xはprojection/readability receipt後にunavailableまたはliveを確定 | 未完（Note native proofは取得済み、state反映・Substack・Xはcapacity gate待ち） |
+| A9i | 再起動後の既存runを安全にreconcileする | sentinelがpressure flagを解除した後、Note live proofを同一keyでstateへ記録し、Substack 2件を同一draft IDだけで処理。Xはprojection/readability receipt後にunavailableまたはliveを確定 | 未完（Note native proofは全項目取得済みだが、空き10.6GiBで`disk-pressure.block`が再発。state反映・Substack・Xは容量回復待ち） |
 | A9g | 旧backlogを外部作用なしで扱う | 旧runのlive pairを保持したまま、未解決pairだけを現行code/state identityのfailure circuitへopenし、plannerが`WAIT`かつ`recovery_pairs=[]`を返す。新規runの公開を旧targetが先取りしない | 完了（Note circuitを現行code/state SHAで再open、receipt-backed handoff 11件をWAIT化し、さらにduplicate-media runの3件をqueue quarantine付きWAITへ隔離。planner `WAIT/blocked_pairs=[note/ja]/recovery_pairs=[]`） |
 | A9h | receiptのない旧CLAIMEDを安全に扱う | receipt-backed owner proofがないclaimは自動で盗まず、状態・所有者・次の監査を自然文receiptへ記録。新しいreceiptまたは明示的なOrder 5 ownerが現れた場合だけqueue state machineで再開 | 未完（`32446a…` credential incident 1件をfail-closedでCLAIMED維持。clean canaryの公開対象ではないが、repair queueの完全な可観測性に必要） |
 | A9b | 1日複数回の正式scheduleを追加する | 06:00/14:00/22:00などのcalendar wake、各slotのunique run ID、同日異記事、連続2周期のnative receiptを実測 | 未着手。現在は06:00のまま |
