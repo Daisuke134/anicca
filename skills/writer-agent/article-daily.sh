@@ -181,6 +181,13 @@ python3 "$ARTICLE_ROOT/scripts/topic_state.py" \
 }
 ARTICLE_PROVIDER_HEALTH="${ARTICLE_PROVIDER_HEALTH:-$STATE_DIR/provider-health.json}"
 ARTICLE_MODEL_RUNNER="${ARTICLE_MODEL_RUNNER:-$ARTICLE_ROOT/runtime/model-runner.sh}"
+ARTICLE_MODEL_AGENT_TIMEOUT_SECONDS="${ARTICLE_MODEL_AGENT_TIMEOUT_SECONDS:-900}"
+case "$ARTICLE_MODEL_AGENT_TIMEOUT_SECONDS" in
+  ''|*[!0-9]*|0)
+    echo "article-daily: invalid ARTICLE_MODEL_AGENT_TIMEOUT_SECONDS=$ARTICLE_MODEL_AGENT_TIMEOUT_SECONDS" >>"$LOG"
+    exit 1
+    ;;
+esac
 ARTICLE_SKILL_DIR="$ARTICLE_ROOT"
 export ARTICLE_PROVIDER_HEALTH ARTICLE_MODEL_RUNNER ARTICLE_SKILL_DIR
 # Short acquisition/recovery mutex.  It is released immediately after the
@@ -937,7 +944,9 @@ fi
 run_model_pass() {
   local active_prompt_file="${1:-$PROMPT_FILE}"
   ARTICLE_RUN_ID="$RUN_TS" ARTICLE_MODEL_LOG="$LOG" \
-    "$ARTICLE_MODEL_RUNNER" agent --prompt-file "$active_prompt_file"
+    python3 "$ARTICLE_ROOT/runtime/bounded-exec.py" \
+      "$ARTICLE_MODEL_AGENT_TIMEOUT_SECONDS" \
+      "$ARTICLE_MODEL_RUNNER" agent --prompt-file "$active_prompt_file"
 }
 
 # AUTH FAILURE SAFETY: a previous wrapper retried this same full prompt after 30 seconds.
@@ -970,7 +979,7 @@ python3 "$GENERATION_STATE" "${GENERATION_ARGS[@]}" begin \
 }
 run_model_pass
 RC=$?
-if [ "$RC" -eq 130 ] || [ "$RC" -eq 143 ]; then
+if [ "$RC" -eq 124 ] || [ "$RC" -eq 130 ] || [ "$RC" -eq 143 ]; then
   python3 "$GENERATION_STATE" "${GENERATION_ARGS[@]}" \
     archive-interrupted --return-code "$RC" >>"$LOG" 2>&1 || \
     echo "=== article-daily interruption archive failed closed rc=$RC ===" >>"$LOG"

@@ -408,10 +408,10 @@ def archive_interrupted(
     return_code: int,
 ) -> dict[str, Any]:
     """Archive a terminated prepublication attempt and make the same prompt resumable."""
-    # SIGINT/SIGTERM archive a still-active attempt; a classified retryable
+    # A bounded timeout or SIGINT/SIGTERM archives a still-active attempt; a classified retryable
     # provider failure (75) that only staged artifacts may also archive, so
     # the same immutable prompt can resume instead of stranding the run.
-    if return_code in {130, 143}:
+    if return_code in {124, 130, 143}:
         allowed_statuses = {"invoking", "interruption-archiving"}
     elif return_code == 75:
         # provider-failed-ambiguous: retryable failure that staged artifacts.
@@ -425,8 +425,8 @@ def archive_interrupted(
         }
     else:
         raise GenerationInvariant(
-            "only SIGINT/SIGTERM interruption or an ambiguous retryable "
-            "provider failure can be archived"
+            "only bounded timeout/SIGINT/SIGTERM interruption or an "
+            "ambiguous retryable provider failure can be archived"
         )
     resolved = _validate_boundary(run_dir, run_id, prompt_file)
     state_path = _state_path(resolved)
