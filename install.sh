@@ -147,6 +147,10 @@ while IFS= read -r slot; do
   fi
   mkdir -p "$dst"
   rsync -a --delete --exclude='state/' --exclude='__pycache__/' "$src/" "$dst/"
+  # Immutable releases are intentionally chmod a-w. Runtime state is outside the release but lives
+  # below each synced slot; restore only this destination root's owner write/execute bits before
+  # creating its state directory. Never make the release writable.
+  chmod u+rwx "$dst"
   mkdir -p "$dst/state"
   if [ "$status" = "live" ]; then
     green "  ✓ $slot  [live]  -> $dir/$entry"
