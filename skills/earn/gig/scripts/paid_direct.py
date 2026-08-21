@@ -3241,7 +3241,16 @@ def _write_file_effect(args, item_path: Path, output: Path, prepared: dict[str, 
         disk_reason = _effect_gate_reason(args)
         if disk_reason is not None:
             return _write_disk_pending(output, room, disk_reason, "before_file_browser_effect")
-        browser = _json_line(_run(command, "file_browser"), "file_browser")
+        browser_process = _run_bounded(command)
+        if browser_process.returncode:
+            _write(browser_evidence / "browser-error.json", {
+                "version": 1,
+                "returncode": browser_process.returncode,
+                "stdout": browser_process.stdout[-4000:],
+                "stderr": browser_process.stderr[-4000:],
+            })
+            raise Failure("file_browser")
+        browser = _json_line(browser_process.stdout, "file_browser")
         if browser.get("ok") is not True or not isinstance(browser.get("evidence"), dict):
             raise Failure("file_browser")
         sent_effect = int(browser["evidence"].get("send_performed") is True)
