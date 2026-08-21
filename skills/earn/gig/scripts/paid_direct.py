@@ -1917,7 +1917,7 @@ def _rewrite_staging_paths(value: Any, source: Path, target: Path) -> Any:
     return value
 
 
-def _prepare_file_owner_staging(root: Path, context: Path, staging: Path) -> None:
+def _prepare_file_owner_staging(root: Path, context: Path, staging: Path) -> Path | None:
     for name in ("requirements", "source"):
         shutil.copytree(root / name, staging / name)
     context_target = staging / "context"
@@ -1939,6 +1939,15 @@ def _prepare_file_owner_staging(root: Path, context: Path, staging: Path) -> Non
     shutil.copyfile(root / "state.json", staging / "state.json")
     for name in ("delivery", "acceptance", "work", "evidence"):
         (staging / name).mkdir()
+    manifest = _load(root / "delivery" / "paid-work-result.json")
+    prior = Path(_text(manifest.get("artifact_path"))) if isinstance(manifest, dict) else Path()
+    if prior.is_file():
+        prior.resolve().relative_to(root.resolve())
+        target = staging / "work" / "prior-artifact" / prior.name
+        target.parent.mkdir(parents=True)
+        shutil.copy2(prior, target)
+        return target
+    return None
 
 
 def _promote_staged_file_bundle(staging: Path, root: Path, expected_version: str) -> None:
@@ -1978,14 +1987,20 @@ def _run_isolated_file_owner(args, root: Path, context: Path, prompt_text: str,
                              owner_evidence: Path) -> int:
     with tempfile.TemporaryDirectory(prefix="paid-file-owner-") as temporary:
         staging = Path(temporary)
-        _prepare_file_owner_staging(root, context, staging)
+        prior_artifact = _prepare_file_owner_staging(root, context, staging)
         prompt = staging / "owner.prompt.txt"
         versions = [int(match.group(1)) for path in (root / "delivery").iterdir()
                     if (match := re.search(r"(?:^|-)v(\d+)(?:\D|$)", path.name))]
         expected_version = f"v{max(versions, default=0) + 1}"
         isolated_prompt = _rewrite_staging_paths(prompt_text, root, staging)
+        prior_instruction = (
+            f" Revise the existing artifact at {prior_artifact}; do not discard it, reconstruct from raw sources, "
+            "or switch approaches. Preserve everything not named by the review finding."
+            if prior_artifact is not None else ""
+        )
         prompt.write_text(
-            isolated_prompt + f" The exact required artifact_version is {expected_version}; use that version in the "
+            isolated_prompt + prior_instruction
+            + f" The exact required artifact_version is {expected_version}; use that version in the "
             "artifact filename, acceptance filename and manifest.",
             encoding="utf-8",
         )
@@ -2129,12 +2144,29 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
     verifier_evidence = root / "evidence" / "agent-PAID_FILE_VERIFY"
     verdict: dict[str, Any] = {}
     proof: dict[str, Any] = {}
+    audit_path = None
+    audit_snapshot = None
+    review_images: list[Path] = []
+    reference_images: list[Path] = []
+    visual_snapshots: dict[str, tuple[int, str]] = {}
     prior_round = (int(review_state.get("round", 0))
                    if isinstance(review_state, dict)
-                   and review_state.get("state") == "REPAIR_PENDING" else 0)
+                   and review_state.get("state") in {"REPAIR_PENDING", "MAX_REVIEW_SHIP"} else 0)
+    legacy_version = re.fullmatch(r"v(\d+)", _text(resumed[0].get("artifact_version"))) if resumed else None
+    if legacy_version and int(legacy_version.group(1)) >= MAX_FILE_REVIEW_ITERATIONS:
+        prior_round = MAX_FILE_REVIEW_ITERATIONS
     start_round = min(prior_round + 1, MAX_FILE_REVIEW_ITERATIONS)
     shipment_basis = "reviewer_approved"
-    for review_round in range(start_round, MAX_FILE_REVIEW_ITERATIONS + 1):
+    review_rounds = range(start_round, MAX_FILE_REVIEW_ITERATIONS + 1)
+    if (prior_round >= MAX_FILE_REVIEW_ITERATIONS and resumed is not None):
+        manifest, snapshots = resumed
+        verdict, proof = _file_runner_result(
+            verifier_evidence, task_label="paid-file-verifier", started_ns=None,
+        )
+        shipment_basis = "max_review_iterations"
+        review_round = MAX_FILE_REVIEW_ITERATIONS
+        review_rounds = range(0)
+    for review_round in review_rounds:
         if resumed is None or finding:
             correction = (" A fresh reviewer rejected the prior artifact. Create a corrected next version that resolves "
                           f"this finding: {finding}" if finding else "")
