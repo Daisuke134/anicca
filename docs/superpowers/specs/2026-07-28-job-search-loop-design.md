@@ -8,8 +8,10 @@ are healthy. Telegram uses the shared OpenClaw gateway. `JOB-LEDGER-EVENT-10N` i
 fixed. `JOB-SCHEDULER-POLICY-10O` is implemented and live at a 30-minute cadence,
 but its completion gate is still open.
 The execution order is explicit: **Ashby fast path → Ashby discovery/application →
-Telegram/Ledger reconciliation → Workday later**. Workday must not run ahead of the
-Ashby gate. In the latest catch-up, Ashby fast path reported `no_work` because there
+Workday fast path → Telegram/Ledger reconciliation**. Workday runs on the same
+30-minute owner wake; it is no longer parked behind Ashby. A user-confirmed
+Salesforce application is held in the private manual-completed URL set and is never
+reapplied by the loop. In the latest catch-up, Ashby fast path reported `no_work` because there
 was no retryable Ashby row; the run was stopped before its Workday stage after the
 previous turn had already demonstrated that Workday stage was being entered too
 early. The earlier Workday evidence remains recorded separately: Rakuten reached the
@@ -115,13 +117,13 @@ evidence, a fenced intent and authoritative confirmation.
 | Order | Atomic TODO | State | Evidence needed to close |
 |---:|---|---|---|
 | 1 | Keep the existing browser owner healthy at CDP `:9222` | `done` | `ai.anicca.job-search-browser` is enabled/running; `/json/version` responds; no second browser owner |
-| 2 | Run the existing 30-minute owner with Ashby fast path first | `in_progress` | `daily-20260821-181731` proved the order; the new owner adds deterministic discovery and disables model fallback by default |
+| 2 | Run the existing 30-minute owner with Ashby then Workday fast paths | `in_progress` | The owner enables `JOB_SEARCH_ENABLE_WORKDAY=1` by default; each lane writes its own evidence and checkpoint |
 | 3 | Replace the timed-out model discovery with a bounded Ashby discovery pass | `completed` | CLI/owner commit `12ea0d89a`; live discovery selected ElevenLabs after browser/cache verification and wrote immutable attribution |
 | 4 | Reach Ashby claim-ready form and route the exact resume | `in_progress` | ElevenLabs reached a real final form with the routed resume; Cohere is durably blocked by its provider limit |
 | 5 | Click the real Ashby submit control once | `completed_for_two_roles` | Two ElevenLabs real Submit Application clicks are fenced as terminal `submit_unknown`; the aria-hidden native-button case uses only a visible text locator; never retry either |
 | 6 | Reconcile authoritative confirmation and send one Telegram report | `in_progress` | Telegram ACKs `27467`, `27480`, and `27475` are recorded; Gmail/ATS confirmation for the ElevenLabs clicks and same-day dedupe remain |
 | 7 | Prove the next wake skips the terminal Ashby row and processes another eligible row | `in_progress` | Consecutive deterministic wakes processed distinct ElevenLabs URLs without reopening terminal rows; one more readback/dedupe check remains |
-| 8 | Resume Workday only after Ashby items 3–7 close | `parked` | Grounded source/previous-employer answers or an explicit durable skip; then one confirmed Workday submission |
+| 8 | Run Workday every wake without reapplying user-confirmed URLs | `in_progress` | `workday-manual-completed.json` skips Salesforce FDE JR355047; next proof is one distinct Workday completion UI plus receipt email |
 | 9 | Continue inbox replies, interview scheduling, preparation and outcome tracking | `pending_after_8` | Real Gmail thread, Calendar readback, interview/offer state, and Telegram receipts |
 | 10 | Finish guardian/self-healing, Career surface, and OSS/cloud distribution | `pending_after_9` | Health repair evidence, `summary.v2` parity, tenant isolation, export/revocation, and clean install E2E |
 
@@ -135,6 +137,8 @@ launchd (30 min)
   → existing Ashby queue
   → live official Ashby board refresh plus discovery of one Tokyo/Japan or Remote row
   → fenced Ashby form/submit action
+  → existing Workday queue excluding user-confirmed URLs
+  → fenced Workday form/submit action
   → durable Ledger + Telegram checkpoint + summary
 ```
 

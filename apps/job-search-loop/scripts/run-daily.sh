@@ -150,7 +150,7 @@ PY
 export JOB_SEARCH_ASHBY_FAST_PATH_RESULT="$ASHBY_COMBINED_RESULT"
 export JOB_SEARCH_ASHBY_DISCOVERY_RESULT="$ASHBY_DISCOVERY_RESULT"
 WORKDAY_FAST_PATH_RESULT="$EVIDENCE/workday-fast-path.json"
-if [[ "${JOB_SEARCH_ENABLE_WORKDAY:-0}" == "1" ]]; then
+if [[ "${JOB_SEARCH_ENABLE_WORKDAY:-1}" == "1" ]]; then
   set +e
   "$JOB_SEARCH_PYTHON" -m job_search_loop.workday_fast_path \
     --endpoint "http://127.0.0.1:9222" \
@@ -159,6 +159,7 @@ if [[ "${JOB_SEARCH_ENABLE_WORKDAY:-0}" == "1" ]]; then
     --materials-root "${XDG_DATA_HOME:-$HOME/.local/share}/anicca/job-search/materials" \
     --evidence-dir "$EVIDENCE/workday-fast-path" \
     --store-path "${XDG_CONFIG_HOME:-$HOME/.config}/anicca/job-search/workday-accounts.json" \
+    --manual-completed-state "$JOB_SEARCH_STATE_ROOT/workday-manual-completed.json" \
     --output "$WORKDAY_FAST_PATH_RESULT" \
     --japan-day "$JAPAN_DAY"
   WORKDAY_FAST_PATH_RC=$?

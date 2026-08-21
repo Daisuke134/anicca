@@ -54,6 +54,15 @@ ACTION_LABELS = {
 }
 
 
+def _manual_completed_urls(path: Path) -> set[str]:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return set()
+    rows = value.get("urls") if isinstance(value, dict) else []
+    return {canonical_url(str(row)) for row in rows if isinstance(row, str)}
+
+
 async def _snapshot(page: Any) -> dict[str, Any]:
     frames: list[dict[str, Any]] = []
     script = """
@@ -492,7 +501,13 @@ async def _run(args: argparse.Namespace) -> dict[str, Any]:
     excluded = ledger.reject_excluded_employers(frozenset(str(value) for value in exclusions) if isinstance(exclusions, list) else None)
     pending = ledger.pending_materials_ready_applications()
     retryable = ledger.retryable_applications()
-    rows_by_id = {str(row["application_id"]): row for row in [*pending, *retryable] if "myworkdayjobs.com" in str(row["canonical_url"])}
+    manual_completed = _manual_completed_urls(args.manual_completed_state)
+    rows_by_id = {
+        str(row["application_id"]): row
+        for row in [*pending, *retryable]
+        if "myworkdayjobs.com" in str(row["canonical_url"])
+        and canonical_url(str(row["canonical_url"])) not in manual_completed
+    }
     rows = list(rows_by_id.values())[: max(1, args.max_jobs)]
     result: dict[str, Any] = {"status": "no_work" if not rows else "completed", "processed": [], "excluded": excluded, "owner": "ai.anicca.job-search-daily"}
     if not rows:
@@ -531,6 +546,11 @@ def main() -> int:
     parser.add_argument("--store-path", type=Path, required=True)
     parser.add_argument("--japan-day", required=True)
     parser.add_argument("--max-jobs", type=int, default=1)
+    parser.add_argument(
+        "--manual-completed-state",
+        type=Path,
+        default=Path.home() / ".local/state/anicca/job-search/workday-manual-completed.json",
+    )
     args = parser.parse_args()
     args.evidence_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
     print(json.dumps(asyncio.run(_run(args)), ensure_ascii=False))
