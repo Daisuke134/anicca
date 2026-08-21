@@ -2430,8 +2430,19 @@ receipt readback, SSOT state update, commit, and push to both canonical remotes.
   readback has 20 exact public English placements with 20 dedicated provider-link
   keys and 20 matching X/public URLs. This is placement/exposure readiness only;
   clicks and transactions remain economic gates.
-- [ ] **D04** Persist one falsifiable Experiment receipt and one changed variable
-  for every new placement.
+- [x] **D04** Persist one falsifiable Experiment receipt and one changed variable
+  for every new placement. Read-only runtime proof is the live English
+  `elevenlabs-discovered-voice-changer-en-experiment-99721872815b` lineage:
+  decision `99721872815bd3081d2409ae84abf6c9ab6c0da43189ac7a7124b19a588639ad`,
+  baseline SHA `c40127662556cf4f25bdd65d825b9c421d33a530c15cec402b6c7d5c26b20072`,
+  selected variable `title`, one falsifiable hypothesis, one exact Dev.to
+  success metric, and the instruction to leave hook, structure, CTA, provider
+  link, and distribution unchanged. The same experiment fields are preserved
+  in the source plan, campaign handoff, policy `PASS`, X-live publication, and
+  placement ledger. This closes receipt persistence only; the placement has
+  `provider_clicks=0`, `transaction_count=0`, and
+  `exposure_denominator_state=INSUFFICIENT_DENOMINATOR`, so no winner, profit,
+  or allocation is inferred.
 - [ ] **D05** Record exact X exposure, owned-page visit, provider click, transaction,
   commission state, reversal, and cost denominators without substituting one for another.
 - [ ] **D06** Put Affiliate and Repost proposals behind one `@selawmqt` English
@@ -2708,15 +2719,17 @@ English rows, 20 dedicated provider-link keys, 20 owned public URLs, and 34
 provider-link clicks; the aggregate PartnerStack overview has 43 clicks (42
 post-baseline) and zero commission/payout money. Three Dev.to exposure
 denominators are observed and the remaining 17 are
-`INSUFFICIENT_DENOMINATOR`. Repost observed 52 valid actions at the 09:10
-capture and 53 at the 09:20 replay, with 0 exact Affiliate campaign joins and
-no revenue credit. The installed `297c713844064418260055860ccf324e6db9122f`
-release is byte-equal to source; its existing owner replayed at 09:30 with the
-same 53/0 state and deduplicated Telegram receipt, while the kick command
-returned `141: Reentrancy avoided`. The owner completed the 09:10 capture with
-`revenue_state=NO_TRANSACTIONS`, `source_rows=0`, and `appended_transitions=0`;
-official artifact `0c0b1af1…5aa5d3f3` has zero commission/payout rows and
-rolling net remains `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`.
+`INSUFFICIENT_DENOMINATOR`. Repost observed 54 valid actions at the latest
+capture, with 0 exact Affiliate campaign joins and no revenue credit. The
+installed `2d51ca39af8d429a6dac63c7c6eb1b71a0a822a8` release is byte-equal to
+source; its existing owner replayed at `11:29:55+0900` with the same 54/0
+state, `+42` aggregate clicks, `0` signups, `0` paid signups, `0%` conversion,
+and Telegram `26992`, while the explicit kick command returned
+`141: Reentrancy avoided`. The owner completed the latest official capture
+with `revenue_state=NO_TRANSACTIONS`, `source_rows=0`, and
+`appended_transitions=0`; artifact `c179a393…e3b5792c` has zero
+commission/payout rows and rolling net remains
+`NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`.
 B01 is waiting for the first non-empty official provider transaction artifact.**
 
 Current atomic remaining queue (the checkboxes in this section are the detailed
@@ -2730,9 +2743,11 @@ acceptance contract; this summary does not reorder them):
 2. **C01–C06:** make actual billed costs, complete coverage, FX, reversals, and
    the rolling-30-day net receipt canonical; unknown material cost keeps net
    unknown.
-3. **D02, D04–D08:** finish fresh opportunity selection, one-variable experiment
-   lineage, exact exposure/click/transaction denominators, shared X/Repost effect
-   arbitration, and money-evidence promote/revert learning.
+3. **D02, D05–D08:** finish fresh opportunity selection, exact
+   exposure/click/transaction denominators, shared X/Repost effect arbitration,
+   and money-evidence promote/revert learning. D04 experiment-receipt
+   persistence is closed by the live title experiment lineage above; its
+   outcome remains unproven until exposure and money denominators mature.
 4. **E02–E10 / M2.2–M2.3-D:** admit Semrush, Amazon Japan, and Rakuten only
    through official terms/auth/link/report gates; reach three executable,
    independently receipted providers and enforce the 40% concentration cap.
