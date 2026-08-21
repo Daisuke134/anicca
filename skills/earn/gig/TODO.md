@@ -328,6 +328,8 @@ evidence. Independent production lanes continue running while development follow
      `remote_resume`, `file_validation` or missing project state remains.
    - [ ] Prove one natural multi-project pass with all actionable projects running independently,
      every effect officially read back, formal delivery OFF before buyer approval, and replay-zero.
+   - [ ] Verify progress-file upload survives Coconala form re-render: on CDP stale-node error,
+     reacquire document and file-input node before retrying; persist non-retryable browser errors.
 
 2. **Negotiate — coverage before latency.**
    - [ ] Account for every buyer-authored message with exactly one durable disposition: replied,
