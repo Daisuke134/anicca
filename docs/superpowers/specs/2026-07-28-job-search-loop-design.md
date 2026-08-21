@@ -1255,6 +1255,18 @@ is `status=sent` in the canonical `telegram-outbox.sqlite3`. This closes the
 previous assignment-conflict blocker without weakening the no-fabrication gate;
 real Ashby and Workday confirmed-submission coverage remains unproven.
 
+Commit `d175aa3e2` extends the same bounded empty-page recovery to Workday while
+leaving its evaluated progression (`workday_job` → Apply choice → account → final
+application) unchanged. Focused canonical/ATS/resume tests passed (26 tests in the
+slice). The canonical pass `daily-20260821-100152` probed seven official ATS URLs;
+the Rakuten Workday job rendered a real `workday_job` surface with a visible Apply
+control, then was truthfully stopped before claim because its explicit 3–6 year
+professional-software/LLM requirement has no verified years fact. The other six
+candidates were likewise blocked on exact missing facts or explicit minimums. No
+submit click and no `submit_unknown` occurred; Telegram ACK `26901` is
+`status=sent` in the canonical outbox. This proves Workday surface detection and
+fact-gated continuation but does not yet prove a confirmed Workday submission.
+
 ### 8.2 Outcome and attribution model
 
 Every application receives one immutable `strategy_generation_id` and the exact
