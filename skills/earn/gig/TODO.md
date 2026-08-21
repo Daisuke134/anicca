@@ -943,6 +943,8 @@ revision cycle from the existing artifact, with formal delivery still off. Paid 
 owner and blind-audit workspaces live under `~/gig/runtime/<talkroom>/`, outside both the
 machine-wide temp tree and the sandbox-denied durable project: unrelated cleanup may never delete
 an active job's workspace, while the isolated owner can still access its own staging tree.
+The read-only targeted refresh is also project-scoped: up to four fresh hidden CDP targets run in
+parallel before the existing project workers, and one refresh failure degrades only that talkroom.
 The authenticated offer page is the exact bridge from a purchased order to its pre-purchase DM:
 persist its `/mypage/direct_message/<id>` reference in the project proposal, then have Paid refresh
 that one thread directly. A buyer-name scan incorrectly reported Haru's real DM `10102712` absent

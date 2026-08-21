@@ -3466,14 +3466,24 @@ def run_once(args, output: Path) -> int:
         rows: dict[str, dict[str, Any]] = {}
         actionable = 0
         failed = effect = readback = 0; failed_step = ""
+        targeted_items = []
+        with ThreadPoolExecutor(max_workers=4, thread_name_prefix="paid-refresh") as refresh_executor:
+            refresh_jobs = [
+                (item, refresh_executor.submit(_targeted, args, item, index))
+                for index, item in enumerate(items)
+            ]
+            for original, job in refresh_jobs:
+                room = _text(original.get("talkroom_id"))
+                try:
+                    targeted_items.append(job.result())
+                except (Failure, OSError, ValueError, TypeError, json.JSONDecodeError) as error:
+                    step = error.step if isinstance(error, Failure) else "targeted_readback"
+                    failed, failed_step = failed + 1, step
+                    rows[room] = {"talkroom_id": room, "status": "failed", "failed_step": step}
         executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="paid-project")
         jobs = []
-        for item in items:
+        for item in targeted_items:
             room = _text(item.get("talkroom_id"))
-            try: item = _targeted(args, item, room)
-            except (Failure, OSError, ValueError, TypeError, json.JSONDecodeError) as error:
-                step = error.step if isinstance(error, Failure) else "targeted_readback"
-                failed, failed_step = failed + 1, step; rows[room] = {"talkroom_id": room, "status": "failed", "failed_step": step}; continue
             # Reserved rooms are refreshed, then dropped. Placing this guard before the read-back
             # above stopped the lane from ever looking at those three talkrooms again — measured:
             # their snapshots froze at the hour the guard shipped while every other room kept
