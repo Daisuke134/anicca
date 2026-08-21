@@ -340,7 +340,7 @@ async def _fill_step(
                             timeout=15_000,
                         )
                     custom_radio = radio_label.first.locator(
-                        "[data-automation-id='radioBtn']"
+                        "xpath=preceding-sibling::div[1]"
                     )
                     if await custom_radio.count() and await custom_radio.first.is_visible():
                         await custom_radio.first.click(timeout=10_000)
