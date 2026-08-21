@@ -813,7 +813,6 @@ a later successful example.
   request must remain `mode=file`. The owner explicitly rejects plans, status reports, transaction
   summaries and promises as deliverables; the fresh reviewer rejects the same class, and write
   phase reports success only after the exact attachment is visible in the official talkroom.
-  cycle succeeds only after an artifact attachment is officially read back.
 - [x] P14 — Build the artifact with the configured `gpt-5.6-sol` executor. Haru's live
   `agent-PAID_FILE_OWNER/summary.json` proves the selected model and a produced v18 package.
 - [x] P15 — Review it in a fresh isolated `gpt-5.6-sol` context. Haru's live
@@ -821,11 +820,15 @@ a later successful example.
   false PASS after finding four source-copy substitutions.
 - [x] P16 — Keep the reviewer read-only and unable to submit. The production verifier command uses
   `--read-only`; only the fenced delivery owner owns marketplace mutation.
-- [ ] P17 — Persist every reviewer finding and return it to the executor as the next bounded
-  revision, including all analogous defects in the same failure class.
-- [ ] P18 — Treat an in-pass review-round limit as durable `REPAIR_PENDING`, never terminal
-  `file_verifier` failure; the next wake must prioritize and resume the same context/finding until
-  the quality gate passes or a truthful external blocker is durable.
+- [x] P17 — Persist every reviewer finding and return it to the executor as the next bounded
+  revision, including all analogous defects in the same failure class. Haru exposed the exact
+  defect: its durable v19 finding was ignored after the owner promoted v20 because resume required
+  the rejected artifact SHA to remain current. Resume now binds the finding to the unchanged buyer
+  event, requirements and policy, so every unapproved successor receives it until review clears it.
+- [x] P18 — Treat an in-pass review-round limit as durable `REPAIR_PENDING`, never terminal
+  `file_verifier` failure. `_prepare_one` now returns a pending transition when that durable state
+  exists; the parent records `pending` and performs no write effect instead of converting the
+  bounded round limit into a failed pass.
 - [ ] P19 — Attach useful progress with formal delivery off while accepted scope remains.
 - [ ] P20 — Enable formal delivery only after the complete accepted scope passes.
 - [ ] P21 — Give reply, attachment and formal delivery independent durable effect keys.

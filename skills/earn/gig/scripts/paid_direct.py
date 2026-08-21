@@ -2050,8 +2050,7 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
             and review_state.get("review_policy_version") == PAID_FILE_POLICY_VERSION
             and review_state.get("operator_policy_sha256") == operator_policy_sha256
             and review_state.get("buyer_feedback_sha256") == feedback
-            and review_state.get("requirements_sha256") == requirements_sha256
-            and review_state.get("artifact_sha256") == resumed[1]["artifact"][1]):
+            and review_state.get("requirements_sha256") == requirements_sha256):
         finding = (_text(review_state.get("finding"))
                    or "The prior reviewer withheld deliverable authorization; rebuild and prove the corrected artifact.")
     if (resumed is not None and isinstance(review_state, dict)
@@ -2914,7 +2913,7 @@ def _run_remote_repair(args, item_path: Path, root: Path, feedback: str, base: P
         raise Failure("remote_resume") from error
 
 def _prepare_one(args, item_path: Path, output: Path) -> int:
-    room = ""
+    room = ""; root = None
     try:
         item = _load(item_path); room, feedback = _text(item.get("talkroom_id")), _text(item.get("buyer_feedback_sha256"))
         # Also refuse here, not only in the parent loop. A guard that sits on one call path while
@@ -2973,6 +2972,16 @@ def _prepare_one(args, item_path: Path, output: Path) -> int:
         _write(output, {**prepared, "_paid_prepare_status": "prepared"})
         return 0
     except (AttributeError, Failure, OSError, ValueError, TypeError, json.JSONDecodeError) as error:
+        if isinstance(error, Failure) and error.step == "file_verifier" and isinstance(root, Path):
+            try:
+                review_state = _load(root / "context" / "paid-review-state.json")
+            except (OSError, ValueError, TypeError, json.JSONDecodeError):
+                review_state = {}
+            if review_state.get("state") == "REPAIR_PENDING":
+                _write(output, {"status": "pending", "talkroom_id": room, "failed": 0,
+                                "failed_step": None, "effect": 0, "readback": 0,
+                                "_paid_prepare_status": "pending"})
+                return 0
         _write(output, {"status": "failed", "talkroom_id": room, "failed": 1, "failed_step": error.step if isinstance(error, Failure) else "remote_resume", "effect": 0, "readback": 0}); return 1
 
 
@@ -3407,6 +3416,9 @@ def run_once(args, output: Path) -> int:
             )
             try: prepared = _load(prepared_file)
             except (OSError, json.JSONDecodeError): prepared = {"status": "failed", "failed_step": "remote_resume", "effect": 0, "readback": 0}
+            if prepare.returncode == 0 and prepared.get("_paid_prepare_status") == "pending":
+                rows[room] = {"talkroom_id": room, "status": "pending"}
+                continue
             if prepare.returncode or prepared.get("_paid_prepare_status") != "prepared":
                 failed, failed_step = failed + 1, _text(prepared.get("failed_step")) or "remote_resume"; rows[room] = {"talkroom_id": room, "status": "failed", "failed_step": failed_step}; continue
             process = _run_bounded(_effect_command(args, prepared_file, effect_file), env=_fresh_child_env(args))
