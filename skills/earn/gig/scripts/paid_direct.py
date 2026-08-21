@@ -3604,11 +3604,10 @@ def run_once(args, output: Path) -> int:
                         root.resolve().relative_to(args.projects_root.resolve())
                         if not (root / "state.json").is_file():
                             delivery_project.record_queue_selection(args.projects_root, item, adapter="coconala")
-                        bootstrap_item = args.evidence_dir / "paid-direct" / "bootstrap" / f"item-{room}.json"
-                        _write(bootstrap_item, item)
-                        _paid_decision(args, bootstrap_item, root.resolve(),
-                                       args.evidence_dir / "paid-direct" / room)
-                        resolved = _recoverable(args, item)
+                        # Decision generation belongs to the project worker. It revalidates after
+                        # DM collection, so doing it here only serializes independent projects and
+                        # can become stale before the worker starts.
+                        resolved = (root.resolve(), None)
                 except (Failure, OSError, ValueError, TypeError, json.JSONDecodeError) as error:
                     step = error.step if isinstance(error, Failure) else "context_compile"
                     failed, failed_step = failed + 1, step

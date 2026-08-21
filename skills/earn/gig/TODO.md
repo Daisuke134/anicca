@@ -970,6 +970,9 @@ decision, and an old `unresolved` claim may never survive after the missing sour
 The project worker revalidates that decision after DM collection. If DM discovery adds or changes
 an input, it runs the Sol decision again in the same worker before choosing file/answer/remote mode;
 it may not fall through to `remote_resume` merely because the required context became more complete.
+The parent initializes any missing durable state and submits the project immediately; it never runs
+a bootstrap Sol decision inline. Decision, DM refresh, build and review therefore remain inside each
+of the maximum four independent project workers rather than serializing queue construction.
 The authenticated offer page is the exact bridge from a purchased order to its pre-purchase DM:
 persist its `/mypage/direct_message/<id>` reference in the project proposal, then have Paid refresh
 that one thread directly. A buyer-name scan incorrectly reported Haru's real DM `10102712` absent
