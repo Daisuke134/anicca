@@ -614,6 +614,8 @@ def repost_consumption_state(repost_root, proposal_id, placement_id):
             if len(placements) > 1:
                 return "CONSUMPTION_LEDGER_INVALID"
             prior_states = states_by_proposal.setdefault(row["proposal_id"], [])
+            if not prior_states and row["state"] != "EFFECT_STARTED":
+                return "CONSUMPTION_LEDGER_INVALID"
             if prior_states:
                 prior = prior_states[-1]
                 if prior != "EFFECT_STARTED" or row["state"] not in REPOST_CONSUMPTION_STATES - {"EFFECT_STARTED"}:
