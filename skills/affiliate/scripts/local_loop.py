@@ -576,6 +576,8 @@ def repost_consumption_state(repost_root, proposal_id, placement_id):
             if row.get("revenue_credit_state") != "NO_REVENUE_CREDIT_UNTIL_EXACT_AFFILIATE_JOIN":
                 return "CONSUMPTION_LEDGER_INVALID"
             if row["state"] == "EFFECT_STARTED":
+                if row.get("post_url") is not None:
+                    return "CONSUMPTION_LEDGER_INVALID"
                 snapshot = row.get("proposal")
                 if not isinstance(snapshot, dict) or (
                     snapshot.get("receipt_type") != "AFFILIATE_REPOST_PROPOSAL"
@@ -607,7 +609,7 @@ def repost_consumption_state(repost_root, proposal_id, placement_id):
                     and re.fullmatch(r"/[A-Za-z0-9_]+/status/[0-9]+", parsed.path)
                 ):
                     return "CONSUMPTION_LEDGER_INVALID"
-            elif row.get("post_url") not in (None, ""):
+            elif row.get("post_url") is not None:
                 return "CONSUMPTION_LEDGER_INVALID"
             placements = placements_by_proposal.setdefault(row["proposal_id"], set())
             placements.add(row["placement_id"])
