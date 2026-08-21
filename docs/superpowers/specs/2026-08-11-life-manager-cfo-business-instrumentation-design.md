@@ -477,3 +477,11 @@ Rules:
   `Operation not permitted`); no account mutation, logout, reboot, or OS-service restart occurred. Parent
   `CFO-OPS3b` and recent-transaction `CFO-1j` are first; once their real loop/receipt gates pass,
   `CFO-2b.2b2` is the first business implementation slice.
+- Host-parity decision (2026-08-21): the official Codex MCP/skills/plugins/App Server/SDK surfaces support sharing
+  user config, skill roots, and installed Apps across local Codex clients, but a fresh `codex exec` is not the main
+  ChatGPT conversation. The Moneytree bundle is present in local plugin cache and `codex app-server` reports it
+  `enabled=true, callable=true` through `app/installed`; actual `app/list`/tool probes still fail at the
+  `chatgpt.com` backend transport. Therefore `CFO-OPS3b` must prove one real Moneytree `mcp_tool_call` through the
+  same local host/app-server or SDK before launchd is considered repaired. If that bridge remains unstable, the
+  canonical portable fallback is the official Moneytree LINK/API integration; no bespoke adapter or guessed finance
+  number is accepted.
