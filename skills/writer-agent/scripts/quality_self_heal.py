@@ -296,56 +296,75 @@ def _history(run_dir: Path) -> list[dict[str, Any]]:
         ):
             raise QualitySelfHealError("quality attempt draft hash is invalid")
         snapshots = value.get("receipt_snapshots")
-        if not isinstance(snapshots, dict) or set(snapshots) != {"ja", "en"}:
-            raise QualitySelfHealError("quality receipt snapshots are missing")
-        for lang in ("ja", "en"):
-            record = languages[lang]
-            snapshot = snapshots.get(lang)
-            if not isinstance(snapshot, dict) or set(snapshot) != {
-                "editorial", "reader", "identity"
-            }:
-                raise QualitySelfHealError("quality receipt snapshot set is invalid")
-            directory = run_dir / "gates" / f"quality-attempt-{index}"
-            if directory.is_symlink() or not directory.is_dir():
-                raise QualitySelfHealError("quality receipt snapshot directory is invalid")
-            filenames = {
-                "editorial": f"editorial-{lang}.json",
-                "reader": f"reader-testing-gate-{lang}.terminal.json",
-                "identity": f"identity-{lang}.json",
-            }
-            for kind, filename in filenames.items():
-                path = directory / filename
-                if (
-                    path.is_symlink()
-                    or not path.is_file()
-                    or not re.fullmatch(r"[0-9a-f]{64}", str(snapshot[kind]))
-                    or _sha256(path) != snapshot[kind]
-                ):
-                    raise QualitySelfHealError("quality receipt snapshot is tampered")
-                observed = _read_json(path)
-                if observed is None or observed.get("article_sha256") != record.get("article_sha256"):
-                    raise QualitySelfHealError("quality receipt snapshot article hash mismatch")
-                expected = {
-                    "editorial": record.get("editorial") == "PASS",
-                    "reader": record.get("reader") == "PASS",
-                    "identity": record.get("identity") == "PASS",
-                }[kind]
-                observed_pass = {
-                    "editorial": observed.get("verdict") == "PASS",
-                    "reader": (
-                        observed.get("status") == "pass"
-                        and (
-                            observed.get("exit_code") == 0
-                            or (
-                                isinstance(observed.get("payload"), dict)
-                                and observed["payload"].get("verdict") == "PASS"
+        legacy_initial = index == 1 and isinstance(value.get("legacy_initial"), dict)
+        if legacy_initial:
+            if snapshots != {}:
+                raise QualitySelfHealError("legacy quality attempt has unexpected snapshots")
+            legacy = value["legacy_initial"]
+            source = run_dir / "gates" / "quality-legacy" / "quality-self-heal-attempt-1.json"
+            source_value = _read_json(source)
+            if (
+                source.is_symlink()
+                or not source.is_file()
+                or not isinstance(source_value, dict)
+                or source_value.get("version") != CURRENT_VERSION
+                or source_value.get("attempt") != 1
+                or not isinstance(source_value.get("quality"), dict)
+                or legacy.get("source_path") != "gates/quality-legacy/quality-self-heal-attempt-1.json"
+                or legacy.get("source_sha256") != _sha256(source)
+            ):
+                raise QualitySelfHealError("legacy quality source is not bound")
+        else:
+            if not isinstance(snapshots, dict) or set(snapshots) != {"ja", "en"}:
+                raise QualitySelfHealError("quality receipt snapshots are missing")
+            for lang in ("ja", "en"):
+                record = languages[lang]
+                snapshot = snapshots.get(lang)
+                if not isinstance(snapshot, dict) or set(snapshot) != {
+                    "editorial", "reader", "identity"
+                }:
+                    raise QualitySelfHealError("quality receipt snapshot set is invalid")
+                directory = run_dir / "gates" / f"quality-attempt-{index}"
+                if directory.is_symlink() or not directory.is_dir():
+                    raise QualitySelfHealError("quality receipt snapshot directory is invalid")
+                filenames = {
+                    "editorial": f"editorial-{lang}.json",
+                    "reader": f"reader-testing-gate-{lang}.terminal.json",
+                    "identity": f"identity-{lang}.json",
+                }
+                for kind, filename in filenames.items():
+                    path = directory / filename
+                    if (
+                        path.is_symlink()
+                        or not path.is_file()
+                        or not re.fullmatch(r"[0-9a-f]{64}", str(snapshot[kind]))
+                        or _sha256(path) != snapshot[kind]
+                    ):
+                        raise QualitySelfHealError("quality receipt snapshot is tampered")
+                    observed = _read_json(path)
+                    if observed is None or observed.get("article_sha256") != record.get("article_sha256"):
+                        raise QualitySelfHealError("quality receipt snapshot article hash mismatch")
+                    expected = {
+                        "editorial": record.get("editorial") == "PASS",
+                        "reader": record.get("reader") == "PASS",
+                        "identity": record.get("identity") == "PASS",
+                    }[kind]
+                    observed_pass = {
+                        "editorial": observed.get("verdict") == "PASS",
+                        "reader": (
+                            observed.get("status") == "pass"
+                            and (
+                                observed.get("exit_code") == 0
+                                or (
+                                    isinstance(observed.get("payload"), dict)
+                                    and observed["payload"].get("verdict") == "PASS"
+                                )
                             )
-                        )
-                    ),
-                    "identity": observed.get("verdict") == "PASS",
-                }[kind]
-                if observed_pass != expected:
-                    raise QualitySelfHealError("quality receipt verdict binding failed")
+                        ),
+                        "identity": observed.get("verdict") == "PASS",
+                    }[kind]
+                    if observed_pass != expected:
+                        raise QualitySelfHealError("quality receipt verdict binding failed")
         drafts = tuple(languages[lang]["article_sha256"] for lang in ("ja", "en"))
         if index > 1:
             if drafts == previous_drafts or value.get("fingerprint") == rows[-1].get("fingerprint"):
