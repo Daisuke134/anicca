@@ -382,6 +382,22 @@ and a new deduplicated delivery event; no duplicate send, public effect, click
 credit, commission, payout, or money was created. B01 remains
 `WAITING_FOR_PROVIDER_TRANSACTION`.
 
+### 1.1.11 Repost shared-effect boundary
+
+Read-only inspection of the existing `ai.anicca.x-repost-pass` owner shows it
+executes the separate `/Users/anicca/loops/current/skills/x-repost/x-repost-cli.sh`
+and its `x_collect.py` candidate harvester. The existing CLI consumes harvested
+external X candidates and passes their `source_url` to its own publisher; it has
+no input reader for Affiliate `campaign-publications`, Life Manager campaign
+proposals, or the Affiliate placement ledger. Its real state has 53 entries,
+all with an external X `source_url`, while the Affiliate observer has 0 exact
+campaign joins. This is an upstream shared-effect-owner boundary, not a parser
+or metric defect. D06 remains open as `BLOCKED_EXTERNAL_SHARED_EFFECT_OWNER`:
+the allowed Affiliate worktree cannot edit the separate Repost loop, and no
+manual or parallel X publisher is a truthful substitute. Existing Affiliate
+placements and official measurement remain intact; no post, click, transaction,
+or money was created by this inspection.
+
 ### 1.2.0 Audited executable boundary
 
 The installed ownership graph has six launchd labels: three persistent browser
@@ -2316,7 +2332,11 @@ receipt readback, SSOT state update, commit, and push to both canonical remotes.
 - [ ] **D05** Record exact X exposure, owned-page visit, provider click, transaction,
   commission state, reversal, and cost denominators without substituting one for another.
 - [ ] **D06** Put Affiliate and Repost proposals behind one `@selawmqt` English
-  effect arbiter with a bounded cadence and disclosure/policy gate.
+  effect arbiter with a bounded cadence and disclosure/policy gate. The current
+  installed Repost owner has no Affiliate-proposal input and only consumes its
+  external candidate harvester, so this remains
+  `BLOCKED_EXTERNAL_SHARED_EFFECT_OWNER`; do not edit the separate loop or post
+  manually from Affiliate.
 - [x] **D06.1** Let the existing Affiliate owner read the Repost `posted.jsonl`
   ledger through an explicit `AFFILIATE_REPOST_STATE_DIR` boundary, persist one
   replay-safe observation receipt, and report exact campaign-URL joins without
