@@ -179,9 +179,9 @@ includes exact Repost campaign matching through either `post_url` or
 `source_url`, the policy-budget queue starvation repair, per-item policy-failure
 isolation, provider unique-click retention, and versioned daily-summary Telegram
 receipts described above.
-The official empty artifact `b65723e65e3fe309dda373b1cd7edda0b6cfb8ae754c208f7da827154b9fecce`,
-unique-click readback, and Telegram delivery in section 1.1.23 are the latest
-money truth. The installed owner completed the due wake at 12:22 JST with
+The official empty artifact `b65723e65e3fe309dda373b1cd7edda0b6cfb8ae754c208f7da827154b9fecce`
+and unique-click readback in section 1.1.23 are the latest money truth; section
+1.1.24 is the latest Telegram transport truth. The installed owner completed the due wake at 12:22 JST with
 34/32 placement clicks/unique clicks, 0 commission rows, and a deduplicated
 Telegram delivery; no official transaction or money exists. The installed
 daily-summary schema is version `2`, so a same-day schema change may produce one
