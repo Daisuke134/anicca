@@ -17,6 +17,7 @@ import os
 import re
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 from playwright.async_api import async_playwright
@@ -42,8 +43,13 @@ FIELD_SELECTOR = (
 EMAIL_RE = re.compile(r"\b[^\s@]+@[^\s@]+\.[^\s@]+\b")
 LONG_DIGIT_RE = re.compile(r"\d{7,}")
 CONFIRMATION_RE = re.compile(
-    r"thank you|thanks for applying|application received|successfully submitted|"
+    r"thank you|thanks for applying|application received|application(?: has been)? submitted|"
+    r"successfully submitted|we(?:'|’)ll be in touch|"
     r"応募情報が送信|応募を受け付け",
+    re.IGNORECASE,
+)
+APPLICATION_SUBMIT_ENDPOINT_RE = re.compile(
+    r"application[-_./]?form[-_./]?submit",
     re.IGNORECASE,
 )
 PROVIDER_LIMIT_RE = re.compile(
@@ -419,18 +425,43 @@ async def _has_visible_captcha(page: Any) -> bool:
     return bool(CAPTCHA_RE.search(text))
 
 
-async def _submitted_confirmation(page: Any) -> bool:
-    for _ in range(20):
-        try:
-            body = await page.locator("body").inner_text(timeout=1_000)
-        except Exception:
-            body = ""
-        if CONFIRMATION_RE.search(body):
-            return True
-        if "/application" not in page.url.casefold() and "ashbyhq.com" in page.url.casefold():
-            return True
-        await page.wait_for_timeout(250)
-    return False
+def _is_application_submit_request(url: str) -> bool:
+    parsed = urlsplit(url)
+    return (
+        parsed.hostname is not None
+        and parsed.hostname.casefold().endswith("ashbyhq.com")
+        and bool(APPLICATION_SUBMIT_ENDPOINT_RE.search(parsed.path))
+    )
+
+
+async def _submitted_confirmation(page: Any) -> tuple[bool, str]:
+    """Return only a user-visible Ashby success result, never HTTP inference."""
+
+    try:
+        await page.wait_for_function(
+            "() => /thank you|thanks for applying|application received|"
+            "application(?: has been)? submitted|successfully submitted|"
+            "we(?:'|’)ll be in touch|応募情報が送信|応募を受け付け/i"
+            ".test(document.body?.innerText || '')",
+            timeout=10_000,
+        )
+    except PlaywrightTimeoutError:
+        pass
+    body = await _body_text(page)
+    match = CONFIRMATION_RE.search(body)
+    return bool(match), _safe_text(match.group(0) if match else "")
+
+
+async def _save_post_submit_screenshot(
+    page: Any, evidence_dir: Path, application_id: str
+) -> str | None:
+    path = evidence_dir / f"post-submit-{application_id[:16]}.png"
+    try:
+        await page.screenshot(path=str(path), full_page=True)
+        os.chmod(path, 0o600)
+    except Exception:
+        return None
+    return str(path)
 
 
 async def _visible_validation_error(page: Any) -> bool:
@@ -648,22 +679,30 @@ async def _process_one(
         def observe_request(request: Any) -> None:
             if request.method not in {"POST", "PUT"}:
                 return
-            if "ashbyhq.com" in request.url.casefold():
-                submit_requests.append(request.url)
+            if _is_application_submit_request(request.url):
+                submit_requests.append(urlsplit(request.url).path)
 
         def observe_response(response: Any) -> None:
             request = response.request
-            if request.method in {"POST", "PUT"} and "ashbyhq.com" in request.url.casefold():
+            if (
+                request.method in {"POST", "PUT"}
+                and _is_application_submit_request(request.url)
+            ):
                 submit_response_statuses.append(response.status)
 
         page.on("request", observe_request)
         page.on("response", observe_response)
         await submit.first.click()
         clicked = True
-        confirmed = await _submitted_confirmation(page)
+        confirmed, confirmation_text = await _submitted_confirmation(page)
+        screenshot_path = await _save_post_submit_screenshot(
+            page, evidence_dir, application_id
+        )
         if confirmed:
             outcome = "submitted"
         elif await _visible_validation_error(page):
+            outcome = "not_submitted"
+        elif not submit_requests:
             outcome = "not_submitted"
         else:
             outcome = "submit_unknown"
@@ -677,7 +716,10 @@ async def _process_one(
             "status": outcome,
             "url": url,
             "submit_request_observed": bool(submit_requests),
+            "submit_request_paths": submit_requests,
             "submit_response_statuses": submit_response_statuses,
+            "confirmation_text": confirmation_text,
+            "post_submit_screenshot": screenshot_path,
             "answered_fields": [
                 _safe_text(
                     fields[index].get("labels")
