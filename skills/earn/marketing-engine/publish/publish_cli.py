@@ -62,7 +62,8 @@ def run_create_intent(*, engine: pathlib.Path, output_path: pathlib.Path,
             sys.path.insert(0, str(brain))
         from script_ledger import ScriptLedger
         script = ScriptLedger(script_db_path).get(script_id)
-        if (script["product_id"], script["account_id"], script["creative_id"], script["renderer_id"]) != (product_id, account_id, creative_id, renderer_id):
+        allowed_script_accounts = {account_id, f"product:{product_id}"}
+        if (script["product_id"], script["creative_id"], script["renderer_id"]) != (product_id, creative_id, renderer_id) or script["account_id"] not in allowed_script_accounts:
             raise ValueError("script receipt does not bind this publication")
 
     intent = build_intent(
