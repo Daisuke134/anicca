@@ -54,6 +54,21 @@
 - 次のatomic actionは、再起動後の十分な空き容量とpause下の無作用をfresh adversarial reviewerに再確認させること。
   GOが出た後だけpauseを解除し、既存`article-daily`の1回kickstartでclean canaryを所有させる。
 
+### clean canary の Codex 設定隔離実測（2026-08-21）
+
+- pause解除直前にpublisher process、owner fence、publication/recovery lockが0件、空き`17,583,856 KiB`を
+  readbackし、既存`ai.anicca.article-daily`を1回だけkickstartした。wrapperのdisk preflightは
+  `17,957,031,936 >= 536,870,912 bytes`でPASSした。
+- `20260821-072939`は同一runを再開し、topic route、日英本文、画像2点、editorial、identity、CTAまで生成した。
+  しかしCodex agentがユーザー設定由来のCodeGraph/CUA/Premiere MCPを起動してowner fenceを約13分占有し、
+  publication-state作成前に進行が止まった。既存launchdへTERMを送り、generation stateは
+  `interrupted-safe/return_code=143`、attempt-2 archive receiptへ保存された。
+- その時点でpublication-state、articles ledgerのrun行、native URL、payment/money eventは0件で、外部公開作用はない。
+  pause markerを再作成し、次のrelease切替中に誤って公開しない境界を戻した。
+- `d9494ae3d`でagent modeにも`--ignore-user-config --ignore-rules`を付け、Writer prompt以外のCodex
+  MCP/skill/rules graphを読み込まないようにした。model-runner contract 7件＋3 subtests、shell構文、diff checkはPASS。
+  次のatomic actionはこのreleaseをcurrentへ反映し、pause下のCodex-only canaryで無関係なMCP processが0件であることを確認する。
+
 ### launchd control-plane の外部照合と現在の原因判定（2026-08-21）
 
 - Appleの資料では、`~/Library/LaunchAgents`はログイン中ユーザー専用のLaunchAgent置き場であり、
@@ -1005,7 +1020,7 @@ loaded definitionと自然tickまで読み戻すことを意味する。A1のcon
 | A9c | WriterのCodex-only retryを実装する | `ARTICLE_PROVIDER=codex`固定。cooldown既定値を300秒へ変更し、同一immutable runを最大3回だけcheckpoint再開するfixture。Codex cooldown中にClaude/Hermesを起動しない、公開state/ledger後のreplay 0、3回 exhausted後に新runを増殖させない | 実装・契約検証完了（model-runner 7件、resume circuit 6件、start-control 6件、candidate wiring 19件、publication identity 15件、topic-card resume 9件、state routing、duplicate-media guard、構文/manifest/diff check、fresh v2 adversarial review PASS） |
 | A9d | Codex-only Writer公開canaryを行う | current releaseをlaunchdへ反映し、pause解除後の新runでCodex attempt receipt、Note JA、Substack JA/EN、X Article JAの4 native URL、本文・media hash、Telegram delivery receiptを取得。Codex timeout時は同じrunの次tickへ安全にhandoffする | 部分完了（既存`daily-2026-08-21`は4媒体native live＋`article-run-complete rc=0`。`20260821-054500`はduplicate-media quarantine完了。`20260821-072939`はdisk floor低下前にSIGTERMしpublication前で安全停止。clean canary・連続tick・Telegram deliveryは未実施） |
 | A9e | invalid duplicate-media runを安全に隔離する | 対象runの同一media SHA、全active pairが`unavailable`またはdormant `skipped`、no-effect ledgerを再計算し、proof-bound `run-quarantine.json`を作成。start-controlが同日`new`を返し、対象pair以外とledgerの不変をreadback | 完了（実装・fixture 13件、focused 43件、契約・構文・diff check PASS。実canaryのX intentを同じtargetの`unavailable`へ共有lock下で遷移、receipt作成、ledger不変、start-control=`new`、current release=`cdb611300`を実測） |
-| A9f | disk floor復帰後にclean canaryを再開する | `gig_disk_guard`とarticle wrapperが同じ512MiB floorをPASSし、pause解除→既存daily kickstart→新runの4 native receipt、Telegram message ID、2連続tickを取得。floor未達なら生成・公開を開始しない | pause維持中（再起動後current=`0069ba42a`、空き約17GiB、swap=0、`20260821-072939`はpublication前安全停止、`20260821-054500`の3修復項目は隔離済み。clean canary・連続tick・Telegram deliveryは未実施） |
+| A9f | disk floor復帰後にclean canaryを再開する | `gig_disk_guard`とarticle wrapperが同じ512MiB floorをPASSし、pause解除→既存daily kickstart→新runの4 native receipt、Telegram message ID、2連続tickを取得。floor未達なら生成・公開を開始しない | pause再設定中（`20260821-072939` attempt-2はCodex user-config MCP起動を検出してpublication前TERM、`interrupted-safe` archive。修正`d9494ae3d`はcontract PASSだがcurrent反映・Codex-only canary・4媒体公開は未実施） |
 | A9g | 旧backlogを外部作用なしで扱う | 旧runのlive pairを保持したまま、未解決pairだけを現行code/state identityのfailure circuitへopenし、plannerが`WAIT`かつ`recovery_pairs=[]`を返す。新規runの公開を旧targetが先取りしない | 完了（Note circuitを現行code/state SHAで再open、receipt-backed handoff 11件をWAIT化し、さらにduplicate-media runの3件をqueue quarantine付きWAITへ隔離。planner `WAIT/blocked_pairs=[note/ja]/recovery_pairs=[]`） |
 | A9h | receiptのない旧CLAIMEDを安全に扱う | receipt-backed owner proofがないclaimは自動で盗まず、状態・所有者・次の監査を自然文receiptへ記録。新しいreceiptまたは明示的なOrder 5 ownerが現れた場合だけqueue state machineで再開 | 未完（`32446a…` credential incident 1件をfail-closedでCLAIMED維持。clean canaryの公開対象ではないが、repair queueの完全な可観測性に必要） |
 | A9b | 1日複数回の正式scheduleを追加する | 06:00/14:00/22:00などのcalendar wake、各slotのunique run ID、同日異記事、連続2周期のnative receiptを実測 | 未着手。現在は06:00のまま |
