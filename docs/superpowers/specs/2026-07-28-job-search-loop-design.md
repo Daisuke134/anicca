@@ -103,6 +103,31 @@ evidence, a fenced intent and authoritative confirmation.
 | 9 | Continue inbox replies, interview scheduling, preparation and outcome tracking | `pending_after_8` | Real Gmail thread, Calendar readback, interview/offer state, and Telegram receipts |
 | 10 | Finish guardian/self-healing, Career surface, and OSS/cloud distribution | `pending_after_9` | Health repair evidence, `summary.v2` parity, tenant isolation, export/revocation, and clean install E2E |
 
+### 1.1 Repeatable-loop robustness contract
+
+The current production loop is intentionally deterministic before adaptive:
+
+```text
+launchd (30 min)
+  → CDP browser health evidence
+  → existing Ashby queue
+  → official-cache discovery of one new Tokyo/Japan Ashby row
+  → fenced Ashby form/submit action
+  → durable Ledger + Telegram checkpoint + summary
+```
+
+| Failure class | Required loop behavior |
+|---|---|
+| No candidate in current cache | Report `no_work`; do not invoke an unbounded model search or invent a job |
+| Browser/CDP unavailable | No Ledger claim and no form action; browser owner launchd keeps/restarts only its dedicated profile, then the next wake retries |
+| Provider policy visible | Record the exact policy and quarantine the row; never bypass application limits or repeat it on every wake |
+| Required form fact unknown | Stop before submit with a durable blocker; continue to another candidate rather than guessing a fact |
+| Submit click without authoritative confirmation | Record `submit_unknown`; never click it again; inbox/ATS reconciliation owns later confirmation |
+| Telegram transport outcome unknown | Keep the event `send_started`; never blindly resend; a later reconciliation may attach an authoritative ACK |
+| Model fallback | Disabled by default for Ashby. It can only be explicitly re-enabled after a bounded deterministic lane has no viable source |
+
+The remaining robustness work is ordered, not parallelized: cache freshness, provider-capacity detection, non-Ashby fallback, confirmation reconciliation, then full lifecycle/guardian/OSS.
+
 Build a local-first job application operating system around the useful parts of
 `MadsLorentzen/ai-job-search`, without treating job descriptions as instructions and
 without fabricating candidate claims.
