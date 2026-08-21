@@ -100,11 +100,13 @@ class LocalLoopTest(unittest.TestCase):
                 (state / "daily-summaries" / "2026-08-16.json").read_text()
             )
             self.assertEqual(summary["placement_count"], 2)
+            self.assertEqual(summary["schema_version"], 2)
             self.assertEqual(summary["provider_click_measurement_count"], 1)
             self.assertEqual(summary["provider_click_unknown_count"], 1)
             self.assertEqual(summary["provider_unique_clicks"], 0)
             self.assertEqual(summary["provider_unique_click_measurement_count"], 1)
             self.assertEqual(summary["provider_unique_click_unknown_count"], 1)
+            self.assertIn("uniqueクリック", first["body"])
             self.assertEqual(summary["composition_budget_blocked_count"], 1)
             self.assertEqual(
                 summary["composition_budget_blocked_campaigns"],

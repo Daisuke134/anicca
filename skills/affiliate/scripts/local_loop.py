@@ -826,10 +826,14 @@ def daily_summary_event(state, wake_event, now=None):
         for row in wake_event_rows(state)
         if isinstance(row.get("ts"), int)
     )
-    identity = {"kind": "AFFILIATE_DAILY_SUMMARY", "date": report_date}
+    identity = {
+        "kind": "AFFILIATE_DAILY_SUMMARY",
+        "date": report_date,
+        "schema_version": 2,
+    }
     event_uuid = hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()
     receipt = {
-        "schema_version": 1,
+        "schema_version": 2,
         "receipt_type": "AFFILIATE_DAILY_SUMMARY",
         "report_date": report_date,
         "event_uuid": event_uuid,
