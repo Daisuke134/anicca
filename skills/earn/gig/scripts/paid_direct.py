@@ -145,6 +145,24 @@ def _collector(args, mode, output, evidence, item_path=None, item=None):
                     "--selected-order-input", str(item_path)]
     return command
 
+def _collect_dm_context(args, item: dict[str, Any], root: Path, base: Path) -> None:
+    """Bind the existing pre-purchase DM collector before any semantic paid work."""
+    evidence = base / "preflight" / "direct-message.json"
+    command = [sys.executable, str(args.dm_collector), "--project-root", str(root),
+               "--buyer", _text(item.get("buyer")), "--observed-at", datetime.now().astimezone().isoformat(),
+               "--cdp-helper", str(args.cdp_helper), "--evidence-output", str(evidence)]
+    result = _run_bounded(command)
+    try:
+        receipt = _json_line(result.stdout, "dm_context")
+    except Failure:
+        raise Failure("dm_context")
+    if receipt.get("ok") is True:
+        return
+    # A verified full-inbox miss is the explicit no-pre-purchase-DM state. Browser,
+    # parser, identity and attachment failures must not silently compile partial context.
+    if receipt.get("error") != "dm_thread_not_found":
+        raise Failure("dm_context")
+
 def _row(snapshot: dict[str, Any], room: str) -> dict[str, Any]:
     for value in snapshot.get("orders", []):
         if isinstance(value, dict) and _text(value.get("talkroom_id")) == room:
@@ -2898,6 +2916,7 @@ def _prepare_one(args, item_path: Path, output: Path) -> int:
         _run(_collector(args, "selected-talkroom-only", preflight, preflight.parent, item_path, item), "remote_resume")
         preflight_row = _row(_load(preflight), room)
         if _text(preflight_row.get("buyer_feedback_sha256")) != feedback: raise Failure("remote_resume")
+        _collect_dm_context(args, {**item, **preflight_row}, root, base)
         try:
             file_mode = _file_mode(root, item)
         except (AttributeError, KeyError, OSError, ValueError, TypeError, json.JSONDecodeError):
@@ -3161,6 +3180,7 @@ def _child_command(args, phase, item, output):
             "--answer-browser", str(args.answer_browser), "--formal-browser", str(args.formal_browser),
             "--delivery-evidence-dir", str(args.delivery_evidence_dir),
             "--cdp-helper", str(args.cdp_helper), "--context-compiler", str(args.context_compiler),
+            "--dm-collector", str(args.dm_collector),
             "--agent-runner", str(args.agent_runner), "--runner-schema", str(args.runner_schema),
             "--artifact-schema", str(args.artifact_schema), "--cdp-lock-dir", str(args.cdp_lock_dir), "--today", args.today]
 
@@ -3404,6 +3424,7 @@ def _parser():
     parser.add_argument("--cdp-lock-dir", type=Path, default=Path.home() / "gig" / ".cdp-gig.lock")
     parser.add_argument("--cdp-helper", type=Path, default=BROWSER_DIR / "scripts" / "cdp_default_tab.py"); parser.add_argument("--lock-file", type=Path)
     parser.add_argument("--context-compiler", type=Path, default=HERE / "project_context_compiler.py"); parser.add_argument("--agent-runner", type=Path, default=RUNNER_DIR / "agent_runner.py")
+    parser.add_argument("--dm-collector", type=Path, default=HERE / "coconala_dm_collect.py")
     parser.add_argument("--runner-schema", type=Path, default=HERE.parent / "schemas/gig_step_result.schema.json")
     parser.add_argument("--artifact-schema", type=Path, default=HERE.parent / "schemas/paid_file_judgement.schema.json")
     parser.add_argument("--decision-schema", type=Path, default=HERE.parent / "schemas/paid_work_decision.schema.json")
@@ -3417,7 +3438,7 @@ def _parser():
 
 def main(argv=None) -> int:
     args = _parser().parse_args(argv)
-    for name in ("output", "evidence_dir", "projects_root", "collector", "run_with_cdp_lock", "answer_browser", "formal_browser", "delivery_evidence_dir", "cdp_lock_dir", "context_compiler", "agent_runner", "runner_schema", "artifact_schema", "decision_schema"): setattr(args, name, getattr(args, name).expanduser().resolve())
+    for name in ("output", "evidence_dir", "projects_root", "collector", "run_with_cdp_lock", "answer_browser", "formal_browser", "delivery_evidence_dir", "cdp_lock_dir", "context_compiler", "dm_collector", "agent_runner", "runner_schema", "artifact_schema", "decision_schema"): setattr(args, name, getattr(args, name).expanduser().resolve())
     args.cdp_helper = args.cdp_helper.expanduser(); args.lock_file = args.lock_file.expanduser().resolve() if args.lock_file else args.evidence_dir / ".paid-direct.lock"
     if args.write_item: return _write_one(args, args.write_item.expanduser().resolve(), args.output)
     if args.effect_item: return _prepare_one(args, args.effect_item.expanduser().resolve(), args.output)

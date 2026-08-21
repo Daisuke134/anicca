@@ -759,7 +759,14 @@ a later successful example.
   `c3c751c400c264e2d098569db4a10d4c625c75049a5f2020850d42a6481df316` with
   `proposal_read_first=true`. Orders without an official application/offer retain explicit absence;
   the loop never invents one.
-- [ ] P4 — Bind every pre-purchase DM to the same context packet.
+- [x] P4 — Bind every pre-purchase DM to the same context packet. Paid preflight now invokes
+  the existing authenticated DM collector before semantic work; a full-inbox miss is persisted
+  as explicit absence while browser/parser/identity failures stop partial-context execution.
+  Production proof on Manledge binds official DM thread `10104078` (10 messages, content SHA256
+  `25c0352f8530c95cfc322834003c5ff46f300fa3b3121ca74de6c9ff749cf0ce`) under
+  `projects/18169985/source/dm/`; the regenerated packet reports `dm` in `sources_present` and
+  names that exact thread in `read_these_first` (packet SHA256
+  `5c0e3522c7817b3c59ea0b6846743cd5b249a1c783791dc6496d17619284f184`).
 - [ ] P5 — Bind purchased scope, agreed price and deadline to the same context packet.
 - [ ] P6 — Bind the complete append-only talkroom history to the same context packet.
 - [ ] P7 — Bind every buyer attachment and its content receipt to the same context packet.
