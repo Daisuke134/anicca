@@ -1207,6 +1207,18 @@ material; Appier was stopped on its explicit three-year minimum. No form submit
 click occurred. The canonical summary still reports the required Workday adapter
 as unconfirmed.
 
+The follow-up pass `daily-20260821-091952` exercised the queue-continuation
+contract in a real browser. It recorded six candidate blockers before returning
+the final result: Citadel AI (required fields filled but no visible Submit control),
+Anthropic (missing exact client-facing fact), Axtria (application surface missing),
+Appier (application surface missing after Apply), Amazon (application surface
+missing after Apply), and Microsoft (application surface missing after Apply).
+The Citadel intent was released as `not_submitted` with no submit click; the pass
+returned zero submitted and zero `submit_unknown`. Telegram ACK `26861` is present
+with `status=sent` in the canonical `telegram-outbox.sqlite3`. This proves that a
+candidate blocker no longer ends the pass, while the separate Ashby Submit-control
+visibility issue remains the next active engineering slice.
+
 The code path is now pushed through `a181d5fd9` and its preceding job-search
 changes: non-Workday Apply navigation (`a595ca29f`), event-before-state ordering
 for normal and late-confirmation transitions (`def1d1918`, `48fe67fd3`), labeled
