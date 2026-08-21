@@ -1207,7 +1207,9 @@ class Ledger:
             ).fetchone()
             if application is None:
                 raise KeyError(application_id)
-            if canonical_url(snapshot["url"]) != str(application["canonical_url"]):
+            if canonical_url(snapshot["url"]) != canonical_url(
+                str(application["canonical_url"])
+            ):
                 raise ValueError("ATS snapshot URL does not match the application")
             existing = self.connection.execute(
                 "SELECT * FROM submit_intents WHERE application_id = ?",

@@ -48,6 +48,18 @@ def _normalize_text(value: str) -> str:
 def canonical_url(value: str) -> str:
     parsed = urlsplit(value.strip())
     path = parsed.path.rstrip("/") or "/"
+    hostname = parsed.netloc.casefold().split("@")[-1].split(":", 1)[0]
+    segments = [segment for segment in path.split("/") if segment]
+    # Ashby opens the same posting at `/company/job-id/application` after the
+    # visible Apply CTA.  Keep the ATS form and posting as one dedupe identity;
+    # other providers' paths remain untouched.
+    if (
+        hostname in {"jobs.ashbyhq.com", "app.ashbyhq.com"}
+        and len(segments) >= 3
+        and segments[-1].casefold() == "application"
+    ):
+        segments.pop()
+        path = "/" + "/".join(segments)
     return urlunsplit(
         (parsed.scheme.casefold(), parsed.netloc.casefold(), path, "", "")
     )
