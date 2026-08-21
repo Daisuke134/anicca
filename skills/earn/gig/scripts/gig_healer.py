@@ -22,6 +22,11 @@ if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 from gig_paths import REPO_ROOT  # noqa: E402
 
+SHARED_LIB = REPO_ROOT / "skills" / "_shared" / "lib"
+if str(SHARED_LIB) not in sys.path:
+    sys.path.insert(0, str(SHARED_LIB))
+from launchd_preflight import probe as launchd_control_plane_probe  # noqa: E402
+
 
 SCHEMAS = Path(__file__).resolve().parents[1] / "schemas"
 DIAGNOSTIC_CLASSES = frozenset(
@@ -364,6 +369,16 @@ def dispatch(
             "status": "deferred_unknown_class",
             "repair_class": repair_class,
         }
+    if command[0] == "/bin/launchctl":
+        control_plane = launchd_control_plane_probe(runner)
+        if control_plane["mutation_allowed"] is not True:
+            return {
+                "status": "dispatch_failed",
+                "repair_class": repair_class,
+                "error": "blocked_control_plane",
+                "control_plane_errors": control_plane["errors"],
+                "side_effect_performed": False,
+            }
     result = runner(
         command,
         shell=False,

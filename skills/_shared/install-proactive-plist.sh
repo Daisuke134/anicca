@@ -72,6 +72,12 @@ if [[ "$REPO_ROOT" != "$CANONICAL_HOME" ]]; then
   exit 4
 fi
 
+# A stale GUI execution context can return launchctl 141/153 while still
+# allowing disk writes.  Refuse before touching the plist or loaded job.
+if [[ -z "${LAUNCHCTL_BIN:-}" ]]; then
+  "$PY" "$REPO_ROOT/skills/_shared/lib/launchd_preflight.py" >/dev/null || exit $?
+fi
+
 UID_NUM="$(id -u)"
 LAUNCH_AGENTS="$HOME/Library/LaunchAgents"
 LOG_DIR="$HOME/.local/state/life-manager/logs"

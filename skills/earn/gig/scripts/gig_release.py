@@ -50,6 +50,7 @@ LAUNCH_AGENTS = Path.home() / "Library" / "LaunchAgents"
 RELEASE_ROOT = Path.home() / "gig" / "releases" / "life-manager"
 CURRENT_RELEASE = RELEASE_ROOT / "current"
 PUBLISH_LOCK = RELEASE_ROOT / ".publish.lock"
+LAUNCHD_PREFLIGHT = REPO_ROOT / "skills" / "_shared" / "lib" / "launchd_preflight.py"
 # The browser owns the one authenticated session the lanes share. Reloading it
 # throws that session away, so it is never in the default set.
 DEFAULT_EXCLUDED = {"ai.anicca.hf-gig-browser", "ai.anicca.hf-gig-release-watch"}
@@ -302,6 +303,18 @@ def control_plane_available() -> bool:
     ).returncode == 0
 
 
+def require_control_plane() -> bool:
+    """Write a durable diagnosis and allow no launchd mutation on failure."""
+    result = subprocess.run(
+        [sys.executable, str(LAUNCHD_PREFLIGHT)], capture_output=True, text=True, check=False,
+    )
+    if result.returncode == 0:
+        return True
+    detail = (result.stderr or result.stdout).strip()
+    print(f"launchd mutation blocked by control-plane preflight (rc={result.returncode}): {detail[-500:]}")
+    return False
+
+
 def is_running(label: str) -> bool:
     printed = subprocess.run(["launchctl", "print", f"gui/{os.getuid()}/{label}"],
                              capture_output=True, text=True)
@@ -458,6 +471,8 @@ def main() -> int:
         if behind and not control_plane_available():
             print("launchd readback unavailable; current published, legacy jobs left running")
             return 0
+        if behind and not require_control_plane():
+            return 75
         _, stable_table = settings(CURRENT_RELEASE)
         for job in behind:
             activate(job, stable_table, release, False,
@@ -470,9 +485,9 @@ def main() -> int:
     sha = git("rev-parse", args.sha or "HEAD")
 
     if args.command == "status":
-        if not control_plane_available():
+        if not require_control_plane():
             print("launchd readback unavailable; no loaded/not-loaded conclusion is safe")
-            return 0
+            return 75
         for job in manifest["jobs"]:
             argv = loaded_program(job["label"])
             script = next((a for a in argv if a.endswith((".py", ".sh"))), "(not loaded)")
@@ -489,6 +504,8 @@ def main() -> int:
     wanted = ({label.strip() for label in args.jobs.split(",")} if args.jobs
               else {job["label"] for job in manifest["jobs"]} - DEFAULT_EXCLUDED)
     _, table = settings(CURRENT_RELEASE)
+    if not args.dry_run and not require_control_plane():
+        return 75
     failed = [job["label"] for job in manifest["jobs"] if job["label"] in wanted
               and not activate(job, table, release, args.dry_run)]
     if failed:

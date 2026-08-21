@@ -1,0 +1,25 @@
+#!/bin/sh
+set -eu
+
+ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+PREFLIGHT="$ROOT/skills/_shared/lib/launchd_preflight.py"
+RECEIPT=${LIFE_MANAGER_LAUNCHD_PREFLIGHT_RECEIPT:-"$HOME/.local/state/life-manager/launchd-control-plane-preflight.json"}
+
+if [ "${1:-}" = "preflight" ]; then
+  exec /usr/bin/python3 "$PREFLIGHT" --receipt "$RECEIPT"
+fi
+[ "$#" -gt 0 ] || { echo "usage: launchctl-safe preflight | <launchctl arguments>" >&2; exit 2; }
+
+case "$1" in
+  print|list|managername|manageruid|managerpid|version|variant|help|print-disabled)
+    exec /bin/launchctl "$@"
+    ;;
+  *)
+    /usr/bin/python3 "$PREFLIGHT" --receipt "$RECEIPT" >/dev/null || {
+      rc=$?
+      echo "launchctl mutation blocked: invalid Aqua/user bootstrap; receipt=$RECEIPT" >&2
+      exit "$rc"
+    }
+    exec /bin/launchctl "$@"
+    ;;
+esac

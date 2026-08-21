@@ -14,9 +14,11 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PAT
 AGENTS="$HOME/Library/LaunchAgents"
 BACKUP_DIR="${LOOP_INSTALL_BACKUP_DIR:-$HOME/loops/plist-backups}"
 DOMAIN="gui/$(id -u)"
+LAUNCHCTL_SAFE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/launchctl-safe"
+"$LAUNCHCTL_SAFE" preflight >/dev/null || exit $?
 mkdir -p "$BACKUP_DIR"
 
-loaded() { launchctl print "$DOMAIN/$1" >/dev/null 2>&1; }
+loaded() { "$LAUNCHCTL_SAFE" print "$DOMAIN/$1" >/dev/null 2>&1; }
 
 install_one() {
   local label="$1" plist="$AGENTS/$1.plist"
@@ -29,9 +31,9 @@ install_one() {
   local was_loaded=no
   loaded "$label" && was_loaded=yes
 
-  launchctl bootout "$DOMAIN/$label" 2>/dev/null
+  "$LAUNCHCTL_SAFE" bootout "$DOMAIN/$label" 2>/dev/null
   for attempt in 1 2 3; do
-    launchctl bootstrap "$DOMAIN" "$plist" 2>/dev/null
+    "$LAUNCHCTL_SAFE" bootstrap "$DOMAIN" "$plist" 2>/dev/null
     if loaded "$label"; then
       echo "$label: loaded (attempt $attempt, backup $(basename "$backup"))"
       return 0
@@ -43,7 +45,7 @@ install_one() {
   echo "$label: bootstrap failed 3x" >&2
   if [ "$was_loaded" = yes ]; then
     cp "$backup" "$plist"
-    launchctl bootstrap "$DOMAIN" "$plist" 2>/dev/null
+    "$LAUNCHCTL_SAFE" bootstrap "$DOMAIN" "$plist" 2>/dev/null
     loaded "$label" && echo "$label: RESTORED the previous plist" >&2 \
       || echo "$label: STILL UNLOADED -- needs a human" >&2
   fi
