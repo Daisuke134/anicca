@@ -1,5 +1,14 @@
 # Affiliate local money loop handover
 
+- The rejected-provider guard is now installed. Commit
+  `c75dacc605bd7f0e0162e4da66ae2936dc3da7e0` is immutable `current`; source and
+  installed `en-candidates.json` bytes match, and HubSpot reads
+  `APPLICATION_REJECTED / DO_NOT_RESUBMIT_UNCHANGED`. Existing-owner wake
+  `29609ab7ed947ee21958835a72d191289385e4144aa2bb39404a6217d1567bbb` finished
+  at `2026-08-21T16:05:56+0900` with `runs=241`, exit `0`, publication
+  `ALREADY_LIVE`, revenue `COOLDOWN`, Repost `OBSERVED`, and Telegram
+  `NO_PENDING`. No application, provider link, public effect, transaction,
+  settlement, payout, or money changed; B01 remains open.
 - Latest registered-owner recheck at `2026-08-21T15:56:21+0900` completed from
   immutable release `a1767577a` with `runs=240`, exit `0`, provider
   `AUTHENTICATED`, placement `VERIFIED`, publication `ALREADY_LIVE`, revenue

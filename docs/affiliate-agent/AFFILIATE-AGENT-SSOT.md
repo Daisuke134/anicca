@@ -214,6 +214,17 @@ transaction, approved/paid commission, reversal, settlement, payout, known-cost
 net, or USD 10,000 proof exists. F01, F02, and F03 are live-proven and closed;
 B01 remains `WAITING_FOR_PROVIDER_TRANSACTION`.
 
+**Installed-release override (2026-08-21 16:06 JST):** current is now immutable
+release `c75dacc605bd7f0e0162e4da66ae2936dc3da7e0`, installed after the registry
+guard changed HubSpot from stale `APPLICATION_PENDING` to
+`APPLICATION_REJECTED / DO_NOT_RESUBMIT_UNCHANGED`. Source/installed registry
+bytes and `local_loop.py` bytes are equal. The registered owner replay at
+`16:05:56 JST` completed with `runs=241`, exit `0`, provider authenticated,
+publication already live, revenue cooldown, Repost observed, and Telegram no
+pending. Impact remained rejected and created no application or link. This
+override supersedes older runtime identifiers below; it does not change the
+open B01 transaction gate.
+
 This table prevents tests, fixtures, screenshots, or plans from being reported as
 live autonomous operation.
 
@@ -886,6 +897,24 @@ missing observer input. Clicks, post actions, estimates, screenshots, fixtures,
 and the recovery receipt are not money. B01 remains
 `WAITING_FOR_PROVIDER_TRANSACTION`; the next capture must be performed only by
 the existing owner after its durable cooldown, never by manual capture.
+
+### 1.1.33 Rejected-provider guard installed and replayed
+
+The source registry now agrees with the authenticated Impact receipt for
+HubSpot: `APPLICATION_REJECTED` with `DO_NOT_RESUBMIT_UNCHANGED`, replacing the
+stale `APPLICATION_PENDING` record. Commit `c75dacc605bd7f0e0162e4da66ae2936dc3da7e0`
+is installed as immutable `current`; source and installed registry bytes match,
+and the installed `local_loop.py` remains byte-equal at SHA-256
+`8289ee06bad0ae4e3e7c837f817e2e915df08cfccb7776fec1620661020a2e19`.
+
+The existing owner replay `29609ab7ed947ee21958835a72d191289385e4144aa2bb39404a6217d1567bbb`
+completed at `2026-08-21T07:05:56Z` (`16:05:56 JST`) with `runs=241`, exit `0`,
+provider `AUTHENTICATED`, publication `ALREADY_LIVE`, revenue `COOLDOWN`,
+Repost `OBSERVED`, and Telegram `NO_PENDING`. The Impact receipt remained
+`REJECTED`, `changed=false`, transition `14d9b1aa…5cb6`; no application,
+provider link, public effect, transaction, or money was created. Rolling net
+remains `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`, with real
+cost coverage `UNKNOWN`.
 
 ### 1.2.0 Audited executable boundary
 
@@ -3171,6 +3200,15 @@ eligible capture has not produced a provider row: PartnerStack remains
 funnel readback is 44 aggregate clicks, 0 signups, 0 paid signups, and Repost
 58/0 exact joins; X impressions and owned-page visits remain `UNKNOWN`. No
 manual capture, direct publisher, or parallel executor is authorized.
+
+**Latest installed replay override (2026-08-21 16:06 JST):** release
+`c75dacc605bd7f0e0162e4da66ae2936dc3da7e0` is `current`; the source and
+installed HubSpot registry bytes are equal and read `APPLICATION_REJECTED /
+DO_NOT_RESUBMIT_UNCHANGED`. Wake `29609ab7e…` finished with `runs=241`, exit
+`0`, `publication=ALREADY_LIVE`, `revenue=COOLDOWN`, Repost `OBSERVED`, and
+Telegram `NO_PENDING`; no application, provider link, transaction, or money
+changed. The next economic gate remains B01: a non-empty official provider
+transaction artifact.
 
 The next existing-owner wake `4376877990…` at `14:52:45+0900` also exited `0`,
 returned revenue `COOLDOWN`, and left Telegram `NO_PENDING`; no provider
