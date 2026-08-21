@@ -206,16 +206,16 @@ function planMarketingLivenessJobs(input = {}) {
 }
 
 function renderMessage(payload) {
-  return [
-    "Mobile marketing slot receipt",
-    `product: ${payload.product}`,
-    `locale: ${payload.locale}`,
-    `platform: ${payload.platform}`,
-    `slot: ${payload.slot}`,
-    `status: ${payload.status}`,
-    `public URL: ${payload.public_url}`,
-    `retry state: ${payload.retry_state}`,
-  ].join("\n");
+  const accountHandle = String(payload.public_url || "").match(
+    payload.platform === "tiktok"
+      ? /^https:\/\/www\.tiktok\.com\/@([^/]+)\/video\//
+      : /^https:\/\/www\.instagram\.com\/(?:reel|p)\/([^/]+)/,
+  )?.[1];
+  const account = accountHandle ? `@${accountHandle}` : `the configured ${payload.lane} account`;
+  if (payload.status === "published") {
+    return `Life Manager::: ${payload.product} (locale ${payload.locale}) has a verified ${payload.platform} publication for the ${payload.slot} slot on ${account}. The status is published, the direct public URL is ${payload.public_url}, and the retry state is ${payload.retry_state}.`;
+  }
+  return `Life Manager::: ${payload.product} (locale ${payload.locale}) has no verified ${payload.platform} publication for the ${payload.slot} slot on ${account}. The status is missed, the public URL is unavailable, and the retry state is unavailable.`;
 }
 
 async function executeMarketingLivenessJob(job, deps = {}) {
