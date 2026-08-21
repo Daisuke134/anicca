@@ -99,6 +99,13 @@ workday_job
 workday_apply_choice
   → click Apply Manually
   → recapture and reevaluate
+workday_sign_in_entry
+  → click the visible `Sign In` entry control once
+  → recapture and reevaluate
+workday_sign_in
+  → reuse the tenant's private credential; fill only the visible email and
+    password controls, leave honeypots blank, wait the provider timer, click the
+    visible `Sign In` overlay once, then recapture and reevaluate
 workday_account_create
   → do not claim; provision/reuse the tenant's private credential, then create
     the account and recapture/reevaluate
@@ -228,7 +235,10 @@ submit_unknown on ambiguity; not_submitted when definitely before the click.
 submit_unknown is never retried.
 
 Use `job_search_loop.telegram.send_daily_report` for the daily report, passing the
-current Asia/Tokyo day. The natural-language report must begin with `Codex:::`.
+current Asia/Tokyo day and the dedicated Telegram outbox database:
+`Path(os.environ.get("JOB_SEARCH_STATE_ROOT", str(Path.home() / ".local/state/anicca/job-search"))) / "telegram-outbox.sqlite3"`.
+Never pass `ledger.sqlite3` as the Telegram database. The natural-language report
+must begin with `Codex:::`.
 Report applied URLs, roles, exact state, blockers, discovery
 fallback outcome, and selected model route. The first report uses the stable daily
 key; a materially changed same-day catch-up sends one content-addressed correction,

@@ -114,6 +114,39 @@ def _is_workday_account_create(controls: list[dict[str, Any]]) -> bool:
     )
 
 
+def _is_workday_sign_in(controls: list[dict[str, Any]]) -> bool:
+    """Recognize Workday's existing-account authentication form."""
+    has_email = any(_normalized(control.get("type")) == "email" for control in controls)
+    has_password = any(
+        _normalized(control.get("type")) == "password" for control in controls
+    )
+    has_sign_in = any(
+        _normalized(control.get("text")) == "sign in"
+        and (
+            _normalized(control.get("role")) == "button"
+            or _normalized(control.get("tag")) == "button"
+        )
+        for control in controls
+    )
+    return has_email and has_password and has_sign_in
+
+
+def _is_workday_sign_in_entry(controls: list[dict[str, Any]]) -> bool:
+    """Recognize the post-account-creation Sign In entry surface."""
+    sign_in_count = sum(
+        _normalized(control.get("text")) == "sign in"
+        and (
+            _normalized(control.get("role")) == "button"
+            or _normalized(control.get("tag")) == "button"
+        )
+        for control in controls
+    )
+    return sign_in_count == 1 and not any(
+        _normalized(control.get("type")) in {"email", "password"}
+        for control in controls
+    )
+
+
 def _validate_snapshot(snapshot: Any) -> dict[str, Any]:
     if not isinstance(snapshot, dict):
         raise ValueError("snapshot must be an object")
@@ -199,6 +232,24 @@ def evaluate_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
                     {
                         "ready": True,
                         "surface": "workday_account_create",
+                        "frame_index": frame_index,
+                    }
+                )
+                return base
+            if _is_workday_sign_in(controls):
+                base.update(
+                    {
+                        "ready": True,
+                        "surface": "workday_sign_in",
+                        "frame_index": frame_index,
+                    }
+                )
+                return base
+            if _is_workday_sign_in_entry(controls):
+                base.update(
+                    {
+                        "ready": True,
+                        "surface": "workday_sign_in_entry",
                         "frame_index": frame_index,
                     }
                 )
