@@ -1012,14 +1012,12 @@ def _main() -> int:
         contract.project_root, contract.artifact_path, manifest.get("requirements_path"),
         trajectory_context=trajectory_context,
     )
-    # E1 (26-gig-loop §CC' 段E). Same reasoning as the formal browser: the judge above
-    # answers only "is this the ordered thing", this scores how well it matches and raises
-    # only on a confidently bad score (predelivery_score.SCORE_FLOOR). Uncaught here exactly
-    # like the judge call above it -- this path has no ask-the-buyer routing, so any refusal
-    # already propagates as a hard failure and the pass retries later.
-    predelivery_score.score_predelivery(
-        contract.project_root, contract.artifact_path, manifest.get("requirements_path"),
-    )
+    # Ordinary progress is intentionally incomplete and already declares its blockers. Score the
+    # whole contract only when this channel carries a completed revision after formal delivery.
+    if args.revision_after_formal:
+        predelivery_score.score_predelivery(
+            contract.project_root, contract.artifact_path, manifest.get("requirements_path"),
+        )
     with collector.DefaultTab(args.default_tab_helper, contract.talkroom_url) as tab:
         verified, screenshot, send_performed = asyncio.run(
             deliver_progress(

@@ -331,6 +331,17 @@ Immediate customer-remediation queue, in order:
    https://markiteasy.com/blog/how-to-recruit-cdl-nemt-drivers/,
    https://help.x.com/en/rules-and-policies/x-automation,
    https://github.com/Dukotah/leadgen, https://github.com/Atum246/keelead.
+   The 100-candidate progress artifact is now buyer-visible. The existing Paid browser path sent
+   `manledge-osaka-driver-candidates-100-v1.csv` once in talkroom `18169985`, and an independent
+   fresh official read found the exact latest seller message plus the attachment while the formal
+   delivery checkbox remained off. The file contains 100 rows, 100 unique profile URLs and SHA256
+   `99a25f87e135053f5e3f2a26d0df724d97b7a6a55c3b985be8fc28e28885c6fc`; unverifiable mileage
+   and ratings remain explicitly marked for direct qualification. Progress delivery previously ran
+   the final-contract quality score and therefore rejected every honest partial artifact for its
+   declared blocker. Ordinary progress now keeps the deliverable/relevance gate but reserves the
+   final-contract score for revision-after-formal delivery. Remaining Manledge work is exactly 50
+   permitted, truthfully receipted outreach actions, response/LINE handoff tracking, then formal
+   delivery and replay-zero proof; the 100-candidate list must not be resent.
 2. **haru haru9 / project 18169583.** Finish the current v10 producer/reviewer cycle, attach the
    accepted PC/responsive editable package in the exact room with formal delivery unchecked, read
    the attachment back officially and prove replay effect zero. Do not ask locality or copy questions
