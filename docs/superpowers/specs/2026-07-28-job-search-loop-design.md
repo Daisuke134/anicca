@@ -145,7 +145,7 @@ launchd (30 min)
 | Provider policy visible | Record the exact policy and quarantine the row; never bypass application limits or repeat it on every wake |
 | Required form fact unknown | Store the exact non-secret fields keyed to the profile SHA-256 and mapper revision; skip that row until profile facts or the grounded mapper change, then continue to another candidate rather than guessing a fact |
 | Submit click without authoritative confirmation | Record `submit_unknown`; never click it again; inbox/ATS reconciliation owns later confirmation |
-| Telegram transport outcome unknown | Keep the event `send_started`; never blindly resend; a later reconciliation may attach an authoritative ACK. Every wake includes its run ID in the checkpoint message, so every run has an independently observable delivery attempt |
+| Telegram transport outcome unknown | Keep legacy outbox events `send_started`; never blindly resend them. The Ashby wake itself uses the proven launchd-safe OpenClaw CLI and stores that run's returned message ID in evidence, so every run has an independently observable delivery attempt |
 | Model fallback | Disabled by default for Ashby. It can only be explicitly re-enabled after a bounded deterministic lane has no viable source |
 
 The remaining robustness work is ordered, not parallelized: cache freshness, provider-capacity detection, non-Ashby fallback, confirmation reconciliation, then full lifecycle/guardian/OSS.

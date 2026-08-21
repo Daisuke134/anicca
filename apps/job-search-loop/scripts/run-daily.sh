@@ -190,21 +190,16 @@ PY
 fi
 export JOB_SEARCH_WORKDAY_FAST_PATH_RESULT="$WORKDAY_FAST_PATH_RESULT"
 FAST_PATH_REPORT="$EVIDENCE/fast-path-report.json"
-set +e
-"$JOB_SEARCH_PYTHON" - \
+JOB_SEARCH_REPORT_TEXT=$("$JOB_SEARCH_PYTHON" - \
   "$ASHBY_FAST_PATH_RESULT" \
   "$WORKDAY_FAST_PATH_RESULT" \
-  "$TELEGRAM_OUTBOX" \
   "$JAPAN_DAY" \
-  "$RUN_ID" \
-  "$FAST_PATH_REPORT" <<'PY'
+  "$RUN_ID" <<'PY'
 import json
 import sys
 from pathlib import Path
 
-from job_search_loop.telegram import send_daily_report
-
-ashby_path, workday_path, outbox_path, japan_day, run_id, receipt_path = map(Path, sys.argv[1:])
+ashby_path, workday_path, japan_day, run_id = map(Path, sys.argv[1:])
 
 def read(path: Path) -> dict:
     try:
@@ -237,19 +232,48 @@ message = (
     + (f" ({workday_reason})" if workday_reason else "")
     + ". This checkpoint is sent before the model fallback so a timeout cannot suppress Telegram reporting."
 )
-try:
-    result = send_daily_report(database=outbox_path, japan_day=japan_day, message=message)
-    receipt = {"status": "sent", **result}
-except Exception as error:
-    receipt = {"status": "failed", "error_type": type(error).__name__}
-receipt_path.write_text(json.dumps(receipt, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
-receipt_path.chmod(0o600)
+print(message)
+PY
+)
+set +e
+JOB_SEARCH_REPORT_RESPONSE=$(env PATH="/opt/homebrew/bin:/opt/homebrew/opt/node/bin:/usr/bin:/bin" \
+  /opt/homebrew/bin/openclaw message send \
+    --channel telegram \
+    --target "${TELEGRAM_ALERT_CHAT_ID:-8547730585}" \
+    -m "$JOB_SEARCH_REPORT_TEXT" \
+    --json 2>/dev/null)
+JOB_SEARCH_REPORT_RC=$?
+set -e
+"$JOB_SEARCH_PYTHON" - \
+  "$FAST_PATH_REPORT" \
+  "$JOB_SEARCH_REPORT_RESPONSE" \
+  "$JOB_SEARCH_REPORT_RC" <<'PY'
+import json
+import os
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+raw = sys.argv[2]
+returncode = int(sys.argv[3])
+receipt = {"status": "failed", "error_type": f"openclaw_rc_{returncode}"}
+if returncode == 0:
+    try:
+        value = json.loads(raw)
+        payload = value.get("payload") if isinstance(value, dict) else {}
+        message_id = value.get("messageId") or (payload or {}).get("messageId")
+        if message_id:
+            receipt = {"status": "sent", "message_id": str(message_id)}
+        else:
+            receipt = {"status": "failed", "error_type": "ack_missing_message_id"}
+    except json.JSONDecodeError:
+        receipt = {"status": "failed", "error_type": "invalid_openclaw_json"}
+path.write_text(json.dumps(receipt, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
+os.chmod(path, 0o600)
 print(json.dumps(receipt, ensure_ascii=False, sort_keys=True))
 PY
-FAST_PATH_REPORT_RC=$?
-set -e
-if [[ "$FAST_PATH_REPORT_RC" -ne 0 ]]; then
-  printf '%s\n' "fast-path Telegram report failed; browser/model lane continues" >&2
+if [[ "$JOB_SEARCH_REPORT_RC" -ne 0 ]]; then
+  printf '%s\n' "fast-path Telegram report failed; wake continues" >&2
 fi
 if [[ "${JOB_SEARCH_ENABLE_MODEL_FALLBACK:-0}" != "1" ]]; then
   "$JOB_SEARCH_PYTHON" -m job_search_loop.application_reporting deliver \
