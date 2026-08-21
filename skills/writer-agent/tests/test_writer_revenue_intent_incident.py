@@ -1,9 +1,8 @@
 """Order 3: a failed revenue-set intent must become exactly one durable incident.
 
-The fixture reproduces the live shape of `daily-2026-08-07`: three revenue-set
-pairs stuck at `intent`, two dormant skip receipts, one published pair, one
-non-blocking distribution pair, and an open `resume-failure-circuit.json` entry
-that carries the observed publisher error signature.
+The fixture uses the current active-four contract: three revenue-set pairs,
+four dormant skip receipts, and one non-blocking distribution pair. The open
+``resume-failure-circuit.json`` rows carry the observed publisher signatures.
 """
 
 import importlib.util
@@ -18,7 +17,9 @@ NOTE_SIGNATURE = (
     'NoteNativePublishError: Note native publish HTTP 422: '
     '{"error":{"code":"invalid","message":"本文に利用できない内容が含まれています。"}}'
 )
-DEVTO_SIGNATURE = "DevtoPublishError: Dev.to publish HTTP 503 upstream unavailable"
+X_ARTICLE_SIGNATURE = (
+    "XArticlePublishError: X Article publish HTTP 503 upstream unavailable"
+)
 
 
 def _load_bridge():
@@ -32,7 +33,7 @@ def _load_bridge():
 
 
 def _fixture(tmp_path: Path) -> Path:
-    """Build a state root shaped like the live daily-2026-08-07 run."""
+    """Build a state root shaped like the current active-four run."""
     state_root = tmp_path / "state"
     run_dir = state_root / "runs" / "daily-2026-08-07"
     gates = run_dir / "gates"
@@ -48,7 +49,7 @@ def _fixture(tmp_path: Path) -> Path:
     (gates / "publication-state.json").write_text(
         json.dumps({
             "version": 1,
-            "publication_contract": "active-six",
+            "publication_contract": "active-four",
             "run_id": "daily-2026-08-07",
             "run_dir": str(run_dir),
             "pairs": {
@@ -59,6 +60,11 @@ def _fixture(tmp_path: Path) -> Path:
                 },
                 "x-post/ja": {
                     "platform": "x-post", "lang": "ja", "status": "skipped",
+                    "skip_receipt": {"type": "dormant-destination",
+                                     "reason": "dormant-destination"},
+                },
+                "zenn-article/ja": {
+                    "platform": "zenn-article", "lang": "ja", "status": "skipped",
                     "skip_receipt": {"type": "dormant-destination",
                                      "reason": "dormant-destination"},
                 },
@@ -75,12 +81,13 @@ def _fixture(tmp_path: Path) -> Path:
                     "target_kind": "substack-draft-id", "target": "210098890",
                 },
                 "devto/en": {
-                    "platform": "devto", "lang": "en", "status": "intent",
-                    "target_kind": "devto-article-id", "target": "4334072",
+                    "platform": "devto", "lang": "en", "status": "skipped",
+                    "skip_receipt": {"type": "dormant-destination",
+                                     "reason": "dormant-destination"},
                 },
                 "x-article/ja": {
-                    "platform": "x-article", "lang": "ja", "status": "live",
-                    "receipt": {"live_url": "https://x.com/diceai0/article/2085407378015764614"},
+                    "platform": "x-article", "lang": "ja", "status": "intent",
+                    "target": "https://x.com/compose/articles/edit/2085407378015764614",
                 },
             },
         }, ensure_ascii=False),
@@ -95,10 +102,10 @@ def _fixture(tmp_path: Path) -> Path:
                     "count": 2, "notified": True, "open": True,
                     "signature": NOTE_SIGNATURE,
                 },
-                "devto/en": {
+                "x-article/ja": {
                     "state_sha256": "5f4eb592", "code_sha256": "64a6fcec",
                     "count": 2, "notified": True, "open": True,
-                    "signature": DEVTO_SIGNATURE,
+                    "signature": X_ARTICLE_SIGNATURE,
                 },
             },
         }, ensure_ascii=False),
@@ -129,10 +136,11 @@ def test_open_circuit_on_revenue_intent_becomes_one_keyed_incident(tmp_path: Pat
 
     by_destination = _incidents(state_root)
     assert result["enqueued"] == 2, (
-        "the open note/ja and devto/en circuits are the only observed destination "
+        "the open note/ja and x-article/ja circuits are the only observed "
+        "destination "
         f"failures; got {result}"
     )
-    assert set(by_destination) == {"note/ja", "devto/en"}
+    assert set(by_destination) == {"note/ja", "x-article/ja"}
 
     note = by_destination["note/ja"]
     assert note["run_id"] == "daily-2026-08-07"
@@ -201,11 +209,11 @@ def test_non_blocking_distribution_failure_is_recorded_but_distinguishable(
     module.bridge(state_root=state_root, run_id="daily-2026-08-07",
                   observed_at="2026-08-07T14:10:00+09:00")
 
-    devto = _incidents(state_root)["devto/en"]
-    assert devto["revenue_role"] == "non-blocking-distribution"
-    assert devto["blocking"] is False
-    assert devto["error_signature"] == DEVTO_SIGNATURE
-    assert devto["artifact_id"] == "daily-2026-08-07__devto__en"
+    x_article = _incidents(state_root)["x-article/ja"]
+    assert x_article["revenue_role"] == "non-blocking-distribution"
+    assert x_article["blocking"] is False
+    assert x_article["error_signature"] == X_ARTICLE_SIGNATURE
+    assert x_article["artifact_id"] == "daily-2026-08-07__x-article__ja"
 
 
 def test_incident_recorded_before_destination_identity_is_adopted_not_duplicated(
@@ -252,7 +260,7 @@ def test_incident_recorded_before_destination_identity_is_adopted_not_duplicated
 
     after = json.loads(queue_path.read_text(encoding="utf-8"))["items"]
     assert len(after) == 2, (
-        "the adopted note incident plus the rebuilt devto incident, and no "
+        "the adopted note incident plus the rebuilt X Article incident, and no "
         f"duplicate beside the old key; got {sorted(after)}"
     )
     assert legacy_key not in after
@@ -265,7 +273,7 @@ def test_incident_recorded_before_destination_identity_is_adopted_not_duplicated
     assert adopted["artifact_id"] == "daily-2026-08-07__note__ja"
 
 
-def test_dormant_skips_and_published_pairs_never_become_incidents(tmp_path: Path) -> None:
+def test_dormant_skips_and_unfailed_pairs_never_become_incidents(tmp_path: Path) -> None:
     module = _load_bridge()
     state_root = _fixture(tmp_path)
     module.bridge(state_root=state_root, run_id="daily-2026-08-07",
@@ -274,7 +282,8 @@ def test_dormant_skips_and_published_pairs_never_become_incidents(tmp_path: Path
     destinations = set(_incidents(state_root))
     assert "x-article/en" not in destinations
     assert "x-post/ja" not in destinations
-    assert "x-article/ja" not in destinations
+    assert "zenn-article/ja" not in destinations
+    assert "devto/en" not in destinations
     assert "substack/ja" not in destinations, (
         "an intent with no observed failure evidence is still owned by the "
         "deterministic retry loop, not by the agent incident queue"

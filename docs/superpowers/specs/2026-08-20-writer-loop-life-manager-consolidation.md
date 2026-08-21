@@ -468,7 +468,24 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
 - `writer_report.py`が、今日の公開がない時に保存済みの過去runを表示しながら「公開は動いています」と解釈していた。`report_articles_scope`を`today`／`latest_saved_run`／`none`に分け、過去runのURLには「今回tickの新規公開ではない」と明示する。
 - 解釈は`render_message`が選択したcadence period（todayまたはweek）を使うように修正した。週内の確認済みreceiptを「今日の受取0件」と矛盾させない。本文version `2`と記事scopeをsemantic hashへ含め、既存dedupe stateでも今回の文面修正を一度だけdelivery対象にする。
 - focused regressionは6件PASS。週次の確認済みreceipt、過去記事fallback、公開receiptなし、収益receiptあり、semantic hash versionの全ケースを最終renderで確認した。既存のdedupe stateを一時ディレクトリへコピーした実測では、Telegram transport呼出し2チャンク、delivery 1件、過去runラベルあり、旧「公開は動いています」文言なしだった。production workerはhidden launchd jobとの二重送信を避けるため直接起動していない。
-- このsliceはreport本文とdedupeだけを修正し、記事公開・価格・入金の意味は変更しない。広い既存テストには`devto/en`の`revenue_role`期待値不一致が1件残るため、次の独立TODOとして扱う。
+- この時点のsliceはreport本文とdedupeだけを修正し、記事公開・価格・入金の意味は変更しない。広い既存テストには`devto/en`の`revenue_role`期待値不一致が1件残るため、次の独立TODOとして扱った。
+
+### 2026-08-21 active-four role fixture correction（11:56 JST）
+
+- 既存の`test_writer_revenue_intent_incident.py`は、現在の`publication_contract.py`が定める
+  active-four（Note JA、Substack JA/EN、X Article JA）を検証するファイルなのに、fixtureだけが
+  `active-six`の名残で`devto/en`をintentとして置き、非ブロッキング配信の期待値を付けていた。
+  現行契約ではDev.toはdormant、非ブロッキング配信はX Article JAであるため、production role判定を
+  旧fixtureへ戻す変更はしなかった。
+- fixtureをactive-fourへ揃え、Dev.to・Zenn・X Article EN・X Post JAをdormant skip、X Article JAを
+  open retry circuit付きのnon-blocking distributionとして記録した。これにより「事故はdurable
+  incidentへ記録するが、収益出荷をblockingしない」という同じ挙動を現行destinationで検証する。
+- focused bridge/revenue/unknown testsは`12 passed`、report truth testsは`6 passed`、対象スクリプトの
+  `py_compile`と`git diff --check`もPASSした。これはtest/state fixtureの修正であり、production workerの
+  起動、外部公開、入金receiptの生成は行っていない。
+- fresh adversarial reviewもSHIP判定で、隣接bridgeを含む`7 passed`、contract絞り込み`7 passed`を
+  再確認した。Writer全体suiteで残る1件は、今回のfixtureとは無関係な旧`profitable-claude` pathを
+  期待する既存plistテストであり、次の独立TODOとして残す。
 
 ## 目標構成
 
@@ -557,7 +574,7 @@ publication identity、読者、payout、ledgerを分ける。
 
 この表は過去のmilestone状態を保持する履歴である。現在の実行順序は次の原子TODOを正本とする。
 
-## Current atomic remaining TODO（2026-08-21 11:47 JST）
+## Current atomic remaining TODO（2026-08-21 11:56 JST）
 
 各行は一つの外部状態または証拠だけを変える。前行の完了証拠がない限り、次行を開始しない。
 
