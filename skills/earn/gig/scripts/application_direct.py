@@ -40,6 +40,7 @@ DEFAULT_TELEGRAM_DATABASE = Path.home() / "gig" / "telegram-outbox.sqlite3"
 DEFAULT_TELEGRAM_TARGET = os.environ.get("GIG_REPORT_CHAT", "")
 DEFAULT_OPENCLAW = Path("/opt/homebrew/bin/openclaw")
 DEFAULT_TELEGRAM_RECEIPT_DIR = Path.home() / "gig" / "telegram-delivery-receipts"
+SAME_WAKE_RECONCILE_DELAY_SECONDS = 60
 CONFIRMED = frozenset(("confirmed", "recovered_prepared_confirmed", "reconciled_confirmed"))
 ALREADY_APPLIED_STATUSES = frozenset(("dedupe_already_applied",))
 EFFECT_STATUSES = CONFIRMED | {"confirmed_unverified"}
@@ -1298,6 +1299,59 @@ def main(argv: list[str] | None = None) -> int:
         _publish_fresh_decision_notifications(
             args=args, pass_id=pass_id, evidence_dir=phase_evidence, values=values,
         )
+        awaiting_exact_readback = any(
+            row.get("status") == "awaiting_exact_id_readback"
+            for row in values["report_results"]
+        )
+        if parent_rc == 0 and awaiting_exact_readback:
+            # Keep the durable parent as the only click authority. A delayed second
+            # parent turn re-enters its existing PREPARED recovery state machine,
+            # which requires official absence, saved non-landing evidence and a
+            # fresh accepting form before it can create another irreversible attempt.
+            # If this wrapper dies during the delay, the next launchd wake resumes
+            # from the same durable intent instead of losing or duplicating work.
+            time.sleep(SAME_WAKE_RECONCILE_DELAY_SECONDS)
+            reconcile_evidence = run_dir / f"{phase}-reconcile-evidence"
+            reconcile_legacy = run_dir / f"{phase}-reconcile-legacy-b2.json"
+            reconcile_command = _parent_command(
+                args, context=context, pass_id=pass_id,
+                evidence_dir=reconcile_evidence, legacy_path=reconcile_legacy,
+                lease_task=f"{lease_task}-reconcile", cursor_path=cursor,
+                attempt_budget_path=attempt_budget_path,
+            )
+            reconcile = _run_parent(
+                reconcile_command, env,
+                run_dir / f"{stem}-reconcile.stdout",
+                run_dir / f"{stem}-reconcile.stderr",
+            )
+            _atomic_json(
+                run_dir / f"parent.invocation-{phase}-reconcile.json",
+                {"argv": reconcile_command},
+            )
+            reconcile_rc = reconcile.returncode
+            if reconcile_rc == 0:
+                reconcile_rc = _validate_parent_result(
+                    args=args, run_dir=run_dir, phase=f"{phase}-reconcile",
+                    evidence_dir=reconcile_evidence, context=context,
+                    pass_id=pass_id, cursor_path=cursor,
+                    deferred_cursor_path=coverage_cursor_path,
+                )
+            if reconcile_rc == 0:
+                _harvest_postings(
+                    args=args, env=env, run_dir=run_dir,
+                    phase=f"{phase}-reconcile", evidence_dir=reconcile_evidence,
+                )
+            phases[-1] = (phase, reconcile_evidence, reconcile_rc)
+            phase_evidence = reconcile_evidence
+            parent_rc = reconcile_rc
+            values = summarize(
+                phase_evidence, parent_rc, require_observations=True,
+                intent_root=args.intent_root,
+            )
+            _publish_fresh_decision_notifications(
+                args=args, pass_id=pass_id,
+                evidence_dir=phase_evidence, values=values,
+            )
         if phase == "refresh":
             if denied_source_id is not None:
                 try:
