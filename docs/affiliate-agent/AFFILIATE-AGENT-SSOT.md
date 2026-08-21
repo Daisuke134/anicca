@@ -1084,6 +1084,32 @@ no-effect receipt resets the streak. This closes the F04 quarantine
 sub-behavior only. Daily action/cost caps and F05's allowlisted repair plus
 postcondition remain open; B01 still has no official transaction row.
 
+### 1.1.42 F04 action cap and blocked-report repair readback
+
+Release `83127c9b814a7baa2a4fdd679697341d76a46269` is installed as immutable
+`current`; the Affiliate suite is `86/86`, compilation and `git diff --check`
+pass, and source/installed `local_loop.py` bytes match. The release adds a
+JST-day external-action cap of `10` that counts only non-`NO_EFFECT` attempts,
+rechecks the append-only receipt file before and after every admitted external
+action, and blocks the next action in the same wake once the cap is reached.
+The existing owner wake `aa033716178ce6ce238d008b5cd733ae4d5f3e420c8f7f3891cb64d8f5adc6d7`
+completed at `2026-08-21T17:31:13+0900`, launchd `runs=253`, exit `0`, with
+`ACTION_CAP_BLOCKED` at `34/10`, runtime `DISK_GUARD_BLOCKED` at
+`926257152` free bytes versus `10737418240`, owner health `HEALTHY`, and
+quarantine `CLEAR`. No new provider link, publication, or other external
+write occurred; capture, ledger, and Telegram read paths continued.
+
+The same release replaces the generic blocked Telegram fallback with a typed
+report: `NO_TRANSACTIONS / approved_or_paid_net=USD 0.00 / cost=UNKNOWN`,
+`external_action_cap=34/10`, and the disk guard free/floor values, with a next
+step that waits for both cap reset and disk recovery before the same durable
+owner job resumes. The corrected outbox row was appended, but its delivery
+receipt is `SEND_TIMEOUT_UNKNOWN` and has no provider message ID; therefore no
+Telegram delivery is claimed and the existing owner must retry the same event.
+This closes action-cap enforcement and blocker-report classification only. It
+does not close B01: the official PartnerStack report is still empty, no
+transaction/settlement/payout exists, and real billed costs remain unknown.
+
 ### 1.2.0 Audited executable boundary
 
 The installed ownership graph has six launchd labels: three persistent browser
@@ -3152,7 +3178,9 @@ receipt readback, SSOT state update, commit, and push to both canonical remotes.
   caps, disk guard, browser-owner health, and watchdog inside the existing ownership graph.
   **Partial:** the 10 GiB disk guard, read-only owner-health observation, and
   repeated-failure quarantine are installed and live-proven in §§1.1.39–1.1.41;
-  daily action/cost caps and repair/watchdog behavior remain open.
+  the JST external-action cap and typed blocked-report repair are installed and
+  live-proven in §1.1.42. Real billed-cost caps and repair/watchdog behavior
+  remain open.
 - [ ] **F05** Implement diagnose→one allowlisted repair→postcondition→same-job resume;
   escalate or quarantine when the repair postcondition fails.
 - [x] **F06** Observe one real recoverable capture failure and prove `SELF_HEALED`,

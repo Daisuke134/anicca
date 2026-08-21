@@ -1,5 +1,22 @@
 # Affiliate local money loop handover
 
+- Release `83127c9b814a7baa2a4fdd679697341d76a46269` is installed as immutable
+  `current` after the daily external-action-cap and Telegram blocked-report
+  repairs. The existing money owner wake `aa033716178ce6ce238d008b5cd733ae4d5f3e420c8f7f3891cb64d8f5adc6d7`
+  completed at `2026-08-21T17:31:13+0900`, launchd `runs=253`, exit `0`, with
+  owner health `HEALTHY`, quarantine `CLEAR`, `ACTION_CAP_BLOCKED` at `34/10`
+  JST attempts, and `DISK_GUARD_BLOCKED` at `926257152` free bytes versus the
+  10 GiB floor. The official PartnerStack readback remains
+  `NO_TRANSACTIONS` / zero commission rows; rolling net is
+  `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS`, approved-or-paid counted net is
+  USD 0.00, and real costs remain `UNKNOWN`. The repaired outbox report now
+  preserves both typed blockers and the money state, but its delivery receipt
+  is `SEND_TIMEOUT_UNKNOWN` with no provider message ID, so delivery is not
+  claimed; the existing owner must retry the same outbox event and no manual
+  resend is allowed. This closes report classification and action-cap live
+  observation only; B01, cost caps, F05 repair postconditions, and the USD
+  10,000 gate remain open.
+
 - Release `fe7b589bf9009cbc79a3183de65452a138d86f6b` is installed as immutable
   `current`; the Affiliate suite is `82/82`, and source/installed bytes match
   for the shared `runtime_guard.py`, `local_loop.py`, `source_capture.py`, and
