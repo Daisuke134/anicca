@@ -57,6 +57,26 @@ On this host `launchctl managername` itself fails (`153`/`141`), so the helper
 correctly refuses to register or report a resident service until the bootstrap
 namespace is healthy.
 
+### Hourly throughput and truth contract
+
+Every intended 3600-second wake is an application attempt, not a permission to
+stop after the first blocked candidate. The existing executor claims at most one
+unique application per wake and keeps the Japan-day cap of ten, then continues
+through distinct official ATS URLs after `not_submitted`, an ATS transport failure,
+an unmet requirement, or an unknown submit result. A candidate-level blocker is
+never a terminal wake result. When no truthful eligible candidate remains, the
+wake records `no_eligible_job_found` with the exact blockers and sends the normal
+Telegram report; it does not manufacture a submission.
+
+The exact-fact gate is absolute. The loop must not guess an experience duration
+(including a default such as “1–3 years”), Python or client-facing experience,
+employer motivation, legal status, or any other required answer. A general
+attestation such as “has experience” is not evidence for a specific years or skill
+claim. This preserves truthful applications while ensuring that one uncertain
+field never prevents the loop from trying the next job. Until the user GUI
+launchd domain is recovered and read back successfully, direct canonical-wrapper
+runs are fallback evidence only; they do not prove a resident hourly schedule.
+
 ### 1.1 `JOB-CANONICAL-MERGE-1`
 
 This completed canonicalization deliverable changed ownership and runtime wiring,
@@ -1564,6 +1584,7 @@ slice has one owner, one acceptance result and one durable receipt.
 | Slice | Parent | Status | Done when |
 |---|---|---|---|
 | `JOB-LOOP-CADENCE-2A` | 11 | `in_progress` | The resident acquisition owner uses an hourly LaunchAgent/systemd interval, processes at most one candidate per wake, preserves the ten-application Japan-day portfolio cap, and passes plist lint plus scheduler-template tests. The source and installed plist read `StartInterval=3600`, the systemd timer reads `OnUnitActiveSec=1h`, and `loops/job-hunter/` plus `bin/plistgen.py` generate the same hourly label and CLI. Commit `4c113ca21` adds a DNS-safe public FreeHire fallback; real `countries=JP` discovery returned ten Japan jobs with Workday/Greenhouse/Amazon ATS URLs. Commit `c956d4ebe` adds a `JOB_SEARCH_DAILY_WAKE_ID` ledger fence (`wake_claims` plus `BEGIN IMMEDIATE`) and result-schema `maxItems=1`; 30 focused tests pass. Commit `8e8aa7400` requires a broken official ATS page to be recorded as candidate-level `not_submitted` and the queue to continue across at least five distinct eligible URLs. Canonical pass `daily-20260820-225831` completed with runner `rc=0`, browser owner ready, no ledger claim, and Telegram report ACK `26261`; Appier/PayPay Card Greenhouse and Amazon read-only probes returned body text and Apply controls, while Asurion Workday/Liquid AI Ashby returned committed navigation with zero body text. The private Workday credential store contains tenants for CrowdStrike, NVIDIA and Salesforce, and the existing Chrome CDP has a Salesforce Workday candidate-home page plus Gmail; this does not prove every ATS is authenticated. The installer and healthcheck resolve `Aqua → gui/<uid>` or `Background → user/<uid>` and fail closed with rc75 when the manager context is unavailable. An explicitly authorized userspace reboot retry returned rc141 (`Reentrancy avoided`); `launchctl print`, `kickstart`, and `bootout/bootstrap` readback remain blocked by the same error, while `launchctl managername` returns rc153. This is a host user-launchd/LaunchServices bootstrap failure; the loop is not marked live until the user GUI launchd domain is recovered and the plist is read back successfully. |
+| `JOB-HOURLY-THROUGHPUT-2B` | 11 | `pending_after_2A` | After `JOB-LOOP-CADENCE-2A` is live, observe three consecutive hourly wakes. Each wake must attempt discovery, continue after every candidate-level blocker across at least five distinct official URLs when needed, submit no more than one verified truthful application, and emit one Telegram event with durable outbox status plus ACK/readback. A truthful zero with exact blockers passes when the queue is exhausted; guessed years or other unsupported answers never pass. |
 | `JOB-RESUME-FACTS-1R-A` | 1R | `completed` | Full institution names and periods are recorded, and Daisuke confirmed TOEIC 910. The private truth ledger now records TOEFL iBT 96, TOEIC 910, Duolingo English Test 140 and DELE B1; no language claim remains unresolved. |
 | `JOB-RESUME-EN-1R-B` | 1R | `frozen_user_approved` | Version 9 is approved; keep the existing canonical English artifacts unchanged unless Daisuke explicitly reopens resume work. |
 | `JOB-RESUME-JA-1R-C` | 1R | `frozen_user_approved` | Resume version 9 is approved; Japanese artifact refinement is not an active TODO and requires an explicit reopen request. |
