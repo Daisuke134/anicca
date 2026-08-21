@@ -500,6 +500,30 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
   source URLをfetchするため、現在のDNS障害で`UnresolvableSourcesError`になった。今回のportable
   path修正とは独立であり、外部公開やproduction repair workerは起動していない。
 
+### 2026-08-21 current run publication readback（12:04 JST）
+
+- 外部stateを再読したところ、`daily-2026-08-21`は`publication_contract=active-four`で、
+  `updated_at=2026-08-20T23:30:32Z`（08:30 JST）までにNote JA、Substack JA、Substack EN、
+  X Article JAの4件がすべて`status=live`になっていた。Dev.to、Zenn、X Article EN、X Post JAは
+  4件とも明示的なdormant skipである。
+- 4件は単なるURL文字列ではなく、publication stateと`articles.jsonl`の同一run行に
+  `reality_gate=PASS`、`verified=true`、`identity_verified=true`、`content_verified=true`、
+  `asset_verified`または`body_media_verified=true`、artifact SHA、native live URLを持つ。
+  Noteは`ncbdb8a56bb20`・`¥500` paywall、Substack JAは`212035682`、Substack ENは別identity
+  `aniccaai2026.substack.com`の`212079208`、X Article JAは`2090526616854405173`をreadbackした。
+- これは「同一runが最終的に4 destinationを完了した」証拠であり、「いまのtickで4件を新規公開した」
+  証拠ではない。最終native receiptの時刻は4件で異なり、`article-resume`の直近11:56 JST tickは
+  旧`daily-2026-08-07`のNote ambiguity circuitを理由に`WAIT`し、公開URLを増やしていない。
+  report workerは12:00 JSTに同じsemantic hashをdedupeし、同一内容を再送していない。
+- money stateは`verified_revenue_event_count=0`、`payout_receipts=[]`であり、公開・paywall・価格・
+  表示数を入金へ変換していない。したがって今回の実測はA9のreceipt材料を増やすが、launchdの
+  control-plane readback（manager rc=153、print rc=141）、5分周期の2回連続実行、payment receiptを
+  完了したとは扱わない。
+- fresh adversarial auditもpublication receiptとしてはPASS、12:00 JST tickの新規公開証拠としては
+  FAILと判定した。4件の対象run行はartifact／実PNG hash、canonical identity、content/media flagsまで
+ 一致するが、公開時刻は02:36〜08:30 JSTでreporting tickより前であり、money event・non-test payout・
+  subscription contractは0件だった。
+
 ## 目標構成
 
 ### 実行トポロジー（Coconala parity）
