@@ -165,8 +165,8 @@ heartbeat ledgerは64MiB閾値、flock、atomic rename、gzip archive、orphan r
 runtime SHAをcanonicalと一致させた。Stripe listenerは128MiB閾値、owner-PID lock、active appendと
 rotationの直列化、orphan recovery、archive名衝突回避を実装した。両方とも元eventを削除せずarchiveへ
 保持する。heartbeatの初回rotationは180,297,803 bytes→3,259,576-byte archive、active 0 bytesを
-readbackした。Stripeの現行346MiB ledgerは次のlistener write時にrotationするため、production archive
-readbackは未取得である。
+readbackした。Stripeもproduction rotationをreadbackし、345,871,539 bytes→15MiB gzip archive、
+active 32KiBへ縮小した。両方ともevent lineをarchiveへ保持している。
 
 ### OSS boundary
 
