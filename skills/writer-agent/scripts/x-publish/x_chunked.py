@@ -3,22 +3,12 @@ Guarantees image ORDER (cursor always at end; no racy block-index click). Fresh 
 import os,time,json,sys
 from playwright.sync_api import sync_playwright
 from browser_clipboard import browser_write_html, browser_write_image
+from x_anchor import build_chunks
 W=os.path.expanduser("~/.cloak/note-work")
 PARSED=os.environ["X_PARSED"]
 d=json.load(open(PARSED)); TITLE=d["title"]; THUMB=d.get("cover_image",""); html=d["html"]
 cis=sorted(d["content_images"], key=lambda c:c["block_index"])
-# split html into chunks at each image's anchor paragraph end
-chunks=[]; pos=0
-for ci in cis:
-    at=ci["after_text"] or ""
-    idx=html.find(at,pos)
-    if idx==-1 and len(at)>20: idx=html.find(at[:20],pos)
-    if idx==-1:
-        print("ANCHOR NOT FOUND:",at[:30]); continue
-    end=html.find("</p>",idx)
-    end = (end+4) if end!=-1 else len(html)
-    chunks.append(("html",html[pos:end])); chunks.append(("img",ci["path"])); pos=end
-chunks.append(("html",html[pos:]))
+chunks=build_chunks(html, cis)
 print("chunks:",len(chunks),"images:",sum(1 for k,_ in chunks if k=='img'))
 
 DETECT="""()=>{const t=[...document.querySelectorAll('textarea')].find(e=>{const a=((e.getAttribute('aria-label')||'')+(e.placeholder||'')).toLowerCase();const b=e.getBoundingClientRect();return a.includes('title')||(b.height>40&&b.width>300&&b.y<700&&b.x>900);});if(!t)return null;const b=t.getBoundingClientRect();return {x:Math.round(b.x+b.width/2),y:Math.round(b.y+b.height/2)};}"""
