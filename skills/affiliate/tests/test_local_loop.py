@@ -318,6 +318,21 @@ class LocalLoopTest(unittest.TestCase):
             self.assertEqual(event["provider_state"], "AUTHENTICATED")
             self.assertEqual(event["publication_state"], "X_LIVE")
             self.assertEqual(event["revenue_state"], "NO_TRANSACTIONS")
+            run_receipts = [
+                json.loads(line)
+                for line in (args.state / "run-receipts.jsonl").read_text().splitlines()
+            ]
+            self.assertEqual(len(run_receipts), 1)
+            self.assertEqual(run_receipts[0]["run_id"], event["wake_event_uuid"])
+            self.assertEqual(run_receipts[0]["release_sha"], "SOURCE_CHECKOUT")
+            self.assertEqual(run_receipts[0]["terminal_state"], "READY_FOR_PUBLICATION")
+            self.assertEqual(
+                [stage["name"] for stage in run_receipts[0]["stages"]],
+                [
+                    "provider", "placement_link", "publication", "distribution",
+                    "revenue", "rolling_net", "repost_observation", "telegram",
+                ],
+            )
 
     def test_wake_requires_authenticated_provider_and_receipts_transition(self):
         with tempfile.TemporaryDirectory() as root:
@@ -368,6 +383,32 @@ class LocalLoopTest(unittest.TestCase):
             self.assertEqual(event["provider_state"], "AUTHENTICATED")
             self.assertEqual(event["provider_transition_id"], "transition-1")
             self.assertEqual(event["revenue_state"], "NO_TRANSACTIONS")
+
+    def test_run_receipt_is_append_only_and_replay_safe(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root)
+            event = {
+                "event": "affiliate_wake",
+                "wake_event_uuid": "wake-1",
+                "status": "READY_FOR_PUBLICATION",
+                "provider_state": "AUTHENTICATED",
+                "placement_link_state": "VERIFIED",
+                "publication_state": "X_LIVE",
+                "distribution_state": "COOLDOWN",
+                "revenue_state": "NO_TRANSACTIONS",
+                "rolling_net_net_state": "NO_APPROVED_OR_PAID_ROWS",
+                "repost_observation": {"state": "OBSERVED"},
+                "telegram_state": "NO_PENDING",
+            }
+            self.assertTrue(MODULE.append_run_receipt(state, event, 100.0, 101.5))
+            self.assertFalse(MODULE.append_run_receipt(state, event, 100.0, 101.5))
+            rows = [
+                json.loads(line)
+                for line in (state / "run-receipts.jsonl").read_text().splitlines()
+            ]
+            self.assertEqual(len(rows), 1)
+            self.assertEqual(rows[0]["duration_ms"], 1500)
+            self.assertEqual(rows[0]["causal_parent"]["owner_label"], MODULE.RUN_OWNER_LABEL)
 
     def test_telegram_outbox_precedes_send_and_deduplicates_message_id(self):
         with tempfile.TemporaryDirectory() as root:

@@ -30,6 +30,8 @@ from acquisition_decision import advance as advance_acquisition_decision
 
 SYSTEME_LOGIN = "https://systeme.io/en/login"
 ELEVENLABS_HOME = "https://elevenlabs.io/app/home"
+RUN_OWNER_LABEL = "ai.anicca.affiliate-loop"
+RELEASE_SHA_PATTERN = re.compile(r"^[0-9a-f]{40}$")
 
 
 def atomic_json(path, value):
@@ -81,6 +83,68 @@ def json_rows(path):
         except ValueError:
             continue
     return rows
+
+
+def installed_release_sha():
+    """Return the immutable release SHA, or an explicit source-checkout marker."""
+    candidate = Path(__file__).resolve().parents[1].name
+    return candidate if RELEASE_SHA_PATTERN.fullmatch(candidate) else "SOURCE_CHECKOUT"
+
+
+def run_receipt_stages(event):
+    """Expose stage state without copying URLs, links, credentials, or content."""
+    repost = event.get("repost_observation") or {}
+    return [
+        {"name": "provider", "state": event.get("provider_state")},
+        {"name": "placement_link", "state": event.get("placement_link_state")},
+        {"name": "publication", "state": event.get("publication_state")},
+        {"name": "distribution", "state": event.get("distribution_state")},
+        {"name": "revenue", "state": event.get("revenue_state")},
+        {"name": "rolling_net", "state": event.get("rolling_net_net_state")},
+        {"name": "repost_observation", "state": repost.get("state")},
+        {"name": "telegram", "state": event.get("telegram_state", "PENDING")},
+    ]
+
+
+def append_run_receipt(state, event, started_at, finished_at=None, run_id=None,
+                       terminal_state=None, failure_type=None):
+    """Persist one replay-safe canonical receipt for a scheduler wake."""
+    finished_at = time.time() if finished_at is None else finished_at
+    run_id = run_id or event.get("wake_event_uuid")
+    if not isinstance(run_id, str) or not run_id:
+        raise ValueError("run receipt requires a run_id")
+    receipt = {
+        "schema_version": 1,
+        "receipt_type": "AFFILIATE_RUN_RECEIPT",
+        "run_id": run_id,
+        "wake_event_uuid": event.get("wake_event_uuid"),
+        "release_sha": installed_release_sha(),
+        "owner_label": RUN_OWNER_LABEL,
+        "causal_parent": {
+            "type": "scheduler",
+            "owner_label": RUN_OWNER_LABEL,
+            "trigger": "launchd",
+        },
+        "started_at": datetime.fromtimestamp(
+            started_at, timezone.utc
+        ).isoformat(),
+        "finished_at": datetime.fromtimestamp(
+            finished_at, timezone.utc
+        ).isoformat(),
+        "duration_ms": max(0, int(round((finished_at - started_at) * 1000))),
+        "due_work": {
+            "revenue_state": event.get("revenue_state"),
+            "acquisition_decision_state": event.get("acquisition_decision_state"),
+            "publication_state": event.get("publication_state"),
+        },
+        "stages": run_receipt_stages(event),
+        "terminal_state": terminal_state or event.get("status") or "UNKNOWN",
+        "run_state": "FAILED" if failure_type else "SUCCEEDED",
+        "failure_type": failure_type,
+    }
+    return append_unique(
+        state / "run-receipts.jsonl", receipt, ("run_id", "terminal_state")
+    )
 
 
 def wake_event_rows(state):
@@ -2194,12 +2258,39 @@ def verify_systeme_email(state, cdp_port, private_markdown):
 
 
 def wake(args):
+    """Run one owner wake and always leave a terminal scheduler receipt."""
+    started_at = time.time()
+    run_id = hashlib.sha256(
+        f"{installed_release_sha()}:{started_at:.6f}:{os.getpid()}".encode()
+    ).hexdigest()
+    try:
+        return _wake_once(args, started_at, run_id)
+    except BaseException as error:
+        append_run_receipt(
+            args.state.expanduser(),
+            {"status": "FAILED"},
+            started_at,
+            run_id=run_id,
+            terminal_state="FAILED",
+            failure_type=type(error).__name__,
+        )
+        raise
+
+
+def _wake_once(args, started_at, run_id):
     state = args.state.expanduser()
     state.mkdir(mode=0o700, parents=True, exist_ok=True)
     lock = (state / ".wake.lock").open("a+")
     try:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except BlockingIOError:
+        append_run_receipt(
+            state,
+            {"status": "ALREADY_RUNNING"},
+            started_at,
+            run_id=run_id,
+            terminal_state="ALREADY_RUNNING",
+        )
         lock.close()
         print('{"state":"ALREADY_RUNNING"}')
         return 0
@@ -2516,6 +2607,13 @@ def wake(args):
     event["telegram_message_id"] = telegram["message_id"]
     event["telegram_delivery_receipt_event_uuid"] = delivery_receipt["event_uuid"]
     atomic_json(state / "last-run.json", event)
+    append_run_receipt(
+        state,
+        event,
+        started_at,
+        run_id=event["wake_event_uuid"],
+        terminal_state=event.get("status") or "UNKNOWN",
+    )
     lock.close()
     print(json.dumps(event, sort_keys=True, separators=(",", ":")))
     return 0
