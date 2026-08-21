@@ -123,6 +123,8 @@ fallback passは`host-inventory-full.at`を使い、launchd user domain障害中
 隔離stateでのfull readbackは約60秒、mode=`full`、mount 9件、root 23件、gap 11件だった。
 production fallbackのfull receipt（2026-08-21T09:21:29Z）はgap 10件、preserved 6件、
 protected deletion 0件だった。productionの追加managed-home familyは次回full marker更新後に反映される。
+probe boundを10秒（`/opt/homebrew`は30秒）へ拡張した隔離full readbackは62.6秒、gap 4件まで減少した。
+残りはLibraryのTCC、system tempのpermission、`.Trash`のOS保護領域で、削除候補には昇格しない。
 Anicca cleanup controlのgit/lsof/du probeにも15秒timeoutを設定し、さらにguard外側のgovernor、
 runtime-manifest、sweep subprocessにも120秒（kill-after 10秒）のtimeoutを設定した。timeoutは
 error/preserveとして扱い、runtime-manifest失敗時はhourly markerを進めない。これによりfull passの
@@ -480,8 +482,8 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 
 | # | Work | Completion evidence | State |
 |---:|---|---|---|
-| 1 | 全local volume、top-level root、guard/sentinel/janitor/plist/log/state/manifestをimmutable host censusへ記録 | mount/root/owner family、label、interval、program SHA、last exit、free bytes | 部分完了: bounded `host-inventory.json`はmount 9/root 17を実測。11件のgap、root size timeout、writable-volume attributionが残る |
-| 2 | `skills/self/disk-cleanup/` にcanonical host inventory、manifest、runner、health interfaceを定義 | local writable volume missing 0、required owner family missing 0、schema PASS | 部分完了: inventory schema、atomic writer、fast/full mode、hourly marker、9 testsは実装。local writable missing 0とhealth readbackは未完了 |
+| 1 | 全local volume、top-level root、guard/sentinel/janitor/plist/log/state/manifestをimmutable host censusへ記録 | mount/root/owner family、label、interval、program SHA、last exit、free bytes | 部分完了: bounded `host-inventory.json`はmount 9/root 23を実測。full gapは4件まで縮小し、permission/owner attributionが残る |
+| 2 | `skills/self/disk-cleanup/` にcanonical host inventory、manifest、runner、health interfaceを定義 | local writable volume missing 0、required owner family missing 0、schema PASS | 部分完了: inventory schema、atomic writer、fast/full mode、hourly marker、14 testsは実装。local writable missing 0とhealth readbackは未完了 |
 | 3 | protected rootsとfail-closed validatorをTDDで固定 | Test Matrix 3–11 PASS | 部分完了: Life Manager governorとAnicca回帰testで主要保護を確認。全Matrix 3–11の統合証跡は未完了 |
 | 4 | exact-byte tier、hysteresis、single lock、300秒schedulerをTDD実装 | Test Matrix 2、12–14 PASS | 部分完了: exact-byte tier、atomic lock、300秒plist、pressure/recovery floor、hourly full-pass marker、ULTRA時のcritical full-pass promotion、hourly/explicit fullのcooldown、marker fail-closed、bounded fast/full pass、正本labelのbootstrap/readbackは実装・unit/live PASS。24時間観測は未完了 |
 | 4a | GUI bootstrap health failureを観測専用fail-closedに固定 | Test Matrix 28–29 PASS、141/153 fixture receipt、復旧後readback | 部分完了: `launchctl-safe preflight`でUID/Directory Services/`gui/501`をreadbackし、cutover前にPASSを確認。cleanup内のhealth-failure receiptと141/153実機fixtureは未完了 |
@@ -503,7 +505,7 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 
 次の順序で実行する。各項目は証拠が揃うまで完了扱いにしない。
 
-1. **host-wide censusを完成** — bounded `host-inventory.json`の11件のgapを解消し、全local writable volume、必須owner family、1 GiB以上のunknown rootを同一versioned inventoryへ記録し、missing 0を出す。
+1. **host-wide censusを完成** — bounded `host-inventory.json`の残り4件（Library/TCC、system temp、`.Trash`のpermission gap）をowner/permission receiptとして分類し、全local writable volume、必須owner family、1 GiB以上のunknown rootを同一versioned inventoryへ記録し、missing 0を出す。
 2. **OSS contract testを完成** — protected roots、lease、open-path、probe error、dirty/unpushed worktree、unknown classの統合fixtureを追加し、Test Matrix 3–11をPASSにする。
 3. **bootstrap health契約を実装** — `dscl` UID readback、`launchctl print gui/501`、対象label存在をpreflightし、141/153/UID failureでは削除・plist変更・bootstrap・restart・killを行わず、`gui-bootstrap-health-failure` receiptだけをatomic writeする。stale app-server終了はcleanupから分離する。installer preflightは実装済みだが、cleanup内receiptと実機fixtureを追加する。
 5. **producer lifecycleを接続** — 上位growth owner（browser、build、media、VM/container、package manager、agent runtime、`~/gig/releases`）をcensusし、artifact登録、lease heartbeat、finalizer、quotaを実装する。旧`disk-reclaim`の安全なrelease proofはこのmanifestへ移植してから再有効化する。
