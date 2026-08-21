@@ -536,6 +536,29 @@ sent message `27018`. This closes the unknown-vs-zero schema edge only; D05
 still needs official X/owned analytics values before it can claim exact
 denominators, and B01 remains open.
 
+### 1.1.19 Current X error reconciliation and funnel readback
+
+The historical `XPostError` rows are retained as past effect-fence evidence,
+but they are not the current owner state. The last `loop.err.log` write is
+`2026-08-20T19:09:16+0900`; its ambiguous X readback, old provider-application
+attribute error, browser selector timeouts, and one Telegram send timeout are
+all earlier release/runtime rows. The existing money owner later completed
+wake `d4beb584901a11076f29d1f884a566a419090b015ab3e7da19cb736514677716` at
+`2026-08-21T11:50:42+0900` with `publication_state=ALREADY_LIVE`,
+`telegram_state=SENT`, provider `AUTHENTICATED`, and no current XPostError;
+Telegram message `27018` has a verified delivery row. This reconciles the
+current X error gate without deleting historical evidence or claiming a new
+public effect.
+
+The same readback closes the measurement diagnosis, not B01: PartnerStack
+Link Performance reports 13 rows, 43 provider clicks, 0 customers, 0
+transactions, USD 0 revenue, and USD 0 unpaid/fully-paid rewards; the latest
+commission artifact has 0 rows. Therefore the observed bottleneck is
+qualified acquisition-to-signup/conversion, while metrics, the append-only
+ledger, and Telegram reporting are wired. Clicks remain non-money and B01 is
+still `WAITING_FOR_PROVIDER_TRANSACTION`; no approved/paid row, settlement ID,
+or canonical net amount exists.
+
 ### 1.2.0 Audited executable boundary
 
 The installed ownership graph has six launchd labels: three persistent browser
