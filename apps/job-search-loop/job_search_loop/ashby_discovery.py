@@ -48,6 +48,19 @@ def _role_family(title: str) -> str:
     ) else "applied_ai"
 
 
+def _role_priority(title: str) -> int:
+    value = title.casefold()
+    if "forward deployed" in value or "solutions engineer" in value:
+        return 5
+    if "customer success" in value or "technical account" in value:
+        return 4
+    if "sales engineer" in value or "solutions" in value:
+        return 3
+    if "product manager" in value or "product management" in value:
+        return 2
+    return 1
+
+
 def _board_slug(url: str) -> str:
     parts = urlsplit(url).path.strip("/").split("/")
     return parts[0] if len(parts) >= 2 else ""
@@ -81,7 +94,13 @@ def _candidate_jobs(
         if not ROLE_RE.search(title):
             continue
         rows.append({**job, "company": company, "title": title, "url": url})
-    rows.sort(key=lambda row: int(row.get("posted_at_ms") or 0), reverse=True)
+    rows.sort(
+        key=lambda row: (
+            _role_priority(str(row.get("title") or "")),
+            int(row.get("posted_at_ms") or 0),
+        ),
+        reverse=True,
+    )
     return rows
 
 
