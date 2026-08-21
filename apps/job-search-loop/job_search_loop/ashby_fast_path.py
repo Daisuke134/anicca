@@ -586,6 +586,12 @@ async def _process_one(
             }
         submit = page.get_by_role("button", name="Submit Application", exact=True)
         if await submit.count() == 0:
+            # Some Ashby tenants mark the native button aria-hidden while
+            # keeping its user-facing text visibly clickable.  Clicking the
+            # visible text span is an ordinary user-facing action; it is not a
+            # force click or DOM event dispatch.
+            submit = page.get_by_text("Submit Application", exact=True)
+        if await submit.count() == 0 or not await submit.first.is_visible():
             ledger.complete_submission(intent.intent_id, intent.fence, "not_submitted")
             return {"application_id": application_id, "status": "not_submitted", "blocker": "submit_control_missing"}
         await submit.first.click()
