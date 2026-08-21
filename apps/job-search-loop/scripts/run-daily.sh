@@ -92,6 +92,67 @@ os.chmod(path, 0o600)
 PY
 fi
 export JOB_SEARCH_WORKDAY_FAST_PATH_RESULT="$WORKDAY_FAST_PATH_RESULT"
+FAST_PATH_REPORT="$EVIDENCE/fast-path-report.json"
+set +e
+"$JOB_SEARCH_PYTHON" - \
+  "$ASHBY_FAST_PATH_RESULT" \
+  "$WORKDAY_FAST_PATH_RESULT" \
+  "$TELEGRAM_OUTBOX" \
+  "$JAPAN_DAY" \
+  "$FAST_PATH_REPORT" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+from job_search_loop.telegram import send_daily_report
+
+ashby_path, workday_path, outbox_path, japan_day, receipt_path = map(Path, sys.argv[1:])
+
+def read(path: Path) -> dict:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {"status": "failed", "processed": [], "reason": "result_unreadable"}
+    return value if isinstance(value, dict) else {"status": "failed", "processed": [], "reason": "result_invalid"}
+
+ashby = read(ashby_path)
+workday = read(workday_path)
+processed = ashby.get("processed") if isinstance(ashby.get("processed"), list) else []
+details = []
+for row in processed:
+    if not isinstance(row, dict):
+        continue
+    company = str(row.get("company") or "unknown employer")
+    title = str(row.get("title") or "unknown role")
+    status = str(row.get("status") or "unknown")
+    blocker = str(row.get("blocker") or "")
+    details.append(f"{company} — {title}: {status}" + (f" ({blocker})" if blocker else ""))
+if not details:
+    details.append(f"no row processed ({ashby.get('status', 'unknown')})")
+workday_status = str(workday.get("status") or "unknown")
+workday_reason = str(workday.get("reason") or "")
+message = (
+    "Codex::: "
+    f"{japan_day} JST fast-path checkpoint. Ashby ran first: "
+    + "; ".join(details)
+    + f". Workday is {workday_status}"
+    + (f" ({workday_reason})" if workday_reason else "")
+    + ". This checkpoint is sent before the model fallback so a timeout cannot suppress Telegram reporting."
+)
+try:
+    result = send_daily_report(database=outbox_path, japan_day=japan_day, message=message)
+    receipt = {"status": "sent", **result}
+except Exception as error:
+    receipt = {"status": "failed", "error_type": type(error).__name__}
+receipt_path.write_text(json.dumps(receipt, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
+receipt_path.chmod(0o600)
+print(json.dumps(receipt, ensure_ascii=False, sort_keys=True))
+PY
+FAST_PATH_REPORT_RC=$?
+set -e
+if [[ "$FAST_PATH_REPORT_RC" -ne 0 ]]; then
+  printf '%s\n' "fast-path Telegram report failed; browser/model lane continues" >&2
+fi
 MODEL_TIMEOUT_SECONDS="${JOB_SEARCH_BROWSER_TIMEOUT_SECONDS:-300}"
 set +e
 "$JOB_SEARCH_PYTHON" "$JOB_SEARCH_RUNNER" \
