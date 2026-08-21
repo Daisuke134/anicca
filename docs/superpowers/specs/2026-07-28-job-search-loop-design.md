@@ -50,6 +50,10 @@ Software Engineer - Singapore and initially exposed an Ashby `aria-hidden` nativ
 submit button. The adapter now clicks the visible `Submit Application` text fallback
 without force/DOM dispatch; the live retry reached the real click and recorded
 `submit_unknown` as well.
+Inbox reconciliation now loads `GOG_KEYRING_PASSWORD` through the private env loader
+before invoking `gog`; the pre-fix failure was a launchd no-TTY password prompt, not
+an expired Google authorization. Commit `78d2e8dc5` is verified by a real read-only
+Gmail search after loading that value without printing it.
 The fully automatic run `daily-20260821-184654` then discovered ElevenLabs'
 Enterprise Solutions Engineer - Singapore, reached its real Ashby submit click, and
 recorded another terminal `submit_unknown`. Its fast-path checkpoint was sent with

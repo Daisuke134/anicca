@@ -316,7 +316,17 @@ def select_new_recruiting_messages(
             ):
                 continue
             messages.append(
-                {"message_id": message_id, "thread_id": thread_id}
+                {
+                    "message_id": message_id,
+                    "thread_id": thread_id,
+                    "subject": subject,
+                    "sender": sender,
+                    # The thread loader already requests --wrap-untrusted and
+                    # --sanitize-content.  Persist the exact fetched content
+                    # privately so the model lane never needs a second Gmail
+                    # OAuth/DNS round-trip for the same candidate message.
+                    "body": body,
+                }
             )
     thread_ids = list(dict.fromkeys(row["thread_id"] for row in messages))
     message_ids = [row["message_id"] for row in messages]
