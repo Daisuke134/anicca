@@ -1223,9 +1223,10 @@ class Ledger:
                 return None
             if existing is None and current_state != "materials_ready":
                 return None
-            # Slots are an append-only per-day audit sequence, not a quota.
-            # BEGIN IMMEDIATE serializes concurrent claimers, so max+1 is
-            # deterministic and cannot allocate the same slot twice.
+            # Slots are transactional per-day audit labels, not a quota.
+            # A definite pre-click `not_submitted` releases its row below;
+            # BEGIN IMMEDIATE still makes max+1 deterministic and collision-free
+            # among all live claims while submitted/unknown claims remain held.
             row = self.connection.execute(
                 "SELECT COALESCE(MAX(slot), 0) AS max_slot "
                 "FROM daily_slots WHERE japan_day = ?",
