@@ -844,7 +844,11 @@ a later successful example.
   `coconala:attachment:<talkroom>:<file_sha256>` keys. Formal delivery retains its append-only
   ledger identity `coconala:formal:<project>:<file_sha256>` and exposes the same value as
   `formal_effect_key`; the three effect classes cannot cross-dedupe.
-- [ ] P22 — Read the attachment back in the exact official talkroom.
+- [x] P22 — Read the attachment back in the exact official talkroom. Production progress evidence
+  for talkroom `18138707` records an actual send and post-send official DOM readback of
+  `カントリーロード_ハンドベル3パート譜_v15.pdf` (1,448,789 bytes) in that exact room; the
+  on-disk artifact independently hashes to the manifest-bound SHA256
+  `40e1e15059782403a35f107d71070e6a351bcd9a29971bb558a66968ef9bcdbd`.
 - [ ] P23 — Read formal delivery back in the exact official talkroom.
 - [ ] P24 — Replay and prove zero duplicate replies, attachments and formal deliveries.
 - [ ] P25 — Resume the next transition after an executor/reviewer process exits.
