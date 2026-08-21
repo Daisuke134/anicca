@@ -173,23 +173,25 @@ deployment adapter for these same contracts, not a second implementation.
 
 ### 1.2 Truth checkpoint: implemented versus still hypothetical
 
-Current override: the installed runtime is `90378f6d901e6ddb5966210f1a4a9aa0c332de2d`,
+Current override: the installed runtime is `b9b73047a1b76ebf219472d8022f24f846a7f060`,
 not the older release identifiers retained in historical table rows below. Its
 source and installed `scripts/local_loop.py` bytes match at SHA-256
-`bcdc5d4ce508fc57a44b081a0775df4dab07ac899d3175f9155d8de16611a6ab`; the
+`a0b5db86c90a1105ad437369d68d0ee6b066c894075f60c26719a22bb874c027`; the
 existing suite is `75/75`, compilation and diff checks pass. It includes the
 prior exact Repost matching, policy/source budget guards, per-item failure
 isolation, provider denominator retention, bounded Telegram reconciliation,
 versioned daily summaries, a canonical append-only `AFFILIATE_RUN_RECEIPT`
 for every launchd wake, and redacted effect-classified
-`AFFILIATE_TOOL_ATTEMPT` receipts for each admitted owner-stage tool. The
+`AFFILIATE_TOOL_ATTEMPT` receipts for each admitted owner-stage tool. Tool
+failures are typed with bounded retry due-time and effect certainty. The
 post-install registered-owner wake
-`f98f6d6e3991c858bf79ce59b2f59193aab277a829dbe633602270ab53547f60` joins
+`b389bfbf3c24206ad347bfb7222c77d9d2b843fe84e50eb9fe6d9f2131cf1a6b` joins
 `last-run.wake_event_uuid` to the RunReceipt `run_id`, records
 `terminal_state=READY_FOR_PUBLICATION`, `run_state=SUCCEEDED`, and
 `causal_parent.trigger=launchd`; its 21 ToolAttemptReceipt rows all carry the
-exact release SHA, unique `(scheduler_run_id, tool, attempt)` keys, and no URL,
-credential, or secret. `launchctl print` reads `runs=227`, `last exit code=0`,
+exact release SHA, unique `(scheduler_run_id, tool, attempt)` keys, typed retry
+fields, and no URL,
+credential, or secret. `launchctl print` reads `runs=228`, `last exit code=0`,
 and `StartInterval=600`. Telegram remains `NO_PENDING` on message `27069` with
 outbox/sent `135/135`, and no public/provider effect changed.
 
@@ -784,20 +786,22 @@ it does not create a provider transaction or money.
 
 ### 1.1.29 Latest ToolAttemptReceipt owner proof
 
-Release `90378f6d901e6ddb5966210f1a4a9aa0c332de2d` is installed and its source
+Release `b9b73047a1b76ebf219472d8022f24f846a7f060` is installed and its source
 and installed `local_loop.py` bytes match at SHA-256
-`bcdc5d4ce508fc57a44b081a0775df4dab07ac899d3175f9155d8de16611a6ab`. The
+`a0b5db86c90a1105ad437369d68d0ee6b066c894075f60c26719a22bb874c027`. The
 registered owner wake
-`f98f6d6e3991c858bf79ce59b2f59193aab277a829dbe633602270ab53547f60` completed
-with `runs=227`, `last exit code=0`, and `revenue_state=COOLDOWN`. Its
-`scheduler_run_id=e79f26c7…` has 21 admitted-tool receipts covering browser,
+`b389bfbf3c24206ad347bfb7222c77d9d2b843fe84e50eb9fe6d9f2131cf1a6b` completed
+with `runs=228`, `last exit code=0`, and `revenue_state=COOLDOWN`. Its
+`scheduler_run_id=16feb836…` has 21 admitted-tool receipts covering browser,
 provider, link, publication, distribution, acquisition, ledger, revenue,
 Repost observation, and Telegram stages. Every row carries the exact release
 SHA; `(scheduler_run_id, tool, attempt)` is unique; the deduplicated provider
 link is `NO_EFFECT`, the Telegram retry is `NO_EFFECT`, and no HTTP URL,
 password, secret, or cookie value appears. The wake's RunReceipt joins exactly
 to `last-run.wake_event_uuid`; Telegram remains `NO_PENDING` and outbox/sent
-remain `135/135`. This closes F02 observability only, not B01 or money.
+remain `135/135`. The typed-failure schema is installed; no failure occurred
+in this healthy wake, so F03 remains open for a real typed-failure/retry
+readback. F02 is closed; B01 and money remain open.
 
 ### 1.2.0 Audited executable boundary
 
@@ -3042,17 +3046,18 @@ cursor; later work MUST NOT jump ahead of an unmet gate.
 
 Current execution cursor (latest owner readback): **E1-H, close the first real
 transaction path.** Publication recovery and the ten-placement readiness gate
-are complete through the existing owner. Release `90378f6d9` is installed at
+are complete through the existing owner. Release `b9b73047a` is installed at
 `current`; its installed/source `local_loop.py` bytes match (SHA-256
-`bcdc5d4c…11a6ab`) and the existing suite is `75/75` with compilation and diff
+`a0b5db86…74c027`) and the existing suite is `75/75` with compilation and diff
 checks clean. The existing `ai.anicca.affiliate-loop` owner completed the
-post-install wake `f98f6d6e…` with `runs=227`, `last exit code=0`, and
+post-install wake `b389bfbf…` with `runs=228`, `last exit code=0`, and
 `StartInterval=600`; its canonical RunReceipt joins exactly to
 `last-run.wake_event_uuid`, and 21 ToolAttemptReceipt rows join through the
-same scheduler run ID. All rows carry the installed release SHA and contain no
-secrets or raw links. Telegram remains `NO_PENDING` on `27069`, with outbox and
-sent `135/135`, so the owner replay added no external send. F01 and F02 are
-closed.
+same scheduler run ID. All rows carry the installed release SHA, typed retry
+fields, and contain no secrets or raw links. Telegram remains `NO_PENDING` on
+`27069`, with outbox and sent `135/135`, so the owner replay added no external
+send. F01 and F02 are closed; F03 has its schema installed but still needs a
+real typed failure/retry readback.
 The prior bounded Telegram-history repair and its append-only retractions remain
 historical audit evidence and have no public or money effect.
 
