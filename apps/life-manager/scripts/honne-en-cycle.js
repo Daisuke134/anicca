@@ -3,6 +3,7 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
+const { createContentObjectStore } = require("../lib/content-object-store.js");
 const { createMarketingLocalLedger } = require("../lib/marketing-local-ledger.js");
 const {
   buildMarketingVideoGenerationJob,
@@ -14,6 +15,7 @@ const { HONNE_EN_SLOTS } = require("../lib/honne-en-shadow-runtime.js");
 const { marketingVideoDueSlot } = require("../lib/honne-ja-shadow-schedule.js");
 const { PROMOTION_CONFIRMATION, runHonneEnCanary } = require("./honne-en-canary.js");
 
+const TENANT = "dais-local";
 const PRODUCT = "honne-ai";
 const FORMAT = "reelclaw";
 const LOCALE = "en";
@@ -80,11 +82,17 @@ async function runHonneEnCycle(argv, deps = {}) {
   const env = deps.env || process.env;
   const dataDir = path.resolve(required(deps.dataDir || env.LM_DATA_DIR, "LM_DATA_DIR"));
   const tenantId = required(env.LM_RUNTIME_TENANT_ID, "LM_RUNTIME_TENANT_ID");
+  if (tenantId !== TENANT) throw new Error("honne EN cycle tenant is invalid");
   const nowMs = deps.nowMs == null ? Date.now() : deps.nowMs;
   const slot = dueSlot(requestedSlot || marketingVideoDueSlot(nowMs, TIME_ZONE, HONNE_EN_SLOTS), nowMs);
   const packRef = required(env.LM_HONNE_EN_PACK_REF, "LM_HONNE_EN_PACK_REF");
   const mediaRefs = required(env.LM_HONNE_EN_MEDIA_REFS, "LM_HONNE_EN_MEDIA_REFS").split(",").map((value) => value.trim()).filter(Boolean);
   const approvalRef = required(env.LM_HONNE_EN_PUBLICATION_APPROVAL_REF, "LM_HONNE_EN_PUBLICATION_APPROVAL_REF");
+  const objectStore = createContentObjectStore({ objectDir: path.join(dataDir, "objects") });
+  const approval = JSON.parse(fs.readFileSync(objectStore.resolve(approvalRef), "utf8"));
+  if (approval.scope !== "standing" || approval.product_id !== PRODUCT || approval.locale !== LOCALE || approval.platform !== "tiktok") {
+    throw new Error("honne EN cycle approval scope is invalid");
+  }
   const store = deps.store || createMarketingLocalLedger({ dataDir });
   const generationJob = buildMarketingVideoGenerationJob({ tenantId, productId: PRODUCT, formatId: FORMAT, locale: LOCALE, slot, packRef, mediaRefs });
   const generation = await generate(store, generationJob, dataDir, new Date(nowMs).toISOString());
