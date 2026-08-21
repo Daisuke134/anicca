@@ -1,5 +1,26 @@
 # Affiliate local money loop handover
 
+- Latest bounded Telegram-history repair is installed as immutable release
+  `088f36982ae9ec6c643d7fa6d9a299701dbb377b`; source and installed
+  `local_loop.py` SHA-256 is `7d9c401b4785dc2f39ac367887d0ceb9b1e481cb9b7328c022d1bc186100e3c3`,
+  with the existing suite `72/72`, compilation, and diff checks passing. The
+  first repair release appended 125 broad historical reconciliation rows; the
+  bounded follow-up appended 123 explicit
+  `RETRACTED_INSUFFICIENT_BASE_EVIDENCE` rows for provisional rows that lacked
+  a base delivery receipt. This is append-only internal audit repair only: no
+  public post, provider effect, Telegram send, transaction, or money was
+  created by either repair.
+- The existing `ai.anicca.affiliate-loop` owner completed its natural retry at
+  `2026-08-21T13:21:49+0900` (`wake_event_uuid=de150faa…`). `launchctl print`
+  reads `state=not running`, `runs=219`, `last exit code=0`, and a 600-second
+  interval. The Gateway remains loaded/running with a successful local probe.
+  The retry ended `telegram_history_reconciled_count=0`,
+  `telegram_state=NO_PENDING`, and the already-sent provider message `27069`;
+  the private Telegram outbox/sent ledgers remain `133/133`, proving no
+  duplicate external send. T01b is therefore closed; the old `141` management
+  result and earlier transport timeout remain historical evidence, not the
+  current owner state.
+
 - Latest launchd/runtime verification: the existing `ai.anicca.affiliate-loop`
   label now reads back through `launchctl print` with exit `0`, loaded,
   `state=not running` after a completed wake, `runs=214`, `last exit code=0`,

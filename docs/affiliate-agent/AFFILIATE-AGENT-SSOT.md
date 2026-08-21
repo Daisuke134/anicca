@@ -2963,22 +2963,35 @@ cursor; later work MUST NOT jump ahead of an unmet gate.
 
 Current execution cursor (latest owner readback): **E1-H, close the first real
 transaction path.** Publication recovery and the ten-placement readiness gate
-are complete through the existing owner. The current ledger has 20 canonical
-English rows, 20 dedicated provider-link keys, 20 owned public URLs, 34
-provider-link clicks, and 32 unique provider clicks; the aggregate PartnerStack
-overview remains 43 clicks (42 post-baseline), with 0 signups, 0 paid signups,
-and zero commission/payout money. Dev.to remains 40 total views across five
-articles and is not an X denominator; X impressions and owned-page visits are
-`UNKNOWN`. Repost observed 56 valid actions at the latest capture, with 0 exact
-Affiliate campaign joins and no revenue credit. Installed release `5a8445ad7`
-is byte-equal to source; its natural owner wake at `13:04:33+0900` sent Repost
-event `a8fe…` as Telegram `27080` with the corrected exact event binding.
-The pre-fix historical receipt `f111…` still mislabels Telegram `27069`, so
-receipt-integrity reconciliation is open. The latest official artifact remains
-empty and rolling net remains
+are complete through the existing owner. Release `088f36982` is installed at
+`current`; its installed/source `local_loop.py` bytes match (SHA-256
+`7d9c401b…e3c3`) and the existing suite is `72/72` with compilation and diff
+checks clean. The existing `ai.anicca.affiliate-loop` owner now reads back as
+loaded, `state=not running` after completion, `runs=219`, `last exit code=0`,
+and `StartInterval=600`; the Gateway is loaded/running with a successful
+loopback probe. The latest completed wake (`de150faa…`) reports
+`telegram_history_reconciled_count=0`, `telegram_state=NO_PENDING`, and the
+already-sent provider message `27069`; `telegram-sent.jsonl` and the outbox
+remain 133/133, so the idempotent retry added no external send. The earlier
+over-broad historical reconciliation appended 125 internal repair rows; the
+bounded `088f` guard then appended 123 explicit
+`RETRACTED_INSUFFICIENT_BASE_EVIDENCE` rows for unsupported provisional rows.
+Those append-only ledger repairs have no public effect and no money effect.
+
+The canonical ledger still has 20 English rows, 20 dedicated provider-link
+keys, 20 owned public URLs, 34 provider-link clicks, and 32 unique provider
+clicks; the aggregate PartnerStack overview remains 43 clicks (42
+post-baseline), with 0 signups, 0 paid signups, and zero commission/payout
+money. Dev.to remains 40 total views across five articles and is not an X
+denominator; X impressions and owned-page visits are `UNKNOWN`. Repost
+observed 56 valid actions at the latest capture, with 0 exact Affiliate
+campaign joins and no revenue credit. The pre-fix receipt `f111…` remains
+historical evidence of the old misbinding, while the post-fix Repost delivery
+is exact. The latest official artifact remains empty and rolling net remains
 `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED` with cost coverage
-`UNKNOWN`. B01 is waiting for the first non-empty official provider
-transaction artifact.**
+`UNKNOWN`. **T01b (owner retry + receipt-history idempotence) is closed;
+B01 is waiting for the first non-empty official provider transaction
+artifact.**
 
 Current atomic remaining queue (the checkboxes in this section are the detailed
 acceptance contract; this summary does not reorder them):
