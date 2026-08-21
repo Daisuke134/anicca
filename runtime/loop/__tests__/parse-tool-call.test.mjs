@@ -157,3 +157,12 @@ test('the OpenAI-wrapped shape (proxy brain) still parses', () => {
   };
   assert.equal(parseToolCall(openai).slot, 'yield');
 });
+
+test('run_skill without an explicit slot is rejected instead of becoming the literal run_skill slot', () => {
+  const malformed = {
+    choices: [{ message: { tool_calls: [{
+      function: { name: 'run_skill', arguments: JSON.stringify({ strategy: 'x402' }) },
+    }] } }],
+  };
+  assert.equal(parseToolCall(malformed), null);
+});

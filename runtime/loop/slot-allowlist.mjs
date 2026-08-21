@@ -29,3 +29,9 @@ export function applySlotAllowlist(registry, envValue) {
   }
   return { registry: { ...registry, slots }, applied: [...allow] };
 }
+
+/** Pure wire guard: a model-selected slot must be present in this wake's offered menu. */
+export function isAllowedSlot(slot, allowedSlots) {
+  return typeof slot === 'string' && slot.length > 0 && Array.isArray(allowedSlots)
+    && allowedSlots.includes(slot);
+}

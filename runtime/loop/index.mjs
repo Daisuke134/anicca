@@ -41,6 +41,7 @@ import { classifyEarnResult, defaultEarnLedgerPath } from './earn-detect.mjs';
 import { summarizeSkillResult } from './result-summary.mjs';
 import { redactPrivateKeyPatterns } from './env-filter.mjs';
 import { liveSlotNames } from './prompt.mjs';
+import { isAllowedSlot } from './slot-allowlist.mjs';
 import { classifyLayer, capFailureDetail } from './harness-health.mjs';
 import {
   filterCatalog,
@@ -676,6 +677,24 @@ async function runOneWake() {
       sleep_s: sleepS,
       model: currentTier.model,
       note: args.reason || 'agent chose to sleep',
+    });
+    await safeAppend(LEDGER_PATH, record);
+    await sleepSecs(sleepS);
+    return;
+  }
+
+  // The menu is the trust boundary. A malformed/roleplayed response must never reach the skill
+  // resolver, where it would waste a wake as "run_skill skill not found" or execute a stale slot.
+  if (!isAllowedSlot(slot, eligibleSkillSlots)) {
+    const sleepS = cfgNum(config.SLEEP_BASE_S, 120);
+    const record = formatRecord({
+      ts,
+      wake_id: wakeId,
+      kind: 'invalid_slot',
+      sleep_s: sleepS,
+      model: currentTier.model,
+      slot,
+      note: 'model-selected slot was absent from the current live menu',
     });
     await safeAppend(LEDGER_PATH, record);
     await sleepSecs(sleepS);

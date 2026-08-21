@@ -38,7 +38,13 @@ export function parseToolCall(rawResponse) {
       ? JSON.parse(toolCall.function.arguments)
       : toolCall.function.arguments;
 
-    const slot = parsed.slot ?? toolCall.function.name;
+    const declaredSlot = parsed && typeof parsed === 'object' ? parsed.slot : undefined;
+    // `run_skill` is the wrapper tool, not a runnable skill. Falling back to its function name
+    // turned malformed model output into the literal slot `run_skill`, producing repeated
+    // "run_skill skill not found" wakes. Direct tools such as `sleep` retain their legacy fallback.
+    if (toolCall.function.name === 'run_skill' && typeof declaredSlot !== 'string') return null;
+    const slot = declaredSlot ?? toolCall.function.name;
+    if (typeof slot !== 'string' || slot.length === 0) return null;
 
     // The run_skill schema is { slot, args } — the SKILL's args (e.g. {strategy:"hl",coin:"ETH"}) live
     // under parsed.args. The old code returned the WHOLE parsed object as args, so a downstream

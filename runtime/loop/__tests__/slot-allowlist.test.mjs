@@ -1,7 +1,7 @@
 // slot-allowlist.mjs unit tests (x402-zero-to-one 2026-07-14).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { applySlotAllowlist } from '../slot-allowlist.mjs';
+import { applySlotAllowlist, isAllowedSlot } from '../slot-allowlist.mjs';
 
 const REG = () => ({
   slots: {
@@ -40,4 +40,11 @@ test('malformed registry -> untouched, no throw', () => {
   const { registry, applied } = applySlotAllowlist(null, 'x402_sell');
   assert.equal(registry, null);
   assert.equal(applied, null);
+});
+
+test('isAllowedSlot accepts only a non-empty slot present in the current menu', () => {
+  assert.equal(isAllowedSlot('x402_sell', ['report', 'x402_sell']), true);
+  assert.equal(isAllowedSlot('run_skill', ['report', 'x402_sell']), false);
+  assert.equal(isAllowedSlot('', ['report']), false);
+  assert.equal(isAllowedSlot('report', []), false);
 });
