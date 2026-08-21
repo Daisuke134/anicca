@@ -224,12 +224,22 @@ Before fresh discovery, call `Ledger.retryable_applications()`. A durable
 `not_submitted` row means the prior attempt definitely stopped before the submit
 click; recheck its recorded blocker against the current private profile and current
 official posting. If the blocker is resolved and the role is still eligible, route
-the resume again, capture fresh claim-ready ATS evidence, and call
-`claim_submission` normally. The Ledger atomically reuses the intent id, increments
-the fence, preserves append-only attempt history, and allocates a current-day slot.
+the resume again only for a new assignment. For an existing retryable application,
+read `Ledger.strategy_assignment(application_id)` first and reuse its immutable
+`material_variant`, `material_sha256`, role family, strategy generation and other
+assignment fields; resolve the stored variant with `resume_routing --resume-variant`
+and `--expected-sha256 <material_sha256>` and require the helper to verify the
+stored hash before continuing. Do not call `LearningDriver.assign`, `add_attributed_application`, or rebind an existing assignment.
+If the stored material is missing or its hash no longer matches,
+record that exact blocker as candidate-level `not_submitted` and continue. Once
+the stored assignment is reproduced, capture fresh claim-ready ATS evidence and
+call `claim_submission` normally. The Ledger atomically reuses the intent id,
+increments the fence, preserves append-only attempt history, and allocates a
+current-day slot.
 If the blocker remains, report it once and continue discovery. Never reopen
-`submit_unknown` or `submitted`, and never reuse an old resume hash, ATS snapshot,
-payload, or fence.
+`submit_unknown` or `submitted`, and never trust an old resume hash without
+re-reading and verifying the mapped material file. Old ATS snapshots, payloads,
+and fences are never reused.
 
 For Product, GTM, Partnerships, and Customer Success roles, generate the application
 message through `job_search_loop.application_messages.build_application_message`.
