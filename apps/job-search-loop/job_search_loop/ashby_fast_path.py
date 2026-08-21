@@ -424,6 +424,7 @@ async def _fill_known_fields(
 ) -> list[str]:
     locator = page.locator(FIELD_SELECTOR)
     blockers: list[str] = []
+    radio_groups: dict[str, list[tuple[Any, dict[str, Any], str]]] = {}
     for item in fields:
         index = int(item["index"])
         element = locator.nth(index)
@@ -447,8 +448,8 @@ async def _fill_known_fields(
                 blockers.append(_safe_text(label or item.get("placeholder") or kind))
             continue
         if kind == "radio" or role == "radio":
-            if not await _select_radio(element, item, value):
-                blockers.append(_safe_text(label or item.get("context") or "radio"))
+            group = str(item.get("name") or item.get("context") or index)
+            radio_groups.setdefault(group, []).append((element, item, value))
             continue
         if role == "combobox":
             if not await _select_combobox(page, element, value):
@@ -457,6 +458,15 @@ async def _fill_known_fields(
         if kind == "checkbox" or role == "checkbox":
             continue
         await element.fill(value)
+    for choices in radio_groups.values():
+        selected = False
+        for element, item, value in choices:
+            if await _select_radio(element, item, value):
+                selected = True
+                break
+        if not selected:
+            item = choices[0][1]
+            blockers.append(_safe_text(_label(item) or item.get("context") or "radio"))
     return blockers
 
 
