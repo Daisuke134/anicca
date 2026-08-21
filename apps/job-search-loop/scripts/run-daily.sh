@@ -65,9 +65,11 @@ if [[ "$WORKDAY_FAST_PATH_RC" -ne 0 ]]; then
   printf '%s\n' "Workday fast path exited rc=$WORKDAY_FAST_PATH_RC; browser-lane fallback continues" >&2
 fi
 export JOB_SEARCH_WORKDAY_FAST_PATH_RESULT="$WORKDAY_FAST_PATH_RESULT"
+MODEL_TIMEOUT_SECONDS="${JOB_SEARCH_BROWSER_TIMEOUT_SECONDS:-300}"
 set +e
 "$JOB_SEARCH_PYTHON" "$JOB_SEARCH_RUNNER" \
   --task-class browser-lane-agent \
+  --timeout-seconds "$MODEL_TIMEOUT_SECONDS" \
   --prompt-file "$JOB_SEARCH_APP_ROOT/prompts/daily-pass.md" \
   --schema "$JOB_SEARCH_APP_ROOT/schemas/pass-result.v1.schema.json" \
   --evidence-dir "$EVIDENCE" \
