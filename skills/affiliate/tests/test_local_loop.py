@@ -34,6 +34,7 @@ class LocalLoopTest(unittest.TestCase):
             self.assertEqual(blocked["receipt_persist_state"], "PERSISTED")
             stored = json.loads((state / "runtime-guard.json").read_text())
             self.assertEqual(stored["state"], "DISK_GUARD_BLOCKED")
+            self.assertEqual(stored["receipt_persist_state"], "PERSISTED")
 
     def test_disk_guard_outcome_is_no_effect(self):
         self.assertEqual(
