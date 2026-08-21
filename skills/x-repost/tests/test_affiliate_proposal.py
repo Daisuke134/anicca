@@ -139,6 +139,24 @@ class AffiliateProposalTests(unittest.TestCase):
             consumed.write_text(json.dumps({"proposal_id": "a" * 64, "state": "EFFECT_STARTED"}) + "\n")
             self.assertEqual(MODULE.select(proposal_path, consumed)["state"], "BLOCKED_LEGACY_CLAIM")
 
+    def test_invalid_consumption_ledger_blocks_new_proposal(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            proposal_path = root / "proposal.json"
+            consumed = root / "consumed.jsonl"
+            proposal_path.write_text(json.dumps({
+                "receipt_type": "AFFILIATE_REPOST_PROPOSAL",
+                "state": "READY_FOR_EXISTING_REPOST_OWNER",
+                "proposal_id": "a" * 64,
+                "placement_id": "voice-isolator-en-1",
+                "owned_article_url": "https://aniccaai.com/blog/voice-isolator",
+                "language": "en", "disclosure_required": True,
+                "tracking_link_state": "NOT_INCLUDED",
+                "revenue_credit_state": "NO_REVENUE_CREDIT",
+            }))
+            consumed.write_text("{broken\n")
+            self.assertEqual(MODULE.select(proposal_path, consumed)["state"], "BLOCKED_CONSUMPTION_LEDGER")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -209,9 +209,9 @@ trap 'bash "$GUARD" release "$IDENTITY" >/dev/null 2>&1 || true' EXIT
 AFFILIATE_CONSUMED="$STATE/affiliate-proposals-consumed.jsonl"
 AFFILIATE_PICK="$($PY "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL" --consumed "$AFFILIATE_CONSUMED" 2>/dev/null || echo '{"state":"NO_PROPOSAL"}')"
 AFFILIATE_STATE="$($PY -c 'import json,sys; print(json.load(sys.stdin).get("state","NO_PROPOSAL"))' <<<"$AFFILIATE_PICK" 2>/dev/null || echo NO_PROPOSAL)"
-if [ "$AFFILIATE_STATE" = "BLOCKED_LEGACY_CLAIM" ]; then
-  report "🛑 An older Affiliate proposal effect has no safe snapshot; no new Affiliate or generic X post is allowed"
-  finish 1 "affiliate legacy claim unresolved"
+if [ "$AFFILIATE_STATE" = "BLOCKED_LEGACY_CLAIM" ] || [ "$AFFILIATE_STATE" = "BLOCKED_CONSUMPTION_LEDGER" ]; then
+  report "🛑 Affiliate proposal consumption state is unsafe; no new Affiliate or generic X post is allowed"
+  finish 1 "affiliate proposal consumption state blocked"
 fi
 if [ "$AFFILIATE_STATE" = "READY" ] || [ "$AFFILIATE_STATE" = "RECONCILE" ]; then
   AFFILIATE_PROPOSAL_INPUT="$EV/affiliate-proposal.json"

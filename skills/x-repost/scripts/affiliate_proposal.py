@@ -69,23 +69,29 @@ def canonical(proposal: dict) -> dict:
 
 
 def rows(path: Path) -> list[dict]:
+    if not path.exists():
+        return []
     try:
         lines = path.read_text(encoding="utf-8").splitlines()
-    except OSError:
-        return []
+    except OSError as error:
+        raise ValueError("consumption ledger unavailable") from error
     values = []
     for line in lines:
         try:
             value = json.loads(line)
-        except ValueError:
-            continue
-        if isinstance(value, dict):
-            values.append(value)
+        except ValueError as error:
+            raise ValueError("consumption ledger invalid") from error
+        if not isinstance(value, dict):
+            raise ValueError("consumption ledger invalid")
+        values.append(value)
     return values
 
 
 def select(proposal_path: Path, consumed_path: Path) -> dict:
-    all_rows = rows(consumed_path)
+    try:
+        all_rows = rows(consumed_path)
+    except ValueError:
+        return {"state": "BLOCKED_CONSUMPTION_LEDGER"}
     latest_by_proposal = {}
     for row in all_rows:
         proposal_id = row.get("proposal_id")
@@ -144,9 +150,11 @@ def _append_once(consumed_path: Path, proposal_id: str, row: dict, *, require_cl
         for line in stream:
             try:
                 value = json.loads(line)
-            except ValueError:
-                continue
-            if isinstance(value, dict) and value.get("proposal_id") == proposal_id:
+            except ValueError as error:
+                raise ValueError("consumption ledger invalid") from error
+            if not isinstance(value, dict):
+                raise ValueError("consumption ledger invalid")
+            if value.get("proposal_id") == proposal_id:
                 prior.append(value)
         terminal = next((value for value in reversed(prior)
                          if value.get("state") in {"POSTED", "UNVERIFIED", "NO_EFFECT"}), None)
