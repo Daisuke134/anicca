@@ -863,8 +863,12 @@ empty payout section, and no generic transaction ID; reconciliation read,
 appended, and replayed `0/0/0`. The later owner wake at `15:43:27+0900` kept the
 revenue path in its normal cooldown and delivered Telegram `27244`
 (`SELF_HEALED`) for the failed-to-recovered path with `transactions=0`; no
-estimated revenue was counted. The current launchd readback is `runs=239`,
-`last exit code=0`, and `run interval=600 seconds`.
+estimated revenue was counted. A subsequent registered-owner wake completed at
+`15:56:21+0900` with release `a1767577a`, `runs=240`, exit `0`, provider
+`AUTHENTICATED`, publication `ALREADY_LIVE`, revenue `COOLDOWN`, Repost
+`OBSERVED`, and Telegram `NO_PENDING`; it changed no public/provider effect or
+money state. The current launchd readback is `runs=240`, `last exit code=0`, and
+`run interval=600 seconds`.
 
 The economic truth therefore remains `NO_TRANSACTIONS /
 NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`, with approved, paid, pending, and

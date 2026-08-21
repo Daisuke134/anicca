@@ -1,5 +1,14 @@
 # Affiliate local money loop handover
 
+- Latest registered-owner recheck at `2026-08-21T15:56:21+0900` completed from
+  immutable release `a1767577a` with `runs=240`, exit `0`, provider
+  `AUTHENTICATED`, placement `VERIFIED`, publication `ALREADY_LIVE`, revenue
+  `COOLDOWN`, Repost `OBSERVED`, and Telegram `NO_PENDING`. The durable Repost
+  observation remains `58` valid actions / `0` exact Affiliate joins; the
+  rolling-net readback remains `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS /
+  NOT_REACHED`, all four money status counts are zero, and real costs are
+  `UNKNOWN`. The cooldown recheck created no provider/public effect, transaction,
+  settlement, payout, commission, or money.
 - Current reconciliation at `2026-08-21T15:51:24+0900`: the user-visible
   `REVENUE_CYCLE_FAILED / stage=capture` report is the historical
   `14:35:54+0900` `NONZERO_EXIT` receipt. The existing owner crossed its
