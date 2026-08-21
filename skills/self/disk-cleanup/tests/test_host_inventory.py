@@ -97,3 +97,44 @@ def test_full_inventory_gives_homebrew_a_longer_bounded_probe(tmp_path: Path) ->
     )
 
     assert ("/opt/homebrew", 30) in du_calls
+
+
+def test_full_inventory_enforces_global_probe_budget(tmp_path: Path) -> None:
+    for directory in (
+        "Projects",
+        "Projects/life-manager-main",
+        "anicca-project",
+        "anicca",
+        "anicca-docs-tools",
+        "anicca-portfolio-self-improve",
+        "anicca-rtdash",
+        "life-manager-repo-v0-retire",
+        ".codex-worktrees",
+        "gig",
+        ".openclaw",
+        "Library",
+    ):
+        (tmp_path / directory).mkdir(parents=True)
+
+    clock = [0.0]
+    du_timeouts: list[float] = []
+
+    def budget_runner(
+        argv: list[str], *, timeout: float
+    ) -> subprocess.CompletedProcess[str]:
+        if argv[0].endswith("/du"):
+            du_timeouts.append(timeout)
+            clock[0] += timeout
+            raise subprocess.TimeoutExpired(argv, timeout)
+        return fake_runner(argv, timeout=timeout)
+
+    payload = collect_host_inventory(
+        home=tmp_path,
+        state_dir=tmp_path / "state",
+        full=True,
+        runner=budget_runner,
+        clock=lambda: clock[0],
+    )
+
+    assert sum(du_timeouts) <= 90
+    assert any(gap.startswith("size-budget-exhausted:") for gap in payload["coverage"]["gaps"])

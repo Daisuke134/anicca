@@ -125,6 +125,8 @@ production fallbackのfull receipt（2026-08-21T09:21:29Z）はgap 10件、prese
 protected deletion 0件だった。productionの追加managed-home familyは次回full marker更新後に反映される。
 probe boundを10秒（`/opt/homebrew`は30秒）へ拡張した隔離full readbackは62.6秒、gap 4件まで減少した。
 残りはLibraryのTCC、system tempのpermission、`.Trash`のOS保護領域で、削除候補には昇格しない。
+full inventoryには90秒のglobal probe budgetを置き、個別timeoutの合計がouter 120秒を超えて
+full marker更新を飢餓させない。budget枯渇は`size-budget-exhausted`として保存する。
 Anicca cleanup controlのgit/lsof/du probeにも15秒timeoutを設定し、さらにguard外側のgovernor、
 runtime-manifest、sweep subprocessにも120秒（kill-after 10秒）のtimeoutを設定した。timeoutは
 error/preserveとして扱い、runtime-manifest失敗時はhourly markerを進めない。これによりfull passの
@@ -483,7 +485,7 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 | # | Work | Completion evidence | State |
 |---:|---|---|---|
 | 1 | 全local volume、top-level root、guard/sentinel/janitor/plist/log/state/manifestをimmutable host censusへ記録 | mount/root/owner family、label、interval、program SHA、last exit、free bytes | 部分完了: bounded `host-inventory.json`はmount 9/root 23を実測。full gapは4件まで縮小し、permission/owner attributionが残る |
-| 2 | `skills/self/disk-cleanup/` にcanonical host inventory、manifest、runner、health interfaceを定義 | local writable volume missing 0、required owner family missing 0、schema PASS | 部分完了: inventory schema、atomic writer、fast/full mode、hourly marker、14 testsは実装。local writable missing 0とhealth readbackは未完了 |
+| 2 | `skills/self/disk-cleanup/` にcanonical host inventory、manifest、runner、health interfaceを定義 | local writable volume missing 0、required owner family missing 0、schema PASS | 部分完了: inventory schema、atomic writer、fast/full mode、hourly marker、15 tests、90秒global budgetは実装。local writable missing 0とhealth readbackは未完了 |
 | 3 | protected rootsとfail-closed validatorをTDDで固定 | Test Matrix 3–11 PASS | 部分完了: Life Manager governorとAnicca回帰testで主要保護を確認。全Matrix 3–11の統合証跡は未完了 |
 | 4 | exact-byte tier、hysteresis、single lock、300秒schedulerをTDD実装 | Test Matrix 2、12–14 PASS | 部分完了: exact-byte tier、atomic lock、300秒plist、pressure/recovery floor、hourly full-pass marker、ULTRA時のcritical full-pass promotion、hourly/explicit fullのcooldown、marker fail-closed、bounded fast/full pass、正本labelのbootstrap/readbackは実装・unit/live PASS。24時間観測は未完了 |
 | 4a | GUI bootstrap health failureを観測専用fail-closedに固定 | Test Matrix 28–29 PASS、141/153 fixture receipt、復旧後readback | 部分完了: `launchctl-safe preflight`でUID/Directory Services/`gui/501`をreadbackし、cutover前にPASSを確認。cleanup内のhealth-failure receiptと141/153実機fixtureは未完了 |

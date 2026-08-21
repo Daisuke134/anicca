@@ -19,6 +19,7 @@ SCHEMA_VERSION = "life-manager-host-inventory-v1"
 # keeps the probe bounded while allowing those roots to be measured.
 DU_TIMEOUT_SECONDS = 10
 BUILD_TOOL_DU_TIMEOUT_SECONDS = 30
+FULL_INVENTORY_BUDGET_SECONDS = 90
 MAX_CHILDREN_PER_ROOT = 512
 
 # These are observation families, not deletion roots.  A missing or unreadable
@@ -158,8 +159,19 @@ def _children(path: Path) -> tuple[dict[str, Any], list[str]]:
     return record, gaps
 
 
-def _bounded_size(path: Path, run: Runner = _run) -> tuple[int | None, str, str | None]:
+def _bounded_size(
+    path: Path,
+    run: Runner = _run,
+    *,
+    deadline: float | None = None,
+    clock: Callable[[], float] = time.monotonic,
+) -> tuple[int | None, str, str | None]:
     timeout = BUILD_TOOL_DU_TIMEOUT_SECONDS if path == Path("/opt/homebrew") else DU_TIMEOUT_SECONDS
+    if deadline is not None:
+        remaining = deadline - clock()
+        if remaining <= 0:
+            return None, "budget-exhausted", "size-budget-exhausted"
+        timeout = min(timeout, remaining)
     try:
         result = run(["/usr/bin/du", "-x", "-sk", str(path)], timeout=timeout)
     except subprocess.TimeoutExpired:
@@ -183,10 +195,12 @@ def collect_host_inventory(
     state_dir: Path,
     full: bool = False,
     runner: Callable[..., subprocess.CompletedProcess[str]] | None = None,
+    clock: Callable[[], float] = time.monotonic,
 ) -> dict[str, Any]:
     """Collect and atomically persist a read-only, bounded host census."""
 
     run = runner or _run
+    deadline = clock() + FULL_INVENTORY_BUDGET_SECONDS if full else None
     mounts, gaps = _mounts(run)
     roots: list[dict[str, Any]] = []
     root_gaps = list(gaps)
@@ -195,7 +209,7 @@ def collect_host_inventory(
         record, record_gaps = _children(path)
         record["owner_family"] = family
         if full and family in SIZE_PROBE_FAMILIES and record["exists"] and not record["symlink"]:
-            size, measurement, size_gap = _bounded_size(path, run)
+            size, measurement, size_gap = _bounded_size(path, run, deadline=deadline, clock=clock)
             record["size_bytes"] = size
             record["measurement"] = measurement
             if size_gap:
