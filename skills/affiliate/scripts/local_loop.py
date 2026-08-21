@@ -629,6 +629,87 @@ def observe_repost_acquisition(state):
     }
 
 
+def create_repost_proposal(state):
+    """Offer one disclosed Affiliate placement to the separate Repost owner.
+
+    This writes a private handoff only. It never posts, grants revenue credit,
+    or assumes that the separate owner has consumed the proposal.
+    """
+    try:
+        ledger = json.loads((state / "placement-ledger.json").read_text(encoding="utf-8"))
+        placement_rows = {
+            row.get("placement_id"): row for row in ledger.get("placements", [])
+            if isinstance(row, dict) and isinstance(row.get("placement_id"), str)
+        }
+    except (OSError, ValueError, TypeError):
+        placement_rows = {}
+    candidates = []
+    for path in (state / "campaign-publications").glob("*.json"):
+        try:
+            campaign = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        placement_id = campaign.get("placement_id")
+        owned_url = campaign.get("owned_url")
+        if not (
+            campaign.get("state") == "X_LIVE"
+            and isinstance(placement_id, str) and placement_id
+            and isinstance(owned_url, str) and owned_url.startswith("https://aniccaai.com/blog/")
+        ):
+            continue
+        metrics = placement_rows.get(placement_id, {}).get("provider_clicks", {})
+        click_count = metrics.get("count") if isinstance(metrics, dict) else None
+        candidates.append({
+            "placement_id": placement_id,
+            "plan_id": campaign.get("plan_id"),
+            "owned_article_url": owned_url,
+            "provider_click_count": click_count if isinstance(click_count, int) else None,
+            "created_at": campaign.get("created_at") or "",
+        })
+    if not candidates:
+        return {"state": "WAITING_FOR_ELIGIBLE_PLACEMENT", "changed": False}
+    selected = max(candidates, key=lambda row: (
+        row["provider_click_count"] is not None,
+        row["provider_click_count"] or -1,
+        row["created_at"],
+    ))
+    proposal_identity = {
+        "placement_id": selected["placement_id"],
+        "owned_article_url": selected["owned_article_url"],
+        "language": "en",
+        "proposal_kind": "AFFILIATE_REPOST_PROPOSAL",
+    }
+    proposal_id = hashlib.sha256(json.dumps(
+        proposal_identity, sort_keys=True, separators=(",", ":")
+    ).encode()).hexdigest()
+    receipt = {
+        "schema_version": 1,
+        "receipt_type": "AFFILIATE_REPOST_PROPOSAL",
+        "proposal_id": proposal_id,
+        "state": "READY_FOR_EXISTING_REPOST_OWNER",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "placement_id": selected["placement_id"],
+        "plan_id": selected["plan_id"],
+        "owned_article_url": selected["owned_article_url"],
+        "language": "en",
+        "disclosure_required": True,
+        "provider_click_count": selected["provider_click_count"],
+        "selection_state": "BOUNDED_EXPLORATION_NO_APPROVED_NET",
+        "repost_delivery_state": "UNCONSUMED_BY_SEPARATE_OWNER",
+        "revenue_credit_state": "NO_REVENUE_CREDIT",
+        "tracking_link_state": "NOT_INCLUDED",
+    }
+    changed = append_unique(
+        state / "repost-proposals.jsonl", receipt, ("proposal_id",)
+    )
+    atomic_json(state / "repost-proposals" / "latest.json", receipt)
+    return {
+        **receipt,
+        "state": "READY_FOR_EXISTING_REPOST_OWNER" if changed else "ALREADY_PROPOSED",
+        "changed": changed,
+    }
+
+
 def latest_commission_rows(state):
     """Return one latest lifecycle row per provider transaction lineage."""
     latest = {}
@@ -950,6 +1031,25 @@ def owner_event(state, wake_event, sent_event_ids=None):
             f"次の実行: {wake_event.get('acquisition_decision_instruction')}"
         ))
     repost = wake_event.get("repost_observation") or {}
+    repost_proposal = wake_event.get("repost_proposal") or {}
+    if (
+        repost_proposal.get("changed")
+        and repost_proposal.get("state") == "READY_FOR_EXISTING_REPOST_OWNER"
+    ):
+        kind = "REPOST_PROPOSAL_READY"
+        add(kind, {
+            "kind": kind,
+            "proposal_id": repost_proposal.get("proposal_id"),
+        }, (
+            f"placement={repost_proposal.get('placement_id') or 'UNKNOWN'} / "
+            "existing Repost owner handoff only / no post, click, or revenue credit"
+        ), decision=(
+            "英語・disclosure必須・tracking link非含有のplacement proposalを"
+            "別Repost owner向けに保存しました"
+        ), next_job=(
+            "別Repost ownerがproposalを消費し、exact placement ID付きの"
+            "public readbackを返すまで外部効果は主張しない"
+        ))
     if repost.get("changed") and repost.get("state") == "OBSERVED":
         kind = "REPOST_OBSERVED"
         add(kind, {
@@ -3056,6 +3156,16 @@ def _wake_once(args, started_at, run_id):
             "denominator_state": "POST_ACTION_COUNT_ONLY",
             "revenue_credit_state": "NO_REVENUE_CREDIT",
         }
+    try:
+        repost_proposal = admit(
+            "repost.propose", "LEDGER_ONLY", {"owner": "existing-x-repost"},
+            lambda: create_repost_proposal(state),
+        )
+    except Exception as error:
+        repost_proposal = {
+            "state": "PROPOSAL_FAILED", "changed": False,
+            "failure_type": type(error).__name__, "proposal_id": None,
+        }
     link = admit(
         "tracking-link.read", "READ_ONLY", {"provider": "elevenlabs"},
         lambda: {"state": "AVAILABLE" if elevenlabs_link(args.private_markdown.expanduser()) else "MISSING"},
@@ -3398,6 +3508,14 @@ def _wake_once(args, started_at, run_id):
                 "post_action_count", "joined_campaign_count",
                 "unjoined_post_action_count", "invalid_row_count", "join_state",
                 "denominator_state", "revenue_credit_state", "failure_type",
+            )
+        },
+        "repost_proposal": {
+            key: repost_proposal.get(key)
+            for key in (
+                "state", "changed", "proposal_id", "placement_id", "plan_id",
+                "provider_click_count", "repost_delivery_state",
+                "revenue_credit_state", "tracking_link_state", "failure_type",
             )
         },
         "acquisition_decision_state": acquisition_decision.get("state"),

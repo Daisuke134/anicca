@@ -22,6 +22,35 @@ SPEC.loader.exec_module(MODULE)
 
 
 class LocalLoopTest(unittest.TestCase):
+    def test_repost_proposal_is_exactly_once_and_never_contains_tracking_link(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root)
+            campaign_dir = state / "campaign-publications"
+            campaign_dir.mkdir(parents=True)
+            MODULE.atomic_json(campaign_dir / "alpha-en.json", {
+                "state": "X_LIVE", "plan_id": "alpha-en",
+                "placement_id": "alpha-en-1", "created_at": "2026-08-21T00:00:00+00:00",
+                "owned_url": "https://aniccaai.com/blog/alpha-guide",
+            })
+            MODULE.atomic_json(state / "placement-ledger.json", {"placements": [{
+                "placement_id": "alpha-en-1",
+                "provider_clicks": {"count": 3},
+            }]})
+
+            first = MODULE.create_repost_proposal(state)
+            second = MODULE.create_repost_proposal(state)
+
+            self.assertEqual(first["state"], "READY_FOR_EXISTING_REPOST_OWNER")
+            self.assertTrue(first["changed"])
+            self.assertEqual(first["repost_delivery_state"], "UNCONSUMED_BY_SEPARATE_OWNER")
+            self.assertEqual(first["revenue_credit_state"], "NO_REVENUE_CREDIT")
+            self.assertEqual(first["tracking_link_state"], "NOT_INCLUDED")
+            self.assertEqual(second["state"], "ALREADY_PROPOSED")
+            self.assertFalse(second["changed"])
+            serialized = (state / "repost-proposals.jsonl").read_text()
+            self.assertNotIn("try.elevenlabs.io", serialized)
+            self.assertNotIn("affiliate_link", serialized)
+
     def test_cost_budget_deduplicates_actual_usd_rows_and_blocks_at_cap(self):
         with tempfile.TemporaryDirectory() as root:
             state = Path(root)
