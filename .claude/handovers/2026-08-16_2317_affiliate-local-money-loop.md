@@ -17,6 +17,15 @@
   and no public/provider effect changed. F01 and F02 are closed; F03 schema is
   installed but still awaits a real typed failure/retry readback; B01 remains
   open.
+- Latest launchd management-plane readback at `2026-08-21T14:17:46+0900`
+  returned exit `0` for both `launchctl print` and `launchctl list` on the
+  registered `ai.anicca.affiliate-loop` label. The label is idle after its
+  one-shot wake with `runs=228`, `last exit code=0`, and `600` seconds; stdout
+  was last written by the successful `14:12:10+0900` wake, while stderr's last
+  write is the historical `2026-08-20T19:09:16+0900` failure. The former
+  `141: Reentrancy avoided` result is therefore historical management-plane
+  evidence, not a current owner failure. This proves scheduling/readback, not
+  provider money: the official commission artifact remains empty.
 - Prior bounded Telegram-history repair was installed as immutable release
   `088f36982ae9ec6c643d7fa6d9a299701dbb377b`; source and installed
   `local_loop.py` SHA-256 is `7d9c401b4785dc2f39ac367887d0ceb9b1e481cb9b7328c022d1bc186100e3c3`,

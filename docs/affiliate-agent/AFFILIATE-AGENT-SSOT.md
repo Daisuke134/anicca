@@ -803,6 +803,19 @@ remain `135/135`. The typed-failure schema is installed; no failure occurred
 in this healthy wake, so F03 remains open for a real typed-failure/retry
 readback. F02 is closed; B01 and money remain open.
 
+### 1.1.30 Latest launchd management-plane readback
+
+At `2026-08-21T14:17:46+0900`, the registered `ai.anicca.affiliate-loop`
+label returned exit `0` for both `launchctl print` and `launchctl list`. The
+label is loaded from the expected plist, is idle as `state=not running` after
+its one-shot wake, retains `runs=228`, `last exit code=0`, and
+`run interval=600 seconds`. The stderr log's last write remains the historical
+`2026-08-20T19:09:16+0900` failure, while stdout was written by the successful
+`14:12:10+0900` wake. Therefore the former `141: Reentrancy avoided` management
+result is not a current owner failure; it remains historical evidence only.
+This closes the launchd scheduling/readback concern, but it does not close B01:
+the official commission artifact is still empty and no money is claimed.
+
 ### 1.2.0 Audited executable boundary
 
 The installed ownership graph has six launchd labels: three persistent browser
