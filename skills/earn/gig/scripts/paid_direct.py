@@ -2,6 +2,7 @@
 """Recover verified paid remote answers through existing delivery boundaries."""
 from __future__ import annotations
 import argparse, fcntl, hashlib, json, os, re, shutil, stat, subprocess, sys, tempfile, time, zipfile
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from datetime import date, datetime
 from pathlib import Path
@@ -3312,6 +3313,40 @@ def _fresh_child_env(args):
     return env
 
 
+def _run_paid_item(args, room: str, item_file: Path, prepared_file: Path,
+                   effect_file: Path) -> tuple[dict[str, Any], int, int, int, str]:
+    prepare = _run_bounded(
+        _prepare_command(args, item_file, prepared_file),
+        env=_fresh_child_env(args), timeout=FILE_PREPARE_TIMEOUT_SECONDS,
+    )
+    try:
+        prepared = _load(prepared_file)
+    except (OSError, json.JSONDecodeError):
+        prepared = {"status": "failed", "failed_step": "remote_resume"}
+    if prepare.returncode == 0 and prepared.get("_paid_prepare_status") == "pending":
+        return {"talkroom_id": room, "status": "pending"}, 0, 0, 0, ""
+    if prepare.returncode or prepared.get("_paid_prepare_status") != "prepared":
+        step = _text(prepared.get("failed_step")) or "remote_resume"
+        return {"talkroom_id": room, "status": "failed", "failed_step": step}, 0, 0, 1, step
+    process = _run_bounded(_effect_command(args, prepared_file, effect_file), env=_fresh_child_env(args))
+    try:
+        value = _load(effect_file)
+    except (OSError, json.JSONDecodeError):
+        value = {"status": "failed", "failed_step": "writer_lock", "effect": 0, "readback": 0}
+    if process.returncode or value.get("status") != "completed":
+        step = _text(value.get("failed_step")) or "writer_lock"
+        return ({"talkroom_id": room, "status": "failed", "failed_step": step},
+                int(value.get("effect") == 1), int(value.get("readback") == 1), 1, step)
+    item_result = value.get("item") or {}
+    row = {"talkroom_id": room, "status": "completed", **{
+        key: item_result[key] for key in (
+            "send_performed", "deduplicated", "formal_delivery_checkbox", "remote_repaired",
+            "file_repaired", "evidence_paths",
+        ) if key in item_result
+    }}
+    return row, int(item_result.get("send_performed") is True), int(value.get("readback") == 1), 0, ""
+
+
 def _paid_report(run_id: str, result: dict[str, Any]) -> str:
     items = ", ".join(
         f"{_text(row.get('talkroom_id'))}={_text(row.get('status'))}"
@@ -3424,6 +3459,8 @@ def run_once(args, output: Path) -> int:
         rows: dict[str, dict[str, Any]] = {}
         actionable = 0
         failed = effect = readback = 0; failed_step = ""
+        executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="paid-project")
+        jobs = []
         for item in items:
             room = _text(item.get("talkroom_id"))
             try: item = _targeted(args, item, room)
@@ -3514,25 +3551,18 @@ def run_once(args, output: Path) -> int:
             actionable += 1
             prepared_file = item_file.with_name(item_file.stem + "-prepared.json")
             effect_file.unlink(missing_ok=True); prepared_file.unlink(missing_ok=True)
-            prepare = _run_bounded(
-                _prepare_command(args, item_file, prepared_file),
-                env=_fresh_child_env(args), timeout=FILE_PREPARE_TIMEOUT_SECONDS,
-            )
-            try: prepared = _load(prepared_file)
-            except (OSError, json.JSONDecodeError): prepared = {"status": "failed", "failed_step": "remote_resume", "effect": 0, "readback": 0}
-            if prepare.returncode == 0 and prepared.get("_paid_prepare_status") == "pending":
-                rows[room] = {"talkroom_id": room, "status": "pending"}
-                continue
-            if prepare.returncode or prepared.get("_paid_prepare_status") != "prepared":
-                failed, failed_step = failed + 1, _text(prepared.get("failed_step")) or "remote_resume"; rows[room] = {"talkroom_id": room, "status": "failed", "failed_step": failed_step}; continue
-            process = _run_bounded(_effect_command(args, prepared_file, effect_file), env=_fresh_child_env(args))
-            try: value = _load(effect_file)
-            except (OSError, json.JSONDecodeError): value = {"status": "failed", "failed_step": "writer_lock", "effect": 0, "readback": 0}
-            if process.returncode or value.get("status") != "completed":
-                effect += int(value.get("effect") == 1); readback += int(value.get("readback") == 1)
-                failed, failed_step = failed + 1, _text(value.get("failed_step")) or "writer_lock"; rows[room] = {"talkroom_id": room, "status": "failed", "failed_step": failed_step}; continue
-            item_result = value.get("item") or {}; effect, readback = effect + int(item_result.get("send_performed") is True), readback + int(value.get("readback") == 1)
-            rows[room] = {"talkroom_id": room, "status": "completed", **{key: item_result[key] for key in ("send_performed", "deduplicated", "formal_delivery_checkbox", "remote_repaired", "file_repaired", "evidence_paths") if key in item_result}}
+            jobs.append((room, executor.submit(
+                _run_paid_item, args, room, item_file, prepared_file, effect_file,
+            )))
+        executor.shutdown(wait=True)
+        for room, job in jobs:
+            row, item_effect, item_readback, item_failed, item_step = job.result()
+            rows[room] = row
+            effect += item_effect
+            readback += item_readback
+            failed += item_failed
+            if item_step:
+                failed_step = item_step
         dates = [_text(item.get("delivery_date")) for item in items if _text(item.get("delivery_date"))]
         result = {"status": "failed" if failed else "completed", "observed": len(items),
                   "duplicate_dropped": duplicate_dropped, "actionable": actionable,
