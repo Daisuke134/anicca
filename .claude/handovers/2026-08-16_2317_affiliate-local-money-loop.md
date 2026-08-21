@@ -1,5 +1,17 @@
 # Affiliate local money loop handover
 
+- Current Repost readback confirms the acquisition gap is structural, not a
+  metrics parser defect. The separate `posted.jsonl` has `58` valid rows, all
+  third-party X quote-post candidates; neither their `source_url` nor `post_url`
+  matches any Affiliate campaign X URL. The Affiliate canonical ledger has 20
+  public/dedicated-link placements, `35` provider clicks (`33` unique), three
+  positive DEV view rows, and zero pending/approved/paid/reversed commission
+  rows. The observer therefore remains `NO_EXACT_CAMPAIGN_URL_JOIN / 58`
+  unjoined / `NO_REVENUE_CREDIT`. Do not retroactively claim those posts as
+  Affiliate traffic. A real bridge requires the separate Repost effect owner to
+  accept bounded Affiliate proposals; the Affiliate worktree must not edit it
+  or post manually. B01 still waits for an organic official transaction.
+
 - Release `15ca7f7c10a5cff47a1cff7a569cad355593e288` is installed as immutable
   `current`; the full Affiliate suite is `93/93`, compile and `git diff --check`
   pass, and source/installed `local_loop.py` plus

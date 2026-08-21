@@ -1236,6 +1236,25 @@ This closes the current Codex pin failure path only. B01's non-empty official
 transaction, real cost coverage, universal F05, and USD 10,000 gates remain
 open.
 
+### 1.1.48 Repost is currently unrelated quote-post volume, not Affiliate acquisition
+
+The latest read-only Affiliate observation of the existing Repost owner records
+`58` valid `posted.jsonl` rows, `0` exact Affiliate campaign joins, `58`
+unjoined rows, and `NO_REVENUE_CREDIT`. Direct comparison of the ledger fields
+shows why: every sampled current row is a quote of a third-party AI-news X post,
+and neither its `source_url` nor its published `post_url` equals any Affiliate
+campaign X URL. The canonical Affiliate ledger has 20 public/dedicated-link
+placements, 35 provider clicks (33 unique), three positive DEV view rows, and
+zero pending/approved/paid/reversed commission rows.
+
+This is a true upstream shared-effect-owner boundary, not an attribution parser
+bug. The existing Repost owner only consumes its third-party candidate harvester
+and has no Affiliate-proposal input. Affiliate must neither modify that separate
+owner from this worktree nor manually post a substitute. Until the Repost owner
+accepts one bounded disclosed Affiliate proposal and returns an exact placement
+identity, its volume is excluded from visits, clicks, revenue, allocation, and
+money. B01 still requires an organic official provider transaction.
+
 ### 1.2.0 Audited executable boundary
 
 The installed ownership graph has six launchd labels: three persistent browser
