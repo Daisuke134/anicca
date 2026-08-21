@@ -116,10 +116,29 @@ def _is_workday_account_create(controls: list[dict[str, Any]]) -> bool:
 
 def _is_workday_sign_in(controls: list[dict[str, Any]]) -> bool:
     """Recognize Workday's existing-account authentication form."""
-    has_email = any(_normalized(control.get("type")) == "email" for control in controls)
+    # Workday's production form currently renders the email field as
+    # ``<input type="text" ...>`` and exposes ``Email Address*`` as its label
+    # (some tenants use ``name=email`` instead).  Do not require HTML5
+    # ``type=email`` or the real sign-in surface is misclassified as ``none``.
+    has_email = any(
+        _normalized(control.get("type")) == "email"
+        or (
+            _normalized(control.get("tag")) == "input"
+            and (
+                "email address" in _normalized(control.get("label"))
+                or _normalized(control.get("name")) == "email"
+            )
+        )
+        for control in controls
+    )
     has_password = any(
         _normalized(control.get("type")) == "password" for control in controls
     )
+    # An incomplete account-create form can already contain one password field
+    # and a generic Sign In action; its verify-password marker wins.
+    combined = " ".join(_control_text(control) for control in controls)
+    if "verify new password" in combined:
+        return False
     has_sign_in = any(
         _normalized(control.get("text")) == "sign in"
         and (
@@ -141,10 +160,18 @@ def _is_workday_sign_in_entry(controls: list[dict[str, Any]]) -> bool:
         )
         for control in controls
     )
-    return sign_in_count == 1 and not any(
-        _normalized(control.get("type")) in {"email", "password"}
+    has_auth_fields = any(
+        _normalized(control.get("type")) == "password"
+        or (
+            _normalized(control.get("tag")) == "input"
+            and (
+                "email address" in _normalized(control.get("label"))
+                or _normalized(control.get("name")) == "email"
+            )
+        )
         for control in controls
     )
+    return sign_in_count == 1 and not has_auth_fields
 
 
 def _validate_snapshot(snapshot: Any) -> dict[str, Any]:

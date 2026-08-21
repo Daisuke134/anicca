@@ -140,6 +140,31 @@ class AtsReadinessTests(unittest.TestCase):
         self.assertFalse(result["claim_ready"])
         self.assertEqual(result["surface"], "none")
 
+    def test_workday_sign_in_accepts_text_email_field_with_email_label(self):
+        snapshot = {
+            "version": 1,
+            "url": "https://example.wd5.myworkdayjobs.com/en-US/careers/job/Japan-Tokyo/example/apply/applyManually",
+            "navigation_committed": True,
+            "frames": [
+                {
+                    "url": "https://example.wd5.myworkdayjobs.com/en-US/careers/job/Japan-Tokyo/example/apply/applyManually",
+                    "controls": [
+                        {
+                            "tag": "input",
+                            "type": "text",
+                            "label": "Email Address*",
+                        },
+                        {"tag": "input", "type": "password", "label": "Password*"},
+                        {"tag": "button", "type": "submit", "text": "Sign In"},
+                    ],
+                }
+            ],
+        }
+        result = evaluate_snapshot(snapshot)
+        self.assertEqual(result["surface"], "workday_sign_in")
+        self.assertTrue(result["ready"])
+        self.assertFalse(result["claim_ready"])
+
     def test_generic_application_surface_is_claim_ready(self):
         snapshot = {
             "version": 1,

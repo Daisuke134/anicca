@@ -4,22 +4,21 @@
 **Last updated:** 2026-08-21
 **Owner:** Daisuke Narita
 **Status:** The macOS launchd manager and the three canonical job-search LaunchAgents
-are healthy. Telegram uses the shared OpenClaw gateway and records ACKs when the
-transport returns a message ID. `JOB-LEDGER-EVENT-10N` is fixed. `JOB-SCHEDULER-
+are healthy. Telegram uses the shared OpenClaw gateway and the latest corrective
+report received ACK `27288`. `JOB-LEDGER-EVENT-10N` is fixed. `JOB-SCHEDULER-
 POLICY-10O` is implemented and live at a 30-minute cadence, but its completion gate
-is still open: live pass `daily-20260821-151025` exited `0`, delivered Telegram ACK
-`27220`, and produced no new submission or Submit click. The pass quarantined ten
-pre-submit OpenAI/Anthropic rows under the new hard-employer policy, preserved all
-historical OpenAI/Anthropic/Palantir/Cursor terminal evidence, and left one
-`materials_ready` row (Rakuten) plus four discovered rows. Genspark was quarantined
-after an immutable attribution recorded an unsupported message variant; Salesforce
-MuleSoft was rejected because its official requirements contain no AI/LLM/product
-requirement; Rakuten stopped at the Workday account-create surface. Ashby entrance
-detection and `/application` URL normalization are fixed in commits `b9763ec57`
-and `40d14fde1`; Ashby preflight now fails closed on provider caps, unknown required
-controls, CAPTCHA, and pre-click exceptions. Older `send_started` rows remain
-quarantined and are never blindly resent. Guardian and the Life Manager Career
-surface remain in progress.
+is still open. Live pass `daily-20260821-161619` exited `0`: the deterministic Ashby
+path processed Tailor through the real Submit click and recorded `submit_unknown`
+because no authoritative confirmation was available; the model Workday path
+reached Rakuten's `Apply → Apply Manually → Sign In` sequence but stopped before
+claim, credential fill, or submit when the post-click surface did not render. The
+four discovery query families completed. OpenAI, Anthropic, Palantir, Cursor,
+Accenture, KPMG, Deloitte, Ernst & Young/EY, and PwC remain one hard exclusion set;
+historical terminal evidence is preserved and never reopened. The Workday evaluator
+now accepts its production `input type=text` email field when labelled `Email
+Address*`; the focused ATS suite is green (`12/12`). Ashby remains the primary
+adapter; Workday is a secondary adapter under repair. Guardian and the Life Manager
+Career surface remain in progress.
 **Done when:** `Daisuke134/life-manager` is the only versioned source and the
 resident system can discover, qualify, tailor and submit truthful eligible
 applications on the configured recurring cadence without a product-imposed daily
@@ -303,8 +302,8 @@ workday_job
   → Apply
   → workday_apply_choice
   → Apply Manually
-  → workday_account_create
-  → authenticated application steps
+  → workday_sign_in_entry → workday_sign_in (existing account)
+    or workday_account_create → authenticated application steps
   → workday_application
 ```
 
@@ -312,6 +311,7 @@ workday_job
 |---|---|---|
 | Model the Apply choice as a separate surface | [CrowdStrike Workday application](https://crowdstrike.wd5.myworkdayjobs.com/crowdstrikecareers/job/Japan---Tokyo/Regional-Sales-Engineer---AIDR_R29264-1) | “Autofill with Resume” / “Apply Manually” / “Use My Last Application” |
 | Model account creation as a separate, non-claimable surface | [CrowdStrike Workday Create Account](https://crowdstrike.wd5.myworkdayjobs.com/en-US/crowdstrikecareers/job/Japan---Tokyo/Regional-Sales-Engineer---AIDR_R29264-1/apply/applyManually) | “Email Address” / “Password” / “Verify New Password” / “Create Account” |
+| Model existing-account sign-in entry and form separately | [Rakuten Workday application surface](https://rakuten.wd1.myworkdayjobs.com/en-us/rakuteninc/job/tokyo-japan/solutions---customer-success-manager---conversational-experiences-department--cxd-_1036041-147) | “Sign In” entry followed by “Email Address” / “Password” / “Sign In” |
 | Keep actions semantic and auto-waited | [Playwright locators](https://playwright.dev/docs/locators) | “We recommend prioritizing role locators to locate elements, as it is the closest way to how users and assistive technology perceive the page.” |
 
 `evaluate_snapshot` adds `claim_ready`. Its meaning is independent of `ready`:
@@ -321,6 +321,7 @@ workday_job
 | `workday_job` | true | false | Click `Apply` |
 | `workday_apply_choice` | true | false | Prefer `Apply Manually`; do not upload before material routing |
 | `workday_account_create` | true | false | Use only an approved private identity/credential path |
+| `workday_sign_in_entry` | true | false | Click the visible `Sign In` entry once, then recapture |
 | `workday_sign_in` | true | false | Use the existing private account; never expose credentials |
 | `workday_application` | true | true | Claim only on the final submit-bearing application surface |
 | `ashby_job` | true | false | Click the visible `Apply for this Job` CTA, recapture, and reevaluate |
@@ -351,6 +352,23 @@ language, or employer.
 
 Order 10 remains `in_progress` after 10B. The real confirmed-application gate is
 unchanged.
+
+### 4.5.2 Workday locator compatibility
+
+The 2026-08-21 Rakuten snapshot showed the sign-in email control as
+`<input type="text" aria-label="Email Address*">`, not `type="email"`. Requiring
+the HTML5 type caused a real sign-in form to be classified as
+`application_surface_not_found` after the user-facing Sign In transition. The
+production evaluator now recognizes either `type=email` or an input labelled
+`Email Address*`/named `email`, while still rejecting an incomplete account-create
+form that contains `Verify New Password`. The browser prompt also treats Workday's
+job-page `Apply` as a semantic button because the provider renders it as
+`<a role="button">`; it never uses a hidden submit element or forced click.
+
+Evidence: private snapshot
+`daily-20260821-161619/ats-rakuten-after-sign-in-entry-v1.json`; evaluator result
+`surface=none` before the fix; focused replay `12/12` after the fix. No claim,
+credential input, or submission was made for Rakuten in that pass.
 
 ### 4.5.1 Durable ATS progress projection
 
@@ -950,10 +968,19 @@ Latest runtime recheck measured on 2026-08-21:
 | Remaining ATS proof | The required real confirmed Ashby and Workday submissions are still absent; `ats_progress.complete` remains false |
 | Ledger repair follow-up | The canonical `Ledger.transition` fix advanced Cognition from `discovered` through `qualified` to `materials_ready`; the reopened DB reports the same state, `PRAGMA integrity_check=ok`, and zero event/projection mismatches. The subsequent live pass exited `0`, reported `no_eligible_job_found` with Telegram ACK `27113`, and did not submit because its other inspected roles had unverified explicit experience minima. |
 
-The engineering program must therefore describe the system as
+The engineering program therefore describes the system as
 `acquisition_live + follow_through_live + attribution_live +
-The current runtime additionally has `ledger_event_consistency_blocked` until the
-discovered→qualified→materials_ready event contract is repaired and replayed.
+ashby_primary_live + workday_secondary_repair`.
+
+Late-pass runtime evidence (2026-08-21 JST): `daily-20260821-161619` exited `0`.
+Its Ashby fast path clicked Tailor's real `Submit` control and recorded terminal
+`submit_unknown`; the row is fenced and will be reconciled by the inbox pass, never
+resent blindly. Its Workday lane reached the Rakuten sign-in entry and then stopped
+with `application_surface_not_found` after the sign-in transition. Gateway logs show
+the attempted daily report transport returned message IDs `27282`/`27283`; the
+dedicated correction report was sent and acknowledged as `27288`. The evaluator
+compatibility fix for Workday's text-typed email field is committed with the focused
+ATS replay green; the next live pass is the required E2E recheck.
 
 ### 8.2 Outcome and attribution model
 
@@ -1175,9 +1202,9 @@ must accumulate in the live loop:
 | 7 | Bilingual resume and official-posting language routing | `completed` | 107 tests; fourteen grounded Japanese points; A4 one-page Japanese PDF; extracted-text and visual inspection; real CLI selected the Japanese PDF for Japanese text and technical-business English PDF for English text; routed path/hash remains the Telegram receipt source |
 | 8 | Verified nationality and Japan work-visa answers | `waiting_private_input` | Add the two legal facts to the private profile, then rerun the current BJAK AI Finance Agent application without inference |
 | 9 | Recurring interview preparation and real interview-email E2E | `implemented_waiting_external_e2e` | Persistent registration; 3-day/1-day/immediate windows; real Telegram immediate delivery plus second-tick dedupe; forced production launchd no-mail pass and private DB healthcheck; final real recruiter-email E2E waits for an interview message |
-| 10 | ATS resilience for Ashby, Workday and other blocked forms | `in_progress` | 10A–10M remain as recorded above. The employer-exclusion fence now rejects OpenAI, Anthropic, Palantir, Cursor and the existing consulting exclusions at ranking and Ledger intake; a pre-submit quarantine preserves terminal history. Ashby fast preflight fails closed on provider limits, unknown required controls, visible CAPTCHA and pre-click exceptions, and keeps the shared CDP browser alive. Live `daily-20260821-151025` exited `0` with Telegram ACK `27220`: zero submits, ten excluded rows quarantined, Genspark and Salesforce safely blocked/rejected, and Rakuten stopped before claim at Workday account creation. Current counts are 6 submitted / 33 submit_unknown / 23 rejected / 1 materials_ready. Next gate is one real confirmed non-excluded Ashby and one Workday submission, with repeated-wake progress and no blind retry |
+| 10 | ATS resilience for Ashby, Workday and other blocked forms | `in_progress` | 10A–10M remain as recorded above. The employer-exclusion fence now rejects OpenAI, Anthropic, Palantir, Cursor and the existing consulting exclusions at ranking and Ledger intake; a pre-submit quarantine preserves terminal history. Ashby fast preflight fails closed on provider limits, unknown required controls, visible CAPTCHA and pre-click exceptions, and keeps the shared CDP browser alive. Live `daily-20260821-161619` exited `0`: Ashby processed Tailor through the real Submit click into terminal `submit_unknown`; Rakuten Workday stopped after the Sign In transition before claim or credentials. The Workday evaluator now accepts the production text-typed email field and the focused ATS replay is green. Current counts are 6 submitted / 34 submit_unknown / 23 rejected / 1 materials_ready / 3 discovered. Next gate is one real confirmed non-excluded Ashby and one Workday submission, with repeated-wake progress and no blind retry |
 | 10N | `JOB-LEDGER-EVENT-10N`: repair the attributed-application transition contract | `completed` | `Ledger` appends the matching event before updating the trigger-guarded projection in the same transaction. Focused ledger tests pass (`17/17`); the live Cognition row advanced `discovered→qualified→materials_ready`, survived DB reopen, and the real ledger reports integrity `ok` with zero event/projection mismatches. |
-| 10O | `JOB-SCHEDULER-POLICY-10O`: align cadence and application objective | `in_progress` | Code commit `e07b6887c` removes the shell quota short-circuit, allocates unbounded transactional audit slots under the existing fence (a definite pre-click `not_submitted` releases its slot), adds `pending_materials_ready_applications()`, updates the prompt, and installs 30-minute launchd/systemd cadence. Ashby入口認識 is fixed in `b9763ec57`; Ashby job/application URLs are normalized for claim matching in `40d14fde1` (22 focused state/ledger tests pass). Live `daily-20260821-142833` exited `0`, reached six Ashby application forms, claimed and clicked Submit for Cognition and Cohere, recorded both as terminal `submit_unknown`, left five pending rows, and delivered Telegram ACK `27182`. The completion gate remains: reconcile a later authoritative confirmation or obtain one new confirmed submission, advance to the next pending row on repeated wakes, preserve dedupe/ATS fences, and quarantine unknown deliveries without blind resend |
+| 10O | `JOB-SCHEDULER-POLICY-10O`: align cadence and application objective | `in_progress` | Code commit `e07b6887c` removes the shell quota short-circuit, allocates unbounded transactional audit slots under the existing fence (a definite pre-click `not_submitted` releases its slot), adds `pending_materials_ready_applications()`, updates the prompt, and installs 30-minute launchd/systemd cadence. Ashby入口認識 is fixed in `b9763ec57`; Ashby job/application URLs are normalized for claim matching in `40d14fde1` (22 focused state/ledger tests pass). The late live pass `daily-20260821-161619` processed Tailor through the deterministic Ashby submit path into terminal `submit_unknown`; the correction Telegram report was acknowledged as `27288`. The completion gate remains: reconcile a later authoritative confirmed receipt or obtain one new confirmed submission, advance to the next pending row on repeated wakes, preserve dedupe/ATS fences, and quarantine unknown deliveries without blind resend |
 | 11 | Closed-loop Dream Job objective, self-improvement and self-healing | `in_progress` | 11A completed in PR #1364 (final CI `30473862095`). 11B adds immutable attribution and outcomes. 11C implements the resident weekly learning driver, deterministic two-arm assignment, held-out replay, Wilson promotion, immediate rollback, compare-and-swap pointer and hashed Telegram report; its real first pass remained truthfully inconclusive at 0/0 resolved with replay violations=0 and ACK `4530`, without changing the five application states. Guardian, lifecycle closure and `summary.v2` remain in 11D–11F |
 | 12 | Portable local OSS distribution | `completed` | 12A merged in PR #1296; 12B merged in PR #1302 (`a58f1838`, CI `30449915191`): guided interactive/JSON profile authoring with placeholder/overwrite/legal-inference fences; reproducible 105-entry merge-commit tar.gz + SHA-256 `f334202a`; extracted-artifact clean-HOME install; 149 job-loop + 7 runner tests; canonical health exit 0 and both SQLite integrity checks `ok` without scheduler reinstall |
 | 13 | Life Manager Career organ and paid multi-tenant service | `pending` | 13A local Career surface consumes `summary.v2`; 13B moves the proven drivers to isolated cloud tenants; 13C integrates evidence-backed Financial/Physical/Mental job utility without merging consent boundaries |

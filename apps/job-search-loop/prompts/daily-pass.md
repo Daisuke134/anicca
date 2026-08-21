@@ -94,7 +94,9 @@ ashby_job
   → click the visible “Apply for this Job” control
   → recapture and reevaluate
 workday_job
-  → click the ordinary Apply navigation control
+  → click the ordinary visible `Apply` navigation control using
+    `get_by_role("button", name="Apply", exact=True)`; Workday may render this
+    control as an `<a role="button">`, so do not require link semantics
   → recapture and reevaluate
 workday_apply_choice
   → click Apply Manually
