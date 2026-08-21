@@ -1195,15 +1195,17 @@ Manager must never read the OpenClaw map, credentials, or assets at runtime.
 
 | Product/channel | TikTok | Instagram | YouTube | Current truth |
 |---|---|---|---|---|
-| Honne EN | `@honne_reveal` (`cmoig11ew001zlv0yk6vqo1us`) | live Postiz target not yet frozen | **not used** | TikTok + Instagram only |
-| Honne JA | `@honnevideo` | live Postiz target not yet frozen | **not used** | TikTok + Instagram only |
-| Anicca JP4 | `@anicca.jp4` | live Postiz target not yet frozen | no dedicated target recorded | one lane at a time |
-| Anicca iOS / main JA | `@anicca.jp` | live Postiz target not yet frozen | historical candidate `@anicca-jp` (`cmn1oukj9012nnq0yqhouc3ib`) | live registry required |
-| Anicca EN / main | not in the incident canary | live Postiz target not yet frozen | historical candidate `@anicca-ai` (`cmmzukbkw04ulp30yfvijrwio`) | separate product pack |
+| Honne EN | `@honne_reveal` (`cmoig11ew001zlv0yk6vqo1us`) | **unassigned** — no live Honne Instagram profile in the 2026-08-21 registry | **not used** | TikTok only until an explicit live Instagram assignment exists |
+| Honne JA | `@honnevideo` (`cmnit95mg015rrm0ye5vm8dhl`) | **unassigned** — no live Honne Instagram profile in the 2026-08-21 registry | **not used** | TikTok only until an explicit live Instagram assignment exists |
+| Anicca JP4 | `@anicca.jp4` (`cmn8x8hdv028uqx0y4gdfse5t`) | not frozen | no dedicated target recorded | one lane at a time |
+| Anicca iOS / main JA | `@anicca.jp` (`cmp9sdev5012voh0y58qs45xc`) | `@anicca.jp1` (`cmn8ycvtn02djqx0ytuisn9mw`) | live candidate `@anicca-jp` (`cmn1oukj9012nnq0yqhouc3ib`), LM lane disabled | default-off; no provider write |
+| Anicca EN / main | not in the incident canary | `@anicca.en` (`cmn8y95rg02d2qx0y09bbk5pb`) | live candidate `@anicca-ai` (`cmq3u37gi005iqp0y90a2w92n`), LM lane disabled | separate product pack; default-off |
 | Affirmation pack | not an Anicca iOS lane | not an Anicca iOS lane | historical candidate `@anicca-affirmation-video` (`cmn8ymq6c02oio70y5ea1trv8`) | do not mix rewards |
 
-The three YouTube handles and IDs above are candidates copied from the old
-redacted map, not a production assignment. YouTube is an **Anicca-only**
+The YouTube handles above are live Postiz profiles read back on 2026-08-21;
+their current Postiz `disabled` value is `false`, but both Life Manager lanes
+are explicitly `disabled` until the direct-URL contract. They are not a
+production assignment. YouTube is an **Anicca-only**
 destination in this recovery. Honne has no YouTube job, account, campaign,
 metric gate, or TODO; do not create or assign one. An Anicca YouTube lane stays
 disabled until its live Postiz integration, product, locale, account, and direct
@@ -1218,20 +1220,22 @@ provider-specific settings, a direct URL verifier (`/shorts/<id>`,
 `/watch?v=<id>`, or an equivalent verified public URL), and shadow tests before
 any Anicca YouTube write.
 
-**MKT-02 cursor (2026-08-21 JST).** The Life Manager-side registry boundary is
-implemented as a secret-free deterministic manifest normalizer and atomic
-writer. It accepts only explicit assignments and strict `verified=true` routes,
-rejects missing/duplicate, alias-conflicting, historical, or ambiguous routes,
-keeps `disabled`/`default-off`/`shadow` lanes non-production, forbids Honne
-YouTube, and allows an Anicca YouTube row only as explicitly disabled until the
-MKT-03A direct-URL contract exists. The read-only live request reached Postiz
-with the documented `GET /public/v1/integrations` route but returned `401 No
-API Key`: no Life
-Manager-owned Postiz credential is present in this checkout/runtime, so no
-live manifest artifact was generated and no integration ID was guessed. The
-next gate is to provide the authorized Life Manager secret reference, rerun the
-GET, and freeze the redacted target manifest; no provider write is part of
-MKT-02.
+**MKT-02 cursor (2026-08-21 JST — complete for the measured assignments).**
+The Life Manager-side registry boundary is implemented as a secret-free
+deterministic manifest normalizer and atomic writer. A read-only
+`GET /public/v1/integrations` with the authorized credential returned `HTTP 200`
+and 29 rows. The frozen artifact is
+`~/.local/state/life-manager/marketing/lane-manifest.json`, mode `0600`, with
+manifest ID
+`marketing-lane-manifest:9867179bbb8db1cbd434800562a92c40935b353789c2c60de4027dba9895790c`
+and eight explicit routes: four target TikTok routes, two evidence-backed
+Anicca Instagram routes, and two Anicca YouTube candidates held explicitly
+disabled. All eight are `production_armed=false`; no provider write occurred.
+The live registry contains no Honne Instagram profile, so Honne Instagram is
+explicitly **unassigned**, not guessed or enabled. The artifact contains no
+credential, OpenClaw path, or raw provider payload. The next gate is MKT-03's
+single Honne EN TikTok canary; the Postiz credential remains outside Git and
+must never be copied into the manifest.
 
 ### 8.9 Telegram marketing reporting contract
 
@@ -1567,13 +1571,13 @@ after the preceding numbered row, and no later row is started early:
 MKT-07 → MKT-08 → MKT-09 → MKT-10 → MKT-11 → MKT-11A → MKT-11B → MKT-12 →
 MKT-13`.
 
-Current TODO state: **MKT-01 done; MKT-02 active; MKT-03 onward open**. Honne
+Current TODO state: **MKT-01 done; MKT-02 done; MKT-03 active; MKT-03A onward open**. Honne
 has TikTok/Instagram destinations only; YouTube remains an Anicca-only lane.
 
 | ID | Atomic action | Account/lane | Done evidence |
 |---|---|---|---|
 | MKT-01 | **done —** Port I-3 claim, receipt, Telegram dedupe, and replay state from PostgreSQL/`pg` to the Life Manager-owned local JSONL/atomic-file ledger | all lanes | direct local process restarts cleanly; 32/32 focused tests; 149/149 runtime-adapter tests; 8/8 runtime-path tests; live/dead lock recovery stress 20/20; duplicate claim/effect/notification count is 0; expired external effects reconcile instead of retrying |
-| MKT-02 | **implementation ready; live registry pending** — Read the live Postiz integration registry and freeze a redacted multi-platform lane manifest containing integration ID, provider, profile, locale, product, and disabled state | Honne TikTok/Instagram; Anicca TikTok/Instagram/YouTube | strict assignment/verification, alias-conflict, platform-profile, YouTube-disabled, endpoint, writer-root, and secret-free tests pass; live GET is still blocked by missing Life Manager credential (`401 No API Key`), so target artifact and route IDs remain unclaimed; Honne has no YouTube row and historical/unknown profiles are not guessed |
+| MKT-02 | **done —** Read the live Postiz integration registry and freeze a redacted multi-platform lane manifest containing integration ID, provider, profile, locale, product, and disabled state | Honne TikTok/Instagram; Anicca TikTok/Instagram/YouTube | live GET `HTTP 200` with 29 rows; manifest `marketing-lane-manifest:9867179bbb8db1cbd434800562a92c40935b353789c2c60de4027dba9895790c` at the Life Manager data root, mode `0600`; eight explicit routes validate and all remain non-production; Honne Instagram is recorded as unassigned because no live profile exists; no provider write |
 | MKT-03 | Run one controlled publication using the Life Manager route, reconcile `PUBLISHED`, verify the direct TikTok `/video/<id>` URL, and send one Telegram receipt | Honne EN `@honne_reveal` | one real public URL, one matching Telegram receipt, and replay creates no new effect |
 | MKT-03A | Extend the generic publication contract and direct-URL verifier to YouTube while keeping Postiz as the provider | selected **Anicca** YouTube integration only | shadow performs zero provider writes; a verified `/shorts/<id>`, `/watch?v=<id>`, or equivalent public URL is required before canary |
 | MKT-03B | Run one controlled Postiz fan-out canary with one effect key per platform, one selected product lane at a time: Anicca on TikTok/Instagram/YouTube or Honne on TikTok/Instagram | one selected production-armed product lane | Anicca: three receipts/URLs; Honne: two receipts/URLs; each has a metric join key, one natural-language Telegram summary, and replay creates 0 new effects |
