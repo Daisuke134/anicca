@@ -1237,6 +1237,27 @@ credential, OpenClaw path, or raw provider payload. The next gate is MKT-03's
 single Honne EN TikTok canary; the Postiz credential remains outside Git and
 must never be copied into the manifest.
 
+**MKT-03 preflight (2026-08-21 JST — blocked before any external effect).**
+The read-only preflight found three independent prerequisites still absent:
+
+1. `apps/life-manager/scripts/honne-en-canary.js` accepts only the explicit
+   `LM_HONNE_EN_CANARY_TRANSPORT=fake` marker and rejects external transport;
+   its fake receipts cannot satisfy the real-publication acceptance gate.
+2. The Life Manager process environment and the guarded Life Manager data
+   boundary contain neither `LM_TELEGRAM_BOT_TOKEN` nor
+   `LM_TELEGRAM_ALERT_CHAT_ID`. OpenClaw environment files are not read or
+   used as a fallback, so a Telegram receipt cannot be delivered yet.
+3. The Life Manager-owned marketing data root has no tenant-scoped Honne EN
+   media pack, verified generation receipt, publication approval object, or
+   promoted canary job to claim. The Postiz credential alone does not create
+   those lineage inputs.
+
+No Postiz write, TikTok publication, Telegram send, lane enablement, or legacy
+OpenClaw scheduler action was performed. MKT-03 remains **active**; the next
+allowed action is to provision the Life Manager secret boundary and import or
+generate one Honne EN creative with its approval and durable job, then run the
+explicit controlled canary and direct-URL/Telegram/replay checks.
+
 ### 8.9 Telegram marketing reporting contract
 
 The ledger is machine-readable; Telegram is always a natural-language
@@ -1578,7 +1599,7 @@ has TikTok/Instagram destinations only; YouTube remains an Anicca-only lane.
 |---|---|---|---|
 | MKT-01 | **done —** Port I-3 claim, receipt, Telegram dedupe, and replay state from PostgreSQL/`pg` to the Life Manager-owned local JSONL/atomic-file ledger | all lanes | direct local process restarts cleanly; 32/32 focused tests; 149/149 runtime-adapter tests; 8/8 runtime-path tests; live/dead lock recovery stress 20/20; duplicate claim/effect/notification count is 0; expired external effects reconcile instead of retrying |
 | MKT-02 | **done —** Read the live Postiz integration registry and freeze a redacted multi-platform lane manifest containing integration ID, provider, profile, locale, product, and disabled state | Honne TikTok/Instagram; Anicca TikTok/Instagram/YouTube | live GET `HTTP 200` with 29 rows; manifest `marketing-lane-manifest:9867179bbb8db1cbd434800562a92c40935b353789c2c60de4027dba9895790c` at the Life Manager data root, mode `0600`; eight explicit routes validate and all remain non-production; Honne Instagram is recorded as unassigned because no live profile exists; no provider write |
-| MKT-03 | Run one controlled publication using the Life Manager route, reconcile `PUBLISHED`, verify the direct TikTok `/video/<id>` URL, and send one Telegram receipt | Honne EN `@honne_reveal` | one real public URL, one matching Telegram receipt, and replay creates no new effect |
+| MKT-03 | Run one controlled publication using the Life Manager route, reconcile `PUBLISHED`, verify the direct TikTok `/video/<id>` URL, and send one Telegram receipt | Honne EN `@honne_reveal` | **active — preflight blocked before external effect:** fake-only canary transport, missing Life Manager Telegram token/chat, and no Life Manager-owned Honne EN media/approval/job; one real public URL, one matching Telegram receipt, and replay creates no new effect remain required |
 | MKT-03A | Extend the generic publication contract and direct-URL verifier to YouTube while keeping Postiz as the provider | selected **Anicca** YouTube integration only | shadow performs zero provider writes; a verified `/shorts/<id>`, `/watch?v=<id>`, or equivalent public URL is required before canary |
 | MKT-03B | Run one controlled Postiz fan-out canary with one effect key per platform, one selected product lane at a time: Anicca on TikTok/Instagram/YouTube or Honne on TikTok/Instagram | one selected production-armed product lane | Anicca: three receipts/URLs; Honne: two receipts/URLs; each has a metric join key, one natural-language Telegram summary, and replay creates 0 new effects |
 | MKT-04 | Run the retained Honne EN cadence and prove seven consecutive expected cycles | Honne EN: 07:00 / 11:00 / 20:30 Asia/Tokyo | every expected slot has one generation, publication, direct URL, notification, and observation receipt |
