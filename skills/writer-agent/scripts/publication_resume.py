@@ -389,12 +389,16 @@ def require_quality_terminals(
         )
     except (OSError, json.JSONDecodeError, TypeError):
         quality_self_heal = None
-    force_advisory = bool(
-        isinstance(quality_self_heal, dict)
-        and quality_self_heal.get("action") == "force_publish_advisory"
-        and quality_self_heal.get("force_publish_after_iterations") == 5
-        and quality_self_heal.get("publication_policy") == "continuous"
-    )
+    force_advisory = False
+    if isinstance(quality_self_heal, dict):
+        try:
+            from quality_self_heal import validate_force_receipt
+
+            force_advisory = validate_force_receipt(
+                Path(run_dir), drafts
+            )
+        except Exception:
+            force_advisory = False
     advisory_seen = False
     for lang in ("ja", "en"):
         draft = Path(drafts[lang])

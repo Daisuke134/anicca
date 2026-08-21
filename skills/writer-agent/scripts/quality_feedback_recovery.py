@@ -161,6 +161,20 @@ def _publication_handoff_ready(run_dir: Path) -> bool:
         and quality.get("force_publish_after_iterations") == 5
         and quality.get("quality_advisory") is True
     )
+    if force:
+        try:
+            from quality_self_heal import validate_force_receipt
+
+            if not validate_force_receipt(
+                run_dir,
+                {
+                    lang: run_dir / f"article-{lang}.md"
+                    for lang in ("ja", "en")
+                },
+            ):
+                return False
+        except Exception:
+            return False
     if quality.get("action") != "ready_to_freeze" and not force:
         return False
     languages = quality.get("quality")

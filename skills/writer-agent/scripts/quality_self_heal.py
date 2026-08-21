@@ -8,6 +8,8 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
+import shutil
 import sys
 from typing import Any
 
@@ -50,6 +52,64 @@ def _atomic_write(path: Path, payload: dict[str, Any]) -> None:
         encoding="utf-8",
     )
     os.replace(temporary, path)
+
+
+def _receipt_hash(payload: dict[str, Any]) -> str:
+    unsigned = {
+        key: value for key, value in payload.items() if key != "receipt_sha256"
+    }
+    return hashlib.sha256(
+        json.dumps(
+            unsigned, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+        ).encode("utf-8")
+    ).hexdigest()
+
+
+def _snapshot_receipts(
+    run_dir: Path, attempt: int, quality: dict[str, Any]
+) -> dict[str, dict[str, str]]:
+    """Copy each gate receipt into an immutable, attempt-scoped evidence set."""
+    gates = run_dir / "gates"
+    destination = gates / f"quality-attempt-{attempt}"
+    if destination.exists():
+        if destination.is_symlink() or not destination.is_dir():
+            raise QualitySelfHealError("quality attempt snapshot is not a directory")
+    else:
+        destination.mkdir()
+    snapshots: dict[str, dict[str, str]] = {}
+    names = {
+        "editorial": lambda lang: f"editorial-{lang}.json",
+        "reader": lambda lang: f"reader-testing-gate-{lang}.terminal.json",
+        "identity": lambda lang: f"identity-{lang}.json",
+    }
+    for lang in ("ja", "en"):
+        record = quality.get(lang)
+        if not isinstance(record, dict):
+            raise QualitySelfHealError("quality language record is missing")
+        snapshots[lang] = {}
+        for kind, filename in names.items():
+            source = gates / filename(lang)
+            if source.is_symlink() or not source.is_file():
+                raise QualitySelfHealError(
+                    f"quality {kind} receipt is missing for {lang}"
+                )
+            target = destination / filename(lang)
+            if target.exists() or target.is_symlink():
+                if target.is_symlink() or not target.is_file():
+                    raise QualitySelfHealError("quality receipt snapshot is invalid")
+                if _sha256(target) != _sha256(source):
+                    raise QualitySelfHealError("quality receipt snapshot conflicts with current gate")
+            else:
+                shutil.copy2(source, target)
+            digest = _sha256(target)
+            snapshots[lang][kind] = digest
+            observed = _read_json(target)
+            if (
+                observed is None
+                or observed.get("article_sha256") != record.get("article_sha256")
+            ):
+                raise QualitySelfHealError("quality receipt snapshot hash binding failed")
+    return snapshots
 
 
 def language_quality(
@@ -131,13 +191,102 @@ def _route_form(run_dir: Path) -> str:
 
 def _history(run_dir: Path) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
-    for path in sorted(
-        (run_dir / "gates").glob("quality-self-heal-attempt-*.json")
-    ):
+    paths = sorted(
+        (run_dir / "gates").glob("quality-self-heal-attempt-*.json"),
+        key=lambda path: path.name,
+    )
+    previous_hash: str | None = None
+    for index, path in enumerate(paths, start=1):
+        if path.is_symlink() or not path.is_file():
+            raise QualitySelfHealError("quality attempt receipt is not regular")
         value = _read_json(path)
-        if value:
-            rows.append(value)
+        if not isinstance(value, dict):
+            raise QualitySelfHealError("quality attempt receipt is malformed")
+        if (
+            value.get("run_id") != run_dir.name
+            or value.get("attempt") != index
+            or value.get("previous_receipt_sha256") != previous_hash
+            or value.get("receipt_sha256") != _receipt_hash(value)
+        ):
+            raise QualitySelfHealError("quality attempt receipt chain is invalid")
+        languages = value.get("quality")
+        if not isinstance(languages, dict) or any(
+            not isinstance(languages.get(lang), dict)
+            or not re.fullmatch(
+                r"[0-9a-f]{64}", str(languages[lang].get("article_sha256", ""))
+            )
+            for lang in ("ja", "en")
+        ):
+            raise QualitySelfHealError("quality attempt draft hash is invalid")
+        snapshots = value.get("receipt_snapshots")
+        if not isinstance(snapshots, dict) or set(snapshots) != {"ja", "en"}:
+            raise QualitySelfHealError("quality receipt snapshots are missing")
+        for lang in ("ja", "en"):
+            record = languages[lang]
+            snapshot = snapshots.get(lang)
+            if not isinstance(snapshot, dict) or set(snapshot) != {
+                "editorial", "reader", "identity"
+            }:
+                raise QualitySelfHealError("quality receipt snapshot set is invalid")
+            directory = run_dir / "gates" / f"quality-attempt-{index}"
+            if directory.is_symlink() or not directory.is_dir():
+                raise QualitySelfHealError("quality receipt snapshot directory is invalid")
+            filenames = {
+                "editorial": f"editorial-{lang}.json",
+                "reader": f"reader-testing-gate-{lang}.terminal.json",
+                "identity": f"identity-{lang}.json",
+            }
+            for kind, filename in filenames.items():
+                path = directory / filename
+                if (
+                    path.is_symlink()
+                    or not path.is_file()
+                    or not re.fullmatch(r"[0-9a-f]{64}", str(snapshot[kind]))
+                    or _sha256(path) != snapshot[kind]
+                ):
+                    raise QualitySelfHealError("quality receipt snapshot is tampered")
+                observed = _read_json(path)
+                if observed is None or observed.get("article_sha256") != record.get("article_sha256"):
+                    raise QualitySelfHealError("quality receipt snapshot article hash mismatch")
+        rows.append(value)
+        previous_hash = value["receipt_sha256"]
     return rows
+
+
+def validate_force_receipt(run_dir: Path | str, drafts: dict[str, Path]) -> bool:
+    """Recompute the exact five-attempt force boundary before advisory publish."""
+    run_dir = Path(run_dir)
+    current = _read_json(run_dir / "gates" / "quality-self-heal.json")
+    if not (
+        isinstance(current, dict)
+        and current.get("action") == "force_publish_advisory"
+        and current.get("force_publish_after_iterations") == MAX_ITERATIONS
+        and current.get("publication_policy") == "continuous"
+        and current.get("run_id") == run_dir.name
+        and current.get("attempt") == MAX_ITERATIONS
+    ):
+        return False
+    try:
+        history = _history(run_dir)
+    except QualitySelfHealError:
+        return False
+    if len(history) != MAX_ITERATIONS or history[-1] != current:
+        return False
+    final_quality = current.get("quality")
+    if not isinstance(final_quality, dict):
+        return False
+    for lang in ("ja", "en"):
+        draft = Path(drafts[lang])
+        record = final_quality.get(lang)
+        if (
+            draft.is_symlink()
+            or not draft.is_file()
+            or not isinstance(record, dict)
+            or record.get("article_sha256") != _sha256(draft)
+            or record.get("identity") != "PASS"
+        ):
+            return False
+    return True
 
 
 def _feedback_consumption(run_dir: Path) -> dict[str, Any] | None:
@@ -192,6 +341,8 @@ def assess(run_dir: Path, drafts: dict[str, Path]) -> dict[str, Any]:
     history = _history(run_dir)
     if history and history[-1].get("fingerprint") == fingerprint:
         return history[-1]
+    if len(history) >= MAX_ITERATIONS:
+        raise QualitySelfHealError("quality iteration budget exhausted")
 
     failed_languages = [
         lang for lang in ("ja", "en") if not quality[lang]["ready"]
@@ -249,6 +400,7 @@ def assess(run_dir: Path, drafts: dict[str, Path]) -> dict[str, Any]:
 
     decision: dict[str, Any] = {
         "version": CURRENT_VERSION,
+        "run_id": run_dir.name,
         "attempt": len(history) + 1,
         "action": action,
         "fingerprint": fingerprint,
@@ -258,6 +410,8 @@ def assess(run_dir: Path, drafts: dict[str, Path]) -> dict[str, Any]:
         "quality": quality,
         "publication_policy": publication_policy,
     }
+    attempt = len(history) + 1
+    decision["receipt_snapshots"] = _snapshot_receipts(run_dir, attempt, quality)
     if action == "force_publish_advisory":
         decision.update(
             {
@@ -298,11 +452,14 @@ def assess(run_dir: Path, drafts: dict[str, Path]) -> dict[str, Any]:
         decision["quality_feedback_reason"] = feedback.get("reason", "unknown")
 
     gates = run_dir / "gates"
-    if action != "evaluate_reroute":
-        _atomic_write(
-            gates / f"quality-self-heal-attempt-{decision['attempt']}.json",
-            decision,
-        )
+    decision["previous_receipt_sha256"] = (
+        history[-1].get("receipt_sha256") if history else None
+    )
+    decision["receipt_sha256"] = _receipt_hash(decision)
+    _atomic_write(
+        gates / f"quality-self-heal-attempt-{decision['attempt']}.json",
+        decision,
+    )
     _atomic_write(gates / "quality-self-heal.json", decision)
     return decision
 
