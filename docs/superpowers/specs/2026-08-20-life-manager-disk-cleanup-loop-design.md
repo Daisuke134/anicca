@@ -110,6 +110,11 @@ Servicesとlaunchd bootstrap domainへの接続を保持したままになった
 現行app-serverがDB/WAL/HTTPS接続を開いているためkill・削除しない。manifestにない未知rootは回収せず、
 `evaluated=0/reclaimed=0/protected_deletions=0`をfailureとして残し、stop flag/backpressureを維持する。
 
+同日の監査で、旧manifestに誤って登録されていた`~/.codex/.tmp`がquarantine不在時のdirect-remove経路で
+64,398,907 bytes回収されたreceiptを確認した。これはsession DB/WALではないが、`~/.codex/**`永久保護契約に
+反するため、Anicca cleanup controlは保護token配下の非protected classをmanifest検証時に拒否し、該当entryを
+manifestから除去した。回帰testで`.codex/.tmp`の再登録をfail-closedに固定し、以後この経路は実行不可である。
+
 ### 2026-08-21 bounded host census and safe reclaim evidence
 
 Life Manager governorは`host-inventory.json`を毎pass atomic writeする。実機のfast readbackはmount
