@@ -19,6 +19,16 @@ one user-facing control stable, advance every Workday step, and require a
 provider completion UI before the ledger may report `submitted`. A Workday wake
 processes every pending/retryable row; one blocked row must not terminate the
 rest of that provider queue.
+**Handover state:** active immutable release is
+`63adf180bdaf6e5dbbd35d4967e2c3df24b7f7ca`; launchd uses
+`StartInterval=3600`. The latest completed Workday receipt still reports
+Rakuten My Information blocked on `How Did You Hear About Us?`; no provider
+submit request, completion UI, or receipt email exists. The source code maps
+the Workday `source--source` ID to `Job Boards`, selects it with
+fill/ArrowDown/Enter, and defers source validation to Workday's own
+Save-and-Continue result. The next session must trigger the existing loop,
+inspect the next evidence directory, and fix only the exact next provider
+surface; do not claim submission from a click, response, or ledger row alone.
 
 ### Universal-application architecture (target)
 
