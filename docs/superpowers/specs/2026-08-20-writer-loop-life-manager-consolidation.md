@@ -670,6 +670,28 @@ resume、1つの収益台帳、1つのTelegram報告面で、需要カードか�
   source/currentの`article-daily.sh` SHA一致、loaded daily/resumeのcurrent argv、Codex、cooldown=300をreadbackした。
   pauseは維持している。次は承認境界を明示した短時間canaryで同一run attempt 2と4媒体native receiptを確認する。
 
+### 2026-08-21 managed state routing and duplicate-media readback
+
+- `88e37a988`で`skills/writer-agent/scripts/run.sh`のメタデータ保存先を`ARTICLE_STATE_DIR`へ固定した。
+  release treeへ書き込まず、`run-state-path-contract.sh`、managed Note/Substack契約、dispatch isolationがPASSした。
+- `27396412d`で、draft作成後に旧immutable release pathへstateを書けなかった場合だけ、ledgerのlive receiptと
+  dispatch raw errorを照合して同じNote/Substackのtargetへ限定recoveryするようにした。別runのlive row、target不一致、
+  raw error不一致は再利用を拒否する。publication init/readbackもheadlineとbodyの同一byteを拒否する。
+- release currentは`27396412dd7eb6a07785f79dc0095546341d3db1`で、sourceとcurrentの`run.sh`、
+  `recover-known-unavailable.py`、`publication_resume.py`のSHAが一致する。loaded `article-daily`と`article-resume`は
+  Life Manager current、`ARTICLE_STATE_DIR=/Users/anicca/.local/state/life-manager/writer`、Codex、cooldown 300秒をreadbackした。
+- canary `20260821-054500`は、Note/各Substackに同一draft IDを保持したままstate directory permission errorで`unavailable`、
+  X Article JAは既存edit URLの`intent`で停止している。headlineとbodyのSHAはともに
+  `516ddf632dd891e20e93b48eb3e163528c68cf3c6bb999c75a4008e1db5bcc4e`で、重複mediaのためrecovery guardが拒否した。
+  state SHAはrecovery前後で不変であり、このrunは公開禁止のまま保持する。
+- 既存の別run `daily-2026-08-21`は、headline `9473e1285b68d9aa21119e07a45c67540d081d1a439753f4cbaef3dfd4409b7b`、
+  body `927ae05b1c63619c069b45243db5d931762ced74c2138ca73ce09130fc883069`で異なる。Note JA、Substack JA/EN、X Article JAの
+  4つのnative live URLとpublisher receiptがあり、`article-run-complete.py`はrc=0を返した。これは既存runの完了証拠であり、
+  凍結canaryや24/7連続tickの証拠とは分離する。
+- pause fileは現在も存在し、外部公開を止めている。plannerは全体BLOCKではなく、古い`daily-2026-08-07`のNote JA recoveryを
+  次の候補として返す。cleanな新規canaryの前に、古いrecoveryを同じtarget・同じrunだけで処理し、実際のnative readbackと
+  Telegram delivery receiptを確認する。
+
 ## 目標構成
 
 ### 実行トポロジー（Coconala parity）
@@ -891,8 +913,8 @@ loaded definitionと自然tickまで読み戻すことを意味する。A1のcon
 | A8 | 5分周期の自然tickを2回連続で検証する | 2回ともcurrent argv、単一owner、run/receipt更新、重複外部作用0を確認。`process_alive`だけでは完了にしない | A7待ち。既存runの一回receiptはあるが連続tickではない |
 | A9 | control-plane復旧後の新規same-run公開を検証する | 新しいrunでNote JA、Substack JA、Substack EN、X Article JAの各native URL・本文・owner・artifact/media hashをreadbackし、Telegram送信receiptを取得 | A7/A8待ち |
 | A9a | 同日完了runの新規記事解放と重複防止をreleaseへ反映する | current releaseでstart-control 6件、publication identity 15件、schedule miss 2件がPASS。実launchdで完了runから新run `20260821-043922`を作成し、provider cooldownで公開前停止、重複外部作用0を確認 | 部分完了（新run解放・重複防止・Codex-only retry配線はPASS。公開E2EはA9d待ち） |
-| A9c | WriterのCodex-only retryを実装する | `ARTICLE_PROVIDER=codex`固定。cooldown既定値を300秒へ変更し、同一immutable runを最大3回だけcheckpoint再開するfixture。Codex cooldown中にClaude/Hermesを起動しない、公開state/ledger後のreplay 0、3回 exhausted後に新runを増殖させない | 実装・契約検証完了（model-runner 7件、resume circuit 6件、start-control 6件、candidate wiring 19件、publication identity 15件、topic-card resume 9件、構文/manifest/diff check PASS。launchd canary待ち） |
-| A9d | Codex-only Writer公開canaryを行う | current releaseをlaunchdへ反映し、pause解除後の新runでCodex attempt receipt、Note JA、Substack JA/EN、X Article JAの4 native URL、本文・media hash、Telegram delivery receiptを取得。Codex timeout時は同じrunの次tickへ安全にhandoffする | 部分完了（loaded env、pause canary、stale fence回収、topic選択前同一run resume修正、fresh反証、654cec69 release反映はPASS。pause解除後の4媒体公開canaryは未実施） |
+| A9c | WriterのCodex-only retryを実装する | `ARTICLE_PROVIDER=codex`固定。cooldown既定値を300秒へ変更し、同一immutable runを最大3回だけcheckpoint再開するfixture。Codex cooldown中にClaude/Hermesを起動しない、公開state/ledger後のreplay 0、3回 exhausted後に新runを増殖させない | 実装・契約検証完了（model-runner 7件、resume circuit 6件、start-control 6件、candidate wiring 19件、publication identity 15件、topic-card resume 9件、state routing、duplicate-media guard、構文/manifest/diff check PASS。fresh v2反証readback待ち） |
+| A9d | Codex-only Writer公開canaryを行う | current releaseをlaunchdへ反映し、pause解除後の新runでCodex attempt receipt、Note JA、Substack JA/EN、X Article JAの4 native URL、本文・media hash、Telegram delivery receiptを取得。Codex timeout時は同じrunの次tickへ安全にhandoffする | 部分完了（既存`daily-2026-08-21`は4媒体native live＋`article-run-complete rc=0`。別canary`20260821-054500`は旧state permission errorと重複mediaでfail-closed凍結。pause解除後のclean canary、連続tick、Telegram deliveryは未実施） |
 | A9b | 1日複数回の正式scheduleを追加する | 06:00/14:00/22:00などのcalendar wake、各slotのunique run ID、同日異記事、連続2周期のnative receiptを実測 | 未着手。現在は06:00のまま |
 | A10 | 実payment/publisher receiptをmoney ledgerへ接続する | receipt ID、金額、通貨、destination identity、artifact/run IDをjoin。未取得は`unknown`のまま保持 | 未着手 |
 | A11 | 14日間の運用観測を完了する | 重複外部作用0、同一run resume、自然文の成功/失敗報告、revenue ledger整合を連続receiptで確認 | A9/A10待ち |
