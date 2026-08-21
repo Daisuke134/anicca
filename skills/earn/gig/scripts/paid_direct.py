@@ -20,7 +20,7 @@ from telegram_report import OpenClawTelegramTransport  # noqa: E402
 from gig_paths import BROWSER_DIR, REPO_ROOT, RUNNER_DIR  # noqa: E402
 
 DEFAULT_STEP_TIMEOUT_SECONDS = 2100
-TARGETED_READBACK_TIMEOUT_SECONDS = 90
+TARGETED_READBACK_TIMEOUT_SECONDS = 180
 # One prepare child owns up to three 60-minute production rounds plus three 30-minute reviews.
 # Its outer deadline must not expire before those already-bounded inner steps can settle.
 FILE_PREPARE_TIMEOUT_SECONDS = 21600
@@ -1404,16 +1404,10 @@ def _targeted(args, item, index):
     room = _text(item.get("talkroom_id")); base = args.evidence_dir / "paid-direct" / "targeted" / room
     item_path, snapshot = base / "item.json", base / "snapshot.json"
     _write(item_path, item)
-    for attempt in range(2):
-        try:
-            _run(
-                _collector(args, "selected-talkroom-only", snapshot, base, item_path, item),
-                "targeted_readback", timeout=TARGETED_READBACK_TIMEOUT_SECONDS,
-            )
-            break
-        except Failure:
-            if attempt:
-                raise
+    _run(
+        _collector(args, "selected-talkroom-only", snapshot, base, item_path, item),
+        "targeted_readback", timeout=TARGETED_READBACK_TIMEOUT_SECONDS,
+    )
     return {**item, **_row(_load(snapshot), room)}
 
 def _recoverable(args, item):

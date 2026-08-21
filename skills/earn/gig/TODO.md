@@ -951,8 +951,9 @@ counts toward the maximum of ten. A buyer-visible progress artifact does not sup
 `REPAIR_PENDING` cycle: the next wake revises and submits again until approval or round ten.
 The read-only targeted refresh is also project-scoped: up to four fresh hidden CDP targets run in
 parallel before the existing project workers, and one refresh failure degrades only that talkroom.
-Each target attempt is bounded to 90 seconds with one retry, so one wedged browser target cannot
-hold every other independent project behind the generic 35-minute step timeout.
+Each target is bounded to one 180-second attempt, so long histories can finish without restarting
+their work at 90 seconds while one wedged browser target still cannot hold every other independent
+project behind the generic 35-minute step timeout.
 When a purchased request exposes both its original request id and a talkroom id, an existing
 talkroom project containing the authenticated accumulated requirements is canonical. The resolver
 must not select an empty request-id twin and strand article, copy or other new Paid work as pending.
