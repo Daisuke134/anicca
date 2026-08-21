@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "demand_mode": "required",
+  "x_article_target_source": "state/x-article-targets.json",
+  "x_article_seed_receipt": "state/x-article-seeds-used.json",
+  "x_article_receipt_store": "state/x-article-bodies.json",
+  "demand_source_id": "techi-author",
+  "demand_source_config": "config/opportunity-watch.json",
+  "demand_source_receipt": "state/demand-source-bodies.json",
+  "x_article_seed_urls": [
+    "https://x.com/rimuruafi/status/2069458256238612785",
+    "https://x.com/MuchoAi/status/2079105435056107721"
+  ],
+  "sources": [
+    {
+      "id": "openai-x",
+      "kind": "x",
+      "handle": "OpenAI",
+      "source_name": "OpenAI on X",
+      "reader_job": "Decide whether an official announcement changes what the reader should build, buy, or operate.",
+      "limit": 5
+    },
+    {
+      "id": "openai-python-releases",
+      "kind": "github",
+      "repo": "openai/openai-python",
+      "source_name": "OpenAI Python SDK releases",
+      "reader_job": "Decide whether to upgrade the SDK and which changed behavior must be tested first.",
+      "limit": 3
+    },
+    {
+      "id": "cloudflare-blog-rss",
+      "kind": "rss",
+      "url": "https://blog.cloudflare.com/rss/",
+      "source_name": "Cloudflare Blog RSS",
+      "reader_job": "Decide whether a documented infrastructure or product change affects the reader's current system.",
+      "limit": 3
+    },
+    {
+      "id": "github-blog-rss",
+      "kind": "rss",
+      "url": "https://github.blog/feed/",
+      "source_name": "GitHub Blog RSS",
+      "reader_job": "Decide whether a documented software-development change should alter the reader's workflow.",
+      "limit": 3
+    }
+  ]
+}

@@ -1,0 +1,183 @@
+{
+  "schema_version": 1,
+  "runtime_root": "skills/writer-agent",
+  "runtime_tree_sha256": "54ef72514f49a9f9440313dcd6e358c7b5700176cedeb1c578bda6dbf6b3f47e",
+  "runtime_file_count": 492,
+  "hash_algorithm": "sha256(sorted relative path + NUL + file bytes + NUL; excludes state and cache directories)",
+  "canonical_census": {
+    "owner": "Daisuke134/life-manager",
+    "tracked_runtime_files": 492,
+    "mutable_state_imported": false,
+    "mutable_state_root": "~/.local/state/life-manager/writer",
+    "source_absolute_path_references": 77,
+    "source_plists_with_machine_path": 10,
+    "machine_paths_require_install_time_rendering": true
+  },
+  "source": {
+    "repository": "/Users/anicca/Projects/life-manager-main",
+    "path": "skills/writer-agent",
+    "commit": "09c7525d4bba2efd99e3c55123bc3aaca814d5f3",
+    "status": "Life Manager source-of-truth"
+  },
+  "active_release": {
+    "path": "/Users/anicca/gig/releases/life-manager/current/skills/writer-agent",
+    "tree_sha256": "54ef72514f49a9f9440313dcd6e358c7b5700176cedeb1c578bda6dbf6b3f47e",
+    "file_count": 492,
+    "status": "immutable release matches canonical source; launchd-load-pending"
+  },
+  "state": {
+    "active": "~/.local/state/life-manager/writer",
+    "target": "~/.local/state/life-manager/writer",
+    "credentials": "~/.config/life-manager/accounts",
+    "owner_fence": "~/.local/state/life-manager/writer/owner-fence",
+    "parity": {
+      "status": "content-hash-match-before-owner-cutover",
+      "source_file_count": 18326,
+      "target_file_count": 18326,
+      "source_bytes": 590863796,
+      "target_bytes": 590863796,
+      "tree_sha256": "2a58d15a8b30dfa4edabb4ed0d845833d30a7844212b2d9ddb492d6c525e6e02",
+      "pause_marker": "absent-in-source-and-target",
+      "target_directory_mode": "0700"
+    }
+  },
+  "launchd_labels": [
+    "ai.anicca.article-daily",
+    "ai.anicca.article-healthcheck",
+    "ai.anicca.article-resume",
+    "ai.anicca.article-zenn-retry",
+    "ai.anicca.article-self-improve",
+    "ai.anicca.article-audit-7day",
+    "ai.anicca.article-learn-whitelist",
+    "ai.anicca.writer-claim-loop",
+    "ai.anicca.writer-craft-train",
+    "ai.anicca.writer-money-sync",
+    "ai.anicca.writer-opportunity-discovery",
+    "ai.anicca.writer-opportunity-response",
+    "ai.anicca.writer-report",
+    "ai.anicca.writer-sales-measure"
+  ],
+  "launchd_sources": {
+    "ai.anicca.article-daily": "/Users/anicca/Library/LaunchAgents/ai.anicca.article-daily.plist",
+    "ai.anicca.article-healthcheck": "/Users/anicca/Library/LaunchAgents/ai.anicca.article-healthcheck.plist",
+    "ai.anicca.article-resume": "/Users/anicca/Library/LaunchAgents/ai.anicca.article-resume.plist",
+    "ai.anicca.article-zenn-retry": "/Users/anicca/Library/LaunchAgents/ai.anicca.article-zenn-retry.plist",
+    "ai.anicca.article-self-improve": "/Users/anicca/Library/LaunchAgents/ai.anicca.article-self-improve.plist",
+    "ai.anicca.article-audit-7day": "/Users/anicca/Library/LaunchAgents/ai.anicca.article-audit-7day.plist",
+    "ai.anicca.article-learn-whitelist": "/Users/anicca/Library/LaunchAgents/ai.anicca.article-learn-whitelist.plist",
+    "ai.anicca.writer-claim-loop": "/Users/anicca/Library/LaunchAgents/ai.anicca.writer-claim-loop.plist",
+    "ai.anicca.writer-craft-train": "/Users/anicca/Library/LaunchAgents/ai.anicca.writer-craft-train.plist",
+    "ai.anicca.writer-money-sync": "/Users/anicca/Library/LaunchAgents/ai.anicca.writer-money-sync.plist",
+    "ai.anicca.writer-opportunity-discovery": "/Users/anicca/Library/LaunchAgents/ai.anicca.writer-opportunity-discovery.plist",
+    "ai.anicca.writer-opportunity-response": "/Users/anicca/Library/LaunchAgents/ai.anicca.writer-opportunity-response.plist",
+    "ai.anicca.writer-report": "/Users/anicca/Library/LaunchAgents/ai.anicca.writer-report.plist",
+    "ai.anicca.writer-sales-measure": "/Users/anicca/Library/LaunchAgents/ai.anicca.writer-sales-measure.plist"
+  },
+  "retired_launchd_labels": {
+    "status": "retired-from-installed-launchagents",
+    "labels": [
+      "ai.anicca.writer-book-monthly",
+      "ai.anicca.writer-daily",
+      "ai.anicca.writer-learn-daily",
+      "ai.anicca.writer-learn-weekly",
+      "ai.anicca.writer-resume"
+    ],
+    "reason": "separate ~/.local/bin/writer engine would create a second Writer pipeline",
+    "rollback_archive": "~/.local/state/life-manager/rollback/writer-legacy-cli-retired-20260820-a",
+    "launchctl_readback": "rc=141: Reentrancy avoided"
+  },
+  "path_audit": {
+    "installed_writer_launchagents": 14,
+    "life_manager_templates": 10,
+    "installed_labels_with_life_manager_template": 8,
+    "installed_labels_without_life_manager_template": 6,
+    "external_cli_labels": 0,
+    "retired_external_cli_labels": 5,
+    "source_tree_script_labels": 6,
+    "status": "release-manifest-written-runtime-verified-load-pending",
+    "reason": "The Coconala release manifest renders all 14 Writer labels against the immutable current release and ~/.local/state/life-manager/writer. A current-release claim lane produced a FILLED queue receipt, and the creator pause gate returned rc=0. launchctl bootstrap/readback remains rc=141, so loaded scheduler state is unproven."
+  },
+  "external_dependencies": {
+    "writer_engine_cli": "/Users/anicca/.local/bin/writer",
+    "writer_engine_root": "/Users/anicca/.local/lib/writer-engine",
+    "writer_engine_state": "/Users/anicca/.local/share/writer-engine",
+    "status": "retained-for-source-and-rollback; not-invoked-by-installed-writer-labels",
+    "loaded_definition_warning": "stale in-memory launchd definitions still invoke old-root paths and fail with ENOENT or the old publication pause gate"
+  },
+  "owner_fence": {
+    "path": "skills/writer-agent/scripts/writer_owner_fence.py",
+    "state_path": "~/.local/state/life-manager/writer/owner-fence",
+    "status": "invoked-by-core-plists-not-loaded",
+    "pause_gates": ["article-daily", "article-resume", "zenn-deferred-worker"],
+    "fenced_workers": ["article-daily", "article-resume"],
+    "legacy_cli_pause_proven": false
+  },
+  "core_plist_cutover": {
+    "status": "release-written-not-loaded",
+    "labels": [
+      "ai.anicca.article-daily",
+      "ai.anicca.article-resume",
+      "ai.anicca.article-zenn-retry"
+    ],
+    "installed_path_readback": "life-manager-code-and-target-state",
+    "launchctl_readback": "rc=141: Reentrancy avoided",
+    "rollback_archive": "~/.local/state/life-manager/rollback/writer-core-cutover-20260820-a"
+  },
+  "worker_plist_cutover": {
+    "status": "release-written-not-loaded",
+    "labels": [
+      "ai.anicca.writer-claim-loop",
+      "ai.anicca.writer-money-sync",
+      "ai.anicca.writer-opportunity-discovery",
+      "ai.anicca.writer-opportunity-response",
+      "ai.anicca.writer-report",
+      "ai.anicca.writer-sales-measure",
+      "ai.anicca.article-healthcheck",
+      "ai.anicca.article-audit-7day",
+      "ai.anicca.article-learn-whitelist",
+      "ai.anicca.article-self-improve",
+      "ai.anicca.writer-craft-train"
+    ],
+    "installed_path_readback": "life-manager-code-and-target-state",
+    "launchctl_readback": "rc=141: Reentrancy avoided",
+    "rollback_archives": [
+      "~/.local/state/life-manager/rollback/writer-state-workers-cutover-20260820-a",
+      "~/.local/state/life-manager/rollback/writer-legacy-path-cutover-20260820-a"
+    ]
+  },
+  "cutover": {
+    "status": "not-ready",
+    "reason": "all 14 generated Writer plist files now point to the immutable current release and target state; current-release demand and creator gates are runtime-verified, but launchd bootstrap/readback is rc=141 and loaded owner, stale-old drain, and scheduler wake remain unproven",
+    "publication_paused": false,
+    "legacy_roots_must_not_be_deleted": true
+  },
+  "runtime_blocker": {
+    "status": "launchd-readback-and-stale-loaded-jobs",
+    "observed": "2026-08-20",
+    "evidence": [
+      "launchctl managerpid/list/print for system, user/501, and gui/501 all return 141: Reentrancy avoided",
+      "launchctl asuser 501 also returns 141: Reentrancy avoided",
+      "dscacheutil cannot resolve user anicca and dscl returns eServerError",
+      "log show cannot connect to logd",
+      "open -n -a /Applications/ChatGPT.app returns kLSNoExecutableErr (-10827)",
+      "writer-claim-loop.err at 23:18:46, article-healthcheck.err at 23:27:17, article-zenn-retry.out at 23:26:29, article-resume.log at 23:30:13, and writer-money-sync/report errors at 23:25:30 show stale loaded jobs invoking /Users/anicca/profitable-claude",
+      "stale claim/money/report/healthcheck jobs fail with ENOENT; stale Zenn job exits on the old publication pause gate",
+      "no Writer process is running at the observation instant"
+    ],
+    "interpretation": "The current session cannot read launchd or Directory Services, and the installed plist set is not the same as the stale in-memory loaded job definitions. A full GUI/bootstrap root cause is not proven; stale jobs are proven by their old-root log paths.",
+    "required_recovery": "Restore a valid user bootstrap, bootout and drain all stale 14 Writer definitions plus the 5 retired CLI labels, read back their loaded ProgramArguments/env, then bootstrap and read back all 14 Life Manager labels before removing the publication pause.",
+    "publication_effect": "blocked-and-fail-closed"
+  },
+  "last_validation": {
+    "release_sha": "09c7525d4bba2efd99e3c55123bc3aaca814d5f3",
+    "current_release": "/Users/anicca/gig/releases/life-manager/current",
+    "activate": "current symlink points to the immutable full-repo release; Writer tree matches canonical source commit 09c7525d4bba2efd99e3c55123bc3aaca814d5f3; all bootstrap/readback attempts failed with rc=141 Reentrancy avoided",
+    "bounded_wake": {
+      "creator_rc": 0,
+      "resume_rc": 0,
+      "publication_pause": true,
+      "state_dir": "~/.local/state/life-manager/writer",
+      "observed_behavior": "creator exited before planner/publisher and wrote target pause log; release tree includes the Life Manager runtime path fixes"
+    }
+  }
+}

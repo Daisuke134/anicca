@@ -1,0 +1,186 @@
+[
+  {
+    "id": "hatena:https://bigcomics.jp/episodes/092930776107b",
+    "subject": "漫画作品『感劇ッ!!! 白府さん』の掲載内容。",
+    "lang": "ja",
+    "title": "感劇ッ!!! 白府さん・感劇ッ!!! 白府さん | ビッコミ（ビッグコミックス）",
+    "metric_primary": 69.0,
+    "split": "val"
+  },
+  {
+    "id": "hatena:https://news.yahoo.co.jp/articles/385c8b1ddd28b3b21c454072e72f1944b76abf6b",
+    "subject": "Joshinが全事業所に導入した、ピースサインで打刻できる顔認証勤怠システムと従業員の反応",
+    "lang": "ja",
+    "title": "「ピースサインで勤怠打刻」　Joshinが全事業所に導入した顔認証が“従業員から絶賛”のワケ（ITmedia ビジネスオンライン） - Yahoo!ニュース",
+    "metric_primary": 107.0,
+    "split": "val"
+  },
+  {
+    "id": "hatena:https://newsdig.tbs.co.jp/articles/-/2825211",
+    "subject": "気象庁が、7月29日頃から日本のほぼ全域で平年より著しく高温となる可能性を発表したこと",
+    "lang": "ja",
+    "title": "日本のほぼ全域で7月29日頃から「この時期としては10年に1度程度しか起きないような著しい高温」となる可能性が高まっている…気象庁が「高温に関する早期天候情報」発表 | TBS NEWS DIG",
+    "metric_primary": 216.0,
+    "split": "val"
+  },
+  {
+    "id": "hatena:https://note.com/tenmemo/n/ne03821b127aa",
+    "subject": "日本トレーディングカード協会の組織構造と設立目的を公開情報から分析する内容",
+    "lang": "ja",
+    "title": "議連発足と同時に現れた「日本トレーディングカード協会」とは何者か──組織構造と狙いを公開情報から読む｜メモ帳のnote",
+    "metric_primary": 75.0,
+    "split": "val"
+  },
+  {
+    "id": "hatena:https://speakerdeck.com/asei/aigong-xue-te-lun-mlopsji-sok-de-ping-jia-b257eb10-fb3e-4159-828b-8445b7ff2f37",
+    "subject": "MLOpsと機械学習モデルの継続的な評価",
+    "lang": "ja",
+    "title": "AI工学特論: MLOps・継続的評価",
+    "metric_primary": 78.0,
+    "split": "val"
+  },
+  {
+    "id": "qiita:3b1e01cf7a2d77b45da1",
+    "subject": "入社同期の中で先輩から親しまれる人とそうでない人の間にある小さな違いについて",
+    "lang": "ja",
+    "title": "# 僕より入社同期メンバーが先輩に可愛がられる理由、後から気づいた小さな差",
+    "metric_primary": 56.0,
+    "split": "val"
+  },
+  {
+    "id": "qiita:700e37b3240717217b37",
+    "subject": "動画生成AIで需要を検証してから個人開発を始める方法",
+    "lang": "ja",
+    "title": "個人開発に活かせる、動画生成AIで需要を確かめてから作成するという発想",
+    "metric_primary": 82.0,
+    "split": "val"
+  },
+  {
+    "id": "qiita:b7bfe27efae0231a09af",
+    "subject": "AI人材を二つのタイプに分類し、それぞれの特徴とキャリアの方向性を解説する内容",
+    "lang": "ja",
+    "title": "AI人材は２つに分かれる。あなたが目指すべきはどっち？",
+    "metric_primary": 82.0,
+    "split": "val"
+  },
+  {
+    "id": "zenn:opentelemetry-browser-frontend",
+    "subject": "フロントエンドで利用されるOpenTelemetry Browser SDKの現状",
+    "lang": "ja",
+    "title": "フロントエンドに広がりつつある OpenTelemetry：Browser SDK の現在地",
+    "metric_primary": 100.0,
+    "split": "val"
+  },
+  {
+    "id": "hn:46987559",
+    "subject": "An AI agent submits a pull request and writes a blog post criticizing the maintainer who closes it.",
+    "lang": "en",
+    "title": "AI agent opens a PR write a blogpost to shames the maintainer who closes it",
+    "metric_primary": 953.0,
+    "split": "val"
+  },
+  {
+    "id": "hn:47083145",
+    "subject": "An AI agent published a defamatory article about a person, and its human operator later identified themselves.",
+    "lang": "en",
+    "title": "An AI Agent Published a Hit Piece on Me – The Operator Came Forward",
+    "metric_primary": 535.0,
+    "split": "val"
+  },
+  {
+    "id": "hn:47543139",
+    "subject": "The structure, contents, and purpose of the .claude/ folder.",
+    "lang": "en",
+    "title": "Anatomy of the .claude/ folder",
+    "metric_primary": 627.0,
+    "split": "val"
+  },
+  {
+    "id": "hn:47633396",
+    "subject": "Anthropic restricting Claude Code subscriptions from being used with OpenClaw.",
+    "lang": "en",
+    "title": "Tell HN: Anthropic no longer allowing Claude Code subscriptions to use OpenClaw",
+    "metric_primary": 1099.0,
+    "split": "val"
+  },
+  {
+    "id": "hn:47660925",
+    "subject": "Claude Codeの2月のアップデート後における複雑なエンジニアリング作業での使いやすさ",
+    "lang": "en",
+    "title": "Issue: Claude Code is unusable for complex engineering tasks with Feb updates",
+    "metric_primary": 1364.0,
+    "split": "val"
+  },
+  {
+    "id": "hn:47788385",
+    "subject": "Tools and runtimes for running large language models locally without relying on Ollama.",
+    "lang": "en",
+    "title": "The local LLM ecosystem doesn’t need Ollama",
+    "metric_primary": 648.0,
+    "split": "val"
+  },
+  {
+    "id": "hn:47807006",
+    "subject": "An analysis of the tokenization costs associated with Claude 4.7.",
+    "lang": "en",
+    "title": "Measuring Claude 4.7's tokenizer costs",
+    "metric_primary": 714.0,
+    "split": "val"
+  },
+  {
+    "id": "hn:48002136",
+    "subject": "A Claude Code agent loop powered by DeepSeek V4 Pro.",
+    "lang": "en",
+    "title": "DeepClaude – Claude Code agent loop with DeepSeek V4 Pro",
+    "metric_primary": 678.0,
+    "split": "val"
+  },
+  {
+    "id": "hn:48307887",
+    "subject": "Differences in how leading large language models evaluate real-world factual claims",
+    "lang": "en",
+    "title": "Disagreement among frontier LLMs on real-world fact-checks",
+    "metric_primary": 505.0,
+    "split": "val"
+  },
+  {
+    "id": "hn:48457830",
+    "subject": "A security breach involving Microsoft’s open-source tools and the theft of AI developers’ passwords.",
+    "lang": "en",
+    "title": "Microsoft's open source tools were hacked to steal passwords of AI developers",
+    "metric_primary": 561.0,
+    "split": "val"
+  },
+  {
+    "id": "hn:48489229",
+    "subject": "Anthropic’s apology for undisclosed safety restrictions in Claude Fable.",
+    "lang": "en",
+    "title": "Anthropic apologizes for invisible Claude Fable guardrails",
+    "metric_primary": 511.0,
+    "split": "val"
+  },
+  {
+    "id": "hn:48827858",
+    "subject": "A security demonstration showing that GitHub’s AI agent could be induced to disclose private repository contents.",
+    "lang": "en",
+    "title": "GitLost: We Tricked GitHub's AI Agent into Leaking Private Repos",
+    "metric_primary": 541.0,
+    "split": "val"
+  },
+  {
+    "id": "hn:48966569",
+    "subject": "Claude Code now uses Bun, a JavaScript runtime and tooling platform written in Rust.",
+    "lang": "en",
+    "title": "Claude Code uses Bun written in Rust now",
+    "metric_primary": 608.0,
+    "split": "val"
+  },
+  {
+    "id": "hn:48997548",
+    "subject": "A security incident involving OpenAI and Hugging Face during model evaluation.",
+    "lang": "en",
+    "title": "OpenAI and Hugging Face address security incident during model evaluation",
+    "metric_primary": 1625.0,
+    "split": "val"
+  }
+]

@@ -1,0 +1,64 @@
+# SkillOpt feasibility-probe config for the "writing" env.
+#
+# _base_ points INTO the upstream checkout at /tmp/SkillOpt purely to read
+# its shared defaults (model/train/gradient/optimizer/evaluation knobs) --
+# this does not modify anything inside /tmp/SkillOpt, it only references it,
+# the same way any config under /tmp/SkillOpt/configs/*/default.yaml does.
+# Absolute path because this file does not live under /tmp/SkillOpt/configs/,
+# so a relative "../_base_/default.yaml" (as the guide's own docfaithful
+# example uses) would not resolve from here.
+_base_: /tmp/SkillOpt/configs/_base_/default.yaml
+
+model:
+  # Backend plumbing under test (Task B): route both roles through the
+  # generic OpenAI-compatible backend, pointed at the local CLIProxyAPI on
+  # 127.0.0.1:8317 via OPENAI_COMPATIBLE_BASE_URL / OPENAI_COMPATIBLE_API_KEY
+  # environment variables (set at invocation time, not committed here).
+  optimizer_backend: openai_compatible
+  target_backend: openai_compatible
+  optimizer: claude-haiku-4-5-20251001
+  target: claude-haiku-4-5-20251001
+  reasoning_effort: medium
+
+train:
+  num_epochs: 1        # Task B: run ONE epoch and report exactly what happens
+  batch_size: 2         # matches the tiny 4-item train split
+  accumulation: 1
+
+gradient:
+  minibatch_size: 2
+  merge_batch_size: 2
+  analyst_workers: 1
+
+optimizer:
+  learning_rate: 2      # Task B's explicit requirement
+
+# T15 wall-clock follow-up (2026-07-27): these three caps were sized for
+# the probe's 4-item split ("0 = use the whole (1-item) val split" below
+# was true THEN). The split grew to 119/21/38 train/val/test and the
+# sizing did not -- uncapped, at GATE_OPPONENTS=15 this run projected to
+# ~8,000 judge calls / ~22 hours serial, running straight through the
+# 06:00 publish and holding the judge broker the whole time. With
+# TRAIN_OPPONENTS=5 for train (see writing/rollout.py) and these caps:
+#   train  limit=20  -> 20 * 5  * 2 orderings                = 200 calls
+#   val    sel=10    -> 10 * 15 * 2 orderings * 2 skills      = 600 calls
+#   test   test=8    -> 8  * 15 * 2 orderings * 3 skills      = 720 calls
+#                                                    total ~= 1,520 calls
+# at ~10s/call (measured) that is ~4 hours -- craft-train.sh's own
+# projection check (craft_train.py's project_and_check_deadline) recomputes
+# this from the ACTUAL split sizes and these exact numbers at every run and
+# refuses to start rather than trust this comment staying accurate forever.
+evaluation:
+  sel_env_num: 10        # was 0 (whole 21-item val split) -- see arithmetic above
+  test_env_num: 8         # was 0 (whole 38-item test split) -- see arithmetic above
+
+env:
+  name: writing
+  # T6: the REAL trainable weight, not the probe's seed skill -- this is
+  # the file craft-train.sh checks in/out and diffs.
+  skill_init: /Users/anicca/profitable-claude/skills/writing-craft/CRAFT.md
+  split_mode: split_dir
+  split_dir: /Users/anicca/profitable-claude/skills/writer-agent/vendor/skillopt-writing/data/writing_split
+  workers: 1
+  max_completion_tokens: 256
+  limit: 20              # was 0 (whole 119-item train split) -- see arithmetic above

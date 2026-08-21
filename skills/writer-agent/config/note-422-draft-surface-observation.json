@@ -1,0 +1,250 @@
+{
+ "schema": "writer.note-422-draft-surface-observation",
+ "version": 1,
+ "ssot": "WRITER-AGENT-SSOT.md §9.0 item 4c, §9.3.1 rows H2 and H4",
+ "observed_at": "2026-08-07T10:46:49Z",
+ "why": "Item 4c asks for a non-publishing probe that narrows the note/ja 422 by bisecting the rejected body against note's draft surface. This file records the measurement that answers whether such a probe can reproduce the failure it is meant to diagnose. It cannot: the draft surface accepts the exact rejected bytes.",
+ "method": "The incident draft n47735d9811e8 was read once, read-only, with the same authenticated GET publish-paid.py already performs. Its body was replayed against the draft surface on a throwaway scratch draft created for this measurement, whole and then as each half of the rejected paid split. No payload sent carried a status field and no publish endpoint was called. Requests were spaced 3 seconds apart.",
+ "incident": {
+  "run_id": "daily-2026-08-07",
+  "fingerprint": "b4968e8b6bde403bc6aad3d7d1da43d32986523c5853df2cf355fe3410fb2074",
+  "note_key": "n47735d9811e8",
+  "numeric_id": 173630036,
+  "error_signature": "NoteNativePublishError: Note native publish HTTP 422: {\"error\":{\"code\":\"invalid\",\"message\":\"本文に利用できない内容が含まれています。\"}}",
+  "rejected_request": "PUT https://note.com/api/v1/text_notes/173630036",
+  "recorded_payload_sha256": "4e06c659a09e459bd0f041ebd4d729b80878a1e68f5d195a652c55b9a56b67d6",
+  "recorded_payload_sha256_source": "state/runs/daily-2026-08-07/gates/note-native-effect.json, written by publish-paid.py before the PUT",
+  "body_sha256": "435a5f0a38d9daf2ae9acd0e3ee266b08dbb11031fe819be32d5bce61301f5c6",
+  "body_chars": 13700,
+  "still_unpublished": {
+   "status": "draft",
+   "price": 0,
+   "checked_at": "2026-08-07T10:45Z"
+  }
+ },
+ "reconstruction": {
+  "verified": true,
+  "how": "build_paid_publish_payload from scripts/note-publish/publish-paid.py was replayed offline against the draft body still held by note, sweeping every distinct separator block and a small set of tag candidates, and hashed exactly as publish-paid.py hashes it (json.dumps(payload, ensure_ascii=False, sort_keys=True)).",
+  "payload_sha256": "4e06c659a09e459bd0f041ebd4d729b80878a1e68f5d195a652c55b9a56b67d6",
+  "recovered_parameters": {
+   "price": 500,
+   "tags": [],
+   "after_chars": 2447,
+   "separator": "d44c0a65-1a70-415e-b959-27294926cdc7"
+  },
+  "free_body_chars": 8019,
+  "pay_body_chars": 5681,
+  "body_blocks": 62,
+  "visible_body_length": 3817,
+  "significance": "The exact bytes note rejected are reproducible offline from artifacts that still exist, with zero requests to note. Any later narrowing stage therefore starts from the real payload rather than a guess."
+ },
+ "scratch_artifact": {
+  "key": "na22933edda29",
+  "numeric_id": 173741847,
+  "title": "probe-4c scratch (never published)",
+  "created_for": "this measurement only",
+  "readback_statuses": [
+   "draft",
+   "draft",
+   "draft"
+  ],
+  "readback_price": [
+   0,
+   0,
+   0
+  ],
+  "readback_publish_at": [
+   null,
+   null,
+   null
+  ],
+  "unauthenticated_public_http_status": 404,
+  "unauthenticated_public_url": "https://note.com/anicca123/n/na22933edda29",
+  "final_status": "deleted",
+  "draft_is_public": false
+ },
+ "draft_surface_replays": [
+  {
+   "fragment": "whole_body",
+   "endpoint": "POST /api/v1/text_notes/draft_save?id=<scratch>&is_temp_saved=true",
+   "request_body_sha256": "b24bd853be5e8488df3acd2a4b3ee1861717eca073bf0cc89fd09a5b7759e778",
+   "http_status": 201,
+   "result": true,
+   "response_body_literal": "{\"data\":{\"result\":true,\"note_days_count\":0,\"updated_at\":\"2026-08-07T19:46:52.000+09:00\"}}"
+  },
+  {
+   "fragment": "free_body",
+   "endpoint": "POST /api/v1/text_notes/draft_save?id=<scratch>&is_temp_saved=true",
+   "request_body_sha256": "e170a7dca73a89c6f429be78ce3326b3f3973af9f6c33ec2b2a5eb4f0d6c6412",
+   "http_status": 201,
+   "result": true,
+   "response_body_literal": "{\"data\":{\"result\":true,\"note_days_count\":0,\"updated_at\":\"2026-08-07T19:46:58.000+09:00\"}}"
+  },
+  {
+   "fragment": "pay_body",
+   "endpoint": "POST /api/v1/text_notes/draft_save?id=<scratch>&is_temp_saved=true",
+   "request_body_sha256": "613c3c85a3622c726a8ee3178362b0e1b0d7110d0c49428798f5ef10c6bb8954",
+   "http_status": 201,
+   "result": true,
+   "response_body_literal": "{\"data\":{\"result\":true,\"note_days_count\":0,\"updated_at\":\"2026-08-07T19:47:05.000+09:00\"}}"
+  }
+ ],
+ "requests": [
+  {
+   "label": "create-scratch-draft",
+   "method": "POST",
+   "url": "https://note.com/api/v1/text_notes",
+   "http_status": 201,
+   "request_payload_keys": [
+    "index",
+    "is_lead_form",
+    "name"
+   ],
+   "request_body_sha256": "c1a4ca3913e3f9c0482780ac34acef7d1179483d939ee826203ed1acb2c2f310",
+   "response_bytes": 325,
+   "response_sha256": "ce02030a7dfed3169abeb1926ee28ce51917d6f74e86452ab5041992f1c616ba"
+  },
+  {
+   "label": "draft_save whole incident body",
+   "method": "POST",
+   "url": "https://note.com/api/v1/text_notes/draft_save?id=173741847&is_temp_saved=true",
+   "http_status": 201,
+   "request_payload_keys": [
+    "body",
+    "body_length",
+    "index",
+    "is_lead_form",
+    "name"
+   ],
+   "request_body_sha256": "b24bd853be5e8488df3acd2a4b3ee1861717eca073bf0cc89fd09a5b7759e778",
+   "response_bytes": 89,
+   "response_sha256": "ccc73aca1d6c5f89d706c095376bac1ec98a0a5807550b4f6ec1570265459352"
+  },
+  {
+   "label": "readback after: draft_save whole incident body",
+   "method": "GET",
+   "url": "https://note.com/api/v3/notes/na22933edda29",
+   "http_status": 200,
+   "request_payload_keys": null,
+   "request_body_sha256": null,
+   "response_bytes": 48371,
+   "response_sha256": "28772b737566777bf99d4659526646dc4bf1598d20d7d16c77ea78cfa567063d"
+  },
+  {
+   "label": "draft_save free_body only",
+   "method": "POST",
+   "url": "https://note.com/api/v1/text_notes/draft_save?id=173741847&is_temp_saved=true",
+   "http_status": 201,
+   "request_payload_keys": [
+    "body",
+    "body_length",
+    "index",
+    "is_lead_form",
+    "name"
+   ],
+   "request_body_sha256": "e170a7dca73a89c6f429be78ce3326b3f3973af9f6c33ec2b2a5eb4f0d6c6412",
+   "response_bytes": 89,
+   "response_sha256": "9d4a42aadec6755dea235bc48d072713e3c1dc644f7fec95ed253378840fb65e"
+  },
+  {
+   "label": "readback after: draft_save free_body only",
+   "method": "GET",
+   "url": "https://note.com/api/v3/notes/na22933edda29",
+   "http_status": 200,
+   "request_payload_keys": null,
+   "request_body_sha256": null,
+   "response_bytes": 31893,
+   "response_sha256": "71ebc3b2bba51988f0f0d85892ef88d963baf0dbc64902853b7e8bf36446185d"
+  },
+  {
+   "label": "draft_save pay_body only",
+   "method": "POST",
+   "url": "https://note.com/api/v1/text_notes/draft_save?id=173741847&is_temp_saved=true",
+   "http_status": 201,
+   "request_payload_keys": [
+    "body",
+    "body_length",
+    "index",
+    "is_lead_form",
+    "name"
+   ],
+   "request_body_sha256": "613c3c85a3622c726a8ee3178362b0e1b0d7110d0c49428798f5ef10c6bb8954",
+   "response_bytes": 89,
+   "response_sha256": "68c230895c44b20f1ec6ad3421534663c9f2bfd832b98a041f1d0c5b79921f4c"
+  },
+  {
+   "label": "readback after: draft_save pay_body only",
+   "method": "GET",
+   "url": "https://note.com/api/v3/notes/na22933edda29",
+   "http_status": 200,
+   "request_payload_keys": null,
+   "request_body_sha256": null,
+   "response_bytes": 22193,
+   "response_sha256": "6d4943d1ff80d1ba78641b83de3da7fc43ef062a048bdd3697a117f43dbd55d5"
+  },
+  {
+   "label": "unauthenticated public fetch",
+   "method": "GET",
+   "url": "https://note.com/anicca123/n/na22933edda29",
+   "http_status": 404,
+   "request_payload_keys": null,
+   "request_body_sha256": null,
+   "response_bytes": 155471,
+   "response_sha256": "521f5c87d52795f3abab47db754ddd98bc6ce17e71486aaedfe4f580e85921b3"
+  },
+  {
+   "label": "cleanup delete scratch",
+   "method": "DELETE",
+   "url": "https://note.com/api/v1/notes/n/na22933edda29",
+   "http_status": 422,
+   "request_payload_keys": null,
+   "request_body_sha256": null,
+   "response_bytes": 32,
+   "response_sha256": "19c456602739fe86a3471a0646a5cea14f709a0f410578e70dc134e580fae096"
+  },
+  {
+   "label": "readback after delete",
+   "method": "GET",
+   "url": "https://note.com/api/v3/notes/na22933edda29",
+   "http_status": 200,
+   "request_payload_keys": null,
+   "request_body_sha256": null,
+   "response_bytes": 22193,
+   "response_sha256": "652316c8f4d8b909168422e02a27e05f4ad4d0a61359a31ce2d4a8a9b308bd9b"
+  },
+  {
+   "label": "cleanup delete scratch (retry with editor headers)",
+   "method": "DELETE",
+   "url": "https://note.com/api/v1/notes/n/na22933edda29",
+   "http_status": 200,
+   "request_payload_keys": null,
+   "request_body_sha256": null,
+   "response_bytes": 24,
+   "response_sha256": null,
+   "response_body_literal": "{\"data\":{\"result\":true}}",
+   "note": "the first DELETE returned 422 Unprocessable Entity solely because Origin/Referer/X-Requested-With were absent; note's delete requires the editor headers"
+  },
+  {
+   "label": "readback after delete",
+   "method": "GET",
+   "url": "https://note.com/api/v3/notes/na22933edda29",
+   "http_status": 200,
+   "request_payload_keys": null,
+   "request_body_sha256": null,
+   "response_bytes": null,
+   "response_sha256": null,
+   "note": "data.status == 'deleted', slug 'deleted-na22933edda29'"
+  }
+ ],
+ "verdict": {
+  "reproducible_on_draft_surface": false,
+  "measured": "The exact rejected body, and each half of the rejected split sent on its own, were all accepted by POST /v1/text_notes/draft_save with HTTP 201 {\"result\":true}. No 422, and no other rejection, on any of the three.",
+  "structural": "The rejected payload's fields are free_body, pay_body, separator, price and status:\"published\". draft_save accepts name, body, body_length, index, is_lead_form and hashtags. The paid split has no draft representation, which publish-paid.py had already measured independently on 2026-07-16 and recorded in its module docstring: paid type, price and paywall line are transient editor form state that note commits only on 投稿する.",
+  "consequence": "A draft-surface bisection has no signal to bisect and cannot present note with the payload that failed. The item 4c probe cannot exist as specified. Building one would have measured a different validator on different inputs and returned a confident wrong answer."
+ },
+ "not_verified": [
+  "Whether the publish-surface 422 is deterministic. The PUT was never re-sent, because re-sending it is the one action that can create a public artifact. A single observed 422 is not proof of a stable rule.",
+  "Which element of the payload note objects to. This measurement narrows only by exclusion: note's draft validator finds nothing objectionable in these bytes.",
+  "Whether PUT /v1/text_notes/{id} with a non-published status would run the same validator. Not attempted: the risk that note publishes anyway cannot be bounded in advance, and a transient public artifact is still a public artifact."
+ ]
+}

@@ -1,0 +1,209 @@
+#!/usr/bin/env python3
+"""Persistent per-run attempt bookkeeping for bounded quality gates."""
+
+from __future__ import annotations
+
+import argparse
+import fcntl
+import hashlib
+import json
+import os
+from pathlib import Path
+from typing import Any
+
+
+MAX_ATTEMPTS = 3
+
+
+def atomic_write(path: Path, data: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    tmp.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
+    os.replace(tmp, path)
+
+
+def read_json(path: Path) -> dict[str, Any] | None:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError, TypeError):
+        return None
+    return value if isinstance(value, dict) else None
+
+
+def payload_from_output(path: Path | None) -> dict[str, Any] | None:
+    if path is None:
+        return None
+    try:
+        lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return None
+    for line in reversed(lines):
+        try:
+            payload = json.loads(line)
+        except (json.JSONDecodeError, TypeError):
+            continue
+        if isinstance(payload, dict):
+            return payload
+    return None
+
+
+def paths(run_dir: Path, gate: str, lang: str) -> tuple[Path, Path, Path, Path]:
+    gates = run_dir / "gates"
+    return (
+        gates / ".attempts" / f"{gate}-{lang}.json",
+        gates / f"{gate}-{lang}.terminal.json",
+        gates / f"{gate}-{lang}.json",
+        gates / ".attempts" / f"{gate}-{lang}.lock",
+    )
+
+
+def legacy_status(gate: str, payload: dict[str, Any]) -> str | None:
+    verdict = payload.get("verdict")
+    if gate in {"rubric-judge", "reader-testing-gate"} and verdict == "PASS":
+        return "pass"
+    return None
+
+
+def article_sha256(path: str) -> str:
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def matches_article(payload: dict[str, Any], current_hash: str) -> bool:
+    saved_hash = payload.get("article_sha256")
+    return isinstance(saved_hash, str) and saved_hash == current_hash
+
+
+def begin(args: argparse.Namespace) -> int:
+    run_dir = Path(args.run_dir)
+    current_hash = article_sha256(args.markdown_file)
+    state_path, terminal_path, legacy_path, lock_path = paths(run_dir, args.gate, args.lang)
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    with lock_path.open("a+") as lock:
+        fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+
+        legacy = read_json(legacy_path)
+        status = legacy_status(args.gate, legacy) if legacy else None
+        if status and matches_article(legacy, current_hash):
+            print(json.dumps({"action": f"skip-{status}", "attempts": 0, "payload": legacy}, ensure_ascii=False))
+            return 0
+
+        terminal = read_json(terminal_path)
+        if (
+            terminal
+            and terminal.get("status") == "revision-required"
+            and terminal.get("article_sha256") == current_hash
+        ):
+            print(json.dumps({
+                "action": "skip-revision-required",
+                "attempts": int(terminal.get("attempts", 1)),
+                "payload": terminal.get("payload"),
+            }, ensure_ascii=False))
+            return 0
+        if (
+            terminal
+            and terminal.get("status") == "advisory"
+            and terminal.get("article_sha256") == current_hash
+        ):
+            print(json.dumps({
+                "action": "skip-advisory",
+                "attempts": int(terminal.get("attempts", MAX_ATTEMPTS)),
+                "payload": terminal.get("payload"),
+            }, ensure_ascii=False))
+            return 0
+        if terminal and terminal.get("status") == "pass" and matches_article(terminal, current_hash):
+            print(json.dumps({
+                "action": f"skip-{terminal['status']}",
+                "attempts": int(terminal.get("attempts", MAX_ATTEMPTS)),
+                "payload": terminal.get("payload"),
+            }, ensure_ascii=False))
+            return 0
+
+        state = read_json(state_path) or {}
+        if state.get("article_sha256") != current_hash:
+            state = {}
+        attempts = int(state.get("attempts", 0))
+        if attempts >= MAX_ATTEMPTS:
+            terminal = {
+                "gate": args.gate,
+                "lang": args.lang,
+                "status": "advisory",
+                "attempts": attempts,
+                "reason": "max-attempts-reached",
+                "article_sha256": current_hash,
+            }
+            atomic_write(terminal_path, terminal)
+            print(json.dumps({"action": "skip-advisory", "attempts": attempts, "payload": None}))
+            return 0
+
+        attempts += 1
+        atomic_write(
+            state_path,
+            {
+                "gate": args.gate,
+                "lang": args.lang,
+                "attempts": attempts,
+                "article_sha256": current_hash,
+            },
+        )
+        print(json.dumps({"action": "run", "attempt": attempts}))
+        return 0
+
+
+def finish(args: argparse.Namespace) -> int:
+    run_dir = Path(args.run_dir)
+    _, terminal_path, _, lock_path = paths(run_dir, args.gate, args.lang)
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path = Path(args.output_file) if args.output_file else None
+    payload = payload_from_output(output_path)
+    status = (
+        "pass"
+        if args.exit_code == 0
+        else (
+            "revision-required"
+            if args.gate == "reader-testing-gate"
+            else ("advisory" if args.attempt >= MAX_ATTEMPTS else None)
+        )
+    )
+    if status is None:
+        return 0
+    terminal = {
+        "gate": args.gate,
+        "lang": args.lang,
+        "status": status,
+        "attempts": args.attempt,
+        "exit_code": args.exit_code,
+        "article_sha256": article_sha256(args.markdown_file),
+    }
+    if payload is not None:
+        terminal["payload"] = (
+            payload.get("payload", payload)
+            if args.gate == "reader-testing-gate"
+            else payload
+        )
+    if output_path and output_path.is_file():
+        terminal["output_sha256"] = hashlib.sha256(output_path.read_bytes()).hexdigest()
+    with lock_path.open("a+") as lock:
+        fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+        atomic_write(terminal_path, terminal)
+    return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    sub = parser.add_subparsers(dest="command", required=True)
+    common = argparse.ArgumentParser(add_help=False)
+    common.add_argument("--run-dir", required=True)
+    common.add_argument("--gate", required=True, choices=("rubric-judge", "reader-testing-gate"))
+    common.add_argument("--lang", required=True, choices=("ja", "en"))
+    common.add_argument("--markdown-file", required=True)
+    sub.add_parser("begin", parents=[common])
+    finish_parser = sub.add_parser("finish", parents=[common])
+    finish_parser.add_argument("--attempt", required=True, type=int)
+    finish_parser.add_argument("--exit-code", required=True, type=int)
+    finish_parser.add_argument("--output-file")
+    args = parser.parse_args()
+    return begin(args) if args.command == "begin" else finish(args)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

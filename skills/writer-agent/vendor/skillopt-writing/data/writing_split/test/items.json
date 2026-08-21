@@ -1,0 +1,306 @@
+[
+  {
+    "id": "hatena:https://www.afpbb.com/articles/-/3645617",
+    "subject": "ゼレンスキー氏が、ロシアが北朝鮮に兵士3万人とミサイル発射台の追加提供を求めたと述べた件。",
+    "lang": "ja",
+    "title": "ロシアが北朝鮮兵3万人とミサイル発射台を追加要求、ゼレンスキー氏",
+    "metric_primary": 46.0,
+    "split": "test"
+  },
+  {
+    "id": "hatena:https://www.watch.impress.co.jp/docs/series/itsmo/2127783.html",
+    "subject": "SwitchBotの電子ペーパー端末をデスク上で情報表示に活用する方法と利便性",
+    "lang": "ja",
+    "title": "デスクに欲しい情報を集約　SwitchBot電子ペーパー端末の”そこにある”魅力【いつモノコト】",
+    "metric_primary": 111.0,
+    "split": "test"
+  },
+  {
+    "id": "hatena:https://www.yomiuri.co.jp/economy/20260726-GYT1T00032/",
+    "subject": "ニトリの似鳥昭雄会長が関わる恐竜パークが北海道に開業し、毎年内容を更新する計画",
+    "lang": "ja",
+    "title": "ニトリの似鳥昭雄会長が「子どもたちが喜ぶ」と直感した恐竜パーク、北海道にオープン…「毎年アップデートしていきたい」",
+    "metric_primary": 145.0,
+    "split": "test"
+  },
+  {
+    "id": "hatena:https://zenn.dev/akfm/books/nextjs-basic-principle/viewer/part_2_container_1st_design",
+    "subject": "Next.jsでUIをコンポーネントのツリーとして分解・設計する考え方",
+    "lang": "ja",
+    "title": "UIをツリーに分解する｜Next.jsの考え方",
+    "metric_primary": 48.0,
+    "split": "test"
+  },
+  {
+    "id": "hatena:https://zenn.dev/little_hand_s/articles/72646a09f49d2a",
+    "subject": "Opus 5向けの公式プロンプトガイドと推奨される指示文の変更について",
+    "lang": "ja",
+    "title": "Opus 5では今までのプロンプトが逆効果に。「検証して」を消して「簡潔に」と書くべし。公式プロンプトガイドを読み解く",
+    "metric_primary": 50.0,
+    "split": "test"
+  },
+  {
+    "id": "qiita:0fe99e9afff2c9f79fcd",
+    "subject": "先輩から行動の理由を問われた際に、考えを整理して落ち着いて説明する方法",
+    "lang": "ja",
+    "title": "先輩の「なぜこうしたの？」に毎回パニックになってたけど、整理するだけで上手に話せるようになった",
+    "metric_primary": 68.0,
+    "split": "test"
+  },
+  {
+    "id": "qiita:14df505c7023f665c585",
+    "subject": "AIと人間がコードの差分上でコメントを交換できる「hunk」というツールについて",
+    "lang": "ja",
+    "title": "AI⇔人間 がdiff上にコメントを書き合える「hunk」がすごい",
+    "metric_primary": 89.0,
+    "split": "test"
+  },
+  {
+    "id": "qiita:2d70dc11cab7a580321b",
+    "subject": "新人がわからないことを早めに質問することの利点",
+    "lang": "ja",
+    "title": "新人のうちは、わからないことを早くいったほうが得という話",
+    "metric_primary": 62.0,
+    "split": "test"
+  },
+  {
+    "id": "qiita:5a1deaa541d70e11d85f",
+    "subject": "Railsにおける暗号化とハッシュの仕組み、およびmaster.keyやDeviseの内部処理",
+    "lang": "ja",
+    "title": "Railsで学ぶ 暗号化とハッシュ 〜master.keyやDeviseは内部で何をしている？〜",
+    "metric_primary": 64.0,
+    "split": "test"
+  },
+  {
+    "id": "qiita:699e89544da8b0de300d",
+    "subject": "技術ブログの文章からAI生成らしい印象を減らすためのスキルについて",
+    "lang": "ja",
+    "title": "あなたの技術ブログの「AI臭さ」を抜くスキル公開します",
+    "metric_primary": 280.0,
+    "split": "test"
+  },
+  {
+    "id": "qiita:97d9d9b7ed0064f7433e",
+    "subject": "手順の不足と知識の不足を区別して考えることについて",
+    "lang": "ja",
+    "title": "手順不足と知識不足は分けて考えた方がいいと思う話",
+    "metric_primary": 63.0,
+    "split": "test"
+  },
+  {
+    "id": "qiita:c1a219a3156a4214828d",
+    "subject": "未経験者が面接で将来の活躍可能性を伝え、信頼を得る方法",
+    "lang": "ja",
+    "title": "面接相手に「未来」を想像させる。未経験でも信用される伝え方",
+    "metric_primary": 91.0,
+    "split": "test"
+  },
+  {
+    "id": "qiita:ced302095c8ddd3c8213",
+    "subject": "エンジニアが業務や成果を数値で捉え、評価・改善につなげるための思考法",
+    "lang": "ja",
+    "title": "「頑張ってます」はもう卒業。エンジニアが今日から使える『数値化の鬼』の思考法",
+    "metric_primary": 175.0,
+    "split": "test"
+  },
+  {
+    "id": "qiita:d3c540c868c3413704b7",
+    "subject": "新人が保守業務を経験して得た気づき",
+    "lang": "ja",
+    "title": "「保守業務って地味…」と思っていた新人の自分へ",
+    "metric_primary": 123.0,
+    "split": "test"
+  },
+  {
+    "id": "qiita:d442ed23d24245b789a0",
+    "subject": "GitHub Copilotを効果的に使うためのコンテキスト設計とトークン活用方法",
+    "lang": "ja",
+    "title": "トークンをケチるな、設計しろ：GitHub Copilotを賢く使うコンテキスト戦略",
+    "metric_primary": 60.0,
+    "split": "test"
+  },
+  {
+    "id": "qiita:d8c22cb512d9ba036154",
+    "subject": "AI時代の転職におけるポートフォリオと、成果や考えを言語化する能力の評価について",
+    "lang": "ja",
+    "title": "AI時代のポートフォリオ、転職で本当に見られているのは「言語化力」",
+    "metric_primary": 47.0,
+    "split": "test"
+  },
+  {
+    "id": "qiita:dbabb5c130aae2566f0f",
+    "subject": "「めっちゃカメレオン」を例に、AI時代におけるアイデア創出力について扱う記事",
+    "lang": "ja",
+    "title": "「めっちゃカメレオン」が教えてくれた、アイディア力こそAI時代の最強武器",
+    "metric_primary": 90.0,
+    "split": "test"
+  },
+  {
+    "id": "qiita:e54c70c90c6aa84d0f66",
+    "subject": "プロジェクト規模に応じたCLAUDE.mdの設計パターンと7種類のテンプレート",
+    "lang": "ja",
+    "title": "CLAUDE.md 設計パターン集──プロジェクト規模別に使い分ける7つのテンプレート",
+    "metric_primary": 91.0,
+    "split": "test"
+  },
+  {
+    "id": "qiita:fb02ae5fa0848f4c511e",
+    "subject": "『めっちゃカメレオン』のサーバー代が無料になる仕組みや実態について",
+    "lang": "ja",
+    "title": "『めっちゃカメレオン』のサーバー代0円ってまじ？",
+    "metric_primary": 577.0,
+    "split": "test"
+  },
+  {
+    "id": "zenn:31ec1e630ab28b",
+    "subject": "設計を技術的な実装の検討ではなく、目的や課題の整理から始める考え方について",
+    "lang": "ja",
+    "title": "設計を、技術の話から始めない",
+    "metric_primary": 61.0,
+    "split": "test"
+  },
+  {
+    "id": "hn:46809708",
+    "subject": "Agent evaluations comparing AGENTS.md with skills and reporting better performance for AGENTS.md.",
+    "lang": "en",
+    "title": "AGENTS.md outperforms skills in our agent evals",
+    "metric_primary": 524.0,
+    "split": "test"
+  },
+  {
+    "id": "hn:46810282",
+    "subject": "Daily benchmarking of Claude Code to monitor performance degradation over time.",
+    "lang": "en",
+    "title": "Claude Code daily benchmarks for degradation tracking",
+    "metric_primary": 760.0,
+    "split": "test"
+  },
+  {
+    "id": "hn:46985151",
+    "subject": "Using Warcraft III Peon voice notifications with Claude Code.",
+    "lang": "en",
+    "title": "Warcraft III Peon Voice Notifications for Claude Code",
+    "metric_primary": 1006.0,
+    "split": "test"
+  },
+  {
+    "id": "hn:47058219",
+    "subject": "A message addressed to large language models.",
+    "lang": "en",
+    "title": "If you’re an LLM, please read this",
+    "metric_primary": 905.0,
+    "split": "test"
+  },
+  {
+    "id": "hn:47178371",
+    "subject": "A program providing eligible open-source maintainers with free access to Claude Max 20x.",
+    "lang": "en",
+    "title": "Get free Claude max 20x for open-source maintainers",
+    "metric_primary": 580.0,
+    "split": "test"
+  },
+  {
+    "id": "hn:47193064",
+    "subject": "A Model Context Protocol server designed to reduce the amount of context Claude Code consumes.",
+    "lang": "en",
+    "title": "MCP server that reduces Claude Code context consumption by 98%",
+    "metric_primary": 570.0,
+    "split": "test"
+  },
+  {
+    "id": "hn:47263595",
+    "subject": "A security incident in which a GitHub issue title compromised approximately 4,000 developer machines.",
+    "lang": "en",
+    "title": "A GitHub Issue Title Compromised 4k Developer Machines",
+    "metric_primary": 632.0,
+    "split": "test"
+  },
+  {
+    "id": "hn:47586778",
+    "subject": "An analysis of leaked Claude Code source code covering simulated tools, frustration-related regular expressions, and an undercover mode.",
+    "lang": "en",
+    "title": "The Claude Code Source Leak: fake tools, frustration regexes, undercover mode",
+    "metric_primary": 1376.0,
+    "split": "test"
+  },
+  {
+    "id": "hn:47768133",
+    "subject": "Recurring workflows and practices for using Claude Code.",
+    "lang": "en",
+    "title": "Claude Code Routines",
+    "metric_primary": 720.0,
+    "split": "test"
+  },
+  {
+    "id": "hn:47792764",
+    "subject": "The release of Qwen3.6-35B-A3B, an open-weight language model for coding agents.",
+    "lang": "en",
+    "title": "Qwen3.6-35B-A3B: Agentic coding power, now open to all",
+    "metric_primary": 1274.0,
+    "split": "test"
+  },
+  {
+    "id": "hn:47844269",
+    "subject": "Anthropic has reinstated permission for using its Claude CLI in OpenClaw-style setups.",
+    "lang": "en",
+    "title": "Anthropic says OpenClaw-style Claude CLI usage is allowed again",
+    "metric_primary": 511.0,
+    "split": "test"
+  },
+  {
+    "id": "hn:47932937",
+    "subject": "Legal ownership of code generated by Claude Code.",
+    "lang": "en",
+    "title": "Who owns the code Claude Code wrote?",
+    "metric_primary": 557.0,
+    "split": "test"
+  },
+  {
+    "id": "hn:48037128",
+    "subject": "The convergence of AI-assisted “vibe coding” and agentic software engineering practices.",
+    "lang": "en",
+    "title": "Vibe coding and agentic engineering are getting closer than I'd like",
+    "metric_primary": 787.0,
+    "split": "test"
+  },
+  {
+    "id": "hn:48411635",
+    "subject": "Claudeの利用とrsyncのバグ増加との関連性",
+    "lang": "en",
+    "title": "Did Claude increase bugs in rsync?",
+    "metric_primary": 512.0,
+    "split": "test"
+  },
+  {
+    "id": "hn:48467896",
+    "subject": "Claude Fable’s possible loss of helpfulness without users noticing",
+    "lang": "en",
+    "title": "If Claude Fable stops helping you, you'll never know",
+    "metric_primary": 1036.0,
+    "split": "test"
+  },
+  {
+    "id": "hn:48507020",
+    "subject": "Setting up a local coding agent on macOS",
+    "lang": "en",
+    "title": "How to setup a local coding agent on macOS",
+    "metric_primary": 507.0,
+    "split": "test"
+  },
+  {
+    "id": "hn:48664814",
+    "subject": "Anthropic’s allegation that Alibaba obtained and replicated capabilities of its Claude AI models through unauthorized access.",
+    "lang": "en",
+    "title": "Anthropic says Alibaba illicitly extracted Claude AI model capabilities",
+    "metric_primary": 813.0,
+    "split": "test"
+  },
+  {
+    "id": "hn:48883343",
+    "subject": "Large language models and criticism of exaggerated claims about them",
+    "lang": "en",
+    "title": "I love LLMs, I hate hype",
+    "metric_primary": 501.0,
+    "split": "test"
+  }
+]

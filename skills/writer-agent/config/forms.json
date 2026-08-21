@@ -1,0 +1,30 @@
+{
+  "_doc": "Writing-form registry (spec 47 §8). The gate skeleton (identity/rubric/reader-testing/render-verify/self-improve) is form-agnostic and shared. Only length, exit platforms, and monetization change per form. A topic card's optional `form:` field selects one; absent = article. Never fabricate an exit that isn't wired: `exit_status` says what actually works today.",
+  "default": "article",
+  "forms": {
+    "xpost": {
+      "label": "X post (short hook)",
+      "length": { "target_chars": 280, "thread_max_posts": 8, "guidance": "one finding, one hook; no hamburger template; lead IS the whole post" },
+      "exits": ["x"],
+      "exit_status": { "x": "wired (scripts/x-publish/publish-to-x.sh)" },
+      "monetization": "creator revenue (X ad share / subscriptions)",
+      "gate_notes": "rubric axes lead/title_jargon/why_pay apply; jargon_defined relaxed (no room to define — pick a hook that needs no jargon); reader-testing = would a stranger scrolling get it in 3 seconds"
+    },
+    "article": {
+      "label": "Article (current default)",
+      "length": { "target_chars": 8000, "guidance": "hamburger template, beginner-friendly, jargon defined on first use" },
+      "exits": ["note", "zenn", "substack-ja", "substack-en", "devto", "x"],
+      "exit_status": { "note": "wired", "zenn": "wired", "substack-ja": "wired", "substack-en": "wired", "devto": "wired", "x": "wired (Articles)" },
+      "monetization": "note single-purchase ¥500 + Substack paid $8/mo + free-tier reach",
+      "gate_notes": "full gate skeleton, all axes apply"
+    },
+    "ebook": {
+      "label": "Ebook (long form)",
+      "length": { "target_chars": 30000, "guidance": "multi-chapter, each chapter passes the article gate skeleton independently, one spine across chapters" },
+      "exits": ["zenn-book", "kdp"],
+      "exit_status": { "zenn-book": "pending (zenn book format not yet wired)", "kdp": "pending (Amazon KDP publisher not yet built)" },
+      "monetization": "ebook one-off sales (zenn book paid / KDP royalties)",
+      "gate_notes": "run gate skeleton per chapter; title_jargon applies to book title AND chapter titles"
+    }
+  }
+}

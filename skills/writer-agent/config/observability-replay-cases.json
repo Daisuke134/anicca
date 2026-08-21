@@ -1,0 +1,36 @@
+{
+  "schema": "writer.observability.replay-cases",
+  "version": 1,
+  "cases": [
+    {
+      "execution_id": "launchd-1078",
+      "run_id": "20260805-162010",
+      "kind": "recorded-failure",
+      "checkpoint": "gates/quality-repair/epoch-1/original/quality-self-heal-attempt-2.json"
+    },
+    {
+      "execution_id": "launchd-1083",
+      "run_id": "20260805-162010",
+      "kind": "recorded-self-heal",
+      "checkpoint": "gates/quality-repair-state.json"
+    },
+    {
+      "execution_id": "launchd-1084",
+      "run_id": "20260805-162010",
+      "kind": "recorded-terminal",
+      "checkpoint": "gates/quality-self-heal-attempt-2.json"
+    },
+    {
+      "execution_id": "publisher-20260806-084924",
+      "run_id": "20260806-084924",
+      "kind": "live-publisher-failure",
+      "checkpoint": "observability/evidence-index.json"
+    },
+    {
+      "execution_id": "publication-20260731-213927",
+      "run_id": "20260731-213927",
+      "kind": "successful-publication",
+      "checkpoint": "gates/publication-state.json"
+    }
+  ]
+}

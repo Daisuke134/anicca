@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "definition": "revenue_capable means a real external receipt can be collected today; theoretical creator programs and views are not money",
+  "destinations": {
+    "note": {"revenue_capable": true, "class": "direct_writing", "stream": "note_paid_article"},
+    "substack": {"revenue_capable": true, "class": "direct_writing", "stream": "substack_subscription"},
+    "editorial": {"revenue_capable": true, "class": "direct_writing", "stream": "editorial_fee"},
+    "self-owned": {"revenue_capable": true, "class": "direct_writing", "stream": "self_owned_publication"},
+    "devto": {"revenue_capable": false, "reason": "views and reactions have no wired external payment receipt"},
+    "zenn-article": {"revenue_capable": false, "reason": "free article views and likes are not received money"},
+    "zenn": {"revenue_capable": false, "reason": "free article views and likes are not received money"},
+    "x-article": {"revenue_capable": false, "reason": "creator payout is not currently wired to an external receipt"},
+    "x-post": {"revenue_capable": false, "reason": "creator payout is not currently wired to an external receipt"}
+  },
+  "account_streams": {
+    "note_paid_article": {"revenue_capable": true},
+    "substack_subscription": {"revenue_capable": true},
+    "editorial_fee": {"revenue_capable": true},
+    "editorial_retainer": {"revenue_capable": true},
+    "self_owned_publication": {"revenue_capable": true},
+    "devto_views": {"revenue_capable": false},
+    "zenn_views": {"revenue_capable": false},
+    "x_views": {"revenue_capable": false}
+  }
+}

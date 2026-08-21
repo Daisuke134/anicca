@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>ai.anicca.article-resume</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>/Users/anicca/Projects/life-manager-main/skills/writer-agent/scripts/article-resume-pending.sh</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>ARTICLE_ROOT</key>
+    <string>/Users/anicca/Projects/life-manager-main/skills/writer-agent</string>
+    <key>ARTICLE_STATE_DIR</key>
+    <string>/Users/anicca/.local/state/life-manager/writer</string>
+    <key>ARTICLE_AUTOPUBLISH</key>
+    <string>1</string>
+    <key>ARTICLE_PROVIDER</key>
+    <string>codex</string>
+    <key>ARTICLE_PROVIDER_COOLDOWN_SECONDS</key>
+    <string>300</string>
+    <key>ARTICLE_CODEX_PROVIDER_ID</key>
+    <string>local_proxy</string>
+    <key>ARTICLE_CODEX_PROVIDER_BASE_URL</key>
+    <string>http://127.0.0.1:8317/v1</string>
+    <key>ARTICLE_CODEX_PROVIDER_ENV_KEY</key>
+    <string>CLIPROXY_API_KEY</string>
+    <key>ARTICLE_CODEX_PROVIDER_API_KEY_SOURCE</key>
+    <string>cliproxyapi</string>
+  </dict>
+  <key>RunAtLoad</key>
+  <false/>
+  <key>StartInterval</key>
+  <integer>300</integer>
+  <key>StandardOutPath</key>
+  <string>/Users/anicca/.openclaw/logs/article-resume.out</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/anicca/.openclaw/logs/article-resume.err</string>
+</dict>
+</plist>
