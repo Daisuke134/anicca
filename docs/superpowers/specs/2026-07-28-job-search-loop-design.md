@@ -25,6 +25,10 @@ launchd owner in commit `04989df62`. Ashby remains the primary adapter; Workday 
 secondary adapter with deterministic navigation now live. The catch-up correction
 report was acknowledged by Telegram as message `27323`. Guardian and the Life
 Manager Career surface remain in progress.
+The daily script now bounds the non-deterministic browser fallback at 300 seconds
+by default (`JOB_SEARCH_BROWSER_TIMEOUT_SECONDS` may lower or raise that bounded
+value); deterministic ATS fast paths run before it and retain their own evidence.
+
 **Done when:** `Daisuke134/life-manager` is the only versioned source and the
 resident system can discover, qualify, tailor and submit truthful eligible
 applications on the configured recurring cadence without a product-imposed daily
