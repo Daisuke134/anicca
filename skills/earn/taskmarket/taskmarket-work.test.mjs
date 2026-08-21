@@ -4,7 +4,7 @@ import { mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { classifyTask, runTaskMarketPass, selectTask } from './taskmarket-work.mjs';
+import { classifyTask, imageSpendDecision, runTaskMarketPass, selectTask } from './taskmarket-work.mjs';
 
 const NOW = Date.parse('2026-07-28T08:00:00Z');
 const IMAGE_BRIEF = [
@@ -34,6 +34,17 @@ test('classifyTask accepts one unstaked frontier still-image delivery', () => {
     supported: true,
     reason: 'supported_still_image',
   });
+});
+
+test('imageSpendDecision reuses the shared treasury reserve and session-cap policy', () => {
+  assert.deepEqual(imageSpendDecision({ balanceUsd: 1, amountUsd: 0.07, spentUsd: 0 }), {
+    allowed: true,
+    reason: 'ok',
+    spendableUsdc: 0.75,
+    sessionRemainingUsdc: 0.07,
+  });
+  assert.equal(imageSpendDecision({ balanceUsd: 0.3, amountUsd: 0.07, spentUsd: 0 }).reason, 'reserve-floor');
+  assert.equal(imageSpendDecision({ balanceUsd: 1, amountUsd: 0.07, spentUsd: 0.1 }).reason, 'session-cap');
 });
 
 test('classifyTask rejects closed, staked, unsupported, and uneconomic tasks', () => {

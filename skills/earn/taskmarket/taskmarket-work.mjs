@@ -8,6 +8,7 @@ import { privateKeyToAccount } from 'viem/accounts';
 import { loadEvmKey } from '../lib/resolve-identity.mjs';
 import { evmErc20Balance, EVM_TOKENS, RPC } from '../lib/net-worth.mjs';
 import { generateImage as generateX402Image } from './x402-image-client.mjs';
+import { authorizeSpend } from '../../agent-economy/lib/treasury-policy.mjs';
 
 const USDC_DECIMALS = 1_000_000;
 const TASKMARKET_CLI = '/opt/homebrew/bin/taskmarket';
@@ -16,6 +17,22 @@ const MAX_IMAGE_COST_USD = 0.07;
 const DAILY_IMAGE_CAP_USD = 0.14;
 const MIN_FLOAT_USD = 0.25;
 const execFileAsync = promisify(execFile);
+
+export function imageSpendDecision({
+  balanceUsd,
+  amountUsd,
+  spentUsd = 0,
+  minFloatUsd = MIN_FLOAT_USD,
+  dailyCapUsd = DAILY_IMAGE_CAP_USD,
+} = {}) {
+  return authorizeSpend({
+    amountUsdc: amountUsd,
+    liquidUsdc: balanceUsd,
+    reserveUsdc: minFloatUsd,
+    sessionSpentUsdc: spentUsd,
+    sessionCapUsdc: dailyCapUsd,
+  });
+}
 
 function rewardUsd(task) {
   const atomic = Number(task?.netReward ?? task?.reward);
@@ -272,13 +289,13 @@ async function reserveImageSpend({ walletKey, amountUsd, statePath, day }) {
     fetch,
     RPC.base,
   );
-  if (balanceUsd - amountUsd < MIN_FLOAT_USD) {
-    throw new Error('TaskMarket image spend would breach agent float floor');
-  }
   const state = await readSpend(statePath, day);
-  if (state.spentUsd + amountUsd > DAILY_IMAGE_CAP_USD + Number.EPSILON) {
-    throw new Error('TaskMarket image daily cap reached');
-  }
+  const decision = imageSpendDecision({
+    balanceUsd,
+    amountUsd,
+    spentUsd: state.spentUsd,
+  });
+  if (!decision.allowed) throw new Error(`TaskMarket image spend blocked: ${decision.reason}`);
   const next = { day, spentUsd: Number((state.spentUsd + amountUsd).toFixed(6)) };
   await mkdir(dirname(statePath), { recursive: true });
   const temp = `${statePath}.tmp`;

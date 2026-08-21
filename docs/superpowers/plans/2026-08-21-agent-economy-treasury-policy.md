@@ -51,3 +51,26 @@
 
   Run: `git add skills/agent-economy/lib/treasury-policy.mjs skills/agent-economy/lib/treasury-policy.test.mjs docs/superpowers/plans/2026-08-21-agent-economy-treasury-policy.md && git commit -m "feat: add agent economy treasury policy" && git push`
 
+### Task 2: Reuse the policy at the existing TaskMarket spend boundary
+
+**Files:**
+- Modify: `skills/earn/taskmarket/taskmarket-work.mjs`
+- Test: `skills/earn/taskmarket/taskmarket-work.test.mjs`
+
+**Interfaces:**
+- Consumes: `authorizeSpend()` and the existing `$0.25` float / `$0.14` daily limits.
+- Produces: `imageSpendDecision()` and the same fail-closed TaskMarket behavior with one shared policy implementation.
+
+- [ ] **Step 1: Write the failing `imageSpendDecision` assertions**
+
+  Assert an allowed `$0.07` image at `$1.00` balance, reserve-floor rejection at `$0.30`, and session-cap rejection after `$0.10` daily spend.
+
+- [ ] **Step 2: Run `node --test skills/earn/taskmarket/taskmarket-work.test.mjs` and observe the missing export**
+
+- [ ] **Step 3: Import `authorizeSpend`, export `imageSpendDecision`, and replace the duplicate float/daily checks**
+
+- [ ] **Step 4: Run the nine TaskMarket tests plus the seven treasury-policy tests**
+
+- [ ] **Step 5: Commit and push**
+
+  Run: `git add skills/earn/taskmarket/taskmarket-work.mjs skills/earn/taskmarket/taskmarket-work.test.mjs docs/superpowers/plans/2026-08-21-agent-economy-treasury-policy.md && git commit -m "fix: route taskmarket spend through treasury policy" && git push`
