@@ -1,6 +1,24 @@
 # Affiliate local money loop handover
 
-- Latest bounded Telegram-history repair is installed as immutable release
+- Current installed runtime is immutable release
+  `75dd88931b50fc6f30e18b4226f33cfea7fa1389`; source and installed
+  `scripts/local_loop.py` bytes match at SHA-256
+  `3970a0fcfd0b74283fa2c442802d73f41ff197c4ae96ad18f797ecd2bc5c01ce`.
+  The release persists one append-only `AFFILIATE_RUN_RECEIPT` for every
+  launchd wake, with redacted stage state, release SHA, timing, due work,
+  terminal state, run state, and causal parent; it does not store URLs,
+  tracking links, credentials, or secrets. The registered owner was
+  kickstarted at `2026-08-21T13:46:48+0900` and completed wake
+  `2c66ae7cfe1aafeb72e12615e43c3e3388b0597e9d1ee60733bd8fba61555146` at
+  `13:46:55+0900`; `run-receipts.jsonl` contains one row with
+  `run_id=wake_event_uuid`, `terminal_state=READY_FOR_PUBLICATION`,
+  `run_state=SUCCEEDED`, `duration_ms=13572`, and
+  `causal_parent.trigger=launchd`. `launchctl print` reads `runs=223`,
+  `last exit code=0`, and `StartInterval=600`. Telegram remains
+  `NO_PENDING` on message `27069` with private outbox/sent `133/133`, and no
+  public/provider effect changed. F01 is closed by live owner readback;
+  B01 remains open.
+- Prior bounded Telegram-history repair was installed as immutable release
   `088f36982ae9ec6c643d7fa6d9a299701dbb377b`; source and installed
   `local_loop.py` SHA-256 is `7d9c401b4785dc2f39ac367887d0ceb9b1e481cb9b7328c022d1bc186100e3c3`,
   with the existing suite `72/72`, compilation, and diff checks passing. The
