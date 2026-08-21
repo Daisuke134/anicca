@@ -45,6 +45,13 @@ CONFIRMATION_RE = re.compile(
     r"応募情報が送信|応募を受け付け",
     re.IGNORECASE,
 )
+ACTION_LABELS = {
+    "Apply": ("Apply", "応募"),
+    "Apply Manually": ("Apply Manually", "手動で応募"),
+    "Save and Continue": ("Save and Continue", "保存して次へ"),
+    "Submit": ("Submit", "送信"),
+    "Sign In": ("Sign In", "サインイン"),
+}
 
 
 async def _snapshot(page: Any) -> dict[str, Any]:
@@ -150,24 +157,25 @@ async def _visible_exact(page: Any, role: str, name: str) -> Any | None:
 async def _click_surface(page: Any, name: str) -> bool:
     # Workday sometimes exposes an <a role="button"> and sometimes a visible
     # click_filter overlay.  Both are user-facing and must be ordinary clicks.
-    overlay = page.locator(
-        f"[data-automation-id='click_filter'][aria-label='{name}']"
-    )
-    visible_overlay: list[Any] = []
-    for index in range(await overlay.count()):
-        candidate = overlay.nth(index)
-        if await candidate.is_visible():
-            visible_overlay.append(candidate)
-    if len(visible_overlay) == 1:
-        await visible_overlay[0].click(timeout=10_000)
-        return True
-    button = await _visible_exact(page, "button", name)
-    if button is None:
-        button = await _visible_exact(page, "link", name)
-    if button is None:
-        return False
-    await button.click(timeout=10_000)
-    return True
+    for label in ACTION_LABELS.get(name, (name,)):
+        overlay = page.locator(
+            f"[data-automation-id='click_filter'][aria-label='{label}']"
+        )
+        visible_overlay: list[Any] = []
+        for index in range(await overlay.count()):
+            candidate = overlay.nth(index)
+            if await candidate.is_visible():
+                visible_overlay.append(candidate)
+        if len(visible_overlay) == 1:
+            await visible_overlay[0].click(timeout=10_000)
+            return True
+        button = await _visible_exact(page, "button", label)
+        if button is None:
+            button = await _visible_exact(page, "link", label)
+        if button is not None:
+            await button.click(timeout=10_000)
+            return True
+    return False
 
 
 def _profile_values(profile: dict[str, Any]) -> dict[str, str]:
