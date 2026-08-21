@@ -476,8 +476,8 @@ Rules:
   plist-equivalent environment (no external resolver injection): `status=sent`, `revision=2`, `appended=true`, and
   `delivered=true`; the snapshot/claim and Telegram delivery receipt read back with provider `message_id=766`. After
   `5e1c0dfcc`, the same-hour rerun returned `status=quiet`, `revision=2`, `appended=false`, `delivered=false`, with
-  no duplicate receipt. This is core-loop evidence, not launchd provenance. On 2026-08-21,
-  authorized restart paths were attempted but did not execute (`-10827`, `141`, and
+  no duplicate receipt. This is core-loop evidence, not launchd provenance. Authorized restart paths were attempted but
+  did not execute (`-10827`, `141`, and
   `Operation not permitted`); no account mutation, logout, reboot, or OS-service restart occurred. Parent
   `CFO-OPS3b` operational launchd/receipt and recent-transaction `CFO-1j` are first; once their real loop/receipt
   gates pass, `CFO-2b.2b2` is the first business implementation slice.
@@ -486,6 +486,7 @@ Rules:
   ChatGPT conversation. The Moneytree bundle is present in local plugin cache and `codex app-server` reports it
   `enabled=true, callable=true` through `app/installed`; the persistent app-server `app/read` and direct
   `mcpServer/tool/call` now return the existing structured Moneytree result, which the adapter consumes without LLM
-  number copying. The remaining OPS3b blocker is GUI/user launchd and receipt delivery. If this bridge later regresses,
+  number copying. The remaining OPS3b blocker is GUI/user launchd; the current core-loop receipt is real but not
+  attributed to launchd. If this bridge later regresses,
   the canonical portable fallback is the official Moneytree LINK/API integration; no bespoke adapter or guessed
   finance number is accepted.

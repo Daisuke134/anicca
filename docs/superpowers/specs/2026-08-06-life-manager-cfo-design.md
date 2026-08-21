@@ -1000,12 +1000,14 @@ The exact same ChatGPT conversation context is a separate product capability: a 
 retain chat context while the app is running, but it is not the portable local-launchd/OSS runtime contract. Other
 devices cannot inherit this owner's linked Moneytree account; they need their own consented connection or LINK tenant.
 
-On 2026-08-21, authorized restart paths were attempted but no restart occurred: System Events returned Apple Event
-error `-10827`, `launchctl reboot system` returned `141: Reentrancy avoided`, `/sbin/reboot` returned
-`Operation not permitted`, and the Terminal helper was unavailable (`kLSNoExecutableErr -10827`). A read-only preflight
+Authorized restart paths were attempted but no restart occurred: System Events returned Apple Event
+error `-10827`, `launchctl reboot system` and `launchctl reboot userspace` returned `141: Reentrancy avoided`,
+`/sbin/reboot` returned `Operation not permitted`, and the Terminal helper was unavailable (`kLSNoExecutableErr -10827`).
+A read-only preflight
 found 240 LaunchAgents (238 valid and two invalid: `ai.anicca.cfo-daily.plist` and
 `ai.anicca.fleet-daily.plist`); the invalid/legacy CFO jobs remain intentionally out. A second read-only
-`launchctl asuser 501`/`pid/15509`/`user/501` probe returned the same `141` and could not obtain an audit UID. No
+`launchctl asuser 501`/`pid/15509`/`user/501` probe returned the same `141` and could not obtain an audit UID; a direct
+`launchctl bootstrap user/501` attempt returned the same `141`. No
 account-directory mutation, logout, reboot, or OS-service restart occurred. The post-fix install remains read-back
 clean (`plutil -lint` PASS, stable wrapper `bash -n` PASS, and the stable Moneytree reader PASS). The installed stable
 wrapper E2E also passed with a real provider receipt (`message_id=766`), while `launchctl list
