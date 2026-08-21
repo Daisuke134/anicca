@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | `CFO-OPS3b`, `CFO-1j`, `CFO-2b.2`, `CFO-2b.3`, `CFO-2b.4`, and `CFO-2b.5` are closed; `CFO-2b.6` is the next active business-instrumentation slice |
+| Status | `CFO-OPS3b`, `CFO-1j`, `CFO-2b.2`, `CFO-2b.3`, `CFO-2b.4`, `CFO-2b.5`, and `CFO-2b.6` are closed; `CFO-2b.7` is the next active business-instrumentation slice |
 | Parent | `docs/superpowers/specs/2026-08-06-life-manager-cfo-design.md` |
 | Runtime | Canonical target is local `/Users/anicca/Projects/life-manager-main/apps/life-manager`; existing `apps/life-call` code is migration evidence, not the final owner |
 | Role split | Sol specifies/verifies; Luna implements production code/tests |
@@ -68,7 +68,7 @@ Only the first unchecked business item is active after the parent spec's operati
       `skills/earn/gig`; the pure projection keeps the external Coconala snapshot, local earnings ledger, and runtime
       receipt separate. It records the observed 3,198 JPY mismatch and leaves landed cash, costs, profit, and ROI
       unknown/null until reconciliation.
-- [ ] **CFO-2b.6 — x402 Services**: finalized external on-chain sales; self-transfers are excluded.
+- [x] **CFO-2b.6 — x402 Services**: finalized external on-chain sales; self-transfers and internal moves are excluded.
 - [ ] **CFO-2b.7 — Employment Income**: payroll/bank receipt, kept as personal income rather than business revenue.
 - [ ] **CFO-2b.8 — Capafy Marketplace**: landed sales receipts and costs.
 - [ ] **CFO-2b.9 — Proprietary Investing**: realized reconciled P&L only; deposits/internal moves are excluded.
@@ -171,8 +171,38 @@ state are reconciled.
 - [x] Node syntax, manifest JSON, focused live assertions, canonical hash/count, state-absence, commit, and remote push
       read-back pass. No launchd, provider, Telegram, database, or mutable-state write occurred.
 
-The next active item is **CFO-2b.6 — x402 Services**. It must use finalized external on-chain customer settlement
-receipts only; self-transfers and internal moves remain excluded and unknown data cannot become zero.
+### CFO-2b.6 measured truth and completion evidence
+
+Canonical code commit `00c39a1a5` owns the tracked x402 runtime under `skills/earn/x402-sell` (56 files; tree hash
+`de0780f1f811bdd6a213c9cfd34e69f36c22120a4066f230f9a591ee806d661b`). The runtime manifest is
+`config/x402/runtime-manifest.json`; mutable x402 state and the separate `~/.anicca-founder` runtime were not
+imported. The existing Life Manager x402 ledger template remains install-time rendered and was not changed in this
+slice.
+
+A read-only Base mainnet verification of the existing external-inflow ledger observed three rows. All three passed
+the chain-id, finalized-block, receipt-status, exact USDC Transfer, amount, receiver, and external-initiator checks;
+the verified external total is `30,000` USDC atomic units (`$0.03`). The latest observed settlement date is
+`2026-08-13`; this is a verified ledger observation, not a claim that a new sale occurred today. Self-transfers and
+internal moves are excluded before revenue admission and their counts remain unknown when the source does not expose
+them. No wallet address, transaction hash, route, or raw row crosses the CFO projection boundary.
+
+`apps/life-manager/lib/cfo-x402.js` composes the redacted fact with `evidence_status=onchain_finalized_external_settlement`
+and `landed_cash_status=confirmed_agent_wallet` for the verified external observation. Direct/API cost, human cost,
+capital, profit, and ROI remain unknown/null; the service-wide scope remains open until the later reconciliation slice.
+The live projection took `1593 ms`, recursively freezes its output, and rejects a verified settlement with zero amount
+using the fixed error `cfo_x402_invalid:business_fact`. The input state file hash, size, and mtime were unchanged.
+
+The existing `ai.anicca.life-manager-x402-ledger` launchd label is currently installed against the main-worktree
+script and its last observed exit code is `1`; this slice records that runtime failure and does not mutate launchd.
+The next active item is **CFO-2b.7 — Employment Income**; it must keep payroll/bank receipts as personal income,
+separate from business revenue, and retain unknown data as unknown.
+
+- [x] Canonical x402 runtime and manifest are present; no mutable state, credentials, or separate founder runtime was
+      copied into the repository.
+- [x] Three of three existing external-inflow rows pass live Base finalization and exact-transfer verification;
+      external total is `$0.03` with no self-transfer revenue admitted.
+- [x] Pure projection, privacy boundary, state non-mutation, hostile zero rejection, syntax, manifest, commit, and
+      remote push read-back pass. No launchd, provider, database, or Telegram runtime mutation occurred.
 
 ## 4. Current measured truth
 
@@ -704,7 +734,7 @@ fact therefore preserves provider evidence and coverage labels instead of claimi
   test failed. No loop, launchd, database, provider, or Telegram runtime effect was introduced by this pure slice.
 - The output keeps Apple settled Partner Share separate from RevenueCat gross, preserves payout/bank/API-cost absence
   as unknown/null, freezes the result recursively, and emits no raw provider identifiers. `CFO-2b.3`, `CFO-2b.4`, and
-  `CFO-2b.5` are closed; `CFO-2b.6` is now next.
+  `CFO-2b.5` and `CFO-2b.6` are closed; `CFO-2b.7` is now next.
 
 ### CFO-2b.2c implementation target
 
@@ -753,7 +783,7 @@ add a business-fact database table, renderer, API route, launchd wiring, or Tele
   `asOf=2026-08-21T05:04:12Z` matched the delivered balance parity. No raw account number, provider ID, description,
   category label, credential, or raw payload was persisted or sent. Shared transport and `CFO-1j` are closed; the LLM
   spending guardian remains disabled until its later verified-outgoing and reconciliation gates. `CFO-2b.2c` is closed and
-  `CFO-2b.4` and `CFO-2b.5` are closed; `CFO-2b.6` is next.
+  `CFO-2b.4`, `CFO-2b.5`, and `CFO-2b.6` are closed; `CFO-2b.7` is next.
 - Provider-freshness correction (2026-08-21): two direct read-only calls at `2026-08-21T05:09:58Z` and
   `2026-08-21T05:11:43Z` returned the same provider-reported balance fingerprint as revision 5, so the loop is not
   serving a stale local cache; the Moneytree provider value itself had not changed. Moneytree's official [MUFG
@@ -769,7 +799,7 @@ add a business-fact database table, renderer, API route, launchd wiring, or Tele
   composer and focused boundary regressions. Focused tests pass `7/7`; the full package gate remains `846/847` with
   only the pre-existing TECH PLAY `absent` versus `unavailable` assertion. Apple settled Partner Share and RevenueCat
   gross remain separate; payout, bank landing, and missing API cost remain unknown/null. No loop or launchd behavior
-  changed. `CFO-2b.4` and `CFO-2b.5` are closed; the next active item is `CFO-2b.6` x402 Services instrumentation.
+  changed. `CFO-2b.4`, `CFO-2b.5`, and `CFO-2b.6` are closed; the next active item is `CFO-2b.7` Employment Income.
 
 - Moneytree display correction (2026-08-21): canonical commit `6faf0bd06` keeps the installed read-only provider
   boundary intact while retaining only safe provider categories and the latest returned transaction date in the
