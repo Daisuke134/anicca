@@ -21,11 +21,14 @@ SUPPORTED_PAIRS,
 
 def assert_disk_headroom() -> None:
     """Keep every external publication boundary on the Coconala 1 GiB floor."""
-    state_root = Path(
-        os.environ.get("ARTICLE_STATE_DIR")
-        or os.environ.get("GIG_STATE_DIR")
-        or (Path.home() / "gig")
-    )
+    state_path = os.environ.get("ARTICLE_PUBLICATION_STATE", "")
+    state_dir = os.environ.get("ARTICLE_STATE_DIR", "")
+    if state_path:
+        state_root = Path(state_path).parent
+    elif state_dir:
+        state_root = Path(state_dir)
+    else:
+        raise InvariantError("managed_publication_state_required")
     try:
         available = shutil.disk_usage(state_root).free
     except OSError as error:
@@ -140,6 +143,10 @@ def main() -> int:
     manual = sub.add_parser("manual-check")
     manual.add_argument("--pair", required=True, choices=SUPPORTED_PAIRS)
     args = parser.parse_args()
+    if args.command == "preflight" and managed_article_context():
+        # Check the real publication filesystem before PublicationStore can
+        # validate/repair a primary state file from its backup.
+        assert_disk_headroom()
     if args.command in {"quarantine-identity-conflict", "migrate-substack-en-identity"}:
         # This is the one migration command whose purpose is to repair the
         # legacy equal-identity boundary; the method itself performs the
@@ -233,7 +240,6 @@ def main() -> int:
     elif args.command == "preflight":
         if os.environ.get("ARTICLE_REMOTE_FIXTURE"):
             raise InvariantError("production remote fixture injection is forbidden")
-        assert_disk_headroom()
         entry = store.read().get("pairs", {}).get(args.pair)
         if not entry:
             raise InvariantError(f"no pre-registered stable intent for {args.pair}")
