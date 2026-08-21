@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "canonical_paths": [
+    "apps/life-manager/lib/cfo-fleet-source.js",
+    "apps/life-manager/lib/cfo-fleet.js"
+  ],
+  "historical_source": {
+    "repository": "Daisuke134/life-manager",
+    "path": "apps/life-call/lib/cfo-fleet.js + apps/life-call/lib/cfo-fleet-source.js",
+    "commit": "8d3f4e07c",
+    "status": "migration evidence copied into canonical Life Manager owner"
+  },
+  "canonical_census": {
+    "owner": "Daisuke134/life-manager",
+    "source_absolute_path_references": 0,
+    "mutable_state_imported": false,
+    "credentials_imported": false,
+    "network_write": false
+  },
+  "provider": {
+    "endpoint": "https://aniccaai.com/.netlify/functions/dashboard-sync",
+    "method": "GET",
+    "response_boundary": "post-signature/post-chain-enrichment dashboard JSON",
+    "root_totals_admitted": false,
+    "unknown_dashboard_wallets_admitted": false,
+    "inflows_are_revenue": false,
+    "burn_is_provider_confirmed": false
+  },
+  "last_validation": {
+    "observed_at": "2026-08-21T09:06:30.415Z",
+    "source_updated_at": "2026-08-21T09:06:30.257Z",
+    "registered_wallet_count": 4,
+    "present_wallet_count": 0,
+    "partial": true,
+    "wallet_valuation": "unknown",
+    "external_stablecoin_inflows": "unknown",
+    "burn_rate": "unknown",
+    "exception_reasons": ["missing_registered_wallet"],
+    "limitations": [
+      "asset_positions_unavailable",
+      "valuation_quote_provenance_unavailable",
+      "inflows_not_recognized_revenue",
+      "inflow_window_approximate",
+      "burn_estimated",
+      "economic_owner_mapping_unavailable"
+    ],
+    "state_mutated": false,
+    "launchd_mutated": false
+  }
+}
