@@ -123,6 +123,33 @@ def test_allocator_selects_only_one_deterministic_candidate() -> None:
     assert decision["item"]["feature"] == "capafy-o1"
 
 
+def test_allocator_resumes_matching_draft_at_full_cap_but_blocks_without_one() -> None:
+    module = load_module()
+    normalized = {"readable": True, "counts": {"occupied": 5}}
+    draft = {
+        "agent_id": "draft-42",
+        "title": "Portfolio Tracker — Daily Position Review",
+        "feature": "catalog:portfolio-tracker",
+        "icon": "/catalog/portfolio-tracker/icon.svg",
+        "listing": "/catalog/portfolio-tracker/LISTING.md",
+        "skill": "/catalog/portfolio-tracker/SKILL.md",
+        "source": "repo_catalog",
+    }
+    retry = {"agent_id": "rejected-1", "title": "Retry Me"}
+    fresh = {"feature": "catalog:fresh", "title": "Fresh Skill"}
+
+    resumed = module.allocate_action(normalized, [retry], [fresh], [draft])
+
+    assert resumed["verdict"] == "PUBLISHABLE"
+    assert resumed["action"] == "resume_draft"
+    assert resumed["action_key"] == "resume:draft-42"
+    assert resumed["item"] == draft
+
+    blocked = module.allocate_action(normalized, [retry], [fresh], [])
+
+    assert blocked == {"verdict": "CAP_FULL", "occupied": 5}
+
+
 def test_repo_catalog_is_ready_and_overrides_same_title_legacy_item(tmp_path: Path) -> None:
     module = load_module()
     features = tmp_path / "features"

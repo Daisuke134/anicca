@@ -98,13 +98,32 @@ def normalize_agents(agents):
     return {"readable": structurally_valid, "counts": counts, "agents": normalized}
 
 
-def allocate_action(normalized, retries, publishable):
-    """Choose at most one stable action without performing any platform write."""
+def allocate_action(normalized, retries, publishable, resumable_drafts=None):
+    """Choose at most one stable action without performing any platform write.
+
+    An exact-title repository draft can be resumed in place even when all five
+    submission slots are occupied: finishing that existing Agent does not create
+    a sixth Agent.  The optional argument keeps the pre-resume call contract
+    compatible for callers that only provide retry/fresh candidates.
+    """
+    resumable_drafts = resumable_drafts or []
     if not normalized.get("readable"):
         return {"verdict": "SERVER_UNREADABLE"}
     occupied = (normalized.get("counts") or {}).get("occupied")
     if not isinstance(occupied, int) or isinstance(occupied, bool) or occupied < 0:
         return {"verdict": "SERVER_UNREADABLE"}
+    if resumable_drafts:
+        item = min(
+            resumable_drafts,
+            key=lambda row: (str(row.get("agent_id") or ""), str(row.get("title") or "")),
+        )
+        return {
+            "verdict": "PUBLISHABLE",
+            "reason": "resume exact-title repository draft",
+            "action": "resume_draft",
+            "action_key": f"resume:{item['agent_id']}",
+            "item": item,
+        }
     # Capafy permits at most five simultaneous draft/under-review submissions.
     # A rejected agent becomes retryable only after that rejection has freed a slot;
     # retrying an old agent does not create a sixth submission exception.
@@ -242,6 +261,16 @@ def main():
     retryable_rejected = [a for a in rejected if (a.get("name") or "").strip() in ready_titles]
 
     ready_by_title = {item["title"]: item for item in items}
+    resumable_drafts = []
+    for agent in agents:
+        if agent.get("agentStatus") != "draft":
+            continue
+        title = (agent.get("name") or "").strip()
+        item = ready_by_title.get(title)
+        if not item or item.get("source") != "repo_catalog":
+            continue
+        resumable_drafts.append({"agent_id": str(agent.get("agentId")), **item})
+
     retry_items = []
     for agent in retryable_rejected:
         title = (agent.get("name") or "").strip()
@@ -251,7 +280,7 @@ def main():
         {key: item[key] for key in ("feature", "title", "icon", "listing", "skill", "source")}
         for item in publishable
     ]
-    v = allocate_action(normalized, retry_items, fresh_items)
+    v = allocate_action(normalized, retry_items, fresh_items, resumable_drafts)
 
     v.update({
         "online_count": len(online_titles),

@@ -28,9 +28,12 @@ monitoring/deferred work.
    online agent is recorded, and any `REVIEW_REJECTED` agent is flagged. Never trust the
    local ledger over `publish-list`/`publish-remote-status`; the server is the only truth.
 1. **Five simultaneous submissions**: use the reconciled inventory verdict. Draft and under-review
-   agents occupy the five slots. Accepted or rejected agents free a slot. If occupied is 5, STOP
-   and report "cap full, N listed" for both fresh and retry work. Once a slot is free, prefer an
-   in-place REVIEW_REJECTED repair over creating a fresh agent. Never create a sixth submission.
+   agents occupy the five slots. A `PUBLISHABLE` `resume_draft` for an exact-title repository
+   `draft` may proceed at occupied=5, preserving that exact `agent_id`; completing it does not
+   create a sixth Agent. `under_review` remains wait-only. If occupied is 5, STOP and report
+   "cap full, N listed" for both fresh and retry work when no resumable draft exists. Once a slot
+   is free, prefer an in-place REVIEW_REJECTED repair over creating a fresh agent. Never create a
+   sixth submission.
 2. **Pick next inventory item** (prefer a REJECTED retry over a fresh publish):
    a. If reconcile flagged a `REVIEW_REJECTED` inventory item (e.g. O9 youtube) whose skill
       dir + icon + LISTING still exist → RE-PUBLISH it. **First check remote-status**
