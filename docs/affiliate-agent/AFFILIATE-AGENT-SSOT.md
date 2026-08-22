@@ -2776,10 +2776,13 @@ flowchart LR
    length violations, extra properties, and anything other than exactly one
    action or timezone-bound durable wait. Invalid fixtures invoke dispatch zero
    times; a valid action invokes once and a valid wait never invokes it.
-7. **A-CUT-2D — due-time and model budget:** call the runtime model only when a
-   judgment is due and reserve the configured pass budget before invocation;
-   acceptance is a normal reconciliation wake with zero model calls and a due
-   wake with one receipted call.
+7. **A-CUT-2D — due-time and model budget — DONE:** `scripts/agent_due.py` calls
+   the existing budget-reserving Agent runner only for a timezone-bound due
+   judgment and deduplicates the goal/job/due event under a durable lock. A normal
+   future-due reconciliation records `NOT_DUE` with zero runner/model calls; a due
+   event accepts only runner evidence of budget `allowed` plus exactly one attempt
+   and records one `MODEL_CALLED` receipt. A budget-blocked summary requires zero
+   attempts and records zero model calls; the same due event cannot call again.
 8. **A-CUT-2E — shadow Agent:** run the pinned Affiliate model with no external-
    write authority and record its proposal beside the installed deterministic
    choice; acceptance is repeated shadow completion without changing public,
