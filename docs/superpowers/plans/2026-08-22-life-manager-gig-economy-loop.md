@@ -409,7 +409,7 @@ U14 atomic order:
    `220a6ebbc` then completed its launchd wake with exit 0 at
    `2026-08-22T17:07:32.599713+00:00`: balance 0 produced `waiting_free_capacity`, public submit
    permission false, and zero proposals, invitations, offers, earnings or transition append.
-2. **IN PROGRESS:** the click-free preflight contract now requires the live apply URL, job ID,
+2. **CODE COMPLETE / LIVE POSITIVE-CAPACITY READBACK PENDING:** the click-free preflight contract now requires the live apply URL, job ID,
    exact Connects, bid, delivery, cover letter, ordered screening answers, attachments, enabled
    submit label and zero validation errors to match the sealed payload. It returns only job ID,
    Connects and an evidence hash, never proposal copy. Focused provider/preflight tests pass 21/21.
@@ -420,10 +420,20 @@ U14 atomic order:
    Connects refill, generic default answers and duplicate-as-success behavior are rejected. The
    `swindon/upwork-proposals-chrome-extension` commit
    `13e80c143f1c3aa5fbbad3407b8552c790a5f70d` supplies job-title/description selector fallbacks but
-   has no submit/readback path. Next, generate this contract from a real CloakBrowser hidden-target
-   fill without clicking submit.
-3. After preflight, cross the existing durable effect fence once, submit once, and require the exact
-   official proposal ID plus post-effect Connects readback; unknown effect stays reconcile-only.
+   has no submit/readback path. Production commit `ff86c9e09` adds the hidden-target fill using
+   native setters plus `input`/`change` events for bid, duration, cover letter and exact screening
+   questions. A real isolated Chrome-for-Testing apply-page fixture proves all sealed values are
+   present while the submit button remains unclicked; the combined provider/preflight suite passes
+   22/22. Release `485eab85ad8f` contains that commit. The production five-minute loop then completed
+   an official read at `2026-08-22T17:25:20.808350+00:00`: balance 0, submitted proposals 0,
+   invitations 0, offers 0, available earnings USD 0 and `waiting_free_capacity`. The three live
+   ready rows require 7/14/9 Connects, so the balance gate correctly prevented private payload access,
+   form fill, click, purchase or any marketplace effect. A positive live Upwork form read remains
+   pending until Upwork supplies free capacity that covers an exact live job cost.
+3. **NEXT:** after a positive official balance selects a sealed job and the live click-free preflight
+   passes, cross the existing durable effect fence once, submit once, and require the exact official
+   proposal ID plus post-effect Connects readback; unknown effect stays reconcile-only and is never
+   blindly retried. Invitations/direct offers remain separate zero-Connect acquisition effects.
 
 ### Task 7: Record Upwork's private action matrix
 
