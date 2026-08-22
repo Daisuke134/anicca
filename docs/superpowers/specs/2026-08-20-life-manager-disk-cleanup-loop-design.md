@@ -545,6 +545,22 @@ label reload/remove/submitは行っていない。canonical cleanupはruns 180�
 1件の計3件であり、host-wide build/media coverageも未完了である。空き約255 MiB、tier `ULTRA`で、A-20完了や
 11 GiB recoveryの証拠ではない。
 
+A-20の第4 sliceでは、X provision browserの既存callerとlive childへ同じpreflightを接続した。新daemon、dependency、
+profile、labelは追加せず、Instagramで実証済みのstdlib実装をcopy-tweakした。callerはprofile作成、Singleton削除、
+`launchctl remove`、sleep、submitより前にpreflight-onlyを実行し、submitted childもCloakBrowser import/launch前に
+同じguardを再実行する。passwd由来home、exact immutable guard、`/usr/bin/python3 -I`、固定512 MiB、canonical
+host/lane state、bypass/alternate state env除去、dynamic port `0..65535`を維持する。
+
+production未変更のREDはfocused 6 tests/11 errorsで欠落境界を再現し、GREENはfocused **6 passed**、既存Gig
+**30 passed**、compile、shell syntax、diff checkがPASSした。fresh adversarial reviewはBLOCKER/HIGH/MEDIUMなしで
+`ship`、code commitは`50c853764300035e93338586b9846c16e2af3a40`である。実機stop flag下のport 0
+preflight-onlyはRC 1、`reason=disk_writers_stop/effect=0/readback=0/required_bytes=536870912`、X profileの
+mtime/ctime/size不変、PID 12221→12221だった。label reload/remove/submitは行っていない。canonical cleanupは
+runs 183→184、state not running、last exit 0、17:19:49Z receiptは`errors=0/protected_deletions=0`、
+`evaluated=10/preserved_reasons={"open":10}`、reserve 1 MiB/0600/2048 blocks、temporary 0だった。したがってX
+provision 1件はnext-start consumerを持つ。残るbrowser consumerはjob-search 2件であり、host-wide build/media
+coverageも未完了である。空き約565 MiB、tier `ULTRA`で、A-20完了や11 GiB recoveryの証拠ではない。
+
 `/Users/anicca/anicca-project`は約9.5 GiB、その`.worktrees`は約4.4 GiBだった。最大の
 `cfo-resume-spec`（約1.08 GiB）は、dirty=0、branch upstream 0/0、process/open-path/leaseなしを
 read backした後にだけ`git worktree remove`で回収した。branchとremoteは残り、再作成可能である。
@@ -1119,7 +1135,7 @@ TDDのためだけの過剰fixtureや後続itemのscaffoldは前倒ししない�
 | A-17 | VM/package producer lifecycleを登録する | artifact/lease/finalizer/quota receipt | 完了: registration-only static 16件、pnpm exact version/proof/lease fail-closed、全A-17 entry runtime/quota 0/lease 300/preserveで削除authority 0、focused 48 tests、final review `ship`、fallback SHA一致/runs 486→487/static 16 bad 0、canonical runs 137→138 exit 0、protected deletion 0 |
 | A-18 | agent/gig-project lifecycleを登録する | project owner/terminal/lease receipt | 完了: registration-only numeric project 24件、terminal true 0、unknown owner 3、全件deliverable/preserve、focused 49 tests、fresh review `ship`、fallback runs 507→508/削除0、canonical runs 142→143 exit 0、errors/protected deletion 0 |
 | A-19 | Writer in-flight drainを接続する | provider interruption checkpoint/resume test | 完了: exact stop 2 pathのpre-Popen gate、process-group TERM→1秒→KILL/reap、immutable run/prompt checkpoint/resume、focused 44 tests、fresh review `ship`、release `43074f76422d1ec4935acdba98e553cb8564de94`、Writer runs 1/exit 0/provider effect 0、canonical runs 149→150/exit 0/errors 0/protected deletion 0 |
-| A-20 | browser/build/media preflightを接続する | producer consumer missing 0 for these families | 部分完了: Gig browser、Affiliate 3 browser、Instagram provision、self-build 2境界、Writer media既存境界を接続。Instagram commit `02a0bbec1`、focused 6 tests、review `ship`、実機RC 1/effect 0/PID 86819不変。active browser 8中job-search 2/X provision 1の3 consumerとhost-wide build/media coverageが残る。canonical runs 180/exit 0/protected deletion 0だがreceipt errors 1 |
+| A-20 | browser/build/media preflightを接続する | producer consumer missing 0 for these families | 部分完了: Gig browser、Affiliate 3 browser、Instagram/X provision、self-build 2境界、Writer media既存境界を接続。X commit `50c853764`、focused 6＋既存Gig 30 tests、review `ship`、実機RC 1/effect 0/PID 12221不変。active browser 8中job-search 2 consumerとhost-wide build/media coverageが残る。canonical runs 184/exit 0/errors 0/protected deletion 0 |
 | A-21 | VM/package/agent preflightを接続する | producer consumer missing 0 for these families | 未完了 |
 | A-22 | supervisor non-stop behaviorを実装する | ULTRA wake keeps supervisor labels loaded | 未完了 |
 | A-23 | Codex log budget/rotationを実装する | active app-server handoff with session loss 0 | 未完了 |
