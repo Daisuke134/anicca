@@ -77,6 +77,26 @@ The existing hourly Job Hunter acquisition loop becomes the single Mercor-capabl
 5. Re-open the application list after any submit and store evidence plus the external result.
 6. Record settled earnings only when the Mercor Earnings UI proves payment; views, invitations, offers, and estimates are not earnings.
 
+### 6.4 End-to-end money state machine
+
+An application is only the first state; it is not income. The complete flow is:
+
+```text
+DISCOVERED
+  → GROUNDED_READY
+  → SUBMITTED_PENDING_REVIEW
+  → SELECTED_OR_REJECTED
+  → CONTRACTED
+  → AUTHORIZED_WORK
+  → WORK_ACCEPTED
+  → PAID_SETTLED
+  → REVENUE_LEDGER
+```
+
+The resident loop owns discovery, grounded submission, Gmail/status reconciliation, Calendar scheduling, evidence, and settled-payout read-back. It does not impersonate a human interview/assessment or perform work when the contract prohibits AI/automation. `PAID_SETTLED` requires a real Mercor Earnings/contract payment row; the hourly rate, an offer, an invitation, a selected application, or a pending balance never advances the revenue ledger.
+
+Current money diagnosis: the account has three `SUBMITTED_PENDING_REVIEW` applications, no observed selection/contract, and Mercor Earnings says `No payment history yet`. Therefore settled revenue is not observed, not zeroed as a fabricated success, and no `$10K` claim is valid.
+
 ### 6.1 Ready-to-submit queue
 
 The loop may submit a new listing without human intervention when the live application page proves all of the following:
@@ -177,6 +197,7 @@ Mercor interview messages enter the existing Job Hunter inbox lane. Reuse `apps/
 - The resident model-led pass at `mercor-20260822-200153-55024` inspected the already-submitted Software listing, selected Data analysis / quantitative readouts, submitted it once, reopened the result, and read back the visible submitted state. The result is recorded in the private ledger and evidence paths under `~/.local/state/anicca/job-search/mercor/`; no `needs_human` or `blocked` result was returned.
 - Live enablement is now installed: the dedicated browser transport `ai.anicca.job-search-mercor-browser` is `KeepAlive`/`RunAtLoad` with CDP `127.0.0.1:9334`, and the existing `ai.anicca.job-search-mercor` LaunchAgent is registered with a 3600-second wake interval. The first recovery pass blocked while the browser was down; the next pass `mercor-20260822-204000-83882` read back `browser-owner=ready`, inspected the existing Software application, and observed the Data quality / CRM operations listing without submitting because the private fact bank did not verify its 5+ years requirement. The pass exited 0, wrote fresh evidence, and left the ledger at three submitted applications.
 - Operational meaning of 24/7 is a persistent browser transport plus an hourly bounded wake, not a busy loop that clicks continuously. Each wake may submit at most one grounded listing; `observed_no_action` is a successful safe pass when no listing is fully supported by verified facts.
+- The first live resident pass after enablement inspected `Data quality / CRM operations Evaluator`, but did not submit because the private facts did not verify the listing's five-year requirement. This is the expected grounded behavior; adding a role-specific fact is only allowed when the operator can truthfully evidence it.
 - The live read-only Earnings page at `https://work.mercor.com/earnings` was opened in the dedicated Mercor profile. It read `Your total earnings to date are $0.00`, `No payment history yet`, and `Once you receive your first payout, it will appear here`. The private read-back is `status=not_observed`, `revenue_credited=false`, and `verified_monthly_run_rate_usd=null`; no application, offer, rate estimate, or `$0.00` placeholder is counted as earnings.
 - Failure fixtures now cover page drift, stale/non-Mercor tabs, transient CDP failure, ambiguous submit read-back, recovery/reset/Google `はい` screens, and authoritative successful read-back. The guard fails closed and never retries an ambiguous submit or clicks recovery UI.
 - A redacted two-operator fixture now proves separate operator IDs, state roots, application ledgers, evidence files, resume paths, and CDP endpoints; no cross-operator listing or evidence is visible.
@@ -217,3 +238,14 @@ Only the first unchecked item is active. Finish its evidence and read-back befor
 14. [x] **Open-source release:** secret scan, fresh-install test, setup/runbook, provider docs, and one non-Dais fixture pass.
 15. [x] **Reference cleanup:** remove all production references to `profitable-claude` and confirm the canonical Life Manager runtime still passes.
 16. [ ] **Deletion gate:** only after every prior read-back succeeds, migrate or explicitly stop the 15 enabled old-repo jobs (and reconcile the broader 38-file plist scan), then archive/delete `/Users/anicca/profitable-claude` as a separate destructive operation. Current status: blocked by active consumers and dirty old-repo worktree; no destructive action was taken.
+
+### 10.1 Remaining operational TODO after the live loop install
+
+These are runtime milestones, not additional submit clicks:
+
+1. **Selection/inbox reconciliation:** let the 15-minute inbox lane classify Mercor selection, rejection, and contract messages; persist each transition and evidence.
+2. **Contract/calendar handoff:** for an explicit interview offer, use FreeBusy and the existing idempotent Calendar/prep flow; the user attends any human-bound interview or assessment.
+3. **Authorized work:** only after a contract explicitly permits the tool/model, track the actual completed work and acceptance; otherwise route the task to `needs_human`.
+4. **Settled payout:** read back the first real paid/settled Mercor row and calculate the trailing-30-day verified amount; do not count pending or estimated balances.
+5. **Revenue proof:** require three consecutive settled monthly cycles before reporting `$10K verified`; until then the revenue ledger remains `not_observed` when no payout evidence exists.
+6. **Legacy cleanup:** separately migrate/stop the old-repo consumers before deleting `profitable-claude`; this is not a reason to disable the Mercor loop.
