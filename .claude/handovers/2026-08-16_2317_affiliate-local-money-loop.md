@@ -1523,3 +1523,18 @@ remain unknown, and owner Telegram readback is `SENT`, message ID `28441`. No
 manual post, provider write, or parallel executor ran. The next atomic item is
 FUNNEL-B: obtain an observed first-party visit count or explicit `UNAVAILABLE` for
 these three exact owned URLs and join it replay-safely to their placement IDs.
+
+FUNNEL-B is now terminal `DONE` by explicit unavailable evidence rather than a
+fabricated zero. Installed release
+`2b79f78406df963d91e83d2adbcb03662ce1eed1` lets the existing owner read the exact
+Netlify site identity using the private token without persisting it. Netlify's
+site readback returns `analytics_instance_id=None`, and the tested public
+Analytics API routes return 404. The owner persisted mode-0600, hash-valid receipt
+`5961221f00ebb9f73ca535b42d1129079ae1eadd69dc77282f9bed2bac4e4d6b` exactly once,
+binding all three FUNNEL-A placement IDs to count null, state `UNAVAILABLE`, and
+reason `NETLIFY_WEB_ANALYTICS_DISABLED`. `launchctl` reads `runs=33`, last exit
+`0`; owner Telegram is `SENT`, message ID `28447`. This creates no money and
+changes no Netlify setting, article body, publication, or provider state. Rolling
+money remains `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`. The next
+atomic item is FUNNEL-C: receipt outbound CTA activation per exact placement
+without persisting or exposing the raw provider tracking URL.

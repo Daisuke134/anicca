@@ -2812,9 +2812,15 @@ installed or committed as a substitute for this queue.
   visits and CTA clicks remain `UNKNOWN`, and exact-placement customers remain
   `UNAVAILABLE_AT_EXACT_PLACEMENT`. The receipt is explicitly non-money. Owner
   Telegram delivery read back `SENT`, message ID `28441`.
-- **FUNNEL-B — owned-visit denominator:** add or repair first-party visit capture
-  for those exact owned URLs and join it replay-safely to placement IDs; acceptance
-  is an observed count or explicit `UNAVAILABLE`, never inferred traffic.
+- **FUNNEL-B — DONE — owned-visit denominator:** installed release
+  `2b79f78406df963d91e83d2adbcb03662ce1eed1` lets the existing owner inspect the
+  exact `aniccaai.com` Netlify site without exposing its token. Netlify reports
+  `analytics_instance_id=None`; its public Analytics API paths are absent. The
+  owner joined hash-valid, mode-0600 receipt `5961221f…e4d6b` to the FUNNEL-A top
+  three exactly once. Every count stays null with state `UNAVAILABLE` and reason
+  `NETLIFY_WEB_ANALYTICS_DISABLED`; none is coerced to zero. This is non-money.
+  `launchctl` reads `runs=33`, last exit `0`; owner Telegram is `SENT`, message ID
+  `28447`.
 - **FUNNEL-C — CTA-click denominator:** receipt outbound CTA activation per exact
   placement without storing or exposing the raw tracking URL.
 - **FUNNEL-D — provider funnel join:** join provider unique clicks, customer/signup
