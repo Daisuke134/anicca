@@ -474,6 +474,26 @@ async def click(*, label: str, role: str, stable_id: str) -> dict[str, Any]:
     return await act(path)
 
 
+async def type_candidate(
+    *, label: str, role: str, stable_id: str, candidate_concept: str
+) -> dict[str, Any]:
+    path = _path_env("JOB_SEARCH_BROWSER_SCRATCH") / "runtime-type.json"
+    path.write_text(
+        json.dumps(
+            {
+                "kind": "type",
+                "target": {"label": label, "role": role, "stable_id": stable_id},
+                "candidate_concept": candidate_concept,
+            },
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    os.chmod(path, 0o600)
+    return await act(path)
+
+
 async def wait(milliseconds: int) -> dict[str, Any]:
     if milliseconds < 1 or milliseconds > 10_000:
         raise ValueError("wait milliseconds must be between 1 and 10000")
@@ -726,6 +746,11 @@ def main(argv: list[str] | None = None) -> int:
     click_parser.add_argument("--label", required=True)
     click_parser.add_argument("--role", default="")
     click_parser.add_argument("--stable-id", default="")
+    type_parser = subparsers.add_parser("type")
+    type_parser.add_argument("--label", required=True)
+    type_parser.add_argument("--role", default="")
+    type_parser.add_argument("--stable-id", default="")
+    type_parser.add_argument("--candidate-concept", required=True)
     wait_parser = subparsers.add_parser("wait")
     wait_parser.add_argument("--milliseconds", required=True, type=int)
     act_parser = subparsers.add_parser("act")
@@ -756,6 +781,13 @@ def main(argv: list[str] | None = None) -> int:
     elif args.command == "click":
         operation = click(
             label=args.label, role=args.role, stable_id=args.stable_id
+        )
+    elif args.command == "type":
+        operation = type_candidate(
+            label=args.label,
+            role=args.role,
+            stable_id=args.stable_id,
+            candidate_concept=args.candidate_concept,
         )
     elif args.command == "wait":
         operation = wait(args.milliseconds)

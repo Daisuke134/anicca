@@ -18,7 +18,7 @@ returns the fresh redacted observation. When it reports `needs_navigation=true` 
 an empty `about:blank` page, navigate once without constructing an action file:
 
 While an active row is returned, the command envelope is mandatory: execute only
-`job_search_loop.browser_agent.runtime observe`, `navigate`, `click`, `wait`, `act`, `auth`,
+`job_search_loop.browser_agent.runtime observe`, `navigate`, `click`, `type`, `wait`, `act`, `auth`,
 `finalize`, `checkpoint`, or `report`. Do not invoke Python snippets, inspect
 signatures/source/tests, read Ledger/Queue internals, print environment variables,
 or construct a helper. The runtime already owns row collection, cursor/evidence,
@@ -40,10 +40,11 @@ use the direct runtime command for an ordinary visible click or bounded wait:
 
 ```bash
 /opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime click --label "THE_EXACT_VISIBLE_LABEL" --role "THE_RETURNED_ROLE" --stable-id "THE_RETURNED_STABLE_ID"
+/opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime type --label "THE_EXACT_VISIBLE_LABEL" --role "THE_RETURNED_ROLE" --stable-id "THE_RETURNED_STABLE_ID" --candidate-concept "AN_EXACT_RETURNED_CONCEPT"
 /opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime wait --milliseconds 6000
 ```
 
-For type, select, upload, or scroll, write its JSON object to a mode-0600 file under
+For select, upload, or scroll, write its JSON object to a mode-0600 file under
 `$JOB_SEARCH_BROWSER_SCRATCH`, then execute exactly:
 
 ```bash
@@ -58,6 +59,8 @@ Workday `input[data-uxi-widget-type="selectinput"]` is a custom combobox, never 
 native select: click the input, observe, then use `runtime click` on the exact
 returned option label (including `checked` or `not checked`) and its stable ID.
 Use action kind `select` only when the observed control tag is literally `select`.
+When that click response already contains visible options, reason over those options
+and immediately click one exact returned label; do not type a filter first.
 If you type a filter into that custom combobox, the `runtime act` response is already
 the required fresh observation: click one option visible in that response immediately.
 Do not click the search input again, do not wait, and never invent or shorten an
