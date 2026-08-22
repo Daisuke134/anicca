@@ -327,6 +327,89 @@ four, not four.
 requires the real launchd owner to act through the authenticated Coconala browser and an exact-room
 official DOM/readback receipt; local artifact PASS, process liveness or Telegram alone is insufficient.
 
+#### Paid buyer-visible media contract — authoritative
+
+**1. Overview.** A saved screenshot, generated image or linked asset is part of the buyer-visible
+deliverable, not transient model/browser evidence. The current generic file path can mark an incomplete
+draft PASS when the draft merely lists missing contract-required media as unresolved. This allowed
+`18171890` v4 to pass locally with zero supplied/candidate/reference images and three required screenshots
+still absent. The durable Paid owner must bind required media before building, save every produced asset,
+prove package membership and visual review, and distinguish a truthful review-stage draft from a completed
+buyer output.
+
+**2. Acceptance criteria.** All criteria are mandatory before this slice closes.
+
+- Before the builder runs, the accumulated buyer contract records `required_assets`. Each entry binds a
+  stable `asset_id`, media kind, minimum count, buyer-visible purpose, source authority (`builder`, `buyer`
+  or `account_owner`) and whether the file must be a member of the delivered archive.
+- Every produced or supplied buyer-visible file records an `artifact_assets` entry with a project-owned
+  absolute path, non-zero byte count, MIME/type, SHA-256, provenance class and archive member path when
+  applicable. A transient browser/model path is not an artifact.
+- `acceptance_status=PASS` requires every `required_assets` entry to be covered by the required number of
+  readable, non-empty, hash-matching `artifact_assets`. For ZIP output, every required member must exist,
+  be readable and match the recorded bytes/hash. Missing, zero-byte, corrupt, hash-mismatched or omitted
+  required media fails closed.
+- A requirement whose source authority is `account_owner` and cannot truthfully be delegated produces a
+  durable `BLOCKED_NON_DELEGABLE` disposition with one exact minimum owner action. It cannot become PASS
+  because a draft documents the gap. `REVIEW_READY` may describe and send a useful truthful draft with
+  formal delivery OFF only when the accumulated contract permits buyer review before those inputs exist;
+  it never counts as completed Paid delivery.
+- The fresh visual reviewer receives every candidate and reference image named by the contract and records
+  the inspected hashes. `required_assets` containing visual media with zero attached review images is a
+  validation failure, not “visual inspection not applicable.”
+- A contract with no buyer-visible media requirement remains valid without synthetic images. Manledge is
+  the regression case for asset-free output; Haru is the regression case for a ZIP containing real media;
+  tests use synthetic fixtures and never copy customer files into the public repository.
+- Completion still requires the generic launchd owner to attach the exact hash-bound artifact, obtain the
+  exact-room official DOM readback with formal delivery OFF where required, and prove replay-zero.
+
+**3. As-is / To-be.**
+
+| Boundary | As-is | To-be |
+|---|---|---|
+| Requirement capture | Media can remain prose in `unresolved` | Required media is a structured pre-build contract |
+| Persistence | Evidence images may exist without deliverable binding | Buyer-visible assets have durable path, size and hash |
+| Package validation | Top-level artifact existence/hash is sufficient | Required archive members and their bytes are verified |
+| Acceptance | Missing screenshots may be recorded as a PASS check | Missing required media is FAIL, REVIEW_READY or BLOCKED |
+| Visual review | Zero attached images can be called non-applicable | Required visual hashes must all reach the reviewer |
+| Completion | Bounded draft can look like completed delivery | Review-stage and completed effects have distinct dispositions |
+
+**4. Test matrix.** No separate review ceremony is added; these are direct regression checks for the
+existing owner and validator.
+
+| # | To-be | Test name | Cover |
+|---|---|---|---|
+| 1 | Required media is structured before build | `test_required_assets_are_bound_before_builder` | OK |
+| 2 | Missing/empty/hash-mismatched media cannot PASS | `test_required_asset_integrity_fails_closed` | OK |
+| 3 | Required ZIP members and bytes must match | `test_required_archive_member_is_verified` | OK |
+| 4 | All visual hashes reach the reviewer | `test_required_visual_assets_are_attached_to_reviewer` | OK |
+| 5 | Non-delegable media becomes durable blocker | `test_account_owner_asset_gap_cannot_pass` | OK |
+| 6 | Review draft never counts as completed Paid delivery | `test_review_ready_is_not_delivery_complete` | OK |
+| 7 | Asset-free contracts remain valid | `test_asset_free_contract_does_not_invent_media` | OK |
+| 8 | Existing customer data stays out of public fixtures | `test_media_contract_fixture_contains_no_customer_data` | OK |
+
+**5. Boundaries.** Do not fabricate firsthand use, seller-authored text, privacy-redacted screenshots or
+human publication approval. Do not regenerate Haru v31 or Manledge v20. Do not create a one-off byusco
+executor, new agent layer or second Paid owner. Do not formally deliver before buyer approval. Keep secrets,
+customer media and private project state out of Git, logs, prompts and public test fixtures.
+
+**6. Atomic execution steps.** Soft target: two production files and one focused public regression file;
+reduce scope before exceeding three files or 100 production LOC.
+
+1. Extend the existing Paid decision/manifest boundary in `scripts/paid_direct.py` with the structured
+   required/produced asset contract and distinct PASS, REVIEW_READY and BLOCKED_NON_DELEGABLE semantics.
+2. Extend `scripts/paid_work_evidence.py` to fail closed on asset count, path ownership, non-zero bytes,
+   MIME/type, hash and required ZIP membership, and to reject required visual media with no review receipt.
+3. Add the eight synthetic regressions above in one focused test file and run only that file plus the
+   existing Paid disk preflight regression.
+4. Reclassify existing private records without regenerating artifacts: Haru v31 must prove its existing
+   images/archive members; Manledge v20 must prove that its accumulated contract requires no media;
+   byusco v4 must become REVIEW_READY or BLOCKED_NON_DELEGABLE, never completed PASS.
+5. Publish the immutable release, read back the four launchd program arguments/release SHA, kick the real
+   Paid owner, and observe natural continuation. Do not use Codex as the customer-work executor.
+6. Obtain exact-room official readback and replay-zero for every safe effect; keep byusco's exact owner
+   dependency durable while Haru, Manledge and every other non-blocked purchased room continue.
+
 1. **Paid/Submission — finish first.**
    - [x] Deploy and read back Paid ignoring shared preventive `disk-pressure.block` (20 GiB) and
      `disk-writers.stop` (10/11 GiB hysteresis), while retaining the 512 MiB last-resort guard and
