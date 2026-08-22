@@ -2745,10 +2745,15 @@ flowchart LR
    shared Draft 2020-12 contracts, including authority-specific preconditions and
    postconditions. Registry validation and exact inventory/entrypoint/effect-class
    equality pass without copying or invoking publisher, provider, or ledger logic.
-3. **A-CUT-1C — guarded dispatch:** require `WRITE_EXTERNAL` calls to pass the
-   existing owner claim, effect journal, policy, cost, quarantine, and exact-
-   readback gates; acceptance is rejection of direct model-to-browser/provider
-   mutation.
+3. **A-CUT-1C — guarded dispatch — DONE:** `scripts/guarded_dispatch.py` is the
+   Agent-only boundary around registered commands. A `WRITE_EXTERNAL` callback
+   runs only for `ai.anicca.affiliate-loop` after durable `EFFECT_STARTED` claim,
+   PASS policy, non-blocked actual-cost cap, clear quarantine, and a registered
+   read-only/money readback command are observed; the result must bind the claim
+   ID and report `EXACT` readback or remain `POSTCONDITION_UNVERIFIED`. Tests prove
+   a model caller with forged gate inputs invokes the callback zero times and each
+   missing owner gate rejects before mutation. Existing launchd entrypoints and
+   effect implementations remain unchanged.
 4. **A-CUT-2A — redacted context:** build one context packet from current goal,
    unfinished job, due-times, allowed tool schemas, and redacted receipts;
    acceptance is zero credential, raw tracking-link, private provider ID, or
