@@ -2067,3 +2067,8 @@ decision criterion, failure condition, or comparison method. Installed release
 is `20260822T233044-8f18344d`; source/runtime SHA-256 is
 `47d449022163288378fa67fab4535c2ba07f634ba42f56625b6f5d9ad425cc8a`.
 Generic commentary becomes a safe no-effect rather than public output.
+
+Commit `8c1f095cb` persists the new `original_ratio=0.15` into existing private
+strategy state on the next owner run using fsync plus atomic replace. Installed
+release is `20260822T233154-8c1f095c`; source/runtime SHA-256 is
+`054ea01a24105b27729b9eb17330c0529dc5b53d2a77f07f31dfaa35327cb3b2`.

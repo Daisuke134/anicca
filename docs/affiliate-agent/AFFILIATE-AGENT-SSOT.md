@@ -75,6 +75,9 @@ backlog is:
    publication now requires both source support and concrete reader utility,
    classified as a procedure, decision criterion, failure condition, or
    comparison method. Correct-but-generic commentary is a no-effect outcome.
+   Release `8c1f095cb` atomically migrates existing strategy state to persist
+   `original_ratio=0.15` once, with fsync plus replace. The ratio is now an
+   inspectable and later learnable state value, not only an implicit code default.
 5. **X05 — PARTIAL, FIRST SNAPSHOT LIVE:** replace early views as the optimizer's sole objective with a funnel
    vector: qualified impressions, profile visits/follows when observable,
    owned-article sessions, CTA clicks, provider clicks, official transactions,
@@ -99,10 +102,10 @@ backlog is:
    queued and never converts a post, view, or click into money.
 
 Current live checkpoint: immutable sparse release
-`20260822T233044-8f18344d` is installed from commit
-`8f18344d3`, pushed to both Repost remotes.
+`20260822T233154-8c1f095c` is installed from commit
+`8c1f095cb`, pushed to both Repost remotes.
 Source/runtime `x-repost-cli.sh` is byte-equal at SHA-256
-`47d449022163288378fa67fab4535c2ba07f634ba42f56625b6f5d9ad425cc8a`.
+`054ea01a24105b27729b9eb17330c0529dc5b53d2a77f07f31dfaa35327cb3b2`.
 Its versioned readback lets a newer exact verifier inspect an old terminal row
 once, then records the verifier version on an unresolved row so it cannot retry
 forever. Run 33 read back the 22:13 source-backed original at exact permalink
