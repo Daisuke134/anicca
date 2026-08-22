@@ -293,6 +293,16 @@ runtime-manifest、sweep subprocessにも120秒（kill-after 10秒）のtimeout�
 error/preserveとして扱い、runtime-manifest失敗時はhourly markerを進めない。これによりfull passの
 probeが無期限にguard lockを占有しない。
 
+A-11ではcanonical host adapterのreclaimerをproduction変更せず、local bare remote、primary repository、
+linked worktreeを実際に作るcharacterization fixtureを追加した。tracked dirty worktreeは
+`dirty_worktree`、remoteへ未pushのclean commitは`head_not_on_remote`として、worktree残存、removed 0、
+ledger reasonを同時に検証する。host adapter全 **28 tests**、Life Manager全 **57 tests**、compile、
+diff checkはPASSし、fresh reviewは`ship`、BLOCKER/HIGH/MEDIUMなしだった。live ledgerでも実在する
+dirty/head-not-on-remote worktreeをpreserveしている。canonical runはruns 106→107、last exit 0、receipt mode
+`0600`、`protected_deletions=0`である。このrunの`errors=1`は`/Users/anicca/gig/evidence`のsize probeを
+読めず`managed_reclaimer_size_unreadable`としてpreserveしたfail-closed eventであり、削除成功やclean runとは
+扱わない。reviewのLOWとしてMatrix 9のtest名に名称driftがあるが、既存testの意味上のcoverageは存在する。
+
 `/Users/anicca/anicca-project`は約9.5 GiB、その`.worktrees`は約4.4 GiBだった。最大の
 `cfo-resume-spec`（約1.08 GiB）は、dirty=0、branch upstream 0/0、process/open-path/leaseなしを
 read backした後にだけ`git worktree remove`で回収した。branchとremoteは残り、再作成可能である。
@@ -818,7 +828,7 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 |---:|---|---|---|
 | 1 | 全local volume、top-level root、guard/sentinel/janitor/plist/log/state/manifestをimmutable host censusへ記録 | mount/root/owner family、label、interval、program SHA、last exit、free bytes | 部分完了: bounded `host-inventory.json`はmount 9/root 23を実測。full gapは4件まで縮小し、permission/owner attributionが残る |
 | 2 | `skills/self/disk-cleanup/` にcanonical host inventory、manifest、runner、health interfaceを定義 | local writable volume missing 0、required owner family missing 0、schema PASS | 部分完了: inventory schema、atomic writer、fast/full mode、hourly marker、48 tests、90秒census/90秒governor budget、permission/partial size、required owner coverage、local writable missing 0のreadbackは実装。health readbackの残契約は未完了 |
-| 3 | protected rootsとfail-closed validatorをTDDで固定 | Test Matrix 3–11 PASS | 部分完了: protected-root、lease、open-path、probe/atomic failureのfail-closed fixture 57 testsを実装。A-07〜A-10は完了したが、A-11〜A-12の統合証跡は未完了 |
+| 3 | protected rootsとfail-closed validatorをTDDで固定 | Test Matrix 3–11 PASS | 部分完了: protected-root、lease、open-path、probe/atomic failureのfail-closed fixture 57 testsと、canonical host adapterのdirty/unpushed real-git fixture 28 testsを実装。A-07〜A-11は完了したが、A-12の統合証跡は未完了 |
 | 4 | exact-byte tier、hysteresis、single lock、300秒schedulerをTDD実装 | Test Matrix 2、12–14 PASS | 部分完了: exact-byte tier、atomic lock、300秒plist、pressure/recovery floor、hourly full-pass marker、ULTRA時のcritical full-pass promotion、hourly/explicit fullのcooldown、marker fail-closed、bounded fast/full pass、正本labelのbootstrap/readbackは実装・unit/live PASS。24時間観測は未完了 |
 | 4a | GUI bootstrap health failureを観測専用fail-closedに固定 | Test Matrix 28–29 PASS、141/153 fixture receipt、復旧後readback | 部分完了: cleanup内preflight、atomic `gui-bootstrap-health-failure` receipt、UID/Directory Services/`gui/501`の実機PASSを実装。141/153 failure fixtureとstale app-server分離の実機証跡は未完了 |
 | 5 | Mac全体のproducer censusを作り、artifact/lease/finalizer helperを上位growth ownerへ接続 | 1 GiB以上のunattributed root 0、active lease readback、orphan lease fixture PASS | 部分完了: Chrome/Chromium cloneと`cfo-*`のallow-list discoveryは実装。host-wide census、lease heartbeat/finalizer接続は未完了 |
@@ -839,8 +849,8 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 
 各行は1つの作業だけを持つ。順序を飛ばさず、受入証拠が保存されるまで完了扱いにしない。
 
-capacity-safety interruptのA-25とA-04〜A-10を閉じたため、実行queueは
-`A-11 → A-12 → … → A-24 → A-26 → … → A-44`へ進む。A-25の先行完了はA-11〜A-24の
+capacity-safety interruptのA-25とA-04〜A-11を閉じたため、実行queueは
+`A-12 → A-13 → … → A-24 → A-26 → … → A-44`へ進む。A-25の先行完了はA-11〜A-24の
 完了を意味しない。data loss、credential/session保護、money safety、ENOSPC recoveryなど重要sliceは
 Ponytailでscopeを最小化してTDDを行う。軽微なdocs/readbackは現状実測からstraight fixへ進める。
 全itemで必要最小限のregression、fresh adversarial review、実機readback、spec state更新、commit/pushを同じsliceで閉じ、
@@ -858,7 +868,7 @@ TDDのためだけの過剰fixtureや後続itemのscaffoldは前倒ししない�
 | A-08 | active-lease fixtureを追加する | active lease candidate preserve test PASS | 完了: dict/string schema対応、開始時・effect直前・probe errorをpreserve、52 tests、runs 97→98、exit 0、protected deletion 0、review `ship` |
 | A-09 | open-path fixtureを追加する | open path candidate preserve test PASS | 完了: 実expired lease、effect直前2nd lsof、NaN TTL fail-closed、54 tests、runs 101→102、exit 0、protected deletion 0、review `ship` |
 | A-10 | probe/atomic-write failure fixtureを追加する | lsof/du failure fail-closed、production size-timeout owner attribution、host-inventory orphan temporary 0 | 完了: lsof/du/replace failure fixture、57 tests、timeout owner 2 roots、SHA一致/0600、orphan 0、runs 104→105、exit 0、protected deletion 0、review `ship` |
-| A-11 | dirty/unpushed worktree fixtureを追加する | dirty/unpushed preserve test PASS | 未完了 |
+| A-11 | dirty/unpushed worktree fixtureを追加する | dirty/unpushed preserve test PASS | 完了: real bare remote + linked worktreeでdirty/unpushedをpreserve、removed 0、ledger reason一致、host adapter 28 tests、Life Manager 57 tests、review `ship`、runs 106→107、exit 0、protected deletion 0 |
 | A-12 | unknown-class fixtureを追加する | unknown candidate preserve test PASS | 未完了 |
 | A-13 | 141/153 failure fixtureを保存する | failure receipt with zero deletion | 未完了 |
 | A-14 | stale app-server separation receiptを保存する | cleanup never kills app-server receipt | 未完了 |
