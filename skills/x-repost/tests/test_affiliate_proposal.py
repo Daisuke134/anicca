@@ -5,6 +5,7 @@ import json
 import re
 import tempfile
 import unittest
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 
@@ -62,6 +63,37 @@ class AffiliateProposalTests(unittest.TestCase):
             self.assertEqual(selected["state"], "VERIFY_UNVERIFIED")
             posted.write_text(json.dumps({"affiliate_proposal_id": proposal["proposal_id"]}) + "\n")
             self.assertEqual(MODULE.select(proposal_path, consumed, posted)["state"], "ALREADY_CONSUMED")
+
+    def test_old_unverified_does_not_starve_new_acquisition_work(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            proposal_path = root / "missing.json"
+            consumed = root / "consumed.jsonl"
+            proposal = {
+                "receipt_type": "AFFILIATE_REPOST_PROPOSAL",
+                "state": "READY_FOR_EXISTING_REPOST_OWNER",
+                "proposal_id": "8" * 64,
+                "placement_id": "subtitle-en-1",
+                "owned_article_url": "https://aniccaai.com/blog/subtitle",
+                "language": "en", "disclosure_required": True,
+                "tracking_link_state": "NOT_INCLUDED",
+                "revenue_credit_state": "NO_REVENUE_CREDIT",
+            }
+            old = (datetime.now(timezone.utc) - timedelta(hours=7)).isoformat()
+            consumed.write_text(
+                json.dumps({"schema_version": 1,
+                            "receipt_type": "X_REPOST_AFFILIATE_PROPOSAL_CONSUMPTION",
+                            "proposal_id": proposal["proposal_id"],
+                            "placement_id": proposal["placement_id"],
+                            "proposal": proposal, "state": "EFFECT_STARTED",
+                            "observed_at": old}) + "\n" +
+                json.dumps({"schema_version": 1,
+                            "receipt_type": "X_REPOST_AFFILIATE_PROPOSAL_CONSUMPTION",
+                            "proposal_id": proposal["proposal_id"],
+                            "placement_id": proposal["placement_id"],
+                            "state": "UNVERIFIED", "observed_at": old}) + "\n"
+            )
+            self.assertEqual(MODULE.select(proposal_path, consumed)["state"], "NO_PROPOSAL")
 
     def test_select_and_record_are_exactly_once_without_tracking_link(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

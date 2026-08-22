@@ -9,7 +9,7 @@ import json
 import os
 import re
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -23,6 +23,7 @@ SAFE_FIELDS = (
     "article_title", "buyer_intent",
 )
 X_TRANSFORMED_URL_LENGTH = 23
+UNVERIFIED_RECOVERY_WINDOW = timedelta(hours=6)
 URL = re.compile(r"https?://\S+")
 
 
@@ -203,8 +204,12 @@ def select(proposal_path: Path, consumed_path: Path, posted_path: Path | None = 
             "language": "en",
         }
     recoverable = []
+    now = datetime.now(timezone.utc)
     for proposal_id, terminal in latest_by_proposal.items():
         if terminal.get("state") != "UNVERIFIED" or proposal_id in posted_ids:
+            continue
+        terminal_at = datetime.fromisoformat(terminal["observed_at"].replace("Z", "+00:00"))
+        if now - terminal_at.astimezone(timezone.utc) > UNVERIFIED_RECOVERY_WINDOW:
             continue
         claim_row = next((row for row in reversed(all_rows)
                           if row.get("proposal_id") == proposal_id
