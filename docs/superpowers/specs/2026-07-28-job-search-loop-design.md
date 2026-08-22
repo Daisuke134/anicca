@@ -372,8 +372,8 @@ This is the remaining implementation-order SSOT. Only the first
 | 2 | Read and compare fixed-commit browser-agent/job-lifecycle OSS before architecture changes | `done` | Browser Use, Skyvern, Stagehand, job-apply-plugin, AIHawk, career-ops `421d93e`, and ai-job-search `ab91c60` code findings recorded |
 | 3 | Make Workday-first and the OSS-code-first rule the current spec/memory SSOT | `done` | This section and `MEMORY.md` contain one non-contradictory order |
 | 4 | Trace the existing daily owner, Workday helper, runner, credential helper, Ledger, and Gmail call graph | `done` | Exact reused entrypoints, replaceable fast-path boundaries, and framework integration seams are named below |
-| 5 | Freeze fixed-commit OSS source lineage and license boundaries | `pending_actionable` | MIT reuse from Browser Use, Stagehand, career-ops, and ai-job-search; Skyvern AGPL pattern-only boundary; rejected human-stop/default-answer patterns recorded |
-| 6 | Define the Job Hunter browser-agent framework package and public contracts | `pending_after_5` | Orchestrator, session, observation, action, answer, checkpoint, verifier, and provider-hint interfaces are versioned |
+| 5 | Freeze fixed-commit OSS source lineage and license boundaries | `done` | Fixed SHA, license text, allowed reuse, AGPL pattern-only boundary, and rejected human-stop/default-answer patterns are recorded below |
+| 6 | Define the Job Hunter browser-agent framework package and public contracts | `pending_actionable` | Orchestrator, session, observation, action, answer, checkpoint, verifier, and provider-hint interfaces are versioned |
 | 7 | Define one provider-neutral sanitized row-envelope and row-run state schema | `pending_after_6` | Schema requires identity/evidence pointers and rejects secrets, raw answers, and terminal retries |
 | 8 | Add framework contract tests and recorded real-shape replays | `pending_after_7` | Observation/action/recovery/checkpoint/verifier contracts fail against the current fast-path architecture |
 | 9 | Route `browser-lane-agent` to Luna xhigh with the existing bounded runner | `pending_after_8` | One config route, one runner, one timeout; no fallback executor |
@@ -581,6 +581,37 @@ unknown-field result on behalf of an eligible row.
 #### Source lineage
 
 The design is grounded in fixed source commits, not article summaries:
+
+The following manifest freezes both the source revision and the legal reuse
+boundary. A future implementation may copy or adapt MIT code only when its source
+file is recorded in the implementation evidence and the upstream copyright and
+permission notice are retained in the distributed attribution. AGPL repositories
+are clean-room pattern references only: no source, translation, or close structural
+port is copied into Job Hunter.
+
+| Repository and fixed revision | License evidence at that revision | Allowed lineage |
+|---|---|---|
+| [Browser Use `85ddbfedf609166b2d2c76c3d80506649fee82a9`](https://github.com/browser-use/browser-use/tree/85ddbfedf609166b2d2c76c3d80506649fee82a9) | [MIT LICENSE](https://github.com/browser-use/browser-use/blob/85ddbfedf609166b2d2c76c3d80506649fee82a9/LICENSE): “Permission is hereby granted, free of charge” | Code/pattern adaptation permitted with MIT notice; step-loop and reconnect behavior are candidates |
+| [Stagehand `a21633d53930abc5d62b8dbd6b608995f2ccb4b1`](https://github.com/browserbase/stagehand/tree/a21633d53930abc5d62b8dbd6b608995f2ccb4b1) | [MIT LICENSE](https://github.com/browserbase/stagehand/blob/a21633d53930abc5d62b8dbd6b608995f2ccb4b1/LICENSE): “The above copyright notice and this permission notice shall be included” | Code/pattern adaptation permitted with MIT notice; fresh observation and semantic element resolution are candidates |
+| [career-ops `421d93e2bb32d2220242feac6d5069ff20e2e7f9`](https://github.com/santifer/career-ops/tree/421d93e2bb32d2220242feac6d5069ff20e2e7f9) | [MIT LICENSE](https://github.com/santifer/career-ops/blob/421d93e2bb32d2220242feac6d5069ff20e2e7f9/LICENSE): “to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies” | Code/pattern adaptation permitted with MIT notice; ref-tagged observe/action/re-observe loop and Workday interaction findings are candidates |
+| [ai-job-search `ab91c60cc47147d9416f0af758fb5e2d109956ce`](https://github.com/MadsLorentzen/ai-job-search/tree/ab91c60cc47147d9416f0af758fb5e2d109956ce) | [MIT LICENSE](https://github.com/MadsLorentzen/ai-job-search/blob/ab91c60cc47147d9416f0af758fb5e2d109956ce/LICENSE): “deal in the Software without restriction” | Code/pattern adaptation permitted with MIT notice; profile-grounded answer artifacts and Gmail lifecycle classification are candidates |
+| [job-apply-plugin `081a5d9d793da29111e2d5331767021718f1d8b5`](https://github.com/neonwatty/job-apply-plugin/tree/081a5d9d793da29111e2d5331767021718f1d8b5) | [MIT LICENSE](https://github.com/neonwatty/job-apply-plugin/blob/081a5d9d793da29111e2d5331767021718f1d8b5/LICENSE): “Permission is hereby granted, free of charge” | Code/pattern adaptation permitted with MIT notice; visible Workday structure reading is a candidate |
+| [Skyvern `c68a662fb7ff026df9a295c07fdfaee677a6a74d`](https://github.com/Skyvern-AI/skyvern/tree/c68a662fb7ff026df9a295c07fdfaee677a6a74d) | [GNU AGPL-3.0 LICENSE](https://github.com/Skyvern-AI/skyvern/blob/c68a662fb7ff026df9a295c07fdfaee677a6a74d/LICENSE): “specifically designed to ensure cooperation with the community in the case of network server software” | Pattern-only clean-room reference for action receipts and independent verification; no code copying |
+| [AIHawk `79155b52faccfbd19b834680af285eac70dd2df4`](https://github.com/feder-cr/Jobs_Applier_AI_Agent_AIHawk/tree/79155b52faccfbd19b834680af285eac70dd2df4) | [GNU AGPL-3.0 LICENSE](https://github.com/feder-cr/Jobs_Applier_AI_Agent_AIHawk/blob/79155b52faccfbd19b834680af285eac70dd2df4/LICENSE): “a free, copyleft license for software and other kinds of works” | Rejected-behavior evidence only; no code copying |
+
+The rejected patterns are equally fixed. career-ops stops at new decision points:
+its Workday guidance says the candidate “Reviews the filled step,” and its generic
+field contract marks sensitive unknowns as `needs_candidate_confirmation`. Job
+Hunter instead resolves each field from Candidate/Answer Memory and a stable
+inference policy, then verifies the rendered value; it does not introduce a routine
+human stop. AIHawk's numeric answer path catches parse failure and uses
+`default_experience: str = 3`; Job Hunter rejects this ungrounded constant and must
+derive a role-relevant duration from dated evidence. ai-job-search and
+job-apply-plugin prepare answers or retain human copy/submit boundaries; Job Hunter
+may reuse their field knowledge but not those ownership boundaries. None of these
+upstreams may weaken the existing exact-identity submit fence, authoritative
+completion proof, provider-limit quarantine, or permanent `submit_unknown` retry
+ban.
 
 | Source | Fixed code pattern adopted | Boundary |
 |---|---|---|
