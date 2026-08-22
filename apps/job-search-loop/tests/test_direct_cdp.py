@@ -6,9 +6,14 @@ from job_search_loop.browser_agent.direct_cdp import DirectCDPPage
 from job_search_loop.browser_agent.observation import ObservationBuilder
 from job_search_loop.browser_agent.actions import ActionExecutor
 from job_search_loop.browser_agent.contracts import ActionTargetV1, VisibleActionV1
+from job_search_loop.browser_agent.runtime import main as browser_runtime_main
+from job_search_loop.runtime import main as compatibility_runtime_main
 
 
 class DirectCDPTypeTests(unittest.IsolatedAsyncioTestCase):
+    def test_short_runtime_entrypoint_is_the_same_bounded_runtime(self):
+        self.assertIs(compatibility_runtime_main, browser_runtime_main)
+
     async def test_choose_reopens_an_expired_overlay_and_clicks_the_option_atomically(self):
         page = DirectCDPPage("ws://example", "target")
         page.click_target = AsyncMock(side_effect=[RuntimeError("closed"), None, None])
