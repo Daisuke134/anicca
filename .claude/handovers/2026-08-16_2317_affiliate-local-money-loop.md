@@ -1769,3 +1769,22 @@ money status counts remain zero. Next: at the next eligible hour, kick only
 `ai.anicca.x-repost-pass`, read claim/exact X/terminal state, then kick only
 `ai.anicca.affiliate-loop` and read exact join, official transactions, and
 Telegram receipt. Do not retry any terminal `UNVERIFIED` proposal.
+
+Realtime Speech-to-Text preflight found and repaired the next concrete blocker
+before any claim. The article is HTTP 200, `index, follow`, and canonical-exact,
+but old Repost code rejected its 281 raw characters. Official OSS
+`twitter/twitter-text` commit `30e2430d90cff3b46393ea54caf511441983c260`
+defines v3 `transformedURLLength=23` and `maxWeightedTweetLength=280`. Repost
+commit `81e803c13` applies that contract, passes all 11 focused tests, is pushed to
+both remotes, and is installed at
+`/Users/anicca/loops/releases/20260822T191252-81e803c1`. Source/runtime script
+SHA-256 matches at
+`0ba5e2a71f7e16f260da78061e215776e0b226b31c6f049f9f6bc4b22a28e52d`;
+installed render is raw 281 / weighted 231 with disclosure and exactly one owned
+URL. Proposal remains READY/UNCONSUMED. Repost Telegram backlog is durable at 21;
+two owner attempts timed out while another existing Gig owner held an
+`openclaw-message` SQLite operation. Do not stop that other owner or bypass
+Telegram manually; let the Repost owner flush at most one row per later pass.
+Physical free space is about 1.2 GiB because the shared Mac currently uses about
+13.7 GiB of 15 GiB swap. Old read-only `du` diagnostics owned by this effort were
+terminated; do not stop unrelated owners or browsers merely to reclaim swap.

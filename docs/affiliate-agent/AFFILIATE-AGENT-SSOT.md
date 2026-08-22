@@ -6693,3 +6693,14 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   `2026-08-22T10:01:25.068317+00:00` contains zero commission rows. Pending,
   approved, paid, and reversed remain zero. These X effects and exact joins are
   distribution evidence, not money.
+- Realtime Speech-to-Text preflight exposed a real owner blocker before claim:
+  the owned article is HTTP 200 with exact canonical and `index, follow`, but the
+  Repost renderer rejected its 281 raw characters. The fixed renderer copies the
+  pinned `twitter/twitter-text` v3 contract from commit
+  `30e2430d90cff3b46393ea54caf511441983c260`: each URL contributes transformed
+  length 23 toward the 280 weighted limit. Repost commit `81e803c13` is pushed to
+  both remotes and installed as immutable release `20260822T191252-81e803c1`;
+  source/runtime SHA-256 is
+  `0ba5e2a71f7e16f260da78061e215776e0b226b31c6f049f9f6bc4b22a28e52d`.
+  Installed readback renders raw 281 / weighted 231, one owned URL, and the
+  required disclosure without claiming or publishing the proposal.
