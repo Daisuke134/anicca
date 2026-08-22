@@ -2101,3 +2101,16 @@ The captured artifact verifies `list / 5 seeds`; private state was not hand-edit
 to reconstruct the four previously lost rows. Installed release is
 `20260822T234302-99453f2c`, with digest source/runtime SHA-256
 `564f37790fb8730ef893c51afc345fbe382fd04c13c65f06aa88b3d7c5318620`.
+
+Commit `7184049c0` adds local-date experiment dedupe. A real delivery-only replay
+kept experiments `9→9` and seeds `12→12`. Commit `5ace602c4` adds a shared
+`body_sha256 -> messageId` sent ledger to both pass and digest owners, allowing
+terminal local dedupe before a Gateway replay. Installed release is
+`20260822T234911-5ace602c`; CLI SHA-256 is
+`0282aa12bf986787a03143e213d0968d8b7b318e64893ba0729287d8a583db21`
+and digest SHA-256 is
+`43dcd6278793aaa57cf47e6a5923cbbcca5fb7a693dd19d311cebddb405fa561`.
+Run 39 did not prove the new success path because Gateway calls hit the bounded
+timeout: backlog remained 24 and no sent ledger row was written. The owner still
+exited `0` at the same-hour fence with no X effect. Preserve this as pending live
+receipt evidence; do not manually send or claim Telegram success.

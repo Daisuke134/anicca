@@ -99,6 +99,15 @@ backlog is:
    the exact captured artifact readback is `list / 5 seeds`. Existing owner state
    is not hand-edited to recover the four lost rows; the next digest harvest uses
    the repaired parser.
+   Release `7184049c0` deduplicates evaluation/harvest by the local date of the
+   canonical experiment receipt. Its delivery-only replay proved experiments
+   `9→9` and seeds `12→12`; no second learning effect occurred. Release
+   `5ace602c4` adds a shared terminal Telegram ledger keyed by body SHA-256 and
+   provider messageId, so a later digest can stop before replaying a delivered
+   body. The code is installed, but run 39 hit the bounded Gateway timeout before
+   a new success receipt: backlog stayed 24, sent-ledger stayed absent, X effect
+   stayed zero, and owner exited `0` at the same-hour fence. Live sent-ledger
+   success therefore remains unproven, not silently promoted to DONE.
 5. **X05 — PARTIAL, FIRST SNAPSHOT LIVE:** replace early views as the optimizer's sole objective with a funnel
    vector: qualified impressions, profile visits/follows when observable,
    owned-article sessions, CTA clicks, provider clicks, official transactions,
@@ -123,14 +132,14 @@ backlog is:
    queued and never converts a post, view, or click into money.
 
 Current live checkpoint: immutable sparse release
-`20260822T234302-99453f2c` is installed from commit
-`99453f2ca`, pushed to both Repost remotes.
+`20260822T234911-5ace602c` is installed from commit
+`5ace602c4`, pushed to both Repost remotes.
 Source/runtime `x-repost-cli.sh` is byte-equal at SHA-256
-`054ea01a24105b27729b9eb17330c0529dc5b53d2a77f07f31dfaa35327cb3b2`.
+`0282aa12bf986787a03143e213d0968d8b7b318e64893ba0729287d8a583db21`.
 Source/runtime `x_evaluate.py` is byte-equal at SHA-256
 `0dcfac06ca841f9b622916aef3b08f0f4978a27267be3f650e80bb20ae071b04`;
 source/runtime `x-repost-digest.sh` is byte-equal at SHA-256
-`564f37790fb8730ef893c51afc345fbe382fd04c13c65f06aa88b3d7c5318620`;
+`43dcd6278793aaa57cf47e6a5923cbbcca5fb7a693dd19d311cebddb405fa561`;
 22 focused tests pass.
 Its versioned readback lets a newer exact verifier inspect an old terminal row
 once, then records the verifier version on an unresolved row so it cannot retry
