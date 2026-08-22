@@ -39,28 +39,19 @@ queue_snapshot = _load_module(
 )
 
 
-def test_reply_semantic_route_prefers_luna_and_has_bounded_provider_fallback():
+def test_reply_semantic_route_uses_bounded_luna_candidate():
     config = json.loads(RUNNER_CONFIG.read_text(encoding="utf-8"))
     composition = config["task_classes"]["composition-agent"]
     route = config["task_classes"]["reply-semantic-agent"]
 
-    assert route["route"] == "luna-medium-reply-semantic-with-provider-fallback"
-    assert route["timeout_seconds"] == 120
+    assert route["route"] == "luna-medium-reply-semantic"
+    assert route["timeout_seconds"] == 240
     assert route["token_reservation"] <= composition["token_reservation"]
     assert route["candidates"][0] == {
         "provider": "codex", "model": "gpt-5.6-luna", "effort": "medium",
-        "timeout_seconds": 40,
+        "timeout_seconds": 120,
     }
-    assert [candidate["provider"] for candidate in route["candidates"]] == [
-        "codex", "claude-direct", "hermes",
-    ]
-    assert [candidate["timeout_seconds"] for candidate in route["candidates"]] == [40, 40, 40]
-    hermes = route["candidates"][2]
-    assert hermes["toolsets"] == ["clarify"]
-    assert hermes["required_capabilities"] == []
-    assert not set(hermes["toolsets"]) & {
-        "browser", "marketplace", "shell", "message_send", "external_effect",
-    }
+    assert len(route["candidates"]) == 1
     assert "reply-semantic-agent" in runner.TOOLLESS_TASK_CLASSES
 
 
@@ -342,6 +333,41 @@ def test_semantic_judge_accepts_compatible_receipts_and_rejects_unknown_profile(
     assert judge.receipt_current({**current, "runner_profile": "unknown-agent"}) is False
 
 
+def test_semantic_validation_rejects_deferring_an_inline_artifact_request():
+    rows = [
+        {
+            "message_id": "buyer-preview",
+            "role": "buyer",
+            "sent_at": "2026-08-22T12:30:13Z",
+            "body": "購入前に、X用とWeibo用の2つの投稿全文をここで見せてください。",
+        },
+    ]
+    payload = {
+        "conversation_state": "question",
+        "next_action": "reply",
+        "cycle_start_message_id": "buyer-preview",
+        "evidence_message_ids": ["buyer-preview"],
+        "required_official_context": "none",
+        "estimate_terms": None,
+        "reply_body": "対応可能です。X用・Weibo用それぞれの投稿前案をお見せします。",
+        "reply_audit": {
+            "answered_buyer_message_ids": ["buyer-preview"],
+            "unanswered_questions": [],
+            "unsupported_claims": [],
+            "unrequested_cta": False,
+            "repeats_seller_message": False,
+            "off_platform_contact": False,
+        },
+        "uncertainty": [],
+    }
+
+    with pytest.raises(
+        requested_estimate.SemanticJudgementError,
+        match="semantic_inline_artifact_deferred",
+    ):
+        requested_estimate.validate_semantic_judgement(payload, rows)
+
+
 def test_semantic_judge_uses_one_bounded_runner_attempt(tmp_path, monkeypatch):
     schema = GIG_ROOT / "schemas" / "reply_semantic_judgement.schema.json"
     calls = []
@@ -376,14 +402,14 @@ def test_semantic_judge_uses_one_bounded_runner_attempt(tmp_path, monkeypatch):
     assert calls[0][1]["timeout"] == judge.timeout_seconds + 30
 
 
-def test_direct_inbox_parser_defaults_semantic_timeout_to_120(tmp_path):
+def test_direct_inbox_parser_defaults_semantic_timeout_to_240(tmp_path):
     args = queue_snapshot.argument_parser().parse_args([
         "--output", str(tmp_path / "out.json"),
         "--evidence-dir", str(tmp_path / "evidence"),
         "--mode", "direct-inbox-only",
     ])
 
-    assert args.semantic_timeout_seconds == 120
+    assert args.semantic_timeout_seconds == 240
 
 
 def test_negotiate_runs_every_30_seconds_without_changing_other_job_intervals():
@@ -403,14 +429,14 @@ def test_negotiate_runs_every_30_seconds_without_changing_other_job_intervals():
     assert by_lane["browser"]["ThrottleInterval"] == 30
 
 
-def test_semantic_prompt_v15_uses_verified_application_scope_without_blanket_refusal():
+def test_semantic_prompt_v22_uses_verified_application_scope_without_blanket_refusal():
     prompt = requested_estimate.semantic_prompt(
         [{"message_id": "buyer-1", "role": "buyer", "sent_at": "2026-08-19T00:00:00Z", "body": "質問です"}],
         official_context=None,
         seller_facts=[],
     )
 
-    assert requested_estimate.SEMANTIC_PROMPT_VERSION == "reply-negotiate-v15"
+    assert requested_estimate.SEMANTIC_PROMPT_VERSION == "reply-negotiate-v22"
     assert "saas_lp_cvr_3_to_10_20260819" in requested_estimate.SELLER_FACT_IDS
     assert "公式応募" in prompt
     assert "current capability commitment" in prompt
@@ -430,6 +456,8 @@ def test_semantic_prompt_v15_uses_verified_application_scope_without_blanket_ref
     assert "動画編集、字幕・テロップ挿入、映像加工、完成動画書き出しは対応不能です。" not in prompt
     assert "Care Earth Mart" in prompt
     assert "選定用ラフ" in prompt
+    assert "後で見せます／お送りします" in prompt
+    assert "実物全文" in prompt
     assert "SaaS/Wix LP" in prompt
     assert "3%" in prompt and "10%" in prompt
     assert "CTA" in prompt and "first-view" in prompt

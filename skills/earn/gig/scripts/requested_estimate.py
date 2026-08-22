@@ -63,7 +63,7 @@ NA15_CATEGORY_IDS = {
 }
 
 SEMANTIC_RECEIPT_VERSION = 1
-SEMANTIC_PROMPT_VERSION = "reply-negotiate-v21"
+SEMANTIC_PROMPT_VERSION = "reply-negotiate-v22"
 SEMANTIC_RUNNER_PROFILE = "reply-semantic-agent"
 SEMANTIC_COMPATIBLE_RUNNER_PROFILES = frozenset({
     "composition-agent", SEMANTIC_RUNNER_PROFILE,
@@ -180,6 +180,7 @@ def semantic_prompt(
 - buyerがseller提示の納期rangeを受諾済みなら、短い側を約束せず、最も遅い上限をdelivery_daysにします。「購入当日または翌日」は1日、「2〜3日」は3日です。これは不確実性ではなくsellerに安全な確定値です。
 - selection sample/roughのexplicit buyer deadlineはinterim deadlineとして扱い、later official final delivery dateとは別で、applied scope内ならclarifyせず受諾して進みます。後日のofficial final delivery dateと矛盾しない中間成果物期限として、選定用ラフをその期限までに提出します。
 - reply/clarifyは最新buyerの質問・依頼へ直接答えるsend-readyな日本語本文をreply_bodyへ返します。未依頼の購入催促、同じ案内の反復、根拠のない職歴・実績・本人属性を作りません。
+- buyerが成果物・投稿文・サンプルの全文を「この返信で見せて／提示して」と求めた場合、「後で見せます／お送りします」と将来へ延期して回答済みにしません。作成根拠が会話内に揃うなら、要求された各成果物をラベル付きの実物全文としてreply_bodyへ直接含めます。根拠が足りなければ不足する最小情報だけclarifyします。
 - 最新messageがbuyerで、明確なdecline/stop、unknown、必要official context待ちのいずれでもない場合、waitにしません。question/negotiating/ready stateはreply/clarify/send_estimateで前進させ、gratitude/consideringにも同じmessage identityへ一度だけ短いcontextual acknowledgementを返します。購入催促やseller既送文の反復は加えません。
 - buyerが対応可否を尋ね、current conversationまたはverified factsに根拠がある場合、reply_bodyの冒頭で「対応可能です」等の明確な回答を先に述べ、その後に根拠と条件を短く続けます。根拠がない能力をyesにせず、確認できる範囲を正直に区別します。
 - reply/clarifyではreply_auditを本文作成後に自己監査します。answered_buyer_message_idsへ本文が直接回答したcurrent-cycle buyer message IDを入れます。unanswered_questionsとunsupported_claimsは具体的な問題を列挙します。未依頼の購入・見積りCTA、seller既送文の反復、外部連絡先への誘導を各booleanで申告します。問題が1つでもある本文を安全扱いにしません。
@@ -317,6 +318,16 @@ def validate_semantic_judgement(
             or audit["off_platform_contact"]
         ):
             raise SemanticJudgementError("semantic_reply_audit_failed")
+        latest_request = rows[-1]["body"]
+        inline_artifact_requested = (
+            any(word in latest_request for word in ("全文", "完成文", "投稿案", "サンプル"))
+            and any(word in latest_request for word in ("見せて", "提示して", "送って", "ください"))
+        )
+        if inline_artifact_requested and any(
+            phrase in reply_body
+            for phrase in ("お見せします", "提示します", "お送りします", "後ほど", "改めて送ります")
+        ):
+            raise SemanticJudgementError("semantic_inline_artifact_deferred")
         urls = re.findall(r"https?://[^\s。、！？!，,）)」』】]+", reply_body)
         if any(url != VERIFIED_PROMO_URL for url in urls):
             raise SemanticJudgementError("semantic_reply_external_url")
@@ -541,6 +552,9 @@ class SemanticJudge:
             "の連続は、その金額での公式見積り送付承認です。『公式』の語を追加要求しないでください。"
             "条件が一意ならsend_estimateと構造化estimate_termsを返し、"
             "不足時だけclarifyまたは公式context要求を返してください。"
+            "buyerが成果物・投稿文・サンプルの全文を今ここで求めている場合、"
+            "『後で見せます／送ります』と延期せず、会話内の原文から要求された実物全文を"
+            "ラベル付きでreply_bodyへ含めてください。根拠不足なら最小情報だけclarifyしてください。"
         )):
             run_evidence = evidence if correction is None else evidence / "corrective-1"
             run_evidence.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -570,6 +584,7 @@ class SemanticJudge:
                 if correction is not None or str(error) not in {
                     "semantic_estimate_request_reply_conflict",
                     "semantic_seller_last_reply_conflict",
+                    "semantic_inline_artifact_deferred",
                 }:
                     raise
             except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
