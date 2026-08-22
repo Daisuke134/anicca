@@ -1538,3 +1538,23 @@ changes no Netlify setting, article body, publication, or provider state. Rollin
 money remains `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`. The next
 atomic item is FUNNEL-C: receipt outbound CTA activation per exact placement
 without persisting or exposing the raw provider tracking URL.
+
+FUNNEL-C is now `DONE`. Installed release
+`afda1a826790db4ac360150da830a38274af69a2` caused only the existing Affiliate
+owner to apply an exact-hash-guarded production instrumentation change. V1 public
+commit `95b3c581…c088a` first exposed the same-origin CTA but real readback found
+that the old wrapper wrongly required the App Store provider token and returned
+503. V2 public commit `c8988326e2dabf72c89b6bb874552a23f778cac4`
+fixed that boundary, restricted Affiliate tokens to the current
+`elevenlabs-discovered-…-en-1` placement shape, and preserved the token requirement
+for existing App redirects. The existing GitHub Actions Netlify deploy succeeded;
+public HTML contains the same-origin CTA and no raw provider href, while invalid
+`af_bad` returns 404. No valid click was synthesized. The mode-0600 current CTA
+observation has recomputed-valid hash `1f94f18a…1f52c4`, interval start
+`2026-08-22T07:20:00.091568+00:00`, and exact observed counts 0/0/0 for Subtitle
+Translator, Voice Isolator, and Voice Changer. It excludes raw tracking URL, IP,
+user agent, referrer, cookie, and query, and declares `NON_MONEY`. `launchctl`
+reads `runs=38`, last exit `0`; rolling money remains
+`NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`. The next atomic item
+is FUNNEL-D: join provider unique clicks, exact-placement customer availability,
+and official transaction counts to this same observation interval.

@@ -2821,8 +2821,20 @@ installed or committed as a substitute for this queue.
   `NETLIFY_WEB_ANALYTICS_DISABLED`; none is coerced to zero. This is non-money.
   `launchctl` reads `runs=33`, last exit `0`; owner Telegram is `SENT`, message ID
   `28447`.
-- **FUNNEL-C — CTA-click denominator:** receipt outbound CTA activation per exact
-  placement without storing or exposing the raw tracking URL.
+- **FUNNEL-C — DONE — CTA-click denominator:** installed release
+  `afda1a826790db4ac360150da830a38274af69a2` lets the existing owner install and
+  verify the existing fail-closed `marketing-go` receipt-before-redirect pattern
+  for Affiliate CTAs. Public commit `c8988326e2dabf72c89b6bb874552a23f778cac4`
+  rewrites rendered affiliate hrefs to same-origin `/go/af_<placement_id>`, accepts
+  only the current `elevenlabs-discovered-…-en-1` placement shape, and keeps the
+  existing App redirects dependent on their App Store provider token. Netlify
+  deploy succeeded; public readback has the same-origin CTA, no raw provider href,
+  and invalid `af_bad` returns `404`. The owner did not synthesize a valid click.
+  Hash-valid mode-0600 observation `1f94f18a…1f52c4`, starting
+  `2026-08-22T07:20:00.091568+00:00`, joins observed CTA counts `0/0/0` to the
+  FUNNEL-A top three. It stores no raw tracking URL, IP, user agent, referrer,
+  cookie, or query and is explicitly non-money. `launchctl` reads `runs=38`, last
+  exit `0`.
 - **FUNNEL-D — provider funnel join:** join provider unique clicks, customer/signup
   count, and transaction count to the same placements and interval; ambiguous
   legacy links remain unjoined and receive no conversion credit.
