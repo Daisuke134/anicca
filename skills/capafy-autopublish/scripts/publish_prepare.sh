@@ -25,6 +25,7 @@ LIFE_MANAGER_STATE_HOME="${LIFE_MANAGER_STATE_HOME:-$HOME/.local/state/life-mana
 VENV="${CAPAFY_BROWSER_PYTHON:-python3}"
 WS="${CAPAFY_WORKSPACE:-$LIFE_MANAGER_STATE_HOME/work/capafy}"
 SKILL_NAME="$(basename "$SKILL_DIR")"
+SEL_FILE="$LIFE_MANAGER_STATE_HOME/state/capafy-autopublish/sel_one.json"
 
 step(){ echo ""; echo "━━━ $* ━━━"; }
 die(){ echo "❌ $*"; exit 1; }
@@ -65,13 +66,13 @@ step "[1] publish-init"
 cd "$PUB" || die "cd PUB"
 TITLE="$(grep -A1 '^## Title' "$LISTING" | tail -1)"
 # write selections via python (heredoc redirects can be blocked by the sandbox)
-"$VENV" - "$TITLE" "$SKILL_NAME" <<'PY'
+mkdir -p "$(dirname "$SEL_FILE")"
+"$VENV" - "$TITLE" "$SKILL_NAME" "$SEL_FILE" <<'PY'
 import json,sys,os
-title,sn=sys.argv[1],sys.argv[2]
-os.makedirs(".temp",exist_ok=True)
+title,sn,out=sys.argv[1],sys.argv[2],sys.argv[3]
 json.dump({"title":title,"description":title,
   "skills":[{"path":f".openclaw/skills/{sn}","name":sn,"purpose":sn}],
-  "plugins":[],"crons":[]}, open(".temp/sel_one.json","w"), ensure_ascii=False)
+  "plugins":[],"crons":[]}, open(out,"w"), ensure_ascii=False)
 PY
 # RESUME GUARD: every failed run used to publish-init a NEW draft, so failures piled
 # up orphan drafts that eat the 5-slot cap until the loop hard-blocks. Reuse an
@@ -100,11 +101,11 @@ if [ -n "$ID" ]; then
   # currently under_review (not editable), this call fails — that's fine, it means
   # there is no fixed content to ship yet; ship will correctly refuse later instead
   # of silently no-op'ing.
-  python3 packager.py publish-init --env openclaw --runtime-dir "$WS" --skill-dir "$WS/skills/$SKILL_NAME" --agent-id "$ID" --selections-file "$PUB/.temp/sel_one.json" >/dev/null 2>&1 \
+  python3 packager.py publish-init --env openclaw --runtime-dir "$WS" --skill-dir "$WS/skills/$SKILL_NAME" --agent-id "$ID" --selections-file "$SEL_FILE" >/dev/null 2>&1 \
     && echo "local publish work-state rebound to agent_id=$ID" \
     || echo "WARN: could not rebind local publish work-state to $ID (agent likely under_review, not editable) — publish_finish.sh ship step will fail closed rather than resubmit stale content"
 else
-  ID="$(python3 packager.py publish-init --env openclaw --runtime-dir "$WS" --skill-dir "$WS/skills/$SKILL_NAME" --selections-file "$PUB/.temp/sel_one.json" 2>&1 | python3 -c "import json,sys
+  ID="$(python3 packager.py publish-init --env openclaw --runtime-dir "$WS" --skill-dir "$WS/skills/$SKILL_NAME" --selections-file "$SEL_FILE" 2>&1 | python3 -c "import json,sys
 try: print(json.loads(sys.stdin.read()).get('agent_id',''))
 except: print('')")"
   [ -n "$ID" ] || die "publish-init returned no agent_id (dup title? cap full = 5 unlisted max? see publish-list)"
