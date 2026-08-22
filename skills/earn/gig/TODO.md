@@ -303,27 +303,30 @@ Do not advance the development cursor until every unchecked item in the current 
 evidence. Independent production lanes continue running while development follows this order.
 
 **Live handover state.** `main`, `origin/main` and `/Users/anicca/gig/releases/life-manager/current` are pinned to
-`15f7bbac4d550f0945128af94cd814e3b5a53899`. The Paid launchd owner is loaded but not running, with last exit
-`1`. The protected unrelated dirty `skills/earn/gig/tests/test_reply_concurrency.py` remains outside this work.
-The next release must include the shared room-local observe-only effect guard before Paid is kickstarted again;
-it verifies immutable exact-room browser effect evidence, official DOM readback and the factual state hash, and
-never trusts a later mutable same-name artifact. The loaded Paid owner uses up to eight independent project
-workers. Its launchd environment ignores the shared preventive `disk-pressure.block` and `disk-writers.stop`
-flags while retaining the 512 MiB last-resort guard and expiring operator brake.
+`81af6b81f47d6fa197bf25cd4aac67cdd7780a67`. The Paid launchd owner is loaded but not running, with last exit
+`1`; its first natural pass from this release gave X no project/effect worker, returned byusco's delivery gate
+as source-bound `file_owner_feedback`, and stopped Manledge before effect as `disk_pressure`. The host then
+reached 117 MiB free and could not persist a new final receipt, so this is not replay-zero proof. The account
+owner authorized deletion of obsolete LBJ `18130722` work because another provider now owns that job. Only the
+v107 package SHA-256 `cc7ddd9e…` plus audit metadata remain; old work/source/backups and all MP4/MOV copies were
+removed, reducing that room from 6.8 GiB to 232 MiB and restoring 6.0 GiB free. The protected unrelated dirty
+`skills/earn/gig/tests/test_reply_concurrency.py` remains outside this work. The loaded Paid owner uses up to
+eight independent project workers and retains the 512 MiB effect floor and expiring operator brake.
 
 **Current official Paid truth — supersedes the historical chronology below.** The latest natural receipt is
 `status=failed`, `observed=7`, `actionable=5`, `effect=0`, `readback=2`, `failed=5`, `pending=0`. Launchd label
-`ai.anicca.hf-gig-paid-direct` is loaded with last exit `1`; at the latest readback it is running naturally.
+`ai.anicca.hf-gig-paid-direct` is loaded with last exit `1` and currently stopped after the disk-safe pass.
 Two rows are intentionally `reserved_for_owner`; five owned rows have explicit failures, so silent pending
 remains zero but customer work is not complete. Process liveness does not supersede the failed official receipt.
 
 - Haru `18169583` sent v32 previously with exact official readback/replay-zero, but the buyer then supplied two
   complaint screenshots and explicitly reported rough images, repeated lack of checking and possible
-  cancellation. Haru is therefore reopened and first priority. The natural Project Owner read the new event and
-  produced durable `habikino-renewal-v34.zip`, 40,866,238 bytes, SHA-256
-  `dd99d499b40ca73db3c192727eb9bd27933abb4a284e852716c62397ff04d14a`, with producer-side `PASS`; the
-  controller still closed at `file_validation`. No v34 customer effect or readback exists. Local/producer PASS
-  does not authorize sending. The same Project Owner must fresh-inspect v34 against every accumulated
+  cancellation. Haru is therefore reopened and first priority. The natural Project Owner preserved
+  `habikino-renewal-v37.zip`, 40,866,940 bytes, SHA-256
+  `eedfe409b25536709d0fcdd69b5b6538ad59e61856ee889041c84d66e42a0969`, with producer-side `PASS`; the
+  controller stopped on the old ordering defect `required_visual_review_missing` before customer effect. The
+  newer release performs that review before validation. No v37 customer effect or readback exists. Local/
+  producer PASS does not authorize sending. The same Project Owner must fresh-inspect v37 against every accumulated
   requirement, the last accepted layout lineage and both complaint screenshots, repair through the natural loop
   if any visible defect remains, then send exactly one verified hash with formal delivery OFF and replay-zero.
 - Manledge `18169985` currently holds `manledge-community-listing-review-v21.md`, SHA-256
@@ -841,10 +844,24 @@ flowchart TB
    The next release also routes delivery-gate results as structured Owner feedback and performs visual review
    before validating its receipt, fixing the measured Haru and byusco ordering failures without regenerating
    their artifacts merely to classify an error.
+   Haru's preserved v37 is independently measured rather than trusted from producer PASS: both buyer roughness
+   screenshots are durable 2880x1800 sources; PC/Responsive 2x previews are 2880x10944 and 1500x19968; its
+   PDF-compatible AI/PDF contents contain editable text/vector structure, embedded fonts and exactly the two
+   buyer-authorized raster illustrations at 205–245 effective PPI. The `.ai` bytes are identical to the PDFs and
+   this Mac has no Illustrator installation, so no claim of native Illustrator private-data/layer roundtrip is
+   permitted. Fresh visual review must compare the actual v37 package to both complaint images and v27 before
+   effect; missing native-only proof must be reported truthfully rather than hidden by a filename extension.
 8. [ ] Complete the shared tool boundary: content-addressed durable artifact inputs/outputs; fresh read-only
    evaluator opening every actual source/candidate/package/reference; and mechanical exact-room browser
    send/readback with formal delivery OFF, effect fence and replay-zero. Missing evidence is NEEDS_WORK, never
    an inferred PASS; temporary cleanup cannot erase the only candidate.
+   When an Owner lacks a required production capability, it may run bounded OSS capability discovery: search
+   code, clone a pinned commit into isolated temporary storage, verify license and the exact entrypoint/call
+   path, run it against a non-customer artifact, and record an artifact receipt. Only then may a minimal copied
+   tool enter the capability registry. Downloaded code never receives browser, credential, customer-send or
+   money authority. For Illustrator conversion, inspected sources are `creold/illustrator-scripts` commit
+   `9b3e3ee…` (MIT, native `IllustratorSaveOptions`) and `rjduran/adobe-scripting` commit `b2cd2c8…`
+   (behavioral comparison only; no clear license file, so no copied code).
 9. [ ] Publish the immutable reconstruction release and kickstart the existing launchd Paid owner. Observe Haru's
    natural Project Owner inspect v34 against the new complaint screenshots, complete conversation and accepted
    lineage. If defective, revise naturally; if fresh PASS, send the exact final hash once, obtain official DOM
