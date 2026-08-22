@@ -8,6 +8,7 @@ const { resolveDataRoot } = require("../lib/runtime-paths.js");
 const { persistDailyDigest, sendMetricSnapshot } = require("./instagram-metrics-read.js");
 const { collectTikTokWindow } = require("./tiktok-native-metrics-read.js");
 const { persistAniccaDaily, persistHonneDaily, persistWeeklyReview, sendSummary } = require("./marketing-product-summary.js");
+const { persistAscAcquisition } = require("./marketing-asc-acquisition.js");
 
 const WINDOWS = Object.freeze({ "2h": 2 * 3600_000, "24h": 24 * 3600_000, "72h": 72 * 3600_000, "7d": 7 * 86400_000 });
 const GRACE_MS = 90 * 60_000;
@@ -54,7 +55,7 @@ function delayed(dataDir, expected, window, observedAt) {
 async function runDue(nowMs = Date.now(), env = process.env, provided = null) {
   const dataDir = resolveDataRoot(env); const results = []; const expecteds = provided || discoverTargets(dataDir);
   const reportParts = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date(nowMs)).map(({ type, value }) => [type, value])); const reportDay = `${reportParts.year}-${reportParts.month}-${reportParts.day}`;
-  if (Number(reportParts.hour) >= 22 && !provided) { const weekly = persistWeeklyReview(dataDir, reportDay, new Date(nowMs).toISOString()); results.push({ product_id: "mobile-marketing", window: "weekly-product", state: weekly.created ? "reported" : "complete", telegram: await sendSummary(weekly, env, dataDir) }); }
+  if (Number(reportParts.hour) >= 22 && !provided) { const asc = await persistAscAcquisition(dataDir, reportDay); results.push({ product_id: "mobile-marketing", window: "asc-daily", state: asc.created ? "measured" : "complete", snapshot_ref: asc.snapshot_ref }); const weekly = persistWeeklyReview(dataDir, reportDay, new Date(nowMs).toISOString()); results.push({ product_id: "mobile-marketing", window: "weekly-product", state: weekly.created ? "reported" : "complete", telegram: await sendSummary(weekly, env, dataDir) }); }
   for (const expected of expecteds) {
     for (const [window, delay] of Object.entries(WINDOWS)) {
       const existingFile = snapshotFile(dataDir, expected, window);
