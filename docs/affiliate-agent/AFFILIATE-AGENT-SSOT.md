@@ -2754,10 +2754,13 @@ flowchart LR
    a model caller with forged gate inputs invokes the callback zero times and each
    missing owner gate rejects before mutation. Existing launchd entrypoints and
    effect implementations remain unchanged.
-4. **A-CUT-2A — redacted context:** build one context packet from current goal,
-   unfinished job, due-times, allowed tool schemas, and redacted receipts;
-   acceptance is zero credential, raw tracking-link, private provider ID, or
-   unrelated state bytes in the model input.
+4. **A-CUT-2A — redacted context — DONE:** `scripts/context_packet.py` builds the
+   only state packet exposed to the Agent from allowlisted goal, unfinished-job,
+   due-time, registered tool-schema, and canonical receipt fields. It strips all
+   other state keys and redacts inline URLs/credential assignments. The malicious
+   fixture readback contains zero bytes from credential, raw tracking URL,
+   customer/private-provider ID, click/view, or unrelated state inputs while
+   preserving goal ID, placement ID, `NO_TRANSACTIONS`, and allowed tool schemas.
 5. **A-CUT-2B — durable checkpoint:** persist goal ID, job ID, stage, proposed
    action, tool attempt, observation, effect certainty, and next due-time;
    acceptance is restart from the last committed transition without replaying a
