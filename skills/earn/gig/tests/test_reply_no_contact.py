@@ -24,6 +24,62 @@ TELEGRAM_SPEC = importlib.util.spec_from_file_location(
 assert TELEGRAM_SPEC and TELEGRAM_SPEC.loader
 telegram = importlib.util.module_from_spec(TELEGRAM_SPEC)
 TELEGRAM_SPEC.loader.exec_module(telegram)
+QUEUE_SPEC = importlib.util.spec_from_file_location(
+    "gig_no_contact_reply_queue_test", ROOT / "scripts/reply_queue.py",
+)
+assert QUEUE_SPEC and QUEUE_SPEC.loader
+reply_queue = importlib.util.module_from_spec(QUEUE_SPEC)
+QUEUE_SPEC.loader.exec_module(reply_queue)
+
+
+def test_targeted_seller_debt_bridge_binds_verified_reply_to_target_event():
+    inquiry = {
+        "last_message_side": "seller",
+        "seller_sent_at": "2026-08-22T12:31:47+00:00",
+        "reply_required": True,
+        "next_action": "reply",
+        "semantic_reply_body": "X用投稿案：全文\nWeibo用投稿案：全文",
+        "semantic_receipt": {
+            "prompt_version": "reply-negotiate-v23",
+            "judgement": {"next_action": "reply"},
+        },
+    }
+    target = {
+        "action_id": 378,
+        "thread_id": "10082097",
+        "inbox_event_key": "coconala:inbox:v1:10082097:sha256_v1:" + "a" * 64,
+    }
+    queue = {"status": "ready", "items": [{"event_key": "old", "covered_event_keys": ["old"]}]}
+
+    assert detector._targeted_seller_debt_reply(inquiry) is True
+    rebound = detector._bind_targeted_seller_debt_queue(queue, target)
+    assert rebound["items"][0]["event_key"] == target["inbox_event_key"]
+    assert rebound["items"][0]["covered_event_keys"] == [target["inbox_event_key"]]
+
+
+def test_reply_queue_builds_verified_seller_debt_without_relabeling_official_side():
+    queue = reply_queue.build_queue({
+        "captured_at": "2026-08-22T12:32:00+00:00",
+        "semantic_ssot": True,
+        "orders": [],
+        "inquiries": [{
+            "talkroom_id": "10082097",
+            "talkroom_url": "https://coconala.com/mypage/direct_message/10082097",
+            "last_message_side": "seller",
+            "seller_sent_at": "2026-08-22T12:31:47+00:00",
+            "reply_required": True,
+            "next_action": "reply",
+            "semantic_seller_debt_reply": True,
+            "semantic_reply_body": "X用投稿案：全文\nWeibo用投稿案：全文",
+            "semantic_context_sha256": "b" * 64,
+            "semantic_receipt": {"version": 1},
+            "stable_ordinal": 0,
+            "message_sha256": "c" * 64,
+        }],
+    })
+
+    assert queue["status"] == "ready"
+    assert queue["items"][0]["semantic_reply_body"].startswith("X用投稿案：")
 
 
 class FakeOutbox:

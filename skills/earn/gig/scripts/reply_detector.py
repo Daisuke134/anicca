@@ -1316,6 +1316,38 @@ def _targeted_effect_result(
     }
 
 
+def _targeted_seller_debt_reply(inquiry: dict[str, Any]) -> bool:
+    receipt = inquiry.get("semantic_receipt")
+    judgement = receipt.get("judgement") if isinstance(receipt, dict) else None
+    return bool(
+        inquiry.get("last_message_side") == "seller"
+        and inquiry.get("reply_required") is True
+        and inquiry.get("next_action") == "reply"
+        and isinstance(receipt, dict)
+        and receipt.get("prompt_version") == "reply-negotiate-v23"
+        and isinstance(judgement, dict)
+        and judgement.get("next_action") == "reply"
+        and type(inquiry.get("semantic_reply_body")) is str
+        and inquiry["semantic_reply_body"].strip()
+    )
+
+
+def _bind_targeted_seller_debt_queue(
+    queue: dict[str, Any], target: dict[str, Any],
+) -> dict[str, Any]:
+    event_key = str(target.get("inbox_event_key") or "")
+    match = _INBOX_EVENT.fullmatch(event_key)
+    items = queue.get("items") if isinstance(queue.get("items"), list) else []
+    if match is None or match.group("thread") != str(target.get("thread_id") or "") or len(items) != 1:
+        raise ValueError("targeted seller debt queue binding invalid")
+    rebound = dict(queue)
+    item = dict(items[0])
+    item["event_key"] = event_key
+    item["covered_event_keys"] = [event_key]
+    rebound["items"] = [item]
+    return rebound
+
+
 def _run_effect_pipeline(
     args: Any, *, snapshot: dict[str, Any], evidence: Path, run_id: str,
     target: dict[str, Any] | None = None,
@@ -1342,6 +1374,7 @@ def _run_effect_pipeline(
     semantic_ready = False
     estimate_required = False
     no_send = False
+    seller_debt_reply = False
     thread_id = str(target.get("thread_id") or "") if target else ""
     target_expected_revision = (
         _count(target.get("expected_revision")) if target else None
@@ -1372,6 +1405,7 @@ def _run_effect_pipeline(
         next_action = str(inquiry.get("next_action") or "")
         semantic_failure = str(inquiry.get("semantic_failure") or "") or None
         semantic_receipt = inquiry.get("semantic_receipt")
+        seller_debt_reply = _targeted_seller_debt_reply(inquiry)
         estimate_required = bool(
             inquiry.get("estimate_required") is True
             or next_action in _TARGETED_ESTIMATE_ACTIONS
@@ -1382,6 +1416,7 @@ def _run_effect_pipeline(
             and (
                 inquiry.get("last_message_side") == "buyer"
                 or next_action in _TARGETED_ESTIMATE_ACTIONS
+                or seller_debt_reply
             )
             and next_action in (_TARGETED_SEND_ACTIONS | _TARGETED_ESTIMATE_ACTIONS)
         )
@@ -1392,6 +1427,8 @@ def _run_effect_pipeline(
             normal_value = _targeted_presemantic_snapshot(
                 snapshot, inquiry, semantic=semantic_ready and next_action in _TARGETED_SEND_ACTIONS,
             )
+            if seller_debt_reply:
+                normal_value["inquiries"][0]["semantic_seller_debt_reply"] = True
     else:
         normal_value = dict(snapshot)
         if isinstance(snapshot.get("inquiries"), list):
@@ -1406,13 +1443,17 @@ def _run_effect_pipeline(
         "--snapshot", str(normal_path), "--output", str(queue_path),
     ])
     _owner_only(queue_path)
+    queue_value = json.loads(queue_path.read_text(encoding="utf-8"))
+    if not isinstance(queue_value, dict):
+        raise ValueError("reply queue must be an object")
+    if target and seller_debt_reply:
+        queue_value = _bind_targeted_seller_debt_queue(queue_value, target)
+        _atomic_json(queue_path, queue_value)
+        _owner_only(queue_path)
     _run("outbox_enqueue", [
         sys.executable, str(queue_script), "enqueue", "--queue", str(queue_path),
         "--database", str(database), "--manifest", str(manifest),
     ])
-    queue_value = json.loads(queue_path.read_text(encoding="utf-8"))
-    if not isinstance(queue_value, dict):
-        raise ValueError("reply queue must be an object")
     if target:
         items = queue_value.get("items") if isinstance(queue_value.get("items"), list) else []
         if no_send and not semantic_failure:
