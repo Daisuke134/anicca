@@ -984,11 +984,29 @@ zero submitted proposals, invites, offers, active contracts and earnings.
 
 **Interfaces:** Produces submission ID/state and binds it to contract, milestone and artifact hashes.
 
-- [ ] Write the lost-ACK/repeated-tick/changed-artifact failing matrix.
-- [ ] Persist delivery intent only after independent `PASS` and fresh contract readback.
+- [x] Write the lost-ACK/repeated-tick/changed-artifact failing matrix.
+- [x] Persist delivery intent only after independent `PASS` and fresh contract readback.
 - [ ] Execute one authorized milestone submission with frozen message/files.
-- [ ] Require official submission ID and `Submitted` state; reconcile before any resubmission.
+- [x] Require official submission ID and `Submitted` state; reconcile before any resubmission.
 - [ ] Replay with zero duplicate delivery; run tests and commit/push.
+
+Task 19 engine evidence: Upwork's current official instructions say fixed-price work must be sent
+through `Deliver work > Your active contracts > Submit work` to start the 14-day review period;
+files do not need to be uploaded again when already shared, and only a funded active milestone is a
+valid starting point ([submit work](https://support.upwork.com/hc/en-us/articles/211068368-How-to-submit-work-and-milestones-to-your-client),
+[fixed-price flow](https://support.upwork.com/hc/en-us/articles/211063718-How-payments-for-milestones-and-fixed-price-contracts-work)).
+`upwork_delivery.py` therefore validates the Task 17 artifact bytes/hashes, requires both Task 18
+independent-PASS evidence markers, rereads an exact funded/active contract+milestone no more than
+five minutes old, and freezes contract, milestone, message, file paths, artifact hashes and
+verification hash before the shared provider-effect fence closes retry permission. A lost ACK or
+later tick performs readback only. Only an exact official `submitted` row with a nonempty
+submission ID, matching contract/milestone/artifact hashes and evidence SHA-256 verifies the row.
+The shared ledger now also forbids a second payload for one `deliver_milestone` resource, matching
+its existing proposal invariant. Focused delivery/proposal/authorization tests pass 27/27,
+including success, lost ACK, replay, changed artifact, non-PASS, forged-PASS and unfunded gates.
+This is not a live delivery claim: the official account still has zero active contracts, so no
+workroom submission control or real submission ID exists to exercise yet. The external-effect
+checkbox stays open until that official receipt exists.
 
 ### Task 20: Process Upwork revisions
 
