@@ -525,6 +525,19 @@ https://leverageproposals.com/guides/how-to-get-first-job-on-upwork.
    invitations 0, offers 0, earnings USD 0, Direct Offer evidence files 0 and private inbound packets
    0. Therefore an empty inbox created no model call and no marketplace effect. The next atomic item
    is the durable single-click Direct Offer acceptance effect plus official active-contract readback.
+7. **CODE COMPLETE / FIRST LIVE DIRECT OFFER PENDING:** an `accept_ready` decision now resolves the
+   exact private `accept_offer` browser authorization, hashes the complete bound decision, validates
+   the live offer URL/title/scope/amount/deadline/payment-protection markers and enabled exact
+   `Accept offer` control, then durably changes the shared provider-effect row to
+   `reconcile_pending` before the only click expression. A replay can never start a second click.
+   Verification requires an official Upwork `/workroom/{contract_id}` readback; a missing or
+   ambiguous contract ID stays `reconcile_unknown` and is never blindly retried. The same existing
+   connector outbox and browser profile are reused; no new service or executor exists. The focused
+   offer/proposal/inbound/browser/effect matrix passes 60/60. Release `e8ee5a7db` completed a
+   production five-minute wake with exit 0 at `2026-08-22T18:24:49.980181+00:00`: Connects 0,
+   invitations 0, offers 0, submitted proposals 0, active contracts 0, earnings USD 0, private offer
+   evidence 0 and `accept_offer` effect rows 0→0. Therefore empty inventory generated no click or
+   durable mutation. One real Direct Offer is still required for the official contract-ID proof.
 
 ### Task 7: Record Upwork's private action matrix
 
