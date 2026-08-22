@@ -270,6 +270,15 @@ def _action(value: dict[str, Any]) -> VisibleActionV1:
             exact=bool(target_value.get("exact", True)),
             stable_id=str(target_value.get("stable_id") or ""),
         )
+    opener_value = value.get("opener")
+    opener = None
+    if isinstance(opener_value, dict):
+        opener = ActionTargetV1(
+            role=str(opener_value.get("role") or ""),
+            label=str(opener_value.get("label") or ""),
+            exact=bool(opener_value.get("exact", True)),
+            stable_id=str(opener_value.get("stable_id") or ""),
+        )
     text = value.get("text")
     concept = value.get("candidate_concept")
     if concept:
@@ -285,6 +294,7 @@ def _action(value: dict[str, Any]) -> VisibleActionV1:
     return VisibleActionV1(
         kind=str(kind),
         target=target,
+        opener=opener,
         text=str(text) if text is not None else None,
         url=str(value["url"]) if value.get("url") else None,
         file_path=file_path,
@@ -485,6 +495,35 @@ async def click(*, label: str, role: str, stable_id: str) -> dict[str, Any]:
             sort_keys=True,
         )
         + "\n",
+        encoding="utf-8",
+    )
+    os.chmod(path, 0o600)
+    return await act(path)
+
+
+async def choose(
+    *, field_label: str, field_role: str, field_stable_id: str,
+    option_label: str, option_role: str, option_stable_id: str,
+) -> dict[str, Any]:
+    """Open one observed custom field and click one observed option atomically."""
+    path = _path_env("JOB_SEARCH_BROWSER_SCRATCH") / "runtime-choose.json"
+    path.write_text(
+        json.dumps(
+            {
+                "kind": "choose",
+                "opener": {
+                    "label": field_label,
+                    "role": field_role,
+                    "stable_id": field_stable_id,
+                },
+                "target": {
+                    "label": option_label,
+                    "role": option_role,
+                    "stable_id": option_stable_id,
+                },
+            },
+            sort_keys=True,
+        ) + "\n",
         encoding="utf-8",
     )
     os.chmod(path, 0o600)
@@ -763,6 +802,13 @@ def main(argv: list[str] | None = None) -> int:
     click_parser.add_argument("--label", required=True)
     click_parser.add_argument("--role", default="")
     click_parser.add_argument("--stable-id", default="")
+    choose_parser = subparsers.add_parser("choose")
+    choose_parser.add_argument("--field-label", required=True)
+    choose_parser.add_argument("--field-role", default="")
+    choose_parser.add_argument("--field-stable-id", default="")
+    choose_parser.add_argument("--option-label", required=True)
+    choose_parser.add_argument("--option-role", default="option")
+    choose_parser.add_argument("--option-stable-id", default="")
     type_parser = subparsers.add_parser("type")
     type_parser.add_argument("--label", required=True)
     type_parser.add_argument("--role", default="")
@@ -798,6 +844,15 @@ def main(argv: list[str] | None = None) -> int:
     elif args.command == "click":
         operation = click(
             label=args.label, role=args.role, stable_id=args.stable_id
+        )
+    elif args.command == "choose":
+        operation = choose(
+            field_label=args.field_label,
+            field_role=args.field_role,
+            field_stable_id=args.field_stable_id,
+            option_label=args.option_label,
+            option_role=args.option_role,
+            option_stable_id=args.option_stable_id,
         )
     elif args.command == "type":
         operation = type_candidate(

@@ -103,13 +103,18 @@ class ActionExecutor:
                 raise ValueError("navigate requires url")
             self._validate_https(action.url)
             await page.goto(action.url, wait_until="commit", timeout=self._timeout_ms)
-        elif action.kind in {"click", "type", "select", "upload"}:
+        elif action.kind in {"click", "choose", "type", "select", "upload"}:
             if action.target is None:
                 raise ValueError(f"{action.kind} requires target")
             if action.kind == "click" and _FINAL_SUBMIT.match(action.target.label):
                 raise PermissionError("final Submit requires the SubmissionFence path")
+            if action.kind == "choose":
+                if action.opener is None:
+                    raise ValueError("choose requires opener")
+                opener = await self._target(page, action.opener)
+                await opener.click(timeout=self._timeout_ms)
             target = await self._target(page, action.target)
-            if action.kind == "click":
+            if action.kind in {"click", "choose"}:
                 await target.click(timeout=self._timeout_ms)
             elif action.kind == "type":
                 if action.text is None:

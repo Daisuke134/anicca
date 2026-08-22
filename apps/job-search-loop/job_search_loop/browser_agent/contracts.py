@@ -57,8 +57,9 @@ class ActionTargetV1:
 
 @dataclass(frozen=True, slots=True)
 class VisibleActionV1:
-    kind: Literal["navigate", "click", "type", "select", "upload", "scroll", "wait"]
+    kind: Literal["navigate", "click", "choose", "type", "select", "upload", "scroll", "wait"]
     target: ActionTargetV1 | None = None
+    opener: ActionTargetV1 | None = None
     text: str | None = None
     url: str | None = None
     file_path: Path | None = None

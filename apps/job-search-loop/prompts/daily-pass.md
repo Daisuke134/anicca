@@ -18,7 +18,7 @@ returns the fresh redacted observation. When it reports `needs_navigation=true` 
 an empty `about:blank` page, navigate once without constructing an action file:
 
 While an active row is returned, the command envelope is mandatory: execute only
-`job_search_loop.browser_agent.runtime observe`, `navigate`, `click`, `type`, `wait`, `act`, `auth`,
+`job_search_loop.browser_agent.runtime observe`, `navigate`, `click`, `choose`, `type`, `wait`, `act`, `auth`,
 `finalize`, `checkpoint`, or `report`. Do not invoke Python snippets, inspect
 signatures/source/tests, read Ledger/Queue internals, print environment variables,
 or construct a helper. The runtime already owns row collection, cursor/evidence,
@@ -40,6 +40,7 @@ use the direct runtime command for an ordinary visible click or bounded wait:
 
 ```bash
 /opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime click --label "THE_EXACT_VISIBLE_LABEL" --role "THE_RETURNED_ROLE" --stable-id "THE_RETURNED_STABLE_ID"
+/opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime choose --field-label "THE_EXACT_VISIBLE_FIELD_LABEL" --field-role "THE_RETURNED_FIELD_ROLE" --field-stable-id "THE_RETURNED_FIELD_STABLE_ID" --option-label "THE_EXACT_VISIBLE_OPTION_LABEL" --option-role "option" --option-stable-id "THE_RETURNED_OPTION_STABLE_ID"
 /opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime type --label "THE_EXACT_VISIBLE_LABEL" --role "THE_RETURNED_ROLE" --stable-id "THE_RETURNED_STABLE_ID" --candidate-concept "AN_EXACT_RETURNED_CONCEPT"
 /opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime wait --milliseconds 6000
 ```
@@ -56,8 +57,9 @@ For a typed field use one exact name from the returned `candidate_concepts` list
 guess a concept name and never inspect source or Candidate Memory to discover names.
 Repeat from each returned fresh observation.
 Workday `input[data-uxi-widget-type="selectinput"]` is a custom combobox, never a
-native select: click the input, observe, then use `runtime click` on the exact
-returned option label (including `checked` or `not checked`) and its stable ID.
+native select. After any observation exposes exact options, use `runtime choose` so
+opening the field and clicking the exact observed option happen in one CDP connection.
+Do not insert `observe` or `wait` between those two actions.
 Use action kind `select` only when the observed control tag is literally `select`.
 When that click response already contains visible options, reason over those options
 and immediately click one exact returned label; do not type a filter first.
