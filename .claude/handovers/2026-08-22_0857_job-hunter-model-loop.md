@@ -49,33 +49,19 @@ unrelated dirty paths `docs/loops/x-repost.md` and `state/effective-cron/`.
 
 ## Current live blocker
 
-- Active release: `736c398a095fab3655ad9f18dda08b75df37aa64`.
-- NVIDIA `JR2015317` is not submitted. Fresh reset message `1a02a62e0498e3e2`
-  opened the correct tenant page; visual evidence showed two password fields and
-  one `Submit` button. The message is `navigation_unknown` and must not be retried.
-- The unique reset-page `Submit` label is now supported, but the next daily run
-  `daily-20260823-015932` naturally recovered and requested fresh message
-  `1a02a70e1d915f80`. Inbox run `inbox-20260823-020818` opened it but observed
-  both the native `Submit` and Workday's clickable `click_filter` wrapper. The
-  secret rail now restricts reset actions to native button/input controls. The
-  opened message is `navigation_unknown`; request a new reset message and never
-  retry it.
-- Fresh message `1a02a75c17302d42` subsequently reset the NVIDIA credential;
-  visual evidence showed the final Sign In UI. Daily runs reached Review and
-  consumed one submit fence. The completion screenshot was blank, so the Ledger
-  remained `submit_unknown` and the action must never be retried. Gog independently
-  found authoritative receipt `1a02a898712efee9` from `nvidia@myworkday.com` with
-  exact company, role, JR2015317, and "has been received" text. Reconciler Gmail
-  discovery now includes that real Workday wording; kick the existing inbox owner,
-  verify Ledger `submitted`, then repair/verify the Telegram ACK without resubmitting.
-- NVIDIA `JR2015317` is now authoritatively `submitted`: Gmail receipt
-  `1a02a898712efee9` says the application was received, and the reconciler bound it
-  to the exact Ledger row. Its resume Telegram delivery reached `send_started` but
-  has no provider message ID; do not blind-retry that uncertain document delivery.
-- Recurrence run `daily-20260823-024948` selected fresh NVIDIA Workday role
-  `JR2022223`, reused the existing tenant credential, uploaded the resume, and
-  advanced through dynamic questions with 47 screenshots. All runtime commands
-  exited zero and Submit was never called. Luna ended at 891.516 seconds with a
-  false `transport_failed`; the row remains `materials_ready`. Daily model timeout
-  is raised from 900 to 1800 seconds to match `StartInterval=1800`; resume this same
-  checkpoint through final Review and verify completion UI or Gmail receipt.
+- Active release: `4a4cd5c9f19e14888dd9f969bdd66fa0ff52989d`; both launchd owners use the
+  immutable release and the daily owner has `StartInterval=1800`.
+- NVIDIA `JR2015317` is authoritatively `submitted`. Gmail receipt
+  `1a02a898712efee9` identifies the exact role and says the application was received.
+- Recurrence run `daily-20260823-030807` resumed fresh NVIDIA Workday role
+  `JR2022223` from its visual checkpoint, reached Review, invoked the one fenced
+  submit action, and captured the visible Workday `Application Submitted` modal.
+  Gmail independently produced message `1a02aab4b967f64a` confirming receipt of
+  `JR2022223 Physical AI and Simulation Solution Architect`; inbox run
+  `inbox-20260823-031243` reconciled that exact message and Ledger row to `submitted`.
+- The remaining blocker is Telegram truth, not Workday application execution. The
+  old run outcome and resume delivery are `send_started` without provider message
+  IDs and must never be retried. `application_reporting deliver` now sends a new
+  receipt-bound correction event keyed by application ID plus immutable receipt
+  message ID. Deploy it, kick the existing inbox owner, and require a real Telegram
+  message ID before closing the loop. Do not create another executor or browser.

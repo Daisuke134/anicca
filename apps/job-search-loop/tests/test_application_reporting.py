@@ -10,6 +10,84 @@ from job_search_loop.ledger import Ledger
 
 
 class ApplicationReportingTests(unittest.TestCase):
+    def test_reconciled_receipt_sends_authoritative_submitted_correction_once(self):
+        reporting = importlib.import_module("job_search_loop.application_reporting")
+        deliver = reporting.deliver_reconciled_outcomes
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ledger = Ledger(root / "ledger.sqlite3")
+            application_id = ledger.add_application(
+                "Dream AI", "Agent Engineer", "https://dream.wd1.myworkdayjobs.com/job/1"
+            )
+            ledger.transition(application_id, "qualified")
+            ledger.transition(application_id, "materials_ready")
+            resume = root / "resume.pdf"
+            resume.write_bytes(b"%PDF-1.4\nresume\n")
+            snapshot = root / "ats.json"
+            snapshot.write_text(
+                json.dumps(
+                    {
+                        "version": 1,
+                        "url": "https://dream.wd1.myworkdayjobs.com/job/1",
+                        "navigation_committed": True,
+                        "frames": [
+                            {
+                                "url": "https://dream.wd1.myworkdayjobs.com/job/1",
+                                "controls": [
+                                    {"tag": "input", "type": "email"},
+                                    {"tag": "input", "type": "file"},
+                                    {"tag": "button", "type": "submit", "text": "Submit"},
+                                ],
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            intent = ledger.claim_submission(
+                application_id,
+                "2026-08-23",
+                "payload",
+                resume_path=resume,
+                resume_sha256=hashlib.sha256(resume.read_bytes()).hexdigest(),
+                ats_snapshot_path=snapshot,
+                ats_snapshot_sha256=hashlib.sha256(snapshot.read_bytes()).hexdigest(),
+            )
+            ledger.complete_submission_verified(
+                intent.intent_id,
+                intent.fence,
+                outcome="submit_unknown",
+                evidence_sha256="f" * 64,
+                evidence_class="no_authoritative_completion_ui",
+            )
+            ledger.reconcile_submission_confirmation(
+                intent_id=intent.intent_id,
+                message_id="gmail-1",
+                thread_id="thread-1",
+                evidence_sha256="e" * 64,
+                received_at="2026-08-23T00:00:00+00:00",
+            )
+            ledger.close()
+            calls = []
+
+            def fake_sender(**kwargs):
+                calls.append(kwargs)
+                return {"status": "sent", "message_id": "903"}
+
+            result = deliver(
+                ledger_path=root / "ledger.sqlite3",
+                outbox_path=root / "telegram.sqlite3",
+                sender=fake_sender,
+            )
+
+            self.assertEqual(result[0]["message_id"], "903")
+            self.assertEqual(
+                calls[0]["event_key"],
+                f"application-submitted:{application_id}:gmail-1",
+            )
+            self.assertIn("Dream AI — Agent Engineer", calls[0]["message"])
+            self.assertIn("submitted (authoritative_receipt_email)", calls[0]["message"])
+
     def test_document_delivery_is_private_and_at_most_once(self):
         sender = getattr(telegram, "send_document_once", None)
         self.assertIsNotNone(sender)

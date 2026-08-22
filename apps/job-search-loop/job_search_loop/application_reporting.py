@@ -7,7 +7,68 @@ from pathlib import Path
 from typing import Callable
 
 from .ledger import Ledger
-from .telegram import send_document_once
+from .browser_agent.contracts import QueueRowReceiptV1
+from .browser_agent.outcome_reporting import build_hourly_outcome_message
+from .telegram import send_document_once, send_once
+
+
+def deliver_reconciled_outcomes(
+    *,
+    ledger_path: Path,
+    outbox_path: Path,
+    sender: Callable[..., dict[str, str | None]] = send_once,
+) -> list[dict[str, str | None]]:
+    ledger = Ledger(ledger_path)
+    try:
+        rows = ledger.connection.execute(
+            """
+            SELECT
+              applications.id AS application_id,
+              applications.company,
+              applications.title,
+              submission_confirmations.message_id
+            FROM submission_confirmations
+            JOIN submit_intents
+              ON submit_intents.intent_id = submission_confirmations.intent_id
+            JOIN applications
+              ON applications.id = submit_intents.application_id
+            WHERE applications.current_state = 'submitted'
+            ORDER BY submission_confirmations.received_at,
+                     submission_confirmations.message_id
+            """
+        ).fetchall()
+    finally:
+        ledger.close()
+
+    deliveries = []
+    for row in rows:
+        application_id = str(row["application_id"])
+        message_id = str(row["message_id"])
+        message = build_hourly_outcome_message(
+            (
+                QueueRowReceiptV1(
+                    application_id,
+                    str(row["company"]),
+                    str(row["title"]),
+                    "submitted",
+                ),
+            ),
+            {application_id: "authoritative_receipt_email"},
+        )
+        delivery = sender(
+            database=outbox_path,
+            event_key=f"application-submitted:{application_id}:{message_id}",
+            message=message,
+        )
+        deliveries.append(
+            {
+                "application_id": application_id,
+                "receipt_message_id": message_id,
+                "status": delivery["status"],
+                "message_id": delivery["message_id"],
+            }
+        )
+    return deliveries
 
 
 def deliver_submitted_resumes(
@@ -64,9 +125,18 @@ def main() -> None:
         outbox_path=args.outbox,
         media_root=args.media_root,
     )
+    outcomes = deliver_reconciled_outcomes(
+        ledger_path=args.ledger,
+        outbox_path=args.outbox,
+    )
     args.output.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     args.output.write_text(
-        json.dumps({"deliveries": deliveries}, ensure_ascii=False, indent=2) + "\n",
+        json.dumps(
+            {"deliveries": deliveries, "outcomes": outcomes},
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
         encoding="utf-8",
     )
     os.chmod(args.output, 0o600)
