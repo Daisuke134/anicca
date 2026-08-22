@@ -446,9 +446,11 @@ PYEOF
   finish 0 "affiliate proposal published and read back"
 fi
 
-# The daily ceiling remains a hard brake for the ordinary repost path. A READY/RECONCILE Affiliate
-# proposal would have exited above; any other proposal state must not let generic posting bypass it.
-if [ "${TODAY_COUNT:-0}" -ge "${X_REPOST_DAILY_MAX:-12}" ]; then
+# The daily ceiling remains a hard brake for the ordinary repost path after today's useful
+# original exists. This is the second, post-Affiliate gate; it must preserve the same single-slot
+# reservation as the earlier gate or it silently cancels that reservation before recon.
+if [ "${TODAY_COUNT:-0}" -ge "${X_REPOST_DAILY_MAX:-12}" ] \
+  && [ "${ORIGINAL_TODAY_COUNT:-0}" -gt 0 ]; then
   log "daily ceiling reached ($TODAY_COUNT/${X_REPOST_DAILY_MAX:-12}) -- nothing to do"
   touch "$STATE/.last-pass"
   exit 0
