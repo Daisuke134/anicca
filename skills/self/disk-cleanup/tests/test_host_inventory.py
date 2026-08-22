@@ -1,4 +1,6 @@
 import json
+import os
+import stat
 import subprocess
 from pathlib import Path
 
@@ -223,3 +225,71 @@ def test_inventory_reports_required_owner_family_coverage(tmp_path: Path) -> Non
     assert set(coverage["missing_owner_families"]).issubset(
         set(coverage["required_owner_families"])
     )
+
+
+def test_inventory_persists_permission_boundary_owner_receipts(tmp_path: Path, monkeypatch) -> None:
+    tcc = tmp_path / "Library" / "Application Support" / "com.apple.TCC"
+    trash = tmp_path / ".Trash"
+    system_tmp = Path("/private/tmp")
+    system_folders = Path("/private/var/folders")
+    boundary_paths = {tcc, trash, system_tmp, system_folders}
+    real_lstat = host_inventory.os.lstat
+    real_scandir = host_inventory.os.scandir
+
+    def fake_lstat(path):
+        path = Path(path)
+        if path == system_tmp:
+            raise FileNotFoundError(path)
+        if path == system_folders:
+            return os.stat_result((stat.S_IFLNK | 0o755, 0, 0, 1, 0, 0, 0, 0, 0, 0))
+        if path in boundary_paths:
+            return os.stat_result((stat.S_IFDIR | 0o755, 0, 0, 1, 0, 0, 0, 0, 0, 0))
+        return real_lstat(path)
+
+    class EmptyScan:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, traceback):
+            return False
+
+    def fake_scandir(path):
+        path = Path(path)
+        if path == trash:
+            raise PermissionError(path)
+        if path == tcc:
+            return EmptyScan()
+        return real_scandir(path)
+
+    monkeypatch.setattr(host_inventory.os, "lstat", fake_lstat)
+    monkeypatch.setattr(host_inventory.os, "scandir", fake_scandir)
+
+    payload = collect_host_inventory(
+        home=tmp_path,
+        state_dir=tmp_path / "state",
+        runner=fake_runner,
+    )
+
+    receipts = payload["permission_owner_receipts"]
+    assert {
+        (receipt["path"], receipt["owner_family"])
+        for receipt in receipts
+    } == {
+        (str(tcc), "user-library"),
+        (str(trash), "downloads-trash"),
+        (str(system_tmp), "system-temp"),
+        (str(system_folders), "system-temp"),
+    }
+    assert all(receipt["reclaim_eligible"] is False for receipt in receipts)
+    classifications = {
+        (receipt["path"], receipt["access"])
+        for receipt in receipts
+    }
+    assert (str(tcc), "readable") in classifications
+    assert (str(trash), "permission-error") in classifications
+    assert (str(system_tmp), "missing") in classifications
+    assert (str(system_folders), "symlink") in classifications
+    assert all("children" not in receipt for receipt in receipts)
+
+    persisted = json.loads((tmp_path / "state" / "host-inventory.json").read_text())
+    assert persisted["permission_owner_receipts"] == receipts

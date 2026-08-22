@@ -225,6 +225,16 @@ A-04のfresh canonical full passは2026-08-22T08:30:14Zに`runs=81→82`、`last
 残るgap 11件は`size-timeout` 8、`size-permission-partial` 2、`child-limit` 1であり、A-04の延期解消と
 区別してA-05/A-10で追跡する。fresh adversarial reviewはA-04を`ship`とし、production/test変更は不要と判定した。
 同reviewでclosedな旧`.host-inventory.*` temporary 1件も観測したため、曖昧な削除は行わずA-10へ回帰契約を登録する。
+
+A-05はinventoryに`permission_owner_receipts`を追加し、TCC、`.Trash`、`/private/tmp`、
+`/private/var/folders`のexact path、owner family、exists/symlink/access、`reclaim_eligible=false`を保存する。
+子名は列挙・保存せず、既存root 23件と削除candidate生成は変更しない。fixtureはRED 1 failedからGREENへ進み、
+disk-cleanup regression **41 passed**、compile/diff check PASS、fresh adversarial reviewは`ship`だった。
+2026-08-22T08:44:06Zのcanonical full inventoryはruns 83→85（定期wakeとの重複で2増加）、last exit 0、
+file mode `0600`、SHA一致、exact owner receipt 4件、全件non-reclaimable、root 23だった。
+同じ実行contextでは4境界とも`readable`であり、interactive contextでTCC/`.Trash`が`permission-error`だった差は
+実行主体の権限差としてそのまま観測する。full receiptの`errors=0`、`protected_deletions=0`をread backした後、
+次のscheduled fast passが`last-receipt.json`を08:45:15Zに更新したが、full inventory artifactは別fileで保持している。
 Anicca cleanup controlのgit/lsof/du probeにも15秒timeoutを設定し、さらにguard外側のgovernor、
 runtime-manifest、sweep subprocessにも120秒（kill-after 10秒）のtimeoutを設定した。timeoutは
 error/preserveとして扱い、runtime-manifest失敗時はhourly markerを進めない。これによりfull passの
@@ -776,8 +786,8 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 
 各行は1つの作業だけを持つ。順序を飛ばさず、受入証拠が保存されるまで完了扱いにしない。
 
-capacity-safety interruptのA-25とA-04を閉じたため、実行queueは
-`A-05 → A-06 → … → A-24 → A-26 → … → A-44`へ進む。A-25の先行完了はA-05〜A-24の
+capacity-safety interruptのA-25とA-04〜A-05を閉じたため、実行queueは
+`A-06 → A-07 → … → A-24 → A-26 → … → A-44`へ進む。A-25の先行完了はA-06〜A-24の
 完了を意味しない。各itemはRED、最小GREEN、focused regression、fresh adversarial review、実機readback、
 spec state更新、commit/pushまでを同じsliceで閉じる。後続itemのscaffoldは前倒ししない。
 
@@ -787,7 +797,7 @@ spec state更新、commit/pushまでを同じsliceで閉じる。後続itemのsc
 | A-02 | top-level root inventoryを保存する | 実機inventoryでexpected root 23/23、unique path 23、unexpected root 0、owner family 12、SHA一致 | 完了 |
 | A-03 | owner-family coverageを保存する | 実機coverageでrequired 12、present 12、missing 0、set equality PASS | 完了 |
 | A-04 | size-deferred rootを解消する | `coverage.gaps`のsize-deferred 0 | 完了: 08:30:14Z canonical full、runs 81→82、exit 0、root 23、mode/receipt 0600、SHA一致、size-deferred 0、errors/protected deletion 0、review `ship` |
-| A-05 | permission-limited rootを分類する | TCC/system-temp/`.Trash`のowner receipt | 部分完了 |
+| A-05 | permission-limited rootを分類する | TCC/system-temp/`.Trash`のowner receipt | 完了: 08:44:06Z canonical full、exact 4 owner receipts、全件reclaim不可、root 23、mode 0600、SHA一致、runs 83→85、exit 0、errors/protected deletion 0、41 tests、review `ship` |
 | A-06 | local writable volume coverageを証明する | writable volume missing 0 | 未完了 |
 | A-07 | protected-root fixtureを追加する | protected rootがmanifestへ入らないtest PASS | 部分完了 |
 | A-08 | active-lease fixtureを追加する | active lease candidate preserve test PASS | 未完了 |

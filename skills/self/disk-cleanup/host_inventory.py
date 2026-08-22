@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import stat
 import subprocess
 import tempfile
 import time
@@ -48,6 +49,13 @@ ROOT_FAMILIES = (
     ("system-temp", "/private/var/folders"),
     ("volume", "/Volumes"),
     ("build-tool", "/opt/homebrew"),
+)
+
+PERMISSION_OWNER_BOUNDARIES = (
+    ("user-library", "{home}/Library/Application Support/com.apple.TCC"),
+    ("downloads-trash", "{home}/.Trash"),
+    ("system-temp", "/private/tmp"),
+    ("system-temp", "/private/var/folders"),
 )
 REQUIRED_OWNER_FAMILIES = tuple(sorted({family for family, _ in ROOT_FAMILIES}))
 
@@ -162,6 +170,53 @@ def _children(path: Path) -> tuple[dict[str, Any], list[str]]:
     return record, gaps
 
 
+def _permission_owner_receipt(path: Path, owner_family: str) -> dict[str, Any]:
+    """Observe a protected boundary without enumerating or retaining children."""
+
+    receipt: dict[str, Any] = {
+        "path": str(path),
+        "owner_family": owner_family,
+        "exists": False,
+        "symlink": False,
+        "access": "missing",
+        "reclaim_eligible": False,
+    }
+    try:
+        metadata = os.lstat(path)
+    except FileNotFoundError:
+        return receipt
+    except PermissionError:
+        receipt["exists"] = None
+        receipt["symlink"] = None
+        receipt["access"] = "permission-error"
+        return receipt
+    except OSError:
+        receipt["exists"] = None
+        receipt["symlink"] = None
+        receipt["access"] = "scan-error"
+        return receipt
+
+    receipt["exists"] = True
+    receipt["symlink"] = stat.S_ISLNK(metadata.st_mode)
+    if receipt["symlink"]:
+        receipt["access"] = "symlink"
+        return receipt
+    try:
+        with os.scandir(path):
+            pass
+    except FileNotFoundError:
+        receipt["exists"] = False
+        receipt["symlink"] = False
+        receipt["access"] = "missing"
+    except PermissionError:
+        receipt["access"] = "permission-error"
+    except OSError:
+        receipt["access"] = "scan-error"
+    else:
+        receipt["access"] = "readable"
+    return receipt
+
+
 def _bounded_size(
     path: Path,
     run: Runner = _run,
@@ -247,6 +302,11 @@ def collect_host_inventory(
         roots.append(record)
         root_gaps.extend(record_gaps)
 
+    permission_owner_receipts = [
+        _permission_owner_receipt(Path(template.format(home=home)), family)
+        for family, template in PERMISSION_OWNER_BOUNDARIES
+    ]
+
     present_owner_families = sorted({root["owner_family"] for root in roots if root["exists"]})
     missing_owner_families = sorted(
         set(REQUIRED_OWNER_FAMILIES) - set(present_owner_families)
@@ -258,6 +318,7 @@ def collect_host_inventory(
         "mode": "full" if full else "fast",
         "mounts": mounts,
         "roots": roots,
+        "permission_owner_receipts": permission_owner_receipts,
         "coverage": {
             "mount_count": len(mounts),
             "root_count": len(roots),
