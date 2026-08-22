@@ -399,6 +399,14 @@ effect remained zero. The generic controller now accepts a failed/blocked runner
 An exit without that request still fails closed. Publish and naturally re-run; success requires the PDF native receipts,
 same-owner resume, promoted v40 and contextual customer message before browser delivery may begin.
 
+**Targeted readback cleanup separation, activation proof pending.** A subsequent Paid pass captured each selected
+talkroom DOM, including Haru, but `DefaultTab.__exit__` let a 10-second temporary-tab close timeout invalidate the
+already-written authenticated snapshot. All eight refreshed rooms were therefore reported as `targeted_readback`
+failures and no project worker or customer effect followed. Tab close is now best-effort only for
+`TimeoutExpired`/`OSError` after successful capture; authenticated open, exact-room DOM, identity, coverage and source
+receipt failures remain fail-closed. This is a generic browser cleanup boundary, not a Haru exception. Publish and
+prove a natural multi-room refresh reaches the Haru project worker before advancing.
+
 **Current reviewer correction.** `main` and `origin/main` were both `31e7fa09d` before this change; the
 starting verification commit `79ac01ba1eb66b06aed1f9cee66d4af303f03a3d` remains an ancestor. The loaded
 Paid release is still `f747c7d05` while its natural pass is active, so no effect is attributed to the new

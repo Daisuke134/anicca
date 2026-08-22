@@ -2006,18 +2006,23 @@ class DefaultTab:
         if self.hidden:
             self._stop_process()
         elif self.target_id:
-            subprocess.run(
-                [
-                    "python3",
-                    str(self.helper),
-                    "close",
-                    self.target_id,
-                    "--owner",
-                    self.owner,
-                ],
-                stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL, timeout=10, check=False,
-            )
+            try:
+                subprocess.run(
+                    [
+                        "python3",
+                        str(self.helper),
+                        "close",
+                        self.target_id,
+                        "--owner",
+                        self.owner,
+                    ],
+                    stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL, timeout=10, check=False,
+                )
+            except (OSError, subprocess.TimeoutExpired):
+                # DOM capture is already complete. A stale temporary target is
+                # cleanup debt, not evidence that the authenticated read failed.
+                pass
 
 
 async def call(
