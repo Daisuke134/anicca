@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
 
@@ -190,6 +190,16 @@ class FinalReviewReceiptV1:
     company_visible: bool
     role_visible: bool
     receipt_sha256: str
+
+
+@dataclass(frozen=True, slots=True)
+class SubmissionFenceLeaseV1:
+    intent_id: str
+    fence: int
+    review_receipt_sha256: str
+    observation_sha256: str
+    expires_at: str
+    capability: str = field(repr=False)
 
 
 @dataclass(frozen=True, slots=True)

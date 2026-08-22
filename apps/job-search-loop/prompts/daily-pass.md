@@ -119,6 +119,13 @@ fresh observation hash. This receipt—not model prose—is the only identity in
 the SubmissionFence. Any mismatch returns to observation/correction; it never
 authorizes Submit.
 
+Acquire `SubmissionFence.acquire(intent_id, fence, final_review_receipt)` immediately
+before the final click. The fence rereads the Ledger `submit_claimed` intent and
+rejects concurrent/consumed, expired, stale, terminal, application, URL, resume, or
+observation mismatches. Keep its capability inside the browser process and never
+print or persist it outside the private fence store. Only the dedicated final-action
+path may consume it, once, against the unchanged review observation.
+
 Use `StableInferencePolicy` for common concepts. Luna supplies dated,
 Candidate-Memory-provenance intervals for experience; the policy merges overlaps
 before computing years. Minimum/target/stretch compensation comes from the matching
