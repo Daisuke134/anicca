@@ -90,6 +90,11 @@ if [[ "$NEW_COUNT" == "0" && "$PENDING_PREP_COUNT" == "0" ]]; then
     --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
     --seen "$SEEN_STATE" \
     --output "$EVIDENCE/submission-confirmations.json"
+  "$JOB_SEARCH_PYTHON" -m job_search_loop.application_reporting deliver \
+    --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
+    --outbox "$TELEGRAM_OUTBOX" \
+    --media-root "$JOB_SEARCH_TELEGRAM_MEDIA" \
+    --output "$EVIDENCE/resume-deliver-reconciled.json"
   exit 0
 fi
 set +e
