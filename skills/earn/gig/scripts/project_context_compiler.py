@@ -30,9 +30,17 @@ import hashlib
 import importlib.util
 import json
 import os
+import sys
 import tempfile
 from pathlib import Path
 from typing import Any
+
+SCRIPTS = Path(__file__).resolve().parent
+if str(SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS))
+from private_data_boundary import (
+    attachment_metadata, is_credential_attachment, redact_prompt_text,
+)
 
 
 # ★ Where the durable postings live is A8's decision, not a second one. ★
@@ -125,11 +133,14 @@ def _refs(root: Path) -> list[dict[str, Any]]:
         if not path.is_file():
             continue
         size, sha = _bytes_sha(path)
-        refs.append({
+        reference = {
             "path": str(path.relative_to(root)),
             "bytes": size,
             "sha256": sha,
-        })
+        }
+        if is_credential_attachment(root, path):
+            reference.update(attachment_metadata(root, path))
+        refs.append(reference)
     return refs
 
 
@@ -151,7 +162,7 @@ def _recent_events(path: Path, limit: int = 12) -> list[dict[str, Any]]:
 
 
 def _clip(value: Any, limit: int) -> str:
-    text = str(value or "").strip()
+    text = redact_prompt_text(value).strip()
     if len(text) <= limit:
         return text
     return text[:limit].rstrip() + "…"
@@ -423,11 +434,17 @@ def _buyer_attachments(root: Path, references: list[dict[str, Any]]) -> list[dic
     for reference in references:
         path = str(reference.get("path") or "")
         if path.startswith(("source/buyer-attachments/", "source/dm/attachments/")):
-            rows.append({
+            row = {
                 "path": str(root / path),
                 "bytes": reference.get("bytes"),
                 "sha256": reference.get("sha256"),
-            })
+            }
+            if reference.get("restricted") is True:
+                row = {
+                    key: reference.get(key)
+                    for key in ("bytes", "sha256", "content_type", "purpose", "restricted")
+                }
+            rows.append(row)
     return rows[:ATTACHMENT_ROWS]
 
 
@@ -480,6 +497,10 @@ def _fit(body: dict[str, Any]) -> dict[str, Any]:
         # down. Everything dropped is still one open() away, which is the point of
         # read_these_first.
         current = (body.get("requirements") or {}).get("current_request")
+        restricted = [
+            row for row in body.get("buyer_attachments", [])
+            if isinstance(row, dict) and row.get("restricted") is True
+        ]
         body = {
             "version": body["version"],
             # ★ Survives the collapse. ★ What was ordered is the last thing worth dropping:
@@ -490,6 +511,8 @@ def _fit(body: dict[str, Any]) -> dict[str, Any]:
             "read_these_first": body.get("read_these_first", [])[:24],
             "requirements": {"current_request": _clip(current, CURRENT_REQUEST_CHARS)},
         }
+        if restricted:
+            body["buyer_attachments"] = restricted
         dropped.append("collapsed_to_paths")
     body["bytes"] = _encoded_bytes(body)
     if dropped:
@@ -535,7 +558,7 @@ def combined_context(
         if isinstance(section, dict) and section.get("path")
     ] + [
         str(thread["path"]) for thread in (dm_thread or {}).get("threads", [])
-    ] + [row["path"] for row in attachments]
+    ] + [row["path"] for row in attachments if isinstance(row.get("path"), str)]
     body["sources_present"] = sorted(
         key for key in ("posting", "proposal", "dm", "requirements", "talkroom", "our_commitments")
         if key in body

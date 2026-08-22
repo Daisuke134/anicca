@@ -15,6 +15,7 @@ import paid_work_evidence  # noqa: E402
 import paid_remote_result  # noqa: E402
 import reconcile_paid_delivery  # noqa: E402
 import step_result_status  # noqa: E402
+from private_data_boundary import restricted_attachment_paths  # noqa: E402
 from telegram_outbox import TelegramOutbox, dispatch_one  # noqa: E402
 from telegram_report import OpenClawTelegramTransport  # noqa: E402
 from gig_paths import BROWSER_DIR, REPO_ROOT, RUNNER_DIR  # noqa: E402
@@ -61,6 +62,18 @@ def _operator_denied_paths() -> list[str]:
 
 def _deny_reads(paths: list[str]) -> str:
     return "".join(f"(deny file-read* (subpath {json.dumps(path)}))\n" for path in paths)
+
+
+def _private_model_runner(root: Path, command: list[str], label: str) -> list[str]:
+    """Run a project-root model with buyer credential files unreadable at the OS boundary."""
+    restricted = [str(path) for path in restricted_attachment_paths(root)]
+    if not restricted:
+        return command
+    profile = root / "context" / f".{label}-private-data.sb"
+    profile.parent.mkdir(parents=True, exist_ok=True)
+    profile.write_text("(version 1)\n(allow default)\n" + _deny_reads(restricted), encoding="utf-8")
+    profile.chmod(0o600)
+    return ["/usr/bin/sandbox-exec", "-f", str(profile), *command]
 # These orders are worked by hand and must never be answered, delivered, or submitted by this lane.
 # They are the ones where a wrong send is expensive: LBJ's video edit already sits at AWAITING_BUYER
 # on an exact cut, and both BUYMA jobs are listing work inside a client's own account, where the
@@ -1171,12 +1184,13 @@ def _paid_decision(args, item_path: Path, root: Path, base: Path) -> dict[str, A
         raise Failure("paid_work_decision")
     started_ns = time.time_ns()
     try:
-        _run([sys.executable, str(args.agent_runner), "--task-class", "escalation-agent",
+        decision_command = [sys.executable, str(args.agent_runner), "--task-class", "escalation-agent",
               "--candidate-model", PAID_DECISION_MODEL,
               "--prompt-file", str(prompt), "--schema", str(schema), "--evidence-dir", str(evidence),
               "--task-label", "paid-work-decision", "--escalation-reason",
               "Paid delivery routing must use the authorized Sol semantic decision model.",
-              "--loop", "gig", "--workdir", str(root), "--timeout-seconds", "1800", "--read-only"],
+              "--loop", "gig", "--workdir", str(root), "--timeout-seconds", "1800", "--read-only"]
+        _run(_private_model_runner(root, decision_command, "paid-work-decision"),
              "paid_work_decision")
         try:
             value = _consultation_runner_result(
@@ -2087,8 +2101,14 @@ def _rewrite_staging_paths(value: Any, source: Path, target: Path) -> Any:
 
 
 def _prepare_file_owner_staging(root: Path, context: Path, staging: Path) -> Path | None:
-    for name in ("requirements", "source"):
-        shutil.copytree(root / name, staging / name)
+    shutil.copytree(root / "requirements", staging / "requirements")
+    restricted = set(restricted_attachment_paths(root))
+
+    def ignore_private(directory: str, names: list[str]) -> set[str]:
+        base = Path(directory)
+        return {name for name in names if (base / name).resolve() in restricted}
+
+    shutil.copytree(root / "source", staging / "source", ignore=ignore_private)
     context_target = staging / "context"
     context_target.mkdir(parents=True)
     excluded = {
@@ -2498,7 +2518,7 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
         ]
         for image in review_images + reference_images:
             verifier_command += ["--image", str(image)]
-        _run(verifier_command, "file_verifier")
+        _run(_private_model_runner(root, verifier_command, "paid-file-verifier"), "file_verifier")
         verdict, proof = _file_runner_result(
             verifier_evidence, task_label="paid-file-verifier", started_ns=verifier_started,
         )
@@ -2788,6 +2808,8 @@ def _consultation_attachments(root: Path) -> tuple[list[dict[str, str]], list[Pa
             continue
         seen.add(identity)
         expected.append({"filename": filename, "sha256": digest})
+        if image in set(restricted_attachment_paths(root)):
+            continue
         if _text(row.get("content_type")).startswith("image/") or image.suffix.lower() in {
                 ".avif", ".bmp", ".gif", ".heic", ".jpeg", ".jpg", ".png", ".tif", ".tiff", ".webp"}:
             images.append(image)
@@ -2946,7 +2968,7 @@ def _run_consultation_review(args, item_path: Path, root: Path, feedback: str, b
         for image in images:
             command += ["--image", str(image)]
         owner_started_ns = time.time_ns()
-        _run(command, "remote_builder")
+        _run(_private_model_runner(root, command, "paid-answer-owner"), "remote_builder")
         owner = _consultation_runner_result(
             owner_evidence, task_label="paid-answer-owner", task_class="escalation-agent",
             model=PAID_DECISION_MODEL, started_ns=owner_started_ns,
@@ -2988,7 +3010,7 @@ def _run_consultation_review(args, item_path: Path, root: Path, feedback: str, b
         for image in images:
             command += ["--image", str(image)]
         verifier_started_ns = time.time_ns()
-        _run(command, "remote_verifier")
+        _run(_private_model_runner(root, command, "paid-answer-verifier"), "remote_verifier")
         checked = _consultation_runner_result(
             verifier_evidence, task_label="paid-answer-verifier", task_class="escalation-agent",
             model=PAID_DECISION_MODEL, started_ns=verifier_started_ns,
@@ -3081,13 +3103,13 @@ def _run_remote_repair(args, item_path: Path, root: Path, feedback: str, base: P
             )
             owner_evidence = root / "evidence" / "agent-PAID_REMOTE_OWNER"
             owner_started_ns = time.time_ns()
-            _run([sys.executable, str(args.agent_runner), "--task-class", "escalation-agent",
+            owner_command = [sys.executable, str(args.agent_runner), "--task-class", "escalation-agent",
                   "--candidate-model", PAID_DECISION_MODEL,
                   "--prompt-file", str(prompt), "--schema", str(args.runner_schema),
                   "--evidence-dir", str(owner_evidence), "--task-label", "paid-remote-owner",
                   "--escalation-reason", "Sol owner mutates the authenticated paid target",
-                  "--loop", "gig", "--workdir", str(root), "--timeout-seconds", "1800"],
-                 "remote_builder")
+                  "--loop", "gig", "--workdir", str(root), "--timeout-seconds", "1800"]
+            _run(_private_model_runner(root, owner_command, "paid-remote-owner"), "remote_builder")
             _consultation_runner_result(
                 owner_evidence, task_label="paid-remote-owner", task_class="escalation-agent",
                 model=PAID_DECISION_MODEL, started_ns=owner_started_ns,
@@ -3129,13 +3151,13 @@ def _run_remote_repair(args, item_path: Path, root: Path, feedback: str, base: P
         # remote-verifier-result.json, and a read-only sandbox denies it both the socket and the
         # file - which is why this gate had never once passed. Tampering stays fenced by the
         # snapshots either side of the run.
-        _run([sys.executable, str(args.agent_runner), "--task-class", "escalation-agent",
+        verifier_command = [sys.executable, str(args.agent_runner), "--task-class", "escalation-agent",
               "--candidate-model", PAID_DECISION_MODEL,
               "--prompt-file", str(prompt), "--schema", str(args.runner_schema),
               "--evidence-dir", str(verifier_evidence), "--task-label", "paid-remote-verifier",
               "--escalation-reason", "Fresh Sol independently verifies the paid live target",
-              "--loop", "gig", "--workdir", str(root), "--timeout-seconds", "1800"],
-             "remote_verifier")
+              "--loop", "gig", "--workdir", str(root), "--timeout-seconds", "1800"]
+        _run(_private_model_runner(root, verifier_command, "paid-remote-verifier"), "remote_verifier")
         if (_requirements_snapshot(root) != requirements_snapshot
                 or _delivery_snapshot(root) != delivery_snapshot
                 or _project_identity_snapshot(root, verifier_evidence) != project_snapshot):
