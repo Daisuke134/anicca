@@ -15,7 +15,7 @@ const PRODUCTS = Object.freeze([
     Object.freeze({ report_id: "r3-04c74879-547f-4e35-b231-1fafd485801d", report_name: "App Downloads Standard", instance_id: "402ad6b2-ddd8-4f84-a1b6-17ea8cbd3a37", processing_date: "2026-08-22", segments: Object.freeze(["078c2b3b-fac3-4923-8141-8191bb769c85", "d24b3d7a-e22e-4c14-9e7f-1af24756fb97"]) }),
     Object.freeze({ report_id: "r15-04c74879-547f-4e35-b231-1fafd485801d", report_name: "App Store Discovery and Engagement Detailed", instance_id: "f6ea9447-20e5-4910-9378-eb18c9ba4ec3", processing_date: "2026-08-21", segments: Object.freeze(["da95c273-a951-46d4-ae13-3bd2b32efe06"]) }),
   ]) }),
-  Object.freeze({ product_id: "honne-ai", app_id: "6759667221", app_name: "Honne", request_id: "c7c05836-181e-49cc-ae71-b57b7a0b466e", bootstrap_day: "2026-08-23" }),
+  Object.freeze({ product_id: "honne-ai", app_id: "6759667221", app_name: "Honne", request_id: "c7c05836-181e-49cc-ae71-b57b7a0b466e", bootstrap_day: "2026-08-23", campaign_token: "honne_en_base_20260823" }),
 ]);
 const ASC_ENV = Object.freeze({ ...process.env, ASC_BYPASS_KEYCHAIN: "true", ASC_TIMEOUT: "90s" });
 
@@ -40,7 +40,7 @@ function sum(input, predicate, field = "Counts") {
 function measured(value, source) { return { status: "measured", value, source }; }
 function unavailable(reason) { return { status: "unavailable", value: null, reason }; }
 
-function summarize(product, downloads, engagement, metadata) {
+function summarize(product, downloads, engagement, metadata, detailedDownloads = []) {
   if (!downloads.length || !engagement.length) return pending(product, "empty_report");
   const dates = [...downloads, ...engagement].map((row) => row.Date).filter(Boolean).sort();
   const expectedApp = (row) => !row["App Apple Identifier"] || row["App Apple Identifier"] === product.app_id;
@@ -50,6 +50,9 @@ function summarize(product, downloads, engagement, metadata) {
   }
   const downloadSource = "app_store_connect_app_downloads_standard";
   const engagementSource = "app_store_connect_discovery_engagement_detailed";
+  const campaignDownloads = product.campaign_token ? detailedDownloads.filter((row) => row.Campaign === product.campaign_token && row["Download Type"] === "First-time download") : [];
+  const campaignEngagement = product.campaign_token ? engagement.filter((row) => row.Campaign === product.campaign_token) : [];
+  const campaignUnavailable = () => unavailable(product.campaign_token ? "campaign_not_observed_or_privacy_threshold" : "campaign_not_configured");
   return {
     product_id: product.product_id,
     app_id: product.app_id,
@@ -62,6 +65,8 @@ function summarize(product, downloads, engagement, metadata) {
     data_from: dates[0] || null,
     data_to: dates.at(-1) || null,
     reports: metadata,
+    campaign_id: product.campaign_token || null,
+    campaign_status: campaignDownloads.length || campaignEngagement.length ? "measured" : "unavailable",
     metrics: {
       first_time_downloads: measured(sum(downloads, (row) => row["Download Type"] === "First-time download"), downloadSource),
       redownloads: measured(sum(downloads, (row) => row["Download Type"] === "Redownload"), downloadSource),
@@ -71,6 +76,8 @@ function summarize(product, downloads, engagement, metadata) {
       unique_impressions: measured(sum(engagement, (row) => row.Event === "Impression", "Unique Counts"), engagementSource),
       product_page_views: measured(sum(engagement, (row) => row.Event === "Page View" && row["Page Type"] === "Product page"), engagementSource),
       unique_product_page_views: measured(sum(engagement, (row) => row.Event === "Page View" && row["Page Type"] === "Product page", "Unique Counts"), engagementSource),
+      campaign_first_time_downloads: campaignDownloads.length ? measured(sum(campaignDownloads, () => true), "app_store_connect_app_downloads_detailed") : campaignUnavailable(),
+      campaign_impressions: campaignEngagement.length ? measured(sum(campaignEngagement, (row) => row.Event === "Impression"), "app_store_connect_discovery_engagement_detailed") : campaignUnavailable(),
     },
   };
 }
@@ -87,7 +94,9 @@ function pending(product, reason = "report_pending") {
     data_from: null,
     data_to: null,
     reports: [],
-    metrics: Object.fromEntries(["first_time_downloads", "redownloads", "updates", "total_downloads", "impressions", "unique_impressions", "product_page_views", "unique_product_page_views"].map((name) => [name, unavailable(reason)])),
+    campaign_id: product.campaign_token || null,
+    campaign_status: "unavailable",
+    metrics: Object.fromEntries(["first_time_downloads", "redownloads", "updates", "total_downloads", "impressions", "unique_impressions", "product_page_views", "unique_product_page_views", "campaign_first_time_downloads", "campaign_impressions"].map((name) => [name, unavailable(reason)])),
   };
 }
 
@@ -126,14 +135,14 @@ async function collectProduct(product, reportDay) {
   if (product.bootstrap_day === reportDay && !product.bootstrap_reports) return pending(product);
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), `lm-asc-${product.product_id}-`));
   try {
-    const [downloaded, engaged] = product.bootstrap_day === reportDay
-      ? await Promise.all(product.bootstrap_reports.map((report) => downloadKnown(product.request_id, report, directory)))
-      : await Promise.all([
+    const bootstrap = product.bootstrap_day === reportDay ? await Promise.all(product.bootstrap_reports.map((report) => downloadKnown(product.request_id, report, directory))) : null;
+    const [downloaded, detailed, engaged] = bootstrap ? [bootstrap[0], null, bootstrap[1]] : await Promise.all([
         downloadReport(product.request_id, `r3-${product.request_id}`, "App Downloads Standard", directory),
+        downloadReport(product.request_id, `r4-${product.request_id}`, "App Downloads Detailed", directory),
         downloadReport(product.request_id, `r15-${product.request_id}`, "App Store Discovery and Engagement Detailed", directory),
       ]);
     if (!downloaded || !engaged) return pending(product);
-    return summarize(product, downloaded.rows, engaged.rows, [downloaded.metadata, engaged.metadata]);
+    return summarize(product, downloaded.rows, engaged.rows, [downloaded.metadata, ...(detailed ? [detailed.metadata] : []), engaged.metadata], detailed?.rows || []);
   } catch (error) {
     if (/not found|404|no analytics report instances/i.test(String(error.message))) return pending(product);
     return pending(product, /deadline exceeded|timeout/i.test(String(error.message)) ? "source_timeout" : "source_unavailable");

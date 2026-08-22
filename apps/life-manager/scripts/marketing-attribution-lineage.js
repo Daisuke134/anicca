@@ -47,7 +47,7 @@ function exactCaption(receipt, objectDir) {
   const caption = fs.readFileSync(resolveContentObject(ref, { objectDir }), "utf8");
   const hook = caption.split(/\r?\n/).map((line) => line.trim()).find(Boolean);
   if (!hook) throw new Error("publication caption has no hook line");
-  const campaignUrl = caption.split(/\s+/).find((value) => { try { const url = new URL(value); return url.protocol === "https:" && url.hostname === "apps.apple.com" && /^honne_en_tiktok_[a-z0-9_]+$/.test(String(url.searchParams.get("ct") || "")); } catch { return false; } }) || null;
+  const campaignUrl = caption.split(/\s+/).find((value) => { try { const url = new URL(value); return url.protocol === "https:" && url.hostname === "apps.apple.com" && /^honne_en_(?:base|hook)_[a-z0-9_]+$/.test(String(url.searchParams.get("ct") || "")); } catch { return false; } }) || null;
   const campaignId = campaignUrl ? new URL(campaignUrl).searchParams.get("ct") : null;
   return {
     caption_ref: ref,
