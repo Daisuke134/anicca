@@ -99,6 +99,28 @@ class MachineWorkdayCredentialStore:
             raise WorkdayCredentialError(f"no machine credential exists for {tenant}")
         return self._validate(entry, tenant)
 
+    def account_status(self, job_url: str) -> str:
+        tenant = tenant_key(job_url)
+        entry = self._find(self._read(), tenant)
+        if entry is None:
+            return "missing"
+        status = str(entry.get("account_status") or "credential_only")
+        if status not in {"credential_only", "create_submitted", "signed_in"}:
+            raise WorkdayCredentialError("Workday tenant account status is invalid")
+        return status
+
+    def mark_account_status(self, job_url: str, status: str) -> None:
+        if status not in {"create_submitted", "signed_in"}:
+            raise WorkdayCredentialError("Workday tenant account status is invalid")
+        tenant = tenant_key(job_url)
+        value = self._read()
+        entry = self._find(value, tenant)
+        if entry is None:
+            raise WorkdayCredentialError(f"no machine credential exists for {tenant}")
+        entry["account_status"] = status
+        entry["updated_at"] = datetime.now(timezone.utc).isoformat()
+        self._write(value)
+
     def known_tenants(self) -> list[str]:
         tenants = []
         for entry in self._read()["credentials"]:

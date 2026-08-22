@@ -139,8 +139,14 @@ confirmation fields. Fill other visible profile fields from candidate concepts,
 accept ordinary account terms when required, and complete the visible account-create
 action. Never invent a password, inspect the credential store, or sign out. The
 login validation is not `provider_unavailable` and must not be checkpointed as an
-outage. If email verification is visibly required, preserve the same row for the
-existing inbox owner; after verification the next wake signs in and resumes it.
+outage. Read `workday_account_status` from every fresh observation. Once it is
+`create_submitted`, never select Create Account again for that tenant. If sign-in
+still returns the exact wrong-email/password validation, use the visible Forgot
+Password control, submit the stored application email through
+`runtime auth --mode sign_in --field email`, and let the existing inbox owner
+complete the recovery before resuming the same row. If email verification is
+visibly required, preserve the same row for the existing inbox owner; after
+verification the next wake signs in and resumes it.
 
 ## Resume and form completion
 

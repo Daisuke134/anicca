@@ -280,12 +280,13 @@ async def observe() -> dict[str, Any]:
         }
     observation = await builder.build(cursor.handle)
     credential_known = False
+    account_status = "not_workday"
     if detect_provider(row["canonical_url"]) == "workday":
-        credential_known = tenant_key(row["canonical_url"]) in (
-            MachineWorkdayCredentialStore(
-                _path_env("JOB_SEARCH_MACHINE_CREDENTIALS")
-            ).known_tenants()
+        credential_store = MachineWorkdayCredentialStore(
+            _path_env("JOB_SEARCH_MACHINE_CREDENTIALS")
         )
+        credential_known = tenant_key(row["canonical_url"]) in credential_store.known_tenants()
+        account_status = credential_store.account_status(row["canonical_url"])
     candidate_memory = CandidateMemoryView.load(
         _path_env("JOB_SEARCH_CANDIDATE_MEMORY")
     )
@@ -301,6 +302,7 @@ async def observe() -> dict[str, Any]:
             "role": row["title"],
             "canonical_url": row["canonical_url"],
             "workday_credential_known": credential_known,
+            "workday_account_status": account_status,
         },
         "needs_navigation": cursor.needs_navigation,
         "recovery_url": cursor.recovery_url if cursor.needs_navigation else None,
@@ -573,7 +575,23 @@ async def click(*, label: str, role: str, stable_id: str, ordinal: int | None = 
         encoding="utf-8",
     )
     os.chmod(path, 0o600)
-    return await act(path)
+    result = await act(path)
+    observation = result.get("observation", {})
+    validation = (
+        observation.get("validation", []) if isinstance(observation, dict) else []
+    )
+    row = _row()
+    if detect_provider(row["canonical_url"]) == "workday" and not validation:
+        store = MachineWorkdayCredentialStore(
+            _path_env("JOB_SEARCH_MACHINE_CREDENTIALS")
+        )
+        if stable_id == "automation:createAccountSubmitButton":
+            store.mark_account_status(row["canonical_url"], "create_submitted")
+        elif stable_id == "automation:signInSubmitButton" and "/login" not in str(
+            observation.get("url") or ""
+        ):
+            store.mark_account_status(row["canonical_url"], "signed_in")
+    return result
 
 
 async def choose(
