@@ -258,3 +258,20 @@ def test_supervisor_routes_head_policy_closure_to_reporter(tmp_path, monkeypatch
     assert len(reports) == 1
     assert reports[0][1]["status"] == "ignore_policy"
     assert "policy-reports" in str(reports[0][0])
+
+
+def test_telegram_report_does_not_call_zero_effect_command_sent(monkeypatch, tmp_path):
+    monkeypatch.setattr(detector.subprocess, "run", lambda *args, **kwargs: SimpleNamespace(
+        returncode=0, stdout='{"sent":0,"delivery_unknown":0}\n', stderr="",
+    ))
+    args = SimpleNamespace(
+        telegram_report_script=tmp_path / "telegram_report.py",
+        database=tmp_path / "connector.sqlite3",
+        telegram_database=tmp_path / "telegram.sqlite3",
+        runner_config=tmp_path / "runner.json",
+        telegram_target="target",
+    )
+
+    status = detector._telegram_report(args, tmp_path / "result.json", "reply-wake")
+
+    assert status == "deferred"

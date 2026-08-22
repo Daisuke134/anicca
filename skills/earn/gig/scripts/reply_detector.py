@@ -330,10 +330,19 @@ def _telegram_report(args: Any, events: Path, command: str) -> str:
         )
     except Exception:
         return "deferred"
-    if report.returncode == 0:
-        return "sent"
     if report.returncode == 2:
         return "delivery_unknown"
+    try:
+        lines = [line for line in report.stdout.splitlines() if line.strip()]
+        dispatch = json.loads(lines[-1])
+    except (IndexError, TypeError, json.JSONDecodeError):
+        return "deferred"
+    if not isinstance(dispatch, dict):
+        return "deferred"
+    if _count(dispatch.get("delivery_unknown")):
+        return "delivery_unknown"
+    if _count(dispatch.get("sent")):
+        return "sent"
     return "deferred"
 
 
