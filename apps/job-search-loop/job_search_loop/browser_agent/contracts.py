@@ -123,3 +123,20 @@ class EvidenceReceiptV1:
     sequence: int
     evidence_sha256: str
     path: Path
+
+
+@dataclass(frozen=True, slots=True)
+class FieldQuestionV1:
+    label: str
+    field_type: str
+    required: bool
+    options: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class ResolvedAnswerV1:
+    concept: str
+    kind: Literal["exact", "derived", "generated", "conservative"]
+    value: object
+    provenance: tuple[str, ...]
+    answer_sha256: str

@@ -73,6 +73,16 @@ answers create a revision, unchanged answers only extend aliases, and an alias m
 not be rebound to a different concept. Keep raw answers inside this private store
 and direct typed browser inputs only; output/evidence receives hashes and kinds.
 
+Every required form field must pass through `AnswerResolver.resolve(FieldQuestionV1)`.
+The enclosing Luna resolver first derives an exact/derived/generated proposal from
+Candidate Memory and the posting context. If no usable proposal exists, the
+resolver returns the least-claiming conservative value valid for the current field
+type/options and persists it to Answer Memory. Use the returned value directly in
+the typed action without printing it. `missing_context`, `needs_confirmation`,
+`blocked`, and `skip` are not answer outcomes and must never end a row or wake.
+Rendered provider validation becomes the next fresh observation and another model
+resolution; it is not proof that the question cannot be answered.
+
 Never print, `cat`, or `sed` the private profile, credentials, or raw provider
 transcripts into stdout/stderr. If a value is needed, query only the one required
 non-secret field with a redacting filter and keep the command output minimal.
