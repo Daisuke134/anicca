@@ -44,6 +44,23 @@ step "clean-WS copy"
 rm -rf "$WS/skills/$SKILL_NAME" 2>/dev/null
 cp -R "$SKILL_DIR" "$WS/skills/$SKILL_NAME" || die "clean-WS copy failed"
 
+# run_online packaging scans the clean runtime, not the operator's ~/.openclaw.
+# Give that runtime one explicit hosted provider contract.  Keep only an env
+# reference here: CP2 supplies the real key from the private state env.
+mkdir -p "$WS/.openclaw"
+python3 - "$WS/.openclaw/openclaw.json" <<'PY'
+import json, sys
+json.dump({
+  "models": {"providers": {"openrouter": {
+    "baseUrl": "https://openrouter.ai/api/v1",
+    "api": "openai-responses",
+    "apiKey": "${CAPAFY_HOST_OPENROUTER_KEY}",
+    "models": [{"id": "anthropic/claude-sonnet-4.6", "name": "Claude Sonnet 4.6"}]
+  }}},
+  "agents": {"defaults": {"model": {"primary": "openrouter/anthropic/claude-sonnet-4.6"}}}
+}, open(sys.argv[1], "w"), ensure_ascii=False, indent=2)
+PY
+
 step "[1] publish-init"
 cd "$PUB" || die "cd PUB"
 TITLE="$(grep -A1 '^## Title' "$LISTING" | tail -1)"
