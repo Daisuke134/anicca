@@ -25,7 +25,7 @@ TS="$(date '+%Y-%m-%d %H:%M:%S')"
 mkdir -p "$CAPAFY_STATE_DIR"
 
 # EXCLUSIVE LOCK (self-fix-capafy-loop, 2026-07-12): two independent schedulers
-# (launchd ai.anicca.capafy-loop-daily @ 08:10 JST via the full money-loop-core prompt,
+# (launchd ai.anicca.capafy-loop-daily every hour via the full money-loop-core prompt,
 # and OpenClaw cron "anicca-capafy-daily-publish" @ 09:00 JST calling this script directly)
 # both end up invoking this drainer. Without a lock, overlapping runs raced on the SAME
 # shared CloakBrowser tab (:9222), each seeing the other's mid-edit DOM state, burning

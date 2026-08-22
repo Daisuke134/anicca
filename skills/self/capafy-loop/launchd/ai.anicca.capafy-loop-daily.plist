@@ -15,12 +15,9 @@
 	<string>__LIFE_MANAGER_HOME__/logs/capafy-loop-daily.err</string>
 	<key>StandardOutPath</key>
 	<string>__LIFE_MANAGER_HOME__/logs/capafy-loop-daily.out</string>
-	<key>StartCalendarInterval</key>
-	<dict>
-		<key>Hour</key>
-		<integer>8</integer>
-		<key>Minute</key>
-		<integer>10</integer>
-	</dict>
+	<key>StartInterval</key>
+	<integer>3600</integer>
+	<key>ThrottleInterval</key>
+	<integer>60</integer>
 </dict>
 </plist>
