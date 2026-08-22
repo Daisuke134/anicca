@@ -20,15 +20,15 @@ Life Manager public repositoryだけをsourceとして、Capafy skillの発見�
 | creative renderer | Capafy STEP3はrepo外`~/.claude/skills/faceless-money-factory`を直接呼ぶstock b-roll + TTS | **FAIL: OSS/self-containedでなく品質も未gate** |
 | better local assets | repo内`skills/video`と旧`video-processing-editing`が存在。ReelFarmはTikTok slideshow/API automation | FFmpeg編集をcanonical rendererへ採用、ReelFarmはTikTok補助rail |
 | Telegram | promptはvideo、listing、agent_id、native URL、caption、message IDを要求するが、hourly revenue/new-skill receiptとの単一run joinはない | **FAIL: receipt schema未統合** |
-| live inventory read | `/agent/agents`は32 Agentを返しsource freshnessはfresh。5-slot occupancyへ必要なstatus正規化は未完 | C6までslot数を推測せずfresh submit停止 |
+| live inventory read | `/agent/agents`の32行を正規化。22 listed、3 occupied、2 free、7 retry、0 blocked、0 unknown。全行でAgent IDとlatest version IDあり | **PASS: exact slot readback** |
 
 ## Acceptance criteria
 
 1. Capafyに関するsource、test、launchd templateはLife Manager repo内だけに存在し、runtime dependency scanが`~/.claude/skills`、`~/.openclaw/skills`、`/Users/anicca/anicca`を0件とする。
 2. server truthから各Agentの`agent_id`、title、latest version、`status`、`auditStatus`、billing、salesを取得し、5-slot occupancyを決定できる。
-3. fresh Agentの作成は`status in {0,1,2,3}`の別Agentが5未満の時だけ行う。server unreadable時は新規Agentを作らない。
-4. `status=2`のrejectionは同じ`agent_id`で原因を保存し、production/test/listingを修正し、全gate後に同じAgentのnew versionとして再提出する。5-slotが満杯でもこのretryを止めない。
-5. `status=4`へ遷移したAgentは未掲載slotから外れ、次のready candidateを1件だけsubmitする。同一wakeで空いた全slotを一斉に埋めない。
+3. fresh Agentの作成はnormalized lifecycleが`occupied`の別Agentが5未満の時だけ行う。現在のplatform文字列では`draft`と`under_review`だけがoccupiedである。server unreadable時は新規Agentを作らない。
+4. `review_rejected`はactive 5-slotから外すが、同じ`agent_id`で原因を保存し、production/test/listingを修正し、全gate後に同じAgentのnew versionとして再提出する。5-slotが満杯でもこのretryを止めない。
+5. `online`へ遷移したAgentはactive slotから外れ、次のready candidateを1件だけsubmitする。同一wakeで空いた全slotを一斉に埋めない。
 6. 5-slot満杯時もlisted skillのmarketing、creative改善、metrics、refund、subscription、MRR、Telegram reporting、次candidateのoffline build/testを継続する。
 7. marketing creativeは実skillのinput→outputまたはbefore→afterを見せ、canonical video quality gateを通る。generic stock b-roll + TTSだけのartifactをpublicへ出さない。
 8. 各terminal runはskill/version status、slot counts、creative hash、account、native URL、money split、Telegram message IDを単一`run_id`で保存する。
@@ -50,7 +50,7 @@ Life Manager public repositoryだけをsourceとして、Capafy skillの発見�
 
 ## Five-slot lifecycle
 
-5-slotは「1回に5 skillsを含める」という意味ではない。`status 0–3`の未掲載Agentを最大5つ同時に保持できるfresh-Agent capである。accepted/listed Agentは`status=4`となり未掲載capから外れる。rejected Agentは捨てて別Agentを作らず、同じ`agent_id`を修正・version updateして再提出する。
+5-slotは「1回に5 skillsを含める」という意味ではない。`draft`または`under_review`のAgentを最大5つ同時に保持できるactive submission capである。`online`と`review_rejected`はactive slotから外れる。rejected Agentは捨てず、同じ`agent_id`を修正・version updateして再提出する。
 
 ```mermaid
 stateDiagram-v2
@@ -247,6 +247,8 @@ C4はmainに存在するevent store、incident adapter、incident transitionの�
 
 C5でread-only hourly reconcileをLife Managerへ追加し、account、inventory、90-day sales summary、payout、refundを各1回だけGETしてatomic receiptへ保存する。live receiptは5 sourceすべてfresh、5 orders、gross `$19.98`、pending `$8.00`、realized `$0.00`、refund `$0.00`、inventory 32 Agent観測である。seller側active subscription sourceとorder単位billing modeがないため、one-time revenue、settled MRR、net MRRは`unknown`を維持する。receiptはmode `0600`、focused 4件とmarketing全体116件が通る。
 
+C6でcanonical `inventory_status.py`へserver row normalizerを追加する。live responseの32 Agentは22 `online`、3 `draft`、7 `review_rejected`で、normalized countsはlisted 22、occupied 3、free 2、retry 7、blocked 0、unknown 0となる。32/32行にAgent IDとlatest version IDがある。未知statusまたはidentity欠損時はoccupied/freeを`null`にして`SERVER_UNREADABLE`へfail-closedする。focused 3件、autopublish Python 5件、AID guard、leak scan、marketing 116件が通る。
+
 ## Atomic remaining TODO
 
 Items are executed top-to-bottom. Only one item is active.
@@ -259,7 +261,7 @@ Items are executed top-to-bottom. Only one item is active.
 | C3 | fix false-green exits so child failure remains nonzero and terminal heartbeat is written only after classified completion | failure injection returns exact child codes `17`/`23`; failed runs write no heartbeat; success/no-op writes heartbeat | completed |
 | C4 | fix event identity and incident monotonicity | repeated observation is idempotent; new observation gets new event ID; verified cannot regress to unresolved | completed — live duplicate IDs 0; verified regressions 0 |
 | C5 | run a bounded hourly reconcile against live Capafy account/inventory/sales/refunds/subscriptions | fresh receipt separates MRR, one-time, pending, refunds; unknown remains unknown | completed — 5/5 sources fresh; MRR/one-time honestly unknown |
-| C6 | normalize current Capafy server response and restore exact status/slot inventory readback | live call returns agent rows and deterministic occupied/free/retry counts | pending |
+| C6 | normalize current Capafy server response and restore exact status/slot inventory readback | live call returns agent rows and deterministic occupied/free/retry counts | completed — 32 rows; occupied 3; free 2; retry 7 |
 | C7 | implement slot allocator contract | table-driven tests cover free/full/rejected/listed/server-unreadable without duplicate Agent creation | pending |
 | C8 | implement same-agent rejection repair queue | real rejected fixture preserves agent_id, records reason, adds regression test, creates version update | pending |
 | C9 | create durable offline candidate backlog | cap-full wake can research/build/test one candidate without platform submission | pending |

@@ -46,6 +46,57 @@ REJECTED = {"review_rejected", "banned"}
 CAP = 5
 
 
+def normalize_agents(agents):
+    """Return sanitized rows and deterministic five-slot counts from server truth."""
+    normalized = []
+    counts = {"total": len(agents), "listed": 0, "occupied": 0, "free": None,
+              "retry": 0, "blocked": 0, "unknown": 0}
+    structurally_valid = True
+    for agent in agents:
+        if not isinstance(agent, dict):
+            structurally_valid = False
+            counts["unknown"] += 1
+            continue
+        agent_id = str(agent.get("agentId") or "").strip()
+        status = agent.get("agentStatus")
+        if not agent_id or not isinstance(status, str) or not status:
+            structurally_valid = False
+            counts["unknown"] += 1
+            continue
+        if status in ONLINE:
+            lifecycle = "listed"
+            counts["listed"] += 1
+        elif status in UNLISTED:
+            lifecycle = "occupied"
+            counts["occupied"] += 1
+        elif status == "review_rejected":
+            lifecycle = "retry"
+            counts["retry"] += 1
+        elif status == "banned":
+            lifecycle = "blocked"
+            counts["blocked"] += 1
+        else:
+            lifecycle = "unknown"
+            structurally_valid = False
+            counts["unknown"] += 1
+        normalized.append({
+            "agent_id": agent_id,
+            "name": str(agent.get("name") or ""),
+            "latest_version_id": agent.get("latestAgentVersionId"),
+            "latest_version_name": agent.get("latestVersionName"),
+            "remote_status": status,
+            "lifecycle": lifecycle,
+            "agent_type": agent.get("agentType"),
+            "sales": agent.get("sales"),
+            "recent_sales": agent.get("recentSales"),
+        })
+    if structurally_valid:
+        counts["free"] = max(0, CAP - counts["occupied"])
+    else:
+        counts["occupied"] = None
+    return {"readable": structurally_valid, "counts": counts, "agents": normalized}
+
+
 def server_agents():
     """Return list of server agents, or None on read failure."""
     try:
@@ -104,6 +155,13 @@ def main():
         print(json.dumps(verdict, ensure_ascii=False))
         return 0
 
+    normalized = normalize_agents(agents)
+    if not normalized["readable"]:
+        verdict = {"verdict": "SERVER_UNREADABLE", **normalized}
+        print("VERDICT=SERVER_UNREADABLE")
+        print(json.dumps(verdict, ensure_ascii=False))
+        return 0
+
     online_titles = {(a.get("name") or "").strip() for a in agents if a.get("agentStatus") in ONLINE}
     unlisted = [a for a in agents if a.get("agentStatus") in UNLISTED]
     rejected = [a for a in agents if a.get("agentStatus") in REJECTED]
@@ -149,6 +207,7 @@ def main():
         "rejected_count": len(rejected),
         "ready_inventory": len(items),
         "publishable_count": len(publishable),
+        **normalized,
     })
     print("VERDICT=" + v["verdict"])
     print(json.dumps(v, ensure_ascii=False))
