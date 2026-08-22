@@ -172,6 +172,9 @@ def test_policy_report_identity_is_unique_and_contains_no_counterparty_data():
     _event_key, message = telegram.reply_wake_message(result)
     assert "private no-contact policyにより1件を送信せず終了しました" in message
     assert "未確認" not in message
+    assert telegram.report_kinds_for_command("reply-wake") == (
+        "reply_verified", "reply_wake", "reply_dlq",
+    )
 
 
 def test_same_policy_event_is_replay_zero_after_first_closure(tmp_path):

@@ -10,6 +10,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
 from telegram_outbox import TelegramOutbox  # noqa: E402
+from telegram_report import (  # noqa: E402
+    ready_report_ids_for_kinds,
+    report_kinds_for_command,
+)
 
 
 def _state(outbox: TelegramOutbox, report_id: int) -> sqlite3.Row:
@@ -127,3 +131,20 @@ def test_redrive_can_be_scoped_to_one_lane_kind(tmp_path):
     assert moved == 1
     assert _state(outbox, application_id)["state"] == "pending"
     assert _state(outbox, paid_id)["state"] == "delivery_unknown"
+
+
+def test_reply_wake_drain_never_selects_paid_rows(tmp_path):
+    outbox = TelegramOutbox(tmp_path / "outbox.sqlite3")
+    paid = outbox.enqueue(
+        event_key="paid", kind="paid-direct", message="paid", created_at=1000,
+    )
+    reply = outbox.enqueue(
+        event_key="reply", kind="reply_wake", message="reply", created_at=1001,
+    )
+
+    selected = ready_report_ids_for_kinds(
+        outbox, report_kinds_for_command("reply-wake"), now=1002,
+    )
+
+    assert selected == [int(reply["report_id"])]
+    assert int(paid["report_id"]) not in selected

@@ -364,6 +364,24 @@ def publish_reply_wake(
     raise RuntimeError(f"unexpected Telegram dispatch status: {status}")
 
 
+def report_kinds_for_command(command: str) -> tuple[str, ...] | None:
+    """Keep a lane wake from redriving or draining another lane's reports."""
+    if command in {"reply", "reply-wake", "reply-dlq"}:
+        return ("reply_verified", "reply_wake", "reply_dlq")
+    return None
+
+
+def ready_report_ids_for_kinds(
+    outbox: TelegramOutbox, kinds: tuple[str, ...], *, now: int, limit: int = 3,
+) -> list[int]:
+    """Return a bounded cross-kind queue without selecting any foreign kind."""
+    return sorted(
+        report_id
+        for kind in kinds
+        for report_id in outbox.ready_report_ids(kind=kind, now=now, limit=limit)
+    )[:limit]
+
+
 def reply_dlq_message(entry: dict[str, Any], route: str) -> tuple[str, str]:
     """One alert per dead-lettered reply entry: what left, why, and how to undo it."""
     action_id = int(entry["action_id"])
@@ -2237,7 +2255,8 @@ def main() -> int:
         target=args.target,
         now=now_epoch,
     )
-    outbox.redrive_unresolved(now=now_epoch)
+    redrive_kinds = report_kinds_for_command(args.command)
+    outbox.redrive_unresolved(now=now_epoch, kinds=redrive_kinds)
     # The outage alarm must not depend on anything the outage may have broken --
     # least of all the model-routing config, which it never mentions to Dais.
     route = (
@@ -2258,12 +2277,20 @@ def main() -> int:
     # off in its own try/except.
     try:
         redrive_tick = iter(range(now_epoch, now_epoch + 10000)).__next__
-        for _ in range(3):
+        selected_ids: list[int] | None = None
+        if redrive_kinds is not None:
+            selected_ids = ready_report_ids_for_kinds(
+                outbox, redrive_kinds, now=now_epoch, limit=3,
+            )
+        for index in range(3):
+            if selected_ids is not None and index >= len(selected_ids):
+                break
             drained = dispatch_one(
                 outbox,
                 owner=f"gig-telegram-{uuid.uuid4().hex}",
                 now=redrive_tick,
                 transport=transport,
+                report_id=None if selected_ids is None else selected_ids[index],
             )
             if drained["status"] == "queue_empty":
                 break
