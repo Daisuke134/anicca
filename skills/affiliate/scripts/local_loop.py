@@ -853,23 +853,38 @@ def create_repost_proposal(state):
         })
     if not candidates:
         return {"state": "WAITING_FOR_ELIGIBLE_PLACEMENT", "changed": False}
-    selected = max(candidates, key=lambda row: (
+    repost_root = os.environ.get("AFFILIATE_REPOST_STATE_DIR") or str(
+        Path.home() / "loops" / "x-repost"
+    )
+    eligible = []
+    for candidate in candidates:
+        proposal_identity = {
+            "placement_id": candidate["placement_id"],
+            "owned_article_url": candidate["owned_article_url"],
+            "language": "en",
+            "proposal_kind": "AFFILIATE_REPOST_PROPOSAL",
+        }
+        candidate["proposal_id"] = hashlib.sha256(json.dumps(
+            proposal_identity, sort_keys=True, separators=(",", ":")
+        ).encode()).hexdigest()
+        delivery = repost_consumption_state(
+            repost_root, candidate["proposal_id"], candidate["placement_id"]
+        )
+        if delivery in {
+            "CONSUMPTION_LEDGER_INVALID", "CONSUMPTION_LEDGER_UNAVAILABLE",
+            "CONSUMPTION_LEDGER_MISMATCH",
+        }:
+            return {"state": "REPOST_CONSUMPTION_UNSAFE", "changed": False}
+        if delivery == "UNCONSUMED_BY_SEPARATE_OWNER":
+            eligible.append(candidate)
+    if not eligible:
+        return {"state": "WAITING_FOR_REPOST_PROPOSAL_SLOT", "changed": False}
+    selected = max(eligible, key=lambda row: (
         row["provider_click_count"] is not None,
         row["provider_click_count"] or -1,
         row["created_at"],
     ))
-    proposal_identity = {
-        "placement_id": selected["placement_id"],
-        "owned_article_url": selected["owned_article_url"],
-        "language": "en",
-        "proposal_kind": "AFFILIATE_REPOST_PROPOSAL",
-    }
-    proposal_id = hashlib.sha256(json.dumps(
-        proposal_identity, sort_keys=True, separators=(",", ":")
-    ).encode()).hexdigest()
-    repost_root = os.environ.get("AFFILIATE_REPOST_STATE_DIR") or str(
-        Path.home() / "loops" / "x-repost"
-    )
+    proposal_id = selected["proposal_id"]
     delivery_state = repost_consumption_state(
         repost_root, proposal_id, selected["placement_id"]
     )
