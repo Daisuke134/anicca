@@ -1555,9 +1555,18 @@ slice neither edits nor waits on the Paid section, `paid_direct.py`, or the Paid
 **Current production truth.** Apply is enabled and owned by launchd every 60 seconds. The loaded
 definition keeps the real 512 MiB write floor while allowing this lane to continue past the global
 pressure and writer-stop advisory flags; the child still fails closed below the real floor. Natural
-pass `gig-apply-direct-1787394811693936000-80764` completed `ok` after the Data volume recovered to
-about 1.2 GiB free. The former outage was therefore an advisory disk stop followed by a second,
-independent immutable-release GC race, not a disabled schedule.
+pass `gig-apply-direct-1787414266013748000-88004` completed `ok`, inspected 40 official requests,
+made no duplicate application and sent its natural-language Telegram summary with provider message
+ID `29154`. Later natural wakes are currently stopped by the real floor: the Data volume has about
+235 MiB free while `/System/Volumes/VM` holds about 16 GiB, and the guard reports
+`disk_headroom_low` instead of starting another pass. Earlier wakes that began above the floor but
+lost space during execution failed while persisting evidence with `OSError: [Errno 28]`. Apply's
+submission, official-readback, replay and Telegram paths remain proved below, but current-device
+24/7 liveness is not complete until host headroom is restored and the next natural wake finishes.
+
+- [ ] Restore at least the loaded 512 MiB real write floor without deleting protected/user data or
+  stopping another lane, then read back one launchd-owned natural pass with no ENOSPC and a provider-
+  acknowledged natural-language Telegram summary. Do not lower or bypass the floor to claim success.
 
 - [x] Restore bounded write headroom without broad user-data deletion. Apply now ignores only the
   global advisory pressure/stop flags and retains `GIG_DISK_HEADROOM_KIB=524288`; measured natural
