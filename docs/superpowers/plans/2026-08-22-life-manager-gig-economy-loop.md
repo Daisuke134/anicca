@@ -932,12 +932,26 @@ release proof does not pretend that the stopped browser or a nonexistent contrac
 
 **Interfaces:** Returns `PASS`, `REVISE`, `BLOCKED` with contract clause, artifact hash and evidence.
 
-- [ ] Write failing tests rejecting self-approval, wrong artifact hash, missing contract criterion,
+- [x] Write failing tests rejecting self-approval, wrong artifact hash, missing contract criterion,
   unsupported factual claim and private-data leak.
-- [ ] Run deterministic validators before model review.
-- [ ] Use an independent review context bound to exact contract and artifact hashes.
-- [ ] Permit delivery intent only from `PASS`; route `REVISE` back to Task 17.
-- [ ] Run focused tests and commit/push.
+- [x] Run deterministic validators before model review.
+- [x] Use an independent review context bound to exact contract and artifact hashes.
+- [x] Permit delivery intent only from `PASS`; route `REVISE` back to Task 17.
+- [x] Run focused tests and commit/push.
+
+Task 18 implementation evidence: `deliverable_verifier.py` is a local, effect-free gate over the
+immutable Task 16 contract and Task 17 execution receipt. It treats the exact frozen contract
+`scope` as the acceptance clause; a reviewer cannot add or paraphrase a later criterion. Before
+trusting the review verdict it contains every artifact below the private workspace, recomputes its
+size and SHA-256, compares the caller receipt with the immutable stored receipt and contract hash,
+rejects the builder execution ID as reviewer context, and scans bytes for credential, email and
+phone-shaped private data. A `PASS` criterion must name the exact clause and nonempty evidence;
+each factual claim must carry evidence. Structural, identity, hash and privacy failures return
+`BLOCKED`; incomplete/failed criteria or unsupported claims return `REVISE` with
+`next_action=execute_workflow`; only `PASS` sets `delivery_intent_permitted=true`. The new verifier,
+Task 17 executor and Task 16 workspace focused suite passes 19/19, and Python compilation passes.
+This proves the private verification gate only: official Upwork contracts and earnings remain 0,
+so no real deliverable has been reviewed or delivered.
 
 ### Task 19: Deliver an Upwork milestone exactly once
 
