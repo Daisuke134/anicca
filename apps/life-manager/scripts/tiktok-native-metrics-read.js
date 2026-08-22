@@ -2,7 +2,7 @@
 "use strict";
 
 const fs = require("node:fs");
-const { chromium } = require("playwright-core");
+const { connectCdp } = require("../lib/cdp-connection.js");
 const { resolveDataRoot } = require("../lib/runtime-paths.js");
 const {
   extractTikTokNativeMetrics,
@@ -28,13 +28,13 @@ async function postizAnalytics(input, env = process.env) {
 }
 
 async function collectTikTokWindow(input, env = process.env, observedAt = new Date().toISOString()) {
-  const browser = await chromium.connectOverCDP(env.LM_CDP_ENDPOINT || "http://127.0.0.1:9222");
+  const endpoint = env.LM_CDP_ENDPOINT || "http://127.0.0.1:9222"; const base = new URL(endpoint); if (base.protocol !== "http:" || base.hostname !== "127.0.0.1" || base.port !== "9222") throw new Error("TikTok native metric CDP endpoint invalid");
+  const request = async (suffix, options = {}) => { const response = await fetch(new URL(suffix, base), { ...options, signal: AbortSignal.timeout(10_000) }); if (!response.ok) throw new Error(`TikTok native metric CDP HTTP ${response.status}`); return response.json(); };
+  const version = await request("/json/version"); const target = await request(`/json/new?${encodeURIComponent("about:blank")}`, { method: "PUT" }); if (!version.webSocketDebuggerUrl || !target.id) throw new Error("TikTok native metric CDP target unavailable");
+  let client;
   try {
-    const context = browser.contexts()[0];
-    const page = context.pages().find((candidate) => candidate.url() === input.publicUrl) || await context.newPage();
-    if (page.url() !== input.publicUrl) await page.goto(input.publicUrl, { waitUntil: "domcontentloaded", timeout: 60_000 });
-    await page.waitForTimeout(2_000);
-    const metrics = extractTikTokNativeMetrics(await page.locator("script").allTextContents(), input);
+    client = await connectCdp(version.webSocketDebuggerUrl, { targetId: target.id, timeoutMs: 60_000 }); await client.navigate(input.publicUrl); await new Promise((resolve) => setTimeout(resolve, 2_000));
+    const scripts = await client.evaluate("Array.from(document.scripts, (script) => script.textContent || '')"); if (!Array.isArray(scripts)) throw new Error("TikTok native metric scripts unavailable"); const metrics = extractTikTokNativeMetrics(scripts, input);
     const provider = await postizAnalytics(input, env);
     const result = provider ? persistTikTokCombinedSnapshot({
       ...input,
@@ -51,7 +51,8 @@ async function collectTikTokWindow(input, env = process.env, observedAt = new Da
     });
     return { created: result.created, file: result.file, snapshot: result.snapshot, post: result.snapshot.post, account: result.snapshot.account_metrics };
   } finally {
-    await browser.close();
+    if (client) await client.close();
+    try { await fetch(new URL(`/json/close/${encodeURIComponent(target.id)}`, base), { method: "PUT", signal: AbortSignal.timeout(5_000) }); } catch {}
   }
 }
 
