@@ -53,6 +53,7 @@ class ActionTargetV1:
     label: str
     exact: bool = True
     stable_id: str = ""
+    ordinal: int | None = None
 
 
 @dataclass(frozen=True, slots=True)

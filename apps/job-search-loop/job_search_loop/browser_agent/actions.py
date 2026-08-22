@@ -87,6 +87,10 @@ class ActionExecutor:
             ):
                 await focused.click(timeout=self._timeout_ms)
                 visible = await resolve()
+        if target.ordinal is not None:
+            if target.ordinal < 1 or target.ordinal > len(visible):
+                raise RuntimeError("action target ordinal is outside the visible controls")
+            return visible[target.ordinal - 1]
         if len(visible) != 1:
             raise RuntimeError(
                 "action target must resolve to exactly one visible enabled control"

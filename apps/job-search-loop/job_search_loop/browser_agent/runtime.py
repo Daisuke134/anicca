@@ -272,6 +272,7 @@ def _action(value: dict[str, Any]) -> VisibleActionV1:
             label=str(target_value.get("label") or ""),
             exact=bool(target_value.get("exact", True)),
             stable_id=str(target_value.get("stable_id") or ""),
+            ordinal=target_value.get("ordinal"),
         )
     opener_value = value.get("opener")
     opener = None
@@ -487,13 +488,13 @@ async def navigate(url: str) -> dict[str, Any]:
     return await act(path)
 
 
-async def click(*, label: str, role: str, stable_id: str) -> dict[str, Any]:
+async def click(*, label: str, role: str, stable_id: str, ordinal: int | None = None) -> dict[str, Any]:
     path = _path_env("JOB_SEARCH_BROWSER_SCRATCH") / "runtime-click.json"
     path.write_text(
         json.dumps(
             {
                 "kind": "click",
-                "target": {"label": label, "role": role, "stable_id": stable_id},
+                "target": {"label": label, "role": role, "stable_id": stable_id, "ordinal": ordinal},
             },
             sort_keys=True,
         )
@@ -875,6 +876,7 @@ def main(argv: list[str] | None = None) -> int:
     click_parser.add_argument("--label", required=True)
     click_parser.add_argument("--role", default="")
     click_parser.add_argument("--stable-id", default="")
+    click_parser.add_argument("--ordinal", type=int)
     choose_parser = subparsers.add_parser("choose")
     choose_parser.add_argument("--field-label", required=True)
     choose_parser.add_argument("--field-role", default="")
@@ -924,7 +926,8 @@ def main(argv: list[str] | None = None) -> int:
         operation = navigate(args.url)
     elif args.command == "click":
         operation = click(
-            label=args.label, role=args.role, stable_id=args.stable_id
+            label=args.label, role=args.role, stable_id=args.stable_id,
+            ordinal=args.ordinal,
         )
     elif args.command == "choose":
         operation = choose(

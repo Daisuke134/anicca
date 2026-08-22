@@ -47,7 +47,7 @@ For every other surface, choose exactly one action from the observation,
 use the direct runtime command for an ordinary visible click or bounded wait:
 
 ```bash
-/opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime click --label "THE_EXACT_VISIBLE_LABEL" --role "THE_RETURNED_ROLE" --stable-id "THE_RETURNED_STABLE_ID"
+/opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime click --label "THE_EXACT_VISIBLE_LABEL" --role "THE_RETURNED_ROLE" --stable-id "THE_RETURNED_STABLE_ID" [--ordinal ONE_BASED_POSITION_AMONG_IDENTICAL_VISIBLE_CONTROLS]
 /opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime choose --field-label "THE_EXACT_VISIBLE_FIELD_LABEL" --field-role "THE_RETURNED_FIELD_ROLE" --field-stable-id "THE_RETURNED_FIELD_STABLE_ID" --option-label "THE_EXACT_VISIBLE_OPTION_LABEL" --option-role "option" --option-stable-id "THE_RETURNED_OPTION_STABLE_ID"
 /opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime type --label "THE_EXACT_VISIBLE_LABEL" --role "THE_RETURNED_ROLE" --stable-id "THE_RETURNED_STABLE_ID" --candidate-concept "AN_EXACT_RETURNED_CONCEPT"
 /opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime upload --label "THE_EXACT_VISIBLE_UPLOAD_LABEL" --role "THE_RETURNED_ROLE" --stable-id "THE_RETURNED_STABLE_ID"
