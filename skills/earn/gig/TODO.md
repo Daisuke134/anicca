@@ -303,12 +303,13 @@ Do not advance the development cursor until every unchecked item in the current 
 evidence. Independent production lanes continue running while development follows this order.
 
 **Live handover state.** `main` and `origin/main` are pinned to
-`4ee520ab9a6f57c3a4fce4e0c128d97869960280`; the running Paid process was naturally started from immutable
-release `1f8bf173431a9bcb06edc5ad5fe9d6cbc8f1d604`. Launchd label
-`ai.anicca.hf-gig-paid-direct` owns PID `17436` and is concurrently processing the purchased rooms; Haru's
-isolated Project Owner is building the next artifact under that process. This in-flight liveness is not an official effect,
-readback or replay-zero result. The host has only about 407 MiB free while the active v38 workspace and Adobe
-installer consume storage, so persistence remains at immediate risk. The account
+`30a83dc958c13f2cc07c3b44016ab31a459de7b8`; the latest activated Paid release is
+`4bff55c9797f5d321ac6bd05f9ae4a44f426c620`. Its completed natural receipt is
+`status=pending`, `observed=7`, `actionable=0`, `effect=0`, `readback=3`, `failed=0`, `pending=4`:
+all four owned rooms checkpointed at `disk_pressure` before project mutation. Old regenerable OSS inspection
+clones and a completed pytest browser cache were removed after proving they had no open handles, restoring about
+4.1 GiB free; no customer runtime or evidence was deleted. This process liveness and disk recovery are not an
+official customer effect, readback or replay-zero result. The account
 owner authorized deletion of obsolete LBJ `18130722` work because another provider now owns that job. Only the
 v107 package SHA-256 `cc7ddd9e…` plus audit metadata remain; old work/source/backups and all MP4/MOV copies were
 removed, reducing that room from 6.8 GiB to 232 MiB and restoring 6.0 GiB free. The protected unrelated dirty
@@ -316,10 +317,8 @@ removed, reducing that room from 6.8 GiB to 232 MiB and restoring 6.0 GiB free. 
 eight independent project workers and retains the 512 MiB effect floor and expiring operator brake.
 
 **Current official Paid truth — supersedes the historical chronology below.** The latest completed natural receipt is
-`status=failed`, `observed=7`, `actionable=5`, `effect=0`, `readback=2`, `failed=5`, `pending=0`. Launchd label
-`ai.anicca.hf-gig-paid-direct` is now running, but its current pass has not written a newer final receipt.
-Two rows are intentionally `reserved_for_owner`; five owned rows have explicit failures, so silent pending
-remains zero but customer work is not complete. Process liveness does not supersede the failed official receipt.
+the pending disk-pressure receipt above. Three rows are official readback-only/reserved; four owned rows have
+explicit durable checkpoints rather than silent disappearance, but customer work is not complete.
 
 - Haru `18169583` sent v32 previously with exact official readback/replay-zero, but the buyer then supplied two
   complaint screenshots and explicitly reported rough images, repeated lack of checking and possible
@@ -339,8 +338,13 @@ remains zero but customer work is not complete. Process liveness does not supers
   if any visible defect remains, then send exactly one verified hash with formal delivery OFF and replay-zero.
 - Manledge `18169985` naturally prepared v24, SHA-256
   `fbf365e364695907b9ebe853fa72a2e77232267380fb6f7fc6f9b44c1a5f432b`; no completed exact-room effect/readback
-  receipt exists yet. Reconcile its full job/proposal/DM contract and accepted lineage, then obtain fresh PASS,
-  exact-room send/readback and replay-zero.
+  receipt exists yet. Its current semantic decision is correctly `actionable` / `mode=answer`: the buyer needs an
+  immediate Japanese reply containing community details, listing copy, outreach templates and progress/reporting,
+  with confirmed facts separated from pending approval. The answer owner produced useful copy but the fresh verifier
+  blocked it after three rewrites because the owner was sandboxed read-only and therefore could not obtain the official
+  public sources the verifier required. Repair the shared answer-owner boundary so the same model may run local read
+  commands and official-source web research while customer mutation remains exclusively owned by the fenced browser
+  executor; then obtain the natural exact-room reply/readback and replay-zero. Do not add a Manledge-only reply path.
 - byusco `18171890` currently holds `casican-review-article-v5.md`, SHA-256
   `28199b8fb6479915d5ec372f3e57df83899f449a705ac7157dd9ad59867907d1`, as `REVIEW_READY`; the controller
   fails `file_validation: asset contract mismatch`. Its Project Owner must bind every required buyer-visible

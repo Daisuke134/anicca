@@ -3136,7 +3136,9 @@ def _run_consultation_review(args, item_path: Path, root: Path, feedback: str, b
         else:
             attachment_instruction = "No buyer attachments are present; reviewed_attachments must be an empty array."
         owner_prompt.write_text(
-            "You are the Sol paid answer owner. Read-only: never submit or send anything. "
+            "You are the Sol paid answer owner. Never submit or send anything. You may run local read commands and "
+            "research the public web with installed CLI tools when the buyer asks for current or externally verifiable "
+            "facts; prefer official sources and include the exact source URLs in the answer when useful. "
             f"Read {context}, {root / 'requirements/live-buyer-reply.json'}, and the current semantic decision at "
             f"{root / 'context/paid-work-decision.json'}. The answer must satisfy that decision's required_output and "
             f"required_effect without contradicting primary evidence. {attachment_instruction} "
@@ -3152,11 +3154,15 @@ def _run_consultation_review(args, item_path: Path, root: Path, feedback: str, b
                    "--prompt-file", str(owner_prompt), "--schema", str(schema),
                    "--evidence-dir", str(owner_evidence), "--task-label", "paid-answer-owner",
                    "--escalation-reason", "Sol owner composes the exact paid buyer answer",
-                   "--loop", "gig", "--workdir", str(root), "--timeout-seconds", "1800", "--read-only"]
+                   "--loop", "gig", "--workdir", str(root), "--timeout-seconds", "1800"]
         for image in images:
             command += ["--image", str(image)]
+        command = _private_model_runner(root, command, "paid-answer-owner")
+        project_snapshot = _project_identity_snapshot(root, owner_evidence)
         owner_started_ns = time.time_ns()
-        _run(_private_model_runner(root, command, "paid-answer-owner"), "remote_builder")
+        _run(command, "remote_builder")
+        if _project_identity_snapshot(root, owner_evidence) != project_snapshot:
+            raise Failure("remote_builder")
         owner = _consultation_runner_result(
             owner_evidence, task_label="paid-answer-owner", task_class="escalation-agent",
             model=PAID_DECISION_MODEL, started_ns=owner_started_ns,
