@@ -187,6 +187,84 @@ def refresh_funnel_snapshot(state, limit=3):
     return {**receipt, "state": "OBSERVED", "changed": changed}
 
 
+def focus_cohort(state):
+    """Select one existing pre-payment cohort and freeze broad expansion."""
+    latest = state / "focused-cohort" / "latest.json"
+    if latest.is_file():
+        receipt = json.loads(latest.read_text(encoding="utf-8"))
+        return {**receipt, "state": "FOCUSED", "changed": False}
+    interval = json.loads(
+        (state / "interval-funnel-joins" / "latest.json").read_text(encoding="utf-8")
+    )
+    claimed = interval.get("receipt_sha256")
+    core = {key: value for key, value in interval.items() if key != "receipt_sha256"}
+    if claimed != hashlib.sha256(json.dumps(
+        core, sort_keys=True, separators=(",", ":")
+    ).encode()).hexdigest():
+        raise ValueError("interval funnel receipt hash mismatch")
+    snapshot = json.loads(
+        (state / "funnel-snapshots" / "latest.json").read_text(encoding="utf-8")
+    )
+    snapshot_rows = {row["placement_id"]: row for row in snapshot.get("placements", [])}
+    candidates = []
+    for row in interval.get("placements", []):
+        placement_id = row.get("placement_id")
+        campaign = next((
+            json.loads(path.read_text(encoding="utf-8"))
+            for path in (state / "campaign-publications").glob("*.json")
+            if json.loads(path.read_text(encoding="utf-8")).get("placement_id") == placement_id
+        ), {})
+        plan_id = campaign.get("plan_id")
+        handoff_path = state / "campaign-handoffs" / f"{plan_id}.json"
+        handoff = json.loads(handoff_path.read_text(encoding="utf-8")) if handoff_path.is_file() else {}
+        buyer_intent = handoff.get("buyer_intent", "")
+        clicks = (snapshot_rows.get(placement_id, {}).get("provider_clicks") or {})
+        if campaign.get("state") == "X_LIVE" and "before paying" in buyer_intent.lower():
+            candidates.append({
+                "placement_id": placement_id, "plan_id": plan_id,
+                "buyer_problem": buyer_intent,
+                "decision_stage_query": handoff.get("title"),
+                "handoff_fingerprint": handoff.get("handoff_fingerprint"),
+                "provider_unique_clicks": clicks.get("unique_count", -1),
+                "provider_clicks": clicks.get("count", -1),
+            })
+    if not candidates:
+        return {"state": "NO_QUALIFIED_COHORT", "changed": False}
+    selected = max(candidates, key=lambda row: (
+        row["provider_unique_clicks"], row["provider_clicks"], row["placement_id"]
+    ))
+    receipt_core = {
+        "schema_version": 1,
+        "receipt_type": "AFFILIATE_FOCUSED_COHORT",
+        "selection_state": "FOCUSED_EXPLORATION",
+        **selected,
+        "source_interval_receipt_sha256": claimed,
+        "source_snapshot_sha256": snapshot.get("snapshot_sha256"),
+        "selection_basis": "PRE_PAYMENT_INTENT_THEN_PROVIDER_UNIQUE_CLICKS",
+        "channel_set": ["owned_article", "x"],
+        "placement_expansion_state": "PAUSED_FOR_FOCUSED_COHORT",
+        "money_state": "NON_MONEY",
+    }
+    receipt_sha256 = hashlib.sha256(json.dumps(
+        receipt_core, sort_keys=True, separators=(",", ":")
+    ).encode()).hexdigest()
+    receipt = {**receipt_core, "receipt_sha256": receipt_sha256}
+    changed = append_unique(state / "focused-cohorts.jsonl", receipt, ("receipt_sha256",))
+    atomic_json(latest, receipt)
+    return {**receipt, "state": "FOCUSED", "changed": changed}
+
+
+def focused_publication_allowed(state, placement, progress):
+    path = state / "focused-cohort" / "latest.json"
+    if not path.is_file():
+        return True
+    focus = json.loads(path.read_text(encoding="utf-8"))
+    return (
+        placement == focus.get("placement_id")
+        or progress.get("state") in {"MATERIALIZED", "OWNED_NOT_LIVE", "OWNED_LIVE"}
+    )
+
+
 def _private_env_value(name):
     value = os.environ.get(name, "").strip()
     if value:
@@ -2555,6 +2633,8 @@ def advance_generic_publication(
             progress = json.loads(progress_path.read_text(encoding="utf-8"))
         except (OSError, ValueError):
             progress = {}
+        if not focused_publication_allowed(state, placement, progress):
+            continue
         owned_receipt_path = state / "owned-publications" / f"{slug}.json"
         x_receipt_path = state / "x-posts" / f"{placement}.json"
         try:
@@ -3810,6 +3890,19 @@ def _wake_once(args, started_at, run_id):
             "state": "INTERVAL_FUNNEL_JOIN_FAILED", "changed": False,
             "failure_type": type(error).__name__,
         }
+    try:
+        focused_cohort = admit(
+            "ledger.focus-cohort", "LEDGER_ONLY",
+            {"interval_funnel_state": interval_funnel.get("state")},
+            lambda: focus_cohort(state) if interval_funnel.get("state") == "OBSERVED" else {
+                "state": "WAITING_FOR_INTERVAL_FUNNEL", "changed": False,
+            },
+        )
+    except Exception as error:
+        focused_cohort = {
+            "state": "FOCUS_SELECTION_FAILED", "changed": False,
+            "failure_type": type(error).__name__,
+        }
     rolling_net = admit(
         "ledger.rolling-net", "LEDGER_ONLY", {"placement_ledger_state": placement_ledger.get("state")},
         lambda: refresh_rolling_net(state),
@@ -3967,6 +4060,11 @@ def _wake_once(args, started_at, run_id):
         "interval_funnel_state": interval_funnel.get("state"),
         "interval_funnel_receipt_sha256": interval_funnel.get("receipt_sha256"),
         "interval_funnel_failure_type": interval_funnel.get("failure_type"),
+        "focused_cohort_state": focused_cohort.get("state"),
+        "focused_cohort_placement_id": focused_cohort.get("placement_id"),
+        "focused_cohort_receipt_sha256": focused_cohort.get("receipt_sha256"),
+        "focused_cohort_expansion_state": focused_cohort.get("placement_expansion_state"),
+        "focused_cohort_failure_type": focused_cohort.get("failure_type"),
         "rolling_net_state": rolling_net.get("state"),
         "rolling_net_money_state": rolling_net.get("money_state"),
         "rolling_net_net_state": rolling_net.get("net_state"),

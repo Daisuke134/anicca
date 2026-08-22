@@ -22,6 +22,56 @@ SPEC.loader.exec_module(MODULE)
 
 
 class LocalLoopTest(unittest.TestCase):
+    def test_focus_cohort_is_replay_safe_and_pauses_only_new_placements(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root)
+            rows = []
+            for placement_id, unique, clicks in (
+                ("subtitle-en-1", 6, 7), ("isolator-en-1", 6, 6),
+            ):
+                rows.append({
+                    "placement_id": placement_id, "cta_clicks": 0,
+                    "provider_click_delta": 0, "provider_unique_click_delta": 0,
+                    "transaction_count": 0,
+                })
+                plan_id = placement_id.removesuffix("-1")
+                MODULE.atomic_json(state / "campaign-publications" / f"{plan_id}.json", {
+                    "placement_id": placement_id, "plan_id": plan_id, "state": "X_LIVE",
+                })
+                MODULE.atomic_json(state / "campaign-handoffs" / f"{plan_id}.json", {
+                    "buyer_intent": f"Creators evaluating {plan_id} before paying",
+                    "title": f"Should I buy {plan_id}?", "handoff_fingerprint": placement_id,
+                })
+            interval_core = {
+                "schema_version": 1, "receipt_type": "AFFILIATE_INTERVAL_FUNNEL_JOIN",
+                "placements": rows,
+            }
+            interval_hash = hashlib.sha256(json.dumps(
+                interval_core, sort_keys=True, separators=(",", ":")
+            ).encode()).hexdigest()
+            MODULE.atomic_json(state / "interval-funnel-joins" / "latest.json", {
+                **interval_core, "receipt_sha256": interval_hash,
+            })
+            MODULE.atomic_json(state / "funnel-snapshots" / "latest.json", {
+                "snapshot_sha256": "a" * 64,
+                "placements": [
+                    {"placement_id": "subtitle-en-1", "provider_clicks": {"unique_count": 6, "count": 7}},
+                    {"placement_id": "isolator-en-1", "provider_clicks": {"unique_count": 6, "count": 6}},
+                ],
+            })
+
+            first = MODULE.focus_cohort(state)
+            second = MODULE.focus_cohort(state)
+
+            self.assertEqual(first["placement_id"], "subtitle-en-1")
+            self.assertEqual(first["money_state"], "NON_MONEY")
+            self.assertTrue(first["changed"])
+            self.assertFalse(second["changed"])
+            self.assertFalse(MODULE.focused_publication_allowed(state, "new-en-1", {}))
+            self.assertTrue(MODULE.focused_publication_allowed(
+                state, "new-en-1", {"state": "OWNED_LIVE"},
+            ))
+
     def test_funnel_snapshot_ranks_top_three_and_preserves_unknown_denominators(self):
         with tempfile.TemporaryDirectory() as root:
             state = Path(root)

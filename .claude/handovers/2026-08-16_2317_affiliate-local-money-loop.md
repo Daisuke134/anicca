@@ -1586,9 +1586,10 @@ transactions `0`. This is non-money. Rolling state remains
 
 The next atomic item is FUNNEL-E, not another broad placement. Select one existing
 placement using a durable buyer-intent/evidence receipt, freeze new placement
-expansion, and declare one changed variable. Cadence is explicit: at most one new
-evidence-bearing owned article per UTC day and up to three native distribution
-acts per day around that same focused asset. Repeated checks may skip. This follows
+expansion, and declare one changed variable. Daily action cap remains disabled;
+the initial operating range is one to three distinct evidence-bearing articles per
+day when they pass admission, with no quota, plus up to three native distribution
+variants per admitted asset across subsequent days. Repeated checks may skip. This follows
 Google's people-first/thin-affiliate rules plus the pinned `marketingskills`
 check-vs-act loop pattern and `affiliate-skills` repurpose-and-measure pattern; it
 does not copy those repositories' unverified revenue claims.

@@ -2858,14 +2858,13 @@ code is installed or committed as a substitute for this queue.
 
 **Publication cadence decision for FUNNEL-E through FUNNEL-H:** the owner may check
 for qualified buyer signals repeatedly, but publication acts only on an admitted
-asset. Initial cap is one new evidence-bearing owned article per UTC day and up to
-three native distribution acts per day for that same focused asset, each with a
-different buyer-question angle and exact receipt. This is a quality admission rule,
-not a claim that one article is universally optimal. A skipped day is correct when
-there is no new first-hand proof, buyer question, or measurable hypothesis. The
-owner must not create three templated affiliate articles merely to increase surface
-area. One admitted article is repurposed across channels over subsequent days,
-then weekly performance review decides continue, change one variable, or stop.
+asset. Daily action cap remains disabled. The initial operating range is one to
+three new owned articles per day only when each has a distinct evidence-bearing
+buyer question and measurable hypothesis; there is no quota and a skipped day is
+correct when no candidate passes admission. The owner must not create three
+templated affiliate articles merely to increase surface area. Each admitted article
+may produce up to three native distribution variants across subsequent days, then
+weekly performance review decides continue, change one variable, or stop.
 
 Evidence for this decision is pinned rather than paraphrased as folklore:
 
