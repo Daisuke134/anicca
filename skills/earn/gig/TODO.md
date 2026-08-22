@@ -303,9 +303,9 @@ Do not advance the development cursor until every unchecked item in the current 
 evidence. Independent production lanes continue running while development follows this order.
 
 **Live handover state.** `main` and `origin/main` include the pushed structured Owner feedback/browser boundary
-`461649dd3`, while the current in-flight natural Paid pass is pinned to immutable release
-`cfa2b0be8f844a8517478e02e4c957c55311ab20`; the release watcher may select the newer immutable release only
-after that process exits.
+`461649dd3`. `/Users/anicca/gig/releases/life-manager/current` has advanced to immutable release `f032fac4`,
+while the already-running natural Paid PID and all its children remain consistently pinned to immutable release
+`cfa2b0be8f844a8517478e02e4c957c55311ab20`; the next launch will load the newer release.
 same immutable release. The older Paid-specific release link remains historical and is not the loaded launchd
 entrypoint. The protected unrelated dirty
 `skills/earn/gig/tests/test_reply_concurrency.py` remains outside this work. The loaded Paid owner uses up to
