@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import fcntl
 import hashlib
 import json
 import os
 import re
+from contextlib import contextmanager
 from datetime import datetime
 from dataclasses import asdict
 from pathlib import Path
@@ -64,6 +66,18 @@ def _wake_budget_path() -> Path:
 
 def _decision_path() -> Path:
     return _path_env("JOB_SEARCH_BROWSER_SCRATCH") / "last-decision.json"
+
+
+@contextmanager
+def _exclusive_action():
+    path = _path_env("JOB_SEARCH_BROWSER_SCRATCH") / "action.lock"
+    descriptor = os.open(path, os.O_RDWR | os.O_CREAT, 0o600)
+    with os.fdopen(descriptor, "r+") as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as error:
+            raise RuntimeError("another browser action is already in progress") from error
+        yield
 
 
 def _wake_completed_path() -> Path:
@@ -253,7 +267,7 @@ def _action(value: dict[str, Any]) -> VisibleActionV1:
     )
 
 
-async def act(action_path: Path) -> dict[str, Any]:
+async def _act_locked(action_path: Path) -> dict[str, Any]:
     row, session, checkpoints, evidence, cursor, builder = await _context()
     before = await builder.build(cursor.handle)
     action = _action(_private_action(action_path))
@@ -301,6 +315,11 @@ async def act(action_path: Path) -> dict[str, Any]:
             after, checkpoints.load(row["application_id"]), remaining
         ),
     }
+
+
+async def act(action_path: Path) -> dict[str, Any]:
+    with _exclusive_action():
+        return await _act_locked(action_path)
 
 
 async def checkpoint(reason: str) -> dict[str, Any]:
