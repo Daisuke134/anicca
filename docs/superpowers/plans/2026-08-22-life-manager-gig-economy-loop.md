@@ -1021,12 +1021,30 @@ cache. This release proof is local and cannot satisfy the still-open live submis
 
 **Interfaces:** Normalizes revision request, in-scope decision, new artifact version and resubmission.
 
-- [ ] Write failing tests for duplicate request, out-of-scope work, changed deadline and overwritten
+- [x] Write failing tests for duplicate request, out-of-scope work, changed deadline and overwritten
   original artifact.
-- [ ] Bind revision to provider message/milestone identity.
-- [ ] Route in-scope work through Tasks 17–19; route scope changes through negotiation.
-- [ ] Record revision time/cost for economics.
-- [ ] Run focused tests and commit/push.
+- [x] Bind revision to provider message/milestone identity.
+- [x] Route in-scope work through Tasks 17–19; route scope changes through negotiation.
+- [x] Record revision time/cost for economics.
+- [x] Run focused tests and commit/push.
+
+Task 20 engine evidence: Upwork's current fixed-price instructions give a client fourteen days to
+approve submitted work or request changes, and require the client to use the contract's official
+`Request Changes` path. Upwork separately treats milestone title, description, due-date and amount
+changes as contract changes that the freelancer must approve or reject; they are not ordinary free
+revisions ([review and pay](https://support.upwork.com/hc/en-us/articles/360000980507-Review-and-pay-for-fixed-price-contracts-and-milestones),
+[respond to milestone changes](https://support.upwork.com/hc/en-us/articles/360023544173-How-to-propose-or-respond-to-milestone-changes-as-a-freelancer)).
+`upwork_revision.py` therefore binds each request to the exact official message, room, contract and
+milestone plus source-evidence hash. It re-hashes every originally delivered artifact before routing,
+stores an in-scope request as a new immutable manifest, and advances the existing project ledger to
+Task 17; Task 18 and Task 19 remain the required following actions. Out-of-scope work and any changed
+deadline advance the same durable state to Task 14 negotiation without creating a fulfillment
+manifest. Exact replay repairs missing ledger/state only, records one economic fact, and a changed
+payload under the same provider identity is rejected. The revision/workspace/executor/verifier/
+delivery focused suite passes 31/31, plus the six-case revision suite passes independently; Python
+compilation and `git diff --check` pass. This proves the engine only: the last official Upwork state
+has zero active contracts and no revision request, so no live revision, rebuilt artifact or
+resubmission is claimed.
 
 ### Task 21: Reconcile Upwork payment, fee and payout
 
