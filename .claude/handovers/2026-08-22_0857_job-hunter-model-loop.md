@@ -46,3 +46,15 @@ Read the spec and this file, then inspect `/Users/anicca/lm-loops-core/apps/job-
 Do not reapply Salesforce FDE JR355047 from `workday-manual-completed.json`. Do
 not bypass CAPTCHA or provider limits. Do not retry `submit_unknown`. Preserve
 unrelated dirty paths `docs/loops/x-repost.md` and `state/effective-cron/`.
+
+## Current live blocker
+
+- Active release: `736c398a095fab3655ad9f18dda08b75df37aa64`.
+- NVIDIA `JR2015317` is not submitted. Fresh reset message `1a02a62e0498e3e2`
+  opened the correct tenant page; visual evidence showed two password fields and
+  one `Submit` button. The message is `navigation_unknown` and must not be retried.
+- The unique reset-page `Submit` label is now supported, but the next daily run
+  `daily-20260823-015932` is in host uninterruptible disk I/O before model handoff
+  while opening the Ledger. Three 30-second checks showed no progress with 256
+  MiB free. Do not kill the owner, browser, or SQLite process. Observe natural
+  recovery, then let the existing owner request a new reset message and continue.
