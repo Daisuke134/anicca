@@ -76,10 +76,15 @@ report() {
 
 flush_report_backlog() {
   [ -s "$STATE/report-backlog.jsonl" ] || return 0
-  local pending="$STATE/report-backlog.jsonl" kept="$STATE/report-backlog.tmp"
+  local pending="$STATE/report-backlog.jsonl" kept="$STATE/report-backlog.tmp" attempted=0
   : >"$kept"
   while IFS= read -r line; do
     [ -n "$line" ] || continue
+    if [ "$attempted" -ge 1 ]; then
+      printf '%s\n' "$line" >>"$kept"
+      continue
+    fi
+    attempted=1
     local body
     body="$("$PY" -c 'import json,sys; print(json.loads(sys.argv[1])["body"])' "$line" 2>/dev/null)" || continue
     if send_telegram "$body"; then
