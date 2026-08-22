@@ -159,7 +159,13 @@ class ActionExecutor:
             else:
                 target = await self._target(page, action.target)
             if action.kind in {"click", "choose"}:
-                await target.click(timeout=self._timeout_ms)
+                is_checkable = await target.evaluate(
+                    "el => el.tagName === 'INPUT' && ['radio', 'checkbox'].includes(el.type)"
+                )
+                if action.kind == "click" and is_checkable:
+                    await target.check(timeout=self._timeout_ms)
+                else:
+                    await target.click(timeout=self._timeout_ms)
             elif action.kind == "type":
                 if action.text is None:
                     raise ValueError("type requires text")
