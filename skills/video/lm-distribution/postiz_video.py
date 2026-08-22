@@ -179,6 +179,22 @@ def _normalized(value: str) -> str:
     return re.sub(r"\s+", " ", value).strip().casefold()
 
 
+def _matching_profile_url(rows, caption_prefix: str, posted_after: int) -> str | None:
+    candidates = []
+    for row in rows if isinstance(rows, list) else []:
+        url = row.get("href") if isinstance(row, dict) else None
+        alt = row.get("alt") if isinstance(row, dict) else ""
+        match = re.fullmatch(r"https://www\.tiktok\.com/@[^/]+/video/([0-9]+)/?", url or "")
+        if (
+            match
+            and caption_prefix
+            and caption_prefix in _normalized(str(alt))
+            and (int(match.group(1)) >> 32) >= posted_after - 5
+        ):
+            candidates.append((int(match.group(1)), url))
+    return max(candidates)[1] if candidates else None
+
+
 def resolve_profile_release_url(
     profile_url: str,
     caption: str,
@@ -241,25 +257,12 @@ def _resolve_profile_release_url_browser(
     caption_prefix: str | None = None,
 ) -> str | None:
     """Read the newest profile DOM when yt-dlp cannot read TikTok's JS page."""
-    del caption, posted_after  # profile order is newest-first; exact caption is the join key.
+    del caption
     try:
         import websockets
     except ImportError:
         return None
     prefix = caption_prefix or ""
-
-    def matching_url(rows):
-        for row in rows if isinstance(rows, list) else []:
-            url = row.get("href") if isinstance(row, dict) else None
-            alt = row.get("alt") if isinstance(row, dict) else ""
-            if (
-                isinstance(url, str)
-                and re.fullmatch(r"https://www\.tiktok\.com/@[^/]+/video/[0-9]+/?", url)
-                and prefix
-                and prefix in _normalized(str(alt))
-            ):
-                return url
-        return None
 
     async def read_profile():
         host = os.environ.get("CDP_HOST", "127.0.0.1")
@@ -298,7 +301,7 @@ def _resolve_profile_release_url_browser(
                     "Runtime.evaluate", {"expression": expression, "returnByValue": True}, session_id,
                 )
                 value = result.get("result", {}).get("value")
-                return matching_url(json.loads(value)) if isinstance(value, str) else None
+                return _matching_profile_url(json.loads(value), prefix, posted_after) if isinstance(value, str) else None
             finally:
                 await call("Target.closeTarget", {"targetId": target_id})
 
