@@ -281,6 +281,8 @@ C17の実slot-controlled passはlive inventory `occupied=3 / free=2`からO13を
 
 公式`Capafy/Capafy-skills` commit `99b21b67aa97482f5cefaf036f8bb61de1796990`もdownload packageに空のcredential bucketsを生成し、公開修正は存在しない。重複issue 0件を確認後、最小再現、Agent/version、期待するdownload-only contractを公式issue `https://github.com/Capafy/Capafy-skills/issues/1`へ報告する。secret、package URL、個人情報は含めない。Telegram escalation receiptは`28875`。platform修正後は同じAgent IDのfinal review URLから再開し、新Agentを作らない。
 
+追加互換probeはstring/nativeの`null`、`[]`、`{}`の6形式をすべて拒否し、`url_proxy:[{}]`も次にnon-blank URLを要求することを確認する。偽の外部依存を作る境界で停止し、詳細を`https://github.com/Capafy/Capafy-skills/issues/1#issuecomment-5380580152`へ追記する。authoritative remote readbackは引き続き`status=0 / auditStatus=0 / agentType=download / isConfirmedSkills=1 / requiredCredentials=null`である。
+
 C15の再attemptはV4 SHA-256を再確認し、browser owner exact handle `capafy.skills8m4q2z`のedit-page probeまでは通る。posterの最初のlive callはstdoutを返さなかったが実投稿を完了し、native permalink `https://www.instagram.com/reel/DcV9YY7sqYI/`をbrowser homeからreadbackする。その後の重複再試行だけがtier1 `LoginRequired` / tier2 `TooManyRedirects`でfail closedする。公開はexact V4 bytesの1件、重複0、initial metricsはviews/likes/comments `0/0/0`、売上delta `$0`。lifecycleとIG ledgerを同URLへ更新し、Telegram receiptは`28872`。edit-page URLだけをlogin証明にせず、home/feedのauthenticated navigationとnative URL readbackをpublic success条件にする。
 
 C16はLife Manager stateに`REELFARM_API_KEY`名が存在することだけでpublish可能と判定せず、`GET /api/v1/account`と`GET /api/v1/tiktok/accounts`を実readする。両方がHTTP application response `UNAUTHORIZED / Missing or invalid API key`を返すため、slideshow生成、credit消費、TikTok publishを0件で終了する。native TikTok URLを捏造せず、credential再発行とconnected account readbackが成功するまでReelFarm derivativeはhonest no-opとする。Telegram receiptは`28874`。
