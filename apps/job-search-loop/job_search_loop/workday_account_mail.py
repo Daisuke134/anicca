@@ -6,9 +6,8 @@ import json
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from playwright.async_api import async_playwright
-
 from .browser_agent.workday_account import MachineWorkdayCredentialStore
+from .browser_agent.session import BrowserSession
 from .workday_verification import (
     VerificationError,
     VerificationStore,
@@ -36,55 +35,57 @@ async def complete_account_mail(
     if fence is None:
         store.close()
         return target.receipt("duplicate")
-    page = None
+    session = BrowserSession()
+    handle = None
+    navigation_started = False
     try:
-        async with async_playwright() as playwright:
-            browser = await playwright.chromium.connect_over_cdp(endpoint)
-            if not browser.contexts:
-                raise VerificationError("CloakBrowser default context is unavailable")
-            page = await browser.contexts[0].new_page()
-            store.mark_navigation_started(target.event_key, fence)
-            await page.goto(target.verification_url, wait_until="commit", timeout=60_000)
-            await page.wait_for_timeout(3_000)
-            host = (urlsplit(page.url).hostname or "").casefold().rstrip(".")
-            if host != target.tenant:
-                raise VerificationError("Workday account mail escaped the known tenant")
-            if target.kind == "password_reset":
-                password = MachineWorkdayCredentialStore(credential_store).load(
-                    target.verification_url
-                )["password"]
-                password_field = page.locator('[data-automation-id="password"]')
-                verify_field = page.locator('[data-automation-id="verifyPassword"]')
-                submit = page.locator('[data-automation-id="resetPasswordButton"]')
-                if not (
-                    await password_field.count() == 1
-                    and await verify_field.count() == 1
-                    and await submit.count() == 1
-                ):
-                    raise VerificationError("Workday reset controls are not uniquely visible")
-                await password_field.fill(password)
-                await verify_field.fill(password)
-                await submit.click()
-                await page.wait_for_timeout(5_000)
-                current = page.url.casefold()
-                visible = (await page.locator("body").inner_text()).casefold()
-                if "passwordreset" in current or not (
-                    "sign in" in visible
-                    or "password has been reset" in visible
-                    or "password was reset" in visible
-                ):
-                    raise VerificationError("Workday did not visibly confirm password reset")
-            store.mark_opened(target.event_key, fence)
-            return target.receipt("opened")
+        handle = await session.attach(endpoint, f"account-mail-{target.message_id}")
+        page = session.page(handle)
+        store.mark_navigation_started(target.event_key, fence)
+        navigation_started = True
+        await page.goto(target.verification_url)
+        await page.wait_for_timeout(3_000)
+        host = (urlsplit(page.url).hostname or "").casefold().rstrip(".")
+        if host != target.tenant:
+            raise VerificationError("Workday account mail escaped the known tenant")
+        if target.kind == "password_reset":
+            password = MachineWorkdayCredentialStore(credential_store).load(
+                target.verification_url
+            )["password"]
+            await page.type_target(
+                {"label": "", "role": "textbox", "stable_id": "automation:password"},
+                password,
+            )
+            await page.type_target(
+                {"label": "", "role": "textbox", "stable_id": "automation:verifyPassword"},
+                password,
+            )
+            await page.click_target(
+                {"label": "", "role": "button", "stable_id": "automation:resetPasswordButton"}
+            )
+            await page.wait_for_timeout(5_000)
+            current = page.url.casefold()
+            visible = str(await page.evaluate("() => document.body.innerText")).casefold()
+            if "passwordreset" in current or not (
+                "sign in" in visible
+                or "password has been reset" in visible
+                or "password was reset" in visible
+            ):
+                raise VerificationError("Workday did not visibly confirm password reset")
+        store.mark_opened(target.event_key, fence)
+        return target.receipt("opened")
     except Exception:
         try:
-            store.mark_unknown(target.event_key, fence)
+            if navigation_started:
+                store.mark_unknown(target.event_key, fence)
+            else:
+                store.release_claim(target.event_key, fence)
         except VerificationError:
             pass
         raise
     finally:
-        if page is not None:
-            await page.close()
+        if handle is not None:
+            await session.close_owned(handle)
         store.close()
 
 

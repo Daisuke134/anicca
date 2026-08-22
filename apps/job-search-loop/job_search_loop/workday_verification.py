@@ -356,6 +356,18 @@ class VerificationStore:
     def mark_navigation_started(self, event_key: str, fence: str) -> None:
         self._transition(event_key, fence, "claimed", "navigation_started")
 
+    def release_claim(self, event_key: str, fence: str) -> None:
+        changed = self.connection.execute(
+            """
+            UPDATE workday_verifications
+            SET status='pending',fence=NULL,claimed_at=NULL
+            WHERE event_key=? AND fence=? AND status='claimed'
+            """,
+            (event_key, fence),
+        ).rowcount
+        if changed != 1:
+            raise VerificationError("Workday verification claim release mismatch")
+
     def mark_opened(self, event_key: str, fence: str) -> None:
         self._transition(event_key, fence, "navigation_started", "opened")
 
