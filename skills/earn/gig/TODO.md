@@ -405,10 +405,14 @@ reduce scope before exceeding three files or 100 production LOC.
    The normalizer now copies the versioned decision's `required_assets`, requires `artifact_assets`, binds
    manifest/acceptance disposition exactly, requires one exact `blocking_action` for non-delegable input,
    and preserves the existing PASS-only delivery validator instead of creating a second state machine.
-3. [ ] Extend `scripts/paid_work_evidence.py` to fail closed on asset count, path ownership, non-zero bytes,
+3. [x] Extend `scripts/paid_work_evidence.py` to fail closed on asset count, path ownership, non-zero bytes,
    MIME/type, hash and required ZIP membership, and to reject required visual media with no review receipt.
-4. [ ] Run the smallest direct synthetic checks for the asset boundary plus the existing Paid disk preflight
-   regression; do not add a TDD workflow or separate review ceremony.
+   The existing validator now checks project-owned files or exact ZIP members byte-for-byte and requires every
+   image hash in the artifact contract to appear in the controller's artifact-bound review manifest.
+4. [x] Run the smallest direct synthetic checks for the asset boundary plus the existing Paid disk preflight
+   regression; do not add a TDD workflow or separate review ceremony. Direct temporary fixtures proved ZIP
+   integrity, missing/count/hash/review failure and the asset-free case; `test_paid_disk_preflight.py` remains
+   green at 9/9 without modifying its tests.
 5. [ ] Reclassify existing private records without regenerating artifacts: Haru v31 must prove its existing
    images/archive members; Manledge v20 must prove that its accumulated contract requires no media;
    byusco v4 must become REVIEW_READY or BLOCKED_NON_DELEGABLE, never completed PASS.

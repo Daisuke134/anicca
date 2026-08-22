@@ -703,6 +703,12 @@ def _file_review_images(root: Path, artifact_sha256: str, finding: str = "",
 
     suffix = artifact.suffix.casefold()
     if suffix in {".jpg", ".jpeg", ".png", ".webp"}:
+        review_dir = root / "evidence" / "controller-artifact-review" / artifact_sha256
+        review_dir.mkdir(parents=True, exist_ok=True)
+        _write(review_dir / "review-manifest.json", {
+            "version": 1, "artifact_path": str(artifact), "artifact_sha256": artifact_sha256,
+            "pages": [{"path": str(artifact), "sha256": artifact_sha256}],
+        })
         return [artifact]
     if suffix == ".zip":
         review_dir = root / "evidence" / "controller-artifact-review" / artifact_sha256
