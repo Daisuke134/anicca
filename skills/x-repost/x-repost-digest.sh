@@ -20,7 +20,7 @@ TARGET="${TELEGRAM_ALERT_CHAT_ID:-}"
 
 send_digest() {
   [ -n "$TARGET" ] || return 1
-  local body="$1" idempotency_key params response
+  local body="$1" idempotency_key params response message_id
   idempotency_key="$(printf '%s' "$body" | shasum -a 256 | awk '{print $1}')"
   params="$("$PY" -c 'import json,sys; print(json.dumps({"channel":"telegram","to":sys.argv[1],"message":sys.argv[2],"idempotencyKey":sys.argv[3]}, separators=(",",":")))' \
     "$TARGET" "$body" "$idempotency_key")" || return 1
@@ -28,7 +28,7 @@ send_digest() {
     --params "$params" --timeout "$((TELEGRAM_SEND_TIMEOUT * 1000))" --json \
     2>>"$STATE/digest.err")" || return 1
   printf '%s\n' "$response" >>"$STATE/digest.jsonl"
-  "$PY" -c 'import json,sys
+  message_id="$("$PY" -c 'import json,sys
 def message_id(value):
     if isinstance(value, dict):
         for key in ("messageId", "message_id"):
@@ -41,7 +41,22 @@ def message_id(value):
             found=message_id(child)
             if found: return found
     return None
-raise SystemExit(0 if message_id(json.loads(sys.argv[1])) else 1)' "$response"
+mid=message_id(json.loads(sys.argv[1])); print(mid or "")
+raise SystemExit(0 if mid else 1)' "$response")" || return 1
+  "$PY" - "$STATE/telegram-sent.jsonl" "$idempotency_key" "$message_id" <<'PYEOF'
+import datetime, json, pathlib, sys
+path, body_sha, message_id = pathlib.Path(sys.argv[1]), sys.argv[2], sys.argv[3]
+if path.exists():
+    for line in path.read_text(encoding="utf-8").splitlines():
+        try:
+            if json.loads(line).get("body_sha256") == body_sha:
+                raise SystemExit(0)
+        except json.JSONDecodeError:
+            pass
+with path.open("a", encoding="utf-8") as stream:
+    stream.write(json.dumps({"ts": datetime.datetime.now().astimezone().isoformat(),
+        "body_sha256": body_sha, "message_id": message_id, "channel": "telegram"}) + "\n")
+PYEOF
 }
 
 ALREADY_EVALUATED="$("$PY" - "$STATE/experiments.jsonl" <<'PYEOF'
@@ -173,6 +188,21 @@ BODY="$("$PY" "$SKILL/scripts/x_digest.py" --posted "$STATE/posted.jsonl" --wind
   exit 1
 }
 MESSAGE="x-repost::: $BODY"
+MESSAGE_SHA="$(printf '%s' "$MESSAGE" | shasum -a 256 | awk '{print $1}')"
+if "$PY" - "$STATE/telegram-sent.jsonl" "$MESSAGE_SHA" <<'PYEOF'
+import json, pathlib, sys
+path, wanted = pathlib.Path(sys.argv[1]), sys.argv[2]
+found = False
+if path.exists():
+    for line in path.read_text(encoding="utf-8").splitlines():
+        try: found = found or json.loads(line).get("body_sha256") == wanted
+        except json.JSONDecodeError: pass
+raise SystemExit(0 if found else 1)
+PYEOF
+then
+  echo "x-repost-digest: delivery already receipted"
+  exit 0
+fi
 
 for attempt in 1 2 3; do
   if send_digest "$MESSAGE"; then

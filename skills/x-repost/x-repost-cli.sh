@@ -52,7 +52,7 @@ send_telegram() {
     log "telegram target is not configured"
     return 1
   fi
-  local body="$1" idempotency_key params response
+  local body="$1" idempotency_key params response message_id
   idempotency_key="$(printf '%s' "$body" | shasum -a 256 | awk '{print $1}')"
   params="$("$PY" -c 'import json,sys; print(json.dumps({"channel":"telegram","to":sys.argv[1],"message":sys.argv[2],"idempotencyKey":sys.argv[3]}, separators=(",",":")))' \
     "$TELEGRAM_ALERT_CHAT_ID" "$body" "$idempotency_key")" || return 1
@@ -63,7 +63,7 @@ send_telegram() {
       return 1
     }
   printf '%s\n' "$response" >>"$EV/telegram.jsonl"
-  "$PY" -c 'import json,sys
+  message_id="$("$PY" -c 'import json,sys
 def message_id(value):
     if isinstance(value, dict):
         for key in ("messageId", "message_id"):
@@ -77,7 +77,22 @@ def message_id(value):
             if found: return found
     return None
 value=json.loads(sys.argv[1]); mid=message_id(value)
-raise SystemExit(0 if mid else 1)' "$response"
+print(mid or "")
+raise SystemExit(0 if mid else 1)' "$response")" || return 1
+  "$PY" - "$STATE/telegram-sent.jsonl" "$idempotency_key" "$message_id" <<'PYEOF'
+import datetime, json, pathlib, sys
+path, body_sha, message_id = pathlib.Path(sys.argv[1]), sys.argv[2], sys.argv[3]
+if path.exists():
+    for line in path.read_text(encoding="utf-8").splitlines():
+        try:
+            if json.loads(line).get("body_sha256") == body_sha:
+                raise SystemExit(0)
+        except json.JSONDecodeError:
+            pass
+with path.open("a", encoding="utf-8") as stream:
+    stream.write(json.dumps({"ts": datetime.datetime.now().astimezone().isoformat(),
+        "body_sha256": body_sha, "message_id": message_id, "channel": "telegram"}) + "\n")
+PYEOF
 }
 
 # A published post whose report never arrived is indistinguishable from a pass that did nothing.
