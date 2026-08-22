@@ -241,7 +241,14 @@ if [ "$AFFILIATE_STATE" = "BLOCKED_LEGACY_CLAIM" ] || [ "$AFFILIATE_STATE" = "BL
   report "🛑 Affiliate proposal consumption state is unsafe; no new Affiliate or generic X post is allowed"
   finish 1 "affiliate proposal consumption state blocked"
 fi
-if [ "${HOUR_COUNT:-0}" -gt 0 ]; then
+# A fresh/recoverable Affiliate proposal has its own exact proposal claim and terminal ledger,
+# so the generic calendar-hour fence adds no duplicate protection and only suppresses distinct
+# placement distribution. Keep the fence for ordinary quote/reply work; let the replay-safe
+# Affiliate branch proceed immediately when the existing owner is explicitly kicked.
+if [ "${HOUR_COUNT:-0}" -gt 0 ] \
+  && [ "$AFFILIATE_STATE" != "READY" ] \
+  && [ "$AFFILIATE_STATE" != "RECONCILE" ] \
+  && [ "$AFFILIATE_STATE" != "VERIFY_UNVERIFIED" ]; then
   log "already published this hour ($THIS_HOUR) -- nothing to do"
   touch "$STATE/.last-pass"
   exit 0
