@@ -8,6 +8,9 @@
 # Seams: CAPAFY_TEST=1 + CAPAFY_FIXTURE=<dir>, CAPAFY_LOGFILE, CAPAFY_DIR, CAPAFY_REQ.
 set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$HERE" rev-parse --show-toplevel 2>/dev/null)}"
+[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
+export LIFE_MANAGER_REPO
 DIR="${CAPAFY_DIR:-$HERE}"; STATE_MD="$DIR/state/STATE.md"; mkdir -p "$DIR/state"
 set -a; . $HOME/.local/state/life-manager/.env 2>/dev/null; set +a
 REQ="${CAPAFY_REQ:-$HOME/.local/state/life-manager/state/capafy-loop-selfheal-request.json}"
@@ -31,7 +34,16 @@ HEAL=""; add_heal(){ HEAL="$HEAL$1; "; }
 CAP_TOK="$(python3 -c "import json;print(json.load(open('$LIFE_MANAGER_REPO/skills/capafy-autopublish/vendor/capafy-publisher/config.json'))['access_token'])" 2>/dev/null || echo)"
 
 # auth
-[ "$(printf '%s' "$(fetch cap_acct https://api.capafy.ai/agent/account -H "Authorization: Bearer $CAP_TOK")" | python3 -c "import json,sys;print(json.load(sys.stdin).get('code','x'))" 2>/dev/null||echo x)" = "0" ] || add_heal "CAPAFY-AUTH-DOWN → re-login (login-init→gog OTP→login-verify)"
+if [ "${CAPAFY_TEST:-}" = "1" ]; then
+  AUTH_HTTP="$(printf '%s' "$(fetch cap_acct https://api.capafy.ai/agent/account -H "Authorization: Bearer $CAP_TOK")" | python3 -c "import json,sys;print(200 if json.load(sys.stdin).get('code') == 0 else 0)" 2>/dev/null || echo 0)"
+else
+  AUTH_HTTP="$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $CAP_TOK" https://api.capafy.ai/agent/account 2>/dev/null || echo 000)"
+fi
+case "$AUTH_HTTP" in
+  200) ;;
+  401) add_heal "CAPAFY-AUTH-DOWN(HTTP401) → re-login (login-init→gog OTP→login-verify)" ;;
+  *) add_heal "CAPAFY-ACCOUNT-READ-FAILED(HTTP${AUTH_HTTP}) → retry account read; do NOT re-login" ;;
+esac
 # monthly payout = LATEST month (INV-1 error→NA; FIND-015 latest not max)
 CAP_MO="$(printf '%s' "$(fetch cap_payout https://api.capafy.ai/agent/developer/payout-record -H "Authorization: Bearer $CAP_TOK")" | python3 -c "
 import json,sys
