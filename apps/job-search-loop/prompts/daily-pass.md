@@ -7,9 +7,25 @@ execute it with the already-exported `PYTHONPATH`; load Candidate/Answer Memory 
 runtime so no personal values are embedded in that helper.
 
 Application work has strict priority over discovery. Your first executable browser
-step must be: collect `RowQueueSupervisor.collect(ledger)`; when it is non-empty,
-restore its first row from `$JOB_SEARCH_BROWSER_STATE_ROOT` and build a fresh
-observation immediately. While any collected row still has steps, do not run web
+step must be exactly:
+
+```bash
+python -m job_search_loop.browser_agent.runtime observe
+```
+
+This command collects the safe active-provider row, restores its durable cursor, and
+returns the fresh redacted observation. Choose exactly one action from that output,
+write its JSON object to a mode-0600 file under `$JOB_SEARCH_BROWSER_SCRATCH`, then
+execute exactly:
+
+```bash
+python -m job_search_loop.browser_agent.runtime act --action-file "$ACTION_FILE"
+```
+
+For a typed field use `candidate_concept` instead of putting its private value in the
+action file whenever Candidate Memory has that concept. Repeat `act` from each returned
+fresh observation. Do not inspect Python signatures or source before using this CLI.
+While any collected row still has steps, do not run web
 search, multi-source discovery, inspect historical runs, read tests, or reread source
 modules unless a named runtime API has just raised an exception that requires that
 specific definition. Discovery is permitted only after the entire collected tuple has
