@@ -218,6 +218,13 @@ full marker更新を飢餓させない。budget枯渇は`size-budget-exhausted`�
 governor全体にも90秒budgetを置き、最大15秒のlsof probeと削除/receipt用30秒余白を含めて
 inventoryへ残り時間だけを渡す。probe budget枯渇時は候補をpreserveし、lsof後・bytes計測前にもdeadlineを再確認する。残予算0なら
 `df`/`du`を開始せず、full markerを進めず次回へ再試行する。
+
+A-04のfresh canonical full passは2026-08-22T08:30:14Zに`runs=81→82`、`last exit code=0`で完了した。
+`host-inventory-full.json`はinventory mode `full`、file mode `0600`、root 23、SHA self-check一致、
+`coverage.gaps`の`size-deferred` 0だった。receiptは`errors=0`、`protected_deletions=0`である。
+残るgap 11件は`size-timeout` 8、`size-permission-partial` 2、`child-limit` 1であり、A-04の延期解消と
+区別してA-05/A-10で追跡する。fresh adversarial reviewはA-04を`ship`とし、production/test変更は不要と判定した。
+同reviewでclosedな旧`.host-inventory.*` temporary 1件も観測したため、曖昧な削除は行わずA-10へ回帰契約を登録する。
 Anicca cleanup controlのgit/lsof/du probeにも15秒timeoutを設定し、さらにguard外側のgovernor、
 runtime-manifest、sweep subprocessにも120秒（kill-after 10秒）のtimeoutを設定した。timeoutは
 error/preserveとして扱い、runtime-manifest失敗時はhourly markerを進めない。これによりfull passの
@@ -769,8 +776,8 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 
 各行は1つの作業だけを持つ。順序を飛ばさず、受入証拠が保存されるまで完了扱いにしない。
 
-capacity-safety interruptのA-25を閉じたため、実行queueは
-`A-04 → A-05 → … → A-24 → A-26 → … → A-44`へ戻る。A-25の先行完了はA-04〜A-24の
+capacity-safety interruptのA-25とA-04を閉じたため、実行queueは
+`A-05 → A-06 → … → A-24 → A-26 → … → A-44`へ進む。A-25の先行完了はA-05〜A-24の
 完了を意味しない。各itemはRED、最小GREEN、focused regression、fresh adversarial review、実機readback、
 spec state更新、commit/pushまでを同じsliceで閉じる。後続itemのscaffoldは前倒ししない。
 
@@ -779,13 +786,13 @@ spec state更新、commit/pushまでを同じsliceで閉じる。後続itemのsc
 | A-01 | mount inventoryを保存する | 実機`host-inventory.json`でschema PASS、SHA一致、mount_count=9、unique mount=9、mode=600、temporary file残留0、host-inventory tests 9 PASS | 完了 |
 | A-02 | top-level root inventoryを保存する | 実機inventoryでexpected root 23/23、unique path 23、unexpected root 0、owner family 12、SHA一致 | 完了 |
 | A-03 | owner-family coverageを保存する | 実機coverageでrequired 12、present 12、missing 0、set equality PASS | 完了 |
-| A-04 | size-deferred rootを解消する | `coverage.gaps`のsize-deferred 0 | 未完了 |
+| A-04 | size-deferred rootを解消する | `coverage.gaps`のsize-deferred 0 | 完了: 08:30:14Z canonical full、runs 81→82、exit 0、root 23、mode/receipt 0600、SHA一致、size-deferred 0、errors/protected deletion 0、review `ship` |
 | A-05 | permission-limited rootを分類する | TCC/system-temp/`.Trash`のowner receipt | 部分完了 |
 | A-06 | local writable volume coverageを証明する | writable volume missing 0 | 未完了 |
 | A-07 | protected-root fixtureを追加する | protected rootがmanifestへ入らないtest PASS | 部分完了 |
 | A-08 | active-lease fixtureを追加する | active lease candidate preserve test PASS | 未完了 |
 | A-09 | open-path fixtureを追加する | open path candidate preserve test PASS | 未完了 |
-| A-10 | probe-failure fixtureを追加する | lsof/du failure fail-closed test PASS | 未完了 |
+| A-10 | probe/atomic-write failure fixtureを追加する | lsof/du failure fail-closed、production size-timeout owner attribution、host-inventory orphan temporary 0 | 未完了: 08:30:14Z fullでsize-timeout 8件、closedな旧`.host-inventory.*` temporary 1件を観測 |
 | A-11 | dirty/unpushed worktree fixtureを追加する | dirty/unpushed preserve test PASS | 未完了 |
 | A-12 | unknown-class fixtureを追加する | unknown candidate preserve test PASS | 未完了 |
 | A-13 | 141/153 failure fixtureを保存する | failure receipt with zero deletion | 未完了 |
