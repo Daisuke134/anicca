@@ -31,6 +31,10 @@ Mercor is a global provider lane of Life Manager's existing Job Hunter system. I
 - Unsupported questions, CAPTCHA, and ambiguous attestations become `needs_human`.
 - Count earnings only from an authoritative Mercor Earnings/contract settlement read-back; never count views, invitations, estimates, or pending offers.
 
+## Ready-to-submit automation
+
+When a new listing page shows `3 of 3 steps completed`, `100%`, completed Domain Expert Interview reuse, and a visible `Submit application`, the existing hourly Job Hunter loop may submit exactly one new listing in that wake. It must deduplicate against the private ledger, read back the submitted state, and never resubmit an existing pending application.
+
 ## Calendar policy
 
 - Reuse `apps/job-search-loop/job_search_loop/interview_scheduling.py` and `calendar_sync.py` for every Mercor interview, regardless of locale.

@@ -77,6 +77,26 @@ The existing hourly Job Hunter acquisition loop becomes the single Mercor-capabl
 5. Re-open the application list after any submit and store evidence plus the external result.
 6. Record settled earnings only when the Mercor Earnings UI proves payment; views, invitations, offers, and estimates are not earnings.
 
+### 6.1 Ready-to-submit queue
+
+The loop may submit a new listing without human intervention when the live application page proves all of the following:
+
+- `3 of 3 steps completed` and `100%`;
+- the completed `Domain Expert Interview` is explicitly reused;
+- `Submit application` is visible;
+- the listing/application identifier is not already in the private application ledger.
+
+For each wake, select at most one new ready-to-submit listing, submit it once, reopen the application result, and append one evidence row. Never resubmit `submitted_pending_review`, click `Start` on a new interview, or infer readiness from a title alone.
+
+Current ready queue observed in Mercor:
+
+1. Data analysis / quantitative readouts Evaluator — $80–$120/hour
+2. General business strategy / management Evaluator — $80–$120/hour
+3. Humanities / arts / culture Evaluator — $80–$120/hour
+4. Media / journalism / communications Evaluator — $80–$120/hour
+
+Japanese language / cultural fluency Evaluator and Software / AI / IT / data Evaluator are already submitted and excluded from the queue.
+
 ## 7. Calendar and minimal-human-glue flow
 
 Mercor interview messages enter the existing Job Hunter inbox lane. Reuse `apps/job-search-loop/job_search_loop/interview_scheduling.py` and `calendar_sync.py`; do not create a Mercor-specific Calendar writer.
@@ -114,8 +134,7 @@ Do not delete or archive the migration source until all are true:
 1. [x] Copy the Mercor provider policy and skill facade into this repository.
 2. [ ] Add the Mercor provider adapter to the existing job-search runtime; keep ATS, Gmail, Calendar, ledger, and browser side effects in their existing owners.
 3. [ ] Route all locales and role families through one material-variant/fact gate; remove any Japanese-only filter.
-4. [ ] Reconcile the Japanese evaluator's submitted/selected/rejected state from Mercor and Gmail; never resubmit the same application.
-5. [ ] Reconcile the Software/AI/IT/data submission and the Japanese submission from Mercor/Gmail; never resubmit either application.
+4. [ ] Reconcile both submitted applications from Mercor and Gmail; never resubmit either application.
 5. [ ] Add a Mercor fixture to the existing Gmail→FreeBusy→Calendar idempotency tests.
 6. [ ] Fix or explicitly quarantine the Summary persistence gap.
 7. [ ] Run one isolated Mercor pass through the existing Job Hunter launchd route.
