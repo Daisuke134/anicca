@@ -26,7 +26,7 @@ returns the fresh redacted observation. When it reports `needs_navigation=true` 
 an empty `about:blank` page, navigate once without constructing an action file:
 
 While an active row is returned, the command envelope is mandatory: execute only
-`job_search_loop.browser_agent.runtime observe`, `navigate`, `click`, `choose`, `type`, `upload`, `wait`, `act`, `auth`,
+`job_search_loop.browser_agent.runtime observe`, `navigate`, `click`, `choose`, `type`, `upload`, `wait`, `act`, `auth`, `ineligible`,
 `finalize`, `checkpoint`, or `report`. Do not invoke Python snippets, inspect
 signatures/source/tests, read Ledger/Queue internals, print environment variables,
 or construct a helper. The runtime already owns row collection, cursor/evidence,
@@ -52,6 +52,13 @@ use the direct runtime command for an ordinary visible click or bounded wait:
 /opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime type --label "THE_EXACT_VISIBLE_LABEL" --role "THE_RETURNED_ROLE" --stable-id "THE_RETURNED_STABLE_ID" --candidate-concept "AN_EXACT_RETURNED_CONCEPT"
 /opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime upload --label "THE_EXACT_VISIBLE_UPLOAD_LABEL" --role "THE_RETURNED_ROLE" --stable-id "THE_RETURNED_STABLE_ID"
 /opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime wait --milliseconds 6000
+```
+
+If the fresh provider page explicitly shows the job is no longer available and no
+application form exists, do not navigate to a listings page. Execute exactly:
+
+```bash
+/opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime ineligible --reason job_not_available
 ```
 
 For select or scroll, write its JSON object to a mode-0600 file under

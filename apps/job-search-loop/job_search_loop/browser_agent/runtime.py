@@ -634,6 +634,44 @@ async def checkpoint(reason: str) -> dict[str, Any]:
     }
 
 
+async def ineligible(reason: str) -> dict[str, Any]:
+    """Terminally reject one visibly unavailable/ineligible row and continue."""
+    row, session, _checkpoints, _evidence, cursor, builder = await _context()
+    observation = await builder.build(cursor.handle)
+    ledger = Ledger(_path_env("JOB_SEARCH_STATE_ROOT") / "ledger.sqlite3")
+    try:
+        ledger.transition(
+            row["application_id"],
+            "rejected",
+            {
+                "reason": reason,
+                "observation_sha256": observation.content_sha256,
+            },
+        )
+    finally:
+        ledger.close()
+    wake_id = _path_env("JOB_SEARCH_BROWSER_OWNER_EVIDENCE").parent.name
+    report_receipt = send_hourly_outcomes(
+        database=_path_env("JOB_SEARCH_STATE_ROOT") / "telegram-outbox.sqlite3",
+        wake_id=wake_id,
+        receipts=(
+            QueueRowReceiptV1(
+                row["application_id"], row["company"], row["title"], "ineligible"
+            ),
+        ),
+        evidence_classes={},
+    )
+    _mark_wake_completed(row["application_id"])
+    await session.close_owned(cursor.handle)
+    return {
+        "status": "ineligible",
+        "reason": reason,
+        "application_id": row["application_id"],
+        "observation_sha256": observation.content_sha256,
+        "report_message_id": report_receipt.get("message_id"),
+    }
+
+
 def _materials_root() -> Path:
     data_home = Path(os.environ.get("XDG_DATA_HOME", str(Path.home() / ".local/share")))
     return data_home / "anicca/job-search/materials"
@@ -869,6 +907,10 @@ def main(argv: list[str] | None = None) -> int:
     checkpoint_parser.add_argument(
         "--reason", required=True, choices=("provider_unavailable", "visible_challenge")
     )
+    ineligible_parser = subparsers.add_parser("ineligible")
+    ineligible_parser.add_argument(
+        "--reason", required=True, choices=("job_not_available", "hard_ineligible")
+    )
     report_parser = subparsers.add_parser("report")
     report_parser.add_argument(
         "--status", required=True, choices=("checkpointed", "not_submitted")
@@ -918,6 +960,8 @@ def main(argv: list[str] | None = None) -> int:
         )
     elif args.command == "checkpoint":
         operation = checkpoint(args.reason)
+    elif args.command == "ineligible":
+        operation = ineligible(args.reason)
     else:
         operation = None
     result = report(args.status) if operation is None else asyncio.run(operation)
