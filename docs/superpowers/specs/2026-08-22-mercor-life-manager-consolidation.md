@@ -176,6 +176,8 @@ Public repository: adapters, schemas, prompts, tests, launchd templates, provide
 
 The loop reports `$10K verified` only after the operator has actual settled payout evidence for three consecutive monthly cycles. It must never convert an offer, application, view, estimated rate, or unworked weekly cap into revenue. The expected-hours planner uses the contract's displayed rate and weekly cap; it does not promise a result.
 
+The contract-level work harness is implemented in `apps/job-search-loop/job_search_loop/mercor_work_harness.py`. It rejects invalid work transitions, routes human-bound work to `needs_human`, and accepts a revenue record only from a `paid_settled` event with a positive amount, settled status, payment ID, and evidence reference. Runtime persistence and Inbox/Earnings adapters remain a separate TODO below.
+
 ## 7. Calendar and minimal-human-glue flow
 
 Mercor interview messages enter the existing Job Hunter inbox lane. Reuse `apps/job-search-loop/job_search_loop/interview_scheduling.py` and `calendar_sync.py`; do not create a Mercor-specific Calendar writer.
@@ -199,6 +201,7 @@ Mercor interview messages enter the existing Job Hunter inbox lane. Reuse `apps/
 - Operational meaning of 24/7 is a persistent browser transport plus an hourly bounded wake, not a busy loop that clicks continuously. Each wake may submit at most one grounded listing; `observed_no_action` is a successful safe pass when no listing is fully supported by verified facts.
 - The first live resident pass after enablement inspected `Data quality / CRM operations Evaluator`, but did not submit because the private facts did not verify the listing's five-year requirement. This is the expected grounded behavior; adding a role-specific fact is only allowed when the operator can truthfully evidence it.
 - Pass reporting is now wired through the existing idempotent Telegram outbox. The latest pass report was delivered with Telegram `message_id=28840`; it contained the status, inspected job titles, and no-action reason without resume/profile secrets.
+- The contract-level work harness is green: it covers authorized-work → accepted → paid-settled → revenue, rejects pending/offer payment evidence, and routes AI-prohibited work to `needs_human`. It is not yet wired to runtime Inbox/contract/payout persistence.
 - The live read-only Earnings page at `https://work.mercor.com/earnings` was opened in the dedicated Mercor profile. It read `Your total earnings to date are $0.00`, `No payment history yet`, and `Once you receive your first payout, it will appear here`. The private read-back is `status=not_observed`, `revenue_credited=false`, and `verified_monthly_run_rate_usd=null`; no application, offer, rate estimate, or `$0.00` placeholder is counted as earnings.
 - Failure fixtures now cover page drift, stale/non-Mercor tabs, transient CDP failure, ambiguous submit read-back, recovery/reset/Google `はい` screens, and authoritative successful read-back. The guard fails closed and never retries an ambiguous submit or clicks recovery UI.
 - A redacted two-operator fixture now proves separate operator IDs, state roots, application ledgers, evidence files, resume paths, and CDP endpoints; no cross-operator listing or evidence is visible.
@@ -239,7 +242,9 @@ Only the first unchecked item is active. Finish its evidence and read-back befor
 14. [x] **Open-source release:** secret scan, fresh-install test, setup/runbook, provider docs, and one non-Dais fixture pass.
 15. [x] **Reference cleanup:** remove all production references to `profitable-claude` and confirm the canonical Life Manager runtime still passes.
 16. [x] **Pass reporting:** send every Mercor pass status, inspected job, submit/no-action reason through the idempotent Telegram outbox and record the ACK/evidence without leaking private profile or resume data.
-17. [ ] **Deletion gate:** only after every prior read-back succeeds, migrate or explicitly stop the 15 enabled old-repo jobs (and reconcile the broader 38-file plist scan), then archive/delete `/Users/anicca/profitable-claude` as a separate destructive operation. Current status: blocked by active consumers and dirty old-repo worktree; no destructive action was taken.
+17. [x] **Work-harness contract:** enforce submitted → selected → contracted → authorized_work → accepted → paid_settled → revenue_recorded transitions, with fail-closed settlement evidence and `needs_human` routing.
+18. [ ] **Work-harness runtime wiring:** connect Inbox selection/contract messages, Calendar/authorized-work state, acceptance evidence, and Mercor Earnings read-back to the durable private work state; emit Telegram receipts for each transition.
+19. [ ] **Deletion gate:** only after every prior read-back succeeds, migrate or explicitly stop the 15 enabled old-repo jobs (and reconcile the broader 38-file plist scan), then archive/delete `/Users/anicca/profitable-claude` as a separate destructive operation. Current status: blocked by active consumers and dirty old-repo worktree; no destructive action was taken.
 
 ### 10.1 Remaining operational TODO after the live loop install
 
