@@ -258,6 +258,8 @@ def build_queue(snapshot: dict[str, Any], *, now: datetime | None = None) -> dic
                 "semantic_context_sha256": context_sha256,
                 "semantic_receipt_version": row["semantic_receipt"].get("version"),
             })
+            if seller_debt_reply:
+                item["semantic_seller_debt_reply"] = True
         items.append(item)
     if errors:
         return {"status": "collector_unhealthy", "errors": errors, "items": []}

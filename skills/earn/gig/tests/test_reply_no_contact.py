@@ -30,6 +30,12 @@ QUEUE_SPEC = importlib.util.spec_from_file_location(
 assert QUEUE_SPEC and QUEUE_SPEC.loader
 reply_queue = importlib.util.module_from_spec(QUEUE_SPEC)
 QUEUE_SPEC.loader.exec_module(reply_queue)
+LANE_SPEC = importlib.util.spec_from_file_location(
+    "gig_no_contact_reply_lane_test", ROOT / "scripts/reply_lane.py",
+)
+assert LANE_SPEC and LANE_SPEC.loader
+reply_lane = importlib.util.module_from_spec(LANE_SPEC)
+LANE_SPEC.loader.exec_module(reply_lane)
 
 
 def test_targeted_seller_debt_bridge_binds_verified_reply_to_target_event():
@@ -80,6 +86,20 @@ def test_reply_queue_builds_verified_seller_debt_without_relabeling_official_sid
 
     assert queue["status"] == "ready"
     assert queue["items"][0]["semantic_reply_body"].startswith("X用投稿案：")
+    assert queue["items"][0]["semantic_seller_debt_reply"] is True
+
+
+def test_semantic_composer_allows_only_verified_seller_debt_after_seller_last():
+    composer = reply_lane.SemanticReceiptComposer()
+    seller_last = {"conversation": [{"role": "seller"}]}
+    verified_debt = {
+        **seller_last,
+        "semantic_seller_debt_reply": True,
+        "semantic_reply_body": "X用投稿案：全文\nWeibo用投稿案：全文",
+    }
+
+    assert composer.nothing_to_say_reason(seller_last) == "seller_last"
+    assert composer.nothing_to_say_reason(verified_debt) is None
 
 
 class FakeOutbox:

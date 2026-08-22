@@ -113,6 +113,8 @@ class _SemanticContext:
         if isinstance(context, dict):
             context = dict(context)
             context["semantic_reply_body"] = self._item.get("semantic_reply_body")
+            if self._item.get("semantic_seller_debt_reply") is True:
+                context["semantic_seller_debt_reply"] = True
         return context, before
 
 
@@ -127,6 +129,8 @@ class SemanticReceiptComposer:
         if isinstance(rows, list) and rows:
             latest = rows[-1]
             if isinstance(latest, dict) and (latest.get("role") or latest.get("side")) == "seller":
+                if context.get("semantic_seller_debt_reply") is True:
+                    return None
                 return "seller_last"
         return None
 
