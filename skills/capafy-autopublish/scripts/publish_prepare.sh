@@ -44,6 +44,7 @@ step "[0b] KEY-HEALTH GATE (fail-closed) — never publish into an under-funded 
 "$AUTO/scripts/key_health_gate.sh" 2.00 || die "KEY-HEALTH gate FAIL — top up OpenRouter (>= \$2 remaining) before publishing; see state/lessons.md"
 
 step "clean-WS copy"
+mkdir -p "$WS/skills"
 rm -rf "$WS/skills/$SKILL_NAME" 2>/dev/null
 cp -R "$SKILL_DIR" "$WS/skills/$SKILL_NAME" || die "clean-WS copy failed"
 
