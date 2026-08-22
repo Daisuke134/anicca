@@ -39,6 +39,9 @@ Never burn the remaining budget with repeated waits or an unchanged action. If t
 same custom control returns a provider `Network Error` twice, perform one typed
 `navigate` to the current checkpoint URL, observe the newly loaded page, refill any
 lost fields from Candidate Memory, and retry that control once on the fresh page.
+If that fresh navigation renders an explicit provider maintenance/unavailable page,
+checkpoint the row immediately, report that exact visible provider condition, and
+continue the queue; the next hourly owner wake retries the durable row automatically.
 
 This process is the existing `ai.anicca.job-search-daily` launchd owner. Do not
 start another launchd job, agent runner, or Chromium process. Read the JSON path in
