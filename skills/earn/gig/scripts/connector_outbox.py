@@ -809,9 +809,17 @@ class ConnectorOutbox:
             next_revision = int(row["revision"]) + (
                 1 if current_intent_state is not None else 0
             )
-            if now < blocked_at or now < next_attempt_at:
-                # Evaluated FIRST on purpose: a clock that stepped backwards must
-                # produce "not yet", never a permanent dead letter.
+            if now < blocked_at:
+                # A clock that stepped backwards must produce "not yet", never a
+                # permanent dead letter.
+                decision, reason = "wait", "backoff_open"
+            elif attempts >= cap:
+                # The block itself is the durable authoritative-absence receipt for
+                # the final attempt. Waiting through one more backoff cannot create a
+                # new send opportunity; it only leaves terminal work looking active.
+                decision = "dlq"
+                reason = f"revive_attempts_exhausted:{rejection_code or 'unknown'}"
+            elif now < next_attempt_at:
                 decision, reason = "wait", "backoff_open"
             elif int(row["active_siblings"]) > 0:
                 # enqueue() parks a new buyer event on a blocked successor while the
@@ -822,9 +830,6 @@ class ConnectorOutbox:
                 decision, reason = "skipped", "thread_has_active_action"
             elif next_revision > MAX_REVISIONS_PER_ACTION:
                 decision, reason = "dlq", "revision_budget_exhausted"
-            elif attempts >= cap:
-                decision = "dlq"
-                reason = f"revive_attempts_exhausted:{rejection_code or 'unknown'}"
             elif current_intent_state is not None and current_intent_state != "superseded":
                 # The blocked row still owns a live intent: reviving it would
                 # resurrect an un-superseded revision.  Left for the reconcile
