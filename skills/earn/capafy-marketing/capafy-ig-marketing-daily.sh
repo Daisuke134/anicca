@@ -61,7 +61,9 @@ if [ "${CAPAFY_IG_MARKETING_SELFHEAL_TEST:-0}" = "1" ]; then
   selfheal_capafy_launchd
   exit $?
 fi
-if ! selfheal_capafy_launchd; then
+if [ "${CAPAFY_HEADLESS_BRIDGE:-0}" = "1" ]; then
+  :
+elif ! selfheal_capafy_launchd; then
   echo "Capafy launchd self-heal failed — stopping marketing wake" >&2
   exit 2
 fi

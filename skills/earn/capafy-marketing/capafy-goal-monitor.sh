@@ -164,7 +164,9 @@ fi
 
 GO_LIVE_ACTION="not_yet"
 if [ "${WDAY:-0}" -ge "$WARMUP_DAYS_REQUIRED" ]; then
-  if ! converge_ig_launchd; then
+  if [ "${CAPAFY_HEADLESS_BRIDGE:-0}" = "1" ]; then
+    GO_LIVE_ACTION="headless_bridge"
+  elif ! converge_ig_launchd; then
     GO_LIVE_ACTION="load_failed"
     echo "IG launchd convergence failed — stopping goal monitor" >&2
     exit 2

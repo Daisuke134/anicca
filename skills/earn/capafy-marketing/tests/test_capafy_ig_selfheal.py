@@ -89,3 +89,135 @@ def test_production_mode_runs_selfheal_before_account_and_metrics(tmp_path: Path
     result, calls = run_selfheal(tmp_path, launchd_test=False)
     assert calls and all(call.startswith("print ") for call in calls)
     assert result.returncode != 0
+
+
+def _write_executable(path: Path, body: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(body, encoding="utf-8")
+    path.chmod(0o755)
+
+
+def _real_ig_probe_fixture(tmp_path: Path) -> dict[str, Path]:
+    repo = tmp_path / "repo"
+    target = repo / "skills/earn/capafy-marketing"
+    target.mkdir(parents=True)
+    shutil.copy2(SCRIPT, target / SCRIPT.name)
+
+    helper = target / "account_state.sh"
+    helper.write_text(
+        "capafy_ig_accounts_file(){ printf '%s\\n' \"$CAPAFY_FIXTURE_ACCOUNTS\"; }\n"
+        "resolve_capafy_ig_handle(){ printf 'fixture'; }\n"
+        "resolve_capafy_ig_port(){ printf '9332'; }\n"
+        "resolve_capafy_ig_started_warming(){ printf '2020-01-01'; }\n"
+        "capafy_ig_provision_reason(){ return 0; }\n",
+        encoding="utf-8",
+    )
+
+    engine = repo / "skills/earn/marketing-engine"
+    engine.mkdir(parents=True)
+    for name in ("provision_prompt.sh", "load_manifest.sh"):
+        shutil.copy2(ROOT / "skills/earn/marketing-engine" / name, engine / name)
+    (engine / "manifests").mkdir()
+    shutil.copy2(
+        ROOT / "skills/earn/marketing-engine/manifests/capafy.manifest.sh",
+        engine / "manifests/capafy.manifest.sh",
+    )
+
+    # These files fail the test if the probe unexpectedly advances into side-effecting work.
+    side_effects = tmp_path / "side-effects.calls"
+    scripts = target / "scripts"
+    scripts.mkdir(parents=True)
+    for name in ("ig_metrics.py", "pull_attribution.py", "build_landing.py"):
+        (scripts / name).write_text(
+            "import os\n"
+            "with open(os.environ['CAPAFY_SIDE_EFFECTS'], 'a', encoding='utf-8') as f:\n"
+            f"    f.write('{name}\\n')\n",
+            encoding="utf-8",
+        )
+    _write_executable(
+        engine / "run_agent.sh",
+        "#!/bin/sh\nprintf '%s\\n' run_agent >> \"$CAPAFY_SIDE_EFFECTS\"\nexit 99\n",
+    )
+
+    browser = repo / "skills/browser/scripts/cdp_context_lease.py"
+    browser.parent.mkdir(parents=True)
+    browser.write_text(
+        "import os, sys\n"
+        "with open(os.environ['CAPAFY_LEASE_CALLS'], 'a', encoding='utf-8') as f:\n"
+        "    f.write(' '.join(sys.argv[1:]) + '\\n')\n",
+        encoding="utf-8",
+    )
+
+    home = tmp_path / "home"
+    (home / ".local/state/life-manager/logs").mkdir(parents=True)
+    accounts = home / ".cloak/accounts.json"
+    accounts.parent.mkdir(parents=True, exist_ok=True)
+    accounts.write_text("[]\n", encoding="utf-8")
+    safe_calls = tmp_path / "launchctl-safe.calls"
+    safe = tmp_path / "launchctl-safe"
+    _write_executable(
+        safe,
+        "#!/bin/sh\n"
+        "printf '%s\\n' \"$*\" >> \"$CAPAFY_SAFE_CALLS\"\n"
+        "exit 99\n",
+    )
+    return {
+        "repo": repo,
+        "target": target,
+        "home": home,
+        "accounts": accounts,
+        "safe": safe,
+        "safe_calls": safe_calls,
+        "lease_calls": tmp_path / "lease.calls",
+        "side_effects": side_effects,
+    }
+
+
+def _run_real_ig_probe(tmp_path: Path, *, headless: bool) -> tuple[subprocess.CompletedProcess[str], dict[str, Path]]:
+    fixture = _real_ig_probe_fixture(tmp_path)
+    env = os.environ | {
+        "HOME": str(fixture["home"]),
+        "LIFE_MANAGER_REPO": str(fixture["repo"]),
+        "CAPAFY_FIXTURE_ACCOUNTS": str(fixture["accounts"]),
+        "CAPAFY_LAUNCHCTL_SAFE": str(fixture["safe"]),
+        "CAPAFY_LAUNCHCTL_DOMAIN": "gui/501",
+        "CAPAFY_SAFE_CALLS": str(fixture["safe_calls"]),
+        "CAPAFY_LEASE_CALLS": str(fixture["lease_calls"]),
+        "CAPAFY_SIDE_EFFECTS": str(fixture["side_effects"]),
+        "CAPAFY_IG_PROBE_ONLY": "1",
+    }
+    if headless:
+        env["CAPAFY_HEADLESS_BRIDGE"] = "1"
+    result = subprocess.run(
+        ["bash", str(fixture["target"] / SCRIPT.name)],
+        env=env,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    return result, fixture
+
+
+def test_real_ig_headless_bridge_reaches_probe_without_safe_or_side_effects(tmp_path: Path):
+    result, fixture = _run_real_ig_probe(tmp_path, headless=True)
+
+    assert result.returncode == 0, result.stderr
+    assert "active_handle=fixture" in result.stdout
+    assert "provision_needed=no" in result.stdout
+    assert not fixture["safe_calls"].exists()
+    lease_calls = fixture["lease_calls"].read_text(encoding="utf-8").splitlines()
+    assert len(lease_calls) == 2
+    assert [line.split()[0] for line in lease_calls] == ["acquire", "release"]
+    assert all(line.split()[1].startswith("capafy-") for line in lease_calls)
+    assert not fixture["side_effects"].exists()
+
+
+def test_real_ig_normal_mode_remains_fail_closed_before_probe(tmp_path: Path):
+    result, fixture = _run_real_ig_probe(tmp_path, headless=False)
+
+    assert result.returncode == 2
+    assert fixture["safe_calls"].read_text(encoding="utf-8").splitlines() == [
+        "print gui/501/ai.anicca.capafy-goal-monitor",
+    ]
+    assert "active_handle=fixture" not in result.stdout
+    assert not fixture["side_effects"].exists()
