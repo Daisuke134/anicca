@@ -3,6 +3,7 @@ import path from "path";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import WriterUnlock from "../../../components/blog/WriterUnlock";
+import AffiliateEntryReceipt from "../../../components/blog/AffiliateEntryReceipt"; // AFFILIATE_ENTRY_V1
 
 type Mirrors = { x?: string; substack?: string; newsletter?: string };
 
@@ -94,6 +95,11 @@ function trackedAffiliateHref(href: string): string {
       return `/go/af_${placement}`;
   } catch {}
   return href;
+}
+
+function affiliatePlacement(md: string): string | null { // AFFILIATE_ENTRY_V1
+  const match = md.match(/https:\/\/try\.elevenlabs\.io\/(elevenlabs-discovered-[a-z0-9][a-z0-9-]{2,60}-en-1)/);
+  return match ? match[1] : null;
 }
 
 function renderMarkdown(md: string): string {
@@ -210,11 +216,13 @@ export default function ResearchPostPage({ params }: { params: { slug: string } 
     ? post.markdown.replace(voiceHeading, `${voiceHeading}\n\n${voiceImage}`)
     : post.markdown;
   const html = renderMarkdown(articleMarkdown);
+  const affiliatePlacementId = affiliatePlacement(articleMarkdown);
   const m = post.mirrors ?? {};
   const hasMirrors = Boolean(m.x || m.substack || m.newsletter);
 
   return (
     <main className="bg-cream">
+      {affiliatePlacementId && <AffiliateEntryReceipt placementId={affiliatePlacementId} />}
       {post.writer_manifest && (
         <script
           id="writer-public-contract"
