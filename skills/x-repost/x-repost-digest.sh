@@ -11,8 +11,38 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PAT
 SKILL="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 STATE="${X_REPOST_STATE_DIR:-$SKILL/state}"
 PY=/opt/homebrew/bin/python3; [ -x "$PY" ] || PY=python3
-TARGET="${TELEGRAM_ALERT_CHAT_ID:-0000000000}"
 WINDOW="${X_REPOST_DIGEST_WINDOW_HOURS:-24}"
+TELEGRAM_SEND_TIMEOUT="${X_REPOST_TELEGRAM_SEND_TIMEOUT:-30}"
+set -a
+. "$HOME/.openclaw/.env" 2>/dev/null
+set +a
+TARGET="${TELEGRAM_ALERT_CHAT_ID:-}"
+
+send_digest() {
+  [ -n "$TARGET" ] || return 1
+  local body="$1" idempotency_key params response
+  idempotency_key="$(printf '%s' "$body" | shasum -a 256 | awk '{print $1}')"
+  params="$("$PY" -c 'import json,sys; print(json.dumps({"channel":"telegram","to":sys.argv[1],"message":sys.argv[2],"idempotencyKey":sys.argv[3]}, separators=(",",":")))' \
+    "$TARGET" "$body" "$idempotency_key")" || return 1
+  response="$(timeout "$TELEGRAM_SEND_TIMEOUT" openclaw gateway call send \
+    --params "$params" --timeout "$((TELEGRAM_SEND_TIMEOUT * 1000))" --json \
+    2>>"$STATE/digest.err")" || return 1
+  printf '%s\n' "$response" >>"$STATE/digest.jsonl"
+  "$PY" -c 'import json,sys
+def message_id(value):
+    if isinstance(value, dict):
+        for key in ("messageId", "message_id"):
+            if value.get(key) is not None: return str(value[key])
+        for child in value.values():
+            found=message_id(child)
+            if found: return found
+    elif isinstance(value, list):
+        for child in value:
+            found=message_id(child)
+            if found: return found
+    return None
+raise SystemExit(0 if message_id(json.loads(sys.argv[1])) else 1)' "$response"
+}
 
 # Evaluate before reporting, so the digest carries today's verdict instead of yesterday's. The
 # evaluator refuses to move the knob on thin data and records that refusal, which is the difference
@@ -108,8 +138,7 @@ BODY="$("$PY" "$SKILL/scripts/x_digest.py" --posted "$STATE/posted.jsonl" --wind
 MESSAGE="x-repost::: $BODY"
 
 for attempt in 1 2 3; do
-  if openclaw message send --channel telegram --target "$TARGET" -m "$MESSAGE" --json \
-       >>"$STATE/digest.jsonl" 2>&1; then
+  if send_digest "$MESSAGE"; then
     echo "x-repost-digest: sent"
     exit 0
   fi
