@@ -2769,9 +2769,13 @@ flowchart LR
    `replay_proposed_action=false`; only `NO_EFFECT` may retry when due. A corrupt
    history tail fails closed instead of rolling back to a transition that could
    replay a completed effect.
-6. **A-CUT-2C — complete ActionProposal validation:** enforce enum, bounds,
-   additional-property rejection, authority class, and exactly one action or
-   durable wait; acceptance is fail-closed rejection before tool dispatch.
+6. **A-CUT-2C — complete ActionProposal validation — DONE:**
+   `config/schemas/action-proposal-v1.json` publishes the Draft 2020-12 contract
+   and `scripts/action_proposal.py` enforces the same domain boundary before its
+   dispatch callback. It rejects unknown commands, authority mismatch, enum/range/
+   length violations, extra properties, and anything other than exactly one
+   action or timezone-bound durable wait. Invalid fixtures invoke dispatch zero
+   times; a valid action invokes once and a valid wait never invokes it.
 7. **A-CUT-2D — due-time and model budget:** call the runtime model only when a
    judgment is due and reserve the configured pass budget before invocation;
    acceptance is a normal reconciliation wake with zero model calls and a due
