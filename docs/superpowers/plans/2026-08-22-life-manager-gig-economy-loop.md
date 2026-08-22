@@ -244,7 +244,7 @@ No later task may jump ahead of the first incomplete row:
 
 | Order | Atomic outcome | Completion evidence |
 |---:|---|---|
-| U1 | Resolve existing-account vs signup using the owner email | Upwork email-flow page plus private account-state receipt |
+| U1 | Resolve existing-account vs signup using the owner email | **DONE:** existing account confirmed by normal email flow; private account-state receipt stored |
 | U2 | Complete normal email/password signup or login | Authenticated Upwork identity and home/profile URL readback twice |
 | U3 | Complete factual freelancer profile needed to apply | Official profile completeness and availability readback |
 | U4 | Observe real job-search, detail and proposal surfaces | Redacted DOM/API field receipt with zero mutation |
@@ -261,6 +261,11 @@ No later task may jump ahead of the first incomplete row:
 | U15 | Repeat on three independent paid jobs | Three contract/payment IDs and complete per-job economics |
 
 Tasks 13–22 implement U10–U15. Tasks 23–57 remain frozen until U14 closes.
+
+Current U2 evidence: Upwork accepted two password-reset requests, but no Upwork reset message is
+present in Gmail All Mail yet. No Google/Apple/social-login route was used. Resume U2 from receipt
+delivery; do not create another account or advance to U3. Live totals remain 0 applications, 0
+conversations, 0 contracts and USD 0 received revenue.
 
 ### Task 7: Record Upwork's private action matrix
 

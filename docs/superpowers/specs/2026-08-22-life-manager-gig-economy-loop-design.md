@@ -27,6 +27,11 @@ account; otherwise it signs into the existing account to avoid duplicate-account
 adapter refinement follows authenticated observed Upwork state, not a speculative cross-provider
 abstraction.
 
+Current bootstrap state: the normal email flow identifies an existing Upwork account. Two official
+password-reset requests were accepted, while the reset message has not appeared in Gmail All Mail.
+Therefore account creation is closed, U2 remains incomplete at email delivery, and profile or
+application work must not claim authenticated completion yet.
+
 ## 1. Goal, objective and boundaries
 
 ### 1.1 Goal
