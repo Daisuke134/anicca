@@ -254,14 +254,13 @@ No later task may jump ahead of the first incomplete row:
 | U7 | Exercise immutable proposal freezing | **DONE, PARKED:** payload `9fab22a2…10d19` retained for later requalification; zero marketplace effects |
 | U8 | Add the required factual Employment History item | **DONE:** official employment readback matches owner evidence; Find Work progressbar is 70% |
 | U9 | Publish three reusable proofs and complete optional profile items | **DONE:** three public project IDs and bound hashes, factual A10 Lab history, public EEG/ML Other Experience readback, and official `100% completed` |
-| U10 | Publish one narrow Project Catalog offer | Live catalog ID; bounded input/output/exclusions/price/time and client-visible readback |
-| U11 | Collect free acquisition capacity | Account-earned Connects balance and invitation readback; purchases, Plus, badge and boosts remain zero |
-| U12 | Discover and qualify a first-job candidate | Recent, <=20 proposals, explicit acceptance, verified client, positive expected net, low Connects, 1-3 day delivery |
-| U13 | Freeze one tailored first-job proposal | Immutable payload hash, relevant proof IDs, exact terms and zero unsupported claims |
-| U14 | Submit that proposal once | Official proposal ID plus Connects before/after |
-| U15 | Replay immediately | Same proposal ID; zero new proposal and zero additional Connects |
-| U16 | Poll and answer the resulting thread | Official story/message IDs and no duplicate reply |
-| U17 | Negotiate and accept profitable terms | Offer ID, exact terms hash and active contract ID |
+| U10 | Discover and qualify a first-job candidate | Recent, <=20 proposals, explicit acceptance, verified client, positive expected net, low Connects, 1-3 day delivery |
+| U11 | Resolve application capacity for that candidate | Exact proposal-surface Connects requirement and account balance; purchases, Plus, badge and boosts remain zero unless separately authorized |
+| U12 | Freeze one tailored first-job proposal | Immutable payload hash, relevant proof IDs, exact terms and zero unsupported claims |
+| U13 | Submit that proposal once | Official proposal ID plus Connects before/after |
+| U14 | Replay immediately | Same proposal ID; zero new proposal and zero additional Connects |
+| U15 | Poll and answer the resulting thread | Official story/message IDs and no duplicate reply |
+| U16 | Negotiate and accept profitable terms | Offer ID, exact terms hash and active contract ID |
 | U18 | Fulfill and independently verify the work | Artifact hash and independent verifier PASS |
 | U19 | Deliver once | Official submission ID/state and replay with zero duplicate delivery |
 | U20 | Reconcile money and review | Received transaction, fee, costs, payout and honest review evidence |
@@ -312,10 +311,11 @@ gate. U8 first adds Upwork's required factual Employment History item and record
 U9 has published all three proofs as projects `2091143267699150848`, `2091143845069127680`, and
 `2091144398831636480`. GitHub web linking had no credential/session, so U9 used the factual A10 Lab
 Marketing Intern history instead; official completion now reads 95%. It next adds one truthful Other
-Experience item; official completion now reads 100%. U10 next publishes one narrow Project Catalog
-offer; U11 collects account-earned
-Connects and invitations. Purchased Connects, Freelancer Plus, Availability Badge and boosts stay
-disabled during this bootstrap. Application, Connects-spend and payment effects remain zero.
+Experience item; official completion now reads 100%. The unfinished Project Catalog item remains a
+private draft and is no longer next. U10 searches and qualifies the first paid-job candidate; U11 records
+the exact proposal Connects requirement and resolves only the capacity needed for that candidate.
+Purchased Connects, Freelancer Plus, Availability Badge and boosts stay disabled without separate
+authorization. Application, Connects-spend and payment effects remain zero.
 
 ### Task 7: Record Upwork's private action matrix
 

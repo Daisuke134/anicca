@@ -75,9 +75,11 @@ January 2020–January 2021, is publicly readable and moved official completion 
 `aria-valuenow=95` / `95% completed`. U9 is closed: the factual `EEG and Machine Learning Research`
 Other Experience item is publicly readable with NAIST/ATR, April 2024–April 2026, EEG, machine
 learning and mind-wandering detection preserved exactly. The official Find Work progressbar now reads
-`aria-valuenow=100` / `100% completed`. The free-first bootstrap next
-publishes one narrow Project Catalog offer, obtains any account-earned Connects, and searches for a
-small paid job with bounded scope, low competition and delivery in one to three days. Freelancer
+`aria-valuenow=100` / `100% completed`. The main Upwork path next searches for and applies to a
+small paid job with bounded scope, low competition and delivery in one to three days. The unfinished
+Project Catalog project remains a private draft and is not an acquisition gate. For each qualified job
+the loop opens the proposal surface, records the exact Connects requirement, and submits immediately
+when account-earned capacity is sufficient. Freelancer
 Plus, Availability Badge, proposal boost and purchased Connects stay disabled until a qualified
 opportunity has measured evidence that free acquisition paths are insufficient.
 
