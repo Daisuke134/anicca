@@ -327,8 +327,9 @@ archived, job-closed, platform-removed or unknown. Missing from one page never m
 
 U13 atomic order:
 
-1. Implement the missing production CloakBrowser provider entrypoint for the dedicated `gig-upwork`
-   profile; wire official job, free-reward, Connects, Catalog, invitation, proposal and offer readbacks.
+1. **DONE:** Implement the production CloakBrowser provider entrypoint for the dedicated `gig-upwork`
+   profile. Live hidden-target readback persisted Connects 0/no transactions, Offers 0, Invites 0,
+   Active proposals 0, Submitted proposals 0 and the working-style account task; focused tests pass.
 2. Inspect every account-visible onboarding/education reward; complete only factual free tasks and
    verify any award in Connects History.
 3. Finish, publish and read back the bounded private Project Catalog draft as one live inbound service.

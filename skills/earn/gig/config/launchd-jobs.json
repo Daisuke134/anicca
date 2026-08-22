@@ -94,6 +94,28 @@
 
   "jobs": [
     {
+      "label": "ai.anicca.life-manager-upwork-free-loop",
+      "lane": "upwork-free",
+      "summary": "Reconciles free Upwork capacity, invitations, proposals, and offers without purchasing anything.",
+      "program": [
+        "{{PYTHON}}",
+        "{{RELEASE}}/skills/earn/gig/scripts/providers/upwork_browser_provider.py",
+        "--cdp-base",
+        "http://127.0.0.1:9233",
+        "--output",
+        "{{GIG_STATE_DIR}}/state/upwork-free-loop.json"
+      ],
+      "env": {
+        "CLOAK_BROWSER_OWNER": "life-manager-upwork-free-loop",
+        "CLOAK_CDP_BASE_URL": "http://127.0.0.1:9233"
+      },
+      "StartInterval": 300,
+      "ThrottleInterval": 60,
+      "RunAtLoad": true,
+      "ProcessType": "Background",
+      "log_basename": "upwork-free-loop-launchd"
+    },
+    {
       "label": "ai.anicca.hf-gig-apply-direct",
       "lane": "apply",
       "summary": "Reads the coconala job board and submits applications.",

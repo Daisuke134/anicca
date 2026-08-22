@@ -115,6 +115,13 @@ Timeout or lost-ack without readback remains `reconcile_unknown` and cannot rese
 live replay remain intentionally unclaimed until the replacement first-job candidate passes the new
 bootstrap qualification gate.
 
+The production read-only browser provider is now implemented. It reuses the existing hidden-target CDP
+helper against the dedicated `gig-upwork` profile and atomically persists the official zero-spend
+inventory. Live readback currently proves balance 0, no Connects transactions, Offers 0, Invites 0,
+Active proposals 0 and Submitted proposals 0. The account exposes a working-style assessment task but
+does not claim a Connects reward for it, so the loop records it only as `account_task`. A five-minute
+launchd definition exists for this reconciliation and contains no buy, billing, Plus or boost command.
+
 ## 1. Goal, objective and boundaries
 
 ### 1.1 Goal
