@@ -1817,13 +1817,16 @@ action completes.
   the obsolete hard-coded v23. Prompt v26 can now queue one evidence-bound correction after the
   seller falsely denied a verified attachment, and the post-correction debt detector prevents a
   second correction (`7f5608836`; focused RED then 50-test GREEN).
-- [ ] On the affected attachment thread, let the existing Negotiate owner send exactly one correction
+- [x] On the affected attachment thread, the existing Negotiate owner sent exactly one correction
   that names both verified buyer images, states that the earlier inability claim was wrong, says no
-  reattachment is required, and proceeds with the agreed sample. Require exact official message
-  readback plus the natural-language Telegram provider message ID. This effect is currently owned but
-  blocked by the host `disk-writers.stop`, not by the attachment or semantic code.
-- [ ] On the next natural poll after that correction, prove seller-last replay zero: no second apology,
-  no duplicate reply/estimate, unchanged official outgoing hash, and no blind Telegram resend.
+  reattachment is required, and proceeds with the agreed sample. The official thread readback shows
+  that correction once at 00:30:59, the buyer's new acknowledgement at 00:32:28, and action 412 has
+  naturally reconciled to `replied` without another marketplace effect.
+- [x] On the natural polls after that correction, prove seller-last replay zero: no second apology and
+  no duplicate reply/estimate. The only later marketplace event is the buyer's distinct acknowledgement.
+- [ ] Resolve the correction's Telegram report without a blind resend. Report
+  `gig:telegram:reply:v2:412:6` is `delivery_unknown` after `TimeoutExpired` and has no provider message
+  ID; match a provider receipt first and resend only if non-delivery is proven.
 - [ ] Treat a buyer's competing bid or desired ceiling as a semantic renegotiation signal. Choose a
   deliverable, platform-valid competitive price from the whole current cycle without a hard-coded
   discount, revise the existing pre-purchase estimate when needed, and require official readback of
