@@ -685,6 +685,13 @@ production rollout直前のcontrol-plane lineageは、現在のcommand parentが
 `mutation_allowed=true`になるまでtracked plistのcopy/reload/kickstartを停止する。push済みでcleanな2つのA-20 sparse worktreeは
 `git worktree remove`で回収し、feature branchとremote commitは保持した。
 
+owner承認後、PID 525のChatGPT/Codex app-serverだけを終了し、OS service、standalone Codex、OpenClaw、browserは
+停止しなかった。このthreadは既存standalone app-server PID 1423へ再接続でき、session lossはなかった。しかし再接続後も
+`id -un=501`、manager readback 153、`launchctl print gui/501` 141、`launchctl-safe preflight` exit 75、
+`blocked_control_plane/mutation_allowed=false`のままである。したがって単一app-server restartはcontrol-planeを復旧せず、
+同じcontextから追加app-server、Directory Services、loginwindow、launchdを終了しない。Data volumeは約21.3 GiB空き、
+直近canonical receiptは19:20:57Zの`gui-bootstrap-health-failure/errors=1/protected_deletions=0`であり、fresh successではない。
+
 `/Users/anicca/anicca-project`は約9.5 GiB、その`.worktrees`は約4.4 GiBだった。最大の
 `cfo-resume-spec`（約1.08 GiB）は、dirty=0、branch upstream 0/0、process/open-path/leaseなしを
 read backした後にだけ`git worktree remove`で回収した。branchとremoteは残り、再作成可能である。
