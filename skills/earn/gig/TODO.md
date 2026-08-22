@@ -303,8 +303,8 @@ Do not advance the development cursor until every unchecked item in the current 
 evidence. Independent production lanes continue running while development follows this order.
 
 **Current live cursor.** `main` and `origin/main` were verified equal immediately before this snapshot. The Paid
-desktop-capability implementation plus the observed `capability` field contract are immutable commit
-`0d521af2522c013446ebf5eac4de2b0d212d1e43`; the release selector and the active launchd Paid pass are pinned
+desktop-capability implementation, observed `capability` field contract and empty-session recovery are immutable
+commit `e2cdaded2976cd0e0b4c98c337f3790e6b315d22`; the release selector and active launchd Paid pass are pinned
 to that exact release. The shared disk guard is active with
 `GIG_DISK_HEADROOM_KIB=0`; the earlier speculative storage floor no longer stops Paid. APFS clonefile staging
 is also active, so historical ZIPs remain independent paths without physically duplicating their blocks.
@@ -334,7 +334,10 @@ The first broker-enabled natural owner selected the installed Illustrator capabi
 SVG masters and emitted exactly two relative-path requests. That pass exposed one protocol mismatch before any
 customer effect: the owner used the natural field name `capability` while the controller expected `tool`. The
 controller now treats `capability` as canonical and accepts `tool` only as compatibility input. A new natural
-launchd pass is active on the corrected immutable release; it must produce both official Illustrator reopen
+pass then reached the out-of-sandbox Illustrator CLI, but the dedicated app remained on an empty unresponsive home
+window after earlier interrupted automation. The native tool now health-checks Illustrator and restarts it only
+when System Events proves no document window is open; a user document makes the pass fail closed. A third natural
+launchd pass is active on that corrected immutable release; it must produce both official Illustrator reopen
 receipts, resume the same owner, obtain PASS, send v40 once with formal delivery OFF and read it back from Haru's
 exact room before this item advances.
 
