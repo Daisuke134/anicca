@@ -28,6 +28,7 @@ if str(SCRIPTS) not in sys.path:
 from gig_paths import BROWSER_DIR, RUNNER_DIR  # noqa: E402
 from gig_disk_guard import disk_headroom_ok  # noqa: E402
 from no_contact_policy import load_registry, match_thread  # noqa: E402
+from requested_estimate import SEMANTIC_PROMPT_VERSION  # noqa: E402
 
 try:
     from connector_outbox import ConnectorOutbox, coconala_inbox_event_key
@@ -1324,7 +1325,7 @@ def _targeted_seller_debt_reply(inquiry: dict[str, Any]) -> bool:
         and inquiry.get("reply_required") is True
         and inquiry.get("next_action") == "reply"
         and isinstance(receipt, dict)
-        and receipt.get("prompt_version") == "reply-negotiate-v23"
+        and receipt.get("prompt_version") == SEMANTIC_PROMPT_VERSION
         and isinstance(judgement, dict)
         and judgement.get("next_action") == "reply"
         and type(inquiry.get("semantic_reply_body")) is str
