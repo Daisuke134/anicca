@@ -609,6 +609,7 @@ async def type_candidate(
                 "kind": "type",
                 "target": {"label": label, "role": role, "stable_id": stable_id},
                 "candidate_concept": candidate_concept,
+                **({"text": ""} if not candidate_concept else {}),
             },
             sort_keys=True,
         )
