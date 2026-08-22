@@ -219,7 +219,7 @@ def partition_no_contact_rows(
         if (
             lifecycle is not None
             and lifecycle.get("dlq_at") is not None
-            and lifecycle.get("dlq_reason") == f"nothing_to_say:ignore_policy:{policy['policy_id']}"
+            and lifecycle.get("reason") == f"nothing_to_say:ignore_policy:{policy['policy_id']}"
         ):
             ignored.append({
                 "status": "ignore_policy_replay",

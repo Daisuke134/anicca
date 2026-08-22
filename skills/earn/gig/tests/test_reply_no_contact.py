@@ -10,6 +10,12 @@ SPEC = importlib.util.spec_from_file_location(
 assert SPEC and SPEC.loader
 detector = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(detector)
+OUTBOX_SPEC = importlib.util.spec_from_file_location(
+    "gig_no_contact_real_outbox_test", ROOT / "scripts/connector_outbox.py",
+)
+assert OUTBOX_SPEC and OUTBOX_SPEC.loader
+connector = importlib.util.module_from_spec(OUTBOX_SPEC)
+OUTBOX_SPEC.loader.exec_module(connector)
 
 
 class FakeOutbox:
@@ -66,7 +72,7 @@ class FakeOutbox:
             return None
         return {
             "state": action["state"], "dlq_at": action.get("dlq_at"),
-            "dlq_reason": action.get("dlq_reason"),
+            "reason": action.get("dlq_reason"),
         }
 
 
@@ -174,3 +180,27 @@ def test_same_policy_event_is_replay_zero_after_first_closure(tmp_path):
     assert second["ignored"][0]["status"] == "ignore_policy_replay"
     assert len(outbox.closed) == 1
     assert outbox.revived == []
+
+
+def test_real_outbox_policy_closure_is_replay_zero(tmp_path):
+    outbox = connector.ConnectorOutbox(
+        tmp_path / "outbox.sqlite3",
+        ROOT / "config/connectors/coconala.json",
+    )
+    rows = [{
+        "talkroom_id": "90001",
+        "last_message_identity_sha256": "a" * 64,
+    }]
+
+    first = detector.partition_no_contact_rows(
+        rows, registry_path=_registry(tmp_path), outbox=outbox, now=1000,
+    )
+    second = detector.partition_no_contact_rows(
+        rows, registry_path=_registry(tmp_path), outbox=outbox, now=1030,
+    )
+
+    assert first["ignored"][0]["status"] == "ignore_policy"
+    assert second["ignored"][0]["status"] == "ignore_policy_replay"
+    closures = outbox.closed_actions(closure="nothing_to_say")
+    assert len(closures) == 1
+    assert closures[0]["reason"] == "nothing_to_say:ignore_policy:operator-owned-1"
