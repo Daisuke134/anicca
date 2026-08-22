@@ -188,12 +188,12 @@ intent while preserving all existing Coconala effect keys.
 `research, authorized, read, sale, contract, delivery, payment, repeatable, active, assisted,
 denied, unprofitable`.
 
-- [ ] Write failing transition tests; direct `research → sale`, payment without delivery and active
+- [x] Write failing transition tests; direct `research → sale`, payment without delivery and active
   without three independent payments must fail.
-- [ ] Run the test to observe the missing implementation.
-- [ ] Store stages and evidence hashes in the existing SQLite database; add no service or scheduler.
-- [ ] Make every transition monotonic except explicit `paused/reverted`; repeat input is idempotent.
-- [ ] Run focused tests and commit/push.
+- [x] Run the test to observe the missing implementation.
+- [x] Store stages and evidence hashes in the existing SQLite database; add no service or scheduler.
+- [x] Make every transition monotonic except explicit `paused/reverted`; repeat input is idempotent.
+- [x] Run focused tests and commit/push.
 
 ### Task 5: Add the typed human-ceremony queue
 
