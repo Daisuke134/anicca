@@ -302,8 +302,8 @@ no-send, replay-zero and a new natural sub-30-minute official reply/estimate pro
 Do not advance the development cursor until every unchecked item in the current stage has official
 evidence. Independent production lanes continue running while development follows this order.
 
-**Live handover state.** `main` and `origin/main` include the pushed minimal Economic Kernel
-`b9144a47d7d6066e920c3cafd70bbe723160b6e6`, and `/Users/anicca/gig/releases/life-manager/current` selects that
+**Live handover state.** `main` and `origin/main` include the pushed complete Project Context Capsule
+`17a76f21b5b43210255edc2057bf1c3333250480`, and `/Users/anicca/gig/releases/life-manager/current` selects that
 same immutable release. The older Paid-specific release link remains historical and is not the loaded launchd
 entrypoint. The protected unrelated dirty
 `skills/earn/gig/tests/test_reply_concurrency.py` remains outside this work. The loaded Paid owner uses up to
@@ -815,10 +815,17 @@ flowchart TB
    for byusco, each with a versioned effect key, two source facts and `needs_work` capability evidence. Rebuilding
    both graph projections from the ledgers preserved the exact file hash; each ledger has one unique fact and
    zero duplicates. No dependency, framework, service, graph database or customer effect was added.
-6. [ ] Make one durable Project Owner per purchased project own the complete hash-bound Project Context Capsule:
+6. [x] Make one durable Project Owner per purchased project own the complete hash-bound Project Context Capsule:
    job description, exact proposal/application, full DM/talkroom, seller commitments, evidence-linked buyer
    emotion/trust interpretation, accumulated requirements, artifacts/accepted lineage, effects and current delta.
-   Remove tail-only context loss; specialists remain tools and cross-client reads fail closed.
+   Remove tail-only context loss; specialists remain tools and cross-client reads fail closed. The existing compiler
+   now carries every DM/talkroom message with message-level source fact ids, every hash-bound artifact/acceptance
+   lineage reference, economic effects and current delta; buyer emotion/trust must be interpreted only from the
+   cited buyer-message facts. A natural owner pass rebuilt Haru, Manledge, byusco, X and `18062411`: each talkroom
+   message count exactly matched its ledger, no capsule truncated, every room produced a matching context-read
+   receipt, and all source references remained inside that room's project root. A completed staging cleanup freed
+   disk without deleting any unique candidate: only inactive directories with no open file and no delivery hash
+   absent from durable project storage were removed.
 7. [ ] Return raw structured builder/evaluator/browser results, including every validator error and source fact
    id, to the Project Owner for semantic replanning. Delete generic error collapse and hardcoded
    business-error-to-transition/shipment authority while retaining deterministic exact target, hash/archive,
