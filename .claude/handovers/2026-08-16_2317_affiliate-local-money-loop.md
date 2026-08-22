@@ -1,5 +1,33 @@
 # Affiliate local money loop handover
 
+- Distribution-first checkpoint: Repost source commits `54e0d99d7` and
+  `d5723b6db` are pushed to both remotes and immutable release
+  `20260822T181019-d5723b6d` is installed with byte-equal `x_post.py`. The
+  existing `ai.anicca.x-repost-pass` owner recovered the already-published
+  Voice Changer post by readback only; it did not enter the composer or publish
+  again. Exact URL is
+  `https://x.com/selawmqt/status/2091088320772346136`. `posted.jsonl` contains
+  exactly one row for proposal `16b5b8ff...1b60` and placement
+  `elevenlabs-discovered-voice-changer-en-1`; the terminal consumption ledger
+  remains exactly `EFFECT_STARTED -> UNVERIFIED`, preserving the no-resend
+  fence. Repost run 11 exited `0`; its Telegram send timed out and entered the
+  bounded backlog. The existing Affiliate owner then exact-joined the row:
+  70 Repost actions, one placement-ID join, 69 unjoined, no invalid rows,
+  `PARTIAL_EXACT_CAMPAIGN_URL_JOINED`, Telegram message `28588`. The same owner
+  selected the next durable distribution atom, Voice Cloning proposal
+  `bb5c8fbd...bae7`, `READY_FOR_EXISTING_REPOST_OWNER / UNCONSUMED`. Do not
+  bypass the one-post-per-hour Repost fence; safe-kick that owner after the next
+  eligible hour and read back claim, exact X permalink, terminal consumption,
+  exactly-one posted row, and Telegram before kicking Affiliate again.
+
+- Money truth at the same checkpoint: canonical placements remain 25; the
+  latest official PartnerStack artifact observed at
+  `2026-08-22T08:59:20.340818+00:00` has `commission_row_count=0`, commission
+  and payout rows empty, and `NO_LIVE_ROWS`. Rolling money remains
+  `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / cost=UNKNOWN / NOT_REACHED`,
+  with pending/approved/paid/reversed all zero. The Voice Changer X effect,
+  exact join, provider clicks, and Telegram receipts are non-money.
+
 - Architecture planning checkpoint at `2026-08-22T12:50+0900`: no owner was
   kickstarted and no public/provider/Telegram effect was executed. Read-only
   runtime proof shows Affiliate release

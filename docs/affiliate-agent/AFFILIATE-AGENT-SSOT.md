@@ -13,6 +13,26 @@ The ordered backlog in section 9 remains the product-level summary. The atomic
 plan is authoritative for implementation order, exact files, tests, commits,
 live verification, revenue gates, tenantization, and scale work.
 
+Current distribution checkpoint: the existing Repost owner recovered the
+already-published Voice Changer effect without a second publish. Repost release
+`d5723b6db` read back exact permalink
+`https://x.com/selawmqt/status/2091088320772346136` through the public profile
+SSR fallback and appended exactly one posted-ledger row for proposal
+`16b5b8ff4e4e79a7b304999755b909e1e0f07a37e35c2e0da2e39c4a5e4d1b60`
+and placement `elevenlabs-discovered-voice-changer-en-1`; its absorbing
+`EFFECT_STARTED -> UNVERIFIED` consumption history remains unchanged, so no
+retryable publish path was reopened. The Affiliate owner then observed 70 real
+Repost actions, one exact placement-ID join, 69 unjoined actions, denominator
+`POST_ACTION_COUNT_ONLY`, and delivered Telegram message `28588`. This is
+distribution evidence, not revenue credit or money. The canonical placement
+ledger remains 25 rows; the latest official PartnerStack report still has zero
+commission rows and empty payouts, while rolling net is
+`NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / cost=UNKNOWN / NOT_REACHED` with
+pending, approved, paid, and reversed counts all zero. The next distribution
+atom is the existing Voice Cloning proposal `bb5c8fbd...bae7`,
+`READY_FOR_EXISTING_REPOST_OWNER / UNCONSUMED`; the existing Repost owner may
+consume it only after its normal next-hour fence permits a post.
+
 ## 0. Objective
 
 Anicca is the company; Life Manager is the product, autonomous agent, and
