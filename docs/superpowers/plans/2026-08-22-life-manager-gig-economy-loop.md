@@ -257,7 +257,7 @@ No later task may jump ahead of the first incomplete row:
 | U10 | Discover and qualify a first-job candidate | **DONE:** usability-test job `~022091106411892491962`; $15, 10–15 proposals, zero interviews, payment/phone verified, and all student/age/English/recording gates match owner evidence |
 | U11 | Resolve application capacity for that candidate | **DONE:** official proposal surface requires 7 Connects; balance/history, offers, invites and proposals are 0, no reward banner is exposed, and the only buy offer is 100 for $15 plus tax |
 | U12 | Freeze one tailored first-job proposal | **DONE:** immutable payload `c37eed9c…c68e926` contains the $15 terms, cover letter, five factual screening answers, no attachments, and zero unsupported claims |
-| U13 | Maintain a submission-ready queue without spending | Re-read the first candidate; retain at least three live qualified candidates with exact Connects cost, observed age and one factual sealed proposal each; poll Connects history, invitations and messages read-only |
+| U13 | Maintain and reconcile the complete application inventory without spending | Re-read the first candidate; retain at least three live qualified candidates with exact Connects cost, observed age and one factual sealed proposal each; reconcile submitted/active proposals, invitations, messages, offers, contracts and official terminal reasons into one current inventory |
 | U14 | Acquire authorized proposal capacity and submit the best live proposal once | **WALLET EFFECT WAITS FOR AUTHORITY:** purchase the smallest exposed sufficient bundle only after explicit approval, then verify proposal ID plus Connects before/after |
 | U15 | Replay immediately | Same proposal ID; zero new proposal and zero additional Connects |
 | U16 | Poll and answer the resulting thread | Official story/message IDs and no duplicate reply |
@@ -319,7 +319,20 @@ Project Catalog publishing is not required for applications and remains parked. 
 Freelancer Plus, Availability Badge and boosts stay disabled without separate authorization.
 Application, Connects-spend and payment effects remain zero. U13 continues now: it refreshes the
 existing candidate and prepares at least two independent backups instead of waiting passively for a
-non-guaranteed free Connects refill.
+non-guaranteed free Connects refill. The same wake also reconciles every existing application and
+records whether it is submitted, viewed, messaged/interviewing, offered, contracted, declined,
+archived, job-closed, platform-removed or unknown. Missing from one page never means stopped.
+
+U13 atomic order:
+
+1. Read official submitted and active proposal inventories and persist their stable IDs.
+2. Read invitations, unread messages, offers and active contracts; join by official job/proposal/thread IDs.
+3. Re-read every nonterminal job detail and record open, closed, removed or unknown without inference.
+4. Record each terminal transition once with official reason, observation time and receipt hash.
+5. Re-read candidate `~022091106411892491962`; retire it from the ready queue if officially unavailable.
+6. Discover recent jobs twice and qualify replacements until three live sealed candidates exist.
+7. Read Connects history and refunds; do not purchase, withdraw or submit during U13.
+8. Verify a repeated reconciliation produces no duplicate transition or external effect; commit/push.
 
 ### Task 7: Record Upwork's private action matrix
 

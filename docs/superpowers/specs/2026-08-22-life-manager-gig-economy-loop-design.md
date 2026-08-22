@@ -502,6 +502,38 @@ Ten qualified proposals without a view trigger a profile/first-lines/proof corre
 automatically authorize more Connects spend. Project Catalog, invitations and proposals share the
 same contract, delivery, payment and review receipts after acquisition.
 
+### 6.2 Continuous application reconciliation
+
+Upwork is one continuous state-reconciliation loop, not separate search and delivery scripts. Every
+wake first reconciles existing work before creating new acquisition effects. The canonical proposal
+states are:
+
+```text
+sealed → submitted → viewed → messaged/interviewing → offered → contracted
+                    ↘ declined | archived | job_closed | platform_removed
+submitted → withdrawn only through a separately authorized owner effect
+any nonterminal read failure → unknown, never inferred as rejected or closed
+```
+
+Each state transition MUST bind `job_id`, `proposal_id` when assigned, official provider state,
+`observed_at`, source surface, receipt hash and Connects delta/refund when exposed. A disappearance
+from one surface is not terminal evidence: the loop cross-checks active/submitted proposals, the job
+detail, messages, offers and contracts. It records `stopped_reason` only from an official terminal
+readback; otherwise it records `unknown` and retries read-only reconciliation without resubmitting.
+
+The single loop uses three cadences under one lease and one ledger:
+
+| Cadence | Required reconciliation |
+|---|---|
+| Every 5 minutes | Submitted/active proposals, invitations, unread messages, offers and active contracts |
+| Every 30 minutes | Refresh open jobs, age sealed candidates, replace closed/stale candidates and keep three submission-ready applications |
+| Every 60 minutes | Connects history/refunds, contract deadlines, submitted work, payments, fees and payout availability |
+
+Paid work, unread client messages, offers and `unknown` effects always preempt discovery. A terminal
+proposal releases only acquisition capacity; it does not delete its evidence or count as revenue.
+The loop reports each new terminal reason once and never withdraws, resubmits or spends Connects merely
+because a proposal is old.
+
 The first-job qualifier rejects a candidate if any of these hold: broad multi-week build, proposal
 count above 20, unclear acceptance criteria, unsupported proof requirement, negative expected net,
 delivery capacity unavailable, or paid acquisition required before the free bootstrap is complete.
@@ -594,6 +626,9 @@ promise of earnings.
 | First-job qualification rejects high-competition broad builds | Bounded 1-3 day deliverable, proposals <=20, explicit acceptance and evidence-backed proof | Required |
 | Qualification ignores Coconala runtime state | Upwork active-contract count and provider-scoped ledger query | Required |
 | Proposal submits at most once | Proposal ID and Connects before/after, then zero-delta replay | Required |
+| Applied work is continuously reconciled | Every official proposal ID maps to one current canonical state and last-observed receipt | Required |
+| Stopped work has an evidence-backed reason | Declined, archived, job closed, platform removed or owner-withdrawn requires matching official readback; absence remains unknown | Required |
+| Reconciliation preempts acquisition | Unread message, offer, paid deadline or unknown effect blocks a new proposal tick until reconciled | Required |
 | Negotiation creates no duplicate message | Official story/message IDs across replay | Required |
 | Contract, delivery and money reconcile | Contract ID, submission ID, transaction ID and actual fee/cost evidence | Required |
 
