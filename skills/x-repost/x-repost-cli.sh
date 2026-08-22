@@ -176,7 +176,8 @@ run_x_script() {
     echo "x-repost: installed Python runtime is missing playwright" >&2
     return 1
   fi
-  "$PY" "$SKILL/scripts/$script" "$@"
+  timeout "${X_REPOST_BROWSER_STEP_TIMEOUT:-600}" \
+    "$PY" "$SKILL/scripts/$script" "$@"
 }
 
 run_x_post() {
