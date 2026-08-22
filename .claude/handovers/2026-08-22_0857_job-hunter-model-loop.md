@@ -89,3 +89,11 @@ unrelated dirty paths `docs/loops/x-repost.md` and `state/effective-cron/`.
   now permits that status only after a real nonzero command. Discovery now skips
   provider calls while an eligible Workday queue exists, so recovery wakes drain
   checkpoints before adding more rows. No submit fence was consumed; resume again.
+- Release `8ddb0bba47eec17ca1f55fdfe60e66184eb67418` then live-proved the fix:
+  discovery returned `queue_present`, Luna selected visible `Job Board`, and completed
+  the former-employment, country, and phone-type fields. Before `Save and Continue`,
+  Ledger open failed with `sqlite3.OperationalError: unable to open database file`.
+  Data-volume free space fell from 326 MiB to 290 MiB; `PRAGMA quick_check` remains
+  `ok`. Canonical disk-cleanup preflight passed but its existing owner is still
+  `spawn scheduled`; emergency guard last exited 3. No submit fence was consumed.
+  Resume the same checkpoint only after capacity and Ledger open are stable.
