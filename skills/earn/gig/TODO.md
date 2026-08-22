@@ -330,8 +330,10 @@ remains zero but customer work is not complete. Process liveness does not supers
   newer release performs that review before validation. The natural isolated owner is now building v38 from the
   accepted lineage: measured previews are PC 1440x5472/2880x10944 and responsive
   750x9984/1500x19968, with embedded fonts, two authorized raster images and 205–245 effective PPI. Its current
-  `.ai` members are still byte-identical to the PDFs, so native Illustrator edit/save/reopen proof is absent and
-  v38 is not yet authorized. No v37/v38 customer effect or readback exists. Local/producer PASS does not authorize
+  `.ai` members are still byte-identical to the PDFs, so native Illustrator edit/save/reopen proof is absent.
+  v38 was promoted as ZIP SHA-256 `bc747bc35b197322c57bb391d1faf3e48115bfcbcbf619d1b7809b9d11799e09`
+  but failed closed before review/effect because all 22 asset bindings retained staging paths and used field names
+  different from the durable validator contract. No v37/v38 customer effect or readback exists. Local/producer PASS does not authorize
   sending. The same Project Owner must fresh-inspect the resulting package against every accumulated
   requirement, the last accepted layout lineage and both complaint screenshots, repair through the natural loop
   if any visible defect remains, then send exactly one verified hash with formal delivery OFF and replay-zero.
@@ -872,7 +874,10 @@ flowchart TB
    (behavioral comparison only; no clear license file, so no copied code). The account owner authorized Adobe
    Illustrator's seven-day monthly-plan trial (current charge JPY 0; JPY 4,980/month after the trial, cancelable
    without an annual termination fee), Adobe Stock was not selected, and 3DS completed. The installer process
-   was observed, but no Illustrator app is yet present under `/Applications`; native roundtrip remains pending.
+   failed with Adobe installer error 133: 4,992,147,982 bytes were required while only 141,459,456 bytes were
+   available. No Illustrator app is yet present under `/Applications`; native roundtrip remains pending. Cleanup
+   removed 23 inactive, unopened CFO immutable releases while preserving its current release, customer projects
+   and state, raising free space to 9.0 GiB for one installer retry.
 9. [ ] Publish the immutable reconstruction release and kickstart the existing launchd Paid owner. Observe Haru's
    natural Project Owner inspect v38 against the new complaint screenshots, complete conversation and accepted
    lineage. If defective, revise naturally; if fresh PASS, send the exact final hash once, obtain official DOM

@@ -2335,6 +2335,15 @@ def _promote_staged_file_bundle(staging: Path, root: Path, expected_version: str
     promoted["artifact_path"] = str(delivery_target.resolve())
     promoted["acceptance_evidence_path"] = str(acceptance_target.resolve())
     promoted.pop("source_correspondence_path", None)
+    for asset in promoted.get("artifact_assets", []):
+        if not isinstance(asset, dict):
+            continue
+        if "provenance" not in asset and asset.get("provenance_class"):
+            asset["provenance"] = asset.pop("provenance_class")
+        if "archive_member" not in asset and asset.get("archive_member_path"):
+            asset["archive_member"] = asset.pop("archive_member_path")
+        if asset.get("archive_member"):
+            asset["path"] = str(delivery_target.resolve())
     _write(root / "delivery" / "paid-work-result.json", promoted)
 
 
@@ -2514,8 +2523,9 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
         "with status 'ok' for PASS or the exact same non-PASS status, "
         "binding project_root, requirements_path, artifact_path, artifact_version, acceptance_evidence_path, "
         "acceptance_status, acceptance_delta, package_sha256, and artifact_assets. Each artifact_assets entry must "
-        "bind a buyer-visible asset to its project-owned absolute path, non-zero bytes, MIME/type, SHA256, provenance "
-        "class, and archive member path when applicable. Copy acceptance_delta exactly from the acceptance "
+        "bind a buyer-visible asset with asset_id, buyer_visible_asset, path, non-zero bytes, mime_type, type, "
+        "sha256, provenance, and archive_member when applicable. For an archive member, path must name the "
+        "produced ZIP and archive_member must name the exact member inside it. Copy acceptance_delta exactly from the acceptance "
         "file without paraphrasing it. Self-check every accumulated requirement against the actual produced artifact. "
         "When the semantic decision has unresolved items, produce every useful non-blocked portion now, state the exact "
         "remaining limitation without placeholders or invented facts, and claim PASS only for that bounded required_output; "
