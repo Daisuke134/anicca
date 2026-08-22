@@ -12,6 +12,7 @@ from datetime import datetime
 from dataclasses import asdict
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
 
 from ..ats import detect_provider
@@ -387,6 +388,11 @@ async def _act_locked(action_path: Path) -> dict[str, Any]:
     remaining = _wake_budget(consume=True)
     receipt = await ActionExecutor(session).execute(cursor.handle, action)
     after = await builder.build(cursor.handle)
+    parsed_after_url = urlparse(after.url)
+    if parsed_after_url.scheme != "https" or not parsed_after_url.hostname:
+        raise RuntimeError(
+            "post-action browser context no longer exposes an absolute HTTPS page"
+        )
     chain = evidence.read_chain(row["application_id"])
     evidence_receipt = evidence.append(
         StepEvidenceV1(
