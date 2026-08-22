@@ -2081,3 +2081,15 @@ never enter this audience-format comparison. Installed release is
 `20260822T233414-04eaca77`; source/runtime evaluator SHA-256 is
 `0dcfac06ca841f9b622916aef3b08f0f4978a27267be3f650e80bb20ae071b04`;
 22 focused tests pass.
+
+The existing digest owner then provided real evaluator evidence: original 1 vs
+quote 24, median early views 27 vs 4, but `original_ratio` stayed 0.15 because
+the original arm was below the three-sample minimum. Its old transport exposed a
+digest-only bug: it did not load `.env`, targeted placeholder `0000000000`, and
+used an unbounded legacy sender. Commit `a75f9407f` replaces it with configured
+Gateway `send`, body idempotency, a 30-second timeout, and messageId validation.
+Installed release is `20260822T233917-a75f9407`; digest source/runtime SHA-256 is
+`ef1afd2072c141fde2766d11702d9b9690b362cb07ec97145a04850355831e0b`.
+The old failed digest was not manually resent: Repost owner run 38 flushed one
+durable backlog row, `24→23`, Telegram message `29041`, then exited `0` at the
+same-hour fence with no X effect.

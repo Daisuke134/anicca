@@ -83,6 +83,16 @@ backlog is:
    least three same-window measured originals and three quotes, moves the ratio
    only `0.05`, and bounds it to `0.05..0.50`; thin data records
    `insufficient-data` without changing strategy. Affiliate rows are excluded.
+   The first real digest evaluation observed one measured original versus 24
+   quotes in the 48-hour window, with median early views 27 versus 4. It correctly
+   recorded `insufficient-data` and kept `original_ratio=0.15` because the
+   original arm had fewer than three samples.
+   Release `a75f9407f` also removes digest-only placeholder Telegram delivery:
+   it loads the private configured target and uses the same Gateway `send`, body
+   idempotency key, 30-second timeout, and messageId readback as the pass owner.
+   The failed old digest entered the durable backlog; Repost owner run 38 flushed
+   exactly one row (`24→23`) as Telegram message `29041`, then the same-hour fence
+   produced no X effect and exit `0`.
 5. **X05 — PARTIAL, FIRST SNAPSHOT LIVE:** replace early views as the optimizer's sole objective with a funnel
    vector: qualified impressions, profile visits/follows when observable,
    owned-article sessions, CTA clicks, provider clicks, official transactions,
@@ -107,12 +117,14 @@ backlog is:
    queued and never converts a post, view, or click into money.
 
 Current live checkpoint: immutable sparse release
-`20260822T233414-04eaca77` is installed from commit
-`04eaca779`, pushed to both Repost remotes.
+`20260822T233917-a75f9407` is installed from commit
+`a75f9407f`, pushed to both Repost remotes.
 Source/runtime `x-repost-cli.sh` is byte-equal at SHA-256
 `054ea01a24105b27729b9eb17330c0529dc5b53d2a77f07f31dfaa35327cb3b2`.
 Source/runtime `x_evaluate.py` is byte-equal at SHA-256
 `0dcfac06ca841f9b622916aef3b08f0f4978a27267be3f650e80bb20ae071b04`;
+source/runtime `x-repost-digest.sh` is byte-equal at SHA-256
+`ef1afd2072c141fde2766d11702d9b9690b362cb07ec97145a04850355831e0b`;
 22 focused tests pass.
 Its versioned readback lets a newer exact verifier inspect an old terminal row
 once, then records the verifier version on an unresolved row so it cannot retry
