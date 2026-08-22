@@ -121,6 +121,10 @@ inventory. Live readback currently proves balance 0, no Connects transactions, O
 Active proposals 0 and Submitted proposals 0. The account exposes a working-style assessment task but
 does not claim a Connects reward for it, so the loop records it only as `account_task`. A five-minute
 launchd definition exists for this reconciliation and contains no buy, billing, Plus or boost command.
+The dedicated label `ai.anicca.life-manager-upwork-free-loop` is loaded from immutable release
+`c8d2a990351f02d72537d521c10faad2525b867c` at a 300-second interval. Two real wakes both exited
+zero, updated only `observed_at`, reproduced identical official evidence hashes and emitted zero
+stderr bytes; no proposal, Connects or payment effect occurred.
 
 ## 1. Goal, objective and boundaries
 

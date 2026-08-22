@@ -329,7 +329,9 @@ U13 atomic order:
 
 1. **DONE:** Implement the production CloakBrowser provider entrypoint for the dedicated `gig-upwork`
    profile. Live hidden-target readback persisted Connects 0/no transactions, Offers 0, Invites 0,
-   Active proposals 0, Submitted proposals 0 and the working-style account task; focused tests pass.
+   Active proposals 0, Submitted proposals 0 and the working-style account task; 38 focused tests
+   pass. The SHA-fixed five-minute launchd label completed two wakes with exit 0, stable evidence
+   hashes, zero stderr and no external marketplace effect.
 2. Inspect every account-visible onboarding/education reward; complete only factual free tasks and
    verify any award in Connects History.
 3. Finish, publish and read back the bounded private Project Catalog draft as one live inbound service.
