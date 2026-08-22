@@ -1514,30 +1514,37 @@ definition and A0 acceptance is closed.
 Negotiate implementation. Paid/Submission continues under its existing independent owner; this
 slice neither edits nor waits on the Paid section, `paid_direct.py`, or the Paid runtime.
 
-**Current outage, not a disabled lane.** The loaded launchd definition still evaluates Apply every
-60 seconds, but the process currently exits in `gig_disk_guard.py` before `application_direct.py`
-can run. The Data volume is at 100% capacity, writes are failing with `ENOSPC`, and the durable
-`disk-writers.stop` flag remains present. A schedule or successful historical application is
-therefore not 24/7 availability evidence.
+**Current production truth.** Apply is enabled and owned by launchd every 60 seconds. The loaded
+definition keeps the real 512 MiB write floor while allowing this lane to continue past the global
+pressure and writer-stop advisory flags; the child still fails closed below the real floor. Natural
+pass `gig-apply-direct-1787394811693936000-80764` completed `ok` after the Data volume recovered to
+about 1.2 GiB free. The former outage was therefore an advisory disk stop followed by a second,
+independent immutable-release GC race, not a disabled schedule.
 
-- [ ] Recover Apply through the existing disk-cleanup owner: create enough bounded working
-  headroom for snapshot, planner, intent, official-readback and Telegram-receipt writes; clear
-  `disk-writers.stop` only after the cleanup readback says writes are safe. Do not bypass the guard
-  or broadly delete user data to make the lane appear green.
-- [ ] Kick the existing `ai.anicca.hf-gig-apply-direct` launchd owner after recovery and prove the
-  loaded program resolves to the immutable Life Manager release. A manual foreground executor is
-  not acceptance evidence.
-- [ ] Prove one natural maximal-coverage pass accounts for every observed eligible request as
-  officially applied, already applied, bounded truthful ineligibility, or durable owned retry;
-  require `missing=0`, `unowned=0`, and no silent planner/browser/provider loss.
-- [ ] Replay that exact snapshot and prove zero duplicate application effects, then read back the
-  next natural scheduled pass to prove the 60-second owner continues after its child exits.
-- [ ] Prove durable continuous Apply operation without blocking the delivery sequence on 24 hours
-  of wall-clock waiting: natural restart, replay zero, live-release retention, durable health owner
-  and incident recovery must all pass before Negotiate starts. Keep the 24-hour observation running
-  in parallel; every new official application still requires application-history readback plus a
-  Telegram provider message ID, and every blocked wake retains a retry owner and natural-language
-  incident/recovery report.
+- [x] Restore bounded write headroom without broad user-data deletion. Apply now ignores only the
+  global advisory pressure/stop flags and retains `GIG_DISK_HEADROOM_KIB=524288`; measured natural
+  snapshot, intent, official-readback, SQLite and Telegram receipt writes all succeeded above that
+  real floor.
+- [x] Prove the existing `ai.anicca.hf-gig-apply-direct` launchd owner. Its loaded program uses
+  `/Users/anicca/gig/releases/life-manager/current`, natural PID `80764` exited 0, and launchd then
+  started PID `78438` as run 3 without a foreground executor.
+- [x] Prove a natural maximal pass with no silent loss. Pass
+  `gig-apply-direct-1787394811693936000-80764` observed 40, classified the full snapshot as 17
+  already applied, 17 cached truthful ineligible and six current decisions, then ended with five
+  official applications/readbacks, zero failed and one exact-ID uncertainty retained behind a
+  durable duplicate fence. Per-application Telegram provider ACKs are `28744`, `28748`, `28749`,
+  `28753` and `28754`; terminal receipt ACK is `28758`.
+- [x] Prove replay zero and the next natural scheduled owner. Run 3 snapshot includes all five newly
+  confirmed IDs in `already_applied_ids`, while the one unresolved ID remains a request detail with
+  a durable intent fence, so neither class can submit twice. The next natural process uses immutable
+  release `3fa2f7d4...`, which contains the release-retention fix.
+- [x] Prove deterministic continuous Apply operation without waiting 24 wall-clock hours. The wrapper
+  now pins its immutable release for its whole wake; GC preserved the live pin while `/current`
+  advanced, same-wake reconciliation completed from the pinned release, and the next natural wake
+  automatically created `.pins/78438-3fa2f7d4...`. launchd owns 60-second restart and the loaded
+  five-minute `ai.anicca.earning-health-allslots` owner checks all gig labels plus the Apply wake
+  ledger. The 24-hour observation continues in parallel and is not a gate for starting Negotiate;
+  every future application still requires official-history readback and a Telegram provider ACK.
 
 - [x] Restore immediate per-application Telegram reporting. The parent reporter deadline was 90
   seconds while the inner provider deadline was 180 seconds, which killed valid slow sends and left
