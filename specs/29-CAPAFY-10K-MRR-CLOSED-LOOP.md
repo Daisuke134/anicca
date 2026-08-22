@@ -291,6 +291,8 @@ C17継続中にmoney readbackの実障害を修復する。`skills/self/capafy-l
 
 C17は同じAgent `3661050861`をdownloadから`run_online`へ修復し、新規Agentを作らず審査へ提出する。旧`~/.openclaw` loopの並行runが共有publisher stagingを別Agent内容で上書きし、さらにOpenClaw adapterがoperator HOMEのlive `~/.openclaw/openclaw.json`を読むため、O13のOpenRouter契約が`proxy_env`へ誤分類され`url_proxy=[]`になっていた。旧runを停止し、publisher専用HOMEを`~/.local/state/life-manager/runtime/capafy-publisher-home`へ隔離する。repo-owned O13 sourceから再configureした実readbackは`url_proxy=1 / generic=0 / env_var=0`、最終remoteはversion `2091144781376671744`、`status=1 / auditStatus=1 / agentType=run_online / isConfirmedSkills=1 / isConfirmedConfigKeys=1`である。pricingはweekly `$9.99`、cap `20`、free trialなし。inventoryはlisted `22`、occupied `4`、free `1`、retry `7`。moneyはorders `5`、gross `$19.98`、pending `$8.00`、realized `$0.00`、refund `$0.00`、settled subscription MRRはsource不在のため`unknown`を維持する。Telegram message IDは`28979`。
 
+C21の運転proof開始時にhourly goal monitorのexit `1`を修復する。launchd環境がstate envを読まずTelegram targetを欠損し、daily/earn readbackも削除済みrepo内stateを参照していた。monitorは`$LIFE_MANAGER_STATE_HOME`を唯一のruntime state rootとしてenv、daily log、hourly reconcileを読む。money loopのSTATE/ledgerもrepo外へ移す。旧tmux Capafy Claude loopはLife Manager launchdと責務が重複するため停止する。実`launchctl kickstart`後のhourly jobはrun `8`、last exit `0`、BLOCKED-free `1/7`、orders `5`、gross `$19.98`、reconcile age `0.0h`、candidate `under_review`、Telegram message ID `28992`を同一receipt `capafy-e7492dc68be6832dddf13868`へ保存する。
+
 ## Atomic remaining TODO
 
 Items are executed top-to-bottom. Only one item is active.
@@ -318,7 +320,7 @@ Items are executed top-to-bottom. Only one item is active.
 | C18 | prove one rejected Agent correction/resubmit E2E | same agent_id, new version, under-review readback, no orphan Agent | pending |
 | C19 | prove one listed transition frees a fresh slot | status=4 reduces occupied count and next daily wake submits exactly one candidate | pending |
 | C20 | connect post/click/subscription windows without claiming causal proof | attribution row is candidate unless Capafy exposes order-level UTM/source | pending |
-| C21 | prove seven consecutive daily healthy terminals and hourly freshness | 7-day ledger has no stale source, duplicate Agent/version/post or missing Telegram receipt | pending |
+| C21 | prove seven consecutive daily healthy terminals and hourly freshness | 7-day ledger has no stale source, duplicate Agent/version/post or missing Telegram receipt | pending — proof started `1/7`; hourly run 8 exit 0; receipt `capafy-e7492dc68be6832dddf13868`; TG `28992` |
 | C22 | operate growth and retention experiments until settled net MRR reaches `$10,000` | active subscription readback and refunds/fees reconcile to target | pending |
 
 ## Test matrix

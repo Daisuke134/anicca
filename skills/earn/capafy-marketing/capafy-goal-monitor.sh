@@ -15,11 +15,16 @@ export LIFE_MANAGER_REPO
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin:$PATH"
 set -uo pipefail
 PY=/opt/homebrew/bin/python3
-STATE="$HOME/.local/state/life-manager/state/capafy-goal-monitor.json"
+LIFE_MANAGER_STATE_HOME="${LIFE_MANAGER_STATE_HOME:-$HOME/.local/state/life-manager}"
+for ENV_FILE in "$LIFE_MANAGER_STATE_HOME/.env" "$HOME/.openclaw/.env"; do
+  [ -f "$ENV_FILE" ] || continue
+  set -a; . "$ENV_FILE" 2>/dev/null; set +a
+done
+STATE="$LIFE_MANAGER_STATE_HOME/state/capafy-goal-monitor.json"
 mkdir -p "$(dirname "$STATE")"
 
-DAILY_LOG="$LIFE_MANAGER_REPO/skills/capafy-autopublish/state/daily_loop.log"
-EARN_LEDGER="$LIFE_MANAGER_REPO/skills/self/capafy-loop/state/capafy-earn-ledger.jsonl"
+DAILY_LOG="$LIFE_MANAGER_STATE_HOME/state/capafy-autopublish/daily_loop.log"
+EARN_LEDGER="$LIFE_MANAGER_STATE_HOME/state/capafy-hourly-reconcile.json"
 KEY_GATE="$LIFE_MANAGER_REPO/skills/capafy-autopublish/scripts/key_health_gate.sh"
 IG_SCRIPT="$LIFE_MANAGER_REPO/skills/earn/capafy-marketing/capafy-ig-marketing-daily.sh"
 ACCOUNT_STATE_HELPER="${CAPAFY_ACCOUNT_STATE_HELPER:-$LIFE_MANAGER_REPO/skills/earn/capafy-marketing/account_state.sh}"
@@ -169,13 +174,14 @@ goal_a_pass = streak >= 7
 gross = orders = None; last_sales_date = None; reconcile_age_h = None
 if os.path.exists(earn_ledger):
     reconcile_age_h = round((now.timestamp() - os.path.getmtime(earn_ledger)) / 3600, 1)
-    for line in open(earn_ledger):
-        line = line.strip()
-        if not line: continue
-        try: r = json.loads(line)
-        except: continue
-        if r.get("orders") is not None:
-            orders = r.get("orders"); gross = r.get("gross_usd"); last_sales_date = r.get("date")
+    try:
+        r = json.load(open(earn_ledger))
+    except Exception:
+        r = {}
+    if r.get("orders") is not None:
+        orders = r.get("orders")
+        gross = (r.get("money") or {}).get("gross_usd")
+        last_sales_date = str(r.get("observed_at") or "")[:10] or None
 goal_b_ok = reconcile_age_h is not None and reconcile_age_h < 48  # reconcile ran within 2 days
 
 # goal(d): NON-DESTRUCTIVE health — launchctl loaded? plist exists? key-health gate exit?
