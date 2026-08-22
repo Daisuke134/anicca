@@ -30,6 +30,7 @@ from typing import Any, Callable, Iterator, Protocol
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 import application_effect_fence as fence
+import gig_disk_guard
 import application_snapshot as snapshot_contract
 from application_planner import validate_decisions
 from market_snapshot import MARKET_FIELDS, parse_market
@@ -2697,6 +2698,16 @@ def commit_decisions(
                     phase = "click_confirm"
                     effects.click_confirm(request_id)
                     effects.crash_if_requested("after_confirm_click")
+                    phase = "pre_submit_headroom"
+                    if not gig_disk_guard.disk_headroom_ok():
+                        results.append(_pre_submit_abort_result(
+                            store,
+                            request_id,
+                            intent,
+                            phase=phase,
+                            error=ParentContractError("disk_headroom_low"),
+                        ))
+                        continue
                     if attempt_budget_path is None and submit_attempts >= cap:
                         results.append({"request_id": request_id, "status": "cap_reached"})
                         continue

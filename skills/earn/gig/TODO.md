@@ -1572,7 +1572,12 @@ submission, official-readback, replay and Telegram paths remain proved below, bu
   heartbeat when the volume fell below the floor and exited 120. Its application report is outbox
   row `9978 / delivery_unknown / TimeoutExpired`; its terminal summary is row `9979 / send_started`
   with no provider message ID. After headroom recovery, reconcile both receipts without a blind
-  resend and prove that the next natural snapshot treats `5227320` as already applied.
+  resend and prove that the next natural snapshot treats `5227320` as already applied. Source now
+  reuses the real disk guard immediately before the irreversible submit marker/click, so a wake
+  that loses headroom after startup retires its pre-effect intent instead of creating another
+  customer effect. The focused RED reproduced two clicks; GREEN and the related guard/reconcile
+  suite pass 31/31. This remains unchecked until that source is loaded and the natural proof above
+  completes.
 
 - [x] Restore bounded write headroom without broad user-data deletion. Apply now ignores only the
   global advisory pressure/stop flags and retains `GIG_DISK_HEADROOM_KIB=524288`; measured natural
