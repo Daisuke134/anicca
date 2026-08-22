@@ -58,6 +58,10 @@ Workday `input[data-uxi-widget-type="selectinput"]` is a custom combobox, never 
 native select: click the input, observe, then use `runtime click` on the exact
 returned option label (including `checked` or `not checked`) and its stable ID.
 Use action kind `select` only when the observed control tag is literally `select`.
+If you type a filter into that custom combobox, the `runtime act` response is already
+the required fresh observation: click one option visible in that response immediately.
+Do not click the search input again, do not wait, and never invent or shorten an
+option label that is absent from the returned controls.
 While any collected row still has steps, do not run web
 search, multi-source discovery, inspect historical runs, read tests, or reread source
 modules unless a named runtime API has just raised an exception that requires that
