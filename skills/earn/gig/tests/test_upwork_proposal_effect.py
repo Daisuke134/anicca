@@ -46,6 +46,7 @@ def _payload(**overrides: object) -> ProposalPayload:
         "currency": "USD",
         "pricing_kind": "fixed",
         "bid_minor": 90_000,
+        "connects_cost": 12,
         "estimated_duration_days": 2,
         "cover_letter": "Exact bounded adapter proposal",
         "scope_references": ("bounded adapter",),
@@ -103,7 +104,7 @@ class Provider:
     def submit(self, selection, intent, payload):
         self.submits += 1
         if self.mode in {"success", "lost_ack"}:
-            self.connects -= 12
+            self.connects -= payload["connects_cost"]
             self.record = {
                 "proposal_id": "proposal-9",
                 "job_id": intent.resource_id,
@@ -154,6 +155,42 @@ def test_plan_persists_exact_identity_connects_and_payload_before_effect(tmp_pat
     assert row["state"] == "prepared"
     assert provider.submits == 0
     assert intent.action == "propose"
+
+
+def test_zero_connects_never_prepares_or_submits_a_proposal(tmp_path):
+    provider = Provider()
+    provider.connects = 0
+    adapter, store = _adapter(tmp_path, provider)
+
+    with pytest.raises(ValueError, match="insufficient_free_connects"):
+        adapter.plan_effect("propose", _payload())
+
+    assert provider.submits == 0
+    with sqlite3.connect(store.database) as connection:
+        assert connection.execute("SELECT COUNT(*) FROM provider_effect_intents").fetchone()[0] == 0
+
+
+def test_free_balance_must_cover_the_jobs_exact_connects_cost(tmp_path):
+    provider = Provider()
+    provider.connects = 11
+    adapter, _ = _adapter(tmp_path, provider)
+
+    with pytest.raises(ValueError, match="insufficient_free_connects"):
+        adapter.plan_effect("propose", _payload())
+
+    assert provider.submits == 0
+
+
+def test_balance_drop_after_planning_is_rechecked_before_submit(tmp_path):
+    provider = Provider()
+    adapter, _ = _adapter(tmp_path, provider)
+    intent = adapter.plan_effect("propose", _payload())
+    provider.connects = 0
+
+    with pytest.raises(ValueError, match="insufficient_free_connects"):
+        adapter.execute(intent)
+
+    assert provider.submits == 0
 
 
 def test_crash_before_effect_can_resume_once_from_durable_payload(tmp_path):

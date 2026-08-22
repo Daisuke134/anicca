@@ -52,6 +52,7 @@ class ProposalPayload:
     currency: str
     pricing_kind: str
     bid_minor: int
+    connects_cost: int
     estimated_duration_days: int
     cover_letter: str
     scope_references: tuple[str, ...]
@@ -83,6 +84,12 @@ def _text(label: str, value: Any, *, maximum: int = 10_000) -> str:
 
 def _positive(label: str, value: Any) -> int:
     if type(value) is not int or value < 1:
+        raise ProposalContractError(f"invalid_{label}")
+    return value
+
+
+def _nonnegative(label: str, value: Any) -> int:
+    if type(value) is not int or value < 0:
         raise ProposalContractError(f"invalid_{label}")
     return value
 
@@ -233,6 +240,7 @@ def build_proposal(
         currency=_text("currency", getattr(opportunity, "currency", None), maximum=3),
         pricing_kind=pricing_kind,
         bid_minor=bid,
+        connects_cost=_nonnegative("connects_cost", getattr(opportunity, "connects_cost", None)),
         estimated_duration_days=duration,
         cover_letter=letter,
         scope_references=normalized_references,

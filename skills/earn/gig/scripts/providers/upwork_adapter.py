@@ -271,6 +271,8 @@ class UpworkAdapter:
             )
             return intent
         connects_pre, connects_hash = self._connects(self.read_connects(selection))
+        if connects_pre < payload.connects_cost:
+            raise DiscoveryContractError("insufficient_free_connects")
         body = json.dumps(asdict(payload), ensure_ascii=False, sort_keys=True, separators=(",", ":"))
         self.effect_store.prepare_provider_effect(
             intent, authorization=selection.authorization, now=self.now_epoch(),
@@ -357,6 +359,9 @@ class UpworkAdapter:
             or payload_sha256(durable_payload) != intent.payload_hash
         ):
             raise DiscoveryContractError("invalid_durable_proposal")
+        connects_now, _ = self._connects(self.read_connects(selection))
+        if connects_now < durable_payload.connects_cost:
+            raise DiscoveryContractError("insufficient_free_connects")
         started = self.effect_store.mark_provider_effect_started(
             intent, authorization=selection.authorization, now=self.now_epoch(),
         )

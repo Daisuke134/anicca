@@ -149,6 +149,12 @@ portfolio_utility = expected_verified_net
 Hard constraints always dominate the score: authorization, identity, customer confidentiality,
 budget caps, delivery capacity, quality, effect idempotency and receipt integrity.
 
+For the open-source Upwork bootstrap, `spend_cap_usd` is exactly `0`. The loop MUST NOT purchase
+Connects, subscribe to Freelancer Plus, boost a proposal/profile or open a billing flow. It may submit
+only when the official current free balance covers the exact sealed `connects_cost`, or when an
+official invitation requires zero Connects. Insufficient balance keeps the candidate sealed and
+continues discovery/reconciliation; it is not an error and never triggers a purchase fallback.
+
 During the Upwork proof, `delivery capacity` means active Upwork contracts only. Coconala orders,
 projects and stale Coconala talkroom states MUST NOT make an Upwork opportunity eligible or
 ineligible. Portfolio-wide allocation begins only after Upwork receives its first real payment.
@@ -527,7 +533,7 @@ The single loop uses three cadences under one lease and one ledger:
 |---|---|
 | Every 5 minutes | Submitted/active proposals, invitations, unread messages, offers and active contracts |
 | Every 30 minutes | Refresh open jobs, age sealed candidates, replace closed/stale candidates and keep three submission-ready applications |
-| Every 60 minutes | Connects history/refunds, contract deadlines, submitted work, payments, fees and payout availability |
+| Every 60 minutes | Free Connects history/refunds, contract deadlines, submitted work, payments, fees and payout availability; never purchase capacity |
 
 Paid work, unread client messages, offers and `unknown` effects always preempt discovery. A terminal
 proposal releases only acquisition capacity; it does not delete its evidence or count as revenue.

@@ -26,6 +26,7 @@ approved provider APIs, existing launchd release system, pytest with plugin auto
 - Use normal owner email/password signup/login for Upwork. DO NOT use Google, Apple or social login.
 - Create an Upwork account only if the owner email has no existing account; never create a duplicate.
 - Upwork capacity counts active Upwork contracts only. Never read Coconala projects as Upwork capacity.
+- Upwork acquisition spend is permanently USD 0 for this loop: never buy Connects, upgrade, boost or open billing. Submit only from granted/returned Connects or zero-Connect invitations.
 - Observe the authenticated Upwork UI/API first, then refine selectors and payloads from receipts.
 - Complete the application-first bootstrap and submit one bounded first-job proposal before adding
   more general harness abstractions; Project Catalog publishing is not a prerequisite.
@@ -258,7 +259,7 @@ No later task may jump ahead of the first incomplete row:
 | U11 | Resolve application capacity for that candidate | **DONE:** official proposal surface requires 7 Connects; balance/history, offers, invites and proposals are 0, no reward banner is exposed, and the only buy offer is 100 for $15 plus tax |
 | U12 | Freeze one tailored first-job proposal | **DONE:** immutable payload `c37eed9c…c68e926` contains the $15 terms, cover letter, five factual screening answers, no attachments, and zero unsupported claims |
 | U13 | Maintain and reconcile the complete application inventory without spending | Re-read the first candidate; retain at least three live qualified candidates with exact Connects cost, observed age and one factual sealed proposal each; reconcile submitted/active proposals, invitations, messages, offers, contracts and official terminal reasons into one current inventory |
-| U14 | Acquire authorized proposal capacity and submit the best live proposal once | **WALLET EFFECT WAITS FOR AUTHORITY:** purchase the smallest exposed sufficient bundle only after explicit approval, then verify proposal ID plus Connects before/after |
+| U14 | Submit the best live proposal from free capacity once | Wait until granted/returned Connects cover the sealed cost or a zero-Connect invitation exists; never purchase capacity; then verify proposal ID plus Connects before/after |
 | U15 | Replay immediately | Same proposal ID; zero new proposal and zero additional Connects |
 | U16 | Poll and answer the resulting thread | Official story/message IDs and no duplicate reply |
 | U17 | Negotiate and accept profitable terms | Offer ID, exact terms hash and active contract ID |
@@ -325,14 +326,16 @@ archived, job-closed, platform-removed or unknown. Missing from one page never m
 
 U13 atomic order:
 
-1. Read official submitted and active proposal inventories and persist their stable IDs.
-2. Read invitations, unread messages, offers and active contracts; join by official job/proposal/thread IDs.
-3. Re-read every nonterminal job detail and record open, closed, removed or unknown without inference.
-4. Record each terminal transition once with official reason, observation time and receipt hash.
-5. Re-read candidate `~022091106411892491962`; retire it from the ready queue if officially unavailable.
-6. Discover recent jobs twice and qualify replacements until three live sealed candidates exist.
-7. Read Connects history and refunds; do not purchase, withdraw or submit during U13.
-8. Verify a repeated reconciliation produces no duplicate transition or external effect; commit/push.
+1. Implement the missing production CloakBrowser provider entrypoint for the dedicated `gig-upwork`
+   profile; wire official job, Connects, proposal and invitation readbacks into the existing adapter.
+2. Read official submitted and active proposal inventories and persist their stable IDs.
+3. Read invitations, unread messages, offers and active contracts; join by official job/proposal/thread IDs.
+4. Re-read every nonterminal job detail and record open, closed, removed or unknown without inference.
+5. Record each terminal transition once with official reason, observation time and receipt hash.
+6. Re-read candidate `~022091106411892491962`; retire it from the ready queue if officially unavailable.
+7. Discover recent jobs twice and qualify replacements until three live sealed candidates exist.
+8. Read free Connects history and refunds; do not purchase, withdraw or submit without sufficient free capacity.
+9. Verify a repeated reconciliation produces no duplicate transition or external effect; commit/push.
 
 ### Task 7: Record Upwork's private action matrix
 
