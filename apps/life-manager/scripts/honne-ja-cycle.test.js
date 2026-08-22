@@ -2,7 +2,7 @@
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const { PRODUCTION_SLOTS, parseArgs, runSlot } = require("./honne-ja-cycle.js");
+const { ANICCA_MAIN_SLOTS, PRODUCTION_SLOTS, parseArgs, runSlot } = require("./honne-ja-cycle.js");
 
 test("Honne JA production cadence has three exact idempotent slots", () => {
   assert.deepEqual([...PRODUCTION_SLOTS], ["08:30", "12:30", "21:30"]);
@@ -13,8 +13,14 @@ test("Honne JA production cadence has three exact idempotent slots", () => {
 
 test("Honne JA production CLI accepts only an optional exact slot", () => {
   const slot = "2026-08-22T03:30:00.000Z";
-  assert.equal(parseArgs(["run"]), null);
-  assert.equal(parseArgs(["run", "--slot", slot]), slot);
+  assert.equal(parseArgs(["run"]).slot, null);
+  assert.equal(parseArgs(["run", "--slot", slot]).slot, slot);
   assert.throws(() => parseArgs(["run", "--slot"]), /usage/i);
   assert.throws(() => runSlot("invalid", Date.now()), /timestamp is invalid/i);
+});
+
+test("Anicca main uses only its three historical JA widget slots", () => {
+  assert.deepEqual([...ANICCA_MAIN_SLOTS], ["08:00", "16:00", "22:37"]);
+  assert.equal(parseArgs(["run-anicca-main"]).lane.account, "@anicca.jp");
+  assert.equal(runSlot(null, Date.parse("2026-08-22T07:30:00.000Z"), ANICCA_MAIN_SLOTS), "2026-08-22T07:00:00.000Z");
 });
