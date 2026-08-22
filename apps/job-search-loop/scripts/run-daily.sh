@@ -7,15 +7,21 @@ source "$SCRIPT_DIR/runtime-paths.sh"
 RUN_ID="daily-$(date +%Y%m%d-%H%M%S)"
 EVIDENCE="$JOB_SEARCH_STATE_ROOT/evidence/$RUN_ID"
 TELEGRAM_OUTBOX="$JOB_SEARCH_STATE_ROOT/telegram-outbox.sqlite3"
+BROWSER_STATE="$JOB_SEARCH_STATE_ROOT/browser-agent"
+BROWSER_SCRATCH="$EVIDENCE/scratch"
 
-mkdir -p "$EVIDENCE" "$JOB_SEARCH_STATE_ROOT/logs"
+mkdir -p "$EVIDENCE" "$JOB_SEARCH_STATE_ROOT/logs" "$BROWSER_STATE" "$BROWSER_SCRATCH"
 chmod 700 \
   "$JOB_SEARCH_STATE_ROOT" \
   "$JOB_SEARCH_STATE_ROOT/evidence" \
   "$EVIDENCE" \
+  "$BROWSER_STATE" \
+  "$BROWSER_SCRATCH" \
   "$JOB_SEARCH_STATE_ROOT/logs"
 export PYTHONPATH="$JOB_SEARCH_APP_ROOT"
 export JOB_SEARCH_BROWSER_OWNER_EVIDENCE="$EVIDENCE/browser-owner.json"
+export JOB_SEARCH_BROWSER_STATE_ROOT="$BROWSER_STATE"
+export JOB_SEARCH_BROWSER_SCRATCH="$BROWSER_SCRATCH"
 "$JOB_SEARCH_PYTHON" -m job_search_loop.application_reporting deliver \
   --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
   --outbox "$TELEGRAM_OUTBOX" \
