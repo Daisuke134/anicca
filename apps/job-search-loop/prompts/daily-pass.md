@@ -45,6 +45,9 @@ continue the queue; the next hourly owner wake retries the durable row automatic
 Use exactly `/opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime
 checkpoint --reason provider_unavailable` for that visible maintenance surface; do
 not spend an action or inspect source to construct a checkpoint.
+Then use exactly `/opt/homebrew/bin/python3 -m
+job_search_loop.browser_agent.runtime report --status checkpointed`; require its real
+`message_id`, return the row outcome, and do not inspect queue/reporting source.
 
 This process is the existing `ai.anicca.job-search-daily` launchd owner. Do not
 start another launchd job, agent runner, or Chromium process. Read the JSON path in

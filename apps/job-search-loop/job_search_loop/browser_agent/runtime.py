@@ -16,11 +16,13 @@ from .candidate_memory import CandidateMemoryView
 from .checkpoint import CheckpointStore, EvidenceStore
 from .contracts import (
     ActionTargetV1,
+    QueueRowReceiptV1,
     RowCheckpointV1,
     StepEvidenceV1,
     VisibleActionV1,
 )
 from .observation import ObservationBuilder
+from .outcome_reporting import send_hourly_outcomes
 from .queue import RowQueueSupervisor
 from .resume_cursor import RowResumer
 from .session import BrowserSession
@@ -295,6 +297,26 @@ async def checkpoint(reason: str) -> dict[str, Any]:
     }
 
 
+def report(status: str) -> dict[str, Any]:
+    row = _row()
+    wake_id = _path_env("JOB_SEARCH_BROWSER_OWNER_EVIDENCE").parent.name
+    result = send_hourly_outcomes(
+        database=_path_env("JOB_SEARCH_STATE_ROOT") / "telegram-outbox.sqlite3",
+        wake_id=wake_id,
+        receipts=(
+            QueueRowReceiptV1(
+                row["application_id"], row["company"], row["title"], status
+            ),
+        ),
+        evidence_classes={},
+    )
+    return {
+        "status": result.get("status"),
+        "message_id": result.get("message_id"),
+        "application_id": row["application_id"],
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -305,14 +327,20 @@ def main(argv: list[str] | None = None) -> int:
     checkpoint_parser.add_argument(
         "--reason", required=True, choices=("provider_unavailable", "visible_challenge")
     )
+    report_parser = subparsers.add_parser("report")
+    report_parser.add_argument(
+        "--status", required=True, choices=("checkpointed", "not_submitted")
+    )
     args = parser.parse_args(argv)
     if args.command == "observe":
         operation = observe()
     elif args.command == "act":
         operation = act(args.action_file)
-    else:
+    elif args.command == "checkpoint":
         operation = checkpoint(args.reason)
-    result = asyncio.run(operation)
+    else:
+        operation = None
+    result = report(args.status) if operation is None else asyncio.run(operation)
     print(json.dumps(result, ensure_ascii=False, sort_keys=True))
     return 0
 
