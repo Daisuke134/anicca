@@ -45,9 +45,16 @@ class ObservationBuilder:
                 const id = el.getAttribute('id');
                 return id ? `id:${id}` : '';
               };
+              const role = el => el.getAttribute('role') || ({
+                A: 'link', BUTTON: 'button', SELECT: 'combobox',
+                TEXTAREA: 'textbox'
+              }[el.tagName] || (el.tagName === 'INPUT' ? (
+                ['checkbox', 'radio', 'button', 'submit'].includes(el.type)
+                  ? el.type.replace('submit', 'button') : 'textbox'
+              ) : ''));
               const controls = Array.from(document.querySelectorAll('input,button,select,textarea,a,[role]'))
                 .filter(visible).map(el => ({
-                  tag: el.tagName.toLowerCase(), role: el.getAttribute('role') || '',
+                  tag: el.tagName.toLowerCase(), role: role(el),
                   control_type: el.getAttribute('type') || '', label: label(el),
                   disabled: !!el.disabled || el.getAttribute('aria-disabled') === 'true',
                   stable_id: stableId(el),
