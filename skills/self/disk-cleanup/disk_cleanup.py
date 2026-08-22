@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 from contextlib import contextmanager, suppress
 import errno
+import fcntl
 import json
 import math
 import os
@@ -219,6 +220,7 @@ class HostDiskGovernor:
         self.home = (home or Path.home()).resolve()
         self.state_dir = (state_dir or self.home / ".openclaw/state").resolve()
         self.lock_dir = self.state_dir / ".life-manager-disk-cleanup.lock"
+        self._lock_fd: int | None = None
         self.full_inventory_marker = self.state_dir / "host-inventory-full.at"
         self.lsof = lsof
         self.usage = usage or self._usage
@@ -282,26 +284,63 @@ class HostDiskGovernor:
         return age < 0 or age <= max_age
 
     def acquire_lock(self) -> bool:
-        self.state_dir.mkdir(parents=True, exist_ok=True)
+        if self._lock_fd is not None:
+            return False
         try:
-            self.lock_dir.mkdir()
-        except FileExistsError:
-            pid_file = self.lock_dir / "pid"
+            self.state_dir.mkdir(parents=True, exist_ok=True)
             try:
-                pid = int(pid_file.read_text())
-                os.kill(pid, 0)
+                info = self.lock_dir.lstat()
+            except FileNotFoundError:
+                info = None
+            except OSError:
                 return False
-            except (OSError, ValueError):
-                shutil.rmtree(self.lock_dir, ignore_errors=True)
-                try:
-                    self.lock_dir.mkdir()
-                except FileExistsError:
+            if info is not None:
+                if stat.S_ISLNK(info.st_mode):
                     return False
-        (self.lock_dir / "pid").write_text(str(os.getpid()))
-        return True
+                if stat.S_ISREG(info.st_mode) and stat.S_IMODE(info.st_mode) != 0o600:
+                    return False
+                if stat.S_ISDIR(info.st_mode):
+                    return False
+                elif not stat.S_ISREG(info.st_mode):
+                    return False
+            flags = os.O_RDWR | getattr(os, "O_NOFOLLOW", 0)
+            created = info is None
+            if created:
+                try:
+                    fd = os.open(self.lock_dir, flags | os.O_CREAT | os.O_EXCL, 0o600)
+                except FileExistsError:
+                    created = False
+                    fd = os.open(self.lock_dir, flags)
+            else:
+                fd = os.open(self.lock_dir, flags)
+            opened = True
+            try:
+                if created:
+                    os.fchmod(fd, 0o600)
+                current = os.fstat(fd)
+                if not stat.S_ISREG(current.st_mode) or stat.S_IMODE(current.st_mode) != 0o600:
+                    return False
+                fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                self._lock_fd = fd
+                opened = False
+                return True
+            finally:
+                if opened:
+                    with suppress(OSError):
+                        fcntl.flock(fd, fcntl.LOCK_UN)
+                    with suppress(OSError):
+                        os.close(fd)
+        except (BlockingIOError, OSError):
+            return False
 
     def release_lock(self) -> None:
-        shutil.rmtree(self.lock_dir, ignore_errors=True)
+        fd, self._lock_fd = self._lock_fd, None
+        if fd is None:
+            return
+        with suppress(OSError):
+            fcntl.flock(fd, fcntl.LOCK_UN)
+        with suppress(OSError):
+            os.close(fd)
 
     def _protected(self, path: Path) -> bool:
         try:

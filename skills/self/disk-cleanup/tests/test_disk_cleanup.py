@@ -382,6 +382,207 @@ def test_lock_is_atomic(tmp_path: Path) -> None:
     assert first.acquire_lock()
     assert not second.acquire_lock()
     first.release_lock()
+    assert first.acquire_lock()
+    first.release_lock()
+
+
+def test_lock_is_regular_persistent_mode0600_and_precreated_file_is_reused(tmp_path: Path) -> None:
+    state = tmp_path / "state"
+    state.mkdir()
+    lock_path = state / ".life-manager-disk-cleanup.lock"
+    lock_path.write_bytes(b"")
+    lock_path.chmod(0o600)
+    governor = HostDiskGovernor(home=tmp_path, state_dir=state)
+
+    assert governor.acquire_lock()
+    assert lock_path.is_file()
+    assert not lock_path.is_symlink()
+    assert stat.S_IMODE(lock_path.stat().st_mode) == 0o600
+    governor.release_lock()
+    assert lock_path.exists()
+    assert governor.acquire_lock()
+    governor.release_lock()
+
+
+def test_precreated_regular_lock_never_mkdirs_lock_path_under_enospc(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    state = tmp_path / "state"
+    state.mkdir()
+    lock_path = state / ".life-manager-disk-cleanup.lock"
+    lock_path.write_bytes(b"")
+    lock_path.chmod(0o600)
+    reserve = state / ".receipt-reserve"
+    reserve.write_bytes(b"reserve-sentinel")
+    reserve.chmod(0o600)
+    before = reserve.read_bytes()
+    real_mkdir = Path.mkdir
+
+    def fail_lock_mkdir(path: Path, *args, **kwargs):
+        if path == lock_path:
+            raise OSError(errno.ENOSPC, "legacy lock mkdir must not run")
+        return real_mkdir(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "mkdir", fail_lock_mkdir)
+    first = HostDiskGovernor(home=tmp_path, state_dir=state)
+    second = HostDiskGovernor(home=tmp_path, state_dir=state)
+    assert first.acquire_lock()
+    assert not second.acquire_lock()
+    first.release_lock()
+    assert first.acquire_lock()
+    first.release_lock()
+    assert reserve.read_bytes() == before
+
+
+def test_lock_never_truncates_or_writes_and_preserves_receipt_reserve(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    state = tmp_path / "state"
+    state.mkdir()
+    lock_path = state / ".life-manager-disk-cleanup.lock"
+    lock_path.write_bytes(b"")
+    lock_path.chmod(0o600)
+    reserve = state / ".receipt-reserve"
+    reserve.write_bytes(b"reserve-sentinel")
+    reserve.chmod(0o600)
+    before = (reserve.read_bytes(), stat.S_IMODE(reserve.stat().st_mode))
+
+    def fail_allocation(*_args, **_kwargs):
+        raise OSError(errno.ENOSPC, "lock allocation must not run")
+
+    monkeypatch.setattr(disk_cleanup.os, "ftruncate", fail_allocation)
+    monkeypatch.setattr(disk_cleanup.os, "write", fail_allocation)
+    first = HostDiskGovernor(home=tmp_path, state_dir=state)
+    second = HostDiskGovernor(home=tmp_path, state_dir=state)
+    assert first.acquire_lock()
+    assert not second.acquire_lock()
+    first.release_lock()
+    assert first.acquire_lock()
+    first.release_lock()
+    assert (reserve.read_bytes(), stat.S_IMODE(reserve.stat().st_mode)) == before
+
+
+def test_lock_open_and_flock_errors_fail_closed_with_fd_cleanup(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    state = tmp_path / "state"
+    state.mkdir()
+    reserve = state / ".receipt-reserve"
+    reserve.write_bytes(b"reserve-sentinel")
+    reserve.chmod(0o600)
+    before = reserve.read_bytes()
+    governor = HostDiskGovernor(home=tmp_path, state_dir=state)
+    real_open = disk_cleanup.os.open
+
+    monkeypatch.setattr(
+        disk_cleanup.os,
+        "open",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(OSError(errno.EIO, "open failure")),
+    )
+    assert not governor.acquire_lock()
+    assert governor._lock_fd is None
+    assert reserve.read_bytes() == before
+
+    opened: list[int] = []
+    real_flock = disk_cleanup.fcntl.flock
+
+    def capture_open(*args, **kwargs):
+        fd = real_open(*args, **kwargs)
+        opened.append(fd)
+        return fd
+
+    def fail_flock(*_args, **_kwargs):
+        raise OSError(errno.EIO, "flock failure")
+
+    monkeypatch.setattr(disk_cleanup.os, "open", capture_open)
+    monkeypatch.setattr(disk_cleanup.fcntl, "flock", fail_flock)
+    assert not governor.acquire_lock()
+    assert governor._lock_fd is None
+    assert opened
+    with pytest.raises(OSError):
+        os.fstat(opened[-1])
+    monkeypatch.setattr(disk_cleanup.fcntl, "flock", real_flock)
+    assert reserve.read_bytes() == before
+
+
+def test_new_lock_fchmod_failure_closes_fd_and_preserves_reserve(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    state = tmp_path / "state"
+    state.mkdir()
+    reserve = state / ".receipt-reserve"
+    reserve.write_bytes(b"reserve-sentinel")
+    reserve.chmod(0o600)
+    before = reserve.read_bytes()
+    opened: list[int] = []
+    real_open = disk_cleanup.os.open
+
+    def capture_open(*args, **kwargs):
+        fd = real_open(*args, **kwargs)
+        opened.append(fd)
+        return fd
+
+    monkeypatch.setattr(disk_cleanup.os, "open", capture_open)
+    monkeypatch.setattr(
+        disk_cleanup.os,
+        "fchmod",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(OSError(errno.ENOSPC, "fchmod full")),
+    )
+    governor = HostDiskGovernor(home=tmp_path, state_dir=state)
+    assert not governor.acquire_lock()
+    assert governor._lock_fd is None
+    assert opened
+    with pytest.raises(OSError):
+        os.fstat(opened[-1])
+    assert reserve.read_bytes() == before
+
+
+def test_lock_path_unexpected_types_fail_closed_without_deletion(tmp_path: Path) -> None:
+    state = tmp_path / "state"
+    state.mkdir()
+    lock_path = state / ".life-manager-disk-cleanup.lock"
+    for kind in ("directory", "symlink"):
+        if kind == "directory":
+            lock_path.mkdir()
+        else:
+            target = tmp_path / "lock-target"
+            target.write_bytes(b"target")
+            lock_path.symlink_to(target)
+        governor = HostDiskGovernor(home=tmp_path, state_dir=state)
+        assert not governor.acquire_lock()
+        if kind == "directory":
+            assert lock_path.is_dir()
+            (lock_path / "ambiguous").write_text("keep")
+            assert (lock_path / "ambiguous").exists()
+            (lock_path / "ambiguous").unlink()
+            lock_path.rmdir()
+        else:
+            assert lock_path.is_symlink()
+            lock_path.unlink()
+
+
+def test_legacy_directory_active_stale_invalid_and_extra_are_preserved(
+    tmp_path: Path,
+) -> None:
+    state = tmp_path / "state"
+    state.mkdir()
+    lock_path = state / ".life-manager-disk-cleanup.lock"
+
+    for contents in (
+        {"pid": str(os.getpid())},
+        {"pid": "99999999"},
+        {"pid": "not-a-pid"},
+        {"pid": "99999999", "extra": "ambiguous"},
+    ):
+        lock_path.mkdir()
+        for name, value in contents.items():
+            (lock_path / name).write_text(value)
+        governor = HostDiskGovernor(home=tmp_path, state_dir=state)
+        assert not governor.acquire_lock()
+        assert lock_path.is_dir()
+        for child in lock_path.iterdir():
+            child.unlink()
+        lock_path.rmdir()
 
 
 def test_launchd_is_five_minutes_and_single_owner() -> None:
