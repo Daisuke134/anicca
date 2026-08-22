@@ -2295,3 +2295,21 @@ pass. Exact money remains zero official PartnerStack transactions. Next atom is
 one quality-passing owner submission with exact X permalink, followed by an
 Affiliate-owner exact funnel/provider readback; never resend any terminal or
 unverified source.
+
+That next API effect is now proven. Repost owner run `20260823T022124` collected
+91 candidates and selected an English empathy quote. Weighted length was 185/250;
+critic readback was `supported=true`, `useful=true`, `source_specific=true`,
+with procedure and failure condition. Postiz submitted and the owner exact-read
+`https://x.com/selawmqt/status/2091216974349295726`, quoting
+`https://x.com/dhh/status/2091077125348430158`; owner exit was zero. Telegram
+was `ambiguous_no_retry` and must not be replayed. This is distribution, not
+money.
+
+Affiliate owner run 110 then observed 80 X actions, 5 exact Affiliate joins, 75
+unjoined audience actions, and 0 invalid rows. The new quote correctly received
+no revenue credit. Provider capture was in cooldown and canonical money stayed
+pending/approved/paid/reversed all zero, `NO_TRANSACTIONS`, USD 10,000
+`NOT_REACHED`. A new Subtitle Translator experiment proposal is READY but
+unconsumed; normal Affiliate exposure policy decides when the existing Repost
+owner may claim it. Next atom is measured owned-article entry and CTA movement,
+then the first official provider transaction exact-joined to that placement.

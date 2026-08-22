@@ -7173,3 +7173,20 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   attempted; owner exit was zero. Commit `a9e69e02a` now forbids invented
   numbers, periods, and counts in both generation and final selection. This is a
   verified safe no-effect and non-money.
+- Owner run `20260823T022124` proves the repaired end-to-end API path. It
+  collected 91 candidates, selected `quote` / `en` / `empathy`, passed the
+  corrected length gate at 185/250, and the independent critic returned
+  `supported=true`, `useful=true`, `source_specific=true`, with procedure plus
+  failure-condition value. Postiz submission was followed by exact X readback:
+  `https://x.com/selawmqt/status/2091216974349295726`, quoting
+  `https://x.com/dhh/status/2091077125348430158`. Owner exit was zero. The
+  Telegram report remained `ambiguous_no_retry` and was not replayed. This is a
+  public audience-distribution effect, not an Affiliate placement or money.
+- Affiliate owner run 110 then incorporated the effect without manufacturing a
+  join: 80 total X actions, 5 exact Affiliate placement joins, 75 unjoined
+  audience actions, and 0 invalid rows. Provider capture was in cooldown;
+  canonical pending/approved/paid/reversed remain all zero, money state remains
+  `NO_TRANSACTIONS`, and USD 10,000 is `NOT_REACHED`. A new replay-safe proposal
+  exists for the Subtitle Translator experiment, but it is unconsumed and has no
+  revenue credit. The next economic atom remains a nonzero owned article entry
+  followed by an official provider transaction joined to its exact placement.
