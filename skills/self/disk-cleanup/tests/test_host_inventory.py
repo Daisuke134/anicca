@@ -21,6 +21,13 @@ def fake_runner(argv: list[str], *, timeout: float) -> subprocess.CompletedProce
             "/dev/test 100 40 60 40% /test\n",
             "",
         )
+    if argv[0].endswith("/mount"):
+        return subprocess.CompletedProcess(
+            argv,
+            0,
+            "/dev/test on /test (apfs, local)\n",
+            "",
+        )
     return subprocess.CompletedProcess(argv, 0, "8\t%s\n" % argv[-1], "")
 
 
@@ -42,6 +49,248 @@ def test_fast_inventory_is_atomic_and_records_coverage_gaps(tmp_path: Path) -> N
     assert written["coverage"]["root_count"] >= 10
     assert written["coverage"]["gaps"]
     assert all(root["measurement"] == "metadata-only" for root in written["roots"])
+
+
+def test_inventory_uses_mount_metadata_for_local_writable_classification(tmp_path: Path) -> None:
+    def runner(argv: list[str], *, timeout: float) -> subprocess.CompletedProcess[str]:
+        if argv[0].endswith("/df"):
+            return subprocess.CompletedProcess(
+                argv,
+                0,
+                "Filesystem 1024-blocks Used Available Capacity Mounted on\n"
+                "/dev/root 100 40 60 40% /\n"
+                "/dev/data 200 100 100 50% /System/Volumes/Data\n",
+                "",
+            )
+        if argv[0].endswith("/mount"):
+            return subprocess.CompletedProcess(
+                argv,
+                0,
+                "/dev/root on / (apfs, local, read-only)\n"
+                "/dev/data on /System/Volumes/Data (apfs, local)\n",
+                "",
+            )
+        return subprocess.CompletedProcess(argv, 0, "8\t%s\n" % argv[-1], "")
+
+    payload = collect_host_inventory(
+        home=tmp_path,
+        state_dir=tmp_path / "state",
+        runner=runner,
+    )
+
+    mounts = {mount["mount"]: mount for mount in payload["mounts"]}
+    assert mounts["/"]["local"] is True
+    assert mounts["/"]["writable"] is False
+    assert mounts["/System/Volumes/Data"]["local"] is True
+    assert mounts["/System/Volumes/Data"]["writable"] is True
+    assert payload["coverage"]["local_writable_mounts"] == ["/System/Volumes/Data"]
+    assert payload["coverage"]["missing_local_writable_mounts"] == []
+
+
+def test_inventory_reports_local_writable_mount_missing_from_df(tmp_path: Path) -> None:
+    def runner(argv: list[str], *, timeout: float) -> subprocess.CompletedProcess[str]:
+        if argv[0].endswith("/df"):
+            return subprocess.CompletedProcess(
+                argv,
+                0,
+                "Filesystem 1024-blocks Used Available Capacity Mounted on\n"
+                "/dev/root 100 40 60 40% /\n",
+                "",
+            )
+        if argv[0].endswith("/mount"):
+            return subprocess.CompletedProcess(
+                argv,
+                0,
+                "/dev/root on / (apfs, local, read-only)\n"
+                "/dev/data on /System/Volumes/Data (apfs, local)\n",
+                "",
+            )
+        return subprocess.CompletedProcess(argv, 0, "8\t%s\n" % argv[-1], "")
+
+    payload = collect_host_inventory(
+        home=tmp_path,
+        state_dir=tmp_path / "state",
+        runner=runner,
+    )
+
+    coverage = payload["coverage"]
+    assert coverage["local_writable_mounts"] == ["/System/Volumes/Data"]
+    assert coverage["local_writable_mount_count"] == 1
+    assert coverage["missing_local_writable_mounts"] == ["/System/Volumes/Data"]
+
+
+def test_inventory_fails_closed_when_df_device_mount_lacks_metadata(tmp_path: Path) -> None:
+    def runner(argv: list[str], *, timeout: float) -> subprocess.CompletedProcess[str]:
+        if argv[0].endswith("/df"):
+            return subprocess.CompletedProcess(
+                argv,
+                0,
+                "Filesystem 1024-blocks Used Available Capacity Mounted on\n"
+                "/dev/root 100 40 60 40% /\n"
+                "/dev/data 200 100 100 50% /System/Volumes/Data\n",
+                "",
+            )
+        if argv[0].endswith("/mount"):
+            return subprocess.CompletedProcess(
+                argv,
+                0,
+                "/dev/root on / (apfs, local, read-only)\n",
+                "",
+            )
+        return subprocess.CompletedProcess(argv, 0, "8\t%s\n" % argv[-1], "")
+
+    payload = collect_host_inventory(
+        home=tmp_path,
+        state_dir=tmp_path / "state",
+        runner=runner,
+    )
+
+    data_mount = next(mount for mount in payload["mounts"] if mount["mount"] == "/System/Volumes/Data")
+    assert data_mount["local"] is None
+    assert data_mount["writable"] is None
+    assert data_mount["mount_options"] is None
+    assert payload["coverage"]["local_writable_mounts"] is None
+    assert payload["coverage"]["local_writable_mount_count"] is None
+    assert payload["coverage"]["missing_local_writable_mounts"] is None
+    assert "mount-metadata:missing:/System/Volumes/Data" in payload["coverage"]["gaps"]
+
+
+def test_inventory_excludes_devfs_and_autofs_from_local_writable_mounts(tmp_path: Path) -> None:
+    def runner(argv: list[str], *, timeout: float) -> subprocess.CompletedProcess[str]:
+        if argv[0].endswith("/df"):
+            return subprocess.CompletedProcess(
+                argv,
+                0,
+                "Filesystem 1024-blocks Used Available Capacity Mounted on\n"
+                "/dev/root 100 40 60 40% /\n"
+                "devfs 20 4 16 20% /dev\n"
+                "map 30 4 26 14% /Users/test\n",
+                "",
+            )
+        if argv[0].endswith("/mount"):
+            return subprocess.CompletedProcess(
+                argv,
+                0,
+                "/dev/root on / (apfs, local)\n"
+                "devfs on /dev (devfs, local)\n"
+                "map auto_home on /Users/test (autofs, automounted)\n",
+                "",
+            )
+        return subprocess.CompletedProcess(argv, 0, "8\t%s\n" % argv[-1], "")
+
+    payload = collect_host_inventory(
+        home=tmp_path,
+        state_dir=tmp_path / "state",
+        runner=runner,
+    )
+
+    assert payload["coverage"]["local_writable_mounts"] == ["/"]
+    mounts = {mount["mount"]: mount for mount in payload["mounts"]}
+    assert mounts["/dev"]["local"] is True
+    assert mounts["/Users/test"]["local"] is False
+
+
+def test_inventory_parses_mount_and_df_paths_with_spaces(tmp_path: Path) -> None:
+    mount_path = "/Volumes/External on Data"
+
+    def runner(argv: list[str], *, timeout: float) -> subprocess.CompletedProcess[str]:
+        if argv[0].endswith("/df"):
+            return subprocess.CompletedProcess(
+                argv,
+                0,
+                "Filesystem 1024-blocks Used Available Capacity Mounted on\n"
+                f"/dev/external 200 100 100 50% {mount_path}\n",
+                "",
+            )
+        if argv[0].endswith("/mount"):
+            return subprocess.CompletedProcess(
+                argv,
+                0,
+                f"/dev/external on {mount_path} (apfs, local, journaled)\n",
+                "",
+            )
+        return subprocess.CompletedProcess(argv, 0, "8\t%s\n" % argv[-1], "")
+
+    payload = collect_host_inventory(
+        home=tmp_path,
+        state_dir=tmp_path / "state",
+        runner=runner,
+    )
+
+    mount = payload["mounts"][0]
+    assert mount["mount"] == mount_path
+    assert mount["mount_options"] == ["apfs", "journaled", "local"]
+    assert mount["local"] is True
+    assert mount["writable"] is True
+    assert payload["coverage"]["local_writable_mounts"] == [mount_path]
+
+
+def test_inventory_fails_closed_when_mount_metadata_times_out(tmp_path: Path) -> None:
+    def runner(argv: list[str], *, timeout: float) -> subprocess.CompletedProcess[str]:
+        if argv[0].endswith("/df"):
+            return subprocess.CompletedProcess(
+                argv,
+                0,
+                "Filesystem 1024-blocks Used Available Capacity Mounted on\n"
+                "/dev/root 100 40 60 40% /\n",
+                "",
+            )
+        if argv[0].endswith("/mount"):
+            raise subprocess.TimeoutExpired(argv, timeout)
+        return subprocess.CompletedProcess(argv, 0, "8\t%s\n" % argv[-1], "")
+
+    payload = collect_host_inventory(
+        home=tmp_path,
+        state_dir=tmp_path / "state",
+        runner=runner,
+    )
+
+    mount = payload["mounts"][0]
+    assert mount["local"] is None
+    assert mount["writable"] is None
+    assert mount["mount_options"] is None
+    assert payload["coverage"]["local_writable_mounts"] is None
+    assert payload["coverage"]["local_writable_mount_count"] is None
+    assert payload["coverage"]["missing_local_writable_mounts"] is None
+    assert "mount-metadata:TimeoutExpired" in payload["coverage"]["gaps"]
+
+
+def test_full_inventory_recomputes_mount_timeout_after_df_consumes_budget(tmp_path: Path) -> None:
+    clock = [0.0]
+    probe_timeouts: list[tuple[str, float]] = []
+
+    def runner(argv: list[str], *, timeout: float) -> subprocess.CompletedProcess[str]:
+        probe_timeouts.append((argv[0], timeout))
+        if argv[0].endswith("/df"):
+            clock[0] += 2.0
+            return subprocess.CompletedProcess(
+                argv,
+                0,
+                "Filesystem 1024-blocks Used Available Capacity Mounted on\n"
+                "/dev/root 100 40 60 40% /\n",
+                "",
+            )
+        if argv[0].endswith("/mount"):
+            return subprocess.CompletedProcess(
+                argv,
+                0,
+                "/dev/root on / (apfs, local, read-only)\n",
+                "",
+            )
+        return subprocess.CompletedProcess(argv, 0, "8\t%s\n" % argv[-1], "")
+
+    collect_host_inventory(
+        home=tmp_path,
+        state_dir=tmp_path / "state",
+        full=True,
+        budget_seconds=3.0,
+        runner=runner,
+        clock=lambda: clock[0],
+    )
+
+    mount_calls = [timeout for argv, timeout in probe_timeouts if argv.endswith("/mount")]
+    assert mount_calls
+    assert mount_calls[0] <= 1.0
 
 
 def test_full_inventory_uses_bounded_du_only_for_allowlisted_families(tmp_path: Path) -> None:

@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import stat
 import subprocess
 import tempfile
@@ -82,15 +83,63 @@ def _run(argv: list[str], *, timeout: float) -> subprocess.CompletedProcess[str]
 Runner = Callable[..., subprocess.CompletedProcess[str]]
 
 
-def _parse_df(output: str) -> list[dict[str, Any]]:
+def _normalize_mount_path(path: str) -> str:
+    """Decode the octal escapes emitted by BSD mount/df for path names."""
+
+    return (
+        path.strip()
+        .replace(r"\040", " ")
+        .replace(r"\011", "\t")
+        .replace(r"\134", "\\")
+    )
+
+
+def _normalize_mount_options(options: str) -> list[str]:
+    """Return deterministic, de-duplicated mount options."""
+
+    return sorted({option.strip().lower() for option in options.split(",") if option.strip()})
+
+
+def _parse_mount(output: str) -> dict[str, dict[str, Any]]:
+    """Parse macOS ``mount`` records, retaining paths that contain spaces."""
+
+    metadata: dict[str, dict[str, Any]] = {}
+    for line in output.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        match = re.match(r"^(?P<prefix>.+) \((?P<options>[^()]*)\)$", line)
+        if match is None:
+            continue
+        prefix = match.group("prefix")
+        if " on " not in prefix:
+            continue
+        filesystem, mount = prefix.split(" on ", 1)
+        filesystem = filesystem.strip()
+        mount = _normalize_mount_path(mount)
+        if not filesystem or not mount.startswith("/"):
+            continue
+        mount_options = _normalize_mount_options(match.group("options"))
+        metadata[mount] = {
+            "filesystem": filesystem,
+            "mount": mount,
+            "mount_options": mount_options,
+        }
+    return metadata
+
+
+def _parse_df(
+    output: str,
+    mount_metadata: dict[str, dict[str, Any]] | None = None,
+) -> list[dict[str, Any]]:
     mounts: list[dict[str, Any]] = []
     seen: set[str] = set()
     for line in output.splitlines()[1:]:
-        fields = line.split()
+        fields = line.split(maxsplit=5)
         if len(fields) < 6:
             continue
         filesystem, total, used, available, capacity = fields[:5]
-        mount = fields[-1]
+        mount = _normalize_mount_path(fields[5])
         if not mount.startswith("/") or mount in seen:
             continue
         try:
@@ -102,30 +151,100 @@ def _parse_df(output: str) -> list[dict[str, Any]]:
         except ValueError:
             continue
         seen.add(mount)
+        metadata = (mount_metadata or {}).get(mount)
+        options = metadata["mount_options"] if metadata is not None else None
         mounts.append(
             {
                 "filesystem": filesystem,
                 "mount": mount,
                 "capacity": capacity,
-                "writable": os.access(mount, os.W_OK),
+                "local": None if metadata is None else "local" in options,
+                "writable": None if metadata is None else "read-only" not in options,
+                "mount_options": options,
                 **values,
             }
         )
     return mounts
 
 
-def _mounts(run: Runner = _run, *, timeout: float = 5) -> tuple[list[dict[str, Any]], list[str]]:
+def _mounts(
+    run: Runner = _run,
+    *,
+    timeout: float = 5,
+    deadline: float | None = None,
+    clock: Callable[[], float] = time.monotonic,
+) -> tuple[list[dict[str, Any]], list[str], list[str] | None]:
     gaps: list[str] = []
-    try:
-        result = run(["/bin/df", "-P"], timeout=timeout)
-    except (OSError, subprocess.TimeoutExpired) as exc:
-        return [], [f"mount-census:{type(exc).__name__}"]
-    if result.returncode != 0:
-        gaps.append(f"mount-census:rc-{result.returncode}")
-    mounts = _parse_df(result.stdout)
+    metadata: dict[str, dict[str, Any]] = {}
+    metadata_available = False
+    df_timeout = timeout
+    if deadline is not None:
+        df_remaining = deadline - clock()
+        df_timeout = min(timeout, df_remaining) if df_remaining > 0 else None
+    if df_timeout is None:
+        gaps.append("mount-census:budget-exhausted")
+        df_result = None
+    else:
+        try:
+            df_result = run(["/bin/df", "-P"], timeout=df_timeout)
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            gaps.append(f"mount-census:{type(exc).__name__}")
+            df_result = None
+    if df_result is not None and df_result.returncode != 0:
+        gaps.append(f"mount-census:rc-{df_result.returncode}")
+    df_output = df_result.stdout if df_result is not None else ""
+    mounts = _parse_df(df_output)
     if not mounts:
         gaps.append("mount-census:no-readable-mounts")
-    return mounts, gaps
+
+    mount_timeout = timeout
+    if deadline is not None:
+        mount_remaining = deadline - clock()
+        mount_timeout = min(timeout, mount_remaining) if mount_remaining > 0 else None
+    if mount_timeout is None:
+        gaps.append("mount-metadata:budget-exhausted")
+    else:
+        try:
+            mount_result = run(["/sbin/mount"], timeout=mount_timeout)
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            gaps.append(f"mount-metadata:{type(exc).__name__}")
+        else:
+            if mount_result.returncode != 0:
+                gaps.append(f"mount-metadata:rc-{mount_result.returncode}")
+            else:
+                metadata = _parse_mount(mount_result.stdout)
+                if not metadata:
+                    gaps.append("mount-metadata:no-readable-mounts")
+                else:
+                    metadata_available = True
+
+    missing_metadata_mounts = sorted(
+        mount["mount"]
+        for mount in mounts
+        if mount["filesystem"].startswith("/dev/") and mount["mount"] not in metadata
+    )
+    for mount in missing_metadata_mounts:
+        gaps.append(f"mount-metadata:missing:{mount}")
+    if missing_metadata_mounts:
+        metadata_available = False
+
+    if metadata:
+        mounts = _parse_df(
+            df_output,
+            metadata,
+        )
+    local_writable_mounts = (
+        sorted(
+            mount
+            for mount, record in metadata.items()
+            if record["filesystem"].startswith("/dev/")
+            and "local" in record["mount_options"]
+            and "read-only" not in record["mount_options"]
+        )
+        if metadata_available
+        else None
+    )
+    return mounts, gaps, local_writable_mounts
 
 
 def _children(path: Path) -> tuple[dict[str, Any], list[str]]:
@@ -278,11 +397,25 @@ def collect_host_inventory(
     if full and deadline is not None:
         mount_remaining = deadline - clock()
         if mount_remaining <= 0:
-            mounts, gaps = [], ["inventory-budget-exhausted"]
+            mounts, gaps, local_writable_mounts = [], ["inventory-budget-exhausted"], None
         else:
-            mounts, gaps = _mounts(run, timeout=min(5, mount_remaining))
+            mounts, gaps, local_writable_mounts = _mounts(
+                run,
+                timeout=min(5, mount_remaining),
+                deadline=deadline,
+                clock=clock,
+            )
     else:
-        mounts, gaps = _mounts(run)
+        mounts, gaps, local_writable_mounts = _mounts(run)
+    if local_writable_mounts is None:
+        local_writable_mount_count = None
+        missing_local_writable_mounts = None
+    else:
+        local_writable_mount_count = len(local_writable_mounts)
+        df_mount_paths = {mount["mount"] for mount in mounts}
+        missing_local_writable_mounts = sorted(
+            mount for mount in local_writable_mounts if mount not in df_mount_paths
+        )
     roots: list[dict[str, Any]] = []
     root_gaps = list(gaps)
     for family, template in ROOT_FAMILIES:
@@ -321,6 +454,9 @@ def collect_host_inventory(
         "permission_owner_receipts": permission_owner_receipts,
         "coverage": {
             "mount_count": len(mounts),
+            "local_writable_mounts": local_writable_mounts,
+            "local_writable_mount_count": local_writable_mount_count,
+            "missing_local_writable_mounts": missing_local_writable_mounts,
             "root_count": len(roots),
             "required_owner_families": list(REQUIRED_OWNER_FAMILIES),
             "owner_families": present_owner_families,
