@@ -971,8 +971,6 @@ def _file_review_disposition(verdict: Any) -> str:
         return "approve"
     if verdict == "needs_revision":
         return "repair"
-    if verdict == "undeterminable":
-        return "ship_bounded"
     return "block"
 
 
@@ -2061,14 +2059,8 @@ def _validate_file_authorization(root: Path, stable: Path, feedback: str,
                 and review_state.get("state") == "REPAIR_PENDING"
                 and review_state.get("buyer_feedback_sha256") == feedback
                 and review_state.get("requirements_sha256") == requirements_sha256)
-            or (result.get("verdict") != "deliverable"
-                and receipt.get("shipment_basis") not in {
-                    "max_review_iterations", "bounded_undeterminable",
-                })
-            or (receipt.get("shipment_basis") == "max_review_iterations"
-                and receipt.get("review_round") != MAX_FILE_REVIEW_ITERATIONS)
-            or (receipt.get("shipment_basis") == "bounded_undeterminable"
-                and result.get("verdict") != "undeterminable")
+            or result.get("verdict") != "deliverable"
+            or receipt.get("shipment_basis") != "reviewer_approved"
             or not _text(result.get("reason"))
             or summary.get("task_label") != "paid-file-verifier"
             or summary.get("task_class") != "escalation-agent"
@@ -2192,7 +2184,9 @@ def _run_isolated_file_owner(args, root: Path, context: Path, prompt_text: str,
         prompt.write_text(
             isolated_prompt + prior_instruction
             + f" The exact required artifact_version is {expected_version}; use that version in the "
-            "artifact filename, acceptance filename and manifest.",
+            "artifact filename, acceptance filename and manifest. Copy required_assets exactly, including "
+            "every asset_id and field, from context/paid-work-decision.json into the manifest; never rename, "
+            "summarize, regroup, or replace that contract.",
             encoding="utf-8",
         )
         staged_evidence = staging / "runner-evidence"
@@ -2236,6 +2230,20 @@ def _run_isolated_file_owner(args, root: Path, context: Path, prompt_text: str,
             acceptance_path = Path(_text(manifest.get("acceptance_evidence_path"))) if isinstance(manifest, dict) else Path()
             if acceptance_path and not acceptance_path.is_absolute():
                 acceptance_path = staging / acceptance_path
+            rejected = owner_evidence / "rejected-candidate"
+            rejected.mkdir(parents=True, exist_ok=True)
+            for candidate in (
+                Path(_text(manifest.get("artifact_path"))) if isinstance(manifest, dict) else Path(),
+                acceptance_path,
+                staging / "delivery" / "paid-work-result.json",
+            ):
+                try:
+                    candidate = candidate.resolve()
+                    candidate.relative_to(staging.resolve())
+                except (OSError, ValueError):
+                    continue
+                if candidate.is_file():
+                    shutil.copy2(candidate, rejected / candidate.name)
             _write(owner_evidence / "promotion-error.json", {
                 "version": 1,
                 "error_type": type(error).__name__,
@@ -2354,19 +2362,10 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
         and review_state.get("requirements_sha256") == requirements_sha256
     )
     prior_round = (int(review_state.get("round", 0))
-                   if state_matches_cycle
-                   and review_state.get("state") in {"REPAIR_PENDING", "MAX_REVIEW_SHIP"} else 0)
+                   if state_matches_cycle and review_state.get("state") == "REPAIR_PENDING" else 0)
     start_round = min(prior_round + 1, MAX_FILE_REVIEW_ITERATIONS)
     shipment_basis = "reviewer_approved"
     review_rounds = range(start_round, MAX_FILE_REVIEW_ITERATIONS + 1)
-    if (prior_round >= MAX_FILE_REVIEW_ITERATIONS and resumed is not None):
-        manifest, snapshots = resumed
-        verdict, proof = _file_runner_result(
-            verifier_evidence, task_label="paid-file-verifier", started_ns=None,
-        )
-        shipment_basis = "max_review_iterations"
-        review_round = MAX_FILE_REVIEW_ITERATIONS
-        review_rounds = range(0)
     for review_round in review_rounds:
         if resumed is None or finding:
             correction = (" A fresh reviewer rejected the prior artifact. Create a corrected next version that resolves "
@@ -2498,20 +2497,16 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
         if disposition == "approve" and _text(verdict.get("reason")):
             break
         finding = _text(verdict.get("reason")) or "The reviewer did not prove the artifact deliverable."
-        if disposition == "ship_bounded":
-            shipment_basis = "bounded_undeterminable"
-            break
         if review_round == MAX_FILE_REVIEW_ITERATIONS:
-            shipment_basis = "max_review_iterations"
             _write(root / "context" / "paid-review-state.json", {
-                "version": 1, "state": "MAX_REVIEW_SHIP", "mode": "file",
+                "version": 1, "state": "REVIEW_BLOCKED", "mode": "file",
                 "review_policy_version": PAID_FILE_POLICY_VERSION,
                 "operator_policy_sha256": operator_policy_sha256,
                 "buyer_feedback_sha256": feedback, "requirements_sha256": requirements_sha256,
                 "artifact_sha256": snapshots["artifact"][1], "round": review_round,
                 "verdict": _text(verdict.get("verdict")), "finding": finding,
             })
-            break
+            raise Failure("file_validation")
         _write(root / "context" / "paid-review-state.json", {
             "version": 1, "state": "REPAIR_PENDING", "mode": "file",
             "review_policy_version": PAID_FILE_POLICY_VERSION,
@@ -2559,10 +2554,7 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
     })
     _write(root / "context" / "paid-review-state.json", {
         "version": 1,
-        "state": ({
-            "reviewer_approved": "APPROVED",
-            "bounded_undeterminable": "BOUNDED_REVIEW_SHIP",
-        }.get(shipment_basis, "MAX_REVIEW_SHIP")),
+        "state": "APPROVED",
         "mode": "file",
         "review_policy_version": PAID_FILE_POLICY_VERSION,
         "operator_policy_sha256": operator_policy_sha256,
