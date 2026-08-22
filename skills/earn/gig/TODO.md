@@ -302,11 +302,10 @@ no-send, replay-zero and a new natural sub-30-minute official reply/estimate pro
 Do not advance the development cursor until every unchecked item in the current stage has official
 evidence. Independent production lanes continue running while development follows this order.
 
-**Current live cursor.** `main` and `origin/main` were verified equal immediately before this snapshot; the Paid
-desktop-capability implementation is immutable commit `701c8de6f645f4327e8b5e01bea6aad6a14cd75d` and remains an ancestor;
-the release selector points at immutable `2998bf4b5b6db9adde2d140d36591fc5005a8241`, while the active Haru
-project owner is correctly pinned to the immutable release from which that pass began,
-`6f3c3aca00c6c31bb026bd91003856d47bc43462`. The shared disk guard is active with
+**Current live cursor.** `main` and `origin/main` were verified equal immediately before this snapshot. The Paid
+desktop-capability implementation plus the observed `capability` field contract are immutable commit
+`0d521af2522c013446ebf5eac4de2b0d212d1e43`; the release selector and the active launchd Paid pass are pinned
+to that exact release. The shared disk guard is active with
 `GIG_DISK_HEADROOM_KIB=0`; the earlier speculative storage floor no longer stops Paid. APFS clonefile staging
 is also active, so historical ZIPs remain independent paths without physically duplicating their blocks.
 
@@ -330,6 +329,14 @@ model sandbox under one host-wide desktop-tool lease, records stdout/stderr and 
 same project owner for final inspection
 and packaging. This must be published and proved by the natural Haru owner; no Codex one-off artifact generation or
 customer send counts.
+
+The first broker-enabled natural owner selected the installed Illustrator capability itself, staged the two v40
+SVG masters and emitted exactly two relative-path requests. That pass exposed one protocol mismatch before any
+customer effect: the owner used the natural field name `capability` while the controller expected `tool`. The
+controller now treats `capability` as canonical and accepts `tool` only as compatibility input. A new natural
+launchd pass is active on the corrected immutable release; it must produce both official Illustrator reopen
+receipts, resume the same owner, obtain PASS, send v40 once with formal delivery OFF and read it back from Haru's
+exact room before this item advances.
 
 **Current reviewer correction.** `main` and `origin/main` were both `31e7fa09d` before this change; the
 starting verification commit `79ac01ba1eb66b06aed1f9cee66d4af303f03a3d` remains an ancestor. The loaded
