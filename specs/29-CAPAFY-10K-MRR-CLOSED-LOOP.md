@@ -14,7 +14,6 @@ Life Manager public repositoryだけをsourceとして、Capafy skillの発見�
 | launchd cutover | loaded plistは`/Users/anicca/anicca/skills/...`を実行し、`/Users/anicca/Projects/life-manager-main/...`を実行していない | **FAIL: runtimeは旧repo** |
 | scheduler | `ai.anicca.capafy-loop-daily`、IG daily、hourly/daily-close monitorはloaded | schedule定義は存在 |
 | process health | daily loopとIG marketingのlast exit codeは`1`、hourly goal monitorは`2` | **FAIL: stopped/degraded** |
-| disk | Data volumeは100%、freeは約833 MiB。runtime logに`No space left on device` | **FAIL: write不能が再発** |
 | event ledger | hourly reportは同じ`event_id conflict`を反復。outcome monitorは`verified -> unresolved`の逆遷移を反復 | **FAIL: incident state machine不整合** |
 | last money snapshot | 5 orders、2 paid orders、gross `$19.98`、pending `$8.00`、realized `$0.00`、MRR `$0.00` | 売上実績あり、$10K MRR未達 |
 | marketing snapshot | IG Reel URLあり、121 views、1 click、0 likes、0 comments。marketing/inventory/account snapshotはstale | 投稿履歴あり、closed loopは停止 |
@@ -229,30 +228,29 @@ Items are executed top-to-bottom. Only one item is active.
 
 | ID | atomic action | done evidence | state |
 |---|---|---|---|
-| C0 | reclaim safe disk space without deleting protected stores/state | Data volume below 90%, at least 20 GiB free, temp-file write succeeds | pending |
-| C1 | inventory every loaded Capafy launchd label and map source path, state path, log path, cadence | checked-in inventory has no unknown owner | pending |
-| C2 | replace old-repo plist paths with Life Manager main release paths using repo-owned templates | `plutil`, `launchctl print`, resolved ProgramArguments/WorkingDirectory all point to Life Manager | pending |
-| C3 | bootstrap revised jobs once, unload duplicate old-path jobs, and read back exact loaded set | one owner per responsibility; no duplicate daily/hourly publisher | pending |
-| C4 | fix false-green exits so child failure remains nonzero and terminal heartbeat is written only after classified completion | failure injection returns nonzero; no false healthy marker | pending |
-| C5 | fix event identity and incident monotonicity | repeated observation is idempotent; new observation gets new event ID; verified cannot regress to unresolved | pending |
-| C6 | run a bounded hourly reconcile against live Capafy account/inventory/sales/refunds/subscriptions | fresh receipt separates MRR, one-time, pending, refunds; unknown remains unknown | pending |
-| C7 | normalize current Capafy server response and restore exact status/slot inventory readback | live call returns agent rows and deterministic occupied/free/retry counts | pending |
-| C8 | implement slot allocator contract | table-driven tests cover free/full/rejected/listed/server-unreadable without duplicate Agent creation | pending |
-| C9 | implement same-agent rejection repair queue | real rejected fixture preserves agent_id, records reason, adds regression test, creates version update | pending |
-| C10 | create durable offline candidate backlog | cap-full wake can research/build/test one candidate without platform submission | pending |
-| C11 | consolidate Telegram schema and dedupe | one state-change message returns message ID and joins skill, slot, post and revenue by run_id | pending |
-| C12 | port the required FFmpeg editing subset from `video-processing-editing` into repo-owned canonical renderer | unit tests and one local 1080x1920 candidate artifact pass probe/audio/caption/secret gates | pending |
-| C13 | replace Capafy STEP3 repo-external renderer call with canonical renderer | dependency audit contains no `~/.claude/skills/faceless-money-factory` | pending |
-| C14 | add demonstration-first creative gate | public candidate shows verified skill input/output or before/after; generic b-roll-only fixture fails | pending |
-| C15 | render one real Capafy listing candidate and send it to Telegram before public adoption | actual mp4 + Telegram media message ID + user-observable quality artifact | pending |
-| C16 | run one live IG pass through existing account rail | selected listing -> artifact -> account -> native Reel URL -> metrics -> Telegram message ID | pending |
-| C17 | add ReelFarm TikTok derivative behind credential/account/quality gates | no credential means honest no-op; success requires TikTok native URL | pending |
-| C18 | run one real slot-controlled supply pass | inventory readback -> allocator decision -> skill/version remote status -> Telegram message ID | pending |
-| C19 | prove one rejected Agent correction/resubmit E2E | same agent_id, new version, under-review readback, no orphan Agent | pending |
-| C20 | prove one listed transition frees a fresh slot | status=4 reduces occupied count and next daily wake submits exactly one candidate | pending |
-| C21 | connect post/click/subscription windows without claiming causal proof | attribution row is candidate unless Capafy exposes order-level UTM/source | pending |
-| C22 | prove seven consecutive daily healthy terminals and hourly freshness | 7-day ledger has no stale source, duplicate Agent/version/post or missing Telegram receipt | pending |
-| C23 | operate growth and retention experiments until settled net MRR reaches `$10,000` | active subscription readback and refunds/fees reconcile to target | pending |
+| C0 | inventory every loaded Capafy launchd label and map source path, state path, log path, cadence | checked-in inventory has no unknown owner | pending |
+| C1 | replace old-repo plist paths with Life Manager main release paths using repo-owned templates | `plutil`, `launchctl print`, resolved ProgramArguments/WorkingDirectory all point to Life Manager | pending |
+| C2 | bootstrap revised jobs once, unload duplicate old-path jobs, and read back exact loaded set | one owner per responsibility; no duplicate daily/hourly publisher | pending |
+| C3 | fix false-green exits so child failure remains nonzero and terminal heartbeat is written only after classified completion | failure injection returns nonzero; no false healthy marker | pending |
+| C4 | fix event identity and incident monotonicity | repeated observation is idempotent; new observation gets new event ID; verified cannot regress to unresolved | pending |
+| C5 | run a bounded hourly reconcile against live Capafy account/inventory/sales/refunds/subscriptions | fresh receipt separates MRR, one-time, pending, refunds; unknown remains unknown | pending |
+| C6 | normalize current Capafy server response and restore exact status/slot inventory readback | live call returns agent rows and deterministic occupied/free/retry counts | pending |
+| C7 | implement slot allocator contract | table-driven tests cover free/full/rejected/listed/server-unreadable without duplicate Agent creation | pending |
+| C8 | implement same-agent rejection repair queue | real rejected fixture preserves agent_id, records reason, adds regression test, creates version update | pending |
+| C9 | create durable offline candidate backlog | cap-full wake can research/build/test one candidate without platform submission | pending |
+| C10 | consolidate Telegram schema and dedupe | one state-change message returns message ID and joins skill, slot, post and revenue by run_id | pending |
+| C11 | port the required FFmpeg editing subset from `video-processing-editing` into repo-owned canonical renderer | unit tests and one local 1080x1920 candidate artifact pass probe/audio/caption/secret gates | pending |
+| C12 | replace Capafy STEP3 repo-external renderer call with canonical renderer | dependency audit contains no `~/.claude/skills/faceless-money-factory` | pending |
+| C13 | add demonstration-first creative gate | public candidate shows verified skill input/output or before/after; generic b-roll-only fixture fails | pending |
+| C14 | render one real Capafy listing candidate and send it to Telegram before public adoption | actual mp4 + Telegram media message ID + user-observable quality artifact | pending |
+| C15 | run one live IG pass through existing account rail | selected listing -> artifact -> account -> native Reel URL -> metrics -> Telegram message ID | pending |
+| C16 | add ReelFarm TikTok derivative behind credential/account/quality gates | no credential means honest no-op; success requires TikTok native URL | pending |
+| C17 | run one real slot-controlled supply pass | inventory readback -> allocator decision -> skill/version remote status -> Telegram message ID | pending |
+| C18 | prove one rejected Agent correction/resubmit E2E | same agent_id, new version, under-review readback, no orphan Agent | pending |
+| C19 | prove one listed transition frees a fresh slot | status=4 reduces occupied count and next daily wake submits exactly one candidate | pending |
+| C20 | connect post/click/subscription windows without claiming causal proof | attribution row is candidate unless Capafy exposes order-level UTM/source | pending |
+| C21 | prove seven consecutive daily healthy terminals and hourly freshness | 7-day ledger has no stale source, duplicate Agent/version/post or missing Telegram receipt | pending |
+| C22 | operate growth and retention experiments until settled net MRR reaches `$10,000` | active subscription readback and refunds/fees reconcile to target | pending |
 
 ## Test matrix
 
@@ -287,13 +285,13 @@ Items are executed top-to-bottom. Only one item is active.
 
 ## Execution steps
 
-1. C0からC23まで順番に1件ずつ実装する。
+1. C0からC22まで順番に1件ずつ実装する。
 2. 各code sliceは該当testをRED→GREENにし、全Capafy regressionを実行する。
 3. launchd変更はinstalled plist、resolved path、last exit、receiptをreadbackする。
 4. platform writeはslot inventory fresh、lock acquired、idempotency key presentの時だけ行う。
 5. public postはquality gateとaccount/cadence gate通過後に1件だけ行う。
 6. 各milestoneをcommit/pushし、Telegram message IDをspec evidenceへ記録する。
-7. C22の7日連続proof後もC23を継続し、settled net MRR `$10,000`を実測する。
+7. C21の7日連続proof後もC22を継続し、settled net MRR `$10,000`を実測する。
 
 ## Growth decision rule
 
