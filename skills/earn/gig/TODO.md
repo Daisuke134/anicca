@@ -307,6 +307,21 @@ evidence. Independent production lanes continue running while development follow
 `79ac01ba1eb66b06aed1f9cee66d4af303f03a3d` remains an ancestor. The existing launchd Paid owner is the only
 customer-effect owner. The shared disk guard remains `GIG_DISK_HEADROOM_KIB=0`; storage floors do not stop Paid.
 
+**Current runtime refresh.** `main` and `origin/main` are equal at
+`734bdce3dc58f38fc9c3c9c9bd3a5b0a99d74084`; unrelated dirty files remain untouched. The active Paid pass was
+started from immutable release `d6c28857e0a13cb2a1800d27993509749a57abbe`, while `current` now points to
+`82e5366dfed408aceafe7f99636a02debdd931db`. Haru `18169583` remains unsent and is naturally recompiling complete
+context after the macOS Illustrator data-access prompt was granted. That active immutable release still keys an
+owner workspace by both requirements and volatile context-input digests; the current release contains the generic
+requirements-only resume key and preserves staging after an incomplete capability handoff. Do not attribute the
+resume fix to the active child; let the multi-project pass finish, then require the next natural current-release
+wake to resume the existing v43 staging, obtain both Illustrator native reopen receipts, package and send once with
+formal delivery OFF, exact-room DOM readback and replay-zero. The same pass automatically discovered new paid room
+`18179735` (`smilejack2`, app-market-research/promotion work), started its independent project worker and began
+pre-purchase DM collection without a code or queue edit. This proves discovery only, not delivery: it must compile
+proposal + DM + full talkroom + attachments, avoid re-asking known facts, create useful work and remain owned until
+the transaction is complete. Aufbau `18178439` remains active under its own isolated owner in parallel.
+
 **Haru v43 is visually verified but must not be sent until native Illustrator receipts exist.** Three natural
 isolated owners independently rebuilt the same bounded v43 correction from the accepted v27/v32 lineage. The latest
 owner measured PC exports at 1440x5667 and 2880x11334 and responsive exports at 750x10224 and 1500x20448; both PDFs
