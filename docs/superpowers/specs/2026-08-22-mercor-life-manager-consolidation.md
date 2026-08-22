@@ -93,7 +93,7 @@ Mercor interview messages enter the existing Job Hunter inbox lane. Reuse `apps/
 - Mercor skill/spec exist in the migration source and have been read back.
 - Canonical Life Manager repo already owns `skills/job-hunter/`, `apps/job-search-loop/`, and `loops/job-hunter/`.
 - The live Mercor profile is authenticated and the resume/profile fields were verified in the browser.
-- Japanese evaluator application is `2_of_3`; the remaining step is a 14-minute `Domain Expert Interview` AI interview requiring camera and microphone; `Start` was not clicked and final submission is not observed.
+- Japanese evaluator application is `2_of_3` in the old card projection, but the 14-minute `Domain Expert Interview` was completed; the live application card now reads `Ready to submit`. The listing still requires 5+ years of relevant Japanese language/cultural-fluency professional experience, which is not yet an exact verified fact.
 - Mercor Summary currently resets after reload and is tracked as `summary_unpersisted`.
 
 ## 9. Migration acceptance gate
@@ -113,7 +113,7 @@ Do not delete or archive the migration source until all are true:
 1. [x] Copy the Mercor provider policy and skill facade into this repository.
 2. [ ] Add the Mercor provider adapter to the existing job-search runtime; keep ATS, Gmail, Calendar, ledger, and browser side effects in their existing owners.
 3. [ ] Route all locales and role families through one material-variant/fact gate; remove any Japanese-only filter.
-4. [ ] User completes the Japanese evaluator's `Domain Expert Interview`; the loop must not click `Start` or impersonate the candidate.
+4. [ ] Resolve the Japanese evaluator's 5+ years relevant-experience fact gate; submit only if the requirement is grounded, otherwise record `needs_human`/ineligible.
 5. [ ] Add a Mercor fixture to the existing Gmail→FreeBusy→Calendar idempotency tests.
 6. [ ] Fix or explicitly quarantine the Summary persistence gap.
 7. [ ] Run one isolated Mercor pass through the existing Job Hunter launchd route.
