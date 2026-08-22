@@ -253,9 +253,10 @@ def close_no_contact_work(
 
 def no_contact_report(ignored: dict[str, Any], *, now: int) -> dict[str, Any]:
     """Build an owner-visible result without customer identity or message content."""
+    del now
     action_id = int(ignored["action_id"])
     return {
-        **ignored, "run_id": f"ignore-policy-{action_id}-{now}",
+        **ignored, "run_id": f"ignore-policy-{ignored['policy_id']}-{action_id}",
         "replied": 0, "effect": 0, "official_readback": 0,
         "closed_without_send": 1, "pending": 0,
         "events": [], "errors": [],
@@ -1992,8 +1993,6 @@ async def supervise_replies(
             outbox=outbox, now=int(time.time()),
         )
         for ignored in policy["ignored"]:
-            if ignored["status"] != "ignore_policy":
-                continue
             result = no_contact_report(ignored, now=int(time.time()))
             report_dir = evidence / "continuous" / "policy-reports" / result["run_id"]
             await enqueue_report(report_dir / "result.json", result)

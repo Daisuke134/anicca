@@ -149,7 +149,7 @@ def test_policy_report_identity_is_unique_and_contains_no_counterparty_data():
         "status": "ignore_policy", "policy_id": "operator-owned-1", "action_id": 42,
     }, now=1000)
 
-    assert result["run_id"] == "ignore-policy-42-1000"
+    assert result["run_id"] == "ignore-policy-operator-owned-1-42"
     assert result["closed_without_send"] == 1
     assert result["effect"] == 0
     assert result["official_readback"] == 0
