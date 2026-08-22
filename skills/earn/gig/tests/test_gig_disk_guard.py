@@ -19,6 +19,7 @@ MANIFEST_PATH = GIG_ROOT / "config" / "launchd-jobs.json"
 @pytest.fixture(autouse=True)
 def _isolated_host_control_state(tmp_path, monkeypatch):
     monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("GIG_DISK_HEADROOM_KIB", "524288")
     monkeypatch.delenv("GIG_HOST_STATE_DIR", raising=False)
     monkeypatch.delenv("DISK_CONTROL_STATE_DIR", raising=False)
     monkeypatch.delenv("OPENCLAW_STATE_DIR", raising=False)
@@ -329,6 +330,22 @@ def test_manifest_wraps_only_four_business_lanes():
     for lane in {"browser", "release"}:
         program = jobs[lane]["program"]
         assert "gig_disk_guard.py" not in program
+
+
+def test_apply_ignores_preventive_flags_but_keeps_a_real_disk_floor():
+    release_path = Path("/release")
+    release_script = GIG_ROOT / "scripts" / "gig_release.py"
+    spec = importlib.util.spec_from_file_location("gig_release_apply_guard_test", release_script)
+    assert spec and spec.loader
+    release = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(release)
+    manifest, table = release.settings(release_path)
+    apply = next(job for job in manifest["jobs"] if job["lane"] == "apply")
+
+    environment = release.plist_for(apply, table)["EnvironmentVariables"]
+    assert environment["GIG_IGNORE_DISK_PRESSURE_BLOCK"] == "1"
+    assert environment["GIG_IGNORE_DISK_WRITERS_STOP"] == "1"
+    assert environment["GIG_DISK_HEADROOM_KIB"] == "524288"
 
 
 def test_writer_lanes_render_from_immutable_release_and_life_manager_state():
