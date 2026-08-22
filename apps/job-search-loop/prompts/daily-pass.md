@@ -142,6 +142,13 @@ rendered validation is definite `not_submitted`; every other post-click surface 
 `submit_unknown`. The model cannot override this result and a click alone is never
 success.
 
+The resident inbox owner may later reconcile `submit_unknown` only through the
+already-authenticated Gog CLI account. Do not start Gmail/Google login or OAuth.
+`submission_confirmation` requires the exact account recipient, authoritative ATS
+sender domain, company, full role title, confirmation phrase, unique uncertain
+intent, and receipt time after the claim. Only its evidence hash may reach the
+Ledger; ambiguous, wrong-recipient, early, or duplicate mail never proves success.
+
 Use `StableInferencePolicy` for common concepts. Luna supplies dated,
 Candidate-Memory-provenance intervals for experience; the policy merges overlaps
 before computing years. Minimum/target/stretch compensation comes from the matching

@@ -98,6 +98,11 @@ def _message_from_payload(value: dict[str, Any]) -> dict[str, Any] | None:
         "message_id": message_id,
         "thread_id": thread_id,
         "sender": _unwrap(headers.get("from")),
+        "recipient": _unwrap(
+            headers.get("delivered-to")
+            or headers.get("to")
+            or headers.get("x-original-to")
+        ),
         "subject": _unwrap(headers.get("subject")),
         "body": _unwrap(value.get("body")),
         "received_at": received_at,
@@ -105,14 +110,21 @@ def _message_from_payload(value: dict[str, Any]) -> dict[str, Any] | None:
 
 
 def _confirmation_matches(
-    message: dict[str, str], candidate: dict[str, str]
+    message: dict[str, str],
+    candidate: dict[str, str],
+    expected_recipient: str | None = None,
 ) -> bool:
     subject_and_body = _fold(f"{message['subject']}\n{message['body']}")
     company_context = _fold(
         f"{message['sender']}\n{message['subject']}\n{message['body']}"
     )
     return (
-        any(term in subject_and_body for term in _CONFIRMATION_TERMS)
+        (
+            expected_recipient is None
+            or parseaddr(message["recipient"])[1].casefold()
+            == expected_recipient.casefold()
+        )
+        and any(term in subject_and_body for term in _CONFIRMATION_TERMS)
         and _fold(candidate["company"]) in company_context
         and _fold(candidate["title"]) in subject_and_body
         and _sender_matches(message["sender"], candidate["canonical_url"])
@@ -171,6 +183,7 @@ def reconcile_confirmation_threads(
     threads: list[dict[str, Any]],
     thread_loader: Callable[[str], dict[str, Any]],
     seen_state: Path,
+    expected_recipient: str | None = None,
 ) -> dict[str, Any]:
     ledger = Ledger(ledger_path)
     reconciled: list[dict[str, str]] = []
@@ -213,7 +226,7 @@ def reconcile_confirmation_threads(
                 candidates = [
                     candidate
                     for candidate in _uncertain_candidates(ledger)
-                    if _confirmation_matches(message, candidate)
+                    if _confirmation_matches(message, candidate, expected_recipient)
                 ]
                 if len(candidates) != 1:
                     reason = (
@@ -343,6 +356,7 @@ def main() -> None:
             args.account, thread_id, args.gog
         ),
         seen_state=args.seen,
+        expected_recipient=args.account,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     args.output.write_text(
