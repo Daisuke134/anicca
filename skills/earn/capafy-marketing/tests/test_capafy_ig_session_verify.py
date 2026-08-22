@@ -42,6 +42,18 @@ def test_current_session_reuses_existing_target_and_proves_exact_owner(tmp_path)
     assert calls == ["pages", "navigate", "evidence"]
 
 
+def test_current_session_accepts_current_edit_page_profile_link_owner_proof(tmp_path):
+    evidence = {
+        "origin": "https://www.instagram.com",
+        "hostname": "www.instagram.com",
+        "path": "/accounts/edit/",
+        "username": None,
+        "profile_hrefs": [f"/{HANDLE}/"],
+    }
+    result, _ = run_verify(tmp_path, pages=[PAGE], evidence=evidence)
+    assert result.returncode == 0, result.stderr
+
+
 def test_current_session_creates_one_target_when_none_is_reusable(tmp_path):
     result, calls = run_verify(tmp_path, pages=[{**PAGE, "id": "foreign", "url": "https://example.test/"}])
     assert result.returncode == 0, result.stderr

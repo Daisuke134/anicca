@@ -49,10 +49,10 @@ def cdp_call(port: int):
         if operation == "create":
             return cdp.new_tab("about:blank")
         if operation == "navigate":
-            cdp.navigate(payload["target_id"], EDIT_URL); time.sleep(float(os.environ.get("CAPAFY_IG_SESSION_VERIFY_WAIT_SECONDS", "3")))
+            cdp.navigate(payload["target_id"], EDIT_URL); time.sleep(float(os.environ.get("CAPAFY_IG_SESSION_VERIFY_WAIT_SECONDS", "10")))
             return None
         if operation == "evidence":
-            return cdp.evaluate(payload["target_id"], """(()=>{const u=document.querySelector('input[name="username"]');return {origin:location.origin,hostname:location.hostname,path:location.pathname,username:u&&u.value}})()""")
+            return cdp.evaluate(payload["target_id"], """(()=>{const u=document.querySelector('input[name="username"]');return {origin:location.origin,hostname:location.hostname,path:location.pathname,username:u&&u.value,profile_hrefs:[...document.querySelectorAll('a[href]')].map(a=>a.getAttribute('href')).filter(Boolean)}})()""")
         raise ValueError("unknown CDP operation")
     return call
 
@@ -106,8 +106,16 @@ def main() -> int:
         evidence = call("evidence", target_id=target_id)
         if not isinstance(evidence, dict) or evidence.get("origin") != CANONICAL_ORIGIN or evidence.get("hostname") != CANONICAL_HOST or evidence.get("path") != "/accounts/edit/":
             raise ValueError("not an authenticated account page")
-        if not isinstance(evidence.get("username"), str) or handle(evidence["username"]) != expected:
-            raise ValueError("owner proof unavailable")
+        username = evidence.get("username")
+        if isinstance(username, str) and username:
+            if handle(username) != expected:
+                raise ValueError("owner proof unavailable")
+        else:
+            profile_hrefs = evidence.get("profile_hrefs")
+            if not isinstance(profile_hrefs, list) or any(not isinstance(item, str) for item in profile_hrefs):
+                raise ValueError("owner proof unavailable")
+            if f"/{expected}/" not in profile_hrefs:
+                raise ValueError("owner proof unavailable")
     except Exception:
         raise SystemExit("current Instagram session could not be verified")
     print(json.dumps({"verified": True, "handle": expected, "session_owner": "browser", "target_id": target_id}, separators=(",", ":")))
