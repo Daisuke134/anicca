@@ -39,11 +39,17 @@ class ObservationBuilder:
                 const linked = el.labels && el.labels.length ? Array.from(el.labels).map(x => x.innerText).join(' ') : '';
                 return (own || linked || el.getAttribute('placeholder') || el.innerText || '').trim();
               };
-              const stableId = el => {
+              const stableId = (el, index) => {
                 const automation = el.getAttribute('data-automation-id');
                 if (automation) return `automation:${automation}`;
                 const id = el.getAttribute('id');
-                return id ? `id:${id}` : '';
+                if (id) return `id:${id}`;
+                // Adapted from career-ops' ref-tagged drive loop: every fresh
+                // observation gives otherwise anonymous visible controls an
+                // observation-local identity. The next observation replaces it.
+                const ref = `e${index}`;
+                el.setAttribute('data-anicca-ref', ref);
+                return `ref:${ref}`;
               };
               const role = el => el.getAttribute('role') || ({
                 A: 'link', BUTTON: 'button', SELECT: 'combobox',
@@ -53,14 +59,14 @@ class ObservationBuilder:
                   ? el.type.replace('submit', 'button') : 'textbox'
               ) : ''));
               const controls = Array.from(document.querySelectorAll('input,button,select,textarea,a,[role]'))
-                .filter(visible).map(el => ({
+                .filter(visible).map((el, index) => ({
                   tag: el.tagName.toLowerCase(), role: role(el),
                   control_type: el.getAttribute('type') || '', label: label(el),
                   disabled: !!el.disabled || el.getAttribute('aria-disabled') === 'true',
                   required: !!el.required || el.getAttribute('aria-required') === 'true',
                   filled: ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName)
                     ? String(el.value || '').trim().length > 0 : false,
-                  stable_id: stableId(el),
+                  stable_id: stableId(el, index),
                   checked: el.matches('input[type="checkbox"],input[type="radio"]')
                     ? !!el.checked
                     : (el.hasAttribute('aria-checked') ? el.getAttribute('aria-checked') === 'true' : null),

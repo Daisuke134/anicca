@@ -233,10 +233,11 @@ async def observe() -> dict[str, Any]:
                 _path_env("JOB_SEARCH_MACHINE_CREDENTIALS")
             ).known_tenants()
         )
+    candidate_memory = CandidateMemoryView.load(
+        _path_env("JOB_SEARCH_CANDIDATE_MEMORY")
+    )
     candidate_concepts = (
-        *CandidateMemoryView.load(
-            _path_env("JOB_SEARCH_CANDIDATE_MEMORY")
-        ).concepts(),
+        *candidate_memory.concepts(),
         "policy.prefer_not_to_say",
     )
     return {
@@ -251,6 +252,7 @@ async def observe() -> dict[str, Any]:
         "needs_navigation": cursor.needs_navigation,
         "recovery_url": cursor.recovery_url if cursor.needs_navigation else None,
         "candidate_concepts": candidate_concepts,
+        "grounding_facts": candidate_memory.grounding_facts(),
         "observation": _safe_observation(observation, cursor.checkpoint, _wake_budget()),
     }
 
@@ -315,19 +317,6 @@ async def _act_locked(action_path: Path) -> dict[str, Any]:
     row, session, checkpoints, evidence, cursor, builder = await _context()
     before = await builder.build(cursor.handle)
     action = _action(_private_action(action_path))
-    if (
-        action.kind == "type"
-        and action.target is not None
-        and action.target.stable_id == "automation:searchBox"
-        and any(
-            control.role == "option" and not control.disabled
-            for control in before.controls
-        )
-    ):
-        raise RuntimeError(
-            "custom combobox already has visible options; click one exact observed "
-            "option instead of typing a filter"
-        )
     decision_signature = _reject_repeated_decision(before.content_sha256, action_path)
     remaining = _wake_budget(consume=True)
     receipt = await ActionExecutor(session).execute(cursor.handle, action)
@@ -805,7 +794,11 @@ async def finalize() -> dict[str, Any]:
         await page.wait_for_timeout(6_500)
         after = await builder.build(cursor.handle)
         completion = verify_completion_ui(
-            company=row["company"], role=row["title"], review=review, observation=after
+            company=row["company"],
+            role=row["title"],
+            review=review,
+            observation=after,
+            require_receipt=detect_provider(row["canonical_url"]) == "workday",
         )
         record_completion_evidence(ledger, intent.intent_id, intent.fence, completion)
     finally:
@@ -837,13 +830,31 @@ async def finalize() -> dict[str, Any]:
         )
     )
     await session.close_owned(cursor.handle)
+    report_status = (
+        "post_submit_verification"
+        if completion.evidence_class == "exact_completion_ui_pending_receipt"
+        else completion.outcome
+    )
+    wake_id = _path_env("JOB_SEARCH_BROWSER_OWNER_EVIDENCE").parent.name
+    telegram = send_hourly_outcomes(
+        database=_path_env("JOB_SEARCH_STATE_ROOT") / "telegram-outbox.sqlite3",
+        wake_id=wake_id,
+        receipts=(
+            QueueRowReceiptV1(
+                row["application_id"], row["company"], row["title"], report_status
+            ),
+        ),
+        evidence_classes={row["application_id"]: completion.evidence_class},
+    )
+    _mark_wake_completed(row["application_id"])
     return {
-        "status": completion.outcome,
+        "status": report_status,
         "application_id": row["application_id"],
         "evidence_class": completion.evidence_class,
         "evidence_sha256": completion.evidence_sha256,
         "step_evidence_sha256": step.evidence_sha256,
         "checkpoint_sha256": checkpoint_receipt.checkpoint_sha256,
+        "report_message_id": telegram["message_id"],
     }
 
 

@@ -132,35 +132,22 @@ class ModelBrowserLoopContractTests(unittest.TestCase):
             daily.count("-m job_search_loop.browser_agent.orchestrator"), 1
         )
         self.assertNotIn("deterministic Ashby fast path owns", prompt)
-        self.assertNotIn("A `blocked` row remains durable work", prompt)
-        self.assertIn("RowResumer.restore(endpoint,", prompt)
-        self.assertIn("ObservationBuilder.build(handle)", prompt)
-        self.assertIn("ActionExecutor.execute(handle,", prompt)
-        self.assertIn("remain inside this one Luna xhigh runner turn", prompt)
-        self.assertIn("AgentPolicy.next_step", prompt)
-        self.assertIn("validation_feedback(previous_observation, current_observation)", prompt)
-        self.assertIn("ValidationFeedbackV1.messages", prompt)
-        self.assertNotIn("a same-surface result is\n`not_submitted`/a blocker", prompt.lower())
-        self.assertIn("Never batch actions from one observation", prompt)
-        self.assertIn("validates the complete EvidenceStore action chain", prompt)
-        self.assertIn("never\nreplay prior actions", prompt)
-        self.assertIn("StepEvidenceV1", prompt)
+        self.assertIn("Agent loop adopted from Browser Use and career-ops", prompt)
+        self.assertIn("observation-local `ref:*`", prompt)
+        self.assertIn("Act on exactly one currently visible control", prompt)
+        self.assertIn("Opening a dropdown is\none action", prompt)
+        self.assertIn("A row-local failure never ends the queue", " ".join(prompt.split()))
         self.assertIn("job_search_loop.browser_agent.candidate_memory", daily)
-        self.assertIn("CandidateMemoryView", prompt)
+        self.assertIn("grounding_facts", prompt)
         self.assertIn("JOB_SEARCH_ANSWER_MEMORY", daily)
-        self.assertIn("AnswerMemory.concept_for_question", prompt)
-        self.assertIn("AnswerResolver.resolve(FieldQuestionV1)", prompt)
-        self.assertIn("StableInferencePolicy", prompt)
         self.assertIn("JOB_SEARCH_MACHINE_CREDENTIALS", daily)
-        self.assertIn("MachineWorkdayCredentialStore", prompt)
         self.assertIn("runtime auth --mode", prompt)
-        self.assertIn("Never inspect source", prompt)
-        self.assertIn("surface names are observation hints, not a prescribed workflow", prompt)
-        self.assertNotIn("workday_job\n  →", prompt)
+        self.assertIn("visible page determine the next action", prompt)
+        self.assertNotIn("workday_job", prompt)
         self.assertNotIn("workday-accounts.json", prompt)
-        self.assertNotIn("if an unverified fact is a mandatory form field, block", prompt)
-        self.assertIn("are not answer outcomes", prompt)
-        self.assertNotIn("Use `chromium.connect_over_cdp(endpoint)`", prompt)
+        self.assertNotIn("click_filter", prompt)
+        self.assertNotIn("promptOption", prompt)
+        self.assertNotIn("searchBox", prompt)
 
     def test_orchestrator_delegates_once_to_the_existing_bounded_runner(self):
         from job_search_loop.browser_agent.orchestrator import invoke_runner
@@ -226,11 +213,8 @@ class ModelBrowserLoopContractTests(unittest.TestCase):
             daily.count("-m job_search_loop.browser_agent.orchestrator"), 1
         )
         self.assertIn('"status": "model_owned"', daily)
-        self.assertIn(
-            "process the entire returned tuple with `RowQueueSupervisor.run`",
-            normalized_prompt,
-        )
-        self.assertIn("Never return from the wake because one row fails", prompt)
+        self.assertIn("Process every eligible Workday row", prompt)
+        self.assertIn("A row-local failure never ends the queue", normalized_prompt)
         self.assertNotIn("do not reopen a row it advanced", prompt)
         self.assertNotIn("preserve that exact blocker", prompt)
 
@@ -243,11 +227,8 @@ class ModelBrowserLoopContractTests(unittest.TestCase):
         self.assertIn('"status": "model_owned"', daily)
         self.assertIn('"reason": "mandatory_browser_lane"', daily)
         self.assertIn("--active-provider workday", daily)
-        self.assertIn(
-            "Eligible Workday and Ashby rows both belong exclusively to this framework-owned model lane",
-            normalized_prompt,
-        )
-        self.assertNotIn("during Workday 10P", normalized_prompt)
+        self.assertIn("Never open Ashby", prompt)
+        self.assertIn("--active-provider workday", daily)
 
 
 if __name__ == "__main__":

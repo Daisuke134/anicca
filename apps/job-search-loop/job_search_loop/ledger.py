@@ -1443,6 +1443,9 @@ class Ledger:
         }
         if allowed.get(outcome) != evidence_class and not (
             outcome == "not_submitted" and evidence_class == "definite_pre_submit_stop"
+        ) and not (
+            outcome == "submit_unknown"
+            and evidence_class == "exact_completion_ui_pending_receipt"
         ):
             raise ValueError("outcome does not match authoritative evidence class")
         if not re.fullmatch(r"[a-f0-9]{64}", evidence_sha256):

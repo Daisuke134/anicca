@@ -129,6 +129,24 @@ class CandidateMemoryView:
         """Return only safe schema identifiers, never private candidate values."""
         return tuple(str(item["concept"]) for item in self.value["concepts"])
 
+    def grounding_facts(self) -> tuple[dict[str, Any], ...]:
+        """Expose resume/profile claims, excluding candidate contact fields.
+
+        This is the ai-job-search grounding boundary used by the browser model for
+        novel employer questions. Values under ``candidate.*`` remain private and
+        are resolved only inside typed runtime actions.
+        """
+        return tuple(
+            {
+                "concept": str(item["concept"]),
+                "claim": str(item["value"]),
+                "provenance": tuple(str(value) for value in item.get("provenance", ())),
+            }
+            for item in self.value["concepts"]
+            if str(item.get("concept", "")).startswith("fact.")
+            and isinstance(item.get("value"), str)
+        )
+
 
 def main() -> int:
     parser = argparse.ArgumentParser()

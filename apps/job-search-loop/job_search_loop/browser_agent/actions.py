@@ -38,9 +38,15 @@ class ActionExecutor:
             raise ValueError("a non-empty user-facing label is required")
         if target.stable_id:
             kind, separator, value = target.stable_id.partition(":")
-            if not separator or kind not in {"automation", "id"} or not value:
-                raise ValueError("stable_id must be automation:<value> or id:<value>")
-            attribute = "data-automation-id" if kind == "automation" else "id"
+            if not separator or kind not in {"automation", "id", "ref"} or not value:
+                raise ValueError(
+                    "stable_id must be automation:<value>, id:<value>, or ref:<value>"
+                )
+            attribute = {
+                "automation": "data-automation-id",
+                "id": "id",
+                "ref": "data-anicca-ref",
+            }[kind]
             locator = page.locator(f"[{attribute}={json.dumps(value)}]")
         else:
             locator = (
@@ -76,17 +82,6 @@ class ActionExecutor:
             return visible
 
         visible = await resolve()
-        if not visible and target.role == "option":
-            # Transient ARIA menus may collapse when a short-lived CDP client
-            # disconnects between observe and act. Re-open only the control that
-            # retained focus, then resolve the exact previously observed option.
-            focused = page.locator(":focus")
-            if await focused.count() == 1 and await focused.evaluate(
-                """el => el.getAttribute('role') === 'combobox'
-                  || el.getAttribute('data-automation-id') === 'searchBox'"""
-            ):
-                await focused.click(timeout=self._timeout_ms)
-                visible = await resolve()
         if target.ordinal is not None:
             if target.ordinal < 1 or target.ordinal > len(visible):
                 raise RuntimeError("action target ordinal is outside the visible controls")
@@ -134,28 +129,10 @@ class ActionExecutor:
                     try:
                         target = await self._target(page, action.target)
                     except RuntimeError:
-                        if not await opener.evaluate(
-                            "el => el.tagName === 'INPUT' || el.tagName === 'TEXTAREA'"
-                        ):
-                            raise
-                        option_label = re.sub(
-                            r"\s+(?:not checked|checked)$",
-                            "",
-                            action.target.label,
-                            flags=re.IGNORECASE,
+                        raise RuntimeError(
+                            "option is not present in the fresh observation; observe the "
+                            "opened control and choose its new ref in the next model step"
                         )
-                        await opener.fill(option_label, timeout=self._timeout_ms)
-                        prompt_option = page.locator(
-                            "[data-automation-id='promptOption']"
-                        ).filter(has_text=option_label)
-                        await prompt_option.first.wait_for(
-                            state="visible", timeout=self._timeout_ms
-                        )
-                        if await prompt_option.count() != 1:
-                            raise RuntimeError(
-                                "typed option must resolve to exactly one prompt option"
-                            )
-                        target = prompt_option.first
             else:
                 target = await self._target(page, action.target)
             if action.kind in {"click", "choose"}:

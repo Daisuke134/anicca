@@ -25,6 +25,7 @@ def verify_completion_ui(
     role: str,
     review: FinalReviewReceiptV1,
     observation: ObservationV1,
+    require_receipt: bool = False,
 ) -> CompletionEvidenceV1:
     """Classify only freshly rendered UI; clicks, HTTP and Ledger are not inputs."""
     if observation.content_sha256 == review.observation_sha256:
@@ -34,8 +35,12 @@ def verify_completion_ui(
         observation.visible_text, role
     )
     if completion_visible and identity_visible:
-        outcome = "submitted"
-        evidence_class = "exact_completion_ui"
+        if require_receipt:
+            outcome = "submit_unknown"
+            evidence_class = "exact_completion_ui_pending_receipt"
+        else:
+            outcome = "submitted"
+            evidence_class = "exact_completion_ui"
     elif observation.validation_text:
         outcome = "not_submitted"
         evidence_class = "rendered_validation_rejection"
