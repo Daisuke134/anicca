@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>HOME</key>
+		<string>/Users/anicca</string>
+		<key>PATH</key>
+		<string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+	</dict>
+	<key>Label</key>
+	<string>ai.anicca.capafy-ig-account-manager</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/bin/bash</string>
+		<string>__REPO_ROOT__/skills/earn/capafy-marketing/capafy-ig-account-manager.sh</string>
+	</array>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>WorkingDirectory</key>
+	<string>__REPO_ROOT__</string>
+	<key>StandardErrorPath</key>
+	<string>__LIFE_MANAGER_HOME__/logs/capafy-ig-account-manager.err</string>
+	<key>StandardOutPath</key>
+	<string>__LIFE_MANAGER_HOME__/logs/capafy-ig-account-manager.out</string>
+	<key>StartInterval</key>
+	<integer>300</integer>
+</dict>
+</plist>

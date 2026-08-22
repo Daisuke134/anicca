@@ -238,7 +238,7 @@ Telegram report begins with `Life Manager:::` and contains new/updated skill nam
 | `ai.anicca.capafy-loop-daily` | Life Manager / daily build, publish and money loop | 毎日08:10 | `$HOME/anicca/skills/self/capafy-loop/capafy-loop-daily.sh` | portfolio; builder result; earn ledger; last-pass; marketplace evidence | launchd `capafy-loop-daily.{out,err}`; internal `capafy-loop-daily.log` | loaded; not yet run |
 | `ai.anicca.provision-browser.instagram.capafy-provision` | Life Manager / IG provisioning browser child owned by account manager | account-managerが必要時にsubmit、keepalive | `~/.openclaw/skills/_shared/venv-cloak/bin/python3` + `$HOME/anicca/skills/earn/gig/scripts/cdp_daily_driver_keepalive.py` | `~/.cloak/profiles/capafy-mkt-provision` | `~/.openclaw/logs/provision-browser.log` | running |
 
-C1の入力として、Life Manager側に同名sourceが存在しないのは`capafy-ig-account-manager.sh`と`capafy-outcome-monitor.sh`の2件である。この2件をrepo-owned pathへ移植するまでplistだけを切り替えない。
+C1で`capafy-ig-account-manager.sh`、`capafy-outcome-monitor.sh`とそのruntime closureをLife Managerの最終既知実装から復元する。repo-owned templateは`__REPO_ROOT__`と`__LIFE_MANAGER_HOME__`だけを入力にし、render-only commandはlive LaunchAgents directoryへの出力を拒否する。render後の8 plistは`plutil`を通り、`ProgramArguments`と`WorkingDirectory`が8/8件ともLife Manager main releaseを指す。account managerは78件、outcome monitorは54件、Python runtime closureは98件のfocused regressionを通る。installed/loaded jobはまだ旧pathのままであり、切替と`launchctl print` readbackはC2だけが行う。
 
 ## Atomic remaining TODO
 
@@ -247,8 +247,8 @@ Items are executed top-to-bottom. Only one item is active.
 | ID | atomic action | done evidence | state |
 |---|---|---|---|
 | C0 | inventory every loaded Capafy launchd label and map source path, state path, log path, cadence | checked-in inventory has no unknown owner | completed — 9/9 loaded labels mapped; unknown owner 0 |
-| C1 | replace old-repo plist paths with Life Manager main release paths using repo-owned templates | `plutil`, `launchctl print`, resolved ProgramArguments/WorkingDirectory all point to Life Manager | pending |
-| C2 | bootstrap revised jobs once, unload duplicate old-path jobs, and read back exact loaded set | one owner per responsibility; no duplicate daily/hourly publisher | pending |
+| C1 | restore the complete Life Manager runtime closure and render repo-owned plist templates to Life Manager main release paths | 8/8 rendered plist files pass `plutil`; resolved ProgramArguments/WorkingDirectory point to Life Manager; focused runtime regression passes | completed |
+| C2 | install and bootstrap revised jobs once, unload duplicate old-path jobs, and read back the exact loaded set | `launchctl print` points to Life Manager; one owner per responsibility; no duplicate daily/hourly publisher | pending |
 | C3 | fix false-green exits so child failure remains nonzero and terminal heartbeat is written only after classified completion | failure injection returns nonzero; no false healthy marker | pending |
 | C4 | fix event identity and incident monotonicity | repeated observation is idempotent; new observation gets new event ID; verified cannot regress to unresolved | pending |
 | C5 | run a bounded hourly reconcile against live Capafy account/inventory/sales/refunds/subscriptions | fresh receipt separates MRR, one-time, pending, refunds; unknown remains unknown | pending |

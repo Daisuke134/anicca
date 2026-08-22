@@ -12,6 +12,7 @@ const WINDOWS = Object.freeze({ "2h": 2 * 3600_000, "24h": 24 * 3600_000, "72h":
 const GRACE_MS = 90 * 60_000;
 const TARGETS = Object.freeze([
   Object.freeze({ publication_dir: "anicca-ios", product_id: "anicca-ios", locale: "ja", account_id: "@anicca.jp4", native_owner: "anicca.jp4", integration_id: "cmn8x8hdv028uqx0y4gdfse5t", format_id: "reelclaw-card", form: "nudge-card" }),
+  Object.freeze({ publication_dir: "anicca-ios", product_id: "anicca-ios", locale: "ja", account_id: "@anicca.jp", native_owner: "anicca.jp", integration_id: "cmp9sdev5012voh0y58qs45xc", format_id: "reelclaw-card", form: "nudge-card" }),
   Object.freeze({ publication_dir: "honne-ai", product_id: "honne-ai", locale: "en", account_id: "@honne_reveal", native_owner: "honne_reveal", integration_id: "cmoig11ew001zlv0yk6vqo1us", format_id: "reelclaw", form: "relationship-confession" }),
   Object.freeze({ publication_dir: "honne-ai", product_id: "honne-ai", locale: "ja", account_id: "@honnevideo", native_owner: "honnevideo", integration_id: "cmnit95mg015rrm0ye5vm8dhl", format_id: "reelclaw", form: "relationship-confession" }),
 ]);
