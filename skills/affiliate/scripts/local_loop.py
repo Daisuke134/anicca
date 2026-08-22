@@ -112,6 +112,14 @@ def quarantine_snapshot(state_root, threshold=QUARANTINE_FAILURE_THRESHOLD):
         tool = row.get("tool")
         if row.get("effect_class") not in QUARANTINABLE_EFFECTS or not tool:
             continue
+        if (
+            tool == "publication.advance"
+            and row.get("failure_class") == "RUNTIME_TRANSIENT"
+            and row.get("failure_type") == "FileNotFoundError"
+        ):
+            streaks[tool] = 0
+            last_failure.pop(tool, None)
+            continue
         if row.get("outcome") == "FAILED":
             streaks[tool] = streaks.get(tool, 0) + 1
             last_failure[tool] = row.get("failure_type")
