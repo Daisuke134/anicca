@@ -24,7 +24,7 @@ if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
 from cdp_nav_snapshot import navigate_and_snapshot  # noqa: E402
-from connector_outbox import ConnectorOutbox  # noqa: E402
+from connector_outbox import ConnectorBusy, ConnectorOutbox  # noqa: E402
 from provider_authorization import DEFAULT_RECEIPT_PATH  # noqa: E402
 from upwork_proposal_browser import submit_proposal_after_fence  # noqa: E402
 from upwork_inbound_planner import invoke as plan_inbound, write_sealed_proposal  # noqa: E402
@@ -60,6 +60,7 @@ DEFAULT_INBOUND_EVIDENCE = Path.home() / "gig/state/upwork-inbound-planner"
 DEFAULT_OFFER_EVIDENCE = Path.home() / "gig/state/upwork-offer-gate"
 DEFAULT_INBOX_LEDGER = Path.home() / "gig/state/upwork-inbox.jsonl"
 DEFAULT_NEGOTIATION_EVIDENCE = Path.home() / "gig/state/upwork-negotiation-planner"
+DEFAULT_OWNER_PROFILE = Path.home() / ".config/anicca/gig/owner-profile.json"
 TERMINAL_JOB_STATUSES = {"closed", "removed"}
 _COUNT_LABELS = {
     "offers": r"Offers\s*\((\d+)\)",
@@ -617,6 +618,7 @@ async def execute_sealed_proposal(
 
 async def execute_direct_offer(
     decision: dict[str, Any], *, database: Path, manifest: Path, browser_profile: Path,
+    active_contract_ids: list[str], concurrent_job_cap: int,
 ) -> dict[str, Any]:
     """Accept one qualified Direct Offer through the shared durable effect ledger."""
     effect_now = datetime.now(timezone.utc)
@@ -638,10 +640,16 @@ async def execute_direct_offer(
     holder: dict[str, Any] = {}
 
     def start_effect(preflight: dict[str, Any]) -> bool:
-        holder["intent"], started = effect.start(decision, preflight)
+        holder["intent"], started = effect.start(decision, preflight, capacity={
+            "active_contract_ids": active_contract_ids,
+            "concurrent_job_cap": concurrent_job_cap,
+        })
         return started
 
-    receipt = await accept_offer_after_fence(decision, start_effect)
+    try:
+        receipt = await accept_offer_after_fence(decision, start_effect)
+    except ConnectorBusy:
+        return {**base, "state": "capacity_full"}
     effect.verify(holder["intent"], receipt)
     return {**base, "state": "accepted", "contract_id": receipt["contract_id"]}
 
@@ -854,9 +862,15 @@ async def observe(
                 }[decision["action"]]
                 state["free_acquisition"]["offer_reason_codes"] = decision["reason_codes"]
                 if decision["action"] == "accept":
+                    owner = json.loads(DEFAULT_OWNER_PROFILE.read_text(encoding="utf-8"))
+                    cap = owner.get("bounds", {}).get("concurrent_job_cap")
+                    if type(cap) is not int or cap < 1:
+                        raise ValueError("upwork_capacity_invalid")
                     state["free_acquisition"].update(await execute_direct_offer(
                         decision, database=database, manifest=manifest,
                         browser_profile=browser_profile,
+                        active_contract_ids=[item["id"] for item in state["active_contracts"]],
+                        concurrent_job_cap=cap,
                     ))
         else:
             state["free_acquisition"] = inbound
