@@ -399,6 +399,39 @@ U13 atomic order:
 
 U14 atomic order:
 
+Connects bootstrap truth, in plain language:
+
+1. A Connect is an Upwork application ticket. A public job chooses its own ticket price. Seeing
+   `7 Connects` on a job means applying costs seven tickets; it does not mean seven applications
+   were already sent.
+2. The current account has zero tickets and an empty official Connects History. Therefore it has
+   sent zero proposals and spent zero tickets. The loop must never infer an application from a job's
+   displayed price.
+3. There is no general class of beginner public jobs that costs zero Connects. Public proposals use
+   Connects. The verified zero-Connect acquisition paths are a client invitation, a Direct Offer,
+   and a client purchase of an approved Project Catalog project.
+4. Upwork may award free Connects for eligible onboarding tasks, selected monthly offers, talent
+   badges, some interviews, and temporary experiments. None is guaranteed to every new account.
+   The only usable balance is the positive amount actually read from official Connects History.
+5. The zero-spend bootstrap is therefore two parallel lanes: keep the profile and approved Catalog
+   project attractive enough to generate free inbound work, while checking official Connects
+   History every five minutes. When free tickets appear, spend only the exact required amount on the
+   strongest fresh, narrow, provable public job. Never purchase Connects, membership, boosts or a
+   badge under this policy.
+6. Beginner case studies do not reveal a hidden free-public-job category: successful zero-cash
+   starts use awarded/free Connects selectively or receive an invitation. Their reusable lesson is
+   narrow positioning, matching external proof, fresh low-competition jobs and a short specific
+   proposal—not mass application.
+
+Sources: Upwork Help, "Understanding and using Connects",
+https://support.upwork.com/hc/en-us/articles/211062898-Understanding-and-using-Connects;
+Upwork Help, "How to respond to an invitation to apply on Upwork",
+https://support.upwork.com/hc/en-us/articles/211063018-How-to-respond-to-an-invitation-to-apply-on-Upwork;
+Upwork Help, "How direct offers from clients work on Upwork",
+https://support.upwork.com/hc/en-us/articles/30113729524499-How-direct-offers-from-clients-work-on-Upwork;
+Leverage Proposals, "How to Get Your First Upwork Job",
+https://leverageproposals.com/guides/how-to-get-first-job-on-upwork.
+
 1. **DONE:** the observer now selects a public-job action only when the official free balance covers
    that live job's exact Connects cost. It then requires the private proposal directory to be mode
    700, the exact job file to be mode 600, and its provider, job ID, official URL identity, source
