@@ -231,6 +231,28 @@ Larry producers were already broken before quarantine by missing hook files,
 blank hook IDs, poster argument failures, and fragile environment loading.
 Therefore bulk re-enablement is not a valid rollback.
 
+### 3.2.1 Current verified delivery and metric matrix
+
+This is the current operational truth, not the desired three-post policy. A
+`verified` row has a Life Manager receipt, an exact public artifact URL, and a
+natural-language Telegram receipt. Provider account metrics are useful for
+health only; they are not post-level attribution and are never treated as
+installs, trials, or revenue.
+
+| Product/account | Verified destination and latest Life Manager proof | Telegram | Current provider metric state | Operational state |
+|---|---|---|---|---|
+| Honne EN `@honne_reveal` | TikTok; approved ReelClaw direct URL `7676419421304425748` | `27482` | Followers `5`, Videos `177`, account Views `4,264`; post-level/install/revenue join open | verified canary; default-off |
+| Honne JA `@honnevideo` | TikTok; approved ReelClaw direct URL `7676425660641889537` | `27515` | Followers `4`, Videos `278`, account Views `5,650`; post-level/install/revenue join open | verified canary; default-off |
+| Anicca iOS main `@anicca.jp` / `@anicca.jp1` | TikTok `7676422253638176020`; Instagram `DcTFx_UjSio` from the approved card pack | `27500` / `27510` | TikTok Followers `257`, Videos `470`, account Views `5,291`; TikTok post metric unavailable; Instagram post Views/Reach `6`, other reported counts `0` | verified canary; default-off |
+| Anicca JP4 `@anicca.jp4` | TikTok; approved card direct URL `7676495865816632583` | `27939` | Followers `122`, Videos `304`, account Views `11,868`; post-level/install/revenue join open | verified canary; default-off |
+| Anicca HE `@anicca.he` | Postiz row `cmt32u9dj00jxqp0yqdh6yi96` is provider `PUBLISHED`, but no caption-matching direct artifact URL | none | provider account metrics may be read, but the publication effect is unknown | **hold** — no retry or new effect |
+| All other Postiz integrations, including YouTube candidates | no Life Manager verified publication receipt | none | no current Life Manager observation row | disabled/default-off/unassigned; no provider write |
+
+The remaining metric gap is explicit: TikTok, Instagram, and YouTube must each
+produce platform-post observations at 2h/24h/72h/7d, then App Store Connect,
+RevenueCat, and product analytics must join the same immutable creative and
+campaign lineage. Missing data stays `unavailable`, never `0`.
+
 ### 3.3 Historical marketing launch state before quarantine
 
 The table preserves the pre-quarantine schedules for behavior equivalence. Its
