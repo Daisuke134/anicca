@@ -156,3 +156,18 @@ test("affiliate tokens persist exact placement before fixed-host redirect", asyn
   assert.equal(writes[0].product_id, placement);
   assert.equal(JSON.stringify(writes[0]).includes("try.elevenlabs.io"), false);
 });
+
+// AFFILIATE_CTA_V2
+test("affiliate redirect does not require App Store provider token", async () => {
+  const writes = [];
+  const handler = makeMarketingGoHandler({
+    products, providerToken: "", persist: async (_key, value) => writes.push(value),
+  });
+  const placement = "elevenlabs-discovered-voice-changer-en-1";
+  assert.equal((await handler(event(`af_${placement}`))).statusCode, 302);
+  assert.equal(writes.length, 1);
+  assert.equal((await handler(event("af_bad"))).statusCode, 404);
+  assert.equal(writes.length, 1);
+  assert.equal((await handler(event("ai_abcdefghijklmnopqrst"))).statusCode, 503);
+  assert.equal(writes.length, 1);
+});

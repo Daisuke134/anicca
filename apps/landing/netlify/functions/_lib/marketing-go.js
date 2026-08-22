@@ -1,6 +1,6 @@
 const { randomUUID } = require("node:crypto");
 
-const TOKEN = /^(?:(ai|ho|ej|ee)_[a-z2-7]{20}|af_([a-z0-9][a-z0-9-]{2,80}))$/; // AFFILIATE_CTA_V1
+const TOKEN = /^(?:(ai|ho|ej|ee)_[a-z2-7]{20}|af_(elevenlabs-discovered-[a-z0-9][a-z0-9-]{2,60}-en-1))$/; // AFFILIATE_CTA_V1
 
 function destination(product, token, providerToken) {
   if (product.kind === "affiliate") return `https://try.elevenlabs.io/${product.placementId}`;
@@ -41,7 +41,7 @@ function makeMarketingGoHandler({
   now = () => new Date().toISOString(),
   receiptId = randomUUID,
 }) {
-  if (!products || !providerToken || typeof persist !== "function")
+  if (!products || typeof persist !== "function") // AFFILIATE_CTA_V2
     throw new Error("marketing-go dependencies are required");
   return async (event) => {
     if (event.httpMethod !== "GET")
@@ -53,6 +53,8 @@ function makeMarketingGoHandler({
       : products[match[1]]);
     if (!product)
       return { statusCode: 404, headers: { "cache-control": "no-store" }, body: "Not Found" };
+    if (product.kind === "app" && !providerToken)
+      return { statusCode: 503, headers: { "cache-control": "no-store" }, body: "Attribution unavailable" };
     const id = receiptId();
     const receipt = {
       schema_version: 1,

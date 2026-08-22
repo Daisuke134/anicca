@@ -11,11 +11,11 @@ exports.handler = async (event) => {
   const providerToken = process.env.ASC_VENDOR_NUMBER;
   const supabaseUrl = process.env.SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!providerToken || !supabaseUrl || !serviceKey)
+  if (!supabaseUrl || !serviceKey) // AFFILIATE_CTA_V2
     return { statusCode: 503, headers: { "cache-control": "no-store" }, body: "Attribution unavailable" };
   return makeMarketingGoHandler({
     products: PRODUCTS,
-    providerToken,
+    providerToken: providerToken || "",
     persist: makeSupabasePersist({ url: supabaseUrl, serviceKey }),
   })(event);
 };
