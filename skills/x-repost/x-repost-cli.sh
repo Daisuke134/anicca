@@ -707,16 +707,18 @@ log "seeds available: $SEEDS_AVAILABLE"
 # the action worth buying -- but that is reasoned from published weights, not yet proven here, and
 # a knob is how it gets proven.
 STRATEGY="$STATE/strategy.json"
-[ -s "$STRATEGY" ] || printf '{"original_ratio": %s, "reply_ratio": %s, "note": "after the daily original, share of passes that create another original; remaining passes split between reply and quote"}\n' \
-  "${X_REPOST_DEFAULT_ORIGINAL_RATIO:-0.15}" "${X_REPOST_DEFAULT_REPLY_RATIO:-0.75}" >"$STRATEGY"
-"$PY" - "$STRATEGY" "${X_REPOST_DEFAULT_ORIGINAL_RATIO:-0.15}" <<'PYEOF' || \
+[ -s "$STRATEGY" ] || printf '{"original_ratio": %s, "original_ratio_bootstrap_version": 2, "reply_ratio": %s, "note": "share of non-affiliate passes that create a useful standalone original; remaining passes split between reply and quote"}\n' \
+  "${X_REPOST_DEFAULT_ORIGINAL_RATIO:-0.50}" "${X_REPOST_DEFAULT_REPLY_RATIO:-0.75}" >"$STRATEGY"
+"$PY" - "$STRATEGY" "${X_REPOST_DEFAULT_ORIGINAL_RATIO:-0.50}" <<'PYEOF' || \
   log "original_ratio state migration failed; using runtime default"
 import json, os, sys
 path, default = sys.argv[1], float(sys.argv[2])
 with open(path, encoding="utf-8") as stream:
     strategy = json.load(stream)
-if "original_ratio" not in strategy:
+if int(strategy.get("original_ratio_bootstrap_version", 0)) < 2:
     strategy["original_ratio"] = default
+    strategy["original_ratio_bootstrap_version"] = 2
+    strategy["updated_because"] = "bootstrap useful standalone originals at 50 percent"
     tmp = path + ".tmp"
     with open(tmp, "w", encoding="utf-8") as stream:
         json.dump(strategy, stream, ensure_ascii=False, indent=1)
@@ -729,10 +731,10 @@ read -r KIND TARGET_LANGUAGE <<<"$("$PY" - "$STRATEGY" "$POSTED" "$TODAY" <<'PYE
 import json, random, re, sys
 try:
     strategy = json.load(open(sys.argv[1], encoding="utf-8"))
-    original_ratio = float(strategy.get("original_ratio", 0.15))
+    original_ratio = float(strategy.get("original_ratio", 0.50))
     reply_ratio = float(strategy.get("reply_ratio", 0.75))
 except Exception:
-    original_ratio, reply_ratio = 0.15, 0.75
+    original_ratio, reply_ratio = 0.50, 0.75
 rows = []
 for line in open(sys.argv[2], encoding="utf-8"):
     try:
@@ -759,7 +761,7 @@ TARGET_TONE="$("$PY" -c 'import json,random,sys
 w=(json.load(open(sys.argv[1])).get("tone_weights") or {"primary":1,"empathy":1,"funny":1})
 ks=list(w); print(random.choices(ks,[max(0.0,float(w[k])) for k in ks])[0])' "$STRATEGY" 2>/dev/null || echo primary)"
 log "target tone: $TARGET_TONE"
-log "action this pass: $KIND (original_ratio=$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1])).get("original_ratio", 0.15))' "$STRATEGY" 2>/dev/null), reply_ratio=$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1])).get("reply_ratio"))' "$STRATEGY" 2>/dev/null))"
+log "action this pass: $KIND (original_ratio=$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1])).get("original_ratio", 0.50))' "$STRATEGY" 2>/dev/null), reply_ratio=$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1])).get("reply_ratio"))' "$STRATEGY" 2>/dev/null))"
 log "target language: $TARGET_LANGUAGE (rolling EN 9 / JA 1)"
 
 {
