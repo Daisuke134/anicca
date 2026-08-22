@@ -14,14 +14,16 @@ const GRACE_MS = 90 * 60_000;
 const TARGETS = Object.freeze([
   Object.freeze({ publication_dir: "anicca-ios", product_id: "anicca-ios", locale: "ja", account_id: "@anicca.jp4", native_owner: "anicca.jp4", integration_id: "cmn8x8hdv028uqx0y4gdfse5t", format_id: "reelclaw-card", form: "nudge-card" }),
   Object.freeze({ publication_dir: "anicca-ios", product_id: "anicca-ios", locale: "ja", account_id: "@anicca.jp", native_owner: "anicca.jp", integration_id: "cmp9sdev5012voh0y58qs45xc", format_id: "reelclaw-card", form: "nudge-card" }),
+  Object.freeze({ publication_dir: "anicca-ios", product_id: "anicca-ios", locale: "ja", account_id: "@anicca.he", native_owner: "anicca.he", integration_id: "cmq2aoena08bhqp0yx1epjcik", format_id: "reelclaw-card", form: "nudge-card", receipt_job_id: "marketing-video-publication:7732e4c1e7ff88ccad12a0295e6740125f58da2d6e07558e6f9e432bf85349dd" }),
   Object.freeze({ publication_dir: "honne-ai", product_id: "honne-ai", locale: "en", account_id: "@honne_reveal", native_owner: "honne_reveal", integration_id: "cmoig11ew001zlv0yk6vqo1us", format_id: "reelclaw", form: "relationship-confession" }),
   Object.freeze({ publication_dir: "honne-ai", product_id: "honne-ai", locale: "ja", account_id: "@honnevideo", native_owner: "honnevideo", integration_id: "cmnit95mg015rrm0ye5vm8dhl", format_id: "reelclaw", form: "relationship-confession" }),
 ]);
 
 function discoverTarget(dataDir, target) {
   const file = path.join(dataDir, "tenants/dais-local/marketing/video-publication", target.publication_dir, "distribution.jsonl");
-  if (!fs.existsSync(file)) return [];
-  return fs.readFileSync(file, "utf8").split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line)).filter((row) => {
+  let rows = fs.existsSync(file) ? fs.readFileSync(file, "utf8").split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line)) : [];
+  if (target.receipt_job_id && !rows.some((row) => row.public_url?.includes(target.native_owner))) { const receipts = path.join(dataDir, "marketing/receipts.jsonl"); const matched = fs.existsSync(receipts) ? fs.readFileSync(receipts, "utf8").split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line)).find((row) => row.job_id === target.receipt_job_id)?.receipt : null; if (matched) rows = rows.concat({ ...matched, ts: matched.published_at, provider_id: matched.provider_post_id, caption_path: path.join(dataDir, "objects/sha256", matched.caption_sha256) }); }
+  return rows.filter((row) => {
     const match = /^https:\/\/www\.tiktok\.com\/@([^/]+)\/video\/(\d+)\/?$/.exec(String(row.public_url || ""));
     return row.platform === "tiktok" && row.status === "published" && row.provider_reconciled === true && row.format_id === target.format_id && row.form === target.form && row.locale === target.locale && match && `@${match[1]}` === target.account_id;
   }).map((row) => {
