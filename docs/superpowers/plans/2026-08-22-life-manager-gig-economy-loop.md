@@ -350,7 +350,9 @@ U13 atomic order:
    official readback is empty arrays for every entity class, zero invitations/offers/proposals/
    contracts, and `earnings_available_usd_minor=0`. The provider refuses a missing empty-state or a
    positive row without a stable official href; nine focused tests and the live E2E pass.
-5. Read official submitted and active proposal inventories and persist their stable IDs.
+5. **DONE:** official proposal links are persisted separately as offer, active, submitted and
+   fail-visible unclassified stable-ID arrays. Current official Active 0 and Submitted 0 readback
+   produces empty arrays for both without inventing an application effect.
 6. Re-read every nonterminal job detail and record open, closed, removed or unknown without inference.
 7. Record each terminal transition once with official reason, observation time and receipt hash.
 8. Re-read candidate `~022091106411892491962`; retire it from the ready queue if officially unavailable.

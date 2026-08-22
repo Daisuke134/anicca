@@ -83,13 +83,25 @@ def test_extracts_stable_official_ids_instead_of_titles():
             "href": "https://www.upwork.com/jobs/python-task-~012ABC",
             "text": "Python task", "context": "Client invited you to apply",
         }],
-        proposal_links=[{
-            "href": "https://www.upwork.com/ab/proposals/offer-77",
-            "text": "Offer", "context": "Offers Active offer",
-        }],
+        proposal_links=[
+            {
+                "href": "https://www.upwork.com/ab/proposals/offer-77",
+                "text": "Offer", "context": "Offers Active offer",
+            },
+            {
+                "href": "https://www.upwork.com/ab/proposals/active-88",
+                "text": "Python API", "context": "Active proposals",
+            },
+            {
+                "href": "https://www.upwork.com/ab/proposals/submitted-99",
+                "text": "iOS fix", "context": "Submitted proposals",
+            },
+        ],
     )
     assert state["invitation_entities"][0]["id"] == "~012ABC"
     assert state["proposal_offer_entities"][0]["id"] == "offer-77"
+    assert state["active_proposal_entities"][0]["id"] == "active-88"
+    assert state["submitted_proposal_entities"][0]["id"] == "submitted-99"
 
 
 @pytest.mark.parametrize("parser,text", [

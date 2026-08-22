@@ -125,7 +125,9 @@ def parse_stable_entities(
 ) -> dict[str, Any]:
     invitations = _dedupe_links(invite_links)
     offers: list[dict[str, str]] = []
-    proposals: list[dict[str, str]] = []
+    active: list[dict[str, str]] = []
+    submitted: list[dict[str, str]] = []
+    unknown: list[dict[str, str]] = []
     for link in proposal_links:
         entity = _stable_link(link)
         if entity is None:
@@ -133,13 +135,22 @@ def parse_stable_entities(
         context = " ".join(str(link.get(key) or "") for key in (
             "context", "text", "aria", "data_qa", "class_name",
         )).lower()
-        target = offers if "offer" in context else proposals
+        if "offer" in context:
+            target = offers
+        elif "submitted" in context:
+            target = submitted
+        elif "active" in context:
+            target = active
+        else:
+            target = unknown
         if entity not in target:
             target.append(entity)
     return {
         "invitation_entities": invitations,
         "proposal_offer_entities": offers,
-        "proposal_entities": proposals,
+        "active_proposal_entities": active,
+        "submitted_proposal_entities": submitted,
+        "unclassified_proposal_entities": unknown,
     }
 
 
