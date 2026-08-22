@@ -52,6 +52,35 @@ export PYTHONPATH="$JOB_SEARCH_APP_ROOT"
   --profile "$JOB_SEARCH_PROFILE"
 NEW_COUNT=$("$JOB_SEARCH_JQ" -r '.new_count' "$CANDIDATES")
 PENDING_PREP_COUNT=$("$JOB_SEARCH_JQ" -r '.pending_count' "$PREP_STATUS")
+RESET_COUNT=$("$JOB_SEARCH_JQ" -r '
+  [.messages[] | select(
+    (.subject | contains("Reset your password for your candidate account")) and
+    (.sender | ascii_downcase | contains("@otp.workday.com"))
+  )] | length' "$CANDIDATES")
+if [[ "$NEW_COUNT" -gt 0 && "$RESET_COUNT" == "$NEW_COUNT" ]]; then
+  RESET_RECEIPTS="$EVIDENCE/workday-account-mail-receipts.jsonl"
+  RESET_RESULT="$EVIDENCE/workday-account-mail-result.json"
+  : >"$RESET_RECEIPTS"
+  "$JOB_SEARCH_JQ" -r '.messages[].message_id' "$CANDIDATES" | while read -r message_id; do
+    "$JOB_SEARCH_PYTHON" -m job_search_loop.workday_account_mail \
+      --account "$GMAIL_ACCOUNT" \
+      --message-id "$message_id" \
+      --credential-store "$JOB_SEARCH_MACHINE_CREDENTIALS" \
+      --database "$JOB_SEARCH_STATE_ROOT/workday-verifications.sqlite3" \
+      --endpoint "http://127.0.0.1:9222" \
+      >>"$RESET_RECEIPTS"
+  done
+  "$JOB_SEARCH_JQ" -s \
+    --argjson messages "$("$JOB_SEARCH_JQ" '.message_ids' "$CANDIDATES")" \
+    --argjson threads "$("$JOB_SEARCH_JQ" '.thread_ids' "$CANDIDATES")" \
+    '{status:"workday_account_mail_processed",processed_threads:($threads|length),processed_thread_ids:$threads,processed_message_ids:$messages,calendar_events:[],replies:[],assessments:[],prep_packs:[],verifications:.,reports:[]}' \
+    "$RESET_RECEIPTS" >"$RESET_RESULT"
+  "$JOB_SEARCH_PYTHON" -m job_search_loop.inbox mark \
+    --state "$SEEN_STATE" \
+    --input "$CANDIDATES" \
+    --result "$RESET_RESULT"
+  exit 0
+fi
 if [[ "$NEW_COUNT" == "0" && "$PENDING_PREP_COUNT" == "0" ]]; then
   "$JOB_SEARCH_PYTHON" -m job_search_loop.submission_confirmation reconcile \
     --account "$GMAIL_ACCOUNT" \
