@@ -15,31 +15,158 @@ compute from its own wallet, and becomes eligible to pay shelter only after a se
 graduation gate. Franklin and the agent-economy instance use their own identities; neither may
 borrow another instance's key or count self-payments as revenue.
 
-## Target architecture
+## Skill portfolio boundary
 
-```mermaid
-flowchart LR
-  Release[Immutable release\n~/loops/releases/<sha>] --> Loop[agent-economy launchd loop]
-  Loop --> Brain[Dedicated self-funded compute rail]
-  Loop --> Work[Paid-work adapter\nTaskMarket / x402 seller]
-  Work --> Receipt[Official award or chain receipt]
-  Receipt --> Ledger[Append-only earn ledger]
-  Ledger --> Reconcile[Receipt reconciliation sidecar]
-  Reconcile --> Status[30-day economy status]
-  Brain --> Cost[Per-instance compute cost]
-  Shelter[Machine/shelter cost] --> Status
-  Status --> Gate{1.5x coverage\n30d runway\nzero human inference}
-  Gate -->|eligible| ShelterPay[Allow shelter spend]
-  Gate -->|ineligible| Block[Fail closed]
+`agent-economy` is the financial control plane, not a replacement for every earning skill. The
+repository stays one Life Manager repository and one canonical runtime. Each earning capability
+remains a registry slot with its own provider adapter, effect fence, state, and official readback:
+
+| Capability | Current owner | Role in the economy |
+|---|---|---|
+| Coconala (the “Coconella” lane) | `skills/earn/gig/` | Browser-based discovery, proposals, negotiation, delivery, and buyer/payment readback |
+| General gig work | `skills/earn/gig/` and `apps/lancers-revenue/` | Marketplace execution planes; only settled provider receipts become income |
+| TaskMarket | `skills/earn/taskmarket/` | First bounded paid-work lane for agent-economy |
+| x402 service sales | `skills/earn/x402-sell/`, `services/x402-*`, `apps/life-manager/lib/*sale*` | Product serving plus independent settlement observation |
+| Articles and e-books | `skills/writer-agent/` | Research, publishing, digital-product route, and publisher/payment readback; a separate `ebook` skill is deferred until it has an independent provider contract |
+| Financial policy | `skills/agent-economy/` | Reserve, spend cap, receipt reconciliation, status, and graduation gate; it does not duplicate provider executors |
+
+The registry is the composition point. A new capability is added as a slot and adapter, not as a
+second daemon, second ledger, or second copy of `runtime/loop`. Coconala/gig and e-book production
+can therefore grow beside TaskMarket without making the agent-economy control plane provider-
+specific.
+
+## Ideal repository tree
+
+This is the target tree for the open-source Life Manager repository. Bracketed entries are planned
+extension points, not files that may be claimed as implemented today.
+
+```text
+life-manager/
+├── apps/
+│   ├── life-manager/                 # product API, scheduler, observers, handoffs
+│   └── lancers-revenue/              # marketplace/browser execution plane
+├── runtime/
+│   ├── loop/                         # one canonical ReAct/wake engine
+│   ├── compute-proxy/                # per-instance inference payer and wallet bootstrap
+│   ├── anicca-daemon.sh              # supervisor entrypoint
+│   └── wallet-address*.mjs           # read-only identity derivation
+├── skills/
+│   ├── registry.json                 # slot, risk, owner, and entrypoint SSOT
+│   ├── agent-economy/                # policy/control plane (this spec)
+│   │   ├── SKILL.md                  # public read-first contract
+│   │   ├── lib/                      # money truth + treasury policy
+│   │   ├── run.sh                    # status/reconcile entrypoint
+│   │   └── state/                    # runtime-only; never committed
+│   ├── _shared/lib/                  # identity, ledger primitives, tx verification
+│   ├── earn/
+│   │   ├── gig/                      # Coconala and general gig-work lane
+│   │   ├── taskmarket/               # bounded paid-work adapter
+│   │   ├── x402-sell/                # stable service seller
+│   │   └── [other earn adapters]/     # each owns provider-specific effects/readback
+│   ├── writer-agent/                 # articles, e-book route, publisher receipts
+│   └── economy/                      # existing UBI/lending/domain skills
+├── services/
+│   ├── x402-endpoint/                # service ingress
+│   ├── x402-worker/                  # settlement worker
+│   └── facilitator/                  # payment facilitation
+├── loops/agent-economy/loop.toml     # release-backed launchd declaration
+├── docs/
+│   ├── superpowers/specs/             # design and acceptance SSOT
+│   ├── evidence/agent-economy/        # receipts/readbacks, no secrets
+│   └── runbooks/                      # operational recovery
+└── test/                              # cross-cutting contracts and OSS checks
 ```
 
-The resident process must run from an immutable release selected by the atomic
-`~/loops/current` symlink. State is outside the release under `~/loops/agent-economy`. Launchd
-declarations come from `bin/plistgen.py` and must never contain a `.worktrees` path.
+Do not move the existing Coconala/gig or writer code into `skills/agent-economy/`; that would
+collapse provider ownership into policy and make the public skill impossible to reuse. Do not add
+a new folder for e-books until a real publisher/payment adapter and receipt schema exist; the
+writer-agent route is the minimal current home.
+
+## Ideal architecture
+
+```mermaid
+flowchart TB
+  subgraph CONTROL["Life Manager · one repository"]
+    Release["Immutable Life Manager release<br/>~/loops/life-manager/releases/<sha>"] --> Supervisor["launchd + launch.sh"]
+    Supervisor --> Engine["runtime/loop<br/>single canonical wake engine"]
+    Engine --> Registry["skills/registry.json<br/>slot + risk + owner"]
+    Engine --> Compute["runtime/compute-proxy<br/>instance wallet only"]
+    Registry --> Router["agent-economy<br/>select + policy gate"]
+    Router --> Policy["treasury-policy<br/>reserve + session cap"]
+  end
+
+  subgraph LANES["Revenue skill portfolio"]
+    Coconala["skills/earn/gig<br/>Coconala / gig work"]
+    Lancers["apps/lancers-revenue<br/>Lancers execution"]
+    TaskMarket["skills/earn/taskmarket<br/>paid work"]
+    X402["skills/earn/x402-sell<br/>service seller"]
+    Writer["skills/writer-agent<br/>articles / e-book route"]
+  end
+
+  Router --> Coconala
+  Router --> Lancers
+  Router --> TaskMarket
+  Router --> X402
+  Router --> Writer
+
+  subgraph PROOF["Effect and money truth"]
+    Fence["provider effect fence<br/>idempotency + lock"]
+    Provider["official provider readback<br/>award / order / publish"]
+    Chain["chain/RPC verifier<br/>Base · Solana · provider"]
+    Ledger["append-only ledger<br/>earn + cost + settlement"]
+    Reconcile["receipt-reconciliations.jsonl<br/>delayed receipt sidecar"]
+  end
+
+  Coconala --> Fence
+  Lancers --> Fence
+  TaskMarket --> Fence
+  X402 --> Fence
+  Writer --> Fence
+  Fence --> Provider
+  Provider --> Chain
+  Chain --> Ledger
+  Compute --> Ledger
+  Ledger --> Reconcile
+  Reconcile --> Status["30-day status"]
+  Ledger --> Report["report / Telegram<br/>evidence-backed outcome"]
+
+  Compute --> Cost["per-instance compute cost"]
+  Shelter["shelter cost ledger"] --> Status
+  Status --> Gate{"1.5x coverage<br/>30d runway<br/>human inference = 0"}
+  Gate -->|eligible| ShelterPay["allow shelter policy"]
+  Gate -->|ineligible or unknown| Block["fail closed"]
+```
+
+The resident process must run from an immutable Life Manager release selected by the atomic
+`~/loops/life-manager/current` symlink. The `current` symlink must be namespaced per repository;
+the old global `~/loops/current` is not a safe control-plane boundary because another repository
+can replace it between plist generation and the next wake. State is outside the release under
+`~/loops/agent-economy`. Launchd declarations come from `bin/plistgen.py` and must never contain a
+`.worktrees` path.
 
 The target compute rail is a dedicated per-instance BlockRun proxy. It must use the EVM key under
 that instance's `ANICCA_HOME`, not a shared `:8402` ClawRouter credential. OpenRouter is optional
 and pre-funded only; this skill does not automate a browser credit purchase.
+
+## Architecture decisions and external pattern check
+
+- **One repo / one engine:** Life Manager already has the registry, `runtime/loop`, release tooling,
+  provider apps, and shared ledger. A new agent-economy daemon or a second skill registry is
+  rejected because it would split state and make receipt ownership ambiguous.
+- **Adapter-owned effects:** Coconala, gig work, TaskMarket, x402, and writer/e-book lanes own their
+  browser/API/publisher effects and official readbacks. The policy layer only decides whether a
+  proposed spend or revenue claim is admissible.
+- **External comparison:**
+  [Agent Economy OS](https://github.com/fcfsprojects/agent-economy-os) groups wallet, job
+  marketplace, reputation, and treasury concepts, but its checked-out source is an early
+  TypeScript scaffold with roadmap items; we reuse the separation of concerns, not its code or
+  claims of production income.
+  [Agent Mesh](https://github.com/thebid1/Agent-Mesh) demonstrates encrypted wallet-manager and
+  on-chain simulation boundaries, but its README explicitly uses Solana devnet custom tokens; it
+  is not evidence of real revenue and is not a runtime dependency.
+- **Open-source boundary:** public code contains policies, adapters, schemas, and tests only.
+  Credentials, browser sessions, private keys, personal marketplace accounts, and runtime JSONL
+  state stay outside the checkout.
 
 ## Money rules
 
@@ -84,7 +211,8 @@ These prove contracts and fixtures; they do not prove external demand or profit.
 
 The live readback currently says:
 
-- `~/loops/current` points at release `c3497d11`, which is an `origin/main` release without
+- `~/loops/current` points at release `da4cfe54` from the different repository
+  `Daisuke134/anicca-products`, whose release manifest contains only the `x-repost` paths and no
   `skills/agent-economy/launch.sh`;
 - `ai.anicca.agent-economy-loop` is therefore in `spawn scheduled` with `last exit code = 127`;
 - no agent-economy loop process is running;
@@ -98,8 +226,10 @@ The live readback currently says:
 
 The evidence supports four separate causes, in this order:
 
-1. **The deployed control plane is broken.** The current release does not contain the new skill,
-   so launchd exits before a wake. This alone prevents TaskMarket or x402 work from executing.
+1. **The deployed control plane is broken and cross-repository.** The global `~/loops/current`
+   symlink was overwritten by an `anicca-products` x-repost release. That release does not contain
+   the agent-economy skill, so launchd exits before a wake. This alone prevents TaskMarket or x402
+   work from executing.
 2. **There is no verified external customer settlement.** The ledger has zero verified external
    rows. Self-buying, wallet balances, and an x402 endpoint being reachable would not count as
    income, so the accounting correctly reports zero rather than estimating.
@@ -128,14 +258,16 @@ buyer. More model spend would increase losses, not solve the missing demand.
 
 ## Remaining TODO, in order
 
-### P0 — make the committed code the live code
+### P0 — make the Life Manager code the only live code for this loop
 
 1. Fast-forward `origin/main` to the reviewed feature branch without force-push.
-2. Cut a new release from that main commit, regenerate the agent-economy plist, and install only
-   `ai.anicca.agent-economy-loop`.
-3. Read back `launchctl print`, the release symlink, `launch.sh` existence, process environment,
-   and the absence of legacy labels. The acceptance condition is a running loop, not merely a
-   generated plist.
+2. Change Life Manager release tooling and its loop declaration to a namespaced root,
+   `LOOPS_ROOT=~/loops/life-manager`, so `anicca-products` cannot replace this loop's `current`.
+3. Cut a release from that Life Manager main commit, regenerate the agent-economy plist, and
+   install only `ai.anicca.agent-economy-loop`.
+4. Read back the namespaced symlink, release manifest repository, `launch.sh` existence, process
+   environment, and absence of legacy labels. The acceptance condition is a running loop from a
+   Life Manager release, not merely a generated plist.
 
 ### P1 — prove self-funded compute
 
@@ -147,7 +279,17 @@ buyer. More model spend would increase losses, not solve the missing demand.
 3. Record compute cost with instance attribution and reconcile a paid call only when a real
    receipt exists. A free-model call is a zero-cost compute observation, not revenue.
 
-### P2 — obtain one real external revenue event
+### P2 — connect the skill portfolio to one money contract
+
+1. Define one provider-neutral `RevenueReceipt` envelope (provider, external payer, gross, fees,
+   net, currency, chain/provider proof, settlement status, and idempotency key).
+2. Add receipt bridges from Coconala/gig, Lancers, TaskMarket, x402, and writer-agent publisher or
+   e-book payments into the existing append-only ledger. The bridge observes and verifies; it does
+   not copy provider execution code into `agent-economy`.
+3. Keep a future e-book marketplace as `planned` until a real publisher, payout path, and receipt
+   readback are implemented; do not count a draft, view, or affiliate click as income.
+
+### P3 — obtain one real external revenue event
 
 1. Keep the agent focused on one paid-work lane (TaskMarket first); do not spend on trading while
    the work lane has no demand.
@@ -155,7 +297,7 @@ buyer. More model spend would increase losses, not solve the missing demand.
 3. Append exactly one positive external ledger row and demonstrate that a duplicate reconcile does
    not add it twice. Never use self-buying as the success test.
 
-### P3 — turn accounting into an operating gate
+### P4 — turn accounting into an operating gate
 
 1. Feed the status command real per-instance compute cost, shelter lease cost, liquid balance, and
    human-paid-inference evidence.
@@ -164,7 +306,7 @@ buyer. More model spend would increase losses, not solve the missing demand.
 3. Only then allow a shelter payment policy to be implemented; no shelter transfer is authorized
    by this spec today.
 
-### P4 — optional adapters and open-source hardening
+### P5 — optional adapters and open-source hardening
 
 1. Add an OpenRouter adapter only as a pre-funded, non-autonomous option with the same ledger and
    spend gates.
