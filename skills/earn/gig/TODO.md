@@ -308,15 +308,16 @@ evidence. Independent production lanes continue running while development follow
 customer-effect owner. The shared disk guard remains `GIG_DISK_HEADROOM_KIB=0`; storage floors do not stop Paid.
 
 **Current runtime refresh.** `main` and `origin/main` are equal at
-`734bdce3dc58f38fc9c3c9c9bd3a5b0a99d74084`; unrelated dirty files remain untouched. The active Paid pass was
-started from immutable release `d6c28857e0a13cb2a1800d27993509749a57abbe`, while `current` now points to
-`82e5366dfed408aceafe7f99636a02debdd931db`. Haru `18169583` remains unsent and is naturally recompiling complete
-context after the macOS Illustrator data-access prompt was granted. That active immutable release still keys an
-owner workspace by both requirements and volatile context-input digests; the current release contains the generic
-requirements-only resume key and preserves staging after an incomplete capability handoff. Do not attribute the
-resume fix to the active child; let the multi-project pass finish, then require the next natural current-release
-wake to resume the existing v43 staging, obtain both Illustrator native reopen receipts, package and send once with
-formal delivery OFF, exact-room DOM readback and replay-zero. The same pass automatically discovered new paid room
+`3f1ba7b153c730ec159ebe725167ee2c06cd828e`; unrelated dirty files remain untouched. The active Paid pass runs
+immutable release `7f5608836ab5fa9a0218c51d31c94671dab00b56` and naturally resumed the existing Haru v43 staging after compiling
+the complete proposal, DM, talkroom and attachment context. Haru `18169583` remains unsent. The resumed owner first
+rejected the already-failed data-URI SVG inputs, then selected the visually verified v43 PC/responsive PDFs for
+native roundtrip without regenerating the artifact. Illustrator 30.7 produced and reopened the 6.7 MiB PC `.ai`,
+but the receipt's recursive `activeDocument.pageItems.length` query crashed Illustrator before receipt emission;
+customer effect and official readback remain zero. Remove that unsafe, non-quality-bearing recursive census from
+the generic native-roundtrip receipt, publish the corrected immutable release, then require the existing Paid owner
+to resume the same v43 staging, obtain both exact-output reopen receipts, package and send once with formal delivery
+OFF, exact-room DOM readback and replay-zero. The same pass automatically discovered new paid room
 `18179735` (`smilejack2`, app-market-research/promotion work), started its independent project worker and began
 pre-purchase DM collection without a code or queue edit. This proves discovery only, not delivery: it must compile
 proposal + DM + full talkroom + attachments, avoid re-asking known facts, create useful work and remain owned until
@@ -330,16 +331,13 @@ confirmed the responsive top badge, both CTA arrows, four reason icons, the fina
 icons, five FAQ chevrons, three customer-house illustrations, Habikino wording, apology/immediate-fix/cancellation
 handoff and formal delivery OFF. Customer effect and readback are still zero.
 
-The mandatory Illustrator 30.7 save/reopen receipt has now failed after three distinct natural repairs: (1) v43 SVG
-input after the scoped buyer-policy correction, (2) an independently rendered vector-PDF input, and (3) a newly
-rebuilt SVG input after restarting Illustrator and granting both macOS Automation/data-access prompts. The last
-attempt reached responsive Illustrator, then `app.open()` returned non-zero; durable
-`context/paid-tool-results.json` records the sanitized `/paid-owner-workdir` request and return code 1. Do not
-regenerate or send another candidate. The exact minimum non-delegable action is for the account owner to open the
-two latest v43 SVG masters in Adobe Illustrator 30.7, Save As native `.ai`, close and reopen both once. The durable
-controller must capture both official hash/count receipts, resume the same artifact package, and only then may the
-existing Paid owner submit once to exact room `18169583`, with formal delivery OFF, exact-room DOM readback and a
-subsequent replay-zero receipt.
+The latest failure is now fully mechanical and reproducible: the PC PDF successfully saved and reopened as native
+Illustrator data, then the receipt-only full-artwork item count caused the application crash. The official receipt
+contract still requires exact output-path reopen, Illustrator version, positive layers/artboards, distinct hashes
+and native private data; it no longer needs an exhaustive page-item enumeration that adds no buyer-quality proof.
+Do not regenerate or manually submit another candidate. Publish this generic receipt repair, let the durable owner
+perform both native roundtrips and resume the same package, and only then let that owner submit once to exact room
+`18169583`, with formal delivery OFF, exact-room DOM readback and a subsequent replay-zero receipt.
 
 The latest natural pass proved byusco `18171890` once with `effect=1`, `readback=1`, exact artifact SHA-256
 `6d1a0a95850c4bbd496174b27881371dc4b81d44284bf347bd2b5e9d0766ab3d`, exact room DOM, empty composer and

@@ -15,10 +15,11 @@ python3 scripts/illustrator_native_roundtrip.py INPUT.svg OUTPUT.ai --receipt RE
 ```
 
 The CLI opens the source in the installed Adobe Illustrator application, saves with
-`IllustratorSaveOptions(pdfCompatible=true)`, closes it, reopens the produced `.ai`, and records the official
-document object counts plus hashes and Illustrator private-data markers. A successful receipt has
-`status=ok`, positive `page_items`, `layers`, and `artboards`, a distinct source/output hash, and
-`native_private_data=true`.
+`IllustratorSaveOptions(pdfCompatible=true)`, closes it, reopens the produced `.ai`, and records the exact
+reopened path, safe document structure, hashes, and Illustrator private-data markers. A successful receipt has
+`status=ok`, positive `layers` and `artboards`, a distinct source/output hash, and `native_private_data=true`.
+Do not enumerate every page item merely as a receipt: complex vector documents can make Illustrator
+recursively traverse the full artwork and crash.
 
 This copies the native `IllustratorSaveOptions`/`Document.saveAs` pattern from
 `creold/illustrator-scripts` commit `9b3e3eeade9ba748f41612ec4697bb6a5c2489c2`, file

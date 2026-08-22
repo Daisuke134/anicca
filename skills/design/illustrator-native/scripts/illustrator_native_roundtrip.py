@@ -114,11 +114,13 @@ def roundtrip(source: Path, output: Path, receipt: Path) -> dict[str, object]:
         raise RuntimeError("Illustrator did not create the AI output")
     _javascript("app.activeDocument.close(SaveOptions.DONOTSAVECHANGES);")
     _open(output)
-    counts_text = _javascript(
+    structure_text = _javascript(
         "var d=app.activeDocument;"
-        "[d.pageItems.length,d.textFrames.length,d.layers.length,d.artboards.length,app.version].join('|');"
+        "[d.layers.length,d.artboards.length,app.version,d.fullName.fsName].join('|');"
     )
-    page_items, text_frames, layers, artboards, illustrator_version = counts_text.split("|", 4)
+    layers, artboards, illustrator_version, reopened_path = structure_text.split("|", 3)
+    if Path(reopened_path).resolve() != output:
+        raise RuntimeError("Illustrator reopened a different AI output")
     data = output.read_bytes()
     source_sha256, output_sha256 = _sha256(source), _sha256(output)
     payload: dict[str, object] = {
@@ -130,15 +132,14 @@ def roundtrip(source: Path, output: Path, receipt: Path) -> dict[str, object]:
         "output_sha256": output_sha256,
         "output_bytes": len(data),
         "illustrator_version": illustrator_version,
-        "page_items": int(page_items),
-        "text_frames": int(text_frames),
+        "reopened_output_path": reopened_path,
         "layers": int(layers),
         "artboards": int(artboards),
         "native_private_data": b"/AIPrivateData1" in data,
         "creator_metadata": b"Adobe Illustrator" in data,
     }
     if (source_sha256 == output_sha256 or not payload["native_private_data"]
-            or int(page_items) < 1 or int(layers) < 1 or int(artboards) < 1):
+            or int(layers) < 1 or int(artboards) < 1):
         raise RuntimeError("native Illustrator roundtrip verification failed")
     receipt.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return payload
