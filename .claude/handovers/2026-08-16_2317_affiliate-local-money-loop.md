@@ -2201,3 +2201,13 @@ runtime SHA-256
 The run's Telegram attempt never reached an observable Gateway send, returned no
 messageId, and was written once as `ambiguous_no_retry`; do not resend it. Next
 X effect remains the 01:00-or-later quote arm.
+
+Before that effect, commit `c5df74057` raises the public-copy acceptance bar.
+The prior original passed with one generic procedure; the new generator and
+selector require two distinct values from procedure, decision criterion, failure
+condition, and comparison method. The separate critic also requires both types
+and `source_specific=true`. Generic advice or a source paraphrase is now a safe
+no-effect. All 23 Repost tests and shell syntax pass. Installed release is
+`/Users/anicca/loops/releases/20260823T003658-c5df7405`; source/runtime CLI
+SHA-256 is
+`d1a44c7b4585dbbde752e739e3f8beea35fc0631996dd513e21c5c77092f1f9b`.

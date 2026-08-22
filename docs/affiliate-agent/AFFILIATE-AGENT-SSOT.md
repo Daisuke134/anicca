@@ -7079,3 +7079,11 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   `411dada4fd212c63cd636ada3e32c343698ac36415e6a7f9c61ad777eb6581df`.
   The digest Telegram attempt produced no Gateway provider effect or messageId,
   was journaled once as `ambiguous_no_retry`, and was not replayed.
+- The first live original still passed with only one generic procedure. Repost
+  commit `c5df74057` closes that quality loophole: generation and selection must
+  add two distinct reader values from procedure, decision criterion, failure
+  condition, and comparison method; the independent critic must return both
+  distinct types plus `source_specific=true`. A source paraphrase or generic
+  advice now becomes a no-effect. All 23 tests and shell syntax pass. Installed
+  release is `20260823T003658-c5df7405`; source/runtime CLI SHA-256 is
+  `d1a44c7b4585dbbde752e739e3f8beea35fc0631996dd513e21c5c77092f1f9b`.
