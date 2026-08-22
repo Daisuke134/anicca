@@ -378,6 +378,17 @@ the explicit requirements. It must not invent a cancellation offer for unrelated
 that optional field retain the safe legacy fallback. Local passthrough, syntax and diff checks pass; this remains
 non-customer evidence until a natural owner creates the message and exact-room official readback proves it was sent.
 
+**Natural durable-failure proof.** Release `9f4cbe8b0e2e4df17bf02686d92d6a44d8867468`, which contains the
+`32717dc80` recovery change, naturally restarted Haru in an independent multi-room Paid pass. Its semantic owner
+again selected the installed native capability before any prior durable receipt existed, and the controller recorded
+the failed PC SVG request at `context/paid-tool-results.json` with request SHA-256
+`d7fde7137bd0cbba2d59ddbc057223183e8a68458499953bd37c8aee7e5178ff`, PC input SHA-256
+`5f50915acc1c1ec431711588f244800bf6797ffa057c33676bc722b479ab25ec`, responsive input SHA-256
+`2e8b48f879c0abc7175cf2fb57791abe7020691d9a52528aa7b3ccad6e451724` and native return code 1.
+The transient workspace path is sanitized to `/paid-owner-workdir`; customer effect remains zero. The next natural
+Haru owner must read this receipt and choose a different honest input or approach. Do not call this complete until
+that alternate request produces official native reopen receipts and the `bca06caca` contextual handoff path is active.
+
 **Current reviewer correction.** `main` and `origin/main` were both `31e7fa09d` before this change; the
 starting verification commit `79ac01ba1eb66b06aed1f9cee66d4af303f03a3d` remains an ancestor. The loaded
 Paid release is still `f747c7d05` while its natural pass is active, so no effect is attributed to the new
