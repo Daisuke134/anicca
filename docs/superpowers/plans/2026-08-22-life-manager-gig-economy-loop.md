@@ -264,8 +264,12 @@ Tasks 13–22 implement U10–U15. Tasks 23–57 remain frozen until U14 closes.
 
 Current U3 evidence: the new freelancer account is email-verified and normal email/password re-login
 returns `/nx/create-profile/` with the owner identity on two readbacks. Google/Apple/social login was
-not used. Resume at factual profile onboarding. Live totals remain 0 applications, 0 conversations,
-0 contracts and USD 0 received revenue.
+not used. Factual onboarding is saved through category, specialties, skills, title, education,
+languages, overview, USD 50 hourly rate, date of birth, address, selected city and phone. Official
+validation now reports only `Add a profile photo.` The local Coconala headshot was rejected because
+its provenance says AI-generated, and the GitHub avatar was rejected because it is a logo. Resume U3
+with an authentic owner headshot, then review and publish. Live totals remain 0 applications, 0
+conversations, 0 contracts and USD 0 received revenue.
 
 ### Task 7: Record Upwork's private action matrix
 
