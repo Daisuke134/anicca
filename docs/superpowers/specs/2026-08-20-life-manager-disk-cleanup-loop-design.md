@@ -595,6 +595,21 @@ temporary 0だった。空き約4.26 GiB、tier `CRITICAL`であり、標準job-
 `launch_gig_browser.sh`が`GIG_DISK_HEADROOM_KIB:=0`、両ignore flag既定1へ戻ったことを確認した。A-20第1 sliceの
 source commitは残るが、current productionのnext-start consumer証拠は失効したためGigも再度未完了として扱う。
 
+A-20の第6 sliceはMercor browserのprivate profile/session/portをrepoへ移さず、公開runnerと最小private adapterへ
+分離した。runnerはprofile、singleton metadata、Chromiumへ触れる前にpasswd由来home、exact immutable guard、
+`/usr/bin/python3 -I`、固定512 MiB、canonical host/lane state、bypass/alternate state env除去でpreflightする。
+production未変更のREDとhostile `PATH`を使う追加REDを経て、GREENはfocused＋browser owner **7 passed**、shell
+syntax、diff checkがPASSした。初回reviewのHIGHだったbare `pgrep`/`rm`は`/usr/bin/pgrep`と`/bin/rm`へ固定し、
+fresh re-reviewは`ship`だった。code commitは`a06bba4ddde28bac38e580b2a1e4931406bbd09d`で、current release、
+source/runtime SHA-256 `d63fd8a1740065d562aaa2c2e70e9f8c52a8e74252f956360ece79d0ad812c36`が一致する。
+private adapterは既存profile、Chromium、port 9334だけをexportしてcurrent runnerへexecし、元runnerはmode 0600の
+backupとして保持した。stop flagとhostile envでloaded adapterを実行したproduction preflightはRC 1、
+`reason=disk_writers_stop/effect=0/readback=0/required_bytes=536870912`、profile statとsingleton SHA-256不変、
+Mercor PID 81814→81814だった。label reload/restartは行っていない。canonical cleanupはsafe kick後runs 196→197、
+18:27:56Z receiptは`last exit code=0/errors=0/protected_deletions=0/reclaimed=0/evaluated=11`、
+`preserved_reasons={"open":11}`、reserve 1 MiB/0600/2048 blocks、temporary 0だった。空き約1.08 GiB、tier `ULTRA`
+であり、A-20完了や11 GiB recoveryの証拠ではない。残るA-20 consumerはGig browser回帰とhost-wide build/mediaである。
+
 `/Users/anicca/anicca-project`は約9.5 GiB、その`.worktrees`は約4.4 GiBだった。最大の
 `cfo-resume-spec`（約1.08 GiB）は、dirty=0、branch upstream 0/0、process/open-path/leaseなしを
 read backした後にだけ`git worktree remove`で回収した。branchとremoteは残り、再作成可能である。
@@ -1169,7 +1184,7 @@ TDDのためだけの過剰fixtureや後続itemのscaffoldは前倒ししない�
 | A-17 | VM/package producer lifecycleを登録する | artifact/lease/finalizer/quota receipt | 完了: registration-only static 16件、pnpm exact version/proof/lease fail-closed、全A-17 entry runtime/quota 0/lease 300/preserveで削除authority 0、focused 48 tests、final review `ship`、fallback SHA一致/runs 486→487/static 16 bad 0、canonical runs 137→138 exit 0、protected deletion 0 |
 | A-18 | agent/gig-project lifecycleを登録する | project owner/terminal/lease receipt | 完了: registration-only numeric project 24件、terminal true 0、unknown owner 3、全件deliverable/preserve、focused 49 tests、fresh review `ship`、fallback runs 507→508/削除0、canonical runs 142→143 exit 0、errors/protected deletion 0 |
 | A-19 | Writer in-flight drainを接続する | provider interruption checkpoint/resume test | 完了: exact stop 2 pathのpre-Popen gate、process-group TERM→1秒→KILL/reap、immutable run/prompt checkpoint/resume、focused 44 tests、fresh review `ship`、release `43074f76422d1ec4935acdba98e553cb8564de94`、Writer runs 1/exit 0/provider effect 0、canonical runs 149→150/exit 0/errors 0/protected deletion 0 |
-| A-20 | browser/build/media preflightを接続する | producer consumer missing 0 for these families | 部分完了: Affiliate 3 browser、Instagram/X provision、標準job-search、self-build 2境界、Writer media既存境界を接続。標準job-search current `2637df261`、focused 3＋関連12 tests、review `ship`、実機RC 1/effect 0/PID 712不変。Gig currentはfloor 0/ignore 1へregress。active browserはMercorとGigの2 consumer、加えてhost-wide build/media coverageが残る。canonical runs 191/exit 0/errors 0/protected deletion 0 |
+| A-20 | browser/build/media preflightを接続する | producer consumer missing 0 for these families | 部分完了: Affiliate 3 browser、Instagram/X provision、標準job-search、Mercor、self-build 2境界、Writer media既存境界を接続。Mercor current `a06bba4dd`、focused＋関連7 tests、review HIGH修正後`ship`、実機RC 1/effect 0/PID 81814不変。Gig currentはfloor 0/ignore 1へregress。残りはGig browserとhost-wide build/media coverage。canonical runs 197/exit 0/errors 0/protected deletion 0 |
 | A-21 | VM/package/agent preflightを接続する | producer consumer missing 0 for these families | 未完了 |
 | A-22 | supervisor non-stop behaviorを実装する | ULTRA wake keeps supervisor labels loaded | 未完了 |
 | A-23 | Codex log budget/rotationを実装する | active app-server handoff with session loss 0 | 未完了 |

@@ -354,6 +354,20 @@ uses the effect boundary rather than raw return code: an explicit native-app hea
 effect does not poison the input hash, while any failure after input processing still does. The next natural pass
 must retry the two PDFs only after this positive health readback.
 
+That natural owner retry has now completed both native PDF roundtrips. Illustrator 30.7 officially saved, closed
+and reopened the PC AI (`5d46bbf52ae9c57f5ed7f8075fe587f94bee408513f5f3968750b4244de644c9`,
+7,076,972 bytes) and responsive AI
+(`6e2c2423386f7042f72968e78cdae5e81771dd8ea4b4274e77ac795f332e71b2`, 7,058,459 bytes), with positive
+layer/artboard counts, native private-data markers and creator metadata. The same owner rebuilt
+`habikino-renewal-v43.zip`, included both AI files and exact receipts, verified ZIP integrity and emitted PASS with
+package SHA-256 `4d13095f163db23120d4a66498cea2f801bae1ea4c9c0b92db4072f5426afcd8`. Promotion to the durable project
+completed with no customer effect. The post-promotion asset-contract review then correctly stopped before send:
+the artifact was complete, but five `required_assets` IDs had been renamed in the manifest. Durable feedback names
+the exact missing/extra IDs; effect/readback remain zero. Paid run 6 naturally refreshed exact room `18169583` and
+re-entered semantic decision/file ownership. It must repair only those stable manifest IDs, preserve the verified
+package hash, pass the generic contract/correspondence validators, then attach/send once with formal delivery OFF,
+exact-room DOM readback and replay-zero.
+
 **Current runtime refresh.** Unrelated dirty files remain untouched. The existing Paid pass naturally resumed the
 Haru v43 staging after compiling
 the complete proposal, DM, talkroom and attachment context. Haru `18169583` remains unsent. The resumed owner first
