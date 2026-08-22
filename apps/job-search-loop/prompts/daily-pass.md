@@ -38,6 +38,12 @@ overlay after an extra observation is an agent sequencing error, never
 search left zero options, clear the textbox with one empty `kind=type` action, then
 click the fresh `options` button again. Never press Continue while that picker is
 unfilled, and never invent a runtime module or command to recover it.
+Provider pickers can be hierarchical. After `choose`, inspect its returned JSON. If
+it still contains `Options Expanded` and fresh options, the chosen value was a
+category, not a committed answer. Before touching any other field, call `choose`
+again with the visible category/header as opener and one truthful leaf option. For an
+application reached on the employer's official career site, choose the employer's
+official site leaf when visible (for example `Workday.com`), not an unrelated board.
 
 Commands are strictly sequential. Wait for the current runtime command to finish and
 read its complete JSON before starting the next command. Never issue two observations
