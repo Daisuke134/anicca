@@ -382,7 +382,11 @@ U13 atomic order:
    factual, job-specific private proposal; the three private payloads contain no unsupported claim,
    recompute to their recorded hashes, and are stored in a mode-700 directory as mode-600 files.
    Fourteen focused provider tests pass and the receipt-backed parser returns three `open` rows.
-10. Read free Connects history and refunds; never purchase, withdraw or submit without sufficient free capacity.
+10. **DONE:** the production five-minute read opens official Connects History and currently returns
+    balance 0 with `No Connects transactions.` Therefore granted, returned and consumed Connects are
+    all observed as zero, not inferred as a future refill. The loop keeps purchase, membership,
+    boost, billing, withdrawal and public-job submission disabled; only a later official positive
+    history/balance read or a zero-Connect invitation/direct offer can unlock an acquisition effect.
 11. Verify a repeated reconciliation produces no duplicate transition or external effect; commit/push.
 
 ### Task 7: Record Upwork's private action matrix
