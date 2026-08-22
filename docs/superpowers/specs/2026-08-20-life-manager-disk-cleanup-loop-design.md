@@ -581,6 +581,16 @@ PID 712は不変である。したがって標準job-searchはcode/review済み�
 1 MiB/0600/2048 blocks、temporary 0だった。空き約3.3 GiB、tier `CRITICAL`であり、job-search production反映の
 代替証拠ではない。
 
+競合process 0とsource/current `8c737770`の安定をread backした後、隔離branchを最新lineageへrebaseし、commit
+`2637df261b051b2209e05dc9a5a8b2a348cebd48`をpushした。Homebrew Python 3.14と正規release verifier/installerを
+使い、swap直前にもexpected currentを検証してrelease-only atomic activationした。currentは同commit、resolved
+release tree writable 0、source/runtime `run-browser.sh` SHA-256一致である。stop flagとhostile envでcurrent runnerを
+実行し、RC 1、temp profile未作成、`reason=disk_writers_stop/effect=0/readback=0/required_bytes=536870912`、browser
+PID 712→712をread backした。label reload/kickstartは行わず、fresh production re-reviewは`ship`だった。
+canonical cleanupはsafe kick後runs 190→191、state not running、last exit 0、17:56:46Z receiptは
+`errors=0/protected_deletions=0/evaluated=11/preserved_reasons={"open":11}`、reserve 1 MiB/0600/2048 blocks、
+temporary 0だった。空き約4.26 GiB、tier `CRITICAL`であり、標準job-search 1件はnext-natural-start consumerを持つ。
+
 同じreadbackでGig `current`も`df535e792458ef3f56e81a1049e1ca3e1b27253f`へ切り替わり、deployed
 `launch_gig_browser.sh`が`GIG_DISK_HEADROOM_KIB:=0`、両ignore flag既定1へ戻ったことを確認した。A-20第1 sliceの
 source commitは残るが、current productionのnext-start consumer証拠は失効したためGigも再度未完了として扱う。
@@ -1159,7 +1169,7 @@ TDDのためだけの過剰fixtureや後続itemのscaffoldは前倒ししない�
 | A-17 | VM/package producer lifecycleを登録する | artifact/lease/finalizer/quota receipt | 完了: registration-only static 16件、pnpm exact version/proof/lease fail-closed、全A-17 entry runtime/quota 0/lease 300/preserveで削除authority 0、focused 48 tests、final review `ship`、fallback SHA一致/runs 486→487/static 16 bad 0、canonical runs 137→138 exit 0、protected deletion 0 |
 | A-18 | agent/gig-project lifecycleを登録する | project owner/terminal/lease receipt | 完了: registration-only numeric project 24件、terminal true 0、unknown owner 3、全件deliverable/preserve、focused 49 tests、fresh review `ship`、fallback runs 507→508/削除0、canonical runs 142→143 exit 0、errors/protected deletion 0 |
 | A-19 | Writer in-flight drainを接続する | provider interruption checkpoint/resume test | 完了: exact stop 2 pathのpre-Popen gate、process-group TERM→1秒→KILL/reap、immutable run/prompt checkpoint/resume、focused 44 tests、fresh review `ship`、release `43074f76422d1ec4935acdba98e553cb8564de94`、Writer runs 1/exit 0/provider effect 0、canonical runs 149→150/exit 0/errors 0/protected deletion 0 |
-| A-20 | browser/build/media preflightを接続する | producer consumer missing 0 for these families | 部分完了: Affiliate 3 browser、Instagram/X provision、self-build 2境界、Writer media既存境界を接続。標準job-searchはcommit `04402f38e`、focused 3＋関連12 tests、review `ship`だが別sessionの連続deployと競合するためproduction未反映。Gig currentもfloor 0/ignore 1へregress。active browserは標準job-search、Mercor、Gigの3 consumerとhost-wide build/media coverageが残る。canonical runs 189/exit 0/errors 0/protected deletion 0 |
+| A-20 | browser/build/media preflightを接続する | producer consumer missing 0 for these families | 部分完了: Affiliate 3 browser、Instagram/X provision、標準job-search、self-build 2境界、Writer media既存境界を接続。標準job-search current `2637df261`、focused 3＋関連12 tests、review `ship`、実機RC 1/effect 0/PID 712不変。Gig currentはfloor 0/ignore 1へregress。active browserはMercorとGigの2 consumer、加えてhost-wide build/media coverageが残る。canonical runs 191/exit 0/errors 0/protected deletion 0 |
 | A-21 | VM/package/agent preflightを接続する | producer consumer missing 0 for these families | 未完了 |
 | A-22 | supervisor non-stop behaviorを実装する | ULTRA wake keeps supervisor labels loaded | 未完了 |
 | A-23 | Codex log budget/rotationを実装する | active app-server handoff with session loss 0 | 未完了 |
