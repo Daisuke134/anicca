@@ -69,26 +69,29 @@ def send_once(
             return existing
         fence = outbox.claim(event_key)
         outbox.mark_send_started(event_key, fence)
-        completed = subprocess.run(
-            [
-                executable,
-                "message",
-                "send",
-                "--channel",
-                "telegram",
-                "--target",
-                target,
-                "-m",
-                outbox.payload(event_key),
-                "--json",
-            ],
-            check=False,
-            capture_output=True,
-            text=True,
-            timeout=20,
-            env=_transport_env(),
-            stdin=subprocess.DEVNULL,
-        )
+        try:
+            completed = subprocess.run(
+                [
+                    executable,
+                    "message",
+                    "send",
+                    "--channel",
+                    "telegram",
+                    "--target",
+                    target,
+                    "-m",
+                    outbox.payload(event_key),
+                    "--json",
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=20,
+                env=_transport_env(),
+                stdin=subprocess.DEVNULL,
+            )
+        except subprocess.TimeoutExpired:
+            return outbox.status(event_key)
         if completed.returncode != 0:
             raise RuntimeError(f"Telegram transport failed rc={completed.returncode}")
         result = json.loads(completed.stdout)
