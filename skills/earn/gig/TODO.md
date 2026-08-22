@@ -1721,7 +1721,10 @@ seconds.
 
 **Current outage, not a disabled lane.** The loaded Negotiate definition remains `KeepAlive` and
 `RunAtLoad`, with a 30-second poll and two workers, but the shared disk guard exits before
-`reply_detector.py` can run while the filesystem is full and `disk-writers.stop` is present. After
+`reply_detector.py` can run while `disk-writers.stop` is present. The canonical cleanup owner ran
+successfully but preserved all nine open candidates; regenerable npm caches were removed and free
+space recovered to 3.3 GiB, still below the 11 GiB hysteresis release boundary. Do not delete the
+flag manually or bypass this fail-closed gate. After
 Apply recovery is proven, close Negotiate in the following atomic order:
 
 - [ ] Load a machine-private no-contact registry keyed by exact marketplace counterparty ID and
@@ -1796,6 +1799,31 @@ action completes.
 - [x] Send and read back an explicitly requested estimate through the existing lane. Addres88 action
   276 reached exact-thread official estimate readback; later purchased threads are handed to Paid
   and all unfinished Negotiate actions are closed without a resend.
+- [x] Make purchase-decision negotiation proactive. A buyer asking whether the seller recommends
+  proceeding must receive an immediate affirmative, useful recommendation before any investigation
+  note; a conditional statement that the buyer will purchase after that answer cannot authorize an
+  estimate by itself (`ba515600a`, prompt v25 and validator gate).
+- [x] Save and hash buyer DM attachments before semantic judgement. The authenticated collector now
+  persists the exact PDF/PNG/JPEG bytes under the private per-thread material root, binds only an
+  exact message identity (or the strict body/index fallback), exposes bounded filename/type/size/hash
+  metadata to the semantic context, and fails closed on collection error (`82e5366df`, prompt v26).
+  This is the shared durable conversation-material boundary for later work; marketplace replies and
+  Telegram reports must never expose its local paths.
+- [x] Rebind the durable attachment manifest during the final official-DOM freshness read. The exact
+  semantic hash therefore includes verified attachments both before judgement and immediately before
+  effect, while a newly changed message or attachment stops the stale reply (`bf1a14b94`; 50 focused
+  tests pass).
+- [x] Keep seller-last correction authorization bound to the current semantic prompt SSOT instead of
+  the obsolete hard-coded v23. Prompt v26 can now queue one evidence-bound correction after the
+  seller falsely denied a verified attachment, and the post-correction debt detector prevents a
+  second correction (`7f5608836`; focused RED then 50-test GREEN).
+- [ ] On the affected attachment thread, let the existing Negotiate owner send exactly one correction
+  that names both verified buyer images, states that the earlier inability claim was wrong, says no
+  reattachment is required, and proceeds with the agreed sample. Require exact official message
+  readback plus the natural-language Telegram provider message ID. This effect is currently owned but
+  blocked by the host `disk-writers.stop`, not by the attachment or semantic code.
+- [ ] On the next natural poll after that correction, prove seller-last replay zero: no second apology,
+  no duplicate reply/estimate, unchanged official outgoing hash, and no blind Telegram resend.
 - [ ] Treat a buyer's competing bid or desired ceiling as a semantic renegotiation signal. Choose a
   deliverable, platform-valid competitive price from the whole current cycle without a hard-coded
   discount, revise the existing pre-purchase estimate when needed, and require official readback of
