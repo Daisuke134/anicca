@@ -376,7 +376,8 @@ U13 atomic order:
    incompatible and unsupported-experience jobs, then produced three currently open sealed
    candidates: usability test `~022091106411892491962` (7 Connects), Telegram/Sheets/Gemini
    workflow `~022091182433542935908` (11 Connects), and Neuroflow authentication repair
-   `~022091170260597544595` (7 Connects). Each official detail receipt shows a proposal entry and
+   `~022091170260597544595` (9 Connects after Upwork changed the earlier live value of 7). Each
+   official detail receipt shows a proposal entry and
    Available Connects 0; none was submitted. Every ready public row carries the SHA-256 of its
    factual, job-specific private proposal; the three private payloads contain no unsupported claim,
    recompute to their recorded hashes, and are stored in a mode-700 directory as mode-600 files.
