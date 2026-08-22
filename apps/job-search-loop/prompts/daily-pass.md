@@ -214,19 +214,12 @@ workday_application_step
 
 Do not choose `Autofill with Resume` before resume routing, and do not improvise an
 account password or expose credentials in evidence. At a verified
-`workday_account_create` surface, run:
-
-```bash
-PYTHONPATH=apps/job-search-loop \
-/opt/homebrew/bin/python3 -m job_search_loop.workday_credentials \
-  --job-url "<current_official_workday_url>" \
-  --profile-path "${XDG_CONFIG_HOME:-$HOME/.config}/anicca/job-search/profile.json" \
-  --store-path "${XDG_CONFIG_HOME:-$HOME/.config}/anicca/job-search/workday-accounts.json"
-```
-
-The secret-free receipt identifies the tenant and credential path. In the same
-browser process, call `job_search_loop.workday_credentials.load_credentials` and
-use the returned values only as `fill()` inputs for the email, password, and verify
+`workday_account_create` surface, instantiate
+`MachineWorkdayCredentialStore(Path(os.environ["JOB_SEARCH_MACHINE_CREDENTIALS"]))`
+and call `ensure(job_url=current_url, profile_path=private_profile_path)`. The
+secret-free receipt identifies the tenant and the one machine credential SSOT. In
+the same browser process, call `load(current_url)` and use the returned values only
+as `fill()` inputs for the email, password, and verify
 password controls; check the required consent and click the visible user-facing
 `Create Account` action. Workday renders the actual submit `<button>` with
 `aria-hidden="true"` and places a visible `div[role="button"]` overlay above it.

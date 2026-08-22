@@ -27,6 +27,7 @@ from .observation import ObservationBuilder
 from .inference import ExperienceIntervalV1, InferenceDecisionV1, StableInferencePolicy
 from .policy import AgentPolicy
 from .session import BrowserSession
+from .workday_account import MachineWorkdayCredentialStore
 
 __all__ = [
     "API_VERSION", "ActionExecutor", "ActionPlanV1", "ActionReceiptV1", "AnswerMemory",
@@ -37,5 +38,6 @@ __all__ = [
     "ObservationBuilder", "ObservationV1",
     "PolicyContextV1", "ResolvedAnswerV1", "RowCheckpointV1", "SessionHandleV1",
     "StepEvidenceV1", "VisibleActionV1",
-    "StableInferencePolicy", "VisibleControlV1", "build_candidate_memory",
+    "MachineWorkdayCredentialStore", "StableInferencePolicy", "VisibleControlV1",
+    "build_candidate_memory",
 ]

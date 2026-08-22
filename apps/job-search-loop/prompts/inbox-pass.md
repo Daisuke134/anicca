@@ -44,8 +44,8 @@ For a Workday candidate-account verification email, never navigate a raw URL fro
 the message. Use the already-appended wrapped candidate subject, sender, and body,
 then call
 `job_search_loop.workday_verification.extract_verification_target` with its exact
-Gmail message ID, subject, sender, body, and the private credential store at
-`~/.config/anicca/job-search/workday-accounts.json`. The extractor accepts only one
+Gmail message ID, subject, sender, body, and the machine credential SSOT at
+`~/.local/share/anicca/credentials.json`. The extractor accepts only one
 HTTPS `/activate/<token>` URL whose exact host already exists in that store.
 Initialize `VerificationStore` at
 `~/.local/state/anicca/job-search/workday-verifications.sqlite3` and call `claim`.

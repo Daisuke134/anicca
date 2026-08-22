@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import html
 import os
 import re
@@ -12,7 +13,8 @@ from email.utils import parseaddr
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from .workday_credentials import known_tenants
+from .browser_agent.workday_account import MachineWorkdayCredentialStore
+from .workday_credentials import known_tenants as legacy_known_tenants
 
 
 class VerificationError(RuntimeError):
@@ -129,7 +131,12 @@ def extract_verification_target(
         raise VerificationError("Workday verification sender is not trusted")
     if not _verification_language_matches(subject, body):
         raise VerificationError("message is not a Workday account verification")
-    tenants = set(known_tenants(credential_store))
+    raw_store = json.loads(credential_store.read_text(encoding="utf-8"))
+    tenants = set(
+        MachineWorkdayCredentialStore(credential_store).known_tenants()
+        if isinstance(raw_store, dict) and isinstance(raw_store.get("credentials"), list)
+        else legacy_known_tenants(credential_store)
+    )
     matches = {
         match
         for candidate in _candidate_urls(body)
