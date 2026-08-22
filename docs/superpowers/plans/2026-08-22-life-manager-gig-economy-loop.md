@@ -1007,6 +1007,11 @@ including success, lost ACK, replay, changed artifact, non-PASS, forged-PASS and
 This is not a live delivery claim: the official account still has zero active contracts, so no
 workroom submission control or real submission ID exists to exercise yet. The external-effect
 checkbox stays open until that official receipt exists.
+Main commit `c3497d117dd9065eab2eaacb190386279f9389a5` is published as immutable release
+`20260823T050059-c3497d11`; delivery-engine SHA-256 is
+`1a2ca6bc73147ab893d928c95bdc8f9634b28a0a27fbc2dff14536d3772bc276`. The same 27 focused
+tests pass from the read-only release and syntax compilation passes with a redirected bytecode
+cache. This release proof is local and cannot satisfy the still-open live submission checkbox.
 
 ### Task 20: Process Upwork revisions
 
