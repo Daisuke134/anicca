@@ -98,8 +98,19 @@ current execution order, not a menu:
    English non-Affiliate effect; terminal MaxForAI remains fenced forever.
 2. Add official X impression/profile-visit/follow observations when the account
    exposes them; unknown remains unknown.
-3. Add a first-party X-to-owned-article entry receipt without raw referrer,
-   cookie, query, IP, user-agent, tracking link, or secret retention.
+3. **DONE, LIVE:** first-party X-to-owned-article entry receipts are deployed at
+   production commit `87a0babb7849305201982ad2ba9822512d88a925` by the
+   existing Affiliate publication owner. Browser code reduces referrer to
+   `X / UNKNOWN` locally, sends only exact placement ID plus the enum, and sets
+   `credentials=omit` and `referrerPolicy=no-referrer`; raw referrer, cookie,
+   query, IP, user-agent, tracking link, and secret are not persisted. GitHub
+   Actions deploy `32576537291` completed successfully, and the public endpoint
+   readback is HTTP `405` with `Allow: POST`. Affiliate owner run 86 marked the
+   instrumentation `LIVE` and wrote receipt SHA
+   `0472c010019017deca9cedb4631e61c765669de6344731959fddcfaad9732091`.
+   Subtitle Translator, Voice Isolator, and Voice Changer each have exact
+   `count=0 / state=OBSERVED / source=X`; this is observed zero acquisition,
+   not unknown and not money.
 4. Join entry receipt -> owned article -> existing CTA receipt -> PartnerStack
    provider click -> official transaction ID at exact `placement_id`.
 5. Promote only mature approved-or-paid net experiments; stop formats with no
@@ -108,14 +119,16 @@ current execution order, not a menu:
    pending/approved/paid/reversed, currency, reversal, real cost, denominator,
    and rolling 30-day USD 10,000 net in the canonical ledger and Telegram.
 
-Affiliate owner run 83 is the latest economic readback: 76 X post actions, five
+Affiliate owner run 86 is the latest economic readback: 76 X post actions, five
 exact placement joins, 71 unjoined actions, zero invalid rows, CTA and interval
 funnel `OBSERVED`, owned visits
 `UNAVAILABLE / NETLIFY_WEB_ANALYTICS_DISABLED`, and official PartnerStack
 commission/payout rows remain empty. Pending, approved, paid, and reversed are all zero;
 rolling money is `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`,
-cost remains `UNKNOWN`, and owner Telegram receipt is provider message ID
-`28914`. The recovered 76th X row, every view, and every click are non-money.
+cost remains `UNKNOWN`. First-party X-owned entries are now observed at zero for
+all three focused placements; interval join is
+`WAITING_FOR_CURRENT_PROVIDER_READBACK`. The recovered 76th X row, every view,
+entry, and click are non-money.
 
 The prior acquisition release bounds readback-only recovery of terminal
 `UNVERIFIED` proposals to six hours. This preserves immediate recovery of an X

@@ -1,5 +1,20 @@
 # Affiliate local money loop handover
 
+- First-party X-to-owned entry measurement is live. Affiliate runtime commits
+  `284e34696`, `65645765a`, and `1a8eba4f7` are pushed to both remotes; current
+  installed release is `1a8eba4f77dd0a9c45f306326eb52b0df430c860` with
+  source/runtime `local_loop.py` SHA-256
+  `d2151df75ab4537ff3dfc921f6bd9155abdeb71644ea092538c758b744eb56da`.
+  Existing Affiliate owner run 85 created and pushed production commit
+  `87a0babb7849305201982ad2ba9822512d88a925`; GitHub Actions deploy
+  `32576537291` completed successfully and public endpoint readback is exact
+  HTTP `405 / Allow: POST`. Run 86 marked instrumentation `LIVE` and wrote
+  first-party receipt SHA
+  `0472c010019017deca9cedb4631e61c765669de6344731959fddcfaad9732091`.
+  Three focused placements each read `count=0 / OBSERVED / source=X`.
+  Referrer is reduced in-browser to X/UNKNOWN; raw referrer, query, cookie, IP,
+  user-agent, tracking link, and secret are not persisted. This is non-money.
+
 - X measurement runtime is now commit `1ae08822f`, pushed to both Repost
   remotes and installed as immutable release `20260822T223509-1ae08822`.
   Source/runtime `x_collect.py` is byte-equal at SHA-256
