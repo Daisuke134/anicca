@@ -165,11 +165,48 @@ def _row() -> dict[str, Any]:
             for row in RowQueueSupervisor.collect(ledger)
             if row["application_id"] not in completed
         ]
+        if not rows and RowQueueSupervisor.admit_next_discovered_workday(ledger):
+            rows = [
+                row
+                for row in RowQueueSupervisor.collect(ledger)
+                if row["application_id"] not in completed
+            ]
     finally:
         ledger.close()
     if not rows:
         raise RuntimeError("no eligible active-provider row")
     return rows[0]
+
+
+def _role_family(title: str) -> str:
+    return (
+        "technical_business"
+        if re.search(
+            r"solutions|customer success|partnership|sales|account executive|product",
+            title,
+            re.IGNORECASE,
+        )
+        else "applied_ai"
+    )
+
+
+def _routed_resume(row: dict[str, Any], posting_text: str) -> dict[str, str]:
+    ledger = Ledger(_path_env("JOB_SEARCH_STATE_ROOT") / "ledger.sqlite3")
+    try:
+        assignment = ledger.strategy_assignment(row["application_id"])
+    finally:
+        ledger.close()
+    legacy = assignment["capture_status"] == "legacy_unavailable"
+    routed = select_resume(
+        posting_text=posting_text,
+        role_family=(
+            _role_family(str(row["title"])) if legacy else assignment["role_family"]
+        ),
+        materials_root=_materials_root(),
+    )
+    if not legacy and routed["resume_sha256"] != assignment["material_sha256"]:
+        raise RuntimeError("routed resume differs from the immutable assignment")
+    return routed
 
 
 def _safe_observation(observation, checkpoint, remaining_steps: int) -> dict[str, Any]:
@@ -551,18 +588,7 @@ async def upload_resume(*, label: str, role: str, stable_id: str) -> dict[str, A
     """Upload the row's immutable assigned resume without exposing its path."""
     row, _session, _checkpoints, _evidence, cursor, builder = await _context()
     observation = await builder.build(cursor.handle)
-    ledger = Ledger(_path_env("JOB_SEARCH_STATE_ROOT") / "ledger.sqlite3")
-    try:
-        assignment = ledger.strategy_assignment(row["application_id"])
-    finally:
-        ledger.close()
-    routed = select_resume(
-        posting_text=f"{row['title']}\n{observation.visible_text}",
-        role_family=assignment["role_family"],
-        materials_root=_materials_root(),
-    )
-    if routed["resume_sha256"] != assignment["material_sha256"]:
-        raise RuntimeError("routed resume differs from the immutable assignment")
+    routed = _routed_resume(row, f"{row['title']}\n{observation.visible_text}")
     path = _path_env("JOB_SEARCH_BROWSER_SCRATCH") / "runtime-upload.json"
     path.write_text(
         json.dumps(
@@ -725,18 +751,7 @@ async def finalize() -> dict[str, Any]:
     """Fence one final click and classify only its fresh rendered result."""
     row, session, checkpoints, evidence, cursor, builder = await _context()
     before = await builder.build(cursor.handle)
-    assignment_ledger = Ledger(_path_env("JOB_SEARCH_STATE_ROOT") / "ledger.sqlite3")
-    try:
-        assignment = assignment_ledger.strategy_assignment(row["application_id"])
-    finally:
-        assignment_ledger.close()
-    routed = select_resume(
-        posting_text=f"{row['title']}\n{before.visible_text}",
-        role_family=assignment["role_family"],
-        materials_root=_materials_root(),
-    )
-    if routed["resume_sha256"] != assignment["material_sha256"]:
-        raise RuntimeError("routed resume differs from the immutable assignment")
+    routed = _routed_resume(row, f"{row['title']}\n{before.visible_text}")
     resume_path = Path(routed["resume_path"])
     resume = await ResumeVerifier(session).verify(
         cursor.handle, before, resume_path, {}

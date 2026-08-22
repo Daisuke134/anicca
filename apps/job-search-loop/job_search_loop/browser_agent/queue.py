@@ -58,6 +58,39 @@ class RowQueueSupervisor:
             rows.append(row)
         return tuple(rows)
 
+    @staticmethod
+    def admit_next_discovered_workday(ledger: Any) -> str | None:
+        """Promote one legacy discovered Workday row into the model-owned queue."""
+        candidates = ledger.connection.execute(
+            """
+            SELECT id, canonical_url
+            FROM applications
+            WHERE current_state = 'discovered'
+              AND NOT EXISTS (
+                SELECT 1 FROM submit_intents
+                WHERE submit_intents.application_id = applications.id
+              )
+            ORDER BY created_at, rowid
+            """
+        ).fetchall()
+        for candidate in candidates:
+            application_id = str(candidate["id"])
+            identity = canonical_url(str(candidate["canonical_url"]))
+            if detect_provider(identity) != "workday" or identity in _NEVER_REAPPLY:
+                continue
+            ledger.transition(
+                application_id,
+                "qualified",
+                {"reason": "workday_model_lane_admission"},
+            )
+            ledger.transition(
+                application_id,
+                "materials_ready",
+                {"reason": "workday_model_lane_admission"},
+            )
+            return application_id
+        return None
+
     async def run(
         self, rows: Iterable[dict[str, Any]], processor: RowProcessor
     ) -> tuple[QueueRowReceiptV1, ...]:
