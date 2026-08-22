@@ -229,6 +229,14 @@ class DirectCDPPage:
 
     async def type_target(self, target: dict[str, Any], text: str) -> None:
         await self.click_target(target)
+        selected = await self.evaluate("""() => {
+          const el = document.activeElement;
+          if (!el || !['INPUT', 'TEXTAREA'].includes(el.tagName) || typeof el.select !== 'function') return false;
+          el.select();
+          return el.selectionStart === 0 && el.selectionEnd === el.value.length;
+        }""")
+        if not selected:
+            raise RuntimeError("visible text target did not accept whole-value selection")
         modifiers = 4  # Meta on macOS Chromium.
         await self.call("Input.dispatchKeyEvent", {"type": "keyDown", "key": "Meta", "code": "MetaLeft", "modifiers": modifiers})
         await self.call("Input.dispatchKeyEvent", {"type": "keyDown", "key": "a", "code": "KeyA", "modifiers": modifiers})
