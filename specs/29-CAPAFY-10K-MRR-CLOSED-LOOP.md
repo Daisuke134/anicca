@@ -297,6 +297,8 @@ C18は拒否済み`Sales Objection Reply Builder`をLife Managerの`skills/capaf
 
 C19監視開始時、hourly reconcileは`/agent/agents`をfreshとしながら`occupied/free=null`の`observed_unclassified`へ落としており、slot解放を検出できない矛盾を実測する。live server enumをlisted (`online/approved`)、occupied (`draft/under_review`)、retry (`review_rejected`)、blocked (`banned`)へ正規化し、未知status/identityは`degraded`へfail closedする。focused 5件が通り、本番hourly run `9`はexit `0`、listed `22`、occupied `5`、free `0`、retry `6`、orders `5`、gross `$19.98`、settled MRR `unknown`、Telegram message ID `29024`を同一company receiptへ保存する。これでlisted遷移後の`free=1`をhourly ownerが検出できるが、実listed遷移と次候補一件の提出まではC19未完である。
 
+C20はlanding redirect functionのproduction 502を修復する。原因はmanual Netlify deployが`@netlify/blobs`をbundleせず、daily wrapperもhostに存在しないglobal `netlify`を呼んでいたことである。repo dependencyをinstallして固定`npx netlify-cli@27.1.2`経路へ変更し、Capafy専用site `41c8e52e-b163-442a-84ff-fd866269bf6c`へdeploy `6a89b4126e21fe74286b7a79`を反映する。最初に共通`NETLIFY_SITE_ID`で誤って更新した`anicca2`は直前production deploy `6a89a8339dd71d828c00c62b`へrestoreし、published deploy IDのreadbackまで閉じる。live `/go-stats`はHTTP 200、23 Agent、累積clickは7 (`1/1/5`)。attribution v2 rowは本日IG post `https://www.instagram.com/reel/DcV9YY7sqYI/`、Agent別counter、Capafy Agent sales snapshotを同じUTC windowへ接続するが、order-level UTM/sourceとseller subscription-order joinが存在しないため`causal_claim=false`、全行`candidate_no_order_level_source`、`subscription_orders=null`、初回window delta `null`を維持する。focused 11件が通り、Telegram message IDは`29036`。
+
 ## Atomic remaining TODO
 
 Items are executed top-to-bottom. Only one item is active.
@@ -323,7 +325,7 @@ Items are executed top-to-bottom. Only one item is active.
 | C17 | run one real slot-controlled supply pass | inventory readback -> allocator decision -> skill/version remote status -> Telegram message ID | completed — same Agent `3661050861`, version `2091144781376671744`, `status=1/audit=1/run_online/skills=1/config=1`; listed 22/occupied 4/free 1/retry 7; TG `28979` |
 | C18 | prove one rejected Agent correction/resubmit E2E | same agent_id, new package/revision, under-review readback, no orphan Agent | completed — Agent `3098034209`, platform-preserved version `2080431424288878592`, new package, `status=1/audit=1/skills=1/config=1`; duplicate Agent 0; TG `29019` |
 | C19 | prove one listed transition frees a fresh slot | status=4 reduces occupied count and next daily wake submits exactly one candidate | pending — slot monitor repaired; live hourly run 9 sees listed 22/occupied 5/free 0/retry 6; TG `29024`; awaiting real review transition |
-| C20 | connect post/click/subscription windows without claiming causal proof | attribution row is candidate unless Capafy exposes order-level UTM/source | pending |
+| C20 | connect post/click/subscription windows without claiming causal proof | attribution row is candidate unless Capafy exposes order-level UTM/source | completed — live attribution v2 joins one IG post + 23 counters + Capafy snapshot; clicks 7; causal=false; subscription unknown; Netlify deploy `6a89b4126e21fe74286b7a79`; TG `29036` |
 | C21 | prove seven consecutive daily healthy terminals and hourly freshness | 7-day ledger has no stale source, duplicate Agent/version/post or missing Telegram receipt | pending — proof `1/7`; hourly run 9 exit 0; receipt `capafy-91a7d8890a852e281d1e34be`; slots normalized; TG `29024` |
 | C22 | operate growth and retention experiments until settled net MRR reaches `$10,000` | active subscription readback and refunds/fees reconcile to target | pending |
 
