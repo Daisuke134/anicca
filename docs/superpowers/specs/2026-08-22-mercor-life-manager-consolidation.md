@@ -178,6 +178,7 @@ Mercor interview messages enter the existing Job Hunter inbox lane. Reuse `apps/
 - The live read-only Earnings page at `https://work.mercor.com/earnings` was opened in the dedicated Mercor profile. It read `Your total earnings to date are $0.00`, `No payment history yet`, and `Once you receive your first payout, it will appear here`. The private read-back is `status=not_observed`, `revenue_credited=false`, and `verified_monthly_run_rate_usd=null`; no application, offer, rate estimate, or `$0.00` placeholder is counted as earnings.
 - Failure fixtures now cover page drift, stale/non-Mercor tabs, transient CDP failure, ambiguous submit read-back, recovery/reset/Google `はい` screens, and authoritative successful read-back. The guard fails closed and never retries an ambiguous submit or clicks recovery UI.
 - A redacted two-operator fixture now proves separate operator IDs, state roots, application ledgers, evidence files, resume paths, and CDP endpoints; no cross-operator listing or evidence is visible.
+- The reproducible release artifact passed extraction and clean-home install tests with a non-Dais redacted profile; the archive excludes private state, and the tracked public tree has no private-key/token credential matches.
 - Mercor Summary currently resets after reload and is tracked as `summary_unpersisted`.
 
 ## 9. Migration acceptance gate
@@ -209,6 +210,6 @@ Only the first unchecked item is active. Finish its evidence and read-back befor
 11. [x] **Earnings gate:** implement the settled-only parser/schema and perform a live Earnings read-back. The current account has no payment history, so the durable result is `not_observed` with no revenue credited; the first real settled payout remains an external runtime condition for a future `$10K verified` claim.
 12. [x] **Failure fixtures:** test page drift, stale tab, transient failure, ambiguous submit, recovery/reset screen, and successful read-back.
 13. [x] **Multi-operator test:** run a second redacted operator fixture with separate state, browser, ledger, and evidence; confirm no cross-operator data.
-14. [ ] **Open-source release:** secret scan, fresh-install test, setup/runbook, provider docs, and one non-Dais fixture pass.
+14. [x] **Open-source release:** secret scan, fresh-install test, setup/runbook, provider docs, and one non-Dais fixture pass.
 15. [ ] **Reference cleanup:** remove all production references to `profitable-claude` and confirm the canonical Life Manager runtime still passes.
 16. [ ] **Deletion gate:** only after every prior read-back succeeds, obtain the final check-in and archive/delete the old repository as a separate destructive operation.
