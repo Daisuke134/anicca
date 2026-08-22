@@ -1,315 +1,1011 @@
-# Life Manager Gig Economy Loop Implementation Plan
+# Life Manager Open-Source Money Loop Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development
+> (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use
+> checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Extend the existing Coconala commerce kernel with a policy-gated Upwork path, then add
-additional markets and bounded revenue learning without creating a second harness.
+**Goal:** Extend the proven Coconala revenue kernel into a local-first open-source portfolio agent,
+beginning with a complete Upwork sales-to-payment loop and adding each remaining market through one
+repeatable Market Factory.
 
-**Architecture:** `skills/earn/gig/` remains the only local commerce engine. Provider adapters own
-transport and official readback; the shared kernel owns intent, receipts, work, QA, finance and
-learning. Unknown permissions fail closed. Only one task below is active at a time.
+**Architecture:** Existing Coconala owners, SQLite outbox, effect fences, project ledger,
+CloakBrowser, immutable releases and bounded evaluators remain the kernel. Provider adapters contain
+only authorization-aware transport and normalization. A Portfolio CEO allocates toward verified net
+revenue, while a Skill Factory may promote only replayed and canaried bundles.
 
-**Tech Stack:** Python 3.13+, JSON/JSONL, existing launchd release system, approved provider APIs,
-pytest with plugin autoload disabled, existing Life Manager receipt/ledger contracts.
+**Tech Stack:** Python 3.13+, standard-library SQLite/JSON, existing CloakBrowser CDP helpers,
+approved provider APIs, existing launchd release system, pytest with plugin autoload disabled.
 
-**Design:** `docs/superpowers/specs/2026-08-22-life-manager-gig-economy-loop-design.md`
+**Spec:** `docs/superpowers/specs/2026-08-22-life-manager-gig-economy-loop-design.md`
 
-**Current-state SSOT:** `skills/earn/gig/TODO.md`. Finish its active production cursor independently;
-this plan must not edit, restart or reschedule the current lanes merely to begin global expansion.
+## Global constraints
 
-## Execution rules
+- Execute exactly one task at a time and commit/push after its verification passes.
+- Do not move the current `skills/earn/gig/TODO.md` production-repair cursor.
+- Do not add a scheduler, workflow service, browser harness, vector DB or second ledger.
+- Each coding task changes at most three files and about 100 production/test LOC; split before coding
+  if the real slice is larger.
+- All provider mutations require authorization receipt → immutable intent → reconcile → at most one
+  effect → authoritative readback → canonical receipt.
+- Dais's special approval is recorded privately per account/action/transport. It enables matching
+  Upwork/Coconala actions; it does not become a universal public default.
+- Public provider templates remain `unknown`; credentials and approval evidence remain outside Git.
+- No blind retry, synthetic success, fake payment, estimated revenue or missing-evidence-as-zero.
+- Paid work and deadline protection outrank new acquisition and experiments.
+- A market advances only after the preceding live receipt gate closes.
+- Exactly-once means one logical effect identity with zero blind retry; it does not claim a remote
+  provider transaction is atomic with local SQLite.
 
-- Execute tasks in order. A later marketplace is not active until the previous gate has a real
-  provider receipt.
-- Begin each task by re-reading current provider terms and storing URL, retrieved timestamp, content
-  hash, jurisdiction and allowed action. A changed rule invalidates the cached capability.
-- Each implementation slice changes at most three files and 100 production/test LOC. Split before
-  coding if the target is exceeded.
-- Use one normal-path test plus the smallest regression preventing duplicate effect, money error,
-  data loss or secret leakage.
-- Tests and local fixtures never count as business success. External gates close only from official
-  provider readback.
-- No new runtime dependency or abstraction until the first real consumer requires it.
+## Locked interfaces
 
-### Task 0: Preserve continuity and establish development headroom
+Executors keep these names and value sets consistent across tasks:
+
+```python
+from dataclasses import dataclass
+from enum import StrEnum
+from typing import Protocol
+
+class AuthorizationState(StrEnum):
+    APPROVED_API = "approved_api"
+    APPROVED_BROWSER = "approved_browser"
+    APPROVED_ASSISTED = "approved_assisted"
+    DENIED = "denied"
+    UNKNOWN = "unknown"
+
+class MarketStage(StrEnum):
+    RESEARCH = "research"
+    AUTHORIZED = "authorized"
+    READ = "read"
+    SALE = "sale"
+    CONTRACT = "contract"
+    DELIVERY = "delivery"
+    PAYMENT = "payment"
+    REPEATABLE = "repeatable"
+    ACTIVE = "active"
+    ASSISTED = "assisted"
+    DENIED = "denied"
+    UNPROFITABLE = "unprofitable"
+
+@dataclass(frozen=True)
+class EffectIntent:
+    provider: str
+    account_key: str
+    resource_id: str
+    action: str
+    payload_hash: str
+    authorization_hash: str
+    effect_key: str
+
+@dataclass(frozen=True)
+class ProviderReceipt:
+    provider: str
+    action: str
+    effect_key: str
+    provider_receipt_id: str
+    authoritative_state: str
+    observed_at: str
+    evidence_hash: str
+
+class ProviderAdapter(Protocol):
+    def discover(self) -> list["Opportunity"]: ...
+    def inspect(self, opportunity_id: str) -> "OpportunityDetail": ...
+    def plan_effect(self, action: str, payload: dict) -> EffectIntent: ...
+    def reconcile(self, intent: EffectIntent) -> "ProviderState": ...
+    def execute(self, intent: EffectIntent) -> "TransportAck": ...
+    def readback(self, intent: EffectIntent) -> ProviderReceipt: ...
+    def list_projects(self) -> list["ProjectState"]: ...
+    def list_payments(self) -> list["PaymentState"]: ...
+```
+
+Provider-specific modules may define transport payloads, but they may not rename or weaken these
+kernel identities.
+
+## Phase A — Preserve and expose the existing kernel
+
+### Task 0: Record the production baseline
 
 **Files:**
-- Read: `skills/earn/gig/TODO.md`
-- Read: `skills/earn/gig/scripts/gig_disk_guard.py`
-- Test: `skills/earn/gig/tests/test_gig_disk_guard.py`
+- Create: `docs/superpowers/evidence/gig-expansion-baseline.md`
 
-- [ ] Record current `origin/main`, deployed release SHA and the active Coconala TODO cursor without
-      changing runtime state.
-- [ ] Run `df -k /` and the existing disk guard in observation mode.
-- [ ] If below the existing safe development threshold, invoke the existing disk-cleanup procedure;
-      do not create a new cleaner and do not delete protected runtime evidence.
-- [ ] Run
-      `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q skills/earn/gig/tests/test_gig_disk_guard.py`.
-- [ ] Acceptance: the current Coconala release/cursor is unchanged and tests can write durable
-      evidence without disk failure.
+**Interfaces:** Produces the immutable Coconala release SHA, active repair cursor, browser owner,
+state paths and focused test commands used by every later task.
 
-### Task 1: Add the action-level policy receipt contract
+- [ ] Record `origin/main`, current release symlink target, four live owner identities and active
+  `skills/earn/gig/TODO.md` item without changing them.
+- [ ] Record `df -k /`, current disk-guard result and private runtime directories without copying
+  their contents.
+- [ ] Run `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q
+  skills/earn/gig/tests/test_application_direct_reconcile.py
+  skills/earn/gig/tests/test_storefront_direct.py`.
+- [ ] Write exact pass/fail counts and command output summary into the evidence file.
+- [ ] Commit with `docs(gig): record expansion baseline` and push.
+
+### Task 1: Define the action-level authorization receipt
 
 **Files:**
-- Create: `skills/earn/gig/config/marketplace-capabilities.json`
-- Create: `skills/earn/gig/scripts/marketplace_policy.py`
-- Create: `skills/earn/gig/tests/test_marketplace_policy.py`
+- Create: `skills/earn/gig/scripts/provider_authorization.py`
+- Create: `skills/earn/gig/config/provider-capabilities.public.json`
+- Create: `skills/earn/gig/tests/test_provider_authorization.py`
 
-- [ ] Write a failing test: missing provider/action, expired evidence and mismatched content hash
-      return `unknown` and deny mutation.
-- [ ] Add the minimum schema-less loader for
-      `(provider, account, action, jurisdiction, terms_version, evidence_url, evidence_sha256,
-      retrieved_at, state)`.
-- [ ] Add only the five states from the design and make `approved_api` / `approved_browser` the only
-      mutation-authorizing states.
-- [ ] Seed public provider templates with `unknown`; keep account IDs and private proof outside repo.
-- [ ] Run the focused test and `python3 -m json.tool` on the config.
-- [ ] Acceptance: an unknown Upwork `submit_proposal` is mechanically unable to reach an effect.
+**Interfaces:** Produces `AuthorizationReceipt` and
+`authorize(provider, account, action, transport, now) -> AuthorizationDecision`.
 
-### Task 2: Bind policy receipts to the existing effect fence
+- [ ] Write failing tests asserting missing, expired, wrong-account and wrong-action evidence returns
+  `unknown`, while an exact unexpired special approval returns `approved_browser`.
+- [ ] Run `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q
+  skills/earn/gig/tests/test_provider_authorization.py`; confirm import/test failure.
+- [ ] Implement strict JSON parsing for `approved_api`, `approved_browser`, `approved_assisted`,
+  `denied`, `unknown`; reject extra keys and invalid timestamps.
+- [ ] Seed every public provider/action as `unknown`; keep private receipts in
+  `~/.config/anicca/gig/authorizations.json` mode `600`.
+- [ ] Run the focused test plus `python3 -m json.tool` on the public config; commit/push.
+
+### Task 2: Define the provider adapter contract
+
+**Files:**
+- Create: `skills/earn/gig/scripts/provider_adapter.py`
+- Create: `skills/earn/gig/tests/test_provider_adapter.py`
+
+**Interfaces:** Produces immutable `Opportunity`, `EffectIntent`, `ProviderReceipt`, `ProjectState`,
+`PaymentState` and the eight adapter operations from the design.
+
+- [ ] Write a failing contract test with a minimal fake adapter; assert provider IDs, currency,
+  source hash and observed timestamp are mandatory.
+- [ ] Run the focused test and confirm the types are absent.
+- [ ] Implement frozen dataclasses and a runtime contract validator using only the standard library.
+- [ ] Assert `execute()` output cannot be converted to success without `readback()` returning the
+  matching provider/action/effect key.
+- [ ] Run focused tests and commit/push as `feat(gig): define provider adapter contract`.
+
+### Task 3: Bind authorization to the existing effect fence
 
 **Files:**
 - Modify: `skills/earn/gig/scripts/application_effect_fence.py`
-- Modify: `skills/earn/gig/scripts/project_ledger.py`
-- Create: `skills/earn/gig/tests/test_marketplace_policy_fence.py`
+- Modify: `skills/earn/gig/scripts/connector_outbox.py`
+- Create: `skills/earn/gig/tests/test_provider_effect_authorization.py`
 
-- [ ] Write a failing test showing that an otherwise-valid intent is rejected without a matching
-      capability receipt.
-- [ ] Add capability evidence hash to the existing intent/effect identity without weakening legacy
-      Coconala replay identity.
-- [ ] Prove a changed or revoked capability cannot reuse an old mutation authorization.
-- [ ] Prove existing Coconala fixtures retain their current effect keys and duplicate fences.
-- [ ] Run the focused policy/fence tests plus existing application reconcile tests.
-- [ ] Acceptance: policy is a persisted prerequisite of every new-provider mutation, not a prompt.
+**Interfaces:** Consumes `AuthorizationDecision`; persists `authorization_hash` on every new-provider
+intent while preserving all existing Coconala effect keys.
 
-### Task 3: Implement an Upwork approved-auth capability probe
+- [ ] Write failing tests for missing/revoked authorization, changed authorization hash, duplicate
+  intent and lost-ACK reconciliation.
+- [ ] Capture existing Coconala fixture effect keys byte-for-byte before implementation.
+- [ ] Add the authorization hash only to the provider-generic path; do not migrate or rewrite
+  Coconala history.
+- [ ] Prove a changed receipt cannot reuse an old effect, and a same receipt/payload replay performs
+  zero effects.
+- [ ] Run both new tests and existing application reconcile tests; commit/push.
 
-**Files:**
-- Create: `skills/earn/gig/scripts/upwork_adapter.py`
-- Create: `skills/earn/gig/tests/test_upwork_adapter.py`
-- Modify: `skills/earn/gig/config/marketplace-capabilities.json`
-
-- [ ] Re-read the official Upwork automation page and current API documentation; record exact
-      approved endpoints for this account outside the repository.
-- [ ] Request/use an official API key through the provider's supported process; do not derive auth
-      from browser cookies.
-- [ ] Write a failing transport-contract test for authenticated read-only identity/capability
-      response and redacted errors.
-- [ ] Implement only authentication, bounded timeout and response normalization.
-- [ ] Run a real read-only probe and store a redacted receipt outside repo.
-- [ ] Acceptance: G1 closes only if the exact account/action matrix is authoritative. If proposal
-      mutation is absent, record `unknown`/denied and stop Tasks 5–6 without blocking Task 4.
-
-### Task 4: Normalize one Upwork opportunity read-only
+### Task 4: Add Market Factory durable state
 
 **Files:**
-- Modify: `skills/earn/gig/scripts/upwork_adapter.py`
-- Create: `skills/earn/gig/schemas/marketplace_opportunity.schema.json`
-- Modify: `skills/earn/gig/tests/test_upwork_adapter.py`
+- Create: `skills/earn/gig/scripts/market_factory.py`
+- Create: `skills/earn/gig/tests/test_market_factory.py`
 
-- [ ] Write a failing fixture test for provider ID, title, full scope, currency, budget, client
-      evidence, skills, timestamp and source URL.
-- [ ] Reject partial or synthetic rows; preserve raw evidence hash outside the normalized record.
-- [ ] Implement one bounded official query using the approved API.
-- [ ] Run one live read-only discovery with zero proposal/message effects.
-- [ ] Acceptance: one official opportunity validates and repeated discovery yields the same identity.
+**Interfaces:** Produces `advance_market(provider, evidence) -> MarketStage` with stages
+`research, authorized, read, sale, contract, delivery, payment, repeatable, active, assisted,
+denied, unprofitable`.
 
-### Task 5: Reuse existing qualification and fulfillment preflight
+- [ ] Write failing transition tests; direct `research → sale`, payment without delivery and active
+  without three independent payments must fail.
+- [ ] Run the test to observe the missing implementation.
+- [ ] Store stages and evidence hashes in the existing SQLite database; add no service or scheduler.
+- [ ] Make every transition monotonic except explicit `paused/reverted`; repeat input is idempotent.
+- [ ] Run focused tests and commit/push.
 
-**Files:**
-- Modify: `skills/earn/gig/scripts/application_eligibility.py`
-- Modify: `skills/earn/gig/scripts/application_planner.py`
-- Create: `skills/earn/gig/tests/test_upwork_application_preflight.py`
-
-- [ ] Write a failing test proving an Upwork job is ineligible when an installed skill, deadline,
-      revision capacity, data permission or observed fee is missing.
-- [ ] Normalize the new opportunity into the existing planner input; do not create an Upwork-only
-      planner or scoring model.
-- [ ] Rank eligible rows by projected net after observed fee/cost, preserving stable source order.
-- [ ] Generate a tailored proposal from quoted buyer evidence with no unsupported claims.
-- [ ] Acceptance: planner output is valid, deliverable and profitable, while an unfulfillable job
-      cannot create an intent.
-
-### Task 6: Submit one bounded Upwork proposal with official readback
-
-**Prerequisite:** Task 3 proves `submit_proposal=approved_api` for the exact account and endpoint.
+### Task 5: Add the typed human-ceremony queue
 
 **Files:**
-- Modify: `skills/earn/gig/scripts/upwork_adapter.py`
+- Create: `skills/earn/gig/scripts/human_ceremony.py`
+- Create: `skills/earn/gig/tests/test_human_ceremony.py`
+
+**Interfaces:** Produces `request_ceremony(kind, provider_state, resume_predicate)` for identity,
+financial, physical capture and client-reserved acts only.
+
+- [ ] Write failing tests that reject vague requests, missing provider resume evidence and tasks the
+  agent can execute under authorization.
+- [ ] Implement a durable bounded record with deadline, provider URL, exact act and resume predicate.
+- [ ] Prove another provider lane remains runnable while one ceremony is pending.
+- [ ] Prove completion requires authoritative changed provider state or a bound artifact hash.
+- [ ] Run focused tests and commit/push.
+
+### Task 6: Add local onboarding and capability inventory
+
+**Files:**
+- Create: `skills/earn/gig/scripts/money_loop_onboarding.py`
+- Create: `skills/earn/gig/tests/test_money_loop_onboarding.py`
+- Modify: `skills/earn/gig/install.sh`
+
+**Interfaces:** Produces a private owner profile, Skill inventory, per-provider browser profile,
+authorization matrix, spend/capacity bounds and onboarding receipt.
+
+- [ ] Write a failing isolated-home test proving install leaks no credential, customer data, private
+  authorization evidence or original operator path into tracked files.
+- [ ] Implement owner-only directories, explicit provider selection and safe `unknown` defaults.
+- [ ] Collect minimum margin, spend/Connects cap, concurrent-job cap and human-minute value; reject
+  negative or non-numeric bounds.
+- [ ] Run one read-only local capability inventory with no marketplace mutation.
+- [ ] Run isolated-home tests and commit/push.
+
+## Phase B — Upwork first complete autonomous adapter
+
+### Task 7: Record Upwork's private action matrix
+
+**Files:**
+- Create: `skills/earn/gig/config/upwork-actions.public.json`
+- Create: `skills/earn/gig/tests/test_upwork_authorization.py`
+
+**Interfaces:** Declares search, inspect, propose, message, accept offer, deliver milestone, read
+payments and read payouts; private receipts determine API/browser transport.
+
+- [ ] Write a failing test requiring every named action and denying an unlisted action.
+- [ ] Add safe public `unknown` entries with official evidence URLs and terms retrieval hashes.
+- [ ] Record Dais's special approval privately for only its actual account/actions/transports.
+- [ ] Run authorization readback without printing account IDs, credentials or evidence content.
+- [ ] Run focused tests and commit/push the public template only.
+
+### Task 8: Implement Upwork authenticated transport selection
+
+**Files:**
+- Create: `skills/earn/gig/scripts/providers/upwork_transport.py`
+- Create: `skills/earn/gig/tests/test_upwork_transport.py`
+
+**Interfaces:** Produces `UpworkTransport.for_action(action)` selecting approved official API first,
+then approved CloakBrowser; never falls through from an unauthorized transport.
+
+- [ ] Write failing tests for API preference, approved browser fallback, expired authorization and
+  zero transport.
+- [ ] Implement bounded OAuth2 token handling and existing CloakBrowser profile lookup without
+  logging tokens/cookies.
+- [ ] Ensure API and browser share one logical effect identity.
+- [ ] Run a real authenticated read-only identity probe and retain a redacted private receipt.
+- [ ] Run focused tests and commit/push.
+
+### Task 9: Discover and normalize Upwork jobs
+
+**Files:**
+- Create: `skills/earn/gig/scripts/providers/upwork_adapter.py`
+- Create: `skills/earn/gig/tests/test_upwork_discovery.py`
+
+**Interfaces:** Implements `discover()` and `inspect()` returning canonical opportunities.
+
+- [ ] Write fixture tests requiring job ID, URL, title, full scope, skills, currency, budget/rate,
+  client evidence, activity, Connects cost and observed timestamp.
+- [ ] Reject partial rows, deleted jobs, stale identities and unsupported currencies.
+- [ ] Implement bounded cursor pagination through the selected authorized transport.
+- [ ] Run one live discovery twice; assert stable IDs and zero proposal/message effects.
+- [ ] Run focused tests and commit/push.
+
+### Task 10: Qualify jobs against installed Skills and capacity
+
+**Files:**
+- Create: `skills/earn/gig/scripts/opportunity_qualifier.py`
+- Create: `skills/earn/gig/tests/test_opportunity_qualifier.py`
+
+**Interfaces:** Produces `Qualification(eligible, workflow, expected_net, risks, evidence)`.
+
+- [ ] Write failing tests for missing Skill, impossible deadline, capacity exhaustion, negative
+  expected net, unverifiable deliverable and false profile claim.
+- [ ] Reuse the installed Skill registry and current paid-project capacity; add no Upwork-only
+  fulfillment planner.
+- [ ] Calculate expected net from observed budget/rate, fee, Connects, tool cost and risk reserve.
+- [ ] Require a concrete workflow and independent verifier before `eligible=true`.
+- [ ] Run focused tests and commit/push.
+
+### Task 11: Generate evidence-bound Upwork proposals
+
+**Files:**
+- Create: `skills/earn/gig/scripts/providers/upwork_proposal.py`
+- Create: `skills/earn/gig/tests/test_upwork_proposal.py`
+
+**Interfaces:** Produces immutable proposal payload with job evidence, price, milestones, delivery
+workflow, claims evidence and payload hash.
+
+- [ ] Write failing tests for generic copy, unsupported claims, absent scope reference, price outside
+  bounds and missing deliverability proof.
+- [ ] Generate one tailored proposal from official job facts and factual owner assets only.
+- [ ] Bind price and milestone dates to the qualification/capacity receipt.
+- [ ] Freeze the exact body and attachments before creating an effect intent.
+- [ ] Run focused tests and commit/push.
+
+### Task 12: Submit one Upwork proposal exactly once
+
+**Files:**
+- Modify: `skills/earn/gig/scripts/providers/upwork_adapter.py`
+- Create: `skills/earn/gig/tests/test_upwork_proposal_effect.py`
+
+**Interfaces:** Implements `plan_effect(propose)`, `reconcile()`, `execute()` and `readback()`.
+
+- [ ] Write a failing crash matrix: before effect, lost ACK, provider timeout, success readback and
+  repeated tick.
+- [ ] Persist authorization hash, job ID, proposal payload hash and Connects pre-state before effect.
+- [ ] Execute one authorized proposal through API or CloakBrowser.
+- [ ] Require proposal ID plus Connects post-state; on uncertainty enter `reconcile_unknown`.
+- [ ] Replay the same tick, assert zero new proposal and zero additional Connects; commit/push.
+
+### Task 13: Collect Upwork conversations and offers
+
+**Files:**
+- Create: `skills/earn/gig/scripts/providers/upwork_inbox.py`
+- Create: `skills/earn/gig/tests/test_upwork_inbox.py`
+
+**Interfaces:** Produces stable message/story, room, offer and contract identities.
+
+- [ ] Write failing tests for changed-head detection, duplicate events, edited terms and stale room
+  state.
+- [ ] Implement bounded polling using the existing outbox identity pattern.
+- [ ] Persist buyer message before semantic work and bind it to job/proposal IDs.
+- [ ] Normalize offer amount, fee, milestones, deadline and current contract state.
+- [ ] Run a live read-only inbox reconciliation and focused tests; commit/push.
+
+### Task 14: Negotiate and message exactly once
+
+**Files:**
+- Create: `skills/earn/gig/scripts/providers/upwork_negotiate.py`
+- Create: `skills/earn/gig/tests/test_upwork_negotiate.py`
+
+**Interfaces:** Produces accept, counter, clarify or decline decision and message intent.
+
+- [ ] Write failing tests for scope expansion, price below floor, impossible deadline, conflicting
+  terms, near-duplicate reply and expired message identity.
+- [ ] Reuse Coconala reply freshness, duplicate and durable outbox behavior.
+- [ ] Generate a decision from current official thread and capacity evidence.
+- [ ] Execute one authorized message and require story/message ID readback.
+- [ ] Replay the event with zero duplicate message; run tests and commit/push.
+
+### Task 15: Accept an Upwork offer safely
+
+**Files:**
+- Create: `skills/earn/gig/scripts/providers/upwork_contract.py`
+- Create: `skills/earn/gig/tests/test_upwork_contract.py`
+
+**Interfaces:** Produces canonical contract state and one acceptance effect.
+
+- [ ] Write failing tests for terms differing from the accepted negotiation, capacity race, missing
+  funding/milestone evidence and duplicate acceptance.
+- [ ] Re-read official offer immediately before the effect.
+- [ ] Persist offer terms hash and capacity reservation atomically.
+- [ ] Execute one authorized acceptance and require active contract ID/state.
+- [ ] Replay with no additional effect; run tests and commit/push.
+
+### Task 16: Create an immutable project workspace
+
+**Files:**
+- Create: `skills/earn/gig/scripts/project_workspace.py`
+- Create: `skills/earn/gig/tests/test_project_workspace.py`
+
+**Interfaces:** Produces owner-only project directory, source manifest, workflow version, deadline,
+artifact manifest and client-data policy.
+
+- [ ] Write failing tests for path traversal, shared-client directory, missing contract scope and
+  secret copied to public/log paths.
+- [ ] Create one workspace from canonical contract data; mode all private state owner-only.
+- [ ] Bind inputs and workflow version by SHA-256; preserve revisions rather than overwriting.
+- [ ] Project canonical lifecycle events into `project_ledger.py`.
+- [ ] Run focused tests and commit/push.
+
+### Task 17: Execute the contracted Skill workflow
+
+**Files:**
+- Create: `skills/earn/gig/scripts/workflow_executor.py`
+- Create: `skills/earn/gig/tests/test_workflow_executor.py`
+
+**Interfaces:** Produces artifact versions, provenance, cost, elapsed time and execution receipt.
+
+- [ ] Write failing tests for uninstalled Skill, changed contract scope, expired deadline budget,
+  missing output and secret leakage.
+- [ ] Execute only the workflow frozen at qualification/contract acceptance.
+- [ ] Checkpoint each completed step and resume without repeating completed external effects.
+- [ ] Record model/tool cost and artifact hashes in the private ledger.
+- [ ] Run focused tests and commit/push.
+
+### Task 18: Independently verify deliverables
+
+**Files:**
+- Create: `skills/earn/gig/scripts/deliverable_verifier.py`
+- Create: `skills/earn/gig/tests/test_deliverable_verifier.py`
+
+**Interfaces:** Returns `PASS`, `REVISE`, `BLOCKED` with contract clause, artifact hash and evidence.
+
+- [ ] Write failing tests rejecting self-approval, wrong artifact hash, missing contract criterion,
+  unsupported factual claim and private-data leak.
+- [ ] Run deterministic validators before model review.
+- [ ] Use an independent review context bound to exact contract and artifact hashes.
+- [ ] Permit delivery intent only from `PASS`; route `REVISE` back to Task 17.
+- [ ] Run focused tests and commit/push.
+
+### Task 19: Deliver an Upwork milestone exactly once
+
+**Files:**
+- Create: `skills/earn/gig/scripts/providers/upwork_delivery.py`
+- Create: `skills/earn/gig/tests/test_upwork_delivery.py`
+
+**Interfaces:** Produces submission ID/state and binds it to contract, milestone and artifact hashes.
+
+- [ ] Write the lost-ACK/repeated-tick/changed-artifact failing matrix.
+- [ ] Persist delivery intent only after independent `PASS` and fresh contract readback.
+- [ ] Execute one authorized milestone submission with frozen message/files.
+- [ ] Require official submission ID and `Submitted` state; reconcile before any resubmission.
+- [ ] Replay with zero duplicate delivery; run tests and commit/push.
+
+### Task 20: Process Upwork revisions
+
+**Files:**
+- Create: `skills/earn/gig/scripts/providers/upwork_revision.py`
+- Create: `skills/earn/gig/tests/test_upwork_revision.py`
+
+**Interfaces:** Normalizes revision request, in-scope decision, new artifact version and resubmission.
+
+- [ ] Write failing tests for duplicate request, out-of-scope work, changed deadline and overwritten
+  original artifact.
+- [ ] Bind revision to provider message/milestone identity.
+- [ ] Route in-scope work through Tasks 17–19; route scope changes through negotiation.
+- [ ] Record revision time/cost for economics.
+- [ ] Run focused tests and commit/push.
+
+### Task 21: Reconcile Upwork payment, fee and payout
+
+**Files:**
+- Create: `skills/earn/gig/scripts/providers/upwork_finance.py`
+- Create: `skills/earn/gig/tests/test_upwork_finance.py`
+
+**Interfaces:** Implements `list_payments()` returning gross, fee, refund/chargeback, released state,
+payout availability and provider transaction IDs.
+
+- [ ] Write failing tests separating pending balance, released payment, available payout, refund,
+  chargeback and missing source window.
+- [ ] Normalize official transaction IDs and forbid one transaction in two accounting periods.
+- [ ] Join payment to contract, delivery and actual execution cost.
+- [ ] Recognize revenue only from complete released/received evidence; retain missing fields as
+  `unknown`.
+- [ ] Reconcile the first live payment and commit/push after focused tests pass.
+
+### Task 22: Close the Upwork three-job repeatability gate
+
+**Files:**
+- Create: `skills/earn/gig/tests/test_upwork_repeatability_gate.py`
+- Modify: `skills/earn/gig/scripts/market_factory.py`
+
+**Interfaces:** Advances Upwork from `payment` to `repeatable/active`.
+
+- [ ] Write a failing gate for fewer than three independent contract/payment IDs, any duplicate
+  effect, incomplete cost, late unhandled delivery or open reconciliation.
+- [ ] Run three natural paid Upwork paths through Tasks 9–21; do not synthesize receipts.
+- [ ] Reconcile every effect and payment from current provider state.
+- [ ] Advance only when all three paths pass; otherwise persist the exact failed entity/stage.
+- [ ] Run gate tests and commit/push.
+
+## Phase C — Fiverr second complete adapter
+
+### Task 23: Record Fiverr authorization and authenticated transport
+
+**Files:**
+- Create: `skills/earn/gig/config/fiverr-actions.public.json`
+- Create: `skills/earn/gig/scripts/providers/fiverr_transport.py`
+- Create: `skills/earn/gig/tests/test_fiverr_transport.py`
+
+**Interfaces:** Covers Gig read/write, inquiry/message, custom offer, order, delivery, revision,
+earnings and payout actions.
+
+- [ ] Write failing tests for exact action coverage, safe public defaults and approved browser/API
+  selection.
+- [ ] Record account-specific approval privately; never treat Personal Assistant eligibility as
+  general external authorization.
+- [ ] Reuse the isolated CloakBrowser provider profile and shared effect identity.
+- [ ] Run authenticated read-only profile/catalogue readback.
+- [ ] Run tests and commit/push public code/config only.
+
+### Task 24: Build and publish a Fiverr Gig canary
+
+**Files:**
+- Create: `skills/earn/gig/scripts/providers/fiverr_catalogue.py`
+- Create: `skills/earn/gig/tests/test_fiverr_catalogue.py`
+
+**Interfaces:** Produces factual Gig title, packages, price, FAQ, requirements, assets and official
+Gig ID/state.
+
+- [ ] Write failing tests for unfulfillable package, unsupported claim, price below margin, missing
+  requirements and duplicate publication.
+- [ ] Generate one catalogue entry from installed Skills and independent verifier coverage.
+- [ ] Persist publication intent and execute one authorized publish/update effect.
+- [ ] Require official Gig ID, visible state and exact package readback.
+- [ ] Replay with zero duplicate Gig; run tests and commit/push.
+
+### Task 25: Handle Fiverr inquiries and custom offers
+
+**Files:**
+- Create: `skills/earn/gig/scripts/providers/fiverr_inbox.py`
+- Create: `skills/earn/gig/tests/test_fiverr_inbox.py`
+
+**Interfaces:** Normalizes conversation identity and executes reply/custom-offer effects.
+
+- [ ] Write failing tests for first auto-reply, Personal Assistant handoff, duplicate message,
+  unclear requirements and custom offer outside bounds.
+- [ ] Persist inquiry before semantic work and choose official assistant or direct authorized effect
+  from current capability.
+- [ ] Generate tailored qualification/reply and one bounded custom offer.
+- [ ] Require message and offer IDs through official page readback.
+- [ ] Replay with no duplicates; run tests and commit/push.
+
+### Task 26: Normalize Fiverr orders and capacity
+
+**Files:**
+- Create: `skills/earn/gig/scripts/providers/fiverr_order.py`
+- Create: `skills/earn/gig/tests/test_fiverr_order.py`
+
+**Interfaces:** Produces canonical project state from order, requirements, delivery date and revision
+terms.
+
+- [ ] Write failing tests for incomplete requirements, conflicting package, capacity overflow,
+  cancelled order and changed delivery deadline.
+- [ ] Reserve capacity only after official active-order readback.
+- [ ] Create the same immutable project workspace used by Upwork.
+- [ ] Route requirements gaps through one durable buyer message.
+- [ ] Run tests and commit/push.
+
+### Task 27: Fulfill, verify, deliver and revise Fiverr orders
+
+**Files:**
+- Create: `skills/earn/gig/scripts/providers/fiverr_delivery.py`
+- Create: `skills/earn/gig/tests/test_fiverr_delivery.py`
+
+**Interfaces:** Uses common workflow/QA; returns official delivery/revision state.
+
+- [ ] Write failing tests for placeholder delivery, partial unauthorized delivery, duplicate
+  delivery, changed artifact and out-of-scope revision.
+- [ ] Run Tasks 17–18 against the Fiverr order workspace.
+- [ ] Persist one delivery intent and require official delivered state/readback.
+- [ ] Version revisions and account for their cost without overwriting prior artifacts.
+- [ ] Replay with zero duplicate delivery; run tests and commit/push.
+
+### Task 28: Reconcile Fiverr earnings and close its first-payment gate
+
+**Files:**
+- Create: `skills/earn/gig/scripts/providers/fiverr_finance.py`
+- Create: `skills/earn/gig/tests/test_fiverr_finance.py`
+
+**Interfaces:** Produces order-bound gross, provider fee, cleared earnings, withdrawal and payout
+states.
+
+- [ ] Write failing tests separating completed order, clearing period, withdrawable balance,
+  withdrawal and unknown payout.
+- [ ] Join official earnings to order/delivery and actual execution/revision cost.
+- [ ] Recognize only cleared/received revenue according to the canonical accounting contract.
+- [ ] Close the first-payment gate with a real receipt, then repeat until the same three-job gate as
+  Upwork passes.
+- [ ] Run tests and commit/push.
+
+## Phase D — Extract the reusable Market Factory after two markets
+
+### Task 29: Prove kernel parity and remove provider branching
+
+**Files:**
+- Create: `skills/earn/gig/tests/test_two_market_kernel_parity.py`
+- Modify: `skills/earn/gig/scripts/provider_adapter.py`
+- Modify: `skills/earn/gig/scripts/market_factory.py`
+
+**Interfaces:** Makes Upwork and Fiverr pass one shared contract suite.
+
+- [ ] Write parity assertions for discover, sale, conversation, contract/order, workspace, QA,
+  delivery, payment and replay.
+- [ ] Identify every provider conditional outside `scripts/providers/`; move only transport/state
+  normalization behind the adapter contract.
+- [ ] Preserve Coconala behavior and effect keys.
+- [ ] Run Coconala, Upwork and Fiverr focused suites together.
+- [ ] Commit/push only after all three paths pass.
+
+### Task 30: Create a provider adapter template and conformance suite
+
+**Files:**
+- Create: `skills/earn/gig/scripts/providers/template_adapter.py`
+- Create: `skills/earn/gig/tests/provider_contract.py`
+- Create: `skills/earn/gig/tests/test_template_adapter.py`
+
+**Interfaces:** Lets every subsequent provider supply transport/normalization while inheriting
+authorization, intent, QA, finance and replay checks.
+
+- [ ] Write a template fixture containing opportunity, message, project, delivery and payment states.
+- [ ] Require all eight adapter operations and explicit unsupported actions.
+- [ ] Make the conformance suite fail any success without provider identity/readback.
+- [ ] Prove the template uses no live credentials and performs zero effects.
+- [ ] Run tests and commit/push.
+
+### Task 31: Implement single-market probe and selection
+
+**Files:**
+- Create: `skills/earn/gig/scripts/next_market_selector.py`
+- Create: `skills/earn/gig/tests/test_next_market_selector.py`
+
+**Interfaces:** Selects one next market from authorization, observed demand, expected net, human
+minutes and account risk; default tie order is LinkedIn, Mercor, Welocalize, TELUS, uTest, Prolific,
+Outlier, Babel.
+
+- [ ] Write failing tests for deterministic ties, denied actions, negative margin, unknown evidence
+  and an already-active market.
+- [ ] Implement pure scoring from receipts; no model opinion or estimated social-post earnings.
+- [ ] Select exactly one candidate and lock it until `active/assisted/denied/unprofitable`.
+- [ ] Prove all other unbuilt markets remain effect-off.
+- [ ] Run tests and commit/push.
+
+## Phase E — Add every remaining market one at a time
+
+### Task 32: Add LinkedIn lead discovery
+
+**Files:**
+- Create: `skills/earn/gig/scripts/providers/linkedin_adapter.py`
+- Create: `skills/earn/gig/tests/test_linkedin_adapter.py`
+
+**Interfaces:** Produces lead/company/job identities and approved outreach capability.
+
+- [ ] Record action-level API/browser authorization and safe public defaults.
+- [ ] Write fixtures for duplicate leads, stale jobs and unsupported outreach.
+- [ ] Run one authenticated read-only lead receipt.
+- [ ] If outreach is approved, send one canary message and require message/thread readback.
+- [ ] Attribute any resulting contract/payment to the original lead; test and commit/push.
+
+### Task 33: Close LinkedIn's market disposition
+
+**Files:**
+- Create: `skills/earn/gig/tests/test_linkedin_market_gate.py`
+- Modify: `skills/earn/gig/scripts/market_factory.py`
+
+- [ ] Require one complete lead→conversation→contract→payment chain for `active`.
+- [ ] Mark `assisted` only when an irreducible ceremony is evidenced.
+- [ ] Mark `denied` or `unprofitable` from authorization/economics evidence, not inconvenience.
+- [ ] Reconcile all effects before unlocking the next market.
+- [ ] Run gate tests and commit/push.
+
+### Task 34: Add Mercor role matching and account workflow
+
+**Files:**
+- Create: `skills/earn/gig/scripts/providers/mercor_adapter.py`
+- Create: `skills/earn/gig/tests/test_mercor_adapter.py`
+
+- [ ] Record action-level authorization for profile, applications, scheduling, interview and
+  post-match work.
+- [ ] Write tests forbidding fabricated credentials and automating an interview outside approval.
+- [ ] Implement role matching, factual profile assets and authorized application/readback.
+- [ ] Represent required identity/interview as a typed ceremony; resume from official state.
+- [ ] Trace the first matched work/payment or terminal disposition; test and commit/push.
+
+### Task 35: Close Mercor's market disposition
+
+**Files:**
+- Create: `skills/earn/gig/tests/test_mercor_market_gate.py`
+- Modify: `skills/earn/gig/scripts/market_factory.py`
+
+- [ ] Require provider role/application/project/payment identities.
+- [ ] Account for interview/human minutes separately from agent work.
+- [ ] Verify no ceremony is silently counted as autonomous success.
+- [ ] Reconcile and set `active/assisted/denied/unprofitable`.
+- [ ] Run tests and commit/push.
+
+### Task 36: Add Welocalize project adapter
+
+**Files:**
+- Create: `skills/earn/gig/scripts/providers/welocalize_adapter.py`
+- Create: `skills/earn/gig/tests/test_welocalize_adapter.py`
+
+- [ ] Resolve authorization per project/task type rather than account-wide.
+- [ ] Write fixtures for locale, rubric, source confidentiality, deadline and pay unit.
+- [ ] Implement authorized discovery, claim, locale workflow, QA, submission and readback.
+- [ ] Reconcile the first payment with task IDs and actual cost/human minutes.
+- [ ] Run conformance tests and commit/push.
+
+### Task 37: Close Welocalize's market disposition
+
+**Files:**
+- Create: `skills/earn/gig/tests/test_welocalize_market_gate.py`
+- Modify: `skills/earn/gig/scripts/market_factory.py`
+
+- [ ] Require a complete authorized project receipt path or explicit terminal evidence.
+- [ ] Reject cross-project reuse of customer data or authorization.
+- [ ] Compare verified net per agent and human minute.
+- [ ] Set terminal disposition and unlock the next market.
+- [ ] Run tests and commit/push.
+
+### Task 38: Add TELUS Digital project adapter
+
+**Files:**
+- Create: `skills/earn/gig/scripts/providers/telus_adapter.py`
+- Create: `skills/earn/gig/tests/test_telus_adapter.py`
+
+- [ ] Record authorization per role/project/action and identity requirement.
+- [ ] Write tests separating agent preparation/administration from required human judgment.
+- [ ] Implement authorized discovery, task scheduling, evidence collection, submission and readback.
+- [ ] Use typed ceremonies only for required human acts and record their minutes.
+- [ ] Reconcile first payment or terminal disposition; test and commit/push.
+
+### Task 39: Close TELUS Digital's market disposition
+
+**Files:**
+- Create: `skills/earn/gig/tests/test_telus_market_gate.py`
+- Modify: `skills/earn/gig/scripts/market_factory.py`
+
+- [ ] Require task, submission and payment receipts for active/assisted status.
+- [ ] Reject revenue attribution when required human judgment was omitted or fabricated.
+- [ ] Calculate verified net per scarce human minute.
+- [ ] Set terminal disposition and reconcile all effects.
+- [ ] Run tests and commit/push.
+
+### Task 40: Add uTest confidential-cycle adapter
+
+**Files:**
+- Create: `skills/earn/gig/scripts/providers/utest_adapter.py`
+- Create: `skills/earn/gig/tests/test_utest_adapter.py`
+
+- [ ] Record cycle-specific authorization, devices, scope and confidentiality.
+- [ ] Write tests for customer-data isolation, duplicate bug submission and missing reproduction.
+- [ ] Implement authorized cycle discovery, test execution orchestration, bug-report QA, submission
+  and readback.
+- [ ] Keep each customer in an isolated owner-only workspace.
+- [ ] Reconcile first payment or terminal disposition; test and commit/push.
+
+### Task 41: Close uTest's market disposition
+
+**Files:**
+- Create: `skills/earn/gig/tests/test_utest_market_gate.py`
+- Modify: `skills/earn/gig/scripts/market_factory.py`
+
+- [ ] Require cycle, bug/task, acceptance and payment identities.
+- [ ] Verify public fixtures/logs contain no client content.
+- [ ] Attribute rejected bugs and human device minutes as cost.
+- [ ] Set terminal disposition after full reconciliation.
+- [ ] Run tests and commit/push.
+
+### Task 42: Add Prolific study-specific adapter
+
+**Files:**
+- Create: `skills/earn/gig/scripts/providers/prolific_adapter.py`
+- Create: `skills/earn/gig/tests/test_prolific_adapter.py`
+
+- [ ] Resolve AI/automation authorization independently for every study.
+- [ ] Write tests excluding unauthorized studies and preventing one submission per participant from
+  duplicating.
+- [ ] Implement authorized study discovery, eligibility, completion workflow, submission/readback.
+- [ ] Include attention/human requirements and expected hourly net in qualification.
+- [ ] Reconcile first payment or terminal disposition; test and commit/push.
+
+### Task 43: Close Prolific's market disposition
+
+**Files:**
+- Create: `skills/earn/gig/tests/test_prolific_market_gate.py`
+- Modify: `skills/earn/gig/scripts/market_factory.py`
+
+- [ ] Require study permission, submission and payment IDs.
+- [ ] Prove unauthorized studies caused zero effects.
+- [ ] Calculate net after time/tool cost and rejection risk.
+- [ ] Set terminal disposition and reconcile.
+- [ ] Run tests and commit/push.
+
+### Task 44: Add Outlier project-specific adapter
+
+**Files:**
+- Create: `skills/earn/gig/scripts/providers/outlier_adapter.py`
+- Create: `skills/earn/gig/tests/test_outlier_adapter.py`
+
+- [ ] Resolve authorization per project and exact automation action.
+- [ ] Write tests for rubric version, provenance, prohibited assistance and duplicate task submit.
+- [ ] Implement authorized task claim, rubric-bound workflow, QA, submission and readback.
+- [ ] Preserve all source/output provenance privately.
+- [ ] Reconcile first payment or terminal disposition; test and commit/push.
+
+### Task 45: Close Outlier's market disposition
+
+**Files:**
+- Create: `skills/earn/gig/tests/test_outlier_market_gate.py`
+- Modify: `skills/earn/gig/scripts/market_factory.py`
+
+- [ ] Require project permission, task, accepted submission and payment IDs.
+- [ ] Reject global authorization inferred from one project.
+- [ ] Attribute rework/rejection and human minutes as cost.
+- [ ] Set terminal disposition and reconcile.
+- [ ] Run tests and commit/push.
+
+### Task 46: Add Babel Audio capture adapter
+
+**Files:**
+- Create: `skills/earn/gig/scripts/providers/babel_audio_adapter.py`
+- Create: `skills/earn/gig/tests/test_babel_audio_adapter.py`
+
+- [ ] Record action authorization and exact human voice/capture requirement.
+- [ ] Write tests for wrong speaker/session, missing consent, bad audio QA and duplicate upload.
+- [ ] Implement discovery, scheduling, typed physical-capture ceremony, audio validation, authorized
+  upload and readback.
+- [ ] Bind source artifact, consent, submission and payment identities without committing audio.
+- [ ] Reconcile first payment or terminal disposition; test and commit/push.
+
+### Task 47: Close Babel Audio and the ten-market queue
+
+**Files:**
+- Create: `skills/earn/gig/tests/test_all_market_dispositions.py`
+- Modify: `skills/earn/gig/scripts/market_factory.py`
+
+- [ ] Require every named market to be `active`, `assisted`, `denied` or `unprofitable`; no silent
+  `research` remains.
+- [ ] Require all mutation-capable lanes to pass conformance and duplicate-replay tests.
+- [ ] Require assisted lanes to report exact human minutes and resume receipts.
+- [ ] Reconcile all open effects before closing the queue.
+- [ ] Run the all-market test and commit/push.
+
+## Phase F — General self-improving portfolio agent
+
+### Task 48: Define immutable Skill bundles
+
+**Files:**
+- Create: `skills/earn/gig/scripts/skill_bundle.py`
+- Create: `skills/earn/gig/tests/test_skill_bundle.py`
+
+**Interfaces:** Loads `SKILL.md`, `skill.manifest.json`, `workflow.json`, tests and version hash.
+
+- [ ] Write failing tests for missing files, mutable version, undeclared tool/effect, absolute path
+  and secret-bearing fixture.
+- [ ] Implement strict bundle validation and content hash.
+- [ ] Index existing Gig Skills without copying them.
+- [ ] Prove the same bundle is immutable and a changed bundle receives a new version.
+- [ ] Run tests and commit/push.
+
+### Task 49: Compose existing Skills before generating code
+
+**Files:**
+- Create: `skills/earn/gig/scripts/skill_composer.py`
+- Create: `skills/earn/gig/tests/test_skill_composer.py`
+
+**Interfaces:** Produces a workflow from installed Skill inputs/outputs or an evidence-bound
+`CapabilityGap`.
+
+- [ ] Write tests where composition succeeds, type mismatch fails and no installed Skill closes the
+  gap.
+- [ ] Select the shortest valid workflow with declared verifier coverage.
+- [ ] Require observed opportunity or failure evidence before emitting a gap.
+- [ ] Do not scaffold code from a speculative gap.
+- [ ] Run tests and commit/push.
+
+### Task 50: Add Skill replay and sandbox evaluation
+
+**Files:**
+- Create: `skills/earn/gig/scripts/skill_replay.py`
+- Create: `skills/earn/gig/tests/test_skill_replay.py`
+
+**Interfaces:** Returns `ReplayPassed/Rejected` from redacted fixtures with all effects disabled.
+
+- [ ] Write failing tests for attempted effect, nondeterministic receipt, missing cost and changed
+  expected artifact.
+- [ ] Replay historical provider/work states in an isolated temporary home.
+- [ ] Compare artifact, provider intent and accounting projections to expected hashes.
+- [ ] Reject any bundle that touches live credentials or transports.
+- [ ] Run tests and commit/push.
+
+### Task 51: Add Skill canary, pause and rollback
+
+**Files:**
+- Create: `skills/earn/gig/scripts/skill_promotion.py`
+- Create: `skills/earn/gig/tests/test_skill_promotion.py`
+
+**Interfaces:** Implements `Proposed → ReplayPassed → Canary → Active/Paused/Reverted/Retired`.
+
+- [ ] Write tests for direct activation, inconclusive pause, guardrail rollback and rollback-window
+  expiry.
+- [ ] Permit one canary effect/account at a time and persist prior version.
+- [ ] Abort acquisition on quality/account/effect guardrail failure while preserving paid work.
+- [ ] Restore the prior version and prove readback after revert.
+- [ ] Run tests and commit/push.
+
+### Task 52: Implement the Portfolio CEO decision function
+
+**Files:**
+- Create: `skills/earn/gig/scripts/portfolio_ceo.py`
+- Create: `skills/earn/gig/tests/test_portfolio_ceo.py`
+
+**Interfaces:** Produces one `PortfolioAction` from deadlines, reconciliations, authorized
+opportunities, capacity, expected verified net, human minutes and experiments.
+
+- [ ] Write priority tests: paid deadline > unknown-effect reconcile > fulfillment > acquisition >
+  experiment > Skill build.
+- [ ] Write economic tests for fees, Connects/bids, tools, refunds, chargebacks, risk and human-minute
+  cost.
+- [ ] Reuse existing founder allocator/bandit logic rather than creating a second optimizer.
+- [ ] Return one action and durable reasoning evidence; never execute inside the scorer.
+- [ ] Run tests and commit/push.
+
+### Task 53: Connect CEO decisions to the existing wake loop
+
+**Files:**
+- Modify: `runtime/loop/index.mjs`
 - Modify: `skills/earn/gig/scripts/application_direct.py`
-- Create: `skills/earn/gig/tests/test_upwork_application_effect.py`
+- Create: `skills/earn/gig/tests/test_portfolio_wake_contract.py`
 
-- [ ] Write a failing crash-recovery test: persisted intent plus unknown response performs read-only
-      reconcile and never blindly resubmits.
-- [ ] Route exactly one qualified proposal through the existing application effect fence.
-- [ ] Persist intent before the call and require official application/proposal ID afterward.
-- [ ] Replay the same tick and assert zero additional effects.
-- [ ] Execute one real proposal, then read it through the official API independently.
-- [ ] Acceptance: G3 closes with one intent, one provider effect, one official ID and replay zero.
+**Interfaces:** One existing wake asks Portfolio CEO for one action and routes it to the current
+provider owner; no new daemon or cron.
 
-### Task 7: Add Upwork conversation and contract readback
+- [ ] Write a failing contract test for one wake/one action, active owner lease and duplicate wake.
+- [ ] Add a Gig portfolio capability to the existing registry/wake path.
+- [ ] Route provider effects through their existing owner/fence; never execute from the model loop
+  directly.
+- [ ] Prove duplicate wake creates no duplicate effect and a busy owner leaves durable pending work.
+- [ ] Run Node loop tests and focused Gig tests; commit/push.
 
-**Files:**
-- Modify: `skills/earn/gig/scripts/upwork_adapter.py`
-- Modify: `skills/earn/gig/scripts/reply_action.py`
-- Create: `skills/earn/gig/tests/test_upwork_sales_readback.py`
-
-- [ ] Write a failing test for stable message identity, changed-head detection and contract terms.
-- [ ] Reuse the existing reply composition and near-duplicate gates.
-- [ ] Permit message effects only if Task 3 proves the exact approved messaging capability.
-- [ ] Normalize official offer/contract state; an email or model statement is not a contract.
-- [ ] Replay a recorded conversation and prove no duplicate reply.
-- [ ] Acceptance: one real buyer event reaches a truthful official disposition and any contract uses
-      an official external ID.
-
-### Task 8: Route one paid Upwork job through the existing fulfillment pipeline
-
-**Files:**
-- Modify: `skills/earn/gig/scripts/paid_intake_gate.py`
-- Modify: `skills/earn/gig/scripts/delivery_attempt.py`
-- Create: `skills/earn/gig/tests/test_upwork_paid_delivery.py`
-
-- [ ] Write a failing test that rejects a job without full official scope, source files, deadline,
-      revision terms and permitted data handling.
-- [ ] Map the official contract into the existing project workspace; do not copy the Coconala DOM
-      adapter or create a second builder.
-- [ ] Require independent reviewer PASS bound to artifact hash.
-- [ ] Persist delivery intent, execute once and require official delivery readback.
-- [ ] Replay and assert zero new delivery effect.
-- [ ] Acceptance: one real paid artifact is delivered and read back through the common kernel.
-
-### Task 9: Record received Upwork net revenue
-
-**Files:**
-- Modify: `skills/earn/gig/scripts/revenue_collector.py`
-- Modify: `skills/earn/gig/scripts/kpi_reconciler.py`
-- Create: `skills/earn/gig/tests/test_upwork_revenue.py`
-
-- [ ] Write failing tests for received gross, actual provider fee, refund, AI/subcontract cost,
-      recurring-vs-one-off and source completeness.
-- [ ] Normalize official transaction and fee IDs; prevent one receipt from belonging to two periods
-      or payout batches.
-- [ ] Keep missing source data `unknown`; never coerce an empty API result to zero without a complete
-      source receipt.
-- [ ] Reconcile the first real payment and match it to contract and delivery IDs.
-- [ ] Acceptance: G4 closes only with received money and observed cost; proposal value remains funnel.
-
-### Task 10: Prove three-job repeatability before widening markets
-
-**Files:**
-- Modify: `skills/earn/gig/scripts/kpi_readback_audit.py`
-- Modify: `skills/earn/gig/scripts/lane_productivity.py`
-- Create: `skills/earn/gig/tests/test_marketplace_repeatability_gate.py`
-
-- [ ] Write a failing gate test for three independent contract IDs, complete receipts, zero duplicate
-      effects, capacity consumption and refund/revision costs.
-- [ ] Add a read-only portfolio projection; do not add another scheduler.
-- [ ] Run three natural paid paths and reconcile each from provider source.
-- [ ] Acceptance: G5 closes from official receipts, or remains open with the exact failing entity.
-
-### Task 11: Probe Fiverr as the second-market candidate
-
-**Files:**
-- Create: `skills/earn/gig/scripts/fiverr_adapter.py`
-- Create: `skills/earn/gig/tests/test_fiverr_adapter.py`
-- Modify: `skills/earn/gig/config/marketplace-capabilities.json`
-
-- [ ] Re-read Fiverr automation, AI, account and seller policies and record action-level evidence.
-- [ ] Compare Fiverr's permitted inbound demand and measured expected net with current Lancers and
-      Freelancer evidence; record why Fiverr remains or ceases to be the single candidate.
-- [ ] Implement only Fiverr's read-only capability/auth/catalogue probe.
-- [ ] If no approved machine interface exists, keep Fiverr discovery-only and stop Task 12. Write a
-      replacement design before selecting another provider; do not silently substitute one here.
-- [ ] Acceptance: one Fiverr official read receipt, zero mutation, and a recorded adopt or reject
-      decision.
-
-### Task 12: Carry Fiverr to first payment
-
-**Prerequisite:** Task 11 proves the required Fiverr actions are permitted for the exact account.
-
-**Files:**
-- Modify: `skills/earn/gig/scripts/fiverr_adapter.py`
-- Modify: `skills/earn/gig/scripts/reply_action.py`
-- Create: `skills/earn/gig/tests/test_fiverr_order_effect.py`
-
-- [ ] Reuse Tasks 4–9 in order: discovery, eligibility, effect/readback, sales, fulfillment, payment.
-- [ ] Stop at each receipt gate; do not build later lanes before the prior real receipt exists.
-- [ ] Prove Fiverr adds no provider branch to the builder, reviewer or finance arithmetic.
-- [ ] Acceptance: G6 closes with one verified net payment and replay zero.
-
-### Task 13: Activate bounded strategy evaluation
+### Task 54: Evaluate one bounded revenue experiment
 
 **Files:**
 - Modify: `skills/earn/gig/scripts/experiment_evaluator.py`
-- Modify: `skills/earn/gig/scripts/category_bandit.py`
-- Create: `skills/earn/gig/tests/test_portfolio_evaluator.py`
+- Create: `skills/earn/gig/tests/test_portfolio_experiment.py`
 
-- [ ] Write a failing test for incomplete outcome windows, one-variable mutation, guardrail failure,
-      holdout identity and automatic revert.
-- [ ] Feed only received net contribution, retention, revision/refund cost, quality and account-health
-      evidence into the existing evaluator.
-- [ ] Return `insufficient_evidence` until a complete comparison exists.
-- [ ] Make policy, effect identity, receipt validation and accounting fields non-mutable inputs.
-- [ ] Run one bounded live experiment and preserve before/after strategy receipts.
-- [ ] Acceptance: G7 closes with an evidence-backed keep or revert, not a model opinion.
+**Interfaces:** Evaluates one variable among offer, price bounds, proposal version, category share,
+schedule or workflow version.
 
-### Task 14: Add discovery-only human-work opportunity cards
+- [ ] Write failing tests for incomplete outcome window, two changed variables, missing holdout,
+  revenue without payment and guardrail degradation.
+- [ ] Attribute outcomes to exact provider, project, Skill and strategy versions.
+- [ ] Return only `insufficient_evidence`, `keep`, `pause`, `revert` or `retire`.
+- [ ] Execute one bounded live canary and preserve before/after receipts.
+- [ ] Run tests and commit/push.
 
-**Files:**
-- Create: `skills/earn/gig/config/human-work-platforms.json`
-- Create: `skills/earn/gig/scripts/human_work_opportunities.py`
-- Create: `skills/earn/gig/tests/test_human_work_opportunities.py`
-
-- [ ] Encode Mercor, Prolific, Outlier, TELUS, uTest, Welocalize, Babel and LinkedIn as
-      `human_work_only`, `owner_ceremony` or `unknown` from current evidence.
-- [ ] Write a failing test proving the output has no apply, interview, task, message or delivery
-      effect method.
-- [ ] Emit owner-visible opportunity cards with source, compensation claim status, ceremony and
-      expiry; label anecdotal earnings unverified.
-- [ ] Acceptance: these sites can inform an owner without masquerading as autonomous revenue lanes.
-
-### Task 15: Publish the portable installer without private state
+### Task 55: Add evidence-bound Skill repair and creation
 
 **Files:**
-- Modify: `install.sh`
-- Modify: `skills/earn/gig/README.md`
-- Create: `skills/earn/gig/tests/test_marketplace_public_package.py`
+- Modify: `skills/earn/gig/scripts/gig_self_fix.py`
+- Create: `skills/earn/gig/tests/test_skill_factory_gate.py`
 
-- [ ] Extend the guided setup to collect owner facts and run ceremonies before effect enablement.
-- [ ] Default every provider action to effect-off until a valid local capability receipt exists.
-- [ ] Test a clean temporary home for zero credentials, customer content, payout IDs, operator paths
-      and live account identifiers.
-- [ ] Run secret scanning, exact archive tests and one clean third-device setup.
-- [ ] Acceptance: G10 closes only when a new owner can reach one permitted official receipt without
-      copying the original operator's private state.
+**Interfaces:** Turns a repeated typed failure or confirmed capability gap into a branch, minimal
+Skill change, replay and canary proposal.
 
-### Task 16: Close the USD 10,000 and JPY 10,000,000 portfolio gates
+- [ ] Write failing tests for speculative request, missing reproduction, policy-gate mutation,
+  accounting mutation and direct hot reload.
+- [ ] Search installed Skills first; compose when possible.
+- [ ] Permit code generation only from reproducible evidence and constrain edits to the named Skill
+  bundle/tests.
+- [ ] Require normal branch/test/replay/canary/revert sequence before active promotion.
+- [ ] Run tests and commit/push.
+
+### Task 56: Publish the open-source local installer
 
 **Files:**
-- Modify: `skills/earn/gig/scripts/daily_gig_report.py`
-- Modify: `skills/earn/gig/scripts/kpi_reconciler.py`
-- Create: `skills/earn/gig/tests/test_portfolio_revenue_gates.py`
+- Modify: `skills/earn/gig/install.sh`
+- Create: `skills/earn/gig/tests/test_open_source_install.py`
+- Create: `docs/gig-money-loop-install.md`
 
-- [ ] Write failing tests separating recurring, repeat one-off and first-time one-off received net.
-- [ ] Require complete provider source receipts, recorded FX, actual costs and matched payout/bank
-      reconciliation for the period.
-- [ ] Display application, contract, delivery, payment and retention funnels separately.
-- [ ] Close G8 only from at least USD 10,000 verified monthly net.
-- [ ] Continue capacity-safe acquisition and close G9 only from at least JPY 10,000,000 verified
-      monthly net; never convert a plan or balance into revenue.
-- [ ] Acceptance: the report is reproducible from immutable receipts and returns `unknown` for every
-      incomplete source.
+**Interfaces:** A new owner installs locally, connects their own provider, records authorization and
+starts one bounded canary without original operator state.
+
+- [ ] Write an isolated-home archive/install test for zero secrets, identities, customers, payout
+  IDs, runtime ledgers and original absolute paths.
+- [ ] Guide provider login/KYC/payout ceremonies locally without exporting browser state.
+- [ ] Explain safe public defaults, private authorization, spend/capacity bounds, receipts and
+  earnings non-guarantee.
+- [ ] Install on a clean third device and complete one authorized end-to-end receipt path.
+- [ ] Run secret scan/install tests and commit/push.
+
+### Task 57: Close portfolio revenue and replication gates
+
+**Files:**
+- Create: `skills/earn/gig/scripts/portfolio_accounting.py`
+- Create: `skills/earn/gig/tests/test_portfolio_accounting.py`
+- Create: `docs/superpowers/evidence/gig-portfolio-gates.md`
+
+**Interfaces:** Reproduces provider/month funnels and USD/JPY verified-net gates from immutable
+provider/payment/payout evidence.
+
+- [ ] Write tests separating first-time one-off, repeat one-off and recurring received revenue;
+  incomplete sources return `unknown`.
+- [ ] Reconcile gross, actual provider fees, Connects/bids, execution cost, refunds, chargebacks,
+  payout and recorded FX.
+- [ ] Report application, conversation, contract, delivery, payment, retention and human-minute
+  funnels separately.
+- [ ] Close USD 10,000 and JPY 10,000,000 gates only from complete source evidence.
+- [ ] Record clean-device replication evidence; run tests and commit/push.
 
 ## Final verification
 
-- [ ] `git diff --check`
-- [ ] `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q skills/earn/gig/tests`
-- [ ] `python3 -m compileall -q skills/earn/gig`
-- [ ] Secret/PII scan returns zero tracked private values.
-- [ ] Every provider mutation has capability → intent → effect → official readback → receipt.
-- [ ] Every crash replay performs zero blind duplicate effects.
-- [ ] Coconala remains on its verified release and current TODO order throughout expansion.
-- [ ] A clean-device archive proves local installation without original operator state.
-- [ ] Revenue report reconciles to provider and bank evidence; unknown remains visible.
-
-Implementation is intentionally not started by this planning change.
+- [ ] `git diff --check` exits 0.
+- [ ] `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q skills/earn/gig/tests` exits 0 with zero
+  failures.
+- [ ] `python3 -m compileall -q skills/earn/gig` exits 0.
+- [ ] Existing runtime loop Node tests exit 0.
+- [ ] Secret/PII scan reports zero tracked credentials, approvals, customer data and payout details.
+- [ ] Every market has a terminal disposition and every mutation has authorization, intent, effect,
+  authoritative readback and receipt.
+- [ ] Every crash replay produces zero blind duplicate effects.
+- [ ] Coconala production release and repair order remain valid.
+- [ ] Clean-device installation completes one real authorized receipt path.
+- [ ] Portfolio accounting reconciles provider/payment/payout evidence and preserves `unknown`.
