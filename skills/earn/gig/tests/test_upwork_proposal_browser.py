@@ -129,3 +129,41 @@ def test_real_browser_fill_produces_exact_click_free_preflight():
         assert page.locator(".fe-proposal-job-questions textarea").input_value() == "Yes."
         assert page.locator("footer button").get_attribute("data-clicked") is None
         chromium.close()
+
+
+def test_submit_mutation_requires_explicit_positive_fence_decision():
+    assert browser is not None
+    receipt = {"ready": True, "job_id": "~012345678901234"}
+    calls: list[dict[str, object]] = []
+
+    with pytest.raises(ValueError, match="upwork_proposal_effect_not_started"):
+        browser.require_effect_start(receipt, lambda value: calls.append(value) or False)
+    assert calls == [receipt]
+
+    browser.require_effect_start(receipt, lambda value: calls.append(value) or True)
+    assert calls == [receipt, receipt]
+    assert ".click()" in browser.submit_click_expression("~012345678901234")
+
+
+def test_submit_readback_requires_exact_official_proposal_id():
+    assert browser is not None
+    snapshot = {
+        "job_id": "~012345678901234",
+        "form_url": "https://www.upwork.com/ab/proposals/123456789/",
+        "proposal_id": "123456789",
+        "state": "submitted",
+    }
+
+    receipt = browser.validate_submit_readback(snapshot, _payload())
+
+    assert receipt["proposal_id"] == "123456789"
+    assert receipt["state"] == "submitted"
+    assert len(receipt["evidence_sha256"]) == 64
+    with pytest.raises(ValueError, match="upwork_proposal_submit_unconfirmed"):
+        browser.validate_submit_readback({**snapshot, "proposal_id": None}, _payload())
+
+
+def test_apply_path_is_not_a_proposal_receipt():
+    assert browser is not None
+    expression = browser.submit_readback_expression("~012345678901234")
+    assert "(?!job" in expression

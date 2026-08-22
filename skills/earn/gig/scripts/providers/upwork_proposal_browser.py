@@ -9,6 +9,7 @@ import json
 import re
 import sys
 from pathlib import Path
+from collections.abc import Callable
 from typing import Any
 from urllib.parse import urlsplit
 
@@ -29,6 +30,7 @@ _SNAPSHOT_KEYS = {
     "job_id", "required_connects", "screening_answers", "submit_enabled",
     "submit_label", "validation_errors",
 }
+_SUBMIT_KEYS = {"form_url", "job_id", "proposal_id", "state"}
 
 
 def _duration_label(days: Any) -> str:
@@ -70,6 +72,56 @@ return{{job_id:p.job_id,form_url:location.href,required_connects:connects,bid_us
 }})()'''
 
 
+def submit_click_expression(job_id: str) -> str:
+    """Build the only proposal-submit mutation; callers must cross the fence first."""
+    sealed_job = json.dumps(job_id)
+    return f'''(()=>{{
+const job={sealed_job},submit=document.querySelector('footer .air3-btn-primary,footer button[type="submit"],button[data-test*="submit" i]');
+if(!location.pathname.includes('/ab/proposals/job/'+job+'/apply')||!submit||submit.disabled)throw Error('upwork_submit_control_missing');
+submit.click();return true;
+}})()'''
+
+
+def submit_readback_expression(job_id: str) -> str:
+    """Read a post-click receipt without proposal copy."""
+    sealed_job = json.dumps(job_id)
+    return f'''(()=>{{
+const job={sealed_job},body=(document.body.innerText||'').replace(/\\s+/g,' ').trim(),url=location.href;
+const hrefs=[...document.querySelectorAll('a[href]')].map(x=>x.href).concat([url]);
+const match=hrefs.map(x=>x.match(new RegExp('/proposals/(?!job(?:/|$))([^/?#]+)'))).find(Boolean);
+const submitted=/proposal (?:was )?submitted|proposal submitted|view proposal/i.test(body);
+return{{job_id:job,form_url:url,proposal_id:match?match[1]:null,state:submitted&&match?'submitted':'unknown'}};
+}})()'''
+
+
+def validate_submit_readback(snapshot: dict[str, Any], payload: dict[str, Any]) -> dict[str, str]:
+    """Require an exact official proposal identifier after the one click."""
+    if not isinstance(snapshot, dict) or set(snapshot) != _SUBMIT_KEYS:
+        raise ValueError("upwork_proposal_submit_unconfirmed")
+    job_id = payload.get("job_id") if isinstance(payload, dict) else None
+    proposal_id = snapshot.get("proposal_id")
+    url = urlsplit(str(snapshot.get("form_url") or ""))
+    if (
+        snapshot.get("job_id") != job_id or snapshot.get("state") != "submitted"
+        or not isinstance(proposal_id, str) or not proposal_id.strip()
+        or url.scheme != "https" or url.netloc != "www.upwork.com"
+    ):
+        raise ValueError("upwork_proposal_submit_unconfirmed")
+    evidence = hashlib.sha256(json.dumps(
+        snapshot, sort_keys=True, separators=(",", ":"),
+    ).encode()).hexdigest()
+    return {"state": "submitted", "job_id": job_id, "proposal_id": proposal_id,
+            "evidence_sha256": evidence}
+
+
+def require_effect_start(
+    preflight: dict[str, Any], start_effect: Callable[[dict[str, Any]], bool],
+) -> None:
+    """Make a durable positive fence decision mandatory before the click expression."""
+    if not callable(start_effect) or start_effect(preflight) is not True:
+        raise ValueError("upwork_proposal_effect_not_started")
+
+
 async def fill_proposal_preflight(payload: dict[str, Any]) -> dict[str, Any]:
     """Fill and read one authenticated hidden proposal form without submit."""
     job_id = payload.get("job_id") if isinstance(payload, dict) else None
@@ -93,6 +145,41 @@ async def fill_proposal_preflight(payload: dict[str, Any]) -> dict[str, Any]:
     if result.get("error") or not isinstance(value, dict):
         raise ValueError("upwork_proposal_preflight_mismatch")
     return validate_preflight(value, payload)
+
+
+async def submit_proposal_after_fence(
+    payload: dict[str, Any], start_effect: Callable[[dict[str, Any]], bool],
+) -> dict[str, str]:
+    """Fill, verify, cross a durable fence, click once, then require official readback."""
+    job_id = payload.get("job_id") if isinstance(payload, dict) else None
+    if not isinstance(job_id, str) or not job_id or not callable(start_effect):
+        raise ValueError("upwork_proposal_preflight_mismatch")
+    apply_url = f"https://www.upwork.com/ab/proposals/job/{job_id}/apply/#/"
+    async with hidden_page_target(apply_url) as ws_url:
+        async with websockets.connect(
+            ws_url, ping_interval=None, open_timeout=10, max_size=40 * 1024 * 1024,
+        ) as ws:
+            await _call(ws, "Page.enable", {}, 1)
+            await _call(ws, "Page.navigate", {"url": apply_url}, 2)
+            _, cid = await _wait_for_load(
+                ws, asyncio.get_event_loop().time() + LOAD_TIMEOUT_SECS, 3,
+            )
+            filled = await _call(ws, "Runtime.evaluate", {
+                "expression": fill_preflight_expression(payload),
+                "awaitPromise": True, "returnByValue": True,
+            }, cid)
+            snapshot = filled.get("result", {}).get("result", {}).get("value")
+            preflight = validate_preflight(snapshot, payload)
+            require_effect_start(preflight, start_effect)
+            await _call(ws, "Runtime.evaluate", {
+                "expression": submit_click_expression(job_id), "returnByValue": True,
+            }, cid + 1)
+            await asyncio.sleep(2)
+            readback = await _call(ws, "Runtime.evaluate", {
+                "expression": submit_readback_expression(job_id), "returnByValue": True,
+            }, cid + 2)
+    value = readback.get("result", {}).get("result", {}).get("value")
+    return validate_submit_readback(value, payload)
 
 
 def validate_preflight(snapshot: dict[str, Any], payload: dict[str, Any]) -> dict[str, Any]:
