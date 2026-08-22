@@ -43,11 +43,33 @@ class WorkdayDiscoveryTests(unittest.TestCase):
 
             ledger = Ledger(ledger_path)
             self.assertEqual(ledger.current_state(first["discovered"][0]["application_id"]), "materials_ready")
+            ledger.transition(first["discovered"][0]["application_id"], "rejected")
             ledger.close()
 
             second = discover_one(ledger_path=ledger_path, fetch_jobs=fake_fetch)
             self.assertEqual(second["status"], "discovered")
             self.assertEqual(second["discovered"][0]["title"], "Technical Account Manager")
+
+    def test_existing_workday_queue_prevents_backlog_growth(self):
+        with tempfile.TemporaryDirectory() as directory:
+            ledger_path = Path(directory) / "ledger.sqlite3"
+            ledger = Ledger(ledger_path)
+            application_id = ledger.add_application(
+                "NVIDIA",
+                "Agent Engineer",
+                "https://nvidia.wd5.myworkdayjobs.com/NVIDIAExternalCareerSite/job/Japan-Tokyo/Agent-Engineer_JR1",
+            )
+            ledger.transition(application_id, "qualified")
+            ledger.transition(application_id, "materials_ready")
+            ledger.close()
+
+            result = discover_one(
+                ledger_path=ledger_path,
+                fetch_jobs=lambda _source: self.fail("provider must not run while queue exists"),
+            )
+
+            self.assertEqual(result["status"], "queue_present")
+            self.assertEqual(result["queued_application_ids"], [application_id])
 
     def test_one_source_failure_does_not_stop_other_tenants(self):
         with tempfile.TemporaryDirectory() as directory:

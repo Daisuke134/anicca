@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 from urllib.request import Request, urlopen
 
+from .browser_agent.queue import RowQueueSupervisor
 from .ledger import Ledger
 from .state import canonical_url, is_excluded_employer
 
@@ -90,6 +91,14 @@ def discover_one(
 ) -> dict[str, Any]:
     ledger = Ledger(ledger_path)
     try:
+        queued = RowQueueSupervisor.collect(ledger, active_provider="workday")
+        if queued:
+            return {
+                "status": "queue_present",
+                "errors": [],
+                "discovered": [],
+                "queued_application_ids": [str(row["application_id"]) for row in queued],
+            }
         seen = {
             canonical_url(str(row[0])).casefold()
             for row in ledger.connection.execute("SELECT canonical_url FROM applications")

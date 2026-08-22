@@ -84,3 +84,8 @@ unrelated dirty paths `docs/loops/x-repost.md` and `state/effective-cron/`.
   removed; a vanished provider option returns `action_rejected` plus fresh observation.
   The row remains `materials_ready`, submit was never called, and it is safe to resume
   after release. Telegram provider ACK remains independently unresolved.
+- Resume run `daily-20260823-033554` had only exit-zero runtime commands and exposed
+  `Job Board not checked`, yet Luna falsely returned `transport_failed`. The prompt
+  now permits that status only after a real nonzero command. Discovery now skips
+  provider calls while an eligible Workday queue exists, so recovery wakes drain
+  checkpoints before adding more rows. No submit fence was consumed; resume again.
