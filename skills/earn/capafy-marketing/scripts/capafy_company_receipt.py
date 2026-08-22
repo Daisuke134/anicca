@@ -42,6 +42,7 @@ def _semantic_payload(sources: dict) -> dict:
     outcome = marketing.get("outcome") if isinstance(marketing, dict) else {}
     outcome = outcome if isinstance(outcome, dict) else {}
     money_source = sources.get("money") or {}
+    growth = sources.get("growth") or {}
     return {
         "skill": {
             "candidate_id": candidate.get("candidate_id"),
@@ -65,6 +66,12 @@ def _semantic_payload(sources: dict) -> dict:
         "money": copy.deepcopy(money_source.get("money") or {}),
         "money_status": copy.deepcopy(money_source.get("money_status") or {}),
         "orders": money_source.get("orders"),
+        "growth_signal": {
+            "signal": growth.get("signal") or "unknown",
+            "company_orders": growth.get("company_orders"),
+            "winner_agent_id": (growth.get("winner") or {}).get("agentId") if isinstance(growth.get("winner"), dict) else None,
+            "attribution_status": growth.get("attribution_status"),
+        },
     }
 
 
@@ -94,6 +101,7 @@ def render_message(receipt: dict) -> str:
     slots = receipt["slots"]
     money = receipt["money"]
     distribution = receipt["distribution"][0]
+    growth = receipt.get("growth_signal") or {}
     post = distribution.get("native_url") or "none"
     mrr = money.get("settled_mrr_usd")
     mrr_text = "unknown" if mrr is None else f"${mrr}"
@@ -102,7 +110,8 @@ def render_message(receipt: dict) -> str:
         f"Candidate: {skill.get('name')} ({skill.get('candidate_id')}) status={skill.get('remote_status')}\n"
         f"Slots: occupied={slots.get('occupied')} free={slots.get('free')} retry={slots.get('retry')} listed={slots.get('listed')}\n"
         f"Latest Reel: {post}\n"
-        f"Money: orders={receipt.get('orders')} gross=${money.get('gross_usd')} pending=${money.get('pending_usd')} realized=${money.get('realized_usd')} refunds=${money.get('refunds_usd')} settled MRR={mrr_text}"
+        f"Money: orders={receipt.get('orders')} gross=${money.get('gross_usd')} pending=${money.get('pending_usd')} realized=${money.get('realized_usd')} refunds=${money.get('refunds_usd')} settled MRR={mrr_text}\n"
+        f"Growth signal: {growth.get('signal')} (winner_agent_id={growth.get('winner_agent_id') or 'none'}; attribution={growth.get('attribution_status') or 'none'})"
     )
 
 
@@ -216,7 +225,9 @@ def _live_sources() -> dict:
     if media_path.is_file():
         outcome["media_sha256"] = "sha256:" + hashlib.sha256(media_path.read_bytes()).hexdigest()
     money = _load(STATE_HOME / "state/capafy-hourly-reconcile.json")
-    return {"inventory": inventory, "candidate": candidate, "marketing": marketing, "money": money}
+    growth_path = STATE_HOME / "state/capafy-sales-ranking.json"
+    growth = _load(growth_path) if growth_path.is_file() else {"signal": "unknown"}
+    return {"inventory": inventory, "candidate": candidate, "marketing": marketing, "money": money, "growth": growth}
 
 
 def main(argv: list[str] | None = None) -> int:

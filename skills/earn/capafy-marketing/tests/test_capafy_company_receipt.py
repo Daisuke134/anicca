@@ -46,6 +46,11 @@ def sources() -> dict:
             "money": {"gross_usd": "19.98", "one_time_revenue_usd": None, "pending_usd": "8.00", "realized_usd": "0.00", "refunds_usd": "0.00", "settled_mrr_usd": None, "net_mrr_usd": None},
             "money_status": {"settled_mrr_usd": "unknown_no_seller_subscription_source"},
         },
+        "growth": {
+            "signal": "unattributed_sales",
+            "company_orders": 5,
+            "attribution_status": "company_orders_exist_agent_sales_unavailable",
+        },
     }
 
 
@@ -59,6 +64,12 @@ def test_receipt_joins_skill_slots_post_money_under_one_run_id() -> None:
     assert receipt["distribution"][0]["native_url"].endswith("/abc/")
     assert receipt["money"]["gross_usd"] == "19.98"
     assert receipt["money"]["settled_mrr_usd"] is None
+    assert receipt["growth_signal"] == {
+        "signal": "unattributed_sales",
+        "company_orders": 5,
+        "winner_agent_id": None,
+        "attribution_status": "company_orders_exist_agent_sales_unavailable",
+    }
     assert receipt["telegram"] == {"status": "pending", "message_id": None}
 
 
