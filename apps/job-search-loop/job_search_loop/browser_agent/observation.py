@@ -41,7 +41,11 @@ class ObservationBuilder:
                 return (own || linked || el.getAttribute('placeholder') || el.innerText || '').trim();
               };
               const nodes = Array.from(document.querySelectorAll('input,button,select,textarea,a,[role]'))
-                .filter(visible);
+                .filter(visible)
+                // Decorative role-bearing SVGs and containers are not
+                // operable model choices.  Every exposed control must have a
+                // user-facing label that the executor can resolve safely.
+                .filter(el => label(el).length > 0);
               const automationCounts = new Map();
               const idCounts = new Map();
               for (const el of nodes) {

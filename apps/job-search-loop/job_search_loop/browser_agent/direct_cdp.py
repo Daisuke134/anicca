@@ -232,6 +232,10 @@ class DirectCDPPage:
         await self.call("Input.dispatchKeyEvent", {"type": "keyDown", "key": "Backspace", "code": "Backspace"})
         await self.call("Input.dispatchKeyEvent", {"type": "keyUp", "key": "Backspace", "code": "Backspace"})
         await self.call("Input.insertText", {"text": text})
+        # Controlled inputs and async pickers commonly render their option
+        # surface on the next task after the input event.  Let that ordinary
+        # UI work settle before the post-action observation is captured.
+        await asyncio.sleep(0.75)
 
     async def select_target(self, target: dict[str, Any], label: str) -> None:
         resolved = await self.resolve_target(target, scroll=True, option_label=label)
