@@ -67,6 +67,10 @@ backlog is:
    and rejects generic `私も〜しがち` commentary. Drafts now require a concrete
    conclusion, why it works, and one executable step; quotes must add a procedure,
    decision criterion, failure condition, or comparison method absent from the source.
+   Release `43d737d2a` also excludes Affiliate and terminal-unverified rows from
+   generation few-shots and ranks the remaining recent exact posts by likes,
+   reposts, then views. A zero-like account therefore learns from measured reach
+   instead of accidentally treating the newest low-quality Affiliate copy as best.
 5. **X05 — PARTIAL, FIRST SNAPSHOT LIVE:** replace early views as the optimizer's sole objective with a funnel
    vector: qualified impressions, profile visits/follows when observable,
    owned-article sessions, CTA clicks, provider clicks, official transactions,
@@ -91,10 +95,10 @@ backlog is:
    queued and never converts a post, view, or click into money.
 
 Current live checkpoint: immutable sparse release
-`20260822T232801-bf20a619` is installed from commit
-`bf20a619a`, pushed to both Repost remotes.
+`20260822T232909-43d737d2` is installed from commit
+`43d737d2a`, pushed to both Repost remotes.
 Source/runtime `x-repost-cli.sh` is byte-equal at SHA-256
-`abb346c1e0e3f0207f3ac08dd144c9f585a5f1e01e91b947a3cfce6efbdd8244`.
+`8737f132633ca5774d171f8c274abc1f7845ace576ae44a3623a547eac0d9258`.
 Its versioned readback lets a newer exact verifier inspect an old terminal row
 once, then records the verifier version on an unresolved row so it cannot retry
 forever. Run 33 read back the 22:13 source-backed original at exact permalink

@@ -2052,3 +2052,10 @@ and runtime SHA-256 are both
 `abb346c1e0e3f0207f3ac08dd144c9f585a5f1e01e91b947a3cfce6efbdd8244`;
 21 tests and shell syntax pass. The next eligible owner effect remains the real
 acceptance test; do not manually publish or bypass same-hour fencing.
+
+Commit `43d737d2a` then repaired the few-shot feedback path: it excludes Affiliate
+and terminal-unverified rows and sorts recent exact posts by likes, reposts, then
+views. This prevents zero-like ties from selecting the newest bad Affiliate copy
+as a style exemplar. Installed release is `20260822T232909-43d737d2`; source and
+runtime SHA-256 are both
+`8737f132633ca5774d171f8c274abc1f7845ace576ae44a3623a547eac0d9258`.
