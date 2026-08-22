@@ -247,7 +247,7 @@ No later task may jump ahead of the first incomplete row:
 | U1 | Resolve existing-account vs signup using the owner email | **DONE:** owner confirmed no account; new freelancer signup completed with normal email flow |
 | U2 | Complete normal email/password signup or login | **DONE:** verification email completed; fresh password login returned the same identity twice |
 | U3 | Complete factual freelancer profile needed to apply | **DONE:** published profile `~01f5fe272d6df34084`; Online, >30 hrs/week, 40% complete |
-| U4 | Observe real job-search, detail and proposal surfaces | Redacted DOM/API field receipt with zero mutation |
+| U4 | Observe real job-search, detail and proposal surfaces | **DONE:** search/detail/proposal-entry receipt; 0 effects, Connects gate identified |
 | U5 | Discover live jobs twice | Stable Upwork job IDs and zero proposal/message effects |
 | U6 | Qualify one job using installed Skills and Upwork-only capacity | Eligible qualification receipt; active Coconala count absent |
 | U7 | Freeze one tailored proposal | Exact body, bid, milestone, claim and attachment hashes |
@@ -262,11 +262,16 @@ No later task may jump ahead of the first incomplete row:
 
 Tasks 13–22 implement U10–U15. Tasks 23–57 remain frozen until U14 closes.
 
-Current U4 evidence: factual profile `~01f5fe272d6df34084` is published with the authentic owner
+U3 closure evidence: factual profile `~01f5fe272d6df34084` is published with the authentic owner
 photo, Status Online and More than 30 hrs/week. The official completion meter is 40%, identity is
 Unverified and Connects is 0. Observe the real search, detail and proposal entry next to determine
 which of those states is an actual submission gate. Live totals remain 0 applications, 0
 conversations, 0 contracts and USD 0 received revenue.
+
+U4 observed query `AI automation Python`, 315 result pages and ten stable job IDs. Detail job
+`~022091070238314681977` exposed title, description, skills, budget, client verification/history,
+activity and Connects fields. Its entry button is `Buy Connects to apply`: 18 required versus 0
+available. No proposal, Connects spend or payment occurred. U5 is now the first incomplete outcome.
 
 ### Task 7: Record Upwork's private action matrix
 

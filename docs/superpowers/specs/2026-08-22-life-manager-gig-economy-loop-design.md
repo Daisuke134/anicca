@@ -38,6 +38,11 @@ Published profile `~01f5fe272d6df34084` reads back Status Online, More than 30 h
 completion. Identity remains Unverified and Connects is 0; U4 must observe a real proposal entry to
 determine whether either state is a submission gate before money is spent.
 
+U4 is closed with a zero-effect live receipt. The observed proposal entry requires 18 Connects while
+the account has 0 and presents `Buy Connects to apply`; no identity-verification gate appeared at
+that entry. Search and detail fields are now grounded in live Upwork DOM rather than inferred provider
+schemas. U5 performs two independent discoveries before any Connects purchase decision.
+
 ## 1. Goal, objective and boundaries
 
 ### 1.1 Goal
