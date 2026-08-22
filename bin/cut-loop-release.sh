@@ -25,6 +25,7 @@ CURRENT="$LOOPS_ROOT/current"
 # state root is intentionally not resolved here (see RELEASE.json note below)
 KEEP="${LOOPS_KEEP_RELEASES:-5}"
 REF="${1:-HEAD}"
+RELEASE_PATHS="${LOOPS_RELEASE_PATHS:-}"
 
 die() { echo "cut-loop-release: $*" >&2; exit 1; }
 
@@ -67,9 +68,15 @@ prune_releases_after "$PRE_KEEP"
 # empty one here would advertise a location nothing actually writes to.
 mkdir -p "$DEST" || die "cannot create $DEST"
 
-# git archive exports the committed tree only: no .git, no untracked scratch, no local edits. That
-# is the difference between "a copy of the commit" and "a copy of someone's desk".
-if ! git -C "$REPO_ROOT" archive --format=tar "$SHA" | tar -x -C "$DEST"; then
+# git archive exports the committed tree only: no .git, no untracked scratch, no local edits. A
+# loop-specific owner may request a whitespace-separated path allowlist; the default remains the
+# complete repository for callers that need it. This keeps a 300 KiB X runtime from requiring a
+# 57 MiB export on a disk-constrained host.
+ARCHIVE_PATHS=()
+if [ -n "$RELEASE_PATHS" ]; then
+  read -r -a ARCHIVE_PATHS <<<"$RELEASE_PATHS"
+fi
+if ! git -C "$REPO_ROOT" archive --format=tar "$SHA" -- "${ARCHIVE_PATHS[@]}" | tar -x -C "$DEST"; then
   rm -rf "$DEST"
   die "export of $SHORT failed"
 fi
@@ -81,7 +88,8 @@ cat >"$DEST/RELEASE.json" <<EOF
   "provenance": "$PROVENANCE",
   "cut_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
   "repo": "$(git -C "$REPO_ROOT" remote get-url origin 2>/dev/null)",
-  "state_root": "${LOOPS_STATE_ROOT:-set per loop by its launchd job, not by this release}"
+  "state_root": "${LOOPS_STATE_ROOT:-set per loop by its launchd job, not by this release}",
+  "release_paths": "${RELEASE_PATHS:-ALL}"
 }
 EOF
 
