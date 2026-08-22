@@ -1943,7 +1943,7 @@ def _supervisor_rebind_targeted_work(
 
 async def supervise_replies(
     args: Any, *, probe: Any, worker: Any, reconcile: Any, stop: Any,
-    report_root: Path | None = None,
+    report_root: Path | None = None, report: Any | None = None,
 ) -> None:
     """Supervise one producer, two consumers, and idle reconciliation.
 
@@ -1984,6 +1984,12 @@ async def supervise_replies(
     sequence = itertools.count()
     in_flight: set[str] = set()
 
+    async def report_policy(path: Path, result: dict[str, Any]) -> None:
+        if report is None:
+            _atomic_json(path, result)
+            return
+        await report(path, result)
+
     async def enqueue_work(work: dict[str, Any]) -> None:
         event_key = work["event_key"]
         if event_key in in_flight:
@@ -2009,7 +2015,7 @@ async def supervise_replies(
         for ignored in policy["ignored"]:
             result = no_contact_report(ignored, now=int(time.time()))
             report_dir = report_root / "continuous" / "policy-reports" / result["run_id"]
-            await enqueue_report(report_dir / "result.json", result)
+            await report_policy(report_dir / "result.json", result)
         for row in policy["available"]:
             thread_id = str(row.get("talkroom_id") or "")
             identity = str(row.get("last_message_identity_sha256") or "")
@@ -2113,7 +2119,7 @@ async def supervise_replies(
                     if ignored is not None:
                         result = no_contact_report(ignored, now=int(time.time()))
                         report_dir = evidence / "continuous" / "policy-reports" / result["run_id"]
-                        await enqueue_report(report_dir / "result.json", result)
+                        await report_policy(report_dir / "result.json", result)
                     else:
                         result = await _supervisor_hook(worker, work)
                     if headroom_available():
@@ -2268,7 +2274,7 @@ async def _run_continuous_runtime(args: Any, evidence: Path) -> dict[str, Any]:
     try:
         await supervise_replies(
             args, probe=probe, worker=worker, reconcile=reconcile, stop=stop,
-            report_root=evidence,
+            report_root=evidence, report=enqueue_report,
         )
     finally:
         for signum in (signal.SIGTERM, signal.SIGINT):

@@ -1,6 +1,8 @@
+import asyncio
 import importlib.util
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -213,3 +215,43 @@ def test_real_outbox_policy_closure_is_replay_zero(tmp_path):
     closures = outbox.closed_actions(closure="nothing_to_say")
     assert len(closures) == 1
     assert closures[0]["reason"] == "nothing_to_say:ignore_policy:operator-owned-1"
+
+
+def test_supervisor_routes_head_policy_closure_to_reporter(tmp_path, monkeypatch):
+    stop = asyncio.Event()
+    reports = []
+    workers = []
+    args = SimpleNamespace(
+        database=tmp_path / "outbox.sqlite3",
+        manifest=ROOT / "config/connectors/coconala.json",
+        no_contact_registry=_registry(tmp_path),
+        poll_seconds=1, workers=2, reconcile_seconds=300,
+    )
+    monkeypatch.setattr(detector, "disk_headroom_ok", lambda: True)
+
+    async def probe():
+        stop.set()
+        return {"inquiries": [{
+            "talkroom_id": "90001",
+            "last_message_identity_sha256": "a" * 64,
+        }]}
+
+    async def worker(work):
+        workers.append(work)
+        return {}
+
+    async def reconcile():
+        return {}
+
+    async def report(path, result):
+        reports.append((path, result))
+
+    asyncio.run(detector.supervise_replies(
+        args, probe=probe, worker=worker, reconcile=reconcile, stop=stop,
+        report_root=tmp_path / "evidence", report=report,
+    ))
+
+    assert workers == []
+    assert len(reports) == 1
+    assert reports[0][1]["status"] == "ignore_policy"
+    assert "policy-reports" in str(reports[0][0])
