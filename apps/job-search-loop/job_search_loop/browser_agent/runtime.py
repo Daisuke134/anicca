@@ -228,9 +228,13 @@ async def observe() -> dict[str, Any]:
             _path_env("JOB_SEARCH_MACHINE_CREDENTIALS")
         ).known_tenants()
     )
-    candidate_concepts = CandidateMemoryView.load(
-        _path_env("JOB_SEARCH_CANDIDATE_MEMORY")
-    ).concepts()
+    candidate_concepts = tuple(
+        concept
+        for concept in CandidateMemoryView.load(
+            _path_env("JOB_SEARCH_CANDIDATE_MEMORY")
+        ).concepts()
+        if concept.startswith("candidate.")
+    )
     return {
         "status": "observed",
         "row": {
