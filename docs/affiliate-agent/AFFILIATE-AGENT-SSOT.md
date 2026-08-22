@@ -42,6 +42,14 @@ four generated Repost proposals and one exact Affiliate posted row; therefore
 the near-term distribution policy is to drain unconsumed live placements through
 the existing hourly owner before inventing repeated variants for one article.
 
+Runtime override: Repost release `41ed5893e` supersedes `fffa6cb8c`. It retains
+the same fresh-distribution priority and adds two operational repairs: release
+retention prunes before export so low disk does not require a transient sixth
+full tree, and X execution reuses installed system Playwright before its
+portable uv fallback. This closes the two ENOSPC paths observed during Voice
+Changer recovery without weakening cost, quarantine, effect-journal, hourly,
+exact-readback, or no-resend gates.
+
 ## 0. Objective
 
 Anicca is the company; Life Manager is the product, autonomous agent, and

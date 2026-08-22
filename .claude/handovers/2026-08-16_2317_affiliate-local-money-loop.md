@@ -1,5 +1,21 @@
 # Affiliate local money loop handover
 
+- Disk-safe Repost runtime checkpoint: commits `7f418b9f2` and `41ed5893e`
+  are pushed to both Repost remotes and immutable release
+  `20260822T182738-41ed5893` is current. `cut-loop-release.sh` now prunes one
+  rollback generation before export as well as enforcing retention after the
+  atomic symlink swap, so an install no longer requires space for a transient
+  `KEEP+1` full tree. A three-cut isolated fixture with keep=2 retained exactly
+  two releases and the newest current symlink. Repost now uses the existing
+  `/opt/homebrew/bin/python3` Playwright installation first and `uv run` only as
+  a portability fallback; this removes the observed repeated wheel download
+  after cache cleanup. The 13 Repost tests, shell syntax, Python compile, and
+  installed/source CLI SHA-256
+  `16619e564a4b5cdd6de2345bd37002e2a2b5feb1e5bac35903b5dc33d81d7568`
+  pass. Voice Cloning preflight is HTTP 200, canonical/indexable, exactly one
+  owned URL, and owner-rendered 271 raw characters. These are harness effects,
+  not a post, click, transaction, or money event.
+
 - Fresh distribution priority repair: Repost commits `fffa6cb8c` are pushed
   to both `origin/feat/repost-affiliate-integration` and
   `canonical/feat/repost-affiliate-integration`; immutable release
