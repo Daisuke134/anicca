@@ -76,3 +76,11 @@ unrelated dirty paths `docs/loops/x-repost.md` and `state/effective-cron/`.
   unseen Japan/remote target-role row, and runs before the existing Luna owner.
   Focused tests pass; build, activate, kickstart, and verify the live discovery
   receipt plus exact model handoff next.
+- Live run `daily-20260823-032744` passed discovery and exact Luna handoff for
+  Salesforce `AI Native Delivery Consultant` (`JR334569`, application `add61f0f...75c`).
+  Luna signed in with the stored tenant credential, uploaded the resume, and reached
+  Personal Information. The stale prompt forced an invisible `Website` option copied
+  from a different tenant, so choose failed before submit. That hardcoded path is now
+  removed; a vanished provider option returns `action_rejected` plus fresh observation.
+  The row remains `materials_ready`, submit was never called, and it is safe to resume
+  after release. Telegram provider ACK remains independently unresolved.

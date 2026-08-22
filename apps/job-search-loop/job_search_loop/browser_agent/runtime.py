@@ -642,7 +642,15 @@ async def choose(
         encoding="utf-8",
     )
     os.chmod(path, 0o600)
-    return await act(path)
+    try:
+        return await act(path)
+    except RuntimeError as error:
+        if "action target must resolve to exactly one visible enabled control" not in str(error):
+            raise
+        result = await observe()
+        result["status"] = "action_rejected"
+        result["reason"] = "observed_option_no_longer_visible"
+        return result
 
 
 async def type_candidate(
