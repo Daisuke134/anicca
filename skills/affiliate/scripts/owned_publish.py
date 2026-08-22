@@ -123,10 +123,24 @@ def fetch_readback(artifact, base_url):
         return None
     visible = html.unescape(re.sub(r"<[^>]+>", " ", markup))
     decoded_markup = html.unescape(markup)
+    expected_links = []
+    for link in artifact.get("readback_links", []):
+        parsed = urlsplit(link)
+        placement = parsed.path.strip("/")
+        if (
+            parsed.scheme == "https"
+            and parsed.hostname == "try.elevenlabs.io"
+            and not parsed.query
+            and not parsed.fragment
+            and re.fullmatch(r"[a-z0-9][a-z0-9-]{2,100}", placement)
+        ):
+            expected_links.append(f"/go/af_{placement}")
+        else:
+            expected_links.append(link)
     if (
         artifact["title"] not in visible
         or any(marker not in visible for marker in artifact["readback_markers"])
-        or any(link not in decoded_markup for link in artifact.get("readback_links", []))
+        or any(link not in decoded_markup for link in expected_links)
     ):
         return None
     return {

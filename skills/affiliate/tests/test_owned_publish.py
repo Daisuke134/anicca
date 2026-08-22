@@ -14,6 +14,21 @@ import owned_publish as module
 
 
 class OwnedPublishRevisionTest(unittest.TestCase):
+    def test_readback_accepts_fixed_host_redirect_for_provider_link(self):
+        placement = "subtitle-experiment-1"
+        artifact = {
+            "slug": "subtitle-experiment", "title": "Subtitle experiment",
+            "readback_markers": ["Affiliate disclosure"],
+            "readback_links": [f"https://try.elevenlabs.io/{placement}"],
+        }
+        markup = (
+            '<html><h1>Subtitle experiment</h1><p>Affiliate disclosure</p>'
+            f'<a href="/go/af_{placement}">Try it</a></html>'
+        ).encode()
+        with patch.object(module, "_read_public_markup", return_value=(markup, "test")):
+            result = module.fetch_readback(artifact, "https://example.test")
+        self.assertEqual(result["public_url"], "https://example.test/blog/subtitle-experiment")
+
     def test_live_same_slug_revision_requires_and_replaces_prior_hash(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary) / "landing"
