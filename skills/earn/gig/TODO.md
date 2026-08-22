@@ -302,9 +302,10 @@ no-send, replay-zero and a new natural sub-30-minute official reply/estimate pro
 Do not advance the development cursor until every unchecked item in the current stage has official
 evidence. Independent production lanes continue running while development follows this order.
 
-**Live handover state.** At this update's start, `main` and `origin/main` both read back
-`7de5072540949f5f09b4b909f3d9cb0029fc797b`. There is no general `/Users/anicca/gig/current` release link;
-the Paid-specific `current` remains `2ed6af9a37b519c173e256caddcc9ea9e1a71d66`. The protected unrelated dirty
+**Live handover state.** `main` and `origin/main` include the pushed private-data boundary
+`f7755b48ec4a039048182129f4892353a456a095`, and `/Users/anicca/gig/releases/life-manager/current` selects that
+same immutable release. The older Paid-specific release link remains historical and is not the loaded launchd
+entrypoint. The protected unrelated dirty
 `skills/earn/gig/tests/test_reply_concurrency.py` remains outside this work. The loaded Paid owner uses up to
 eight independent project workers. Its launchd environment ignores the shared preventive
 `disk-pressure.block` and `disk-writers.stop` flags while retaining the 512 MiB last-resort guard and expiring
@@ -344,6 +345,20 @@ remains zero but customer work is not complete. Process liveness does not supers
   prompt, model stdout or deliverable evidence. Before another Paid model run, preserve only the restricted
   local source/hash/metadata required for authorized work, redact derived prompt/log material, audit analogous
   projects and record the minimum account-owner rotation action if exposure requires it.
+
+**Private-data boundary readback.** The leak above is closed before further Paid reconstruction. The shared
+compiler now identifies credential-bearing buyer attachments without logging their contents, keeps the three
+observed sources under owner-only local project permissions, removes their paths from `read_these_first`, and
+exposes only size, SHA-256, content type, restricted purpose and `restricted=true` to the model context. Every
+project-root Paid decision/builder/verifier model invocation is wrapped by a mode-600 macOS sandbox profile that
+denies those exact files, and the isolated file-owner staging copier omits them. Existing derived prompt/stdout/
+work evidence was audited and 16 files were redacted while the three authorized sources were preserved; exact
+secret-value scans return zero matches in remaining derived project files and tracked repository files. A natural
+`18062411` decision run from immutable release `f7755b48e` read back three restricted metadata rows, zero exposed
+credential paths, a mode-600 sandbox profile and zero secret matches in model stdout. The credential reached a
+third-party model before this boundary existed, so the smallest remaining legal owner action is for the buyer or
+authorized account owner to rotate that external account credential before it is used again; Life Manager must
+not request, copy or store the replacement in prompt/log/repo/Telegram.
 
 **Historical incident chronology — evidence only, not current room state.** The release includes the prior
 `d24a9dbb3e86ce9df648965aac4aadcdf7bce56a` safety boundary, which removes all
@@ -769,7 +784,7 @@ flowchart TB
    delivery OFF; obtain exact-room official DOM readback; repeat read-only and prove replay-zero.
 2. [x] Produce a code-level adoption map: for every copied OSS pattern record pinned source file/function,
    local destination, license, behavior retained and behavior deliberately omitted. No article-only rationale.
-3. [ ] Close the observed credential/customer-data boundary before another Paid model run: detect
+3. [x] Close the observed credential/customer-data boundary before another Paid model run: detect
    credential-bearing buyer attachments without printing their contents; keep authorized source bytes only in
    restricted local project storage; expose hash/type/purpose metadata to the model; redact derived prompt/stdout
    evidence; audit every Paid project and distributable path; and record any required credential rotation as one
