@@ -13,11 +13,16 @@ path, field = sys.argv[1:3]
 try:
     with open(path) as f:
         accounts = json.load(f)
-except Exception:
-    accounts = []
+except Exception as exc:
+    print(f"account state unreadable: {exc}", file=sys.stderr)
+    raise SystemExit(2)
+
+if not isinstance(accounts, list):
+    print("account state must be a JSON list", file=sys.stderr)
+    raise SystemExit(2)
 
 usable = []
-for account in accounts if isinstance(accounts, list) else []:
+for account in accounts:
     status = str(account.get("status") or "").lower()
     if not (status.startswith("ready") or status.startswith("warming") or status.endswith("_ready")):
         continue

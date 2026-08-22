@@ -40,6 +40,10 @@ ACCOUNT_DAY="$(capafy_ig_warming_day "$IG_STARTED_WARMING")"
 WARMUP="$HOME/.cloak/ig-warmup-${IG_HANDLE:-no-active-account}.json"
 IG_PLIST="$HOME/Library/LaunchAgents/ai.anicca.capafy-ig-marketing-daily.plist"
 IG_LABEL="ai.anicca.capafy-ig-marketing-daily"
+LAUNCHCTL_SAFE="${CAPAFY_LAUNCHCTL_SAFE:-$LIFE_MANAGER_REPO/bin/launchctl-safe}"
+LAUNCHCTL_DOMAIN="${CAPAFY_LAUNCHCTL_DOMAIN:-gui/$(id -u)}"
+IG_UNLOAD_POLL_ATTEMPTS="${CAPAFY_IG_UNLOAD_POLL_ATTEMPTS:-50}"
+IG_UNLOAD_POLL_SLEEP="${CAPAFY_IG_UNLOAD_POLL_SLEEP:-0.2}"
 INSTA_PY="$HOME/.cache/instagrapi-venv/bin/python"
 INSTA_POSTER="$LIFE_MANAGER_REPO/skills/earn/marketing-engine/poster.py"
 COOKED_MARKER="$HOME/.local/state/life-manager/state/.capafy-ig-account-cooked"
@@ -53,7 +57,6 @@ if [ "${CAPAFY_GOAL_MONITOR_PROBE_ONLY:-0}" = "1" ]; then
 fi
 
 # ── goal(c) go-live: create + load the IG launchd ONLY when account day>=3. Idempotent. ──
-ig_loaded() { launchctl list 2>/dev/null | grep -q "$IG_LABEL"; }
 write_ig_plist() {
   cat > "$IG_PLIST" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
@@ -62,13 +65,49 @@ write_ig_plist() {
   <key>Label</key><string>$IG_LABEL</string>
   <key>ProgramArguments</key><array><string>/bin/bash</string><string>$IG_SCRIPT</string></array>
   <key>EnvironmentVariables</key><dict><key>HOME</key><string>$HOME</string><key>PATH</key><string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string></dict>
-  <key>StartCalendarInterval</key><dict><key>Hour</key><integer>16</integer><key>Minute</key><integer>30</integer></dict>
+  <key>StartInterval</key><integer>3600</integer>
   <key>RunAtLoad</key><false/>
   <key>StandardOutPath</key><string>$HOME/.local/state/life-manager/logs/capafy-ig-marketing-daily.out</string>
   <key>StandardErrorPath</key><string>$HOME/.local/state/life-manager/logs/capafy-ig-marketing-daily.err</string>
 </dict></plist>
 PLIST
 }
+
+converge_ig_launchd() {
+  local service="$LAUNCHCTL_DOMAIN/$IG_LABEL" current="" after=""
+  if current="$($LAUNCHCTL_SAFE print "$service" 2>/dev/null)"; then
+    if printf '%s\n' "$current" | grep -Eq 'run interval = 3600 seconds'; then
+      GO_LIVE_ACTION="already_live_hourly"
+      return 0
+    fi
+    write_ig_plist
+    "$LAUNCHCTL_SAFE" preflight >/dev/null || return $?
+    "$LAUNCHCTL_SAFE" bootout "$service" >/dev/null 2>&1 || return $?
+    local unloaded=0
+    for _ in $(seq 1 "$IG_UNLOAD_POLL_ATTEMPTS"); do
+      if ! "$LAUNCHCTL_SAFE" print "$service" >/dev/null 2>&1; then
+        unloaded=1
+        break
+      fi
+      sleep "$IG_UNLOAD_POLL_SLEEP"
+    done
+    [ "$unloaded" -eq 1 ] || return 1
+    "$LAUNCHCTL_SAFE" bootstrap "$LAUNCHCTL_DOMAIN" "$IG_PLIST" >/dev/null || return $?
+  else
+    write_ig_plist
+    "$LAUNCHCTL_SAFE" preflight >/dev/null || return $?
+    "$LAUNCHCTL_SAFE" bootstrap "$LAUNCHCTL_DOMAIN" "$IG_PLIST" >/dev/null || return $?
+  fi
+  after="$($LAUNCHCTL_SAFE print "$service" 2>/dev/null)" || return 1
+  printf '%s\n' "$after" | grep -Eq 'run interval = 3600 seconds' || return 1
+  GO_LIVE_ACTION="LOADED_NOW"
+  return 0
+}
+
+if [ "${CAPAFY_GOAL_MONITOR_LAUNCHD_TEST:-0}" = "1" ]; then
+  converge_ig_launchd
+  exit $?
+fi
 
 # NO-HUMAN-LOOP (Dais approved 2026-07-18): NO freeze/approval gate. At day>=3 (the clip 3-day
 # floor — loop self-pacing, NOT a human gate) the monitor auto-loads the IG launchd itself, which
@@ -125,11 +164,10 @@ fi
 
 GO_LIVE_ACTION="not_yet"
 if [ "${WDAY:-0}" -ge "$WARMUP_DAYS_REQUIRED" ]; then
-  if ig_loaded; then
-    GO_LIVE_ACTION="already_live"
-  else
-    write_ig_plist
-    launchctl load "$IG_PLIST" 2>/dev/null && GO_LIVE_ACTION="LOADED_NOW" || GO_LIVE_ACTION="load_failed"
+  if ! converge_ig_launchd; then
+    GO_LIVE_ACTION="load_failed"
+    echo "IG launchd convergence failed — stopping goal monitor" >&2
+    exit 2
   fi
 fi
 

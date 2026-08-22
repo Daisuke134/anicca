@@ -24,12 +24,7 @@
 	<string>__LIFE_MANAGER_HOME__/logs/capafy-ig-marketing-daily.err</string>
 	<key>StandardOutPath</key>
 	<string>__LIFE_MANAGER_HOME__/logs/capafy-ig-marketing-daily.out</string>
-	<key>StartCalendarInterval</key>
-	<dict>
-		<key>Hour</key>
-		<integer>16</integer>
-		<key>Minute</key>
-		<integer>0</integer>
-	</dict>
+	<key>StartInterval</key>
+	<integer>3600</integer>
 </dict>
 </plist>

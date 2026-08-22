@@ -44,3 +44,13 @@ def test_all_capafy_launchd_templates_resolve_to_existing_life_manager_sources(t
         assert data["WorkingDirectory"] == str(ROOT)
         assert Path(expected_script).is_file()
         assert "/Users/anicca/anicca" not in plist_path.read_text()
+
+    ig = plistlib.loads((tmp_path / "ai.anicca.capafy-ig-marketing-daily.plist").read_bytes())
+    assert ig["StartInterval"] == 3600
+    assert "StartCalendarInterval" not in ig
+
+
+def test_ig_goal_monitor_generator_uses_hourly_interval() -> None:
+    text = (ROOT / "skills/earn/capafy-marketing/capafy-goal-monitor.sh").read_text()
+    assert "<key>StartInterval</key><integer>3600</integer>" in text
+    assert "StartCalendarInterval" not in text[text.index("write_ig_plist"):text.index("# NO-HUMAN-LOOP")]

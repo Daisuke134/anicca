@@ -368,6 +368,30 @@ re-entered semantic decision/file ownership. It must repair only those stable ma
 package hash, pass the generic contract/correspondence validators, then attach/send once with formal delivery OFF,
 exact-room DOM readback and replay-zero.
 
+Runs 6-8 exposed two later generic recovery failures before any customer effect. A stale one-time v43 recovery
+policy was replayed, so the natural owner truthfully froze the same verified design as v44 and requested fresh PC
+and responsive Illustrator receipts instead of sending stale-path receipts. The old immutable controller then
+proved LaunchServices had opened a different document; shared `_open` now uses Illustrator's native Apple Event
+`open POSIX file` and is published in current release. The parallel pass next reached physical ENOSPC while writing
+its final receipt. Only regenerated caches and a completed failed staging copy were reclaimed; APFS then released
+19 GiB, while durable customer data, browser profiles and the verified v43 bundle remained intact.
+
+The remaining immediate blocker is now the macOS user bootstrap, not Paid logic, Coconala auth, artifact quality or
+disk. After the disk incident, `launchctl-safe`, direct `launchctl` and `launchctl asuser` all return 141
+`Reentrancy avoided`; Terminal/Aqua resolution returns -10827; OpenClaw Gateway is unavailable; sudo and localhost
+SSH report that uid 501 has no passwd record; and direct OpenDirectory lookup returns `eServerError`. No attempted
+path started another Paid process and customer effect/readback remain zero. A full Codex/ChatGPT desktop app
+restart was then rechecked and did not recover either service: OpenDirectory still returns `eServerError`, and
+`launchctl print gui/501/...` still returns 141. The exact minimum owner action is now one full Mac reboot, then
+resume this thread. On the recovered Aqua bootstrap,
+kickstart the existing `ai.anicca.hf-gig-paid-direct` owner once; do not run a custom executor. Require v44 PASS,
+exact-room attachment/message readback with formal delivery OFF, then a second natural wake with replay-zero.
+The account owner then authorized that reboot. All three in-session native restart paths failed at the same broken
+control plane before any restart effect: `System Events` returned Apple Event `-10827`, direct `loginwindow`
+resolution returned `-1728`, and `launchctl reboot system` returned 141 `Reentrancy avoided`. No Paid process or
+customer effect was created. The only remaining action is therefore a physical Apple-menu/power-button Mac reboot;
+after login, resume this thread and continue with the existing Paid owner as specified above.
+
 **Current runtime refresh.** Unrelated dirty files remain untouched. The existing Paid pass naturally resumed the
 Haru v43 staging after compiling
 the complete proposal, DM, talkroom and attachment context. Haru `18169583` remains unsent. The resumed owner first
