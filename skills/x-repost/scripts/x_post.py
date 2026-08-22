@@ -75,14 +75,23 @@ def postiz_publish(text: str, mode: str, source_url: str | None) -> str:
 
 
 def ensure_logged_in(page) -> str:
-    for attempt in (1, 2):
+    for attempt in (1, 2, 3):
         page.goto("https://x.com/home", wait_until="domcontentloaded", timeout=60000)
-        page.wait_for_timeout(6000)
-        link = page.query_selector('[data-testid="AppTabBar_Profile_Link"]')
+        try:
+            link = page.wait_for_selector(
+                '[data-testid="AppTabBar_Profile_Link"]', timeout=15000
+            )
+        except Exception:
+            link = page.query_selector('[data-testid="AppTabBar_Profile_Link"]')
         if link:
             return (link.get_attribute("href") or "").strip("/")
-        if attempt == 2:
+        if attempt == 3:
             break
+        cookies = page.context.cookies("https://x.com")
+        if any(cookie.get("name") == "auth_token" and cookie.get("value") for cookie in cookies):
+            # A persistent auth cookie plus a missing nav element is usually slow/transient UI.
+            # Reload instead of replacing the known session with a possibly stale env fallback.
+            continue
         token = os.environ.get("TWITTER_AUTH_TOKEN", "")
         if not token:
             raise SystemExit("x_post: not logged in and TWITTER_AUTH_TOKEN is unset")
