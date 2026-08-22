@@ -141,3 +141,18 @@ test("Supabase persistence fails closed without leaking its key", async () => {
     (error) => error.message.includes("503") && !error.message.includes("service-secret"),
   );
 });
+
+// AFFILIATE_CTA_V1
+test("affiliate tokens persist exact placement before fixed-host redirect", async () => {
+  const writes = [];
+  const handler = makeMarketingGoHandler({
+    products, providerToken: "123456", receiptId: () => "click-affiliate",
+    persist: async (_key, value) => writes.push(value),
+  });
+  const placement = "elevenlabs-discovered-voice-changer-en-1";
+  const response = await handler(event(`af_${placement}`));
+  assert.equal(response.statusCode, 302);
+  assert.equal(response.headers.location, `https://try.elevenlabs.io/${placement}`);
+  assert.equal(writes[0].product_id, placement);
+  assert.equal(JSON.stringify(writes[0]).includes("try.elevenlabs.io"), false);
+});

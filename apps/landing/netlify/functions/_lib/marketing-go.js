@@ -1,8 +1,9 @@
 const { randomUUID } = require("node:crypto");
 
-const TOKEN = /^(ai|ho|ej|ee)_[a-z2-7]{20}$/;
+const TOKEN = /^(?:(ai|ho|ej|ee)_[a-z2-7]{20}|af_([a-z0-9][a-z0-9-]{2,80}))$/; // AFFILIATE_CTA_V1
 
 function destination(product, token, providerToken) {
+  if (product.kind === "affiliate") return `https://try.elevenlabs.io/${product.placementId}`;
   if (product.kind === "app") {
     const query = new URLSearchParams({ pt: providerToken, ct: token, mt: "8" });
     return `https://apps.apple.com/app/id${product.appId}?${query}`;
@@ -47,7 +48,9 @@ function makeMarketingGoHandler({
       return { statusCode: 405, headers: { allow: "GET" }, body: "Method Not Allowed" };
     const token = decodeURIComponent(String(event.path || "").split("/").filter(Boolean).at(-1) || "");
     const match = TOKEN.exec(token);
-    const product = match && products[match[1]];
+    const product = match && (match[2]
+      ? { productId: match[2], kind: "affiliate", placementId: match[2] }
+      : products[match[1]]);
     if (!product)
       return { statusCode: 404, headers: { "cache-control": "no-store" }, body: "Not Found" };
     const id = receiptId();

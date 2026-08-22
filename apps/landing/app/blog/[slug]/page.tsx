@@ -84,6 +84,18 @@ function loadPost(slug: string): ResearchPost | null {
   }
 }
 
+// AFFILIATE_CTA_V1: fixed-host redirect; no arbitrary destination input.
+function trackedAffiliateHref(href: string): string {
+  try {
+    const url = new URL(href);
+    const placement = url.pathname.replace(/^\/+|\/+$/g, "");
+    if (url.protocol === "https:" && url.hostname === "try.elevenlabs.io" &&
+        !url.search && !url.hash && /^[a-z0-9][a-z0-9-]{2,80}$/.test(placement))
+      return `/go/af_${placement}`;
+  } catch {}
+  return href;
+}
+
 function renderMarkdown(md: string): string {
   // Minimal markdown → HTML (no extra deps; covers headings, paragraphs,
   // bold/italic, links, lists, code spans, images).
@@ -105,6 +117,7 @@ function renderMarkdown(md: string): string {
   };
   const inline = (s: string) =>
     s
+      .replace(/https:\/\/try\.elevenlabs\.io\/[a-z0-9][a-z0-9-]{2,80}/g, trackedAffiliateHref)
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
