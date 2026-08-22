@@ -30,6 +30,7 @@ _CONFIRMATION_TERMS = (
     "thanksforapplying",
     "applicationsubmitted",
     "wehavereceivedyourapplication",
+    "hasbeenreceived",
     "応募が完了",
     "応募を受け付け",
     "応募を受付",
@@ -295,6 +296,7 @@ def _gmail_confirmation_threads(account: str, executable: str) -> list[dict[str,
             (
                 'newer_than:30d ("application received" OR '
                 '"thank you for applying" OR "thanks for applying" OR '
+                '"thank you for your interest" OR "has been received" OR '
                 '"応募が完了" OR "応募を受け付け" OR "ご応募いただ")'
             ),
         ],

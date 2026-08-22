@@ -60,3 +60,11 @@ unrelated dirty paths `docs/loops/x-repost.md` and `state/effective-cron/`.
   secret rail now restricts reset actions to native button/input controls. The
   opened message is `navigation_unknown`; request a new reset message and never
   retry it.
+- Fresh message `1a02a75c17302d42` subsequently reset the NVIDIA credential;
+  visual evidence showed the final Sign In UI. Daily runs reached Review and
+  consumed one submit fence. The completion screenshot was blank, so the Ledger
+  remained `submit_unknown` and the action must never be retried. Gog independently
+  found authoritative receipt `1a02a898712efee9` from `nvidia@myworkday.com` with
+  exact company, role, JR2015317, and "has been received" text. Reconciler Gmail
+  discovery now includes that real Workday wording; kick the existing inbox owner,
+  verify Ledger `submitted`, then repair/verify the Telegram ACK without resubmitting.
