@@ -92,7 +92,7 @@ OWNER_WORKED_TALKROOMS = {
     "18151989",  # jedbyJUNKYアメーバnote — デザインテンプレート利用許諾契約書
 }
 PAID_DECISION_SCHEMA_VERSION = 4
-PAID_DECISION_PROMPT_VERSION = "paid-semantic-decision-v8"
+PAID_DECISION_PROMPT_VERSION = "paid-semantic-decision-v9"
 PAID_DECISION_MODEL = "gpt-5.6-sol"
 PAID_FILE_MODEL = "gpt-5.6-sol"
 PAID_FILE_POLICY_VERSION = "paid-file-build-review-v20"
@@ -1066,7 +1066,9 @@ def _decision_prompt(context: Path, context_sha256: str, feedback: str,
         "exact question has already been sent and no newer buyer "
         "reply exists. Use file whenever satisfying the request requires a seller-produced local artifact, "
         "including when one absent fact blocks only part of the scope: put only that fact in unresolved and require the "
-        "useful non-blocked portion now rather than delaying the entire artifact. "
+        "useful non-blocked portion now rather than delaying the entire artifact. Never invent a document or other "
+        "artifact merely because a detailed answer has several sections: choose answer unless the buyer or accumulated "
+        "contract requires a file, or the requested outcome cannot truthfully be delivered as talkroom text. "
         "including initial delivery, revision, and resubmission of an artifact already present on disk. A file delivery "
         "may also include an accompanying Coconala message. Do not choose remote merely because the response describes "
         "or acknowledges an action. "

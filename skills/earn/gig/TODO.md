@@ -340,7 +340,10 @@ explicit durable checkpoints rather than silent disappearance, but customer work
   `fbf365e364695907b9ebe853fa72a2e77232267380fb6f7fc6f9b44c1a5f432b`; no completed exact-room effect/readback
   receipt exists yet. Its current semantic decision is correctly `actionable` / `mode=answer`: the buyer needs an
   immediate Japanese reply containing community details, listing copy, outreach templates and progress/reporting,
-  with confirmed facts separated from pending approval. The answer owner produced useful copy but the fresh verifier
+  with confirmed facts separated from pending approval. A fresh v8 decision incorrectly changed this to `mode=file`
+  by inventing a “buyer-reviewable document” even though neither the buyer nor accumulated contract requires a file.
+  The shared decision boundary must choose answer for structured talkroom content and file only when a file is actually
+  required or the outcome cannot truthfully fit in talkroom text. The prior answer owner produced useful copy but the fresh verifier
   blocked it after three rewrites because the owner was sandboxed read-only and therefore could not obtain the official
   public sources the verifier required. Repair the shared answer-owner boundary so the same model may run local read
   commands and official-source web research while customer mutation remains exclusively owned by the fenced browser
