@@ -2041,3 +2041,14 @@ one. Source/runtime CLI SHA-256 is
 exercise the installed multi-original selector and exact-read its effect; keep
 daily measurement/strategy updates running while waiting for the first official
 transaction lifecycle.
+
+Before that live selector readback, commit `bf20a619a` repaired the quality
+policy that produced generic `私も〜しがち` copy. The old prompt forced 30%
+self-deprecation. The installed release is now `20260822T232801-bf20a619` and
+requires a concrete conclusion, mechanism, and executable next step. A quote
+must add a procedure, decision criterion, failure condition, or comparison
+method not present in the source; otherwise the owner selects nothing. Source
+and runtime SHA-256 are both
+`abb346c1e0e3f0207f3ac08dd144c9f585a5f1e01e91b947a3cfce6efbdd8244`;
+21 tests and shell syntax pass. The next eligible owner effect remains the real
+acceptance test; do not manually publish or bypass same-hour fencing.
