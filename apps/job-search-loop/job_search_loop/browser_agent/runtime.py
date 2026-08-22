@@ -84,6 +84,21 @@ def _exclusive_action():
         yield
 
 
+@contextmanager
+def _exclusive_command():
+    """Serialize model-issued runtime commands, including read observations."""
+    path = _path_env("JOB_SEARCH_BROWSER_SCRATCH") / "command.lock"
+    descriptor = os.open(path, os.O_RDWR | os.O_CREAT, 0o600)
+    with os.fdopen(descriptor, "r+") as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as error:
+            raise RuntimeError(
+                "a browser runtime command is already in progress; wait for its result"
+            ) from error
+        yield
+
+
 def _wake_completed_path() -> Path:
     return _path_env("JOB_SEARCH_BROWSER_SCRATCH") / "completed-rows.json"
 
@@ -997,7 +1012,8 @@ def main(argv: list[str] | None = None) -> int:
         operation = ineligible(args.reason)
     else:
         operation = None
-    result = report(args.status) if operation is None else asyncio.run(operation)
+    with _exclusive_command():
+        result = report(args.status) if operation is None else asyncio.run(operation)
     print(json.dumps(result, ensure_ascii=False, sort_keys=True))
     return 0
 

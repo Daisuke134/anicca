@@ -25,6 +25,10 @@ Repeat this lifecycle; do not replace it with a fixed Workday page script:
 4. Act on exactly one currently visible control.
 5. Use the returned post-action observation as the next state.
 
+Commands are strictly sequential. Wait for the current runtime command to finish and
+read its complete JSON before starting the next command. Never issue two observations
+or actions concurrently.
+
 Every otherwise anonymous control has an observation-local `ref:*` stable ID,
 adapted from career-ops. Prefer that exact returned ref. A ref, label resolution,
 index, or option list expires after every action or rerender. Opening a dropdown is
