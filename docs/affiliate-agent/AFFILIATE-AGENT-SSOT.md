@@ -2,6 +2,128 @@
 
 Last updated: 2026-08-22 JST
 
+## Current X acquisition override: useful originals before affiliate scale
+
+The account is not yet an effective acquisition asset. Real readback proves the
+mechanics work, but the latest Affiliate originals were assembled by slicing
+provider fields at fixed character offsets. The resulting public copy contained
+broken fragments such as `Youtube T` and `Genera`; this is a content-quality
+failure, not a provider or attribution failure. Repost release
+`743ab3e30fe70f0c4da2b0f3b4e2af0626a00d01` removes all prose slicing. It uses
+complete buyer-checklist sentences, falls back to a complete generic subject
+instead of truncating a product name, passes 12 focused tests, and is installed
+byte-for-byte at SHA-256
+`09f2e55c2174d958cada383c108c4b2a44abc54a101a2d5c2f90495c96311572`.
+
+This repair does not make the X growth system complete. The current ordered X
+backlog is:
+
+1. **X01 — DONE:** the existing owner posted the first complete-sentence
+   Affiliate effect at `https://x.com/selawmqt/status/2091124360723698095` for
+   `elevenlabs-discovered-video-to-text-en-1`; consumption is exactly
+   `EFFECT_STARTED -> POSTED`. It was not manually posted or retried.
+2. **X02 — PARTIAL:** installed release
+   `9111b85f2f955084ac307ffdfdf5eaa553c7411c` guarantees one source-backed
+   original per JST day and requires a concrete fact/step/number plus reader
+   benefit and next action. Complete the remaining LangChain-shaped pipeline:
+   fetch an admitted source, create an evidence report, reject irrelevant or
+   unsupported content, generate a useful original, and rewrite/condense whole
+   sentences up to three times. Do not copy its human-approval node; the existing
+   launchd owner, effect journal, policy gate, and exact public readback remain.
+3. **X03 — INSTALLED, LIVE READBACK OPEN:** a durable rolling language allocator
+   now targets nine English and one Japanese across verified non-Affiliate X
+   effects. The
+   Japanese slot must use a Japanese source and Japanese copy; it is never a
+   translation of an English affiliate placement. English stays the commercial
+   default. This explicit 9:1 instruction supersedes the older English-only
+   account sentence while preserving separate money accounting by language.
+4. **X04 — INSTALLED, LIVE READBACK OPEN:** ship one original evidence/help post
+   per JST day, plus bounded high-value replies/quotes. Affiliate distribution
+   is a minority lane and is not allowed to replace the daily useful original.
+   Every original carries exactly one public evidence URL and its ledger row
+   retains that source URL.
+5. **X05:** replace early views as the optimizer's sole objective with a funnel
+   vector: qualified impressions, profile visits/follows when observable,
+   owned-article sessions, CTA clicks, provider clicks, official transactions,
+   approved/paid net, reversals, and real cost. Unknown fields stay unknown.
+6. **X06 — PARTIAL:** the existing owner already has a browser lease and exact
+   terminal effect ledger. Add X-Manager's canonical content dedupe and bounded
+   30-day post-metric collection around it. Do not introduce its
+   scheduler or X API as a second executor.
+7. **X07:** report each effect and the daily funnel summary through the existing
+   replay-safe Telegram outbox with a provider message ID. A Telegram timeout is
+   queued and never converts a post, view, or click into money.
+
+The same installed release bounds readback-only recovery of terminal
+`UNVERIFIED` proposals to six hours. This preserves immediate recovery of an X
+effect whose permalink appeared late, but prevents old terminal proposals from
+consuming every future acquisition pass. It never reopens a publish claim and
+never retries the external effect. Source/runtime `affiliate_proposal.py` bytes
+match at SHA-256
+`56bb21aa3639bb26fc664d895cef711bc34819176243ff45292ea5c3b21d9610`;
+13 focused tests and shell/Python syntax pass.
+
+Installed-policy readback is live for the starvation fence. Affiliate owner run
+71 exited `0` with 74 post actions, five exact placement joins, 69 unjoined
+ordinary actions, zero invalid rows, and Telegram message `28774`; it selected
+Music proposal `474cb886...d492` as READY. Repost owner run 24 then logged
+`fresh affiliate proposal deferred (5/3 in rolling 7d)` and exited at the normal
+same-hour fence. `posted.jsonl` remained 74 rows and consumption remained 14
+rows, so this policy check produced no extra X effect. The first source-backed
+original and the subsequent Japanese slot still require exact live permalink
+readback on their next eligible owner wakes.
+
+The fixed-commit OSS code audit was performed from isolated clones, not README
+summaries:
+
+| Repository | Fixed commit and license | Code copied conceptually | Rejected boundary |
+|---|---|---|---|
+| [LangChain Social Media Agent](https://github.com/langchain-ai/social-media-agent) | `d3f416d6ae9856a737ac0bb5534f99dd8048fbd7`, MIT | URL verification, content report, relevancy gate, post generation, whole-sentence condense loop, stored reflection rules | Human approval node and LangGraph scheduler do not become production owners |
+| [X-Manager](https://github.com/tylerbuilds/x-manager) | `a3534ba953fc88beac79fc12ca5ebbcd4f3bed2d`, MIT | Expiring scheduler lease, normalized-copy plus canonical-URL dedupe key, separated post metrics collector | Its scheduler, credential store, and X API publisher are not installed |
+| [GrowthMate](https://github.com/ibrahimahmed/growthmate) | `aea4fcdab135a2d4921cd03257eb7135e0baba62`, MIT | Recent-post voice context and three-draft generation are useful references | Its generic `viral tweets` prompt and unvalidated JSON are too weak to copy |
+
+Source evidence used for these decisions:
+
+- LangChain Social Media Agent,
+  <https://github.com/langchain-ai/social-media-agent/blob/d3f416d6ae9856a737ac0bb5534f99dd8048fbd7/src/agents/generate-post/generate-post-graph.ts>:
+  `Attempt to condense the post if it's too long` and the graph routes the
+  condensed result back through the length decision up to three times.
+- X-Manager,
+  <https://github.com/tylerbuilds/x-manager/blob/a3534ba953fc88beac79fc12ca5ebbcd4f3bed2d/src/lib/scheduler-service.ts>:
+  `Another scheduler instance owns the lease. Skipping this cycle.`
+- X-Manager,
+  <https://github.com/tylerbuilds/x-manager/blob/a3534ba953fc88beac79fc12ca5ebbcd4f3bed2d/src/lib/metrics-collector.ts>:
+  `Limit to 200 most recent to prevent unbounded fetch as post count grows`.
+- GrowthMate,
+  <https://github.com/ibrahimahmed/growthmate/blob/aea4fcdab135a2d4921cd03257eb7135e0baba62/src/app/api/writer/generate/route.ts>:
+  `Match the user's tone and vocabulary from their recent tweets`.
+
+Current measurement truth is partial, not end-to-end complete. Exact X
+permalink, placement join, CTA redirect, provider click, official PartnerStack
+transaction, canonical money status, rolling 30-day net, and Telegram receipts
+exist. X profile visits/follower attribution are not captured. Owned article
+sessions are explicitly `UNAVAILABLE / NETLIFY_WEB_ANALYTICS_DISABLED`. Until
+those holes close, the system can prove effects and money but cannot honestly
+explain every loss between impression and transaction.
+
+```mermaid
+flowchart LR
+  S[Admitted source] --> R[Evidence report]
+  R --> V{Relevant and supported?}
+  V -- no --> Q[Reject with receipt]
+  V -- yes --> G[3 useful drafts]
+  G --> C[Whole-sentence critic and condense]
+  C --> L[Rolling language allocator EN 9 / JA 1]
+  L --> O[Existing launchd X owner]
+  O --> P[Exact X permalink]
+  P --> M[X and owned metrics]
+  M --> T[Provider transaction join]
+  T --> N[Approved/paid net after reversal and cost]
+  N --> E[Experiment memory and next allocation]
+  P --> TG[Telegram effect receipt]
+  N --> TG
+```
+
 Implementation SSOT:
 
 - Design and completion contract:

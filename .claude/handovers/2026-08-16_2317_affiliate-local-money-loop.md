@@ -1,5 +1,76 @@
 # Affiliate local money loop handover
 
+- X acquisition quality reset: the Affiliate owner now observes 73 real Repost
+  actions, four exact placement joins, 69 unjoined ordinary actions, and zero
+  invalid rows. The fourth join is YouTube Transcript Generator at
+  `https://x.com/selawmqt/status/2091120400323526721`. It is a real X effect and
+  exact distribution join, not money. Official rolling state remains
+  `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS`; pending/approved/paid/reversed
+  counts are all zero. Owned visits remain explicitly unavailable because
+  Netlify Web Analytics is disabled. The join wake exited `0`; its Telegram
+  delivery is `SEND_TIMEOUT_UNKNOWN` and must be replayed by the existing outbox.
+
+- User-visible copy defect is repaired in Repost commit `743ab3e30`, pushed to
+  both Repost remotes and installed as immutable release
+  `20260822T202103-743ab3e3`. Source/runtime `affiliate_proposal.py` SHA-256 is
+  `09f2e55c2174d958cada383c108c4b2a44abc54a101a2d5c2f90495c96311572`;
+  12 focused tests pass. The renderer no longer slices title/intent fields in
+  the middle of words. It emits complete buyer-checklist sentences and falls
+  back to a complete generic subject if an input label is too long. The next
+  Video-to-Text proposal `5b338759...cd2f` was READY, HTTP 200, and rendered at
+  265 weighted characters. The existing owner posted it with exact permalink
+  `https://x.com/selawmqt/status/2091124360723698095`; the ledger has exactly
+  `EFFECT_STARTED -> POSTED` and one complete-sentence posted row. Its Telegram
+  send timed out three times and is queued in the bounded outbox. This is a real
+  distribution effect, not a click, transaction, or money event.
+
+- X acquisition policy release `9111b85f2f955084ac307ffdfdf5eaa553c7411c`
+  is pushed to both Repost remotes and installed at
+  `20260822T202926-9111b85f`; source/runtime CLI SHA-256 is
+  `ef801247c3fb9f79aa4c4e5a5f651de47656fdd68baa1e450fcf61aa689eaa6c`.
+  It defers only fresh Affiliate proposals after three verified Affiliate posts
+  in a rolling seven days, while unfinished effect reconciliation stays first.
+  The next generic pass guarantees one source-backed original for the JST day;
+  its durable language allocator selects Japanese only after nine verified
+  English non-Affiliate effects. Current private readback is five Affiliate
+  posts in seven days, no original today, and eight English effects since the
+  last Japanese effect, so the next eligible generic effect is English original
+  and the following eligible effect is Japanese. Syntax and 12 focused tests
+  pass. It also limits readback-only recovery of terminal `UNVERIFIED` effects
+  to six hours, so old terminal rows cannot starve acquisition forever; it never
+  retries or reopens those effects. Source/runtime proposal helper SHA-256 is
+  `56bb21aa3639bb26fc664d895cef711bc34819176243ff45292ea5c3b21d9610`
+  and 13 focused tests pass. Live original/permalink readback is still open; do
+  not claim X02-X04 fully proven until the existing owner produces it.
+
+- Live cap/readback proof: Affiliate natural run 71 exited `0`, observed 74 X
+  actions / five exact placement joins / 69 unjoined / zero invalid, selected
+  Music proposal `474cb886...d492` READY, and delivered Telegram `28774`.
+  Repost run 24 on installed `9111b85f` logged `fresh affiliate proposal
+  deferred (5/3 in rolling 7d)` and then the normal same-hour no-op. Posted and
+  consumption ledgers stayed 74 and 14 rows, so no sixth Affiliate post or other
+  public effect occurred. Official money remains all-zero status counts and
+  `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS`; owned visits remain unavailable.
+  The next atomic live proof is the first eligible source-backed English
+  original permalink, then the rolling allocator's Japanese-source effect.
+
+- OSS X-growth audit is real and code-level. Isolated clones pin LangChain
+  Social Media Agent `d3f416d6` (MIT), X-Manager `a3534ba9` (MIT), and GrowthMate
+  `aea4fcda` (MIT). Copy LangChain's source -> report -> relevance -> generate ->
+  whole-sentence condense loop and stored reflections; copy X-Manager's expiring
+  lease, canonical content dedupe, and bounded post-metrics separation. Do not
+  install their scheduler/publisher or GrowthMate's generic `viral tweets`
+  prompt. The existing launchd owner remains the only executor.
+
+- Ordered next X atoms are now in the SSOT: X01 exact-read back the in-flight
+  complete-sentence Video-to-Text effect; X02 implement evidence-report original
+  helpful posts; X03 enforce a durable rolling 9 English / 1 Japanese verified
+  non-Affiliate effect mix; X04 guarantee one original evidence/help post per JST
+  day while keeping Affiliate a minority lane; X05 add profile/follow and owned
+  session measurement; X06 harden lease/dedupe/30-day metric collection; X07
+  Telegram effect and money receipts. Never call the funnel fully measurable
+  while `owned_visit_state=UNAVAILABLE` or X profile/follow attribution is absent.
+
 - Repost Telegram is now live-repaired. Commit `57a95b2ba` is pushed to both
   Repost remotes and immutable release `20260822T183315-57a95b2b` is current.
   It matches the proven Affiliate transport contract with the full
