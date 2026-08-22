@@ -11,6 +11,15 @@ from job_search_loop.runtime import main as compatibility_runtime_main
 
 
 class DirectCDPTypeTests(unittest.IsolatedAsyncioTestCase):
+    async def test_screenshot_does_not_reflow_virtualized_provider_lists(self):
+        page = DirectCDPPage("ws://example", "target")
+        page._ensure_viewport = AsyncMock()
+        page.call = AsyncMock(return_value={"data": "eA=="})
+
+        await page.screenshot(full_page=True)
+
+        self.assertFalse(page.call.await_args.args[1]["captureBeyondViewport"])
+
     def test_short_runtime_entrypoint_is_the_same_bounded_runtime(self):
         self.assertIs(compatibility_runtime_main, browser_runtime_main)
 

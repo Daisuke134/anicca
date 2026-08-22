@@ -119,7 +119,7 @@ class DirectCDPPage:
         await self._ensure_viewport()
         result = await self.call(
             "Page.captureScreenshot",
-            {"format": "jpeg", "quality": 65, "captureBeyondViewport": True},
+            {"format": "jpeg", "quality": 65, "captureBeyondViewport": False},
             timeout=30,
         )
         data = result.get("data")
