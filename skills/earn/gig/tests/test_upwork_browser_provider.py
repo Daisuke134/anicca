@@ -13,7 +13,11 @@ for directory in (SCRIPTS, PROVIDERS):
     if str(directory) not in sys.path:
         sys.path.insert(0, str(directory))
 
-from upwork_browser_provider import parse_connects, parse_inventory  # noqa: E402
+from upwork_browser_provider import (  # noqa: E402
+    parse_catalog,
+    parse_connects,
+    parse_inventory,
+)
 
 
 def test_parses_zero_connects_without_inventing_a_reward():
@@ -38,9 +42,30 @@ def test_parses_complete_zero_effect_inventory_and_account_task():
     }
 
 
+def test_parses_visible_catalog_inventory_without_inventing_an_order():
+    state = parse_catalog(
+        "Approved (1)\nUnder Review (0)\nDrafts (0)\n"
+        "Views (30 days)\nOrders\nVisible\n"
+        "You will get a Python script integrating one documented REST API endpoint\n"
+        "0\n0\nMore Project Options\n"
+    )
+    assert state == {
+        "catalog_approved": 1,
+        "catalog_under_review": 0,
+        "catalog_drafts": 0,
+        "catalog_projects": [{
+            "title": "You will get a Python script integrating one documented REST API endpoint",
+            "visible": True,
+            "views_30d": 0,
+            "orders": 0,
+        }],
+    }
+
+
 @pytest.mark.parametrize("parser,text", [
     (parse_connects, "Connects History unavailable"),
     (parse_inventory, "Proposals and Offers loading"),
+    (parse_catalog, "Create and manage your services\nProjects loading"),
 ])
 def test_partial_provider_pages_fail_closed(parser, text):
     with pytest.raises(ValueError, match="upwork_readback_incomplete"):

@@ -258,7 +258,7 @@ No later task may jump ahead of the first incomplete row:
 | U10 | Discover and qualify a first-job candidate | **DONE:** usability-test job `~022091106411892491962`; $15, 10–15 proposals, zero interviews, payment/phone verified, and all student/age/English/recording gates match owner evidence |
 | U11 | Resolve application capacity for that candidate | **DONE:** official proposal surface requires 7 Connects; balance/history, offers, invites and proposals are 0, no reward banner is exposed, and the only buy offer is 100 for $15 plus tax |
 | U12 | Freeze one tailored first-job proposal | **DONE:** immutable payload `c37eed9c…c68e926` contains the $15 terms, cover letter, five factual screening answers, no attachments, and zero unsupported claims |
-| U13 | Activate every zero-spend acquisition path | Inspect and complete account-visible free reward tasks; publish one bounded Project Catalog service; monitor invitations/direct offers; retain three sealed public-job candidates; reconcile all official states into one inventory |
+| U13 | Activate every zero-spend acquisition path | **IN PROGRESS:** the bounded Project Catalog service is approved, visible and monitored; inspect remaining factual free-reward tasks, monitor invitations/direct offers, retain three sealed public-job candidates and reconcile all official states into one inventory |
 | U14 | Close the first zero-spend acquisition effect | Accept one qualified invitation/direct offer or Project Catalog order, or submit the best sealed public-job proposal when granted/returned Connects cover its exact cost; never purchase capacity; verify official IDs and balance readback |
 | U15 | Replay immediately | Same proposal ID; zero new proposal and zero additional Connects |
 | U16 | Poll and answer the resulting thread | Official story/message IDs and no duplicate reply |
@@ -332,9 +332,17 @@ U13 atomic order:
    Active proposals 0, Submitted proposals 0 and the working-style account task; 38 focused tests
    pass. The SHA-fixed five-minute launchd label completed two wakes with exit 0, stable evidence
    hashes, zero stderr and no external marketplace effect.
-2. Inspect every account-visible onboarding/education reward; complete only factual free tasks and
-   verify any award in Connects History.
-3. Finish, publish and read back the bounded private Project Catalog draft as one live inbound service.
+2. **DONE for the current account surface:** the only visible task is the working-style assessment.
+   Its live page describes a subjective working-style profile signal and does not promise Connects,
+   so the loop does not fabricate answers or record a nonexistent reward. Connects History remains 0.
+3. **DONE:** the bounded service `You will get a Python script integrating one documented REST API
+   endpoint` is approved and visible at
+   `https://www.upwork.com/services/product/development-it-a-python-script-integrating-one-documented-rest-api-endpoint-2091146976410620036`.
+   The official dashboard reads Approved 1, Under Review 0, Drafts 0, Views 0 and Orders 0. Its owned
+   1600x1200 gallery image, one required client-input question, three delivery steps, $75 price,
+   three-day delivery, one revision and one-project concurrency cap are persisted. The five-minute
+   provider now fail-closed reads the Catalog inventory alongside Connects, invites, offers and
+   proposals; seven focused tests and a live four-page E2E pass.
 4. Read invitations, unread messages, direct offers and active contracts; join stable official IDs.
 5. Read official submitted and active proposal inventories and persist their stable IDs.
 6. Re-read every nonterminal job detail and record open, closed, removed or unknown without inference.

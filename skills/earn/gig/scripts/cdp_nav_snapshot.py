@@ -201,7 +201,9 @@ async def _wait_for_load(ws, deadline, start_cid):
     return False, cid
 
 
-async def navigate_and_snapshot(pass_id, seq, label, url, action):
+async def navigate_and_snapshot(
+    pass_id, seq, label, url, action, settle_seconds=0, viewport_width=0,
+):
     outdir = os.path.expanduser(f"~/gig/trajectory/{pass_id}")
     os.makedirs(outdir, exist_ok=True)
     evidence_path = os.path.join(outdir, f"{seq}-{label}.json")
@@ -217,11 +219,19 @@ async def navigate_and_snapshot(pass_id, seq, label, url, action):
         ) as ws:
             cid = 1
             await _call(ws, "Page.enable", {}, cid); cid += 1
+            if viewport_width:
+                await _call(ws, "Emulation.setDeviceMetricsOverride", {
+                    "width": viewport_width, "height": 900,
+                    "deviceScaleFactor": 1, "mobile": False,
+                }, cid)
+                cid += 1
             await ws.send(json.dumps({"id": cid, "method": "Page.navigate", "params": {"url": url}}))
             cid += 1
 
             deadline = asyncio.get_event_loop().time() + LOAD_TIMEOUT_SECS
             navigated_ok, cid = await _wait_for_load(ws, deadline, cid)
+            if settle_seconds:
+                await asyncio.sleep(settle_seconds)
 
             # page state (url + title) — evidence beyond the pixels, and proof navigation actually landed
             try:
