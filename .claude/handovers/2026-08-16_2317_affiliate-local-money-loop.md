@@ -1788,3 +1788,15 @@ Telegram manually; let the Repost owner flush at most one row per later pass.
 Physical free space is about 1.2 GiB because the shared Mac currently uses about
 13.7 GiB of 15 GiB swap. Old read-only `du` diagnostics owned by this effort were
 terminated; do not stop unrelated owners or browsers merely to reclaim swap.
+
+Repost Telegram transport is repaired and live-proven. Commit `77717589d` routes
+reports through the already-running OpenClaw Gateway `send` RPC and uses the body
+SHA-256 as the provider idempotency key, avoiding a second local runtime's shared
+SQLite contention. Commit `d2df68927` separates Gateway stderr warnings from the
+JSON receipt. Installed release is `20260822T191855-d2df6892`, with source/runtime
+CLI SHA-256
+`d88c2cbc70df0f729f387a4e6ae8f86635714753616f1848ad10fca8cb0dbea6`.
+Owner run 18 delivered provider message `28668`; run 19 received the same cached
+run ID/message ID, decremented backlog `21 -> 20`, posted nothing, changed no
+consumption row, and exited `0`. This proves replay-safe delivery readback rather
+than a duplicate Telegram send.

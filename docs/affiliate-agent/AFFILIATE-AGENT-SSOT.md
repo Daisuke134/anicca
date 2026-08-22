@@ -6704,3 +6704,11 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   `0ba5e2a71f7e16f260da78061e215776e0b226b31c6f049f9f6bc4b22a28e52d`.
   Installed readback renders raw 281 / weighted 231, one owned URL, and the
   required disclosure without claiming or publishing the proposal.
+- Repost Telegram now uses the already-running OpenClaw Gateway `send` RPC with
+  the report body SHA-256 as its idempotency key, rather than starting a second
+  local message runtime that contended on shared SQLite. Release
+  `20260822T191855-d2df6892` is source/runtime byte-equal. Live owner run 18
+  delivered provider message `28668`; its JSON validator initially rejected the
+  receipt because a migration warning shared the combined stream. Run 19 kept
+  stderr separate, received the same deduplicated run ID and message ID, reduced
+  backlog `21 -> 20`, created no post, and changed no proposal consumption.
