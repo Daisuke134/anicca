@@ -127,7 +127,31 @@ class ActionExecutor:
                             ),
                         )
                     await opener.click(timeout=self._timeout_ms)
-                    target = await self._target(page, action.target)
+                    try:
+                        target = await self._target(page, action.target)
+                    except RuntimeError:
+                        if not await opener.evaluate(
+                            "el => el.tagName === 'INPUT' || el.tagName === 'TEXTAREA'"
+                        ):
+                            raise
+                        option_label = re.sub(
+                            r"\s+(?:not checked|checked)$",
+                            "",
+                            action.target.label,
+                            flags=re.IGNORECASE,
+                        )
+                        await opener.fill(option_label, timeout=self._timeout_ms)
+                        prompt_option = page.locator(
+                            "[data-automation-id='promptOption']"
+                        ).filter(has_text=option_label)
+                        await prompt_option.first.wait_for(
+                            state="visible", timeout=self._timeout_ms
+                        )
+                        if await prompt_option.count() != 1:
+                            raise RuntimeError(
+                                "typed option must resolve to exactly one prompt option"
+                            )
+                        target = prompt_option.first
             else:
                 target = await self._target(page, action.target)
             if action.kind in {"click", "choose"}:
