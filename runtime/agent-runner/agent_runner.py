@@ -309,8 +309,6 @@ def provider_process_env(provider: str, provider_config: dict[str, Any],
                 raise ValueError("codex TLS certificate bundle unavailable")
             child_env["SSL_CERT_FILE"] = str(ssl_cert_file)
 
-        if child_env.get("OPENAI_API_KEY"):
-            return child_env
         model_providers = provider_config.get("model_providers", {})
         if isinstance(model_providers, dict):
             for model_provider in model_providers.values():
