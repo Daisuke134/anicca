@@ -454,11 +454,15 @@ U14 atomic order:
    title-based identity. In the same wake, an offer/invitation packet opens its official detail URL
    read-only and marks it `actionable` only when the matching accept/proposal control and decline
    control both exist; missing controls remain `unknown`. Focused inbound/provider tests pass 23/23.
+   An actionable detail is sealed as a mode-600 private packet inside a mode-700 local queue; the
+   public state exposes only its SHA-256 and never the client text. Release `db40a86c8` completed a
+   zero-inbound wake at `2026-08-22T17:55:40.995152+00:00` with exit 0 and private packet files 0→0,
+   proving empty inventory cannot create model work or an external effect.
    Production release `adb317892` completed with exit 0 at
    `2026-08-22T17:51:55.687566+00:00`: invitations 0, offers 0, Catalog orders 0, public proposals 0,
    earnings USD 0 and provider-effect rows 0. Next, when an invitation is actionable, bind its exact
-   official detail evidence to a zero-Connect sealed proposal payload before reusing the U14-3
-   preflight/fence/official-ID path.
+   official detail evidence to a zero-Connect sealed proposal payload through the existing
+   `application-intent-planner` before reusing the U14-3 preflight/fence/official-ID path.
 
 ### Task 7: Record Upwork's private action matrix
 
