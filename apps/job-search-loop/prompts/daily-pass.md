@@ -31,7 +31,10 @@ or candidate concept first. Click that exact `options` button, inspect its retur
 post-click observation, then use `runtime choose` with that same opener and one exact
 fresh visible option. `choose` atomically reopens short-lived provider overlays and
 commits the model-selected option; do not directly click an observed overlay option
-in a later process. If an earlier
+in a later process. The options click's returned JSON already is the fresh
+observation: never call `observe` or `wait` between that click and `choose`. Losing an
+overlay after an extra observation is an agent sequencing error, never
+`provider_unavailable`. If an earlier
 search left zero options, clear the textbox with one empty `kind=type` action, then
 click the fresh `options` button again. Never press Continue while that picker is
 unfilled, and never invent a runtime module or command to recover it.
