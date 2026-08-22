@@ -82,14 +82,17 @@ def build_earnings_result(snapshot: Mapping[str, Any]) -> dict[str, Any]:
         if status.casefold().strip() in SETTLED_STATUSES:
             if amount <= 0:
                 raise EarningsReadbackError(f"rows[{index}] settled amount must be positive")
-            settled_rows.append(
-                {
+            normalized_row = {
                     "payment_id": payment_id.strip(),
                     "status": status.casefold().strip(),
                     "earned_usd": amount,
                     "payout_date": payout_date.isoformat(),
                 }
-            )
+            if row.get("work_id") is not None:
+                if not isinstance(row.get("work_id"), str) or not row["work_id"].strip():
+                    raise EarningsReadbackError(f"rows[{index}].work_id must be a non-empty string")
+                normalized_row["work_id"] = row["work_id"].strip()
+            settled_rows.append(normalized_row)
 
     settled_total = sum((row["earned_usd"] for row in settled_rows), Decimal("0.00"))
     window_start = observed_day - timedelta(days=29)

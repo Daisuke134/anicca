@@ -100,6 +100,18 @@ esac
   --store "$JOB_SEARCH_STATE_ROOT/mercor/work-events.jsonl" \
   --outbox "$TELEGRAM_OUTBOX" \
   --output "$EVIDENCE/mercor-work-sync.json"
+MERCOR_EARNINGS_SNAPSHOT="${MERCOR_EARNINGS_SNAPSHOT:-$JOB_SEARCH_STATE_ROOT/mercor/earnings-readback.json}"
+if [[ -f "$MERCOR_EARNINGS_SNAPSHOT" ]]; then
+  "$JOB_SEARCH_PYTHON" -m job_search_loop.mercor_earnings_sync \
+    --snapshot "$MERCOR_EARNINGS_SNAPSHOT" \
+    --store "$JOB_SEARCH_STATE_ROOT/mercor/work-events.jsonl" \
+    --outbox "$TELEGRAM_OUTBOX" \
+    --output "$EVIDENCE/mercor-earnings-sync.json"
+else
+  printf '%s\n' '{"status":"not_observed","synced_count":0,"events":[],"reason":"no live earnings snapshot"}' \
+    >"$EVIDENCE/mercor-earnings-sync.json"
+  chmod 600 "$EVIDENCE/mercor-earnings-sync.json"
+fi
 "$JOB_SEARCH_PYTHON" -m job_search_loop.interview_prep deliver \
   --database "$PREP_DATABASE" \
   --outbox "$OUTBOX_DATABASE" \
