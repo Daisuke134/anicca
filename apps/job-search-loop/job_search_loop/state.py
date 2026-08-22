@@ -120,7 +120,7 @@ def same_application_surface(actual: str, expected: str) -> bool:
     ):
         return False
 
-    def workday_identity(path: str) -> tuple[tuple[str, ...], str] | None:
+    def workday_identity(path: str) -> str | None:
         segments = tuple(unquote(part).casefold() for part in path.split("/") if part)
         try:
             job_index = segments.index("job")
@@ -128,9 +128,10 @@ def same_application_surface(actual: str, expected: str) -> bool:
             return None
         if job_index + 2 >= len(segments):
             return None
-        # Workday mutates locale casing, location punctuation, and appends
-        # `/apply/*`; tenant path plus requisition-bearing slug stay stable.
-        return segments[:job_index], segments[job_index + 2]
+        # Workday mutates or inserts the locale before the tenant path, mutates
+        # location punctuation, and appends `/apply/*`.  The requisition-bearing
+        # slug is the stable identity within the already-matched tenant host.
+        return segments[job_index + 2]
 
     actual_identity = workday_identity(actual_url.path)
     return actual_identity is not None and actual_identity == workday_identity(expected_url.path)

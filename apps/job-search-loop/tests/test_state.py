@@ -37,6 +37,12 @@ class StateTests(unittest.TestCase):
                 "https://rakuten.wd1.myworkdayjobs.com/en-us/rakuteninc/job/tokyo-japan/other_999",
             )
         )
+        self.assertTrue(
+            same_application_surface(
+                "https://workday.wd5.myworkdayjobs.com/ja-JP/Workday/job/Japan%2C-Tokyo/Account-Executive_JR-0103573-1/apply/autofillWithResume",
+                "https://workday.wd5.myworkdayjobs.com/Workday/job/Japan-Tokyo/Account-Executive_JR-0103573-1",
+            )
+        )
 
     def test_workday_recovery_uses_the_provider_search_href_shape(self):
         posting = "https://rakuten.wd1.myworkdayjobs.com/en-US/RakutenInc/job/Tokyo-Japan/role_1036041-147"
