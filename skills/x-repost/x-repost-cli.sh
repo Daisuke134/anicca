@@ -562,13 +562,14 @@ PYEOF
   finish 0 "affiliate proposal published and read back"
 fi
 
-# The daily ceiling remains a hard brake for the ordinary repost path after today's useful
-# original exists. This is the second, post-Affiliate gate; it must preserve the same single-slot
-# reservation as the earlier gate or it silently cancels that reservation before recon.
-if [ "${TODAY_COUNT:-0}" -ge "${X_REPOST_DAILY_MAX:-12}" ] \
+# The second, post-Affiliate gate mirrors the earlier opt-in emergency ceiling. By default the
+# owner continues to recon; an operator may still set a positive ceiling without bypassing
+# recovery of an unknown prior effect.
+if [ "${X_REPOST_DAILY_MAX:-0}" -gt 0 ] \
+  && [ "${TODAY_COUNT:-0}" -ge "${X_REPOST_DAILY_MAX}" ] \
   && [ "${ORIGINAL_TODAY_COUNT:-0}" -gt 0 ] \
   && [ "$GENERIC_RECOVERY_PENDING" != "True" ]; then
-  log "daily ceiling reached ($TODAY_COUNT/${X_REPOST_DAILY_MAX:-12}) -- nothing to do"
+  log "explicit daily ceiling reached ($TODAY_COUNT/${X_REPOST_DAILY_MAX}) -- nothing to do"
   touch "$STATE/.last-pass"
   exit 0
 fi
