@@ -2387,7 +2387,7 @@ def _run_isolated_file_owner(args, root: Path, context: Path, prompt_text: str,
             or not re.fullmatch(r"[0-9a-f]{64}", context_inputs_sha256)):
         raise Failure("file_builder")
     with _project_workspace(
-        root, f"paid-file-owner-{requirements_sha256[:12]}-{context_inputs_sha256[:12]}-",
+        root, f"paid-file-owner-{requirements_sha256[:12]}-",
         resume=True,
     ) as temporary:
         staging = Path(temporary)
