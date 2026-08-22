@@ -143,6 +143,17 @@ raise SystemExit(1)
 PYEOF
 }
 
+# Prefer the already-installed runtime dependency. `uv run` remains the portable fallback, but
+# making it the unconditional path forced a Playwright wheel download after every cache cleanup
+# and turned low disk into a failed posting pass even though system Python was already ready.
+run_x_post() {
+  if "$PY" -c 'import playwright' >/dev/null 2>&1; then
+    "$PY" "$SKILL/scripts/x_post.py" "$@"
+  else
+    "$UV" run --quiet "$SKILL/scripts/x_post.py" "$@"
+  fi
+}
+
 # ---------------------------------------------------------------- gate: CEO registry + budget
 # shellcheck source=/dev/null
 source "$REPO_ROOT/lib/registry-enforce.sh"
@@ -290,7 +301,7 @@ with open(posted, "a+", encoding="utf-8") as stream:
 PYEOF
   }
   if [ "$AFFILIATE_STATE" = "RECONCILE" ] || [ "$AFFILIATE_STATE" = "VERIFY_UNVERIFIED" ]; then
-    "$UV" run --quiet "$SKILL/scripts/x_post.py" --cdp "$CDP" \
+    run_x_post --cdp "$CDP" \
       --text-file "$EV/post.txt" --mode reconcile >"$EV/post.json" 2>>"$EV/post.err"
     AFFILIATE_RC=$?
     if [ "$AFFILIATE_RC" -eq 0 ] && [ "$($PY -c 'import json,sys; print(json.load(open(sys.argv[1])).get("posted"))' "$EV/post.json")" = "True" ]; then
@@ -327,7 +338,7 @@ PYEOF
     log "affiliate proposal was claimed by another pass; skipping"
     finish 0 "affiliate proposal already claimed"
   fi
-  "$UV" run --quiet "$SKILL/scripts/x_post.py" --cdp "$CDP" \
+  run_x_post --cdp "$CDP" \
     --text-file "$EV/post.txt" --mode original >"$EV/post.json" 2>>"$EV/post.err"
   AFFILIATE_RC=$?
   if [ "$AFFILIATE_RC" -eq 2 ]; then
@@ -674,7 +685,7 @@ SRC_TEXT="$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1]))["text"
 SRC_METRICS="$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1]))["metrics"])' "$EV/source.json")"
 
 # ---------------------------------------------------------------- 6. publish
-"$UV" run --quiet "$SKILL/scripts/x_post.py" --cdp "$CDP" \
+run_x_post --cdp "$CDP" \
   --source-url "$SOURCE_URL" --text-file "$EV/post.txt" --mode "$KIND" >"$EV/post.json" 2>>"$EV/post.err"
 PUBLISH_RC=$?
 if [ "$PUBLISH_RC" -eq 2 ]; then
