@@ -60,6 +60,17 @@ class MercorPassContractTests(unittest.TestCase):
         }
         AgentRunner.validate(result, schema)
 
+    def test_runner_snapshots_prompt_and_schema_into_private_pass_evidence(self):
+        script = (ROOT / "scripts" / "run-mercor.sh").read_text(encoding="utf-8")
+        for required in (
+            'PASS_PROMPT="$EVIDENCE/mercor-pass.md"',
+            'PASS_SCHEMA="$EVIDENCE/mercor-pass-result.v1.schema.json"',
+            'cp "$JOB_SEARCH_APP_ROOT/schemas/mercor-pass-result.v1.schema.json" "$PASS_SCHEMA"',
+            '--prompt "$PASS_PROMPT"',
+            '--schema "$PASS_SCHEMA"',
+        ):
+            self.assertIn(required, script)
+
 
 if __name__ == "__main__":
     unittest.main()
