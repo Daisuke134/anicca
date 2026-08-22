@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import sqlite3
 from pathlib import Path
 
 
@@ -120,6 +121,31 @@ def test_provider_without_message_id_is_quarantined_and_not_retried(tmp_path: Pa
     assert calls == 1
     assert first["telegram"]["status"] == "delivery_uncertain"
     assert replay == first
+
+
+def test_openclaw_sender_timeout_quarantines_once_and_replay_does_not_retry(tmp_path: Path, monkeypatch) -> None:
+    module = load_module()
+    calls = 0
+
+    def timeout(_args, **_kwargs):
+        nonlocal calls
+        calls += 1
+        raise subprocess.TimeoutExpired("openclaw", 30)
+
+    import subprocess
+    monkeypatch.setattr(module.subprocess, "run", timeout)
+    monkeypatch.setenv("CAPAFY_TELEGRAM_TARGET", "fixture-chat")
+    receipt = module.build_receipt(sources(), "2026-08-22T11:00:00Z")
+    outbox = tmp_path / "outbox.sqlite"
+    first = module.deliver_receipt(receipt, outbox, tmp_path / "receipts", module._openclaw_sender)
+    replay = module.deliver_receipt(receipt, outbox, tmp_path / "receipts", module._openclaw_sender)
+
+    assert calls == 1
+    assert first["telegram"] == {"status": "delivery_uncertain", "message_id": None}
+    assert replay == first
+    with sqlite3.connect(outbox) as db:
+        row = db.execute("SELECT status, attempt_count, provider_message_id, last_error_code FROM telegram_outbox").fetchone()
+    assert row == ("delivery_uncertain", 1, None, "sender_timeout")
 
 
 def test_hourly_goal_monitor_uses_unified_receipt_before_legacy_sender() -> None:

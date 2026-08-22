@@ -183,12 +183,15 @@ def _openclaw_sender(message: str) -> str:
     target = os.environ.get("CAPAFY_TELEGRAM_TARGET") or os.environ.get("TELEGRAM_ALERT_CHAT_ID")
     if not target:
         raise DeliveryUncertain("telegram_target_missing")
-    result = subprocess.run(
-        ["openclaw", "message", "send", "--channel", "telegram", "--target", target, "--message", message, "--json"],
-        capture_output=True,
-        text=True,
-        timeout=30,
-    )
+    try:
+        result = subprocess.run(
+            ["openclaw", "message", "send", "--channel", "telegram", "--target", target, "--message", message, "--json"],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise DeliveryUncertain("sender_timeout") from exc
     try:
         payload = json.loads(result.stdout[result.stdout.find("{"):])
     except (json.JSONDecodeError, ValueError):
