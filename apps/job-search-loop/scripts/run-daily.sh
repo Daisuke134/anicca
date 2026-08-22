@@ -304,6 +304,7 @@ MODEL_TIMEOUT_SECONDS="${JOB_SEARCH_BROWSER_TIMEOUT_SECONDS:-300}"
 set +e
 "$JOB_SEARCH_PYTHON" "$JOB_SEARCH_RUNNER" \
   --task-class browser-lane-agent \
+  --escalation-reason mandatory-model-browser-loop \
   --timeout-seconds "$MODEL_TIMEOUT_SECONDS" \
   --prompt-file "$JOB_SEARCH_APP_ROOT/prompts/daily-pass.md" \
   --schema "$JOB_SEARCH_APP_ROOT/schemas/pass-result.v1.schema.json" \

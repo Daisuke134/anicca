@@ -376,8 +376,8 @@ This is the remaining implementation-order SSOT. Only the first
 | 6 | Define the Job Hunter browser-agent framework package and public contracts | `done` | Package boundary, dependency direction, API version, and orchestrator/session/observation/action/answer/checkpoint/verifier/provider-hint signatures are fixed below |
 | 7 | Define one provider-neutral sanitized row-envelope and row-run state schema | `done` | `schemas/browser-row-run.v1.schema.json` allowlists exact identity/evidence pointers and excludes secrets, raw answers, provider workflows, and terminal retry inputs |
 | 8 | Add framework contract tests and recorded real-shape replays | `done` | `tests.test_model_browser_loop` replays sanitized live Workday plus recorded Ashby shapes, rejects forbidden envelopes, and detects all five current fast-path contract gaps |
-| 9 | Route `browser-lane-agent` to Luna xhigh with the existing bounded runner | `pending_actionable` | One config route, one runner, one timeout; no fallback executor |
-| 10 | Remove `JOB_SEARCH_ENABLE_MODEL_FALLBACK` as a production decision | `pending_after_9` | Every eligible Workday row reaches one framework run even after recognized preflight |
+| 9 | Route `browser-lane-agent` to Luna xhigh with the existing bounded runner | `done` | `luna-xhigh-browser-loop` has one Codex Luna xhigh candidate, the existing 900-second bound, explicit reason at both callers, and no fallback executor |
+| 10 | Remove `JOB_SEARCH_ENABLE_MODEL_FALLBACK` as a production decision | `pending_actionable` | Every eligible Workday row reaches one framework run even after recognized preflight |
 | 11 | Replace Workday/Ashby filler ownership with the framework orchestrator | `pending_after_10` | Fast paths produce hints/evidence only and cannot navigate, fill, or terminate an eligible form |
 | 12 | Make Workday the only active application lane during 10P | `pending_after_11` | Ashby discovery may refresh, but no Ashby form opens before Workday live gate closes |
 | 13 | Implement persistent CDP session ownership and reconnection | `pending_after_12` | Framework reuses `:9222`, isolates its row tab/context, reconnects safely, and closes only what it opened |
@@ -716,6 +716,25 @@ RED: 3 tests; missing live-shape fixture error plus an over-broad screenshot-gap
 GREEN: 3 tests; 3 passed; Workday-specific observation gap corrected; runtime 0.011s
 Command: python3 -m unittest tests.test_model_browser_loop -v
 ```
+
+#### Browser model route
+
+`runtime/agent-runner/config.json` has exactly one `browser-lane-agent` route:
+`luna-xhigh-browser-loop`, one `codex` candidate using `gpt-5.6-luna` with
+`effort=xhigh`, and the existing 900-second timeout. The shared runner's restricted
+effort gate remains active. Both current callers—`scripts/run-daily.sh` and
+`job_search_loop.agent_runner.AgentRunner.run(task="submit")`—supply the identical
+explicit reason `mandatory-model-browser-loop`; removing it fails before provider
+launch. No second candidate, fallback provider, executor, timeout, or browser owner
+was introduced.
+
+Atomic 9 evidence is a two-failure RED against the previous Terra route, followed
+by 10 focused route/caller/runner/schema tests passing, shell syntax passing, and a
+direct JSON route readback. The broader legacy canonical-runtime suite still has
+three independently observed stale-harness failures (two fake runs do not create
+the current Ashby discovery artifact and one asserts the superseded 1800-second
+interval); these are not route evidence and must be corrected when the daily owner
+body is changed in Atomic 10.
 
 #### Source lineage
 
