@@ -17,9 +17,9 @@ the complete account-create, sign-in, multi-page, upload, variable-question, rev
 submit, and receipt lifecycle. Ashby follows as 10Q using the same agent contract;
 Greenhouse, Lever, and generic ATS coverage follow only after both live gates close.
 The user-confirmed Salesforce FDE URL remains excluded from reapplication. The
-active release is `537c73f49831b8908334d39764dc735d5c6df377`; launchd remains hourly
+active release is `c02a80ac77f7bd966ade30cf857489fd14d462a0`; launchd remains hourly
 at `StartInterval=3600`. No Rakuten submit request, completion UI, or receipt evidence
-exists yet; Telegram checkpoint reporting has a real ACK at message ID `28422`.
+exists yet; Telegram checkpoint reporting has a real ACK at message ID `28443`.
 
 **Architecture decision:** all eligible ATS form interaction is mandatory
 model-based browser work. Deterministic code owns only discovery, eligibility,
