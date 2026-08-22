@@ -21,6 +21,66 @@ Life Manager public repositoryだけをsourceとして、Capafy skillの発見�
 | creative renderer | Capafy STEP3はrepo外`~/.claude/skills/faceless-money-factory`を直接呼ぶstock b-roll + TTS | **FAIL: OSS/self-containedでなく品質も未gate** |
 | better local assets | repo内`skills/video`と旧`video-processing-editing`が存在。ReelFarmはTikTok slideshow/API automation | FFmpeg編集をcanonical rendererへ採用、ReelFarmはTikTok補助rail |
 | Telegram | promptはvideo、listing、agent_id、native URL、caption、message IDを要求するが、hourly revenue/new-skill receiptとの単一run joinはない | **FAIL: receipt schema未統合** |
+| live inventory read | canonical `inventory_status.py`はserver responseを正規化できず`SERVER_UNREADABLE` | **FAIL: slot数を推測せずsubmission停止、diagnose対象** |
+
+## Acceptance criteria
+
+1. Capafyに関するsource、test、launchd templateはLife Manager repo内だけに存在し、runtime dependency scanが`~/.claude/skills`、`~/.openclaw/skills`、`/Users/anicca/anicca`を0件とする。
+2. server truthから各Agentの`agent_id`、title、latest version、`status`、`auditStatus`、billing、salesを取得し、5-slot occupancyを決定できる。
+3. fresh Agentの作成は`status in {0,1,2,3}`の別Agentが5未満の時だけ行う。server unreadable時は新規Agentを作らない。
+4. `status=2`のrejectionは同じ`agent_id`で原因を保存し、production/test/listingを修正し、全gate後に同じAgentのnew versionとして再提出する。5-slotが満杯でもこのretryを止めない。
+5. `status=4`へ遷移したAgentは未掲載slotから外れ、次のready candidateを1件だけsubmitする。同一wakeで空いた全slotを一斉に埋めない。
+6. 5-slot満杯時もlisted skillのmarketing、creative改善、metrics、refund、subscription、MRR、Telegram reporting、次candidateのoffline build/testを継続する。
+7. marketing creativeは実skillのinput→outputまたはbefore→afterを見せ、canonical video quality gateを通る。generic stock b-roll + TTSだけのartifactをpublicへ出さない。
+8. 各terminal runはskill/version status、slot counts、creative hash、account、native URL、money split、Telegram message IDを単一`run_id`で保存する。
+9. hourly control loopとdaily side-effect loopが7日連続で動き、duplicate Agent、duplicate version、duplicate public post、missing receiptが0件になる。
+10. revenue truthはone-time、hourly、subscription、refund、fee、pending、settledを分離し、settled net MRRだけで`$10,000` gateを判定する。
+
+## As-Is / To-Be
+
+| concern | As-Is | To-Be |
+|---|---|---|
+| source | Life Manager内の3 skill treeと旧home/repo dependencyに分散 | `skills/capafy/` bounded contextとrepo-owned shared video/provider adapter |
+| scheduling | loaded jobが旧repo pathを実行 | repo templateからinstalled release pathだけを実行 |
+| slot control | finite inventory drainer。server response変化で現在read不能 | server-normalized 5-slot state machine + candidate backlog |
+| rejection | retry codeはあるがcompany-wide receipt/queueと未統合 | same-agent correction loop、原因分類、再発test、resubmit readback |
+| cap full | healthy-idleとしてpublisher全体が終了 | fresh submitだけidle。build、marketing、money、repairは継続 |
+| creative | generic stock b-roll + TTS、repo外renderer | real demonstration first、FFmpeg quality gate、artifact evidence |
+| money | gross/order/pending/MRRのsnapshotがstale | hourly fresh reconciliation、settled net MRRがobjective |
+| reporting |別jobのTelegram文面 | single run receipt + state-change/daily-close dedupe |
+
+## Five-slot lifecycle
+
+5-slotは「1回に5 skillsを含める」という意味ではない。`status 0–3`の未掲載Agentを最大5つ同時に保持できるfresh-Agent capである。accepted/listed Agentは`status=4`となり未掲載capから外れる。rejected Agentは捨てて別Agentを作らず、同じ`agent_id`を修正・version updateして再提出する。
+
+```mermaid
+stateDiagram-v2
+  [*] --> Ready: offline build and tests pass
+  Ready --> Draft: free slot and create Agent
+  Draft --> UnderReview: CP1 CP2 CP3 readback
+  UnderReview --> Listed: status 4
+  UnderReview --> Rejected: status 2
+  Rejected --> Fixing: preserve agent_id and rejection reason
+  Fixing --> UnderReview: new version on same Agent
+  Listed --> Selling: marketing and customer use
+  Selling --> Improving: metrics revenue reviews
+  Improving --> Listed: version update readback
+```
+
+### Slot allocator contract
+
+| observed state | publisher action | work that continues |
+|---|---|---|
+| `occupied < 5` + retry exists | retry rejected Agent first | marketing、metrics、money、candidate build |
+| `occupied < 5` + no retry + ready candidate | submit exactly one fresh Agent | same |
+| `occupied >= 5` + retry exists | retry same Agent; it reuses its slot | same |
+| `occupied >= 5` + no retry | no fresh submission | marketing、metrics、money、offline candidate build |
+| listed transition frees slot | next daily wake submits one best candidate | listed portfolio keeps selling |
+| server unreadable | do not create/update Agent | public readback where available、marketing safety checks、report blocker |
+
+The existing Life Manager runbook is the primary implementation evidence: `DAILY_LOOP.md` states that a rejected retry reuses its existing slot and proceeds when unlisted is 5, while the five-slot cap applies only to a fresh Agent. Capafy describes itself as a marketplace where publishers upload Skills and users buy/run them.
+
+ソース: [Capafy: Become a Publisher](https://capafy.ai/earn) / 核心の引用: 「Publishers upload Skills they've built; users discover, buy, and run them.」
 
 ## Metric contract
 
@@ -44,7 +104,7 @@ flowchart LR
   B --> P[Capafy publish and remote readback]
   P --> V[Canonical FFmpeg creative]
   V --> I[Instagram Reel]
-  V --> T[TikTok via ReelFarm optional]
+  V --> T[TikTok derivative via ReelFarm]
   I --> M[Native metrics and attributed click]
   T --> M
   M --> R[Subscription reconcile]
@@ -80,6 +140,54 @@ flowchart LR
 
 Hourly wake does not create or publish a new skill every hour. It observes, reconciles and repairs. Supply and public posting remain bounded daily actions to prevent duplicate drafts, duplicate posts and account damage.
 
+## Finished 24/7 operation
+
+24/7は1つのLLM processを永久起動する意味ではない。launchdが短いidempotent wakeを起動し、各wakeがserver/stateを読み、1つのbounded transitionを行い、receiptを残して終了する。
+
+```mermaid
+flowchart TB
+  H[Every hour] --> HR[Health slot revenue refund reconcile]
+  D[Every day] --> DA[One supply transition]
+  D --> DM[One marketing transition]
+  W[Metric windows] --> WM[Native metrics attribution]
+  C[Daily close] --> CR[Telegram company receipt]
+
+  HR --> Q{Server readable?}
+  Q -- no --> F[Fail closed on submission and report]
+  Q -- yes --> S{Slot state}
+  S -- Rejected --> X[Fix and resubmit same Agent]
+  S -- Free --> N[Submit one best ready skill]
+  S -- Full --> B[Build next candidate offline]
+
+  X --> P[Remote version readback]
+  N --> P
+  B --> M[Market listed portfolio]
+  P --> M
+  M --> R[Sales subscription refund readback]
+  R --> TG[Telegram messageId receipt]
+  TG --> H
+```
+
+Macが起動中ならlaunchd user agentsが運転する。sleep/offlineでmissしたwakeは次回wakeがdurable stateから再開し、時刻だけを根拠に二重submissionしない。Appleはtimed launchd jobを`StartCalendarInterval`で構成すると説明する。
+
+ソース: [Apple: Scheduling Timed Jobs](https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPSystemStartup/Chapters/ScheduledJobs.html) / 核心の引用: 「specify a StartCalendarInterval key containing a dictionary of time values.」
+
+## How the portfolio makes money
+
+1. **Supply**: live sales、search demand、support/rejection evidenceからone-job skillを作る。
+2. **Conversion**: listingはverified output、test input、honest capability、clear billingを持つ。
+3. **Distribution**: listed Agentごとに実outputを見せるshort videoを作り、native accountからlanding/listingへ送る。
+4. **Monetization**: Capafyのsubscription、hourly access、downloadの実orderを受ける。
+5. **Retention**: usage、review、refund、support、churnを読み、売れるAgentのversionを改善する。
+6. **Allocation**: slotが空いたら、最も高いsettled contributionを見込むready candidateを1件入れる。
+7. **Compounding**: listed portfolioは新規submission待ち中も販売とmarketingを継続する。
+
+Capafy自身もrepeatable AI workflowをpaid Skillにし、subscription、hourly access、downloadでearnすると説明する。
+
+ソース: [Capafy: How to Make Money With AI](https://capafy.ai/blog/how-to-make-money-with-ai) / 核心の引用: 「earn through subscriptions, hourly access, or downloads on Capafy.」
+
+`$10K MRR`へ数えるのはsubscriptionだけである。hourly/downloadはcash revenueとcontributionへ数えるがMRRへ混ぜない。marketingのprimary optimization chainは`qualified native view → landing click → product view → paid subscription → retained subscription → settled net MRR`とする。
+
 ## Creative contract
 
 The Capafy marketing loop reuses one canonical Life Manager video renderer. It does not call repo-external `faceless-money-factory`.
@@ -90,7 +198,7 @@ The Capafy marketing loop reuses one canonical Life Manager video renderer. It d
 4. `video-processing-editing` behavior is ported into Life Manager: one FFmpeg encode pass, normalized BT.709/yuv420p, mixed/normalized audio, burned captions, frame-accurate edits.
 5. Gate requires 1080x1920, 9:16, audible narration, caption safe area, no black frames, no duplicated opening, no secret/PII, and a generated contact sheet plus full mp4 for review evidence.
 6. Instagram receives the quality-gated video through the existing Capafy account/poster rail.
-7. ReelFarm is optional for TikTok slideshow derivatives only. It is not the canonical IG renderer and does not own scheduling or revenue truth.
+7. ReelFarmはTikTok slideshow derivativeにだけ使う。canonical IG renderer、scheduler、revenue truthにはしない。
 8. A native post URL readback is required before a post is recorded as published.
 
 Meta documents a dedicated Reel size/aspect-ratio contract; the runtime must validate the produced file before upload rather than assume the renderer complied.
@@ -128,16 +236,64 @@ Items are executed top-to-bottom. Only one item is active.
 | C4 | fix false-green exits so child failure remains nonzero and terminal heartbeat is written only after classified completion | failure injection returns nonzero; no false healthy marker | pending |
 | C5 | fix event identity and incident monotonicity | repeated observation is idempotent; new observation gets new event ID; verified cannot regress to unresolved | pending |
 | C6 | run a bounded hourly reconcile against live Capafy account/inventory/sales/refunds/subscriptions | fresh receipt separates MRR, one-time, pending, refunds; unknown remains unknown | pending |
-| C7 | consolidate Telegram schema and dedupe | one state-change message returns message ID and joins skill, post and revenue by run_id | pending |
-| C8 | port the required FFmpeg editing subset from `video-processing-editing` into repo-owned canonical renderer | unit tests and one local 1080x1920 candidate artifact pass probe/audio/caption/secret gates | pending |
-| C9 | replace Capafy STEP3 repo-external renderer call with canonical renderer | dependency audit contains no `~/.claude/skills/faceless-money-factory` | pending |
-| C10 | render one real Capafy listing candidate and send it to Telegram before public adoption | actual mp4 + Telegram media message ID + user-observable quality artifact | pending |
-| C11 | run one live IG pass through existing account rail | selected listing -> artifact -> account -> native Reel URL -> metrics -> Telegram message ID | pending |
-| C12 | add optional ReelFarm TikTok derivative behind explicit credential/account/quality gates | no credential means honest no-op; success requires TikTok native URL | pending |
-| C13 | run one real skill supply pass | winner/gap evidence -> skill tests -> Capafy remote under-review/online readback -> Telegram message ID | pending |
-| C14 | connect post/click/subscription windows without claiming causal proof | attribution row is candidate unless Capafy exposes order-level UTM/source | pending |
-| C15 | prove seven consecutive daily healthy terminals and hourly freshness | 7-day ledger has no stale source, duplicate post, duplicate draft or missing Telegram receipt | pending |
-| C16 | operate growth experiments until settled net MRR reaches `$10,000` | active subscription readback and refunds/fees reconcile to target | pending |
+| C7 | normalize current Capafy server response and restore exact status/slot inventory readback | live call returns agent rows and deterministic occupied/free/retry counts | pending |
+| C8 | implement slot allocator contract | table-driven tests cover free/full/rejected/listed/server-unreadable without duplicate Agent creation | pending |
+| C9 | implement same-agent rejection repair queue | real rejected fixture preserves agent_id, records reason, adds regression test, creates version update | pending |
+| C10 | create durable offline candidate backlog | cap-full wake can research/build/test one candidate without platform submission | pending |
+| C11 | consolidate Telegram schema and dedupe | one state-change message returns message ID and joins skill, slot, post and revenue by run_id | pending |
+| C12 | port the required FFmpeg editing subset from `video-processing-editing` into repo-owned canonical renderer | unit tests and one local 1080x1920 candidate artifact pass probe/audio/caption/secret gates | pending |
+| C13 | replace Capafy STEP3 repo-external renderer call with canonical renderer | dependency audit contains no `~/.claude/skills/faceless-money-factory` | pending |
+| C14 | add demonstration-first creative gate | public candidate shows verified skill input/output or before/after; generic b-roll-only fixture fails | pending |
+| C15 | render one real Capafy listing candidate and send it to Telegram before public adoption | actual mp4 + Telegram media message ID + user-observable quality artifact | pending |
+| C16 | run one live IG pass through existing account rail | selected listing -> artifact -> account -> native Reel URL -> metrics -> Telegram message ID | pending |
+| C17 | add ReelFarm TikTok derivative behind credential/account/quality gates | no credential means honest no-op; success requires TikTok native URL | pending |
+| C18 | run one real slot-controlled supply pass | inventory readback -> allocator decision -> skill/version remote status -> Telegram message ID | pending |
+| C19 | prove one rejected Agent correction/resubmit E2E | same agent_id, new version, under-review readback, no orphan Agent | pending |
+| C20 | prove one listed transition frees a fresh slot | status=4 reduces occupied count and next daily wake submits exactly one candidate | pending |
+| C21 | connect post/click/subscription windows without claiming causal proof | attribution row is candidate unless Capafy exposes order-level UTM/source | pending |
+| C22 | prove seven consecutive daily healthy terminals and hourly freshness | 7-day ledger has no stale source, duplicate Agent/version/post or missing Telegram receipt | pending |
+| C23 | operate growth and retention experiments until settled net MRR reaches `$10,000` | active subscription readback and refunds/fees reconcile to target | pending |
+
+## Test matrix
+
+| ID | To-Be | test/evidence | cover |
+|---|---|---|---|
+| T1 | self-contained Life Manager source | dependency scan + clean clone test | pending |
+| T2 | five-slot allocator | `test_slot_allocator` table: 0–5 occupied, retry/no retry | pending |
+| T3 | same-Agent rejection retry | `test_rejected_retry_preserves_agent_id` | pending |
+| T4 | listed frees slot | `test_listed_agent_not_counted_as_unlisted` | pending |
+| T5 | server unreadable fail-close | `test_server_unreadable_blocks_only_platform_write` | pending |
+| T6 | cap-full productive idle | offline candidate build + marketing/revenue wake evidence | pending |
+| T7 | video quality | probe, audio, caption, black-frame, secret and demonstration fixtures | pending |
+| T8 | public distribution | native URL logged-out readback | pending |
+| T9 | money separation | one-time/hourly/subscription/refund/fee/MRR fixtures | pending |
+| T10 | receipt exactly once | duplicate wake yields one run receipt and one Telegram message ID | pending |
+| T11 | seven-day operation | launchd/readback ledger audit | pending |
+
+| E2E item | value |
+|---|---|
+| UI変更 | なし（Capafy/Instagramの外部UI automationはあり） |
+| 結論 | Maestro不要。実Capafy remote status、native social URL、Telegram message IDによるexternal E2Eが必要 |
+
+## Boundaries
+
+- Capafy platformの5-slot policy、review速度、rankingを変更しない。
+- review result、subscription、revenue、attributionを捏造しない。
+- rejected Agentを別Agentとして作り直さない。
+- cap-fullを障害扱いして無限self-fixしない。
+- server unreadable時にcached slot countでplatform writeしない。
+- public marketingにquality gate未通過artifactを出さない。
+- Claude/OpenAIをsource ownerにしない。provider adapterとしてのみ使用する。
+
+## Execution steps
+
+1. C0からC23まで順番に1件ずつ実装する。
+2. 各code sliceは該当testをRED→GREENにし、全Capafy regressionを実行する。
+3. launchd変更はinstalled plist、resolved path、last exit、receiptをreadbackする。
+4. platform writeはslot inventory fresh、lock acquired、idempotency key presentの時だけ行う。
+5. public postはquality gateとaccount/cadence gate通過後に1件だけ行う。
+6. 各milestoneをcommit/pushし、Telegram message IDをspec evidenceへ記録する。
+7. C22の7日連続proof後もC23を継続し、settled net MRR `$10,000`を実測する。
 
 ## Growth decision rule
 
@@ -160,4 +316,3 @@ This is a target model, not current evidence.
 The strongest argument against the plan is not that automation cannot publish skills; it is that a larger catalog can increase gross orders without producing retained active subscriptions. The loop therefore optimizes settled net MRR and churn, not listing count or views.
 
 If this spec is wrong, the most likely reason is that Capafy does not expose reliable active-subscription identity or order-level attribution; then `$10K MRR` cannot be verified from its current API and the loop must report `MRR unknown` until a source-of-truth endpoint or payout ledger exists.
-
