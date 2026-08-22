@@ -1164,7 +1164,7 @@ read-only scanして優先するコードまで反映済みである。
 
 | 品質ID | 原子作業 | 完了証拠 | 状態 |
 |---:|---|---|---|
-| Q1 | 5回品質反復のreceipt chainを実装する | attempt 2〜5のwrapper invocation receipt、unique plan SHA、draft変更、verdict意味一致、exact 5 validator。provider/researchの再試行は品質回数と分離し、最大10 invocationまで許可 | 完了（`quality_self_heal.py`、`quality_feedback_recovery.py`） |
+| Q1 | 5回品質反復のreceipt chainを実装する | attempt 2〜5のwrapper invocation receipt、unique plan SHA、draft変更、verdict意味一致、exact 5 validator。provider/researchの再試行は品質回数と分離し、最大20 invocationまで許可 | 完了（`quality_self_heal.py`、`quality_feedback_recovery.py`） |
 | Q2 | force境界をpublication resumeへ結合する | marker単体を拒否し、`validate_force_receipt()`とterminal identity/safetyを再検証 | 完了（focused 5件＋writer回帰46件、fresh adversarial review GO） |
 | Q3 | 混在したローカル障害後も同じrunのquality recoveryを安全に再開する | 既存10 invocation receiptを保持したまま、quota切れと誤分類せず、controllerがretryableへ戻し、現稿gateを再評価する。quality attempt数を水増ししない | 未完（現在 `terminal-blocked`、次の先頭TODO） |
 | Q4 | 現稿JA/ENのeditorial receiptをcurrent SHAへ更新する | high-escalation claimを勝手に削除せず、正規の次quality iterationでfresh judgeを実行し、JA/EN両方のreceipt・snapshotを作成 | Q3待ち |
