@@ -4,7 +4,11 @@
 const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
+const { createContentObjectStore } = require("../lib/content-object-store.js");
+const { createMarketingLocalLedger } = require("../lib/marketing-local-ledger.js");
+const { buildMarketingLivenessJob, executeMarketingLivenessJob } = require("../lib/marketing-liveness-adapter.js");
 const { resolveDataRoot } = require("../lib/runtime-paths.js");
+const { executeCapabilityJob } = require("./runtime-up.js");
 
 const WINDOWS = new Set(["2h", "24h", "72h", "7d"]);
 const EXPECTED = Object.freeze({
@@ -77,19 +81,46 @@ function persistSnapshot({ dataDir, window, observedAt, html, accountRows, postR
   return { created: true, file, snapshot };
 }
 
+async function sendMetricSnapshot(result, env, dataDir) {
+  if (!result.created) return { created: false, reason: "snapshot_replay" };
+  const snapshotRef = createContentObjectStore({ objectDir: path.join(dataDir, "objects") }).import(result.file).ref;
+  const accountTotals = result.snapshot.sources.postiz_account.status === "unavailable"
+    ? { status: "unavailable", value: null } : { status: "measured", value: result.snapshot.account_metrics.length };
+  const job = buildMarketingLivenessJob({
+    tenantId: EXPECTED.tenant_id, telegramTokenRef: "secret://telegram/bot-token", telegramChatRef: "telegram-chat://owner",
+    payload: { lane: "anicca-main-ja-instagram", product: EXPECTED.product_id, locale: EXPECTED.locale, platform: "instagram", account: EXPECTED.account_id,
+      status: "observed", window: result.snapshot.window, observed_at: result.snapshot.observed_at, public_url: EXPECTED.public_url, snapshot_ref: snapshotRef,
+      metrics: { ...result.snapshot.post, account_totals: accountTotals } },
+  });
+  const store = createMarketingLocalLedger({ dataDir });
+  const queued = await store.enqueueJob({ jobId: job.job_id, tenantId: job.tenant_id, loopId: job.loop_id, capability: job.capability, effectClass: job.effect_class, effectKey: job.effect_key, inputRefs: job.input_refs, maxAttempts: job.max_attempts, availableAt: result.snapshot.observed_at });
+  if (!queued.created) return { created: false, reason: "telegram_replay" };
+  const claim = await store.claimJob({ tenantId: job.tenant_id, jobId: job.job_id, capability: job.capability, workerId: "instagram-metrics-read", leaseSeconds: 120 });
+  if (!claim) throw new Error("Instagram metric Telegram job is not claimable");
+  await executeCapabilityJob(claim, { workerId: "instagram-metrics-read", handlers: { [job.capability]: (claimed) => executeMarketingLivenessJob(claimed, {
+    secretProvider: { get: async () => env.LM_TELEGRAM_BOT_TOKEN }, chatProvider: { get: async () => env.LM_TELEGRAM_ALERT_CHAT_ID },
+  }) }, heartbeatJob: (input) => store.heartbeatJob(input), completeJob: (input) => store.completeJob(input), failJob: (input) => store.failJob(input), leaseSeconds: 120 });
+  const receipt = await store.readReceipt({ tenantId: job.tenant_id, jobId: job.job_id });
+  return { created: true, message_id: receipt?.message_id, snapshot_ref: snapshotRef };
+}
+
 async function main() {
   const window = process.argv[2] || "24h";
   const key = String(process.env.LM_POSTIZ_API_KEY || "").trim();
   if (!key) throw new Error("LM_POSTIZ_API_KEY is required");
   const get = async (url, headers = {}) => { const response = await fetch(url, { headers }); if (!response.ok) throw new Error(`Instagram metric HTTP ${response.status}`); return response; };
+  const days = { "2h": 1, "24h": 1, "72h": 3, "7d": 7 }[window];
+  if (!days) throw new Error("Instagram metric window invalid");
   const [page, account, post] = await Promise.all([
     get(EXPECTED.public_url).then((response) => response.text()),
-    get(`https://api.postiz.com/public/v1/analytics/${EXPECTED.integration_id}?date=1`, { Authorization: key }).then((response) => response.json()),
-    get(`https://api.postiz.com/public/v1/analytics/post/${EXPECTED.provider_post_id}?date=1`, { Authorization: key }).then((response) => response.json()),
+    get(`https://api.postiz.com/public/v1/analytics/${EXPECTED.integration_id}?date=${days}`, { Authorization: key }).then((response) => response.json()),
+    get(`https://api.postiz.com/public/v1/analytics/post/${EXPECTED.provider_post_id}?date=${days}`, { Authorization: key }).then((response) => response.json()),
   ]);
-  const result = persistSnapshot({ dataDir: resolveDataRoot(process.env), window, observedAt: new Date().toISOString(), html: page, accountRows: account, postRows: post });
-  process.stdout.write(`${JSON.stringify({ created: result.created, file: result.file, post: result.snapshot.post, account: result.snapshot.account_metrics })}\n`);
+  const dataDir = resolveDataRoot(process.env);
+  const result = persistSnapshot({ dataDir, window, observedAt: new Date().toISOString(), html: page, accountRows: account, postRows: post });
+  const telegram = await sendMetricSnapshot(result, process.env, dataDir);
+  process.stdout.write(`${JSON.stringify({ created: result.created, file: result.file, post: result.snapshot.post, account: result.snapshot.account_metrics, telegram })}\n`);
 }
 
 if (require.main === module) main().catch((error) => { process.stderr.write(`${error.message}\n`); process.exitCode = 1; });
-module.exports = { EXPECTED, persistSnapshot, postMetrics, verifyNativeHtml };
+module.exports = { EXPECTED, persistSnapshot, postMetrics, sendMetricSnapshot, verifyNativeHtml };

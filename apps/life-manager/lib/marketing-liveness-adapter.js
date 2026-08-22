@@ -20,6 +20,8 @@ const ACCOUNT = /^@?[A-Za-z0-9._-]{1,127}$/;
 const SECRET_REF = /^secret:\/\/[a-z0-9][a-z0-9._-]*(?:\/[a-z0-9][a-z0-9._-]*)*$/i;
 const CHAT_REF = /^telegram-chat:\/\/[a-z0-9][a-z0-9._-]*$/i;
 const LIVENESS_REF = /^marketing-liveness:\/\/(.+)$/;
+const SNAPSHOT_REF = /^object:\/\/sha256\/[0-9a-f]{64}$/;
+const METRIC_WINDOWS = new Set(["2h", "24h", "72h", "7d"]);
 
 function required(value, label) {
   const text = String(value == null ? "" : value).trim();
@@ -143,9 +145,23 @@ function parsePayloadRef(ref) {
   if (!match) throw new Error("marketing liveness ref is invalid");
   let payload;
   try { payload = JSON.parse(decodeURIComponent(match[1])); } catch { throw new Error("marketing liveness ref is invalid"); }
-  for (const key of ["lane", "product", "locale", "platform", "slot", "status", "public_url", "retry_state"]) {
+  for (const key of ["lane", "product", "locale", "platform", "status", "public_url"]) {
     if (!Object.hasOwn(payload, key)) throw new Error("marketing liveness ref is invalid");
   }
+  if (payload.status === "observed") {
+    const metrics = payload.metrics;
+    if (
+      !IDENTIFIER.test(payload.lane) || !IDENTIFIER.test(payload.product) || !LOCALE.test(payload.locale)
+      || !["instagram", "tiktok"].includes(payload.platform) || !ACCOUNT.test(String(payload.account || ""))
+      || !METRIC_WINDOWS.has(payload.window) || !SNAPSHOT_REF.test(String(payload.snapshot_ref || ""))
+      || !Number.isFinite(Date.parse(payload.observed_at))
+      || !(payload.platform === "instagram" ? /^https:\/\/www\.instagram\.com\/(?:reel|p)\/[A-Za-z0-9_-]+\/?$/.test(payload.public_url) : /^https:\/\/www\.tiktok\.com\/@[^/]+\/video\/[0-9]+\/?$/.test(payload.public_url))
+      || !metrics || typeof metrics !== "object" || Array.isArray(metrics)
+      || Object.values(metrics).some((metric) => !metric || !["measured", "derived", "unavailable"].includes(metric.status))
+    ) throw new Error("marketing metric ref is invalid");
+    return payload;
+  }
+  for (const key of ["slot", "retry_state"]) if (!Object.hasOwn(payload, key)) throw new Error("marketing liveness ref is invalid");
   exactInstant(payload.slot, "marketing liveness slot");
   if (
     !IDENTIFIER.test(payload.lane)
@@ -213,6 +229,15 @@ function planMarketingLivenessJobs(input = {}) {
 }
 
 function renderMessage(payload) {
+  if (payload.status === "observed") {
+    const label = (key) => ({ views: "Views", reach: "Reach", impressions: "Impressions", likes: "Likes", comments: "Comments", shares: "Shares", saves: "Saves", watch_time: "Watch time", average_watch_time: "Average watch time", completion: "Completion", engagement: "Engagement", account_totals: "Account totals" }[key] || key);
+    const measured = []; const unavailable = [];
+    for (const [key, metric] of Object.entries(payload.metrics)) {
+      if (metric.status === "unavailable") unavailable.push(label(key));
+      else measured.push(`${label(key)} ${metric.percent != null ? `${metric.percent}%` : metric.value}`);
+    }
+    return `Life Manager::: ${payload.product}の${payload.platform} ${payload.account}、${payload.window}メトリクスです。${measured.join("、")}。取得不可: ${unavailable.length ? unavailable.join("、") : "なし"}。直接URL: ${payload.public_url}。Snapshot: ${payload.snapshot_ref}。`;
+  }
   const accountPattern = payload.platform === "tiktok"
     ? /^https:\/\/www\.tiktok\.com\/@([^/]+)\/video\//
     : payload.platform === "instagram"

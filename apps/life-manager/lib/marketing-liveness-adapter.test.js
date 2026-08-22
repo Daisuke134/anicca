@@ -4,6 +4,7 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 
 const {
+  buildMarketingLivenessJob,
   executeMarketingLivenessJob,
   planMarketingLivenessJobs,
   verifyMarketingLivenessReceipt,
@@ -124,4 +125,23 @@ test("jsonb input-ref key order does not invalidate the same bound job", async (
     chatProvider: { get: async () => "fake-chat" },
     sendTelegram: async () => ({ ok: true, result: { message_id: 703 } }),
   }));
+});
+
+test("metric snapshot renders every measured and unavailable field with stable dedupe identity", async () => {
+  const payload = {
+    lane: "anicca-main-ja-instagram", product: "anicca-ios", locale: "ja", platform: "instagram", account: "@anicca.jp1",
+    status: "observed", window: "24h", observed_at: "2026-08-22T12:00:00.000Z",
+    public_url: "https://www.instagram.com/reel/DcTFx_UjSio/", snapshot_ref: `object://sha256/${HASH}`,
+    metrics: { views: { status: "measured", value: 32 }, reach: { status: "measured", value: 31 }, engagement: { status: "derived", percent: 0 }, watch_time: { status: "unavailable", value: null }, account_totals: { status: "unavailable", value: null } },
+  };
+  const input = { tenantId: "dais-local", telegramTokenRef: "secret://telegram/bot-token", telegramChatRef: "telegram-chat://owner", payload };
+  const job = buildMarketingLivenessJob(input); const replay = buildMarketingLivenessJob(input); const sent = [];
+  assert.equal(replay.job_id, job.job_id);
+  const result = await executeMarketingLivenessJob(job, {
+    secretProvider: { get: async () => "fake-token" }, chatProvider: { get: async () => "fake-chat" },
+    sendTelegram: async (_token, _chat, text) => { sent.push(text); return { ok: true, result: { message_id: 704 } }; },
+  });
+  assert.match(sent[0], /Views 32、Reach 31、Engagement 0%/);
+  assert.match(sent[0], /取得不可: Watch time、Account totals/);
+  assert.match(sent[0], /DcTFx_UjSio/); assert.equal(verifyMarketingLivenessReceipt(result.receipt), true);
 });
