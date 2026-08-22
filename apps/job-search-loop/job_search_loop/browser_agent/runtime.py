@@ -52,6 +52,34 @@ def _wake_budget_path() -> Path:
     return _path_env("JOB_SEARCH_BROWSER_SCRATCH") / "wake-step-budget.json"
 
 
+def _decision_path() -> Path:
+    return _path_env("JOB_SEARCH_BROWSER_SCRATCH") / "last-decision.json"
+
+
+def _decision_signature(observation_sha256: str, action_path: Path) -> str:
+    return hashlib.sha256(
+        observation_sha256.encode("ascii") + b"\0" + action_path.read_bytes()
+    ).hexdigest()
+
+
+def _reject_repeated_decision(observation_sha256: str, action_path: Path) -> str:
+    signature = _decision_signature(observation_sha256, action_path)
+    path = _decision_path()
+    if path.exists():
+        if path.stat().st_mode & 0o077:
+            raise RuntimeError("last decision record must be private")
+        prior = json.loads(path.read_text(encoding="utf-8"))
+        if prior.get("signature") == signature:
+            raise RuntimeError("same action on unchanged observation is prohibited")
+    return signature
+
+
+def _record_decision(signature: str) -> None:
+    path = _decision_path()
+    path.write_text(json.dumps({"signature": signature}, sort_keys=True) + "\n")
+    os.chmod(path, 0o600)
+
+
 def _wake_budget(*, consume: bool = False) -> int:
     """Bound one owner wake without carrying exhaustion into the next wake."""
 
@@ -171,7 +199,7 @@ def _action(value: dict[str, Any]) -> VisibleActionV1:
             raise ValueError("candidate concept is not a scalar browser value")
         text = str(resolved)
     file_path = Path(value["file_path"]) if value.get("file_path") else None
-    kind = value.get("kind", value.get("action"))
+    kind = value.get("kind", value.get("action", value.get("type")))
     if not kind:
         raise ValueError("action file requires kind")
     return VisibleActionV1(
@@ -189,6 +217,7 @@ async def act(action_path: Path) -> dict[str, Any]:
     row, session, checkpoints, evidence, cursor, builder = await _context()
     before = await builder.build(cursor.handle)
     action = _action(_private_action(action_path))
+    decision_signature = _reject_repeated_decision(before.content_sha256, action_path)
     remaining = _wake_budget(consume=True)
     receipt = await ActionExecutor(session).execute(cursor.handle, action)
     after = await builder.build(cursor.handle)
@@ -218,6 +247,7 @@ async def act(action_path: Path) -> dict[str, Any]:
             after.url,
         )
     )
+    _record_decision(decision_signature)
     return {
         "status": "acted",
         "action": {

@@ -35,6 +35,10 @@ The runtime gives every new owner wake a fresh bounded step budget even when the
 durable cursor ended the prior wake at zero. A provider `Network Error`, loading
 spinner, empty custom-combobox result, or transient timeout is not a row blocker:
 wait once, reopen the current combobox from a fresh observation, and continue.
+Never burn the remaining budget with repeated waits or an unchanged action. If the
+same custom control returns a provider `Network Error` twice, perform one typed
+`navigate` to the current checkpoint URL, observe the newly loaded page, refill any
+lost fields from Candidate Memory, and retry that control once on the fresh page.
 
 This process is the existing `ai.anicca.job-search-daily` launchd owner. Do not
 start another launchd job, agent runner, or Chromium process. Read the JSON path in
