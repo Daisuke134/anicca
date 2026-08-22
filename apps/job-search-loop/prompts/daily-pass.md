@@ -126,6 +126,14 @@ observation mismatches. Keep its capability inside the browser process and never
 print or persist it outside the private fence store. Only the dedicated final-action
 path may consume it, once, against the unchanged review observation.
 
+Call `ActionExecutor.execute_final` with exactly one visible enabled role/label
+matching `Submit` or `Submit Application`, the lease, and the unchanged review
+observation hash. The method resolves the unique current target, consumes the fence,
+and performs one ordinary visible click. Never call it again after any return,
+timeout, navigation, transport event, or exception. Its receipt binds the target,
+before/after URL, fence receipt, and review observation; it is evidence of one click,
+not evidence that the application completed.
+
 Use `StableInferencePolicy` for common concepts. Luna supplies dated,
 Candidate-Memory-provenance intervals for experience; the policy merges overlaps
 before computing years. Minimum/target/stretch compensation comes from the matching

@@ -76,6 +76,7 @@ class ActionReceiptV1:
     before_url: str
     after_url: str
     receipt_sha256: str
+    fence_receipt_sha256: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

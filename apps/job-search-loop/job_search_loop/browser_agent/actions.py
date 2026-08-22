@@ -6,8 +6,15 @@ import re
 from pathlib import Path
 from urllib.parse import urlparse
 
-from .contracts import ActionReceiptV1, ActionTargetV1, SessionHandleV1, VisibleActionV1
+from .contracts import (
+    ActionReceiptV1,
+    ActionTargetV1,
+    SessionHandleV1,
+    SubmissionFenceLeaseV1,
+    VisibleActionV1,
+)
 from .session import BrowserSession
+from .submission_fence import SubmissionFence
 
 
 _FINAL_SUBMIT = re.compile(r"^\s*(submit|submit application)\s*$", re.IGNORECASE)
@@ -116,6 +123,40 @@ class ActionExecutor:
             "target_stable_id": action.target.stable_id if action.target else None,
             "before_url": before_url,
             "after_url": page.url,
+        }
+        receipt_sha = hashlib.sha256(
+            json.dumps(safe, ensure_ascii=False, sort_keys=True).encode("utf-8")
+        ).hexdigest()
+        return ActionReceiptV1(1, receipt_sha256=receipt_sha, **safe)
+
+    async def execute_final(
+        self,
+        handle: SessionHandleV1,
+        action: VisibleActionV1,
+        fence: SubmissionFence,
+        lease: SubmissionFenceLeaseV1,
+        observation_sha256: str,
+    ) -> ActionReceiptV1:
+        """Consume one fresh fence and click one visible final Submit exactly once."""
+        if (
+            action.kind != "click"
+            or action.target is None
+            or not _FINAL_SUBMIT.match(action.target.label)
+        ):
+            raise ValueError("final action must be the visible Submit click")
+        page = self._session.page(handle)
+        before_url = page.url
+        target = await self._target(page, action.target)
+        fence_receipt = fence.consume(lease, observation_sha256)
+        await target.click(timeout=self._timeout_ms)
+        safe = {
+            "kind": action.kind,
+            "target_role": action.target.role,
+            "target_label": action.target.label,
+            "target_stable_id": action.target.stable_id,
+            "before_url": before_url,
+            "after_url": page.url,
+            "fence_receipt_sha256": fence_receipt,
         }
         receipt_sha = hashlib.sha256(
             json.dumps(safe, ensure_ascii=False, sort_keys=True).encode("utf-8")
