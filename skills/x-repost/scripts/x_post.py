@@ -2,11 +2,11 @@
 # requires-python = ">=3.11"
 # dependencies = ["playwright>=1.40"]
 # ///
-"""Publish half of the x-repost loop: post ONE quote tweet through the leased CDP browser.
+"""Publish one X post through the connected Postiz API, then exact-read it from X.
 
 A quote tweet is a normal post whose body ends with the quoted post's URL -- X renders the
-embedded card itself. That is deliberately the least selector-dependent path available: no
-retweet dropdown, no menu item, no locale-specific label.
+embedded card itself. Browser access is readback-only: X's automation rules prohibit scripted
+website posting, so the external write must go through the connected API transport.
 
 Exit 0 ONLY after the published post has been read back from the account timeline and its
 permalink captured. A compose box that accepted text is not evidence that anything shipped,
@@ -20,9 +20,58 @@ import re
 import sys
 import time
 import urllib.parse
+import urllib.error
+from datetime import datetime, timezone
 from urllib.request import Request, urlopen
 
 from playwright.sync_api import sync_playwright
+
+
+POSTIZ_API = "https://api.postiz.com/public/v1/posts"
+
+
+def postiz_publish(text: str, mode: str, source_url: str | None) -> str:
+    """Submit one API post and return its provider submission ID.
+
+    Acceptance is not publication proof. The caller must still exact-read the X permalink.
+    """
+    api_key = os.environ.get("POSTIZ_API_KEY", "").strip()
+    integration_id = os.environ.get("X_REPOST_POSTIZ_INTEGRATION_ID", "").strip()
+    if not api_key or not integration_id:
+        raise ValueError("Postiz transport is not configured")
+    if mode == "reply":
+        raise ValueError("unsolicited automated replies are disabled")
+    content = text
+    if mode == "quote" and source_url and source_url not in content:
+        content = f"{content.rstrip()}\n{source_url}"
+    payload = {
+        "type": "now",
+        "date": datetime.now(timezone.utc).isoformat(),
+        "shortLink": False,
+        "tags": [],
+        "posts": [{
+            "integration": {"id": integration_id},
+            "value": [{"content": content, "image": []}],
+            "settings": {
+                "__type": "x", "who_can_reply_post": "everyone",
+                "made_with_ai": True, "paid_partnership": False,
+            },
+        }],
+    }
+    request = Request(
+        POSTIZ_API,
+        data=json.dumps(payload, ensure_ascii=False).encode(),
+        headers={"Authorization": api_key, "Content-Type": "application/json",
+                 "User-Agent": "life-manager-x-repost/1"},
+        method="POST",
+    )
+    with urlopen(request, timeout=30) as response:
+        result = json.load(response)
+    row = result[0] if isinstance(result, list) and result else result
+    submission_id = row.get("postId") if isinstance(row, dict) else None
+    if not submission_id:
+        raise ValueError("Postiz response omitted postId")
+    return str(submission_id)
 
 
 def ensure_logged_in(page) -> str:
@@ -217,111 +266,38 @@ def main():
                    "post_url": permalink, "source_url": None}, sys.stdout, ensure_ascii=False)
         print()
         return
-    with sync_playwright() as pw:
-        browser = pw.chromium.connect_over_cdp(args.cdp)
-        ctx = browser.contexts[0] if browser.contexts else browser.new_context()
-        handle = ensure_logged_in(get_page(browser))
-
-        # NEVER navigate or close a tab that still holds composer text. X guards it with
-        # beforeunload, and the dialog is handled by the driver that OWNS the persistent context,
-        # not by this connection -- its auto-accept raced the dialog closing itself, threw
-        # "No dialog is showing" as an uncaught Node rejection, and killed the whole browser twice
-        # (2026-08-17 10:28 and 10:35). So the composer gets its own tab, and that tab is only ever
-        # closed after it is provably clean.
-        compose = ctx.new_page()
-        published = False
-        try:
-            if args.mode == "reply":
-                # Reply inline on the post's own page: no URL is appended, because the reply is
-                # already attached to the conversation and a link would only spend characters and
-                # trip the link penalty.
-                compose.goto(args.source_url, wait_until="domcontentloaded", timeout=60000)
-                compose.wait_for_selector('[data-testid="tweetTextarea_0"]', timeout=45000)
-                compose.click('[data-testid="tweetTextarea_0"]')
-                compose.keyboard.type(text, delay=18)
-                compose.wait_for_timeout(2000)
-            elif args.mode == "quote":
-                compose.goto("https://x.com/compose/post", wait_until="domcontentloaded", timeout=60000)
-                compose.wait_for_selector('[data-testid="tweetTextarea_0"]', timeout=45000)
-                compose.click('[data-testid="tweetTextarea_0"]')
-                compose.keyboard.type(text, delay=18)
-                compose.keyboard.press("Enter")
-                compose.keyboard.type(args.source_url, delay=12)
-                compose.wait_for_timeout(6000)  # let X resolve the URL into the quoted-post card
-            else:
-                compose.goto("https://x.com/compose/post", wait_until="domcontentloaded", timeout=60000)
-                compose.wait_for_selector('[data-testid="tweetTextarea_0"]', timeout=45000)
-                compose.click('[data-testid="tweetTextarea_0"]')
-                compose.keyboard.type(text, delay=18)
-                compose.wait_for_timeout(2000)
-
-            # Scope the button to the composer itself: x.com/home keeps an inline composer mounted
-            # whose button carries a confusingly similar testid, and clicking the wrong one silently
-            # does nothing (measured 10:35 -- "composer did not close within 30s", zero posts).
-            button = (compose.query_selector('[data-testid="tweetButtonInline"]')
-                      or compose.query_selector('[data-testid="tweetButton"]'))
-            if button and button.is_enabled():
-                button.click()
-            else:
-                compose.keyboard.press("Meta+Enter")
-
-            # The composer emptying is X's own acknowledgement that it took the post.
-            try:
-                compose.wait_for_selector('[data-testid="tweetTextarea_0"]',
-                                          state="detached", timeout=30000)
-                published = True
-            except Exception:
-                body = compose.query_selector('[data-testid="tweetTextarea_0"]')
-                published = bool(body) and not (body.inner_text() or "").strip()
-                if not published:
-                    print("x_post: composer still holds text -- publish did not go through",
-                          file=sys.stderr)
-        finally:
-            # Discard through X's own UI rather than navigating away: Escape opens an in-page
-            # confirmation sheet, not a JavaScript dialog, so nothing can crash the owner driver.
-            if not published:
-                try:
-                    compose.keyboard.press("Escape")
-                    compose.wait_for_timeout(1500)
-                    confirm = compose.query_selector('[data-testid="confirmationSheetConfirm"]')
-                    if confirm:
-                        confirm.click()
-                        compose.wait_for_timeout(1500)
-                except Exception as exc:
-                    print(f"x_post: could not discard the draft: {exc}", file=sys.stderr)
-            try:
-                compose.close()
-            except Exception as exc:
-                print(f"x_post: leaving the compose tab open: {exc}", file=sys.stderr)
-
-        if not published:
-            permalink = None
-        elif args.mode == "reply":
-            permalink = find_reply_permalink(pw, args.cdp, args.source_url, handle, needle)
-        else:
-            permalink = find_permalink(pw, args.cdp, handle, needle, expected_url, text if expected_url else None)
-
-    if not published:
-        # The composer never emptied and the draft was discarded: nothing reached X. The caller
-        # must NOT consume the source, or a post nobody ever saw would be crossed off the list.
-        json.dump({"posted": False, "mode": args.mode, "handle": handle, "source_url": args.source_url,
-                   "reason": "composer never emptied -- the post was not submitted"},
-                  sys.stdout, ensure_ascii=False)
+    transport = os.environ.get("X_REPOST_PUBLISH_TRANSPORT", "postiz").strip().lower()
+    if transport != "postiz":
+        raise SystemExit("x_post: non-API publish transport is disabled")
+    try:
+        submission_id = postiz_publish(text, args.mode, args.source_url)
+    except (ValueError, OSError, urllib.error.HTTPError) as exc:
+        status = exc.code if isinstance(exc, urllib.error.HTTPError) else None
+        json.dump({"posted": False, "mode": args.mode, "source_url": args.source_url,
+                   "provider": "postiz", "provider_status": status,
+                   "reason": type(exc).__name__}, sys.stdout, ensure_ascii=False)
         print()
         sys.exit(1)
-
+    with sync_playwright() as pw:
+        browser = pw.chromium.connect_over_cdp(args.cdp)
+        handle = ensure_logged_in(get_page(browser))
+        if args.mode == "reply":
+            permalink = find_reply_permalink(pw, args.cdp, args.source_url, handle, needle)
+        else:
+            permalink = find_permalink(
+                pw, args.cdp, handle, needle, expected_url, text if expected_url else None
+            )
     if not permalink:
-        # "Composer accepted it, timeline could not confirm it" is NOT "did not publish". Say
-        # unverified so the caller consumes the source anyway rather than quoting it twice.
-        json.dump({"posted": "unverified", "mode": args.mode, "handle": handle, "needle": needle,
-                   "source_url": args.source_url,
-                   "reason": "publish was accepted but no matching post was found on the timeline"},
+        json.dump({"posted": "unverified", "mode": args.mode, "handle": handle,
+                   "needle": needle, "source_url": args.source_url, "provider": "postiz",
+                   "provider_submission_id": submission_id,
+                   "reason": "API accepted but no matching post was found on the timeline"},
                   sys.stdout, ensure_ascii=False)
         print()
         sys.exit(2)
-
-    json.dump({"posted": True, "mode": args.mode, "handle": handle, "post_url": permalink,
-               "source_url": args.source_url}, sys.stdout, ensure_ascii=False)
+    json.dump({"posted": True, "mode": args.mode, "handle": handle,
+               "post_url": permalink, "source_url": args.source_url, "provider": "postiz",
+               "provider_submission_id": submission_id}, sys.stdout, ensure_ascii=False)
     print()
 
 

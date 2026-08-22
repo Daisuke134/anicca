@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import importlib.util
+import json
+import os
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 
 SCRIPT = Path(__file__).parents[1] / "scripts" / "x_post.py"
@@ -58,6 +61,40 @@ class Page:
 
 
 class XPostTests(unittest.TestCase):
+    def test_postiz_quote_appends_source_once_and_returns_submission(self) -> None:
+        captured = {}
+
+        class Response:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return False
+
+            def read(self):
+                return b'[{"postId":"provider-1"}]'
+
+        def fake_open(request, timeout):
+            captured["payload"] = json.loads(request.data)
+            captured["timeout"] = timeout
+            return Response()
+
+        env = {"POSTIZ_API_KEY": "secret", "X_REPOST_POSTIZ_INTEGRATION_ID": "integration-1"}
+        source = "https://x.com/source/status/123"
+        with patch.dict(os.environ, env, clear=False), patch.object(MODULE, "urlopen", fake_open):
+            submission = MODULE.postiz_publish("Useful comparison", "quote", source)
+        self.assertEqual(submission, "provider-1")
+        value = captured["payload"]["posts"][0]["value"][0]["content"]
+        self.assertEqual(value, f"Useful comparison\n{source}")
+        self.assertEqual(captured["payload"]["posts"][0]["integration"]["id"], "integration-1")
+        self.assertTrue(captured["payload"]["posts"][0]["settings"]["made_with_ai"])
+
+    def test_postiz_refuses_automated_reply(self) -> None:
+        env = {"POSTIZ_API_KEY": "secret", "X_REPOST_POSTIZ_INTEGRATION_ID": "integration-1"}
+        with patch.dict(os.environ, env, clear=False):
+            with self.assertRaisesRegex(ValueError, "unsolicited"):
+                MODULE.postiz_publish("No", "reply", "https://x.com/source/status/123")
+
     def test_public_ssr_reconciles_exact_owned_post(self) -> None:
         text = "Affiliate link: https://aniccaai.com/blog/voice-changer"
         markup = '''<article data-tweet-id="2091088320772346136">

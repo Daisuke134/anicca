@@ -7,7 +7,8 @@
 # always-on affiliate/explorer tmux shape, because there is nothing to keep warm between passes.
 #
 # Pipeline: registry gate -> lease browser -> recon X -> select+draft (model) -> humanize
-# (a SEPARATE model call, style only) -> choose (model) -> publish via CDP -> record -> Telegram.
+# (a SEPARATE model call, style only) -> choose (model) -> publish via Postiz API -> exact X
+# readback through CDP -> record -> Telegram.
 #
 # Nothing is recorded and nothing is reported as published unless x_post.py read the permalink
 # back off the account timeline. There is no dry-run mode: a pass either ships a real post or
