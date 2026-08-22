@@ -149,7 +149,7 @@ test("metric snapshot renders every measured and unavailable field with stable d
 test("TikTok metric snapshot renders every account value instead of an aggregate count", async () => {
   const payload = {
     lane: "anicca-jp4-ja-tiktok", product: "anicca-ios", locale: "ja", platform: "tiktok", account: "@anicca.jp4",
-    status: "observed", window: "24h", observed_at: "2026-08-22T14:46:13.240Z",
+    status: "observed", window: "24h", correction: true, observed_at: "2026-08-22T14:46:13.240Z",
     public_url: "https://www.tiktok.com/@anicca.jp4/video/7676495865816632583", snapshot_ref: `object://sha256/${HASH}`,
   };
   const job = buildMarketingLivenessJob({ tenantId: "dais-local", telegramTokenRef: "secret://telegram/bot-token", telegramChatRef: "telegram-chat://owner", payload }); const sent = [];
@@ -159,6 +159,7 @@ test("TikTok metric snapshot renders every account value instead of an aggregate
     sendTelegram: async (_token, _chat, text) => { sent.push(text); return { ok: true, result: { message_id: 705 } }; },
   });
   assert.match(sent[0], /Followers 122、Following 0、Account total likes 6839、Videos 304/);
+  assert.match(sent[0], /24h訂正版メトリクス/);
   assert.match(sent[0], /Latest 20 videos views 11873、Latest 20 videos likes 110、Latest 20 videos comments 1、Latest 20 videos shares 2/);
   assert.doesNotMatch(sent[0], /Account totals 8/);
 });

@@ -152,6 +152,7 @@ function parsePayloadRef(ref) {
     if (
       !IDENTIFIER.test(payload.lane) || !IDENTIFIER.test(payload.product) || !LOCALE.test(payload.locale)
       || !["instagram", "tiktok"].includes(payload.platform) || !ACCOUNT.test(String(payload.account || ""))
+      || (payload.correction !== undefined && payload.correction !== true)
       || !METRIC_WINDOWS.has(payload.window) || !SNAPSHOT_REF.test(String(payload.snapshot_ref || ""))
       || !Number.isFinite(Date.parse(payload.observed_at))
       || !(payload.platform === "instagram" ? /^https:\/\/www\.instagram\.com\/(?:reel|p)\/[A-Za-z0-9_-]+\/?$/.test(payload.public_url) : /^https:\/\/www\.tiktok\.com\/@[^/]+\/video\/[0-9]+\/?$/.test(payload.public_url))
@@ -236,7 +237,7 @@ function renderMessage(payload) {
       else measured.push(`${label(key)} ${metric.percent != null ? `${metric.percent}%` : metric.value}`);
     }
     const windows = Array.isArray(payload.window_summary) ? ` Window status: ${payload.window_summary.join("、")}。` : "";
-    return `Life Manager::: ${payload.product}の${payload.platform} ${payload.account}、${payload.window}メトリクスです。${measured.join("、")}。取得不可: ${unavailable.length ? unavailable.join("、") : "なし"}。${windows}直接URL: ${payload.public_url}。Snapshot: ${payload.snapshot_ref}。`;
+    return `Life Manager::: ${payload.product}の${payload.platform} ${payload.account}、${payload.window}${payload.correction ? "訂正版" : ""}メトリクスです。${measured.join("、")}。取得不可: ${unavailable.length ? unavailable.join("、") : "なし"}。${windows}直接URL: ${payload.public_url}。Snapshot: ${payload.snapshot_ref}。`;
   }
   const accountPattern = payload.platform === "tiktok"
     ? /^https:\/\/www\.tiktok\.com\/@([^/]+)\/video\//

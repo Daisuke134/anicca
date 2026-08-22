@@ -102,16 +102,20 @@ function persistDailyDigest({ dataDir, reportDay, observedAt, expected = EXPECTE
   const directory = path.join(path.resolve(dataDir), "tenants", expected.tenant_id, "marketing", "metrics", expected.native_owner, expected.shortcode);
   const rows = [...WINDOWS].map((window) => {
     const file = path.join(directory, `${window}.combined.json`);
-    return fs.existsSync(file) ? { window, status: JSON.parse(fs.readFileSync(file, "utf8")).sources.postiz_post.status, file } : { window, status: "pending" };
+    if (!fs.existsSync(file)) return { window, status: "pending" };
+    const snapshot = JSON.parse(fs.readFileSync(file, "utf8")); const status = Object.values(snapshot.post || {}).some((metric) => metric?.status === "measured" || metric?.status === "derived") ? "measured" : "unavailable";
+    return { window, status, file };
   });
   const source = rows.map((row) => row.file && JSON.parse(fs.readFileSync(row.file, "utf8"))).filter(Boolean)
-    .find((snapshot) => snapshot.sources.postiz_post.status === "measured") || rows.map((row) => row.file && JSON.parse(fs.readFileSync(row.file, "utf8"))).find(Boolean);
+    .find((snapshot) => Object.values(snapshot.post || {}).some((metric) => metric?.status === "measured" || metric?.status === "derived")) || rows.map((row) => row.file && JSON.parse(fs.readFileSync(row.file, "utf8"))).find(Boolean);
   if (!source) throw new Error("Instagram daily digest has no metric snapshot");
-  const file = path.join(directory, "daily", `${reportDay}.json`);
-  const snapshot = { ...source, kind: /^https:\/\/www\.tiktok\.com\//.test(source.public_url) ? "tiktok_daily_metric_digest" : "instagram_daily_metric_digest", window: "daily", observed_at: observedAt, report_day: reportDay,
+  const baseFile = path.join(directory, "daily", `${reportDay}.json`); const correctionFile = path.join(directory, "daily", `${reportDay}.correction.json`);
+  if (fs.existsSync(correctionFile)) return { created: false, file: correctionFile, snapshot: JSON.parse(fs.readFileSync(correctionFile, "utf8")) };
+  if (fs.existsSync(baseFile)) { const existing = JSON.parse(fs.readFileSync(baseFile, "utf8")); const existingMeasured = Object.values(existing.post || {}).some((metric) => metric?.status === "measured" || metric?.status === "derived"); const sourceMeasured = Object.values(source.post || {}).some((metric) => metric?.status === "measured" || metric?.status === "derived"); if (existingMeasured || !sourceMeasured) return { created: false, file: baseFile, snapshot: existing }; }
+  const correction = fs.existsSync(baseFile); const file = correction ? correctionFile : baseFile;
+  const snapshot = { ...source, kind: `${/^https:\/\/www\.tiktok\.com\//.test(source.public_url) ? "tiktok" : "instagram"}_daily_metric_digest${correction ? "_correction" : ""}`, window: "daily", observed_at: observedAt, report_day: reportDay,
     observation_windows: rows.map(({ window, status }) => ({ window, status })) };
   fs.mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 });
-  if (fs.existsSync(file)) return { created: false, file, snapshot: JSON.parse(fs.readFileSync(file, "utf8")) };
   const temporary = `${file}.tmp-${process.pid}-${crypto.randomUUID()}`;
   fs.writeFileSync(temporary, `${JSON.stringify(snapshot, null, 2)}\n`, { mode: 0o600, flag: "wx" }); fs.renameSync(temporary, file); fs.chmodSync(file, 0o600);
   return { created: true, file, snapshot };
@@ -127,7 +131,8 @@ async function sendMetricSnapshot(result, env, dataDir) {
   const job = buildMarketingLivenessJob({
     tenantId: expected.tenant_id, telegramTokenRef: "secret://telegram/bot-token", telegramChatRef: "telegram-chat://owner",
     payload: { lane, product: expected.product_id, locale: expected.locale, platform, account: expected.account_id,
-      status: "observed", window: result.snapshot.window, observed_at: result.snapshot.observed_at, public_url: expected.public_url, snapshot_ref: snapshotRef },
+      status: "observed", window: result.snapshot.window, observed_at: result.snapshot.observed_at, public_url: expected.public_url, snapshot_ref: snapshotRef,
+      ...(String(result.snapshot.kind || "").endsWith("_correction") ? { correction: true } : {}) },
   });
   const store = createMarketingLocalLedger({ dataDir });
   const queued = await store.enqueueJob({ jobId: job.job_id, tenantId: job.tenant_id, loopId: job.loop_id, capability: job.capability, effectClass: job.effect_class, effectKey: job.effect_key, inputRefs: job.input_refs, maxAttempts: job.max_attempts, availableAt: new Date().toISOString() });
