@@ -29,6 +29,12 @@ function required(value, label) {
   return text;
 }
 
+function campaignCaptionRef(objectStore, dataDir, copyRef, campaignUrl) {
+  let url; try { url = new URL(required(campaignUrl, "Honne EN campaign URL")); } catch { throw new Error("Honne EN campaign URL is invalid"); }
+  if (url.protocol !== "https:" || url.hostname !== "apps.apple.com" || !/\/id6759667221$/.test(url.pathname) || url.searchParams.get("pt") !== "93486075" || url.searchParams.get("ct") !== "honne_en_tiktok_honne_reveal" || url.username || url.password || url.hash) throw new Error("Honne EN campaign URL is invalid");
+  const caption = `${fs.readFileSync(objectStore.resolve(copyRef), "utf8").trimEnd()}\n\n${url.href}\n`; const workspace = path.join(dataDir, "tenants/dais-local/marketing/video-generation"); fs.mkdirSync(workspace, { recursive: true, mode: 0o700 }); const candidate = path.join(workspace, `.honne-en-campaign-${process.pid}.txt`); fs.writeFileSync(candidate, caption, { mode: 0o600, flag: "wx" }); try { return objectStore.import(candidate).ref; } finally { fs.unlinkSync(candidate); }
+}
+
 function parseArgs(argv) {
   if (argv[0] !== "run" || ![1, 3].includes(argv.length) || (argv.length === 3 && argv[1] !== "--slot")) {
     throw new Error("usage: honne-en-cycle.js run [--slot <ISO instant>]");
@@ -105,10 +111,11 @@ async function runHonneEnCycle(argv, deps = {}) {
   const store = deps.store || createMarketingLocalLedger({ dataDir });
   const generationJob = buildMarketingVideoGenerationJob({ tenantId, productId: PRODUCT, formatId: FORMAT, locale: LOCALE, slot, packRef, mediaRefs });
   const generation = await generate(store, generationJob, dataDir, new Date(nowMs).toISOString());
+  const captionRef = campaignCaptionRef(objectStore, dataDir, generation.receipt.copy_ref, env.LM_HONNE_EN_CAMPAIGN_URL);
   const publicationJob = buildMarketingVideoPublicationJob({
     tenantId, productId: PRODUCT, formatId: FORMAT, form: generation.receipt.form, locale: LOCALE, slot,
     creativeId: generation.receipt.creative_id, platform: "tiktok", videoRef: generation.receipt.video_ref,
-    captionRef: generation.receipt.copy_ref, approvalRef, instagramProfileRef: "profile://instagram/unassigned",
+    captionRef, approvalRef, instagramProfileRef: "profile://instagram/unassigned",
     postizTokenRef: "secret://postiz/api-key", tiktokIntegrationRef: INTEGRATION_REF,
   });
   await enqueuePublication(store, publicationJob, new Date(nowMs).toISOString());
@@ -121,4 +128,4 @@ async function runHonneEnCycle(argv, deps = {}) {
 
 if (require.main === module) runHonneEnCycle(process.argv.slice(2)).then((result) => process.stdout.write(`${JSON.stringify(result)}\n`)).catch((error) => { process.stderr.write(`${error.message}\n`); process.exitCode = 1; });
 
-module.exports = { enqueuePublication, parseArgs, runHonneEnCycle, runSlot };
+module.exports = { campaignCaptionRef, enqueuePublication, parseArgs, runHonneEnCycle, runSlot };

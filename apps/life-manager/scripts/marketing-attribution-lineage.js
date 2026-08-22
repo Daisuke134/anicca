@@ -47,10 +47,14 @@ function exactCaption(receipt, objectDir) {
   const caption = fs.readFileSync(resolveContentObject(ref, { objectDir }), "utf8");
   const hook = caption.split(/\r?\n/).map((line) => line.trim()).find(Boolean);
   if (!hook) throw new Error("publication caption has no hook line");
+  const campaignUrl = caption.split(/\s+/).find((value) => { try { const url = new URL(value); return url.protocol === "https:" && url.hostname === "apps.apple.com" && /^honne_en_tiktok_[a-z0-9_]+$/.test(String(url.searchParams.get("ct") || "")); } catch { return false; } }) || null;
+  const campaignId = campaignUrl ? new URL(campaignUrl).searchParams.get("ct") : null;
   return {
     caption_ref: ref,
     hook_text: hook,
     hook_sha256: crypto.createHash("sha256").update(hook).digest("hex"),
+    campaign_url: campaignUrl,
+    campaign_id: campaignId,
   };
 }
 
@@ -78,8 +82,8 @@ function buildLineage({ dataDir, tenantId = "dais-local" }) {
     const videoRef = `object://sha256/${publication.video_sha256}`;
     resolveContentObject(videoRef, { objectDir });
     return {
-      attribution_status: "unattributed",
-      attribution_reason: "campaign_not_configured",
+      attribution_status: caption.campaign_id ? "partial" : "unattributed",
+      attribution_reason: caption.campaign_id ? "campaign_link_configured_no_product_readback" : "campaign_not_configured",
       product_id: snapshot.product_id,
       locale: snapshot.locale,
       platform: platformOf(snapshot),
@@ -87,8 +91,9 @@ function buildLineage({ dataDir, tenantId = "dais-local" }) {
       integration_id: snapshot.integration_id,
       provider_post_id: snapshot.provider_post_id,
       public_url: snapshot.public_url,
-      campaign_id: null,
-      campaign_status: "unavailable",
+      campaign_id: caption.campaign_id,
+      campaign_url: caption.campaign_url,
+      campaign_status: caption.campaign_id ? "configured" : "unavailable",
       creative_id: publication.creative_id,
       slot: publication.slot,
       published_at: publication.published_at,
