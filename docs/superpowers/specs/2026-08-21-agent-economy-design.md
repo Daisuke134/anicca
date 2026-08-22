@@ -111,6 +111,17 @@ The evidence supports four separate causes, in this order:
    agent paid for its own inference. Missing runway and human-fuel evidence correctly keep the
    shelter gate closed.
 
+The ledger shape makes the demand failure concrete:
+
+- Franklin's ledger has thousands of wake rows, but the recent rows are `cook`/exploration rows
+  with `net_usdc = 0`; its only external gig claim is `$0.02` with `status = null`, so it remains
+  unverified and contributes zero revenue.
+- The founder lane recorded a TaskMarket work attempt of `-$0.065` and a later reconciliation of
+  `$0`; this is an expense/no-award outcome, not income.
+- Franklin2's ledger has no external revenue rows, and the agent-economy home has no external rows.
+- The x402 review evidence reports `externalCount = 0`: a reachable seller endpoint and self-pay
+  probes are not customer demand.
+
 Therefore this is not primarily a Solana/USDC price problem. It is a deployment-integrity and
 demand problem: the worker is not running, and when it did run there was no externally verified
 buyer. More model spend would increase losses, not solve the missing demand.
