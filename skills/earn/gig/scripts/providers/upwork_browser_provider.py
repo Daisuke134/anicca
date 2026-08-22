@@ -24,6 +24,7 @@ if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
 from cdp_nav_snapshot import navigate_and_snapshot  # noqa: E402
+from upwork_proposal_browser import fill_proposal_preflight  # noqa: E402
 
 
 CONNECTS_URL = "https://www.upwork.com/nx/plans/connects/history"
@@ -528,15 +529,15 @@ async def observe(
     }
     selected = plan_free_proposal(state, proposals_dir)
     state["can_submit_public_job"] = selected is not None
-    state["free_acquisition"] = (
-        {
-            "state": "ready",
-            "job_id": selected["job_id"],
-            "connects_required": selected["terms"]["required_connects"],
+    if selected is None:
+        state["free_acquisition"] = {"state": "waiting_free_capacity"}
+    else:
+        preflight = await fill_proposal_preflight(selected)
+        state["free_acquisition"] = {
+            "state": "preflight_ready",
             "proposal_payload_sha256": selected["payload_sha256"],
+            **preflight,
         }
-        if selected is not None else {"state": "waiting_free_capacity"}
-    )
     return state
 
 

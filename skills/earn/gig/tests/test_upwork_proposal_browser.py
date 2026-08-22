@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 
 import pytest
+from playwright.sync_api import sync_playwright
 
 
 GIG_ROOT = Path(__file__).resolve().parents[1]
@@ -51,7 +52,7 @@ def _snapshot(**overrides: object) -> dict[str, object]:
         "form_url": "https://www.upwork.com/ab/proposals/job/~012345678901234/apply/#/",
         "required_connects": 7,
         "bid_usd": 15,
-        "delivery_days": 1,
+        "duration_label": "Less than 1 month",
         "cover_letter": "Exact factual proposal.",
         "screening_answers": [{"question": "Can you start now?", "answer": "Yes."}],
         "attachments": [],
@@ -89,3 +90,42 @@ def test_any_form_or_submit_mismatch_fails_before_click(override: dict[str, obje
 
     with pytest.raises(ValueError, match="upwork_proposal_preflight_mismatch"):
         browser.validate_preflight(_snapshot(**override), _payload())
+
+
+def test_real_browser_fill_produces_exact_click_free_preflight():
+    assert browser is not None
+    html = """
+      <div>When you submit this proposal <strong>7 Connects</strong></div>
+      <label>Your bid <input data-test="bid" value=""></label>
+      <div class="fe-proposal-job-estimated-duration">
+        <button role="combobox">Select duration</button>
+        <ul><li onclick="this.closest('div').querySelector('button').innerText=this.innerText">Less than 1 month</li><li>1 to 3 months</li></ul>
+      </div>
+      <div class="cover-letter-area"><textarea></textarea></div>
+      <div class="fe-proposal-job-questions">
+        <label>Can you start now?<textarea></textarea></label>
+      </div>
+      <footer><button class="air3-btn-primary">Send for 7 Connects</button></footer>
+    """
+    url = "https://www.upwork.com/ab/proposals/job/~012345678901234/apply/#/"
+    executable = next(Path.home().glob(
+        ".agent-browser/browsers/chrome-*/Google Chrome for Testing.app/Contents/"
+        "MacOS/Google Chrome for Testing"
+    ))
+    with sync_playwright() as playwright:
+        chromium = playwright.chromium.launch(
+            headless=True, executable_path=str(executable),
+        )
+        page = chromium.new_page()
+        page.route("https://www.upwork.com/**", lambda route: route.fulfill(body=html))
+        page.goto(url)
+
+        snapshot = page.evaluate(browser.fill_preflight_expression(_payload()))
+
+        receipt = browser.validate_preflight(snapshot, _payload())
+        assert receipt["ready"] is True
+        assert page.locator(".cover-letter-area textarea").input_value() == "Exact factual proposal."
+        assert page.locator('[data-test="bid"]').input_value() == "15"
+        assert page.locator(".fe-proposal-job-questions textarea").input_value() == "Yes."
+        assert page.locator("footer button").get_attribute("data-clicked") is None
+        chromium.close()
