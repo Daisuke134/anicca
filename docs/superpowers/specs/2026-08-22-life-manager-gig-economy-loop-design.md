@@ -62,8 +62,11 @@ progressbar changed from 40% to `aria-valuenow=70` / `70% completed`; no proposa
 payment effect occurred. U9 is in progress. Portfolio proof 1, `Life Manager — Open-Source AI Agent`,
 is publicly readable as project `2091143267699150848`; its bound image SHA-256 is
 `ed3cef563fc2c43603f82517a48330758f1917b679f96c9ff6ac11bbff4e5136`, and the official Find Work
-progressbar changed from 70% to `aria-valuenow=75` / `75% completed`. Two portfolio proofs and the
-remaining truthful optional items are still required before Upwork reports 100%. The free-first bootstrap then
+progressbar changed from 70% to `aria-valuenow=75` / `75% completed`. Portfolio proof 2,
+`Life Manager iOS — Interactive UX Prototype`, is publicly readable as project `2091143845069127680`;
+its bound image SHA-256 is `fe867ffd64ef8d055a0b326eefa641aa919a67a77cba6f9db8cc497c07eb4e6d`,
+and the official progressbar now reads `aria-valuenow=80` / `80% completed`. One portfolio proof and
+the remaining truthful optional items are still required before Upwork reports 100%. The free-first bootstrap then
 publishes one narrow Project Catalog offer, obtains any account-earned Connects, and searches for a
 small paid job with bounded scope, low competition and delivery in one to three days. Freelancer
 Plus, Availability Badge, proposal boost and purchased Connects stay disabled until a qualified
