@@ -83,6 +83,17 @@ when account-earned capacity is sufficient. Freelancer
 Plus, Availability Badge, proposal boost and purchased Connects stay disabled until a qualified
 opportunity has measured evidence that free acquisition paths are insufficient.
 
+U10–U12 are now closed for first candidate `~022091106411892491962`, a $15 fixed-price
+20–30 minute student usability test posted two hours before observation. The owner evidence matches
+all explicit gates: current NAIST master's student, age 24, English-capable, AI-tool user, and willing
+to share screen/audio for the recorded session. Official job readback showed 10–15 proposals, zero
+interviews, verified payment and phone, seven required Connects, and zero available Connects. Connects
+History has zero balance and zero transactions; the account UI exposes no free onboarding reward or
+monthly grant, while Buy Connects offers only 100 for $15 plus tax. The exact $15 proposal and five
+screening answers are frozen at SHA-256
+`c37eed9c7a41a712f373504ea1a0555eb6be4a60b4f772763c64d8899c68e926` with no unsupported
+claims or attachments. U13 submission is waiting only on seven Connects; no proposal effect occurred.
+
 The proposal effect kernel remains ready before live execution. It persists the full canonical proposal and
 Connects pre-state, admits one concurrent submitter through an atomic compare-and-set, re-hashes the
 durable body before effect, and verifies only a matching official proposal plus Connects post-state.
