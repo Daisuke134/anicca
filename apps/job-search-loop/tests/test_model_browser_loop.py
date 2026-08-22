@@ -234,23 +234,20 @@ class ModelBrowserLoopContractTests(unittest.TestCase):
         self.assertNotIn("do not reopen a row it advanced", prompt)
         self.assertNotIn("preserve that exact blocker", prompt)
 
-    def test_workday_is_the_only_active_application_lane_during_10p(self):
+    def test_workday_and_ashby_share_the_model_application_lane_after_10p(self):
         daily = (APP_ROOT / "scripts" / "run-daily.sh").read_text(encoding="utf-8")
         prompt = (APP_ROOT / "prompts" / "daily-pass.md").read_text(encoding="utf-8")
         normalized_prompt = " ".join(prompt.split())
 
         self.assertIn("-m job_search_loop.ashby_discovery", daily)
-        self.assertIn('"status": "discovery_only"', daily)
-        self.assertIn('"reason": "workday_10p"', daily)
-        self.assertIn("--active-provider workday", daily)
+        self.assertIn('"status": "model_owned"', daily)
+        self.assertIn('"reason": "mandatory_browser_lane"', daily)
+        self.assertIn("--active-provider all", daily)
         self.assertIn(
-            "JOB_SEARCH_ACTIVE_APPLICATION_PROVIDER must be workday",
+            "Eligible Workday and Ashby rows both belong exclusively to this framework-owned model lane",
             normalized_prompt,
         )
-        self.assertIn(
-            "Do not open or navigate to any Ashby application form during Workday 10P",
-            normalized_prompt,
-        )
+        self.assertNotIn("during Workday 10P", normalized_prompt)
 
 
 if __name__ == "__main__":

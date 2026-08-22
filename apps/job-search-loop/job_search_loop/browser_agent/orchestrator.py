@@ -44,7 +44,10 @@ def invoke_runner(
         str(workdir),
     ]
     environment = os.environ.copy()
-    environment["JOB_SEARCH_ACTIVE_APPLICATION_PROVIDER"] = active_provider
+    if active_provider == "all":
+        environment.pop("JOB_SEARCH_ACTIVE_APPLICATION_PROVIDER", None)
+    else:
+        environment["JOB_SEARCH_ACTIVE_APPLICATION_PROVIDER"] = active_provider
     return subprocess.run(command, check=False, env=environment).returncode
 
 
@@ -57,7 +60,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--workdir", type=Path, required=True)
     parser.add_argument("--timeout-seconds", type=int, required=True)
     parser.add_argument("--python", required=True)
-    parser.add_argument("--active-provider", choices=("workday",), required=True)
+    parser.add_argument(
+        "--active-provider", choices=("workday", "ashby", "all"), required=True
+    )
     args = parser.parse_args(argv)
     if args.timeout_seconds < 1:
         parser.error("--timeout-seconds must be positive")

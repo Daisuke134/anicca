@@ -88,10 +88,10 @@ def read(path: Path) -> dict:
 
 discovery = read(discovery_path)
 combined = {
-    "status": "discovery_only",
+    "status": "model_owned",
     "processed": [],
     "excluded": [],
-    "reason": "workday_10p",
+    "reason": "mandatory_browser_lane",
     "discovery": {
         "status": discovery.get("status"),
         "discovered_count": len(discovery.get("discovered") or []),
@@ -158,7 +158,7 @@ workday_reason = str(workday.get("reason") or "")
 message = (
     "Codex::: "
     f"{japan_day} JST {run_id.name} pre-model checkpoint. "
-    + f"Ashby discovery is {ashby_discovery_status} ({ashby_discovered_count} discovered; discovery_only during Workday 10P)"
+    + f"Ashby discovery is {ashby_discovery_status} ({ashby_discovered_count} discovered; forms are model-owned)"
     + f". Workday is {workday_status}"
     + (f" ({workday_reason})" if workday_reason else "")
     + ". This checkpoint is sent before the mandatory model lane so a timeout cannot suppress Telegram reporting."
@@ -216,7 +216,7 @@ set +e
   --evidence-dir "$EVIDENCE" \
   --workdir "$JOB_SEARCH_REPO_ROOT" \
   --python "$JOB_SEARCH_PYTHON" \
-  --active-provider workday
+  --active-provider all
 RUNNER_RC=$?
 set -e
 if [[ "$RUNNER_RC" -ne 0 ]]; then
