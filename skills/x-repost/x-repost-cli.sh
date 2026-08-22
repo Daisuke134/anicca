@@ -206,10 +206,10 @@ THIS_HOUR="$(date +%Y-%m-%dT%H)"
 TODAY="$(date +%F)"
 # Count only rows that actually reached X. A row recorded as not_posted proves the opposite --
 # letting it hold the hourly slot would turn one failed attempt into a silent hour of no output.
-read -r HOUR_COUNT TODAY_COUNT <<<"$("$PY" - "$POSTED" "$THIS_HOUR" "$TODAY" <<'PYEOF'
+read -r HOUR_COUNT TODAY_COUNT ORIGINAL_TODAY_COUNT <<<"$("$PY" - "$POSTED" "$THIS_HOUR" "$TODAY" <<'PYEOF'
 import json, sys
 path, this_hour, today = sys.argv[1:4]
-hour = day = 0
+hour = day = original = 0
 try:
     lines = open(path, encoding="utf-8").read().splitlines()
 except OSError:
@@ -227,7 +227,8 @@ for line in lines:
     at = row.get("posted_at", "")
     hour += at.startswith(this_hour)
     day += at.startswith(today)
-print(hour, day)
+    original += at.startswith(today) and row.get("kind") == "original" and bool(row.get("post_url"))
+print(hour, day, original)
 PYEOF
 )"
 # Read and validate the proposal ledger before the daily generic-post gate. An unresolved
@@ -274,9 +275,10 @@ if [ "${HOUR_COUNT:-0}" -gt 0 ] \
   touch "$STATE/.last-pass"
   exit 0
 fi
-# An Affiliate READY/RECONCILE branch is evaluated above. Only those states may pass the generic
-# daily brake; all ordinary repost work remains capped exactly as before.
+# An unfinished Affiliate effect or the one missing daily original may pass the generic daily
+# runaway brake. Once today's original exists, all ordinary reply/quote work remains capped.
 if [ "${TODAY_COUNT:-0}" -ge "${X_REPOST_DAILY_MAX:-12}" ] \
+  && [ "${ORIGINAL_TODAY_COUNT:-0}" -gt 0 ] \
   && [ "$AFFILIATE_STATE" != "READY" ] \
     && [ "$AFFILIATE_STATE" != "RECONCILE" ] \
     && [ "$AFFILIATE_STATE" != "VERIFY_UNVERIFIED" ]; then
