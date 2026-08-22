@@ -29,7 +29,7 @@ IDENTITY="${X_REPOST_BROWSER_IDENTITY:-x:anicca}"
 # x-repost is Codex-only: Claude's subscription ceiling must not be able to stall this loop.
 MODEL="${X_REPOST_MODEL:-gpt-5.6-luna}"
 REASONING_EFFORT="${X_REPOST_REASONING_EFFORT:-max}"
-TELEGRAM_SEND_TIMEOUT="${X_REPOST_TELEGRAM_SEND_TIMEOUT:-20}"
+TELEGRAM_SEND_TIMEOUT="${X_REPOST_TELEGRAM_SEND_TIMEOUT:-30}"
 HUMANIZER_SKILL="${X_REPOST_HUMANIZER:-$HOME/.openclaw/skills/jp-humanizer-pro/SKILL.md}"
 GUARD="$HOME/.config/ai/bin/browser-guard.sh"
 ENSURE_BROWSER="$HOME/anicca/skills/browser/ensure_provision_browser.sh"
@@ -53,7 +53,7 @@ send_telegram() {
     return 1
   fi
   timeout "$TELEGRAM_SEND_TIMEOUT" openclaw message send --channel telegram --target "$TELEGRAM_ALERT_CHAT_ID" \
-    -m "$1" --json >>"$EV/telegram.jsonl" 2>&1
+    --message "$1" --json >>"$EV/telegram.jsonl" 2>&1
 }
 
 # A published post whose report never arrived is indistinguishable from a pass that did nothing.
