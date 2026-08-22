@@ -48,7 +48,11 @@ log() { echo "$(date '+%F %T') x-repost[$PASS_ID]: $*"; }
 # response is kept: telegram-notify.sh discards it, and a report whose messageId was thrown away
 # cannot be told apart from one that never arrived.
 send_telegram() {
-  timeout "$TELEGRAM_SEND_TIMEOUT" openclaw message send --channel telegram --target "${TELEGRAM_ALERT_CHAT_ID:-0000000000}" \
+  if [ -z "${TELEGRAM_ALERT_CHAT_ID:-}" ]; then
+    log "telegram target is not configured"
+    return 1
+  fi
+  timeout "$TELEGRAM_SEND_TIMEOUT" openclaw message send --channel telegram --target "$TELEGRAM_ALERT_CHAT_ID" \
     -m "$1" --json >>"$EV/telegram.jsonl" 2>&1
 }
 
@@ -159,6 +163,13 @@ run_x_post() {
 source "$REPO_ROOT/lib/registry-enforce.sh"
 registry_enforce_or_exit x-repost
 
+# Reporting configuration must exist before backlog flush. Loading it after the flush made every
+# queued receipt target the placeholder rather than the owner's private destination.
+set -a
+# shellcheck source=/dev/null
+. "$HOME/.openclaw/.env" 2>/dev/null
+set +a
+
 # Do this before the hourly guard: a pass with nothing to publish is still a chance to deliver a
 # report that an earlier pass could not.
 flush_report_backlog
@@ -195,10 +206,6 @@ for line in lines:
 print(hour, day)
 PYEOF
 )"
-set -a
-# shellcheck source=/dev/null
-. "$HOME/.openclaw/.env" 2>/dev/null
-set +a
 # Read and validate the proposal ledger before the daily generic-post gate. An unresolved
 # EFFECT_STARTED claim must remain recoverable even when generic reposts already hit their brake.
 if ! AFFILIATE_PICK="$($PY "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL" --consumed "$AFFILIATE_CONSUMED" --posted "$POSTED" 2>>"$EV/affiliate-proposal.err")"; then
