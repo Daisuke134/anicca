@@ -222,13 +222,31 @@ Every terminal pass writes one immutable receipt keyed by `run_id`:
 
 Telegram report begins with `Life Manager:::` and contains new/updated skill name, agent_id, version status, promoted account, native post URL, revenue split, MRR, artifact, blocker and next atomic action. Media delivery counts only when Telegram returns a message ID.
 
+## Loaded launchd inventory
+
+`launchctl print gui/$(id -u)`、各LaunchAgent plist、loop registry、実スクリプトを突合したloaded setは9件で、owner不明は0件である。8件の永続plistはすべて旧`$HOME/anicca` sourceを指し、provision browserだけはaccount managerが動的submitした子jobである。backup/disabled plistはloaded setへ含めない。
+
+| loaded label | owner / responsibility | cadence | current source | durable state / evidence | logs | observed runtime |
+|---|---|---|---|---|---|---|
+| `ai.anicca.capafy-ig-account-manager` | Life Manager / IG account lifecycle | 300秒 + RunAtLoad | `$HOME/anicca/skills/earn/capafy-marketing/capafy-ig-account-manager.sh` | `~/.cloak/clip-accounts-capafy.json`; `~/.openclaw/state/capafy-{ig-lifecycle,account-manager-result}.json`; account-manager evidence | `~/.openclaw/logs/capafy-ig-account-manager.{out,err}` | loaded; last exit 0 |
+| `ai.anicca.capafy-goal-monitor-hourly` | Life Manager / hourly company telemetry + Telegram | 毎時00分 | `$HOME/anicca/skills/earn/capafy-marketing/capafy-goal-monitor.sh` (`CAPAFY_REPORT_KIND=hourly`) | revenue events/evidence; portfolio; goal-monitor state/delivery; incidents | `~/.openclaw/logs/capafy-goal-monitor-hourly.{out,err}` | loaded; last exit 2 |
+| `ai.anicca.capafy-goal-monitor` | Life Manager / morning company audit | 毎日09:30 | `$HOME/anicca/skills/earn/capafy-marketing/capafy-goal-monitor.sh` | goal-monitor shared state/evidence | `~/.openclaw/logs/capafy-goal-monitor.{out,err}` | loaded; not yet run |
+| `ai.anicca.capafy-goal-monitor-daily-close` | Life Manager / daily-close company report | 毎日23:50 | `$HOME/anicca/skills/earn/capafy-marketing/capafy-goal-monitor.sh` (`CAPAFY_REPORT_KIND=daily_close`) | goal-monitor shared state/evidence | `~/.openclaw/logs/capafy-goal-monitor-daily-close.{out,err}` | loaded; not yet run |
+| `ai.anicca.capafy-ig-marketing-daily` | Life Manager / IG creative + publisher | 毎日16:00 | `$HOME/anicca/skills/earn/capafy-marketing/capafy-ig-marketing-daily.sh` | IG lifecycle; marketing result/creative/caption; marketing evidence | `~/.openclaw/logs/capafy-ig-marketing-daily.{out,err}` | loaded; last exit 1 |
+| `ai.anicca.capafy-outcome-monitor` | Life Manager / terminal self-fix outcome verifier | 60秒 | `$HOME/anicca/skills/earn/capafy-marketing/capafy-outcome-monitor.sh` | `.self-fix-capafy-loop.incident.json`; outcome-monitor lock; result/lifecycle readback | `~/.openclaw/logs/capafy-outcome-monitor.{out,err}.log` | loaded; last exit 0 |
+| `ai.anicca.capafy-loop-healthcheck` | Life Manager / business-outcome supervisor | 300秒 | `$HOME/anicca/skills/self/capafy-loop/capafy-loop-healthcheck.sh` | business-health/incident state; daily job readback | launchd `capafy-loop-launchd.{out,err}.log`; internal `capafy-loop-healthcheck.log` | loaded; last exit 1 |
+| `ai.anicca.capafy-loop-daily` | Life Manager / daily build, publish and money loop | 毎日08:10 | `$HOME/anicca/skills/self/capafy-loop/capafy-loop-daily.sh` | portfolio; builder result; earn ledger; last-pass; marketplace evidence | launchd `capafy-loop-daily.{out,err}`; internal `capafy-loop-daily.log` | loaded; not yet run |
+| `ai.anicca.provision-browser.instagram.capafy-provision` | Life Manager / IG provisioning browser child owned by account manager | account-managerが必要時にsubmit、keepalive | `~/.openclaw/skills/_shared/venv-cloak/bin/python3` + `$HOME/anicca/skills/earn/gig/scripts/cdp_daily_driver_keepalive.py` | `~/.cloak/profiles/capafy-mkt-provision` | `~/.openclaw/logs/provision-browser.log` | running |
+
+C1の入力として、Life Manager側に同名sourceが存在しないのは`capafy-ig-account-manager.sh`と`capafy-outcome-monitor.sh`の2件である。この2件をrepo-owned pathへ移植するまでplistだけを切り替えない。
+
 ## Atomic remaining TODO
 
 Items are executed top-to-bottom. Only one item is active.
 
 | ID | atomic action | done evidence | state |
 |---|---|---|---|
-| C0 | inventory every loaded Capafy launchd label and map source path, state path, log path, cadence | checked-in inventory has no unknown owner | pending |
+| C0 | inventory every loaded Capafy launchd label and map source path, state path, log path, cadence | checked-in inventory has no unknown owner | completed — 9/9 loaded labels mapped; unknown owner 0 |
 | C1 | replace old-repo plist paths with Life Manager main release paths using repo-owned templates | `plutil`, `launchctl print`, resolved ProgramArguments/WorkingDirectory all point to Life Manager | pending |
 | C2 | bootstrap revised jobs once, unload duplicate old-path jobs, and read back exact loaded set | one owner per responsibility; no duplicate daily/hourly publisher | pending |
 | C3 | fix false-green exits so child failure remains nonzero and terminal heartbeat is written only after classified completion | failure injection returns nonzero; no false healthy marker | pending |
