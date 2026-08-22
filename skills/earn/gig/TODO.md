@@ -368,9 +368,13 @@ customer effect exists.
   `28199b8fb6479915d5ec372f3e57df83899f449a705ac7157dd9ad59867907d1`, as `REVIEW_READY`; the controller
   fails `file_validation: asset contract mismatch`. Its Project Owner must bind every required buyer-visible
   screenshot/asset or return a truthful non-delivery disposition; it may not call an incomplete article perfect.
-- X `18171850` already has its approved v1 official effect/readback. Its stale local `REVIEW_READY` and
-  `file_validation: asset contract mismatch` may be reconciled only into the factual ledger; it must not rebuild
-  or resend without a newer buyer event.
+- X `18171850` has a newer buyer event after the v1 official effect/readback and is reopened. The buyer corrected
+  the source category to FANBOX four-panel manga, asked for talkroom text rather than an attachment, and later named
+  one already-used four-panel topic that must be avoided because assignments are first-come. The old room-local
+  `observe_only` policy was incorrectly treated as permanent even though targeted official readback reports
+  `buyer_reply_after_artifact_observed=true`. The generic policy now expires on a newer buyer reply; the natural
+  owner must read the current linked source/DM sequence, produce nonduplicative X copy as talkroom text, send once,
+  and obtain exact-room readback/replay-zero. This is a new response, not a resend of v1.
 - `18062411` currently closes at `remote_resume`; its latest semantic decision is `satisfied_noop` while the
   buyer consults a superior. It requires durable factual disposition/recovery, not a new customer effect.
 - A current Paid Project Context model stdout log contains plaintext content from a buyer-supplied

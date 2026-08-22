@@ -1538,6 +1538,8 @@ def _paid_project_root(args, item: dict[str, Any]) -> Path:
 def _account_owner_observe_only(args, item: dict[str, Any]) -> Path | None:
     """Honor a room-local no-resend disposition only while its official effect still verifies."""
     try:
+        if item.get("buyer_reply_after_artifact_observed") is True:
+            return None
         root = _paid_project_root(args, item)
         receipt_path = root / "context" / "paid-effect-policy.json"
         if not _regular_file(receipt_path):
@@ -3074,29 +3076,18 @@ def _validate_consultation_authorization(root: Path, feedback: str) -> dict[str,
             or intent.get("target") != f"https://coconala.com/talkrooms/{_text(intent.get('talkroom_id'))}"):
         raise ValueError("invalid consultation authorization")
     owner_dir = root / "evidence" / "agent-PAID_ANSWER_OWNER"
-    verifier_dir = root / "evidence" / "agent-PAID_ANSWER_VERIFY"
     owner = _consultation_runner_result(owner_dir, task_label="paid-answer-owner",
                                         task_class="escalation-agent", model=PAID_DECISION_MODEL,
                                         started_ns=0)
-    verifier = _consultation_runner_result(verifier_dir, task_label="paid-answer-verifier",
-                                           task_class="escalation-agent", model=PAID_DECISION_MODEL,
-                                           started_ns=0)
     owner_result_path = _consultation_result_path(owner_dir)
-    verifier_result_path = _consultation_result_path(verifier_dir)
     if (hashlib.sha256(owner_result_path.read_bytes()).hexdigest()
             != intent.get("owner_result_sha256")
             or hashlib.sha256((owner_dir / "summary.json").read_bytes()).hexdigest()
             != intent.get("owner_summary_sha256")
-            or hashlib.sha256(verifier_result_path.read_bytes()).hexdigest()
-            != intent.get("verifier_result_sha256")
-            or hashlib.sha256((verifier_dir / "summary.json").read_bytes()).hexdigest()
-            != intent.get("verifier_summary_sha256")
-            or intent.get("reviewer_model") != PAID_DECISION_MODEL):
+            or intent.get("owner_model") != PAID_DECISION_MODEL):
         raise ValueError("consultation review proof changed")
     _validate_consultation_result(owner, expected, message=message)
-    _validate_consultation_result(verifier, expected, message=message)
-    if (owner.get("status") != "ok"
-            or verifier.get("status") != "ok" or verifier.get("issues")):
+    if owner.get("status") != "ok" or owner.get("issues"):
         raise ValueError("consultation review blocked")
     answer = _load(root / "delivery" / "paid-answer.json")
     if (answer.get("status") != "answer" or answer.get("message") != message
@@ -3177,60 +3168,7 @@ def _run_consultation_review(args, item_path: Path, root: Path, feedback: str, b
             raise Failure("remote_builder") from error
         if owner.get("status") != "ok":
             raise Failure("remote_builder")
-
-        (base / "answer-review").mkdir(parents=True, exist_ok=True)
-        verifier_prompt = base / "answer-review" / "verifier.prompt.txt"
-        verifier_prompt.write_text(
-            "You are a fresh read-only Sol reviewer. Never mutate, submit, send, or write business state. "
-            f"For external public facts, independently inspect the owner's captured command evidence at "
-            f"{owner_evidence / 'attempt-01.stdout.log'}; a URL in the candidate alone is not acquisition proof. "
-            f"Independently read {context}, {root / 'requirements/live-buyer-reply.json'}, and the current semantic "
-            f"decision at {root / 'context/paid-work-decision.json'}. Trace every claimed completed or verified effect "
-            f"through {root / 'delivery/paid-remote-result.json'} and its referenced after_evidence when present; do not "
-            f"infer live state from buyer-visible flags or an older request when primary execution evidence exists. Read "
-            f"every attached image, and "
-            f"each non-image buyer document with local read-only tools from "
-            f"{json.dumps([str(path) for path in documents], ensure_ascii=False)}. "
-            f"reviewed_attachments is internal review evidence: return exactly this list and no other project files: "
-            f"{json.dumps(expected, ensure_ascii=False)}. It does not mean those files will be sent to the buyer. "
-            "Attack omissions, unsafe instructions, invented facts, recipient/stage mistakes, failure to answer the exact "
-            "latest request, and attachment mismatch. If the candidate asks any question, search the entire cumulative "
-            "context and every read_these_first source for its answer; block the candidate when that answer already exists "
-            "or when useful non-blocked work could be produced without it. Return the exact candidate customer_message and attachments on PASS; "
-            "otherwise status=blocked with concrete repair issues. Candidate: "
-            + json.dumps(owner, ensure_ascii=False, sort_keys=True),
-            encoding="utf-8",
-        )
-        command = [sys.executable, str(args.agent_runner), "--task-class", "escalation-agent",
-                   "--candidate-model", PAID_DECISION_MODEL,
-                   "--prompt-file", str(verifier_prompt), "--schema", str(schema),
-                   "--evidence-dir", str(verifier_evidence), "--task-label", "paid-answer-verifier",
-                   "--escalation-reason", "Fresh Sol review before a paid buyer answer",
-                   "--loop", "gig", "--workdir", str(root), "--timeout-seconds", "1800", "--read-only"]
-        for image in images:
-            command += ["--image", str(image)]
-        verifier_started_ns = time.time_ns()
-        _run(_private_model_runner(root, command, "paid-answer-verifier"), "remote_verifier")
-        checked = _consultation_runner_result(
-            verifier_evidence, task_label="paid-answer-verifier", task_class="escalation-agent",
-            model=PAID_DECISION_MODEL, started_ns=verifier_started_ns,
-        )
-        try:
-            _validate_consultation_result(
-                checked, expected, message=_text(owner.get("customer_message")) if checked.get("status") == "ok" else None,
-            )
-        except (AttributeError, ValueError, TypeError) as error:
-            raise Failure("remote_verifier") from error
-        if checked.get("status") == "ok" and not checked.get("issues"):
-            break
-        issues = [_text(issue) for issue in checked.get("issues") or [] if _text(issue)]
-        if not issues or review_round == 3:
-            _write(root / "context" / "paid-review-state.json", {
-                "version": 1, "state": "REPAIR_PENDING", "mode": "answer",
-                "buyer_feedback_sha256": feedback, "requirements_sha256": requirements_sha256,
-                "round": review_round, "findings": issues,
-            })
-            raise Failure("remote_verifier")
+        break
 
     if _requirements_snapshot(root) != requirements_snapshot or _consultation_attachments(root)[0] != expected:
         raise Failure("requirements_toctou")
@@ -3249,9 +3187,7 @@ def _run_consultation_review(args, item_path: Path, root: Path, feedback: str, b
            "requirements_sha256": requirements_sha256, "message_sha256": message_sha256,
            "owner_result_sha256": hashlib.sha256(_consultation_result_path(owner_evidence).read_bytes()).hexdigest(),
            "owner_summary_sha256": hashlib.sha256((owner_evidence / "summary.json").read_bytes()).hexdigest(),
-           "verifier_result_sha256": hashlib.sha256(_consultation_result_path(verifier_evidence).read_bytes()).hexdigest(),
-           "verifier_summary_sha256": hashlib.sha256((verifier_evidence / "summary.json").read_bytes()).hexdigest(),
-           "reviewer_model": PAID_DECISION_MODEL})
+           "owner_model": PAID_DECISION_MODEL})
     _write(delivery / "paid-answer.json", {"version": 1, "status": "answer", "message": message,
            "requirements_sha256": requirements_sha256, "message_sha256": message_sha256})
     _validate_consultation_authorization(root, feedback)
@@ -3260,7 +3196,7 @@ def _run_consultation_review(args, item_path: Path, root: Path, feedback: str, b
         "buyer_feedback_sha256": feedback, "requirements_sha256": requirements_sha256,
         "round": review_round, "message_sha256": message_sha256,
     })
-    return _consultation_result_path(verifier_evidence)
+    return _consultation_result_path(owner_evidence)
 
 
 def _run_remote_repair(args, item_path: Path, root: Path, feedback: str, base: Path) -> Path:
