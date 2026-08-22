@@ -917,6 +917,12 @@ missing ledger fact without rerunning the Skill. Focused executor plus workspace
 pass 13/13, including a second tick after missing-output/secret rejection proving one runner
 invocation, and Python compilation plus `git diff --check` pass. No live execution is claimed:
 official Upwork contracts remain 0, so production has no contract workspace to run yet.
+Main commit `76291a1fa` is published as immutable release
+`76291a1faaa56f5723cb868a43123b09a4f3b893`; release-file SHA-256 is
+`aee2a2c0ad2a90f50fdd0aad932ec83f4635c9f81206828eaed28562a8472841`. The same 13 tests pass
+from the read-only release and syntax compilation passes with its bytecode cache redirected to a
+temporary directory. Launchd readback remains unavailable in the orphaned GUI context, so this
+release proof does not pretend that the stopped browser or a nonexistent contract executed it.
 
 ### Task 18: Independently verify deliverables
 
