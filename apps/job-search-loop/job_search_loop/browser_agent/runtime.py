@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
 
+from ..ats import detect_provider
 from ..ledger import Ledger
 from ..resume_routing import select_resume
 from ..state import provider_recovery_url
@@ -223,11 +224,13 @@ async def observe() -> dict[str, Any]:
             "instruction": "return the accumulated typed outcomes now",
         }
     observation = await builder.build(cursor.handle)
-    credential_known = tenant_key(row["canonical_url"]) in (
-        MachineWorkdayCredentialStore(
-            _path_env("JOB_SEARCH_MACHINE_CREDENTIALS")
-        ).known_tenants()
-    )
+    credential_known = False
+    if detect_provider(row["canonical_url"]) == "workday":
+        credential_known = tenant_key(row["canonical_url"]) in (
+            MachineWorkdayCredentialStore(
+                _path_env("JOB_SEARCH_MACHINE_CREDENTIALS")
+            ).known_tenants()
+        )
     candidate_concepts = tuple(
         concept
         for concept in CandidateMemoryView.load(
