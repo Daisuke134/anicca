@@ -302,7 +302,7 @@ no-send, replay-zero and a new natural sub-30-minute official reply/estimate pro
 Do not advance the development cursor until every unchecked item in the current stage has official
 evidence. Independent production lanes continue running while development follows this order.
 
-**Current live cursor.** `main` and `origin/main` are `ad4ad28fb69c07bb4ebce234e4d7d653dcfc697f`;
+**Current live cursor.** `main` and `origin/main` are `701c8de6f645f4327e8b5e01bea6aad6a14cd75d`;
 the release selector points at immutable `2998bf4b5b6db9adde2d140d36591fc5005a8241`, while the active Haru
 project owner is correctly pinned to the immutable release from which that pass began,
 `6f3c3aca00c6c31bb026bd91003856d47bc43462`. The shared disk guard is active with
