@@ -1545,7 +1545,9 @@ independent immutable-release GC race, not a disabled schedule.
 - [x] Prove replay zero and the next natural scheduled owner. Run 3 snapshot includes all five newly
   confirmed IDs in `already_applied_ids`, while the one unresolved ID remains a request detail with
   a durable intent fence, so neither class can submit twice. The next natural process uses immutable
-  release `3fa2f7d4...`, which contains the release-retention fix.
+  release `3fa2f7d4...`, which contains the release-retention fix. A separate exact-ID audit of the
+  preceding 15 official applications against that same natural snapshot reports 15/15 in
+  `already_applied_ids`, 0/15 in `request_details`, and no missing ID.
 - [x] Prove deterministic continuous Apply operation without waiting 24 wall-clock hours. The wrapper
   now pins its immutable release for its whole wake; GC preserved the live pin while `/current`
   advanced, same-wake reconciliation completed from the pinned release, and the next natural wake
@@ -1553,6 +1555,12 @@ independent immutable-release GC race, not a disabled schedule.
   five-minute `ai.anicca.earning-health-allslots` owner checks all gig labels plus the Apply wake
   ledger. The 24-hour observation continues in parallel and is not a gate for starting Negotiate;
   every future application still requires official-history readback and a Telegram provider ACK.
+  The sole earlier unknown application receipt, request `5225359`, had official history but no
+  provider receipt after its first transport timeout. Business-result redrive now remains eligible
+  for 24 hours while transient health reports retain the one-hour bound; an application-only
+  recovery changed report `9769` from `delivery_unknown` to `sent` with provider message ID `28769`
+  and a matching event-key/target/message-hash receipt. The concurrent Paid unknown row was not
+  changed.
 
 - [x] Restore immediate per-application Telegram reporting. The parent reporter deadline was 90
   seconds while the inner provider deadline was 180 seconds, which killed valid slow sends and left
