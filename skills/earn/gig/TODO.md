@@ -391,6 +391,11 @@ control plane before any restart effect: `System Events` returned Apple Event `-
 resolution returned `-1728`, and `launchctl reboot system` returned 141 `Reentrancy avoided`. No Paid process or
 customer effect was created. The only remaining action is therefore a physical Apple-menu/power-button Mac reboot;
 after login, resume this thread and continue with the existing Paid owner as specified above.
+The account owner explicitly reauthorized an immediate reboot and Haru send. A fresh attempt still found uptime
+over 21 hours, `dscl=eServerError`, `launchctl=141`, and no process table. Passwordless `shutdown -r now` could not
+resolve uid 501; the Computer Use service could not start; and the independently installed CuaDriver saw neither a
+running app PID nor a WindowServer window. These attempts also produced no reboot or customer effect. Physical
+Apple-menu/power-button reboot remains the sole required owner action; this is not permission waiting.
 
 **Current runtime refresh.** Unrelated dirty files remain untouched. The existing Paid pass naturally resumed the
 Haru v43 staging after compiling
