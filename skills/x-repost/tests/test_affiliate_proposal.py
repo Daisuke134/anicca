@@ -269,6 +269,25 @@ class AffiliateProposalTests(unittest.TestCase):
         self.assertLessEqual(len(re.sub(r"https?://\S+", "x" * 23, text)), 280)
         self.assertIn(proposal["owned_article_url"], text)
 
+    def test_post_text_uses_complete_sentences_instead_of_sliced_fields(self) -> None:
+        proposal = {
+            "receipt_type": "AFFILIATE_REPOST_PROPOSAL",
+            "state": "READY_FOR_EXISTING_REPOST_OWNER",
+            "proposal_id": "c" * 64,
+            "placement_id": "youtube-transcript-generator-en-1",
+            "owned_article_url": "https://aniccaai.com/blog/youtube-transcript-generator",
+            "language": "en", "disclosure_required": True,
+            "tracking_link_state": "NOT_INCLUDED",
+            "revenue_credit_state": "NO_REVENUE_CREDIT",
+            "article_title": "Is ElevenLabs' YouTube Transcript Generator a Fit for Your Workflow?",
+            "buyer_intent": "Creators evaluating ElevenLabs Youtube Transcript Generator before paying",
+        }
+        text = MODULE.post_text(proposal)
+        self.assertIn("Considering ElevenLabs Youtube Transcript Generator?", text)
+        self.assertIn("Use this decision checklist to compare the trade-offs.", text)
+        self.assertNotIn("Youtube T\n", text)
+        self.assertNotIn("Genera\n", text)
+
 
 if __name__ == "__main__":
     unittest.main()

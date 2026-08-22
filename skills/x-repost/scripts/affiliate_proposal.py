@@ -86,11 +86,24 @@ def post_text(proposal: dict) -> str:
     disclosure = "Affiliate disclosure: I may earn a commission if you subscribe through this link."
     intent = " ".join((proposal.get("buyer_intent") or "").split())
     title = " ".join((proposal.get("article_title") or "").split())
-    slug = url.rsplit("/", 1)[-1].replace("-", " ")
-    for intent_limit, title_limit in ((120, 100), (80, 70), (40, 40), (0, 0)):
-        hook = intent[:intent_limit].rstrip() if intent_limit else "Before paying for an AI workflow"
-        detail = title[:title_limit].rstrip() if title_limit else slug
-        text = f"{hook}\n{detail}\nCheck fit, limits, and price before paying.\n\n{disclosure}\n{url}"
+    match = re.fullmatch(r"Creators evaluating (.+?) before paying", intent, re.I)
+    product = match.group(1).strip() if match else ""
+    if not product:
+        product = re.sub(r"^(?:Is|How to Evaluate)\s+", "", title, flags=re.I)
+        product = re.split(r"(?:\?|:|\s+(?:a|the)\s+(?:right\s+)?fit\b|\s+before\b)", product,
+                           maxsplit=1, flags=re.I)[0].strip()
+
+    # Never slice prose to fit. The old renderer cut both the hook and title in the middle of
+    # words, producing visibly broken public posts. Try complete-sentence variants and fall back
+    # to a truthful generic noun when a provider-supplied product label is unusually long.
+    for subject in (product, "this AI tool"):
+        if not subject:
+            continue
+        text = (
+            f"Considering {subject}? Check workflow fit, limits, and total price before you "
+            f"subscribe. Use this decision checklist to compare the trade-offs.\n\n"
+            f"{disclosure}\n{url}"
+        )
         # Match twitter/twitter-text v3: each extracted URL contributes the
         # transformed URL length (23), not its raw display length.
         weighted_length = len(URL.sub("x" * X_TRANSFORMED_URL_LENGTH, text))
