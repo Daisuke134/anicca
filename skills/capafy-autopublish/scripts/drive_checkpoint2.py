@@ -25,6 +25,8 @@ MODEL    = "anthropic/claude-sonnet-4.6"
 CDP_ATTACH_TIMEOUT_MS = int(os.environ.get("CP2_CDP_ATTACH_TIMEOUT_MS", "15000"))
 RAW_NAV_TIMEOUT_S = float(os.environ.get("CP2_RAW_NAV_TIMEOUT_S", "30"))
 RAW_CALL_TIMEOUT_S = float(os.environ.get("CP2_RAW_CALL_TIMEOUT_S", "20"))
+RAW_SECTION_TIMEOUT_S = float(os.environ.get("CP2_SECTION_TIMEOUT_S", "5"))
+RAW_SECTION_POLL_S = float(os.environ.get("CP2_SECTION_POLL_S", "0.25"))
 CP2_HOST = "capafy.ai"
 CP2_PATH = "/developer/createAgent"
 OPENROUTER_API_KEY_PATH = "models.providers.openrouter.apiKey"
@@ -358,27 +360,74 @@ def _detected_keys_button_expression():
     )
 
 
+def _bounded_page_call(page, method, params, deadline):
+    remaining = deadline - time.monotonic()
+    if remaining <= 0:
+        raise RuntimeError("provider section deadline exhausted")
+    if not hasattr(page, "_call_timeout_s"):
+        return page.call(method, params)
+    original = page._call_timeout_s
+    page._call_timeout_s = min(float(original), remaining)
+    try:
+        return page.call(method, params)
+    finally:
+        page._call_timeout_s = original
+
+
+def _bounded_page_evaluate(page, expression, deadline):
+    remaining = deadline - time.monotonic()
+    if remaining <= 0:
+        raise RuntimeError("provider section deadline exhausted")
+    if not hasattr(page, "_call_timeout_s"):
+        return page.evaluate(expression)
+    original = page._call_timeout_s
+    page._call_timeout_s = min(float(original), remaining)
+    try:
+        return page.evaluate(expression)
+    finally:
+        page._call_timeout_s = original
+
+
 def _ensure_raw_provider_section(page):
-    state = page.evaluate(_provider_path_state_expression())
-    if not isinstance(state, dict):
-        raise RuntimeError(f"provider path state unavailable ({state})")
-    count = state.get("count")
-    if count == 1:
-        return
-    if count != 0:
-        raise RuntimeError(f"ambiguous OpenRouter provider path ({state})")
-    button = page.evaluate(_detected_keys_button_expression())
-    if not isinstance(button, dict) or not button.get("ok"):
-        raise RuntimeError(f"detected-keys button unavailable ({button})")
-    x, y = button.get("x"), button.get("y")
-    if isinstance(x, bool) or isinstance(y, bool) or not isinstance(x, (int, float)) or not isinstance(y, (int, float)):
-        raise RuntimeError(f"detected-keys button coordinates invalid ({button})")
-    page.call("Input.dispatchMouseEvent", {"type": "mousePressed", "x": float(x), "y": float(y), "button": "left", "clickCount": 1})
-    page.call("Input.dispatchMouseEvent", {"type": "mouseReleased", "x": float(x), "y": float(y), "button": "left", "clickCount": 1})
-    time.sleep(1.5)
-    state = page.evaluate(_provider_path_state_expression())
-    if not isinstance(state, dict) or state.get("count") != 1:
-        raise RuntimeError(f"OpenRouter provider path did not appear after expansion ({state})")
+    deadline = time.monotonic() + RAW_SECTION_TIMEOUT_S
+
+    def provider_state():
+        return _bounded_page_evaluate(page, _provider_path_state_expression(), deadline)
+
+    def require_count_one(state, phase):
+        if isinstance(state, dict) and state.get("count") == 1:
+            return True
+        count = state.get("count") if isinstance(state, dict) else None
+        if isinstance(count, (int, float)) and not isinstance(count, bool) and count > 1:
+            raise RuntimeError(f"ambiguous OpenRouter provider path during {phase} ({state})")
+        return False
+
+    while time.monotonic() < deadline:
+        state = provider_state()
+        if require_count_one(state, "initial hydration"):
+            return
+        button = _bounded_page_evaluate(page, _detected_keys_button_expression(), deadline)
+        if isinstance(button, dict) and button.get("ok"):
+            x, y = button.get("x"), button.get("y")
+            if isinstance(x, bool) or isinstance(y, bool) or not isinstance(x, (int, float)) or not isinstance(y, (int, float)):
+                raise RuntimeError(f"detected-keys button coordinates invalid ({button})")
+            _bounded_page_call(page, "Input.dispatchMouseEvent", {"type": "mousePressed", "x": float(x), "y": float(y), "button": "left", "clickCount": 1}, deadline)
+            _bounded_page_call(page, "Input.dispatchMouseEvent", {"type": "mouseReleased", "x": float(x), "y": float(y), "button": "left", "clickCount": 1}, deadline)
+            break
+        button_count = button.get("count") if isinstance(button, dict) else None
+        if isinstance(button_count, (int, float)) and not isinstance(button_count, bool) and button_count > 1:
+            raise RuntimeError(f"ambiguous detected-keys button ({button})")
+        time.sleep(RAW_SECTION_POLL_S)
+    else:
+        raise RuntimeError("provider path and detected-keys button did not hydrate before deadline")
+
+    deadline = time.monotonic() + RAW_SECTION_TIMEOUT_S
+    while time.monotonic() < deadline:
+        state = provider_state()
+        if require_count_one(state, "post-expansion hydration"):
+            return
+        time.sleep(RAW_SECTION_POLL_S)
+    raise RuntimeError("OpenRouter provider path did not appear after expansion before deadline")
 
 
 def _pw_strict_focus_and_insert(page, path, role, value):

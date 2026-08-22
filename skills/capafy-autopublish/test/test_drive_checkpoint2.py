@@ -307,6 +307,7 @@ def test_provider_section_clicks_one_counted_button_then_requires_path() -> None
             self.calls.append((method, params))
 
     page = _Page()
+    module.RAW_SECTION_POLL_S = 0
     module._ensure_raw_provider_section(page)
     assert [method for method, _ in page.calls] == ["Input.dispatchMouseEvent", "Input.dispatchMouseEvent"]
 
@@ -314,19 +315,128 @@ def test_provider_section_clicks_one_counted_button_then_requires_path() -> None
 @pytest.mark.parametrize("button_state", ({"ok": False, "reason": "button-count", "count": 0}, {"ok": False, "reason": "button-count", "count": 2}))
 def test_provider_section_rejects_missing_or_ambiguous_count_button(button_state) -> None:
     module = load_module()
+    module.RAW_SECTION_TIMEOUT_S = 0.01
+    module.RAW_SECTION_POLL_S = 0.001
 
     class _Page:
         def __init__(self):
-            self.states = iter(({"count": 0}, button_state))
+            self.first = True
 
         def evaluate(self, _expression):
-            return next(self.states)
+            if self.first:
+                self.first = False
+                return {"count": 0}
+            return button_state
 
         def call(self, *_args, **_kwargs):
             pytest.fail("must not click an unavailable/ambiguous detected-keys button")
 
     with pytest.raises(RuntimeError):
         module._ensure_raw_provider_section(_Page())
+
+
+def test_provider_section_polls_delayed_provider_path() -> None:
+    module = load_module()
+    module.RAW_SECTION_POLL_S = 0
+
+    class _Page:
+        def __init__(self):
+            self.states = iter(({"count": 0}, {"ok": False, "count": 0}, {"count": 1}))
+
+        def evaluate(self, _expression):
+            return next(self.states)
+
+        def call(self, *_args, **_kwargs):
+            pytest.fail("detected button should not be clicked")
+
+    module._ensure_raw_provider_section(_Page())
+
+
+def test_provider_section_polls_delayed_counted_button_and_path() -> None:
+    module = load_module()
+    module.RAW_SECTION_POLL_S = 0
+
+    class _Page:
+        def __init__(self):
+            self.states = iter((
+                {"count": 0}, {"ok": False, "count": 0},
+                {"count": 0}, {"ok": True, "x": 10, "y": 20},
+                {"count": 1},
+            ))
+            self.calls = []
+
+        def evaluate(self, _expression):
+            return next(self.states)
+
+        def call(self, method, params=None):
+            self.calls.append(method)
+
+    page = _Page()
+    module._ensure_raw_provider_section(page)
+    assert page.calls == ["Input.dispatchMouseEvent", "Input.dispatchMouseEvent"]
+
+
+def test_provider_section_missing_times_out_and_ambiguous_path_fails_immediately() -> None:
+    module = load_module()
+    module.RAW_SECTION_TIMEOUT_S = 0.01
+    module.RAW_SECTION_POLL_S = 0.001
+
+    class _Missing:
+        def evaluate(self, _expression):
+            return None
+
+        def call(self, *_args, **_kwargs):
+            pytest.fail("missing hydration must not click")
+
+    with pytest.raises(RuntimeError, match="did not hydrate"):
+        module._ensure_raw_provider_section(_Missing())
+
+    class _Ambiguous:
+        def evaluate(self, _expression):
+            return {"count": 2}
+
+        def call(self, *_args, **_kwargs):
+            pytest.fail("ambiguous provider path must not click")
+
+    with pytest.raises(RuntimeError, match="ambiguous OpenRouter"):
+        module._ensure_raw_provider_section(_Ambiguous())
+
+
+def test_provider_state_evaluation_exception_propagates_immediately() -> None:
+    module = load_module()
+
+    class _Page:
+        def evaluate(self, _expression):
+            raise ValueError("renderer disconnected")
+
+    with pytest.raises(ValueError, match="renderer disconnected"):
+        module._ensure_raw_provider_section(_Page())
+
+
+def test_bounded_page_calls_cap_and_restore_timeout(monkeypatch) -> None:
+    module = load_module()
+    monkeypatch.setattr(module.time, "monotonic", lambda: 100.0)
+
+    class _Page:
+        _call_timeout_s = 20.0
+
+        def __init__(self):
+            self.observed = []
+
+        def evaluate(self, _expression):
+            self.observed.append(self._call_timeout_s)
+            return {"count": 1}
+
+        def call(self, _method, _params):
+            self.observed.append(self._call_timeout_s)
+            return {}
+
+    page = _Page()
+    deadline = 105.0
+    assert module._bounded_page_evaluate(page, "1", deadline) == {"count": 1}
+    assert module._bounded_page_call(page, "Input.dispatchMouseEvent", {}, deadline) == {}
+    assert page.observed == [5.0, 5.0]
+    assert page._call_timeout_s == 20.0
 
 
 @pytest.mark.parametrize(("raw_ok", "expected_exit"), ((True, 0), (False, 1)))
