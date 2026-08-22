@@ -179,6 +179,7 @@ Mercor interview messages enter the existing Job Hunter inbox lane. Reuse `apps/
 - Failure fixtures now cover page drift, stale/non-Mercor tabs, transient CDP failure, ambiguous submit read-back, recovery/reset/Google `はい` screens, and authoritative successful read-back. The guard fails closed and never retries an ambiguous submit or clicks recovery UI.
 - A redacted two-operator fixture now proves separate operator IDs, state roots, application ledgers, evidence files, resume paths, and CDP endpoints; no cross-operator listing or evidence is visible.
 - The reproducible release artifact passed extraction and clean-home install tests with a non-Dais redacted profile; the archive excludes private state, and the tracked public tree has no private-key/token credential matches.
+- A production-scope reference scan found zero `profitable-claude` or legacy absolute-path dependencies in `apps/job-search-loop`, `loops/job-hunter`, `skills/mercor`, or the Mercor provider reference; canonical runtime/launchd/job-hunter contract tests pass 17/17.
 - Mercor Summary currently resets after reload and is tracked as `summary_unpersisted`.
 
 ## 9. Migration acceptance gate
@@ -211,5 +212,5 @@ Only the first unchecked item is active. Finish its evidence and read-back befor
 12. [x] **Failure fixtures:** test page drift, stale tab, transient failure, ambiguous submit, recovery/reset screen, and successful read-back.
 13. [x] **Multi-operator test:** run a second redacted operator fixture with separate state, browser, ledger, and evidence; confirm no cross-operator data.
 14. [x] **Open-source release:** secret scan, fresh-install test, setup/runbook, provider docs, and one non-Dais fixture pass.
-15. [ ] **Reference cleanup:** remove all production references to `profitable-claude` and confirm the canonical Life Manager runtime still passes.
+15. [x] **Reference cleanup:** remove all production references to `profitable-claude` and confirm the canonical Life Manager runtime still passes.
 16. [ ] **Deletion gate:** only after every prior read-back succeeds, obtain the final check-in and archive/delete the old repository as a separate destructive operation.
