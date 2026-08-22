@@ -7119,3 +7119,15 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   currently has 2 original and 12 quote posts with a first sample at least 60
   minutes old; the 00:10 original becomes the third eligible original only after
   the next owner measurement.
+- Audience growth itself has an exact non-money denominator. Daily snapshot
+  `life-manager.x-growth-daily.v1` at
+  `2026-08-22T16:05:26.986127+00:00` covers 76 public posts and reads 1 follower
+  / 27 following. It aggregates 3 originals with 72 views and no interactions,
+  39 quotes with 743 views and 5 likes, and 5 Affiliate originals with 22 views
+  and no interactions. X profile visits remain unavailable behind Premium. The
+  focused acquisition interval is still observable without that metric: each of
+  Subtitle Translator, Voice Isolator, and Voice Changer has X-owned entry 0,
+  CTA click 0, provider click delta 0, unique-click delta 0, and official
+  transaction 0 after instrumentation. The live diagnosis is measured failure
+  to create audience growth or article entry, not missing scheduling or an
+  unobserved provider transaction.

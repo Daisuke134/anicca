@@ -2239,3 +2239,16 @@ off-peak." Verdict was `supported=false`, `useful=true`,
 early-view samples are original 2 and quote 12. The 00:10 original needs the next
 post-60-minute owner measurement to become original sample 3; then the next
 daily evaluator can compare the format arms without thin-data guessing.
+
+The current audience denominator is exact. Daily snapshot
+`life-manager.x-growth-daily.v1`, sampled at
+`2026-08-22T16:05:26.986127+00:00`, covers 76 posts and reads 1 follower / 27
+following. Originals are 3 posts / 72 views / zero interactions; quotes are 39
+posts / 743 views / 5 likes / no replies, reposts, or bookmarks; Affiliate
+originals are 5 posts / 22 views / zero interactions. Profile visits remain
+unavailable behind X Premium, but the focused acquisition path is not unknown:
+privacy-reduced X-owned entries, CTA clicks, provider click deltas, unique-click
+deltas, and official transactions are all observed zero for Subtitle
+Translator, Voice Isolator, and Voice Changer after instrumentation. The blocker
+is measured failure to create audience growth or article entry, not missing
+scheduling or an unobserved provider transaction.
