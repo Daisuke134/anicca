@@ -28,6 +28,7 @@ from program_registry import TTS_PLACEMENT, apply_getresponse, elevenlabs_link_a
 from acquisition_decision import advance as advance_acquisition_decision
 from cta_instrumentation import (
     advance as advance_cta_instrumentation, join_provider_interval, observe_clicks,
+    observe_entries,
 )
 from runtime_guard import runtime_guard
 
@@ -3927,6 +3928,17 @@ def _wake_once(args, started_at, run_id):
             "failure_type": type(error).__name__,
         }
     try:
+        owned_entries = admit(
+            "acquisition.observe-x-owned-entries", "READ_ONLY",
+            {"instrumentation_state": cta_instrumentation.get("state")},
+            lambda: observe_entries(state, funnel_snapshot.get("placements") or []),
+        )
+    except Exception as error:
+        owned_entries = {
+            "state": "ENTRY_OBSERVATION_FAILED", "changed": False,
+            "failure_type": type(error).__name__,
+        }
+    try:
         cta_clicks = admit(
             "acquisition.observe-cta-clicks", "READ_ONLY",
             {"instrumentation_state": cta_instrumentation.get("state")},
@@ -4109,6 +4121,9 @@ def _wake_once(args, started_at, run_id):
         "owned_visit_state": owned_visits.get("state"),
         "owned_visit_reason": owned_visits.get("reason"),
         "owned_visit_receipt_sha256": owned_visits.get("receipt_sha256"),
+        "owned_entry_state": owned_entries.get("state"),
+        "owned_entry_receipt_sha256": owned_entries.get("receipt_sha256"),
+        "owned_entry_failure_type": owned_entries.get("failure_type"),
         "cta_instrumentation_state": cta_instrumentation.get("state"),
         "cta_instrumentation_commit": cta_instrumentation.get("commit"),
         "cta_instrumentation_failure_type": cta_instrumentation.get("failure_type"),

@@ -303,8 +303,63 @@ def observe_clicks(state, placements):
     return {**receipt, "state": "OBSERVED", "changed": changed}
 
 
+def observe_entries(state, placements):
+    """Read only reduced X-entry rows; never request or retain transport metadata."""
+    instrumentation = json.loads((state / "cta-instrumentation.json").read_text())
+    if instrumentation.get("state") != "LIVE":
+        return {"state": "WAITING_FOR_INSTRUMENTATION", "changed": False}
+    base = _env("SUPABASE_URL").rstrip("/")
+    key = _env("SUPABASE_SERVICE_ROLE_KEY")
+    rows = []
+    for placement in placements:
+        placement_id = placement["placement_id"]
+        query = urllib.parse.urlencode({
+            "select": "receipt_id,clicked_at,campaign_token",
+            "product_id": f"eq.entry:{placement_id}",
+            "campaign_token": "eq.entry_x",
+            "clicked_at": f"gte.{instrumentation['deployed_at']}",
+            "order": "clicked_at.asc",
+        })
+        request = urllib.request.Request(
+            f"{base}/rest/v1/marketing_click_receipts?{query}",
+            headers={"apikey": key, "Authorization": f"Bearer {key}"},
+        )
+        with urllib.request.urlopen(request, timeout=30) as response:
+            receipts = json.load(response)
+        rows.append({
+            "placement_id": placement_id,
+            "count": len(receipts),
+            "state": "OBSERVED",
+            "source": "X",
+            "first_entered_at": receipts[0].get("clicked_at") if receipts else None,
+            "last_entered_at": receipts[-1].get("clicked_at") if receipts else None,
+        })
+    core = {
+        "schema_version": 1,
+        "receipt_type": "AFFILIATE_X_OWNED_ENTRY_OBSERVATION",
+        "instrumentation_commit": instrumentation.get("commit"),
+        "interval_start": instrumentation.get("deployed_at"),
+        "placements": rows,
+        "raw_referrer_state": "NOT_REQUESTED_OR_RETAINED",
+        "money_state": "NON_MONEY",
+    }
+    receipt_sha256 = hashlib.sha256(json.dumps(
+        core, sort_keys=True, separators=(",", ":")
+    ).encode()).hexdigest()
+    receipt = {**core, "receipt_sha256": receipt_sha256}
+    latest = state / "owned-entry-observations" / "latest.json"
+    changed = not latest.is_file() or json.loads(latest.read_text()).get("receipt_sha256") != receipt_sha256
+    atomic_write(latest, receipt)
+    if changed:
+        with (state / "owned-entry-observations.jsonl").open("a", encoding="utf-8") as stream:
+            stream.write(json.dumps(receipt, sort_keys=True, separators=(",", ":")) + "\n")
+    return {**receipt, "state": "OBSERVED", "changed": changed}
+
+
 def join_provider_interval(state):
     cta = json.loads((state / "cta-click-observations" / "latest.json").read_text())
+    entries_path = state / "owned-entry-observations" / "latest.json"
+    entries = json.loads(entries_path.read_text()) if entries_path.is_file() else {"placements": []}
     interval_start = cta["interval_start"]
     snapshots = [
         json.loads(line) for line in (state / "funnel-snapshots.jsonl").read_text().splitlines()
@@ -330,6 +385,7 @@ def join_provider_interval(state):
     baseline_rows = {row["placement_id"]: row for row in baseline["placements"]}
     current_rows = {row["placement_id"]: row for row in current["placements"]}
     cta_rows = {row["placement_id"]: row for row in cta["placements"]}
+    entry_rows = {row["placement_id"]: row for row in entries.get("placements", [])}
     rows = []
     for placement_id in sorted(cta_rows):
         before = (baseline_rows.get(placement_id, {}).get("provider_clicks") or {})
@@ -341,6 +397,8 @@ def join_provider_interval(state):
         commission = current_rows.get(placement_id, {}).get("transactions") or {}
         rows.append({
             "placement_id": placement_id,
+            "x_owned_entries": (entry_rows.get(placement_id) or {}).get("count"),
+            "x_owned_entry_state": (entry_rows.get(placement_id) or {}).get("state", "UNKNOWN"),
             "cta_clicks": cta_rows[placement_id]["count"],
             "provider_click_delta": click_delta,
             "provider_unique_click_delta": unique_delta,

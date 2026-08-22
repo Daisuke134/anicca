@@ -49,6 +49,26 @@ class CtaInstrumentationTests(unittest.TestCase):
             self.assertEqual(result["money_state"], "NON_MONEY")
             self.assertNotIn("key", json.dumps(result))
 
+    def test_entry_observation_is_exact_separate_and_privacy_reduced(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root)
+            MODULE.atomic_write(state / "cta-instrumentation.json", {
+                "state": "LIVE", "commit": "b" * 40,
+                "deployed_at": "2026-08-22T00:00:00+00:00",
+            })
+            response = io.BytesIO(
+                b'[{"receipt_id":"entry-one","clicked_at":"2026-08-22T01:00:00Z","campaign_token":"entry_x"}]'
+            )
+            with patch.object(MODULE, "_env", side_effect=["https://project.test", "key"]), \
+                 patch.object(MODULE.urllib.request, "urlopen", return_value=response) as opened:
+                result = MODULE.observe_entries(state, [{"placement_id": "alpha-en-1"}])
+            self.assertEqual(result["placements"][0]["count"], 1)
+            self.assertEqual(result["placements"][0]["source"], "X")
+            self.assertEqual(result["raw_referrer_state"], "NOT_REQUESTED_OR_RETAINED")
+            self.assertIn("product_id=eq.entry%3Aalpha-en-1", opened.call_args.args[0].full_url)
+            self.assertNotIn("referrer", opened.call_args.args[0].full_url)
+            self.assertEqual(result["money_state"], "NON_MONEY")
+
     def test_v2_scopes_tokens_and_keeps_app_token_requirement(self):
         wrapper = '''  if (!providerToken || !supabaseUrl || !serviceKey)\n    providerToken,'''
         library = '''const TOKEN = /af_([a-z0-9][a-z0-9-]{2,80})/;\n  if (!products || !providerToken || typeof persist !== "function")\n    if (!product)\n      return { statusCode: 404, headers: { "cache-control": "no-store" }, body: "Not Found" };'''
