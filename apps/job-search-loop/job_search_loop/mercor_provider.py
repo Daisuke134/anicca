@@ -13,6 +13,20 @@ class MercorProviderError(ValueError):
     pass
 
 
+APPROVED_MERCOR_HOST = "work.mercor.com"
+_SENSITIVE_SCREEN_MARKERS = (
+    "restore account",
+    "recover account",
+    "reset password",
+    "create account",
+    "sign up",
+    "アカウントを復元",
+    "アカウントを回復",
+    "パスワードをリセット",
+    "はい",
+)
+
+
 @dataclass(frozen=True)
 class MercorListing:
     listing_id: str
@@ -24,7 +38,25 @@ class MercorListing:
     domain_expert_reused: bool
 
 
+def is_approved_mercor_url(url: str) -> bool:
+    parsed = urlsplit(url.strip())
+    return (
+        parsed.scheme == "https"
+        and parsed.hostname == APPROVED_MERCOR_HOST
+    )
+
+
+def classify_sensitive_screen(visible_text: str) -> str | None:
+    """Return a durable block when auth/recovery UI is visible; never click through it."""
+    if not isinstance(visible_text, str):
+        return "blocked"
+    text = visible_text.casefold()
+    return "blocked" if any(marker.casefold() in text for marker in _SENSITIVE_SCREEN_MARKERS) else None
+
+
 def listing_id_from_url(url: str) -> str:
+    if not is_approved_mercor_url(url):
+        raise MercorProviderError("Mercor URL is outside the approved browser domain")
     parsed = urlsplit(url.strip())
     query_value = parse_qs(parsed.query).get("listingId", [])
     if query_value and query_value[0].strip():

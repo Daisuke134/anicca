@@ -4,7 +4,7 @@ import hashlib
 from dataclasses import dataclass
 from pathlib import Path
 
-from .mercor_provider import MercorListing, ready_for_submit
+from .mercor_provider import MercorListing, is_approved_mercor_url, ready_for_submit
 
 
 class MercorSubmitGuardError(ValueError):
@@ -29,6 +29,8 @@ def claim_ready_submission(
     """Create the one-click claim only after ready state and fresh evidence exist."""
     if listing.listing_id in submitted_listing_ids:
         return None
+    if not is_approved_mercor_url(listing.url):
+        raise MercorSubmitGuardError("listing URL is outside the approved Mercor domain")
     if not ready_for_submit(listing):
         raise MercorSubmitGuardError("listing is not in the live 3/3 ready state")
     evidence_path = Path(pre_submit_evidence).expanduser().resolve()
@@ -50,6 +52,10 @@ def claim_ready_submission(
 def classify_submit_readback(*, page_url: str, visible_text: str) -> str:
     """Classify only an authoritative visible result; ambiguous means no retry."""
     text = visible_text.casefold()
-    if "your application has been submitted" in text and "/jobs/apply/" in page_url:
+    if (
+        is_approved_mercor_url(page_url)
+        and "your application has been submitted" in text
+        and "/jobs/apply/" in page_url
+    ):
         return "submitted_pending_review"
     return "submit_unknown"
