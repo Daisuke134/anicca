@@ -799,7 +799,7 @@ not fabricate an inbound room to force Task 14 positive evidence.
 - [x] Re-read the exact official offer URL and visible scope/amount/deadline/funding immediately
   before the effect.
 - [x] Persist the immutable offer decision/terms hash behind the durable provider-effect fence.
-- [ ] Atomically reserve one concurrent-job slot with that effect; reject a two-offer capacity race.
+- [x] Atomically reserve one concurrent-job slot with that effect; reject a two-offer capacity race.
 - [x] Execute at most one authorized acceptance and require an official active `/workroom/{id}`
   contract readback.
 - [x] Replay the verified effect with no additional click; the related matrix passes 62/62.
@@ -813,8 +813,21 @@ protection. `upwork_offer_browser.py` re-reads those terms immediately before th
 permits one exact `Accept offer` click and accepts success only from an official
 `/workroom/{contract_id}` active-contract readback. `upwork_offer_effect.py` makes replay return the
 stored contract ID without another click. The remaining code gap is narrower: reservation of the
-owner's `concurrent_job_cap` is not yet writer-serialized with the effect, so two concurrent offers
-could both pass a stale active-contract count. That atomic reservation is the next buildable item.
+owner's `concurrent_job_cap` must be writer-serialized with the effect so two concurrent offers do
+not both pass a stale active-contract count.
+
+Task 15 capacity evidence: `provider_capacity_reservations` now enters in the same SQLite
+`BEGIN IMMEDIATE` transaction that persists a new offer effect. The transaction first hands any
+reservation whose contract ID is now present in the official active-contract inventory back to that
+inventory, then calculates `official active IDs + unresolved reservations` against the private cap.
+At the final slot, the first offer reserves and the second offer raises `provider capacity
+exhausted` before any second effect row or click exists. Official contract verification binds the
+reservation to its `/workroom/{contract_id}` so the next official wake can perform that handoff.
+The focused test was observed RED on the missing `capacity` contract, then GREEN; shared proposal,
+message, offer, browser and negotiation effect coverage passes 75/75. No live offer exists, so the
+final real acceptance/readback/replay checkbox remains open and revenue remains USD 0. The next
+buildable item is Task 16's immutable project workspace, while Task 15's first real acceptance stays
+event-driven.
 
 ### Task 16: Create an immutable project workspace
 

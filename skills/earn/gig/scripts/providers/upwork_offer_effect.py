@@ -38,7 +38,10 @@ class SealedUpworkOfferEffect:
             raise SealedEffectError("authorization_not_approved")
         return selection, self.transport.effect_intent(selection, resource_id=offer_id, payload_hash=digest)
 
-    def start(self, decision: dict[str, Any], preflight: dict[str, Any]):
+    def start(
+        self, decision: dict[str, Any], preflight: dict[str, Any], *,
+        capacity: dict[str, Any] | None = None,
+    ):
         selection, intent = self.intent(decision)
         offer_id, _ = self._identity(decision)
         if (
@@ -47,12 +50,21 @@ class SealedUpworkOfferEffect:
             or not re.fullmatch(r"[0-9a-f]{64}", str(preflight.get("evidence_sha256") or ""))
         ):
             raise SealedEffectError("upwork_offer_preflight_effect_mismatch")
+        if (
+            not isinstance(capacity, dict)
+            or set(capacity) != {"active_contract_ids", "concurrent_job_cap"}
+            or not isinstance(capacity["active_contract_ids"], list)
+            or type(capacity["concurrent_job_cap"]) is not int
+        ):
+            raise SealedEffectError("upwork_offer_capacity_invalid")
         row = self.store.provider_effect(intent)
         if row is None:
             body = json.dumps(decision, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
             row = self.store.prepare_provider_effect(
                 intent, authorization=selection.authorization, now=self.now_epoch(),
                 connects_pre=0, connects_pre_hash=preflight["evidence_sha256"], payload_body=body,
+                capacity_limit=capacity["concurrent_job_cap"],
+                active_resource_ids=capacity["active_contract_ids"],
             )
         else:
             self.store.prepare_provider_effect(intent, authorization=selection.authorization, now=self.now_epoch())

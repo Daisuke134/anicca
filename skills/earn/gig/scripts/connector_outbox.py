@@ -309,6 +309,16 @@ CREATE TABLE IF NOT EXISTS provider_effect_intents (
     UNIQUE(provider, account_key, resource_id, action, payload_hash)
 );
 
+CREATE TABLE IF NOT EXISTS provider_capacity_reservations (
+    effect_key TEXT PRIMARY KEY REFERENCES provider_effect_intents(effect_key),
+    provider TEXT NOT NULL,
+    account_key TEXT NOT NULL,
+    resource_id TEXT NOT NULL,
+    contract_id TEXT,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS connector_slots (
     platform TEXT PRIMARY KEY,
     action_id INTEGER,
@@ -1754,6 +1764,8 @@ class ConnectorOutbox:
         connects_pre: int | None = None,
         connects_pre_hash: str | None = None,
         payload_body: str | None = None,
+        capacity_limit: int | None = None,
+        active_resource_ids: list[str] | None = None,
     ) -> dict[str, Any]:
         """Persist one authorization-bound non-Coconala effect before execution."""
         values = self._provider_effect_values(intent, authorization)
@@ -1766,6 +1778,15 @@ class ConnectorOutbox:
                 or not isinstance(payload_body, str) or not payload_body
             ):
                 raise ValueError("invalid provider pre-effect evidence")
+        if (capacity_limit is None) != (active_resource_ids is None):
+            raise ValueError("invalid provider capacity evidence")
+        if capacity_limit is not None and (
+            type(capacity_limit) is not int or capacity_limit < 1
+            or not isinstance(active_resource_ids, list)
+            or any(not isinstance(item, str) or not item for item in active_resource_ids)
+            or len(set(active_resource_ids)) != len(active_resource_ids)
+        ):
+            raise ValueError("invalid provider capacity evidence")
         with self._write() as connection:
             resource = connection.execute(
                 """SELECT * FROM provider_effect_intents
@@ -1793,6 +1814,20 @@ class ConnectorOutbox:
                     if expected is not None and existing[field] != expected:
                         raise ImmutableIntent(f"provider {field} cannot change")
                 return {**dict(existing), "created": False, "reconcile_only": True}
+            if capacity_limit is not None:
+                for contract_id in active_resource_ids:
+                    connection.execute(
+                        """DELETE FROM provider_capacity_reservations
+                           WHERE provider=? AND account_key=? AND contract_id=?""",
+                        (values[1], values[2], contract_id),
+                    )
+                reserved = connection.execute(
+                    """SELECT count(*) FROM provider_capacity_reservations
+                       WHERE provider=? AND account_key=?""",
+                    (values[1], values[2]),
+                ).fetchone()[0]
+                if len(active_resource_ids) + int(reserved) >= capacity_limit:
+                    raise ConnectorBusy("provider capacity exhausted")
             connection.execute(
                 """INSERT INTO provider_effect_intents
                    (effect_key,provider,account_key,resource_id,action,payload_hash,
@@ -1801,6 +1836,13 @@ class ConnectorOutbox:
                    VALUES(?,?,?,?,?,?,?,'prepared',?,?,?,?,?)""",
                 (*values, connects_pre, connects_pre_hash, payload_body, now, now),
             )
+            if capacity_limit is not None:
+                connection.execute(
+                    """INSERT INTO provider_capacity_reservations
+                       (effect_key,provider,account_key,resource_id,created_at,updated_at)
+                       VALUES(?,?,?,?,?,?)""",
+                    (values[0], values[1], values[2], values[3], now, now),
+                )
             stored = connection.execute(
                 "SELECT * FROM provider_effect_intents WHERE effect_key=?", (values[0],),
             ).fetchone()
@@ -1875,6 +1917,11 @@ class ConnectorOutbox:
             ))
             if expected_identity != actual_identity:
                 raise ImmutableIntent("provider effect identity changed")
+            connection.execute(
+                """UPDATE provider_capacity_reservations
+                   SET contract_id=?,updated_at=? WHERE effect_key=?""",
+                (proposal_id, now, effect_key),
+            )
             if existing["connects_pre"] is None or connects_post > existing["connects_pre"]:
                 raise InvalidTransition("provider Connects readback is inconsistent")
             if existing["reconciliation_state"] == "verified":
