@@ -287,7 +287,7 @@ C15の再attemptはV4 SHA-256を再確認し、browser owner exact handle `capaf
 
 C16はLife Manager stateに`REELFARM_API_KEY`名が存在することだけでpublish可能と判定せず、`GET /api/v1/account`と`GET /api/v1/tiktok/accounts`を実readする。両方がHTTP application response `UNAUTHORIZED / Missing or invalid API key`を返すため、slideshow生成、credit消費、TikTok publishを0件で終了する。native TikTok URLを捏造せず、credential再発行とconnected account readbackが成功するまでReelFarm derivativeはhonest no-opとする。Telegram receiptは`28874`。
 
-C17継続中にmoney readbackの実障害を修復する。`skills/self/capafy-loop/loop.sh`は`LIFE_MANAGER_REPO`を初期化する前に参照して`unbound variable`で落ち、さらにaccount endpointの非zero/parse failureをすべて`CAPAFY-AUTH-DOWN`へ丸めていた。script directoryからgit rootを自己解決してexportし、`GET /agent/account`のHTTP 401だけをAUTH-DOWN、その他を`CAPAFY-ACCOUNT-READ-FAILED`へ分離する。実production runはauth healthy、monthly payout `$0.0`、3-day net `$0.0`、selfheal request `none`で終了する。保存credentialやtokenはrepo/specへ書かず、local credential SSOTとgitignored vendor configだけで保持する。`ai.anicca.capafy-loop-daily`を実kickstartし、同じLife Manager pathの本番agent passを開始する。
+C17継続中にmoney readbackの実障害を修復する。`skills/self/capafy-loop/loop.sh`は`LIFE_MANAGER_REPO`を初期化する前に参照して`unbound variable`で落ち、さらにaccount endpointの非zero/parse failureをすべて`CAPAFY-AUTH-DOWN`へ丸めていた。script directoryからgit rootを自己解決してexportし、`GET /agent/account`のHTTP 401だけをAUTH-DOWN、その他を`CAPAFY-ACCOUNT-READ-FAILED`へ分離する。実production runはauth healthy、monthly payout `$0.0`、3-day net `$0.0`、selfheal request `none`で終了する。保存credentialやtokenはrepo/specへ書かず、local credential SSOTとgitignored vendor configだけで保持する。`ai.anicca.capafy-loop-daily`を実kickstartし、同じLife Manager pathの本番agent passを開始する。修復milestoneのTelegram message IDは`28890`。
 
 ## Atomic remaining TODO
 
