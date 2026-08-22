@@ -84,7 +84,9 @@ Use only these runtime commands while a row is active:
 /opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime upload --label "EXACT_LABEL" --role "RETURNED_ROLE" --stable-id "RETURNED_STABLE_ID"
 /opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime wait --milliseconds 6000
 /opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime auth --mode sign_in --field email --label "EXACT_LABEL" --role "RETURNED_ROLE" --stable-id "RETURNED_STABLE_ID"
+/opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime auth --mode create_account --field email --label "EXACT_LABEL" --role "RETURNED_ROLE" --stable-id "RETURNED_STABLE_ID"
 /opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime auth --mode create_account --field password --label "EXACT_LABEL" --role "RETURNED_ROLE" --stable-id "RETURNED_STABLE_ID"
+/opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime auth --mode create_account --field verify_password --label "EXACT_LABEL" --role "RETURNED_ROLE" --stable-id "RETURNED_STABLE_ID"
 /opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime act --action-file "$JOB_SEARCH_BROWSER_SCRATCH/action.json"
 /opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime finalize
 /opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime checkpoint --reason provider_unavailable
@@ -124,14 +126,21 @@ that does not expose that option.
 
 ## Workday account/session
 
-Preserve the existing signed-in session. Never create another account for a tenant
-whose machine credential already exists. If visible auth fields appear, use
+Preserve an existing signed-in session. A stored machine credential is credential
+material for one tenant; it is not proof that the tenant account already exists. If
+visible auth fields appear, first use
 `runtime auth --mode sign_in` once per field with its exact current label/role/ref;
 the runtime privately reuses the stored tenant credential. Re-observe after each
-field and let the visible page determine the next action. Never invent a password,
-inspect the credential store, sign out, or select the create-account control. If
-email verification is visibly required, preserve the row for the existing inbox
-owner; after verification the next wake signs in and resumes this same application.
+field and let the visible page determine the next action. If the provider returns
+the exact wrong-email/password or account-not-found validation and a visible Create
+Account control, the account does not yet exist in this tenant: click Create Account
+and use `runtime auth --mode create_account` for its email, password, and password
+confirmation fields. Fill other visible profile fields from candidate concepts,
+accept ordinary account terms when required, and complete the visible account-create
+action. Never invent a password, inspect the credential store, or sign out. The
+login validation is not `provider_unavailable` and must not be checkpointed as an
+outage. If email verification is visibly required, preserve the same row for the
+existing inbox owner; after verification the next wake signs in and resumes it.
 
 ## Resume and form completion
 
