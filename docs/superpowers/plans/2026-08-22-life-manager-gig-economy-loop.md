@@ -27,7 +27,8 @@ approved provider APIs, existing launchd release system, pytest with plugin auto
 - Create an Upwork account only if the owner email has no existing account; never create a duplicate.
 - Upwork capacity counts active Upwork contracts only. Never read Coconala projects as Upwork capacity.
 - Observe the authenticated Upwork UI/API first, then refine selectors and payloads from receipts.
-- Submit the first qualified live proposal before adding more general harness abstractions.
+- Complete the free-first bootstrap and submit one bounded first-job proposal before adding more
+  general harness abstractions.
 - Do not move the current `skills/earn/gig/TODO.md` production-repair cursor.
 - Do not add a scheduler, workflow service, browser harness, vector DB or second ledger.
 - Tests cover only money loss, duplicate external effects, data loss, authentication leakage and the
@@ -249,18 +250,25 @@ No later task may jump ahead of the first incomplete row:
 | U3 | Complete factual freelancer profile needed to apply | **DONE:** published profile `~01f5fe272d6df34084`; Online, >30 hrs/week, 40% complete |
 | U4 | Observe real job-search, detail and proposal surfaces | **DONE:** search/detail/proposal-entry receipt; 0 effects, Connects gate identified |
 | U5 | Discover live jobs twice | **DONE:** two recency reads returned the same ten job IDs; 0 effects |
-| U6 | Qualify one job using installed Skills and Upwork-only capacity | **DONE:** job `~022091070478975551162` eligible; expected net $1,046.10; Upwork active 0 |
-| U7 | Freeze one tailored proposal | **DONE:** $3,000/21-day payload `9fab22a2…10d19`; 3 milestones, 0 unsupported claims/attachments |
-| U8 | Submit that proposal once | Official proposal ID plus Connects before/after |
-| U9 | Replay immediately | Same proposal ID; zero new proposal and zero additional Connects |
-| U10 | Poll and answer the resulting thread | Official story/message IDs and no duplicate reply |
-| U11 | Negotiate and accept profitable terms | Offer ID, exact terms hash and active contract ID |
-| U12 | Fulfill and independently verify the work | Artifact hash and independent verifier PASS |
-| U13 | Deliver once | Official submission ID/state and replay with zero duplicate delivery |
-| U14 | Reconcile money | Released/received transaction, fee, Connects, costs and payout evidence |
-| U15 | Repeat on three independent paid jobs | Three contract/payment IDs and complete per-job economics |
+| U6 | Exercise qualification on one observed job | **DONE, PARKED:** technical/margin qualification proved on `~022091070478975551162`; 50+ proposals and 26 Connects make it unsuitable as the first target |
+| U7 | Exercise immutable proposal freezing | **DONE, PARKED:** payload `9fab22a2…10d19` retained for later requalification; zero marketplace effects |
+| U8 | Complete the factual main profile | Official profile-completion readback is 100%; identity and every claim match owner evidence |
+| U9 | Publish three reusable portfolio proofs | Three public Upwork portfolio item IDs with bound source/artifact hashes and no unsupported claims |
+| U10 | Publish one narrow Project Catalog offer | Live catalog ID; bounded input/output/exclusions/price/time and client-visible readback |
+| U11 | Collect free acquisition capacity | Account-earned Connects balance and invitation readback; purchases, Plus, badge and boosts remain zero |
+| U12 | Discover and qualify a first-job candidate | Recent, <=20 proposals, explicit acceptance, verified client, positive expected net, low Connects, 1-3 day delivery |
+| U13 | Freeze one tailored first-job proposal | Immutable payload hash, relevant proof IDs, exact terms and zero unsupported claims |
+| U14 | Submit that proposal once | Official proposal ID plus Connects before/after |
+| U15 | Replay immediately | Same proposal ID; zero new proposal and zero additional Connects |
+| U16 | Poll and answer the resulting thread | Official story/message IDs and no duplicate reply |
+| U17 | Negotiate and accept profitable terms | Offer ID, exact terms hash and active contract ID |
+| U18 | Fulfill and independently verify the work | Artifact hash and independent verifier PASS |
+| U19 | Deliver once | Official submission ID/state and replay with zero duplicate delivery |
+| U20 | Reconcile money and review | Received transaction, fee, costs, payout and honest review evidence |
+| U21 | Repeat on three independent paid jobs | Three contract/payment/review IDs and complete per-job economics |
 
-Tasks 13–22 implement U10–U15. Tasks 23–57 remain frozen until U14 closes.
+Later implementation tasks are renumbered only when their first incomplete outcome becomes active.
+All cross-market tasks remain frozen until U20 closes.
 
 U3 closure evidence: factual profile `~01f5fe272d6df34084` is published with the authentic owner
 photo, Status Online and More than 30 hrs/week. The official completion meter is 40%, identity is
@@ -287,19 +295,23 @@ net $1,046.10. Installed `earn/upwork-ai-api-delivery` explicitly covers the job
 image-analysis, classification, AI integration, API, multi-tenant ranking and feedback-reranking
 capabilities. Independently hashed `test-contract` verifies API and state invariants; job-required
 capability subsets and both Skill hashes are bound to the retained full-scope observation. Current
-Upwork capacity is 0 of 3.
+Upwork capacity is 0 of 3. This proved the qualifier's technical and margin contracts but not
+first-contract probability; 50+ proposals, 26 Connects, broad scope and a 40%-complete new profile
+violate the corrected first-job bootstrap gate. The candidate is parked.
 
 U7 froze a $3,000, 21-day proposal with three milestones: $600 ranking contract/acceptance dataset,
 $1,400 tenant-isolated similarity API and $1,000 feedback-reranking verified handoff. The exact body
 binds `multi-tenanted`, `visual appearance`, `user feedback` and `HTTP/JSON API` from the observed
 scope. Unsupported claims and attachments are both empty. Payload hash is
-`9fab22a29ea169632f30c3d1a22597c1091ecb97a2897c987ac788ce1d110d19`. U8 is now the first
-incomplete outcome; marketplace effects remain zero.
+`9fab22a29ea169632f30c3d1a22597c1091ecb97a2897c987ac788ce1d110d19`. The payload remains a
+valid effect-fence fixture and later requalification candidate, not the first live submission.
+Marketplace effects remain zero.
 
-U8 purchase-entry readback offers 100 Connects for $15 plus tax, resulting balance 100 and expiry
-2027-08-22. The target proposal requires 26 Connects. `Buy Connects` remains unpressed because this
-is an irreversible personal-funds charge and therefore requires explicit owner approval. Application,
-Connects-spend and payment effects remain zero.
+The observed purchase entry offers 100 Connects for $15 plus tax, but it is no longer a pending
+gate. U8 first completes the factual profile from 40% to official 100%. U9 then publishes three
+reusable proofs; U10 publishes one narrow Project Catalog offer; U11 collects account-earned
+Connects and invitations. Purchased Connects, Freelancer Plus, Availability Badge and boosts stay
+disabled during this bootstrap. Application, Connects-spend and payment effects remain zero.
 
 ### Task 7: Record Upwork's private action matrix
 

@@ -48,29 +48,27 @@ Saved jobs, proposals, messages, Connects spend and payments remained zero. U6 m
 live job, but it must use only installed Skills and Upwork-owned capacity; Coconala activity is not
 part of the capacity calculation.
 
-U6 is closed on job `~022091070478975551162`. The observed fixed budget is $3,000 and submission
-cost is 26 Connects; the client has payment and phone verification, 75% hire rate and $2.1K spend.
-After fee, Connects, risk and labor reserves, expected net is $1,046.10. Upwork-only active capacity
-is 0 of 3. The installed builder and independent verifier hashes are bound in the private receipt;
-the qualifier also checks the job-required builder/verifier capability subsets. The retained detail
-observation, capability inventory and qualification each have bound SHA-256 evidence. Proposal,
-message, Connects-spend and payment effects remain zero.
+U6/U7 proved qualification, proposal freezing and effect fencing on job
+`~022091070478975551162`, but the job is **parked, not the first acquisition target**. It requires 26
+Connects, already has 50+ proposals and asks a new 40%-complete profile with no Upwork history to win
+a broad $3,000 build. Positive modeled margin did not prove first-contract probability. Treating its
+Connects purchase as the next outcome was a sequencing error. The immutable payload
+`9fab22a29ea169632f30c3d1a22597c1091ecb97a2897c987ac788ce1d110d19` remains retained for later
+requalification; no purchase, proposal, message, contract or payment effect occurred.
 
-U7 is closed with immutable payload
-`9fab22a29ea169632f30c3d1a22597c1091ecb97a2897c987ac788ce1d110d19`: $3,000 over 21 days,
-three milestones totaling the bid, four exact scope references, and zero unsupported claims or
-attachments. U8 is the next outcome and may execute only this payload after the required Connects
-acquisition is separately authorized and read back.
+U8 is now the first incomplete outcome: complete the factual profile from 40% to Upwork's official
+100% readback using only existing owner facts and reusable proof. The free-first bootstrap then
+publishes one narrow Project Catalog offer, obtains any account-earned Connects, and searches for a
+small paid job with bounded scope, low competition and delivery in one to three days. Freelancer
+Plus, Availability Badge, proposal boost and purchased Connects stay disabled until a qualified
+opportunity has measured evidence that free acquisition paths are insufficient.
 
-U8 is waiting only at the explicit spend gate. The live purchase surface offers 100 Connects for
-$15 plus tax, yielding balance 100 with expiry 2027-08-22; the sealed proposal requires 26. No
-purchase or application effect exists before owner approval.
-
-The U8/U9 effect kernel is ready before live execution. It persists the full canonical proposal and
+The proposal effect kernel remains ready before live execution. It persists the full canonical proposal and
 Connects pre-state, admits one concurrent submitter through an atomic compare-and-set, re-hashes the
 durable body before effect, and verifies only a matching official proposal plus Connects post-state.
 Timeout or lost-ack without readback remains `reconcile_unknown` and cannot resend. Live submit and
-live replay remain intentionally unclaimed until the personal-funds gate is approved.
+live replay remain intentionally unclaimed until the replacement first-job candidate passes the new
+bootstrap qualification gate.
 
 ## 1. Goal, objective and boundaries
 
@@ -436,6 +434,34 @@ margin is a valid completed experiment; it is not a reason to weaken the kernel.
 
 Upwork is the first proof that the Coconala kernel generalizes.
 
+### 6.1 First-contract acquisition policy
+
+The first Upwork objective is one verified paid review, not maximum headline contract value and not
+maximum application volume. The deterministic acquisition order is:
+
+1. Complete the factual main profile to official 100% readback.
+2. Publish three reusable portfolio proofs whose claims and artifacts are independently verifiable.
+3. Publish one narrow Project Catalog offer with explicit input, output, exclusions, price and time.
+4. Collect only account-earned Connects and zero-Connect invitations before buying acquisition.
+5. Discover recent jobs and prefer clear acceptance criteria, low proposal count, verified payment,
+   client hiring history, low Connects and one-to-three-day delivery.
+6. Freeze a tailored proposal only when the reusable proof matches the job; never deliver the
+   client's complete solution as unpaid application work.
+7. Close contract, delivery, received payment and honest review before increasing price or scope.
+
+The loop optimizes the measured funnel
+`discovered → qualified → proposed → viewed → interviewed → hired → delivered → paid → reviewed`.
+Ten qualified proposals without a view trigger a profile/first-lines/proof correction; they do not
+automatically authorize more Connects spend. Project Catalog, invitations and proposals share the
+same contract, delivery, payment and review receipts after acquisition.
+
+The first-job qualifier rejects a candidate if any of these hold: broad multi-week build, proposal
+count above 20, unclear acceptance criteria, unsupported proof requirement, negative expected net,
+delivery capacity unavailable, or paid acquisition required before the free bootstrap is complete.
+It prefers a reusable micro-service that can be truthfully delivered from installed Skills within
+one to three days. This rule is a bootstrap constraint; after three independent paid reviews, the
+normal expected-verified-net allocator may select larger work.
+
 ```mermaid
 flowchart LR
   J[Official job receipt] --> Q[Qualification and margin]
@@ -497,7 +523,8 @@ promise of earnings.
 | G1 authorization | Private action-level receipts exist and public defaults remain safe |
 | G1A Upwork identity | Normal owner email/password flow returns the same authenticated Upwork identity twice; no social-login route is used |
 | G2 Upwork discovery | One authenticated official job normalizes with zero mutation |
-| G3 Upwork proposal | One intent, one proposal, proposal ID and Connects readback |
+| G2A Upwork bootstrap | Official 100% profile, three proof artifacts, one live Project Catalog offer and account-earned Connects readback |
+| G3 Upwork proposal | One bootstrap-qualified intent, one proposal, proposal ID and Connects readback |
 | G4 Upwork contract | Message, offer and active contract IDs reconcile |
 | G5 Upwork delivery | Artifact QA, one delivery effect and official submission state |
 | G6 first cash | Received payment, fee, cost and payout evidence reconcile to the project |
@@ -515,7 +542,9 @@ promise of earnings.
 |---|---|---|
 | Email account bootstrap selects existing-login or signup without duplication | Authenticated identity and account-state receipt | Required |
 | Profile contains only factual owner data and is application-ready | Official profile completeness readback | Required |
+| First acquisition is free-first and review-oriented | 100% profile, three reusable proofs, one Project Catalog offer and no paid acquisition effect | Required |
 | Discovery reflects current Upwork state | Same job IDs across two authenticated reads | Required |
+| First-job qualification rejects high-competition broad builds | Bounded 1-3 day deliverable, proposals <=20, explicit acceptance and evidence-backed proof | Required |
 | Qualification ignores Coconala runtime state | Upwork active-contract count and provider-scoped ledger query | Required |
 | Proposal submits at most once | Proposal ID and Connects before/after, then zero-delta replay | Required |
 | Negotiation creates no duplicate message | Official story/message IDs across replay | Required |
