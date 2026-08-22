@@ -28,6 +28,7 @@ from .inference import ExperienceIntervalV1, InferenceDecisionV1, StableInferenc
 from .policy import AgentPolicy
 from .session import BrowserSession
 from .workday_account import MachineWorkdayCredentialStore
+from .workday_auth import WorkdayAuthReceiptV1, WorkdayAuthTool
 
 __all__ = [
     "API_VERSION", "ActionExecutor", "ActionPlanV1", "ActionReceiptV1", "AnswerMemory",
@@ -39,5 +40,6 @@ __all__ = [
     "PolicyContextV1", "ResolvedAnswerV1", "RowCheckpointV1", "SessionHandleV1",
     "StepEvidenceV1", "VisibleActionV1",
     "MachineWorkdayCredentialStore", "StableInferencePolicy", "VisibleControlV1",
+    "WorkdayAuthReceiptV1", "WorkdayAuthTool",
     "build_candidate_memory",
 ]

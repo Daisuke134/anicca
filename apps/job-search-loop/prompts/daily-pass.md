@@ -181,52 +181,30 @@ chmod 600 "<private_snapshot_path>" "<private_evaluation_path>"
 ```
 
 Continue browser progression only when the evaluation says `ready=true`; call
-`Ledger.claim_submission` only when it also says `claim_ready=true`. Advance
-Workday one evaluated surface at a time:
+`Ledger.claim_submission` only when it also says `claim_ready=true`. Workday
+surface names are observation hints, not a prescribed workflow. On every fresh
+observation, Luna chooses the next semantic action from the visible controls:
 
 ```text
-workday_job
-  → click the ordinary visible `Apply` navigation control using
-    `get_by_role("button", name="Apply", exact=True)`; Workday may render this
-    control as an `<a role="button">`, so do not require link semantics
-  → recapture and reevaluate
-workday_apply_choice
-  → click Apply Manually
-  → recapture and reevaluate
-workday_sign_in_entry
-  → click the visible `Sign In` entry control once
-  → recapture and reevaluate
-workday_sign_in
-  → reuse the tenant's private credential; fill only the visible email and
-    password controls, leave honeypots blank, wait the provider timer, click the
-    visible `Sign In` overlay once, then recapture and reevaluate
-workday_account_create
-  → do not claim; provision/reuse the tenant's private credential, then create
-    the account and recapture/reevaluate
-workday_application
-  → claim only when the final submit-bearing form is present
-workday_application_step
-  → wait until My Information controls (not only the step shell) are visibly
-    present, fill only approved profile values, wait at least six seconds after
-    `Save and Continue` mounts, click the visible `Save and Continue` once, then
-    recapture and reevaluate the next step
+workday_job, workday_apply_choice, workday_sign_in_entry, workday_sign_in,
+workday_account_create, workday_application, workday_application_step
 ```
 
 Do not choose `Autofill with Resume` before resume routing, and do not improvise an
 account password or expose credentials in evidence. At a verified
-`workday_account_create` surface, instantiate
-`MachineWorkdayCredentialStore(Path(os.environ["JOB_SEARCH_MACHINE_CREDENTIALS"]))`
-and call `ensure(job_url=current_url, profile_path=private_profile_path)`. The
-secret-free receipt identifies the tenant and the one machine credential SSOT. In
-the same browser process, call `load(current_url)` and use the returned values only
-as `fill()` inputs for the email, password, and verify
-password controls; check the required consent and click the visible user-facing
-`Create Account` action. Workday renders the actual submit `<button>` with
+`workday_sign_in` or `workday_account_create` surface, give the currently visible
+email/password/(when present) verify-password `ActionTargetV1` labels to
+`WorkdayAuthTool.prepare`. Luna chooses the mode from the fresh observation. The
+tool provisions/reuses the one `MachineWorkdayCredentialStore` SSOT, performs typed fills and the provider
+readiness wait internally, and returns only tenant/email/action hashes—never the
+password or email value. Luna then re-observes, handles visible consent when needed,
+and chooses the visible user-facing `Sign In` or `Create Account` action. Workday
+renders the actual submit `<button>` with
 `aria-hidden="true"` and places a visible `div[role="button"]` overlay above it.
 Therefore click `[data-automation-id="click_filter"][aria-label="Create Account"]`
 (or the equivalent visible role/label), never the hidden
 `button[data-automation-id="createAccountSubmitButton"]`. The same rule applies
-to an existing-account login: click the visible `click_filter` labelled `Sign In`,
+to an existing-account login: choose the visible `click_filter` labelled `Sign In`,
 never the hidden `signInSubmitButton`. Never fill
 `input[data-automation-id="beecatcher"]` / `name="website"`; it is the Workday
 honeypot and must remain blank. Workday's own `NoCaptchaButtonClickFilter` also
