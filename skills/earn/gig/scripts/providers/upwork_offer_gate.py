@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -33,7 +34,6 @@ def load_offer_packet(path: Path) -> dict[str, Any]:
         "detail_evidence_sha256", "observed_at", "rendered_text",
     }
     canonical = json.dumps(packet, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n"
-    import hashlib
     url = urlsplit(str(packet.get("resource_url") or ""))
     if (
         set(packet) != expected or packet.get("version") != 1 or packet.get("provider") != "upwork"
@@ -79,7 +79,9 @@ def validate_decision(decision: dict[str, Any], packet: dict[str, Any]) -> dict[
     if action != "accept":
         if decision.get("offer") is not None or not reasons:
             raise InboundPlannerError("offer_decision_invalid")
-        return {"action": action, "reason_codes": reasons, "offer": None}
+        body = json.dumps(decision, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        return {"action": action, "reason_codes": reasons, "offer": None,
+                "decision_sha256": hashlib.sha256(body.encode()).hexdigest()}
     offer = decision.get("offer")
     expected = {
         "provider", "offer_id", "offer_url", "offer_source_sha256", "title", "scope",
@@ -125,7 +127,9 @@ def validate_decision(decision: dict[str, Any], packet: dict[str, Any]) -> dict[
     )
     if not common_valid or not (fixed_valid or hourly_valid):
         raise InboundPlannerError("offer_acceptance_mismatch")
-    return {"action": "accept", "reason_codes": reasons, "offer": offer}
+    body = json.dumps(decision, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return {"action": "accept", "reason_codes": reasons, "offer": offer,
+            "decision_sha256": hashlib.sha256(body.encode()).hexdigest()}
 
 
 def invoke(

@@ -55,7 +55,9 @@ def _accept(packet, contract_type="fixed_price"):
 
 def test_exact_funded_fixed_offer_is_accept_ready(tmp_path):
     path, packet = _packet(tmp_path)
-    assert gate.validate_decision(_accept(packet), gate.load_offer_packet(path))["action"] == "accept"
+    result = gate.validate_decision(_accept(packet), gate.load_offer_packet(path))
+    assert result["action"] == "accept"
+    assert len(result["decision_sha256"]) == 64
 
 
 def test_exact_verified_hourly_offer_is_accept_ready(tmp_path):

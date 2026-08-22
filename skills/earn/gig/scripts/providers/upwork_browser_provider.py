@@ -29,6 +29,8 @@ from provider_authorization import DEFAULT_RECEIPT_PATH  # noqa: E402
 from upwork_proposal_browser import submit_proposal_after_fence  # noqa: E402
 from upwork_inbound_planner import invoke as plan_inbound, write_sealed_proposal  # noqa: E402
 from upwork_offer_gate import invoke as qualify_direct_offer  # noqa: E402
+from upwork_offer_browser import accept_offer_after_fence  # noqa: E402
+from upwork_offer_effect import SealedUpworkOfferEffect  # noqa: E402
 from upwork_sealed_effect import (  # noqa: E402
     SealedUpworkProposalEffect, active_upwork_browser_account,
 )
@@ -607,6 +609,37 @@ async def execute_sealed_proposal(
     }, post_connects, post_hash
 
 
+async def execute_direct_offer(
+    decision: dict[str, Any], *, database: Path, manifest: Path, browser_profile: Path,
+) -> dict[str, Any]:
+    """Accept one qualified Direct Offer through the shared durable effect ledger."""
+    effect_now = datetime.now(timezone.utc)
+    effect = SealedUpworkOfferEffect(
+        ConnectorOutbox(database.expanduser(), manifest.expanduser()),
+        UpworkTransport(
+            active_upwork_browser_account(DEFAULT_RECEIPT_PATH, effect_now, "accept_offer"),
+            effect_now, browser_profile=browser_profile.expanduser(),
+            profiles_root=browser_profile.expanduser().parent,
+        ),
+    )
+    _, planned = effect.intent(decision)
+    existing = effect.store.provider_effect(planned)
+    base = {"offer_decision_sha256": decision["decision_sha256"]}
+    if existing is not None and existing["reconciliation_state"] == "verified":
+        return {**base, "state": "accepted", "contract_id": existing["proposal_id"]}
+    if existing is not None and existing["state"] == "reconcile_pending":
+        return {**base, "state": "reconcile_unknown"}
+    holder: dict[str, Any] = {}
+
+    def start_effect(preflight: dict[str, Any]) -> bool:
+        holder["intent"], started = effect.start(decision, preflight)
+        return started
+
+    receipt = await accept_offer_after_fence(decision, start_effect)
+    effect.verify(holder["intent"], receipt)
+    return {**base, "state": "accepted", "contract_id": receipt["contract_id"]}
+
+
 async def observe(
     candidates_path: Path = DEFAULT_CANDIDATES,
     proposals_dir: Path = DEFAULT_PROPOSALS,
@@ -724,6 +757,11 @@ async def observe(
                     "decline": "decline",
                 }[decision["action"]]
                 state["free_acquisition"]["offer_reason_codes"] = decision["reason_codes"]
+                if decision["action"] == "accept":
+                    state["free_acquisition"].update(await execute_direct_offer(
+                        decision, database=database, manifest=manifest,
+                        browser_profile=browser_profile,
+                    ))
         else:
             state["free_acquisition"] = inbound
         return state

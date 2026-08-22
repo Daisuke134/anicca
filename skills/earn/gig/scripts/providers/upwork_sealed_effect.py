@@ -111,15 +111,15 @@ class SealedUpworkProposalEffect:
         )
 
 
-def active_upwork_browser_account(path: Path, now: datetime) -> str:
-    """Return the one active private propose account without exposing receipt content."""
+def active_upwork_browser_account(path: Path, now: datetime, action: str = "propose") -> str:
+    """Return the one active private browser account for an exact action."""
     matches = {
         receipt.account for receipt in load_receipts(path.expanduser())
-        if receipt.provider == "upwork" and receipt.action == "propose"
+        if receipt.provider == "upwork" and receipt.action == action
         and receipt.transport == "cloak_browser"
         and receipt.state is AuthorizationState.APPROVED_BROWSER
         and receipt.issued_at <= now < receipt.expires_at
     }
     if len(matches) != 1:
-        raise SealedEffectError("upwork_active_propose_account_not_unique")
+        raise SealedEffectError(f"upwork_active_{action}_account_not_unique")
     return next(iter(matches))
