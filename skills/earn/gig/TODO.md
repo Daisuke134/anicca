@@ -302,8 +302,8 @@ no-send, replay-zero and a new natural sub-30-minute official reply/estimate pro
 Do not advance the development cursor until every unchecked item in the current stage has official
 evidence. Independent production lanes continue running while development follows this order.
 
-**Live handover state.** `main` and `origin/main` include the pushed structured asset-contract boundary
-`28026722983c7a4adaefbc8ef441a8ea62573573`, and `/Users/anicca/gig/releases/life-manager/current` selects that
+**Live handover state.** `main` and `origin/main` include the pushed minimal Economic Kernel
+`b9144a47d7d6066e920c3cafd70bbe723160b6e6`, and `/Users/anicca/gig/releases/life-manager/current` selects that
 same immutable release. The older Paid-specific release link remains historical and is not the loaded launchd
 entrypoint. The protected unrelated dirty
 `skills/earn/gig/tests/test_reply_concurrency.py` remains outside this work. The loaded Paid owner uses up to
@@ -807,10 +807,14 @@ flowchart TB
    semantic contract diff to the durable Project Owner. Normalize only owner-decided equivalent terminology;
    migrate contracts only from buyer events/accepted lineage; repair genuinely missing work; and let official
    X/Haru prior effects dominate stale derived state. Fix this shared path once and perform no customer effect.
-5. [ ] Introduce the smallest shared Economic Kernel contracts used by that fix: append-only facts, capability
+5. [x] Introduce the smallest shared Economic Kernel contracts used by that fix: append-only facts, capability
    result envelope, effect key and rebuildable graph projection. Add provenance and reuse only bounded
    circuit-breaker/gate/lease shapes where no equivalent exists. Do not add frameworks, graph DB, CLI stack,
-   symlink, new service or speculative second-market code.
+   symlink, new service or speculative second-market code. The existing JSONL ledger now owns these stdlib-only
+   contracts. A natural Paid pass wrote one provenance-bound `asset_contract_compared` fact for Manledge and one
+   for byusco, each with a versioned effect key, two source facts and `needs_work` capability evidence. Rebuilding
+   both graph projections from the ledgers preserved the exact file hash; each ledger has one unique fact and
+   zero duplicates. No dependency, framework, service, graph database or customer effect was added.
 6. [ ] Make one durable Project Owner per purchased project own the complete hash-bound Project Context Capsule:
    job description, exact proposal/application, full DM/talkroom, seller commitments, evidence-linked buyer
    emotion/trust interpretation, accumulated requirements, artifacts/accepted lineage, effects and current delta.
