@@ -405,7 +405,10 @@ U14 atomic order:
    hash, status, Connects, unsupported-claim list and canonical JSONL SHA-256 to match the public/live
    row. Balance 0 returns before private payload access. Focused tests pass 16/16; an isolated
    balance-7 validation against the real private SSOT selected `~022091106411892491962`, required 7
-   Connects and matched its sealed hash without browser or marketplace effect.
+   Connects and matched its sealed hash without browser or marketplace effect. Production release
+   `220a6ebbc` then completed its launchd wake with exit 0 at
+   `2026-08-22T17:07:32.599713+00:00`: balance 0 produced `waiting_free_capacity`, public submit
+   permission false, and zero proposals, invitations, offers, earnings or transition append.
 2. Add click-free proposal-form fill/readback preflight for the selected sealed payload.
 3. After preflight, cross the existing durable effect fence once, submit once, and require the exact
    official proposal ID plus post-effect Connects readback; unknown effect stays reconcile-only.
