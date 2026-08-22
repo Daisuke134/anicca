@@ -25,6 +25,7 @@ next natural process start resolves the new release without a plist reload.
 from __future__ import annotations
 
 import argparse
+import atexit
 import fcntl
 import json
 import os
@@ -49,6 +50,7 @@ OVERRIDES = Path(
 LAUNCH_AGENTS = Path.home() / "Library" / "LaunchAgents"
 RELEASE_ROOT = Path.home() / "gig" / "releases" / "life-manager"
 CURRENT_RELEASE = RELEASE_ROOT / "current"
+PIN_PATTERN = re.compile(r"(?P<pid>[1-9][0-9]*)-(?P<sha>[0-9a-f]{40})")
 PUBLISH_LOCK = RELEASE_ROOT / ".publish.lock"
 LAUNCHD_PREFLIGHT = REPO_ROOT / "skills" / "_shared" / "lib" / "launchd_preflight.py"
 LAUNCHD_PREFLIGHT_RECEIPT = Path.home() / ".local/state/life-manager/launchd-control-plane-preflight.json"
@@ -217,6 +219,22 @@ def build(sha: str) -> Path:
     return target
 
 
+def pin_release_for_process(path: Path) -> Path | None:
+    """Keep an immutable release alive while this wrapper may reuse it."""
+    release = next(
+        (parent for parent in path.resolve().parents if re.fullmatch(r"[0-9a-f]{40}", parent.name)),
+        None,
+    )
+    if release is None:
+        return None
+    pin_dir = release.parent / ".pins"
+    pin_dir.mkdir(exist_ok=True)
+    marker = pin_dir / f"{os.getpid()}-{release.name}"
+    marker.touch(exist_ok=True)
+    atexit.register(marker.unlink, missing_ok=True)
+    return marker
+
+
 def collect_old_releases() -> list[str]:
     """Remove reproducible releases except current, live, and one rollback copy."""
     if not RELEASE_ROOT.is_dir():
@@ -229,6 +247,20 @@ def collect_old_releases() -> list[str]:
         reverse=True,
     )
     protected = {CURRENT_RELEASE.resolve(strict=False)}
+    pin_dir = RELEASE_ROOT / ".pins"
+    if pin_dir.is_dir():
+        for marker in pin_dir.iterdir():
+            match = PIN_PATTERN.fullmatch(marker.name)
+            if match is None:
+                continue
+            try:
+                os.kill(int(match.group("pid")), 0)
+            except ProcessLookupError:
+                marker.unlink(missing_ok=True)
+            except PermissionError:
+                protected.add(RELEASE_ROOT / match.group("sha"))
+            else:
+                protected.add(RELEASE_ROOT / match.group("sha"))
     processes = subprocess.run(
         ["ps", "-axo", "command="], capture_output=True, text=True, check=False,
     )
