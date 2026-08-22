@@ -1846,6 +1846,28 @@ Honne JA TikTok canaries remain proven; do not enable the three-post policy.
 | MKT-12 | Run bounded learning: change one hook/format/CTA variable, keep or revert from receipts, and prove the next run consumed the decision | Honne and Anicca separately | one-variable challenger, keep/revert receipt, and next-run consumption receipt |
 | MKT-13 | Retire legacy ownership only after every retained platform lane passes its canary/metrics/replay gate | entire mobile fleet | Life Manager is sole owner; Postiz remains the selected provider; old disabled state remains archived rollback evidence |
 
+### 12.3 Atomic finish checklist
+
+This checklist is the implementation order from the current state to the end of
+the incident recovery. Complete exactly one row at a time. A `PUBLISHED`
+provider row, a numeric `releaseId`, an enabled integration, or an HTTP 200
+profile page is never enough by itself.
+
+| Order | Atomic action | Start only when | Done evidence | Never do |
+|---:|---|---|---|---|
+| 0 | Reconcile the existing Anicca HE effect `cmt32u9dj00jxqp0yqdh6yi96` | always; it is the current active item | same effect has a caption-matching direct `@anicca.he/video/<id>` URL, a reconciled receipt, one natural Telegram receipt, replay `0` | retry it, create a replacement effect, or notify success without the direct artifact |
+| 1 | Classify the next remaining Larry/ReelClaw account | Order 0 is terminal `present` or terminal `absent` with an honest receipt | one row names product, locale, account, exact provider integration, allowed renderer, approved pack, and explicit disposition; product-mismatched accounts such as `@anicca.en` stay excluded | infer product from an integration name or post an Anicca iOS pack to an `ebook-en` account |
+| 2 | Migrate that one classified account's pack | Order 1 selects a valid retained account | content-addressed copy under `LM_DATA_DIR`, visible asset/caption/account match, standing approval, and zero runtime legacy path/env/asset read | run or enable its old OpenClaw/launchd job |
+| 3 | Canary that one migrated account | Order 2 passes and provider preflight is healthy | one new effect → exact direct native URL → one natural Telegram receipt → local replay `0` → account/post metric source status | fan out to another account or silently turn unavailable into success/zero |
+| 4 | Repeat Orders 1–3 for every retained account | prior account is terminal and recorded | every retained route has its own account/asset/URL/Telegram/replay/metric receipt or a documented terminal exclusion | mass-enable the legacy fleet |
+| 5 | Finish the selected Anicca YouTube route | all prior active account effects are terminal; selected route remains Anicca-only | one verified `/shorts/<id>` or `/watch?v=<id>` URL, Telegram receipt, replay `0`, and post metric source status | use YouTube for Honne or enable a disabled candidate without its one-lane canary |
+| 6 | Enable the three-posts-per-day policy per account | that exact account has a healthy canary and metric source status | Life Manager-owned policy produces at most the selected three daily effects, no duplicate effects, and natural missed receipts | use the old scheduler or enable all accounts together |
+| 7 | Collect social and app observations | each verified post reaches 2h/24h/72h/7d | TikTok/Instagram/YouTube post observations join creative, campaign, account, and platform; App Store Connect, RevenueCat, and product analytics preserve `unavailable` | report account-level views as an attributed install or paid conversion |
+| 8 | Ship daily and weekly reporting | Order 7 has immutable snapshots | per-post/miss, daily account/app digest, and weekly Honne-vs-Anicca review are natural language, source-labelled, and replay-deduped | raw logs, profile URLs, or internal integration names in owner reports |
+| 9 | Compute attribution coverage | Order 7 observations exist | verified vs partial vs unattributed installs/trials/paid revenue are separate; campaign/window/confidence are present | infer causality from timing alone |
+| 10 | Run bounded learning | Orders 7–9 produce a usable cohort | one hook/format/CTA variable changes; keep/revert receipt; next run consumes the decision | cross-product learning or multi-variable edits |
+| 11 | Retire legacy marketing ownership | every retained route has Orders 1–10 evidence | Life Manager is sole owner; legacy disabled state stays archived rollback evidence | delete or mass-reenable legacy jobs |
+
 The product-growth sequence after incident recovery remains: (1) close and prove
 marketing, (2) use App Store Connect, RevenueCat, Mixpanel/PostHog, reviews, and
 retention evidence to iterate the existing apps, then (3) generalize build,
