@@ -348,6 +348,22 @@ def test_apply_ignores_preventive_flags_but_keeps_a_real_disk_floor():
     assert environment["GIG_DISK_HEADROOM_KIB"] == "524288"
 
 
+def test_negotiate_ignores_preventive_flags_but_keeps_a_real_disk_floor():
+    release_path = Path("/release")
+    release_script = GIG_ROOT / "scripts" / "gig_release.py"
+    spec = importlib.util.spec_from_file_location("gig_release_negotiate_guard_test", release_script)
+    assert spec and spec.loader
+    release = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(release)
+    manifest, table = release.settings(release_path)
+    negotiate = next(job for job in manifest["jobs"] if job["lane"] == "negotiate")
+
+    environment = release.plist_for(negotiate, table)["EnvironmentVariables"]
+    assert environment["GIG_IGNORE_DISK_PRESSURE_BLOCK"] == "1"
+    assert environment["GIG_IGNORE_DISK_WRITERS_STOP"] == "1"
+    assert environment["GIG_DISK_HEADROOM_KIB"] == "524288"
+
+
 def test_writer_lanes_render_from_immutable_release_and_life_manager_state():
     import importlib.util
 
