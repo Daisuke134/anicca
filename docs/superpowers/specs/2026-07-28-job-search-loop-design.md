@@ -371,8 +371,8 @@ This is the remaining implementation-order SSOT. Only the first
 | 1 | Preserve the one hourly owner and CloakBrowser CDP `:9222` | `done` | Launchd interval 3600, owner idle/healthy, CDP responds, no second executor |
 | 2 | Read and compare fixed-commit browser-agent/job-lifecycle OSS before architecture changes | `done` | Browser Use, Skyvern, Stagehand, job-apply-plugin, AIHawk, career-ops `421d93e`, and ai-job-search `ab91c60` code findings recorded |
 | 3 | Make Workday-first and the OSS-code-first rule the current spec/memory SSOT | `done` | This section and `MEMORY.md` contain one non-contradictory order |
-| 4 | Trace the existing daily owner, Workday helper, runner, credential helper, Ledger, and Gmail call graph | `pending_actionable` | Exact reused entrypoints, replaceable fast-path boundaries, and framework integration seams are named |
-| 5 | Freeze fixed-commit OSS source lineage and license boundaries | `pending_after_4` | MIT reuse from Browser Use, Stagehand, career-ops, and ai-job-search; Skyvern AGPL pattern-only boundary; rejected human-stop/default-answer patterns recorded |
+| 4 | Trace the existing daily owner, Workday helper, runner, credential helper, Ledger, and Gmail call graph | `done` | Exact reused entrypoints, replaceable fast-path boundaries, and framework integration seams are named below |
+| 5 | Freeze fixed-commit OSS source lineage and license boundaries | `pending_actionable` | MIT reuse from Browser Use, Stagehand, career-ops, and ai-job-search; Skyvern AGPL pattern-only boundary; rejected human-stop/default-answer patterns recorded |
 | 6 | Define the Job Hunter browser-agent framework package and public contracts | `pending_after_5` | Orchestrator, session, observation, action, answer, checkpoint, verifier, and provider-hint interfaces are versioned |
 | 7 | Define one provider-neutral sanitized row-envelope and row-run state schema | `pending_after_6` | Schema requires identity/evidence pointers and rejects secrets, raw answers, and terminal retries |
 | 8 | Add framework contract tests and recorded real-shape replays | `pending_after_7` | Observation/action/recovery/checkpoint/verifier contracts fail against the current fast-path architecture |
@@ -505,6 +505,63 @@ The framework is a full replacement for deterministic form ownership. It is not 
 prompt wrapped around the old fast paths. Workday is the first production consumer;
 every later ATS uses the same core and supplies only provider hints that cannot
 terminate or bypass the model loop.
+
+#### Current production call graph and replacement seams
+
+The traced production path is concrete. The launchd plist owns the only hourly
+process and resolves its installed immutable-release program at install time. Its
+`StartInterval` is 3600 seconds. That program is `scripts/run-daily.sh`, which
+currently probes the shared CDP browser, lets two deterministic form fillers own
+browser actions and Ledger outcomes, reports their checkpoint, and invokes the
+model only when the optional `JOB_SEARCH_ENABLE_MODEL_FALLBACK=1` flag is present:
+
+```mermaid
+flowchart TD
+    L["launchd: ai.anicca.job-search-daily<br/>StartInterval 3600"] --> D["installed run-daily.sh"]
+    D --> R0["deliver pending Telegram resume reports"]
+    D --> B["browser_owner probe<br/>existing CDP :9222"]
+    B --> AF["ashby_fast_path<br/>currently navigates, fills, clicks, classifies"]
+    AF --> AD["ashby_discovery<br/>queue admission only"]
+    AD --> AF2["ashby_fast_path for newly discovered row"]
+    AF2 --> WF["workday_fast_path<br/>currently authenticates, fills, clicks, classifies"]
+    WF --> T0["direct fast-path Telegram checkpoint"]
+    T0 --> G{"JOB_SEARCH_ENABLE_MODEL_FALLBACK == 1?"}
+    G -- "no: production default" --> X["deliver reports + summary + exit"]
+    G -- yes --> AR["shared agent_runner.py<br/>browser-lane-agent"]
+    AR --> R1["deliver reports + summary"]
+    I["separate run-inbox.sh"] --> GC["submission_confirmation reconcile Gmail"]
+    GC --> LR["Ledger receipt reconciliation"]
+    LR --> R0
+```
+
+This ordering is the exact defect boundary: recognized Workday and Ashby rows are
+acted on before the model and the production default exits at the optional-model
+gate. The renewal keeps the control plane and evidence stores, but removes form
+ownership from both fast paths. Discovery and hard safety checks may produce queue
+facts or provider hints; they cannot open, fill, advance, submit, classify, or
+terminate an eligible form.
+
+| Existing entrypoint | Current ownership | Renewal decision and exact seam |
+|---|---|---|
+| `launchd/ai.anicca.job-search-daily.plist` → installed `scripts/run-daily.sh` | One hourly owner and process lifetime | Reuse unchanged as the only executor; replace the body between CDP preflight and final reconciliation with ordered queue → mandatory orchestrator calls |
+| `scripts/runtime-paths.sh` → `runtime/agent-runner/agent_runner.py` | Installed paths, selected provider, shared state roots | Reuse; no Job Hunter-specific second runner or browser process |
+| `job_search_loop.browser_owner:probe_cdp` | Read-only readiness evidence for CDP `:9222` | Reuse as `BrowserSession` preflight; session attach/reconnect remains inside the framework |
+| `job_search_loop.ashby_discovery:main` and existing eligibility/dedupe queries | Candidate discovery and admission | Reuse sanitized queue facts; during Workday 10P it may refresh only and cannot invoke `ashby_fast_path` |
+| `job_search_loop.workday_fast_path:_run/_process_one` | Opens a page, signs in, fills scripted fields, advances steps, claims Submit, clicks, and writes `blocked`/`submitted`/`submit_unknown` | Replace this ownership completely. Workday-specific surface terms become non-authoritative `ProviderHints`; each row is handed to `BrowserAgentOrchestrator` before any form action |
+| `job_search_loop.ashby_fast_path:_run/_process_one` | Same deterministic browser and terminal-state ownership for Ashby | Remove from the application path; later Ashby 10Q reuses the same orchestrator with Ashby hints only |
+| `job_search_loop.workday_credentials:ensure_credentials/load_credentials` | Per-tenant generated password and private application email lookup | Reuse behind a typed credential tool. The model receives neither password nor raw store contents |
+| `runtime/agent-runner/agent_runner.py --task-class browser-lane-agent` | Bounded provider execution, schema validation, evidence directory, provider usage | Reuse as the single model execution boundary; route changes to Luna xhigh, and the optional fallback gate is removed |
+| `job_search_loop.ledger:pending_materials_ready_applications/retryable_applications` | Durable eligible/recovery queue | Reuse for ordered row admission, with terminal URL and `submit_unknown` exclusions applied before the model |
+| `job_search_loop.ledger:claim_submission/complete_submission` | Exact identity fence and terminal transition | Reuse the atomic fence, but only the framework acquires it at fresh review. `submitted` is passed only after `CompletionVerifier`; pre-click certainty uses `not_submitted`, and unverified post-click uses permanently fenced `submit_unknown` |
+| `scripts/run-inbox.sh` → `job_search_loop.submission_confirmation reconcile` → `Ledger.reconcile_submission_confirmation` | Gmail fetch, exact receipt binding, later reconciliation | Reuse as the independent authoritative-email path. The browser agent never performs a second Gmail network read or sees verification secrets in its prompt/transcript |
+| `job_search_loop.application_reporting deliver` and Telegram outbox | Idempotent resume delivery with receipt state | Reuse for per-row authoritative outcomes and final hourly summary; remove the direct pre-model fast-path message as the outcome source |
+
+The framework integration point is therefore one call per admitted row inside the
+existing daily owner. The call receives only a sanitized row envelope and evidence
+pointers, attaches to the existing CDP owner, returns a verifier result, persists
+through the existing Ledger/reporting interfaces, and then yields control to the
+queue for the next row. No provider helper can return `no_work`, `blocked`, or an
+unknown-field result on behalf of an eligible row.
 
 #### Framework components
 
