@@ -12,7 +12,7 @@ class LaunchdTests(unittest.TestCase):
             (root / "ai.anicca.job-search-learning.plist").read_bytes()
         )
         self.assertTrue(daily["RunAtLoad"])
-        self.assertEqual(daily["StartInterval"], 3600)
+        self.assertEqual(daily["StartInterval"], 1800)
         self.assertEqual(inbox["StartInterval"], 900)
         self.assertTrue(learning["RunAtLoad"])
         self.assertEqual(

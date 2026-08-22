@@ -5,7 +5,7 @@
 **Owner:** Daisuke Narita
 **Status:** The one macOS launchd acquisition owner, shared OpenClaw Telegram
 transport, and authenticated CloakBrowser daily-driver at CDP `:9222` are healthy.
-The owner wakes hourly. Production acquisition is Workday-only until repeated live
+The owner wakes every 30 minutes. Production acquisition is Workday-only until repeated live
 Workday submissions and per-wake Telegram outcomes are proven; Ashby discovery and
 forms are parked. Every admitted Workday row enters the mandatory model browser
 runtime through that one CDP owner. Rakuten reached a completion-like Workday UI in
@@ -238,7 +238,7 @@ Workday account + application E2E
 #### Acceptance criteria
 
 1. `ai.anicca.job-search-daily` remains the only acquisition owner and wakes with
-   `StartInterval=3600`; the authenticated CloakBrowser daily-driver at `:9222`
+   `StartInterval=1800`; the authenticated CloakBrowser daily-driver at `:9222`
    remains the only browser owner.
 2. A finalized resume and application email are sufficient input. Workday passwords
    are generated locally, stored only in the machine
@@ -379,7 +379,7 @@ This is the remaining implementation-order SSOT. Only the first
 
 | Order | Atomic TODO | State | Evidence needed to close |
 |---:|---|---|---|
-| 1 | Preserve the one hourly owner and CloakBrowser CDP `:9222` | `done` | Launchd interval 3600, owner idle/healthy, CDP responds, no second executor |
+| 1 | Preserve the one recurring owner and CloakBrowser CDP `:9222` | `done` | Launchd interval 1800, owner idle/healthy, CDP responds, no second executor |
 | 2 | Read and compare fixed-commit browser-agent/job-lifecycle OSS before architecture changes | `done` | Browser Use, Skyvern, Stagehand, job-apply-plugin, AIHawk, career-ops `421d93e`, and ai-job-search `ab91c60` code findings recorded |
 | 3 | Make Workday-first and the OSS-code-first rule the current spec/memory SSOT | `done` | This section and `MEMORY.md` contain one non-contradictory order |
 | 4 | Trace the existing daily owner, Workday helper, runner, credential helper, Ledger, and Gmail call graph | `done` | Exact reused entrypoints, replaceable fast-path boundaries, and framework integration seams are named below |
@@ -468,6 +468,8 @@ This is the remaining implementation-order SSOT. Only the first
 | 48am | Settle delayed SPA step transitions before evidence | `implementation_done_live_gate` | Run 94 selected `Website → Workday.com` with visible `1 item selected` proof and clicked Save and Continue. Workday changed steps after the prior 350 ms post-click snapshot, so Luna received stale personal-information controls and its next country click failed on the new page. Direct CDP now holds a bounded 1.5-second post-click transition window before URL, screenshot, and control evidence capture. |
 | 48an | Remove the false Workday review-URL rejection | `implementation_done_live_gate` | Run 95 proves Luna completed every visible application question and reached the enabled final `送信` control, but the final fence rejected the review because Workday inserted `/ja-JP/` and retained its SPA `/apply/autofillWithResume` route. Workday review identity now binds the already-matched tenant host to the requisition-bearing job slug; locale, location punctuation, and SPA step routes cannot veto a genuine review, while a different requisition still cannot cross the submit fence. |
 | 48ao | Remove review-only filename and English-submit assumptions | `implementation_done_live_gate` | Run 96 passed exact Workday job identity at the live final review, then the old verifier rejected the already-uploaded routed resume because Workday collapses its filename on review. The final fence now binds the routed resume SHA already carried by the row evidence chain without requiring the provider to repeat its filename on every step. The final visible action accepts the unique enabled Workday footer control or a localized submit label, so Japanese `送信` is not rejected by an English-only harness. |
+| 48ap | Force every final submit through the one fence | `implementation_done_live_gate` | Run 97 proves the model can express the Japanese final action as ordinary `click` even when the prompt says `finalize`; Workday accepted it and rendered `応募情報が送信されました`, and Gmail sent the exact Account Executive receipt, but the click bypassed the intent fence. The runtime now upgrades the unique Workday final footer submit click to `finalize` before any browser effect, so model command-shape variance cannot bypass the one-click ledger/evidence gate. |
+| 48aq | Run the sole acquisition owner every 30 minutes | `implementation_done_live_gate` | The requested recurring cadence is `StartInterval=1800`. The same `ai.anicca.job-search-daily` owner and Daily Driver CDP remain exclusive; no second executor, browser, profile, or account is introduced. |
 | 49 | Drive the fresh Workday form with the LLM agent only | `pending_after_48` | CloakBrowser CDP `:9222`; fresh screenshot and visible controls before every decision; one ordinary visible action; post-action screenshot; no scripted question mapper or fixed page workflow. |
 | 50 | Reuse or create the Workday tenant account inside the same agent session | `pending_after_49` | Preserve the authenticated session; if the tenant is new, generate/store credentials privately, consume email verification, prove login, and resume the same row without user intervention. |
 | 51 | Complete every Workday page and variable employer question | `pending_after_50` | The model grounds answers in resume/Candidate Memory/job context, infers missing routine answers, corrects rendered validation, and keeps observing until Review without a missing-context stop. |
@@ -477,7 +479,7 @@ This is the remaining implementation-order SSOT. Only the first
 | 55 | Reconcile Ledger only after UI plus email agree | `pending_after_54` | Both evidence rails must identify the same application. Until then keep `post_submit_verification`; never write or report `submitted`. |
 | 56 | Send the per-run Telegram truth and verify its ACK | `pending_after_55` | Report company, role, and `verified submitted` or exact `not yet verified/failed` outcome on every kickstarted or scheduled wake; require the real Telegram message ID. |
 | 57 | Immediately repeat on a second fresh Workday row | `pending_after_56` | Prove the first result was not tenant/job-specific, preserve sign-in, prevent duplicates, continue the queue, and again require UI plus email plus Telegram. |
-| 58 | Prove recurring Workday-only operation | `pending_after_57` | Scheduled hourly wakes and developer kickstarts repeatedly process fresh Workday rows, recover row-local failures, send Telegram every run, and never enter Ashby. |
+| 58 | Prove recurring Workday-only operation | `pending_after_57` | Scheduled 30-minute wakes and developer kickstarts repeatedly process fresh Workday rows, recover row-local failures, send Telegram every run, and never enter Ashby. |
 | 59 | Close `JOB-WORKDAY-E2E-MODEL-10P` | `pending_after_58` | At least two fresh Workday applications, each visually verified by final UI plus exact receipt email, deduped on the next wake, with Ledger and Telegram agreement and no scripted form ownership. |
 | 60 | Unpark Ashby as `JOB-ASHBY-E2E-MODEL-10Q` | `pending_after_59` | Only after 10P closes; reuse the identical agent loop without restoring deterministic Ashby form ownership. |
 | 61 | Extend the proven loop to Greenhouse, Lever, and generic ATS | `pending_after_60` | Add provider discovery/safety hints only; never add a new scripted form/question workflow. |

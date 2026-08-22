@@ -554,6 +554,12 @@ async def navigate(url: str) -> dict[str, Any]:
 
 
 async def click(*, label: str, role: str, stable_id: str, ordinal: int | None = None) -> dict[str, Any]:
+    normalized_label = " ".join(label.split()).casefold()
+    if (
+        stable_id == "automation:pageFooterNextButton"
+        and normalized_label in {"submit", "submit application", "送信", "応募を送信"}
+    ):
+        return await finalize()
     path = _path_env("JOB_SEARCH_BROWSER_SCRATCH") / "runtime-click.json"
     path.write_text(
         json.dumps(
