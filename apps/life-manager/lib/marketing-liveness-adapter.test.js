@@ -132,13 +132,13 @@ test("metric snapshot renders every measured and unavailable field with stable d
     lane: "anicca-main-ja-instagram", product: "anicca-ios", locale: "ja", platform: "instagram", account: "@anicca.jp1",
     status: "observed", window: "24h", observed_at: "2026-08-22T12:00:00.000Z",
     public_url: "https://www.instagram.com/reel/DcTFx_UjSio/", snapshot_ref: `object://sha256/${HASH}`,
-    metrics: { views: { status: "measured", value: 32 }, reach: { status: "measured", value: 31 }, engagement: { status: "derived", percent: 0 }, watch_time: { status: "unavailable", value: null }, account_totals: { status: "unavailable", value: null } },
   };
   const input = { tenantId: "dais-local", telegramTokenRef: "secret://telegram/bot-token", telegramChatRef: "telegram-chat://owner", payload };
   const job = buildMarketingLivenessJob(input); const replay = buildMarketingLivenessJob(input); const sent = [];
   assert.equal(replay.job_id, job.job_id);
   const result = await executeMarketingLivenessJob(job, {
     secretProvider: { get: async () => "fake-token" }, chatProvider: { get: async () => "fake-chat" },
+    snapshotProvider: { get: async () => ({ public_url: payload.public_url, window: "24h", post: { views: { status: "measured", value: 32 }, reach: { status: "measured", value: 31 }, engagement: { status: "derived", percent: 0 }, watch_time: { status: "unavailable" } }, sources: { postiz_account: { status: "unavailable" } } }) },
     sendTelegram: async (_token, _chat, text) => { sent.push(text); return { ok: true, result: { message_id: 704 } }; },
   });
   assert.match(sent[0], /Views 32、Reach 31、Engagement 0%/);

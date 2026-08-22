@@ -81,16 +81,30 @@ function persistSnapshot({ dataDir, window, observedAt, html, accountRows, postR
   return { created: true, file, snapshot };
 }
 
+function persistDelayedSnapshot({ dataDir, window, observedAt }) {
+  if (!WINDOWS.has(window) || !Number.isFinite(Date.parse(observedAt))) throw new Error("Instagram delayed metric window invalid");
+  const unavailable = (reason = "source_delayed") => ({ status: "unavailable", value: null, reason });
+  const post = Object.fromEntries([...Object.values(POST_LABELS), "impressions", "watch_time", "average_watch_time", "completion", "engagement"].map((key) => [key, unavailable()]));
+  const snapshot = { schema_version: 1, kind: "instagram_combined_metric_snapshot", ...EXPECTED, window, observed_at: observedAt,
+    caption_sha256: crypto.createHash("sha256").update(EXPECTED.caption).digest("hex"),
+    sources: { instagram_native: { status: "unavailable", reason: "source_delayed", identity_verified: true }, postiz_post: { status: "unavailable", reason: "source_delayed" }, postiz_account: { status: "unavailable", reason: "source_delayed" } },
+    post, account_metrics: { status: "unavailable", reason: "source_delayed" } };
+  const directory = path.join(path.resolve(dataDir), "tenants", EXPECTED.tenant_id, "marketing", "metrics", EXPECTED.native_owner, EXPECTED.shortcode);
+  const file = path.join(directory, `${window}.combined.json`); fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
+  if (fs.existsSync(file)) return { created: false, file, snapshot: JSON.parse(fs.readFileSync(file, "utf8")) };
+  const temporary = `${file}.tmp-${process.pid}-${crypto.randomUUID()}`;
+  fs.writeFileSync(temporary, `${JSON.stringify(snapshot, null, 2)}\n`, { mode: 0o600, flag: "wx" }); fs.renameSync(temporary, file); fs.chmodSync(file, 0o600);
+  return { created: true, file, snapshot };
+}
+
 async function sendMetricSnapshot(result, env, dataDir) {
   if (!result.created) return { created: false, reason: "snapshot_replay" };
-  const snapshotRef = createContentObjectStore({ objectDir: path.join(dataDir, "objects") }).import(result.file).ref;
-  const accountTotals = result.snapshot.sources.postiz_account.status === "unavailable"
-    ? { status: "unavailable", value: null } : { status: "measured", value: result.snapshot.account_metrics.length };
+  const objectStore = createContentObjectStore({ objectDir: path.join(dataDir, "objects") });
+  const snapshotRef = objectStore.import(result.file).ref;
   const job = buildMarketingLivenessJob({
     tenantId: EXPECTED.tenant_id, telegramTokenRef: "secret://telegram/bot-token", telegramChatRef: "telegram-chat://owner",
     payload: { lane: "anicca-main-ja-instagram", product: EXPECTED.product_id, locale: EXPECTED.locale, platform: "instagram", account: EXPECTED.account_id,
-      status: "observed", window: result.snapshot.window, observed_at: result.snapshot.observed_at, public_url: EXPECTED.public_url, snapshot_ref: snapshotRef,
-      metrics: { ...result.snapshot.post, account_totals: accountTotals } },
+      status: "observed", window: result.snapshot.window, observed_at: result.snapshot.observed_at, public_url: EXPECTED.public_url, snapshot_ref: snapshotRef },
   });
   const store = createMarketingLocalLedger({ dataDir });
   const queued = await store.enqueueJob({ jobId: job.job_id, tenantId: job.tenant_id, loopId: job.loop_id, capability: job.capability, effectClass: job.effect_class, effectKey: job.effect_key, inputRefs: job.input_refs, maxAttempts: job.max_attempts, availableAt: result.snapshot.observed_at });
@@ -99,14 +113,14 @@ async function sendMetricSnapshot(result, env, dataDir) {
   if (!claim) throw new Error("Instagram metric Telegram job is not claimable");
   await executeCapabilityJob(claim, { workerId: "instagram-metrics-read", handlers: { [job.capability]: (claimed) => executeMarketingLivenessJob(claimed, {
     secretProvider: { get: async () => env.LM_TELEGRAM_BOT_TOKEN }, chatProvider: { get: async () => env.LM_TELEGRAM_ALERT_CHAT_ID },
+    snapshotProvider: { get: async (_tenantId, ref) => JSON.parse(fs.readFileSync(objectStore.resolve(ref), "utf8")) },
   }) }, heartbeatJob: (input) => store.heartbeatJob(input), completeJob: (input) => store.completeJob(input), failJob: (input) => store.failJob(input), leaseSeconds: 120 });
   const receipt = await store.readReceipt({ tenantId: job.tenant_id, jobId: job.job_id });
   return { created: true, message_id: receipt?.message_id, snapshot_ref: snapshotRef };
 }
 
-async function main() {
-  const window = process.argv[2] || "24h";
-  const key = String(process.env.LM_POSTIZ_API_KEY || "").trim();
+async function collectWindow(window, env = process.env, observedAt = new Date().toISOString()) {
+  const key = String(env.LM_POSTIZ_API_KEY || "").trim();
   if (!key) throw new Error("LM_POSTIZ_API_KEY is required");
   const get = async (url, headers = {}) => { const response = await fetch(url, { headers }); if (!response.ok) throw new Error(`Instagram metric HTTP ${response.status}`); return response; };
   const days = { "2h": 1, "24h": 1, "72h": 3, "7d": 7 }[window];
@@ -116,11 +130,11 @@ async function main() {
     get(`https://api.postiz.com/public/v1/analytics/${EXPECTED.integration_id}?date=${days}`, { Authorization: key }).then((response) => response.json()),
     get(`https://api.postiz.com/public/v1/analytics/post/${EXPECTED.provider_post_id}?date=${days}`, { Authorization: key }).then((response) => response.json()),
   ]);
-  const dataDir = resolveDataRoot(process.env);
-  const result = persistSnapshot({ dataDir, window, observedAt: new Date().toISOString(), html: page, accountRows: account, postRows: post });
-  const telegram = await sendMetricSnapshot(result, process.env, dataDir);
-  process.stdout.write(`${JSON.stringify({ created: result.created, file: result.file, post: result.snapshot.post, account: result.snapshot.account_metrics, telegram })}\n`);
+  const dataDir = resolveDataRoot(env);
+  const result = persistSnapshot({ dataDir, window, observedAt, html: page, accountRows: account, postRows: post });
+  const telegram = await sendMetricSnapshot(result, env, dataDir);
+  return { created: result.created, file: result.file, post: result.snapshot.post, account: result.snapshot.account_metrics, telegram };
 }
 
-if (require.main === module) main().catch((error) => { process.stderr.write(`${error.message}\n`); process.exitCode = 1; });
-module.exports = { EXPECTED, persistSnapshot, postMetrics, sendMetricSnapshot, verifyNativeHtml };
+if (require.main === module) collectWindow(process.argv[2] || "24h").then((result) => process.stdout.write(`${JSON.stringify(result)}\n`)).catch((error) => { process.stderr.write(`${error.message}\n`); process.exitCode = 1; });
+module.exports = { EXPECTED, collectWindow, persistDelayedSnapshot, persistSnapshot, postMetrics, sendMetricSnapshot, verifyNativeHtml };

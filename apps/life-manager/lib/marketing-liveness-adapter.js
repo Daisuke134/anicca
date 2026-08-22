@@ -149,15 +149,14 @@ function parsePayloadRef(ref) {
     if (!Object.hasOwn(payload, key)) throw new Error("marketing liveness ref is invalid");
   }
   if (payload.status === "observed") {
-    const metrics = payload.metrics;
     if (
       !IDENTIFIER.test(payload.lane) || !IDENTIFIER.test(payload.product) || !LOCALE.test(payload.locale)
       || !["instagram", "tiktok"].includes(payload.platform) || !ACCOUNT.test(String(payload.account || ""))
       || !METRIC_WINDOWS.has(payload.window) || !SNAPSHOT_REF.test(String(payload.snapshot_ref || ""))
       || !Number.isFinite(Date.parse(payload.observed_at))
       || !(payload.platform === "instagram" ? /^https:\/\/www\.instagram\.com\/(?:reel|p)\/[A-Za-z0-9_-]+\/?$/.test(payload.public_url) : /^https:\/\/www\.tiktok\.com\/@[^/]+\/video\/[0-9]+\/?$/.test(payload.public_url))
-      || !metrics || typeof metrics !== "object" || Array.isArray(metrics)
-      || Object.values(metrics).some((metric) => !metric || !["measured", "derived", "unavailable"].includes(metric.status))
+      || (payload.metrics !== undefined && (!payload.metrics || typeof payload.metrics !== "object" || Array.isArray(payload.metrics)
+        || Object.values(payload.metrics).some((metric) => !metric || !["measured", "derived", "unavailable"].includes(metric.status))))
     ) throw new Error("marketing metric ref is invalid");
     return payload;
   }
@@ -278,9 +277,22 @@ async function executeMarketingLivenessJob(job, deps = {}) {
   if (!deps.secretProvider || !deps.chatProvider) throw new Error("marketing liveness provider is required");
   const token = await deps.secretProvider.get(job.tenant_id, job.input_refs.telegram_token_ref);
   const chatId = await deps.chatProvider.get(job.tenant_id, job.input_refs.telegram_chat_ref);
+  let renderedPayload = payload;
+  if (payload.status === "observed" && payload.metrics === undefined) {
+    if (!deps.snapshotProvider) throw new Error("marketing metric snapshot provider is required");
+    const snapshot = await deps.snapshotProvider.get(job.tenant_id, payload.snapshot_ref);
+    if (!snapshot || snapshot.public_url !== payload.public_url || snapshot.window !== payload.window || !snapshot.post) throw new Error("marketing metric snapshot mismatch");
+    const compact = Object.fromEntries(Object.entries(snapshot.post).map(([key, metric]) => [key,
+      metric.status === "unavailable" ? { status: "unavailable" }
+        : metric.status === "derived" ? { status: "derived", percent: metric.percent }
+          : { status: "measured", value: metric.value }]));
+    compact.account_totals = snapshot.sources?.postiz_account?.status === "unavailable" ? { status: "unavailable" }
+      : { status: "measured", value: Array.isArray(snapshot.account_metrics) ? snapshot.account_metrics.length : 0 };
+    renderedPayload = { ...payload, metrics: compact };
+  }
   let providerResult;
   try {
-    providerResult = await (deps.sendTelegram || sendMessage)(token, chatId, renderMessage(payload));
+    providerResult = await (deps.sendTelegram || sendMessage)(token, chatId, renderMessage(renderedPayload));
   } catch (error) {
     throw Object.assign(new Error("marketing liveness Telegram send failed", { cause: error }), { unknownEffect: true });
   }
@@ -293,7 +305,7 @@ async function executeMarketingLivenessJob(job, deps = {}) {
   return { receipt: {
     schema_version: 1,
     kind: "telegram_marketing_liveness",
-    ...payload,
+    ...renderedPayload,
     message_id: messageId,
     chat_id_hash: hashChatId(chatId),
     sent_at: (deps.now || (() => new Date().toISOString()))(),
