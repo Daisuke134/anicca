@@ -22,6 +22,8 @@ fi
 trap 'rmdir "$LOCK" 2>/dev/null || true' EXIT
 
 export PYTHONPATH="$JOB_SEARCH_APP_ROOT"
+chmod 644 "$JOB_SEARCH_APP_ROOT/prompts/mercor-pass.md" \
+  "$JOB_SEARCH_APP_ROOT/schemas/mercor-pass-result.v1.schema.json"
 "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_owner \
   --endpoint "$CDP_URL" \
   --output "$EVIDENCE/browser-owner.json"
