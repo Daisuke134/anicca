@@ -700,7 +700,7 @@ log "target language: $TARGET_LANGUAGE (rolling EN 9 / JA 1)"
 ## 3案が必ず守ること
 1. 相手をディスらない（否定・反論・訂正から入らない）
 2. ポジティブな話を入れる
-3. 読者が保存して試せる具体を1つ入れる（手順 / 判断基準 / 失敗条件 / 比較方法）
+3. 読者が保存して試せる具体を **異なる2種類** 入れる（手順 / 判断基準 / 失敗条件 / 比較方法）
 4. 一次情報の種が自然に合う時だけ使う。無理に自分の話へ戻さない
 5. アクションにつなげる（読んだ人が次に何を試すか）
 
@@ -870,7 +870,7 @@ fi
 # ---------------------------------------------------------------- 5. choose one
 {
   echo "次の3案から、今回の $KIND として実際に投稿する1案を選べ。"
-  echo "基準: 相手をディスっていない / 元投稿にない実行手順・判断基準・失敗条件・比較方法のどれかを足す / 自分語りが不要なら0 / 次の行動につながる / AI 文体でない。"
+  echo "基準: 相手をディスっていない / 元投稿にない実行手順・判断基準・失敗条件・比較方法を異なる2種類足す / 自分語りが不要なら0 / 次の行動につながる / AI 文体でない。"
   echo
   echo "## 今回 優先するトーン: $TARGET_TONE"
   echo "同点か僅差ならこのトーンを選ぶ。明確に品質が落ちる場合だけ他を選び、その理由を why に書く。"
@@ -965,18 +965,19 @@ SRC_METRICS="$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1]))["me
   echo "事実主張・数字・固有名詞がsourceに無ければ supported=false。"
   echo "明示的な意見、一般的な次の一手、書き手自身の失敗談は新しい外部事実ではない。"
   echo "さらに、sourceの要約や『幅が広がる』『試したい』だけなら useful=false。"
-  echo "読者が実行できる手順、判断基準、失敗条件、比較方法のどれかを具体的に足した時だけ useful=true。"
+  echo "読者が実行できる手順、判断基準、失敗条件、比較方法のうち異なる2種類を具体的に足した時だけ useful=true。"
+  echo "source固有の仕組み・数字・制約を少なくとも1つ使わない一般論は useful=false。"
   echo "URL、文体、viralらしさではなく事実支持と読者効用を別々に判定する。"
   echo; echo "## source"; cat "$EV/source.json"
   echo; echo "## sourceから解決したexact evidence"; "$PY" -c 'import json,sys; print(json.load(open(sys.argv[1])).get("canonical_evidence","")); d=json.load(open(sys.argv[2])); print(d.get("reader_value",""))' "$EV/grounding.json" "$EV/select.json"
   echo; echo "## final post"; cat "$EV/post.txt"
-  echo; echo '## 出力（最後にJSONだけ）'; echo '{"supported":true,"useful":true,"value_type":"procedure|decision_criterion|failure_condition|comparison_method","reason":"1文"}'
+  echo; echo '## 出力（最後にJSONだけ）'; echo '{"supported":true,"useful":true,"source_specific":true,"value_types":["procedure","failure_condition"],"reason":"1文"}'
 } >"$EV/prompt-verify.txt"
 if ! ask_model "$EV/prompt-verify.txt" "$EV/verify.raw" >"$EV/verify.json"; then
   report "❌ source-grounding criticの応答を読めなかったため投稿を見送り"
   finish 1 "source grounding critic failed"
 fi
-if [ "$("$PY" -c 'import json,sys; d=json.load(open(sys.argv[1])); print(d.get("supported") is True and d.get("useful") is True and d.get("value_type") in {"procedure","decision_criterion","failure_condition","comparison_method"})' "$EV/verify.json" 2>/dev/null)" != "True" ]; then
+if [ "$("$PY" -c 'import json,sys; d=json.load(open(sys.argv[1])); allowed={"procedure","decision_criterion","failure_condition","comparison_method"}; values=d.get("value_types") or []; print(d.get("supported") is True and d.get("useful") is True and d.get("source_specific") is True and len(set(values) & allowed) >= 2)' "$EV/verify.json" 2>/dev/null)" != "True" ]; then
   report "⚠️ 最終本文がsource支持または具体的な読者効用gateを満たさないため投稿を見送り"
   finish 0 "source grounding or utility critic rejected draft"
 fi
