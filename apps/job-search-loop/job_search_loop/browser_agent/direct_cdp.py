@@ -79,7 +79,13 @@ class DirectCDPPage:
                 self._events.append(message)
 
     async def evaluate(self, expression: str, arg: Any = _MISSING) -> Any:
-        source = expression if arg is _MISSING else f"({expression})({json.dumps(arg)})"
+        callable_expression = "=>" in expression or expression.lstrip().startswith(
+            ("function", "async function")
+        )
+        if arg is _MISSING:
+            source = f"({expression})()" if callable_expression else expression
+        else:
+            source = f"({expression})({json.dumps(arg)})"
         result = await self.call(
             "Runtime.evaluate",
             {
