@@ -338,6 +338,8 @@ Data Analyst `7785270416`には既存のlegacy Reel `https://www.instagram.com/r
 
 Telegram unified receiptのlive timeoutで、provider call後に`subprocess.TimeoutExpired`がescapeし、outbox `capafy-b3df16de6cf5a5db14f57842`がattempt `1`の`sending`へ固定される原因を実測する。sender timeoutは`DeliveryUncertain(sender_timeout)`へ変換し、provider message IDなし、retryなしで隔離する。processがreceipt JSON作成前に死んだexact replayは、既存receiptがあればそれを優先し、無ければoutboxを正本として復元する。`delivered`かつprovider IDありだけをdeliveredとしてmaterializeし、pending/sending/uncertainは再送も非delivered JSON書込みもしない。atomic receipt writeは同一directoryのunique owner-only tempfile、fsync、replaceへ変更する。timeout、missing receipt recovery、delivered/uncertain raceを含むfocused 9件とfresh reviewer `ship`を確認し、commits `e39d7176f`、`b8e3de68a`をmainへpushする。live固着行は再送せず`delivery_uncertain / sender_timeout_reconciled_no_retry`へ一回だけ収束済みである。
 
+GUI Aquaが存在しない間も既存4 ownerを同じLife Manager sourceから動かす一時fallbackとして`capafy-headless-bridge.sh`を追加する。bridgeはoutcomeを60秒、supply/goal/marketingを3600秒で呼び、単一instance lock、成功時だけのdurable timestamp、失敗retry、Aqua復帰時の全8 label readbackとhost-level handoffを持つ。goal/marketingのheadless flagはlaunchd自己収束だけをskipし、reconcile、slot、money、cadence、quality、post、receipt gateはskipしない。容量閾値、headroom gate、cleanupは持たない。focused 25件とfresh reviewer `ship`を確認し、commit `136a9f61f`をmainへpushする。実hostではAquaが復帰しpreflight `mutation_allowed=true`、8/8 label readbackが成功したためbridgeを二重起動せず、既存launchdのoutcome、supply、hourly goal、marketingをkickstartする。4本はすべてexit `0`、marketing loaded readbackは`run interval = 3600 seconds`、run `1`、last exit `0`。goalはfresh reconcileを保存し、33 total、22 listed、5 occupied、0 free、6 retry、orders `5`、gross `$19.98`、pending `$8.00`、realized/refunds `$0.00`、settled/net MRR `unknown`、Telegram `29340`を返す。timeout行は`delivery_uncertain`、attempt `1`、provider IDなしのままで再送0。marketingは2本のReel metricsを取得しlanding deploy `6a8a31c52f9c4abf2eb3d957`をproductionへ反映した後、20時間cadence gateで投稿0・rotation0の正常no-opになる。
+
 ## Atomic remaining TODO
 
 Items are executed top-to-bottom. Only one item is active.
@@ -366,17 +368,16 @@ Items are executed top-to-bottom. Only one item is active.
 | C19 | prove one listed transition frees a fresh slot | status=4 reduces occupied count and next hourly wake submits exactly one candidate | pending/event-driven — Portfolio `9480246345`を含む5件がoccupied、free 0。hourly ownerは3600秒ごとにwrite 0で監視し、accepted/rejectedでfree 1になった最初のwakeだけがFootball same-Agent `1037238583`を再提出する |
 | C20 | connect post/click/subscription windows without claiming causal proof | attribution row is candidate unless Capafy exposes order-level UTM/source | completed — live attribution v2 joins one IG post + 23 counters + Capafy snapshot; clicks 7; causal=false; subscription unknown; Netlify deploy `6a89b4126e21fe74286b7a79`; TG `29036` |
 | C21 | prove seven consecutive daily healthy terminals and hourly freshness | 7-day ledger has no stale source, duplicate Agent/version/post or missing Telegram receipt | observing — strict proof `0/7` because an earlier same-day failed execution correctly breaks the streak。run `9`はCAP_FULL/rc0/write0、false-green classifierはfocused 10件でfailure/invalidを非zeroへ写像する |
-| C22 | operate growth and retention experiments until settled net MRR reaches `$10,000` | active subscription readback and refunds/fees reconcile to target | **active** — unreadable state fail-openは`e40202978`、loaded cadence convergence false-greenは`36cdd0219`、Telegram timeout stuck-sending/replay raceは`e39d7176f` + `b8e3de68a`で閉じる。Data Analyst `7785270416`の既存`DcSwjsMIzpa`は承認済みquality contract前のlegacy creativeなので再利用しない。次はAqua receiptでloaded 3600秒とreplay再送0を確認後、repo-owned evidence、HyperFrames、scene-matched Andrew voiceで新creativeを一件だけrender/postし、別hash、native URL、Telegram media message ID、3本の同一window metricsを閉じる。5 ordersは`unattributed_sales`、settled MRR sourceは unavailable のためMRRをgrossから推定しない |
+| C22 | operate growth and retention experiments until settled net MRR reaches `$10,000` | active subscription readback and refunds/fees reconcile to target | **active** — unreadable state fail-openは`e40202978`、loaded cadence convergence false-greenは`36cdd0219`、Telegram timeout stuck-sending/replay raceは`e39d7176f` + `b8e3de68a`、Aqua不在fallbackは`136a9f61f`で閉じる。Aqua実receiptはloaded 3600秒、4 owner exit 0、timeout replay再送0を証明済み。Data Analyst `7785270416`の既存`DcSwjsMIzpa`は承認済みquality contract前のlegacy creativeなので再利用しない。次はcadenceが開いたwakeでrepo-owned evidence、HyperFrames、scene-matched Andrew voiceの新creativeを一件だけrender/postし、別hash、native URL、Telegram media message ID、3本の同一window metricsを閉じる。5 ordersは`unattributed_sales`、settled MRR sourceは unavailable のためMRRをgrossから推定しない |
 
 ### Remaining execution order
 
-1. C22-0: 次のAqua hourly goal-monitor receiptでloaded marketing serviceの`run interval = 3600 seconds`をreadbackし、収束失敗ならmonitor rc `2`、healthy continuation 0を確認する。
-2. C22-1: cadence gateが開いた最初のmarketing wakeでData Analystのrepo-owned evidenceから新しいHyperFrames + scene-matched Andrew voice MP4を一件だけrenderし、full-video inspectionと旧creative hash不一致を確認する。
-3. C22-2: 新しい同一bytesだけをInstagramへ一件投稿し、native Reel URL、Telegram media message ID、rotation commitをreadbackする。失敗時は投稿0・rotation0・heartbeat0でterminal failureにする。
-4. C22-3: metric windowでquality-approved 3 Reelsのreach、landing click、Agent sales snapshotを同じwindowへjoinする。order-level sourceが無ければcausal claimをfalseのまま保つ。
-5. C19-1: hourly inventoryでfree slotを初めて検出したwakeだけがFootball Agent `1037238583`をsame-Agent修正・再提出し、6件目のAgentを作らない。
-6. C21-1: 失敗を隠さないterminal ledgerで7 consecutive healthy daysを蓄積する。途中failureは0/7へ戻すが、C22の安全なgrowth workは停止しない。
-7. C22-4: settled active subscription sourceが取得できるまでmoney truthを`unknown`として監視し、取得後はrefund/fee控除後のnet MRRだけを`$10,000`へ加算する。
+1. C22-1: cadence gateが開いた最初のmarketing wakeでData Analystのrepo-owned evidenceから新しいHyperFrames + scene-matched Andrew voice MP4を一件だけrenderし、full-video inspectionと旧creative hash不一致を確認する。
+2. C22-2: 新しい同一bytesだけをInstagramへ一件投稿し、native Reel URL、Telegram media message ID、rotation commitをreadbackする。失敗時は投稿0・rotation0・heartbeat0でterminal failureにする。
+3. C22-3: metric windowでquality-approved 3 Reelsのreach、landing click、Agent sales snapshotを同じwindowへjoinする。order-level sourceが無ければcausal claimをfalseのまま保つ。
+4. C19-1: hourly inventoryでfree slotを初めて検出したwakeだけがFootball Agent `1037238583`をsame-Agent修正・再提出し、6件目のAgentを作らない。
+5. C21-1: 失敗を隠さないterminal ledgerで7 consecutive healthy daysを蓄積する。途中failureは0/7へ戻すが、C22の安全なgrowth workは停止しない。
+6. C22-4: settled active subscription sourceが取得できるまでmoney truthを`unknown`として監視し、取得後はrefund/fee控除後のnet MRRだけを`$10,000`へ加算する。
 
 ## Test matrix
 
