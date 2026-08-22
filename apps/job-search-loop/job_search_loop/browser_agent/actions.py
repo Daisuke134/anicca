@@ -61,8 +61,22 @@ class ActionExecutor:
             if action.kind == "click" and _FINAL_SUBMIT.match(action.target.label):
                 raise PermissionError("final Submit requires the SubmissionFence path")
             target = self._direct_target(action.target)
-            if action.kind in {"click", "choose"}:
+            if action.kind == "click":
                 await page.click_target(target)
+            elif action.kind == "choose":
+                if action.opener is None:
+                    raise ValueError("choose requires opener")
+                opener = self._direct_target(action.opener)
+                try:
+                    await page.click_target(target)
+                except RuntimeError:
+                    await page.click_target(opener)
+                    try:
+                        await page.click_target(target)
+                    except RuntimeError:
+                        target_without_ephemeral_id = dict(target)
+                        target_without_ephemeral_id["stable_id"] = ""
+                        await page.click_target(target_without_ephemeral_id)
             elif action.kind == "type":
                 if action.text is None:
                     raise ValueError("type requires text")

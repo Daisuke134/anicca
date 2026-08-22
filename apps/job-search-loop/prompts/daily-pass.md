@@ -28,7 +28,10 @@ Repeat this lifecycle; do not replace it with a fixed Workday page script:
 Critical picker invariant: when an unfilled required textbox has a visible related
 `options` button, it is a provider picker, not a narrative field. Do not type a fact
 or candidate concept first. Click that exact `options` button, inspect its returned
-post-click observation, and click one exact fresh visible option. If an earlier
+post-click observation, then use `runtime choose` with that same opener and one exact
+fresh visible option. `choose` atomically reopens short-lived provider overlays and
+commits the model-selected option; do not directly click an observed overlay option
+in a later process. If an earlier
 search left zero options, clear the textbox with one empty `kind=type` action, then
 click the fresh `options` button again. Never press Continue while that picker is
 unfilled, and never invent a runtime module or command to recover it.
@@ -60,6 +63,7 @@ Use only these runtime commands while a row is active:
 ```bash
 /opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime navigate --url "RETURNED_URL"
 /opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime click --label "EXACT_LABEL" --role "RETURNED_ROLE" --stable-id "RETURNED_STABLE_ID"
+/opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime choose --field-label "EXACT_PICKER_OPTIONS_LABEL" --field-role "button" --field-stable-id "RETURNED_PICKER_STABLE_ID" --option-label "EXACT_OPTION_LABEL" --option-role "RETURNED_OPTION_ROLE" --option-stable-id "RETURNED_OPTION_STABLE_ID"
 /opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime type --label "EXACT_LABEL" --role "RETURNED_ROLE" --stable-id "RETURNED_STABLE_ID" --candidate-concept "RETURNED_CONCEPT"
 /opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime upload --label "EXACT_LABEL" --role "RETURNED_ROLE" --stable-id "RETURNED_STABLE_ID"
 /opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime wait --milliseconds 6000
