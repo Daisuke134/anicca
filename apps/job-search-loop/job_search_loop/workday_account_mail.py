@@ -7,6 +7,7 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 from .browser_agent.workday_account import MachineWorkdayCredentialStore
+from .browser_agent.observation import ObservationBuilder
 from .browser_agent.session import BrowserSession
 from .workday_verification import (
     VerificationError,
@@ -52,18 +53,64 @@ async def complete_account_mail(
             password = MachineWorkdayCredentialStore(credential_store).load(
                 target.verification_url
             )["password"]
+            builder = ObservationBuilder(
+                session,
+                database.parent / "evidence" / f"account-mail-{target.message_id}",
+            )
+            observation = await builder.build(handle)
+            password_controls = [
+                control
+                for control in observation.controls
+                if control.type == "password" and control.role == "textbox"
+            ]
+            if len(password_controls) != 2:
+                raise VerificationError("Workday reset must expose two password controls")
+            verify_controls = [
+                control
+                for control in password_controls
+                if any(
+                    phrase in control.label.casefold()
+                    for phrase in ("verify", "confirm", "re-enter", "もう一度")
+                )
+            ]
+            if len(verify_controls) != 1:
+                raise VerificationError("Workday verify-password control is ambiguous")
+            verify_control = verify_controls[0]
+            password_control = next(
+                control for control in password_controls if control != verify_control
+            )
+            buttons = [
+                control
+                for control in observation.controls
+                if control.role == "button"
+                and any(
+                    phrase in control.label.casefold()
+                    for phrase in ("reset password", "save password", "パスワードをリセット")
+                )
+            ]
+            if len(buttons) != 1:
+                raise VerificationError("Workday reset action is ambiguous")
+
+            def target_for(control: object) -> dict[str, object]:
+                return {
+                    "label": control.label,
+                    "role": control.role,
+                    "stable_id": control.stable_id,
+                }
+
             await page.type_target(
-                {"label": "", "role": "textbox", "stable_id": "automation:password"},
+                target_for(password_control),
                 password,
             )
+            await builder.build(handle)
             await page.type_target(
-                {"label": "", "role": "textbox", "stable_id": "automation:verifyPassword"},
+                target_for(verify_control),
                 password,
             )
-            await page.click_target(
-                {"label": "", "role": "button", "stable_id": "automation:resetPasswordButton"}
-            )
+            await builder.build(handle)
+            await page.click_target(target_for(buttons[0]))
             await page.wait_for_timeout(5_000)
+            await builder.build(handle)
             current = page.url.casefold()
             visible = str(await page.evaluate("() => document.body.innerText")).casefold()
             if "passwordreset" in current or not (
