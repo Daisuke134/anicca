@@ -668,12 +668,32 @@ import json, sys
 selected = json.load(open(sys.argv[1], encoding="utf-8"))
 candidates = json.load(open(sys.argv[2], encoding="utf-8")).get("candidates", [])
 source = next((row for row in candidates if row.get("url") == selected.get("source_url")), None)
-quote = " ".join((selected.get("evidence_quote") or "").split())
-body = " ".join(((source or {}).get("text") or "").split())
+raw_quote = selected.get("evidence_quote") or ""
+raw_body = ((source or {}).get("text") or "")
+TYPOGRAPHY = str.maketrans({"‘": "'", "’": "'", "“": '"', "”": '"'})
+def searchable(value, keep_positions=False):
+    out, positions, spaced = [], [], False
+    for index, char in enumerate(value.translate(TYPOGRAPHY)):
+        if char.isspace():
+            if out and not spaced:
+                out.append(" "); positions.append(index)
+            spaced = True
+        else:
+            out.append(char); positions.append(index); spaced = False
+    if out and out[-1] == " ": out.pop(); positions.pop()
+    return ("".join(out), positions) if keep_positions else "".join(out)
+quote = searchable(raw_quote)
+body, body_positions = searchable(raw_body, keep_positions=True)
 reader_value = " ".join((selected.get("reader_value") or "").split())
-ok = bool(source and len(quote) >= 8 and quote in body and reader_value)
-json.dump({"ok": ok, "source_matched": bool(source), "exact_quote": bool(quote and quote in body),
-           "reader_value_present": bool(reader_value)}, sys.stdout)
+offset = body.find(quote) if quote else -1
+canonical_evidence = (raw_body[body_positions[offset]:body_positions[offset + len(quote) - 1] + 1]
+                      if offset >= 0 else "")
+exact_quote = bool(raw_quote and " ".join(raw_quote.split()) in " ".join(raw_body.split()))
+ok = bool(source and len(quote) >= 8 and offset >= 0 and reader_value)
+json.dump({"ok": ok, "source_matched": bool(source), "exact_quote": exact_quote,
+           "typography_equivalent": bool(offset >= 0 and not exact_quote),
+           "canonical_evidence": canonical_evidence,
+           "reader_value_present": bool(reader_value)}, sys.stdout, ensure_ascii=False)
 raise SystemExit(0 if ok else 1)
 PYEOF
 then
@@ -805,7 +825,7 @@ SRC_METRICS="$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1]))["me
   echo "明示的な意見、一般的な次の一手、書き手自身の失敗談は新しい外部事実ではない。"
   echo "URL、文体、viralらしさではなく事実支持だけを判定する。"
   echo; echo "## source"; cat "$EV/source.json"
-  echo; echo "## writerが選んだexact evidence"; "$PY" -c 'import json,sys; d=json.load(open(sys.argv[1])); print(d.get("evidence_quote","")); print(d.get("reader_value",""))' "$EV/select.json"
+  echo; echo "## sourceから解決したexact evidence"; "$PY" -c 'import json,sys; print(json.load(open(sys.argv[1])).get("canonical_evidence","")); d=json.load(open(sys.argv[2])); print(d.get("reader_value",""))' "$EV/grounding.json" "$EV/select.json"
   echo; echo "## final post"; cat "$EV/post.txt"
   echo; echo '## 出力（最後にJSONだけ）'; echo '{"supported":true,"reason":"1文"}'
 } >"$EV/prompt-verify.txt"
