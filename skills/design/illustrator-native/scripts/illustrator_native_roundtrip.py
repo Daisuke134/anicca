@@ -63,11 +63,11 @@ def _ensure_responsive() -> None:
 
 def _open(path: Path) -> None:
     # Illustrator 30.7 can finish opening a PDF while leaving the synchronous
-    # `app.open()` Apple event unanswered.  Ask LaunchServices to open the exact
-    # file, then bind to it through a separate short readback instead.
+    # `app.open()` JavaScript call unanswered. Use Illustrator's native Apple
+    # Event open command, then bind through a separate short readback.
     subprocess.run(
-        ["open", "-a", str(APP_PATH), str(path)],
-        check=True, timeout=30,
+        ["osascript", "-e", f'tell application id "{APP_ID}" to open POSIX file {json.dumps(str(path))}'],
+        check=True, capture_output=True, text=True, timeout=30,
     )
     for _ in range(60):
         try:
