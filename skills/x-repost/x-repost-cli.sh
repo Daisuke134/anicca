@@ -235,9 +235,10 @@ PYEOF
 # Select at most one recent terminal row for readback only. Its source is already consumed, and
 # this path never opens the composer or retries the external effect.
 GENERIC_RECOVERY="$EV/generic-recovery.json"
-"$PY" - "$POSTED" "$GENERIC_RECOVERY" "${X_REPOST_UNVERIFIED_RECOVERY_HOURS:-6}" <<'PYEOF'
+GENERIC_READBACK_VERSION="quote-card-div-v1"
+"$PY" - "$POSTED" "$GENERIC_RECOVERY" "${X_REPOST_UNVERIFIED_RECOVERY_HOURS:-6}" "$GENERIC_READBACK_VERSION" <<'PYEOF'
 import datetime, hashlib, json, sys
-posted, target, hours = sys.argv[1:4]
+posted, target, hours, readback_version = sys.argv[1:5]
 cutoff = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=float(hours))
 selected = None
 for line in open(posted, encoding="utf-8"):
@@ -247,7 +248,8 @@ for line in open(posted, encoding="utf-8"):
     except (ValueError, TypeError, json.JSONDecodeError):
         continue
     if (row.get("kind") == "original" and row.get("status") == "unverified"
-            and not row.get("post_url") and not row.get("readback_checked_at") and at >= cutoff):
+            and not row.get("post_url") and row.get("readback_version") != readback_version
+            and at >= cutoff):
         selected = row
 if selected:
     selected["row_sha256"] = hashlib.sha256(json.dumps(
@@ -379,9 +381,9 @@ PYEOF
     report "✅ Original recovered from readback without duplicate publish\npost: $GENERIC_POST_URL"
     finish 0 "generic original reconciled without duplicate publish"
   fi
-  if ! "$PY" - "$POSTED" "$GENERIC_RECOVERY" <<'PYEOF'
+  if ! "$PY" - "$POSTED" "$GENERIC_RECOVERY" "$GENERIC_READBACK_VERSION" <<'PYEOF'
 import datetime, fcntl, hashlib, json, os, sys, tempfile
-posted, recovery_path = sys.argv[1:3]
+posted, recovery_path, readback_version = sys.argv[1:4]
 recovery = json.load(open(recovery_path, encoding="utf-8"))["row"]
 expected = recovery.pop("row_sha256")
 with open(posted, "r+", encoding="utf-8") as lock:
@@ -393,8 +395,9 @@ with open(posted, "r+", encoding="utf-8") as lock:
             row, sort_keys=True, separators=(",", ":"), ensure_ascii=False
         ).encode()).hexdigest()
         if (digest == expected and row.get("status") == "unverified"
-                and not row.get("post_url") and not row.get("readback_checked_at")):
+                and not row.get("post_url") and row.get("readback_version") != readback_version):
             row["readback_checked_at"] = datetime.datetime.now().astimezone().isoformat()
+            row["readback_version"] = readback_version
             changed += 1
         rows.append(row)
     if changed != 1: raise SystemExit(1)
