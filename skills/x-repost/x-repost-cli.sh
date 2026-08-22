@@ -24,7 +24,6 @@ REPO_ROOT="$(cd "$SKILL/../.." && pwd)"
 STATE="${X_REPOST_STATE_DIR:-$SKILL/state}"
 POSTED="$STATE/posted.jsonl"
 PY=/opt/homebrew/bin/python3; [ -x "$PY" ] || PY=python3
-UV="$(command -v uv || echo "$HOME/.local/bin/uv")"
 CODEX="$(command -v codex || echo "$HOME/.local/bin/codex")"
 IDENTITY="${X_REPOST_BROWSER_IDENTITY:-x:anicca}"
 # x-repost is Codex-only: Claude's subscription ceiling must not be able to stall this loop.
@@ -167,15 +166,21 @@ raise SystemExit(1)
 PYEOF
 }
 
-# Prefer the already-installed runtime dependency. `uv run` remains the portable fallback, but
-# making it the unconditional path forced a Playwright wheel download after every cache cleanup
-# and turned low disk into a failed posting pass even though system Python was already ready.
-run_x_post() {
-  if "$PY" -c 'import playwright' >/dev/null 2>&1; then
-    "$PY" "$SKILL/scripts/x_post.py" "$@"
-  else
-    "$UV" run --quiet "$SKILL/scripts/x_post.py" "$@"
+# Publishing and collection share the release-installed Python runtime. Never resolve or download
+# dependencies inside a live pass: a cache miss otherwise turns disk/network state into a posting
+# failure even when the host runtime is already healthy.
+run_x_script() {
+  local script="$1"
+  shift
+  if ! "$PY" -c 'import playwright' >/dev/null 2>&1; then
+    echo "x-repost: installed Python runtime is missing playwright" >&2
+    return 1
   fi
+  "$PY" "$SKILL/scripts/$script" "$@"
+}
+
+run_x_post() {
+  run_x_script x_post.py "$@"
 }
 
 # ---------------------------------------------------------------- gate: CEO registry + budget
@@ -576,7 +581,7 @@ if [ "${X_REPOST_DAILY_MAX:-0}" -gt 0 ] \
 fi
 
 # ---------------------------------------------------------------- 1. recon
-if ! "$UV" run --quiet "$SKILL/scripts/x_collect.py" --cdp "$CDP" --mode recon \
+if ! run_x_script x_collect.py --cdp "$CDP" --mode recon \
       --queries "$SKILL/config/queries.txt" --posted "$POSTED" >"$EV/candidates.json" 2>>"$EV/collect.err"; then
   report "❌ recon failed — $(tail -1 "$EV/collect.err" 2>/dev/null)"
   finish 1 "recon failed"
@@ -590,7 +595,7 @@ if [ "${CAND_COUNT:-0}" -eq 0 ]; then
 fi
 
 # ---------------------------------------------------------------- 2. engagement feedback
-"$UV" run --quiet "$SKILL/scripts/x_collect.py" --cdp "$CDP" --mode engagement \
+run_x_script x_collect.py --cdp "$CDP" --mode engagement \
   --posted "$POSTED" >"$EV/engagement.json" 2>>"$EV/collect.err" || log "engagement refresh failed (non-fatal)"
 
 # top performers become the few-shot for this pass (most recent 10 considered, best 5 shown)
