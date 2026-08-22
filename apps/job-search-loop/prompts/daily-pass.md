@@ -54,6 +54,10 @@ For a typed field use one exact name from the returned `candidate_concepts` list
 `candidate_concept` instead of putting its private value in the action file. Never
 guess a concept name and never inspect source or Candidate Memory to discover names.
 Repeat from each returned fresh observation.
+Workday `input[data-uxi-widget-type="selectinput"]` is a custom combobox, never a
+native select: click the input, observe, then use `runtime click` on the exact
+returned option label (including `checked` or `not checked`) and its stable ID.
+Use action kind `select` only when the observed control tag is literally `select`.
 While any collected row still has steps, do not run web
 search, multi-source discovery, inspect historical runs, read tests, or reread source
 modules unless a named runtime API has just raised an exception that requires that
