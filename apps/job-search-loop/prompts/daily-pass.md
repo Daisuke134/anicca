@@ -48,6 +48,9 @@ not spend an action or inspect source to construct a checkpoint.
 Then use exactly `/opt/homebrew/bin/python3 -m
 job_search_loop.browser_agent.runtime report --status checkpointed`; require its real
 `message_id`, return the row outcome, and do not inspect queue/reporting source.
+After a successful report, never call `observe` for that row again in the same wake;
+the runtime marks it wake-complete and the next hourly scratch directory makes it
+eligible for retry automatically.
 
 This process is the existing `ai.anicca.job-search-daily` launchd owner. Do not
 start another launchd job, agent runner, or Chromium process. Read the JSON path in

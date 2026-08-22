@@ -66,6 +66,31 @@ def _decision_path() -> Path:
     return _path_env("JOB_SEARCH_BROWSER_SCRATCH") / "last-decision.json"
 
 
+def _wake_completed_path() -> Path:
+    return _path_env("JOB_SEARCH_BROWSER_SCRATCH") / "completed-rows.json"
+
+
+def _wake_completed() -> set[str]:
+    path = _wake_completed_path()
+    if not path.exists():
+        return set()
+    if path.stat().st_mode & 0o077:
+        raise RuntimeError("wake completed-row state must be private")
+    value = json.loads(path.read_text(encoding="utf-8"))
+    return {str(item) for item in value.get("application_ids", [])}
+
+
+def _mark_wake_completed(application_id: str) -> None:
+    path = _wake_completed_path()
+    completed = _wake_completed()
+    completed.add(application_id)
+    path.write_text(
+        json.dumps({"application_ids": sorted(completed)}, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    os.chmod(path, 0o600)
+
+
 def _decision_signature(observation_sha256: str, action_path: Path) -> str:
     return hashlib.sha256(
         observation_sha256.encode("ascii") + b"\0" + action_path.read_bytes()
@@ -116,7 +141,12 @@ def _wake_budget(*, consume: bool = False) -> int:
 def _row() -> dict[str, Any]:
     ledger = Ledger(_path_env("JOB_SEARCH_STATE_ROOT") / "ledger.sqlite3")
     try:
-        rows = RowQueueSupervisor.collect(ledger)
+        completed = _wake_completed()
+        rows = [
+            row
+            for row in RowQueueSupervisor.collect(ledger)
+            if row["application_id"] not in completed
+        ]
     finally:
         ledger.close()
     if not rows:
@@ -487,6 +517,8 @@ def report(status: str) -> dict[str, Any]:
         ),
         evidence_classes={},
     )
+    if result.get("status") == "sent" and result.get("message_id"):
+        _mark_wake_completed(row["application_id"])
     return {
         "status": result.get("status"),
         "message_id": result.get("message_id"),
