@@ -84,3 +84,39 @@ def test_missing_identity_fails_closed() -> None:
 
     assert result["readable"] is False
     assert result["counts"]["free"] is None
+
+
+def test_allocator_contract_is_bounded_and_replay_stable() -> None:
+    module = load_module()
+    retry = {"agent_id": "rejected-1", "title": "Fix Me"}
+    fresh = {"feature": "capafy-o1-fresh", "title": "Fresh Skill"}
+    cases = [
+        ({"readable": False, "counts": {"occupied": None}}, [retry], [fresh], "SERVER_UNREADABLE", None),
+        ({"readable": True, "counts": {"occupied": 5}}, [retry], [fresh], "PUBLISHABLE", "retry_existing"),
+        ({"readable": True, "counts": {"occupied": 5}}, [], [fresh], "CAP_FULL", None),
+        ({"readable": True, "counts": {"occupied": 4}}, [], [fresh], "PUBLISHABLE", "create_fresh"),
+        ({"readable": True, "counts": {"occupied": 4}}, [], [], "DRAINED", None),
+    ]
+
+    for normalized, retries, publishable, verdict, action in cases:
+        first = module.allocate_action(normalized, retries, publishable)
+        replay = module.allocate_action(normalized, retries, publishable)
+        assert first == replay
+        assert first["verdict"] == verdict
+        assert first.get("action") == action
+        assert int(first.get("action") is not None) <= 1
+
+
+def test_allocator_selects_only_one_deterministic_candidate() -> None:
+    module = load_module()
+    normalized = {"readable": True, "counts": {"occupied": 0}}
+    candidates = [
+        {"feature": "capafy-o2", "title": "Second"},
+        {"feature": "capafy-o1", "title": "First"},
+    ]
+
+    decision = module.allocate_action(normalized, [], candidates)
+
+    assert decision["action"] == "create_fresh"
+    assert decision["action_key"] == "create:capafy-o1"
+    assert decision["item"]["feature"] == "capafy-o1"

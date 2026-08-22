@@ -97,6 +97,36 @@ def normalize_agents(agents):
     return {"readable": structurally_valid, "counts": counts, "agents": normalized}
 
 
+def allocate_action(normalized, retries, publishable):
+    """Choose at most one stable action without performing any platform write."""
+    if not normalized.get("readable"):
+        return {"verdict": "SERVER_UNREADABLE"}
+    occupied = (normalized.get("counts") or {}).get("occupied")
+    if not isinstance(occupied, int) or isinstance(occupied, bool) or occupied < 0:
+        return {"verdict": "SERVER_UNREADABLE"}
+    if retries:
+        item = min(retries, key=lambda row: (str(row.get("agent_id") or ""), str(row.get("title") or "")))
+        return {
+            "verdict": "PUBLISHABLE",
+            "reason": "review_rejected retry",
+            "action": "retry_existing",
+            "action_key": f"retry:{item['agent_id']}",
+            "item": item,
+        }
+    if occupied >= CAP:
+        return {"verdict": "CAP_FULL", "occupied": occupied}
+    if publishable:
+        item = min(publishable, key=lambda row: (str(row.get("feature") or ""), str(row.get("title") or "")))
+        identity = item.get("feature") or item.get("title")
+        return {
+            "verdict": "PUBLISHABLE",
+            "action": "create_fresh",
+            "action_key": f"create:{identity}",
+            "item": item,
+        }
+    return {"verdict": "DRAINED"}
+
+
 def server_agents():
     """Return list of server agents, or None on read failure."""
     try:
@@ -191,15 +221,15 @@ def main():
     ready_titles = {it["title"] for it in items}
     retryable_rejected = [a for a in rejected if (a.get("name") or "").strip() in ready_titles]
 
-    if retryable_rejected:
-        v = {"verdict": "PUBLISHABLE", "reason": "review_rejected retry",
-             "item": {"agent_id": str(retryable_rejected[0].get("agentId")), "title": (retryable_rejected[0].get("name") or "").strip()}}
-    elif len(unlisted) >= CAP:
-        v = {"verdict": "CAP_FULL", "unlisted": len(unlisted)}
-    elif publishable:
-        v = {"verdict": "PUBLISHABLE", "item": {k: publishable[0][k] for k in ("feature", "title", "icon", "listing")}}
-    else:
-        v = {"verdict": "DRAINED"}
+    retry_items = [
+        {"agent_id": str(agent.get("agentId")), "title": (agent.get("name") or "").strip()}
+        for agent in retryable_rejected
+    ]
+    fresh_items = [
+        {key: item[key] for key in ("feature", "title", "icon", "listing")}
+        for item in publishable
+    ]
+    v = allocate_action(normalized, retry_items, fresh_items)
 
     v.update({
         "online_count": len(online_titles),
