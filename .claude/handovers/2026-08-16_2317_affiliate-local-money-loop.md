@@ -2023,3 +2023,21 @@ non-money. Next atom: after the provider cooldown is due, safe-kick only
 `ai.anicca.affiliate-loop` and read the current PartnerStack report so the
 X-entry interval can leave `WAITING_FOR_CURRENT_PROVIDER_READBACK`; then continue
 until an official exact-placement transaction proves the money lifecycle.
+
+That provider atom is now closed. Affiliate owner run 90 captured a current
+official PartnerStack report at `2026-08-22T14:24:12.794368+00:00`; commission
+rows remain zero. Interval receipt
+`83c775c34920ab6ef98c9132eed84dc46e1db9e74969ec45d026666c535cf815`
+joins Subtitle Translator, Voice Changer, and Voice Isolator exactly. Each has
+X-owned entries 0, CTA clicks 0, provider click delta 0, unique-click delta 0,
+and transactions 0; Telegram message is `29014`. This is observed zero, not an
+unknown wait and not money. Separately, Repost commit `59619a6a7` is pushed to
+both remotes and installed as `20260822T232112-59619a6a`. It preserves the first
+daily original guarantee and adds post-minimum `original_ratio=0.15`, allowing
+multiple source-backed originals per day instead of the prior hard maximum of
+one. Source/runtime CLI SHA-256 is
+`949823b93a978618e07f019f896199cd63c02dfba9c036e7e764eac2f5df4e82`;
+21 focused tests and shell syntax pass. Next atom: let the existing hourly owner
+exercise the installed multi-original selector and exact-read its effect; keep
+daily measurement/strategy updates running while waiting for the first official
+transaction lifecycle.

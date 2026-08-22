@@ -51,7 +51,10 @@ backlog is:
    `https://x.com/ClaudeCode_love/status/2090977505654235170`. The exact row is
    appended to `posted.jsonl`; the owner exited `0`. This is distribution, not money.
 4. **X04 — DONE FOR FIRST DAY, RECURRING OWNER CONTRACT:** ship one original evidence/help post
-   per JST day, plus bounded high-value replies/quotes. The daily ordinary-action
+   per JST day, plus bounded additional originals and high-value replies/quotes.
+   Repost release `59619a6a7` adds a state `original_ratio` with default `0.15`
+   after the daily minimum; on a fully available hourly schedule this is roughly
+   four originals per day in expectation rather than a hard maximum of one. The daily ordinary-action
    ceiling reserves exactly the missing original even when replies/quotes have
    already filled that ceiling; after an original exists it grants no extra
    action. Affiliate distribution is a minority lane and is not allowed to
@@ -84,10 +87,10 @@ backlog is:
    queued and never converts a post, view, or click into money.
 
 Current live checkpoint: immutable sparse release
-`20260822T230907-8b28f5e3` is installed from commit
-`8b28f5e3e50c6308366bc51c5494b8055c526bfc`, pushed to both Repost remotes.
+`20260822T232112-59619a6a` is installed from commit
+`59619a6a7`, pushed to both Repost remotes.
 Source/runtime `x-repost-cli.sh` is byte-equal at SHA-256
-`7c8e2a4fd04532e89f8a8ee9acd97431ed7d8e27305cf473aed90da5fd64eed3`.
+`949823b93a978618e07f019f896199cd63c02dfba9c036e7e764eac2f5df4e82`.
 Its versioned readback lets a newer exact verifier inspect an old terminal row
 once, then records the verifier version on an unresolved row so it cannot retry
 forever. Run 33 read back the 22:13 source-backed original at exact permalink
@@ -120,24 +123,29 @@ current execution order, not a menu:
    Subtitle Translator, Voice Isolator, and Voice Changer each have exact
    `count=0 / state=OBSERVED / source=X`; this is observed zero acquisition,
    not unknown and not money.
-4. Join entry receipt -> owned article -> existing CTA receipt -> PartnerStack
-   provider click -> official transaction ID at exact `placement_id`.
+4. **DONE FOR THE FIRST CURRENT INTERVAL:** join entry receipt -> owned article
+   -> existing CTA receipt -> PartnerStack provider click -> official transaction
+   count at exact `placement_id`; receipt `83c775c3…f815` proves observed zeros.
 5. Promote only mature approved-or-paid net experiments; stop formats with no
    qualified traffic or transaction evidence. Views and clicks remain non-money.
 6. Capture the first official transaction and replay its
    pending/approved/paid/reversed, currency, reversal, real cost, denominator,
    and rolling 30-day USD 10,000 net in the canonical ledger and Telegram.
 
-Affiliate owner run 86 is the latest economic readback: 76 X post actions, five
-exact placement joins, 71 unjoined actions, zero invalid rows, CTA and interval
+Affiliate owner run 90 is the latest economic readback: 77 X post actions, five
+exact placement joins, 72 unjoined actions, zero invalid rows, CTA and interval
 funnel `OBSERVED`, owned visits
 `UNAVAILABLE / NETLIFY_WEB_ANALYTICS_DISABLED`, and official PartnerStack
 commission/payout rows remain empty. Pending, approved, paid, and reversed are all zero;
 rolling money is `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`,
-cost remains `UNKNOWN`. First-party X-owned entries are now observed at zero for
-all three focused placements; interval join is
-`WAITING_FOR_CURRENT_PROVIDER_READBACK`. The recovered 76th X row, every view,
-entry, and click are non-money.
+cost remains `UNKNOWN`. First-party X-owned entries are observed at zero for all
+three focused placements. Current official PartnerStack report time is
+`2026-08-22T14:24:12.794368+00:00`, after the measured interval. Immutable
+interval receipt `83c775c34920ab6ef98c9132eed84dc46e1db9e74969ec45d026666c535cf815`
+closes the join as `OBSERVED`: each exact placement has X entry 0, CTA click 0,
+provider click delta 0, unique-click delta 0, and transaction 0. Customer count
+remains unavailable at exact placement rather than invented as zero. Telegram
+message is `29014`. All 77 X rows, every view, entry, and click are non-money.
 
 The prior acquisition release bounds readback-only recovery of terminal
 `UNVERIFIED` proposals to six hours. This preserves immediate recovery of an X
