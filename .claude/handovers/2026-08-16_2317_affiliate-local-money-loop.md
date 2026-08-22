@@ -1,5 +1,15 @@
 # Affiliate local money loop handover
 
+- Repost Telegram is now live-repaired. Commit `57a95b2ba` is pushed to both
+  Repost remotes and immutable release `20260822T183315-57a95b2b` is current.
+  It matches the proven Affiliate transport contract with the full
+  `--message` option and a 30-second provider window. Existing Repost owner run
+  13 exited `0`, kept `posted.jsonl` at `70 -> 70`, flushed exactly one queued
+  report (`21 -> 20`), and read back real Telegram `dryRun=false`, `ok=true`,
+  provider message ID `28605`. The hourly fence then exited without a public X
+  effect. Voice Cloning `bb5c8fbd...bae7` remains READY/UNCONSUMED for the next
+  eligible hour. This Telegram receipt is non-money.
+
 - Repost Telegram transport repair: commit `0d55a1650` is pushed to both
   Repost remotes and immutable release `20260822T183116-0d55a165` is current
   with source/runtime CLI SHA-256

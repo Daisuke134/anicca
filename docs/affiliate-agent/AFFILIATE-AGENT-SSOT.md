@@ -56,6 +56,11 @@ and rejects an absent destination instead of sending to a placeholder. This is
 source/runtime verified but remains live-unverified until the existing Repost
 owner returns a provider message ID; Codex does not send the report directly.
 
+Live override: Repost release `57a95b2ba` supersedes `0d55a1650`. Existing
+owner run 13 proved the repaired transport with exactly one backlog flush,
+provider message ID `28605`, `dryRun=false`, and no X-post ledger change. The
+remaining backlog is 20 rows and stays bounded to one flush per owner run.
+
 ## 0. Objective
 
 Anicca is the company; Life Manager is the product, autonomous agent, and
