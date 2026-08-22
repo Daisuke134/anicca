@@ -176,6 +176,10 @@ def _close_no_contact_action(
     outbox: ConnectorOutbox, action: dict[str, Any], *, policy_id: str, now: int,
 ) -> dict[str, Any]:
     action_id = int(action["action_id"])
+    if action.get("dlq_at") is not None:
+        action = outbox.requeue_closed_action(
+            action_id, now=now, require_no_intent=True,
+        )
     owner = f"gig-no-contact-{action_id}"
     claimed = outbox.claim(owner=owner, now=now, lease_seconds=30, action_id=action_id)
     if claimed is None:

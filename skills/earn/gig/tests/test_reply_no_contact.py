@@ -16,8 +16,15 @@ class FakeOutbox:
     def __init__(self):
         self.actions = {}
         self.closed = []
+        self.revived = []
 
     def enqueue(self, *, event_key, thread_id, thread_url, observed_at):
+        duplicate = next(
+            (action for action in self.actions.values() if action["event_key"] == event_key),
+            None,
+        )
+        if duplicate is not None:
+            return duplicate
         action = {
             "action_id": len(self.actions) + 1, "event_key": event_key,
             "thread_id": thread_id, "thread_url": thread_url, "state": "pending",
@@ -37,6 +44,15 @@ class FakeOutbox:
             "action_id": action_id, "owner": owner,
             "fencing_token": fencing_token, "reason": reason, "now": now,
         })
+
+    def requeue_closed_action(self, action_id, *, now, require_no_intent=False):
+        action = self.actions[action_id]
+        action["dlq_at"] = None
+        self.revived.append({
+            "action_id": action_id, "now": now,
+            "require_no_intent": require_no_intent,
+        })
+        return action
 
 
 def _registry(tmp_path):
@@ -89,3 +105,25 @@ def test_effect_fence_closes_stale_queued_action_without_calling_worker(tmp_path
     )
     assert result["status"] == "ignore_policy"
     assert len(outbox.closed) == 1
+
+
+def test_head_policy_revives_matching_dlq_event_before_durable_closure(tmp_path):
+    outbox = FakeOutbox()
+    action = outbox.enqueue(
+        event_key="coconala:inbox:v1:90001:sha256_v1:" + "a" * 64,
+        thread_id="90001",
+        thread_url="https://coconala.com/mypage/direct_message/90001",
+        observed_at=900,
+    )
+    action["dlq_at"] = 950
+
+    result = detector.partition_no_contact_rows([{
+        "talkroom_id": "90001",
+        "last_message_identity_sha256": "a" * 64,
+    }], registry_path=_registry(tmp_path), outbox=outbox, now=1000)
+
+    assert result["ignored"][0]["status"] == "ignore_policy"
+    assert outbox.revived == [{
+        "action_id": 1, "now": 1000, "require_no_intent": True,
+    }]
+    assert outbox.closed[0]["reason"] == "ignore_policy:operator-owned-1"
