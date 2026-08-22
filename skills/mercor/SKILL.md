@@ -41,6 +41,8 @@ Treat this as a provider module for any operator, not as a shared account or a g
 
 The loop owns recurring discovery, ready-form submission, Gmail/Calendar reconciliation, reminders, evidence, duplicate protection, and settled-earnings accounting. It does not impersonate interviews, assessments, or paid work where Mercor prohibits AI/automation. `$10K verified` means three consecutive cycles of actual settled payouts, not an offer or an estimated capacity.
 
+The execution style is model-led: observe the live page, reason about the next action, and adapt to page drift. Keep deterministic code small and boundary-focused—owned browser session, domain allowlist, lease, dedupe, one guarded submit, read-back, evidence, and ledger. Do not turn every possible UI branch into a brittle script.
+
 ## Calendar policy
 
 - Reuse `apps/job-search-loop/job_search_loop/interview_scheduling.py` and `calendar_sync.py` for every Mercor interview, regardless of locale.

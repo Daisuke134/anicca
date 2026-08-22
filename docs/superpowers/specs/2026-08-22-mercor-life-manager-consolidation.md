@@ -97,6 +97,35 @@ Current ready queue observed in Mercor:
 
 Japanese language / cultural fluency Evaluator and Software / AI / IT / data Evaluator are already submitted and excluded from the queue.
 
+## 6.3 Model-led execution decision
+
+The Mercor macro loop must be model-led rather than a large selector script. The model observes the live page, decides the next safe action from the task packet, and adapts when the page changes. Deterministic code owns only the boundaries that must not drift: operator/profile isolation, lease ownership, approved domains, application dedupe, the single irreversible submit wrapper, read-back, evidence, and ledger writes.
+
+### OSS code evidence and adopted patterns
+
+The implementation comparison was performed against fixed public commits:
+
+| OSS | Fixed commit | Observed mechanism | Adoption decision |
+|---|---|---|---|
+| `browser-use/browser-use` | `85ddbfedf609166b2d2c76c3d80506649fee82a9` | Model-led `Agent` loop; `AgentState`; `BrowserStateSummary`; short/long browser error memory; domain-filtered `ActionRegistry`; structured output schema; failure/loop budgets | Adopt the state/error/action-boundary pattern; do not copy the whole runtime |
+| `browserbase/stagehand` | `a21633d53930abc5d62b8dbd6b608995f2ccb4b1` | Narrow `observe`, `act`, and schema-validated `extract` verbs over an owned browser session; explicit session cleanup | Adopt the narrow verbs and extraction contract; keep the existing Life Manager CDP owner |
+
+The selected call graph is:
+
+```text
+existing launchd wake
+  → job-hunter loop lease
+  → runtime/agent-runner (model-led Mercor prompt)
+  → observe live Mercor page
+  → model selects next grounded action
+  → guard validates domain/state/dedupe
+  → act through owned browser session
+  → extract success/read-back
+  → deterministic evidence + ledger append
+```
+
+Do not encode every Mercor selector, role title, or page branch in shell/Python. When a page changes, the model re-observes and returns a structured `blocked`, `needs_human`, `submitted`, or `observed_no_action` result. A bounded retry may re-observe; it may not repeat an ambiguous submit.
+
 ## 6.2 Open-source reusable macro loop
 
 The Mercor lane is a reusable open-source macro loop for any operator, not a promise that every operator will earn $10K. Each operator supplies their own private inputs and completes identity-bound steps; the shared code owns the repeatable orchestration.
@@ -177,3 +206,6 @@ Do not delete or archive the migration source until all are true:
 14. [ ] Add redacted multi-operator fixtures and tests for dedupe, `3/3` submit, Gmail→Calendar idempotency, payout reconciliation, and privacy boundaries.
 15. [ ] Run the complete loop on Dais first: two submitted applications, one additional ready queue item, one Calendar/inbox event, and a real payout read-back.
 16. [ ] Publish the open-source setup/runbook after secret scan, fresh-install test, and a second non-Dais fixture pass.
+17. [ ] Add a model-led `mercor_pass` prompt and structured result schema to the existing `runtime/agent-runner` route.
+18. [ ] Add one deterministic submit guard (`3/3 + visible Submit + ledger dedupe`) and one post-submit read-back guard; keep all other navigation model-led.
+19. [ ] Add browser-use/Stagehand-inspired state/error fixtures: page drift, stale tab, transient failure, ambiguous submit, and successful read-back.
