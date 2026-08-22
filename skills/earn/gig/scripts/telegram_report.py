@@ -2048,23 +2048,30 @@ class OpenClawTelegramTransport:
     def send_report(self, message: str, *, event_key: str) -> str:
         message_id = send_email_if_configured(message, event_key=event_key, run=self.run)
         if message_id is None:
-            completed = self.run(
-                [
-                    str(self.executable), "message", "send",
-                    "--channel", "telegram", "--target", self.target,
-                    "--message", message, "--json",
-                ],
-                stdin=subprocess.DEVNULL,
-                capture_output=True,
-                text=True,
-                timeout=60,
-                check=False,
-            )
-            if completed.returncode != 0:
-                raise RuntimeError(f"Telegram transport failed rc={completed.returncode}")
+            command = [
+                str(self.executable), "message", "send",
+                "--channel", "telegram", "--target", self.target,
+                "--message", message, "--json",
+            ]
             try:
-                result = json.loads(completed.stdout)
-            except json.JSONDecodeError as error:
+                completed = self.run(
+                    command, stdin=subprocess.DEVNULL, capture_output=True,
+                    text=True, timeout=60, check=False,
+                )
+                if completed.returncode != 0:
+                    raise RuntimeError(
+                        f"Telegram transport failed rc={completed.returncode}"
+                    )
+                provider_output = completed.stdout
+            except subprocess.TimeoutExpired as error:
+                provider_output = error.stdout
+                if not provider_output:
+                    raise
+            if isinstance(provider_output, bytes):
+                provider_output = provider_output.decode("utf-8", errors="strict")
+            try:
+                result = json.loads(provider_output)
+            except (TypeError, UnicodeDecodeError, json.JSONDecodeError) as error:
                 raise RuntimeError("Telegram transport returned invalid JSON") from error
             payload = result.get("payload") if isinstance(result, dict) else None
             if isinstance(payload, dict) and payload.get("ok") is False:

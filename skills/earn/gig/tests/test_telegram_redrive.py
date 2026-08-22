@@ -2,7 +2,10 @@
 
 Run: python3 -m pytest skills/earn/gig/tests/test_telegram_redrive.py
 """
+import hashlib
+import json
 import sqlite3
+import subprocess
 import sys
 from contextlib import closing
 from pathlib import Path
@@ -11,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
 from telegram_outbox import TelegramOutbox  # noqa: E402
 from telegram_report import (  # noqa: E402
+    OpenClawTelegramTransport,
     ready_report_ids_for_kinds,
     report_kinds_for_command,
 )
@@ -148,3 +152,28 @@ def test_reply_wake_drain_never_selects_paid_rows(tmp_path):
 
     assert selected == [int(reply["report_id"])]
     assert int(paid["report_id"]) not in selected
+
+
+def test_timeout_with_provider_ack_persists_receipt(tmp_path):
+    event_key = "gig:telegram:reply:v2:412:6"
+    message = "verified reply"
+
+    def timed_out(command, **_kwargs):
+        raise subprocess.TimeoutExpired(
+            command, 60, output=b'{"messageId":"29117"}\n',
+        )
+
+    transport = OpenClawTelegramTransport(
+        target="8547730585", run=timed_out,
+        receipt_dir=tmp_path / "receipts", now_ms=lambda: 123456,
+    )
+
+    assert transport.send_report(message, event_key=event_key) == "29117"
+    receipt = json.loads((
+        tmp_path / "receipts" /
+        f"{hashlib.sha256(event_key.encode()).hexdigest()}.json"
+    ).read_text(encoding="utf-8"))
+    assert receipt["message_id"] == "29117"
+    assert receipt["event_key"] == event_key
+    assert receipt["target"] == "8547730585"
+    assert receipt["message_sha256"] == hashlib.sha256(message.encode()).hexdigest()
