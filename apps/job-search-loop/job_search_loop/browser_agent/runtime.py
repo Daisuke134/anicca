@@ -331,6 +331,16 @@ async def act(action_path: Path) -> dict[str, Any]:
         return await _act_locked(action_path)
 
 
+async def navigate(url: str) -> dict[str, Any]:
+    path = _path_env("JOB_SEARCH_BROWSER_SCRATCH") / "runtime-navigate.json"
+    path.write_text(
+        json.dumps({"kind": "navigate", "url": url}, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    os.chmod(path, 0o600)
+    return await act(path)
+
+
 async def checkpoint(reason: str) -> dict[str, Any]:
     row, session, checkpoints, _evidence, cursor, builder = await _context()
     observation = await builder.build(cursor.handle)
@@ -559,6 +569,8 @@ def main(argv: list[str] | None = None) -> int:
     subparsers = parser.add_subparsers(dest="command", required=True)
     subparsers.add_parser("observe")
     subparsers.add_parser("finalize")
+    navigate_parser = subparsers.add_parser("navigate")
+    navigate_parser.add_argument("--url", required=True)
     act_parser = subparsers.add_parser("act")
     act_parser.add_argument("--action-file", required=True, type=Path)
     checkpoint_parser = subparsers.add_parser("checkpoint")
@@ -574,6 +586,8 @@ def main(argv: list[str] | None = None) -> int:
         operation = observe()
     elif args.command == "finalize":
         operation = finalize()
+    elif args.command == "navigate":
+        operation = navigate(args.url)
     elif args.command == "act":
         operation = act(args.action_file)
     elif args.command == "checkpoint":

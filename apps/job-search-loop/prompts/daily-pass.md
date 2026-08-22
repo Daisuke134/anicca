@@ -14,7 +14,14 @@ step must be exactly:
 ```
 
 This command collects the safe active-provider row, restores its durable cursor, and
-returns the fresh redacted observation. Choose exactly one action from that output,
+returns the fresh redacted observation. When it reports `needs_navigation=true` or
+an empty `about:blank` page, navigate once without constructing an action file:
+
+```bash
+/opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime navigate --url "THE_RETURNED_RECOVERY_OR_CANONICAL_URL"
+```
+
+For every other surface, choose exactly one action from the observation,
 write its JSON object to a mode-0600 file under `$JOB_SEARCH_BROWSER_SCRATCH`, then
 execute exactly:
 
@@ -107,7 +114,7 @@ outcome. A `checkpointed` row returns control to the queue; it does not end the 
 Before attaching a row, call `RowResumer.restore(endpoint, row_run_id,
 canonical_url)`. It validates the complete EvidenceStore action chain against the
 checkpoint before reconnecting the exact page marker. If `needs_navigation=true`,
-perform exactly one fresh model-selected typed `navigate` to `recovery_url`; never
+perform exactly one `runtime navigate --url` to `recovery_url`; never
 replay prior actions. Restore session generation, receipt hashes, remaining budget,
 and cursor when present. For every executed action: capture the fresh
 after-observation, append one
