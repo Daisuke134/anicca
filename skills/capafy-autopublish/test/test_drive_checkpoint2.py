@@ -35,16 +35,18 @@ class _Response:
         return json.dumps(self._payload).encode()
 
 
-def test_raw_page_target_prefers_existing_capafy_page(monkeypatch) -> None:
+def test_raw_page_targets_only_exact_resolved_cp2_url(monkeypatch) -> None:
     module = load_module()
+    cp2 = "https://capafy.ai/developer/createAgent?source=temp-link&token=123&page=credential"
     targets = [
         {"type": "page", "url": "https://coconala.com/", "webSocketDebuggerUrl": "ws://other"},
-        {"type": "page", "url": "https://capafy.ai/developer/createAgent?page=credential", "webSocketDebuggerUrl": "ws://127.0.0.1:9222/devtools/page/capafy"},
+        {"type": "page", "url": "https://capafy.ai/developer/createAgent?page=credential&source=temp-link&token=123", "webSocketDebuggerUrl": "ws://127.0.0.1:9222/devtools/page/order"},
+        {"type": "page", "url": "https://capafy.ai/developer/createAgent?source=temp-link&token=wrong&page=credential", "webSocketDebuggerUrl": "ws://127.0.0.1:9222/devtools/page/wrong"},
         {"type": "iframe", "url": "https://capafy.ai/iframe", "webSocketDebuggerUrl": "ws://iframe"},
     ]
     monkeypatch.setattr(module.urllib.request, "urlopen", lambda *_args, **_kwargs: _Response(targets))
 
-    assert module._raw_page_target("http://localhost:9222") == targets[1]
+    assert module._raw_page_targets("http://localhost:9222", cp2) == [targets[1]]
 
 
 def test_raw_target_rejects_evil_host_and_non_loopback_ws(monkeypatch) -> None:
@@ -56,10 +58,10 @@ def test_raw_target_rejects_evil_host_and_non_loopback_ws(monkeypatch) -> None:
     }]
     monkeypatch.setattr(module.urllib.request, "urlopen", lambda *_args, **_kwargs: _Response(targets))
 
-    with pytest.raises(RuntimeError, match="no existing Capafy page"):
-        module._raw_page_target("http://127.0.0.1:9222")
+    with pytest.raises(RuntimeError, match="no exact CP2 page"):
+        module._raw_page_targets("http://127.0.0.1:9222", "https://capafy.ai/developer/createAgent?token=123&page=credential")
     with pytest.raises(RuntimeError, match="loopback HTTP"):
-        module._raw_page_target("http://evil.example:9222")
+        module._raw_page_targets("http://evil.example:9222", "https://capafy.ai/developer/createAgent?token=123&page=credential")
     with pytest.raises(RuntimeError, match="loopback host"):
         module._validate_ws_url("ws://evil.example/devtools/browser/x")
 
@@ -212,6 +214,7 @@ def test_raw_call_queues_interleaved_events_and_honors_deadline(monkeypatch) -> 
     page = object.__new__(module._RawPage)
     page._next_id = 0
     page._events = []
+    page._call_timeout_s = module.RAW_CALL_TIMEOUT_S
     page._session_id = None
     page._ws = _Socket([
         json.dumps({"method": "Page.loadEventFired"}),
@@ -232,8 +235,40 @@ def test_raw_call_queues_interleaved_events_and_honors_deadline(monkeypatch) -> 
 
     page._ws = _Never()
     monkeypatch.setattr(module, "RAW_CALL_TIMEOUT_S", 0.01)
+    page._call_timeout_s = module.RAW_CALL_TIMEOUT_S
     with pytest.raises(RuntimeError, match="CDP call timeout"):
         page.call("Runtime.evaluate")
+
+
+def test_probe_loop_uses_one_shared_five_second_budget(monkeypatch) -> None:
+    module = load_module()
+    clock = iter((100.0, 100.0, 101.0, 104.0, 104.0))
+    monkeypatch.setattr(module.time, "monotonic", lambda: next(clock))
+    budgets = []
+    probed = []
+
+    class _Page:
+        def __init__(self, ws_url, *, call_timeout, connect_timeout):
+            budgets.append((ws_url, call_timeout, connect_timeout))
+            if ws_url == "ws://127.0.0.1/bad":
+                raise RuntimeError("stale")
+
+        def evaluate(self, _expression):
+            probed.append("good")
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr(module, "_RawPage", _Page)
+    page = module._open_responsive_page([
+        {"webSocketDebuggerUrl": "ws://127.0.0.1/bad"},
+        {"webSocketDebuggerUrl": "ws://127.0.0.1/good"},
+    ])
+
+    assert page is not None
+    assert probed == ["good"]
+    assert budgets[0][1:] == (5.0, 5.0)
+    assert budgets[1][1:] == (4.0, 4.0)
 
 
 @pytest.mark.parametrize(("raw_ok", "expected_exit"), ((True, 0), (False, 1)))
