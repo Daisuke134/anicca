@@ -2,7 +2,7 @@
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const { ANICCA_MAIN_INSTAGRAM_SLOTS, ANICCA_MAIN_SLOTS, PRODUCTION_SLOTS, parseArgs, runSlot } = require("./honne-ja-cycle.js");
+const { ANICCA_JP4_SLOTS, ANICCA_MAIN_INSTAGRAM_SLOTS, ANICCA_MAIN_SLOTS, PRODUCTION_SLOTS, parseArgs, runSlot } = require("./honne-ja-cycle.js");
 
 test("Honne JA production cadence has three exact idempotent slots", () => {
   assert.deepEqual([...PRODUCTION_SLOTS], ["08:30", "12:30", "21:30"]);
@@ -29,4 +29,9 @@ test("Anicca main uses only its three historical JA widget slots", () => {
   assert.deepEqual([...ANICCA_MAIN_SLOTS], ["08:00", "16:00", "22:37"]);
   assert.equal(parseArgs(["run-anicca-main"]).lane.account, "@anicca.jp");
   assert.equal(runSlot(null, Date.parse("2026-08-22T07:30:00.000Z"), ANICCA_MAIN_SLOTS), "2026-08-22T07:00:00.000Z");
+});
+
+test("JP4 lane is account-bound and capped at three isolated slots", () => {
+  const lane = parseArgs(["run-anicca-jp4"]).lane;
+  assert.equal(lane.account, "@anicca.jp4"); assert.equal(lane.integrationId, "cmn8x8hdv028uqx0y4gdfse5t"); assert.equal(lane.approvalKey, "LM_ANICCA_JP4_TIKTOK_APPROVAL_REF"); assert.deepEqual([...ANICCA_JP4_SLOTS], ["09:15", "15:15", "20:45"]); assert.equal(lane.slots.length, 3);
 });

@@ -23,10 +23,12 @@ const TENANT = "dais-local";
 const PRODUCTION_SLOTS = Object.freeze(["08:30", "12:30", "21:30"]);
 const ANICCA_MAIN_SLOTS = Object.freeze(["08:00", "16:00", "22:37"]);
 const ANICCA_MAIN_INSTAGRAM_SLOTS = Object.freeze(["19:10"]);
+const ANICCA_JP4_SLOTS = Object.freeze(["09:15", "15:15", "20:45"]);
 const LANES = Object.freeze({
   run: { name: "honne JA", product: "honne-ai", format: "reelclaw", locale: "ja", platform: "tiktok", account: "@honnevideo", integrationId: "cmnit95mg015rrm0ye5vm8dhl", slots: PRODUCTION_SLOTS, packKey: "LM_HONNE_JA_PACK_REF", mediaKey: "LM_HONNE_JA_MEDIA_REFS", approvalKey: "LM_HONNE_JA_PUBLICATION_APPROVAL_REF", telegramLane: "honne-ja" },
   "run-anicca-main": { name: "Anicca main", product: "anicca-ios", format: "reelclaw-card", locale: "ja", platform: "tiktok", account: "@anicca.jp", integrationId: "cmp9sdev5012voh0y58qs45xc", slots: ANICCA_MAIN_SLOTS, packKey: "LM_ANICCA_MAIN_PACK_REF", mediaKey: "LM_ANICCA_MAIN_MEDIA_REFS", approvalKey: "LM_ANICCA_MAIN_TIKTOK_APPROVAL_REF", telegramLane: "anicca-main-ja-tiktok" },
   "run-anicca-main-instagram": { name: "Anicca main Instagram", product: "anicca-ios", format: "reelclaw-card", locale: "ja", platform: "instagram", account: "@anicca.jp1", integrationId: "cmn8ycvtn02djqx0ytuisn9mw", slots: ANICCA_MAIN_INSTAGRAM_SLOTS, packKey: "LM_ANICCA_MAIN_PACK_REF", mediaKey: "LM_ANICCA_MAIN_MEDIA_REFS", approvalKey: "LM_ANICCA_MAIN_INSTAGRAM_APPROVAL_REF", telegramLane: "anicca-main-ja-instagram" },
+  "run-anicca-jp4": { name: "Anicca JP4", product: "anicca-ios", format: "reelclaw-card", locale: "ja", platform: "tiktok", account: "@anicca.jp4", integrationId: "cmn8x8hdv028uqx0y4gdfse5t", slots: ANICCA_JP4_SLOTS, packKey: "LM_ANICCA_JP4_PACK_REF", mediaKey: "LM_ANICCA_JP4_MEDIA_REFS", approvalKey: "LM_ANICCA_JP4_TIKTOK_APPROVAL_REF", telegramLane: "anicca-jp4-ja-tiktok" },
 });
 
 function required(value, label) {
@@ -37,7 +39,7 @@ function required(value, label) {
 
 function parseArgs(argv) {
   if (!LANES[argv[0]] || ![1, 3].includes(argv.length) || (argv.length === 3 && argv[1] !== "--slot")) {
-    throw new Error("usage: honne-ja-cycle.js <run|run-anicca-main|run-anicca-main-instagram> [--slot <ISO instant>]");
+    throw new Error("usage: honne-ja-cycle.js <run|run-anicca-main|run-anicca-main-instagram|run-anicca-jp4> [--slot <ISO instant>]");
   }
   return { lane: LANES[argv[0]], slot: argv[1] ? String(argv[2]) : null };
 }
@@ -150,4 +152,4 @@ async function runHonneJaCycle(argv, deps = {}) {
 
 if (require.main === module) runHonneJaCycle(process.argv.slice(2)).then((result) => process.stdout.write(`${JSON.stringify(result)}\n`)).catch((error) => { process.stderr.write(`${error.message}\n`); process.exitCode = 1; });
 
-module.exports = { ANICCA_MAIN_INSTAGRAM_SLOTS, ANICCA_MAIN_SLOTS, PRODUCTION_SLOTS, parseArgs, runHonneJaCycle, runSlot };
+module.exports = { ANICCA_JP4_SLOTS, ANICCA_MAIN_INSTAGRAM_SLOTS, ANICCA_MAIN_SLOTS, PRODUCTION_SLOTS, parseArgs, runHonneJaCycle, runSlot };
