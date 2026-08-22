@@ -302,9 +302,9 @@ no-send, replay-zero and a new natural sub-30-minute official reply/estimate pro
 Do not advance the development cursor until every unchecked item in the current stage has official
 evidence. Independent production lanes continue running while development follows this order.
 
-**Live handover state.** `main`, `origin/main` and the immutable release selected by the Life Manager
-`current` link all read back `930dfdf93de37d267cedfb7df8bb781a0edce5a8`; the Paid-specific `current` remains
-`2ed6af9a37b519c173e256caddcc9ea9e1a71d66`. The protected unrelated dirty
+**Live handover state.** At this update's start, `main` and `origin/main` both read back
+`7de5072540949f5f09b4b909f3d9cb0029fc797b`. There is no general `/Users/anicca/gig/current` release link;
+the Paid-specific `current` remains `2ed6af9a37b519c173e256caddcc9ea9e1a71d66`. The protected unrelated dirty
 `skills/earn/gig/tests/test_reply_concurrency.py` remains outside this work. The loaded Paid owner uses up to
 eight independent project workers. Its launchd environment ignores the shared preventive
 `disk-pressure.block` and `disk-writers.stop` flags while retaining the 512 MiB last-resort guard and expiring
@@ -312,9 +312,9 @@ operator brake.
 
 **Current official Paid truth — supersedes the historical chronology below.** The latest natural receipt is
 `status=failed`, `observed=7`, `actionable=5`, `effect=0`, `readback=2`, `failed=5`, `pending=0`. Launchd label
-`ai.anicca.hf-gig-paid-direct` is loaded with last exit `1` and no currently running Paid PID. Two rows are
-intentionally `reserved_for_owner`; five owned rows have explicit failures, so silent pending remains zero but
-customer work is not complete.
+`ai.anicca.hf-gig-paid-direct` is loaded with last exit `1`; at the latest readback it is running naturally.
+Two rows are intentionally `reserved_for_owner`; five owned rows have explicit failures, so silent pending
+remains zero but customer work is not complete. Process liveness does not supersede the failed official receipt.
 
 - Haru `18169583` sent v32 previously with exact official readback/replay-zero, but the buyer then supplied two
   complaint screenshots and explicitly reported rough images, repeated lack of checking and possible
@@ -571,6 +571,27 @@ needs another job's result before it can start”
 `loop-engineering/tools/loop-gate/src/gate.ts` describes “Mechanical enforcement of static policy”
 ([source](https://github.com/cobusgreyling/loop-engineering/blob/37d558f03aa024d82f7db8f11f43d0bbcf3595bd/tools/loop-gate/src/gate.ts)).
 
+**Observed `file_validation` root cause and adopted boundary.** Current
+`paid_direct.py::_normalize_acceptance_delta` compares the latest decision's `required_assets` and the artifact
+manifest's `required_assets` as exact JSON and raises `asset contract mismatch`. That same outer
+`file_validation` label also collapses structure-validation errors, evaluator exhaustion/rejection, invalid
+delivery decisions and package-hash failures, discarding the actionable `errors` returned by validators. The
+four current rooms prove that this is not one business condition: Haru has semantically corresponding assets
+whose ids/descriptions were regenerated; Manledge has an empty current decision contract but two manifest
+sources; byusco has the same three asset roles with wording-only purpose changes; and completed X has a newer
+stale decision contract while its already-sent v1 manifest correctly has no assets. Exact JSON equality is
+therefore neither artifact fitness nor delivery authorization.
+
+Copy the `loop-gate` separation rather than its whole stack: deterministic code remains strict for exact room,
+artifact/package hash and bytes, archive integrity, restricted-secret paths, formal-delivery policy, lease,
+effect dedupe and official readback. Semantic contract comparison returns a structured diff with source fact
+ids, contract versions and raw validator errors to the same Project Owner. That owner decides whether the diff
+is equivalent terminology to normalize, a buyer-event contract migration, missing work to repair, or stale
+derived state dominated by an official effect. It may not convert uncertainty into PASS. Required-assets
+contracts are created/versioned from buyer events and accepted lineage, then referenced by hash; they are not
+silently regenerated on every pass. This is the smallest copy/tweak of the cloned code: no new workflow engine,
+graph database, error taxonomy, framework dependency or room-specific branch.
+
 **Life Manager economic harness — accepted foundation.** Coconala is the first proving adapter, not the
 architecture boundary. One shared economic kernel owns goals, evidence and capital/risk constraints. A lane is
 a durable goal stream; a marketplace is a mechanical adapter; a skill is a capability with an observable
@@ -753,10 +774,11 @@ flowchart TB
    restricted local project storage; expose hash/type/purpose metadata to the model; redact derived prompt/stdout
    evidence; audit every Paid project and distributable path; and record any required credential rotation as one
    minimum account-owner action. Do not delete the only authorized customer source or copy its value elsewhere.
-4. [ ] Reproduce and isolate the one generic Paid boundary behind the current `file_validation` results for Haru
-   v34, Manledge v21, byusco v5 and the already-completed X v1. Compare the accepted and rejected contract/hash
-   records; fix the durable owner path once. Official X/Haru prior effects must dominate stale workflow state,
-   and this diagnostic/fix performs no customer effect.
+4. [ ] Replace the one generic Paid `file_validation` collapse for Haru v34, Manledge v21, byusco v5 and the
+   already-completed X v1. Preserve exact mechanical failures, but return raw validator errors plus a versioned
+   semantic contract diff to the durable Project Owner. Normalize only owner-decided equivalent terminology;
+   migrate contracts only from buyer events/accepted lineage; repair genuinely missing work; and let official
+   X/Haru prior effects dominate stale derived state. Fix this shared path once and perform no customer effect.
 5. [ ] Introduce the smallest shared Economic Kernel contracts used by that fix: append-only facts, capability
    result envelope, effect key and rebuildable graph projection. Add provenance and reuse only bounded
    circuit-breaker/gate/lease shapes where no equivalent exists. Do not add frameworks, graph DB, CLI stack,
@@ -765,9 +787,10 @@ flowchart TB
    job description, exact proposal/application, full DM/talkroom, seller commitments, evidence-linked buyer
    emotion/trust interpretation, accumulated requirements, artifacts/accepted lineage, effects and current delta.
    Remove tail-only context loss; specialists remain tools and cross-client reads fail closed.
-7. [ ] Return raw structured builder/evaluator/browser results to the Project Owner for semantic replanning.
-   Delete hardcoded business-error-to-transition/shipment authority while retaining deterministic exact target,
-   hash, secret, money, formal-delivery, lease and dedupe safety.
+7. [ ] Return raw structured builder/evaluator/browser results, including every validator error and source fact
+   id, to the Project Owner for semantic replanning. Delete generic error collapse and hardcoded
+   business-error-to-transition/shipment authority while retaining deterministic exact target, hash/archive,
+   secret, money, formal-delivery, lease, dedupe and official-readback safety.
 8. [ ] Complete the shared tool boundary: content-addressed durable artifact inputs/outputs; fresh read-only
    evaluator opening every actual source/candidate/package/reference; and mechanical exact-room browser
    send/readback with formal delivery OFF, effect fence and replay-zero. Missing evidence is NEEDS_WORK, never
