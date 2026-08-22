@@ -38,13 +38,18 @@ backlog is:
    non-anchor `div[role=link]`; readback therefore requires the exact generated
    body, exact source `@handle` inside the quote card, and the account's own
    exact status href. This is a verified distribution effect, not money.
-3. **X03 — INSTALLED, NEXT LIVE EFFECT JAPANESE:** a durable rolling language allocator
+3. **X03 — DONE, FIRST JAPANESE EFFECT EXACT-READ:** a durable rolling language allocator
    now targets nine English and one Japanese across verified non-Affiliate X
    effects. The
    Japanese slot must use a Japanese source and Japanese copy; it is never a
    translation of an English affiliate placement. English stays the commercial
    default. This explicit 9:1 instruction supersedes the older English-only
    account sentence while preserving separate money accounting by language.
+   Repost owner run 37 selected a native Japanese source and Japanese copy and
+   published exactly one quote at
+   `https://x.com/selawmqt/status/2091167316654649488`, quoting
+   `https://x.com/ClaudeCode_love/status/2090977505654235170`. The exact row is
+   appended to `posted.jsonl`; the owner exited `0`. This is distribution, not money.
 4. **X04 — DONE FOR FIRST DAY, RECURRING OWNER CONTRACT:** ship one original evidence/help post
    per JST day, plus bounded high-value replies/quotes. The daily ordinary-action
    ceiling reserves exactly the missing original even when replies/quotes have
@@ -52,8 +57,10 @@ backlog is:
    action. Affiliate distribution is a minority lane and is not allowed to
    replace the daily useful original.
    Every original carries exactly one public evidence URL and its ledger row
-   retains that source URL.
-5. **X05 — PARTIAL, SNAPSHOT INSTALLED:** replace early views as the optimizer's sole objective with a funnel
+   retains that source URL. Daily action count is disabled by product decision;
+   both pre- and post-Affiliate gates now enforce a ceiling only when
+   `X_REPOST_DAILY_MAX` is explicitly set to a positive emergency value.
+5. **X05 — PARTIAL, FIRST SNAPSHOT LIVE:** replace early views as the optimizer's sole objective with a funnel
    vector: qualified impressions, profile visits/follows when observable,
    owned-article sessions, CTA clicks, provider clicks, official transactions,
    approved/paid net, reversals, and real cost. Unknown fields stay unknown.
@@ -63,8 +70,11 @@ backlog is:
    reads public follower/following counts. Authenticated browser readback shows
    one follower and 27 following. The account analytics page responds
    `Advanced analytics with X Premium`, so profile visits remain null with
-   state `UNAVAILABLE_X_PREMIUM_REQUIRED`, never zero. The next eligible owner
-   pass must generate the first durable snapshot from installed runtime.
+   state `UNAVAILABLE_X_PREMIUM_REQUIRED`, never zero. Run 37 wrote the first
+   durable snapshot: 73 published rows in the 30-day window; 5/5 measured
+   Affiliate originals with 22 views, 2/2 measured useful originals with 51
+   views, and 37/37 measured quotes with 723 views and 5 likes. These are
+   bounded X observations and explicitly `NON_MONEY_X_OBSERVATIONS`.
 6. **X06 — PARTIAL:** the existing owner already has a browser lease and exact
    terminal effect ledger. Add X-Manager's canonical content dedupe and bounded
    30-day post-metric collection around it. Do not introduce its
@@ -74,10 +84,10 @@ backlog is:
    queued and never converts a post, view, or click into money.
 
 Current live checkpoint: immutable sparse release
-`20260822T223509-1ae08822` is installed from commit
-`1ae08822f5b870152da21d9e6b7728c447e8b8d5`, pushed to both Repost remotes.
+`20260822T230907-8b28f5e3` is installed from commit
+`8b28f5e3e50c6308366bc51c5494b8055c526bfc`, pushed to both Repost remotes.
 Source/runtime `x-repost-cli.sh` is byte-equal at SHA-256
-`b6f54e1018845dd18a75528b2f1079997f84831593e2feb25bf2624f7088fef7`.
+`7c8e2a4fd04532e89f8a8ee9acd97431ed7d8e27305cf473aed90da5fd64eed3`.
 Its versioned readback lets a newer exact verifier inspect an old terminal row
 once, then records the verifier version on an unresolved row so it cannot retry
 forever. Run 33 read back the 22:13 source-backed original at exact permalink
@@ -93,9 +103,8 @@ the existing owner remains the sole measurement executor.
 The remaining atomic path is the following single ordered queue; this is the
 current execution order, not a menu:
 
-1. On the next eligible owner hour, prove one native-Japanese-source,
-   Japanese-copy exact permalink. The allocator now has the ninth verified
-   English non-Affiliate effect; terminal MaxForAI remains fenced forever.
+1. **DONE:** prove one native-Japanese-source, Japanese-copy exact permalink;
+   run 37 produced `2091167316654649488` without bypassing the existing owner.
 2. Add official X impression/profile-visit/follow observations when the account
    exposes them; unknown remains unknown.
 3. **DONE, LIVE:** first-party X-to-owned-article entry receipts are deployed at

@@ -2007,3 +2007,19 @@ and rendered copy is raw 287 / X weighted 232 with disclosure and exactly one
 owned URL. Next atomic action: kick only `ai.anicca.x-repost-pass` in the next
 eligible hour, then kick only `ai.anicca.affiliate-loop` for exact join and
 official transaction readback.
+
+Run 37 removed the final local distribution blocker and produced the first exact
+Japanese slot. Repost commits `d8431bbe6` and `8b28f5e3e` disable both duplicate
+daily-ceiling gates unless a positive emergency `X_REPOST_DAILY_MAX` is explicitly
+configured. Release `20260822T230907-8b28f5e3` is installed byte-for-byte; 21
+focused tests and shell syntax pass. The existing `ai.anicca.x-repost-pass` owner
+collected 90 candidates, selected `quote`, selected `ja` at rolling EN 9 / JA 1,
+and exact-read `https://x.com/selawmqt/status/2091167316654649488` with source
+`https://x.com/ClaudeCode_love/status/2090977505654235170`; exit was `0`. The
+same owner wrote the first 30-day X snapshot: 73 rows, 1 follower / 27 following,
+profile visits null because X Premium is required, Affiliate originals 22 views,
+useful originals 51 views, and quotes 723 views / 5 likes. Every one of these is
+non-money. Next atom: after the provider cooldown is due, safe-kick only
+`ai.anicca.affiliate-loop` and read the current PartnerStack report so the
+X-entry interval can leave `WAITING_FOR_CURRENT_PROVIDER_READBACK`; then continue
+until an official exact-placement transaction proves the money lifecycle.
