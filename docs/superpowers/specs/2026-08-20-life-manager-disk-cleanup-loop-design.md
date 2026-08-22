@@ -668,6 +668,15 @@ PS4 marker 0だった。これはeffect 0を証明するがguard receiptには�
 専用`disk_writers_stop/effect=0/readback=0/required_bytes=536870912` receipt、profitable-claude push、fresh canonical cleanup
 `last exit code=0`は141/153制御面とDNS復旧後の運用証拠として残す。
 
+A-20のbuild consumer censusは実機LaunchAgents 245件を再走査し、242件をplist parse、invalid 3件はraw argvを
+read backした。`xcodebuild`、Swift/Cargo/npm/pnpm/yarn/bun/Next/Vite/Gradle/Fastlaneまたはself-buildに一致するmanaged
+entrypointは`ai.anicca.life-manager-selfbuild` 1件だけで、A-20第1 sliceの開始前・effect前2境界guardへ既に接続済みである。
+invalid 3件はfleet status、Tailscale bridge、CFOでbuild producerではない。実行中の同build processも0件だった。
+Xcode DerivedData/ArchivesはA-16でpreserve登録済みで、任意の人手shell commandを新しいdaemonで包む需要はない。
+したがって現在観測可能なmanaged build consumer missingは0であり、A-20のsource実装残りを増やさない。A-20の完了判定は
+26 media plistとrecording-store plistのproduction反映、専用guard receipt、profitable-claude push、canonical cleanup
+fresh exit 0/readbackに限定する。新しいmanaged build entrypointが登録された場合はA-35のcoverage gateで未接続を拒否する。
+
 `/Users/anicca/anicca-project`は約9.5 GiB、その`.worktrees`は約4.4 GiBだった。最大の
 `cfo-resume-spec`（約1.08 GiB）は、dirty=0、branch upstream 0/0、process/open-path/leaseなしを
 read backした後にだけ`git worktree remove`で回収した。branchとremoteは残り、再作成可能である。
@@ -1242,7 +1251,7 @@ TDDのためだけの過剰fixtureや後続itemのscaffoldは前倒ししない�
 | A-17 | VM/package producer lifecycleを登録する | artifact/lease/finalizer/quota receipt | 完了: registration-only static 16件、pnpm exact version/proof/lease fail-closed、全A-17 entry runtime/quota 0/lease 300/preserveで削除authority 0、focused 48 tests、final review `ship`、fallback SHA一致/runs 486→487/static 16 bad 0、canonical runs 137→138 exit 0、protected deletion 0 |
 | A-18 | agent/gig-project lifecycleを登録する | project owner/terminal/lease receipt | 完了: registration-only numeric project 24件、terminal true 0、unknown owner 3、全件deliverable/preserve、focused 49 tests、fresh review `ship`、fallback runs 507→508/削除0、canonical runs 142→143 exit 0、errors/protected deletion 0 |
 | A-19 | Writer in-flight drainを接続する | provider interruption checkpoint/resume test | 完了: exact stop 2 pathのpre-Popen gate、process-group TERM→1秒→KILL/reap、immutable run/prompt checkpoint/resume、focused 44 tests、fresh review `ship`、release `43074f76422d1ec4935acdba98e553cb8564de94`、Writer runs 1/exit 0/provider effect 0、canonical runs 149→150/exit 0/errors 0/protected deletion 0 |
-| A-20 | browser/build/media preflightを接続する | producer consumer missing 0 for these families | 部分完了: Affiliate 3 browser、Instagram/X provision、標準job-search、Mercor、Gig、self-build 2境界、Writer media既存境界、共通wrapper配下media 26件とlm-recording-storeをsource接続。hostile BASH_ENV/SHELLOPTS/PS4をTDDで遮断し両review `ship`。実機effect 0だがDirectory Services異常でguard前停止・専用receipt未生成。tracked plist実機反映、残るbuild consumer、profitable-claude push、canonical fresh exit 0/readback待ち |
+| A-20 | browser/build/media preflightを接続する | producer consumer missing 0 for these families | 部分完了: Affiliate 3 browser、Instagram/X provision、標準job-search、Mercor、Gig、self-build 2境界、Writer media既存境界、共通wrapper配下media 26件とlm-recording-storeをsource接続。hostile BASH_ENV/SHELLOPTS/PS4をTDDで遮断し両review `ship`。LaunchAgents 245件+process censusでmanaged build missing 0。実機effect 0だがDirectory Services異常でguard前停止・専用receipt未生成。tracked plist実機反映、profitable-claude push、canonical fresh exit 0/readback待ち |
 | A-21 | VM/package/agent preflightを接続する | producer consumer missing 0 for these families | 未完了 |
 | A-22 | supervisor non-stop behaviorを実装する | ULTRA wake keeps supervisor labels loaded | 未完了 |
 | A-23 | Codex log budget/rotationを実装する | active app-server handoff with session loss 0 | 未完了 |
