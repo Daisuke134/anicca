@@ -199,9 +199,8 @@ set +a
 flush_report_backlog
 
 # ---------------------------------------------------------------- gate: at most one post per hour
-# Cadence is hourly, so the guard is hourly too. The daily ceiling stays as a runaway brake only:
-# it is not the intended rhythm, it is what stops a scheduling bug from emptying the account's
-# credibility in one afternoon.
+# Cadence and duplicate protection are hourly. The owner instruction disables the daily action
+# cap; setting X_REPOST_DAILY_MAX to a positive integer is an explicit emergency override only.
 THIS_HOUR="$(date +%Y-%m-%dT%H)"
 TODAY="$(date +%F)"
 # Count only rows that actually reached X. A row recorded as not_posted proves the opposite --
@@ -306,13 +305,14 @@ if [ "${HOUR_COUNT:-0}" -gt 0 ] \
 fi
 # An unfinished Affiliate effect or the one missing daily original may pass the generic daily
 # runaway brake. Once today's original exists, all ordinary reply/quote work remains capped.
-if [ "${TODAY_COUNT:-0}" -ge "${X_REPOST_DAILY_MAX:-12}" ] \
+if [ "${X_REPOST_DAILY_MAX:-0}" -gt 0 ] \
+  && [ "${TODAY_COUNT:-0}" -ge "${X_REPOST_DAILY_MAX}" ] \
   && [ "${ORIGINAL_TODAY_COUNT:-0}" -gt 0 ] \
   && [ "$GENERIC_RECOVERY_PENDING" != "True" ] \
   && [ "$AFFILIATE_STATE" != "READY" ] \
     && [ "$AFFILIATE_STATE" != "RECONCILE" ] \
     && [ "$AFFILIATE_STATE" != "VERIFY_UNVERIFIED" ]; then
-  log "daily ceiling reached ($TODAY_COUNT/${X_REPOST_DAILY_MAX:-12}) -- nothing to do"
+  log "explicit daily ceiling reached ($TODAY_COUNT/${X_REPOST_DAILY_MAX}) -- nothing to do"
   touch "$STATE/.last-pass"
   exit 0
 fi
