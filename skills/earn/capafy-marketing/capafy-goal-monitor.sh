@@ -23,7 +23,8 @@ done
 STATE="$LIFE_MANAGER_STATE_HOME/state/capafy-goal-monitor.json"
 mkdir -p "$(dirname "$STATE")"
 
-DAILY_LOG="$LIFE_MANAGER_STATE_HOME/state/capafy-autopublish/daily_loop.log"
+DAILY_TERMINAL_LEDGER="$LIFE_MANAGER_STATE_HOME/state/capafy-daily-terminals.jsonl"
+DAILY_TERMINAL_TOOL="$LIFE_MANAGER_REPO/skills/self/capafy-loop/capafy_daily_terminal.py"
 EARN_LEDGER="$LIFE_MANAGER_STATE_HOME/state/capafy-hourly-reconcile.json"
 KEY_GATE="$LIFE_MANAGER_REPO/skills/capafy-autopublish/scripts/key_health_gate.sh"
 IG_SCRIPT="$LIFE_MANAGER_REPO/skills/earn/capafy-marketing/capafy-ig-marketing-daily.sh"
@@ -133,10 +134,11 @@ if [ "${WDAY:-0}" -ge "$WARMUP_DAYS_REQUIRED" ]; then
 fi
 
 # ── the rest (goal a/b/d parsing + state + telegram body) is one python pass (read+append only). ──
-$PY - "$STATE" "$DAILY_LOG" "$EARN_LEDGER" "$WARMUP" "$KEY_GATE" "$IG_PLIST" "$IG_LABEL" "$WDAY" "$WARMUP_DAYS_REQUIRED" "$GO_LIVE_ACTION" "$IG_HANDLE" "$VERIFY_JSON" "$VERIFY_RC" "$COOKED_MARKER" <<'PY' > /tmp/capafy_goal_monitor.json
+DAILY_PROOF_JSON="$($PY "$DAILY_TERMINAL_TOOL" status --ledger "$DAILY_TERMINAL_LEDGER" 2>/dev/null || printf '{}')"
+$PY - "$STATE" "$EARN_LEDGER" "$WARMUP" "$KEY_GATE" "$IG_PLIST" "$IG_LABEL" "$WDAY" "$WARMUP_DAYS_REQUIRED" "$GO_LIVE_ACTION" "$IG_HANDLE" "$VERIFY_JSON" "$VERIFY_RC" "$COOKED_MARKER" "$DAILY_PROOF_JSON" <<'PY' > /tmp/capafy_goal_monitor.json
 import json, os, re, subprocess, sys, datetime
-(state_p, daily_log, earn_ledger, warmup, key_gate, ig_plist, ig_label, wday, wreq,
- golive, ig_handle, verify_raw, verify_rc, cooked_marker) = sys.argv[1:15]
+(state_p, earn_ledger, warmup, key_gate, ig_plist, ig_label, wday, wreq,
+ golive, ig_handle, verify_raw, verify_rc, cooked_marker, daily_proof_raw) = sys.argv[1:15]
 wday = int(wday or 0); wreq = int(wreq); verify_rc = int(verify_rc)
 try:
     verify = json.loads(verify_raw)
@@ -146,29 +148,14 @@ account_cooked = verify.get("poisoned") is True or "ChallengeRequired" in verify
 now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
 today = now.date()
 
-# goal(a): per-day BLOCKED rc=1 from daily_loop.log -> trailing consecutive clean-day streak.
-blocked_by_day = {}
-seen_days = set()
-if os.path.exists(daily_log):
-    for line in open(daily_log, errors="ignore"):
-        m = re.search(r'daily_loop done rc=(\d+).*?===', line)
-        d = re.search(r'(\d{4}-\d{2}-\d{2})', line)
-        if m and d:
-            day = d.group(1); seen_days.add(day)
-            if m.group(1) == "1" and "BLOCKED" in line:
-                blocked_by_day[day] = blocked_by_day.get(day, 0) + 1
-# streak = consecutive days (ending today, walking back) that had a run and ZERO blocked.
-streak = 0
-day = today
-while True:
-    ds = day.isoformat()
-    if ds not in seen_days:
-        break  # no run recorded that day -> streak ends (conservative)
-    if blocked_by_day.get(ds, 0) > 0:
-        break
-    streak += 1
-    day = day - datetime.timedelta(days=1)
-goal_a_pass = streak >= 7
+# goal(a): durable outer launchd-owner terminals. Missing start/terminal or any
+# nonzero execution breaks that day; inner drainer logs are not accepted as proof.
+try:
+    daily_proof = json.loads(daily_proof_raw)
+except Exception:
+    daily_proof = {}
+streak = int(daily_proof.get("consecutive_healthy_days") or 0)
+goal_a_pass = daily_proof.get("pass") is True
 
 # goal(b): latest sales row + reconcile freshness (staleness = divergence risk).
 gross = orders = None; last_sales_date = None; reconcile_age_h = None

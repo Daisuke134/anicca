@@ -293,6 +293,8 @@ C17は同じAgent `3661050861`をdownloadから`run_online`へ修復し、新規
 
 C21の運転proof開始時にhourly goal monitorのexit `1`を修復する。launchd環境がstate envを読まずTelegram targetを欠損し、daily/earn readbackも削除済みrepo内stateを参照していた。monitorは`$LIFE_MANAGER_STATE_HOME`を唯一のruntime state rootとしてenv、daily log、hourly reconcileを読む。money loopのSTATE/ledgerもrepo外へ移す。旧tmux Capafy Claude loopはLife Manager launchdと責務が重複するため停止し、5分healthcheckはtmuxを再生成せず唯一のowner `ai.anicca.capafy-loop-daily`だけをstale時にkickstartする。disk容量判定・cleanup・headroom gateはこの経路に存在しない。healthcheck実run `53`はlast exit `0`でtmux再生成0。実`launchctl kickstart`後のhourly jobはrun `8`、last exit `0`、BLOCKED-free `1/7`、orders `5`、gross `$19.98`、reconcile age `0.0h`、candidate `under_review`、Telegram message ID `28992`を同一receipt `capafy-e7492dc68be6832dddf13868`へ保存する。
 
+C21の7日proof sourceを修復する。旧goal monitorはloaded outer ownerが`CAP_FULL`で正常終了しても、実行されないinner drainerの`daily_loop.log`を読んでいたためstreakが増えない。outer `capafy-loop-daily.sh`は各executionをrepo外`capafy-daily-terminals.jsonl`へ`started`と`terminal`で記録し、missing terminal、nonzero rc、同日中の失敗が1件でもあればその日をhealthyにしない。SIGTERMを含むEXITもterminal化する。goal monitorはこのledgerだけをproof sourceにする。本番daily run `7`は`started → rc=0 / verdict=CAP_FULL / healthy=true`、launchd last exit `0`、proof `1/7`。実hourly monitorはrc `0`、reconcile age `0.4h`、orders `5`、gross `$19.98`、loaded daily true、Telegram company receipt `capafy-347cba2e81592deb481a24b2` / message ID `29064`をreadbackする。disk gateは追加しない。
+
 C18は拒否済み`Sales Objection Reply Builder`をLife Managerの`skills/capafy/catalog/sales-objection-reply-builder/`へ正本化し、同じAgent `3098034209`で実修正・再申請する。旧3プランとfree trialを廃止し、weekly `$9.99`、cap `20`、free trialなし、`url_proxy=1 / generic=0 / env_var=0`へ統一する。Capafyの拒否版update endpointは新Agentも新version IDも発行せず、同じversion `2080431424288878592`をdraft revisionへ戻して新packageを発行する実挙動であるため、version IDの変化を捏造しない。新package URLのreadback後、最終remoteは`status=1 / auditStatus=1 / run_online / isConfirmedSkills=1 / isConfirmedConfigKeys=1`、重複Agent 0。inventoryはlisted `22`、occupied `5`、free `0`、retry `6`で、5枠は正しく満杯になる。Telegram message IDは`29019`。prepareはcaller-relative sourceをpublisher `cd`前に絶対化し、direct recoveryとlaunchdの両方でprivate state envを同じ順序で読む。
 
 C19監視開始時、hourly reconcileは`/agent/agents`をfreshとしながら`occupied/free=null`の`observed_unclassified`へ落としており、slot解放を検出できない矛盾を実測する。live server enumをlisted (`online/approved`)、occupied (`draft/under_review`)、retry (`review_rejected`)、blocked (`banned`)へ正規化し、未知status/identityは`degraded`へfail closedする。focused 5件が通り、本番hourly run `9`はexit `0`、listed `22`、occupied `5`、free `0`、retry `6`、orders `5`、gross `$19.98`、settled MRR `unknown`、Telegram message ID `29024`を同一company receiptへ保存する。これでlisted遷移後の`free=1`をhourly ownerが検出できるが、実listed遷移と次候補一件の提出まではC19未完である。
@@ -328,7 +330,7 @@ Items are executed top-to-bottom. Only one item is active.
 | C18 | prove one rejected Agent correction/resubmit E2E | same agent_id, new package/revision, under-review readback, no orphan Agent | completed — Agent `3098034209`, platform-preserved version `2080431424288878592`, new package, `status=1/audit=1/skills=1/config=1`; duplicate Agent 0; TG `29019` |
 | C19 | prove one listed transition frees a fresh slot | status=4 reduces occupied count and next daily wake submits exactly one candidate | pending — Football same-Agent `1037238583` is repo-canonical/ready_retry; loaded run 6 at listed 22/occupied 5/free 0 exits 0 with agent spend/write 0; TG `29055`; awaiting real review transition, then exactly one retry |
 | C20 | connect post/click/subscription windows without claiming causal proof | attribution row is candidate unless Capafy exposes order-level UTM/source | completed — live attribution v2 joins one IG post + 23 counters + Capafy snapshot; clicks 7; causal=false; subscription unknown; Netlify deploy `6a89b4126e21fe74286b7a79`; TG `29036` |
-| C21 | prove seven consecutive daily healthy terminals and hourly freshness | 7-day ledger has no stale source, duplicate Agent/version/post or missing Telegram receipt | pending — proof `1/7`; hourly run 9 exit 0; receipt `capafy-91a7d8890a852e281d1e34be`; slots normalized; TG `29024` |
+| C21 | prove seven consecutive daily healthy terminals and hourly freshness | 7-day ledger has no stale source, duplicate Agent/version/post or missing Telegram receipt | pending — durable outer-owner proof `1/7`; daily run 7 and hourly run 9 exit 0; freshness 0.4h; receipt `capafy-347cba2e81592deb481a24b2`; TG `29064` |
 | C22 | operate growth and retention experiments until settled net MRR reaches `$10,000` | active subscription readback and refunds/fees reconcile to target | pending |
 
 ## Test matrix
@@ -345,7 +347,7 @@ Items are executed top-to-bottom. Only one item is active.
 | T8 | public distribution | native URL logged-out readback | pending |
 | T9 | money separation | one-time/hourly/subscription/refund/fee/MRR fixtures | pending |
 | T10 | receipt exactly once | duplicate wake yields one run receipt and one Telegram message ID | pending |
-| T11 | seven-day operation | launchd/readback ledger audit | pending |
+| T11 | seven-day operation | outer-owner started/terminal ledger; missing/nonzero execution breaks streak | in progress — durable proof contract passes; live `1/7` |
 
 | E2E item | value |
 |---|---|

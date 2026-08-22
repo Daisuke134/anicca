@@ -15,8 +15,27 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RUN_AGENT="$SCRIPT_DIR/../../earn/marketing-engine/run_agent.sh"
 LOG="$HOME/.local/state/life-manager/logs/capafy-loop-daily.log"
 LAST_PASS_MARKER="$HOME/.local/state/life-manager/state/.capafy-loop-last-pass"
+TERMINAL_LEDGER="$HOME/.local/state/life-manager/state/capafy-daily-terminals.jsonl"
+TERMINAL_TOOL="$SCRIPT_DIR/capafy_daily_terminal.py"
+EXECUTION_ID="$(date -u +%Y%m%dT%H%M%SZ)-$$"
+TERMINAL_RECORDED=0
 mkdir -p "$(dirname "$LOG")"
 echo "=== capafy-loop-daily run $(date '+%F %T %Z') ===" >>"$LOG"
+
+record_terminal() {
+  local rc="$1" verdict="${2:-UNCLASSIFIED}"
+  [ "$TERMINAL_RECORDED" -eq 0 ] || return 0
+  python3 "$TERMINAL_TOOL" finish --ledger "$TERMINAL_LEDGER" \
+    --execution-id "$EXECUTION_ID" --rc "$rc" --verdict "$verdict" >>"$LOG" 2>&1 || true
+  TERMINAL_RECORDED=1
+}
+on_exit() {
+  local rc=$?
+  record_terminal "$rc" "${VERDICT:-UNCLASSIFIED}"
+}
+trap on_exit EXIT
+python3 "$TERMINAL_TOOL" start --ledger "$TERMINAL_LEDGER" \
+  --execution-id "$EXECUTION_ID" >>"$LOG" 2>&1 || exit 1
 
 # Enforce the five simultaneous-submission cap before spending an agent turn.
 # CAP_FULL is healthy idle: refresh the offline backlog and perform no write.
