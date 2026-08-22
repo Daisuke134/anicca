@@ -93,6 +93,12 @@ backlog is:
    The failed old digest entered the durable backlog; Repost owner run 38 flushed
    exactly one row (`24→23`) as Telegram message `29041`, then the same-hour fence
    produced no X effect and exit `0`.
+   Seed-pool readback found a second digest defect: Luna returned five valid
+   generalized facts, but the old object-only parser retained only the last one.
+   Release `99453f2ca` parses a full JSON array first and retains all valid rows;
+   the exact captured artifact readback is `list / 5 seeds`. Existing owner state
+   is not hand-edited to recover the four lost rows; the next digest harvest uses
+   the repaired parser.
 5. **X05 — PARTIAL, FIRST SNAPSHOT LIVE:** replace early views as the optimizer's sole objective with a funnel
    vector: qualified impressions, profile visits/follows when observable,
    owned-article sessions, CTA clicks, provider clicks, official transactions,
@@ -117,14 +123,14 @@ backlog is:
    queued and never converts a post, view, or click into money.
 
 Current live checkpoint: immutable sparse release
-`20260822T233917-a75f9407` is installed from commit
-`a75f9407f`, pushed to both Repost remotes.
+`20260822T234302-99453f2c` is installed from commit
+`99453f2ca`, pushed to both Repost remotes.
 Source/runtime `x-repost-cli.sh` is byte-equal at SHA-256
 `054ea01a24105b27729b9eb17330c0529dc5b53d2a77f07f31dfaa35327cb3b2`.
 Source/runtime `x_evaluate.py` is byte-equal at SHA-256
 `0dcfac06ca841f9b622916aef3b08f0f4978a27267be3f650e80bb20ae071b04`;
 source/runtime `x-repost-digest.sh` is byte-equal at SHA-256
-`ef1afd2072c141fde2766d11702d9b9690b362cb07ec97145a04850355831e0b`;
+`564f37790fb8730ef893c51afc345fbe382fd04c13c65f06aa88b3d7c5318620`;
 22 focused tests pass.
 Its versioned readback lets a newer exact verifier inspect an old terminal row
 once, then records the verifier version on an unresolved row so it cannot retry

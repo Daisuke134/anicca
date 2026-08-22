@@ -2093,3 +2093,11 @@ Installed release is `20260822T233917-a75f9407`; digest source/runtime SHA-256 i
 The old failed digest was not manually resent: Repost owner run 38 flushed one
 durable backlog row, `24→23`, Telegram message `29041`, then exited `0` at the
 same-hour fence with no X effect.
+
+Seed readback then showed that the model had returned five valid facts but the
+old digest parser extracted only the last JSON object. Commit `99453f2ca` parses
+the complete array first and falls back to streamed JSON values only when needed.
+The captured artifact verifies `list / 5 seeds`; private state was not hand-edited
+to reconstruct the four previously lost rows. Installed release is
+`20260822T234302-99453f2c`, with digest source/runtime SHA-256
+`564f37790fb8730ef893c51afc345fbe382fd04c13c65f06aa88b3d7c5318620`.
