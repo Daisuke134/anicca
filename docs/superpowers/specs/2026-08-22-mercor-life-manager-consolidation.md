@@ -244,8 +244,9 @@ Only the first unchecked item is active. Finish its evidence and read-back befor
 15. [x] **Reference cleanup:** remove all production references to `profitable-claude` and confirm the canonical Life Manager runtime still passes.
 16. [x] **Pass reporting:** send every Mercor pass status, inspected job, submit/no-action reason through the idempotent Telegram outbox and record the ACK/evidence without leaking private profile or resume data.
 17. [x] **Work-harness contract/store:** enforce submitted → selected → contracted → authorized_work → accepted → paid_settled → revenue_recorded transitions, with fail-closed settlement evidence, `needs_human` routing, private append-only events, and idempotent event IDs.
-18. [ ] **Work-harness runtime wiring:** connect Inbox selection/contract messages, Calendar/authorized-work state, acceptance evidence, and Mercor Earnings read-back to the durable private work state; emit Telegram receipts for each transition.
-19. [ ] **Deletion gate:** only after every prior read-back succeeds, migrate or explicitly stop the 15 enabled old-repo jobs (and reconcile the broader 38-file plist scan), then archive/delete `/Users/anicca/profitable-claude` as a separate destructive operation. Current status: blocked by active consumers and dirty old-repo worktree; no destructive action was taken.
+18. [x] **Work-harness Inbox sync:** accept optional strict `mercor_work_events` from the Inbox result, persist transitions in the private idempotent event store, and emit one Telegram receipt per event.
+19. [ ] **Work-harness Calendar/Earnings wiring:** connect Calendar/authorized-work state, acceptance evidence, and Mercor Earnings read-back to the durable private work state and revenue ledger.
+20. [ ] **Deletion gate:** only after every prior read-back succeeds, migrate or explicitly stop the 15 enabled old-repo jobs (and reconcile the broader 38-file plist scan), then archive/delete `/Users/anicca/profitable-claude` as a separate destructive operation. Current status: blocked by active consumers and dirty old-repo worktree; no destructive action was taken.
 
 ### 10.1 Remaining operational TODO after the live loop install
 

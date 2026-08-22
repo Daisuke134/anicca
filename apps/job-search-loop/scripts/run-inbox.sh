@@ -95,6 +95,11 @@ esac
   --state "$SEEN_STATE" \
   --input "$CANDIDATES" \
   --result "$RESULT_PATH"
+"$JOB_SEARCH_PYTHON" -m job_search_loop.mercor_work_sync \
+  --result "$RESULT_PATH" \
+  --store "$JOB_SEARCH_STATE_ROOT/mercor/work-events.jsonl" \
+  --outbox "$TELEGRAM_OUTBOX" \
+  --output "$EVIDENCE/mercor-work-sync.json"
 "$JOB_SEARCH_PYTHON" -m job_search_loop.interview_prep deliver \
   --database "$PREP_DATABASE" \
   --outbox "$OUTBOX_DATABASE" \

@@ -102,3 +102,12 @@ as `submitted` or an uncertain outcome as `submit_unknown`. Never retry
 
 Never accept an interview time or invent a date when the message lacks a clear time.
 Return only JSON matching the supplied schema.
+
+For Mercor messages, optionally emit `mercor_work_events` only when the exact
+message proves a state transition. Use the application/listing identifier as
+`work_id`, the Gmail message ID plus transition as `event_id`, and a redacted
+evidence reference such as `gmail:<message_id>`. Never infer selection, a
+contract, permission to use AI, acceptance, or payment from silence or an offer
+estimate. Use `needs_human` for human-bound work and emit `paid_settled` only
+with an explicit paid/settled status, payment ID, and amount. The deterministic
+driver persists these events idempotently and sends a Telegram receipt.
