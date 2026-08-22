@@ -8,11 +8,14 @@ Unknown paths, sessions, state, credentials, source, and probe failures remain.
 from __future__ import annotations
 
 import argparse
+from contextlib import contextmanager, suppress
+import errno
 import json
 import os
 import pwd
 import re
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -30,6 +33,13 @@ POST_SWEEP_RESERVE_SECONDS = 30
 HEALTH_CHECK_TIMEOUT_SECONDS = 5
 CANONICAL_LABEL = "ai.anicca.life-manager-disk-cleanup"
 THRESHOLDS = ((20 * GiB, "NORMAL"), (11 * GiB, "PREVENTIVE"), (6 * GiB, "PRESSURE"), (3 * GiB, "CRITICAL"))
+RECEIPT_RESERVE_BYTES = 1024 * 1024
+RECEIPT_PAYLOAD_MAX_BYTES = 64 * 1024
+
+
+class _ReceiptAtomicFailure(Exception):
+    def __init__(self, error: OSError) -> None:
+        self.error = error
 
 
 def classify_tier(free_bytes: int) -> str:
@@ -284,13 +294,107 @@ class HostDiskGovernor:
             )
         return False
 
-    def _receipt(self, payload: dict, filename: str = "last-receipt.json") -> None:
+    @staticmethod
+    def _receipt_reserve_valid(path: Path) -> bool:
+        try:
+            info = path.lstat()
+        except OSError:
+            return False
+        return stat.S_ISREG(info.st_mode) and stat.S_IMODE(info.st_mode) == 0o600 and info.st_size == RECEIPT_RESERVE_BYTES and getattr(info, "st_blocks", 0) * 512 >= RECEIPT_RESERVE_BYTES
+
+    @contextmanager
+    def _staged_receipt_file(self, data: bytes, parent: Path, prefix: str, *, retryable: bool = False):
+        fd, temporary_name = tempfile.mkstemp(prefix=prefix, suffix=".tmp", dir=str(parent))
+        temporary = Path(temporary_name)
+        try:
+            os.fchmod(fd, 0o600)
+            with os.fdopen(fd, "wb") as stream:
+                fd = -1
+                try:
+                    written = stream.write(data)
+                    if written != len(data):
+                        raise OSError(errno.EIO, "short receipt write")
+                    stream.flush()
+                    os.fsync(stream.fileno())
+                except OSError as exc:
+                    if retryable:
+                        raise _ReceiptAtomicFailure(exc) from exc
+                    raise
+            yield temporary
+        finally:
+            with suppress(OSError):
+                os.close(fd)
+            temporary.unlink(missing_ok=True)
+
+    def _receipt_reserve(self, *, recreate: bool = False) -> None:
+        reserve = self.state_dir / ".receipt-reserve"
         self.state_dir.mkdir(parents=True, exist_ok=True)
+        if self._receipt_reserve_valid(reserve) and not recreate:
+            return
+        try:
+            info = reserve.lstat()
+        except FileNotFoundError:
+            info = None
+        if info is not None and stat.S_ISDIR(info.st_mode):
+            raise IsADirectoryError(errno.EISDIR, "receipt reserve is a directory", reserve)
+        if info is not None:
+            reserve.unlink()
+        with self._staged_receipt_file(
+            b"\0" * RECEIPT_RESERVE_BYTES, self.state_dir, ".receipt-reserve."
+        ) as temporary:
+            if not self._receipt_reserve_valid(temporary) or len(temporary.read_bytes()) != RECEIPT_RESERVE_BYTES:
+                raise OSError(errno.EIO, "receipt reserve readback failed")
+            os.replace(temporary, reserve)
+        self._fsync_receipt_parent(self.state_dir)
+
+    def _consume_receipt_reserve(self) -> None:
+        reserve = self.state_dir / ".receipt-reserve"
+        if not self._receipt_reserve_valid(reserve):
+            raise OSError(errno.EIO, "receipt reserve validation failed")
+        reserve.unlink()
+
+    @staticmethod
+    def _fsync_receipt_parent(parent: Path) -> None:
+        fd = -1
+        try:
+            flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+            fd = os.open(str(parent), flags)
+            os.fsync(fd)
+        except OSError:
+            pass
+        with suppress(OSError):
+            os.close(fd)
+
+    def _atomic_receipt_write(self, data: bytes, target: Path) -> None:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        with self._staged_receipt_file(
+            data, target.parent, f".{target.name}.", retryable=True
+        ) as temporary:
+            try:
+                os.replace(temporary, target)
+            except OSError as exc:
+                raise _ReceiptAtomicFailure(exc) from exc
+        self._fsync_receipt_parent(target.parent)
+
+    def _receipt(self, payload: dict, filename: str = "last-receipt.json") -> None:
         payload.setdefault("observed_at", time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
+        data = (json.dumps(payload, ensure_ascii=False, sort_keys=True) + "\n").encode("utf-8")
+        if len(data) > RECEIPT_PAYLOAD_MAX_BYTES:
+            raise ValueError("receipt payload exceeds 64 KiB")
+        self._receipt_reserve()
         target = self.state_dir / filename
-        temporary = self.state_dir / f".{filename}.tmp"
-        temporary.write_text(json.dumps(payload, ensure_ascii=False, sort_keys=True) + "\n")
-        os.replace(temporary, target)
+        try:
+            self._atomic_receipt_write(data, target)
+            return
+        except _ReceiptAtomicFailure as failure:
+            if failure.error.errno != errno.ENOSPC:
+                raise failure.error
+        self._consume_receipt_reserve()
+        try:
+            self._atomic_receipt_write(data, target)
+        except _ReceiptAtomicFailure as failure:
+            raise failure.error
+        self._receipt_reserve(recreate=True)
 
     def _canary_receipt(self, payload: dict[str, object]) -> None:
         """Keep the initial effect and the immediate replay in one receipt."""

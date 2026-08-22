@@ -4,7 +4,7 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
 実行authority: **Mac Host Storage Governor**  
 公開skill: **`disk-cleanup`**
 
-状態: Phase 1実装済み。Life Manager OSS skill、fail-closed governor、guard fallback、回帰テスト、旧cleanup ownerのcutover、正本5分labelのbootstrap/readback、MiB/GiB精度とswap telemetry、ULTRA時のexact-byte full-pass昇格、bootstrap health failureのcleanup内receipt契約、Gig/Writer共通producer preflight、Paid/Storefrontのin-flight effect gate/checkpoint、Writer provider-start gateは反映済み。supervisor non-stop/pause-resume契約、host-wide census、hourly intelligence、Writerのin-flight drainを含む全producer backpressure、atomic capacity claims、rapid-growth predictor、unknown-growth containment、ULTRA receipt reserve/retry、24時間/7日観測、141/153実機fixtureは未完了。UID 501/GUI bootstrapと`ai.anicca.life-manager-disk-cleanup`のload readbackは復旧済み。
+状態: Phase 1実装済み。Life Manager OSS skill、fail-closed governor、guard fallback、回帰テスト、旧cleanup ownerのcutover、正本5分labelのbootstrap/readback、MiB/GiB精度とswap telemetry、ULTRA時のexact-byte full-pass昇格、bootstrap health failureのcleanup内receipt契約、Gig/Writer共通producer preflight、Paid/Storefrontのin-flight effect gate/checkpoint、Writer provider-start gate、ULTRA receipt reserve/retryは反映済み。supervisor non-stop/pause-resume契約、host-wide census、hourly intelligence、Writerのin-flight drainを含む全producer backpressure、atomic capacity claims、rapid-growth predictor、unknown-growth containment、24時間/7日観測、141/153実機fixtureは未完了。UID 501/GUI bootstrapと`ai.anicca.life-manager-disk-cleanup`のload readbackは復旧済み。
 
 ## 現行実装状況とOSS境界
 
@@ -61,16 +61,15 @@ contractへ揃えた。容量変更とalertのauthorityをLife Managerへ一本�
 alertと広範囲cache削除が消えていることを固定した。
 ただしfreeはなお5.9 GiBで、現在の`gui/501`は復旧したものの、正本cleanup labelのload readbackは未達である。
 
-### 2026-08-22 receipt ENOSPC incident — TODOへ戻す
+### 2026-08-22 receipt ENOSPC incident — A-25で復旧
 
 2026-08-22T06:37Zのcanonical passは、容量計測と保護判定を完了した後、
 `last-receipt.json`のatomic replaceで`Errno 28 (ENOSPC)`になり、exit 1になった。これは削除判断の失敗ではなく、
 最終receiptを書けないために1回の実行が失敗扱いになった障害である。
 
-これはA-25の未完了証拠として扱う。state directoryに保護されたreceipt reserveを確保し、ENOSPC時にreserveを解放して
-同じatomic writeを再試行し、成功後にreserveを再作成する実装とテストが必要である。未知path、session、source、swap、
-重要stateを削除する設計にはしない。実装をこのsessionでは行わず、古いstderrのENOSPC行と`last exit code=1`を履歴として保持する。
-次sessionの最初の原子作業はA-25であり、実装後にcanonical labelの新しいreceiptとexit 0をread backする。
+この障害をA-25で閉じた。state directoryに保護されたreceipt reserveを確保し、pre-commit ENOSPC時だけreserveを
+解放して同じatomic writeを1回再試行し、成功後にreserveを再作成する。未知path、session、source、swap、重要stateは
+削除しない。古いstderrのENOSPC行と`last exit code=1`はincident履歴として保持する。
 
 2026-08-22T07:08Zのplanning readbackでは、Data volumeのavailableは`592,976 KiB`から
 `139,808 KiB`まで低下し、swapは`6,048 MiB`使用、tierは`ULTRA`だった。canonical labelは
@@ -87,7 +86,7 @@ A-25は通常のA-04以降より先に処理するcapacity-safety interruptで�
 作らない。実装soft targetはproduction 1 file + test 1 file、100 LOC未満とする。
 
 1. `state_dir/.receipt-reserve`を1 MiBの実割当済みregular file、mode `0600`として保持する。
-   sparse `truncate`だけを成功扱いにせず、書込み、flush、`fsync`、`st_blocks > 0`をread backする。
+   sparse `truncate`だけを成功扱いにせず、書込み、flush、`fsync`、`st_blocks * 512 >= 1 MiB`をread backする。
 2. reserve pathは通常のinventory/reclaimer candidateへ絶対に入れない。解放authorityは
    `_receipt()`の`ENOSPC` recovery branchだけである。
 3. receipt JSONは64 KiB以下へboundし、既存targetを保持したまま同一directoryのunique temporary fileへ
@@ -104,6 +103,13 @@ A-25は通常のA-04以降より先に処理するcapacity-safety interruptで�
    reserveを消費しないことを最小regressionで固定する。
 7. GREEN後は既存canonical labelだけを`bin/launchctl-safe kickstart`し、run count増加、新しい実機receipt、
    `last exit code=0`、reserve size/mode/allocation、protected deletion 0をread backする。人工的なproduction disk-fillは行わない。
+
+A-25のTDDはdisk-cleanup **40 passed**、`py_compile`、shell/plist lint、`git diff --check`を通した。
+write/file-fsync/replaceのENOSPC、他errno、2回目ENOSPC、sparse reserve、reserve再作成失敗、64 KiB bound、
+temporary cleanup、fd ownershipをfixtureで反証し、fresh adversarial reviewはBLOCKER/HIGH/MEDIUMなしで`ship`だった。
+canonical labelをpreflight後にkickstartし、`runs=80→81`、`state=not running`、`last exit code=0`をread backした。
+新receiptは`observed_at=2026-08-22T08:21:25Z`、`errors=0`、`protected_deletions=0`、mode `0600`で、
+reserveは1,048,576 bytes、mode `0600`、2048 blocks、孤児temporary file 0だった。人工的なdisk-fillは行っていない。
 
 #### 2026-08-22 rapid saturation readback and prevention closure
 
@@ -763,8 +769,8 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 
 各行は1つの作業だけを持つ。順序を飛ばさず、受入証拠が保存されるまで完了扱いにしない。
 
-実行queueはcapacity-safety interruptの **A-25を最初に1件だけ** 閉じ、その後
-`A-04 → A-05 → … → A-24 → A-26 → … → A-44`へ戻る。A-25の先行はA-04〜A-24の
+capacity-safety interruptのA-25を閉じたため、実行queueは
+`A-04 → A-05 → … → A-24 → A-26 → … → A-44`へ戻る。A-25の先行完了はA-04〜A-24の
 完了を意味しない。各itemはRED、最小GREEN、focused regression、fresh adversarial review、実機readback、
 spec state更新、commit/pushまでを同じsliceで閉じる。後続itemのscaffoldは前倒ししない。
 
@@ -794,7 +800,7 @@ spec state更新、commit/pushまでを同じsliceで閉じる。後続itemのsc
 | A-22 | supervisor non-stop behaviorを実装する | ULTRA wake keeps supervisor labels loaded | 未完了 |
 | A-23 | Codex log budget/rotationを実装する | active app-server handoff with session loss 0 | 未完了 |
 | A-24 | completed-project janitorをcanonical loopへ接続する | terminal-only dry-run/live receipt | 未完了 |
-| A-25 | `_receipt()`へdurable atomic writeと1 MiB reserve付きENOSPC 1回retryを追加する | Test Matrix 30 PASS、write/file-fsync/replace各ENOSPCで旧receipt保持・retry 1回、他errnoでreserve保持、receipt mode 0600、temporary残留0、reserve 1 MiB/mode 0600/allocated、canonical run count増加、新receipt、last exit 0、protected deletion 0 | 最優先・未完了: 2026-08-22 ENOSPCでlast-receipt atomic replaceがexit 1。実装・fixture・実機readbackが必要 |
+| A-25 | `_receipt()`へdurable atomic writeと1 MiB reserve付きENOSPC 1回retryを追加する | Test Matrix 30 PASS、write/file-fsync/replace各ENOSPCで旧receipt保持・retry 1回、他errnoでreserve保持、receipt mode 0600、temporary残留0、reserve 1 MiB/mode 0600/allocated、canonical run count増加、新receipt、last exit 0、protected deletion 0 | 完了: disk-cleanup 40 passed、fresh review `ship`、canonical runs 80→81、08:21:25Z receipt、exit 0、reserve 1 MiB/0600/2048 blocks、temporary 0、protected deletion 0 |
 | A-26 | bounded ops logを分離する | operational log size/retention test PASS | 部分完了 |
 | A-27 | incident receiptを分離する | immutable incident receipt schema PASS | 未完了 |
 | A-28 | delivery-failure aggregationを保存する | Telegram message/delivery-failure IDs read back | 未完了 |
