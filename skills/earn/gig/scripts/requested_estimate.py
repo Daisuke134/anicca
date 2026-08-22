@@ -63,7 +63,7 @@ NA15_CATEGORY_IDS = {
 }
 
 SEMANTIC_RECEIPT_VERSION = 1
-SEMANTIC_PROMPT_VERSION = "reply-negotiate-v22"
+SEMANTIC_PROMPT_VERSION = "reply-negotiate-v23"
 SEMANTIC_RUNNER_PROFILE = "reply-semantic-agent"
 SEMANTIC_COMPATIBLE_RUNNER_PROFILES = frozenset({
     "composition-agent", SEMANTIC_RUNNER_PROFILE,
@@ -181,6 +181,7 @@ def semantic_prompt(
 - selection sample/roughのexplicit buyer deadlineはinterim deadlineとして扱い、later official final delivery dateとは別で、applied scope内ならclarifyせず受諾して進みます。後日のofficial final delivery dateと矛盾しない中間成果物期限として、選定用ラフをその期限までに提出します。
 - reply/clarifyは最新buyerの質問・依頼へ直接答えるsend-readyな日本語本文をreply_bodyへ返します。未依頼の購入催促、同じ案内の反復、根拠のない職歴・実績・本人属性を作りません。
 - buyerが成果物・投稿文・サンプルの全文を「この返信で見せて／提示して」と求めた場合、「後で見せます／お送りします」と将来へ延期して回答済みにしません。作成根拠が会話内に揃うなら、要求された各成果物をラベル付きの実物全文としてreply_bodyへ直接含めます。根拠が足りなければ不足する最小情報だけclarifyします。
+- 上記依頼の後にsellerが実物を含めず「後で見せます／送ります」とだけ返信した場合、その約束は未履行です。最新roleがsellerでもseller_last/waitにせず、会話内の根拠から実物全文をreplyして債務を閉じます。
 - 最新messageがbuyerで、明確なdecline/stop、unknown、必要official context待ちのいずれでもない場合、waitにしません。question/negotiating/ready stateはreply/clarify/send_estimateで前進させ、gratitude/consideringにも同じmessage identityへ一度だけ短いcontextual acknowledgementを返します。購入催促やseller既送文の反復は加えません。
 - buyerが対応可否を尋ね、current conversationまたはverified factsに根拠がある場合、reply_bodyの冒頭で「対応可能です」等の明確な回答を先に述べ、その後に根拠と条件を短く続けます。根拠がない能力をyesにせず、確認できる範囲を正直に区別します。
 - reply/clarifyではreply_auditを本文作成後に自己監査します。answered_buyer_message_idsへ本文が直接回答したcurrent-cycle buyer message IDを入れます。unanswered_questionsとunsupported_claimsは具体的な問題を列挙します。未依頼の購入・見積りCTA、seller既送文の反復、外部連絡先への誘導を各booleanで申告します。問題が1つでもある本文を安全扱いにしません。
@@ -228,6 +229,27 @@ def _semantic_ids(value: Any, *, field: str, allowed: set[str]) -> list[str]:
     return result
 
 
+def _latest_inline_artifact_request(rows: list[dict[str, str]]) -> dict[str, str] | None:
+    for row in reversed(rows):
+        body = row["body"]
+        if (
+            row["role"] == "buyer"
+            and any(word in body for word in ("全文", "完成文", "投稿案", "サンプル"))
+            and any(word in body for word in ("見せて", "提示して", "送って", "ください"))
+        ):
+            return row
+    return None
+
+
+def _inline_artifact_debt(rows: list[dict[str, str]]) -> bool:
+    if _latest_inline_artifact_request(rows) is None or rows[-1]["role"] != "seller":
+        return False
+    return any(
+        phrase in rows[-1]["body"]
+        for phrase in ("お見せします", "提示します", "お送りします", "後ほど", "改めて送ります")
+    )
+
+
 def validate_semantic_judgement(
     payload: Any, rows: list[dict[str, str]],
 ) -> dict[str, Any]:
@@ -247,7 +269,8 @@ def validate_semantic_judgement(
         raise SemanticJudgementError("semantic_enum_invalid")
     if state == "explicit_estimate_request" and action == "reply":
         raise SemanticJudgementError("semantic_estimate_request_reply_conflict")
-    if rows[-1]["role"] == "seller" and action in {"reply", "clarify"}:
+    artifact_debt = _inline_artifact_debt(rows)
+    if rows[-1]["role"] == "seller" and action in {"reply", "clarify"} and not artifact_debt:
         raise SemanticJudgementError("semantic_seller_last_reply_conflict")
     if official_context not in SEMANTIC_OFFICIAL_CONTEXTS:
         raise SemanticJudgementError("semantic_official_context_invalid")
@@ -303,12 +326,17 @@ def validate_semantic_judgement(
             raise SemanticJudgementError("semantic_reply_audit_invalid")
     terms = payload.get("estimate_terms")
     if action in {"reply", "clarify"}:
-        if rows[-1]["role"] != "buyer" or type(reply_body) is not str or not reply_body.strip():
+        if (
+            rows[-1]["role"] != "buyer" and not artifact_debt
+            or type(reply_body) is not str or not reply_body.strip()
+        ):
             raise SemanticJudgementError("semantic_reply_invalid")
         reply_body = reply_body.strip()
         if len(reply_body) > 1000 or uncertainty or official_context != "none" or terms is not None:
             raise SemanticJudgementError("semantic_reply_not_authorized")
-        latest_buyer_id = rows[-1]["message_id"]
+        latest_buyer_id = next(
+            row["message_id"] for row in reversed(rows) if row["role"] == "buyer"
+        )
         if (
             latest_buyer_id not in answered
             or audit["unanswered_questions"]
@@ -318,12 +346,8 @@ def validate_semantic_judgement(
             or audit["off_platform_contact"]
         ):
             raise SemanticJudgementError("semantic_reply_audit_failed")
-        latest_request = rows[-1]["body"]
-        inline_artifact_requested = (
-            any(word in latest_request for word in ("全文", "完成文", "投稿案", "サンプル"))
-            and any(word in latest_request for word in ("見せて", "提示して", "送って", "ください"))
-        )
-        if inline_artifact_requested and any(
+        inline_artifact_requested = _latest_inline_artifact_request(rows) is not None
+        if inline_artifact_requested and not artifact_debt and any(
             phrase in reply_body
             for phrase in ("お見せします", "提示します", "お送りします", "後ほど", "改めて送ります")
         ):
