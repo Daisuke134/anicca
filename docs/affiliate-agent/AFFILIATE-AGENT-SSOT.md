@@ -7281,3 +7281,34 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   launchctl, a parallel executor, or manual posting. A fresh Aqua/user context
   must first prove `launchctl-safe preflight` PASS; then safe-kick only the
   existing Repost owner and read back the 0.50 strategy migration.
+- The user restored the Aqua/user control plane. Exact preflight readback is
+  `status=pass`, `mutation_allowed=true`, username `anicca`, manager `Aqua`, UID
+  501, and readable `gui/501`. Recovery had also moved `~/loops/current` to
+  canonical-main release `20260823T050059-c3497d11`, whose X runtime predated
+  the duplicate, Postiz, and 0.50 repairs. Its first Repost run was stopped
+  before any X effect after it attempted three historical Telegram backlog
+  deliveries; all three failed and the posted ledger stayed at 81. A targeted
+  `launchctl kill SIGTERM` stopped that exact service after normal `stop` left
+  the parent reader alive. The immutable Repost release was then atomically
+  restored to `20260823T035527-da4cfe54`, with source/runtime CLI and Postiz
+  hashes matching.
+- Repost owner run `20260823T083329` proves the restored lane. It quarantined the
+  backlog, collected 94 candidates, migrated private strategy to
+  `original_ratio=0.50` and `original_ratio_bootstrap_version=2`, and selected
+  the quote arm for this random pass. The length gate passed at 246/250; the
+  independent critic accepted source support and two reader values. Postiz
+  submission ID `cmt50wubn06tpqp0yg85auwg5` was followed by exact X readback
+  `https://x.com/selawmqt/status/2091310209826439443`, quoting Gergely Orosz's
+  MCP-interface post. Owner exit was zero and the posted ledger moved 81 to 82.
+  Telegram was `ambiguous_no_retry` and was not replayed. This is a real public
+  distribution effect, but not an Affiliate placement or money.
+- Affiliate owner run after that effect observed 82 X actions, 5 exact
+  Affiliate placement joins, 77 unjoined audience actions, and 0 invalid rows.
+  The new quote correctly received `NO_REVENUE_CREDIT`. Telegram delivery is
+  exact messageId `29366`. Latest official PartnerStack capture observed at
+  `2026-08-22T23:29:34.438093+00:00` has zero commission rows, USD display,
+  no live `reward_key`, and an empty payout table. Rolling money remains
+  pending/approved/paid/reversed all zero, `NO_TRANSACTIONS`,
+  `NO_APPROVED_OR_PAID_ROWS`, and USD 10,000 `NOT_REACHED`; real cost remains
+  unknown. The provider click count of 2 on the READY/UNCONSUMED Subtitle
+  Translator proposal remains non-money.

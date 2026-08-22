@@ -2400,3 +2400,34 @@ context, first require `/Users/anicca/loops/current/bin/launchctl-safe preflight
 to return PASS. Then safe-kick only `ai.anicca.x-repost-pass`, verify private
 `original_ratio=0.50` plus bootstrap version 2, and wait for either an exact X
 permalink or a terminal safe no-effect before triggering the Affiliate owner.
+
+The user restored the Aqua/user control plane. `launchctl-safe preflight` now
+returns PASS with manager Aqua, UID 501, and readable gui/501. Recovery had
+repointed `~/loops/current` to canonical-main release
+`20260823T050059-c3497d11`, which contained an obsolete X runtime. Its first
+run attempted three historical Telegram backlog rows but made no X effect;
+posted count remained 81. Normal stop left the backlog reader alive, so a
+targeted `launchctl kill SIGTERM` stopped that exact existing service. Current
+was atomically restored to the verified immutable Repost release
+`20260823T035527-da4cfe54`, and source/runtime hashes match.
+
+Live owner run `20260823T083329` then quarantined the backlog, collected 94
+candidates, and migrated strategy to `original_ratio=0.50` with bootstrap
+version 2. This pass randomly selected quote, passed 246/250 length and the
+source/value critic, and exact-read
+`https://x.com/selawmqt/status/2091310209826439443` after Postiz submission
+`cmt50wubn06tpqp0yg85auwg5`. It quotes
+`https://x.com/GergelyOrosz/status/2091248280365682688`; owner exit was zero,
+ledger moved 81 to 82, and Telegram stayed ambiguous-no-retry. This is public
+distribution, not money.
+
+The following Affiliate owner run observed 82 X actions, 5 exact Affiliate
+joins, 77 unjoined actions, 0 invalid rows, and delivered Telegram messageId
+`29366`. Latest official PartnerStack capture at
+`2026-08-22T23:29:34.438093+00:00` remains zero commission rows, USD, no
+`reward_key`, and empty payouts. Canonical pending/approved/paid/reversed are
+all zero: `NO_TRANSACTIONS`, `NO_APPROVED_OR_PAID_ROWS`, USD 10,000
+`NOT_REACHED`; cost is unknown. Next atom: in the next half-hour slot let the
+same owner exercise the 50% standalone-original arm, read back its exact X
+permalink or safe terminal no-effect, then repeat Affiliate funnel/money
+readback. Never treat the proposal's provider click count 2 as money.
