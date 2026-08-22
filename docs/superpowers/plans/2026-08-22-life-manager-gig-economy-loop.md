@@ -359,7 +359,12 @@ U13 atomic order:
    `~022091070478975551162` open/26 Connects, and historical
    `~022091070238314681977` closed with `This job is no longer available`; every row carries its own
    evidence SHA-256. Eleven focused tests pass.
-7. Record each terminal transition once with official reason, observation time and receipt hash.
+7. **DONE:** a mode-600, flocked JSONL ledger records each `closed` or `removed` transition with
+   deterministic event ID, prior/next state, official reason, observation times and receipt hash.
+   Ledger fsync precedes atomic state replacement, so a crash cannot silently lose the event; replay
+   uses the same source observation identity and cannot duplicate it. Two live nine-page reads
+   produced one 367-byte closed event on the first pass and `appended=0` with identical ledger
+   SHA-256 on the second. Thirteen focused tests pass.
 8. **DONE:** candidate `~022091106411892491962` still exposes the official 7-Connect proposal entry,
    so it remains in the ready queue rather than being falsely retired. Balance remains 0 and no
    proposal effect occurred.

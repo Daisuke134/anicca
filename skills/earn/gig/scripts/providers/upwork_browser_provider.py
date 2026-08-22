@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import fcntl
 import hashlib
 import json
 import os
@@ -31,6 +32,8 @@ CATALOG_URL = "https://www.upwork.com/nx/project-dashboard/?step=approved"
 CONTRACTS_URL = "https://www.upwork.com/nx/wm/freelancer/home"
 MESSAGES_URL = "https://www.upwork.com/ab/messages/rooms/"
 DEFAULT_CANDIDATES = SCRIPTS.parent / "config" / "upwork-candidates.public.json"
+DEFAULT_TRANSITIONS = Path.home() / "gig/state/upwork-free-transitions.jsonl"
+TERMINAL_JOB_STATUSES = {"closed", "removed"}
 _COUNT_LABELS = {
     "offers": r"Offers\s*\((\d+)\)",
     "invites": r"Invites from clients\s*\((\d+)\)",
@@ -264,8 +267,100 @@ def _atomic_write(path: Path, value: dict[str, Any]) -> None:
     os.replace(temporary, path)
 
 
-async def observe(output: Path, candidates_path: Path = DEFAULT_CANDIDATES) -> dict[str, Any]:
-    pass_id = f"upwork-free-{int(time.time())}"
+def _read_previous_state(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        return {}
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise ValueError("upwork_previous_state_invalid") from error
+    if not isinstance(value, dict):
+        raise ValueError("upwork_previous_state_invalid")
+    return value
+
+
+def reconcile_terminal_transitions(
+    output: Path, ledger: Path, state: dict[str, Any],
+) -> dict[str, Any]:
+    ledger.parent.mkdir(parents=True, exist_ok=True)
+    with ledger.open("a+", encoding="utf-8") as handle:
+        os.chmod(ledger, 0o600)
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        try:
+            previous = _read_previous_state(output)
+            handle.seek(0)
+            rows = []
+            for line in handle:
+                if not line.strip():
+                    continue
+                try:
+                    row = json.loads(line)
+                except json.JSONDecodeError as error:
+                    raise ValueError("upwork_transition_ledger_invalid") from error
+                if not isinstance(row, dict) or not row.get("event_id"):
+                    raise ValueError("upwork_transition_ledger_invalid")
+                rows.append(row)
+            existing_ids = {str(row["event_id"]) for row in rows}
+            existing_terminal = {
+                (str(row.get("job_id")), str(row.get("to_status"))) for row in rows
+            }
+            previous_jobs = {
+                str(item.get("job_id")): item
+                for item in previous.get("candidate_jobs", [])
+                if isinstance(item, dict) and item.get("job_id")
+            }
+            appended = []
+            for candidate in state.get("candidate_jobs", []):
+                if not isinstance(candidate, dict):
+                    continue
+                job_id = str(candidate.get("job_id") or "")
+                to_status = str(candidate.get("status") or "")
+                if not job_id or to_status not in TERMINAL_JOB_STATUSES:
+                    continue
+                prior = previous_jobs.get(job_id, {})
+                prior_status = str(prior.get("status") or "unobserved")
+                if prior_status == to_status and (job_id, to_status) in existing_terminal:
+                    continue
+                from_status = "legacy_observed" if prior_status == to_status else prior_status
+                source_observed_at = str(previous.get("observed_at") or "unobserved")
+                event_material = "|".join((
+                    job_id, from_status, to_status, source_observed_at,
+                ))
+                event_id = hashlib.sha256(event_material.encode("utf-8")).hexdigest()
+                if event_id in existing_ids:
+                    continue
+                event = {
+                    "event_id": event_id,
+                    "job_id": job_id,
+                    "from_status": from_status,
+                    "to_status": to_status,
+                    "official_reason": str(candidate.get("official_marker") or "unknown"),
+                    "observed_at": str(state.get("observed_at") or ""),
+                    "source_observed_at": source_observed_at,
+                    "receipt_hash": str(candidate.get("evidence_sha256") or ""),
+                }
+                handle.write(json.dumps(
+                    event, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+                ) + "\n")
+                appended.append(event)
+                existing_ids.add(event_id)
+                existing_terminal.add((job_id, to_status))
+            handle.flush()
+            os.fsync(handle.fileno())
+            state = dict(state)
+            state["terminal_transition_count"] = len(rows) + len(appended)
+            state["terminal_transitions_appended"] = len(appended)
+            state["terminal_transition_event_ids"] = [
+                event["event_id"] for event in appended
+            ]
+            _atomic_write(output, state)
+            return state
+        finally:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
+
+async def observe(candidates_path: Path = DEFAULT_CANDIDATES) -> dict[str, Any]:
+    pass_id = f"upwork-free-{time.time_ns()}-{os.getpid()}"
     artifacts: dict[str, str] = {}
     pages: dict[str, str] = {}
     links: dict[str, list[dict[str, Any]]] = {}
@@ -315,7 +410,6 @@ async def observe(output: Path, candidates_path: Path = DEFAULT_CANDIDATES) -> d
         "evidence_sha256": artifacts,
     }
     state["can_submit_public_job"] = state["balance"] > 0
-    _atomic_write(output, state)
     return state
 
 
@@ -323,13 +417,17 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--cdp-base", default="http://127.0.0.1:9233")
     parser.add_argument("--candidates", type=Path, default=DEFAULT_CANDIDATES)
+    parser.add_argument("--transitions", type=Path, default=DEFAULT_TRANSITIONS)
     parser.add_argument(
         "--output", type=Path,
         default=Path(os.path.expanduser("~/gig/state/upwork-free-loop.json")),
     )
     args = parser.parse_args()
     os.environ["CLOAK_CDP_BASE_URL"] = args.cdp_base.rstrip("/")
-    state = asyncio.run(observe(args.output.expanduser(), args.candidates.expanduser()))
+    state = asyncio.run(observe(args.candidates.expanduser()))
+    state = reconcile_terminal_transitions(
+        args.output.expanduser(), args.transitions.expanduser(), state,
+    )
     print(json.dumps(state, ensure_ascii=False, sort_keys=True, separators=(",", ":")))
     return 0
 

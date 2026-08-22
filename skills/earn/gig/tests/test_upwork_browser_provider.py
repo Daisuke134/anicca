@@ -22,6 +22,7 @@ from upwork_browser_provider import (  # noqa: E402
     parse_inventory,
     parse_messages,
     parse_stable_entities,
+    reconcile_terminal_transitions,
 )
 
 
@@ -137,6 +138,59 @@ def test_public_candidate_config_has_unique_exact_ids():
     assert all(item["job_id"] in item["job_url"] for item in candidates)
 
 
+def test_terminal_transition_is_fsynced_once_and_replay_is_zero(tmp_path):
+    output = tmp_path / "state.json"
+    ledger = tmp_path / "transitions.jsonl"
+    previous = {
+        "observed_at": "2026-08-22T00:00:00+00:00",
+        "candidate_jobs": [{
+            "job_id": "~01", "status": "closed", "evidence_sha256": "a" * 64,
+        }],
+    }
+    output.write_text(json.dumps(previous), encoding="utf-8")
+    current = {
+        "observed_at": "2026-08-22T00:05:00+00:00",
+        "candidate_jobs": [{
+            "job_id": "~01", "status": "closed",
+            "official_marker": "no_longer_available", "evidence_sha256": "b" * 64,
+        }],
+    }
+    first = reconcile_terminal_transitions(output, ledger, current)
+    rows = [json.loads(line) for line in ledger.read_text().splitlines()]
+    assert first["terminal_transitions_appended"] == 1
+    assert rows[0]["from_status"] == "legacy_observed"
+    assert rows[0]["to_status"] == "closed"
+    assert rows[0]["official_reason"] == "no_longer_available"
+    first_size = ledger.stat().st_size
+
+    replay = reconcile_terminal_transitions(output, ledger, current)
+    assert replay["terminal_transitions_appended"] == 0
+    assert ledger.stat().st_size == first_size
+    assert ledger.stat().st_mode & 0o777 == 0o600
+
+
+def test_reopen_then_remove_creates_a_distinct_terminal_transition(tmp_path):
+    output, ledger = tmp_path / "state.json", tmp_path / "transitions.jsonl"
+    opened = {
+        "observed_at": "2026-08-22T00:10:00+00:00",
+        "candidate_jobs": [{
+            "job_id": "~01", "status": "open", "evidence_sha256": "c" * 64,
+        }],
+    }
+    reconcile_terminal_transitions(output, ledger, opened)
+    removed = {
+        "observed_at": "2026-08-22T00:15:00+00:00",
+        "candidate_jobs": [{
+            "job_id": "~01", "status": "removed",
+            "official_marker": "removed", "evidence_sha256": "d" * 64,
+        }],
+    }
+    result = reconcile_terminal_transitions(output, ledger, removed)
+    assert result["terminal_transitions_appended"] == 1
+    row = json.loads(ledger.read_text().splitlines()[-1])
+    assert (row["from_status"], row["to_status"]) == ("open", "removed")
+
+
 @pytest.mark.parametrize("parser,text", [
     (parse_connects, "Connects History unavailable"),
     (parse_inventory, "Proposals and Offers loading"),
@@ -154,4 +208,5 @@ def test_launchd_job_is_zero_spend_and_runs_every_five_minutes():
     assert job["StartInterval"] == 300
     assert "upwork_browser_provider.py" in command
     assert "upwork-candidates.public.json" in command
+    assert "upwork-free-transitions.jsonl" in command
     assert all(term not in command for term in ("buy", "billing", "plus", "boost"))
