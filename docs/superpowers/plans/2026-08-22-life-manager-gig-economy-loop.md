@@ -1084,7 +1084,12 @@ recorded once as negative revenue in its actual month without subtracting execut
 ten-case finance suite and the 40-test provider/delivery/revision/executor focused suite pass; Python compilation and
 `git diff --check` pass. This is engine proof only: the last official account snapshot has no active
 contract, payment or payout, so the first-live-payment checkbox remains open and no revenue is
-claimed.
+claimed. Main merge `c0c66c32f562807d8a9d32b604c1019989b3069c` is published as immutable
+gig release `c0c66c32f562807d8a9d32b604c1019989b3069c`; the finance engine SHA-256 is
+`8a917ad97902d86639a430c97d007059d9abaa1ac2a58ec798624c680cccffd6`. The same 40 focused
+tests pass from the read-only release. The stable `current` pointer resolves to this release, while
+launchd argv readback remains unavailable in the orphaned GUI context; deployment is proven, but a
+fresh official transaction window is not.
 
 ### Task 22: Close the Upwork three-job repeatability gate
 
