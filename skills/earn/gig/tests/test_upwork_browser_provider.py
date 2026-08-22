@@ -151,6 +151,8 @@ def test_public_candidate_config_has_unique_exact_ids():
     assert len(candidates) == 3
     assert len({item["job_id"] for item in candidates}) == 3
     assert all(item["job_id"] in item["job_url"] for item in candidates)
+    assert all(item["queue"] == "ready" for item in candidates)
+    assert all(len(item["proposal_payload_sha256"]) == 64 for item in candidates)
 
 
 def test_terminal_transition_is_fsynced_once_and_replay_is_zero(tmp_path):
