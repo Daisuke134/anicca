@@ -19,6 +19,8 @@ from pathlib import Path
 MIN_PER_ARM = 3          # below this, any difference is noise
 STEP = 0.15              # how far the ratio moves per verdict
 FLOOR, CEILING = 0.2, 0.9  # never stop doing either action entirely: that ends the comparison
+ORIGINAL_STEP = 0.05
+ORIGINAL_FLOOR, ORIGINAL_CEILING = 0.05, 0.50
 
 
 def read_jsonl(path: Path) -> list[dict]:
@@ -99,6 +101,52 @@ def evaluate_tone(posted, samples, cutoff, state: Path, apply: bool, result: dic
     return result
 
 
+def evaluate_original_ratio(posted, samples, cutoff, state: Path, apply: bool,
+                            result: dict) -> dict:
+    """Move additional-original share using same-window early reach, never affiliate rows."""
+    arms: dict[str, list[int]] = {"original": [], "quote": []}
+    for row in posted:
+        at = parse_dt(row.get("posted_at"))
+        kind = row.get("kind")
+        if not at or at < cutoff or kind not in arms:
+            continue
+        views = early_views(samples, row["post_url"])
+        if views is not None:
+            arms[kind].append(views)
+
+    strategy_path = state / "strategy.json"
+    try:
+        strategy = json.loads(strategy_path.read_text(encoding="utf-8"))
+    except Exception:
+        strategy = {}
+    current = float(strategy.get("original_ratio", 0.15))
+    result.update({"knob": "original_ratio", "from": current,
+                   "samples": {k: len(v) for k, v in arms.items()},
+                   "median_early_views": {
+                       k: (float(statistics.median(v)) if v else None) for k, v in arms.items()}})
+    thin = [k for k, values in arms.items() if len(values) < MIN_PER_ARM]
+    if thin:
+        result.update({"to": current, "verdict": "insufficient-data",
+                       "reason": f"fewer than {MIN_PER_ARM} measured posts for: {', '.join(thin)}"})
+        return result
+    original_med = statistics.median(arms["original"])
+    quote_med = statistics.median(arms["quote"])
+    if original_med == quote_med:
+        result.update({"to": current, "verdict": "tie", "reason": "identical medians"})
+        return result
+    direction = ORIGINAL_STEP if original_med > quote_med else -ORIGINAL_STEP
+    new = round(min(ORIGINAL_CEILING, max(ORIGINAL_FLOOR, current + direction)), 2)
+    result.update({"to": new, "verdict": "moved" if new != current else "at-bound",
+                   "reason": f"original {original_med:g} vs quote {quote_med:g} early views"})
+    if apply and new != current:
+        strategy["original_ratio"] = new
+        strategy["updated_at"] = result["ts"]
+        strategy["updated_because"] = result["reason"]
+        strategy_path.write_text(json.dumps(strategy, ensure_ascii=False, indent=1) + "\n",
+                                 encoding="utf-8")
+    return result
+
+
 def evaluate(state: Path, window_hours: int, apply: bool) -> dict:
     posted = [r for r in read_jsonl(state / "posted.jsonl") if r.get("post_url")]
     samples = read_jsonl(state / "engagement.jsonl")
@@ -133,9 +181,12 @@ def evaluate(state: Path, window_hours: int, apply: bool) -> dict:
     # An arm that is switched off will never fill, so waiting on it is not patience, it is a report
     # that reads like pending work when nothing is pending. Say the comparison is off instead.
     if current <= 0.0 or current >= 1.0:
-        # One action is switched off, so that arm will never fill. Compare what is still live
-        # instead of waiting forever: with replies off, tone is the only knob the loop can turn,
-        # and a loop that measures but cannot change anything is not closed.
+        # One action is switched off, so that arm will never fill. Alternate the two live knobs
+        # instead of waiting forever or changing format and tone in the same daily experiment.
+        experiments = read_jsonl(state / "experiments.jsonl")
+        last_knob = experiments[-1].get("knob") if experiments else None
+        if last_knob != "original_ratio":
+            return evaluate_original_ratio(posted, samples, cutoff, state, apply, result)
         return evaluate_tone(posted, samples, cutoff, state, apply, result)
 
     thin = [k for k, v in arms.items() if len(v) < MIN_PER_ARM]
