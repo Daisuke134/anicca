@@ -354,6 +354,7 @@ class ConnectorOutbox:
         self.manifest_path = Path(manifest)
         self.database.parent.mkdir(parents=True, exist_ok=True)
         self._initialize()
+        os.chmod(self.database, 0o600)
 
     def _connect(self) -> sqlite3.Connection:
         connection = sqlite3.connect(self.database, timeout=5, isolation_level=None)

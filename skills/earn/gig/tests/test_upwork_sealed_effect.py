@@ -82,6 +82,7 @@ def test_exact_preflight_persists_then_starts_one_effect(tmp_path):
     assert _row(store)["state"] == "reconcile_pending"
     assert _row(store)["connects_pre"] == 7
     assert "private" in _row(store)["payload_body"]
+    assert store.database.stat().st_mode & 0o777 == 0o600
 
 
 def test_replay_never_starts_a_second_click(tmp_path):
