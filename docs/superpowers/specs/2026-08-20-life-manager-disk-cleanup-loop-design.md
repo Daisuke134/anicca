@@ -428,6 +428,31 @@ state not running、last exit 0、2026-08-22T13:44:46Z receipt、mode `0600`、`
 同じentrypointのreadback復旧後runでexit 0を確認した。空きは約2.8 GiB、swap使用は約10.9 GiBでULTRAのままであり、
 A-18はGig project誤削除を防ぐ証拠であって11 GiB floor回復の証拠ではない。
 
+A-19ではWriterのforeground providerだけへ既存`bounded-exec.py`のprocess-group境界を再利用し、
+`disk-writers.stop`または`disk-pressure.block`が存在する時のin-flight drainを接続した。provider起動前にも
+同じexact 2 pathを確認してeffectを開始せずRC 143を返す。起動後にflagまたはSIGTERMを受けた時はprocess
+groupへTERM、1秒のgrace、残存groupへKILL、全child reapの順で閉じ、SIGINTは130、timeoutは124、通常終了は
+child RCを維持する。既存generation stateのimmutable run/prompt hash、interrupted archive、resume decisionを
+そのまま使い、同一run/promptから再開しpublication state/ledgerを更新しない。
+
+この境界は[Python subprocess](https://docs.python.org/3/library/subprocess.html)の`start_new_session`、
+[Kubernetes Pod lifecycle](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/)のTERM後grace、
+[systemd.kill](https://www.freedesktop.org/software/systemd/man/latest/systemd.kill.html)のchild escapeを防ぐ
+control-group terminationを採用した。REDはstop flag下でproviderがtimeoutまで残ること、leader終了後も
+TERM-ignore descendantが残ること、Writer launchdのdisk floorが未固定であることを再現した。修正後はready
+同期したreal-process fixtureを含むfocused **44 passed**、compile、shell syntax、JSON、diff checkがPASSした。
+fresh reviewはpre-Popen raceとorphan descendant、fixture同期不足を検出し、全修正後のfinal verdictは`ship`である。
+code commitsは`ce112513d`と`43074f764`、deployed immutable releaseは
+`43074f76422d1ec4935acdba98e553cb8564de94`である。
+
+production Writer dailyは初回にinherited `GIG_DISK_HEADROOM_KIB=0`を検出してexit 1したため、Writer 14 jobsへ
+exact `524288` KiBをexplicit environmentとして固定した。再deploy後はruns 1、last exit 0、free
+5,179,191,296 bytesのpreflightを通過し、publication owner identity unavailableでprovider起動前に安全停止した。
+したがって実provider interruptionはisolated real-process E2E、productionはdeployとprovider effect 0の証拠であり、
+live providerを強制中断した証拠ではない。final canonical cleanupはruns 149→150、state not running、last exit 0、
+2026-08-22T14:20:23Z receipt、`errors=0`、`protected_deletions=0`、`evaluated=9/preserved=9/reclaimed=0`である。
+空き約4.9 GiB、swap使用約10.38 GiBで、A-19はA-36の全producer heartbeat/drainや11 GiB回復の証拠ではない。
+
 `/Users/anicca/anicca-project`は約9.5 GiB、その`.worktrees`は約4.4 GiBだった。最大の
 `cfo-resume-spec`（約1.08 GiB）は、dirty=0、branch upstream 0/0、process/open-path/leaseなしを
 read backした後にだけ`git worktree remove`で回収した。branchとremoteは残り、再作成可能である。
@@ -957,7 +982,7 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 | 4 | exact-byte tier、hysteresis、single lock、300秒schedulerをTDD実装 | Test Matrix 2、12–14 PASS | 部分完了: exact-byte tier、atomic lock、300秒plist、pressure/recovery floor、hourly full-pass marker、ULTRA時のcritical full-pass promotion、hourly/explicit fullのcooldown、marker fail-closed、bounded fast/full pass、正本labelのbootstrap/readbackは実装・unit/live PASS。24時間観測は未完了 |
 | 4a | GUI bootstrap health failureを観測専用fail-closedに固定 | Test Matrix 28–29 PASS、141/153 fixture receipt、復旧後readback | 完了: cleanup内preflight、atomic `gui-bootstrap-health-failure` receipt、141/153隔離fixture、stale app-serverのsession-owner/no-kill分離、UID/Directory Services/`gui/501`/canonical labelの復旧readbackを実装 |
 | 5 | Mac全体のproducer censusを作り、artifact/lease/finalizer helperを上位growth ownerへ接続 | 1 GiB以上のunattributed root 0、active lease readback、orphan lease fixture PASS | 部分完了: browser、build/media、VM/package、Gig project lifecycleとChrome/Chromium/pnpmのproducer-specific discovery、`cfo-*`のallow-list discoveryは実装。agent、host-wide census、lease heartbeat/finalizer接続は未完了 |
-| 6 | 全write-heavy producerへ共通disk preflightを接続 | producer census missing consumer 0、Test Matrix 15 PASS | 部分完了: `gig_disk_guard.py`をGig 4 laneとWriter laneの共通入口へ接続し、Paid/Storefrontにはeffect直前gateとatomic/attempt checkpoint、Writerにはprovider-start 11GiB gateを追加。Gig/guard 11件、Paid 9件、Storefront 27件、Writer shell regressionをPASS。Writerのin-flight drain、browser/build/media/VM/package/agent等の全producer接続は未完了 |
+| 6 | 全write-heavy producerへ共通disk preflightを接続 | producer census missing consumer 0、Test Matrix 15 PASS | 部分完了: `gig_disk_guard.py`をGig 4 laneとWriter laneの共通入口へ接続し、Paid/Storefrontにはeffect直前gateとatomic/attempt checkpoint、Writerにはprovider-start 11GiB gateとforeground provider process-group drainを追加。Gig/guard 11件、Paid 9件、Storefront 27件、Writer focused 44件をPASS。browser/build/media/VM/package/agent等の全producer接続は未完了 |
 | 7 | bounded ops log、incident receipt、Telegram dedupeを実装 | Test Matrix 18–19 PASS、message ID | 部分完了: ledger rotationとlast receipt、milestone送信は実装。ops log/incident receiptの正式分離とdedupe契約は未完了 |
 | 8 | intelligence input/output schemaとwake gateを実装 | deletion capability 0、Test Matrix 16–17 PASS | 未完了: deterministic cleanupにLLM削除権限はないが、hourly intelligence schema/wake gateは未実装 |
 | 9 | owner単位のbounded recoveryを実装 | Test Matrix 20 PASS、duplicate redispatch 0 | 未完了: owner単位のcheckpoint、redispatch、重複抑止は未実装 |
@@ -974,8 +999,8 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 
 各行は1つの作業だけを持つ。順序を飛ばさず、受入証拠が保存されるまで完了扱いにしない。
 
-capacity-safety interruptのA-25とA-04〜A-18を閉じたため、実行queueは
-`A-19 → … → A-24 → A-26 → … → A-44`へ進む。A-25の先行完了はA-11〜A-24の
+capacity-safety interruptのA-25とA-04〜A-19を閉じたため、実行queueは
+`A-20 → … → A-24 → A-26 → … → A-44`へ進む。A-25の先行完了はA-20〜A-24の
 完了を意味しない。data loss、credential/session保護、money safety、ENOSPC recoveryなど重要sliceは
 Ponytailでscopeを最小化してTDDを行う。軽微なdocs/readbackは現状実測からstraight fixへ進める。
 全itemで必要最小限のregression、fresh adversarial review、実機readback、spec state更新、commit/pushを同じsliceで閉じ、
@@ -1001,7 +1026,7 @@ TDDのためだけの過剰fixtureや後続itemのscaffoldは前倒ししない�
 | A-16 | build/media producer lifecycleを登録する | artifact/lease/finalizer/quota receipt | 完了: registration-only、static 3件、dynamic build/mediaはowner/class/lease/quota登録済み、全新規entry preserveで削除authority 0、focused 48 tests、final review `ship`、fallback runs 474→475 runtime manifest 0600、canonical runs 129→130 exit 0、実機59 run/videoとArchives保持、protected deletion 0 |
 | A-17 | VM/package producer lifecycleを登録する | artifact/lease/finalizer/quota receipt | 完了: registration-only static 16件、pnpm exact version/proof/lease fail-closed、全A-17 entry runtime/quota 0/lease 300/preserveで削除authority 0、focused 48 tests、final review `ship`、fallback SHA一致/runs 486→487/static 16 bad 0、canonical runs 137→138 exit 0、protected deletion 0 |
 | A-18 | agent/gig-project lifecycleを登録する | project owner/terminal/lease receipt | 完了: registration-only numeric project 24件、terminal true 0、unknown owner 3、全件deliverable/preserve、focused 49 tests、fresh review `ship`、fallback runs 507→508/削除0、canonical runs 142→143 exit 0、errors/protected deletion 0 |
-| A-19 | Writer in-flight drainを接続する | provider interruption checkpoint/resume test | 未完了 |
+| A-19 | Writer in-flight drainを接続する | provider interruption checkpoint/resume test | 完了: exact stop 2 pathのpre-Popen gate、process-group TERM→1秒→KILL/reap、immutable run/prompt checkpoint/resume、focused 44 tests、fresh review `ship`、release `43074f76422d1ec4935acdba98e553cb8564de94`、Writer runs 1/exit 0/provider effect 0、canonical runs 149→150/exit 0/errors 0/protected deletion 0 |
 | A-20 | browser/build/media preflightを接続する | producer consumer missing 0 for these families | 未完了 |
 | A-21 | VM/package/agent preflightを接続する | producer consumer missing 0 for these families | 未完了 |
 | A-22 | supervisor non-stop behaviorを実装する | ULTRA wake keeps supervisor labels loaded | 未完了 |
