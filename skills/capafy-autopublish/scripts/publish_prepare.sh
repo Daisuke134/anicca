@@ -19,6 +19,13 @@ SKILL_DIR="${1:?skill-dir required}"
 LISTING="${2:?LISTING.md required}"
 ICON="${3:?icon path required}"
 
+# The workflow changes directory to the publisher before it reads LISTING again.
+# Resolve caller-relative paths once at the boundary so a valid repo-owned source
+# cannot turn into a missing file halfway through a live same-Agent update.
+SKILL_DIR="$(cd "$SKILL_DIR" 2>/dev/null && pwd)" || { echo "❌ skill dir not found: $SKILL_DIR"; exit 1; }
+LISTING="$(cd "$(dirname "$LISTING")" 2>/dev/null && pwd)/$(basename "$LISTING")"
+ICON="$(cd "$(dirname "$ICON")" 2>/dev/null && pwd)/$(basename "$ICON")"
+
 AUTO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PUB="$AUTO/vendor/capafy-publisher"
 LIFE_MANAGER_STATE_HOME="${LIFE_MANAGER_STATE_HOME:-$HOME/.local/state/life-manager}"
@@ -30,6 +37,14 @@ CAPAFY_PUBLISH_HOME="${CAPAFY_PUBLISH_HOME:-$LIFE_MANAGER_STATE_HOME/runtime/cap
 WS="${CAPAFY_WORKSPACE:-$CAPAFY_PUBLISH_HOME/.openclaw/workspace}"
 SKILL_NAME="$(basename "$SKILL_DIR")"
 SEL_FILE="$LIFE_MANAGER_STATE_HOME/state/capafy-autopublish/sel_one.json"
+
+# launchd and direct recovery runs must use the same private credential SSOT.
+# Load names into the process only; never copy values into the repo or output.
+for ENV_FILE in "$LIFE_MANAGER_STATE_HOME/.env" "$HOME/.openclaw/.env"; do
+  if [ -f "$ENV_FILE" ]; then
+    set -a; . "$ENV_FILE" 2>/dev/null; set +a
+  fi
+done
 
 step(){ echo ""; echo "━━━ $* ━━━"; }
 die(){ echo "❌ $*"; exit 1; }
