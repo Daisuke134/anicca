@@ -188,24 +188,23 @@ Do not delete or archive the migration source until all are true:
 - A repository-wide reference scan shows no production Mercor path still depends on `profitable-claude`.
 - Only after the above read-back may `profitable-claude` be archived/deleted as a separate destructive operation.
 
-## 10. Atomic TODO (ordered)
+## 10. Atomic completion sequence (one active item at a time)
 
-1. [x] Copy the Mercor provider policy and skill facade into this repository.
-2. [ ] Add the Mercor provider adapter to the existing job-search runtime; keep ATS, Gmail, Calendar, ledger, and browser side effects in their existing owners.
-3. [ ] Route all locales and role families through one material-variant/fact gate; remove any Japanese-only filter.
-4. [ ] Reconcile both submitted applications from Mercor and Gmail; never resubmit either application.
-5. [ ] Add a Mercor fixture to the existing Gmail→FreeBusy→Calendar idempotency tests.
-6. [ ] Fix or explicitly quarantine the Summary persistence gap.
-7. [ ] Run one isolated Mercor pass through the existing Job Hunter launchd route.
-8. [ ] Verify application/earnings evidence, Calendar read-back, prep delivery, and Telegram reporting.
-9. [ ] Remove all production references to `profitable-claude`.
-10. [ ] Obtain a final deletion check-in before deleting the old repository checkout/history.
-11. [ ] Implement a reusable `mercor_pass` macro runner in `apps/job-search-loop/` with per-operator state roots and no hard-coded Dais data.
-12. [ ] Wire `acquisition`, `inbox`, `calendar`, `earnings`, `guardian`, and `learning` into the existing Job Hunter launchd route without a second executor.
-13. [ ] Add operator onboarding/setup commands for resume, account, Calendar, payment, capacity, locale, role families, and exclusions.
-14. [ ] Add redacted multi-operator fixtures and tests for dedupe, `3/3` submit, Gmail→Calendar idempotency, payout reconciliation, and privacy boundaries.
-15. [ ] Run the complete loop on Dais first: two submitted applications, one additional ready queue item, one Calendar/inbox event, and a real payout read-back.
-16. [ ] Publish the open-source setup/runbook after secret scan, fresh-install test, and a second non-Dais fixture pass.
-17. [ ] Add a model-led `mercor_pass` prompt and structured result schema to the existing `runtime/agent-runner` route.
-18. [ ] Add one deterministic submit guard (`3/3 + visible Submit + ledger dedupe`) and one post-submit read-back guard; keep all other navigation model-led.
-19. [ ] Add browser-use/Stagehand-inspired state/error fixtures: page drift, stale tab, transient failure, ambiguous submit, and successful read-back.
+Only the first unchecked item is active. Finish its evidence and read-back before starting the next item. A `needs_human` result is a durable state, not permission to skip the next independent item.
+
+1. [x] **Canonical source:** keep skill, spec, provider reference, and runtime state under the Life Manager boundary; no private secrets in Git.
+2. [x] **Canary evidence:** complete and submit Japanese Evaluator plus Software/AI/IT/data Evaluator; store fresh submitted read-back and evidence.
+3. [x] **Queue discovery:** read the four `3/3 + Submit` ready listings and exclude submitted application IDs.
+4. [ ] **Model contract:** add a model-led `mercor_pass` prompt and structured result schema to `runtime/agent-runner`; allowed results are `submitted`, `observed_no_action`, `needs_human`, and `blocked`.
+5. [ ] **Provider adapter:** implement Mercor discovery/application reconciliation in `apps/job-search-loop/`; keep Gmail, Calendar, ledger, and browser ownership in existing modules.
+6. [ ] **Submit guard:** implement exactly one deterministic irreversible wrapper requiring `3/3 + visible Submit + ledger dedupe`, followed by mandatory post-submit read-back.
+7. [ ] **Operator onboarding:** add private per-operator state roots and setup for resume, account, Calendar, payment, capacity, locale, role families, and exclusions.
+8. [ ] **Calendar fixture:** test Gmail classification → FreeBusy → idempotent Calendar event → prep reminders with a redacted Mercor fixture.
+9. [ ] **Resident cadence:** wire acquisition, inbox, Calendar, earnings, guardian, and learning into the existing Job Hunter launchd route; do not create a second executor.
+10. [ ] **Dais full pass:** run one real hourly pass that submits one ready queue item, reconciles Gmail/Calendar, and verifies the ledger/evidence result.
+11. [ ] **Earnings gate:** read a real Mercor settled payout and verify the monthly run-rate calculation; offers and estimates remain zero revenue.
+12. [ ] **Failure fixtures:** test page drift, stale tab, transient failure, ambiguous submit, recovery/reset screen, and successful read-back.
+13. [ ] **Multi-operator test:** run a second redacted operator fixture with separate state, browser, ledger, and evidence; confirm no cross-operator data.
+14. [ ] **Open-source release:** secret scan, fresh-install test, setup/runbook, provider docs, and one non-Dais fixture pass.
+15. [ ] **Reference cleanup:** remove all production references to `profitable-claude` and confirm the canonical Life Manager runtime still passes.
+16. [ ] **Deletion gate:** only after every prior read-back succeeds, obtain the final check-in and archive/delete the old repository as a separate destructive operation.
