@@ -560,14 +560,16 @@ def test_negotiate_runs_every_30_seconds_without_changing_other_job_intervals():
     assert by_lane["browser"]["ThrottleInterval"] == 30
 
 
-def test_semantic_prompt_v23_uses_verified_application_scope_without_blanket_refusal():
+def test_semantic_prompt_v24_uses_verified_application_scope_without_blanket_refusal():
     prompt = requested_estimate.semantic_prompt(
         [{"message_id": "buyer-1", "role": "buyer", "sent_at": "2026-08-19T00:00:00Z", "body": "質問です"}],
         official_context=None,
         seller_facts=[],
     )
 
-    assert requested_estimate.SEMANTIC_PROMPT_VERSION == "reply-negotiate-v23"
+    assert requested_estimate.SEMANTIC_PROMPT_VERSION == "reply-negotiate-v24"
+    assert "clarifyでは、こちらが確認する不足情報をuncertaintyにだけ列挙" in prompt
+    assert "unanswered_questionsは空配列" in prompt
     assert "saas_lp_cvr_3_to_10_20260819" in requested_estimate.SELLER_FACT_IDS
     assert "公式応募" in prompt
     assert "current capability commitment" in prompt

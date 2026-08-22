@@ -63,7 +63,7 @@ NA15_CATEGORY_IDS = {
 }
 
 SEMANTIC_RECEIPT_VERSION = 1
-SEMANTIC_PROMPT_VERSION = "reply-negotiate-v23"
+SEMANTIC_PROMPT_VERSION = "reply-negotiate-v24"
 SEMANTIC_RUNNER_PROFILE = "reply-semantic-agent"
 SEMANTIC_COMPATIBLE_RUNNER_PROFILES = frozenset({
     "composition-agent", SEMANTIC_RUNNER_PROFILE,
@@ -184,7 +184,7 @@ def semantic_prompt(
 - 上記依頼の後にsellerが実物を含めず「後で見せます／送ります」とだけ返信した場合、その約束は未履行です。最新roleがsellerでもseller_last/waitにせず、会話内の根拠から実物全文をreplyして債務を閉じます。
 - 最新messageがbuyerで、明確なdecline/stop、unknown、必要official context待ちのいずれでもない場合、waitにしません。question/negotiating/ready stateはreply/clarify/send_estimateで前進させ、gratitude/consideringにも同じmessage identityへ一度だけ短いcontextual acknowledgementを返します。購入催促やseller既送文の反復は加えません。
 - buyerが対応可否を尋ね、current conversationまたはverified factsに根拠がある場合、reply_bodyの冒頭で「対応可能です」等の明確な回答を先に述べ、その後に根拠と条件を短く続けます。根拠がない能力をyesにせず、確認できる範囲を正直に区別します。
-- reply/clarifyではreply_auditを本文作成後に自己監査します。answered_buyer_message_idsへ本文が直接回答したcurrent-cycle buyer message IDを入れます。unanswered_questionsとunsupported_claimsは具体的な問題を列挙します。未依頼の購入・見積りCTA、seller既送文の反復、外部連絡先への誘導を各booleanで申告します。問題が1つでもある本文を安全扱いにしません。
+- reply/clarifyではreply_auditを本文作成後に自己監査します。answered_buyer_message_idsへ本文が直接回答したcurrent-cycle buyer message IDを入れます。unanswered_questionsはbuyerが既に尋ねたのに本文が答えていない質問だけです。clarifyでは、こちらが確認する不足情報をuncertaintyにだけ列挙し、unanswered_questionsは空配列にします。unsupported_claimsは本文中の根拠なし主張だけです。未依頼の購入・見積りCTA、seller既送文の反復、外部連絡先への誘導を各booleanで申告します。問題が1つでもある本文を安全扱いにしません。
 - 過去client・history・result・metricのexact claimはcurrent conversationまたはwhitelisted verified_seller_factsにある確認済み事実だけを使い、存在しないcustomer・project・numberを作りません。current capabilityはmatching official applicationのapplied scopeまたはverified transferable factsを先に答え、未確認historyの不在や経験不足を自発的に説明したり、対応不可を先頭に置いたりしません。buyerがexact historyを明示的に聞いた場合だけ確認済み事実を答え、missing historyをcapability refusalへ変換しません。
 - seller本人の年齢、性別、身体、容姿、声、出演・撮影可否、着用できる衣装なども未提供の本人事実です。会話かverified contextに明示がなければ対応可能と断言しません。
 - 翻訳言語、デザイン、撮影、出演、動画編集、開発、運用などのservice capabilityも本人事実です。verified_seller_facts、current cycleのseller既発言、またはmatching verified_official_context.applicationの明示scopeに根拠がある場合だけ「対応可能」「できます」と答えます。buyerの依頼文そのものは能力の根拠ではありません。
@@ -206,7 +206,7 @@ def semantic_prompt(
 - Few-shot Care Earth Mart: Applied Care Earth Mart logo brush-upのbuyerが選定用ラフを求める場合、application contextがmissingならrequired_official_context=applicationで待ち、能力拒否はしません。matching application contextならreply_bodyを「対応可能です」で始め、選定用ラフの制作・提出と次の確認手順を具体化します。
 - Few-shot SaaS/Wix LP: buyerがexperienceとimplementation rangeを尋ねた場合、verified factのapproximately 3% -> 10% visitor-to-service-start conversionだけを使い、scopeはstructure/design refinement、CTAをupper/first-view areaへ移動、copy revisionです。Wixのapplied scopeをofficial applicationで確認し、unrelated CPA claimを混ぜません。
 - required_official_contextがnone以外で、そのcontextなしに正確なreply/estimateを作れない場合はnext_action=wait、uncertaintyへ不足を示し、reply_body=nullにします。
-- unknown/conflict/根拠不足は推測しません。安全な確認質問1件で前進できる時だけclarifyとsend-ready reply_bodyを返し、uncertaintyは空にします。それ以外はwaitとuncertaintyです。
+- unknown/conflict/根拠不足は推測しません。安全な確認質問1件で前進できる時だけclarifyとsend-ready reply_bodyを返し、確認対象をuncertaintyに列挙します。それ以外はwaitとuncertaintyです。
 - current cycleの開始messageをcycle_start_message_id、判断根拠のbuyer messageだけをevidence_message_idsへ返します。
 - cycle_start_message_idを決めた後は、そのmessage以降のbuyer message IDだけを
   evidence_message_idsと全ての*_evidence_message_idsへ使います。cycle開始前のbuyer IDを
