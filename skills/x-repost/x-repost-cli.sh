@@ -231,6 +231,32 @@ for line in lines:
 print(hour, day, original)
 PYEOF
 )"
+# An accepted original can appear on the public timeline after the publishing pass gives up.
+# Select at most one recent terminal row for readback only. Its source is already consumed, and
+# this path never opens the composer or retries the external effect.
+GENERIC_RECOVERY="$EV/generic-recovery.json"
+"$PY" - "$POSTED" "$GENERIC_RECOVERY" "${X_REPOST_UNVERIFIED_RECOVERY_HOURS:-6}" <<'PYEOF'
+import datetime, hashlib, json, sys
+posted, target, hours = sys.argv[1:4]
+cutoff = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=float(hours))
+selected = None
+for line in open(posted, encoding="utf-8"):
+    try:
+        row = json.loads(line)
+        at = datetime.datetime.fromisoformat(row.get("posted_at", "")).astimezone(datetime.timezone.utc)
+    except (ValueError, TypeError, json.JSONDecodeError):
+        continue
+    if (row.get("kind") == "original" and row.get("status") == "unverified"
+            and not row.get("post_url") and at >= cutoff):
+        selected = row
+if selected:
+    selected["row_sha256"] = hashlib.sha256(json.dumps(
+        selected, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+    ).encode()).hexdigest()
+json.dump({"pending": bool(selected), "row": selected}, open(target, "w", encoding="utf-8"),
+          ensure_ascii=False, sort_keys=True)
+PYEOF
+GENERIC_RECOVERY_PENDING="$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1])).get("pending") is True)' "$GENERIC_RECOVERY")"
 # Read and validate the proposal ledger before the daily generic-post gate. An unresolved
 # EFFECT_STARTED claim must remain recoverable even when generic reposts already hit their brake.
 if ! AFFILIATE_PICK="$($PY "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL" --consumed "$AFFILIATE_CONSUMED" --posted "$POSTED" 2>>"$EV/affiliate-proposal.err")"; then
@@ -268,6 +294,7 @@ fi
 # placement distribution. Keep the fence for ordinary quote/reply work; let the replay-safe
 # Affiliate branch proceed immediately when the existing owner is explicitly kicked.
 if [ "${HOUR_COUNT:-0}" -gt 0 ] \
+  && [ "$GENERIC_RECOVERY_PENDING" != "True" ] \
   && [ "$AFFILIATE_STATE" != "READY" ] \
   && [ "$AFFILIATE_STATE" != "RECONCILE" ] \
   && [ "$AFFILIATE_STATE" != "VERIFY_UNVERIFIED" ]; then
@@ -279,6 +306,7 @@ fi
 # runaway brake. Once today's original exists, all ordinary reply/quote work remains capped.
 if [ "${TODAY_COUNT:-0}" -ge "${X_REPOST_DAILY_MAX:-12}" ] \
   && [ "${ORIGINAL_TODAY_COUNT:-0}" -gt 0 ] \
+  && [ "$GENERIC_RECOVERY_PENDING" != "True" ] \
   && [ "$AFFILIATE_STATE" != "READY" ] \
     && [ "$AFFILIATE_STATE" != "RECONCILE" ] \
     && [ "$AFFILIATE_STATE" != "VERIFY_UNVERIFIED" ]; then
@@ -302,6 +330,58 @@ case "$CDP" in
 esac
 BROWSER_LEASED=1
 trap '[ "$BROWSER_LEASED" -eq 1 ] && bash "$GUARD" release "$IDENTITY" >/dev/null 2>&1 || true' EXIT
+
+# ---------------------------------------------------------------- generic original readback-only recovery
+if [ "$GENERIC_RECOVERY_PENDING" = "True" ]; then
+  "$PY" -c 'import json,sys; print(json.load(open(sys.argv[1]))["row"]["text"])' \
+    "$GENERIC_RECOVERY" >"$EV/post.txt"
+  run_x_post --cdp "$CDP" --text-file "$EV/post.txt" --mode reconcile \
+    >"$EV/post.json" 2>>"$EV/post.err"
+  if [ "$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1])).get("posted") is True)' "$EV/post.json" 2>/dev/null)" = "True" ]; then
+    GENERIC_POST_URL="$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1]))["post_url"])' "$EV/post.json")"
+    if ! "$PY" - "$POSTED" "$GENERIC_RECOVERY" "$GENERIC_POST_URL" <<'PYEOF'
+import datetime, fcntl, hashlib, json, os, sys, tempfile
+posted, recovery_path, post_url = sys.argv[1:4]
+recovery = json.load(open(recovery_path, encoding="utf-8"))["row"]
+expected = recovery.pop("row_sha256")
+with open(posted, "r+", encoding="utf-8") as lock:
+    fcntl.flock(lock, fcntl.LOCK_EX)
+    rows = []
+    changed = 0
+    for line in lock.read().splitlines():
+        row = json.loads(line)
+        digest = hashlib.sha256(json.dumps(
+            row, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+        ).encode()).hexdigest()
+        if (digest == expected and row.get("status") == "unverified"
+                and not row.get("post_url")):
+            row.update({"post_url": post_url, "status": "recovered",
+                        "reconciled_at": datetime.datetime.now().astimezone().isoformat()})
+            changed += 1
+        rows.append(row)
+    if changed != 1:
+        raise SystemExit(1)
+    directory = os.path.dirname(posted) or "."
+    fd, temporary = tempfile.mkstemp(prefix="posted.", suffix=".tmp", dir=directory, text=True)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as stream:
+            for row in rows:
+                stream.write(json.dumps(row, ensure_ascii=False) + "\n")
+            stream.flush(); os.fsync(stream.fileno())
+        os.replace(temporary, posted)
+    finally:
+        if os.path.exists(temporary): os.unlink(temporary)
+PYEOF
+    then
+      report "❌ Original permalink was found but the exact terminal row could not be reconciled"
+      finish 1 "generic original reconcile ledger update failed"
+    fi
+    report "✅ Original recovered from readback without duplicate publish\npost: $GENERIC_POST_URL"
+    finish 0 "generic original reconciled without duplicate publish"
+  fi
+  report "⚠️ Recent terminal original remains unverified after readback-only recovery; no repost was attempted"
+  finish 0 "generic original readback unresolved without duplicate publish"
+fi
 
 # ---------------------------------------------------------------- affiliate proposal (one exact owned article, no tracking link)
 # Affiliate can offer a policy-safe placement but cannot publish through this owner.
@@ -450,7 +530,8 @@ fi
 # original exists. This is the second, post-Affiliate gate; it must preserve the same single-slot
 # reservation as the earlier gate or it silently cancels that reservation before recon.
 if [ "${TODAY_COUNT:-0}" -ge "${X_REPOST_DAILY_MAX:-12}" ] \
-  && [ "${ORIGINAL_TODAY_COUNT:-0}" -gt 0 ]; then
+  && [ "${ORIGINAL_TODAY_COUNT:-0}" -gt 0 ] \
+  && [ "$GENERIC_RECOVERY_PENDING" != "True" ]; then
   log "daily ceiling reached ($TODAY_COUNT/${X_REPOST_DAILY_MAX:-12}) -- nothing to do"
   touch "$STATE/.last-pass"
   exit 0
