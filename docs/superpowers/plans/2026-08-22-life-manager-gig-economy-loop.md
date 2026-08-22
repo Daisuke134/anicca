@@ -708,12 +708,25 @@ replay remain open behind the separately recorded $15 plus tax Connects purchase
 
 **Interfaces:** Produces stable message/story, room, offer and contract identities.
 
-- [ ] Write failing tests for changed-head detection, duplicate events, edited terms and stale room
+- [x] Write focused tests for changed-head detection, duplicate events, edited terms and stale room
   state.
-- [ ] Implement bounded polling using the existing outbox identity pattern.
-- [ ] Persist buyer message before semantic work and bind it to job/proposal IDs.
-- [ ] Normalize offer amount, fee, milestones, deadline and current contract state.
-- [ ] Run a live read-only inbox reconciliation and focused tests; commit/push.
+- [x] Implement bounded polling using the existing outbox identity pattern.
+- [x] Persist buyer message before semantic work and bind it to job/proposal IDs.
+- [x] Normalize offer amount, fee, milestones, deadline and current contract state.
+- [x] Run a live read-only inbox reconciliation and focused tests; commit/push.
+
+Task 13 code and zero-inventory evidence: each official room is opened read-only, bounded to twenty
+per wake, and its normalized private head is stored in a mode-600 JSONL ledger under a mode-700
+directory before Task 14 semantic work. Stable official links bind job, proposal and contract IDs;
+missing links remain explicit empty arrays. Offer and contract heads normalize observed USD amounts,
+fee basis points, milestones, ISO deadline and state without inventing absent fields. The event ID is
+the provider/kind/resource/head hash, so the same head appends zero, a changed head advances the
+revision, and a stale old head cannot duplicate. Public state exposes only IDs, revision and hashes,
+never message copy. The related proposal/offer/contract/browser matrix passes 66/66. Production
+descendant release `2b49386c1` containing `b2e9c2ac6` completed with exit 0 at
+`2026-08-22T18:31:43.266441+00:00`: official rooms 0, unread rooms 0, offers 0, active contracts 0,
+earnings USD 0 and `inbox_reconciliation={observed:0,appended:0,heads:[]}`; the private inbox ledger
+remained absent. A real client head is still required for positive message/story-ID evidence.
 
 ### Task 14: Negotiate and message exactly once
 
