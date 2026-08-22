@@ -1793,8 +1793,9 @@ class ConnectorOutbox:
                    WHERE provider=? AND account_key=? AND resource_id=? AND action=?""",
                 (values[1], values[2], values[3], values[4]),
             ).fetchone()
-            if resource is not None and resource["payload_hash"] != values[5] and values[4] == "propose":
-                raise ImmutableIntent("resource already has proposal intent")
+            if resource is not None and resource["payload_hash"] != values[5] and values[4] in {"propose", "deliver_milestone"}:
+                label = "proposal" if values[4] == "propose" else "milestone delivery"
+                raise ImmutableIntent(f"resource already has {label} intent")
             existing = connection.execute(
                 """SELECT * FROM provider_effect_intents
                    WHERE provider=? AND account_key=? AND resource_id=?
