@@ -104,6 +104,43 @@ A-25は通常のA-04以降より先に処理するcapacity-safety interruptで�
 7. GREEN後は既存canonical labelだけを`bin/launchctl-safe kickstart`し、run count増加、新しい実機receipt、
    `last exit code=0`、reserve size/mode/allocation、protected deletion 0をread backする。人工的なproduction disk-fillは行わない。
 
+#### A-45 persistent execution lock contract
+
+2026-08-22T16:14Zのcanonical passはreceipt処理へ到達する前に、毎run作り直す
+`.life-manager-disk-cleanup.lock` directoryの`mkdir`で`ENOSPC`となり、runs 172、last exit 1になった。
+直前receiptはvalid JSON、mode `0600`、receipt reserveは1 MiB/mode `0600`/allocatedで、
+`protected_deletions=0`だった。A-25はreceipt commitだけを保護するため、このpre-receipt lock allocationを救済しない。
+
+A-45は新daemon、追加reserve、queue、databaseを作らず、既存single-owner lockだけをstdlibのpersistent
+regular-file `flock`へ置き換えるcapacity-safety interruptである。production 1 file + test 1 file、約60 LOCを
+soft targetとする。
+
+1. lock pathはstate directory直下のregular file、non-symlink、mode `0600`とする。既存directory lockはactive/staleを
+   問わず自動削除・移動せずfail closedにする。旧ownerが正常終了して自分のdirectoryを除去した後だけfile形式へ移る。
+2. `os.open`したFDへ`LOCK_EX | LOCK_NB`を適用し、取得成功時だけFDをgovernor instanceがrun終了まで保持する。
+   競合時はeffect 0で取得失敗を返し、別passを開始しない。
+3. releaseは`LOCK_UN`とcloseだけを行い、lock fileをunlinkしない。次回は既存inodeを再利用し、ENOSPC時に
+   directory/pid fileを新規作成しない。
+4. symlink、directory、unexpected file type、open/`fchmod`/flock failureはfail closedにし、receipt reserveを消費しない。
+5. RED fixtureは旧mkdir方式へENOSPCを注入してCLI exit 1を再現し、GREENではprecreated lock file下で同じ
+   allocation failureでもsingle-owner取得、競合拒否、release後再取得、file継続、mode `0600`、reserve不変を証明する。
+6. GREEN後は既存canonical labelだけを`bin/launchctl-safe kickstart`し、runs増加、state not running、last exit 0、
+   fresh receipt、lock regular/non-symlink/0600、reserve 1 MiB/0600/allocated、protected deletion 0をread backする。
+
+A-45のTDDは旧lock path `mkdir`へENOSPCを注入するfixture、content write/truncate禁止、single-owner競合、
+release/reacquire、open/`fchmod`/flock failure、FD cleanup、reserve不変、symlink/unexpected type、全legacy directory
+preserveを含むfocused **8 passed**、disk-cleanup full **46 passed**、compile、diff checkを通した。初回reviewは
+legacy directory rename race、exact mkdir-ENOSPC fixture、`fchmod` gapを検出した。自動legacy migrationを全廃し、
+新規fileだけ`O_CREAT|O_EXCL` + `fchmod(0600)`、既存fileは`O_NOFOLLOW` + `fstat`、所有権はcontentを書かない
+nonblocking `flock`だけへ縮小した後、fresh re-reviewはBLOCKER/HIGH/MEDIUMなしで`ship`だった。code commitは
+`b3c3ea385`である。
+
+canonical labelを`bin/launchctl-safe` preflight PASS後にkickstartし、runs 176→177、state not running、last exit 0を
+read backした。fresh receiptは2026-08-22T16:42:07Z、`errors=0/protected_deletions=0/reclaimed=0`、lockは
+regular/non-symlink/mode `0600`、reserveは1,048,576 bytes/mode `0600`/2048 blocks、temporary residue 0だった。
+lock size 6の既存PID文字列はpreliminary runのinode内容で、final runはwrite/truncateせずmtimeを変更していないため
+曖昧なcleanupを行わず保持した。空き約300 MiB、tier `ULTRA`であり、A-45完了は11 GiB recoveryの証拠ではない。
+
 A-25のTDDはdisk-cleanup **40 passed**、`py_compile`、shell/plist lint、`git diff --check`を通した。
 write/file-fsync/replaceのENOSPC、他errno、2回目ENOSPC、sparse reserve、reserve再作成失敗、64 KiB bound、
 temporary cleanup、fd ownershipをfixtureで反証し、fresh adversarial reviewはBLOCKER/HIGH/MEDIUMなしで`ship`だった。
@@ -1091,6 +1128,7 @@ TDDのためだけの過剰fixtureや後続itemのscaffoldは前倒ししない�
 | A-42 | 7-day production observationを完了する | 7d state-write failure 0、oversubscription 0、cleanup-caused producer failure 0 | 未完了 |
 | A-43 | rollback restore testを保存する | prior label restore receipt | 未完了 |
 | A-44 | final production receiptを保存する | final receipt、admission coverage missing 0、Telegram message ID | 未完了 |
+| A-45 | mkdir不要のpersistent execution lockへ移行する | ENOSPC下でsingle-owner lock取得、競合0、fresh canonical exit 0、reserve保持 | 完了: focused 8/full 46 tests、review `ship`、commit `b3c3ea385`、canonical runs 176→177、exit 0、16:42:07Z receipt、lock 0600、reserve 1 MiB/0600/2048 blocks、temporary 0、protected deletion 0 |
 
 ### Required verification commands
 
