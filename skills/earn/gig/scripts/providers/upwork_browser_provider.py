@@ -33,6 +33,8 @@ from upwork_offer_browser import accept_offer_after_fence  # noqa: E402
 from upwork_offer_effect import SealedUpworkOfferEffect  # noqa: E402
 from upwork_inbox import append_changed_heads, normalize_observation  # noqa: E402
 from upwork_negotiate import invoke as plan_negotiation  # noqa: E402
+from upwork_message_browser import send_message_after_fence  # noqa: E402
+from upwork_message_effect import SealedUpworkMessageEffect  # noqa: E402
 from upwork_sealed_effect import (  # noqa: E402
     SealedUpworkProposalEffect, active_upwork_browser_account,
 )
@@ -644,6 +646,37 @@ async def execute_direct_offer(
     return {**base, "state": "accepted", "contract_id": receipt["contract_id"]}
 
 
+async def execute_negotiation_message(
+    decision: dict[str, Any], *, database: Path, manifest: Path, browser_profile: Path,
+) -> dict[str, Any]:
+    """Send one current-head-bound negotiation through the durable effect ledger."""
+    effect_now = datetime.now(timezone.utc)
+    effect = SealedUpworkMessageEffect(
+        ConnectorOutbox(database.expanduser(), manifest.expanduser()),
+        UpworkTransport(
+            active_upwork_browser_account(DEFAULT_RECEIPT_PATH, effect_now, "message"),
+            effect_now, browser_profile=browser_profile.expanduser(),
+            profiles_root=browser_profile.expanduser().parent,
+        ),
+    )
+    _, planned = effect.intent(decision)
+    existing = effect.store.provider_effect(planned)
+    base = {"intent_sha256": decision["intent_sha256"]}
+    if existing is not None and existing["reconciliation_state"] == "verified":
+        return {**base, "state": "sent", "message_id": existing["proposal_id"]}
+    if existing is not None and existing["state"] == "reconcile_pending":
+        return {**base, "state": "reconcile_unknown"}
+    holder: dict[str, Any] = {}
+
+    def start_effect(preflight: dict[str, Any]) -> bool:
+        holder["intent"], started = effect.start(decision, preflight)
+        return started
+
+    receipt = await send_message_after_fence(decision, start_effect)
+    effect.verify(holder["intent"], receipt)
+    return {**base, "state": "sent", "message_id": receipt["message_id"]}
+
+
 async def observe(
     candidates_path: Path = DEFAULT_CANDIDATES,
     proposals_dir: Path = DEFAULT_PROPOSALS,
@@ -742,12 +775,18 @@ async def observe(
             loop_state_value=state,
             evidence_dir=DEFAULT_NEGOTIATION_EVIDENCE / head["event_id"],
         )
-        state["negotiation_intents"].append({
+        public_intent = {
             "room_id": head["resource_id"], "event_id": head["event_id"],
             "head_sha256": head["head_sha256"], "revision": head["revision"],
             "decision": intent["decision"], "reason_codes": intent["reason_codes"],
             "intent_sha256": intent["intent_sha256"],
-        })
+        }
+        if intent["decision"] != "no_reply":
+            public_intent.update(await execute_negotiation_message(
+                intent, database=database, manifest=manifest,
+                browser_profile=browser_profile,
+            ))
+        state["negotiation_intents"].append(public_intent)
     inbound = plan_zero_connect_inbound(state)
     if inbound is not None:
         state["can_submit_public_job"] = False
