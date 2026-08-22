@@ -1,4 +1,5 @@
 import asyncio
+import hashlib
 import importlib.util
 import json
 from pathlib import Path
@@ -36,6 +37,12 @@ LANE_SPEC = importlib.util.spec_from_file_location(
 assert LANE_SPEC and LANE_SPEC.loader
 reply_lane = importlib.util.module_from_spec(LANE_SPEC)
 LANE_SPEC.loader.exec_module(reply_lane)
+BROWSER_SPEC = importlib.util.spec_from_file_location(
+    "gig_no_contact_reply_browser_test", ROOT / "scripts/coconala_reply_browser.py",
+)
+assert BROWSER_SPEC and BROWSER_SPEC.loader
+reply_browser = importlib.util.module_from_spec(BROWSER_SPEC)
+BROWSER_SPEC.loader.exec_module(reply_browser)
 
 
 def test_targeted_seller_debt_bridge_binds_verified_reply_to_target_event():
@@ -100,6 +107,26 @@ def test_semantic_composer_allows_only_verified_seller_debt_after_seller_last():
 
     assert composer.nothing_to_say_reason(seller_last) == "seller_last"
     assert composer.nothing_to_say_reason(verified_debt) is None
+
+
+def test_semantic_freshness_accepts_verified_debt_only_when_seller_still_last():
+    rows = [{
+        "message_id": "message-1", "role": "seller",
+        "sent_at": "2026-08-22T12:31:47+00:00", "body": "preview promised",
+    }]
+    expected = hashlib.sha256(json.dumps(
+        rows, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+    ).encode()).hexdigest()
+    browser = reply_browser.CoconalaCdpReplyBrowser.__new__(
+        reply_browser.CoconalaCdpReplyBrowser,
+    )
+    browser.semantic_context_sha256 = expected
+    browser.semantic_expected_last_sender = "seller"
+    browser._read = lambda: (
+        {"conversation": rows}, {"last_sender": "seller"},
+    )
+
+    browser.verify_semantic_freshness()
 
 
 class FakeOutbox:

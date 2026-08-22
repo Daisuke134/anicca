@@ -584,6 +584,7 @@ class CoconalaCdpReplyBrowser:
         self.send_error_code = ""
         self.required_official_context = "none"
         self.semantic_context_sha256: str | None = None
+        self.semantic_expected_last_sender = "buyer"
 
     def __enter__(self) -> "CoconalaCdpReplyBrowser":
         self.tab = collector.DefaultTab(
@@ -883,7 +884,8 @@ class CoconalaCdpReplyBrowser:
         actual = hashlib.sha256(json.dumps(
             rows, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
         ).encode()).hexdigest()
-        if actual != expected or bounded.get("last_sender") != "buyer":
+        expected_last_sender = str(self.semantic_expected_last_sender or "buyer")
+        if actual != expected or bounded.get("last_sender") != expected_last_sender:
             raise ValueError("semantic_context_changed")
 
     def fill(self, body: str) -> None:

@@ -96,6 +96,8 @@ class _SemanticContext:
     def __init__(self, browser: Any, item: dict[str, Any]):
         self._browser, self._item = browser, item
         self._browser.semantic_context_sha256 = item.get("semantic_context_sha256")
+        if item.get("semantic_seller_debt_reply") is True:
+            self._browser.semantic_expected_last_sender = "seller"
         self._browser.required_official_context = "none"
 
     def __getattr__(self, name: str) -> Any:
