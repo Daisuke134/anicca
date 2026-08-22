@@ -278,12 +278,21 @@ and Upwork returns an authenticated account identity.
 
 **Interfaces:** Implements `discover()` and `inspect()` returning canonical opportunities.
 
-- [ ] Write fixture tests requiring job ID, URL, title, full scope, skills, currency, budget/rate,
+- [x] Write fixture tests requiring job ID, URL, title, full scope, skills, currency, budget/rate,
   client evidence, activity, Connects cost and observed timestamp.
-- [ ] Reject partial rows, deleted jobs, stale identities and unsupported currencies.
-- [ ] Implement bounded cursor pagination through the selected authorized transport.
+- [x] Reject partial rows, deleted jobs, stale identities and unsupported currencies.
+- [x] Implement bounded cursor pagination through the selected authorized transport.
 - [ ] Run one live discovery twice; assert stable IDs and zero proposal/message effects.
-- [ ] Run focused tests and commit/push.
+- [x] Run focused tests and commit/push.
+
+Implementation evidence: Upwork's official [GraphQL API documentation](https://www.upwork.com/developer/documentation/graphql/api/docs/index.html)
+is the provider schema authority. Code comparison used the official Python SDK at
+`upwork/python-upwork-oauth2@9bee35b` for the GraphQL POST boundary,
+`tryAGI/Upwork@7346170` for `pagination.after/first`, `pageInfo.endCursor/hasNextPage`, money,
+client and activity shapes, and `furkankoykiran/upwork-mcp@9ed7b44` only to cross-check the
+Connects field. The MCP formatter and its non-advancing search pagination were not copied.
+The live-twice checkbox remains open because ceremony `1` still records Google 2FA as the exact
+authentication boundary; fixture replay already proves stable IDs and invokes only `search` reads.
 
 ### Task 10: Qualify jobs against installed Skills and capacity
 
