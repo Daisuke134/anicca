@@ -63,7 +63,7 @@ async def complete_account_mail(
             password_controls = [
                 control
                 for control in observation.controls
-                if control.type == "password" and control.role == "textbox"
+                if control.control_type == "password" and control.role == "textbox"
             ]
             if len(password_controls) != 2:
                 raise VerificationError("Workday reset must expose two password controls")
