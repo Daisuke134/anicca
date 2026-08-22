@@ -5,6 +5,8 @@ import json
 import sqlite3
 from pathlib import Path
 
+import pytest
+
 
 SCRIPT = Path(__file__).parents[1] / "scripts" / "capafy_company_receipt.py"
 GOAL_MONITOR = Path(__file__).parents[1] / "capafy-goal-monitor.sh"
@@ -146,6 +148,61 @@ def test_openclaw_sender_timeout_quarantines_once_and_replay_does_not_retry(tmp_
     with sqlite3.connect(outbox) as db:
         row = db.execute("SELECT status, attempt_count, provider_message_id, last_error_code FROM telegram_outbox").fetchone()
     assert row == ("delivery_uncertain", 1, None, "sender_timeout")
+
+
+@pytest.mark.parametrize("outbox_status", ("delivery_uncertain", "delivered"))
+def test_replay_recovers_missing_receipt_from_authoritative_outbox(tmp_path: Path, outbox_status: str) -> None:
+    module = load_module()
+    receipt = module.build_receipt(sources(), "2026-08-22T11:00:00Z")
+    outbox = tmp_path / "outbox.sqlite"
+    receipts = tmp_path / "receipts"
+    message = module.render_message(receipt)
+    assert module.enqueue(outbox, receipt["run_id"], message, receipt["observed_at"]) is True
+    assert module.claim_next(outbox) is not None
+    if outbox_status == "delivery_uncertain":
+        module.mark_delivery_uncertain(outbox, receipt["run_id"], "sender_timeout")
+    else:
+        module.mark_delivered(outbox, receipt["run_id"], "9002", "2026-08-22T11:01:00Z")
+
+    def sender(_message: str) -> str:
+        raise AssertionError("exact replay must not call provider")
+
+    recovered = module.deliver_receipt(receipt, outbox, receipts, sender)
+
+    expected = {
+        "status": "delivered" if outbox_status == "delivered" else "delivery_uncertain",
+        "message_id": "9002" if outbox_status == "delivered" else None,
+    }
+    assert recovered["telegram"] == expected
+    receipt_path = receipts / f"{receipt['run_id']}.json"
+    if outbox_status == "delivered":
+        persisted = json.loads(receipt_path.read_text())
+        assert persisted["telegram"] == expected
+    else:
+        assert not receipt_path.exists()
+
+
+def test_uncertain_replay_cannot_overwrite_existing_delivered_receipt(tmp_path: Path, monkeypatch) -> None:
+    module = load_module()
+    receipt = module.build_receipt(sources(), "2026-08-22T11:00:00Z")
+    receipts = tmp_path / "receipts"
+    receipts.mkdir()
+    receipt_path = receipts / f"{receipt['run_id']}.json"
+    delivered = {**receipt, "telegram": {"status": "delivered", "message_id": "9003"}}
+    receipt_path.write_text(json.dumps(delivered), encoding="utf-8")
+    outbox = tmp_path / "outbox.sqlite"
+    module.enqueue(outbox, receipt["run_id"], module.render_message(receipt), receipt["observed_at"])
+
+    class _Uncertain:
+        event_key = receipt["run_id"]
+        status = "delivery_uncertain"
+        provider_message_id = None
+
+    monkeypatch.setattr(module, "list_items", lambda _database: [_Uncertain()])
+    replay = module.deliver_receipt(receipt, outbox, receipts, lambda _message: pytest.fail("must not send"))
+
+    assert replay["telegram"] == delivered["telegram"]
+    assert json.loads(receipt_path.read_text())["telegram"] == delivered["telegram"]
 
 
 def test_hourly_goal_monitor_uses_unified_receipt_before_legacy_sender() -> None:

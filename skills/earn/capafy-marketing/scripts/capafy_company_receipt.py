@@ -11,6 +11,7 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any, Callable
 
@@ -18,7 +19,7 @@ from typing import Any, Callable
 REPO_ROOT = Path(__file__).resolve().parents[4]
 OUTBOX_MODULES = REPO_ROOT / "skills/_shared/marketplace-core/scripts"
 sys.path.insert(0, str(OUTBOX_MODULES))
-from telegram_outbox import enqueue, claim_next, mark_delivered, mark_delivery_uncertain  # noqa: E402
+from telegram_outbox import enqueue, claim_next, list_items, mark_delivered, mark_delivery_uncertain  # noqa: E402
 
 
 STATE_HOME = Path(os.environ.get("LIFE_MANAGER_STATE_HOME", Path.home() / ".local/state/life-manager")).expanduser()
@@ -117,14 +118,26 @@ def render_message(receipt: dict) -> str:
 
 def _atomic_write(path: Path, value: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_suffix(path.suffix + ".tmp")
-    with temporary.open("w", encoding="utf-8") as stream:
-        json.dump(value, stream, ensure_ascii=False, indent=2, sort_keys=True)
-        stream.write("\n")
-        stream.flush()
-        os.fsync(stream.fileno())
-    os.chmod(temporary, 0o600)
-    os.replace(temporary, path)
+    fd, temporary_name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
+    temporary = Path(temporary_name)
+    try:
+        os.fchmod(fd, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8") as stream:
+            json.dump(value, stream, ensure_ascii=False, indent=2, sort_keys=True)
+            stream.write("\n")
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary, path)
+    except BaseException:
+        try:
+            os.close(fd)
+        except OSError:
+            pass
+        try:
+            temporary.unlink()
+        except FileNotFoundError:
+            pass
+        raise
 
 
 def deliver_receipt(
@@ -140,6 +153,15 @@ def deliver_receipt(
     if not inserted:
         if receipt_path.exists():
             return json.loads(receipt_path.read_text())
+        outbox_item = next((item for item in list_items(outbox_database) if item.event_key == run_id), None)
+        if outbox_item is not None:
+            recovered = copy.deepcopy(receipt)
+            if outbox_item.status == "delivered" and outbox_item.provider_message_id:
+                recovered["telegram"] = {"status": "delivered", "message_id": outbox_item.provider_message_id}
+                _atomic_write(receipt_path, recovered)
+            else:
+                recovered["telegram"] = {"status": "delivery_uncertain", "message_id": None}
+            return recovered
         return receipt
     claimed = claim_next(outbox_database)
     if claimed is None or claimed.event_key != run_id:
