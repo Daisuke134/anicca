@@ -610,6 +610,26 @@ Mercor PID 81814→81814だった。label reload/restartは行っていない。
 `preserved_reasons={"open":11}`、reserve 1 MiB/0600/2048 blocks、temporary 0だった。空き約1.08 GiB、tier `ULTRA`
 であり、A-20完了や11 GiB recoveryの証拠ではない。残るA-20 consumerはGig browser回帰とhost-wide build/mediaである。
 
+A-20の第7 sliceはGig browserへ混入した`floor=0`とpreventive flag bypassを、新機構なしで既存
+`dd3e45b5f`契約へ戻した。production変更前の既存testはbrowser境界4 failuresを再現し、launcherとbrowser manifestの
+2 filesだけで固定512 MiB、canonical host/lane state、ignore/alternate state env除去を復元した。GREENはbrowser
+focused **4 passed**、full file **22 passed/2 existing non-browser failures**、shell syntax、diff checkがPASSした。
+残る2 failuresはこのsliceで変更しないApply/Negotiateの現行floor 0 policyである。fresh adversarial reviewは
+BLOCKER/HIGH/MEDIUMなしで`ship`、code commitは`24e60462a50f03daf4d6302cf4ae014cab4aa225`である。
+他sessionの新しいmainを巻き戻さないよう、そのdescendant `3703700d8f1ea89869b8e8137cc2955ef149af09`を公式builderで
+immutable release化し、remote mainとexpected currentをpublish lock内で再検証してrelease-only atomic publishした。
+browser labelはreload/restartせず、PID 61802→61802、profile statとsingleton metadataは不変、source/runtime launcher
+SHA-256 `7e4d40f37785a89a97c31cb9028f5248dde5ee9935f9521f144c483c72c22915`が一致する。stop flagとhostile envで
+current runnerを実行したproduction preflightはRC 1、`reason=disk_writers_stop/effect=0/readback=0/`
+`required_bytes=536870912`だった。03:45:05 JSTのcanonical run 200 receiptは`errors=0/protected_deletions=0/`
+`reclaimed=0/evaluated=11/preserved_reasons={"open":11}`、reserve 1 MiB/0600/2048 blocks、temporary 0だった。
+safe kick由来のrun 201はreceipt更新前にSIGTERM 15となり、成功扱いにしない。次の自然tickはruns 202/PID 8160まで
+read backしたがfresh receiptを残さず、その後このCodex GUI contextの`launchctl print`が141
+`Reentrancy avoided`、preflight receiptが`blocked_control_plane/mutation_allowed=false`になったため、追加mutationを
+停止した。空きは約5.25 GiBへ回復したが11 GiB未満で、回復主体もcanonical receiptで未証明である。fresh run、
+`last exit code=0`、receiptをread backするまではGig sliceの最終運用証拠を完了扱いにしない。A-20の実装残りは
+host-wide build/media coverageである。
+
 `/Users/anicca/anicca-project`は約9.5 GiB、その`.worktrees`は約4.4 GiBだった。最大の
 `cfo-resume-spec`（約1.08 GiB）は、dirty=0、branch upstream 0/0、process/open-path/leaseなしを
 read backした後にだけ`git worktree remove`で回収した。branchとremoteは残り、再作成可能である。
@@ -1184,7 +1204,7 @@ TDDのためだけの過剰fixtureや後続itemのscaffoldは前倒ししない�
 | A-17 | VM/package producer lifecycleを登録する | artifact/lease/finalizer/quota receipt | 完了: registration-only static 16件、pnpm exact version/proof/lease fail-closed、全A-17 entry runtime/quota 0/lease 300/preserveで削除authority 0、focused 48 tests、final review `ship`、fallback SHA一致/runs 486→487/static 16 bad 0、canonical runs 137→138 exit 0、protected deletion 0 |
 | A-18 | agent/gig-project lifecycleを登録する | project owner/terminal/lease receipt | 完了: registration-only numeric project 24件、terminal true 0、unknown owner 3、全件deliverable/preserve、focused 49 tests、fresh review `ship`、fallback runs 507→508/削除0、canonical runs 142→143 exit 0、errors/protected deletion 0 |
 | A-19 | Writer in-flight drainを接続する | provider interruption checkpoint/resume test | 完了: exact stop 2 pathのpre-Popen gate、process-group TERM→1秒→KILL/reap、immutable run/prompt checkpoint/resume、focused 44 tests、fresh review `ship`、release `43074f76422d1ec4935acdba98e553cb8564de94`、Writer runs 1/exit 0/provider effect 0、canonical runs 149→150/exit 0/errors 0/protected deletion 0 |
-| A-20 | browser/build/media preflightを接続する | producer consumer missing 0 for these families | 部分完了: Affiliate 3 browser、Instagram/X provision、標準job-search、Mercor、self-build 2境界、Writer media既存境界を接続。Mercor current `a06bba4dd`、focused＋関連7 tests、review HIGH修正後`ship`、実機RC 1/effect 0/PID 81814不変。Gig currentはfloor 0/ignore 1へregress。残りはGig browserとhost-wide build/media coverage。canonical runs 197/exit 0/errors 0/protected deletion 0 |
+| A-20 | browser/build/media preflightを接続する | producer consumer missing 0 for these families | 部分完了: Affiliate 3 browser、Instagram/X provision、標準job-search、Mercor、Gig、self-build 2境界、Writer media既存境界を接続。Gig current `3703700d8`、browser 4 tests、review `ship`、実機RC 1/effect 0/PID 61802不変。実装残りはhost-wide build/media coverage。canonical run 200 receipt後、run 201 SIGTERM、run 202 fresh receiptなし、control-plane 141のため最終運用readback待ち |
 | A-21 | VM/package/agent preflightを接続する | producer consumer missing 0 for these families | 未完了 |
 | A-22 | supervisor non-stop behaviorを実装する | ULTRA wake keeps supervisor labels loaded | 未完了 |
 | A-23 | Codex log budget/rotationを実装する | active app-server handoff with session loss 0 | 未完了 |
