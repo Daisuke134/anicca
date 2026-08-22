@@ -32,6 +32,8 @@ class ApprovedHyperFramesWiringTest(unittest.TestCase):
         self.assertIn("evidence-ready listing selection failed", source)
         self.assertIn("live pass produced no verified native Reel", source)
         self.assertIn("Do not reject a valid tier1 session merely because", source)
+        self.assertIn("/opt/homebrew/bin/python3 $LIFE_MANAGER_REPO/skills/earn/marketing-engine/poster.py", source)
+        self.assertNotIn("~/.cache/instagrapi-venv/bin/python", source)
         self.assertNotIn("use session_owner=instagrapi from the supplied Capafy state", source)
         self.assertIn("--commit-agent-id", source)
         self.assertLess(source.index("VERIFIED_POST="), source.index("--commit-agent-id"))
