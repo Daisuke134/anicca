@@ -785,17 +785,36 @@ not fabricate an inbound room to force Task 14 positive evidence.
 ### Task 15: Accept an Upwork offer safely
 
 **Files:**
-- Create: `skills/earn/gig/scripts/providers/upwork_contract.py`
-- Create: `skills/earn/gig/tests/test_upwork_contract.py`
+- Reuse: `skills/earn/gig/scripts/providers/upwork_offer_gate.py`
+- Reuse: `skills/earn/gig/scripts/providers/upwork_offer_browser.py`
+- Reuse: `skills/earn/gig/scripts/providers/upwork_offer_effect.py`
+- Modify: `skills/earn/gig/scripts/providers/upwork_browser_provider.py`
+- Reuse: `skills/earn/gig/tests/test_upwork_offer_gate.py`
+- Reuse: `skills/earn/gig/tests/test_upwork_offer_effect.py`
 
 **Interfaces:** Produces canonical contract state and one acceptance effect.
 
-- [ ] Write failing tests for terms differing from the accepted negotiation, capacity race, missing
-  funding/milestone evidence and duplicate acceptance.
-- [ ] Re-read official offer immediately before the effect.
-- [ ] Persist offer terms hash and capacity reservation atomically.
-- [ ] Execute one authorized acceptance and require active contract ID/state.
-- [ ] Replay with no additional effect; run tests and commit/push.
+- [x] Reject terms mismatch, missing fixed-price funding, missing verified hourly billing and
+  duplicate acceptance in focused tests.
+- [x] Re-read the exact official offer URL and visible scope/amount/deadline/funding immediately
+  before the effect.
+- [x] Persist the immutable offer decision/terms hash behind the durable provider-effect fence.
+- [ ] Atomically reserve one concurrent-job slot with that effect; reject a two-offer capacity race.
+- [x] Execute at most one authorized acceptance and require an official active `/workroom/{id}`
+  contract readback.
+- [x] Replay the verified effect with no additional click; the related matrix passes 62/62.
+- [ ] Close one real offer and replay it; until an offer exists, keep official contracts/offers at
+  zero rather than manufacturing a fixture as live evidence.
+
+Task 15 reuse evidence: the existing Direct Offer lane already performs the offer/contract work
+described here, so a second `upwork_contract.py` abstraction is rejected. `upwork_offer_gate.py`
+binds offer ID/URL/source hash and exact scope, amount, deadline, account state and payment
+protection. `upwork_offer_browser.py` re-reads those terms immediately before the durable fence,
+permits one exact `Accept offer` click and accepts success only from an official
+`/workroom/{contract_id}` active-contract readback. `upwork_offer_effect.py` makes replay return the
+stored contract ID without another click. The remaining code gap is narrower: reservation of the
+owner's `concurrent_job_cap` is not yet writer-serialized with the effect, so two concurrent offers
+could both pass a stale active-contract count. That atomic reservation is the next buildable item.
 
 ### Task 16: Create an immutable project workspace
 
