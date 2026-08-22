@@ -216,18 +216,18 @@ financial, physical capture and client-reserved acts only.
 **Files:**
 - Create: `skills/earn/gig/scripts/money_loop_onboarding.py`
 - Create: `skills/earn/gig/tests/test_money_loop_onboarding.py`
-- Modify: `skills/earn/gig/install.sh`
+- Create: `skills/earn/gig/install.sh`
 
 **Interfaces:** Produces a private owner profile, Skill inventory, per-provider browser profile,
 authorization matrix, spend/capacity bounds and onboarding receipt.
 
-- [ ] Write a failing isolated-home test proving install leaks no credential, customer data, private
+- [x] Write a failing isolated-home test proving install leaks no credential, customer data, private
   authorization evidence or original operator path into tracked files.
-- [ ] Implement owner-only directories, explicit provider selection and safe `unknown` defaults.
-- [ ] Collect minimum margin, spend/Connects cap, concurrent-job cap and human-minute value; reject
+- [x] Implement owner-only directories, explicit provider selection and safe `unknown` defaults.
+- [x] Collect minimum margin, spend/Connects cap, concurrent-job cap and human-minute value; reject
   negative or non-numeric bounds.
-- [ ] Run one read-only local capability inventory with no marketplace mutation.
-- [ ] Run isolated-home tests and commit/push.
+- [x] Run one read-only local capability inventory with no marketplace mutation.
+- [x] Run isolated-home tests and commit/push.
 
 ## Phase B — Upwork first complete autonomous adapter
 
