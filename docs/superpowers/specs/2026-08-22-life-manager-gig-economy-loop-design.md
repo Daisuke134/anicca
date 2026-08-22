@@ -48,6 +48,20 @@ Saved jobs, proposals, messages, Connects spend and payments remained zero. U6 m
 live job, but it must use only installed Skills and Upwork-owned capacity; Coconala activity is not
 part of the capacity calculation.
 
+U6 is closed on job `~022091070478975551162`. The observed fixed budget is $3,000 and submission
+cost is 26 Connects; the client has payment and phone verification, 75% hire rate and $2.1K spend.
+After fee, Connects, risk and labor reserves, expected net is $1,046.10. Upwork-only active capacity
+is 0 of 3. The installed builder and independent verifier hashes are bound in the private receipt;
+the qualifier also checks the job-required builder/verifier capability subsets. The retained detail
+observation, capability inventory and qualification each have bound SHA-256 evidence. Proposal,
+message, Connects-spend and payment effects remain zero.
+
+U7 is closed with immutable payload
+`9fab22a29ea169632f30c3d1a22597c1091ecb97a2897c987ac788ce1d110d19`: $3,000 over 21 days,
+three milestones totaling the bid, four exact scope references, and zero unsupported claims or
+attachments. U8 is the next outcome and may execute only this payload after the required Connects
+acquisition is separately authorized and read back.
+
 ## 1. Goal, objective and boundaries
 
 ### 1.1 Goal

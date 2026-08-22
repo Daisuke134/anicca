@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import re
 import stat
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -23,6 +24,8 @@ class Workflow:
     estimated_minutes: int
     verifier_skill: str
     required_claims: tuple[str, ...] = ()
+    required_capabilities: tuple[str, ...] = ()
+    verification_capabilities: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -61,20 +64,25 @@ def _aware(name: str, value: datetime) -> datetime:
     return value
 
 
-def _installed_skills(inventory: dict[str, Any]) -> dict[str, str]:
+def _installed_skills(inventory: dict[str, Any]) -> dict[str, tuple[str, frozenset[str]]]:
     if inventory.get("probe_mode") != "read_only" or inventory.get("marketplace_mutations") != 0:
         raise QualificationContractError("untrusted_skill_inventory")
     rows = inventory.get("skills")
     if not isinstance(rows, list):
         raise QualificationContractError("invalid_skill_inventory")
-    installed: dict[str, str] = {}
+    installed: dict[str, tuple[str, frozenset[str]]] = {}
     for row in rows:
         if not isinstance(row, dict):
             raise QualificationContractError("invalid_skill_inventory")
         name, digest = row.get("skill"), row.get("source_sha256")
         if not isinstance(name, str) or not name or not isinstance(digest, str) or len(digest) != 64:
             raise QualificationContractError("invalid_skill_inventory")
-        installed[name] = digest
+        capabilities = row.get("capabilities", [])
+        if not isinstance(capabilities, list) or any(
+            not isinstance(item, str) or not item.strip() for item in capabilities
+        ):
+            raise QualificationContractError("invalid_skill_inventory")
+        installed[name] = (digest, frozenset(capabilities))
     return installed
 
 
@@ -90,6 +98,8 @@ def _capacity(projects_root: Path, now: datetime) -> tuple[int, bool]:
             raise QualificationContractError(f"invalid_project_state:{path.parent.name}") from exc
         if not isinstance(state, dict):
             raise QualificationContractError(f"invalid_project_state:{path.parent.name}")
+        if state.get("provider") != "upwork":
+            continue
         is_active = state.get("talkroom_state") == "取引中" or state.get("project_status") in {
             "active", "accepted", "in_progress",
         }
@@ -154,6 +164,13 @@ def qualify(
 
     minimum_minor = _integer("minimum_minor", getattr(opportunity, "minimum_minor", None))
     connects = _integer("connects_cost", getattr(opportunity, "connects_cost", None))
+    source_hash = getattr(opportunity, "source_hash", None)
+    if (
+        getattr(opportunity, "provider", None) != "upwork"
+        or not isinstance(source_hash, str)
+        or re.fullmatch(r"[0-9a-f]{64}", source_hash) is None
+    ):
+        raise QualificationContractError("invalid_opportunity_evidence")
     pricing_kind = getattr(opportunity, "pricing_kind", None)
     if pricing_kind == "fixed":
         gross = minimum_minor
@@ -168,8 +185,11 @@ def qualify(
     expected_net = gross - fee - connects_cost - tool_cost_minor - risk_reserve_minor - labor_cost
     active_count, stale_active = _capacity(projects_root, now)
     risks: list[str] = []
-    if workflow.skill not in installed:
+    builder = installed.get(workflow.skill)
+    if builder is None:
         risks.append("missing_skill")
+    elif not set(workflow.required_capabilities).issubset(builder[1]):
+        risks.append("capability_mismatch")
     if deadline_at < now + timedelta(minutes=minutes):
         risks.append("impossible_deadline")
     if active_count >= capacity_cap:
@@ -182,20 +202,23 @@ def qualify(
         risks.append("below_minimum_margin")
     if connects > connects_cap:
         risks.append("connects_cap_exceeded")
-    verifier_hash = installed.get(workflow.verifier_skill)
+    verifier = installed.get(workflow.verifier_skill)
+    verifier_hash = verifier[0] if verifier else None
     if (
         not workflow.steps or any(not isinstance(step, str) or not step.strip() for step in workflow.steps)
         or not isinstance(workflow.deliverable, str) or not workflow.deliverable.strip()
         or workflow.verifier_skill == workflow.skill or verifier_hash is None
     ):
         risks.append("unverifiable_deliverable")
+    elif not set(workflow.verification_capabilities).issubset(verifier[1]):
+        risks.append("verification_capability_mismatch")
     assets = owner.get("portfolio_assets")
     if not isinstance(assets, list) or not set(workflow.required_claims).issubset(set(assets)):
         risks.append("false_profile_claim")
 
     evidence: tuple[tuple[str, Any], ...] = (
-        ("opportunity_source_hash", getattr(opportunity, "source_hash", None)),
-        ("skill_sha256", installed.get(workflow.skill)),
+        ("opportunity_source_hash", source_hash),
+        ("skill_sha256", builder[0] if builder else None),
         ("verifier_sha256", verifier_hash),
         ("gross_minor", gross),
         ("fee_minor", fee),

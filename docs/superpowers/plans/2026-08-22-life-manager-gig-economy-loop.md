@@ -249,8 +249,8 @@ No later task may jump ahead of the first incomplete row:
 | U3 | Complete factual freelancer profile needed to apply | **DONE:** published profile `~01f5fe272d6df34084`; Online, >30 hrs/week, 40% complete |
 | U4 | Observe real job-search, detail and proposal surfaces | **DONE:** search/detail/proposal-entry receipt; 0 effects, Connects gate identified |
 | U5 | Discover live jobs twice | **DONE:** two recency reads returned the same ten job IDs; 0 effects |
-| U6 | Qualify one job using installed Skills and Upwork-only capacity | Eligible qualification receipt; active Coconala count absent |
-| U7 | Freeze one tailored proposal | Exact body, bid, milestone, claim and attachment hashes |
+| U6 | Qualify one job using installed Skills and Upwork-only capacity | **DONE:** job `~022091070478975551162` eligible; expected net $1,046.10; Upwork active 0 |
+| U7 | Freeze one tailored proposal | **DONE:** $3,000/21-day payload `9fab22a2…10d19`; 3 milestones, 0 unsupported claims/attachments |
 | U8 | Submit that proposal once | Official proposal ID plus Connects before/after |
 | U9 | Replay immediately | Same proposal ID; zero new proposal and zero additional Connects |
 | U10 | Poll and answer the resulting thread | Official story/message IDs and no duplicate reply |
@@ -278,6 +278,23 @@ ordered ten job IDs, including `~022091072411475953338`, `~022091070478975551162
 `~022091070238314681977`. Saved jobs remained 0; proposals, messages, Connects spend and payments
 remained 0. U6 is now the first incomplete outcome and must qualify one of these live jobs against
 the installed Skills and Upwork-only delivery capacity.
+
+U6 selected `~022091070478975551162`, a fixed-price $3,000 multi-tenant product-similarity and
+feedback-reranking API. Live detail evidence showed 26 Connects, 50+ proposals, 0 interviews,
+payment and phone verification, a 75% client hire rate and $2.1K client spend. The conservative
+qualification reserves $300 fee, $3.90 Connects, $300 risk and $1,350 labor value, leaving expected
+net $1,046.10. Installed `earn/upwork-ai-api-delivery` explicitly covers the job's summarization,
+image-analysis, classification, AI integration, API, multi-tenant ranking and feedback-reranking
+capabilities. Independently hashed `test-contract` verifies API and state invariants; job-required
+capability subsets and both Skill hashes are bound to the retained full-scope observation. Current
+Upwork capacity is 0 of 3.
+
+U7 froze a $3,000, 21-day proposal with three milestones: $600 ranking contract/acceptance dataset,
+$1,400 tenant-isolated similarity API and $1,000 feedback-reranking verified handoff. The exact body
+binds `multi-tenanted`, `visual appearance`, `user feedback` and `HTTP/JSON API` from the observed
+scope. Unsupported claims and attachments are both empty. Payload hash is
+`9fab22a29ea169632f30c3d1a22597c1091ecb97a2897c987ac788ce1d110d19`. U8 is now the first
+incomplete outcome; marketplace effects remain zero.
 
 ### Task 7: Record Upwork's private action matrix
 
@@ -357,7 +374,7 @@ identity. Fixture replay proves only normalization behavior; it is not live-mark
 
 - [x] Write failing tests for missing Skill, impossible deadline, capacity exhaustion, negative
   expected net, unverifiable deliverable and false profile claim.
-- [ ] Reuse the installed Skill registry and **Upwork-only** active-contract capacity; do not read
+- [x] Reuse the installed Skill registry and **Upwork-only** active-contract capacity; do not read
   Coconala projects or talkroom states.
 - [x] Calculate expected net from observed budget/rate, fee, Connects, tool cost and risk reserve.
 - [x] Require a concrete workflow and independent verifier before `eligible=true`.

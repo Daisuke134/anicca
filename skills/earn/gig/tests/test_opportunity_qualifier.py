@@ -41,7 +41,8 @@ def _facts(tmp_path: Path, *, cap: int = 3, skills: tuple[str, ...] = ("builder"
         "version": 1,
         "probe_mode": "read_only",
         "marketplace_mutations": 0,
-        "skills": [{"skill": skill, "source_sha256": str(index + 1) * 64}
+        "skills": [{"skill": skill, "source_sha256": str(index + 1) * 64,
+                    "capabilities": [f"{skill}_capability"]}
                    for index, skill in enumerate(skills)],
     })
     owner = _private_json(tmp_path / "owner.json", {
@@ -142,7 +143,7 @@ def test_current_paid_project_capacity_is_enforced(tmp_path):
     project = projects / "paid-1"
     project.mkdir()
     (project / "state.json").write_text(json.dumps({
-        "talkroom_state": "取引中", "updated_at": NOW.isoformat(),
+        "provider": "upwork", "project_status": "active", "updated_at": NOW.isoformat(),
     }), encoding="utf-8")
 
     result = qualifier.qualify(
@@ -160,7 +161,7 @@ def test_unix_second_project_timestamp_is_current_capacity_evidence(tmp_path):
     project = projects / "paid-unix-seconds"
     project.mkdir()
     (project / "state.json").write_text(json.dumps({
-        "talkroom_state": "取引中", "updated_at": NOW.timestamp(),
+        "provider": "upwork", "project_status": "active", "updated_at": NOW.timestamp(),
     }), encoding="utf-8")
     result = qualifier.qualify(
         _opportunity(), _workflow(), inventory_path=inventory,
@@ -207,7 +208,7 @@ def test_stale_active_capacity_is_unknown_not_silently_free(tmp_path):
     project = projects / "stale-paid"
     project.mkdir()
     (project / "state.json").write_text(json.dumps({
-        "talkroom_state": "取引中",
+        "provider": "upwork", "project_status": "active",
         "updated_at": (NOW - timedelta(days=8)).isoformat(),
     }), encoding="utf-8")
     result = qualifier.qualify(
@@ -218,6 +219,64 @@ def test_stale_active_capacity_is_unknown_not_silently_free(tmp_path):
     )
     assert result.eligible is False
     assert "unknown_capacity" in result.risks
+
+
+def test_coconala_project_never_consumes_upwork_capacity(tmp_path):
+    inventory, owner, projects = _facts(tmp_path, cap=1)
+    project = projects / "coconala-paid"
+    project.mkdir()
+    (project / "state.json").write_text(json.dumps({
+        "provider": "coconala", "talkroom_state": "取引中",
+        "updated_at": NOW.isoformat(),
+    }), encoding="utf-8")
+
+    result = qualifier.qualify(
+        _opportunity(), _workflow(), inventory_path=inventory,
+        owner_profile_path=owner, projects_root=projects, now=NOW,
+        deadline_at=NOW + timedelta(hours=4), fee_bps=1000,
+        connects_unit_cost_minor=15, tool_cost_minor=1000, risk_reserve_minor=5000,
+    )
+
+    assert result.eligible is True
+    assert dict(result.evidence)["active_project_count"] == 0
+
+
+def test_missing_provider_project_never_consumes_upwork_capacity(tmp_path):
+    inventory, owner, projects = _facts(tmp_path, cap=1)
+    project = projects / "legacy-coconala-paid"
+    project.mkdir()
+    (project / "state.json").write_text(json.dumps({
+        "talkroom_state": "取引中", "updated_at": NOW.isoformat(),
+    }), encoding="utf-8")
+
+    result = qualifier.qualify(
+        _opportunity(), _workflow(), inventory_path=inventory,
+        owner_profile_path=owner, projects_root=projects, now=NOW,
+        deadline_at=NOW + timedelta(hours=4), fee_bps=1000,
+        connects_unit_cost_minor=15, tool_cost_minor=1000, risk_reserve_minor=5000,
+    )
+
+    assert result.eligible is True
+    assert dict(result.evidence)["active_project_count"] == 0
+
+
+def test_builder_and_verifier_capabilities_must_match_workflow(tmp_path):
+    result = _qualify(tmp_path, workflow=_workflow(
+        required_capabilities=("multi_tenant_api",),
+        verification_capabilities=("tenant_isolation_contract",),
+    ))
+    assert result.eligible is False
+    assert "capability_mismatch" in result.risks
+    assert "verification_capability_mismatch" in result.risks
+
+
+def test_opportunity_requires_upwork_provider_and_sha256_source_evidence(tmp_path):
+    (tmp_path / "provider").mkdir()
+    (tmp_path / "hash").mkdir()
+    with pytest.raises(qualifier.QualificationContractError, match="invalid_opportunity_evidence"):
+        _qualify(tmp_path / "provider", opportunity=_opportunity(provider="coconala"))
+    with pytest.raises(qualifier.QualificationContractError, match="invalid_opportunity_evidence"):
+        _qualify(tmp_path / "hash", opportunity=_opportunity(source_hash=None))
 
 
 def test_private_fact_files_must_not_be_world_readable(tmp_path):
