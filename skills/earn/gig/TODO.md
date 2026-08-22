@@ -302,8 +302,8 @@ no-send, replay-zero and a new natural sub-30-minute official reply/estimate pro
 Do not advance the development cursor until every unchecked item in the current stage has official
 evidence. Independent production lanes continue running while development follows this order.
 
-**Live handover state.** `main` and `origin/main` include the pushed private-data boundary
-`f7755b48ec4a039048182129f4892353a456a095`, and `/Users/anicca/gig/releases/life-manager/current` selects that
+**Live handover state.** `main` and `origin/main` include the pushed structured asset-contract boundary
+`28026722983c7a4adaefbc8ef441a8ea62573573`, and `/Users/anicca/gig/releases/life-manager/current` selects that
 same immutable release. The older Paid-specific release link remains historical and is not the loaded launchd
 entrypoint. The protected unrelated dirty
 `skills/earn/gig/tests/test_reply_concurrency.py` remains outside this work. The loaded Paid owner uses up to
@@ -359,6 +359,19 @@ credential paths, a mode-600 sandbox profile and zero secret matches in model st
 third-party model before this boundary existed, so the smallest remaining legal owner action is for the buyer or
 authorized account owner to rotate that external account credential before it is used again; Life Manager must
 not request, copy or store the replacement in prompt/log/repo/Telegram.
+
+**Structured contract-diff readback.** The next natural run from `280267229` produced no customer effect and
+no generic `file_validation` result. Haru and X now stop at `file_contract_review` with content-hash-bound
+`paid-asset-contract-diff.json` evidence: Haru has six decision assets missing and six differently named manifest
+assets; X has three current decision assets absent from its already-sent v1 manifest. Both remain owner decisions,
+not auto-delivery or auto-regeneration. Manledge and byusco now stop earlier at
+`file_non_delivery_disposition`, so the natural run correctly did not mutate their preserved manifests. A
+read-only comparison of those exact current files classifies Manledge as two missing decision assets and byusco
+as the same three stable ids/mechanical fields with two purpose-wording differences. The generic boundary
+normalizes only that stable-id/mechanical-equivalent wording case; every missing/extra/mechanical change returns
+`owner_review_required`. The official receipt remains failed with `observed=7`, `actionable=5`, `effect=0`,
+`readback=2`, `failed=5`, `pending=0`; the next blockers are therefore explicit semantic dispositions, not the
+old catch-all validation label.
 
 **Historical incident chronology — evidence only, not current room state.** The release includes the prior
 `d24a9dbb3e86ce9df648965aac4aadcdf7bce56a` safety boundary, which removes all
@@ -789,7 +802,7 @@ flowchart TB
    restricted local project storage; expose hash/type/purpose metadata to the model; redact derived prompt/stdout
    evidence; audit every Paid project and distributable path; and record any required credential rotation as one
    minimum account-owner action. Do not delete the only authorized customer source or copy its value elsewhere.
-4. [ ] Replace the one generic Paid `file_validation` collapse for Haru v34, Manledge v21, byusco v5 and the
+4. [x] Replace the one generic Paid `file_validation` collapse for Haru v34, Manledge v21, byusco v5 and the
    already-completed X v1. Preserve exact mechanical failures, but return raw validator errors plus a versioned
    semantic contract diff to the durable Project Owner. Normalize only owner-decided equivalent terminology;
    migrate contracts only from buyer events/accepted lineage; repair genuinely missing work; and let official
