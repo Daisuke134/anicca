@@ -62,7 +62,7 @@ write_ig_plist() {
   <key>Label</key><string>$IG_LABEL</string>
   <key>ProgramArguments</key><array><string>/bin/bash</string><string>$IG_SCRIPT</string></array>
   <key>EnvironmentVariables</key><dict><key>HOME</key><string>$HOME</string><key>PATH</key><string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string></dict>
-  <key>StartCalendarInterval</key><dict><key>Hour</key><integer>16</integer><key>Minute</key><integer>30</integer></dict>
+  <key>StartInterval</key><integer>3600</integer>
   <key>RunAtLoad</key><false/>
   <key>StandardOutPath</key><string>$HOME/.local/state/life-manager/logs/capafy-ig-marketing-daily.out</string>
   <key>StandardErrorPath</key><string>$HOME/.local/state/life-manager/logs/capafy-ig-marketing-daily.err</string>
