@@ -305,7 +305,12 @@ evidence. Independent production lanes continue running while development follow
 **Live handover state.** The loaded Paid owner uses an immutable release with up to eight independent
 project workers. Its launchd environment ignores the shared preventive `disk-pressure.block` and
 `disk-writers.stop` flags while retaining the 512 MiB last-resort guard and expiring operator brake.
-The loaded release is `097a2e1363929e4724294e8e44fba86bfd3e9d71`. The latest natural receipt is
+The loaded release is `d24a9dbb3e86ce9df648965aac4aadcdf7bce56a`. It removes all
+`undeterminable`/review-exhaustion delivery authorization, requires the builder to copy the exact decision
+asset contract, and preserves a failed staged candidate under private owner evidence before cleanup. The
+existing Paid launchd job read back that immutable release and naturally resumed; its Haru exact-room snapshot
+is still in progress, so these code paths are deployed but not yet production-proved. The latest completed
+natural receipt remains
 `status=failed`, `observed=7`, `actionable=5`, `effect=0`, `readback=2`, `failed=5`, `pending=0`;
 silent pending is now zero, but parallel artifact production therefore does not yet prove
 parallel buyer delivery. X-post talkroom `18171850` remains the sole closed item in the current
@@ -339,6 +344,10 @@ the buyer's report: v31 reverted the designed heading rails, cards, diagrams and
 a sparse generic page. The natural owner then generated a claimed v32 correction, but its manifest renamed the
 decision's required asset ids and failed `asset contract mismatch`; cleanup removed the temporary v32 ZIP before
 independent visual inspection. This is not a review PASS and must not be reconstructed from the self-report.
+The surviving v32 PC/responsive style previews were subsequently opened directly: unlike v31 they restore the
+inquiry artwork, comparison table, special-vacant-house diagram and designed content hierarchy. They remain
+insufficient for authorization because the package, editable AI files and exact asset contract no longer exist
+for hash-bound inspection.
 
 **E2E judgment.** This work changes no owned application UI, so Maestro is not applicable. Completion
 requires the real launchd owner to act through the authenticated Coconala browser and an exact-room
