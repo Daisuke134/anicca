@@ -131,7 +131,9 @@ os.replace(tmp,path)
 PY
   python3 "$LIFECYCLE" snapshot --accounts "$ACCOUNTS" --state "$STATE" >/dev/null || return 1
   rm -f "$RESULT"
-  "$KICKSTART" kickstart -k "gui/$(id -u)/ai.anicca.capafy-ig-marketing-daily" >/dev/null 2>&1 || true
+  if [ "${CAPAFY_RECOVERY_SKIP_PUBLISHER_KICK:-0}" != "1" ]; then
+    "$KICKSTART" kickstart -k "gui/$(id -u)/ai.anicca.capafy-ig-marketing-daily" >/dev/null 2>&1 || true
+  fi
   return 0
 }
 fail(){
