@@ -191,14 +191,19 @@ def _quality_attempt_count(gates: Path) -> int:
 
 
 def _valid_reopen_defect(run_dir: Path, gates: Path, quality_attempts: int) -> bool:
-    defect = _read_json(gates / "quality-feedback-recovery-defect.json")
+    defect_path = gates / "quality-feedback-recovery-defect.json"
+    if defect_path.is_symlink() or not defect_path.is_file():
+        return False
+    defect = _read_json(defect_path)
     if not isinstance(defect, dict):
         return False
     try:
-        drafts = {
-            lang: _sha256(run_dir / f"article-{lang}.md")
-            for lang in ("ja", "en")
-        }
+        drafts = {}
+        for lang in ("ja", "en"):
+            draft = run_dir / f"article-{lang}.md"
+            if draft.is_symlink() or not draft.is_file():
+                return False
+            drafts[lang] = _sha256(draft)
     except OSError:
         return False
     preserved = defect.get("preserved_invariants")
@@ -211,11 +216,29 @@ def _valid_reopen_defect(run_dir: Path, gates: Path, quality_attempts: int) -> b
         and defect.get("draft_sha256") == drafts
         and isinstance(defect.get("observations"), list)
         and defect.get("observations")
+        and all(
+            isinstance(observation, dict)
+            and isinstance(observation.get("return_code"), int)
+            and (
+                observation.get("quality_action") is None
+                or observation.get("quality_action") in {
+                    "block_freeze",
+                    "ready_to_freeze",
+                    "reroute",
+                    "evaluate_reroute",
+                    "force_publish_advisory",
+                }
+            )
+            for observation in defect["observations"]
+        )
         and isinstance(preserved, dict)
         and preserved.get("publication_or_staging_performed") is False
         and preserved.get("feedback_consumption_verification") == "PASS"
         and preserved.get("identity") == {"ja": "PASS", "en": "PASS"}
-        and preserved.get("reader") == {"ja": "PASS", "en": "PASS"}
+        and isinstance(preserved.get("reader"), dict)
+        and set(preserved["reader"]) == {"ja", "en"}
+        and all(value in {"PASS", "FAIL"} for value in preserved["reader"].values())
+        and preserved.get("cta") == {"ja": "PASS", "en": "PASS"}
         and isinstance(defect.get("required_safe_next_action"), str)
         and bool(defect["required_safe_next_action"].strip())
     )
@@ -347,7 +370,12 @@ def plan(run_dir: Path | str, ledger: Path | str) -> dict[str, Any]:
     run_dir = Path(run_dir).resolve()
     ledger = Path(ledger).resolve()
     gates = run_dir / "gates"
-    if not run_dir.is_dir() or not gates.is_dir():
+    if (
+        run_dir.is_symlink()
+        or gates.is_symlink()
+        or not run_dir.is_dir()
+        or not gates.is_dir()
+    ):
         return _refused("run-directory-missing")
     publication_state = gates / "publication-state.json"
     if publication_state.exists() or publication_state.is_symlink():
@@ -879,12 +907,17 @@ def record_result(
         status = "terminal-ready-not-published"
     else:
         status = "terminal-blocked"
-    if status == "terminal-blocked":
+    if status == "terminal-blocked" and not publication_phase:
         defect_path = gates / "quality-feedback-recovery-defect.json"
         existing_defect = _read_json(defect_path)
-        if defect_path.is_file() and not defect_path.is_symlink():
+        if defect_path.is_symlink():
+            raise QualityFeedbackRecoveryError("quality-recovery-defect-is-symlink")
+        if defect_path.is_file():
             legacy_path = gates / "quality-feedback-recovery-defect-legacy.json"
-            if not legacy_path.exists():
+            if legacy_path.exists() or legacy_path.is_symlink():
+                if legacy_path.is_symlink() or not legacy_path.is_file():
+                    raise QualityFeedbackRecoveryError("quality-recovery-legacy-defect-is-symlink")
+            else:
                 shutil.copy2(defect_path, legacy_path)
         current_drafts: dict[str, str] = {}
         try:
@@ -929,6 +962,16 @@ def record_result(
                     },
                     "reader": {
                         lang: quality_records.get(lang, {}).get("reader")
+                        for lang in ("ja", "en")
+                    },
+                    "cta": {
+                        lang: (
+                            "PASS"
+                            if (
+                                _read_json(gates / f"cta-{lang}.json") or {}
+                            ).get("verdict") == "PASS"
+                            else "FAIL"
+                        )
                         for lang in ("ja", "en")
                     },
                 },
