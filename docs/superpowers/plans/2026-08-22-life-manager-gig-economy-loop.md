@@ -430,10 +430,22 @@ U14 atomic order:
    ready rows require 7/14/9 Connects, so the balance gate correctly prevented private payload access,
    form fill, click, purchase or any marketplace effect. A positive live Upwork form read remains
    pending until Upwork supplies free capacity that covers an exact live job cost.
-3. **NEXT:** after a positive official balance selects a sealed job and the live click-free preflight
-   passes, cross the existing durable effect fence once, submit once, and require the exact official
-   proposal ID plus post-effect Connects readback; unknown effect stays reconcile-only and is never
-   blindly retried. Invitations/direct offers remain separate zero-Connect acquisition effects.
+3. **CODE COMPLETE / FIRST LIVE EFFECT PENDING:** after a positive official balance selects a sealed
+   job, the same hidden target now fills the exact form, requires its live `Available Connects` to
+   cover the exact job cost, validates the click-free preflight, and calls the shared durable provider
+   fence before the only submit expression can run. A denied or replayed fence produces zero clicks.
+   A click requires an official non-job proposal URL/ID, then a fresh Connects History read whose
+   balance is exactly `pre - required`; missing IDs, wrong deltas and timeouts remain
+   `reconcile_unknown` and are never blindly retried. The private authorization resolves exactly one
+   active Upwork propose account and the existing daily-driver profile; no new browser, queue or
+   service was added. The focused browser/fence/legacy crash matrix passes 51/51. Production release
+   `4c14d4e45` completed its five-minute wake with exit 0 at
+   `2026-08-22T17:43:25.669314+00:00`: balance 0, proposals 0, invitations 0, offers 0, available
+   earnings USD 0, `waiting_free_capacity`, provider-effect rows 0 and transition appends 0. The
+   shared outbox is now forced to mode 600 before it can store sealed proposal content. The only
+   remaining proof for this public-job effect is a real free-capacity event followed by one official
+   proposal ID and its exact Connects delta. Invitations/direct offers remain separate zero-Connect
+   acquisition effects.
 
 ### Task 7: Record Upwork's private action matrix
 
