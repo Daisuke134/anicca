@@ -6,7 +6,9 @@ import html
 import os
 import re
 import sqlite3
+import subprocess
 import uuid
+import base64
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from email.utils import parseaddr
@@ -54,10 +56,13 @@ class VerificationTarget:
     tenant: str
     verification_url: str
     url_sha256: str
+    kind: str = "activation"
 
     @property
     def event_key(self) -> str:
         material = f"{self.message_id}\n{self.tenant}\n{self.url_sha256}"
+        if self.kind != "activation":
+            material += f"\n{self.kind}"
         return "workday-verify:" + hashlib.sha256(material.encode("utf-8")).hexdigest()
 
     def receipt(self, status: str) -> dict[str, str]:
@@ -73,6 +78,7 @@ def _verification_language_matches(subject: str, body: str) -> bool:
     text = f"{subject}\n{body}".casefold()
     return (
         "verify your candidate account" in text
+        or "reset your password for your candidate account" in text
         or (
             "confirm your email address" in text
             and "candidate account" in text
@@ -89,7 +95,9 @@ def _candidate_urls(body: str) -> list[str]:
     ]
 
 
-def _valid_activation_url(value: str, tenants: set[str]) -> tuple[str, str] | None:
+def _valid_activation_url(
+    value: str, tenants: set[str]
+) -> tuple[str, str, str] | None:
     try:
         parsed = urlsplit(value)
         host = (parsed.hostname or "").casefold().rstrip(".")
@@ -105,15 +113,14 @@ def _valid_activation_url(value: str, tenants: set[str]) -> tuple[str, str] | No
     ):
         return None
     segments = [segment for segment in parsed.path.split("/") if segment]
-    try:
-        activation_index = [segment.casefold() for segment in segments].index(
-            "activate"
-        )
-    except ValueError:
-        return None
-    if activation_index + 1 >= len(segments) or not segments[activation_index + 1]:
-        return None
-    return host, value
+    lowered = [segment.casefold() for segment in segments]
+    for marker, kind in (("activate", "activation"), ("passwordreset", "password_reset")):
+        if marker not in lowered:
+            continue
+        marker_index = lowered.index(marker)
+        if marker_index + 1 < len(segments) and segments[marker_index + 1]:
+            return host, value, kind
+    return None
 
 
 def extract_verification_target(
@@ -147,12 +154,77 @@ def extract_verification_target(
         raise VerificationError(
             "message must contain exactly one known-tenant activation URL"
         )
-    tenant, verification_url = matches.pop()
+    tenant, verification_url, kind = matches.pop()
     return VerificationTarget(
         message_id=message_id,
         tenant=tenant,
         verification_url=verification_url,
         url_sha256=hashlib.sha256(verification_url.encode("utf-8")).hexdigest(),
+        kind=kind,
+    )
+
+
+def _decoded_html_parts(value: object) -> list[str]:
+    parts: list[str] = []
+    if isinstance(value, dict):
+        if value.get("mimeType") == "text/html":
+            encoded = (value.get("body") or {}).get("data")
+            if isinstance(encoded, str):
+                padded = encoded + "=" * ((4 - len(encoded) % 4) % 4)
+                parts.append(base64.urlsafe_b64decode(padded).decode("utf-8", "replace"))
+        for child in value.values():
+            parts.extend(_decoded_html_parts(child))
+    elif isinstance(value, list):
+        for child in value:
+            parts.extend(_decoded_html_parts(child))
+    return parts
+
+
+def extract_verification_target_from_gmail(
+    *,
+    account: str,
+    message_id: str,
+    credential_store: Path,
+    gog: str = "/opt/homebrew/bin/gog",
+) -> VerificationTarget:
+    completed = subprocess.run(
+        [
+            gog,
+            "gmail",
+            "thread",
+            "get",
+            "--account",
+            account,
+            "--json",
+            "--full",
+            "--gmail-no-send",
+            message_id,
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    value = json.loads(completed.stdout)
+    messages = ((value.get("thread") or {}).get("messages") or [])
+    matches = [row for row in messages if isinstance(row, dict) and row.get("id") == message_id]
+    if len(matches) != 1:
+        raise VerificationError("Gmail result must contain the exact message once")
+    message = matches[0]
+    headers = {
+        str(row.get("name") or "").casefold(): str(row.get("value") or "")
+        for row in ((message.get("payload") or {}).get("headers") or [])
+        if isinstance(row, dict)
+    }
+    bodies = _decoded_html_parts(message.get("payload"))
+    if len(bodies) != 1:
+        raise VerificationError("Workday message must contain exactly one HTML body")
+    return extract_verification_target(
+        message_id=message_id,
+        subject=headers.get("subject", ""),
+        sender=headers.get("from", ""),
+        body=bodies[0],
+        credential_store=credential_store,
     )
 
 

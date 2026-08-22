@@ -66,6 +66,18 @@ never retry it. Close only the page you created. Add only the target's secret-fr
 receipt to `verifications`; activation URLs and tokens must never appear in JSON,
 evidence, logs, Telegram, or replies.
 
+For an exact Workday candidate-account password-reset message from the same trusted
+sender set, do not request or print its raw body. Run
+`python -m job_search_loop.workday_account_mail` with the exact candidate Gmail
+message ID, the already-selected mailbox account, the machine credential SSOT,
+the Workday verification database, and local CDP `http://127.0.0.1:9222`. This
+bounded secret rail fetches and validates the raw message internally, admits only
+one known-tenant HTTPS `/passwordreset/<token>` URL, enters the already-stored
+tenant password, and returns only a secret-free receipt. Add that receipt to
+`verifications`. An `opened` receipt means password reset was visibly confirmed;
+the daily owner signs in and resumes the same application. Never open the raw URL
+or copy its token into a command, prompt, JSON, evidence, log, Telegram, or reply.
+
 For an interview email that explicitly offers one or more candidate times, extract
 at most 20 candidates as timezone-aware RFC3339 `start`/`end` values. Preserve a
 verbatim `source_span` for every candidate; do not infer a timezone, duration, or
