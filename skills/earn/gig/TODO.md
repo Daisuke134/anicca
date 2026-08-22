@@ -317,8 +317,10 @@ removed, reducing that room from 6.8 GiB to 232 MiB and restoring 6.0 GiB free. 
 eight independent project workers and retains the 512 MiB effect floor and expiring operator brake.
 
 **Current official Paid truth — supersedes the historical chronology below.** The latest completed natural receipt is
-the pending disk-pressure receipt above. Three rows are official readback-only/reserved; four owned rows have
-explicit durable checkpoints rather than silent disappearance, but customer work is not complete.
+`status=failed`, `observed=7`, `actionable=4`, `effect=0`, `readback=3`, `failed=4`, `pending=0`.
+Three rows are official readback-only/reserved; the owned failures are Manledge `remote_verifier`, Haru
+`file_builder`, byusco `file_owner_feedback`, and `18062411` `remote_resume`. Silent pending is zero, but no new
+customer effect exists.
 
 - Haru `18169583` sent v32 previously with exact official readback/replay-zero, but the buyer then supplied two
   complaint screenshots and explicitly reported rough images, repeated lack of checking and possible
