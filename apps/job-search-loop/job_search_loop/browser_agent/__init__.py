@@ -20,6 +20,7 @@ from .contracts import (
     PolicyContextV1,
     RowCheckpointV1,
     ResolvedAnswerV1,
+    ResumeVerificationV1,
     SessionHandleV1,
     VisibleActionV1,
     VisibleControlV1,
@@ -30,6 +31,7 @@ from .observation import ObservationBuilder
 from .inference import ExperienceIntervalV1, InferenceDecisionV1, StableInferencePolicy
 from .policy import AgentPolicy
 from .session import BrowserSession
+from .resume import ResumeVerifier
 from .workday_account import MachineWorkdayCredentialStore
 from .workday_auth import WorkdayAuthReceiptV1, WorkdayAuthTool
 from .validation import validation_feedback
@@ -43,6 +45,7 @@ __all__ = [
     "EvidenceStore", "ExperienceIntervalV1", "FieldQuestionV1", "InferenceDecisionV1",
     "ObservationBuilder", "ObservationV1",
     "PolicyContextV1", "ResolvedAnswerV1", "RowCheckpointV1", "SessionHandleV1",
+    "ResumeVerificationV1", "ResumeVerifier",
     "StepEvidenceV1", "VisibleActionV1",
     "MachineWorkdayCredentialStore", "StableInferencePolicy", "VisibleControlV1",
     "WorkdayAuthReceiptV1", "WorkdayAuthTool",

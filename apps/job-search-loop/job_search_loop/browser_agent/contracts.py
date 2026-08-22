@@ -106,6 +106,17 @@ class ChallengeAssessmentV1:
 
 
 @dataclass(frozen=True, slots=True)
+class ResumeVerificationV1:
+    schema_version: int
+    observation_sha256: str
+    resume_sha256: str
+    filename_visible: bool
+    checked_labels: tuple[str, ...]
+    mismatched_labels: tuple[str, ...]
+    receipt_sha256: str
+
+
+@dataclass(frozen=True, slots=True)
 class ActionPlanV1:
     based_on_observation_sha256: str
     action: VisibleActionV1 | None = None

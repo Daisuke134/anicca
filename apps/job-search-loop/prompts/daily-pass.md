@@ -99,6 +99,14 @@ file input; modals are newly observed surfaces. If labels collide, use only the
 `stable_id` from that same fresh observation to disambiguate. Never retain an index,
 selector, stable ID, or option list across a rerender or reorder.
 
+After uploading the routed resume, build a fresh observation and call
+`ResumeVerifier.verify` with Candidate-Memory expected fields inside the browser
+boundary. Continue only after `filename_visible=true` and the returned resume hash
+matches the routed material hash. The receipt exposes only checked/mismatched labels,
+never parsed values. For each mismatched label, retrieve the Candidate Memory value
+internally, correct it through one typed action, observe again, and reverify until no
+mismatch remains.
+
 Use `StableInferencePolicy` for common concepts. Luna supplies dated,
 Candidate-Memory-provenance intervals for experience; the policy merges overlaps
 before computing years. Minimum/target/stretch compensation comes from the matching
