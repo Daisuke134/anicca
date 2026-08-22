@@ -97,15 +97,33 @@ if timeout "${X_REPOST_MODEL_TIMEOUT:-600}" env -u ANTHROPIC_API_KEY "$CODEX_BIN
      --add-dir "$SKILL" "$(cat "$STATE/last-harvest-prompt.txt")" \
      >"$STATE/last-harvest.stdout" 2>"$STATE/last-harvest.err"; then
   "$PY" - "$STATE/last-harvest.raw" >"$STATE/last-harvest.json" <<'PYEOF'
-import json, re, sys
+import json, sys
 raw = open(sys.argv[1], encoding="utf-8", errors="replace").read()
-for candidate in reversed(re.findall(r"\{.*\}", raw, re.S)):
-    for start in range(len(candidate)):
-        try:
-            json.dump(json.loads(candidate[start:]), sys.stdout, ensure_ascii=False)
-            raise SystemExit(0)
-        except json.JSONDecodeError:
-            continue
+try:
+    value = json.loads(raw)
+    if isinstance(value, (list, dict)):
+        json.dump(value, sys.stdout, ensure_ascii=False)
+        raise SystemExit(0)
+except json.JSONDecodeError:
+    pass
+decoder = json.JSONDecoder()
+values = []
+for start, char in enumerate(raw):
+    if char not in "[{":
+        continue
+    try:
+        value, _ = decoder.raw_decode(raw[start:])
+        if isinstance(value, (list, dict)):
+            values.append(value)
+    except json.JSONDecodeError:
+        pass
+for value in reversed(values):
+    if isinstance(value, list):
+        json.dump(value, sys.stdout, ensure_ascii=False)
+        raise SystemExit(0)
+if values:
+    json.dump(values[-1], sys.stdout, ensure_ascii=False)
+    raise SystemExit(0)
 raise SystemExit(1)
 PYEOF
   # The well drains far faster than it fills: the pass may publish up to twelve times a day and
