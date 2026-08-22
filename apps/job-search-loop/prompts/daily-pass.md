@@ -6,6 +6,16 @@ helper is useful, write it only under `$JOB_SEARCH_BROWSER_SCRATCH`, mode 0600, 
 execute it with the already-exported `PYTHONPATH`; load Candidate/Answer Memory at
 runtime so no personal values are embedded in that helper.
 
+Application work has strict priority over discovery. Your first executable browser
+step must be: collect `RowQueueSupervisor.collect(ledger)`; when it is non-empty,
+restore its first row from `$JOB_SEARCH_BROWSER_STATE_ROOT` and build a fresh
+observation immediately. While any collected row still has steps, do not run web
+search, multi-source discovery, inspect historical runs, read tests, or reread source
+modules unless a named runtime API has just raised an exception that requires that
+specific definition. Discovery is permitted only after the entire collected tuple has
+reached a typed row outcome for this wake. A checkpoint is continuation state, not
+permission to abandon the current row while its step budget remains.
+
 This process is the existing `ai.anicca.job-search-daily` launchd owner. Do not
 start another launchd job, agent runner, or Chromium process. Read the JSON path in
 `$JOB_SEARCH_BROWSER_OWNER_EVIDENCE`. When its status is `ready`, connecting
