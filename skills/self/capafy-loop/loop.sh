@@ -11,7 +11,19 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DIR="${CAPAFY_DIR:-$HERE}"; STATE_MD="$DIR/state/STATE.md"; mkdir -p "$DIR/state"
 set -a; . $HOME/.local/state/life-manager/.env 2>/dev/null; set +a
 REQ="${CAPAFY_REQ:-$HOME/.local/state/life-manager/state/capafy-loop-selfheal-request.json}"
-LP="${CAPAFY_LOGFILE:-$LIFE_MANAGER_REPO/skills/capafy-autopublish/state/daily_loop.log}"
+# daily_loop.sh stores its durable runtime state outside the source checkout.  Keep
+# the legacy checkout-local log as a migration fallback only; preferring it made a
+# healthy real publisher look as though it had never run after the state-home move.
+LIFE_MANAGER_STATE_HOME="${LIFE_MANAGER_STATE_HOME:-$HOME/.local/state/life-manager}"
+STATE_HOME_LP="$LIFE_MANAGER_STATE_HOME/state/capafy-autopublish/daily_loop.log"
+LEGACY_LP="${LIFE_MANAGER_REPO:-$HERE}/skills/capafy-autopublish/state/daily_loop.log"
+if [ -n "${CAPAFY_LOGFILE:-}" ]; then
+  LP="$CAPAFY_LOGFILE"
+elif [ -f "$STATE_HOME_LP" ] || [ ! -f "$LEGACY_LP" ]; then
+  LP="$STATE_HOME_LP"
+else
+  LP="$LEGACY_LP"
+fi
 fetch(){ local name="$1" url="$2"; shift 2
   if [ "${CAPAFY_TEST:-}" = "1" ] && [ -n "${CAPAFY_FIXTURE:-}" ]; then cat "$CAPAFY_FIXTURE/$name.json" 2>/dev/null || echo '{}'; return 0; fi
   curl -s --max-time 20 "$@" "$url" 2>/dev/null; }
