@@ -71,3 +71,8 @@ unrelated dirty paths `docs/loops/x-repost.md` and `state/effective-cron/`.
   discovered Workday row left in Ledger. The daily slot is not a quota. The next
   implementation slice is recurring official Workday discovery/admission before
   each 30-minute model wake, with canonical URL dedupe and existing submit fences.
+- `workday_discovery` now implements that supply slice from the official NVIDIA,
+  Workday, and Salesforce CXS surfaces. It isolates source failures, admits one
+  unseen Japan/remote target-role row, and runs before the existing Luna owner.
+  Focused tests pass; build, activate, kickstart, and verify the live discovery
+  receipt plus exact model handoff next.

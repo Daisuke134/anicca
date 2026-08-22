@@ -50,6 +50,16 @@ chmod 600 "$EVIDENCE/candidate-memory-receipt.json"
 export JOB_SEARCH_CANDIDATE_MEMORY="$CANDIDATE_MEMORY"
 export JOB_SEARCH_ANSWER_MEMORY="$JOB_SEARCH_STATE_ROOT/answer-memory.v1.json"
 export JOB_SEARCH_MACHINE_CREDENTIALS="${XDG_DATA_HOME:-$HOME/.local/share}/anicca/credentials.json"
+WORKDAY_DISCOVERY_RESULT="$EVIDENCE/workday-discovery.json"
+set +e
+"$JOB_SEARCH_PYTHON" -m job_search_loop.workday_discovery \
+  --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
+  --output "$WORKDAY_DISCOVERY_RESULT"
+WORKDAY_DISCOVERY_RC=$?
+set -e
+if [[ "$WORKDAY_DISCOVERY_RC" -ne 0 ]]; then
+  printf '%s\n' "Workday discovery failed; existing eligible queue continues" >&2
+fi
 ASHBY_DISCOVERY_RESULT="$EVIDENCE/ashby-discovery.json"
 ASHBY_COMBINED_RESULT="$EVIDENCE/ashby-fast-path-combined.json"
 "$JOB_SEARCH_PYTHON" - \
