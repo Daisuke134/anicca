@@ -407,6 +407,69 @@ def test_semantic_validation_allows_fulfilling_deferred_artifact_after_seller_la
     ].startswith("X用投稿案：")
 
 
+def test_semantic_validation_rejects_deferring_the_same_artifact_again():
+    rows = [
+        {
+            "message_id": "buyer-preview",
+            "role": "buyer",
+            "sent_at": "2026-08-22T12:30:13Z",
+            "body": "購入前に、X用とWeibo用の2つの投稿全文をここで見せてください。",
+        },
+        {
+            "message_id": "seller-promise",
+            "role": "seller",
+            "sent_at": "2026-08-22T12:31:47Z",
+            "body": "対応可能です。X用・Weibo用の投稿前案をお見せします。",
+        },
+    ]
+    payload = {
+        "conversation_state": "question",
+        "next_action": "reply",
+        "cycle_start_message_id": "buyer-preview",
+        "evidence_message_ids": ["buyer-preview"],
+        "required_official_context": "none",
+        "estimate_terms": None,
+        "reply_body": "承知しました。投稿前案を改めて送ります。",
+        "reply_audit": {
+            "answered_buyer_message_ids": ["buyer-preview"],
+            "unanswered_questions": [],
+            "unsupported_claims": [],
+            "unrequested_cta": False,
+            "repeats_seller_message": False,
+            "off_platform_contact": False,
+        },
+        "uncertainty": [],
+    }
+
+    with pytest.raises(
+        requested_estimate.SemanticJudgementError,
+        match="semantic_inline_artifact_deferred",
+    ):
+        requested_estimate.validate_semantic_judgement(payload, rows)
+
+
+def test_inline_artifact_debt_cannot_authorize_a_second_seller_only_reply():
+    rows = [
+        {
+            "message_id": "buyer-preview", "role": "buyer",
+            "sent_at": "2026-08-22T12:30:13Z",
+            "body": "購入前に投稿全文をここで見せてください。",
+        },
+        {
+            "message_id": "seller-promise", "role": "seller",
+            "sent_at": "2026-08-22T12:31:47Z",
+            "body": "投稿前案をお見せします。",
+        },
+        {
+            "message_id": "seller-repeat", "role": "seller",
+            "sent_at": "2026-08-22T12:35:00Z",
+            "body": "準備して改めて送ります。",
+        },
+    ]
+
+    assert requested_estimate._inline_artifact_debt(rows) is False
+
+
 def test_semantic_judge_uses_one_bounded_runner_attempt(tmp_path, monkeypatch):
     schema = GIG_ROOT / "schemas" / "reply_semantic_judgement.schema.json"
     calls = []

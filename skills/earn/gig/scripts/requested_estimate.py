@@ -242,7 +242,14 @@ def _latest_inline_artifact_request(rows: list[dict[str, str]]) -> dict[str, str
 
 
 def _inline_artifact_debt(rows: list[dict[str, str]]) -> bool:
-    if _latest_inline_artifact_request(rows) is None or rows[-1]["role"] != "seller":
+    request = _latest_inline_artifact_request(rows)
+    if request is None or rows[-1]["role"] != "seller":
+        return False
+    request_index = next(
+        index for index in range(len(rows) - 1, -1, -1)
+        if rows[index]["message_id"] == request["message_id"]
+    )
+    if sum(row["role"] == "seller" for row in rows[request_index + 1:]) != 1:
         return False
     return any(
         phrase in rows[-1]["body"]
@@ -347,7 +354,7 @@ def validate_semantic_judgement(
         ):
             raise SemanticJudgementError("semantic_reply_audit_failed")
         inline_artifact_requested = _latest_inline_artifact_request(rows) is not None
-        if inline_artifact_requested and not artifact_debt and any(
+        if inline_artifact_requested and any(
             phrase in reply_body
             for phrase in ("お見せします", "提示します", "お送りします", "後ほど", "改めて送ります")
         ):
