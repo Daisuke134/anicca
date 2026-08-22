@@ -2891,10 +2891,26 @@ Evidence for this decision is pinned rather than paraphrased as folklore:
   placement `transaction_count >= 1` in the next focused interval. The decision is
   non-money and creates no public/provider effect. Owner publication remained
   `FOCUSED_COHORT_HELD`; Telegram message is `28507`.
-- **FUNNEL-G — NEXT — focused owner distribution:** existing owners distribute only the
-  admitted focused asset through owned channels with exact effect/readback receipts;
-  no manual post, duplicate broadcast, or account farming.
-- **FUNNEL-H — mature readback:** after the declared sample/age boundary, capture
+- **FUNNEL-G — DONE — focused owner distribution:** source owner created experiment
+  plan `elevenlabs-discovered-subtitle-translator-en-experiment-1ecf26fe47e1` from
+  the exact FUNNEL-F decision, and composition/policy owners produced the CTA-only
+  artifact with policy PASS. The Affiliate owner created exactly one dedicated
+  placement, exactly one owned file/commit, and exactly one X effect. Owned commit
+  `8da9c2bdae59ea3a3ae8ebe38a852ae62127a20a` is live at
+  `https://aniccaai.com/blog/elevenlabs-subtitle-translator-for-creators-experiment-1ecf26fe47e1`;
+  rendered SHA-256 is `773324384bc5dec9ce16e77dbb90f97848cbd3cd5512afd564b1c055d950da69`.
+  X exact readback is `https://x.com/selawmqt/status/2091080533396922494` with
+  effect job `ee5882dd…f055` VERIFIED on attempt 2. Releases `77cf6db6d` and
+  `5f8aef6c9` repaired owned same-origin redirect readback and X public-SSR
+  reconciliation respectively; installed/source bytes match. Owner run 53 exited
+  `0`, read dedicated link `VERIFIED / changed=false / deduplicated=true`, retained
+  placement ledger count `25`, and sent Telegram `28544`. The first X attempt was
+  not repeated: public readback reconciled the existing effect. This is a live
+  exposure, not money; rolling state remains `NO_TRANSACTIONS / NOT_REACHED` with
+  all official status counts zero.
+- **FUNNEL-H — NEXT — mature readback:** first bind the now-known X exposure
+  timestamp to an immutable maturity boundary (the FUNNEL-F receipt omitted this
+  required field), then after that declared sample/age boundary capture
   the full funnel again; insufficient sample stays exploration and cannot name a
   winner.
 - **FUNNEL-I — first-customer diagnosis:** if provider customers remain zero,

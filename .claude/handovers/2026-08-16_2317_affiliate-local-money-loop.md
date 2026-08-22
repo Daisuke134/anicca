@@ -1633,8 +1633,30 @@ official exact-placement `transaction_count >= 1` in the next focused interval.
 This is a hypothesis, not money. Publication stayed `FOCUSED_COHORT_HELD`, no link
 or distribution changed, exit was `0`, and Telegram receipt is `28507`.
 
-The next atomic item is FUNNEL-G: let only the existing composition/publication/X
-owners materialize and distribute the admitted CTA-only experiment under the same
-control lineage, then read back one exact public URL/X permalink and terminal
-consumption. Do not let the old view-only title experiment satisfy this gate, and
-do not open another product placement.
+FUNNEL-G is now `DONE`. Existing source/composition/policy owners created the
+CTA-only experiment plan and PASS artifact from decision `1ecf26fe…7fe6`. Existing
+Affiliate owner created one dedicated placement, one owned article commit
+`8da9c2bdae59ea3a3ae8ebe38a852ae62127a20a`, and one X effect. The article is LIVE
+at `https://aniccaai.com/blog/elevenlabs-subtitle-translator-for-creators-experiment-1ecf26fe47e1`
+with rendered SHA-256 `77332438…da69`; X is LIVE at
+`https://x.com/selawmqt/status/2091080533396922494`. An owned readback defect had
+expected the private provider URL although the public site correctly rendered a
+same-origin redirect; release `77cf6db6d` fixed that. The first X effect then
+became ambiguous when the logged-in DOM returned zero timeline rows. Public X SSR
+proved the exact post already existed, so release `5f8aef6c9` added exact
+disclosure/copy + owned-URL + numeric-status reconciliation. Owner run 53 verified
+the original effect job `ee5882dd…f055` on attempt 2 without reposting. Dedicated
+link readback is `VERIFIED / changed=false / deduplicated=true`, placement count is
+still `25`, exit is `0`, and Telegram message is `28544`. One campaign receipt,
+one owned file/commit, and one exact X permalink exist. Old regenerable Affiliate
+releases were pruned from 230 to three after physical disk exhaustion interrupted
+one atomic receipt write; current runtime was preserved and free space recovered.
+This is non-money. Rolling state is `NO_TRANSACTIONS / NOT_REACHED`, with pending,
+approved, paid, and reversed official counts all zero.
+
+The next atomic item is FUNNEL-H. Before waiting for maturity, repair the omitted
+experiment boundary: bind X exposure `2026-08-22T08:40:16.318419+00:00`, its exact
+placement/decision/content hashes, and a declared age/sample boundary into an
+immutable receipt. Then only the existing Affiliate owner captures the mature
+official funnel. Insufficient sample remains exploration; do not call clicks,
+views, or the live placement money and do not publish another variant meanwhile.
