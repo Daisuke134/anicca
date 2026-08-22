@@ -1060,13 +1060,31 @@ fresh official Upwork wake is not.
 **Interfaces:** Implements `list_payments()` returning gross, fee, refund/chargeback, released state,
 payout availability and provider transaction IDs.
 
-- [ ] Write failing tests separating pending balance, released payment, available payout, refund,
+- [x] Write failing tests separating pending balance, released payment, available payout, refund,
   chargeback and missing source window.
-- [ ] Normalize official transaction IDs and forbid one transaction in two accounting periods.
-- [ ] Join payment to contract, delivery and actual execution cost.
-- [ ] Recognize revenue only from complete released/received evidence; retain missing fields as
+- [x] Normalize official transaction IDs and forbid one transaction in two accounting periods.
+- [x] Join payment to contract, delivery and actual execution cost.
+- [x] Recognize revenue only from complete released/received evidence; retain missing fields as
   `unknown`.
 - [ ] Reconcile the first live payment and commit/push after focused tests pass.
+
+Task 21 engine evidence: Upwork's current fixed-price flow distinguishes work in progress, review,
+the five-day `Pending` security hold and `Available`; only Available can be withdrawn
+([fixed-price payment flow](https://support.upwork.com/hc/en-us/articles/211063718-How-payments-for-milestones-and-fixed-price-contracts-work),
+[earnings statuses](https://support.upwork.com/hc/en-us/articles/211068418-How-to-track-the-status-of-your-earnings-on-Upwork)).
+`upwork_finance.py` requires a complete official transaction window and stable provider transaction
+IDs, groups gross payment, fee, refund, chargeback and payout without treating absent fees as zero,
+and joins the exact contract, Task 19 submission and Task 17 measured execution cost. In-review,
+Pending and merely Available balances never become recognized revenue. Revenue and verified net
+remain `unknown` until the official payout row is `received` and its amount equals gross minus fee,
+refund and chargeback. Each transaction is claimed once to its actual occurrence month; a payout may
+arrive in a later month, and revenue is then attributed only to that received month. Exact replay is
+idempotent and the same transaction ID in another month is rejected. A later refund or chargeback is
+recorded once as negative revenue in its actual month without subtracting execution cost twice. The
+ten-case finance suite and the 40-test provider/delivery/revision/executor focused suite pass; Python compilation and
+`git diff --check` pass. This is engine proof only: the last official account snapshot has no active
+contract, payment or payout, so the first-live-payment checkbox remains open and no revenue is
+claimed.
 
 ### Task 22: Close the Upwork three-job repeatability gate
 
