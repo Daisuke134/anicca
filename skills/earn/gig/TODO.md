@@ -1567,6 +1567,12 @@ submission, official-readback, replay and Telegram paths remain proved below, bu
 - [ ] Restore at least the loaded 512 MiB real write floor without deleting protected/user data or
   stopping another lane, then read back one launchd-owned natural pass with no ENOSPC and a provider-
   acknowledged natural-language Telegram summary. Do not lower or bypass the floor to claim success.
+  Natural wake `gig-apply-direct-1787415528495922000-61669` started while the floor was briefly
+  available and officially submitted/read back request `5227320`, but then lost the Cloak lease
+  heartbeat when the volume fell below the floor and exited 120. Its application report is outbox
+  row `9978 / delivery_unknown / TimeoutExpired`; its terminal summary is row `9979 / send_started`
+  with no provider message ID. After headroom recovery, reconcile both receipts without a blind
+  resend and prove that the next natural snapshot treats `5227320` as already applied.
 
 - [x] Restore bounded write headroom without broad user-data deletion. Apply now ignores only the
   global advisory pressure/stop flags and retains `GIG_DISK_HEADROOM_KIB=524288`; measured natural
