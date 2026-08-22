@@ -373,8 +373,8 @@ This is the remaining implementation-order SSOT. Only the first
 | 3 | Make Workday-first and the OSS-code-first rule the current spec/memory SSOT | `done` | This section and `MEMORY.md` contain one non-contradictory order |
 | 4 | Trace the existing daily owner, Workday helper, runner, credential helper, Ledger, and Gmail call graph | `done` | Exact reused entrypoints, replaceable fast-path boundaries, and framework integration seams are named below |
 | 5 | Freeze fixed-commit OSS source lineage and license boundaries | `done` | Fixed SHA, license text, allowed reuse, AGPL pattern-only boundary, and rejected human-stop/default-answer patterns are recorded below |
-| 6 | Define the Job Hunter browser-agent framework package and public contracts | `pending_actionable` | Orchestrator, session, observation, action, answer, checkpoint, verifier, and provider-hint interfaces are versioned |
-| 7 | Define one provider-neutral sanitized row-envelope and row-run state schema | `pending_after_6` | Schema requires identity/evidence pointers and rejects secrets, raw answers, and terminal retries |
+| 6 | Define the Job Hunter browser-agent framework package and public contracts | `done` | Package boundary, dependency direction, API version, and orchestrator/session/observation/action/answer/checkpoint/verifier/provider-hint signatures are fixed below |
+| 7 | Define one provider-neutral sanitized row-envelope and row-run state schema | `pending_actionable` | Schema requires identity/evidence pointers and rejects secrets, raw answers, and terminal retries |
 | 8 | Add framework contract tests and recorded real-shape replays | `pending_after_7` | Observation/action/recovery/checkpoint/verifier contracts fail against the current fast-path architecture |
 | 9 | Route `browser-lane-agent` to Luna xhigh with the existing bounded runner | `pending_after_8` | One config route, one runner, one timeout; no fallback executor |
 | 10 | Remove `JOB_SEARCH_ENABLE_MODEL_FALLBACK` as a production decision | `pending_after_9` | Every eligible Workday row reaches one framework run even after recognized preflight |
@@ -577,6 +577,90 @@ unknown-field result on behalf of an eligible row.
 | `SubmissionFence` | Atomic exact-identity permission for one final action | Deciding whether submission succeeded |
 | `CompletionVerifier` | Fresh post-action UI and authoritative Gmail receipt evaluation | Trusting model prose, click, HTTP, or Ledger intent |
 | `ProviderHints` | Stable surface vocabulary, account-entry hints, known confirmation phrases | Scripted form workflow or question mapping |
+
+#### Package boundary and public API v1
+
+The framework lives under one provider-neutral Python package. Provider names are
+confined to hint adapters; neither the orchestrator nor its contracts import a
+Workday/Ashby fast path:
+
+```text
+job_search_loop/browser_agent/
+  __init__.py                 # exports API_VERSION and public contracts only
+  contracts.py                # frozen value records + Protocol interfaces
+  orchestrator.py             # the only per-row control loop
+  session.py                  # existing-CDP adapter
+  observation.py              # screenshot + AX/DOM + visible-text builder
+  policy.py                   # Luna xhigh next-step adapter over shared runner
+  actions.py                  # typed visible-action executor
+  answers.py                  # Candidate/Answer Memory resolver adapter
+  checkpoint.py               # durable checkpoint + ordered evidence adapter
+  verification.py             # UI/email completion verifier + Ledger fence adapter
+  provider_hints/
+    __init__.py               # URL-based hint registry
+    workday.py                # 10P hints; no workflow
+    ashby.py                  # dormant until 10Q
+```
+
+`API_VERSION = "job-hunter-browser-agent/1"`. Every value crossing a public
+boundary is an immutable record with `schema_version = 1`; serialization rejects
+unknown schema versions. `contracts.py` imports no Playwright, provider helper,
+Ledger implementation, credential store, Gmail client, Telegram transport, or
+runner. Those are injected adapters. This preserves the Browser Use fixed-source
+step rule—“always capture screenshot if not available yet”—and Stagehand's
+fresh-tree behavior while keeping the current authenticated CDP/Ledger effects
+behind explicit ports.
+
+```mermaid
+flowchart LR
+    O["BrowserAgentOrchestrator"] --> C["contracts.py v1"]
+    O --> S["BrowserSession"]
+    O --> OB["ObservationBuilder"]
+    O --> P["AgentPolicy"]
+    O --> A["ActionExecutor"]
+    O --> AN["AnswerResolver"]
+    O --> CP["CheckpointStore + EvidenceStore"]
+    O --> V["CompletionVerifier + SubmissionFence"]
+    H["Workday ProviderHints"] --> OB
+    S --> CDP["existing CDP :9222"]
+    V --> L["existing Ledger/Gmail adapters"]
+    P --> R["existing browser-lane-agent runner"]
+```
+
+The public protocols are fixed at the semantic level below. Concrete Python type
+definitions implement these signatures in Atomic 11–20 without changing their
+ownership:
+
+| Public contract | Version-1 signature | Required semantics |
+|---|---|---|
+| `BrowserAgentOrchestrator` | `run_row(row: RowEnvelopeV1, budget: RunBudgetV1) -> RowRunResultV1` | Mandatory once per admitted row; resumes a checkpoint, loops observe→decide→act→evidence, returns control to the queue, and never returns run-level `no_work` or `blocked` |
+| `BrowserSession` | `attach(endpoint: str, row_run_id: str) -> SessionHandleV1`; `reconnect(handle) -> SessionHandleV1`; `close_owned(handle) -> None` | Attaches only to the existing CDP owner, creates/recovers one row page, and closes only pages it created |
+| `ObservationBuilder` | `build(handle: SessionHandleV1, hints: ProviderHintsV1) -> ObservationV1` | Captures a fresh screenshot, current URL/title, visible text, accessibility/DOM controls, validation text, tabs, and stable content hash after every meaningful change |
+| `AgentPolicy` | `next_step(context: PolicyContextV1) -> ActionPlanV1` | Luna xhigh chooses exactly one next semantic action or a typed transition from the current observation/history; it cannot assert submission success |
+| `ActionExecutor` | `execute(handle: SessionHandleV1, action: VisibleActionV1) -> ActionReceiptV1` | Accepts only `navigate`, `click`, `type`, `select`, `upload`, `scroll`, or `wait`; resolves current visible targets and rejects hidden/forced/stale actions |
+| `AnswerResolver` | `resolve(question: FieldQuestionV1, memory: CandidateMemoryViewV1) -> ResolvedAnswerV1` | Always returns `exact`, `derived`, `generated`, or `conservative` with semantic concept and provenance; missing context is not a result |
+| `CheckpointStore` | `load(row_run_id: str) -> RowCheckpointV1 | None`; `save(checkpoint: RowCheckpointV1) -> CheckpointReceiptV1` | Atomic mode-0600 persistence of cursor, hashes, budgets, and recovery state; never stores raw credentials or duplicated profile values |
+| `EvidenceStore` | `append(step: StepEvidenceV1) -> EvidenceReceiptV1`; `read_chain(row_run_id: str) -> tuple[EvidenceReceiptV1, ...]` | Append-only ordered before/action/after hashes; rejects a broken predecessor hash or non-redacted payload |
+| `SubmissionFence` | `acquire(review: ReviewIdentityV1) -> FenceTokenV1 | None`; `complete(token: FenceTokenV1, outcome: VerifiedOutcomeV1) -> None` | Adapts existing Ledger fencing; binds exact row/URL/company/role/resume/review observation and permits one visible Submit action |
+| `CompletionVerifier` | `verify(request: VerificationRequestV1) -> VerificationResultV1` | Independently re-observes rendered UI and optionally consumes an exact Gmail receipt adapter; only authoritative proof can produce `verified_submitted` |
+| `ProviderHints` | `for_url(url: str) -> ProviderHintsV1`; `enrich(observation: ObservationV1) -> ProviderHintsV1` | Supplies vocabulary, stable IDs, known account surfaces, and confirmation phrases only; cannot prescribe action order, answer fields, or classify completion |
+
+`RowRunResultV1` has exactly four control outcomes:
+
+- `verified_submitted`: verifier evidence exists and the Ledger transition may be
+  completed as `submitted`.
+- `submit_unknown`: a fenced final click occurred without authoritative proof; the
+  row becomes permanently non-retryable and reconciliation continues independently.
+- `checkpointed`: no final click occurred; durable cursor/evidence exists and the
+  hourly owner immediately continues the queue. This is not `blocked`.
+- `ineligible`: a deterministic pre-form eligibility or provider-policy gate proves
+  the role cannot be applied to; its reason/evidence is durable and it is not a
+  missing-answer or UI-failure escape.
+
+No component may create another executor, browser profile, Gmail fetch, credential
+copy, or terminal Ledger truth. A new ATS is integrated only by registering a
+`ProviderHintsV1` adapter; if it needs a new action primitive or state transition,
+the provider-neutral v1 contract must be deliberately revised rather than bypassed.
 
 #### Source lineage
 
