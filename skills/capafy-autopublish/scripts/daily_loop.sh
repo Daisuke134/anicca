@@ -103,7 +103,7 @@ printf '%s\n' "$PROMPT" | timeout 1200 env -u ANTHROPIC_API_KEY "$RUN_AGENT" \
   --evidence-dir "$EVIDENCE_DIR" \
   --task-label capafy-drainer \
   --loop capafy \
-  --workdir "$HOME" >> "$LOG" 2>&1
+  --workdir "$LIFE_MANAGER_REPO" >> "$LOG" 2>&1
 RC=$?
 
 # Post-run truth: did a listing actually go live (online_count increased), not just "did the
