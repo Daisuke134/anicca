@@ -874,10 +874,13 @@ flowchart TB
    (behavioral comparison only; no clear license file, so no copied code). The account owner authorized Adobe
    Illustrator's seven-day monthly-plan trial (current charge JPY 0; JPY 4,980/month after the trial, cancelable
    without an annual termination fee), Adobe Stock was not selected, and 3DS completed. The installer process
-   failed with Adobe installer error 133: 4,992,147,982 bytes were required while only 141,459,456 bytes were
-   available. No Illustrator app is yet present under `/Applications`; native roundtrip remains pending. Cleanup
+   first failed with Adobe installer error 133: 4,992,147,982 bytes were required while only 141,459,456 bytes
+   were available. Cleanup
    removed 23 inactive, unopened CFO immutable releases while preserving its current release, customer projects
-   and state, raising free space to 9.0 GiB for one installer retry.
+   and state, raising free space to 9.0 GiB. The one retry completed with Adobe installer Exit Code 0 and
+   `/Applications/Adobe Illustrator 2026/Adobe Illustrator.app` now exists. Read-only `gog gmail search` also
+   returned the official Adobe trial-start and Illustrator welcome messages; Gmail UI and send authority were
+   not used. Native open/save/reopen and editable-object receipt remain pending.
 9. [ ] Publish the immutable reconstruction release and kickstart the existing launchd Paid owner. Observe Haru's
    natural Project Owner inspect v38 against the new complaint screenshots, complete conversation and accepted
    lineage. If defective, revise naturally; if fresh PASS, send the exact final hash once, obtain official DOM
