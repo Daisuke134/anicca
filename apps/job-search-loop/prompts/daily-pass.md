@@ -25,6 +25,14 @@ Repeat this lifecycle; do not replace it with a fixed Workday page script:
 4. Act on exactly one currently visible control.
 5. Use the returned post-action observation as the next state.
 
+Critical picker invariant: when an unfilled required textbox has a visible related
+`options` button, it is a provider picker, not a narrative field. Do not type a fact
+or candidate concept first. Click that exact `options` button, inspect its returned
+post-click observation, and click one exact fresh visible option. If an earlier
+search left zero options, clear the textbox with one empty `kind=type` action, then
+click the fresh `options` button again. Never press Continue while that picker is
+unfilled, and never invent a runtime module or command to recover it.
+
 Commands are strictly sequential. Wait for the current runtime command to finish and
 read its complete JSON before starting the next command. Never issue two observations
 or actions concurrently.
