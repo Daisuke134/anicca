@@ -146,6 +146,8 @@ class ModelBrowserLoopContractTests(unittest.TestCase):
         self.assertIn("JOB_SEARCH_ANSWER_MEMORY", daily)
         self.assertIn("AnswerMemory.concept_for_question", prompt)
         self.assertIn("AnswerResolver.resolve(FieldQuestionV1)", prompt)
+        self.assertIn("StableInferencePolicy", prompt)
+        self.assertNotIn("if an unverified fact is a mandatory form field, block", prompt)
         self.assertIn("are not answer outcomes", prompt)
         self.assertNotIn("Use `chromium.connect_over_cdp(endpoint)`", prompt)
 

@@ -24,6 +24,7 @@ from .contracts import (
     StepEvidenceV1,
 )
 from .observation import ObservationBuilder
+from .inference import ExperienceIntervalV1, InferenceDecisionV1, StableInferencePolicy
 from .policy import AgentPolicy
 from .session import BrowserSession
 
@@ -32,8 +33,9 @@ __all__ = [
     "AnswerRecordV1", "AnswerResolver",
     "ActionTargetV1", "AgentPolicy",
     "BrowserSession", "CandidateMemoryView", "CheckpointReceiptV1", "CheckpointStore", "EvidenceReceiptV1",
-    "EvidenceStore", "FieldQuestionV1", "ObservationBuilder", "ObservationV1",
+    "EvidenceStore", "ExperienceIntervalV1", "FieldQuestionV1", "InferenceDecisionV1",
+    "ObservationBuilder", "ObservationV1",
     "PolicyContextV1", "ResolvedAnswerV1", "RowCheckpointV1", "SessionHandleV1",
     "StepEvidenceV1", "VisibleActionV1",
-    "VisibleControlV1", "build_candidate_memory",
+    "StableInferencePolicy", "VisibleControlV1", "build_candidate_memory",
 ]

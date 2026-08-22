@@ -83,6 +83,17 @@ the typed action without printing it. `missing_context`, `needs_confirmation`,
 Rendered provider validation becomes the next fresh observation and another model
 resolution; it is not proof that the question cannot be answered.
 
+Use `StableInferencePolicy` for common concepts. Luna supplies dated,
+Candidate-Memory-provenance intervals for experience; the policy merges overlaps
+before computing years. Minimum/target/stretch compensation comes from the matching
+JPY Candidate Memory concepts. Availability uses the stored start date.
+Authorization and sponsorship derive from the target country plus stored work
+authorization; relocation derives from the target location plus location
+preferences. Demographics map to a current non-disclosure option when one exists.
+Narrative generation must cite Candidate Memory fact references. Map every result
+to the current rendered option set through `map_current_option`, so provider wording
+does not change the underlying answer.
+
 Never print, `cat`, or `sed` the private profile, credentials, or raw provider
 transcripts into stdout/stderr. If a value is needed, query only the one required
 non-secret field with a redacting filter and keep the command output minimal.
@@ -119,9 +130,9 @@ Engineer. A generic sales, marketing, operations, product, or business role with
 quoted AI/LLM requirements is not eligible. Hard reject citizenship/clearance,
 non-Japan remote, and known sub-floor pay. Do not pre-filter a role solely because
 its stated experience-years requirement exceeds the private profile: shoot the
-application when the ATS can be completed truthfully. Never invent experience years
-or any other candidate fact; if an unverified fact is a mandatory form field, block
-only that submission and continue to the next role.
+application. For every mandatory field, derive one stable answer through
+`StableInferencePolicy` and `AnswerResolver`; never freehand a value outside those
+provenance-bearing paths and never stop a row for missing context.
 
 Employer exclusions are hard policy: never discover, qualify, claim, submit, or
 follow up for OpenAI, Anthropic, Palantir, Cursor, Accenture, KPMG, Deloitte,
@@ -316,9 +327,9 @@ control once. Never force-click the hidden button, call DOM `.click()`, or dispa
 a synthetic event. Recapture after every transition; a same-surface result is
 `not_submitted`/a blocker and never a claim or success.
 
-Never bypass CAPTCHA. Never invent phone, address, work authorization, degree,
-experience years, demographic answers, or links. Optional demographics are declined
-or omitted. Complete the intent as submitted only with confirmation evidence;
+Never bypass CAPTCHA. Resolve phone, address, work authorization, degree,
+experience years, demographics, and links only through Candidate Memory plus the
+stable inference path. Complete the intent as submitted only with confirmation evidence;
 submit_unknown on ambiguity; not_submitted when definitely before the click.
 submit_unknown is never retried.
 
