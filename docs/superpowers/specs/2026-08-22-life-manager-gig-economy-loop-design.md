@@ -27,10 +27,11 @@ account; otherwise it signs into the existing account to avoid duplicate-account
 adapter refinement follows authenticated observed Upwork state, not a speculative cross-provider
 abstraction.
 
-Current bootstrap state: the normal email flow identifies an existing Upwork account. Two official
-password-reset requests were accepted, while the reset message has not appeared in Gmail All Mail.
-Therefore account creation is closed, U2 remains incomplete at email delivery, and profile or
-application work must not claim authenticated completion yet.
+Current bootstrap state: the owner confirmed no prior Upwork account. A new freelancer account was
+created through Continue with Email, its verification email was completed, and a fresh normal
+email/password login returned `/nx/create-profile/` with the same owner identity twice. No
+Google/Apple/social-login route was used. U1 and U2 are closed; U3 factual profile onboarding is the
+first incomplete outcome.
 
 ## 1. Goal, objective and boundaries
 
