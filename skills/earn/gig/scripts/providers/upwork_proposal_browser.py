@@ -26,7 +26,7 @@ from cdp_nav_snapshot import (  # noqa: E402
 
 
 _SNAPSHOT_KEYS = {
-    "attachments", "bid_usd", "cover_letter", "duration_label", "form_url",
+    "attachments", "available_connects", "bid_usd", "cover_letter", "duration_label", "form_url",
     "job_id", "required_connects", "screening_answers", "submit_enabled",
     "submit_label", "validation_errors",
 }
@@ -66,9 +66,9 @@ const option=[...(durationRoot.querySelectorAll('li,[role="option"]'))].find(x=>
 const areas=[...document.querySelectorAll('.fe-proposal-job-questions textarea')];if(areas.length!==p.screening_answers.length)throw Error('upwork_question_count_mismatch');
 const answers=p.screening_answers.map(item=>{{const area=areas.find(x=>norm((x.closest('label,.up-form-group,.air3-form-group,[data-test]')||x.parentElement).innerText).includes(norm(item.question)));if(!area)throw Error('upwork_question_mismatch');setValue(area,item.answer);return{{question:item.question,answer:area.value}};}});
 const submit=document.querySelector('footer .air3-btn-primary,footer button[type="submit"],button[data-test*="submit" i]');if(!submit)throw Error('upwork_submit_control_missing');
-const body=norm(document.body.innerText),required=p.terms.required_connects,connects=body.includes(String(required)+' Connects')?required:null;
+const body=norm(document.body.innerText),required=p.terms.required_connects,connects=body.includes(String(required)+' Connects')?required:null,availableMatch=body.match(/Available Connects:?\\s*(\\d+)/i);
 const errors=[...document.querySelectorAll('.form-error,.air3-form-error,.up-alert-danger,[role="alert"]')].map(x=>norm(x.innerText)).filter(Boolean);
-return{{job_id:p.job_id,form_url:location.href,required_connects:connects,bid_usd:Number(bid.value),duration_label:norm(combo.innerText),cover_letter:cover.value,screening_answers:answers,attachments:[],submit_label:norm(submit.innerText),submit_enabled:!submit.disabled,validation_errors:errors}};
+return{{job_id:p.job_id,form_url:location.href,required_connects:connects,available_connects:availableMatch?Number(availableMatch[1]):null,bid_usd:Number(bid.value),duration_label:norm(combo.innerText),cover_letter:cover.value,screening_answers:answers,attachments:[],submit_label:norm(submit.innerText),submit_enabled:!submit.disabled,validation_errors:errors}};
 }})()'''
 
 
@@ -206,6 +206,8 @@ def validate_preflight(snapshot: dict[str, Any], payload: dict[str, Any]) -> dic
         or url.scheme != "https" or url.netloc != "www.upwork.com"
         or f"/ab/proposals/job/{job_id}/apply" not in url.path
         or any(snapshot.get(key) != value for key, value in expected.items())
+        or type(snapshot.get("available_connects")) is not int
+        or snapshot["available_connects"] < required
         or snapshot.get("submit_enabled") is not True
         or snapshot.get("validation_errors") != []
         or not isinstance(snapshot.get("submit_label"), str)
@@ -219,5 +221,6 @@ def validate_preflight(snapshot: dict[str, Any], payload: dict[str, Any]) -> dic
         "ready": True,
         "job_id": job_id,
         "required_connects": required,
+        "available_connects": snapshot["available_connects"],
         "evidence_sha256": evidence,
     }

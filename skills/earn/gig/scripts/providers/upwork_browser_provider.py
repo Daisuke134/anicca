@@ -24,7 +24,13 @@ if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
 from cdp_nav_snapshot import navigate_and_snapshot  # noqa: E402
-from upwork_proposal_browser import fill_proposal_preflight  # noqa: E402
+from connector_outbox import ConnectorOutbox  # noqa: E402
+from provider_authorization import DEFAULT_RECEIPT_PATH  # noqa: E402
+from upwork_proposal_browser import submit_proposal_after_fence  # noqa: E402
+from upwork_sealed_effect import (  # noqa: E402
+    SealedUpworkProposalEffect, active_upwork_browser_account,
+)
+from upwork_transport import UpworkTransport  # noqa: E402
 
 
 CONNECTS_URL = "https://www.upwork.com/nx/plans/connects/history"
@@ -37,6 +43,9 @@ WORKING_STYLE_URL = "https://www.upwork.com/nx/skills-assesment/assessment-resul
 DEFAULT_CANDIDATES = SCRIPTS.parent / "config" / "upwork-candidates.public.json"
 DEFAULT_TRANSITIONS = Path.home() / "gig/state/upwork-free-transitions.jsonl"
 DEFAULT_PROPOSALS = Path.home() / ".config/anicca/gig/upwork-proposals"
+DEFAULT_DATABASE = Path.home() / "gig/connector-outbox.sqlite3"
+DEFAULT_MANIFEST = SCRIPTS.parent / "config/connectors/coconala.json"
+DEFAULT_BROWSER_PROFILE = Path.home() / ".cloak/profiles/gig-daily-driver"
 TERMINAL_JOB_STATUSES = {"closed", "removed"}
 _COUNT_LABELS = {
     "offers": r"Offers\s*\((\d+)\)",
@@ -473,6 +482,9 @@ def reconcile_terminal_transitions(
 async def observe(
     candidates_path: Path = DEFAULT_CANDIDATES,
     proposals_dir: Path = DEFAULT_PROPOSALS,
+    database: Path = DEFAULT_DATABASE,
+    manifest: Path = DEFAULT_MANIFEST,
+    browser_profile: Path = DEFAULT_BROWSER_PROFILE,
 ) -> dict[str, Any]:
     pass_id = f"upwork-free-{time.time_ns()}-{os.getpid()}"
     artifacts: dict[str, str] = {}
@@ -532,11 +544,51 @@ async def observe(
     if selected is None:
         state["free_acquisition"] = {"state": "waiting_free_capacity"}
     else:
-        preflight = await fill_proposal_preflight(selected)
+        effect_now = datetime.now(timezone.utc)
+        effect = SealedUpworkProposalEffect(
+            ConnectorOutbox(database.expanduser(), manifest.expanduser()),
+            UpworkTransport(
+                active_upwork_browser_account(DEFAULT_RECEIPT_PATH, effect_now),
+                effect_now, browser_profile=browser_profile.expanduser(),
+                profiles_root=browser_profile.expanduser().parent,
+            ),
+        )
+        _, planned = effect.intent(selected)
+        existing = effect.store.provider_effect(planned)
+        if existing is not None and existing["reconciliation_state"] == "verified":
+            state["free_acquisition"] = {
+                "state": "submitted", "proposal_id": existing["proposal_id"],
+                "proposal_payload_sha256": selected["payload_sha256"],
+            }
+            return state
+        if existing is not None and existing["state"] == "reconcile_pending":
+            state["free_acquisition"] = {
+                "state": "reconcile_unknown",
+                "proposal_payload_sha256": selected["payload_sha256"],
+            }
+            return state
+        holder: dict[str, Any] = {}
+
+        def start_effect(preflight: dict[str, Any]) -> bool:
+            holder["intent"], started = effect.start(selected, preflight)
+            return started
+
+        receipt = await submit_proposal_after_fence(selected, start_effect)
+        post_artifact = Path(await navigate_and_snapshot(
+            pass_id, f"{len(targets) + 1:02d}-1", "connects-post", CONNECTS_URL,
+            "read_only", 2, 1440,
+        ))
+        post_text, post_hash, _ = _read_evidence(post_artifact, CONNECTS_URL)
+        post_connects = parse_connects(post_text)
+        effect.verify(
+            holder["intent"], receipt, connects_post=post_connects["balance"],
+            connects_evidence_sha256=post_hash,
+        )
+        state.update(post_connects)
+        state["evidence_sha256"]["connects-post"] = post_hash
         state["free_acquisition"] = {
-            "state": "preflight_ready",
+            "state": "submitted", "proposal_id": receipt["proposal_id"],
             "proposal_payload_sha256": selected["payload_sha256"],
-            **preflight,
         }
     return state
 
@@ -546,6 +598,9 @@ def main() -> int:
     parser.add_argument("--cdp-base", default="http://127.0.0.1:9233")
     parser.add_argument("--candidates", type=Path, default=DEFAULT_CANDIDATES)
     parser.add_argument("--proposals", type=Path, default=DEFAULT_PROPOSALS)
+    parser.add_argument("--database", type=Path, default=DEFAULT_DATABASE)
+    parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
+    parser.add_argument("--browser-profile", type=Path, default=DEFAULT_BROWSER_PROFILE)
     parser.add_argument("--transitions", type=Path, default=DEFAULT_TRANSITIONS)
     parser.add_argument(
         "--output", type=Path,
@@ -553,7 +608,10 @@ def main() -> int:
     )
     args = parser.parse_args()
     os.environ["CLOAK_CDP_BASE_URL"] = args.cdp_base.rstrip("/")
-    state = asyncio.run(observe(args.candidates.expanduser(), args.proposals.expanduser()))
+    state = asyncio.run(observe(
+        args.candidates.expanduser(), args.proposals.expanduser(), args.database.expanduser(),
+        args.manifest.expanduser(), args.browser_profile.expanduser(),
+    ))
     state = reconcile_terminal_transitions(
         args.output.expanduser(), args.transitions.expanduser(), state,
     )

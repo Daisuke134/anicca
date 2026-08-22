@@ -51,6 +51,7 @@ def _snapshot(**overrides: object) -> dict[str, object]:
         "job_id": "~012345678901234",
         "form_url": "https://www.upwork.com/ab/proposals/job/~012345678901234/apply/#/",
         "required_connects": 7,
+        "available_connects": 7,
         "bid_usd": 15,
         "duration_label": "Less than 1 month",
         "cover_letter": "Exact factual proposal.",
@@ -72,6 +73,7 @@ def test_exact_filled_form_returns_only_safe_preflight_receipt():
     assert receipt["ready"] is True
     assert receipt["job_id"] == "~012345678901234"
     assert receipt["required_connects"] == 7
+    assert receipt["available_connects"] == 7
     assert len(receipt["evidence_sha256"]) == 64
     assert "Exact factual proposal" not in repr(receipt)
 
@@ -80,6 +82,7 @@ def test_exact_filled_form_returns_only_safe_preflight_receipt():
     "override",
     [
         {"required_connects": 8},
+        {"available_connects": 6},
         {"cover_letter": "Different proposal."},
         {"screening_answers": [{"question": "Can you start now?", "answer": "Maybe."}]},
         {"submit_enabled": False},
@@ -95,7 +98,7 @@ def test_any_form_or_submit_mismatch_fails_before_click(override: dict[str, obje
 def test_real_browser_fill_produces_exact_click_free_preflight():
     assert browser is not None
     html = """
-      <div>When you submit this proposal <strong>7 Connects</strong></div>
+      <div>When you submit this proposal <strong>7 Connects</strong>; Available Connects: 7</div>
       <label>Your bid <input data-test="bid" value=""></label>
       <div class="fe-proposal-job-estimated-duration">
         <button role="combobox">Select duration</button>
