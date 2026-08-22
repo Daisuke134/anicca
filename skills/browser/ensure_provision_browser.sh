@@ -105,6 +105,10 @@ clear_stale_singletons() {
 }
 
 launch() {
+  if ! "$CLOAK_PY" "$KEEPALIVE" --profile "$profile" --port 0 --preflight-only >>"$LOG" 2>&1; then
+    log "disk preflight failed before touching provisioning profile $profile"
+    return 1
+  fi
   mkdir -p "$profile" 2>/dev/null || true
   clear_stale_singletons
   launchctl remove "$LABEL" 2>/dev/null || true
