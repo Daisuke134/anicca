@@ -214,7 +214,8 @@ except OSError:
     prior = []
 for ev in prior:
     post_json, post_err = ev / "post.json", ev / "post.err"
-    source_file, text_file, verify_file = ev / "source.json", ev / "post.txt", ev / "verify.json"
+    source_file, select_file = ev / "source.json", ev / "select.json"
+    text_file, verify_file = ev / "post.txt", ev / "verify.json"
     try:
         if post_json.stat().st_size != 0 or "X session could not be restored" not in post_err.read_text():
             continue
@@ -222,7 +223,8 @@ for ev in prior:
         if not all(verify.get(k) is True for k in ("supported", "useful", "source_specific")):
             continue
         source = json.loads(source_file.read_text())
-        source_url = source["url"]
+        selection = json.loads(select_file.read_text())
+        source_url = source.get("url") or selection["source_url"]
         text = text_file.read_text().strip()
         if not source_url.startswith("https://x.com/") or not text:
             continue
