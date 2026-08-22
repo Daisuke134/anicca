@@ -9,9 +9,10 @@ import json
 import os
 from datetime import datetime, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 
-TERMINAL = {"MODEL_CALLED", "BUDGET_BLOCKED", "RUNNER_INVALID"}
+TERMINAL = {"MODEL_CALLED", "RUNNER_INVALID"}
 
 
 def _canonical(value) -> str:
@@ -70,9 +71,13 @@ def run(
     with lock_path.open("a+") as lock:
         os.chmod(lock_path, 0o600)
         fcntl.flock(lock, fcntl.LOCK_EX)
+        budget_day = now.astimezone(ZoneInfo("Asia/Tokyo")).date().isoformat()
         previous = next((
             row for row in reversed(_rows(path))
-            if row.get("event_id") == event_id and row.get("state") in TERMINAL
+            if row.get("event_id") == event_id and (
+                row.get("state") in TERMINAL
+                or row.get("state") == "BUDGET_BLOCKED" and row.get("budget_day") == budget_day
+            )
         ), None)
         if previous:
             return previous
@@ -84,6 +89,7 @@ def run(
             "job_id": job_id,
             "next_due_at": next_due_at,
             "observed_at": now.astimezone(timezone.utc).isoformat(),
+            "budget_day": budget_day,
         }
         if not _due(next_due_at, now):
             receipt = {**common, "state": "NOT_DUE", "model_call_count": 0}

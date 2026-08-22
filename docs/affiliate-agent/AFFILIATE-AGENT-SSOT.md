@@ -2701,11 +2701,12 @@ cloud work, and broad self-repair do not start unless one is the measured blocke
 for the next external state. Known stages are deterministic; the model writes or
 diagnoses only when an existing deterministic tool cannot advance them.
 
-**Architecture override:** section 7.3 supersedes the last sentence above. The
-model-led Affiliate Agent now chooses the next registered tool by default;
-determinism is retained only at money, policy, authority, secret, evidence, cost,
-and duplicate-effect boundaries. Until that migration is live-proven, the
-installed owners continue unchanged and no manual executor substitutes for them.
+**Target architecture, not current runtime:** section 7.3 defines the intended
+model-led Affiliate Agent, but it does not yet choose the installed runtime's next
+tool by default. The seven completed A-CUT safety primitives are retained. Shadow,
+canary, and strategy cutover are deferred until the loop closes one real approved
+commission lineage; they are not substitutes for buyer acquisition. The installed
+owners continue unchanged and no manual executor substitutes for them.
 
 #### Canonical atomic remaining route — runtime Agent → E1 → OSS → USD 10K
 
@@ -2718,8 +2719,9 @@ ordering; historical DONE evidence remains evidence, not a competing queue.
 
 ```mermaid
 flowchart LR
-  C[Agent cutover] --> B[B01 official transaction]
+  F[Exact conversion funnel] --> B[B01 official transaction]
   B --> E[E1 approved commission]
+  E --> C[Agent shadow and cutover]
   E --> L[Measured learning loop]
   L --> S[Profitable pod scale]
   E --> O[Public OSS proof]
@@ -2728,7 +2730,7 @@ flowchart LR
   K --> Z
 ```
 
-**Phase A — install the runtime Agent without replacing proven tools**
+**Phase A — retain the completed Agent safety primitives**
 
 1. **A-CUT-1A — authority inventory — DONE:** classify every existing Affiliate
    command as `READ_ONLY`, `WRITE_LOCAL`, `SECRET_LOCAL`, `MODEL_EXTERNAL`,
@@ -2782,34 +2784,82 @@ flowchart LR
    future-due reconciliation records `NOT_DUE` with zero runner/model calls; a due
    event accepts only runner evidence of budget `allowed` plus exactly one attempt
    and records one `MODEL_CALLED` receipt. A budget-blocked summary requires zero
-   attempts and records zero model calls; the same due event cannot call again.
-8. **A-CUT-2E — shadow Agent:** run the pinned Affiliate model with no external-
+   attempts and records zero model calls. Successful due events are absorbing;
+   budget-blocked events dedupe only within the same JST budget day and may reserve
+   again after the next JST boundary.
+
+**Immediate economic queue — this block executes before items 8–14 and 15–23:**
+
+Current exact readback establishes the starting point: `ai.anicca.affiliate-loop`
+is loaded and running with `30` runs and last exit code `0`; the canonical
+placement ledger contains `24` public placements, `40` provider clicks, `38`
+provider unique clicks, and `13` placements with a provider click. Official
+customers, transactions, approved commissions, and paid commissions are all `0`.
+Rolling money is `NO_TRANSACTIONS`, `NO_APPROVED_OR_PAID_ROWS`, and
+`NOT_REACHED`; material cost coverage remains `UNKNOWN`. Runtime availability is
+therefore not the current blocker. The measured blockers are click-to-customer
+conversion and missing owned-visit/CTA denominators. No shadow Agent code is
+installed or committed as a substitute for this queue.
+
+- **FUNNEL-A — top-three canonical snapshot:** produce one receipt selecting the
+  three exact placements with the highest provider unique-click counts and record
+  owned visits, CTA clicks, provider clicks/unique clicks, customers, transactions,
+  and observation times. Missing denominators remain `UNKNOWN`; clicks and views
+  remain non-money.
+- **FUNNEL-B — owned-visit denominator:** add or repair first-party visit capture
+  for those exact owned URLs and join it replay-safely to placement IDs; acceptance
+  is an observed count or explicit `UNAVAILABLE`, never inferred traffic.
+- **FUNNEL-C — CTA-click denominator:** receipt outbound CTA activation per exact
+  placement without storing or exposing the raw tracking URL.
+- **FUNNEL-D — provider funnel join:** join provider unique clicks, customer/signup
+  count, and transaction count to the same placements and interval; ambiguous
+  legacy links remain unjoined and receive no conversion credit.
+- **FUNNEL-E — focus one cohort:** select exactly one placement by qualified buyer
+  intent plus measured funnel evidence, not by treating clicks as money; pause new
+  placement expansion until this cohort matures or reaches a typed terminal state.
+- **FUNNEL-F — one-variable hypothesis:** version one change to offer, proof, CTA,
+  or intent framing while holding placement, provider link, and other content
+  variables fixed; the metric is customer or transaction conversion.
+- **FUNNEL-G — focused owner distribution:** existing owners distribute only the
+  admitted focused asset through owned channels with exact effect/readback receipts;
+  no manual post, duplicate broadcast, or account farming.
+- **FUNNEL-H — mature readback:** after the declared sample/age boundary, capture
+  the full funnel again; insufficient sample stays exploration and cannot name a
+  winner.
+- **FUNNEL-I — first-customer diagnosis:** if provider customers remain zero,
+  identify the exact observed loss stage and admit the next single-variable repair;
+  a customer is denominator evidence, not money. Then items 15–23 close the first
+  official transaction and approved commission lineage.
+
+8. **A-CUT-2E — DEFERRED UNTIL E1 — shadow Agent:** run the pinned Affiliate model with no external-
    write authority and record its proposal beside the installed deterministic
    choice; acceptance is repeated shadow completion without changing public,
    provider, money, or Telegram state.
-9. **A-CUT-2F — shadow admission:** inspect mismatches and admit only proposals
+9. **A-CUT-2F — DEFERRED UNTIL E1 — shadow admission:** inspect mismatches and admit only proposals
    that satisfy the tool contract and current goal; acceptance is a versioned
    admission receipt, not subjective prompt approval.
-10. **A-CUT-3A — read-only canary:** allow one Agent-selected observation tool;
+10. **A-CUT-3A — DEFERRED UNTIL E1 — read-only canary:** allow one Agent-selected observation tool;
     acceptance is one causal goal/job/model/tool/observation checkpoint.
-11. **A-CUT-3B — guarded effect canary:** allow one Agent-selected external action
+11. **A-CUT-3B — DEFERRED UNTIL E1 — guarded effect canary:** allow one Agent-selected external action
     only through its existing launchd effect owner; acceptance is owner claim,
     exact public/provider readback, and one terminal consumption row.
-12. **A-CUT-3C — crash replay:** interrupt between effect start and receipt
+12. **A-CUT-3C — DEFERRED UNTIL E1 — crash replay:** interrupt between effect start and receipt
     completion, then resume the same job; acceptance is exact reconciliation and
     zero second external effect.
-13. **A-CUT-3D — bounded repair:** induce one recoverable typed failure and allow
+13. **A-CUT-3D — DEFERRED UNTIL E1 — bounded repair:** induce one recoverable typed failure and allow
     one allowlisted repair with postcondition readback; acceptance is
     `SELF_HEALED` or quarantine, never an unbounded retry.
-14. **A-CUT-3E — strategy cutover:** replace only the fixed strategy selector with
+14. **A-CUT-3E — DEFERRED UNTIL E1 — strategy cutover:** replace only the fixed strategy selector with
     the admitted Agent loop; acceptance is that launchd remains the sole scheduler
     and existing tools, owners, journals, and ledgers remain authoritative.
 
 **Phase B — close the first real money lineage**
 
-15. **B01-A — exact live acquisition:** the existing owners consume the next
-    eligible Affiliate proposal and join its exact placement ID to the exact
-    public permalink; terminal/unverified proposals are never resent.
+15. **B01-A — focused lineage readiness:** verify that the selected existing
+    placement has one exact placement ID, owned URL, public permalink, dedicated
+    provider-link key, and terminal publication receipt. Do not create a new
+    placement merely to satisfy this gate; terminal/unverified proposals are never
+    resent.
 16. **B01-B — due official capture:** the existing provider owner captures a
     fresh PartnerStack commission/payout report with artifact hash and provider
     denominator fields; an empty report remains valid non-money evidence.

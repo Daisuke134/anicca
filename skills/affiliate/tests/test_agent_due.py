@@ -55,17 +55,29 @@ class AgentDueTests(unittest.TestCase):
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         with tempfile.TemporaryDirectory() as root:
+            calls = []
             receipt = module.run(
                 Path(root), goal_id="goal-1", job_id="job-1",
                 next_due_at="2026-08-21T00:00:00Z",
                 now=datetime(2026, 8, 22, tzinfo=timezone.utc),
-                invoke_budgeted_runner=lambda: {
+                invoke_budgeted_runner=lambda: calls.append("blocked") or {
                     "status": "budget_blocked", "attempt_count": 0,
                     "budget": {"status": "blocked", "reason": "pass_token_budget_exceeded"},
                 },
             )
             self.assertEqual(receipt["state"], "BUDGET_BLOCKED")
             self.assertEqual(receipt["model_call_count"], 0)
+            next_day = module.run(
+                Path(root), goal_id="goal-1", job_id="job-1",
+                next_due_at="2026-08-21T00:00:00Z",
+                now=datetime(2026, 8, 23, tzinfo=timezone.utc),
+                invoke_budgeted_runner=lambda: calls.append("allowed") or {
+                    "status": "success", "attempt_count": 1,
+                    "budget": {"status": "allowed", "reservation_tokens": 32768},
+                },
+            )
+            self.assertEqual(next_day["state"], "MODEL_CALLED")
+            self.assertEqual(calls, ["blocked", "allowed"])
 
 
 if __name__ == "__main__":
