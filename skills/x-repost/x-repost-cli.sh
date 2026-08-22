@@ -629,14 +629,16 @@ log "seeds available: $SEEDS_AVAILABLE"
 # the action worth buying -- but that is reasoned from published weights, not yet proven here, and
 # a knob is how it gets proven.
 STRATEGY="$STATE/strategy.json"
-[ -s "$STRATEGY" ] || printf '{"reply_ratio": %s, "note": "share of passes that reply instead of quote"}\n' \
-  "${X_REPOST_DEFAULT_REPLY_RATIO:-0.75}" >"$STRATEGY"
+[ -s "$STRATEGY" ] || printf '{"original_ratio": %s, "reply_ratio": %s, "note": "after the daily original, share of passes that create another original; remaining passes split between reply and quote"}\n' \
+  "${X_REPOST_DEFAULT_ORIGINAL_RATIO:-0.15}" "${X_REPOST_DEFAULT_REPLY_RATIO:-0.75}" >"$STRATEGY"
 read -r KIND TARGET_LANGUAGE <<<"$("$PY" - "$STRATEGY" "$POSTED" "$TODAY" <<'PYEOF'
 import json, random, re, sys
 try:
-    ratio = float(json.load(open(sys.argv[1], encoding="utf-8")).get("reply_ratio", 0.75))
+    strategy = json.load(open(sys.argv[1], encoding="utf-8"))
+    original_ratio = float(strategy.get("original_ratio", 0.15))
+    reply_ratio = float(strategy.get("reply_ratio", 0.75))
 except Exception:
-    ratio = 0.75
+    original_ratio, reply_ratio = 0.15, 0.75
 rows = []
 for line in open(sys.argv[2], encoding="utf-8"):
     try:
@@ -647,8 +649,10 @@ for line in open(sys.argv[2], encoding="utf-8"):
         rows.append(row)
 has_original_today = any(r.get("posted_at", "").startswith(sys.argv[3]) and
                          r.get("kind") == "original" for r in rows)
-kind = "original" if not has_original_today else (
-    "reply" if random.random() < max(0.0, min(1.0, ratio)) else "quote")
+if not has_original_today or random.random() < max(0.0, min(1.0, original_ratio)):
+    kind = "original"
+else:
+    kind = "reply" if random.random() < max(0.0, min(1.0, reply_ratio)) else "quote"
 since_ja = 0
 for row in reversed(rows):
     if re.search(r"[\u3040-\u30ff\u4e00-\u9fff]", row.get("text", "")):
@@ -661,7 +665,7 @@ TARGET_TONE="$("$PY" -c 'import json,random,sys
 w=(json.load(open(sys.argv[1])).get("tone_weights") or {"primary":1,"empathy":1,"funny":1})
 ks=list(w); print(random.choices(ks,[max(0.0,float(w[k])) for k in ks])[0])' "$STRATEGY" 2>/dev/null || echo primary)"
 log "target tone: $TARGET_TONE"
-log "action this pass: $KIND (reply_ratio=$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1])).get("reply_ratio"))' "$STRATEGY" 2>/dev/null))"
+log "action this pass: $KIND (original_ratio=$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1])).get("original_ratio", 0.15))' "$STRATEGY" 2>/dev/null), reply_ratio=$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1])).get("reply_ratio"))' "$STRATEGY" 2>/dev/null))"
 log "target language: $TARGET_LANGUAGE (rolling EN 9 / JA 1)"
 
 {
