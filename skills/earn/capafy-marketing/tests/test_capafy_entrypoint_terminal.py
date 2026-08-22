@@ -119,3 +119,12 @@ def test_ig_success_and_cadence_noop_are_terminal(tmp_path: Path):
     assert success_marker.is_file()
     assert noop.returncode == 0
     assert noop_marker.is_file()
+
+
+def test_ig_private_telegram_aliases_precede_provision_prompt() -> None:
+    script = (ROOT / "skills/earn/capafy-marketing/capafy-ig-marketing-daily.sh").read_text()
+    alert_alias = script.index('export TELEGRAM_ALERT_CHAT_ID="$LM_TELEGRAM_ALERT_CHAT_ID"')
+    bot_alias = script.index('export TELEGRAM_BOT_TOKEN="$LM_TELEGRAM_BOT_TOKEN"')
+    provision_prompt = script.index("PROVISION_PROMPT=\"$(")
+    assert alert_alias < provision_prompt
+    assert bot_alias < provision_prompt
