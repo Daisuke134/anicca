@@ -17,9 +17,9 @@ the complete account-create, sign-in, multi-page, upload, variable-question, rev
 submit, and receipt lifecycle. Ashby follows as 10Q using the same agent contract;
 Greenhouse, Lever, and generic ATS coverage follow only after both live gates close.
 The user-confirmed Salesforce FDE URL remains excluded from reapplication. The
-active release is `aaf66007855f996ee9190eed37c01452764ed6d3`; launchd remains hourly
+active release is `88e737fcb986f0f8abd9c3c45b111ccfb74fe7c7`; launchd remains hourly
 at `StartInterval=3600`. No Rakuten submit request, completion UI, or receipt evidence
-exists yet; Telegram checkpoint reporting has a real ACK at message ID `28456`.
+exists yet; Telegram checkpoint reporting has a real ACK at message ID `28467`.
 
 **Architecture decision:** all eligible ATS form interaction is mandatory
 model-based browser work. Deterministic code owns only discovery, eligibility,
@@ -411,8 +411,8 @@ This is the remaining implementation-order SSOT. Only the first
 | 40 | Implement the development kickstart/readback controller | `done` | `activate_and_kickstart` verifies archive checksum/metadata/safe layout, installs `releases/<commit>` read-only, waits for the one launchd owner to be idle, atomically switches `current`, invokes only `launchctl kickstart -k`, requires run-count increment/idle/exit 0, and returns the new exact evidence paths while preserving the previous release. |
 | 41 | Close focused framework verification | `done` | 53 focused browser/Ledger/receipt/Telegram/release/launchd/Workday tests plus 13 release-launchd-model checks pass; all job-search shell syntax and browser/deployment compile pass; scans find no email literal/private DB/env/profile artifact, one orchestrator call, normal Submit rejection, evidence-only terminal write, and no direct runner/browser in deployment. |
 | 42 | Build a commit-pinned immutable release | `done` | Commit `db3433464b5b90e1c3915cee7176ea081a06839a` produced a 161-member bounded archive with SHA-256 `61a7a285b8947857ca6b11051e4386773fcacfc6ac6afef74590400c64d7d4a3`; independent checksum, RELEASE commit/private-state flag, traversal/link, and private artifact checks pass. |
-| 43 | Activate only while the hourly owner is idle | `done` | Immutable releases are checksum-verified, installed read-only, and switched only by the deployment controller after `launchd` reports idle; `aaf66007855f996ee9190eed37c01452764ed6d3` is the current released commit and prior releases remain rollback targets. |
-| 44 | Kickstart and watch the existing launchd owner | `done` | Existing `ai.anicca.job-search-daily` run 16 exited 0 from `daily-20260822-161043`, used the official observe/action/checkpoint/report path, and returned Telegram message ID `28456`, with no substitute executor. Run 17 verifies wake-local row retirement. |
+| 43 | Activate only while the hourly owner is idle | `done` | Immutable releases are checksum-verified, installed read-only, and switched only by the deployment controller after `launchd` reports idle; `88e737fcb986f0f8abd9c3c45b111ccfb74fe7c7` is the current released commit and prior releases remain rollback targets. |
+| 44 | Kickstart and watch the existing launchd owner | `done` | Existing `ai.anicca.job-search-daily` run 18 exited 0 from `daily-20260822-162722`; it used only official `observe → navigate → checkpoint → report`, received Telegram message ID `28467`, then returned typed `queue_complete` without source inspection, duplicate action, or substitute executor. |
 | 45 | Resume Rakuten and prove Workday step 2 | `done` | The durable model cursor reached visible `My Information`, uploaded and hash-verified `Daisuke_Narita_AI_Business_Resume.pdf`, filled current identity/address/phone controls from private Candidate Memory, and accumulated an ordered 50-step evidence chain without a submit claim. |
 | 46 | Complete one real Workday application authoritatively | `in_progress_provider_maintenance` | A fresh model-selected navigate rendered Workday's explicit planned-maintenance page for 2026-08-22 15:00–18:00 GMT+9. Resume the same row after availability; close only on exact completion UI or authoritative Gog receipt plus Ledger agreement and Telegram ACK. |
 | 47 | Kickstart immediately again to prove dedupe and continued queue | `pending_after_46` | Submitted URL is not repeated and the same run attempts remaining eligible Workday rows without waiting an hour |
