@@ -71,3 +71,45 @@ def test_gc_preserves_release_pinned_by_live_wrapper(tmp_path, monkeypatch):
     assert marker == tmp_path / ".pins" / f"4242-{pinned_sha}"
     assert pinned_sha not in removed
     assert (tmp_path / pinned_sha).is_dir()
+
+
+def test_job_needs_activation_when_loaded_environment_is_stale(monkeypatch):
+    job = {
+        "label": "ai.anicca.hf-gig-reply-detector",
+        "program": ["/usr/bin/python3", "{{RELEASE}}/reply_detector.py"],
+        "env": {"GIG_NO_CONTACT_REGISTRY": "{{HOME}}/.config/no-contact.json"},
+        "log_basename": "reply",
+    }
+    table = {
+        "RELEASE": "/tmp/current",
+        "HOME": "/Users/test",
+        "GIG_LOG_DIR": "/tmp/logs",
+    }
+    desired = gig_release.plist_for(job, table)
+    monkeypatch.setattr(gig_release, "loaded_program", lambda _label: desired["ProgramArguments"])
+    monkeypatch.setattr(gig_release, "loaded_environment", lambda _label: {})
+
+    assert gig_release.job_needs_activation(job, table) is True
+
+
+def test_job_does_not_need_activation_when_program_and_environment_match(monkeypatch):
+    job = {
+        "label": "ai.anicca.hf-gig-reply-detector",
+        "program": ["/usr/bin/python3", "{{RELEASE}}/reply_detector.py"],
+        "env": {"GIG_NO_CONTACT_REGISTRY": "{{HOME}}/.config/no-contact.json"},
+        "log_basename": "reply",
+    }
+    table = {
+        "RELEASE": "/tmp/current",
+        "HOME": "/Users/test",
+        "GIG_LOG_DIR": "/tmp/logs",
+    }
+    desired = gig_release.plist_for(job, table)
+    monkeypatch.setattr(gig_release, "loaded_program", lambda _label: desired["ProgramArguments"])
+    monkeypatch.setattr(
+        gig_release,
+        "loaded_environment",
+        lambda _label: desired["EnvironmentVariables"] | {"XPC_SERVICE_NAME": job["label"]},
+    )
+
+    assert gig_release.job_needs_activation(job, table) is False

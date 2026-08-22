@@ -333,6 +333,39 @@ def loaded_program(label: str) -> list[str]:
     return argv
 
 
+def loaded_environment(label: str) -> dict[str, str]:
+    """Return the explicit environment launchd is actually holding."""
+    printed = subprocess.run(
+        ["launchctl", "print", f"gui/{os.getuid()}/{label}"],
+        capture_output=True, text=True,
+    )
+    if printed.returncode != 0:
+        return {}
+    environment, inside = {}, False
+    for line in printed.stdout.splitlines():
+        stripped = line.strip()
+        if stripped == "environment = {":
+            inside = True
+            continue
+        if inside:
+            if stripped == "}":
+                break
+            key, separator, value = stripped.partition(" => ")
+            if separator:
+                environment[key] = value
+    return environment
+
+
+def job_needs_activation(job: dict, table: dict[str, str]) -> bool:
+    """Detect both stale program paths and stale launchd-held configuration."""
+    desired = plist_for(job, table)
+    if loaded_program(job["label"]) != desired["ProgramArguments"]:
+        return True
+    loaded_env = loaded_environment(job["label"])
+    return any(loaded_env.get(key) != str(value)
+               for key, value in desired["EnvironmentVariables"].items())
+
+
 def control_plane_available() -> bool:
     """Whether this context can read the user's launchd domain."""
     return subprocess.run(
@@ -491,9 +524,10 @@ def main() -> int:
         git("fetch", "--quiet", "origin", "main")
         sha = git("rev-parse", "origin/main")
         wanted = {job["label"] for job in manifest["jobs"]} - DEFAULT_EXCLUDED
+        _, stable_table = settings(CURRENT_RELEASE)
         behind = [
             job for job in manifest["jobs"] if job["label"] in wanted
-            and not any(str(CURRENT_RELEASE) in arg for arg in loaded_program(job["label"]))
+            and job_needs_activation(job, stable_table)
         ]
         if current_sha() == sha and not behind:
             removed = collect_old_releases()
@@ -511,7 +545,6 @@ def main() -> int:
             return 0
         if behind and not require_control_plane():
             return 75
-        _, stable_table = settings(CURRENT_RELEASE)
         for job in behind:
             activate(job, stable_table, release, False,
                      skip_busy=job["label"] not in CONTINUOUS_RELOADABLE)
