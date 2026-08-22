@@ -6712,3 +6712,18 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   receipt because a migration warning shared the combined stream. Run 19 kept
   stderr separate, received the same deduplicated run ID and message ID, reduced
   backlog `21 -> 20`, created no post, and changed no proposal consumption.
+- Existing Repost owner run 21 consumed Realtime Speech-to-Text proposal
+  `d74db46252c28e610e73a0b9dab54af6929e1d5e058ef366831e21410b53e174`
+  exactly once as `EFFECT_STARTED -> POSTED`. Exact public X is
+  `https://x.com/selawmqt/status/2091118699810005255`; the matching posted-ledger
+  row exists once, and Telegram provider message is `28745`.
+- Existing Affiliate owner run 68 then observed 72 total Repost actions, 3 exact
+  placement joins, 69 unjoined actions, and 0 invalid rows. Telegram receipt is
+  `28750`. The fresh official PartnerStack report observed at
+  `2026-08-22T11:04:52.538283+00:00` still contains zero commission rows, with
+  pending, approved, paid, and reversed all zero. This is distribution, not money.
+- The next owner-selected proposal is YouTube Transcript Generator
+  `cc050e4223b0a0a3853c92b93170af428cc5ecf1ea6eb8318d05a3fc9409b5a6` for
+  `elevenlabs-discovered-youtube-transcript-generator-en-1`. Claim-free preflight
+  is READY: owned article HTTP 200, `index, follow`, exact canonical, rendered X
+  weighted length 232, required disclosure, and exactly one owned URL.

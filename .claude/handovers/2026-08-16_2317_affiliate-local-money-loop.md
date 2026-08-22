@@ -1800,3 +1800,22 @@ Owner run 18 delivered provider message `28668`; run 19 received the same cached
 run ID/message ID, decremented backlog `21 -> 20`, posted nothing, changed no
 consumption row, and exited `0`. This proves replay-safe delivery readback rather
 than a duplicate Telegram send.
+
+Realtime Speech-to-Text distribution is complete and exact-read. Existing Repost
+owner run 21 consumed proposal
+`d74db46252c28e610e73a0b9dab54af6929e1d5e058ef366831e21410b53e174` as
+`EFFECT_STARTED -> POSTED`, wrote one posted-ledger row, and read exact public X
+`https://x.com/selawmqt/status/2091118699810005255`; Telegram message is `28745`.
+Existing Affiliate owner run 68 then read 72 actions / 3 exact placement joins /
+69 unjoined / 0 invalid and sent Telegram `28750`. Fresh PartnerStack official
+report time is `2026-08-22T11:04:52.538283+00:00` with zero commission rows; all
+four official money status counts remain zero. This is non-money.
+
+Next proposal is YouTube Transcript Generator
+`cc050e4223b0a0a3853c92b93170af428cc5ecf1ea6eb8318d05a3fc9409b5a6` for
+`elevenlabs-discovered-youtube-transcript-generator-en-1`. Claim-free installed
+preflight returns READY; article is HTTP 200, `index, follow`, canonical-exact,
+and rendered copy is raw 287 / X weighted 232 with disclosure and exactly one
+owned URL. Next atomic action: kick only `ai.anicca.x-repost-pass` in the next
+eligible hour, then kick only `ai.anicca.affiliate-loop` for exact join and
+official transaction readback.
