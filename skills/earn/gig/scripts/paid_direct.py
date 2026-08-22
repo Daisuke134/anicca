@@ -2746,7 +2746,11 @@ def _prepare_file(args, item_path: Path, root: Path, item: dict[str, Any], base:
         "formal_approval_evidence": semantic.get("formal_approval_evidence")}
     decision = delivery_queue.delivery_decision(cadence)
     if decision.get("mode") not in {"formal", "progress"}:
-        raise Failure("file_validation")
+        _owner_feedback(root, "paid.delivery_gate", [decision], [
+            root / "delivery" / "paid-work-result.json",
+            root / "requirements" / "live-buyer-reply.json",
+        ])
+        raise Failure("file_owner_feedback")
     prepared = {
         **cadence, "delivery_evidence": evidence, "delivery_action": decision["mode"],
         "formal_delivery_checkbox": decision["formal_delivery_checkbox"],
