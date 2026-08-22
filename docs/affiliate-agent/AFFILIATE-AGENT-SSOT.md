@@ -2761,10 +2761,14 @@ flowchart LR
    fixture readback contains zero bytes from credential, raw tracking URL,
    customer/private-provider ID, click/view, or unrelated state inputs while
    preserving goal ID, placement ID, `NO_TRANSACTIONS`, and allowed tool schemas.
-5. **A-CUT-2B — durable checkpoint:** persist goal ID, job ID, stage, proposed
-   action, tool attempt, observation, effect certainty, and next due-time;
-   acceptance is restart from the last committed transition without replaying a
-   completed effect.
+5. **A-CUT-2B — durable checkpoint — DONE:** `scripts/agent_checkpoint.py`
+   persists goal ID, job ID, stage, proposed action, tool attempt, observation,
+   effect certainty, and next due-time as a hash-bound append-only transition plus
+   atomic latest cache. Identical commits dedupe. A fresh-process restart maps
+   `EFFECT_CONFIRMED` to `ADVANCE` and `UNKNOWN` to `READBACK_ONLY`, both with
+   `replay_proposed_action=false`; only `NO_EFFECT` may retry when due. A corrupt
+   history tail fails closed instead of rolling back to a transition that could
+   replay a completed effect.
 6. **A-CUT-2C — complete ActionProposal validation:** enforce enum, bounds,
    additional-property rejection, authority class, and exactly one action or
    durable wait; acceptance is fail-closed rejection before tool dispatch.
