@@ -289,7 +289,7 @@ async def observe() -> dict[str, Any]:
         _path_env("JOB_SEARCH_CANDIDATE_MEMORY")
     )
     candidate_concepts = (
-        *candidate_memory.concepts(),
+        *(concept for concept in candidate_memory.concepts() if concept.startswith("candidate.")),
         "policy.prefer_not_to_say",
     )
     return {
@@ -352,7 +352,18 @@ def _action(value: dict[str, Any]) -> VisibleActionV1:
     file_path = Path(value["file_path"]) if value.get("file_path") else None
     kind = value.get("kind", value.get("action", value.get("type")))
     if not kind:
-        raise ValueError("action file requires kind")
+        if target is not None and text is not None:
+            kind = "type"
+        elif value.get("url"):
+            kind = "navigate"
+        elif target is not None and value.get("file_path"):
+            kind = "upload"
+        elif value.get("delta_y") is not None:
+            kind = "scroll"
+        elif value.get("wait_ms") is not None:
+            kind = "wait"
+        else:
+            raise ValueError("action intent is ambiguous")
     return VisibleActionV1(
         kind=str(kind),
         target=target,
