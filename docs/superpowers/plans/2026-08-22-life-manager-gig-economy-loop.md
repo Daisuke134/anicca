@@ -204,12 +204,12 @@ denied, unprofitable`.
 **Interfaces:** Produces `request_ceremony(kind, provider_state, resume_predicate)` for identity,
 financial, physical capture and client-reserved acts only.
 
-- [ ] Write failing tests that reject vague requests, missing provider resume evidence and tasks the
+- [x] Write failing tests that reject vague requests, missing provider resume evidence and tasks the
   agent can execute under authorization.
-- [ ] Implement a durable bounded record with deadline, provider URL, exact act and resume predicate.
-- [ ] Prove another provider lane remains runnable while one ceremony is pending.
-- [ ] Prove completion requires authoritative changed provider state or a bound artifact hash.
-- [ ] Run focused tests and commit/push.
+- [x] Implement a durable bounded record with deadline, provider URL, exact act and resume predicate.
+- [x] Prove another provider lane remains runnable while one ceremony is pending.
+- [x] Prove completion requires authoritative changed provider state or a bound artifact hash.
+- [x] Run focused tests and commit/push.
 
 ### Task 6: Add local onboarding and capability inventory
 
