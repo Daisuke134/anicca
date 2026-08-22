@@ -2892,7 +2892,7 @@ def _prepare_file(args, item_path: Path, root: Path, item: dict[str, Any], base:
         "acceptance_evidence_path", "acceptance_status", "package_sha256",
         "acceptance_delta", "recipient_access_required",
     ) if key in evidence}, "blockers": blockers,
-        "buyer_formal_delivery_hold": semantic.get("delivery_stage") == "review",
+        "buyer_formal_delivery_hold": item.get("buyer_formal_delivery_hold") is True,
         "latest_message_identity": semantic.get("latest_message_identity"),
         "formal_approval_evidence": semantic.get("formal_approval_evidence")}
     decision = delivery_queue.delivery_decision(cadence)

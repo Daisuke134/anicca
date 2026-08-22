@@ -325,6 +325,15 @@ for structured copy or a revision previously stored in a file. This is a generic
 X-specific route. Next: push/activate v10, naturally resume X, and require exact-room official DOM effect/readback
 plus replay-zero for all four rooms before advancing beyond Paid.
 
+The first v21 byusco pass independently approved `casican-review-article-v7.md`, SHA-256
+`6d1a0a95850c4bbd496174b27881371dc4b81d44284bf347bd2b5e9d0766ab3d`, but effect remained zero because
+`_prepare_file` incorrectly synthesized `buyer_formal_delivery_hold=true` from every semantic review stage.
+That conflated the controller's formal-delivery-OFF policy with an explicit buyer hold and routed an approved
+review draft back to `work_required`. The shared cadence now preserves only the collector's actual buyer-hold
+fact; the unchanged formal-approval gate naturally selects buyer-visible `progress` with the formal checkbox
+false. A direct production-data decision check returns exactly that result. This is not yet a customer effect;
+activate the fix and let the existing Paid owner naturally retry byusco once.
+
 **Live handover state.** `main` and `origin/main` include implementation commit
 `92174b7932f9691109a537e3a90a95b8f6759227`; the latest activated Paid release is that immutable commit.
 Its completed natural receipt is
