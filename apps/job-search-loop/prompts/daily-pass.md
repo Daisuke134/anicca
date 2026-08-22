@@ -4,11 +4,14 @@ This process is the existing `ai.anicca.job-search-daily` launchd owner. Do not
 start another launchd job, agent runner, or Chromium process. Read the JSON path in
 `$JOB_SEARCH_BROWSER_OWNER_EVIDENCE`. When its status is `ready`, connecting
 Playwright to its `endpoint` is the required browser side effect and is not a
-duplicate executor. Use `chromium.connect_over_cdp(endpoint)`, open one new page in
-the existing default context, and close only the page you created; never close the
-shared browser or another tab. Do not refuse browser work merely because the
-daily-driver process already exists—that existing process is the browser transport
-owned by this loop.
+duplicate executor. Use
+`job_search_loop.browser_agent.BrowserSession.attach(endpoint, row_run_id)` for each
+row. On a disconnected or missing row page, call `reconnect(handle)`; it recovers
+the tagged page or creates one in the existing default context. Obtain the current
+page through `page(handle)`, and call `close_owned(handle)` only after that row is
+finished. Never call `chromium.launch`, `browser.close`, `context.close`, or close
+another tab. Do not refuse browser work merely because the daily-driver process
+already exists—that existing process is the browser transport owned by this loop.
 
 Read:
 - docs/superpowers/specs/2026-07-28-job-search-loop-design.md

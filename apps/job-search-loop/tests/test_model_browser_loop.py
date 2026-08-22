@@ -133,6 +133,8 @@ class ModelBrowserLoopContractTests(unittest.TestCase):
         )
         self.assertNotIn("deterministic Ashby fast path owns", prompt)
         self.assertNotIn("A `blocked` row remains durable work", prompt)
+        self.assertIn("BrowserSession.attach(endpoint, row_run_id)", prompt)
+        self.assertNotIn("Use `chromium.connect_over_cdp(endpoint)`", prompt)
 
     def test_orchestrator_delegates_once_to_the_existing_bounded_runner(self):
         from job_search_loop.browser_agent.orchestrator import invoke_runner
