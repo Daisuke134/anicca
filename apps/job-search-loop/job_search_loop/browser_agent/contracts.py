@@ -87,3 +87,39 @@ class ActionPlanV1:
     action: VisibleActionV1 | None = None
     transition: Literal["checkpointed", "ineligible", "post_submit_verification"] | None = None
     reason: str = ""
+
+
+@dataclass(frozen=True, slots=True)
+class RowCheckpointV1:
+    schema_version: int
+    row_run_id: str
+    stage: Literal["acting", "recovering", "checkpointed", "post_submit_verification"]
+    page_marker: str
+    session_generation: int
+    observation_sha256: str
+    action_receipt_hashes: tuple[str, ...]
+    remaining_steps: int
+
+
+@dataclass(frozen=True, slots=True)
+class CheckpointReceiptV1:
+    path: Path
+    checkpoint_sha256: str
+
+
+@dataclass(frozen=True, slots=True)
+class StepEvidenceV1:
+    schema_version: int
+    row_run_id: str
+    sequence: int
+    predecessor_sha256: str | None
+    before_observation_sha256: str
+    action_receipt_sha256: str
+    after_observation_sha256: str
+
+
+@dataclass(frozen=True, slots=True)
+class EvidenceReceiptV1:
+    sequence: int
+    evidence_sha256: str
+    path: Path

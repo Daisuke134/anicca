@@ -41,6 +41,15 @@ this loop. Never batch actions from one observation. `AgentPolicy` rejects a sta
 observation hash and cannot assert `submitted` or any other authoritative terminal
 outcome. A `checkpointed` row returns control to the queue; it does not end the wake.
 
+Before attaching a row, call `CheckpointStore.load(row_run_id)` and restore its
+page marker, session generation, receipt hashes, remaining budget, and cursor when
+present. For every executed action: capture the fresh after-observation, append one
+`StepEvidenceV1` to `EvidenceStore` with the exact predecessor/before/action/after
+SHA-256 values, then atomically save the next `RowCheckpointV1`. Persist a
+`checkpointed` cursor before returning the row to the queue. Never put entered
+text, credentials, cookies, profile values, screenshots, or model prose in either
+store; only opaque identity, cursor, budget, and evidence hashes are permitted.
+
 Read:
 - docs/superpowers/specs/2026-07-28-job-search-loop-design.md
 - ${XDG_CONFIG_HOME:-$HOME/.config}/anicca/job-search/profile.json

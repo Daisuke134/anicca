@@ -3,15 +3,20 @@
 API_VERSION = "job-hunter-browser-agent/1"
 
 from .actions import ActionExecutor
+from .checkpoint import CheckpointStore, EvidenceStore
 from .contracts import (
     ActionReceiptV1,
     ActionPlanV1,
     ActionTargetV1,
+    CheckpointReceiptV1,
+    EvidenceReceiptV1,
     ObservationV1,
     PolicyContextV1,
+    RowCheckpointV1,
     SessionHandleV1,
     VisibleActionV1,
     VisibleControlV1,
+    StepEvidenceV1,
 )
 from .observation import ObservationBuilder
 from .policy import AgentPolicy
@@ -20,6 +25,8 @@ from .session import BrowserSession
 __all__ = [
     "API_VERSION", "ActionExecutor", "ActionPlanV1", "ActionReceiptV1",
     "ActionTargetV1", "AgentPolicy",
-    "BrowserSession", "ObservationBuilder", "ObservationV1", "SessionHandleV1",
-    "PolicyContextV1", "VisibleActionV1", "VisibleControlV1",
+    "BrowserSession", "CheckpointReceiptV1", "CheckpointStore", "EvidenceReceiptV1",
+    "EvidenceStore", "ObservationBuilder", "ObservationV1", "PolicyContextV1",
+    "RowCheckpointV1", "SessionHandleV1", "StepEvidenceV1", "VisibleActionV1",
+    "VisibleControlV1",
 ]

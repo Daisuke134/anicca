@@ -139,6 +139,8 @@ class ModelBrowserLoopContractTests(unittest.TestCase):
         self.assertIn("remain inside this one Luna xhigh runner turn", prompt)
         self.assertIn("AgentPolicy.next_step", prompt)
         self.assertIn("Never batch actions from one observation", prompt)
+        self.assertIn("CheckpointStore.load(row_run_id)", prompt)
+        self.assertIn("StepEvidenceV1", prompt)
         self.assertNotIn("Use `chromium.connect_over_cdp(endpoint)`", prompt)
 
     def test_orchestrator_delegates_once_to_the_existing_bounded_runner(self):
