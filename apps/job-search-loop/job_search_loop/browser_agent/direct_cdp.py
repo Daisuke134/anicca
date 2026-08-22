@@ -191,8 +191,8 @@ class DirectCDPPage:
           }}
           nodes=nodes.filter(el=>visible(el)&&!el.disabled&&el.getAttribute('aria-disabled')!=='true')
             .filter(el=>!target.role||role(el)===target.role);
-          const resolvedByStableId=nodes.length>0;
-          if (!nodes.length) {{
+          const resolvedByStableId=nodes.length===1;
+          if (!resolvedByStableId) {{
             nodes=Array.from(document.querySelectorAll('input,button,select,textarea,a,[role],[data-automation-id]'));
           }}
           nodes=nodes.filter(el=>visible(el)&&!el.disabled&&el.getAttribute('aria-disabled')!=='true')
