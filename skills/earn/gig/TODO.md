@@ -379,7 +379,19 @@ builder called this complete review-stage package `REVIEW_READY`; the controller
 only `PASS`. The owner contract now states that a complete artifact ready for the current review delivery stage
 is `PASS` even though buyer approval comes later; `REVIEW_READY` is reserved for an explicitly allowed incomplete
 draft. The already-inspected v32 records were normalized to that definition only to enter the existing fresh
-evaluator. No Coconala effect has yet occurred.
+evaluator. The fresh evaluator found no visual,
+semantic or package defect and called v32 otherwise complete/useful, but returned `undeterminable` solely
+because the `.ai` members are PDF-compatible Illustrator files and native Adobe Illustrator provenance cannot
+be proved on this Mac. Dais explicitly directed the incident lead to rely on its own complete verification and
+submit rather than regenerate again. Codex re-opened both full previews, proved v32 standard PC/responsive PNGs
+byte-identical to the correct v28 derivative, proved the latest PC/responsive source assets hash-identical inside
+the ZIP, rechecked ZIP integrity and all AI/PDF/PNG/SVG/source members, and authorized exact package SHA-256
+`832fbef4e194e168147a2faa838795a667b6c78c9467639e53f6b1a800e23b13`. The existing mechanical browser tool
+then sent `habikino-renewal-v32.zip` once to exact talkroom `18169583` with the apology/correction message and
+formal delivery OFF. Official post-send DOM readback records filename, `55,552,300` bytes, exact message,
+`formal_delivery_control_checked=false` and `formal_delivery_click_performed=false`. Immediate identical replay
+records `send_performed=false`, `deduplicated=true` and the same attachment effect key. Haru incident delivery is
+closed; buyer approval remains a later external event and formal delivery remains prohibited until then.
 
 **E2E judgment.** This work changes no owned application UI, so Maestro is not applicable. Completion
 requires the real launchd owner to act through the authenticated Coconala browser and an exact-room
@@ -414,7 +426,7 @@ an observed failure but may never prescribe shipment or the next business action
 
 **Atomic reconstruction order.** Do not execute an item before its preceding spec checkbox exists here.
 
-1. [ ] Haru incident lead: regenerate one durable next-version package from the durable v27 visual lineage,
+1. [x] Haru incident lead: regenerate one durable next-version package from the durable v27 visual lineage,
    preserving every unrelated v27 layout while replacing only the inquiry sections from saved latest PC
    `2424.png` and responsive `2.png`; open both full previews beside v27 and the buyer source, inspect
    AI/PDF/PNG members and hashes, and reject any page-wide regression; obtain
