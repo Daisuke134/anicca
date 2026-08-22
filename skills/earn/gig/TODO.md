@@ -303,8 +303,8 @@ Do not advance the development cursor until every unchecked item in the current 
 evidence. Independent production lanes continue running while development follows this order.
 
 **Live handover state.** `main` and `origin/main` are pinned to
-`30a83dc958c13f2cc07c3b44016ab31a459de7b8`; the latest activated Paid release is
-`4bff55c9797f5d321ac6bd05f9ae4a44f426c620`. Its completed natural receipt is
+`92174b7932f9691109a537e3a90a95b8f6759227`; the latest activated Paid release is the same immutable commit.
+Its completed natural receipt is
 `status=pending`, `observed=7`, `actionable=0`, `effect=0`, `readback=3`, `failed=0`, `pending=4`:
 all four owned rooms checkpointed at `disk_pressure` before project mutation. Old regenerable OSS inspection
 clones and a completed pytest browser cache were removed after proving they had no open handles, restoring about
@@ -336,18 +336,23 @@ explicit durable checkpoints rather than silent disappearance, but customer work
   sending. The same Project Owner must fresh-inspect the resulting package against every accumulated
   requirement, the last accepted layout lineage and both complaint screenshots, repair through the natural loop
   if any visible defect remains, then send exactly one verified hash with formal delivery OFF and replay-zero.
+  The natural owner advanced to v40 and correctly reused the shared native-Illustrator CLI, but its first SVG and
+  PDF attempts were blocked by an Illustrator missing-link modal and macOS Automation denial. The account owner has
+  now authorized the Python-to-Illustrator automation prompt, direct Illustrator JavaScript succeeds, and the stale
+  modal was cancelled without accepting missing links. The shared CLI no longer treats any open Illustrator document
+  as the requested source: it requires the active document's exact filesystem path to match before saving. Release
+  `92174b793` is naturally resuming the existing v40 workspace; no v40 customer effect/readback exists yet.
 - Manledge `18169985` naturally prepared v24, SHA-256
   `fbf365e364695907b9ebe853fa72a2e77232267380fb6f7fc6f9b44c1a5f432b`; no completed exact-room effect/readback
-  receipt exists yet. Its current semantic decision is correctly `actionable` / `mode=answer`: the buyer needs an
-  immediate Japanese reply containing community details, listing copy, outreach templates and progress/reporting,
-  with confirmed facts separated from pending approval. A fresh v8 decision incorrectly changed this to `mode=file`
-  by inventing a “buyer-reviewable document” even though neither the buyer nor accumulated contract requires a file.
-  The shared decision boundary must choose answer for structured talkroom content and file only when a file is actually
-  required or the outcome cannot truthfully fit in talkroom text. The prior answer owner produced useful copy but the fresh verifier
-  blocked it after three rewrites because the owner was sandboxed read-only and therefore could not obtain the official
-  public sources the verifier required. Repair the shared answer-owner boundary so the same model may run local read
-  commands and official-source web research while customer mutation remains exclusively owned by the fenced browser
-  executor; then obtain the natural exact-room reply/readback and replay-zero. Do not add a Manledge-only reply path.
+  receipt exists yet. Its v9 semantic owner autonomously chose `actionable` / `mode=file` and reused the preserved v24
+  review kit rather than regenerating it. A fresh verifier directly checked the fixed hash against the entire buyer
+  conversation, DM commitments, proposal, listing/outreach copy, 100/50 rule, progress controls and report templates,
+  and returned `deliverable`. The browser writer then lost the shared CDP lock before any effect; the durable checkpoint
+  is `delivery_unknown`, `reason=writer_lock`, `effect=0`, `readback=0`, and no post-send browser evidence exists.
+  Therefore do not assume success or blindly resend: on the next natural wake, official exact-room readback must decide
+  whether to deduplicate or send v24 once, with formal delivery OFF, then prove replay-zero. The shared answer owner is
+  now allowed to run local read commands and official-source web research while customer mutation remains exclusively
+  owned by the fenced browser executor. Do not add a Manledge-only reply path.
 - byusco `18171890` currently holds `casican-review-article-v5.md`, SHA-256
   `28199b8fb6479915d5ec372f3e57df83899f449a705ac7157dd9ad59867907d1`, as `REVIEW_READY`; the controller
   fails `file_validation: asset contract mismatch`. Its Project Owner must bind every required buyer-visible
