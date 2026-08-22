@@ -2791,7 +2791,7 @@ flowchart LR
 **Immediate economic queue — this block executes before items 8–14 and 15–23:**
 
 Current exact readback establishes the starting point: `ai.anicca.affiliate-loop`
-is loaded and running with `30` runs and last exit code `0`; the canonical
+is loaded with `32` runs and last exit code `0`; the canonical
 placement ledger contains `24` public placements, `40` provider clicks, `38`
 provider unique clicks, and `13` placements with a provider click. Official
 customers, transactions, approved commissions, and paid commissions are all `0`.
@@ -2801,11 +2801,17 @@ therefore not the current blocker. The measured blockers are click-to-customer
 conversion and missing owned-visit/CTA denominators. No shadow Agent code is
 installed or committed as a substitute for this queue.
 
-- **FUNNEL-A — top-three canonical snapshot:** produce one receipt selecting the
-  three exact placements with the highest provider unique-click counts and record
-  owned visits, CTA clicks, provider clicks/unique clicks, customers, transactions,
-  and observation times. Missing denominators remain `UNKNOWN`; clicks and views
-  remain non-money.
+- **FUNNEL-A — DONE — top-three canonical snapshot:** installed release
+  `970bc7a094fcfba1534295567a1301e1270443ce` makes the existing Affiliate owner
+  write one replay-safe, mode-0600 snapshot derived from the canonical placement
+  ledger. Owner readback produced hash-valid snapshot `62de4b70…4f456`, bound to
+  ledger `58b4e34a…47484`, with one history row after two owner wakes. The exact
+  ranking is Subtitle Translator (`7` clicks / `6` unique), Voice Isolator (`6` /
+  `6`), then Voice Changer (`6` / `5`). All three have an owned URL, X permalink,
+  and dedicated provider-link key. Each has `0` observed transactions; owned
+  visits and CTA clicks remain `UNKNOWN`, and exact-placement customers remain
+  `UNAVAILABLE_AT_EXACT_PLACEMENT`. The receipt is explicitly non-money. Owner
+  Telegram delivery read back `SENT`, message ID `28441`.
 - **FUNNEL-B — owned-visit denominator:** add or repair first-party visit capture
   for those exact owned URLs and join it replay-safely to placement IDs; acceptance
   is an observed count or explicit `UNAVAILABLE`, never inferred traffic.

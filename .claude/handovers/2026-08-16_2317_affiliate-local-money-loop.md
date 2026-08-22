@@ -1505,3 +1505,21 @@ URLs), and removed the slug alias. Telegram `26700` is the natural-language
 The wake remained in revenue cooldown; official source rows are still zero,
 approved/paid net is null, all pending/approved/paid/reversed counts are zero, and
 real billed costs remain `UNKNOWN`.
+
+FUNNEL-A is now closed by installed release
+`970bc7a094fcfba1534295567a1301e1270443ce`. The existing Affiliate owner ran the
+new `ledger.funnel-snapshot` stage; `launchctl` reads `runs=32`, last exit `0`.
+The mode-0600 latest receipt has recomputed-valid SHA-256
+`62de4b70f2f00bf3c12e63a343a60e11051991cbb0a5416d6322feb004f4f456`, is bound
+to canonical placement ledger `58b4e34a…47484`, and appears exactly once in the
+append-only history after two wakes. Its top three exact placements are Subtitle
+Translator (`7/6` provider clicks/unique clicks), Voice Isolator (`6/6`), and
+Voice Changer (`6/5`). All three retain exact owned URL, X permalink, and private
+provider-link-key presence; each has zero observed transactions. Owned visits and
+CTA clicks remain `UNKNOWN`, exact-placement customers remain
+`UNAVAILABLE_AT_EXACT_PLACEMENT`, and the receipt declares non-money. Rolling
+state remains `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`, costs
+remain unknown, and owner Telegram readback is `SENT`, message ID `28441`. No
+manual post, provider write, or parallel executor ran. The next atomic item is
+FUNNEL-B: obtain an observed first-party visit count or explicit `UNAVAILABLE` for
+these three exact owned URLs and join it replay-safely to their placement IDs.
