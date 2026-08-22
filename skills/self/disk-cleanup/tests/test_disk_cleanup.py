@@ -17,6 +17,8 @@ from disk_cleanup import (  # noqa: E402
     classify_tier,
 )
 
+DEFAULT_BOOTSTRAP_HEALTH = disk_cleanup._default_bootstrap_health
+
 
 @pytest.fixture(autouse=True)
 def stub_bootstrap_health_for_governor_unit_tests(monkeypatch) -> None:
@@ -508,10 +510,27 @@ def test_run_once_rechecks_budget_after_lsof_before_reclaim(tmp_path: Path, monk
     assert not (tmp_path / "state" / "host-inventory-full.at").exists()
 
 
-def test_bootstrap_health_failure_is_observation_only(tmp_path: Path, monkeypatch) -> None:
+@pytest.mark.parametrize("launchctl_status", (141, 153))
+def test_gui_bootstrap_health_failure_is_observation_only(
+    tmp_path: Path, monkeypatch, launchctl_status: int
+) -> None:
     candidate = tmp_path / "tmp" / "cfo-health-failure"
     candidate.mkdir(parents=True)
     monkeypatch.setattr(disk_cleanup.tempfile, "gettempdir", lambda: str(candidate.parent))
+    monkeypatch.setattr(disk_cleanup.sys, "platform", "darwin")
+
+    def fake_run(argv: list[str], **_kwargs) -> subprocess.CompletedProcess[str]:
+        if argv[0] == "/usr/bin/dscl":
+            stdout = f"UniqueID: {os.getuid()}\nNFSHomeDirectory: {tmp_path}\n"
+            return subprocess.CompletedProcess(argv, 0, stdout, "")
+        assert argv == [
+            "/bin/launchctl",
+            "print",
+            f"gui/{os.getuid()}/ai.anicca.life-manager-disk-cleanup",
+        ]
+        return subprocess.CompletedProcess(argv, launchctl_status, "", "Reentrancy avoided")
+
+    monkeypatch.setattr(disk_cleanup.subprocess, "run", fake_run)
     monkeypatch.setattr(
         disk_cleanup,
         "collect_host_inventory",
@@ -521,19 +540,14 @@ def test_bootstrap_health_failure_is_observation_only(tmp_path: Path, monkeypatc
     governor = HostDiskGovernor(
         home=tmp_path,
         state_dir=tmp_path / "state",
-        bootstrap_health=lambda: {
-            "status": "failure",
-            "error_code": "launchctl-141",
-            "domain": "gui/501",
-            "label": "ai.anicca.life-manager-disk-cleanup",
-        },
+        bootstrap_health=lambda: DEFAULT_BOOTSTRAP_HEALTH(tmp_path, tmp_path / "state"),
         lsof=lambda _path: (_ for _ in ()).throw(AssertionError("lsof must not run")),
         usage=lambda: (12 * GiB, 100 * GiB),
     )
     monkeypatch.setattr(
         governor,
         "discover_candidates",
-        lambda: [{"path": candidate, "class": "ephemeral", "owner": "temporary-run"}],
+        lambda: (_ for _ in ()).throw(AssertionError("discovery must not run")),
     )
 
     result = governor.run_once()
@@ -541,10 +555,17 @@ def test_bootstrap_health_failure_is_observation_only(tmp_path: Path, monkeypatc
     assert result["reason"] == "gui-bootstrap-health-failure"
     assert result["evaluated"] == 0
     assert result["reclaimed"] == 0
+    assert result["errors"] == 1
+    assert result["protected_deletions"] == 0
     assert candidate.exists()
     receipt = json.loads((tmp_path / "state" / "last-receipt.json").read_text())
     assert receipt["reason"] == "gui-bootstrap-health-failure"
-    assert receipt["health"]["error_code"] == "launchctl-141"
+    assert receipt["health"]["error_code"] == f"launchctl-{launchctl_status}"
+    assert receipt["health"]["domain"] == f"gui/{os.getuid()}"
+    assert receipt["health"]["label"] == "ai.anicca.life-manager-disk-cleanup"
+    assert receipt["evaluated"] == 0
+    assert receipt["reclaimed"] == 0
+    assert receipt["protected_deletions"] == 0
     assert not (tmp_path / "state" / "host-inventory-full.at").exists()
 
 
