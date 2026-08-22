@@ -67,6 +67,13 @@ class LocalLoopTest(unittest.TestCase):
             self.assertEqual(first["money_state"], "NON_MONEY")
             self.assertTrue(first["changed"])
             self.assertFalse(second["changed"])
+            baseline = json.loads(next(
+                (state / "distribution-baselines").glob("focused-*.json")
+            ).read_text())
+            self.assertEqual(
+                baseline["required_success_metric"],
+                "EXACT_PLACEMENT_OFFICIAL_TRANSACTION_COUNT",
+            )
             self.assertFalse(MODULE.focused_publication_allowed(state, "new-en-1", {}))
             self.assertTrue(MODULE.focused_publication_allowed(
                 state, "new-en-1", {"state": "OWNED_LIVE"},

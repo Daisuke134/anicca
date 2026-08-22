@@ -6,6 +6,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -142,11 +143,14 @@ def advance(skill_root: Path, state: Path) -> dict:
                 raise DecisionError
             continue
         baseline = json.loads(raw)
+        receipt_type = baseline.get("receipt_type")
+        common = ("public_id", "plan_id", "placement_id", "observed_at")
+        devto = ("page_views_count", "public_reactions_count", "comments_count")
         if (
-            baseline.get("receipt_type") != "DEVTO_24H_BASELINE"
-            or not all(baseline.get(key) is not None for key in (
-                "public_id", "plan_id", "placement_id", "observed_at",
-                "page_views_count", "public_reactions_count", "comments_count",
+            receipt_type not in {"DEVTO_24H_BASELINE", "FOCUSED_INTERVAL_BASELINE"}
+            or not all(baseline.get(key) is not None for key in common)
+            or (receipt_type == "DEVTO_24H_BASELINE" and not all(
+                baseline.get(key) is not None for key in devto
             ))
         ):
             raise DecisionError
@@ -165,6 +169,7 @@ Return one falsifiable hypothesis and one exact instruction for the next campaig
 Do not invent traffic, clicks, conversions, revenue, causality, or guarantees. If exposure is zero, do not claim the CTA failed; choose a reach variable. If exposure exists but an exact provider click row is unknown, preserve that uncertainty. A decision is an acquisition experiment, not proof of profit.
 API-equivalent model cost is a planning estimate, not an invoice. Never declare a profit winner when actual cash cost, approved commission, or a positive exposure denominator is unknown. When comparable approved-net unit economics exist, use them as evidence; otherwise choose one acquisition experiment without claiming allocation superiority.
 Canonical examples: zero views supports testing title or opening_hook; views with zero exact clicks may support testing article_structure or cta; an unknown denominator must stay unknown.
+For a FOCUSED_INTERVAL_BASELINE, choose one variable for the existing focused cohort. The success_metric must use exact-placement official customer_count or transaction_count, never views, clicks, engagement, estimates, or money. If exact-placement customers are unavailable, require official transaction_count >= 1.
 
 OBSERVED JSON:
 """ + json.dumps(context, ensure_ascii=False, sort_keys=True)
@@ -222,6 +227,11 @@ OBSERVED JSON:
                     evidence_state=evidence_state,
                 )
         result, seal = _result(evidence_dir, context_sha256)
+        if receipt_type == "FOCUSED_INTERVAL_BASELINE" and (
+            not re.search(r"\b(customer|transaction)(_count)?\b", result["success_metric"], re.I)
+            or re.search(r"\b(view|click|engagement|impression)s?\b", result["success_metric"], re.I)
+        ):
+            raise DecisionError
         decision_id = hashlib.sha256(
             f"{context_sha256}:{seal['result_sha256']}".encode()
         ).hexdigest()

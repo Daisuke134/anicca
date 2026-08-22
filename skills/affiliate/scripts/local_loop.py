@@ -192,6 +192,7 @@ def focus_cohort(state):
     latest = state / "focused-cohort" / "latest.json"
     if latest.is_file():
         receipt = json.loads(latest.read_text(encoding="utf-8"))
+        write_focused_baseline(state, receipt)
         return {**receipt, "state": "FOCUSED", "changed": False}
     interval = json.loads(
         (state / "interval-funnel-joins" / "latest.json").read_text(encoding="utf-8")
@@ -251,7 +252,41 @@ def focus_cohort(state):
     receipt = {**receipt_core, "receipt_sha256": receipt_sha256}
     changed = append_unique(state / "focused-cohorts.jsonl", receipt, ("receipt_sha256",))
     atomic_json(latest, receipt)
+    write_focused_baseline(state, receipt)
     return {**receipt, "state": "FOCUSED", "changed": changed}
+
+
+def write_focused_baseline(state, focus):
+    """Expose immutable focused evidence to the existing model decision owner."""
+    interval = json.loads(
+        (state / "interval-funnel-joins" / "latest.json").read_text(encoding="utf-8")
+    )
+    row = next(
+        item for item in interval.get("placements", [])
+        if item.get("placement_id") == focus.get("placement_id")
+    )
+    baseline = {
+        "schema_version": 1,
+        "receipt_type": "FOCUSED_INTERVAL_BASELINE",
+        "public_id": focus["placement_id"],
+        "plan_id": focus["plan_id"],
+        "placement_id": focus["placement_id"],
+        "observed_at": interval.get("interval_end"),
+        "source_interval_receipt_sha256": focus["source_interval_receipt_sha256"],
+        "buyer_problem": focus["buyer_problem"],
+        "control_provider_clicks": focus["provider_clicks"],
+        "control_provider_unique_clicks": focus["provider_unique_clicks"],
+        "interval_cta_clicks": row.get("cta_clicks"),
+        "interval_provider_click_delta": row.get("provider_click_delta"),
+        "interval_provider_unique_click_delta": row.get("provider_unique_click_delta"),
+        "customer_state": row.get("customer_state"),
+        "transaction_count": row.get("transaction_count"),
+        "required_success_metric": "EXACT_PLACEMENT_OFFICIAL_TRANSACTION_COUNT",
+    }
+    atomic_json(
+        state / "distribution-baselines" / f"focused-{focus['receipt_sha256']}.json",
+        baseline,
+    )
 
 
 def focused_publication_allowed(state, placement, progress):
