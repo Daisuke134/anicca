@@ -2097,6 +2097,7 @@ async def collect_cdp_events(ws: Any, seconds: float = 2.0) -> list[dict[str, An
 
 async def capture_click_downloads(
     ws: Any, request_id: int, talkroom: dict[str, Any], probe_reference: str | None = None,
+    project_root: Path | None = None,
 ) -> int:
     """Capture buyer attachment controls that expose no href."""
     with tempfile.TemporaryDirectory(prefix="gig-buyer-attachments-") as directory:
@@ -2119,6 +2120,11 @@ async def capture_click_downloads(
                 continue
             for attachment_index, attachment in enumerate(message.get("attachments") or []):
                 if not isinstance(attachment, dict) or attachment.get("data_base64"):
+                    continue
+                recovered = recover_captured_attachment(
+                    project_root, safe_filename(attachment.get("filename")),
+                ) if project_root is not None else None
+                if recovered is not None:
                     continue
                 before = {path.name for path in Path(directory).iterdir()}
                 # Coconala's no-href attachment control ignores synthetic DOM
@@ -2296,6 +2302,7 @@ async def inspect_page(
     previous_count: int | None = None,
     coverage_expression: str | None = None,
     validate_coverage: bool = True,
+    attachment_project_root: Path | None = None,
 ) -> dict[str, Any]:
     async with websockets.connect(ws_url, ping_interval=None, open_timeout=10, max_size=50 * 1024 * 1024) as ws:
         request_id = 1
@@ -2363,6 +2370,7 @@ async def inspect_page(
                         attachment.update(row)
             request_id = await capture_click_downloads(
                 ws, request_id, value, os.environ.get("GIG_ATTACHMENT_PROBE_REFERENCE") or None,
+                attachment_project_root,
             )
         if screenshot is not None:
             shot = await call(ws, request_id, "Page.captureScreenshot", {"format": "png", "captureBeyondViewport": False})
@@ -2496,6 +2504,7 @@ def inspect_page_with_retry(
     previous_count: int | None = None,
     coverage_expression: str | None = None,
     validate_coverage: bool = True,
+    attachment_project_root: Path | None = None,
 ) -> dict[str, Any]:
     """Retry only the known transient navigation timeout with fresh tabs."""
     if attempts < 1:
@@ -2511,6 +2520,7 @@ def inspect_page_with_retry(
                     previous_count=previous_count,
                     coverage_expression=coverage_expression,
                     validate_coverage=validate_coverage,
+                    attachment_project_root=attachment_project_root,
                 ))
         except RuntimeError as exc:
             if str(exc) != TRANSIENT_NAVIGATION_ERROR or attempt == attempts - 1:
@@ -3270,6 +3280,7 @@ def main() -> int:
                 screenshot(args.evidence_dir / f"talkroom-{safe_name(talkroom_id)}.png"),
                 hidden=False,
                 capture_buyer_attachments=True,
+                attachment_project_root=args.projects_root.expanduser().resolve() / project_id,
             )
             source_dom = raw_talkroom
             if safe_coconala_url(raw_talkroom.get("url")) != talkroom_url:
