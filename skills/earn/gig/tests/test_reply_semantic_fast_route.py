@@ -19,6 +19,7 @@ RUNNER_CONFIG = GIG_ROOT / "agent-runner" / "config.json"
 REQUESTED_ESTIMATE_PATH = GIG_ROOT / "scripts" / "requested_estimate.py"
 QUEUE_SNAPSHOT_PATH = GIG_ROOT / "scripts" / "coconala_queue_snapshot.py"
 LAUNCHD_PATH = GIG_ROOT / "config" / "launchd-jobs.json"
+REPLY_BROWSER_PATH = GIG_ROOT / "scripts" / "coconala_reply_browser.py"
 sys.path.insert(0, str(RUNNER_PATH.parent))
 
 
@@ -36,6 +37,9 @@ requested_estimate = _load_module(
 )
 queue_snapshot = _load_module(
     "gig_queue_snapshot_reply_semantic_test", QUEUE_SNAPSHOT_PATH,
+)
+reply_browser = _load_module(
+    "gig_reply_browser_attachment_context_test", REPLY_BROWSER_PATH,
 )
 
 
@@ -256,7 +260,7 @@ def test_semantic_judge_uses_fast_task_class_and_bounded_outer_timeout(tmp_path,
         "url": "https://coconala.com/messages/123",
         "title": "メッセージ詳細",
         "container_present": True,
-        "own_user_path": "/users/seller",
+        "own_user_path": "/users/12345",
         "messages": [
             {"message_id": "seller-1", "author_path": "/users/seller",
              "body": "こんにちは", "sent_at": "2026-08-19T00:00:00Z"},
@@ -657,6 +661,28 @@ def test_verified_attachment_denial_debt_allows_one_correction():
     assert requested_estimate.validate_semantic_judgement(payload, rows)[
         "reply_body"
     ].startswith("確認できました")
+
+
+def test_reply_browser_context_preserves_verified_attachment_hash():
+    dom = {
+        "url": "https://coconala.com/mypage/direct_message/123",
+        "title": "メッセージ詳細 | マイページ | ココナラ", "container_present": True,
+        "own_user_path": "/users/12345",
+        "messages": [{
+            "message_id": "m1", "author_path": "/users/67890",
+            "sent_at": "2026-08-22 23:37:59", "body": "こちらで大丈夫でしょうか？",
+            "verified_attachments": [{
+                "filename": "1880.png", "content_type": "image/png",
+                "size_bytes": 632406, "sha256": "e" * 64,
+            }],
+        }],
+    }
+
+    context, _bounded = reply_browser.thread_state(
+        dom, "https://coconala.com/mypage/direct_message/123",
+    )
+
+    assert context["conversation"][0]["verified_attachments"][0]["sha256"] == "e" * 64
 
 
 def test_verified_attachment_correction_does_not_create_second_debt():

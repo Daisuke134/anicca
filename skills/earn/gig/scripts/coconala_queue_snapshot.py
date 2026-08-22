@@ -146,6 +146,20 @@ def enrich_verified_dm_attachments(
     merge_verified_dm_attachments(dom, document)
 
 
+def merge_durable_dm_attachments(dom: dict[str, Any], thread_id: str) -> None:
+    """Rebind the already verified manifest during the final pre-click read."""
+    state_root = Path(os.environ.get("GIG_STATE_DIR") or (Path.home() / "gig"))
+    path = (
+        state_root / "direct-message-materials" / safe_name(thread_id)
+        / "source" / "dm" / f"thread-{safe_name(thread_id)}-full.json"
+    )
+    try:
+        document = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, TypeError, ValueError, json.JSONDecodeError) as error:
+        raise CollectorUnhealthy("dm_attachment_evidence_invalid") from error
+    merge_verified_dm_attachments(dom, document)
+
+
 def _posting_module():
     """Load posting_source lazily, same shape as the retainer loader."""
     global _POSTING_MODULE
