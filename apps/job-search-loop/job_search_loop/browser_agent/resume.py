@@ -7,6 +7,7 @@ from typing import Mapping
 
 from .contracts import ObservationV1, ResumeVerificationV1, SessionHandleV1
 from .session import BrowserSession
+from .direct_cdp import DirectCDPPage
 
 
 class ResumeVerifier:
@@ -38,6 +39,43 @@ class ResumeVerifier:
 
         checked: list[str] = []
         mismatched: list[str] = []
+        if isinstance(page, DirectCDPPage):
+            values = await page.evaluate(
+                """labels => {
+                  const controls = Array.from(document.querySelectorAll('input,textarea,select'));
+                  const label = el => {
+                    const own = el.getAttribute('aria-label') || '';
+                    const linked = el.labels && el.labels.length
+                      ? Array.from(el.labels).map(x => x.innerText).join(' ') : '';
+                    return (own || linked || '').trim();
+                  };
+                  return Object.fromEntries(labels.map(expected => {
+                    const matches = controls.filter(el => label(el) === expected)
+                      .filter(el => { const s=getComputedStyle(el),r=el.getBoundingClientRect(); return s.visibility!=='hidden'&&s.display!=='none'&&r.width>0&&r.height>0; });
+                    return [expected, matches.length === 1 ? String(matches[0].value || '') : null];
+                  }));
+                }""",
+                list(expected_fields),
+            )
+            for label, expected in expected_fields.items():
+                actual = values.get(label) if isinstance(values, dict) else None
+                if actual is None:
+                    mismatched.append(label)
+                    continue
+                checked.append(label)
+                if " ".join(str(actual).split()).casefold() != " ".join(expected.split()).casefold():
+                    mismatched.append(label)
+            safe = {
+                "observation_sha256": observation.content_sha256,
+                "resume_sha256": resume_sha,
+                "filename_visible": bool(filename_visible),
+                "checked_labels": tuple(checked),
+                "mismatched_labels": tuple(mismatched),
+            }
+            receipt_sha = hashlib.sha256(
+                json.dumps(safe, ensure_ascii=False, sort_keys=True).encode("utf-8")
+            ).hexdigest()
+            return ResumeVerificationV1(1, receipt_sha256=receipt_sha, **safe)
         for label, expected in expected_fields.items():
             locator = page.get_by_label(label, exact=True)
             visible = [

@@ -14,6 +14,7 @@ from .contracts import (
     VisibleActionV1,
 )
 from .session import BrowserSession
+from .direct_cdp import DirectCDPPage
 from .submission_fence import SubmissionFence
 
 
@@ -32,6 +33,60 @@ class ActionExecutor:
         parsed = urlparse(url)
         if parsed.scheme != "https" or not parsed.hostname:
             raise ValueError("navigation requires an absolute HTTPS URL")
+
+    @staticmethod
+    def _direct_target(target: ActionTargetV1) -> dict[str, object]:
+        if not target.label.strip():
+            raise ValueError("a non-empty user-facing label is required")
+        return {
+            "role": target.role,
+            "label": target.label,
+            "exact": target.exact,
+            "stable_id": target.stable_id,
+            "ordinal": target.ordinal,
+        }
+
+    async def _execute_direct(
+        self, page: DirectCDPPage, action: VisibleActionV1
+    ) -> None:
+        if action.kind == "navigate":
+            if action.url is None:
+                raise ValueError("navigate requires url")
+            self._validate_https(action.url)
+            await page.goto(action.url)
+            return
+        if action.kind in {"click", "choose", "type", "select", "upload"}:
+            if action.target is None:
+                raise ValueError(f"{action.kind} requires target")
+            if action.kind == "click" and _FINAL_SUBMIT.match(action.target.label):
+                raise PermissionError("final Submit requires the SubmissionFence path")
+            target = self._direct_target(action.target)
+            if action.kind in {"click", "choose"}:
+                await page.click_target(target)
+            elif action.kind == "type":
+                if action.text is None:
+                    raise ValueError("type requires text")
+                await page.type_target(target, action.text)
+            elif action.kind == "select":
+                if action.text is None:
+                    raise ValueError("select requires option label")
+                await page.select_target(target, action.text)
+            else:
+                if action.file_path is None or not Path(action.file_path).is_file():
+                    raise ValueError("upload requires an existing file")
+                await page.upload_target(target, str(action.file_path))
+            return
+        if action.kind == "scroll":
+            if action.delta_y is None or abs(action.delta_y) > 10_000:
+                raise ValueError("scroll requires bounded delta_y")
+            await page.scroll(action.delta_y)
+            return
+        if action.kind == "wait":
+            if action.wait_ms is None or not 0 < action.wait_ms <= 10_000:
+                raise ValueError("wait requires 1..10000 milliseconds")
+            await page.wait_for_timeout(action.wait_ms)
+            return
+        raise ValueError(f"unsupported action kind: {action.kind}")
 
     async def _target(self, page, target: ActionTargetV1):
         if not target.label.strip():
@@ -98,7 +153,9 @@ class ActionExecutor:
         page = self._session.page(handle)
         before_url = page.url
         target = None
-        if action.kind == "navigate":
+        if isinstance(page, DirectCDPPage):
+            await self._execute_direct(page, action)
+        elif action.kind == "navigate":
             if action.url is None:
                 raise ValueError("navigate requires url")
             self._validate_https(action.url)
@@ -209,11 +266,14 @@ class ActionExecutor:
             raise ValueError("final action must be the visible Submit click")
         page = self._session.page(handle)
         before_url = page.url
-        target = await self._target(page, action.target)
         fence_receipt = fence.consume(lease, observation_sha256)
         click_error_type = None
         try:
-            await target.click(timeout=self._timeout_ms)
+            if isinstance(page, DirectCDPPage):
+                await page.click_target(self._direct_target(action.target))
+            else:
+                target = await self._target(page, action.target)
+                await target.click(timeout=self._timeout_ms)
         except Exception as error:
             # Once the fence is consumed the click may have reached the provider.
             # Return an opaque receipt so the caller observes and classifies the

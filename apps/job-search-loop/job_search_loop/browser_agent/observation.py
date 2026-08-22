@@ -9,6 +9,7 @@ from typing import Any
 
 from .contracts import ObservationV1, SessionHandleV1, VisibleControlV1
 from .session import BrowserSession
+from .direct_cdp import DirectCDPPage
 
 
 class ObservationBuilder:
@@ -90,7 +91,15 @@ class ObservationBuilder:
             }"""
         )
         controls = tuple(VisibleControlV1(**value) for value in snapshot["controls"])
-        tabs = tuple(candidate.url for context in page.context.browser.contexts for candidate in context.pages)
+        tabs = (
+            (page.url,)
+            if isinstance(page, DirectCDPPage)
+            else tuple(
+                candidate.url
+                for context in page.context.browser.contexts
+                for candidate in context.pages
+            )
+        )
         canonical = {
             "url": page.url,
             "title": await page.title(),

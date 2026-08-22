@@ -28,6 +28,9 @@ Repeat this lifecycle; do not replace it with a fixed Workday page script:
 Commands are strictly sequential. Wait for the current runtime command to finish and
 read its complete JSON before starting the next command. Never issue two observations
 or actions concurrently.
+If a runtime command exits nonzero before returning JSON, do not repeat that command:
+return a `transport_failed` pass result immediately. Retrying an identical transport
+failure is not row recovery and must never spend the rest of the model budget.
 
 Every otherwise anonymous control has an observation-local `ref:*` stable ID,
 adapted from career-ops. Prefer that exact returned ref. A ref, label resolution,

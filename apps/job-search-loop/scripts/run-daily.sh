@@ -195,6 +195,18 @@ set +e
   --active-provider workday
 RUNNER_RC=$?
 set -e
+set +e
+/opt/homebrew/bin/timeout 45 env \
+  SESSION_VAULT_PORT=9222 \
+  SESSION_VAULT_DIR="$JOB_SEARCH_SESSION_VAULT_DIR" \
+  "$JOB_SEARCH_PYTHON" "$JOB_SEARCH_SESSION_VAULT_SCRIPT" dump \
+  >"$EVIDENCE/session-vault-dump.json" 2>"$EVIDENCE/session-vault-dump.stderr.log"
+VAULT_RC=$?
+set -e
+chmod 600 "$EVIDENCE/session-vault-dump.json" "$EVIDENCE/session-vault-dump.stderr.log"
+if [[ "$VAULT_RC" -ne 0 ]]; then
+  printf '%s\n' "job-search session vault snapshot failed; wake evidence preserved" >&2
+fi
 if [[ "$RUNNER_RC" -ne 0 ]]; then
   refresh_summary
   exit "$RUNNER_RC"
