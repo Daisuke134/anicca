@@ -181,7 +181,8 @@ def test_effect_recheck_preserves_new_protected_descendant(tmp_path: Path, monke
     assert result["preserved_reasons"] == {"protected_descendant": 1}
 
 
-def test_active_lease_preserves_artifact(tmp_path: Path, monkeypatch) -> None:
+@pytest.mark.parametrize("max_age", [300, float("nan")])
+def test_active_lease_preserves_artifact(tmp_path: Path, monkeypatch, max_age: float) -> None:
     temporary = tmp_path / "tmp"
     candidate = temporary / "cfo-lease-race"
     lease = temporary / "cfo-lease-race.lease"
@@ -208,7 +209,7 @@ def test_active_lease_preserves_artifact(tmp_path: Path, monkeypatch) -> None:
             "class": "ephemeral",
             "owner": "temporary-run",
             "discovery": "allowlisted",
-            "lease": {"path": str(lease), "max_age_seconds": 300},
+            "lease": {"path": str(lease), "max_age_seconds": max_age},
         }]
     )
 
@@ -251,6 +252,37 @@ def test_lease_probe_error_fails_closed(tmp_path: Path, monkeypatch) -> None:
 
     assert candidate.exists()
     assert result["preserved_reasons"] == {"active_lease": 1}
+
+
+def test_expired_lease_open_path_is_preserved(tmp_path: Path, monkeypatch) -> None:
+    temporary = tmp_path / "tmp"
+    candidate = temporary / "cfo-open-race"
+    lease = temporary / "expired.lease"
+    candidate.mkdir(parents=True)
+    (candidate / "payload").write_text("in-flight")
+    lease.write_text("stale heartbeat")
+    os.utime(lease, (1, 1))
+    monkeypatch.setattr(disk_cleanup.tempfile, "gettempdir", lambda: str(temporary))
+    probes = iter(("confirmed-closed", "open"))
+    governor = HostDiskGovernor(
+        home=tmp_path,
+        state_dir=tmp_path / "state",
+        lsof=lambda _path: next(probes),
+        usage=lambda: (0, 1),
+    )
+
+    result = governor.sweep(
+        [{
+            "path": candidate,
+            "class": "ephemeral",
+            "owner": "temporary-run",
+            "discovery": "allowlisted",
+            "lease": {"path": str(lease), "max_age_seconds": 300},
+        }]
+    )
+
+    assert candidate.exists()
+    assert result["preserved_reasons"] == {"open": 1}
 
 
 def test_unproved_candidate_is_preserved(tmp_path: Path) -> None:

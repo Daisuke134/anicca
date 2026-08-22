@@ -11,6 +11,7 @@ import argparse
 from contextlib import contextmanager, suppress
 import errno
 import json
+import math
 import os
 import pwd
 import re
@@ -243,12 +244,23 @@ class HostDiskGovernor:
         if not isinstance(lease_path, (str, os.PathLike)):
             return True
         try:
-            Path(lease_path).expanduser().stat()
-            return True
+            modified_at = Path(lease_path).expanduser().stat().st_mtime
         except FileNotFoundError:
             return False
         except OSError:
             return True
+        if not isinstance(lease, dict):
+            return True
+        max_age = lease.get("max_age_seconds")
+        if (
+            isinstance(max_age, bool)
+            or not isinstance(max_age, (int, float))
+            or not math.isfinite(max_age)
+            or max_age <= 0
+        ):
+            return True
+        age = time.time() - modified_at
+        return age < 0 or age <= max_age
 
     def acquire_lock(self) -> bool:
         self.state_dir.mkdir(parents=True, exist_ok=True)
@@ -563,6 +575,17 @@ class HostDiskGovernor:
             if descendant_state is not None:
                 result["errors"] += descendant_state == "descendant_probe_error"
                 preserve(descendant_state)
+                continue
+            if deadline is not None and self.clock() + LSOF_TIMEOUT_SECONDS + POST_SWEEP_RESERVE_SECONDS >= deadline:
+                preserve("probe-budget-exhausted")
+                continue
+            state = self.lsof(path)
+            if deadline is not None and self.clock() >= deadline:
+                preserve("probe-budget-exhausted")
+                continue
+            if state != "confirmed-closed":
+                result["errors"] += state == "probe-error"
+                preserve(state)
                 continue
             if self._active_lease(item):
                 preserve("active_lease")
