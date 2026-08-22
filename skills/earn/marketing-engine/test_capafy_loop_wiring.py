@@ -76,6 +76,16 @@ class CapafyLoopWiringTest(unittest.TestCase):
         )
         self.assertNotIn("invalid or missing --task-class", proc.stderr)
 
+    def test_run_agent_accepts_the_capafy_drainer_browser_class(self):
+        # capafy-autopublish uses this longer browser class for the actual
+        # CP1/CP2/CP3 drainer.  Keep the wrapper whitelist from silently
+        # rejecting a valid configured class before any live work begins.
+        proc = self._run_agent_with(
+            "Run one bounded Capafy browser publish fixture and return JSON only.\n",
+            task_class="application-lane-agent",
+        )
+        self.assertNotIn("invalid or missing --task-class", proc.stderr)
+
     def _run_agent_with(self, prompt_text, task_class="tool-agent"):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
