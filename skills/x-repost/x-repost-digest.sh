@@ -178,7 +178,11 @@ PYINNER
   echo "x-repost-digest: harvested $ADDED seed(s)"
 fi
 else
-  echo "x-repost-digest: today's evaluation already exists; delivery-only replay"
+  # The first delivery may have timed out after Telegram accepted it. The provider has no
+  # idempotency key, so a same-day replay can create a duplicate even when telegram-sent.jsonl has
+  # no receipt. Treat the daily evaluation itself as the at-most-once attempt fence.
+  echo "x-repost-digest: today's evaluation already exists; no delivery replay"
+  exit 0
 fi
 
 BODY="$("$PY" "$SKILL/scripts/x_digest.py" --posted "$STATE/posted.jsonl" --window-hours "$WINDOW")" || {
