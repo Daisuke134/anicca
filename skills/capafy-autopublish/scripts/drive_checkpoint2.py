@@ -18,7 +18,7 @@ import math
 import os, sys, time, json, urllib.request
 import re
 from urllib.error import HTTPError
-from urllib.parse import parse_qs, urlsplit
+from urllib.parse import parse_qs, parse_qsl, urlsplit
 
 BASE_URL = "https://openrouter.ai/api/v1"
 MODEL    = "anthropic/claude-sonnet-4.6"
@@ -55,6 +55,14 @@ def _is_capafy_target_url(url):
     return parts.scheme == "https" and parts.netloc.lower() == CP2_HOST and parts.path == CP2_PATH
 
 
+def _target_url_key(url):
+    if not _is_capafy_target_url(url):
+        return None
+    parts = urlsplit(str(url))
+    query = tuple(sorted(parse_qsl(parts.query, keep_blank_values=True)))
+    return (parts.scheme.lower(), parts.netloc.lower(), parts.path, query)
+
+
 def _detect_cdp():
     """CDP port drifts (observed 9222 -> 9223) — auto-detect instead of trusting
     a hardcoded port (self-fix-capafy-loop, 2026-07-21)."""
@@ -77,50 +85,38 @@ def _load_playwright():
     return sync_playwright
 
 
-def _raw_page_target(cdp_base):
-    """Return an existing Capafy page target for page-level CDP fallback.
-
-    CloakBrowser can answer the page websocket while Playwright's browser-level
-    attach hangs. Reusing an existing Capafy page avoids Target.createTarget,
-    which requires the browser websocket that is unavailable in that failure
-    mode. The caller remains fail-closed when no suitable page exists.
-    """
+def _raw_page_targets(cdp_base, cp2):
+    _validate_cp2_url(cp2)
+    expected = _target_url_key(cp2)
     cdp_base = _validate_cdp_base(cdp_base)
     with urllib.request.urlopen(f"{cdp_base}/json/list", timeout=8) as r:
         targets = json.loads(r.read())
-    for target in reversed(targets if isinstance(targets, list) else []):
-        if (
-            isinstance(target, dict)
-            and target.get("type") == "page"
-            and _is_capafy_target_url(target.get("url"))
-            and target.get("webSocketDebuggerUrl")
-        ):
-            return target
-    raise RuntimeError("no existing Capafy page target for raw CDP fallback")
-
-
-def _raw_page_targets(cdp_base):
-    cdp_base = _validate_cdp_base(cdp_base)
-    with urllib.request.urlopen(f"{cdp_base}/json/list", timeout=8) as r:
-        targets = json.loads(r.read())
-    return [
+    matches = [
         target for target in reversed(targets if isinstance(targets, list) else [])
         if isinstance(target, dict)
         and target.get("type") == "page"
-        and _is_capafy_target_url(target.get("url"))
+        and _target_url_key(target.get("url")) == expected
         and target.get("webSocketDebuggerUrl")
     ]
+    if not matches:
+        raise RuntimeError("no exact CP2 page target for raw CDP fallback")
+    return matches
 
 
 class _RawPage:
     """Small synchronous page-level CDP adapter for the CP2 interactions below."""
 
-    def __init__(self, ws_url):
+    def __init__(self, ws_url, *, call_timeout=None, connect_timeout=None):
         try:
             import websocket
         except ImportError as exc:  # pragma: no cover - environment guard
             raise RuntimeError("websocket-client is required for raw CDP fallback") from exc
-        self._ws = websocket.create_connection(_validate_ws_url(ws_url), timeout=15, enable_multithread=True)
+        self._call_timeout_s = float(call_timeout if call_timeout is not None else RAW_CALL_TIMEOUT_S)
+        self._ws = websocket.create_connection(
+            _validate_ws_url(ws_url),
+            timeout=float(connect_timeout if connect_timeout is not None else 15),
+            enable_multithread=True,
+        )
         self._next_id = 0
         self._events = []
 
@@ -132,7 +128,7 @@ class _RawPage:
         request_id = self._next_id
         message = {"id": request_id, "method": method, "params": params or {}}
         self._ws.send(json.dumps(message))
-        deadline = time.monotonic() + RAW_CALL_TIMEOUT_S
+        deadline = time.monotonic() + self._call_timeout_s
         while time.monotonic() < deadline:
             self._ws.settimeout(max(0.1, min(2.0, deadline - time.monotonic())))
             try:
@@ -359,26 +355,39 @@ def _pw_strict_click(page, path, kind):
     return True
 
 
+def _open_responsive_page(targets):
+    probe_deadline = time.monotonic() + 5.0
+    last_error = None
+    for target in targets:
+        remaining = probe_deadline - time.monotonic()
+        if remaining <= 0:
+            break
+        page = None
+        try:
+            page = _RawPage(
+                target["webSocketDebuggerUrl"],
+                call_timeout=max(0.05, remaining),
+                connect_timeout=max(0.05, remaining),
+            )
+            remaining = probe_deadline - time.monotonic()
+            if remaining <= 0:
+                raise RuntimeError("raw CDP probe deadline exhausted")
+            page._call_timeout_s = remaining
+            page.evaluate("1")
+            page._call_timeout_s = RAW_CALL_TIMEOUT_S
+            return page
+        except Exception as exc:
+            last_error = exc
+            if page is not None:
+                page.close()
+    raise RuntimeError(f"no responsive exact CP2 page target ({last_error})")
+
+
 def _raw_cp2(cp2, key, cdp_base):
     """Drive CP2 through an existing page websocket when browser attach is unavailable."""
     _validate_cp2_url(cp2)
-    targets = _raw_page_targets(cdp_base)
-    if not targets:
-        raise RuntimeError("no existing Capafy page target for raw CDP fallback")
-    last_error = None
-    for target in targets:
-        try:
-            page = _RawPage(target["webSocketDebuggerUrl"])
-            page.evaluate("1")
-            break
-        except Exception as exc:
-            last_error = exc
-            try:
-                page.close()
-            except Exception:
-                pass
-    else:
-        raise RuntimeError(f"no responsive Capafy page target ({last_error})")
+    targets = _raw_page_targets(cdp_base, cp2)
+    page = _open_responsive_page(targets)
     try:
         page.call("Page.enable")
         page.call("Page.bringToFront")
