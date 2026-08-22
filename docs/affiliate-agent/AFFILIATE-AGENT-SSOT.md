@@ -7011,3 +7011,40 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   `elevenlabs-discovered-youtube-transcript-generator-en-1`. Claim-free preflight
   is READY: owned article HTTP 200, `index, follow`, exact canonical, rendered X
   weighted length 232, required disclosure, and exactly one owned URL.
+
+### 11.6 X original/quote reporting safety readback
+
+- The distribution owner supports both useful original posts and source-backed
+  quote posts. The first daily post is an original; later eligible passes select
+  originals with private `original_ratio` (initially `0.15`). The daily evaluator
+  may move it by `0.05` only after at least three measured originals and three
+  measured quotes. Affiliate placements do not enter this format experiment.
+- Gateway log readback disproved the assumption that a client timeout meant no
+  Telegram effect. Telegram accepted messages `29048`, `29049`, `29052`, and
+  `29053` in about 2.7--4.4 seconds while the caller stayed alive until its outer
+  timeout. Retrying that ambiguous result produced real duplicates. Repost commit
+  `30099e9bf` changes reporting to at-most-once: one finite
+  `openclaw message send --json` attempt, receipt only on exact `messageId`, no
+  automatic retry, and no historical backlog replay. Ambiguous outcomes are
+  journaled by body hash. Installed release is `20260822T235459-30099e9b`;
+  source/runtime CLI and digest SHA-256 values are respectively
+  `ab5800c6bcce68d7b434a843cc9fba11c07bfac2663e337fdc1ee44a645152cf`
+  and `6095524388aebad8aee9d852df20dc82dfe77797e80c05dfa9b186943fe4f0b1`.
+  The 24 historical backlog rows are quarantined evidence, not a resend queue.
+- Telegram messages and all X views, likes, clicks, and live permalinks are
+  non-money. Official PartnerStack commission rows remain zero; rolling net is
+  `NO_TRANSACTIONS` until an official transaction is replay-safely joined to an
+  exact placement.
+- Live owner run 40 proves the original path after midnight. It collected 89
+  candidates, selected `original` / `en` with `original_ratio=0.15`, passed the
+  independent critic as `supported=true`, `useful=true`, `value_type=procedure`,
+  and exact-read
+  `https://x.com/selawmqt/status/2091181024474697887`. The private strategy now
+  persists `original_ratio=0.15`. The report attempt is
+  `ambiguous_no_retry`; it has no claimed Telegram messageId and was not retried.
+- Affiliate owner run 95 then observed 78 total X actions, 5 exact Affiliate
+  placement joins, 73 unjoined audience posts, and 0 invalid rows. Its provider
+  fetch was in `COOLDOWN`; the canonical latest official lifecycle remains zero
+  pending/approved/paid/reversed, `NO_TRANSACTIONS`, and `NOT_REACHED`. Telegram
+  readback is `SEND_TIMEOUT_UNKNOWN` with no messageId. The original X post is a
+  distribution effect, not an Affiliate placement or money.

@@ -2114,3 +2114,45 @@ Run 39 did not prove the new success path because Gateway calls hit the bounded
 timeout: backlog remained 24 and no sent ledger row was written. The owner still
 exited `0` at the same-hour fence with no X effect. Preserve this as pending live
 receipt evidence; do not manually send or claim Telegram success.
+
+That interpretation is corrected by exact Gateway readback. Telegram accepted
+messages `29048`, `29049`, `29052`, and `29053` in about 2.7--4.4 seconds, but
+the Gateway caller process did not terminate before its 30-second outer timeout.
+The digest and pass retried the ambiguous success and created real duplicate
+external reports. Commit `30099e9bf` removes all Telegram retries and backlog
+replay, uses one finite `openclaw message send --json` call, receipts only an
+exact returned `messageId`, and journals ambiguous body hashes without resend.
+Installed release is `/Users/anicca/loops/releases/20260822T235459-30099e9b`;
+source/runtime hashes match at
+`ab5800c6bcce68d7b434a843cc9fba11c07bfac2663e337fdc1ee44a645152cf`
+for the pass and
+`6095524388aebad8aee9d852df20dc82dfe77797e80c05dfa9b186943fe4f0b1`
+for the digest. The existing 24 backlog rows are quarantined and must not be
+automatically or manually resent.
+
+Next atom: after local midnight, safe-kick only `ai.anicca.x-repost-pass`. Read
+the private strategy migration, exact post kind/copy/permalink, independent
+utility verdict, terminal proposal state, and a single Telegram messageId. Then
+safe-kick only `ai.anicca.affiliate-loop` and read exact placement joins plus the
+official PartnerStack transaction lifecycle. X/Telegram effects remain
+non-money; rolling net remains `NO_TRANSACTIONS` while official rows are zero.
+
+Repost owner run 40 is the first live readback of the repaired original path. It
+collected 89 candidates, selected `original` / `en` at
+`original_ratio=0.15`, and persisted that ratio into private strategy. The final
+critic returned `supported=true`, `useful=true`, `value_type=procedure`; exact X
+is `https://x.com/selawmqt/status/2091181024474697887`, sourced from
+`https://x.com/cyrilXBT/status/2091074896478847187`. The Telegram call returned
+no messageId, so it is journaled once as `ambiguous_no_retry` and was not resent.
+Backlog remains 24. Exit is `0`.
+
+Affiliate owner run 95 completed after one transient `ENOSPC` write failure; the
+filesystem recovered to about 1.1 GiB available and the same durable owner
+finished with exit `0`. It observed 78 total X actions, 5 exact Affiliate joins,
+73 unjoined audience posts, and 0 invalid rows. Revenue capture was in
+`COOLDOWN`; the canonical latest official lifecycle remains pending 0, approved
+0, paid 0, reversed 0, `NO_TRANSACTIONS`, and threshold `NOT_REACHED`. Affiliate
+Telegram is `SEND_TIMEOUT_UNKNOWN` with no messageId. Next atom: do not resend
+either ambiguous report. On the next provider-eligible owner pass, capture the
+fresh official PartnerStack report and keep growing both original and quote
+sample arms until the evaluator has at least three of each.
