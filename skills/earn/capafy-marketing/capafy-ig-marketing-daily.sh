@@ -159,7 +159,7 @@ Do not write '"$LAST_PASS_MARKER"'; the deterministic wrapper owns that heartbea
 
 EVIDENCE_DIR="$HOME/.local/state/life-manager/state/agent-runner-evidence/${INSTANCE}-ig-marketing/$(date +%s)-$$"
 printf '%s\n' "$PROMPT" | "$RUN_AGENT" \
-  --task-class tool-agent \
+  --task-class marketing-agent \
   --evidence-dir "$EVIDENCE_DIR" \
   --task-label "${INSTANCE}-ig-marketing-daily" \
   --loop capafy >>"$LOG" 2>&1

@@ -9,6 +9,7 @@ SCRIPT = Path(__file__).resolve().parents[1] / "capafy-ig-marketing-daily.sh"
 class ApprovedHyperFramesWiringTest(unittest.TestCase):
     def test_step3_uses_approved_hyperframes_and_andrew_voice(self):
         source = SCRIPT.read_text(encoding="utf-8")
+        self.assertIn("--task-class marketing-agent", source)
         self.assertIn("$LIFE_MANAGER_REPO/skills/video/hyperframes/capafy-o13-review/", source)
         self.assertIn("hyperframes@0.8.8 render", source)
         self.assertIn("edge-tts --voice en-US-AndrewNeural", source)
