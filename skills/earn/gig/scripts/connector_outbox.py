@@ -1206,10 +1206,14 @@ class ConnectorOutbox:
                       AND a.dlq_at IS NULL
                       AND i.state='superseded'
                       AND i.rejection_code='submit_rejected_sending_unavailable'
-                      AND a.revive_attempts<3
                     ORDER BY a.created_at,a.action_id"""
             ).fetchall()
-        return [dict(row) for row in rows]
+        return [
+            dict(row) for row in rows
+            if int(row["revive_attempts"]) < blocked_revive_attempt_cap(
+                str(row["rejection_code"]),
+            )
+        ]
 
     def revive_sending_available(
         self, action_id: int, *, expected_revision: int, now: int,
