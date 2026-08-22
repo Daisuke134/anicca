@@ -3,6 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="${0:A:h}"
 source "$SCRIPT_DIR/runtime-paths.sh"
+export CLOAK_LEASE_HOLDER_PID=$$
 
 RUN_ID="daily-$(date +%Y%m%d-%H%M%S)"
 EVIDENCE="$JOB_SEARCH_STATE_ROOT/evidence/$RUN_ID"

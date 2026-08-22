@@ -138,6 +138,20 @@ def _pid_alive(pid):
         return None  # inconclusive: do not reap on an ambiguous signal
 
 
+def _holder_pid():
+    """Return the durable owner of a lease, not a one-shot helper process."""
+    configured = os.environ.get("CLOAK_LEASE_HOLDER_PID")
+    if configured is None:
+        return os.getppid()
+    try:
+        pid = int(configured)
+    except ValueError as error:
+        raise ValueError("CLOAK_LEASE_HOLDER_PID must be a positive process id") from error
+    if pid <= 0 or _pid_alive(pid) is False:
+        raise ValueError("CLOAK_LEASE_HOLDER_PID must identify a live process")
+    return pid
+
+
 def _leases():
     leases_path = _leases_path()
     if os.path.exists(leases_path):
@@ -230,7 +244,7 @@ def acquire(task, url="about:blank", no_seed=False):
             # Whoever is calling acquire() right now is the current holder, even if a
             # different (now-dead) process originally created this row -- record its ppid so
             # gc's fast pid-liveness path tracks the real owner, not a crashed predecessor.
-            held["pid"] = os.getppid()
+            held["pid"] = _holder_pid()
             changed = True
             if changed:
                 leases[task] = held
@@ -261,7 +275,7 @@ def acquire(task, url="about:blank", no_seed=False):
             "cookies_seeded": len(cookies),
             "token": secrets.token_hex(16),
             "generation": 1,
-            "pid": os.getppid(),
+            "pid": _holder_pid(),
         }
         leases[task] = lease
         _save(leases)
@@ -294,7 +308,7 @@ def heartbeat(task, token=None, generation=None):
         if not _fence_matches(held, token, generation):
             return {"ok": False, "reason": "lease_fence_mismatch"}
         held["ts"] = int(time.time())
-        held["pid"] = os.getppid()  # same holder proving liveness again; keep pid current
+        held["pid"] = _holder_pid()  # same holder proving liveness again; keep pid current
         leases[task] = held
         _save(leases)
         return {
