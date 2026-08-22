@@ -31,9 +31,11 @@ verified submitted or safely resumable. A row-local failure never terminates the
 queue or becomes a reason for the hourly owner to stop before trying another
 eligible role.
 
-The minimum autonomous input is a finalized truthful resume, the candidate's
-application email address, and the private profile facts already required by the
-truth ledger. The user does not supply ATS passwords. When Workday requires an
+The minimum autonomous input is a finalized truthful resume and the candidate's
+application email address. The loop derives its initial Candidate Memory from those
+inputs and expands it from every answer and verified outcome; missing context is not
+a form-level stop or a request for routine human confirmation. The user does not
+supply ATS passwords. When Workday requires an
 account, the loop reuses the existing strong-password generator, stores the new
 tenant credential only in the machine credential SSOT, completes an exact matching
 email-verification flow through the authenticated Gmail rail, verifies a fresh
@@ -55,11 +57,11 @@ fix re-looks up each field by stable provider `id`, then `name` or label. Live
 CDP evidence also showed the source multiselect renders all options before
 filtering; the keyboard sequence now waits for the exact visible
 `data-automation-label="Job Boards"` option or fails closed. Focused regressions
-cover both stable re-lookup and exact-prompt gating. Those deterministic fixes
-are not sufficient by themselves, but Workday repair is not the next gate. The next
-implementation MUST prove the mandatory Ashby model-browser loop and one real
-confirmed Ashby application. Do not claim submission from a click, response, or
-ledger row alone.
+cover both stable re-lookup and exact-prompt gating. Those deterministic fixes are
+not sufficient by themselves. The next implementation MUST replace their form
+ownership with the mandatory model framework and close the Workday 10P live gate;
+Ashby follows in 10Q. Do not claim submission from a click, response, or ledger row
+alone.
 
 ### Universal-application architecture (target)
 
@@ -184,14 +186,18 @@ deterministic preflight runs first, then hands each eligible row to the model
 agent and retains the same row-local evidence.
 
 **Done when:** `Daisuke134/life-manager` is the only versioned source and the
-resident system can discover, qualify, tailor and submit truthful eligible
+Job Hunter is an installable open-source Life Manager skill plus resident loop. The
+resident system can discover, qualify, tailor and submit eligible
 applications on the configured recurring cadence without a product-imposed daily
 count cap; reconcile every later Gmail message; manage scheduling, assessments,
 interview preparation, follow-up, offers and final outcomes; report every material
 event at most once; heal safe operational failures; and promote or roll back only
-verified evidence-backed strategy changes without routine human prompting. Every
-submission still requires exact-job deduplication, truth-ledger answers, ATS
-evidence, a fenced intent and authoritative confirmation.
+verified evidence-backed strategy changes without routine human prompting. Its
+economic outcome gate is one accepted and started role whose authoritative gross
+base salary is at least USD 10,000 per month equivalent (USD 120,000 annualized),
+recorded as salary rather than product revenue. Every submission still requires
+exact-job deduplication, inference provenance, ATS evidence, a fenced intent and
+authoritative confirmation.
 
 ## 1. Outcome
 
@@ -212,10 +218,11 @@ The implementation order is:
 
 ```text
 Workday account + application E2E
-  → Workday repeated hourly dedupe
+  → immediate developer kickstart + Workday dedupe/continued queue
   → Ashby E2E on the same agent contract
   → Greenhouse → Lever → provider-neutral ATS
-  → inbox → interview → assessment → offer → started outcome
+  → Life Manager open-source skill/loop packaging
+  → inbox → interview → assessment → offer → USD 10K/month salary → started outcome
 ```
 
 #### Acceptance criteria
@@ -223,8 +230,8 @@ Workday account + application E2E
 1. `ai.anicca.job-search-daily` remains the only acquisition owner and wakes with
    `StartInterval=3600`; the authenticated CloakBrowser daily-driver at `:9222`
    remains the only browser owner.
-2. A finalized resume, application email, and truthful private profile are sufficient
-   input. Workday passwords are generated locally, stored only in the machine
+2. A finalized resume and application email are sufficient input. Workday passwords
+   are generated locally, stored only in the machine
    credential SSOT, never exposed to the model, and verified by a fresh sign-in.
 3. Every eligible Workday row receives one sanitized row envelope and one bounded
    `browser-lane-agent` session. No production-off model flag or deterministic form
@@ -235,16 +242,25 @@ Workday account + application E2E
 5. Account creation, email verification, login, resume upload, dynamic controls,
    validation correction, application questions, review, and final submit all remain
    inside the same row-scoped agent session and durable checkpoint lineage.
-6. Questions are answered only from the private truth ledger, resume, existing
-   confirmed answer memory, and the current job description. No default experience,
-   legal, demographic, salary, authorization, or identity value is guessed.
+6. Every visible question receives an answer. `AnswerResolver` first retrieves the
+   resume, Candidate Memory, semantic prior answers, and job context, then returns an
+   exact, derived, generated, or conservative inference. It computes experience from
+   dated work/project evidence, generates narrative answers from resume plus role,
+   estimates salary from role/location/seniority policy, uses non-disclosure choices
+   for self-identification when offered, and applies stable least-claiming defaults
+   for required logistics. Confidence and provenance are stored for consistency and
+   learning; they never create `unknown_required_field`, human-confirmation, blocked,
+   or skip behavior. Credentials, degrees, employers, and achievements are not
+   fabricated.
 7. CloakBrowser and the daily-driver session are the first CAPTCHA prevention path.
    A visible CAPTCHA invokes the existing approved solver/recovery path before submit;
    solver failure preserves the row and the owner continues another eligible role.
    Employer application-count and provider policy limits are never bypassed.
 8. A row-local browser, model, validation, credential, or provider failure never ends
-   the hourly queue. The owner checkpoints that row and continues until one verified
-   application succeeds or the ordered eligible queue is exhausted.
+   the hourly queue. The owner checkpoints recovery state and continues through the
+   ordered eligible queue until the wake's explicit time/action budget or the queue
+   is exhausted. A verified submission does not end the wake; the same run may submit
+   two, three, five, or more distinct eligible applications.
 9. `submitted` is verifier-owned and is written only after an exact completion UI or
    an authoritative receipt email bound to the company, role, and application. A
    click, HTTP response, model statement, or Ledger intent is insufficient.
@@ -262,6 +278,18 @@ Workday account + application E2E
     reconciliation, recruiter replies, interview scheduling/preparation, assessment
     fencing, offer support, and accepted/declined/started outcomes remain linked to
     the same application identity and evidence ledger.
+15. Development never waits for the next 3600-second schedule. After each immutable
+    release is activated while the owner is idle, development triggers the existing
+    owner with `launchctl kickstart -k`, watches it to exit, reads back evidence, fixes
+    the smallest root cause, and kickstarts again. It never invokes `run-daily.sh`
+    directly or creates a second executor.
+16. The Job Hunter ships inside `Daisuke134/life-manager` as an open-source skill and
+    resident loop with the same install, state, credential, release, launchd,
+    Telegram, and `summary.v2` conventions as the other Life Manager loops.
+17. The lifecycle does not stop at an application or offer. It tracks compensation,
+    negotiation, acceptance, and start evidence until one started role proves gross
+    base salary of at least USD 10,000 per month equivalent; variable compensation is
+    reported separately and is not used to pass this gate.
 
 #### As-Is / To-Be
 
@@ -270,13 +298,16 @@ Workday account + application E2E
 | Form owner | Workday/Ashby fast paths fill and may return before the optional model branch | The model agent owns every eligible form; deterministic code is safety/evidence only |
 | First provider | Ashby is specified first despite a live Rakuten Workday progression | Workday E2E closes first; Ashby reuses it second |
 | Account input | Workday has a password helper but account creation is part of a fixed path and uses a parallel store | Resume + email are sufficient; existing generator writes the machine credential SSOT and the agent verifies login |
-| New questions | Unknown fields produce an early `unknown_required_field` return | The model reads exact wording and resolves grounded facts or checkpoints only that row |
+| New questions | Unknown fields produce an early `unknown_required_field` return | Every field receives a stable exact/derived/generated/conservative inference; provenance is memory, never a stopping gate |
 | Browser perception | Fixed snapshots and selectors drive provider-specific code | Screenshot + AX/DOM + visible text are reread after every action |
 | CAPTCHA | A CAPTCHA can become a durable provider block | CloakBrowser prevents most challenges; the approved solver is bounded pre-submit recovery |
 | Queue | One provider/row failure can consume or terminate the wake | Every row is isolated; the owner continues the ordered queue |
 | Success | Click/request/Ledger progress may be overinterpreted | Only completion UI or exact official receipt transitions to `submitted` |
 | Expansion | Each ATS invites another scripted filler | One model loop; adapters contain only discovery and stable safety/evidence hints |
 | Reporting | Fast-path summary can omit the actual model outcome | Company, role, outcome, evidence class, and next action receive a Telegram ACK |
+| Development cadence | Validation waits for a natural hourly wake or bypasses launchd with a local command | The active immutable release is repeatedly exercised through the existing launchd owner's kickstart/readback cycle |
+| Product location | Job Search exists as a standalone runtime plus later Career surface | Job Hunter is an open-source Life Manager skill and resident loop using the common lifecycle contracts |
+| Economic outcome | Pipeline health ends at application/offer/start counts | The final outcome gate is authoritative started employment at USD 10,000/month gross base salary equivalent |
 
 #### Test matrix
 
@@ -292,13 +323,17 @@ accepted as a substitute for the framework.
 | 3 | No production-off model path | `test_daily_owner_has_no_optional_model_exit` | OK |
 | 4 | Row envelope excludes credentials and terminal retries | `test_model_row_envelope_redacts_secrets_and_fences_terminal_states` | OK |
 | 5 | Existing password generator stores only through credential SSOT | `test_workday_signup_uses_machine_credential_ssot` | OK |
-| 6 | Dynamic question uses grounded fact or resumable row checkpoint | `test_unknown_question_never_uses_default_answer` | OK |
+| 6 | Every dynamic question produces one stable inferred answer | `test_every_question_returns_stable_answer_with_provenance` | OK |
 | 7 | CAPTCHA recovery stays pre-submit and row-local | `test_captcha_recovery_never_crosses_submit_fence` | OK |
 | 8 | Agent failure continues the queue | `test_model_row_failure_continues_queue` | OK |
 | 9 | Ambiguous submit is non-retryable | `test_submit_unknown_is_never_retried` | OK |
 | 10 | Submitted requires completion or receipt | `test_submitted_requires_authoritative_evidence` | OK |
 | 11 | Telegram contains company, role, and exact outcome | `test_hourly_company_role_report_contract` | OK |
 | 12 | Workday contract ports unchanged to Ashby | `test_ashby_reuses_model_row_contract` | OK |
+| 13 | Submission does not stop a wake with remaining eligible rows | `test_verified_submission_continues_same_wake_queue` | OK |
+| 14 | Development uses only launchd kickstart/readback | `test_development_trigger_reuses_existing_owner` | OK |
+| 15 | Life Manager skill/install owns the Job Hunter loop | `test_job_hunter_skill_installs_canonical_resident_loop` | OK |
+| 16 | Started salary gate uses authoritative gross base compensation | `test_salary_goal_requires_started_10k_month_base_evidence` | OK |
 
 | E2E item | Value |
 |---|---|
@@ -311,16 +346,20 @@ accepted as a substitute for the framework.
   first-class Job Hunter browser-agent framework is built inside the canonical runtime
   and reuses the existing owner, runner, CDP transport, credential helper, Ledger,
   Gmail rail, and Telegram transport.
-- No candidate fact is invented. CAPTCHA solver use does not authorize bypassing an
-  employer application-count limit, geographic restriction, or provider policy.
+- No credential, degree, employer, job title, achievement, or receipt is invented.
+  Missing application answers use stable evidence-derived or least-claiming inference
+  and never become a human-wait state. CAPTCHA solver use does not authorize
+  bypassing an employer application-count limit, geographic restriction, or provider
+  policy.
 - `submit_unknown`, Salesforce JR355047, and any other terminal URL are never
   resubmitted.
 - Credentials, email codes, cookies, raw profile values, and resume contents never
   enter a row envelope, evidence JSON, model transcript, Telegram, or repository.
-- The hourly objective is one verified application when an eligible, permitted role
-  exists. When the queue is exhausted without one, the loop reports every exact
-  reason and resumes from durable checkpoints on the next wake; it never fabricates
-  a success.
+- The hourly floor is one verified application when an eligible, permitted role
+  exists; there is no one-per-wake or daily ceiling. The owner continues after each
+  success until its explicit wake budget or queue is exhausted. During development,
+  repeated launchd kickstarts replace waiting for the clock; they do not bypass the
+  canonical owner or duplicate an external effect.
 
 #### Atomic execution steps
 
@@ -330,10 +369,10 @@ This is the remaining implementation-order SSOT. Only the first
 | Order | Atomic TODO | State | Evidence needed to close |
 |---:|---|---|---|
 | 1 | Preserve the one hourly owner and CloakBrowser CDP `:9222` | `done` | Launchd interval 3600, owner idle/healthy, CDP responds, no second executor |
-| 2 | Read and compare fixed-commit browser-agent OSS before architecture changes | `done` | Browser Use, Skyvern, Stagehand, job-apply-plugin, and AIHawk code findings recorded |
+| 2 | Read and compare fixed-commit browser-agent/job-lifecycle OSS before architecture changes | `done` | Browser Use, Skyvern, Stagehand, job-apply-plugin, AIHawk, career-ops `421d93e`, and ai-job-search `ab91c60` code findings recorded |
 | 3 | Make Workday-first and the OSS-code-first rule the current spec/memory SSOT | `done` | This section and `MEMORY.md` contain one non-contradictory order |
 | 4 | Trace the existing daily owner, Workday helper, runner, credential helper, Ledger, and Gmail call graph | `pending_actionable` | Exact reused entrypoints, replaceable fast-path boundaries, and framework integration seams are named |
-| 5 | Freeze fixed-commit OSS source lineage and license boundaries | `pending_after_4` | Browser Use/Stagehand MIT reuse candidates, Skyvern AGPL pattern-only boundary, and rejected AIHawk defaults are recorded |
+| 5 | Freeze fixed-commit OSS source lineage and license boundaries | `pending_after_4` | MIT reuse from Browser Use, Stagehand, career-ops, and ai-job-search; Skyvern AGPL pattern-only boundary; rejected human-stop/default-answer patterns recorded |
 | 6 | Define the Job Hunter browser-agent framework package and public contracts | `pending_after_5` | Orchestrator, session, observation, action, answer, checkpoint, verifier, and provider-hint interfaces are versioned |
 | 7 | Define one provider-neutral sanitized row-envelope and row-run state schema | `pending_after_6` | Schema requires identity/evidence pointers and rejects secrets, raw answers, and terminal retries |
 | 8 | Add framework contract tests and recorded real-shape replays | `pending_after_7` | Observation/action/recovery/checkpoint/verifier contracts fail against the current fast-path architecture |
@@ -346,44 +385,52 @@ This is the remaining implementation-order SSOT. Only the first
 | 15 | Implement the typed `ActionExecutor` | `pending_after_14` | Only visible navigate/click/type/select/upload/scroll/wait actions are available; hidden/forced actions are impossible |
 | 16 | Implement Luna xhigh `AgentPolicy` and multi-step reasoning loop | `pending_after_15` | The model chooses the next action from current observation, row goal, facts, and history until a framework transition |
 | 17 | Implement `CheckpointStore` and per-action `EvidenceStore` | `pending_after_16` | Ordered redacted before/action/after receipts survive process death and CDP reconnect |
-| 18 | Implement `AnswerResolver` with provenance | `pending_after_17` | Resume/profile/confirmed memory/job text answer known questions; no default or guessed fact exists |
-| 19 | Reuse the Workday password generator through the machine credential SSOT | `pending_after_18` | Per-tenant strong password is atomic, 0700/0600, and has no parallel secret copy |
-| 20 | Implement model-owned Workday create-account/sign-in flow | `pending_after_19` | Resume + application email create/reuse an account without a user-supplied password |
-| 21 | Implement exact Gmail account-verification tool | `pending_after_20` | Recent sender/domain/purpose-bound code or link is consumed once without model/log exposure |
-| 22 | Verify a fresh Workday sign-in from stored credentials | `pending_after_21` | A new isolated browser context reaches the authenticated application surface and refreshes the vault |
-| 23 | Feed rendered validation errors back into the next model step | `pending_after_22` | Provider error text causes observation/reasoning/correction instead of `unknown_required_field` return |
-| 24 | Handle dropdowns, radios, dates, uploads, modals, and reordered controls semantically | `pending_after_23` | No stale index identity survives; current label/role/stable ID is always resolved again |
-| 25 | Add CloakBrowser-first CAPTCHA prevention and typed approved solver recovery | `pending_after_24` | Challenge recovery is evidenced before submit; bounded failure checkpoints only that row |
-| 26 | Verify resume upload and parsed profile fields | `pending_after_25` | Visible filename/hash and corrected parsed values match routed material |
-| 27 | Resume the same row after every meaningful page transition | `pending_after_26` | A killed pre-submit run resumes company/role/step without replaying completed effects |
-| 28 | Continue the Workday queue after any row-local failure | `pending_after_27` | A failing first row still invokes the next eligible row in the same wake |
-| 29 | Recheck exact application identity at final review | `pending_after_28` | Company, role, canonical URL, resume hash, row ID, and fresh observation agree |
-| 30 | Acquire the existing one-shot `SubmissionFence` | `pending_after_29` | Concurrent, expired, stale, mismatched, and terminal claims cannot activate Submit |
-| 31 | Click the one visible final Submit control once | `pending_after_30` | Action receipt binds the click to the fresh fence and review observation |
-| 32 | Implement independent rendered completion verification | `pending_after_31` | Fresh UI proves completion or returns non-submitted/unknown; click/HTTP cannot pass |
-| 33 | Reconcile an exact authoritative Gmail receipt | `pending_after_32` | Sender, recipient, company, role/job identity, and time window bind to the row |
-| 34 | Write Ledger terminal state only from verifier evidence | `pending_after_33` | `submitted` has completion/receipt hash; `submit_unknown` is permanently retry-fenced |
-| 35 | Emit per-company/role Telegram outcomes and hourly summary | `pending_after_34` | Real message IDs include outcome/evidence class and omit credentials/private answers |
-| 36 | Close framework contract/replay/regression verification | `pending_after_35` | Framework contracts, real-shape replays, shell syntax, PII scan, and existing relevant checks pass |
-| 37 | Build a commit-pinned immutable release | `pending_after_36` | Archive checksum passes; release roots are versioned and read-only |
-| 38 | Activate only while the hourly owner is idle | `pending_after_37` | `current` points to the new release; old release remains a verified rollback target |
-| 39 | Kickstart the existing launchd owner | `pending_after_38` | The real owner—not a local substitute—creates the live framework evidence bundle |
-| 40 | Resume Rakuten and prove Workday step 2 | `pending_after_39` | Visible step-2 controls plus ordered model/evidence receipts; no submit claim yet |
-| 41 | Complete one real Workday application authoritatively | `pending_after_40` | Completion UI or exact Gmail receipt, Ledger agreement, and Telegram ACK |
-| 42 | Verify the next hourly Workday wake | `pending_after_41` | Exact URL is deduped and another eligible role is attempted without duplicate effect |
-| 43 | Close `JOB-WORKDAY-E2E-MODEL-10P` | `pending_after_42` | Account→application→receipt and repeated-wake evidence all agree |
-| 44 | Unpark Ashby as `JOB-ASHBY-E2E-MODEL-10Q` | `pending_after_43` | Same framework contracts are reused; only provider hints are added |
-| 45 | Complete one real Ashby application authoritatively | `pending_after_44` | Completion UI or exact receipt, Ledger agreement, Telegram ACK, and next-wake dedupe |
-| 46 | Add Greenhouse as `JOB-GREENHOUSE-E2E-MODEL-10R` | `pending_after_45` | Provider hints only; one live authoritative outcome closes |
-| 47 | Add Lever as `JOB-LEVER-E2E-MODEL-10S` | `pending_after_46` | Same framework and one live authoritative outcome close |
-| 48 | Add provider-neutral ATS fallback as `JOB-GENERIC-ATS-MODEL-10T` | `pending_after_47` | Unknown supported form completes without a new scripted mapper |
-| 49 | Prove resume+email-only onboarding across fresh ATS accounts | `pending_after_48` | Password, verification, fresh login, application, receipt, and redaction agree |
-| 50 | Close inbox and recruiter-response lineage | `pending_after_49` | Every authoritative reply maps to one application and one truthful next action |
-| 51 | Close interview scheduling and preparation lineage | `pending_after_50` | Exact thread/timezone/calendar evidence and Telegram reminders agree |
-| 52 | Close assessment/take-home lineage | `pending_after_51` | Rules, deadline, allowed automation, artifacts, and final-action fence are durable |
-| 53 | Close offer and employment lifecycle | `pending_after_52` | Offered/negotiating/accepted/declined/started have authoritative evidence and human-only final judgment boundaries |
-| 54 | Reconcile summary, Ledger, Gmail, Calendar, evidence, and Telegram | `pending_after_53` | Rebuilt projections and all external receipts agree with no orphan/duplicate effects |
-| 55 | Complete the recurring soak and end-to-end release gate | `pending_after_54` | Scheduled hourly applications and follow-through remain healthy without manual password or routine browser intervention |
+| 18 | Build Candidate Memory from resume plus application email | `pending_after_17` | Identity, dated experience, skills, projects, preferences, and derived concepts are addressable without another onboarding interview |
+| 19 | Implement semantic Answer Memory | `pending_after_18` | Equivalent questions reuse one stable concept answer across wording/provider changes and preserve revisions/provenance |
+| 20 | Implement the always-answer `AnswerResolver` | `pending_after_19` | Every field returns exact/derived/generated/conservative output; no missing-context, confirmation, blocked, or skip transition exists |
+| 21 | Define stable inference policies for common required questions | `pending_after_20` | Experience math, narratives, salary, availability, relocation, sponsorship/logistics, EEO non-disclosure, and option mapping are deterministic and consistent |
+| 22 | Reuse the Workday password generator through the machine credential SSOT | `pending_after_21` | Per-tenant strong password is atomic, 0700/0600, and has no parallel secret copy |
+| 23 | Implement model-owned Workday create-account/sign-in flow | `pending_after_22` | Resume + application email create/reuse an account without a user-supplied password |
+| 24 | Implement exact Gmail account-verification tool | `pending_after_23` | Recent sender/domain/purpose-bound code or link is consumed once without model/log exposure |
+| 25 | Verify a fresh Workday sign-in from stored credentials | `pending_after_24` | A new isolated browser context reaches the authenticated application surface and refreshes the credential receipt |
+| 26 | Feed rendered validation errors back into the next model step | `pending_after_25` | Provider error text causes observation/reasoning/correction; no `unknown_required_field` return exists |
+| 27 | Handle dropdowns, radios, dates, uploads, modals, and reordered controls semantically | `pending_after_26` | No stale index identity survives; current label/role/stable ID is always resolved again |
+| 28 | Add CloakBrowser-first CAPTCHA prevention and typed approved solver recovery | `pending_after_27` | Challenge recovery is evidenced before submit; bounded recovery moves the row cursor but never stops the queue |
+| 29 | Verify resume upload and parsed profile fields | `pending_after_28` | Visible filename/hash and corrected parsed values match routed material |
+| 30 | Resume the same row after every meaningful page transition | `pending_after_29` | A killed pre-submit run resumes company/role/step without replaying completed effects |
+| 31 | Continue the Workday queue after any row-local recovery | `pending_after_30` | A failing first row still invokes the next eligible row in the same wake |
+| 32 | Continue after every verified submission until the wake budget ends | `pending_after_31` | A first successful application does not suppress second/third/fifth eligible rows; no daily count cap exists |
+| 33 | Recheck exact application identity at final review | `pending_after_32` | Company, role, canonical URL, resume hash, row ID, and fresh observation agree |
+| 34 | Acquire the existing one-shot `SubmissionFence` | `pending_after_33` | Concurrent, expired, stale, mismatched, and terminal claims cannot activate Submit |
+| 35 | Click the one visible final Submit control once | `pending_after_34` | Action receipt binds the click to the fresh fence and review observation |
+| 36 | Implement independent rendered completion verification | `pending_after_35` | Fresh UI proves completion or returns non-submitted/unknown; click/HTTP cannot pass |
+| 37 | Reconcile an exact authoritative Gmail receipt | `pending_after_36` | Sender, recipient, company, role/job identity, and time window bind to the row |
+| 38 | Write Ledger terminal state only from verifier evidence | `pending_after_37` | `submitted` has completion/receipt hash; `submit_unknown` is permanently retry-fenced |
+| 39 | Emit per-company/role Telegram outcomes and hourly summary | `pending_after_38` | Real message IDs include outcome/evidence class and omit credentials/private answers |
+| 40 | Implement the development kickstart/readback controller | `pending_after_39` | It waits for owner idle, activates one release, kickstarts existing launchd, watches exit, and returns exact evidence paths without direct-script execution |
+| 41 | Close focused framework verification | `pending_after_40` | Contract replays, shell syntax, PII scan, duplicate-effect guards, and existing relevant checks pass; no broad test detour |
+| 42 | Build a commit-pinned immutable release | `pending_after_41` | Archive checksum passes; release roots are versioned and read-only |
+| 43 | Activate only while the hourly owner is idle | `pending_after_42` | `current` points to the new release; old release remains a verified rollback target |
+| 44 | Kickstart and watch the existing launchd owner | `pending_after_43` | The real owner—not a local substitute—creates the live framework evidence bundle and exits cleanly |
+| 45 | Resume Rakuten and prove Workday step 2 | `pending_after_44` | Visible step-2 controls plus ordered model/evidence receipts; no submit claim yet |
+| 46 | Complete one real Workday application authoritatively | `pending_after_45` | Completion UI or exact Gmail receipt, Ledger agreement, and Telegram ACK |
+| 47 | Kickstart immediately again to prove dedupe and continued queue | `pending_after_46` | Submitted URL is not repeated and the same run attempts remaining eligible Workday rows without waiting an hour |
+| 48 | Close `JOB-WORKDAY-E2E-MODEL-10P` | `pending_after_47` | Account→application→receipt, multi-row wake, and repeated-kickstart evidence all agree |
+| 49 | Unpark Ashby as `JOB-ASHBY-E2E-MODEL-10Q` | `pending_after_48` | Same framework contracts are reused; only provider hints are added |
+| 50 | Complete one real Ashby application authoritatively | `pending_after_49` | Completion UI or exact receipt, Ledger agreement, Telegram ACK, and kickstart dedupe |
+| 51 | Add Greenhouse as `JOB-GREENHOUSE-E2E-MODEL-10R` | `pending_after_50` | Provider hints only; one live authoritative outcome closes |
+| 52 | Add Lever as `JOB-LEVER-E2E-MODEL-10S` | `pending_after_51` | Same framework and one live authoritative outcome close |
+| 53 | Add provider-neutral ATS fallback as `JOB-GENERIC-ATS-MODEL-10T` | `pending_after_52` | Unknown supported form completes without a new scripted mapper |
+| 54 | Prove resume+email-only onboarding across fresh ATS accounts | `pending_after_53` | Password, verification, fresh login, inferred answers, application, receipt, and redaction agree |
+| 55 | Package Job Hunter as a canonical Life Manager skill and resident loop | `pending_after_54` | Skill invokes the existing owner/control surface; install owns launchd/release/state/summary contracts and no standalone fork |
+| 56 | Prove the open-source clean-home install and update path | `pending_after_55` | Public artifact installs without private data, configures resume/email locally, survives upgrade, and produces the same verified loop semantics |
+| 57 | Close inbox and recruiter-response lineage | `pending_after_56` | Every authoritative reply maps to one application and one consistent next action |
+| 58 | Close interview scheduling and preparation lineage | `pending_after_57` | Exact thread/timezone/calendar evidence, generated preparation, and Telegram reminders agree |
+| 59 | Close assessment/take-home lineage | `pending_after_58` | Rules, deadline, permitted assistance, artifacts, and final-action fence are durable |
+| 60 | Close offer, negotiation, acceptance, and start lineage | `pending_after_59` | Authoritative offer/compensation and accepted/declined/started evidence remain bound to the application |
+| 61 | Prove the USD 10,000/month salary outcome | `pending_after_60` | A started role has authoritative gross base salary of at least USD 10,000 monthly equivalent; FX source/date and annualization are recorded; bonus/equity remain separate |
+| 62 | Reconcile `summary.v2`, Ledger, Gmail, Calendar, evidence, Telegram, and salary outcome | `pending_after_61` | Rebuilt projections and all external receipts agree with no orphan/duplicate effects |
+| 63 | Complete the recurring end-to-end soak and release gate | `pending_after_62` | Scheduled and kickstarted applications plus follow-through remain healthy without manual password, missing-context waits, or routine browser intervention |
 
 Execution and verification commands:
 
@@ -422,23 +469,35 @@ launchd (hourly)
       → Luna xhigh policy: reason over goal, facts, history, and current observation
       → ActionExecutor: ordinary visible action(s)
       → EvidenceStore: post-action snapshot + redacted action receipt
-      → repeat until review, resumable row failure, or authoritative completion
+      → repeat until review, recovery checkpoint, or authoritative completion
       → CompletionVerifier owns submitted/not-submitted/unknown classification
-  → continue queue until one verified submission or exhaustion
+  → continue after every submission until wake budget or queue exhaustion
   → Ledger/Gmail/Telegram reconciliation + durable hourly checkpoint
 ```
 
 | Failure class | Required loop behavior |
 |---|---|
-| No candidate in current cache | Refresh configured official company/ATS sources in current provider order, then report exact zero-work evidence; never invent a job |
+| No candidate in current cache | Refresh configured official company/ATS sources in current provider order and continue discovery until the wake budget ends; report the sources checked without creating a run-level `no_work` terminal |
 | Browser/CDP unavailable | `BrowserSession` reconnects to the existing daily-driver owner; no Ledger claim or second browser is created |
 | Provider policy visible | Record the exact policy and quarantine the row; never bypass application limits or repeat it on every wake |
 | CAPTCHA visible | Preserve the same row and run CloakBrowser/approved solver recovery before submit; on bounded failure checkpoint the row and continue the queue |
-| Required form fact unknown | Store the exact non-secret question keyed to profile/material revisions; continue another candidate rather than guessing |
+| Previously unseen required question | `AnswerResolver` returns an exact, derived, generated, or conservative inference, stores semantic answer memory/provenance, fills it, and continues; missing context never stops the row |
 | Model/schema/action error | Persist the failed step and current observation; retry within the row budget or checkpoint the row, then continue the queue |
+| Verified submission with queue remaining | Persist and report the submission, release its row resources, and immediately open the next eligible row in the same wake |
 | Submit click without authoritative confirmation | Record `submit_unknown`; never click it again; inbox/ATS reconciliation owns later confirmation |
 | Telegram transport outcome unknown | Keep `send_started` and never blind-resend; the next reconciliation checks the existing delivery receipt |
 | Framework invariant | Mandatory for every eligible form, including recognized fast-path surfaces; deterministic output is context, never permission to skip agent ownership |
+
+Development uses the production control plane rather than waiting for wall clock time:
+
+```text
+edit → focused verification → immutable release → wait until launchd owner is idle
+→ activate → launchctl kickstart -k existing owner → watch exit/read evidence
+→ reconcile Ledger/Gmail/Telegram → smallest root-cause fix → kickstart again
+```
+
+Direct execution of `run-daily.sh`, a second executor, or a second browser owner is
+not a valid development shortcut.
 
 ### 1.2 Job Hunter browser-agent framework contract
 
@@ -456,7 +515,7 @@ terminate or bypass the model loop.
 | `ObservationBuilder` | Fresh screenshot, accessibility/DOM tree, visible text, URL, tabs, validation state | Deciding answers or actions |
 | `AgentPolicy` | Luna xhigh goal reasoning and next-action selection from current observation/history | Credentials, final submitted transition |
 | `ActionExecutor` | Typed visible actions: navigate, click, type, select, upload, scroll, wait | Hidden DOM dispatch, forced clicks, submit retries |
-| `AnswerResolver` | Retrieve grounded facts and generate supported prose with provenance | Default or inferred candidate facts |
+| `AnswerResolver` | Return an exact, derived, generated, or conservative answer for every field and persist semantic provenance | Credentials, fabricated qualifications, or a missing-context stop |
 | `CheckpointStore` | Durable row state, step receipts, screenshot hashes, resume/reconnect cursor | Raw secrets or duplicated profile values |
 | `SubmissionFence` | Atomic exact-identity permission for one final action | Deciding whether submission succeeded |
 | `CompletionVerifier` | Fresh post-action UI and authoritative Gmail receipt evaluation | Trusting model prose, click, HTTP, or Ledger intent |
@@ -475,18 +534,23 @@ The design is grounded in fixed source commits, not article summaries:
 | [Stagehand observation](https://github.com/browserbase/stagehand/blob/a21633d53930abc5d62b8dbd6b608995f2ccb4b1/packages/extension/services/observeService.ts#L76-L140) | Accessibility snapshot plus model-selected semantic action resolved to a current element | Do not cache stale selectors across rerenders |
 | [Stagehand two-step self-heal](https://github.com/browserbase/stagehand/blob/a21633d53930abc5d62b8dbd6b608995f2ccb4b1/packages/extension/services/actService.ts#L140-L228) | Capture a changed tree after action and re-infer follow-up | Every Job Hunter step also persists evidence and checks submit fence |
 | [Job Apply Workday flow](https://github.com/neonwatty/job-apply-plugin/blob/081a5d9d793da29111e2d5331767021718f1d8b5/skills/job-apply/SKILL.md#L231-L250) | Read the visible form structure on each Workday page | Replace its human-submit boundary with the existing authorized fence/verifier |
-| [AIHawk numeric fallback](https://github.com/feder-cr/Jobs_Applier_AI_Agent_AIHawk/blob/79155b52faccfbd19b834680af285eac70dd2df4/src/libs/llm_manager.py#L610-L637) | Rejected: failed parsing falls back to a default experience value | Job Hunter never guesses a candidate fact |
+| [career-ops drive loop](https://github.com/santifer/career-ops/blob/421d93e2bb32d2220242feac6d5069ff20e2e7f9/web/src/lib/apply/drive.ts#L10-L20) | Ref-tagged observation, one model action, execution, screenshot, and re-observation | MIT pattern/code candidate; remove optional-model, turn-budget `stuck`, memory-only session, and human-submit boundaries |
+| [career-ops Workday and answer handling](https://github.com/santifer/career-ops/blob/421d93e2bb32d2220242feac6d5069ff20e2e7f9/modes/apply.md#L142-L177) | Generate new answers from report/CV; type real Workday keystrokes and verify selections | Replace candidate-confirmation branches with stable inference and authoritative post-submit verification |
+| [ai-job-search application fields](https://github.com/MadsLorentzen/ai-job-search/blob/ab91c60cc47147d9416f0af758fb5e2d109956ce/.claude/skills/job-application-assistant/08-application-forms.md#L11-L25) | Candidate-profile/CV grounding, role-specific prose, limits, and reusable field artifacts | MIT pattern/code candidate; replace optional artifact and human copy/paste with mandatory live agent operation |
+| [ai-job-search Gmail lifecycle](https://github.com/MadsLorentzen/ai-job-search/blob/ab91c60cc47147d9416f0af758fb5e2d109956ce/.claude/commands/gmail-sync.md#L63-L75) | Full-message classification for acknowledgement, assessment, interview, offer, and rejection | Remove routine approval waits; authoritative evidence updates the bound application idempotently |
+| [AIHawk numeric fallback](https://github.com/feder-cr/Jobs_Applier_AI_Agent_AIHawk/blob/79155b52faccfbd19b834680af285eac70dd2df4/src/libs/llm_manager.py#L610-L637) | Rejected: failed parsing falls back to one ungrounded fixed experience value | Job Hunter derives role-relevant experience from dated evidence and semantic similarity, then stores the inference; it never uses an arbitrary constant |
 
 #### Row state machine
 
 ```text
-queued → opening → authenticating → observing ↔ acting
+queued → opening → authenticating → observing ↔ acting ↔ recovering
   → reviewing → submit_claimed → verifying
-  → submitted | submit_unknown | resumable
+  → submitted | submit_unknown
 ```
 
-`resumable` is an internal framework state, not a run-level terminal result. The
-hourly owner checkpoints it and immediately continues another eligible row. Only
+`recovering` is a checkpointed cursor, not a result or run-level terminal state. The
+hourly owner can continue another eligible row and revisit the cursor inside the
+same or a later wake. Only
 `submitted` and `submit_unknown` are terminal side-effect states; exact URL dedupe
 also excludes manually completed or rejected applications.
 
@@ -498,7 +562,9 @@ The agent must satisfy all of these rules:
    keyboard input, scrolling, uploads, and condition waits; no hidden DOM dispatch or
    forced click is available to the model.
 3. Questions are never assumed identical across employers. The model reads exact
-   wording and controls, then requests grounded values from `AnswerResolver`.
+   wording and controls, maps them to semantic concepts, and `AnswerResolver` always
+   returns an exact, derived, generated, or conservative inference. It persists the
+   answer and provenance so future wording changes reuse a consistent decision.
 4. Account secrets and email verification values are injected only by deterministic
    secret tools at the action boundary and are never model inputs or evidence fields.
 5. Every action writes a sanitized before/action/after receipt. Checkpoints allow a
@@ -513,8 +579,9 @@ The agent must satisfy all of these rules:
 8. `submitted` is verifier-owned. The verifier accepts only an explicit completion UI
    bound to the row or an exact authoritative email; model prose, click, HTTP status,
    intent, and Ledger state are never sufficient.
-9. The outer owner catches every row exception, persists the checkpoint/outcome,
-   reports company and role, and continues the ordered queue.
+9. The outer owner catches every row exception, persists the recovery cursor/outcome,
+   reports company and role, and continues the ordered queue. A verified submission
+   also returns to the queue; it does not end the wake.
 
 Runtime routing is explicit: `browser-lane-agent` is the sole task class and uses
 GPT-5.6 Luna at `xhigh` effort. One model route, the existing runner, hourly owner,
@@ -1694,17 +1761,17 @@ closed loop to pass real E2E verification, not merely unit tests or a polished U
 | Failure | Behavior |
 |---|---|
 | Browser busy | Defer with exit 75; do not start a second browser owner |
-| CAPTCHA/manual identity challenge | Preserve intent and mark blocked; report exact URL |
+| CAPTCHA/identity challenge | Reuse CloakBrowser and the approved typed recovery action; checkpoint the row cursor and continue the queue if bounded recovery is not yet complete |
 | Unknown submit result | Mark `submit_unknown`; no retry until authoritative reconciliation |
 | Gmail/Calendar transient error | Retry the read or idempotent write with bounded backoff |
-| Invalid model JSON | Fail closed and retain raw evidence |
-| Daily model budget already exhausted | Retain the runner's `budget_blocked` summary and complete the scheduler pass with exit zero; do not report an application |
-| Missing profile fact | Do not use a missing experience-year fact as a discovery filter; block only a submission whose mandatory field cannot be answered truthfully, and never infer |
+| Invalid model JSON | Retain the observation, request schema repair, retry within the row budget, then checkpoint recovery and continue the queue |
+| Model budget pressure | Reserve an explicit wake budget before opening rows and continue until that budget ends; there is no daily-budget terminal or deterministic non-model fallback |
+| Missing profile context | Compute or generate the stable least-claiming inference, persist semantic answer memory/provenance, fill it, and continue |
 | Telegram uncertainty | Keep `delivery_unknown`; never blind-send duplicate |
 | Firecrawl/provider outage | Continue through every configured public provider, then official company/ATS pages in the existing browser |
 | Browser library unavailable | Use another installed Playwright transport against the same CDP owner; never launch a second browser |
 | Same-day recovery changes the result | Send one content-addressed daily correction; identical results remain at-most-once |
-| No qualifying jobs | Honest zero report with rejected reasons and next discovery expansion |
+| No qualifying jobs yet | Expand configured official-company/ATS discovery until the wake budget ends, then report every source and rejection reason without creating a durable `no_work` terminal |
 
 ## 10. Security and privacy
 
@@ -1715,42 +1782,47 @@ closed loop to pass real E2E verification, not merely unit tests or a polished U
   execute commands, request secrets, or redefine the task.
 - Credentials remain in existing authenticated transports (`gh`, `gog`,
   CloakBrowser); no token is copied into the repository.
-- Public application artifacts include only claims explicitly approved in the truth
-  ledger.
+- Public application artifacts include resume-supported claims and stable recorded
+  inferences; credentials, degrees, employers, job titles, achievements, and receipts
+  are never fabricated.
 
 ## 11. Delivery phases
 
 | Phase | Included |
 |---|---|
-| 1 — local closed loop | acquisition, follow-through, learning and guardian drivers; full outcome attribution; Telegram; verified `summary.v2` |
+| 1 — open-source Life Manager Job Hunter loop | installable skill plus resident acquisition, follow-through, learning and guardian drivers; full outcome attribution; Telegram; verified `summary.v2` |
 | 2 — local Life Manager Career | consume `summary.v2`, show timeline/decisions/learning/health and expose pause/resume/goal controls without browser ownership |
 | 3 — paid cloud | tenant-isolated managed drivers, encrypted state/materials, scoped OAuth, budgets, export and revocation |
 | 4 — whole-life coordination | evidence-backed Career inputs to Financial, Physical and Mental planning with separate consent boundaries |
 
-Phase 1 is the current implementation scope. Acquisition and follow-through are
-live; learning, guardian, lifecycle closure and `summary.v2` are the remaining local
-work. Phase 2 starts only after the local closed-loop verification gates pass. Career
+Phase 1 is the current implementation scope and includes the Job Hunter skill,
+clean-home open-source installation, resident launchd loop, and salary-outcome
+ledger. Acquisition and follow-through are live; model-owned application, guardian,
+lifecycle closure, skill packaging, salary closure and `summary.v2` are the remaining
+local work. Phase 2 starts only after these local verification gates pass. Career
 is a coordinating Life Manager surface, not permission to merge private health and
 employment evidence into one unrestricted data pool.
 
 ### 11.1 Ordered expansion backlog
 
 This table is the dependency-order SSOT. Execution proceeds from the first
-non-completed row whose prerequisites are currently actionable. A
-`waiting_private_input` or `implemented_waiting_external_e2e` row remains ordered,
-but it does not block independent engineering or evidence collection. Two pointers
+non-completed row whose prerequisites are currently actionable. An
+`implemented_waiting_external_e2e` row remains ordered, but it does not block
+independent engineering, repeated development kickstarts, or evidence collection. Two pointers
 exist so the resident loop never waits for development and development never waits
 for a naturally arriving email:
 
 - Runtime evidence pointer: 10P implements the shared browser-agent framework and
-  continues hourly until one truthful confirmed Workday submission and one
-  repeated-wake dedupe receipt exist. Ashby adopts the framework in 10Q.
+  continues through every eligible row in each hourly or development-kickstarted
+  wake. It closes with an authoritative Workday submission, same-wake continuation,
+  and immediate repeated-kickstart dedupe receipt. Ashby adopts the framework in 10Q.
 - Engineering pointer: `JOB-LEDGER-EVENT-10N` and the hourly scheduler policy are
   present. The next implementation increment is `JOB-WORKDAY-E2E-MODEL-10P` in
   section 1.0; guardian work follows only after the provider rollout gate closes.
 
-Orders 8 and 9, plus 10L's naturally occurring same-thread follow-up proof, wait for
-their respective private fact or external message.
+Order 8's former private-fact wait is superseded by the 10P inference contract.
+Order 9 and 10L's naturally occurring same-thread follow-up proof still require a
+real external message, but do not block development or live acquisition.
 
 The 2026-07-30 status refresh separates work that can proceed now from evidence that
 must accumulate in the live loop:
@@ -1759,31 +1831,31 @@ must accumulate in the live loop:
 |---|---|---|
 | Engineering now | 11C and 10N are complete; hourly owner and provider discovery are live; model fallback remains production-off | Build the full framework in section 1.0, replace fast-path ownership, and close Workday release/live gates |
 | Resident runtime | `Aqua`/manager PID `1` is healthy; installed acquisition owner reports `StartInterval=3600`, last exit `0`; active release is `96f49a0ff5ba29557f5725dd2bc55c8750facc1d` | Obtain one authoritative Workday submission, per-row Telegram proof, and next-wake dedupe before enabling Ashby forms |
-| Private/external wait | No verified nationality/work-visa facts, real interview email, or naturally occurring later same-thread recruiting message has arrived | Close Order 8, Order 9 and the 10L E2E gate only when their authoritative input exists; none blocks 11B engineering |
+| External evidence wait | No real interview email or naturally occurring later same-thread recruiting message has arrived | Order 9 and the 10L E2E gate close only on authoritative external messages; no profile-context wait blocks application engineering |
 
 | Order | Deliverable | Status | Completion evidence |
 |---:|---|---|---|
 | 0 | `JOB-CANONICAL-MERGE-1`: make Life Manager the only versioned source and preserve the live local loop | `completed` | PR #1273; 114 job-loop + 7 runner tests; all five CI checks passed in run `30444708546`; both canonical LaunchAgents last exit 0; 08:30 JST/900s schedules; three SQLite integrity checks `ok`; application and Telegram counts unchanged through cutover |
 | 1 | Technical-business resume bundle | `completed` | 53 tests; private A4 one-page PDF; ATS extraction and visual inspection; role-based resume routing |
-| 2 | Role-specific application messages for Product, GTM, Partnerships and Customer Success | `completed` | Four strict templates; real-profile generation; fact/source validation; 59 tests |
 | 3 | Recruiter question auto-reply | `completed` | 68 tests; approved-answer and fail-closed policy; at-most-once outbox; real two-message same-thread Gmail round trip with private evidence |
 | 4 | Interview slot selection and confirmation | `completed` | 79 tests; explicit timezone/source validation; real busy-slot skip, private Calendar event, same-thread Gmail reply and retry-idempotency E2E; all test artifacts cleaned |
 | 5 | Assessment and take-home workflow | `completed` | 89 tests; quoted rule/deadline manifest; real sandbox denial of network/home access; private hashed evidence; fenced unknown-submission retry block |
 | 6 | No-give-up runtime reliability | `completed` | 104 tests; real Firecrawl-credit failure recovered through Freehire + LinkedIn Tokyo/Remote with 30 usable candidates; real daily owner connected to Chrome CDP and inspected official ATS pages; Node Playwright failure fell through to installed Python Playwright; Inbox prompt transport exits successfully; exact submitted-resume path/hash delivery is enforced; historical material aliases recovered the exact LayerX and Ex-ture PDFs and real Telegram document ACKs 4378/4379; same-day corrected report ACK 4377 |
 | 7 | Bilingual resume and official-posting language routing | `completed` | 107 tests; fourteen grounded Japanese points; A4 one-page Japanese PDF; extracted-text and visual inspection; real CLI selected the Japanese PDF for Japanese text and technical-business English PDF for English text; routed path/hash remains the Telegram receipt source |
-| 8 | Verified nationality and Japan work-visa answers | `waiting_private_input` | Add the two legal facts to the private profile, then rerun the current BJAK AI Finance Agent application without inference |
+| 8 | Required-question autonomy | `superseded_by_10P` | Section 1.0 steps 18-21 replace the private-input wait with Candidate Memory, semantic Answer Memory, and stable always-answer inference policies |
 | 9 | Recurring interview preparation and real interview-email E2E | `implemented_waiting_external_e2e` | Persistent registration; 3-day/1-day/immediate windows; real Telegram immediate delivery plus second-tick dedupe; forced production launchd no-mail pass and private DB healthcheck; final real recruiter-email E2E waits for an interview message |
 | 10 | Shared browser-agent framework and ATS rollout | `in_progress` | 10A–10O are audit history and deterministic rails. Current gate is 10P: build the framework and close Workday E2E. 10Q applies it to Ashby, 10R to Greenhouse, 10S to Lever, and 10T to unknown supported ATS forms. |
 | 10N | `JOB-LEDGER-EVENT-10N`: repair the attributed-application transition contract | `completed` | `Ledger` appends the matching event before updating the trigger-guarded projection in the same transaction. Focused ledger tests pass (`17/17`); the live Cognition row advanced `discovered→qualified→materials_ready`, survived DB reopen, and the real ledger reports integrity `ok` with zero event/projection mismatches. |
 | 10O | `JOB-SCHEDULER-POLICY-10O`: align cadence and application objective | `implemented` | The quota short-circuit is removed and pending `materials_ready` rows are exposed. The installed production policy is now hourly (`StartInterval=3600`); final completion evidence is owned by 10P. |
-| 10P | `JOB-WORKDAY-E2E-MODEL-10P`: full framework plus Workday E2E | `pending_actionable` | Section 1.0 steps 4-43 close: framework contracts, account creation/sign-in, Rakuten step 2, authoritative Workday outcome, Ledger/Gmail/Telegram agreement, and repeated hourly dedupe |
+| 10P | `JOB-WORKDAY-E2E-MODEL-10P`: full framework plus Workday E2E | `pending_actionable` | Section 1.0 steps 4-48 close: always-answer framework, account creation/sign-in, repeated launchd kickstarts, Rakuten step 2, authoritative Workday outcome, same-wake continuation, and Ledger/Gmail/Telegram agreement |
 | 10Q | `JOB-ASHBY-E2E-MODEL-10Q`: reuse the framework for Ashby | `pending_after_10P` | Same orchestrator/session/observation/action/checkpoint/verifier contracts; one authoritative Ashby outcome and repeated-wake dedupe |
 | 10R | `JOB-GREENHOUSE-E2E-MODEL-10R` | `pending_after_10Q` | Provider hints only plus one authoritative Greenhouse outcome |
 | 10S | `JOB-LEVER-E2E-MODEL-10S` | `pending_after_10R` | Provider hints only plus one authoritative Lever outcome |
 | 10T | `JOB-GENERIC-ATS-MODEL-10T` | `pending_after_10S` | An unknown supported ATS form completes without a new fixed workflow |
 | 11 | Closed-loop Dream Job objective, self-improvement and self-healing | `in_progress` | 11A completed in PR #1364 (final CI `30473862095`). 11B adds immutable attribution and outcomes. 11C implements the resident weekly learning driver, deterministic two-arm assignment, held-out replay, Wilson promotion, immediate rollback, compare-and-swap pointer and hashed Telegram report; its real first pass remained truthfully inconclusive at 0/0 resolved with replay violations=0 and ACK `4530`, without changing the five application states. Guardian, lifecycle closure and `summary.v2` remain in 11D–11F |
 | 12 | Portable local OSS distribution | `completed` | 12A merged in PR #1296; 12B merged in PR #1302 (`a58f1838`, CI `30449915191`): guided interactive/JSON profile authoring with placeholder/overwrite/legal-inference fences; reproducible 105-entry merge-commit tar.gz + SHA-256 `f334202a`; extracted-artifact clean-HOME install; 149 job-loop + 7 runner tests; canonical health exit 0 and both SQLite integrity checks `ok` without scheduler reinstall |
-| 13 | Life Manager Career organ and paid multi-tenant service | `pending` | 13A local Career surface consumes `summary.v2`; 13B moves the proven drivers to isolated cloud tenants; 13C integrates evidence-backed Financial/Physical/Mental job utility without merging consent boundaries |
+| 13 | Life Manager Career organ and paid multi-tenant service | `pending` | 13A packages the local open-source Job Hunter skill/loop and Career surface around `summary.v2`; 13B moves proven semantics to isolated cloud tenants; 13C coordinates evidence-backed whole-life utility without merging consent boundaries |
+| 14 | Verified USD 10K/month salary outcome | `pending_after_lifecycle` | One accepted and started role has authoritative gross base compensation of at least USD 10,000/month equivalent; annualization and FX evidence are durable, while bonus/equity remain separate |
 
 ### 11.2 Autonomy closure increments
 
@@ -1798,7 +1870,7 @@ not start merely because their design is already written:
 | `JOB-LEARNING-PASS-11C` | `completed` | PR #1376 / merge `1bdbc67d3` / final CI `30507559728`; health-status follow-up PR #1377 / merge `fd26398cc`. 203 job-loop + 11 runner tests pass. Sunday 09:15 JST launchd and persistent systemd drivers replay eight safety cases, deterministically assign future canonical job keys, evaluate authoritative interview outcomes, atomically promote/close/rollback with pointer-race fencing, and send one content-addressed Telegram report. The live ledger stayed integrity `ok` with unchanged 2 submitted / 1 submit-unknown / 2 not-submitted counts; its first 0/0-sample decision was correctly inconclusive, receipt `175d3b7be5db06f88dbdc9aaf9428dfbda3fe65245a497a1f377b6271255564c`, Telegram ACK `4530`; canonical LaunchAgent reached runs=4 / last exit=0 and the three-driver healthcheck reports learning `status=success` with both SQLite integrity checks `ok` |
 | `JOB-LEDGER-EVENT-10N` | `completed` | The production fix and focused ledger suite write event then projection atomically; Cognition was repaired and reopened successfully with integrity `ok` and zero mismatches. |
 | `JOB-SCHEDULER-POLICY-10O` | `implemented` | The legacy two-slot gate is removed, pending `materials_ready` rows are exposed, and the installed owner is hourly. Authoritative application outcomes and repeated-wake queue progress move to 10P. |
-| `JOB-WORKDAY-E2E-MODEL-10P` | `pending_actionable` | Build the framework and prove Workday account→application→authoritative outcome plus repeated-wake dedupe through the one CDP owner. |
+| `JOB-WORKDAY-E2E-MODEL-10P` | `pending_actionable` | Build the always-answer framework and prove Workday account→multi-row application→authoritative outcome plus immediate repeated-kickstart dedupe through the one CDP owner. |
 | `JOB-ASHBY-E2E-MODEL-10Q` | `pending_after_10P` | Ashby reuses the framework unchanged except provider hints and closes the same live evidence gates. |
 | `JOB-GREENHOUSE-E2E-MODEL-10R` | `pending_after_10Q` | Greenhouse provider hints and one authoritative outcome close. |
 | `JOB-LEVER-E2E-MODEL-10S` | `pending_after_10R` | Lever provider hints and one authoritative outcome close. |
@@ -1806,7 +1878,9 @@ not start merely because their design is already written:
 | `JOB-GUARDIAN-PASS-11D` | `pending_after_10T` | A deterministic scheduled guardian checks launchd/timer freshness, DB integrity, provider/browser health and leases; repairs only pre-side-effect failures; deduplicates alerts and persists remediation |
 | `JOB-LIFECYCLE-CLOSE-11E` | `pending_after_11D` | Follow-up cadence, every interview round, offers, negotiation support and accepted/declined/started outcomes are durable; only final identity/judgment actions require the user |
 | `JOB-CAREER-SUMMARY-11F` | `pending_after_11E` | Versioned `summary.v2` exposes Today, Pipeline, Interviews, Decisions, Learning and Health; its counts are rebuilt from the same events and match Telegram receipts |
-| `LIFE-CAREER-LOCAL-13A` | `pending_after_11F` | The local Life Manager Career surface reads `summary.v2`, shows the full timeline and provides pause/resume/goal controls without browser ownership |
+| `JOB-LIFE-MANAGER-SKILL-11G` | `pending_after_11F` | Job Hunter is an installable open-source Life Manager skill and resident loop; clean-home install, upgrade, launchd, state, Telegram and summary contracts reproduce local behavior without private data |
+| `JOB-SALARY-OUTCOME-11H` | `pending_after_11G_and_live_started_role` | Authoritative offer/acceptance/start evidence proves at least USD 10,000/month gross base salary equivalent with FX/date/annualization; bonus and equity remain separate |
+| `LIFE-CAREER-LOCAL-13A` | `pending_after_11G` | The local Life Manager Career surface reads `summary.v2`, shows the full timeline and provides pause/resume/goal controls without browser ownership |
 | `LIFE-CAREER-CLOUD-13B` | `pending_after_local_e2e` | Per-tenant queues, encrypted state/materials, scoped OAuth, budgets and export/revocation reproduce the verified local semantics |
 | `LIFE-WHOLE-HEALTH-13C` | `pending_after_13B` | Career evidence informs Financial, Physical and Mental planning with explicit consent, visible unknowns and no medical or employment guarantee |
 
@@ -1814,17 +1888,17 @@ not start merely because their design is already written:
 
 Completion requires:
 
-1. Unit and integration tests for normalization, hard filters, scoring, quotas,
-   transitions, claims, Gmail classification, Calendar idempotency, Telegram outbox,
-   and self-improvement promotion.
+1. Focused contract and integration checks for normalization, hard filters,
+   always-answer inference, queue continuation, transitions, claims, Gmail
+   classification, Calendar idempotency, Telegram outbox and self-improvement.
 2. Resume PDF render plus extracted-text verification.
 3. LaunchAgent validation and a forced catch-up run.
 4. Real Gmail read and Calendar test-event create/reread/delete in the authenticated
    account.
 5. Real Telegram delivery with outbox evidence.
-6. Real browser evidence for the first eligible ATS application. The final report
-   distinguishes `submitted`, `submit_unknown`, and `blocked`; dry-run output does not
-   count as completion.
+6. Real browser evidence for every eligible row processed in the wake. The final
+   report distinguishes `submitted`, `submit_unknown`, `not submitted`, and active
+   recovery cursor; dry-run output does not count as completion.
 7. Outcome-oriented evals grade authoritative ATS/Gmail/Calendar/Telegram/database
    state and retain the complete trace; model narration alone cannot pass.
 8. A replay suite proves every candidate strategy preserves truth, hard filters,
@@ -1835,10 +1909,10 @@ Completion requires:
 10. Guardian fault injection proves safe lease recovery before a side effect,
     non-retry after submit/send/navigation starts, projection rebuild after a forced
     integrity fault, and one deduplicated alert after bounded recovery fails.
-11. A seven-day local soak completes scheduled acquisition, inbox, learning-
-    eligibility and guardian passes without manual commands except declared
-    human-only boundaries; every unexpected stale/error state becomes a durable
-    recovery or remediation receipt.
+11. A seven-day local soak completes scheduled and development-kickstarted
+    acquisition, inbox, learning-eligibility and guardian passes without manual
+    browser operation; every unexpected stale/error state becomes a durable recovery
+    or remediation receipt.
 12. `summary.v2`, Telegram receipts and rebuilt event-log projections agree on
     application, interview, offer, experiment and health state.
 13. The paid cloud gate additionally proves tenant isolation, scoped OAuth
@@ -1849,15 +1923,27 @@ Completion requires:
     `qualified` and `materials_ready` without bypassing the claim fence.
 15. `JOB-SCHEDULER-POLICY-10O` proves the configured recurring cadence, no
     product-imposed daily count cap, exact URL deduplication, ATS/provider
-    throttling, and no duplicate external side effect across repeated wakes.
+    throttling, continued queue processing after each success, and no duplicate
+    external side effect across scheduled wakes or immediate development kickstarts.
 16. Telegram delivery uses the OpenClaw CLI, records a real `messageId` ACK in the
     outbox, and leaves no raw bot token in LaunchAgent environment or evidence.
 17. `JOB-WORKDAY-E2E-MODEL-10P` proves, in one immutable hourly release, that every
     eligible Workday row receives a row-scoped `browser-lane-agent` attempt; each
-    step has sanitized before/after UI evidence; one row-local failure does not stop
-    the queue; Rakuten reaches step 2 and then exact completion UI or an authoritative
-    Gmail receipt; and `submitted` appears only beside that authoritative evidence.
-    Release checksum/read-only checks, existing launchd kickstart, live evidence JSON,
-    Ledger reconciliation, Gmail search, and company/role Telegram ACKs must all
-    agree. 10Q separately proves Ashby using the unchanged 10P contract; 10R, 10S,
-    and 10T then prove Greenhouse, Lever, and a provider-neutral ATS respectively.
+    step has sanitized before/after UI evidence; every new question receives a
+    recorded inference; one row-local recovery or one verified submission does not
+    stop the queue; Rakuten reaches step 2 and then exact completion UI or an
+    authoritative Gmail receipt; and `submitted` appears only beside that evidence.
+    Release checksum/read-only checks, existing launchd kickstart, immediate second
+    kickstart, live evidence JSON, Ledger reconciliation, Gmail search, and
+    company/role Telegram ACKs must all agree. 10Q separately proves Ashby using the
+    unchanged 10P contract; 10R, 10S, and 10T then prove Greenhouse, Lever, and a
+    provider-neutral ATS respectively.
+18. `JOB-LIFE-MANAGER-SKILL-11G` proves that a clean machine can install the public
+    Life Manager Job Hunter skill/loop, add resume plus application email locally,
+    create the canonical launchd owner, upgrade without losing state, and reproduce
+    the verified local semantics without private data in the open-source artifact.
+19. `JOB-SALARY-OUTCOME-11H` closes only when authoritative offer, acceptance and
+    start evidence prove gross base salary of at least USD 10,000/month equivalent.
+    The receipt stores original currency/period, FX source/date, annualization and
+    start date; bonus, commission and equity are displayed separately and cannot pass
+    the base-salary gate.

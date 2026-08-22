@@ -21,3 +21,15 @@
 - A framework is complete only after its real hourly owner produces authoritative
   external outcomes. A click, HTTP response, model statement, test, or Ledger state
   alone is never submission proof.
+- Missing application context is never a Job Hunter stop state. Resume plus
+  application email seed Candidate Memory; every new field receives an exact,
+  derived, generated, or conservative stable inference whose provenance is retained
+  for consistency and learning. Provenance is not a human-confirmation gate.
+- During development, never wait for the natural hourly wake and never invoke the
+  daily script directly. Build and activate one immutable release while the owner is
+  idle, repeatedly kickstart the existing launchd owner, watch/read back its real
+  evidence, and fix the smallest root cause.
+- Job Hunter is an open-source Life Manager skill plus resident loop. Its outcome
+  continues through inbox, interview, assessment, offer, acceptance and start, with
+  an economic gate of authoritative USD 10,000/month-equivalent gross base salary;
+  salary is not product revenue and variable compensation is recorded separately.
