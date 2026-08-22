@@ -20,6 +20,11 @@ Pass order:
    live application page shows `3 of 3 steps completed`, `100%`, the completed
    Domain Expert Interview is reused, and a visible `Submit application` control.
    The listing/application identifier must not already exist in the ledger.
+   If the current Explore page is exhausted without a grounded candidate, use the
+   visible pagination controls (for example a button titled `Page N` or `Next`) to
+   inspect up to four additional pages, with a bounded maximum of twelve candidate
+   detail pages per wake. Never stop after the first Explore page solely because its
+   candidates fail a fact gate; record the exact page/listing evidence and continue.
 4. For a ready listing, save fresh pre-action screenshot and bounded DOM evidence.
    Submit exactly once, then reopen the application result and require the visible
    success/read-back before returning `submitted`. If the outcome is ambiguous after

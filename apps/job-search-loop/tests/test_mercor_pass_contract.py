@@ -29,6 +29,12 @@ class MercorPassContractTests(unittest.TestCase):
             "only the current `evidence_dir`",
             "exact `evidence_dir` supplied",
             "never inspect or reuse an older `model-pass-*` directory",
+            "visible pagination controls",
+            "button titled `Page N` or `Next`",
+            "up to four additional pages",
+            "with a bounded maximum of twelve candidate",
+            "detail pages per wake",
+            "Never stop after the first Explore page",
         ):
             self.assertIn(required, prompt)
 
