@@ -24,6 +24,11 @@ trap 'rmdir "$LOCK" 2>/dev/null || true' EXIT
 export PYTHONPATH="$JOB_SEARCH_APP_ROOT"
 chmod 644 "$JOB_SEARCH_APP_ROOT/prompts/mercor-pass.md" \
   "$JOB_SEARCH_APP_ROOT/schemas/mercor-pass-result.v1.schema.json"
+PASS_PROMPT="$EVIDENCE/mercor-pass.md"
+PASS_SCHEMA="$EVIDENCE/mercor-pass-result.v1.schema.json"
+cp "$JOB_SEARCH_APP_ROOT/prompts/mercor-pass.md" "$PASS_PROMPT"
+cp "$JOB_SEARCH_APP_ROOT/schemas/mercor-pass-result.v1.schema.json" "$PASS_SCHEMA"
+chmod 600 "$PASS_PROMPT" "$PASS_SCHEMA"
 "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_owner \
   --endpoint "$CDP_URL" \
   --output "$EVIDENCE/browser-owner.json"
@@ -33,8 +38,8 @@ chmod 644 "$JOB_SEARCH_APP_ROOT/prompts/mercor-pass.md" \
   --profile "$MERCOR_PROFILE" \
   --resume "$MERCOR_RESUME" \
   --cdp-url "$CDP_URL" \
-  --prompt "$JOB_SEARCH_APP_ROOT/prompts/mercor-pass.md" \
-  --schema "$JOB_SEARCH_APP_ROOT/schemas/mercor-pass-result.v1.schema.json" \
+  --prompt "$PASS_PROMPT" \
+  --schema "$PASS_SCHEMA" \
   --evidence-dir "$EVIDENCE/agent" \
   --workdir "$JOB_SEARCH_REPO_ROOT" \
   --run-id "$RUN_ID"
