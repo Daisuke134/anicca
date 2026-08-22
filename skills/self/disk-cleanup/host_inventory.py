@@ -272,7 +272,7 @@ def collect_host_inventory(
     encoded = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
     payload["inventory_sha256"] = hashlib.sha256(encoded).hexdigest()
     state_dir.mkdir(parents=True, exist_ok=True)
-    target = state_dir / "host-inventory.json"
+    target = state_dir / ("host-inventory-full.json" if full else "host-inventory.json")
     with tempfile.NamedTemporaryFile("w", dir=state_dir, prefix=".host-inventory.", delete=False) as handle:
         json.dump(payload, handle, ensure_ascii=False, sort_keys=True, indent=2)
         handle.write("\n")

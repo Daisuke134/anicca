@@ -58,6 +58,24 @@ def test_full_inventory_uses_bounded_du_only_for_allowlisted_families(tmp_path: 
     assert all(root["measurement"] in {"bounded-du", "metadata-only"} for root in payload["roots"])
 
 
+def test_full_inventory_is_preserved_separately_from_fast_inventory(tmp_path: Path) -> None:
+    state = tmp_path / "state"
+
+    payload = collect_host_inventory(
+        home=tmp_path,
+        state_dir=state,
+        full=True,
+        runner=fake_runner,
+    )
+
+    full_path = state / "host-inventory-full.json"
+    assert full_path.is_file()
+    written = json.loads(full_path.read_text())
+    assert written["mode"] == "full"
+    assert written["inventory_sha256"] == payload["inventory_sha256"]
+    assert not (state / "host-inventory.json").exists()
+
+
 def test_full_inventory_allows_slow_allowlisted_root_with_bounded_timeout(tmp_path: Path) -> None:
     (tmp_path / "Projects").mkdir()
 
