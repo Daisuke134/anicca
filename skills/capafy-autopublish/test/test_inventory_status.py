@@ -92,7 +92,8 @@ def test_allocator_contract_is_bounded_and_replay_stable() -> None:
     fresh = {"feature": "capafy-o1-fresh", "title": "Fresh Skill"}
     cases = [
         ({"readable": False, "counts": {"occupied": None}}, [retry], [fresh], "SERVER_UNREADABLE", None),
-        ({"readable": True, "counts": {"occupied": 5}}, [retry], [fresh], "PUBLISHABLE", "retry_existing"),
+        ({"readable": True, "counts": {"occupied": 5}}, [retry], [fresh], "CAP_FULL", None),
+        ({"readable": True, "counts": {"occupied": 4}}, [retry], [fresh], "PUBLISHABLE", "retry_existing"),
         ({"readable": True, "counts": {"occupied": 5}}, [], [fresh], "CAP_FULL", None),
         ({"readable": True, "counts": {"occupied": 4}}, [], [fresh], "PUBLISHABLE", "create_fresh"),
         ({"readable": True, "counts": {"occupied": 4}}, [], [], "DRAINED", None),
@@ -120,3 +121,31 @@ def test_allocator_selects_only_one_deterministic_candidate() -> None:
     assert decision["action"] == "create_fresh"
     assert decision["action_key"] == "create:capafy-o1"
     assert decision["item"]["feature"] == "capafy-o1"
+
+
+def test_repo_catalog_is_ready_and_overrides_same_title_legacy_item(tmp_path: Path) -> None:
+    module = load_module()
+    features = tmp_path / "features"
+    icons = tmp_path / "icons"
+    catalog = tmp_path / "catalog"
+    legacy = features / "capafy-o1-football"
+    canonical = catalog / "football-match-analyst"
+    legacy.mkdir(parents=True)
+    icons.mkdir()
+    canonical.mkdir(parents=True)
+    title = "Football Match Analyst — Weekly Fixture Read"
+    (legacy / "LISTING.md").write_text(f"## Title\n{title}\n")
+    (legacy / "SKILL.md").write_text("legacy")
+    (icons / "o1.png").write_bytes(b"png")
+    (canonical / "LISTING.md").write_text(f"## Title\n{title}\n")
+    (canonical / "SKILL.md").write_text("canonical")
+    (canonical / "icon.svg").write_text("<svg/>")
+    module.FEATURES = str(features)
+    module.ICONS = str(icons)
+    module.CATALOG = str(catalog)
+
+    items = module.ready_inventory()
+
+    assert len(items) == 1
+    assert items[0]["feature"] == "catalog:football-match-analyst"
+    assert items[0]["source"] == "repo_catalog"

@@ -17,7 +17,20 @@ STATE_HOME = Path(os.environ.get("LIFE_MANAGER_STATE_HOME", Path.home() / ".loca
 DEFAULT_FEATURES = STATE_HOME / "features"
 DEFAULT_ICONS = STATE_HOME / "assets/capafy/icons"
 DEFAULT_OUTPUT = STATE_HOME / "state/capafy-candidate-backlog.json"
+REPO_ROOT = Path(os.environ.get("LIFE_MANAGER_REPO", Path(__file__).resolve().parents[3]))
+DEFAULT_CATALOG = REPO_ROOT / "skills/capafy/catalog"
 TERMINAL_PLATFORM_STATES = {"online", "approved"}
+RETRY_PLATFORM_STATES = {"review_rejected"}
+
+
+def _candidate_state(remote_status: str | None, complete: bool) -> str:
+    if remote_status in TERMINAL_PLATFORM_STATES:
+        return "listed"
+    if remote_status in RETRY_PLATFORM_STATES:
+        return "ready_retry" if complete else "building"
+    if remote_status:
+        return "submitted"
+    return "ready" if complete else "building"
 
 
 def _title(listing: Path) -> str | None:
@@ -62,7 +75,8 @@ def _platform_by_title(inventory: dict) -> dict[str, dict]:
     }
 
 
-def refresh_backlog(existing: dict, inventory: dict, features: Path, icons: Path, observed_at: str) -> dict:
+def refresh_backlog(existing: dict, inventory: dict, features: Path, icons: Path, observed_at: str,
+                    catalog: Path | None = None) -> dict:
     old_items = existing.get("items") if isinstance(existing, dict) else None
     old_by_id = {
         item.get("candidate_id"): item
@@ -89,7 +103,7 @@ def refresh_backlog(existing: dict, inventory: dict, features: Path, icons: Path
         remote = platform.get(title or "")
         remote_status = remote.get("remote_status") if remote else None
         platform_state = remote_status or "not_submitted"
-        state = "listed" if remote_status in TERMINAL_PLATFORM_STATES else "submitted" if remote else "ready" if complete else "building"
+        state = _candidate_state(remote_status, complete)
         paths = [skill, listing, icon, *tests]
         old = old_by_id.get(directory.name, {})
         item = {
@@ -106,6 +120,41 @@ def refresh_backlog(existing: dict, inventory: dict, features: Path, icons: Path
         if remote and remote.get("agent_id"):
             item["agent_id"] = str(remote["agent_id"])
         items.append(item)
+    if catalog and catalog.is_dir():
+        for directory in sorted(path for path in catalog.iterdir() if path.is_dir()):
+            skill = directory / "SKILL.md"
+            listing = directory / "LISTING.md"
+            icon = next((directory / name for name in ("icon.svg", "icon.png")
+                         if (directory / name).is_file()), directory / "icon.svg")
+            title = _title(listing)
+            gates = {
+                "skill": "pass" if skill.is_file() and skill.stat().st_size > 0 else "missing",
+                "listing": "pass" if title else "missing",
+                "icon": "pass" if icon.is_file() and icon.stat().st_size > 0 else "missing",
+                "tests": "not_required",
+            }
+            complete = all(gates[key] == "pass" for key in ("skill", "listing", "icon"))
+            remote = platform.get(title or "")
+            remote_status = remote.get("remote_status") if remote else None
+            platform_state = remote_status or "not_submitted"
+            state = _candidate_state(remote_status, complete)
+            candidate_id = f"catalog:{directory.name}"
+            old = old_by_id.get(candidate_id, {})
+            item = {
+                "candidate_id": candidate_id,
+                "title": title,
+                "state": state,
+                "platform_state": platform_state,
+                "gates": gates,
+                "content_sha256": _content_hash([skill, listing, icon]),
+                "paths": {"feature": str(directory), "skill": str(skill), "listing": str(listing), "icon": str(icon), "tests": []},
+                "first_observed_at": old.get("first_observed_at") or observed_at,
+                "last_observed_at": observed_at,
+            }
+            if remote and remote.get("agent_id"):
+                item["agent_id"] = str(remote["agent_id"])
+            items = [prior for prior in items if prior.get("title") != title]
+            items.append(item)
     return {
         "schema_version": 1,
         "updated_at": observed_at,
@@ -114,6 +163,7 @@ def refresh_backlog(existing: dict, inventory: dict, features: Path, icons: Path
             "total": len(items),
             "building": sum(item["state"] == "building" for item in items),
             "ready": sum(item["state"] == "ready" for item in items),
+            "ready_retry": sum(item["state"] == "ready_retry" for item in items),
             "submitted": sum(item["state"] == "submitted" for item in items),
             "listed": sum(item["state"] == "listed" for item in items),
         },
@@ -139,6 +189,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--inventory-json", type=Path)
     parser.add_argument("--features", type=Path, default=DEFAULT_FEATURES)
     parser.add_argument("--icons", type=Path, default=DEFAULT_ICONS)
+    parser.add_argument("--catalog", type=Path, default=DEFAULT_CATALOG)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--observed-at")
     args = parser.parse_args(argv)
@@ -155,7 +206,7 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps({"ok": False, "reason": "existing_backlog_invalid"}))
         return 1
     observed_at = args.observed_at or dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
-    backlog = refresh_backlog(existing, inventory, args.features, args.icons, observed_at)
+    backlog = refresh_backlog(existing, inventory, args.features, args.icons, observed_at, args.catalog)
     atomic_write(args.output, backlog)
     print(json.dumps({"ok": True, "path": str(args.output), **backlog["counts"]}, separators=(",", ":"), sort_keys=True))
     return 0

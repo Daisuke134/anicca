@@ -39,6 +39,7 @@ PUB = os.path.join(AUTO, "vendor", "capafy-publisher")
 ICONS = os.environ.get("CAPAFY_ICONS_DIR") or str(STATE_HOME / "assets/capafy/icons")
 FEATURES = os.environ.get("CAPAFY_FEATURES_DIR") or str(STATE_HOME / "features")
 SKILLS = os.environ.get("CAPAFY_SKILLS_ROOT") or str(REPO_ROOT / "skills")
+CATALOG = os.environ.get("CAPAFY_CATALOG_DIR") or str(REPO_ROOT / "skills/capafy/catalog")
 
 ONLINE = {"online", "approved"}
 UNLISTED = {"draft", "under_review"}   # occupy the 5-slot publish cap
@@ -104,6 +105,11 @@ def allocate_action(normalized, retries, publishable):
     occupied = (normalized.get("counts") or {}).get("occupied")
     if not isinstance(occupied, int) or isinstance(occupied, bool) or occupied < 0:
         return {"verdict": "SERVER_UNREADABLE"}
+    # Capafy permits at most five simultaneous draft/under-review submissions.
+    # A rejected agent becomes retryable only after that rejection has freed a slot;
+    # retrying an old agent does not create a sixth submission exception.
+    if occupied >= CAP:
+        return {"verdict": "CAP_FULL", "occupied": occupied}
     if retries:
         item = min(retries, key=lambda row: (str(row.get("agent_id") or ""), str(row.get("title") or "")))
         return {
@@ -113,8 +119,6 @@ def allocate_action(normalized, retries, publishable):
             "action_key": f"retry:{item['agent_id']}",
             "item": item,
         }
-    if occupied >= CAP:
-        return {"verdict": "CAP_FULL", "occupied": occupied}
     if publishable:
         item = min(publishable, key=lambda row: (str(row.get("feature") or ""), str(row.get("title") or "")))
         identity = item.get("feature") or item.get("title")
@@ -153,28 +157,42 @@ def listing_title(path):
 
 
 def ready_inventory():
-    """Ready items = feature dirs with LISTING.md (## Title) + matching icon + a real skill dir."""
+    """Return complete legacy candidates plus repository-owned canonical catalog items."""
     items = []
-    if not os.path.isdir(FEATURES):
-        return items
-    for name in sorted(os.listdir(FEATURES)):
-        if not name.startswith("capafy-"):
-            continue
-        d = os.path.join(FEATURES, name)
-        listing = os.path.join(d, "LISTING.md")
-        if not os.path.isfile(listing):
-            continue
-        title = listing_title(listing)
-        if not title:
-            continue
-        m = re.match(r"^capafy-([a-z][0-9]+)-", name)
-        if not m:
-            continue
-        icon = os.path.join(ICONS, m.group(1) + ".png")
-        if not os.path.isfile(icon):
-            continue
-        items.append({"feature": name, "title": title, "icon": icon, "listing": listing})
-    return items
+    if os.path.isdir(FEATURES):
+        for name in sorted(os.listdir(FEATURES)):
+            if not name.startswith("capafy-"):
+                continue
+            d = os.path.join(FEATURES, name)
+            listing = os.path.join(d, "LISTING.md")
+            title = listing_title(listing) if os.path.isfile(listing) else None
+            m = re.match(r"^capafy-([a-z][0-9]+)-", name)
+            icon = os.path.join(ICONS, m.group(1) + ".png") if m else ""
+            skill = os.path.join(d, "SKILL.md")
+            if title and os.path.isfile(icon) and os.path.isfile(skill):
+                items.append({"feature": name, "title": title, "icon": icon,
+                              "listing": listing, "skill": skill, "source": "legacy_state"})
+
+    if os.path.isdir(CATALOG):
+        for name in sorted(os.listdir(CATALOG)):
+            d = os.path.join(CATALOG, name)
+            if not os.path.isdir(d):
+                continue
+            listing = os.path.join(d, "LISTING.md")
+            skill = os.path.join(d, "SKILL.md")
+            icon = next((os.path.join(d, candidate) for candidate in ("icon.svg", "icon.png")
+                         if os.path.isfile(os.path.join(d, candidate))), None)
+            title = listing_title(listing) if os.path.isfile(listing) else None
+            if title and icon and os.path.isfile(skill):
+                items.append({"feature": f"catalog:{name}", "title": title, "icon": icon,
+                              "listing": listing, "skill": skill, "source": "repo_catalog"})
+
+    # The repository catalog is authoritative when a legacy candidate has the same title.
+    by_title = {}
+    for item in items:
+        if item["title"] not in by_title or item["source"] == "repo_catalog":
+            by_title[item["title"]] = item
+    return [by_title[title] for title in sorted(by_title)]
 
 
 def main():
@@ -205,8 +223,10 @@ def main():
     inflight_titles = {(a.get("name") or "").strip() for a in unlisted}
 
     items = ready_inventory()
-    publishable = [it for it in items
-                   if it["title"] not in online_titles and it["title"] not in inflight_titles]
+    rejected_titles = {(a.get("name") or "").strip() for a in rejected}
+    publishable = [it for it in items if it["title"] not in online_titles
+                   and it["title"] not in inflight_titles
+                   and it["title"] not in rejected_titles]
 
     # A rejected agent is only retryable if its title still matches a CURRENT
     # ready_inventory LISTING.md. If the LISTING.md title has since drifted (edited,
@@ -221,12 +241,14 @@ def main():
     ready_titles = {it["title"] for it in items}
     retryable_rejected = [a for a in rejected if (a.get("name") or "").strip() in ready_titles]
 
-    retry_items = [
-        {"agent_id": str(agent.get("agentId")), "title": (agent.get("name") or "").strip()}
-        for agent in retryable_rejected
-    ]
+    ready_by_title = {item["title"]: item for item in items}
+    retry_items = []
+    for agent in retryable_rejected:
+        title = (agent.get("name") or "").strip()
+        retry_items.append({"agent_id": str(agent.get("agentId")), "title": title,
+                            **ready_by_title[title]})
     fresh_items = [
-        {key: item[key] for key in ("feature", "title", "icon", "listing")}
+        {key: item[key] for key in ("feature", "title", "icon", "listing", "skill", "source")}
         for item in publishable
     ]
     v = allocate_action(normalized, retry_items, fresh_items)

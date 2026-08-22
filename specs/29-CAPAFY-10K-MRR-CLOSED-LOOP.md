@@ -27,7 +27,7 @@ Life Manager public repositoryだけをsourceとして、Capafy skillの発見�
 1. Capafyに関するsource、test、launchd templateはLife Manager repo内だけに存在し、runtime dependency scanが`~/.claude/skills`、`~/.openclaw/skills`、`/Users/anicca/anicca`を0件とする。
 2. server truthから各Agentの`agent_id`、title、latest version、`status`、`auditStatus`、billing、salesを取得し、5-slot occupancyを決定できる。
 3. fresh Agentの作成はnormalized lifecycleが`occupied`の別Agentが5未満の時だけ行う。現在のplatform文字列では`draft`と`under_review`だけがoccupiedである。server unreadable時は新規Agentを作らない。
-4. `review_rejected`はactive 5-slotから外すが、同じ`agent_id`で原因を保存し、production/test/listingを修正し、全gate後に同じAgentのnew versionとして再提出する。5-slotが満杯でもこのretryを止めない。
+4. `review_rejected`はactive 5-slotから外す。同じ`agent_id`で原因を保存し、production/listingを修正し、全gate後に同じAgentのrevisionとして再提出する。ただし同時提出は最大5件であり、`draft/under_review=5`ならretryも送信せず、accepted/rejectedで空いた次の1枠を使う。
 5. `online`へ遷移したAgentはactive slotから外れ、次のready candidateを1件だけsubmitする。同一wakeで空いた全slotを一斉に埋めない。
 6. 5-slot満杯時もlisted skillのmarketing、creative改善、metrics、refund、subscription、MRR、Telegram reporting、次candidateのoffline build/testを継続する。
 7. marketing creativeは実skillのinput→outputまたはbefore→afterを見せ、canonical video quality gateを通る。generic stock b-roll + TTSだけのartifactをpublicへ出さない。
@@ -72,12 +72,12 @@ stateDiagram-v2
 |---|---|---|
 | `occupied < 5` + retry exists | retry rejected Agent first | marketing、metrics、money、candidate build |
 | `occupied < 5` + no retry + ready candidate | submit exactly one fresh Agent | same |
-| `occupied >= 5` + retry exists | retry same Agent; it reuses its slot | same |
+| `occupied >= 5` + retry exists | platform write 0; retryをoffline readyで保持 | marketing、metrics、money、candidate build |
 | `occupied >= 5` + no retry | no fresh submission | marketing、metrics、money、offline candidate build |
 | listed transition frees slot | next daily wake submits one best candidate | listed portfolio keeps selling |
 | server unreadable | do not create/update Agent | public readback where available、marketing safety checks、report blocker |
 
-The existing Life Manager runbook is the primary implementation evidence: `DAILY_LOOP.md` states that a rejected retry reuses its existing slot and proceeds when unlisted is 5, while the five-slot cap applies only to a fresh Agent. Capafy describes itself as a marketplace where publishers upload Skills and users buy/run them.
+The Life Manager runbook is the primary implementation contract: `DAILY_LOOP.md` enforces no more than five simultaneous `draft/under_review` submissions. Accepted or rejected status frees a slot; the next wake prefers an in-place rejected repair over a fresh Agent and performs at most one platform write.
 
 ソース: [Capafy: Become a Publisher](https://capafy.ai/earn) / 核心の引用: 「Publishers upload Skills they've built; users discover, buy, and run them.」
 
@@ -249,7 +249,7 @@ C5でread-only hourly reconcileをLife Managerへ追加し、account、inventory
 
 C6でcanonical `inventory_status.py`へserver row normalizerを追加する。live responseの32 Agentは22 `online`、3 `draft`、7 `review_rejected`で、normalized countsはlisted 22、occupied 3、free 2、retry 7、blocked 0、unknown 0となる。32/32行にAgent IDとlatest version IDがある。未知statusまたはidentity欠損時はoccupied/freeを`null`にして`SERVER_UNREADABLE`へfail-closedする。focused 3件、autopublish Python 5件、AID guard、leak scan、marketing 116件が通る。
 
-C7でslot allocatorをside-effect-free decision関数へ分離する。優先順位はserver unreadableで停止、same-Agent retry、cap-full idle、fresh candidate 1件、drained idleで、1 wakeのactionは最大1件である。retryは`retry:<agent_id>`、fresh submitは`create:<feature>`のstable action keyを持つ。live stateはoccupied 3、free 2、ready candidate 1件から`create_fresh`を選び、連続2 readで同じ`create:capafy-o13-user-interview-synthesizer`を返し、readback中のAgent作成は0件である。focused 5件、autopublish 7件、AID/leak guards、marketing 116件が通る。
+C7でslot allocatorをside-effect-free decision関数へ分離する。優先順位はserver unreadableで停止、cap-full idle、空きがあればsame-Agent retry、fresh candidate 1件、drained idleで、1 wakeのactionは最大1件である。retryは`retry:<agent_id>`、fresh submitは`create:<feature>`のstable action keyを持つ。live stateはoccupied 3、free 2、ready candidate 1件から`create_fresh`を選び、連続2 readで同じ`create:capafy-o13-user-interview-synthesizer`を返し、readback中のAgent作成は0件である。focused 5件、autopublish 7件、AID/leak guards、marketing 116件が通る。
 
 C8でrejected versionを`<agent_id>:<source_version_id>`キーのdurable repair queueへ保存する。live `review_rejected` 7件は7/7が`update_existing_agent`、同じAgent ID、既知のtarget next versionを持ち、new Agent IDを作らない。連続2 readでも7件のままである。platform detailは`status=2`と`auditStatus=3`を返すがreason本文を返さないため、7件を`platform_reason_unavailable` / `needs_diagnosis`としてfail-closedで保存し、原因を捏造しない。fixtureでは実reasonの保存、同version dedupe、進捗保持、同Agentのnew rejected version追加を検証する。queueはmode `0600`、focused 4件、autopublish 11件、AID/leak guards、marketing 116件が通る。外部same-Agent resubmitはC18で実行する。
 
@@ -299,6 +299,8 @@ C19監視開始時、hourly reconcileは`/agent/agents`をfreshとしながら`o
 
 C20はlanding redirect functionのproduction 502を修復する。原因はmanual Netlify deployが`@netlify/blobs`をbundleせず、daily wrapperもhostに存在しないglobal `netlify`を呼んでいたことである。repo dependencyをinstallして固定`npx netlify-cli@27.1.2`経路へ変更し、Capafy専用site `41c8e52e-b163-442a-84ff-fd866269bf6c`へdeploy `6a89b4126e21fe74286b7a79`を反映する。最初に共通`NETLIFY_SITE_ID`で誤って更新した`anicca2`は直前production deploy `6a89a8339dd71d828c00c62b`へrestoreし、published deploy IDのreadbackまで閉じる。live `/go-stats`はHTTP 200、23 Agent、累積clickは7 (`1/1/5`)。attribution v2 rowは本日IG post `https://www.instagram.com/reel/DcV9YY7sqYI/`、Agent別counter、Capafy Agent sales snapshotを同じUTC windowへ接続するが、order-level UTM/sourceとseller subscription-order joinが存在しないため`causal_claim=false`、全行`candidate_no_order_level_source`、`subscription_orders=null`、初回window delta `null`を維持する。focused 11件が通り、Telegram message IDは`29036`。
 
+C19の次候補をrepo-owned `skills/capafy/catalog/football-match-analyst/`へ正本化する。タイトルは既存rejected Agent `1037238583`と完全一致し、weekly `$9.99`、cap `20`、trialなし、入力されたfixture/team-newsだけを分析しlive score/odds/lineupを主張しない。inventoryとdurable backlogはrepo catalogをlegacy stateより優先し、同タイトルのrejected Agentをfresh作成候補から除外してsame-Agent repairに限定する。live readbackはlisted `22`、occupied `5`、free `0`、retry `6`、ready catalog `3`、publishable fresh `0`でplatform write `0`。空き0ではretryを送らず、空き1になった最初のwakeでAgent `1037238583`を1件だけ選ぶ。さらにloaded launchd ownerの外側wrapperがCAP_FULL判定前に高コストagentを毎回起動する別入口を発見し、server inventoryとbacklog refreshをrunner前へ移す。本番run `6`はlast exit `0`、`HEALTHY-IDLE: CAP_FULL`、agent spend `0`、platform write `0`。listing lint、focused 15件、shell syntaxが通り、Telegram message IDは`29055`。実review transition/resubmitまではC19未完である。
+
 ## Atomic remaining TODO
 
 Items are executed top-to-bottom. Only one item is active.
@@ -324,7 +326,7 @@ Items are executed top-to-bottom. Only one item is active.
 | C16 | add ReelFarm TikTok derivative behind credential/account/quality gates | no credential means honest no-op; success requires TikTok native URL | completed — stored key is invalid by live account/accounts reads; generation 0, publish 0, spend 0, native URL none; TG `28874` |
 | C17 | run one real slot-controlled supply pass | inventory readback -> allocator decision -> skill/version remote status -> Telegram message ID | completed — same Agent `3661050861`, version `2091144781376671744`, `status=1/audit=1/run_online/skills=1/config=1`; listed 22/occupied 4/free 1/retry 7; TG `28979` |
 | C18 | prove one rejected Agent correction/resubmit E2E | same agent_id, new package/revision, under-review readback, no orphan Agent | completed — Agent `3098034209`, platform-preserved version `2080431424288878592`, new package, `status=1/audit=1/skills=1/config=1`; duplicate Agent 0; TG `29019` |
-| C19 | prove one listed transition frees a fresh slot | status=4 reduces occupied count and next daily wake submits exactly one candidate | pending — slot monitor repaired; live hourly run 9 sees listed 22/occupied 5/free 0/retry 6; TG `29024`; awaiting real review transition |
+| C19 | prove one listed transition frees a fresh slot | status=4 reduces occupied count and next daily wake submits exactly one candidate | pending — Football same-Agent `1037238583` is repo-canonical/ready_retry; loaded run 6 at listed 22/occupied 5/free 0 exits 0 with agent spend/write 0; TG `29055`; awaiting real review transition, then exactly one retry |
 | C20 | connect post/click/subscription windows without claiming causal proof | attribution row is candidate unless Capafy exposes order-level UTM/source | completed — live attribution v2 joins one IG post + 23 counters + Capafy snapshot; clicks 7; causal=false; subscription unknown; Netlify deploy `6a89b4126e21fe74286b7a79`; TG `29036` |
 | C21 | prove seven consecutive daily healthy terminals and hourly freshness | 7-day ledger has no stale source, duplicate Agent/version/post or missing Telegram receipt | pending — proof `1/7`; hourly run 9 exit 0; receipt `capafy-91a7d8890a852e281d1e34be`; slots normalized; TG `29024` |
 | C22 | operate growth and retention experiments until settled net MRR reaches `$10,000` | active subscription readback and refunds/fees reconcile to target | pending |
@@ -334,8 +336,8 @@ Items are executed top-to-bottom. Only one item is active.
 | ID | To-Be | test/evidence | cover |
 |---|---|---|---|
 | T1 | self-contained Life Manager source | dependency scan + clean clone test | pending |
-| T2 | five-slot allocator | `test_slot_allocator` table: 0–5 occupied, retry/no retry | pending |
-| T3 | same-Agent rejection retry | `test_rejected_retry_preserves_agent_id` | pending |
+| T2 | five-slot allocator | allocator table covers occupied 5 with retry/no retry and never returns a write | completed — focused allocator contract passes |
+| T3 | same-Agent rejection retry | rejected catalog title preserves existing agent_id and becomes retry only when free > 0 | completed — Football backlog/allocator fixtures preserve `1037238583` |
 | T4 | listed frees slot | `test_listed_agent_not_counted_as_unlisted` | pending |
 | T5 | server unreadable fail-close | `test_server_unreadable_blocks_only_platform_write` | pending |
 | T6 | cap-full productive idle | offline candidate build + marketing/revenue wake evidence | pending |

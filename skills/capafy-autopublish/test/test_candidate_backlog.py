@@ -89,3 +89,29 @@ def test_daily_loop_refreshes_backlog_before_cap_full_exit() -> None:
 
     assert refresh < cap_full
     assert "--inventory-stdin" in source
+
+
+def test_repo_catalog_rejected_item_keeps_same_agent_identity(tmp_path: Path) -> None:
+    module = load_module()
+    catalog = tmp_path / "catalog"
+    candidate = catalog / "football-match-analyst"
+    candidate.mkdir(parents=True)
+    title = "Football Match Analyst — Weekly Fixture Read"
+    (candidate / "SKILL.md").write_text("# Football\n")
+    (candidate / "LISTING.md").write_text(f"## Title\n{title}\n")
+    (candidate / "icon.svg").write_text("<svg/>")
+    current = {
+        "agents": [{"agent_id": "1037238583", "name": title,
+                    "remote_status": "review_rejected"}],
+        "counts": {"occupied": 5, "free": 0},
+    }
+
+    backlog = module.refresh_backlog({}, current, tmp_path / "features", tmp_path / "icons",
+                                     "2026-08-22T12:00:00Z", catalog)
+
+    assert backlog["items"] == [backlog["items"][0]]
+    assert backlog["items"][0]["candidate_id"] == "catalog:football-match-analyst"
+    assert backlog["items"][0]["agent_id"] == "1037238583"
+    assert backlog["items"][0]["platform_state"] == "review_rejected"
+    assert backlog["items"][0]["state"] == "ready_retry"
+    assert backlog["counts"]["ready_retry"] == 1
