@@ -12,6 +12,7 @@ from typing import Any
 STRONG_RECRUITING_TERMS = (
     "verify your candidate account",
     "confirm your email address",
+    "reset your password for your candidate account",
     "アカウントを確認してください",
     "application received",
     "application status",
@@ -67,7 +68,11 @@ def classify_message(subject: str, body: str) -> str:
     rules = (
         (
             "account_verification",
-            ("verify your candidate account", "confirm your email address"),
+            (
+                "verify your candidate account",
+                "confirm your email address",
+                "reset your password for your candidate account",
+            ),
         ),
         ("offer", ("offer letter", "pleased to offer")),
         ("interview", ("interview", "choose a time", "schedule a call")),
@@ -408,7 +413,7 @@ def _gmail_threads(account: str) -> list[dict[str, Any]]:
     query = (
         "newer_than:14d "
         "(application OR applied OR assessment OR interview OR offer OR recruiter "
-        "OR candidate OR verify OR account OR 応募 OR 選考 OR 面接 OR 採用 "
+        "OR candidate OR verify OR account OR password OR reset OR 応募 OR 選考 OR 面接 OR 採用 "
         "OR エントリー OR アカウント OR 確認)"
     )
     completed = subprocess.run(

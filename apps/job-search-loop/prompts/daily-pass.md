@@ -144,7 +144,10 @@ outage. Read `workday_account_status` from every fresh observation. Once it is
 still returns the exact wrong-email/password validation, use the visible Forgot
 Password control, submit the stored application email through
 `runtime auth --mode sign_in --field email`, and let the existing inbox owner
-complete the recovery before resuming the same row. If email verification is
+complete the recovery before resuming the same row. The visible acknowledgement
+that reset instructions were sent is successful recovery handoff, not
+`provider_unavailable`; checkpoint it with `--reason email_recovery`, report the
+row as checkpointed, and continue the queue. If email verification is
 visibly required, preserve the same row for the existing inbox owner; after
 verification the next wake signs in and resumes it.
 

@@ -1001,7 +1001,9 @@ def main(argv: list[str] | None = None) -> int:
     auth_parser.add_argument("--stable-id", default="")
     checkpoint_parser = subparsers.add_parser("checkpoint")
     checkpoint_parser.add_argument(
-        "--reason", required=True, choices=("provider_unavailable", "visible_challenge")
+        "--reason",
+        required=True,
+        choices=("provider_unavailable", "visible_challenge", "email_recovery"),
     )
     ineligible_parser = subparsers.add_parser("ineligible")
     ineligible_parser.add_argument(
