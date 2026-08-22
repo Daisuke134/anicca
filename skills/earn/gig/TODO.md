@@ -303,21 +303,25 @@ Do not advance the development cursor until every unchecked item in the current 
 evidence. Independent production lanes continue running while development follows this order.
 
 **Current live cursor.** `main` and `origin/main` were verified equal immediately before this snapshot at
-`5bb23b3de798b550d14b4420aff64560e4f12399`; the starting verification commit
+`0d16152be`; the starting verification commit
 `79ac01ba1eb66b06aed1f9cee66d4af303f03a3d` remains an ancestor. The existing launchd Paid owner is the only
-customer-effect owner. The shared disk guard remains `GIG_DISK_HEADROOM_KIB=0`; storage floors do not stop Paid.
+customer-effect owner. The authenticated gig-browser launcher was still overriding the configured no-floor policy
+with a hard-coded 512 MiB headroom and by unsetting both ignore flags. Under current host pressure this prevented
+CDP startup after 78 stale tabs made all nine targeted readbacks time out. The generic launcher now honors the
+configured environment and defaults to zero headroom with both pressure-stop flags ignored; cleanup remains owned
+by the separate cleanup loop rather than blocking every Paid customer effect.
 
-**Current runtime refresh.** `main` and `origin/main` are equal at
-`3f1ba7b153c730ec159ebe725167ee2c06cd828e`; unrelated dirty files remain untouched. The active Paid pass runs
-immutable release `7f5608836ab5fa9a0218c51d31c94671dab00b56` and naturally resumed the existing Haru v43 staging after compiling
+**Current runtime refresh.** Unrelated dirty files remain untouched. The existing Paid pass naturally resumed the
+Haru v43 staging after compiling
 the complete proposal, DM, talkroom and attachment context. Haru `18169583` remains unsent. The resumed owner first
-rejected the already-failed data-URI SVG inputs, then selected the visually verified v43 PC/responsive PDFs for
-native roundtrip without regenerating the artifact. Illustrator 30.7 produced and reopened the 6.7 MiB PC `.ai`,
-but the receipt's recursive `activeDocument.pageItems.length` query crashed Illustrator before receipt emission;
-customer effect and official readback remain zero. Remove that unsafe, non-quality-bearing recursive census from
-the generic native-roundtrip receipt, publish the corrected immutable release, then require the existing Paid owner
-to resume the same v43 staging, obtain both exact-output reopen receipts, package and send once with formal delivery
-OFF, exact-room DOM readback and replay-zero. The same pass automatically discovered new paid room
+rejected the already-failed data-URI SVG inputs. After the generic receipt crash repair, its linked recovery-SVG
+attempt reached Illustrator but failed at `app.open()` before any effect/readback. Queued Keychain prompts and the
+Illustrator cross-application access prompt were cleared without storing credentials. The next honest reusable
+inputs are the already-inspected v43 PC/responsive PDFs; no artifact regeneration or Haru-only bypass is allowed.
+Publish the generic browser-launch repair, restart the authenticated browser and existing Paid owner, then require
+that owner to choose those inputs, obtain both exact-output reopen receipts, package and send once with formal
+delivery OFF, exact-room DOM readback and replay-zero. Customer effect and official readback remain zero. The same
+pass automatically discovered new paid room
 `18179735` (`smilejack2`, app-market-research/promotion work), started its independent project worker and began
 pre-purchase DM collection without a code or queue edit. This proves discovery only, not delivery: it must compile
 proposal + DM + full talkroom + attachments, avoid re-asking known facts, create useful work and remain owned until
