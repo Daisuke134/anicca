@@ -2667,6 +2667,22 @@ def advance_legacy_dedicated_publication(
 def advance_known_publication(
     state, landing_root, x_cdp_port, private_markdown=None, provider_cdp_port=9324,
 ):
+    landing_root = Path(landing_root).expanduser()
+    if not landing_root.is_dir():
+        repo_root = landing_root.parent.parent
+        if (
+            landing_root.name != "affiliate-foundation-prod"
+            or landing_root.parent.name != ".worktrees"
+            or not (repo_root / ".git").exists()
+        ):
+            raise FileNotFoundError(landing_root)
+        subprocess.run(
+            ["git", "-C", str(repo_root), "worktree", "add", str(landing_root),
+             "feature/affiliate-foundation-prod"],
+            check=True, capture_output=True, text=True, timeout=120,
+        )
+        if not landing_root.is_dir():
+            raise FileNotFoundError(landing_root)
     generic = advance_generic_publication(
         state, landing_root, x_cdp_port, private_markdown, provider_cdp_port,
     )
