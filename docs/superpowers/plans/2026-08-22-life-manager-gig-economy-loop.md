@@ -28,8 +28,8 @@ approved provider APIs, existing launchd release system, pytest with plugin auto
 - Upwork capacity counts active Upwork contracts only. Never read Coconala projects as Upwork capacity.
 - Upwork acquisition spend is permanently USD 0 for this loop: never buy Connects, upgrade, boost or open billing. Submit only from granted/returned Connects or zero-Connect invitations.
 - Observe the authenticated Upwork UI/API first, then refine selectors and payloads from receipts.
-- Complete the application-first bootstrap and submit one bounded first-job proposal before adding
-  more general harness abstractions; Project Catalog publishing is not a prerequisite.
+- Complete the zero-spend bootstrap across onboarding rewards, invitations, direct offers and one
+  bounded Project Catalog service, then submit from free capacity before adding general abstractions.
 - Do not move the current `skills/earn/gig/TODO.md` production-repair cursor.
 - Do not add a scheduler, workflow service, browser harness, vector DB or second ledger.
 - Tests cover only money loss, duplicate external effects, data loss, authentication leakage and the
@@ -258,8 +258,8 @@ No later task may jump ahead of the first incomplete row:
 | U10 | Discover and qualify a first-job candidate | **DONE:** usability-test job `~022091106411892491962`; $15, 10–15 proposals, zero interviews, payment/phone verified, and all student/age/English/recording gates match owner evidence |
 | U11 | Resolve application capacity for that candidate | **DONE:** official proposal surface requires 7 Connects; balance/history, offers, invites and proposals are 0, no reward banner is exposed, and the only buy offer is 100 for $15 plus tax |
 | U12 | Freeze one tailored first-job proposal | **DONE:** immutable payload `c37eed9c…c68e926` contains the $15 terms, cover letter, five factual screening answers, no attachments, and zero unsupported claims |
-| U13 | Maintain and reconcile the complete application inventory without spending | Re-read the first candidate; retain at least three live qualified candidates with exact Connects cost, observed age and one factual sealed proposal each; reconcile submitted/active proposals, invitations, messages, offers, contracts and official terminal reasons into one current inventory |
-| U14 | Submit the best live proposal from free capacity once | Wait until granted/returned Connects cover the sealed cost or a zero-Connect invitation exists; never purchase capacity; then verify proposal ID plus Connects before/after |
+| U13 | Activate every zero-spend acquisition path | Inspect and complete account-visible free reward tasks; publish one bounded Project Catalog service; monitor invitations/direct offers; retain three sealed public-job candidates; reconcile all official states into one inventory |
+| U14 | Close the first zero-spend acquisition effect | Accept one qualified invitation/direct offer or Project Catalog order, or submit the best sealed public-job proposal when granted/returned Connects cover its exact cost; never purchase capacity; verify official IDs and balance readback |
 | U15 | Replay immediately | Same proposal ID; zero new proposal and zero additional Connects |
 | U16 | Poll and answer the resulting thread | Official story/message IDs and no duplicate reply |
 | U17 | Negotiate and accept profitable terms | Offer ID, exact terms hash and active contract ID |
@@ -314,9 +314,10 @@ U9 has published all three proofs as projects `2091143267699150848`, `2091143845
 `2091144398831636480`. GitHub web linking had no credential/session, so U9 used the factual A10 Lab
 Marketing Intern history instead; official completion now reads 95%. It next adds one truthful Other
 Experience item; official completion now reads 100%. The unfinished Project Catalog item remains a
-private draft and is no longer next. U10 searches and qualifies the first paid-job candidate; U11 records
+private draft and returns as a zero-spend inbound bootstrap task. U10 searches and qualifies the first paid-job candidate; U11 records
 the exact proposal Connects requirement and resolves only the capacity needed for that candidate.
-Project Catalog publishing is not required for applications and remains parked. Purchased Connects,
+Project Catalog publishing is not required for public applications, but is required as a separate
+zero-Connect inbound acquisition path. Purchased Connects,
 Freelancer Plus, Availability Badge and boosts stay disabled without separate authorization.
 Application, Connects-spend and payment effects remain zero. U13 continues now: it refreshes the
 existing candidate and prepares at least two independent backups instead of waiting passively for a
@@ -327,15 +328,18 @@ archived, job-closed, platform-removed or unknown. Missing from one page never m
 U13 atomic order:
 
 1. Implement the missing production CloakBrowser provider entrypoint for the dedicated `gig-upwork`
-   profile; wire official job, Connects, proposal and invitation readbacks into the existing adapter.
-2. Read official submitted and active proposal inventories and persist their stable IDs.
-3. Read invitations, unread messages, offers and active contracts; join by official job/proposal/thread IDs.
-4. Re-read every nonterminal job detail and record open, closed, removed or unknown without inference.
-5. Record each terminal transition once with official reason, observation time and receipt hash.
-6. Re-read candidate `~022091106411892491962`; retire it from the ready queue if officially unavailable.
-7. Discover recent jobs twice and qualify replacements until three live sealed candidates exist.
-8. Read free Connects history and refunds; do not purchase, withdraw or submit without sufficient free capacity.
-9. Verify a repeated reconciliation produces no duplicate transition or external effect; commit/push.
+   profile; wire official job, free-reward, Connects, Catalog, invitation, proposal and offer readbacks.
+2. Inspect every account-visible onboarding/education reward; complete only factual free tasks and
+   verify any award in Connects History.
+3. Finish, publish and read back the bounded private Project Catalog draft as one live inbound service.
+4. Read invitations, unread messages, direct offers and active contracts; join stable official IDs.
+5. Read official submitted and active proposal inventories and persist their stable IDs.
+6. Re-read every nonterminal job detail and record open, closed, removed or unknown without inference.
+7. Record each terminal transition once with official reason, observation time and receipt hash.
+8. Re-read candidate `~022091106411892491962`; retire it from the ready queue if officially unavailable.
+9. Discover recent jobs twice and qualify replacements until three live sealed candidates exist.
+10. Read free Connects history and refunds; never purchase, withdraw or submit without sufficient free capacity.
+11. Verify a repeated reconciliation produces no duplicate transition or external effect; commit/push.
 
 ### Task 7: Record Upwork's private action matrix
 

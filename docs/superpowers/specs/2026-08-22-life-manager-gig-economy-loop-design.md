@@ -77,13 +77,14 @@ Other Experience item is publicly readable with NAIST/ATR, April 2024–April 20
 learning and mind-wandering detection preserved exactly. The official Find Work progressbar now reads
 `aria-valuenow=100` / `100% completed`. The main Upwork path next searches for and applies to a
 small paid job with bounded scope, low competition and delivery in one to three days. The unfinished
-Project Catalog project remains a private draft and is not an acquisition gate. For each qualified job
+Project Catalog project remains a private draft. Under the locked zero-spend policy it now becomes an
+inbound bootstrap gate alongside invitations and direct offers. For each qualified public job
 the loop opens the proposal surface, records the exact Connects requirement, and submits immediately
-when authorized Connects capacity is sufficient. Project Catalog publishing, Freelancer Plus,
-Availability Badge and proposal boosting are not prerequisites for outbound applications. Until
-Connects purchasing is authorized, the loop MUST continue read-only discovery, candidate aging,
-qualification, factual proposal sealing and inbox/invitation polling so capital approval never blocks
-preparation work.
+when authorized free Connects capacity is sufficient. Freelancer Plus, Availability Badge and
+proposal boosting are not prerequisites. With Connects purchasing permanently disabled, the loop
+MUST continue read-only discovery, candidate aging,
+qualification, factual proposal sealing, onboarding-reward inspection, inbox/invitation polling and
+Project Catalog inbound acquisition so a zero balance never blocks all acquisition work.
 
 U10–U12 are now closed for first candidate `~022091106411892491962`, a $15 fixed-price
 20–30 minute student usability test posted two hours before observation. The owner evidence matches
@@ -101,9 +102,10 @@ Submitted proposals 0; the Invites tab is empty and no educational Connects rewa
 There is therefore no current zero-Connect submission path for this account. Free monthly Connects
 are offer-dependent rather than a guaranteed refill on a known date; the account's official Connects
 history is the only acceptance source for a grant. Publishing a Project Catalog listing does not
-create proposal capacity and MUST NOT block the outbound-application path.
+create proposal capacity, but it lets clients purchase a bounded service without a freelancer proposal;
+therefore it is a distinct zero-Connect acquisition path rather than a prerequisite for outbound jobs.
 
-The proposal effect kernel remains ready before live execution. While spend authority is absent, the
+The proposal effect kernel remains ready before live execution. Under the zero-spend policy, the
 active work is to re-read the first candidate, mark it stale if its official state changes, maintain at
 least three independently qualified backup candidates, seal one factual proposal per live candidate,
 and poll Connects history, invitations and messages without mutation. It persists the full canonical proposal and
@@ -154,6 +156,12 @@ Connects, subscribe to Freelancer Plus, boost a proposal/profile or open a billi
 only when the official current free balance covers the exact sealed `connects_cost`, or when an
 official invitation requires zero Connects. Insufficient balance keeps the candidate sealed and
 continues discovery/reconciliation; it is not an error and never triggers a purchase fallback.
+
+Zero-spend acquisition MUST run all provider-supported paths in this order: claim only account-visible
+onboarding/education rewards, respond to qualified invitations at zero Connects, publish and monitor
+one bounded Project Catalog service, accept qualified direct offers, then spend only granted or returned
+Connects on a small public job. A normal public `Apply now` path is never classified as zero-cost unless
+its official proposal surface explicitly reads back `connects_cost=0`.
 
 During the Upwork proof, `delivery capacity` means active Upwork contracts only. Coconala orders,
 projects and stale Coconala talkroom states MUST NOT make an Upwork opportunity eligible or
@@ -491,15 +499,17 @@ maximum application volume. The deterministic acquisition order is:
 1. Add the required factual Employment History item and read back the required-profile baseline.
 2. Publish three reusable portfolio proofs, then add only truthful optional items until the main
    profile reaches official 100% readback.
-3. Discover recent jobs and prefer clear acceptance criteria, low proposal count, verified payment,
+3. Complete account-visible free onboarding/education tasks and verify any Connects award in history.
+4. Publish one narrow Project Catalog service and monitor qualified inbound orders/messages.
+5. Monitor qualified invitations and direct offers, which require no purchased proposal capacity.
+6. Discover recent jobs and prefer clear acceptance criteria, low proposal count, verified payment,
    client hiring history, low Connects and one-to-three-day delivery.
-4. Maintain at least three live qualified candidates while submission capital is unavailable; re-read
+7. Maintain at least three live qualified candidates while free submission capacity is unavailable; re-read
    official job state before every proposed effect.
-5. Freeze a tailored proposal only when the reusable proof matches the job; never deliver the
+8. Freeze a tailored proposal only when the reusable proof matches the job; never deliver the
    client's complete solution as unpaid application work.
-6. Use invitations or granted Connects when present; otherwise purchase only after explicit wallet
-   authorization. Do not publish a Project Catalog listing merely to obtain Connects.
-7. Submit each authorized proposal exactly once, then close contract, delivery, received payment and
+9. Use invitations or granted/returned Connects when present; never purchase acquisition capacity.
+10. Submit each authorized proposal exactly once, then close contract, delivery, received payment and
    honest review before increasing price or scope.
 
 The loop optimizes the measured funnel
@@ -627,7 +637,7 @@ promise of earnings.
 |---|---|---|
 | Email account bootstrap selects existing-login or signup without duplication | Authenticated identity and account-state receipt | Required |
 | Profile contains only factual owner data and is application-ready | Official profile completeness readback | Required |
-| First acquisition is application-first and review-oriented | 100% profile, three reusable proofs, at least three live qualified candidates and no unauthorized paid effect | Required |
+| First acquisition is zero-spend and review-oriented | 100% profile, three reusable proofs, free-reward inventory, one live Project Catalog service, invitation/direct-offer monitoring, three live qualified public-job candidates and no paid effect | Required |
 | Discovery reflects current Upwork state | Same job IDs across two authenticated reads | Required |
 | First-job qualification rejects high-competition broad builds | Bounded 1-3 day deliverable, proposals <=20, explicit acceptance and evidence-backed proof | Required |
 | Qualification ignores Coconala runtime state | Upwork active-contract count and provider-scoped ledger query | Required |
