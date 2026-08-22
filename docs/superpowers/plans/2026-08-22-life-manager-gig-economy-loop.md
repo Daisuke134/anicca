@@ -446,6 +446,19 @@ U14 atomic order:
    remaining proof for this public-job effect is a real free-capacity event followed by one official
    proposal ID and its exact Connects delta. Invitations/direct offers remain separate zero-Connect
    acquisition effects.
+4. **DETECTION COMPLETE / FIRST LIVE INBOUND PENDING:** the five-minute observer now routes a stable
+   direct offer before an invitation, an invitation before a public-job proposal, and a positive
+   Catalog order count before `waiting_free_capacity`. Offer and invitation packets require an exact
+   official Upwork HTTPS URL containing the stable resource ID. A positive Catalog count without an
+   order ID is fail-visible as `catalog_order_identity_pending`, never treated as an executable
+   title-based identity. In the same wake, an offer/invitation packet opens its official detail URL
+   read-only and marks it `actionable` only when the matching accept/proposal control and decline
+   control both exist; missing controls remain `unknown`. Focused inbound/provider tests pass 23/23.
+   Production release `adb317892` completed with exit 0 at
+   `2026-08-22T17:51:55.687566+00:00`: invitations 0, offers 0, Catalog orders 0, public proposals 0,
+   earnings USD 0 and provider-effect rows 0. Next, when an invitation is actionable, bind its exact
+   official detail evidence to a zero-Connect sealed proposal payload before reusing the U14-3
+   preflight/fence/official-ID path.
 
 ### Task 7: Record Upwork's private action matrix
 
