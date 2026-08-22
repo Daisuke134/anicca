@@ -204,5 +204,8 @@ def qualify(
         ("risk_reserve_minor", risk_reserve_minor),
         ("labor_cost_minor", labor_cost),
         ("active_project_count", active_count),
+        ("concurrent_job_cap", capacity_cap),
+        ("evaluated_at", now.isoformat()),
+        ("qualified_deadline_at", deadline_at.isoformat()),
     )
     return Qualification(not risks, workflow, expected_net, tuple(risks), evidence)

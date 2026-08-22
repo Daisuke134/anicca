@@ -335,12 +335,33 @@ does not prove an installed workflow, capacity, economics or independent verific
 **Interfaces:** Produces immutable proposal payload with job evidence, price, milestones, delivery
 workflow, claims evidence and payload hash.
 
-- [ ] Write failing tests for generic copy, unsupported claims, absent scope reference, price outside
+- [x] Write failing tests for generic copy, unsupported claims, absent scope reference, price outside
   bounds and missing deliverability proof.
-- [ ] Generate one tailored proposal from official job facts and factual owner assets only.
-- [ ] Bind price and milestone dates to the qualification/capacity receipt.
-- [ ] Freeze the exact body and attachments before creating an effect intent.
-- [ ] Run focused tests and commit/push.
+- [x] Generate one tailored proposal from official job facts and factual owner assets only.
+- [x] Bind price and milestone dates to the qualification/capacity receipt.
+- [x] Freeze the exact body and attachments before creating an effect intent.
+- [x] Run focused tests and commit/push.
+
+Task 11 evidence: the pure sealer consumes the canonical `UpworkOpportunity` produced by Task 9
+and the eligible `Qualification` produced by Task 10. It rejects generic copy, missing or fabricated
+scope references, unsupported profile claims, bids outside the observed job range, fixed-price
+milestones whose amounts do not sum to the bid or whose dates exceed the qualified deadline, absent
+independent verification, and mismatched/ineligible qualification. The frozen payload binds the job
+source hash, qualification hash, exact cover letter, claim receipts, terms, milestones, builder and
+verifier before Task 12 creates any effect intent. Task 10 evidence now also includes evaluated time,
+qualified deadline and capacity cap, closing the downstream binding gap found during this task.
+Twenty-three focused Task 10/11 tests pass. A live private read-only gate saw six current active paid
+projects against cap three plus older active state, and therefore rejected proposal creation with
+`qualification_ineligible`; marketplace effects remained zero. Upwork Help states that a proposal
+sets hourly/fixed terms, project-or-milestone payment, duration and cover letter:
+https://support.upwork.com/hc/en-us/articles/211062998-How-to-submit-a-proposal-on-Upwork.
+Upwork Help also says fixed milestones should agree amounts, deliverables and deadlines before work:
+https://support.upwork.com/hc/en-us/articles/211068218-How-to-use-milestones-in-fixed-price-jobs.
+OSS comparison: `vivekanandtech/upwork-proposal-automation@496a388a52e2fc158ec88387008f3caff481d2b2`
+contributed the useful pattern of opening from an exact job detail and carrying job fields into the
+proposal record. Its free-form hard-coded profile claims, Airtable write and Slack notification were
+rejected: they do not bind qualification, factual assets, pricing, milestones or an immutable effect
+identity.
 
 ### Task 12: Submit one Upwork proposal exactly once
 

@@ -118,6 +118,11 @@ def test_eligible_fixed_job_has_conservative_net_and_evidence(tmp_path):
     assert dict(result.evidence)["gross_minor"] == 100_000
     assert dict(result.evidence)["skill_sha256"] == "1" * 64
     assert dict(result.evidence)["verifier_sha256"] == "2" * 64
+    assert dict(result.evidence)["evaluated_at"] == NOW.isoformat()
+    assert dict(result.evidence)["qualified_deadline_at"] == (
+        NOW + timedelta(hours=4)
+    ).isoformat()
+    assert dict(result.evidence)["concurrent_job_cap"] == 3
 
 
 def test_missing_installed_skill_is_ineligible(tmp_path):
