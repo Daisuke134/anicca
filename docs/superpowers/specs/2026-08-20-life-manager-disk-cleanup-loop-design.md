@@ -563,7 +563,8 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 
 ## 6. Execution Steps — Atomic TODO
 
-この順序が実装と完了判定のSSOTである。後続itemを先に実行しない。
+この表はphase mapである。実装と完了判定の唯一のSSOTは下のAtomic TODO Register A-01〜A-36であり、
+後続itemを先に実行しない。
 
 | # | Work | Completion evidence | State |
 |---:|---|---|---|
@@ -586,22 +587,48 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 | 16 | 7日間連続観測とproducer lifecycle audit | state write failure 0、cleanup起因producer failure 0 | 未完了: 24時間観測後に開始 |
 | 17 | rollback restore testと最終production receiptを保存 | prior label復元可能、final receipt、Telegram完了message ID | 未完了: launchd cutover、rollback実演、最終receiptが未完了 |
 
-### 現時点の残TODO（実装完了まで）
+### Atomic TODO Register（実装完了までの唯一の残TODO SSOT）
 
-次の順序で実行する。各項目は証拠が揃うまで完了扱いにしない。
+各行は1つの作業だけを持つ。順序を飛ばさず、受入証拠が保存されるまで完了扱いにしない。
 
-1. **host-wide censusを完成** — bounded `host-inventory.json`の残り4件（Library/TCC、system temp、`.Trash`のpermission gap）をowner/permission receiptとして分類し、全local writable volume、必須owner family、1 GiB以上のunknown rootを同一versioned inventoryへ記録し、missing 0を出す。
-2. **OSS contract testを完成** — protected roots、lease、open-path、probe error、dirty/unpushed worktree、unknown classの統合fixtureを追加し、Test Matrix 3–11をPASSにする。
-3. **bootstrap health契約を完成** — `dscl` UID readback、`launchctl print gui/501`、対象label存在のpreflightと、141/153/UID failure時のatomic `gui-bootstrap-health-failure` receiptは実装済み。残りは141/153 failure fixtureとstale app-server終了をcleanupから分離した実機receiptの検証。
-5. **producer lifecycleを接続** — 上位growth owner（browser、build、media、VM/container、package manager、agent runtime、`~/gig/releases`）をcensusし、artifact登録、lease heartbeat、finalizer、quotaを実装する。旧`disk-reclaim`の安全なrelease proofはこのmanifestへ移植してから再有効化する。
-6. **全producerにbackpressureを接続** — Gig/Writerの共通入口、Paid/Storefrontのin-flight effect boundary、Writer provider-start gateは接続済み。残るWriterの長時間処理、browser、build、media、VM/container、package manager、agent runtime等へPREVENTIVE/PRESSURE/CRITICAL/ULTRAのpreflight、drain、checkpoint、bounded resumeを同じcontractで適用し、consumer missing 0にする。
-7. **audit/reportingを完成** — bounded ops log、immutable incident receipt、Telegram状態遷移dedupe、delivery-failure receiptを実装し、message IDをreadbackする。sentinelはstable event key、payload SHA-256、atomic claim、pending→sent receipt、120秒send timeout、30分dedupeを実装した。Gatewayのactive disk/health/recovery/janitor cronは0件、旧`anicca-disk-hourly`（ID `79b05373…`）も`enabled=false`だった。正式message IDのreadback、delivery-failure receiptの集計、guard/sentinelソースに存在しない日本語alertの発行元は未特定のため、Claude/外部watcherを含むowner attributionを追加する。
-8. **hourly intelligenceを完成** — input/output schema、異常時wake gate、growth attribution、producer defect task化を実装する。intelligenceは削除・manifest mutationを持たないことをtestで固定する。
-9. **owner単位recoveryを完成** — reserve回復後のredispatchをownerごとに直列化し、checkpoint、retry上限、duplicate redispatch 0を証明する。
-10. **shadow parityと全テストを完了** — legacy shimとcanonical governorのeffect-free decision parityをreceipt化し、Test Matrix 18–29、Life Manager regressionをPASSにする。
-11. **canaryとreplayを閉じた** — exact-path canary、bytes/free readback、protected deletion 0、initial/replay duplicate 0をproduction receiptへ保存済み。今後は同経路の長期観測だけを残す。
-12. **容量を回復して観測** — 重要sessionを削除せず、growth owner/再生成候補を特定してfree spaceを11 GiB以上へ戻し、24時間（ENOSPC 0、protected deletion 0、duplicate owner 0）を連続観測する。swapfileの直接削除と重要app-server killは禁止。
-13. **7日観測とrollbackを閉じる** — 7日間のstate write failure 0、cleanup起因producer failure 0を確認し、rollback restore testと最終Telegram完了message IDを保存する。
+| ID | Atomic action（1作業） | Acceptance evidence | State |
+|---|---|---|---|
+| A-01 | mount inventoryを保存する | 9 mountのimmutable receipt | 部分完了 |
+| A-02 | top-level root inventoryを保存する | 23 rootのversioned inventory | 部分完了 |
+| A-03 | owner-family coverageを保存する | required family 12、missing 0のreceipt | 部分完了 |
+| A-04 | size-deferred rootを解消する | `coverage.gaps`のsize-deferred 0 | 未完了 |
+| A-05 | permission-limited rootを分類する | TCC/system-temp/`.Trash`のowner receipt | 部分完了 |
+| A-06 | local writable volume coverageを証明する | writable volume missing 0 | 未完了 |
+| A-07 | protected-root fixtureを追加する | protected rootがmanifestへ入らないtest PASS | 部分完了 |
+| A-08 | active-lease fixtureを追加する | active lease candidate preserve test PASS | 未完了 |
+| A-09 | open-path fixtureを追加する | open path candidate preserve test PASS | 未完了 |
+| A-10 | probe-failure fixtureを追加する | lsof/du failure fail-closed test PASS | 未完了 |
+| A-11 | dirty/unpushed worktree fixtureを追加する | dirty/unpushed preserve test PASS | 未完了 |
+| A-12 | unknown-class fixtureを追加する | unknown candidate preserve test PASS | 未完了 |
+| A-13 | 141/153 failure fixtureを保存する | failure receipt with zero deletion | 未完了 |
+| A-14 | stale app-server separation receiptを保存する | cleanup never kills app-server receipt | 未完了 |
+| A-15 | browser producer lifecycleを登録する | artifact/lease/finalizer/quota receipt | 未完了 |
+| A-16 | build/media producer lifecycleを登録する | artifact/lease/finalizer/quota receipt | 未完了 |
+| A-17 | VM/package producer lifecycleを登録する | artifact/lease/finalizer/quota receipt | 未完了 |
+| A-18 | agent/gig-project lifecycleを登録する | project owner/terminal/lease receipt | 未完了 |
+| A-19 | Writer in-flight drainを接続する | provider interruption checkpoint/resume test | 未完了 |
+| A-20 | browser/build/media preflightを接続する | producer consumer missing 0 for these families | 未完了 |
+| A-21 | VM/package/agent preflightを接続する | producer consumer missing 0 for these families | 未完了 |
+| A-22 | supervisor non-stop behaviorを実装する | ULTRA wake keeps supervisor labels loaded | 未完了 |
+| A-23 | Codex log budget/rotationを実装する | active app-server handoff with session loss 0 | 未完了 |
+| A-24 | completed-project janitorをcanonical loopへ接続する | terminal-only dry-run/live receipt | 未完了 |
+| A-25 | ULTRA receipt reserveを実装する | state/receipt/checkpoint write survives pressure | 未完了 |
+| A-26 | bounded ops logを分離する | operational log size/retention test PASS | 部分完了 |
+| A-27 | incident receiptを分離する | immutable incident receipt schema PASS | 未完了 |
+| A-28 | delivery-failure aggregationを保存する | Telegram message/delivery-failure IDs read back | 未完了 |
+| A-29 | hourly intelligence schemaを実装する | schema PASS and deletion capability 0 | 未完了 |
+| A-30 | owner recovery redispatchを実装する | checkpoint/retry/duplicate redispatch 0 | 未完了 |
+| A-31 | legacy/canonical shadow parityを保存する | protected mismatch 0 receipt | 未完了 |
+| A-32 | full regression matrixを実行する | Test Matrix 3–11 and 18–29 PASS | 部分完了 |
+| A-33 | 24-hour production observationを完了する | 24h free≥11GiB, ENOSPC 0, protected deletion 0 | 未完了 |
+| A-34 | 7-day production observationを完了する | 7d state-write failure 0 and cleanup-caused producer failure 0 | 未完了 |
+| A-35 | rollback restore testを保存する | prior label restore receipt | 未完了 |
+| A-36 | final production receiptを保存する | final receipt and Telegram message ID | 未完了 |
 
 ### Required verification commands
 
@@ -622,5 +649,5 @@ df -k /System/Volumes/Data
 
 ### Completion claim rule
 
-spec作成、unit test、launchd load、1回の回収だけではDONEではない。Atomic TODO 1–17が
+spec作成、unit test、launchd load、1回の回収だけではDONEではない。Atomic TODO A-01〜A-36が
 順番に完了し、24時間と7日間のproduction observationを満たした時だけDONEとする。
