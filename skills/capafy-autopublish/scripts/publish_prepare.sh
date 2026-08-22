@@ -23,7 +23,9 @@ AUTO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PUB="$AUTO/vendor/capafy-publisher"
 LIFE_MANAGER_STATE_HOME="${LIFE_MANAGER_STATE_HOME:-$HOME/.local/state/life-manager}"
 VENV="${CAPAFY_BROWSER_PYTHON:-python3}"
-WS="${CAPAFY_WORKSPACE:-$LIFE_MANAGER_STATE_HOME/work/capafy}"
+# Capafy's OpenClaw packager validates the runtime shape under ~/.openclaw.
+# This is generated staging only; the canonical skill source remains in this repo.
+WS="${CAPAFY_WORKSPACE:-$HOME/.openclaw/workspace-capafy-life-manager}"
 SKILL_NAME="$(basename "$SKILL_DIR")"
 SEL_FILE="$LIFE_MANAGER_STATE_HOME/state/capafy-autopublish/sel_one.json"
 
