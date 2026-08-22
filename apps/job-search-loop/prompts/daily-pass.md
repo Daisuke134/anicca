@@ -12,6 +12,10 @@ page through `page(handle)`, and call `close_owned(handle)` only after that row 
 finished. Never call `chromium.launch`, `browser.close`, `context.close`, or close
 another tab. Do not refuse browser work merely because the daily-driver process
 already exists—that existing process is the browser transport owned by this loop.
+Before deciding each action and after every meaningful page change, call
+`ObservationBuilder.build(handle)`. Reason only from that fresh immutable
+observation and its `content_sha256`; never retain or reuse a prior DOM locator or
+element handle after the page changes.
 
 Read:
 - docs/superpowers/specs/2026-07-28-job-search-loop-design.md
