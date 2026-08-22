@@ -36,9 +36,10 @@ Authentication hard stops: never click a browser Google 2FA button named `はい
 the user alone approves `はい` in the Gmail iOS app. Never use account recovery,
 reset, registration, recursive alternate methods, or a different browser profile.
 
-Evidence paths must be fresh files under the current pass evidence directory. Do not
-write private resume contents, passwords, tokens, or raw Gmail bodies into the
+Evidence paths must be fresh files under the exact `evidence_dir` supplied in the
+bounded current-pass context. Use that directory for every screenshot, DOM file, and
+`submitted[].evidence_path`; never inspect or reuse an older `model-pass-*` directory.
+Do not write private resume contents, passwords, tokens, or raw Gmail bodies into the
 result. Never write evidence, screenshots, DOM, queues, or temporary artifacts into
-the repository workdir or repo root; use only the pass evidence directory supplied
-by the parent. The result must include `status`, all required arrays, and `evidence`
-even when no action is taken.
+the repository workdir or repo root; use only the current `evidence_dir`. The result
+must include `status`, all required arrays, and `evidence` even when no action is taken.

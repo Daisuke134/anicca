@@ -1,8 +1,10 @@
 import json
 from pathlib import Path
+import tempfile
 import unittest
 
 from job_search_loop.agent_runner import AgentRunner, TASK_CLASSES
+from job_search_loop.mercor_pass import build_context, validate_evidence_paths
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -24,7 +26,9 @@ class MercorPassContractTests(unittest.TestCase):
             "needs_human",
             "browser Google 2FA button named `はい`",
             "Never write evidence",
-            "only the pass evidence directory",
+            "only the current `evidence_dir`",
+            "exact `evidence_dir` supplied",
+            "never inspect or reuse an older `model-pass-*` directory",
         ):
             self.assertIn(required, prompt)
 
@@ -70,6 +74,60 @@ class MercorPassContractTests(unittest.TestCase):
             '--schema "$PASS_SCHEMA"',
         ):
             self.assertIn(required, script)
+
+    def test_evidence_paths_must_stay_inside_current_private_pass(self):
+        with self.subTest("stale evidence path is rejected"):
+            with self.assertRaises(ValueError):
+                validate_evidence_paths(
+                    {
+                        "status": "needs_human",
+                        "evidence": {
+                            "page_url": "https://work.mercor.com/explore",
+                            "screenshot_path": "/tmp/old-pass/screenshot.png",
+                            "dom_path": "/tmp/old-pass/dom.json",
+                        },
+                        "submitted": [],
+                    },
+                    Path("/tmp/current-pass"),
+                )
+
+    def test_evidence_paths_accept_existing_files_inside_current_private_pass(self):
+        with self.subTest("current evidence is accepted"):
+            with tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                screenshot = root / "screenshot.png"
+                dom = root / "dom.json"
+                screenshot.write_bytes(b"png")
+                dom.write_text("{}", encoding="utf-8")
+                validate_evidence_paths(
+                    {
+                        "status": "needs_human",
+                        "evidence": {
+                            "page_url": "https://work.mercor.com/explore",
+                            "screenshot_path": str(screenshot),
+                            "dom_path": str(dom),
+                        },
+                        "submitted": [],
+                    },
+                    root,
+                )
+
+    def test_context_binds_the_current_evidence_directory(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            state = root / "state"
+            state.mkdir()
+            context = build_context(
+                state_root=state,
+                profile_path=root / "profile.json",
+                resume_path=root / "resume.pdf",
+                cdp_url="http://127.0.0.1:9334",
+                evidence_dir=root / "evidence" / "current-pass",
+            )
+            self.assertEqual(
+                context["evidence_dir"],
+                str((root / "evidence" / "current-pass").resolve()),
+            )
 
 
 if __name__ == "__main__":
