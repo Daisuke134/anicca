@@ -799,8 +799,8 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 
 capacity-safety interruptのA-25とA-04〜A-06を閉じたため、実行queueは
 `A-07 → A-08 → … → A-24 → A-26 → … → A-44`へ進む。A-25の先行完了はA-07〜A-24の
-完了を意味しない。各itemはRED、最小GREEN、focused regression、fresh adversarial review、実機readback、
-spec state更新、commit/pushまでを同じsliceで閉じる。後続itemのscaffoldは前倒ししない。
+完了を意味しない。各itemは現状実測、straight fix、必要最小限のregression、fresh adversarial review、実機readback、
+spec state更新、commit/pushまでを同じsliceで閉じる。TDDのためだけのfixture増加や後続itemのscaffoldは前倒ししない。
 
 | ID | Atomic action（1作業） | Acceptance evidence | State |
 |---|---|---|---|
