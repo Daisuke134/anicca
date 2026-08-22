@@ -45,6 +45,21 @@ def test_parses_complete_zero_effect_inventory_and_account_task():
         "active_proposals": 0,
         "submitted_proposals": 0,
         "account_tasks": ["working_style_assessment"],
+        "working_style": {"completed": False, "strengths": []},
+    }
+
+
+def test_completed_working_style_result_overrides_stale_todo_banner():
+    state = parse_inventory(
+        "Offers (0)\nInvites from clients (0)\nActive proposals (0)\n"
+        "Submitted proposals (0)\nTo do: Take the working style assessment.\n",
+        "Working style assessment results\nAccountable for outcomes\n"
+        "Shown on profile\nDetail-oriented\nShown on profile\n",
+    )
+    assert state["account_tasks"] == []
+    assert state["working_style"] == {
+        "completed": True,
+        "strengths": ["Accountable for outcomes", "Detail-oriented"],
     }
 
 

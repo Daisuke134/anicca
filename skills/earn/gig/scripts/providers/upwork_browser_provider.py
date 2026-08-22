@@ -31,6 +31,7 @@ PROPOSALS_URL = "https://www.upwork.com/nx/proposals/"
 CATALOG_URL = "https://www.upwork.com/nx/project-dashboard/?step=approved"
 CONTRACTS_URL = "https://www.upwork.com/nx/wm/freelancer/home"
 MESSAGES_URL = "https://www.upwork.com/ab/messages/rooms/"
+WORKING_STYLE_URL = "https://www.upwork.com/nx/skills-assesment/assessment-results"
 DEFAULT_CANDIDATES = SCRIPTS.parent / "config" / "upwork-candidates.public.json"
 DEFAULT_TRANSITIONS = Path.home() / "gig/state/upwork-free-transitions.jsonl"
 TERMINAL_JOB_STATUSES = {"closed", "removed"}
@@ -57,17 +58,33 @@ def parse_connects(text: str) -> dict[str, Any]:
     }
 
 
-def parse_inventory(text: str) -> dict[str, Any]:
+def parse_inventory(text: str, working_style_text: str = "") -> dict[str, Any]:
     result: dict[str, Any] = {}
     for field, pattern in _COUNT_LABELS.items():
         match = re.search(pattern, text or "", re.IGNORECASE)
         if match is None:
             raise ValueError("upwork_readback_incomplete")
         result[field] = int(match.group(1))
+    strengths = [
+        label for label in ("Accountable for outcomes", "Detail-oriented")
+        if label.casefold() in working_style_text.casefold()
+    ]
+    working_style_complete = (
+        "working style assessment results" in working_style_text.casefold()
+        and working_style_text.casefold().count("shown on profile") >= 2
+        and len(strengths) == 2
+    )
     tasks: list[str] = []
-    if re.search(r"Take the working style assessment", text, re.IGNORECASE):
+    if (
+        re.search(r"Take the working style assessment", text, re.IGNORECASE)
+        and not working_style_complete
+    ):
         tasks.append("working_style_assessment")
     result["account_tasks"] = tasks
+    result["working_style"] = {
+        "completed": working_style_complete,
+        "strengths": strengths,
+    }
     return result
 
 
@@ -369,6 +386,7 @@ async def observe(candidates_path: Path = DEFAULT_CANDIDATES) -> dict[str, Any]:
         ("connects", CONNECTS_URL), ("invites", INVITES_URL),
         ("proposals", PROPOSALS_URL), ("catalog", CATALOG_URL),
         ("contracts", CONTRACTS_URL), ("messages", MESSAGES_URL),
+        ("working-style", WORKING_STYLE_URL),
     ] + [
         (f"candidate-{item['job_id'].lstrip('~')}", item["job_url"])
         for item in candidates
@@ -392,7 +410,10 @@ async def observe(candidates_path: Path = DEFAULT_CANDIDATES) -> dict[str, Any]:
         "mode": "zero_spend",
         "observed_at": datetime.now(timezone.utc).isoformat(),
         **parse_connects(pages["connects"]),
-        **parse_inventory(pages["proposals"] + "\n" + pages["invites"]),
+        **parse_inventory(
+            pages["proposals"] + "\n" + pages["invites"],
+            pages["working-style"],
+        ),
         **parse_stable_entities(
             invite_links=links["invites"], proposal_links=links["proposals"],
         ),
