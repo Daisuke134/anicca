@@ -1,4 +1,16 @@
 #!/usr/bin/env bash
+# Load the private launchd environment before any child process is started. Keep the source
+# outside the repository, suppress dotenv output, and export every assignment so provider keys
+# (including OpenRouter) reach the existing runner without ever being printed here.
+LIFE_MANAGER_ENV_FILE="$HOME/.local/state/life-manager/.env"
+if [ -f "$LIFE_MANAGER_ENV_FILE" ]; then
+  set -a
+  . "$LIFE_MANAGER_ENV_FILE" >/dev/null 2>&1 || true
+  set +a
+fi
+if [ -n "${LM_TELEGRAM_ALERT_CHAT_ID:-}" ] && [ -z "${TELEGRAM_ALERT_CHAT_ID:-}" ]; then
+  export TELEGRAM_ALERT_CHAT_ID="$LM_TELEGRAM_ALERT_CHAT_ID"
+fi
 LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
 [ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
 export LIFE_MANAGER_REPO
