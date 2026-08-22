@@ -338,6 +338,49 @@ def _strict_button_expression(path, kind):
     )
 
 
+def _provider_path_state_expression(path=OPENROUTER_API_KEY_PATH):
+    return (
+        "(() => {"
+        f"const path={json.dumps(path)};"
+        "const xs=[...document.querySelectorAll('*')].filter(x=>(x.textContent||'').trim()===path&&![...x.children].some(c=>(c.textContent||'').trim()===path));"
+        "return {count:xs.length};"
+        "})()"
+    )
+
+
+def _detected_keys_button_expression():
+    return (
+        "(() => {"
+        "const bs=[...document.querySelectorAll('button')].filter(b=>{const t=(b.textContent||'').trim();return /^検出されたキー（[0-9]+ 件）$/.test(t)||t==='検出されたキー';});"
+        "if(bs.length!==1)return {ok:false,reason:'button-count',count:bs.length};"
+        "const b=bs[0];b.scrollIntoView({block:'center'});const r=b.getBoundingClientRect();return {ok:true,x:r.x+r.width/2,y:r.y+r.height/2};"
+        "})()"
+    )
+
+
+def _ensure_raw_provider_section(page):
+    state = page.evaluate(_provider_path_state_expression())
+    if not isinstance(state, dict):
+        raise RuntimeError(f"provider path state unavailable ({state})")
+    count = state.get("count")
+    if count == 1:
+        return
+    if count != 0:
+        raise RuntimeError(f"ambiguous OpenRouter provider path ({state})")
+    button = page.evaluate(_detected_keys_button_expression())
+    if not isinstance(button, dict) or not button.get("ok"):
+        raise RuntimeError(f"detected-keys button unavailable ({button})")
+    x, y = button.get("x"), button.get("y")
+    if isinstance(x, bool) or isinstance(y, bool) or not isinstance(x, (int, float)) or not isinstance(y, (int, float)):
+        raise RuntimeError(f"detected-keys button coordinates invalid ({button})")
+    page.call("Input.dispatchMouseEvent", {"type": "mousePressed", "x": float(x), "y": float(y), "button": "left", "clickCount": 1})
+    page.call("Input.dispatchMouseEvent", {"type": "mouseReleased", "x": float(x), "y": float(y), "button": "left", "clickCount": 1})
+    time.sleep(1.5)
+    state = page.evaluate(_provider_path_state_expression())
+    if not isinstance(state, dict) or state.get("count") != 1:
+        raise RuntimeError(f"OpenRouter provider path did not appear after expansion ({state})")
+
+
 def _pw_strict_focus_and_insert(page, path, role, value):
     result = page.evaluate(_strict_focus_expression(path, role))
     if not isinstance(result, dict) or not result.get("ok"):
@@ -392,16 +435,7 @@ def _raw_cp2(cp2, key, cdp_base):
         page.call("Page.enable")
         page.call("Page.bringToFront")
         _wait_raw_navigation(page, cp2)
-
-        has_input = page.evaluate(
-            "[...document.querySelectorAll('input')].some(i=>/apiKey/.test(i.value||''))"
-        )
-        if not has_input:
-            label_state = page.evaluate("(() => {const xs=[...document.querySelectorAll('*')].filter(x=>(x.textContent||'').trim()==='検出されたキー'&&![...x.children].some(c=>(c.textContent||'').trim()==='検出されたキー'));if(xs.length!==1)return {ok:false,count:xs.length};const x=xs[0];x.scrollIntoView({block:'center'});const r=x.getBoundingClientRect();return {ok:true,x:r.x+r.width/2,y:r.y+r.height/2};})()")
-            if not isinstance(label_state, dict) or not label_state.get("ok"):
-                raise RuntimeError(f"ambiguous detected-keys label ({label_state})")
-            page.click_coords("(() => {const xs=[...document.querySelectorAll('*')].filter(x=>(x.textContent||'').trim()==='検出されたキー'&&![...x.children].some(c=>(c.textContent||'').trim()==='検出されたキー'));if(xs.length!==1)return null;const x=xs[0];x.scrollIntoView({block:'center'});const r=x.getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2};})()")
-            time.sleep(1.5)
+        _ensure_raw_provider_section(page)
 
         has_input = page.evaluate(
             "[...document.querySelectorAll('input')].some(i=>{const v=i.value||'';return v.includes('api.')||v.includes('openrouter')})"

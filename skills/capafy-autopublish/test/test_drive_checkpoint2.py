@@ -271,6 +271,64 @@ def test_probe_loop_uses_one_shared_five_second_budget(monkeypatch) -> None:
     assert budgets[1][1:] == (4.0, 4.0)
 
 
+def test_provider_section_skips_count_button_when_path_already_expanded() -> None:
+    module = load_module()
+
+    class _Page:
+        def __init__(self):
+            self.evaluates = []
+            self.calls = []
+
+        def evaluate(self, expression):
+            self.evaluates.append(expression)
+            return {"count": 1}
+
+        def call(self, *args, **kwargs):
+            self.calls.append((args, kwargs))
+
+    page = _Page()
+    module._ensure_raw_provider_section(page)
+    assert len(page.evaluates) == 1
+    assert page.calls == []
+
+
+def test_provider_section_clicks_one_counted_button_then_requires_path() -> None:
+    module = load_module()
+
+    class _Page:
+        def __init__(self):
+            self.states = iter(({"count": 0}, {"ok": True, "x": 10, "y": 20}, {"count": 1}))
+            self.calls = []
+
+        def evaluate(self, expression):
+            return next(self.states)
+
+        def call(self, method, params=None):
+            self.calls.append((method, params))
+
+    page = _Page()
+    module._ensure_raw_provider_section(page)
+    assert [method for method, _ in page.calls] == ["Input.dispatchMouseEvent", "Input.dispatchMouseEvent"]
+
+
+@pytest.mark.parametrize("button_state", ({"ok": False, "reason": "button-count", "count": 0}, {"ok": False, "reason": "button-count", "count": 2}))
+def test_provider_section_rejects_missing_or_ambiguous_count_button(button_state) -> None:
+    module = load_module()
+
+    class _Page:
+        def __init__(self):
+            self.states = iter(({"count": 0}, button_state))
+
+        def evaluate(self, _expression):
+            return next(self.states)
+
+        def call(self, *_args, **_kwargs):
+            pytest.fail("must not click an unavailable/ambiguous detected-keys button")
+
+    with pytest.raises(RuntimeError):
+        module._ensure_raw_provider_section(_Page())
+
+
 @pytest.mark.parametrize(("raw_ok", "expected_exit"), ((True, 0), (False, 1)))
 def test_main_defaults_to_raw_without_playwright_attach(monkeypatch, raw_ok, expected_exit) -> None:
     module = load_module()
