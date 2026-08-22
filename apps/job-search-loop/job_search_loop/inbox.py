@@ -12,6 +12,7 @@ from typing import Any
 STRONG_RECRUITING_TERMS = (
     "verify your candidate account",
     "confirm your email address",
+    "アカウントを確認してください",
     "application received",
     "application status",
     "interview invitation",
@@ -47,6 +48,7 @@ RECRUITING_SENDER_TERMS = (
     "lever.co",
     "myworkdayjobs.com",
     "myworkday.com",
+    "otp.workday.com",
 )
 WEAK_RECRUITING_TERMS = (
     "application",
@@ -406,7 +408,8 @@ def _gmail_threads(account: str) -> list[dict[str, Any]]:
     query = (
         "newer_than:14d "
         "(application OR applied OR assessment OR interview OR offer OR recruiter "
-        "OR candidate OR verify OR 応募 OR 選考 OR 面接 OR 採用 OR エントリー)"
+        "OR candidate OR verify OR account OR 応募 OR 選考 OR 面接 OR 採用 "
+        "OR エントリー OR アカウント OR 確認)"
     )
     completed = subprocess.run(
         [

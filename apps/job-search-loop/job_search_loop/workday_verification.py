@@ -127,7 +127,8 @@ def extract_verification_target(
     if not MESSAGE_ID_PATTERN.fullmatch(message_id):
         raise VerificationError("Gmail message ID is invalid")
     sender_address = parseaddr(sender)[1].casefold()
-    if not sender_address.endswith("@myworkday.com"):
+    sender_domain = sender_address.rpartition("@")[2]
+    if sender_domain not in {"myworkday.com", "otp.workday.com"}:
         raise VerificationError("Workday verification sender is not trusted")
     if not _verification_language_matches(subject, body):
         raise VerificationError("message is not a Workday account verification")
