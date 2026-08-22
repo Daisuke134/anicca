@@ -931,7 +931,7 @@ official Upwork contracts remain 0, so production has no contract workspace to r
 - [x] Run deterministic validators before model review.
 - [x] Use an independent review context bound to exact contract and artifact hashes.
 - [x] Permit delivery intent only from `PASS`; route `REVISE` back to Task 17.
-- [ ] Run focused tests and commit/push.
+- [x] Run focused tests and commit/push.
 
 Task 18 implementation evidence: `deliverable_verifier.py` is a local, effect-free gate over the
 immutable Task 16 contract and Task 17 execution receipt. It treats the exact frozen contract
