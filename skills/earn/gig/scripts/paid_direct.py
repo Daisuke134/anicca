@@ -991,6 +991,10 @@ def _file_review_disposition(verdict: Any) -> str:
 def _file_progress_payload(cadence: dict[str, Any]) -> dict[str, Any]:
     """Keep internal acceptance evidence out of the buyer-facing progress note."""
     payload = delivery_queue.progress_payload(cadence)
+    owner_message = _text(cadence.get("customer_message"))
+    if owner_message:
+        payload["message"] = owner_message
+        return payload
     revision = (cadence.get("buyer_feedback_stage") == "revision"
                 or cadence.get("buyer_reply_after_artifact_observed") is True)
     payload["message"] = (
@@ -2329,6 +2333,11 @@ def _promote_staged_file_bundle(staging: Path, root: Path, expected_version: str
     manifest = _load(manifest_path)
     if not isinstance(manifest, dict):
         raise Failure("file_builder")
+    if ("customer_message" in manifest
+            and (not isinstance(manifest["customer_message"], str)
+                 or not manifest["customer_message"].strip()
+                 or len(manifest["customer_message"]) > 2400)):
+        raise Failure("file_builder")
     for key in ("requirements_path", "artifact_path", "acceptance_evidence_path"):
         path = Path(_text(manifest.get(key)))
         if not path.is_absolute():
@@ -2407,7 +2416,12 @@ def _run_isolated_file_owner(args, root: Path, context: Path, prompt_text: str,
             + f" The exact required artifact_version is {expected_version}; use that version in the "
             "artifact filename, acceptance filename and manifest. Copy required_assets exactly, including "
             "every asset_id and field, from context/paid-work-decision.json into the manifest; never rename, "
-            "summarize, regroup, or replace that contract. If a required native desktop application cannot be "
+            "summarize, regroup, or replace that contract. Add customer_message to the manifest: write the concise "
+            "buyer-facing handoff from the complete conversation and buyer_trust_context, without internal evidence. "
+            "When the cited buyer messages show repeated failed submissions or an explicit cancellation warning, "
+            "acknowledge the delay and errors, offer immediate minor corrections, and offer seller-initiated cancellation "
+            "if the new artifact still cannot satisfy the explicit requirements. Never invent that offer when the buyer "
+            "did not raise it. If a required native desktop application cannot be "
             "controlled from this isolated process, do not fake its output and do not ask the buyer or operator "
             "to run it. Write delivery/paid-tool-requests.json with version=1 and a requests array. Each request "
             "must contain capability, input, output and receipt fields using paths relative to this workdir. The currently "
@@ -3693,6 +3707,7 @@ def _write_file_effect(args, item_path: Path, output: Path, prepared: dict[str, 
             "acceptance_evidence_path", "acceptance_status", "package_sha256",
             "acceptance_delta", "recipient_access_required",
         ) if key in evidence}, "delivery_evidence": evidence, "blockers": blockers}
+        cadence["customer_message"] = _text(manifest.get("customer_message"))
         # A targeted DOM readback is intentionally sparse.  It may discover a new
         # reason to downgrade/cancel a send, but it must not erase a buyer hold
         # already derived from the complete project context.

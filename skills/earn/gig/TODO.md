@@ -367,6 +367,17 @@ native receipt, v40 artifact inspection, one send, exact-room official DOM readb
 replay-zero before marking Haru complete. Current APFS free space is about 3.0 GiB; the active Haru runtime occupies
 about 2.9 GiB, so do not delete or mutate that in-flight workspace.
 
+**Buyer-trust message ownership correction, activation proof pending.** The Haru semantic decision correctly required
+a concise apology with the resubmission, but the final file progress helper replaced the Project Owner's contextual
+handoff with a fixed generic sentence. The generic harness now asks the same isolated Project Owner to bind a concise
+`customer_message` into the artifact manifest from the complete conversation and cited `buyer_trust_context`; the
+controller passes that text through unchanged after a nonempty 2,400-character bound. When cited buyer messages prove
+repeated failed submissions or an explicit cancellation warning, the owner must acknowledge the delay and errors,
+offer immediate minor corrections, and offer seller-initiated cancellation if the new artifact still cannot satisfy
+the explicit requirements. It must not invent a cancellation offer for unrelated buyers. Existing manifests without
+that optional field retain the safe legacy fallback. Local passthrough, syntax and diff checks pass; this remains
+non-customer evidence until a natural owner creates the message and exact-room official readback proves it was sent.
+
 **Current reviewer correction.** `main` and `origin/main` were both `31e7fa09d` before this change; the
 starting verification commit `79ac01ba1eb66b06aed1f9cee66d4af303f03a3d` remains an ancestor. The loaded
 Paid release is still `f747c7d05` while its natural pass is active, so no effect is attributed to the new
