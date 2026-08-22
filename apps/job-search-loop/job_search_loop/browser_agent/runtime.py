@@ -310,9 +310,12 @@ async def observe() -> dict[str, Any]:
 
 
 def _private_action(path: Path) -> dict[str, Any]:
-    if not path.is_file() or path.stat().st_mode & 0o077:
-        raise RuntimeError("action file must exist with mode 0600")
-    value = json.loads(path.read_text(encoding="utf-8"))
+    scratch = _path_env("JOB_SEARCH_BROWSER_SCRATCH").resolve()
+    resolved = path.resolve(strict=True)
+    if path.is_symlink() or resolved.parent != scratch or not resolved.is_file():
+        raise RuntimeError("action file must be a regular file in browser scratch")
+    os.chmod(resolved, 0o600)
+    value = json.loads(resolved.read_text(encoding="utf-8"))
     if not isinstance(value, dict):
         raise ValueError("action file must contain an object")
     return value
