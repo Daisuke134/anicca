@@ -253,6 +253,17 @@ produce platform-post observations at 2h/24h/72h/7d, then App Store Connect,
 RevenueCat, and product analytics must join the same immutable creative and
 campaign lineage. Missing data stays `unavailable`, never `0`.
 
+**Seven-day provider readback.** The live Postiz window contains only thirteen
+rows across the few accounts above; it is not evidence that every enabled
+integration is receiving every video or slideshow. It includes the verified
+receipts, the held `@anicca.he` provider-published/unknown effect, two YouTube
+errors, the reconciled-absent JP4 attempt, and quarantined legacy generic or
+`lm_wake` rows. The remaining Larry/ReelClaw labels stay explicitly disabled
+(twenty-six relevant labels in the live override) and no running legacy
+publisher is used. An enabled Postiz integration is routing configuration, not
+a claim of current posting, a direct public artifact, Telegram receipt, or
+metrics completeness.
+
 ### 3.3 Historical marketing launch state before quarantine
 
 The table preserves the pre-quarantine schedules for behavior equivalence. Its
