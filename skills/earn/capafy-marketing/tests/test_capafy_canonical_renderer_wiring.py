@@ -12,6 +12,8 @@ class ApprovedHyperFramesWiringTest(unittest.TestCase):
         self.assertIn("--task-class marketing-agent", source)
         self.assertIn("$LIFE_MANAGER_REPO/skills/video/hyperframes/capafy-o13-review/", source)
         self.assertIn("hyperframes@0.8.8 render", source)
+        self.assertIn("never background the render", source)
+        self.assertIn("identical across two probes at least 2 seconds apart", source)
         self.assertIn("edge-tts --voice en-US-AndrewNeural", source)
         self.assertIn("four listing-specific 1080x1920 scenes", source)
         self.assertIn("zero scene-boundary crossings", source)
