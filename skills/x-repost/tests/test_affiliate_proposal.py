@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import re
 import tempfile
 import unittest
 from pathlib import Path
@@ -245,9 +246,28 @@ class AffiliateProposalTests(unittest.TestCase):
             "buyer_intent": "Intent " * 30,
         }
         text = MODULE.post_text(proposal)
-        self.assertLessEqual(len(text), 280)
+        weighted = len(re.sub(r"https?://\S+", "x" * 23, text))
+        self.assertLessEqual(weighted, 280)
         self.assertIn("Affiliate disclosure: I may earn a commission", text)
         self.assertIn("https://aniccaai.com/blog/voice-isolator", text)
+
+    def test_post_text_uses_x_transformed_url_length(self) -> None:
+        proposal = {
+            "receipt_type": "AFFILIATE_REPOST_PROPOSAL",
+            "state": "READY_FOR_EXISTING_REPOST_OWNER",
+            "proposal_id": "b" * 64,
+            "placement_id": "realtime-speech-to-text-en-1",
+            "owned_article_url": "https://aniccaai.com/blog/elevenlabs-realtime-speech-to-text-for-creators",
+            "language": "en", "disclosure_required": True,
+            "tracking_link_state": "NOT_INCLUDED",
+            "revenue_credit_state": "NO_REVENUE_CREDIT",
+            "article_title": "Is ElevenLabs Scribe v2 Realtime a Fit for Your Live Transcription Build?",
+            "buyer_intent": "Creators evaluating ElevenLabs Realtime Speech To Text before paying",
+        }
+        text = MODULE.post_text(proposal)
+        self.assertGreater(len(text), 280)
+        self.assertLessEqual(len(re.sub(r"https?://\S+", "x" * 23, text)), 280)
+        self.assertIn(proposal["owned_article_url"], text)
 
 
 if __name__ == "__main__":

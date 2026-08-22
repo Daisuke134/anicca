@@ -22,6 +22,8 @@ SAFE_FIELDS = (
     "language", "disclosure_required", "tracking_link_state", "revenue_credit_state",
     "article_title", "buyer_intent",
 )
+X_TRANSFORMED_URL_LENGTH = 23
+URL = re.compile(r"https?://\S+")
 
 
 def read_json(path: Path) -> dict:
@@ -89,7 +91,10 @@ def post_text(proposal: dict) -> str:
         hook = intent[:intent_limit].rstrip() if intent_limit else "Before paying for an AI workflow"
         detail = title[:title_limit].rstrip() if title_limit else slug
         text = f"{hook}\n{detail}\nCheck fit, limits, and price before paying.\n\n{disclosure}\n{url}"
-        if len(text) <= 280:
+        # Match twitter/twitter-text v3: each extracted URL contributes the
+        # transformed URL length (23), not its raw display length.
+        weighted_length = len(URL.sub("x" * X_TRANSFORMED_URL_LENGTH, text))
+        if weighted_length <= 280:
             return text
     raise ValueError("affiliate proposal copy exceeds X limit")
 
