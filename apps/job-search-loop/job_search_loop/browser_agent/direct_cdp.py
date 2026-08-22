@@ -189,12 +189,14 @@ class DirectCDPPage:
             const value=rest.join(':');
             if (attr) nodes=Array.from(document.querySelectorAll(`[${{attr}}]`)).filter(el=>el.getAttribute(attr)===value);
           }}
+          const resolvedByStableId=nodes.length>0;
           if (!nodes.length) {{
             nodes=Array.from(document.querySelectorAll('input,button,select,textarea,a,[role],[data-automation-id]'));
           }}
           nodes=nodes.filter(el=>visible(el)&&!el.disabled&&el.getAttribute('aria-disabled')!=='true')
             .filter(el=>!target.role||role(el)===target.role)
             .filter(el=>{{
+              if (resolvedByStableId) return true;
               const actual=semanticLabel(label(el)), wanted=semanticLabel(target.label);
               return target.exact?actual===wanted:actual.includes(wanted);
             }});

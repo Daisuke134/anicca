@@ -12,6 +12,7 @@ class DirectCDPTypeTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("[data-automation-id]", script)
         self.assertIn("cursor==='pointer'?'button'", script)
         self.assertIn("relatedInput", script)
+        self.assertIn("if (resolvedByStableId) return true", script)
 
     async def test_type_selects_the_existing_whole_value_before_inserting(self):
         page = DirectCDPPage("ws://example", "target")
