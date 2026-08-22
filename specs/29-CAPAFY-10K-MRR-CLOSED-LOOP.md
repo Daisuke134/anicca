@@ -322,6 +322,8 @@ Portfolio draft recoveryは既存Agent `9480246345`を6件目なしで再開す�
 
 hourly ownerの再発false-greenも閉じる。過去runはresult evidenceにdrainer failureとdraft readbackを保存しながら、共有schemaが`status=ok`固定のためouter rc `0`を返した。Capafy専用terminal schemaとsame-directory result classifierを導入し、`failure=1`、invalid/missing/path escape=`2`、`success/no_op=0`へ写像する。実launchd kickstart run `9`はcurrent CAP_FULLを4秒でno-write終了し、terminal ledger `20260822T183104Z-34584`は`rc=0 / verdict=CAP_FULL / healthy=true`、loaded intervalは3600秒、last exitは0。strict daily counterは同日の過去failureを正しく含めるため現在`0/7`であり、古い`2/7`を維持しない。
 
+C22の次passで、OSが一時ファイルを書けない時にaccount resolverとcadence probeのhere-documentが作れず、本来停止すべきpassが`WARM_DAY=0 / DRY`と「cadence到来」へfail-openしてHyperFrames制作を開始する経路を実測する。誤作動中のrun `11`はInstagram投稿前にSIGTERMし、新規native Reelとrotation commitは0件。共有account resolverはmalformed・IO・non-list SSOTをnonzero、valid empty listをempty/rc0へ分離し、Capafy callerはhandle/port/warming resolver failure、既存accountのday 0、malformed/non-regular cadence stateをrc `2`で停止する。容量閾値やheadroom gateは追加せず、実write/state readが失敗したrunだけを停止する。focused fail-closed 4件、shell syntax、fresh reviewer `ship`を確認し、commit `e40202978`をmainへpushする。公式inventoryは引き続きlisted `22`、occupied `5`、free `0`、retry `6`なのでplatform writeは0件。production再kickはCodex GUI contextのlaunchd preflightが`manager_not_aqua / gui_domain_unreadable / 141 Reentrancy avoided`として拒否し、loaded schedulerの次実行readbackを未完として残す。
+
 ## Atomic remaining TODO
 
 Items are executed top-to-bottom. Only one item is active.
@@ -350,16 +352,17 @@ Items are executed top-to-bottom. Only one item is active.
 | C19 | prove one listed transition frees a fresh slot | status=4 reduces occupied count and next hourly wake submits exactly one candidate | pending/event-driven — Portfolio `9480246345`を含む5件がoccupied、free 0。hourly ownerは3600秒ごとにwrite 0で監視し、accepted/rejectedでfree 1になった最初のwakeだけがFootball same-Agent `1037238583`を再提出する |
 | C20 | connect post/click/subscription windows without claiming causal proof | attribution row is candidate unless Capafy exposes order-level UTM/source | completed — live attribution v2 joins one IG post + 23 counters + Capafy snapshot; clicks 7; causal=false; subscription unknown; Netlify deploy `6a89b4126e21fe74286b7a79`; TG `29036` |
 | C21 | prove seven consecutive daily healthy terminals and hourly freshness | 7-day ledger has no stale source, duplicate Agent/version/post or missing Telegram receipt | observing — strict proof `0/7` because an earlier same-day failed execution correctly breaks the streak。run `9`はCAP_FULL/rc0/write0、false-green classifierはfocused 10件でfailure/invalidを非zeroへ写像する |
-| C22 | operate growth and retention experiments until settled net MRR reaches `$10,000` | active subscription readback and refunds/fees reconcile to target | **active** — next eligible creativeはData Analyst `7785270416`。HyperFrames + scene-matched Andrew voice + repo-owned evidenceから第3 Reelを一件だけ作り、native URL/Telegram media/metric windowを取得する。5 ordersは`unattributed_sales`、settled MRR sourceは unavailable のためMRRをgrossから推定しない |
+| C22 | operate growth and retention experiments until settled net MRR reaches `$10,000` | active subscription readback and refunds/fees reconcile to target | **active** — unreadable warmup/cadence stateのDRY fail-openはcommit `e40202978`で閉じる。次eligible creativeはData Analyst `7785270416`。loaded schedulerの正常cadence readback後、HyperFrames + scene-matched Andrew voice + repo-owned evidenceから第3 Reelを一件だけ作り、native URL/Telegram media/metric windowを取得する。5 ordersは`unattributed_sales`、settled MRR sourceは unavailable のためMRRをgrossから推定しない |
 
 ### Remaining execution order
 
-1. C22-1: cadence gateが開いた最初のmarketing wakeでData Analystのevidence-backed HyperFrames MP4を一件だけrenderし、full-video inspectionを通す。
-2. C22-2: 同一bytesだけをInstagramへ一件投稿し、native Reel URL、Telegram media message ID、rotation commitをreadbackする。失敗時は投稿0・rotation0・heartbeat0でterminal failureにする。
-3. C22-3: metric windowで3 Reelsのreach、landing click、Agent sales snapshotを同じwindowへjoinする。order-level sourceが無ければcausal claimをfalseのまま保つ。
-4. C19-1: hourly inventoryでfree slotを初めて検出したwakeだけがFootball Agent `1037238583`をsame-Agent修正・再提出し、6件目のAgentを作らない。
-5. C21-1: 失敗を隠さないterminal ledgerで7 consecutive healthy daysを蓄積する。途中failureは0/7へ戻すが、C22の安全なgrowth workは停止しない。
-6. C22-4: settled active subscription sourceが取得できるまでmoney truthを`unknown`として監視し、取得後はrefund/fee控除後のnet MRRだけを`$10,000`へ加算する。
+1. C22-0: loaded schedulerの次wakeでaccount dayとcadence stateを正常readbackし、期限前ならagent spend 0 / post 0 / rc 0、判定不能ならheartbeat 0 / rc 2を確認する。
+2. C22-1: cadence gateが開いた最初のmarketing wakeでData Analystのevidence-backed HyperFrames MP4を一件だけrenderし、full-video inspectionを通す。
+3. C22-2: 同一bytesだけをInstagramへ一件投稿し、native Reel URL、Telegram media message ID、rotation commitをreadbackする。失敗時は投稿0・rotation0・heartbeat0でterminal failureにする。
+4. C22-3: metric windowで3 Reelsのreach、landing click、Agent sales snapshotを同じwindowへjoinする。order-level sourceが無ければcausal claimをfalseのまま保つ。
+5. C19-1: hourly inventoryでfree slotを初めて検出したwakeだけがFootball Agent `1037238583`をsame-Agent修正・再提出し、6件目のAgentを作らない。
+6. C21-1: 失敗を隠さないterminal ledgerで7 consecutive healthy daysを蓄積する。途中failureは0/7へ戻すが、C22の安全なgrowth workは停止しない。
+7. C22-4: settled active subscription sourceが取得できるまでmoney truthを`unknown`として監視し、取得後はrefund/fee控除後のnet MRRだけを`$10,000`へ加算する。
 
 ## Test matrix
 
