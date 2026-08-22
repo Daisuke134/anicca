@@ -277,6 +277,10 @@ UserはchatでV4を明示承認する。承認対象はTelegram review media `28
 
 C15の最初のlive attemptは公開前にfail closedする。承認済みartifact hashは再確認済みだが、`capafy.skills8m4q2z`のbrowser sessionidが失効し、posterはnative Reel URLを返さずregistryを`poisoned_manual_backup`へ隔離する。公開0件、revenue/MRR deltaは`$0`。account-managerを実kickstartすると、削除済みGig keepaliveへの旧参照で停止したため、git履歴の動作済みpersistent-context ownerをLife Manager共有`skills/browser/cdp_persistent_context.py`へ復元する。再実行で専用browser `instagram:capafy-provision`は動的portを取得するが、InstagramのGoogle QR/device/phone verificationでreplacement作成が止まり、`capafy.skills57f987ea`は`session_failed`へ隔離される。Telegram進捗receiptは`28786`。C15の次の原子的作業は、既存accountのbrowser再認証経路を修復し、同一V4 bytesを投稿してnative URLをreadbackすること。
 
+C17の実slot-controlled passはlive inventory `occupied=3 / free=2`からO13を一件だけ選び、Agent `3661050861`、version `2091144781376671744`を新規作成する。カードはtitle 48/50、category `分析`、price `$29.99`、agentType `download`、isConfirmedSkills `1`、workspace document 31件すべてexcludedで保存し、secret scan 0件のbundleを実uploadする。最終submit APIはdownloadでも空の`requiredCredentials.url_proxy`を拒否し、`requiredCredentials.url_proxy must contain at least one item`を返す。一方、既存online download Agent 3件はrequiredCredentialsなしでstatus=4のため、これは現行platform validationとの不整合である。偽の外部API credentialは追加せず、O13はdraftのまま保持する。slot passはAgent重複0、platform write 1件、公開/売上0でfail closedする。
+
+C15の再attemptはV4 SHA-256を再確認し、browser owner exact handle `capafy.skills8m4q2z`のedit-page probeまでは通る。しかしposterのprivate APIはtier1 `LoginRequired`、browser sessionid tier2 `TooManyRedirects`で公開前に停止し、Instagram homeのbrowser readbackもログアウト画面を返す。native Reel URLなし、公開0件、売上delta `$0`。edit-page URLだけをlogin証明として扱わず、home/feedのauthenticated navigationを必須にして再認証する。
+
 ## Atomic remaining TODO
 
 Items are executed top-to-bottom. Only one item is active.
@@ -298,9 +302,9 @@ Items are executed top-to-bottom. Only one item is active.
 | C12 | replace Capafy STEP3 repo-external renderer call with canonical renderer | dependency audit contains no `~/.claude/skills/faceless-money-factory` | completed — canonical command + manifest gate; old renderer path 0; TG `28706` |
 | C13 | add demonstration-first creative gate | public candidate shows verified skill input/output or before/after; generic b-roll-only fixture fails | completed — source-hashed o13 scenes pass; generic invocation fails; TG `28713` |
 | C14 | render one real Capafy listing candidate and send it to Telegram before public adoption | actual mp4 + Telegram media message ID + user-observable quality artifact | completed — user approved exact V4 artifact from TG `28775`; SHA-256 `88163040c4c99a1539a5457339a19171e1a379ec0c31101239e23058aaef9486` |
-| C15 | run one live IG pass through existing account rail | selected listing -> artifact -> account -> native Reel URL -> metrics -> Telegram message ID | in progress — no post; expired session quarantined; replacement hit Google QR/device verification; repair existing-account browser reauth next; TG `28786` |
+| C15 | run one live IG pass through existing account rail | selected listing -> artifact -> account -> native Reel URL -> metrics -> Telegram message ID | in progress — exact V4 hash verified; private API and browser home both prove logout; post 0; reauthenticate exact account, then post same bytes |
 | C16 | add ReelFarm TikTok derivative behind credential/account/quality gates | no credential means honest no-op; success requires TikTok native URL | pending |
-| C17 | run one real slot-controlled supply pass | inventory readback -> allocator decision -> skill/version remote status -> Telegram message ID | pending |
+| C17 | run one real slot-controlled supply pass | inventory readback -> allocator decision -> skill/version remote status -> Telegram message ID | in progress — one Agent `3661050861` created, card/package saved; platform rejects download empty credentials before review; no duplicate, no false publish |
 | C18 | prove one rejected Agent correction/resubmit E2E | same agent_id, new version, under-review readback, no orphan Agent | pending |
 | C19 | prove one listed transition frees a fresh slot | status=4 reduces occupied count and next daily wake submits exactly one candidate | pending |
 | C20 | connect post/click/subscription windows without claiming causal proof | attribution row is candidate unless Capafy exposes order-level UTM/source | pending |
