@@ -2533,6 +2533,7 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
                 or _file_immutable_inputs(root, context) != bound
                 or paid_remote_result.requirements_digest(root, feedback) != requirements_sha256):
             raise Failure("requirements_toctou")
+        review_images = _file_review_images(root, snapshots["artifact"][1], finding)
         ok, errors = paid_work_evidence.validate_paid_work(
             root, stable, require_delivery_evidence=False, artifact_judge=paid_work_evidence.STRUCTURE_ONLY,
             allow_fresh_blocked_for_review=True,
@@ -2543,7 +2544,6 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
                 Path(_text(manifest.get("acceptance_evidence_path"))),
             ])
             raise Failure("file_owner_feedback")
-        review_images = _file_review_images(root, snapshots["artifact"][1], finding)
         audit_path, audit_images = (None, [])
         if "source_correspondence" in snapshots:
             audit_path, audit_images = _prepare_blind_output_audit(
