@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import os
 from collections.abc import Awaitable, Callable, Iterable
 from typing import Any
 
+from ..ats import detect_provider
 from ..state import canonical_url
 from .contracts import QueueRowReceiptV1
 
@@ -18,13 +20,26 @@ _STATUSES = frozenset(
         "submitted",
     }
 )
+_NEVER_REAPPLY = frozenset(
+    {
+        canonical_url(
+            "https://salesforce.wd12.myworkdayjobs.com/External_Career_Site/"
+            "job/Japan---Tokyo/Forward-Deployed-Engineer--Multiple-Levels-_JR355047"
+        )
+    }
+)
 
 
 class RowQueueSupervisor:
     """Run every unique queued row; one row failure never ends the wake."""
 
     @staticmethod
-    def collect(ledger: Any) -> tuple[dict[str, Any], ...]:
+    def collect(
+        ledger: Any, active_provider: str | None = None
+    ) -> tuple[dict[str, Any], ...]:
+        provider = active_provider or os.environ.get(
+            "JOB_SEARCH_ACTIVE_APPLICATION_PROVIDER"
+        )
         ordered: Iterable[dict[str, Any]] = (
             *ledger.pending_materials_ready_applications(),
             *ledger.retryable_applications(),
@@ -33,6 +48,10 @@ class RowQueueSupervisor:
         rows: list[dict[str, Any]] = []
         for row in ordered:
             identity = canonical_url(str(row["canonical_url"]))
+            if provider and detect_provider(identity) != provider:
+                continue
+            if identity in _NEVER_REAPPLY:
+                continue
             if identity in seen:
                 continue
             seen.add(identity)

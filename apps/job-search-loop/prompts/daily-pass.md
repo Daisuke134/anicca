@@ -57,7 +57,6 @@ text, credentials, cookies, profile values, screenshots, or model prose in eithe
 store; only opaque identity, cursor, budget, and evidence hashes are permitted.
 
 Read:
-- docs/superpowers/specs/2026-07-28-job-search-loop-design.md
 - ${XDG_CONFIG_HOME:-$HOME/.config}/anicca/job-search/profile.json
 - apps/job-search-loop/config/strategy.default.json
 
@@ -189,6 +188,9 @@ Workday surface. Exclude only exact terminal `submitted`/`submit_unknown` identi
 manual completion, hard employer/role ineligibility, or a current provider-policy
 limit. A recognized surface, prior field error, or missing-context question never
 suppresses model ownership.
+`collect` enforces `JOB_SEARCH_ACTIVE_APPLICATION_PROVIDER=workday`, so Ashby rows
+never enter this execution tuple, and permanently excludes Salesforce JR355047.
+Never reconstruct, reopen, navigate to, or apply to that Salesforce row.
 
 The row processor catches nothing outside its own row. `RowQueueSupervisor` records
 only the exception class as a checkpointed row receipt and immediately invokes the
