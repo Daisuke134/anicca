@@ -175,9 +175,9 @@ class DirectCDPPage:
             return (own||linked||el.getAttribute('placeholder')||el.innerText||'').trim();
           }};
           const semanticLabel = value => String(value || '').trim()
-            .replace(/\s+not checked$/i, '')
-            .replace(/\s+checked$/i, '')
-            .replace(/,\s*press delete to clear value\.$/i, '');
+            .replace(/\\s+not checked$/i, '')
+            .replace(/\\s+checked$/i, '')
+            .replace(/,\\s*press delete to clear value\\.$/i, '');
           const role = el => el.getAttribute('role') || ({{A:'link',BUTTON:'button',SELECT:'combobox',TEXTAREA:'textbox'}}[el.tagName] || (el.tagName==='INPUT' ? (['checkbox','radio','button','submit'].includes(el.type)?el.type.replace('submit','button'):'textbox') : ''));
           let nodes=[];
           if (target.stable_id) {{
