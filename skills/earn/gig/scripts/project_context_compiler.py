@@ -77,7 +77,7 @@ except Exception:  # noqa: BLE001 - instrumentation may never break its host
 SOURCE_DIRS = ("source", "requirements", "delivery", "acceptance")
 # Budgets. The combined block is a digest, not a transcript: these are what a builder
 # prompt can afford beside the rest of the paid-work instructions.
-COMBINED_MAX_BYTES = 12000
+COMBINED_MAX_BYTES = 262144
 POSTING_CHARS = 3000
 CURRENT_REQUEST_CHARS = 1500
 ACCUMULATED_ROWS = 16
@@ -316,7 +316,7 @@ def _dm_section(root: Path) -> dict[str, Any] | None:
         if not isinstance(messages, list) or not messages:
             continue
         rows = []
-        for message in messages[-DM_MESSAGE_ROWS:]:
+        for message in messages:
             if not isinstance(message, dict):
                 continue
             rows.append({
@@ -385,12 +385,70 @@ def _talkroom_section(root: Path) -> dict[str, Any] | None:
     rows = _jsonl_rows(path)
     if not rows:
         return None
+    messages = []
+    for row in rows:
+        evidence = {
+            key: row.get(key) for key in ("side", "sent_at", "message_id", "text", "attachments")
+            if row.get(key) is not None
+        }
+        encoded = json.dumps(evidence, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        messages.append({
+            **evidence,
+            "text": _clip(evidence.get("text"), DM_MESSAGE_CHARS),
+            "source_fact_id": f"talkroom-message:sha256:{hashlib.sha256(encoded.encode()).hexdigest()}",
+        })
     return {
         "path": str(path),
         "message_count": len(rows),
         "buyer_message_count": sum(1 for row in rows if row.get("side") == "buyer"),
         "seller_message_count": sum(1 for row in rows if row.get("side") == "seller"),
-        "note": "full ledger on disk; the buyer's words are collected under requirements",
+        "messages": messages,
+    }
+
+
+def _project_history(root: Path, references: list[dict[str, Any]], state: dict[str, Any]) -> dict[str, Any]:
+    """Hash-bound artifact lineage, external effects and the unresolved delta."""
+    lineage = [
+        reference for reference in references
+        if str(reference.get("path") or "").startswith(("delivery/", "acceptance/"))
+    ]
+    effects = []
+    for row in _jsonl_rows(root / "events.jsonl"):
+        if row.get("event") == "economic_fact" and isinstance(row.get("fact"), dict):
+            fact = row["fact"]
+            capability = fact.get("capability_result") or {}
+            effects.append({
+                "fact_id": fact.get("fact_id"),
+                "effect_key": fact.get("effect_key"),
+                "kind": fact.get("kind"),
+                "status": capability.get("status"),
+                "source_fact_ids": capability.get("source_fact_ids") or [],
+            })
+    latest_acceptance = None
+    acceptance_files = sorted(
+        (path for path in (root / "acceptance").glob("acceptance-*.json") if path.is_file()),
+        key=lambda path: path.stat().st_mtime_ns,
+    )
+    if acceptance_files:
+        path = acceptance_files[-1]
+        value = _json(path)
+        latest_acceptance = {
+            "path": str(path), "sha256": _bytes_sha(path)[1],
+            "status": value.get("status"), "artifact_version": value.get("artifact_version"),
+            "package_sha256": value.get("package_sha256"),
+            "acceptance_delta": value.get("acceptance_delta"),
+        }
+    return {
+        "artifact_lineage": lineage,
+        "latest_acceptance": latest_acceptance,
+        "effects": effects,
+        "current_delta": {
+            key: state.get(key) for key in (
+                "next_action", "work_state", "current_version", "current_package_sha256",
+                "current_acceptance_status", "current_acceptance_delta",
+                "buyer_feedback_sha256", "handled_buyer_feedback_sha256",
+            )
+        },
     }
 
 
@@ -522,6 +580,7 @@ def _fit(body: dict[str, Any]) -> dict[str, Any]:
 
 def combined_context(
     root: Path, references: list[dict[str, Any]], queue: dict[str, Any] | None = None,
+    state: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """One block holding all four sources, bounded, with the paths to the full bodies.
 
@@ -552,6 +611,14 @@ def combined_context(
     attachments = _buyer_attachments(root, references)
     if attachments:
         body["buyer_attachments"] = attachments
+    body["project_history"] = _project_history(root, references, state or {})
+    body["buyer_trust_context"] = {
+        "instruction": "Interpret buyer emotion and trust only from the cited message source_fact_ids.",
+        "evidence": [
+            {"source_fact_id": row["source_fact_id"], "sent_at": row.get("sent_at"), "text": row.get("text")}
+            for row in (talkroom or {}).get("messages", []) if row.get("side") == "buyer"
+        ],
+    }
     body["read_these_first"] = [
         str(section["path"])
         for section in (posting, proposal, requirements, talkroom)
@@ -583,7 +650,7 @@ def compile_context(root: Path, queue: dict[str, Any]) -> dict[str, Any]:
         "current_queue": {key: queue[key] for key in QUEUE_FIELDS if key in queue},
         "recent_events": _recent_events(root / "events.jsonl"),
         "source_refs": references,
-        "combined_context": combined_context(root, references, queue),
+        "combined_context": combined_context(root, references, queue, state),
     }
     encoded = json.dumps(body, ensure_ascii=False, separators=(",", ":"), sort_keys=True).encode("utf-8")
     body["project_context_sha256"] = hashlib.sha256(encoded).hexdigest()
