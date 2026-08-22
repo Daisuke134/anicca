@@ -400,8 +400,11 @@ reduce scope before exceeding three files or 100 production LOC.
    schema with the structured `required_assets` contract. Schema/prompt version 4/v8 now invalidates old
    cached decisions, binds every buyer-visible screenshot/image/linked asset before the builder runs, and
    directly rejects malformed, duplicate, zero-count or unsupported asset entries.
-2. [ ] Extend the existing Paid manifest boundary in `scripts/paid_direct.py` with the structured
+2. [x] Extend the existing Paid manifest boundary in `scripts/paid_direct.py` with the structured
    required/produced asset contract and distinct PASS, REVIEW_READY and BLOCKED_NON_DELEGABLE semantics.
+   The normalizer now copies the versioned decision's `required_assets`, requires `artifact_assets`, binds
+   manifest/acceptance disposition exactly, requires one exact `blocking_action` for non-delegable input,
+   and preserves the existing PASS-only delivery validator instead of creating a second state machine.
 3. [ ] Extend `scripts/paid_work_evidence.py` to fail closed on asset count, path ownership, non-zero bytes,
    MIME/type, hash and required ZIP membership, and to reject required visual media with no review receipt.
 4. [ ] Run the smallest direct synthetic checks for the asset boundary plus the existing Paid disk preflight

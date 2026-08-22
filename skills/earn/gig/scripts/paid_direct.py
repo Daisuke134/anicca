@@ -1907,27 +1907,46 @@ def _file_bundle_snapshots(
 def _normalize_acceptance_delta(root: Path) -> None:
     manifest_path = root / "delivery" / "paid-work-result.json"
     manifest = _load(manifest_path)
-    if isinstance(manifest, dict) and manifest.get("status") == "PASS":
-        manifest["status"] = "ok"
-        _write(manifest_path, manifest)
-    if not isinstance(manifest, dict) or manifest.get("status") != "ok":
+    if not isinstance(manifest, dict):
         raise ValueError("invalid file manifest")
     acceptance_path = Path(_text(manifest.get("acceptance_evidence_path"))).resolve()
     acceptance_path.relative_to(root.resolve())
     acceptance = _load(acceptance_path)
     if not isinstance(acceptance, dict):
         raise ValueError("invalid acceptance delta")
+    acceptance_status = acceptance.get("status")
+    if acceptance_status not in {"PASS", "REVIEW_READY", "BLOCKED_NON_DELEGABLE"}:
+        raise ValueError("invalid acceptance status")
+    manifest_status = manifest.get("status")
+    if acceptance_status == "PASS":
+        if manifest_status == "PASS":
+            manifest_status = "ok"
+        if manifest_status != "ok":
+            raise ValueError("invalid file manifest status")
+    elif manifest_status != acceptance_status:
+        raise ValueError("acceptance status mismatch")
+    decision = _load(root / "context" / "paid-work-decision.json")
+    required_assets = decision.get("required_assets") if isinstance(decision, dict) else None
+    artifact_assets = manifest.get("artifact_assets")
+    if not isinstance(required_assets, list) or not isinstance(artifact_assets, list):
+        raise ValueError("invalid asset contract")
+    if (acceptance_status == "BLOCKED_NON_DELEGABLE"
+            and not _text(acceptance.get("blocking_action"))):
+        raise ValueError("missing non-delegable blocking action")
     delta = acceptance.get("acceptance_delta")
     if isinstance(delta, str) and delta.strip():
         delta = [delta.strip()]
         acceptance["acceptance_delta"] = delta
         _write(acceptance_path, acceptance)
-    if (acceptance.get("status") != "PASS" or not isinstance(delta, list)
-            or not delta or any(not isinstance(value, str) or not value.strip() for value in delta)):
+    if (not isinstance(delta, list) or not delta
+            or any(not isinstance(value, str) or not value.strip() for value in delta)):
         raise ValueError("invalid acceptance delta")
+    manifest["status"] = manifest_status
+    manifest["acceptance_status"] = acceptance_status
+    manifest["required_assets"] = required_assets
     if manifest.get("acceptance_delta") != delta:
         manifest["acceptance_delta"] = delta
-        _write(manifest_path, manifest)
+    _write(manifest_path, manifest)
 
 
 def _file_immutable_inputs(root: Path, context: Path) -> dict[str, tuple[int, str]]:
@@ -2272,10 +2291,16 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
         "Choose tools from the complete buyer context and required output, never from a hardcoded buyer name, category, or keyword router. "
         "Create the actual buyer-facing deliverable, not a plan, "
         "status report, transaction summary, or promise. Create exactly the next vN artifact under delivery/, "
-        "a JSON acceptance file with status PASS and acceptance_delta as a nonempty JSON array of nonempty strings, "
-        "and delivery/paid-work-result.json with status exactly 'ok' "
+        "a JSON acceptance file whose status is exactly PASS, REVIEW_READY, or BLOCKED_NON_DELEGABLE and whose "
+        "acceptance_delta is a nonempty JSON array of nonempty strings. Use PASS only for a complete contract, "
+        "REVIEW_READY only for a truthful buyer-review draft permitted by the accumulated contract, and "
+        "BLOCKED_NON_DELEGABLE when an account-owner input cannot truthfully be delegated; the blocked acceptance "
+        "must include blocking_action with the one exact minimum owner action. Create delivery/paid-work-result.json "
+        "with status 'ok' for PASS or the exact same non-PASS status, "
         "binding project_root, requirements_path, artifact_path, artifact_version, acceptance_evidence_path, "
-        "acceptance_status, acceptance_delta, and package_sha256; copy acceptance_delta exactly from the acceptance "
+        "acceptance_status, acceptance_delta, package_sha256, and artifact_assets. Each artifact_assets entry must "
+        "bind a buyer-visible asset to its project-owned absolute path, non-zero bytes, MIME/type, SHA256, provenance "
+        "class, and archive member path when applicable. Copy acceptance_delta exactly from the acceptance "
         "file without paraphrasing it. Self-check every accumulated requirement against the actual produced artifact. "
         "When the semantic decision has unresolved items, produce every useful non-blocked portion now, state the exact "
         "remaining limitation without placeholders or invented facts, and claim PASS only for that bounded required_output; "
