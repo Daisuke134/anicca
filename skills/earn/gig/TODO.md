@@ -386,6 +386,11 @@ restart was then rechecked and did not recover either service: OpenDirectory sti
 resume this thread. On the recovered Aqua bootstrap,
 kickstart the existing `ai.anicca.hf-gig-paid-direct` owner once; do not run a custom executor. Require v44 PASS,
 exact-room attachment/message readback with formal delivery OFF, then a second natural wake with replay-zero.
+The account owner then authorized that reboot. All three in-session native restart paths failed at the same broken
+control plane before any restart effect: `System Events` returned Apple Event `-10827`, direct `loginwindow`
+resolution returned `-1728`, and `launchctl reboot system` returned 141 `Reentrancy avoided`. No Paid process or
+customer effect was created. The only remaining action is therefore a physical Apple-menu/power-button Mac reboot;
+after login, resume this thread and continue with the existing Paid owner as specified above.
 
 **Current runtime refresh.** Unrelated dirty files remain untouched. The existing Paid pass naturally resumed the
 Haru v43 staging after compiling
