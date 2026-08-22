@@ -178,7 +178,7 @@ def select(proposal_path: Path, consumed_path: Path, posted_path: Path | None = 
         if claim_row:
             recoverable.append(claim_row)
     if recoverable:
-        pending = min(recoverable, key=lambda row: row.get("observed_at", ""))
+        pending = max(recoverable, key=lambda row: row.get("observed_at", ""))
         snapshot = pending["proposal"]
         return {
             "state": "VERIFY_UNVERIFIED",
