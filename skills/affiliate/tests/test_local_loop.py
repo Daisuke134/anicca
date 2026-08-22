@@ -1177,6 +1177,36 @@ class LocalLoopTest(unittest.TestCase):
             self.assertEqual(len(calls), 1)
             self.assertEqual(json.loads((state / "telegram-sent.jsonl").read_text())["message_id"], "7640")
 
+    def test_telegram_timeout_is_quarantined_without_retry(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root)
+            event = {
+                "event_uuid": "timeout-event", "kind": "REVENUE_RECONCILED",
+                "body": "report", "created_at": 1,
+            }
+            calls = []
+
+            def timeout_runner(command, **kwargs):
+                calls.append(command)
+                raise subprocess.TimeoutExpired(command, 30)
+
+            with patch.object(MODULE.shutil, "which", return_value="/opt/homebrew/bin/openclaw"):
+                first = MODULE.flush_telegram(state, event, runner=timeout_runner)
+            MODULE.append_telegram_delivery_receipt(
+                state, {"wake_event_uuid": "wake-1", "ts": 1}, event, first,
+            )
+
+            def must_not_retry(command, **kwargs):
+                raise AssertionError("ambiguous Telegram effect must not be retried")
+
+            with patch.object(MODULE.shutil, "which", return_value="/opt/homebrew/bin/openclaw"):
+                second = MODULE.flush_telegram(state, event, runner=must_not_retry)
+
+            self.assertEqual(first["state"], "SEND_TIMEOUT_UNKNOWN")
+            self.assertEqual(second["state"], "AMBIGUOUS_NO_RETRY")
+            self.assertEqual(second["sent_event_uuid"], "timeout-event")
+            self.assertEqual(len(calls), 1)
+
     def test_telegram_receipt_binds_the_event_actually_sent(self):
         with tempfile.TemporaryDirectory() as root:
             state = Path(root)

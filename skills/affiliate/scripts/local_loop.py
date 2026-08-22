@@ -2175,6 +2175,18 @@ def flush_telegram(state, event, runner=subprocess.run):
     sent_ids = {row.get("event_uuid") for row in sent_rows}
     sent_by_id = {row.get("event_uuid"): row for row in sent_rows}
     superseded_ids = supersede_telegram_rows(state, outbox, sent_by_id)
+    # A transport timeout is an ambiguous external effect: Telegram may have
+    # accepted the message even though the CLI never returned its messageId.
+    # Retrying such a row under the same local identity is not replay safety;
+    # OpenClaw's message CLI has no provider idempotency key and real duplicates
+    # were observed in the sibling X owner. Quarantine it for readback instead.
+    ambiguous_ids = {
+        row.get("telegram_event_uuid")
+        for row in json_rows(state / "events.jsonl")
+        if row.get("receipt_type") == "AFFILIATE_TELEGRAM_DELIVERY"
+        and row.get("delivery_state") == "SEND_TIMEOUT_UNKNOWN"
+        and row.get("telegram_event_uuid")
+    }
     for row in outbox:
         if row.get("event_uuid") in sent_by_id:
             sent = sent_by_id[row["event_uuid"]]
@@ -2185,12 +2197,17 @@ def flush_telegram(state, event, runner=subprocess.run):
         row for row in outbox
         if row.get("event_uuid") not in sent_ids
         and row.get("event_uuid") not in superseded_ids
+        and row.get("event_uuid") not in ambiguous_ids
     ]
     if not pending:
+        requested_ambiguous = requested_event_uuid in ambiguous_ids
         return {
-            "state": "NO_PENDING", "sent": 0,
+            "state": "AMBIGUOUS_NO_RETRY" if requested_ambiguous else "NO_PENDING", "sent": 0,
             "message_id": (sent_by_id.get(requested_event_uuid) or {}).get("message_id"),
-            "sent_event_uuid": requested_event_uuid if requested_event_uuid in sent_by_id else None,
+            "sent_event_uuid": (
+                requested_event_uuid
+                if requested_event_uuid in sent_by_id or requested_ambiguous else None
+            ),
         }
     openclaw = shutil.which("openclaw")
     if not openclaw:
@@ -2199,13 +2216,6 @@ def flush_telegram(state, event, runner=subprocess.run):
             "sent_event_uuid": pending[0]["event_uuid"],
         }
     row = pending[0]
-    # A send that failed before it could be recorded leaves an unresolved effect
-    # that the reconcile pass above can never clear, because that pass only
-    # resolves events already present in telegram-sent.jsonl. Without a resume
-    # the owner stops hearing anything at all, which is how placements eight
-    # through ten went unreported on 2026-08-17. Resume under the same identity,
-    # exactly as every other effect owner here does; the sent-ledger dedupe on
-    # event_uuid still guarantees a delivered message is never sent twice.
     try:
         job = resume_effect(state, "TELEGRAM_SEND", row["event_uuid"]) or start_effect(
             state, "TELEGRAM_SEND", row["event_uuid"],
@@ -2278,7 +2288,9 @@ def append_telegram_delivery_receipt(state, wake_event, telegram_event, delivery
     )
     delivery_state = delivery.get("state") or "UNKNOWN"
     message_id = delivery.get("message_id")
-    attempted = delivery_state in {"SENT", "SEND_FAILED", "SEND_TIMEOUT_UNKNOWN"}
+    attempted = delivery_state in {
+        "SENT", "SEND_FAILED", "SEND_TIMEOUT_UNKNOWN", "AMBIGUOUS_NO_RETRY",
+    }
     if delivery_state == "SENT":
         delivery_result = "DELIVERED"
     elif delivery_state == "NO_PENDING" and message_id:
@@ -2293,7 +2305,7 @@ def append_telegram_delivery_receipt(state, wake_event, telegram_event, delivery
         delivery_state
         if delivery_state in {
             "SEND_FAILED", "SEND_TIMEOUT_UNKNOWN", "TRANSPORT_UNAVAILABLE",
-            "RECONCILE_REQUIRED",
+            "RECONCILE_REQUIRED", "AMBIGUOUS_NO_RETRY",
         }
         else None
     )
