@@ -736,12 +736,26 @@ remained absent. A real client head is still required for positive message/story
 
 **Interfaces:** Produces accept, counter, clarify or decline decision and message intent.
 
-- [ ] Write failing tests for scope expansion, price below floor, impossible deadline, conflicting
+- [x] Write focused tests for scope expansion, price below floor, impossible deadline, conflicting
   terms, near-duplicate reply and expired message identity.
-- [ ] Reuse Coconala reply freshness, duplicate and durable outbox behavior.
-- [ ] Generate a decision from current official thread and capacity evidence.
+- [x] Reuse the existing freshness, duplicate and immutable private-intent behavior.
+- [x] Generate a decision from current official thread and capacity evidence.
 - [ ] Execute one authorized message and require story/message ID readback.
 - [ ] Replay the event with zero duplicate message; run tests and commit/push.
+
+Task 14 decision evidence: only a newly appended official `message_room` head enters the existing
+`application-intent-planner`. The schema permits `accept_terms`, `counter`, `clarify`, `decline` or
+`no_reply` and mechanically rebinds room URL/ID, event ID, head hash and revision. The same wake's
+official active-contract count is checked against the private concurrent-job cap; accept/counter
+requires explicit scope, positive price, nonnegative cost, exact recomputed margin at or above the
+private floor, and a non-expired ISO deadline. A 0.92 similarity gate rejects near-duplicate prior
+sealed replies. Each validated decision is immutable by source event in a mode-700/600 store and is
+reused on replay without another model call. No message transport is called in this slice. The
+related negotiation/inbox/browser/effect matrix passes 75/75. Release `e4284beaa` completed a
+production wake with exit 0 at `2026-08-22T18:40:41.432545+00:00`: rooms 0,
+`negotiation_intents=[]`, planner evidence files 0, sealed negotiation files 0, Upwork message effect
+rows 0 and earnings USD 0. The next atomic item is the durable message effect and official
+story/message-ID readback.
 
 ### Task 15: Accept an Upwork offer safely
 
