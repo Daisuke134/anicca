@@ -1,6 +1,6 @@
 # Affiliate Agent — Revenue, Runtime, and Architecture SSOT
 
-Last updated: 2026-08-21 JST
+Last updated: 2026-08-22 JST
 
 Implementation SSOT:
 
@@ -2707,22 +2707,169 @@ determinism is retained only at money, policy, authority, secret, evidence, cost
 and duplicate-effect boundaries. Until that migration is live-proven, the
 installed owners continue unchanged and no manual executor substitutes for them.
 
-The remaining atomic TODO order is:
+#### Canonical atomic remaining route — runtime Agent → E1 → OSS → USD 10K
 
-1. **A-CUT-1 — tool boundary:** inventory and expose existing read-only tools and
-   guarded owner commands without changing any external effect.
-2. **A-CUT-2 — shadow Agent:** persist one goal/checkpoint and record the Agent's
-   proposed next tool beside the current deterministic choice; no publish/provider
-   authority in shadow mode.
-3. **A-CUT-3 — guarded cutover:** allow one Agent-selected action only through the
-   existing effect gateway; prove claim, exact readback, terminal consumption,
-   crash replay, no duplicate, and no secret leakage.
-4. **A-CUT-4 — economic evaluator:** after non-empty official PartnerStack rows
-   exist, score versioned playbooks on exact-placement approved/paid net after
-   reversals and known costs; keep insufficient candidates in shadow.
-5. **B01 remains the product gate:** capture the first official provider
-   transaction/settlement ID and replay-safe join it to the exact placement. No
-   architecture milestone is money and none closes B01.
+“End” for this route means both conditions are true: a reproducible public OSS
+release passes a clean-machine replay, and canonical rolling 30-day USD
+approved-or-paid net after reversals and known real costs is at least `10000`.
+Later USD 10M/100M outcome gates are not implementation scope until this route
+produces observed unit economics. The steps below supersede older open-item
+ordering; historical DONE evidence remains evidence, not a competing queue.
+
+```mermaid
+flowchart LR
+  C[Agent cutover] --> B[B01 official transaction]
+  B --> E[E1 approved commission]
+  E --> L[Measured learning loop]
+  L --> S[Profitable pod scale]
+  E --> O[Public OSS proof]
+  S --> K[Rolling 30-day net USD 10K]
+  O --> Z[Terminal route complete]
+  K --> Z
+```
+
+**Phase A — install the runtime Agent without replacing proven tools**
+
+1. **A-CUT-1A — authority inventory:** classify every existing Affiliate command
+   as `READ_ONLY`, `WRITE_EXTERNAL`, `MONEY_RECONCILE`, or `REPORT`; acceptance is
+   one inventory with no unclassified command and no new effect implementation.
+2. **A-CUT-1B — typed registry:** wrap the existing command entrypoints with input,
+   output, effect class, precondition, and semantic postcondition schemas;
+   acceptance is schema validation for every inventory row without copying the
+   publisher, provider, or ledger logic.
+3. **A-CUT-1C — guarded dispatch:** require `WRITE_EXTERNAL` calls to pass the
+   existing owner claim, effect journal, policy, cost, quarantine, and exact-
+   readback gates; acceptance is rejection of direct model-to-browser/provider
+   mutation.
+4. **A-CUT-2A — redacted context:** build one context packet from current goal,
+   unfinished job, due-times, allowed tool schemas, and redacted receipts;
+   acceptance is zero credential, raw tracking-link, private provider ID, or
+   unrelated state bytes in the model input.
+5. **A-CUT-2B — durable checkpoint:** persist goal ID, job ID, stage, proposed
+   action, tool attempt, observation, effect certainty, and next due-time;
+   acceptance is restart from the last committed transition without replaying a
+   completed effect.
+6. **A-CUT-2C — complete ActionProposal validation:** enforce enum, bounds,
+   additional-property rejection, authority class, and exactly one action or
+   durable wait; acceptance is fail-closed rejection before tool dispatch.
+7. **A-CUT-2D — due-time and model budget:** call the runtime model only when a
+   judgment is due and reserve the configured pass budget before invocation;
+   acceptance is a normal reconciliation wake with zero model calls and a due
+   wake with one receipted call.
+8. **A-CUT-2E — shadow Agent:** run the pinned Affiliate model with no external-
+   write authority and record its proposal beside the installed deterministic
+   choice; acceptance is repeated shadow completion without changing public,
+   provider, money, or Telegram state.
+9. **A-CUT-2F — shadow admission:** inspect mismatches and admit only proposals
+   that satisfy the tool contract and current goal; acceptance is a versioned
+   admission receipt, not subjective prompt approval.
+10. **A-CUT-3A — read-only canary:** allow one Agent-selected observation tool;
+    acceptance is one causal goal/job/model/tool/observation checkpoint.
+11. **A-CUT-3B — guarded effect canary:** allow one Agent-selected external action
+    only through its existing launchd effect owner; acceptance is owner claim,
+    exact public/provider readback, and one terminal consumption row.
+12. **A-CUT-3C — crash replay:** interrupt between effect start and receipt
+    completion, then resume the same job; acceptance is exact reconciliation and
+    zero second external effect.
+13. **A-CUT-3D — bounded repair:** induce one recoverable typed failure and allow
+    one allowlisted repair with postcondition readback; acceptance is
+    `SELF_HEALED` or quarantine, never an unbounded retry.
+14. **A-CUT-3E — strategy cutover:** replace only the fixed strategy selector with
+    the admitted Agent loop; acceptance is that launchd remains the sole scheduler
+    and existing tools, owners, journals, and ledgers remain authoritative.
+
+**Phase B — close the first real money lineage**
+
+15. **B01-A — exact live acquisition:** the existing owners consume the next
+    eligible Affiliate proposal and join its exact placement ID to the exact
+    public permalink; terminal/unverified proposals are never resent.
+16. **B01-B — due official capture:** the existing provider owner captures a
+    fresh PartnerStack commission/payout report with artifact hash and provider
+    denominator fields; an empty report remains valid non-money evidence.
+17. **B01-C — transaction normalization:** normalize the first non-test provider
+    transaction/settlement ID with status, currency, amount, observed/effective
+    time, and reversal/payout identifiers; missing required fields fail closed.
+18. **B01-D — exact placement join:** join that official ID to exactly one
+    placement using provider evidence; ambiguous or unjoined rows receive no
+    revenue credit.
+19. **B01-E — replay proof:** import the same provider artifact again; acceptance
+    is zero duplicate economic transitions and the same canonical ledger hash.
+20. **E1-A — lifecycle proof:** preserve `pending`, `approved`, `paid`, and
+    `reversed` as separate transitions; E1 closes only on the first non-test
+    `approved` row joined to one exact placement.
+21. **E1-B — real-cost join:** join actual billed model, tool, channel, and hosting
+    costs when available; unknown material cost keeps net unknown rather than
+    coercing it to zero.
+22. **E1-C — denominator join:** retain provider clicks/unique clicks and admitted
+    qualified exposure denominators for the same placement; absent denominators
+    remain explicitly insufficient.
+23. **E1-D — unit economics:** compute exact-placement approved-or-paid net after
+    reversals and known costs; acceptance is an observed cohort result, not a
+    forecast derived from views or clicks.
+
+**Phase C — enable measured self-improvement and scale**
+
+24. **A-CUT-4A — maturity gate:** define one comparable cohort boundary with the
+    existing minimum sample/age contract; immature placements remain exploration
+    data and cannot select a winner.
+25. **A-CUT-4B — evaluator:** score active and candidate playbooks on approved-or-
+    paid net per qualified denominator and per real content dollar; raw output,
+    clicks, views, and model scores cannot promote a candidate.
+26. **A-CUT-4C — one-variable canary:** change exactly one of offer, intent, hook,
+    proof shape, CTA, format, channel, or time while holding the control lineage;
+    acceptance is a versioned hypothesis and exact outcome join.
+27. **A-CUT-4D — promotion and rollback:** promote only a mature superior candidate
+    as a versioned skill/policy and retain one-command rollback; memory never
+    grants authority or rewrites production code.
+28. **SCALE-A — allocation:** allocate `80%` of admitted capacity to mature positive
+    cohorts and `20%` to bounded canaries; negative/unknown cohorts do not receive
+    winner status.
+29. **SCALE-B — offer diversification:** admit the next executable provider/offer
+    only with ownership, terms, allowed channel, dedicated link, and report
+    receipt; acceptance is an independent settlement lineage.
+30. **SCALE-C — channel diversification:** add a channel only when the canonical
+    asset and an exact public/effect/readback adapter exist; account farms and
+    duplicated bulk content remain forbidden.
+31. **SCALE-D — profitable pod replication:** replicate only positive mature pods
+    across buyer intents, offers, channels, and later locales; each pod retains
+    isolated identity, browser authority, placement, costs, and settlement ledger.
+32. **SCALE-E — payout and reversal reconciliation:** continue official captures
+    through approval, payout, late reversal, and currency normalization; cash and
+    accrued commission remain separate.
+
+**Phase D — publish the proven system as OSS**
+
+33. **OSS-A — public/private projection:** define the public source, example, and
+    receipt projection while excluding credentials, sessions, tax/bank/customer
+    data, raw links, and private provider identifiers.
+34. **OSS-B — license provenance:** include license/SHA attribution for every
+    copied Hermes/LangGraph/EvoAgentX/affiliate-automation slice; pattern-only
+    sources contribute no copied code.
+35. **OSS-C — stable adapter SDK:** publish the typed tool, provider, channel,
+    checkpoint, effect-gateway, and ledger contracts with one non-secret example
+    adapter per required boundary.
+36. **OSS-D — independent verifier:** replay fixture and redacted real receipts,
+    validate hashes, exact joins, statuses, currency, reversals, real costs, and
+    rolling net, and reject screenshots or estimates as money.
+37. **OSS-E — clean-machine install:** install on an isolated clean Mac with no
+    production state and prove scheduler ownership, restart resume, fixture
+    reconciliation, and secret isolation without creating a real public effect.
+38. **OSS-F — public release:** pass repository-wide secret/raw-link scan, publish
+    the source and reproducible documentation, tag an immutable version, and
+    retain the qualified claim gate until redacted real E1 evidence is published.
+
+**Phase E — close the terminal USD 10K gate**
+
+39. **A3-A — continuous canonical close:** every provider capture updates exact
+    placement transitions, reversals, payouts, currencies, denominators, and real
+    costs without duplicate rows.
+40. **A3-B — rolling threshold:** close only when one canonical rolling 30-day
+    receipt proves approved-or-paid USD net after reversals and known real costs
+    is at least `10000`; unknown material cost, pending commission, annualized
+    run-rate, clicks, or estimates cannot close it.
+41. **TERMINAL — dual readback:** independently replay the public OSS release and
+    the redacted A3 receipt from their immutable hashes. The route is complete
+    only when both pass; neither code publication nor revenue alone is sufficient.
 
 #### Autonomous responsibility boundary
 
@@ -2731,6 +2878,24 @@ publishing service. Dais and Codex do not choose each topic, write each article,
 create each affiliate link, publish each asset, inspect each dashboard, or decide
 the next experiment. They design and repair the harness. The installed owners
 must perform the recurring business work themselves:
+
+“Codex is not in the loop” means the interactive Codex chat/development session
+is not a recurring operator. It does **not** mean the production loop has no
+model. The runtime Agent is launched by the installed owner and invokes a pinned,
+isolated Codex CLI model only when judgment is due. Current configuration binds
+`marketing-agent` to `gpt-5.6-terra` at high effort and the explicit one-use
+repair lane to `gpt-5.6-sol` at high effort; Luna is not currently configured for
+Affiliate runtime. Model, effort, route, usage, budget, and evidence seal are
+receipted on every admitted call, so a later model change is configuration with
+readback rather than an implicit architecture change.
+
+| Actor | Inside recurring production loop? | Authority |
+|---|---:|---|
+| Interactive Codex chat session | No | Design/repair the harness, install an immutable release, safely trigger the existing owner, and verify readback |
+| Runtime Affiliate Agent using pinned Codex model | Yes, only when judgment is due | Choose one validated allowlisted tool or durable wait from redacted context |
+| Existing launchd effect owner | Yes | Claim and execute admitted browser/provider/public/Telegram effects and perform exact readback |
+| Deterministic guarded kernel | Yes | Enforce policy, authority, idempotency, secrets, costs, evidence, accounting, and replay |
+| Dais | No daily operation | Set objective, spend/policy limits, and terminal success contract |
 
 ```mermaid
 flowchart LR
@@ -6069,6 +6234,12 @@ current E0 slice. `OPEN-PROOF` items close only with installed real trajectories
 zero, success, or a forecast.
 
 ### 11.0.1 Focused autonomous-loop specification — Core 6
+
+**Historical status:** superseded by section 9.0.1
+`Canonical atomic remaining route — runtime Agent → E1 → OSS → USD 10K`.
+This section retains the evidence and acceptance-contract history that produced
+the current design; its `DEFERRED`, `OPEN`, and execution-step order are not a
+second active queue.
 
 #### 1. Overview
 
