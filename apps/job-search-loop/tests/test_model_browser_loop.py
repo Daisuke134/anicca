@@ -135,6 +135,7 @@ class ModelBrowserLoopContractTests(unittest.TestCase):
         self.assertNotIn("A `blocked` row remains durable work", prompt)
         self.assertIn("BrowserSession.attach(endpoint, row_run_id)", prompt)
         self.assertIn("ObservationBuilder.build(handle)", prompt)
+        self.assertIn("ActionExecutor.execute(handle,", prompt)
         self.assertNotIn("Use `chromium.connect_over_cdp(endpoint)`", prompt)
 
     def test_orchestrator_delegates_once_to_the_existing_bounded_runner(self):

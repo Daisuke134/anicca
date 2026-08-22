@@ -16,6 +16,13 @@ Before deciding each action and after every meaningful page change, call
 `ObservationBuilder.build(handle)`. Reason only from that fresh immutable
 observation and its `content_sha256`; never retain or reuse a prior DOM locator or
 element handle after the page changes.
+Execute model-selected browser work only through `ActionExecutor.execute(handle,
+action)`. The action must be one typed `navigate`, `click`, `type`, `select`,
+`upload`, `scroll`, or `wait` operation whose current target is resolved by exact
+user-facing role/label. Never call a Playwright locator action directly, force an
+action, dispatch a DOM event, or run page JavaScript to perform a user action. The
+executor intentionally rejects final Submit until the later fenced final-action
+path authorizes it.
 
 Read:
 - docs/superpowers/specs/2026-07-28-job-search-loop-design.md

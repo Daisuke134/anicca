@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal
 
 
 @dataclass(frozen=True, slots=True)
@@ -40,3 +41,32 @@ class ObservationV1:
     screenshot_path: Path
     screenshot_sha256: str
     content_sha256: str
+
+
+@dataclass(frozen=True, slots=True)
+class ActionTargetV1:
+    role: str
+    label: str
+    exact: bool = True
+
+
+@dataclass(frozen=True, slots=True)
+class VisibleActionV1:
+    kind: Literal["navigate", "click", "type", "select", "upload", "scroll", "wait"]
+    target: ActionTargetV1 | None = None
+    text: str | None = None
+    url: str | None = None
+    file_path: Path | None = None
+    delta_y: int | None = None
+    wait_ms: int | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ActionReceiptV1:
+    schema_version: int
+    kind: str
+    target_role: str | None
+    target_label: str | None
+    before_url: str
+    after_url: str
+    receipt_sha256: str

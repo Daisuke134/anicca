@@ -1,0 +1,98 @@
+from __future__ import annotations
+
+import hashlib
+import json
+import re
+from pathlib import Path
+from urllib.parse import urlparse
+
+from .contracts import ActionReceiptV1, ActionTargetV1, SessionHandleV1, VisibleActionV1
+from .session import BrowserSession
+
+
+_FINAL_SUBMIT = re.compile(r"^\s*(submit|submit application)\s*$", re.IGNORECASE)
+
+
+class ActionExecutor:
+    """Execute only fresh, unique, visible user-facing actions."""
+
+    def __init__(self, session: BrowserSession, timeout_ms: int = 20_000) -> None:
+        self._session = session
+        self._timeout_ms = timeout_ms
+
+    @staticmethod
+    def _validate_https(url: str) -> None:
+        parsed = urlparse(url)
+        if parsed.scheme != "https" or not parsed.hostname:
+            raise ValueError("navigation requires an absolute HTTPS URL")
+
+    async def _target(self, page, target: ActionTargetV1):
+        if not target.label.strip():
+            raise ValueError("a non-empty user-facing label is required")
+        locator = (
+            page.get_by_role(target.role, name=target.label, exact=target.exact)
+            if target.role
+            else page.get_by_label(target.label, exact=target.exact)
+        )
+        if await locator.count() != 1:
+            raise RuntimeError("action target must resolve to exactly one current control")
+        locator = locator.first
+        if not await locator.is_visible():
+            raise RuntimeError("action target is not visible")
+        if not await locator.is_enabled():
+            raise RuntimeError("action target is not enabled")
+        return locator
+
+    async def execute(
+        self, handle: SessionHandleV1, action: VisibleActionV1
+    ) -> ActionReceiptV1:
+        page = self._session.page(handle)
+        before_url = page.url
+        target = None
+        if action.kind == "navigate":
+            if action.url is None:
+                raise ValueError("navigate requires url")
+            self._validate_https(action.url)
+            await page.goto(action.url, wait_until="commit", timeout=self._timeout_ms)
+        elif action.kind in {"click", "type", "select", "upload"}:
+            if action.target is None:
+                raise ValueError(f"{action.kind} requires target")
+            if action.kind == "click" and _FINAL_SUBMIT.match(action.target.label):
+                raise PermissionError("final Submit requires the SubmissionFence path")
+            target = await self._target(page, action.target)
+            if action.kind == "click":
+                await target.click(timeout=self._timeout_ms)
+            elif action.kind == "type":
+                if action.text is None:
+                    raise ValueError("type requires text")
+                await target.fill(action.text, timeout=self._timeout_ms)
+            elif action.kind == "select":
+                if action.text is None:
+                    raise ValueError("select requires option label")
+                await target.select_option(label=action.text, timeout=self._timeout_ms)
+            else:
+                if action.file_path is None or not Path(action.file_path).is_file():
+                    raise ValueError("upload requires an existing file")
+                await target.set_input_files(str(action.file_path), timeout=self._timeout_ms)
+        elif action.kind == "scroll":
+            if action.delta_y is None or abs(action.delta_y) > 10_000:
+                raise ValueError("scroll requires bounded delta_y")
+            await page.mouse.wheel(0, action.delta_y)
+        elif action.kind == "wait":
+            if action.wait_ms is None or not 0 < action.wait_ms <= 10_000:
+                raise ValueError("wait requires 1..10000 milliseconds")
+            await page.wait_for_timeout(action.wait_ms)
+        else:
+            raise ValueError(f"unsupported action kind: {action.kind}")
+
+        safe = {
+            "kind": action.kind,
+            "target_role": action.target.role if action.target else None,
+            "target_label": action.target.label if action.target else None,
+            "before_url": before_url,
+            "after_url": page.url,
+        }
+        receipt_sha = hashlib.sha256(
+            json.dumps(safe, ensure_ascii=False, sort_keys=True).encode("utf-8")
+        ).hexdigest()
+        return ActionReceiptV1(1, receipt_sha256=receipt_sha, **safe)
