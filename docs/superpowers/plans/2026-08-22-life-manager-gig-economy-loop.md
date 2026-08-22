@@ -132,15 +132,15 @@ commands used by every later task.
 **Interfaces:** Produces `AuthorizationReceipt` and
 `authorize(provider, account, action, transport, now) -> AuthorizationDecision`.
 
-- [ ] Write failing tests asserting missing, expired, wrong-account and wrong-action evidence returns
+- [x] Write failing tests asserting missing, expired, wrong-account and wrong-action evidence returns
   `unknown`, while an exact unexpired special approval returns `approved_browser`.
-- [ ] Run `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q
+- [x] Run `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q
   skills/earn/gig/tests/test_provider_authorization.py`; confirm import/test failure.
-- [ ] Implement strict JSON parsing for `approved_api`, `approved_browser`, `approved_assisted`,
+- [x] Implement strict JSON parsing for `approved_api`, `approved_browser`, `approved_assisted`,
   `denied`, `unknown`; reject extra keys and invalid timestamps.
-- [ ] Seed every public provider/action as `unknown`; keep private receipts in
+- [x] Seed every public provider/action as `unknown`; keep private receipts in
   `~/.config/anicca/gig/authorizations.json` mode `600`.
-- [ ] Run the focused test plus `python3 -m json.tool` on the public config; commit/push.
+- [x] Run the focused test plus `python3 -m json.tool` on the public config; commit/push.
 
 ### Task 2: Define the provider adapter contract
 
