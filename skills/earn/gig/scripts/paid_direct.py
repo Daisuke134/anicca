@@ -2276,6 +2276,14 @@ def _rewrite_staging_paths(value: Any, source: Path, target: Path) -> Any:
     return value
 
 
+def _clone_prior_artifact(source: Path, target: Path) -> None:
+    """Give the isolated owner an independent APFS clone without duplicating its bytes."""
+    cloned = subprocess.run(["/bin/cp", "-c", str(source), str(target)], capture_output=True)
+    if cloned.returncode:
+        target.unlink(missing_ok=True)
+        shutil.copy2(source, target)
+
+
 def _prepare_file_owner_staging(root: Path, context: Path, staging: Path) -> Path | None:
     shutil.copytree(root / "requirements", staging / "requirements")
     restricted = set(restricted_attachment_paths(root))
@@ -2311,7 +2319,7 @@ def _prepare_file_owner_staging(root: Path, context: Path, staging: Path) -> Pat
         prior.resolve().relative_to(root.resolve())
         target = staging / "work" / "prior-artifact" / prior.name
         target.parent.mkdir(parents=True)
-        shutil.copy2(prior, target)
+        _clone_prior_artifact(prior, target)
         return target
     return None
 
@@ -2380,7 +2388,7 @@ def _run_isolated_file_owner(args, root: Path, context: Path, prompt_text: str,
         for candidate in sorted((root / "delivery").glob("*.zip")):
             target = prior_dir / candidate.name
             if not target.exists():
-                shutil.copy2(candidate, target)
+                _clone_prior_artifact(candidate, target)
         prior_candidates = sorted(prior_dir.glob("*.zip"))
         prompt = staging / "owner.prompt.txt"
         versions = [int(match.group(1)) for path in (root / "delivery").iterdir()

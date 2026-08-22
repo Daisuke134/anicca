@@ -313,6 +313,19 @@ the four lanes continue until the filesystem itself rejects a write while the in
 space. An installer may still set an explicit nonzero headroom value. This source change is not active until the
 current Paid pass completes and a new immutable release is activated.
 
+The next natural pass proved byusco `18171890` once with `effect=1`, `readback=1`, exact artifact SHA-256
+`6d1a0a95850c4bbd496174b27881371dc4b81d44284bf347bd2b5e9d0766ab3d`, exact room DOM, empty composer and
+formal delivery OFF. Its following wake omitted a new byusco worker after targeted official readback, so the final
+aggregate receipt must still record replay-zero explicitly. Manledge reached its authorized 2,897-character answer
+and acquired the writer lock, but the browser returned `answer_browser` with effect/readback zero; the next official
+pre-send readback must determine whether the click occurred before any retry. Haru exposed the actual disk root
+cause after the preventive floor was disabled: the generic isolated file owner physically recopied every historical
+ZIP from `delivery/` into runtime on every resume (892 MiB for this project), then failed `ENOSPC` while copying old
+versions. The shared staging path now uses macOS/APFS native `cp -c` clonefile semantics for independent copy-on-write
+prior artifacts, with ordinary `copy2` only as a portability fallback. A direct 42,352,745-byte clone retained the
+exact SHA-256 with a distinct inode and zero allocated-KiB delta. No room-specific artifact selection or symlink was
+added; publish and naturally resume before attributing any Haru effect.
+
 **Current reviewer correction.** `main` and `origin/main` were both `31e7fa09d` before this change; the
 starting verification commit `79ac01ba1eb66b06aed1f9cee66d4af303f03a3d` remains an ancestor. The loaded
 Paid release is still `f747c7d05` while its natural pass is active, so no effect is attributed to the new
