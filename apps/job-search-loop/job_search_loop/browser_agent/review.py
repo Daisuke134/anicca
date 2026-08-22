@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 
-from ..state import canonical_url
+from ..state import canonical_url, same_application_surface
 from .contracts import FinalReviewReceiptV1, ObservationV1, ResumeVerificationV1
 
 
@@ -25,7 +25,7 @@ def verify_final_review(
     """Bind exact row identity and routed material to one fresh review surface."""
     if resume.observation_sha256 != observation.content_sha256:
         raise RuntimeError("resume verification is stale for final review")
-    if canonical_url(observation.url) != canonical_url(expected_url):
+    if not same_application_surface(observation.url, expected_url):
         raise RuntimeError("final review URL does not match the application")
     if resume.resume_sha256 != expected_resume_sha256 or not resume.filename_visible:
         raise RuntimeError("final review resume does not match routed material")

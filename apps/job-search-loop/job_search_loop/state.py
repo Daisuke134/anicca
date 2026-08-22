@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import re
-from urllib.parse import urlsplit, urlunsplit
+from urllib.parse import unquote, urlsplit, urlunsplit
 
 
 class InvalidTransition(ValueError):
@@ -102,6 +102,38 @@ def canonical_url(value: str) -> str:
     return urlunsplit(
         (parsed.scheme.casefold(), parsed.netloc.casefold(), path, "", "")
     )
+
+
+def same_application_surface(actual: str, expected: str) -> bool:
+    """Bind an ATS form URL to the exact posting without conflating jobs."""
+    if canonical_url(actual) == canonical_url(expected):
+        return True
+    actual_url = urlsplit(actual.strip())
+    expected_url = urlsplit(expected.strip())
+    actual_host = actual_url.hostname.casefold() if actual_url.hostname else ""
+    expected_host = expected_url.hostname.casefold() if expected_url.hostname else ""
+    if (
+        actual_url.scheme.casefold() != "https"
+        or expected_url.scheme.casefold() != "https"
+        or actual_host != expected_host
+        or not actual_host.endswith(".myworkdayjobs.com")
+    ):
+        return False
+
+    def workday_identity(path: str) -> tuple[tuple[str, ...], str] | None:
+        segments = tuple(unquote(part).casefold() for part in path.split("/") if part)
+        try:
+            job_index = segments.index("job")
+        except ValueError:
+            return None
+        if job_index + 2 >= len(segments):
+            return None
+        # Workday mutates locale casing, location punctuation, and appends
+        # `/apply/*`; tenant path plus requisition-bearing slug stay stable.
+        return segments[:job_index], segments[job_index + 2]
+
+    actual_identity = workday_identity(actual_url.path)
+    return actual_identity is not None and actual_identity == workday_identity(expected_url.path)
 
 
 def canonical_job_id(company: str, title: str, url: str) -> str:

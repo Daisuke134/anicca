@@ -18,6 +18,7 @@ from .state import (
     canonical_job_id,
     canonical_url,
     is_excluded_employer,
+    same_application_surface,
     validate_transition,
 )
 
@@ -1276,8 +1277,8 @@ class Ledger:
             ).fetchone()
             if application is None:
                 raise KeyError(application_id)
-            if canonical_url(snapshot["url"]) != canonical_url(
-                str(application["canonical_url"])
+            if not same_application_surface(
+                snapshot["url"], str(application["canonical_url"])
             ):
                 raise ValueError("ATS snapshot URL does not match the application")
             existing = self.connection.execute(
