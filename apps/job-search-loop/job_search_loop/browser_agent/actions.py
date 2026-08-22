@@ -115,7 +115,17 @@ class ActionExecutor:
                 try:
                     target = await self._target(page, action.target)
                 except RuntimeError:
-                    opener = await self._target(page, action.opener)
+                    try:
+                        opener = await self._target(page, action.opener)
+                    except RuntimeError:
+                        opener = await self._target(
+                            page,
+                            ActionTargetV1(
+                                role=action.opener.role,
+                                label=action.opener.label,
+                                exact=action.opener.exact,
+                            ),
+                        )
                     await opener.click(timeout=self._timeout_ms)
                     target = await self._target(page, action.target)
             else:
