@@ -141,6 +141,8 @@ class ModelBrowserLoopContractTests(unittest.TestCase):
         self.assertIn("Never batch actions from one observation", prompt)
         self.assertIn("CheckpointStore.load(row_run_id)", prompt)
         self.assertIn("StepEvidenceV1", prompt)
+        self.assertIn("job_search_loop.browser_agent.candidate_memory", daily)
+        self.assertIn("CandidateMemoryView", prompt)
         self.assertNotIn("Use `chromium.connect_over_cdp(endpoint)`", prompt)
 
     def test_orchestrator_delegates_once_to_the_existing_bounded_runner(self):

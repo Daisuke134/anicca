@@ -55,6 +55,14 @@ Read:
 - ${XDG_CONFIG_HOME:-$HOME/.config}/anicca/job-search/profile.json
 - apps/job-search-loop/config/strategy.default.json
 
+`$JOB_SEARCH_CANDIDATE_MEMORY` is the private mode-0600 Candidate Memory generated
+by this owner from the current private profile, application email, and all three
+verified resume PDFs. Load it only through `CandidateMemoryView`; retrieve concepts
+inside the browser process and pass values directly to typed `fill`/`select`
+actions. Never print or copy its values into model output, evidence, commands, or
+Telegram. Its identity, dated experience, skills/projects, work authorization,
+logistics, links, and preferences replace any missing-context stop.
+
 Never print, `cat`, or `sed` the private profile, credentials, or raw provider
 transcripts into stdout/stderr. If a value is needed, query only the one required
 non-secret field with a redacting filter and keep the command output minimal.

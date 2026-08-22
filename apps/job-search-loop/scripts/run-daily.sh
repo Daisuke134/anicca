@@ -32,6 +32,15 @@ refresh_summary() {
 "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_owner \
   --endpoint "http://127.0.0.1:9222" \
   --output "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE"
+CANDIDATE_MEMORY="$JOB_SEARCH_STATE_ROOT/candidate-memory.v1.json"
+"$JOB_SEARCH_PYTHON" -m job_search_loop.browser_agent.candidate_memory \
+  --profile "$JOB_SEARCH_PROFILE" \
+  --resume "${XDG_DATA_HOME:-$HOME/.local/share}/anicca/job-search/materials/master/Daisuke_Narita_AI_Resume.pdf" \
+  --resume "${XDG_DATA_HOME:-$HOME/.local/share}/anicca/job-search/materials/business/Daisuke_Narita_AI_Business_Resume.pdf" \
+  --resume "${XDG_DATA_HOME:-$HOME/.local/share}/anicca/job-search/materials/japan/Daisuke_Narita_Japan_AI_Resume.pdf" \
+  --output "$CANDIDATE_MEMORY" >"$EVIDENCE/candidate-memory-receipt.json"
+chmod 600 "$EVIDENCE/candidate-memory-receipt.json"
+export JOB_SEARCH_CANDIDATE_MEMORY="$CANDIDATE_MEMORY"
 ASHBY_BOARD_BLOCKER_STATE="$JOB_SEARCH_STATE_ROOT/ashby-board-blockers.json"
 ASHBY_DISCOVERY_RESULT="$EVIDENCE/ashby-discovery.json"
 set +e
