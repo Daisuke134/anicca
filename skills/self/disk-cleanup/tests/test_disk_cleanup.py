@@ -311,6 +311,28 @@ def test_lsof_stderr_is_probe_error(monkeypatch) -> None:
     assert disk_cleanup._default_lsof(Path("/tmp/unknown")) == "probe-error"
 
 
+def test_lsof_failure_fails_closed(tmp_path: Path, monkeypatch) -> None:
+    temporary = tmp_path / "tmp"
+    candidate = temporary / "cfo-lsof-error"
+    candidate.mkdir(parents=True)
+    (candidate / "payload").write_text("in-flight")
+    monkeypatch.setattr(disk_cleanup.tempfile, "gettempdir", lambda: str(temporary))
+    governor = HostDiskGovernor(
+        home=tmp_path,
+        state_dir=tmp_path / "state",
+        lsof=lambda _path: "probe-error",
+        usage=lambda: (0, 1),
+    )
+
+    result = governor.sweep(
+        [{"path": candidate, "class": "ephemeral", "owner": "temporary-run", "discovery": "allowlisted"}]
+    )
+
+    assert candidate.exists()
+    assert result["errors"] == 1
+    assert result["preserved_reasons"] == {"probe-error": 1}
+
+
 def test_cli_candidate_is_rejected(tmp_path: Path) -> None:
     script = Path(__file__).parents[1] / "disk_cleanup.py"
     result = subprocess.run(

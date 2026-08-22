@@ -4,6 +4,8 @@ import stat
 import subprocess
 from pathlib import Path
 
+import pytest
+
 import sys
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
@@ -347,6 +349,46 @@ def test_full_inventory_allows_slow_allowlisted_root_with_bounded_timeout(tmp_pa
     projects = next(root for root in payload["roots"] if root["path"] == str(tmp_path / "Projects"))
     assert projects["measurement"] == "bounded-du"
     assert f"size-timeout:{tmp_path / 'Projects'}" not in payload["coverage"]["gaps"]
+
+
+def test_du_timeout_preserves_unknown_size_with_owner_attribution(tmp_path: Path) -> None:
+    projects_path = tmp_path / "Projects"
+    projects_path.mkdir()
+
+    def timeout_runner(argv: list[str], *, timeout: float) -> subprocess.CompletedProcess[str]:
+        if argv[0].endswith("/du") and argv[-1] == str(projects_path):
+            raise subprocess.TimeoutExpired(argv, timeout)
+        return fake_runner(argv, timeout=timeout)
+
+    payload = collect_host_inventory(
+        home=tmp_path,
+        state_dir=tmp_path / "state",
+        full=True,
+        runner=timeout_runner,
+    )
+
+    projects = next(root for root in payload["roots"] if root["path"] == str(projects_path))
+    assert projects["measurement"] == "timeout"
+    assert projects["size_bytes"] is None
+    assert projects["owner_family"] == "repository-worktree"
+    assert f"size-timeout:{projects_path}" in payload["coverage"]["gaps"]
+
+
+def test_inventory_replace_failure_preserves_target_and_removes_temporaries(tmp_path: Path, monkeypatch) -> None:
+    state = tmp_path / "state"
+    state.mkdir()
+    target = state / "host-inventory.json"
+    target.write_text('{"old":true}\n')
+    orphan = state / ".host-inventory.orphan"
+    orphan.write_text("orphan")
+    os.utime(orphan, (1, 1))
+    monkeypatch.setattr(host_inventory.os, "replace", lambda *_args: (_ for _ in ()).throw(OSError("replace failed")))
+
+    with pytest.raises(OSError, match="replace failed"):
+        collect_host_inventory(home=tmp_path, state_dir=state, runner=fake_runner)
+
+    assert target.read_text() == '{"old":true}\n'
+    assert list(state.glob(".host-inventory.*")) == []
 
 
 def test_full_inventory_gives_homebrew_a_longer_bounded_probe(tmp_path: Path) -> None:

@@ -470,10 +470,24 @@ def collect_host_inventory(
     payload["inventory_sha256"] = hashlib.sha256(encoded).hexdigest()
     state_dir.mkdir(parents=True, exist_ok=True)
     target = state_dir / ("host-inventory-full.json" if full else "host-inventory.json")
-    with tempfile.NamedTemporaryFile("w", dir=state_dir, prefix=".host-inventory.", delete=False) as handle:
-        json.dump(payload, handle, ensure_ascii=False, sort_keys=True, indent=2)
-        handle.write("\n")
-        temporary = Path(handle.name)
-    os.replace(temporary, target)
+    for orphan in state_dir.glob(".host-inventory.*"):
+        try:
+            metadata = os.lstat(orphan)
+            if stat.S_ISREG(metadata.st_mode) and time.time() - metadata.st_mtime > FULL_INVENTORY_BUDGET_SECONDS:
+                orphan.unlink()
+        except OSError:
+            pass
+    temporary: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile("w", dir=state_dir, prefix=".host-inventory.", delete=False) as handle:
+            temporary = Path(handle.name)
+            json.dump(payload, handle, ensure_ascii=False, sort_keys=True, indent=2)
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, target)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
     payload["path"] = str(target)
     return payload
