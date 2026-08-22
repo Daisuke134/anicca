@@ -28,14 +28,14 @@ function decodeHtml(value) {
 
 function normalize(value) { return String(value).normalize("NFKC").replace(/\s+/g, " ").trim(); }
 
-function verifyNativeHtml(html) {
+function verifyNativeHtml(html, expected = EXPECTED) {
   const description = /<meta property="og:description" content="([^"]*)"/.exec(String(html))?.[1];
   const canonical = /<link rel="canonical" href="([^"]*)"/.exec(String(html))?.[1];
   const decoded = decodeHtml(description || "");
-  if (canonical !== EXPECTED.public_url || !decoded.includes(EXPECTED.native_owner) || !normalize(decoded).includes(normalize(EXPECTED.caption))) {
+  if (canonical !== expected.public_url || !decoded.includes(expected.native_owner) || !normalize(decoded).includes(normalize(expected.caption))) {
     throw new Error("Instagram native URL, owner, or caption mismatch");
   }
-  return { status: "measured", identity_verified: true, native_owner: EXPECTED.native_owner };
+  return { status: "measured", identity_verified: true, native_owner: expected.native_owner };
 }
 
 function measured(value, source) {
@@ -58,21 +58,21 @@ function postMetrics(rows) {
   return result;
 }
 
-function persistSnapshot({ dataDir, window, observedAt, html, accountRows, postRows }) {
+function persistSnapshot({ dataDir, window, observedAt, html, accountRows, postRows, expected = EXPECTED }) {
   if (!WINDOWS.has(window) || !Number.isFinite(Date.parse(observedAt))) throw new Error("Instagram metric window invalid");
-  const native = verifyNativeHtml(html);
+  const native = verifyNativeHtml(html, expected);
   const snapshot = {
-    schema_version: 1, kind: "instagram_combined_metric_snapshot", ...EXPECTED,
-    window, observed_at: observedAt, caption_sha256: crypto.createHash("sha256").update(EXPECTED.caption).digest("hex"),
+    schema_version: 1, kind: "instagram_combined_metric_snapshot", ...expected,
+    window, observed_at: observedAt, caption_sha256: crypto.createHash("sha256").update(expected.caption).digest("hex"),
     sources: { instagram_native: native, postiz_post: { status: "measured" }, postiz_account: Array.isArray(accountRows) && accountRows.length ? { status: "measured" } : { status: "unavailable", reason: "empty_response", response: "empty_array" } },
     post: postMetrics(postRows), account_metrics: Array.isArray(accountRows) && accountRows.length ? accountRows : { status: "unavailable", reason: "empty_response" },
   };
-  const directory = path.join(path.resolve(dataDir), "tenants", EXPECTED.tenant_id, "marketing", "metrics", EXPECTED.native_owner, EXPECTED.shortcode);
+  const directory = path.join(path.resolve(dataDir), "tenants", expected.tenant_id, "marketing", "metrics", expected.native_owner, expected.shortcode);
   const file = path.join(directory, `${window}.combined.json`);
   fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
   if (fs.existsSync(file)) {
     const existing = JSON.parse(fs.readFileSync(file, "utf8"));
-    if (existing.public_url !== EXPECTED.public_url || existing.provider_post_id !== EXPECTED.provider_post_id || existing.caption_sha256 !== snapshot.caption_sha256) throw new Error("Instagram metric replay mismatch");
+    if (existing.public_url !== expected.public_url || existing.provider_post_id !== expected.provider_post_id || existing.caption_sha256 !== snapshot.caption_sha256) throw new Error("Instagram metric replay mismatch");
     return { created: false, file, snapshot: existing };
   }
   const temporary = `${file}.tmp-${process.pid}-${crypto.randomUUID()}`;
@@ -81,15 +81,15 @@ function persistSnapshot({ dataDir, window, observedAt, html, accountRows, postR
   return { created: true, file, snapshot };
 }
 
-function persistDelayedSnapshot({ dataDir, window, observedAt }) {
+function persistDelayedSnapshot({ dataDir, window, observedAt, expected = EXPECTED }) {
   if (!WINDOWS.has(window) || !Number.isFinite(Date.parse(observedAt))) throw new Error("Instagram delayed metric window invalid");
   const unavailable = (reason = "source_delayed") => ({ status: "unavailable", value: null, reason });
   const post = Object.fromEntries([...Object.values(POST_LABELS), "impressions", "watch_time", "average_watch_time", "completion", "engagement"].map((key) => [key, unavailable()]));
-  const snapshot = { schema_version: 1, kind: "instagram_combined_metric_snapshot", ...EXPECTED, window, observed_at: observedAt,
-    caption_sha256: crypto.createHash("sha256").update(EXPECTED.caption).digest("hex"),
+  const snapshot = { schema_version: 1, kind: "instagram_combined_metric_snapshot", ...expected, window, observed_at: observedAt,
+    caption_sha256: crypto.createHash("sha256").update(expected.caption).digest("hex"),
     sources: { instagram_native: { status: "unavailable", reason: "source_delayed", identity_verified: true }, postiz_post: { status: "unavailable", reason: "source_delayed" }, postiz_account: { status: "unavailable", reason: "source_delayed" } },
     post, account_metrics: { status: "unavailable", reason: "source_delayed" } };
-  const directory = path.join(path.resolve(dataDir), "tenants", EXPECTED.tenant_id, "marketing", "metrics", EXPECTED.native_owner, EXPECTED.shortcode);
+  const directory = path.join(path.resolve(dataDir), "tenants", expected.tenant_id, "marketing", "metrics", expected.native_owner, expected.shortcode);
   const file = path.join(directory, `${window}.combined.json`); fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
   if (fs.existsSync(file)) return { created: false, file, snapshot: JSON.parse(fs.readFileSync(file, "utf8")) };
   const temporary = `${file}.tmp-${process.pid}-${crypto.randomUUID()}`;
@@ -97,9 +97,9 @@ function persistDelayedSnapshot({ dataDir, window, observedAt }) {
   return { created: true, file, snapshot };
 }
 
-function persistDailyDigest({ dataDir, reportDay, observedAt }) {
+function persistDailyDigest({ dataDir, reportDay, observedAt, expected = EXPECTED }) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(reportDay) || !Number.isFinite(Date.parse(observedAt))) throw new Error("Instagram daily digest identity invalid");
-  const directory = path.join(path.resolve(dataDir), "tenants", EXPECTED.tenant_id, "marketing", "metrics", EXPECTED.native_owner, EXPECTED.shortcode);
+  const directory = path.join(path.resolve(dataDir), "tenants", expected.tenant_id, "marketing", "metrics", expected.native_owner, expected.shortcode);
   const rows = [...WINDOWS].map((window) => {
     const file = path.join(directory, `${window}.combined.json`);
     return fs.existsSync(file) ? { window, status: JSON.parse(fs.readFileSync(file, "utf8")).sources.postiz_post.status, file } : { window, status: "pending" };
@@ -119,12 +119,13 @@ function persistDailyDigest({ dataDir, reportDay, observedAt }) {
 
 async function sendMetricSnapshot(result, env, dataDir) {
   if (!result.created) return { created: false, reason: "snapshot_replay" };
+  const expected = result.snapshot;
   const objectStore = createContentObjectStore({ objectDir: path.join(dataDir, "objects") });
   const snapshotRef = objectStore.import(result.file).ref;
   const job = buildMarketingLivenessJob({
-    tenantId: EXPECTED.tenant_id, telegramTokenRef: "secret://telegram/bot-token", telegramChatRef: "telegram-chat://owner",
-    payload: { lane: "anicca-main-ja-instagram", product: EXPECTED.product_id, locale: EXPECTED.locale, platform: "instagram", account: EXPECTED.account_id,
-      status: "observed", window: result.snapshot.window, observed_at: result.snapshot.observed_at, public_url: EXPECTED.public_url, snapshot_ref: snapshotRef },
+    tenantId: expected.tenant_id, telegramTokenRef: "secret://telegram/bot-token", telegramChatRef: "telegram-chat://owner",
+    payload: { lane: "anicca-main-ja-instagram", product: expected.product_id, locale: expected.locale, platform: "instagram", account: expected.account_id,
+      status: "observed", window: result.snapshot.window, observed_at: result.snapshot.observed_at, public_url: expected.public_url, snapshot_ref: snapshotRef },
   });
   const store = createMarketingLocalLedger({ dataDir });
   const queued = await store.enqueueJob({ jobId: job.job_id, tenantId: job.tenant_id, loopId: job.loop_id, capability: job.capability, effectClass: job.effect_class, effectKey: job.effect_key, inputRefs: job.input_refs, maxAttempts: job.max_attempts, availableAt: new Date().toISOString() });
@@ -139,19 +140,19 @@ async function sendMetricSnapshot(result, env, dataDir) {
   return { created: true, message_id: receipt?.message_id, snapshot_ref: snapshotRef };
 }
 
-async function collectWindow(window, env = process.env, observedAt = new Date().toISOString()) {
+async function collectWindow(window, env = process.env, observedAt = new Date().toISOString(), expected = EXPECTED) {
   const key = String(env.LM_POSTIZ_API_KEY || "").trim();
   if (!key) throw new Error("LM_POSTIZ_API_KEY is required");
   const get = async (url, headers = {}) => { const response = await fetch(url, { headers }); if (!response.ok) throw new Error(`Instagram metric HTTP ${response.status}`); return response; };
   const days = { "2h": 1, "24h": 1, "72h": 3, "7d": 7 }[window];
   if (!days) throw new Error("Instagram metric window invalid");
   const [page, account, post] = await Promise.all([
-    get(EXPECTED.public_url).then((response) => response.text()),
-    get(`https://api.postiz.com/public/v1/analytics/${EXPECTED.integration_id}?date=${days}`, { Authorization: key }).then((response) => response.json()),
-    get(`https://api.postiz.com/public/v1/analytics/post/${EXPECTED.provider_post_id}?date=${days}`, { Authorization: key }).then((response) => response.json()),
+    get(expected.public_url).then((response) => response.text()),
+    get(`https://api.postiz.com/public/v1/analytics/${expected.integration_id}?date=${days}`, { Authorization: key }).then((response) => response.json()),
+    get(`https://api.postiz.com/public/v1/analytics/post/${expected.provider_post_id}?date=${days}`, { Authorization: key }).then((response) => response.json()),
   ]);
   const dataDir = resolveDataRoot(env);
-  const result = persistSnapshot({ dataDir, window, observedAt, html: page, accountRows: account, postRows: post });
+  const result = persistSnapshot({ dataDir, window, observedAt, html: page, accountRows: account, postRows: post, expected });
   const telegram = await sendMetricSnapshot(result, env, dataDir);
   return { created: result.created, file: result.file, post: result.snapshot.post, account: result.snapshot.account_metrics, telegram };
 }
