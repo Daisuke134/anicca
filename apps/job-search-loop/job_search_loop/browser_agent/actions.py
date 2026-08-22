@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
 import re
@@ -71,12 +72,23 @@ class ActionExecutor:
                     await page.click_target(target)
                 except RuntimeError:
                     await page.click_target(opener)
-                    try:
-                        await page.click_target(target)
-                    except RuntimeError:
-                        target_without_ephemeral_id = dict(target)
-                        target_without_ephemeral_id["stable_id"] = ""
-                        await page.click_target(target_without_ephemeral_id)
+                    target_without_ephemeral_id = dict(target)
+                    target_without_ephemeral_id["stable_id"] = ""
+                    last_error: RuntimeError | None = None
+                    for _ in range(15):
+                        try:
+                            await page.click_target(target)
+                            break
+                        except RuntimeError as error:
+                            last_error = error
+                            try:
+                                await page.click_target(target_without_ephemeral_id)
+                                break
+                            except RuntimeError as fallback_error:
+                                last_error = fallback_error
+                                await asyncio.sleep(0.2)
+                    else:
+                        raise last_error or RuntimeError("provider option did not settle")
             elif action.kind == "type":
                 if action.text is None:
                     raise ValueError("type requires text")
