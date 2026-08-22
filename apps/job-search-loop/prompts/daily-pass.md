@@ -4,10 +4,9 @@ This process is the existing `ai.anicca.job-search-daily` launchd owner. Do not
 start another launchd job, agent runner, or Chromium process. Read the JSON path in
 `$JOB_SEARCH_BROWSER_OWNER_EVIDENCE`. When its status is `ready`, connecting
 Playwright to its `endpoint` is the required browser side effect and is not a
-duplicate executor. Use
-`job_search_loop.browser_agent.BrowserSession.attach(endpoint, row_run_id)` for each
-row. On a disconnected or missing row page, call `reconnect(handle)`; it recovers
-the tagged page or creates one in the existing default context. Obtain the current
+duplicate executor. Use `job_search_loop.browser_agent.RowResumer.restore(endpoint,
+row_run_id, canonical_url)` for each row. It attaches a new row or restores the
+validated checkpoint and tagged page in the existing default context. Obtain the current
 page through `page(handle)`, and call `close_owned(handle)` only after that row is
 finished. Never call `chromium.launch`, `browser.close`, `context.close`, or close
 another tab. Do not refuse browser work merely because the daily-driver process
@@ -43,12 +42,17 @@ this loop. Never batch actions from one observation. `AgentPolicy` rejects a sta
 observation hash and cannot assert `submitted` or any other authoritative terminal
 outcome. A `checkpointed` row returns control to the queue; it does not end the wake.
 
-Before attaching a row, call `CheckpointStore.load(row_run_id)` and restore its
-page marker, session generation, receipt hashes, remaining budget, and cursor when
-present. For every executed action: capture the fresh after-observation, append one
+Before attaching a row, call `RowResumer.restore(endpoint, row_run_id,
+canonical_url)`. It validates the complete EvidenceStore action chain against the
+checkpoint before reconnecting the exact page marker. If `needs_navigation=true`,
+perform exactly one fresh model-selected typed `navigate` to `recovery_url`; never
+replay prior actions. Restore session generation, receipt hashes, remaining budget,
+and cursor when present. For every executed action: capture the fresh
+after-observation, append one
 `StepEvidenceV1` to `EvidenceStore` with the exact predecessor/before/action/after
 SHA-256 values, then atomically save the next `RowCheckpointV1`. Persist a
-`checkpointed` cursor before returning the row to the queue. Never put entered
+current HTTPS URL and a `checkpointed` cursor before returning the row to the queue.
+Never put entered
 text, credentials, cookies, profile values, screenshots, or model prose in either
 store; only opaque identity, cursor, budget, and evidence hashes are permitted.
 

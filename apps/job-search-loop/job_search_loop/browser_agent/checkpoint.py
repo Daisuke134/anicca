@@ -6,6 +6,7 @@ import os
 import tempfile
 from dataclasses import asdict
 from pathlib import Path
+from urllib.parse import urlparse
 
 from .contracts import (
     CheckpointReceiptV1,
@@ -69,6 +70,10 @@ class CheckpointStore:
             _sha256(value) for value in checkpoint.action_receipt_hashes
         ):
             raise ValueError("checkpoint evidence fields must be SHA-256 references")
+        if checkpoint.current_url:
+            parsed = urlparse(checkpoint.current_url)
+            if parsed.scheme != "https" or not parsed.hostname:
+                raise ValueError("checkpoint current_url must be absolute HTTPS")
         payload = _canonical(asdict(checkpoint))
         path = self._path(checkpoint.row_run_id)
         _atomic_private(path, payload)

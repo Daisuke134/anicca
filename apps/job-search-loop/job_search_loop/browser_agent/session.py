@@ -48,16 +48,16 @@ class BrowserSession:
             return None
         return value if isinstance(value, str) else None
 
-    async def _recover_or_create(self, browser: Any, marker: str) -> Any:
+    async def _recover_or_create(self, browser: Any, marker: str) -> tuple[Any, bool]:
         if not browser.contexts:
             raise RuntimeError("existing CDP owner has no default browser context")
         context = browser.contexts[0]
         for page in context.pages:
             if not page.is_closed() and await self._marker(page) == marker:
-                return page
+                return page, True
         page = await context.new_page()
         await page.evaluate("marker => { window.name = marker }", marker)
-        return page
+        return page, False
 
     async def attach(self, endpoint: str, row_run_id: str) -> SessionHandleV1:
         endpoint = self._validate_endpoint(endpoint)
@@ -65,7 +65,8 @@ class BrowserSession:
             raise ValueError("row_run_id is required")
         marker = f"anicca-job-search:{row_run_id}"
         browser = await self._connect(endpoint)
-        page = await self._recover_or_create(browser, marker)
+        recovered = await self._recover_or_create(browser, marker)
+        page = recovered[0] if isinstance(recovered, tuple) else recovered
         self._pages[marker] = page
         return SessionHandleV1(1, endpoint, row_run_id, marker, 1)
 
@@ -75,7 +76,8 @@ class BrowserSession:
         if page is not None and not page.is_closed():
             return handle
         browser = await self._connect(endpoint)
-        page = await self._recover_or_create(browser, handle.page_marker)
+        recovered = await self._recover_or_create(browser, handle.page_marker)
+        page = recovered[0] if isinstance(recovered, tuple) else recovered
         self._pages[handle.page_marker] = page
         return SessionHandleV1(
             1,
@@ -83,6 +85,18 @@ class BrowserSession:
             handle.row_run_id,
             handle.page_marker,
             handle.generation + 1,
+        )
+
+    async def resume(self, handle: SessionHandleV1) -> tuple[SessionHandleV1, bool]:
+        endpoint = self._validate_endpoint(handle.endpoint)
+        browser = await self._connect(endpoint)
+        page, recovered = await self._recover_or_create(browser, handle.page_marker)
+        self._pages[handle.page_marker] = page
+        return (
+            SessionHandleV1(
+                1, endpoint, handle.row_run_id, handle.page_marker, handle.generation + 1
+            ),
+            recovered,
         )
 
     async def close_owned(self, handle: SessionHandleV1) -> None:

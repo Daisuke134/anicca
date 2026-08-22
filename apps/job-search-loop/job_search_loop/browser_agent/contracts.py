@@ -134,6 +134,7 @@ class RowCheckpointV1:
     observation_sha256: str
     action_receipt_hashes: tuple[str, ...]
     remaining_steps: int
+    current_url: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -158,6 +159,15 @@ class EvidenceReceiptV1:
     sequence: int
     evidence_sha256: str
     path: Path
+
+
+@dataclass(frozen=True, slots=True)
+class ResumeCursorV1:
+    handle: SessionHandleV1
+    checkpoint: RowCheckpointV1 | None
+    evidence_predecessor_sha256: str | None
+    needs_navigation: bool
+    recovery_url: str
 
 
 @dataclass(frozen=True, slots=True)
