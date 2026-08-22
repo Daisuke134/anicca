@@ -227,7 +227,10 @@ class DirectCDPPage:
         await self.call("Input.dispatchMouseEvent", {"type": "mouseMoved", "x": x, "y": y})
         await self.call("Input.dispatchMouseEvent", {"type": "mousePressed", "x": x, "y": y, "button": "left", "clickCount": 1})
         await self.call("Input.dispatchMouseEvent", {"type": "mouseReleased", "x": x, "y": y, "button": "left", "clickCount": 1})
-        await asyncio.sleep(0.35)
+        # Provider SPAs often validate and rerender the next step well after the
+        # mouse event returns.  Capture the post-action state only after that
+        # bounded transition window, otherwise the model receives stale controls.
+        await asyncio.sleep(1.5)
         self.url = str(await self.evaluate("() => location.href") or self.url)
         if self.url != before_url:
             await self.wait_ready()
