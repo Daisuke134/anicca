@@ -600,7 +600,7 @@ X の上限は 280 で、**日本語や全角文字は1文字が2と数えられ
 長い案は具体情報ではなく修飾語を削って縮める。
 
 ## 出力（最後に JSON オブジェクトだけを1つ）
-{"selected": true, "source_url": "...", "why": "選んだ理由1文", "seed_id": "v00X または null",
+{"selected": true, "source_url": "...", "evidence_quote": "候補本文からの原文そのまま", "reader_value": "誰が何を試せるか", "why": "選んだ理由1文", "seed_id": "v00X または null",
  "drafts": [{"tone":"funny","text":"..."},{"tone":"empathy","text":"..."},{"tone":"primary","text":"..."}]}
 EOF
   if [ "$TARGET_LANGUAGE" = "ja" ]; then
@@ -660,6 +660,23 @@ if [ "$SELECTED" != "True" ]; then
   REASON="$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1])).get("reason",""))' "$EV/select.json")"
   report "⚠️ 今回は該当なしで見送り: $REASON"
   finish 0 "model selected nothing"
+fi
+if ! "$PY" - "$EV/select.json" "$EV/candidates.json" >"$EV/grounding.json" <<'PYEOF'
+import json, sys
+selected = json.load(open(sys.argv[1], encoding="utf-8"))
+candidates = json.load(open(sys.argv[2], encoding="utf-8")).get("candidates", [])
+source = next((row for row in candidates if row.get("url") == selected.get("source_url")), None)
+quote = " ".join((selected.get("evidence_quote") or "").split())
+body = " ".join(((source or {}).get("text") or "").split())
+reader_value = " ".join((selected.get("reader_value") or "").split())
+ok = bool(source and len(quote) >= 8 and quote in body and reader_value)
+json.dump({"ok": ok, "source_matched": bool(source), "exact_quote": bool(quote and quote in body),
+           "reader_value_present": bool(reader_value)}, sys.stdout)
+raise SystemExit(0 if ok else 1)
+PYEOF
+then
+  report "⚠️ 選定案にsource本文のexact evidenceとreader valueが無いため投稿を見送り"
+  finish 0 "selection grounding gate failed"
 fi
 
 # ---------------------------------------------------------------- 4. humanize (separate call)
@@ -778,6 +795,27 @@ SRC_HANDLE="$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1]))["han
 SRC_TEXT="$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1]))["text"][:280])' "$EV/source.json")"
 SRC_METRICS="$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1]))["metrics"])' "$EV/source.json")"
 
+# LangChain Social Media Agent verifies content before scheduling it. Keep that boundary here as
+# a separate model judgment: the writer cannot approve its own unsupported factual additions.
+{
+  echo "次のX投稿をsource本文だけに照らして検証せよ。"
+  echo "事実主張・数字・固有名詞がsourceに無ければ supported=false。"
+  echo "明示的な意見、一般的な次の一手、書き手自身の失敗談は新しい外部事実ではない。"
+  echo "URL、文体、viralらしさではなく事実支持だけを判定する。"
+  echo; echo "## source"; cat "$EV/source.json"
+  echo; echo "## writerが選んだexact evidence"; "$PY" -c 'import json,sys; d=json.load(open(sys.argv[1])); print(d.get("evidence_quote","")); print(d.get("reader_value",""))' "$EV/select.json"
+  echo; echo "## final post"; cat "$EV/post.txt"
+  echo; echo '## 出力（最後にJSONだけ）'; echo '{"supported":true,"reason":"1文"}'
+} >"$EV/prompt-verify.txt"
+if ! ask_model "$EV/prompt-verify.txt" "$EV/verify.raw" >"$EV/verify.json"; then
+  report "❌ source-grounding criticの応答を読めなかったため投稿を見送り"
+  finish 1 "source grounding critic failed"
+fi
+if [ "$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1])).get("supported") is True)' "$EV/verify.json" 2>/dev/null)" != "True" ]; then
+  report "⚠️ 最終本文にsourceで支持されない事実があるため投稿を見送り"
+  finish 0 "source grounding critic rejected draft"
+fi
+
 # ---------------------------------------------------------------- 6. publish
 run_x_post --cdp "$CDP" \
   --source-url "$SOURCE_URL" --text-file "$EV/post.txt" --mode "$KIND" >"$EV/post.json" 2>>"$EV/post.err"
@@ -826,7 +864,11 @@ with open(posted, "a", encoding="utf-8") as fh:
     fh.write(json.dumps(row, ensure_ascii=False) + "\n")
 PYEOF
 
-KIND_JA="$([ "$KIND" = "reply" ] && echo "返信" || echo "引用ツイート")"
+case "$KIND" in
+  reply) KIND_JA="返信" ;;
+  original) KIND_JA="source-backed original" ;;
+  *) KIND_JA="引用ツイート" ;;
+esac
 report "$(printf '✅ %s を投稿した\n\n── 元の投稿 ──\n%s  %s\n%s\n%s\n\n── 自分が書いた%s ──\n%s\n%s\n\nトーン: %s' \
   "$KIND_JA" "$SRC_HANDLE" "$SRC_METRICS" "$SRC_TEXT" "$SOURCE_URL" \
   "$KIND_JA" "$(cat "$EV/post.txt")" "$POST_URL" "$TONE")"
