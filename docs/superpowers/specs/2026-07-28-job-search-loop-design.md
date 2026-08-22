@@ -5,8 +5,10 @@
 **Owner:** Daisuke Narita
 **Status:** The one macOS launchd acquisition owner, shared OpenClaw Telegram
 transport, and authenticated CloakBrowser daily-driver at CDP `:9222` are healthy.
-The owner wakes hourly and every admitted Workday/Ashby row now enters the mandatory
-model browser runtime through that one CDP owner. Rakuten completed the full Workday
+The owner wakes hourly. Production acquisition is Workday-only until repeated live
+Workday submissions and per-wake Telegram outcomes are proven; Ashby discovery and
+forms are parked. Every admitted Workday row enters the mandatory model browser
+runtime through that one CDP owner. Rakuten completed the full Workday
 flow in run `daily-20260822-182223`: the model resolved the hierarchical source
 question, preserved the verified resume, crossed My Experience and Voluntary
 Disclosures, consumed the final-action fence once, and produced exact completion UI.
@@ -22,8 +24,9 @@ at `StartInterval=3600`. Ledger and the fenced attempt are `submitted` with
 `evidence_class=exact_completion_ui` and evidence SHA-256
 `07e07393a4f4161839a94eb2242c7d48ef8e031f2bf8903e1b97b78d696f556b`.
 Telegram acknowledged the submitted outcome at message ID `28598`. Gog then checked
-13 current threads and found no exact Rakuten receipt email; completion UI is the
-authoritative submission proof.
+13 current threads and found no exact Rakuten receipt email. Therefore Rakuten has
+completion-UI evidence only, not receipt-email evidence; this distinction must be
+reported explicitly and never collapsed into a claim that an email was received.
 
 **Architecture decision:** all eligible ATS form interaction is mandatory
 model-based browser work. Deterministic code owns only discovery, eligibility,
@@ -224,7 +227,8 @@ The implementation order is:
 ```text
 Workday account + application E2E
   → immediate developer kickstart + Workday dedupe/continued queue
-  → Ashby E2E on the same agent contract
+  → repeated Workday submissions + Telegram outcome on every wake
+  → only then Ashby E2E on the same agent contract
   → Greenhouse → Lever → provider-neutral ATS
   → Life Manager open-source skill/loop packaging
   → inbox → interview → assessment → offer → USD 10K/month salary → started outcome

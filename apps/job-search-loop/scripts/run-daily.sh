@@ -49,25 +49,7 @@ chmod 600 "$EVIDENCE/candidate-memory-receipt.json"
 export JOB_SEARCH_CANDIDATE_MEMORY="$CANDIDATE_MEMORY"
 export JOB_SEARCH_ANSWER_MEMORY="$JOB_SEARCH_STATE_ROOT/answer-memory.v1.json"
 export JOB_SEARCH_MACHINE_CREDENTIALS="${XDG_DATA_HOME:-$HOME/.local/share}/anicca/credentials.json"
-ASHBY_BOARD_BLOCKER_STATE="$JOB_SEARCH_STATE_ROOT/ashby-board-blockers.json"
 ASHBY_DISCOVERY_RESULT="$EVIDENCE/ashby-discovery.json"
-set +e
-"$JOB_SEARCH_PYTHON" -m job_search_loop.ashby_discovery \
-  --cache "$JOB_SEARCH_STATE_ROOT/official-ats-board-cache.v1.json" \
-  --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
-  --profile "$JOB_SEARCH_PROFILE" \
-  --materials-root "${XDG_DATA_HOME:-$HOME/.local/share}/anicca/job-search/materials" \
-  --prompt "$JOB_SEARCH_APP_ROOT/prompts/daily-pass.md" \
-  --refresh-state "$JOB_SEARCH_STATE_ROOT/ashby-live-board-cursor.json" \
-  --board-blocker-state "$ASHBY_BOARD_BLOCKER_STATE" \
-  --board-batch 12 \
-  --output "$ASHBY_DISCOVERY_RESULT" \
-  --max-jobs 1
-ASHBY_DISCOVERY_RC=$?
-set -e
-if [[ "$ASHBY_DISCOVERY_RC" -ne 0 ]]; then
-  printf '%s\n' "Ashby deterministic discovery exited rc=$ASHBY_DISCOVERY_RC; existing queue continues" >&2
-fi
 ASHBY_COMBINED_RESULT="$EVIDENCE/ashby-fast-path-combined.json"
 "$JOB_SEARCH_PYTHON" - \
   "$ASHBY_DISCOVERY_RESULT" \
@@ -78,24 +60,17 @@ import sys
 from pathlib import Path
 
 discovery_path, output_path = map(Path, sys.argv[1:])
-
-def read(path: Path) -> dict:
-    try:
-        value = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return {"status": "failed", "processed": [], "excluded": []}
-    return value if isinstance(value, dict) else {"status": "failed", "processed": [], "excluded": []}
-
-discovery = read(discovery_path)
+discovery_path.write_text(
+    json.dumps({"status": "parked", "reason": "workday_first_gate"}) + "\n",
+    encoding="utf-8",
+)
+os.chmod(discovery_path, 0o600)
 combined = {
-    "status": "model_owned",
+    "status": "parked",
     "processed": [],
     "excluded": [],
-    "reason": "mandatory_browser_lane",
-    "discovery": {
-        "status": discovery.get("status"),
-        "discovered_count": len(discovery.get("discovered") or []),
-    },
+    "reason": "workday_first_gate",
+    "discovery": {"status": "parked", "discovered_count": 0},
     "owner": "ai.anicca.job-search-daily",
 }
 output_path.write_text(json.dumps(combined, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
@@ -158,9 +133,10 @@ workday_reason = str(workday.get("reason") or "")
 message = (
     "Codex::: "
     f"{japan_day} JST {run_id.name} pre-model checkpoint. "
-    + f"Ashby discovery is {ashby_discovery_status} ({ashby_discovered_count} discovered; forms are model-owned)"
-    + f". Workday is {workday_status}"
+    + "Workday-only model browser wake is starting"
+    + f"; Workday is {workday_status}"
     + (f" ({workday_reason})" if workday_reason else "")
+    + f". Ashby is {ashby_discovery_status} ({ashby_discovered_count} discovered; parked until Workday is proven repeatable)"
     + ". This checkpoint is sent before the mandatory model lane so a timeout cannot suppress Telegram reporting."
 )
 print(message)
@@ -216,7 +192,7 @@ set +e
   --evidence-dir "$EVIDENCE" \
   --workdir "$JOB_SEARCH_REPO_ROOT" \
   --python "$JOB_SEARCH_PYTHON" \
-  --active-provider all
+  --active-provider workday
 RUNNER_RC=$?
 set -e
 if [[ "$RUNNER_RC" -ne 0 ]]; then

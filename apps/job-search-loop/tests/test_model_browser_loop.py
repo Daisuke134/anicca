@@ -239,10 +239,10 @@ class ModelBrowserLoopContractTests(unittest.TestCase):
         prompt = (APP_ROOT / "prompts" / "daily-pass.md").read_text(encoding="utf-8")
         normalized_prompt = " ".join(prompt.split())
 
-        self.assertIn("-m job_search_loop.ashby_discovery", daily)
+        self.assertNotIn("-m job_search_loop.ashby_discovery", daily)
         self.assertIn('"status": "model_owned"', daily)
         self.assertIn('"reason": "mandatory_browser_lane"', daily)
-        self.assertIn("--active-provider all", daily)
+        self.assertIn("--active-provider workday", daily)
         self.assertIn(
             "Eligible Workday and Ashby rows both belong exclusively to this framework-owned model lane",
             normalized_prompt,
