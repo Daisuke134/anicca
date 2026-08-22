@@ -305,23 +305,24 @@ evidence. Independent production lanes continue running while development follow
 **Live handover state.** The loaded Paid owner uses an immutable release with up to eight independent
 project workers. Its launchd environment ignores the shared preventive `disk-pressure.block` and
 `disk-writers.stop` flags while retaining the 512 MiB last-resort guard and expiring operator brake.
-The latest natural receipt is nevertheless `status=failed`, `observed=7`, `actionable=3`, `effect=0`,
-`readback=2`, `failed=4`, `pending=1`; parallel artifact production therefore does not yet prove
+The loaded release is `097a2e1363929e4724294e8e44fba86bfd3e9d71`. The latest natural receipt is
+`status=failed`, `observed=7`, `actionable=4`, `effect=0`, `readback=2`, `failed=5`, `pending=0`;
+silent pending is now zero, but parallel artifact production therefore does not yet prove
 parallel buyer delivery. X-post talkroom `18171850` remains the sole closed item in the current
 four-client set: approved v1 has already been sent and officially read back with formal delivery OFF.
-Review-article talkroom `18171890` has locally acceptance-PASS v4
-`645b3db845c779f597457e53330d419ca583dcc70a78876ee3b4e7800b2af08a`, but direct artifact inspection
-proves it is only a buyer-review draft: all three required screenshots are absent, four firsthand-use
-passages remain unresolved, and the artifact itself says it is not publishable until the seller performs
-the required real use, captures privacy-redacted images, and completes the required human editing. The
-generic acceptance path incorrectly treated those missing buyer-visible inputs as PASS checks rather than
-a durable blocker; its current delivery attempt also fails `file_validation`. Manledge `18169985` now has acceptance-PASS v20
-`2cd506a57a6a791d53751e89cb68859fdd5e950768cbc5961cf23e2cc0b45fe8`, but delivery fails at
-`file_browser`. Haru `18169583` now has acceptance-PASS v31
+The natural owner pass violated the no-regeneration boundary before the durable non-PASS guard took effect:
+review-article talkroom `18171890` changed from v4 to REVIEW_READY v5
+`28199b8fb6479915d5ec372f3e57df83899f449a705ac7157dd9ad59867907d1`, and Manledge `18169985`
+changed from acceptance-PASS v20 to REVIEW_READY v21
+`b0588d9e2e99fd998896e611ddb52d61c98bacf56750b130e082580de5bd4c2e`. Do not regenerate either
+artifact again; decide whether the truthful v5/v21 records may be preserved or whether the existing v4/v20
+hashes must be restored without sending. The current failures are `18171890=file_non_delivery_disposition`
+and `18169985=file_validation`. Haru `18169583` remains acceptance-PASS v31
 `bceca32db8a9272330fd12798d44da06e14aab51e83e17d81e030aa37665d185` in
 `BOUNDED_REVIEW_SHIP` round 4, but the latest pass fails `targeted_readback`; v31 is not yet proven
-buyer-visible. Paid completion is therefore still one officially delivered/read-back artifact out of
-four, not four.
+buyer-visible. The already-closed X room incorrectly re-entered `file_builder`, and room `18062411`
+still fails `remote_resume`. Paid completion is therefore still one officially delivered/read-back artifact
+out of four, not four.
 
 **E2E judgment.** This work changes no owned application UI, so Maestro is not applicable. Completion
 requires the real launchd owner to act through the authenticated Coconala browser and an exact-room
@@ -416,11 +417,13 @@ reduce scope before exceeding three files or 100 production LOC.
    regression; do not add a TDD workflow or separate review ceremony. Direct temporary fixtures proved ZIP
    integrity, missing/count/hash/review failure and the asset-free case; `test_paid_disk_preflight.py` remains
    green at 9/9 without modifying its tests.
-5. [ ] Reclassify existing private records without regenerating artifacts: Haru v31 must prove its existing
-   images/archive members; Manledge v20 must prove that its accumulated contract requires no media;
-   byusco v4 must become REVIEW_READY or BLOCKED_NON_DELEGABLE, never completed PASS.
-6. [ ] Publish the immutable release, read back the four launchd program arguments/release SHA, kick the real
-   Paid owner, and observe natural continuation. Do not use Codex as the customer-work executor.
+5. [ ] Repair the failed private-record migration without another regeneration: Haru v31 must prove its
+   existing images/archive members; reconcile Manledge v21 against the preserved v20 hash and its actual
+   media-free contract; keep byusco v5 REVIEW_READY/non-delivery and preserve the prior v4 hash as migration
+   evidence. Never represent either regenerated artifact as an approved buyer effect.
+6. [x] Publish release `097a2e1363929e4724294e8e44fba86bfd3e9d71`, verify its Paid source bytes
+   against the Git blob, read back the four loaded launchd program arguments, and observe a natural Paid
+   continuation. The continuation produced no effect and exposed the migration failures above; it is not Done.
 7. [ ] Obtain exact-room official readback and replay-zero for every safe effect; keep byusco's exact owner
    dependency durable while Haru, Manledge and every other non-blocked purchased room continue.
 
