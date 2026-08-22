@@ -167,21 +167,25 @@ internally, correct it through one typed action, observe again, and reverify unt
 mismatch remains.
 
 On the final Workday review surface, build one more fresh observation and call
-`verify_final_review` with the exact row/application identity and latest
-`ResumeVerificationV1`. It must match canonical URL and resume SHA-256, find company
-and role on the rendered surface, have zero parsed-field mismatches, and bind the
-fresh observation hash. This receipt—not model prose—is the only identity input to
-the SubmissionFence. Any mismatch returns to observation/correction; it never
-authorizes Submit.
+exactly `/opt/homebrew/bin/python3 -m
+job_search_loop.browser_agent.runtime finalize`. Call it once and do not inspect
+source or assemble the final-action APIs yourself. The command reroutes and hashes
+the immutable assigned resume, verifies its visible filename and the exact
+row/application identity, captures a claim-ready ATS snapshot, acquires and consumes
+the one-shot SubmissionFence, clicks the one visible Submit control, waits for a
+fresh rendered surface, classifies it, and records the evidence-gated Ledger result.
+Any pre-click mismatch returns an error to observation/correction and never
+authorizes Submit. After any post-click return or exception, never call `finalize`
+again; `submit_unknown` is reconciled only by the receipt owner.
 
-Acquire `SubmissionFence.acquire(intent_id, fence, final_review_receipt)` immediately
-before the final click. The fence rereads the Ledger `submit_claimed` intent and
+The `finalize` command acquires `SubmissionFence` immediately before the final click.
+The fence rereads the Ledger `submit_claimed` intent and
 rejects concurrent/consumed, expired, stale, terminal, application, URL, resume, or
 observation mismatches. Keep its capability inside the browser process and never
 print or persist it outside the private fence store. Only the dedicated final-action
 path may consume it, once, against the unchanged review observation.
 
-Call `ActionExecutor.execute_final` with exactly one visible enabled role/label
+The command calls `ActionExecutor.execute_final` with exactly one visible enabled role/label
 matching `Submit` or `Submit Application`, the lease, and the unchanged review
 observation hash. The method resolves the unique current target, consumes the fence,
 and performs one ordinary visible click. Never call it again after any return,
@@ -189,15 +193,15 @@ timeout, navigation, transport event, or exception. Its receipt binds the target
 before/after URL, fence receipt, and review observation; it is evidence of one click,
 not evidence that the application completed.
 
-After the click, build a new screenshot-backed observation and call
-`verify_completion_ui` independently. Do not pass click receipts, network requests,
+After the click, the command builds a new screenshot-backed observation and calls
+`verify_completion_ui` independently. It does not pass click receipts, network requests,
 HTTP statuses, or Ledger state into this verifier. It returns `submitted` only when
 an exact rendered completion phrase and the same company+role identity are visible;
 rendered validation is definite `not_submitted`; every other post-click surface is
 `submit_unknown`. The model cannot override this result and a click alone is never
 success.
 
-Write the post-click state only through `record_completion_evidence`; it calls the
+The command writes the post-click state only through `record_completion_evidence`; it calls the
 Ledger evidence gate that fixes each outcome to its verifier evidence class/hash.
 Never call `complete_submission` with submitted/submit_unknown and never derive a
 terminal state from model prose. `submit_unknown` stays terminal and is never

@@ -206,7 +206,12 @@ def _is_workday_review(controls: list[dict[str, Any]]) -> bool:
         automation_id = _normalized(control.get("automation_id"))
         if text != "submit" or not (role in {"button", "link"} or tag in {"a", "button"}):
             continue
-        if not automation_id or "submit" in automation_id or "footer" in automation_id:
+        if (
+            not automation_id
+            or "submit" in automation_id
+            or "footer" in automation_id
+            or automation_id == "bottom-navigation-next-button"
+        ):
             return True
     return False
 

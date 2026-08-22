@@ -165,6 +165,29 @@ class AtsReadinessTests(unittest.TestCase):
         self.assertTrue(result["ready"])
         self.assertFalse(result["claim_ready"])
 
+    def test_workday_review_accepts_visible_submit_on_next_button_automation_id(self):
+        snapshot = {
+            "version": 1,
+            "url": "https://example.wd5.myworkdayjobs.com/en-US/careers/job/example",
+            "navigation_committed": True,
+            "frames": [
+                {
+                    "url": "https://example.wd5.myworkdayjobs.com/en-US/careers/job/example",
+                    "controls": [
+                        {
+                            "tag": "button",
+                            "role": "button",
+                            "automation_id": "bottom-navigation-next-button",
+                            "text": "Submit",
+                        }
+                    ],
+                }
+            ],
+        }
+        result = evaluate_snapshot(snapshot)
+        self.assertEqual(result["surface"], "workday_review")
+        self.assertTrue(result["claim_ready"])
+
     def test_generic_application_surface_is_claim_ready(self):
         snapshot = {
             "version": 1,

@@ -6,14 +6,18 @@ import hashlib
 import json
 import os
 import re
+from datetime import datetime
 from dataclasses import asdict
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from ..ledger import Ledger
+from ..resume_routing import select_resume
 from .actions import ActionExecutor
 from .candidate_memory import CandidateMemoryView
 from .checkpoint import CheckpointStore, EvidenceStore
+from .completion import record_completion_evidence, verify_completion_ui
 from .contracts import (
     ActionTargetV1,
     QueueRowReceiptV1,
@@ -24,8 +28,11 @@ from .contracts import (
 from .observation import ObservationBuilder
 from .outcome_reporting import send_hourly_outcomes
 from .queue import RowQueueSupervisor
+from .resume import ResumeVerifier
 from .resume_cursor import RowResumer
+from .review import verify_final_review
 from .session import BrowserSession
+from .submission_fence import SubmissionFence
 
 
 _EMAIL = re.compile(r"\b[^\s@]+@[^\s@]+\.[^\s@]+\b")
@@ -297,6 +304,176 @@ async def checkpoint(reason: str) -> dict[str, Any]:
     }
 
 
+def _materials_root() -> Path:
+    data_home = Path(os.environ.get("XDG_DATA_HOME", str(Path.home() / ".local/share")))
+    return data_home / "anicca/job-search/materials"
+
+
+def _claim_snapshot(observation) -> dict[str, Any]:
+    controls = []
+    for control in observation.controls:
+        automation_id = (
+            control.stable_id.removeprefix("automation:")
+            if control.stable_id.startswith("automation:")
+            else ""
+        )
+        controls.append(
+            {
+                "tag": control.tag,
+                "type": control.control_type,
+                "role": control.role,
+                "automation_id": automation_id,
+                "label": control.label,
+                "name": "",
+                "text": control.label,
+            }
+        )
+    return {
+        "version": 1,
+        "url": observation.url,
+        "navigation_committed": True,
+        "frames": [{"url": observation.url, "controls": controls}],
+    }
+
+
+def _submit_action(observation) -> VisibleActionV1:
+    candidates = [
+        control
+        for control in observation.controls
+        if " ".join(control.label.split()).casefold()
+        in {"submit", "submit application"}
+        and not control.disabled
+    ]
+    if len(candidates) != 1:
+        raise RuntimeError("final review requires exactly one visible Submit control")
+    control = candidates[0]
+    role = control.role or ("link" if control.tag == "a" else "button")
+    return VisibleActionV1(
+        kind="click",
+        target=ActionTargetV1(
+            role=role,
+            label=control.label,
+            exact=True,
+            stable_id=control.stable_id,
+        ),
+    )
+
+
+async def finalize() -> dict[str, Any]:
+    """Fence one final click and classify only its fresh rendered result."""
+    row, session, checkpoints, evidence, cursor, builder = await _context()
+    before = await builder.build(cursor.handle)
+    assignment_ledger = Ledger(_path_env("JOB_SEARCH_STATE_ROOT") / "ledger.sqlite3")
+    try:
+        assignment = assignment_ledger.strategy_assignment(row["application_id"])
+    finally:
+        assignment_ledger.close()
+    routed = select_resume(
+        posting_text=f"{row['title']}\n{before.visible_text}",
+        role_family=assignment["role_family"],
+        materials_root=_materials_root(),
+    )
+    if routed["resume_sha256"] != assignment["material_sha256"]:
+        raise RuntimeError("routed resume differs from the immutable assignment")
+    resume_path = Path(routed["resume_path"])
+    resume = await ResumeVerifier(session).verify(
+        cursor.handle, before, resume_path, {}
+    )
+    review = verify_final_review(
+        row_run_id=cursor.handle.row_run_id,
+        application_id=row["application_id"],
+        company=row["company"],
+        role=row["title"],
+        expected_url=row["canonical_url"],
+        expected_resume_sha256=routed["resume_sha256"],
+        observation=before,
+        resume=resume,
+    )
+    final_action = _submit_action(before)
+    snapshot_path = _path_env("JOB_SEARCH_BROWSER_SCRATCH") / "final-review-ats.json"
+    snapshot_path.write_text(
+        json.dumps(_claim_snapshot(before), ensure_ascii=False, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    os.chmod(snapshot_path, 0o600)
+    snapshot_sha = hashlib.sha256(snapshot_path.read_bytes()).hexdigest()
+    payload_hash = hashlib.sha256(
+        json.dumps(
+            {
+                "canonical_url": row["canonical_url"],
+                "resume_sha256": routed["resume_sha256"],
+            },
+            sort_keys=True,
+        ).encode("utf-8")
+    ).hexdigest()
+    ledger = Ledger(_path_env("JOB_SEARCH_STATE_ROOT") / "ledger.sqlite3")
+    try:
+        intent = ledger.claim_submission(
+            row["application_id"],
+            datetime.now(ZoneInfo("Asia/Tokyo")).strftime("%Y-%m-%d"),
+            payload_hash,
+            resume_path=resume_path,
+            resume_sha256=routed["resume_sha256"],
+            ats_snapshot_path=snapshot_path,
+            ats_snapshot_sha256=snapshot_sha,
+        )
+        if intent is None:
+            raise RuntimeError("submission intent is already claimed or row is not ready")
+        fence = SubmissionFence(ledger, _path_env("JOB_SEARCH_BROWSER_STATE_ROOT"))
+        lease = fence.acquire(intent.intent_id, intent.fence, review)
+        try:
+            action_receipt = await ActionExecutor(session).execute_final(
+                cursor.handle, final_action, fence, lease, before.content_sha256
+            )
+        except Exception:
+            ledger.complete_submission(intent.intent_id, intent.fence, "not_submitted")
+            raise
+        page = session.page(cursor.handle)
+        await page.wait_for_timeout(6_500)
+        after = await builder.build(cursor.handle)
+        completion = verify_completion_ui(
+            company=row["company"], role=row["title"], review=review, observation=after
+        )
+        record_completion_evidence(ledger, intent.intent_id, intent.fence, completion)
+    finally:
+        ledger.close()
+    chain = evidence.read_chain(row["application_id"])
+    step = evidence.append(
+        StepEvidenceV1(
+            1,
+            row["application_id"],
+            len(chain),
+            chain[-1].evidence_sha256 if chain else None,
+            before.content_sha256,
+            action_receipt.receipt_sha256,
+            after.content_sha256,
+        )
+    )
+    prior = cursor.checkpoint.action_receipt_hashes if cursor.checkpoint else ()
+    checkpoint_receipt = checkpoints.save(
+        RowCheckpointV1(
+            1,
+            row["application_id"],
+            completion.outcome,
+            cursor.handle.page_marker,
+            cursor.handle.generation,
+            after.content_sha256,
+            (*prior, action_receipt.receipt_sha256),
+            0,
+            after.url,
+        )
+    )
+    await session.close_owned(cursor.handle)
+    return {
+        "status": completion.outcome,
+        "application_id": row["application_id"],
+        "evidence_class": completion.evidence_class,
+        "evidence_sha256": completion.evidence_sha256,
+        "step_evidence_sha256": step.evidence_sha256,
+        "checkpoint_sha256": checkpoint_receipt.checkpoint_sha256,
+    }
+
+
 def report(status: str) -> dict[str, Any]:
     row = _row()
     wake_id = _path_env("JOB_SEARCH_BROWSER_OWNER_EVIDENCE").parent.name
@@ -321,6 +498,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(dest="command", required=True)
     subparsers.add_parser("observe")
+    subparsers.add_parser("finalize")
     act_parser = subparsers.add_parser("act")
     act_parser.add_argument("--action-file", required=True, type=Path)
     checkpoint_parser = subparsers.add_parser("checkpoint")
@@ -334,6 +512,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if args.command == "observe":
         operation = observe()
+    elif args.command == "finalize":
+        operation = finalize()
     elif args.command == "act":
         operation = act(args.action_file)
     elif args.command == "checkpoint":

@@ -161,7 +161,14 @@ class ActionExecutor:
         before_url = page.url
         target = await self._target(page, action.target)
         fence_receipt = fence.consume(lease, observation_sha256)
-        await target.click(timeout=self._timeout_ms)
+        click_error_type = None
+        try:
+            await target.click(timeout=self._timeout_ms)
+        except Exception as error:
+            # Once the fence is consumed the click may have reached the provider.
+            # Return an opaque receipt so the caller observes and classifies the
+            # rendered result exactly once instead of retrying an ambiguous submit.
+            click_error_type = type(error).__name__
         safe = {
             "kind": action.kind,
             "target_role": action.target.role,
@@ -170,8 +177,10 @@ class ActionExecutor:
             "before_url": before_url,
             "after_url": page.url,
             "fence_receipt_sha256": fence_receipt,
+            "click_error_type": click_error_type,
         }
         receipt_sha = hashlib.sha256(
             json.dumps(safe, ensure_ascii=False, sort_keys=True).encode("utf-8")
         ).hexdigest()
+        safe.pop("click_error_type")
         return ActionReceiptV1(1, receipt_sha256=receipt_sha, **safe)
