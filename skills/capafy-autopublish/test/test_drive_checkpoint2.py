@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import builtins
 import json
 import sys
 import types
@@ -236,25 +237,11 @@ def test_raw_call_queues_interleaved_events_and_honors_deadline(monkeypatch) -> 
 
 
 @pytest.mark.parametrize(("raw_ok", "expected_exit"), ((True, 0), (False, 1)))
-def test_main_falls_back_after_playwright_attach_timeout(monkeypatch, raw_ok, expected_exit) -> None:
+def test_main_defaults_to_raw_without_playwright_attach(monkeypatch, raw_ok, expected_exit) -> None:
     module = load_module()
     calls = []
 
-    class _Chromium:
-        def connect_over_cdp(self, *_args, **_kwargs):
-            raise TimeoutError("browser-level CDP attach timeout")
-
-    class _Playwright:
-        chromium = _Chromium()
-
-        def stop(self):
-            calls.append("stop")
-
-    class _Factory:
-        def start(self):
-            return _Playwright()
-
-    monkeypatch.setattr(module, "sync_playwright", lambda: _Factory())
+    monkeypatch.setattr(module, "_load_playwright", lambda: pytest.fail("default transport must not attach Playwright"))
     monkeypatch.setattr(module, "_detect_cdp", lambda: "http://localhost:9222")
 
     def raw_fallback(cp2, key, cdp):
@@ -269,9 +256,31 @@ def test_main_falls_back_after_playwright_attach_timeout(monkeypatch, raw_ok, ex
         module.main()
 
     assert exc.value.code == expected_exit
-    assert calls[0] == "stop"
-    assert calls[1][0].startswith("https://capafy.ai/developer/createAgent?")
-    assert calls[1][2] == "http://localhost:9222"
+    assert calls[0][0].startswith("https://capafy.ai/developer/createAgent?")
+    assert calls[0][2] == "http://localhost:9222"
+
+
+def test_raw_default_loads_without_playwright_module(monkeypatch) -> None:
+    real_import = builtins.__import__
+
+    def blocked_import(name, *args, **kwargs):
+        if name == "playwright" or name.startswith("playwright."):
+            raise AssertionError("raw default must not import playwright")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", blocked_import)
+    module = load_module()
+    calls = []
+    monkeypatch.setattr(module, "_detect_cdp", lambda: "http://localhost:9222")
+    monkeypatch.setattr(module, "_raw_cp2", lambda cp2, key, cdp: calls.append((cp2, key, cdp)) or True)
+    monkeypatch.setenv("CAPAFY_HOST_OPENROUTER_KEY", "raw-only-key")
+    monkeypatch.setattr(sys, "argv", ["drive_checkpoint2.py", "https://capafy.ai/developer/createAgent?token=t&page=credential"])
+
+    with pytest.raises(SystemExit) as exc:
+        module.main()
+
+    assert exc.value.code == 0
+    assert calls and calls[0][2] == "http://localhost:9222"
 
 
 def test_fresh_success_accepts_only_new_toast_or_url_transition() -> None:
@@ -299,7 +308,7 @@ def test_fallback_does_not_print_secret(capsys, monkeypatch) -> None:
         def start(self):
             return _Playwright()
 
-    monkeypatch.setattr(module, "sync_playwright", lambda: _Factory())
+    monkeypatch.setattr(module, "_load_playwright", lambda: _Factory())
     monkeypatch.setattr(module, "_detect_cdp", lambda: "http://127.0.0.1:9222")
     monkeypatch.setattr(module, "_raw_cp2", lambda *_args: True)
     monkeypatch.setenv("CAPAFY_HOST_OPENROUTER_KEY", "do-not-print-secret")
