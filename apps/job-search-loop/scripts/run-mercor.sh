@@ -76,4 +76,5 @@ set -e
   --run-id "$RUN_ID" \
   --result "$EVIDENCE/agent/mercor-pass-summary.json" \
   --outbox "$JOB_SEARCH_STATE_ROOT/telegram-outbox.sqlite3" \
+  --gate-store "$MERCOR_STATE_ROOT/human-gates.jsonl" \
   --output "$EVIDENCE/telegram-report.json"
