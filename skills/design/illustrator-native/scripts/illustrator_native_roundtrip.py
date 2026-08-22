@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import subprocess
 import time
@@ -23,11 +24,41 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def _javascript(source: str) -> str:
+def _javascript(source: str, timeout: int = 180) -> str:
     return subprocess.run(
         ["osascript", "-e", f'tell application id "{APP_ID}" to do javascript {json.dumps(source)}'],
-        check=True, capture_output=True, text=True, timeout=180,
+        check=True, capture_output=True, text=True, timeout=timeout,
     ).stdout.strip()
+
+
+def _ensure_responsive() -> None:
+    """Recover only an empty, stale Illustrator automation session."""
+    try:
+        _javascript("app.version", timeout=10)
+        return
+    except subprocess.SubprocessError:
+        windows = subprocess.run(
+            ["osascript", "-e", 'tell application "System Events" to tell process '
+             '"Adobe Illustrator" to get name of every window'],
+            check=True, capture_output=True, text=True, timeout=10,
+        ).stdout.strip().strip(", ")
+        if windows not in {"", "Adobe Illustrator 2026"}:
+            raise RuntimeError("Illustrator is unresponsive with an open document")
+        pids = subprocess.run(
+            ["pgrep", "-x", "Adobe Illustrator"], check=False,
+            capture_output=True, text=True, timeout=5,
+        ).stdout.split()
+        for pid in pids:
+            os.kill(int(pid), 15)
+        time.sleep(3)
+        subprocess.run(["open", "-a", str(APP_PATH)], check=True, timeout=30)
+        for _ in range(30):
+            try:
+                _javascript("app.version", timeout=5)
+                return
+            except subprocess.SubprocessError:
+                time.sleep(1)
+        raise RuntimeError("Illustrator did not recover")
 
 
 def _open(path: Path) -> None:
@@ -53,6 +84,7 @@ def roundtrip(source: Path, output: Path, receipt: Path) -> dict[str, object]:
     receipt.parent.mkdir(parents=True, exist_ok=True)
     output.unlink(missing_ok=True)
 
+    _ensure_responsive()
     # `open -a` does not make the requested document active when Illustrator already
     # owns another window. Use Illustrator's own open command so the subsequent
     # active-document verification is bound to the exact source.
