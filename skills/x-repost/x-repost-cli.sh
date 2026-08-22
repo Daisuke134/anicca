@@ -247,7 +247,7 @@ for line in open(posted, encoding="utf-8"):
     except (ValueError, TypeError, json.JSONDecodeError):
         continue
     if (row.get("kind") == "original" and row.get("status") == "unverified"
-            and not row.get("post_url") and at >= cutoff):
+            and not row.get("post_url") and not row.get("readback_checked_at") and at >= cutoff):
         selected = row
 if selected:
     selected["row_sha256"] = hashlib.sha256(json.dumps(
@@ -378,6 +378,39 @@ PYEOF
     fi
     report "✅ Original recovered from readback without duplicate publish\npost: $GENERIC_POST_URL"
     finish 0 "generic original reconciled without duplicate publish"
+  fi
+  if ! "$PY" - "$POSTED" "$GENERIC_RECOVERY" <<'PYEOF'
+import datetime, fcntl, hashlib, json, os, sys, tempfile
+posted, recovery_path = sys.argv[1:3]
+recovery = json.load(open(recovery_path, encoding="utf-8"))["row"]
+expected = recovery.pop("row_sha256")
+with open(posted, "r+", encoding="utf-8") as lock:
+    fcntl.flock(lock, fcntl.LOCK_EX)
+    rows, changed = [], 0
+    for line in lock.read().splitlines():
+        row = json.loads(line)
+        digest = hashlib.sha256(json.dumps(
+            row, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+        ).encode()).hexdigest()
+        if (digest == expected and row.get("status") == "unverified"
+                and not row.get("post_url") and not row.get("readback_checked_at")):
+            row["readback_checked_at"] = datetime.datetime.now().astimezone().isoformat()
+            changed += 1
+        rows.append(row)
+    if changed != 1: raise SystemExit(1)
+    directory = os.path.dirname(posted) or "."
+    fd, temporary = tempfile.mkstemp(prefix="posted.", suffix=".tmp", dir=directory, text=True)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as stream:
+            for row in rows: stream.write(json.dumps(row, ensure_ascii=False) + "\n")
+            stream.flush(); os.fsync(stream.fileno())
+        os.replace(temporary, posted)
+    finally:
+        if os.path.exists(temporary): os.unlink(temporary)
+PYEOF
+  then
+    report "❌ Original readback finished but the exact terminal row could not record its check"
+    finish 1 "generic original unresolved readback ledger update failed"
   fi
   report "⚠️ Recent terminal original remains unverified after readback-only recovery; no repost was attempted"
   finish 0 "generic original readback unresolved without duplicate publish"
