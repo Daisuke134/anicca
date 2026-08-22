@@ -556,6 +556,19 @@ async def navigate(url: str) -> dict[str, Any]:
 
 
 async def click(*, label: str, role: str, stable_id: str, ordinal: int | None = None) -> dict[str, Any]:
+    row = _row()
+    if (
+        detect_provider(row["canonical_url"]) == "workday"
+        and stable_id
+        in {"automation:createAccountLink", "automation:createAccountSubmitButton"}
+        and MachineWorkdayCredentialStore(
+            _path_env("JOB_SEARCH_MACHINE_CREDENTIALS")
+        ).account_status(row["canonical_url"])
+        in {"create_submitted", "signed_in"}
+    ):
+        raise RuntimeError(
+            "Workday account creation is forbidden after create_submitted"
+        )
     normalized_label = " ".join(label.split()).casefold()
     if (
         stable_id == "automation:pageFooterNextButton"
@@ -580,7 +593,6 @@ async def click(*, label: str, role: str, stable_id: str, ordinal: int | None = 
     validation = (
         observation.get("validation", []) if isinstance(observation, dict) else []
     )
-    row = _row()
     if detect_provider(row["canonical_url"]) == "workday" and not validation:
         store = MachineWorkdayCredentialStore(
             _path_env("JOB_SEARCH_MACHINE_CREDENTIALS")
