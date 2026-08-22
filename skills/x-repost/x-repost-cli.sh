@@ -635,6 +635,22 @@ log "seeds available: $SEEDS_AVAILABLE"
 STRATEGY="$STATE/strategy.json"
 [ -s "$STRATEGY" ] || printf '{"original_ratio": %s, "reply_ratio": %s, "note": "after the daily original, share of passes that create another original; remaining passes split between reply and quote"}\n' \
   "${X_REPOST_DEFAULT_ORIGINAL_RATIO:-0.15}" "${X_REPOST_DEFAULT_REPLY_RATIO:-0.75}" >"$STRATEGY"
+"$PY" - "$STRATEGY" "${X_REPOST_DEFAULT_ORIGINAL_RATIO:-0.15}" <<'PYEOF' || \
+  log "original_ratio state migration failed; using runtime default"
+import json, os, sys
+path, default = sys.argv[1], float(sys.argv[2])
+with open(path, encoding="utf-8") as stream:
+    strategy = json.load(stream)
+if "original_ratio" not in strategy:
+    strategy["original_ratio"] = default
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as stream:
+        json.dump(strategy, stream, ensure_ascii=False, indent=1)
+        stream.write("\n")
+        stream.flush()
+        os.fsync(stream.fileno())
+    os.replace(tmp, path)
+PYEOF
 read -r KIND TARGET_LANGUAGE <<<"$("$PY" - "$STRATEGY" "$POSTED" "$TODAY" <<'PYEOF'
 import json, random, re, sys
 try:
