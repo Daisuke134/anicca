@@ -1,7 +1,9 @@
 import unittest
+import inspect
 from unittest.mock import AsyncMock
 
 from job_search_loop.browser_agent.direct_cdp import DirectCDPPage
+from job_search_loop.browser_agent.observation import ObservationBuilder
 
 
 class DirectCDPTypeTests(unittest.IsolatedAsyncioTestCase):
@@ -13,6 +15,7 @@ class DirectCDPTypeTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("cursor==='pointer'?'button'", script)
         self.assertIn("relatedInput", script)
         self.assertIn("if (resolvedByStableId) return true", script)
+        self.assertIn("closest('[role=\"option\"]')", inspect.getsource(ObservationBuilder.build))
 
     async def test_type_selects_the_existing_whole_value_before_inserting(self):
         page = DirectCDPPage("ws://example", "target")

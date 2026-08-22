@@ -50,6 +50,8 @@ class ObservationBuilder:
                 .filter(el => ['INPUT','BUTTON','SELECT','TEXTAREA','A'].includes(el.tagName)
                   || (el.getAttribute('role') && el.getAttribute('role') !== 'presentation')
                   || getComputedStyle(el).cursor === 'pointer')
+                .filter(el => !(getComputedStyle(el).cursor === 'pointer'
+                  && el.closest('[role="option"]') && el.closest('[role="option"]') !== el))
                 .filter(el => label(el).length > 0);
               const automationCounts = new Map();
               const idCounts = new Map();
