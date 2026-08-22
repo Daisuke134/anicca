@@ -17,6 +17,20 @@ This command collects the safe active-provider row, restores its durable cursor,
 returns the fresh redacted observation. When it reports `needs_navigation=true` or
 an empty `about:blank` page, navigate once without constructing an action file:
 
+While an active row is returned, the command envelope is mandatory: execute only
+`job_search_loop.browser_agent.runtime observe`, `navigate`, `act`, `auth`,
+`finalize`, `checkpoint`, or `report`. Do not invoke Python snippets, inspect
+signatures/source/tests, read Ledger/Queue internals, print environment variables,
+or construct a helper. The runtime already owns row collection, cursor/evidence,
+credentials, browser attachment, and reporting. The Python API descriptions later
+in this document explain runtime semantics; they are not callable instructions.
+If the fresh observation contains visible Workday email/password fields, immediately
+use `runtime auth` once for the email field, use its returned fresh observation,
+then once for the password field. Do not run any intervening command. If the prior
+surface has verify-password, first click its visible Sign In link when the returned
+row says `workday_credential_known=true`; never attempt to create the
+same tenant account again.
+
 ```bash
 /opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime navigate --url "THE_RETURNED_RECOVERY_OR_CANONICAL_URL"
 ```

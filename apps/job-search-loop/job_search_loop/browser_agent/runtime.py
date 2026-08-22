@@ -17,6 +17,7 @@ from zoneinfo import ZoneInfo
 from ..ledger import Ledger
 from ..resume_routing import select_resume
 from ..state import provider_recovery_url
+from ..workday_credentials import tenant_key
 from .actions import ActionExecutor
 from .candidate_memory import CandidateMemoryView
 from .checkpoint import CheckpointStore, EvidenceStore
@@ -222,6 +223,11 @@ async def observe() -> dict[str, Any]:
             "instruction": "return the accumulated typed outcomes now",
         }
     observation = await builder.build(cursor.handle)
+    credential_known = tenant_key(row["canonical_url"]) in (
+        MachineWorkdayCredentialStore(
+            _path_env("JOB_SEARCH_MACHINE_CREDENTIALS")
+        ).known_tenants()
+    )
     return {
         "status": "observed",
         "row": {
@@ -229,6 +235,7 @@ async def observe() -> dict[str, Any]:
             "company": row["company"],
             "role": row["title"],
             "canonical_url": row["canonical_url"],
+            "workday_credential_known": credential_known,
         },
         "needs_navigation": cursor.needs_navigation,
         "recovery_url": cursor.recovery_url if cursor.needs_navigation else None,
