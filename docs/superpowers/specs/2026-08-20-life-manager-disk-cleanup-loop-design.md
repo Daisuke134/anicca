@@ -453,6 +453,29 @@ live providerを強制中断した証拠ではない。final canonical cleanup�
 2026-08-22T14:20:23Z receipt、`errors=0`、`protected_deletions=0`、`evaluated=9/preserved=9/reclaimed=0`である。
 空き約4.9 GiB、swap使用約10.38 GiBで、A-19はA-36の全producer heartbeat/drainや11 GiB回復の証拠ではない。
 
+A-20の第1 sliceでは、既存`gig_disk_guard.py`をGig browserの次回自然起動とLife Manager self-buildの
+dependency/effect 2境界へ接続し、Writer mediaはA-19で既に同じstop pathとprovider境界にあることを回帰testで
+固定した。稼働中Gig browserのloaded argvは`/bin/bash .../current/.../launch_gig_browser.sh`であるため、guardを
+script内部のprofile作成・Chromium探索より前へ置いた。これによりplist reloadでPID 787のauthenticated sessionを
+evictせず、immutable `current` release更新後の次回自然起動からguardへ到達する。browser/self-buildはfloor
+536,870,912 bytes、canonical `~/.openclaw/state`、canonical measurement rootをdotenv・inherited environmentより
+後で固定し、ignore flagとalternate state pathを解除する。
+
+TDDは初回3 failures、adversarial review後のhost-path bypass/deferred loaded argv契約で追加7 failuresを取得した。
+両stop flag、floor 0、hostile dotenv/inherited paths、guard call count、profile/Chromium effect 0、receipt reasonを含む
+focused **24 passed**、Paid隣接込み **33 passed**、shell syntax、JSON、compile、diff checkがPASSした。fresh reviewは
+loaded argv cutoverとpath overrideのHIGH、KeepAlive retryとfixtureのMEDIUMを検出し、内部guard化とfixture強化後の
+final verdictは`ship`である。code commitは`dd3e45b5f`、deployed releaseは
+`dd3e45b5f9b198d1893d3dd1c17e4e654f853a1c`、source/runtime browser script SHA-256一致である。production
+preflightはRC 1、`reason=disk_writers_stop/effect=0/required_bytes=536870912`、browser PID 787→787をread backした。
+
+ただしA-20は未完了である。実機のactive browser producer 8 labels中、このsliceでnext-start consumerを証明したのは
+Gig browser 1件だけで、affiliate 3、job-search 2、provision 2の計7件が未接続である。build/mediaもこのsliceでは
+self-buildとWriter mediaだけで、host-wide arbitrary Xcode/media producer coverageを証明していない。canonical cleanup
+runsは159→160、2026-08-22T15:12:10Z receiptは`errors=0/protected_deletions=0/evaluated=9/preserved=9/reclaimed=0`、
+free 1,173,725,184→1,217,122,304 bytesだったが、launchdは`spawn scheduled`のため新しいlast-exit readbackは未取得である。
+Data volume空き約1.1 GiB、swap使用約12.9 GiBで、consumer missing 0と11 GiB recoveryの証拠ではない。
+
 `/Users/anicca/anicca-project`は約9.5 GiB、その`.worktrees`は約4.4 GiBだった。最大の
 `cfo-resume-spec`（約1.08 GiB）は、dirty=0、branch upstream 0/0、process/open-path/leaseなしを
 read backした後にだけ`git worktree remove`で回収した。branchとremoteは残り、再作成可能である。
@@ -1027,7 +1050,7 @@ TDDのためだけの過剰fixtureや後続itemのscaffoldは前倒ししない�
 | A-17 | VM/package producer lifecycleを登録する | artifact/lease/finalizer/quota receipt | 完了: registration-only static 16件、pnpm exact version/proof/lease fail-closed、全A-17 entry runtime/quota 0/lease 300/preserveで削除authority 0、focused 48 tests、final review `ship`、fallback SHA一致/runs 486→487/static 16 bad 0、canonical runs 137→138 exit 0、protected deletion 0 |
 | A-18 | agent/gig-project lifecycleを登録する | project owner/terminal/lease receipt | 完了: registration-only numeric project 24件、terminal true 0、unknown owner 3、全件deliverable/preserve、focused 49 tests、fresh review `ship`、fallback runs 507→508/削除0、canonical runs 142→143 exit 0、errors/protected deletion 0 |
 | A-19 | Writer in-flight drainを接続する | provider interruption checkpoint/resume test | 完了: exact stop 2 pathのpre-Popen gate、process-group TERM→1秒→KILL/reap、immutable run/prompt checkpoint/resume、focused 44 tests、fresh review `ship`、release `43074f76422d1ec4935acdba98e553cb8564de94`、Writer runs 1/exit 0/provider effect 0、canonical runs 149→150/exit 0/errors 0/protected deletion 0 |
-| A-20 | browser/build/media preflightを接続する | producer consumer missing 0 for these families | 未完了 |
+| A-20 | browser/build/media preflightを接続する | producer consumer missing 0 for these families | 部分完了: Gig browser next-start、self-build 2境界、Writer media既存境界を接続。focused 24/隣接33 tests、review `ship`、commit `dd3e45b5f`、release SHA一致、browser RC 1/effect 0/PID維持、canonical runs 159→160/protected deletion 0。active browser 8中affiliate 3/job-search 2/provision 2の7 consumerとhost-wide build/media coverage、新last-exit readbackが残る |
 | A-21 | VM/package/agent preflightを接続する | producer consumer missing 0 for these families | 未完了 |
 | A-22 | supervisor non-stop behaviorを実装する | ULTRA wake keeps supervisor labels loaded | 未完了 |
 | A-23 | Codex log budget/rotationを実装する | active app-server handoff with session loss 0 | 未完了 |
