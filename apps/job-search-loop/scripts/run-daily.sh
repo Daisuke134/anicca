@@ -167,7 +167,7 @@ print(message)
 PY
 )
 set +e
-JOB_SEARCH_REPORT_RESPONSE=$(/opt/homebrew/bin/timeout 90 env PATH="/opt/homebrew/bin:/opt/homebrew/opt/node/bin:/usr/bin:/bin" \
+JOB_SEARCH_REPORT_RESPONSE=$(/opt/homebrew/bin/timeout 10 env PATH="/opt/homebrew/bin:/opt/homebrew/opt/node/bin:/usr/bin:/bin" \
   "$JOB_SEARCH_OPENCLAW" message send \
     --channel telegram \
     --target "${TELEGRAM_ALERT_CHAT_ID:-8547730585}" \
