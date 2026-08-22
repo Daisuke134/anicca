@@ -36,9 +36,18 @@ RUN_AGENT="$MARKETING_ENGINE_DIR/run_agent.sh"
 LOG="$HOME/.local/state/life-manager/logs/${INSTANCE}-ig-marketing-daily.log"
 ROT="$HOME/.local/state/life-manager/state/${INSTANCE}-marketing-rotation.jsonl"
 ACCOUNTS_FILE="$(capafy_ig_accounts_file)"
-IG_HANDLE="$(resolve_capafy_ig_handle "$ACCOUNTS_FILE")"
-IG_PORT="$(resolve_capafy_ig_port "$ACCOUNTS_FILE")"
-IG_STARTED_WARMING="$(resolve_capafy_ig_started_warming "$ACCOUNTS_FILE")"
+if ! IG_HANDLE="$(resolve_capafy_ig_handle "$ACCOUNTS_FILE")"; then
+  echo "account SSOT unreadable: handle resolution failed" >&2
+  exit 2
+fi
+if ! IG_PORT="$(resolve_capafy_ig_port "$ACCOUNTS_FILE")"; then
+  echo "account SSOT unreadable: port resolution failed" >&2
+  exit 2
+fi
+if ! IG_STARTED_WARMING="$(resolve_capafy_ig_started_warming "$ACCOUNTS_FILE")"; then
+  echo "account SSOT unreadable: warming timestamp resolution failed" >&2
+  exit 2
+fi
 LANDING_URL="${MKT_BIO_LINK:-https://capafy-skills-daily.netlify.app}"
 LANDING_SITE_ID="${MKT_LANDING_SITE_ID:-41c8e52e-b163-442a-84ff-fd866269bf6c}"
 COOKED_MARKER="$HOME/.local/state/life-manager/state/.${INSTANCE}-ig-account-cooked"
@@ -70,6 +79,13 @@ fi
 
 # ── WARMUP GATE: decide DRY vs LIVE. Creation date is day1; day1-2 DRY; LIVE from day3. ──
 WARM_DAY="$(capafy_ig_warming_day "$IG_STARTED_WARMING")"
+case "$WARM_DAY" in
+  ''|*[!0-9]*) echo "warmup state unreadable — stopping pass" >>"$LOG"; exit 2 ;;
+esac
+if [ "$PROVISION_NEEDED" = "no" ] && [ "$WARM_DAY" -eq 0 ]; then
+  echo "warmup state unreadable — existing account has day 0" >>"$LOG"
+  exit 2
+fi
 # ★STRATEGY (2026-07-19 Dais, WHOLE marketing engine): warm up for 2 days, post from DAY 3.
 # day1-2 = warmup ONLY (no posting) so the fresh account is NOT poisoned/cooled/polluted by
 # early posting. instagrapi CAN post (proven) — the failure mode was posting too early, not the
@@ -85,22 +101,30 @@ COMMERCIAL_OK="no"; [ -f "$COMMERCIAL_MARKER" ] && COMMERCIAL_OK="yes"
 echo "warmup day-count=$WARM_DAY -> post mode: ${MODE_FLAG:-DRY} | commercial_ok=$COMMERCIAL_OK" >>"$LOG"
 
 # ── CADENCE GATE (rolling 20h, platform=ig) ──
-if [ "$PROVISION_NEEDED" = "no" ] && [ -f "$ROT" ] && /opt/homebrew/bin/python3 - "$ROT" <<'PY'
+CADENCE_RC=10
+if [ "$PROVISION_NEEDED" = "no" ] && [ -e "$ROT" ] && [ ! -f "$ROT" ]; then
+  echo "cadence state is not a regular file — stopping pass" >>"$LOG"
+  exit 2
+fi
+if [ "$PROVISION_NEEDED" = "no" ] && [ -f "$ROT" ]; then
+  /opt/homebrew/bin/python3 - "$ROT" <<'PY'
 import json,sys,time
 last=0
 for line in open(sys.argv[1]):
     line=line.strip()
     if not line: continue
-    try: r=json.loads(line)
-    except: continue
+    r=json.loads(line)
     if r.get("platform")=="ig" and r.get("ts"): last=max(last,int(r["ts"]))
-sys.exit(0 if last and (time.time()-last)<72000 else 1)
+sys.exit(0 if last and (time.time()-last)<72000 else 10)
 PY
-then
+  CADENCE_RC=$?
+fi
+if [ "$CADENCE_RC" -eq 0 ]; then
   echo "cadence gate: last IG Reel < 20h ago — no-op." >>"$LOG"
   touch "$LAST_PASS_MARKER" || exit 2
   exit 0
 fi
+[ "$CADENCE_RC" -eq 10 ] || { echo "cadence state unreadable — stopping pass" >>"$LOG"; exit 2; }
 
 # Select exactly once, read-only. Rotation is committed only after a new native
 # Reel row for this exact Agent is verified below.

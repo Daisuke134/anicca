@@ -34,7 +34,12 @@ def run_money_entrypoint(tmp_path: Path, runner_rc: int) -> subprocess.Completed
 
 
 def run_ig_entrypoint(
-    tmp_path: Path, runner_rc: int, *, recent_rotation: bool = False
+    tmp_path: Path,
+    runner_rc: int,
+    *,
+    recent_rotation: bool = False,
+    invalid_rotation: bool = False,
+    warm_day: str = "3",
 ) -> subprocess.CompletedProcess:
     repo = tmp_path / "repo"
     home = tmp_path / "home"
@@ -52,7 +57,7 @@ resolve_capafy_ig_handle() {{ printf '%s\\n' 'capafy.fixture'; }}
 resolve_capafy_ig_port() {{ printf '%s\\n' '9332'; }}
 resolve_capafy_ig_started_warming() {{ printf '%s\\n' '2020-01-01'; }}
 capafy_ig_provision_reason() {{ printf '%s' ''; }}
-capafy_ig_warming_day() {{ printf '%s\\n' '3'; }}
+capafy_ig_warming_day() {{ printf '%s\\n' '{warm_day}'; }}
 ''',
     )
     write_executable(
@@ -75,6 +80,10 @@ capafy_ig_warming_day() {{ printf '%s\\n' '3'; }}
         rotation = home / ".local/state/life-manager/state/capafy-marketing-rotation.jsonl"
         rotation.parent.mkdir(parents=True, exist_ok=True)
         rotation.write_text(f'{{"platform":"ig","ts":{int(time.time())}}}\n')
+    elif invalid_rotation:
+        rotation = home / ".local/state/life-manager/state/capafy-marketing-rotation.jsonl"
+        rotation.parent.mkdir(parents=True, exist_ok=True)
+        rotation.write_text('{"platform":\n')
     return subprocess.run(
         ["bash", str(script)],
         env=os.environ
@@ -119,6 +128,13 @@ def test_ig_success_and_cadence_noop_are_terminal(tmp_path: Path):
     assert success_marker.is_file()
     assert noop.returncode == 0
     assert noop_marker.is_file()
+
+
+def test_ig_refuses_to_run_when_warmup_or_cadence_state_is_unreadable(tmp_path: Path):
+    warmup = run_ig_entrypoint(tmp_path / "warmup", 0, warm_day="")
+    cadence = run_ig_entrypoint(tmp_path / "cadence", 0, invalid_rotation=True)
+    assert warmup.returncode == 2
+    assert cadence.returncode == 2
 
 
 def test_ig_private_telegram_aliases_precede_provision_prompt() -> None:
