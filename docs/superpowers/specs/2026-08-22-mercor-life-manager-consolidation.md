@@ -97,6 +97,36 @@ Current ready queue observed in Mercor:
 
 Japanese language / cultural fluency Evaluator and Software / AI / IT / data Evaluator are already submitted and excluded from the queue.
 
+## 6.2 Open-source reusable macro loop
+
+The Mercor lane is a reusable open-source macro loop for any operator, not a promise that every operator will earn $10K. Each operator supplies their own private inputs and completes identity-bound steps; the shared code owns the repeatable orchestration.
+
+### Operator onboarding (human once per account)
+
+1. Provide a private resume/fact profile and approve the material baseline.
+2. Authenticate the operator's own Google/Mercor account in an isolated browser.
+3. Complete Mercor's required profile, work authorization, payment setup, interview, and assessment steps personally.
+4. Connect the operator's own Gmail and Google Calendar through the existing Job Hunter integration.
+5. Set the operator's target rate, weekly capacity, locales, role families, and hard exclusions.
+
+### Resident loop (minimal human runtime)
+
+- `acquisition`: hourly discovery, dedupe, fact matching, ready-to-submit queue, one bounded submit.
+- `inbox`: 15-minute Gmail/Mercor reconciliation, selection/contract/rejection transitions.
+- `calendar`: FreeBusy, idempotent interview event, reminders, prep pack delivery.
+- `work`: track only authorized human/approved work; never impersonate an interview or violate task AI-use rules.
+- `earnings`: reconcile Mercor Earnings/settled payouts and calculate verified monthly run-rate.
+- `guardian`: leases, browser ownership, retries, duplicate-submit protection, and evidence integrity.
+- `learning`: weekly role/rate/conversion analysis without fabricating success.
+
+### Public/private boundary
+
+Public repository: adapters, schemas, prompts, tests, launchd templates, provider policy, and redacted fixtures. Private runtime: resume, fact ledger, Google/Mercor session, Calendar IDs, Gmail thread IDs, payment details, application ledger, evidence, and earnings. A new operator gets a fresh private state root and never receives Dais's credentials or profile.
+
+### $10K verification contract
+
+The loop reports `$10K verified` only after the operator has actual settled payout evidence for three consecutive monthly cycles. It must never convert an offer, application, view, estimated rate, or unworked weekly cap into revenue. The expected-hours planner uses the contract's displayed rate and weekly cap; it does not promise a result.
+
 ## 7. Calendar and minimal-human-glue flow
 
 Mercor interview messages enter the existing Job Hunter inbox lane. Reuse `apps/job-search-loop/job_search_loop/interview_scheduling.py` and `calendar_sync.py`; do not create a Mercor-specific Calendar writer.
@@ -141,3 +171,9 @@ Do not delete or archive the migration source until all are true:
 8. [ ] Verify application/earnings evidence, Calendar read-back, prep delivery, and Telegram reporting.
 9. [ ] Remove all production references to `profitable-claude`.
 10. [ ] Obtain a final deletion check-in before deleting the old repository checkout/history.
+11. [ ] Implement a reusable `mercor_pass` macro runner in `apps/job-search-loop/` with per-operator state roots and no hard-coded Dais data.
+12. [ ] Wire `acquisition`, `inbox`, `calendar`, `earnings`, `guardian`, and `learning` into the existing Job Hunter launchd route without a second executor.
+13. [ ] Add operator onboarding/setup commands for resume, account, Calendar, payment, capacity, locale, role families, and exclusions.
+14. [ ] Add redacted multi-operator fixtures and tests for dedupe, `3/3` submit, Gmail→Calendar idempotency, payout reconciliation, and privacy boundaries.
+15. [ ] Run the complete loop on Dais first: two submitted applications, one additional ready queue item, one Calendar/inbox event, and a real payout read-back.
+16. [ ] Publish the open-source setup/runbook after secret scan, fresh-install test, and a second non-Dais fixture pass.

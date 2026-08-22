@@ -35,6 +35,12 @@ Mercor is a global provider lane of Life Manager's existing Job Hunter system. I
 
 When a new listing page shows `3 of 3 steps completed`, `100%`, completed Domain Expert Interview reuse, and a visible `Submit application`, the existing hourly Job Hunter loop may submit exactly one new listing in that wake. It must deduplicate against the private ledger, read back the submitted state, and never resubmit an existing pending application.
 
+## Reusable open-source macro loop
+
+Treat this as a provider module for any operator, not as a shared account or a guaranteed-income machine. Each operator must supply their own resume/facts, Google/Mercor session, payment setup, Calendar, interview/assessment completion, capacity, locales, and exclusions. Keep those inputs in the operator's private XDG state root; never commit them or reuse another operator's credentials.
+
+The loop owns recurring discovery, ready-form submission, Gmail/Calendar reconciliation, reminders, evidence, duplicate protection, and settled-earnings accounting. It does not impersonate interviews, assessments, or paid work where Mercor prohibits AI/automation. `$10K verified` means three consecutive cycles of actual settled payouts, not an offer or an estimated capacity.
+
 ## Calendar policy
 
 - Reuse `apps/job-search-loop/job_search_loop/interview_scheduling.py` and `calendar_sync.py` for every Mercor interview, regardless of locale.
