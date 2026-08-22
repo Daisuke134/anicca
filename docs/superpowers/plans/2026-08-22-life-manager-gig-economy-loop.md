@@ -463,6 +463,21 @@ U14 atomic order:
    earnings USD 0 and provider-effect rows 0. Next, when an invitation is actionable, bind its exact
    official detail evidence to a zero-Connect sealed proposal payload through the existing
    `application-intent-planner` before reusing the U14-3 preflight/fence/official-ID path.
+5. **CODE COMPLETE / FIRST LIVE INVITATION PENDING:** an actionable invitation packet now enters the
+   existing provider-agnostic `application-intent-planner` through its stdin/schema/evidence
+   contract. The schema permits only truthful submit/skip decisions; mechanical validation rebinds
+   job ID, official URL and detail evidence, requires Connects 0, bounded price/delivery, exact
+   screening answers, no unsupported claims and no attachments, then seals submit decisions in a
+   separate mode-700/600 store. A successful runner summary is reused by packet hash, preventing a
+   model call on every five-minute replay. The invitation browser enters through the official
+   accept/send-proposal control, rejects any positive Connects amount, fills the exact sealed form,
+   and reuses the same durable effect, single-click, proposal-ID and exact zero-Connect-delta path as
+   public proposals. Direct offers do not enter this planner and remain at `terms_gate_pending`.
+   The unified planner/browser/crash suite passes 53/53. Production release `73a0979ec` completed
+   with exit 0 at `2026-08-22T18:07:39.554042+00:00`: invitations 0, planner files 0, sealed inbound
+   proposals 0, provider-effect rows 0, marketplace proposals 0 and earnings USD 0. The remaining
+   invitation proof is one real inbound followed by one official proposal ID; the next independent
+   zero-Connect effect is direct-offer terms qualification and exact contract acceptance readback.
 
 ### Task 7: Record Upwork's private action matrix
 
