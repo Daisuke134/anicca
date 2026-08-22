@@ -53,6 +53,23 @@ class XPostContractTest(unittest.TestCase):
         )
         self.assertEqual(MODULE.find_exact(rows, text, resolver=lambda _: "https://example.com/wrong"), "")
 
+    def test_public_ssr_profile_reconciles_exact_owned_post(self):
+        text = "Affiliate link: https://aniccaai.com/blog/voice-workflows"
+        markup = '''
+        <article data-tweet-id="123">
+          <span>Affiliate link: </span>
+          <a href="https://aniccaai.com/blog/voice-workflows">aniccaai.com/blog/voice…</a>
+        </article>
+        <article data-tweet-id="456">
+          <span>Affiliate link: </span>
+          <a href="https://aniccaai.com/blog/wrong">wrong</a>
+        </article>
+        '''
+        self.assertEqual(
+            MODULE.find_exact_public_markup(markup, text, "selawmqt"),
+            "https://x.com/selawmqt/status/123",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

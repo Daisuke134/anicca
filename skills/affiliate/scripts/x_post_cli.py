@@ -3,6 +3,7 @@
 
 import argparse
 import hashlib
+import html as html_lib
 import json
 import re
 import sys
@@ -135,10 +136,38 @@ def find_exact(rows, text, resolver=resolve_outbound):
     return ""
 
 
+def find_exact_public_markup(markup, text, handle):
+    owned_url = re.findall(r"https://[^\s]+", text)[0].rstrip(".,)")
+    prefix = text.replace(owned_url, "").strip()
+    for article in re.findall(r"<article\b.*?</article>", markup, flags=re.DOTALL):
+        match = re.search(r'data-tweet-id="([0-9]+)"', article)
+        if not match or f'href="{html_lib.escape(owned_url, quote=True)}"' not in article:
+            continue
+        visible = html_lib.unescape(re.sub(r"<[^>]+>", " ", article))
+        visible = re.sub(r"\s+", " ", visible).strip()
+        if re.sub(r"\s+", " ", prefix).strip() in visible:
+            return f"https://x.com/{handle}/status/{match.group(1)}"
+    return ""
+
+
+def public_profile_readback(handle, text):
+    request = Request(
+        f"https://x.com/{handle}",
+        headers={"User-Agent": "Life-Manager-Affiliate/1.0"},
+    )
+    try:
+        with urlopen(request, timeout=12) as response:
+            markup = response.read().decode("utf-8")
+    except (OSError, UnicodeDecodeError):
+        return ""
+    return find_exact_public_markup(markup, text, handle)
+
+
 def live_readback(ws, request_id, url, text):
     request_id = navigate(ws, request_id, url)
     rows, request_id = timeline_posts(ws, request_id)
-    if find_exact(rows, text) != url:
+    handle = urlparse(url).path.strip("/").split("/", 1)[0]
+    if find_exact(rows, text) != url and public_profile_readback(handle, text) != url:
         raise XPostError("published X post failed exact public readback")
     return request_id
 
@@ -164,6 +193,8 @@ def publish(args):
         request_id = navigate(ws, 1, f"https://x.com/{config['handle']}")
         rows, request_id = timeline_posts(ws, request_id)
         public_url = find_exact(rows, text)
+        if not public_url:
+            public_url = public_profile_readback(config["handle"], text)
         if not public_url and receipt_path.is_file():
             candidate = existing.get("public_url", "")
             if candidate:
