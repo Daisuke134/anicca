@@ -96,28 +96,11 @@ else
     [ "$(rstat status)" = "1" ] && break
     echo "CP3 submit attempt $attempt"
     CP3="$(refresh ship)"
-    EDITURL="$CP3" timeout 95 "$VENV" - <<'PY' 2>&1 | grep -vE "Deprecation|warnings.warn" | tail -3
-import time,os,urllib.request
-from playwright.sync_api import sync_playwright
-def _detect_cdp():
-    override=os.environ.get("CP1_CDP_URL")
-    if override: return override
-    for port in (9222,9223):
-        url=f"http://localhost:{port}"
-        try:
-            with urllib.request.urlopen(f"{url}/json/version", timeout=2) as r:
-                if r.status==200: return url
-        except Exception: continue
-    return "http://localhost:9222"
-pw=sync_playwright().start(); br=pw.chromium.connect_over_cdp(_detect_cdp())
-caps=[p for c in br.contexts for p in c.pages if 'capafy.ai' in (p.url or '')]
-pg=caps[-1] if caps else br.contexts[0].new_page()
-pg.bring_to_front(); pg.goto(os.environ["EDITURL"], wait_until="networkidle", timeout=60000); time.sleep(7)
-r=pg.evaluate("""()=>{const c=[...document.querySelectorAll('button')].filter(e=>/審査に提出|提出$/i.test((e.textContent||'').trim())&&(e.textContent||'').length<16&&!e.disabled);if(c.length){const b=c[c.length-1];b.scrollIntoView();const r=b.getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2};}return null;}""")
-if r: pg.mouse.click(r['x'],r['y']); print("審査に提出"); time.sleep(3)
-m=pg.evaluate("""()=>{const b=[...document.querySelectorAll('button')].find(e=>/提出を確認|Confirm|確定/.test((e.textContent||'').trim())&&e.offsetParent&&e.getBoundingClientRect().width<340);if(b){b.click();return 'confirmed';}return 'no-modal';}""")
-print("confirm:",m); time.sleep(4)
-PY
+    CP3_OUT="$(timeout 30 "$VENV" "$AUTO/scripts/drive_checkpoint3.py" "$CP3" 2>&1)" || {
+      printf '%s\n' "$CP3_OUT" | tail -3
+      die "CP3 raw submit failed"
+    }
+    printf '%s\n' "$CP3_OUT" | tail -3
     poll status 1 6 5 && break
   done
 fi
