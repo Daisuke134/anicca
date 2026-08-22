@@ -40,6 +40,8 @@ class FakeOutbox:
         return {**action, "owner": owner, "fencing_token": 1}
 
     def close_nothing_to_say(self, action_id, *, owner, fencing_token, reason, now):
+        self.actions[action_id]["dlq_at"] = now
+        self.actions[action_id]["dlq_reason"] = f"nothing_to_say:{reason}"
         self.closed.append({
             "action_id": action_id, "owner": owner,
             "fencing_token": fencing_token, "reason": reason, "now": now,
@@ -53,6 +55,19 @@ class FakeOutbox:
             "require_no_intent": require_no_intent,
         })
         return action
+
+    def action_lifecycle_for_event(self, event_key, thread_id):
+        action = next(
+            (action for action in self.actions.values()
+             if action["event_key"] == event_key and action["thread_id"] == thread_id),
+            None,
+        )
+        if action is None:
+            return None
+        return {
+            "state": action["state"], "dlq_at": action.get("dlq_at"),
+            "dlq_reason": action.get("dlq_reason"),
+        }
 
 
 def _registry(tmp_path):
@@ -140,3 +155,22 @@ def test_policy_report_identity_is_unique_and_contains_no_counterparty_data():
     assert result["official_readback"] == 0
     assert "thread_id" not in result
     assert "counterparty" not in json.dumps(result)
+
+
+def test_same_policy_event_is_replay_zero_after_first_closure(tmp_path):
+    outbox = FakeOutbox()
+    rows = [{
+        "talkroom_id": "90001",
+        "last_message_identity_sha256": "a" * 64,
+    }]
+    first = detector.partition_no_contact_rows(
+        rows, registry_path=_registry(tmp_path), outbox=outbox, now=1000,
+    )
+    second = detector.partition_no_contact_rows(
+        rows, registry_path=_registry(tmp_path), outbox=outbox, now=1030,
+    )
+
+    assert first["ignored"][0]["status"] == "ignore_policy"
+    assert second["ignored"][0]["status"] == "ignore_policy_replay"
+    assert len(outbox.closed) == 1
+    assert outbox.revived == []

@@ -209,11 +209,24 @@ def partition_no_contact_rows(
         identity = str(row.get("last_message_identity_sha256") or "")
         if _TARGETED_THREAD_ID.fullmatch(thread_id) is None or re.fullmatch(r"[0-9a-f]{64}", identity) is None:
             raise ValueError("no_contact_head_identity_invalid")
+        event_key = coconala_inbox_event_key(thread_id, identity)
         action = outbox.enqueue(
-            event_key=coconala_inbox_event_key(thread_id, identity),
+            event_key=event_key,
             thread_id=thread_id, thread_url=f"https://coconala.com{thread_path}",
             observed_at=now,
         )
+        lifecycle = outbox.action_lifecycle_for_event(event_key, thread_id)
+        if (
+            lifecycle is not None
+            and lifecycle.get("dlq_at") is not None
+            and lifecycle.get("dlq_reason") == f"nothing_to_say:ignore_policy:{policy['policy_id']}"
+        ):
+            ignored.append({
+                "status": "ignore_policy_replay",
+                "policy_id": policy["policy_id"],
+                "action_id": int(action["action_id"]),
+            })
+            continue
         ignored.append(_close_no_contact_action(
             outbox, action, policy_id=policy["policy_id"], now=now,
         ))
@@ -1979,6 +1992,8 @@ async def supervise_replies(
             outbox=outbox, now=int(time.time()),
         )
         for ignored in policy["ignored"]:
+            if ignored["status"] != "ignore_policy":
+                continue
             result = no_contact_report(ignored, now=int(time.time()))
             report_dir = evidence / "continuous" / "policy-reports" / result["run_id"]
             await enqueue_report(report_dir / "result.json", result)
