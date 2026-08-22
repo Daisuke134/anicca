@@ -302,8 +302,8 @@ no-send, replay-zero and a new natural sub-30-minute official reply/estimate pro
 Do not advance the development cursor until every unchecked item in the current stage has official
 evidence. Independent production lanes continue running while development follows this order.
 
-**Live handover state.** `main` and `origin/main` are pinned to
-`92174b7932f9691109a537e3a90a95b8f6759227`; the latest activated Paid release is the same immutable commit.
+**Live handover state.** `main` and `origin/main` include implementation commit
+`92174b7932f9691109a537e3a90a95b8f6759227`; the latest activated Paid release is that immutable commit.
 Its completed natural receipt is
 `status=pending`, `observed=7`, `actionable=0`, `effect=0`, `readback=3`, `failed=0`, `pending=4`:
 all four owned rooms checkpointed at `disk_pressure` before project mutation. Old regenerable OSS inspection
