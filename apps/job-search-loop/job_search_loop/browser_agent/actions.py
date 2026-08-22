@@ -48,12 +48,13 @@ class ActionExecutor:
                 if target.role
                 else page.get_by_label(target.label, exact=target.exact)
             )
-        visible = []
-        for index in range(await locator.count()):
-            candidate = locator.nth(index)
-            if not await candidate.is_visible() or not await candidate.is_enabled():
-                continue
-            if target.stable_id and not await candidate.evaluate(
+        async def resolve():
+            visible = []
+            for index in range(await locator.count()):
+                candidate = locator.nth(index)
+                if not await candidate.is_visible() or not await candidate.is_enabled():
+                    continue
+                if target.stable_id and not await candidate.evaluate(
                 """(el, expected) => {
                   const own = el.getAttribute('aria-label') || el.getAttribute('title') || '';
                   const linked = el.labels && el.labels.length
@@ -68,12 +69,23 @@ class ActionExecutor:
                     : variants.some(value => value.includes(expected.label));
                 }""",
                 {"label": target.label, "exact": target.exact},
+                ):
+                    continue
+                visible.append(candidate)
+            return visible
+
+        visible = await resolve()
+        if not visible and target.role == "option":
+            # Transient ARIA menus may collapse when a short-lived CDP client
+            # disconnects between observe and act. Re-open only the control that
+            # retained focus, then resolve the exact previously observed option.
+            focused = page.locator(":focus")
+            if await focused.count() == 1 and await focused.evaluate(
+                """el => el.getAttribute('role') === 'combobox'
+                  || el.getAttribute('data-automation-id') === 'searchBox'"""
             ):
-                continue
-            if target.stable_id:
-                visible.append(candidate)
-            else:
-                visible.append(candidate)
+                await focused.click(timeout=self._timeout_ms)
+                visible = await resolve()
         if len(visible) != 1:
             raise RuntimeError(
                 "action target must resolve to exactly one visible enabled control"
