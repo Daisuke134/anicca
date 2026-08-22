@@ -1943,6 +1943,7 @@ def _supervisor_rebind_targeted_work(
 
 async def supervise_replies(
     args: Any, *, probe: Any, worker: Any, reconcile: Any, stop: Any,
+    report_root: Path | None = None,
 ) -> None:
     """Supervise one producer, two consumers, and idle reconciliation.
 
@@ -1964,6 +1965,7 @@ async def supervise_replies(
 
     database = Path(getattr(args, "database"))
     manifest = Path(getattr(args, "manifest"))
+    report_root = Path(report_root) if report_root is not None else database.parent
     outbox: ConnectorOutbox | None = None
 
     def get_outbox() -> ConnectorOutbox:
@@ -2006,7 +2008,7 @@ async def supervise_replies(
         )
         for ignored in policy["ignored"]:
             result = no_contact_report(ignored, now=int(time.time()))
-            report_dir = evidence / "continuous" / "policy-reports" / result["run_id"]
+            report_dir = report_root / "continuous" / "policy-reports" / result["run_id"]
             await enqueue_report(report_dir / "result.json", result)
         for row in policy["available"]:
             thread_id = str(row.get("talkroom_id") or "")
@@ -2266,6 +2268,7 @@ async def _run_continuous_runtime(args: Any, evidence: Path) -> dict[str, Any]:
     try:
         await supervise_replies(
             args, probe=probe, worker=worker, reconcile=reconcile, stop=stop,
+            report_root=evidence,
         )
     finally:
         for signum in (signal.SIGTERM, signal.SIGINT):
