@@ -600,10 +600,19 @@ async def click(*, label: str, role: str, stable_id: str, ordinal: int | None = 
         )
         if stable_id == "automation:createAccountSubmitButton":
             store.mark_account_status(row["canonical_url"], "create_submitted")
-        elif stable_id == "automation:signInSubmitButton" and "/login" not in str(
-            observation.get("url") or ""
-        ):
-            store.mark_account_status(row["canonical_url"], "signed_in")
+        elif stable_id == "automation:signInSubmitButton":
+            visible_ids = {
+                str(control.get("stable_id") or "")
+                for control in observation.get("controls", [])
+                if isinstance(control, dict)
+            }
+            signed_in = (
+                "automation:signInSubmitButton" not in visible_ids
+                and str(observation.get("title") or "").strip().casefold() != "sign in"
+            )
+            store.mark_account_status(
+                row["canonical_url"], "signed_in" if signed_in else "create_submitted"
+            )
     return result
 
 
