@@ -16,7 +16,7 @@ if [[ "${JOB_SEARCH_SKIP_BOOTSTRAP:-0}" != "1" ]]; then
   "$JOB_SEARCH_APP_ROOT/scripts/bootstrap-framework.sh"
 fi
 
-for name in ai.anicca.job-search-daily ai.anicca.job-search-inbox ai.anicca.job-search-learning; do
+for name in ai.anicca.job-search-daily ai.anicca.job-search-inbox ai.anicca.job-search-learning ai.anicca.job-search-mercor; do
   template="$JOB_SEARCH_APP_ROOT/launchd/$name.plist"
   installed="$JOB_SEARCH_LAUNCH_AGENT_DIR/$name.plist"
   program="${name##*-}"
@@ -44,7 +44,7 @@ PY
 done
 
 if [[ "${JOB_SEARCH_SKIP_LAUNCHCTL:-0}" != "1" ]]; then
-  for name in ai.anicca.job-search-daily ai.anicca.job-search-inbox ai.anicca.job-search-learning; do
+  for name in ai.anicca.job-search-daily ai.anicca.job-search-inbox ai.anicca.job-search-learning ai.anicca.job-search-mercor; do
     "$JOB_SEARCH_LAUNCHCTL" bootout "$JOB_SEARCH_LAUNCHD_DOMAIN/$name" 2>/dev/null || true
     "$JOB_SEARCH_LAUNCHCTL" bootstrap \
       "$JOB_SEARCH_LAUNCHD_DOMAIN" "$JOB_SEARCH_LAUNCH_AGENT_DIR/$name.plist"

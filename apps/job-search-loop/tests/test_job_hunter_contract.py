@@ -27,7 +27,7 @@ class JobHunterContractTests(unittest.TestCase):
         self.assertEqual(registry["executor"], "apps/job-search-loop")
         self.assertEqual(registry["state"]["root"], "~/.local/state/anicca/job-search")
         self.assertEqual(
-            {item["id"] for item in loops}, {"acquisition", "inbox", "learning"}
+            {item["id"] for item in loops}, {"acquisition", "inbox", "learning", "mercor"}
         )
         self.assertEqual(
             {item["schedule"]["launchd_label"] for item in loops},
@@ -35,6 +35,7 @@ class JobHunterContractTests(unittest.TestCase):
                 "ai.anicca.job-search-daily",
                 "ai.anicca.job-search-inbox",
                 "ai.anicca.job-search-learning",
+                "ai.anicca.job-search-mercor",
             },
         )
         for item in loops:
@@ -50,6 +51,8 @@ class JobHunterContractTests(unittest.TestCase):
         self.assertEqual(jobs["inbox"]["interval_seconds"], 900)
         self.assertEqual(jobs["acquisition"]["label"], "ai.anicca.job-search-daily")
         self.assertEqual(jobs["inbox"]["label"], "ai.anicca.job-search-inbox")
+        self.assertEqual(jobs["mercor"]["interval_seconds"], 3600)
+        self.assertEqual(jobs["mercor"]["label"], "ai.anicca.job-search-mercor")
         self.assertEqual(
             jobs["learning"]["calendar"], {"weekday": 1, "hour": 9, "minute": 15}
         )
@@ -73,7 +76,7 @@ class JobHunterContractTests(unittest.TestCase):
 
     def test_cli_delegates_without_a_second_executor_or_private_data(self):
         cli = self.cli_path.read_text(encoding="utf-8")
-        for lane in ("run-daily.sh", "run-inbox.sh", "run-learning.sh", "healthcheck.sh", "install-launchd.sh"):
+        for lane in ("run-daily.sh", "run-inbox.sh", "run-learning.sh", "run-mercor.sh", "healthcheck.sh", "install-launchd.sh"):
             self.assertIn(f"scripts/{lane}", cli)
         self.assertNotRegex(cli, r"(?:curl|sqlite|telegram|openclaw|browser)")
         self.assertNotRegex(cli, r"/(?:Users|home)/[^\s\"']+")
