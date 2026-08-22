@@ -2156,3 +2156,34 @@ Telegram is `SEND_TIMEOUT_UNKNOWN` with no messageId. Next atom: do not resend
 either ambiguous report. On the next provider-eligible owner pass, capture the
 fresh official PartnerStack report and keep growing both original and quote
 sample arms until the evaluator has at least three of each.
+
+Affiliate owner run 96 closed the fresh-provider atom. Official PartnerStack
+report observed at `2026-08-22T15:25:30.350473+00:00`, artifact
+`93fe48451a0f74b9bb7a1a01e47f8708c790f35ca36cb8943024409309bad80b`,
+contains zero commission rows, USD display currency, and no live `reward_key`.
+Reconciliation source rows/appended/replayed transitions are all zero. Rolling
+receipt `cb9af04eccafa1dc515cabe201eec588fab7a0ece1b63fad1d55e4f3637e6812`
+covers 30 days and proves pending 0, approved 0, paid 0, reversed 0,
+`NO_TRANSACTIONS`, and USD 10,000 `NOT_REACHED`. Payout readiness is separately
+`PAYOUT_BLOCKED_BY_TAX_SETUP`; tax information is `REQUIRED` and payment-provider
+selection is required. This is not the cause of zero acquisition: there is still
+no official buyer transaction to pay out.
+
+Affiliate Telegram had the same unsafe assumption as Repost: a timeout event was
+resumed after 60 seconds even though `openclaw message send` has no provider
+idempotency key. Commit `9696f23cd` excludes every receipted
+`SEND_TIMEOUT_UNKNOWN` event from pending sends and returns
+`AMBIGUOUS_NO_RETRY`. Installed release is
+`/Users/anicca/.local/share/life-manager/affiliate/releases/9696f23cd430d074a06a12439930abafbc26217a`;
+source/runtime SHA-256 is
+`5f276eb30d524235d485ed808e1cc64626c9aedf026fb419287e409946a437f5`.
+The new duplicate regression and six focused Telegram tests pass. The full 53-test
+module still has seven unrelated pre-existing publication/repost fixture failures.
+Live run 97 did not retry timeout event `30016e7b...`; it sent distinct event
+`5fb4fa9c...` once, exact Telegram message `29106`, and exited zero.
+
+Next atom: at the next eligible X hour, let the Repost owner add the quote arm and
+exact-read its utility/permalink. Continue until each format has three measured
+samples, then allow the evaluator to move `original_ratio`. Independently, the
+only money completion remains an official `reward_key` row joined to an exact
+placement and carried through pending/approved/paid/reversed with real cost.

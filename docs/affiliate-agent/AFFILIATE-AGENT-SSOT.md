@@ -7048,3 +7048,23 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   pending/approved/paid/reversed, `NO_TRANSACTIONS`, and `NOT_REACHED`. Telegram
   readback is `SEND_TIMEOUT_UNKNOWN` with no messageId. The original X post is a
   distribution effect, not an Affiliate placement or money.
+- Affiliate owner run 96 captured a fresh official PartnerStack report at
+  `2026-08-22T15:25:30.350473+00:00`. Artifact
+  `93fe48451a0f74b9bb7a1a01e47f8708c790f35ca36cb8943024409309bad80b`
+  has zero commission rows, USD display currency, no live `reward_key`, and no
+  payout rows. Reconciliation replayed/appended zero transitions. Rolling receipt
+  `cb9af04eccafa1dc515cabe201eec588fab7a0ece1b63fad1d55e4f3637e6812`
+  proves a 30-day window, pending/approved/paid/reversed all zero, no economic
+  transitions, and USD 10,000 `NOT_REACHED`. PartnerStack also reports
+  `PAYOUT_BLOCKED_BY_TAX_SETUP`, tax information `REQUIRED`, and payment-provider
+  selection required. These payout-readiness gates do not change the immediate
+  acquisition fact: buyer conversion and official transactions are still zero.
+- Affiliate commit `9696f23cd` applies the same at-most-once rule to its Telegram
+  outbox. A prior `SEND_TIMEOUT_UNKNOWN` event is excluded from future pending
+  sends and returns `AMBIGUOUS_NO_RETRY`; it can only be closed by exact provider
+  readback, never replay. Installed runtime is
+  `~/.local/share/life-manager/affiliate/releases/9696f23cd430d074a06a12439930abafbc26217a`;
+  source/runtime `local_loop.py` SHA-256 is
+  `5f276eb30d524235d485ed808e1cc64626c9aedf026fb419287e409946a437f5`.
+  Live run 97 did not resend timeout event `30016e7b...`; it delivered a distinct
+  current event `5fb4fa9c...` once as Telegram message `29106` and exited zero.
