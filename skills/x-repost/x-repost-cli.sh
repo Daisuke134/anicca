@@ -953,19 +953,21 @@ SRC_METRICS="$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1]))["me
   echo "次のX投稿をsource本文だけに照らして検証せよ。"
   echo "事実主張・数字・固有名詞がsourceに無ければ supported=false。"
   echo "明示的な意見、一般的な次の一手、書き手自身の失敗談は新しい外部事実ではない。"
-  echo "URL、文体、viralらしさではなく事実支持だけを判定する。"
+  echo "さらに、sourceの要約や『幅が広がる』『試したい』だけなら useful=false。"
+  echo "読者が実行できる手順、判断基準、失敗条件、比較方法のどれかを具体的に足した時だけ useful=true。"
+  echo "URL、文体、viralらしさではなく事実支持と読者効用を別々に判定する。"
   echo; echo "## source"; cat "$EV/source.json"
   echo; echo "## sourceから解決したexact evidence"; "$PY" -c 'import json,sys; print(json.load(open(sys.argv[1])).get("canonical_evidence","")); d=json.load(open(sys.argv[2])); print(d.get("reader_value",""))' "$EV/grounding.json" "$EV/select.json"
   echo; echo "## final post"; cat "$EV/post.txt"
-  echo; echo '## 出力（最後にJSONだけ）'; echo '{"supported":true,"reason":"1文"}'
+  echo; echo '## 出力（最後にJSONだけ）'; echo '{"supported":true,"useful":true,"value_type":"procedure|decision_criterion|failure_condition|comparison_method","reason":"1文"}'
 } >"$EV/prompt-verify.txt"
 if ! ask_model "$EV/prompt-verify.txt" "$EV/verify.raw" >"$EV/verify.json"; then
   report "❌ source-grounding criticの応答を読めなかったため投稿を見送り"
   finish 1 "source grounding critic failed"
 fi
-if [ "$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1])).get("supported") is True)' "$EV/verify.json" 2>/dev/null)" != "True" ]; then
-  report "⚠️ 最終本文にsourceで支持されない事実があるため投稿を見送り"
-  finish 0 "source grounding critic rejected draft"
+if [ "$("$PY" -c 'import json,sys; d=json.load(open(sys.argv[1])); print(d.get("supported") is True and d.get("useful") is True and d.get("value_type") in {"procedure","decision_criterion","failure_condition","comparison_method"})' "$EV/verify.json" 2>/dev/null)" != "True" ]; then
+  report "⚠️ 最終本文がsource支持または具体的な読者効用gateを満たさないため投稿を見送り"
+  finish 0 "source grounding or utility critic rejected draft"
 fi
 
 # ---------------------------------------------------------------- 6. publish
