@@ -295,6 +295,8 @@ C21の運転proof開始時にhourly goal monitorのexit `1`を修復する。lau
 
 C18は拒否済み`Sales Objection Reply Builder`をLife Managerの`skills/capafy/catalog/sales-objection-reply-builder/`へ正本化し、同じAgent `3098034209`で実修正・再申請する。旧3プランとfree trialを廃止し、weekly `$9.99`、cap `20`、free trialなし、`url_proxy=1 / generic=0 / env_var=0`へ統一する。Capafyの拒否版update endpointは新Agentも新version IDも発行せず、同じversion `2080431424288878592`をdraft revisionへ戻して新packageを発行する実挙動であるため、version IDの変化を捏造しない。新package URLのreadback後、最終remoteは`status=1 / auditStatus=1 / run_online / isConfirmedSkills=1 / isConfirmedConfigKeys=1`、重複Agent 0。inventoryはlisted `22`、occupied `5`、free `0`、retry `6`で、5枠は正しく満杯になる。Telegram message IDは`29019`。prepareはcaller-relative sourceをpublisher `cd`前に絶対化し、direct recoveryとlaunchdの両方でprivate state envを同じ順序で読む。
 
+C19監視開始時、hourly reconcileは`/agent/agents`をfreshとしながら`occupied/free=null`の`observed_unclassified`へ落としており、slot解放を検出できない矛盾を実測する。live server enumをlisted (`online/approved`)、occupied (`draft/under_review`)、retry (`review_rejected`)、blocked (`banned`)へ正規化し、未知status/identityは`degraded`へfail closedする。focused 5件が通り、本番hourly run `9`はexit `0`、listed `22`、occupied `5`、free `0`、retry `6`、orders `5`、gross `$19.98`、settled MRR `unknown`、Telegram message ID `29024`を同一company receiptへ保存する。これでlisted遷移後の`free=1`をhourly ownerが検出できるが、実listed遷移と次候補一件の提出まではC19未完である。
+
 ## Atomic remaining TODO
 
 Items are executed top-to-bottom. Only one item is active.
@@ -320,9 +322,9 @@ Items are executed top-to-bottom. Only one item is active.
 | C16 | add ReelFarm TikTok derivative behind credential/account/quality gates | no credential means honest no-op; success requires TikTok native URL | completed — stored key is invalid by live account/accounts reads; generation 0, publish 0, spend 0, native URL none; TG `28874` |
 | C17 | run one real slot-controlled supply pass | inventory readback -> allocator decision -> skill/version remote status -> Telegram message ID | completed — same Agent `3661050861`, version `2091144781376671744`, `status=1/audit=1/run_online/skills=1/config=1`; listed 22/occupied 4/free 1/retry 7; TG `28979` |
 | C18 | prove one rejected Agent correction/resubmit E2E | same agent_id, new package/revision, under-review readback, no orphan Agent | completed — Agent `3098034209`, platform-preserved version `2080431424288878592`, new package, `status=1/audit=1/skills=1/config=1`; duplicate Agent 0; TG `29019` |
-| C19 | prove one listed transition frees a fresh slot | status=4 reduces occupied count and next daily wake submits exactly one candidate | pending |
+| C19 | prove one listed transition frees a fresh slot | status=4 reduces occupied count and next daily wake submits exactly one candidate | pending — slot monitor repaired; live hourly run 9 sees listed 22/occupied 5/free 0/retry 6; TG `29024`; awaiting real review transition |
 | C20 | connect post/click/subscription windows without claiming causal proof | attribution row is candidate unless Capafy exposes order-level UTM/source | pending |
-| C21 | prove seven consecutive daily healthy terminals and hourly freshness | 7-day ledger has no stale source, duplicate Agent/version/post or missing Telegram receipt | pending — proof started `1/7`; hourly run 8 exit 0; receipt `capafy-e7492dc68be6832dddf13868`; TG `28992` |
+| C21 | prove seven consecutive daily healthy terminals and hourly freshness | 7-day ledger has no stale source, duplicate Agent/version/post or missing Telegram receipt | pending — proof `1/7`; hourly run 9 exit 0; receipt `capafy-91a7d8890a852e281d1e34be`; slots normalized; TG `29024` |
 | C22 | operate growth and retention experiments until settled net MRR reaches `$10,000` | active subscription readback and refunds/fees reconcile to target | pending |
 
 ## Test matrix

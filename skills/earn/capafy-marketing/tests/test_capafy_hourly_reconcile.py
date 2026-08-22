@@ -19,7 +19,17 @@ def load_module():
 def live_payloads() -> dict:
     return {
         "account": {"code": 0, "data": {"email": "owner@example.com"}},
-        "inventory": {"code": 0, "data": {"list": [{"agentStatus": "online"}]}},
+        "inventory": {
+            "code": 0,
+            "data": {
+                "list": [
+                    {"agentId": "a1", "agentStatus": "online"},
+                    {"agentId": "a2", "agentStatus": "draft"},
+                    {"agentId": "a3", "agentStatus": "under_review"},
+                    {"agentId": "a4", "agentStatus": "review_rejected"},
+                ]
+            },
+        },
         "sales": {
             "code": 0,
             "data": {
@@ -91,6 +101,23 @@ def test_inventory_shape_is_observed_without_claiming_normalized_slots() -> None
     assert receipt["inventory"]["occupied"] is None
     assert receipt["inventory"]["free"] is None
     assert receipt["sources"]["inventory"]["freshness"] == "fresh"
+    assert receipt["verdict"] == "degraded"
+
+
+def test_inventory_normalizes_five_slot_lifecycle() -> None:
+    module = load_module()
+
+    receipt = module.build_receipt(live_payloads(), "2026-08-22T10:00:00Z")
+
+    assert receipt["inventory"] == {
+        "status": "normalized",
+        "observed_agents": 4,
+        "listed": 1,
+        "occupied": 2,
+        "free": 3,
+        "retry": 1,
+        "blocked": 0,
+    }
 
 
 def test_cli_fixture_run_writes_atomic_receipt(tmp_path: Path) -> None:

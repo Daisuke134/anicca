@@ -17,6 +17,7 @@ from typing import Any
 
 API = "https://api.capafy.ai"
 SOURCE_NAMES = ("account", "inventory", "sales", "payout", "refunds")
+CAPAFY_ACTIVE_SUBMISSION_CAP = 5
 
 
 def _money(value: Any) -> str | None:
@@ -96,8 +97,35 @@ def _inventory(payload: dict) -> dict:
             if isinstance(data.get(key), list):
                 rows = data[key]
                 break
-    if rows is not None:
-        result.update(status="observed_unclassified", observed_agents=len(rows))
+    if rows is None:
+        return result
+
+    counts = {"listed": 0, "occupied": 0, "retry": 0, "blocked": 0}
+    for row in rows:
+        if not isinstance(row, dict) or not str(row.get("agentId") or "").strip():
+            result.update(status="unknown_invalid_agent", observed_agents=len(rows))
+            return result
+        status = row.get("agentStatus")
+        if status in {"online", "approved"}:
+            counts["listed"] += 1
+        elif status in {"draft", "under_review"}:
+            counts["occupied"] += 1
+        elif status == "review_rejected":
+            counts["retry"] += 1
+        elif status == "banned":
+            counts["blocked"] += 1
+        else:
+            result.update(status="unknown_unrecognized_status", observed_agents=len(rows))
+            return result
+    result.update(
+        status="normalized",
+        observed_agents=len(rows),
+        listed=counts["listed"],
+        occupied=counts["occupied"],
+        free=max(0, CAPAFY_ACTIVE_SUBMISSION_CAP - counts["occupied"]),
+        retry=counts["retry"],
+        blocked=counts["blocked"],
+    )
     return result
 
 
@@ -111,14 +139,18 @@ def build_receipt(payloads: dict[str, dict], observed_at: str) -> dict:
     }
     gross, refunds, orders = _sales_money(payloads.get("sales", {}))
     pending, realized = _payout_money(payloads.get("payout", {}))
-    required_fresh = all(sources[name]["freshness"] == "fresh" for name in SOURCE_NAMES)
+    inventory = _inventory(payloads.get("inventory", {}))
+    required_fresh = (
+        all(sources[name]["freshness"] == "fresh" for name in SOURCE_NAMES)
+        and inventory["status"] == "normalized"
+    )
     return {
         "schema_version": 1,
         "kind": "capafy_hourly_reconcile",
         "observed_at": observed_at,
         "verdict": "success" if required_fresh else "degraded",
         "account": {"authenticated": True if _ok(payloads.get("account")) else None},
-        "inventory": _inventory(payloads.get("inventory", {})),
+        "inventory": inventory,
         "orders": orders,
         "refunds": {"tickets": _refund_count(payloads.get("refunds", {}))},
         "money": {
