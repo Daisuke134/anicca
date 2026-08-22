@@ -54,13 +54,15 @@ def early_views(samples: list[dict], url: str):
 def evaluate_tone(posted, samples, cutoff, state: Path, apply: bool, result: dict) -> dict:
     """Move the tone mix toward whichever tone earns more early reach."""
     arms: dict[str, list[int]] = {}
+    audience_tones = {"primary", "empathy", "funny"}
     for row in posted:
         at = parse_dt(row.get("posted_at"))
-        if not at or at < cutoff:
+        tone = row.get("tone", "primary")
+        if not at or at < cutoff or tone not in audience_tones:
             continue
         views = early_views(samples, row["post_url"])
         if views is not None:
-            arms.setdefault(row.get("tone", "primary"), []).append(views)
+            arms.setdefault(tone, []).append(views)
 
     strategy_path = state / "strategy.json"
     try:
