@@ -61,6 +61,7 @@ def scan_timeline(page, handle: str, needle: str, expected_url: str | None = Non
     exact_bodies = {
         normalized(expected_text or ""),
         normalized((expected_text or "").replace(expected_url or "", expected_visible)),
+        normalized((expected_text or "").replace(expected_url or "", "").strip()),
     }
     for art in page.query_selector_all('article[data-testid="tweet"]'):
         text_el = art.query_selector('div[data-testid="tweetText"]')
@@ -68,12 +69,16 @@ def scan_timeline(page, handle: str, needle: str, expected_url: str | None = Non
         body_text = normalized(body)
         if needle and (body_text in exact_bodies if expected_text else body_text.startswith(needle)):
             visible_links = []
-            for anchor in art.query_selector_all('div[data-testid="tweetText"] a'):
+            # X removes an x.com source URL from tweetText and renders it as a quote card. The
+            # exact source anchor then lives elsewhere in the same article. Looking only inside
+            # tweetText made accepted source-backed originals permanently "unverified".
+            for anchor in art.query_selector_all("a"):
                 visible_links.extend((anchor.get_attribute("href") or "", anchor.inner_text() or ""))
-            if expected_visible and not any(
-                normalized(link).removeprefix("https://") == expected_visible
-                for link in visible_links
-            ):
+            def canonical_link(link):
+                value = normalized(link).removeprefix("https://").removeprefix("www.").rstrip("/")
+                return f"x.com{value}" if value.startswith("/") else value
+            if expected_visible and not any(canonical_link(link) == expected_visible.rstrip("/")
+                                            for link in visible_links):
                 continue
             link = art.query_selector(f'a[href*="/{handle}/status/"]')
             href = link.get_attribute("href") if link else ""

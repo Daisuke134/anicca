@@ -24,18 +24,26 @@ class Node:
 
 
 class Article:
-    def __init__(self, text: str, visible_url: str) -> None:
+    def __init__(self, text: str, visible_url: str, article_links=None) -> None:
         self.text, self.visible_url = text, visible_url
+        self.article_links = article_links or [Node(text=visible_url, href="https://t.co/example")]
 
     def query_selector(self, selector: str):
         if selector == 'div[data-testid="tweetText"]':
             return Node(text=self.text)
         if 'status/' in selector:
+            for link in self.article_links:
+                if "/selawmqt/status/" in link.href:
+                    return link
             return Node(href="/selawmqt/status/123")
         return None
 
     def query_selector_all(self, selector: str):
-        return [Node(text=self.visible_url, href="https://t.co/example")]
+        if selector == 'div[data-testid="tweetText"] a':
+            return [Node(text=self.visible_url, href="https://t.co/example")]
+        if selector == "a":
+            return self.article_links
+        return []
 
 
 class Page:
@@ -78,6 +86,21 @@ class XPostTests(unittest.TestCase):
             "https://aniccaai.com/blog/voice-isolator", text,
         )
         self.assertIsNone(found)
+
+    def test_source_backed_original_reads_x_quote_card_outside_tweet_text(self) -> None:
+        source = "https://x.com/jun_song/status/2091114049954283855"
+        body = "Pair cloud orchestration with local execution, then compare one task."
+        text = f"{body}\n{source}"
+        article = Article(
+            body, "", article_links=[
+                Node(href="/selawmqt/status/456"),
+                Node(href="/jun_song/status/2091114049954283855"),
+            ],
+        )
+        self.assertEqual(
+            MODULE.scan_timeline(Page([article]), "selawmqt", body, source, text),
+            "https://x.com/selawmqt/status/456",
+        )
 
 
 if __name__ == "__main__":
