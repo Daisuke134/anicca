@@ -6,23 +6,18 @@ from pathlib import Path
 SCRIPT = Path(__file__).resolve().parents[1] / "capafy-ig-marketing-daily.sh"
 
 
-class CanonicalRendererWiringTest(unittest.TestCase):
-    def test_step3_uses_repo_owned_canonical_renderer(self):
+class ApprovedHyperFramesWiringTest(unittest.TestCase):
+    def test_step3_uses_approved_hyperframes_and_andrew_voice(self):
         source = SCRIPT.read_text(encoding="utf-8")
-        self.assertIn("$LIFE_MANAGER_REPO/skills/video/canonical-renderer/render.py", source)
-        self.assertIn("--hook", source)
-        self.assertIn("--proof", source)
-        self.assertIn("--cta", source)
-        self.assertIn("--audio", source)
-        self.assertIn("--output", source)
-        self.assertIn("--demo-source", source)
-        self.assertIn("--demo-input", source)
-        self.assertIn("--demo-output", source)
+        self.assertIn("$LIFE_MANAGER_REPO/skills/video/hyperframes/capafy-o13-review/", source)
+        self.assertIn("hyperframes@0.8.8 render", source)
+        self.assertIn("edge-tts --voice en-US-AndrewNeural", source)
+        self.assertIn("four listing-specific 1080x1920 scenes", source)
+        self.assertIn("zero scene-boundary crossings", source)
         self.assertIn("repo-owned test fixture or immutable live output receipt", source)
-        self.assertIn("say -v Samantha -r 185 -f", source)
-        self.assertIn("reel.manifest.json", source)
-        self.assertIn("quality_gate=pass", source)
-        self.assertIn("video_encode_passes=1", source)
+        self.assertIn("inspect full-resolution frames from all four scenes", source)
+        self.assertNotIn("say -v Samantha", source)
+        self.assertNotIn("skills/video/canonical-renderer/render.py", source)
 
     def test_runtime_has_no_repo_external_faceless_renderer(self):
         source = SCRIPT.read_text(encoding="utf-8")
