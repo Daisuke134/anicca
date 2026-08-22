@@ -65,10 +65,13 @@ def _open(path: Path) -> None:
     # Illustrator 30.7 can finish opening a PDF while leaving the synchronous
     # `app.open()` JavaScript call unanswered. Use Illustrator's native Apple
     # Event open command, then bind through a separate short readback.
-    subprocess.run(
-        ["osascript", "-e", f'tell application id "{APP_ID}" to open POSIX file {json.dumps(str(path))}'],
-        check=True, capture_output=True, text=True, timeout=30,
-    )
+    try:
+        subprocess.run(
+            ["osascript", "-e", f'tell application id "{APP_ID}" to open POSIX file {json.dumps(str(path))}'],
+            check=True, capture_output=True, text=True, timeout=30,
+        )
+    except subprocess.TimeoutExpired:
+        pass
     for _ in range(60):
         try:
             opened = _javascript(

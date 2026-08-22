@@ -397,6 +397,20 @@ resolve uid 501; the Computer Use service could not start; and the independently
 running app PID nor a WindowServer window. These attempts also produced no reboot or customer effect. Physical
 Apple-menu/power-button reboot remains the sole required owner action; this is not permission waiting.
 
+The account owner then restored the macOS user bootstrap without a reboot. Fresh readback now resolves uid 501,
+`dscl` returns `UniqueID: 501`, the process table is available, and launchd reports the unchanged
+`ai.anicca.hf-gig-paid-direct` owner running naturally as PID 74801 from immutable release `c0c66c32f562...`.
+That owner refreshed all nine paid rooms and dispatched their isolated workers in parallel; Haru `18169583` is
+actionable at review stage, with formal delivery unchecked and latest buyer message
+`js-talkroomMessage-220032238`. Its isolated owner preserved the verified v43 visual lineage as required v44,
+created `habikino-renewal-v44.zip` plus distinct PC/responsive PDF native inputs, and wrote two generic
+`illustrator_native_roundtrip` requests. The owner emitted the required blocked handoff after about six minutes;
+the controller can now execute both requests and resume that same owner. No official v44 save-close-reopen receipt
+exists yet, so do not send this unreceipted package or create a manual executor. Let the durable controller finish
+both roundtrips and resume, then require PASS, one exact-room send with formal delivery OFF, official
+attachment/message readback, and a second natural replay-zero wake. Customer effect and official readback remain
+zero.
+
 **Current runtime refresh.** Unrelated dirty files remain untouched. The existing Paid pass naturally resumed the
 Haru v43 staging after compiling
 the complete proposal, DM, talkroom and attachment context. Haru `18169583` remains unsent. The resumed owner first
