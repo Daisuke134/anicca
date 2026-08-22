@@ -27,6 +27,7 @@ if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 from gig_paths import BROWSER_DIR, RUNNER_DIR  # noqa: E402
 from gig_disk_guard import disk_headroom_ok  # noqa: E402
+from no_contact_policy import load_registry, match_thread  # noqa: E402
 
 try:
     from connector_outbox import ConnectorOutbox, coconala_inbox_event_key
@@ -169,6 +170,68 @@ def _collect_head_snapshot(args: Any, evidence: Path) -> dict[str, Any]:
         raise ValueError("head snapshot incomplete")
     _owner_only(snapshot)
     return value
+
+
+def _close_no_contact_action(
+    outbox: ConnectorOutbox, action: dict[str, Any], *, policy_id: str, now: int,
+) -> dict[str, Any]:
+    action_id = int(action["action_id"])
+    owner = f"gig-no-contact-{action_id}"
+    claimed = outbox.claim(owner=owner, now=now, lease_seconds=30, action_id=action_id)
+    if claimed is None:
+        return {"status": "ignore_policy", "policy_id": policy_id, "action_id": action_id}
+    outbox.close_nothing_to_say(
+        action_id, owner=owner, fencing_token=int(claimed["fencing_token"]),
+        reason=f"ignore_policy:{policy_id}", now=now,
+    )
+    return {"status": "ignore_policy", "policy_id": policy_id, "action_id": action_id}
+
+
+def partition_no_contact_rows(
+    rows: list[dict[str, Any]], *, registry_path: Path,
+    outbox: ConnectorOutbox, now: int,
+) -> dict[str, Any]:
+    """Create a durable action, then close private threads before semantic work."""
+    registry = load_registry(registry_path)
+    available: list[dict[str, Any]] = []
+    ignored: list[dict[str, Any]] = []
+    for row in rows:
+        thread_id = str(row.get("talkroom_id") or "")
+        thread_path = f"/mypage/direct_message/{thread_id}"
+        policy = match_thread(registry, thread_path=thread_path)
+        if policy is None:
+            available.append(row)
+            continue
+        identity = str(row.get("last_message_identity_sha256") or "")
+        if _TARGETED_THREAD_ID.fullmatch(thread_id) is None or re.fullmatch(r"[0-9a-f]{64}", identity) is None:
+            raise ValueError("no_contact_head_identity_invalid")
+        action = outbox.enqueue(
+            event_key=coconala_inbox_event_key(thread_id, identity),
+            thread_id=thread_id, thread_url=f"https://coconala.com{thread_path}",
+            observed_at=now,
+        )
+        ignored.append(_close_no_contact_action(
+            outbox, action, policy_id=policy["policy_id"], now=now,
+        ))
+    return {"available": available, "ignored": ignored}
+
+
+def close_no_contact_work(
+    work: dict[str, Any], *, registry_path: Path,
+    outbox: ConnectorOutbox, now: int,
+) -> dict[str, Any] | None:
+    """Independent effect-time fence for stale or manually queued work."""
+    thread_id = str(work.get("thread_id") or "")
+    policy = match_thread(
+        load_registry(registry_path),
+        thread_path=f"/mypage/direct_message/{thread_id}",
+    )
+    if policy is None:
+        return None
+    action = outbox.get_action(int(work["action_id"]))
+    return _close_no_contact_action(
+        outbox, action, policy_id=policy["policy_id"], now=now,
+    )
 
 
 def _operator_brake_status(
@@ -1896,7 +1959,11 @@ async def supervise_replies(
 
     async def enqueue_head_rows(rows: list[dict[str, Any]]) -> None:
         outbox = get_outbox()
-        for row in rows:
+        policy = partition_no_contact_rows(
+            rows, registry_path=Path(args.no_contact_registry),
+            outbox=outbox, now=int(time.time()),
+        )
+        for row in policy["available"]:
             thread_id = str(row.get("talkroom_id") or "")
             identity = str(row.get("last_message_identity_sha256") or "")
             if (
@@ -1992,7 +2059,21 @@ async def supervise_replies(
                 continue
             try:
                 if headroom_available():
-                    result = await _supervisor_hook(worker, work)
+                    ignored = close_no_contact_work(
+                        work, registry_path=Path(args.no_contact_registry),
+                        outbox=get_outbox(), now=int(time.time()),
+                    )
+                    if ignored is not None:
+                        result = {
+                            **ignored, "run_id": f"ignore-policy-{int(time.time())}",
+                            "replied": 0, "official_readback": 0,
+                            "closed_without_send": 1, "pending": 0,
+                            "events": [], "errors": [],
+                        }
+                        report_dir = evidence / "continuous" / "policy-reports" / result["run_id"]
+                        await enqueue_report(report_dir / "result.json", result)
+                    else:
+                        result = await _supervisor_hook(worker, work)
                     if headroom_available():
                         try:
                             rebound = _supervisor_rebind_targeted_work(
@@ -2203,6 +2284,13 @@ def main() -> int:
     parser.add_argument(
         "--telegram-database", type=Path,
         default=home / "gig/telegram-outbox.sqlite3",
+    )
+    parser.add_argument(
+        "--no-contact-registry", type=Path,
+        default=Path(os.environ.get(
+            "GIG_NO_CONTACT_REGISTRY",
+            home / ".config/anicca/gig/no-contact.json",
+        )),
     )
     parser.add_argument(
         "--runner-config", type=Path,

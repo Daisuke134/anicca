@@ -182,6 +182,7 @@
         "CDP_GUARD_LOCK": "{{GIG_STATE_DIR}}/.cdp-gig-guard.lock",
         "CDP_GUARD_LOG": "{{GIG_LOG_DIR}}/cdp-gig-browser-guard.log",
         "GIG_CDP_HEALTH_URL": "http://127.0.0.1:{{CDP_PORT}}/json/version",
+        "GIG_NO_CONTACT_REGISTRY": "{{HOME}}/.config/anicca/gig/no-contact.json",
         "GIG_IGNORE_DISK_PRESSURE_BLOCK": "1",
         "GIG_IGNORE_DISK_WRITERS_STOP": "1",
         "GIG_DISK_HEADROOM_KIB": "524288"
