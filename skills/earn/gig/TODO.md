@@ -302,8 +302,10 @@ no-send, replay-zero and a new natural sub-30-minute official reply/estimate pro
 Do not advance the development cursor until every unchecked item in the current stage has official
 evidence. Independent production lanes continue running while development follows this order.
 
-**Live handover state.** `main` and `origin/main` include the pushed complete Project Context Capsule
-`17a76f21b5b43210255edc2057bf1c3333250480`, and `/Users/anicca/gig/releases/life-manager/current` selects that
+**Live handover state.** `main` and `origin/main` include the pushed structured Owner feedback/browser boundary
+`461649dd3`, while the current in-flight natural Paid pass is pinned to immutable release
+`cfa2b0be8f844a8517478e02e4c957c55311ab20`; the release watcher may select the newer immutable release only
+after that process exits.
 same immutable release. The older Paid-specific release link remains historical and is not the loaded launchd
 entrypoint. The protected unrelated dirty
 `skills/earn/gig/tests/test_reply_concurrency.py` remains outside this work. The loaded Paid owner uses up to
@@ -829,7 +831,15 @@ flowchart TB
 7. [ ] Return raw structured builder/evaluator/browser results, including every validator error and source fact
    id, to the Project Owner for semantic replanning. Delete generic error collapse and hardcoded
    business-error-to-transition/shipment authority while retaining deterministic exact target, hash/archive,
-   secret, money, formal-delivery, lease, dedupe and official-readback safety.
+   secret, money, formal-delivery, lease, dedupe and official-readback safety. In the current natural pass,
+   Manledge and byusco crossed the former `file_non_delivery_disposition`/`file_contract_review` stop and spawned
+   isolated Project Owners with the structured contract diff copied into each staging root. byusco produced v6
+   and Haru produced v36; structure validation returned respectively 7 and 26 raw errors, each bound to two
+   source facts in a durable `project_owner_feedback` fact instead of collapsing to `file_validation`. Manledge
+   v22 passed structure review; its fresh evaluator returned one concrete cross-document quality finding as a
+   source-bound fact, and the same run naturally spawned a second Owner with that full verdict in its prompt.
+   Browser nonzero output is now redacted and returned through the same room-local fact boundary. This item
+   remains unchecked until the natural repair finishes and the newer browser boundary is exercised/read back.
 8. [ ] Complete the shared tool boundary: content-addressed durable artifact inputs/outputs; fresh read-only
    evaluator opening every actual source/candidate/package/reference; and mechanical exact-room browser
    send/readback with formal delivery OFF, effect fence and replay-zero. Missing evidence is NEEDS_WORK, never
