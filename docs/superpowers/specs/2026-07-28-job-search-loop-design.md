@@ -375,8 +375,8 @@ This is the remaining implementation-order SSOT. Only the first
 | 5 | Freeze fixed-commit OSS source lineage and license boundaries | `done` | Fixed SHA, license text, allowed reuse, AGPL pattern-only boundary, and rejected human-stop/default-answer patterns are recorded below |
 | 6 | Define the Job Hunter browser-agent framework package and public contracts | `done` | Package boundary, dependency direction, API version, and orchestrator/session/observation/action/answer/checkpoint/verifier/provider-hint signatures are fixed below |
 | 7 | Define one provider-neutral sanitized row-envelope and row-run state schema | `done` | `schemas/browser-row-run.v1.schema.json` allowlists exact identity/evidence pointers and excludes secrets, raw answers, provider workflows, and terminal retry inputs |
-| 8 | Add framework contract tests and recorded real-shape replays | `pending_actionable` | Observation/action/recovery/checkpoint/verifier contracts fail against the current fast-path architecture |
-| 9 | Route `browser-lane-agent` to Luna xhigh with the existing bounded runner | `pending_after_8` | One config route, one runner, one timeout; no fallback executor |
+| 8 | Add framework contract tests and recorded real-shape replays | `done` | `tests.test_model_browser_loop` replays sanitized live Workday plus recorded Ashby shapes, rejects forbidden envelopes, and detects all five current fast-path contract gaps |
+| 9 | Route `browser-lane-agent` to Luna xhigh with the existing bounded runner | `pending_actionable` | One config route, one runner, one timeout; no fallback executor |
 | 10 | Remove `JOB_SEARCH_ENABLE_MODEL_FALLBACK` as a production decision | `pending_after_9` | Every eligible Workday row reaches one framework run even after recognized preflight |
 | 11 | Replace Workday/Ashby filler ownership with the framework orchestrator | `pending_after_10` | Fast paths produce hints/evidence only and cannot navigate, fill, or terminate an eligible form |
 | 12 | Make Workday the only active application lane during 10P | `pending_after_11` | Ashby discovery may refresh, but no Ashby form opens before Workday live gate closes |
@@ -689,6 +689,33 @@ row already in either terminal state therefore cannot be serialized as a new
 return to `acting` or acquire another Submit action. Canonical URL and exact
 application identity are still rechecked against Ledger at adapter load time; JSON
 shape validation never substitutes for that authoritative read.
+
+#### Contract replay baseline
+
+`tests/test_model_browser_loop.py` is the focused executable baseline. Its Workday
+fixture is a value/identity-redacted projection of the real 42-control CDP snapshot
+whose SHA-256 is recorded in
+`tests/fixtures/browser_agent/workday-step1-live-shape.v1.json`; the existing Ashby
+application-surface fixture supplies the second provider shape. Both validate
+through the same `browser-row-run.v1` contract. The suite also proves that password,
+cookie, email-code, raw-answer, `submitted`, `submit_unknown`, and post-click
+`acting` inputs are rejected.
+
+The characterization assertion deliberately records five present-tense gaps in
+the production fast paths: Workday observation has no screenshot, the helpers own
+actions, row failures become `blocked`, no durable row checkpoint exists, and the
+helpers own completion classification. The test remains green only while that gap
+set is exact. As Atomic 10–17 replace each boundary, the corresponding gap assertion
+is removed in the same slice and replaced by the positive framework invariant; it
+cannot silently disappear or be relabeled as completion.
+
+Recorded RED/GREEN evidence for Atomic 8:
+
+```text
+RED: 3 tests; missing live-shape fixture error plus an over-broad screenshot-gap assertion failure
+GREEN: 3 tests; 3 passed; Workday-specific observation gap corrected; runtime 0.011s
+Command: python3 -m unittest tests.test_model_browser_loop -v
+```
 
 #### Source lineage
 
