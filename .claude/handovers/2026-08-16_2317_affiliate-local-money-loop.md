@@ -2226,3 +2226,16 @@ exit is zero. This is distribution, not money. Next atom: let scheduled owners
 accumulate measured original/quote samples and optimize the ratio; Affiliate
 completion still requires the first official PartnerStack transaction joined to
 its exact placement and subsequent lifecycle/rolling-net proof.
+
+Affiliate owner run 100 then observed 79 total X actions, 5 exact Affiliate
+joins, 74 unjoined audience actions, and 0 invalid rows. Provider capture was in
+cooldown and rolling money remained pending/approved/paid/reversed all zero,
+`NO_TRANSACTIONS`, USD 10,000 `NOT_REACHED`. No ambiguous Telegram event was
+resent. Repost owner run `20260823T010025` collected 88 candidates in the next
+half-hour slot, but the critic caught a factual inversion: the source announced
+removal of weekend peak/off-peak pricing while the draft called it "weekend
+off-peak." Verdict was `supported=false`, `useful=true`,
+`source_specific=true`; no X effect occurred and exit was zero. Current eligible
+early-view samples are original 2 and quote 12. The 00:10 original needs the next
+post-60-minute owner measurement to become original sample 3; then the next
+daily evaluator can compare the format arms without thin-data guessing.

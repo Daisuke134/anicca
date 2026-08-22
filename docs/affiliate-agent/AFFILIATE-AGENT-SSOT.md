@@ -7103,3 +7103,19 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   Exact X is `https://x.com/selawmqt/status/2091191175739052050`; Telegram
   message is `29134`, and the owner exited zero. This is audience distribution,
   not an Affiliate placement, provider transaction, or money.
+- Affiliate owner run 100 observed the new audience post without inventing
+  revenue: 79 X actions, 5 exact Affiliate placement joins, 74 unjoined audience
+  actions, and 0 invalid rows. Provider capture remained in cooldown; canonical
+  rolling status stayed pending/approved/paid/reversed all zero,
+  `NO_TRANSACTIONS`, and USD 10,000 `NOT_REACHED`. Its prior ambiguous Telegram
+  event was not replayed and remained `AMBIGUOUS_NO_RETRY`.
+- Repost owner run `20260823T010025` exercised the stronger public-copy gate in
+  the next half-hour slot. It collected 88 candidates and selected a source-backed
+  English quote, but the critic found that the draft called the announced weekend
+  removal of peak/off-peak pricing "weekend off-peak". Exact verdict was
+  `supported=false`, `useful=true`, `source_specific=true`; therefore no X post
+  was attempted, the posted ledger did not grow, and the owner exited zero. This
+  is a verified safe no-effect, not a distribution or money effect. The evaluator
+  currently has 2 original and 12 quote posts with a first sample at least 60
+  minutes old; the 00:10 original becomes the third eligible original only after
+  the next owner measurement.
