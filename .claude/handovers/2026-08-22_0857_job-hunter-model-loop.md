@@ -103,3 +103,21 @@ unrelated dirty paths `docs/loops/x-repost.md` and `state/effective-cron/`.
   evidence directory, Ledger, Telegram, or model work; it honors global stop flags,
   requires 512 MiB, and exits 75 without touching the checkpoint. Focused checks
   pass. Release the guard, but do not start Luna until capacity readback is stable.
+- Capacity has recovered to 19 GiB and the canonical Ledger again opens with
+  `PRAGMA quick_check=ok`. The 30-minute schedule is already installed
+  (`StartInterval=1800`), and the browser owner is configured with `KeepAlive=1`.
+  The latest saved Salesforce `JR334569` screenshot visibly stops at Personal
+  Information with the required phone fields filled and `Save and Continue`
+  available; it is not a completion screen, so both fresh Salesforce rows remain
+  `materials_ready` and no submission may be claimed.
+- Runtime recovery is now blocked outside the job code: CDP `127.0.0.1:9222` is
+  down, no Job Hunter Chromium process exists, and `launchctl-safe preflight
+  gui/501` returns `blocked_control_plane` with unresolved username/directory
+  services plus unreadable GUI domain (`launchctl` error 141, `Reentrancy
+  avoided`). Immutable release `8d59090e22739a3c8a15ac43ecfe2dbab4cfc30c`
+  is installed but not active; active remains `8ddb0bba47eec17ca1f55fdfe60e66184eb67418`.
+  Do not bypass the preflight, create a second executor/browser, or switch the
+  symlink without proving the existing owner idle. On GUI-domain recovery, activate
+  the installed release, kick only the existing daily owner, resume `JR334569`, and
+  close only on Workday completion UI or an exact receipt email plus Ledger and
+  Telegram provider-message-ID reconciliation.
