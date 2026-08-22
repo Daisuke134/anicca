@@ -252,8 +252,8 @@ No later task may jump ahead of the first incomplete row:
 | U5 | Discover live jobs twice | **DONE:** two recency reads returned the same ten job IDs; 0 effects |
 | U6 | Exercise qualification on one observed job | **DONE, PARKED:** technical/margin qualification proved on `~022091070478975551162`; 50+ proposals and 26 Connects make it unsuitable as the first target |
 | U7 | Exercise immutable proposal freezing | **DONE, PARKED:** payload `9fab22a2…10d19` retained for later requalification; zero marketplace effects |
-| U8 | Complete the factual main profile | Official profile-completion readback is 100%; identity and every claim match owner evidence |
-| U9 | Publish three reusable portfolio proofs | Three public Upwork portfolio item IDs with bound source/artifact hashes and no unsupported claims |
+| U8 | Add the required factual Employment History item | **DONE:** official employment readback matches owner evidence; Find Work progressbar is 70% |
+| U9 | Publish three reusable proofs and complete optional profile items | Three public portfolio item IDs with bound hashes, only truthful optional items, and official completion readback is 100% |
 | U10 | Publish one narrow Project Catalog offer | Live catalog ID; bounded input/output/exclusions/price/time and client-visible readback |
 | U11 | Collect free acquisition capacity | Account-earned Connects balance and invitation readback; purchases, Plus, badge and boosts remain zero |
 | U12 | Discover and qualify a first-job candidate | Recent, <=20 proposals, explicit acceptance, verified client, positive expected net, low Connects, 1-3 day delivery |
@@ -308,8 +308,9 @@ valid effect-fence fixture and later requalification candidate, not the first li
 Marketplace effects remain zero.
 
 The observed purchase entry offers 100 Connects for $15 plus tax, but it is no longer a pending
-gate. U8 first completes the factual profile from 40% to official 100%. U9 then publishes three
-reusable proofs; U10 publishes one narrow Project Catalog offer; U11 collects account-earned
+gate. U8 first adds Upwork's required factual Employment History item and records the new baseline.
+U9 then publishes three reusable proofs and uses only truthful optional items to reach official
+100%; U10 publishes one narrow Project Catalog offer; U11 collects account-earned
 Connects and invitations. Purchased Connects, Freelancer Plus, Availability Badge and boosts stay
 disabled during this bootstrap. Application, Connects-spend and payment effects remain zero.
 

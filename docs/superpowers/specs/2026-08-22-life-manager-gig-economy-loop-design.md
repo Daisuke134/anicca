@@ -56,8 +56,11 @@ Connects purchase as the next outcome was a sequencing error. The immutable payl
 `9fab22a29ea169632f30c3d1a22597c1091ecb97a2897c987ac788ce1d110d19` remains retained for later
 requalification; no purchase, proposal, message, contract or payment effect occurred.
 
-U8 is now the first incomplete outcome: complete the factual profile from 40% to Upwork's official
-100% readback using only existing owner facts and reusable proof. The free-first bootstrap then
+U8 is closed. Upwork publicly reads back `Applied AI / AI Agent` at Mitsubishi UFJ Information
+Technology, Ltd., April 2025–Present, with the sanitized factual description. The official Find Work
+progressbar changed from 40% to `aria-valuenow=70` / `70% completed`; no proposal, Connects or
+payment effect occurred. U9 is now the first incomplete outcome: add three reusable portfolio proofs and
+the remaining truthful optional items until Upwork reports 100%. The free-first bootstrap then
 publishes one narrow Project Catalog offer, obtains any account-earned Connects, and searches for a
 small paid job with bounded scope, low competition and delivery in one to three days. Freelancer
 Plus, Availability Badge, proposal boost and purchased Connects stay disabled until a qualified
@@ -439,8 +442,9 @@ Upwork is the first proof that the Coconala kernel generalizes.
 The first Upwork objective is one verified paid review, not maximum headline contract value and not
 maximum application volume. The deterministic acquisition order is:
 
-1. Complete the factual main profile to official 100% readback.
-2. Publish three reusable portfolio proofs whose claims and artifacts are independently verifiable.
+1. Add the required factual Employment History item and read back the required-profile baseline.
+2. Publish three reusable portfolio proofs, then add only truthful optional items until the main
+   profile reaches official 100% readback.
 3. Publish one narrow Project Catalog offer with explicit input, output, exclusions, price and time.
 4. Collect only account-earned Connects and zero-Connect invitations before buying acquisition.
 5. Discover recent jobs and prefer clear acceptance criteria, low proposal count, verified payment,
