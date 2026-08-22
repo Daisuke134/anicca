@@ -325,7 +325,7 @@ def _telegram_report(args: Any, events: Path, command: str) -> str:
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
-            timeout=90,
+            timeout=240,
             check=False,
         )
     except Exception:

@@ -261,9 +261,13 @@ def test_supervisor_routes_head_policy_closure_to_reporter(tmp_path, monkeypatch
 
 
 def test_telegram_report_does_not_call_zero_effect_command_sent(monkeypatch, tmp_path):
-    monkeypatch.setattr(detector.subprocess, "run", lambda *args, **kwargs: SimpleNamespace(
-        returncode=0, stdout='{"sent":0,"delivery_unknown":0}\n', stderr="",
-    ))
+    call = {}
+    def fake_run(*args, **kwargs):
+        call.update(kwargs)
+        return SimpleNamespace(
+            returncode=0, stdout='{"sent":0,"delivery_unknown":0}\n', stderr="",
+        )
+    monkeypatch.setattr(detector.subprocess, "run", fake_run)
     args = SimpleNamespace(
         telegram_report_script=tmp_path / "telegram_report.py",
         database=tmp_path / "connector.sqlite3",
@@ -275,3 +279,4 @@ def test_telegram_report_does_not_call_zero_effect_command_sent(monkeypatch, tmp
     status = detector._telegram_report(args, tmp_path / "result.json", "reply-wake")
 
     assert status == "deferred"
+    assert call["timeout"] == 240
