@@ -732,7 +732,11 @@ remained absent. A real client head is still required for positive message/story
 
 **Files:**
 - Create: `skills/earn/gig/scripts/providers/upwork_negotiate.py`
+- Create: `skills/earn/gig/scripts/providers/upwork_message_browser.py`
+- Create: `skills/earn/gig/scripts/providers/upwork_message_effect.py`
 - Create: `skills/earn/gig/tests/test_upwork_negotiate.py`
+- Create: `skills/earn/gig/tests/test_upwork_message_effect.py`
+- Modify: `skills/earn/gig/scripts/providers/upwork_browser_provider.py`
 
 **Interfaces:** Produces accept, counter, clarify or decline decision and message intent.
 
@@ -740,8 +744,11 @@ remained absent. A real client head is still required for positive message/story
   terms, near-duplicate reply and expired message identity.
 - [x] Reuse the existing freshness, duplicate and immutable private-intent behavior.
 - [x] Generate a decision from current official thread and capacity evidence.
-- [ ] Execute one authorized message and require story/message ID readback.
-- [ ] Replay the event with zero duplicate message; run tests and commit/push.
+- [x] Implement a durable one-click message effect that accepts success only after a new outgoing
+  DOM story/message ID with the exact sealed body appears.
+- [x] Prove replay cannot start a second click; run the related 84-test matrix and commit/push.
+- [ ] Execute one real authorized client message and read back its official story/message ID.
+- [ ] Replay that same live event and prove zero duplicate message.
 
 Task 14 decision evidence: only a newly appended official `message_room` head enters the existing
 `application-intent-planner`. The schema permits `accept_terms`, `counter`, `clarify`, `decline` or
@@ -754,8 +761,26 @@ reused on replay without another model call. No message transport is called in t
 related negotiation/inbox/browser/effect matrix passes 75/75. Release `e4284beaa` completed a
 production wake with exit 0 at `2026-08-22T18:40:41.432545+00:00`: rooms 0,
 `negotiation_intents=[]`, planner evidence files 0, sealed negotiation files 0, Upwork message effect
-rows 0 and earnings USD 0. The next atomic item is the durable message effect and official
-story/message-ID readback.
+rows 0 and earnings USD 0.
+
+Task 14 message-effect evidence: the browser preflight binds the current room URL and SHA-256 of the
+normalized official room text before filling the exact sealed body. It requires one visible input,
+one enabled Send control and no validation error, persists all pre-existing message IDs behind the
+shared durable provider-effect fence, then permits one click. Success requires a newly appearing
+outgoing element whose normalized body is exact and whose stable `data-id`, `data-message-id` or
+`data-story-id` is present; click, elapsed time or URL alone never count. Replay cannot cross the
+durable fence again. The related negotiation/inbox/browser/effect matrix passes 84/84. The code is
+in main commit `b229a1822` and immutable production current
+`6e95717c620e8aa66f18b420ba570f8833618097`; the deployed message-effect file SHA-256 is
+`2c1f197094808fb0b1466fb7adbddc1fc47e0e269ada988a63ad5234215ec4a9`.
+Production still has rooms 0, `negotiation_intents=[]`, Upwork message-effect rows 0 and earnings USD
+0, so no live story/message ID or live replay is claimed. A current-release wake was requested but
+the local Codex execution context failed the launchd preflight with `blocked_control_plane`
+(`manager_not_aqua`, unreadable `gui/501`); the scheduled state remained at
+`2026-08-22T18:46:29.413515+00:00`. The next Task 14 effect therefore remains event-driven: the first
+real client head authorizes the message, then the same wake must capture the official ID and replay
+proof. Until then the next buildable atomic item is Task 15's contract workspace/terms gate; it must
+not fabricate an inbound room to force Task 14 positive evidence.
 
 ### Task 15: Accept an Upwork offer safely
 
