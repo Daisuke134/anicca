@@ -72,6 +72,33 @@ alertと広範囲cache削除が消えていることを固定した。
 重要stateを削除する設計にはしない。実装をこのsessionでは行わず、古いstderrのENOSPC行と`last exit code=1`を履歴として保持する。
 次sessionの最初の原子作業はA-25であり、実装後にcanonical labelの新しいreceiptとexit 0をread backする。
 
+2026-08-22T07:08Zのplanning readbackでは、Data volumeのavailableは`592,976 KiB`から
+`139,808 KiB`まで低下し、swapは`6,048 MiB`使用、tierは`ULTRA`だった。canonical labelは
+`gui/501`に登録済み、`StartInterval=300`、`runs=66`、直近`last exit code=0`で、
+`last-receipt.json`も07:08Zに更新されている。ただしreserve fileは未実装であり、このexit 0は
+ENOSPC recovery contractのPASSではない。容量圧力下で新規repository cloneを作ることもproducer writeに
+当たるため、OSS比較は固定commitのGitHub raw sourceで行い、cloneは開始しなかった。
+
+#### A-25 receipt reserve contract
+
+A-25は通常のA-04以降より先に処理するcapacity-safety interruptである。既存の
+`HostDiskGovernor._receipt()`だけを共通入口として使い、新しいdaemon、queue、database、cleanup ownerは
+作らない。実装soft targetはproduction 1 file + test 1 file、100 LOC未満とする。
+
+1. `state_dir/.receipt-reserve`を1 MiBの実割当済みregular file、mode `0600`として保持する。
+   sparse `truncate`だけを成功扱いにせず、書込み、flush、`fsync`、`st_blocks > 0`をread backする。
+2. reserve pathは通常のinventory/reclaimer candidateへ絶対に入れない。解放authorityは
+   `_receipt()`の`ENOSPC` recovery branchだけである。
+3. receipt JSONは64 KiB以下へboundし、既存targetを保持したまま同一directoryのtemporary fileへ書く。
+4. temporary writeまたは`os.replace`が`errno.ENOSPC`の時だけ、reserveがregular fileかつsymlinkでないことを
+   再検証してunlinkし、同じpayloadのatomic writeを1回だけ再試行する。他errnoはreserveを解放せずraiseする。
+5. retry成功後にreserveを同じsize/modeで再作成してread backする。再作成できなければpassはexit 0にせず、
+   次回のcontrol-plane write safetyが失われたことを明示する。
+6. RED fixtureは最初のreceipt replaceだけをENOSPCにし、旧receiptがretry成功まで残ること、retryが1回、
+   新receiptがvalid JSON、temporary file残留0、reserveが1 MiB/mode 0600/allocatedへ戻ることを検証する。
+7. GREEN後は既存canonical labelだけを`bin/launchctl-safe kickstart`し、run count増加、新しい実機receipt、
+   `last exit code=0`、reserve size/mode/allocation、protected deletion 0をread backする。人工的なproduction disk-fillは行わない。
+
 ### 2026-08-21 GUI bootstrap incident and recovery
 
 このincidentの原因はcleanupによる削除ではない。障害中のcleanup receiptは
@@ -290,13 +317,42 @@ owner、class、lease、open-path、再生成証明をすべて確認して回�
 intelligence passは原因分析、未分類artifact、producer lifecycle defectを診断するが、
 未知のpathを削除する権限を持たない。
 
-Apple `launchd.plist(5)` は `StartInterval` について、
-“This optional key causes the job to be started every N seconds” とし、jobが実行中なら
-次のintervalはmissされると明記する。したがって5分schedulerは重複実行を保証せず、
+Apple `launchd.plist(5)` は `StartInterval` をN秒ごとの起動として定義し、sleep中に複数intervalが
+経過した場合はwake時に1 eventへcoalesceすると明記する。scheduler deliveryだけを排他性の証明にせず、
 cleanup側もsingle-owner lockをMUSTで持つ。
 
 ソース: [Apple OSS launchd.plist(5)](https://github.com/apple-oss-distributions/launchd/blob/main/man/launchd.plist.5)
-/ 核心の引用: “If the job is running during an interval firing, that interval firing will likewise be missed.”
+/ 核心の引用: “events will be coalesced into one event upon wake from sleep.”
+
+### Guarantee boundary — 「never run out」の正確な意味
+
+有限diskで永久保護dataが無制限に増える場合、cleanupだけで空き容量を永久保証することはできない。
+Life Managerが保証するのは「保護dataを壊して空きを偽装しない」「control planeが最後のreceiptを残せる」
+「producerをreserveより前で止める」の3点である。hostを長期継続させる必要条件を次で固定する。
+
+```text
+sum(active producer quotas) + protected growth budget + control-plane reserve
+  <= writable capacity - recovery floor
+```
+
+この不等式を満たせないownerは新規writeを開始できない。protected growthがbudgetを超えた場合は、
+そのproducer自身がactive sessionを保持したままrotate/checkpoint/offloadする。cleanupが代わりにsession、source、
+credential、database、swapを削除してはならない。回収可能bytesが0ならcapacity incidentを正直に継続し、
+supervisorと最小receipt writerだけを動かす。
+
+### OSS comparison and adoption decision
+
+| Source | Observed design | Adopt / reject |
+|---|---|---|
+| [Kubernetes node-pressure eviction](https://kubernetes.io/docs/concepts/scheduling-eviction/node-pressure-eviction/) | disk/inode signalをthresholdと比較し、workload停止前にnode-level resourceを回収し、minimum reclaimでthreshold oscillationを避ける。核心: “reclaim node-level resources before it terminates end-user pods.” | exact-byte tier、hysteresis、minimum recovery floor、producer admissionへ採用 |
+| [systemd journald](https://www.freedesktop.org/software/systemd/man/latest/journald.conf.html) | producer自身がMaxUse/KeepFreeを持ち、active fileではなくarchived fileだけをvacuumする。核心: “only archived files are deleted.” | producer quota、active artifact非削除、owner finalizerへ採用 |
+| [pfnet/pfio `FileCache`](https://github.com/pfnet/pfio/blob/52faa1f36ded6bfcb5b78e443fadb019f62275f1/pfio/cache/file_cache.py) | cache writeのENOSPCをcatchし、warning + `False`で本処理を継続する。 | 非必須cache producerのfail-softへ採用。critical receiptはreserve付きfail-closedへ強化 |
+| BleachBit [`Cleaner.py`](https://github.com/bleachbit/bleachbit/blob/53cc9131f94edb2ee712957263611efe48c8180b/bleachbit/Cleaner.py) / [`claude.xml`](https://github.com/bleachbit/bleachbit/blob/53cc9131f94edb2ee712957263611efe48c8180b/cleaners/claude.xml) | preview/keep-listを持つが、cleaner catalogにはClaude session削除もwarning付きで定義できる。 | interactive cleanerとしては妥当。無人host governorのdelete catalogとしては棄却 |
+| [Czkawka](https://github.com/qarmin/czkawka/blob/105a520bab59d8a0064770b3dbcba0ab47abe59e/krokiet/src/file_actions/connect_delete.rs) | scan結果からuserが選択したitemだけをdelete/trashし、失敗itemを残す。 | observation/action分離だけ採用。user-selection前提のdelete authorityは棄却 |
+
+推奨は既存のmanifest-driven host governorを完成させる案である。汎用cleaner catalog案は対象範囲が広い一方、
+session/cacheの意味をowner proofなしで誤分類する。LLM自由判断案は新規pathへ適応できる一方、再現可能な
+deletion proofとreview boundaryを失う。intelligenceは候補とtestを作れても、production deletion capabilityは0のままにする。
 
 ### Target architecture
 
@@ -310,6 +366,7 @@ flowchart TD
   G -->|No or unknown| K[Preserve and record reason]
   G -->|Yes| R[Reclaim regenerable bytes]
   R --> V[Read back bytes and free space]
+  E[Protected receipt reserve] -->|ENOSPC: release once, retry, restore| V
   H[Hourly intelligence pass] --> O[Observe growth and failures]
   O --> F[Repair producer lifecycle or propose manifest entry]
   F --> T[Test and promote deterministic rule]
@@ -317,6 +374,7 @@ flowchart TD
   L --> D
   L --> H
   L --> B[Backpressure and bounded resume]
+  B -->|quota + preflight + checkpoint| P[All host producers]
 ```
 
 ### Ownership
@@ -538,6 +596,7 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 | 27 | full censusのdisk使用量をbounded化 | `test_full_census_respects_temp_log_and_ledger_limits` | OK |
 | 28 | `dscl`/`launchctl`の141/153をhealth failureとしてfail-closed処理 | `test_gui_bootstrap_health_failure_is_observation_only` | OK |
 | 29 | stale app-server復旧後もcleanup labelのload readbackを独立検証 | `test_cleanup_label_load_readback_is_required` | OK |
+| 30 | receipt replaceのENOSPC時だけreserveを解放し、1回retry後にreserveを復元 | `test_receipt_enospc_releases_reserve_retries_once_and_restores_reserve` | OK |
 
 ### E2E judgment
 
@@ -602,6 +661,11 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 
 各行は1つの作業だけを持つ。順序を飛ばさず、受入証拠が保存されるまで完了扱いにしない。
 
+実行queueはcapacity-safety interruptの **A-25を最初に1件だけ** 閉じ、その後
+`A-04 → A-05 → … → A-24 → A-26 → … → A-36`へ戻る。A-25の先行はA-04〜A-24の
+完了を意味しない。各itemはRED、最小GREEN、focused regression、fresh adversarial review、実機readback、
+spec state更新、commit/pushまでを同じsliceで閉じる。後続itemのscaffoldは前倒ししない。
+
 | ID | Atomic action（1作業） | Acceptance evidence | State |
 |---|---|---|---|
 | A-01 | mount inventoryを保存する | 実機`host-inventory.json`でschema PASS、SHA一致、mount_count=9、unique mount=9、mode=600、temporary file残留0、host-inventory tests 9 PASS | 完了 |
@@ -628,14 +692,14 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 | A-22 | supervisor non-stop behaviorを実装する | ULTRA wake keeps supervisor labels loaded | 未完了 |
 | A-23 | Codex log budget/rotationを実装する | active app-server handoff with session loss 0 | 未完了 |
 | A-24 | completed-project janitorをcanonical loopへ接続する | terminal-only dry-run/live receipt | 未完了 |
-| A-25 | ULTRA receipt reserveを実装する | state/receipt/checkpoint write survives pressure | 未完了: 2026-08-22 ENOSPCでlast-receipt atomic replaceがexit 1。reserve/retryの実装・fixture・実機exit 0 readbackが必要 |
+| A-25 | `_receipt()`へ1 MiB reserve付きENOSPC 1回retryを追加する | Test Matrix 30 PASS、旧receipt保持、retry 1回、temporary残留0、reserve 1 MiB/mode 0600/allocated、canonical run count増加、新receipt、last exit 0、protected deletion 0 | 最優先・未完了: 2026-08-22 ENOSPCでlast-receipt atomic replaceがexit 1。実装・fixture・実機readbackが必要 |
 | A-26 | bounded ops logを分離する | operational log size/retention test PASS | 部分完了 |
 | A-27 | incident receiptを分離する | immutable incident receipt schema PASS | 未完了 |
 | A-28 | delivery-failure aggregationを保存する | Telegram message/delivery-failure IDs read back | 未完了 |
 | A-29 | hourly intelligence schemaを実装する | schema PASS and deletion capability 0 | 未完了 |
 | A-30 | owner recovery redispatchを実装する | checkpoint/retry/duplicate redispatch 0 | 未完了 |
 | A-31 | legacy/canonical shadow parityを保存する | protected mismatch 0 receipt | 未完了 |
-| A-32 | full regression matrixを実行する | Test Matrix 3–11 and 18–29 PASS | 部分完了 |
+| A-32 | full regression matrixを実行する | Test Matrix 3–11 and 18–30 PASS | 部分完了 |
 | A-33 | 24-hour production observationを完了する | 24h free≥11GiB, ENOSPC 0, protected deletion 0 | 未完了 |
 | A-34 | 7-day production observationを完了する | 7d state-write failure 0 and cleanup-caused producer failure 0 | 未完了 |
 | A-35 | rollback restore testを保存する | prior label restore receipt | 未完了 |
@@ -652,6 +716,8 @@ plutil -lint skills/self/disk-cleanup/launchd/*.plist
 dscl . -read /Users/anicca UniqueID NFSHomeDirectory
 launchctl print gui/$(id -u)/ai.anicca.life-manager-disk-cleanup
 df -k /System/Volumes/Data
+stat -f '%N %z %Sp %b' ~/.openclaw/state/.receipt-reserve
+jq '{observed_at,tier,errors,protected_deletions}' ~/.openclaw/state/last-receipt.json
 ```
 
 ### User GUI tasks
