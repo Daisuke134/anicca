@@ -24,6 +24,23 @@ action, dispatch a DOM event, or run page JavaScript to perform a user action. T
 executor intentionally rejects final Submit until the later fenced final-action
 path authorizes it.
 
+For each admitted Workday row, remain inside this one Luna xhigh runner turn and
+repeat until a typed row transition or the row step budget is reached:
+
+1. attach or reconnect the row `BrowserSession`;
+2. build a fresh `ObservationV1`;
+3. construct `PolicyContextV1` from the row goal, opaque fact references, current
+   observation hash, prior receipt hashes, and remaining steps;
+4. use your model reasoning to propose exactly one `ActionPlanV1` from that current
+   context, then pass it through `AgentPolicy.next_step`;
+5. execute its one action through `ActionExecutor`, record the value-free receipt,
+   decrement the budget, and observe again.
+
+Never call Codex, OpenClaw, the shared agent runner, or another model from inside
+this loop. Never batch actions from one observation. `AgentPolicy` rejects a stale
+observation hash and cannot assert `submitted` or any other authoritative terminal
+outcome. A `checkpointed` row returns control to the queue; it does not end the wake.
+
 Read:
 - docs/superpowers/specs/2026-07-28-job-search-loop-design.md
 - ${XDG_CONFIG_HOME:-$HOME/.config}/anicca/job-search/profile.json

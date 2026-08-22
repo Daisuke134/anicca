@@ -70,3 +70,20 @@ class ActionReceiptV1:
     before_url: str
     after_url: str
     receipt_sha256: str
+
+
+@dataclass(frozen=True, slots=True)
+class PolicyContextV1:
+    row_goal: str
+    fact_refs: tuple[str, ...]
+    observation_sha256: str
+    action_receipt_hashes: tuple[str, ...]
+    remaining_steps: int
+
+
+@dataclass(frozen=True, slots=True)
+class ActionPlanV1:
+    based_on_observation_sha256: str
+    action: VisibleActionV1 | None = None
+    transition: Literal["checkpointed", "ineligible", "post_submit_verification"] | None = None
+    reason: str = ""
