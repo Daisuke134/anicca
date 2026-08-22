@@ -421,6 +421,8 @@ exact source files; prose summaries alone are not implementation authority.
 | `langchain-ai/langgraph` | `f09cfe8ffc1eeffd68f4b628ed69c30f7cad229f` | Checkpoint/interrupt/retry mechanics; never fixed business-semantic authority |
 | `temporalio/samples-python` | `e652a4d0e85042a34ec8fc46a4a03e51681fd7f9` | Durable timer, signal and external activity/effect boundaries |
 | `dagster-io/dagster` | `b2dabdc99f23d5d19bb9bf7417e606c0427c4413` | Materialized-asset dependency/staleness projection derived from facts |
+| `codejunkie99/graph-engineering` | `cfacb56a05a31ba69bf84d0b8b00f5ce463127ef` | Competency-question-first schema, provenance, fusion and true-dependency task edges |
+| `cobusgreyling/loop-engineering` | `37d558f03aa024d82f7db8f11f43d0bbcf3595bd` | Operational circuit breaker, locked accounting and mechanical policy gate |
 
 Do not add these frameworks as dependencies or transplant a demo wholesale. Copy the smallest relevant code
 shapes into the existing `agent_runner.py`/Paid owner, retain license notices for any copied code, and delete
@@ -442,6 +444,23 @@ upstream license notice if source is copied; otherwise copy the behavior into th
 | `samples-python/sleep_for_days/workflows.py::SleepForDaysWorkflow` (MIT) | Durable wait races timer against external signal; effects are activities | launchd wake plus fenced browser activity | Temporal server/SDK in local OSS baseline |
 | `samples-python/message_passing/waiting_for_handlers_and_compensation/workflows.py` (MIT) | Platform lifecycle is separate from application logic | Lease/restart/cleanup outside model judgment | Attempted undo of irreversible marketplace messages |
 | `dagster/_scheduler/stale.py::resolve_stale_or_missing_assets` (Apache-2.0) | Dependency graph derives stale work from materialization facts | Derive artifact/capability/readback graph from factual ledger | Dagster runtime and second authoritative store |
+| `graph-engineering/references/modeling.md` (MIT) | Competency questions define the minimum ontology; every fact carries source/time/confidence provenance | Define Economic Graph only from queries needed by Apply/Negotiate/Paid/Storefront and bind every projected edge to ledger fact ids | Generic `RELATED_TO` edges, speculative entity types and a graph database before a required traversal query exists |
+| `graph-engineering/references/task-graphs.md` (MIT) | Delete fake dependencies, parallelize only independent jobs and retain one merge owner | Manager owns sequential buyer context; independent room/tool work may fan out and factual outputs rejoin at that manager | Written static routing for semantic buyer decisions, blanket human gates and multi-agent voting on sequential work |
+| `loop-engineering/tools/loop-context/src/context-manager.ts::checkCircuitBreaker` (MIT) | Deterministic caps stop repeated similar failures, no-progress runs and budget exhaustion | Operational breaker observes attempts and stops a failing executor after the configured three materially different fixes or equivalent no-progress evidence | Error signatures that choose a business action, classify buyer intent or authorize delivery |
+| `loop-engineering/tools/loop-context/src/daily-spend.ts::withLock` (MIT) | Exclusive-create lock serializes a read-modify-write counter and expires stale ownership | Reuse the single-writer shape for per-goal lease/accounting only where the existing owner lacks an equivalent | Lock files as marketplace truth or a second effect ledger |
+| `loop-engineering/tools/loop-gate/src/gate.ts::checkGate` (MIT) | Static deny/allow policy is mechanical and separate from run-history judgment | Apply the shape to secret paths, money caps, formal-delivery policy, exact target and permitted effect classes | Mandatory human review for already-authorized reversible marketplace activity and semantic artifact grading |
+| `loop-engineering/tools/loop-swarm/src/swarm.ts::runSwarm` (MIT) | Exact patch hashes can form a strict majority across isolated runs | No current adoption | Consensus voting for customer work, duplicated model cost and extra review ceremony; identical mistakes are still identical |
+
+The two requested repositories were cloned and read at the commits above. `graph-engineering` contains a
+packaged skill and reference workflows rather than an executable graph store or scheduler, so it is design
+authority only. `loop-engineering` contains executable TypeScript tools, but Life Manager copies only the
+three bounded mechanics named above; installing its CLI/fleet/worktree/swarm stack would duplicate launchd,
+the current owner and existing state. Neither repository is vendored, symlinked or added as a dependency.
+Primary code evidence: `graph-engineering/references/task-graphs.md` states, “Draw an arrow only when a job
+needs another job's result before it can start”
+([source](https://github.com/codejunkie99/graph-engineering/blob/cfacb56a05a31ba69bf84d0b8b00f5ce463127ef/graph-engineering/references/task-graphs.md));
+`loop-engineering/tools/loop-gate/src/gate.ts` describes “Mechanical enforcement of static policy”
+([source](https://github.com/cobusgreyling/loop-engineering/blob/37d558f03aa024d82f7db8f11f43d0bbcf3595bd/tools/loop-gate/src/gate.ts)).
 
 **Life Manager economic harness — accepted foundation.** Coconala is the first proving adapter, not the
 architecture boundary. One shared economic kernel owns goals, evidence and capital/risk constraints. A lane is
@@ -474,11 +493,15 @@ work and replanning. Deterministic code enforces permission, budget, secret boun
 hash, lease, effect idempotency and official readback. No enum, graph node or edge may promote uncertainty to
 delivery authority.
 
-Graph engineering begins now only as a projection schema: nodes are goals, opportunities, contracts,
-capabilities, artifacts, effects, readbacks and revenue; edges are `requires`, `produced_by`, `sent_to`,
-`proved_by` and `earned`. Initial storage remains one local append-only ledger with an in-memory index. Add a
-graph library/database only when a real query needs cycle detection, cross-goal dependency planning or
-multi-device concurrent traversal. This keeps local install fast/cheap and prevents a second source of truth.
+Graph engineering begins now only as a projection schema. Its initial competency questions are: which buyer
+requirement produced this artifact; which official readback proves this effect; which capability and evidence
+led to revenue or loss; which goals are blocked by the same missing capability; and which effect has already
+occurred and must replay to zero. Nodes are goals, opportunities, contracts, capabilities, artifacts, effects,
+readbacks and revenue; edges are `requires`, `produced_by`, `sent_to`, `proved_by` and `earned`. Every node and
+edge carries source ledger fact ids, observed time and confidence/authority. Initial storage remains one local
+append-only ledger with an in-memory index. Add a graph library/database only when a real query needs cycle
+detection, cross-goal dependency planning or multi-device concurrent traversal. This keeps local install
+fast/cheap and prevents a second source of truth.
 
 ```mermaid
 stateDiagram-v2
@@ -524,7 +547,10 @@ flowchart TB
    local destination, license, behavior retained and behavior deliberately omitted. No article-only rationale.
 3. [ ] Introduce the smallest shared economic-kernel contracts used by Paid first: append-only facts,
    capability result envelope, effect key and graph projection. Do not add LangGraph, Temporal, Dagster, a
-   graph database, symlinks, a new service or speculative Upwork code.
+   graph database, either researched CLI, symlinks, a new service or speculative Upwork code. Add provenance
+   fields and answer the five competency questions above with a rebuildable projection. Reuse the
+   `loop-engineering` circuit-breaker/gate/lock shapes only where existing production code has no equivalent;
+   keep them operational and incapable of choosing semantic next actions.
 4. [ ] Make one Paid manager own the complete room conversation, accumulated contract, current artifact,
    buyer-visible goal and final response. Specialists are tools; no handoff may lose conversation ownership.
 5. [ ] Replace hardcoded business-semantic error-to-transition routing with raw structured tool results returned
