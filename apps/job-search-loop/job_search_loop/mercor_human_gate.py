@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -10,6 +11,17 @@ from typing import Any
 
 class HumanGateError(ValueError):
     pass
+
+
+def _identity(reason: str, evidence_ref: str) -> str:
+    """Return a stable logical identity despite model wording drift."""
+    normalized = " ".join(reason.casefold().split())
+    if "project thor assessment" in normalized:
+        return "project_thor_assessment"
+    if "finance interview" in normalized:
+        return "finance_interview"
+    normalized = re.sub(r"[^a-z0-9]+", " ", normalized).strip()
+    return f"{normalized}\n{evidence_ref.strip()}"
 
 
 class HumanGateStore:
@@ -34,9 +46,17 @@ class HumanGateStore:
     def record(self, *, run_id: str, reason: str, evidence_ref: str) -> dict[str, Any]:
         if not all(isinstance(value, str) and value.strip() for value in (run_id, reason, evidence_ref)):
             raise HumanGateError("run_id, reason, and evidence_ref are required")
-        gate_id = hashlib.sha256(f"{reason}\n{evidence_ref}".encode()).hexdigest()[:24]
+        identity = _identity(reason.strip(), evidence_ref.strip())
+        gate_id = hashlib.sha256(identity.encode()).hexdigest()[:24]
         rows = self._rows()
-        existing = next((row for row in rows if row.get("gate_id") == gate_id), None)
+        existing = next(
+            (
+                row
+                for row in rows
+                if _identity(str(row.get("reason", "")), str(row.get("evidence_ref", ""))) == identity
+            ),
+            None,
+        )
         if existing is not None:
             return existing
         row = {
@@ -55,4 +75,14 @@ class HumanGateStore:
         return row
 
     def pending(self) -> list[dict[str, Any]]:
-        return [row for row in self._rows() if row.get("status") == "pending"]
+        pending: list[dict[str, Any]] = []
+        seen: set[str] = set()
+        for row in self._rows():
+            if row.get("status") != "pending":
+                continue
+            identity = _identity(str(row.get("reason", "")), str(row.get("evidence_ref", "")))
+            if identity in seen:
+                continue
+            seen.add(identity)
+            pending.append(row)
+        return pending
