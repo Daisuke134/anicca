@@ -19,7 +19,9 @@ from .direct_cdp import DirectCDPPage
 from .submission_fence import SubmissionFence
 
 
-_FINAL_SUBMIT = re.compile(r"^\s*(submit|submit application)\s*$", re.IGNORECASE)
+_FINAL_SUBMIT = re.compile(
+    r"^\s*(submit|submit application|送信|応募を送信)\s*$", re.IGNORECASE
+)
 
 
 class ActionExecutor:
