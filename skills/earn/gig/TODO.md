@@ -350,7 +350,12 @@ explicit durable checkpoints rather than silent disappearance, but customer work
   and returned `deliverable`. The browser writer then lost the shared CDP lock before any effect; the durable checkpoint
   is `delivery_unknown`, `reason=writer_lock`, `effect=0`, `readback=0`, and no post-send browser evidence exists.
   Therefore do not assume success or blindly resend: on the next natural wake, official exact-room readback must decide
-  whether to deduplicate or send v24 once, with formal delivery OFF, then prove replay-zero. The shared answer owner is
+  whether to deduplicate or send once, with formal delivery OFF, then prove replay-zero. On that wake the fresh v9
+  semantic decision changed naturally to `mode=answer`. The research-capable owner produced a complete talkroom reply;
+  two fresh verifier passes rejected concrete proof/wording defects rather than sending them: unsupported prior-send
+  claims, unsourced official-detail assertions, a missing exploratory-contact template, omission of known LINE ID
+  `@810akrtq`, and an unqualified zero-effect claim. The third natural repair round is now running with those exact
+  findings and must either PASS or leave an explicit failure; no customer effect/readback exists yet. The shared answer owner is
   now allowed to run local read commands and official-source web research while customer mutation remains exclusively
   owned by the fenced browser executor. Do not add a Manledge-only reply path.
 - byusco `18171890` currently holds `casican-review-article-v5.md`, SHA-256
