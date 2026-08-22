@@ -27,8 +27,8 @@ approved provider APIs, existing launchd release system, pytest with plugin auto
 - Create an Upwork account only if the owner email has no existing account; never create a duplicate.
 - Upwork capacity counts active Upwork contracts only. Never read Coconala projects as Upwork capacity.
 - Observe the authenticated Upwork UI/API first, then refine selectors and payloads from receipts.
-- Complete the free-first bootstrap and submit one bounded first-job proposal before adding more
-  general harness abstractions.
+- Complete the application-first bootstrap and submit one bounded first-job proposal before adding
+  more general harness abstractions; Project Catalog publishing is not a prerequisite.
 - Do not move the current `skills/earn/gig/TODO.md` production-repair cursor.
 - Do not add a scheduler, workflow service, browser harness, vector DB or second ledger.
 - Tests cover only money loss, duplicate external effects, data loss, authentication leakage and the
@@ -257,17 +257,18 @@ No later task may jump ahead of the first incomplete row:
 | U10 | Discover and qualify a first-job candidate | **DONE:** usability-test job `~022091106411892491962`; $15, 10–15 proposals, zero interviews, payment/phone verified, and all student/age/English/recording gates match owner evidence |
 | U11 | Resolve application capacity for that candidate | **DONE:** official proposal surface requires 7 Connects; balance/history, offers, invites and proposals are 0, no reward banner is exposed, and the only buy offer is 100 for $15 plus tax |
 | U12 | Freeze one tailored first-job proposal | **DONE:** immutable payload `c37eed9c…c68e926` contains the $15 terms, cover letter, five factual screening answers, no attachments, and zero unsupported claims |
-| U13 | Submit that proposal once | **WAITING ON EXTERNAL SPEND AUTHORITY:** official proposal ID plus Connects before/after; seven Connects are required and available balance is zero |
-| U14 | Replay immediately | Same proposal ID; zero new proposal and zero additional Connects |
-| U15 | Poll and answer the resulting thread | Official story/message IDs and no duplicate reply |
-| U16 | Negotiate and accept profitable terms | Offer ID, exact terms hash and active contract ID |
+| U13 | Maintain a submission-ready queue without spending | Re-read the first candidate; retain at least three live qualified candidates with exact Connects cost, observed age and one factual sealed proposal each; poll Connects history, invitations and messages read-only |
+| U14 | Acquire authorized proposal capacity and submit the best live proposal once | **WALLET EFFECT WAITS FOR AUTHORITY:** purchase the smallest exposed sufficient bundle only after explicit approval, then verify proposal ID plus Connects before/after |
+| U15 | Replay immediately | Same proposal ID; zero new proposal and zero additional Connects |
+| U16 | Poll and answer the resulting thread | Official story/message IDs and no duplicate reply |
+| U17 | Negotiate and accept profitable terms | Offer ID, exact terms hash and active contract ID |
 | U18 | Fulfill and independently verify the work | Artifact hash and independent verifier PASS |
 | U19 | Deliver once | Official submission ID/state and replay with zero duplicate delivery |
 | U20 | Reconcile money and review | Received transaction, fee, costs, payout and honest review evidence |
 | U21 | Repeat on three independent paid jobs | Three contract/payment/review IDs and complete per-job economics |
 
 Later implementation tasks are renumbered only when their first incomplete outcome becomes active.
-All cross-market tasks remain frozen until U20 closes.
+All cross-market tasks remain frozen until the first received Upwork payment closes.
 
 U3 closure evidence: factual profile `~01f5fe272d6df34084` is published with the authentic owner
 photo, Status Online and More than 30 hrs/week. The official completion meter is 40%, identity is
@@ -314,8 +315,11 @@ Marketing Intern history instead; official completion now reads 95%. It next add
 Experience item; official completion now reads 100%. The unfinished Project Catalog item remains a
 private draft and is no longer next. U10 searches and qualifies the first paid-job candidate; U11 records
 the exact proposal Connects requirement and resolves only the capacity needed for that candidate.
-Purchased Connects, Freelancer Plus, Availability Badge and boosts stay disabled without separate
-authorization. Application, Connects-spend and payment effects remain zero.
+Project Catalog publishing is not required for applications and remains parked. Purchased Connects,
+Freelancer Plus, Availability Badge and boosts stay disabled without separate authorization.
+Application, Connects-spend and payment effects remain zero. U13 continues now: it refreshes the
+existing candidate and prepares at least two independent backups instead of waiting passively for a
+non-guaranteed free Connects refill.
 
 ### Task 7: Record Upwork's private action matrix
 

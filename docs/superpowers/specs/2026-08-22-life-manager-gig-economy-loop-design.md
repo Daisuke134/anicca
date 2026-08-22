@@ -79,9 +79,11 @@ learning and mind-wandering detection preserved exactly. The official Find Work 
 small paid job with bounded scope, low competition and delivery in one to three days. The unfinished
 Project Catalog project remains a private draft and is not an acquisition gate. For each qualified job
 the loop opens the proposal surface, records the exact Connects requirement, and submits immediately
-when account-earned capacity is sufficient. Freelancer
-Plus, Availability Badge, proposal boost and purchased Connects stay disabled until a qualified
-opportunity has measured evidence that free acquisition paths are insufficient.
+when authorized Connects capacity is sufficient. Project Catalog publishing, Freelancer Plus,
+Availability Badge and proposal boosting are not prerequisites for outbound applications. Until
+Connects purchasing is authorized, the loop MUST continue read-only discovery, candidate aging,
+qualification, factual proposal sealing and inbox/invitation polling so capital approval never blocks
+preparation work.
 
 U10–U12 are now closed for first candidate `~022091106411892491962`, a $15 fixed-price
 20–30 minute student usability test posted two hours before observation. The owner evidence matches
@@ -92,12 +94,19 @@ History has zero balance and zero transactions; the account UI exposes no free o
 monthly grant, while Buy Connects offers only 100 for $15 plus tax. The exact $15 proposal and five
 screening answers are frozen at SHA-256
 `c37eed9c7a41a712f373504ea1a0555eb6be4a60b4f772763c64d8899c68e926` with no unsupported
-claims or attachments. U13 submission is waiting only on seven Connects; no proposal effect occurred.
+claims or attachments. Submission still needs seven Connects; no proposal effect occurred. U13 now
+keeps this and at least two backup applications submission-ready while wallet authority is absent.
 The official Proposals and Offers readback also shows Offers 0, Invites 0, Active proposals 0 and
 Submitted proposals 0; the Invites tab is empty and no educational Connects reward banner is exposed.
-There is therefore no current zero-Connect submission path for this account.
+There is therefore no current zero-Connect submission path for this account. Free monthly Connects
+are offer-dependent rather than a guaranteed refill on a known date; the account's official Connects
+history is the only acceptance source for a grant. Publishing a Project Catalog listing does not
+create proposal capacity and MUST NOT block the outbound-application path.
 
-The proposal effect kernel remains ready before live execution. It persists the full canonical proposal and
+The proposal effect kernel remains ready before live execution. While spend authority is absent, the
+active work is to re-read the first candidate, mark it stale if its official state changes, maintain at
+least three independently qualified backup candidates, seal one factual proposal per live candidate,
+and poll Connects history, invitations and messages without mutation. It persists the full canonical proposal and
 Connects pre-state, admits one concurrent submitter through an atomic compare-and-set, re-hashes the
 durable body before effect, and verifies only a matching official proposal plus Connects post-state.
 Timeout or lost-ack without readback remains `reconcile_unknown` and cannot resend. Live submit and
@@ -476,13 +485,16 @@ maximum application volume. The deterministic acquisition order is:
 1. Add the required factual Employment History item and read back the required-profile baseline.
 2. Publish three reusable portfolio proofs, then add only truthful optional items until the main
    profile reaches official 100% readback.
-3. Publish one narrow Project Catalog offer with explicit input, output, exclusions, price and time.
-4. Collect only account-earned Connects and zero-Connect invitations before buying acquisition.
-5. Discover recent jobs and prefer clear acceptance criteria, low proposal count, verified payment,
+3. Discover recent jobs and prefer clear acceptance criteria, low proposal count, verified payment,
    client hiring history, low Connects and one-to-three-day delivery.
-6. Freeze a tailored proposal only when the reusable proof matches the job; never deliver the
+4. Maintain at least three live qualified candidates while submission capital is unavailable; re-read
+   official job state before every proposed effect.
+5. Freeze a tailored proposal only when the reusable proof matches the job; never deliver the
    client's complete solution as unpaid application work.
-7. Close contract, delivery, received payment and honest review before increasing price or scope.
+6. Use invitations or granted Connects when present; otherwise purchase only after explicit wallet
+   authorization. Do not publish a Project Catalog listing merely to obtain Connects.
+7. Submit each authorized proposal exactly once, then close contract, delivery, received payment and
+   honest review before increasing price or scope.
 
 The loop optimizes the measured funnel
 `discovered → qualified → proposed → viewed → interviewed → hired → delivered → paid → reviewed`.
@@ -558,7 +570,7 @@ promise of earnings.
 | G1 authorization | Private action-level receipts exist and public defaults remain safe |
 | G1A Upwork identity | Normal owner email/password flow returns the same authenticated Upwork identity twice; no social-login route is used |
 | G2 Upwork discovery | One authenticated official job normalizes with zero mutation |
-| G2A Upwork bootstrap | Official 100% profile, three proof artifacts, one live Project Catalog offer and account-earned Connects readback |
+| G2A Upwork bootstrap | Official 100% profile, three proof artifacts, Connects history readback and at least three live submission-ready candidates |
 | G3 Upwork proposal | One bootstrap-qualified intent, one proposal, proposal ID and Connects readback |
 | G4 Upwork contract | Message, offer and active contract IDs reconcile |
 | G5 Upwork delivery | Artifact QA, one delivery effect and official submission state |
@@ -577,7 +589,7 @@ promise of earnings.
 |---|---|---|
 | Email account bootstrap selects existing-login or signup without duplication | Authenticated identity and account-state receipt | Required |
 | Profile contains only factual owner data and is application-ready | Official profile completeness readback | Required |
-| First acquisition is free-first and review-oriented | 100% profile, three reusable proofs, one Project Catalog offer and no paid acquisition effect | Required |
+| First acquisition is application-first and review-oriented | 100% profile, three reusable proofs, at least three live qualified candidates and no unauthorized paid effect | Required |
 | Discovery reflects current Upwork state | Same job IDs across two authenticated reads | Required |
 | First-job qualification rejects high-competition broad builds | Bounded 1-3 day deliverable, proposals <=20, explicit acceptance and evidence-backed proof | Required |
 | Qualification ignores Coconala runtime state | Upwork active-contract count and provider-scoped ledger query | Required |
