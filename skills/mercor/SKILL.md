@@ -5,7 +5,7 @@ description: "Mercor provider lane for Life Manager: safe Google/Gmail authentic
 
 # Mercor
 
-Mercor is a provider lane of Life Manager's existing Job Hunter system. Use this skill for provider policy and routing; `apps/job-search-loop/` remains the sole owner of browser and application side effects.
+Mercor is a global provider lane of Life Manager's existing Job Hunter system. It is not limited to Japanese jobs: route Japanese, English, bilingual, business, AI-agent, research, data/CRM, product, and other grounded role families through the same fact gate. Use this skill for provider policy and routing; `apps/job-search-loop/` remains the sole owner of browser and application side effects.
 
 ## Canonical owners
 
@@ -29,6 +29,12 @@ Mercor is a provider lane of Life Manager's existing Job Hunter system. Use this
 - Apply only with verified profile facts and a read-back-verified resume artifact.
 - Do not impersonate interviews or assessments. Unsupported questions, CAPTCHA, and ambiguous attestations become `needs_human`.
 - Count earnings only from an authoritative Mercor Earnings/contract settlement read-back; never count views, invitations, estimates, or pending offers.
+
+## Calendar policy
+
+- Reuse `apps/job-search-loop/job_search_loop/interview_scheduling.py` and `calendar_sync.py` for every Mercor interview, regardless of locale.
+- Classify the Gmail/Mercor thread, require explicit start/end/timezone, check Calendar FreeBusy, and create one idempotent private event with prep reminders.
+- Human glue is limited to authorization, ambiguous scheduling, attending the interview, and human-bound assessments. Never impersonate an interview.
 
 ## Loop contract
 

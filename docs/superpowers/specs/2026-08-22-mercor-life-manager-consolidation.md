@@ -62,7 +62,11 @@ Do not create `profitable-claude`-style second executors, a second Mercor loop, 
 - If recovery/reset/wait appears, record the visible URL/text and stop.
 - Use a dedicated Mercor browser profile; never navigate the job-search or trusted daily-driver tab.
 
-## 5. Loop behavior
+## 5. Global role and locale scope
+
+Mercor is not a Japanese-only lane. The provider must route every supported locale and role family through the same Job Hunter fact gate: Japanese, English, bilingual, business operations, AI-agent evaluation, research, data/CRM, product, and other roles are eligible when the approved profile and the live listing support them. Locale selects the approved material variant; it does not restrict discovery to Japanese jobs.
+
+## 6. Loop behavior
 
 The existing hourly Job Hunter acquisition loop becomes the single Mercor-capable loop. It must:
 
@@ -73,7 +77,18 @@ The existing hourly Job Hunter acquisition loop becomes the single Mercor-capabl
 5. Re-open the application list after any submit and store evidence plus the external result.
 6. Record settled earnings only when the Mercor Earnings UI proves payment; views, invitations, offers, and estimates are not earnings.
 
-## 6. Current migration state
+## 7. Calendar and minimal-human-glue flow
+
+Mercor interview messages enter the existing Job Hunter inbox lane. Reuse `apps/job-search-loop/job_search_loop/interview_scheduling.py` and `calendar_sync.py`; do not create a Mercor-specific Calendar writer.
+
+1. Classify the Gmail/Mercor message and require a clear role, source thread, timezone, start, and end.
+2. Read Google Calendar FreeBusy for the primary calendar.
+3. Choose the earliest explicitly offered slot that is free; never invent a time.
+4. Create or update one idempotent private Calendar event keyed by the source thread and normalized start time, with 3-day and 1-day reminders.
+5. Register the interview-prep job and deliver grounded prep windows through the existing inbox/prep loop.
+6. Human glue remains only for Gmail/Calendar authorization, ambiguous scheduling, and attending the interview or taking a human-bound assessment. The system never impersonates the interview.
+
+## 8. Current migration state
 
 - Mercor skill/spec exist in the migration source and have been read back.
 - Canonical Life Manager repo already owns `skills/job-hunter/`, `apps/job-search-loop/`, and `loops/job-hunter/`.
@@ -81,7 +96,7 @@ The existing hourly Job Hunter acquisition loop becomes the single Mercor-capabl
 - Japanese evaluator application is `in_progress_2_of_3`; Assessment remains; final submission is not observed.
 - Mercor Summary currently resets after reload and is tracked as `summary_unpersisted`.
 
-## 7. Migration acceptance gate
+## 9. Migration acceptance gate
 
 Do not delete or archive the migration source until all are true:
 
@@ -93,13 +108,15 @@ Do not delete or archive the migration source until all are true:
 - A repository-wide reference scan shows no production Mercor path still depends on `profitable-claude`.
 - Only after the above read-back may `profitable-claude` be archived/deleted as a separate destructive operation.
 
-## 8. Remaining TODO
+## 10. Atomic TODO (ordered)
 
-1. Copy the Mercor provider policy and skill facade into this repository.
-2. Add the Mercor provider adapter to the existing job-search runtime.
-3. Reconcile the Japanese evaluator Assessment and mark form vs human interview.
-4. Fix or explicitly quarantine the Summary persistence gap.
-5. Run one isolated Mercor pass through the existing Job Hunter launchd route.
-6. Verify application/earnings evidence and Telegram reporting.
-7. Remove all production references to `profitable-claude`.
-8. Obtain a final deletion check-in before deleting the old repository checkout/history.
+1. [x] Copy the Mercor provider policy and skill facade into this repository.
+2. [ ] Add the Mercor provider adapter to the existing job-search runtime; keep ATS, Gmail, Calendar, ledger, and browser side effects in their existing owners.
+3. [ ] Route all locales and role families through one material-variant/fact gate; remove any Japanese-only filter.
+4. [ ] Reconcile the Japanese evaluator Assessment and mark form vs human interview.
+5. [ ] Add a Mercor fixture to the existing Gmail→FreeBusy→Calendar idempotency tests.
+6. [ ] Fix or explicitly quarantine the Summary persistence gap.
+7. [ ] Run one isolated Mercor pass through the existing Job Hunter launchd route.
+8. [ ] Verify application/earnings evidence, Calendar read-back, prep delivery, and Telegram reporting.
+9. [ ] Remove all production references to `profitable-claude`.
+10. [ ] Obtain a final deletion check-in before deleting the old repository checkout/history.
