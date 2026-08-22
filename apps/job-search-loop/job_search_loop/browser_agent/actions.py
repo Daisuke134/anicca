@@ -104,7 +104,20 @@ class ActionExecutor:
             else:
                 if action.file_path is None or not Path(action.file_path).is_file():
                     raise ValueError("upload requires an existing file")
-                await target.set_input_files(str(action.file_path), timeout=self._timeout_ms)
+                is_file_input = await target.evaluate(
+                    "el => el.tagName === 'INPUT' && el.type === 'file'"
+                )
+                if is_file_input:
+                    await target.set_input_files(
+                        str(action.file_path), timeout=self._timeout_ms
+                    )
+                else:
+                    async with page.expect_file_chooser(
+                        timeout=self._timeout_ms
+                    ) as chooser_info:
+                        await target.click(timeout=self._timeout_ms)
+                    chooser = await chooser_info.value
+                    await chooser.set_files(str(action.file_path))
         elif action.kind == "scroll":
             if action.delta_y is None or abs(action.delta_y) > 10_000:
                 raise ValueError("scroll requires bounded delta_y")

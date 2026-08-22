@@ -8,7 +8,10 @@ duplicate executor. Use `job_search_loop.browser_agent.RowResumer.restore(endpoi
 row_run_id, canonical_url)` for each row. It attaches a new row or restores the
 validated checkpoint and tagged page in the existing default context. Obtain the current
 page through `page(handle)`, and call `close_owned(handle)` only after that row is
-finished. Never call `chromium.launch`, `browser.close`, `context.close`, or close
+terminal or its full step budget is exhausted. Never close an owned page merely
+because you saved an intermediate checkpoint or are about to issue the next action;
+keep that same tagged page attached for the whole row inside this wake. Never call
+`chromium.launch`, `browser.close`, `context.close`, or close
 another tab. Do not refuse browser work merely because the daily-driver process
 already exists—that existing process is the browser transport owned by this loop.
 Before deciding each action and after every meaningful page change, call
