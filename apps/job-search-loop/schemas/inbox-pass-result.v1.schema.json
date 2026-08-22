@@ -24,6 +24,20 @@
         }
       }
     },
+    "mercor_calendar_events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["work_id", "event_id", "calendar_event_key", "evidence_ref"],
+        "properties": {
+          "work_id": {"type": "string", "minLength": 1},
+          "event_id": {"type": "string", "minLength": 1},
+          "calendar_event_key": {"type": "string", "minLength": 1},
+          "evidence_ref": {"type": "string", "minLength": 1}
+        }
+      }
+    },
     "processed_threads": {"type": "integer"},
     "processed_thread_ids": {
       "type": "array",

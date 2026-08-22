@@ -100,6 +100,19 @@ esac
   --store "$JOB_SEARCH_STATE_ROOT/mercor/work-events.jsonl" \
   --outbox "$TELEGRAM_OUTBOX" \
   --output "$EVIDENCE/mercor-work-sync.json"
+"$JOB_SEARCH_PYTHON" - "$RESULT_PATH" "$JOB_SEARCH_STATE_ROOT/mercor/work-events.jsonl" "$TELEGRAM_OUTBOX" "$EVIDENCE/mercor-calendar-sync.json" <<'PY'
+import json
+import sys
+from pathlib import Path
+from job_search_loop.mercor_calendar_sync import sync_calendar_events
+
+result_path, store_path, outbox_path, output_path = map(Path, sys.argv[1:])
+payload = json.loads(result_path.read_text(encoding="utf-8"))
+value = sync_calendar_events(payload=payload, store_path=store_path, outbox_path=outbox_path)
+output_path.write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+output_path.chmod(0o600)
+print(json.dumps(value, ensure_ascii=False))
+PY
 MERCOR_EARNINGS_SNAPSHOT="${MERCOR_EARNINGS_SNAPSHOT:-$JOB_SEARCH_STATE_ROOT/mercor/earnings-readback.json}"
 if [[ -f "$MERCOR_EARNINGS_SNAPSHOT" ]]; then
   "$JOB_SEARCH_PYTHON" -m job_search_loop.mercor_earnings_sync \

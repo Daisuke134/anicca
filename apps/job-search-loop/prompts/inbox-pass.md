@@ -111,3 +111,10 @@ contract, permission to use AI, acceptance, or payment from silence or an offer
 estimate. Use `needs_human` for human-bound work and emit `paid_settled` only
 with an explicit paid/settled status, payment ID, and amount. The deterministic
 driver persists these events idempotently and sends a Telegram receipt.
+
+When the existing Calendar workflow creates or updates an explicit interview
+event, optionally emit `mercor_calendar_events` with the application/listing
+`work_id`, a unique event transition ID, the returned private
+`calendar_event_key`, and a redacted Gmail evidence reference. A Calendar artifact
+does not authorize paid work by itself; never emit `authorized_work` merely because
+an interview was scheduled.

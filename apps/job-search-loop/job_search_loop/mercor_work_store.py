@@ -39,6 +39,9 @@ class WorkStateStore:
     def events(self, work_id: str) -> list[dict[str, Any]]:
         return [row for row in self._rows() if row.get("work_id") == work_id]
 
+    def artifacts(self, work_id: str) -> list[dict[str, Any]]:
+        return [row for row in self.events(work_id) if row.get("kind") == "artifact"]
+
     def current_state(self, work_id: str) -> str:
         rows = self.events(work_id)
         return str(rows[-1]["state"]) if rows else "submitted_pending_review"
@@ -66,6 +69,42 @@ class WorkStateStore:
         event.update({"work_id": work_id, "event_id": event_id})
         with self.path.open("a", encoding="utf-8") as handle:
             handle.write(json.dumps(event, ensure_ascii=False, default=str) + "\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.chmod(self.path, 0o600)
+        return event
+
+    def record_artifact(
+        self,
+        *,
+        work_id: str,
+        event_id: str,
+        artifact_type: str,
+        evidence_ref: str,
+        artifact_key: str,
+    ) -> dict[str, Any]:
+        if not all(isinstance(value, str) and value.strip() for value in (work_id, event_id, artifact_type, evidence_ref, artifact_key)):
+            raise WorkStoreError("artifact identity and evidence fields are required")
+        rows = self._rows()
+        existing = next((row for row in rows if row.get("event_id") == event_id), None)
+        expected = {
+            "work_id": work_id,
+            "event_id": event_id,
+            "kind": "artifact",
+            "artifact_type": artifact_type,
+            "artifact_key": artifact_key,
+            "evidence_ref": evidence_ref,
+        }
+        if existing is not None:
+            if any(existing.get(key) != value for key, value in expected.items()):
+                raise WorkStoreError("artifact event_id already exists with different data")
+            return existing
+        event = {
+            **expected,
+            "state": self.current_state(work_id),
+        }
+        with self.path.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(event, ensure_ascii=False) + "\n")
             handle.flush()
             os.fsync(handle.fileno())
         os.chmod(self.path, 0o600)
