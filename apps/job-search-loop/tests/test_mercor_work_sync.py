@@ -57,6 +57,42 @@ class MercorWorkSyncTests(unittest.TestCase):
             )
             self.assertEqual(output, {"synced_count": 0, "events": []})
 
+    def test_runtime_sync_accepts_explicit_authorization_and_acceptance_chain(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            states = [
+                ("selected", {}),
+                ("contracted", {}),
+                ("authorized_work", {"authorization_policy": "explicitly_allowed"}),
+                ("work_submitted", {}),
+                ("accepted", {"acceptance_status": "accepted"}),
+            ]
+            for index, (next_state, extra) in enumerate(states):
+                result = root / f"result-{index}.json"
+                result.write_text(
+                    json.dumps(
+                        {
+                            "mercor_work_events": [
+                                {
+                                    "work_id": "application-1",
+                                    "event_id": f"event-{index}",
+                                    "next_state": next_state,
+                                    "evidence_ref": f"evidence://{next_state}",
+                                    **extra,
+                                }
+                            ]
+                        }
+                    ),
+                    encoding="utf-8",
+                )
+                sync_result(
+                    result_path=result,
+                    store_path=root / "work-events.jsonl",
+                    outbox_path=root / "telegram.sqlite3",
+                    sender=lambda **_: {"status": "sent", "message_id": "telegram-chain"},
+                )
+            self.assertEqual(WorkStateStore(root / "work-events.jsonl").current_state("application-1"), "accepted")
+
 
 if __name__ == "__main__":
     unittest.main()
