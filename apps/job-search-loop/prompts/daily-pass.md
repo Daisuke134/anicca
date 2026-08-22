@@ -107,10 +107,10 @@ owner; after verification the next wake signs in and resumes this same applicati
 
 ## Resume and form completion
 
-Use `runtime upload` for every visible control whose label means resume autofill,
-upload, attach, or choose file, even when Workday exposes that control with role
-`button`. Never ordinary-click such a control: it opens a native file chooser that
-only `runtime upload` is permitted to intercept. After upload, verify from fresh
+Use ordinary click for a workflow choice such as `Autofill with Resume`; it selects
+the application path and may navigate to authentication before any file control
+exists. Use `runtime upload` only for a visible control that actually asks to upload,
+attach, browse, or choose a file. After upload, verify from fresh
 visible UI that the correct filename is present. Review and correct every visible
 required field and validation message. Do not trust resumed values merely because a
 field is filled. Answer all employer-specific questions by reading their current

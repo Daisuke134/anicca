@@ -214,6 +214,7 @@ class DirectCDPPage:
         return result
 
     async def click_target(self, target: dict[str, Any]) -> None:
+        before_url = self.url
         resolved = await self.resolve_target(target, scroll=True)
         x, y = float(resolved["x"]), float(resolved["y"])
         await self.call("Input.dispatchMouseEvent", {"type": "mouseMoved", "x": x, "y": y})
@@ -221,6 +222,10 @@ class DirectCDPPage:
         await self.call("Input.dispatchMouseEvent", {"type": "mouseReleased", "x": x, "y": y, "button": "left", "clickCount": 1})
         await asyncio.sleep(0.35)
         self.url = str(await self.evaluate("() => location.href") or self.url)
+        if self.url != before_url:
+            await self.wait_ready()
+            await self._ensure_viewport()
+            await asyncio.sleep(0.25)
 
     async def type_target(self, target: dict[str, Any], text: str) -> None:
         await self.click_target(target)
