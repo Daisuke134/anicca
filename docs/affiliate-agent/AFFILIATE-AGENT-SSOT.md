@@ -7087,3 +7087,19 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   advice now becomes a no-effect. All 23 tests and shell syntax pass. Installed
   release is `20260823T003658-c5df7405`; source/runtime CLI SHA-256 is
   `d1a44c7b4585dbbde752e739e3f8beea35fc0631996dd513e21c5c77092f1f9b`.
+- Repost commit `372008f25` changes the distribution cadence from hourly to
+  replay-safe local half-hour slots. The same existing launchd owner chooses
+  original versus source-backed quote content; it does not create a parallel
+  publisher. The first daily generic post remains original, later passes use
+  learned `original_ratio` (currently `0.15`), and every public effect still
+  requires the source-specific two-value critic gate. Installed release is
+  `20260823T004023-372008f2`; launchd readback is `run interval = 1800 seconds`,
+  source/runtime CLI SHA-256 is
+  `884a7d2b941d6bee83c393dc3aac4fb598d8495cd9ee1e94b0f208806d493814`.
+  Live owner run `20260823T004041` selected `quote` / `en` / `primary`, used
+  source `https://x.com/0xkydo/status/2090894947335750142`, and passed the
+  independent critic with `supported=true`, `useful=true`,
+  `source_specific=true`, and values `procedure` plus `failure_condition`.
+  Exact X is `https://x.com/selawmqt/status/2091191175739052050`; Telegram
+  message is `29134`, and the owner exited zero. This is audience distribution,
+  not an Affiliate placement, provider transaction, or money.

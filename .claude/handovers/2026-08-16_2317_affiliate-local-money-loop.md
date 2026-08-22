@@ -2211,3 +2211,18 @@ no-effect. All 23 Repost tests and shell syntax pass. Installed release is
 `/Users/anicca/loops/releases/20260823T003658-c5df7405`; source/runtime CLI
 SHA-256 is
 `d1a44c7b4585dbbde752e739e3f8beea35fc0631996dd513e21c5c77092f1f9b`.
+
+Repost commit `372008f25` now runs the existing owner in local half-hour slots
+instead of hourly slots. Installed release is
+`/Users/anicca/loops/releases/20260823T004023-372008f2`; launchd readback is
+`run interval = 1800 seconds`, and source/runtime CLI SHA-256 is
+`884a7d2b941d6bee83c393dc3aac4fb598d8495cd9ee1e94b0f208806d493814`.
+The safe-kicked owner run `20260823T004041` selected `quote` / `en` / `primary`
+with `original_ratio=0.15`. Its critic returned `supported=true`, `useful=true`,
+`source_specific=true`, and values `procedure` plus `failure_condition`.
+Exact public X is `https://x.com/selawmqt/status/2091191175739052050`, quoting
+`https://x.com/0xkydo/status/2090894947335750142`; Telegram is `29134`, owner
+exit is zero. This is distribution, not money. Next atom: let scheduled owners
+accumulate measured original/quote samples and optimize the ratio; Affiliate
+completion still requires the first official PartnerStack transaction joined to
+its exact placement and subsequent lifecycle/rolling-net proof.
