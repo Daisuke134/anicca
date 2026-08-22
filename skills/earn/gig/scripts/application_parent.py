@@ -900,7 +900,7 @@ class CdpParentEffects:
         ) as ws:
             call_id = 1
             await self._call(ws, "Page.enable", {}, call_id)
-            call_id = await self._navigate(ws, url, call_id + 1)
+            call_id = await self._navigate_retry_once(ws, url, call_id + 1)
             page, call_id = await self._eval_json(
                 ws,
                 """JSON.stringify((()=>{
