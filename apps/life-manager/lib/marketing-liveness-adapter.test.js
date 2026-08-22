@@ -163,3 +163,9 @@ test("TikTok metric snapshot renders every account value instead of an aggregate
   assert.match(sent[0], /Latest 20 videos views 11873、Latest 20 videos likes 110、Latest 20 videos comments 1、Latest 20 videos shares 2/);
   assert.doesNotMatch(sent[0], /Account totals 8/);
 });
+
+test("immutable product summary renders through the durable Telegram adapter", async () => {
+  const payload = { lane: "marketing-product-summary-honne", product: "honne-ai", locale: "en", platform: "multi", status: "summary", period: "daily", observed_at: "2026-08-22T13:00:00.000Z", summary_ref: `object://sha256/${HASH}` }; const job = buildMarketingLivenessJob({ tenantId: "dais-local", telegramTokenRef: "secret://telegram/bot-token", telegramChatRef: "telegram-chat://owner", payload }); const sent = [];
+  const result = await executeMarketingLivenessJob(job, { secretProvider: { get: async () => "fake-token" }, chatProvider: { get: async () => "fake-chat" }, snapshotProvider: { get: async () => ({ kind: "marketing_product_metric_summary", period: "daily", report_key: "2026-08-22", source_refs: [`object://sha256/${HASH}`], message: "Life Manager::: Honne AIの日次プロダクトメトリクスです。" }) }, sendTelegram: async (_token, _chat, message) => { sent.push(message); return { ok: true, result: { message_id: 706 } }; } });
+  assert.equal(sent[0], "Life Manager::: Honne AIの日次プロダクトメトリクスです。"); assert.equal(result.receipt.report_key, "2026-08-22"); assert.equal(verifyMarketingLivenessReceipt(result.receipt), true);
+});

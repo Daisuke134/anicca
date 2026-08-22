@@ -145,9 +145,14 @@ function parsePayloadRef(ref) {
   if (!match) throw new Error("marketing liveness ref is invalid");
   let payload;
   try { payload = JSON.parse(decodeURIComponent(match[1])); } catch { throw new Error("marketing liveness ref is invalid"); }
-  for (const key of ["lane", "product", "locale", "platform", "status", "public_url"]) {
+  for (const key of ["lane", "product", "locale", "platform", "status"]) {
     if (!Object.hasOwn(payload, key)) throw new Error("marketing liveness ref is invalid");
   }
+  if (payload.status === "summary") {
+    if (!IDENTIFIER.test(payload.lane) || !IDENTIFIER.test(payload.product) || !LOCALE.test(payload.locale) || payload.platform !== "multi" || !["daily", "weekly"].includes(payload.period) || !SNAPSHOT_REF.test(String(payload.summary_ref || "")) || !Number.isFinite(Date.parse(payload.observed_at))) throw new Error("marketing summary ref is invalid");
+    return payload;
+  }
+  if (!Object.hasOwn(payload, "public_url")) throw new Error("marketing liveness ref is invalid");
   if (payload.status === "observed") {
     if (
       !IDENTIFIER.test(payload.lane) || !IDENTIFIER.test(payload.product) || !LOCALE.test(payload.locale)
@@ -229,6 +234,7 @@ function planMarketingLivenessJobs(input = {}) {
 }
 
 function renderMessage(payload) {
+  if (payload.status === "summary") return payload.message;
   if (payload.status === "observed") {
     const label = (key) => ({ views: "Views", reach: "Reach", impressions: "Impressions", likes: "Likes", comments: "Comments", shares: "Shares", saves: "Saves", watch_time: "Watch time", average_watch_time: "Average watch time", completion: "Completion", engagement: "Engagement", account_totals: "Account totals", account_followers: "Followers", account_following: "Following", account_total_likes: "Account total likes", account_videos: "Videos", account_recent_views: "Latest 20 videos views", account_recent_likes: "Latest 20 videos likes", account_recent_comments: "Latest 20 videos comments", account_recent_shares: "Latest 20 videos shares" }[key] || key);
     const measured = []; const unavailable = [];
@@ -280,6 +286,12 @@ async function executeMarketingLivenessJob(job, deps = {}) {
   const token = await deps.secretProvider.get(job.tenant_id, job.input_refs.telegram_token_ref);
   const chatId = await deps.chatProvider.get(job.tenant_id, job.input_refs.telegram_chat_ref);
   let renderedPayload = payload;
+  if (payload.status === "summary") {
+    if (!deps.snapshotProvider) throw new Error("marketing summary snapshot provider is required");
+    const snapshot = await deps.snapshotProvider.get(job.tenant_id, payload.summary_ref);
+    if (!snapshot || snapshot.kind !== "marketing_product_metric_summary" || snapshot.period !== payload.period || typeof snapshot.message !== "string" || !snapshot.message.startsWith("Life Manager:::") || Buffer.byteLength(snapshot.message) > 4096 || !Array.isArray(snapshot.source_refs) || snapshot.source_refs.some((ref) => !SNAPSHOT_REF.test(ref))) throw new Error("marketing summary snapshot mismatch");
+    renderedPayload = { ...payload, report_key: snapshot.report_key, source_refs: snapshot.source_refs, message: snapshot.message };
+  }
   if (payload.status === "observed" && payload.metrics === undefined) {
     if (!deps.snapshotProvider) throw new Error("marketing metric snapshot provider is required");
     const snapshot = await deps.snapshotProvider.get(job.tenant_id, payload.snapshot_ref);
