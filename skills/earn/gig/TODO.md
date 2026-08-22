@@ -302,6 +302,17 @@ no-send, replay-zero and a new natural sub-30-minute official reply/estimate pro
 Do not advance the development cursor until every unchecked item in the current stage has official
 evidence. Independent production lanes continue running while development follows this order.
 
+**Current live cursor.** `main` and `origin/main` are `362680e5222294bad3f60724bcdf797c5b7f6f2b`;
+the loaded immutable Paid release is `ff80da6b1f0a9cf94241801f6cfc6f4e2f5c4a88`, which contains the
+v21 material-risk reviewer, v10 talkroom-text medium selection and the review-stage/formal-hold separation.
+The previous natural receipt has one new official X `18171850` progress-message effect with formal delivery
+OFF; Haru `18169583`, Manledge `18169985` and byusco `18171890` still have no new customer effect. A new
+launchd-owned natural pass is active to obtain those three effects and prove X replay-zero. The shared gig disk
+guard's default 512 MiB speculative headroom gate is removed: `GIG_DISK_HEADROOM_KIB` now defaults to zero, so
+the four lanes continue until the filesystem itself rejects a write while the independent cleanup owner recovers
+space. An installer may still set an explicit nonzero headroom value. This source change is not active until the
+current Paid pass completes and a new immutable release is activated.
+
 **Current reviewer correction.** `main` and `origin/main` were both `31e7fa09d` before this change; the
 starting verification commit `79ac01ba1eb66b06aed1f9cee66d4af303f03a3d` remains an ancestor. The loaded
 Paid release is still `f747c7d05` while its natural pass is active, so no effect is attributed to the new

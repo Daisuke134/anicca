@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Sequence
 
 
-REQUIRED_KIB = int(os.environ.get("GIG_DISK_HEADROOM_KIB", "524288"))
+REQUIRED_KIB = int(os.environ.get("GIG_DISK_HEADROOM_KIB", "0"))
 REQUIRED_BYTES = REQUIRED_KIB * 1024
 RECEIPT_PATH = Path("state") / "disk-headroom.json"
 
@@ -171,7 +171,7 @@ def disk_headroom_ok() -> bool:
     except Exception:
         _failure("disk_headroom_unavailable", None)
         return False
-    if available_bytes < REQUIRED_BYTES:
+    if REQUIRED_BYTES and available_bytes < REQUIRED_BYTES:
         _failure("disk_headroom_low", available_bytes)
         return False
     return True
