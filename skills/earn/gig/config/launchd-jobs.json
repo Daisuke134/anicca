@@ -103,6 +103,8 @@
         "{{RELEASE}}/skills/earn/gig/scripts/providers/upwork_browser_provider.py",
         "--cdp-base",
         "http://127.0.0.1:9233",
+        "--candidates",
+        "{{RELEASE}}/skills/earn/gig/config/upwork-candidates.public.json",
         "--output",
         "{{GIG_STATE_DIR}}/state/upwork-free-loop.json"
       ],

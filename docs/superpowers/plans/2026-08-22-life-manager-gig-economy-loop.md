@@ -353,9 +353,16 @@ U13 atomic order:
 5. **DONE:** official proposal links are persisted separately as offer, active, submitted and
    fail-visible unclassified stable-ID arrays. Current official Active 0 and Submitted 0 readback
    produces empty arrays for both without inventing an application effect.
-6. Re-read every nonterminal job detail and record open, closed, removed or unknown without inference.
+6. **DONE:** the public candidate config drives official detail reads on every five-minute wake and
+   records `open`, `closed`, `removed` or fail-visible `unknown` only from Upwork markers. Live E2E
+   reads primary `~022091106411892491962` open/7 Connects, parked
+   `~022091070478975551162` open/26 Connects, and historical
+   `~022091070238314681977` closed with `This job is no longer available`; every row carries its own
+   evidence SHA-256. Eleven focused tests pass.
 7. Record each terminal transition once with official reason, observation time and receipt hash.
-8. Re-read candidate `~022091106411892491962`; retire it from the ready queue if officially unavailable.
+8. **DONE:** candidate `~022091106411892491962` still exposes the official 7-Connect proposal entry,
+   so it remains in the ready queue rather than being falsely retired. Balance remains 0 and no
+   proposal effect occurred.
 9. Discover recent jobs twice and qualify replacements until three live sealed candidates exist.
 10. Read free Connects history and refunds; never purchase, withdraw or submit without sufficient free capacity.
 11. Verify a repeated reconciliation produces no duplicate transition or external effect; commit/push.

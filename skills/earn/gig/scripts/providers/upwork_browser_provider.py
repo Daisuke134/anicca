@@ -30,12 +30,18 @@ PROPOSALS_URL = "https://www.upwork.com/nx/proposals/"
 CATALOG_URL = "https://www.upwork.com/nx/project-dashboard/?step=approved"
 CONTRACTS_URL = "https://www.upwork.com/nx/wm/freelancer/home"
 MESSAGES_URL = "https://www.upwork.com/ab/messages/rooms/"
+DEFAULT_CANDIDATES = SCRIPTS.parent / "config" / "upwork-candidates.public.json"
 _COUNT_LABELS = {
     "offers": r"Offers\s*\((\d+)\)",
     "invites": r"Invites from clients\s*\((\d+)\)",
     "active_proposals": r"Active proposals\s*\((\d+)\)",
     "submitted_proposals": r"Submitted proposals\s*\((\d+)\)",
 }
+_CONNECTS_REQUIRED = re.compile(
+    r"Send a proposal for:\s*(\d+)\s+Connects|"
+    r"Required Connects to submit a proposal:\s*(\d+)",
+    re.IGNORECASE,
+)
 
 
 def parse_connects(text: str) -> dict[str, Any]:
@@ -190,6 +196,50 @@ def parse_messages(text: str, links: list[dict[str, Any]]) -> dict[str, Any]:
     return {"message_rooms": rooms, "unread_message_room_ids": sorted(set(unread))}
 
 
+def load_candidates(path: Path) -> list[dict[str, str]]:
+    value = json.loads(path.read_text(encoding="utf-8"))
+    candidates = value.get("candidates") if isinstance(value, dict) else None
+    if not isinstance(candidates, list):
+        raise ValueError("upwork_candidate_config_invalid")
+    result: list[dict[str, str]] = []
+    seen: set[str] = set()
+    for item in candidates:
+        if not isinstance(item, dict):
+            raise ValueError("upwork_candidate_config_invalid")
+        job_id = str(item.get("job_id") or "")
+        job_url = str(item.get("job_url") or "")
+        if not re.fullmatch(r"~\d{15,}", job_id) or job_id not in job_url or job_id in seen:
+            raise ValueError("upwork_candidate_config_invalid")
+        seen.add(job_id)
+        result.append({key: str(item.get(key) or "") for key in (
+            "job_id", "job_url", "queue", "title",
+        )})
+    return result
+
+
+def parse_candidate(
+    candidate: dict[str, str], text: str, evidence_sha256: str,
+) -> dict[str, Any]:
+    lowered = (text or "").lower()
+    if "this job has been removed" in lowered or "removed from upwork" in lowered:
+        status, marker = "removed", "removed"
+    elif "this job is no longer available" in lowered:
+        status, marker = "closed", "no_longer_available"
+    elif _CONNECTS_REQUIRED.search(text or "") and "Available Connects:" in (text or ""):
+        status, marker = "open", "proposal_entry"
+    else:
+        status, marker = "unknown", "no_authoritative_marker"
+    connects = _CONNECTS_REQUIRED.search(text or "")
+    return {
+        **candidate,
+        "status": status,
+        "official_marker": marker,
+        "connects_required": int(next(value for value in connects.groups() if value))
+        if connects else None,
+        "evidence_sha256": evidence_sha256,
+    }
+
+
 def _read_evidence(path: Path, expected_url: str) -> tuple[str, str, list[dict[str, Any]]]:
     value = json.loads(path.read_text(encoding="utf-8"))
     if value.get("navigated_ok") is not True or value.get("url") != expected_url:
@@ -214,16 +264,21 @@ def _atomic_write(path: Path, value: dict[str, Any]) -> None:
     os.replace(temporary, path)
 
 
-async def observe(output: Path) -> dict[str, Any]:
+async def observe(output: Path, candidates_path: Path = DEFAULT_CANDIDATES) -> dict[str, Any]:
     pass_id = f"upwork-free-{int(time.time())}"
     artifacts: dict[str, str] = {}
     pages: dict[str, str] = {}
     links: dict[str, list[dict[str, Any]]] = {}
-    for sequence, (label, url) in enumerate((
+    candidates = load_candidates(candidates_path)
+    targets = [
         ("connects", CONNECTS_URL), ("invites", INVITES_URL),
         ("proposals", PROPOSALS_URL), ("catalog", CATALOG_URL),
         ("contracts", CONTRACTS_URL), ("messages", MESSAGES_URL),
-    ), start=1):
+    ] + [
+        (f"candidate-{item['job_id'].lstrip('~')}", item["job_url"])
+        for item in candidates
+    ]
+    for sequence, (label, url) in enumerate(targets, start=1):
         for attempt in range(1, 4):
             artifact = Path(await navigate_and_snapshot(
                 pass_id, f"{sequence:02d}-{attempt}", label, url, "read_only", 2,
@@ -249,6 +304,14 @@ async def observe(output: Path) -> dict[str, Any]:
         **parse_catalog(pages["catalog"]),
         **parse_contracts(pages["contracts"], links["contracts"]),
         **parse_messages(pages["messages"], links["messages"]),
+        "candidate_jobs": [
+            parse_candidate(
+                item,
+                pages[f"candidate-{item['job_id'].lstrip('~') }"],
+                artifacts[f"candidate-{item['job_id'].lstrip('~') }"],
+            )
+            for item in candidates
+        ],
         "evidence_sha256": artifacts,
     }
     state["can_submit_public_job"] = state["balance"] > 0
@@ -259,13 +322,14 @@ async def observe(output: Path) -> dict[str, Any]:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--cdp-base", default="http://127.0.0.1:9233")
+    parser.add_argument("--candidates", type=Path, default=DEFAULT_CANDIDATES)
     parser.add_argument(
         "--output", type=Path,
         default=Path(os.path.expanduser("~/gig/state/upwork-free-loop.json")),
     )
     args = parser.parse_args()
     os.environ["CLOAK_CDP_BASE_URL"] = args.cdp_base.rstrip("/")
-    state = asyncio.run(observe(args.output.expanduser()))
+    state = asyncio.run(observe(args.output.expanduser(), args.candidates.expanduser()))
     print(json.dumps(state, ensure_ascii=False, sort_keys=True, separators=(",", ":")))
     return 0
 

@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "candidates": [
+    {
+      "job_id": "~022091106411892491962",
+      "job_url": "https://www.upwork.com/jobs/~022091106411892491962",
+      "queue": "ready",
+      "title": "2 Students needed for short usability test - 20-30 minutes"
+    },
+    {
+      "job_id": "~022091070478975551162",
+      "job_url": "https://www.upwork.com/jobs/~022091070478975551162",
+      "queue": "parked",
+      "title": "Need an AI Product Comparison Engine built."
+    },
+    {
+      "job_id": "~022091070238314681977",
+      "job_url": "https://www.upwork.com/jobs/~022091070238314681977",
+      "queue": "historical_observed",
+      "title": "AI Developer Needed for RAG Document Search & Q&A MVP"
+    }
+  ]
+}

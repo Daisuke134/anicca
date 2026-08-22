@@ -14,6 +14,8 @@ for directory in (SCRIPTS, PROVIDERS):
         sys.path.insert(0, str(directory))
 
 from upwork_browser_provider import (  # noqa: E402
+    load_candidates,
+    parse_candidate,
     parse_catalog,
     parse_connects,
     parse_contracts,
@@ -104,6 +106,37 @@ def test_extracts_stable_official_ids_instead_of_titles():
     assert state["submitted_proposal_entities"][0]["id"] == "submitted-99"
 
 
+def test_classifies_candidate_only_from_official_job_markers():
+    candidate = {"job_id": "~01", "job_url": "https://www.upwork.com/jobs/~01"}
+    opened = parse_candidate(
+        candidate,
+        "Job title\nSend a proposal for: 7 Connects\nAvailable Connects: 0\n",
+        "a" * 64,
+    )
+    assert (opened["status"], opened["connects_required"]) == ("open", 7)
+    parked = parse_candidate(
+        candidate,
+        "Required Connects to submit a proposal: 26\nAvailable Connects: 0\n",
+        "e" * 64,
+    )
+    assert (parked["status"], parked["connects_required"]) == ("open", 26)
+    assert parse_candidate(
+        candidate, "This job is no longer available.\nHired: 1\n", "b" * 64,
+    )["status"] == "closed"
+    assert parse_candidate(
+        candidate, "This job has been removed from Upwork.", "c" * 64,
+    )["status"] == "removed"
+    assert parse_candidate(candidate, "Job detail loading", "d" * 64)["status"] == "unknown"
+
+
+def test_public_candidate_config_has_unique_exact_ids():
+    path = SCRIPTS.parent / "config" / "upwork-candidates.public.json"
+    candidates = load_candidates(path)
+    assert len(candidates) == 3
+    assert len({item["job_id"] for item in candidates}) == 3
+    assert all(item["job_id"] in item["job_url"] for item in candidates)
+
+
 @pytest.mark.parametrize("parser,text", [
     (parse_connects, "Connects History unavailable"),
     (parse_inventory, "Proposals and Offers loading"),
@@ -120,4 +153,5 @@ def test_launchd_job_is_zero_spend_and_runs_every_five_minutes():
     command = " ".join(job["program"]).lower()
     assert job["StartInterval"] == 300
     assert "upwork_browser_provider.py" in command
+    assert "upwork-candidates.public.json" in command
     assert all(term not in command for term in ("buy", "billing", "plus", "boost"))
