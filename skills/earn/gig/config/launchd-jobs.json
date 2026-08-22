@@ -539,7 +539,7 @@
         "GIG_BROWSER_PROFILE": "{{CDP_DAILY_DRIVER_PROFILE}}",
         "GIG_BROWSER_FINGERPRINT": "{{GIG_BROWSER_FINGERPRINT}}",
         "GIG_BROWSER_TLS_COMPAT": "{{GIG_BROWSER_TLS_COMPAT}}",
-        "GIG_DISK_HEADROOM_KIB": "0"
+        "GIG_DISK_HEADROOM_KIB": "524288"
       },
       "RunAtLoad": true,
       "KeepAlive": true,
