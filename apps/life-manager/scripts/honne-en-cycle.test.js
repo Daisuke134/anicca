@@ -3,7 +3,7 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 
-const { parseArgs, runSlot } = require("./honne-en-cycle.js");
+const { enqueuePublication, parseArgs, runSlot } = require("./honne-en-cycle.js");
 
 const SLOT = "2026-08-21T11:30:00.000Z";
 
@@ -24,4 +24,16 @@ test("Honne EN cycle CLI accepts only the optional slot pair", () => {
   assert.equal(parseArgs(["run", "--slot", SLOT]), SLOT);
   assert.throws(() => parseArgs(["run", "--slot"]), /usage|invalid/i);
   assert.throws(() => parseArgs(["run", "--other", SLOT]), /usage|invalid/i);
+});
+
+test("Honne EN cycle reuses an existing publication effect", async () => {
+  const job = { job_id: "publication", tenant_id: "dais-local" };
+  let enqueues = 0;
+  const result = await enqueuePublication({
+    readJob: async () => ({ ...job, status: "completed" }),
+    enqueueJob: async () => { enqueues += 1; },
+  }, job, SLOT);
+  assert.equal(result.created, false);
+  assert.equal(result.job.status, "completed");
+  assert.equal(enqueues, 0);
 });

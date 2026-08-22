@@ -76,6 +76,16 @@ async function generate(store, job, dataDir, nowIso) {
   }
 }
 
+async function enqueuePublication(store, job, availableAt) {
+  const existing = await store.readJob({ tenantId: job.tenant_id, jobId: job.job_id });
+  if (existing) return { created: false, job: existing };
+  return store.enqueueJob({
+    jobId: job.job_id, tenantId: job.tenant_id, loopId: job.loop_id, capability: job.capability,
+    effectClass: job.effect_class, effectKey: job.effect_key, inputRefs: job.input_refs,
+    maxAttempts: job.max_attempts, availableAt,
+  });
+}
+
 async function runHonneEnCycle(argv, deps = {}) {
   const requestedSlot = parseArgs(argv);
   const env = deps.env || process.env;
@@ -101,11 +111,7 @@ async function runHonneEnCycle(argv, deps = {}) {
     captionRef: generation.receipt.copy_ref, approvalRef, instagramProfileRef: "profile://instagram/unassigned",
     postizTokenRef: "secret://postiz/api-key", tiktokIntegrationRef: INTEGRATION_REF,
   });
-  await store.enqueueJob({
-    jobId: publicationJob.job_id, tenantId, loopId: publicationJob.loop_id, capability: publicationJob.capability,
-    effectClass: publicationJob.effect_class, effectKey: publicationJob.effect_key, inputRefs: publicationJob.input_refs,
-    maxAttempts: publicationJob.max_attempts, availableAt: new Date(nowMs).toISOString(),
-  });
+  await enqueuePublication(store, publicationJob, new Date(nowMs).toISOString());
   const result = await runHonneEnCanary(["run", "--tenant", tenantId, "--job-id", publicationJob.job_id], {
     store,
     env: { ...env, LM_DATA_DIR: dataDir, LM_HONNE_EN_CANARY_TRANSPORT: "postiz", LM_HONNE_EN_CANARY_CONFIRM: PROMOTION_CONFIRMATION, LM_HONNE_EN_TIKTOK_INTEGRATION_REF: INTEGRATION_REF, LM_HONNE_EN_TIKTOK_INTEGRATION: INTEGRATION_ID, LM_HONNE_EN_CANARY_WORKER_ID: "honne-en-cycle" },
@@ -115,4 +121,4 @@ async function runHonneEnCycle(argv, deps = {}) {
 
 if (require.main === module) runHonneEnCycle(process.argv.slice(2)).then((result) => process.stdout.write(`${JSON.stringify(result)}\n`)).catch((error) => { process.stderr.write(`${error.message}\n`); process.exitCode = 1; });
 
-module.exports = { parseArgs, runHonneEnCycle, runSlot };
+module.exports = { enqueuePublication, parseArgs, runHonneEnCycle, runSlot };
