@@ -130,17 +130,36 @@ def test_zero_connect_inbound_precedes_public_job_capacity():
     assert callable(planner)
     base = {"proposal_offer_entities": [], "invitation_entities": [], "catalog_projects": []}
 
-    assert planner({**base, "invitation_entities": [{"id": "~invite-1"}]}) == {
+    assert planner({**base, "invitation_entities": [{
+        "id": "~invite-1", "href": "https://www.upwork.com/jobs/~invite-1",
+    }]}) == {
         "state": "invitation_detected", "resource_id": "~invite-1",
+        "resource_url": "https://www.upwork.com/jobs/~invite-1",
     }
     assert planner({
-        **base, "proposal_offer_entities": [{"id": "offer-1"}],
-        "invitation_entities": [{"id": "~invite-1"}],
-    }) == {"state": "direct_offer_detected", "resource_id": "offer-1"}
+        **base, "proposal_offer_entities": [{
+            "id": "offer-1", "href": "https://www.upwork.com/ab/proposals/offer-1",
+        }],
+        "invitation_entities": [{
+            "id": "~invite-1", "href": "https://www.upwork.com/jobs/~invite-1",
+        }],
+    }) == {
+        "state": "direct_offer_detected", "resource_id": "offer-1",
+        "resource_url": "https://www.upwork.com/ab/proposals/offer-1",
+    }
     assert planner({**base, "catalog_projects": [{"title": "API script", "orders": 1}]}) == {
-        "state": "catalog_order_detected", "resource_id": "API script",
+        "state": "catalog_order_identity_pending", "order_count": 1,
     }
     assert planner(base) is None
+
+
+def test_inbound_detail_is_actionable_only_from_official_controls():
+    parser = getattr(provider, "parse_zero_connect_detail", None)
+    assert callable(parser)
+    assert parser("invitation_detected", "Accept and send a proposal  Decline") == "actionable"
+    assert parser("direct_offer_detected", "Accept offer  Decline") == "actionable"
+    assert parser("invitation_detected", "Client invited you to apply") == "unknown"
+    assert parser("direct_offer_detected", "Offer details") == "unknown"
 
 
 def test_classifies_candidate_only_from_official_job_markers():

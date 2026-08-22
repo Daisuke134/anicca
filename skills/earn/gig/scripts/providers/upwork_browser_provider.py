@@ -340,7 +340,7 @@ def plan_free_proposal(state: dict[str, Any], proposals_dir: Path) -> dict[str, 
     return None
 
 
-def plan_zero_connect_inbound(state: dict[str, Any]) -> dict[str, str] | None:
+def plan_zero_connect_inbound(state: dict[str, Any]) -> dict[str, Any] | None:
     """Prioritize one stable-ID inbound acquisition that needs no Connects."""
     for field, kind in (
         ("proposal_offer_entities", "direct_offer_detected"),
@@ -351,16 +351,40 @@ def plan_zero_connect_inbound(state: dict[str, Any]) -> dict[str, str] | None:
             raise ValueError("upwork_free_action_state_invalid")
         if entities:
             entity = entities[0]
-            if not isinstance(entity, dict) or not isinstance(entity.get("id"), str):
+            resource_url = urlsplit(str(entity.get("href") or "")) if isinstance(entity, dict) else None
+            if (
+                not isinstance(entity, dict) or not isinstance(entity.get("id"), str)
+                or not isinstance(entity.get("href"), str)
+                or resource_url is None or resource_url.scheme != "https"
+                or resource_url.netloc != "www.upwork.com"
+                or entity["id"] not in entity["href"]
+            ):
                 raise ValueError("upwork_free_action_state_invalid")
-            return {"state": kind, "resource_id": entity["id"]}
+            return {
+                "state": kind, "resource_id": entity["id"],
+                "resource_url": entity["href"],
+            }
     projects = state.get("catalog_projects")
     if not isinstance(projects, list):
         raise ValueError("upwork_free_action_state_invalid")
     ordered = next((item for item in projects if isinstance(item, dict) and item.get("orders", 0) > 0), None)
     if ordered is not None:
-        return {"state": "catalog_order_detected", "resource_id": str(ordered.get("title") or "")}
+        return {"state": "catalog_order_identity_pending", "order_count": ordered["orders"]}
     return None
+
+
+def parse_zero_connect_detail(kind: str, text: str) -> str:
+    """Classify only official controls; never infer that an inbound is actionable."""
+    normalized = " ".join((text or "").lower().split())
+    if kind == "invitation_detected":
+        accept = any(marker in normalized for marker in (
+            "accept and send a proposal", "submit a proposal", "accept interview",
+        ))
+    elif kind == "direct_offer_detected":
+        accept = "accept offer" in normalized
+    else:
+        raise ValueError("upwork_inbound_kind_invalid")
+    return "actionable" if accept and "decline" in normalized else "unknown"
 
 
 def parse_candidate(
@@ -565,7 +589,22 @@ async def observe(
     inbound = plan_zero_connect_inbound(state)
     if inbound is not None:
         state["can_submit_public_job"] = False
-        state["free_acquisition"] = inbound
+        if inbound["state"] in {"invitation_detected", "direct_offer_detected"}:
+            detail_artifact = Path(await navigate_and_snapshot(
+                pass_id, f"{len(targets) + 1:02d}-1", "inbound-detail",
+                inbound["resource_url"], "read_only", 2, 1440,
+            ))
+            detail_text, detail_hash, _ = _read_evidence(
+                detail_artifact, inbound["resource_url"],
+            )
+            state["evidence_sha256"]["inbound-detail"] = detail_hash
+            state["free_acquisition"] = {
+                **inbound,
+                "detail_state": parse_zero_connect_detail(inbound["state"], detail_text),
+                "detail_evidence_sha256": detail_hash,
+            }
+        else:
+            state["free_acquisition"] = inbound
         return state
     selected = plan_free_proposal(state, proposals_dir)
     state["can_submit_public_job"] = selected is not None
