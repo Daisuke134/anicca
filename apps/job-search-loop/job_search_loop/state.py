@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import re
-from urllib.parse import unquote, urlsplit, urlunsplit
+from urllib.parse import quote, unquote, urlsplit, urlunsplit
 
 
 class InvalidTransition(ValueError):
@@ -134,6 +134,23 @@ def same_application_surface(actual: str, expected: str) -> bool:
 
     actual_identity = workday_identity(actual_url.path)
     return actual_identity is not None and actual_identity == workday_identity(expected_url.path)
+
+
+def provider_recovery_url(value: str) -> str:
+    """Return a public posting URL that the provider can actually re-open."""
+    parsed = urlsplit(value.strip())
+    hostname = (parsed.hostname or "").casefold()
+    if not hostname.endswith(".myworkdayjobs.com"):
+        return value
+    job_slug = unquote(parsed.path.rstrip("/").rsplit("/", 1)[-1])
+    requisition = job_slug.rsplit("_", 1)[-1]
+    if not re.fullmatch(r"[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*", requisition):
+        return value
+    # Some Workday tenants return a false not-found surface for the canonical
+    # detail URL but reopen the same posting when using their own search href.
+    return urlunsplit(
+        (parsed.scheme, parsed.netloc, parsed.path, f"q={quote(requisition)}", "")
+    )
 
 
 def canonical_job_id(company: str, title: str, url: str) -> str:

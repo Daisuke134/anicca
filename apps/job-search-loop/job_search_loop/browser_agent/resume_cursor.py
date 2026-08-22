@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 
+from ..state import canonical_url as normalize_url
+from ..state import provider_recovery_url
 from .checkpoint import CheckpointStore, EvidenceStore
 from .contracts import ResumeCursorV1, SessionHandleV1
 from .session import BrowserSession
@@ -50,6 +52,8 @@ class RowResumer:
         )
         handle, recovered = await self._session.resume(prior)
         recovery_url = checkpoint.current_url or canonical_url
+        if normalize_url(recovery_url) == normalize_url(canonical_url):
+            recovery_url = provider_recovery_url(canonical_url)
         return ResumeCursorV1(
             handle,
             checkpoint,

@@ -4,6 +4,7 @@ from job_search_loop.state import (
     InvalidTransition,
     canonical_job_id,
     canonical_url,
+    provider_recovery_url,
     same_application_surface,
     validate_transition,
 )
@@ -36,6 +37,15 @@ class StateTests(unittest.TestCase):
                 "https://rakuten.wd1.myworkdayjobs.com/en-us/rakuteninc/job/tokyo-japan/other_999",
             )
         )
+
+    def test_workday_recovery_uses_the_provider_search_href_shape(self):
+        posting = "https://rakuten.wd1.myworkdayjobs.com/en-US/RakutenInc/job/Tokyo-Japan/role_1036041-147"
+        self.assertEqual(
+            provider_recovery_url(posting),
+            f"{posting}?q=1036041-147",
+        )
+        generic = "https://careers.example.com/job/role_1036041-147"
+        self.assertEqual(provider_recovery_url(generic), generic)
 
     def test_canonical_identity_ignores_tracking_and_case(self):
         first = canonical_job_id(

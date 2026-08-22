@@ -16,6 +16,7 @@ from zoneinfo import ZoneInfo
 
 from ..ledger import Ledger
 from ..resume_routing import select_resume
+from ..state import provider_recovery_url
 from .actions import ActionExecutor
 from .candidate_memory import CandidateMemoryView
 from .checkpoint import CheckpointStore, EvidenceStore
@@ -346,7 +347,9 @@ async def checkpoint(reason: str) -> dict[str, Any]:
     observation = await builder.build(cursor.handle)
     prior_hashes = cursor.checkpoint.action_receipt_hashes if cursor.checkpoint else ()
     recovery_url = (
-        row["canonical_url"] if reason == "provider_unavailable" else observation.url
+        provider_recovery_url(row["canonical_url"])
+        if reason == "provider_unavailable"
+        else observation.url
     )
     receipt = checkpoints.save(
         RowCheckpointV1(
