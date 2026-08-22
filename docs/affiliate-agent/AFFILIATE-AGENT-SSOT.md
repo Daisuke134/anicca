@@ -2349,6 +2349,84 @@ failure into an empty market signal.
 No external prompt or source is copied unless its license permits reuse. Public
 workflow ideas are reimplemented against our own contracts and evidence.
 
+### 7.3 2026-08-22 OSS architecture decision: Agent core, guarded effects
+
+Read-only source inspection at fixed commits compared five repositories against
+the installed Affiliate runtime. The current runtime has 21 top-level Python or
+shell scripts (15,267 lines); `local_loop.py` alone is 3,863 lines. This is not a
+reason to discard its verified money and effect contracts. It is evidence that
+strategy, orchestration, recovery, accounting, and reporting have accumulated in
+one deterministic coordinator and make every new judgment require another code
+branch.
+
+| Fixed source | Code-level observation | Adoption decision |
+|---|---|---|
+| [Hermes Agent `fc7523c`](https://github.com/NousResearch/hermes-agent/blob/fc7523ca31eeb6eff9114afe384c2cf6380359df/CONTRIBUTING.md#architecture-overview) | One model loop dispatches self-registering tools, appends observations, loops, persists sessions, and loads persistent memory/skills | **Primary pattern.** Copy the small `plan → tool → observe → continue` control shape and tool registry; do not import its broad tool surface or let memory authorize effects |
+| [LangGraph `f09cfe8`](https://github.com/langchain-ai/langgraph/blob/f09cfe8ffc1eeffd68f4b628ed69c30f7cad229f/README.md#why-use-langgraph) | “Durable execution” resumes long-running stateful agents after failure; SQLite checkpointers preserve lineage | **Copy pattern, no dependency in slice 1.** Map the existing job journal to one checkpoint per committed transition; reconsider the library only if the local adapter cannot preserve resume semantics |
+| [Dapr Agents `5a3c834`](https://github.com/dapr/dapr-agents/blob/5a3c8348ff38d49e7485bfdf7a6935cf0e03cc19/README.md#durable-execution) | Combines deterministic processes with LLM decisions and restores workflow state after interruption | **Cloud reference only.** It adds a distributed runtime that the current Mac and first commission do not need |
+| [EvoAgentX `fd6b9a6`](https://github.com/EvoAgentX/EvoAgentX/blob/fd6b9a6352afc933b170e595bfb3dc5a28d9571a/README.md) | Evolves workflows through iterative evaluation rather than unmeasured prompt mutation | **Copy evaluator/promotion pattern.** Candidate playbooks remain shadow-only until mature provider outcomes beat the active version; never optimize on views or clicks as money |
+| [affiliate-automation `ba75817`](https://github.com/paraggit/affiliate-automation/blob/ba758178a95a7c785e73b05b2735eeced272d66a/src/affiliate_automation/main.py) | Interactive commands and `Start scheduler?`; product persistence exists, but no commission, reversal, settlement, or replay-safe join | **Reject as runtime.** Retain only the already-documented small provider/retry ideas |
+
+Sources and core quotations:
+
+- Hermes Agent: “Execute each tool via registry dispatch ... Loop back to LLM
+  call.” Its state table makes SQLite canonical and separates skills, memories,
+  sessions, and cron. Source: [Hermes contributing guide](https://github.com/NousResearch/hermes-agent/blob/fc7523ca31eeb6eff9114afe384c2cf6380359df/CONTRIBUTING.md#architecture-overview).
+- LangGraph: “Build agents that persist through failures ... automatically
+  resuming from exactly where they left off.” Source: [LangGraph README](https://github.com/langchain-ai/langgraph/blob/f09cfe8ffc1eeffd68f4b628ed69c30f7cad229f/README.md#why-use-langgraph).
+- EvoAgentX: “AI agents can be constructed, assessed, and optimized through
+  iterative feedback loops.” Source: [EvoAgentX README](https://github.com/EvoAgentX/EvoAgentX/blob/fd6b9a6352afc933b170e595bfb3dc5a28d9571a/README.md).
+
+The single recommended target is a **thin persistent Agent core around the
+existing guarded effect and money kernel**:
+
+```mermaid
+flowchart LR
+  W[Existing launchd wake] --> C[Load one durable goal and checkpoint]
+  C --> A[Affiliate Agent reasons about the next best action]
+  A --> R[Read-only tools: market, provider, placement, ledger]
+  A --> G[Guarded effect gateway]
+  G -->|allowed| O[Existing launchd effect owner]
+  G -->|denied or ambiguous| A
+  O --> B[Exact external readback]
+  B --> J[Append checkpoint and canonical receipts]
+  J --> A
+  J --> E[Evaluator proposes a shadow playbook]
+  E -->|mature provider outcome wins| S[Versioned skill promotion]
+  E -->|insufficient or worse| X[Reject candidate]
+  J --> M[Immutable money reconciler]
+```
+
+The Agent owns strategy, diagnosis, sequencing, and choosing among registered
+tools. Deterministic code remains only where an incorrect guess can create a
+duplicate external effect, leak a secret, violate provider/channel policy,
+corrupt evidence, or misstate money. Launchd remains the sole scheduler and
+business-effect owner. The canonical placement and transaction ledgers remain
+append-only truth. Self-improvement changes versioned prompts/skills and tool
+selection policy only; it never edits code, grants authority, rewrites history,
+or promotes a candidate without provider-outcome evaluation.
+
+Migration is one vertical slice, not a rewrite:
+
+1. Extract current read-only observations and already-owned effect commands into
+   a typed tool registry; preserve their exact entrypoints and receipts.
+2. Add one persistent Agent session keyed by durable goal/job ID. On each wake it
+   receives the current checkpoint, chooses one tool, observes the result, and
+   either continues or records a typed wait/terminal state.
+3. Route every write through the existing effect journal, quarantine, cost cap,
+   policy, secret, exact-readback, and owner-authority gates. The Agent never
+   invokes a publisher/provider mutation directly.
+4. Run the Agent in shadow mode against the existing owner until its proposed
+   next action matches an allowed real transition and replay produces no second
+   effect. Then replace only the strategy branch of `local_loop.py`.
+5. After the first official transaction cohort is mature, add evaluator-driven
+   playbook candidates and promote only on approved/paid net after reversals and
+   known real costs.
+
+Explicit non-goals: importing an entire agent framework, adding Dapr/Temporal,
+creating another scheduler or executor, replacing the canonical ledger, allowing
+self-modifying production code, or counting content/clicks/views as revenue.
+
 ## 8. Revenue gates
 
 | Gate | Verifiable completion |
@@ -2622,6 +2700,29 @@ generalization, generic action schemas, clean-Mac packaging, multilingual lanes,
 cloud work, and broad self-repair do not start unless one is the measured blocker
 for the next external state. Known stages are deterministic; the model writes or
 diagnoses only when an existing deterministic tool cannot advance them.
+
+**Architecture override:** section 7.3 supersedes the last sentence above. The
+model-led Affiliate Agent now chooses the next registered tool by default;
+determinism is retained only at money, policy, authority, secret, evidence, cost,
+and duplicate-effect boundaries. Until that migration is live-proven, the
+installed owners continue unchanged and no manual executor substitutes for them.
+
+The remaining atomic TODO order is:
+
+1. **A-CUT-1 — tool boundary:** inventory and expose existing read-only tools and
+   guarded owner commands without changing any external effect.
+2. **A-CUT-2 — shadow Agent:** persist one goal/checkpoint and record the Agent's
+   proposed next tool beside the current deterministic choice; no publish/provider
+   authority in shadow mode.
+3. **A-CUT-3 — guarded cutover:** allow one Agent-selected action only through the
+   existing effect gateway; prove claim, exact readback, terminal consumption,
+   crash replay, no duplicate, and no secret leakage.
+4. **A-CUT-4 — economic evaluator:** after non-empty official PartnerStack rows
+   exist, score versioned playbooks on exact-placement approved/paid net after
+   reversals and known costs; keep insufficient candidates in shadow.
+5. **B01 remains the product gate:** capture the first official provider
+   transaction/settlement ID and replay-safe join it to the exact placement. No
+   architecture milestone is money and none closes B01.
 
 #### Autonomous responsibility boundary
 

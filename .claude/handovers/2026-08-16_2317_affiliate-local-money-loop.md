@@ -1,5 +1,26 @@
 # Affiliate local money loop handover
 
+- Architecture planning checkpoint at `2026-08-22T12:50+0900`: no owner was
+  kickstarted and no public/provider/Telegram effect was executed. Read-only
+  runtime proof shows Affiliate release
+  `6f70ef499c841d0e4cde421d3f8144b57cfdc344` installed with byte-equal
+  `local_loop.py`; Repost release is `50dae0a6` family. Voice Changer proposal
+  `16b5b8ff…1b60` remains `READY_FOR_EXISTING_REPOST_OWNER`; Repost observation
+  is `0/65` exact joins and `NO_REVENUE_CREDIT`. The canonical ledger has 24
+  placements and 39 provider clicks (37 unique), while rolling net remains
+  `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / cost=UNKNOWN`, with all four
+  money status counts zero. Translate Video remains a live placement, not money.
+
+- Fixed-commit OSS audit cloned and inspected Hermes Agent `fc7523c`, LangGraph
+  `f09cfe8`, Dapr Agents `5a3c834`, EvoAgentX `fd6b9a6`, and
+  affiliate-automation `ba75817`. The design decision is not a full framework
+  replacement: copy Hermes' persistent tool loop, LangGraph's checkpoint
+  contract, and EvoAgentX's evaluator/promotion boundary around the existing
+  effect journal and canonical money ledger. Keep launchd as the sole owner.
+  The next atomic planning-to-build item is `A-CUT-1`: expose existing read-only
+  observations and guarded owner commands through one typed registry; no second
+  scheduler, executor, publisher, provider mutation, or ledger is admitted.
+
 - Current owner progress at `2026-08-22T11:51:11+0900`: the user-directed
   action cap is `ACTION_CAP_DISABLED` and runtime disk guard is `CLEAR` with
   `floor_bytes=null`; cost/quarantine/replay/public-readback gates remain.
