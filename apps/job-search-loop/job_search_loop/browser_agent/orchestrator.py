@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import subprocess
 from pathlib import Path
 
@@ -17,6 +18,7 @@ def invoke_runner(
     workdir: Path,
     timeout_seconds: int,
     python: str,
+    active_provider: str,
 ) -> int:
     """Delegate one wake to the existing bounded model runner."""
     command = [
@@ -41,7 +43,9 @@ def invoke_runner(
         "--workdir",
         str(workdir),
     ]
-    return subprocess.run(command, check=False).returncode
+    environment = os.environ.copy()
+    environment["JOB_SEARCH_ACTIVE_APPLICATION_PROVIDER"] = active_provider
+    return subprocess.run(command, check=False, env=environment).returncode
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -53,6 +57,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--workdir", type=Path, required=True)
     parser.add_argument("--timeout-seconds", type=int, required=True)
     parser.add_argument("--python", required=True)
+    parser.add_argument("--active-provider", choices=("workday",), required=True)
     args = parser.parse_args(argv)
     if args.timeout_seconds < 1:
         parser.error("--timeout-seconds must be positive")
@@ -64,6 +69,7 @@ def main(argv: list[str] | None = None) -> int:
         workdir=args.workdir,
         timeout_seconds=args.timeout_seconds,
         python=args.python,
+        active_provider=args.active_provider,
     )
 
 

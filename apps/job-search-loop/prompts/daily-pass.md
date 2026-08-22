@@ -20,10 +20,12 @@ transcripts into stdout/stderr. If a value is needed, query only the one require
 non-secret field with a redacting filter and keep the command output minimal.
 
 `$JOB_SEARCH_ASHBY_FAST_PATH_RESULT` is a compatibility receipt with
-`status=model_owned`; it contains deterministic discovery counts only and has no
-form authority. Ashby and Workday form navigation, answers, actions, and outcomes
-belong exclusively to this framework-owned model lane. Provider helpers may supply
-surface vocabulary or evidence but never a completed workflow or stopping result.
+`status=discovery_only`; it contains deterministic discovery counts only and has no
+form authority. JOB_SEARCH_ACTIVE_APPLICATION_PROVIDER must be workday. Do not
+open or navigate to any Ashby application form during Workday 10P. Workday form
+navigation, answers, actions, and outcomes belong exclusively to this
+framework-owned model lane. Provider helpers may supply surface vocabulary or
+evidence but never a completed workflow or stopping result.
 
 `$JOB_SEARCH_WORKDAY_FAST_PATH_RESULT` is a compatibility receipt with
 `status=model_owned`; it has no form authority. Before fresh discovery, call both
@@ -100,13 +102,10 @@ chmod 600 "<private_snapshot_path>" "<private_evaluation_path>"
 ```
 
 Continue browser progression only when the evaluation says `ready=true`; call
-`Ledger.claim_submission` only when it also says `claim_ready=true`. Advance Ashby
-and Workday one evaluated surface at a time:
+`Ledger.claim_submission` only when it also says `claim_ready=true`. Advance
+Workday one evaluated surface at a time:
 
 ```text
-ashby_job
-  → click the visible “Apply for this Job” control
-  → recapture and reevaluate
 workday_job
   → click the ordinary visible `Apply` navigation control using
     `get_by_role("button", name="Apply", exact=True)`; Workday may render this

@@ -150,10 +150,15 @@ class ModelBrowserLoopContractTests(unittest.TestCase):
                 workdir=Path("/repo"),
                 timeout_seconds=900,
                 python="/python3",
+                active_provider="workday",
             )
 
         self.assertEqual(returncode, 0)
-        run.assert_called_once_with(
+        run.assert_called_once()
+        command = run.call_args.args[0]
+        kwargs = run.call_args.kwargs
+        self.assertEqual(
+            command,
             [
                 "/python3",
                 "/runtime/agent_runner.py",
@@ -176,7 +181,10 @@ class ModelBrowserLoopContractTests(unittest.TestCase):
                 "--workdir",
                 "/repo",
             ],
-            check=False,
+        )
+        self.assertIs(kwargs["check"], False)
+        self.assertEqual(
+            kwargs["env"]["JOB_SEARCH_ACTIVE_APPLICATION_PROVIDER"], "workday"
         )
 
     def test_every_eligible_workday_row_reaches_the_mandatory_model_lane(self):
@@ -196,6 +204,24 @@ class ModelBrowserLoopContractTests(unittest.TestCase):
         )
         self.assertNotIn("do not reopen a row it advanced", prompt)
         self.assertNotIn("preserve that exact blocker", prompt)
+
+    def test_workday_is_the_only_active_application_lane_during_10p(self):
+        daily = (APP_ROOT / "scripts" / "run-daily.sh").read_text(encoding="utf-8")
+        prompt = (APP_ROOT / "prompts" / "daily-pass.md").read_text(encoding="utf-8")
+        normalized_prompt = " ".join(prompt.split())
+
+        self.assertIn("-m job_search_loop.ashby_discovery", daily)
+        self.assertIn('"status": "discovery_only"', daily)
+        self.assertIn('"reason": "workday_10p"', daily)
+        self.assertIn("--active-provider workday", daily)
+        self.assertIn(
+            "JOB_SEARCH_ACTIVE_APPLICATION_PROVIDER must be workday",
+            normalized_prompt,
+        )
+        self.assertIn(
+            "Do not open or navigate to any Ashby application form during Workday 10P",
+            normalized_prompt,
+        )
 
 
 if __name__ == "__main__":
