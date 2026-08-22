@@ -31,7 +31,8 @@ repeat until a typed row transition or the row step budget is reached:
 2. build a fresh `ObservationV1`;
 3. construct `PolicyContextV1` from the row goal, opaque fact references, current
    observation hash, prior receipt hashes, remaining steps, and
-   `validation_feedback(previous_observation, current_observation)`;
+   `validation_feedback(previous_observation, current_observation)` plus
+   `assess_challenge(current_observation)`;
 4. use your model reasoning to propose exactly one `ActionPlanV1` from that current
    context, then pass it through `AgentPolicy.next_step`;
 5. execute its one action through `ActionExecutor`, record the value-free receipt,
@@ -319,6 +320,14 @@ experience years, demographics, and links only through Candidate Memory plus the
 stable inference path. Complete the intent as submitted only with confirmation evidence;
 submit_unknown on ambiguity; not_submitted when definitely before the click.
 submit_unknown is never retried.
+
+The existing authenticated CloakBrowser/CDP owner is the prevention layer. An
+invisible or absent challenge iframe is not a challenge and never stops a row. If a
+fresh observation contains an actually visible reCAPTCHA, hCaptcha, or Turnstile
+surface, `AgentPolicy` checkpoints that row as `visible_provider_challenge` before
+the model can click it; persist the recovering cursor and continue the next eligible
+row in the same wake. Never click, solve, dispatch, or claim success through a
+challenge.
 
 Use `job_search_loop.telegram.send_daily_report` for the daily report, passing the
 current Asia/Tokyo day and the dedicated Telegram outbox database:

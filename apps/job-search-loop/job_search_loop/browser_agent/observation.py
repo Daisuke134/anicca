@@ -60,7 +60,17 @@ class ObservationBuilder:
                 }));
               const validation = Array.from(document.querySelectorAll('[role="alert"],[aria-invalid="true"],.error'))
                 .filter(visible).map(el => (el.innerText || el.getAttribute('aria-label') || '').trim()).filter(Boolean);
-              return { visible_text: document.body ? document.body.innerText : '', controls, validation };
+              const challengeProvider = el => {
+                const haystack = `${el.getAttribute('src') || ''} ${el.getAttribute('title') || ''} ${el.getAttribute('name') || ''} ${el.className || ''}`.toLowerCase();
+                if (haystack.includes('hcaptcha')) return 'hcaptcha';
+                if (haystack.includes('recaptcha')) return 'recaptcha';
+                if (haystack.includes('turnstile')) return 'turnstile';
+                return '';
+              };
+              const challenges = Array.from(document.querySelectorAll('iframe,[data-sitekey]'))
+                .filter(visible).map(challengeProvider).filter(Boolean);
+              return { visible_text: document.body ? document.body.innerText : '', controls, validation,
+                challenges: Array.from(new Set(challenges)) };
             }"""
         )
         controls = tuple(VisibleControlV1(**value) for value in snapshot["controls"])
@@ -71,6 +81,7 @@ class ObservationBuilder:
             "visible_text": snapshot["visible_text"],
             "controls": [asdict(value) for value in controls],
             "validation_text": snapshot["validation"],
+            "visible_challenges": snapshot["challenges"],
             "tabs": tabs,
             "screenshot_sha256": screenshot_sha,
         }
@@ -80,5 +91,5 @@ class ObservationBuilder:
         return ObservationV1(
             1, canonical["url"], canonical["title"], canonical["visible_text"],
             controls, tuple(canonical["validation_text"]), tabs, screenshot_path,
-            screenshot_sha, content_sha,
+            screenshot_sha, content_sha, tuple(canonical["visible_challenges"]),
         )

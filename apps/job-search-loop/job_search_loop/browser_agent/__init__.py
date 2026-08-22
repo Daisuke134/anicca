@@ -6,12 +6,14 @@ from .actions import ActionExecutor
 from .answer_memory import AnswerMemory, AnswerRecordV1
 from .answers import AnswerResolver
 from .checkpoint import CheckpointStore, EvidenceStore
+from .challenge import assess_challenge
 from .candidate_memory import CandidateMemoryView, build_candidate_memory
 from .contracts import (
     ActionReceiptV1,
     ActionPlanV1,
     ActionTargetV1,
     CheckpointReceiptV1,
+    ChallengeAssessmentV1,
     EvidenceReceiptV1,
     FieldQuestionV1,
     ObservationV1,
@@ -37,6 +39,7 @@ __all__ = [
     "AnswerRecordV1", "AnswerResolver",
     "ActionTargetV1", "AgentPolicy",
     "BrowserSession", "CandidateMemoryView", "CheckpointReceiptV1", "CheckpointStore", "EvidenceReceiptV1",
+    "ChallengeAssessmentV1", "assess_challenge",
     "EvidenceStore", "ExperienceIntervalV1", "FieldQuestionV1", "InferenceDecisionV1",
     "ObservationBuilder", "ObservationV1",
     "PolicyContextV1", "ResolvedAnswerV1", "RowCheckpointV1", "SessionHandleV1",

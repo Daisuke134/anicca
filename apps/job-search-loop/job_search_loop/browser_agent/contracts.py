@@ -44,6 +44,7 @@ class ObservationV1:
     screenshot_path: Path
     screenshot_sha256: str
     content_sha256: str
+    visible_challenges: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -85,6 +86,7 @@ class PolicyContextV1:
     action_receipt_hashes: tuple[str, ...]
     remaining_steps: int
     validation_feedback: ValidationFeedbackV1 | None = None
+    challenge_assessment: ChallengeAssessmentV1 | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -94,6 +96,13 @@ class ValidationFeedbackV1:
     messages: tuple[str, ...]
     related_controls: tuple[VisibleControlV1, ...]
     changed: bool
+
+
+@dataclass(frozen=True, slots=True)
+class ChallengeAssessmentV1:
+    schema_version: int
+    observation_sha256: str
+    visible_providers: tuple[str, ...]
 
 
 @dataclass(frozen=True, slots=True)

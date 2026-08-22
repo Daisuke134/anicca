@@ -28,6 +28,14 @@ class AgentPolicy:
             and context.validation_feedback.observation_sha256 != context.observation_sha256
         ):
             raise RuntimeError("validation feedback is stale for the current observation")
+        if context.challenge_assessment is not None:
+            if context.challenge_assessment.observation_sha256 != context.observation_sha256:
+                raise RuntimeError("challenge assessment is stale for the current observation")
+            return ActionPlanV1(
+                based_on_observation_sha256=context.observation_sha256,
+                transition="checkpointed",
+                reason="visible_provider_challenge",
+            )
         plan = await self._model_decision(context)
         if plan.based_on_observation_sha256 != context.observation_sha256:
             raise RuntimeError("model plan is stale for the current observation")
