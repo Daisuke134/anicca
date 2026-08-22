@@ -24,6 +24,15 @@ class ApprovedHyperFramesWiringTest(unittest.TestCase):
         self.assertNotIn("~/.claude/skills/faceless-money-factory", source)
         self.assertNotIn("~/.agents/skills/faceless-money-factory", source)
 
+    def test_live_pass_selects_once_and_requires_new_native_reel_before_success(self):
+        source = SCRIPT.read_text(encoding="utf-8")
+
+        self.assertIn("STEP1 SELECTED (deterministic caller; do not call selector again)", source)
+        self.assertIn("evidence-ready listing selection failed", source)
+        self.assertIn("live pass produced no verified native Reel", source)
+        self.assertIn("--commit-agent-id", source)
+        self.assertLess(source.index("VERIFIED_POST="), source.index("--commit-agent-id"))
+
 
 if __name__ == "__main__":
     unittest.main()

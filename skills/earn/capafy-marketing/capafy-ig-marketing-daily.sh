@@ -12,6 +12,10 @@ export LIFE_MANAGER_REPO
 #   NON-COMMERCIAL until the reach-health marker exists. ★
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin:$PATH"
 set -uo pipefail
+for ENV_FILE in "$HOME/.local/state/life-manager/.env" "$HOME/.openclaw/.env"; do
+  [ -f "$ENV_FILE" ] || continue
+  set -a; . "$ENV_FILE" 2>/dev/null; set +a
+done
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=account_state.sh
 . "$SCRIPT_DIR/account_state.sh"
@@ -92,6 +96,21 @@ then
   exit 0
 fi
 
+# Select exactly once, read-only. Rotation is committed only after a new native
+# Reel row for this exact Agent is verified below.
+SELECTED_JSON='{}'
+SELECTED_AGENT_ID=''
+PRE_IG_ROWS=0
+if [ "$PROVISION_NEEDED" = "no" ]; then
+  SELECTED_JSON="$(/opt/homebrew/bin/python3 "$SCRIPT_DIR/scripts/select_listing.py")" || {
+    echo "evidence-ready listing selection failed: $SELECTED_JSON" >>"$LOG"
+    exit 1
+  }
+  SELECTED_AGENT_ID="$(printf '%s' "$SELECTED_JSON" | /opt/homebrew/bin/python3 -c 'import json,sys; print(json.load(sys.stdin).get("agent_id") or "")')"
+  [ -n "$SELECTED_AGENT_ID" ] || exit 1
+  [ -f "$IG_LEDGER" ] && PRE_IG_ROWS="$(wc -l < "$IG_LEDGER" | tr -d ' ')"
+fi
+
 PROVISION_PROMPT="$(
   IG_PROVISION_ACCOUNT_STATE_FILE="$ACCOUNTS_FILE" \
   IG_PROVISION_HANDLE_PREFIX="${MKT_HANDLE_PREFIX:-capafy}" \
@@ -116,7 +135,7 @@ PROVISION GATE: provision_needed='"$PROVISION_NEEDED"', reason='"${PROVISION_REA
 
 '"$PROVISION_PROMPT"'
 
-STEP1 SELECT (tool): python3 $LIFE_MANAGER_REPO/skills/earn/capafy-marketing/scripts/select_listing.py  → one online Capafy listing {agent_id,name,desc,url}.
+STEP1 SELECTED (deterministic caller; do not call selector again): '"$SELECTED_JSON"'. Use exactly this Agent and its evidence_source. Never advance rotation during exploration.
 
 COMMERCIAL GATE: commercial_ok='"$COMMERCIAL_OK"'. While commercial_ok=no, EVERY post is NON-COMMERCIAL: pure-info caption ("here is a Claude skill that does X" — NO "buy/subscribe/link in bio" push), and DO NOT add any Capafy link to the bio yet. This avoids the day-0 commercial-link suspension trigger while we measure reach. Only when commercial_ok=yes do you add the bio link + a soft CTA.
 
@@ -145,6 +164,29 @@ printf '%s\n' "$PROMPT" | "$RUN_AGENT" \
   --task-label "${INSTANCE}-ig-marketing-daily" \
   --loop capafy >>"$LOG" 2>&1
 RC=$?
+if [ "$RC" -eq 0 ] && [ "$PROVISION_NEEDED" = "no" ] && [ "$MODE_FLAG" = "--live" ]; then
+  VERIFIED_POST="$(/opt/homebrew/bin/python3 - "$IG_LEDGER" "$PRE_IG_ROWS" "$SELECTED_AGENT_ID" <<'PY'
+import json, pathlib, sys
+path, before, agent_id = pathlib.Path(sys.argv[1]), int(sys.argv[2]), sys.argv[3]
+rows = path.read_text().splitlines()[before:] if path.is_file() else []
+for line in rows:
+    try:
+        row = json.loads(line)
+    except Exception:
+        continue
+    if str(row.get("agent_id")) == agent_id and str(row.get("reel_url") or "").startswith("https://www.instagram.com/reel/"):
+        print(row["reel_url"])
+        raise SystemExit
+print("")
+PY
+)"
+  if [ -z "$VERIFIED_POST" ]; then
+    echo "live pass produced no verified native Reel for selected Agent $SELECTED_AGENT_ID" >>"$LOG"
+    RC=3
+  else
+    /opt/homebrew/bin/python3 "$SCRIPT_DIR/scripts/select_listing.py" --commit-agent-id "$SELECTED_AGENT_ID" >>"$LOG" 2>&1 || RC=4
+  fi
+fi
 echo "=== capafy-ig-marketing-daily done rc=$RC $(date '+%F %T %Z') ===" >>"$LOG"
 [ "$RC" -eq 0 ] || exit "$RC"
 touch "$LAST_PASS_MARKER" || exit 2
