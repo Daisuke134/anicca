@@ -22,9 +22,9 @@ class ObservationBuilder:
         page = self._session.page(handle)
         self._evidence_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
         os.chmod(self._evidence_dir, 0o700)
-        screenshot = await page.screenshot(full_page=True)
+        screenshot = await page.screenshot(full_page=True, type="jpeg", quality=65)
         screenshot_sha = hashlib.sha256(screenshot).hexdigest()
-        screenshot_path = self._evidence_dir / f"{handle.row_run_id}-{screenshot_sha}.png"
+        screenshot_path = self._evidence_dir / f"{handle.row_run_id}-{screenshot_sha}.jpg"
         screenshot_path.write_bytes(screenshot)
         os.chmod(screenshot_path, 0o600)
 
