@@ -76,8 +76,9 @@ alertと広範囲cache削除が消えていることを固定した。
 `139,808 KiB`まで低下し、swapは`6,048 MiB`使用、tierは`ULTRA`だった。canonical labelは
 `gui/501`に登録済み、`StartInterval=300`、`runs=66`、直近`last exit code=0`で、
 `last-receipt.json`も07:08Zに更新されている。ただしreserve fileは未実装であり、このexit 0は
-ENOSPC recovery contractのPASSではない。容量圧力下で新規repository cloneを作ることもproducer writeに
-当たるため、OSS比較は固定commitのGitHub raw sourceで行い、cloneは開始しなかった。
+ENOSPC recovery contractのPASSではない。当初は容量圧力下でcloneを開始しなかったが、その後free 6.06 GiBを
+確認して、合計約121 MiBに収まる4 repositoryだけを`/tmp/lm-cleanup-oss-research`へ固定commitで隔離cloneした。
+Kubernetesとsystemdは巨大なためcloneせず、固定commitのproduction sourceとtestだけをGitHub APIで読んだ。
 
 #### A-25 receipt reserve contract
 
@@ -89,13 +90,18 @@ A-25は通常のA-04以降より先に処理するcapacity-safety interruptで�
    sparse `truncate`だけを成功扱いにせず、書込み、flush、`fsync`、`st_blocks > 0`をread backする。
 2. reserve pathは通常のinventory/reclaimer candidateへ絶対に入れない。解放authorityは
    `_receipt()`の`ENOSPC` recovery branchだけである。
-3. receipt JSONは64 KiB以下へboundし、既存targetを保持したまま同一directoryのtemporary fileへ書く。
-4. temporary writeまたは`os.replace`が`errno.ENOSPC`の時だけ、reserveがregular fileかつsymlinkでないことを
-   再検証してunlinkし、同じpayloadのatomic writeを1回だけ再試行する。他errnoはreserveを解放せずraiseする。
+3. receipt JSONは64 KiB以下へboundし、既存targetを保持したまま同一directoryのunique temporary fileへ
+   mode `0600`で書く。temporaryをflush + file `fsync`してから`os.replace`し、commit後のparent-directory `fsync`は
+   best-effortにする。replace前の失敗では旧targetを保持し、partial temporaryを必ず除去する。
+4. temporary write、file `fsync`、または`os.replace`が`errno.ENOSPC`の時だけ、reserveがregular fileかつsymlinkで
+   ないことを再検証してunlinkし、同じpayloadのatomic operation全体を1回だけ再実行する。他errnoはreserveを
+   解放せずraiseする。directory `fsync`はreplace後なので、その失敗を未commitとしてretryしてはならない。
 5. retry成功後にreserveを同じsize/modeで再作成してread backする。再作成できなければpassはexit 0にせず、
    次回のcontrol-plane write safetyが失われたことを明示する。
-6. RED fixtureは最初のreceipt replaceだけをENOSPCにし、旧receiptがretry成功まで残ること、retryが1回、
-   新receiptがvalid JSON、temporary file残留0、reserveが1 MiB/mode 0600/allocatedへ戻ることを検証する。
+6. RED fixtureはwrite/file `fsync`/replaceの各pre-commit境界をparameterizeして最初の試行だけENOSPCにし、
+   旧receiptがretry成功まで残ること、retryが1回、新receiptがvalid JSON/mode 0600、temporary file残留0、
+   reserveが1 MiB/mode 0600/allocatedへ戻ることを検証する。他errnoとpost-commit directory `fsync`も
+   reserveを消費しないことを最小regressionで固定する。
 7. GREEN後は既存canonical labelだけを`bin/launchctl-safe kickstart`し、run count増加、新しい実機receipt、
    `last exit code=0`、reserve size/mode/allocation、protected deletion 0をread backする。人工的なproduction disk-fillは行わない。
 
@@ -354,6 +360,22 @@ supervisorと最小receipt writerだけを動かす。
 session/cacheの意味をowner proofなしで誤分類する。LLM自由判断案は新規pathへ適応できる一方、再現可能な
 deletion proofとreview boundaryを失う。intelligenceは候補とtestを作れても、production deletion capabilityは0のままにする。
 
+#### Fixed-commit code study
+
+READMEではなくentrypoint、call graph、state、error recovery、effect/readback、testを固定commitで比較した。
+
+| Repository / fixed commit | 実コードで確認したflow | Life Managerへの判断 |
+|---|---|---|
+| [notebooklm-py `3bb0c185`](https://github.com/teng-lin/notebooklm-py/blob/3bb0c1850ac4e85378a831581a0cf1e82fa80272/src/notebooklm/_atomic_io.py#L202) | sibling unique temp作成 → `0600` → write/flush/file `fsync` → `os.replace` → best-effort dir `fsync`。pre-commit errorはtempを消してold targetを保持する。[tests](https://github.com/teng-lin/notebooklm-py/blob/3bb0c1850ac4e85378a831581a0cf1e82fa80272/tests/unit/test_atomic_io.py#L434)はtemp `fsync`のENOSPCも反証する。隔離cloneで該当22 test PASS。 | A-25のatomic writer本体をcopy-tweakする第一候補。既存pass-wide lockを維持し、`filelock` dependencyとWindows retryは持ち込まない。Life Manager固有の1 MiB reserveとENOSPC 1回retryだけを加える。 |
+| [Kubernetes `e81f39c0`](https://github.com/kubernetes/kubernetes/blob/e81f39c0e03ce8ed8e2660c9147b391edd9e262b/pkg/kubelet/eviction/eviction_manager.go#L254) | `synchronize` → signals観測 → threshold/grace/min-reclaim判定 → node-level reclaim →再観測 → critical podを除外してrank/evict。[image GC](https://github.com/kubernetes/kubernetes/blob/e81f39c0e03ce8ed8e2660c9147b391edd9e262b/pkg/kubelet/images/image_gc_manager.go#L349)はhighで開始しlowまでunused imageを回収する。 | tier hysteresis、safe reclaim後のreadback、protected workload非evictionを採用。pod ranker/evictorはhost path deletionへコピーしない。 |
+| [systemd `ed22b5a7`](https://github.com/systemd/systemd/blob/ed22b5a77f39b7c1c901c357760d9596e2c9028b/src/journal/journald-manager.c#L143) | `limit = clamp(used + available-after-keep-free, min_use, max_use)`でproducer自身のbudgetを決める。[vacuum](https://github.com/systemd/systemd/blob/ed22b5a77f39b7c1c901c357760d9596e2c9028b/src/libsystemd/sd-journal/journal-vacuum.c#L126)はactive/unknown fileを除外し、archivedだけをoldest-firstでunlinkし、freed bytesを出す。 | producer-owned quota、active/unknown preserve、oldest-first bounded finalizer、bytes readbackを採用。journald固有filename parserはコピーしない。 |
+| [pfio `52faa1f3`](https://github.com/pfnet/pfio/blob/52faa1f36ded6bfcb5b78e443fadb019f62275f1/pfio/cache/file_cache.py#L250) | quota超過でcacheをfreezeし、cache writeのENOSPCだけwarning + `False`で上位処理を継続する。 | 再生成可能cache producerのfail-soft contractへ採用。critical receiptへは不採用。 |
+| [BleachBit `53cc9131`](https://github.com/bleachbit/bleachbit/blob/53cc9131f94edb2ee712957263611efe48c8180b/bleachbit/CLI.py#L190) | `--preview`と`--clean`を排他にし、曖昧なwildcard excludeは“avoid over-cleaning”でfailする。`Delete.execute(really_delete)`がeffect gate。ただし[Claude cleaner](https://github.com/bleachbit/bleachbit/blob/53cc9131f94edb2ee712957263611efe48c8180b/cleaners/claude.xml)はsession/history削除を定義する。 | plan/effect分離とinvalid exclusion fail-closedだけ採用。catalog、session cleanup、reboot時deleteは棄却。 |
+| [Czkawka `105a520b`](https://github.com/qarmin/czkawka/blob/105a520bab59d8a0064770b3dbcba0ab47abe59e/czkawka_core/src/common/deletion.rs#L167) | default `DeleteMethod::None`、dry-run/trash/stop flag、exact selected item、per-item errorとgained bytesを持つ。一方、effectはparallel delete。 | default no-effect、exact candidate、per-item readbackを採用。host governorでは直前再検証を保つためparallel deletionを棄却。 |
+
+この比較によりA-25の変更対象は既存`disk_cleanup.py`とtestの2 filesだけでよく、新しいexecutor、daemon、DB、
+third-party dependencyは不要である。実装soft targetは100 LOC未満を維持する。
+
 ### Target architecture
 
 ```mermaid
@@ -596,7 +618,7 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 | 27 | full censusのdisk使用量をbounded化 | `test_full_census_respects_temp_log_and_ledger_limits` | OK |
 | 28 | `dscl`/`launchctl`の141/153をhealth failureとしてfail-closed処理 | `test_gui_bootstrap_health_failure_is_observation_only` | OK |
 | 29 | stale app-server復旧後もcleanup labelのload readbackを独立検証 | `test_cleanup_label_load_readback_is_required` | OK |
-| 30 | receipt replaceのENOSPC時だけreserveを解放し、1回retry後にreserveを復元 | `test_receipt_enospc_releases_reserve_retries_once_and_restores_reserve` | OK |
+| 30 | receiptのpre-commit write/file-fsync/replace ENOSPC時だけreserveを解放し、atomic operationを1回再実行してreserveを復元 | `test_receipt_enospc_releases_reserve_retries_once_and_restores_reserve` | OK |
 
 ### E2E judgment
 
@@ -692,7 +714,7 @@ spec state更新、commit/pushまでを同じsliceで閉じる。後続itemのsc
 | A-22 | supervisor non-stop behaviorを実装する | ULTRA wake keeps supervisor labels loaded | 未完了 |
 | A-23 | Codex log budget/rotationを実装する | active app-server handoff with session loss 0 | 未完了 |
 | A-24 | completed-project janitorをcanonical loopへ接続する | terminal-only dry-run/live receipt | 未完了 |
-| A-25 | `_receipt()`へ1 MiB reserve付きENOSPC 1回retryを追加する | Test Matrix 30 PASS、旧receipt保持、retry 1回、temporary残留0、reserve 1 MiB/mode 0600/allocated、canonical run count増加、新receipt、last exit 0、protected deletion 0 | 最優先・未完了: 2026-08-22 ENOSPCでlast-receipt atomic replaceがexit 1。実装・fixture・実機readbackが必要 |
+| A-25 | `_receipt()`へdurable atomic writeと1 MiB reserve付きENOSPC 1回retryを追加する | Test Matrix 30 PASS、write/file-fsync/replace各ENOSPCで旧receipt保持・retry 1回、他errnoでreserve保持、receipt mode 0600、temporary残留0、reserve 1 MiB/mode 0600/allocated、canonical run count増加、新receipt、last exit 0、protected deletion 0 | 最優先・未完了: 2026-08-22 ENOSPCでlast-receipt atomic replaceがexit 1。実装・fixture・実機readbackが必要 |
 | A-26 | bounded ops logを分離する | operational log size/retention test PASS | 部分完了 |
 | A-27 | incident receiptを分離する | immutable incident receipt schema PASS | 未完了 |
 | A-28 | delivery-failure aggregationを保存する | Telegram message/delivery-failure IDs read back | 未完了 |
