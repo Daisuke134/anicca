@@ -263,7 +263,7 @@ A-08では正本schemaの`lease: {path,max_age_seconds}`を現行`Path(item["lea
 それぞれREDで再現した。既存string形式との互換を保つ1つのlease probeを追加し、開始時とeffect直前に
 同じ判定を行う。fresh reviewはPython 3.14の`Path.exists()`がpermission等の`OSError`をFalseへ畳む
 HIGHを発見したため、`stat()`成功だけをactive、`FileNotFoundError`だけをinactive、その他のschema/probe
-errorをactiveとしてpreserveするfail-closed分岐へ修正した。3 focused fixtureと全 **53 tests**、compile、
+errorをactiveとしてpreserveするfail-closed分岐へ修正した。2 focused fixtureと全 **52 tests**、compile、
 diff checkはPASSし、re-reviewは`ship`だった。final canonical runは2026-08-22T09:47:31Z、
 runs 97→98、last exit 0、`errors=0`、`protected_deletions=0`、`reclaimed=0`である。
 Anicca cleanup controlのgit/lsof/du probeにも15秒timeoutを設定し、さらにguard外側のgovernor、
@@ -796,7 +796,7 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 |---:|---|---|---|
 | 1 | 全local volume、top-level root、guard/sentinel/janitor/plist/log/state/manifestをimmutable host censusへ記録 | mount/root/owner family、label、interval、program SHA、last exit、free bytes | 部分完了: bounded `host-inventory.json`はmount 9/root 23を実測。full gapは4件まで縮小し、permission/owner attributionが残る |
 | 2 | `skills/self/disk-cleanup/` にcanonical host inventory、manifest、runner、health interfaceを定義 | local writable volume missing 0、required owner family missing 0、schema PASS | 部分完了: inventory schema、atomic writer、fast/full mode、hourly marker、48 tests、90秒census/90秒governor budget、permission/partial size、required owner coverage、local writable missing 0のreadbackは実装。health readbackの残契約は未完了 |
-| 3 | protected rootsとfail-closed validatorをTDDで固定 | Test Matrix 3–11 PASS | 部分完了: protected-root descendant scanとactive-leaseのschema/probe/effect recheck、53 testsを実装。A-07〜A-08は完了したが、A-09〜A-12の統合証跡は未完了 |
+| 3 | protected rootsとfail-closed validatorをTDDで固定 | Test Matrix 3–11 PASS | 部分完了: protected-root descendant scanとactive-leaseのschema/probe/effect recheck、52 testsを実装。A-07〜A-08は完了したが、A-09〜A-12の統合証跡は未完了 |
 | 4 | exact-byte tier、hysteresis、single lock、300秒schedulerをTDD実装 | Test Matrix 2、12–14 PASS | 部分完了: exact-byte tier、atomic lock、300秒plist、pressure/recovery floor、hourly full-pass marker、ULTRA時のcritical full-pass promotion、hourly/explicit fullのcooldown、marker fail-closed、bounded fast/full pass、正本labelのbootstrap/readbackは実装・unit/live PASS。24時間観測は未完了 |
 | 4a | GUI bootstrap health failureを観測専用fail-closedに固定 | Test Matrix 28–29 PASS、141/153 fixture receipt、復旧後readback | 部分完了: cleanup内preflight、atomic `gui-bootstrap-health-failure` receipt、UID/Directory Services/`gui/501`の実機PASSを実装。141/153 failure fixtureとstale app-server分離の実機証跡は未完了 |
 | 5 | Mac全体のproducer censusを作り、artifact/lease/finalizer helperを上位growth ownerへ接続 | 1 GiB以上のunattributed root 0、active lease readback、orphan lease fixture PASS | 部分完了: Chrome/Chromium cloneと`cfo-*`のallow-list discoveryは実装。host-wide census、lease heartbeat/finalizer接続は未完了 |
@@ -833,7 +833,7 @@ TDDのためだけの過剰fixtureや後続itemのscaffoldは前倒ししない�
 | A-05 | permission-limited rootを分類する | TCC/system-temp/`.Trash`のowner receipt | 完了: 08:44:06Z canonical full、exact 4 owner receipts、全件reclaim不可、root 23、mode 0600、SHA一致、runs 83→85、exit 0、errors/protected deletion 0、41 tests、review `ship` |
 | A-06 | local writable volume coverageを証明する | writable volume missing 0 | 完了: 09:08:04Z canonical fast、mount 9、local writable 7、Data含有、missing 0、metadata gap 0、runs 89→90、exit 0、0600、SHA一致、48 tests、review `ship` |
 | A-07 | protected-root fixtureを追加する | protected rootがmanifestへ入らないtest PASS | 完了: independent allowlisted parent 16件をpreserve、safe siblingだけ回収、effect直前競合もpreserve、50 tests、runs 93→94、exit 0、protected deletion 0、review `ship` |
-| A-08 | active-lease fixtureを追加する | active lease candidate preserve test PASS | 完了: dict/string schema対応、開始時・effect直前・probe errorをpreserve、53 tests、runs 97→98、exit 0、protected deletion 0、review `ship` |
+| A-08 | active-lease fixtureを追加する | active lease candidate preserve test PASS | 完了: dict/string schema対応、開始時・effect直前・probe errorをpreserve、52 tests、runs 97→98、exit 0、protected deletion 0、review `ship` |
 | A-09 | open-path fixtureを追加する | open path candidate preserve test PASS | 未完了 |
 | A-10 | probe/atomic-write failure fixtureを追加する | lsof/du failure fail-closed、production size-timeout owner attribution、host-inventory orphan temporary 0 | 未完了: 08:30:14Z fullでsize-timeout 8件、closedな旧`.host-inventory.*` temporary 1件を観測 |
 | A-11 | dirty/unpushed worktree fixtureを追加する | dirty/unpushed preserve test PASS | 未完了 |
