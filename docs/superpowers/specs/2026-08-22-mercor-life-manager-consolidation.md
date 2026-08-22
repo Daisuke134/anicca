@@ -259,3 +259,11 @@ These are runtime milestones, not additional submit clicks:
 4. **Settled payout:** read back the first real paid/settled Mercor row and calculate the trailing-30-day verified amount; do not count pending or estimated balances.
 5. **Revenue proof:** require three consecutive settled monthly cycles before reporting `$10K verified`; until then the revenue ledger remains `not_observed` when no payout evidence exists.
 6. **Legacy cleanup:** separately migrate/stop the old-repo consumers before deleting `profitable-claude`; this is not a reason to disable the Mercor loop.
+
+### 10.2 Actionable now versus external state
+
+There is actionable engineering work now; the system is not reduced to passive waiting:
+
+- **Actionable now:** run the full regression/release suite, maintain the Inbox→work-store→Calendar artifact→Earnings capture→Telegram receipt chain, run redacted authorized-work/acceptance/settlement fixtures, and monitor every hourly Mercor wake for fresh evidence and duplicate protection.
+- **External state:** Mercor must independently select an application, issue a contract, authorize the actual work, accept delivery, and settle a payout. The loop cannot force those provider decisions or fabricate the missing evidence.
+- **Current diagnosis:** three applications are pending review; the latest live Earnings capture has no payment history; the private revenue state therefore remains `not_observed`, not a guessed zero or a claimed income.
