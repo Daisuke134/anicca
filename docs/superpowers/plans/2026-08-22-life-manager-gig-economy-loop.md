@@ -246,7 +246,7 @@ No later task may jump ahead of the first incomplete row:
 |---:|---|---|
 | U1 | Resolve existing-account vs signup using the owner email | **DONE:** owner confirmed no account; new freelancer signup completed with normal email flow |
 | U2 | Complete normal email/password signup or login | **DONE:** verification email completed; fresh password login returned the same identity twice |
-| U3 | Complete factual freelancer profile needed to apply | Official profile completeness and availability readback |
+| U3 | Complete factual freelancer profile needed to apply | **DONE:** published profile `~01f5fe272d6df34084`; Online, >30 hrs/week, 40% complete |
 | U4 | Observe real job-search, detail and proposal surfaces | Redacted DOM/API field receipt with zero mutation |
 | U5 | Discover live jobs twice | Stable Upwork job IDs and zero proposal/message effects |
 | U6 | Qualify one job using installed Skills and Upwork-only capacity | Eligible qualification receipt; active Coconala count absent |
@@ -262,13 +262,10 @@ No later task may jump ahead of the first incomplete row:
 
 Tasks 13–22 implement U10–U15. Tasks 23–57 remain frozen until U14 closes.
 
-Current U3 evidence: the new freelancer account is email-verified and normal email/password re-login
-returns `/nx/create-profile/` with the owner identity on two readbacks. Google/Apple/social login was
-not used. Factual onboarding is saved through category, specialties, skills, title, education,
-languages, overview, USD 50 hourly rate, date of birth, address, selected city and phone. Official
-validation now reports only `Add a profile photo.` The local Coconala headshot was rejected because
-its provenance says AI-generated, and the GitHub avatar was rejected because it is a logo. Resume U3
-with an authentic owner headshot, then review and publish. Live totals remain 0 applications, 0
+Current U4 evidence: factual profile `~01f5fe272d6df34084` is published with the authentic owner
+photo, Status Online and More than 30 hrs/week. The official completion meter is 40%, identity is
+Unverified and Connects is 0. Observe the real search, detail and proposal entry next to determine
+which of those states is an actual submission gate. Live totals remain 0 applications, 0
 conversations, 0 contracts and USD 0 received revenue.
 
 ### Task 7: Record Upwork's private action matrix

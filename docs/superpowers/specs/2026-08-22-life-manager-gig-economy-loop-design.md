@@ -33,10 +33,10 @@ email/password login returned `/nx/create-profile/` with the same owner identity
 Google/Apple/social-login route was used. U1 and U2 are closed; U3 factual profile onboarding is the
 first incomplete outcome.
 
-U3 is saved through every required factual field except the authentic owner profile photo. Upwork's
-authoritative validation reports only `Add a profile photo.` An AI-generated Coconala headshot and a
-GitHub logo avatar are explicitly ineligible. U3 cannot close until an authentic owner headshot is
-uploaded, the review succeeds, and the published profile and availability are read back.
+U3 is closed. The authentic owner headshot is attached and Upwork reports `Your profile is ready!`.
+Published profile `~01f5fe272d6df34084` reads back Status Online, More than 30 hrs/week and 40%
+completion. Identity remains Unverified and Connects is 0; U4 must observe a real proposal entry to
+determine whether either state is a submission gate before money is spent.
 
 ## 1. Goal, objective and boundaries
 
