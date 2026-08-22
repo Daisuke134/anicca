@@ -15,6 +15,7 @@ import paid_work_evidence  # noqa: E402
 import paid_remote_result  # noqa: E402
 import reconcile_paid_delivery  # noqa: E402
 import step_result_status  # noqa: E402
+import project_ledger  # noqa: E402
 from private_data_boundary import restricted_attachment_paths  # noqa: E402
 from telegram_outbox import TelegramOutbox, dispatch_one  # noqa: E402
 from telegram_report import OpenClawTelegramTransport  # noqa: E402
@@ -1950,13 +1951,41 @@ def _normalize_acceptance_delta(root: Path) -> None:
         required_assets = decision_assets
     elif isinstance(decision_assets, list) and required_assets != decision_assets:
         contract_diff = _asset_contract_diff(decision_assets, required_assets)
+        decision_path = root / "context" / "paid-work-decision.json"
+        decision_sha256 = _file_snapshot(decision_path)[1]
+        manifest_sha256 = _file_snapshot(manifest_path)[1]
+        state = _load(root / "state.json")
+        proposed_effect_key = project_ledger.effect_key(
+            _text(state.get("adapter")), _text(state.get("talkroom_id")),
+            "file_review_submission", decision_sha256,
+        )
+        source_fact_ids = [f"file:sha256:{decision_sha256}", f"file:sha256:{manifest_sha256}"]
+        envelope = project_ledger.capability_result(
+            "paid.asset_contract",
+            "succeeded" if contract_diff["status"] == "equivalent_wording_normalized" else "needs_work",
+            evidence=[{"path": str(decision_path.resolve()), "sha256": decision_sha256},
+                      {"path": str(manifest_path.resolve()), "sha256": manifest_sha256}],
+            errors=[{"code": "asset_contract_diff", **contract_diff}],
+            source_fact_ids=source_fact_ids,
+        )
+        fact = project_ledger.append_fact(
+            root, "asset_contract_compared", contract_diff,
+            provenance=[
+                {"fact_id": source_fact_ids[0], "path": str(decision_path.resolve()),
+                 "sha256": decision_sha256},
+                {"fact_id": source_fact_ids[1], "path": str(manifest_path.resolve()),
+                 "sha256": manifest_sha256},
+            ], capability=envelope, effect=proposed_effect_key,
+        )
         _write(root / "context" / "paid-asset-contract-diff.json", {
             "version": 1,
             "status": contract_diff["status"],
-            "decision_path": str((root / "context" / "paid-work-decision.json").resolve()),
-            "decision_sha256": _file_snapshot(root / "context" / "paid-work-decision.json")[1],
+            "decision_path": str(decision_path.resolve()),
+            "decision_sha256": decision_sha256,
             "manifest_path": str(manifest_path.resolve()),
-            "manifest_sha256": _file_snapshot(manifest_path)[1],
+            "manifest_sha256": manifest_sha256,
+            "fact_id": fact["fact_id"], "effect_key": proposed_effect_key,
+            "capability_result": envelope,
             **contract_diff,
         })
         if contract_diff["status"] == "equivalent_wording_normalized":
