@@ -2878,10 +2878,20 @@ Evidence for this decision is pinned rather than paraphrased as folklore:
 - Google Search Central, [scaled content and thin affiliation](https://developers.google.com/search/docs/essentials/spam-policies#scaled-content): scaled unoriginal pages and merchant-copy affiliate pages add no value; good affiliate pages add original reviews, testing, comparisons, or useful features.
 - [`coreyhaines31/marketingskills@3df87f9`](https://github.com/coreyhaines31/marketingskills/tree/3df87f97621e18fbed7f6aa684edba54f49779a7/skills/marketing-loops): separate check cadence from act conditions, match cadence to signal speed, and treat over-frequent loops as busywork/noise.
 - [`Affitor/affiliate-skills@ed17ef3`](https://github.com/Affitor/affiliate-skills/blob/ed17ef37bc167b52d9596cbe0292507f001c483d/skills/automation/content-repurposer/SKILL.md): repurpose one proven article into native formats, schedule distribution across days, and feed measured format performance back into the next choice. Its unverified revenue examples are not adopted.
-- **FUNNEL-F — NEXT — one-variable hypothesis:** version one change to offer, proof, CTA,
-  or intent framing while holding placement, provider link, and other content
-  variables fixed; the metric is customer or transaction conversion.
-- **FUNNEL-G — focused owner distribution:** existing owners distribute only the
+- **FUNNEL-F — DONE — one-variable hypothesis:** installed release
+  `982154e1283e41f537eeef1c515032668d7bcc47` exposes the hash-bound focused
+  interval to the existing budgeted model Agent and rejects view/click/engagement
+  success metrics. Owner run `46` produced sealed decision
+  `1ecf26fe…167fe6` from baseline `36dffbc1…062e8`; result hash
+  `b8e86414…71bcc` matches the evidence seal. The pinned internal Agent was
+  `gpt-5.6-terra` at high effort with budget status `allowed`. It selected only
+  `cta`: replace the control CTA with “Try ElevenLabs Subtitle Translator for your
+  next multilingual video,” while retaining title, opening hook, article structure,
+  provider link, placement, and distribution. The success metric is official exact-
+  placement `transaction_count >= 1` in the next focused interval. The decision is
+  non-money and creates no public/provider effect. Owner publication remained
+  `FOCUSED_COHORT_HELD`; Telegram message is `28507`.
+- **FUNNEL-G — NEXT — focused owner distribution:** existing owners distribute only the
   admitted focused asset through owned channels with exact effect/readback receipts;
   no manual post, duplicate broadcast, or account farming.
 - **FUNNEL-H — mature readback:** after the declared sample/age boundary, capture

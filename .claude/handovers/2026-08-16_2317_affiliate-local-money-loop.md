@@ -1616,3 +1616,25 @@ money. The hypothesis must identify the current control artifact, one of offer /
 proof / CTA / intent framing, the replacement value, exposure start, maturity
 boundary, and customer/transaction outcome metric before FUNNEL-G lets existing
 owners distribute it.
+
+FUNNEL-F is now `DONE`. Release
+`982154e1283e41f537eeef1c515032668d7bcc47` is installed. It writes one immutable
+`FOCUSED_INTERVAL_BASELINE` from the FUNNEL-E/interval receipts and lets the
+existing budgeted `acquisition_decision` model Agent choose one variable. The
+result validator rejects views, clicks, engagement, and impressions as the focused
+success metric; exact customer or official transaction count is required. Owner
+run 46 produced decision `1ecf26fe47e19cd4a741547142eb6935056e2e6ac72053a758b146e132167fe6`
+from baseline `36dffbc1…062e8`. Evidence seal result `b8e86414…71bcc` recomputes
+exactly. The internal model readback is `gpt-5.6-terra`, high effort, budget
+`allowed`. It selected only `cta`, with exact replacement “Try ElevenLabs Subtitle
+Translator for your next multilingual video”; title, opening hook, article
+structure, provider link, placement, and distribution remain fixed. Success is
+official exact-placement `transaction_count >= 1` in the next focused interval.
+This is a hypothesis, not money. Publication stayed `FOCUSED_COHORT_HELD`, no link
+or distribution changed, exit was `0`, and Telegram receipt is `28507`.
+
+The next atomic item is FUNNEL-G: let only the existing composition/publication/X
+owners materialize and distribute the admitted CTA-only experiment under the same
+control lineage, then read back one exact public URL/X permalink and terminal
+consumption. Do not let the old view-only title experiment satisfy this gate, and
+do not open another product placement.
