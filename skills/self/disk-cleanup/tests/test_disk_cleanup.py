@@ -181,6 +181,107 @@ def test_effect_recheck_preserves_new_protected_descendant(tmp_path: Path, monke
     assert result["preserved_reasons"] == {"protected_descendant": 1}
 
 
+def test_active_lease_preserves_artifact(tmp_path: Path, monkeypatch) -> None:
+    temporary = tmp_path / "tmp"
+    candidate = temporary / "cfo-active-lease"
+    lease = temporary / "cfo-active-lease.lease"
+    candidate.mkdir(parents=True)
+    (candidate / "payload").write_text("in-flight")
+    lease.write_text("heartbeat")
+    monkeypatch.setattr(disk_cleanup.tempfile, "gettempdir", lambda: str(temporary))
+    governor = HostDiskGovernor(
+        home=tmp_path,
+        state_dir=tmp_path / "state",
+        lsof=lambda _path: (_ for _ in ()).throw(AssertionError("lsof must not run for an active lease")),
+        usage=lambda: (0, 1),
+    )
+
+    result = governor.sweep(
+        [{
+            "path": candidate,
+            "class": "ephemeral",
+            "owner": "temporary-run",
+            "discovery": "allowlisted",
+            "lease": {"path": str(lease), "max_age_seconds": 300},
+        }]
+    )
+
+    assert candidate.exists()
+    assert result["preserved_reasons"] == {"active_lease": 1}
+
+
+def test_effect_recheck_preserves_new_active_lease(tmp_path: Path, monkeypatch) -> None:
+    temporary = tmp_path / "tmp"
+    candidate = temporary / "cfo-lease-race"
+    lease = temporary / "cfo-lease-race.lease"
+    candidate.mkdir(parents=True)
+    (candidate / "payload").write_text("in-flight")
+    monkeypatch.setattr(disk_cleanup.tempfile, "gettempdir", lambda: str(temporary))
+    real_bytes = disk_cleanup._bytes
+
+    def start_lease(path: Path, **kwargs) -> int | None:
+        lease.write_text("heartbeat")
+        return real_bytes(path, **kwargs)
+
+    monkeypatch.setattr(disk_cleanup, "_bytes", start_lease)
+    governor = HostDiskGovernor(
+        home=tmp_path,
+        state_dir=tmp_path / "state",
+        lsof=lambda _path: "confirmed-closed",
+        usage=lambda: (0, 1),
+    )
+
+    result = governor.sweep(
+        [{
+            "path": candidate,
+            "class": "ephemeral",
+            "owner": "temporary-run",
+            "discovery": "allowlisted",
+            "lease": {"path": str(lease), "max_age_seconds": 300},
+        }]
+    )
+
+    assert candidate.exists()
+    assert lease.exists()
+    assert result["preserved_reasons"] == {"active_lease": 1}
+
+
+def test_lease_probe_error_fails_closed(tmp_path: Path, monkeypatch) -> None:
+    temporary = tmp_path / "tmp"
+    candidate = temporary / "cfo-lease-probe-error"
+    lease = temporary / "cfo-lease-probe-error.lease"
+    candidate.mkdir(parents=True)
+    (candidate / "payload").write_text("in-flight")
+    monkeypatch.setattr(disk_cleanup.tempfile, "gettempdir", lambda: str(temporary))
+    real_stat = Path.stat
+
+    def deny_lease_probe(path: Path, *args, **kwargs):
+        if path == lease:
+            raise PermissionError("lease unreadable")
+        return real_stat(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "stat", deny_lease_probe)
+    governor = HostDiskGovernor(
+        home=tmp_path,
+        state_dir=tmp_path / "state",
+        lsof=lambda _path: (_ for _ in ()).throw(AssertionError("lsof must not run after lease probe error")),
+        usage=lambda: (0, 1),
+    )
+
+    result = governor.sweep(
+        [{
+            "path": candidate,
+            "class": "ephemeral",
+            "owner": "temporary-run",
+            "discovery": "allowlisted",
+            "lease": {"path": str(lease), "max_age_seconds": 300},
+        }]
+    )
+
+    assert candidate.exists()
+    assert result["preserved_reasons"] == {"active_lease": 1}
+
+
 def test_unproved_candidate_is_preserved(tmp_path: Path) -> None:
     candidate = tmp_path / "important"
     candidate.write_bytes(b"do-not-delete")

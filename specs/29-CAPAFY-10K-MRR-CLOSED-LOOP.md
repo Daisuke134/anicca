@@ -11,9 +11,9 @@ Life Manager public repositoryだけをsourceとして、Capafy skillの発見�
 | 項目 | 実測 | 判定 |
 |---|---|---|
 | canonical source | `Daisuke134/life-manager` mainはpublic canonical repo。Capafy sourceは`skills/capafy-autopublish`、`skills/self/capafy-loop`、`skills/earn/capafy-marketing`に存在 | sourceは移植済み |
-| launchd cutover | loaded plistは`/Users/anicca/anicca/skills/...`を実行し、`/Users/anicca/Projects/life-manager-main/...`を実行していない | **FAIL: runtimeは旧repo** |
+| launchd cutover | loaded 8件すべての`ProgramArguments`と`WorkingDirectory`が`/Users/anicca/Projects/life-manager-main`を指す。旧repo path 0件、duplicate label 0件 | **PASS: runtimeはLife Manager** |
 | scheduler | `ai.anicca.capafy-loop-daily`、IG daily、hourly/daily-close monitorはloaded | schedule定義は存在 |
-| process health | daily loopとIG marketingのlast exit codeは`1`、hourly goal monitorは`2` | **FAIL: stopped/degraded** |
+| process health | daily loopとIG marketingはchild failureをそのままnonzeroで返し、成功時だけterminal heartbeatを書く。7日連続の実運転証明は未完 | wrapper false-green解消、C21継続 |
 | event ledger | hourly reportは同じ`event_id conflict`を反復。outcome monitorは`verified -> unresolved`の逆遷移を反復 | **FAIL: incident state machine不整合** |
 | last money snapshot | 5 orders、2 paid orders、gross `$19.98`、pending `$8.00`、realized `$0.00`、MRR `$0.00` | 売上実績あり、$10K MRR未達 |
 | marketing snapshot | IG Reel URLあり、121 views、1 click、0 likes、0 comments。marketing/inventory/account snapshotはstale | 投稿履歴あり、closed loopは停止 |
@@ -241,6 +241,8 @@ C1で`capafy-ig-account-manager.sh`、`capafy-outcome-monitor.sh`とそのruntim
 
 C2で旧installed definitionをrollback snapshotへ保存し、8件をbootout、render済みplistをinstall、同じ8 labelsをbootstrapする。`launchctl print` readbackは8/8件のsourceとWorkingDirectoryがLife Managerで、旧repo path 0件、duplicate label 0件、旧動的provision browser 0件である。rollback snapshotのcurrent pointerは`~/.local/state/life-manager/state/capafy-c2-last-backup.txt`に置く。
 
+C3でdaily money loopとIG marketing wrapperをterminal stateの唯一のownerにする。failure injectionではmoney childの`17`とIG childの`23`をそのまま返し、どちらもheartbeatを作らない。child `0`とIG cadence no-opだけがheartbeatを作る。focused 4件、Capafy marketing 112件、runner wiring 10件（subtest 7件）、money loop 7件が通る。
+
 ## Atomic remaining TODO
 
 Items are executed top-to-bottom. Only one item is active.
@@ -250,7 +252,7 @@ Items are executed top-to-bottom. Only one item is active.
 | C0 | inventory every loaded Capafy launchd label and map source path, state path, log path, cadence | checked-in inventory has no unknown owner | completed — 9/9 loaded labels mapped; unknown owner 0 |
 | C1 | restore the complete Life Manager runtime closure and render repo-owned plist templates to Life Manager main release paths | 8/8 rendered plist files pass `plutil`; resolved ProgramArguments/WorkingDirectory point to Life Manager; focused runtime regression passes | completed |
 | C2 | install and bootstrap revised jobs once, unload duplicate old-path jobs, and read back the exact loaded set | `launchctl print` points to Life Manager; one owner per responsibility; no duplicate daily/hourly publisher | completed — loaded 8/8; old path 0; duplicates 0 |
-| C3 | fix false-green exits so child failure remains nonzero and terminal heartbeat is written only after classified completion | failure injection returns nonzero; no false healthy marker | pending |
+| C3 | fix false-green exits so child failure remains nonzero and terminal heartbeat is written only after classified completion | failure injection returns exact child codes `17`/`23`; failed runs write no heartbeat; success/no-op writes heartbeat | completed |
 | C4 | fix event identity and incident monotonicity | repeated observation is idempotent; new observation gets new event ID; verified cannot regress to unresolved | pending |
 | C5 | run a bounded hourly reconcile against live Capafy account/inventory/sales/refunds/subscriptions | fresh receipt separates MRR, one-time, pending, refunds; unknown remains unknown | pending |
 | C6 | normalize current Capafy server response and restore exact status/slot inventory readback | live call returns agent rows and deterministic occupied/free/retry counts | pending |

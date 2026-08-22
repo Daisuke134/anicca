@@ -88,7 +88,7 @@ sys.exit(0 if last and (time.time()-last)<72000 else 1)
 PY
 then
   echo "cadence gate: last IG Reel < 20h ago — no-op." >>"$LOG"
-  touch "$LAST_PASS_MARKER" 2>/dev/null || true
+  touch "$LAST_PASS_MARKER" || exit 2
   exit 0
 fi
 
@@ -136,7 +136,7 @@ STEP7 REPORT — MANDATORY every pass. Send to the Telegram target in CAPAFY_TEL
   (b) the message body MUST contain: the promoted listing name + agent_id, the mode (DRY or LIVE), the Reel public URL (or "DRY — not posted" on a dry pass), and the FULL caption text verbatim (the exact caption you wrote for the Reel).
   On a DRY pass you STILL send this once (video + full caption + which listing) so Dais can review the creative before go-live — you just do NOT publish to IG. Confirm the send returned a real message id; also AgentMail via loop-report if that path exists.
 
-FINALLY touch '"$LAST_PASS_MARKER"'. A DRY pass, a deferred cadence pass, or a caught error is a clean finish, never a hang.'
+Do not write '"$LAST_PASS_MARKER"'; the deterministic wrapper owns that heartbeat and writes it only after this runner exits 0. A DRY pass or a deferred cadence pass is a clean finish.'
 
 EVIDENCE_DIR="$HOME/.local/state/life-manager/state/agent-runner-evidence/${INSTANCE}-ig-marketing/$(date +%s)-$$"
 printf '%s\n' "$PROMPT" | "$RUN_AGENT" \
@@ -146,5 +146,6 @@ printf '%s\n' "$PROMPT" | "$RUN_AGENT" \
   --loop capafy >>"$LOG" 2>&1
 RC=$?
 echo "=== capafy-ig-marketing-daily done rc=$RC $(date '+%F %T %Z') ===" >>"$LOG"
-touch "$LAST_PASS_MARKER" 2>/dev/null || true
+[ "$RC" -eq 0 ] || exit "$RC"
+touch "$LAST_PASS_MARKER" || exit 2
 exit 0

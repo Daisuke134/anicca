@@ -234,6 +234,22 @@ class HostDiskGovernor:
         usage = shutil.disk_usage("/System/Volumes/Data" if Path("/System/Volumes/Data").exists() else "/")
         return usage.free, usage.total
 
+    @staticmethod
+    def _active_lease(item: dict) -> bool:
+        lease = item.get("lease")
+        if lease is None:
+            return False
+        lease_path = lease.get("path") if isinstance(lease, dict) else lease
+        if not isinstance(lease_path, (str, os.PathLike)):
+            return True
+        try:
+            Path(lease_path).expanduser().stat()
+            return True
+        except FileNotFoundError:
+            return False
+        except OSError:
+            return True
+
     def acquire_lock(self) -> bool:
         self.state_dir.mkdir(parents=True, exist_ok=True)
         try:
@@ -508,7 +524,7 @@ class HostDiskGovernor:
             if not self._allowlisted_candidate(path, item):
                 preserve("unknown_artifact")
                 continue
-            if item.get("lease") and Path(item["lease"]).exists():
+            if self._active_lease(item):
                 preserve("active_lease")
                 continue
             if not path.exists() or path.is_symlink():
@@ -547,6 +563,9 @@ class HostDiskGovernor:
             if descendant_state is not None:
                 result["errors"] += descendant_state == "descendant_probe_error"
                 preserve(descendant_state)
+                continue
+            if self._active_lease(item):
+                preserve("active_lease")
                 continue
             try:
                 if path.is_dir():
