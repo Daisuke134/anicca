@@ -838,12 +838,40 @@ event-driven.
 **Interfaces:** Produces owner-only project directory, source manifest, workflow version, deadline,
 artifact manifest and client-data policy.
 
-- [ ] Write failing tests for path traversal, shared-client directory, missing contract scope and
+- [x] Write failing tests for path traversal, shared-client directory, missing contract scope and
   secret copied to public/log paths.
-- [ ] Create one workspace from canonical contract data; mode all private state owner-only.
-- [ ] Bind inputs and workflow version by SHA-256; preserve revisions rather than overwriting.
-- [ ] Project canonical lifecycle events into `project_ledger.py`.
-- [ ] Run focused tests and commit/push.
+- [x] Create one workspace from canonical contract data; mode all private state owner-only.
+- [x] Bind inputs and workflow version by SHA-256; preserve revisions rather than overwriting.
+- [x] Project canonical lifecycle events into `project_ledger.py`.
+- [x] Run focused tests and commit/push.
+- [ ] Create the first production workspace from a real official Upwork contract; require its frozen
+  workflow identity rather than inventing one after acceptance.
+
+Task 16 evidence: `project_workspace.py` is a narrow security/content-addressing wrapper around the
+existing `project_ledger.py`; no second ledger, database, dependency or workspace service was added.
+It accepts only the exact canonical contract and frozen workflow keys, rejects traversal and secret
+extra fields before creating the base, gives every provider/contract a distinct directory, and uses
+an owner-only per-contract file lock. Each contract/workflow pair receives a SHA-256 revision under
+`requirements/revisions`, source and workflow manifests, an initially empty artifact manifest and a
+fixed owner-only client-data policy. Existing bytes must match exactly; changed scope creates a new
+revision instead of overwriting the first. Only hashes enter the append-only economic lifecycle
+fact. Directories are mode 700 and files mode 600.
+
+The security REDs reproduced both missing implementation and a nested `requirements/revisions`
+symlink writing one private revision outside the workspace before rejection. The implementation now
+checks the complete existing tree before any revision write; traversal, provider symlink, nested
+symlink, shared-client, missing-scope, secret-extra, replay and revision behavior pass 7/7. OSS code
+comparison: Conway Automaton commit `871c53e39b9180920c775759ddc38789699d69ea` supplied resolved
+path containment and version archival patterns
+(https://github.com/Conway-Research/automaton); profitable-claude commit
+`bf1d4f2ac9918a9de0e718786be274167382c547` supplied atomic JSON and deterministic SHA-256 manifest
+patterns (https://github.com/Daisuke134/profitable-claude). Automaton's ordinary output overwrite
+and default file modes were rejected for client data. GitHub API and DuckDuckGo retrieval were also
+attempted but the host resolver was unavailable; these two already-cloned fixed commits were read
+directly. Production currently has offers 0, active contracts 0, earnings USD 0 and no
+`~/gig/projects/upwork` directory, so no live project or revenue is claimed. The next buildable item
+is Task 17's frozen-workflow executor; live Task 16 creation remains gated by a real contract and the
+workflow identity frozen before acceptance.
 
 ### Task 17: Execute the contracted Skill workflow
 
