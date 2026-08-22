@@ -186,6 +186,72 @@ def observe_clicks(state, placements):
     return {**receipt, "state": "OBSERVED", "changed": changed}
 
 
+def join_provider_interval(state):
+    cta = json.loads((state / "cta-click-observations" / "latest.json").read_text())
+    interval_start = cta["interval_start"]
+    snapshots = [
+        json.loads(line) for line in (state / "funnel-snapshots.jsonl").read_text().splitlines()
+        if line.strip()
+    ]
+    def observed_at(snapshot):
+        values = [
+            (row.get("provider_clicks") or {}).get("observed_at")
+            for row in snapshot.get("placements", [])
+        ]
+        return min((value for value in values if isinstance(value, str)), default="")
+    baselines = [row for row in snapshots if observed_at(row) and observed_at(row) <= interval_start]
+    current = max(snapshots, key=observed_at, default={})
+    report = json.loads((state / "provider-reports" / "partnerstack" / "latest.json").read_text())
+    if not baselines or observed_at(current) < interval_start or report.get("observed_at", "") < interval_start:
+        return {
+            "state": "WAITING_FOR_CURRENT_PROVIDER_READBACK", "changed": False,
+            "interval_start": interval_start,
+            "current_link_observed_at": observed_at(current) or None,
+            "current_transaction_observed_at": report.get("observed_at"),
+        }
+    baseline = max(baselines, key=observed_at)
+    baseline_rows = {row["placement_id"]: row for row in baseline["placements"]}
+    current_rows = {row["placement_id"]: row for row in current["placements"]}
+    cta_rows = {row["placement_id"]: row for row in cta["placements"]}
+    rows = []
+    for placement_id in sorted(cta_rows):
+        before = (baseline_rows.get(placement_id, {}).get("provider_clicks") or {})
+        after = (current_rows.get(placement_id, {}).get("provider_clicks") or {})
+        click_delta = after.get("count") - before.get("count")
+        unique_delta = after.get("unique_count") - before.get("unique_count")
+        if click_delta < 0 or unique_delta < 0:
+            raise InstrumentationError("provider click counter regressed")
+        commission = current_rows.get(placement_id, {}).get("transactions") or {}
+        rows.append({
+            "placement_id": placement_id,
+            "cta_clicks": cta_rows[placement_id]["count"],
+            "provider_click_delta": click_delta,
+            "provider_unique_click_delta": unique_delta,
+            "customers": None,
+            "customer_state": "UNAVAILABLE_AT_EXACT_PLACEMENT",
+            "transaction_count": commission.get("count", 0),
+            "transaction_state": commission.get("state", "OBSERVED"),
+            "money_state": "NON_MONEY_UNTIL_APPROVED_OR_PAID",
+        })
+    core = {
+        "schema_version": 1, "receipt_type": "AFFILIATE_INTERVAL_FUNNEL_JOIN",
+        "interval_start": interval_start, "interval_end": observed_at(current),
+        "baseline_snapshot_sha256": baseline.get("snapshot_sha256"),
+        "current_snapshot_sha256": current.get("snapshot_sha256"),
+        "official_report_observed_at": report.get("observed_at"),
+        "placements": rows,
+    }
+    receipt_sha256 = hashlib.sha256(json.dumps(core, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    receipt = {**core, "receipt_sha256": receipt_sha256}
+    latest = state / "interval-funnel-joins" / "latest.json"
+    changed = not latest.is_file() or json.loads(latest.read_text()).get("receipt_sha256") != receipt_sha256
+    atomic_write(latest, receipt)
+    if changed:
+        with (state / "interval-funnel-joins.jsonl").open("a", encoding="utf-8") as stream:
+            stream.write(json.dumps(receipt, sort_keys=True, separators=(",", ":")) + "\n")
+    return {**receipt, "state": "OBSERVED", "changed": changed}
+
+
 def _public_ready(owned_url, placement_id):
     try:
         with urllib.request.urlopen(owned_url, timeout=20) as response:

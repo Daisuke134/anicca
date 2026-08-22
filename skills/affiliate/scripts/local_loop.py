@@ -26,7 +26,9 @@ from job_journal import (
 from provider_cli import ProviderError, observe, poll, read_login_credentials, resume
 from program_registry import TTS_PLACEMENT, apply_getresponse, elevenlabs_link_action
 from acquisition_decision import advance as advance_acquisition_decision
-from cta_instrumentation import advance as advance_cta_instrumentation, observe_clicks
+from cta_instrumentation import (
+    advance as advance_cta_instrumentation, join_provider_interval, observe_clicks,
+)
 from runtime_guard import runtime_guard
 
 
@@ -3797,6 +3799,17 @@ def _wake_once(args, started_at, run_id):
             "state": "CTA_OBSERVATION_FAILED", "changed": False,
             "failure_type": type(error).__name__,
         }
+    try:
+        interval_funnel = admit(
+            "ledger.interval-funnel-join", "LEDGER_ONLY",
+            {"cta_click_state": cta_clicks.get("state")},
+            lambda: join_provider_interval(state),
+        )
+    except Exception as error:
+        interval_funnel = {
+            "state": "INTERVAL_FUNNEL_JOIN_FAILED", "changed": False,
+            "failure_type": type(error).__name__,
+        }
     rolling_net = admit(
         "ledger.rolling-net", "LEDGER_ONLY", {"placement_ledger_state": placement_ledger.get("state")},
         lambda: refresh_rolling_net(state),
@@ -3951,6 +3964,9 @@ def _wake_once(args, started_at, run_id):
         "cta_click_state": cta_clicks.get("state"),
         "cta_click_receipt_sha256": cta_clicks.get("receipt_sha256"),
         "cta_click_failure_type": cta_clicks.get("failure_type"),
+        "interval_funnel_state": interval_funnel.get("state"),
+        "interval_funnel_receipt_sha256": interval_funnel.get("receipt_sha256"),
+        "interval_funnel_failure_type": interval_funnel.get("failure_type"),
         "rolling_net_state": rolling_net.get("state"),
         "rolling_net_money_state": rolling_net.get("money_state"),
         "rolling_net_net_state": rolling_net.get("net_state"),
