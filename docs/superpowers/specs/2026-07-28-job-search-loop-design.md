@@ -188,7 +188,7 @@ The mapper also recognizes approved current-location and GitHub-portfolio fields
 LangChain's Solutions Engineer (Chicago) form reached the real submit click and is
 fenced as `submit_unknown`; its direct Telegram application report was acknowledged
 as message `27539`.
-The daily script now bounds the model-based browser lane at 300 seconds by
+The daily script now bounds the model-based browser lane at 1800 seconds by
 default (`JOB_SEARCH_BROWSER_TIMEOUT_SECONDS` may lower or raise that bounded
 value). It is a required form-operator lane, not an optional fallback: the
 deterministic preflight runs first, then hands each eligible row to the model
@@ -387,7 +387,7 @@ This is the remaining implementation-order SSOT. Only the first
 | 6 | Define the Job Hunter browser-agent framework package and public contracts | `done` | Package boundary, dependency direction, API version, and orchestrator/session/observation/action/answer/checkpoint/verifier/provider-hint signatures are fixed below |
 | 7 | Define one provider-neutral sanitized row-envelope and row-run state schema | `done` | `schemas/browser-row-run.v1.schema.json` allowlists exact identity/evidence pointers and excludes secrets, raw answers, provider workflows, and terminal retry inputs |
 | 8 | Add framework contract tests and recorded real-shape replays | `done` | `tests.test_model_browser_loop` replays sanitized live Workday plus recorded Ashby shapes, rejects forbidden envelopes, and detects all five current fast-path contract gaps |
-| 9 | Route `browser-lane-agent` to Luna xhigh with the existing bounded runner | `done` | `luna-xhigh-browser-loop` has one Codex Luna xhigh candidate, the existing 900-second bound, explicit reason at both callers, and no fallback executor |
+| 9 | Route `browser-lane-agent` to Luna xhigh with the existing bounded runner | `done` | `luna-xhigh-browser-loop` has one Codex Luna xhigh candidate, the 1800-second daily bound, explicit reason at both callers, and no fallback executor |
 | 10 | Remove `JOB_SEARCH_ENABLE_MODEL_FALLBACK` as a production decision | `done` | The flag and early exit are absent, Workday fast path is outside production, and the mandatory Luna lane consumes every eligible Ledger Workday row |
 | 11 | Replace Workday/Ashby filler ownership with the framework orchestrator | `done` | Production reaches neither filler nor runner directly; discovery/model-owned receipts feed one `browser_agent.orchestrator`, which delegates once to the existing runner |
 | 12 | Make Workday the only active application lane during 10P | `done` | The owner keeps Ashby discovery read-only, emits `discovery_only/workday_10p`, passes `active_provider=workday` through the orchestrator boundary, and forbids Ashby form navigation in the model prompt |
@@ -798,12 +798,25 @@ Command: python3 -m unittest tests.test_model_browser_loop -v
 
 `runtime/agent-runner/config.json` has exactly one `browser-lane-agent` route:
 `luna-xhigh-browser-loop`, one `codex` candidate using `gpt-5.6-luna` with
-`effort=xhigh`, and the existing 900-second timeout. The shared runner's restricted
+`effort=xhigh`. The daily owner supplies a 1800-second timeout, matching its
+30-minute launchd cadence so a long Workday form can finish in one wake. The shared runner's restricted
 effort gate remains active. Both current callers—`scripts/run-daily.sh` and
 `job_search_loop.agent_runner.AgentRunner.run(task="submit")`—supply the identical
 explicit reason `mandatory-model-browser-loop`; removing it fails before provider
 launch. No second candidate, fallback provider, executor, timeout, or browser owner
 was introduced.
+
+Live recurrence evidence: `daily-20260823-024948` used Luna xhigh and the existing
+CloakBrowser owner to select the next unsubmitted Workday row, NVIDIA Physical AI
+and Simulation Solution Architect (`JR2022223`), sign in with the stored tenant
+credential, upload the current resume, and advance through source, personal data,
+address, and dynamic questionnaire pages with 47 per-action screenshots. Every
+runtime command exited successfully and no submit fence was consumed, but the
+900-second model window ended after 891.516 seconds and Luna mislabeled the
+checkpoint `transport_failed`. The row remains `materials_ready`; this is a bounded
+execution-window defect, not a CDP/provider failure. The daily default is therefore
+1800 seconds and the same checkpointed row must resume; `submitted` still requires
+completion UI or the exact authoritative receipt email.
 
 Atomic 9 evidence is a two-failure RED against the previous Terra route, followed
 by 10 focused route/caller/runner/schema tests passing, shell syntax passing, and a

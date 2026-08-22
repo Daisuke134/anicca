@@ -183,7 +183,7 @@ PY
 if [[ "$JOB_SEARCH_REPORT_RC" -ne 0 ]]; then
   printf '%s\n' "pre-model Telegram report failed; wake continues" >&2
 fi
-MODEL_TIMEOUT_SECONDS="${JOB_SEARCH_BROWSER_TIMEOUT_SECONDS:-900}"
+MODEL_TIMEOUT_SECONDS="${JOB_SEARCH_BROWSER_TIMEOUT_SECONDS:-1800}"
 set +e
 "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_agent.orchestrator \
   --runner "$JOB_SEARCH_RUNNER" \

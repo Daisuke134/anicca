@@ -68,3 +68,14 @@ unrelated dirty paths `docs/loops/x-repost.md` and `state/effective-cron/`.
   exact company, role, JR2015317, and "has been received" text. Reconciler Gmail
   discovery now includes that real Workday wording; kick the existing inbox owner,
   verify Ledger `submitted`, then repair/verify the Telegram ACK without resubmitting.
+- NVIDIA `JR2015317` is now authoritatively `submitted`: Gmail receipt
+  `1a02a898712efee9` says the application was received, and the reconciler bound it
+  to the exact Ledger row. Its resume Telegram delivery reached `send_started` but
+  has no provider message ID; do not blind-retry that uncertain document delivery.
+- Recurrence run `daily-20260823-024948` selected fresh NVIDIA Workday role
+  `JR2022223`, reused the existing tenant credential, uploaded the resume, and
+  advanced through dynamic questions with 47 screenshots. All runtime commands
+  exited zero and Submit was never called. Luna ended at 891.516 seconds with a
+  false `transport_failed`; the row remains `materials_ready`. Daily model timeout
+  is raised from 900 to 1800 seconds to match `StartInterval=1800`; resume this same
+  checkpoint through final Review and verify completion UI or Gmail receipt.
