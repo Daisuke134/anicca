@@ -213,7 +213,7 @@ PYEOF
 # Count only rows that actually reached X. A row recorded as not_posted proves the opposite --
 # letting it hold the half-hour slot would turn one failed attempt into a silent slot of no output.
 read -r SLOT_COUNT TODAY_COUNT ORIGINAL_TODAY_COUNT <<<"$("$PY" - "$POSTED" "$THIS_SLOT" "$TODAY" <<'PYEOF'
-import json, sys
+import datetime, json, sys
 path, this_slot, today = sys.argv[1:4]
 slot = day = original = 0
 try:
@@ -230,10 +230,16 @@ for line in lines:
         continue
     if row.get("status") == "not_posted":
         continue
-    at = row.get("posted_at", "")
-    slot += at.startswith(this_slot)
-    day += at.startswith(today)
-    original += at.startswith(today) and row.get("kind") == "original" and bool(row.get("post_url"))
+    try:
+        at = datetime.datetime.fromisoformat(row.get("posted_at", "")).astimezone()
+    except (ValueError, TypeError):
+        continue
+    row_slot_minute = 0 if at.minute < 30 else 30
+    row_slot = at.strftime("%Y-%m-%dT%H:") + f"{row_slot_minute:02d}"
+    row_day = at.strftime("%Y-%m-%d")
+    slot += row_slot == this_slot
+    day += row_day == today
+    original += row_day == today and row.get("kind") == "original" and bool(row.get("post_url"))
 print(slot, day, original)
 PYEOF
 )"
