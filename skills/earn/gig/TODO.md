@@ -1822,9 +1822,24 @@ action completes.
   naturally reconciled to `replied` without another marketplace effect.
 - [x] On the natural polls after that correction, prove seller-last replay zero: no second apology and
   no duplicate reply/estimate. The only later marketplace event is the buyer's distinct acknowledgement.
+- [x] Re-open the affected live material root and verify the attachment contract at the byte boundary,
+  not from reply text. Its private manifest still owns four buyer files with nonzero bytes and exact
+  SHA-256 values; both requested PNGs open as distinct valid 638 x 848 images, and their on-disk sizes
+  match the manifest. Authenticated in-page fetch is the primary path; a no-href control uses the
+  existing trusted-pointer/download-behavior fallback. A browser save-dialog interaction is not a
+  completion fact by itself: durable bytes, hash, exact message binding and successful content open are.
+- [ ] Prove the purchase handoff without asking the buyer to upload again. Negotiate must expose the
+  canonical thread material manifest as a private content-addressed handoff; after a matching purchase,
+  the separate Paid owner must read back the same attachment SHA-256 values inside the project context
+  without a blind redownload or filename-only match. This lane owns the immutable handoff output only;
+  do not edit `paid_direct.py` or the Paid runtime from this section.
 - [ ] Resolve the correction's Telegram report without a blind resend. Report
   `gig:telegram:reply:v2:412:6` is `delivery_unknown` after `TimeoutExpired` and has no provider message
-  ID; match a provider receipt first and resend only if non-delivery is proven.
+  ID; match a provider receipt first and resend only if non-delivery is proven. Future runs retain a
+  complete provider JSON acknowledgement carried by `TimeoutExpired.stdout`, persist its exact
+  event/target/message binding and still fail closed for empty, malformed, rejected or ID-less output
+  (`81a4e91b7`; 23 focused tests pass). This prevents another lost acknowledgement but does not invent
+  a receipt for the historical unknown report.
 - [ ] Treat a buyer's competing bid or desired ceiling as a semantic renegotiation signal. Choose a
   deliverable, platform-valid competitive price from the whole current cycle without a hard-coded
   discount, revise the existing pre-purchase estimate when needed, and require official readback of
