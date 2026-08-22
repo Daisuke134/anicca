@@ -7270,3 +7270,14 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   pending/approved/paid/reversed all zero. Canonical money remains
   `NO_TRANSACTIONS`, `NO_APPROVED_OR_PAID_ROWS`, and USD 10,000 `NOT_REACHED`;
   the newest Subtitle Translator provider click count is non-money.
+- The owner verification blocker is host user-control-plane loss, not an X or
+  Affiliate decision. Both Repost and Affiliate owner logs stop at exactly
+  `2026-08-23 03:44:49 JST`; neither scheduled `StartInterval` produced a later
+  effect. Read-only probes from the Codex app-server context return numeric
+  `id -un=501`, Directory Services `eServerError`, `scutil` invalid destination,
+  `logd` unavailable, and `launchctl print gui/501` code 141
+  `Reentrancy avoided`. The shared preflight therefore correctly records
+  `blocked_control_plane` and forbids a mutation. Do not bypass it with raw
+  launchctl, a parallel executor, or manual posting. A fresh Aqua/user context
+  must first prove `launchctl-safe preflight` PASS; then safe-kick only the
+  existing Repost owner and read back the 0.50 strategy migration.

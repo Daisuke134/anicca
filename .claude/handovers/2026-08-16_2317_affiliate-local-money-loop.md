@@ -2388,3 +2388,15 @@ safe-kick/read back the Affiliate owner only through the existing owner path.
 Current official PartnerStack truth after Affiliate run 112 is still zero
 commission rows and pending/approved/paid/reversed all zero:
 `NO_TRANSACTIONS`, `NO_APPROVED_OR_PAID_ROWS`, and USD 10,000 `NOT_REACHED`.
+
+Current blocker is broader than Repost. Repost and Affiliate owner logs both
+stop at exactly `2026-08-23 03:44:49 JST`, and neither StartInterval produced a
+later run. From this Codex app-server context, read-only probes show numeric
+`id -un=501`, Directory Services `eServerError`, `scutil` invalid destination,
+`logd` unavailable, and GUI launchd code 141 `Reentrancy avoided`. The shared
+preflight is correctly `blocked_control_plane`; never bypass it with raw
+launchctl, a parallel executor, or manual X/Postiz work. In a fresh Aqua/user
+context, first require `/Users/anicca/loops/current/bin/launchctl-safe preflight`
+to return PASS. Then safe-kick only `ai.anicca.x-repost-pass`, verify private
+`original_ratio=0.50` plus bootstrap version 2, and wait for either an exact X
+permalink or a terminal safe no-effect before triggering the Affiliate owner.
