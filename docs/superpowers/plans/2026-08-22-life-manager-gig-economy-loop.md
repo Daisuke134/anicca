@@ -151,13 +151,13 @@ commands used by every later task.
 **Interfaces:** Produces immutable `Opportunity`, `EffectIntent`, `ProviderReceipt`, `ProjectState`,
 `PaymentState` and the eight adapter operations from the design.
 
-- [ ] Write a failing contract test with a minimal fake adapter; assert provider IDs, currency,
+- [x] Write a failing contract test with a minimal fake adapter; assert provider IDs, currency,
   source hash and observed timestamp are mandatory.
-- [ ] Run the focused test and confirm the types are absent.
-- [ ] Implement frozen dataclasses and a runtime contract validator using only the standard library.
-- [ ] Assert `execute()` output cannot be converted to success without `readback()` returning the
+- [x] Run the focused test and confirm the types are absent.
+- [x] Implement frozen dataclasses and a runtime contract validator using only the standard library.
+- [x] Assert `execute()` output cannot be converted to success without `readback()` returning the
   matching provider/action/effect key.
-- [ ] Run focused tests and commit/push as `feat(gig): define provider adapter contract`.
+- [x] Run focused tests and commit/push as `feat(gig): define provider adapter contract`.
 
 ### Task 3: Bind authorization to the existing effect fence
 
