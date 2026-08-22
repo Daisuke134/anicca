@@ -1,5 +1,30 @@
 # Affiliate local money loop handover
 
+- Fresh distribution priority repair: Repost commits `fffa6cb8c` are pushed
+  to both `origin/feat/repost-affiliate-integration` and
+  `canonical/feat/repost-affiliate-integration`; immutable release
+  `20260822T182156-fffa6cb8` is current and source/runtime
+  `affiliate_proposal.py` SHA-256 is
+  `2338f2a41bd4c50e10907c2863eb7a9a6a357b4ca60d545a1bb857752f4136a8`.
+  The selector still reconciles every unfinished `EFFECT_STARTED` claim first,
+  but a fresh current READY proposal now precedes readback-only recovery of
+  older terminal UNVERIFIED proposals. Private readback selects Voice Cloning
+  proposal `bb5c8fbd...bae7` as `READY`, rather than spending the next hourly
+  distribution slot on old Subtitle Translator observation. The 13 Repost
+  tests, shell syntax, Python compilation, and real private selector readback
+  pass. No public or provider effect was executed by this repair. The existing
+  one-post-per-hour fence keeps Voice Cloning ineligible until the next hour
+  after the recovered Voice Changer row at `18:15:55 JST`; do not bypass it.
+
+- Distribution supply readback: canonical state has 22 `X_LIVE` campaign
+  publications, six live DEV publications, six live Substack publications,
+  four Affiliate Repost proposals, six consumption rows, and one exact
+  Affiliate Repost posted row. The proposal owner selects the next unconsumed
+  X_LIVE placement by observed provider click count, so the immediate work is
+  to drain the existing placement supply through the sole hourly Repost owner.
+  Do not add same-placement content variants until this existing supply has
+  actually been distributed and measured; current official money remains zero.
+
 - Distribution-first checkpoint: Repost source commits `54e0d99d7` and
   `d5723b6db` are pushed to both remotes and immutable release
   `20260822T181019-d5723b6d` is installed with byte-equal `x_post.py`. The

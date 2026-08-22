@@ -33,6 +33,15 @@ atom is the existing Voice Cloning proposal `bb5c8fbd...bae7`,
 `READY_FOR_EXISTING_REPOST_OWNER / UNCONSUMED`; the existing Repost owner may
 consume it only after its normal next-hour fence permits a post.
 
+The installed Repost selector is now release `fffa6cb8c`: unfinished external
+effects retain first priority, then the current fresh READY Affiliate proposal,
+then old terminal readback-only recovery. This prevents an old UNVERIFIED
+observation from consuming the next eligible growth slot while preserving every
+no-resend fence. Current supply is 22 `X_LIVE` Affiliate placements versus only
+four generated Repost proposals and one exact Affiliate posted row; therefore
+the near-term distribution policy is to drain unconsumed live placements through
+the existing hourly owner before inventing repeated variants for one article.
+
 ## 0. Objective
 
 Anicca is the company; Life Manager is the product, autonomous agent, and
