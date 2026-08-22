@@ -511,6 +511,20 @@ https://leverageproposals.com/guides/how-to-get-first-job-on-upwork.
    proposals 0, provider-effect rows 0, marketplace proposals 0 and earnings USD 0. The remaining
    invitation proof is one real inbound followed by one official proposal ID; the next independent
    zero-Connect effect is direct-offer terms qualification and exact contract acceptance readback.
+6. **TERMS GATE COMPLETE / FIRST LIVE DIRECT OFFER PENDING:** an actionable Direct Offer now enters
+   a separate schema-bound decision through the existing `application-intent-planner`; it does not
+   require or create a proposal. The exact offer ID, official URL and detail evidence hash must bind
+   mechanically. `accept_ready` requires a nonempty feasible scope, positive amount/rate, explicit
+   ISO deadline, an enabled accept state, no off-platform payment/contact, no synchronous or physical
+   requirement, and payment protection. Fixed-price additionally requires a funded milestone that
+   covers the full accepted amount; hourly additionally requires verified billing and a positive
+   weekly hour limit. Missing negotiable terms become `request_changes`; unsafe or infeasible work
+   becomes `decline`; neither produces an executable offer. Schema validation and the focused
+   proposal/inbound/browser/effect matrix pass 52/52. Release `dfcc24217` completed a production
+   five-minute wake with exit 0 at `2026-08-22T18:17:02.699584+00:00`: Connects 0, proposals 0,
+   invitations 0, offers 0, earnings USD 0, Direct Offer evidence files 0 and private inbound packets
+   0. Therefore an empty inbox created no model call and no marketplace effect. The next atomic item
+   is the durable single-click Direct Offer acceptance effect plus official active-contract readback.
 
 ### Task 7: Record Upwork's private action matrix
 
