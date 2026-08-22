@@ -7,6 +7,5 @@
 - Story: messy notes -> visible transcript evidence -> evidence clusters -> ranked decision memo.
 - Visual direction: editorial research war room; warm paper, black ink, safety orange, cobalt blue; large Archivo-style display type and monospace evidence labels.
 - Quality bar: the visual density, readability, foreground/background depth, and scene-specific illustration of LBJ v97.
-- Audio: local narration with restrained local SFX; no paid/cloud media dependency.
+- Audio: ElevenLabs Mona professional English voice from the existing 10,020-character account allowance; 1.1382x timing fit and -16 LUFS normalization. The rejected macOS Samantha take remains historical only.
 - Approval: Telegram review candidate only. No public publishing until the user explicitly approves.
-
