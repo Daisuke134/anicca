@@ -174,6 +174,10 @@ class DirectCDPPage:
             const linked=el.labels&&el.labels.length?Array.from(el.labels).map(x=>x.innerText).join(' '):'';
             return (own||linked||el.getAttribute('placeholder')||el.innerText||'').trim();
           }};
+          const semanticLabel = value => String(value || '').trim()
+            .replace(/\s+not checked$/i, '')
+            .replace(/\s+checked$/i, '')
+            .replace(/,\s*press delete to clear value\.$/i, '');
           const role = el => el.getAttribute('role') || ({{A:'link',BUTTON:'button',SELECT:'combobox',TEXTAREA:'textbox'}}[el.tagName] || (el.tagName==='INPUT' ? (['checkbox','radio','button','submit'].includes(el.type)?el.type.replace('submit','button'):'textbox') : ''));
           let nodes=[];
           if (target.stable_id) {{
@@ -181,12 +185,16 @@ class DirectCDPPage:
             const attr={{automation:'data-automation-id',id:'id',ref:'data-anicca-ref'}}[kind];
             const value=rest.join(':');
             if (attr) nodes=Array.from(document.querySelectorAll(`[${{attr}}]`)).filter(el=>el.getAttribute(attr)===value);
-          }} else {{
+          }}
+          if (!nodes.length) {{
             nodes=Array.from(document.querySelectorAll('input,button,select,textarea,a,[role]'));
           }}
           nodes=nodes.filter(el=>visible(el)&&!el.disabled&&el.getAttribute('aria-disabled')!=='true')
             .filter(el=>!target.role||role(el)===target.role)
-            .filter(el=>{{ const actual=label(el); return target.exact?actual===target.label:actual.includes(target.label); }});
+            .filter(el=>{{
+              const actual=semanticLabel(label(el)), wanted=semanticLabel(target.label);
+              return target.exact?actual===wanted:actual.includes(wanted);
+            }});
           const index=target.ordinal==null?0:target.ordinal-1;
           if ((target.ordinal==null&&nodes.length!==1)||index<0||index>=nodes.length) return {{ok:false,count:nodes.length}};
           const el=nodes[index]; {scroll_source}
