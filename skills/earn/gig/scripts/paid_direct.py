@@ -2571,6 +2571,11 @@ def _prepare_file(args, item_path: Path, root: Path, item: dict[str, Any], base:
                   feedback: str) -> dict[str, Any]:
     requirements_sha256 = paid_remote_result.requirements_digest(root, feedback)
     stable = delivery_queue.evidence_path(args.delivery_evidence_dir, item)
+    current_manifest = _load(root / "delivery" / "paid-work-result.json")
+    if (isinstance(current_manifest, dict)
+            and current_manifest.get("status") in {"REVIEW_READY", "BLOCKED_NON_DELEGABLE"}):
+        _normalize_acceptance_delta(root)
+        raise Failure("file_non_delivery_disposition")
     try:
         manifest = _validate_file_authorization(root, stable, feedback, requirements_sha256)
         repaired = False
