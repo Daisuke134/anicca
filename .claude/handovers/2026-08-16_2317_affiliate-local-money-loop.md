@@ -2313,3 +2313,19 @@ pending/approved/paid/reversed all zero, `NO_TRANSACTIONS`, USD 10,000
 unconsumed; normal Affiliate exposure policy decides when the existing Repost
 owner may claim it. Next atom is measured owned-article entry and CTA movement,
 then the first official provider transaction exact-joined to that placement.
+
+Current focused interval truth is X-owned entry 0, CTA 0, provider delta 0, and
+transaction 0 for Subtitle Translator, Voice Isolator, and Voice Changer. The
+new Subtitle Translator experiment link has official provider click delta 1 /
+unique 1 but transaction 0; the click is explicitly non-money. Netlify owned
+visit totals are unavailable, while privacy-reduced X-entry/CTA counters are
+observed zeros.
+
+Digest same-day reruns still attempted ambiguous Telegram delivery under a
+`delivery-only replay` path. Commit `a3164516a` makes an existing daily
+evaluation an at-most-once delivery fence and exits without replay. Installed
+release is `/Users/anicca/loops/releases/20260823T023834-a3164516`, digest
+source/runtime SHA-256 is
+`b70f8bf25a2719f235e52fdaef0ffeef10d258019bd061ac660f889ad08e4de2`.
+Live verification held the ambiguous ledger at 9 rows before and after and
+exited zero. Never replay those nine ambiguous reports.

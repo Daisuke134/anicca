@@ -7190,3 +7190,19 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   exists for the Subtitle Translator experiment, but it is unconsumed and has no
   revenue credit. The next economic atom remains a nonzero owned article entry
   followed by an official provider transaction joined to its exact placement.
+- Exact funnel readback separates acquisition from money. The three focused
+  placements each have X-owned entries 0, CTA clicks 0, provider click delta 0,
+  and official transactions 0 for the current interval. A newer Subtitle
+  Translator experiment link has an official provider click delta 1 / unique 1,
+  but no transaction; this is a non-money click signal only. Owned visit totals
+  remain unavailable because Netlify Web Analytics is disabled, while the
+  privacy-reduced X-entry and CTA instruments remain observed zeros.
+- A manual digest readback exposed one remaining duplicate boundary: after an
+  ambiguous daily Telegram attempt, same-day owner reruns called the path
+  `delivery-only replay` and could try the digest again. Repost commit
+  `a3164516a` makes the daily evaluation itself the at-most-once attempt fence;
+  an already-evaluated day exits without any delivery replay. Installed release
+  is `20260823T023834-a3164516`; source/runtime digest SHA-256 is
+  `b70f8bf25a2719f235e52fdaef0ffeef10d258019bd061ac660f889ad08e4de2`.
+  Live owner verification kept the ambiguous ledger at exactly 9 rows before
+  and after, logged `no delivery replay`, and exited zero.
