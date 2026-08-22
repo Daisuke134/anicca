@@ -75,6 +75,11 @@ class MercorPassContractTests(unittest.TestCase):
         ):
             self.assertIn(required, script)
 
+    def test_runner_normalizes_model_evidence_modes_after_the_pass(self):
+        script = (ROOT / "scripts" / "run-mercor.sh").read_text(encoding="utf-8")
+        self.assertIn('find "$EVIDENCE" -type d -exec chmod 700 {} +', script)
+        self.assertIn('find "$EVIDENCE" -type f -exec chmod 600 {} +', script)
+
     def test_evidence_paths_must_stay_inside_current_private_pass(self):
         with self.subTest("stale evidence path is rejected"):
             with self.assertRaises(ValueError):

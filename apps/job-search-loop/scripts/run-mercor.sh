@@ -44,6 +44,10 @@ chmod 600 "$PASS_PROMPT" "$PASS_SCHEMA"
   --workdir "$JOB_SEARCH_REPO_ROOT" \
   --run-id "$RUN_ID"
 
+# Model-created artifacts are private even when the model omitted chmod.
+find "$EVIDENCE" -type d -exec chmod 700 {} +
+find "$EVIDENCE" -type f -exec chmod 600 {} +
+
 # Read-only Earnings capture is part of every Mercor wake. It never clicks a
 # payment control and fail-closes if the page exposes rows we cannot structure.
 EARNINGS_EVIDENCE="$EVIDENCE/earnings"

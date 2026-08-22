@@ -134,10 +134,13 @@ def _project_workspace(root: Path, prefix: str, *, resume: bool = False) -> Iter
     if workspace is None:
         workspace = Path(tempfile.mkdtemp(prefix=prefix, dir=runtime))
     workspace.resolve().relative_to(runtime.resolve())
+    completed = False
     try:
         yield str(workspace)
+        completed = True
     finally:
-        shutil.rmtree(workspace, ignore_errors=True)
+        if completed:
+            shutil.rmtree(workspace, ignore_errors=True)
 
 def _text(value: Any) -> str: return str(value or "").strip()
 
