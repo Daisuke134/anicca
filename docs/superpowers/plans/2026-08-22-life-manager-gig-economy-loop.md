@@ -169,14 +169,14 @@ commands used by every later task.
 **Interfaces:** Consumes `AuthorizationDecision`; persists `authorization_hash` on every new-provider
 intent while preserving all existing Coconala effect keys.
 
-- [ ] Write failing tests for missing/revoked authorization, changed authorization hash, duplicate
+- [x] Write failing tests for missing/revoked authorization, changed authorization hash, duplicate
   intent and lost-ACK reconciliation.
-- [ ] Capture existing Coconala fixture effect keys byte-for-byte before implementation.
-- [ ] Add the authorization hash only to the provider-generic path; do not migrate or rewrite
+- [x] Capture existing Coconala fixture effect keys byte-for-byte before implementation.
+- [x] Add the authorization hash only to the provider-generic path; do not migrate or rewrite
   Coconala history.
-- [ ] Prove a changed receipt cannot reuse an old effect, and a same receipt/payload replay performs
+- [x] Prove a changed receipt cannot reuse an old effect, and a same receipt/payload replay performs
   zero effects.
-- [ ] Run both new tests and existing application reconcile tests; commit/push.
+- [x] Run both new tests and existing application reconcile tests; commit/push.
 
 ### Task 4: Add Market Factory durable state
 
