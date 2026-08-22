@@ -19,6 +19,7 @@ import os
 import re
 import sys
 import time
+import urllib.parse
 from urllib.request import Request, urlopen
 
 from playwright.sync_api import sync_playwright
@@ -77,9 +78,25 @@ def scan_timeline(page, handle: str, needle: str, expected_url: str | None = Non
             def canonical_link(link):
                 value = normalized(link).removeprefix("https://").removeprefix("www.").rstrip("/")
                 return f"x.com{value}" if value.startswith("/") else value
-            if expected_visible and not any(canonical_link(link) == expected_visible.rstrip("/")
-                                            for link in visible_links):
-                continue
+            exact_source_link = any(canonical_link(link) == expected_visible.rstrip("/")
+                                    for link in visible_links)
+            if expected_visible and not exact_source_link:
+                # X currently renders quote cards as a clickable DIV, not an anchor. The exact
+                # source status URL is therefore absent from the DOM even though the quoted
+                # account and body are visible. Accept that representation only when this is an
+                # x.com status URL and the card contains the exact source @handle. The generated
+                # body above must still match exactly, so a card alone can never recover a row.
+                parsed = urllib.parse.urlparse(expected_url or "")
+                parts = [part for part in parsed.path.split("/") if part]
+                source_handle = parts[0] if (parsed.netloc.lower() in {"x.com", "www.x.com"}
+                                             and len(parts) >= 3 and parts[1] == "status") else ""
+                quote_cards = art.query_selector_all('div[role="link"]')
+                source_identity = f"@{source_handle}" if source_handle else ""
+                if not source_identity or not any(
+                    source_identity in {line.strip() for line in (card.inner_text() or "").splitlines()}
+                    for card in quote_cards
+                ):
+                    continue
             link = art.query_selector(f'a[href*="/{handle}/status/"]')
             href = link.get_attribute("href") if link else ""
             if href:

@@ -24,9 +24,10 @@ class Node:
 
 
 class Article:
-    def __init__(self, text: str, visible_url: str, article_links=None) -> None:
+    def __init__(self, text: str, visible_url: str, article_links=None, quote_cards=None) -> None:
         self.text, self.visible_url = text, visible_url
         self.article_links = article_links or [Node(text=visible_url, href="https://t.co/example")]
+        self.quote_cards = quote_cards or []
 
     def query_selector(self, selector: str):
         if selector == 'div[data-testid="tweetText"]':
@@ -43,6 +44,8 @@ class Article:
             return [Node(text=self.visible_url, href="https://t.co/example")]
         if selector == "a":
             return self.article_links
+        if selector == 'div[role="link"]':
+            return self.quote_cards
         return []
 
 
@@ -100,6 +103,31 @@ class XPostTests(unittest.TestCase):
         self.assertEqual(
             MODULE.scan_timeline(Page([article]), "selawmqt", body, source, text),
             "https://x.com/selawmqt/status/456",
+        )
+
+    def test_source_backed_original_reads_non_anchor_x_quote_card(self) -> None:
+        source = "https://x.com/jun_song/status/2091114049954283855"
+        body = "Pair cloud orchestration with local execution, then compare one task."
+        text = f"{body}\n{source}"
+        article = Article(
+            body, "", article_links=[Node(href="/selawmqt/status/789")],
+            quote_cards=[Node(text="Jun Song\n@jun_song\n2h\nExact quoted source body")],
+        )
+        self.assertEqual(
+            MODULE.scan_timeline(Page([article]), "selawmqt", body, source, text),
+            "https://x.com/selawmqt/status/789",
+        )
+
+    def test_source_backed_original_rejects_wrong_non_anchor_quote_card(self) -> None:
+        source = "https://x.com/jun_song/status/2091114049954283855"
+        body = "Pair cloud orchestration with local execution, then compare one task."
+        text = f"{body}\n{source}"
+        article = Article(
+            body, "", article_links=[Node(href="/selawmqt/status/789")],
+            quote_cards=[Node(text="Different author\n@jun_song_fan\n2h\nSimilar source body")],
+        )
+        self.assertIsNone(
+            MODULE.scan_timeline(Page([article]), "selawmqt", body, source, text)
         )
 
 
