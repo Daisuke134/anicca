@@ -593,7 +593,7 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 
 | ID | Atomic action（1作業） | Acceptance evidence | State |
 |---|---|---|---|
-| A-01 | mount inventoryを保存する | 9 mountのimmutable receipt | 部分完了 |
+| A-01 | mount inventoryを保存する | 実機`host-inventory.json`でschema PASS、SHA一致、mount_count=9、unique mount=9、mode=600、temporary file残留0、host-inventory tests 9 PASS | 完了 |
 | A-02 | top-level root inventoryを保存する | 23 rootのversioned inventory | 部分完了 |
 | A-03 | owner-family coverageを保存する | required family 12、missing 0のreceipt | 部分完了 |
 | A-04 | size-deferred rootを解消する | `coverage.gaps`のsize-deferred 0 | 未完了 |
