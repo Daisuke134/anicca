@@ -241,6 +241,27 @@ if [ "$AFFILIATE_STATE" = "BLOCKED_LEGACY_CLAIM" ] || [ "$AFFILIATE_STATE" = "BL
   report "🛑 Affiliate proposal consumption state is unsafe; no new Affiliate or generic X post is allowed"
   finish 1 "affiliate proposal consumption state blocked"
 fi
+# A continuous READY supply used to starve useful original posts indefinitely. Defer only fresh
+# Affiliate proposals after three verified posts in seven days. Unfinished effects still retain
+# their mandatory reconcile/readback priority.
+AFFILIATE_7D_COUNT="$($PY - "$POSTED" <<'PYEOF'
+import datetime, json, sys
+cutoff = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=7)
+count = 0
+for line in open(sys.argv[1], encoding="utf-8"):
+    try:
+        row = json.loads(line)
+        at = datetime.datetime.fromisoformat(row.get("posted_at", "")).astimezone(datetime.timezone.utc)
+    except (ValueError, TypeError, json.JSONDecodeError):
+        continue
+    count += at >= cutoff and row.get("kind") == "affiliate_original" and bool(row.get("post_url"))
+print(count)
+PYEOF
+)"
+if [ "$AFFILIATE_STATE" = "READY" ] && [ "${AFFILIATE_7D_COUNT:-0}" -ge "${X_REPOST_AFFILIATE_WEEKLY_MAX:-3}" ]; then
+  AFFILIATE_STATE="DEFERRED_WEEKLY_CAP"
+  log "fresh affiliate proposal deferred (${AFFILIATE_7D_COUNT}/${X_REPOST_AFFILIATE_WEEKLY_MAX:-3} in rolling 7d)"
+fi
 # A fresh/recoverable Affiliate proposal has its own exact proposal claim and terminal ledger,
 # so the generic calendar-hour fence adds no duplicate protection and only suppresses distinct
 # placement distribution. Keep the fence for ordinary quote/reply work; let the replay-safe
@@ -488,13 +509,30 @@ log "seeds available: $SEEDS_AVAILABLE"
 STRATEGY="$STATE/strategy.json"
 [ -s "$STRATEGY" ] || printf '{"reply_ratio": %s, "note": "share of passes that reply instead of quote"}\n' \
   "${X_REPOST_DEFAULT_REPLY_RATIO:-0.75}" >"$STRATEGY"
-KIND="$("$PY" - "$STRATEGY" <<'PYEOF'
-import json, random, sys
+read -r KIND TARGET_LANGUAGE <<<"$("$PY" - "$STRATEGY" "$POSTED" "$TODAY" <<'PYEOF'
+import json, random, re, sys
 try:
     ratio = float(json.load(open(sys.argv[1], encoding="utf-8")).get("reply_ratio", 0.75))
 except Exception:
     ratio = 0.75
-print("reply" if random.random() < max(0.0, min(1.0, ratio)) else "quote")
+rows = []
+for line in open(sys.argv[2], encoding="utf-8"):
+    try:
+        row = json.loads(line)
+    except json.JSONDecodeError:
+        continue
+    if row.get("post_url") and row.get("kind") != "affiliate_original":
+        rows.append(row)
+has_original_today = any(r.get("posted_at", "").startswith(sys.argv[3]) and
+                         r.get("kind") == "original" for r in rows)
+kind = "original" if not has_original_today else (
+    "reply" if random.random() < max(0.0, min(1.0, ratio)) else "quote")
+since_ja = 0
+for row in reversed(rows):
+    if re.search(r"[\u3040-\u30ff\u4e00-\u9fff]", row.get("text", "")):
+        break
+    since_ja += 1
+print(kind, "ja" if since_ja >= 9 else "en")
 PYEOF
 )"
 TARGET_TONE="$("$PY" -c 'import json,random,sys
@@ -502,14 +540,15 @@ w=(json.load(open(sys.argv[1])).get("tone_weights") or {"primary":1,"empathy":1,
 ks=list(w); print(random.choices(ks,[max(0.0,float(w[k])) for k in ks])[0])' "$STRATEGY" 2>/dev/null || echo primary)"
 log "target tone: $TARGET_TONE"
 log "action this pass: $KIND (reply_ratio=$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1])).get("reply_ratio"))' "$STRATEGY" 2>/dev/null))"
+log "target language: $TARGET_LANGUAGE (rolling EN 9 / JA 1)"
 
 {
   cat <<'EOF'
-あなたは X アカウント @selawmqt（sela | AI Tools）の運用者。AI/crypto の話題に「のっかり引用ツイート」を1日1本だけ出す。
+あなたは X アカウント @selawmqt（sela | AI Tools）の運用者。AI/creator toolsの実務情報を、検証可能なsourceに基づいて届ける。
 
 ## いまやること
-1. 候補一覧から、引用する価値のある投稿を **1本だけ** 選ぶ。
-2. その投稿への引用コメントを **3案** 書く（面白系 / 共感系 / 静かな一次情報系）。
+1. 候補一覧から、読者へ具体的な価値を足せる投稿を **1本だけ** 選ぶ。
+2. 今回指定された形式の本文を **3案** 書く（面白系 / 共感系 / 静かな一次情報系）。
 
 ## 選定基準
 - 伸びていて、かつ議論を呼んでいる（数字は candidates[].metrics を見る。regex ではなくお前の判断で選ぶ）。
@@ -562,6 +601,11 @@ X の上限は 280 で、**日本語や全角文字は1文字が2と数えられ
 {"selected": true, "source_url": "...", "why": "選んだ理由1文", "seed_id": "v00X または null",
  "drafts": [{"tone":"funny","text":"..."},{"tone":"empathy","text":"..."},{"tone":"primary","text":"..."}]}
 EOF
+  if [ "$TARGET_LANGUAGE" = "ja" ]; then
+    echo "**このpassは日本語slot。日本語の候補だけを選び、日本語で書く。無ければ selected=false。**"
+  else
+    echo "**このpassは英語slot。英語の候補だけを選び、英語で書く。**"
+  fi
   echo
   if [ "$KIND" = "reply" ]; then
     cat <<'EOF'
@@ -573,6 +617,13 @@ EOF
 - 著者が一言で答えられる形にする: 具体的な問い / 自分の実測値の提示 / 否定しない補足
 - 「勉強になります」「同感です」だけの返信は書かない（答える理由が無い）
 - 相手の投稿を要約し直さない
+EOF
+  elif [ "$KIND" = "original" ]; then
+    cat <<'EOF'
+## 今回の形式: source-backed original
+引用や返信ではなく、単独で役立つoriginal postを書く。候補から具体的な事実・手順・数字を
+1つ選び、「何が起きたか→誰にどう役立つか→次に試す一手」を完全文で書く。元投稿の要約、
+曖昧な感想、viralを自称するhookは禁止。証拠URLは投稿処理が末尾に1件だけ付ける。
 EOF
   else
     cat <<'EOF'
@@ -636,7 +687,7 @@ fi
 
 # ---------------------------------------------------------------- 5. choose one
 {
-  echo "次の3案から、引用ツイートとして実際に投稿する1案を選べ。"
+  echo "次の3案から、今回の $KIND として実際に投稿する1案を選べ。"
   echo "基準: 相手をディスっていない / ポジティブ / 自分にしか言えない具体が入っている / 自分語りが過剰でない / 次の行動につながる / AI 文体でない。"
   echo
   echo "## 今回 優先するトーン: $TARGET_TONE"
@@ -703,6 +754,9 @@ TONE="$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1]))["tone"])' 
 if [ ! -s "$EV/post.txt" ] || [ -z "$SOURCE_URL" ]; then
   report "❌ 投稿本文または引用元 URL が空"
   finish 1 "empty text or source url"
+fi
+if [ "$KIND" = "original" ]; then
+  printf '\n%s\n' "$SOURCE_URL" >>"$EV/post.txt"
 fi
 
 # Pull the quoted post's author and body back out of the candidate set. The report has to stand on
