@@ -6,6 +6,7 @@ from .actions import ActionExecutor
 from .answer_memory import AnswerMemory, AnswerRecordV1
 from .answers import AnswerResolver
 from .checkpoint import CheckpointStore, EvidenceStore
+from .completion import verify_completion_ui
 from .challenge import assess_challenge
 from .candidate_memory import CandidateMemoryView, build_candidate_memory
 from .contracts import (
@@ -25,6 +26,7 @@ from .contracts import (
     QueueRowReceiptV1,
     FinalReviewReceiptV1,
     SubmissionFenceLeaseV1,
+    CompletionEvidenceV1,
     SessionHandleV1,
     VisibleActionV1,
     VisibleControlV1,
@@ -58,6 +60,7 @@ __all__ = [
     "QueueRowReceiptV1", "RowQueueSupervisor",
     "FinalReviewReceiptV1", "verify_final_review",
     "SubmissionFenceLeaseV1", "SubmissionFence",
+    "CompletionEvidenceV1", "verify_completion_ui",
     "StepEvidenceV1", "VisibleActionV1",
     "MachineWorkdayCredentialStore", "StableInferencePolicy", "VisibleControlV1",
     "WorkdayAuthReceiptV1", "WorkdayAuthTool",

@@ -134,6 +134,14 @@ timeout, navigation, transport event, or exception. Its receipt binds the target
 before/after URL, fence receipt, and review observation; it is evidence of one click,
 not evidence that the application completed.
 
+After the click, build a new screenshot-backed observation and call
+`verify_completion_ui` independently. Do not pass click receipts, network requests,
+HTTP statuses, or Ledger state into this verifier. It returns `submitted` only when
+an exact rendered completion phrase and the same company+role identity are visible;
+rendered validation is definite `not_submitted`; every other post-click surface is
+`submit_unknown`. The model cannot override this result and a click alone is never
+success.
+
 Use `StableInferencePolicy` for common concepts. Luna supplies dated,
 Candidate-Memory-provenance intervals for experience; the policy merges overlaps
 before computing years. Minimum/target/stretch compensation comes from the matching

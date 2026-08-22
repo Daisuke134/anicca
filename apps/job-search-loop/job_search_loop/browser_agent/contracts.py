@@ -204,6 +204,17 @@ class SubmissionFenceLeaseV1:
 
 
 @dataclass(frozen=True, slots=True)
+class CompletionEvidenceV1:
+    schema_version: int
+    outcome: Literal["submitted", "not_submitted", "submit_unknown"]
+    review_receipt_sha256: str
+    observation_sha256: str
+    evidence_class: str
+    identity_visible: bool
+    evidence_sha256: str
+
+
+@dataclass(frozen=True, slots=True)
 class FieldQuestionV1:
     label: str
     field_type: str
