@@ -354,8 +354,12 @@ explicit durable checkpoints rather than silent disappearance, but customer work
   semantic decision changed naturally to `mode=answer`. The research-capable owner produced a complete talkroom reply;
   two fresh verifier passes rejected concrete proof/wording defects rather than sending them: unsupported prior-send
   claims, unsourced official-detail assertions, a missing exploratory-contact template, omission of known LINE ID
-  `@810akrtq`, and an unqualified zero-effect claim. The third natural repair round is now running with those exact
-  findings and must either PASS or leave an explicit failure; no customer effect/readback exists yet. The shared answer owner is
+  `@810akrtq`, and an unqualified zero-effect claim. The third natural repair also failed closed: it still repeated
+  external official facts without a captured fetch, omitted the three mandatory fit checks from the 50-count rule, and
+  called an advertising-partnership contact an employment-recruiting desk. The generic missing harness is evidence
+  transport, not another buyer rule: when the owner uses external facts it must fetch official pages with installed
+  `crwl`, retain that stdout in its owner evidence, and let the fresh verifier inspect it. No customer effect/readback
+  exists yet. The shared answer owner is
   now allowed to run local read commands and official-source web research while customer mutation remains exclusively
   owned by the fenced browser executor. Do not add a Manledge-only reply path.
 - byusco `18171890` currently holds `casican-review-article-v5.md`, SHA-256

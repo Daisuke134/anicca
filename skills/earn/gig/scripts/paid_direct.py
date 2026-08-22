@@ -3140,7 +3140,9 @@ def _run_consultation_review(args, item_path: Path, root: Path, feedback: str, b
         owner_prompt.write_text(
             "You are the Sol paid answer owner. Never submit or send anything. You may run local read commands and "
             "research the public web with installed CLI tools when the buyer asks for current or externally verifiable "
-            "facts; prefer official sources and include the exact source URLs in the answer when useful. "
+            "facts. Before repeating any external fact not proved by the compiled project sources, fetch its official "
+            "page with the installed crwl CLI so the command output is preserved in your runner stdout evidence; include "
+            "the exact official URL in the answer. If it cannot be fetched, label it unverified instead of repeating it. "
             f"Read {context}, {root / 'requirements/live-buyer-reply.json'}, and the current semantic decision at "
             f"{root / 'context/paid-work-decision.json'}. The answer must satisfy that decision's required_output and "
             f"required_effect without contradicting primary evidence. {attachment_instruction} "
@@ -3180,6 +3182,8 @@ def _run_consultation_review(args, item_path: Path, root: Path, feedback: str, b
         verifier_prompt = base / "answer-review" / "verifier.prompt.txt"
         verifier_prompt.write_text(
             "You are a fresh read-only Sol reviewer. Never mutate, submit, send, or write business state. "
+            f"For external public facts, independently inspect the owner's captured command evidence at "
+            f"{owner_evidence / 'attempt-01.stdout.log'}; a URL in the candidate alone is not acquisition proof. "
             f"Independently read {context}, {root / 'requirements/live-buyer-reply.json'}, and the current semantic "
             f"decision at {root / 'context/paid-work-decision.json'}. Trace every claimed completed or verified effect "
             f"through {root / 'delivery/paid-remote-result.json'} and its referenced after_evidence when present; do not "
