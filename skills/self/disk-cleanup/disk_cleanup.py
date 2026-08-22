@@ -56,6 +56,15 @@ def classify_tier(free_bytes: int) -> str:
     return "ULTRA"
 
 
+def _session_recovery_receipt() -> dict[str, object]:
+    return {
+        "authority": "gui-session-owner",
+        "process_kill_authority": False,
+        "required_readback": ["uid", "gui-domain", "canonical-label"],
+        "stale_app_server_action": "observe-only",
+    }
+
+
 def _bytes(
     path: Path,
     *,
@@ -217,6 +226,16 @@ class HostDiskGovernor:
         self.bootstrap_health = bootstrap_health or (
             lambda: _default_bootstrap_health(self.home, self.state_dir)
         )
+
+    def _checked_bootstrap_health(self) -> dict[str, object]:
+        try:
+            return self.bootstrap_health()
+        except Exception as exc:  # fail closed if the preflight itself is broken
+            return {
+                "status": "failure",
+                "error_code": "health-check-exception",
+                "detail": type(exc).__name__,
+            }
 
     def _full_inventory_due(self) -> bool:
         try:
@@ -660,10 +679,7 @@ class HostDiskGovernor:
     def run_once(self) -> dict[str, object]:
         deadline = self.clock() + GOVERNOR_BUDGET_SECONDS
         free_before, _ = self.usage()
-        try:
-            health = self.bootstrap_health()
-        except Exception as exc:  # fail closed if the preflight itself is broken
-            health = {"status": "failure", "error_code": "health-check-exception", "detail": type(exc).__name__}
+        health = self._checked_bootstrap_health()
         if health.get("status") not in {"ok", "not-applicable"}:
             result: dict[str, object] = {
                 "tier": classify_tier(free_before),
@@ -674,6 +690,7 @@ class HostDiskGovernor:
                 "protected_deletions": 0,
                 "reason": "gui-bootstrap-health-failure",
                 "health": health,
+                "session_recovery": _session_recovery_receipt(),
                 "free_before": free_before,
                 "free_after": free_before,
                 "preserved_reasons": {"gui-bootstrap-health-failure": 1},
@@ -737,7 +754,7 @@ class HostDiskGovernor:
         deadline = self.clock() + GOVERNOR_BUDGET_SECONDS
         free_before, _ = self.usage()
         canary_path = str(path.expanduser().resolve())
-        health = self.bootstrap_health()
+        health = self._checked_bootstrap_health()
         if health.get("status") not in {"ok", "not-applicable"}:
             result: dict[str, object] = {
                 "tier": classify_tier(free_before),
@@ -748,6 +765,7 @@ class HostDiskGovernor:
                 "protected_deletions": 0,
                 "reason": "gui-bootstrap-health-failure",
                 "health": health,
+                "session_recovery": _session_recovery_receipt(),
                 "canary_path": canary_path,
                 "before_bytes": 0,
                 "after_bytes": 0,

@@ -4,7 +4,7 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
 実行authority: **Mac Host Storage Governor**  
 公開skill: **`disk-cleanup`**
 
-状態: Phase 1実装済み。Life Manager OSS skill、fail-closed governor、guard fallback、回帰テスト、旧cleanup ownerのcutover、正本5分labelのbootstrap/readback、MiB/GiB精度とswap telemetry、ULTRA時のexact-byte full-pass昇格、bootstrap health failureのcleanup内receipt契約、Gig/Writer共通producer preflight、Paid/Storefrontのin-flight effect gate/checkpoint、Writer provider-start gate、ULTRA receipt reserve/retryは反映済み。supervisor non-stop/pause-resume契約、host-wide census、hourly intelligence、Writerのin-flight drainを含む全producer backpressure、atomic capacity claims、rapid-growth predictor、unknown-growth containment、24時間/7日観測、141/153実機fixtureは未完了。UID 501/GUI bootstrapと`ai.anicca.life-manager-disk-cleanup`のload readbackは復旧済み。
+状態: Phase 1実装済み。Life Manager OSS skill、fail-closed governor、guard fallback、回帰テスト、旧cleanup ownerのcutover、正本5分labelのbootstrap/readback、MiB/GiB精度とswap telemetry、ULTRA時のexact-byte full-pass昇格、bootstrap health failureのcleanup内receipt契約、141/153隔離fixture、stale app-serverのsession-owner分離、Gig/Writer共通producer preflight、Paid/Storefrontのin-flight effect gate/checkpoint、Writer provider-start gate、ULTRA receipt reserve/retryは反映済み。supervisor non-stop/pause-resume契約、host-wide census、hourly intelligence、Writerのin-flight drainを含む全producer backpressure、atomic capacity claims、rapid-growth predictor、unknown-growth containment、24時間/7日観測は未完了。UID 501/GUI bootstrapと`ai.anicca.life-manager-disk-cleanup`のload readbackは復旧済み。
 
 ## 現行実装状況とOSS境界
 
@@ -326,6 +326,21 @@ discovery stubが「不実行」を証明していないと指摘され、例外
 **59 tests**、canonical host adapter全 **28 tests**、compile、diff checkはPASSした。正常GUIへの復旧readbackは
 canonical runs 109→110、state not running、last exit 0、2026-08-22T10:52:48Z full receipt、mode `0600`、
 `errors=0`、`protected_deletions=0`、`reclaimed=0`である。実GUI domainを故障させる操作は行っていない。
+
+A-14ではhealth failure receiptへversioned session separation contractを追加し、stale app-serverの
+authorityを`gui-session-owner`、cleanup actionを`observe-only`、`process_kill_authority=false`、復旧条件を
+UID・GUI domain・canonical labelのreadbackと明記した。通常passとcanaryは同じchecked health probeと
+receipt policyを使用する。初回reviewはcanaryだけprobe例外を送出してreceiptを失うHIGHを検出したため、
+共有exception normalizationとcanary regressionをRED→GREENで実装した。両failure pathは`os.kill`が
+呼ばれたら失敗するguardを通り、candidate残存、reclaimed/protected deletion 0、atomic receiptを検証する。
+`os.kill(pid, 0)`はcleanup lock ownerのliveness probeでありtermination signalではない。
+[Apple launchd.plist](https://github.com/apple-oss-distributions/launchd/blob/main/man/launchd.plist.5)の
+「plist値ではcurrent stateを証明せずlaunchdへqueryする」契約どおり、external recovery前のlabel missingを
+failureに保ち、復旧後もexact canonical labelを再queryして初めてokとするMatrix 29 fixtureを追加した。
+fix後のfresh re-reviewは`ship`、blocking findingなし。Life Manager全 **61 tests**、canonical host adapter全
+**28 tests**、compile、diff checkはPASSした。final canonical readbackはruns 112→113、state not running、
+last exit 0、2026-08-22T11:08:46Z receipt、mode `0600`、`errors=0`、`protected_deletions=0`、
+`reclaimed=0`である。実app-server/sessionへのsignalは行っていない。
 
 `/Users/anicca/anicca-project`は約9.5 GiB、その`.worktrees`は約4.4 GiBだった。最大の
 `cfo-resume-spec`（約1.08 GiB）は、dirty=0、branch upstream 0/0、process/open-path/leaseなしを
@@ -854,7 +869,7 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 | 2 | `skills/self/disk-cleanup/` にcanonical host inventory、manifest、runner、health interfaceを定義 | local writable volume missing 0、required owner family missing 0、schema PASS | 部分完了: inventory schema、atomic writer、fast/full mode、hourly marker、48 tests、90秒census/90秒governor budget、permission/partial size、required owner coverage、local writable missing 0のreadbackは実装。health readbackの残契約は未完了 |
 | 3 | protected rootsとfail-closed validatorをTDDで固定 | Test Matrix 3–11 PASS | 完了: protected-root、lease、open-path、probe/atomic failure、unknown classのfail-closed fixture 58 testsと、canonical host adapterのdirty/unpushed real-git fixture 28 testsを実装。A-07〜A-12の統合証跡を保存 |
 | 4 | exact-byte tier、hysteresis、single lock、300秒schedulerをTDD実装 | Test Matrix 2、12–14 PASS | 部分完了: exact-byte tier、atomic lock、300秒plist、pressure/recovery floor、hourly full-pass marker、ULTRA時のcritical full-pass promotion、hourly/explicit fullのcooldown、marker fail-closed、bounded fast/full pass、正本labelのbootstrap/readbackは実装・unit/live PASS。24時間観測は未完了 |
-| 4a | GUI bootstrap health failureを観測専用fail-closedに固定 | Test Matrix 28–29 PASS、141/153 fixture receipt、復旧後readback | 部分完了: cleanup内preflight、atomic `gui-bootstrap-health-failure` receipt、141/153の隔離failure fixture、UID/Directory Services/`gui/501`の復旧readbackを実装。stale app-server分離の実機証跡は未完了 |
+| 4a | GUI bootstrap health failureを観測専用fail-closedに固定 | Test Matrix 28–29 PASS、141/153 fixture receipt、復旧後readback | 完了: cleanup内preflight、atomic `gui-bootstrap-health-failure` receipt、141/153隔離fixture、stale app-serverのsession-owner/no-kill分離、UID/Directory Services/`gui/501`/canonical labelの復旧readbackを実装 |
 | 5 | Mac全体のproducer censusを作り、artifact/lease/finalizer helperを上位growth ownerへ接続 | 1 GiB以上のunattributed root 0、active lease readback、orphan lease fixture PASS | 部分完了: Chrome/Chromium cloneと`cfo-*`のallow-list discoveryは実装。host-wide census、lease heartbeat/finalizer接続は未完了 |
 | 6 | 全write-heavy producerへ共通disk preflightを接続 | producer census missing consumer 0、Test Matrix 15 PASS | 部分完了: `gig_disk_guard.py`をGig 4 laneとWriter laneの共通入口へ接続し、Paid/Storefrontにはeffect直前gateとatomic/attempt checkpoint、Writerにはprovider-start 11GiB gateを追加。Gig/guard 11件、Paid 9件、Storefront 27件、Writer shell regressionをPASS。Writerのin-flight drain、browser/build/media/VM/package/agent等の全producer接続は未完了 |
 | 7 | bounded ops log、incident receipt、Telegram dedupeを実装 | Test Matrix 18–19 PASS、message ID | 部分完了: ledger rotationとlast receipt、milestone送信は実装。ops log/incident receiptの正式分離とdedupe契約は未完了 |
@@ -873,8 +888,8 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 
 各行は1つの作業だけを持つ。順序を飛ばさず、受入証拠が保存されるまで完了扱いにしない。
 
-capacity-safety interruptのA-25とA-04〜A-13を閉じたため、実行queueは
-`A-14 → A-15 → … → A-24 → A-26 → … → A-44`へ進む。A-25の先行完了はA-11〜A-24の
+capacity-safety interruptのA-25とA-04〜A-14を閉じたため、実行queueは
+`A-15 → A-16 → … → A-24 → A-26 → … → A-44`へ進む。A-25の先行完了はA-11〜A-24の
 完了を意味しない。data loss、credential/session保護、money safety、ENOSPC recoveryなど重要sliceは
 Ponytailでscopeを最小化してTDDを行う。軽微なdocs/readbackは現状実測からstraight fixへ進める。
 全itemで必要最小限のregression、fresh adversarial review、実機readback、spec state更新、commit/pushを同じsliceで閉じ、
@@ -895,7 +910,7 @@ TDDのためだけの過剰fixtureや後続itemのscaffoldは前倒ししない�
 | A-11 | dirty/unpushed worktree fixtureを追加する | dirty/unpushed preserve test PASS | 完了: real bare remote + linked worktreeでdirty/unpushedをpreserve、removed 0、ledger reason一致、host adapter 28 tests、Life Manager 57 tests、review `ship`、runs 106→107、exit 0、protected deletion 0 |
 | A-12 | unknown-class fixtureを追加する | unknown candidate preserve test PASS | 完了: allowlisted `cfo-*`でもunknown classをprobe前にpreserve、path残存、reclaimed 0、receipt reason一致、58 tests、review `ship`、runs 107→109、exit 0、errors/protected deletion 0 |
 | A-13 | 141/153 failure fixtureを保存する | failure receipt with zero deletion | 完了: production health probeへ141/153注入、inventory/discovery/lsof/delete 0、evaluated/reclaimed/protected deletion 0のatomic receipt、59 tests、review `ship`、runs 109→110、exit 0 |
-| A-14 | stale app-server separation receiptを保存する | cleanup never kills app-server receipt | 未完了 |
+| A-14 | stale app-server separation receiptを保存する | cleanup never kills app-server receipt | 完了: run/canary共通session-owner/no-kill receipt、probe exception fail-closed、exact label再readback、61 tests、fix-first review→`ship`、runs 112→113、exit 0、protected deletion 0 |
 | A-15 | browser producer lifecycleを登録する | artifact/lease/finalizer/quota receipt | 未完了 |
 | A-16 | build/media producer lifecycleを登録する | artifact/lease/finalizer/quota receipt | 未完了 |
 | A-17 | VM/package producer lifecycleを登録する | artifact/lease/finalizer/quota receipt | 未完了 |

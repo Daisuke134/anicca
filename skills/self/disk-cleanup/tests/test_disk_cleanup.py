@@ -532,6 +532,11 @@ def test_gui_bootstrap_health_failure_is_observation_only(
 
     monkeypatch.setattr(disk_cleanup.subprocess, "run", fake_run)
     monkeypatch.setattr(
+        disk_cleanup.os,
+        "kill",
+        lambda *_args: (_ for _ in ()).throw(AssertionError("cleanup must not signal app-server")),
+    )
+    monkeypatch.setattr(
         disk_cleanup,
         "collect_host_inventory",
         lambda **_kwargs: (_ for _ in ()).throw(AssertionError("inventory must not run")),
@@ -566,7 +571,51 @@ def test_gui_bootstrap_health_failure_is_observation_only(
     assert receipt["evaluated"] == 0
     assert receipt["reclaimed"] == 0
     assert receipt["protected_deletions"] == 0
+    assert receipt["session_recovery"] == {
+        "authority": "gui-session-owner",
+        "process_kill_authority": False,
+        "required_readback": ["uid", "gui-domain", "canonical-label"],
+        "stale_app_server_action": "observe-only",
+    }
     assert not (tmp_path / "state" / "host-inventory-full.at").exists()
+
+
+def test_canary_health_exception_preserves_without_process_action(
+    tmp_path: Path, monkeypatch
+) -> None:
+    canary = tmp_path / "tmp" / "cfo-health-exception"
+    canary.mkdir(parents=True)
+    (canary / "payload").write_text("keep")
+    monkeypatch.setattr(disk_cleanup.tempfile, "gettempdir", lambda: str(canary.parent))
+    monkeypatch.setattr(
+        disk_cleanup.os,
+        "kill",
+        lambda *_args: (_ for _ in ()).throw(AssertionError("cleanup must not signal app-server")),
+    )
+
+    governor = HostDiskGovernor(
+        home=tmp_path,
+        state_dir=tmp_path / "state",
+        bootstrap_health=lambda: (_ for _ in ()).throw(RuntimeError("bootstrap unavailable")),
+        lsof=lambda _path: (_ for _ in ()).throw(AssertionError("lsof must not run")),
+        usage=lambda: (12 * GiB, 100 * GiB),
+    )
+
+    result = governor.run_canary(canary)
+
+    assert canary.exists()
+    assert result["reason"] == "gui-bootstrap-health-failure"
+    assert result["removed"] is False
+    assert result["reclaimed"] == 0
+    assert result["protected_deletions"] == 0
+    receipt = json.loads((tmp_path / "state" / "canary-last-receipt.json").read_text())
+    assert receipt["health"] == {
+        "detail": "RuntimeError",
+        "error_code": "health-check-exception",
+        "status": "failure",
+    }
+    assert receipt["session_recovery"]["process_kill_authority"] is False
+    assert receipt["session_recovery"]["stale_app_server_action"] == "observe-only"
 
 
 def test_exact_canary_reclaims_one_regenerable_path_and_replay_is_noop(
