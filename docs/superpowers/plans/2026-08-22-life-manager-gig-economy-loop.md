@@ -332,9 +332,13 @@ U13 atomic order:
    Active proposals 0, Submitted proposals 0 and the working-style account task; 38 focused tests
    pass. The SHA-fixed five-minute launchd label completed two wakes with exit 0, stable evidence
    hashes, zero stderr and no external marketplace effect.
-2. **DONE for the current account surface:** the only visible task is the working-style assessment.
-   Its live page describes a subjective working-style profile signal and does not promise Connects,
-   so the loop does not fabricate answers or record a nonexistent reward. Connects History remains 0.
+2. **DONE:** the working-style assessment is completed from the actual Life Manager operating
+   principles rather than invented personal history. Upwork's official result exposes `Accountable
+   for outcomes` and `Detail-oriented` as `Shown on profile`, with retake eligibility after August
+   22, 2027; Connects History remains 0, so no reward is invented. The provider now reads the
+   durable assessment-results page on every wake and lets that official completion override the
+   stale Find Work `Take the working style assessment` banner. Fourteen focused tests and the live
+   result receipt prove `account_tasks=[]` and `working_style.completed=true`.
 3. **DONE:** the bounded service `You will get a Python script integrating one documented REST API
    endpoint` is approved and visible at
    `https://www.upwork.com/services/product/development-it-a-python-script-integrating-one-documented-rest-api-endpoint-2091146976410620036`.
