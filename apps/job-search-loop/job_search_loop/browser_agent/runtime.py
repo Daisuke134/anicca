@@ -550,6 +550,38 @@ async def type_candidate(
     return await act(path)
 
 
+async def upload_resume(*, label: str, role: str, stable_id: str) -> dict[str, Any]:
+    """Upload the row's immutable assigned resume without exposing its path."""
+    row, _session, _checkpoints, _evidence, cursor, builder = await _context()
+    observation = await builder.build(cursor.handle)
+    ledger = Ledger(_path_env("JOB_SEARCH_STATE_ROOT") / "ledger.sqlite3")
+    try:
+        assignment = ledger.strategy_assignment(row["application_id"])
+    finally:
+        ledger.close()
+    routed = select_resume(
+        posting_text=f"{row['title']}\n{observation.visible_text}",
+        role_family=assignment["role_family"],
+        materials_root=_materials_root(),
+    )
+    if routed["resume_sha256"] != assignment["material_sha256"]:
+        raise RuntimeError("routed resume differs from the immutable assignment")
+    path = _path_env("JOB_SEARCH_BROWSER_SCRATCH") / "runtime-upload.json"
+    path.write_text(
+        json.dumps(
+            {
+                "kind": "upload",
+                "target": {"label": label, "role": role, "stable_id": stable_id},
+                "file_path": routed["resume_path"],
+            },
+            sort_keys=True,
+        ) + "\n",
+        encoding="utf-8",
+    )
+    os.chmod(path, 0o600)
+    return await act(path)
+
+
 async def wait(milliseconds: int) -> dict[str, Any]:
     if milliseconds < 1 or milliseconds > 10_000:
         raise ValueError("wait milliseconds must be between 1 and 10000")
@@ -814,6 +846,10 @@ def main(argv: list[str] | None = None) -> int:
     type_parser.add_argument("--role", default="")
     type_parser.add_argument("--stable-id", default="")
     type_parser.add_argument("--candidate-concept", required=True)
+    upload_parser = subparsers.add_parser("upload")
+    upload_parser.add_argument("--label", required=True)
+    upload_parser.add_argument("--role", default="")
+    upload_parser.add_argument("--stable-id", default="")
     wait_parser = subparsers.add_parser("wait")
     wait_parser.add_argument("--milliseconds", required=True, type=int)
     act_parser = subparsers.add_parser("act")
@@ -860,6 +896,10 @@ def main(argv: list[str] | None = None) -> int:
             role=args.role,
             stable_id=args.stable_id,
             candidate_concept=args.candidate_concept,
+        )
+    elif args.command == "upload":
+        operation = upload_resume(
+            label=args.label, role=args.role, stable_id=args.stable_id
         )
     elif args.command == "wait":
         operation = wait(args.milliseconds)
