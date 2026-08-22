@@ -5,10 +5,11 @@
 **Owner:** Daisuke Narita
 **Status:** The one macOS launchd acquisition owner, shared OpenClaw Telegram
 transport, and authenticated CloakBrowser daily-driver at CDP `:9222` are healthy.
-The owner wakes hourly, but the active release still runs deterministic Workday and
-Ashby fillers before an optional model branch whose production default is off. The
-current implementation therefore cannot adapt to an employer's new question and is
-not an end-to-end agent.
+The owner wakes hourly and every admitted Workday/Ashby row now enters the mandatory
+model browser runtime through that one CDP owner. Rakuten has a verified resume upload
+and reached Workday step 2; its real form remains unsubmitted. On the current live
+attempt Workday rendered its explicit planned-maintenance page for August 22, 2026
+15:00–18:00 GMT+9, so the durable row resumes after provider availability returns.
 **Current execution truth supersedes earlier historical run notes below:** the next
 milestone is `JOB-WORKDAY-E2E-MODEL-10P`. Workday is first because the existing
 Rakuten session has already reached the real application flow and Workday exercises
@@ -16,9 +17,9 @@ the complete account-create, sign-in, multi-page, upload, variable-question, rev
 submit, and receipt lifecycle. Ashby follows as 10Q using the same agent contract;
 Greenhouse, Lever, and generic ATS coverage follow only after both live gates close.
 The user-confirmed Salesforce FDE URL remains excluded from reapplication. The
-active release is `96f49a0ff5ba29557f5725dd2bc55c8750facc1d`; launchd remains hourly
-at `StartInterval=3600`. No Rakuten submit request, completion UI, or receipt
-evidence exists yet.
+active release is `537c73f49831b8908334d39764dc735d5c6df377`; launchd remains hourly
+at `StartInterval=3600`. No Rakuten submit request, completion UI, or receipt evidence
+exists yet; Telegram checkpoint reporting has a real ACK at message ID `28422`.
 
 **Architecture decision:** all eligible ATS form interaction is mandatory
 model-based browser work. Deterministic code owns only discovery, eligibility,
@@ -410,10 +411,10 @@ This is the remaining implementation-order SSOT. Only the first
 | 40 | Implement the development kickstart/readback controller | `done` | `activate_and_kickstart` verifies archive checksum/metadata/safe layout, installs `releases/<commit>` read-only, waits for the one launchd owner to be idle, atomically switches `current`, invokes only `launchctl kickstart -k`, requires run-count increment/idle/exit 0, and returns the new exact evidence paths while preserving the previous release. |
 | 41 | Close focused framework verification | `done` | 53 focused browser/Ledger/receipt/Telegram/release/launchd/Workday tests plus 13 release-launchd-model checks pass; all job-search shell syntax and browser/deployment compile pass; scans find no email literal/private DB/env/profile artifact, one orchestrator call, normal Submit rejection, evidence-only terminal write, and no direct runner/browser in deployment. |
 | 42 | Build a commit-pinned immutable release | `done` | Commit `db3433464b5b90e1c3915cee7176ea081a06839a` produced a 161-member bounded archive with SHA-256 `61a7a285b8947857ca6b11051e4386773fcacfc6ac6afef74590400c64d7d4a3`; independent checksum, RELEASE commit/private-state flag, traversal/link, and private artifact checks pass. |
-| 43 | Activate only while the hourly owner is idle | `pending_actionable` | `current` points to the new release; old release remains a verified rollback target |
-| 44 | Kickstart and watch the existing launchd owner | `pending_after_43` | The real owner—not a local substitute—creates the live framework evidence bundle and exits cleanly |
-| 45 | Resume Rakuten and prove Workday step 2 | `pending_after_44` | Visible step-2 controls plus ordered model/evidence receipts; no submit claim yet |
-| 46 | Complete one real Workday application authoritatively | `pending_after_45` | Completion UI or exact Gmail receipt, Ledger agreement, and Telegram ACK |
+| 43 | Activate only while the hourly owner is idle | `done` | Immutable releases are checksum-verified, installed read-only, and switched only by the deployment controller after `launchd` reports idle; `537c73f49831b8908334d39764dc735d5c6df377` is the current released commit and prior releases remain rollback targets. |
+| 44 | Kickstart and watch the existing launchd owner | `done` | Existing `ai.anicca.job-search-daily` runs 10 and 11 created live framework evidence; run 11 exited 0 from `daily-20260822-152026` and returned Telegram message ID `28422`, with no substitute executor. |
+| 45 | Resume Rakuten and prove Workday step 2 | `done` | The durable model cursor reached visible `My Information`, uploaded and hash-verified `Daisuke_Narita_AI_Business_Resume.pdf`, filled current identity/address/phone controls from private Candidate Memory, and accumulated an ordered 50-step evidence chain without a submit claim. |
+| 46 | Complete one real Workday application authoritatively | `in_progress_provider_maintenance` | A fresh model-selected navigate rendered Workday's explicit planned-maintenance page for 2026-08-22 15:00–18:00 GMT+9. Resume the same row after availability; close only on exact completion UI or authoritative Gog receipt plus Ledger agreement and Telegram ACK. |
 | 47 | Kickstart immediately again to prove dedupe and continued queue | `pending_after_46` | Submitted URL is not repeated and the same run attempts remaining eligible Workday rows without waiting an hour |
 | 48 | Close `JOB-WORKDAY-E2E-MODEL-10P` | `pending_after_47` | Account→application→receipt, multi-row wake, and repeated-kickstart evidence all agree |
 | 49 | Unpark Ashby as `JOB-ASHBY-E2E-MODEL-10Q` | `pending_after_48` | Same framework contracts are reused; only provider hints are added |
