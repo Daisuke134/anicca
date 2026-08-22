@@ -952,6 +952,12 @@ each factual claim must carry evidence. Structural, identity, hash and privacy f
 Task 17 executor and Task 16 workspace focused suite passes 19/19, and Python compilation passes.
 This proves the private verification gate only: official Upwork contracts and earnings remain 0,
 so no real deliverable has been reviewed or delivered.
+Main commit `e089a8f2d8ba70937cbea16859dbcc60dae326b0` is published as immutable release
+`20260823T044408-e089a8f2`; verifier SHA-256 is
+`74b30ee9442467d96f6bfc488c0d70421e7624490068daa62ef6a62bf45830c3`. The same 19 focused tests
+pass from the read-only release and syntax compilation passes with a redirected bytecode cache.
+This release readback still does not claim a live Upwork effect: the official account snapshot has
+zero submitted proposals, invites, offers, active contracts and earnings.
 
 ### Task 19: Deliver an Upwork milestone exactly once
 
