@@ -238,6 +238,23 @@ PY
 
 RC=$?
 BODY="$(cat /tmp/capafy_goal_monitor_body.txt 2>/dev/null)"
+REPORT_KIND="${CAPAFY_REPORT_KIND:-morning}"
+
+# Hourly control wakes use the unified state-change receipt. It refreshes money,
+# joins candidate/slot/post/revenue under one run_id, and dedupes through the
+# durable Telegram outbox. Never fall through to the legacy sender on this path.
+if [ "$REPORT_KIND" = "hourly" ]; then
+  "$PY" "$LIFE_MANAGER_REPO/skills/earn/capafy-marketing/scripts/capafy_hourly_reconcile.py" \
+    >>"$HOME/.local/state/life-manager/logs/capafy-goal-monitor-hourly.out" 2>>"$HOME/.local/state/life-manager/logs/capafy-goal-monitor-hourly.err"
+  RECONCILE_RC=$?
+  "$PY" "$LIFE_MANAGER_REPO/skills/earn/capafy-marketing/scripts/capafy_company_receipt.py" deliver \
+    >>"$HOME/.local/state/life-manager/logs/capafy-goal-monitor-hourly.out" 2>>"$HOME/.local/state/life-manager/logs/capafy-goal-monitor-hourly.err"
+  UNIFIED_RC=$?
+  cat /tmp/capafy_goal_monitor.json 2>/dev/null
+  [ "$RECONCILE_RC" -eq 0 ] || exit "$RECONCILE_RC"
+  exit "$UNIFIED_RC"
+fi
+
 # telegram daily report (best-effort; never blocks the monitor)
 if [ -n "$BODY" ]; then
   openclaw message send --channel telegram \
