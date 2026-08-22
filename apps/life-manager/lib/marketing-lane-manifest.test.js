@@ -85,6 +85,57 @@ test("creates a frozen secret-free manifest from explicit live routes", () => {
   assert.doesNotMatch(JSON.stringify(manifest), /token|secret|cookie|password|credential|openclaw|\/Users\//i);
 });
 
+test("encodes classified targets separately from unclassified zero-day holds", () => {
+  const target = row({
+    lane_state: "default-off",
+    disposition: "target",
+    renderer: "reelclaw",
+    format: "relationship-confession",
+    approved_pack: "honne-ai-reelclaw-en.pack.json",
+    canary_state: "verified",
+    target_daily_limit: 3,
+  });
+  const manifest = createManifest({
+    tenant_id: "dais-local",
+    integrations: [target],
+    holds: [{
+      integration_id: "live-tt-unclassified",
+      platform: "tiktok",
+      account: "@unclassified",
+      provider: "postiz",
+      provider_disabled: false,
+      disposition: "hold",
+      target_daily_limit: 0,
+      verified: true,
+    }],
+  });
+  assert.equal(manifest.schema_version, 2);
+  assert.equal(manifest.lanes[0].production_armed, false);
+  assert.equal(manifest.lanes[0].target_daily_limit, 3);
+  assert.deepEqual(manifest.holds, [{
+    integration_id: "live-tt-unclassified",
+    platform: "tiktok",
+    account: "@unclassified",
+    provider: "postiz",
+    provider_disabled: false,
+    disposition: "hold",
+    target_daily_limit: 0,
+  }]);
+  assert.equal(isMarketingLaneManifest(manifest), true);
+  assert.throws(
+    () => createManifest({ tenant_id: "dais-local", integrations: [target], holds: [] }),
+    /portfolio incomplete/i,
+  );
+  assert.throws(
+    () => createManifest({
+      tenant_id: "dais-local",
+      integrations: [target],
+      holds: [{ ...manifest.holds[0], target_daily_limit: 1, verified: true }],
+    }),
+    /hold disposition invalid/i,
+  );
+});
+
 test("normalizes Postiz's instagram-standalone identifier without copying raw payload fields", () => {
   const manifest = createManifest([row({
     identifier: "instagram-standalone",
