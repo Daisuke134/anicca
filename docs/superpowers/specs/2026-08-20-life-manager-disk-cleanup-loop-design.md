@@ -476,6 +476,22 @@ runsは159→160、2026-08-22T15:12:10Z receiptは`errors=0/protected_deletions=
 free 1,173,725,184→1,217,122,304 bytesだったが、launchdは`spawn scheduled`のため新しいlast-exit readbackは未取得である。
 Data volume空き約1.1 GiB、swap使用約12.9 GiBで、consumer missing 0と11 GiB recoveryの証拠ではない。
 
+A-20の第2 sliceでは、稼働Affiliate release `9696f23cd`の直系lineageへ3 browser共通entrypointの内部guardを
+移植した。passwd由来home、固定512 MiB floor、canonical host/lane state、`python3 -I`を使い、ignore flagと
+alternate state環境変数を除去する。guard、port検証、遅延CloakBrowser importの順に通すため、profile作成とbrowser
+effectより前にfail closedする。release installerはguardをrelease作成前にregular/non-symlink/readableかつcompile可能と
+検証し、SHA-256とexternal dependencyをreceiptへ保存する。既存6 launchd owner、Impact/source/composition plist、
+`ensure_agent` non-reload動作は維持した。
+
+live-lineage focused testは**11 passed**（canonical guard欠落専用1 skip）、compile、shell syntax、diff checkがPASSし、
+fresh adversarial reviewはBLOCKER/HIGH/MEDIUMなしで`ship`だった。code commitは`3a6b38ac5`。release-only atomic swap後の
+`affiliate/current`は`3a6b38ac5e78e8e2eef9c96633ff7517c08579e3`を指し、browser PIDは3119/3112/801で全件不変だった。
+実機stop flag preflightはRC 1、`reason=disk_writers_stop/effect=0/readback=0/required_bytes=536870912`で、3 PIDは再度
+不変だった。したがってAffiliate 3件はnext-natural-start consumerを持つ。残るbrowser consumerはjob-search 2件と
+provision 2件の計4件である。空きは約186 MiBまで低下し、canonical cleanupはruns 170→171へ進んだが
+`minimum runtime=300`の再spawn待ちで`state=spawn scheduled`、新last-exitは未取得である。直近16:04Z receiptは
+`errors=0/protected_deletions=0/reclaimed=0/preserved_reasons={"open":9}`で、A-20完了や11 GiB recoveryの証拠ではない。
+
 `/Users/anicca/anicca-project`は約9.5 GiB、その`.worktrees`は約4.4 GiBだった。最大の
 `cfo-resume-spec`（約1.08 GiB）は、dirty=0、branch upstream 0/0、process/open-path/leaseなしを
 read backした後にだけ`git worktree remove`で回収した。branchとremoteは残り、再作成可能である。
@@ -1050,7 +1066,7 @@ TDDのためだけの過剰fixtureや後続itemのscaffoldは前倒ししない�
 | A-17 | VM/package producer lifecycleを登録する | artifact/lease/finalizer/quota receipt | 完了: registration-only static 16件、pnpm exact version/proof/lease fail-closed、全A-17 entry runtime/quota 0/lease 300/preserveで削除authority 0、focused 48 tests、final review `ship`、fallback SHA一致/runs 486→487/static 16 bad 0、canonical runs 137→138 exit 0、protected deletion 0 |
 | A-18 | agent/gig-project lifecycleを登録する | project owner/terminal/lease receipt | 完了: registration-only numeric project 24件、terminal true 0、unknown owner 3、全件deliverable/preserve、focused 49 tests、fresh review `ship`、fallback runs 507→508/削除0、canonical runs 142→143 exit 0、errors/protected deletion 0 |
 | A-19 | Writer in-flight drainを接続する | provider interruption checkpoint/resume test | 完了: exact stop 2 pathのpre-Popen gate、process-group TERM→1秒→KILL/reap、immutable run/prompt checkpoint/resume、focused 44 tests、fresh review `ship`、release `43074f76422d1ec4935acdba98e553cb8564de94`、Writer runs 1/exit 0/provider effect 0、canonical runs 149→150/exit 0/errors 0/protected deletion 0 |
-| A-20 | browser/build/media preflightを接続する | producer consumer missing 0 for these families | 部分完了: Gig browser next-start、self-build 2境界、Writer media既存境界を接続。focused 24/隣接33 tests、review `ship`、commit `dd3e45b5f`、release SHA一致、browser RC 1/effect 0/PID維持、canonical runs 159→160/protected deletion 0。active browser 8中affiliate 3/job-search 2/provision 2の7 consumerとhost-wide build/media coverage、新last-exit readbackが残る |
+| A-20 | browser/build/media preflightを接続する | producer consumer missing 0 for these families | 部分完了: Gig browser、Affiliate 3 browser、self-build 2境界、Writer media既存境界を接続。Affiliate live-lineage commit/release `3a6b38ac5`、focused 11 tests、review `ship`、release-only PID 3119/3112/801不変、実機RC 1/effect 0。active browser 8中job-search 2/provision 2の4 consumerとhost-wide build/media coverage、canonical runs 170→171の新last-exit readbackが残る |
 | A-21 | VM/package/agent preflightを接続する | producer consumer missing 0 for these families | 未完了 |
 | A-22 | supervisor non-stop behaviorを実装する | ULTRA wake keeps supervisor labels loaded | 未完了 |
 | A-23 | Codex log budget/rotationを実装する | active app-server handoff with session loss 0 | 未完了 |
