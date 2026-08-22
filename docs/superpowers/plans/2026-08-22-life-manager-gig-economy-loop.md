@@ -397,6 +397,19 @@ U13 atomic order:
     release expansion exhausted disk headroom; it wrote neither state nor ledger effect. Replaying
     after that producer stopped proved recovery without a duplicate marketplace or ledger effect.
 
+U14 atomic order:
+
+1. **DONE:** the observer now selects a public-job action only when the official free balance covers
+   that live job's exact Connects cost. It then requires the private proposal directory to be mode
+   700, the exact job file to be mode 600, and its provider, job ID, official URL identity, source
+   hash, status, Connects, unsupported-claim list and canonical JSONL SHA-256 to match the public/live
+   row. Balance 0 returns before private payload access. Focused tests pass 16/16; an isolated
+   balance-7 validation against the real private SSOT selected `~022091106411892491962`, required 7
+   Connects and matched its sealed hash without browser or marketplace effect.
+2. Add click-free proposal-form fill/readback preflight for the selected sealed payload.
+3. After preflight, cross the existing durable effect fence once, submit once, and require the exact
+   official proposal ID plus post-effect Connects readback; unknown effect stays reconcile-only.
+
 ### Task 7: Record Upwork's private action matrix
 
 **Files:**

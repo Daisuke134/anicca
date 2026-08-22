@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+import hashlib
 import json
 from pathlib import Path
 
@@ -12,6 +13,8 @@ PROVIDERS = SCRIPTS / "providers"
 for directory in (SCRIPTS, PROVIDERS):
     if str(directory) not in sys.path:
         sys.path.insert(0, str(directory))
+
+import upwork_browser_provider as provider  # noqa: E402
 
 from upwork_browser_provider import (  # noqa: E402
     load_candidates,
@@ -153,6 +156,71 @@ def test_public_candidate_config_has_unique_exact_ids():
     assert all(item["job_id"] in item["job_url"] for item in candidates)
     assert all(item["queue"] == "ready" for item in candidates)
     assert all(len(item["proposal_payload_sha256"]) == 64 for item in candidates)
+
+
+def _sealed_proposal(
+    path: Path, *, job_id: str = "~01", connects: int = 7,
+    job_url: str | None = None,
+) -> str:
+    payload = {
+        "attachments": [],
+        "cover_letter": "A job-specific factual proposal.",
+        "job_id": job_id,
+        "job_source_sha256": "1" * 64,
+        "job_url": job_url or f"https://www.upwork.com/jobs/{job_id}",
+        "provider": "upwork",
+        "screening_answers": [],
+        "status": "frozen_waiting_for_connects",
+        "terms": {
+            "type": "fixed_price", "bid_usd": 15,
+            "delivery_days": 1, "required_connects": connects,
+            "available_connects_before": 0,
+        },
+        "title": "One bounded job",
+        "unsupported_claims": [],
+    }
+    canonical = json.dumps(
+        payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+    ) + "\n"
+    digest = hashlib.sha256(canonical.encode()).hexdigest()
+    payload["payload_sha256"] = digest
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    path.chmod(0o600)
+    return digest
+
+
+def test_zero_balance_never_selects_a_private_proposal(tmp_path):
+    proposals = tmp_path / "proposals"
+    proposals.mkdir(mode=0o700)
+    _sealed_proposal(proposals / "01.json")
+    planner = getattr(provider, "plan_free_proposal", None)
+
+    assert planner is not None
+    assert planner({"balance": 0, "candidate_jobs": []}, proposals) is None
+
+
+def test_exact_free_capacity_selects_only_the_hash_bound_live_job(tmp_path):
+    proposals = tmp_path / "proposals"
+    proposals.mkdir(mode=0o700)
+    digest = _sealed_proposal(
+        proposals / "01.json",
+        job_url="https://www.upwork.com/jobs/One-bounded-job_~01/",
+    )
+    state = {
+        "balance": 7,
+        "candidate_jobs": [{
+            "job_id": "~01", "status": "open", "queue": "ready",
+            "job_url": "https://www.upwork.com/jobs/~01",
+            "connects_required": 7, "proposal_payload_sha256": digest,
+        }],
+    }
+    planner = getattr(provider, "plan_free_proposal", None)
+
+    assert planner is not None
+    selected = planner(state, proposals)
+    assert selected["job_id"] == "~01"
+    assert selected["payload_sha256"] == digest
+    assert selected["terms"]["required_connects"] == 7
 
 
 def test_terminal_transition_is_fsynced_once_and_replay_is_zero(tmp_path):

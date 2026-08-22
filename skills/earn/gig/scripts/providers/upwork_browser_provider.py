@@ -16,6 +16,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 
 SCRIPTS = Path(__file__).resolve().parents[1]
@@ -34,6 +35,7 @@ MESSAGES_URL = "https://www.upwork.com/ab/messages/rooms/"
 WORKING_STYLE_URL = "https://www.upwork.com/nx/skills-assesment/assessment-results"
 DEFAULT_CANDIDATES = SCRIPTS.parent / "config" / "upwork-candidates.public.json"
 DEFAULT_TRANSITIONS = Path.home() / "gig/state/upwork-free-transitions.jsonl"
+DEFAULT_PROPOSALS = Path.home() / ".config/anicca/gig/upwork-proposals"
 TERMINAL_JOB_STATUSES = {"closed", "removed"}
 _COUNT_LABELS = {
     "offers": r"Offers\s*\((\d+)\)",
@@ -242,6 +244,92 @@ def load_candidates(path: Path) -> list[dict[str, str]]:
     return result
 
 
+_SEALED_PROPOSAL_KEYS = {
+    "attachments", "cover_letter", "job_id", "job_source_sha256", "job_url",
+    "payload_sha256", "provider", "screening_answers", "status", "terms",
+    "title", "unsupported_claims",
+}
+_SEALED_TERMS_KEYS = {
+    "type", "bid_usd", "delivery_days", "required_connects",
+    "available_connects_before",
+}
+
+
+def plan_free_proposal(state: dict[str, Any], proposals_dir: Path) -> dict[str, Any] | None:
+    """Return the first exact sealed proposal covered by the observed free balance."""
+    balance = state.get("balance")
+    candidates = state.get("candidate_jobs")
+    if type(balance) is not int or balance < 0 or not isinstance(candidates, list):
+        raise ValueError("upwork_free_action_state_invalid")
+    if balance == 0:
+        return None
+    proposals_dir = proposals_dir.expanduser()
+    if (
+        proposals_dir.is_symlink() or not proposals_dir.is_dir()
+        or proposals_dir.stat().st_mode & 0o777 != 0o700
+    ):
+        raise ValueError("upwork_proposal_store_invalid")
+    for candidate in candidates:
+        if (
+            not isinstance(candidate, dict) or candidate.get("status") != "open"
+            or candidate.get("queue") != "ready"
+        ):
+            continue
+        required = candidate.get("connects_required")
+        if type(required) is not int or required < 0 or balance < required:
+            continue
+        job_id = candidate.get("job_id")
+        expected_hash = candidate.get("proposal_payload_sha256")
+        if (
+            not isinstance(job_id, str) or not job_id.startswith("~")
+            or not isinstance(expected_hash, str)
+            or not re.fullmatch(r"[0-9a-f]{64}", expected_hash)
+        ):
+            raise ValueError("upwork_free_action_candidate_invalid")
+        path = proposals_dir / f"{job_id.lstrip('~')}.json"
+        if path.is_symlink() or not path.is_file() or path.stat().st_mode & 0o777 != 0o600:
+            raise ValueError("upwork_sealed_proposal_invalid")
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+            raise ValueError("upwork_sealed_proposal_invalid") from exc
+        if not isinstance(payload, dict) or set(payload) != _SEALED_PROPOSAL_KEYS:
+            raise ValueError("upwork_sealed_proposal_invalid")
+        terms = payload.get("terms")
+        answers = payload.get("screening_answers")
+        proposal_url = urlsplit(str(payload.get("job_url") or ""))
+        if (
+            payload.get("provider") != "upwork" or payload.get("job_id") != job_id
+            or proposal_url.scheme != "https" or proposal_url.netloc != "www.upwork.com"
+            or job_id not in proposal_url.path
+            or payload.get("status") != "frozen_waiting_for_connects"
+            or not re.fullmatch(r"[0-9a-f]{64}", str(payload.get("job_source_sha256") or ""))
+            or not isinstance(payload.get("cover_letter"), str)
+            or not payload["cover_letter"].strip()
+            or not isinstance(terms, dict) or set(terms) != _SEALED_TERMS_KEYS
+            or terms.get("required_connects") != required
+            or not isinstance(answers, list)
+            or any(
+                not isinstance(answer, dict) or set(answer) != {"question", "answer"}
+                or not all(isinstance(answer[key], str) and answer[key].strip() for key in answer)
+                for answer in answers
+            )
+            or payload.get("unsupported_claims") != []
+            or not isinstance(payload.get("attachments"), list)
+        ):
+            raise ValueError("upwork_sealed_proposal_invalid")
+        canonical = dict(payload)
+        recorded_hash = canonical.pop("payload_sha256")
+        canonical_line = json.dumps(
+            canonical, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+        ) + "\n"
+        actual_hash = hashlib.sha256(canonical_line.encode()).hexdigest()
+        if recorded_hash != expected_hash or actual_hash != expected_hash:
+            raise ValueError("upwork_sealed_proposal_hash_mismatch")
+        return payload
+    return None
+
+
 def parse_candidate(
     candidate: dict[str, str], text: str, evidence_sha256: str,
 ) -> dict[str, Any]:
@@ -381,7 +469,10 @@ def reconcile_terminal_transitions(
             fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
 
-async def observe(candidates_path: Path = DEFAULT_CANDIDATES) -> dict[str, Any]:
+async def observe(
+    candidates_path: Path = DEFAULT_CANDIDATES,
+    proposals_dir: Path = DEFAULT_PROPOSALS,
+) -> dict[str, Any]:
     pass_id = f"upwork-free-{time.time_ns()}-{os.getpid()}"
     artifacts: dict[str, str] = {}
     pages: dict[str, str] = {}
@@ -435,7 +526,17 @@ async def observe(candidates_path: Path = DEFAULT_CANDIDATES) -> dict[str, Any]:
         ],
         "evidence_sha256": artifacts,
     }
-    state["can_submit_public_job"] = state["balance"] > 0
+    selected = plan_free_proposal(state, proposals_dir)
+    state["can_submit_public_job"] = selected is not None
+    state["free_acquisition"] = (
+        {
+            "state": "ready",
+            "job_id": selected["job_id"],
+            "connects_required": selected["terms"]["required_connects"],
+            "proposal_payload_sha256": selected["payload_sha256"],
+        }
+        if selected is not None else {"state": "waiting_free_capacity"}
+    )
     return state
 
 
@@ -443,6 +544,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--cdp-base", default="http://127.0.0.1:9233")
     parser.add_argument("--candidates", type=Path, default=DEFAULT_CANDIDATES)
+    parser.add_argument("--proposals", type=Path, default=DEFAULT_PROPOSALS)
     parser.add_argument("--transitions", type=Path, default=DEFAULT_TRANSITIONS)
     parser.add_argument(
         "--output", type=Path,
@@ -450,7 +552,7 @@ def main() -> int:
     )
     args = parser.parse_args()
     os.environ["CLOAK_CDP_BASE_URL"] = args.cdp_base.rstrip("/")
-    state = asyncio.run(observe(args.candidates.expanduser()))
+    state = asyncio.run(observe(args.candidates.expanduser(), args.proposals.expanduser()))
     state = reconcile_terminal_transitions(
         args.output.expanduser(), args.transitions.expanduser(), state,
     )
