@@ -180,6 +180,11 @@ and pre-funded only; this skill does not automate a browser credit purchase.
   revenue claim.
 - The append-only earn ledger is never rewritten. Delayed EVM receipts join through the
   tx-keyed `receipt-reconciliations.jsonl` sidecar; a missing receipt remains retryable.
+- A receipt is admissible only after chain, transaction sender, USDC contract/token, recipient,
+  amount, and terminal status are checked. `status = 0x1` alone is not a revenue proof.
+- The ledger aggregate is net and idempotent: one canonical receipt identity contributes once,
+  positive and negative realized rows both remain in the period calculation, and duplicate rows
+  never inflate graduation coverage.
 - Graduation requires all of the following over the same trailing 30 days:
   - verified external realized net >= `1.5 * (compute cost + shelter cost)`;
   - liquid runway >= 30 days;
@@ -258,9 +263,24 @@ buyer. More model spend would increase losses, not solve the missing demand.
 
 ## Remaining TODO, in order
 
-### P0 — make the Life Manager code the only live code for this loop
+### P0 — close money-safety blockers before any live spend
 
-1. Fast-forward `origin/main` to the reviewed feature branch without force-push.
+1. Extend receipt verification beyond transaction status to the expected chain, USDC contract,
+   sender/counterparty, recipient, amount, and transfer log; fail closed when any proof is absent.
+2. Aggregate by canonical receipt identity and preserve signed net values, including external losses;
+   add regression tests for duplicate tx rows, a positive-plus-negative period, and a successful
+   unrelated/self transfer.
+3. Remove `PKVAR`, `BLOCKRUN_WALLET_KEY`, and `BASE_CHAIN_WALLET_KEY` overrides before resolving an
+   agent-economy compute key; prove the proxy account equals this instance's wallet.
+4. Make `plistgen.py` reject worktree paths at generation time, not only when `launch.sh` starts.
+
+No live money lane is enabled until this section passes.
+
+### P1 — make the Life Manager code the only live code for this loop
+
+1. Fetch the latest `origin/main`, merge it into the feature branch, rerun the focused and OSS
+   suites, and integrate through a normal reviewed main update; a fast-forward is allowed only if
+   the ancestry check actually passes. Never force-push.
 2. Change Life Manager release tooling and its loop declaration to a namespaced root,
    `LOOPS_ROOT=~/loops/life-manager`, so `anicca-products` cannot replace this loop's `current`.
 3. Cut a release from that Life Manager main commit, regenerate the agent-economy plist, and
@@ -268,8 +288,11 @@ buyer. More model spend would increase losses, not solve the missing demand.
 4. Read back the namespaced symlink, release manifest repository, `launch.sh` existence, process
    environment, and absence of legacy labels. The acceptance condition is a running loop from a
    Life Manager release, not merely a generated plist.
+5. Install lockfile dependencies in a durable path that is not a feature worktree and read back
+   the module resolution from the immutable release; a symlink into `agent-economy-implementation`
+   is not release evidence.
 
-### P1 — prove self-funded compute
+### P2 — prove self-funded compute
 
 1. Route this instance to a dedicated local proxy port and explicitly remove inherited
    `BLOCKRUN_WALLET_KEY`, `BASE_CHAIN_WALLET_KEY`, and `PKVAR` overrides before the proxy resolves
@@ -279,7 +302,7 @@ buyer. More model spend would increase losses, not solve the missing demand.
 3. Record compute cost with instance attribution and reconcile a paid call only when a real
    receipt exists. A free-model call is a zero-cost compute observation, not revenue.
 
-### P2 — connect the skill portfolio to one money contract
+### P3 — connect the skill portfolio to one money contract
 
 1. Define one provider-neutral `RevenueReceipt` envelope (provider, external payer, gross, fees,
    net, currency, chain/provider proof, settlement status, and idempotency key).
@@ -289,7 +312,7 @@ buyer. More model spend would increase losses, not solve the missing demand.
 3. Keep a future e-book marketplace as `planned` until a real publisher, payout path, and receipt
    readback are implemented; do not count a draft, view, or affiliate click as income.
 
-### P3 — obtain one real external revenue event
+### P4 — obtain one real external revenue event
 
 1. Keep the agent focused on one paid-work lane (TaskMarket first); do not spend on trading while
    the work lane has no demand.
@@ -297,7 +320,7 @@ buyer. More model spend would increase losses, not solve the missing demand.
 3. Append exactly one positive external ledger row and demonstrate that a duplicate reconcile does
    not add it twice. Never use self-buying as the success test.
 
-### P4 — turn accounting into an operating gate
+### P5 — turn accounting into an operating gate
 
 1. Feed the status command real per-instance compute cost, shelter lease cost, liquid balance, and
    human-paid-inference evidence.
@@ -306,7 +329,7 @@ buyer. More model spend would increase losses, not solve the missing demand.
 3. Only then allow a shelter payment policy to be implemented; no shelter transfer is authorized
    by this spec today.
 
-### P5 — optional adapters and open-source hardening
+### P6 — optional adapters and open-source hardening
 
 1. Add an OpenRouter adapter only as a pre-funded, non-autonomous option with the same ledger and
    spend gates.
