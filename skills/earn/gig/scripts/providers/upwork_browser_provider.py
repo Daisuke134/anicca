@@ -493,6 +493,26 @@ def _read_previous_state(path: Path) -> dict[str, Any]:
     return value
 
 
+def retain_last_official_candidate_costs(
+    current: list[dict[str, Any]], previous: dict[str, Any],
+) -> list[dict[str, Any]]:
+    prior = {
+        str(item.get("job_id")): item
+        for item in previous.get("candidate_jobs", [])
+        if isinstance(item, dict) and item.get("job_id")
+    }
+    result = []
+    for item in current:
+        row = dict(item)
+        old = prior.get(str(row.get("job_id")), {})
+        cost = old.get("connects_required")
+        if row.get("connects_required") is None and type(cost) is int and cost >= 0:
+            row["connects_required"] = cost
+            row["connects_evidence_sha256"] = old.get("connects_evidence_sha256") or old.get("evidence_sha256")
+        result.append(row)
+    return result
+
+
 def reconcile_terminal_transitions(
     output: Path, ledger: Path, state: dict[str, Any],
 ) -> dict[str, Any]:
@@ -502,6 +522,10 @@ def reconcile_terminal_transitions(
         fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
         try:
             previous = _read_previous_state(output)
+            state = dict(state)
+            state["candidate_jobs"] = retain_last_official_candidate_costs(
+                state.get("candidate_jobs", []), previous,
+            )
             handle.seek(0)
             rows = []
             for line in handle:
