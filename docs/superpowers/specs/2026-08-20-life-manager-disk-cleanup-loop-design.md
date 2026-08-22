@@ -679,6 +679,12 @@ Xcode DerivedData/ArchivesはA-16でpreserve登録済みで、任意の人手she
 26 media plistとrecording-store plistのproduction反映、専用guard receipt、canonical cleanup
 fresh exit 0/readbackに限定する。新しいmanaged build entrypointが登録された場合はA-35のcoverage gateで未接続を拒否する。
 
+production rollout直前のcontrol-plane lineageは、現在のcommand parentがPID 525のChatGPT/Codex app-serverで、同process配下に
+このsessionと複数のactive補助processがあることを示した。これをstale processとして終了すると保護対象の実行中Codex sessionを
+巻き込むため、PPID 1や141/153だけを根拠にkill/restartしない。`launchctl-safe preflight`が
+`mutation_allowed=true`になるまでtracked plistのcopy/reload/kickstartを停止する。push済みでcleanな2つのA-20 sparse worktreeは
+`git worktree remove`で回収し、feature branchとremote commitは保持した。
+
 `/Users/anicca/anicca-project`は約9.5 GiB、その`.worktrees`は約4.4 GiBだった。最大の
 `cfo-resume-spec`（約1.08 GiB）は、dirty=0、branch upstream 0/0、process/open-path/leaseなしを
 read backした後にだけ`git worktree remove`で回収した。branchとremoteは残り、再作成可能である。
