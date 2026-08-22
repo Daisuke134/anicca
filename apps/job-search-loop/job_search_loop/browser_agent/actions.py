@@ -61,7 +61,7 @@ class ActionExecutor:
                     ? Array.from(el.labels).map(x => x.innerText).join(' ') : '';
                   const actual = (own || linked || el.getAttribute('placeholder') || el.innerText || '').trim();
                   const variants = [actual];
-                  variants.push(actual.replace(/\s+(?:not checked|checked)$/i, ''));
+                  variants.push(actual.replace(/\\s+(?:not checked|checked)$/i, ''));
                   if (el.hasAttribute('aria-checked')) {
                     variants.push(`${actual} ${el.getAttribute('aria-checked') === 'true' ? 'checked' : 'not checked'}`);
                   }
