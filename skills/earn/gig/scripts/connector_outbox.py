@@ -1924,6 +1924,27 @@ class ConnectorOutbox:
         action_id = int(action["action_id"])
         successor = None
         if intent["rejection_code"] in SERVER_REJECTION_CODES:
+            attempts = max(0, int(action["revive_attempts"]))
+            attempt_cap = blocked_revive_attempt_cap(str(intent["rejection_code"]))
+            if attempts >= attempt_cap:
+                reason = f"revive_attempts_exhausted:{intent['rejection_code']}"
+                closure = self._dead_letter(
+                    connection,
+                    action,
+                    reason=reason,
+                    attempts=attempts,
+                    attempts_kind="revive",
+                    now=observed_at,
+                )
+                connection.execute(
+                    """UPDATE connector_actions
+                       SET owner=NULL,lease_until=0,updated_at=? WHERE action_id=?""",
+                    (observed_at, action_id),
+                )
+                self._release_slot(connection, action_id)
+                exhausted = dict(self._action(connection, action_id))
+                exhausted["revive_attempts_exhausted"] = True
+                return exhausted, closure
             successor = connection.execute(
                 """SELECT * FROM connector_actions
                    WHERE platform=? AND thread_id=? AND state='blocked'
