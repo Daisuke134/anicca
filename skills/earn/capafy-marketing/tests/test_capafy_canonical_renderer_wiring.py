@@ -31,6 +31,8 @@ class ApprovedHyperFramesWiringTest(unittest.TestCase):
         self.assertIn("STEP1 SELECTED (deterministic caller; do not call selector again)", source)
         self.assertIn("evidence-ready listing selection failed", source)
         self.assertIn("live pass produced no verified native Reel", source)
+        self.assertIn("Do not reject a valid tier1 session merely because", source)
+        self.assertNotIn("use session_owner=instagrapi from the supplied Capafy state", source)
         self.assertIn("--commit-agent-id", source)
         self.assertLess(source.index("VERIFIED_POST="), source.index("--commit-agent-id"))
 
