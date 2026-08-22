@@ -1248,6 +1248,10 @@ def _decision_only(args, item_path: Path, output: Path) -> int:
         root.relative_to(projects)
         if not root.is_dir():
             raise Failure("paid_work_decision")
+        if _account_owner_observe_only(args, item) is not None:
+            _write(output, {"status": "reserved_for_owner", "talkroom_id": room,
+                            "effect": 0, "readback": 1, "failed": 0})
+            return 0
         state = _load(root / "state.json")
         if _text(state.get("talkroom_id")) != room:
             raise Failure("paid_work_decision")
@@ -1527,6 +1531,55 @@ def _paid_project_root(args, item: dict[str, Any]) -> Path:
     root = candidate.resolve()
     root.relative_to(projects)
     return root
+
+
+def _account_owner_observe_only(args, item: dict[str, Any]) -> Path | None:
+    """Honor a room-local no-resend disposition only while its official effect still verifies."""
+    try:
+        root = _paid_project_root(args, item)
+        receipt_path = root / "context" / "paid-effect-policy.json"
+        if not _regular_file(receipt_path):
+            return None
+        receipt = _load(receipt_path)
+        room = _text(item.get("talkroom_id"))
+        package_sha256 = _text(receipt.get("package_sha256"))
+        artifact_basename = _text(receipt.get("artifact_basename"))
+        if (receipt.get("version") != 1 or receipt.get("disposition") != "observe_only"
+                or receipt.get("authority") != "account_owner_instruction"
+                or _text(receipt.get("talkroom_id")) != room
+                or not re.fullmatch(r"[0-9a-f]{64}", package_sha256)
+                or not artifact_basename or Path(artifact_basename).name != artifact_basename):
+            return None
+        state = _load(root / "state.json")
+        if (state.get("buyer_visible") is not True
+                or state.get("latest_buyer_visible_package_sha256") != package_sha256):
+            return None
+        evidence_root = (args.evidence_dir / "paid-direct" / room).resolve()
+        effect = Path(_text(receipt.get("effect_evidence"))).resolve()
+        official = Path(_text(receipt.get("official_readback"))).resolve()
+        effect.relative_to(evidence_root)
+        official.relative_to(evidence_root)
+        if (not _regular_file(effect) or not _regular_file(official)
+                or hashlib.sha256(effect.read_bytes()).hexdigest()
+                != _text(receipt.get("effect_evidence_sha256"))
+                or hashlib.sha256(official.read_bytes()).hexdigest()
+                != _text(receipt.get("official_readback_sha256"))):
+            return None
+        effect_row = _load(effect)
+        if (effect_row.get("talkroom_id") != room
+                or effect_row.get("artifact_basename") != artifact_basename
+                or effect_row.get("package_sha256") != package_sha256
+                or effect_row.get("send_performed") is not True
+                or effect_row.get("formal_delivery_checkbox") is not False):
+            return None
+        official_row = _row(_load(official), room)
+        seller_messages = official_row.get("seller_sent_messages") or []
+        if not any(artifact_basename in (message.get("attachments") or [])
+                   for message in seller_messages if isinstance(message, dict)):
+            return None
+        return receipt_path
+    except (AttributeError, OSError, ValueError, TypeError, json.JSONDecodeError, Failure):
+        return None
 
 
 def _current_paid_decision(root: Path, item: dict[str, Any]) -> dict[str, Any]:
@@ -3340,6 +3393,10 @@ def _prepare_one(args, item_path: Path, output: Path) -> int:
             return 0
         diagnostic_stage = "resolve_project"
         root = _paid_project_root(args, item)
+        if _account_owner_observe_only(args, item) is not None:
+            _write(output, {"status": "reserved_for_owner", "talkroom_id": room,
+                            "effect": 0, "readback": 1, "failed": 0})
+            return 0
         base = args.evidence_dir / "paid-direct" / room
         preflight = base / "preflight" / "selected-talkroom-snapshot.json"
         diagnostic_stage = "preflight_collect"
@@ -3583,6 +3640,11 @@ def _write_one(args, item_path: Path, output: Path) -> int:
         if _text(prepared.get("talkroom_id")) in OWNER_WORKED_TALKROOMS:
             _write(output, {"status": "reserved_for_owner", "talkroom_id": _text(prepared.get("talkroom_id")),
                             "effect": 0, "readback": 0, "failed": 0})
+            return 0
+        if _account_owner_observe_only(args, item) is not None:
+            _write(output, {"status": "reserved_for_owner",
+                            "talkroom_id": _text(prepared.get("talkroom_id")),
+                            "effect": 0, "readback": 1, "failed": 0})
             return 0
         disk_reason = _effect_gate_reason(args)
         if disk_reason is not None:
@@ -4007,6 +4069,14 @@ def run_once(args, output: Path) -> int:
                 rows[room] = {"talkroom_id": room, "status": "reserved_for_owner",
                               "send_performed": False, "deduplicated": True,
                               "formal_delivery_checkbox": False}
+                readback += 1
+                continue
+            effect_policy = _account_owner_observe_only(args, item)
+            if effect_policy is not None:
+                rows[room] = {"talkroom_id": room, "status": "reserved_for_owner",
+                              "send_performed": False, "deduplicated": True,
+                              "formal_delivery_checkbox": False,
+                              "evidence_paths": {"official_readback": str(effect_policy)}}
                 readback += 1
                 continue
             handoff = _reported_handoff_cycle(args, item)

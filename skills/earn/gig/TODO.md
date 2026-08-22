@@ -302,16 +302,14 @@ no-send, replay-zero and a new natural sub-30-minute official reply/estimate pro
 Do not advance the development cursor until every unchecked item in the current stage has official
 evidence. Independent production lanes continue running while development follows this order.
 
-**Live handover state.** `main` and `origin/main` include the pushed structured Owner feedback/browser boundary
-`461649dd3`. `/Users/anicca/gig/releases/life-manager/current` has advanced to immutable release `f032fac4`,
-while the already-running natural Paid PID and all its children remain consistently pinned to immutable release
-`cfa2b0be8f844a8517478e02e4c957c55311ab20`; the next launch will load the newer release.
-same immutable release. The older Paid-specific release link remains historical and is not the loaded launchd
-entrypoint. The protected unrelated dirty
-`skills/earn/gig/tests/test_reply_concurrency.py` remains outside this work. The loaded Paid owner uses up to
-eight independent project workers. Its launchd environment ignores the shared preventive
-`disk-pressure.block` and `disk-writers.stop` flags while retaining the 512 MiB last-resort guard and expiring
-operator brake.
+**Live handover state.** `main`, `origin/main` and `/Users/anicca/gig/releases/life-manager/current` are pinned to
+`15f7bbac4d550f0945128af94cd814e3b5a53899`. The Paid launchd owner is loaded but not running, with last exit
+`1`. The protected unrelated dirty `skills/earn/gig/tests/test_reply_concurrency.py` remains outside this work.
+The next release must include the shared room-local observe-only effect guard before Paid is kickstarted again;
+it verifies immutable exact-room browser effect evidence, official DOM readback and the factual state hash, and
+never trusts a later mutable same-name artifact. The loaded Paid owner uses up to eight independent project
+workers. Its launchd environment ignores the shared preventive `disk-pressure.block` and `disk-writers.stop`
+flags while retaining the 512 MiB last-resort guard and expiring operator brake.
 
 **Current official Paid truth — supersedes the historical chronology below.** The latest natural receipt is
 `status=failed`, `observed=7`, `actionable=5`, `effect=0`, `readback=2`, `failed=5`, `pending=0`. Launchd label
@@ -840,6 +838,9 @@ flowchart TB
    source-bound fact, and the same run naturally spawned a second Owner with that full verdict in its prompt.
    Browser nonzero output is now redacted and returned through the same room-local fact boundary. This item
    remains unchecked until the natural repair finishes and the newer browser boundary is exercised/read back.
+   The next release also routes delivery-gate results as structured Owner feedback and performs visual review
+   before validating its receipt, fixing the measured Haru and byusco ordering failures without regenerating
+   their artifacts merely to classify an error.
 8. [ ] Complete the shared tool boundary: content-addressed durable artifact inputs/outputs; fresh read-only
    evaluator opening every actual source/candidate/package/reference; and mechanical exact-room browser
    send/readback with formal delivery OFF, effect fence and replay-zero. Missing evidence is NEEDS_WORK, never
@@ -855,6 +856,10 @@ flowchart TB
     exact-room official readback and replay-zero. Incomplete `REVIEW_READY` is not completed delivery.
 12. [ ] Migrate X's already-proved v1 effect/readback into the factual authority and demonstrate zero rebuild/send;
     close `18062411`'s `remote_resume` as durable `satisfied_noop` or resume only on a newer official buyer event.
+    X now has a room-local account-owner observe-only disposition bound to sent hash `c95765c5…`, immutable
+    browser effect evidence and exact-room official DOM readback. The local same-name artifact was measured as
+    later-mutated hash `8266ce28…`; the guard deliberately rejects it as authority. This remains unchecked until
+    a natural pass observes X and proves zero builder spawn, zero send and replay-zero.
 13. [ ] Migrate every remaining purchased room, close every silent pending/failure with an owned disposition and
     prove one natural concurrent multi-project pass. Each client must show its own capsule/source hashes,
     context-correct artifact/disposition, official readback and replay-zero; parallel speed may not reduce
