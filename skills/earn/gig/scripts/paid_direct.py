@@ -2413,7 +2413,9 @@ def _run_isolated_file_owner(args, root: Path, context: Path, prompt_text: str,
             "must contain capability, input, output and receipt fields using paths relative to this workdir. The currently "
             "available capability is illustrator_native_roundtrip with input, output and receipt fields. Return "
             "blocked after writing the request; the durable controller will execute it outside this sandbox and "
-            "resume this same owner to inspect the official receipt and finish the artifact.",
+            "resume this same owner to inspect the official receipt and finish the artifact. If "
+            "context/paid-tool-results.json exists, read it as mechanical failure evidence and semantically choose "
+            "a different honest skill-supported input or approach. Never repeat the same capability and input hash.",
             encoding="utf-8",
         )
         staged_evidence = staging / "runner-evidence"
@@ -2436,7 +2438,11 @@ def _run_isolated_file_owner(args, root: Path, context: Path, prompt_text: str,
         try:
             for owner_round in range(2):
                 _run(command, "file_builder")
-                executed = _execute_owner_tool_requests(staging, REPO_ROOT)
+                try:
+                    executed = _execute_owner_tool_requests(staging, REPO_ROOT)
+                except Failure:
+                    _persist_owner_tool_failure(staging, root)
+                    raise
                 if not executed:
                     break
                 if owner_round:
@@ -2465,6 +2471,7 @@ def _run_isolated_file_owner(args, root: Path, context: Path, prompt_text: str,
             raise Failure("file_builder")
         try:
             _promote_staged_file_bundle(staging, root, expected_version)
+            (root / "context" / "paid-tool-results.json").unlink(missing_ok=True)
         except (AttributeError, OSError, ValueError, TypeError, json.JSONDecodeError, Failure) as error:
             manifest = _load(staging / "delivery" / "paid-work-result.json")
             acceptance_path = Path(_text(manifest.get("acceptance_evidence_path"))) if isinstance(manifest, dict) else Path()
@@ -2553,6 +2560,57 @@ def _execute_owner_tool_requests(staging: Path, code_root: Path) -> int:
     _write(staging / "delivery" / "paid-tool-results.json", {"version": 1, "results": results})
     request_path.rename(staging / "delivery" / "paid-tool-requests.executed.json")
     return len(results)
+
+
+def _persist_owner_tool_failure(staging: Path, root: Path) -> None:
+    """Preserve mechanical failure facts for the next semantic owner decision."""
+    def sanitize(value: Any) -> Any:
+        if isinstance(value, dict):
+            return {key: sanitize(child) for key, child in value.items()}
+        if isinstance(value, list):
+            return [sanitize(child) for child in value]
+        if isinstance(value, str):
+            return value.replace(str(staging), "/paid-owner-workdir").replace(
+                str(staging.resolve()), "/paid-owner-workdir")
+        return value
+
+    request_path = staging / "delivery" / "paid-tool-requests.json"
+    result_path = staging / "delivery" / "paid-tool-results.json"
+    if not request_path.is_file() or not result_path.is_file():
+        return
+    request = _load(request_path)
+    result = _load(result_path)
+    requests = request.get("requests") if isinstance(request, dict) else None
+    if (not isinstance(request, dict) or request.get("version") != 1 or not isinstance(requests, list)
+            or not isinstance(result, dict) or result.get("version") != 1):
+        return
+    inputs = []
+    for row in requests:
+        raw = row.get("input") if isinstance(row, dict) else None
+        if not isinstance(raw, str) or Path(raw).is_absolute():
+            continue
+        path = (staging / raw).resolve()
+        try:
+            path.relative_to(staging.resolve())
+        except ValueError:
+            continue
+        if path.is_file():
+            inputs.append({
+                "path": raw,
+                "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+            })
+    _write(root / "context" / "paid-tool-results.json", {
+        "version": 1,
+        "status": "failed",
+        "instruction": (
+            "Mechanical tool evidence only. Read the buyer context and choose a different honest "
+            "skill-supported input or approach; do not repeat the same capability and input hash."
+        ),
+        "request_sha256": hashlib.sha256(request_path.read_bytes()).hexdigest(),
+        "requests": requests,
+        "inputs": inputs,
+        "results": sanitize(result.get("results", [])),
+    })
 
 
 def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str, Any],

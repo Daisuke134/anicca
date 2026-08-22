@@ -353,6 +353,20 @@ then issue a new capability request. If Illustrator also crashes on that indepen
 non-delegable action is an account-owner native Illustrator save/reopen on this machine; record its official receipt
 before the loop may package or send v40.
 
+**Durable semantic recovery now implemented, activation proof pending.** `main` and `origin/main` were verified at
+`aabadf06f69f3e64e374bf95f33a8dc44c28942d` before this change while the already-running Haru effect child remained
+on its pre-change `ba6dfa88c21334ce6ca2993e41f8b15febc6b0f0` source path. On a desktop-capability failure the controller now
+preserves only the mechanical request, request SHA-256, staging-relative input names and SHA-256 values, return code
+and path-sanitized stdout/stderr in project-local `context/paid-tool-results.json`. The next isolated Project Owner
+receives that receipt and must semantically choose a different honest installed-skill input or approach instead of
+repeating the same capability plus input hash; the controller does not classify the buyer problem or select the
+replacement. A successful promoted bundle removes the stale failure receipt. A local isolated receipt exercise
+proved the input hash binding and removal of the transient workspace path; syntax and diff checks pass. This is not
+customer evidence: publish it, let the existing Paid launchd owner restart naturally, and require the alternate
+native receipt, v40 artifact inspection, one send, exact-room official DOM readback, formal delivery OFF and then
+replay-zero before marking Haru complete. Current APFS free space is about 3.0 GiB; the active Haru runtime occupies
+about 2.9 GiB, so do not delete or mutate that in-flight workspace.
+
 **Current reviewer correction.** `main` and `origin/main` were both `31e7fa09d` before this change; the
 starting verification commit `79ac01ba1eb66b06aed1f9cee66d4af303f03a3d` remains an ancestor. The loaded
 Paid release is still `f747c7d05` while its natural pass is active, so no effect is attributed to the new
