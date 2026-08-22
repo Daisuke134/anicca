@@ -19,6 +19,7 @@ OUTBOX_DATABASE="$JOB_SEARCH_STATE_ROOT/ledger.sqlite3"
 PREP_STATUS="$EVIDENCE/prep-status.json"
 TELEGRAM_OUTBOX="$JOB_SEARCH_STATE_ROOT/telegram-outbox.sqlite3"
 GMAIL_ACCOUNT="${JOB_SEARCH_GMAIL_ACCOUNT:-}"
+export JOB_SEARCH_MACHINE_CREDENTIALS="${XDG_DATA_HOME:-$HOME/.local/share}/anicca/credentials.json"
 
 if [[ -z "$GMAIL_ACCOUNT" ]]; then
   GMAIL_ACCOUNT=$("$JOB_SEARCH_JQ" -er \
