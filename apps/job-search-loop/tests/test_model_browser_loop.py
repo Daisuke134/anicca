@@ -2,6 +2,7 @@ import copy
 import json
 import unittest
 from pathlib import Path
+from unittest.mock import Mock, patch
 
 from jsonschema import Draft202012Validator, FormatChecker
 
@@ -120,35 +121,62 @@ class ModelBrowserLoopContractTests(unittest.TestCase):
             with self.subTest(value=value):
                 self.assertInvalid(value)
 
-    def test_current_fast_paths_are_recorded_as_all_five_contract_gaps(self):
-        workday = (APP_ROOT / "job_search_loop" / "workday_fast_path.py").read_text(
-            encoding="utf-8"
-        )
-        ashby = (APP_ROOT / "job_search_loop" / "ashby_fast_path.py").read_text(
-            encoding="utf-8"
-        )
-        sources = workday + "\n" + ashby
-        gaps = set()
-        if "async def _snapshot" in workday and "page.screenshot" not in workday:
-            gaps.add("observation_without_screenshot")
-        if "_click_surface" in sources and "_fill_step" in sources:
-            gaps.add("fast_path_owns_actions")
-        if '"status": "blocked"' in sources:
-            gaps.add("row_failure_becomes_blocked")
-        if "CheckpointStore" not in sources:
-            gaps.add("no_durable_row_checkpoint")
-        if "complete_submission" in sources and "_confirmation" in sources:
-            gaps.add("fast_path_owns_completion_classification")
+    def test_daily_owner_routes_forms_only_through_framework_orchestrator(self):
+        daily = (APP_ROOT / "scripts" / "run-daily.sh").read_text(encoding="utf-8")
+        prompt = (APP_ROOT / "prompts" / "daily-pass.md").read_text(encoding="utf-8")
 
+        self.assertNotIn("job_search_loop.ashby_fast_path", daily)
+        self.assertNotIn("job_search_loop.workday_fast_path", daily)
+        self.assertNotIn('"$JOB_SEARCH_PYTHON" "$JOB_SEARCH_RUNNER"', daily)
         self.assertEqual(
-            {
-                "observation_without_screenshot",
-                "fast_path_owns_actions",
-                "row_failure_becomes_blocked",
-                "no_durable_row_checkpoint",
-                "fast_path_owns_completion_classification",
-            },
-            gaps,
+            daily.count("-m job_search_loop.browser_agent.orchestrator"), 1
+        )
+        self.assertNotIn("deterministic Ashby fast path owns", prompt)
+        self.assertNotIn("A `blocked` row remains durable work", prompt)
+
+    def test_orchestrator_delegates_once_to_the_existing_bounded_runner(self):
+        from job_search_loop.browser_agent.orchestrator import invoke_runner
+
+        completed = Mock(returncode=0)
+        with patch(
+            "job_search_loop.browser_agent.orchestrator.subprocess.run",
+            return_value=completed,
+        ) as run:
+            returncode = invoke_runner(
+                runner=Path("/runtime/agent_runner.py"),
+                prompt=Path("/app/prompts/daily-pass.md"),
+                schema=Path("/app/schemas/pass-result.v1.schema.json"),
+                evidence_dir=Path("/state/evidence/wake"),
+                workdir=Path("/repo"),
+                timeout_seconds=900,
+                python="/python3",
+            )
+
+        self.assertEqual(returncode, 0)
+        run.assert_called_once_with(
+            [
+                "/python3",
+                "/runtime/agent_runner.py",
+                "--task-class",
+                "browser-lane-agent",
+                "--escalation-reason",
+                "mandatory-model-browser-loop",
+                "--timeout-seconds",
+                "900",
+                "--prompt-file",
+                "/app/prompts/daily-pass.md",
+                "--schema",
+                "/app/schemas/pass-result.v1.schema.json",
+                "--evidence-dir",
+                "/state/evidence/wake",
+                "--task-label",
+                "job-search-daily",
+                "--loop",
+                "job-search",
+                "--workdir",
+                "/repo",
+            ],
+            check=False,
         )
 
     def test_every_eligible_workday_row_reaches_the_mandatory_model_lane(self):
@@ -158,7 +186,9 @@ class ModelBrowserLoopContractTests(unittest.TestCase):
 
         self.assertNotIn("JOB_SEARCH_ENABLE_MODEL_FALLBACK", daily)
         self.assertNotIn("-m job_search_loop.workday_fast_path", daily)
-        self.assertEqual(daily.count("--task-class browser-lane-agent"), 1)
+        self.assertEqual(
+            daily.count("-m job_search_loop.browser_agent.orchestrator"), 1
+        )
         self.assertIn('"status": "model_owned"', daily)
         self.assertIn(
             "Process every eligible Workday row returned by both Ledger queue methods",

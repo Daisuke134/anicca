@@ -378,8 +378,8 @@ This is the remaining implementation-order SSOT. Only the first
 | 8 | Add framework contract tests and recorded real-shape replays | `done` | `tests.test_model_browser_loop` replays sanitized live Workday plus recorded Ashby shapes, rejects forbidden envelopes, and detects all five current fast-path contract gaps |
 | 9 | Route `browser-lane-agent` to Luna xhigh with the existing bounded runner | `done` | `luna-xhigh-browser-loop` has one Codex Luna xhigh candidate, the existing 900-second bound, explicit reason at both callers, and no fallback executor |
 | 10 | Remove `JOB_SEARCH_ENABLE_MODEL_FALLBACK` as a production decision | `done` | The flag and early exit are absent, Workday fast path is outside production, and the mandatory Luna lane consumes every eligible Ledger Workday row |
-| 11 | Replace Workday/Ashby filler ownership with the framework orchestrator | `pending_actionable` | Fast paths produce hints/evidence only and cannot navigate, fill, or terminate an eligible form |
-| 12 | Make Workday the only active application lane during 10P | `pending_after_11` | Ashby discovery may refresh, but no Ashby form opens before Workday live gate closes |
+| 11 | Replace Workday/Ashby filler ownership with the framework orchestrator | `done` | Production reaches neither filler nor runner directly; discovery/model-owned receipts feed one `browser_agent.orchestrator`, which delegates once to the existing runner |
+| 12 | Make Workday the only active application lane during 10P | `pending_actionable` | Ashby discovery may refresh, but no Ashby form opens before Workday live gate closes |
 | 13 | Implement persistent CDP session ownership and reconnection | `pending_after_12` | Framework reuses `:9222`, isolates its row tab/context, reconnects safely, and closes only what it opened |
 | 14 | Implement `ObservationBuilder` from fresh screenshot + AX/DOM + visible text | `pending_after_13` | Dynamic rerender invalidates old elements; every observation has a stable hash |
 | 15 | Implement the typed `ActionExecutor` | `pending_after_14` | Only visible navigate/click/type/select/upload/scroll/wait actions are available; hidden/forced actions are impossible |
@@ -701,13 +701,14 @@ through the same `browser-row-run.v1` contract. The suite also proves that passw
 cookie, email-code, raw-answer, `submitted`, `submit_unknown`, and post-click
 `acting` inputs are rejected.
 
-The characterization assertion deliberately records five present-tense gaps in
-the production fast paths: Workday observation has no screenshot, the helpers own
-actions, row failures become `blocked`, no durable row checkpoint exists, and the
-helpers own completion classification. The test remains green only while that gap
-set is exact. As Atomic 10–17 replace each boundary, the corresponding gap assertion
-is removed in the same slice and replaced by the positive framework invariant; it
-cannot silently disappear or be relabeled as completion.
+The initial characterization assertion recorded five gaps in the old production
+fast paths: Workday observation had no screenshot, the helpers owned actions, row
+failures became `blocked`, no durable row checkpoint existed, and the helpers owned
+completion classification. Atomic 11 replaces that transitional assertion with the
+positive production invariant: the daily owner references neither filler, calls
+only `job_search_loop.browser_agent.orchestrator`, and the orchestrator delegates
+exactly once to the existing bounded runner. Later component slices add their own
+positive observation/action/checkpoint/verifier invariants.
 
 Recorded RED/GREEN evidence for Atomic 8:
 
@@ -757,6 +758,31 @@ Atomic 10 evidence is one RED against the optional flag/Workday filler/prompt, t
 and `zsh -n scripts/run-daily.sh` passing. The isolated canonical execution has no
 model-enable environment flag, observes no Workday fast-path module call, invokes
 the shared runner exactly once, and performs no real Telegram send.
+
+#### Framework-owned production call graph
+
+`job_search_loop/browser_agent/orchestrator.py` is now the only production form
+control entrypoint. `run-daily.sh` performs browser-owner evidence, deterministic
+Ashby discovery, hard safety preparation, and secret-free `model_owned`
+compatibility receipts; it invokes neither `ashby_fast_path` nor
+`workday_fast_path`, and it no longer launches `runtime/agent-runner/agent_runner.py`
+directly. The orchestrator delegates once to that same existing runner with the
+fixed Luna xhigh route, explicit reason, one timeout, prompt/schema/evidence roots,
+and canonical workdir.
+
+The old filler source files remain only for history and focused legacy tests. They
+are unreachable from the hourly production call graph and therefore cannot
+navigate, fill, click, claim, classify, or terminate an eligible production row.
+Ashby discovery remains deterministic but its receipt contains only discovery
+status/count and `status=model_owned`; it does not open a form. The pre-model
+Telegram message likewise reports discovery/ownership, never a fabricated
+application outcome.
+
+Atomic 11 evidence is one failure plus one missing-package error in RED, followed by
+5/5 browser ownership/replay tests, 8/8 isolated canonical-runtime tests, and shell
+syntax passing. The orchestrator delegation test binds the exact single runner
+argv; the isolated daily owner observes zero Ashby/Workday filler calls and exactly
+one orchestrator call without a real browser/model/Telegram side effect.
 
 #### Source lineage
 

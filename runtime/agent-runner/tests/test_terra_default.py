@@ -38,7 +38,12 @@ class ApprovedRouteDefaultTest(unittest.TestCase):
         self.assertTrue(route["requires_explicit_escalation"])
         self.assertEqual(len(route["candidates"]), 1)
         for caller in (
-            repo_root / "apps" / "job-search-loop" / "scripts" / "run-daily.sh",
+            repo_root
+            / "apps"
+            / "job-search-loop"
+            / "job_search_loop"
+            / "browser_agent"
+            / "orchestrator.py",
             repo_root / "apps" / "job-search-loop" / "job_search_loop" / "agent_runner.py",
         ):
             with self.subTest(caller=caller):

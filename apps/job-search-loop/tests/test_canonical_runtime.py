@@ -77,6 +77,8 @@ if sys.argv[1:3] and sys.argv[1] == "-m" and "--output" in sys.argv:
         value = {"status": "ready", "endpoint": "http://127.0.0.1:9222"}
     output.write_text(json.dumps(value) + "\\n", encoding="utf-8")
     raise SystemExit(0)
+if sys.argv[1:3] == ["-m", "job_search_loop.browser_agent.orchestrator"]:
+    raise SystemExit(%d)
 if sys.argv[1:2] and sys.argv[1].endswith("agent_runner.py"):
     evidence = pathlib.Path(sys.argv[sys.argv.index("--evidence-dir") + 1])
     evidence.mkdir(parents=True, exist_ok=True)
@@ -87,7 +89,7 @@ if sys.argv[1:2] and sys.argv[1].endswith("agent_runner.py"):
     raise SystemExit(%d)
 raise SystemExit(0)
 """
-            % runner_rc,
+            % (runner_rc, runner_rc),
             encoding="utf-8",
         )
         fake_python.chmod(0o700)
@@ -127,12 +129,13 @@ raise SystemExit(0)
             self.assertEqual(result.returncode, 99, result.stderr)
             encoded = json.dumps(calls)
             self.assertIn("job_search_loop.browser_owner", encoded)
-            self.assertIn("agent_runner.py", encoded)
+            self.assertIn("job_search_loop.browser_agent.orchestrator", encoded)
             self.assertNotIn("job_search_loop.workday_fast_path", encoded)
+            self.assertNotIn("job_search_loop.ashby_fast_path", encoded)
             self.assertEqual(
                 1,
                 sum(
-                    bool(call and call[0].endswith("agent_runner.py"))
+                    call[:2] == ["-m", "job_search_loop.browser_agent.orchestrator"]
                     for call in calls
                 ),
             )

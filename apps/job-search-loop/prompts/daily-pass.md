@@ -19,12 +19,11 @@ Never print, `cat`, or `sed` the private profile, credentials, or raw provider
 transcripts into stdout/stderr. If a value is needed, query only the one required
 non-secret field with a redacting filter and keep the command output minimal.
 
-Before processing the queue, read `$JOB_SEARCH_ASHBY_FAST_PATH_RESULT` when it
-exists. It is a deterministic preflight owned by this same daily process. Do not
-repeat a row that it marked `submitted`, `submit_unknown`, `not_submitted`, or
-`already_claimed` during this pass. A `blocked` row remains durable work for a
-future pass only when its blocker can change; continue discovery to other
-companies instead of spending the pass re-reading the same blocked form.
+`$JOB_SEARCH_ASHBY_FAST_PATH_RESULT` is a compatibility receipt with
+`status=model_owned`; it contains deterministic discovery counts only and has no
+form authority. Ashby and Workday form navigation, answers, actions, and outcomes
+belong exclusively to this framework-owned model lane. Provider helpers may supply
+surface vocabulary or evidence but never a completed workflow or stopping result.
 
 `$JOB_SEARCH_WORKDAY_FAST_PATH_RESULT` is a compatibility receipt with
 `status=model_owned`; it has no form authority. Before fresh discovery, call both

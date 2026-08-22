@@ -32,25 +32,7 @@ refresh_summary() {
 "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_owner \
   --endpoint "http://127.0.0.1:9222" \
   --output "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE"
-ASHBY_FAST_PATH_RESULT="$EVIDENCE/ashby-fast-path.json"
-ASHBY_BLOCKER_STATE="$JOB_SEARCH_STATE_ROOT/ashby-required-field-blockers.json"
 ASHBY_BOARD_BLOCKER_STATE="$JOB_SEARCH_STATE_ROOT/ashby-board-blockers.json"
-set +e
-"$JOB_SEARCH_PYTHON" -m job_search_loop.ashby_fast_path \
-  --endpoint "http://127.0.0.1:9222" \
-  --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
-  --profile "$JOB_SEARCH_PROFILE" \
-  --materials-root "${XDG_DATA_HOME:-$HOME/.local/share}/anicca/job-search/materials" \
-  --evidence-dir "$EVIDENCE/ashby-fast-path" \
-  --output "$ASHBY_FAST_PATH_RESULT" \
-  --blocker-state "$ASHBY_BLOCKER_STATE" \
-  --board-blocker-state "$ASHBY_BOARD_BLOCKER_STATE" \
-  --japan-day "$JAPAN_DAY"
-ASHBY_FAST_PATH_RC=$?
-set -e
-if [[ "$ASHBY_FAST_PATH_RC" -ne 0 ]]; then
-  printf '%s\n' "Ashby fast path exited rc=$ASHBY_FAST_PATH_RC; browser-lane fallback continues" >&2
-fi
 ASHBY_DISCOVERY_RESULT="$EVIDENCE/ashby-discovery.json"
 set +e
 "$JOB_SEARCH_PYTHON" -m job_search_loop.ashby_discovery \
@@ -69,42 +51,8 @@ set -e
 if [[ "$ASHBY_DISCOVERY_RC" -ne 0 ]]; then
   printf '%s\n' "Ashby deterministic discovery exited rc=$ASHBY_DISCOVERY_RC; existing queue continues" >&2
 fi
-ASHBY_DISCOVERED_FAST_PATH_RESULT="$EVIDENCE/ashby-fast-path-discovered.json"
-ASHBY_DISCOVERY_COUNT=$("$JOB_SEARCH_JQ" -r '(.discovered // []) | length' "$ASHBY_DISCOVERY_RESULT")
-if [[ "$ASHBY_DISCOVERY_COUNT" -gt 0 ]]; then
-  set +e
-  "$JOB_SEARCH_PYTHON" -m job_search_loop.ashby_fast_path \
-    --endpoint "http://127.0.0.1:9222" \
-    --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
-    --profile "$JOB_SEARCH_PROFILE" \
-    --materials-root "${XDG_DATA_HOME:-$HOME/.local/share}/anicca/job-search/materials" \
-    --evidence-dir "$EVIDENCE/ashby-fast-path-discovered" \
-    --output "$ASHBY_DISCOVERED_FAST_PATH_RESULT" \
-    --blocker-state "$ASHBY_BLOCKER_STATE" \
-    --board-blocker-state "$ASHBY_BOARD_BLOCKER_STATE" \
-    --japan-day "$JAPAN_DAY" \
-    --max-jobs 1
-  ASHBY_DISCOVERED_FAST_PATH_RC=$?
-  set -e
-  if [[ "$ASHBY_DISCOVERED_FAST_PATH_RC" -ne 0 ]]; then
-    printf '%s\n' "Ashby discovered fast path exited rc=$ASHBY_DISCOVERED_FAST_PATH_RC; model fallback remains bounded" >&2
-  fi
-else
-  "$JOB_SEARCH_PYTHON" - "$ASHBY_DISCOVERED_FAST_PATH_RESULT" <<'PY'
-import json
-import os
-import sys
-from pathlib import Path
-
-path = Path(sys.argv[1])
-path.write_text(json.dumps({"status": "no_work", "processed": [], "excluded": []}) + "\n", encoding="utf-8")
-os.chmod(path, 0o600)
-PY
-fi
 ASHBY_COMBINED_RESULT="$EVIDENCE/ashby-fast-path-combined.json"
 "$JOB_SEARCH_PYTHON" - \
-  "$ASHBY_FAST_PATH_RESULT" \
-  "$ASHBY_DISCOVERED_FAST_PATH_RESULT" \
   "$ASHBY_DISCOVERY_RESULT" \
   "$ASHBY_COMBINED_RESULT" <<'PY'
 import json
@@ -112,7 +60,7 @@ import os
 import sys
 from pathlib import Path
 
-first_path, second_path, discovery_path, output_path = map(Path, sys.argv[1:])
+discovery_path, output_path = map(Path, sys.argv[1:])
 
 def read(path: Path) -> dict:
     try:
@@ -121,23 +69,12 @@ def read(path: Path) -> dict:
         return {"status": "failed", "processed": [], "excluded": []}
     return value if isinstance(value, dict) else {"status": "failed", "processed": [], "excluded": []}
 
-first, second, discovery = read(first_path), read(second_path), read(discovery_path)
-processed = [
-    row
-    for result in (first, second)
-    for row in (result.get("processed") or [])
-    if isinstance(row, dict)
-]
-excluded = [
-    row
-    for result in (first, second)
-    for row in (result.get("excluded") or [])
-    if isinstance(row, dict)
-]
+discovery = read(discovery_path)
 combined = {
-    "status": "completed" if processed else first.get("status", "no_work"),
-    "processed": processed,
-    "excluded": excluded,
+    "status": "model_owned",
+    "processed": [],
+    "excluded": [],
+    "reason": "mandatory_browser_lane",
     "discovery": {
         "status": discovery.get("status"),
         "discovered_count": len(discovery.get("discovered") or []),
@@ -175,9 +112,9 @@ path.write_text(
 os.chmod(path, 0o600)
 PY
 export JOB_SEARCH_WORKDAY_FAST_PATH_RESULT="$WORKDAY_FAST_PATH_RESULT"
-FAST_PATH_REPORT="$EVIDENCE/fast-path-report.json"
+PREFLIGHT_REPORT="$EVIDENCE/pre-model-report.json"
 JOB_SEARCH_REPORT_TEXT=$("$JOB_SEARCH_PYTHON" - \
-  "$ASHBY_FAST_PATH_RESULT" \
+  "$ASHBY_COMBINED_RESULT" \
   "$WORKDAY_FAST_PATH_RESULT" \
   "$JAPAN_DAY" \
   "$RUN_ID" <<'PY'
@@ -196,35 +133,15 @@ def read(path: Path) -> dict:
 
 ashby = read(ashby_path)
 workday = read(workday_path)
-processed = ashby.get("processed") if isinstance(ashby.get("processed"), list) else []
-details = []
-for row in processed:
-    if not isinstance(row, dict):
-        continue
-    company = str(row.get("company") or "unknown employer")
-    title = str(row.get("title") or "unknown role")
-    status = str(row.get("status") or "unknown")
-    blocker = str(row.get("blocker") or "")
-    request_observed = row.get("submit_request_observed") is True
-    response_statuses = [
-        int(value)
-        for value in (row.get("submit_response_statuses") or [])
-        if isinstance(value, int)
-    ]
-    details.append(
-        f"{company} — {title}: {status}"
-        + (" (submit request observed)" if request_observed else "")
-        + (f" (Ashby response {response_statuses})" if response_statuses else "")
-        + (f" ({blocker})" if blocker else "")
-    )
-if not details:
-    details.append(f"no row processed ({ashby.get('status', 'unknown')})")
+ashby_discovery = ashby.get("discovery") if isinstance(ashby.get("discovery"), dict) else {}
+ashby_discovery_status = str(ashby_discovery.get("status") or "unknown")
+ashby_discovered_count = int(ashby_discovery.get("discovered_count") or 0)
 workday_status = str(workday.get("status") or "unknown")
 workday_reason = str(workday.get("reason") or "")
 message = (
     "Codex::: "
-    f"{japan_day} JST {run_id.name} fast-path checkpoint. Ashby ran first: "
-    + "; ".join(details)
+    f"{japan_day} JST {run_id.name} pre-model checkpoint. "
+    + f"Ashby discovery is {ashby_discovery_status} ({ashby_discovered_count} discovered; forms model_owned)"
     + f". Workday is {workday_status}"
     + (f" ({workday_reason})" if workday_reason else "")
     + ". This checkpoint is sent before the mandatory model lane so a timeout cannot suppress Telegram reporting."
@@ -242,7 +159,7 @@ JOB_SEARCH_REPORT_RESPONSE=$(/opt/homebrew/bin/timeout 90 env PATH="/opt/homebre
 JOB_SEARCH_REPORT_RC=$?
 set -e
 "$JOB_SEARCH_PYTHON" - \
-  "$FAST_PATH_REPORT" \
+  "$PREFLIGHT_REPORT" \
   "$JOB_SEARCH_REPORT_RESPONSE" \
   "$JOB_SEARCH_REPORT_RC" <<'PY'
 import json
@@ -270,20 +187,18 @@ os.chmod(path, 0o600)
 print(json.dumps(receipt, ensure_ascii=False, sort_keys=True))
 PY
 if [[ "$JOB_SEARCH_REPORT_RC" -ne 0 ]]; then
-  printf '%s\n' "fast-path Telegram report failed; wake continues" >&2
+  printf '%s\n' "pre-model Telegram report failed; wake continues" >&2
 fi
 MODEL_TIMEOUT_SECONDS="${JOB_SEARCH_BROWSER_TIMEOUT_SECONDS:-900}"
 set +e
-"$JOB_SEARCH_PYTHON" "$JOB_SEARCH_RUNNER" \
-  --task-class browser-lane-agent \
-  --escalation-reason mandatory-model-browser-loop \
+"$JOB_SEARCH_PYTHON" -m job_search_loop.browser_agent.orchestrator \
+  --runner "$JOB_SEARCH_RUNNER" \
   --timeout-seconds "$MODEL_TIMEOUT_SECONDS" \
-  --prompt-file "$JOB_SEARCH_APP_ROOT/prompts/daily-pass.md" \
+  --prompt "$JOB_SEARCH_APP_ROOT/prompts/daily-pass.md" \
   --schema "$JOB_SEARCH_APP_ROOT/schemas/pass-result.v1.schema.json" \
   --evidence-dir "$EVIDENCE" \
-  --task-label job-search-daily \
-  --loop job-search \
-  --workdir "$JOB_SEARCH_REPO_ROOT"
+  --workdir "$JOB_SEARCH_REPO_ROOT" \
+  --python "$JOB_SEARCH_PYTHON"
 RUNNER_RC=$?
 set -e
 if [[ "$RUNNER_RC" -ne 0 ]]; then
