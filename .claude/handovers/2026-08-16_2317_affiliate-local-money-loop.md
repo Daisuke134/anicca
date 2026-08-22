@@ -2361,3 +2361,30 @@ source/runtime SHA-256 is
 `b70f8bf25a2719f235e52fdaef0ffeef10d258019bd061ac660f889ad08e4de2`.
 Live verification held the ambiguous ledger at 9 rows before and after and
 exited zero. Never replay those nine ambiguous reports.
+
+The next distribution repair closes three effect-safety gaps. Repost commit
+`4c9b439ee` parses timezone-aware post times before enforcing the local
+half-hour fence; live run `20260823T024905` then exited before collection or
+Postiz with exact readback `already published this half-hour slot
+(2026-08-23T02:30)`. Commits `8bfb0f40c` and `50449ae0f` record a
+Postiz-accepted/X-readback-failed attempt exactly once as terminal
+`UNVERIFIED`, including its source URL and provider submission ID, without a
+publish retry. The affected source is
+`https://x.com/samueljmcd/status/2091034521810424209`; its permalink is still
+unknown and it must never be resent. Commit `c1ffce2c9` adds bounded X-session
+readback retries while preserving a valid cookie.
+
+The existing owner now has a deliberate standalone-original lane rather than a
+mostly-quote mix. Commits `c8ebd3571` and `da4cfe547` set the one-time strategy
+bootstrap to `original_ratio=0.50`; after migration, the evaluator can still
+move that ratio from measured early-view evidence. All 26 focused tests and
+shell syntax pass. Installed release is
+`/Users/anicca/loops/releases/20260823T035527-da4cfe54`, and source/runtime
+hashes match. The first safe-kick was blocked by the shared launchd Aqua/user
+preflight, so do not claim the migration has run: private strategy remains 0.15
+until the scheduled owner starts the release. Watch the next owner run for the
+exact `original_ratio=0.5` log and, if it publishes, the exact X permalink. Then
+safe-kick/read back the Affiliate owner only through the existing owner path.
+Current official PartnerStack truth after Affiliate run 112 is still zero
+commission rows and pending/approved/paid/reversed all zero:
+`NO_TRANSACTIONS`, `NO_APPROVED_OR_PAID_ROWS`, and USD 10,000 `NOT_REACHED`.

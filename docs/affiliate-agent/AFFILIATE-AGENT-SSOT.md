@@ -7240,3 +7240,33 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   `b70f8bf25a2719f235e52fdaef0ffeef10d258019bd061ac660f889ad08e4de2`.
   Live owner verification kept the ambiguous ledger at exactly 9 rows before
   and after, logged `no delivery replay`, and exited zero.
+- Repost commits `8bfb0f40c` and `50449ae0f` close the Postiz unknown-effect
+  boundary. If Postiz accepts a submission but X-session permalink readback
+  fails, the owner records exactly one terminal `UNVERIFIED` row with the
+  provider submission ID and source URL. Startup recovery journals the same
+  prior crash shape without calling Postiz or the composer again. The exact
+  affected source is `https://x.com/samueljmcd/status/2091034521810424209`;
+  its `post_url` remains null and it must never be resent. Commit `c1ffce2c9`
+  gives authenticated X readback three bounded attempts and never overwrites an
+  existing auth cookie during a transient selector miss.
+- Repost commit `4c9b439ee` fixes the half-hour duplicate fence by parsing each
+  timezone-aware `posted_at` and flooring it to `:00` or `:30`. Live owner run
+  `20260823T024905` then returned `already published this half-hour slot
+  (2026-08-23T02:30)` without collection, Postiz submission, or ledger growth.
+  This is an at-most-once safety proof, not distribution or money.
+- Repost commits `c8ebd3571` and `da4cfe547` bootstrap source-backed standalone
+  originals at `original_ratio=0.50` while preserving the measured evaluator,
+  which may subsequently move the ratio by 0.05 after both arms have sufficient
+  early-view samples. All 26 focused tests and shell syntax pass. Installed
+  immutable release is `/Users/anicca/loops/releases/20260823T035527-da4cfe54`;
+  source/runtime hashes match for the CLI and evaluator. The initial safe-kick
+  was correctly blocked by the shared launchd preflight because this Codex
+  context could not resolve the Aqua/user bootstrap. Private strategy therefore
+  remains `0.15` until the existing scheduled owner executes the new release;
+  no 0.50 runtime effect or new X permalink is claimed yet.
+- Affiliate owner run 112 observed 80 X actions, 5 exact Affiliate placement
+  joins, 75 unjoined audience actions, and 0 invalid rows. Fresh official
+  PartnerStack readback still has zero commission and payout rows, with
+  pending/approved/paid/reversed all zero. Canonical money remains
+  `NO_TRANSACTIONS`, `NO_APPROVED_OR_PAID_ROWS`, and USD 10,000 `NOT_REACHED`;
+  the newest Subtitle Translator provider click count is non-money.
