@@ -125,14 +125,14 @@ def _mark_wake_completed(application_id: str) -> None:
     os.chmod(path, 0o600)
 
 
-def _decision_signature(observation_sha256: str, action_path: Path) -> str:
+def _decision_signature(observation_sha256: str, action_bytes: bytes) -> str:
     return hashlib.sha256(
-        observation_sha256.encode("ascii") + b"\0" + action_path.read_bytes()
+        observation_sha256.encode("ascii") + b"\0" + action_bytes
     ).hexdigest()
 
 
-def _reject_repeated_decision(observation_sha256: str, action_path: Path) -> str:
-    signature = _decision_signature(observation_sha256, action_path)
+def _reject_repeated_decision(observation_sha256: str, action_bytes: bytes) -> str:
+    signature = _decision_signature(observation_sha256, action_bytes)
     path = _decision_path()
     if path.exists():
         if path.stat().st_mode & 0o077:
@@ -385,8 +385,12 @@ def _action(value: dict[str, Any]) -> VisibleActionV1:
 async def _act_locked(action_path: Path) -> dict[str, Any]:
     row, session, checkpoints, evidence, cursor, builder = await _context()
     before = await builder.build(cursor.handle)
-    action = _action(_private_action(action_path))
-    decision_signature = _reject_repeated_decision(before.content_sha256, action_path)
+    action_value = _private_action(action_path)
+    action = _action(action_value)
+    decision_signature = _reject_repeated_decision(
+        before.content_sha256,
+        json.dumps(action_value, ensure_ascii=False, sort_keys=True).encode("utf-8"),
+    )
     remaining = _wake_budget(consume=True)
     receipt = await ActionExecutor(session).execute(cursor.handle, action)
     after = await builder.build(cursor.handle)
@@ -440,6 +444,35 @@ async def _act_locked(action_path: Path) -> dict[str, Any]:
 async def act(action_path: Path) -> dict[str, Any]:
     with _exclusive_action():
         return await _act_locked(action_path)
+
+
+async def type_text(*, label: str, role: str, stable_id: str, text: str) -> dict[str, Any]:
+    """Type one model-grounded visible answer without an intermediate file."""
+    scratch = _path_env("JOB_SEARCH_BROWSER_SCRATCH")
+    path = scratch / "literal-action.json"
+    path.write_text(
+        json.dumps(
+            {
+                "kind": "type",
+                "target": {
+                    "role": role,
+                    "label": label,
+                    "exact": True,
+                    "stable_id": stable_id,
+                },
+                "text": text,
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+        ),
+        encoding="utf-8",
+    )
+    os.chmod(path, 0o600)
+    try:
+        with _exclusive_action():
+            return await _act_locked(path)
+    finally:
+        path.unlink(missing_ok=True)
 
 
 async def auth(
@@ -1013,6 +1046,11 @@ def main(argv: list[str] | None = None) -> int:
     type_parser.add_argument("--role", default="")
     type_parser.add_argument("--stable-id", default="")
     type_parser.add_argument("--candidate-concept", required=True)
+    type_text_parser = subparsers.add_parser("type-text")
+    type_text_parser.add_argument("--label", required=True)
+    type_text_parser.add_argument("--role", default="")
+    type_text_parser.add_argument("--stable-id", default="")
+    type_text_parser.add_argument("--text", required=True)
     upload_parser = subparsers.add_parser("upload")
     upload_parser.add_argument("--label", required=True)
     upload_parser.add_argument("--role", default="")
@@ -1070,6 +1108,13 @@ def main(argv: list[str] | None = None) -> int:
             role=args.role,
             stable_id=args.stable_id,
             candidate_concept=args.candidate_concept,
+        )
+    elif args.command == "type-text":
+        operation = type_text(
+            label=args.label,
+            role=args.role,
+            stable_id=args.stable_id,
+            text=args.text,
         )
     elif args.command == "upload":
         operation = upload_resume(

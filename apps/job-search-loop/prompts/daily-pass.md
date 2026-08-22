@@ -81,13 +81,13 @@ Use only these runtime commands while a row is active:
 /opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime click --label "EXACT_LABEL" --role "RETURNED_ROLE" --stable-id "RETURNED_STABLE_ID"
 /opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime choose --field-label "EXACT_PICKER_OPTIONS_LABEL" --field-role "button" --field-stable-id "RETURNED_PICKER_STABLE_ID" --option-label "EXACT_OPTION_LABEL" --option-role "RETURNED_OPTION_ROLE" --option-stable-id "RETURNED_OPTION_STABLE_ID"
 /opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime type --label "EXACT_LABEL" --role "RETURNED_ROLE" --stable-id "RETURNED_STABLE_ID" --candidate-concept "RETURNED_CONCEPT"
+/opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime type-text --label "EXACT_LABEL" --role "RETURNED_ROLE" --stable-id "RETURNED_STABLE_ID" --text "GROUNDED_ANSWER"
 /opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime upload --label "EXACT_LABEL" --role "RETURNED_ROLE" --stable-id "RETURNED_STABLE_ID"
 /opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime wait --milliseconds 6000
 /opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime auth --mode sign_in --field email --label "EXACT_LABEL" --role "RETURNED_ROLE" --stable-id "RETURNED_STABLE_ID"
 /opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime auth --mode create_account --field email --label "EXACT_LABEL" --role "RETURNED_ROLE" --stable-id "RETURNED_STABLE_ID"
 /opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime auth --mode create_account --field password --label "EXACT_LABEL" --role "RETURNED_ROLE" --stable-id "RETURNED_STABLE_ID"
 /opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime auth --mode create_account --field verify_password --label "EXACT_LABEL" --role "RETURNED_ROLE" --stable-id "RETURNED_STABLE_ID"
-/opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime act --action-file "$JOB_SEARCH_BROWSER_SCRATCH/action.json"
 /opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime finalize
 /opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime checkpoint --reason provider_unavailable
 /opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime checkpoint --reason visible_challenge
@@ -102,23 +102,20 @@ For an ordinary scalar candidate value, use `runtime type` with an exact returne
 password, phone, address, cookies, tokens, or credentials in commands or output.
 
 For a novel narrative or numeric employer question, reason from the returned
-`grounding_facts`, current job, exact question, options, and length constraint. Write
-one mode-0600 `VisibleActionV1` JSON object under
-`$JOB_SEARCH_BROWSER_SCRATCH/action.json`, then call `runtime act`. The object may
-contain only the current target and the generated answer. Do not create helper code,
-batch actions, or reuse the file after its one action. Every claim must be supported
-by a returned grounding fact. Calculate experience from dated facts; do not use a
-fixed default. Prefer a visible non-disclosure option for optional demographics.
+`grounding_facts`, current job, exact question, options, and length constraint, then
+call `runtime type-text` once with the exact current target and grounded answer. Do
+not create an intermediate file, helper code, or batch action. Every claim must be
+supported by a returned grounding fact. Calculate experience from dated facts; do
+not use a fixed default. Prefer a visible non-disclosure option for optional demographics.
 For routine logistics, select the least-claiming option consistent with the resume,
 job location, and candidate facts. Missing a prewritten answer is never a reason to
 stop the row.
 
-The action object always requires an explicit `kind`. For text, use exactly:
-`{"kind":"type","target":{"label":"EXACT_LABEL","role":"textbox","stable_id":"EXACT_STABLE_ID"},"text":"GROUNDED_ANSWER"}`.
+For text without a candidate concept, use exactly one `runtime type-text` command.
 If the fresh observation exposes visible options, click the chosen option's exact
 fresh `ref:*` instead of typing a narrative answer into the picker.
 For an editable picker, a scalar answer that leaves `filled=false` is not accepted.
-Clear the search control with one `kind=type` action whose `text` is empty, observe
+Clear the search control with one `runtime type-text --text ""` action, observe
 the unfiltered options, then click one exact fresh option ref. For an application
 discovered from its official ATS posting, the truthful broad source category is
 `Website` when that option is visible; do not keep typing `Job board` into a picker
