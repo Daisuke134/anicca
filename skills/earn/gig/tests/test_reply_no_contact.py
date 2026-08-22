@@ -16,6 +16,12 @@ OUTBOX_SPEC = importlib.util.spec_from_file_location(
 assert OUTBOX_SPEC and OUTBOX_SPEC.loader
 connector = importlib.util.module_from_spec(OUTBOX_SPEC)
 OUTBOX_SPEC.loader.exec_module(connector)
+TELEGRAM_SPEC = importlib.util.spec_from_file_location(
+    "gig_no_contact_telegram_test", ROOT / "scripts/telegram_report.py",
+)
+assert TELEGRAM_SPEC and TELEGRAM_SPEC.loader
+telegram = importlib.util.module_from_spec(TELEGRAM_SPEC)
+TELEGRAM_SPEC.loader.exec_module(telegram)
 
 
 class FakeOutbox:
@@ -161,6 +167,9 @@ def test_policy_report_identity_is_unique_and_contains_no_counterparty_data():
     assert result["official_readback"] == 0
     assert "thread_id" not in result
     assert "counterparty" not in json.dumps(result)
+    _event_key, message = telegram.reply_wake_message(result)
+    assert "private no-contact policyにより1件を送信せず終了しました" in message
+    assert "未確認" not in message
 
 
 def test_same_policy_event_is_replay_zero_after_first_closure(tmp_path):

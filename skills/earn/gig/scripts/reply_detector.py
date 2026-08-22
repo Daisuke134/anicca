@@ -257,8 +257,20 @@ def no_contact_report(ignored: dict[str, Any], *, now: int) -> dict[str, Any]:
     action_id = int(ignored["action_id"])
     return {
         **ignored, "run_id": f"ignore-policy-{ignored['policy_id']}-{action_id}",
+        "observed": 1, "actionable": 0,
         "replied": 0, "effect": 0, "official_readback": 0,
+        "estimate_required": 0, "estimate_effect": 0, "estimate_readback": 0,
+        "estimate_failed": 0, "estimate_pending": 0,
         "closed_without_send": 1, "pending": 0,
+        "blocked": 0, "historical_dlq": 0, "newly_dlq": 0,
+        "failed": 0, "skipped": 0, "deferred": 0,
+        "officially_unrepliable_count": 0, "stop_contact_count": 0,
+        "classification_failed_count": 0,
+        "semantic_judgement_failed_count": 0,
+        "semantic_migration_pending_count": 0,
+        "thread_changed_buyer_count": 0, "thread_readback_count": 1,
+        "thread_revalidated_count": 1 if ignored["status"] == "ignore_policy_replay" else 0,
+        "policy_ignored_count": 1,
         "events": [], "errors": [],
     }
 

@@ -292,6 +292,11 @@ def reply_wake_message(state: dict[str, Any], route: str = "") -> tuple[str, str
         f"{_wake_count(state, 'officially_unrepliable_count')}、相手が連絡終了を希望した会話は"
         f"{_wake_count(state, 'stop_contact_count')}です。これらには送信していません。"
     )
+    if _wake_positive(state, "policy_ignored_count"):
+        lines.append(
+            "private no-contact policyにより"
+            f"{_wake_count(state, 'policy_ignored_count')}を送信せず終了しました。"
+        )
     lines.append(
         f"見積りの新規提出は{display(estimate_effect)}、公式提出確認は{display(estimate_readback)}です。"
         f"送信前に失敗し次回再試行する見積りは{_wake_count(state, 'estimate_failed')}、"
