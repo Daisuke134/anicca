@@ -47,6 +47,22 @@ def validate_public_text(*values):
         raise ValueError("listing text contains a secret or PII")
 
 
+def validate_demonstration(source, demo_input, demo_output):
+    source = Path(source)
+    if not source.is_file() or source.stat().st_size == 0:
+        raise FileNotFoundError(f"missing demonstration source: {source}")
+    validate_public_text(demo_input, demo_output)
+    before = " ".join(demo_input.lower().split())
+    after = " ".join(demo_output.lower().split())
+    if len(before) < 8 or len(after) < 8 or before == after:
+        raise ValueError("demonstration requires distinct input and output")
+    return {
+        "mode": "input_output",
+        "source": str(source.resolve()),
+        "source_sha256": "sha256:" + hashlib.sha256(source.read_bytes()).hexdigest(),
+    }
+
+
 def ass_escape(value):
     return value.replace("\\", "／").replace("{", "（").replace("}", "）")
 
@@ -58,7 +74,9 @@ def ass_wrap(value, width=25):
     return r"\N".join(wrapped)
 
 
-def write_ass(path, hook, proof, duration):
+def write_ass(path, hook, proof, demo_input, demo_output, duration):
+    input_start = min(3.2, duration * 0.30)
+    output_start = min(12.0, duration * 0.55)
     content = f"""[Script Info]
 ScriptType: v4.00+
 PlayResX: 1080
@@ -69,11 +87,17 @@ WrapStyle: 1
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
 Style: Hook,Arial,72,&H00FFFFFF,&H000000FF,&H00111B2E,&HC0111B2E,1,0,0,0,100,100,0,0,1,5,0,8,96,96,260,1
 Style: Proof,Arial,54,&H00E7FFF7,&H000000FF,&H00111B2E,&HC0111B2E,1,0,0,0,100,100,0,0,1,4,0,2,96,96,260,1
+Style: DemoLabel,Arial,34,&H004FE3B1,&H000000FF,&H00111B2E,&HC0111B2E,1,0,0,0,100,100,2,0,1,2,0,7,110,110,520,1
+Style: DemoBody,Arial,46,&H00FFFFFF,&H000000FF,&H00111B2E,&HC0111B2E,1,0,0,0,100,100,0,0,1,3,0,7,110,110,610,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 Dialogue: 2,0:00:00.00,0:00:03.20,Hook,,96,96,260,,{ass_wrap(hook)}
-Dialogue: 2,0:00:03.20,0:00:{duration:05.2f},Proof,,96,96,260,,{ass_wrap(proof)}
+Dialogue: 3,0:00:{input_start:05.2f},0:00:{output_start:05.2f},DemoLabel,,110,110,520,,INPUT
+Dialogue: 3,0:00:{input_start:05.2f},0:00:{output_start:05.2f},DemoBody,,110,110,610,,{ass_wrap(demo_input, 31)}
+Dialogue: 3,0:00:{output_start:05.2f},0:00:{duration:05.2f},DemoLabel,,110,110,520,,VERIFIED OUTPUT
+Dialogue: 3,0:00:{output_start:05.2f},0:00:{duration:05.2f},DemoBody,,110,110,610,,{ass_wrap(demo_output, 31)}
+Dialogue: 2,0:00:{output_start:05.2f},0:00:{duration:05.2f},Proof,,96,96,260,,{ass_wrap(proof)}
 """
     Path(path).write_text(content, encoding="utf-8")
 
@@ -119,17 +143,28 @@ def validate_opening_motion(path, ffmpeg="ffmpeg"):
         raise RuntimeError("opening is duplicated or visually static")
 
 
-def create_contact_sheet(path, destination, ffmpeg="ffmpeg"):
-    run([ffmpeg, "-hide_banner", "-y", "-i", str(path), "-vf", "fps=1/2,scale=270:480,tile=4x1", "-frames:v", "1", str(destination)])
+def create_contact_sheet(path, destination, duration, ffmpeg="ffmpeg"):
+    run([
+        ffmpeg, "-hide_banner", "-y", "-i", str(path), "-vf",
+        f"fps=4/{duration},scale=270:480,tile=4x1", "-frames:v", "1", str(destination),
+    ])
 
 
 def render(args):
     validate_public_text(args.hook, args.proof, args.cta)
+    demonstration = validate_demonstration(args.demo_source, args.demo_input, args.demo_output)
     args.ffmpeg = resolve_ffmpeg(args.ffmpeg)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="lm-canonical-video-") as temporary:
         work = Path(temporary)
-        write_ass(work / "captions.ass", args.hook, f"{args.proof}\n{args.cta}", args.duration)
+        write_ass(
+            work / "captions.ass",
+            args.hook,
+            f"{args.proof}\n{args.cta}",
+            args.demo_input,
+            args.demo_output,
+            args.duration,
+        )
         partial = work / "render.mp4"
         filters = (
             "[0:v]drawbox=x='mod(t*180\\,1180)-100':y=760:w=260:h=18:color=0x4FE3B1@0.9:t=fill,"
@@ -151,7 +186,7 @@ def render(args):
         validate_opening_motion(partial, args.ffmpeg)
         partial.replace(args.output)
     contact_sheet = args.output.with_suffix(".contact-sheet.png")
-    create_contact_sheet(args.output, contact_sheet, args.ffmpeg)
+    create_contact_sheet(args.output, contact_sheet, duration, args.ffmpeg)
     digest = hashlib.sha256(args.output.read_bytes()).hexdigest()
     manifest = {
         "schema_version": 1,
@@ -163,8 +198,9 @@ def render(args):
         "duration_seconds": duration,
         "mean_volume_db": mean_volume,
         "quality_gate": "pass",
-        "gates": ["1080x1920", "h264", "yuv420p", "bt709", "aac_48khz", "audible", "burned_captions", "caption_safe_area", "no_black_frames", "opening_motion", "no_secret_or_pii"],
+        "gates": ["1080x1920", "h264", "yuv420p", "bt709", "aac_48khz", "audible", "burned_captions", "caption_safe_area", "no_black_frames", "opening_motion", "no_secret_or_pii", "verified_demonstration"],
         "video_encode_passes": 1,
+        "demonstration": demonstration,
     }
     manifest_path = args.output.with_suffix(".manifest.json")
     manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
@@ -176,6 +212,9 @@ def parser():
     parse.add_argument("--hook", required=True)
     parse.add_argument("--proof", required=True)
     parse.add_argument("--cta", required=True)
+    parse.add_argument("--demo-source", required=True, type=Path)
+    parse.add_argument("--demo-input", required=True)
+    parse.add_argument("--demo-output", required=True)
     parse.add_argument("--audio", required=True, type=Path)
     parse.add_argument("--output", required=True, type=Path)
     parse.add_argument("--duration", type=float, default=8.0)

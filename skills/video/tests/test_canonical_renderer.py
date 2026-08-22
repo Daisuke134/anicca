@@ -41,12 +41,38 @@ class CanonicalRendererTest(unittest.TestCase):
     def test_ass_captions_stay_inside_vertical_safe_area(self):
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary) / "captions.ass"
-            self.renderer.write_ass(path, "Instant interview themes", "Turn calls into evidence", 8)
+            self.renderer.write_ass(
+                path,
+                "Instant interview themes",
+                "Turn calls into evidence",
+                "INPUT: Friday chasing missing receipts",
+                "OUTPUT: Missing receipts are the repeated pain",
+                8,
+            )
             text = path.read_text(encoding="utf-8")
             self.assertIn("PlayResX: 1080", text)
             self.assertIn("PlayResY: 1920", text)
             self.assertIn("MarginL, MarginR, MarginV", text)
             self.assertIn(",96,96,260,", text)
+            self.assertIn("INPUT", text)
+            self.assertIn("VERIFIED OUTPUT", text)
+
+    def test_demonstration_rejects_generic_or_unverifiable_content(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            source = Path(temporary) / "case.md"
+            source.write_text("verified case", encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "distinct input and output"):
+                self.renderer.validate_demonstration(source, "generic money b-roll", "generic money b-roll")
+            with self.assertRaisesRegex(FileNotFoundError, "demonstration source"):
+                self.renderer.validate_demonstration(source.with_name("missing.md"), "input notes", "ranked memo")
+
+    def test_demonstration_records_source_hash(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            source = Path(temporary) / "case.md"
+            source.write_text("verified case", encoding="utf-8")
+            evidence = self.renderer.validate_demonstration(source, "input notes", "ranked memo")
+            self.assertEqual(evidence["mode"], "input_output")
+            self.assertTrue(evidence["source_sha256"].startswith("sha256:"))
 
 
 if __name__ == "__main__":
