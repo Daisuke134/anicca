@@ -22,6 +22,54 @@ SPEC.loader.exec_module(MODULE)
 
 
 class LocalLoopTest(unittest.TestCase):
+    def test_funnel_snapshot_ranks_top_three_and_preserves_unknown_denominators(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root)
+            placements = []
+            for placement_id, unique, clicks in (
+                ("alpha-en-1", 2, 3), ("beta-en-1", 6, 6),
+                ("gamma-en-1", 6, 7), ("delta-en-1", 1, 9),
+            ):
+                placements.append({
+                    "placement_id": placement_id,
+                    "public_url": f"https://aniccaai.com/blog/{placement_id}",
+                    "provider_link_key": f"key-{placement_id}",
+                    "exposure": {
+                        "owned_page_visits": None,
+                        "owned_page_visits_state": "UNKNOWN",
+                    },
+                    "provider_clicks": {
+                        "count": clicks, "unique_count": unique,
+                        "unique_state": "OBSERVED", "observed_at": "provider-time",
+                    },
+                    "commission": {"transaction_count": 0},
+                })
+                MODULE.atomic_json(
+                    state / "campaign-publications" / f"{placement_id}.json",
+                    {"placement_id": placement_id, "x_url": f"https://x.com/example/{placement_id}"},
+                )
+            MODULE.atomic_json(state / "placement-ledger.json", {
+                "ledger_sha256": "a" * 64, "placements": placements,
+            })
+
+            first = MODULE.refresh_funnel_snapshot(state)
+            second = MODULE.refresh_funnel_snapshot(state)
+
+            self.assertEqual(
+                [row["placement_id"] for row in first["placements"]],
+                ["gamma-en-1", "beta-en-1", "alpha-en-1"],
+            )
+            self.assertEqual(first["placements"][0]["owned_visits"]["state"], "UNKNOWN")
+            self.assertEqual(first["placements"][0]["cta_clicks"]["state"], "UNKNOWN")
+            self.assertEqual(
+                first["placements"][0]["customers"]["state"],
+                "UNAVAILABLE_AT_EXACT_PLACEMENT",
+            )
+            self.assertEqual(first["placements"][0]["transactions"]["count"], 0)
+            self.assertEqual(first["placements"][0]["money_state"], "NON_MONEY_UNTIL_APPROVED_OR_PAID")
+            self.assertTrue(first["changed"])
+            self.assertFalse(second["changed"])
+
     def test_owned_article_url_rejects_tracking_and_ambiguous_forms(self):
         self.assertTrue(MODULE.is_owned_article_url("https://aniccaai.com/blog/alpha-guide"))
         for value in (

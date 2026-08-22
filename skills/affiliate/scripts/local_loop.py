@@ -104,6 +104,86 @@ def json_rows(path):
     return rows
 
 
+def refresh_funnel_snapshot(state, limit=3):
+    """Persist the highest-observed exact placement funnels without inference."""
+    ledger = json.loads((state / "placement-ledger.json").read_text(encoding="utf-8"))
+    rows = ledger.get("placements")
+    if not isinstance(rows, list):
+        raise ValueError("placement ledger rows unavailable")
+    ranked = sorted(
+        (row for row in rows if isinstance(row, dict) and row.get("placement_id")),
+        key=lambda row: (
+            -(
+                (row.get("provider_clicks") or {}).get("unique_count")
+                if isinstance((row.get("provider_clicks") or {}).get("unique_count"), int)
+                else -1
+            ),
+            -(
+                (row.get("provider_clicks") or {}).get("count")
+                if isinstance((row.get("provider_clicks") or {}).get("count"), int)
+                else -1
+            ),
+            row["placement_id"],
+        ),
+    )[:limit]
+    placements = []
+    for row in ranked:
+        placement_id = row["placement_id"]
+        campaign = next((
+            value for path in (state / "campaign-publications").glob("*.json")
+            for value in [json.loads(path.read_text(encoding="utf-8"))]
+            if value.get("placement_id") == placement_id
+        ), {})
+        exposure = row.get("exposure") if isinstance(row.get("exposure"), dict) else {}
+        clicks = row.get("provider_clicks") if isinstance(row.get("provider_clicks"), dict) else {}
+        commission = row.get("commission") if isinstance(row.get("commission"), dict) else {}
+        placements.append({
+            "placement_id": placement_id,
+            "owned_url": row.get("public_url"),
+            "x_permalink": campaign.get("x_url"),
+            "provider_link_key_state": "PRESENT" if row.get("provider_link_key") else "MISSING",
+            "owned_visits": {
+                "count": exposure.get("owned_page_visits"),
+                "state": exposure.get("owned_page_visits_state", "UNKNOWN"),
+                "observed_at": exposure.get("observed_at"),
+            },
+            "cta_clicks": {"count": None, "state": "UNKNOWN", "observed_at": None},
+            "provider_clicks": {
+                "count": clicks.get("count"),
+                "unique_count": clicks.get("unique_count"),
+                "state": clicks.get("unique_state", "UNKNOWN"),
+                "observed_at": clicks.get("observed_at"),
+            },
+            "customers": {
+                "count": None,
+                "state": "UNAVAILABLE_AT_EXACT_PLACEMENT",
+                "observed_at": None,
+            },
+            "transactions": {
+                "count": commission.get("transaction_count"),
+                "state": "OBSERVED" if isinstance(commission.get("transaction_count"), int) else "UNKNOWN",
+            },
+            "money_state": "NON_MONEY_UNTIL_APPROVED_OR_PAID",
+        })
+    core = {
+        "schema_version": 1,
+        "receipt_type": "AFFILIATE_TOP_PLACEMENT_FUNNEL_SNAPSHOT",
+        "source_ledger_sha256": ledger.get("ledger_sha256"),
+        "selection": "PROVIDER_UNIQUE_CLICKS_DESC",
+        "limit": limit,
+        "placements": placements,
+    }
+    snapshot_sha256 = hashlib.sha256(json.dumps(
+        core, sort_keys=True, separators=(",", ":")
+    ).encode()).hexdigest()
+    receipt = {**core, "snapshot_sha256": snapshot_sha256}
+    changed = append_unique(
+        state / "funnel-snapshots.jsonl", receipt, ("snapshot_sha256",)
+    )
+    atomic_json(state / "funnel-snapshots" / "latest.json", receipt)
+    return {**receipt, "state": "OBSERVED", "changed": changed}
+
+
 def quarantine_snapshot(state_root, threshold=QUARANTINE_FAILURE_THRESHOLD):
     """Quarantine only external tools with a consecutive failure streak."""
     streaks = {}
@@ -3619,6 +3699,11 @@ def _wake_once(args, started_at, run_id):
         "ledger.placement-refresh", "LEDGER_ONLY", {"revenue_state": revenue.get("state")},
         lambda: refresh_placement_ledger(state),
     )
+    funnel_snapshot = admit(
+        "ledger.funnel-snapshot", "LEDGER_ONLY",
+        {"placement_ledger_state": placement_ledger.get("state")},
+        lambda: refresh_funnel_snapshot(state),
+    )
     rolling_net = admit(
         "ledger.rolling-net", "LEDGER_ONLY", {"placement_ledger_state": placement_ledger.get("state")},
         lambda: refresh_rolling_net(state),
@@ -3759,6 +3844,11 @@ def _wake_once(args, started_at, run_id):
         "placement_ledger_sha256": placement_ledger.get("ledger_sha256"),
         "placement_ledger_count": placement_ledger.get("placement_count"),
         "placement_ledger_failure_type": placement_ledger.get("failure_type"),
+        "funnel_snapshot_state": funnel_snapshot.get("state"),
+        "funnel_snapshot_sha256": funnel_snapshot.get("snapshot_sha256"),
+        "funnel_snapshot_placement_ids": [
+            row.get("placement_id") for row in funnel_snapshot.get("placements", [])
+        ],
         "rolling_net_state": rolling_net.get("state"),
         "rolling_net_money_state": rolling_net.get("money_state"),
         "rolling_net_net_state": rolling_net.get("net_state"),
