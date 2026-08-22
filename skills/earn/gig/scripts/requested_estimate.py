@@ -63,7 +63,7 @@ NA15_CATEGORY_IDS = {
 }
 
 SEMANTIC_RECEIPT_VERSION = 1
-SEMANTIC_PROMPT_VERSION = "reply-negotiate-v25"
+SEMANTIC_PROMPT_VERSION = "reply-negotiate-v26"
 SEMANTIC_RUNNER_PROFILE = "reply-semantic-agent"
 SEMANTIC_COMPATIBLE_RUNNER_PROFILES = frozenset({
     "composition-agent", SEMANTIC_RUNNER_PROFILE,
@@ -95,13 +95,13 @@ class SemanticJudgementError(ValueError):
     """A model result cannot authorize any Coconala effect."""
 
 
-def semantic_conversation(dom: dict[str, Any]) -> list[dict[str, str]]:
+def semantic_conversation(dom: dict[str, Any]) -> list[dict[str, Any]]:
     """Project the complete official thread with stable role and message identity."""
     messages = dom.get("messages") if isinstance(dom.get("messages"), list) else []
     own = str(dom.get("own_user_path") or "").strip()
     if not own:
         raise collector.CollectorUnhealthy("missing_sender_identity")
-    rows: list[dict[str, str]] = []
+    rows: list[dict[str, Any]] = []
     for index, raw in enumerate(messages):
         if not isinstance(raw, dict):
             raise collector.CollectorUnhealthy("invalid_message_row")
@@ -117,12 +117,32 @@ def semantic_conversation(dom: dict[str, Any]) -> list[dict[str, str]]:
                 ensure_ascii=False, sort_keys=True, separators=(",", ":"),
             )
             message_id = "sha256_" + hashlib.sha256(canonical.encode()).hexdigest()
-        rows.append({
+        attachments: list[dict[str, Any]] = []
+        for attachment in raw.get("verified_attachments", []):
+            if not isinstance(attachment, dict):
+                raise collector.CollectorUnhealthy("invalid_verified_attachment")
+            filename = str(attachment.get("filename") or "").strip()
+            content_type = str(attachment.get("content_type") or "").strip()
+            size_bytes, digest = attachment.get("size_bytes"), attachment.get("sha256")
+            if (
+                not filename or not content_type or type(size_bytes) is not int
+                or size_bytes < 1 or type(digest) is not str
+                or not re.fullmatch(r"[0-9a-f]{64}", digest)
+            ):
+                raise collector.CollectorUnhealthy("invalid_verified_attachment")
+            attachments.append({
+                "filename": filename[:255], "content_type": content_type[:100],
+                "size_bytes": size_bytes, "sha256": digest,
+            })
+        row: dict[str, Any] = {
             "message_id": message_id,
             "role": "seller" if author == own else "buyer",
             "sent_at": sent_at,
             "body": body,
-        })
+        }
+        if attachments:
+            row["verified_attachments"] = attachments
+        rows.append(row)
     return rows
 
 
@@ -185,6 +205,8 @@ def semantic_prompt(
 - 最新messageがbuyerで、明確なdecline/stop、unknown、必要official context待ちのいずれでもない場合、waitにしません。question/negotiating/ready stateはreply/clarify/send_estimateで前進させ、gratitude/consideringにも同じmessage identityへ一度だけ短いcontextual acknowledgementを返します。購入催促やseller既送文の反復は加えません。
 - buyerが対応可否を尋ね、current conversationまたはverified factsに根拠がある場合、reply_bodyの冒頭で「対応可能です」等の明確な回答を先に述べ、その後に根拠と条件を短く続けます。根拠がない能力をyesにせず、確認できる範囲を正直に区別します。
 - buyerが「いける／対応できるなら購入する」「yesなら購入処理へ進む」と決定を求めた条件付き購入意思は購入承認ではありません。send_estimateやclarifyへ進まず、verified contextから判断できる安全・合法・応募scope内の依頼なら「はい、いけます。ぜひやりましょう。対応します。」のように判断を本文の先頭で明言してreplyします。内部調査をbuyerへ押し返す「確認します／確認してお伝えします／判断します」で始めず、既に会話・応募・URLにある情報を再送させません。根拠のない売上保証はせず、引き受ける作業scopeを肯定します。
+- conversation内のverified_attachmentsは、同じ認証DMからstatus・bytes・SHA-256までreadback済みのbuyer添付です。存在する添付を「確認できない」と言わず、再送や文字起こしをbuyerへ要求しません。filename・content type・bytesから受領を明言し、内容処理はloop内部で進めます。verified_attachmentsがない添付を見たふりもしません。
+- verified_attachmentsがあるのにsellerが「確認できない／再添付して」と確認不能と誤案内した場合、その案内は未訂正です。最新roleがsellerでもwaitにせず、「確認できました。先ほどの案内は誤りです」と訂正し、受領済みfilenameと再添付不要、内部で進める次作業をreplyします。
 - reply/clarifyではreply_auditを本文作成後に自己監査します。answered_buyer_message_idsへ本文が直接回答したcurrent-cycle buyer message IDを入れます。unanswered_questionsはbuyerが既に尋ねたのに本文が答えていない質問だけです。clarifyでは、こちらが確認する不足情報をuncertaintyにだけ列挙し、unanswered_questionsは空配列にします。unsupported_claimsは本文中の根拠なし主張だけです。未依頼の購入・見積りCTA、seller既送文の反復、外部連絡先への誘導を各booleanで申告します。問題が1つでもある本文を安全扱いにしません。
 - 過去client・history・result・metricのexact claimはcurrent conversationまたはwhitelisted verified_seller_factsにある確認済み事実だけを使い、存在しないcustomer・project・numberを作りません。current capabilityはmatching official applicationのapplied scopeまたはverified transferable factsを先に答え、未確認historyの不在や経験不足を自発的に説明したり、対応不可を先頭に置いたりしません。buyerがexact historyを明示的に聞いた場合だけ確認済み事実を答え、missing historyをcapability refusalへ変換しません。
 - seller本人の年齢、性別、身体、容姿、声、出演・撮影可否、着用できる衣装なども未提供の本人事実です。会話かverified contextに明示がなければ対応可能と断言しません。
@@ -273,6 +295,21 @@ def _unanswered_purchase_decision(rows: list[dict[str, str]]) -> dict[str, str] 
     return None
 
 
+def _verified_attachment_denial_debt(rows: list[dict[str, Any]]) -> bool:
+    if rows[-1]["role"] != "seller" or not any(
+        row.get("role") == "buyer" and row.get("verified_attachments") for row in rows
+    ):
+        return False
+    latest = rows[-1]["body"]
+    if any(
+        phrase in latest for phrase in ("確認できました", "受領済み", "再添付は不要")
+    ):
+        return False
+    if not any(phrase in latest for phrase in ("確認できない", "確認できません", "再添付")):
+        return False
+    return True
+
+
 def validate_semantic_judgement(
     payload: Any, rows: list[dict[str, str]],
 ) -> dict[str, Any]:
@@ -303,7 +340,11 @@ def validate_semantic_judgement(
                 "semantic_purchase_decision_requires_proactive_reply"
             )
     artifact_debt = _inline_artifact_debt(rows)
-    if rows[-1]["role"] == "seller" and action in {"reply", "clarify"} and not artifact_debt:
+    attachment_denial_debt = _verified_attachment_denial_debt(rows)
+    if (
+        rows[-1]["role"] == "seller" and action in {"reply", "clarify"}
+        and not artifact_debt and not attachment_denial_debt
+    ):
         raise SemanticJudgementError("semantic_seller_last_reply_conflict")
     if official_context not in SEMANTIC_OFFICIAL_CONTEXTS:
         raise SemanticJudgementError("semantic_official_context_invalid")
@@ -360,7 +401,7 @@ def validate_semantic_judgement(
     terms = payload.get("estimate_terms")
     if action in {"reply", "clarify"}:
         if (
-            rows[-1]["role"] != "buyer" and not artifact_debt
+            rows[-1]["role"] != "buyer" and not artifact_debt and not attachment_denial_debt
             or type(reply_body) is not str or not reply_body.strip()
         ):
             raise SemanticJudgementError("semantic_reply_invalid")

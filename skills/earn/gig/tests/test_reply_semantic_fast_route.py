@@ -551,6 +551,130 @@ def test_purchase_decision_reply_cannot_lead_with_internal_confirmation():
         requested_estimate.validate_semantic_judgement(payload, rows)
 
 
+def test_verified_dm_attachments_enter_semantic_context_without_local_path():
+    dom = {
+        "own_user_path": "/users/seller",
+        "messages": [{
+            "message_id": "buyer-files", "author_path": "/users/buyer",
+            "sent_at": "2026-08-22T14:37:00Z", "body": "こちらで大丈夫でしょうか？",
+            "verified_attachments": [{
+                "filename": "1880.png", "content_type": "image/png",
+                "size_bytes": 632406, "sha256": "a" * 64,
+            }],
+        }],
+    }
+
+    rows = requested_estimate.semantic_conversation(dom)
+
+    assert rows[0]["verified_attachments"] == [{
+        "filename": "1880.png", "content_type": "image/png",
+        "size_bytes": 632406, "sha256": "a" * 64,
+    }]
+    assert "path" not in json.dumps(rows, ensure_ascii=False)
+
+
+def test_merge_verified_dm_attachments_requires_hash_and_bytes():
+    dom = {"messages": [{"message_id": "m1", "author_path": "/users/buyer", "body": "添付です"}]}
+    document = {
+        "messages": [{
+            "message_id": "m1", "side": "buyer",
+            "attachments": [{"url": "https://coconala.com/uploaded_files/view/1", "filename": "1880.png"}],
+        }],
+        "attachment_index": [{
+            "url": "https://coconala.com/uploaded_files/view/1", "filename": "1880.png",
+            "bytes": 632406, "sha256": "b" * 64, "content_type": "image/png",
+        }],
+    }
+
+    queue_snapshot.merge_verified_dm_attachments(dom, document)
+
+    assert dom["messages"][0]["verified_attachments"][0]["sha256"] == "b" * 64
+
+
+def test_merge_verified_dm_attachments_fails_closed_on_download_error():
+    dom = {"messages": [{"message_id": "m1", "author_path": "/users/buyer", "body": "添付です"}]}
+    document = {
+        "messages": [{
+            "message_id": "m1", "side": "buyer",
+            "attachments": [{"url": "https://coconala.com/uploaded_files/view/1", "filename": "1880.png"}],
+        }],
+        "attachment_index": [{
+            "url": "https://coconala.com/uploaded_files/view/1", "filename": "1880.png",
+            "error": "not_fetched",
+        }],
+    }
+
+    with pytest.raises(queue_snapshot.CollectorUnhealthy, match="dm_attachment_unverified"):
+        queue_snapshot.merge_verified_dm_attachments(dom, document)
+
+
+def test_merge_verified_dm_attachments_uses_exact_index_and_body_when_ids_are_absent():
+    dom = {"messages": [{"message_id": None, "author_path": "/users/buyer", "body": "こちらで大丈夫ですか？"}]}
+    document = {
+        "messages": [{
+            "message_id": None, "side": "buyer", "text": "こちらで大丈夫ですか？",
+            "attachments": [{"url": "https://coconala.com/uploaded_files/view/1", "filename": "1880.png"}],
+        }],
+        "attachment_index": [{
+            "url": "https://coconala.com/uploaded_files/view/1", "filename": "1880.png",
+            "bytes": 632406, "sha256": "c" * 64, "content_type": "image/png",
+        }],
+    }
+
+    queue_snapshot.merge_verified_dm_attachments(dom, document)
+
+    assert dom["messages"][0]["verified_attachments"][0]["sha256"] == "c" * 64
+
+
+def test_verified_attachment_denial_debt_allows_one_correction():
+    rows = [
+        {
+            "message_id": "buyer-files", "role": "buyer",
+            "sent_at": "2026-08-22T15:03:45Z", "body": "PNGを添付しました。確認できますか？",
+            "verified_attachments": [{
+                "filename": "1880.png", "content_type": "image/png",
+                "size_bytes": 632406, "sha256": "d" * 64,
+            }],
+        },
+        {
+            "message_id": "seller-denial", "role": "seller",
+            "sent_at": "2026-08-22T15:10:53Z", "body": "PNGファイル本体を確認できない状態です。再添付してください。",
+        },
+    ]
+    payload = {
+        "conversation_state": "question", "next_action": "reply",
+        "cycle_start_message_id": "buyer-files", "evidence_message_ids": ["buyer-files"],
+        "required_official_context": "none", "estimate_terms": None,
+        "reply_body": "確認できました。先ほどの案内は誤りです。1880.pngを受領済みです。再添付は不要です。この素材で進めます。",
+        "reply_audit": {
+            "answered_buyer_message_ids": ["buyer-files"], "unanswered_questions": [],
+            "unsupported_claims": [], "unrequested_cta": False,
+            "repeats_seller_message": False, "off_platform_contact": False,
+        },
+        "uncertainty": [],
+    }
+
+    assert requested_estimate.validate_semantic_judgement(payload, rows)[
+        "reply_body"
+    ].startswith("確認できました")
+
+
+def test_verified_attachment_correction_does_not_create_second_debt():
+    rows = [
+        {
+            "message_id": "buyer-files", "role": "buyer", "sent_at": "2026-08-22T15:03:45Z",
+            "body": "PNGを添付しました。", "verified_attachments": [{
+                "filename": "1880.png", "content_type": "image/png",
+                "size_bytes": 632406, "sha256": "d" * 64,
+            }],
+        },
+        {"message_id": "seller-denial", "role": "seller", "sent_at": "2026-08-22T15:10:53Z", "body": "確認できません。"},
+        {"message_id": "seller-correct", "role": "seller", "sent_at": "2026-08-22T15:15:00Z", "body": "確認できました。再添付は不要です。"},
+    ]
+
+    assert requested_estimate._verified_attachment_denial_debt(rows) is False
+
+
 def test_semantic_judge_uses_one_bounded_runner_attempt(tmp_path, monkeypatch):
     schema = GIG_ROOT / "schemas" / "reply_semantic_judgement.schema.json"
     calls = []
@@ -612,17 +736,20 @@ def test_negotiate_runs_every_30_seconds_without_changing_other_job_intervals():
     assert by_lane["browser"]["ThrottleInterval"] == 30
 
 
-def test_semantic_prompt_v25_is_proactive_before_internal_confirmation():
+def test_semantic_prompt_v26_is_proactive_and_reads_verified_attachments():
     prompt = requested_estimate.semantic_prompt(
         [{"message_id": "buyer-1", "role": "buyer", "sent_at": "2026-08-19T00:00:00Z", "body": "質問です"}],
         official_context=None,
         seller_facts=[],
     )
 
-    assert requested_estimate.SEMANTIC_PROMPT_VERSION == "reply-negotiate-v25"
+    assert requested_estimate.SEMANTIC_PROMPT_VERSION == "reply-negotiate-v26"
     assert "条件付き購入意思は購入承認ではありません" in prompt
     assert "判断を本文の先頭で明言" in prompt
     assert "確認します／確認してお伝えします" in prompt
+    assert "verified_attachments" in prompt
+    assert "再送や文字起こしをbuyerへ要求" in prompt
+    assert "確認不能と誤案内" in prompt
     assert "clarifyでは、こちらが確認する不足情報をuncertaintyにだけ列挙" in prompt
     assert "unanswered_questionsは空配列" in prompt
     assert "saas_lp_cvr_3_to_10_20260819" in requested_estimate.SELLER_FACT_IDS
