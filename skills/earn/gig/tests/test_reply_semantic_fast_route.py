@@ -499,6 +499,58 @@ def test_semantic_validation_allows_clarify_to_name_missing_buyer_input():
     ].startswith("ありがとうございます")
 
 
+def test_purchase_decision_request_requires_proactive_reply_before_estimate():
+    rows = [{
+        "message_id": "buyer-go", "role": "buyer",
+        "sent_at": "2026-08-22T14:55:00Z",
+        "body": "このアプリがいけると判断した場合は『いけます！』と答えてください。購入処理に進みます。",
+    }]
+    payload = {
+        "conversation_state": "ready_to_buy", "next_action": "send_estimate",
+        "cycle_start_message_id": "buyer-go", "evidence_message_ids": ["buyer-go"],
+        "required_official_context": "none", "estimate_terms": None,
+        "reply_body": None,
+        "reply_audit": {
+            "answered_buyer_message_ids": [], "unanswered_questions": [],
+            "unsupported_claims": [], "unrequested_cta": False,
+            "repeats_seller_message": False, "off_platform_contact": False,
+        },
+        "uncertainty": [],
+    }
+
+    with pytest.raises(
+        requested_estimate.SemanticJudgementError,
+        match="semantic_purchase_decision_requires_proactive_reply",
+    ):
+        requested_estimate.validate_semantic_judgement(payload, rows)
+
+
+def test_purchase_decision_reply_cannot_lead_with_internal_confirmation():
+    rows = [{
+        "message_id": "buyer-go", "role": "buyer",
+        "sent_at": "2026-08-22T14:55:00Z",
+        "body": "いける場合は『いけます！』と答えてください。購入処理に進みます。",
+    }]
+    payload = {
+        "conversation_state": "question", "next_action": "reply",
+        "cycle_start_message_id": "buyer-go", "evidence_message_ids": ["buyer-go"],
+        "required_official_context": "none", "estimate_terms": None,
+        "reply_body": "承知しました。URLを確認して判断します。",
+        "reply_audit": {
+            "answered_buyer_message_ids": ["buyer-go"], "unanswered_questions": [],
+            "unsupported_claims": [], "unrequested_cta": False,
+            "repeats_seller_message": False, "off_platform_contact": False,
+        },
+        "uncertainty": [],
+    }
+
+    with pytest.raises(
+        requested_estimate.SemanticJudgementError,
+        match="semantic_purchase_decision_requires_proactive_reply",
+    ):
+        requested_estimate.validate_semantic_judgement(payload, rows)
+
+
 def test_semantic_judge_uses_one_bounded_runner_attempt(tmp_path, monkeypatch):
     schema = GIG_ROOT / "schemas" / "reply_semantic_judgement.schema.json"
     calls = []
@@ -560,14 +612,17 @@ def test_negotiate_runs_every_30_seconds_without_changing_other_job_intervals():
     assert by_lane["browser"]["ThrottleInterval"] == 30
 
 
-def test_semantic_prompt_v24_uses_verified_application_scope_without_blanket_refusal():
+def test_semantic_prompt_v25_is_proactive_before_internal_confirmation():
     prompt = requested_estimate.semantic_prompt(
         [{"message_id": "buyer-1", "role": "buyer", "sent_at": "2026-08-19T00:00:00Z", "body": "質問です"}],
         official_context=None,
         seller_facts=[],
     )
 
-    assert requested_estimate.SEMANTIC_PROMPT_VERSION == "reply-negotiate-v24"
+    assert requested_estimate.SEMANTIC_PROMPT_VERSION == "reply-negotiate-v25"
+    assert "条件付き購入意思は購入承認ではありません" in prompt
+    assert "判断を本文の先頭で明言" in prompt
+    assert "確認します／確認してお伝えします" in prompt
     assert "clarifyでは、こちらが確認する不足情報をuncertaintyにだけ列挙" in prompt
     assert "unanswered_questionsは空配列" in prompt
     assert "saas_lp_cvr_3_to_10_20260819" in requested_estimate.SELLER_FACT_IDS

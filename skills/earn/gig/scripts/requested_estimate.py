@@ -63,7 +63,7 @@ NA15_CATEGORY_IDS = {
 }
 
 SEMANTIC_RECEIPT_VERSION = 1
-SEMANTIC_PROMPT_VERSION = "reply-negotiate-v24"
+SEMANTIC_PROMPT_VERSION = "reply-negotiate-v25"
 SEMANTIC_RUNNER_PROFILE = "reply-semantic-agent"
 SEMANTIC_COMPATIBLE_RUNNER_PROFILES = frozenset({
     "composition-agent", SEMANTIC_RUNNER_PROFILE,
@@ -184,6 +184,7 @@ def semantic_prompt(
 - 上記依頼の後にsellerが実物を含めず「後で見せます／送ります」とだけ返信した場合、その約束は未履行です。最新roleがsellerでもseller_last/waitにせず、会話内の根拠から実物全文をreplyして債務を閉じます。
 - 最新messageがbuyerで、明確なdecline/stop、unknown、必要official context待ちのいずれでもない場合、waitにしません。question/negotiating/ready stateはreply/clarify/send_estimateで前進させ、gratitude/consideringにも同じmessage identityへ一度だけ短いcontextual acknowledgementを返します。購入催促やseller既送文の反復は加えません。
 - buyerが対応可否を尋ね、current conversationまたはverified factsに根拠がある場合、reply_bodyの冒頭で「対応可能です」等の明確な回答を先に述べ、その後に根拠と条件を短く続けます。根拠がない能力をyesにせず、確認できる範囲を正直に区別します。
+- buyerが「いける／対応できるなら購入する」「yesなら購入処理へ進む」と決定を求めた条件付き購入意思は購入承認ではありません。send_estimateやclarifyへ進まず、verified contextから判断できる安全・合法・応募scope内の依頼なら「はい、いけます。ぜひやりましょう。対応します。」のように判断を本文の先頭で明言してreplyします。内部調査をbuyerへ押し返す「確認します／確認してお伝えします／判断します」で始めず、既に会話・応募・URLにある情報を再送させません。根拠のない売上保証はせず、引き受ける作業scopeを肯定します。
 - reply/clarifyではreply_auditを本文作成後に自己監査します。answered_buyer_message_idsへ本文が直接回答したcurrent-cycle buyer message IDを入れます。unanswered_questionsはbuyerが既に尋ねたのに本文が答えていない質問だけです。clarifyでは、こちらが確認する不足情報をuncertaintyにだけ列挙し、unanswered_questionsは空配列にします。unsupported_claimsは本文中の根拠なし主張だけです。未依頼の購入・見積りCTA、seller既送文の反復、外部連絡先への誘導を各booleanで申告します。問題が1つでもある本文を安全扱いにしません。
 - 過去client・history・result・metricのexact claimはcurrent conversationまたはwhitelisted verified_seller_factsにある確認済み事実だけを使い、存在しないcustomer・project・numberを作りません。current capabilityはmatching official applicationのapplied scopeまたはverified transferable factsを先に答え、未確認historyの不在や経験不足を自発的に説明したり、対応不可を先頭に置いたりしません。buyerがexact historyを明示的に聞いた場合だけ確認済み事実を答え、missing historyをcapability refusalへ変換しません。
 - seller本人の年齢、性別、身体、容姿、声、出演・撮影可否、着用できる衣装なども未提供の本人事実です。会話かverified contextに明示がなければ対応可能と断言しません。
@@ -257,6 +258,21 @@ def _inline_artifact_debt(rows: list[dict[str, str]]) -> bool:
     )
 
 
+def _unanswered_purchase_decision(rows: list[dict[str, str]]) -> dict[str, str] | None:
+    """Return an explicit yes-before-purchase request not yet answered by seller."""
+    for index in range(len(rows) - 1, -1, -1):
+        row = rows[index]
+        body = row["body"]
+        if (
+            row["role"] == "buyer"
+            and "購入" in body
+            and any(word in body for word in ("場合", "なら"))
+            and any(word in body for word in ("いけます", "対応", "できます", "やりましょう"))
+        ):
+            return row if not any(item["role"] == "seller" for item in rows[index + 1:]) else None
+    return None
+
+
 def validate_semantic_judgement(
     payload: Any, rows: list[dict[str, str]],
 ) -> dict[str, Any]:
@@ -276,6 +292,16 @@ def validate_semantic_judgement(
         raise SemanticJudgementError("semantic_enum_invalid")
     if state == "explicit_estimate_request" and action == "reply":
         raise SemanticJudgementError("semantic_estimate_request_reply_conflict")
+    purchase_decision = _unanswered_purchase_decision(rows)
+    if purchase_decision is not None:
+        body = payload.get("reply_body")
+        proactive = type(body) is str and body.strip().startswith(
+            ("はい、いけます", "はい、ぜひ", "ぜひ対応", "対応可能です", "できます")
+        )
+        if action != "reply" or not proactive:
+            raise SemanticJudgementError(
+                "semantic_purchase_decision_requires_proactive_reply"
+            )
     artifact_debt = _inline_artifact_debt(rows)
     if rows[-1]["role"] == "seller" and action in {"reply", "clarify"} and not artifact_debt:
         raise SemanticJudgementError("semantic_seller_last_reply_conflict")
