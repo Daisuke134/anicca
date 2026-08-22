@@ -903,15 +903,22 @@ if ! "$PY" - "$EV/chosen.json" "$EV/humanized.json" "$EV/post.txt" "${X_REPOST_T
   lesson "3案とも文字数超過" "日本語は1文字2カウント。プロンプトの上限表記が実単位とずれていないか見る"
   finish 0 "all drafts over the X length budget"
 fi <<'PYEOF'
-import json, sys, unicodedata
+import json, re, sys, unicodedata
 
 chosen_path, humanized_path, out_path, budget = sys.argv[1:5]
 budget = int(budget)
 
 
 def weighted(text):
-    """X counts full-width characters as 2. A plain len() is not the limit X enforces."""
-    return sum(2 if unicodedata.east_asian_width(c) in ("W", "F") else 1 for c in text)
+    """Approximate X weighted length, including its fixed 23-character t.co URL cost."""
+    def chars(value):
+        return sum(2 if unicodedata.east_asian_width(c) in ("W", "F") else 1 for c in value)
+
+    total = start = 0
+    for match in re.finditer(r"https?://\S+", text):
+        total += chars(text[start:match.start()]) + 23
+        start = match.end()
+    return total + chars(text[start:])
 
 
 chosen = json.load(open(chosen_path, encoding="utf-8"))
