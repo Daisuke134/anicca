@@ -306,7 +306,7 @@ evidence. Independent production lanes continue running while development follow
 project workers. Its launchd environment ignores the shared preventive `disk-pressure.block` and
 `disk-writers.stop` flags while retaining the 512 MiB last-resort guard and expiring operator brake.
 The loaded release is `097a2e1363929e4724294e8e44fba86bfd3e9d71`. The latest natural receipt is
-`status=failed`, `observed=7`, `actionable=4`, `effect=0`, `readback=2`, `failed=5`, `pending=0`;
+`status=failed`, `observed=7`, `actionable=5`, `effect=0`, `readback=2`, `failed=5`, `pending=0`;
 silent pending is now zero, but parallel artifact production therefore does not yet prove
 parallel buyer delivery. X-post talkroom `18171850` remains the sole closed item in the current
 four-client set: approved v1 has already been sent and officially read back with formal delivery OFF.
@@ -324,11 +324,21 @@ buyer-visible at 05:30, but the buyer replied at 11:13 that the design had rever
 whether it had been sent without proper checking; the seller apologized at 11:47 and promised another
 verified submission. The fresh reviewer had returned `undeterminable` because native Illustrator provenance
 could not be proved, while calling the package otherwise useful, and the controller incorrectly converted
-that verdict into shipment without proving retention of the buyer-approved latest design. The latest loop
-still reports `targeted_readback`, so neither the incorrect shipment nor the apology is a successful Paid
-completion. The already-closed X room incorrectly re-entered `file_builder`, and room `18062411`
+that verdict into shipment without proving retention of the buyer-approved latest design. The latest natural
+owner pass now fails Haru closed at `file_validation`; it has neither resent v31 nor produced a proved
+correction. Codex is the explicit incident lead for Haru: it must inspect the complete buyer attachment/message
+sequence and candidate visually, decide what correction is truthful, and authorize only a reviewer-PASS
+artifact. The existing Paid owner remains the sole browser/effect executor so the repair is durable and
+replay-safe; do not create a manual browser shortcut or one-off Haru script. Neither the incorrect shipment
+nor the apology is a successful Paid completion. The already-closed X room incorrectly re-entered `file_builder`, and room `18062411`
 still fails `remote_resume`. Paid completion is therefore still one officially delivered/read-back artifact
 out of four, not four.
+
+The incident lead visually compared the saved buyer source `5372ec073081-image.png` with v31 and confirmed
+the buyer's report: v31 reverted the designed heading rails, cards, diagrams and large comparison sections to
+a sparse generic page. The natural owner then generated a claimed v32 correction, but its manifest renamed the
+decision's required asset ids and failed `asset contract mismatch`; cleanup removed the temporary v32 ZIP before
+independent visual inspection. This is not a review PASS and must not be reconstructed from the self-report.
 
 **E2E judgment.** This work changes no owned application UI, so Maestro is not applicable. Completion
 requires the real launchd owner to act through the authenticated Coconala browser and an exact-room
@@ -442,6 +452,12 @@ reduce scope before exceeding three files or 100 production LOC.
      buyer's explicit defect report: do not resend v31. Preserve it as failed evidence, reconstruct the exact
      buyer-approved latest design from the accumulated attachment/message sequence, require direct visual
      correspondence rather than `bounded_undeterminable`, and send only a genuinely corrected next artifact.
+     Atomic order: [ ] persist every candidate before temporary runtime cleanup; [ ] make the builder reuse the
+     decision's exact required asset ids instead of renaming them; [ ] regenerate one next-version correction
+     from the saved buyer source and latest PC/responsive inquiry references; [ ] have the incident lead and a
+     fresh reviewer open the source, both candidate previews and package members and record hash-bound PASS;
+     [ ] let the existing Paid owner attach that exact hash with formal delivery OFF; [ ] obtain exact-room
+     official DOM readback; [ ] rerun naturally and prove replay-zero.
    - [ ] Manledge `18169985`: submit the already acceptance-PASS v20 deliverable, repair the
      `file_browser` attachment path without regenerating the artifact, obtain official readback and
      keep formal delivery OFF. The buyer has approved the CSV and is now waiting for the community details,
@@ -457,9 +473,11 @@ reduce scope before exceeding three files or 100 production LOC.
      persist the exact non-delegable seller action as a durable blocker. Only then repair the
      `file_validation` handoff, send the truthful buyer-review-stage artifact if that bounded effect is
      still contract-valid, obtain official readback and keep formal delivery OFF.
-   - [ ] Treat ten reviews as a ceiling, not a quota: when a fresh reviewer returns
-     `undeterminable` with no independently repairable defect, immediately ship the best truthful
-     bounded artifact with formal delivery OFF instead of regenerating it until round ten.
+   - [ ] Treat ten reviews as a ceiling, not a quota, and fail closed: a fresh reviewer may return only
+     evidence-backed PASS or NEEDS_WORK for delivery authorization. `undeterminable`, missing visual
+     correspondence, unavailable provenance and review exhaustion never authorize shipment; preserve the
+     artifact, return the raw evidence to the Paid manager for replanning, and request one exact owner input
+     only when the missing fact is genuinely non-delegable.
    - [ ] Read back first-artifact staging without a prior `paid-work-result.json`: new projects must
      create v1 from complete context, while existing projects alone receive a prior artifact to resume.
    - [ ] Classify and close every other purchased room as buyer-waiting, formally complete,
