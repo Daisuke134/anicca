@@ -22,22 +22,30 @@ backlog is:
    Affiliate effect at `https://x.com/selawmqt/status/2091124360723698095` for
    `elevenlabs-discovered-video-to-text-en-1`; consumption is exactly
    `EFFECT_STARTED -> POSTED`. It was not manually posted or retried.
-2. **X02 — INSTALLED, LIVE EFFECT UNVERIFIED:** installed release
-   `788710f3fdc7110bfe63704712fb27a829101e0e` implements the bounded
+2. **X02 — DONE, FIRST USEFUL ORIGINAL EXACT-READ:** installed release
+   `0361b9d3ba4601d265920e03b5f86963909c2c7d` implements the bounded
    LangChain-shaped pipeline inside the existing owner. It fetches an admitted
    source, requires an exact `evidence_quote` substring plus a concrete
    `reader_value`, rejects an unsupported draft with a separate model critic,
    and condenses only at sentence boundaries. It does not copy LangChain's human
    approval node or scheduler; the existing launchd owner, effect journal,
    policy gate, and exact public readback remain the only effect path.
-3. **X03 — INSTALLED, LIVE READBACK OPEN:** a durable rolling language allocator
+   Repost owner run 33 recovered the source-backed original without reopening
+   the composer or duplicating the effect. Exact permalink is
+   `https://x.com/selawmqt/status/2091151330790510790`, source is
+   `https://x.com/jun_song/status/2091114049954283855`, and the same ledger row
+   moved from `unverified` to `recovered`. X renders that quote card as a
+   non-anchor `div[role=link]`; readback therefore requires the exact generated
+   body, exact source `@handle` inside the quote card, and the account's own
+   exact status href. This is a verified distribution effect, not money.
+3. **X03 — INSTALLED, NEXT LIVE EFFECT JAPANESE:** a durable rolling language allocator
    now targets nine English and one Japanese across verified non-Affiliate X
    effects. The
    Japanese slot must use a Japanese source and Japanese copy; it is never a
    translation of an English affiliate placement. English stays the commercial
    default. This explicit 9:1 instruction supersedes the older English-only
    account sentence while preserving separate money accounting by language.
-4. **X04 — INSTALLED, LIVE READBACK OPEN:** ship one original evidence/help post
+4. **X04 — DONE FOR FIRST DAY, RECURRING OWNER CONTRACT:** ship one original evidence/help post
    per JST day, plus bounded high-value replies/quotes. The daily ordinary-action
    ceiling reserves exactly the missing original even when replies/quotes have
    already filled that ceiling; after an original exists it grants no extra
@@ -57,48 +65,47 @@ backlog is:
    replay-safe Telegram outbox with a provider message ID. A Telegram timeout is
    queued and never converts a post, view, or click into money.
 
-Current live checkpoint: run 26 exposed a sparse-release dependency omission in
-`launchctl-safe` before any owner or public effect ran. Release `f25abe081`
-automatically closes `bin` over `skills/_shared`, and its real Aqua/gui/501
-preflight passed. Run 27 then exposed a second daily-cap gate that cancelled the
-missing-original reservation; release `ce8cf8631` makes both gates preserve
-exactly one missing original slot. Run 28 selected 90 candidates, produced an
-English source-backed original, resolved an exact source quote, passed the
-separate factual critic, and X accepted the compose action. Six timeline reads
-and one separate read-only reconcile found no exact permalink, so the ledger row
-is terminal `status=unverified`, `post_url=null`. It is not retried, is not a
-verified X effect, and does not advance the verified EN 9 / JA 1 allocator.
+Current live checkpoint: immutable sparse release
+`20260822T222514-0361b9d3` is installed from commit
+`0361b9d3ba4601d265920e03b5f86963909c2c7d`, pushed to both Repost remotes.
+Source/runtime `x-repost-cli.sh` is byte-equal at SHA-256
+`b6f54e1018845dd18a75528b2f1079997f84831593e2feb25bf2624f7088fef7`.
+Its versioned readback lets a newer exact verifier inspect an old terminal row
+once, then records the verifier version on an unresolved row so it cannot retry
+forever. Run 33 read back the 22:13 source-backed original at exact permalink
+`https://x.com/selawmqt/status/2091151330790510790` and atomically changed that
+same row to `status=recovered`; no new composer effect occurred. Nineteen
+focused tests, shell syntax, source/runtime hash, launchd Aqua/gui/501 preflight,
+and the real owner readback pass.
 
 The remaining atomic path is the following single ordered queue; this is the
 current execution order, not a menu:
 
-1. On the next eligible owner hour, select a different English source and prove
-   one `kind=original` exact X permalink. The terminal MaxForAI source is never
-   replayed.
-2. After nine verified English non-Affiliate effects since the last Japanese
-   effect, prove one native-Japanese-source, Japanese-copy exact permalink.
-3. Add official X impression/profile-visit/follow observations when the account
+1. On the next eligible owner hour, prove one native-Japanese-source,
+   Japanese-copy exact permalink. The allocator now has the ninth verified
+   English non-Affiliate effect; terminal MaxForAI remains fenced forever.
+2. Add official X impression/profile-visit/follow observations when the account
    exposes them; unknown remains unknown.
-4. Add a first-party X-to-owned-article entry receipt without raw referrer,
+3. Add a first-party X-to-owned-article entry receipt without raw referrer,
    cookie, query, IP, user-agent, tracking link, or secret retention.
-5. Join entry receipt -> owned article -> existing CTA receipt -> PartnerStack
+4. Join entry receipt -> owned article -> existing CTA receipt -> PartnerStack
    provider click -> official transaction ID at exact `placement_id`.
-6. Promote only mature approved-or-paid net experiments; stop formats with no
+5. Promote only mature approved-or-paid net experiments; stop formats with no
    qualified traffic or transaction evidence. Views and clicks remain non-money.
-7. Capture the first official transaction and replay its
+6. Capture the first official transaction and replay its
    pending/approved/paid/reversed, currency, reversal, real cost, denominator,
    and rolling 30-day USD 10,000 net in the canonical ledger and Telegram.
 
-Affiliate owner run 78 is the latest economic readback: 75 X post actions, five
-exact placement joins, 70 unjoined actions, zero invalid rows, CTA and interval
+Affiliate owner run 83 is the latest economic readback: 76 X post actions, five
+exact placement joins, 71 unjoined actions, zero invalid rows, CTA and interval
 funnel `OBSERVED`, owned visits
 `UNAVAILABLE / NETLIFY_WEB_ANALYTICS_DISABLED`, and official PartnerStack
-commission/payout rows empty. Pending, approved, paid, and reversed are all zero;
+commission/payout rows remain empty. Pending, approved, paid, and reversed are all zero;
 rolling money is `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`,
-cost remains `UNKNOWN`, and Telegram is `SEND_TIMEOUT_UNKNOWN` in the existing
-replay-safe queue. The 75th unverified X row and every click are non-money.
+cost remains `UNKNOWN`, and owner Telegram receipt is provider message ID
+`28914`. The recovered 76th X row, every view, and every click are non-money.
 
-The same installed release bounds readback-only recovery of terminal
+The prior acquisition release bounds readback-only recovery of terminal
 `UNVERIFIED` proposals to six hours. This preserves immediate recovery of an X
 effect whose permalink appeared late, but prevents old terminal proposals from
 consuming every future acquisition pass. It never reopens a publish claim and
@@ -120,9 +127,8 @@ same-hour fence. `posted.jsonl` remained 74 rows and consumption remained 14
 rows, so this policy check produced no extra X effect. Repost owner run 25 on
 installed `51cf42041` flushed exactly one Telegram backlog row, repeated the
 same `5/3` deferral, and also produced no public effect at the same-hour fence.
-The first source-backed
-original and the subsequent Japanese slot still require exact live permalink
-readback on their next eligible owner wakes.
+The first source-backed original is now exact-read by run 33. The native
+Japanese slot remains the next eligible public effect.
 
 The fixed-commit OSS code audit was performed from isolated clones, not README
 summaries:
@@ -132,6 +138,8 @@ summaries:
 | [LangChain Social Media Agent](https://github.com/langchain-ai/social-media-agent) | `d3f416d6ae9856a737ac0bb5534f99dd8048fbd7`, MIT | URL verification, content report, relevancy gate, post generation, whole-sentence condense loop, stored reflection rules | Human approval node and LangGraph scheduler do not become production owners |
 | [X-Manager](https://github.com/tylerbuilds/x-manager) | `a3534ba953fc88beac79fc12ca5ebbcd4f3bed2d`, MIT | Expiring scheduler lease, normalized-copy plus canonical-URL dedupe key, separated post metrics collector | Its scheduler, credential store, and X API publisher are not installed |
 | [GrowthMate](https://github.com/ibrahimahmed/growthmate) | `aea4fcdab135a2d4921cd03257eb7135e0baba62`, MIT | Recent-post voice context and three-draft generation are useful references | Its generic `viral tweets` prompt and unvalidated JSON are too weak to copy |
+| [Socrates](https://github.com/jddavenportOpen/socrates) | `020fd3b7f746b6a5dae218e7da898473f3c4a922`, Apache-2.0 | Separate original/reply metric rows, daily follower and impression snapshot, evidence-based reflection, append-only playbook, and AI-tell/zero-like quality audit | Its X API publisher, cron, Supabase owner, follower target, and engagement score never replace launchd or the canonical money objective |
+| [Social Posting Skills](https://github.com/tang-vu/social-posting-skills) | `9e4539a5cd3792fb1101c6a079f2fc9ab8b76afe`, MIT | Content pillars plus hook/how-to/thread structures as draft diversity inputs | Unsupported reach claims, browser publisher, generic hook formulas, and mass engagement routines are not production policy |
 
 Source evidence used for these decisions:
 
@@ -148,6 +156,15 @@ Source evidence used for these decisions:
 - GrowthMate,
   <https://github.com/ibrahimahmed/growthmate/blob/aea4fcdab135a2d4921cd03257eb7135e0baba62/src/app/api/writer/generate/route.ts>:
   `Match the user's tone and vocabulary from their recent tweets`.
+- Socrates,
+  <https://github.com/jddavenportOpen/socrates/blob/020fd3b7f746b6a5dae218e7da898473f3c4a922/socrates/reflector.py>:
+  `Append dated entry to playbook.md (never overwrite).`
+- Socrates,
+  <https://github.com/jddavenportOpen/socrates/blob/020fd3b7f746b6a5dae218e7da898473f3c4a922/socrates/analytics.py>:
+  `Each tweet is tagged kind='original' or kind='reply'.`
+- Social Posting Skills,
+  <https://github.com/tang-vu/social-posting-skills/blob/9e4539a5cd3792fb1101c6a079f2fc9ab8b76afe/.agents/skills/content-writing/SKILL.md>:
+  `The first line determines whether anyone reads the rest.`
 
 Current measurement truth is partial, not end-to-end complete. Exact X
 permalink, placement join, CTA redirect, provider click, official PartnerStack

@@ -1,5 +1,35 @@
 # Affiliate local money loop handover
 
+- Latest X effect is now exact-read, not shadow/mock. Repost commits
+  `3b339a433` and `0361b9d3b` are pushed to both Repost remotes and installed as
+  immutable sparse release `20260822T222514-0361b9d3`. X renders source quote
+  cards as non-anchor `div[role=link]`, so the old exact-source-anchor check
+  could see the generated body but never the source URL. The repaired verifier
+  requires the exact generated body, exact quoted `@handle`, and exact own
+  status href; versioned terminal recovery permits one retry only after a
+  verifier upgrade. Existing owner run 33 did not publish again and atomically
+  recovered the same row to exact permalink
+  `https://x.com/selawmqt/status/2091151330790510790`. Nineteen tests and real
+  owner readback pass. This is a distribution effect, not money.
+
+- Affiliate owner run 83 exited `0` on installed release
+  `5f8aef6c9625de391e3c0f5823ea02c5e5280b41`. It observed 76 X actions, five
+  exact placement joins, 71 unjoined, zero invalid, and Telegram provider
+  message ID `28914`. Official PartnerStack status counts remain pending 0,
+  approved 0, paid 0, reversed 0; rolling state remains
+  `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`, owned visits are
+  still `UNAVAILABLE / NETLIFY_WEB_ANALYTICS_DISABLED`. The next atomic owner
+  effect is the native-Japanese source/copy slot required after nine verified
+  English effects, followed by X/profile and owned-entry measurement.
+
+- Additional isolated OSS clones are code-audited: Socrates
+  `020fd3b7f...` (Apache-2.0) supplies separate original/reply metrics, daily
+  evidence reflection, append-only playbook updates, and AI-tell/zero-like
+  quality checks; Social Posting Skills `9e4539a5...` (MIT) supplies content
+  pillar and hook/thread draft structures. Do not install either publisher,
+  scheduler, credential path, generic viral claim, or engagement objective.
+  The existing launchd owner and canonical money ledger remain sole owners.
+
 - Latest live attempt: sparse release `51cf42041` omitted the shared
   `launchctl-safe` preflight dependency, so the 21:00 kick failed closed before
   any owner or public effect. Repost commit `f25abe081` now automatically adds
