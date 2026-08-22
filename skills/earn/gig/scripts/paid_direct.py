@@ -2451,7 +2451,11 @@ def _run_isolated_file_owner(args, root: Path, context: Path, prompt_text: str,
         ]
         try:
             for owner_round in range(2):
-                _run(command, "file_builder")
+                try:
+                    _run(command, "file_builder")
+                except Failure:
+                    if not (staging / "delivery" / "paid-tool-requests.json").is_file():
+                        raise
                 try:
                     executed = _execute_owner_tool_requests(staging, REPO_ROOT)
                 except Failure:

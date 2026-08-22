@@ -389,6 +389,16 @@ The transient workspace path is sanitized to `/paid-owner-workdir`; customer eff
 Haru owner must read this receipt and choose a different honest input or approach. Do not call this complete until
 that alternate request produces official native reopen receipts and the `bca06caca` contextual handoff path is active.
 
+**PDF handoff ordering defect, repair pending activation.** The next natural owner read the durable SVG failure and
+correctly selected fresh PDF inputs for both PC and responsive native roundtrips. It produced a complete v40 package,
+acceptance and manifest, then returned `status=blocked` exactly as the capability prompt instructed while asking the
+controller to execute the two PDF requests. The controller incorrectly treated that blocked runner exit as
+`file_builder` failure before reading the valid request file, so Illustrator never received either PDF and customer
+effect remained zero. The generic controller now accepts a failed/blocked runner exit only when a staging-local
+`paid-tool-requests.json` exists, then runs the same strict capability/path/input validation before any desktop effect.
+An exit without that request still fails closed. Publish and naturally re-run; success requires the PDF native receipts,
+same-owner resume, promoted v40 and contextual customer message before browser delivery may begin.
+
 **Current reviewer correction.** `main` and `origin/main` were both `31e7fa09d` before this change; the
 starting verification commit `79ac01ba1eb66b06aed1f9cee66d4af303f03a3d` remains an ancestor. The loaded
 Paid release is still `f747c7d05` while its natural pass is active, so no effect is attributed to the new
