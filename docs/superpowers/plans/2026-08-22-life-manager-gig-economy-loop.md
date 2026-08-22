@@ -248,7 +248,7 @@ No later task may jump ahead of the first incomplete row:
 | U2 | Complete normal email/password signup or login | **DONE:** verification email completed; fresh password login returned the same identity twice |
 | U3 | Complete factual freelancer profile needed to apply | **DONE:** published profile `~01f5fe272d6df34084`; Online, >30 hrs/week, 40% complete |
 | U4 | Observe real job-search, detail and proposal surfaces | **DONE:** search/detail/proposal-entry receipt; 0 effects, Connects gate identified |
-| U5 | Discover live jobs twice | Stable Upwork job IDs and zero proposal/message effects |
+| U5 | Discover live jobs twice | **DONE:** two recency reads returned the same ten job IDs; 0 effects |
 | U6 | Qualify one job using installed Skills and Upwork-only capacity | Eligible qualification receipt; active Coconala count absent |
 | U7 | Freeze one tailored proposal | Exact body, bid, milestone, claim and attachment hashes |
 | U8 | Submit that proposal once | Official proposal ID plus Connects before/after |
@@ -272,6 +272,12 @@ U4 observed query `AI automation Python`, 315 result pages and ten stable job ID
 `~022091070238314681977` exposed title, description, skills, budget, client verification/history,
 activity and Connects fields. Its entry button is `Buy Connects to apply`: 18 required versus 0
 available. No proposal, Connects spend or payment occurred. U5 is now the first incomplete outcome.
+
+U5 repeated the same `AI automation Python` recency discovery twice. Both reads returned the same
+ordered ten job IDs, including `~022091072411475953338`, `~022091070478975551162` and
+`~022091070238314681977`. Saved jobs remained 0; proposals, messages, Connects spend and payments
+remained 0. U6 is now the first incomplete outcome and must qualify one of these live jobs against
+the installed Skills and Upwork-only delivery capacity.
 
 ### Task 7: Record Upwork's private action matrix
 

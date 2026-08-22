@@ -43,6 +43,11 @@ the account has 0 and presents `Buy Connects to apply`; no identity-verification
 that entry. Search and detail fields are now grounded in live Upwork DOM rather than inferred provider
 schemas. U5 performs two independent discoveries before any Connects purchase decision.
 
+U5 is closed: two independent reads of the same recency query returned the same ordered ten job IDs.
+Saved jobs, proposals, messages, Connects spend and payments remained zero. U6 may now qualify one
+live job, but it must use only installed Skills and Upwork-owned capacity; Coconala activity is not
+part of the capacity calculation.
+
 ## 1. Goal, objective and boundaries
 
 ### 1.1 Goal
