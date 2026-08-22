@@ -604,10 +604,14 @@ for line in open(sys.argv[1], encoding="utf-8"):
         r = json.loads(line)
     except json.JSONDecodeError:
         continue
-    if r.get("post_url"):
+    if r.get("post_url") and r.get("kind") != "affiliate_original" and r.get("status") != "unverified":
         rows.append(r)
 rows = rows[-10:]
-rows.sort(key=lambda r: (r.get("engagement") or {}).get("likes", 0), reverse=True)
+rows.sort(key=lambda r: (
+    (r.get("engagement") or {}).get("likes", 0),
+    (r.get("engagement") or {}).get("reposts", 0),
+    (r.get("engagement") or {}).get("views", 0),
+), reverse=True)
 json.dump([{"tone": r.get("tone"), "text": r.get("text"),
             "engagement": r.get("engagement") or {}} for r in rows[:5]],
           sys.stdout, ensure_ascii=False, indent=1)
