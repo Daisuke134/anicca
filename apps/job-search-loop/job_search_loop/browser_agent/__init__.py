@@ -34,6 +34,7 @@ from .contracts import (
     StepEvidenceV1,
 )
 from .observation import ObservationBuilder
+from .outcome_reporting import build_hourly_outcome_message, send_hourly_outcomes
 from .inference import ExperienceIntervalV1, InferenceDecisionV1, StableInferencePolicy
 from .policy import AgentPolicy
 from .session import BrowserSession
@@ -62,6 +63,7 @@ __all__ = [
     "SubmissionFenceLeaseV1", "SubmissionFence",
     "CompletionEvidenceV1", "verify_completion_ui",
     "record_completion_evidence",
+    "build_hourly_outcome_message", "send_hourly_outcomes",
     "StepEvidenceV1", "VisibleActionV1",
     "MachineWorkdayCredentialStore", "StableInferencePolicy", "VisibleControlV1",
     "WorkdayAuthReceiptV1", "WorkdayAuthTool",
