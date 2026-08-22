@@ -562,6 +562,49 @@ def reconcile_terminal_transitions(
             fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
 
+async def execute_sealed_proposal(
+    payload: dict[str, Any], *, pass_id: str, sequence: int, database: Path,
+    manifest: Path, browser_profile: Path,
+) -> tuple[dict[str, Any], dict[str, Any] | None, str | None]:
+    """Run either public or invitation proposal through the same durable effect."""
+    effect_now = datetime.now(timezone.utc)
+    effect = SealedUpworkProposalEffect(
+        ConnectorOutbox(database.expanduser(), manifest.expanduser()),
+        UpworkTransport(
+            active_upwork_browser_account(DEFAULT_RECEIPT_PATH, effect_now), effect_now,
+            browser_profile=browser_profile.expanduser(),
+            profiles_root=browser_profile.expanduser().parent,
+        ),
+    )
+    _, planned = effect.intent(payload)
+    existing = effect.store.provider_effect(planned)
+    base = {"proposal_payload_sha256": payload["payload_sha256"]}
+    if existing is not None and existing["reconciliation_state"] == "verified":
+        return {**base, "state": "submitted", "proposal_id": existing["proposal_id"]}, None, None
+    if existing is not None and existing["state"] == "reconcile_pending":
+        return {**base, "state": "reconcile_unknown"}, None, None
+    holder: dict[str, Any] = {}
+
+    def start_effect(preflight: dict[str, Any]) -> bool:
+        holder["intent"], started = effect.start(payload, preflight)
+        return started
+
+    receipt = await submit_proposal_after_fence(payload, start_effect)
+    artifact = Path(await navigate_and_snapshot(
+        pass_id, f"{sequence:02d}-1", "connects-post", CONNECTS_URL,
+        "read_only", 2, 1440,
+    ))
+    post_text, post_hash, _ = _read_evidence(artifact, CONNECTS_URL)
+    post_connects = parse_connects(post_text)
+    effect.verify(
+        holder["intent"], receipt, connects_post=post_connects["balance"],
+        connects_evidence_sha256=post_hash,
+    )
+    return {
+        **base, "state": "submitted", "proposal_id": receipt["proposal_id"],
+    }, post_connects, post_hash
+
+
 async def observe(
     candidates_path: Path = DEFAULT_CANDIDATES,
     proposals_dir: Path = DEFAULT_PROPOSALS,
@@ -656,10 +699,14 @@ async def observe(
                     state["free_acquisition"]["proposal_state"] = "model_skip"
                 else:
                     write_sealed_proposal(proposal, inbound_proposals)
-                    state["free_acquisition"].update({
-                        "proposal_state": "sealed",
-                        "proposal_payload_sha256": proposal["payload_sha256"],
-                    })
+                    acquisition, post_connects, post_hash = await execute_sealed_proposal(
+                        proposal, pass_id=pass_id, sequence=len(targets) + 2,
+                        database=database, manifest=manifest, browser_profile=browser_profile,
+                    )
+                    state["free_acquisition"].update(acquisition)
+                    if post_connects is not None and post_hash is not None:
+                        state.update(post_connects)
+                        state["evidence_sha256"]["connects-post"] = post_hash
             elif detail_state == "actionable":
                 state["free_acquisition"]["offer_state"] = "terms_gate_pending"
         else:
@@ -670,52 +717,14 @@ async def observe(
     if selected is None:
         state["free_acquisition"] = {"state": "waiting_free_capacity"}
     else:
-        effect_now = datetime.now(timezone.utc)
-        effect = SealedUpworkProposalEffect(
-            ConnectorOutbox(database.expanduser(), manifest.expanduser()),
-            UpworkTransport(
-                active_upwork_browser_account(DEFAULT_RECEIPT_PATH, effect_now),
-                effect_now, browser_profile=browser_profile.expanduser(),
-                profiles_root=browser_profile.expanduser().parent,
-            ),
+        acquisition, post_connects, post_hash = await execute_sealed_proposal(
+            selected, pass_id=pass_id, sequence=len(targets) + 1,
+            database=database, manifest=manifest, browser_profile=browser_profile,
         )
-        _, planned = effect.intent(selected)
-        existing = effect.store.provider_effect(planned)
-        if existing is not None and existing["reconciliation_state"] == "verified":
-            state["free_acquisition"] = {
-                "state": "submitted", "proposal_id": existing["proposal_id"],
-                "proposal_payload_sha256": selected["payload_sha256"],
-            }
-            return state
-        if existing is not None and existing["state"] == "reconcile_pending":
-            state["free_acquisition"] = {
-                "state": "reconcile_unknown",
-                "proposal_payload_sha256": selected["payload_sha256"],
-            }
-            return state
-        holder: dict[str, Any] = {}
-
-        def start_effect(preflight: dict[str, Any]) -> bool:
-            holder["intent"], started = effect.start(selected, preflight)
-            return started
-
-        receipt = await submit_proposal_after_fence(selected, start_effect)
-        post_artifact = Path(await navigate_and_snapshot(
-            pass_id, f"{len(targets) + 1:02d}-1", "connects-post", CONNECTS_URL,
-            "read_only", 2, 1440,
-        ))
-        post_text, post_hash, _ = _read_evidence(post_artifact, CONNECTS_URL)
-        post_connects = parse_connects(post_text)
-        effect.verify(
-            holder["intent"], receipt, connects_post=post_connects["balance"],
-            connects_evidence_sha256=post_hash,
-        )
-        state.update(post_connects)
-        state["evidence_sha256"]["connects-post"] = post_hash
-        state["free_acquisition"] = {
-            "state": "submitted", "proposal_id": receipt["proposal_id"],
-            "proposal_payload_sha256": selected["payload_sha256"],
-        }
+        state["free_acquisition"] = acquisition
+        if post_connects is not None and post_hash is not None:
+            state.update(post_connects)
+            state["evidence_sha256"]["connects-post"] = post_hash
     return state
 
 

@@ -170,3 +170,19 @@ def test_apply_path_is_not_a_proposal_receipt():
     assert browser is not None
     expression = browser.submit_readback_expression("~012345678901234")
     assert "(?!job" in expression
+
+
+def test_invitation_preflight_accepts_only_zero_cost_submit_form():
+    assert browser is not None
+    payload = _payload()
+    payload["status"] = "frozen_waiting_for_invitation"
+    payload["terms"] = {**payload["terms"], "required_connects": 0}
+    snapshot = _snapshot(
+        required_connects=0, available_connects=0, submit_label="Submit a proposal",
+    )
+
+    receipt = browser.validate_preflight(snapshot, payload)
+
+    assert receipt["required_connects"] == 0
+    assert receipt["available_connects"] == 0
+    assert "accept and send a proposal" in browser.invitation_accept_expression().lower()

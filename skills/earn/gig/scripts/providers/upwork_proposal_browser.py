@@ -66,10 +66,18 @@ const option=[...(durationRoot.querySelectorAll('li,[role="option"]'))].find(x=>
 const areas=[...document.querySelectorAll('.fe-proposal-job-questions textarea')];if(areas.length!==p.screening_answers.length)throw Error('upwork_question_count_mismatch');
 const answers=p.screening_answers.map(item=>{{const area=areas.find(x=>norm((x.closest('label,.up-form-group,.air3-form-group,[data-test]')||x.parentElement).innerText).includes(norm(item.question)));if(!area)throw Error('upwork_question_mismatch');setValue(area,item.answer);return{{question:item.question,answer:area.value}};}});
 const submit=document.querySelector('footer .air3-btn-primary,footer button[type="submit"],button[data-test*="submit" i]');if(!submit)throw Error('upwork_submit_control_missing');
-const body=norm(document.body.innerText),required=p.terms.required_connects,connects=body.includes(String(required)+' Connects')?required:null,availableMatch=body.match(/Available Connects:?\\s*(\\d+)/i);
+const body=norm(document.body.innerText),required=p.terms.required_connects,isInvite=p.status==='frozen_waiting_for_invitation',costs=[...body.matchAll(/(\\d+)\\s+Connects/gi)].map(x=>Number(x[1])),connects=isInvite?(costs.some(x=>x>0)?null:0):(body.includes(String(required)+' Connects')?required:null),availableMatch=body.match(/Available Connects:?\\s*(\\d+)/i),available=isInvite?0:(availableMatch?Number(availableMatch[1]):null);
 const errors=[...document.querySelectorAll('.form-error,.air3-form-error,.up-alert-danger,[role="alert"]')].map(x=>norm(x.innerText)).filter(Boolean);
-return{{job_id:p.job_id,form_url:location.href,required_connects:connects,available_connects:availableMatch?Number(availableMatch[1]):null,bid_usd:Number(bid.value),duration_label:norm(combo.innerText),cover_letter:cover.value,screening_answers:answers,attachments:[],submit_label:norm(submit.innerText),submit_enabled:!submit.disabled,validation_errors:errors}};
+return{{job_id:p.job_id,form_url:location.href,required_connects:connects,available_connects:available,bid_usd:Number(bid.value),duration_label:norm(combo.innerText),cover_letter:cover.value,screening_answers:answers,attachments:[],submit_label:norm(submit.innerText),submit_enabled:!submit.disabled,validation_errors:errors}};
 }})()'''
+
+
+def invitation_accept_expression() -> str:
+    """Enter the zero-Connect invitation form without submitting it."""
+    return '''(()=>{const norm=x=>(x||'').replace(/\\s+/g,' ').trim().toLowerCase();
+const controls=[...document.querySelectorAll('button,a')];
+const accept=controls.find(x=>['accept and send a proposal','submit a proposal','accept interview'].includes(norm(x.innerText)));
+if(!accept||accept.disabled)throw Error('upwork_invitation_accept_missing');accept.click();return true;})()'''
 
 
 def submit_click_expression(job_id: str) -> str:
@@ -155,15 +163,22 @@ async def submit_proposal_after_fence(
     if not isinstance(job_id, str) or not job_id or not callable(start_effect):
         raise ValueError("upwork_proposal_preflight_mismatch")
     apply_url = f"https://www.upwork.com/ab/proposals/job/{job_id}/apply/#/"
-    async with hidden_page_target(apply_url) as ws_url:
+    is_invitation = payload.get("status") == "frozen_waiting_for_invitation"
+    entry_url = str(payload.get("job_url") or "") if is_invitation else apply_url
+    async with hidden_page_target(entry_url) as ws_url:
         async with websockets.connect(
             ws_url, ping_interval=None, open_timeout=10, max_size=40 * 1024 * 1024,
         ) as ws:
             await _call(ws, "Page.enable", {}, 1)
-            await _call(ws, "Page.navigate", {"url": apply_url}, 2)
+            await _call(ws, "Page.navigate", {"url": entry_url}, 2)
             _, cid = await _wait_for_load(
                 ws, asyncio.get_event_loop().time() + LOAD_TIMEOUT_SECS, 3,
             )
+            if is_invitation:
+                await _call(ws, "Runtime.evaluate", {
+                    "expression": invitation_accept_expression(), "returnByValue": True,
+                }, cid)
+                await asyncio.sleep(2)
             filled = await _call(ws, "Runtime.evaluate", {
                 "expression": fill_preflight_expression(payload),
                 "awaitPromise": True, "returnByValue": True,
@@ -211,7 +226,14 @@ def validate_preflight(snapshot: dict[str, Any], payload: dict[str, Any]) -> dic
         or snapshot.get("submit_enabled") is not True
         or snapshot.get("validation_errors") != []
         or not isinstance(snapshot.get("submit_label"), str)
-        or not re.search(rf"\b{required}\s+Connects\b", snapshot["submit_label"], re.IGNORECASE)
+        or (
+            payload.get("status") == "frozen_waiting_for_invitation"
+            and not re.search(r"submit|send", snapshot["submit_label"], re.IGNORECASE)
+        )
+        or (
+            payload.get("status") != "frozen_waiting_for_invitation"
+            and not re.search(rf"\b{required}\s+Connects\b", snapshot["submit_label"], re.IGNORECASE)
+        )
     ):
         raise ValueError("upwork_proposal_preflight_mismatch")
     evidence = hashlib.sha256(json.dumps(
