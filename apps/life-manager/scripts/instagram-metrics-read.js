@@ -97,6 +97,26 @@ function persistDelayedSnapshot({ dataDir, window, observedAt }) {
   return { created: true, file, snapshot };
 }
 
+function persistDailyDigest({ dataDir, reportDay, observedAt }) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(reportDay) || !Number.isFinite(Date.parse(observedAt))) throw new Error("Instagram daily digest identity invalid");
+  const directory = path.join(path.resolve(dataDir), "tenants", EXPECTED.tenant_id, "marketing", "metrics", EXPECTED.native_owner, EXPECTED.shortcode);
+  const rows = [...WINDOWS].map((window) => {
+    const file = path.join(directory, `${window}.combined.json`);
+    return fs.existsSync(file) ? { window, status: JSON.parse(fs.readFileSync(file, "utf8")).sources.postiz_post.status, file } : { window, status: "pending" };
+  });
+  const source = rows.map((row) => row.file && JSON.parse(fs.readFileSync(row.file, "utf8"))).filter(Boolean)
+    .find((snapshot) => snapshot.sources.postiz_post.status === "measured") || rows.map((row) => row.file && JSON.parse(fs.readFileSync(row.file, "utf8"))).find(Boolean);
+  if (!source) throw new Error("Instagram daily digest has no metric snapshot");
+  const file = path.join(directory, "daily", `${reportDay}.json`);
+  const snapshot = { ...source, kind: "instagram_daily_metric_digest", window: "daily", observed_at: observedAt, report_day: reportDay,
+    observation_windows: rows.map(({ window, status }) => ({ window, status })) };
+  fs.mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 });
+  if (fs.existsSync(file)) return { created: false, file, snapshot: JSON.parse(fs.readFileSync(file, "utf8")) };
+  const temporary = `${file}.tmp-${process.pid}-${crypto.randomUUID()}`;
+  fs.writeFileSync(temporary, `${JSON.stringify(snapshot, null, 2)}\n`, { mode: 0o600, flag: "wx" }); fs.renameSync(temporary, file); fs.chmodSync(file, 0o600);
+  return { created: true, file, snapshot };
+}
+
 async function sendMetricSnapshot(result, env, dataDir) {
   if (!result.created) return { created: false, reason: "snapshot_replay" };
   const objectStore = createContentObjectStore({ objectDir: path.join(dataDir, "objects") });
@@ -107,7 +127,7 @@ async function sendMetricSnapshot(result, env, dataDir) {
       status: "observed", window: result.snapshot.window, observed_at: result.snapshot.observed_at, public_url: EXPECTED.public_url, snapshot_ref: snapshotRef },
   });
   const store = createMarketingLocalLedger({ dataDir });
-  const queued = await store.enqueueJob({ jobId: job.job_id, tenantId: job.tenant_id, loopId: job.loop_id, capability: job.capability, effectClass: job.effect_class, effectKey: job.effect_key, inputRefs: job.input_refs, maxAttempts: job.max_attempts, availableAt: result.snapshot.observed_at });
+  const queued = await store.enqueueJob({ jobId: job.job_id, tenantId: job.tenant_id, loopId: job.loop_id, capability: job.capability, effectClass: job.effect_class, effectKey: job.effect_key, inputRefs: job.input_refs, maxAttempts: job.max_attempts, availableAt: new Date().toISOString() });
   if (!queued.created) return { created: false, reason: "telegram_replay" };
   const claim = await store.claimJob({ tenantId: job.tenant_id, jobId: job.job_id, capability: job.capability, workerId: "instagram-metrics-read", leaseSeconds: 120 });
   if (!claim) throw new Error("Instagram metric Telegram job is not claimable");
@@ -137,4 +157,4 @@ async function collectWindow(window, env = process.env, observedAt = new Date().
 }
 
 if (require.main === module) collectWindow(process.argv[2] || "24h").then((result) => process.stdout.write(`${JSON.stringify(result)}\n`)).catch((error) => { process.stderr.write(`${error.message}\n`); process.exitCode = 1; });
-module.exports = { EXPECTED, collectWindow, persistDelayedSnapshot, persistSnapshot, postMetrics, sendMetricSnapshot, verifyNativeHtml };
+module.exports = { EXPECTED, collectWindow, persistDailyDigest, persistDelayedSnapshot, persistSnapshot, postMetrics, sendMetricSnapshot, verifyNativeHtml };

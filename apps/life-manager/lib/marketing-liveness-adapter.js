@@ -21,7 +21,7 @@ const SECRET_REF = /^secret:\/\/[a-z0-9][a-z0-9._-]*(?:\/[a-z0-9][a-z0-9._-]*)*$
 const CHAT_REF = /^telegram-chat:\/\/[a-z0-9][a-z0-9._-]*$/i;
 const LIVENESS_REF = /^marketing-liveness:\/\/(.+)$/;
 const SNAPSHOT_REF = /^object:\/\/sha256\/[0-9a-f]{64}$/;
-const METRIC_WINDOWS = new Set(["2h", "24h", "72h", "7d"]);
+const METRIC_WINDOWS = new Set(["2h", "24h", "72h", "7d", "daily"]);
 
 function required(value, label) {
   const text = String(value == null ? "" : value).trim();
@@ -235,7 +235,8 @@ function renderMessage(payload) {
       if (metric.status === "unavailable") unavailable.push(label(key));
       else measured.push(`${label(key)} ${metric.percent != null ? `${metric.percent}%` : metric.value}`);
     }
-    return `Life Manager::: ${payload.product}の${payload.platform} ${payload.account}、${payload.window}メトリクスです。${measured.join("、")}。取得不可: ${unavailable.length ? unavailable.join("、") : "なし"}。直接URL: ${payload.public_url}。Snapshot: ${payload.snapshot_ref}。`;
+    const windows = Array.isArray(payload.window_summary) ? ` Window status: ${payload.window_summary.join("、")}。` : "";
+    return `Life Manager::: ${payload.product}の${payload.platform} ${payload.account}、${payload.window}メトリクスです。${measured.join("、")}。取得不可: ${unavailable.length ? unavailable.join("、") : "なし"}。${windows}直接URL: ${payload.public_url}。Snapshot: ${payload.snapshot_ref}。`;
   }
   const accountPattern = payload.platform === "tiktok"
     ? /^https:\/\/www\.tiktok\.com\/@([^/]+)\/video\//
@@ -288,7 +289,7 @@ async function executeMarketingLivenessJob(job, deps = {}) {
           : { status: "measured", value: metric.value }]));
     compact.account_totals = snapshot.sources?.postiz_account?.status === "unavailable" ? { status: "unavailable" }
       : { status: "measured", value: Array.isArray(snapshot.account_metrics) ? snapshot.account_metrics.length : 0 };
-    renderedPayload = { ...payload, metrics: compact };
+    renderedPayload = { ...payload, metrics: compact, ...(Array.isArray(snapshot.observation_windows) ? { window_summary: snapshot.observation_windows.map((row) => `${row.window} ${row.status}`) } : {}) };
   }
   let providerResult;
   try {

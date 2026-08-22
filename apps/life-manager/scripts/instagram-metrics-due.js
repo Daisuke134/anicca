@@ -4,7 +4,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { resolveDataRoot } = require("../lib/runtime-paths.js");
-const { EXPECTED, collectWindow, persistDelayedSnapshot, sendMetricSnapshot } = require("./instagram-metrics-read.js");
+const { EXPECTED, collectWindow, persistDailyDigest, persistDelayedSnapshot, sendMetricSnapshot } = require("./instagram-metrics-read.js");
 
 const WINDOWS = Object.freeze({ "2h": 2 * 3600_000, "24h": 24 * 3600_000, "72h": 72 * 3600_000, "7d": 7 * 86400_000 });
 const GRACE_MS = 90 * 60_000;
@@ -28,6 +28,13 @@ async function runDue(nowMs = Date.now(), env = process.env) {
     const observation = await collectWindow(window, env, new Date(nowMs).toISOString());
     results.push({ window, state: "measured", telegram: observation.telegram });
   }
+  const parts = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date(nowMs)).map(({ type, value }) => [type, value]));
+  const reportDay = `${parts.year}-${parts.month}-${parts.day}`;
+  if (Number(parts.hour) > 17 || (Number(parts.hour) === 17 && Number(parts.minute) >= 30)) {
+    const digest = persistDailyDigest({ dataDir, reportDay, observedAt: new Date(nowMs).toISOString() });
+    const telegram = await sendMetricSnapshot(digest, env, dataDir);
+    results.push({ window: "daily", state: digest.created ? "reported" : "complete", telegram });
+  } else results.push({ window: "daily", state: "pending", due_at: `${reportDay}T17:30:00+09:00` });
   return results;
 }
 
