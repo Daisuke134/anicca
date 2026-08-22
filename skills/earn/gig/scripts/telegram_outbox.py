@@ -380,7 +380,7 @@ class TelegramOutbox:
 
     def redrive_unresolved(
         self, *, now: int, older_than_seconds: int = 600, max_attempts: int = 3,
-        newer_than_seconds: int = 3600,
+        newer_than_seconds: int = 3600, business_newer_than_seconds: int = 86400,
     ) -> int:
         """Give a stale delivery_unknown row one more shot after reconciliation gave up on it.
 
@@ -402,6 +402,8 @@ class TelegramOutbox:
         at a time. A health report is only worth resending while it is still news. Older
         than this window it stays where it is -- unresolved is the honest record of a
         report that never landed, and replaying it tells the operator nothing about now.
+        Verified application and delivery receipts remain useful for one day because
+        they report an irreversible business fact, not transient health.
         """
         now = self._integer("now", now)
         older_than_seconds = self._integer(
@@ -410,14 +412,22 @@ class TelegramOutbox:
         newer_than_seconds = self._integer(
             "newer_than_seconds", newer_than_seconds, positive=True
         )
+        business_newer_than_seconds = self._integer(
+            "business_newer_than_seconds", business_newer_than_seconds, positive=True
+        )
         max_attempts = self._integer("max_attempts", max_attempts, positive=True)
         with self._write() as connection:
             cursor = connection.execute(
                 """UPDATE telegram_reports
                    SET state='pending',owner=NULL,lease_until=0,error_class=NULL,updated_at=?
                    WHERE state='delivery_unknown' AND updated_at<=? AND fencing_token<?
-                     AND CAST(created_at AS INTEGER)>=?""",
-                (now, now - older_than_seconds, max_attempts, now - newer_than_seconds),
+                     AND (CAST(created_at AS INTEGER)>=?
+                          OR (kind IN ('application','delivery')
+                              AND CAST(created_at AS INTEGER)>=?))""",
+                (
+                    now, now - older_than_seconds, max_attempts,
+                    now - newer_than_seconds, now - business_newer_than_seconds,
+                ),
             )
             return int(cursor.rowcount)
 

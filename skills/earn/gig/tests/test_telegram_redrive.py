@@ -17,9 +17,11 @@ def _state(outbox: TelegramOutbox, report_id: int) -> sqlite3.Row:
         return outbox._row(connection, report_id)
 
 
-def _make_unknown(outbox: TelegramOutbox, *, event_key: str, created_at: int) -> int:
+def _make_unknown(
+    outbox: TelegramOutbox, *, event_key: str, created_at: int, kind: str = "pass",
+) -> int:
     row = outbox.enqueue(
-        event_key=event_key, kind="pass", message="m", created_at=created_at,
+        event_key=event_key, kind=kind, message="m", created_at=created_at,
     )
     report_id = int(row["report_id"])
     claimed = outbox.claim(owner="o", now=created_at, lease_seconds=60, report_id=report_id)
@@ -101,3 +103,13 @@ def test_a_report_too_old_to_be_news_is_left_where_it_died(tmp_path):
     )
     assert moved == 0
     assert _state(outbox, report_id)["state"] == "delivery_unknown"
+
+
+def test_verified_application_receipt_remains_redrivable_for_one_day(tmp_path):
+    outbox = TelegramOutbox(tmp_path / "outbox.sqlite3")
+    report_id = _make_unknown(
+        outbox, event_key="application", created_at=1000, kind="application",
+    )
+    moved = outbox.redrive_unresolved(now=1000 + 4008)
+    assert moved == 1
+    assert _state(outbox, report_id)["state"] == "pending"
