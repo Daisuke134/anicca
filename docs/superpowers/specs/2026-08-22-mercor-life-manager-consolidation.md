@@ -94,6 +94,7 @@ Mercor interview messages enter the existing Job Hunter inbox lane. Reuse `apps/
 - Canonical Life Manager repo already owns `skills/job-hunter/`, `apps/job-search-loop/`, and `loops/job-hunter/`.
 - The live Mercor profile is authenticated and the resume/profile fields were verified in the browser.
 - Japanese evaluator application has the 14-minute `Domain Expert Interview` completed and the live application page now reads `3 of 3 steps done`, `Your application has been submitted!`, with review expected within four weeks. Submission used the user's explicit attestation of Japanese native fluency and 24 years living in Japan; do not resubmit while selection is pending.
+- Related evaluator pages for Software/AI/IT/data, Data analysis, General business strategy, Humanities/arts/culture, and Media/journalism/communications also read `3 of 3 steps completed` with `Submit application` visible and reuse the completed Domain Expert Interview; Software/AI/IT/data is the strongest next candidate from the current profile.
 - Mercor Summary currently resets after reload and is tracked as `summary_unpersisted`.
 
 ## 9. Migration acceptance gate
@@ -114,6 +115,7 @@ Do not delete or archive the migration source until all are true:
 2. [ ] Add the Mercor provider adapter to the existing job-search runtime; keep ATS, Gmail, Calendar, ledger, and browser side effects in their existing owners.
 3. [ ] Route all locales and role families through one material-variant/fact gate; remove any Japanese-only filter.
 4. [ ] Reconcile the Japanese evaluator's submitted/selected/rejected state from Mercor and Gmail; never resubmit the same application.
+5. [ ] Submit the strongest additional evaluator only after its exact requirements are recorded as user-attested facts; no additional interview is required by the current 3/3 read-back.
 5. [ ] Add a Mercor fixture to the existing Gmail→FreeBusy→Calendar idempotency tests.
 6. [ ] Fix or explicitly quarantine the Summary persistence gap.
 7. [ ] Run one isolated Mercor pass through the existing Job Hunter launchd route.
