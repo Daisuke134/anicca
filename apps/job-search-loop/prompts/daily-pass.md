@@ -87,6 +87,12 @@ The action object always requires an explicit `kind`. For text, use exactly:
 `{"kind":"type","target":{"label":"EXACT_LABEL","role":"textbox","stable_id":"EXACT_STABLE_ID"},"text":"GROUNDED_ANSWER"}`.
 If the fresh observation exposes visible options, click the chosen option's exact
 fresh `ref:*` instead of typing a narrative answer into the picker.
+For an editable picker, a scalar answer that leaves `filled=false` is not accepted.
+Clear the search control with one `kind=type` action whose `text` is empty, observe
+the unfiltered options, then click one exact fresh option ref. For an application
+discovered from its official ATS posting, the truthful broad source category is
+`Website` when that option is visible; do not keep typing `Job board` into a picker
+that does not expose that option.
 
 ## Workday account/session
 
