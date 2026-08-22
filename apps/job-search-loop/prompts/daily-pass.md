@@ -353,10 +353,14 @@ Do not choose `Autofill with Resume` before resume routing, and do not improvise
 account password or expose credentials in evidence. At a verified
 `workday_sign_in` or `workday_account_create` surface, give the currently visible
 email/password/(when present) verify-password `ActionTargetV1` labels to
-`WorkdayAuthTool.prepare`. Luna chooses the mode from the fresh observation. The
-tool provisions/reuses the one `MachineWorkdayCredentialStore` SSOT, performs typed fills and the provider
-readiness wait internally, and returns only tenant/email/action hashes—never the
-password or email value. Luna then re-observes, handles visible consent when needed,
+the official `runtime auth` command once per fresh visible credential field. Luna
+chooses the mode from the fresh observation. For example, use `runtime auth --mode
+sign_in --field email --label "Email Address*" --stable-id automation:email`, then
+use its returned fresh observation before the password call. The command
+provisions/reuses the one `MachineWorkdayCredentialStore` SSOT and returns only
+tenant/email/action hashes—never the password or email value. Never inspect source
+or construct a helper script for authentication. After the last field, execute one
+official `runtime act` wait action for 6000 ms. Luna then re-observes, handles visible consent when needed,
 and chooses the visible user-facing `Sign In` or `Create Account` action. Workday
 renders the actual submit `<button>` with
 `aria-hidden="true"` and places a visible `div[role="button"]` overlay above it.

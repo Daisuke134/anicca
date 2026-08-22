@@ -36,6 +36,7 @@ from .resume_cursor import RowResumer
 from .review import verify_final_review
 from .session import BrowserSession
 from .submission_fence import SubmissionFence
+from .workday_account import MachineWorkdayCredentialStore
 
 
 _EMAIL = re.compile(r"\b[^\s@]+@[^\s@]+\.[^\s@]+\b")
@@ -332,6 +333,109 @@ async def act(action_path: Path) -> dict[str, Any]:
         return await _act_locked(action_path)
 
 
+async def auth(
+    *, mode: str, field: str, label: str, role: str, stable_id: str
+) -> dict[str, Any]:
+    """Type exactly one Workday credential field without exposing its value."""
+    if mode not in {"sign_in", "create_account"}:
+        raise ValueError("auth mode must be sign_in or create_account")
+    if field not in {"email", "password", "verify_password"}:
+        raise ValueError("auth field is invalid")
+    if field == "verify_password" and mode != "create_account":
+        raise ValueError("verify_password is only valid for create_account")
+    with _exclusive_action():
+        row, session, checkpoints, evidence, cursor, builder = await _context()
+        before = await builder.build(cursor.handle)
+        store = MachineWorkdayCredentialStore(
+            _path_env("JOB_SEARCH_MACHINE_CREDENTIALS")
+        )
+        safe = store.ensure(
+            job_url=row["canonical_url"], profile_path=_path_env("JOB_SEARCH_PROFILE")
+        )
+        credentials = store.load(row["canonical_url"])
+        value = (
+            credentials["application_email"]
+            if field == "email"
+            else credentials["password"]
+        )
+        descriptor = _path_env("JOB_SEARCH_BROWSER_SCRATCH") / "runtime-auth.json"
+        descriptor.write_text(
+            json.dumps(
+                {
+                    "mode": mode,
+                    "field": field,
+                    "label": label,
+                    "role": role,
+                    "stable_id": stable_id,
+                },
+                sort_keys=True,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        os.chmod(descriptor, 0o600)
+        decision_signature = _reject_repeated_decision(
+            before.content_sha256, descriptor
+        )
+        remaining = _wake_budget(consume=True)
+        receipt = await ActionExecutor(session).execute(
+            cursor.handle,
+            VisibleActionV1(
+                "type",
+                target=ActionTargetV1(
+                    role=role,
+                    label=label,
+                    exact=True,
+                    stable_id=stable_id,
+                ),
+                text=value,
+            ),
+        )
+        after = await builder.build(cursor.handle)
+        chain = evidence.read_chain(row["application_id"])
+        evidence_receipt = evidence.append(
+            StepEvidenceV1(
+                1,
+                row["application_id"],
+                len(chain),
+                chain[-1].evidence_sha256 if chain else None,
+                before.content_sha256,
+                receipt.receipt_sha256,
+                after.content_sha256,
+            )
+        )
+        prior_hashes = (
+            cursor.checkpoint.action_receipt_hashes if cursor.checkpoint else ()
+        )
+        checkpoint_receipt = checkpoints.save(
+            RowCheckpointV1(
+                1,
+                row["application_id"],
+                "acting" if remaining else "checkpointed",
+                cursor.handle.page_marker,
+                cursor.handle.generation,
+                after.content_sha256,
+                (*prior_hashes, receipt.receipt_sha256),
+                remaining,
+                after.url,
+            )
+        )
+        _record_decision(decision_signature)
+        return {
+            "status": "acted",
+            "mode": mode,
+            "field": field,
+            "tenant": safe["tenant"],
+            "email_sha256": safe["email_sha256"],
+            "action_receipt_sha256": receipt.receipt_sha256,
+            "evidence_sha256": evidence_receipt.evidence_sha256,
+            "checkpoint_sha256": checkpoint_receipt.checkpoint_sha256,
+            "observation": _safe_observation(
+                after, checkpoints.load(row["application_id"]), remaining
+            ),
+        }
+
+
 async def navigate(url: str) -> dict[str, Any]:
     path = _path_env("JOB_SEARCH_BROWSER_SCRATCH") / "runtime-navigate.json"
     path.write_text(
@@ -579,6 +683,14 @@ def main(argv: list[str] | None = None) -> int:
     navigate_parser.add_argument("--url", required=True)
     act_parser = subparsers.add_parser("act")
     act_parser.add_argument("--action-file", required=True, type=Path)
+    auth_parser = subparsers.add_parser("auth")
+    auth_parser.add_argument("--mode", required=True, choices=("sign_in", "create_account"))
+    auth_parser.add_argument(
+        "--field", required=True, choices=("email", "password", "verify_password")
+    )
+    auth_parser.add_argument("--label", required=True)
+    auth_parser.add_argument("--role", default="")
+    auth_parser.add_argument("--stable-id", default="")
     checkpoint_parser = subparsers.add_parser("checkpoint")
     checkpoint_parser.add_argument(
         "--reason", required=True, choices=("provider_unavailable", "visible_challenge")
@@ -596,6 +708,14 @@ def main(argv: list[str] | None = None) -> int:
         operation = navigate(args.url)
     elif args.command == "act":
         operation = act(args.action_file)
+    elif args.command == "auth":
+        operation = auth(
+            mode=args.mode,
+            field=args.field,
+            label=args.label,
+            role=args.role,
+            stable_id=args.stable_id,
+        )
     elif args.command == "checkpoint":
         operation = checkpoint(args.reason)
     else:
