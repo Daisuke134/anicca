@@ -31,10 +31,14 @@ def _javascript(source: str) -> str:
 
 
 def _open(path: Path) -> None:
-    subprocess.run(
-        ["osascript", "-e", f'tell application id "{APP_ID}" to open POSIX file {json.dumps(str(path))}'],
-        check=True, capture_output=True, text=True, timeout=180,
+    opened = _javascript(
+        f"var f=new File({json.dumps(str(path))});var d=null;"
+        "for(var i=0;i<app.documents.length;i++){"
+        "if(app.documents[i].fullName.fsName==f.fsName){d=app.documents[i];break;}}"
+        "if(d===null){d=app.open(f);}d.activate();d.fullName.fsName;"
     )
+    if Path(opened).resolve() != path.resolve():
+        raise RuntimeError("Illustrator opened a different document")
 
 
 def roundtrip(source: Path, output: Path, receipt: Path) -> dict[str, object]:
@@ -49,7 +53,10 @@ def roundtrip(source: Path, output: Path, receipt: Path) -> dict[str, object]:
     receipt.parent.mkdir(parents=True, exist_ok=True)
     output.unlink(missing_ok=True)
 
-    subprocess.run(["open", "-a", str(APP_PATH), str(source)], check=True, timeout=30)
+    # `open -a` does not make the requested document active when Illustrator already
+    # owns another window. Use Illustrator's own open command so the subsequent
+    # active-document verification is bound to the exact source.
+    _open(source)
     for _ in range(60):
         try:
             active_path = subprocess.run(

@@ -2407,7 +2407,13 @@ def _run_isolated_file_owner(args, root: Path, context: Path, prompt_text: str,
             + f" The exact required artifact_version is {expected_version}; use that version in the "
             "artifact filename, acceptance filename and manifest. Copy required_assets exactly, including "
             "every asset_id and field, from context/paid-work-decision.json into the manifest; never rename, "
-            "summarize, regroup, or replace that contract.",
+            "summarize, regroup, or replace that contract. If a required native desktop application cannot be "
+            "controlled from this isolated process, do not fake its output and do not ask the buyer or operator "
+            "to run it. Write delivery/paid-tool-requests.json with version=1 and a requests array. Each request "
+            "must name an installed controller capability and paths relative to this workdir. The currently "
+            "available capability is illustrator_native_roundtrip with input, output and receipt fields. Return "
+            "blocked after writing the request; the durable controller will execute it outside this sandbox and "
+            "resume this same owner to inspect the official receipt and finish the artifact.",
             encoding="utf-8",
         )
         staged_evidence = staging / "runner-evidence"
@@ -2428,7 +2434,20 @@ def _run_isolated_file_owner(args, root: Path, context: Path, prompt_text: str,
             "--escalation-reason", "One isolated Sol paid owner must build the buyer deliverable",
         ]
         try:
-            _run(command, "file_builder")
+            for owner_round in range(2):
+                _run(command, "file_builder")
+                executed = _execute_owner_tool_requests(staging, REPO_ROOT)
+                if not executed:
+                    break
+                if owner_round:
+                    raise Failure("file_builder")
+                prompt.write_text(
+                    prompt.read_text(encoding="utf-8")
+                    + " The controller executed every request in delivery/paid-tool-requests.json. Read "
+                    "delivery/paid-tool-results.json and the exact receipt files, inspect the resulting outputs, "
+                    "then rebuild and verify the final artifact. Do not repeat a completed request.",
+                    encoding="utf-8",
+                )
         finally:
             if staged_evidence.is_dir():
                 shutil.copytree(staged_evidence, owner_evidence, dirs_exist_ok=True)
@@ -2475,6 +2494,59 @@ def _run_isolated_file_owner(args, root: Path, context: Path, prompt_text: str,
             })
             raise
         return started
+
+
+def _execute_owner_tool_requests(staging: Path, code_root: Path) -> int:
+    """Execute narrow mechanical desktop capabilities outside the model sandbox.
+
+    The model owns the semantic decision to request a tool. The controller owns the
+    OS capability boundary, validates every path, and records exact command output.
+    """
+    request_path = staging / "delivery" / "paid-tool-requests.json"
+    if not request_path.is_file():
+        return 0
+    value = _load(request_path)
+    requests = value.get("requests") if isinstance(value, dict) else None
+    if (not isinstance(value, dict) or value.get("version") != 1
+            or not isinstance(requests, list) or not 1 <= len(requests) <= 4):
+        raise Failure("file_builder")
+    tool = code_root / "skills" / "design" / "illustrator-native" / "scripts" / "illustrator_native_roundtrip.py"
+    results: list[dict[str, Any]] = []
+    for index, request in enumerate(requests):
+        if not isinstance(request, dict) or request.get("tool") != "illustrator_native_roundtrip":
+            raise Failure("file_builder")
+        resolved: dict[str, Path] = {}
+        for field, suffixes in (("input", {".svg", ".pdf"}), ("output", {".ai"}), ("receipt", {".json"})):
+            raw = request.get(field)
+            if not isinstance(raw, str) or not raw or Path(raw).is_absolute():
+                raise Failure("file_builder")
+            path = (staging / raw).resolve()
+            try:
+                path.relative_to(staging.resolve())
+            except ValueError as error:
+                raise Failure("file_builder") from error
+            if path.suffix.casefold() not in suffixes:
+                raise Failure("file_builder")
+            resolved[field] = path
+        if not resolved["input"].is_file() or resolved["input"].stat().st_size == 0:
+            raise Failure("file_builder")
+        completed = subprocess.run(
+            [sys.executable, str(tool), str(resolved["input"]), str(resolved["output"]),
+             "--receipt", str(resolved["receipt"])],
+            stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            text=True, timeout=360,
+        )
+        result = {
+            "index": index, "tool": request["tool"], "returncode": completed.returncode,
+            "stdout": completed.stdout[-4000:], "stderr": completed.stderr[-4000:],
+        }
+        results.append(result)
+        if completed.returncode or not resolved["output"].is_file() or not resolved["receipt"].is_file():
+            _write(staging / "delivery" / "paid-tool-results.json", {"version": 1, "results": results})
+            raise Failure("file_builder")
+    _write(staging / "delivery" / "paid-tool-results.json", {"version": 1, "results": results})
+    request_path.rename(staging / "delivery" / "paid-tool-requests.executed.json")
+    return len(results)
 
 
 def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str, Any],

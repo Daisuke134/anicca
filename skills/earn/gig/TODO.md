@@ -302,29 +302,32 @@ no-send, replay-zero and a new natural sub-30-minute official reply/estimate pro
 Do not advance the development cursor until every unchecked item in the current stage has official
 evidence. Independent production lanes continue running while development follows this order.
 
-**Current live cursor.** `main` and `origin/main` are `362680e5222294bad3f60724bcdf797c5b7f6f2b`;
-the loaded immutable Paid release is `ff80da6b1f0a9cf94241801f6cfc6f4e2f5c4a88`, which contains the
-v21 material-risk reviewer, v10 talkroom-text medium selection and the review-stage/formal-hold separation.
-The previous natural receipt has one new official X `18171850` progress-message effect with formal delivery
-OFF; Haru `18169583`, Manledge `18169985` and byusco `18171890` still have no new customer effect. A new
-launchd-owned natural pass is active to obtain those three effects and prove X replay-zero. The shared gig disk
-guard's default 512 MiB speculative headroom gate is removed: `GIG_DISK_HEADROOM_KIB` now defaults to zero, so
-the four lanes continue until the filesystem itself rejects a write while the independent cleanup owner recovers
-space. An installer may still set an explicit nonzero headroom value. This source change is not active until the
-current Paid pass completes and a new immutable release is activated.
+**Current live cursor.** `main` and `origin/main` are `ad4ad28fb69c07bb4ebce234e4d7d653dcfc697f`;
+the release selector points at immutable `2998bf4b5b6db9adde2d140d36591fc5005a8241`, while the active Haru
+project owner is correctly pinned to the immutable release from which that pass began,
+`6f3c3aca00c6c31bb026bd91003856d47bc43462`. The shared disk guard is active with
+`GIG_DISK_HEADROOM_KIB=0`; the earlier speculative storage floor no longer stops Paid. APFS clonefile staging
+is also active, so historical ZIPs remain independent paths without physically duplicating their blocks.
 
-The next natural pass proved byusco `18171890` once with `effect=1`, `readback=1`, exact artifact SHA-256
+The latest natural pass proved byusco `18171890` once with `effect=1`, `readback=1`, exact artifact SHA-256
 `6d1a0a95850c4bbd496174b27881371dc4b81d44284bf347bd2b5e9d0766ab3d`, exact room DOM, empty composer and
 formal delivery OFF. Its following wake omitted a new byusco worker after targeted official readback, so the final
-aggregate receipt must still record replay-zero explicitly. Manledge reached its authorized 2,897-character answer
-and acquired the writer lock, but the browser returned `answer_browser` with effect/readback zero; the next official
-pre-send readback must determine whether the click occurred before any retry. Haru exposed the actual disk root
-cause after the preventive floor was disabled: the generic isolated file owner physically recopied every historical
-ZIP from `delivery/` into runtime on every resume (892 MiB for this project), then failed `ENOSPC` while copying old
-versions. The shared staging path now uses macOS/APFS native `cp -c` clonefile semantics for independent copy-on-write
-prior artifacts, with ordinary `copy2` only as a portability fallback. A direct 42,352,745-byte clone retained the
-exact SHA-256 with a distinct inode and zero allocated-KiB delta. No room-specific artifact selection or symlink was
-added; publish and naturally resume before attributing any Haru effect.
+aggregate receipt must still record replay-zero explicitly. Manledge `18169985` then sent its authorized answer
+exactly once with `effect=1`, `readback=1`, empty composer and formal delivery OFF; its official latest-seller-text
+SHA-256 is `219cf0bff258b88fd782e3a060c8199a181d231933896b96c81a832e680256f9`. Manledge also still needs a subsequent
+official replay-zero receipt. X `18171850` remains no-resend: its prior official effect exists, but the final
+aggregate replay-zero row is still missing.
+
+Haru `18169583` now has a v40 candidate built from the accepted v27/v32/v39 lineage with vector text, panels,
+icons and inquiry artwork plus only the two buyer-mandated raster illustrations. The isolated owner correctly
+refused to represent PDF-identical `.ai` members as native Illustrator files. The observed blocker is mechanical,
+not semantic: macOS rejects Illustrator Apple Events inherited by the model sandbox with `-10004`, although the
+same official Illustrator automation is reachable from the durable controller context. The generic repair is a
+controller capability boundary: the model requests a named installed desktop capability using only staging-relative
+paths; the controller validates those paths, executes the existing `illustrator_native_roundtrip.py` outside the
+model sandbox, records stdout/stderr and official receipt, then resumes the same project owner for final inspection
+and packaging. This must be published and proved by the natural Haru owner; no Codex one-off artifact generation or
+customer send counts.
 
 **Current reviewer correction.** `main` and `origin/main` were both `31e7fa09d` before this change; the
 starting verification commit `79ac01ba1eb66b06aed1f9cee66d4af303f03a3d` remains an ancestor. The loaded
