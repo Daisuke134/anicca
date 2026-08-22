@@ -32,6 +32,7 @@ from upwork_offer_gate import invoke as qualify_direct_offer  # noqa: E402
 from upwork_offer_browser import accept_offer_after_fence  # noqa: E402
 from upwork_offer_effect import SealedUpworkOfferEffect  # noqa: E402
 from upwork_inbox import append_changed_heads, normalize_observation  # noqa: E402
+from upwork_negotiate import invoke as plan_negotiation  # noqa: E402
 from upwork_sealed_effect import (  # noqa: E402
     SealedUpworkProposalEffect, active_upwork_browser_account,
 )
@@ -56,6 +57,7 @@ DEFAULT_INBOUND_PROPOSALS = Path.home() / ".config/anicca/gig/upwork-inbound-pro
 DEFAULT_INBOUND_EVIDENCE = Path.home() / "gig/state/upwork-inbound-planner"
 DEFAULT_OFFER_EVIDENCE = Path.home() / "gig/state/upwork-offer-gate"
 DEFAULT_INBOX_LEDGER = Path.home() / "gig/state/upwork-inbox.jsonl"
+DEFAULT_NEGOTIATION_EVIDENCE = Path.home() / "gig/state/upwork-negotiation-planner"
 TERMINAL_JOB_STATUSES = {"closed", "removed"}
 _COUNT_LABELS = {
     "offers": r"Offers\s*\((\d+)\)",
@@ -731,6 +733,21 @@ async def observe(
         ],
         "evidence_sha256": artifacts,
     }
+    state["negotiation_intents"] = []
+    for head in inbox_reconciliation["heads"]:
+        if head["kind"] != "message_room" or head["changed"] is not True:
+            continue
+        intent = await asyncio.to_thread(
+            plan_negotiation, head["resource_id"], inbox=inbox_ledger,
+            loop_state_value=state,
+            evidence_dir=DEFAULT_NEGOTIATION_EVIDENCE / head["event_id"],
+        )
+        state["negotiation_intents"].append({
+            "room_id": head["resource_id"], "event_id": head["event_id"],
+            "head_sha256": head["head_sha256"], "revision": head["revision"],
+            "decision": intent["decision"], "reason_codes": intent["reason_codes"],
+            "intent_sha256": intent["intent_sha256"],
+        })
     inbound = plan_zero_connect_inbound(state)
     if inbound is not None:
         state["can_submit_public_job"] = False

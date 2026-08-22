@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Upwork negotiation decision",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["decision", "reason_codes", "source", "message"],
+  "properties": {
+    "decision": {"enum": ["accept_terms", "counter", "clarify", "decline", "no_reply"]},
+    "reason_codes": {"type": "array", "items": {"type": "string", "minLength": 1}, "maxItems": 20},
+    "source": {
+      "type": "object", "additionalProperties": false,
+      "required": ["room_id", "room_url", "event_id", "head_sha256", "revision"],
+      "properties": {
+        "room_id": {"type": "string", "minLength": 1},
+        "room_url": {"type": "string", "pattern": "^https://www\\.upwork\\.com/ab/messages/rooms/"},
+        "event_id": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "head_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "revision": {"type": "integer", "minimum": 1}
+      }
+    },
+    "message": {
+      "type": ["object", "null"], "additionalProperties": false,
+      "required": ["body", "scope", "price_usd", "expected_cost_usd", "margin_bps", "deadline"],
+      "properties": {
+        "body": {"type": "string", "minLength": 20, "maxLength": 5000},
+        "scope": {"type": ["string", "null"], "maxLength": 10000},
+        "price_usd": {"type": ["number", "null"], "exclusiveMinimum": 0},
+        "expected_cost_usd": {"type": ["number", "null"], "minimum": 0},
+        "margin_bps": {"type": ["integer", "null"], "minimum": -100000, "maximum": 10000},
+        "deadline": {"type": ["string", "null"], "pattern": "^20\\d{2}-\\d{2}-\\d{2}$"}
+      }
+    }
+  }
+}
