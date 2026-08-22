@@ -2059,3 +2059,11 @@ views. This prevents zero-like ties from selecting the newest bad Affiliate copy
 as a style exemplar. Installed release is `20260822T232909-43d737d2`; source and
 runtime SHA-256 are both
 `8737f132633ca5774d171f8c274abc1f7845ace576ae44a3623a547eac0d9258`.
+
+Commit `8f18344d3` adds the same utility requirement to the independent final
+critic, so prompt compliance is not trusted implicitly. A post is publishable
+only when `supported=true`, `useful=true`, and `value_type` is one of procedure,
+decision criterion, failure condition, or comparison method. Installed release
+is `20260822T233044-8f18344d`; source/runtime SHA-256 is
+`47d449022163288378fa67fab4535c2ba07f634ba42f56625b6f5d9ad425cc8a`.
+Generic commentary becomes a safe no-effect rather than public output.
