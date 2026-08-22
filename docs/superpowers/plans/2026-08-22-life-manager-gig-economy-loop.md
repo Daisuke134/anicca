@@ -240,11 +240,11 @@ authorization matrix, spend/capacity bounds and onboarding receipt.
 **Interfaces:** Declares search, inspect, propose, message, accept offer, deliver milestone, read
 payments and read payouts; private receipts determine API/browser transport.
 
-- [ ] Write a failing test requiring every named action and denying an unlisted action.
-- [ ] Add safe public `unknown` entries with official evidence URLs and terms retrieval hashes.
-- [ ] Record Dais's special approval privately for only its actual account/actions/transports.
-- [ ] Run authorization readback without printing account IDs, credentials or evidence content.
-- [ ] Run focused tests and commit/push the public template only.
+- [x] Write a failing test requiring every named action and denying an unlisted action.
+- [x] Add safe public `unknown` entries with official evidence URLs and terms retrieval hashes.
+- [x] Record Dais's special approval privately for only its actual account/actions/transports.
+- [x] Run authorization readback without printing account IDs, credentials or evidence content.
+- [x] Run focused tests and commit/push the public template only.
 
 ### Task 8: Implement Upwork authenticated transport selection
 

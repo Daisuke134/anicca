@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "provider": "upwork",
+  "default_state": "unknown",
+  "sources": [
+    {
+      "id": "automation_policy",
+      "url": "https://support.upwork.com/hc/en-us/articles/43342677368467-Use-bots-and-other-automation-properly",
+      "retrieved_at": "2026-08-22T00:00:00+00:00",
+      "retrieved_sha256": "9e1b0b9465587bd319ff1ddd644b2954dd382d95164db01e536bac8b058e7ba5"
+    },
+    {
+      "id": "api_scopes",
+      "url": "https://support.upwork.com/hc/en-us/articles/115015857607-API-scopes-and-permissions",
+      "retrieved_at": "2026-08-22T00:00:00+00:00",
+      "retrieved_sha256": "a2a6f529fb2ac4aa7b781c27966e6c7baa7874d3614854b35b741b16d897e186"
+    },
+    {
+      "id": "graphql_schema",
+      "url": "https://www.upwork.com/developer/documentation/graphql/api/docs/index.html",
+      "retrieved_at": "2026-08-22T00:00:00+00:00",
+      "retrieved_sha256": "ddb2a4fa8adde8ead2a1707594e51d90276c028ab286d7a727d68413ad5c776f"
+    },
+    {
+      "id": "terms",
+      "url": "https://www.upwork.com/legal#apimcpterms",
+      "retrieved_at": "2026-08-22T00:00:00+00:00",
+      "retrieved_sha256": "956c737f4360bcb2372b49a3ef0af358547a5443be6b9db652758a310d6a3dce"
+    }
+  ],
+  "actions": {
+    "search": {
+      "state": "unknown",
+      "candidate_transports": ["official_api", "cloak_browser"],
+      "evidence_sources": ["automation_policy", "api_scopes", "graphql_schema", "terms"]
+    },
+    "inspect": {
+      "state": "unknown",
+      "candidate_transports": ["official_api", "cloak_browser"],
+      "evidence_sources": ["automation_policy", "api_scopes", "graphql_schema", "terms"]
+    },
+    "propose": {
+      "state": "unknown",
+      "candidate_transports": ["official_api", "cloak_browser"],
+      "evidence_sources": ["automation_policy", "api_scopes", "graphql_schema", "terms"]
+    },
+    "message": {
+      "state": "unknown",
+      "candidate_transports": ["official_api", "cloak_browser"],
+      "evidence_sources": ["automation_policy", "api_scopes", "graphql_schema", "terms"]
+    },
+    "accept_offer": {
+      "state": "unknown",
+      "candidate_transports": ["official_api", "cloak_browser"],
+      "evidence_sources": ["automation_policy", "api_scopes", "graphql_schema", "terms"]
+    },
+    "deliver_milestone": {
+      "state": "unknown",
+      "candidate_transports": ["official_api", "cloak_browser"],
+      "evidence_sources": ["automation_policy", "api_scopes", "graphql_schema", "terms"]
+    },
+    "read_payments": {
+      "state": "unknown",
+      "candidate_transports": ["official_api", "cloak_browser"],
+      "evidence_sources": ["automation_policy", "api_scopes", "graphql_schema", "terms"]
+    },
+    "read_payouts": {
+      "state": "unknown",
+      "candidate_transports": ["official_api", "cloak_browser"],
+      "evidence_sources": ["automation_policy", "api_scopes", "graphql_schema", "terms"]
+    }
+  }
+}
