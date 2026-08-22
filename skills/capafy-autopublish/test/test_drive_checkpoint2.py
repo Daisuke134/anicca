@@ -63,6 +63,40 @@ def test_raw_target_rejects_evil_host_and_non_loopback_ws(monkeypatch) -> None:
         module._validate_ws_url("ws://evil.example/devtools/browser/x")
 
 
+def test_short_cp2_url_resolves_one_valid_redirect(monkeypatch) -> None:
+    module = load_module()
+    final = "https://capafy.ai/developer/createAgent?source=temp-link&token=123&page=credential"
+    seen = []
+
+    def redirect(url, method):
+        seen.append((url, method))
+        return [final]
+
+    monkeypatch.setattr(module, "_single_redirect_location", redirect)
+
+    assert module._resolve_cp2_url("https://api.capafy.ai/C123") == final
+    assert seen == [("https://api.capafy.ai/C123", "HEAD")]
+
+
+def test_short_cp2_url_rejects_cross_domain_location(monkeypatch) -> None:
+    module = load_module()
+    monkeypatch.setattr(
+        module,
+        "_single_redirect_location",
+        lambda *_args: ["https://evil.example/developer/createAgent?token=123&page=credential"],
+    )
+
+    with pytest.raises(RuntimeError, match="exact Capafy"):
+        module._resolve_cp2_url("https://api.capafy.ai/C123")
+
+
+def test_short_cp2_url_rejects_invalid_path() -> None:
+    module = load_module()
+
+    with pytest.raises(RuntimeError, match="exactly https://api.capafy.ai/C"):
+        module._resolve_cp2_url("https://api.capafy.ai/not-a-short-url")
+
+
 def test_raw_page_connects_to_validated_page_websocket(monkeypatch) -> None:
     module = load_module()
     calls = []

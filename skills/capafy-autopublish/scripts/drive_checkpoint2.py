@@ -16,7 +16,9 @@ Exit 0 + prints VERIFIED on success; exit 1 on failure (fail-closed).
 """
 import math
 import os, sys, time, json, urllib.request
-from urllib.parse import urlsplit
+import re
+from urllib.error import HTTPError
+from urllib.parse import parse_qs, urlsplit
 from playwright.sync_api import sync_playwright
 
 BASE_URL = "https://openrouter.ai/api/v1"
@@ -205,8 +207,62 @@ def _location_key(url):
 
 def _validate_cp2_url(cp2):
     parts = urlsplit(cp2)
-    if parts.scheme != "https" or parts.netloc.lower() != CP2_HOST or parts.path != CP2_PATH:
+    page_values = parse_qs(parts.query, keep_blank_values=True).get("page", [])
+    if (
+        not _is_capafy_target_url(cp2)
+        or len(page_values) != 1
+        or page_values[0] not in {"credential", "review"}
+    ):
         raise RuntimeError("CP2 URL must use the exact Capafy HTTPS origin/path")
+
+
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, *_args, **_kwargs):
+        return None
+
+
+def _single_redirect_location(url, method):
+    opener = urllib.request.build_opener(_NoRedirect())
+    request = urllib.request.Request(url, method=method)
+    try:
+        response = opener.open(request, timeout=8)
+    except HTTPError as exc:
+        if exc.code not in {301, 302, 303, 307, 308}:
+            return []
+        headers = exc.headers
+    else:
+        try:
+            headers = response.headers
+        finally:
+            response.close()
+    locations = headers.get_all("Location") if headers is not None else None
+    return [str(value).strip() for value in (locations or []) if str(value).strip()]
+
+
+def _resolve_cp2_url(raw_url):
+    raw_url = str(raw_url or "").strip()
+    if _is_capafy_target_url(raw_url):
+        _validate_cp2_url(raw_url)
+        return raw_url
+
+    parts = urlsplit(raw_url)
+    if (
+        parts.scheme != "https"
+        or parts.netloc.lower() != "api.capafy.ai"
+        or not re.fullmatch(r"/C[0-9]+", parts.path)
+        or parts.query
+        or parts.fragment
+    ):
+        raise RuntimeError("CP2 short URL must be exactly https://api.capafy.ai/C<digits>")
+
+    locations = _single_redirect_location(raw_url, "HEAD")
+    if not locations:
+        locations = _single_redirect_location(raw_url, "GET")
+    if len(locations) != 1:
+        raise RuntimeError("CP2 short URL must return exactly one redirect Location")
+    resolved = locations[0]
+    _validate_cp2_url(resolved)
+    return resolved
 
 
 def _wait_raw_navigation(page, cp2):
@@ -390,7 +446,7 @@ def _raw_cp2(cp2, key, cdp_base):
 def main():
     if len(sys.argv) < 2:
         print("ERR: need CP2 url"); sys.exit(1)
-    cp2 = sys.argv[1]
+    cp2 = _resolve_cp2_url(sys.argv[1])
     key = os.environ.get("CAPAFY_HOST_OPENROUTER_KEY", "").strip()
     if not key:
         # fallback: read from the per-user Life Manager state env
