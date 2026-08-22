@@ -52,8 +52,31 @@ send_telegram() {
     log "telegram target is not configured"
     return 1
   fi
-  timeout "$TELEGRAM_SEND_TIMEOUT" openclaw message send --channel telegram --target "$TELEGRAM_ALERT_CHAT_ID" \
-    --message "$1" --json >>"$EV/telegram.jsonl" 2>&1
+  local body="$1" idempotency_key params response
+  idempotency_key="$(printf '%s' "$body" | shasum -a 256 | awk '{print $1}')"
+  params="$("$PY" -c 'import json,sys; print(json.dumps({"channel":"telegram","to":sys.argv[1],"message":sys.argv[2],"idempotencyKey":sys.argv[3]}, separators=(",",":")))' \
+    "$TELEGRAM_ALERT_CHAT_ID" "$body" "$idempotency_key")" || return 1
+  response="$(timeout "$TELEGRAM_SEND_TIMEOUT" openclaw gateway call send \
+    --params "$params" --timeout "$((TELEGRAM_SEND_TIMEOUT * 1000))" --json 2>&1)" || {
+      printf '%s\n' "$response" >>"$EV/telegram.jsonl"
+      return 1
+    }
+  printf '%s\n' "$response" >>"$EV/telegram.jsonl"
+  "$PY" -c 'import json,sys
+def message_id(value):
+    if isinstance(value, dict):
+        for key in ("messageId", "message_id"):
+            if value.get(key) is not None: return str(value[key])
+        for child in value.values():
+            found=message_id(child)
+            if found: return found
+    elif isinstance(value, list):
+        for child in value:
+            found=message_id(child)
+            if found: return found
+    return None
+value=json.loads(sys.argv[1]); mid=message_id(value)
+raise SystemExit(0 if mid else 1)' "$response"
 }
 
 # A published post whose report never arrived is indistinguishable from a pass that did nothing.
