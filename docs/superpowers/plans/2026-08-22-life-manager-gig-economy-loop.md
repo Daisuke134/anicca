@@ -302,13 +302,29 @@ authentication boundary; fixture replay already proves stable IDs and invokes on
 
 **Interfaces:** Produces `Qualification(eligible, workflow, expected_net, risks, evidence)`.
 
-- [ ] Write failing tests for missing Skill, impossible deadline, capacity exhaustion, negative
+- [x] Write failing tests for missing Skill, impossible deadline, capacity exhaustion, negative
   expected net, unverifiable deliverable and false profile claim.
-- [ ] Reuse the installed Skill registry and current paid-project capacity; add no Upwork-only
+- [x] Reuse the installed Skill registry and current paid-project capacity; add no Upwork-only
   fulfillment planner.
-- [ ] Calculate expected net from observed budget/rate, fee, Connects, tool cost and risk reserve.
-- [ ] Require a concrete workflow and independent verifier before `eligible=true`.
-- [ ] Run focused tests and commit/push.
+- [x] Calculate expected net from observed budget/rate, fee, Connects, tool cost and risk reserve.
+- [x] Require a concrete workflow and independent verifier before `eligible=true`.
+- [x] Run focused tests and commit/push.
+
+Task 10 evidence: qualification is provider-neutral and binds exact installed builder/verifier Skill
+hashes, owner bounds, conservative gross/fee/Connects/tool/risk/labor economics, deadline and the
+shared paid-project ledger. Eleven focused tests pass, including the Unix-second timestamp used by
+the live ledger and fail-closed stale active states. A read-only live canary bound `writer-agent` to
+the independent `writer-agent/checklists/stop-slop` Skill and calculated expected net `79350`, but
+correctly returned `capacity_exhausted` with six current active projects against the private cap of
+three, plus `unknown_capacity` for older still-active records. It created no marketplace effect.
+Upwork fee and Connects costs remain observed inputs rather than hard-coded policy because current
+official values can vary. Sources: Upwork Help, "Learn about the Freelancer Service Fee",
+https://support.upwork.com/hc/en-us/articles/211062538-Learn-about-the-Freelancer-Service-Fee;
+Upwork Help, "Understanding and using Connects",
+https://support.upwork.com/hc/en-us/articles/211062898-Understanding-and-using-Connects. OSS comparison:
+`ABerger94/ai-native-opportunities@17cda3d0b5bd7fc7cb0017dad6eff23075c430fd` informed the
+required/missing-skill split; its arbitrary weighted resume-keyword score was rejected because it
+does not prove an installed workflow, capacity, economics or independent verification.
 
 ### Task 11: Generate evidence-bound Upwork proposals
 
