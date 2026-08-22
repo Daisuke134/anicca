@@ -198,11 +198,19 @@ def _public_ready(owned_url, placement_id):
 def advance(state, landing_root, placement_id, owned_url):
     receipt_path = state / "cta-instrumentation.json"
     prior = json.loads(receipt_path.read_text()) if receipt_path.is_file() else {}
-    if prior.get("state") in {"DELIVERED", "LIVE"} and _public_ready(owned_url, placement_id):
+    root = landing_root.resolve()
+    v2_paths = {name: root / name for name in V2_FILES}
+    v2_ready = all(
+        path.is_file() and V2_MARKER in path.read_text(encoding="utf-8")
+        for path in v2_paths.values()
+    )
+    if (
+        prior.get("state") in {"DELIVERED", "LIVE"}
+        and v2_ready and _public_ready(owned_url, placement_id)
+    ):
         receipt = {**prior, "state": "LIVE", "observed_at": datetime.now(timezone.utc).isoformat()}
         atomic_write(receipt_path, receipt)
         return {**receipt, "changed": prior.get("state") != "LIVE"}
-    root = landing_root.resolve()
     if _git(root, "rev-parse", "--show-toplevel") != str(root):
         raise InstrumentationError("publication worktree mismatch")
     paths = {name: root / name for name in FILES}
@@ -227,7 +235,6 @@ def advance(state, landing_root, placement_id, owned_url):
             raise InstrumentationError("marketing-go test failed")
         _git(root, "add", "--", *paths)
         _git(root, "commit", "-m", "feat(marketing): receipt affiliate CTA redirects")
-    v2_paths = {name: root / name for name in V2_FILES}
     if not all(V2_MARKER in path.read_text(encoding="utf-8") for path in v2_paths.values()):
         if _git(root, "status", "--porcelain"):
             raise InstrumentationError("publication worktree is dirty before V2")
