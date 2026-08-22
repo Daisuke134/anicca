@@ -86,11 +86,13 @@ def test_existing_runner_cli_contract_returns_owned_private_result(tmp_path):
     packet_path, packet = _packet(tmp_path)
     decision = _decision(packet)
     runner = tmp_path / "runner.py"
+    calls = tmp_path / "calls"
     runner.write_text(
         "import json,sys\n"
         "from pathlib import Path\n"
         "args=sys.argv; root=Path(args[args.index('--evidence-dir')+1]); root.mkdir(parents=True,exist_ok=True)\n"
         f"decision={decision!r}\n"
+        f"counter=Path({str(calls)!r}); counter.write_text(str(int(counter.read_text())+1) if counter.exists() else '1')\n"
         "result=root/'result.json'; result.write_text(json.dumps(decision))\n"
         "(root/'summary.json').write_text(json.dumps({'status':'success','result_path':str(result.resolve())}))\n"
         "sys.stdin.read()\n"
@@ -107,3 +109,13 @@ def test_existing_runner_cli_contract_returns_owned_private_result(tmp_path):
     assert proposal["payload_sha256"]
     assert evidence.stat().st_mode & 0o777 == 0o700
     assert all(path.stat().st_mode & 0o777 == 0o600 for path in evidence.iterdir())
+    assert planner.invoke(
+        packet_path, runner=runner, schema=planner.DEFAULT_SCHEMA,
+        profile=profile, evidence_dir=evidence,
+    )["payload_sha256"] == proposal["payload_sha256"]
+    assert calls.read_text() == "1"
+
+    sealed = planner.write_sealed_proposal(proposal, tmp_path / "sealed")
+    assert sealed.stat().st_mode & 0o777 == 0o600
+    assert (tmp_path / "sealed").stat().st_mode & 0o777 == 0o700
+    assert planner.write_sealed_proposal(proposal, tmp_path / "sealed") == sealed

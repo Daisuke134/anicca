@@ -133,19 +133,21 @@ def invoke(
     profile: Path = DEFAULT_PROFILE, evidence_dir: Path,
 ) -> dict[str, Any] | None:
     packet = load_packet(packet_path)
-    prompt = planner_prompt(packet, _object(profile.expanduser(), "owner_profile"))
     evidence_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
     os.chmod(evidence_dir, 0o700)
-    completed = subprocess.run([
-        sys.executable, str(runner), "--task-class", "application-intent-planner",
-        "--prompt-stdin", "--schema", str(schema), "--evidence-dir", str(evidence_dir),
-        "--task-label", "upwork-inbound-proposal", "--loop", "gig-upwork",
-        "--workdir", str(Path.home()), "--timeout-seconds", "420",
-        "--escalation-reason", "client-facing zero-Connect Upwork invitation proposal",
-    ], input=prompt, text=True, capture_output=True, timeout=450, check=False)
-    if completed.returncode != 0:
-        raise InboundPlannerError("inbound_planner_failed")
-    summary = _object(evidence_dir / "summary.json", "planner_summary")
+    summary_path = evidence_dir / "summary.json"
+    if not summary_path.is_file():
+        prompt = planner_prompt(packet, _object(profile.expanduser(), "owner_profile"))
+        completed = subprocess.run([
+            sys.executable, str(runner), "--task-class", "application-intent-planner",
+            "--prompt-stdin", "--schema", str(schema), "--evidence-dir", str(evidence_dir),
+            "--task-label", "upwork-inbound-proposal", "--loop", "gig-upwork",
+            "--workdir", str(Path.home()), "--timeout-seconds", "420",
+            "--escalation-reason", "client-facing zero-Connect Upwork invitation proposal",
+        ], input=prompt, text=True, capture_output=True, timeout=450, check=False)
+        if completed.returncode != 0:
+            raise InboundPlannerError("inbound_planner_failed")
+    summary = _object(summary_path, "planner_summary")
     if summary.get("status") != "success":
         raise InboundPlannerError("inbound_planner_failed")
     try:
@@ -158,3 +160,25 @@ def invoke(
         if path.is_file() and not path.is_symlink():
             os.chmod(path, 0o600)
     return proposal
+
+
+def write_sealed_proposal(proposal: dict[str, Any], root: Path) -> Path:
+    """Persist only a mechanically validated submit decision for the browser effect."""
+    digest = proposal.get("payload_sha256") if isinstance(proposal, dict) else None
+    job_id = proposal.get("job_id") if isinstance(proposal, dict) else None
+    if (
+        not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest)
+        or not isinstance(job_id, str) or not job_id
+    ):
+        raise InboundPlannerError("sealed_inbound_proposal_invalid")
+    root = root.expanduser()
+    root.mkdir(parents=True, exist_ok=True, mode=0o700)
+    os.chmod(root, 0o700)
+    path = root / f"{hashlib.sha256(job_id.encode()).hexdigest()}.json"
+    body = json.dumps(proposal, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n"
+    if path.exists() and path.read_text(encoding="utf-8") != body:
+        raise InboundPlannerError("sealed_inbound_proposal_immutable")
+    if not path.exists():
+        path.write_text(body, encoding="utf-8")
+    os.chmod(path, 0o600)
+    return path

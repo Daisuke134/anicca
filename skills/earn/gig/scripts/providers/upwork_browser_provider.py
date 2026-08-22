@@ -27,6 +27,7 @@ from cdp_nav_snapshot import navigate_and_snapshot  # noqa: E402
 from connector_outbox import ConnectorOutbox  # noqa: E402
 from provider_authorization import DEFAULT_RECEIPT_PATH  # noqa: E402
 from upwork_proposal_browser import submit_proposal_after_fence  # noqa: E402
+from upwork_inbound_planner import invoke as plan_inbound, write_sealed_proposal  # noqa: E402
 from upwork_sealed_effect import (  # noqa: E402
     SealedUpworkProposalEffect, active_upwork_browser_account,
 )
@@ -47,6 +48,8 @@ DEFAULT_DATABASE = Path.home() / "gig/connector-outbox.sqlite3"
 DEFAULT_MANIFEST = SCRIPTS.parent / "config/connectors/coconala.json"
 DEFAULT_BROWSER_PROFILE = Path.home() / ".cloak/profiles/gig-daily-driver"
 DEFAULT_INBOUND_DIR = Path.home() / ".config/anicca/gig/upwork-inbound"
+DEFAULT_INBOUND_PROPOSALS = Path.home() / ".config/anicca/gig/upwork-inbound-proposals"
+DEFAULT_INBOUND_EVIDENCE = Path.home() / "gig/state/upwork-inbound-planner"
 TERMINAL_JOB_STATUSES = {"closed", "removed"}
 _COUNT_LABELS = {
     "offers": r"Offers\s*\((\d+)\)",
@@ -566,6 +569,8 @@ async def observe(
     manifest: Path = DEFAULT_MANIFEST,
     browser_profile: Path = DEFAULT_BROWSER_PROFILE,
     inbound_dir: Path = DEFAULT_INBOUND_DIR,
+    inbound_proposals: Path = DEFAULT_INBOUND_PROPOSALS,
+    inbound_evidence: Path = DEFAULT_INBOUND_EVIDENCE,
 ) -> dict[str, Any]:
     pass_id = f"upwork-free-{time.time_ns()}-{os.getpid()}"
     artifacts: dict[str, str] = {}
@@ -638,10 +643,25 @@ async def observe(
                 "detail_state": detail_state,
                 "detail_evidence_sha256": detail_hash,
             }
-            if detail_state == "actionable":
-                state["free_acquisition"]["private_packet_sha256"] = seal_inbound_detail(
+            if detail_state == "actionable" and inbound["state"] == "invitation_detected":
+                packet_sha = seal_inbound_detail(
                     inbound, detail_text, detail_hash, inbound_dir, state["observed_at"],
                 )
+                state["free_acquisition"]["private_packet_sha256"] = packet_sha
+                proposal = await asyncio.to_thread(
+                    plan_inbound, inbound_dir.expanduser() / f"{packet_sha}.json",
+                    evidence_dir=inbound_evidence.expanduser() / packet_sha,
+                )
+                if proposal is None:
+                    state["free_acquisition"]["proposal_state"] = "model_skip"
+                else:
+                    write_sealed_proposal(proposal, inbound_proposals)
+                    state["free_acquisition"].update({
+                        "proposal_state": "sealed",
+                        "proposal_payload_sha256": proposal["payload_sha256"],
+                    })
+            elif detail_state == "actionable":
+                state["free_acquisition"]["offer_state"] = "terms_gate_pending"
         else:
             state["free_acquisition"] = inbound
         return state
@@ -708,6 +728,8 @@ def main() -> int:
     parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
     parser.add_argument("--browser-profile", type=Path, default=DEFAULT_BROWSER_PROFILE)
     parser.add_argument("--inbound-dir", type=Path, default=DEFAULT_INBOUND_DIR)
+    parser.add_argument("--inbound-proposals", type=Path, default=DEFAULT_INBOUND_PROPOSALS)
+    parser.add_argument("--inbound-evidence", type=Path, default=DEFAULT_INBOUND_EVIDENCE)
     parser.add_argument("--transitions", type=Path, default=DEFAULT_TRANSITIONS)
     parser.add_argument(
         "--output", type=Path,
@@ -718,6 +740,7 @@ def main() -> int:
     state = asyncio.run(observe(
         args.candidates.expanduser(), args.proposals.expanduser(), args.database.expanduser(),
         args.manifest.expanduser(), args.browser_profile.expanduser(), args.inbound_dir.expanduser(),
+        args.inbound_proposals.expanduser(), args.inbound_evidence.expanduser(),
     ))
     state = reconcile_terminal_transitions(
         args.output.expanduser(), args.transitions.expanduser(), state,
