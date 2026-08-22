@@ -7,7 +7,7 @@ const path = require("node:path");
 const { resolveDataRoot } = require("../lib/runtime-paths.js");
 const { persistDailyDigest, sendMetricSnapshot } = require("./instagram-metrics-read.js");
 const { collectTikTokWindow } = require("./tiktok-native-metrics-read.js");
-const { persistAniccaDaily, persistHonneDaily, persistWeeklyReview, sendSummary } = require("./marketing-product-summary.js");
+const { persistAniccaDaily, persistAttributionCoverage, persistHonneDaily, persistWeeklyReview, sendSummary } = require("./marketing-product-summary.js");
 const { persistAscAcquisition } = require("./marketing-asc-acquisition.js");
 const { persistRevenueCatSubscriptions } = require("./marketing-revenuecat-subscriptions.js");
 
@@ -56,7 +56,7 @@ function delayed(dataDir, expected, window, observedAt) {
 async function runDue(nowMs = Date.now(), env = process.env, provided = null) {
   const dataDir = resolveDataRoot(env); const results = []; const expecteds = provided || discoverTargets(dataDir);
   const reportParts = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date(nowMs)).map(({ type, value }) => [type, value])); const reportDay = `${reportParts.year}-${reportParts.month}-${reportParts.day}`;
-  if (Number(reportParts.hour) >= 22 && !provided) { const asc = await persistAscAcquisition(dataDir, reportDay); results.push({ product_id: "mobile-marketing", window: "asc-daily", state: asc.created ? "measured" : "complete", snapshot_ref: asc.snapshot_ref }); const revenuecat = persistRevenueCatSubscriptions(dataDir, reportDay, new Date(nowMs).toISOString()); results.push({ product_id: "mobile-marketing", window: "revenuecat-daily", state: revenuecat.created ? "observed" : "complete", snapshot_ref: revenuecat.snapshot_ref }); const weekly = persistWeeklyReview(dataDir, reportDay, new Date(nowMs).toISOString()); results.push({ product_id: "mobile-marketing", window: "weekly-product", state: weekly.created ? "reported" : "complete", telegram: await sendSummary(weekly, env, dataDir) }); }
+  if (Number(reportParts.hour) >= 22 && !provided) { const asc = await persistAscAcquisition(dataDir, reportDay); results.push({ product_id: "mobile-marketing", window: "asc-daily", state: asc.created ? "measured" : "complete", snapshot_ref: asc.snapshot_ref }); const revenuecat = persistRevenueCatSubscriptions(dataDir, reportDay, new Date(nowMs).toISOString()); results.push({ product_id: "mobile-marketing", window: "revenuecat-daily", state: revenuecat.created ? "observed" : "complete", snapshot_ref: revenuecat.snapshot_ref }); const coverage = persistAttributionCoverage(dataDir, reportDay, new Date(nowMs).toISOString()); results.push({ product_id: "mobile-marketing", window: "attribution-daily", state: coverage.created ? "reported" : "complete", telegram: await sendSummary(coverage, env, dataDir), snapshot_ref: coverage.snapshot.snapshot_ref }); const weekly = persistWeeklyReview(dataDir, reportDay, new Date(nowMs).toISOString()); results.push({ product_id: "mobile-marketing", window: "weekly-product", state: weekly.created ? "reported" : "complete", telegram: await sendSummary(weekly, env, dataDir) }); }
   for (const expected of expecteds) {
     for (const [window, delay] of Object.entries(WINDOWS)) {
       const existingFile = snapshotFile(dataDir, expected, window);
