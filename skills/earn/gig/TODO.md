@@ -303,12 +303,49 @@ Do not advance the development cursor until every unchecked item in the current 
 evidence. Independent production lanes continue running while development follows this order.
 
 **Live handover state.** `main`, `origin/main` and the immutable release selected by the Life Manager
-`current` link all read back `08f07ee87050e3ff7a8bf8f54ef09ce54a717132`; the Paid-specific `current` remains
+`current` link all read back `930dfdf93de37d267cedfb7df8bb781a0edce5a8`; the Paid-specific `current` remains
 `2ed6af9a37b519c173e256caddcc9ea9e1a71d66`. The protected unrelated dirty
 `skills/earn/gig/tests/test_reply_concurrency.py` remains outside this work. The loaded Paid owner uses up to
 eight independent project workers. Its launchd environment ignores the shared preventive
 `disk-pressure.block` and `disk-writers.stop` flags while retaining the 512 MiB last-resort guard and expiring
-operator brake. The release includes the prior
+operator brake.
+
+**Current official Paid truth — supersedes the historical chronology below.** The latest natural receipt is
+`status=failed`, `observed=7`, `actionable=5`, `effect=0`, `readback=2`, `failed=5`, `pending=0`. Launchd label
+`ai.anicca.hf-gig-paid-direct` is loaded with last exit `1` and no currently running Paid PID. Two rows are
+intentionally `reserved_for_owner`; five owned rows have explicit failures, so silent pending remains zero but
+customer work is not complete.
+
+- Haru `18169583` sent v32 previously with exact official readback/replay-zero, but the buyer then supplied two
+  complaint screenshots and explicitly reported rough images, repeated lack of checking and possible
+  cancellation. Haru is therefore reopened and first priority. The natural Project Owner read the new event and
+  produced durable `habikino-renewal-v34.zip`, 40,866,238 bytes, SHA-256
+  `dd99d499b40ca73db3c192727eb9bd27933abb4a284e852716c62397ff04d14a`, with producer-side `PASS`; the
+  controller still closed at `file_validation`. No v34 customer effect or readback exists. Local/producer PASS
+  does not authorize sending. The same Project Owner must fresh-inspect v34 against every accumulated
+  requirement, the last accepted layout lineage and both complaint screenshots, repair through the natural loop
+  if any visible defect remains, then send exactly one verified hash with formal delivery OFF and replay-zero.
+- Manledge `18169985` currently holds `manledge-community-listing-review-v21.md`, SHA-256
+  `b0588d9e2e99fd998896e611ddb52d61c98bacf56750b130e082580de5bd4c2e`, as `REVIEW_READY`; the controller
+  fails `file_validation: asset contract mismatch`. Reconcile its full job/proposal/DM contract and the last
+  accepted v20/v21 lineage without regenerating blindly, then obtain fresh PASS, exact-room send/readback and
+  replay-zero.
+- byusco `18171890` currently holds `casican-review-article-v5.md`, SHA-256
+  `28199b8fb6479915d5ec372f3e57df83899f449a705ac7157dd9ad59867907d1`, as `REVIEW_READY`; the controller
+  fails `file_validation: asset contract mismatch`. Its Project Owner must bind every required buyer-visible
+  screenshot/asset or return a truthful non-delivery disposition; it may not call an incomplete article perfect.
+- X `18171850` already has its approved v1 official effect/readback. Its stale local `REVIEW_READY` and
+  `file_validation: asset contract mismatch` may be reconciled only into the factual ledger; it must not rebuild
+  or resend without a newer buyer event.
+- `18062411` currently closes at `remote_resume`; its latest semantic decision is `satisfied_noop` while the
+  buyer consults a superior. It requires durable factual disposition/recovery, not a new customer effect.
+- A current Paid Project Context model stdout log contains plaintext content from a buyer-supplied
+  credential-bearing attachment. The value is not copied into this spec and must never enter repo, Telegram,
+  prompt, model stdout or deliverable evidence. Before another Paid model run, preserve only the restricted
+  local source/hash/metadata required for authorized work, redact derived prompt/log material, audit analogous
+  projects and record the minimum account-owner rotation action if exposure requires it.
+
+**Historical incident chronology — evidence only, not current room state.** The release includes the prior
 `d24a9dbb3e86ce9df648965aac4aadcdf7bce56a` safety boundary, which removes all
 `undeterminable`/review-exhaustion delivery authorization, requires the builder to copy the exact decision
 asset contract, and preserves a failed staged candidate under private owner evidence before cleanup. The newer
@@ -395,6 +432,77 @@ formal delivery OFF. Official post-send DOM readback records filename, `55,552,3
 `formal_delivery_control_checked=false` and `formal_delivery_click_performed=false`. Immediate identical replay
 records `send_performed=false`, `deduplicated=true` and the same attachment effect key. Haru incident delivery is
 closed; buyer approval remains a later external event and formal delivery remains prohibited until then.
+
+#### Coconala-first completion contract — authoritative
+
+**1. Overview.** Coconala is the first production proof of the shared Life Manager Economic Harness. No App
+Store, ebook, trading, Upwork, Lancers, CloudWorks or self-generated business loop may advance the development
+cursor while purchased Coconala clients are waiting for context-correct work. Independent already-loaded lanes
+continue normal safe operation, but architecture work serves the current Paid incident first. The purpose is
+not to ship whatever passes a local schema; it is to make each isolated Project Owner understand the complete
+commercial relationship and naturally deliver the correct buyer outcome once.
+
+**2. Acceptance criteria.** All are mandatory.
+
+- Each purchased project has one exclusive durable owner and Project Context Capsule containing the original
+  listing/job description, exact proposal/application, full chronological DM/talkroom ledger, seller promises,
+  evidence-linked buyer emotion/trust state, accumulated requirements, attachments, accepted/rejected artifact
+  lineage, effect ledger and current delta. Another buyer's context is absent.
+- Every semantic decision records capsule hash and source-read hashes. Tail-only DM context, silent truncation of
+  trust-changing turns, and asking for known information are failures.
+- Every candidate is content-addressed and survives restart. Producer PASS is only an input to a fresh evaluator,
+  never delivery authorization. The evaluator opens the actual artifact/package and every required visual
+  reference; PASS means every observable requirement is satisfied, not merely that files exist.
+- The marketplace adapter performs exact-target preflight, exact-hash attachment, buyer-appropriate message,
+  formal delivery OFF before approval, one effect fence, official DOM/API readback and replay-zero. It never
+  chooses buyer intent or artifact fitness.
+- Haru closes only after its newest complaint is resolved by a fresh-inspected artifact and one official
+  readback/replay-zero. Manledge and byusco close by the same standard. X proves preserved prior effect and zero
+  resend. Every other purchased room has an official effect or a truthful durable no-effect disposition.
+- One natural Paid wake processes independent projects concurrently without mixed context, duplicate effects,
+  silent pending, orphan worker or stale-state re-entry. Process exit and the next scheduled wake reconstruct
+  the same facts and do not repeat completed effects.
+- Paid completion is followed, not preceded, by Negotiate full coverage/sub-30-minute reply, Storefront truth and
+  attribution, Apply audit, four-lane restart/reboot, clean-device install, actual cash reconciliation and OSS
+  audit in the single atomic order below.
+
+**3. As-is / To-be.**
+
+| Boundary | As-is observed | To-be required |
+|---|---|---|
+| Client context | Full sources exist, but bounded context can truncate DM and lose decisive history | Hash-bound capsule preserves all decisive origin, conversation, commitments, emotion evidence and lineage |
+| Ownership | One controller plus project workers, but stale workflow state can re-enter completed work | One exclusive Project Owner per client; official facts dominate derived workflow state |
+| Quality | Producer can report PASS while controller fails later | Producer result → fresh actual-artifact evaluator → mechanical effect fence |
+| Artifact state | Haru v34 exists locally but has no customer authorization/readback | Actual complaint references inspected; exact approved hash sent once and read back |
+| Parallel speed | Projects run concurrently but failures repeat across stale semantic routes | Independent clients run concurrently; sequential context stays with one owner; one failure cannot contaminate another |
+| Expansion | Many potential money loops exist | Coconala proves the kernel first; later markets reuse contracts rather than copy platform-specific loops |
+
+**4. Runtime verification matrix.** This adds no TDD or separate ceremony; these are direct production evidence
+checks performed by the natural owner and existing tools.
+
+| # | To-be | Runtime evidence check | Cover |
+|---|---|---|---|
+| 1 | Complete isolated capsule | `paid_context_capsule_readback` | OK |
+| 2 | No cross-client context | `paid_project_namespace_readback` | OK |
+| 3 | Actual artifact/reference inspection | `paid_fresh_artifact_evaluator_readback` | OK |
+| 4 | Exact safe customer effect | `paid_exact_room_effect_readback` | OK |
+| 5 | No duplicate replay | `paid_effect_replay_zero_readback` | OK |
+| 6 | Concurrent natural clients | `paid_multi_project_natural_receipt` | OK |
+| 7 | Restart continuity | `paid_restart_fact_reconstruction_readback` | OK |
+| 8 | No secrets/customer data in distributable evidence | `paid_private_data_boundary_readback` | OK |
+
+**5. Boundaries.** DO NOT manually impersonate a Project Owner, create a Haru/Manledge/byusco one-off script,
+resend X, mark formal delivery before buyer approval, regenerate a preserved artifact without a new requirement,
+install a graph/workflow framework, add symlinks, expand to a second market, store credential/customer content in
+repo/log/prompt, or call PID/local PASS/Telegram/dry run/mock completion. Account-holder authentication, legal
+identity/KYC and irreversible personal-money operations remain explicit minimum owner actions when required.
+
+**6. Execution steps.** Update this section whenever an observed fact changes. Then implement only the first
+unchecked atomic item, publish one immutable release, kickstart the existing launchd owner rather than spawning a
+replacement, watch its natural per-project workers, inspect actual artifacts and official site readbacks, prove
+replay-zero/restart continuity, update this section, and commit/push before advancing. Failure after three
+materially different fixes records the exact evidence and smallest owner action; it never silently skips to a
+later business lane.
 
 **E2E judgment.** This work changes no owned application UI, so Maestro is not applicable. Completion
 requires the real launchd owner to act through the authenticated Coconala browser and an exact-room
@@ -640,63 +748,69 @@ flowchart TB
    delivery OFF; obtain exact-room official DOM readback; repeat read-only and prove replay-zero.
 2. [x] Produce a code-level adoption map: for every copied OSS pattern record pinned source file/function,
    local destination, license, behavior retained and behavior deliberately omitted. No article-only rationale.
-3. [ ] Introduce the smallest shared economic-kernel contracts used by Paid first: append-only facts,
-   capability result envelope, effect key and graph projection. Do not add LangGraph, Temporal, Dagster, a
-   graph database, either researched CLI, symlinks, a new service or speculative Upwork code. Add provenance
-   fields and answer the five competency questions above with a rebuildable projection. Reuse the
-   `loop-engineering` circuit-breaker/gate/lock shapes only where existing production code has no equivalent;
-   keep them operational and incapable of choosing semantic next actions.
-4. [ ] Make one durable Paid Project Owner per purchased project own its complete origin and history: job
-   description, exact application/proposal, full DM/talkroom ledger, seller commitments, evidence-linked buyer
-   state/emotion interpretation, accumulated contract, artifact lineage, buyer-visible goal and final response.
-   Replace tail-only context loss with the hash-bound Project Context Capsule and context-read receipt defined
-   above. Specialists are tools; no handoff may lose conversation ownership, and no project may read another
-   buyer's capsule.
-5. [ ] Replace hardcoded business-semantic error-to-transition routing with raw structured tool results returned
-   to the manager for replanning. Retain only deterministic safety invariants and delete obsolete shipment enums.
-6. [ ] Make artifact production a tool with durable inputs/outputs: every buyer asset and generated asset is
-   saved once, content-addressed, package-bound and available after failure/restart; temporary cleanup cannot
-   erase the only candidate or its review images.
-7. [ ] Make the fresh evaluator a read-only agent-as-tool that opens the actual source, candidate and package.
-   Its delivery result is only PASS or NEEDS_WORK; missing evidence, uncertainty and timeout fail closed and
-   return concrete findings to the manager.
-8. [ ] Make browser send/readback tools mechanical and idempotent: exact-room preflight, exact artifact hash,
-   formal delivery OFF before approval, send fence, official DOM receipt and replay-zero. They never decide copy,
-   artifact fitness or buyer intent.
-9. [ ] Replace workflow-state completion with an append-only factual handoff/effect ledger that survives crash,
-   restart and model context loss. Manager reconstructs the next action from facts; no stale state authorizes an
-   effect.
-10. [ ] Migrate every purchased Paid room through isolated Project Owners, preserve already-proved effects,
-   close every silent pending/failure with an owned disposition, and prove one natural concurrent multi-project
-   pass. Each client must show its own capsule/source hashes, correct artifact, exact-room official readback and
-   replay-zero; speed from parallel clients must not shorten per-client build/review quality.
-11. [ ] Only after Paid proves the architecture, extract the proved kernel from Coconala-specific code and apply
-    the same goal-owner/tool/evaluator/effect-ledger shape in the existing authoritative order: Negotiate full
-    message coverage and natural sub-30-minute reply/estimate; Storefront truthful create/update and attribution;
-    then Apply maximal coverage/replay audit. Every lane must produce a real Coconala effect and official
-    readback; a PID, draft, report or local PASS remains supporting evidence only.
-12. [ ] Prove four independent local launchd owners: concurrent operation without shared mutable conversation
-    state, one effect owner per target, lease recovery, self-clean, process-exit restart, Mac reboot continuation,
-    two successive natural starts and no split brain. Telegram/email reporting failure must not stop business
-    work, and reporting must never impersonate marketplace readback.
-13. [ ] On a clean third-party device, run only `./install.sh coconala`, authenticate without placing secrets or
-    customer data in repo/log/prompt, enable email notifications, and obtain one natural official receipt for
-    Apply, Negotiate, Paid and Storefront after restart. No symlink or development checkout may be required.
-14. [ ] Prove economic truth end to end: real marketplace sale, platform balance, permitted withdrawal and bank
-    arrival reconcile to the same revenue lineage; distinguish gross revenue, fees, refunds, receivable and cash.
-    Authentication, KYC and irreversible owner-money actions remain explicit owner gates where legally required.
-15. [ ] Run secret/customer-data/license audit, remove private artifacts from the distributable package, retain
-    copied-code notices, prove empty-HOME install and publish the complete Life Manager package under MIT. Done
-    requires the four natural lane outcomes, official readbacks/replay-zero, restart continuity and clean-device
-    E2E evidence.
-16. [ ] Add Upwork as the first second-market adapter against the same goal, capability, context, effect and
-    receipt contracts. Do not fork the kernel. Use real Upwork outcomes to reveal only genuine adapter gaps;
-    feed reusable improvements back to the shared registry and graph.
-17. [ ] Add Lancers and CloudWorks next, then allow the portfolio manager to discover new markets and compose
-    existing capabilities into proposed new revenue loops. A new loop starts in bounded observation, earns wider
-    permissions only from official outcome evidence, and cannot self-authorize secrets, unbounded spend or
-    irreversible public/financial effects. Move scheduler/workers/event store to cloud only after local and
-    second-market contracts remain unchanged and Telegram-only operation is naturally proved.
+3. [ ] Close the observed credential/customer-data boundary before another Paid model run: detect
+   credential-bearing buyer attachments without printing their contents; keep authorized source bytes only in
+   restricted local project storage; expose hash/type/purpose metadata to the model; redact derived prompt/stdout
+   evidence; audit every Paid project and distributable path; and record any required credential rotation as one
+   minimum account-owner action. Do not delete the only authorized customer source or copy its value elsewhere.
+4. [ ] Reproduce and isolate the one generic Paid boundary behind the current `file_validation` results for Haru
+   v34, Manledge v21, byusco v5 and the already-completed X v1. Compare the accepted and rejected contract/hash
+   records; fix the durable owner path once. Official X/Haru prior effects must dominate stale workflow state,
+   and this diagnostic/fix performs no customer effect.
+5. [ ] Introduce the smallest shared Economic Kernel contracts used by that fix: append-only facts, capability
+   result envelope, effect key and rebuildable graph projection. Add provenance and reuse only bounded
+   circuit-breaker/gate/lease shapes where no equivalent exists. Do not add frameworks, graph DB, CLI stack,
+   symlink, new service or speculative second-market code.
+6. [ ] Make one durable Project Owner per purchased project own the complete hash-bound Project Context Capsule:
+   job description, exact proposal/application, full DM/talkroom, seller commitments, evidence-linked buyer
+   emotion/trust interpretation, accumulated requirements, artifacts/accepted lineage, effects and current delta.
+   Remove tail-only context loss; specialists remain tools and cross-client reads fail closed.
+7. [ ] Return raw structured builder/evaluator/browser results to the Project Owner for semantic replanning.
+   Delete hardcoded business-error-to-transition/shipment authority while retaining deterministic exact target,
+   hash, secret, money, formal-delivery, lease and dedupe safety.
+8. [ ] Complete the shared tool boundary: content-addressed durable artifact inputs/outputs; fresh read-only
+   evaluator opening every actual source/candidate/package/reference; and mechanical exact-room browser
+   send/readback with formal delivery OFF, effect fence and replay-zero. Missing evidence is NEEDS_WORK, never
+   an inferred PASS; temporary cleanup cannot erase the only candidate.
+9. [ ] Publish the immutable reconstruction release and kickstart the existing launchd Paid owner. Observe Haru's
+   natural Project Owner inspect v34 against the new complaint screenshots, complete conversation and accepted
+   lineage. If defective, revise naturally; if fresh PASS, send the exact final hash once, obtain official DOM
+   readback with formal delivery OFF and prove replay-zero. Do not manually submit or call producer PASS Done.
+10. [ ] Through the same natural owner architecture, reconcile Manledge v20/v21 without blind regeneration,
+   obtain one complete fresh PASS artifact, exact-room official readback, formal delivery OFF and replay-zero.
+11. [ ] Through the same natural owner architecture, bind every required byusco screenshot/asset to the article;
+    produce a complete fresh PASS or truthful buyer-permitted review-stage disposition, then obtain the matching
+    exact-room official readback and replay-zero. Incomplete `REVIEW_READY` is not completed delivery.
+12. [ ] Migrate X's already-proved v1 effect/readback into the factual authority and demonstrate zero rebuild/send;
+    close `18062411`'s `remote_resume` as durable `satisfied_noop` or resume only on a newer official buyer event.
+13. [ ] Migrate every remaining purchased room, close every silent pending/failure with an owned disposition and
+    prove one natural concurrent multi-project pass. Each client must show its own capsule/source hashes,
+    context-correct artifact/disposition, official readback and replay-zero; parallel speed may not reduce
+    per-client quality.
+14. [ ] Apply the proved kernel in the existing Coconala order: Negotiate full message coverage and natural
+    sub-30-minute reply/estimate; Storefront truthful create/update plus attribution; Apply maximal coverage and
+    replay audit. Each lane needs a real official effect/readback, not PID/draft/report/local PASS.
+15. [ ] Prove four independent local launchd owners: concurrent no-shared-context operation, one effect owner per
+    target, lease recovery, self-clean, process-exit restart, Mac reboot continuation, two natural starts and no
+    split brain. Telegram/email reporting failure must not stop business work.
+16. [ ] On a clean third-party device, run only `./install.sh coconala`, authenticate without repo/log/prompt
+    secrets or customer data, enable email notifications, restart and obtain one natural official receipt for all
+    four lanes. No symlink or development checkout may be required.
+17. [ ] Reconcile one real Coconala sale through platform balance, permitted withdrawal and bank arrival; separate
+    gross revenue, fees, refunds, receivable and cash. Authentication/KYC/irreversible owner-money actions remain
+    explicit minimum legal owner gates.
+18. [ ] Run secret/customer-data/license audit, remove private artifacts from the distributable package, retain
+    copied-code notices, prove empty-HOME install and publish the complete Life Manager package under MIT.
+19. [ ] Only after Coconala OSS completion, add App Store product-building/release/growth as a capability bundle
+    and marketplace adapter using the same goal/context/effect/readback/revenue contracts; App Store review,
+    proceeds and bank arrival are the official outcomes.
+20. [ ] Add Upwork as the first second-market gig adapter without forking the kernel; use real outcomes to expose
+    genuine adapter gaps and feed reusable evidence back to the shared registry/graph.
+21. [ ] Add Lancers and CloudWorks, then admit ebook, bounded capital/trading and newly discovered revenue loops
+    through the same observation→pilot→official outcome→scale/kill contract. No loop self-authorizes secrets,
+    unbounded spend or irreversible public/financial effects.
+22. [ ] Move scheduler/workers/event store to cloud only after local, clean-device and second-market contracts
+    remain unchanged and Telegram-only operation is naturally proved.
 
 #### Paid buyer-visible media contract — authoritative
 
