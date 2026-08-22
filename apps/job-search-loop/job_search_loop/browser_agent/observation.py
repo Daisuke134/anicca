@@ -40,11 +40,21 @@ class ObservationBuilder:
                 const linked = el.labels && el.labels.length ? Array.from(el.labels).map(x => x.innerText).join(' ') : '';
                 return (own || linked || el.getAttribute('placeholder') || el.innerText || '').trim();
               };
+              const nodes = Array.from(document.querySelectorAll('input,button,select,textarea,a,[role]'))
+                .filter(visible);
+              const automationCounts = new Map();
+              const idCounts = new Map();
+              for (const el of nodes) {
+                const automation = el.getAttribute('data-automation-id');
+                const id = el.getAttribute('id');
+                if (automation) automationCounts.set(automation, (automationCounts.get(automation) || 0) + 1);
+                if (id) idCounts.set(id, (idCounts.get(id) || 0) + 1);
+              }
               const stableId = (el, index) => {
                 const automation = el.getAttribute('data-automation-id');
-                if (automation) return `automation:${automation}`;
+                if (automation && automationCounts.get(automation) === 1) return `automation:${automation}`;
                 const id = el.getAttribute('id');
-                if (id) return `id:${id}`;
+                if (id && idCounts.get(id) === 1) return `id:${id}`;
                 // Adapted from career-ops' ref-tagged drive loop: every fresh
                 // observation gives otherwise anonymous visible controls an
                 // observation-local identity. The next observation replaces it.
@@ -59,8 +69,7 @@ class ObservationBuilder:
                 ['checkbox', 'radio', 'button', 'submit'].includes(el.type)
                   ? el.type.replace('submit', 'button') : 'textbox'
               ) : ''));
-              const controls = Array.from(document.querySelectorAll('input,button,select,textarea,a,[role]'))
-                .filter(visible).map((el, index) => ({
+              const controls = nodes.map((el, index) => ({
                   tag: el.tagName.toLowerCase(), role: role(el),
                   control_type: el.getAttribute('type') || '', label: label(el),
                   disabled: !!el.disabled || el.getAttribute('aria-disabled') === 'true',
