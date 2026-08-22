@@ -296,6 +296,11 @@ scope. Unsupported claims and attachments are both empty. Payload hash is
 `9fab22a29ea169632f30c3d1a22597c1091ecb97a2897c987ac788ce1d110d19`. U8 is now the first
 incomplete outcome; marketplace effects remain zero.
 
+U8 purchase-entry readback offers 100 Connects for $15 plus tax, resulting balance 100 and expiry
+2027-08-22. The target proposal requires 26 Connects. `Buy Connects` remains unpressed because this
+is an irreversible personal-funds charge and therefore requires explicit owner approval. Application,
+Connects-spend and payment effects remain zero.
+
 ### Task 7: Record Upwork's private action matrix
 
 **Files:**

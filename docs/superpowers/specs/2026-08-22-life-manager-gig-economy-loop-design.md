@@ -62,6 +62,10 @@ three milestones totaling the bid, four exact scope references, and zero unsuppo
 attachments. U8 is the next outcome and may execute only this payload after the required Connects
 acquisition is separately authorized and read back.
 
+U8 is waiting only at the explicit spend gate. The live purchase surface offers 100 Connects for
+$15 plus tax, yielding balance 100 with expiry 2027-08-22; the sealed proposal requires 26. No
+purchase or application effect exists before owner approval.
+
 ## 1. Goal, objective and boundaries
 
 ### 1.1 Goal
