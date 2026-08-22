@@ -70,6 +70,33 @@ class LocalLoopTest(unittest.TestCase):
             self.assertTrue(first["changed"])
             self.assertFalse(second["changed"])
 
+    def test_owned_visit_observation_records_disabled_analytics_as_unavailable(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root)
+            MODULE.atomic_json(state / "funnel-snapshots" / "latest.json", {
+                "snapshot_sha256": "a" * 64,
+                "placements": [{
+                    "placement_id": "alpha-en-1",
+                    "owned_url": "https://aniccaai.com/blog/alpha",
+                }],
+            })
+            response = Mock()
+            response.__enter__ = Mock(return_value=response)
+            response.__exit__ = Mock(return_value=False)
+            response.read = Mock(return_value=json.dumps([{
+                "custom_domain": "aniccaai.com", "analytics_instance_id": None,
+            }]).encode())
+            with patch.object(MODULE, "_private_env_value", return_value="private-token"), \
+                 patch.object(MODULE.urllib.request, "urlopen", return_value=response):
+                first = MODULE.observe_owned_visits(state)
+                second = MODULE.observe_owned_visits(state)
+            self.assertEqual(first["state"], "UNAVAILABLE")
+            self.assertEqual(first["reason"], "NETLIFY_WEB_ANALYTICS_DISABLED")
+            self.assertIsNone(first["placements"][0]["count"])
+            self.assertEqual(first["placements"][0]["state"], "UNAVAILABLE")
+            self.assertTrue(first["changed"])
+            self.assertFalse(second["changed"])
+
     def test_owned_article_url_rejects_tracking_and_ambiguous_forms(self):
         self.assertTrue(MODULE.is_owned_article_url("https://aniccaai.com/blog/alpha-guide"))
         for value in (

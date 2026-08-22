@@ -184,6 +184,67 @@ def refresh_funnel_snapshot(state, limit=3):
     return {**receipt, "state": "OBSERVED", "changed": changed}
 
 
+def _private_env_value(name):
+    value = os.environ.get(name, "").strip()
+    if value:
+        return value
+    for path in (Path("~/.config/anicca/affiliate.env"), Path("~/.openclaw/.env")):
+        path = path.expanduser()
+        if not path.is_file():
+            continue
+        for line in path.read_text(encoding="utf-8", errors="ignore").splitlines():
+            if line.startswith(f"{name}=") and line.split("=", 1)[1].strip():
+                return line.split("=", 1)[1].strip().strip("\"'")
+    raise ValueError(f"{name} is unavailable")
+
+
+def observe_owned_visits(state):
+    """Join an exact Netlify analytics capability readback without guessing visits."""
+    snapshot = json.loads(
+        (state / "funnel-snapshots" / "latest.json").read_text(encoding="utf-8")
+    )
+    token = _private_env_value("NETLIFY_AUTH_TOKEN")
+    request = urllib.request.Request(
+        "https://api.netlify.com/api/v1/sites?per_page=100",
+        headers={"Authorization": f"Bearer {token}", "User-Agent": "life-manager-affiliate/1"},
+    )
+    with urllib.request.urlopen(request, timeout=30) as response:
+        sites = json.load(response)
+    site = next((
+        row for row in sites if isinstance(row, dict)
+        and row.get("custom_domain") == "aniccaai.com"
+    ), None)
+    if not site:
+        raise ValueError("owned Netlify site unavailable")
+    enabled = bool(site.get("analytics_instance_id"))
+    reason = "NETLIFY_ANALYTICS_API_NOT_REGISTERED" if enabled else "NETLIFY_WEB_ANALYTICS_DISABLED"
+    rows = [{
+        "placement_id": row.get("placement_id"),
+        "owned_url": row.get("owned_url"),
+        "count": None,
+        "state": "UNAVAILABLE",
+        "reason": reason,
+    } for row in snapshot.get("placements", [])]
+    core = {
+        "schema_version": 1,
+        "receipt_type": "AFFILIATE_OWNED_VISIT_OBSERVATION",
+        "source_funnel_snapshot_sha256": snapshot.get("snapshot_sha256"),
+        "site_identity": "aniccaai.com",
+        "analytics_enabled": enabled,
+        "placements": rows,
+        "money_state": "NON_MONEY",
+    }
+    receipt_sha256 = hashlib.sha256(json.dumps(
+        core, sort_keys=True, separators=(",", ":")
+    ).encode()).hexdigest()
+    receipt = {**core, "receipt_sha256": receipt_sha256}
+    changed = append_unique(
+        state / "owned-visit-observations.jsonl", receipt, ("receipt_sha256",)
+    )
+    atomic_json(state / "owned-visit-observations" / "latest.json", receipt)
+    return {**receipt, "state": "UNAVAILABLE", "changed": changed, "reason": reason}
+
+
 def quarantine_snapshot(state_root, threshold=QUARANTINE_FAILURE_THRESHOLD):
     """Quarantine only external tools with a consecutive failure streak."""
     streaks = {}
@@ -3704,6 +3765,11 @@ def _wake_once(args, started_at, run_id):
         {"placement_ledger_state": placement_ledger.get("state")},
         lambda: refresh_funnel_snapshot(state),
     )
+    owned_visits = admit(
+        "acquisition.observe-owned-visits", "READ_ONLY",
+        {"funnel_snapshot_sha256": funnel_snapshot.get("snapshot_sha256")},
+        lambda: observe_owned_visits(state),
+    )
     rolling_net = admit(
         "ledger.rolling-net", "LEDGER_ONLY", {"placement_ledger_state": placement_ledger.get("state")},
         lambda: refresh_rolling_net(state),
@@ -3849,6 +3915,9 @@ def _wake_once(args, started_at, run_id):
         "funnel_snapshot_placement_ids": [
             row.get("placement_id") for row in funnel_snapshot.get("placements", [])
         ],
+        "owned_visit_state": owned_visits.get("state"),
+        "owned_visit_reason": owned_visits.get("reason"),
+        "owned_visit_receipt_sha256": owned_visits.get("receipt_sha256"),
         "rolling_net_state": rolling_net.get("state"),
         "rolling_net_money_state": rolling_net.get("money_state"),
         "rolling_net_net_state": rolling_net.get("net_state"),
