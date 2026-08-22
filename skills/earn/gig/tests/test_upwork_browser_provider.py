@@ -203,6 +203,25 @@ def test_classifies_candidate_only_from_official_job_markers():
     assert parse_candidate(candidate, "Job detail loading", "d" * 64)["status"] == "unknown"
 
 
+def test_unknown_candidate_keeps_last_official_connects_cost_without_becoming_open():
+    current = [{
+        "job_id": "~01", "status": "unknown", "official_marker": "no_authoritative_marker",
+        "connects_required": None, "evidence_sha256": "c" * 64,
+    }]
+    previous = {"candidate_jobs": [{
+        "job_id": "~01", "status": "open", "official_marker": "proposal_entry",
+        "connects_required": 7, "evidence_sha256": "p" * 64,
+    }]}
+
+    reconciled = provider.retain_last_official_candidate_costs(current, previous)
+
+    assert reconciled == [{
+        "job_id": "~01", "status": "unknown", "official_marker": "no_authoritative_marker",
+        "connects_required": 7, "evidence_sha256": "c" * 64,
+        "connects_evidence_sha256": "p" * 64,
+    }]
+
+
 def test_public_candidate_config_has_unique_exact_ids():
     path = SCRIPTS.parent / "config" / "upwork-candidates.public.json"
     candidates = load_candidates(path)

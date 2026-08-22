@@ -410,6 +410,18 @@ U13 atomic order:
     9223/9233 from this context. No alternate profile, fake browser receipt, proposal or payment was
     created. The next native Aqua wake must restart `ai.anicca.hf-gig-browser`, then the existing
     five-minute provider must refresh all official rows before U14 may act.
+13. **CANDIDATE COST EVIDENCE REPAIRED:** fresh host readback still shows no CDP listener on
+    9223/9233 and the isolated Codex context still returns launchctl 141/manager 153. The correct
+    `gig-upwork` profile is intact with 103 Upwork cookies and 114 Upwork history rows; an isolated
+    CloakBrowser profile aborts with SIGABRT in this context, while cookie-only official GETs are
+    rejected with HTTP 403. The last successful official Connects receipt says `0 Connects` and
+    `No Connects transactions.` The candidate later rendered behind Cloudflare and was incorrectly
+    reported with `connects_required=null`, but its immediately preceding official receipt says
+    `7 Connects`; it is not a zero-Connect job. Reconciliation now retains that last official cost
+    and its evidence hash when a later tick is unknown, while preserving `status=unknown`, so the
+    planner still cannot submit. The focused provider suite passes 20/20, and a replay of the real
+    official-7-then-Cloudflare receipt sequence returns unknown/7 rather than unknown/null without
+    creating an application effect.
 
 U14 atomic order:
 
