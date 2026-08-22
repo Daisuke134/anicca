@@ -113,3 +113,10 @@ def test_job_does_not_need_activation_when_program_and_environment_match(monkeyp
     )
 
     assert gig_release.job_needs_activation(job, table) is False
+
+
+def test_default_activation_never_restarts_a_busy_continuous_lane():
+    label = "ai.anicca.hf-gig-reply-detector"
+
+    assert gig_release.skip_busy_for_requested_activation(label, None) is True
+    assert gig_release.skip_busy_for_requested_activation(label, {label}) is False

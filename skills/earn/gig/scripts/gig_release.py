@@ -366,6 +366,13 @@ def job_needs_activation(job: dict, table: dict[str, str]) -> bool:
                for key, value in desired["EnvironmentVariables"].items())
 
 
+def skip_busy_for_requested_activation(
+    label: str, requested_jobs: set[str] | None,
+) -> bool:
+    """Only an explicit continuous-lane request may interrupt its supervisor."""
+    return requested_jobs is None or label not in CONTINUOUS_RELOADABLE
+
+
 def control_plane_available() -> bool:
     """Whether this context can read the user's launchd domain."""
     return subprocess.run(
@@ -573,13 +580,21 @@ def main() -> int:
 
     if not args.dry_run:
         publish(release)
-    wanted = ({label.strip() for label in args.jobs.split(",")} if args.jobs
+    requested_jobs = (
+        {label.strip() for label in args.jobs.split(",")} if args.jobs else None
+    )
+    wanted = (requested_jobs if requested_jobs is not None
               else {job["label"] for job in manifest["jobs"]} - DEFAULT_EXCLUDED)
     _, table = settings(CURRENT_RELEASE)
     if not args.dry_run and not require_control_plane():
         return 75
     failed = [job["label"] for job in manifest["jobs"] if job["label"] in wanted
-              and not activate(job, table, release, args.dry_run)]
+              and not activate(
+                  job, table, release, args.dry_run,
+                  skip_busy=skip_busy_for_requested_activation(
+                      job["label"], requested_jobs,
+                  ),
+              )]
     if failed:
         print(f"not activated: {', '.join(failed)}")
         return 1
