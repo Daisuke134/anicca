@@ -4,6 +4,7 @@ import json
 
 from ..state import canonical_url as normalize_url
 from ..state import provider_recovery_url
+from ..state import same_application_surface
 from .checkpoint import CheckpointStore, EvidenceStore
 from .contracts import ResumeCursorV1, SessionHandleV1
 from .session import BrowserSession
@@ -28,7 +29,9 @@ class RowResumer:
         checkpoint = self._checkpoints.load(row_run_id)
         if checkpoint is None:
             handle = await self._session.attach(endpoint, row_run_id)
-            needs_navigation = self._session.page(handle).url in {"", "about:blank"}
+            needs_navigation = not same_application_surface(
+                self._session.page(handle).url, canonical_url
+            )
             return ResumeCursorV1(
                 handle, None, None, needs_navigation, canonical_url
             )
