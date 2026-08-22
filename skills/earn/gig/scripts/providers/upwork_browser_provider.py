@@ -46,6 +46,7 @@ DEFAULT_PROPOSALS = Path.home() / ".config/anicca/gig/upwork-proposals"
 DEFAULT_DATABASE = Path.home() / "gig/connector-outbox.sqlite3"
 DEFAULT_MANIFEST = SCRIPTS.parent / "config/connectors/coconala.json"
 DEFAULT_BROWSER_PROFILE = Path.home() / ".cloak/profiles/gig-daily-driver"
+DEFAULT_INBOUND_DIR = Path.home() / ".config/anicca/gig/upwork-inbound"
 TERMINAL_JOB_STATUSES = {"closed", "removed"}
 _COUNT_LABELS = {
     "offers": r"Offers\s*\((\d+)\)",
@@ -387,6 +388,38 @@ def parse_zero_connect_detail(kind: str, text: str) -> str:
     return "actionable" if accept and "decline" in normalized else "unknown"
 
 
+def seal_inbound_detail(
+    inbound: dict[str, Any], text: str, evidence_sha256: str, root: Path,
+    observed_at: str,
+) -> str:
+    """Persist one actionable inbound privately for the existing model runner."""
+    if (
+        inbound.get("state") not in {"invitation_detected", "direct_offer_detected"}
+        or not isinstance(inbound.get("resource_id"), str)
+        or not isinstance(inbound.get("resource_url"), str)
+        or not isinstance(text, str) or not text.strip()
+        or not re.fullmatch(r"[0-9a-f]{64}", evidence_sha256)
+    ):
+        raise ValueError("upwork_inbound_packet_invalid")
+    root = root.expanduser()
+    root.mkdir(parents=True, exist_ok=True, mode=0o700)
+    os.chmod(root, 0o700)
+    packet = {
+        "version": 1, "provider": "upwork", "kind": inbound["state"],
+        "resource_id": inbound["resource_id"], "resource_url": inbound["resource_url"],
+        "detail_evidence_sha256": evidence_sha256, "observed_at": observed_at,
+        "rendered_text": text,
+    }
+    body = json.dumps(packet, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n"
+    digest = hashlib.sha256(body.encode()).hexdigest()
+    path = root / f"{digest}.json"
+    if not path.exists():
+        _atomic_write(path, packet)
+    if path.is_symlink() or path.stat().st_mode & 0o777 != 0o600:
+        raise ValueError("upwork_inbound_packet_invalid")
+    return digest
+
+
 def parse_candidate(
     candidate: dict[str, str], text: str, evidence_sha256: str,
 ) -> dict[str, Any]:
@@ -532,6 +565,7 @@ async def observe(
     database: Path = DEFAULT_DATABASE,
     manifest: Path = DEFAULT_MANIFEST,
     browser_profile: Path = DEFAULT_BROWSER_PROFILE,
+    inbound_dir: Path = DEFAULT_INBOUND_DIR,
 ) -> dict[str, Any]:
     pass_id = f"upwork-free-{time.time_ns()}-{os.getpid()}"
     artifacts: dict[str, str] = {}
@@ -598,11 +632,16 @@ async def observe(
                 detail_artifact, inbound["resource_url"],
             )
             state["evidence_sha256"]["inbound-detail"] = detail_hash
+            detail_state = parse_zero_connect_detail(inbound["state"], detail_text)
             state["free_acquisition"] = {
                 **inbound,
-                "detail_state": parse_zero_connect_detail(inbound["state"], detail_text),
+                "detail_state": detail_state,
                 "detail_evidence_sha256": detail_hash,
             }
+            if detail_state == "actionable":
+                state["free_acquisition"]["private_packet_sha256"] = seal_inbound_detail(
+                    inbound, detail_text, detail_hash, inbound_dir, state["observed_at"],
+                )
         else:
             state["free_acquisition"] = inbound
         return state
@@ -668,6 +707,7 @@ def main() -> int:
     parser.add_argument("--database", type=Path, default=DEFAULT_DATABASE)
     parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
     parser.add_argument("--browser-profile", type=Path, default=DEFAULT_BROWSER_PROFILE)
+    parser.add_argument("--inbound-dir", type=Path, default=DEFAULT_INBOUND_DIR)
     parser.add_argument("--transitions", type=Path, default=DEFAULT_TRANSITIONS)
     parser.add_argument(
         "--output", type=Path,
@@ -677,7 +717,7 @@ def main() -> int:
     os.environ["CLOAK_CDP_BASE_URL"] = args.cdp_base.rstrip("/")
     state = asyncio.run(observe(
         args.candidates.expanduser(), args.proposals.expanduser(), args.database.expanduser(),
-        args.manifest.expanduser(), args.browser_profile.expanduser(),
+        args.manifest.expanduser(), args.browser_profile.expanduser(), args.inbound_dir.expanduser(),
     ))
     state = reconcile_terminal_transitions(
         args.output.expanduser(), args.transitions.expanduser(), state,

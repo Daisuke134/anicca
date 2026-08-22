@@ -162,6 +162,24 @@ def test_inbound_detail_is_actionable_only_from_official_controls():
     assert parser("direct_offer_detected", "Offer details") == "unknown"
 
 
+def test_actionable_inbound_is_sealed_privately_without_public_copy(tmp_path):
+    sealer = getattr(provider, "seal_inbound_detail", None)
+    assert callable(sealer)
+    inbound = {
+        "state": "invitation_detected", "resource_id": "~invite-1",
+        "resource_url": "https://www.upwork.com/jobs/~invite-1",
+    }
+
+    digest = sealer(inbound, "Private invitation details", "a" * 64, tmp_path / "queue", "now")
+    packet = tmp_path / "queue" / f"{digest}.json"
+
+    assert packet.is_file()
+    assert packet.stat().st_mode & 0o777 == 0o600
+    assert (tmp_path / "queue").stat().st_mode & 0o777 == 0o700
+    assert "Private invitation details" in packet.read_text()
+    assert "Private invitation details" not in digest
+
+
 def test_classifies_candidate_only_from_official_job_markers():
     candidate = {"job_id": "~01", "job_url": "https://www.upwork.com/jobs/~01"}
     opened = parse_candidate(
