@@ -374,8 +374,8 @@ This is the remaining implementation-order SSOT. Only the first
 | 4 | Trace the existing daily owner, Workday helper, runner, credential helper, Ledger, and Gmail call graph | `done` | Exact reused entrypoints, replaceable fast-path boundaries, and framework integration seams are named below |
 | 5 | Freeze fixed-commit OSS source lineage and license boundaries | `done` | Fixed SHA, license text, allowed reuse, AGPL pattern-only boundary, and rejected human-stop/default-answer patterns are recorded below |
 | 6 | Define the Job Hunter browser-agent framework package and public contracts | `done` | Package boundary, dependency direction, API version, and orchestrator/session/observation/action/answer/checkpoint/verifier/provider-hint signatures are fixed below |
-| 7 | Define one provider-neutral sanitized row-envelope and row-run state schema | `pending_actionable` | Schema requires identity/evidence pointers and rejects secrets, raw answers, and terminal retries |
-| 8 | Add framework contract tests and recorded real-shape replays | `pending_after_7` | Observation/action/recovery/checkpoint/verifier contracts fail against the current fast-path architecture |
+| 7 | Define one provider-neutral sanitized row-envelope and row-run state schema | `done` | `schemas/browser-row-run.v1.schema.json` allowlists exact identity/evidence pointers and excludes secrets, raw answers, provider workflows, and terminal retry inputs |
+| 8 | Add framework contract tests and recorded real-shape replays | `pending_actionable` | Observation/action/recovery/checkpoint/verifier contracts fail against the current fast-path architecture |
 | 9 | Route `browser-lane-agent` to Luna xhigh with the existing bounded runner | `pending_after_8` | One config route, one runner, one timeout; no fallback executor |
 | 10 | Remove `JOB_SEARCH_ENABLE_MODEL_FALLBACK` as a production decision | `pending_after_9` | Every eligible Workday row reaches one framework run even after recognized preflight |
 | 11 | Replace Workday/Ashby filler ownership with the framework orchestrator | `pending_after_10` | Fast paths produce hints/evidence only and cannot navigate, fill, or terminate an eligible form |
@@ -661,6 +661,34 @@ No component may create another executor, browser profile, Gmail fetch, credenti
 copy, or terminal Ledger truth. A new ATS is integrated only by registering a
 `ProviderHintsV1` adapter; if it needs a new action primitive or state transition,
 the provider-neutral v1 contract must be deliberately revised rather than bypassed.
+
+#### Sanitized row-run schema v1
+
+[`schemas/browser-row-run.v1.schema.json`](../../../apps/job-search-loop/schemas/browser-row-run.v1.schema.json)
+is the only serialized input accepted by the future orchestrator. It follows the
+repository's Draft 2020-12/closed-object convention and implements two disjoint run
+shapes:
+
+| Shape | Permitted state/effect | Required identity and evidence |
+|---|---|---|
+| Pre-submit | `queued` through `reviewing`, `recovering`, or `checkpointed`; `effect_phase=pre_submit` | application/company/role/canonical HTTPS URL/provider, eligible policy receipt, opaque Candidate/Answer Memory refs, resume/posting refs plus SHA-256, wake/run IDs, budget, observation/checkpoint hashes |
+| Post-submit verification | `submit_claimed` or `verifying`; `effect_phase=post_submit_verification` | All common identity plus existing intent/fence and the one final-action receipt; only verification/reconciliation may continue |
+
+Every object uses `additionalProperties: false` or
+`unevaluatedProperties: false`. Consequently passwords, cookies, email codes,
+tokens, raw profile fields, raw resume text, raw question answers, arbitrary model
+instructions, and provider-script steps have no representable property. Evidence
+and memory values cross the boundary only as opaque references and hashes; the
+corresponding typed adapter resolves them inside the owner process.
+
+The input schema contains neither `submitted` nor `submit_unknown`. Those outcomes
+exist only in `VerificationResultV1`/`RowRunResultV1` after an active run. A Ledger
+row already in either terminal state therefore cannot be serialized as a new
+`RowEnvelopeV1`. A post-click checkpoint can serialize only as
+`post_submit_verification`, includes the original fence/action receipt, and cannot
+return to `acting` or acquire another Submit action. Canonical URL and exact
+application identity are still rechecked against Ledger at adapter load time; JSON
+shape validation never substitutes for that authoritative read.
 
 #### Source lineage
 
