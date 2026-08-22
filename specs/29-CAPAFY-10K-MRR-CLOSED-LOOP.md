@@ -328,6 +328,8 @@ marketingの旧calendar scheduleは20時間cadenceが`20:57 JST`に開いても�
 
 Data Analyst `7785270416`のrepo-owned demonstrationは4か月の入力値、WHAT/WHY/SO WHAT出力、仮説label、非捏造条件を持ち、source SHA-256は`0f47c7ad7ad4056f6dc399d86265dc3841f4cf38a939cef8e71bf6078892442c`。現在のfresh selectorはCapafy APIからJSONを取得できずterminal failureになるため、stale inventoryで制作・投稿を続けない。外部readback回復後のhourly wakeが同じ候補をfresh選択してからrenderへ進む。
 
+system resolver不調時もOS DNS設定を変えず、Cloudflare DoHで公式A recordを解決してTLS hostnameを維持したread-only fallbackを実測する。Telegram milestoneはprovider `message_id=29317`を返す。Capafy `GET /agent/agents`はHTTP `200`、33 total、listed `22`、occupied `5`、free `0`、retry `6`、unknown `0`。Portfolio `9480246345`、Sales Objection `3098034209`、User Interview `3661050861`はunder review、Football `1037238583`はreview rejectedのままで、slot writeは0件を維持する。このDoH fallbackはdiagnostic readbackだけで、stale stateをpublisher入力へ昇格しない。
+
 ## Atomic remaining TODO
 
 Items are executed top-to-bottom. Only one item is active.
