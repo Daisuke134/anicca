@@ -130,7 +130,7 @@ def rows(path: Path) -> list[dict]:
     return values
 
 
-def select(proposal_path: Path, consumed_path: Path) -> dict:
+def select(proposal_path: Path, consumed_path: Path, posted_path: Path | None = None) -> dict:
     try:
         all_rows = rows(consumed_path)
     except ValueError:
@@ -140,6 +140,16 @@ def select(proposal_path: Path, consumed_path: Path) -> dict:
         proposal_id = row.get("proposal_id")
         if isinstance(proposal_id, str):
             latest_by_proposal[proposal_id] = row
+    posted_ids = set()
+    if posted_path is not None and posted_path.exists():
+        try:
+            for line in posted_path.read_text(encoding="utf-8").splitlines():
+                row = json.loads(line)
+                proposal_id = row.get("affiliate_proposal_id")
+                if isinstance(proposal_id, str):
+                    posted_ids.add(proposal_id)
+        except (OSError, ValueError, AttributeError):
+            return {"state": "BLOCKED_CONSUMPTION_LEDGER"}
     legacy = [row for row in latest_by_proposal.values()
               if row.get("state") == "EFFECT_STARTED" and not valid(row.get("proposal"))]
     if legacy:
@@ -151,6 +161,27 @@ def select(proposal_path: Path, consumed_path: Path) -> dict:
         snapshot = pending["proposal"]
         return {
             "state": "RECONCILE",
+            "proposal": canonical(snapshot),
+            "proposal_id": snapshot["proposal_id"],
+            "placement_id": snapshot["placement_id"],
+            "owned_article_url": snapshot["owned_article_url"],
+            "language": "en",
+        }
+    recoverable = []
+    for proposal_id, terminal in latest_by_proposal.items():
+        if terminal.get("state") != "UNVERIFIED" or proposal_id in posted_ids:
+            continue
+        claim_row = next((row for row in reversed(all_rows)
+                          if row.get("proposal_id") == proposal_id
+                          and row.get("state") == "EFFECT_STARTED"
+                          and valid(row.get("proposal"))), None)
+        if claim_row:
+            recoverable.append(claim_row)
+    if recoverable:
+        pending = min(recoverable, key=lambda row: row.get("observed_at", ""))
+        snapshot = pending["proposal"]
+        return {
+            "state": "VERIFY_UNVERIFIED",
             "proposal": canonical(snapshot),
             "proposal_id": snapshot["proposal_id"],
             "placement_id": snapshot["placement_id"],
@@ -267,6 +298,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--proposal", type=Path, required=True)
     parser.add_argument("--consumed", type=Path, required=True)
+    parser.add_argument("--posted", type=Path)
     parser.add_argument("--record", choices=("POSTED", "UNVERIFIED", "NO_EFFECT"))
     parser.add_argument("--claim", action="store_true")
     parser.add_argument("--render", action="store_true")
@@ -279,7 +311,7 @@ def main() -> int:
         print(post_text(read_json(args.proposal)), end="")
         return 0
     if not args.record:
-        print(json.dumps(select(args.proposal, args.consumed), sort_keys=True))
+        print(json.dumps(select(args.proposal, args.consumed, args.posted), sort_keys=True))
         return 0
     proposal = read_json(args.proposal)
     print(json.dumps(record(args.consumed, proposal, args.record, args.post_url), sort_keys=True))

@@ -15,6 +15,29 @@ SPEC.loader.exec_module(MODULE)
 
 
 class AffiliateProposalTests(unittest.TestCase):
+    def test_unverified_is_readback_only_until_posted_ledger_recovers_it(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            proposal_path = root / "proposal.json"
+            consumed, posted = root / "consumed.jsonl", root / "posted.jsonl"
+            proposal = {
+                "receipt_type": "AFFILIATE_REPOST_PROPOSAL",
+                "state": "READY_FOR_EXISTING_REPOST_OWNER",
+                "proposal_id": "9" * 64,
+                "placement_id": "voice-changer-en-1",
+                "owned_article_url": "https://aniccaai.com/blog/voice-changer",
+                "language": "en", "disclosure_required": True,
+                "tracking_link_state": "NOT_INCLUDED",
+                "revenue_credit_state": "NO_REVENUE_CREDIT",
+            }
+            proposal_path.write_text(json.dumps(proposal))
+            MODULE.claim(consumed, proposal)
+            MODULE.record(consumed, proposal, "UNVERIFIED", None)
+            selected = MODULE.select(proposal_path, consumed, posted)
+            self.assertEqual(selected["state"], "VERIFY_UNVERIFIED")
+            posted.write_text(json.dumps({"affiliate_proposal_id": proposal["proposal_id"]}) + "\n")
+            self.assertEqual(MODULE.select(proposal_path, consumed, posted)["state"], "ALREADY_CONSUMED")
+
     def test_select_and_record_are_exactly_once_without_tracking_link(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

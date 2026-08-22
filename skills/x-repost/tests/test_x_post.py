@@ -47,6 +47,18 @@ class Page:
 
 
 class XPostTests(unittest.TestCase):
+    def test_public_ssr_reconciles_exact_owned_post(self) -> None:
+        text = "Affiliate link: https://aniccaai.com/blog/voice-changer"
+        markup = '''<article data-tweet-id="2091088320772346136">
+        <span>Affiliate link: </span>
+        <a href="https://aniccaai.com/blog/voice-changer">article</a></article>'''
+        self.assertEqual(
+            MODULE.find_exact_public_markup(
+                markup, text, "https://aniccaai.com/blog/voice-changer", "selawmqt"
+            ),
+            "https://x.com/selawmqt/status/2091088320772346136",
+        )
+
     def test_multiline_original_requires_exact_prefix_and_owned_url(self) -> None:
         text = "Before paying for an AI workflow: voice isolator.\n\nAffiliate link disclosure:\nhttps://aniccaai.com/blog/voice-isolator"
         found = MODULE.scan_timeline(

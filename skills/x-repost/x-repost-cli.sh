@@ -190,7 +190,7 @@ set -a
 set +a
 # Read and validate the proposal ledger before the daily generic-post gate. An unresolved
 # EFFECT_STARTED claim must remain recoverable even when generic reposts already hit their brake.
-if ! AFFILIATE_PICK="$($PY "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL" --consumed "$AFFILIATE_CONSUMED" 2>>"$EV/affiliate-proposal.err")"; then
+if ! AFFILIATE_PICK="$($PY "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL" --consumed "$AFFILIATE_CONSUMED" --posted "$POSTED" 2>>"$EV/affiliate-proposal.err")"; then
   report "🛑 Affiliate proposal helper failed; no new Affiliate or generic X post is allowed"
   finish 1 "affiliate proposal helper failed"
 fi
@@ -208,7 +208,8 @@ fi
 # daily brake; all ordinary repost work remains capped exactly as before.
 if [ "${TODAY_COUNT:-0}" -ge "${X_REPOST_DAILY_MAX:-12}" ] \
   && [ "$AFFILIATE_STATE" != "READY" ] \
-  && [ "$AFFILIATE_STATE" != "RECONCILE" ]; then
+    && [ "$AFFILIATE_STATE" != "RECONCILE" ] \
+    && [ "$AFFILIATE_STATE" != "VERIFY_UNVERIFIED" ]; then
   log "daily ceiling reached ($TODAY_COUNT/${X_REPOST_DAILY_MAX:-12}) -- nothing to do"
   touch "$STATE/.last-pass"
   exit 0
@@ -233,7 +234,7 @@ trap '[ "$BROWSER_LEASED" -eq 1 ] && bash "$GUARD" release "$IDENTITY" >/dev/nul
 # ---------------------------------------------------------------- affiliate proposal (one exact owned article, no tracking link)
 # Affiliate can offer a policy-safe placement but cannot publish through this owner.
 # This owner remains the sole X executor and records its own exact post readback.
-if [ "$AFFILIATE_STATE" = "READY" ] || [ "$AFFILIATE_STATE" = "RECONCILE" ]; then
+if [ "$AFFILIATE_STATE" = "READY" ] || [ "$AFFILIATE_STATE" = "RECONCILE" ] || [ "$AFFILIATE_STATE" = "VERIFY_UNVERIFIED" ]; then
   AFFILIATE_PROPOSAL_INPUT="$EV/affiliate-proposal.json"
   if ! "$PY" - "$AFFILIATE_PICK" "$AFFILIATE_PROPOSAL_INPUT" <<'PYEOF'
 import json, os, sys
@@ -288,7 +289,7 @@ with open(posted, "a+", encoding="utf-8") as stream:
     os.fsync(stream.fileno())
 PYEOF
   }
-  if [ "$AFFILIATE_STATE" = "RECONCILE" ]; then
+  if [ "$AFFILIATE_STATE" = "RECONCILE" ] || [ "$AFFILIATE_STATE" = "VERIFY_UNVERIFIED" ]; then
     "$UV" run --quiet "$SKILL/scripts/x_post.py" --cdp "$CDP" \
       --text-file "$EV/post.txt" --mode reconcile >"$EV/post.json" 2>>"$EV/post.err"
     AFFILIATE_RC=$?
@@ -298,13 +299,19 @@ PYEOF
         report "❌ Affiliate post read back but posted ledger append failed; proposal remains claimed"
         finish 1 "affiliate posted ledger append failed"
       fi
-      if ! "$PY" "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL_INPUT" \
-        --consumed "$AFFILIATE_CONSUMED" --record POSTED --post-url "$AFFILIATE_POST_URL" >/dev/null; then
-        report "❌ Affiliate post read back but terminal consumption receipt failed; proposal remains claimed"
-        finish 1 "affiliate terminal receipt failed"
+      if [ "$AFFILIATE_STATE" = "RECONCILE" ]; then
+        if ! "$PY" "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL_INPUT" \
+          --consumed "$AFFILIATE_CONSUMED" --record POSTED --post-url "$AFFILIATE_POST_URL" >/dev/null; then
+          report "❌ Affiliate post read back but terminal consumption receipt failed; proposal remains claimed"
+          finish 1 "affiliate terminal receipt failed"
+        fi
       fi
       report "✅ Affiliate proposal recovered from exact X readback\nplacement: $AFFILIATE_PLACEMENT\npost: $AFFILIATE_POST_URL"
       finish 0 "affiliate proposal reconciled without duplicate publish"
+    fi
+    if [ "$AFFILIATE_STATE" = "VERIFY_UNVERIFIED" ]; then
+      report "⚠️ Affiliate terminal post remains unverified after readback-only recovery; no repost was attempted"
+      finish 0 "affiliate terminal readback unresolved without duplicate publish"
     fi
     if ! "$PY" "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL_INPUT" \
       --consumed "$AFFILIATE_CONSUMED" --record UNVERIFIED >/dev/null; then

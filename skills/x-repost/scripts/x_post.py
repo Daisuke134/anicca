@@ -13,11 +13,13 @@ permalink captured. A compose box that accepted text is not evidence that anythi
 so every other outcome exits non-zero and the caller must not record a post.
 """
 import argparse
+import html as html_lib
 import json
 import os
 import re
 import sys
 import time
+from urllib.request import Request, urlopen
 
 from playwright.sync_api import sync_playwright
 
@@ -80,6 +82,29 @@ def scan_timeline(page, handle: str, needle: str, expected_url: str | None = Non
     return None
 
 
+def find_exact_public_markup(markup: str, expected_text: str, expected_url: str, handle: str):
+    prefix = normalized(expected_text.replace(expected_url, "").strip())
+    escaped_url = html_lib.escape(expected_url, quote=True)
+    for article in re.findall(r"<article\b.*?</article>", markup, flags=re.DOTALL):
+        tweet_id = re.search(r'data-tweet-id="([0-9]+)"', article)
+        if not tweet_id or f'href="{escaped_url}"' not in article:
+            continue
+        visible = normalized(html_lib.unescape(re.sub(r"<[^>]+>", " ", article)))
+        if prefix in visible:
+            return f"https://x.com/{handle}/status/{tweet_id.group(1)}"
+    return None
+
+
+def public_profile_readback(handle: str, expected_text: str, expected_url: str):
+    request = Request(f"https://x.com/{handle}", headers={"User-Agent": "x-repost/1.0"})
+    try:
+        with urlopen(request, timeout=12) as response:
+            markup = response.read().decode("utf-8")
+    except (OSError, UnicodeDecodeError):
+        return None
+    return find_exact_public_markup(markup, expected_text, expected_url, handle)
+
+
 def find_reply_permalink(pw, cdp: str, source_url: str, handle: str, needle: str, attempts: int = 5):
     """A reply lives in the conversation, not on the profile timeline, so read it back there.
 
@@ -129,6 +154,10 @@ def find_permalink(pw, cdp: str, handle: str, needle: str, expected_url: str | N
                 page.close()
         except Exception as exc:
             print(f"x_post: read-back attempt {attempt + 1} failed: {exc}", file=sys.stderr)
+        if expected_url and expected_text:
+            found = public_profile_readback(handle, expected_text, expected_url)
+            if found:
+                return found
         time.sleep(6)
     return None
 
