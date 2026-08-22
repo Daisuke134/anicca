@@ -2,10 +2,11 @@
 
 ## 0. Decision
 
-Life Manager contains one revenue system, not one harness per marketplace. The running Coconala
-package under `skills/earn/gig/` is the reference commerce kernel. Upwork is the first complete new
-market adapter. Fiverr follows. LinkedIn, Mercor, TELUS Digital, Welocalize, uTest, Prolific,
-Outlier and Babel Audio then pass through the same market-factory sequence one at a time.
+Life Manager ultimately contains one revenue system, not one harness per marketplace. The active
+delivery slice is now **Upwork only**. Coconala continues running independently and is neither an
+Upwork dependency nor an Upwork capacity source. Fiverr, LinkedIn, Mercor, TELUS Digital,
+Welocalize, uTest, Prolific, Outlier and Babel Audio stay frozen until Upwork closes one real
+proposal-to-received-payment path.
 
 The target is an open-source, local-first agent that discovers demand, builds or selects Skills,
 sells work, fulfills it, verifies delivery and payment, and reallocates effort toward the highest
@@ -19,6 +20,12 @@ must establish their own action-level authorization receipts.
 
 This document changes design and implementation order only. It does not start, stop or modify the
 current Coconala runtime. `skills/earn/gig/TODO.md` remains the production-repair SSOT.
+
+The Upwork account bootstrap uses the owner's normal email/password flow. It MUST NOT choose Google,
+Apple or another social-login button. It creates an account only when the owner email has no Upwork
+account; otherwise it signs into the existing account to avoid duplicate-account creation. Every
+adapter refinement follows authenticated observed Upwork state, not a speculative cross-provider
+abstraction.
 
 ## 1. Goal, objective and boundaries
 
@@ -56,6 +63,10 @@ portfolio_utility = expected_verified_net
 Hard constraints always dominate the score: authorization, identity, customer confidentiality,
 budget caps, delivery capacity, quality, effect idempotency and receipt integrity.
 
+During the Upwork proof, `delivery capacity` means active Upwork contracts only. Coconala orders,
+projects and stale Coconala talkroom states MUST NOT make an Upwork opportunity eligible or
+ineligible. Portfolio-wide allocation begins only after Upwork receives its first real payment.
+
 One-off revenue, repeat revenue and MRR remain separate. Missing evidence is `unknown`, not zero.
 Only received payment plus actual cost evidence enters `verified_net`.
 
@@ -84,6 +95,8 @@ otherwise equal.
 - No revenue recognition from views, proposals, offers, balances, estimates or test payments.
 - No self-modification of authorization, effect fences, receipt validation or accounting rules.
 - No simultaneous implementation of ten markets before the preceding market closes its gate.
+- No Google/Apple/social login for the owner Upwork account.
+- No new cross-provider abstraction before the first Upwork proposal is submitted and read back.
 
 ## 2. Evidence and repository lessons
 
@@ -437,6 +450,7 @@ promise of earnings.
 |---|---|
 | G0 continuity | Coconala release/TODO remain unchanged while development tests pass |
 | G1 authorization | Private action-level receipts exist and public defaults remain safe |
+| G1A Upwork identity | Normal owner email/password flow returns the same authenticated Upwork identity twice; no social-login route is used |
 | G2 Upwork discovery | One authenticated official job normalizes with zero mutation |
 | G3 Upwork proposal | One intent, one proposal, proposal ID and Connects readback |
 | G4 Upwork contract | Message, offer and active contract IDs reconcile |
@@ -449,6 +463,23 @@ promise of earnings.
 | G11 USD 10k | Complete sources prove USD 10,000 verified monthly net |
 | G12 JPY 10m | Provider and bank sources prove JPY 10,000,000 verified monthly net |
 | G13 replication | A clean third device completes setup and one authorized receipt path |
+
+### 9.1 Upwork live-path test matrix
+
+| To-Be | Verification | Cover |
+|---|---|---|
+| Email account bootstrap selects existing-login or signup without duplication | Authenticated identity and account-state receipt | Required |
+| Profile contains only factual owner data and is application-ready | Official profile completeness readback | Required |
+| Discovery reflects current Upwork state | Same job IDs across two authenticated reads | Required |
+| Qualification ignores Coconala runtime state | Upwork active-contract count and provider-scoped ledger query | Required |
+| Proposal submits at most once | Proposal ID and Connects before/after, then zero-delta replay | Required |
+| Negotiation creates no duplicate message | Official story/message IDs across replay | Required |
+| Contract, delivery and money reconcile | Contract ID, submission ID, transaction ID and actual fee/cost evidence | Required |
+
+| E2E item | Value |
+|---|---|
+| UI change | Yes: external Upwork signup/login/profile/application workflow |
+| Conclusion | Maestro not required; authenticated CloakBrowser E2E and official Upwork readback are mandatory because this is not an iOS UI path |
 
 ## 10. Scenario and contrary case
 

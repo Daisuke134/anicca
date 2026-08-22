@@ -4,14 +4,15 @@
 > (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use
 > checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Extend the proven Coconala revenue kernel into a local-first open-source portfolio agent,
-beginning with a complete Upwork sales-to-payment loop and adding each remaining market through one
-repeatable Market Factory.
+**Goal:** Close one real Upwork email-signup/login → job → proposal → negotiation → contract →
+delivery → received-payment loop first, then generalize the proven receipts into the local-first
+open-source portfolio agent and add remaining markets one at a time.
 
-**Architecture:** Existing Coconala owners, SQLite outbox, effect fences, project ledger,
-CloakBrowser, immutable releases and bounded evaluators remain the kernel. Provider adapters contain
-only authorization-aware transport and normalization. A Portfolio CEO allocates toward verified net
-revenue, while a Skill Factory may promote only replayed and canaried bundles.
+**Architecture:** The active slice is Upwork only. It uses the dedicated CloakBrowser profile,
+normal owner email/password authentication, Upwork-scoped state and the smallest existing durable
+effect primitives needed for the first live path. Coconala continues independently and contributes
+neither runtime state nor capacity to Upwork. Cross-market Portfolio CEO and Skill Factory work
+resumes only after Upwork receives one real payment.
 
 **Tech Stack:** Python 3.13+, standard-library SQLite/JSON, existing CloakBrowser CDP helpers,
 approved provider APIs, existing launchd release system, pytest with plugin autoload disabled.
@@ -21,10 +22,16 @@ approved provider APIs, existing launchd release system, pytest with plugin auto
 ## Global constraints
 
 - Execute exactly one task at a time and commit/push after its verification passes.
+- Until the first Upwork payment, mutate and measure Upwork only; do not operate on Coconala.
+- Use normal owner email/password signup/login for Upwork. DO NOT use Google, Apple or social login.
+- Create an Upwork account only if the owner email has no existing account; never create a duplicate.
+- Upwork capacity counts active Upwork contracts only. Never read Coconala projects as Upwork capacity.
+- Observe the authenticated Upwork UI/API first, then refine selectors and payloads from receipts.
+- Submit the first qualified live proposal before adding more general harness abstractions.
 - Do not move the current `skills/earn/gig/TODO.md` production-repair cursor.
 - Do not add a scheduler, workflow service, browser harness, vector DB or second ledger.
-- Each coding task changes at most three files and about 100 production/test LOC; split before coding
-  if the real slice is larger.
+- Tests cover only money loss, duplicate external effects, data loss, authentication leakage and the
+  current live path. Do not expand a broad TDD matrix before the first live Upwork receipt.
 - All provider mutations require authorization receipt → immutable intent → reconcile → at most one
   effect → authoritative readback → canonical receipt.
 - Dais's special approval is recorded privately per account/action/transport. It enables matching
@@ -231,6 +238,30 @@ authorization matrix, spend/capacity bounds and onboarding receipt.
 
 ## Phase B — Upwork first complete autonomous adapter
 
+### Phase B immediate execution SSOT
+
+No later task may jump ahead of the first incomplete row:
+
+| Order | Atomic outcome | Completion evidence |
+|---:|---|---|
+| U1 | Resolve existing-account vs signup using the owner email | Upwork email-flow page plus private account-state receipt |
+| U2 | Complete normal email/password signup or login | Authenticated Upwork identity and home/profile URL readback twice |
+| U3 | Complete factual freelancer profile needed to apply | Official profile completeness and availability readback |
+| U4 | Observe real job-search, detail and proposal surfaces | Redacted DOM/API field receipt with zero mutation |
+| U5 | Discover live jobs twice | Stable Upwork job IDs and zero proposal/message effects |
+| U6 | Qualify one job using installed Skills and Upwork-only capacity | Eligible qualification receipt; active Coconala count absent |
+| U7 | Freeze one tailored proposal | Exact body, bid, milestone, claim and attachment hashes |
+| U8 | Submit that proposal once | Official proposal ID plus Connects before/after |
+| U9 | Replay immediately | Same proposal ID; zero new proposal and zero additional Connects |
+| U10 | Poll and answer the resulting thread | Official story/message IDs and no duplicate reply |
+| U11 | Negotiate and accept profitable terms | Offer ID, exact terms hash and active contract ID |
+| U12 | Fulfill and independently verify the work | Artifact hash and independent verifier PASS |
+| U13 | Deliver once | Official submission ID/state and replay with zero duplicate delivery |
+| U14 | Reconcile money | Released/received transaction, fee, Connects, costs and payout evidence |
+| U15 | Repeat on three independent paid jobs | Three contract/payment IDs and complete per-job economics |
+
+Tasks 13–22 implement U10–U15. Tasks 23–57 remain frozen until U14 closes.
+
 ### Task 7: Record Upwork's private action matrix
 
 **Files:**
@@ -246,29 +277,34 @@ payments and read payouts; private receipts determine API/browser transport.
 - [x] Run authorization readback without printing account IDs, credentials or evidence content.
 - [x] Run focused tests and commit/push the public template only.
 
-### Task 8: Implement Upwork authenticated transport selection
+### Task 8: Bootstrap and authenticate the owner Upwork account by email
 
 **Files:**
 - Create: `skills/earn/gig/scripts/providers/upwork_transport.py`
 - Create: `skills/earn/gig/tests/test_upwork_transport.py`
 
-**Interfaces:** Produces `UpworkTransport.for_action(action)` selecting approved official API first,
-then approved CloakBrowser; never falls through from an unauthorized transport.
+**Interfaces:** Produces one authenticated dedicated Upwork browser identity plus
+`UpworkTransport.for_action(action)`. Account bootstrap uses only the owner's normal email/password
+flow; API credentials may be connected after the live browser identity exists.
 
 - [x] Write failing tests for API preference, approved browser fallback, expired authorization and
   zero transport.
 - [x] Implement bounded OAuth2 token handling and existing CloakBrowser profile lookup without
   logging tokens/cookies.
 - [x] Ensure API and browser share one logical effect identity.
+- [ ] Read the owner email and existing credential facts from private SSOT without printing them.
+- [ ] Open Upwork's email flow directly; DO NOT click Google, Apple or another social provider.
+- [ ] Detect whether that email already owns an account; signup only when absent, otherwise login.
+- [ ] Complete email verification from the owned mailbox when requested and persist new credentials
+  to the private credential SSOT before closing the page.
+- [ ] Complete only the factual minimum freelancer profile required to browse and apply.
 - [ ] Run a real authenticated read-only identity probe and retain a redacted private receipt.
 - [x] Run focused tests and commit/push.
 
-Live probe evidence: the owner account exists and the dedicated `gig-upwork` profile reached Google
-two-step verification after password authentication. The agent did not bypass that identity control.
-Private redacted receipt hash
-`1dcbeb2544684af696f204583adb7ca9e29c6cdec89dadef3960f58c4ed40ccf` and pending ceremony `1`
-retain the exact resume boundary. The identity-probe checkbox remains open until the ceremony completes
-and Upwork returns an authenticated account identity.
+Current evidence: no authenticated Upwork identity exists. The dedicated profile is on Upwork Login
+and the previous Google session is expired. That route is rejected by the updated design and MUST NOT
+be resumed. The next action is the normal owner email flow. The private special-approval receipt is
+authorization evidence only; it is not authentication evidence.
 
 ### Task 9: Discover and normalize Upwork jobs
 
@@ -291,8 +327,8 @@ is the provider schema authority. Code comparison used the official Python SDK a
 `tryAGI/Upwork@7346170` for `pagination.after/first`, `pageInfo.endCursor/hasNextPage`, money,
 client and activity shapes, and `furkankoykiran/upwork-mcp@9ed7b44` only to cross-check the
 Connects field. The MCP formatter and its non-advancing search pagination were not copied.
-The live-twice checkbox remains open because ceremony `1` still records Google 2FA as the exact
-authentication boundary; fixture replay already proves stable IDs and invokes only `search` reads.
+The live-twice checkbox remains open because Task 8 has not yet produced an authenticated email-flow
+identity. Fixture replay proves only normalization behavior; it is not live-market evidence.
 
 ### Task 10: Qualify jobs against installed Skills and capacity
 
@@ -304,19 +340,17 @@ authentication boundary; fixture replay already proves stable IDs and invokes on
 
 - [x] Write failing tests for missing Skill, impossible deadline, capacity exhaustion, negative
   expected net, unverifiable deliverable and false profile claim.
-- [x] Reuse the installed Skill registry and current paid-project capacity; add no Upwork-only
-  fulfillment planner.
+- [ ] Reuse the installed Skill registry and **Upwork-only** active-contract capacity; do not read
+  Coconala projects or talkroom states.
 - [x] Calculate expected net from observed budget/rate, fee, Connects, tool cost and risk reserve.
 - [x] Require a concrete workflow and independent verifier before `eligible=true`.
 - [x] Run focused tests and commit/push.
 
-Task 10 evidence: qualification is provider-neutral and binds exact installed builder/verifier Skill
-hashes, owner bounds, conservative gross/fee/Connects/tool/risk/labor economics, deadline and the
-shared paid-project ledger. Eleven focused tests pass, including the Unix-second timestamp used by
-the live ledger and fail-closed stale active states. A read-only live canary bound `writer-agent` to
-the independent `writer-agent/checklists/stop-slop` Skill and calculated expected net `79350`, but
-correctly returned `capacity_exhausted` with six current active projects against the private cap of
-three, plus `unknown_capacity` for older still-active records. It created no marketplace effect.
+Task 10 code evidence: qualification binds installed builder/verifier Skill hashes, owner bounds and
+conservative gross/fee/Connects/tool/risk/labor economics. Its previous live canary incorrectly used
+Coconala project state as Upwork capacity; that result is void and the Upwork-only capacity checkbox
+is reopened. The next qualifier revision scopes every project read by `provider == "upwork"` and
+starts at zero until an official Upwork contract receipt exists.
 Upwork fee and Connects costs remain observed inputs rather than hard-coded policy because current
 official values can vary. Sources: Upwork Help, "Learn about the Freelancer Service Fee",
 https://support.upwork.com/hc/en-us/articles/211062538-Learn-about-the-Freelancer-Service-Fee;
@@ -350,9 +384,9 @@ independent verification, and mismatched/ineligible qualification. The frozen pa
 source hash, qualification hash, exact cover letter, claim receipts, terms, milestones, builder and
 verifier before Task 12 creates any effect intent. Task 10 evidence now also includes evaluated time,
 qualified deadline and capacity cap, closing the downstream binding gap found during this task.
-Twenty-three focused Task 10/11 tests pass. A live private read-only gate saw six current active paid
-projects against cap three plus older active state, and therefore rejected proposal creation with
-`qualification_ineligible`; marketplace effects remained zero. Upwork Help states that a proposal
+Twenty-three focused Task 10/11 fixture tests pass. The prior `qualification_ineligible` live claim
+based on Coconala capacity is void; Task U6 must be rerun with Upwork-only capacity after authenticated
+discovery. Marketplace effects remain zero. Upwork Help states that a proposal
 sets hourly/fixed terms, project-or-milestone payment, duration and cover letter:
 https://support.upwork.com/hc/en-us/articles/211062998-How-to-submit-a-proposal-on-Upwork.
 Upwork Help also says fixed milestones should agree amounts, deliverables and deadlines before work:
