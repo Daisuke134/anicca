@@ -112,9 +112,14 @@ class ActionExecutor:
             if action.kind == "choose":
                 if action.opener is None:
                     raise ValueError("choose requires opener")
-                opener = await self._target(page, action.opener)
-                await opener.click(timeout=self._timeout_ms)
-            target = await self._target(page, action.target)
+                try:
+                    target = await self._target(page, action.target)
+                except RuntimeError:
+                    opener = await self._target(page, action.opener)
+                    await opener.click(timeout=self._timeout_ms)
+                    target = await self._target(page, action.target)
+            else:
+                target = await self._target(page, action.target)
             if action.kind in {"click", "choose"}:
                 await target.click(timeout=self._timeout_ms)
             elif action.kind == "type":
