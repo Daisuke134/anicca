@@ -319,8 +319,14 @@ artifact again; decide whether the truthful v5/v21 records may be preserved or w
 hashes must be restored without sending. The current failures are `18171890=file_non_delivery_disposition`
 and `18169985=file_validation`. Haru `18169583` remains acceptance-PASS v31
 `bceca32db8a9272330fd12798d44da06e14aab51e83e17d81e030aa37665d185` in
-`BOUNDED_REVIEW_SHIP` round 4, but the latest pass fails `targeted_readback`; v31 is not yet proven
-buyer-visible. The already-closed X room incorrectly re-entered `file_builder`, and room `18062411`
+`BOUNDED_REVIEW_SHIP` round 4. An account-owner Coconala screenshot now proves the v31 filename was
+buyer-visible at 05:30, but the buyer replied at 11:13 that the design had reverted again and asked
+whether it had been sent without proper checking; the seller apologized at 11:47 and promised another
+verified submission. The fresh reviewer had returned `undeterminable` because native Illustrator provenance
+could not be proved, while calling the package otherwise useful, and the controller incorrectly converted
+that verdict into shipment without proving retention of the buyer-approved latest design. The latest loop
+still reports `targeted_readback`, so neither the incorrect shipment nor the apology is a successful Paid
+completion. The already-closed X room incorrectly re-entered `file_builder`, and room `18062411`
 still fails `remote_resume`. Paid completion is therefore still one officially delivered/read-back artifact
 out of four, not four.
 
@@ -432,10 +438,17 @@ reduce scope before exceeding three files or 100 production LOC.
      `disk-writers.stop` (10/11 GiB hysteresis), while retaining the 512 MiB last-resort guard and
      expiring operator brake; an expired audit file or healthy 10+ GiB headroom must not stop earning.
    - [ ] Haru `18169583`: submit the already acceptance-PASS v31 ZIP with concise text, recover exact-room
-     `targeted_readback`, prove the v31 hash buyer-visible and keep formal delivery OFF.
+     `targeted_readback`, prove the v31 hash buyer-visible and keep formal delivery OFF. Superseded by the
+     buyer's explicit defect report: do not resend v31. Preserve it as failed evidence, reconstruct the exact
+     buyer-approved latest design from the accumulated attachment/message sequence, require direct visual
+     correspondence rather than `bounded_undeterminable`, and send only a genuinely corrected next artifact.
    - [ ] Manledge `18169985`: submit the already acceptance-PASS v20 deliverable, repair the
      `file_browser` attachment path without regenerating the artifact, obtain official readback and
-     keep formal delivery OFF.
+     keep formal delivery OFF. The buyer has approved the CSV and is now waiting for the community details,
+     complete proposed listing copy, individual outreach wording, and the progress-management/reporting method.
+     The semantic decision correctly classified that combined response, but the runtime created REVIEW_READY
+     v21 while the answer reviewer state remained `APPROVED`, then stopped at `file_validation`; no response
+     or attachment is officially visible for the latest buyer request.
    - [x] X-post project `18171850`: approved v1 was attached and officially read back with formal
      delivery OFF.
    - [ ] Review-article project `18171890`: do not represent v4 as a publishable completed article.
