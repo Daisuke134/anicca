@@ -51,6 +51,9 @@ job_search_loop.browser_agent.runtime report --status checkpointed`; require its
 After a successful report, never call `observe` for that row again in the same wake;
 the runtime marks it wake-complete and the next hourly scratch directory makes it
 eligible for retry automatically.
+If `observe` returns `status=queue_complete`, immediately return the accumulated
+typed outcomes and latest `report_message_id`; do not inspect source or run another
+command.
 
 This process is the existing `ai.anicca.job-search-daily` launchd owner. Do not
 start another launchd job, agent runner, or Chromium process. Read the JSON path in

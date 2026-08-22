@@ -209,7 +209,16 @@ async def _context():
 
 
 async def observe() -> dict[str, Any]:
-    row, _session, _checkpoints, _evidence, cursor, builder = await _context()
+    try:
+        row, _session, _checkpoints, _evidence, cursor, builder = await _context()
+    except RuntimeError as error:
+        if str(error) != "no eligible active-provider row":
+            raise
+        return {
+            "status": "queue_complete",
+            "remaining_rows": 0,
+            "instruction": "return the accumulated typed outcomes now",
+        }
     observation = await builder.build(cursor.handle)
     return {
         "status": "observed",
