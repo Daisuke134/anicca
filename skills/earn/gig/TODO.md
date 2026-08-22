@@ -303,10 +303,10 @@ Do not advance the development cursor until every unchecked item in the current 
 evidence. Independent production lanes continue running while development follows this order.
 
 **Live handover state.** `main` and `origin/main` are pinned to
-`b95a4aee279f18fee31b8f985fe9328999cd2726`; the running Paid process was naturally started from immutable
-release `5511d65f8f50e09bf502c964e23427c10c2d4743`. Launchd label
-`ai.anicca.hf-gig-paid-direct` owns PID `45060` and is concurrently processing the purchased rooms; Haru's
-isolated Project Owner is building v38 under that process. This in-flight liveness is not an official effect,
+`4ee520ab9a6f57c3a4fce4e0c128d97869960280`; the running Paid process was naturally started from immutable
+release `1f8bf173431a9bcb06edc5ad5fe9d6cbc8f1d604`. Launchd label
+`ai.anicca.hf-gig-paid-direct` owns PID `17436` and is concurrently processing the purchased rooms; Haru's
+isolated Project Owner is building the next artifact under that process. This in-flight liveness is not an official effect,
 readback or replay-zero result. The host has only about 407 MiB free while the active v38 workspace and Adobe
 installer consume storage, so persistence remains at immediate risk. The account
 owner authorized deletion of obsolete LBJ `18130722` work because another provider now owns that job. Only the
@@ -880,7 +880,15 @@ flowchart TB
    and state, raising free space to 9.0 GiB. The one retry completed with Adobe installer Exit Code 0 and
    `/Applications/Adobe Illustrator 2026/Adobe Illustrator.app` now exists. Read-only `gog gmail search` also
    returned the official Adobe trial-start and Illustrator welcome messages; Gmail UI and send authority were
-   not used. Native open/save/reopen and editable-object receipt remain pending.
+   not used. The first-launch macOS prompts granted Illustrator file/Apple Event automation but denied its
+   unrelated local-network request.
+   The shared `skills/design/illustrator-native` capability now copies the MIT native
+   `IllustratorSaveOptions`/`Document.saveAs` primitive from `creold/illustrator-scripts` pinned commit
+   `9b3e3eeade9ba748f41612ec4697bb6a5c2489c2` and omits its selection UI. A non-customer SVG smoke run through
+   Illustrator 30.7 produced a distinct 68,313-byte AI hash, reopened it in Illustrator, read back two page
+   items, one editable text frame, one layer and one artboard, and found official `AIPrivateData1` plus creator
+   metadata. This is capability proof only; Haru still requires a natural owner-produced package and fresh
+   visual review before any effect.
 9. [ ] Publish the immutable reconstruction release and kickstart the existing launchd Paid owner. Observe Haru's
    natural Project Owner inspect v38 against the new complaint screenshots, complete conversation and accepted
    lineage. If defective, revise naturally; if fresh PASS, send the exact final hash once, obtain official DOM
