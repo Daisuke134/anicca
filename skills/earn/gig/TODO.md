@@ -302,6 +302,24 @@ no-send, replay-zero and a new natural sub-30-minute official reply/estimate pro
 Do not advance the development cursor until every unchecked item in the current stage has official
 evidence. Independent production lanes continue running while development follows this order.
 
+**Current reviewer correction.** `main` and `origin/main` were both `31e7fa09d` before this change; the
+starting verification commit `79ac01ba1eb66b06aed1f9cee66d4af303f03a3d` remains an ancestor. The loaded
+Paid release is still `f747c7d05` while its natural pass is active, so no effect is attributed to the new
+code yet. The shared file reviewer policy is now v21: exactly one material-risk review may block only a
+materially missing explicit buyer requirement, a false or materially unverified claim, a wrong-target /
+duplicate / formal-delivery error, a secret/legal/money risk, or a corrupt or buyer-unusable artifact.
+Style, wording preference, optional additions, cosmetic polish and alternate approaches are non-blocking.
+For one concrete repairable material finding, the Project Owner performs one class-wide repair and then
+the controller verifies structure, hashes, immutable inputs and TOCTOU without starting a second reviewer
+round. The original reviewer receipt and repaired artifact hash remain separately bound in the durable
+authorization, including after restart. `undeterminable` remains fail-closed only for an unresolved material
+risk. The answer reviewer remains removed. Direct compile/help/contract checks pass; no TDD or extra review
+ceremony was added. Disk headroom was recovered from about 529 MiB to 1.4 GiB by removing only verified
+regenerable caches and terminating four duplicate prohibited pytest runs; customer artifacts, active Haru
+workspace and the protected dirty test were preserved. Next: commit/push and activate this immutable release,
+then kickstart the existing Paid owner and require exact-room official DOM effect/readback plus replay-zero
+for Haru, Manledge, byusco and reopened X before advancing beyond Paid.
+
 **Live handover state.** `main` and `origin/main` include implementation commit
 `92174b7932f9691109a537e3a90a95b8f6759227`; the latest activated Paid release is that immutable commit.
 Its completed natural receipt is

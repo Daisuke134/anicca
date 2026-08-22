@@ -95,8 +95,8 @@ PAID_DECISION_SCHEMA_VERSION = 4
 PAID_DECISION_PROMPT_VERSION = "paid-semantic-decision-v9"
 PAID_DECISION_MODEL = "gpt-5.6-sol"
 PAID_FILE_MODEL = "gpt-5.6-sol"
-PAID_FILE_POLICY_VERSION = "paid-file-build-review-v20"
-MAX_FILE_REVIEW_ITERATIONS = 10
+PAID_FILE_POLICY_VERSION = "paid-file-build-review-v21"
+MAX_FILE_REVIEW_ITERATIONS = 1
 PAID_MAX_PARALLEL_PROJECTS = 8
 PAID_SOURCE_CENSUS_VERSION = "paid-source-census-v4"
 # The skills a paid order may be built with. A skill the lane cannot see is a skill it will
@@ -2225,6 +2225,12 @@ def _validate_file_authorization(root: Path, stable: Path, feedback: str,
     result_path = _consultation_result_path(verifier, summary)
     result = _load(result_path)
     review_state = _load(root / "context" / "paid-review-state.json")
+    shipment_basis = receipt.get("shipment_basis") if isinstance(receipt, dict) else None
+    review_authorized = (
+        (shipment_basis == "reviewer_approved" and result.get("verdict") == "deliverable")
+        or (shipment_basis == "single_material_review_repaired"
+            and result.get("verdict") == "needs_revision")
+    )
     if (not isinstance(receipt, dict) or receipt.get("version") != 4
             or receipt.get("buyer_feedback_sha256") != feedback
             or receipt.get("requirements_sha256") != requirements_sha256
@@ -2242,8 +2248,7 @@ def _validate_file_authorization(root: Path, stable: Path, feedback: str,
                 and review_state.get("state") == "REPAIR_PENDING"
                 and review_state.get("buyer_feedback_sha256") == feedback
                 and review_state.get("requirements_sha256") == requirements_sha256)
-            or result.get("verdict") != "deliverable"
-            or receipt.get("shipment_basis") != "reviewer_approved"
+            or not review_authorized
             or not _text(result.get("reason"))
             or summary.get("task_label") != "paid-file-verifier"
             or summary.get("task_class") != "escalation-agent"
@@ -2573,6 +2578,12 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
     )
     prior_round = (int(review_state.get("round", 0))
                    if state_matches_cycle and review_state.get("state") == "REPAIR_PENDING" else 0)
+    review_already_completed = (
+        state_matches_cycle
+        and review_state.get("state") == "REPAIR_PENDING"
+        and review_state.get("verdict") == "needs_revision"
+        and prior_round >= MAX_FILE_REVIEW_ITERATIONS
+    )
     start_round = min(prior_round + 1, MAX_FILE_REVIEW_ITERATIONS)
     shipment_basis = "reviewer_approved"
     review_rounds = range(start_round, MAX_FILE_REVIEW_ITERATIONS + 1)
@@ -2628,6 +2639,20 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
         census_receipt = root / "context" / "paid-source-census.json"
         census_receipt_snapshot = (_file_snapshot(census_receipt)
                                    if source_census is not None else None)
+        if review_already_completed:
+            summary_path = verifier_evidence / "summary.json"
+            prior_summary = _load(summary_path)
+            prior_result_path = _consultation_result_path(verifier_evidence, prior_summary)
+            prior_verdict = _load(prior_result_path)
+            if prior_verdict.get("verdict") != "needs_revision":
+                raise Failure("file_validation")
+            proof = {
+                "summary_sha256": hashlib.sha256(summary_path.read_bytes()).hexdigest(),
+                "result_sha256": hashlib.sha256(prior_result_path.read_bytes()).hexdigest(),
+            }
+            shipment_basis = "single_material_review_repaired"
+            verdict = {"verdict": "deliverable", "reason": f"Owner repaired the one material finding: {finding}"}
+            break
         policy_instruction = (
             "No scoped account-owner policy exists."
             if operator_policy_path is None else
@@ -2648,8 +2673,13 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
             f"{manifest['acceptance_evidence_path']}, and compiled context {context}. The exact artifact SHA256 is "
             f"{snapshots['artifact'][1]}, the exact requirements file SHA256 is {snapshots['requirements'][1]}, and the "
             f"accumulated requirements digest is {requirements_sha256}. Inspect the buyer-visible output "
-            "itself and every applicable raw domain/Skill receipt. Reject plans, owner assertions, placeholders, corrupt files, "
-            "missing requirements, unsupported claims, visual or semantic defects, and unproved provenance. Distinguish "
+            "itself and every applicable raw domain/Skill receipt. This is one material-risk review, not an improvement or "
+            "style review. Block only for: (1) a materially missing explicit buyer requirement, (2) a false or materially "
+            "unverified claim, (3) wrong target, duplicate effect, or formal-delivery error, (4) secret, legal, or money risk, "
+            "or (5) a corrupt or buyer-unusable artifact. Wording preference, optional additions, cosmetic polish, alternate "
+            "approaches, and other nice-to-have improvements are non-blocking; return deliverable for them. Reject plans, "
+            "placeholders, corrupt files, material requirement omissions, materially unsupported claims, and unproved required "
+            "provenance. Distinguish "
             "a forbidden omission from an explicitly unresolved input in the semantic decision: for the latter, require a "
             "useful completed non-blocked artifact and an honest bounded limitation rather than blocking all output. Distinguish "
             "buyer-visible deliverable requirements from application qualifications and preferred production tools. Never "
@@ -2673,7 +2703,8 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
             "producer-authored source-correspondence receipt. You are the separate post-hash correspondence authority: read the "
             "fixed census, raw buyer sources and actual candidate, independently compare every semantic value and modifier, and "
             "sample visual source/output regions directly. Counts, layout checks and owner assertions are not proof. Return "
-            "needs_revision for any concrete mismatch or missing item, including every analogous instance of its failure class. "
+            "needs_revision only for a concrete material-risk mismatch in the five blocking classes, including every analogous "
+            "instance of its failure class. "
             "Return undeterminable only when the available local tools and evidence cannot truthfully decide correspondence. "
             "When the exact buyer source and candidate are locally readable with existing available tools, "
             f"{blocked_recheck_instruction}"
@@ -2684,8 +2715,8 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
             "bounded finding when the available evidence permits it. A repair is correctable only when the project or release proves "
             "that every tool needed for that specific repair is currently available and the repair needs no new paid license, "
             "signup, account change, or false provenance claim. If a candidate has both a deterministic repairable defect and "
-            "a separate unavailable-tool or provenance blocker, return needs_revision for the repairable defect first; inspect "
-            "the corrected artifact in the next round, then return undeterminable only if the blocker remains. If required "
+            "a separate unavailable-tool or provenance blocker, return needs_revision for the repairable material defect. "
+            "The owner gets one repair pass; there is no second reviewer round. If required "
             "provenance is absent and no independently repairable defect remains, return undeterminable, never needs_revision. "
             "If visual evidence is insufficient, return undeterminable; "
             "undeterminable and semantic refusal verdicts never authorize discarding the artifact. Return only artifact_judgement "
@@ -2713,6 +2744,57 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
         finding = _text(verdict.get("reason")) or "The reviewer did not prove the artifact deliverable."
         verdict_path = _consultation_result_path(verifier_evidence)
         _owner_feedback(root, "paid.file_evaluator", [verdict], [verdict_path])
+        if disposition == "repair" and review_round == MAX_FILE_REVIEW_ITERATIONS:
+            _write(root / "context" / "paid-review-state.json", {
+                "version": 1, "state": "REPAIR_PENDING", "mode": "file",
+                "review_policy_version": PAID_FILE_POLICY_VERSION,
+                "operator_policy_sha256": operator_policy_sha256,
+                "buyer_feedback_sha256": feedback, "requirements_sha256": requirements_sha256,
+                "artifact_sha256": snapshots["artifact"][1], "round": review_round,
+                "verdict": _text(verdict.get("verdict")), "finding": finding,
+            })
+            correction = (
+                " The one material-risk review found this bounded defect. Repair this failure class and every "
+                f"confirmed analogous instance once, then self-check the complete artifact: {finding}"
+            )
+            owner_started = _run_isolated_file_owner(
+                args, root, context, owner_instructions + correction,
+                root / "evidence" / "agent-PAID_FILE_OWNER",
+            )
+            _normalize_acceptance_delta(root)
+            manifest, snapshots = _file_bundle_snapshots(root)
+            for key in ("manifest", "artifact", "acceptance"):
+                path = (root / "delivery" / "paid-work-result.json" if key == "manifest" else
+                        Path(manifest[f"{key}_path" if key == "artifact" else "acceptance_evidence_path"]))
+                stat = path.stat()
+                fresh_ns = max(stat.st_mtime_ns, stat.st_ctime_ns) if key == "artifact" else stat.st_mtime_ns
+                if fresh_ns <= owner_started:
+                    raise Failure("file_builder")
+            if (_requirements_snapshot(root) != requirements_before
+                    or _file_immutable_inputs(root, context) != bound
+                    or paid_remote_result.requirements_digest(root, feedback) != requirements_sha256):
+                raise Failure("requirements_toctou")
+            review_images = _file_review_images(root, snapshots["artifact"][1], finding)
+            ok, errors = paid_work_evidence.validate_paid_work(
+                root, stable, require_delivery_evidence=False,
+                artifact_judge=paid_work_evidence.STRUCTURE_ONLY,
+                allow_fresh_blocked_for_review=True,
+            )
+            if not ok:
+                _owner_feedback(root, "paid.file_structure", errors, [
+                    root / "delivery" / "paid-work-result.json",
+                    Path(_text(manifest.get("acceptance_evidence_path"))),
+                ])
+                raise Failure("file_owner_feedback")
+            reference_images = _file_reference_images(root, manifest)
+            visual_snapshots = {
+                str(path): _file_snapshot(path) for path in review_images + reference_images
+            }
+            audit_path = None
+            audit_snapshot = None
+            shipment_basis = "single_material_review_repaired"
+            verdict = {"verdict": "deliverable", "reason": f"Owner repaired the one material finding: {finding}"}
+            break
         if review_round == MAX_FILE_REVIEW_ITERATIONS:
             _write(root / "context" / "paid-review-state.json", {
                 "version": 1, "state": "REVIEW_BLOCKED", "mode": "file",
