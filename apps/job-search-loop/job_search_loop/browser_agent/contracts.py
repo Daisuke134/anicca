@@ -171,6 +171,15 @@ class ResumeCursorV1:
 
 
 @dataclass(frozen=True, slots=True)
+class QueueRowReceiptV1:
+    application_id: str
+    company: str
+    role: str
+    status: str
+    error_type: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class FieldQuestionV1:
     label: str
     field_type: str

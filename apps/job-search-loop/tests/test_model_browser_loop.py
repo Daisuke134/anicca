@@ -226,9 +226,10 @@ class ModelBrowserLoopContractTests(unittest.TestCase):
         )
         self.assertIn('"status": "model_owned"', daily)
         self.assertIn(
-            "Process every eligible Workday row returned by both Ledger queue methods",
+            "process the entire returned tuple with `RowQueueSupervisor.run`",
             normalized_prompt,
         )
+        self.assertIn("Never return from the wake because one row fails", prompt)
         self.assertNotIn("do not reopen a row it advanced", prompt)
         self.assertNotIn("preserve that exact blocker", prompt)
 
