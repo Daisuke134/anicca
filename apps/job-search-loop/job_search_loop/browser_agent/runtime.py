@@ -297,6 +297,19 @@ async def _act_locked(action_path: Path) -> dict[str, Any]:
     row, session, checkpoints, evidence, cursor, builder = await _context()
     before = await builder.build(cursor.handle)
     action = _action(_private_action(action_path))
+    if (
+        action.kind == "type"
+        and action.target is not None
+        and action.target.stable_id == "automation:searchBox"
+        and any(
+            control.role == "option" and not control.disabled
+            for control in before.controls
+        )
+    ):
+        raise RuntimeError(
+            "custom combobox already has visible options; click one exact observed "
+            "option instead of typing a filter"
+        )
     decision_signature = _reject_repeated_decision(before.content_sha256, action_path)
     remaining = _wake_budget(consume=True)
     receipt = await ActionExecutor(session).execute(cursor.handle, action)
