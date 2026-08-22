@@ -59,7 +59,13 @@ class ActionExecutor:
                   const linked = el.labels && el.labels.length
                     ? Array.from(el.labels).map(x => x.innerText).join(' ') : '';
                   const actual = (own || linked || el.getAttribute('placeholder') || el.innerText || '').trim();
-                  return expected.exact ? actual === expected.label : actual.includes(expected.label);
+                  const variants = [actual];
+                  if (el.hasAttribute('aria-checked')) {
+                    variants.push(`${actual} ${el.getAttribute('aria-checked') === 'true' ? 'checked' : 'not checked'}`);
+                  }
+                  return expected.exact
+                    ? variants.includes(expected.label)
+                    : variants.some(value => value.includes(expected.label));
                 }""",
                 {"label": target.label, "exact": target.exact},
             ):
