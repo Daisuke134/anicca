@@ -121,3 +121,12 @@ unrelated dirty paths `docs/loops/x-repost.md` and `state/effective-cron/`.
   the installed release, kick only the existing daily owner, resume `JR334569`, and
   close only on Workday completion UI or an exact receipt email plus Ledger and
   Telegram provider-message-ID reconciliation.
+- OS readback identifies the control-plane failure as a lost console session, not a
+  Workday or Luna failure: `/dev/console` is root, `loginwindow` and WindowServer
+  restarted after the disk event, while this Codex app-server remains attached to
+  the older orphaned GUI bootstrap. It cannot capture display 0, resolve Directory
+  Services, reach CDP, or resolve `api.telegram.org`. The private credential SSOT has
+  no macOS/loginwindow credential entry, so this context cannot authenticate the
+  console session without inventing a credential. A milestone Telegram attempt
+  failed before provider acceptance with DNS resolution failure; no message ID was
+  produced and no success report was sent.
