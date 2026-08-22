@@ -2849,12 +2849,18 @@ code is installed or committed as a substitute for this queue.
   `0`. This is observed non-money, not a conversion or earning. `launchctl` reads
   `runs=42`, last exit `0`; owner Telegram is `SENT`, message ID `28492`. Rolling
   money remains `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`.
-- **FUNNEL-E — NEXT — focus one cohort:** select exactly one existing placement by
-  qualified buyer intent plus the observed zero interval, not by treating historic
-  clicks as money. Pause placement expansion until this cohort reaches its declared
-  maturity or a typed terminal state. Persist placement ID, buyer problem,
-  decision-stage query, evidence hashes, chosen channel set, selection reason, and
-  one-variable hypothesis before any new publication effect.
+- **FUNNEL-E — DONE — focus one cohort:** installed release
+  `b149b14748a7bf00f0b0232af0b598f75a68fd69` persists hash-valid, mode-0600,
+  single-history receipt `1aa7970d…44631b`. It selects
+  `elevenlabs-discovered-subtitle-translator-en-1` as a non-money focused
+  exploration from the exact pre-payment buyer intent plus the strongest existing
+  provider signal (`7` clicks / `6` unique), not as a revenue winner. Buyer problem,
+  decision-stage title, plan/placement IDs, source interval/snapshot hashes,
+  channel set, selection basis, and expansion pause are bound to the receipt.
+  Existing in-flight work remains reconcilable; broad legacy/new placement fallback
+  is held. Owner run `44` reads quarantine `CLEAR`, publication
+  `FOCUSED_COHORT_HELD`, placement count `24`, link changed `false`, distribution
+  changed `false`, and Telegram message `28498`. Money remains `NO_TRANSACTIONS`.
 
 **Publication cadence decision for FUNNEL-E through FUNNEL-H:** the owner may check
 for qualified buyer signals repeatedly, but publication acts only on an admitted
@@ -2872,7 +2878,7 @@ Evidence for this decision is pinned rather than paraphrased as folklore:
 - Google Search Central, [scaled content and thin affiliation](https://developers.google.com/search/docs/essentials/spam-policies#scaled-content): scaled unoriginal pages and merchant-copy affiliate pages add no value; good affiliate pages add original reviews, testing, comparisons, or useful features.
 - [`coreyhaines31/marketingskills@3df87f9`](https://github.com/coreyhaines31/marketingskills/tree/3df87f97621e18fbed7f6aa684edba54f49779a7/skills/marketing-loops): separate check cadence from act conditions, match cadence to signal speed, and treat over-frequent loops as busywork/noise.
 - [`Affitor/affiliate-skills@ed17ef3`](https://github.com/Affitor/affiliate-skills/blob/ed17ef37bc167b52d9596cbe0292507f001c483d/skills/automation/content-repurposer/SKILL.md): repurpose one proven article into native formats, schedule distribution across days, and feed measured format performance back into the next choice. Its unverified revenue examples are not adopted.
-- **FUNNEL-F — one-variable hypothesis:** version one change to offer, proof, CTA,
+- **FUNNEL-F — NEXT — one-variable hypothesis:** version one change to offer, proof, CTA,
   or intent framing while holding placement, provider link, and other content
   variables fixed; the metric is customer or transaction conversion.
 - **FUNNEL-G — focused owner distribution:** existing owners distribute only the

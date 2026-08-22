@@ -1593,3 +1593,26 @@ variants per admitted asset across subsequent days. Repeated checks may skip. Th
 Google's people-first/thin-affiliate rules plus the pinned `marketingskills`
 check-vs-act loop pattern and `affiliate-skills` repurpose-and-measure pattern; it
 does not copy those repositories' unverified revenue claims.
+
+FUNNEL-E is now `DONE`. Release
+`b149b14748a7bf00f0b0232af0b598f75a68fd69` is installed and byte-equal to the
+source. The existing owner created mode-0600, hash-valid, one-history focus receipt
+`1aa7970d7582a888e304e40cb0ee5aed88976560a6fc7666bf4393042a44631b` for
+`elevenlabs-discovered-subtitle-translator-en-1`. Selection basis is exact
+pre-payment intent, then existing provider unique/click counts (`6/7`); it is
+explicitly `NON_MONEY`, not a winner claim. Run 43 created the local focus receipt
+with no new link/publication/distribution and placement count `24`. Readback also
+exposed an older `publication.advance` quarantine caused by legacy fallback trying
+to republish a conflicting slug after all generic campaigns were live. Release
+`b149b1474` holds that legacy/TTS fallback during focused mode while retaining
+in-flight generic reconciliation. Owner run 44 then read quarantine `CLEAR`,
+publication `FOCUSED_COHORT_HELD / ALREADY_LIVE`, placement count `24`, link changed
+`false`, distribution changed `false`, exit `0`, and Telegram `28498`. No external
+publication effect occurred; rolling money remains `NO_TRANSACTIONS`.
+
+The next atomic item is FUNNEL-F: bind exactly one changed variable for the focused
+Subtitle Translator cohort. Do not create another placement or call historic clicks
+money. The hypothesis must identify the current control artifact, one of offer /
+proof / CTA / intent framing, the replacement value, exposure start, maturity
+boundary, and customer/transaction outcome metric before FUNNEL-G lets existing
+owners distribute it.
