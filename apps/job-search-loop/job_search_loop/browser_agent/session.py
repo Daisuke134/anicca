@@ -37,9 +37,22 @@ class BrowserSession:
             return await self._connector(endpoint)
         from playwright.async_api import async_playwright
 
-        driver = await async_playwright().start()
-        self._drivers.append(driver)
-        return await driver.chromium.connect_over_cdp(endpoint)
+        last_error: Exception | None = None
+        for attempt in range(3):
+            driver = await async_playwright().start()
+            try:
+                browser = await driver.chromium.connect_over_cdp(
+                    endpoint, timeout=10_000
+                )
+            except Exception as error:
+                last_error = error
+                await driver.stop()
+                if attempt < 2:
+                    await asyncio.sleep(2)
+                continue
+            self._drivers.append(driver)
+            return browser
+        raise RuntimeError("existing CDP owner did not accept a bounded attach") from last_error
 
     @staticmethod
     async def _marker(page: Any) -> str | None:
