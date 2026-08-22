@@ -255,13 +255,20 @@ payments and read payouts; private receipts determine API/browser transport.
 **Interfaces:** Produces `UpworkTransport.for_action(action)` selecting approved official API first,
 then approved CloakBrowser; never falls through from an unauthorized transport.
 
-- [ ] Write failing tests for API preference, approved browser fallback, expired authorization and
+- [x] Write failing tests for API preference, approved browser fallback, expired authorization and
   zero transport.
-- [ ] Implement bounded OAuth2 token handling and existing CloakBrowser profile lookup without
+- [x] Implement bounded OAuth2 token handling and existing CloakBrowser profile lookup without
   logging tokens/cookies.
-- [ ] Ensure API and browser share one logical effect identity.
+- [x] Ensure API and browser share one logical effect identity.
 - [ ] Run a real authenticated read-only identity probe and retain a redacted private receipt.
-- [ ] Run focused tests and commit/push.
+- [x] Run focused tests and commit/push.
+
+Live probe evidence: the owner account exists and the dedicated `gig-upwork` profile reached Google
+two-step verification after password authentication. The agent did not bypass that identity control.
+Private redacted receipt hash
+`1dcbeb2544684af696f204583adb7ca9e29c6cdec89dadef3960f58c4ed40ccf` and pending ceremony `1`
+retain the exact resume boundary. The identity-probe checkbox remains open until the ceremony completes
+and Upwork returns an authenticated account identity.
 
 ### Task 9: Discover and normalize Upwork jobs
 
