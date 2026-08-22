@@ -189,21 +189,26 @@ set -a
 . "$HOME/.openclaw/.env" 2>/dev/null
 set +a
 
-# Do this before the hourly guard: a pass with nothing to publish is still a chance to deliver a
+# Do this before the half-hour guard: a pass with nothing to publish is still a chance to deliver a
 # report that an earlier pass could not.
 flush_report_backlog
 
-# ---------------------------------------------------------------- gate: at most one post per hour
-# Cadence and duplicate protection are hourly. The owner instruction disables the daily action
+# ---------------------------------------------------------- gate: at most one post per half-hour
+# Cadence and duplicate protection use local half-hour slots. The owner instruction disables the daily action
 # cap; setting X_REPOST_DAILY_MAX to a positive integer is an explicit emergency override only.
-THIS_HOUR="$(date +%Y-%m-%dT%H)"
-TODAY="$(date +%F)"
+read -r THIS_SLOT TODAY <<<"$("$PY" - <<'PYEOF'
+import datetime
+now = datetime.datetime.now().astimezone()
+slot_minute = 0 if now.minute < 30 else 30
+print(now.strftime("%Y-%m-%dT%H:") + f"{slot_minute:02d}", now.strftime("%Y-%m-%d"))
+PYEOF
+)"
 # Count only rows that actually reached X. A row recorded as not_posted proves the opposite --
-# letting it hold the hourly slot would turn one failed attempt into a silent hour of no output.
-read -r HOUR_COUNT TODAY_COUNT ORIGINAL_TODAY_COUNT <<<"$("$PY" - "$POSTED" "$THIS_HOUR" "$TODAY" <<'PYEOF'
+# letting it hold the half-hour slot would turn one failed attempt into a silent slot of no output.
+read -r SLOT_COUNT TODAY_COUNT ORIGINAL_TODAY_COUNT <<<"$("$PY" - "$POSTED" "$THIS_SLOT" "$TODAY" <<'PYEOF'
 import json, sys
-path, this_hour, today = sys.argv[1:4]
-hour = day = original = 0
+path, this_slot, today = sys.argv[1:4]
+slot = day = original = 0
 try:
     lines = open(path, encoding="utf-8").read().splitlines()
 except OSError:
@@ -219,10 +224,10 @@ for line in lines:
     if row.get("status") == "not_posted":
         continue
     at = row.get("posted_at", "")
-    hour += at.startswith(this_hour)
+    slot += at.startswith(this_slot)
     day += at.startswith(today)
     original += at.startswith(today) and row.get("kind") == "original" and bool(row.get("post_url"))
-print(hour, day, original)
+print(slot, day, original)
 PYEOF
 )"
 # An accepted original can appear on the public timeline after the publishing pass gives up.
@@ -289,12 +294,12 @@ fi
 # so the generic calendar-hour fence adds no duplicate protection and only suppresses distinct
 # placement distribution. Keep the fence for ordinary quote/reply work; let the replay-safe
 # Affiliate branch proceed immediately when the existing owner is explicitly kicked.
-if [ "${HOUR_COUNT:-0}" -gt 0 ] \
+if [ "${SLOT_COUNT:-0}" -gt 0 ] \
   && [ "$GENERIC_RECOVERY_PENDING" != "True" ] \
   && [ "$AFFILIATE_STATE" != "READY" ] \
   && [ "$AFFILIATE_STATE" != "RECONCILE" ] \
   && [ "$AFFILIATE_STATE" != "VERIFY_UNVERIFIED" ]; then
-  log "already published this hour ($THIS_HOUR) -- nothing to do"
+  log "already published this half-hour slot ($THIS_SLOT) -- nothing to do"
   touch "$STATE/.last-pass"
   exit 0
 fi
