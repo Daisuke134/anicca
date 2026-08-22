@@ -38,13 +38,18 @@ class ObservationBuilder:
               const label = el => {
                 const own = el.getAttribute('aria-label') || el.getAttribute('title') || '';
                 const linked = el.labels && el.labels.length ? Array.from(el.labels).map(x => x.innerText).join(' ') : '';
-                return (own || linked || el.getAttribute('placeholder') || el.innerText || '').trim();
+                const labelledBy = (el.getAttribute('aria-labelledby') || '').split(/\\s+/).filter(Boolean)
+                  .map(id => document.getElementById(id)?.innerText || '').join(' ');
+                const relatedInput = el.closest('[data-automation-id="multiselectInputContainer"]')?.querySelector('input');
+                const related = relatedInput && relatedInput !== el
+                  ? `${label(relatedInput)} options` : '';
+                return (own || linked || labelledBy || el.getAttribute('placeholder') || el.innerText || related || '').trim();
               };
-              const nodes = Array.from(document.querySelectorAll('input,button,select,textarea,a,[role]'))
+              const nodes = Array.from(document.querySelectorAll('input,button,select,textarea,a,[role],[data-automation-id]'))
                 .filter(visible)
-                // Decorative role-bearing SVGs and containers are not
-                // operable model choices.  Every exposed control must have a
-                // user-facing label that the executor can resolve safely.
+                .filter(el => ['INPUT','BUTTON','SELECT','TEXTAREA','A'].includes(el.tagName)
+                  || (el.getAttribute('role') && el.getAttribute('role') !== 'presentation')
+                  || getComputedStyle(el).cursor === 'pointer')
                 .filter(el => label(el).length > 0);
               const automationCounts = new Map();
               const idCounts = new Map();
@@ -72,7 +77,7 @@ class ObservationBuilder:
               }[el.tagName] || (el.tagName === 'INPUT' ? (
                 ['checkbox', 'radio', 'button', 'submit'].includes(el.type)
                   ? el.type.replace('submit', 'button') : 'textbox'
-              ) : ''));
+              ) : (getComputedStyle(el).cursor === 'pointer' ? 'button' : '')));
               const controls = nodes.map((el, index) => ({
                   tag: el.tagName.toLowerCase(), role: role(el),
                   control_type: el.getAttribute('type') || '', label: label(el),

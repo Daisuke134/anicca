@@ -5,6 +5,14 @@ from job_search_loop.browser_agent.direct_cdp import DirectCDPPage
 
 
 class DirectCDPTypeTests(unittest.IsolatedAsyncioTestCase):
+    def test_target_resolution_includes_pointer_operated_provider_controls(self):
+        script = DirectCDPPage._target_script(
+            {"label": "Search options", "role": "button", "stable_id": "automation:picker"}
+        )
+        self.assertIn("[data-automation-id]", script)
+        self.assertIn("cursor==='pointer'?'button'", script)
+        self.assertIn("relatedInput", script)
+
     async def test_type_selects_the_existing_whole_value_before_inserting(self):
         page = DirectCDPPage("ws://example", "target")
         page.click_target = AsyncMock()

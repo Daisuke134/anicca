@@ -172,13 +172,16 @@ class DirectCDPPage:
           const label = el => {{
             const own=el.getAttribute('aria-label')||el.getAttribute('title')||'';
             const linked=el.labels&&el.labels.length?Array.from(el.labels).map(x=>x.innerText).join(' '):'';
-            return (own||linked||el.getAttribute('placeholder')||el.innerText||'').trim();
+            const labelledBy=(el.getAttribute('aria-labelledby')||'').split(/\\s+/).filter(Boolean).map(id=>document.getElementById(id)?.innerText||'').join(' ');
+            const relatedInput=el.closest('[data-automation-id="multiselectInputContainer"]')?.querySelector('input');
+            const related=relatedInput&&relatedInput!==el?`${{label(relatedInput)}} options`:'';
+            return (own||linked||labelledBy||el.getAttribute('placeholder')||el.innerText||related||'').trim();
           }};
           const semanticLabel = value => String(value || '').trim()
             .replace(/\\s+not checked$/i, '')
             .replace(/\\s+checked$/i, '')
             .replace(/,\\s*press delete to clear value\\.$/i, '');
-          const role = el => el.getAttribute('role') || ({{A:'link',BUTTON:'button',SELECT:'combobox',TEXTAREA:'textbox'}}[el.tagName] || (el.tagName==='INPUT' ? (['checkbox','radio','button','submit'].includes(el.type)?el.type.replace('submit','button'):'textbox') : ''));
+          const role = el => el.getAttribute('role') || ({{A:'link',BUTTON:'button',SELECT:'combobox',TEXTAREA:'textbox'}}[el.tagName] || (el.tagName==='INPUT' ? (['checkbox','radio','button','submit'].includes(el.type)?el.type.replace('submit','button'):'textbox') : (getComputedStyle(el).cursor==='pointer'?'button':'')));
           let nodes=[];
           if (target.stable_id) {{
             const [kind,...rest]=target.stable_id.split(':');
@@ -187,7 +190,7 @@ class DirectCDPPage:
             if (attr) nodes=Array.from(document.querySelectorAll(`[${{attr}}]`)).filter(el=>el.getAttribute(attr)===value);
           }}
           if (!nodes.length) {{
-            nodes=Array.from(document.querySelectorAll('input,button,select,textarea,a,[role]'));
+            nodes=Array.from(document.querySelectorAll('input,button,select,textarea,a,[role],[data-automation-id]'));
           }}
           nodes=nodes.filter(el=>visible(el)&&!el.disabled&&el.getAttribute('aria-disabled')!=='true')
             .filter(el=>!target.role||role(el)===target.role)
