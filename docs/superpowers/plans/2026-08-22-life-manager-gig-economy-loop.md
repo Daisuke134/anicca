@@ -396,6 +396,20 @@ U13 atomic order:
     7/11/9 Connects with identical proposal hashes. An earlier attempt exited 120 while a concurrent
     release expansion exhausted disk headroom; it wrote neither state nor ledger effect. Replaying
     after that producer stopped proved recovery without a duplicate marketplace or ledger effect.
+12. **CONTROL-PLANE RECOVERY IN PROGRESS:** the last official wake persisted at
+    `2026-08-22T18:46:29.413515+00:00` before evidence allocation failed with
+    `OSError: [Errno 28] No space left on device`. The stored official truth remains Connects 0,
+    submitted proposals 0, invitations 0, offers 0, active contracts 0, Catalog orders 0 and
+    earnings USD 0; it is stale rather than a current successful wake. Reclaim removed only the
+    regenerable `~/.npm/_npx` cache plus two unpinned immutable releases while preserving current,
+    live and rollback releases. Free space recovered from roughly 320 MiB to 20.08 GiB; the owning
+    disk sentinel then cleared both `disk-writers.stop` and `disk-pressure.block` through their
+    normal >=11 GiB recovery condition. The remaining fault is the orphaned Codex GUI context:
+    `launchctl print gui/501/...` returns 141, the previous Chromium reports WindowServer port death,
+    and the canonical browser entrypoint cannot persist the macOS Chromium policy or start ports
+    9223/9233 from this context. No alternate profile, fake browser receipt, proposal or payment was
+    created. The next native Aqua wake must restart `ai.anicca.hf-gig-browser`, then the existing
+    five-minute provider must refresh all official rows before U14 may act.
 
 U14 atomic order:
 
@@ -881,12 +895,28 @@ workflow identity frozen before acceptance.
 
 **Interfaces:** Produces artifact versions, provenance, cost, elapsed time and execution receipt.
 
-- [ ] Write failing tests for uninstalled Skill, changed contract scope, expired deadline budget,
+- [x] Write failing tests for uninstalled Skill, changed contract scope, expired deadline budget,
   missing output and secret leakage.
-- [ ] Execute only the workflow frozen at qualification/contract acceptance.
-- [ ] Checkpoint each completed step and resume without repeating completed external effects.
-- [ ] Record model/tool cost and artifact hashes in the private ledger.
-- [ ] Run focused tests and commit/push.
+- [x] Execute only the workflow frozen at qualification/contract acceptance.
+- [x] Checkpoint each completed step and resume without repeating completed external effects.
+- [x] Record model/tool cost and artifact hashes in the private ledger.
+- [x] Run focused tests and commit/push.
+
+Task 17 implementation evidence: `workflow_executor.py` reuses the existing generic agent runner;
+it adds no agent service, database, marketplace client or delivery effect. Before invoking a model it
+recomputes the canonical contract, source-manifest, revision and frozen workflow hashes, resolves the
+installed Skill below the configured Skill root, verifies its version and deterministic bundle hash,
+and rejects an expired runner-sized deadline budget. The runner works only in a private staging
+directory and is instructed to produce local artifacts with zero marketplace, message, delivery,
+payment or browser effects. `runner_completed`, `artifacts_validated` and `completed` checkpoints
+resume without rerunning a completed runner step. Every artifact is contained, regular, nonempty,
+secret-scanned and hashed before any promotion; promotion is content-addressed and collision-safe.
+The mode-600 receipt and append-only economic fact contain paths, sizes, hashes, elapsed time and
+measured model/tool cost, never client content. Receipt-first crash recovery idempotently repairs a
+missing ledger fact without rerunning the Skill. Focused executor plus workspace integration tests
+pass 13/13, including a second tick after missing-output/secret rejection proving one runner
+invocation, and Python compilation plus `git diff --check` pass. No live execution is claimed:
+official Upwork contracts remain 0, so production has no contract workspace to run yet.
 
 ### Task 18: Independently verify deliverables
 
