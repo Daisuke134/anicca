@@ -2433,7 +2433,10 @@ def _run_isolated_file_owner(args, root: Path, context: Path, prompt_text: str,
             "blocked after writing the request; the durable controller will execute it outside this sandbox and "
             "resume this same owner to inspect the official receipt and finish the artifact. If "
             "context/paid-tool-results.json exists, read it as mechanical failure evidence and semantically choose "
-            "a different honest skill-supported input or approach. Never repeat the same capability and input hash.",
+            "a different honest skill-supported input or approach. If every recorded result is returncode -15 with "
+            "empty stdout and stderr, the controller was interrupted before producing a tool effect and the same "
+            "capability/input hash may be retried exactly once after a controller repair. Otherwise never repeat "
+            "the same capability and input hash.",
             encoding="utf-8",
         )
         staged_evidence = staging / "runner-evidence"
@@ -2621,13 +2624,25 @@ def _persist_owner_tool_failure(staging: Path, root: Path) -> None:
                 "path": raw,
                 "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
             })
+    results = sanitize(result.get("results", []))
+    interrupted_before_effect = (
+        isinstance(results, list) and bool(results)
+        and all(isinstance(row, dict) and row.get("returncode") == -15
+                and not _text(row.get("stdout")) and not _text(row.get("stderr"))
+                for row in results)
+    )
+    instruction = (
+        "Mechanical tool evidence only. The controller was interrupted before producing any tool output or "
+        "effect; after a controller repair, retry the same capability and input hash exactly once."
+        if interrupted_before_effect else
+        "Mechanical tool evidence only. Read the buyer context and choose a different honest "
+        "skill-supported input or approach; do not repeat the same capability and input hash."
+    )
     _write(root / "context" / "paid-tool-results.json", {
         "version": 1,
         "status": "failed",
-        "instruction": (
-            "Mechanical tool evidence only. Read the buyer context and choose a different honest "
-            "skill-supported input or approach; do not repeat the same capability and input hash."
-        ),
+        "instruction": instruction,
+        "interrupted_before_effect": interrupted_before_effect,
         "request_sha256": hashlib.sha256(request_path.read_bytes()).hexdigest(),
         "requests": requests,
         "inputs": inputs,
