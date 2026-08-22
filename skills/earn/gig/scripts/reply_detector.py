@@ -2149,15 +2149,17 @@ async def supervise_replies(
                 dispatch.task_done()
 
     async def reconciler() -> None:
+        delay = min(poll_seconds, reconcile_seconds)
         while not stop.is_set():
             try:
-                await asyncio.wait_for(stop.wait(), timeout=reconcile_seconds)
+                await asyncio.wait_for(stop.wait(), timeout=delay)
             except asyncio.TimeoutError:
                 if headroom_available():
                     try:
                         await _supervisor_hook(reconcile)
+                        delay = reconcile_seconds
                     except Exception:
-                        pass
+                        delay = min(poll_seconds, reconcile_seconds)
 
     producer_task = asyncio.create_task(producer(), name="gig-reply-producer")
     consumer_tasks = [

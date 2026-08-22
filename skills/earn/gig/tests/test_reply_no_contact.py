@@ -280,3 +280,35 @@ def test_telegram_report_does_not_call_zero_effect_command_sent(monkeypatch, tmp
 
     assert status == "deferred"
     assert call["timeout"] == 240
+
+
+def test_supervisor_runs_first_full_reconciliation_after_one_poll(tmp_path, monkeypatch):
+    stop = asyncio.Event()
+    reconciliations = []
+    registry = tmp_path / "no-contact.json"
+    registry.write_text('{"version":1,"entries":[]}', encoding="utf-8")
+    args = SimpleNamespace(
+        database=tmp_path / "outbox.sqlite3",
+        manifest=ROOT / "config/connectors/coconala.json",
+        no_contact_registry=registry,
+        poll_seconds=0.01, workers=2, reconcile_seconds=300,
+    )
+    monkeypatch.setattr(detector, "disk_headroom_ok", lambda: True)
+
+    async def probe():
+        return {"inquiries": []}
+
+    async def worker(_work):
+        raise AssertionError("empty inbox must not create work")
+
+    async def reconcile():
+        reconciliations.append(True)
+        stop.set()
+        return {}
+
+    asyncio.run(asyncio.wait_for(detector.supervise_replies(
+        args, probe=probe, worker=worker, reconcile=reconcile, stop=stop,
+        report_root=tmp_path / "evidence",
+    ), timeout=1))
+
+    assert reconciliations == [True]
