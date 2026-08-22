@@ -1,5 +1,8 @@
 Reconcile job-search email for the private account selected by the inbox driver.
 
+The inbox owner already has one authenticated Gog CLI mailbox account. Never start
+Google Sign-In, OAuth consent, browser Gmail login, or another mailbox session.
+
 The deterministic inbox driver appends the only candidate messages for this pass to
 the prompt, already fetched with `gog` using `--wrap-untrusted` and
 `--sanitize-content`. Do not invoke `gog`, Gmail, OAuth, or any second network read
