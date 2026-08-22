@@ -23,6 +23,8 @@ class MercorPassContractTests(unittest.TestCase):
             "never retry",
             "needs_human",
             "browser Google 2FA button named `はい`",
+            "Never write evidence",
+            "only the pass evidence directory",
         ):
             self.assertIn(required, prompt)
 

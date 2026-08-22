@@ -38,5 +38,7 @@ reset, registration, recursive alternate methods, or a different browser profile
 
 Evidence paths must be fresh files under the current pass evidence directory. Do not
 write private resume contents, passwords, tokens, or raw Gmail bodies into the
-result. The result must include `status`, all required arrays, and `evidence` even
-when no action is taken.
+result. Never write evidence, screenshots, DOM, queues, or temporary artifacts into
+the repository workdir or repo root; use only the pass evidence directory supplied
+by the parent. The result must include `status`, all required arrays, and `evidence`
+even when no action is taken.
