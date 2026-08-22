@@ -1,6 +1,7 @@
 import importlib.util
 import io
 import json
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -54,6 +55,40 @@ class CtaInstrumentationTests(unittest.TestCase):
         transformed = MODULE._transform_v2_library(library)
         self.assertIn("elevenlabs-discovered-", transformed)
         self.assertIn('product.kind === "app" && !providerToken', transformed)
+
+    def test_v3_page_sends_only_reduced_source_from_exact_affiliate_article(self):
+        page = '''import WriterUnlock from "../../../components/blog/WriterUnlock";
+function renderMarkdown(md: string): string {
+  const html = renderMarkdown(articleMarkdown);
+    <main className="bg-cream">'''
+        transformed = MODULE._transform_v3_page(page)
+        self.assertIn("AFFILIATE_ENTRY_V1", transformed)
+        self.assertIn("affiliatePlacement(articleMarkdown)", transformed)
+        self.assertIn("<AffiliateEntryReceipt placementId={affiliatePlacementId}", transformed)
+
+    def test_v3_client_never_sends_raw_referrer_query_cookie_ip_or_user_agent(self):
+        client = MODULE.V3_NEW_FILES[
+            "apps/landing/components/blog/AffiliateEntryReceipt.tsx"
+        ]
+        self.assertIn('? "X" : "UNKNOWN"', client)
+        self.assertIn('referrerPolicy: "no-referrer"', client)
+        self.assertIn('credentials: "omit"', client)
+        for forbidden in ("document.referrer,", "location.search", "document.cookie", "userAgent"):
+            self.assertNotIn(forbidden, client)
+
+    def test_generated_v3_netlify_handler_executes_its_real_node_test(self):
+        with tempfile.TemporaryDirectory() as root:
+            landing = Path(root)
+            for name, content in MODULE.V3_NEW_FILES.items():
+                relative = name.removeprefix("apps/landing/")
+                target = landing / relative
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(content, encoding="utf-8")
+            result = subprocess.run(
+                ["node", "--test", "netlify/functions/_lib/__tests__/marketing-entry.test.js"],
+                cwd=landing, capture_output=True, text=True, check=False,
+            )
+        self.assertEqual(result.returncode, 0, result.stderr or result.stdout)
 
 
 if __name__ == "__main__":

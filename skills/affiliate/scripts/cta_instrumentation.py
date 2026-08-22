@@ -27,6 +27,97 @@ V2_FILES = {
     "apps/landing/netlify/functions/_lib/__tests__/marketing-go.test.js": "2e64e76da4636afd33fc42d66565a68599f3c3219c980f175f33ca5081561a84",
 }
 V2_MARKER = "AFFILIATE_CTA_V2"
+V3_MARKER = "AFFILIATE_ENTRY_V1"
+V3_BASE_FILES = {
+    "apps/landing/app/blog/[slug]/page.tsx": "98a8ca2e105eb579ec18f01b51a158feced956c41d5695ba472ae62b2d7ed243",
+    "apps/landing/netlify/functions/marketing-go.js": "eb026683a32547851019423964672ea32c72fc18a145a359c6a0f2520c36f885",
+    "apps/landing/netlify/functions/_lib/marketing-go.js": "84c00fe2ab1083987544f228a837876670d6efd97f0f4adff417b94265f4d220",
+    "apps/landing/netlify/functions/_lib/__tests__/marketing-go.test.js": "1665c97279172db359fbd685471407ba04bf2767f9728d8331aaecec8f40af27",
+}
+V3_NEW_FILES = {
+    "apps/landing/components/blog/AffiliateEntryReceipt.tsx": '''"use client";
+
+import { useEffect } from "react";
+
+const X_HOSTS = new Set(["x.com", "www.x.com", "twitter.com", "www.twitter.com", "t.co"]);
+
+export default function AffiliateEntryReceipt({ placementId }: { placementId: string }) {
+  useEffect(() => {
+    let source = "UNKNOWN";
+    try { source = X_HOSTS.has(new URL(document.referrer).hostname.toLowerCase()) ? "X" : "UNKNOWN"; } catch {}
+    if (source !== "X") return;
+    void fetch("/.netlify/functions/marketing-entry", {
+      method: "POST", credentials: "omit", cache: "no-store", keepalive: true,
+      referrerPolicy: "no-referrer", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ placement_id: placementId, source }),
+    });
+  }, [placementId]);
+  return null;
+}
+// AFFILIATE_ENTRY_V1
+''',
+    "apps/landing/netlify/functions/marketing-entry.js": '''const { makeEntryHandler, makeSupabasePersist } = require("./_lib/marketing-entry");
+
+exports.handler = async (event) => {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return { statusCode: 503, body: "Entry receipt unavailable" };
+  return makeEntryHandler({ persist: makeSupabasePersist({ url, serviceKey: key }) })(event);
+};
+// AFFILIATE_ENTRY_V1
+''',
+    "apps/landing/netlify/functions/_lib/marketing-entry.js": '''const { randomUUID } = require("node:crypto");
+
+const PLACEMENT = /^elevenlabs-discovered-[a-z0-9][a-z0-9-]{2,60}-en-1$/;
+
+function makeSupabasePersist({ url, serviceKey, fetchImpl = fetch }) {
+  const endpoint = `${url.replace(/\\/$/, "")}/rest/v1/marketing_click_receipts`;
+  return async (receipt) => {
+    const response = await fetchImpl(endpoint, {
+      method: "POST", headers: { "Content-Type": "application/json", apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`, Prefer: "return=minimal" },
+      body: JSON.stringify(receipt),
+    });
+    if (!response.ok) throw new Error(`entry receipt storage failed: HTTP ${response.status}`);
+  };
+}
+
+function makeEntryHandler({ persist, now = () => new Date().toISOString(), receiptId = randomUUID }) {
+  return async (event) => {
+    if (event.httpMethod !== "POST") return { statusCode: 405, headers: { allow: "POST" }, body: "" };
+    let body;
+    try { body = JSON.parse(event.body || "{}"); } catch { return { statusCode: 400, body: "" }; }
+    if (!PLACEMENT.test(body.placement_id || "") || body.source !== "X")
+      return { statusCode: 400, body: "" };
+    const receipt = { schema_version: 1, receipt_id: receiptId(), campaign_token: "entry_x",
+      product_id: `entry:${body.placement_id}`, clicked_at: now() };
+    try { await persist(receipt); } catch { return { statusCode: 503, body: "" }; }
+    return { statusCode: 204, headers: { "cache-control": "no-store" }, body: "" };
+  };
+}
+
+module.exports = { PLACEMENT, makeEntryHandler, makeSupabasePersist };
+// AFFILIATE_ENTRY_V1
+''',
+    "apps/landing/netlify/functions/_lib/__tests__/marketing-entry.test.js": '''const test = require("node:test");
+const assert = require("node:assert/strict");
+const { makeEntryHandler } = require("../marketing-entry");
+
+test("persists only reduced X source and exact placement", async () => {
+  const rows = [];
+  const handler = makeEntryHandler({ persist: async (row) => rows.push(row),
+    receiptId: () => "entry-1", now: () => "2026-08-22T00:00:00Z" });
+  const placement = "elevenlabs-discovered-voice-changer-en-1";
+  assert.equal((await handler({ httpMethod: "POST", body: JSON.stringify({ placement_id: placement, source: "X" }) })).statusCode, 204);
+  assert.deepEqual(rows[0], { schema_version: 1, receipt_id: "entry-1", campaign_token: "entry_x",
+    product_id: `entry:${placement}`, clicked_at: "2026-08-22T00:00:00Z" });
+  assert.equal(JSON.stringify(rows[0]).includes("referrer"), false);
+  assert.equal((await handler({ httpMethod: "POST", body: JSON.stringify({ placement_id: placement, source: "UNKNOWN" }) })).statusCode, 400);
+  assert.equal(rows.length, 1);
+});
+// AFFILIATE_ENTRY_V1
+''',
+}
 
 
 class InstrumentationError(RuntimeError):
@@ -127,6 +218,31 @@ test("affiliate redirect does not require App Store provider token", async () =>
   assert.equal(writes.length, 1);
 });
 '''
+
+
+def _transform_v3_page(text):
+    text = text.replace(
+        'import WriterUnlock from "../../../components/blog/WriterUnlock";',
+        'import WriterUnlock from "../../../components/blog/WriterUnlock";\nimport AffiliateEntryReceipt from "../../../components/blog/AffiliateEntryReceipt"; // AFFILIATE_ENTRY_V1',
+    )
+    text = text.replace(
+        "function renderMarkdown(md: string): string {",
+        '''function affiliatePlacement(md: string): string | null { // AFFILIATE_ENTRY_V1
+  const match = md.match(/https:\\/\\/try\\.elevenlabs\\.io\\/(elevenlabs-discovered-[a-z0-9][a-z0-9-]{2,60}-en-1)/);
+  return match ? match[1] : null;
+}
+
+function renderMarkdown(md: string): string {''',
+    )
+    text = text.replace(
+        "  const html = renderMarkdown(articleMarkdown);",
+        "  const html = renderMarkdown(articleMarkdown);\n  const affiliatePlacementId = affiliatePlacement(articleMarkdown);",
+    )
+    text = text.replace(
+        '    <main className="bg-cream">',
+        '    <main className="bg-cream">\n      {affiliatePlacementId && <AffiliateEntryReceipt placementId={affiliatePlacementId} />}',
+    )
+    return text
 
 
 def _env(name):
@@ -270,9 +386,15 @@ def advance(state, landing_root, placement_id, owned_url):
         path.is_file() and V2_MARKER in path.read_text(encoding="utf-8")
         for path in v2_paths.values()
     )
+    v3_paths = {name: root / name for name in V3_NEW_FILES}
+    page_path = root / "apps/landing/app/blog/[slug]/page.tsx"
+    v3_ready = V3_MARKER in page_path.read_text(encoding="utf-8") and all(
+        path.is_file() and V3_MARKER in path.read_text(encoding="utf-8")
+        for path in v3_paths.values()
+    )
     if (
         prior.get("state") in {"DELIVERED", "LIVE"}
-        and v2_ready and _public_ready(owned_url, placement_id)
+        and v2_ready and v3_ready and _public_ready(owned_url, placement_id)
     ):
         receipt = {**prior, "state": "LIVE", "observed_at": datetime.now(timezone.utc).isoformat()}
         atomic_write(receipt_path, receipt)
@@ -321,6 +443,25 @@ def advance(state, landing_root, placement_id, owned_url):
             raise InstrumentationError("marketing-go V2 test failed")
         _git(root, "add", "--", *v2_paths)
         _git(root, "commit", "-m", "fix(marketing): admit fixed-host affiliate redirects")
+    if not v3_ready:
+        if _git(root, "status", "--porcelain"):
+            raise InstrumentationError("publication worktree is dirty before entry instrumentation")
+        for name, expected in V3_BASE_FILES.items():
+            if _sha(root / name) != expected:
+                raise InstrumentationError("publication entry source hash drift")
+        page_path.write_text(_transform_v3_page(page_path.read_text(encoding="utf-8")), encoding="utf-8")
+        for name, content in V3_NEW_FILES.items():
+            path = root / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(content, encoding="utf-8")
+        completed = subprocess.run(
+            ["node", "--test", "netlify/functions/_lib/__tests__/marketing-entry.test.js"],
+            cwd=root / "apps/landing", capture_output=True, check=False, timeout=60,
+        )
+        if completed.returncode:
+            raise InstrumentationError("marketing entry test failed")
+        _git(root, "add", "--", page_path, *v3_paths.values())
+        _git(root, "commit", "-m", "feat(marketing): receipt privacy-safe X entries")
     commit = _git(root, "rev-parse", "HEAD")
     remote = _git(root, "ls-remote", "origin", "refs/heads/main")
     remote_head = remote.split()[0] if remote else None
