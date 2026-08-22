@@ -184,31 +184,6 @@ for line in lines:
 print(hour, day)
 PYEOF
 )"
-AFFILIATE_TODAY_COUNT="$($PY - "$AFFILIATE_CONSUMED" "$TODAY" <<'PYEOF'
-import json, sys
-from datetime import datetime
-path, today = sys.argv[1:3]
-ids = set()
-try:
-    lines = open(path, encoding="utf-8").read().splitlines()
-except OSError:
-    lines = []
-for line in lines:
-    try:
-        row = json.loads(line)
-    except json.JSONDecodeError:
-        continue
-    if not isinstance(row, dict) or not row.get("proposal_id"):
-        continue
-    try:
-        observed = datetime.fromisoformat(str(row.get("observed_at", "")).replace("Z", "+00:00"))
-    except ValueError:
-        continue
-    if observed.tzinfo is not None and observed.astimezone().date().isoformat() == today:
-        ids.add(row["proposal_id"])
-print(len(ids))
-PYEOF
-)"
 set -a
 # shellcheck source=/dev/null
 . "$HOME/.openclaw/.env" 2>/dev/null
@@ -223,10 +198,6 @@ AFFILIATE_STATE="$($PY -c 'import json,sys; print(json.load(sys.stdin).get("stat
 if [ "$AFFILIATE_STATE" = "BLOCKED_LEGACY_CLAIM" ] || [ "$AFFILIATE_STATE" = "BLOCKED_CONSUMPTION_LEDGER" ]; then
   report "🛑 Affiliate proposal consumption state is unsafe; no new Affiliate or generic X post is allowed"
   finish 1 "affiliate proposal consumption state blocked"
-fi
-if [ "$AFFILIATE_STATE" = "READY" ] && [ "${AFFILIATE_TODAY_COUNT:-0}" -ge 1 ]; then
-  log "Affiliate daily ceiling reached (${AFFILIATE_TODAY_COUNT}/1) -- defer new proposal"
-  AFFILIATE_STATE="NO_PROPOSAL"
 fi
 if [ "${HOUR_COUNT:-0}" -gt 0 ]; then
   log "already published this hour ($THIS_HOUR) -- nothing to do"
