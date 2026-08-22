@@ -78,6 +78,20 @@ class LocalLoopTest(unittest.TestCase):
             self.assertTrue(MODULE.focused_publication_allowed(
                 state, "new-en-1", {"state": "OWNED_LIVE"},
             ))
+            MODULE.atomic_json(state / "acquisition-decisions" / "baseline.json", {
+                "state": "READY", "decision_id": "decision-1", "selected_variable": "cta",
+                "success_metric": "official transaction_count >= 1",
+                "next_campaign_instruction": "change only the CTA",
+            })
+            admitted = {"experiment": {
+                "baseline_sha256": "baseline", "decision_id": "decision-1",
+                "control_placement_id": "subtitle-en-1", "selected_variable": "cta",
+                "success_metric": "official transaction_count >= 1",
+                "instruction": "change only the CTA",
+            }}
+            self.assertTrue(MODULE.focused_publication_allowed(
+                state, "subtitle-en-experiment-1", {}, admitted,
+            ))
 
     def test_funnel_snapshot_ranks_top_three_and_preserves_unknown_denominators(self):
         with tempfile.TemporaryDirectory() as root:

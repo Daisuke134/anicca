@@ -289,15 +289,33 @@ def write_focused_baseline(state, focus):
     )
 
 
-def focused_publication_allowed(state, placement, progress):
+def focused_publication_allowed(state, placement, progress, handoff=None):
     path = state / "focused-cohort" / "latest.json"
     if not path.is_file():
         return True
     focus = json.loads(path.read_text(encoding="utf-8"))
-    return (
+    if (
         placement == focus.get("placement_id")
         or progress.get("state") in {"MATERIALIZED", "OWNED_NOT_LIVE", "OWNED_LIVE"}
-    )
+    ):
+        return True
+    experiment = (handoff or {}).get("experiment") or {}
+    baseline_sha256 = experiment.get("baseline_sha256", "")
+    decision_path = state / "acquisition-decisions" / f"{baseline_sha256}.json"
+    try:
+        decision = json.loads(decision_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    return all((
+        experiment.get("control_placement_id") == focus.get("placement_id"),
+        experiment.get("decision_id") == decision.get("decision_id"),
+        experiment.get("selected_variable") == decision.get("selected_variable"),
+        experiment.get("success_metric") == decision.get("success_metric"),
+        experiment.get("instruction") == decision.get("next_campaign_instruction"),
+        decision.get("state") == "READY",
+        re.search(r"\b(customer|transaction)(_count)?\b", decision.get("success_metric", ""), re.I),
+        not re.search(r"\b(view|click|engagement|impression)s?\b", decision.get("success_metric", ""), re.I),
+    ))
 
 
 def _private_env_value(name):
@@ -2668,7 +2686,7 @@ def advance_generic_publication(
             progress = json.loads(progress_path.read_text(encoding="utf-8"))
         except (OSError, ValueError):
             progress = {}
-        if not focused_publication_allowed(state, placement, progress):
+        if not focused_publication_allowed(state, placement, progress, handoff):
             continue
         owned_receipt_path = state / "owned-publications" / f"{slug}.json"
         x_receipt_path = state / "x-posts" / f"{placement}.json"
