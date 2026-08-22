@@ -23,9 +23,11 @@ AUTO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PUB="$AUTO/vendor/capafy-publisher"
 LIFE_MANAGER_STATE_HOME="${LIFE_MANAGER_STATE_HOME:-$HOME/.local/state/life-manager}"
 VENV="${CAPAFY_BROWSER_PYTHON:-python3}"
-# Capafy's OpenClaw packager validates the runtime shape under ~/.openclaw.
-# This is generated staging only; the canonical skill source remains in this repo.
-WS="${CAPAFY_WORKSPACE:-$HOME/.openclaw/workspace-capafy-life-manager}"
+# OpenClaw resolves provider config from $HOME/.openclaw/openclaw.json, not from
+# runtime_dir. Give the publisher an isolated HOME so it cannot package the
+# operator's live OpenClaw providers. Canonical skill source remains in this repo.
+CAPAFY_PUBLISH_HOME="${CAPAFY_PUBLISH_HOME:-$LIFE_MANAGER_STATE_HOME/runtime/capafy-publisher-home}"
+WS="${CAPAFY_WORKSPACE:-$CAPAFY_PUBLISH_HOME/.openclaw/workspace}"
 SKILL_NAME="$(basename "$SKILL_DIR")"
 SEL_FILE="$LIFE_MANAGER_STATE_HOME/state/capafy-autopublish/sel_one.json"
 
@@ -51,8 +53,8 @@ cp -R "$SKILL_DIR" "$WS/skills/$SKILL_NAME" || die "clean-WS copy failed"
 # run_online packaging scans the clean runtime, not the operator's ~/.openclaw.
 # Give that runtime one explicit hosted provider contract.  Keep only an env
 # reference here: CP2 supplies the real key from the private state env.
-mkdir -p "$WS/.openclaw"
-python3 - "$WS/.openclaw/openclaw.json" <<'PY'
+mkdir -p "$CAPAFY_PUBLISH_HOME/.openclaw"
+python3 - "$CAPAFY_PUBLISH_HOME/.openclaw/openclaw.json" <<'PY'
 import json, sys
 json.dump({
   "models": {"providers": {"openrouter": {
@@ -66,6 +68,7 @@ json.dump({
 PY
 
 step "[1] publish-init"
+export HOME="$CAPAFY_PUBLISH_HOME"
 cd "$PUB" || die "cd PUB"
 TITLE="$(grep -A1 '^## Title' "$LISTING" | tail -1)"
 # write selections via python (heredoc redirects can be blocked by the sandbox)

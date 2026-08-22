@@ -15,7 +15,9 @@ LISTING="${3:-}"
 AUTO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PUB="$AUTO/vendor/capafy-publisher"
 LIFE_MANAGER_STATE_HOME="${LIFE_MANAGER_STATE_HOME:-$HOME/.local/state/life-manager}"
+CAPAFY_PUBLISH_HOME="${CAPAFY_PUBLISH_HOME:-$LIFE_MANAGER_STATE_HOME/runtime/capafy-publisher-home}"
 VENV="${CAPAFY_BROWSER_PYTHON:-python3}"
+export HOME="$CAPAFY_PUBLISH_HOME"
 cd "$PUB" || { echo "❌ cd PUB"; exit 1; }
 
 step(){ echo ""; echo "━━━ $* ━━━"; }
@@ -131,9 +133,11 @@ sys.exit(0 if (st==1 and cfg==1) else 1)
 " || die "FINAL VERIFY failed (status/cfg not 1) for agent $ID"
 
 step "[8] ledger"
-python3 - "$ID" "$SKILL_NAME" "$LISTING" <<'PY'
+LEDGER="$LIFE_MANAGER_STATE_HOME/state/capafy-autopublish/published.jsonl"
+mkdir -p "$(dirname "$LEDGER")"
+python3 - "$ID" "$SKILL_NAME" "$LISTING" "$LEDGER" <<'PY'
 import json,sys
-aid,sn,listing=sys.argv[1],sys.argv[2],sys.argv[3]
+aid,sn,listing,ledger=sys.argv[1],sys.argv[2],sys.argv[3],sys.argv[4]
 title=sn
 try:
     for ln in open(listing):
@@ -143,7 +147,6 @@ try:
     if '## Title' in lines:
         i=lines.index('## Title'); title=lines[i+1] if i+1<len(lines) else sn
 except Exception: pass
-ledger="../../state/published.jsonl"
 # dedup: resuming an already-ledgered agent must not append a duplicate row
 import os
 if os.path.exists(ledger) and any(('"agent_id":"%s"'%aid) in l or ('"agent_id": "%s"'%aid) in l for l in open(ledger)):
@@ -155,5 +158,6 @@ else:
     },ensure_ascii=False)+"\n")
     print("ledger appended", aid)
 PY
+[ "$?" -eq 0 ] || die "ledger write failed for agent $ID"
 echo ""
 echo "✅ PUBLISHED + VERIFIED: agent_id=$ID ($SKILL_NAME) — status=1 under review."
