@@ -402,6 +402,28 @@ def test_provider_section_missing_times_out_and_ambiguous_path_fails_immediately
         module._ensure_raw_provider_section(_Ambiguous())
 
 
+def test_edit_mode_japanese_field_and_button_signatures_are_strict() -> None:
+    module = load_module()
+    focus = module._strict_focus_expression(module.OPENROUTER_API_KEY_PATH, "key")
+    model_focus = module._strict_focus_expression(module.OPENROUTER_API_KEY_PATH, "model")
+    save = module._strict_button_expression(module.OPENROUTER_API_KEY_PATH, "save")
+    assert "キャンセル" in focus and "保存" in focus and "キー" in focus
+    assert "モデル" in model_focus
+    assert "edit-signature" in focus and "edit-field-count" in focus
+    assert "キャンセル" in save and "保存" in save and "edit-signature" in save
+
+
+@pytest.mark.parametrize("failure", ({"ok": False, "reason": "edit-signature"}, {"ok": False, "reason": "edit-field-count", "count": 2}))
+def test_edit_mode_fallback_missing_or_duplicate_fails_closed(failure) -> None:
+    module = load_module()
+    page = object.__new__(module._RawPage)
+    page.evaluate = lambda _expression: failure
+    page.call = lambda *_args, **_kwargs: pytest.fail("edit fallback failure must not write")
+
+    with pytest.raises(RuntimeError):
+        page.strict_focus_and_insert(module.OPENROUTER_API_KEY_PATH, "key", "secret")
+
+
 def test_provider_state_evaluation_exception_propagates_immediately() -> None:
     module = load_module()
 

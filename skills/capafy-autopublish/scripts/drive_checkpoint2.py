@@ -294,16 +294,25 @@ def _fresh_success(before_url, before_toasts, current_url, toast):
 
 def _strict_focus_expression(path, role):
     predicates = {
-        "base": "(x.value||'').includes('api.')||(x.value||'').includes('openrouter.ai')||(x.placeholder||'').includes('api.')",
-        "model": "(x.value||'').startsWith('gpt-')||(x.value||'').startsWith('claude-')||(x.value||'').startsWith('anthropic/')||(x.value||'')==='auto'||(x.placeholder||'')==='Model'",
-        "key": "(x.placeholder||'').includes('Paste')||(x.placeholder||'').toLowerCase().includes('key')",
+        "base": "(x.value||'').includes('api.')||(x.value||'').includes('openrouter.ai')||/^https?:\\/\\//.test(x.value||'')||(x.placeholder||'').includes('api.')",
+        "model": "(x.value||'').startsWith('gpt-')||(x.value||'').startsWith('claude-')||(x.value||'').startsWith('anthropic/')||(x.value||'')==='auto'||['Model','モデル'].includes(x.placeholder||'')",
+        "key": "x.type==='password'&&((x.placeholder||'').includes('Paste')||(x.placeholder||'').toLowerCase().includes('key')||(x.placeholder||'').includes('キー'))",
     }
     predicate = predicates[role]
     return (
         "(() => {"
         f"const path={json.dumps(path)};"
         "const leaves=[...document.querySelectorAll('*')].filter(e=>(e.textContent||'').trim()===path&&![...e.children].some(c=>(c.textContent||'').trim()===path));"
-        "if(leaves.length!==1)return {ok:false,reason:'path-count',count:leaves.length};"
+        "if(leaves.length>1)return {ok:false,reason:'path-count',count:leaves.length};"
+        "if(leaves.length===0){"
+        "const visible=b=>!!(b.offsetWidth||b.offsetHeight||b.getClientRects().length);"
+        "const saves=[...document.querySelectorAll('button')].filter(b=>visible(b)&&/^(保存|Save)$/.test((b.textContent||'').trim()));"
+        "const cancels=[...document.querySelectorAll('button')].filter(b=>visible(b)&&/^(キャンセル|Cancel)$/.test((b.textContent||'').trim()));"
+        "if(saves.length!==1||cancels.length!==1)return {ok:false,reason:'edit-signature',saveCount:saves.length,cancelCount:cancels.length};"
+        f"const xs=[...document.querySelectorAll('input')].filter(x=>{predicate});"
+        "if(xs.length!==1)return {ok:false,reason:'edit-field-count',count:xs.length};"
+        "const x=xs[0];x.scrollIntoView({block:'center'});x.focus();x.select();return {ok:true,mode:'edit'};"
+        "}"
         "let card=leaves[0],matches=[];"
         "for(let k=0;k<12&&card;k++,card=card.parentElement){"
         f"const xs=[...card.querySelectorAll('input')].filter(x=>{predicate});"
@@ -328,7 +337,16 @@ def _strict_button_expression(path, kind):
         "(() => {"
         f"const path={json.dumps(path)};"
         "const leaves=[...document.querySelectorAll('*')].filter(e=>(e.textContent||'').trim()===path&&![...e.children].some(c=>(c.textContent||'').trim()===path));"
-        "if(leaves.length!==1)return {ok:false,reason:'path-count',count:leaves.length};"
+        "if(leaves.length>1)return {ok:false,reason:'path-count',count:leaves.length};"
+        "if(leaves.length===0){"
+        "if(" + ("true" if kind == "save" else "false") + "){"
+        "const visible=b=>!!(b.offsetWidth||b.offsetHeight||b.getClientRects().length);"
+        "const saves=[...document.querySelectorAll('button')].filter(b=>visible(b)&&/^(保存|Save)$/.test((b.textContent||'').trim()));"
+        "const cancels=[...document.querySelectorAll('button')].filter(b=>visible(b)&&/^(キャンセル|Cancel)$/.test((b.textContent||'').trim()));"
+        "if(saves.length!==1||cancels.length!==1)return {ok:false,reason:'edit-signature',saveCount:saves.length,cancelCount:cancels.length};"
+        "const b=saves[0];b.scrollIntoView({block:'center'});const r=b.getBoundingClientRect();return {ok:true,mode:'edit',x:r.x+r.width/2,y:r.y+r.height/2,disabled:!!b.disabled};"
+        "}return {ok:false,reason:'path-missing'};"
+        "}"
         "let card=leaves[0],buttons=[];"
         "for(let k=0;k<12&&card;k++,card=card.parentElement){"
         f"const bs=[...card.querySelectorAll('button')].filter(b=>{predicate});"

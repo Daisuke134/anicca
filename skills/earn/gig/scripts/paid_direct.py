@@ -2433,10 +2433,10 @@ def _run_isolated_file_owner(args, root: Path, context: Path, prompt_text: str,
             "blocked after writing the request; the durable controller will execute it outside this sandbox and "
             "resume this same owner to inspect the official receipt and finish the artifact. If "
             "context/paid-tool-results.json exists, read it as mechanical failure evidence and semantically choose "
-            "a different honest skill-supported input or approach. If every recorded result is returncode -15 with "
-            "empty stdout and stderr, the controller was interrupted before producing a tool effect and the same "
-            "capability/input hash may be retried exactly once after a controller repair. Otherwise never repeat "
-            "the same capability and input hash.",
+            "a different honest skill-supported input or approach. When that evidence explicitly marks "
+            "interrupted_before_effect=true, controller/native-application health failed before the input produced "
+            "an effect; after health is repaired and read back, retry the same capability/input hash. Otherwise "
+            "never repeat the same capability and input hash.",
             encoding="utf-8",
         )
         staged_evidence = staging / "runner-evidence"
@@ -2587,6 +2587,41 @@ def _execute_owner_tool_requests(staging: Path, code_root: Path) -> int:
     return len(results)
 
 
+def _tool_failure_before_input_effect(results: object) -> bool:
+    return (
+        isinstance(results, list) and bool(results)
+        and all(
+            isinstance(row, dict) and not _text(row.get("stdout"))
+            and (
+                row.get("returncode") == -15
+                or ("_ensure_responsive" in _text(row.get("stderr"))
+                    and "app.version" in _text(row.get("stderr"))
+                    and "timed out" in _text(row.get("stderr")))
+            )
+            for row in results
+        )
+    )
+
+
+def _refresh_owner_tool_failure_instruction(root: Path) -> None:
+    """Upgrade durable mechanical evidence using the current effect boundary."""
+    path = root / "context" / "paid-tool-results.json"
+    if not path.is_file():
+        return
+    value = _load(path)
+    if not isinstance(value, dict) or value.get("status") != "failed":
+        return
+    before_effect = _tool_failure_before_input_effect(value.get("results"))
+    value["interrupted_before_effect"] = before_effect
+    if before_effect:
+        value["instruction"] = (
+            "Mechanical tool evidence only. The controller or native-application health check failed before the "
+            "input produced any tool output or effect; after controller/application health is repaired and read "
+            "back, retry the same capability and input hash."
+        )
+        _write(path, value)
+
+
 def _persist_owner_tool_failure(staging: Path, root: Path) -> None:
     """Preserve mechanical failure facts for the next semantic owner decision."""
     def sanitize(value: Any) -> Any:
@@ -2625,15 +2660,11 @@ def _persist_owner_tool_failure(staging: Path, root: Path) -> None:
                 "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
             })
     results = sanitize(result.get("results", []))
-    interrupted_before_effect = (
-        isinstance(results, list) and bool(results)
-        and all(isinstance(row, dict) and row.get("returncode") == -15
-                and not _text(row.get("stdout")) and not _text(row.get("stderr"))
-                for row in results)
-    )
+    interrupted_before_effect = _tool_failure_before_input_effect(results)
     instruction = (
-        "Mechanical tool evidence only. The controller was interrupted before producing any tool output or "
-        "effect; after a controller repair, retry the same capability and input hash exactly once."
+        "Mechanical tool evidence only. The controller or native-application health check failed before the "
+        "input produced any tool output or effect; after controller/application health is repaired and read back, "
+        "retry the same capability and input hash."
         if interrupted_before_effect else
         "Mechanical tool evidence only. Read the buyer context and choose a different honest "
         "skill-supported input or approach; do not repeat the same capability and input hash."
@@ -2654,6 +2685,7 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
                               feedback: str, requirements_sha256: str, base: Path,
                               stable: Path) -> dict[str, Any]:
     code_root = HERE.parents[2]
+    _refresh_owner_tool_failure_instruction(root)
     context = root / "context" / "current.json"
     _run([sys.executable, str(args.context_compiler), "--project-root", str(root),
           "--queue-item", str(item_path), "--output", str(context)], "context_compile")

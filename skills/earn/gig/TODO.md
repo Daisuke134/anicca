@@ -346,6 +346,14 @@ controller repair the semantic owner may retry that same capability/input hash e
 error or repeated failure still requires a different honest input. Activate this policy with the open/readback
 repair before the next Haru owner pass.
 
+On the first post-repair retry, Illustrator still held the unanswered legacy Apple Event: the controller failed in
+`_ensure_responsive` at the `app.version` health check before opening either PDF. Accessibility readback showed the
+only open document was the Haru PC input and no new AI output existed, so Illustrator alone was restarted and
+officially read back as version `30.7.0`; browser and Paid state were preserved. Shared failure classification now
+uses the effect boundary rather than raw return code: an explicit native-app health-check failure before input
+effect does not poison the input hash, while any failure after input processing still does. The next natural pass
+must retry the two PDFs only after this positive health readback.
+
 **Current runtime refresh.** Unrelated dirty files remain untouched. The existing Paid pass naturally resumed the
 Haru v43 staging after compiling
 the complete proposal, DM, talkroom and attachment context. Haru `18169583` remains unsent. The resumed owner first
