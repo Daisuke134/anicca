@@ -27,7 +27,8 @@ Mercor is a global provider lane of Life Manager's existing Job Hunter system. I
 
 - Reconcile an existing in-progress Mercor application before discovering a new listing.
 - Apply only with verified profile facts and a read-back-verified resume artifact.
-- Do not impersonate interviews or assessments. Unsupported questions, CAPTCHA, and ambiguous attestations become `needs_human`.
+- Do not impersonate interviews or assessments. The current Japanese Evaluator's remaining step is a 14-minute camera/microphone `Domain Expert Interview`; leave `Start` untouched and route it to `needs_human`.
+- Unsupported questions, CAPTCHA, and ambiguous attestations become `needs_human`.
 - Count earnings only from an authoritative Mercor Earnings/contract settlement read-back; never count views, invitations, estimates, or pending offers.
 
 ## Calendar policy

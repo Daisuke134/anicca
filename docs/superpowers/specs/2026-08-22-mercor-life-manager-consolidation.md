@@ -93,7 +93,7 @@ Mercor interview messages enter the existing Job Hunter inbox lane. Reuse `apps/
 - Mercor skill/spec exist in the migration source and have been read back.
 - Canonical Life Manager repo already owns `skills/job-hunter/`, `apps/job-search-loop/`, and `loops/job-hunter/`.
 - The live Mercor profile is authenticated and the resume/profile fields were verified in the browser.
-- Japanese evaluator application is `in_progress_2_of_3`; Assessment remains; final submission is not observed.
+- Japanese evaluator application is `2_of_3`; the remaining step is a 14-minute `Domain Expert Interview` AI interview requiring camera and microphone; `Start` was not clicked and final submission is not observed.
 - Mercor Summary currently resets after reload and is tracked as `summary_unpersisted`.
 
 ## 9. Migration acceptance gate
@@ -113,7 +113,7 @@ Do not delete or archive the migration source until all are true:
 1. [x] Copy the Mercor provider policy and skill facade into this repository.
 2. [ ] Add the Mercor provider adapter to the existing job-search runtime; keep ATS, Gmail, Calendar, ledger, and browser side effects in their existing owners.
 3. [ ] Route all locales and role families through one material-variant/fact gate; remove any Japanese-only filter.
-4. [ ] Reconcile the Japanese evaluator Assessment and mark form vs human interview.
+4. [ ] User completes the Japanese evaluator's `Domain Expert Interview`; the loop must not click `Start` or impersonate the candidate.
 5. [ ] Add a Mercor fixture to the existing Gmail→FreeBusy→Calendar idempotency tests.
 6. [ ] Fix or explicitly quarantine the Summary persistence gap.
 7. [ ] Run one isolated Mercor pass through the existing Job Hunter launchd route.
