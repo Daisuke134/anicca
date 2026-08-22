@@ -31,6 +31,7 @@ class VisibleControlV1:
     checked: bool | None = None
     options: tuple[str, ...] = ()
     required: bool = False
+    filled: bool = False
 
 
 @dataclass(frozen=True, slots=True)

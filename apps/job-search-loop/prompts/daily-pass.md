@@ -65,6 +65,10 @@ employer, school, pronoun, or experience question. Resume-grounded `fact.*` conc
 are available for employer, education, project, and experience answers. For an
 optional disclosure field with no matching grounded fact, use
 `policy.prefer_not_to_say`; never fill it with an unrelated concept.
+On a resumed form, `filled=true` reveals only that a value exists, not that it is
+correct. Overwrite each visible text field once with the matching grounded concept;
+use `policy.prefer_not_to_say` for an optional disclosure field with no matching
+fact. Never trust a value left by an interrupted attempt.
 
 If the fresh provider page explicitly shows the job is no longer available and no
 application form exists, do not navigate to a listings page. Execute exactly:

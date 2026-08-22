@@ -188,6 +188,7 @@ def _safe_observation(observation, checkpoint, remaining_steps: int) -> dict[str
                 "label": _redact(control.label),
                 "disabled": control.disabled,
                 "required": control.required,
+                "filled": control.filled,
                 "stable_id": control.stable_id,
                 "checked": control.checked,
                 "options": [_redact(value) for value in control.options],
