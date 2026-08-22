@@ -364,6 +364,11 @@ the generated PNG/PDF/AI/SVG files can persist as non-zero local files; persiste
 candidate fit for delivery. The next candidate must branch from v27's approved visual lineage, replace only the
 PC/responsive inquiry sections with `2424.png` and `2.png`, regenerate every derivative, and be rejected if a
 full-preview comparison shows any unrelated page-wide layout regression.
+The minimal generic repair now stages every durable prior ZIP for the isolated owner and explicitly requires
+the manager to inspect previews plus the complete conversation and select the last buyer-accepted visual
+lineage; highest version is no longer treated as synonymous with accepted. It adds no Haru-specific branch,
+workflow state or new dependency. This source change is syntax-verified but is not production-proved until a
+published natural owner pass selects v27, builds the next version and passes the visual/effect gates below.
 
 **E2E judgment.** This work changes no owned application UI, so Maestro is not applicable. Completion
 requires the real launchd owner to act through the authenticated Coconala browser and an exact-room

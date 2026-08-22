@@ -2167,19 +2167,27 @@ def _run_isolated_file_owner(args, root: Path, context: Path, prompt_text: str,
     ) as temporary:
         staging = Path(temporary)
         if (staging / "state.json").is_file():
-            prior_candidates = sorted((staging / "work" / "prior-artifact").glob("*"))
-            prior_artifact = prior_candidates[0] if len(prior_candidates) == 1 else None
+            prior_dir = staging / "work" / "prior-artifact"
         else:
-            prior_artifact = _prepare_file_owner_staging(root, context, staging)
+            _prepare_file_owner_staging(root, context, staging)
+            prior_dir = staging / "work" / "prior-artifact"
+        prior_dir.mkdir(parents=True, exist_ok=True)
+        for candidate in sorted((root / "delivery").glob("*.zip")):
+            target = prior_dir / candidate.name
+            if not target.exists():
+                shutil.copy2(candidate, target)
+        prior_candidates = sorted(prior_dir.glob("*.zip"))
         prompt = staging / "owner.prompt.txt"
         versions = [int(match.group(1)) for path in (root / "delivery").iterdir()
                     if (match := re.search(r"(?:^|-)v(\d+)(?:\D|$)", path.name))]
         expected_version = f"v{max(versions, default=0) + 1}"
         isolated_prompt = _rewrite_staging_paths(prompt_text, root, staging)
         prior_instruction = (
-            f" Revise the existing artifact at {prior_artifact}; do not discard it, reconstruct from raw sources, "
-            "or switch approaches. Preserve everything not named by the review finding."
-            if prior_artifact is not None else ""
+            f" Prior artifact candidates are under {prior_dir}. Inspect their actual previews and the complete "
+            "buyer conversation, then choose the last buyer-accepted visual lineage as the revision base. "
+            "Do not assume the highest version is accepted: buyer feedback may reject it. Preserve every "
+            "unrelated property of the chosen lineage and change only what later buyer feedback requests."
+            if prior_candidates else ""
         )
         prompt.write_text(
             isolated_prompt + prior_instruction
