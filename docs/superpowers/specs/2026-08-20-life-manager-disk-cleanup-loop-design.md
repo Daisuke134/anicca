@@ -626,9 +626,9 @@ current runnerを実行したproduction preflightはRC 1、`reason=disk_writers_
 safe kick由来のrun 201はreceipt更新前にSIGTERM 15となり、成功扱いにしない。次の自然tickはruns 202/PID 8160まで
 read backしたがfresh receiptを残さず、その後このCodex GUI contextの`launchctl print`が141
 `Reentrancy avoided`、preflight receiptが`blocked_control_plane/mutation_allowed=false`になったため、追加mutationを
-停止した。空きは約5.25 GiBへ回復したが11 GiB未満で、回復主体もcanonical receiptで未証明である。fresh run、
-`last exit code=0`、receiptをread backするまではGig sliceの最終運用証拠を完了扱いにしない。A-20の実装残りは
-host-wide build/media coverageである。
+停止した。その後空きは約19.1 GiBへ回復して11 GiB floorを超えたが、canonical process不在、receipt/stdoutは
+03:46/03:32 JSTから更新せず、回復主体もcanonical receiptで未証明である。fresh run、`last exit code=0`、receiptを
+read backするまではGig sliceの最終運用証拠を完了扱いにしない。A-20の実装残りはhost-wide build/media coverageである。
 
 `/Users/anicca/anicca-project`は約9.5 GiB、その`.worktrees`は約4.4 GiBだった。最大の
 `cfo-resume-spec`（約1.08 GiB）は、dirty=0、branch upstream 0/0、process/open-path/leaseなしを
