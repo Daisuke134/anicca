@@ -351,6 +351,20 @@ inquiry artwork, comparison table, special-vacant-house diagram and designed con
 insufficient for authorization because the package, editable AI files and exact asset contract no longer exist
 for hash-bound inspection.
 
+A later natural reconstruction attempt exposed the decisive lineage defect before any customer effect. The
+Paid owner was instructed to revise rejected v31 and preserve everything not named by the latest finding, so it
+again produced v31's card-based page hierarchy with the latest inquiry artwork added. Direct full-preview
+comparison against durable v27, v29, v30 and v31 proves that v27 is the last artifact that preserves the
+buyer-supplied base design's two-column heading rows, wide section rails, side-by-side illustration treatment,
+horizontal process, FAQ, voices and summary composition. The buyer's messages after v27 requested only the
+inquiry-section replacement and higher-resolution Illustrator output; they did not authorize a page-wide
+redesign. Codex stopped only that isolated Haru builder before promotion. No v32 entered durable delivery and
+no Coconala message or attachment was sent. The attempt nevertheless proved that all six saved buyer inputs and
+the generated PNG/PDF/AI/SVG files can persist as non-zero local files; persistence alone does not make the
+candidate fit for delivery. The next candidate must branch from v27's approved visual lineage, replace only the
+PC/responsive inquiry sections with `2424.png` and `2.png`, regenerate every derivative, and be rejected if a
+full-preview comparison shows any unrelated page-wide layout regression.
+
 **E2E judgment.** This work changes no owned application UI, so Maestro is not applicable. Completion
 requires the real launchd owner to act through the authenticated Coconala browser and an exact-room
 official DOM/readback receipt; local artifact PASS, process liveness or Telegram alone is insufficient.
@@ -384,8 +398,10 @@ an observed failure but may never prescribe shipment or the next business action
 
 **Atomic reconstruction order.** Do not execute an item before its preceding spec checkbox exists here.
 
-1. [ ] Haru incident lead: recover or regenerate one durable next-version package from the saved buyer source,
-   latest PC `2424.png` and responsive `2.png`; open both full previews, AI/PDF/PNG members and hashes; obtain
+1. [ ] Haru incident lead: regenerate one durable next-version package from the durable v27 visual lineage,
+   preserving every unrelated v27 layout while replacing only the inquiry sections from saved latest PC
+   `2424.png` and responsive `2.png`; open both full previews beside v27 and the buyer source, inspect
+   AI/PDF/PNG members and hashes, and reject any page-wide regression; obtain
    fresh evidence-backed PASS; submit the exact package directly through the existing browser tool with formal
    delivery OFF; obtain exact-room official DOM readback; repeat read-only and prove replay-zero.
 2. [ ] Produce a code-level adoption map: for every copied OSS pattern record pinned source file/function,
