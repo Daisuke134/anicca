@@ -16,6 +16,10 @@ ollama·docker·openclaw install.sh 実取得 / BlockRunAI-Franklin / freqtrade 
 旧「遅刻防止電話」MVPのhistorical repoである。新規code、issue、branch、deployment、記事、spec、Agent Economy実装を
 `life-manager-v0`へ追加してはならない。
 
+Mercorのprovider skill・spec・loop integrationもこのcanonical repositoryへ置く。
+Mercor移行の具体的なlayout、private runtime state境界、Job Hunterへの統合、旧`profitable-claude`削除gateは
+[`2026-08-22-mercor-life-manager-consolidation.md`](./2026-08-22-mercor-life-manager-consolidation.md)を参照する。
+
 **one repoの意味**は「全Life Manager sourceが1 repo」であり、「全processを1台で動かす」ではない。
 Railway、Nosana、local OSS、external providerへ同じcanonical commitからdeployしてよいが、別repoのcopyをproduction sourceに
 してはならない。wallet key、OAuth/session、tenant data、ledger等はrepoではなくexternal runtime stateとして分離する。

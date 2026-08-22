@@ -1,0 +1,105 @@
+# Mercor → Life Manager 統合仕様
+
+**Status:** migration-slice / loop not live
+**Canonical repository:** `https://github.com/Daisuke134/life-manager`
+**Canonical checkout:** `/Users/anicca/Projects/life-manager-main`
+
+## 1. Repository boundary
+
+`life-manager`だけがMercorのコード、skill、spec、loop、test、releaseの正本である。`profitable-claude`は移行元の履歴であり、移行完了後はMercorのproduction sourceとして参照しない。
+
+「1つのrepository」はsource controlを1つにする意味であり、credentials、Google session、Mercor Cookie、resume PDF、個人プロフィール、応募台帳などのprivate runtime stateをGitへ入れる意味ではない。
+
+## 2. Canonical layout
+
+```text
+life-manager/
+├── skills/
+│   ├── job-hunter/                         # fact bank/materials owner
+│   │   ├── SKILL.md
+│   │   └── references/mercor.md            # provider-specific reference
+│   └── mercor/                             # user-facing Mercor skill facade
+│       ├── SKILL.md
+│       └── agents/openai.yaml
+├── apps/job-search-loop/                   # sole browser/application side-effect owner
+│   ├── job_search_loop/                    # deterministic state, adapters, evidence
+│   ├── prompts/                            # bounded agent prompts
+│   ├── schemas/                            # pass/application/result contracts
+│   └── tests/
+├── loops/job-hunter/                       # hourly/inbox/learning cadence
+│   ├── loop.toml
+│   └── registry.yaml
+├── runtime/agent-runner/                   # provider/model routing and validation
+└── docs/superpowers/specs/                 # this migration and acceptance evidence
+```
+
+Private runtime state remains outside the repository:
+
+```text
+~/.config/anicca/job-search/profile.json
+~/.local/share/anicca/job-search/materials/
+~/.local/state/anicca/job-search/mercor/
+```
+
+## 3. Ownership and no-duplication contract
+
+| Responsibility | Canonical owner |
+|---|---|
+| Candidate facts and approved resume variants | `skills/job-hunter/` + private profile SSOT |
+| Mercor auth and provider policy | `skills/mercor/SKILL.md` + `skills/job-hunter/references/mercor.md` |
+| Mercor browser, form submission, read-back, locks, evidence | `apps/job-search-loop/` |
+| Hourly/inbox/learning scheduling | `loops/job-hunter/` |
+| Model/provider execution | `runtime/agent-runner/` |
+| Private resume, Cookie, ledger and evidence | `~/.local/state/anicca/job-search/` |
+
+Do not create `profitable-claude`-style second executors, a second Mercor loop, or a browser script inside the skill. The skill provides policy and routing; the existing job-search runtime owns side effects.
+
+## 4. Mercor authentication boundary
+
+- Use ordinary Google sign-in with the Keychain credential.
+- Never click a browser Google 2FA button whose accessible name is `はい`; only the user taps `はい` inside the Gmail iOS app.
+- Never click account recovery, reset, registration, recovery-email, or recursive alternate-method paths.
+- If recovery/reset/wait appears, record the visible URL/text and stop.
+- Use a dedicated Mercor browser profile; never navigate the job-search or trusted daily-driver tab.
+
+## 5. Loop behavior
+
+The existing hourly Job Hunter acquisition loop becomes the single Mercor-capable loop. It must:
+
+1. Reconcile the oldest in-progress Mercor application before discovering new work.
+2. Deduplicate by stable Mercor listing/application identifier.
+3. Apply only to grounded forms using approved facts and a verified resume artifact.
+4. Route interviews, assessments, CAPTCHA, unsupported free-response questions, and ambiguous attestations to `needs_human`; never impersonate a candidate interview or assessment.
+5. Re-open the application list after any submit and store evidence plus the external result.
+6. Record settled earnings only when the Mercor Earnings UI proves payment; views, invitations, offers, and estimates are not earnings.
+
+## 6. Current migration state
+
+- Mercor skill/spec exist in the migration source and have been read back.
+- Canonical Life Manager repo already owns `skills/job-hunter/`, `apps/job-search-loop/`, and `loops/job-hunter/`.
+- The live Mercor profile is authenticated and the resume/profile fields were verified in the browser.
+- Japanese evaluator application is `in_progress_2_of_3`; Assessment remains; final submission is not observed.
+- Mercor Summary currently resets after reload and is tracked as `summary_unpersisted`.
+
+## 7. Migration acceptance gate
+
+Do not delete or archive the migration source until all are true:
+
+- Mercor skill, provider reference, and this spec are committed and pushed to `Daisuke134/life-manager`.
+- `apps/job-search-loop` has the Mercor adapter, provider-specific browser owner, application dedupe, result schema, and tests.
+- `loops/job-hunter` has one canonical hourly route; no second executor exists.
+- A real read-only pass and one authorized form submission have fresh evidence and no duplicate application.
+- Private runtime state is copied to `~/.local/state/anicca/job-search/mercor/` with mode `700/600`, and no secret or private resume is committed.
+- A repository-wide reference scan shows no production Mercor path still depends on `profitable-claude`.
+- Only after the above read-back may `profitable-claude` be archived/deleted as a separate destructive operation.
+
+## 8. Remaining TODO
+
+1. Copy the Mercor provider policy and skill facade into this repository.
+2. Add the Mercor provider adapter to the existing job-search runtime.
+3. Reconcile the Japanese evaluator Assessment and mark form vs human interview.
+4. Fix or explicitly quarantine the Summary persistence gap.
+5. Run one isolated Mercor pass through the existing Job Hunter launchd route.
+6. Verify application/earnings evidence and Telegram reporting.
+7. Remove all production references to `profitable-claude`.
+8. Obtain a final deletion check-in before deleting the old repository checkout/history.

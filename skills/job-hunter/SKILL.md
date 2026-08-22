@@ -37,6 +37,14 @@ remain the sole owner of browser, application, ledger, evidence, and Telegram-ou
 side effects. The CLI and registry add no parallel executor and must never be used to
 submit an application independently.
 
+Mercor is an additional provider lane in this same Job Hunter loop. Its provider policy
+lives in `skills/mercor/SKILL.md` and `references/mercor.md`; its browser/application
+side effects must be implemented in `apps/job-search-loop/`, not in a second skill
+executor or a separate repository. The Mercor lane reconciles in-progress applications
+first, uses a dedicated owned browser profile, forbids browser-side Google `はい`, and
+routes interviews, assessments, CAPTCHA, and unsupported free-response questions to
+`needs_human`.
+
 ## Canonical state
 
 Read private state before asking the user for anything:
