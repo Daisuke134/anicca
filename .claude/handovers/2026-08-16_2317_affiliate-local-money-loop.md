@@ -1,5 +1,37 @@
 # Affiliate local money loop handover
 
+- Repost duplicate protection is live-repaired at commit `4c9b439ee`, pushed
+  to both Repost remotes and installed as immutable release
+  `20260823T024854-4c9b439e`. The old half-hour counter matched `HH:30`
+  literally, so a post at `02:33` was incorrectly counted as outside the slot.
+  The new counter parses and floors timezone-aware effect timestamps. Source
+  and runtime SHA-256 are exactly
+  `51323d8b521868ee9f7917a1389f8c53cf6da38489eeff1b1060b0f56cd06911`;
+  25 focused tests pass. Owner run `20260823T024905` exited `0` before browser
+  acquisition with `already published this half-hour slot
+  (2026-08-23T02:30)`, and ledgers stayed `posted=80 / consumption=14`. The
+  interrupted unsafe pre-fix run produced no public or consumption effect.
+
+- The current proposal is not missing. Exact helper readback against
+  `repost-proposals/latest.json` returns `READY` for proposal
+  `7ff560cfbf85f03bacde1f0365a62e1b4d9bde8d750b1b1829c885a301b5b4eb`,
+  placement
+  `elevenlabs-discovered-subtitle-translator-en-experiment-1ecf26fe47e1-1`.
+  The earlier `NO_PROPOSAL` result came from passing the history JSONL to a
+  single-object helper input. The existing X owner retains it unconsumed but
+  defers it at `5/3` verified Affiliate posts in seven days so promotional
+  posts cannot starve useful originals and quotes. Its provider click count is
+  one and remains non-money.
+
+- Affiliate owner run 112 exited `0`: 80 X actions, five exact placement joins,
+  75 unjoined actions, and zero invalid rows. Official PartnerStack report
+  observed at `2026-08-22T17:31:29.797553+00:00` has commission rows `0` and
+  payout rows `0`; pending/approved/paid/reversed are all zero and rolling net
+  remains `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED` with cost
+  unknown. Telegram is `AMBIGUOUS_NO_RETRY`, so it must not be resent. The next
+  atom is the next eligible useful original or quote exact permalink and its
+  X-to-owned measurement, then the first official transaction exact join.
+
 - First-party X-to-owned entry measurement is live. Affiliate runtime commits
   `284e34696`, `65645765a`, and `1a8eba4f7` are pushed to both remotes; current
   installed release is `1a8eba4f77dd0a9c45f306326eb52b0df430c860` with

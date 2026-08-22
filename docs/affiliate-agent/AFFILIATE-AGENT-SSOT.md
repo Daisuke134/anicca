@@ -2,6 +2,40 @@
 
 Last updated: 2026-08-22 JST
 
+## Current live checkpoint
+
+Repost release `4c9b439eecef07fcf2cc3e35f7f8fed0e7d86ea3` repairs the
+half-hour duplicate boundary. The prior implementation compared the slot prefix
+`HH:00` or `HH:30` directly with an effect timestamp, so a real post at minute
+33 was not counted in the 30-minute slot. The repaired gate parses every
+timezone-aware `posted_at`, floors its minute to 00 or 30, and compares the
+normalized local slot. Twenty-five focused tests pass; immutable runtime
+`20260823T024854-4c9b439e` is byte-equal to source at SHA-256
+`51323d8b521868ee9f7917a1389f8c53cf6da38489eeff1b1060b0f56cd06911`.
+Live owner run `20260823T024905` read the existing 02:33 quote into slot 02:30,
+exited `0` before browser acquisition, and left `posted=80` and Affiliate
+consumption `=14`. This proves duplicate prevention; it is not a new X effect
+or money.
+
+The current Subtitle Translator experiment proposal
+`7ff560cfbf85f03bacde1f0365a62e1b4d9bde8d750b1b1829c885a301b5b4eb`
+is exactly `READY / UNCONSUMED`, not `NO_PROPOSAL`. The earlier `NO_PROPOSAL`
+probe incorrectly passed the proposal-history JSONL where the helper requires
+`repost-proposals/latest.json`. The existing owner correctly defers this fresh
+Affiliate proposal because five verified Affiliate posts already exist in the
+rolling seven-day window versus the minority-lane maximum of three. Generic
+original and quote acquisition remains eligible every new half-hour slot.
+
+Affiliate owner run 112 exited `0` and observed 80 X actions, five exact
+placement joins, 75 unjoined actions, and zero invalid rows. Official
+PartnerStack evidence remains commission rows `0`, payout rows `0`, and status
+counts pending/approved/paid/reversed all `0`; rolling state is
+`NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`. The experiment's
+one provider click is distribution evidence only. The next atom is the next
+eligible useful original or quote exact permalink, followed by its X and owned
+entry measurement; the first official provider transaction remains the first
+money atom.
+
 ## Current X acquisition override: useful originals before affiliate scale
 
 The account is not yet an effective acquisition asset. Real readback proves the
