@@ -1500,9 +1500,12 @@ therefore not 24/7 availability evidence.
   require `missing=0`, `unowned=0`, and no silent planner/browser/provider loss.
 - [ ] Replay that exact snapshot and prove zero duplicate application effects, then read back the
   next natural scheduled pass to prove the 60-second owner continues after its child exits.
-- [ ] Hold a 24-hour natural soak with no unowned Apply gap. Every new official application must
-  have application-history readback plus a Telegram provider message ID; every blocked wake must
-  retain a retry owner and produce a natural-language incident/recovery report.
+- [ ] Prove durable continuous Apply operation without blocking the delivery sequence on 24 hours
+  of wall-clock waiting: natural restart, replay zero, live-release retention, durable health owner
+  and incident recovery must all pass before Negotiate starts. Keep the 24-hour observation running
+  in parallel; every new official application still requires application-history readback plus a
+  Telegram provider message ID, and every blocked wake retains a retry owner and natural-language
+  incident/recovery report.
 
 - [x] Restore immediate per-application Telegram reporting. The parent reporter deadline was 90
   seconds while the inner provider deadline was 180 seconds, which killed valid slow sends and left
@@ -1649,9 +1652,12 @@ Apply recovery is proven, close Negotiate in the following atomic order:
 - [ ] Emit natural-language Telegram receipts for backlog, blocked, recovered, reply and estimate
   transitions, each with a provider message ID. Aggregate no-contact skips without exposing private
   counterparty identity or conversation content.
-- [ ] Hold a 24-hour natural soak with continuous discovery, zero duplicate replies/estimates, no
-  unauthorized effect on private no-contact identities, and every new authorized actionable buyer
-  message reaching official reply/estimate readback within 30 minutes.
+- [ ] Prove durable continuous Negotiate operation without making 24 hours of wall-clock waiting a
+  blocking delivery gate: natural restart, continuous discovery, duplicate fences, private
+  no-contact enforcement and durable health ownership must pass. Keep the 24-hour observation
+  running in parallel with zero duplicate replies/estimates, no unauthorized effect on private
+  identities, and every new authorized actionable buyer message reaching official reply/estimate
+  readback within 30 minutes.
 
 Source fix `da5e16627` now coalesces a changed buyer identity onto the current durable action and
 selects the newest coalesced event for restart dispatch. Commit `c366586ac` additionally binds a
