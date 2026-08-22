@@ -35,6 +35,8 @@ class ApprovedHyperFramesWiringTest(unittest.TestCase):
         self.assertNotIn("use session_owner=instagrapi from the supplied Capafy state", source)
         self.assertIn("--commit-agent-id", source)
         self.assertLess(source.index("VERIFIED_POST="), source.index("--commit-agent-id"))
+        self.assertIn('(\"listing_name\", \"caption\", \"hook\")', source)
+        self.assertIn("mandatory experiment evidence", source)
 
 
 if __name__ == "__main__":

@@ -221,7 +221,7 @@ STEP4 POST (B4, shared instagrapi poster): CDP_PORT='"$IG_PORT"' ~/.cache/instag
 
 STEP5 BIO (deterministic — do NOT hand-drive the profile UI): set the profile Website to the all-skills landing URL '"$LANDING_URL"' ONLY when commercial_ok=yes AND MODE=--live. Use the PROVEN script (it sets the Website via CDP AND persistence-verifies the value survived save+reload): open the account edit page in THIS pass isolated lease context and run  python3 ~/.agents/skills/ig-account-create/scripts/setup_profile.py --tid <the lease tab TID for '"$IG_HANDLE"'> --website '"$LANDING_URL"' --username '"$IG_HANDLE"'  . It prints website_set=true only if IG kept the FULL link; if website_set=false, IG stripped it — report that and do NOT claim the bio link is installed (never fabricate). Never use an individual Capafy listing URL for the Website (always the all-skills landing). While commercial_ok=no, DO NOT touch the bio (non-commercial reach-measuring phase). Never in DRY.
 
-STEP6 VERIFY + LEDGER + REACH: on --live, confirm the Reel is publicly visible, record its URL in '"$IG_LEDGER"' (platform=ig, reel_url=...) + post time in the rotation ledger (platform=ig). Then MEASURE REACH (the real shadowban test): run  python3 $LIFE_MANAGER_REPO/skills/earn/capafy-marketing/scripts/ig_metrics.py  to snapshot views/likes/comments, and (a few hours after a post, or on the NEXT day pass) judge: is reach healthy for a fresh account (getting non-zero views/plays, appearing when you search its own hashtags)? If reach looks HEALTHY on the accumulated snapshots, write the marker  touch '"$COMMERCIAL_MARKER"'  (this flips commercial_ok=yes → next posts add the bio link + soft CTA). If reach looks SHADOWBANNED (near-zero views across multiple posts, not in hashtag/explore), do NOT write the marker — instead report it so a human/next pass decides account-rebuild vs warmup-extend. Never fabricate reach numbers. On DRY, just record the flow reached share cleanly.
+STEP6 VERIFY + LEDGER + REACH: on --live, confirm the Reel is publicly visible and append exactly one row to '"$IG_LEDGER"' containing platform=ig, reel_url, agent_id, listing_name, handle, artifact_sha256, plus the exact nonempty `caption` and nonempty on-screen `hook` used in this post. These copy fields are mandatory experiment evidence, not optional prose. Record post time in the rotation ledger (platform=ig). Then MEASURE REACH (the real shadowban test): run  python3 $LIFE_MANAGER_REPO/skills/earn/capafy-marketing/scripts/ig_metrics.py  to snapshot views/likes/comments, and (a few hours after a post, or on the NEXT day pass) judge: is reach healthy for a fresh account (getting non-zero views/plays, appearing when you search its own hashtags)? If reach looks HEALTHY on the accumulated snapshots, write the marker  touch '"$COMMERCIAL_MARKER"'  (this flips commercial_ok=yes → next posts add the bio link + soft CTA). If reach looks SHADOWBANNED (near-zero views across multiple posts, not in hashtag/explore), do NOT write the marker — instead report it so a human/next pass decides account-rebuild vs warmup-extend. Never fabricate reach numbers. On DRY, just record the flow reached share cleanly.
 After REACH, run python3 $LIFE_MANAGER_REPO/skills/earn/capafy-marketing/scripts/ig_reflect.py exactly once to refresh IG_BEST_PRACTICES.md from real ledger + metrics data for the next pass.
 
 STEP7 REPORT — MANDATORY every pass. Send to the Telegram target in CAPAFY_TELEGRAM_TARGET or TELEGRAM_ALERT_CHAT_ID via openclaw message send:
@@ -248,7 +248,11 @@ for line in rows:
         row = json.loads(line)
     except Exception:
         continue
-    if str(row.get("agent_id")) == agent_id and str(row.get("reel_url") or "").startswith("https://www.instagram.com/reel/"):
+    if (
+        str(row.get("agent_id")) == agent_id
+        and str(row.get("reel_url") or "").startswith("https://www.instagram.com/reel/")
+        and all(str(row.get(key) or "").strip() for key in ("listing_name", "caption", "hook"))
+    ):
         print(row["reel_url"])
         raise SystemExit
 print("")
