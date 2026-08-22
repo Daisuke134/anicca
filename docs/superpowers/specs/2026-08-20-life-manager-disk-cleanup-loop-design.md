@@ -561,6 +561,25 @@ runs 183→184、state not running、last exit 0、17:19:49Z receiptは`errors=0
 provision 1件はnext-start consumerを持つ。残るbrowser consumerはjob-search 2件であり、host-wide build/media
 coverageも未完了である。空き約565 MiB、tier `ULTRA`で、A-20完了や11 GiB recoveryの証拠ではない。
 
+A-20の第5 sliceは標準job-search browserのexact live release `974f36a59`から隔離sparse worktreeを作り、既存
+`run-browser.sh`のprofile作成、chmod、Chromium探索、execより前へ同じguardを接続した。production未変更のREDは
+focused 3 tests/2 failures、GREENはfocused **3 passed**、browser owner/model/direct-CDP **12 passed**、shell
+syntax、diff checkがPASSした。stop flagとhostile inherited envを使った実processはRC 1、profile未作成、
+`reason=disk_writers_stop/effect=0/required_bytes=536870912`だった。初回reviewは順序testがcanonical-home probeを
+見て実guard移動を検出しないMEDIUMを指摘した。exact guard invocation基準へ修正し、guardをeffect後へ移すmutationが
+1 failureになることを確認した後、fresh re-reviewは`ship`だった。
+
+codeはlive lineageの進行に追随して`668ded258`へrebaseし、commit
+`04402f38e9ff7727d7b7fcb0b02dbd32103067aa`を`fix/a20-job-search-browser-preflight`へpushした。ただしrelease installは
+system Pythonの`tarfile.extractall(filter=...)`非対応でtarget作成前に失敗し、こちらのcurrent swapは0だった。同じ
+30秒内に別sessionがsource/currentを`668ded258`、続いて`149e054923d4f821fcba061c23a13e2f8e3cadf4`へcommit/deploy
+したため、同一production stateの上書きを停止した。17:42Z時点のcurrent `149e054923d4`にはguardがなく、browser
+PID 712は不変である。したがって標準job-searchはcode/review済みだがproduction consumerとして未完了である。
+
+同じreadbackでGig `current`も`df535e792458ef3f56e81a1049e1ca3e1b27253f`へ切り替わり、deployed
+`launch_gig_browser.sh`が`GIG_DISK_HEADROOM_KIB:=0`、両ignore flag既定1へ戻ったことを確認した。A-20第1 sliceの
+source commitは残るが、current productionのnext-start consumer証拠は失効したためGigも再度未完了として扱う。
+
 `/Users/anicca/anicca-project`は約9.5 GiB、その`.worktrees`は約4.4 GiBだった。最大の
 `cfo-resume-spec`（約1.08 GiB）は、dirty=0、branch upstream 0/0、process/open-path/leaseなしを
 read backした後にだけ`git worktree remove`で回収した。branchとremoteは残り、再作成可能である。
@@ -1135,7 +1154,7 @@ TDDのためだけの過剰fixtureや後続itemのscaffoldは前倒ししない�
 | A-17 | VM/package producer lifecycleを登録する | artifact/lease/finalizer/quota receipt | 完了: registration-only static 16件、pnpm exact version/proof/lease fail-closed、全A-17 entry runtime/quota 0/lease 300/preserveで削除authority 0、focused 48 tests、final review `ship`、fallback SHA一致/runs 486→487/static 16 bad 0、canonical runs 137→138 exit 0、protected deletion 0 |
 | A-18 | agent/gig-project lifecycleを登録する | project owner/terminal/lease receipt | 完了: registration-only numeric project 24件、terminal true 0、unknown owner 3、全件deliverable/preserve、focused 49 tests、fresh review `ship`、fallback runs 507→508/削除0、canonical runs 142→143 exit 0、errors/protected deletion 0 |
 | A-19 | Writer in-flight drainを接続する | provider interruption checkpoint/resume test | 完了: exact stop 2 pathのpre-Popen gate、process-group TERM→1秒→KILL/reap、immutable run/prompt checkpoint/resume、focused 44 tests、fresh review `ship`、release `43074f76422d1ec4935acdba98e553cb8564de94`、Writer runs 1/exit 0/provider effect 0、canonical runs 149→150/exit 0/errors 0/protected deletion 0 |
-| A-20 | browser/build/media preflightを接続する | producer consumer missing 0 for these families | 部分完了: Gig browser、Affiliate 3 browser、Instagram/X provision、self-build 2境界、Writer media既存境界を接続。X commit `50c853764`、focused 6＋既存Gig 30 tests、review `ship`、実機RC 1/effect 0/PID 12221不変。active browser 8中job-search 2 consumerとhost-wide build/media coverageが残る。canonical runs 184/exit 0/errors 0/protected deletion 0 |
+| A-20 | browser/build/media preflightを接続する | producer consumer missing 0 for these families | 部分完了: Affiliate 3 browser、Instagram/X provision、self-build 2境界、Writer media既存境界を接続。標準job-searchはcommit `04402f38e`、focused 3＋関連12 tests、review `ship`だが別sessionの連続deployと競合するためproduction未反映。Gig currentもfloor 0/ignore 1へregress。active browserは標準job-search、Mercor、Gigの3 consumerとhost-wide build/media coverageが残る。canonical runs 184/exit 0/errors 0/protected deletion 0 |
 | A-21 | VM/package/agent preflightを接続する | producer consumer missing 0 for these families | 未完了 |
 | A-22 | supervisor non-stop behaviorを実装する | ULTRA wake keeps supervisor labels loaded | 未完了 |
 | A-23 | Codex log budget/rotationを実装する | active app-server handoff with session loss 0 | 未完了 |

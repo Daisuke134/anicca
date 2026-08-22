@@ -19,7 +19,6 @@ import os, sys, time, json, urllib.request
 import re
 from urllib.error import HTTPError
 from urllib.parse import parse_qs, urlsplit
-from playwright.sync_api import sync_playwright
 
 BASE_URL = "https://openrouter.ai/api/v1"
 MODEL    = "anthropic/claude-sonnet-4.6"
@@ -71,6 +70,11 @@ def _detect_cdp():
         except Exception:
             continue
     return "http://localhost:9222"
+
+
+def _load_playwright():
+    from playwright.sync_api import sync_playwright
+    return sync_playwright
 
 
 def _raw_page_target(cdp_base):
@@ -464,24 +468,30 @@ def main():
         print("ERR: CAPAFY_HOST_OPENROUTER_KEY missing"); sys.exit(1)
 
     cdp = _detect_cdp()
+    transport = os.environ.get("CP2_TRANSPORT", "raw").strip().lower()
+    if transport != "playwright":
+        try:
+            ok = _raw_cp2(cp2, key, cdp)
+        except Exception as raw_error:
+            print(f"ERR: raw page CDP failed ({type(raw_error).__name__}: {str(raw_error)[:160]})")
+            sys.exit(1)
+        sys.exit(0 if ok else 1)
+
+    try:
+        sync_playwright = _load_playwright()
+    except Exception as import_error:
+        print(f"ERR: Playwright dependency unavailable ({type(import_error).__name__})")
+        sys.exit(1)
     p = sync_playwright().start()
     try:
         b = p.chromium.connect_over_cdp(cdp, timeout=CDP_ATTACH_TIMEOUT_MS)
     except Exception as attach_error:
-        # CloakBrowser may keep each page websocket healthy while its browser-level
-        # endpoint hangs. Fall back to the existing Capafy page target instead of
-        # waiting for the outer publish timeout or hijacking another tab.
         try:
             p.stop()
         except Exception:
             pass
-        print(f"WARN: Playwright browser CDP attach failed; using page CDP fallback ({type(attach_error).__name__})")
-        try:
-            ok = _raw_cp2(cp2, key, cdp)
-        except Exception as raw_error:
-            print(f"ERR: raw page CDP fallback failed ({type(raw_error).__name__}: {str(raw_error)[:160]})")
-            sys.exit(1)
-        sys.exit(0 if ok else 1)
+        print(f"ERR: Playwright CDP attach failed ({type(attach_error).__name__})")
+        sys.exit(1)
     # Reuse an existing capafy tab; else create a BRAND-NEW tab. NEVER hijack a
     # daily-driver tab (ctx.pages[0] may be coconala/discord/etc and its watchdog
     # reverts a hijacked URL -> silent CP2 failure).
