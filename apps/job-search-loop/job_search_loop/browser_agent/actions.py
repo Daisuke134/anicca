@@ -29,15 +29,37 @@ class ActionExecutor:
     async def _target(self, page, target: ActionTargetV1):
         if not target.label.strip():
             raise ValueError("a non-empty user-facing label is required")
-        locator = (
-            page.get_by_role(target.role, name=target.label, exact=target.exact)
-            if target.role
-            else page.get_by_label(target.label, exact=target.exact)
-        )
+        if target.stable_id:
+            kind, separator, value = target.stable_id.partition(":")
+            if not separator or kind not in {"automation", "id"} or not value:
+                raise ValueError("stable_id must be automation:<value> or id:<value>")
+            attribute = "data-automation-id" if kind == "automation" else "id"
+            locator = page.locator(f"[{attribute}={json.dumps(value)}]")
+        else:
+            locator = (
+                page.get_by_role(target.role, name=target.label, exact=target.exact)
+                if target.role
+                else page.get_by_label(target.label, exact=target.exact)
+            )
         visible = []
         for index in range(await locator.count()):
             candidate = locator.nth(index)
-            if await candidate.is_visible() and await candidate.is_enabled():
+            if not await candidate.is_visible() or not await candidate.is_enabled():
+                continue
+            if target.stable_id and not await candidate.evaluate(
+                """(el, expected) => {
+                  const own = el.getAttribute('aria-label') || el.getAttribute('title') || '';
+                  const linked = el.labels && el.labels.length
+                    ? Array.from(el.labels).map(x => x.innerText).join(' ') : '';
+                  const actual = (own || linked || el.getAttribute('placeholder') || el.innerText || '').trim();
+                  return expected.exact ? actual === expected.label : actual.includes(expected.label);
+                }""",
+                {"label": target.label, "exact": target.exact},
+            ):
+                continue
+            if target.stable_id:
+                visible.append(candidate)
+            else:
                 visible.append(candidate)
         if len(visible) != 1:
             raise RuntimeError(
@@ -91,6 +113,7 @@ class ActionExecutor:
             "kind": action.kind,
             "target_role": action.target.role if action.target else None,
             "target_label": action.target.label if action.target else None,
+            "target_stable_id": action.target.stable_id if action.target else None,
             "before_url": before_url,
             "after_url": page.url,
         }

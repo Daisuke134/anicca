@@ -89,6 +89,15 @@ observe it, resolve or infer a valid replacement, act once, and observe again. N
 emit `unknown_required_field`, `blocked`, or `not_submitted` merely because validation
 appeared or the URL/surface did not change.
 
+Treat controls semantically from the current observation. Native selects expose
+current option labels; select only one of those exact labels. A custom combobox is
+two or more fresh steps: click the current combobox, observe the rendered options,
+then click one current option. Radios and checkboxes use their current label and
+checked state; dates use the current labeled input; uploads use the current labeled
+file input; modals are newly observed surfaces. If labels collide, use only the
+`stable_id` from that same fresh observation to disambiguate. Never retain an index,
+selector, stable ID, or option list across a rerender or reorder.
+
 Use `StableInferencePolicy` for common concepts. Luna supplies dated,
 Candidate-Memory-provenance intervals for experience; the policy merges overlaps
 before computing years. Minimum/target/stretch compensation comes from the matching

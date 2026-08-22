@@ -39,11 +39,24 @@ class ObservationBuilder:
                 const linked = el.labels && el.labels.length ? Array.from(el.labels).map(x => x.innerText).join(' ') : '';
                 return (own || linked || el.getAttribute('placeholder') || el.innerText || '').trim();
               };
+              const stableId = el => {
+                const automation = el.getAttribute('data-automation-id');
+                if (automation) return `automation:${automation}`;
+                const id = el.getAttribute('id');
+                return id ? `id:${id}` : '';
+              };
               const controls = Array.from(document.querySelectorAll('input,button,select,textarea,a,[role]'))
                 .filter(visible).map(el => ({
                   tag: el.tagName.toLowerCase(), role: el.getAttribute('role') || '',
                   control_type: el.getAttribute('type') || '', label: label(el),
-                  disabled: !!el.disabled || el.getAttribute('aria-disabled') === 'true'
+                  disabled: !!el.disabled || el.getAttribute('aria-disabled') === 'true',
+                  stable_id: stableId(el),
+                  checked: el.matches('input[type="checkbox"],input[type="radio"]')
+                    ? !!el.checked
+                    : (el.hasAttribute('aria-checked') ? el.getAttribute('aria-checked') === 'true' : null),
+                  options: el.tagName === 'SELECT'
+                    ? Array.from(el.options).map(option => option.textContent.trim()).filter(Boolean)
+                    : []
                 }));
               const validation = Array.from(document.querySelectorAll('[role="alert"],[aria-invalid="true"],.error'))
                 .filter(visible).map(el => (el.innerText || el.getAttribute('aria-label') || '').trim()).filter(Boolean);

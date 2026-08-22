@@ -27,6 +27,9 @@ class VisibleControlV1:
     control_type: str
     label: str
     disabled: bool
+    stable_id: str = ""
+    checked: bool | None = None
+    options: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -48,6 +51,7 @@ class ActionTargetV1:
     role: str
     label: str
     exact: bool = True
+    stable_id: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -67,6 +71,7 @@ class ActionReceiptV1:
     kind: str
     target_role: str | None
     target_label: str | None
+    target_stable_id: str | None
     before_url: str
     after_url: str
     receipt_sha256: str
