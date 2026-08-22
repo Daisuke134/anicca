@@ -36,3 +36,12 @@ export PYTHONPATH="$JOB_SEARCH_APP_ROOT"
   --evidence-dir "$EVIDENCE/agent" \
   --workdir "$JOB_SEARCH_REPO_ROOT" \
   --run-id "$RUN_ID"
+
+# Report every pass through the existing idempotent Telegram outbox. A missing
+# Telegram credential must not erase or retry the browser pass; the report
+# evidence records delivery_unknown and the next wake can reconcile it.
+"$JOB_SEARCH_PYTHON" -m job_search_loop.mercor_reporting \
+  --run-id "$RUN_ID" \
+  --result "$EVIDENCE/agent/mercor-pass-summary.json" \
+  --outbox "$JOB_SEARCH_STATE_ROOT/telegram-outbox.sqlite3" \
+  --output "$EVIDENCE/telegram-report.json"
