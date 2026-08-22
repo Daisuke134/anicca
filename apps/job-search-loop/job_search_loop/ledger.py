@@ -1244,6 +1244,8 @@ class Ledger:
         resume_sha256: str,
         ats_snapshot_path: Path,
         ats_snapshot_sha256: str,
+        final_review_receipt_sha256: str | None = None,
+        observed_at: str | None = None,
     ) -> SubmitIntent | None:
         resolved_resume = Path(resume_path).expanduser().resolve()
         if not resolved_resume.is_file():
@@ -1265,11 +1267,32 @@ class Ledger:
             snapshot_evaluation = evaluate_snapshot(snapshot)
         except (json.JSONDecodeError, ValueError) as error:
             raise ValueError(f"ATS snapshot is invalid: {error}") from error
-        if not snapshot_evaluation["ready"]:
-            blockers = ",".join(snapshot_evaluation["blockers"])
-            raise ValueError(f"ATS snapshot is not ready: {blockers}")
-        if not snapshot_evaluation["claim_ready"]:
-            raise ValueError("ATS snapshot is not claim-ready: application form not open")
+        final_review = final_review_receipt_sha256 is not None
+        if final_review:
+            if not re.fullmatch(r"[a-f0-9]{64}", final_review_receipt_sha256 or ""):
+                raise ValueError("final review receipt must be a lowercase SHA-256")
+            labels = [
+                " ".join(str(control.get("label") or control.get("text") or "").split()).casefold()
+                for frame in snapshot.get("frames", [])
+                for control in frame.get("controls", [])
+            ]
+            if sum(label in {"submit", "submit application", "送信", "応募を送信"} for label in labels) != 1:
+                raise ValueError("final review snapshot requires exactly one submit control")
+        else:
+            if not snapshot_evaluation["ready"]:
+                blockers = ",".join(snapshot_evaluation["blockers"])
+                raise ValueError(f"ATS snapshot is not ready: {blockers}")
+            if not snapshot_evaluation["claim_ready"]:
+                raise ValueError("ATS snapshot is not claim-ready: application form not open")
+        claimed_at = _now()
+        if observed_at is not None:
+            if not final_review:
+                raise ValueError("observed_at is only valid with a final review receipt")
+            observed = datetime.fromisoformat(observed_at)
+            now = datetime.now(timezone.utc)
+            if observed.tzinfo is None or observed > now or (now - observed).total_seconds() > 3600:
+                raise ValueError("observed_at must be a recent timezone-aware timestamp")
+            claimed_at = observed.isoformat()
         with self._transaction():
             application = self.connection.execute(
                 "SELECT canonical_url FROM applications WHERE id = ?",
@@ -1305,7 +1328,6 @@ class Ledger:
                 (japan_day,),
             ).fetchone()
             slot = int(row["max_slot"]) + 1
-            claimed_at = _now()
             intent = SubmitIntent(
                 intent_id=(
                     str(existing["intent_id"]) if reopening else uuid.uuid4().hex

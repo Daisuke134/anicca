@@ -838,6 +838,7 @@ async def finalize() -> dict[str, Any]:
             resume_sha256=routed["resume_sha256"],
             ats_snapshot_path=snapshot_path,
             ats_snapshot_sha256=snapshot_sha,
+            final_review_receipt_sha256=review.receipt_sha256,
         )
         if intent is None:
             raise RuntimeError("submission intent is already claimed or row is not ready")
