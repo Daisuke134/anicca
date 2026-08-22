@@ -630,6 +630,30 @@ read backしたがfresh receiptを残さず、その後このCodex GUI context�
 03:46/03:32 JSTから更新せず、回復主体もcanonical receiptで未証明である。fresh run、`last exit code=0`、receiptを
 read backするまではGig sliceの最終運用証拠を完了扱いにしない。A-20の実装残りはhost-wide build/media coverageである。
 
+A-20の第8 sliceは、新daemonやplist変更を追加せず、既存の共通
+`/Users/anicca/profitable-claude/bin/launchd_run_and_report.sh`にmedia producer preflightを接続した。
+対象patternは`reelclaw-*`、`larry-*-reel-*`、`larry-anicca-*`、`larry-*-library-post`、`watercolor-jp-*`で、
+registry上のenabled media consumer 26件（Reelclaw 12、Larry 11、Watercolor 3）がこのwrapperを通り、非media Larry
+2件は従来動作を維持する。固定512 MiB、passwd由来canonical home、canonical
+host stateとmedia専用lane stateを設定し、ignore flagとalternate state envを除去してから、既存runtime
+`gig_disk_guard.py`をchild、temporary file、notifierより先に実行する。変更はwrapperとtestの2 files、105 lines、
+初期code commitは`5afcaf1c8f1c384d7ef5a2a464c1e3e8d7cd0471`、feature commitは
+`681ee2513ac718ddb7ed823f9e468fa1576697ec`である。fresh reviewでLarry 7件のcoverage欠落と、launchdの非privileged
+bashがwrapper本文前にhostile `BASH_ENV`および`SHELLOPTS=xtrace`/`PS4` effectを許す2 HIGHを検出した。
+TDD REDはLarry 7件のguard欠落、全26 plistのBASH_ENV marker、全26 plistのPS4 markerをそれぞれ再現した。
+最小修正はwrapper pattern追加、passwd lookup failure診断、全26 tracked plistの`BASH_ENV=/dev/null`と
+`/bin/bash -p`である。feature commitsは`d7c64735`、`af41c5e9`、`31eac7ba`、`e21ee3ad`、production source commitsは
+`cc7d4b4e`、`c30ebeb8`、`586d3122`、`f1e98da1`である。GREENはwrapper **7 tests**、既存migration **27 passed**、
+plist lint 26/26、shell syntax、diff checkがPASSし、fresh adversarial re-reviewはBLOCKER/HIGH/MEDIUMなしで`ship`した。
+実機stop flag下のhostile env検証は、現在のDirectory Services異常でpasswd canonical home解決が失敗したためRC 1、
+child effect 0だったが、guard実行前のfail-closedでありmedia専用receiptは未生成だった。したがってこのsliceは安全側の
+停止を証明するが、production acceptanceは未完了である。`launchctl-safe preflight`は
+`blocked_control_plane/mutation_allowed=false`、raw readbackは141/153なのでlabel mutationは行わない。制御面復旧後に
+tracked plistを実機26件へ反映し、同じhostile env検証の
+`reason=disk_writers_stop/effect=0/readback=0/required_bytes=536870912` receipt、26 consumer、
+fresh canonical cleanup `last exit code=0`をread backする。`ai.anicca.lm-recording-store`の直接wrapperと残るbuild consumerは
+この共通wrapper外なので後続A-20 sliceとして残す。GitHub DNS failureのためprofitable-claudeの関連commitはlocal unpushedである。
+
 `/Users/anicca/anicca-project`は約9.5 GiB、その`.worktrees`は約4.4 GiBだった。最大の
 `cfo-resume-spec`（約1.08 GiB）は、dirty=0、branch upstream 0/0、process/open-path/leaseなしを
 read backした後にだけ`git worktree remove`で回収した。branchとremoteは残り、再作成可能である。
@@ -1204,7 +1228,7 @@ TDDのためだけの過剰fixtureや後続itemのscaffoldは前倒ししない�
 | A-17 | VM/package producer lifecycleを登録する | artifact/lease/finalizer/quota receipt | 完了: registration-only static 16件、pnpm exact version/proof/lease fail-closed、全A-17 entry runtime/quota 0/lease 300/preserveで削除authority 0、focused 48 tests、final review `ship`、fallback SHA一致/runs 486→487/static 16 bad 0、canonical runs 137→138 exit 0、protected deletion 0 |
 | A-18 | agent/gig-project lifecycleを登録する | project owner/terminal/lease receipt | 完了: registration-only numeric project 24件、terminal true 0、unknown owner 3、全件deliverable/preserve、focused 49 tests、fresh review `ship`、fallback runs 507→508/削除0、canonical runs 142→143 exit 0、errors/protected deletion 0 |
 | A-19 | Writer in-flight drainを接続する | provider interruption checkpoint/resume test | 完了: exact stop 2 pathのpre-Popen gate、process-group TERM→1秒→KILL/reap、immutable run/prompt checkpoint/resume、focused 44 tests、fresh review `ship`、release `43074f76422d1ec4935acdba98e553cb8564de94`、Writer runs 1/exit 0/provider effect 0、canonical runs 149→150/exit 0/errors 0/protected deletion 0 |
-| A-20 | browser/build/media preflightを接続する | producer consumer missing 0 for these families | 部分完了: Affiliate 3 browser、Instagram/X provision、標準job-search、Mercor、Gig、self-build 2境界、Writer media既存境界を接続。Gig current `3703700d8`、browser 4 tests、review `ship`、実機RC 1/effect 0/PID 61802不変。実装残りはhost-wide build/media coverage。canonical run 200 receipt後、run 201 SIGTERM、run 202 fresh receiptなし、control-plane 141のため最終運用readback待ち |
+| A-20 | browser/build/media preflightを接続する | producer consumer missing 0 for these families | 部分完了: Affiliate 3 browser、Instagram/X provision、標準job-search、Mercor、Gig、self-build 2境界、Writer media既存境界、共通wrapper配下media 26件をsource接続。hostile BASH_ENV/SHELLOPTS/PS4をTDDで遮断しre-review `ship`。実機RC 1/effect 0だがDirectory Services異常でguard前停止・専用receipt未生成。tracked plist実機反映、直接wrapperのrecording-storeと残るbuild consumer、profitable-claude push、canonical fresh exit 0/readback待ち |
 | A-21 | VM/package/agent preflightを接続する | producer consumer missing 0 for these families | 未完了 |
 | A-22 | supervisor non-stop behaviorを実装する | ULTRA wake keeps supervisor labels loaded | 未完了 |
 | A-23 | Codex log budget/rotationを実装する | active app-server handoff with session loss 0 | 未完了 |
