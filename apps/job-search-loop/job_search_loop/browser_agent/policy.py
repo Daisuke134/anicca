@@ -23,6 +23,11 @@ class AgentPolicy:
             )
         if not context.row_goal.strip() or not context.observation_sha256:
             raise ValueError("policy requires a row goal and fresh observation hash")
+        if (
+            context.validation_feedback is not None
+            and context.validation_feedback.observation_sha256 != context.observation_sha256
+        ):
+            raise RuntimeError("validation feedback is stale for the current observation")
         plan = await self._model_decision(context)
         if plan.based_on_observation_sha256 != context.observation_sha256:
             raise RuntimeError("model plan is stale for the current observation")

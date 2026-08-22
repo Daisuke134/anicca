@@ -30,7 +30,8 @@ repeat until a typed row transition or the row step budget is reached:
 1. attach or reconnect the row `BrowserSession`;
 2. build a fresh `ObservationV1`;
 3. construct `PolicyContextV1` from the row goal, opaque fact references, current
-   observation hash, prior receipt hashes, and remaining steps;
+   observation hash, prior receipt hashes, remaining steps, and
+   `validation_feedback(previous_observation, current_observation)`;
 4. use your model reasoning to propose exactly one `ActionPlanV1` from that current
    context, then pass it through `AgentPolicy.next_step`;
 5. execute its one action through `ActionExecutor`, record the value-free receipt,
@@ -81,7 +82,12 @@ type/options and persists it to Answer Memory. Use the returned value directly i
 the typed action without printing it. `missing_context`, `needs_confirmation`,
 `blocked`, and `skip` are not answer outcomes and must never end a row or wake.
 Rendered provider validation becomes the next fresh observation and another model
-resolution; it is not proof that the question cannot be answered.
+resolution; it is not proof that the question cannot be answered. Read every
+`ValidationFeedbackV1.messages` item and its related visible controls, then correct
+one current control per step. A same-surface rerender is normal validation feedback:
+observe it, resolve or infer a valid replacement, act once, and observe again. Never
+emit `unknown_required_field`, `blocked`, or `not_submitted` merely because validation
+appeared or the URL/surface did not change.
 
 Use `StableInferencePolicy` for common concepts. Luna supplies dated,
 Candidate-Memory-provenance intervals for experience; the policy merges overlaps
@@ -295,8 +301,9 @@ For every later Workday form action protected by `NoCaptchaButtonClickFilter`
 (`Save and Continue`, `Next`, or final `Submit`), wait at least six seconds after
 that form visibly mounts, then click only the visible `click_filter` user-facing
 control once. Never force-click the hidden button, call DOM `.click()`, or dispatch
-a synthetic event. Recapture after every transition; a same-surface result is
-`not_submitted`/a blocker and never a claim or success.
+a synthetic event. Recapture after every transition. A same-surface result is fresh
+input to the validation correction loop and is never by itself a claim, success,
+`not_submitted`, or blocker.
 
 Never bypass CAPTCHA. Resolve phone, address, work authorization, degree,
 experience years, demographics, and links only through Candidate Memory plus the

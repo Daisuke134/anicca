@@ -79,6 +79,16 @@ class PolicyContextV1:
     observation_sha256: str
     action_receipt_hashes: tuple[str, ...]
     remaining_steps: int
+    validation_feedback: ValidationFeedbackV1 | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ValidationFeedbackV1:
+    schema_version: int
+    observation_sha256: str
+    messages: tuple[str, ...]
+    related_controls: tuple[VisibleControlV1, ...]
+    changed: bool
 
 
 @dataclass(frozen=True, slots=True)
