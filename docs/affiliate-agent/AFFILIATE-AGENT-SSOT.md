@@ -22,8 +22,8 @@ backlog is:
    Affiliate effect at `https://x.com/selawmqt/status/2091124360723698095` for
    `elevenlabs-discovered-video-to-text-en-1`; consumption is exactly
    `EFFECT_STARTED -> POSTED`. It was not manually posted or retried.
-2. **X02 — INSTALLED, LIVE READBACK OPEN:** installed release
-   `51cf420416776e848184137660a556b05a3d5514` implements the bounded
+2. **X02 — INSTALLED, LIVE EFFECT UNVERIFIED:** installed release
+   `788710f3fdc7110bfe63704712fb27a829101e0e` implements the bounded
    LangChain-shaped pipeline inside the existing owner. It fetches an admitted
    source, requires an exact `evidence_quote` substring plus a concrete
    `reader_value`, rejects an unsupported draft with a separate model critic,
@@ -56,6 +56,47 @@ backlog is:
 7. **X07:** report each effect and the daily funnel summary through the existing
    replay-safe Telegram outbox with a provider message ID. A Telegram timeout is
    queued and never converts a post, view, or click into money.
+
+Current live checkpoint: run 26 exposed a sparse-release dependency omission in
+`launchctl-safe` before any owner or public effect ran. Release `f25abe081`
+automatically closes `bin` over `skills/_shared`, and its real Aqua/gui/501
+preflight passed. Run 27 then exposed a second daily-cap gate that cancelled the
+missing-original reservation; release `ce8cf8631` makes both gates preserve
+exactly one missing original slot. Run 28 selected 90 candidates, produced an
+English source-backed original, resolved an exact source quote, passed the
+separate factual critic, and X accepted the compose action. Six timeline reads
+and one separate read-only reconcile found no exact permalink, so the ledger row
+is terminal `status=unverified`, `post_url=null`. It is not retried, is not a
+verified X effect, and does not advance the verified EN 9 / JA 1 allocator.
+
+The remaining atomic path is the following single ordered queue; this is the
+current execution order, not a menu:
+
+1. On the next eligible owner hour, select a different English source and prove
+   one `kind=original` exact X permalink. The terminal MaxForAI source is never
+   replayed.
+2. After nine verified English non-Affiliate effects since the last Japanese
+   effect, prove one native-Japanese-source, Japanese-copy exact permalink.
+3. Add official X impression/profile-visit/follow observations when the account
+   exposes them; unknown remains unknown.
+4. Add a first-party X-to-owned-article entry receipt without raw referrer,
+   cookie, query, IP, user-agent, tracking link, or secret retention.
+5. Join entry receipt -> owned article -> existing CTA receipt -> PartnerStack
+   provider click -> official transaction ID at exact `placement_id`.
+6. Promote only mature approved-or-paid net experiments; stop formats with no
+   qualified traffic or transaction evidence. Views and clicks remain non-money.
+7. Capture the first official transaction and replay its
+   pending/approved/paid/reversed, currency, reversal, real cost, denominator,
+   and rolling 30-day USD 10,000 net in the canonical ledger and Telegram.
+
+Affiliate owner run 78 is the latest economic readback: 75 X post actions, five
+exact placement joins, 70 unjoined actions, zero invalid rows, CTA and interval
+funnel `OBSERVED`, owned visits
+`UNAVAILABLE / NETLIFY_WEB_ANALYTICS_DISABLED`, and official PartnerStack
+commission/payout rows empty. Pending, approved, paid, and reversed are all zero;
+rolling money is `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`,
+cost remains `UNKNOWN`, and Telegram is `SEND_TIMEOUT_UNKNOWN` in the existing
+replay-safe queue. The 75th unverified X row and every click are non-money.
 
 The same installed release bounds readback-only recovery of terminal
 `UNVERIFIED` proposals to six hours. This preserves immediate recovery of an X
@@ -319,7 +360,7 @@ deployment adapter for these same contracts, not a second implementation.
 | ElevenLabs | The official affiliate entry reached ElevenLabs signup. The acceptance email instructs the approved affiliate to accept Terms, configure a payment provider, and share the referral link; it also grants Resources, Messages, and Reporting access. The authenticated PartnerStack UI proves accepted Terms, an active Eleven Labs Inc. partnership, and an executable default link. An anonymous browser followed that link to `elevenlabs.io` with PartnerStack referral parameters and cookies. The current Commissions page explicitly renders tax registration required, a tax-information CTA for withdrawals, and a choice of direct deposit, PayPal, or Stripe | `ACTIVE_LINK_VERIFIED + ACCEPTED + EARNING_ENABLED`; the funnel can run now. Payout is `PAYOUT_BLOCKED_BY_TAX_SETUP` and the payment provider is `SELECTION_REQUIRED`. Retain the exact link only in private runtime state and prefer a product-specific link when the article concerns one product |
 | Rakuten Affiliate | CDP rendered the public home page with `ログイン`; approval state is not observable | `AUTH_REQUIRED`, keep the provider adapter dormant |
 | Postiz | A Japanese integration exists, but the product decision excludes Postiz | Do not read, connect, or use it in the Agent; this is not a blocker |
-| X identity | Dedicated Affiliate CDP `9326` and authenticated `whoami` prove `@selawmqt`: 128 posts, 27 following, 0 followers. The semantic profile command changed the public name to `sela | AI Tools`, added an English practical-AI bio with affiliate-link disclosure, set `aniccaai.com`, and a second apply returned `changed=false + matches_config=true`. X rejected legacy `@aniccaen` as inactive | Preserve mixed historical posts, keep all future posts English-only, and never use Japanese `@aniccaxxx` or shared daily-driver `@diceai0`; the first post still requires a duplicate-post fence and public readback |
+| X identity | Dedicated Affiliate CDP `9326` and authenticated `whoami` prove `@selawmqt`: 128 posts, 27 following, 0 followers. The semantic profile command changed the public name to `sela | AI Tools`, added an English practical-AI bio with affiliate-link disclosure, set `aniccaai.com`, and a second apply returned `changed=false + matches_config=true`. X rejected legacy `@aniccaen` as inactive | Preserve mixed historical posts and keep this identity English-primary. The current verified-effect allocator admits one native Japanese source/copy slot only after nine English non-Affiliate effects; never translate an English Affiliate placement into that slot, and never use Japanese `@aniccaxxx` or shared daily-driver `@diceai0`. Every post still requires the duplicate-post fence and public readback |
 | X publication | The first Affiliate X placement is `LIVE` at `https://x.com/selawmqt/status/2088728168534597644`. The canonical skill verifies `@selawmqt:9326`, requires disclosure plus one `LIVE` owned article URL, writes an effect-possible fence before the click, and requires exact status-page readback before `LIVE`. For a `t.co` anchor it prefers HTTP HEAD, then accepts only the exact owned URL rendered by the authenticated X DOM; this keeps readback truthful when the Mac cannot resolve `t.co` through Python DNS. X's April 2026 rules warn that scripted website automation may permanently suspend an account | Commit `97d143d7908b05ee4261e83c85d41818c3478c04` implements the DOM fallback. The installed source passed byte equality, and a read-only real-browser replay verified all five historical `XPostError` liveness rows as exact `LIVE` readbacks without clicking Publish. The existing owner naturally executed the release at `2026-08-20T14:12:51Z`; liveness remains same-day cooldown, so the old failure receipt is retained until the next sweep. Keep action caps and immediate account quarantine |
 | X Article EN | Writer Agent has a real public X Article on the separate `@diceai0` identity and a production adapter based on `wshuyi/x-article-publisher-skill`. Fresh authenticated read-only revalidation on Affiliate `@selawmqt:9326` reached the canonical `/compose/articles` route but returned `Page not found`, with zero textarea/contenteditable controls | `CHANNEL_CURRENTLY_UNAVAILABLE`, not a permanent product claim. Recheck capability after an account/entitlement change. Until then, owned English articles are the conversion assets and ordinary disclosed X posts/replies are the acquisition surface; another account's capability is not proof for `@selawmqt` |
 | English source scout | The canonical `sources capture --plan elevenlabs-en` command live-captured six immutable local artifacts: five ElevenLabs official web pages through CRWL and the official `elevenlabs/elevenlabs-python` repository through `gh` | Each receipt stores adapter, locator, locale, evidence class, license, body SHA-256, parser version, observed time, and expiry. The first live run returned `captured=6 + new=6`; after allowlisting stable GitHub fields, an immediate repeat returned `captured=6 + new=0`. Exact hashes are in Git-external `source-captures.jsonl`. CRWL `-q` failed because no LLM provider is configured, so the admitted route deliberately uses deterministic `md-fit` without an LLM. Authenticated X research readback is still missing |
@@ -1768,7 +1809,7 @@ owner, and independent work selected for the same wake.
 | HubSpot/Impact’s authenticated page now says `Declined` | Closed negative provider application; owner receipt refresh remains open | Do not resubmit or create a link; let the existing owner persist the rejection, then continue the rest of the funnel and other eligible programs |
 | ElevenLabs has executable links plus six disclosed owned/X placements and one canonical DEV syndication, but no post-baseline click or provider transaction | Acquisition and revenue blocker, not authority blocker | Continue truthful distribution and measure real provider clicks and transactions without counting clicks as money |
 | Kit rejected the submitted application without naming one applicant-specific cause | Closed negative receipt | Do not reapply unchanged; first make audience fit, accessible content, and organic promotion evidence materially stronger |
-| `@selawmqt` has zero followers and mixed historical language | Acquisition weakness, not implementation blocker | Rebrand future output to English, preserve history, publish useful material, and measure qualified reach honestly |
+| `@selawmqt` has zero followers and mixed historical language | Acquisition weakness, not implementation blocker | Keep future output English-primary with the current native-source EN 9 / JA 1 verified-effect allocator, preserve history, publish useful material, and measure qualified reach honestly |
 | The owned site does not yet present a deep affiliate-relevant English content body | Approval and conversion weakness | Publish evidence-led B2B SaaS/creator workflows and comparison foundations before another fit-sensitive application |
 | `agent-browser 0.27.0` hung against the live multi-tab CloakBrowser | Tool-path failure, not browser incapability | Use the live-proven raw-CDP path now; retain the failure receipt and replace only when a candidate passes the same live postcondition |
 | Provider signup/login/OTP/contract/application writes are not yet fully exposed by `affiliate provider` | Product implementation gap | Turn every successful operator action into an idempotent semantic playbook and CLI state |
@@ -2150,7 +2191,8 @@ recurring payouts and the existing English publication lane reduces launch
 friction. Exact market-size superiority is unproven and is not a premise.
 Before its first Affiliate placement, change the current `sela` presentation to
 an English Anicca identity with an adjacent profile disclosure; future content
-is English-only. The 128 historical mixed-language posts remain historical data,
+is English-primary with one native Japanese-source slot after nine verified
+English non-Affiliate effects. The 128 historical mixed-language posts remain historical data,
 not a reason to delete or fabricate a clean track record.
 
 Initial English capacity allocation:
@@ -2712,8 +2754,9 @@ was rejected.
 
 The Repost contribution is bounded and measurable:
 
-1. `@selawmqt` stays English-only and targets creators, developers, agencies, and
-   SMB operators who can buy the three admitted SaaS products.
+1. `@selawmqt` stays English-primary and targets creators, developers, agencies,
+   and SMB operators who can buy the admitted SaaS products. Its bounded 9:1
+   non-Affiliate allocator uses Japanese source and copy only for the Japanese slot.
 2. One X effect owner arbitrates Affiliate campaign posts and Repost engagement;
    independent loops submit proposals but never concurrently drive the account.
 3. Initial cadence is at most four high-value buyer-conversation replies/quotes
@@ -3819,7 +3862,7 @@ independent harness task continues:
    30-day view that counts only approved-or-paid rows less reversals and known real
    cost, and refuses A3 when any material cost needed for net is unknown.
 4. **P3 — Convert Repost into measurable Affiliate acquisition, not raw volume.**
-   Give `@selawmqt` one X effect owner, enforce English-only identity and bounded
+   Give `@selawmqt` one X effect owner, enforce English-primary EN 9 / JA 1 identity and bounded
    cadence, and join each Repost/ordinary-post exposure through owned article,
    provider click, and transaction. Use the existing 20 exact public placements for the next
    one-variable experiment; no transaction join means no revenue credit.

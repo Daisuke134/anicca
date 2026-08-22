@@ -1,5 +1,40 @@
 # Affiliate local money loop handover
 
+- Latest live attempt: sparse release `51cf42041` omitted the shared
+  `launchctl-safe` preflight dependency, so the 21:00 kick failed closed before
+  any owner or public effect. Repost commit `f25abe081` now automatically adds
+  `skills/_shared` whenever a sparse release includes `bin`; real Aqua/gui/501
+  preflight passed. Run 26 then exposed a second daily-cap gate that cancelled
+  the reserved missing-original slot. Commit `ce8cf8631` aligns both gates.
+  Run 27 safely rejected a smart-apostrophe evidence mismatch; commit
+  `788710f3fdc7110bfe63704712fb27a829101e0e` resolves typography-equivalent
+  model text back to the exact source substring and gives that canonical quote
+  to the independent critic. All three commits are pushed to both Repost remotes;
+  current immutable release is `20260822T211555-788710f3`, source/runtime CLI
+  SHA-256 is `9dbf431589b13af93d5f2b303661f9c245e38037c96010ac9e28b8c6c39b02ad`.
+
+- Repost run 28 collected 90 candidates and produced a useful English original:
+  `Give two agents the same repeatable task, then inspect the first failure before
+  choosing one.` Exact evidence and the separate critic passed; X accepted the
+  composer. Six timeline reads plus a separate read-only reconcile still found
+  no permalink. The sole row is terminal `status=unverified`, `post_url=null`,
+  source `https://x.com/MaxForAI/status/2091056022551187579`; never resend it.
+  Posted ledger is 75 and Telegram backlog is 22. This is neither a verified X
+  effect nor money and does not advance the language allocator, so the next
+  verified acquisition atom remains a different English source-backed original.
+
+- Affiliate owner run 78 exited `0` and observed the terminal row: 75 X actions,
+  five exact placement joins, 70 unjoined, zero invalid. Official PartnerStack
+  report at `2026-08-22T12:14:27.419022+00:00` has zero commission rows and empty
+  payout rows; pending/approved/paid/reversed are all zero. Rolling state is
+  `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / cost=UNKNOWN / NOT_REACHED`.
+  Owned visits remain `UNAVAILABLE / NETLIFY_WEB_ANALYTICS_DISABLED`; CTA and
+  interval funnel are observed. Telegram is `SEND_TIMEOUT_UNKNOWN` and belongs
+  to the existing replay-safe owner queue. The ordered remaining queue is SSOT
+  X02-X07: exact English original, verified native Japanese 1/10, X and entry
+  measurement, exact provider transaction join, mature-net allocation, then the
+  first official money lifecycle through rolling USD 10,000 net.
+
 - Current X acquisition runtime is sparse immutable Repost release
   `20260822T203734-51cf4204`, full commit
   `51cf420416776e848184137660a556b05a3d5514`, pushed to both Repost remotes.
@@ -13,6 +48,18 @@
   flushed exactly one Telegram backlog row, repeated the measured `5/3`
   Affiliate deferral, and correctly stopped at the same-hour fence with no X
   effect. The first exact original permalink remains the next live proof.
+
+- Current Affiliate runtime is immutable release
+  `5f8aef6c9625de391e3c0f5823ea02c5e5280b41`. It is a strict descendant of
+  required checkpoint `6f70ef499c841d0e4cde421d3f8144b57cfdc344`, not a rollback;
+  installed/source `local_loop.py` is byte-equal at SHA-256
+  `ca7cb6c61d51bd75000f2be7fe0bb5d19dbafa14e3b8ec80f89003cea9e29126`.
+  Natural owner run 72 exited `0` on its 600-second cadence. It observed 74 X
+  actions, five exact placement joins, 69 unjoined, zero invalid, CTA state
+  `OBSERVED`, owned visits `UNAVAILABLE / NETLIFY_WEB_ANALYTICS_DISABLED`, and
+  official rolling money `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS` with all
+  four status counts zero. This proves current provenance and honest funnel
+  reporting; it does not prove a buyer or money.
 
 - X acquisition quality reset: the Affiliate owner now observes 73 real Repost
   actions, four exact placement joins, 69 unjoined ordinary actions, and zero
