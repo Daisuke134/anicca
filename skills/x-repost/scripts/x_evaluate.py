@@ -121,7 +121,7 @@ def evaluate_original_ratio(posted, samples, cutoff, state: Path, apply: bool,
         strategy = json.loads(strategy_path.read_text(encoding="utf-8"))
     except Exception:
         strategy = {}
-    current = float(strategy.get("original_ratio", 0.15))
+    current = float(strategy.get("original_ratio", 0.50))
     result.update({"knob": "original_ratio", "from": current,
                    "samples": {k: len(v) for k, v in arms.items()},
                    "median_early_views": {
