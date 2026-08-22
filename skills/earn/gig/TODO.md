@@ -302,8 +302,9 @@ no-send, replay-zero and a new natural sub-30-minute official reply/estimate pro
 Do not advance the development cursor until every unchecked item in the current stage has official
 evidence. Independent production lanes continue running while development follows this order.
 
-**Live handover state.** `main`, `origin/main` and the immutable release selected by the Paid `current`
-link all read back `6c7b27438b64c88c5efcd51028dcd873356ab962`; the protected unrelated dirty
+**Live handover state.** `main`, `origin/main` and the immutable release selected by the Life Manager
+`current` link all read back `08f07ee87050e3ff7a8bf8f54ef09ce54a717132`; the Paid-specific `current` remains
+`2ed6af9a37b519c173e256caddcc9ea9e1a71d66`. The protected unrelated dirty
 `skills/earn/gig/tests/test_reply_concurrency.py` remains outside this work. The loaded Paid owner uses up to
 eight independent project workers. Its launchd environment ignores the shared preventive
 `disk-pressure.block` and `disk-writers.stop` flags while retaining the 512 MiB last-resort guard and expiring
@@ -468,6 +469,100 @@ a durable goal stream; a marketplace is a mechanical adapter; a skill is a capab
 contract; a graph is a rebuildable projection of facts. Telegram is the control/report channel, not marketplace
 truth.
 
+**Loop and graph, from first principles.** A loop is agency through time: observe current reality, reconstruct
+the goal, choose and perform the next bounded action, verify the external result, persist facts, then wake again.
+Without recurrence it is a one-shot prompt; without official verification it is only repeated guessing; without
+durable facts it forgets after restart. Loop engineering designs that recurrence, stop condition, ownership,
+budget, recovery and effect safety.
+
+A graph is agency across relationships: it represents which goals, people, conversations, capabilities,
+artifacts, effects and revenue depend on or prove one another. Graph engineering designs the minimal schema,
+provenance, identity fusion, true dependency edges and queries. The graph does not replace the loop. Each loop
+appends facts; the graph projects relationships among those facts; the manager queries the graph to select a
+better next action; the next loop outcome improves the graph. Loops supply time and learning cycles; graphs
+supply structure and cross-loop reuse.
+
+```mermaid
+flowchart LR
+    Wake[Wake] --> Observe[Observe official reality]
+    Observe --> Context[Rebuild goal context]
+    Context --> Decide[Model selects next action]
+    Decide --> Effect[Capability or marketplace effect]
+    Effect --> Verify[Official verification]
+    Verify --> Ledger[(Append fact)]
+    Ledger --> Graph[Project relationships]
+    Graph --> Context
+    Verify --> Wait[Wait or next wake]
+    Wait --> Wake
+```
+
+**Four-lane topology.** The lanes share the kernel, capability registry, factual ledger, economic graph,
+content-addressed artifact store, scheduler/leases, secrets boundary, evaluator and official receipt contract.
+They do not share mutable conversation context or browser effect ownership. Each lane is independently loaded,
+self-cleaning and restartable, and all four may run concurrently.
+
+| Lane | Durable goal owner | Natural loop | Required business outcome |
+|---|---|---|---|
+| Apply | one opportunity/application owner per listing | discover → qualify → assemble capabilities → write proposal → exact submission → readback | real application officially received |
+| Negotiate | one conversation owner per application/thread | observe buyer message → reconstruct application/proposal/DM → reply or estimate within 30 minutes → readback | every buyer message has a durable official disposition |
+| Paid | one project owner per purchased talkroom | reconstruct complete contract/context → build/revise → verify → exact delivery → readback → await approval/payment | context-correct artifact delivered once, replay-zero |
+| Storefront | one portfolio/listing owner per service | observe demand/outcomes → select capability bundle → create/update truthful listing → readback → attribute sales | real listing mutation and attributable revenue |
+
+The Economic Manager allocates attention across lanes using expected value, deadline, buyer risk, marginal cost,
+capacity and evidence quality. It may call any registered skill whose input contract is satisfied: research,
+writing, design, image, software, marketing, pricing, localization and future capabilities are not separate
+islands. A skill publishes `inputs`, `outputs`, `cost`, `permissions`, `evidence`, `quality history` and
+`marketplace constraints`; the manager composes skills for the current goal, while the outcome ledger updates
+their demonstrated usefulness. No skill may directly send to a marketplace; only the owning lane adapter may
+cross an effect fence.
+
+**Paid project isolation and context contract — mandatory.** Speed comes from independent projects running in
+parallel, not from shortening or mixing their reasoning. The Paid supervisor performs only observation,
+priority, lease and worker lifecycle. For every `platform + account + talkroom/contract`, exactly one durable
+Project Owner receives one project root, one conversation ledger, one artifact lineage and one effect namespace.
+It cannot read another buyer's project context. Sequential work inside one project stays with the same owner;
+independent projects may run concurrently up to the measured capacity limit.
+
+```mermaid
+flowchart TB
+    Supervisor[Paid supervisor] --> Haru[Project Owner Haru]
+    Supervisor --> Manledge[Project Owner Manledge]
+    Supervisor --> Byusco[Project Owner byusco]
+    Supervisor --> Other[Project Owner N]
+    Haru --> HC[Haru Context Capsule]
+    Manledge --> MC[Manledge Context Capsule]
+    Byusco --> BC[byusco Context Capsule]
+    HC --> Shared[Shared capability tools]
+    MC --> Shared
+    BC --> Shared
+    Shared --> HEffect[Haru exact-room effect fence]
+    Shared --> MEffect[Manledge exact-room effect fence]
+    Shared --> BEffect[byusco exact-room effect fence]
+```
+
+Before every semantic decision or artifact build, the Project Owner reconstructs a hash-bound `Project Context
+Capsule` from full durable sources, in chronological order:
+
+1. identity and deadline: marketplace, account, listing/request, application, contract and talkroom ids;
+2. original job description and every source/attachment available before application;
+3. exact submitted proposal, price, scope, schedule and promises that won the work;
+4. complete DM/talkroom ledger from both buyer and seller, not merely the last N messages;
+5. accumulated requirements, corrections, explicit approvals/rejections and unresolved questions;
+6. seller commitment ledger: every promise, apology, estimate and stated next action;
+7. buyer-state interpretation: current objective, urgency, satisfaction/frustration, trust damage and expected
+   response tone, each linked to exact quoted message ids with confidence; inference is never stored as fact;
+8. artifact lineage: buyer-supplied inputs, every candidate hash, review evidence, last buyer-accepted base and
+   why later versions were rejected;
+9. effect ledger: every message/file/formal-delivery action and official DOM/API readback, including replay key;
+10. current decision boundary: what changed since the last verified fact and what must not be repeated.
+
+The full ledger remains on disk and content-addressed. Context budgeting may summarize older turns only into an
+evidence-linked digest; it may never silently keep only the tail, omit the winning proposal, discard seller
+promises, or substitute a newer artifact version for the last buyer-accepted lineage. The owner must record a
+context-read receipt containing capsule hash and every source hash before work. If any required origin source is
+missing, it collects/reconstructs that source or fails closed; it does not ask the buyer for information already
+present anywhere in the project ledger.
+
 ```mermaid
 flowchart LR
     Sources[Markets and opportunities] --> Manager[Economic manager]
@@ -551,8 +646,12 @@ flowchart TB
    fields and answer the five competency questions above with a rebuildable projection. Reuse the
    `loop-engineering` circuit-breaker/gate/lock shapes only where existing production code has no equivalent;
    keep them operational and incapable of choosing semantic next actions.
-4. [ ] Make one Paid manager own the complete room conversation, accumulated contract, current artifact,
-   buyer-visible goal and final response. Specialists are tools; no handoff may lose conversation ownership.
+4. [ ] Make one durable Paid Project Owner per purchased project own its complete origin and history: job
+   description, exact application/proposal, full DM/talkroom ledger, seller commitments, evidence-linked buyer
+   state/emotion interpretation, accumulated contract, artifact lineage, buyer-visible goal and final response.
+   Replace tail-only context loss with the hash-bound Project Context Capsule and context-read receipt defined
+   above. Specialists are tools; no handoff may lose conversation ownership, and no project may read another
+   buyer's capsule.
 5. [ ] Replace hardcoded business-semantic error-to-transition routing with raw structured tool results returned
    to the manager for replanning. Retain only deterministic safety invariants and delete obsolete shipment enums.
 6. [ ] Make artifact production a tool with durable inputs/outputs: every buyer asset and generated asset is
@@ -567,16 +666,37 @@ flowchart TB
 9. [ ] Replace workflow-state completion with an append-only factual handoff/effect ledger that survives crash,
    restart and model context loss. Manager reconstructs the next action from facts; no stale state authorizes an
    effect.
-10. [ ] Migrate every purchased Paid room through the reconstructed manager, preserve already-proved effects,
-   close every silent pending/failure with an owned disposition, and prove one natural multi-project pass with
-   official readback and replay-zero for every effect.
+10. [ ] Migrate every purchased Paid room through isolated Project Owners, preserve already-proved effects,
+   close every silent pending/failure with an owned disposition, and prove one natural concurrent multi-project
+   pass. Each client must show its own capsule/source hashes, correct artifact, exact-room official readback and
+   replay-zero; speed from parallel clients must not shorten per-client build/review quality.
 11. [ ] Only after Paid proves the architecture, extract the proved kernel from Coconala-specific code and apply
-    the same manager/tool/evaluator/effect-ledger shape to Negotiate, Storefront and Apply in the existing
-    authoritative lane order; then continue device durability, clean third-device acceptance, real withdrawal
-    and OSS audit.
-12. [ ] After local four-lane and clean-device acceptance pass, add the first second-market adapter against the
-    same capability/effect contracts. Upwork is first; Lancers and CloudWorks follow only from observed adapter
-    gaps. Cloud scheduling comes after local OSS truth.
+    the same goal-owner/tool/evaluator/effect-ledger shape in the existing authoritative order: Negotiate full
+    message coverage and natural sub-30-minute reply/estimate; Storefront truthful create/update and attribution;
+    then Apply maximal coverage/replay audit. Every lane must produce a real Coconala effect and official
+    readback; a PID, draft, report or local PASS remains supporting evidence only.
+12. [ ] Prove four independent local launchd owners: concurrent operation without shared mutable conversation
+    state, one effect owner per target, lease recovery, self-clean, process-exit restart, Mac reboot continuation,
+    two successive natural starts and no split brain. Telegram/email reporting failure must not stop business
+    work, and reporting must never impersonate marketplace readback.
+13. [ ] On a clean third-party device, run only `./install.sh coconala`, authenticate without placing secrets or
+    customer data in repo/log/prompt, enable email notifications, and obtain one natural official receipt for
+    Apply, Negotiate, Paid and Storefront after restart. No symlink or development checkout may be required.
+14. [ ] Prove economic truth end to end: real marketplace sale, platform balance, permitted withdrawal and bank
+    arrival reconcile to the same revenue lineage; distinguish gross revenue, fees, refunds, receivable and cash.
+    Authentication, KYC and irreversible owner-money actions remain explicit owner gates where legally required.
+15. [ ] Run secret/customer-data/license audit, remove private artifacts from the distributable package, retain
+    copied-code notices, prove empty-HOME install and publish the complete Life Manager package under MIT. Done
+    requires the four natural lane outcomes, official readbacks/replay-zero, restart continuity and clean-device
+    E2E evidence.
+16. [ ] Add Upwork as the first second-market adapter against the same goal, capability, context, effect and
+    receipt contracts. Do not fork the kernel. Use real Upwork outcomes to reveal only genuine adapter gaps;
+    feed reusable improvements back to the shared registry and graph.
+17. [ ] Add Lancers and CloudWorks next, then allow the portfolio manager to discover new markets and compose
+    existing capabilities into proposed new revenue loops. A new loop starts in bounded observation, earns wider
+    permissions only from official outcome evidence, and cannot self-authorize secrets, unbounded spend or
+    irreversible public/financial effects. Move scheduler/workers/event store to cloud only after local and
+    second-market contracts remain unchanged and Telegram-only operation is naturally proved.
 
 #### Paid buyer-visible media contract — authoritative
 
