@@ -368,6 +368,23 @@ re-entered semantic decision/file ownership. It must repair only those stable ma
 package hash, pass the generic contract/correspondence validators, then attach/send once with formal delivery OFF,
 exact-room DOM readback and replay-zero.
 
+Runs 6-8 exposed two later generic recovery failures before any customer effect. A stale one-time v43 recovery
+policy was replayed, so the natural owner truthfully froze the same verified design as v44 and requested fresh PC
+and responsive Illustrator receipts instead of sending stale-path receipts. The old immutable controller then
+proved LaunchServices had opened a different document; shared `_open` now uses Illustrator's native Apple Event
+`open POSIX file` and is published in current release. The parallel pass next reached physical ENOSPC while writing
+its final receipt. Only regenerated caches and a completed failed staging copy were reclaimed; APFS then released
+19 GiB, while durable customer data, browser profiles and the verified v43 bundle remained intact.
+
+The remaining immediate blocker is now the macOS user bootstrap, not Paid logic, Coconala auth, artifact quality or
+disk. After the disk incident, `launchctl-safe`, direct `launchctl` and `launchctl asuser` all return 141
+`Reentrancy avoided`; Terminal/Aqua resolution returns -10827; OpenClaw Gateway is unavailable; sudo and localhost
+SSH report that uid 501 has no passwd record; and direct OpenDirectory lookup returns `eServerError`. No attempted
+path started another Paid process and customer effect/readback remain zero. The exact minimum owner action is to
+fully quit and reopen the Codex/ChatGPT desktop app, then resume this thread. On the recovered Aqua bootstrap,
+kickstart the existing `ai.anicca.hf-gig-paid-direct` owner once; do not run a custom executor. Require v44 PASS,
+exact-room attachment/message readback with formal delivery OFF, then a second natural wake with replay-zero.
+
 **Current runtime refresh.** Unrelated dirty files remain untouched. The existing Paid pass naturally resumed the
 Haru v43 staging after compiling
 the complete proposal, DM, talkroom and attachment context. Haru `18169583` remains unsent. The resumed owner first
