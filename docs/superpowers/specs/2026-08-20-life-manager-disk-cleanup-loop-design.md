@@ -362,6 +362,28 @@ live fallback source SHA一致後のruntime manifestはmode `0600`、browser sta
 last exit 0、2026-08-22T11:46:10Z receipt、mode `0600`、`errors=0`、`protected_deletions=0`、
 `evaluated=9/preserved open=9/reclaimed=0`である。実行中browser sessionとcloneは削除していない。
 
+A-16ではbuild/media producer lifecycleを登録した。Xcode DerivedDataは`runtime`、Xcode Archivesと
+`~/.openclaw/workspace/runs`は`deliverable`、dynamic repository buildは`repository-build/runtime`、
+publication receiptの4 fieldを満たすrunのexact `reel-final.mp4`は`reelclaw-media/deliverable`として
+owner、class、quota 0、300秒lease pathをruntime manifestへ保存する。Archives、run root、meta、source、
+videoを削除対象にせず、全新規entryのfinalizerは`preserve`で削除authorityを0に固定した。declared leaseの
+writer/heartbeatはまだ接続されておらず、現時点では運用保護を追加しない。A-20のproducer preflightとA-36の
+heartbeat/drainが実装・実測されるまで削除をenableしない。
+
+[Apple Xcode debugging information](https://developer.apple.com/documentation/xcode/building-your-app-to-include-debugging-information)の
+配布build archiveを保持する契約、[Cargo build cache](https://doc.rust-lang.org/cargo/reference/build-cache.html)の
+`target`がbuild output/cacheである契約、[Next.js deployment](https://nextjs.org/learn/pages-router/deploying-nextjs-app-other-hosting-options)の
+`.next`が`next build` outputである契約を採用した。初回reviewは、writerのないleaseに削除authorityを与えるHIGHと
+path-based unlinkのsymlink raceを検出したため、Ponytailでregistration-onlyへ縮小した。focused **48 tests**、
+JSON/diff check、primary **37+11 tests**がPASSし、final fresh reviewは`ship`、blocking findingなし。
+external host adapter commitは`62bd6b023`である。live fallback runs 474→475はruntime manifestをmode `0600`で
+更新し、static 3件をexact readbackした後、回収可能候補0・reserve未回復を正しくexit 3で報告した。実機59 run、
+59 videoはpublication receipt 0件のため全保持し、Xcode Archives約29 MiBも保持した。final canonical readbackは
+runs 129→130、state not running、last exit 0、2026-08-22T12:38:02Z receipt、mode `0600`、`errors=0`、
+`protected_deletions=0`、`evaluated=9/reclaimed=0`である。観測中に空きは約5.7 GiBから3.6 GiBへ低下した。
+これはA-16が登録だけで回収を有効化していないこと、およびproducer増加が継続していることの実測であり、
+11 GiB reserve回復の証拠ではない。
+
 `/Users/anicca/anicca-project`は約9.5 GiB、その`.worktrees`は約4.4 GiBだった。最大の
 `cfo-resume-spec`（約1.08 GiB）は、dirty=0、branch upstream 0/0、process/open-path/leaseなしを
 read backした後にだけ`git worktree remove`で回収した。branchとremoteは残り、再作成可能である。
@@ -908,8 +930,8 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 
 各行は1つの作業だけを持つ。順序を飛ばさず、受入証拠が保存されるまで完了扱いにしない。
 
-capacity-safety interruptのA-25とA-04〜A-15を閉じたため、実行queueは
-`A-16 → A-17 → … → A-24 → A-26 → … → A-44`へ進む。A-25の先行完了はA-11〜A-24の
+capacity-safety interruptのA-25とA-04〜A-16を閉じたため、実行queueは
+`A-17 → A-18 → … → A-24 → A-26 → … → A-44`へ進む。A-25の先行完了はA-11〜A-24の
 完了を意味しない。data loss、credential/session保護、money safety、ENOSPC recoveryなど重要sliceは
 Ponytailでscopeを最小化してTDDを行う。軽微なdocs/readbackは現状実測からstraight fixへ進める。
 全itemで必要最小限のregression、fresh adversarial review、実機readback、spec state更新、commit/pushを同じsliceで閉じ、
@@ -932,7 +954,7 @@ TDDのためだけの過剰fixtureや後続itemのscaffoldは前倒ししない�
 | A-13 | 141/153 failure fixtureを保存する | failure receipt with zero deletion | 完了: production health probeへ141/153注入、inventory/discovery/lsof/delete 0、evaluated/reclaimed/protected deletion 0のatomic receipt、59 tests、review `ship`、runs 109→110、exit 0 |
 | A-14 | stale app-server separation receiptを保存する | cleanup never kills app-server receipt | 完了: run/canary共通session-owner/no-kill receipt、probe exception fail-closed、exact label再readback、61 tests、fix-first review→`ship`、runs 112→113、exit 0、protected deletion 0 |
 | A-15 | browser producer lifecycleを登録する | artifact/lease/finalizer/quota receipt | 完了: static browser 6件、Chromium dynamic clone 9件、producer-specific exact proof、0/複数/symlink fail-closed、focused 44+4 tests、review fix-first→re-review `ship`、runs 118→120、exit 0、open 9 preserve、protected deletion 0 |
-| A-16 | build/media producer lifecycleを登録する | artifact/lease/finalizer/quota receipt | 未完了 |
+| A-16 | build/media producer lifecycleを登録する | artifact/lease/finalizer/quota receipt | 完了: registration-only、static 3件、dynamic build/mediaはowner/class/lease/quota登録済み、全新規entry preserveで削除authority 0、focused 48 tests、final review `ship`、fallback runs 474→475 runtime manifest 0600、canonical runs 129→130 exit 0、実機59 run/videoとArchives保持、protected deletion 0 |
 | A-17 | VM/package producer lifecycleを登録する | artifact/lease/finalizer/quota receipt | 未完了 |
 | A-18 | agent/gig-project lifecycleを登録する | project owner/terminal/lease receipt | 未完了 |
 | A-19 | Writer in-flight drainを接続する | provider interruption checkpoint/resume test | 未完了 |
