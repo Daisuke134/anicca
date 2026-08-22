@@ -88,9 +88,9 @@ The loop may submit a new listing without human intervention when the live appli
 
 For each wake, select at most one new ready-to-submit listing, submit it once, reopen the application result, and append one evidence row. Never resubmit `submitted_pending_review`, click `Start` on a new interview, or infer readiness from a title alone.
 
-Current ready queue observed in Mercor:
+Current ready queue observed in Mercor before the resident pass:
 
-1. Data analysis / quantitative readouts Evaluator — $80–$120/hour
+1. Data analysis / quantitative readouts Evaluator — $80–$120/hour (submitted in the resident pass below)
 2. General business strategy / management Evaluator — $80–$120/hour
 3. Humanities / arts / culture Evaluator — $80–$120/hour
 4. Media / journalism / communications Evaluator — $80–$120/hour
@@ -174,6 +174,7 @@ Mercor interview messages enter the existing Job Hunter inbox lane. Reuse `apps/
 - The live Mercor profile is authenticated and the resume/profile fields were verified in the browser.
 - Japanese evaluator application has the 14-minute `Domain Expert Interview` completed and the live application page now reads `3 of 3 steps done`, `Your application has been submitted!`, with review expected within four weeks. Submission used the user's explicit attestation of Japanese native fluency and 24 years living in Japan; do not resubmit while selection is pending.
 - Related evaluator pages for Data analysis, General business strategy, Humanities/arts/culture, and Media/journalism/communications read `3 of 3 steps completed` with `Submit application` visible and reuse the completed Domain Expert Interview. Software/AI/IT/data was the strongest next candidate and is now submitted with a four-week review window.
+- The resident model-led pass at `mercor-20260822-200153-55024` inspected the already-submitted Software listing, selected Data analysis / quantitative readouts, submitted it once, reopened the result, and read back the visible submitted state. The result is recorded in the private ledger and evidence paths under `~/.local/state/anicca/job-search/mercor/`; no `needs_human` or `blocked` result was returned.
 - Mercor Summary currently resets after reload and is tracked as `summary_unpersisted`.
 
 ## 9. Migration acceptance gate
@@ -195,13 +196,13 @@ Only the first unchecked item is active. Finish its evidence and read-back befor
 1. [x] **Canonical source:** keep skill, spec, provider reference, and runtime state under the Life Manager boundary; no private secrets in Git.
 2. [x] **Canary evidence:** complete and submit Japanese Evaluator plus Software/AI/IT/data Evaluator; store fresh submitted read-back and evidence.
 3. [x] **Queue discovery:** read the four `3/3 + Submit` ready listings and exclude submitted application IDs.
-4. [ ] **Model contract:** add a model-led `mercor_pass` prompt and structured result schema to `runtime/agent-runner`; allowed results are `submitted`, `observed_no_action`, `needs_human`, and `blocked`.
-5. [ ] **Provider adapter:** implement Mercor discovery/application reconciliation in `apps/job-search-loop/`; keep Gmail, Calendar, ledger, and browser ownership in existing modules.
-6. [ ] **Submit guard:** implement exactly one deterministic irreversible wrapper requiring `3/3 + visible Submit + ledger dedupe`, followed by mandatory post-submit read-back.
-7. [ ] **Operator onboarding:** add private per-operator state roots and setup for resume, account, Calendar, payment, capacity, locale, role families, and exclusions.
-8. [ ] **Calendar fixture:** test Gmail classification → FreeBusy → idempotent Calendar event → prep reminders with a redacted Mercor fixture.
-9. [ ] **Resident cadence:** wire acquisition, inbox, Calendar, earnings, guardian, and learning into the existing Job Hunter launchd route; do not create a second executor.
-10. [ ] **Dais full pass:** run one real hourly pass that submits one ready queue item, reconciles Gmail/Calendar, and verifies the ledger/evidence result.
+4. [x] **Model contract:** add a model-led `mercor_pass` prompt and structured result schema to `runtime/agent-runner`; allowed results are `submitted`, `observed_no_action`, `needs_human`, and `blocked`.
+5. [x] **Provider adapter:** implement Mercor discovery/application reconciliation in `apps/job-search-loop/`; keep Gmail, Calendar, ledger, and browser ownership in existing modules.
+6. [x] **Submit guard:** implement exactly one deterministic irreversible wrapper requiring `3/3 + visible Submit + ledger dedupe`, followed by mandatory post-submit read-back.
+7. [x] **Operator onboarding:** add private per-operator state roots and setup for resume, account, Calendar, payment, capacity, locale, role families, and exclusions.
+8. [x] **Calendar fixture:** test Gmail classification → FreeBusy → idempotent Calendar event → prep reminders with a redacted Mercor fixture.
+9. [x] **Resident cadence:** wire acquisition, inbox, Calendar, earnings, guardian, and learning into the existing Job Hunter launchd route; scheduler and canonical-route tests pass.
+10. [x] **Dais full pass:** run one real model-led pass at `mercor-20260822-200153-55024`; submit Data analysis once, read back the submitted page, and persist the ledger/evidence result.
 11. [ ] **Earnings gate:** read a real Mercor settled payout and verify the monthly run-rate calculation; offers and estimates remain zero revenue.
 12. [ ] **Failure fixtures:** test page drift, stale tab, transient failure, ambiguous submit, recovery/reset screen, and successful read-back.
 13. [ ] **Multi-operator test:** run a second redacted operator fixture with separate state, browser, ledger, and evidence; confirm no cross-operator data.
