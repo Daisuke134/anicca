@@ -121,7 +121,13 @@ print(json.dumps({"messageId": "901"}))
                 ats_snapshot_path=ats_snapshot,
                 ats_snapshot_sha256=ats_snapshot_sha256,
             )
-            ledger.complete_submission(intent.intent_id, intent.fence, "submitted")
+            ledger.complete_submission_verified(
+                intent.intent_id,
+                intent.fence,
+                outcome="submitted",
+                evidence_sha256="e" * 64,
+                evidence_class="exact_completion_ui",
+            )
             ledger.close()
             calls = []
 

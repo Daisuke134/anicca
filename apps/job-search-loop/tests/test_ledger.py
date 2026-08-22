@@ -9,6 +9,20 @@ from pathlib import Path
 from job_search_loop.ledger import FenceError, Ledger
 
 
+def _complete_verified(ledger, intent_id, fence, outcome):
+    evidence_class = {
+        "submitted": "exact_completion_ui",
+        "submit_unknown": "no_authoritative_completion_ui",
+    }[outcome]
+    ledger.complete_submission_verified(
+        intent_id,
+        fence,
+        outcome=outcome,
+        evidence_sha256="e" * 64,
+        evidence_class=evidence_class,
+    )
+
+
 class LedgerTests(unittest.TestCase):
     def setUp(self):
         self.tempdir = tempfile.TemporaryDirectory()
@@ -111,13 +125,13 @@ class LedgerTests(unittest.TestCase):
         first = self._claim(
             self.ledger, self.application_id, "2026-07-28", "hash-1"
         )
-        self.ledger.complete_submission(first.intent_id, first.fence, "submitted")
+        _complete_verified(self.ledger, first.intent_id, first.fence, "submitted")
         second_id = self.ledger.add_application(
             "Other", "GenAI Engineer", "https://jobs.example.com/43"
         )
         self._ready(second_id)
         second = self._claim(self.ledger, second_id, "2026-07-28", "hash-2")
-        self.ledger.complete_submission(second.intent_id, second.fence, "submit_unknown")
+        _complete_verified(self.ledger, second.intent_id, second.fence, "submit_unknown")
         third_id = self.ledger.add_application(
             "Third", "AI Product Engineer", "https://jobs.example.com/44"
         )
@@ -173,7 +187,7 @@ class LedgerTests(unittest.TestCase):
         self.assertEqual(self.ledger.retryable_applications(), [])
 
         with self.assertRaises(FenceError):
-            self.ledger.complete_submission(
+            _complete_verified(self.ledger,
                 first.intent_id, first.fence, "submitted"
             )
 
@@ -186,7 +200,7 @@ class LedgerTests(unittest.TestCase):
             ],
         )
 
-        self.ledger.complete_submission(
+        _complete_verified(self.ledger,
             second.intent_id, second.fence, "submitted"
         )
         self.assertEqual(
@@ -200,7 +214,7 @@ class LedgerTests(unittest.TestCase):
             self.ledger, self.application_id, "2026-07-28", "hash"
         )
         with self.assertRaises(FenceError):
-            self.ledger.complete_submission(
+            _complete_verified(self.ledger,
                 intent.intent_id, intent.fence + 1, "submitted"
             )
 
@@ -209,7 +223,7 @@ class LedgerTests(unittest.TestCase):
         intent = self._claim(
             self.ledger, self.application_id, "2026-07-28", "hash"
         )
-        self.ledger.complete_submission(
+        _complete_verified(self.ledger,
             intent.intent_id, intent.fence, "submit_unknown"
         )
         self.assertIsNone(
@@ -223,7 +237,7 @@ class LedgerTests(unittest.TestCase):
         intent = self._claim(
             self.ledger, self.application_id, "2026-07-28", "hash"
         )
-        self.ledger.complete_submission(intent.intent_id, intent.fence, "submitted")
+        _complete_verified(self.ledger, intent.intent_id, intent.fence, "submitted")
         self.assertIsNone(
             self._claim(
                 self.ledger, self.application_id, "2026-07-29", "new-hash"
@@ -501,7 +515,7 @@ class LedgerTests(unittest.TestCase):
         )
         self.assertEqual(intent.ats_snapshot_path, str(ats_snapshot.resolve()))
         self.assertEqual(intent.ats_snapshot_sha256, ats_sha256)
-        self.ledger.complete_submission(intent.intent_id, intent.fence, "submitted")
+        _complete_verified(self.ledger, intent.intent_id, intent.fence, "submitted")
 
         self.assertEqual(
             reports(),

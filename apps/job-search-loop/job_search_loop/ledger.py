@@ -310,6 +310,19 @@ class Ledger:
             END;
             """
         )
+        for table in ("submit_intents", "submission_attempts"):
+            columns = {
+                str(row["name"])
+                for row in self.connection.execute(f"PRAGMA table_info({table})")
+            }
+            if "outcome_evidence_sha256" not in columns:
+                self.connection.execute(
+                    f"ALTER TABLE {table} ADD COLUMN outcome_evidence_sha256 TEXT"
+                )
+            if "outcome_evidence_class" not in columns:
+                self.connection.execute(
+                    f"ALTER TABLE {table} ADD COLUMN outcome_evidence_class TEXT"
+                )
         self._migrate_funnel_outcome_evidence_constraint()
         intent_columns = {
             str(row["name"])
@@ -1399,8 +1412,40 @@ class Ledger:
     def complete_submission(
         self, intent_id: str, fence: int, outcome: str
     ) -> None:
-        if outcome not in {"submitted", "submit_unknown", "not_submitted"}:
-            raise ValueError(f"invalid submission outcome: {outcome}")
+        if outcome != "not_submitted":
+            raise ValueError(
+                "submitted and submit_unknown require verifier evidence"
+            )
+        self.complete_submission_verified(
+            intent_id,
+            fence,
+            outcome="not_submitted",
+            evidence_sha256=hashlib.sha256(
+                f"legacy-pre-submit:{intent_id}:{fence}".encode()
+            ).hexdigest(),
+            evidence_class="definite_pre_submit_stop",
+        )
+
+    def complete_submission_verified(
+        self,
+        intent_id: str,
+        fence: int,
+        *,
+        outcome: str,
+        evidence_sha256: str,
+        evidence_class: str,
+    ) -> None:
+        allowed = {
+            "submitted": "exact_completion_ui",
+            "submit_unknown": "no_authoritative_completion_ui",
+            "not_submitted": "rendered_validation_rejection",
+        }
+        if allowed.get(outcome) != evidence_class and not (
+            outcome == "not_submitted" and evidence_class == "definite_pre_submit_stop"
+        ):
+            raise ValueError("outcome does not match authoritative evidence class")
+        if not re.fullmatch(r"[a-f0-9]{64}", evidence_sha256):
+            raise ValueError("outcome evidence must be a lowercase SHA-256")
         with self._transaction():
             row = self.connection.execute(
                 "SELECT * FROM submit_intents WHERE intent_id = ?", (intent_id,)
@@ -1412,17 +1457,27 @@ class Ledger:
             completed_at = _now()
             self.connection.execute(
                 """
-                UPDATE submit_intents SET status = ?, completed_at = ?
+                UPDATE submit_intents
+                SET status = ?, completed_at = ?, outcome_evidence_sha256 = ?,
+                    outcome_evidence_class = ?
                 WHERE intent_id = ? AND fence = ?
                 """,
-                (outcome, completed_at, intent_id, fence),
+                (
+                    outcome, completed_at, evidence_sha256, evidence_class,
+                    intent_id, fence,
+                ),
             )
             self.connection.execute(
                 """
-                UPDATE submission_attempts SET status = ?, completed_at = ?
+                UPDATE submission_attempts
+                SET status = ?, completed_at = ?, outcome_evidence_sha256 = ?,
+                    outcome_evidence_class = ?
                 WHERE intent_id = ? AND fence = ?
                 """,
-                (outcome, completed_at, intent_id, fence),
+                (
+                    outcome, completed_at, evidence_sha256, evidence_class,
+                    intent_id, fence,
+                ),
             )
             self.connection.execute(
                 """
@@ -1434,7 +1489,12 @@ class Ledger:
             self._transition_in_transaction(
                 str(row["application_id"]),
                 outcome,
-                {"intent_id": intent_id, "fence": fence},
+                {
+                    "intent_id": intent_id,
+                    "fence": fence,
+                    "evidence_sha256": evidence_sha256,
+                    "evidence_class": evidence_class,
+                },
             )
             if outcome == "not_submitted":
                 self.connection.execute(

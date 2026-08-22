@@ -53,3 +53,14 @@ def verify_completion_ui(
         json.dumps(safe, ensure_ascii=False, sort_keys=True).encode("utf-8")
     ).hexdigest()
     return CompletionEvidenceV1(1, evidence_sha256=evidence_sha, **safe)
+
+
+def record_completion_evidence(ledger, intent_id: str, fence: int, evidence: CompletionEvidenceV1) -> None:
+    """Write a terminal projection only through the Ledger's evidence gate."""
+    ledger.complete_submission_verified(
+        intent_id,
+        fence,
+        outcome=evidence.outcome,
+        evidence_sha256=evidence.evidence_sha256,
+        evidence_class=evidence.evidence_class,
+    )

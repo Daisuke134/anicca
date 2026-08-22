@@ -69,8 +69,12 @@ class SubmissionConfirmationTests(unittest.TestCase):
             ats_snapshot_path=snapshot,
             ats_snapshot_sha256=snapshot_sha256,
         )
-        ledger.complete_submission(
-            intent.intent_id, intent.fence, "submit_unknown"
+        ledger.complete_submission_verified(
+            intent.intent_id,
+            intent.fence,
+            outcome="submit_unknown",
+            evidence_sha256="e" * 64,
+            evidence_class="no_authoritative_completion_ui",
         )
         return ledger, application_id, intent.intent_id
 

@@ -142,6 +142,13 @@ rendered validation is definite `not_submitted`; every other post-click surface 
 `submit_unknown`. The model cannot override this result and a click alone is never
 success.
 
+Write the post-click state only through `record_completion_evidence`; it calls the
+Ledger evidence gate that fixes each outcome to its verifier evidence class/hash.
+Never call `complete_submission` with submitted/submit_unknown and never derive a
+terminal state from model prose. `submit_unknown` stays terminal and is never
+returned by either queue method; only the exact Gog receipt reconciler may later
+upgrade it to submitted.
+
 The resident inbox owner may later reconcile `submit_unknown` only through the
 already-authenticated Gog CLI account. Do not start Gmail/Google login or OAuth.
 `submission_confirmation` requires the exact account recipient, authoritative ATS
