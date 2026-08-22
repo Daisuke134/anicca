@@ -264,14 +264,55 @@ async def act(action_path: Path) -> dict[str, Any]:
     }
 
 
+async def checkpoint(reason: str) -> dict[str, Any]:
+    row, session, checkpoints, _evidence, cursor, builder = await _context()
+    observation = await builder.build(cursor.handle)
+    prior_hashes = cursor.checkpoint.action_receipt_hashes if cursor.checkpoint else ()
+    receipt = checkpoints.save(
+        RowCheckpointV1(
+            1,
+            row["application_id"],
+            "checkpointed",
+            cursor.handle.page_marker,
+            cursor.handle.generation,
+            observation.content_sha256,
+            prior_hashes,
+            0,
+            observation.url,
+        )
+    )
+    await session.close_owned(cursor.handle)
+    return {
+        "status": "checkpointed",
+        "reason": reason,
+        "row": {
+            "application_id": row["application_id"],
+            "company": row["company"],
+            "role": row["title"],
+        },
+        "checkpoint_sha256": receipt.checkpoint_sha256,
+        "observation_sha256": observation.content_sha256,
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(dest="command", required=True)
     subparsers.add_parser("observe")
     act_parser = subparsers.add_parser("act")
     act_parser.add_argument("--action-file", required=True, type=Path)
+    checkpoint_parser = subparsers.add_parser("checkpoint")
+    checkpoint_parser.add_argument(
+        "--reason", required=True, choices=("provider_unavailable", "visible_challenge")
+    )
     args = parser.parse_args(argv)
-    result = asyncio.run(observe() if args.command == "observe" else act(args.action_file))
+    if args.command == "observe":
+        operation = observe()
+    elif args.command == "act":
+        operation = act(args.action_file)
+    else:
+        operation = checkpoint(args.reason)
+    result = asyncio.run(operation)
     print(json.dumps(result, ensure_ascii=False, sort_keys=True))
     return 0
 

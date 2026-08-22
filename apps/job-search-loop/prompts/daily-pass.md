@@ -42,6 +42,9 @@ lost fields from Candidate Memory, and retry that control once on the fresh page
 If that fresh navigation renders an explicit provider maintenance/unavailable page,
 checkpoint the row immediately, report that exact visible provider condition, and
 continue the queue; the next hourly owner wake retries the durable row automatically.
+Use exactly `/opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime
+checkpoint --reason provider_unavailable` for that visible maintenance surface; do
+not spend an action or inspect source to construct a checkpoint.
 
 This process is the existing `ai.anicca.job-search-daily` launchd owner. Do not
 start another launchd job, agent runner, or Chromium process. Read the JSON path in
