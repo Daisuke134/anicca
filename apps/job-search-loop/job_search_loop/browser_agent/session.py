@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Awaitable, Callable
 from typing import Any
 from urllib.parse import urlparse
@@ -43,8 +44,10 @@ class BrowserSession:
     @staticmethod
     async def _marker(page: Any) -> str | None:
         try:
-            value = await page.evaluate("() => window.name")
-        except Exception:
+            value = await asyncio.wait_for(
+                page.evaluate("() => window.name"), timeout=2.0
+            )
+        except (Exception, asyncio.TimeoutError):
             return None
         return value if isinstance(value, str) else None
 
