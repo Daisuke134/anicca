@@ -107,18 +107,20 @@ kernel identities.
 **Files:**
 - Create: `docs/superpowers/evidence/gig-expansion-baseline.md`
 
-**Interfaces:** Produces the immutable Coconala release SHA, active repair cursor, browser owner,
-state paths and focused test commands used by every later task.
+**Interfaces:** Produces the Coconala source/release identities, active repair cursor, browser owner,
+four configured lane-owner identities with their live observed states, state paths and focused test
+commands used by every later task.
 
-- [ ] Record `origin/main`, current release symlink target, four live owner identities and active
+- [x] Record `origin/main`, current release symlink target, four configured owner identities plus
+  their observed launchd/process states, and the active
   `skills/earn/gig/TODO.md` item without changing them.
-- [ ] Record `df -k /`, current disk-guard result and private runtime directories without copying
+- [x] Record `df -k /`, current disk-guard result and private runtime directories without copying
   their contents.
-- [ ] Run `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q
+- [x] Run `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q
   skills/earn/gig/tests/test_application_direct_reconcile.py
   skills/earn/gig/tests/test_storefront_direct.py`.
-- [ ] Write exact pass/fail counts and command output summary into the evidence file.
-- [ ] Commit with `docs(gig): record expansion baseline` and push.
+- [x] Write exact pass/fail counts and command output summary into the evidence file.
+- [x] Commit with `docs(gig): record expansion baseline` and push.
 
 ### Task 1: Define the action-level authorization receipt
 
