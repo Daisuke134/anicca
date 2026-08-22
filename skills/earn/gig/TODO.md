@@ -406,6 +406,8 @@ reduce scope before exceeding three files or 100 production LOC.
    manifest/acceptance disposition exactly, requires one exact `blocking_action` for non-delegable input,
    preserves the existing PASS-only delivery validator instead of creating a second state machine, and
    stops a durable non-PASS artifact before authorization/build so a later pass cannot silently regenerate it.
+   Legacy artifacts may carry their truthful migrated contract in the manifest without forging an old signed
+   decision receipt; once a current decision exists, any manifest/decision contract mismatch fails closed.
 3. [x] Extend `scripts/paid_work_evidence.py` to fail closed on asset count, path ownership, non-zero bytes,
    MIME/type, hash and required ZIP membership, and to reject required visual media with no review receipt.
    The existing validator now checks project-owned files or exact ZIP members byte-for-byte and requires every

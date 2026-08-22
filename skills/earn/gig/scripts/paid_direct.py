@@ -1932,7 +1932,12 @@ def _normalize_acceptance_delta(root: Path) -> None:
     elif manifest_status != acceptance_status:
         raise ValueError("acceptance status mismatch")
     decision = _load(root / "context" / "paid-work-decision.json")
-    required_assets = decision.get("required_assets") if isinstance(decision, dict) else None
+    decision_assets = decision.get("required_assets") if isinstance(decision, dict) else None
+    required_assets = manifest.get("required_assets")
+    if required_assets is None:
+        required_assets = decision_assets
+    elif isinstance(decision_assets, list) and required_assets != decision_assets:
+        raise ValueError("asset contract mismatch")
     artifact_assets = manifest.get("artifact_assets")
     if not isinstance(required_assets, list) or not isinstance(artifact_assets, list):
         raise ValueError("invalid asset contract")
