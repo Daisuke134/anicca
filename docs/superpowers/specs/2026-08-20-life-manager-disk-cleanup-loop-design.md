@@ -4,7 +4,7 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
 実行authority: **Mac Host Storage Governor**  
 公開skill: **`disk-cleanup`**
 
-状態: Phase 1実装済み。Life Manager OSS skill、fail-closed governor、guard fallback、回帰テスト、旧cleanup ownerのcutover、正本5分labelのbootstrap/readback、MiB/GiB精度とswap telemetry、ULTRA時のexact-byte full-pass昇格、bootstrap health failureのcleanup内receipt契約、Gig/Writer共通producer preflight、Paid/Storefrontのin-flight effect gate/checkpoint、Writer provider-start gateは反映済み。supervisor non-stop/pause-resume契約、host-wide census、hourly intelligence、Writerのin-flight drainを含む全producer backpressure、ULTRA receipt reserve/retry、24時間/7日観測、141/153実機fixtureは未完了。UID 501/GUI bootstrapと`ai.anicca.life-manager-disk-cleanup`のload readbackは復旧済み。
+状態: Phase 1実装済み。Life Manager OSS skill、fail-closed governor、guard fallback、回帰テスト、旧cleanup ownerのcutover、正本5分labelのbootstrap/readback、MiB/GiB精度とswap telemetry、ULTRA時のexact-byte full-pass昇格、bootstrap health failureのcleanup内receipt契約、141/153隔離fixture、stale app-serverのsession-owner分離、browser producer lifecycle、Gig/Writer共通producer preflight、Paid/Storefrontのin-flight effect gate/checkpoint、Writer provider-start gate、ULTRA receipt reserve/retryは反映済み。supervisor non-stop/pause-resume契約、host-wide census、hourly intelligence、Writerのin-flight drainを含む全producer backpressure、atomic capacity claims、rapid-growth predictor、unknown-growth containment、24時間/7日観測は未完了。UID 501/GUI bootstrapと`ai.anicca.life-manager-disk-cleanup`のload readbackは復旧済み。
 
 ## 現行実装状況とOSS境界
 
@@ -61,16 +61,91 @@ contractへ揃えた。容量変更とalertのauthorityをLife Managerへ一本�
 alertと広範囲cache削除が消えていることを固定した。
 ただしfreeはなお5.9 GiBで、現在の`gui/501`は復旧したものの、正本cleanup labelのload readbackは未達である。
 
-### 2026-08-22 receipt ENOSPC incident — TODOへ戻す
+### 2026-08-22 receipt ENOSPC incident — A-25で復旧
 
 2026-08-22T06:37Zのcanonical passは、容量計測と保護判定を完了した後、
 `last-receipt.json`のatomic replaceで`Errno 28 (ENOSPC)`になり、exit 1になった。これは削除判断の失敗ではなく、
 最終receiptを書けないために1回の実行が失敗扱いになった障害である。
 
-これはA-25の未完了証拠として扱う。state directoryに保護されたreceipt reserveを確保し、ENOSPC時にreserveを解放して
-同じatomic writeを再試行し、成功後にreserveを再作成する実装とテストが必要である。未知path、session、source、swap、
-重要stateを削除する設計にはしない。実装をこのsessionでは行わず、古いstderrのENOSPC行と`last exit code=1`を履歴として保持する。
-次sessionの最初の原子作業はA-25であり、実装後にcanonical labelの新しいreceiptとexit 0をread backする。
+この障害をA-25で閉じた。state directoryに保護されたreceipt reserveを確保し、pre-commit ENOSPC時だけreserveを
+解放して同じatomic writeを1回再試行し、成功後にreserveを再作成する。未知path、session、source、swap、重要stateは
+削除しない。古いstderrのENOSPC行と`last exit code=1`はincident履歴として保持する。
+
+2026-08-22T07:08Zのplanning readbackでは、Data volumeのavailableは`592,976 KiB`から
+`139,808 KiB`まで低下し、swapは`6,048 MiB`使用、tierは`ULTRA`だった。canonical labelは
+`gui/501`に登録済み、`StartInterval=300`、`runs=66`、直近`last exit code=0`で、
+`last-receipt.json`も07:08Zに更新されている。ただしreserve fileは未実装であり、このexit 0は
+ENOSPC recovery contractのPASSではない。当初は容量圧力下でcloneを開始しなかったが、その後free 6.06 GiBを
+確認して、合計約121 MiBに収まる4 repositoryだけを`/tmp/lm-cleanup-oss-research`へ固定commitで隔離cloneした。
+Kubernetesとsystemdは巨大なためcloneせず、固定commitのproduction sourceとtestだけをGitHub APIで読んだ。
+
+#### A-25 receipt reserve contract
+
+A-25は通常のA-04以降より先に処理するcapacity-safety interruptである。既存の
+`HostDiskGovernor._receipt()`だけを共通入口として使い、新しいdaemon、queue、database、cleanup ownerは
+作らない。実装soft targetはproduction 1 file + test 1 file、100 LOC未満とする。
+
+1. `state_dir/.receipt-reserve`を1 MiBの実割当済みregular file、mode `0600`として保持する。
+   sparse `truncate`だけを成功扱いにせず、書込み、flush、`fsync`、`st_blocks * 512 >= 1 MiB`をread backする。
+2. reserve pathは通常のinventory/reclaimer candidateへ絶対に入れない。解放authorityは
+   `_receipt()`の`ENOSPC` recovery branchだけである。
+3. receipt JSONは64 KiB以下へboundし、既存targetを保持したまま同一directoryのunique temporary fileへ
+   mode `0600`で書く。temporaryをflush + file `fsync`してから`os.replace`し、commit後のparent-directory `fsync`は
+   best-effortにする。replace前の失敗では旧targetを保持し、partial temporaryを必ず除去する。
+4. temporary write、file `fsync`、または`os.replace`が`errno.ENOSPC`の時だけ、reserveがregular fileかつsymlinkで
+   ないことを再検証してunlinkし、同じpayloadのatomic operation全体を1回だけ再実行する。他errnoはreserveを
+   解放せずraiseする。directory `fsync`はreplace後なので、その失敗を未commitとしてretryしてはならない。
+5. retry成功後にreserveを同じsize/modeで再作成してread backする。再作成できなければpassはexit 0にせず、
+   次回のcontrol-plane write safetyが失われたことを明示する。
+6. RED fixtureはwrite/file `fsync`/replaceの各pre-commit境界をparameterizeして最初の試行だけENOSPCにし、
+   旧receiptがretry成功まで残ること、retryが1回、新receiptがvalid JSON/mode 0600、temporary file残留0、
+   reserveが1 MiB/mode 0600/allocatedへ戻ることを検証する。他errnoとpost-commit directory `fsync`も
+   reserveを消費しないことを最小regressionで固定する。
+7. GREEN後は既存canonical labelだけを`bin/launchctl-safe kickstart`し、run count増加、新しい実機receipt、
+   `last exit code=0`、reserve size/mode/allocation、protected deletion 0をread backする。人工的なproduction disk-fillは行わない。
+
+A-25のTDDはdisk-cleanup **40 passed**、`py_compile`、shell/plist lint、`git diff --check`を通した。
+write/file-fsync/replaceのENOSPC、他errno、2回目ENOSPC、sparse reserve、reserve再作成失敗、64 KiB bound、
+temporary cleanup、fd ownershipをfixtureで反証し、fresh adversarial reviewはBLOCKER/HIGH/MEDIUMなしで`ship`だった。
+canonical labelをpreflight後にkickstartし、`runs=80→81`、`state=not running`、`last exit code=0`をread backした。
+新receiptは`observed_at=2026-08-22T08:21:25Z`、`errors=0`、`protected_deletions=0`、mode `0600`で、
+reserveは1,048,576 bytes、mode `0600`、2048 blocks、孤児temporary file 0だった。人工的なdisk-fillは行っていない。
+
+#### 2026-08-22 rapid saturation readback and prevention closure
+
+OSS code study後のread-only計測では、Data volume freeが約5.60 GiBから約414 MiBまで短時間に低下し、
+その後のreadbackでも`1,033,488 KiB`（約1009 MiB）だった。swapは`9,008 MiB`使用、canonical labelは
+`StartInterval=300`、`runs=73`、`last exit code=0`である。直近receiptは
+`free_before=1,120,423,936`、`free_after=1,061,883,904`、tier=`ULTRA`、`reclaimed=0`、
+`protected_deletions=0`だった。`.receipt-reserve`は存在せず、`last-receipt.json`はmode `0644`だった。
+
+この事象は、cleanup cadenceと新規producer preflightだけでは再発を防げないことを示す。Life Manager管理下の
+producerには、次のcapacity firewallを共通入口とeffect直前の両方で適用する。
+
+```text
+projected_free = current_free
+               - outstanding_capacity_claims
+               - requested_max_allocation
+               - max(observed_growth_rate, declared_growth_rate) * reaction_window
+```
+
+`projected_free < 11 GiB`なら新規claimをatomicに拒否する。claimはowner、PID、artifact、maximum bytes、expiry、
+checkpointを持ち、同時起動するproducerが同じfree bytesを二重に予約できないようsingle lockで直列化する。
+開始後もproducerはquota到達前またはprojected floor到達前に自分でcheckpoint/drainし、保護sessionを保持したまま
+新規bulk writeを止める。Codex/OpenClaw/browser database、WAL、logなどprotected growthはcleanupが削除せず、
+owner側のlossless rotation/checkpoint contractでbounded化する。
+
+未登録application、OS update、APFS snapshotなどLife Managerが開始を阻止できないwriterについて、絶対的な
+「disk fullにならない」保証はしない。60秒sentinelがfree deltaとtime-to-floorを計算し、declared claimで説明できない
+growthを検出した時点で全managed producerの新規claimを拒否し、既存producerへcheckpoint要求を出し、owner不明の
+capacity incidentを通知する。unknown path、session、source、credential、database、swapは削除しない。
+
+したがって完成時の保証は次の4つである。
+
+1. managed producerは11 GiB recovery floorを割る新規allocationを開始しない。
+2. in-flight managed producerはquota/projected floor前にcheckpointし、bulk writeを継続しない。
+3. unmanaged/protected growthでも、cleanupはdataを壊さずmanaged loadを遮断し、control-plane receiptを書ける。
+4. ENOSPCが発生してもA-25 reserveでreceiptを1回回復し、失敗を成功として隠さない。
 
 ### 2026-08-21 GUI bootstrap incident and recovery
 
@@ -143,10 +218,263 @@ full marker更新を飢餓させない。budget枯渇は`size-budget-exhausted`�
 governor全体にも90秒budgetを置き、最大15秒のlsof probeと削除/receipt用30秒余白を含めて
 inventoryへ残り時間だけを渡す。probe budget枯渇時は候補をpreserveし、lsof後・bytes計測前にもdeadlineを再確認する。残予算0なら
 `df`/`du`を開始せず、full markerを進めず次回へ再試行する。
+
+A-04のfresh canonical full passは2026-08-22T08:30:14Zに`runs=81→82`、`last exit code=0`で完了した。
+`host-inventory-full.json`はinventory mode `full`、file mode `0600`、root 23、SHA self-check一致、
+`coverage.gaps`の`size-deferred` 0だった。receiptは`errors=0`、`protected_deletions=0`である。
+残るgap 11件は`size-timeout` 8、`size-permission-partial` 2、`child-limit` 1であり、A-04の延期解消と
+区別してA-05/A-10で追跡する。fresh adversarial reviewはA-04を`ship`とし、production/test変更は不要と判定した。
+同reviewでclosedな旧`.host-inventory.*` temporary 1件も観測したため、曖昧な削除は行わずA-10へ回帰契約を登録する。
+
+A-05はinventoryに`permission_owner_receipts`を追加し、TCC、`.Trash`、`/private/tmp`、
+`/private/var/folders`のexact path、owner family、exists/symlink/access、`reclaim_eligible=false`を保存する。
+子名は列挙・保存せず、既存root 23件と削除candidate生成は変更しない。fixtureはRED 1 failedからGREENへ進み、
+disk-cleanup regression **41 passed**、compile/diff check PASS、fresh adversarial reviewは`ship`だった。
+2026-08-22T08:44:06Zのcanonical full inventoryはruns 83→85（定期wakeとの重複で2増加）、last exit 0、
+file mode `0600`、SHA一致、exact owner receipt 4件、全件non-reclaimable、root 23だった。
+同じ実行contextでは4境界とも`readable`であり、interactive contextでTCC/`.Trash`が`permission-error`だった差は
+実行主体の権限差としてそのまま観測する。full receiptの`errors=0`、`protected_deletions=0`をread backした後、
+次のscheduled fast passが`last-receipt.json`を08:45:15Zに更新したが、full inventory artifactは別fileで保持している。
+
+A-06はmount rootへの`os.access(W_OK)`をvolumeのrw判定に使わず、macOS `/sbin/mount`のdevice-backed、
+`local`、非`read-only` metadataと`df` inventoryを照合する。各mountへlocal/writable/optionsを保存し、
+coverageへlocal writable mountのexact list/count/missingを保存する。metadata timeout、空、部分欠落では
+3 coverage値を`null`にして明示gapを残し、missing 0を偽装しない。full passではdf後にdeadlineを再計算し、
+mount probeへ残時間だけを渡す。REDはmetadata timeout、Data metadata部分欠落、残時間二重消費を再現し、
+disk-cleanup regression **48 passed**、compile/diff check PASSとなった。初回reviewのHIGH/MEDIUMを修正後、
+fresh adversarial re-reviewはBLOCKER/HIGH/MEDIUMなしで`ship`だった。
+final sourceによる2026-08-22T09:08:04Z canonical fast passはruns 89→90、last exit 0、mount 9、
+local writable device volume 7、Data含有、sealed `/`はread-only、missing 0、mount metadata gap 0、
+file mode `0600`、SHA一致、`errors=0`、`protected_deletions=0`をread backした。
+
+A-07の初回fixtureはprotected file自身だけを`sweep()`へ渡していたため、実allowlisted parentの内側にある
+`.git`、DB、state JSONL、credential、sourceを`rmtree`できるHIGH gapをadversarial reviewが再現した。
+削除前のbounded descendant scanを共通effect pathへ追加し、protected root/pair、memory/source、source/secret suffix、
+auth/cookie/credential/session/transcript/ledger/payment/publication receiptを検出したら親全体をpreserveする。
+scan error、nested symlink、budget exhaustionもfail-closedにし、`_bytes()`後・effect直前に同じscanを再実行する。
+独立16 allowlisted candidateとsafe siblingを使うfixture、および`_bytes()`中に`.env`が追加される競合fixtureは
+RED 2 failedからGREENとなり、protected parent 16件を保持しつつsafe siblingだけを回収した。
+disk-cleanup regression **50 passed**、compile/diff check PASS、2回のfix-first後のfresh reviewは`ship`だった。
+final canonical receiptは2026-08-22T09:28:22Z、runs 93→94、last exit 0、`errors=0`、
+`protected_deletions=0`、`reclaimed=0`、mode `0600`である。
+
+A-08では正本schemaの`lease: {path,max_age_seconds}`を現行`Path(item["lease"])`へ渡すと
+`TypeError`になりreceiptなしで終了すること、容量計測中にleaseが開始するとartifactを削除することを
+それぞれREDで再現した。既存string形式との互換を保つ1つのlease probeを追加し、開始時とeffect直前に
+同じ判定を行う。fresh reviewはPython 3.14の`Path.exists()`がpermission等の`OSError`をFalseへ畳む
+HIGHを発見したため、`stat()`成功だけをactive、`FileNotFoundError`だけをinactive、その他のschema/probe
+errorをactiveとしてpreserveするfail-closed分岐へ修正した。2 focused fixtureと全 **52 tests**、compile、
+diff checkはPASSし、re-reviewは`ship`だった。final canonical runは2026-08-22T09:47:31Z、
+runs 97→98、last exit 0、`errors=0`、`protected_deletions=0`、`reclaimed=0`である。
+
+A-09では初回`lsof=confirmed-closed`の後、effect境界でpathが`open`へ変わってもcandidateを
+削除することをREDで再現した。既存lsof probeをprotected descendant再検査後・final lease check前に
+もう一度実行し、timeout budget、probe error accounting、fail-closed preserveを同じ契約で維持する。
+初回fixtureはlease path不在をexpiredと呼んでいたためreviewがMatrix 5未証明を指摘し、実在leaseのmtimeを
+期限切れにして`max_age_seconds`判定を通るfixtureへ修正した。さらにNaN TTLが比較をすり抜けるHIGHを
+parametrized REDで再現し、non-finite、非正数、schema error、clock skewをactiveとしてpreserveする。
+実macOSのopen file descriptorでもproduction `_default_lsof()`は`open`を返した。全 **54 tests**、compile、
+diff checkはPASSし、2回のfix-first後のre-reviewは`ship`だった。final canonical runは
+2026-08-22T10:07:40Z、runs 101→102、last exit 0、receipt mode `0600`、`errors=0`、
+`protected_deletions=0`、`reclaimed=0`である。
+
+A-10では`lsof` probe errorがcandidateを保持し`errors=1`になるfixtureと、`du` timeoutが
+`size_bytes=null`、`measurement=timeout`、gap、`owner_family`を同時に保持するfixtureを追加した。
+host inventoryのatomic replace failureは旧targetを保持する一方、旧closed orphanと自分のpartial temporaryを
+残すREDを再現した。writerは90秒budgetより古いregular orphanだけを事前除去し、symlink、新しいfile、
+stat errorはpreserveする。unique sibling temporaryをflush + file `fsync`後に`os.replace`し、全failure pathで
+自分のtemporaryをfinally除去する。全 **57 tests**、両production moduleのcompile、diff checkはPASSし、
+fresh reviewは`ship`だった。production full artifactは`/Users/anicca/Projects`を`repository-worktree`、
+`/opt/homebrew`を`build-tool`としてtimeout/unknown sizeへ帰属し、SHA一致、mode `0600`である。
+final canonical runは2026-08-22T10:23:14Z、runs 104→105、last exit 0、receipt mode `0600`、
+`errors=0`、`protected_deletions=0`、`reclaimed=0`、`.host-inventory.*` orphan 0である。
 Anicca cleanup controlのgit/lsof/du probeにも15秒timeoutを設定し、さらにguard外側のgovernor、
 runtime-manifest、sweep subprocessにも120秒（kill-after 10秒）のtimeoutを設定した。timeoutは
 error/preserveとして扱い、runtime-manifest失敗時はhourly markerを進めない。これによりfull passの
 probeが無期限にguard lockを占有しない。
+
+A-11ではcanonical host adapterのreclaimerをproduction変更せず、local bare remote、primary repository、
+linked worktreeを実際に作るcharacterization fixtureを追加した。tracked dirty worktreeは
+`dirty_worktree`、remoteへ未pushのclean commitは`head_not_on_remote`として、worktree残存、removed 0、
+ledger reasonを同時に検証する。host adapter全 **28 tests**、Life Manager全 **57 tests**、compile、
+diff checkはPASSし、fresh reviewは`ship`、BLOCKER/HIGH/MEDIUMなしだった。live ledgerでも実在する
+dirty/head-not-on-remote worktreeをpreserveしている。canonical runはruns 106→107、last exit 0、receipt mode
+`0600`、`protected_deletions=0`である。このrunの`errors=1`は`/Users/anicca/gig/evidence`のsize probeを
+読めず`managed_reclaimer_size_unreadable`としてpreserveしたfail-closed eventであり、削除成功やclean runとは
+扱わない。reviewのLOWとしてMatrix 9のtest名に名称driftがあるが、既存testの意味上のcoverageは存在する。
+
+A-12では実allowlist形状の`cfo-*` pathに未知classを与え、productionのclass gateがallowlist、`lsof`、
+size probe、削除より前にcandidateをpreserveするfixtureをMatrix 11の正本名で追加した。path残存、
+`reclaimed=0`、receiptの`unknown_class`、`protected_deletions=0`をread backし、`lsof`を呼ぶと失敗する
+fixtureでprobe前拒否も固定する。[NIST Deny by Default](https://csrc.nist.gov/glossary/term/deny_by_default)の
+「明示許可以外をblockする」原則と、[OWASP Input Validation](https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html)の
+allowlist validation推奨に従い、
+既知classだけへ削除authorityを与える。productionはすでにこの順序だったため人工的なREDやcode変更は
+追加しない。Life Manager全 **58 tests**、canonical host adapter全 **28 tests**、compile、diff checkはPASSし、
+fresh reviewは`ship`、重大・中程度の指摘なしだった。reviewのLOWは`protected_deletions`が0初期化される
+自己申告counterである点だが、本fixtureはcandidate残存を独立に検証する。final canonical readbackは
+runs 107→109、state not running、active count 0、last exit 0、2026-08-22T10:47:14Z receipt、mode `0600`、`errors=0`、
+`protected_deletions=0`、`reclaimed=0`である。
+
+A-13では`launchctl print`の実production health probeへreturn code 141/153をparameterizeして注入し、
+両方を`launchctl-141`/`launchctl-153`へ正規化した`gui-bootstrap-health-failure` receiptを保存する。
+Directory ServicesのUID/home readbackは成功させ、対象domainとlabelを固定した。inventory、discovery、
+`lsof`は呼ばれたら失敗するguardで不実行を証明し、candidate残存、`evaluated=0`、`reclaimed=0`、
+`errors=1`、`protected_deletions=0`をresultとatomic receiptの両方からread backする。初回reviewで
+discovery stubが「不実行」を証明していないと指摘され、例外guardへ修正後の再reviewは`ship`、
+ブロッキング所見なしだった。production behaviorは既に正しく、test以外の変更はない。Life Manager全
+**59 tests**、canonical host adapter全 **28 tests**、compile、diff checkはPASSした。正常GUIへの復旧readbackは
+canonical runs 109→110、state not running、last exit 0、2026-08-22T10:52:48Z full receipt、mode `0600`、
+`errors=0`、`protected_deletions=0`、`reclaimed=0`である。実GUI domainを故障させる操作は行っていない。
+
+A-14ではhealth failure receiptへversioned session separation contractを追加し、stale app-serverの
+authorityを`gui-session-owner`、cleanup actionを`observe-only`、`process_kill_authority=false`、復旧条件を
+UID・GUI domain・canonical labelのreadbackと明記した。通常passとcanaryは同じchecked health probeと
+receipt policyを使用する。初回reviewはcanaryだけprobe例外を送出してreceiptを失うHIGHを検出したため、
+共有exception normalizationとcanary regressionをRED→GREENで実装した。両failure pathは`os.kill`が
+呼ばれたら失敗するguardを通り、candidate残存、reclaimed/protected deletion 0、atomic receiptを検証する。
+`os.kill(pid, 0)`はcleanup lock ownerのliveness probeでありtermination signalではない。
+[Apple launchd.plist](https://github.com/apple-oss-distributions/launchd/blob/main/man/launchd.plist.5)の
+「plist値ではcurrent stateを証明せずlaunchdへqueryする」契約どおり、external recovery前のlabel missingを
+failureに保ち、復旧後もexact canonical labelを再queryして初めてokとするMatrix 29 fixtureを追加した。
+fix後のfresh re-reviewは`ship`、blocking findingなし。Life Manager全 **61 tests**、canonical host adapter全
+**28 tests**、compile、diff checkはPASSした。final canonical readbackはruns 112→113、state not running、
+last exit 0、2026-08-22T11:08:46Z receipt、mode `0600`、`errors=0`、`protected_deletions=0`、
+`reclaimed=0`である。実app-server/sessionへのsignalは行っていない。
+
+A-15ではbrowser producer lifecycleをstatic 6件とdynamic code-sign cloneへ登録した。`~/.cloak`は
+identity、`~/.cloakbrowser`はruntimeとしていずれも`preserve`し、profile、cookie、credential、実行binaryへ
+削除authorityを与えない。Playwright、Camoufox、Chrome model、Google Updater cacheだけを
+`regenerable_output`とし、quotaは0、Playwright leaseは300秒、他leaseはnullのdefer状態をexact testで固定した。
+[Chromium User Data Directory](https://chromium.googlesource.com/chromium/src/+/main/docs/user_data_dir.md)が
+profileにhistory、bookmark、cookie等を保持し、Macのcache pathをuser data pathから分離する契約、および
+[Playwright Browsers](https://playwright.dev/docs/browsers)がbrowser binaryを既定で`~/Library/Caches/ms-playwright`へ
+配置し再installできる契約に従う。
+
+初回fresh reviewはHIGHとして、`org.chromium.Chromium.code_sign_clone`が実producerではなくGoogle Chromeを
+regeneration proofに使う別製品proof混同を検出した。Chrome/Chromium collectionへ別proofを要求し、Chromiumは
+`~/.cloakbrowser/chromium-*/Chromium.app/Contents/MacOS/Chromium`がexactly 1件のregular non-symlink fileの時だけ
+登録する。0件・複数件・symlinkはfail-closedで登録しない。REDはguard既存test 8件を失敗させ、Bash 3.2の
+`set -u`空配列も修正後、focused **44 passed**、exact lifecycle test **4 passed**、compile、shell syntax、
+diff checkがPASSした。fresh re-reviewは`ship`、重大所見なし。external host adapter commitは`6eb344cfb`である。
+live fallback source SHA一致後のruntime manifestはmode `0600`、browser static 6件、Chromium dynamic clone 9件、
+全dynamic proofが実producer binaryへ一致した。final canonical readbackはruns 118→120、state not running、
+last exit 0、2026-08-22T11:46:10Z receipt、mode `0600`、`errors=0`、`protected_deletions=0`、
+`evaluated=9/preserved open=9/reclaimed=0`である。実行中browser sessionとcloneは削除していない。
+
+A-16ではbuild/media producer lifecycleを登録した。Xcode DerivedDataは`runtime`、Xcode Archivesと
+`~/.openclaw/workspace/runs`は`deliverable`、dynamic repository buildは`repository-build/runtime`、
+publication receiptの4 fieldを満たすrunのexact `reel-final.mp4`は`reelclaw-media/deliverable`として
+owner、class、quota 0、300秒lease pathをruntime manifestへ保存する。Archives、run root、meta、source、
+videoを削除対象にせず、全新規entryのfinalizerは`preserve`で削除authorityを0に固定した。declared leaseの
+writer/heartbeatはまだ接続されておらず、現時点では運用保護を追加しない。A-20のproducer preflightとA-36の
+heartbeat/drainが実装・実測されるまで削除をenableしない。
+
+[Apple Xcode debugging information](https://developer.apple.com/documentation/xcode/building-your-app-to-include-debugging-information)の
+配布build archiveを保持する契約、[Cargo build cache](https://doc.rust-lang.org/cargo/reference/build-cache.html)の
+`target`がbuild output/cacheである契約、[Next.js deployment](https://nextjs.org/learn/pages-router/deploying-nextjs-app-other-hosting-options)の
+`.next`が`next build` outputである契約を採用した。初回reviewは、writerのないleaseに削除authorityを与えるHIGHと
+path-based unlinkのsymlink raceを検出したため、Ponytailでregistration-onlyへ縮小した。focused **48 tests**、
+JSON/diff check、primary **37+11 tests**がPASSし、final fresh reviewは`ship`、blocking findingなし。
+external host adapter commitは`62bd6b023`である。live fallback runs 474→475はruntime manifestをmode `0600`で
+更新し、static 3件をexact readbackした後、回収可能候補0・reserve未回復を正しくexit 3で報告した。実機59 run、
+59 videoはpublication receipt 0件のため全保持し、Xcode Archives約29 MiBも保持した。final canonical readbackは
+runs 129→130、state not running、last exit 0、2026-08-22T12:38:02Z receipt、mode `0600`、`errors=0`、
+`protected_deletions=0`、`evaluated=9/reclaimed=0`である。観測中に空きは約5.7 GiBから3.6 GiBへ低下した。
+これはA-16が登録だけで回収を有効化していないこと、およびproducer増加が継続していることの実測であり、
+11 GiB reserve回復の証拠ではない。
+
+A-17ではVM/package producer lifecycleをregistration-onlyで登録した。static 16件はClaude VM bundle、
+Colima runtime/cache、Docker Desktop runtime、uv/pip/npm/pnpm以外のpackage root、Cargo build/registry、
+Go module cache、Ruby gem、Bun、Homebrew、pipx、CocoaPods、SwiftPMをowner別の`runtime`として持ち、
+quota 0、300秒lease、`preserve`へ統一した。dynamic pnpm storeはproducer binaryがabsolute regular
+non-symlink、leaseがabsolute、version directory名がexact `v[0-9]+`かつregular non-symlinkの時だけ
+登録する。A-21のpreflightとA-36のlease writer/heartbeatが未接続なので、declared lease自体はまだ
+active保護を追加せず、全A-17 entryの削除authorityは0である。
+
+[Colima FAQ](https://github.com/abiosoft/colima/blob/main/docs/FAQ.md)が`COLIMA_HOME`をconfiguration directory、
+VM内`fstrim`を手動disk recoveryと定義する契約、[Docker Desktop resources](https://docs.docker.com/desktop/settings-and-maintenance/settings/#resources)が
+container/imageをLinux VM disk imageへ保持しdisk usage limit/locationをowner設定とする契約、
+[pnpm store](https://pnpm.io/cli/store)がunreferenced packageの判定・prune・必要時再downloadをpnpm自身の
+mark-and-sweepへ委ねる契約を採用した。このためcleanupがVM diskやpackage treeをpath-basedで直接消さない。
+
+TDDはstatic/dynamic contract不足でRED、malformed pnpm名とlogical HOME lease配線でも別REDを取得し、
+focused **48 tests**、JSON、Python compile、shell syntax、diff checkがPASSした。fresh reviewはGo module
+約512 MiBとpipx約1.4 GiBの未登録をblockerとして検出し、current-host censusからRuby/Bun/Homebrew/
+CocoaPods/SwiftPMまで登録後のfinal reviewは`ship`、blocking findingなし。external host adapter commitは
+`ba2814739`、deployed fallback source SHA-256は`dcbbc80ddadbf4d7776e9f0e9c500adb36227d17b7c7fff5d07dc329e5feeb82`
+でcanonical sourceと一致した。fallback runs 486→487はmode `0600` runtime manifestでstatic 16件、bad 0、
+pnpm store実体なしのためdynamic 0をread backし、安全候補0・reserve未回復をexit 3で報告した。
+final canonical readbackはruns 137→138、state not running、last exit 0、2026-08-22T13:19:09Z receipt、
+mode `0600`、`errors=0`、`protected_deletions=0`、`evaluated=9/reclaimed=0`である。
+観測中の空きは一時116 MiBまで低下しcleanup ledger appendもENOSPCになった後、約4.7 GiBへ戻ったが、
+cleanupによる回復ではない。A-17はVM/package誤削除を防ぐ証拠であり、11 GiB floor回復、A-26のbounded
+ops ledger、A-36のproducer drain完了の証拠ではない。
+
+A-18ではGig project lifecycleをregistration-onlyで登録した。`~/gig/projects`直下のexact
+`[1-9][0-9]*`かつregular non-symlink directoryだけを対象とし、ownerはregular non-symlink
+`state.json`のsafe adapterだけを採用する。terminalは`state.json`、取引状態、年齢から推測せず、exact schemaの
+regular non-symlink `project-terminal.json`だけを受理する。全project artifactは`deliverable`、TTL null、
+quota 0、300秒lease、`preserve`に固定し、A-24まで削除authorityは0である。
+
+TDDは`--gig-project-root`未実装とguard未配線でRED、focused **49 tests**、Python compile、shell syntax、
+diff checkがPASSし、fresh adversarial reviewは`ship`、blocking findingなし。external host adapter commitは
+`a2e991293`、deployed fallback source SHA-256は
+`a49e2ed6ba477194ad1c221bb3b0081b03efd96f9aed62ed754ad9558497aae2`でcanonical sourceと一致した。
+fallback runs 507→508はruntime manifestをmode `0600`で更新し、numeric project 24件、terminal true 0、
+unknown owner 3、preserve違反0、削除0をexact readbackした。final canonical readbackはruns 142→143、
+state not running、last exit 0、2026-08-22T13:44:46Z receipt、mode `0600`、`errors=0`、
+`protected_deletions=0`、`evaluated=9/reclaimed=0`である。直前runはentrypointの一時的なEACCESでexit 2だったが、
+同じentrypointのreadback復旧後runでexit 0を確認した。空きは約2.8 GiB、swap使用は約10.9 GiBでULTRAのままであり、
+A-18はGig project誤削除を防ぐ証拠であって11 GiB floor回復の証拠ではない。
+
+A-19ではWriterのforeground providerだけへ既存`bounded-exec.py`のprocess-group境界を再利用し、
+`disk-writers.stop`または`disk-pressure.block`が存在する時のin-flight drainを接続した。provider起動前にも
+同じexact 2 pathを確認してeffectを開始せずRC 143を返す。起動後にflagまたはSIGTERMを受けた時はprocess
+groupへTERM、1秒のgrace、残存groupへKILL、全child reapの順で閉じ、SIGINTは130、timeoutは124、通常終了は
+child RCを維持する。既存generation stateのimmutable run/prompt hash、interrupted archive、resume decisionを
+そのまま使い、同一run/promptから再開しpublication state/ledgerを更新しない。
+
+この境界は[Python subprocess](https://docs.python.org/3/library/subprocess.html)の`start_new_session`、
+[Kubernetes Pod lifecycle](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/)のTERM後grace、
+[systemd.kill](https://www.freedesktop.org/software/systemd/man/latest/systemd.kill.html)のchild escapeを防ぐ
+control-group terminationを採用した。REDはstop flag下でproviderがtimeoutまで残ること、leader終了後も
+TERM-ignore descendantが残ること、Writer launchdのdisk floorが未固定であることを再現した。修正後はready
+同期したreal-process fixtureを含むfocused **44 passed**、compile、shell syntax、JSON、diff checkがPASSした。
+fresh reviewはpre-Popen raceとorphan descendant、fixture同期不足を検出し、全修正後のfinal verdictは`ship`である。
+code commitsは`ce112513d`と`43074f764`、deployed immutable releaseは
+`43074f76422d1ec4935acdba98e553cb8564de94`である。
+
+production Writer dailyは初回にinherited `GIG_DISK_HEADROOM_KIB=0`を検出してexit 1したため、Writer 14 jobsへ
+exact `524288` KiBをexplicit environmentとして固定した。再deploy後はruns 1、last exit 0、free
+5,179,191,296 bytesのpreflightを通過し、publication owner identity unavailableでprovider起動前に安全停止した。
+したがって実provider interruptionはisolated real-process E2E、productionはdeployとprovider effect 0の証拠であり、
+live providerを強制中断した証拠ではない。final canonical cleanupはruns 149→150、state not running、last exit 0、
+2026-08-22T14:20:23Z receipt、`errors=0`、`protected_deletions=0`、`evaluated=9/preserved=9/reclaimed=0`である。
+空き約4.9 GiB、swap使用約10.38 GiBで、A-19はA-36の全producer heartbeat/drainや11 GiB回復の証拠ではない。
+
+A-20の第1 sliceでは、既存`gig_disk_guard.py`をGig browserの次回自然起動とLife Manager self-buildの
+dependency/effect 2境界へ接続し、Writer mediaはA-19で既に同じstop pathとprovider境界にあることを回帰testで
+固定した。稼働中Gig browserのloaded argvは`/bin/bash .../current/.../launch_gig_browser.sh`であるため、guardを
+script内部のprofile作成・Chromium探索より前へ置いた。これによりplist reloadでPID 787のauthenticated sessionを
+evictせず、immutable `current` release更新後の次回自然起動からguardへ到達する。browser/self-buildはfloor
+536,870,912 bytes、canonical `~/.openclaw/state`、canonical measurement rootをdotenv・inherited environmentより
+後で固定し、ignore flagとalternate state pathを解除する。
+
+TDDは初回3 failures、adversarial review後のhost-path bypass/deferred loaded argv契約で追加7 failuresを取得した。
+両stop flag、floor 0、hostile dotenv/inherited paths、guard call count、profile/Chromium effect 0、receipt reasonを含む
+focused **24 passed**、Paid隣接込み **33 passed**、shell syntax、JSON、compile、diff checkがPASSした。fresh reviewは
+loaded argv cutoverとpath overrideのHIGH、KeepAlive retryとfixtureのMEDIUMを検出し、内部guard化とfixture強化後の
+final verdictは`ship`である。code commitは`dd3e45b5f`、deployed releaseは
+`dd3e45b5f9b198d1893d3dd1c17e4e654f853a1c`、source/runtime browser script SHA-256一致である。production
+preflightはRC 1、`reason=disk_writers_stop/effect=0/required_bytes=536870912`、browser PID 787→787をread backした。
+
+ただしA-20は未完了である。実機のactive browser producer 8 labels中、このsliceでnext-start consumerを証明したのは
+Gig browser 1件だけで、affiliate 3、job-search 2、provision 2の計7件が未接続である。build/mediaもこのsliceでは
+self-buildとWriter mediaだけで、host-wide arbitrary Xcode/media producer coverageを証明していない。canonical cleanup
+runsは159→160、2026-08-22T15:12:10Z receiptは`errors=0/protected_deletions=0/evaluated=9/preserved=9/reclaimed=0`、
+free 1,173,725,184→1,217,122,304 bytesだったが、launchdは`spawn scheduled`のため新しいlast-exit readbackは未取得である。
+Data volume空き約1.1 GiB、swap使用約12.9 GiBで、consumer missing 0と11 GiB recoveryの証拠ではない。
 
 `/Users/anicca/anicca-project`は約9.5 GiB、その`.worktrees`は約4.4 GiBだった。最大の
 `cfo-resume-spec`（約1.08 GiB）は、dirty=0、branch upstream 0/0、process/open-path/leaseなしを
@@ -290,13 +618,58 @@ owner、class、lease、open-path、再生成証明をすべて確認して回�
 intelligence passは原因分析、未分類artifact、producer lifecycle defectを診断するが、
 未知のpathを削除する権限を持たない。
 
-Apple `launchd.plist(5)` は `StartInterval` について、
-“This optional key causes the job to be started every N seconds” とし、jobが実行中なら
-次のintervalはmissされると明記する。したがって5分schedulerは重複実行を保証せず、
+Apple `launchd.plist(5)` は `StartInterval` をN秒ごとの起動として定義し、sleep中に複数intervalが
+経過した場合はwake時に1 eventへcoalesceすると明記する。scheduler deliveryだけを排他性の証明にせず、
 cleanup側もsingle-owner lockをMUSTで持つ。
 
 ソース: [Apple OSS launchd.plist(5)](https://github.com/apple-oss-distributions/launchd/blob/main/man/launchd.plist.5)
-/ 核心の引用: “If the job is running during an interval firing, that interval firing will likewise be missed.”
+/ 核心の引用: “events will be coalesced into one event upon wake from sleep.”
+
+### Guarantee boundary — 「never run out」の正確な意味
+
+有限diskで永久保護dataが無制限に増える場合、cleanupだけで空き容量を永久保証することはできない。
+Life Managerが保証するのは「保護dataを壊して空きを偽装しない」「control planeが最後のreceiptを残せる」
+「producerをreserveより前で止める」の3点である。hostを長期継続させる必要条件を次で固定する。
+
+```text
+sum(active producer quotas) + protected growth budget + control-plane reserve
+  <= writable capacity - recovery floor
+```
+
+この不等式を満たせないownerは新規writeを開始できない。protected growthがbudgetを超えた場合は、
+そのproducer自身がactive sessionを保持したままrotate/checkpoint/offloadする。cleanupが代わりにsession、source、
+credential、database、swapを削除してはならない。回収可能bytesが0ならcapacity incidentを正直に継続し、
+supervisorと最小receipt writerだけを動かす。
+
+### OSS comparison and adoption decision
+
+| Source | Observed design | Adopt / reject |
+|---|---|---|
+| [Kubernetes node-pressure eviction](https://kubernetes.io/docs/concepts/scheduling-eviction/node-pressure-eviction/) | disk/inode signalをthresholdと比較し、workload停止前にnode-level resourceを回収し、minimum reclaimでthreshold oscillationを避ける。核心: “reclaim node-level resources before it terminates end-user pods.” | exact-byte tier、hysteresis、minimum recovery floor、producer admissionへ採用 |
+| [systemd journald](https://www.freedesktop.org/software/systemd/man/latest/journald.conf.html) | producer自身がMaxUse/KeepFreeを持ち、active fileではなくarchived fileだけをvacuumする。核心: “only archived files are deleted.” | producer quota、active artifact非削除、owner finalizerへ採用 |
+| [pfnet/pfio `FileCache`](https://github.com/pfnet/pfio/blob/52faa1f36ded6bfcb5b78e443fadb019f62275f1/pfio/cache/file_cache.py) | cache writeのENOSPCをcatchし、warning + `False`で本処理を継続する。 | 非必須cache producerのfail-softへ採用。critical receiptはreserve付きfail-closedへ強化 |
+| BleachBit [`Cleaner.py`](https://github.com/bleachbit/bleachbit/blob/53cc9131f94edb2ee712957263611efe48c8180b/bleachbit/Cleaner.py) / [`claude.xml`](https://github.com/bleachbit/bleachbit/blob/53cc9131f94edb2ee712957263611efe48c8180b/cleaners/claude.xml) | preview/keep-listを持つが、cleaner catalogにはClaude session削除もwarning付きで定義できる。 | interactive cleanerとしては妥当。無人host governorのdelete catalogとしては棄却 |
+| [Czkawka](https://github.com/qarmin/czkawka/blob/105a520bab59d8a0064770b3dbcba0ab47abe59e/krokiet/src/file_actions/connect_delete.rs) | scan結果からuserが選択したitemだけをdelete/trashし、失敗itemを残す。 | observation/action分離だけ採用。user-selection前提のdelete authorityは棄却 |
+
+推奨は既存のmanifest-driven host governorを完成させる案である。汎用cleaner catalog案は対象範囲が広い一方、
+session/cacheの意味をowner proofなしで誤分類する。LLM自由判断案は新規pathへ適応できる一方、再現可能な
+deletion proofとreview boundaryを失う。intelligenceは候補とtestを作れても、production deletion capabilityは0のままにする。
+
+#### Fixed-commit code study
+
+READMEではなくentrypoint、call graph、state、error recovery、effect/readback、testを固定commitで比較した。
+
+| Repository / fixed commit | 実コードで確認したflow | Life Managerへの判断 |
+|---|---|---|
+| [notebooklm-py `3bb0c185`](https://github.com/teng-lin/notebooklm-py/blob/3bb0c1850ac4e85378a831581a0cf1e82fa80272/src/notebooklm/_atomic_io.py#L202) | sibling unique temp作成 → `0600` → write/flush/file `fsync` → `os.replace` → best-effort dir `fsync`。pre-commit errorはtempを消してold targetを保持する。[tests](https://github.com/teng-lin/notebooklm-py/blob/3bb0c1850ac4e85378a831581a0cf1e82fa80272/tests/unit/test_atomic_io.py#L434)はtemp `fsync`のENOSPCも反証する。隔離cloneで該当22 test PASS。 | A-25のatomic writer本体をcopy-tweakする第一候補。既存pass-wide lockを維持し、`filelock` dependencyとWindows retryは持ち込まない。Life Manager固有の1 MiB reserveとENOSPC 1回retryだけを加える。 |
+| [Kubernetes `e81f39c0`](https://github.com/kubernetes/kubernetes/blob/e81f39c0e03ce8ed8e2660c9147b391edd9e262b/pkg/kubelet/eviction/eviction_manager.go#L254) | `synchronize` → signals観測 → threshold/grace/min-reclaim判定 → node-level reclaim →再観測 → critical podを除外してrank/evict。[image GC](https://github.com/kubernetes/kubernetes/blob/e81f39c0e03ce8ed8e2660c9147b391edd9e262b/pkg/kubelet/images/image_gc_manager.go#L349)はhighで開始しlowまでunused imageを回収する。 | tier hysteresis、safe reclaim後のreadback、protected workload非evictionを採用。pod ranker/evictorはhost path deletionへコピーしない。 |
+| [systemd `ed22b5a7`](https://github.com/systemd/systemd/blob/ed22b5a77f39b7c1c901c357760d9596e2c9028b/src/journal/journald-manager.c#L143) | `limit = clamp(used + available-after-keep-free, min_use, max_use)`でproducer自身のbudgetを決める。[vacuum](https://github.com/systemd/systemd/blob/ed22b5a77f39b7c1c901c357760d9596e2c9028b/src/libsystemd/sd-journal/journal-vacuum.c#L126)はactive/unknown fileを除外し、archivedだけをoldest-firstでunlinkし、freed bytesを出す。 | producer-owned quota、active/unknown preserve、oldest-first bounded finalizer、bytes readbackを採用。journald固有filename parserはコピーしない。 |
+| [pfio `52faa1f3`](https://github.com/pfnet/pfio/blob/52faa1f36ded6bfcb5b78e443fadb019f62275f1/pfio/cache/file_cache.py#L250) | quota超過でcacheをfreezeし、cache writeのENOSPCだけwarning + `False`で上位処理を継続する。 | 再生成可能cache producerのfail-soft contractへ採用。critical receiptへは不採用。 |
+| [BleachBit `53cc9131`](https://github.com/bleachbit/bleachbit/blob/53cc9131f94edb2ee712957263611efe48c8180b/bleachbit/CLI.py#L190) | `--preview`と`--clean`を排他にし、曖昧なwildcard excludeは“avoid over-cleaning”でfailする。`Delete.execute(really_delete)`がeffect gate。ただし[Claude cleaner](https://github.com/bleachbit/bleachbit/blob/53cc9131f94edb2ee712957263611efe48c8180b/cleaners/claude.xml)はsession/history削除を定義する。 | plan/effect分離とinvalid exclusion fail-closedだけ採用。catalog、session cleanup、reboot時deleteは棄却。 |
+| [Czkawka `105a520b`](https://github.com/qarmin/czkawka/blob/105a520bab59d8a0064770b3dbcba0ab47abe59e/czkawka_core/src/common/deletion.rs#L167) | default `DeleteMethod::None`、dry-run/trash/stop flag、exact selected item、per-item errorとgained bytesを持つ。一方、effectはparallel delete。 | default no-effect、exact candidate、per-item readbackを採用。host governorでは直前再検証を保つためparallel deletionを棄却。 |
+
+この比較によりA-25の変更対象は既存`disk_cleanup.py`とtestの2 filesだけでよく、新しいexecutor、daemon、DB、
+third-party dependencyは不要である。実装soft targetは100 LOC未満を維持する。
 
 ### Target architecture
 
@@ -305,11 +678,18 @@ flowchart TD
   X[All local writable volumes] --> C[Host-wide capacity census]
   C --> O[Owner and growth attribution]
   P[All host producers] -->|artifact + lease + finalizer| M[Lifecycle manifest]
+  P -->|request max bytes| A[Atomic capacity claims]
+  S[60-second sentinel] --> Q[Growth rate and time-to-floor]
+  C --> A
+  Q --> A
+  A -->|projected free >= 11 GiB| P
+  A -->|below floor or unknown surge| Z[Reject start or request checkpoint]
   D[5-minute deterministic pass] --> M
   M --> G{All deletion proofs pass}
   G -->|No or unknown| K[Preserve and record reason]
   G -->|Yes| R[Reclaim regenerable bytes]
   R --> V[Read back bytes and free space]
+  E[Protected receipt reserve] -->|ENOSPC: release once, retry, restore| V
   H[Hourly intelligence pass] --> O[Observe growth and failures]
   O --> F[Repair producer lifecycle or propose manifest entry]
   F --> T[Test and promote deterministic rule]
@@ -317,6 +697,7 @@ flowchart TD
   L --> D
   L --> H
   L --> B[Backpressure and bounded resume]
+  B -->|quota + preflight + checkpoint| P
 ```
 
 ### Ownership
@@ -435,12 +816,37 @@ package managerを含む新規または既存のwrite-heavy producerは、開始
 | ULTRA | free < 3 GiB | 非必須write停止。state/receipt/checkpoint書き込みだけ許可 |
 
 1. tierはData volumeのbytesで算出し、丸めたGBだけで判断しない。
-2. tierを下げるには20 GiB reserveを2回連続観測する。
+2. CRITICAL/ULTRAのhard stopはfree >= 11 GiBを2回連続観測するまで解除しない。NORMALへ戻すには
+   free >= 20 GiBを2回連続観測する。
 3. cleanup後も6 GiB未満なら成功扱いにしない。
 4. stop flagは各producerのpreflightでMUST確認する。
 5. recoveryは一度に全loopを起動せず、owner単位でbounded redispatchする。
 
-### 2.7 Intelligence boundary
+### 2.7 Capacity firewall and ENOSPC prevention
+
+1. 全managed write-heavy producerはprocess開始前と各irreversible/bulk-write effect直前に、同じcapacity
+   admission helperを呼ぶ。helper未接続entrypointが1件でもあればproduction completionを拒否する。
+2. admissionはData volumeのexact free bytes、11 GiB recovery floor、全active claim、producerの
+   `requested_max_allocation`、観測/宣言growth rate、reaction windowから`projected_free`を計算する。
+   reaction windowは`max(2 * sentinel interval, producer checkpoint deadline)`とする。
+3. capacity claimの作成・更新・解放はsingle lock下でatomicに行う。同じfree bytesを複数producerへ
+   二重予約せず、stale claimはPID、lease、checkpointを検証するまで自動解放しない。既存state directoryの
+   bounded atomic JSONを使い、新しいdatabase、daemon、queue、third-party dependencyは作らない。
+4. `projected_free < 11 GiB`、stop/pressure flag、unknown surge、claim ledger read failureのいずれかで
+   admissionをfail-closedにし、effect=0 receiptを残す。
+5. in-flight producerは実使用量とgrowth rateをheartbeatし、quotaまたはprojected floor到達前に
+   checkpointしてbulk writeを止める。kill、session削除、source削除をdrainとして扱わない。
+6. protected growthのownerはlossless rotation/checkpointまたは同一ownerのbounded offloadを実装する。
+   cleanup authorityはprotected fileをtruncate、圧縮、移動、削除しない。
+7. 60秒sentinelはfree deltaとtime-to-11GiB/6GiB/3GiB floorを算出する。declared claimで説明できない
+   surgeは全managed claimを閉じ、in-flight checkpointを要求し、dedupe capacity incidentを発行する。
+8. receipt reserve、claim ledger、stop flag、checkpointはinventory/reclaimerのcandidateから除外する。
+9. isolated filesystemでconcurrent claims、rapid unknown growth、crash-stale claim、write/file-fsync/replace
+   ENOSPCを再現し、protected deletion 0、oversubscription 0、receipt corruption 0を証明する。
+10. 64 KiB以下のreceipt/checkpoint/control flag writeはcapacity claimの対象外とし、bounded control-plane
+    writeとしてA-25 reserveで保護する。bulk data writeをcontrol-plane名義へ偽装してはならない。
+
+### 2.8 Intelligence boundary
 
 hourly intelligence passは、次だけを出力する。
 
@@ -462,7 +868,7 @@ intelligence passはpathを削除せず、manifestを直接変更せず、protec
 - 2 GiB/hour以上の未知growthを検出した。
 - 同じownerで3回連続のlease/finalizer defectを検出した。
 
-### 2.8 Reporting and audit
+### 2.9 Reporting and audit
 
 1. 1 passは `observed_at`、free before/after、tier、eligible count、reclaimed bytes、
    preserved reasons、owner、policy versionを1 receiptに記録する。
@@ -472,7 +878,7 @@ intelligence passはpathを削除せず、manifestを直接変更せず、protec
 4. 同じ状態とpayloadはdedupeする。
 5. report delivery failureはcleanupを失敗させないが、delivery failure receiptを残す。
 
-### 2.9 Production completion
+### 2.10 Production completion
 
 1. unit/integration testが全てpassする。
 2. fixtureでactive session、active lease、open file、dirty worktree、unpushed worktree、
@@ -485,6 +891,8 @@ intelligence passはpathを削除せず、manifestを直接変更せず、protec
 7. 7日間でENOSPC 0、state write failure 0、cleanup起因producer failure 0を観測する。
 8. host inventory coverage reportでlocal writable volume missing 0、required owner family missing 0、
    1 GiB以上のunattributed root 0を観測する。
+9. managed producer entrypoint/effect boundaryのcapacity admission consumer missing 0を観測する。
+10. isolated saturation matrixでoversubscribed claim 0、receipt write failure 0、protected deletion 0を観測する。
 
 ## 3. As-Is / To-Be
 
@@ -499,6 +907,9 @@ intelligence passはpathを削除せず、manifestを直接変更せず、protec
 | Active execution | open-path中心 | producer lease + heartbeat + open-pathの二重証明 |
 | Worktrees | remote/dirty/open判定はcleanup側に存在 | producer ownershipとremote recovery receiptまで必須 |
 | Backpressure | stop flag consumerが不均一 | 全write-heavy producer preflightで同じtier contractを実行 |
+| Capacity admission | producerが同じfree bytesを独立に見て同時起動できる | atomic claimでmax allocationを予約し、projected freeが11 GiB未満なら開始/effectを拒否 |
+| In-flight growth | 起動後のproducerはstop flagだけでは止まらない | quota/growth heartbeatからfloor到達前にcheckpointし、bulk writeをdrain |
+| Unknown growth | 事後のhourly attribution中心 | 60秒sentinelがtime-to-floorを予測し、unknown surge中はmanaged claimを閉じる |
 | Logs | ledgerが無制限に増加可能 | bounded ops log + immutable incident receipt |
 | Recovery | reserve回復後に複数ownerが競合可能 | owner単位のbounded redispatch |
 
@@ -538,6 +949,15 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 | 27 | full censusのdisk使用量をbounded化 | `test_full_census_respects_temp_log_and_ledger_limits` | OK |
 | 28 | `dscl`/`launchctl`の141/153をhealth failureとしてfail-closed処理 | `test_gui_bootstrap_health_failure_is_observation_only` | OK |
 | 29 | stale app-server復旧後もcleanup labelのload readbackを独立検証 | `test_cleanup_label_load_readback_is_required` | OK |
+| 30 | receiptのpre-commit write/file-fsync/replace ENOSPC時だけreserveを解放し、atomic operationを1回再実行してreserveを復元 | `test_receipt_enospc_releases_reserve_retries_once_and_restores_reserve` | OK |
+| 31 | concurrent producerがfree bytesを二重予約しない | `test_capacity_claims_serialize_and_reject_oversubscription` | OK |
+| 32 | projected freeが11 GiB未満なら開始/effectを拒否 | `test_projected_floor_blocks_start_and_effect` | OK |
+| 33 | stale claimをproofなしで解放しない | `test_stale_capacity_claim_requires_pid_lease_and_checkpoint_proof` | OK |
+| 34 | in-flight producerがquota前にcheckpointする | `test_inflight_growth_checkpoints_before_recovery_floor` | OK |
+| 35 | protected growthはowner rotationでbounded化しcleanupは触らない | `test_protected_growth_uses_owner_rotation_without_cleanup_effect` | OK |
+| 36 | unknown surgeはmanaged claimを閉じる | `test_unknown_growth_surge_closes_managed_admission` | OK |
+| 37 | 全managed entrypoint/effect boundaryが同じadmission helperを使う | `test_managed_producer_admission_coverage_is_complete` | OK |
+| 38 | isolated saturationでもreceipt/protected dataを壊さない | `test_isolated_saturation_preserves_control_plane_and_protected_data` | OK |
 
 ### E2E judgment
 
@@ -574,18 +994,18 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 
 ## 6. Execution Steps — Atomic TODO
 
-この表はphase mapである。実装と完了判定の唯一のSSOTは下のAtomic TODO Register A-01〜A-36であり、
+この表はphase mapである。実装と完了判定の唯一のSSOTは下のAtomic TODO Register A-01〜A-44であり、
 後続itemを先に実行しない。
 
 | # | Work | Completion evidence | State |
 |---:|---|---|---|
 | 1 | 全local volume、top-level root、guard/sentinel/janitor/plist/log/state/manifestをimmutable host censusへ記録 | mount/root/owner family、label、interval、program SHA、last exit、free bytes | 部分完了: bounded `host-inventory.json`はmount 9/root 23を実測。full gapは4件まで縮小し、permission/owner attributionが残る |
-| 2 | `skills/self/disk-cleanup/` にcanonical host inventory、manifest、runner、health interfaceを定義 | local writable volume missing 0、required owner family missing 0、schema PASS | 部分完了: inventory schema、atomic writer、fast/full mode、hourly marker、25 tests、90秒census/90秒governor budget、permission/partial size、required owner coverage readbackは実装。local writable missing 0とhealth readbackは未完了 |
-| 3 | protected rootsとfail-closed validatorをTDDで固定 | Test Matrix 3–11 PASS | 部分完了: Life Manager governorとAnicca回帰testで主要保護を確認。全Matrix 3–11の統合証跡は未完了 |
+| 2 | `skills/self/disk-cleanup/` にcanonical host inventory、manifest、runner、health interfaceを定義 | local writable volume missing 0、required owner family missing 0、schema PASS | 部分完了: inventory schema、atomic writer、fast/full mode、hourly marker、48 tests、90秒census/90秒governor budget、permission/partial size、required owner coverage、local writable missing 0のreadbackは実装。health readbackの残契約は未完了 |
+| 3 | protected rootsとfail-closed validatorをTDDで固定 | Test Matrix 3–11 PASS | 完了: protected-root、lease、open-path、probe/atomic failure、unknown classのfail-closed fixture 58 testsと、canonical host adapterのdirty/unpushed real-git fixture 28 testsを実装。A-07〜A-12の統合証跡を保存 |
 | 4 | exact-byte tier、hysteresis、single lock、300秒schedulerをTDD実装 | Test Matrix 2、12–14 PASS | 部分完了: exact-byte tier、atomic lock、300秒plist、pressure/recovery floor、hourly full-pass marker、ULTRA時のcritical full-pass promotion、hourly/explicit fullのcooldown、marker fail-closed、bounded fast/full pass、正本labelのbootstrap/readbackは実装・unit/live PASS。24時間観測は未完了 |
-| 4a | GUI bootstrap health failureを観測専用fail-closedに固定 | Test Matrix 28–29 PASS、141/153 fixture receipt、復旧後readback | 部分完了: cleanup内preflight、atomic `gui-bootstrap-health-failure` receipt、UID/Directory Services/`gui/501`の実機PASSを実装。141/153 failure fixtureとstale app-server分離の実機証跡は未完了 |
-| 5 | Mac全体のproducer censusを作り、artifact/lease/finalizer helperを上位growth ownerへ接続 | 1 GiB以上のunattributed root 0、active lease readback、orphan lease fixture PASS | 部分完了: Chrome/Chromium cloneと`cfo-*`のallow-list discoveryは実装。host-wide census、lease heartbeat/finalizer接続は未完了 |
-| 6 | 全write-heavy producerへ共通disk preflightを接続 | producer census missing consumer 0、Test Matrix 15 PASS | 部分完了: `gig_disk_guard.py`をGig 4 laneとWriter laneの共通入口へ接続し、Paid/Storefrontにはeffect直前gateとatomic/attempt checkpoint、Writerにはprovider-start 11GiB gateを追加。Gig/guard 11件、Paid 9件、Storefront 27件、Writer shell regressionをPASS。Writerのin-flight drain、browser/build/media/VM/package/agent等の全producer接続は未完了 |
+| 4a | GUI bootstrap health failureを観測専用fail-closedに固定 | Test Matrix 28–29 PASS、141/153 fixture receipt、復旧後readback | 完了: cleanup内preflight、atomic `gui-bootstrap-health-failure` receipt、141/153隔離fixture、stale app-serverのsession-owner/no-kill分離、UID/Directory Services/`gui/501`/canonical labelの復旧readbackを実装 |
+| 5 | Mac全体のproducer censusを作り、artifact/lease/finalizer helperを上位growth ownerへ接続 | 1 GiB以上のunattributed root 0、active lease readback、orphan lease fixture PASS | 部分完了: browser、build/media、VM/package、Gig project lifecycleとChrome/Chromium/pnpmのproducer-specific discovery、`cfo-*`のallow-list discoveryは実装。agent、host-wide census、lease heartbeat/finalizer接続は未完了 |
+| 6 | 全write-heavy producerへ共通disk preflightを接続 | producer census missing consumer 0、Test Matrix 15 PASS | 部分完了: `gig_disk_guard.py`をGig 4 laneとWriter laneの共通入口へ接続し、Paid/Storefrontにはeffect直前gateとatomic/attempt checkpoint、Writerにはprovider-start 11GiB gateとforeground provider process-group drainを追加。Gig/guard 11件、Paid 9件、Storefront 27件、Writer focused 44件をPASS。browser/build/media/VM/package/agent等の全producer接続は未完了 |
 | 7 | bounded ops log、incident receipt、Telegram dedupeを実装 | Test Matrix 18–19 PASS、message ID | 部分完了: ledger rotationとlast receipt、milestone送信は実装。ops log/incident receiptの正式分離とdedupe契約は未完了 |
 | 8 | intelligence input/output schemaとwake gateを実装 | deletion capability 0、Test Matrix 16–17 PASS | 未完了: deterministic cleanupにLLM削除権限はないが、hourly intelligence schema/wake gateは未実装 |
 | 9 | owner単位のbounded recoveryを実装 | Test Matrix 20 PASS、duplicate redispatch 0 | 未完了: owner単位のcheckpoint、redispatch、重複抑止は未実装 |
@@ -602,44 +1022,59 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 
 各行は1つの作業だけを持つ。順序を飛ばさず、受入証拠が保存されるまで完了扱いにしない。
 
+capacity-safety interruptのA-25とA-04〜A-19を閉じたため、実行queueは
+`A-20 → … → A-24 → A-26 → … → A-44`へ進む。A-25の先行完了はA-20〜A-24の
+完了を意味しない。data loss、credential/session保護、money safety、ENOSPC recoveryなど重要sliceは
+Ponytailでscopeを最小化してTDDを行う。軽微なdocs/readbackは現状実測からstraight fixへ進める。
+全itemで必要最小限のregression、fresh adversarial review、実機readback、spec state更新、commit/pushを同じsliceで閉じ、
+TDDのためだけの過剰fixtureや後続itemのscaffoldは前倒ししない。
+
 | ID | Atomic action（1作業） | Acceptance evidence | State |
 |---|---|---|---|
 | A-01 | mount inventoryを保存する | 実機`host-inventory.json`でschema PASS、SHA一致、mount_count=9、unique mount=9、mode=600、temporary file残留0、host-inventory tests 9 PASS | 完了 |
 | A-02 | top-level root inventoryを保存する | 実機inventoryでexpected root 23/23、unique path 23、unexpected root 0、owner family 12、SHA一致 | 完了 |
 | A-03 | owner-family coverageを保存する | 実機coverageでrequired 12、present 12、missing 0、set equality PASS | 完了 |
-| A-04 | size-deferred rootを解消する | `coverage.gaps`のsize-deferred 0 | 未完了 |
-| A-05 | permission-limited rootを分類する | TCC/system-temp/`.Trash`のowner receipt | 部分完了 |
-| A-06 | local writable volume coverageを証明する | writable volume missing 0 | 未完了 |
-| A-07 | protected-root fixtureを追加する | protected rootがmanifestへ入らないtest PASS | 部分完了 |
-| A-08 | active-lease fixtureを追加する | active lease candidate preserve test PASS | 未完了 |
-| A-09 | open-path fixtureを追加する | open path candidate preserve test PASS | 未完了 |
-| A-10 | probe-failure fixtureを追加する | lsof/du failure fail-closed test PASS | 未完了 |
-| A-11 | dirty/unpushed worktree fixtureを追加する | dirty/unpushed preserve test PASS | 未完了 |
-| A-12 | unknown-class fixtureを追加する | unknown candidate preserve test PASS | 未完了 |
-| A-13 | 141/153 failure fixtureを保存する | failure receipt with zero deletion | 未完了 |
-| A-14 | stale app-server separation receiptを保存する | cleanup never kills app-server receipt | 未完了 |
-| A-15 | browser producer lifecycleを登録する | artifact/lease/finalizer/quota receipt | 未完了 |
-| A-16 | build/media producer lifecycleを登録する | artifact/lease/finalizer/quota receipt | 未完了 |
-| A-17 | VM/package producer lifecycleを登録する | artifact/lease/finalizer/quota receipt | 未完了 |
-| A-18 | agent/gig-project lifecycleを登録する | project owner/terminal/lease receipt | 未完了 |
-| A-19 | Writer in-flight drainを接続する | provider interruption checkpoint/resume test | 未完了 |
-| A-20 | browser/build/media preflightを接続する | producer consumer missing 0 for these families | 未完了 |
+| A-04 | size-deferred rootを解消する | `coverage.gaps`のsize-deferred 0 | 完了: 08:30:14Z canonical full、runs 81→82、exit 0、root 23、mode/receipt 0600、SHA一致、size-deferred 0、errors/protected deletion 0、review `ship` |
+| A-05 | permission-limited rootを分類する | TCC/system-temp/`.Trash`のowner receipt | 完了: 08:44:06Z canonical full、exact 4 owner receipts、全件reclaim不可、root 23、mode 0600、SHA一致、runs 83→85、exit 0、errors/protected deletion 0、41 tests、review `ship` |
+| A-06 | local writable volume coverageを証明する | writable volume missing 0 | 完了: 09:08:04Z canonical fast、mount 9、local writable 7、Data含有、missing 0、metadata gap 0、runs 89→90、exit 0、0600、SHA一致、48 tests、review `ship` |
+| A-07 | protected-root fixtureを追加する | protected rootがmanifestへ入らないtest PASS | 完了: independent allowlisted parent 16件をpreserve、safe siblingだけ回収、effect直前競合もpreserve、50 tests、runs 93→94、exit 0、protected deletion 0、review `ship` |
+| A-08 | active-lease fixtureを追加する | active lease candidate preserve test PASS | 完了: dict/string schema対応、開始時・effect直前・probe errorをpreserve、52 tests、runs 97→98、exit 0、protected deletion 0、review `ship` |
+| A-09 | open-path fixtureを追加する | open path candidate preserve test PASS | 完了: 実expired lease、effect直前2nd lsof、NaN TTL fail-closed、54 tests、runs 101→102、exit 0、protected deletion 0、review `ship` |
+| A-10 | probe/atomic-write failure fixtureを追加する | lsof/du failure fail-closed、production size-timeout owner attribution、host-inventory orphan temporary 0 | 完了: lsof/du/replace failure fixture、57 tests、timeout owner 2 roots、SHA一致/0600、orphan 0、runs 104→105、exit 0、protected deletion 0、review `ship` |
+| A-11 | dirty/unpushed worktree fixtureを追加する | dirty/unpushed preserve test PASS | 完了: real bare remote + linked worktreeでdirty/unpushedをpreserve、removed 0、ledger reason一致、host adapter 28 tests、Life Manager 57 tests、review `ship`、runs 106→107、exit 0、protected deletion 0 |
+| A-12 | unknown-class fixtureを追加する | unknown candidate preserve test PASS | 完了: allowlisted `cfo-*`でもunknown classをprobe前にpreserve、path残存、reclaimed 0、receipt reason一致、58 tests、review `ship`、runs 107→109、exit 0、errors/protected deletion 0 |
+| A-13 | 141/153 failure fixtureを保存する | failure receipt with zero deletion | 完了: production health probeへ141/153注入、inventory/discovery/lsof/delete 0、evaluated/reclaimed/protected deletion 0のatomic receipt、59 tests、review `ship`、runs 109→110、exit 0 |
+| A-14 | stale app-server separation receiptを保存する | cleanup never kills app-server receipt | 完了: run/canary共通session-owner/no-kill receipt、probe exception fail-closed、exact label再readback、61 tests、fix-first review→`ship`、runs 112→113、exit 0、protected deletion 0 |
+| A-15 | browser producer lifecycleを登録する | artifact/lease/finalizer/quota receipt | 完了: static browser 6件、Chromium dynamic clone 9件、producer-specific exact proof、0/複数/symlink fail-closed、focused 44+4 tests、review fix-first→re-review `ship`、runs 118→120、exit 0、open 9 preserve、protected deletion 0 |
+| A-16 | build/media producer lifecycleを登録する | artifact/lease/finalizer/quota receipt | 完了: registration-only、static 3件、dynamic build/mediaはowner/class/lease/quota登録済み、全新規entry preserveで削除authority 0、focused 48 tests、final review `ship`、fallback runs 474→475 runtime manifest 0600、canonical runs 129→130 exit 0、実機59 run/videoとArchives保持、protected deletion 0 |
+| A-17 | VM/package producer lifecycleを登録する | artifact/lease/finalizer/quota receipt | 完了: registration-only static 16件、pnpm exact version/proof/lease fail-closed、全A-17 entry runtime/quota 0/lease 300/preserveで削除authority 0、focused 48 tests、final review `ship`、fallback SHA一致/runs 486→487/static 16 bad 0、canonical runs 137→138 exit 0、protected deletion 0 |
+| A-18 | agent/gig-project lifecycleを登録する | project owner/terminal/lease receipt | 完了: registration-only numeric project 24件、terminal true 0、unknown owner 3、全件deliverable/preserve、focused 49 tests、fresh review `ship`、fallback runs 507→508/削除0、canonical runs 142→143 exit 0、errors/protected deletion 0 |
+| A-19 | Writer in-flight drainを接続する | provider interruption checkpoint/resume test | 完了: exact stop 2 pathのpre-Popen gate、process-group TERM→1秒→KILL/reap、immutable run/prompt checkpoint/resume、focused 44 tests、fresh review `ship`、release `43074f76422d1ec4935acdba98e553cb8564de94`、Writer runs 1/exit 0/provider effect 0、canonical runs 149→150/exit 0/errors 0/protected deletion 0 |
+| A-20 | browser/build/media preflightを接続する | producer consumer missing 0 for these families | 部分完了: Gig browser next-start、self-build 2境界、Writer media既存境界を接続。focused 24/隣接33 tests、review `ship`、commit `dd3e45b5f`、release SHA一致、browser RC 1/effect 0/PID維持、canonical runs 159→160/protected deletion 0。active browser 8中affiliate 3/job-search 2/provision 2の7 consumerとhost-wide build/media coverage、新last-exit readbackが残る |
 | A-21 | VM/package/agent preflightを接続する | producer consumer missing 0 for these families | 未完了 |
 | A-22 | supervisor non-stop behaviorを実装する | ULTRA wake keeps supervisor labels loaded | 未完了 |
 | A-23 | Codex log budget/rotationを実装する | active app-server handoff with session loss 0 | 未完了 |
 | A-24 | completed-project janitorをcanonical loopへ接続する | terminal-only dry-run/live receipt | 未完了 |
-| A-25 | ULTRA receipt reserveを実装する | state/receipt/checkpoint write survives pressure | 未完了: 2026-08-22 ENOSPCでlast-receipt atomic replaceがexit 1。reserve/retryの実装・fixture・実機exit 0 readbackが必要 |
+| A-25 | `_receipt()`へdurable atomic writeと1 MiB reserve付きENOSPC 1回retryを追加する | Test Matrix 30 PASS、write/file-fsync/replace各ENOSPCで旧receipt保持・retry 1回、他errnoでreserve保持、receipt mode 0600、temporary残留0、reserve 1 MiB/mode 0600/allocated、canonical run count増加、新receipt、last exit 0、protected deletion 0 | 完了: disk-cleanup 40 passed、fresh review `ship`、canonical runs 80→81、08:21:25Z receipt、exit 0、reserve 1 MiB/0600/2048 blocks、temporary 0、protected deletion 0 |
 | A-26 | bounded ops logを分離する | operational log size/retention test PASS | 部分完了 |
 | A-27 | incident receiptを分離する | immutable incident receipt schema PASS | 未完了 |
 | A-28 | delivery-failure aggregationを保存する | Telegram message/delivery-failure IDs read back | 未完了 |
 | A-29 | hourly intelligence schemaを実装する | schema PASS and deletion capability 0 | 未完了 |
 | A-30 | owner recovery redispatchを実装する | checkpoint/retry/duplicate redispatch 0 | 未完了 |
 | A-31 | legacy/canonical shadow parityを保存する | protected mismatch 0 receipt | 未完了 |
-| A-32 | full regression matrixを実行する | Test Matrix 3–11 and 18–29 PASS | 部分完了 |
-| A-33 | 24-hour production observationを完了する | 24h free≥11GiB, ENOSPC 0, protected deletion 0 | 未完了 |
-| A-34 | 7-day production observationを完了する | 7d state-write failure 0 and cleanup-caused producer failure 0 | 未完了 |
-| A-35 | rollback restore testを保存する | prior label restore receipt | 未完了 |
-| A-36 | final production receiptを保存する | final receipt and Telegram message ID | 未完了 |
+| A-32 | full regression matrixを実行する | Test Matrix 3–11 and 18–30 PASS | 部分完了 |
+| A-33 | atomic capacity claim ledgerを実装する | concurrent claimsをsingle lockで直列化し、oversubscription 0、stale claim proof fixture PASS | 未完了 |
+| A-34 | projected-free admissionを開始/effect境界へ実装する | exact bytes、active claims、requested max、growth rateで11GiB floorを割るstart/effect 0 | 未完了 |
+| A-35 | managed producer admission coverageを閉じる | launchd/runtime entrypointとbulk-write effect boundaryのconsumer missing 0 | 未完了 |
+| A-36 | 全managed in-flight producerへquota heartbeat/drainを接続する | browser/build/media/VM/package/agent/Gig/Writerがfloor前にcheckpoint、session loss 0 | 未完了 |
+| A-37 | protected-growth owner rotationを接続する | Codex/OpenClaw/browser DB/WAL/logのowner-side lossless rotation、cleanup effect 0 | 未完了 |
+| A-38 | 60秒rapid-growth predictorを実装する | free delta、declared/observed rate、time-to-floor receiptとunknown surge gate fixture PASS | 未完了 |
+| A-39 | unknown/unmanaged growth containmentを実装する | managed claim close、in-flight checkpoint request、dedupe incident、unknown deletion 0 | 未完了 |
+| A-40 | isolated capacity saturation matrixを実行する | Test Matrix 31–38 PASS。concurrent start、rapid growth、crash-stale claim、ENOSPCでoversubscription/receipt corruption/protected deletion各0 | 未完了 |
+| A-41 | 24-hour production observationを完了する | 24h free≥11GiB、managed floor violation 0、ENOSPC 0、protected deletion 0 | 未完了 |
+| A-42 | 7-day production observationを完了する | 7d state-write failure 0、oversubscription 0、cleanup-caused producer failure 0 | 未完了 |
+| A-43 | rollback restore testを保存する | prior label restore receipt | 未完了 |
+| A-44 | final production receiptを保存する | final receipt、admission coverage missing 0、Telegram message ID | 未完了 |
 
 ### Required verification commands
 
@@ -652,6 +1087,8 @@ plutil -lint skills/self/disk-cleanup/launchd/*.plist
 dscl . -read /Users/anicca UniqueID NFSHomeDirectory
 launchctl print gui/$(id -u)/ai.anicca.life-manager-disk-cleanup
 df -k /System/Volumes/Data
+stat -f '%N %z %Sp %b' ~/.openclaw/state/.receipt-reserve
+jq '{observed_at,tier,errors,protected_deletions}' ~/.openclaw/state/last-receipt.json
 ```
 
 ### User GUI tasks
@@ -660,5 +1097,5 @@ df -k /System/Volumes/Data
 
 ### Completion claim rule
 
-spec作成、unit test、launchd load、1回の回収だけではDONEではない。Atomic TODO A-01〜A-36が
+spec作成、unit test、launchd load、1回の回収だけではDONEではない。Atomic TODO A-01〜A-44が
 順番に完了し、24時間と7日間のproduction observationを満たした時だけDONEとする。

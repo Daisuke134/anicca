@@ -13,6 +13,7 @@ REPO_ROOT = Path(os.environ.get("LIFE_MANAGER_REPO", Path(__file__).resolve().pa
 CAPAFY_HTTP = str(REPO_ROOT / "skills/capafy-autopublish/vendor/capafy-user/scripts/capafy_http.py")
 DEFAULT_STATS_URL = "https://capafy-skills-daily.netlify.app/go-stats"
 OUTPUT_FILE = Path(os.path.expanduser("~/.local/state/life-manager/state/capafy-attribution.jsonl"))
+POSTS_FILE = Path(os.path.expanduser("~/.local/state/life-manager/state/capafy-marketing-ig-ledger.jsonl"))
 
 
 def _find_agent_list(value):
@@ -57,9 +58,53 @@ def _existing_row(output_file: Path, day: str):
     return None
 
 
+def _previous_row(output_file: Path, day: str):
+    if not output_file.exists():
+        return None
+    rows = []
+    for line in output_file.read_text(encoding="utf-8").splitlines():
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(row, dict) and str(row.get("date") or "") < day:
+            rows.append(row)
+    return max(rows, key=lambda row: str(row.get("date") or ""), default=None)
+
+
+def _posts_for_day(posts_file: Path, day: str) -> dict[str, list[str]]:
+    result: dict[str, list[str]] = {}
+    if not posts_file.exists():
+        return result
+    for line in posts_file.read_text(encoding="utf-8").splitlines():
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        agent_id = str(row.get("agent_id") or "").strip() if isinstance(row, dict) else ""
+        published_at = str(row.get("published_at") or "") if isinstance(row, dict) else ""
+        native_url = str(row.get("reel_url") or row.get("native_url") or "") if isinstance(row, dict) else ""
+        if agent_id and published_at.startswith(day) and native_url:
+            result.setdefault(agent_id, []).append(native_url)
+    return {agent_id: sorted(set(urls)) for agent_id, urls in result.items()}
+
+
+def _counter_delta(current, previous):
+    if (
+        isinstance(current, int)
+        and not isinstance(current, bool)
+        and isinstance(previous, int)
+        and not isinstance(previous, bool)
+        and current >= previous
+    ):
+        return current - previous
+    return None
+
+
 def pull(
     stats_url: str = DEFAULT_STATS_URL,
     output_file: Path = OUTPUT_FILE,
+    posts_file: Path = POSTS_FILE,
     today: date | None = None,
 ):
     day = (today or date.today()).isoformat()
@@ -82,19 +127,46 @@ def pull(
         for agent in agents
         if isinstance(agent, dict) and agent.get("agentId") is not None
     }
+    previous = _previous_row(output_file, day)
+    previous_by_id = {
+        str(row.get("agent_id")): row
+        for row in ((previous or {}).get("agents") or [])
+        if isinstance(row, dict) and row.get("agent_id") is not None
+    }
+    posts_by_id = _posts_for_day(posts_file, day)
     joined = []
-    for agent_id, clicks in sorted(stats.items(), key=lambda item: str(item[0])):
+    agent_ids = sorted({str(agent_id) for agent_id in stats} | set(posts_by_id))
+    for agent_id in agent_ids:
+        clicks = stats.get(agent_id, stats.get(int(agent_id), 0) if agent_id.isdigit() else 0)
         snapshot = sales_by_id.get(str(agent_id), {})
+        cumulative_clicks = int(clicks)
+        cumulative_sales = snapshot.get("sales")
+        if not isinstance(cumulative_sales, int) or isinstance(cumulative_sales, bool):
+            cumulative_sales = None
+        prior = previous_by_id.get(agent_id, {})
         joined.append(
             {
-                "agent_id": str(agent_id),
-                "clicks": int(clicks),
-                "sales": snapshot.get("sales"),
+                "agent_id": agent_id,
                 "name": snapshot.get("name"),
+                "post_urls": posts_by_id.get(agent_id, []),
+                "cumulative_clicks": cumulative_clicks,
+                "cumulative_sales": cumulative_sales,
+                "window_clicks": _counter_delta(cumulative_clicks, prior.get("cumulative_clicks")),
+                "window_sales": _counter_delta(cumulative_sales, prior.get("cumulative_sales")),
+                "subscription_orders": None,
+                "attribution_status": "candidate_no_order_level_source",
             }
         )
 
-    row = {"date": day, "agents": joined}
+    row = {
+        "schema_version": 2,
+        "date": day,
+        "window": {"start": f"{day}T00:00:00Z", "end": f"{day}T23:59:59Z"},
+        "causal_claim": False,
+        "attribution_status": "candidate_no_order_level_source",
+        "attribution_note": "Agent-level post, redirect, and sales windows are correlated only; Capafy exposes no order-level UTM/source or subscription-order join.",
+        "agents": joined,
+    }
     output_file.parent.mkdir(parents=True, exist_ok=True)
     with output_file.open("a", encoding="utf-8") as ledger:
         ledger.write(json.dumps(row, ensure_ascii=False, separators=(",", ":")) + "\n")

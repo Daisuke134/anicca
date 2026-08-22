@@ -302,22 +302,194 @@ no-send, replay-zero and a new natural sub-30-minute official reply/estimate pro
 Do not advance the development cursor until every unchecked item in the current stage has official
 evidence. Independent production lanes continue running while development follows this order.
 
-**Live handover state.** `main`, `origin/main` and `/Users/anicca/gig/releases/life-manager/current` are pinned to
-`81af6b81f47d6fa197bf25cd4aac67cdd7780a67`. The Paid launchd owner is loaded but not running, with last exit
-`1`; its first natural pass from this release gave X no project/effect worker, returned byusco's delivery gate
-as source-bound `file_owner_feedback`, and stopped Manledge before effect as `disk_pressure`. The host then
-reached 117 MiB free and could not persist a new final receipt, so this is not replay-zero proof. The account
+**Current live cursor.** `main` and `origin/main` were verified equal immediately before this snapshot at
+`5bb23b3de798b550d14b4420aff64560e4f12399`; the starting verification commit
+`79ac01ba1eb66b06aed1f9cee66d4af303f03a3d` remains an ancestor. The existing launchd Paid owner is the only
+customer-effect owner. The shared disk guard remains `GIG_DISK_HEADROOM_KIB=0`; storage floors do not stop Paid.
+
+**Current runtime refresh.** `main` and `origin/main` are equal at
+`734bdce3dc58f38fc9c3c9c9bd3a5b0a99d74084`; unrelated dirty files remain untouched. The active Paid pass was
+started from immutable release `d6c28857e0a13cb2a1800d27993509749a57abbe`, while `current` now points to
+`82e5366dfed408aceafe7f99636a02debdd931db`. Haru `18169583` remains unsent and is naturally recompiling complete
+context after the macOS Illustrator data-access prompt was granted. That active immutable release still keys an
+owner workspace by both requirements and volatile context-input digests; the current release contains the generic
+requirements-only resume key and preserves staging after an incomplete capability handoff. Do not attribute the
+resume fix to the active child; let the multi-project pass finish, then require the next natural current-release
+wake to resume the existing v43 staging, obtain both Illustrator native reopen receipts, package and send once with
+formal delivery OFF, exact-room DOM readback and replay-zero. The same pass automatically discovered new paid room
+`18179735` (`smilejack2`, app-market-research/promotion work), started its independent project worker and began
+pre-purchase DM collection without a code or queue edit. This proves discovery only, not delivery: it must compile
+proposal + DM + full talkroom + attachments, avoid re-asking known facts, create useful work and remain owned until
+the transaction is complete. Aufbau `18178439` remains active under its own isolated owner in parallel.
+
+**Haru v43 is visually verified but must not be sent until native Illustrator receipts exist.** Three natural
+isolated owners independently rebuilt the same bounded v43 correction from the accepted v27/v32 lineage. The latest
+owner measured PC exports at 1440x5667 and 2880x11334 and responsive exports at 750x10224 and 1500x20448; both PDFs
+contain only the two buyer-mandated raster illustrations and otherwise preserve vector artwork. Direct inspection
+confirmed the responsive top badge, both CTA arrows, four reason icons, the final inquiry notice panel, process
+icons, five FAQ chevrons, three customer-house illustrations, Habikino wording, apology/immediate-fix/cancellation
+handoff and formal delivery OFF. Customer effect and readback are still zero.
+
+The mandatory Illustrator 30.7 save/reopen receipt has now failed after three distinct natural repairs: (1) v43 SVG
+input after the scoped buyer-policy correction, (2) an independently rendered vector-PDF input, and (3) a newly
+rebuilt SVG input after restarting Illustrator and granting both macOS Automation/data-access prompts. The last
+attempt reached responsive Illustrator, then `app.open()` returned non-zero; durable
+`context/paid-tool-results.json` records the sanitized `/paid-owner-workdir` request and return code 1. Do not
+regenerate or send another candidate. The exact minimum non-delegable action is for the account owner to open the
+two latest v43 SVG masters in Adobe Illustrator 30.7, Save As native `.ai`, close and reopen both once. The durable
+controller must capture both official hash/count receipts, resume the same artifact package, and only then may the
+existing Paid owner submit once to exact room `18169583`, with formal delivery OFF, exact-room DOM readback and a
+subsequent replay-zero receipt.
+
+The latest natural pass proved byusco `18171890` once with `effect=1`, `readback=1`, exact artifact SHA-256
+`6d1a0a95850c4bbd496174b27881371dc4b81d44284bf347bd2b5e9d0766ab3d`, exact room DOM, empty composer and
+formal delivery OFF. Its following wake omitted a new byusco worker after targeted official readback, so the final
+aggregate receipt must still record replay-zero explicitly. Manledge `18169985` then sent its authorized answer
+exactly once with `effect=1`, `readback=1`, empty composer and formal delivery OFF; its official latest-seller-text
+SHA-256 is `219cf0bff258b88fd782e3a060c8199a181d231933896b96c81a832e680256f9`. Manledge also still needs a subsequent
+official replay-zero receipt. X `18171850` remains no-resend: its prior official effect exists, but the final
+aggregate replay-zero row is still missing.
+
+Haru `18169583` now has a v40 candidate built from the accepted v27/v32/v39 lineage with vector text, panels,
+icons and inquiry artwork plus only the two buyer-mandated raster illustrations. The isolated owner correctly
+refused to represent PDF-identical `.ai` members as native Illustrator files. The observed blocker is mechanical,
+not semantic: macOS rejects Illustrator Apple Events inherited by the model sandbox with `-10004`, although the
+same official Illustrator automation is reachable from the durable controller context. The generic repair is a
+controller capability boundary: the model requests a named installed desktop capability using only staging-relative
+paths; the controller validates those paths, executes the existing `illustrator_native_roundtrip.py` outside the
+model sandbox under one host-wide desktop-tool lease, records stdout/stderr and official receipt, then resumes the
+same project owner for final inspection
+and packaging. This must be published and proved by the natural Haru owner; no Codex one-off artifact generation or
+customer send counts.
+
+The first broker-enabled natural owner selected the installed Illustrator capability itself, staged the two v40
+SVG masters and emitted exactly two relative-path requests. That pass exposed one protocol mismatch before any
+customer effect: the owner used the natural field name `capability` while the controller expected `tool`. The
+controller now treats `capability` as canonical and accepts `tool` only as compatibility input. A new natural
+pass then reached the out-of-sandbox Illustrator CLI, but the dedicated app remained on an empty unresponsive home
+window after earlier interrupted automation. The native tool now health-checks Illustrator and restarts it only
+when System Events proves no document window is open; a user document makes the pass fail closed. A third natural
+launchd pass is active on that corrected immutable release; it must produce both official Illustrator reopen
+receipts, resume the same owner, obtain PASS, send v40 once with formal delivery OFF and read it back from Haru's
+exact room before this item advances.
+
+**Native receipt blocker after three distinct repairs.** The same mandatory Illustrator save/reopen receipt remains
+absent after (1) binding the owner's natural `capability` request field, (2) recovering only an empty stale
+Illustrator session, and (3) moving the mechanical execution outside the model sandbox. The third path proves TCC
+and controller access, then Adobe Illustrator 30.7.0 crashes while adopting the tall PC SVG: macOS diagnostic
+`Adobe Illustrator-2026-08-22-193132.ips` records `EXC_BAD_ACCESS`, `SIGSEGV`, faulting thread 0. No buyer effect
+occurred in any attempt. Do not repeat that SVG open path or send the PDF-identical pseudo-AI. The next safe repair
+must preserve `paid-tool-results.json` into durable project context so the same owner can semantically select a
+different honest input supported by the installed skill, most plausibly the already verified vector PDF roundtrip,
+then issue a new capability request. If Illustrator also crashes on that independent input, the exact minimum
+non-delegable action is an account-owner native Illustrator save/reopen on this machine; record its official receipt
+before the loop may package or send v40.
+
+**Durable semantic recovery now implemented, activation proof pending.** `main` and `origin/main` were verified at
+`aabadf06f69f3e64e374bf95f33a8dc44c28942d` before this change while the already-running Haru effect child remained
+on its pre-change `ba6dfa88c21334ce6ca2993e41f8b15febc6b0f0` source path. On a desktop-capability failure the controller now
+preserves only the mechanical request, request SHA-256, staging-relative input names and SHA-256 values, return code
+and path-sanitized stdout/stderr in project-local `context/paid-tool-results.json`. The next isolated Project Owner
+receives that receipt and must semantically choose a different honest installed-skill input or approach instead of
+repeating the same capability plus input hash; the controller does not classify the buyer problem or select the
+replacement. A successful promoted bundle removes the stale failure receipt. A local isolated receipt exercise
+proved the input hash binding and removal of the transient workspace path; syntax and diff checks pass. This is not
+customer evidence: publish it, let the existing Paid launchd owner restart naturally, and require the alternate
+native receipt, v40 artifact inspection, one send, exact-room official DOM readback, formal delivery OFF and then
+replay-zero before marking Haru complete. Current APFS free space is about 3.0 GiB; the active Haru runtime occupies
+about 2.9 GiB, so do not delete or mutate that in-flight workspace.
+
+**Buyer-trust message ownership correction, activation proof pending.** The Haru semantic decision correctly required
+a concise apology with the resubmission, but the final file progress helper replaced the Project Owner's contextual
+handoff with a fixed generic sentence. The generic harness now asks the same isolated Project Owner to bind a concise
+`customer_message` into the artifact manifest from the complete conversation and cited `buyer_trust_context`; the
+controller passes that text through unchanged after a nonempty 2,400-character bound. When cited buyer messages prove
+repeated failed submissions or an explicit cancellation warning, the owner must acknowledge the delay and errors,
+offer immediate minor corrections, and offer seller-initiated cancellation if the new artifact still cannot satisfy
+the explicit requirements. It must not invent a cancellation offer for unrelated buyers. Existing manifests without
+that optional field retain the safe legacy fallback. Local passthrough, syntax and diff checks pass; this remains
+non-customer evidence until a natural owner creates the message and exact-room official readback proves it was sent.
+
+**Natural durable-failure proof.** Release `9f4cbe8b0e2e4df17bf02686d92d6a44d8867468`, which contains the
+`32717dc80` recovery change, naturally restarted Haru in an independent multi-room Paid pass. Its semantic owner
+again selected the installed native capability before any prior durable receipt existed, and the controller recorded
+the failed PC SVG request at `context/paid-tool-results.json` with request SHA-256
+`d7fde7137bd0cbba2d59ddbc057223183e8a68458499953bd37c8aee7e5178ff`, PC input SHA-256
+`5f50915acc1c1ec431711588f244800bf6797ffa057c33676bc722b479ab25ec`, responsive input SHA-256
+`2e8b48f879c0abc7175cf2fb57791abe7020691d9a52528aa7b3ccad6e451724` and native return code 1.
+The transient workspace path is sanitized to `/paid-owner-workdir`; customer effect remains zero. The next natural
+Haru owner must read this receipt and choose a different honest input or approach. Do not call this complete until
+that alternate request produces official native reopen receipts and the `bca06caca` contextual handoff path is active.
+
+**PDF handoff ordering defect, repair pending activation.** The next natural owner read the durable SVG failure and
+correctly selected fresh PDF inputs for both PC and responsive native roundtrips. It produced a complete v40 package,
+acceptance and manifest, then returned `status=blocked` exactly as the capability prompt instructed while asking the
+controller to execute the two PDF requests. The controller incorrectly treated that blocked runner exit as
+`file_builder` failure before reading the valid request file, so Illustrator never received either PDF and customer
+effect remained zero. The generic controller now accepts a failed/blocked runner exit only when a staging-local
+`paid-tool-requests.json` exists, then runs the same strict capability/path/input validation before any desktop effect.
+An exit without that request still fails closed. Publish and naturally re-run; success requires the PDF native receipts,
+same-owner resume, promoted v40 and contextual customer message before browser delivery may begin.
+
+**Targeted readback cleanup separation, activation proof pending.** A subsequent Paid pass captured each selected
+talkroom DOM, including Haru, but `DefaultTab.__exit__` let a 10-second temporary-tab close timeout invalidate the
+already-written authenticated snapshot. All eight refreshed rooms were therefore reported as `targeted_readback`
+failures and no project worker or customer effect followed. Tab close is now best-effort only for
+`TimeoutExpired`/`OSError` after successful capture; authenticated open, exact-room DOM, identity, coverage and source
+receipt failures remain fail-closed. This is a generic browser cleanup boundary, not a Haru exception. Publish and
+prove a natural multi-room refresh reaches the Haru project worker before advancing.
+
+**Current reviewer correction.** `main` and `origin/main` were both `31e7fa09d` before this change; the
+starting verification commit `79ac01ba1eb66b06aed1f9cee66d4af303f03a3d` remains an ancestor. The loaded
+Paid release is still `f747c7d05` while its natural pass is active, so no effect is attributed to the new
+code yet. The shared file reviewer policy is now v21: exactly one material-risk review may block only a
+materially missing explicit buyer requirement, a false or materially unverified claim, a wrong-target /
+duplicate / formal-delivery error, a secret/legal/money risk, or a corrupt or buyer-unusable artifact.
+Style, wording preference, optional additions, cosmetic polish and alternate approaches are non-blocking.
+For one concrete repairable material finding, the Project Owner performs one class-wide repair and then
+the controller verifies structure, hashes, immutable inputs and TOCTOU without starting a second reviewer
+round. The original reviewer receipt and repaired artifact hash remain separately bound in the durable
+authorization, including after restart. `undeterminable` remains fail-closed only for an unresolved material
+risk. The answer reviewer remains removed. Direct compile/help/contract checks pass; no TDD or extra review
+ceremony was added. Disk headroom was recovered from about 529 MiB to 1.4 GiB by removing only verified
+regenerable caches and terminating four duplicate prohibited pytest runs; customer artifacts, active Haru
+workspace and the protected dirty test were preserved. Commit `39574cae2` is pushed and activated; Haru,
+Manledge and byusco continue as independent natural workers. Reopened X then produced a semantically inconsistent
+decision: `mode=file` while its own required effect and buyer instruction require the deliverable contents pasted
+into the talkroom. That X worker was stopped before effect. Shared semantic policy v10 now requires answer mode
+whenever the buyer explicitly requires talkroom-pasted contents and does not also request a separate file, even
+for structured copy or a revision previously stored in a file. This is a generic medium-selection rule, not an
+X-specific route. Next: push/activate v10, naturally resume X, and require exact-room official DOM effect/readback
+plus replay-zero for all four rooms before advancing beyond Paid.
+
+The first v21 byusco pass independently approved `casican-review-article-v7.md`, SHA-256
+`6d1a0a95850c4bbd496174b27881371dc4b81d44284bf347bd2b5e9d0766ab3d`, but effect remained zero because
+`_prepare_file` incorrectly synthesized `buyer_formal_delivery_hold=true` from every semantic review stage.
+That conflated the controller's formal-delivery-OFF policy with an explicit buyer hold and routed an approved
+review draft back to `work_required`. The shared cadence now preserves only the collector's actual buyer-hold
+fact; the unchanged formal-approval gate naturally selects buyer-visible `progress` with the formal checkbox
+false. A direct production-data decision check returns exactly that result. This is not yet a customer effect;
+activate the fix and let the existing Paid owner naturally retry byusco once.
+
+**Live handover state.** `main` and `origin/main` include implementation commit
+`92174b7932f9691109a537e3a90a95b8f6759227`; the latest activated Paid release is that immutable commit.
+Its completed natural receipt is
+`status=pending`, `observed=7`, `actionable=0`, `effect=0`, `readback=3`, `failed=0`, `pending=4`:
+all four owned rooms checkpointed at `disk_pressure` before project mutation. Old regenerable OSS inspection
+clones and a completed pytest browser cache were removed after proving they had no open handles, restoring about
+4.1 GiB free; no customer runtime or evidence was deleted. This process liveness and disk recovery are not an
+official customer effect, readback or replay-zero result. The account
 owner authorized deletion of obsolete LBJ `18130722` work because another provider now owns that job. Only the
 v107 package SHA-256 `cc7ddd9e…` plus audit metadata remain; old work/source/backups and all MP4/MOV copies were
 removed, reducing that room from 6.8 GiB to 232 MiB and restoring 6.0 GiB free. The protected unrelated dirty
 `skills/earn/gig/tests/test_reply_concurrency.py` remains outside this work. The loaded Paid owner uses up to
 eight independent project workers and retains the 512 MiB effect floor and expiring operator brake.
 
-**Current official Paid truth — supersedes the historical chronology below.** The latest natural receipt is
-`status=failed`, `observed=7`, `actionable=5`, `effect=0`, `readback=2`, `failed=5`, `pending=0`. Launchd label
-`ai.anicca.hf-gig-paid-direct` is loaded with last exit `1` and currently stopped after the disk-safe pass.
-Two rows are intentionally `reserved_for_owner`; five owned rows have explicit failures, so silent pending
-remains zero but customer work is not complete. Process liveness does not supersede the failed official receipt.
+**Current official Paid truth — supersedes the historical chronology below.** The latest completed natural receipt is
+`status=failed`, `observed=7`, `actionable=4`, `effect=0`, `readback=3`, `failed=4`, `pending=0`.
+Three rows are official readback-only/reserved; the owned failures are Manledge `remote_verifier`, Haru
+`file_builder`, byusco `file_owner_feedback`, and `18062411` `remote_resume`. Silent pending is zero, but no new
+customer effect exists.
 
 - Haru `18169583` sent v32 previously with exact official readback/replay-zero, but the buyer then supplied two
   complaint screenshots and explicitly reported rough images, repeated lack of checking and possible
@@ -325,22 +497,53 @@ remains zero but customer work is not complete. Process liveness does not supers
   `habikino-renewal-v37.zip`, 40,866,940 bytes, SHA-256
   `eedfe409b25536709d0fcdd69b5b6538ad59e61856ee889041c84d66e42a0969`, with producer-side `PASS`; the
   controller stopped on the old ordering defect `required_visual_review_missing` before customer effect. The
-  newer release performs that review before validation. No v37 customer effect or readback exists. Local/
-  producer PASS does not authorize sending. The same Project Owner must fresh-inspect v37 against every accumulated
+  newer release performs that review before validation. The natural isolated owner is now building v38 from the
+  accepted lineage: measured previews are PC 1440x5472/2880x10944 and responsive
+  750x9984/1500x19968, with embedded fonts, two authorized raster images and 205–245 effective PPI. Its current
+  `.ai` members are still byte-identical to the PDFs, so native Illustrator edit/save/reopen proof is absent.
+  v38 was promoted as ZIP SHA-256 `bc747bc35b197322c57bb391d1faf3e48115bfcbcbf619d1b7809b9d11799e09`
+  but failed closed before review/effect because all 22 asset bindings retained staging paths and used field names
+  different from the durable validator contract. No v37/v38 customer effect or readback exists. Local/producer PASS does not authorize
+  sending. The same Project Owner must fresh-inspect the resulting package against every accumulated
   requirement, the last accepted layout lineage and both complaint screenshots, repair through the natural loop
   if any visible defect remains, then send exactly one verified hash with formal delivery OFF and replay-zero.
-- Manledge `18169985` currently holds `manledge-community-listing-review-v21.md`, SHA-256
-  `b0588d9e2e99fd998896e611ddb52d61c98bacf56750b130e082580de5bd4c2e`, as `REVIEW_READY`; the controller
-  fails `file_validation: asset contract mismatch`. Reconcile its full job/proposal/DM contract and the last
-  accepted v20/v21 lineage without regenerating blindly, then obtain fresh PASS, exact-room send/readback and
-  replay-zero.
+  The natural owner advanced to v40 and correctly reused the shared native-Illustrator CLI, but its first SVG and
+  PDF attempts were blocked by an Illustrator missing-link modal and macOS Automation denial. The account owner has
+  now authorized the Python-to-Illustrator automation prompt, direct Illustrator JavaScript succeeds, and the stale
+  modal was cancelled without accepting missing links. The shared CLI no longer treats any open Illustrator document
+  as the requested source: it requires the active document's exact filesystem path to match before saving. Release
+  `92174b793` is naturally resuming the existing v40 workspace; no v40 customer effect/readback exists yet.
+- Manledge `18169985` naturally prepared v24, SHA-256
+  `fbf365e364695907b9ebe853fa72a2e77232267380fb6f7fc6f9b44c1a5f432b`; no completed exact-room effect/readback
+  receipt exists yet. Its v9 semantic owner autonomously chose `actionable` / `mode=file` and reused the preserved v24
+  review kit rather than regenerating it. A fresh verifier directly checked the fixed hash against the entire buyer
+  conversation, DM commitments, proposal, listing/outreach copy, 100/50 rule, progress controls and report templates,
+  and returned `deliverable`. The browser writer then lost the shared CDP lock before any effect; the durable checkpoint
+  is `delivery_unknown`, `reason=writer_lock`, `effect=0`, `readback=0`, and no post-send browser evidence exists.
+  Therefore do not assume success or blindly resend: on the next natural wake, official exact-room readback must decide
+  whether to deduplicate or send once, with formal delivery OFF, then prove replay-zero. On that wake the fresh v9
+  semantic decision changed naturally to `mode=answer`. The research-capable owner produced a complete talkroom reply;
+  two fresh verifier passes rejected concrete proof/wording defects rather than sending them: unsupported prior-send
+  claims, unsourced official-detail assertions, a missing exploratory-contact template, omission of known LINE ID
+  `@810akrtq`, and an unqualified zero-effect claim. The third natural repair also failed closed: it still repeated
+  external official facts without a captured fetch, omitted the three mandatory fit checks from the 50-count rule, and
+  called an advertising-partnership contact an employment-recruiting desk. The generic missing harness is evidence
+  transport, not another buyer rule: when the owner uses external facts it must fetch official pages with installed
+  `crwl`, retain that stdout in its owner evidence, and let the fresh verifier inspect it. No customer effect/readback
+  exists yet. The shared answer owner is
+  now allowed to run local read commands and official-source web research while customer mutation remains exclusively
+  owned by the fenced browser executor. Do not add a Manledge-only reply path.
 - byusco `18171890` currently holds `casican-review-article-v5.md`, SHA-256
   `28199b8fb6479915d5ec372f3e57df83899f449a705ac7157dd9ad59867907d1`, as `REVIEW_READY`; the controller
   fails `file_validation: asset contract mismatch`. Its Project Owner must bind every required buyer-visible
   screenshot/asset or return a truthful non-delivery disposition; it may not call an incomplete article perfect.
-- X `18171850` already has its approved v1 official effect/readback. Its stale local `REVIEW_READY` and
-  `file_validation: asset contract mismatch` may be reconciled only into the factual ledger; it must not rebuild
-  or resend without a newer buyer event.
+- X `18171850` has a newer buyer event after the v1 official effect/readback and is reopened. The buyer corrected
+  the source category to FANBOX four-panel manga, asked for talkroom text rather than an attachment, and later named
+  one already-used four-panel topic that must be avoided because assignments are first-come. The old room-local
+  `observe_only` policy was incorrectly treated as permanent even though targeted official readback reports
+  `buyer_reply_after_artifact_observed=true`. The generic policy now expires on a newer buyer reply; the natural
+  owner must read the current linked source/DM sequence, produce nonduplicative X copy as talkroom text, send once,
+  and obtain exact-room readback/replay-zero. This is a new response, not a resend of v1.
 - `18062411` currently closes at `remote_resume`; its latest semantic decision is `satisfied_noop` while the
   buyer consults a superior. It requires durable factual disposition/recovery, not a new customer effect.
 - A current Paid Project Context model stdout log contains plaintext content from a buyer-supplied
@@ -844,7 +1047,10 @@ flowchart TB
    The next release also routes delivery-gate results as structured Owner feedback and performs visual review
    before validating its receipt, fixing the measured Haru and byusco ordering failures without regenerating
    their artifacts merely to classify an error.
-   Haru's preserved v37 is independently measured rather than trusted from producer PASS: both buyer roughness
+   The native save dialog observed during the disk-full incident was dismissed once; after natural launchd
+   restart every current Haru attachment resolves by saved filename/hash and the dialog has not recurred. This
+   shows the existing attachment recovery path works; do not add a speculative filename index or regenerate
+   artifacts to classify that stale dialog. Haru's preserved v37 is independently measured rather than trusted from producer PASS: both buyer roughness
    screenshots are durable 2880x1800 sources; PC/Responsive 2x previews are 2880x10944 and 1500x19968; its
    PDF-compatible AI/PDF contents contain editable text/vector structure, embedded fonts and exactly the two
    buyer-authorized raster illustrations at 205–245 effective PPI. The `.ai` bytes are identical to the PDFs and
@@ -861,12 +1067,30 @@ flowchart TB
    tool enter the capability registry. Downloaded code never receives browser, credential, customer-send or
    money authority. For Illustrator conversion, inspected sources are `creold/illustrator-scripts` commit
    `9b3e3ee…` (MIT, native `IllustratorSaveOptions`) and `rjduran/adobe-scripting` commit `b2cd2c8…`
-   (behavioral comparison only; no clear license file, so no copied code).
+   (behavioral comparison only; no clear license file, so no copied code). The account owner authorized Adobe
+   Illustrator's seven-day monthly-plan trial (current charge JPY 0; JPY 4,980/month after the trial, cancelable
+   without an annual termination fee), Adobe Stock was not selected, and 3DS completed. The installer process
+   first failed with Adobe installer error 133: 4,992,147,982 bytes were required while only 141,459,456 bytes
+   were available. Cleanup
+   removed 23 inactive, unopened CFO immutable releases while preserving its current release, customer projects
+   and state, raising free space to 9.0 GiB. The one retry completed with Adobe installer Exit Code 0 and
+   `/Applications/Adobe Illustrator 2026/Adobe Illustrator.app` now exists. Read-only `gog gmail search` also
+   returned the official Adobe trial-start and Illustrator welcome messages; Gmail UI and send authority were
+   not used. The first-launch macOS prompts granted Illustrator file/Apple Event automation but denied its
+   unrelated local-network request.
+   The shared `skills/design/illustrator-native` capability now copies the MIT native
+   `IllustratorSaveOptions`/`Document.saveAs` primitive from `creold/illustrator-scripts` pinned commit
+   `9b3e3eeade9ba748f41612ec4697bb6a5c2489c2` and omits its selection UI. A non-customer SVG smoke run through
+   Illustrator 30.7 produced a distinct 68,313-byte AI hash, reopened it in Illustrator, read back two page
+   items, one editable text frame, one layer and one artboard, and found official `AIPrivateData1` plus creator
+   metadata. This is capability proof only; Haru still requires a natural owner-produced package and fresh
+   visual review before any effect.
 9. [ ] Publish the immutable reconstruction release and kickstart the existing launchd Paid owner. Observe Haru's
-   natural Project Owner inspect v34 against the new complaint screenshots, complete conversation and accepted
+   natural Project Owner inspect v38 against the new complaint screenshots, complete conversation and accepted
    lineage. If defective, revise naturally; if fresh PASS, send the exact final hash once, obtain official DOM
    readback with formal delivery OFF and prove replay-zero. Do not manually submit or call producer PASS Done.
-10. [ ] Through the same natural owner architecture, reconcile Manledge v20/v21 without blind regeneration,
+10. [ ] Through the same natural owner architecture, fresh-inspect the naturally prepared Manledge v24 without
+   blind regeneration,
    obtain one complete fresh PASS artifact, exact-room official readback, formal delivery OFF and replay-zero.
 11. [ ] Through the same natural owner architecture, bind every required byusco screenshot/asset to the article;
     produce a complete fresh PASS or truthful buyer-permitted review-stage disposition, then obtain the matching
@@ -1326,6 +1550,50 @@ definition and A0 acceptance is closed.
 
 #### B. Restore Apply and prove one new application
 
+**Apply/Negotiate recovery cursor.** Close the unchecked Apply items below before starting new
+Negotiate implementation. Paid/Submission continues under its existing independent owner; this
+slice neither edits nor waits on the Paid section, `paid_direct.py`, or the Paid runtime.
+
+**Current production truth.** Apply is enabled and owned by launchd every 60 seconds. The loaded
+definition keeps the real 512 MiB write floor while allowing this lane to continue past the global
+pressure and writer-stop advisory flags; the child still fails closed below the real floor. Natural
+pass `gig-apply-direct-1787394811693936000-80764` completed `ok` after the Data volume recovered to
+about 1.2 GiB free. The former outage was therefore an advisory disk stop followed by a second,
+independent immutable-release GC race, not a disabled schedule.
+
+- [x] Restore bounded write headroom without broad user-data deletion. Apply now ignores only the
+  global advisory pressure/stop flags and retains `GIG_DISK_HEADROOM_KIB=524288`; measured natural
+  snapshot, intent, official-readback, SQLite and Telegram receipt writes all succeeded above that
+  real floor.
+- [x] Prove the existing `ai.anicca.hf-gig-apply-direct` launchd owner. Its loaded program uses
+  `/Users/anicca/gig/releases/life-manager/current`, natural PID `80764` exited 0, and launchd then
+  started PID `78438` as run 3 without a foreground executor.
+- [x] Prove a natural maximal pass with no silent loss. Pass
+  `gig-apply-direct-1787394811693936000-80764` observed 40, classified the full snapshot as 17
+  already applied, 17 cached truthful ineligible and six current decisions, then ended with five
+  official applications/readbacks, zero failed and one exact-ID uncertainty retained behind a
+  durable duplicate fence. Per-application Telegram provider ACKs are `28744`, `28748`, `28749`,
+  `28753` and `28754`; terminal receipt ACK is `28758`.
+- [x] Prove replay zero and the next natural scheduled owner. Run 3 snapshot includes all five newly
+  confirmed IDs in `already_applied_ids`, while the one unresolved ID remains a request detail with
+  a durable intent fence, so neither class can submit twice. The next natural process uses immutable
+  release `3fa2f7d4...`, which contains the release-retention fix. A separate exact-ID audit of the
+  preceding 15 official applications against that same natural snapshot reports 15/15 in
+  `already_applied_ids`, 0/15 in `request_details`, and no missing ID.
+- [x] Prove deterministic continuous Apply operation without waiting 24 wall-clock hours. The wrapper
+  now pins its immutable release for its whole wake; GC preserved the live pin while `/current`
+  advanced, same-wake reconciliation completed from the pinned release, and the next natural wake
+  automatically created `.pins/78438-3fa2f7d4...`. launchd owns 60-second restart and the loaded
+  five-minute `ai.anicca.earning-health-allslots` owner checks all gig labels plus the Apply wake
+  ledger. The 24-hour observation continues in parallel and is not a gate for starting Negotiate;
+  every future application still requires official-history readback and a Telegram provider ACK.
+  The sole earlier unknown application receipt, request `5225359`, had official history but no
+  provider receipt after its first transport timeout. Business-result redrive now remains eligible
+  for 24 hours while transient health reports retain the one-hour bound; an application-only
+  recovery changed report `9769` from `delivery_unknown` to `sent` with provider message ID `28769`
+  and a matching event-key/target/message-hash receipt. The concurrent Paid unknown row was not
+  changed.
+
 - [x] Restore immediate per-application Telegram reporting. The parent reporter deadline was 90
   seconds while the inner provider deadline was 180 seconds, which killed valid slow sends and left
   them `delivery_unknown`. Release `1b72c4329` makes the parent outlive the transport at 240 seconds;
@@ -1450,6 +1718,33 @@ policy no-send, or owned pending retry; it may never disappear because another t
 operation is slow. The product SLO is official reply readback within 30 minutes of the buyer's
 message. Thirty-second polling is the operating mechanism, not a promise to send a reply every 30
 seconds.
+
+**Current outage, not a disabled lane.** The loaded Negotiate definition remains `KeepAlive` and
+`RunAtLoad`, with a 30-second poll and two workers, but the shared disk guard exits before
+`reply_detector.py` can run while the filesystem is full and `disk-writers.stop` is present. After
+Apply recovery is proven, close Negotiate in the following atomic order:
+
+- [ ] Load a machine-private no-contact registry keyed by exact marketplace counterparty ID and
+  canonical thread path. Provision the two current operator-owned counterparties outside git.
+  Matching threads must terminate as `ignore_policy` before semantic judgement, estimate creation,
+  reply send, or counterparty-specific Telegram content; the effect fence must independently deny
+  any stale or manually queued action for the same identities.
+- [ ] Recover and kick only the existing `ai.anicca.hf-gig-reply-detector` owner, then prove its
+  loaded immutable Life Manager release remains alive across a child failure and resumes 30-second
+  discovery without a manual foreground executor.
+- [ ] Census every pre-purchase inbox source and assign every buyer-authored actionable message to
+  exactly one durable action identity. Drain the existing non-policy backlog oldest-first; each
+  item must end as official reply readback, official estimate readback, permitted policy no-send,
+  or an observable owned retry, with `missing=0` and `unowned=0`.
+- [ ] Emit natural-language Telegram receipts for backlog, blocked, recovered, reply and estimate
+  transitions, each with a provider message ID. Aggregate no-contact skips without exposing private
+  counterparty identity or conversation content.
+- [ ] Prove durable continuous Negotiate operation without making 24 hours of wall-clock waiting a
+  blocking delivery gate: natural restart, continuous discovery, duplicate fences, private
+  no-contact enforcement and durable health ownership must pass. Keep the 24-hour observation
+  running in parallel with zero duplicate replies/estimates, no unauthorized effect on private
+  identities, and every new authorized actionable buyer message reaching official reply/estimate
+  readback within 30 minutes.
 
 Source fix `da5e16627` now coalesces a changed buyer identity onto the current durable action and
 selects the newest coalesced event for restart dispatch. Commit `c366586ac` additionally binds a

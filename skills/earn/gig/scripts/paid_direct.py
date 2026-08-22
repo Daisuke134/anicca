@@ -92,11 +92,11 @@ OWNER_WORKED_TALKROOMS = {
     "18151989",  # jedbyJUNKYアメーバnote — デザインテンプレート利用許諾契約書
 }
 PAID_DECISION_SCHEMA_VERSION = 4
-PAID_DECISION_PROMPT_VERSION = "paid-semantic-decision-v8"
+PAID_DECISION_PROMPT_VERSION = "paid-semantic-decision-v10"
 PAID_DECISION_MODEL = "gpt-5.6-sol"
 PAID_FILE_MODEL = "gpt-5.6-sol"
-PAID_FILE_POLICY_VERSION = "paid-file-build-review-v20"
-MAX_FILE_REVIEW_ITERATIONS = 10
+PAID_FILE_POLICY_VERSION = "paid-file-build-review-v21"
+MAX_FILE_REVIEW_ITERATIONS = 1
 PAID_MAX_PARALLEL_PROJECTS = 8
 PAID_SOURCE_CENSUS_VERSION = "paid-source-census-v4"
 # The skills a paid order may be built with. A skill the lane cannot see is a skill it will
@@ -134,10 +134,13 @@ def _project_workspace(root: Path, prefix: str, *, resume: bool = False) -> Iter
     if workspace is None:
         workspace = Path(tempfile.mkdtemp(prefix=prefix, dir=runtime))
     workspace.resolve().relative_to(runtime.resolve())
+    completed = False
     try:
         yield str(workspace)
+        completed = True
     finally:
-        shutil.rmtree(workspace, ignore_errors=True)
+        if completed:
+            shutil.rmtree(workspace, ignore_errors=True)
 
 def _text(value: Any) -> str: return str(value or "").strip()
 
@@ -991,6 +994,10 @@ def _file_review_disposition(verdict: Any) -> str:
 def _file_progress_payload(cadence: dict[str, Any]) -> dict[str, Any]:
     """Keep internal acceptance evidence out of the buyer-facing progress note."""
     payload = delivery_queue.progress_payload(cadence)
+    owner_message = _text(cadence.get("customer_message"))
+    if owner_message:
+        payload["message"] = owner_message
+        return payload
     revision = (cadence.get("buyer_feedback_stage") == "revision"
                 or cadence.get("buyer_reply_after_artifact_observed") is True)
     payload["message"] = (
@@ -1066,7 +1073,11 @@ def _decision_prompt(context: Path, context_sha256: str, feedback: str,
         "exact question has already been sent and no newer buyer "
         "reply exists. Use file whenever satisfying the request requires a seller-produced local artifact, "
         "including when one absent fact blocks only part of the scope: put only that fact in unresolved and require the "
-        "useful non-blocked portion now rather than delaying the entire artifact. "
+        "useful non-blocked portion now rather than delaying the entire artifact. Never invent a document or other "
+        "artifact merely because a detailed answer has several sections: choose answer unless the buyer or accumulated "
+        "contract requires a file, or the requested outcome cannot truthfully be delivered as talkroom text. "
+        "When the buyer explicitly requires the deliverable contents pasted into the Coconala talkroom and does not also "
+        "require a separate file, choose answer even for structured copy, revisions, or content previously stored in a file. "
         "including initial delivery, revision, and resubmission of an artifact already present on disk. A file delivery "
         "may also include an accompanying Coconala message. Do not choose remote merely because the response describes "
         "or acknowledges an action. "
@@ -1536,6 +1547,8 @@ def _paid_project_root(args, item: dict[str, Any]) -> Path:
 def _account_owner_observe_only(args, item: dict[str, Any]) -> Path | None:
     """Honor a room-local no-resend disposition only while its official effect still verifies."""
     try:
+        if item.get("buyer_reply_after_artifact_observed") is True:
+            return None
         root = _paid_project_root(args, item)
         receipt_path = root / "context" / "paid-effect-policy.json"
         if not _regular_file(receipt_path):
@@ -2221,6 +2234,12 @@ def _validate_file_authorization(root: Path, stable: Path, feedback: str,
     result_path = _consultation_result_path(verifier, summary)
     result = _load(result_path)
     review_state = _load(root / "context" / "paid-review-state.json")
+    shipment_basis = receipt.get("shipment_basis") if isinstance(receipt, dict) else None
+    review_authorized = (
+        (shipment_basis == "reviewer_approved" and result.get("verdict") == "deliverable")
+        or (shipment_basis == "single_material_review_repaired"
+            and result.get("verdict") == "needs_revision")
+    )
     if (not isinstance(receipt, dict) or receipt.get("version") != 4
             or receipt.get("buyer_feedback_sha256") != feedback
             or receipt.get("requirements_sha256") != requirements_sha256
@@ -2238,8 +2257,7 @@ def _validate_file_authorization(root: Path, stable: Path, feedback: str,
                 and review_state.get("state") == "REPAIR_PENDING"
                 and review_state.get("buyer_feedback_sha256") == feedback
                 and review_state.get("requirements_sha256") == requirements_sha256)
-            or result.get("verdict") != "deliverable"
-            or receipt.get("shipment_basis") != "reviewer_approved"
+            or not review_authorized
             or not _text(result.get("reason"))
             or summary.get("task_label") != "paid-file-verifier"
             or summary.get("task_class") != "escalation-agent"
@@ -2263,6 +2281,14 @@ def _rewrite_staging_paths(value: Any, source: Path, target: Path) -> Any:
     if isinstance(value, str):
         return value.replace(str(source.resolve()), str(target.resolve()))
     return value
+
+
+def _clone_prior_artifact(source: Path, target: Path) -> None:
+    """Give the isolated owner an independent APFS clone without duplicating its bytes."""
+    cloned = subprocess.run(["/bin/cp", "-c", str(source), str(target)], capture_output=True)
+    if cloned.returncode:
+        target.unlink(missing_ok=True)
+        shutil.copy2(source, target)
 
 
 def _prepare_file_owner_staging(root: Path, context: Path, staging: Path) -> Path | None:
@@ -2300,7 +2326,7 @@ def _prepare_file_owner_staging(root: Path, context: Path, staging: Path) -> Pat
         prior.resolve().relative_to(root.resolve())
         target = staging / "work" / "prior-artifact" / prior.name
         target.parent.mkdir(parents=True)
-        shutil.copy2(prior, target)
+        _clone_prior_artifact(prior, target)
         return target
     return None
 
@@ -2309,6 +2335,11 @@ def _promote_staged_file_bundle(staging: Path, root: Path, expected_version: str
     manifest_path = staging / "delivery" / "paid-work-result.json"
     manifest = _load(manifest_path)
     if not isinstance(manifest, dict):
+        raise Failure("file_builder")
+    if ("customer_message" in manifest
+            and (not isinstance(manifest["customer_message"], str)
+                 or not manifest["customer_message"].strip()
+                 or len(manifest["customer_message"]) > 2400)):
         raise Failure("file_builder")
     for key in ("requirements_path", "artifact_path", "acceptance_evidence_path"):
         path = Path(_text(manifest.get(key)))
@@ -2335,6 +2366,15 @@ def _promote_staged_file_bundle(staging: Path, root: Path, expected_version: str
     promoted["artifact_path"] = str(delivery_target.resolve())
     promoted["acceptance_evidence_path"] = str(acceptance_target.resolve())
     promoted.pop("source_correspondence_path", None)
+    for asset in promoted.get("artifact_assets", []):
+        if not isinstance(asset, dict):
+            continue
+        if "provenance" not in asset and asset.get("provenance_class"):
+            asset["provenance"] = asset.pop("provenance_class")
+        if "archive_member" not in asset and asset.get("archive_member_path"):
+            asset["archive_member"] = asset.pop("archive_member_path")
+        if asset.get("archive_member"):
+            asset["path"] = str(delivery_target.resolve())
     _write(root / "delivery" / "paid-work-result.json", promoted)
 
 
@@ -2347,7 +2387,7 @@ def _run_isolated_file_owner(args, root: Path, context: Path, prompt_text: str,
             or not re.fullmatch(r"[0-9a-f]{64}", context_inputs_sha256)):
         raise Failure("file_builder")
     with _project_workspace(
-        root, f"paid-file-owner-{requirements_sha256[:12]}-{context_inputs_sha256[:12]}-",
+        root, f"paid-file-owner-{requirements_sha256[:12]}-",
         resume=True,
     ) as temporary:
         staging = Path(temporary)
@@ -2360,7 +2400,7 @@ def _run_isolated_file_owner(args, root: Path, context: Path, prompt_text: str,
         for candidate in sorted((root / "delivery").glob("*.zip")):
             target = prior_dir / candidate.name
             if not target.exists():
-                shutil.copy2(candidate, target)
+                _clone_prior_artifact(candidate, target)
         prior_candidates = sorted(prior_dir.glob("*.zip"))
         prompt = staging / "owner.prompt.txt"
         versions = [int(match.group(1)) for path in (root / "delivery").iterdir()
@@ -2379,7 +2419,20 @@ def _run_isolated_file_owner(args, root: Path, context: Path, prompt_text: str,
             + f" The exact required artifact_version is {expected_version}; use that version in the "
             "artifact filename, acceptance filename and manifest. Copy required_assets exactly, including "
             "every asset_id and field, from context/paid-work-decision.json into the manifest; never rename, "
-            "summarize, regroup, or replace that contract.",
+            "summarize, regroup, or replace that contract. Add customer_message to the manifest: write the concise "
+            "buyer-facing handoff from the complete conversation and buyer_trust_context, without internal evidence. "
+            "When the cited buyer messages show repeated failed submissions or an explicit cancellation warning, "
+            "acknowledge the delay and errors, offer immediate minor corrections, and offer seller-initiated cancellation "
+            "if the new artifact still cannot satisfy the explicit requirements. Never invent that offer when the buyer "
+            "did not raise it. If a required native desktop application cannot be "
+            "controlled from this isolated process, do not fake its output and do not ask the buyer or operator "
+            "to run it. Write delivery/paid-tool-requests.json with version=1 and a requests array. Each request "
+            "must contain capability, input, output and receipt fields using paths relative to this workdir. The currently "
+            "available capability is illustrator_native_roundtrip with input, output and receipt fields. Return "
+            "blocked after writing the request; the durable controller will execute it outside this sandbox and "
+            "resume this same owner to inspect the official receipt and finish the artifact. If "
+            "context/paid-tool-results.json exists, read it as mechanical failure evidence and semantically choose "
+            "a different honest skill-supported input or approach. Never repeat the same capability and input hash.",
             encoding="utf-8",
         )
         staged_evidence = staging / "runner-evidence"
@@ -2400,7 +2453,28 @@ def _run_isolated_file_owner(args, root: Path, context: Path, prompt_text: str,
             "--escalation-reason", "One isolated Sol paid owner must build the buyer deliverable",
         ]
         try:
-            _run(command, "file_builder")
+            for owner_round in range(2):
+                try:
+                    _run(command, "file_builder")
+                except Failure:
+                    if not (staging / "delivery" / "paid-tool-requests.json").is_file():
+                        raise
+                try:
+                    executed = _execute_owner_tool_requests(staging, REPO_ROOT)
+                except Failure:
+                    _persist_owner_tool_failure(staging, root)
+                    raise
+                if not executed:
+                    break
+                if owner_round:
+                    raise Failure("file_builder")
+                prompt.write_text(
+                    prompt.read_text(encoding="utf-8")
+                    + " The controller executed every request in delivery/paid-tool-requests.json. Read "
+                    "delivery/paid-tool-results.json and the exact receipt files, inspect the resulting outputs, "
+                    "then rebuild and verify the final artifact. Do not repeat a completed request.",
+                    encoding="utf-8",
+                )
         finally:
             if staged_evidence.is_dir():
                 shutil.copytree(staged_evidence, owner_evidence, dirs_exist_ok=True)
@@ -2418,6 +2492,7 @@ def _run_isolated_file_owner(args, root: Path, context: Path, prompt_text: str,
             raise Failure("file_builder")
         try:
             _promote_staged_file_bundle(staging, root, expected_version)
+            (root / "context" / "paid-tool-results.json").unlink(missing_ok=True)
         except (AttributeError, OSError, ValueError, TypeError, json.JSONDecodeError, Failure) as error:
             manifest = _load(staging / "delivery" / "paid-work-result.json")
             acceptance_path = Path(_text(manifest.get("acceptance_evidence_path"))) if isinstance(manifest, dict) else Path()
@@ -2447,6 +2522,116 @@ def _run_isolated_file_owner(args, root: Path, context: Path, prompt_text: str,
             })
             raise
         return started
+
+
+def _execute_owner_tool_requests(staging: Path, code_root: Path) -> int:
+    """Execute narrow mechanical desktop capabilities outside the model sandbox.
+
+    The model owns the semantic decision to request a tool. The controller owns the
+    OS capability boundary, validates every path, and records exact command output.
+    """
+    request_path = staging / "delivery" / "paid-tool-requests.json"
+    if not request_path.is_file():
+        return 0
+    value = _load(request_path)
+    requests = value.get("requests") if isinstance(value, dict) else None
+    if (not isinstance(value, dict) or value.get("version") != 1
+            or not isinstance(requests, list) or not 1 <= len(requests) <= 4):
+        raise Failure("file_builder")
+    tool = code_root / "skills" / "design" / "illustrator-native" / "scripts" / "illustrator_native_roundtrip.py"
+    results: list[dict[str, Any]] = []
+    for index, request in enumerate(requests):
+        capability = (request.get("capability", request.get("tool"))
+                      if isinstance(request, dict) else None)
+        if capability != "illustrator_native_roundtrip":
+            raise Failure("file_builder")
+        resolved: dict[str, Path] = {}
+        for field, suffixes in (("input", {".svg", ".pdf"}), ("output", {".ai"}), ("receipt", {".json"})):
+            raw = request.get(field)
+            if not isinstance(raw, str) or not raw or Path(raw).is_absolute():
+                raise Failure("file_builder")
+            path = (staging / raw).resolve()
+            try:
+                path.relative_to(staging.resolve())
+            except ValueError as error:
+                raise Failure("file_builder") from error
+            if path.suffix.casefold() not in suffixes:
+                raise Failure("file_builder")
+            resolved[field] = path
+        if not resolved["input"].is_file() or resolved["input"].stat().st_size == 0:
+            raise Failure("file_builder")
+        lock_path = Path(os.environ.get("GIG_STATE_DIR", Path.home() / "gig")) / ".paid-desktop-tool.lock"
+        lock_path.parent.mkdir(parents=True, exist_ok=True)
+        with lock_path.open("a+", encoding="utf-8") as lock:
+            fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+            completed = subprocess.run(
+                [sys.executable, str(tool), str(resolved["input"]), str(resolved["output"]),
+                 "--receipt", str(resolved["receipt"])],
+                stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                text=True, timeout=360,
+            )
+        result = {
+            "index": index, "capability": capability, "returncode": completed.returncode,
+            "stdout": completed.stdout[-4000:], "stderr": completed.stderr[-4000:],
+        }
+        results.append(result)
+        if completed.returncode or not resolved["output"].is_file() or not resolved["receipt"].is_file():
+            _write(staging / "delivery" / "paid-tool-results.json", {"version": 1, "results": results})
+            raise Failure("file_builder")
+    _write(staging / "delivery" / "paid-tool-results.json", {"version": 1, "results": results})
+    request_path.rename(staging / "delivery" / "paid-tool-requests.executed.json")
+    return len(results)
+
+
+def _persist_owner_tool_failure(staging: Path, root: Path) -> None:
+    """Preserve mechanical failure facts for the next semantic owner decision."""
+    def sanitize(value: Any) -> Any:
+        if isinstance(value, dict):
+            return {key: sanitize(child) for key, child in value.items()}
+        if isinstance(value, list):
+            return [sanitize(child) for child in value]
+        if isinstance(value, str):
+            return value.replace(str(staging), "/paid-owner-workdir").replace(
+                str(staging.resolve()), "/paid-owner-workdir")
+        return value
+
+    request_path = staging / "delivery" / "paid-tool-requests.json"
+    result_path = staging / "delivery" / "paid-tool-results.json"
+    if not request_path.is_file() or not result_path.is_file():
+        return
+    request = _load(request_path)
+    result = _load(result_path)
+    requests = request.get("requests") if isinstance(request, dict) else None
+    if (not isinstance(request, dict) or request.get("version") != 1 or not isinstance(requests, list)
+            or not isinstance(result, dict) or result.get("version") != 1):
+        return
+    inputs = []
+    for row in requests:
+        raw = row.get("input") if isinstance(row, dict) else None
+        if not isinstance(raw, str) or Path(raw).is_absolute():
+            continue
+        path = (staging / raw).resolve()
+        try:
+            path.relative_to(staging.resolve())
+        except ValueError:
+            continue
+        if path.is_file():
+            inputs.append({
+                "path": raw,
+                "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+            })
+    _write(root / "context" / "paid-tool-results.json", {
+        "version": 1,
+        "status": "failed",
+        "instruction": (
+            "Mechanical tool evidence only. Read the buyer context and choose a different honest "
+            "skill-supported input or approach; do not repeat the same capability and input hash."
+        ),
+        "request_sha256": hashlib.sha256(request_path.read_bytes()).hexdigest(),
+        "requests": requests,
+        "inputs": inputs,
+        "results": sanitize(result.get("results", [])),
+    })
 
 
 def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str, Any],
@@ -2514,8 +2699,9 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
         "with status 'ok' for PASS or the exact same non-PASS status, "
         "binding project_root, requirements_path, artifact_path, artifact_version, acceptance_evidence_path, "
         "acceptance_status, acceptance_delta, package_sha256, and artifact_assets. Each artifact_assets entry must "
-        "bind a buyer-visible asset to its project-owned absolute path, non-zero bytes, MIME/type, SHA256, provenance "
-        "class, and archive member path when applicable. Copy acceptance_delta exactly from the acceptance "
+        "bind a buyer-visible asset with asset_id, buyer_visible_asset, path, non-zero bytes, mime_type, type, "
+        "sha256, provenance, and archive_member when applicable. For an archive member, path must name the "
+        "produced ZIP and archive_member must name the exact member inside it. Copy acceptance_delta exactly from the acceptance "
         "file without paraphrasing it. Self-check every accumulated requirement against the actual produced artifact. "
         "When the semantic decision has unresolved items, produce every useful non-blocked portion now, state the exact "
         "remaining limitation without placeholders or invented facts, and claim PASS only for that bounded required_output; "
@@ -2559,6 +2745,12 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
     )
     prior_round = (int(review_state.get("round", 0))
                    if state_matches_cycle and review_state.get("state") == "REPAIR_PENDING" else 0)
+    review_already_completed = (
+        state_matches_cycle
+        and review_state.get("state") == "REPAIR_PENDING"
+        and review_state.get("verdict") == "needs_revision"
+        and prior_round >= MAX_FILE_REVIEW_ITERATIONS
+    )
     start_round = min(prior_round + 1, MAX_FILE_REVIEW_ITERATIONS)
     shipment_basis = "reviewer_approved"
     review_rounds = range(start_round, MAX_FILE_REVIEW_ITERATIONS + 1)
@@ -2614,6 +2806,20 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
         census_receipt = root / "context" / "paid-source-census.json"
         census_receipt_snapshot = (_file_snapshot(census_receipt)
                                    if source_census is not None else None)
+        if review_already_completed:
+            summary_path = verifier_evidence / "summary.json"
+            prior_summary = _load(summary_path)
+            prior_result_path = _consultation_result_path(verifier_evidence, prior_summary)
+            prior_verdict = _load(prior_result_path)
+            if prior_verdict.get("verdict") != "needs_revision":
+                raise Failure("file_validation")
+            proof = {
+                "summary_sha256": hashlib.sha256(summary_path.read_bytes()).hexdigest(),
+                "result_sha256": hashlib.sha256(prior_result_path.read_bytes()).hexdigest(),
+            }
+            shipment_basis = "single_material_review_repaired"
+            verdict = {"verdict": "deliverable", "reason": f"Owner repaired the one material finding: {finding}"}
+            break
         policy_instruction = (
             "No scoped account-owner policy exists."
             if operator_policy_path is None else
@@ -2634,8 +2840,13 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
             f"{manifest['acceptance_evidence_path']}, and compiled context {context}. The exact artifact SHA256 is "
             f"{snapshots['artifact'][1]}, the exact requirements file SHA256 is {snapshots['requirements'][1]}, and the "
             f"accumulated requirements digest is {requirements_sha256}. Inspect the buyer-visible output "
-            "itself and every applicable raw domain/Skill receipt. Reject plans, owner assertions, placeholders, corrupt files, "
-            "missing requirements, unsupported claims, visual or semantic defects, and unproved provenance. Distinguish "
+            "itself and every applicable raw domain/Skill receipt. This is one material-risk review, not an improvement or "
+            "style review. Block only for: (1) a materially missing explicit buyer requirement, (2) a false or materially "
+            "unverified claim, (3) wrong target, duplicate effect, or formal-delivery error, (4) secret, legal, or money risk, "
+            "or (5) a corrupt or buyer-unusable artifact. Wording preference, optional additions, cosmetic polish, alternate "
+            "approaches, and other nice-to-have improvements are non-blocking; return deliverable for them. Reject plans, "
+            "placeholders, corrupt files, material requirement omissions, materially unsupported claims, and unproved required "
+            "provenance. Distinguish "
             "a forbidden omission from an explicitly unresolved input in the semantic decision: for the latter, require a "
             "useful completed non-blocked artifact and an honest bounded limitation rather than blocking all output. Distinguish "
             "buyer-visible deliverable requirements from application qualifications and preferred production tools. Never "
@@ -2659,7 +2870,8 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
             "producer-authored source-correspondence receipt. You are the separate post-hash correspondence authority: read the "
             "fixed census, raw buyer sources and actual candidate, independently compare every semantic value and modifier, and "
             "sample visual source/output regions directly. Counts, layout checks and owner assertions are not proof. Return "
-            "needs_revision for any concrete mismatch or missing item, including every analogous instance of its failure class. "
+            "needs_revision only for a concrete material-risk mismatch in the five blocking classes, including every analogous "
+            "instance of its failure class. "
             "Return undeterminable only when the available local tools and evidence cannot truthfully decide correspondence. "
             "When the exact buyer source and candidate are locally readable with existing available tools, "
             f"{blocked_recheck_instruction}"
@@ -2670,8 +2882,8 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
             "bounded finding when the available evidence permits it. A repair is correctable only when the project or release proves "
             "that every tool needed for that specific repair is currently available and the repair needs no new paid license, "
             "signup, account change, or false provenance claim. If a candidate has both a deterministic repairable defect and "
-            "a separate unavailable-tool or provenance blocker, return needs_revision for the repairable defect first; inspect "
-            "the corrected artifact in the next round, then return undeterminable only if the blocker remains. If required "
+            "a separate unavailable-tool or provenance blocker, return needs_revision for the repairable material defect. "
+            "The owner gets one repair pass; there is no second reviewer round. If required "
             "provenance is absent and no independently repairable defect remains, return undeterminable, never needs_revision. "
             "If visual evidence is insufficient, return undeterminable; "
             "undeterminable and semantic refusal verdicts never authorize discarding the artifact. Return only artifact_judgement "
@@ -2699,6 +2911,57 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
         finding = _text(verdict.get("reason")) or "The reviewer did not prove the artifact deliverable."
         verdict_path = _consultation_result_path(verifier_evidence)
         _owner_feedback(root, "paid.file_evaluator", [verdict], [verdict_path])
+        if disposition == "repair" and review_round == MAX_FILE_REVIEW_ITERATIONS:
+            _write(root / "context" / "paid-review-state.json", {
+                "version": 1, "state": "REPAIR_PENDING", "mode": "file",
+                "review_policy_version": PAID_FILE_POLICY_VERSION,
+                "operator_policy_sha256": operator_policy_sha256,
+                "buyer_feedback_sha256": feedback, "requirements_sha256": requirements_sha256,
+                "artifact_sha256": snapshots["artifact"][1], "round": review_round,
+                "verdict": _text(verdict.get("verdict")), "finding": finding,
+            })
+            correction = (
+                " The one material-risk review found this bounded defect. Repair this failure class and every "
+                f"confirmed analogous instance once, then self-check the complete artifact: {finding}"
+            )
+            owner_started = _run_isolated_file_owner(
+                args, root, context, owner_instructions + correction,
+                root / "evidence" / "agent-PAID_FILE_OWNER",
+            )
+            _normalize_acceptance_delta(root)
+            manifest, snapshots = _file_bundle_snapshots(root)
+            for key in ("manifest", "artifact", "acceptance"):
+                path = (root / "delivery" / "paid-work-result.json" if key == "manifest" else
+                        Path(manifest[f"{key}_path" if key == "artifact" else "acceptance_evidence_path"]))
+                stat = path.stat()
+                fresh_ns = max(stat.st_mtime_ns, stat.st_ctime_ns) if key == "artifact" else stat.st_mtime_ns
+                if fresh_ns <= owner_started:
+                    raise Failure("file_builder")
+            if (_requirements_snapshot(root) != requirements_before
+                    or _file_immutable_inputs(root, context) != bound
+                    or paid_remote_result.requirements_digest(root, feedback) != requirements_sha256):
+                raise Failure("requirements_toctou")
+            review_images = _file_review_images(root, snapshots["artifact"][1], finding)
+            ok, errors = paid_work_evidence.validate_paid_work(
+                root, stable, require_delivery_evidence=False,
+                artifact_judge=paid_work_evidence.STRUCTURE_ONLY,
+                allow_fresh_blocked_for_review=True,
+            )
+            if not ok:
+                _owner_feedback(root, "paid.file_structure", errors, [
+                    root / "delivery" / "paid-work-result.json",
+                    Path(_text(manifest.get("acceptance_evidence_path"))),
+                ])
+                raise Failure("file_owner_feedback")
+            reference_images = _file_reference_images(root, manifest)
+            visual_snapshots = {
+                str(path): _file_snapshot(path) for path in review_images + reference_images
+            }
+            audit_path = None
+            audit_snapshot = None
+            shipment_basis = "single_material_review_repaired"
+            verdict = {"verdict": "deliverable", "reason": f"Owner repaired the one material finding: {finding}"}
+            break
         if review_round == MAX_FILE_REVIEW_ITERATIONS:
             _write(root / "context" / "paid-review-state.json", {
                 "version": 1, "state": "REVIEW_BLOCKED", "mode": "file",
@@ -2794,7 +3057,7 @@ def _prepare_file(args, item_path: Path, root: Path, item: dict[str, Any], base:
         "acceptance_evidence_path", "acceptance_status", "package_sha256",
         "acceptance_delta", "recipient_access_required",
     ) if key in evidence}, "blockers": blockers,
-        "buyer_formal_delivery_hold": semantic.get("delivery_stage") == "review",
+        "buyer_formal_delivery_hold": item.get("buyer_formal_delivery_hold") is True,
         "latest_message_identity": semantic.get("latest_message_identity"),
         "formal_approval_evidence": semantic.get("formal_approval_evidence")}
     decision = delivery_queue.delivery_decision(cadence)
@@ -3062,29 +3325,18 @@ def _validate_consultation_authorization(root: Path, feedback: str) -> dict[str,
             or intent.get("target") != f"https://coconala.com/talkrooms/{_text(intent.get('talkroom_id'))}"):
         raise ValueError("invalid consultation authorization")
     owner_dir = root / "evidence" / "agent-PAID_ANSWER_OWNER"
-    verifier_dir = root / "evidence" / "agent-PAID_ANSWER_VERIFY"
     owner = _consultation_runner_result(owner_dir, task_label="paid-answer-owner",
                                         task_class="escalation-agent", model=PAID_DECISION_MODEL,
                                         started_ns=0)
-    verifier = _consultation_runner_result(verifier_dir, task_label="paid-answer-verifier",
-                                           task_class="escalation-agent", model=PAID_DECISION_MODEL,
-                                           started_ns=0)
     owner_result_path = _consultation_result_path(owner_dir)
-    verifier_result_path = _consultation_result_path(verifier_dir)
     if (hashlib.sha256(owner_result_path.read_bytes()).hexdigest()
             != intent.get("owner_result_sha256")
             or hashlib.sha256((owner_dir / "summary.json").read_bytes()).hexdigest()
             != intent.get("owner_summary_sha256")
-            or hashlib.sha256(verifier_result_path.read_bytes()).hexdigest()
-            != intent.get("verifier_result_sha256")
-            or hashlib.sha256((verifier_dir / "summary.json").read_bytes()).hexdigest()
-            != intent.get("verifier_summary_sha256")
-            or intent.get("reviewer_model") != PAID_DECISION_MODEL):
+            or intent.get("owner_model") != PAID_DECISION_MODEL):
         raise ValueError("consultation review proof changed")
     _validate_consultation_result(owner, expected, message=message)
-    _validate_consultation_result(verifier, expected, message=message)
-    if (owner.get("status") != "ok"
-            or verifier.get("status") != "ok" or verifier.get("issues")):
+    if owner.get("status") != "ok" or owner.get("issues"):
         raise ValueError("consultation review blocked")
     answer = _load(root / "delivery" / "paid-answer.json")
     if (answer.get("status") != "answer" or answer.get("message") != message
@@ -3126,7 +3378,11 @@ def _run_consultation_review(args, item_path: Path, root: Path, feedback: str, b
         else:
             attachment_instruction = "No buyer attachments are present; reviewed_attachments must be an empty array."
         owner_prompt.write_text(
-            "You are the Sol paid answer owner. Read-only: never submit or send anything. "
+            "You are the Sol paid answer owner. Never submit or send anything. You may run local read commands and "
+            "research the public web with installed CLI tools when the buyer asks for current or externally verifiable "
+            "facts. Before repeating any external fact not proved by the compiled project sources, fetch its official "
+            "page with the installed crwl CLI so the command output is preserved in your runner stdout evidence; include "
+            "the exact official URL in the answer. If it cannot be fetched, label it unverified instead of repeating it. "
             f"Read {context}, {root / 'requirements/live-buyer-reply.json'}, and the current semantic decision at "
             f"{root / 'context/paid-work-decision.json'}. The answer must satisfy that decision's required_output and "
             f"required_effect without contradicting primary evidence. {attachment_instruction} "
@@ -3142,11 +3398,15 @@ def _run_consultation_review(args, item_path: Path, root: Path, feedback: str, b
                    "--prompt-file", str(owner_prompt), "--schema", str(schema),
                    "--evidence-dir", str(owner_evidence), "--task-label", "paid-answer-owner",
                    "--escalation-reason", "Sol owner composes the exact paid buyer answer",
-                   "--loop", "gig", "--workdir", str(root), "--timeout-seconds", "1800", "--read-only"]
+                   "--loop", "gig", "--workdir", str(root), "--timeout-seconds", "1800"]
         for image in images:
             command += ["--image", str(image)]
+        command = _private_model_runner(root, command, "paid-answer-owner")
+        project_snapshot = _project_identity_snapshot(root, owner_evidence)
         owner_started_ns = time.time_ns()
-        _run(_private_model_runner(root, command, "paid-answer-owner"), "remote_builder")
+        _run(command, "remote_builder")
+        if _project_identity_snapshot(root, owner_evidence) != project_snapshot:
+            raise Failure("remote_builder")
         owner = _consultation_runner_result(
             owner_evidence, task_label="paid-answer-owner", task_class="escalation-agent",
             model=PAID_DECISION_MODEL, started_ns=owner_started_ns,
@@ -3157,58 +3417,7 @@ def _run_consultation_review(args, item_path: Path, root: Path, feedback: str, b
             raise Failure("remote_builder") from error
         if owner.get("status") != "ok":
             raise Failure("remote_builder")
-
-        (base / "answer-review").mkdir(parents=True, exist_ok=True)
-        verifier_prompt = base / "answer-review" / "verifier.prompt.txt"
-        verifier_prompt.write_text(
-            "You are a fresh read-only Sol reviewer. Never mutate, submit, send, or write business state. "
-            f"Independently read {context}, {root / 'requirements/live-buyer-reply.json'}, and the current semantic "
-            f"decision at {root / 'context/paid-work-decision.json'}. Trace every claimed completed or verified effect "
-            f"through {root / 'delivery/paid-remote-result.json'} and its referenced after_evidence when present; do not "
-            f"infer live state from buyer-visible flags or an older request when primary execution evidence exists. Read "
-            f"every attached image, and "
-            f"each non-image buyer document with local read-only tools from "
-            f"{json.dumps([str(path) for path in documents], ensure_ascii=False)}. "
-            f"reviewed_attachments is internal review evidence: return exactly this list and no other project files: "
-            f"{json.dumps(expected, ensure_ascii=False)}. It does not mean those files will be sent to the buyer. "
-            "Attack omissions, unsafe instructions, invented facts, recipient/stage mistakes, failure to answer the exact "
-            "latest request, and attachment mismatch. If the candidate asks any question, search the entire cumulative "
-            "context and every read_these_first source for its answer; block the candidate when that answer already exists "
-            "or when useful non-blocked work could be produced without it. Return the exact candidate customer_message and attachments on PASS; "
-            "otherwise status=blocked with concrete repair issues. Candidate: "
-            + json.dumps(owner, ensure_ascii=False, sort_keys=True),
-            encoding="utf-8",
-        )
-        command = [sys.executable, str(args.agent_runner), "--task-class", "escalation-agent",
-                   "--candidate-model", PAID_DECISION_MODEL,
-                   "--prompt-file", str(verifier_prompt), "--schema", str(schema),
-                   "--evidence-dir", str(verifier_evidence), "--task-label", "paid-answer-verifier",
-                   "--escalation-reason", "Fresh Sol review before a paid buyer answer",
-                   "--loop", "gig", "--workdir", str(root), "--timeout-seconds", "1800", "--read-only"]
-        for image in images:
-            command += ["--image", str(image)]
-        verifier_started_ns = time.time_ns()
-        _run(_private_model_runner(root, command, "paid-answer-verifier"), "remote_verifier")
-        checked = _consultation_runner_result(
-            verifier_evidence, task_label="paid-answer-verifier", task_class="escalation-agent",
-            model=PAID_DECISION_MODEL, started_ns=verifier_started_ns,
-        )
-        try:
-            _validate_consultation_result(
-                checked, expected, message=_text(owner.get("customer_message")) if checked.get("status") == "ok" else None,
-            )
-        except (AttributeError, ValueError, TypeError) as error:
-            raise Failure("remote_verifier") from error
-        if checked.get("status") == "ok" and not checked.get("issues"):
-            break
-        issues = [_text(issue) for issue in checked.get("issues") or [] if _text(issue)]
-        if not issues or review_round == 3:
-            _write(root / "context" / "paid-review-state.json", {
-                "version": 1, "state": "REPAIR_PENDING", "mode": "answer",
-                "buyer_feedback_sha256": feedback, "requirements_sha256": requirements_sha256,
-                "round": review_round, "findings": issues,
-            })
-            raise Failure("remote_verifier")
+        break
 
     if _requirements_snapshot(root) != requirements_snapshot or _consultation_attachments(root)[0] != expected:
         raise Failure("requirements_toctou")
@@ -3227,9 +3436,7 @@ def _run_consultation_review(args, item_path: Path, root: Path, feedback: str, b
            "requirements_sha256": requirements_sha256, "message_sha256": message_sha256,
            "owner_result_sha256": hashlib.sha256(_consultation_result_path(owner_evidence).read_bytes()).hexdigest(),
            "owner_summary_sha256": hashlib.sha256((owner_evidence / "summary.json").read_bytes()).hexdigest(),
-           "verifier_result_sha256": hashlib.sha256(_consultation_result_path(verifier_evidence).read_bytes()).hexdigest(),
-           "verifier_summary_sha256": hashlib.sha256((verifier_evidence / "summary.json").read_bytes()).hexdigest(),
-           "reviewer_model": PAID_DECISION_MODEL})
+           "owner_model": PAID_DECISION_MODEL})
     _write(delivery / "paid-answer.json", {"version": 1, "status": "answer", "message": message,
            "requirements_sha256": requirements_sha256, "message_sha256": message_sha256})
     _validate_consultation_authorization(root, feedback)
@@ -3238,7 +3445,7 @@ def _run_consultation_review(args, item_path: Path, root: Path, feedback: str, b
         "buyer_feedback_sha256": feedback, "requirements_sha256": requirements_sha256,
         "round": review_round, "message_sha256": message_sha256,
     })
-    return _consultation_result_path(verifier_evidence)
+    return _consultation_result_path(owner_evidence)
 
 
 def _run_remote_repair(args, item_path: Path, root: Path, feedback: str, base: Path) -> Path:
@@ -3507,6 +3714,7 @@ def _write_file_effect(args, item_path: Path, output: Path, prepared: dict[str, 
             "acceptance_evidence_path", "acceptance_status", "package_sha256",
             "acceptance_delta", "recipient_access_required",
         ) if key in evidence}, "delivery_evidence": evidence, "blockers": blockers}
+        cadence["customer_message"] = _text(manifest.get("customer_message"))
         # A targeted DOM readback is intentionally sparse.  It may discover a new
         # reason to downgrade/cancel a send, but it must not erase a buyer hold
         # already derived from the complete project context.

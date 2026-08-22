@@ -4,9 +4,11 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from job_search_loop import telegram
 from job_search_loop.ledger import Ledger
+from job_search_loop.outbox import DeliveryUncertain
 
 
 class ApplicationReportingTests(unittest.TestCase):
@@ -146,6 +148,40 @@ print(json.dumps({"messageId": "901"}))
             self.assertIn("Agent Product Engineer", calls[0]["message"])
             self.assertIn("https://jobs.example/dream", calls[0]["message"])
             self.assertEqual(result[0]["message_id"], "902")
+
+    def test_delivery_uncertain_is_reported_without_crashing_inbox(self):
+        reporting = importlib.import_module("job_search_loop.application_reporting")
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            row = {
+                "application_id": "application-1",
+                "company": "Dream AI",
+                "title": "Agent Product Engineer",
+                "canonical_url": "https://jobs.example/dream",
+                "resume_path": str(root / "resume.pdf"),
+                "resume_sha256": "a" * 64,
+            }
+            with patch.object(
+                reporting.Ledger,
+                "submitted_resume_reports",
+                return_value=[row],
+            ):
+                result = reporting.deliver_submitted_resumes(
+                    ledger_path=root / "ledger.sqlite3",
+                    outbox_path=root / "outbox.sqlite3",
+                    media_root=root / "media",
+                    sender=lambda **_: (_ for _ in ()).throw(
+                        DeliveryUncertain("delivery outcome is unknown")
+                    ),
+                )
+            self.assertEqual(
+                result,
+                [{
+                    "application_id": "application-1",
+                    "status": "delivery_unknown",
+                    "message_id": None,
+                }],
+            )
 
 
 if __name__ == "__main__":

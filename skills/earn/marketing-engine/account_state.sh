@@ -19,7 +19,7 @@ except Exception:
 usable = []
 for account in accounts if isinstance(accounts, list) else []:
     status = str(account.get("status") or "").lower()
-    if not (status.startswith("ready") or status.startswith("warming")):
+    if not (status.startswith("ready") or status.startswith("warming") or status.endswith("_ready")):
         continue
     if any(word in status for word in ("poison", "frozen", "blocked")):
         continue
@@ -53,7 +53,7 @@ except Exception:
 count = 0
 for account in accounts if isinstance(accounts, list) else []:
     status = str(account.get("status") or "").lower()
-    if not (status.startswith("ready") or status.startswith("warming")):
+    if not (status.startswith("ready") or status.startswith("warming") or status.endswith("_ready")):
         continue
     if any(word in status for word in ("poison", "frozen", "blocked")):
         continue

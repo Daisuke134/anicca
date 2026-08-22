@@ -343,6 +343,9 @@ raise SystemExit(0)
             learning = plistlib.loads(
                 (agents / "ai.anicca.job-search-learning.plist").read_bytes()
             )
+            mercor = plistlib.loads(
+                (agents / "ai.anicca.job-search-mercor.plist").read_bytes()
+            )
             self.assertEqual(
                 daily["ProgramArguments"][0],
                 str(APP_ROOT / "scripts" / "run-daily.sh"),
@@ -361,6 +364,8 @@ raise SystemExit(0)
                 learning["StartCalendarInterval"],
                 {"Weekday": 1, "Hour": 9, "Minute": 15},
             )
+            self.assertEqual(mercor["ProgramArguments"][0], str(APP_ROOT / "scripts" / "run-mercor.sh"))
+            self.assertEqual(mercor["StartInterval"], 3600)
             self.assertTrue(
                 daily["StandardOutPath"].startswith(
                     str(private_root / "state" / "anicca" / "job-search")
@@ -415,6 +420,12 @@ raise SystemExit(0)
             learning_timer = (
                 unit_dir / "ai.anicca.job-search-learning.timer"
             ).read_text(encoding="utf-8")
+            mercor_service = (
+                unit_dir / "ai.anicca.job-search-mercor.service"
+            ).read_text(encoding="utf-8")
+            mercor_timer = (
+                unit_dir / "ai.anicca.job-search-mercor.timer"
+            ).read_text(encoding="utf-8")
             self.assertIn(
                 str(APP_ROOT / "scripts" / "run-daily.sh"), daily_service
             )
@@ -426,6 +437,8 @@ raise SystemExit(0)
                 str(APP_ROOT / "scripts" / "run-learning.sh"), learning_service
             )
             self.assertIn("OnCalendar=Sun *-*-* 09:15:00 Asia/Tokyo", learning_timer)
+            self.assertIn(str(APP_ROOT / "scripts" / "run-mercor.sh"), mercor_service)
+            self.assertIn("OnUnitActiveSec=1h", mercor_timer)
             self.assertIn("Persistent=true", learning_timer)
             encoded = "\n".join(
                 path.read_text(encoding="utf-8") for path in unit_dir.iterdir()
@@ -439,7 +452,8 @@ raise SystemExit(0)
                 recorded[1],
                 "--user enable --now ai.anicca.job-search-daily.timer "
                 "ai.anicca.job-search-inbox.timer "
-                "ai.anicca.job-search-learning.timer",
+                "ai.anicca.job-search-learning.timer "
+                "ai.anicca.job-search-mercor.timer",
             )
 
     def test_portable_installer_dispatches_to_launchd_with_fake_adapter(self):

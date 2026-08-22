@@ -25,6 +25,7 @@ next natural process start resolves the new release without a plist reload.
 from __future__ import annotations
 
 import argparse
+import atexit
 import fcntl
 import json
 import os
@@ -49,6 +50,7 @@ OVERRIDES = Path(
 LAUNCH_AGENTS = Path.home() / "Library" / "LaunchAgents"
 RELEASE_ROOT = Path.home() / "gig" / "releases" / "life-manager"
 CURRENT_RELEASE = RELEASE_ROOT / "current"
+PIN_PATTERN = re.compile(r"(?P<pid>[1-9][0-9]*)-(?P<sha>[0-9a-f]{40})")
 PUBLISH_LOCK = RELEASE_ROOT / ".publish.lock"
 LAUNCHD_PREFLIGHT = REPO_ROOT / "skills" / "_shared" / "lib" / "launchd_preflight.py"
 LAUNCHD_PREFLIGHT_RECEIPT = Path.home() / ".local/state/life-manager/launchd-control-plane-preflight.json"
@@ -217,6 +219,22 @@ def build(sha: str) -> Path:
     return target
 
 
+def pin_release_for_process(path: Path) -> Path | None:
+    """Keep an immutable release alive while this wrapper may reuse it."""
+    release = next(
+        (parent for parent in path.resolve().parents if re.fullmatch(r"[0-9a-f]{40}", parent.name)),
+        None,
+    )
+    if release is None:
+        return None
+    pin_dir = release.parent / ".pins"
+    pin_dir.mkdir(exist_ok=True)
+    marker = pin_dir / f"{os.getpid()}-{release.name}"
+    marker.touch(exist_ok=True)
+    atexit.register(marker.unlink, missing_ok=True)
+    return marker
+
+
 def collect_old_releases() -> list[str]:
     """Remove reproducible releases except current, live, and one rollback copy."""
     if not RELEASE_ROOT.is_dir():
@@ -229,6 +247,20 @@ def collect_old_releases() -> list[str]:
         reverse=True,
     )
     protected = {CURRENT_RELEASE.resolve(strict=False)}
+    pin_dir = RELEASE_ROOT / ".pins"
+    if pin_dir.is_dir():
+        for marker in pin_dir.iterdir():
+            match = PIN_PATTERN.fullmatch(marker.name)
+            if match is None:
+                continue
+            try:
+                os.kill(int(match.group("pid")), 0)
+            except ProcessLookupError:
+                marker.unlink(missing_ok=True)
+            except PermissionError:
+                protected.add(RELEASE_ROOT / match.group("sha"))
+            else:
+                protected.add(RELEASE_ROOT / match.group("sha"))
     processes = subprocess.run(
         ["ps", "-axo", "command="], capture_output=True, text=True, check=False,
     )
@@ -299,6 +331,46 @@ def loaded_program(label: str) -> list[str]:
                 break
             argv.append(stripped)
     return argv
+
+
+def loaded_environment(label: str) -> dict[str, str]:
+    """Return the explicit environment launchd is actually holding."""
+    printed = subprocess.run(
+        ["launchctl", "print", f"gui/{os.getuid()}/{label}"],
+        capture_output=True, text=True,
+    )
+    if printed.returncode != 0:
+        return {}
+    environment, inside = {}, False
+    for line in printed.stdout.splitlines():
+        stripped = line.strip()
+        if stripped == "environment = {":
+            inside = True
+            continue
+        if inside:
+            if stripped == "}":
+                break
+            key, separator, value = stripped.partition(" => ")
+            if separator:
+                environment[key] = value
+    return environment
+
+
+def job_needs_activation(job: dict, table: dict[str, str]) -> bool:
+    """Detect both stale program paths and stale launchd-held configuration."""
+    desired = plist_for(job, table)
+    if loaded_program(job["label"]) != desired["ProgramArguments"]:
+        return True
+    loaded_env = loaded_environment(job["label"])
+    return any(loaded_env.get(key) != str(value)
+               for key, value in desired["EnvironmentVariables"].items())
+
+
+def skip_busy_for_requested_activation(
+    label: str, requested_jobs: set[str] | None,
+) -> bool:
+    """Only an explicit continuous-lane request may interrupt its supervisor."""
+    return requested_jobs is None or label not in CONTINUOUS_RELOADABLE
 
 
 def control_plane_available() -> bool:
@@ -459,9 +531,10 @@ def main() -> int:
         git("fetch", "--quiet", "origin", "main")
         sha = git("rev-parse", "origin/main")
         wanted = {job["label"] for job in manifest["jobs"]} - DEFAULT_EXCLUDED
+        _, stable_table = settings(CURRENT_RELEASE)
         behind = [
             job for job in manifest["jobs"] if job["label"] in wanted
-            and not any(str(CURRENT_RELEASE) in arg for arg in loaded_program(job["label"]))
+            and job_needs_activation(job, stable_table)
         ]
         if current_sha() == sha and not behind:
             removed = collect_old_releases()
@@ -479,7 +552,6 @@ def main() -> int:
             return 0
         if behind and not require_control_plane():
             return 75
-        _, stable_table = settings(CURRENT_RELEASE)
         for job in behind:
             activate(job, stable_table, release, False,
                      skip_busy=job["label"] not in CONTINUOUS_RELOADABLE)
@@ -508,13 +580,21 @@ def main() -> int:
 
     if not args.dry_run:
         publish(release)
-    wanted = ({label.strip() for label in args.jobs.split(",")} if args.jobs
+    requested_jobs = (
+        {label.strip() for label in args.jobs.split(",")} if args.jobs else None
+    )
+    wanted = (requested_jobs if requested_jobs is not None
               else {job["label"] for job in manifest["jobs"]} - DEFAULT_EXCLUDED)
     _, table = settings(CURRENT_RELEASE)
     if not args.dry_run and not require_control_plane():
         return 75
     failed = [job["label"] for job in manifest["jobs"] if job["label"] in wanted
-              and not activate(job, table, release, args.dry_run)]
+              and not activate(
+                  job, table, release, args.dry_run,
+                  skip_busy=skip_busy_for_requested_activation(
+                      job["label"], requested_jobs,
+                  ),
+              )]
     if failed:
         print(f"not activated: {', '.join(failed)}")
         return 1

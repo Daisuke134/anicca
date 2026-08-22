@@ -240,7 +240,7 @@ def _asset_contract_errors(root: Path, payload: dict[str, Any], artifact: Path |
     if not isinstance(required, list) or not isinstance(produced, list):
         return ["asset_contract_missing"]
     covered: dict[str, int] = {}
-    visual_hashes: set[str] = set()
+    has_visual_assets = False
     for asset in produced:
         if not isinstance(asset, dict):
             errors.append("artifact_asset_invalid")
@@ -275,20 +275,28 @@ def _asset_contract_errors(root: Path, payload: dict[str, Any], artifact: Path |
             continue
         covered[asset_id] = covered.get(asset_id, 0) + 1
         if mime.startswith("image/"):
-            visual_hashes.add(digest)
+            has_visual_assets = True
     for item in required:
         minimum = item.get("minimum_count") if isinstance(item, dict) else None
         if (not isinstance(item, dict) or not isinstance(minimum, int) or minimum < 1
                 or covered.get(str(item.get("asset_id") or ""), 0) < minimum):
             errors.append("required_asset_missing")
-    if visual_hashes:
+    if has_visual_assets:
         review = root / "evidence" / "controller-artifact-review" / str(payload.get("package_sha256") or "") / "review-manifest.json"
         try:
             receipt = json.loads(review.read_text(encoding="utf-8"))
-            inspected = {str(row.get("sha256") or "") for row in receipt.get("pages", []) if isinstance(row, dict)}
-            if receipt.get("artifact_sha256") != payload.get("package_sha256") or not visual_hashes.issubset(inspected):
+            pages = receipt.get("pages")
+            if (receipt.get("artifact_sha256") != payload.get("package_sha256")
+                    or not isinstance(pages, list) or not pages):
                 errors.append("required_visual_review_missing")
-        except (OSError, AttributeError, json.JSONDecodeError):
+            for row in pages or []:
+                page = Path(str(row.get("path") or "")).resolve()
+                page.relative_to(root)
+                if (not page.is_file()
+                        or _sha256(page) != str(row.get("sha256") or "")):
+                    errors.append("required_visual_review_missing")
+                    break
+        except (OSError, AttributeError, ValueError, json.JSONDecodeError):
             errors.append("required_visual_review_missing")
     return errors
 

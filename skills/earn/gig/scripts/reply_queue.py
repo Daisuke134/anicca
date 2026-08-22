@@ -205,15 +205,21 @@ def build_queue(snapshot: dict[str, Any], *, now: datetime | None = None) -> dic
     for row in snapshot.get("inquiries", []):
         if not isinstance(row, dict):
             continue
-        if row.get("reply_required") is not True or row.get("last_message_side") != "buyer":
+        seller_debt_reply = row.get("semantic_seller_debt_reply") is True
+        if row.get("reply_required") is not True or (
+            row.get("last_message_side") != "buyer" and not seller_debt_reply
+        ):
             continue
         talkroom_id = str(row["talkroom_id"])
         if talkroom_id in paid_talkroom_ids or row.get("contracted") is True:
             continue
-        if not row.get("buyer_sent_at"):
+        origin_value = row.get("buyer_sent_at") or (
+            row.get("seller_sent_at") if seller_debt_reply else None
+        )
+        if not origin_value:
             errors.append(f"inquiry:{talkroom_id}:missing_buyer_sent_at")
             continue
-        origin_at = _timestamp(row["buyer_sent_at"])
+        origin_at = _timestamp(origin_value)
         event_key = _event_key(row, talkroom_id, origin_at)
         if event_key is None:
             errors.append(f"inquiry:{talkroom_id}:missing_event_identity")
@@ -252,6 +258,8 @@ def build_queue(snapshot: dict[str, Any], *, now: datetime | None = None) -> dic
                 "semantic_context_sha256": context_sha256,
                 "semantic_receipt_version": row["semantic_receipt"].get("version"),
             })
+            if seller_debt_reply:
+                item["semantic_seller_debt_reply"] = True
         items.append(item)
     if errors:
         return {"status": "collector_unhealthy", "errors": errors, "items": []}

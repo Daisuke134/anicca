@@ -1,0 +1,19 @@
+{
+  "message_id": "mercor-message-synthetic-001",
+  "thread_id": "mercor-thread-synthetic-001",
+  "subject": "Mercor interview availability",
+  "company": "Mercor",
+  "role": "Software / AI / IT / data Evaluator",
+  "slots": [
+    {
+      "start": "2026-09-01T10:00:00+09:00",
+      "end": "2026-09-01T11:00:00+09:00",
+      "source_span": "September 1, 10:00–11:00 JST"
+    },
+    {
+      "start": "2026-09-02T15:00:00+09:00",
+      "end": "2026-09-02T16:00:00+09:00",
+      "source_span": "September 2, 15:00–16:00 JST"
+    }
+  ]
+}

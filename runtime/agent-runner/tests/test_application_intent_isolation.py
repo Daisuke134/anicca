@@ -1,5 +1,6 @@
 import json
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -38,6 +39,24 @@ class ApplicationIntentIsolationTest(unittest.TestCase):
         child_env = provider_process_env("codex", {}, self.source)
 
         self.assertEqual(child_env, self.source)
+
+    def test_codex_proxy_auth_is_loaded_even_with_openai_key(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            token_file = root / "proxy-token"
+            auth_file = root / "auth.json"
+            token_file.write_text("proxy-fixture\n", encoding="utf-8")
+            auth_file.write_text("{}\n", encoding="utf-8")
+            child_env = provider_process_env("codex", {
+                "automation_home": str(root / "automation"),
+                "auth_file": str(auth_file),
+                "model_providers": {"local_proxy": {
+                    "env_key": "CLIPROXY_API_KEY",
+                    "auth_token_file": str(token_file),
+                }},
+            }, {"OPENAI_API_KEY": "unrelated-fixture"})
+
+        self.assertEqual(child_env["CLIPROXY_API_KEY"], "proxy-fixture")
 
     def test_application_intent_planner_config(self):
         config_path = ROOT / "config.json"

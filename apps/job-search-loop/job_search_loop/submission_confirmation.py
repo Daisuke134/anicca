@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 import re
+import sqlite3
 import subprocess
 import unicodedata
 from datetime import datetime, timezone
@@ -244,6 +245,15 @@ def reconcile_confirmation_threads(
                             "message_id": message["message_id"],
                             "thread_id": thread_id,
                             "status": "ledger_fence_blocked",
+                        }
+                    )
+                    continue
+                except sqlite3.IntegrityError:
+                    blocked.append(
+                        {
+                            "message_id": message["message_id"],
+                            "thread_id": thread_id,
+                            "status": "ledger_integrity_blocked",
                         }
                     )
                     continue

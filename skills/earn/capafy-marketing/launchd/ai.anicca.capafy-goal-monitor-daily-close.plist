@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>CAPAFY_REPORT_KIND</key>
+		<string>daily_close</string>
+		<key>HOME</key>
+		<string>/Users/anicca</string>
+		<key>PATH</key>
+		<string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+	</dict>
+	<key>Label</key>
+	<string>ai.anicca.capafy-goal-monitor-daily-close</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/bin/bash</string>
+		<string>__REPO_ROOT__/skills/earn/capafy-marketing/capafy-goal-monitor.sh</string>
+	</array>
+	<key>RunAtLoad</key>
+	<false/>
+	<key>WorkingDirectory</key>
+	<string>__REPO_ROOT__</string>
+	<key>StandardErrorPath</key>
+	<string>__LIFE_MANAGER_HOME__/logs/capafy-goal-monitor-daily-close.err</string>
+	<key>StandardOutPath</key>
+	<string>__LIFE_MANAGER_HOME__/logs/capafy-goal-monitor-daily-close.out</string>
+	<key>StartCalendarInterval</key>
+	<dict>
+		<key>Hour</key>
+		<integer>23</integer>
+		<key>Minute</key>
+		<integer>50</integer>
+	</dict>
+</dict>
+</plist>

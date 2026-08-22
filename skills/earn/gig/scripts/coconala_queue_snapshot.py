@@ -59,6 +59,105 @@ except ModuleNotFoundError:  # imported directly by the unit-test loader
 
 _RETAINER_MODULE = None
 _POSTING_MODULE = None
+_DM_COLLECT_MODULE = None
+
+
+def _dm_collect_module():
+    global _DM_COLLECT_MODULE
+    if _DM_COLLECT_MODULE is None:
+        spec = importlib.util.spec_from_file_location(
+            "coconala_dm_collect_for_negotiate", Path(__file__).with_name("coconala_dm_collect.py")
+        )
+        if spec is None or spec.loader is None:
+            raise RuntimeError("cannot load coconala_dm_collect")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        _DM_COLLECT_MODULE = module
+    return _DM_COLLECT_MODULE
+
+
+def merge_verified_dm_attachments(dom: dict[str, Any], document: dict[str, Any]) -> None:
+    """Bind downloaded buyer files to the exact semantic message, fail closed."""
+    index = {
+        str(row.get("url") or ""): row
+        for row in document.get("attachment_index", []) if isinstance(row, dict)
+    }
+    semantic_rows = [
+        row for row in dom.get("messages", []) if isinstance(row, dict)
+    ]
+    document_rows = [
+        row for row in document.get("messages", []) if isinstance(row, dict)
+    ]
+    if len(semantic_rows) != len(document_rows):
+        raise CollectorUnhealthy("dm_attachment_message_identity_changed")
+    semantic_messages = {
+        str(row.get("message_id") or ""): row
+        for row in semantic_rows if row.get("message_id")
+    }
+    for message_index, message in enumerate(document_rows):
+        if not isinstance(message, dict) or message.get("side") != "buyer":
+            continue
+        attachments = message.get("attachments") if isinstance(message.get("attachments"), list) else []
+        if not attachments:
+            continue
+        target = semantic_messages.get(str(message.get("message_id") or ""))
+        if target is None and not message.get("message_id"):
+            indexed = semantic_rows[message_index]
+            if str(indexed.get("body") or "") == str(message.get("text") or ""):
+                target = indexed
+        if target is None:
+            raise CollectorUnhealthy("dm_attachment_message_identity_changed")
+        verified: list[dict[str, Any]] = []
+        for attachment in attachments:
+            row = index.get(str(attachment.get("url") or "")) if isinstance(attachment, dict) else None
+            if (
+                not isinstance(row, dict) or row.get("error")
+                or type(row.get("bytes")) is not int or row["bytes"] < 1
+                or type(row.get("sha256")) is not str
+                or not re.fullmatch(r"[0-9a-f]{64}", row["sha256"])
+            ):
+                raise CollectorUnhealthy("dm_attachment_unverified")
+            verified.append({
+                "filename": safe_filename(row.get("filename")),
+                "content_type": str(row.get("content_type") or "application/octet-stream"),
+                "size_bytes": row["bytes"], "sha256": row["sha256"],
+            })
+        target["verified_attachments"] = verified
+
+
+def enrich_verified_dm_attachments(
+    dom: dict[str, Any], *, helper: Path, thread_id: str, observed_at: str,
+) -> None:
+    """Use the existing authenticated DM collector before semantic judgement."""
+    state_root = Path(os.environ.get("GIG_STATE_DIR") or (Path.home() / "gig"))
+    project_root = state_root / "direct-message-materials" / safe_name(thread_id)
+    secure_directory(project_root)
+    result = _dm_collect_module().collect(
+        helper=helper, project_root=project_root, buyer="", thread_id=thread_id,
+        observed_at=observed_at, owner=os.environ.get("CLOAK_BROWSER_OWNER") or None,
+        fetch_attachments=True,
+    )
+    if result.get("ok") is not True or result.get("attachment_errors"):
+        raise CollectorUnhealthy("dm_attachment_capture_failed")
+    try:
+        document = json.loads(Path(str(result["path"])).read_text(encoding="utf-8"))
+    except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
+        raise CollectorUnhealthy("dm_attachment_evidence_invalid") from error
+    merge_verified_dm_attachments(dom, document)
+
+
+def merge_durable_dm_attachments(dom: dict[str, Any], thread_id: str) -> None:
+    """Rebind the already verified manifest during the final pre-click read."""
+    state_root = Path(os.environ.get("GIG_STATE_DIR") or (Path.home() / "gig"))
+    path = (
+        state_root / "direct-message-materials" / safe_name(thread_id)
+        / "source" / "dm" / f"thread-{safe_name(thread_id)}-full.json"
+    )
+    try:
+        document = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, TypeError, ValueError, json.JSONDecodeError) as error:
+        raise CollectorUnhealthy("dm_attachment_evidence_invalid") from error
+    merge_verified_dm_attachments(dom, document)
 
 
 def _posting_module():
@@ -2006,18 +2105,23 @@ class DefaultTab:
         if self.hidden:
             self._stop_process()
         elif self.target_id:
-            subprocess.run(
-                [
-                    "python3",
-                    str(self.helper),
-                    "close",
-                    self.target_id,
-                    "--owner",
-                    self.owner,
-                ],
-                stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL, timeout=10, check=False,
-            )
+            try:
+                subprocess.run(
+                    [
+                        "python3",
+                        str(self.helper),
+                        "close",
+                        self.target_id,
+                        "--owner",
+                        self.owner,
+                    ],
+                    stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL, timeout=10, check=False,
+                )
+            except (OSError, subprocess.TimeoutExpired):
+                # DOM capture is already complete. A stale temporary target is
+                # cleanup debt, not evidence that the authenticated read failed.
+                pass
 
 
 async def call(
@@ -3393,6 +3497,10 @@ def main() -> int:
                 inquiry_dom = asyncio.run(inspect_message_page(
                     tab.ws, DIRECT_MESSAGE_EXPRESSION, thread_url,
                 ))
+            enrich_verified_dm_attachments(
+                inquiry_dom, helper=args.cdp_helper, thread_id=talkroom_id,
+                observed_at=observed_at,
+            )
             source_dom = inquiry_dom
             inquiry = {
                 "talkroom_id": talkroom_id,
@@ -3655,6 +3763,10 @@ def main() -> int:
                     inquiry_dom = asyncio.run(inspect_message_page(
                         tab.ws, DIRECT_MESSAGE_EXPRESSION, inquiry["talkroom_url"],
                     ))
+                enrich_verified_dm_attachments(
+                    inquiry_dom, helper=args.cdp_helper, thread_id=talkroom_id,
+                    observed_at=observed_at,
+                )
                 cached_receipt = reusable_semantic_receipt(
                     prior, inquiry_dom, semantic_judge, semantic_module,
                 )

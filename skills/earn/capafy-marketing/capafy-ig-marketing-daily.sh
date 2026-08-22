@@ -4,7 +4,7 @@ LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")
 export LIFE_MANAGER_REPO
 # capafy-ig-marketing-daily.sh — B1-B4 IG line — DETERMINISTIC daily trigger for the Capafy
 # Instagram marketing loop. Active IG account comes only from clip-accounts-capafy.json.
-# launchd -> this script -> shared agent runner: provision-or-selector -> copy -> faceless video
+# launchd -> this script -> shared agent runner: provision-or-selector -> copy -> canonical video
 # (B3) -> instagrapi post (B4) -> ledger -> report. Copy is agent judgment, NEVER hardcoded here.
 # LaunchAgent: ai.anicca.capafy-ig-marketing-daily at 16:00 local; stdout/stderr use LOG below.
 #
@@ -12,6 +12,10 @@ export LIFE_MANAGER_REPO
 #   NON-COMMERCIAL until the reach-health marker exists. ★
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin:$PATH"
 set -uo pipefail
+for ENV_FILE in "$HOME/.local/state/life-manager/.env" "$HOME/.openclaw/.env"; do
+  [ -f "$ENV_FILE" ] || continue
+  set -a; . "$ENV_FILE" 2>/dev/null; set +a
+done
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=account_state.sh
 . "$SCRIPT_DIR/account_state.sh"
@@ -56,7 +60,7 @@ fi
 
 # ── All-skills bio landing refreshes on EVERY pass, including cadence no-op days. ──
 # netlify-cli writes ./.netlify relative to cwd; launchd starts at / (no WorkingDirectory) -> mkdir '//.netlify' ENOENT. cd keeps it inside the skill dir.
-/opt/homebrew/bin/python3 "$LIFE_MANAGER_REPO/skills/earn/capafy-marketing/scripts/build_landing.py" >>"$LOG" 2>&1 && ( cd "$LIFE_MANAGER_REPO/skills/earn/capafy-marketing" && netlify deploy --prod --dir "$LIFE_MANAGER_REPO/skills/earn/capafy-marketing/site" --site "$LANDING_SITE_ID" ) >>"$LOG" 2>&1 || echo "landing regenerate/deploy failed (non-fatal)" >>"$LOG"
+/opt/homebrew/bin/python3 "$LIFE_MANAGER_REPO/skills/earn/capafy-marketing/scripts/build_landing.py" >>"$LOG" 2>&1 && ( cd "$LIFE_MANAGER_REPO/skills/earn/capafy-marketing" && /opt/homebrew/bin/npx --yes netlify-cli@27.1.2 deploy --prod --dir "$LIFE_MANAGER_REPO/skills/earn/capafy-marketing/site" --site "$LANDING_SITE_ID" ) >>"$LOG" 2>&1 || echo "landing regenerate/deploy failed (non-fatal)" >>"$LOG"
 
 # ── WARMUP GATE: decide DRY vs LIVE. Creation date is day1; day1-2 DRY; LIVE from day3. ──
 WARM_DAY="$(capafy_ig_warming_day "$IG_STARTED_WARMING")"
@@ -88,8 +92,23 @@ sys.exit(0 if last and (time.time()-last)<72000 else 1)
 PY
 then
   echo "cadence gate: last IG Reel < 20h ago — no-op." >>"$LOG"
-  touch "$LAST_PASS_MARKER" 2>/dev/null || true
+  touch "$LAST_PASS_MARKER" || exit 2
   exit 0
+fi
+
+# Select exactly once, read-only. Rotation is committed only after a new native
+# Reel row for this exact Agent is verified below.
+SELECTED_JSON='{}'
+SELECTED_AGENT_ID=''
+PRE_IG_ROWS=0
+if [ "$PROVISION_NEEDED" = "no" ]; then
+  SELECTED_JSON="$(/opt/homebrew/bin/python3 "$SCRIPT_DIR/scripts/select_listing.py")" || {
+    echo "evidence-ready listing selection failed: $SELECTED_JSON" >>"$LOG"
+    exit 1
+  }
+  SELECTED_AGENT_ID="$(printf '%s' "$SELECTED_JSON" | /opt/homebrew/bin/python3 -c 'import json,sys; print(json.load(sys.stdin).get("agent_id") or "")')"
+  [ -n "$SELECTED_AGENT_ID" ] || exit 1
+  [ -f "$IG_LEDGER" ] && PRE_IG_ROWS="$(wc -l < "$IG_LEDGER" | tr -d ' ')"
 fi
 
 PROVISION_PROMPT="$(
@@ -116,13 +135,13 @@ PROVISION GATE: provision_needed='"$PROVISION_NEEDED"', reason='"${PROVISION_REA
 
 '"$PROVISION_PROMPT"'
 
-STEP1 SELECT (tool): python3 $LIFE_MANAGER_REPO/skills/earn/capafy-marketing/scripts/select_listing.py  → one online Capafy listing {agent_id,name,desc,url}.
+STEP1 SELECTED (deterministic caller; do not call selector again): '"$SELECTED_JSON"'. Use exactly this Agent and its evidence_source. Never advance rotation during exploration.
 
 COMMERCIAL GATE: commercial_ok='"$COMMERCIAL_OK"'. While commercial_ok=no, EVERY post is NON-COMMERCIAL: pure-info caption ("here is a Claude skill that does X" — NO "buy/subscribe/link in bio" push), and DO NOT add any Capafy link to the bio yet. This avoids the day-0 commercial-link suspension trigger while we measure reach. Only when commercial_ok=yes do you add the bio link + a soft CTA.
 
 STEP2 COPY (YOUR judgment, no template): from name+desc write (a) a Reel caption (hook + what the skill does; if commercial_ok=yes add a soft "link in bio" CTA, else pure info, NO push, NO link in caption/comment — IG comment links are unclickable) and (b) a one-line on-screen hook for the video. Before writing, if $LIFE_MANAGER_REPO/skills/earn/capafy-marketing/IG_BEST_PRACTICES.md exists, read it and follow its measured winning patterns; if absent, use your normal judgment.
 
-STEP3 VIDEO (B3, faceless engine): write YOUR 30-45s voiceover script about THIS listing (hook + what it kills + what it does + "link in bio" CTA; topic = the skill, not generic finance) to a file, then build ONE 9:16 mp4 with:  BROLL_QUERY="<a b-roll query that matches the listing category>" bash ~/.claude/skills/faceless-money-factory/scripts/run-daily.sh <your-script-file> en  . ★Set BROLL_QUERY to topic-appropriate stock footage, NOT the finance default (e.g. YouTube Script Writer -> "video editing laptop creator", Lead Magnet Generator -> "marketing office laptop", a coding skill -> "programmer typing code"). Without BROLL_QUERY the engine falls back to finance "money" b-roll, which mismatches a Capafy skill.★ Gate: only proceed if the mp4 exists and is 1080x1920 9:16.
+STEP3 VIDEO (B3, APPROVED HyperFrames V4 contract): create one unique run directory below $HOME/.local/state/life-manager/artifacts/capafy/ig/. Find a repo-owned test fixture or immutable live output receipt for THIS selected listing; do not invent a result from its description. If no source exists, fail before rendering/posting. Use `$LIFE_MANAGER_REPO/skills/video/hyperframes/capafy-o13-review/` only as the approved visual/technical reference; copy its HyperFrames 0.8.8 project shape into the run directory and author four listing-specific 1080x1920 scenes that visibly match the narration: pain/raw input -> source evidence -> transformation -> verified output/CTA. Do not reuse O13 text for another listing. Generate four separate scene narration clips with free `edge-tts --voice en-US-AndrewNeural`, constrain each clip to its matching visual scene window, join them with zero scene-boundary crossings, and normalize the final mix near -16 LUFS. The rejected Samantha and Indian-accent Mona voices are forbidden. Render through pinned `npx --yes hyperframes@0.8.8 render`; the old canonical-renderer and generic text-card fallback are forbidden. Gate before POST: HyperFrames check/lint passes; final MP4 is 1080x1920, about 30 seconds, H.264/AAC; four scene files are present; the source path/hash, selected Agent ID, scene timings, voice, output hash and inspection frames are saved in a manifest; inspect full-resolution frames from all four scenes and reject blank rectangles, tiny text, mismatched narration/content, generic b-roll, or reused O13 copy. A render, inspection, evidence, or audio-sync failure is terminal; never post a fallback.
 
 STEP4 POST (B4, shared instagrapi poster): CDP_PORT='"$IG_PORT"' ~/.cache/instagrapi-venv/bin/python $LIFE_MANAGER_REPO/skills/earn/marketing-engine/poster.py --video <mp4> --caption-file <caption> --handle '"$IG_HANDLE"' --port '"$IG_PORT"' --accounts-path '"$ACCOUNTS_FILE"' --live . The poster must load ~/.cloak/instagrapi-'"$IG_HANDLE"'.json as tier1 and use session_owner=instagrapi from the supplied Capafy state, which forbids browser sessionid fallback. Only run when MODE=--live; if MODE=DRY do not post. If it returns ChallengeRequired, stop and report; never retry-login. Capture post_url.
 
@@ -136,15 +155,39 @@ STEP7 REPORT — MANDATORY every pass. Send to the Telegram target in CAPAFY_TEL
   (b) the message body MUST contain: the promoted listing name + agent_id, the mode (DRY or LIVE), the Reel public URL (or "DRY — not posted" on a dry pass), and the FULL caption text verbatim (the exact caption you wrote for the Reel).
   On a DRY pass you STILL send this once (video + full caption + which listing) so Dais can review the creative before go-live — you just do NOT publish to IG. Confirm the send returned a real message id; also AgentMail via loop-report if that path exists.
 
-FINALLY touch '"$LAST_PASS_MARKER"'. A DRY pass, a deferred cadence pass, or a caught error is a clean finish, never a hang.'
+Do not write '"$LAST_PASS_MARKER"'; the deterministic wrapper owns that heartbeat and writes it only after this runner exits 0. A DRY pass or a deferred cadence pass is a clean finish.'
 
 EVIDENCE_DIR="$HOME/.local/state/life-manager/state/agent-runner-evidence/${INSTANCE}-ig-marketing/$(date +%s)-$$"
 printf '%s\n' "$PROMPT" | "$RUN_AGENT" \
-  --task-class tool-agent \
+  --task-class marketing-agent \
   --evidence-dir "$EVIDENCE_DIR" \
   --task-label "${INSTANCE}-ig-marketing-daily" \
   --loop capafy >>"$LOG" 2>&1
 RC=$?
+if [ "$RC" -eq 0 ] && [ "$PROVISION_NEEDED" = "no" ] && [ "$MODE_FLAG" = "--live" ]; then
+  VERIFIED_POST="$(/opt/homebrew/bin/python3 - "$IG_LEDGER" "$PRE_IG_ROWS" "$SELECTED_AGENT_ID" <<'PY'
+import json, pathlib, sys
+path, before, agent_id = pathlib.Path(sys.argv[1]), int(sys.argv[2]), sys.argv[3]
+rows = path.read_text().splitlines()[before:] if path.is_file() else []
+for line in rows:
+    try:
+        row = json.loads(line)
+    except Exception:
+        continue
+    if str(row.get("agent_id")) == agent_id and str(row.get("reel_url") or "").startswith("https://www.instagram.com/reel/"):
+        print(row["reel_url"])
+        raise SystemExit
+print("")
+PY
+)"
+  if [ -z "$VERIFIED_POST" ]; then
+    echo "live pass produced no verified native Reel for selected Agent $SELECTED_AGENT_ID" >>"$LOG"
+    RC=3
+  else
+    /opt/homebrew/bin/python3 "$SCRIPT_DIR/scripts/select_listing.py" --commit-agent-id "$SELECTED_AGENT_ID" >>"$LOG" 2>&1 || RC=4
+  fi
+fi
 echo "=== capafy-ig-marketing-daily done rc=$RC $(date '+%F %T %Z') ===" >>"$LOG"
-touch "$LAST_PASS_MARKER" 2>/dev/null || true
+[ "$RC" -eq 0 ] || exit "$RC"
+touch "$LAST_PASS_MARKER" || exit 2
 exit 0

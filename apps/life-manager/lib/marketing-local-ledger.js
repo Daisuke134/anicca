@@ -784,6 +784,49 @@ function createMarketingLocalLedger(options = {}) {
     });
   }
 
+  function correctReceiptDirectUrl(input = {}) {
+    const tenantId = identifier(input.tenantId ?? input.tenant_id, "local ledger tenant id");
+    const jobId = identifier(input.jobId ?? input.job_id, "local ledger job id");
+    if (input.confirmation !== "CORRECT_CAPTION_MATCHED_DIRECT_URL") {
+      throw new Error("local ledger receipt correction confirmation is invalid");
+    }
+    const receipt = input.receipt;
+    if (!receipt || typeof receipt !== "object" || Array.isArray(receipt)) {
+      throw new Error("local ledger receipt correction is invalid");
+    }
+    return withLock(() => {
+      const state = snapshot();
+      const job = jobFor(state, tenantId, jobId);
+      const retained = receiptFor(state, tenantId, jobId);
+      if (!job || job.status !== "completed" || job.effect_class === "none" || !retained) {
+        throw new Error("local ledger receipt is not correctable");
+      }
+      if (isDeepStrictEqual(retained, receipt)) return clone(job);
+      const { public_url: retainedUrl, ...retainedLineage } = retained;
+      const { public_url: correctedUrl, ...correctedLineage } = receipt;
+      if (
+        !isDeepStrictEqual(retainedLineage, correctedLineage)
+        || typeof retainedUrl !== "string" || !retainedUrl
+        || typeof correctedUrl !== "string" || !correctedUrl
+        || retainedUrl === correctedUrl
+      ) {
+        throw new Error("local ledger correction may only replace the direct URL");
+      }
+      const observedAt = nowInstant(now);
+      append(receiptsFile, {
+        schema_version: 1, kind: "receipt", tenant_id: tenantId, job_id: jobId,
+        attempt: job.attempt, receipt: clone(receipt), correction: "caption_matched_direct_url",
+        corrected_at: observedAt,
+      });
+      atomicJson(path.join(receiptsDirectory, `${keyFor(tenantId, jobId)}.json`), {
+        schema_version: 1, tenant_id: tenantId, job_id: jobId, receipt,
+      });
+      const corrected = { ...job, receipt_corrected_at: observedAt, updated_at: observedAt };
+      append(jobsFile, { schema_version: 1, kind: "job", event: "receipt_correct", job: corrected });
+      return clone(corrected);
+    });
+  }
+
   function readJob(input = {}) {
     const tenantId = identifier(input.tenantId ?? input.tenant_id, "local ledger tenant id");
     const jobId = identifier(input.jobId ?? input.job_id, "local ledger job id");
@@ -807,6 +850,7 @@ function createMarketingLocalLedger(options = {}) {
     failJob: async (input) => failJob(input),
     retryJob: async (input) => retryJob(input),
     resolveReconciliation: async (input) => resolveReconciliation(input),
+    correctReceiptDirectUrl: async (input) => correctReceiptDirectUrl(input),
     readJob: async (input) => readJob(input),
     readReceipt: async (input) => readReceipt(input),
   });

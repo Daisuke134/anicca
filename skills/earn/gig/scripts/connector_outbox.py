@@ -848,9 +848,17 @@ class ConnectorOutbox:
             next_revision = int(row["revision"]) + (
                 1 if current_intent_state is not None else 0
             )
-            if now < blocked_at or now < next_attempt_at:
-                # Evaluated FIRST on purpose: a clock that stepped backwards must
-                # produce "not yet", never a permanent dead letter.
+            if now < blocked_at:
+                # A clock that stepped backwards must produce "not yet", never a
+                # permanent dead letter.
+                decision, reason = "wait", "backoff_open"
+            elif attempts >= cap:
+                # The block itself is the durable authoritative-absence receipt for
+                # the final attempt. Waiting through one more backoff cannot create a
+                # new send opportunity; it only leaves terminal work looking active.
+                decision = "dlq"
+                reason = f"revive_attempts_exhausted:{rejection_code or 'unknown'}"
+            elif now < next_attempt_at:
                 decision, reason = "wait", "backoff_open"
             elif int(row["active_siblings"]) > 0:
                 # enqueue() parks a new buyer event on a blocked successor while the
@@ -861,9 +869,6 @@ class ConnectorOutbox:
                 decision, reason = "skipped", "thread_has_active_action"
             elif next_revision > MAX_REVISIONS_PER_ACTION:
                 decision, reason = "dlq", "revision_budget_exhausted"
-            elif attempts >= cap:
-                decision = "dlq"
-                reason = f"revive_attempts_exhausted:{rejection_code or 'unknown'}"
             elif current_intent_state is not None and current_intent_state != "superseded":
                 # The blocked row still owns a live intent: reviving it would
                 # resurrect an un-superseded revision.  Left for the reconcile
@@ -1245,10 +1250,14 @@ class ConnectorOutbox:
                       AND a.dlq_at IS NULL
                       AND i.state='superseded'
                       AND i.rejection_code='submit_rejected_sending_unavailable'
-                      AND a.revive_attempts<3
                     ORDER BY a.created_at,a.action_id"""
             ).fetchall()
-        return [dict(row) for row in rows]
+        return [
+            dict(row) for row in rows
+            if int(row["revive_attempts"]) < blocked_revive_attempt_cap(
+                str(row["rejection_code"]),
+            )
+        ]
 
     def revive_sending_available(
         self, action_id: int, *, expected_revision: int, now: int,
@@ -2128,6 +2137,27 @@ class ConnectorOutbox:
         action_id = int(action["action_id"])
         successor = None
         if intent["rejection_code"] in SERVER_REJECTION_CODES:
+            attempts = max(0, int(action["revive_attempts"]))
+            attempt_cap = blocked_revive_attempt_cap(str(intent["rejection_code"]))
+            if attempts >= attempt_cap:
+                reason = f"revive_attempts_exhausted:{intent['rejection_code']}"
+                closure = self._dead_letter(
+                    connection,
+                    action,
+                    reason=reason,
+                    attempts=attempts,
+                    attempts_kind="revive",
+                    now=observed_at,
+                )
+                connection.execute(
+                    """UPDATE connector_actions
+                       SET owner=NULL,lease_until=0,updated_at=? WHERE action_id=?""",
+                    (observed_at, action_id),
+                )
+                self._release_slot(connection, action_id)
+                exhausted = dict(self._action(connection, action_id))
+                exhausted["revive_attempts_exhausted"] = True
+                return exhausted, closure
             successor = connection.execute(
                 """SELECT * FROM connector_actions
                    WHERE platform=? AND thread_id=? AND state='blocked'

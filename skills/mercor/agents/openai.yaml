@@ -1,0 +1,4 @@
+interface:
+  display_name: "Mercor"
+  short_description: "Safe Mercor applications inside Life Manager"
+  default_prompt: "Use $mercor through Life Manager's Job Hunter lane for a grounded Mercor application pass."

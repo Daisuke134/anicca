@@ -13,12 +13,13 @@ x_post.py (--url/--tweet/--reply).
 The copy is NOT written here (that is the agent's judgment, per the skill's design).
 This tool only selects + resolves the URL + does bookkeeping.
 """
-import json, os, subprocess, sys, time
+import argparse, json, os, subprocess, sys, time
 from pathlib import Path
 
 REPO_ROOT = Path(os.environ.get("LIFE_MANAGER_REPO", Path(__file__).resolve().parents[4]))
 CAPAFY_HTTP = str(REPO_ROOT / "skills/capafy-autopublish/vendor/capafy-user/scripts/capafy_http.py")
 ROTATION = os.path.expanduser("~/.local/state/life-manager/state/capafy-marketing-rotation.jsonl")
+EVIDENCE_ROOT = REPO_ROOT / "skills/capafy/marketing-evidence"
 LISTING_URL_FMT = "https://capafy.ai/agent/{agent_id}"
 
 
@@ -60,37 +61,53 @@ def _load_rotation() -> dict:
     return last
 
 
-def _record(agent_id: str) -> None:
-    os.makedirs(os.path.dirname(ROTATION), exist_ok=True)
-    with open(ROTATION, "a") as f:
+def _record(agent_id: str, rotation: str = ROTATION) -> None:
+    os.makedirs(os.path.dirname(rotation), exist_ok=True)
+    with open(rotation, "a") as f:
         f.write(json.dumps({"agent_id": agent_id, "ts": int(time.time())}) + "\n")
 
 
-def main() -> int:
-    agents = _fetch_agents()
-    online = [a for a in agents if a.get("agentStatus") == "online"]
-    if not online:
-        print(json.dumps({"ok": False, "error": "no online listings"}))
-        return 1
-
-    last = _load_rotation()
-    # rotation: pick the online listing promoted least recently (never-promoted = ts 0).
-    online.sort(key=lambda a: last.get(str(a.get("agentId")), 0))
-    pick = online[0]
-    agent_id = str(pick.get("agentId"))
-
-    _record(agent_id)
-    out = {
+def choose(agents: list, last: dict, evidence_root: Path = EVIDENCE_ROOT) -> dict | None:
+    eligible = []
+    for agent in agents:
+        agent_id = str(agent.get("agentId") or "")
+        evidence = evidence_root / agent_id / "case1.md"
+        if agent.get("agentStatus") == "online" and agent_id and evidence.is_file() and evidence.stat().st_size > 0:
+            eligible.append((agent, evidence))
+    if not eligible:
+        return None
+    eligible.sort(key=lambda row: (last.get(str(row[0].get("agentId")), 0), str(row[0].get("agentId"))))
+    pick, evidence = eligible[0]
+    return {
         "ok": True,
-        "agent_id": agent_id,
+        "agent_id": str(pick.get("agentId")),
         "name": pick.get("name"),
         "desc": (pick.get("desc") or "")[:600],
         "sales": pick.get("sales"),
         "rating": pick.get("rating"),
-        "url": LISTING_URL_FMT.format(agent_id=agent_id),
-        "online_pool": len(online),
+        "url": LISTING_URL_FMT.format(agent_id=pick.get("agentId")),
+        "online_pool": sum(agent.get("agentStatus") == "online" for agent in agents),
+        "evidence_ready_pool": len(eligible),
+        "evidence_source": str(evidence),
+        "selection_committed": False,
     }
-    print(json.dumps(out, ensure_ascii=False))
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--commit-agent-id")
+    parser.add_argument("--rotation", default=ROTATION)
+    args = parser.parse_args()
+    if args.commit_agent_id:
+        _record(str(args.commit_agent_id), args.rotation)
+        print(json.dumps({"ok": True, "agent_id": str(args.commit_agent_id), "selection_committed": True}))
+        return 0
+    agents = _fetch_agents()
+    pick = choose(agents, _load_rotation())
+    if pick is None:
+        print(json.dumps({"ok": False, "error": "no online evidence-ready listings"}))
+        return 1
+    print(json.dumps(pick, ensure_ascii=False))
     return 0
 
 

@@ -298,7 +298,7 @@ function normalizeLane(row, options, assignments) {
   if (hasPortfolioMetadata && portfolioValues.some((value) => value === undefined)) {
     invalid("marketing target metadata incomplete");
   }
-  if (hasPortfolioMetadata && (portfolioValues[0] !== "target" || portfolioValues[5] < 1 || productionArmed)) {
+  if (hasPortfolioMetadata && (portfolioValues[0] !== "target" || portfolioValues[5] < 1)) {
     invalid("marketing target disposition invalid");
   }
   return {

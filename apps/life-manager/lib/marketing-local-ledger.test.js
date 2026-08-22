@@ -83,6 +83,20 @@ test("receipt identity is tenant-scoped even when identifiers contain separators
   assert.equal(await ledger.readReceipt({ tenantId: "tenant", jobId: "one:colon-job" }), null);
 });
 
+test("a completed external receipt preserves lineage while correcting only its direct URL", async () => {
+  const dataDir = tempDataDir();
+  const ledger = createMarketingLocalLedger({ dataDir, now: () => "2026-08-22T13:50:00.000Z" });
+  await ledger.enqueueJob(job({ available_at: "2026-08-22T13:49:00.000Z" }));
+  const claim = await ledger.claimJob({ tenantId: "dais-local", jobId: "publication-job", capability: "marketing.video.publish", workerId: "worker", leaseSeconds: 30 });
+  const receipt = { status: "published", provider_post_id: "post-1", caption_sha256: "a".repeat(64), public_url: PUBLIC_URL };
+  await ledger.completeJob({ tenantId: "dais-local", jobId: "publication-job", attempt: claim.attempt, workerId: "worker", receipt });
+  const corrected = { ...receipt, public_url: "https://www.tiktok.com/@honne_reveal/video/7888888888888888888" };
+  await ledger.correctReceiptDirectUrl({ tenantId: "dais-local", jobId: "publication-job", confirmation: "CORRECT_CAPTION_MATCHED_DIRECT_URL", receipt: corrected });
+  assert.deepEqual(await ledger.readReceipt({ tenantId: "dais-local", jobId: "publication-job" }), corrected);
+  await assert.rejects(() => ledger.correctReceiptDirectUrl({ tenantId: "dais-local", jobId: "publication-job", confirmation: "CORRECT_CAPTION_MATCHED_DIRECT_URL", receipt: { ...corrected, provider_post_id: "post-2" } }), /only replace the direct URL/i);
+  assert.equal(fs.readFileSync(path.join(dataDir, "marketing", "receipts.jsonl"), "utf8").trim().split("\n").length, 2);
+});
+
 test("JSONL partial tails recover while a complete no-newline record remains appendable", async () => {
   const dataDir = tempDataDir();
   const first = createMarketingLocalLedger({

@@ -1,15 +1,34 @@
 #!/usr/bin/env bash
-LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
-[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
-export LIFE_MANAGER_REPO
-# capafy-loop healthcheck — thin wrapper over the shared supervisor (FIND-011). launchd runs this every 5min.
-export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+# Supervise the single launchd-owned Capafy daily pass. Do not create a second
+# tmux/Claude scheduler: ai.anicca.capafy-loop-daily is the only execution owner.
 set -uo pipefail
-source "$LIFE_MANAGER_REPO/skills/self/healthcheck-lib.sh"
-HC_LOOP="capafy-loop" \
-HC_SOCK="/tmp/anicca-capafy-loop-tmux.sock" HC_SESSION="anicca-capafy-loop" \
-HC_HB="$HOME/.local/state/life-manager/state/.capafy-loop-last-pass" HC_START="$HOME/.local/state/life-manager/state/.capafy-loop-last-start" \
-HC_STALE_MIN=1560 HC_CLI="$LIFE_MANAGER_REPO/skills/self/capafy-loop/capafy-loop-cli.sh" \
-HC_OUTPUT="$LIFE_MANAGER_REPO/skills/capafy-autopublish/state/.capafy-healthy-pass" HC_OUTPUT_STALE_HRS=30 \
-HC_SELFFIX_HINT="capafy publish loop reached NO healthy terminal state in >30h. daily_loop.sh touches .capafy-healthy-pass on every healthy pass — a real publish OR a correctly-drained/cap-full idle run (this is a DRAIN-ONLY loop over finite inventory; 'no new skill' is NOT itself a bug). A stale marker means the loop is genuinely stuck: daily_loop.sh not running, Capafy auth/network down (SERVER_UNREADABLE), or a PUBLISHABLE item whose publish keeps failing (CP1 cp1_agent.py -> CP2 -> CP3). Read state/daily_loop.log for the last verdict; do NOT assume drive_cp1.py is broken." \
-hc_run
+
+LABEL="ai.anicca.capafy-loop-daily"
+DOMAIN="gui/$(id -u)"
+LIFE_MANAGER_STATE_HOME="${LIFE_MANAGER_STATE_HOME:-$HOME/.local/state/life-manager}"
+MARK="$LIFE_MANAGER_STATE_HOME/state/capafy-autopublish/.capafy-healthy-pass"
+LOG="$LIFE_MANAGER_STATE_HOME/logs/capafy-loop-healthcheck.log"
+STALE_SECONDS=$((30 * 60 * 60))
+mkdir -p "$(dirname "$LOG")"
+
+if ! launchctl print "$DOMAIN/$LABEL" >/dev/null 2>&1; then
+  echo "$(date '+%F %T') missing launchd owner: $LABEL" >>"$LOG"
+  exit 1
+fi
+
+now="$(date +%s)"
+mtime="$(stat -f %m "$MARK" 2>/dev/null || echo 0)"
+age=$((now - mtime))
+if [ "$mtime" -gt 0 ] && [ "$age" -lt "$STALE_SECONDS" ]; then
+  exit 0
+fi
+
+# A stale/missing terminal receipt means the real launchd loop needs a pass.
+# kickstart that owner directly; never spawn a parallel executor or disk gate.
+if launchctl kickstart -k "$DOMAIN/$LABEL"; then
+  echo "$(date '+%F %T') stale healthy-pass (${age}s); kickstarted $LABEL" >>"$LOG"
+  exit 0
+fi
+
+echo "$(date '+%F %T') failed to kickstart $LABEL" >>"$LOG"
+exit 1
