@@ -654,6 +654,20 @@ tracked plistを実機26件へ反映し、同じhostile env検証の
 fresh canonical cleanup `last exit code=0`をread backする。`ai.anicca.lm-recording-store`の直接wrapperと残るbuild consumerは
 この共通wrapper外なので後続A-20 sliceとして残す。GitHub DNS failureのためprofitable-claudeの関連commitはlocal unpushedである。
 
+A-20の第9 sliceは、共通wrapperを迂回していたenabled producer `ai.anicca.lm-recording-store`だけを接続した。
+Ponytailで新daemonやdependencyを作らず、34行のtracked adapter、既存schedule/logを保つplist、101行のbehavior testの
+3 files、162 insertionsに限定した。adapterはpasswd canonical home、exact current `gig_disk_guard.py`のregular/non-symlink/
+readable proof、固定512 MiB、canonical host state、専用lane state、ignore/alternate env除去を行い、guard成功後にだけprivate
+`run-store-recordings.sh`をexecする。したがってcredential source、Telnyx request、recording directory作成、MP3 download、
+manifest appendはすべてguard後であり、private credential/dataをOSS sourceへ取り込まない。旧live plistにguard rejectとhostile
+shell envを与えるREDはchild effectを再現し、GREENはfocused **3 tests**、既存migration **2 passed**、plist lint、shell syntax、
+compile、diff checkがPASSした。feature commitは`018b0fa52d778aacb0a9e108fbffe4f938eb5614`、production source commitは
+`1198809b`、fresh adversarial reviewはBLOCKER/HIGH/MEDIUMなしで`ship`である。実機stop flag下のhostile env実行は
+Directory Services異常でcanonical home解決前にRC 1となり、recording file count 144→144、manifest SHA/mtime不変、
+PS4 marker 0だった。これはeffect 0を証明するがguard receiptには到達していない。production plist反映、loaded argv、
+専用`disk_writers_stop/effect=0/readback=0/required_bytes=536870912` receipt、profitable-claude push、fresh canonical cleanup
+`last exit code=0`は141/153制御面とDNS復旧後の運用証拠として残す。
+
 `/Users/anicca/anicca-project`は約9.5 GiB、その`.worktrees`は約4.4 GiBだった。最大の
 `cfo-resume-spec`（約1.08 GiB）は、dirty=0、branch upstream 0/0、process/open-path/leaseなしを
 read backした後にだけ`git worktree remove`で回収した。branchとremoteは残り、再作成可能である。
@@ -1228,7 +1242,7 @@ TDDのためだけの過剰fixtureや後続itemのscaffoldは前倒ししない�
 | A-17 | VM/package producer lifecycleを登録する | artifact/lease/finalizer/quota receipt | 完了: registration-only static 16件、pnpm exact version/proof/lease fail-closed、全A-17 entry runtime/quota 0/lease 300/preserveで削除authority 0、focused 48 tests、final review `ship`、fallback SHA一致/runs 486→487/static 16 bad 0、canonical runs 137→138 exit 0、protected deletion 0 |
 | A-18 | agent/gig-project lifecycleを登録する | project owner/terminal/lease receipt | 完了: registration-only numeric project 24件、terminal true 0、unknown owner 3、全件deliverable/preserve、focused 49 tests、fresh review `ship`、fallback runs 507→508/削除0、canonical runs 142→143 exit 0、errors/protected deletion 0 |
 | A-19 | Writer in-flight drainを接続する | provider interruption checkpoint/resume test | 完了: exact stop 2 pathのpre-Popen gate、process-group TERM→1秒→KILL/reap、immutable run/prompt checkpoint/resume、focused 44 tests、fresh review `ship`、release `43074f76422d1ec4935acdba98e553cb8564de94`、Writer runs 1/exit 0/provider effect 0、canonical runs 149→150/exit 0/errors 0/protected deletion 0 |
-| A-20 | browser/build/media preflightを接続する | producer consumer missing 0 for these families | 部分完了: Affiliate 3 browser、Instagram/X provision、標準job-search、Mercor、Gig、self-build 2境界、Writer media既存境界、共通wrapper配下media 26件をsource接続。hostile BASH_ENV/SHELLOPTS/PS4をTDDで遮断しre-review `ship`。実機RC 1/effect 0だがDirectory Services異常でguard前停止・専用receipt未生成。tracked plist実機反映、直接wrapperのrecording-storeと残るbuild consumer、profitable-claude push、canonical fresh exit 0/readback待ち |
+| A-20 | browser/build/media preflightを接続する | producer consumer missing 0 for these families | 部分完了: Affiliate 3 browser、Instagram/X provision、標準job-search、Mercor、Gig、self-build 2境界、Writer media既存境界、共通wrapper配下media 26件とlm-recording-storeをsource接続。hostile BASH_ENV/SHELLOPTS/PS4をTDDで遮断し両review `ship`。実機effect 0だがDirectory Services異常でguard前停止・専用receipt未生成。tracked plist実機反映、残るbuild consumer、profitable-claude push、canonical fresh exit 0/readback待ち |
 | A-21 | VM/package/agent preflightを接続する | producer consumer missing 0 for these families | 未完了 |
 | A-22 | supervisor non-stop behaviorを実装する | ULTRA wake keeps supervisor labels loaded | 未完了 |
 | A-23 | Codex log budget/rotationを実装する | active app-server handoff with session loss 0 | 未完了 |
