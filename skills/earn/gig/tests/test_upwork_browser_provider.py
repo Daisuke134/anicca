@@ -125,6 +125,24 @@ def test_extracts_stable_official_ids_instead_of_titles():
     assert state["submitted_proposal_entities"][0]["id"] == "submitted-99"
 
 
+def test_zero_connect_inbound_precedes_public_job_capacity():
+    planner = getattr(provider, "plan_zero_connect_inbound", None)
+    assert callable(planner)
+    base = {"proposal_offer_entities": [], "invitation_entities": [], "catalog_projects": []}
+
+    assert planner({**base, "invitation_entities": [{"id": "~invite-1"}]}) == {
+        "state": "invitation_detected", "resource_id": "~invite-1",
+    }
+    assert planner({
+        **base, "proposal_offer_entities": [{"id": "offer-1"}],
+        "invitation_entities": [{"id": "~invite-1"}],
+    }) == {"state": "direct_offer_detected", "resource_id": "offer-1"}
+    assert planner({**base, "catalog_projects": [{"title": "API script", "orders": 1}]}) == {
+        "state": "catalog_order_detected", "resource_id": "API script",
+    }
+    assert planner(base) is None
+
+
 def test_classifies_candidate_only_from_official_job_markers():
     candidate = {"job_id": "~01", "job_url": "https://www.upwork.com/jobs/~01"}
     opened = parse_candidate(

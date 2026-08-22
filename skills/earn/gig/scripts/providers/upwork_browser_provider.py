@@ -340,6 +340,29 @@ def plan_free_proposal(state: dict[str, Any], proposals_dir: Path) -> dict[str, 
     return None
 
 
+def plan_zero_connect_inbound(state: dict[str, Any]) -> dict[str, str] | None:
+    """Prioritize one stable-ID inbound acquisition that needs no Connects."""
+    for field, kind in (
+        ("proposal_offer_entities", "direct_offer_detected"),
+        ("invitation_entities", "invitation_detected"),
+    ):
+        entities = state.get(field)
+        if not isinstance(entities, list):
+            raise ValueError("upwork_free_action_state_invalid")
+        if entities:
+            entity = entities[0]
+            if not isinstance(entity, dict) or not isinstance(entity.get("id"), str):
+                raise ValueError("upwork_free_action_state_invalid")
+            return {"state": kind, "resource_id": entity["id"]}
+    projects = state.get("catalog_projects")
+    if not isinstance(projects, list):
+        raise ValueError("upwork_free_action_state_invalid")
+    ordered = next((item for item in projects if isinstance(item, dict) and item.get("orders", 0) > 0), None)
+    if ordered is not None:
+        return {"state": "catalog_order_detected", "resource_id": str(ordered.get("title") or "")}
+    return None
+
+
 def parse_candidate(
     candidate: dict[str, str], text: str, evidence_sha256: str,
 ) -> dict[str, Any]:
@@ -539,6 +562,11 @@ async def observe(
         ],
         "evidence_sha256": artifacts,
     }
+    inbound = plan_zero_connect_inbound(state)
+    if inbound is not None:
+        state["can_submit_public_job"] = False
+        state["free_acquisition"] = inbound
+        return state
     selected = plan_free_proposal(state, proposals_dir)
     state["can_submit_public_job"] = selected is not None
     if selected is None:
