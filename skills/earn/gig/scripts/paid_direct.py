@@ -2051,6 +2051,39 @@ def _asset_contract_diff(decision_assets: list[Any], manifest_assets: list[Any])
             "changed": changed, "wording_only": wording_only}
 
 
+def _owner_feedback(root: Path, capability: str, errors: list[Any],
+                    evidence_paths: list[Path]) -> Path:
+    """Persist raw specialist output as facts the same Project Owner can read next."""
+    evidence = []
+    provenance = []
+    for path in evidence_paths:
+        path = path.resolve()
+        path.relative_to(root.resolve())
+        if not _regular_file(path):
+            continue
+        sha256 = _file_snapshot(path)[1]
+        source_fact_id = f"file:sha256:{sha256}"
+        evidence.append({"path": str(path), "sha256": sha256})
+        provenance.append({"fact_id": source_fact_id, "path": str(path), "sha256": sha256})
+    source_fact_ids = [row["fact_id"] for row in provenance]
+    structured_errors = [
+        error if isinstance(error, dict) else {"code": "validator_error", "detail": str(error)}
+        for error in errors
+    ]
+    envelope = project_ledger.capability_result(
+        capability, "needs_work", evidence=evidence, errors=structured_errors,
+        source_fact_ids=source_fact_ids,
+    )
+    fact = project_ledger.append_fact(
+        root, "project_owner_feedback", {"capability": capability, "errors": structured_errors},
+        provenance=provenance, capability=envelope,
+    )
+    output = root / "context" / "paid-owner-feedback.json"
+    _write(output, {"version": 1, "fact_id": fact["fact_id"],
+                    "capability_result": envelope})
+    return output
+
+
 def _file_immutable_inputs(root: Path, context: Path) -> dict[str, tuple[int, str]]:
     compiled = _load(context)
     read_first = compiled.get("combined_context", {}).get("read_these_first")
@@ -2096,7 +2129,7 @@ def _resumable_file_bundle(root: Path, stable: Path, feedback: str) -> tuple[dic
             allow_fresh_blocked_for_review=True,
         )
         return (manifest, snapshots) if ok else None
-    except (AttributeError, OSError, ValueError, TypeError, json.JSONDecodeError):
+    except (AttributeError, Failure, OSError, ValueError, TypeError, json.JSONDecodeError):
         return None
 
 
@@ -2411,7 +2444,9 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
     owner_instructions = (
         "You are the sole paid task owner. Work only inside PROJECT_ROOT. Read context/current.json, "
         "every combined_context.read_these_first file, requirements/live-buyer-reply.json, state.json, and "
-        "context/paid-work-decision.json. "
+        "context/paid-work-decision.json. If context/paid-asset-contract-diff.json or "
+        "context/paid-owner-feedback.json exists, read its complete raw structured errors and source fact ids, "
+        "semantically repair the underlying work or manifest, and do not merely rename an error state. "
         f"Before creating anything, search {code_root} with rg for existing relevant SKILL.md files and production CLIs, "
         "read the applicable skill fully, and use its proven CLI contract instead of reimplementing the workflow. "
         "Choose tools from the complete buyer context and required output, never from a hardcoded buyer name, category, or keyword router. "
@@ -2503,7 +2538,11 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
             allow_fresh_blocked_for_review=True,
         )
         if not ok:
-            raise Failure("file_validation")
+            _owner_feedback(root, "paid.file_structure", errors, [
+                root / "delivery" / "paid-work-result.json",
+                Path(_text(manifest.get("acceptance_evidence_path"))),
+            ])
+            raise Failure("file_owner_feedback")
         review_images = _file_review_images(root, snapshots["artifact"][1], finding)
         audit_path, audit_images = (None, [])
         if "source_correspondence" in snapshots:
@@ -2605,6 +2644,8 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
         if disposition == "approve" and _text(verdict.get("reason")):
             break
         finding = _text(verdict.get("reason")) or "The reviewer did not prove the artifact deliverable."
+        verdict_path = _consultation_result_path(verifier_evidence)
+        _owner_feedback(root, "paid.file_evaluator", [verdict], [verdict_path])
         if review_round == MAX_FILE_REVIEW_ITERATIONS:
             _write(root / "context" / "paid-review-state.json", {
                 "version": 1, "state": "REVIEW_BLOCKED", "mode": "file",
@@ -2637,7 +2678,10 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
         allow_fresh_blocked_for_review=True,
     )
     if not ok:
-        raise Failure("file_validation")
+        _owner_feedback(root, "paid.file_presend_validation", errors, [
+            root / "delivery" / "paid-work-result.json", stable,
+        ])
+        raise Failure("file_owner_feedback")
     paid_work_evidence.resolve_fresh_blocked_after_review(
         root, manifest["requirements_path"], feedback, snapshots["artifact"][1],
     )
@@ -2645,7 +2689,10 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
         root, stable, artifact_judge=lambda *_: ("deliverable", _text(verdict.get("reason"))),
     )
     if not ok:
-        raise Failure("file_validation")
+        _owner_feedback(root, "paid.file_final_validation", errors, [
+            root / "delivery" / "paid-work-result.json", stable,
+        ])
+        raise Failure("file_owner_feedback")
     _write(root / "context" / "paid-file-authorization.json", {
         "version": 4, "buyer_feedback_sha256": feedback, "requirements_sha256": requirements_sha256,
         "review_policy_version": PAID_FILE_POLICY_VERSION,
@@ -2676,11 +2723,6 @@ def _prepare_file(args, item_path: Path, root: Path, item: dict[str, Any], base:
                   feedback: str) -> dict[str, Any]:
     requirements_sha256 = paid_remote_result.requirements_digest(root, feedback)
     stable = delivery_queue.evidence_path(args.delivery_evidence_dir, item)
-    current_manifest = _load(root / "delivery" / "paid-work-result.json")
-    if (isinstance(current_manifest, dict)
-            and current_manifest.get("status") in {"REVIEW_READY", "BLOCKED_NON_DELEGABLE"}):
-        _normalize_acceptance_delta(root)
-        raise Failure("file_non_delivery_disposition")
     try:
         manifest = _validate_file_authorization(root, stable, feedback, requirements_sha256)
         repaired = False
@@ -3374,6 +3416,9 @@ def _prepare_one(args, item_path: Path, output: Path) -> int:
         if (isinstance(error, Failure) and error.step == "file_contract_review"
                 and contract_diff is not None and _regular_file(contract_diff)):
             failure["diagnostic_evidence"] = str(contract_diff)
+        owner_feedback = root / "context" / "paid-owner-feedback.json" if isinstance(root, Path) else None
+        if owner_feedback is not None and _regular_file(owner_feedback):
+            failure["owner_feedback"] = str(owner_feedback)
         _write(output, failure); return 1
 
 
