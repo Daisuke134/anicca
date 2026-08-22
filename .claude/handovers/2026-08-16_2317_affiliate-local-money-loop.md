@@ -2187,3 +2187,17 @@ exact-read its utility/permalink. Continue until each format has three measured
 samples, then allow the evaluator to move `original_ratio`. Independently, the
 only money completion remains an official `reward_key` row joined to an exact
 placement and carried through pending/approved/paid/reversed with real cost.
+
+Repost digest run 3 then executed today's learning step. Alternating control chose
+`tone_weights`, not `original_ratio`, and moved primary/empathy/funny from
+`0.75/2.0/0.5` to `0.25/2.5/0.5` because median early views were empathy 5 vs
+primary 2. Its diagnostic samples incorrectly included five
+`affiliate_disclosed` rows. They did not affect that winner/worst pair, but they
+must not train audience tone. Commit `a1ec6941c` allowlists only primary,
+empathy, and funny in tone evaluation; 23 focused tests pass. Installed release
+is `/Users/anicca/loops/releases/20260823T003327-a1ec6941`, evaluator source and
+runtime SHA-256
+`411dada4fd212c63cd636ada3e32c343698ac36415e6a7f9c61ad777eb6581df`.
+The run's Telegram attempt never reached an observable Gateway send, returned no
+messageId, and was written once as `ambiguous_no_retry`; do not resend it. Next
+X effect remains the 01:00-or-later quote arm.

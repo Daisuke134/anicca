@@ -7068,3 +7068,14 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   `5f276eb30d524235d485ed808e1cc64626c9aedf026fb419287e409946a437f5`.
   Live run 97 did not resend timeout event `30016e7b...`; it delivered a distinct
   current event `5fb4fa9c...` once as Telegram message `29106` and exited zero.
+- Repost digest run 3 performed the next daily learning step. Because knob changes
+  alternate, it evaluated tone rather than format and moved weights from
+  primary/empathy/funny `0.75/2.0/0.5` to `0.25/2.5/0.5` on median early views
+  empathy 5 versus primary 2. Readback exposed five `affiliate_disclosed` rows in
+  the diagnostic sample map. They did not change this winner/worst pair, but they
+  are not audience-tone evidence. Repost commit `a1ec6941c` restricts tone
+  learning to `primary`, `empathy`, and `funny`; all 23 tests pass. Installed
+  release is `20260823T003327-a1ec6941`, with source/runtime evaluator SHA-256
+  `411dada4fd212c63cd636ada3e32c343698ac36415e6a7f9c61ad777eb6581df`.
+  The digest Telegram attempt produced no Gateway provider effect or messageId,
+  was journaled once as `ambiguous_no_retry`, and was not replayed.
