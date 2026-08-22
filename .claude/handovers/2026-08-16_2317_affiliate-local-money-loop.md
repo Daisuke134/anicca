@@ -2273,3 +2273,25 @@ original. Read-only evaluation now has original 3 / quote 11, median early views
 scheduled digest may apply it. Next atom is the first quality-passing Postiz
 submission plus exact X permalink; then continue measured distribution toward a
 nonzero owned entry and official transaction.
+
+The next repair cycle found two pre-effect runtime faults. X counts every URL as
+23 characters, while the local gate counted the full source URL; Repost commit
+`1ebb91517` corrects that. Runs `20260823T014309` and `20260823T014626` then
+proved that 162--223 MiB physical free space was insufficient for `uv` to
+extract Playwright. Commit `65f417356` removes live-pass dependency downloads
+and uses the installed system Playwright runtime; `b9821adc3` adds a 600-second
+browser-step bound. Regenerable build/cache artifacts were removed without
+touching state, evidence, credentials, publication copy, or browser profiles.
+
+Owner run `20260823T020158` subsequently collected 86 candidates and selected
+`original` / `en` / `empathy`. The corrected length gate passed at 224/250. Its
+critic found procedure, comparison method, and failure condition but returned
+`supported=false` because the copy invented a seven-day period not present in
+the source. There was no Postiz submission and no X effect; exit was zero.
+Commit `a9e69e02a` forbids source-less numbers, periods, and counts at generation
+and final selection. Installed release is
+`/Users/anicca/loops/releases/20260823T021744-a9e69e02`; all 25 focused tests
+pass. Exact money remains zero official PartnerStack transactions. Next atom is
+one quality-passing owner submission with exact X permalink, followed by an
+Affiliate-owner exact funnel/provider readback; never resend any terminal or
+unverified source.

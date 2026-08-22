@@ -7152,3 +7152,24 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   and computes the next eligible move `original_ratio 0.15 -> 0.20`. The daily
   digest remains the sole durable owner allowed to apply that change; this
   interactive readback did not mutate strategy. All of this is non-money.
+- The apparent over-length failure was partly a harness bug. X's official text
+  rules count every URL as a fixed 23 characters, but the gate counted the raw
+  source URL. Repost commit `1ebb91517` implements the fixed t.co weight. Commit
+  `65f417356` then removes every live-pass Playwright download and uses the
+  already-installed system runtime for collection and exact readback; commit
+  `b9821adc3` bounds each browser step to 600 seconds. All 25 focused tests pass.
+  Installed release is now `20260823T021744-a9e69e02`; launchd still reads
+  Postiz transport and a 1,800-second interval.
+- Physical disk exhaustion was also real, not a provider wait. At 162 MiB free,
+  runs `20260823T014309` and `20260823T014626` failed before generation while a
+  Playwright wheel could not extract. Only regenerable build/cache artifacts
+  were removed; no loop state, evidence, credential, publication body, or
+  browser profile was deleted. Run `20260823T020158` then used system Python,
+  collected 86 live candidates, and selected an English source-backed original.
+  It passed the corrected length gate at weighted 224/250 and added three reader
+  values: procedure, comparison method, and failure condition. The independent
+  critic nevertheless returned `supported=false` because the draft invented a
+  seven-day period absent from the source. No Postiz submission or X effect was
+  attempted; owner exit was zero. Commit `a9e69e02a` now forbids invented
+  numbers, periods, and counts in both generation and final selection. This is a
+  verified safe no-effect and non-money.
