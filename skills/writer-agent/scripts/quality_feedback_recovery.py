@@ -60,7 +60,7 @@ def _receipt_hash(value: dict[str, Any]) -> str:
     ).hexdigest()
 
 
-def _quality_attempt_count(run_dir: Path) -> int:
+def _quality_attempt_count_for_run(run_dir: Path) -> int:
     return sum(
         1
         for path in (run_dir / "gates").glob("quality-self-heal-attempt-*.json")
@@ -76,7 +76,7 @@ def _record_feedback_invocation(
     owner_pid: int,
 ) -> None:
     """Persist the wrapper's hash-bound proof that a new model call was launched."""
-    quality_attempt = _quality_attempt_count(run_dir) + 1
+    quality_attempt = _quality_attempt_count_for_run(run_dir) + 1
     if quality_attempt <= 1:
         return
     prompt_sha256 = str(state.get("prompt_sha256", ""))
@@ -180,6 +180,45 @@ def _age_seconds(timestamp: Any) -> float | None:
     if started.tzinfo is None:
         return None
     return (datetime.now(timezone.utc) - started).total_seconds()
+
+
+def _quality_attempt_count(gates: Path) -> int:
+    return sum(
+        1
+        for path in gates.glob("quality-self-heal-attempt-*.json")
+        if path.is_file() and not path.is_symlink()
+    )
+
+
+def _valid_reopen_defect(run_dir: Path, gates: Path, quality_attempts: int) -> bool:
+    defect = _read_json(gates / "quality-feedback-recovery-defect.json")
+    if not isinstance(defect, dict):
+        return False
+    try:
+        drafts = {
+            lang: _sha256(run_dir / f"article-{lang}.md")
+            for lang in ("ja", "en")
+        }
+    except OSError:
+        return False
+    preserved = defect.get("preserved_invariants")
+    return bool(
+        defect.get("version") == 2
+        and defect.get("status") == "blocked"
+        and defect.get("run_id") == run_dir.name
+        and defect.get("scope") == "bounded-feedback-recovery"
+        and defect.get("quality_attempt") == quality_attempts
+        and defect.get("draft_sha256") == drafts
+        and isinstance(defect.get("observations"), list)
+        and defect.get("observations")
+        and isinstance(preserved, dict)
+        and preserved.get("publication_or_staging_performed") is False
+        and preserved.get("feedback_consumption_verification") == "PASS"
+        and preserved.get("identity") == {"ja": "PASS", "en": "PASS"}
+        and preserved.get("reader") == {"ja": "PASS", "en": "PASS"}
+        and isinstance(defect.get("required_safe_next_action"), str)
+        and bool(defect["required_safe_next_action"].strip())
+    )
 
 
 def _is_quality_audit(row: dict[str, Any]) -> bool:
@@ -356,11 +395,7 @@ def plan(run_dir: Path | str, ledger: Path | str) -> dict[str, Any]:
         prompt = Path(str(state.get("prompt_path", "")))
         attempts = int(state.get("attempts", 0))
         publication_attempts = int(state.get("publication_attempts", 0))
-        quality_attempt_count = sum(
-            1
-            for path in gates.glob("quality-self-heal-attempt-*.json")
-            if path.is_file() and not path.is_symlink()
-        )
+        quality_attempt_count = _quality_attempt_count(gates)
         if (
             state.get("status")
             in {"terminal-blocked", "terminal-ready-not-published"}
@@ -408,13 +443,11 @@ def plan(run_dir: Path | str, ledger: Path | str) -> dict[str, Any]:
                 "prompt_sha256": state["prompt_sha256"],
                 "attempts": attempts,
             }
-        defect = _read_json(gates / "quality-feedback-recovery-defect.json")
         if (
             state.get("status") == "terminal-blocked"
             and attempts < MAX_INVOCATIONS
             and quality_attempt_count < 5
-            and isinstance(defect, dict)
-            and defect.get("status") == "blocked"
+            and _valid_reopen_defect(run_dir, gates, quality_attempt_count)
             and prompt.is_file()
             and state.get("prompt_sha256") == _sha256(prompt)
         ):
@@ -846,6 +879,64 @@ def record_result(
         status = "terminal-ready-not-published"
     else:
         status = "terminal-blocked"
+    if status == "terminal-blocked":
+        defect_path = gates / "quality-feedback-recovery-defect.json"
+        existing_defect = _read_json(defect_path)
+        if defect_path.is_file() and not defect_path.is_symlink():
+            legacy_path = gates / "quality-feedback-recovery-defect-legacy.json"
+            if not legacy_path.exists():
+                shutil.copy2(defect_path, legacy_path)
+        current_drafts: dict[str, str] = {}
+        try:
+            current_drafts = {
+                lang: _sha256(run_dir / f"article-{lang}.md")
+                for lang in ("ja", "en")
+            }
+        except OSError:
+            current_drafts = {}
+        quality_records = (
+            quality.get("quality")
+            if isinstance(quality, dict) and isinstance(quality.get("quality"), dict)
+            else {}
+        )
+        consumption_status = validate_consumption(run_dir).get("status")
+        _atomic_write(
+            defect_path,
+            {
+                "version": 2,
+                "status": "blocked",
+                "run_id": run_dir.name,
+                "scope": "bounded-feedback-recovery",
+                "quality_attempt": _quality_attempt_count(gates),
+                "draft_sha256": current_drafts,
+                "observations": [
+                    {
+                        "return_code": return_code,
+                        "quality_action": quality.get("action") if isinstance(quality, dict) else None,
+                        "prior_defect_sha256": (
+                            _sha256(gates / "quality-feedback-recovery-defect-legacy.json")
+                            if (gates / "quality-feedback-recovery-defect-legacy.json").is_file()
+                            else None
+                        ),
+                    }
+                ],
+                "preserved_invariants": {
+                    "publication_or_staging_performed": False,
+                    "feedback_consumption_verification": consumption_status,
+                    "identity": {
+                        lang: quality_records.get(lang, {}).get("identity")
+                        for lang in ("ja", "en")
+                    },
+                    "reader": {
+                        lang: quality_records.get(lang, {}).get("reader")
+                        for lang in ("ja", "en")
+                    },
+                },
+                "required_safe_next_action": (
+                    "Re-run the current-hash editorial and reader gates through a new signed recovery invocation."
+                ),
+            },
+        )
     state.update(
         {
             "status": status,
