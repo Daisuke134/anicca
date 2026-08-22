@@ -1949,7 +1949,20 @@ def _normalize_acceptance_delta(root: Path) -> None:
     if required_assets is None:
         required_assets = decision_assets
     elif isinstance(decision_assets, list) and required_assets != decision_assets:
-        raise ValueError("asset contract mismatch")
+        contract_diff = _asset_contract_diff(decision_assets, required_assets)
+        _write(root / "context" / "paid-asset-contract-diff.json", {
+            "version": 1,
+            "status": contract_diff["status"],
+            "decision_path": str((root / "context" / "paid-work-decision.json").resolve()),
+            "decision_sha256": _file_snapshot(root / "context" / "paid-work-decision.json")[1],
+            "manifest_path": str(manifest_path.resolve()),
+            "manifest_sha256": _file_snapshot(manifest_path)[1],
+            **contract_diff,
+        })
+        if contract_diff["status"] == "equivalent_wording_normalized":
+            required_assets = decision_assets
+        else:
+            raise Failure("file_contract_review")
     artifact_assets = manifest.get("artifact_assets")
     if not isinstance(required_assets, list) or not isinstance(artifact_assets, list):
         raise ValueError("invalid asset contract")
@@ -1970,6 +1983,43 @@ def _normalize_acceptance_delta(root: Path) -> None:
     if manifest.get("acceptance_delta") != delta:
         manifest["acceptance_delta"] = delta
     _write(manifest_path, manifest)
+
+
+def _asset_contract_diff(decision_assets: list[Any], manifest_assets: list[Any]) -> dict[str, Any]:
+    """Compare stable mechanics; leave buyer-visible semantic changes to the Project Owner."""
+    mechanical = ("kind", "minimum_count", "source_authority", "archive_required")
+
+    def indexed(rows: list[Any]) -> dict[str, dict[str, Any]] | None:
+        result: dict[str, dict[str, Any]] = {}
+        for row in rows:
+            if not isinstance(row, dict):
+                return None
+            asset_id = _text(row.get("asset_id"))
+            if not re.fullmatch(r"[a-z0-9][a-z0-9_-]*", asset_id) or asset_id in result:
+                return None
+            result[asset_id] = row
+        return result
+
+    decision_by_id, manifest_by_id = indexed(decision_assets), indexed(manifest_assets)
+    if decision_by_id is None or manifest_by_id is None:
+        return {"status": "owner_review_required", "reason": "invalid_or_duplicate_asset_id",
+                "missing_in_manifest": [], "extra_in_manifest": [], "changed": []}
+    missing = sorted(set(decision_by_id) - set(manifest_by_id))
+    extra = sorted(set(manifest_by_id) - set(decision_by_id))
+    changed = []
+    wording_only = []
+    for asset_id in sorted(set(decision_by_id) & set(manifest_by_id)):
+        left, right = decision_by_id[asset_id], manifest_by_id[asset_id]
+        fields = [field for field in mechanical if left.get(field) != right.get(field)]
+        if fields:
+            changed.append({"asset_id": asset_id, "fields": fields})
+        elif left.get("buyer_visible_purpose") != right.get("buyer_visible_purpose"):
+            wording_only.append(asset_id)
+    status = ("equivalent_wording_normalized"
+              if not missing and not extra and not changed else "owner_review_required")
+    return {"status": status, "reason": "stable_asset_contract_diff",
+            "missing_in_manifest": missing, "extra_in_manifest": extra,
+            "changed": changed, "wording_only": wording_only}
 
 
 def _file_immutable_inputs(root: Path, context: Path) -> dict[str, tuple[int, str]]:
@@ -3281,7 +3331,7 @@ def _prepare_one(args, item_path: Path, output: Path) -> int:
                                 "_paid_prepare_status": "pending"})
                 return 0
         cause = error.__cause__
-        _write(output, {
+        failure = {
             "status": "failed", "talkroom_id": room, "failed": 1,
             "failed_step": error.step if isinstance(error, Failure) else "remote_resume",
             "diagnostic_stage": diagnostic_stage,
@@ -3290,7 +3340,12 @@ def _prepare_one(args, item_path: Path, output: Path) -> int:
             "cause_type": type(cause).__name__ if cause is not None else None,
             "cause_detail": str(cause)[:500] if cause is not None else None,
             "effect": 0, "readback": 0,
-        }); return 1
+        }
+        contract_diff = root / "context" / "paid-asset-contract-diff.json" if isinstance(root, Path) else None
+        if (isinstance(error, Failure) and error.step == "file_contract_review"
+                and contract_diff is not None and _regular_file(contract_diff)):
+            failure["diagnostic_evidence"] = str(contract_diff)
+        _write(output, failure); return 1
 
 
 def _write_file_effect(args, item_path: Path, output: Path, prepared: dict[str, Any]) -> int:
