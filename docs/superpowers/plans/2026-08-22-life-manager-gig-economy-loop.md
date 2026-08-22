@@ -422,6 +422,11 @@ U13 atomic order:
     planner still cannot submit. The focused provider suite passes 20/20, and a replay of the real
     official-7-then-Cloudflare receipt sequence returns unknown/7 rather than unknown/null without
     creating an application effect.
+    Main commit `a3ff1d61e4ccfe980f8e4b1de197f8e9fa28047d` is published as immutable release
+    `20260823T045407-a3ff1d61`; provider SHA-256 is
+    `20fd33e07aec70063b48fd2e20539a13ca55d07727da46693580b956aefc1a72`. The same 20 focused
+    tests pass from the read-only release and syntax compilation passes with a redirected bytecode
+    cache. This proves deployment, not a fresh Upwork wake or application.
 
 U14 atomic order:
 
