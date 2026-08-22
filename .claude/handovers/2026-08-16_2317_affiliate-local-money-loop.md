@@ -1571,3 +1571,24 @@ successful revenue cycle completed `06:49:07Z`; its next legitimate due time is
 `runs=39`, last exit `0`, and Telegram message ID `28468`. Do not manually capture
 or coerce the current delta to zero. After the due owner wake, read back the exact
 interval join, customer availability, official transactions, and money state.
+
+FUNNEL-D is now `DONE`. At `2026-08-22T07:49:10Z`, Codex kicked only the existing
+`ai.anicca.affiliate-loop` owner after the legitimate revenue due time. Run 42
+ended with exit `0`; fresh official link and commission observations are
+`07:49:41.963731Z` and `07:49:57.991646Z`. The mode-0600 interval receipt
+`6a8a3daaa493e6cef73e869fe57af02fe2f11d2e07e8375d702292145b9a1cc0` recomputes
+exactly and appears once in history. It joins the CTA interval to Subtitle
+Translator, Voice Changer, and Voice Isolator: all have CTA `0`, provider click/
+unique deltas `0/0`, exact-placement customers unavailable, and official
+transactions `0`. This is non-money. Rolling state remains
+`NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`; Telegram receipt is
+`28492`. No manual post, provider write, or parallel executor ran.
+
+The next atomic item is FUNNEL-E, not another broad placement. Select one existing
+placement using a durable buyer-intent/evidence receipt, freeze new placement
+expansion, and declare one changed variable. Cadence is explicit: at most one new
+evidence-bearing owned article per UTC day and up to three native distribution
+acts per day around that same focused asset. Repeated checks may skip. This follows
+Google's people-first/thin-affiliate rules plus the pinned `marketingskills`
+check-vs-act loop pattern and `affiliate-skills` repurpose-and-measure pattern; it
+does not copy those repositories' unverified revenue claims.

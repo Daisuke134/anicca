@@ -2791,15 +2791,17 @@ flowchart LR
 **Immediate economic queue — this block executes before items 8–14 and 15–23:**
 
 Current exact readback establishes the starting point: `ai.anicca.affiliate-loop`
-is loaded with `32` runs and last exit code `0`; the canonical
+is loaded with `42` runs and last exit code `0`; the canonical
 placement ledger contains `24` public placements, `40` provider clicks, `38`
 provider unique clicks, and `13` placements with a provider click. Official
 customers, transactions, approved commissions, and paid commissions are all `0`.
 Rolling money is `NO_TRANSACTIONS`, `NO_APPROVED_OR_PAID_ROWS`, and
 `NOT_REACHED`; material cost coverage remains `UNKNOWN`. Runtime availability is
-therefore not the current blocker. The measured blockers are click-to-customer
-conversion and missing owned-visit/CTA denominators. No shadow Agent code is
-installed or committed as a substitute for this queue.
+therefore not the current blocker. Owned-visit capability is explicitly
+unavailable, while the post-instrumentation CTA/provider interval is observed at
+zero. The measured blocker is qualified-buyer acquisition and click-to-customer
+conversion, not a missing scheduler or fabricated denominator. No shadow Agent
+code is installed or committed as a substitute for this queue.
 
 - **FUNNEL-A — DONE — top-three canonical snapshot:** installed release
   `970bc7a094fcfba1534295567a1301e1270443ce` makes the existing Affiliate owner
@@ -2835,20 +2837,42 @@ installed or committed as a substitute for this queue.
   FUNNEL-A top three. It stores no raw tracking URL, IP, user agent, referrer,
   cookie, or query and is explicitly non-money. `launchctl` reads `runs=38`, last
   exit `0`.
-- **FUNNEL-D — provider funnel join:** join provider unique clicks, customer/signup
-  count, and transaction count to the same placements and interval; ambiguous
-  legacy links remain unjoined and receive no conversion credit. **IN PROGRESS:**
-  installed release `404608f109fa6c1725f844816d9a49f76f473881` owns the
-  hash-bound interval join. CTA interval start is `2026-08-22T07:20:00.091568Z`,
-  while current official link/transaction observations are still
-  `06:48:52Z/06:49:07Z`; therefore owner readback correctly remains
-  `WAITING_FOR_CURRENT_PROVIDER_READBACK` instead of claiming zero delta. The
-  durable owner is `ai.anicca.affiliate-loop`; the revenue cooldown is due at
-  `07:49:07Z`. `launchctl` reads `runs=39`, last exit `0`; owner Telegram message
-  ID is `28468`.
-- **FUNNEL-E — focus one cohort:** select exactly one placement by qualified buyer
-  intent plus measured funnel evidence, not by treating clicks as money; pause new
-  placement expansion until this cohort matures or reaches a typed terminal state.
+- **FUNNEL-D — DONE — provider funnel join:** installed release
+  `404608f109fa6c1725f844816d9a49f76f473881` let only the existing owner capture
+  fresh official link and commission reports after CTA interval start. Hash-valid,
+  mode-0600 receipt `6a8a3daa…a1cc0` occurs once in history and binds baseline
+  `62de4b70…4f456` to current snapshot `869b754b…5c7e12`. The interval is
+  `2026-08-22T07:20:00.091568Z` through `07:49:41.963731Z`; official commission
+  observation is `07:49:57.991646Z`. Subtitle Translator, Voice Changer, and Voice
+  Isolator each read CTA clicks `0`, provider click/unique deltas `0/0`, exact-
+  placement customers `UNAVAILABLE_AT_EXACT_PLACEMENT`, and official transactions
+  `0`. This is observed non-money, not a conversion or earning. `launchctl` reads
+  `runs=42`, last exit `0`; owner Telegram is `SENT`, message ID `28492`. Rolling
+  money remains `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`.
+- **FUNNEL-E — NEXT — focus one cohort:** select exactly one existing placement by
+  qualified buyer intent plus the observed zero interval, not by treating historic
+  clicks as money. Pause placement expansion until this cohort reaches its declared
+  maturity or a typed terminal state. Persist placement ID, buyer problem,
+  decision-stage query, evidence hashes, chosen channel set, selection reason, and
+  one-variable hypothesis before any new publication effect.
+
+**Publication cadence decision for FUNNEL-E through FUNNEL-H:** the owner may check
+for qualified buyer signals repeatedly, but publication acts only on an admitted
+asset. Initial cap is one new evidence-bearing owned article per UTC day and up to
+three native distribution acts per day for that same focused asset, each with a
+different buyer-question angle and exact receipt. This is a quality admission rule,
+not a claim that one article is universally optimal. A skipped day is correct when
+there is no new first-hand proof, buyer question, or measurable hypothesis. The
+owner must not create three templated affiliate articles merely to increase surface
+area. One admitted article is repurposed across channels over subsequent days,
+then weekly performance review decides continue, change one variable, or stop.
+
+Evidence for this decision is pinned rather than paraphrased as folklore:
+
+- Google Search Central, [people-first content](https://developers.google.com/search/docs/fundamentals/creating-helpful-content): many automated topics and content added merely to appear fresh are warning signs; original information, first-hand expertise, and visitor utility are the gate.
+- Google Search Central, [scaled content and thin affiliation](https://developers.google.com/search/docs/essentials/spam-policies#scaled-content): scaled unoriginal pages and merchant-copy affiliate pages add no value; good affiliate pages add original reviews, testing, comparisons, or useful features.
+- [`coreyhaines31/marketingskills@3df87f9`](https://github.com/coreyhaines31/marketingskills/tree/3df87f97621e18fbed7f6aa684edba54f49779a7/skills/marketing-loops): separate check cadence from act conditions, match cadence to signal speed, and treat over-frequent loops as busywork/noise.
+- [`Affitor/affiliate-skills@ed17ef3`](https://github.com/Affitor/affiliate-skills/blob/ed17ef37bc167b52d9596cbe0292507f001c483d/skills/automation/content-repurposer/SKILL.md): repurpose one proven article into native formats, schedule distribution across days, and feed measured format performance back into the next choice. Its unverified revenue examples are not adopted.
 - **FUNNEL-F — one-variable hypothesis:** version one change to offer, proof, CTA,
   or intent framing while holding placement, provider link, and other content
   variables fixed; the metric is customer or transaction conversion.
