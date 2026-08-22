@@ -52,12 +52,13 @@ send_telegram() {
     log "telegram target is not configured"
     return 1
   fi
-  local body="$1" idempotency_key params response message_id
+  local body="$1" idempotency_key response message_id
   idempotency_key="$(printf '%s' "$body" | shasum -a 256 | awk '{print $1}')"
-  params="$("$PY" -c 'import json,sys; print(json.dumps({"channel":"telegram","to":sys.argv[1],"message":sys.argv[2],"idempotencyKey":sys.argv[3]}, separators=(",",":")))' \
-    "$TELEGRAM_ALERT_CHAT_ID" "$body" "$idempotency_key")" || return 1
-  response="$(timeout "$TELEGRAM_SEND_TIMEOUT" openclaw gateway call send \
-    --params "$params" --timeout "$((TELEGRAM_SEND_TIMEOUT * 1000))" --json \
+  # One external attempt only. The Gateway call can deliver successfully and then keep its CLI
+  # alive until the outer timeout; retrying that ambiguous result created duplicate Telegram
+  # messages. `message send` is the live-proven finite CLI and returns the provider messageId.
+  response="$(timeout "$TELEGRAM_SEND_TIMEOUT" openclaw message send \
+    --channel telegram --target "$TELEGRAM_ALERT_CHAT_ID" --message "$body" --json \
     2>>"$EV/telegram.err")" || {
       printf '%s\n' "$response" >>"$EV/telegram.jsonl"
       return 1
@@ -106,37 +107,16 @@ report() {
   local body="x-repost::: $1
 
 — loop x-repost · model ${MODEL} · effort ${REASONING_EFFORT} · pass ${PASS_ID}"
-  for attempt in 1 2 3; do
-    if send_telegram "$body"; then
-      return 0
-    fi
-    sleep 3
-  done
-  log "telegram report failed 3x, queued to backlog"
-  "$PY" -c 'import json,sys; open(sys.argv[1],"a",encoding="utf-8").write(json.dumps({"body": sys.argv[2]}, ensure_ascii=False)+"\n")' \
-    "$STATE/report-backlog.jsonl" "$body"
+  send_telegram "$body" && return 0
+  log "telegram report outcome is ambiguous; no retry is allowed"
+  "$PY" -c 'import datetime,json,sys; open(sys.argv[1],"a",encoding="utf-8").write(json.dumps({"ts":datetime.datetime.now().astimezone().isoformat(),"body_sha256":sys.argv[2],"status":"ambiguous_no_retry"})+"\n")' \
+    "$STATE/telegram-ambiguous.jsonl" "$(printf '%s' "$body" | shasum -a 256 | awk '{print $1}')"
 }
 
 flush_report_backlog() {
-  [ -s "$STATE/report-backlog.jsonl" ] || return 0
-  local pending="$STATE/report-backlog.jsonl" kept="$STATE/report-backlog.tmp" attempted=0
-  : >"$kept"
-  while IFS= read -r line; do
-    [ -n "$line" ] || continue
-    if [ "$attempted" -ge 1 ]; then
-      printf '%s\n' "$line" >>"$kept"
-      continue
-    fi
-    attempted=1
-    local body
-    body="$("$PY" -c 'import json,sys; print(json.loads(sys.argv[1])["body"])' "$line" 2>/dev/null)" || continue
-    if send_telegram "$body"; then
-      log "flushed a queued report"
-    else
-      printf '%s\n' "$line" >>"$kept"
-    fi
-  done <"$pending"
-  mv "$kept" "$pending"
+  # Historical rows include outcomes that timed out after the provider accepted them. They are
+  # evidence to reconcile, not a safe resend queue.
+  [ ! -s "$STATE/report-backlog.jsonl" ] || log "telegram backlog quarantined; automatic resend disabled"
 }
 
 # A pass that went wrong and left no trace teaches nothing. One line, appended, never blocking.

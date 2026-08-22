@@ -20,12 +20,10 @@ TARGET="${TELEGRAM_ALERT_CHAT_ID:-}"
 
 send_digest() {
   [ -n "$TARGET" ] || return 1
-  local body="$1" idempotency_key params response message_id
+  local body="$1" idempotency_key response message_id
   idempotency_key="$(printf '%s' "$body" | shasum -a 256 | awk '{print $1}')"
-  params="$("$PY" -c 'import json,sys; print(json.dumps({"channel":"telegram","to":sys.argv[1],"message":sys.argv[2],"idempotencyKey":sys.argv[3]}, separators=(",",":")))' \
-    "$TARGET" "$body" "$idempotency_key")" || return 1
-  response="$(timeout "$TELEGRAM_SEND_TIMEOUT" openclaw gateway call send \
-    --params "$params" --timeout "$((TELEGRAM_SEND_TIMEOUT * 1000))" --json \
+  response="$(timeout "$TELEGRAM_SEND_TIMEOUT" openclaw message send \
+    --channel telegram --target "$TARGET" --message "$body" --json \
     2>>"$STATE/digest.err")" || return 1
   printf '%s\n' "$response" >>"$STATE/digest.jsonl"
   message_id="$("$PY" -c 'import json,sys
@@ -204,15 +202,11 @@ then
   exit 0
 fi
 
-for attempt in 1 2 3; do
-  if send_digest "$MESSAGE"; then
-    echo "x-repost-digest: sent"
-    exit 0
-  fi
-  sleep 3
-done
-
-echo "x-repost-digest: send failed 3x, queued to backlog" >&2
-"$PY" -c 'import json,sys; open(sys.argv[1],"a",encoding="utf-8").write(json.dumps({"body": sys.argv[2]}, ensure_ascii=False)+"\n")' \
-  "$STATE/report-backlog.jsonl" "$MESSAGE"
+if send_digest "$MESSAGE"; then
+  echo "x-repost-digest: sent"
+  exit 0
+fi
+echo "x-repost-digest: ambiguous send; no retry or backlog enqueue" >&2
+"$PY" -c 'import datetime,json,sys; open(sys.argv[1],"a",encoding="utf-8").write(json.dumps({"ts":datetime.datetime.now().astimezone().isoformat(),"body_sha256":sys.argv[2],"status":"ambiguous_no_retry"})+"\n")' \
+  "$STATE/telegram-ambiguous.jsonl" "$MESSAGE_SHA"
 exit 1
