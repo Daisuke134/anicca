@@ -988,7 +988,7 @@ zero submitted proposals, invites, offers, active contracts and earnings.
 - [x] Persist delivery intent only after independent `PASS` and fresh contract readback.
 - [ ] Execute one authorized milestone submission with frozen message/files.
 - [x] Require official submission ID and `Submitted` state; reconcile before any resubmission.
-- [ ] Replay with zero duplicate delivery; run tests and commit/push.
+- [x] Replay with zero duplicate delivery; run tests and commit/push.
 
 Task 19 engine evidence: Upwork's current official instructions say fixed-price work must be sent
 through `Deliver work > Your active contracts > Submit work` to start the 14-day review period;
