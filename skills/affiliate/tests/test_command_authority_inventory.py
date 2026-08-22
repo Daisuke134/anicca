@@ -6,10 +6,14 @@ import re
 import unittest
 from pathlib import Path
 
+from jsonschema import Draft202012Validator
+
 
 SKILL_ROOT = Path(__file__).resolve().parents[1]
 DISPATCHER = SKILL_ROOT / "affiliate"
 INVENTORY = SKILL_ROOT / "config" / "command-authority.json"
+REGISTRY = SKILL_ROOT / "config" / "command-registry.json"
+REGISTRY_SCHEMA = SKILL_ROOT / "config" / "schemas" / "command-registry-v1.json"
 AUTHORITY_CLASSES = {
     "READ_ONLY",
     "WRITE_LOCAL",
@@ -75,6 +79,38 @@ class CommandAuthorityInventoryTests(unittest.TestCase):
                 self.assertEqual(row["entrypoint"], entrypoint)
                 self.assertIn(row["authority"], AUTHORITY_CLASSES)
                 self.assertIs(type(row["external_effect"]), bool)
+
+    def test_typed_registry_covers_inventory_with_valid_schemas(self) -> None:
+        self.assertTrue(REGISTRY_SCHEMA.is_file(), f"missing registry schema: {REGISTRY_SCHEMA}")
+        self.assertTrue(REGISTRY.is_file(), f"missing typed registry: {REGISTRY}")
+        inventory = json.loads(INVENTORY.read_text(encoding="utf-8"))
+        schema = json.loads(REGISTRY_SCHEMA.read_text(encoding="utf-8"))
+        registry = json.loads(REGISTRY.read_text(encoding="utf-8"))
+        Draft202012Validator.check_schema(schema)
+        Draft202012Validator(schema).validate(registry)
+
+        inventory_rows = {row["command"]: row for row in inventory["commands"]}
+        registry_rows = {row["command"]: row for row in registry["commands"]}
+        self.assertEqual(set(registry_rows), set(inventory_rows))
+        for command, expected in inventory_rows.items():
+            with self.subTest(command=command):
+                row = registry_rows[command]
+                self.assertEqual(row["entrypoint"], expected["entrypoint"])
+                self.assertEqual(row["effect_class"], expected["authority"])
+                expected_refs = {
+                    "input_schema": "command-registry-v1.json#/$defs/input",
+                    "output_schema": "command-registry-v1.json#/$defs/output",
+                    "effect_schema": "command-registry-v1.json#/$defs/effect",
+                    "precondition_schema": (
+                        f"command-registry-v1.json#/$defs/precondition_{expected['authority'].lower()}"
+                    ),
+                    "semantic_postcondition_schema": (
+                        f"command-registry-v1.json#/$defs/postcondition_{expected['authority'].lower()}"
+                    ),
+                }
+                for field, reference in expected_refs.items():
+                    self.assertEqual(row[field], {"$ref": reference})
+                    Draft202012Validator.check_schema(row[field])
 
 
 if __name__ == "__main__":

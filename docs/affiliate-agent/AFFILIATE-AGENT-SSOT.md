@@ -2738,10 +2738,13 @@ flowchart LR
    Readback proves 41/41 dispatched commands have exactly one classification and
    the matching entrypoint. This cut adds no publisher, provider, ledger, or other
    production effect implementation.
-2. **A-CUT-1B — typed registry:** wrap the existing command entrypoints with input,
-   output, effect class, precondition, and semantic postcondition schemas;
-   acceptance is schema validation for every inventory row without copying the
-   publisher, provider, or ledger logic.
+2. **A-CUT-1B — typed registry — DONE:** wrap the existing command entrypoints with
+   input, output, effect class, precondition, and semantic postcondition schemas.
+   `skills/affiliate/config/command-registry.json` maps all 41 inventory rows to
+   their existing entrypoints; `config/schemas/command-registry-v1.json` owns the
+   shared Draft 2020-12 contracts, including authority-specific preconditions and
+   postconditions. Registry validation and exact inventory/entrypoint/effect-class
+   equality pass without copying or invoking publisher, provider, or ledger logic.
 3. **A-CUT-1C — guarded dispatch:** require `WRITE_EXTERNAL` calls to pass the
    existing owner claim, effect journal, policy, cost, quarantine, and exact-
    readback gates; acceptance is rejection of direct model-to-browser/provider
