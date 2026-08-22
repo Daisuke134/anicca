@@ -1,5 +1,20 @@
 # Affiliate local money loop handover
 
+- Repost Telegram transport repair: commit `0d55a1650` is pushed to both
+  Repost remotes and immutable release `20260822T183116-0d55a165` is current
+  with source/runtime CLI SHA-256
+  `e91a68b05d2f9f549edb0379d3a2ac5300938410539a9827ea6b3d218bef9203`.
+  Root cause of the 21-row backlog was exact: `flush_report_backlog` ran before
+  private env loading and `send_telegram` silently substituted target
+  `0000000000`; Affiliate succeeded because its owner used the configured real
+  destination. Repost now loads the private env before flush and fails closed
+  when the target is absent. The existing successful owner destination was
+  copied into Git-external `~/.openclaw/.env` without displaying it; file mode
+  is `0600`. The 13 Repost tests and shell/diff checks pass. No Telegram send is
+  claimed yet: the next existing-owner run must prove at most one backlog row
+  flushed, a provider message ID, and no duplicate report while it handles
+  Voice Cloning.
+
 - Disk-safe Repost runtime checkpoint: commits `7f418b9f2` and `41ed5893e`
   are pushed to both Repost remotes and immutable release
   `20260822T182738-41ed5893` is current. `cut-loop-release.sh` now prunes one

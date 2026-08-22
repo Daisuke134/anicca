@@ -50,6 +50,12 @@ portable uv fallback. This closes the two ENOSPC paths observed during Voice
 Changer recovery without weakening cost, quarantine, effect-journal, hourly,
 exact-readback, or no-resend gates.
 
+Runtime override: Repost release `0d55a1650` supersedes `41ed5893e`. It loads
+the Git-external private Telegram destination before the bounded backlog flush
+and rejects an absent destination instead of sending to a placeholder. This is
+source/runtime verified but remains live-unverified until the existing Repost
+owner returns a provider message ID; Codex does not send the report directly.
+
 ## 0. Objective
 
 Anicca is the company; Life Manager is the product, autonomous agent, and
