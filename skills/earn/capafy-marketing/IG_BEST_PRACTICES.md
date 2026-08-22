@@ -19,7 +19,7 @@
 
 | Rank | Reel | Score | Views | Likes | Comments | Listing |
 |---:|---|---:|---:|---:|---:|---|
-| 1 | [DcWRx9ys7Cv](https://www.instagram.com/capafy.skills8m4q2z/reel/DcWRx9ys7Cv/) | 0 | 0 | 0 | 0 | Decision Debate — Three Experts Argue It Out |
+| 1 | [DcWRx9ys7Cv](https://www.instagram.com/capafy.skills8m4q2z/reel/DcWRx9ys7Cv/) | 8 | 8 | 0 | 0 | Decision Debate — Three Experts Argue It Out |
 
 ## Lower-performing Reels
 
@@ -28,7 +28,6 @@ Not reported until at least 3 Reels have metrics; a baseline cannot form a lower
 ## Observed Tendencies
 
 - No winning pattern claimed from the current sample.
-- All measured Reels are tied at score 0; no separation exists.
 - Listing category metadata unavailable; no category trend inferred from listing names.
 - Hook metadata unavailable; no hook-tone trend inferred.
 
