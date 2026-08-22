@@ -83,6 +83,11 @@ For routine logistics, select the least-claiming option consistent with the resu
 job location, and candidate facts. Missing a prewritten answer is never a reason to
 stop the row.
 
+The action object always requires an explicit `kind`. For text, use exactly:
+`{"kind":"type","target":{"label":"EXACT_LABEL","role":"textbox","stable_id":"EXACT_STABLE_ID"},"text":"GROUNDED_ANSWER"}`.
+If the fresh observation exposes visible options, click the chosen option's exact
+fresh `ref:*` instead of typing a narrative answer into the picker.
+
 ## Workday account/session
 
 Preserve the existing signed-in session. Never create another account for a tenant
