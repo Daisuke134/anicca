@@ -387,7 +387,15 @@ U13 atomic order:
     all observed as zero, not inferred as a future refill. The loop keeps purchase, membership,
     boost, billing, withdrawal and public-job submission disabled; only a later official positive
     history/balance read or a zero-Connect invitation/direct offer can unlock an acquisition effect.
-11. Verify a repeated reconciliation produces no duplicate transition or external effect; commit/push.
+11. **DONE:** two consecutive production launchd reconciliations completed with exit 0 at official
+    observations `2026-08-22T16:51:09.769019+00:00` and
+    `2026-08-22T16:52:45.538216+00:00`. Across both runs the mode-600 transition ledger stayed
+    394 bytes with SHA-256 `e49adcc6ac3bd4db201c5275520458f8c5b7d819b2d8212bb8295ecb7b3d576b`,
+    total transitions stayed 1, and each run appended 0. Balance, submitted proposals, invitations,
+    offers, active proposals and earnings all stayed 0; the three sealed jobs stayed open at
+    7/11/9 Connects with identical proposal hashes. An earlier attempt exited 120 while a concurrent
+    release expansion exhausted disk headroom; it wrote neither state nor ledger effect. Replaying
+    after that producer stopped proved recovery without a duplicate marketplace or ledger effect.
 
 ### Task 7: Record Upwork's private action matrix
 
