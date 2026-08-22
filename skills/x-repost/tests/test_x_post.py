@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import importlib.util
+import io
 import json
 import os
+import tempfile
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
 
@@ -61,6 +64,30 @@ class Page:
 
 
 class XPostTests(unittest.TestCase):
+    def test_postiz_acceptance_survives_readback_session_failure_as_unverified(self) -> None:
+        class BrokenPlaywright:
+            def __enter__(self):
+                raise SystemExit("session unavailable")
+
+            def __exit__(self, *_args):
+                return False
+
+        with tempfile.TemporaryDirectory() as td:
+            text_file = Path(td) / "post.txt"
+            text_file.write_text("Useful comparison", encoding="utf-8")
+            argv = ["x_post.py", "--cdp", "http://127.0.0.1:1", "--mode", "quote",
+                    "--source-url", "https://x.com/source/status/123",
+                    "--text-file", str(text_file)]
+            output = io.StringIO()
+            with patch.object(MODULE, "postiz_publish", return_value="provider-1"), \
+                    patch.object(MODULE, "sync_playwright", return_value=BrokenPlaywright()), \
+                    patch.object(MODULE.sys, "argv", argv), redirect_stdout(output):
+                with self.assertRaisesRegex(SystemExit, "2"):
+                    MODULE.main()
+        receipt = json.loads(output.getvalue())
+        self.assertEqual(receipt["posted"], "unverified")
+        self.assertEqual(receipt["provider_submission_id"], "provider-1")
+
     def test_postiz_quote_appends_source_once_and_returns_submission(self) -> None:
         captured = {}
 

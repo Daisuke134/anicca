@@ -278,15 +278,27 @@ def main():
                    "reason": type(exc).__name__}, sys.stdout, ensure_ascii=False)
         print()
         sys.exit(1)
-    with sync_playwright() as pw:
-        browser = pw.chromium.connect_over_cdp(args.cdp)
-        handle = ensure_logged_in(get_page(browser))
-        if args.mode == "reply":
-            permalink = find_reply_permalink(pw, args.cdp, args.source_url, handle, needle)
-        else:
-            permalink = find_permalink(
-                pw, args.cdp, handle, needle, expected_url, text if expected_url else None
-            )
+    try:
+        with sync_playwright() as pw:
+            browser = pw.chromium.connect_over_cdp(args.cdp)
+            handle = ensure_logged_in(get_page(browser))
+            if args.mode == "reply":
+                permalink = find_reply_permalink(pw, args.cdp, args.source_url, handle, needle)
+            else:
+                permalink = find_permalink(
+                    pw, args.cdp, handle, needle, expected_url, text if expected_url else None
+                )
+    except (Exception, SystemExit) as exc:
+        # The Postiz effect already happened above. A readback/session failure is therefore an
+        # unknown external effect, never a safe publish failure. Return the provider receipt so
+        # the owner records an absorbing unverified row and cannot submit the source again.
+        json.dump({"posted": "unverified", "mode": args.mode,
+                   "source_url": args.source_url, "provider": "postiz",
+                   "provider_submission_id": submission_id,
+                   "reason": f"readback failed: {type(exc).__name__}"},
+                  sys.stdout, ensure_ascii=False)
+        print()
+        sys.exit(2)
     if not permalink:
         json.dump({"posted": "unverified", "mode": args.mode, "handle": handle,
                    "needle": needle, "source_url": args.source_url, "provider": "postiz",

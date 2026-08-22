@@ -200,6 +200,65 @@ set +a
 # report that an earlier pass could not.
 flush_report_backlog
 
+# A historical x_post version could return an empty result after Postiz accepted the effect when
+# the subsequent X login readback failed. Recover exactly that crash shape into the same absorbing
+# unverified ledger used by normal rc=2 handling. This never opens a composer or calls Postiz.
+CRASH_RECOVERY="$EV/postiz-readback-crash-recovery.json"
+"$PY" - "$POSTED" "$STATE/evidence" "$EV" "$CRASH_RECOVERY" <<'PYEOF'
+import datetime, fcntl, json, os, pathlib, sys
+posted_path, evidence_root, current_ev, receipt_path = map(pathlib.Path, sys.argv[1:5])
+recovered = None
+try:
+    prior = sorted((p for p in evidence_root.iterdir() if p.is_dir() and p != current_ev), reverse=True)
+except OSError:
+    prior = []
+for ev in prior:
+    post_json, post_err = ev / "post.json", ev / "post.err"
+    source_file, text_file, verify_file = ev / "source.json", ev / "post.txt", ev / "verify.json"
+    try:
+        if post_json.stat().st_size != 0 or "X session could not be restored" not in post_err.read_text():
+            continue
+        verify = json.loads(verify_file.read_text())
+        if not all(verify.get(k) is True for k in ("supported", "useful", "source_specific")):
+            continue
+        source = json.loads(source_file.read_text())
+        source_url = source["url"]
+        text = text_file.read_text().strip()
+        if not source_url.startswith("https://x.com/") or not text:
+            continue
+    except (OSError, ValueError, KeyError, TypeError):
+        continue
+    posted_path.touch(exist_ok=True)
+    with posted_path.open("a+", encoding="utf-8") as fh:
+        fcntl.flock(fh, fcntl.LOCK_EX)
+        fh.seek(0)
+        rows = [json.loads(line) for line in fh if line.strip()]
+        if any(row.get("source_url") == source_url for row in rows):
+            break
+        row = {
+            "posted_at": datetime.datetime.fromtimestamp(post_err.stat().st_mtime).astimezone().isoformat(),
+            "kind": "original" if source_url in text else "quote",
+            "source_url": source_url,
+            "source_handle": source.get("handle", ""),
+            "source_text": source.get("text", ""),
+            "tone": "unknown",
+            "text": text,
+            "post_url": None,
+            "status": "unverified",
+            "recovery_reason": "POSTIZ_ACCEPTED_THEN_X_SESSION_READBACK_FAILED",
+        }
+        fh.seek(0, os.SEEK_END)
+        fh.write(json.dumps(row, ensure_ascii=False) + "\n")
+        fh.flush()
+        os.fsync(fh.fileno())
+        recovered = {"source_url": source_url, "evidence": str(ev)}
+    break
+receipt_path.write_text(json.dumps({"recovered": recovered is not None, "row": recovered}) + "\n")
+PYEOF
+if [ "$($PY -c 'import json,sys; print(json.load(open(sys.argv[1])).get("recovered") is True)' "$CRASH_RECOVERY" 2>/dev/null)" = "True" ]; then
+  log "recovered prior Postiz-accepted/readback-failed effect as terminal unverified"
+fi
+
 # ---------------------------------------------------------- gate: at most one post per half-hour
 # Cadence and duplicate protection use local half-hour slots. The owner instruction disables the daily action
 # cap; setting X_REPOST_DAILY_MAX to a positive integer is an explicit emergency override only.
