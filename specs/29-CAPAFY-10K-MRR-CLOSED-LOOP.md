@@ -330,6 +330,8 @@ Data Analyst `7785270416`のrepo-owned demonstrationは4か月の入力値、WHA
 
 system resolver不調時もOS DNS設定を変えず、Cloudflare DoHで公式A recordを解決してTLS hostnameを維持したread-only fallbackを実測する。Telegram milestoneはprovider `message_id=29317`を返す。Capafy `GET /agent/agents`はHTTP `200`、33 total、listed `22`、occupied `5`、free `0`、retry `6`、unknown `0`。Portfolio `9480246345`、Sales Objection `3098034209`、User Interview `3661050861`はunder review、Football `1037238583`はreview rejectedのままで、slot writeは0件を維持する。このDoH fallbackはdiagnostic readbackだけで、stale stateをpublisher入力へ昇格しない。
 
+同じlive DoH readbackをaccount、inventory、90-day sales、payout、refundの5 sourceへ適用したcompany receiptは`verdict=success`、orders `5`、gross `$19.98`、pending `$8.00`、realized `$0.00`、refund `$0.00`を返す。order billing mixとseller subscription sourceは引き続き存在しないため、one-time revenue、settled MRR、net MRRは`unknown`を維持する。
+
 ## Atomic remaining TODO
 
 Items are executed top-to-bottom. Only one item is active.
