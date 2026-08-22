@@ -26,6 +26,7 @@ from job_journal import (
 from provider_cli import ProviderError, observe, poll, read_login_credentials, resume
 from program_registry import TTS_PLACEMENT, apply_getresponse, elevenlabs_link_action
 from acquisition_decision import advance as advance_acquisition_decision
+from cta_instrumentation import advance as advance_cta_instrumentation, observe_clicks
 from runtime_guard import runtime_guard
 
 
@@ -3770,6 +3771,32 @@ def _wake_once(args, started_at, run_id):
         {"funnel_snapshot_sha256": funnel_snapshot.get("snapshot_sha256")},
         lambda: observe_owned_visits(state),
     )
+    focused_funnel = (funnel_snapshot.get("placements") or [{}])[0]
+    try:
+        cta_instrumentation = admit(
+            "publication.cta-instrumentation", "PUBLICATION_WRITE",
+            {"placement_id": focused_funnel.get("placement_id")},
+            lambda: advance_cta_instrumentation(
+                state, landing_root.expanduser(), focused_funnel["placement_id"],
+                focused_funnel["owned_url"],
+            ),
+        )
+    except Exception as error:
+        cta_instrumentation = {
+            "state": "CTA_INSTRUMENTATION_FAILED", "changed": False,
+            "failure_type": type(error).__name__,
+        }
+    try:
+        cta_clicks = admit(
+            "acquisition.observe-cta-clicks", "READ_ONLY",
+            {"instrumentation_state": cta_instrumentation.get("state")},
+            lambda: observe_clicks(state, funnel_snapshot.get("placements") or []),
+        )
+    except Exception as error:
+        cta_clicks = {
+            "state": "CTA_OBSERVATION_FAILED", "changed": False,
+            "failure_type": type(error).__name__,
+        }
     rolling_net = admit(
         "ledger.rolling-net", "LEDGER_ONLY", {"placement_ledger_state": placement_ledger.get("state")},
         lambda: refresh_rolling_net(state),
@@ -3918,6 +3945,12 @@ def _wake_once(args, started_at, run_id):
         "owned_visit_state": owned_visits.get("state"),
         "owned_visit_reason": owned_visits.get("reason"),
         "owned_visit_receipt_sha256": owned_visits.get("receipt_sha256"),
+        "cta_instrumentation_state": cta_instrumentation.get("state"),
+        "cta_instrumentation_commit": cta_instrumentation.get("commit"),
+        "cta_instrumentation_failure_type": cta_instrumentation.get("failure_type"),
+        "cta_click_state": cta_clicks.get("state"),
+        "cta_click_receipt_sha256": cta_clicks.get("receipt_sha256"),
+        "cta_click_failure_type": cta_clicks.get("failure_type"),
         "rolling_net_state": rolling_net.get("state"),
         "rolling_net_money_state": rolling_net.get("money_state"),
         "rolling_net_net_state": rolling_net.get("net_state"),

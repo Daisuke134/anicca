@@ -1,0 +1,52 @@
+import importlib.util
+import io
+import json
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+from unittest.mock import patch
+
+
+SCRIPT = Path(__file__).parents[1] / "scripts" / "cta_instrumentation.py"
+sys.path.insert(0, str(SCRIPT.parent))
+SPEC = importlib.util.spec_from_file_location("cta_instrumentation", SCRIPT)
+MODULE = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(MODULE)
+
+
+class CtaInstrumentationTests(unittest.TestCase):
+    def test_transforms_fixed_host_redirect_and_public_href_without_raw_receipt(self):
+        library = '''const TOKEN = /^(ai|ho|ej|ee)_[a-z2-7]{20}$/;\nfunction destination(product, token, providerToken) {\n  if (product.kind === "app") {\n}\n    const product = match && products[match[1]];'''
+        transformed = MODULE._transform_library(library)
+        self.assertIn("AFFILIATE_CTA_V1", transformed)
+        self.assertIn('kind: "affiliate"', transformed)
+        self.assertIn("https://try.elevenlabs.io/${product.placementId}", transformed)
+        page = '''function renderMarkdown(md: string): string {\n  const inline = (s: string) =>\n    s\n      .replace(/&/g, "&amp;")'''
+        transformed_page = MODULE._transform_page(page)
+        self.assertIn("trackedAffiliateHref", transformed_page)
+        self.assertIn("/go/af_${placement}", transformed_page)
+
+    def test_click_observation_joins_exact_placements_and_zero_is_non_money(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root)
+            MODULE.atomic_write(state / "cta-instrumentation.json", {
+                "state": "LIVE", "commit": "a" * 40,
+                "deployed_at": "2026-08-22T00:00:00+00:00",
+            })
+            responses = [
+                io.BytesIO(b'[{"receipt_id":"one","clicked_at":"2026-08-22T01:00:00Z"}]'),
+                io.BytesIO(b"[]"),
+            ]
+            with patch.object(MODULE, "_env", side_effect=["https://project.test", "key"]), \
+                 patch.object(MODULE.urllib.request, "urlopen", side_effect=responses):
+                result = MODULE.observe_clicks(state, [
+                    {"placement_id": "alpha-en-1"}, {"placement_id": "beta-en-1"},
+                ])
+            self.assertEqual([row["count"] for row in result["placements"]], [1, 0])
+            self.assertEqual(result["money_state"], "NON_MONEY")
+            self.assertNotIn("key", json.dumps(result))
+
+
+if __name__ == "__main__":
+    unittest.main()
