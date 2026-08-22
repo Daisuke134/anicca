@@ -16,7 +16,7 @@ class DirectCDPTypeTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_choose_reopens_an_expired_overlay_and_clicks_the_option_atomically(self):
         page = DirectCDPPage("ws://example", "target")
-        page.click_target = AsyncMock(side_effect=[RuntimeError("closed"), None, None])
+        page.click_target = AsyncMock(side_effect=[RuntimeError("expired id"), None])
         session = unittest.mock.Mock()
         session.page.return_value = page
         action = VisibleActionV1(
@@ -27,7 +27,7 @@ class DirectCDPTypeTests(unittest.IsolatedAsyncioTestCase):
 
         await ActionExecutor(session)._execute_direct(page, action)
 
-        self.assertEqual(page.click_target.await_count, 3)
+        self.assertEqual(page.click_target.await_count, 2)
 
     def test_target_resolution_includes_pointer_operated_provider_controls(self):
         script = DirectCDPPage._target_script(
