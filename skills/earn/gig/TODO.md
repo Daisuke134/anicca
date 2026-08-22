@@ -369,6 +369,17 @@ the manager to inspect previews plus the complete conversation and select the la
 lineage; highest version is no longer treated as synonymous with accepted. It adds no Haru-specific branch,
 workflow state or new dependency. This source change is syntax-verified but is not production-proved until a
 published natural owner pass selects v27, builds the next version and passes the visual/effect gates below.
+Published release `829334b6fabf76bade54601182f43acbc186fc67` production-proved lineage selection:
+the natural Haru owner staged v1-v31, opened v27-v31 PC/responsive previews, selected v27 as the last accepted
+base and used the v28 internal derivative that preserves that layout with the latest inquiry assets. It produced
+durable v32 SHA-256 `832fbef4e194e168147a2faa838795a667b6c78c9467639e53f6b1a800e23b13` with exact required asset ids,
+AI/PDF/standard and 2x PNG/SVG/source members and ZIP integrity. Direct PC/responsive inspection confirms the
+v27 layout and both latest inquiry treatments. The first pass still stopped before review/send because the
+builder called this complete review-stage package `REVIEW_READY`; the controller's old structure gate accepts
+only `PASS`. The owner contract now states that a complete artifact ready for the current review delivery stage
+is `PASS` even though buyer approval comes later; `REVIEW_READY` is reserved for an explicitly allowed incomplete
+draft. The already-inspected v32 records were normalized to that definition only to enter the existing fresh
+evaluator. No Coconala effect has yet occurred.
 
 **E2E judgment.** This work changes no owned application UI, so Maestro is not applicable. Completion
 requires the real launchd owner to act through the authenticated Coconala browser and an exact-room
