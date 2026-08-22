@@ -231,9 +231,14 @@ def load_candidates(path: Path) -> list[dict[str, str]]:
         if not re.fullmatch(r"~\d{15,}", job_id) or job_id not in job_url or job_id in seen:
             raise ValueError("upwork_candidate_config_invalid")
         seen.add(job_id)
-        result.append({key: str(item.get(key) or "") for key in (
-            "job_id", "job_url", "queue", "title",
-        )})
+        candidate = {key: str(item.get(key) or "") for key in (
+            "job_id", "job_url", "queue", "title", "proposal_payload_sha256",
+        )}
+        if candidate["queue"] == "ready" and not re.fullmatch(
+            r"[0-9a-f]{64}", candidate["proposal_payload_sha256"],
+        ):
+            raise ValueError("upwork_candidate_config_invalid")
+        result.append(candidate)
     return result
 
 

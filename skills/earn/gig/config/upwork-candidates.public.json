@@ -5,19 +5,22 @@
       "job_id": "~022091106411892491962",
       "job_url": "https://www.upwork.com/jobs/~022091106411892491962",
       "queue": "ready",
-      "title": "2 Students needed for short usability test - 20-30 minutes"
+      "title": "2 Students needed for short usability test - 20-30 minutes",
+      "proposal_payload_sha256": "a6ffd0ef515370406653bf4d9cb2c4b874df21652ff2764c7228e2dbc443cee7"
     },
     {
-      "job_id": "~022091070478975551162",
-      "job_url": "https://www.upwork.com/jobs/~022091070478975551162",
-      "queue": "parked",
-      "title": "Need an AI Product Comparison Engine built."
+      "job_id": "~022091182433542935908",
+      "job_url": "https://www.upwork.com/jobs/~022091182433542935908",
+      "queue": "ready",
+      "title": "Build a Telegram Bot for AI-Powered UPSC Mains Answer Evaluation (Google Sheets + Gemini AI)",
+      "proposal_payload_sha256": "3e959965a64466dbfa4906f34a107a845267957a2ea6617ae07ff118135ad200"
     },
     {
-      "job_id": "~022091070238314681977",
-      "job_url": "https://www.upwork.com/jobs/~022091070238314681977",
-      "queue": "historical_observed",
-      "title": "AI Developer Needed for RAG Document Search & Q&A MVP"
+      "job_id": "~022091170260597544595",
+      "job_url": "https://www.upwork.com/jobs/~022091170260597544595",
+      "queue": "ready",
+      "title": "Developer Needed to Fix Authentication & Small Issues in AI Platform",
+      "proposal_payload_sha256": "c99d560c043fc6494bbb36b3a3bb3055873e639a1deac427701841b2af57905b"
     }
   ]
 }

@@ -372,7 +372,15 @@ U13 atomic order:
 8. **DONE:** candidate `~022091106411892491962` still exposes the official 7-Connect proposal entry,
    so it remains in the ready queue rather than being falsely retired. Balance remains 0 and no
    proposal effect occurred.
-9. Discover recent jobs twice and qualify replacements until three live sealed candidates exist.
+9. **DONE:** repeated authenticated searches rejected already-hired, oversized, geographically
+   incompatible and unsupported-experience jobs, then produced three currently open sealed
+   candidates: usability test `~022091106411892491962` (7 Connects), Telegram/Sheets/Gemini
+   workflow `~022091182433542935908` (11 Connects), and Neuroflow authentication repair
+   `~022091170260597544595` (7 Connects). Each official detail receipt shows a proposal entry and
+   Available Connects 0; none was submitted. Every ready public row carries the SHA-256 of its
+   factual, job-specific private proposal; the three private payloads contain no unsupported claim,
+   recompute to their recorded hashes, and are stored in a mode-700 directory as mode-600 files.
+   Fourteen focused provider tests pass and the receipt-backed parser returns three `open` rows.
 10. Read free Connects history and refunds; never purchase, withdraw or submit without sufficient free capacity.
 11. Verify a repeated reconciliation produces no duplicate transition or external effect; commit/push.
 
