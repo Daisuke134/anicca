@@ -319,6 +319,15 @@ read-only targeted refresh is now serialized through that single physical browse
 does not serialize artifact work or delivery; it prevents one browser resource from turning parallel dispatch into
 an all-room failure.
 
+Release `17fb4a7e6` then completed fresh targeted official readback for all nine paid rooms and dispatched the
+project owners in parallel. Haru was classified `actionable/file/review`, formal approval null and unresolved empty
+against latest buyer message `js-talkroomMessage-220032238`. Its existing v43 package remains SHA-256
+`4ce8e306b2edc0d9aeb9c68c217d9948f044d3c293f62f1f6bea277a19ffc640`. The owner selected two new
+self-contained SVG inputs after proving zero pixel delta from the v43 masters, but Illustrator 30.7 immediately
+closed the PC document during `app.open()` (`The document is no longer open`); effect/readback remain zero and the
+responsive request did not run. That input hash is now durably failed. The next owner resume must choose the
+already-inspected PC/responsive PDF inputs, obtain both save-close-reopen receipts, finish v43 and send once.
+
 **Current runtime refresh.** Unrelated dirty files remain untouched. The existing Paid pass naturally resumed the
 Haru v43 staging after compiling
 the complete proposal, DM, talkroom and attachment context. Haru `18169583` remains unsent. The resumed owner first
