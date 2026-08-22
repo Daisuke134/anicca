@@ -44,12 +44,28 @@ def message_id(value):
 raise SystemExit(0 if message_id(json.loads(sys.argv[1])) else 1)' "$response"
 }
 
-# Evaluate before reporting, so the digest carries today's verdict instead of yesterday's. The
-# evaluator refuses to move the knob on thin data and records that refusal, which is the difference
-# between a loop that learns and one that just fidgets.
-"$PY" "$SKILL/scripts/x_evaluate.py" --state "$STATE" \
-  --window-hours "${X_REPOST_EXPERIMENT_WINDOW_HOURS:-48}" --apply >/dev/null 2>&1 \
-  || echo "x-repost-digest: evaluation failed, reporting anyway" >&2
+ALREADY_EVALUATED="$("$PY" - "$STATE/experiments.jsonl" <<'PYEOF'
+import datetime, json, pathlib, sys
+today = datetime.datetime.now().astimezone().date()
+path = pathlib.Path(sys.argv[1])
+seen = False
+if path.exists():
+    for line in path.read_text(encoding="utf-8").splitlines():
+        try:
+            at = datetime.datetime.fromisoformat(json.loads(line).get("ts", "")).astimezone().date()
+            seen = seen or at == today
+        except (ValueError, TypeError, json.JSONDecodeError):
+            pass
+print(seen)
+PYEOF
+)"
+
+if [ "$ALREADY_EVALUATED" != "True" ]; then
+  # Evaluate before reporting, so the digest carries today's verdict instead of yesterday's. The
+  # evaluator refuses to move the knob on thin data and records that refusal.
+  "$PY" "$SKILL/scripts/x_evaluate.py" --state "$STATE" \
+    --window-hours "${X_REPOST_EXPERIMENT_WINDOW_HOURS:-48}" --apply >/dev/null 2>&1 \
+    || echo "x-repost-digest: evaluation failed, reporting anyway" >&2
 
 # Refill the well once a day. It used to run inside the hourly pass, which added a second long
 # model call to every publish and pushed one pass past 35 minutes on an hourly schedule. The
@@ -147,6 +163,9 @@ for row in rows:
 PYINNER
 )
   echo "x-repost-digest: harvested $ADDED seed(s)"
+fi
+else
+  echo "x-repost-digest: today's evaluation already exists; delivery-only replay"
 fi
 
 BODY="$("$PY" "$SKILL/scripts/x_digest.py" --posted "$STATE/posted.jsonl" --window-hours "$WINDOW")" || {
