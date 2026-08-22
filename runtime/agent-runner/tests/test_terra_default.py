@@ -4,6 +4,15 @@ from pathlib import Path
 
 
 class ApprovedRouteDefaultTest(unittest.TestCase):
+    def test_codex_automation_uses_local_shell_without_code_mode_host(self):
+        config_path = Path(__file__).resolve().parents[1] / "config.json"
+        config = json.loads(config_path.read_text(encoding="utf-8"))
+        disabled = config["providers"]["codex"]["disabled_features"]
+
+        self.assertIn("code_mode_host", disabled)
+        self.assertNotIn("shell_tool", disabled)
+        self.assertNotIn("unified_exec", disabled)
+
     def test_every_executable_agent_class_uses_its_approved_single_route(self):
         config_path = Path(__file__).resolve().parents[1] / "config.json"
         config = json.loads(config_path.read_text(encoding="utf-8"))
