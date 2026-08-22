@@ -10,20 +10,28 @@ const { collectTikTokWindow } = require("./tiktok-native-metrics-read.js");
 
 const WINDOWS = Object.freeze({ "2h": 2 * 3600_000, "24h": 24 * 3600_000, "72h": 72 * 3600_000, "7d": 7 * 86400_000 });
 const GRACE_MS = 90 * 60_000;
-const ACCOUNT = "@anicca.jp4";
-const INTEGRATION = "cmn8x8hdv028uqx0y4gdfse5t";
+const TARGETS = Object.freeze([
+  Object.freeze({ publication_dir: "anicca-ios", product_id: "anicca-ios", locale: "ja", account_id: "@anicca.jp4", native_owner: "anicca.jp4", integration_id: "cmn8x8hdv028uqx0y4gdfse5t", format_id: "reelclaw-card", form: "nudge-card" }),
+  Object.freeze({ publication_dir: "honne-ai", product_id: "honne-ai", locale: "en", account_id: "@honne_reveal", native_owner: "honne_reveal", integration_id: "cmoig11ew001zlv0yk6vqo1us", format_id: "reelclaw", form: "relationship-confession" }),
+]);
 
-function discoverJp4(dataDir) {
-  const file = path.join(dataDir, "tenants/dais-local/marketing/video-publication/anicca-ios/distribution.jsonl");
+function discoverTarget(dataDir, target) {
+  const file = path.join(dataDir, "tenants/dais-local/marketing/video-publication", target.publication_dir, "distribution.jsonl");
   if (!fs.existsSync(file)) return [];
-  return fs.readFileSync(file, "utf8").split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line)).filter((row) => row.platform === "tiktok" && row.status === "published" && row.provider_reconciled === true && /^https:\/\/www\.tiktok\.com\/@anicca\.jp4\/video\/\d+\/?$/.test(String(row.public_url || ""))).map((row) => {
+  return fs.readFileSync(file, "utf8").split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line)).filter((row) => {
+    const match = /^https:\/\/www\.tiktok\.com\/@([^/]+)\/video\/(\d+)\/?$/.exec(String(row.public_url || ""));
+    return row.platform === "tiktok" && row.status === "published" && row.provider_reconciled === true && row.format_id === target.format_id && row.form === target.form && row.locale === target.locale && match && `@${match[1]}` === target.account_id;
+  }).map((row) => {
     const match = /\/video\/(\d+)/.exec(row.public_url); const captionPath = path.resolve(String(row.caption_path || ""));
-    if (row.format_id !== "reelclaw-card" || row.form !== "nudge-card" || row.locale !== "ja" || !/^c[a-z0-9]+$/.test(String(row.provider_id || "")) || !fs.statSync(captionPath, { throwIfNoEntry: false })?.isFile() || !Number.isFinite(Date.parse(row.ts))) throw new Error("JP4 verified distribution row invalid");
-    const bytes = fs.readFileSync(captionPath); if (crypto.createHash("sha256").update(bytes).digest("hex") !== row.caption_sha256) throw new Error("JP4 caption object integrity mismatch");
-    return Object.freeze({ tenant_id: "dais-local", product_id: "anicca-ios", locale: "ja", account_id: ACCOUNT, native_owner: "anicca.jp4", integration_id: INTEGRATION,
+    if (row.format_id !== target.format_id || row.form !== target.form || row.locale !== target.locale || !/^c[a-z0-9]+$/.test(String(row.provider_id || "")) || !fs.statSync(captionPath, { throwIfNoEntry: false })?.isFile() || !Number.isFinite(Date.parse(row.ts))) throw new Error(`${target.account_id} verified distribution row invalid`);
+    const bytes = fs.readFileSync(captionPath); if (crypto.createHash("sha256").update(bytes).digest("hex") !== row.caption_sha256) throw new Error(`${target.account_id} caption object integrity mismatch`);
+    return Object.freeze({ tenant_id: "dais-local", product_id: target.product_id, locale: target.locale, account_id: target.account_id, native_owner: target.native_owner, integration_id: target.integration_id,
       provider_post_id: row.provider_id, shortcode: match[1], video_id: match[1], public_url: row.public_url, caption: bytes.toString("utf8"), published_at: row.ts });
   });
 }
+
+function discoverJp4(dataDir) { return discoverTarget(dataDir, TARGETS[0]); }
+function discoverTargets(dataDir) { return TARGETS.flatMap((target) => discoverTarget(dataDir, target)); }
 
 function snapshotFile(dataDir, expected, window) { return path.join(dataDir, "tenants", expected.tenant_id, "marketing", "metrics", expected.native_owner, expected.shortcode, `${window}.combined.json`); }
 
@@ -39,7 +47,7 @@ function delayed(dataDir, expected, window, observedAt) {
 }
 
 async function runDue(nowMs = Date.now(), env = process.env, provided = null) {
-  const dataDir = resolveDataRoot(env); const results = []; const expecteds = provided || discoverJp4(dataDir);
+  const dataDir = resolveDataRoot(env); const results = []; const expecteds = provided || discoverTargets(dataDir);
   for (const expected of expecteds) {
     for (const [window, delay] of Object.entries(WINDOWS)) {
       if (fs.existsSync(snapshotFile(dataDir, expected, window))) { results.push({ video_id: expected.video_id, window, state: "complete" }); continue; }
@@ -57,4 +65,4 @@ async function runDue(nowMs = Date.now(), env = process.env, provided = null) {
 }
 
 if (require.main === module) runDue().then((result) => process.stdout.write(`${JSON.stringify(result)}\n`)).catch((error) => { process.stderr.write(`${error.message}\n`); process.exitCode = 1; });
-module.exports = { GRACE_MS, WINDOWS, delayed, discoverJp4, runDue, snapshotFile };
+module.exports = { GRACE_MS, TARGETS, WINDOWS, delayed, discoverJp4, discoverTarget, discoverTargets, runDue, snapshotFile };

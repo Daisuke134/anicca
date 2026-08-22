@@ -108,7 +108,7 @@ function persistDailyDigest({ dataDir, reportDay, observedAt, expected = EXPECTE
     .find((snapshot) => snapshot.sources.postiz_post.status === "measured") || rows.map((row) => row.file && JSON.parse(fs.readFileSync(row.file, "utf8"))).find(Boolean);
   if (!source) throw new Error("Instagram daily digest has no metric snapshot");
   const file = path.join(directory, "daily", `${reportDay}.json`);
-  const snapshot = { ...source, kind: "instagram_daily_metric_digest", window: "daily", observed_at: observedAt, report_day: reportDay,
+  const snapshot = { ...source, kind: /^https:\/\/www\.tiktok\.com\//.test(source.public_url) ? "tiktok_daily_metric_digest" : "instagram_daily_metric_digest", window: "daily", observed_at: observedAt, report_day: reportDay,
     observation_windows: rows.map(({ window, status }) => ({ window, status })) };
   fs.mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 });
   if (fs.existsSync(file)) return { created: false, file, snapshot: JSON.parse(fs.readFileSync(file, "utf8")) };
