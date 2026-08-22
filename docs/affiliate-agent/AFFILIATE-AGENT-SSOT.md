@@ -2730,9 +2730,14 @@ flowchart LR
 
 **Phase A — install the runtime Agent without replacing proven tools**
 
-1. **A-CUT-1A — authority inventory:** classify every existing Affiliate command
-   as `READ_ONLY`, `WRITE_EXTERNAL`, `MONEY_RECONCILE`, or `REPORT`; acceptance is
-   one inventory with no unclassified command and no new effect implementation.
+1. **A-CUT-1A — authority inventory — DONE:** classify every existing Affiliate
+   command as `READ_ONLY`, `WRITE_LOCAL`, `SECRET_LOCAL`, `MODEL_EXTERNAL`,
+   `WRITE_EXTERNAL`, `MONEY_RECONCILE`, or `REPORT`. The canonical inventory is
+   `skills/affiliate/config/command-authority.json`; its dispatcher/AST-derived
+   coverage test is `skills/affiliate/tests/test_command_authority_inventory.py`.
+   Readback proves 41/41 dispatched commands have exactly one classification and
+   the matching entrypoint. This cut adds no publisher, provider, ledger, or other
+   production effect implementation.
 2. **A-CUT-1B — typed registry:** wrap the existing command entrypoints with input,
    output, effect class, precondition, and semantic postcondition schemas;
    acceptance is schema validation for every inventory row without copying the
