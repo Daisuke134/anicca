@@ -22,9 +22,11 @@ const { executeCapabilityJob } = require("./runtime-up.js");
 const TENANT = "dais-local";
 const PRODUCTION_SLOTS = Object.freeze(["08:30", "12:30", "21:30"]);
 const ANICCA_MAIN_SLOTS = Object.freeze(["08:00", "16:00", "22:37"]);
+const ANICCA_MAIN_INSTAGRAM_SLOTS = Object.freeze(["19:10"]);
 const LANES = Object.freeze({
-  run: { name: "honne JA", product: "honne-ai", format: "reelclaw", locale: "ja", account: "@honnevideo", integrationId: "cmnit95mg015rrm0ye5vm8dhl", slots: PRODUCTION_SLOTS, packKey: "LM_HONNE_JA_PACK_REF", mediaKey: "LM_HONNE_JA_MEDIA_REFS", approvalKey: "LM_HONNE_JA_PUBLICATION_APPROVAL_REF", telegramLane: "honne-ja" },
-  "run-anicca-main": { name: "Anicca main", product: "anicca-ios", format: "reelclaw-card", locale: "ja", account: "@anicca.jp", integrationId: "cmp9sdev5012voh0y58qs45xc", slots: ANICCA_MAIN_SLOTS, packKey: "LM_ANICCA_MAIN_PACK_REF", mediaKey: "LM_ANICCA_MAIN_MEDIA_REFS", approvalKey: "LM_ANICCA_MAIN_TIKTOK_APPROVAL_REF", telegramLane: "anicca-main-ja-tiktok" },
+  run: { name: "honne JA", product: "honne-ai", format: "reelclaw", locale: "ja", platform: "tiktok", account: "@honnevideo", integrationId: "cmnit95mg015rrm0ye5vm8dhl", slots: PRODUCTION_SLOTS, packKey: "LM_HONNE_JA_PACK_REF", mediaKey: "LM_HONNE_JA_MEDIA_REFS", approvalKey: "LM_HONNE_JA_PUBLICATION_APPROVAL_REF", telegramLane: "honne-ja" },
+  "run-anicca-main": { name: "Anicca main", product: "anicca-ios", format: "reelclaw-card", locale: "ja", platform: "tiktok", account: "@anicca.jp", integrationId: "cmp9sdev5012voh0y58qs45xc", slots: ANICCA_MAIN_SLOTS, packKey: "LM_ANICCA_MAIN_PACK_REF", mediaKey: "LM_ANICCA_MAIN_MEDIA_REFS", approvalKey: "LM_ANICCA_MAIN_TIKTOK_APPROVAL_REF", telegramLane: "anicca-main-ja-tiktok" },
+  "run-anicca-main-instagram": { name: "Anicca main Instagram", product: "anicca-ios", format: "reelclaw-card", locale: "ja", platform: "instagram", account: "@anicca.jp1", integrationId: "cmn8ycvtn02djqx0ytuisn9mw", slots: ANICCA_MAIN_INSTAGRAM_SLOTS, packKey: "LM_ANICCA_MAIN_PACK_REF", mediaKey: "LM_ANICCA_MAIN_MEDIA_REFS", approvalKey: "LM_ANICCA_MAIN_INSTAGRAM_APPROVAL_REF", telegramLane: "anicca-main-ja-instagram" },
 });
 
 function required(value, label) {
@@ -35,7 +37,7 @@ function required(value, label) {
 
 function parseArgs(argv) {
   if (!LANES[argv[0]] || ![1, 3].includes(argv.length) || (argv.length === 3 && argv[1] !== "--slot")) {
-    throw new Error("usage: honne-ja-cycle.js <run|run-anicca-main> [--slot <ISO instant>]");
+    throw new Error("usage: honne-ja-cycle.js <run|run-anicca-main|run-anicca-main-instagram> [--slot <ISO instant>]");
   }
   return { lane: LANES[argv[0]], slot: argv[1] ? String(argv[2]) : null };
 }
@@ -91,11 +93,10 @@ function services(env, dataDir, tenantId, lane) {
   return {
     publication: createMarketingVideoPublicationLoopAdapter({
       objectStore,
-      profileProvider: { get: async () => { throw new Error("honne JA Instagram profile is unassigned"); } },
       secretProvider,
       integrationProvider: { async get(requestTenantId, ref) {
         scoped(requestTenantId);
-        if (ref !== lane.integrationRef) throw new Error(`${lane.name} TikTok integration scope mismatch`);
+        if (ref !== lane.integrationRef) throw new Error(`${lane.name} ${lane.platform} integration scope mismatch`);
         return lane.integrationId;
       } },
       ledgerPath: (requestTenantId, productId) => path.join(dataDir, "tenants", encodeURIComponent(requestTenantId), "marketing", "video-publication", encodeURIComponent(productId), "distribution.jsonl"),
@@ -113,7 +114,7 @@ function services(env, dataDir, tenantId, lane) {
 
 async function runHonneJaCycle(argv, deps = {}) {
   const parsed = parseArgs(argv);
-  const lane = { ...parsed.lane, integrationRef: `integration://postiz/tiktok/${parsed.lane.integrationId}` };
+  const lane = { ...parsed.lane, integrationRef: `integration://postiz/${parsed.lane.platform}/${parsed.lane.integrationId}` };
   const env = deps.env || process.env;
   const dataDir = path.resolve(required(deps.dataDir || env.LM_DATA_DIR, "LM_DATA_DIR"));
   const tenantId = required(env.LM_RUNTIME_TENANT_ID, "LM_RUNTIME_TENANT_ID");
@@ -125,7 +126,7 @@ async function runHonneJaCycle(argv, deps = {}) {
   const approvalRef = required(env[lane.approvalKey], lane.approvalKey);
   const objectStore = createContentObjectStore({ objectDir: path.join(dataDir, "objects") });
   const approval = JSON.parse(fs.readFileSync(objectStore.resolve(approvalRef), "utf8"));
-  if (approval.scope !== "standing" || approval.product_id !== lane.product || approval.locale !== lane.locale || approval.platform !== "tiktok") {
+  if (approval.scope !== "standing" || approval.product_id !== lane.product || approval.locale !== lane.locale || approval.platform !== lane.platform || (approval.account && approval.account !== lane.account)) {
     throw new Error(`${lane.name} cycle approval scope is invalid`);
   }
   const store = deps.store || createMarketingLocalLedger({ dataDir });
@@ -133,14 +134,15 @@ async function runHonneJaCycle(argv, deps = {}) {
   const generationQueued = await store.enqueueJob({ jobId: generationJob.job_id, tenantId, loopId: generationJob.loop_id, capability: generationJob.capability, effectClass: generationJob.effect_class, effectKey: generationJob.effect_key, inputRefs: generationJob.input_refs, maxAttempts: generationJob.max_attempts, availableAt: new Date(nowMs).toISOString() });
   const generationAdapter = createMarketingVideoGenerationLoopAdapter({ dataDir, historyProvider: historyProvider(dataDir), now: () => new Date(nowMs).toISOString() });
   const artifact = await executeJob(store, generationJob, "honne-ja-cycle", (job) => generationAdapter.execute(job));
-  const publicationJob = buildMarketingVideoPublicationJob({ tenantId, productId: lane.product, formatId: lane.format, form: artifact.form, locale: lane.locale, slot, creativeId: artifact.creative_id, platform: "tiktok", videoRef: artifact.video_ref, captionRef: artifact.copy_ref, approvalRef, instagramProfileRef: "profile://instagram/unassigned", postizTokenRef: "secret://postiz/api-key", tiktokIntegrationRef: lane.integrationRef });
+  const publicationJob = buildMarketingVideoPublicationJob({ tenantId, productId: lane.product, formatId: lane.format, form: artifact.form, locale: lane.locale, slot, creativeId: artifact.creative_id, platform: lane.platform, videoRef: artifact.video_ref, captionRef: artifact.copy_ref, approvalRef, instagramProfileRef: lane.platform === "instagram" ? "profile://instagram/anicca.jp1" : "profile://instagram/unassigned", postizTokenRef: "secret://postiz/api-key", ...(lane.platform === "instagram" ? { instagramIntegrationRef: lane.integrationRef } : { tiktokIntegrationRef: lane.integrationRef }) });
   const publicationQueued = await store.enqueueJob({ jobId: publicationJob.job_id, tenantId, loopId: publicationJob.loop_id, capability: publicationJob.capability, effectClass: publicationJob.effect_class, effectKey: publicationJob.effect_key, inputRefs: publicationJob.input_refs, maxAttempts: publicationJob.max_attempts, availableAt: new Date(nowMs).toISOString() });
   const runtime = services(env, dataDir, tenantId, lane);
   const publication = await executeJob(store, publicationJob, "honne-ja-cycle", (job) => runtime.publication.execute(job));
-  if (!verifyMarketingVideoPublicationReceipt(publication) || publication.provider_reconciled !== true || !new RegExp(`^https://www\\.tiktok\\.com/${lane.account}/video/\\d+/?$`).test(publication.public_url)) {
+  const direct = lane.platform === "instagram" ? /^https:\/\/www\.instagram\.com\/reel\/[A-Za-z0-9_-]+\/?$/ : new RegExp(`^https://www\\.tiktok\\.com/${lane.account}/video/\\d+/?$`);
+  if (!verifyMarketingVideoPublicationReceipt(publication) || publication.provider_reconciled !== true || !direct.test(publication.public_url)) {
     throw new Error(`${lane.name} publication receipt is not account-bound and reconciled`);
   }
-  const telegramJob = buildMarketingLivenessJob({ tenantId, telegramTokenRef: "secret://telegram/bot-token", telegramChatRef: "telegram-chat://owner", payload: { lane: lane.telegramLane, product: lane.product, locale: lane.locale, platform: "tiktok", account: lane.account, slot, status: "published", public_url: publication.public_url, retry_state: "not_required" } });
+  const telegramJob = buildMarketingLivenessJob({ tenantId, telegramTokenRef: "secret://telegram/bot-token", telegramChatRef: "telegram-chat://owner", payload: { lane: lane.telegramLane, product: lane.product, locale: lane.locale, platform: lane.platform, account: lane.account, slot, status: "published", public_url: publication.public_url, retry_state: "not_required" } });
   const telegramQueued = await store.enqueueJob({ jobId: telegramJob.job_id, tenantId, loopId: telegramJob.loop_id, capability: telegramJob.capability, effectClass: telegramJob.effect_class, effectKey: telegramJob.effect_key, inputRefs: telegramJob.input_refs, maxAttempts: telegramJob.max_attempts, availableAt: new Date(nowMs).toISOString() });
   const telegram = await executeJob(store, telegramJob, "honne-ja-cycle", runtime.liveness);
   return { slot, generation: { created: generationQueued.created, creative_id: artifact.creative_id }, publication: { created: publicationQueued.created, public_url: publication.public_url, provider_post_id: publication.provider_post_id }, telegram: { created: telegramQueued.created, message_id: telegram.message_id } };
@@ -148,4 +150,4 @@ async function runHonneJaCycle(argv, deps = {}) {
 
 if (require.main === module) runHonneJaCycle(process.argv.slice(2)).then((result) => process.stdout.write(`${JSON.stringify(result)}\n`)).catch((error) => { process.stderr.write(`${error.message}\n`); process.exitCode = 1; });
 
-module.exports = { ANICCA_MAIN_SLOTS, PRODUCTION_SLOTS, parseArgs, runHonneJaCycle, runSlot };
+module.exports = { ANICCA_MAIN_INSTAGRAM_SLOTS, ANICCA_MAIN_SLOTS, PRODUCTION_SLOTS, parseArgs, runHonneJaCycle, runSlot };
