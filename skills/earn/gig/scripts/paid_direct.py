@@ -3493,12 +3493,16 @@ def _write_file_effect(args, item_path: Path, output: Path, prepared: dict[str, 
             return _write_disk_pending(output, room, disk_reason, "before_file_browser_effect")
         browser_process = _run_bounded(command)
         if browser_process.returncode:
-            _write(browser_evidence / "browser-error.json", {
+            browser_error = {
                 "version": 1,
                 "returncode": browser_process.returncode,
-                "stdout": browser_process.stdout[-4000:],
-                "stderr": browser_process.stderr[-4000:],
-            })
+                "stdout": redact_prompt_text(browser_process.stdout[-4000:]),
+                "stderr": redact_prompt_text(browser_process.stderr[-4000:]),
+            }
+            _write(browser_evidence / "browser-error.json", browser_error)
+            owner_browser_result = root / "context" / "paid-browser-result.json"
+            _write(owner_browser_result, browser_error)
+            _owner_feedback(root, "paid.file_browser", [browser_error], [owner_browser_result])
             if "artifact_is_about_the_deal_not_the_deliverable:" in browser_process.stderr:
                 authorization = _load(root / "context" / "paid-file-authorization.json")
                 finding = browser_process.stderr.rsplit(
