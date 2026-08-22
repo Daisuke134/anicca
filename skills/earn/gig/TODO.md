@@ -341,6 +341,18 @@ launchd pass is active on that corrected immutable release; it must produce both
 receipts, resume the same owner, obtain PASS, send v40 once with formal delivery OFF and read it back from Haru's
 exact room before this item advances.
 
+**Native receipt blocker after three distinct repairs.** The same mandatory Illustrator save/reopen receipt remains
+absent after (1) binding the owner's natural `capability` request field, (2) recovering only an empty stale
+Illustrator session, and (3) moving the mechanical execution outside the model sandbox. The third path proves TCC
+and controller access, then Adobe Illustrator 30.7.0 crashes while adopting the tall PC SVG: macOS diagnostic
+`Adobe Illustrator-2026-08-22-193132.ips` records `EXC_BAD_ACCESS`, `SIGSEGV`, faulting thread 0. No buyer effect
+occurred in any attempt. Do not repeat that SVG open path or send the PDF-identical pseudo-AI. The next safe repair
+must preserve `paid-tool-results.json` into durable project context so the same owner can semantically select a
+different honest input supported by the installed skill, most plausibly the already verified vector PDF roundtrip,
+then issue a new capability request. If Illustrator also crashes on that independent input, the exact minimum
+non-delegable action is an account-owner native Illustrator save/reopen on this machine; record its official receipt
+before the loop may package or send v40.
+
 **Current reviewer correction.** `main` and `origin/main` were both `31e7fa09d` before this change; the
 starting verification commit `79ac01ba1eb66b06aed1f9cee66d4af303f03a3d` remains an ancestor. The loaded
 Paid release is still `f747c7d05` while its natural pass is active, so no effect is attributed to the new
