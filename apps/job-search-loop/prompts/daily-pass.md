@@ -85,12 +85,14 @@ stop the row.
 
 ## Workday account/session
 
-Preserve the existing signed-in session. If visible auth fields appear, use
-`runtime auth` once per field with its exact current label/role/ref. The runtime
-privately reuses or creates tenant credentials. Re-observe after each field and let
-the visible page determine the next action. Never invent a password, inspect the
-credential store, or sign out. If email verification is visibly required, preserve
-the row for the existing inbox owner; do not start another Google/Gmail login.
+Preserve the existing signed-in session. Never create another account for a tenant
+whose machine credential already exists. If visible auth fields appear, use
+`runtime auth --mode sign_in` once per field with its exact current label/role/ref;
+the runtime privately reuses the stored tenant credential. Re-observe after each
+field and let the visible page determine the next action. Never invent a password,
+inspect the credential store, sign out, or select the create-account control. If
+email verification is visibly required, preserve the row for the existing inbox
+owner; after verification the next wake signs in and resumes this same application.
 
 ## Resume and form completion
 

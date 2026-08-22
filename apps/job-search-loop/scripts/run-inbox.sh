@@ -32,22 +32,6 @@ chmod 700 \
   "$EVIDENCE" \
   "$JOB_SEARCH_STATE_ROOT/logs"
 export PYTHONPATH="$JOB_SEARCH_APP_ROOT"
-"$JOB_SEARCH_PYTHON" -m job_search_loop.submission_confirmation reconcile \
-  --account "$GMAIL_ACCOUNT" \
-  --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
-  --seen "$SEEN_STATE" \
-  --output "$EVIDENCE/submission-confirmations.json"
-"$JOB_SEARCH_PYTHON" -m job_search_loop.application_reporting deliver \
-  --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
-  --outbox "$TELEGRAM_OUTBOX" \
-  --media-root "$JOB_SEARCH_TELEGRAM_MEDIA" \
-  --output "$EVIDENCE/resume-deliver-reconciled.json"
-JAPAN_DAY=$(TZ=Asia/Tokyo /bin/date +%F)
-"$JOB_SEARCH_PYTHON" -m job_search_loop.summary \
-  --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
-  --output "$JOB_SEARCH_STATE_ROOT/summary.v1.json" \
-  --day "$JAPAN_DAY" \
-  --model-route "${AGENT_RUNNER_PROVIDER:-unconfigured}"
 "$JOB_SEARCH_PYTHON" -m job_search_loop.interview_prep deliver \
   --database "$PREP_DATABASE" \
   --outbox "$OUTBOX_DATABASE" \
@@ -69,6 +53,11 @@ JAPAN_DAY=$(TZ=Asia/Tokyo /bin/date +%F)
 NEW_COUNT=$("$JOB_SEARCH_JQ" -r '.new_count' "$CANDIDATES")
 PENDING_PREP_COUNT=$("$JOB_SEARCH_JQ" -r '.pending_count' "$PREP_STATUS")
 if [[ "$NEW_COUNT" == "0" && "$PENDING_PREP_COUNT" == "0" ]]; then
+  "$JOB_SEARCH_PYTHON" -m job_search_loop.submission_confirmation reconcile \
+    --account "$GMAIL_ACCOUNT" \
+    --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
+    --seen "$SEEN_STATE" \
+    --output "$EVIDENCE/submission-confirmations.json"
   exit 0
 fi
 set +e
@@ -100,6 +89,22 @@ esac
   --state "$SEEN_STATE" \
   --input "$CANDIDATES" \
   --result "$RESULT_PATH"
+"$JOB_SEARCH_PYTHON" -m job_search_loop.submission_confirmation reconcile \
+  --account "$GMAIL_ACCOUNT" \
+  --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
+  --seen "$SEEN_STATE" \
+  --output "$EVIDENCE/submission-confirmations.json"
+"$JOB_SEARCH_PYTHON" -m job_search_loop.application_reporting deliver \
+  --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
+  --outbox "$TELEGRAM_OUTBOX" \
+  --media-root "$JOB_SEARCH_TELEGRAM_MEDIA" \
+  --output "$EVIDENCE/resume-deliver-reconciled.json"
+JAPAN_DAY=$(TZ=Asia/Tokyo /bin/date +%F)
+"$JOB_SEARCH_PYTHON" -m job_search_loop.summary \
+  --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
+  --output "$JOB_SEARCH_STATE_ROOT/summary.v1.json" \
+  --day "$JAPAN_DAY" \
+  --model-route "${AGENT_RUNNER_PROVIDER:-unconfigured}"
 "$JOB_SEARCH_PYTHON" -m job_search_loop.interview_prep deliver \
   --database "$PREP_DATABASE" \
   --outbox "$OUTBOX_DATABASE" \
