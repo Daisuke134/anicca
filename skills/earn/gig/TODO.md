@@ -305,11 +305,13 @@ evidence. Independent production lanes continue running while development follow
 **Live handover state.** The loaded Paid owner uses an immutable release with up to eight independent
 project workers. Its launchd environment ignores the shared preventive `disk-pressure.block` and
 `disk-writers.stop` flags while retaining the 512 MiB last-resort guard and expiring operator brake.
-The loaded release is `d24a9dbb3e86ce9df648965aac4aadcdf7bce56a`. It removes all
+The published Paid release is `227111b43c5ec0ed6527ee902faaa11063e419cb`. It includes the prior
+`d24a9dbb3e86ce9df648965aac4aadcdf7bce56a` safety boundary, which removes all
 `undeterminable`/review-exhaustion delivery authorization, requires the builder to copy the exact decision
-asset contract, and preserves a failed staged candidate under private owner evidence before cleanup. The
-existing Paid launchd job read back that immutable release and naturally resumed; its Haru exact-room snapshot
-is still in progress, so these code paths are deployed but not yet production-proved. The latest completed
+asset contract, and preserves a failed staged candidate under private owner evidence before cleanup. The newer
+release also reuses hash-verified saved buyer attachments instead of redownloading all six Haru files on every
+readback. The existing Paid launchd job read back the immutable release, but these code paths are not yet
+production-proved. The latest completed
 natural receipt remains
 `status=failed`, `observed=7`, `actionable=5`, `effect=0`, `readback=2`, `failed=5`, `pending=0`;
 silent pending is now zero, but parallel artifact production therefore does not yet prove
@@ -352,6 +354,64 @@ for hash-bound inspection.
 **E2E judgment.** This work changes no owned application UI, so Maestro is not applicable. Completion
 requires the real launchd owner to act through the authenticated Coconala browser and an exact-room
 official DOM/readback receipt; local artifact PASS, process liveness or Telegram alone is insufficient.
+
+#### Paid harness reconstruction — authoritative
+
+**Decision.** Stop extending the current business-semantic state machine. Haru is the emergency recovery:
+Codex owns the complete context, visual decision and submission directly, using the existing authenticated
+Paid browser tools only as mechanical tools. After Haru has an exact corrected artifact and fresh PASS, Codex
+attaches that exact hash immediately with formal delivery OFF and obtains official DOM readback. No v31 resend,
+no self-reported v32 reconstruction and no shipment from preview images is allowed.
+
+The subsequent Paid repair is a harness reconstruction, not another error-type patch. It copies proven code
+patterns from the following locally cloned, commit-pinned OSS references after checking their licenses and the
+exact source files; prose summaries alone are not implementation authority.
+
+| Reference | Pinned commit | Pattern to copy into the existing owner |
+|---|---|---|
+| `openai/openai-agents-python` | `904bc6988fd8e855c565de7fa65b223847101ed0` | One manager retains conversation ownership and invokes specialist agents as tools |
+| `openai/openai-cs-agents-demo` | `bd7bfca0f5abf50529370814c3e7c88542011925` | Customer-context triage, specialist tools and one current conversation owner |
+| `anthropics/cwc-long-running-agents` | `ad107a974bced5244f74dd283dbf2bfd3baee3a1` | Fresh-context evaluator, default-fail evidence gate and durable handoff |
+| `langchain-ai/deepagents` | `23b83ad50f63d241d0069a3dc426d43b211adf2e` | Model-driven tool loop with middleware limited to context, persistence and safety |
+| `anthropics/launch-your-agent` | `c9e0f1378a252bd42deb7e9eb02ac0cbd07160bc` | Explicit done criteria, grading and resumable long-running progress |
+
+Do not add these frameworks as dependencies or transplant a demo wholesale. Copy the smallest relevant code
+shapes into the existing `agent_runner.py`/Paid owner, retain license notices for any copied code, and delete
+the replaced semantic routing. The manager decides buyer intent, artifact work and replanning. Deterministic
+code only enforces exact room, artifact/hash integrity, formal-delivery policy, secret boundaries, effect
+dedupe, official readback and lease ownership. Raw tool failures return to the manager; an enum may describe
+an observed failure but may never prescribe shipment or the next business action.
+
+**Atomic reconstruction order.** Do not execute an item before its preceding spec checkbox exists here.
+
+1. [ ] Haru incident lead: recover or regenerate one durable next-version package from the saved buyer source,
+   latest PC `2424.png` and responsive `2.png`; open both full previews, AI/PDF/PNG members and hashes; obtain
+   fresh evidence-backed PASS; submit the exact package directly through the existing browser tool with formal
+   delivery OFF; obtain exact-room official DOM readback; repeat read-only and prove replay-zero.
+2. [ ] Produce a code-level adoption map: for every copied OSS pattern record pinned source file/function,
+   local destination, license, behavior retained and behavior deliberately omitted. No article-only rationale.
+3. [ ] Make one Paid manager own the complete room conversation, accumulated contract, current artifact,
+   buyer-visible goal and final response. Specialists are tools; no handoff may lose conversation ownership.
+4. [ ] Replace hardcoded business-semantic error-to-transition routing with raw structured tool results returned
+   to the manager for replanning. Retain only deterministic safety invariants and delete obsolete shipment enums.
+5. [ ] Make artifact production a tool with durable inputs/outputs: every buyer asset and generated asset is
+   saved once, content-addressed, package-bound and available after failure/restart; temporary cleanup cannot
+   erase the only candidate or its review images.
+6. [ ] Make the fresh evaluator a read-only agent-as-tool that opens the actual source, candidate and package.
+   Its delivery result is only PASS or NEEDS_WORK; missing evidence, uncertainty and timeout fail closed and
+   return concrete findings to the manager.
+7. [ ] Make browser send/readback tools mechanical and idempotent: exact-room preflight, exact artifact hash,
+   formal delivery OFF before approval, send fence, official DOM receipt and replay-zero. They never decide copy,
+   artifact fitness or buyer intent.
+8. [ ] Replace workflow-state completion with an append-only factual handoff/effect ledger that survives crash,
+   restart and model context loss. Manager reconstructs the next action from facts; no stale state authorizes an
+   effect.
+9. [ ] Migrate every purchased Paid room through the reconstructed manager, preserve already-proved effects,
+   close every silent pending/failure with an owned disposition, and prove one natural multi-project pass with
+   official readback and replay-zero for every effect.
+10. [ ] Only after Paid proves the architecture, apply the same manager/tool/evaluator/effect-ledger shape to
+    Negotiate, Storefront and Apply in the existing authoritative lane order; then continue device durability,
+    clean third-device acceptance, real withdrawal and OSS audit.
 
 #### Paid buyer-visible media contract — authoritative
 
