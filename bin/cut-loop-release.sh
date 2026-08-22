@@ -75,6 +75,18 @@ mkdir -p "$DEST" || die "cannot create $DEST"
 ARCHIVE_PATHS=()
 if [ -n "$RELEASE_PATHS" ]; then
   read -r -a ARCHIVE_PATHS <<<"$RELEASE_PATHS"
+  # launchctl-safe is not standalone: every mutating command executes the shared Aqua/user
+  # bootstrap preflight first. A sparse release that includes the wrapper but omits this module
+  # cannot safely kick an owner, so close that dependency automatically instead of relying on
+  # every caller to remember a second path.
+  case " $RELEASE_PATHS " in
+    *" bin "*)
+      case " $RELEASE_PATHS " in
+        *" skills/_shared "*) ;;
+        *) ARCHIVE_PATHS+=("skills/_shared") ;;
+      esac
+      ;;
+  esac
 fi
 if ! git -C "$REPO_ROOT" archive --format=tar "$SHA" -- "${ARCHIVE_PATHS[@]}" | tar -x -C "$DEST"; then
   rm -rf "$DEST"
@@ -89,7 +101,7 @@ cat >"$DEST/RELEASE.json" <<EOF
   "cut_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
   "repo": "$(git -C "$REPO_ROOT" remote get-url origin 2>/dev/null)",
   "state_root": "${LOOPS_STATE_ROOT:-set per loop by its launchd job, not by this release}",
-  "release_paths": "${RELEASE_PATHS:-ALL}"
+  "release_paths": "${ARCHIVE_PATHS[*]:-ALL}"
 }
 EOF
 
