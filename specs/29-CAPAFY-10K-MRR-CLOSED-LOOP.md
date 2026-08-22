@@ -326,6 +326,8 @@ C22の次passで、OSが一時ファイルを書けない時にaccount resolver�
 
 marketingの旧calendar scheduleは20時間cadenceが`20:57 JST`に開いても次のwakeを翌日まで遅らせるため、既存labelのcanonical plistとgoal-monitor generatorを`StartInterval=3600`へ統一する。新labelや並行publisherは作らず、投稿重複は既存20時間gateとnative Reel/rotation readbackで防ぐ。rendered plistはLife Manager mainのProgramArguments/WorkingDirectory、`StartInterval=3600`、`StartCalendarInterval`なしを返し、focused 2件、`plutil`、fresh reviewer `ship`を確認する。commit `457cf7392`をmainへpushし、同じhourly plistを`~/Library/LaunchAgents`へmode `0600`でinstallする。loaded domainのreload/readbackはlaunchd preflight回復後まで未完とする。
 
+Data Analyst `7785270416`のrepo-owned demonstrationは4か月の入力値、WHAT/WHY/SO WHAT出力、仮説label、非捏造条件を持ち、source SHA-256は`0f47c7ad7ad4056f6dc399d86265dc3841f4cf38a939cef8e71bf6078892442c`。現在のfresh selectorはCapafy APIからJSONを取得できずterminal failureになるため、stale inventoryで制作・投稿を続けない。外部readback回復後のhourly wakeが同じ候補をfresh選択してからrenderへ進む。
+
 ## Atomic remaining TODO
 
 Items are executed top-to-bottom. Only one item is active.
