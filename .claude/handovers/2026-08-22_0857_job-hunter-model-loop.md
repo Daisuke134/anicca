@@ -97,3 +97,9 @@ unrelated dirty paths `docs/loops/x-repost.md` and `state/effective-cron/`.
   `ok`. Canonical disk-cleanup preflight passed but its existing owner is still
   `spawn scheduled`; emergency guard last exited 3. No submit fence was consumed.
   Resume the same checkpoint only after capacity and Ledger open are stable.
+- Free space later fell below 200 MiB. Canonical cleanup could not create its own
+  lock/receipt (`ENOSPC`), while emergency guard remained inside `colima status`.
+  `run-daily.sh` now invokes the shared Life Manager producer preflight before any
+  evidence directory, Ledger, Telegram, or model work; it honors global stop flags,
+  requires 512 MiB, and exits 75 without touching the checkpoint. Focused checks
+  pass. Release the guard, but do not start Luna until capacity readback is stable.

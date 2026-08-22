@@ -5,6 +5,25 @@ SCRIPT_DIR="${0:A:h}"
 source "$SCRIPT_DIR/runtime-paths.sh"
 export CLOAK_LEASE_HOLDER_PID=$$
 
+JOB_SEARCH_DISK_GUARD="${JOB_SEARCH_DISK_GUARD:-$HOME/gig/releases/life-manager/current/skills/earn/gig/scripts/gig_disk_guard.py}"
+if [[ ! -f "$JOB_SEARCH_DISK_GUARD" || -L "$JOB_SEARCH_DISK_GUARD" || ! -r "$JOB_SEARCH_DISK_GUARD" ]]; then
+  print -u2 "job-search daily: disk guard is missing or unsafe"
+  exit 75
+fi
+unset GIG_IGNORE_DISK_PRESSURE_BLOCK \
+  GIG_IGNORE_DISK_WRITERS_STOP \
+  DISK_CONTROL_STATE_DIR \
+  OPENCLAW_STATE_DIR \
+  LIFE_MANAGER_HOST_STATE_DIR
+GIG_DISK_HEADROOM_KIB=524288
+GIG_HOST_STATE_DIR="$HOME/.openclaw/state"
+GIG_STATE_DIR="$HOME/.local/state/life-manager/job-search-daily"
+export GIG_DISK_HEADROOM_KIB GIG_HOST_STATE_DIR GIG_STATE_DIR
+if ! /usr/bin/python3 -I "$JOB_SEARCH_DISK_GUARD" /usr/bin/true; then
+  print -u2 "job-search daily: disk guard blocked model wake"
+  exit 75
+fi
+
 RUN_ID="daily-$(date +%Y%m%d-%H%M%S)"
 EVIDENCE="$JOB_SEARCH_STATE_ROOT/evidence/$RUN_ID"
 TELEGRAM_OUTBOX="$JOB_SEARCH_STATE_ROOT/telegram-outbox.sqlite3"

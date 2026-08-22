@@ -98,6 +98,9 @@ raise SystemExit(0)
             encoding="utf-8",
         )
         fake_openclaw.chmod(0o700)
+        fake_disk_guard = root / "disk-guard.py"
+        fake_disk_guard.write_text("raise SystemExit(0)\n", encoding="utf-8")
+        fake_disk_guard.chmod(0o600)
         env = {
             **os.environ,
             "HOME": str(root / "home"),
@@ -107,6 +110,7 @@ raise SystemExit(0)
             "JOB_SEARCH_PYTHON": str(fake_python),
             "JOB_SEARCH_OPENCLAW": str(fake_openclaw),
             "JOB_SEARCH_TELEGRAM_MEDIA": str(root / "media"),
+            "JOB_SEARCH_DISK_GUARD": str(fake_disk_guard),
         }
         result = subprocess.run(
             ["/bin/zsh", str(APP_ROOT / "scripts" / "run-daily.sh")],
