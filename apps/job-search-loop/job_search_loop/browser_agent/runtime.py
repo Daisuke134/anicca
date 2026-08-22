@@ -187,6 +187,7 @@ def _safe_observation(observation, checkpoint, remaining_steps: int) -> dict[str
                 "type": control.control_type,
                 "label": _redact(control.label),
                 "disabled": control.disabled,
+                "required": control.required,
                 "stable_id": control.stable_id,
                 "checked": control.checked,
                 "options": [_redact(value) for value in control.options],
@@ -231,12 +232,11 @@ async def observe() -> dict[str, Any]:
                 _path_env("JOB_SEARCH_MACHINE_CREDENTIALS")
             ).known_tenants()
         )
-    candidate_concepts = tuple(
-        concept
-        for concept in CandidateMemoryView.load(
+    candidate_concepts = (
+        *CandidateMemoryView.load(
             _path_env("JOB_SEARCH_CANDIDATE_MEMORY")
-        ).concepts()
-        if concept.startswith("candidate.")
+        ).concepts(),
+        "policy.prefer_not_to_say",
     )
     return {
         "status": "observed",
@@ -286,8 +286,11 @@ def _action(value: dict[str, Any]) -> VisibleActionV1:
     text = value.get("text")
     concept = value.get("candidate_concept")
     if concept:
-        memory = CandidateMemoryView.load(_path_env("JOB_SEARCH_CANDIDATE_MEMORY"))
-        resolved = memory.get(str(concept))
+        if concept == "policy.prefer_not_to_say":
+            resolved = "Prefer not to say"
+        else:
+            memory = CandidateMemoryView.load(_path_env("JOB_SEARCH_CANDIDATE_MEMORY"))
+            resolved = memory.get(str(concept))
         if not isinstance(resolved, (str, int, float)):
             raise ValueError("candidate concept is not a scalar browser value")
         text = str(resolved)

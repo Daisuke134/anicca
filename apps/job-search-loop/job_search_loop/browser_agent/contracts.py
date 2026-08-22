@@ -30,6 +30,7 @@ class VisibleControlV1:
     stable_id: str = ""
     checked: bool | None = None
     options: tuple[str, ...] = ()
+    required: bool = False
 
 
 @dataclass(frozen=True, slots=True)

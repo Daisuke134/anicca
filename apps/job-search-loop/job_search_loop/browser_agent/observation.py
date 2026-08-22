@@ -57,6 +57,7 @@ class ObservationBuilder:
                   tag: el.tagName.toLowerCase(), role: role(el),
                   control_type: el.getAttribute('type') || '', label: label(el),
                   disabled: !!el.disabled || el.getAttribute('aria-disabled') === 'true',
+                  required: !!el.required || el.getAttribute('aria-required') === 'true',
                   stable_id: stableId(el),
                   checked: el.matches('input[type="checkbox"],input[type="radio"]')
                     ? !!el.checked

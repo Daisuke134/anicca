@@ -59,6 +59,13 @@ use `click --ordinal` with their one-based order in the returned controls. Ambig
 is a target-selection problem to resolve from the observation, never a checkpoint
 reason.
 
+Choose a concept whose identifier semantically matches the visible question.
+`candidate.base` is only the candidate's geographic base and must never answer an
+employer, school, pronoun, or experience question. Resume-grounded `fact.*` concepts
+are available for employer, education, project, and experience answers. For an
+optional disclosure field with no matching grounded fact, use
+`policy.prefer_not_to_say`; never fill it with an unrelated concept.
+
 If the fresh provider page explicitly shows the job is no longer available and no
 application form exists, do not navigate to a listings page. Execute exactly:
 
