@@ -15,6 +15,30 @@ SPEC.loader.exec_module(MODULE)
 
 
 class AffiliateProposalTests(unittest.TestCase):
+    def test_new_ready_proposal_precedes_older_terminal_readback(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            proposal_path, consumed = root / "proposal.json", root / "consumed.jsonl"
+            old = {
+                "receipt_type": "AFFILIATE_REPOST_PROPOSAL",
+                "state": "READY_FOR_EXISTING_REPOST_OWNER",
+                "proposal_id": "8" * 64,
+                "placement_id": "subtitle-en-1",
+                "owned_article_url": "https://aniccaai.com/blog/subtitle",
+                "language": "en", "disclosure_required": True,
+                "tracking_link_state": "NOT_INCLUDED",
+                "revenue_credit_state": "NO_REVENUE_CREDIT",
+            }
+            current = {**old, "proposal_id": "7" * 64,
+                       "placement_id": "voice-cloning-en-1",
+                       "owned_article_url": "https://aniccaai.com/blog/voice-cloning"}
+            MODULE.claim(consumed, old)
+            MODULE.record(consumed, old, "UNVERIFIED", None)
+            proposal_path.write_text(json.dumps(current))
+            selected = MODULE.select(proposal_path, consumed)
+            self.assertEqual(selected["state"], "READY")
+            self.assertEqual(selected["proposal_id"], current["proposal_id"])
+
     def test_unverified_is_readback_only_until_posted_ledger_recovers_it(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

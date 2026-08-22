@@ -167,6 +167,23 @@ def select(proposal_path: Path, consumed_path: Path, posted_path: Path | None = 
             "owned_article_url": snapshot["owned_article_url"],
             "language": "en",
         }
+    try:
+        proposal = read_json(proposal_path)
+    except ValueError:
+        proposal = None
+    if proposal is not None and not valid(proposal):
+        return {"state": "INVALID_PROPOSAL"}
+    prior = [row for row in all_rows
+             if proposal is not None and row.get("proposal_id") == proposal["proposal_id"]]
+    if proposal is not None and not prior:
+        return {
+            "state": "READY",
+            "proposal": canonical(proposal),
+            "proposal_id": proposal["proposal_id"],
+            "placement_id": proposal["placement_id"],
+            "owned_article_url": proposal["owned_article_url"],
+            "language": "en",
+        }
     recoverable = []
     for proposal_id, terminal in latest_by_proposal.items():
         if terminal.get("state") != "UNVERIFIED" or proposal_id in posted_ids:
@@ -188,13 +205,8 @@ def select(proposal_path: Path, consumed_path: Path, posted_path: Path | None = 
             "owned_article_url": snapshot["owned_article_url"],
             "language": "en",
         }
-    try:
-        proposal = read_json(proposal_path)
-    except ValueError:
+    if proposal is None:
         return {"state": "NO_PROPOSAL"}
-    if not valid(proposal):
-        return {"state": "INVALID_PROPOSAL"}
-    prior = [row for row in all_rows if row.get("proposal_id") == proposal["proposal_id"]]
     if any(row.get("state") in {"POSTED", "UNVERIFIED", "NO_EFFECT"} for row in prior):
         return {"state": "ALREADY_CONSUMED", "proposal_id": proposal["proposal_id"]}
     if any(row.get("state") == "EFFECT_STARTED" for row in prior):
@@ -205,14 +217,7 @@ def select(proposal_path: Path, consumed_path: Path, posted_path: Path | None = 
             "owned_article_url": proposal["owned_article_url"],
             "language": "en",
         }
-    return {
-        "state": "READY",
-        "proposal": canonical(proposal),
-        "proposal_id": proposal["proposal_id"],
-        "placement_id": proposal["placement_id"],
-        "owned_article_url": proposal["owned_article_url"],
-        "language": "en",
-    }
+    return {"state": "BLOCKED_CONSUMPTION_LEDGER"}
 
 
 def _append_once(consumed_path: Path, proposal_id: str, row: dict, *, require_claim: bool) -> dict:
