@@ -2530,12 +2530,16 @@ def _execute_owner_tool_requests(staging: Path, code_root: Path) -> int:
             resolved[field] = path
         if not resolved["input"].is_file() or resolved["input"].stat().st_size == 0:
             raise Failure("file_builder")
-        completed = subprocess.run(
-            [sys.executable, str(tool), str(resolved["input"]), str(resolved["output"]),
-             "--receipt", str(resolved["receipt"])],
-            stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            text=True, timeout=360,
-        )
+        lock_path = Path(os.environ.get("GIG_STATE_DIR", Path.home() / "gig")) / ".paid-desktop-tool.lock"
+        lock_path.parent.mkdir(parents=True, exist_ok=True)
+        with lock_path.open("a+", encoding="utf-8") as lock:
+            fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+            completed = subprocess.run(
+                [sys.executable, str(tool), str(resolved["input"]), str(resolved["output"]),
+                 "--receipt", str(resolved["receipt"])],
+                stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                text=True, timeout=360,
+            )
         result = {
             "index": index, "tool": request["tool"], "returncode": completed.returncode,
             "stdout": completed.stdout[-4000:], "stderr": completed.stderr[-4000:],

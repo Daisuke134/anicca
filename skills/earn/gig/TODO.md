@@ -326,7 +326,8 @@ not semantic: macOS rejects Illustrator Apple Events inherited by the model sand
 same official Illustrator automation is reachable from the durable controller context. The generic repair is a
 controller capability boundary: the model requests a named installed desktop capability using only staging-relative
 paths; the controller validates those paths, executes the existing `illustrator_native_roundtrip.py` outside the
-model sandbox, records stdout/stderr and official receipt, then resumes the same project owner for final inspection
+model sandbox under one host-wide desktop-tool lease, records stdout/stderr and official receipt, then resumes the
+same project owner for final inspection
 and packaging. This must be published and proved by the natural Haru owner; no Codex one-off artifact generation or
 customer send counts.
 
