@@ -65,3 +65,9 @@ unrelated dirty paths `docs/loops/x-repost.md` and `state/effective-cron/`.
   receipt-bound correction event keyed by application ID plus immutable receipt
   message ID. Deploy it, kick the existing inbox owner, and require a real Telegram
   message ID before closing the loop. Do not create another executor or browser.
+- Release `7fdc2d29be0d7aeb0899d4e4f4b8a9a55b34ccd1` is active and passed its
+  checksum. Existing owner run `daily-20260823-031951` used Luna/xhigh and the same
+  CloakBrowser, then truthfully returned `queue_complete`: there was no eligible or
+  discovered Workday row left in Ledger. The daily slot is not a quota. The next
+  implementation slice is recurring official Workday discovery/admission before
+  each 30-minute model wake, with canonical URL dedupe and existing submit fences.
