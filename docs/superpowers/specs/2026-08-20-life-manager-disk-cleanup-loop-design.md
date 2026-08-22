@@ -4,7 +4,7 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
 実行authority: **Mac Host Storage Governor**  
 公開skill: **`disk-cleanup`**
 
-状態: Phase 1実装済み。Life Manager OSS skill、fail-closed governor、guard fallback、回帰テスト、旧cleanup ownerのcutover、正本5分labelのbootstrap/readback、MiB/GiB精度とswap telemetry、ULTRA時のexact-byte full-pass昇格、bootstrap health failureのcleanup内receipt契約、Gig/Writer共通producer preflight、Paid/Storefrontのin-flight effect gate/checkpoint、Writer provider-start gateは反映済み。supervisor non-stop/pause-resume契約、host-wide census、hourly intelligence、Writerのin-flight drainを含む全producer backpressure、24時間/7日観測、141/153実機fixtureは未完了。UID 501/GUI bootstrapと`ai.anicca.life-manager-disk-cleanup`のload readbackは復旧済み。
+状態: Phase 1実装済み。Life Manager OSS skill、fail-closed governor、guard fallback、回帰テスト、旧cleanup ownerのcutover、正本5分labelのbootstrap/readback、MiB/GiB精度とswap telemetry、ULTRA時のexact-byte full-pass昇格、bootstrap health failureのcleanup内receipt契約、Gig/Writer共通producer preflight、Paid/Storefrontのin-flight effect gate/checkpoint、Writer provider-start gateは反映済み。supervisor non-stop/pause-resume契約、host-wide census、hourly intelligence、Writerのin-flight drainを含む全producer backpressure、ULTRA receipt reserve/retry、24時間/7日観測、141/153実機fixtureは未完了。UID 501/GUI bootstrapと`ai.anicca.life-manager-disk-cleanup`のload readbackは復旧済み。
 
 ## 現行実装状況とOSS境界
 
@@ -60,6 +60,17 @@ pass（互換の`EMERGENCY_GUARD_FULL_PASS=1`でも強制可能）だけが`~/gi
 contractへ揃えた。容量変更とalertのauthorityをLife Managerへ一本化した。回帰testは両sourceから旧日本語
 alertと広範囲cache削除が消えていることを固定した。
 ただしfreeはなお5.9 GiBで、現在の`gui/501`は復旧したものの、正本cleanup labelのload readbackは未達である。
+
+### 2026-08-22 receipt ENOSPC incident — TODOへ戻す
+
+2026-08-22T06:37Zのcanonical passは、容量計測と保護判定を完了した後、
+`last-receipt.json`のatomic replaceで`Errno 28 (ENOSPC)`になり、exit 1になった。これは削除判断の失敗ではなく、
+最終receiptを書けないために1回の実行が失敗扱いになった障害である。
+
+これはA-25の未完了証拠として扱う。state directoryに保護されたreceipt reserveを確保し、ENOSPC時にreserveを解放して
+同じatomic writeを再試行し、成功後にreserveを再作成する実装とテストが必要である。未知path、session、source、swap、
+重要stateを削除する設計にはしない。実装をこのsessionでは行わず、古いstderrのENOSPC行と`last exit code=1`を履歴として保持する。
+次sessionの最初の原子作業はA-25であり、実装後にcanonical labelの新しいreceiptとexit 0をread backする。
 
 ### 2026-08-21 GUI bootstrap incident and recovery
 
@@ -617,7 +628,7 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 | A-22 | supervisor non-stop behaviorを実装する | ULTRA wake keeps supervisor labels loaded | 未完了 |
 | A-23 | Codex log budget/rotationを実装する | active app-server handoff with session loss 0 | 未完了 |
 | A-24 | completed-project janitorをcanonical loopへ接続する | terminal-only dry-run/live receipt | 未完了 |
-| A-25 | ULTRA receipt reserveを実装する | state/receipt/checkpoint write survives pressure | 未完了 |
+| A-25 | ULTRA receipt reserveを実装する | state/receipt/checkpoint write survives pressure | 未完了: 2026-08-22 ENOSPCでlast-receipt atomic replaceがexit 1。reserve/retryの実装・fixture・実機exit 0 readbackが必要 |
 | A-26 | bounded ops logを分離する | operational log size/retention test PASS | 部分完了 |
 | A-27 | incident receiptを分離する | immutable incident receipt schema PASS | 未完了 |
 | A-28 | delivery-failure aggregationを保存する | Telegram message/delivery-failure IDs read back | 未完了 |
