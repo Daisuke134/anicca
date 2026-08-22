@@ -7131,3 +7131,24 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   transaction 0 after instrumentation. The live diagnosis is measured failure
   to create audience growth or article entry, not missing scheduling or an
   unobserved provider transaction.
+- X's current Automation Rules permit helpful automated posts and quote posts,
+  but prohibit non-API website scripting and warn against bulk/aggressive
+  Reposts; unsolicited automated replies require prior user intent. Repost
+  commit `95d4c151e` therefore removes the browser composer from the executable
+  publish path. Existing browser access is readback-only. The already-owned
+  `@selawmqt` session authorized the Postiz X channel; exact integration readback
+  is `profile=selawmqt`, `disabled=false`. The owner now submits through Postiz
+  API and still refuses to call API acceptance a post until the exact X
+  permalink is read back. Installed release is `20260823T012251-95d4c151`;
+  source/runtime `x_post.py` SHA-256 is
+  `1f1df1fa0140d30983249eb834d8718a1b95417409260ee411a3c5a99ae40476`,
+  launchd reads `transport=postiz` and `run interval=1800 seconds`, and all 25
+  focused Repost tests pass. No secret or raw auth token is committed.
+- Live owner run `20260823T012305` exercised the new release but made no API
+  submission: all generated drafts were over the exact X budget (257--276 vs
+  250), so the pre-effect length gate stopped the run. Its engagement collection
+  did close the format-learning sample boundary. Read-only evaluator now sees 3
+  originals versus 11 quotes with median first-post-60-minute views 26 versus 4
+  and computes the next eligible move `original_ratio 0.15 -> 0.20`. The daily
+  digest remains the sole durable owner allowed to apply that change; this
+  interactive readback did not mutate strategy. All of this is non-money.

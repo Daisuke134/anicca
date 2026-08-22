@@ -2252,3 +2252,24 @@ deltas, and official transactions are all observed zero for Subtitle
 Translator, Voice Isolator, and Voice Changer after instrumentation. The blocker
 is measured failure to create audience growth or article entry, not missing
 scheduling or an unobserved provider transaction.
+
+Current X Automation Rules exposed a material account-safety flaw: helpful API
+posts and quote posts are allowed, but non-API website scripting is prohibited,
+bulk/aggressive Reposts are risky, and unsolicited automated replies require
+prior intent. `@selawmqt` is now connected to Postiz with exact readback
+`disabled=false`. Repost commit `95d4c151e` removes the browser composer from the
+executable path; Postiz API is the only write transport and CDP is readback-only.
+API acceptance remains non-proof until the exact X permalink appears. Installed
+release is `/Users/anicca/loops/releases/20260823T012251-95d4c151`; source/runtime
+`x_post.py` SHA-256 is
+`1f1df1fa0140d30983249eb834d8718a1b95417409260ee411a3c5a99ae40476`;
+launchd reads `transport=postiz`, interval 1800 seconds, and 25 tests pass.
+
+Live run `20260823T012305` produced no external effect because all drafts were
+257--276 weighted characters against budget 250, so it stopped before the API.
+The same run collected the first eligible post-60-minute sample for the 00:10
+original. Read-only evaluation now has original 3 / quote 11, median early views
+26 / 4, and computes the next daily move `original_ratio 0.15 -> 0.20`. Only the
+scheduled digest may apply it. Next atom is the first quality-passing Postiz
+submission plus exact X permalink; then continue measured distribution toward a
+nonzero owned entry and official transaction.
