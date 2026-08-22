@@ -245,7 +245,7 @@ installs, trials, or revenue.
 | Honne JA `@honnevideo` | TikTok; approved ReelClaw direct URL `7676425660641889537` | `27515` | Followers `4`, Videos `278`, account Views `5,650`; post-level/install/revenue join open | verified canary; default-off |
 | Anicca iOS main `@anicca.jp` / `@anicca.jp1` | TikTok `7676422253638176020`; Instagram `DcTFx_UjSio` from the approved card pack | `27500` / `27510` | TikTok Followers `257`, Videos `470`, account Views `5,291`; TikTok post metric unavailable; Instagram post Views/Reach `6`, other reported counts `0` | verified canary; default-off |
 | Anicca JP4 `@anicca.jp4` | TikTok; approved card direct URL `7676495865816632583` | `27939` | Followers `122`, Videos `304`, account Views `11,868`; post-level/install/revenue join open | verified canary; default-off |
-| Anicca HE `@anicca.he` | Postiz row `cmt32u9dj00jxqp0yqdh6yi96` is provider `PUBLISHED`, but no caption-matching direct artifact URL | none | provider account metrics may be read, but the publication effect is unknown | **hold** — no retry or new effect |
+| Anicca HE `@anicca.he` | TikTok; existing Postiz row `cmt32u9dj00jxqp0yqdh6yi96` reconciled by exact native profile-caption readback to `https://www.tiktok.com/@anicca.he/video/7676500512308481296` | `28431` | post-level metric collection remains open | verified recovered effect; default-off |
 | All other Postiz integrations, including YouTube candidates | no Life Manager verified publication receipt | none | no current Life Manager observation row | disabled/default-off/unassigned; no provider write |
 
 The remaining metric gap is explicit: TikTok, Instagram, and YouTube must each
@@ -256,7 +256,7 @@ campaign lineage. Missing data stays `unavailable`, never `0`.
 **Seven-day provider readback.** The live Postiz window contains only thirteen
 rows across the few accounts above; it is not evidence that every enabled
 integration is receiving every video or slideshow. It includes the verified
-receipts, the held `@anicca.he` provider-published/unknown effect, two YouTube
+receipts, the reconciled `@anicca.he` effect, two YouTube
 errors, the reconciled-absent JP4 attempt, and quarantined legacy generic or
 `lm_wake` rows. The remaining Larry/ReelClaw labels stay explicitly disabled
 (twenty-six relevant labels in the live override) and no running legacy
@@ -1818,13 +1818,12 @@ after the preceding numbered row, and no later row is started early:
 MKT-07 → MKT-08 → MKT-09 → MKT-10 → MKT-11 → MKT-11A → MKT-11B → MKT-12 →
 MKT-13`.
 
-Current TODO state: **MKT-01 done; MKT-02 done; MKT-03 done with the earlier generic row quarantined; MKT-03A contract done; MKT-03B partly done; MKT-04 seven-cycle gate removed; MKT-05 through MKT-08 done; MKT-09 is blocked on its existing unknown effect; MKT-10 onward open**. Honne
+Current TODO state: **MKT-01 done; MKT-02 done; MKT-03 done with the earlier generic row quarantined; MKT-03A contract done; MKT-03B partly done; MKT-04 seven-cycle gate removed; MKT-05 through MKT-08 done; MKT-09 Order 0 is reconciled and the next active item is classification of one remaining account; MKT-10 onward open**. Honne
 has TikTok/Instagram destinations only; YouTube remains an Anicca-only lane.
 
-**Active atomic item:** MKT-09 reconciliation only. The existing `@anicca.he`
-effect must produce a caption-matching direct TikTok URL before any other
-Larry/ReelClaw account is started. Anicca JA TikTok/Instagram, JP4 TikTok, and
-Honne JA TikTok canaries remain proven; do not enable the three-post policy.
+**Active atomic item:** MKT-09 classification of exactly one next remaining
+Larry/ReelClaw account (§12.3 Order 1). The existing `@anicca.he` effect is now
+terminal `present`; no next-account publication or three-post policy is enabled.
 
 | ID | Atomic action | Account/lane | Done evidence |
 |---|---|---|---|
@@ -1838,7 +1837,7 @@ Honne JA TikTok canaries remain proven; do not enable the three-post policy.
 | MKT-06 | Restore Honne JA on-demand publishing and record its account receipt | Honne JA `@honnevideo` | **done —** creative `HJA-011-ed3318c496f4` published at `https://www.tiktok.com/@honnevideo/video/7676425660641889537`, provider row `cmt2siqgp0009nt0yoi1qz7lf`, Telegram `message_id=27515`, replay 0; old `honne-ja-fresh` remains disabled |
 | MKT-07 | Repair and canary the JP4 lane | Anicca JP4 `@anicca.jp4` | **done —** the failed `AJ-CARD-002-7e24db967bf7` effect remains reconciled `absent` and was never retried. A new Life Manager-only `AJ-CARD-003-5639e14832ad` nudge-card effect used the approved card media `5639e148…`, JP4 approval `97f2c5fb…`, and Postiz row `cmt328uot00s2qk0y23e8ptii`. Postiz's numeric release suffix was not trusted: caption/profile readback verified `https://www.tiktok.com/@anicca.jp4/video/7676495865816632583` (HTTP 200). Natural Telegram receipt `message_id=27939` carried that same direct URL; replay created zero publication and zero message effects. The JP4 runner rejects any non-pack media, wrong approval, wrong integration, or terminal job before claim |
 | MKT-08 | Repair and canary the iOS lane | Anicca iOS `@anicca.jp` | **done —** `AJ-CARD-001-35a15c7ce990` remains verified at TikTok `https://www.tiktok.com/@anicca.jp/video/7676422253638176020` (Telegram `27500`) and Instagram `https://www.instagram.com/reel/DcTFx_UjSio/` (Telegram `27510`); current local replay for both jobs returned `created=false`. TikTok account metrics are Followers `257`, Videos `470`, Views `5,252`; TikTok post-level analytics returned an empty array and is recorded unavailable, while Instagram recorded Views/Reach `6` and Saves/Likes/Comments/Shares `0` |
-| MKT-09 | Migrate the remaining Larry/ReelClaw accounts one by one, preserving each measured account/locale contract | remaining Anicca/Honne accounts | **partly done / direct-proof hold —** `@anicca.en` is excluded from Anicca iOS migration because its retained registry declares product `ebook-en` and disallows `reelclaw-card`. The next valid historical JA card route, `@anicca.he`, accepted one Life Manager `AJ-CARD-004-5639e14832ad` effect (Postiz row `cmt32u9dj00jxqp0yqdh6yi96` is `PUBLISHED`), but TikTok profile, oEmbed, browser, and Camoufox readback did not return the caption. The numeric release suffix is therefore not accepted as a direct artifact; the local job remains `failed` with `unknown_effect=true`, no Telegram success receipt, and no retry/new effect. Resume only when the same existing effect can be reconciled to a caption-matching direct URL; no mass re-enable |
+| MKT-09 | Migrate the remaining Larry/ReelClaw accounts one by one, preserving each measured account/locale contract | remaining Anicca/Honne accounts | **partly done —** `@anicca.en` remains excluded because its retained registry declares product `ebook-en` and disallows `reelclaw-card`. The existing `@anicca.he` `AJ-CARD-004-5639e14832ad` effect was reconciled without retry: Postiz row `cmt32u9dj00jxqp0yqdh6yi96` retained the exact caption while TikTok's native profile DOM linked that caption to `https://www.tiktok.com/@anicca.he/video/7676500512308481296`; the numeric release suffix instead resolved to native status `10204 item doesn't exist` and was correctly rejected. The local job is completed with decision `present`, Telegram `message_id=28431`, and publication/message replay both created zero effects. Next: classify exactly one remaining account; no mass re-enable |
 | MKT-10 | Enable the three-posts-per-day policy only after the account canary and metrics health gate pass | every production-armed account | exactly the chosen daily policy, no duplicate effects, no silent misses |
 | MKT-11 | Collect Postiz TikTok/Instagram metrics for Honne and TikTok/Instagram/YouTube metrics for Anicca at 2h/24h/72h/7d, then join App Store Connect, RevenueCat, and product analytics by creative lineage | every published account | social metrics and app metrics are separate rows with the §8.10 join keys; unavailable remains `null`/unavailable and never becomes 0 |
 | MKT-11A | Emit the three natural-language Telegram tiers from the same immutable snapshot used by the panel | every production-armed product/account/platform | **partly done —** per-post/missed receipts use the Life Manager natural-language renderer, reject the raw legacy shape, and the legacy raw notifier is quarantined; daily app/account digests and weekly Honne-vs-Anicca review remain open and must preserve unavailable/partial sources as words, not zero |
@@ -1855,7 +1854,7 @@ profile page is never enough by itself.
 
 | Order | Atomic action | Start only when | Done evidence | Never do |
 |---:|---|---|---|---|
-| 0 | Reconcile the existing Anicca HE effect `cmt32u9dj00jxqp0yqdh6yi96` | always; it is the current active item | same effect has a caption-matching direct `@anicca.he/video/<id>` URL, a reconciled receipt, one natural Telegram receipt, replay `0` | retry it, create a replacement effect, or notify success without the direct artifact |
+| 0 | **done —** Reconcile the existing Anicca HE effect `cmt32u9dj00jxqp0yqdh6yi96` | always | native profile-caption readback proved `https://www.tiktok.com/@anicca.he/video/7676500512308481296`; local decision `present`; natural Telegram `28431`; publication/message replay `0`; no retry or replacement effect | retry it, create a replacement effect, or notify success without the direct artifact |
 | 1 | Classify the next remaining Larry/ReelClaw account | Order 0 is terminal `present` or terminal `absent` with an honest receipt | one row names product, locale, account, exact provider integration, allowed renderer, approved pack, and explicit disposition; product-mismatched accounts such as `@anicca.en` stay excluded | infer product from an integration name or post an Anicca iOS pack to an `ebook-en` account |
 | 2 | Migrate that one classified account's pack | Order 1 selects a valid retained account | content-addressed copy under `LM_DATA_DIR`, visible asset/caption/account match, standing approval, and zero runtime legacy path/env/asset read | run or enable its old OpenClaw/launchd job |
 | 3 | Canary that one migrated account | Order 2 passes and provider preflight is healthy | one new effect → exact direct native URL → one natural Telegram receipt → local replay `0` → account/post metric source status | fan out to another account or silently turn unavailable into success/zero |
