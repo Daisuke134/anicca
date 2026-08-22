@@ -6,10 +6,10 @@
 **Status:** The one macOS launchd acquisition owner, shared OpenClaw Telegram
 transport, and authenticated CloakBrowser daily-driver at CDP `:9222` are healthy.
 The owner wakes hourly and every admitted Workday/Ashby row now enters the mandatory
-model browser runtime through that one CDP owner. Rakuten has a verified resume upload
-and reached Workday step 2; its real form remains unsubmitted. On the current live
-attempt Workday rendered its explicit planned-maintenance page for August 22, 2026
-15:00–18:00 GMT+9, so the durable row resumes after provider availability returns.
+model browser runtime through that one CDP owner. Rakuten completed the full Workday
+flow in run `daily-20260822-182223`: the model resolved the hierarchical source
+question, preserved the verified resume, crossed My Experience and Voluntary
+Disclosures, consumed the final-action fence once, and produced exact completion UI.
 **Current execution truth supersedes earlier historical run notes below:** the next
 milestone is `JOB-WORKDAY-E2E-MODEL-10P`. Workday is first because the existing
 Rakuten session has already reached the real application flow and Workday exercises
@@ -17,9 +17,13 @@ the complete account-create, sign-in, multi-page, upload, variable-question, rev
 submit, and receipt lifecycle. Ashby follows as 10Q using the same agent contract;
 Greenhouse, Lever, and generic ATS coverage follow only after both live gates close.
 The user-confirmed Salesforce FDE URL remains excluded from reapplication. The
-active release is `3e2df256908f800c91720036d1a61f4be9fc99b8`; launchd remains hourly
-at `StartInterval=3600`. No Rakuten submit request, completion UI, or receipt evidence
-exists yet; Telegram checkpoint reporting has a real ACK at message ID `28475`.
+submission release is `246b5d7733f3c982490f618f7ac5f4f1f231cea1`; launchd remains hourly
+at `StartInterval=3600`. Ledger and the fenced attempt are `submitted` with
+`evidence_class=exact_completion_ui` and evidence SHA-256
+`07e07393a4f4161839a94eb2242c7d48ef8e031f2bf8903e1b97b78d696f556b`.
+Telegram acknowledged the submitted outcome at message ID `28598`. Gog then checked
+13 current threads and found no exact Rakuten receipt email; completion UI is the
+authoritative submission proof.
 
 **Architecture decision:** all eligible ATS form interaction is mandatory
 model-based browser work. Deterministic code owns only discovery, eligibility,
@@ -414,8 +418,8 @@ This is the remaining implementation-order SSOT. Only the first
 | 43 | Activate only while the hourly owner is idle | `done` | Immutable releases are checksum-verified, installed read-only, and switched only by the deployment controller after `launchd` reports idle; `3e2df256908f800c91720036d1a61f4be9fc99b8` is the current released commit and prior releases remain rollback targets. Its 162-entry archive independently verifies at SHA-256 `cafe5758875675286ac2caa1d9862bc4831007f196f296e9db588e8091808d6d`. |
 | 44 | Kickstart and watch the existing launchd owner | `done` | Existing `ai.anicca.job-search-daily` run 20 exited 0 from `daily-20260822-163810`; its owner evidence proves the existing CDP `http://127.0.0.1:9222` and browser WebSocket were used. The prior identical checkpoint report remains authoritatively ACKed at Telegram message ID `28475`; run 20's duplicate send has no ACK and is not claimed. No submit intent or substitute executor exists. |
 | 45 | Resume Rakuten and prove Workday step 2 | `done` | The durable model cursor reached visible `My Information`, uploaded and hash-verified `Daisuke_Narita_AI_Business_Resume.pdf`, filled current identity/address/phone controls from private Candidate Memory, and accumulated an ordered 50-step evidence chain without a submit claim. |
-| 46 | Complete one real Workday application authoritatively | `in_progress_provider_maintenance` | A fresh model-selected navigate rendered Workday's explicit planned-maintenance page for 2026-08-22 15:00–18:00 GMT+9. Release `380e10f90` binds Workday's locale/location-mutated `/job/.../apply/*` URL to the exact host, tenant path, and requisition-bearing job slug. Release `3e2df2569` additionally stores the canonical posting—not the provider maintenance page—as the `provider_unavailable` recovery URL; run 20 readback proves the durable checkpoint now points to the exact Rakuten posting. Resume the same row after availability; close only on exact completion UI or authoritative Gog receipt plus Ledger agreement and Telegram ACK. |
-| 47 | Kickstart immediately again to prove dedupe and continued queue | `pending_after_46` | Submitted URL is not repeated and the same run attempts remaining eligible Workday rows without waiting an hour |
+| 46 | Complete one real Workday application authoritatively | `done` | Run `daily-20260822-182223` reached Review and invoked only `runtime finalize`; the one fenced click produced `submitted / exact_completion_ui`, outcome evidence SHA-256 `07e07393a4f4161839a94eb2242c7d48ef8e031f2bf8903e1b97b78d696f556b`, a submitted Ledger row, matching immutable resume SHA, and Telegram ACK `28598`. Gog then checked 13 threads and found no exact role receipt yet. |
+| 47 | Kickstart immediately again to prove dedupe and continued queue | `in_progress_after_46` | Activate the post-submit Telegram-timeout fix, prove the submitted URL is not repeated, exit zero, and continue any remaining eligible Workday rows without waiting an hour |
 | 48 | Close `JOB-WORKDAY-E2E-MODEL-10P` | `pending_after_47` | Account→application→receipt, multi-row wake, and repeated-kickstart evidence all agree |
 | 49 | Unpark Ashby as `JOB-ASHBY-E2E-MODEL-10Q` | `pending_after_48` | Same framework contracts are reused; only provider hints are added |
 | 50 | Complete one real Ashby application authoritatively | `pending_after_49` | Completion UI or exact receipt, Ledger agreement, Telegram ACK, and kickstart dedupe |
@@ -2142,7 +2146,7 @@ must accumulate in the live loop:
 | 10 | Shared browser-agent framework and ATS rollout | `in_progress` | 10A–10O are audit history and deterministic rails. Current gate is 10P: build the framework and close Workday E2E. 10Q applies it to Ashby, 10R to Greenhouse, 10S to Lever, and 10T to unknown supported ATS forms. |
 | 10N | `JOB-LEDGER-EVENT-10N`: repair the attributed-application transition contract | `completed` | `Ledger` appends the matching event before updating the trigger-guarded projection in the same transaction. Focused ledger tests pass (`17/17`); the live Cognition row advanced `discovered→qualified→materials_ready`, survived DB reopen, and the real ledger reports integrity `ok` with zero event/projection mismatches. |
 | 10O | `JOB-SCHEDULER-POLICY-10O`: align cadence and application objective | `implemented` | The quota short-circuit is removed and pending `materials_ready` rows are exposed. The installed production policy is now hourly (`StartInterval=3600`); final completion evidence is owned by 10P. |
-| 10P | `JOB-WORKDAY-E2E-MODEL-10P`: full framework plus Workday E2E | `pending_actionable` | Section 1.0 steps 4-48 close: always-answer framework, account creation/sign-in, repeated launchd kickstarts, Rakuten step 2, authoritative Workday outcome, same-wake continuation, and Ledger/Gmail/Telegram agreement |
+| 10P | `JOB-WORKDAY-E2E-MODEL-10P`: full framework plus Workday E2E | `in_progress_post_submit_reconciliation` | Rakuten has authoritative exact-completion-UI submission and Telegram ACK `28598`; close section 1.0 steps 47-48 with next-wake dedupe, exit-zero, and queue-continuation evidence. |
 | 10Q | `JOB-ASHBY-E2E-MODEL-10Q`: reuse the framework for Ashby | `pending_after_10P` | Same orchestrator/session/observation/action/checkpoint/verifier contracts; one authoritative Ashby outcome and repeated-wake dedupe |
 | 10R | `JOB-GREENHOUSE-E2E-MODEL-10R` | `pending_after_10Q` | Provider hints only plus one authoritative Greenhouse outcome |
 | 10S | `JOB-LEVER-E2E-MODEL-10S` | `pending_after_10R` | Provider hints only plus one authoritative Lever outcome |
