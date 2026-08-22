@@ -439,17 +439,28 @@ identity.
 ### Task 12: Submit one Upwork proposal exactly once
 
 **Files:**
+- Modify: `skills/earn/gig/scripts/connector_outbox.py`
 - Modify: `skills/earn/gig/scripts/providers/upwork_adapter.py`
 - Create: `skills/earn/gig/tests/test_upwork_proposal_effect.py`
 
 **Interfaces:** Implements `plan_effect(propose)`, `reconcile()`, `execute()` and `readback()`.
 
-- [ ] Write a failing crash matrix: before effect, lost ACK, provider timeout, success readback and
+- [x] Write a failing crash matrix: before effect, lost ACK, provider timeout, success readback and
   repeated tick.
-- [ ] Persist authorization hash, job ID, proposal payload hash and Connects pre-state before effect.
+- [x] Persist authorization hash, job ID, proposal payload hash and Connects pre-state before effect.
 - [ ] Execute one authorized proposal through API or CloakBrowser.
-- [ ] Require proposal ID plus Connects post-state; on uncertainty enter `reconcile_unknown`.
+- [x] Require proposal ID plus Connects post-state; on uncertainty enter `reconcile_unknown`.
 - [ ] Replay the same tick, assert zero new proposal and zero additional Connects; commit/push.
+
+Task 12 kernel evidence: the outbox commits authorization, job, canonical payload, Connects pre-state
+and evidence hash before any provider call. A compare-and-set allows only one concurrent executor to
+submit; the loser returns without an effect. The executor re-hashes the entire durable proposal before
+the CAS, so altered cover letter, bid or milestones cannot pass by retaining an embedded hash string.
+Lost acknowledgements and timeouts enter `reconcile_unknown`; only matching proposal ID, job ID,
+payload hash, submitted state and Connects post-state verify the effect. Forty-one focused proposal,
+authorization, discovery and sealer tests pass, including two-worker concurrency and durable
+cover-letter/bid tampering. Fresh adversarial review reports no blocker/high. Live submission and live
+replay remain open behind the separately recorded $15 plus tax Connects purchase approval gate.
 
 ### Task 13: Collect Upwork conversations and offers
 

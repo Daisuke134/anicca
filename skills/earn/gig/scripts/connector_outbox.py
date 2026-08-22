@@ -296,6 +296,14 @@ CREATE TABLE IF NOT EXISTS provider_effect_intents (
     payload_hash TEXT NOT NULL CHECK (length(payload_hash) = 64),
     authorization_hash TEXT NOT NULL CHECK (length(authorization_hash) = 64),
     state TEXT NOT NULL CHECK (state IN ('prepared','reconcile_pending')),
+    reconciliation_state TEXT NOT NULL DEFAULT 'not_started'
+        CHECK (reconciliation_state IN ('not_started','reconcile_unknown','verified')),
+    connects_pre INTEGER,
+    connects_pre_hash TEXT,
+    payload_body TEXT,
+    proposal_id TEXT,
+    connects_post INTEGER,
+    readback_hash TEXT,
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL,
     UNIQUE(provider, account_key, resource_id, action, payload_hash)
@@ -383,6 +391,23 @@ class ConnectorOutbox:
                         connection.execute(
                             "ALTER TABLE connector_intents ADD COLUMN rejection_code TEXT"
                         )
+                    provider_columns = {
+                        str(row[1])
+                        for row in connection.execute("PRAGMA table_info(provider_effect_intents)")
+                    }
+                    for name, declaration in (
+                        ("reconciliation_state", "TEXT NOT NULL DEFAULT 'not_started'"),
+                        ("connects_pre", "INTEGER"),
+                        ("connects_pre_hash", "TEXT"),
+                        ("payload_body", "TEXT"),
+                        ("proposal_id", "TEXT"),
+                        ("connects_post", "INTEGER"),
+                        ("readback_hash", "TEXT"),
+                    ):
+                        if name not in provider_columns:
+                            connection.execute(
+                                f"ALTER TABLE provider_effect_intents ADD COLUMN {name} {declaration}"
+                            )
                     action_columns = {
                         str(row[1])
                         for row in connection.execute("PRAGMA table_info(connector_actions)")
@@ -546,7 +571,7 @@ class ConnectorOutbox:
     @staticmethod
     def _require_key(name: str, value: str) -> str:
         text = str(value or "").strip()
-        if not re.fullmatch(r"[A-Za-z0-9._:/-]{1,500}", text):
+        if not re.fullmatch(r"[A-Za-z0-9._:/~-]{1,500}", text):
             raise ValueError(f"invalid {name}")
         return text
 
@@ -1716,11 +1741,29 @@ class ConnectorOutbox:
 
     def prepare_provider_effect(
         self, intent: Any, *, authorization: Any, now: int,
+        connects_pre: int | None = None,
+        connects_pre_hash: str | None = None,
+        payload_body: str | None = None,
     ) -> dict[str, Any]:
         """Persist one authorization-bound non-Coconala effect before execution."""
         values = self._provider_effect_values(intent, authorization)
         now = self._require_timestamp("now", now)
+        supplied = (connects_pre, connects_pre_hash, payload_body)
+        if any(value is not None for value in supplied):
+            if (
+                type(connects_pre) is not int or connects_pre < 0
+                or not re.fullmatch(r"[0-9a-f]{64}", str(connects_pre_hash or ""))
+                or not isinstance(payload_body, str) or not payload_body
+            ):
+                raise ValueError("invalid provider pre-effect evidence")
         with self._write() as connection:
+            resource = connection.execute(
+                """SELECT * FROM provider_effect_intents
+                   WHERE provider=? AND account_key=? AND resource_id=? AND action=?""",
+                (values[1], values[2], values[3], values[4]),
+            ).fetchone()
+            if resource is not None and resource["payload_hash"] != values[5] and values[4] == "propose":
+                raise ImmutableIntent("resource already has proposal intent")
             existing = connection.execute(
                 """SELECT * FROM provider_effect_intents
                    WHERE provider=? AND account_key=? AND resource_id=?
@@ -1732,13 +1775,21 @@ class ConnectorOutbox:
                     raise ImmutableIntent("authorization hash cannot change")
                 if existing["effect_key"] != values[0]:
                     raise ImmutableIntent("effect key cannot change")
+                for field, expected in (
+                    ("connects_pre", connects_pre),
+                    ("connects_pre_hash", connects_pre_hash),
+                    ("payload_body", payload_body),
+                ):
+                    if expected is not None and existing[field] != expected:
+                        raise ImmutableIntent(f"provider {field} cannot change")
                 return {**dict(existing), "created": False, "reconcile_only": True}
             connection.execute(
                 """INSERT INTO provider_effect_intents
                    (effect_key,provider,account_key,resource_id,action,payload_hash,
-                    authorization_hash,state,created_at,updated_at)
-                   VALUES(?,?,?,?,?,?,?,'prepared',?,?)""",
-                (*values, now, now),
+                    authorization_hash,state,connects_pre,connects_pre_hash,payload_body,
+                    created_at,updated_at)
+                   VALUES(?,?,?,?,?,?,?,'prepared',?,?,?,?,?)""",
+                (*values, connects_pre, connects_pre_hash, payload_body, now, now),
             )
             stored = connection.execute(
                 "SELECT * FROM provider_effect_intents WHERE effect_key=?", (values[0],),
@@ -1766,7 +1817,7 @@ class ConnectorOutbox:
                 return {**dict(existing), "started": False, "reconcile_only": True}
             cursor = connection.execute(
                 """UPDATE provider_effect_intents
-                   SET state='reconcile_pending',updated_at=?
+                   SET state='reconcile_pending',reconciliation_state='reconcile_unknown',updated_at=?
                    WHERE effect_key=? AND state='prepared'""",
                 (now, values[0]),
             )
@@ -1776,6 +1827,60 @@ class ConnectorOutbox:
                 "SELECT * FROM provider_effect_intents WHERE effect_key=?", (values[0],),
             ).fetchone()
             return {**dict(stored), "started": True, "reconcile_only": False}
+
+    def provider_effect(self, intent: Any) -> dict[str, Any] | None:
+        """Read one immutable provider effect without changing retry permission."""
+        effect_key = self._require_key("effect_key", getattr(intent, "effect_key", ""))
+        with closing(self._connect()) as connection:
+            row = connection.execute(
+                "SELECT * FROM provider_effect_intents WHERE effect_key=?", (effect_key,),
+            ).fetchone()
+            return dict(row) if row is not None else None
+
+    def verify_provider_effect(
+        self, intent: Any, *, proposal_id: str, connects_post: int,
+        readback_hash: str, now: int,
+    ) -> dict[str, Any]:
+        """Record only exact authoritative proposal and Connects readback."""
+        effect_key = self._require_key("effect_key", getattr(intent, "effect_key", ""))
+        proposal_id = self._require_key("proposal_id", proposal_id)
+        if type(connects_post) is not int or connects_post < 0:
+            raise ValueError("invalid connects_post")
+        if not re.fullmatch(r"[0-9a-f]{64}", str(readback_hash or "")):
+            raise ValueError("invalid readback_hash")
+        now = self._require_timestamp("now", now)
+        with self._write() as connection:
+            existing = connection.execute(
+                "SELECT * FROM provider_effect_intents WHERE effect_key=?", (effect_key,),
+            ).fetchone()
+            if existing is None or existing["state"] != "reconcile_pending":
+                raise InvalidTransition("provider effect is not awaiting reconciliation")
+            expected_identity = tuple(existing[key] for key in (
+                "provider", "account_key", "resource_id", "action", "payload_hash",
+                "authorization_hash", "effect_key",
+            ))
+            actual_identity = tuple(getattr(intent, key) for key in (
+                "provider", "account_key", "resource_id", "action", "payload_hash",
+                "authorization_hash", "effect_key",
+            ))
+            if expected_identity != actual_identity:
+                raise ImmutableIntent("provider effect identity changed")
+            if existing["connects_pre"] is None or connects_post > existing["connects_pre"]:
+                raise InvalidTransition("provider Connects readback is inconsistent")
+            if existing["reconciliation_state"] == "verified":
+                expected = (existing["proposal_id"], existing["connects_post"], existing["readback_hash"])
+                if expected != (proposal_id, connects_post, readback_hash):
+                    raise ImmutableIntent("provider readback cannot change")
+                return dict(existing)
+            connection.execute(
+                """UPDATE provider_effect_intents
+                   SET reconciliation_state='verified',proposal_id=?,connects_post=?,
+                       readback_hash=?,updated_at=? WHERE effect_key=?""",
+                (proposal_id, connects_post, readback_hash, now, effect_key),
+            )
+            return dict(connection.execute(
+                "SELECT * FROM provider_effect_intents WHERE effect_key=?", (effect_key,),
+            ).fetchone())
 
     def supervisor_recover_stopped_owner(
         self,

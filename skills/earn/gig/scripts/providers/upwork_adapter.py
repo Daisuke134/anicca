@@ -6,13 +6,20 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-from dataclasses import dataclass
-from datetime import datetime
+import time
+from dataclasses import asdict, dataclass
+from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from typing import Any, Callable
 from urllib.parse import urlsplit
 
-from provider_adapter import Opportunity, OpportunityDetail
+from provider_adapter import (
+    Opportunity, OpportunityDetail, ProviderReceipt, ProviderState, TransportAck,
+)
+try:
+    from upwork_proposal import ProposalPayload, payload_sha256
+except ModuleNotFoundError:
+    from providers.upwork_proposal import ProposalPayload, payload_sha256
 
 
 _JOB_KEYS = {
@@ -156,11 +163,21 @@ class UpworkAdapter:
         self, transport: Any, read_page: Callable[..., dict[str, Any]],
         read_detail: Callable[..., dict[str, Any]], *, query: str,
         page_size: int = 20, max_pages: int = 5,
+        effect_store: Any = None,
+        read_connects: Callable[..., dict[str, Any]] | None = None,
+        submit_proposal: Callable[..., TransportAck] | None = None,
+        read_proposal: Callable[..., dict[str, Any] | None] | None = None,
+        now_epoch: Callable[[], int] | None = None,
     ) -> None:
         if not query.strip() or not 1 <= page_size <= 50 or not 1 <= max_pages <= 20:
             raise DiscoveryContractError("invalid_discovery_bounds")
         self.transport, self.read_page, self.read_detail = transport, read_page, read_detail
         self.query, self.page_size, self.max_pages = query, page_size, max_pages
+        self.effect_store = effect_store
+        self.read_connects = read_connects
+        self.submit_proposal = submit_proposal
+        self.read_proposal = read_proposal
+        self.now_epoch = now_epoch or (lambda: int(time.time()))
 
     def discover(self) -> list[UpworkOpportunity]:
         selection = self.transport.for_action("search")
@@ -205,3 +222,164 @@ class UpworkAdapter:
         if job.opportunity_id != opportunity_id:
             raise DiscoveryContractError("stale_job_identity")
         return OpportunityDetail(job, job.scope, job.source_hash)
+
+    def _effect_dependencies(self) -> None:
+        if (
+            self.effect_store is None or not callable(self.read_connects)
+            or not callable(self.submit_proposal) or not callable(self.read_proposal)
+        ):
+            raise DiscoveryContractError("proposal_effect_not_configured")
+
+    def _selection(self, intent: Any):
+        selection = self.transport.for_action("propose")
+        authorization = getattr(selection, "authorization", None)
+        if (
+            selection is None
+            or getattr(authorization, "receipt_hash", None) != intent.authorization_hash
+        ):
+            raise DiscoveryContractError("authorization_not_approved")
+        return selection
+
+    @staticmethod
+    def _connects(value: Any) -> tuple[int, str]:
+        if not isinstance(value, dict) or set(value) != {"balance", "observed_at", "evidence_hash"}:
+            raise DiscoveryContractError("invalid_connects_readback")
+        balance = value["balance"]
+        if type(balance) is not int or balance < 0:
+            raise DiscoveryContractError("invalid_connects_readback")
+        _timestamp(value["observed_at"], "invalid_connects_readback")
+        digest = value["evidence_hash"]
+        if not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest):
+            raise DiscoveryContractError("invalid_connects_readback")
+        return balance, digest
+
+    def plan_effect(self, action: str, payload: dict[str, Any] | ProposalPayload):
+        self._effect_dependencies()
+        if action != "propose" or not isinstance(payload, ProposalPayload):
+            raise DiscoveryContractError("invalid_proposal_effect")
+        if payload.provider != "upwork" or payload.payload_hash != payload_sha256(payload):
+            raise DiscoveryContractError("invalid_proposal_payload")
+        selection = self.transport.for_action("propose")
+        if selection is None:
+            raise DiscoveryContractError("authorization_not_approved")
+        intent = self.transport.effect_intent(
+            selection, resource_id=payload.opportunity_id, payload_hash=payload.payload_hash,
+        )
+        if self.effect_store.provider_effect(intent) is not None:
+            self.effect_store.prepare_provider_effect(
+                intent, authorization=selection.authorization, now=self.now_epoch(),
+            )
+            return intent
+        connects_pre, connects_hash = self._connects(self.read_connects(selection))
+        body = json.dumps(asdict(payload), ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        self.effect_store.prepare_provider_effect(
+            intent, authorization=selection.authorization, now=self.now_epoch(),
+            connects_pre=connects_pre, connects_pre_hash=connects_hash, payload_body=body,
+        )
+        return intent
+
+    def _provider_readback(self, intent: Any, selection: Any) -> dict[str, Any] | None:
+        value = self.read_proposal(selection, intent)
+        if value is None:
+            return None
+        keys = {
+            "proposal_id", "job_id", "payload_hash", "state", "connects_balance",
+            "observed_at", "evidence_hash",
+        }
+        if not isinstance(value, dict) or set(value) != keys:
+            raise DiscoveryContractError("invalid_proposal_readback")
+        if (
+            not isinstance(value["proposal_id"], str) or not value["proposal_id"]
+            or value["job_id"] != intent.resource_id
+            or value["payload_hash"] != intent.payload_hash
+            or value["state"] != "submitted"
+        ):
+            raise DiscoveryContractError("invalid_proposal_readback")
+        if type(value["connects_balance"]) is not int or value["connects_balance"] < 0:
+            raise DiscoveryContractError("invalid_proposal_readback")
+        _timestamp(value["observed_at"], "invalid_proposal_readback")
+        if not isinstance(value["evidence_hash"], str) or not re.fullmatch(
+            r"[0-9a-f]{64}", value["evidence_hash"],
+        ):
+            raise DiscoveryContractError("invalid_proposal_readback")
+        return value
+
+    def reconcile(self, intent: Any) -> ProviderState:
+        self._effect_dependencies()
+        row = self.effect_store.provider_effect(intent)
+        if row is None:
+            raise DiscoveryContractError("proposal_intent_missing")
+        if row["reconciliation_state"] == "verified":
+            return ProviderState(
+                "upwork", intent.resource_id, "propose", "submitted",
+                datetime.fromtimestamp(row["updated_at"], tz=timezone.utc).isoformat(),
+                row["readback_hash"],
+            )
+        selection = self._selection(intent)
+        readback = self._provider_readback(intent, selection)
+        if readback is not None:
+            self.effect_store.verify_provider_effect(
+                intent, proposal_id=readback["proposal_id"],
+                connects_post=readback["connects_balance"],
+                readback_hash=readback["evidence_hash"], now=self.now_epoch(),
+            )
+            return ProviderState(
+                "upwork", intent.resource_id, "propose", "submitted",
+                readback["observed_at"], readback["evidence_hash"],
+            )
+        state = "absent" if row["state"] == "prepared" else "reconcile_unknown"
+        return ProviderState(
+            "upwork", intent.resource_id, "propose", state,
+            datetime.fromtimestamp(row["updated_at"], tz=timezone.utc).isoformat(),
+            row["connects_pre_hash"],
+        )
+
+    def execute(self, intent: Any) -> TransportAck:
+        self._effect_dependencies()
+        state = self.reconcile(intent)
+        if state.state == "submitted":
+            row = self.effect_store.provider_effect(intent)
+            return TransportAck("upwork", "propose", intent.effect_key, True, row["proposal_id"])
+        row = self.effect_store.provider_effect(intent)
+        if row["state"] != "prepared":
+            return TransportAck("upwork", "propose", intent.effect_key, False, None)
+        selection = self._selection(intent)
+        try:
+            payload = json.loads(row["payload_body"])
+        except (TypeError, json.JSONDecodeError) as exc:
+            raise DiscoveryContractError("invalid_durable_proposal") from exc
+        try:
+            durable_payload = ProposalPayload(**payload)
+        except (TypeError, ValueError) as exc:
+            raise DiscoveryContractError("invalid_durable_proposal") from exc
+        if (
+            durable_payload.payload_hash != intent.payload_hash
+            or payload_sha256(durable_payload) != intent.payload_hash
+        ):
+            raise DiscoveryContractError("invalid_durable_proposal")
+        started = self.effect_store.mark_provider_effect_started(
+            intent, authorization=selection.authorization, now=self.now_epoch(),
+        )
+        if not started["started"]:
+            return TransportAck("upwork", "propose", intent.effect_key, False, None)
+        try:
+            ack = self.submit_proposal(selection, intent, payload)
+        except Exception:
+            return TransportAck("upwork", "propose", intent.effect_key, False, None)
+        if (
+            not isinstance(ack, TransportAck) or ack.provider != "upwork"
+            or ack.action != "propose" or ack.effect_key != intent.effect_key
+        ):
+            raise DiscoveryContractError("invalid_proposal_ack")
+        return ack
+
+    def readback(self, intent: Any) -> ProviderReceipt:
+        state = self.reconcile(intent)
+        if state.state != "submitted":
+            raise DiscoveryContractError("proposal_readback_unconfirmed")
+        row = self.effect_store.provider_effect(intent)
+        return ProviderReceipt(
+            provider="upwork", action="propose", effect_key=intent.effect_key,
+            provider_receipt_id=row["proposal_id"], authoritative_state="submitted",
+            observed_at=state.observed_at, evidence_hash=row["readback_hash"],
+        )

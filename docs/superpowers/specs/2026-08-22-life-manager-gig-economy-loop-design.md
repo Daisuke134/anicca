@@ -66,6 +66,12 @@ U8 is waiting only at the explicit spend gate. The live purchase surface offers 
 $15 plus tax, yielding balance 100 with expiry 2027-08-22; the sealed proposal requires 26. No
 purchase or application effect exists before owner approval.
 
+The U8/U9 effect kernel is ready before live execution. It persists the full canonical proposal and
+Connects pre-state, admits one concurrent submitter through an atomic compare-and-set, re-hashes the
+durable body before effect, and verifies only a matching official proposal plus Connects post-state.
+Timeout or lost-ack without readback remains `reconcile_unknown` and cannot resend. Live submit and
+live replay remain intentionally unclaimed until the personal-funds gate is approved.
+
 ## 1. Goal, objective and boundaries
 
 ### 1.1 Goal
