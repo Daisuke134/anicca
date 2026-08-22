@@ -4,7 +4,7 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
 実行authority: **Mac Host Storage Governor**  
 公開skill: **`disk-cleanup`**
 
-状態: Phase 1実装済み。Life Manager OSS skill、fail-closed governor、guard fallback、回帰テスト、旧cleanup ownerのcutover、正本5分labelのbootstrap/readback、MiB/GiB精度とswap telemetry、ULTRA時のexact-byte full-pass昇格、bootstrap health failureのcleanup内receipt契約、Gig/Writer共通producer preflight、Paid/Storefrontのin-flight effect gate/checkpoint、Writer provider-start gateは反映済み。supervisor non-stop/pause-resume契約、host-wide census、hourly intelligence、Writerのin-flight drainを含む全producer backpressure、ULTRA receipt reserve/retry、24時間/7日観測、141/153実機fixtureは未完了。UID 501/GUI bootstrapと`ai.anicca.life-manager-disk-cleanup`のload readbackは復旧済み。
+状態: Phase 1実装済み。Life Manager OSS skill、fail-closed governor、guard fallback、回帰テスト、旧cleanup ownerのcutover、正本5分labelのbootstrap/readback、MiB/GiB精度とswap telemetry、ULTRA時のexact-byte full-pass昇格、bootstrap health failureのcleanup内receipt契約、Gig/Writer共通producer preflight、Paid/Storefrontのin-flight effect gate/checkpoint、Writer provider-start gateは反映済み。supervisor non-stop/pause-resume契約、host-wide census、hourly intelligence、Writerのin-flight drainを含む全producer backpressure、atomic capacity claims、rapid-growth predictor、unknown-growth containment、ULTRA receipt reserve/retry、24時間/7日観測、141/153実機fixtureは未完了。UID 501/GUI bootstrapと`ai.anicca.life-manager-disk-cleanup`のload readbackは復旧済み。
 
 ## 現行実装状況とOSS境界
 
@@ -104,6 +104,42 @@ A-25は通常のA-04以降より先に処理するcapacity-safety interruptで�
    reserveを消費しないことを最小regressionで固定する。
 7. GREEN後は既存canonical labelだけを`bin/launchctl-safe kickstart`し、run count増加、新しい実機receipt、
    `last exit code=0`、reserve size/mode/allocation、protected deletion 0をread backする。人工的なproduction disk-fillは行わない。
+
+#### 2026-08-22 rapid saturation readback and prevention closure
+
+OSS code study後のread-only計測では、Data volume freeが約5.60 GiBから約414 MiBまで短時間に低下し、
+その後のreadbackでも`1,033,488 KiB`（約1009 MiB）だった。swapは`9,008 MiB`使用、canonical labelは
+`StartInterval=300`、`runs=73`、`last exit code=0`である。直近receiptは
+`free_before=1,120,423,936`、`free_after=1,061,883,904`、tier=`ULTRA`、`reclaimed=0`、
+`protected_deletions=0`だった。`.receipt-reserve`は存在せず、`last-receipt.json`はmode `0644`だった。
+
+この事象は、cleanup cadenceと新規producer preflightだけでは再発を防げないことを示す。Life Manager管理下の
+producerには、次のcapacity firewallを共通入口とeffect直前の両方で適用する。
+
+```text
+projected_free = current_free
+               - outstanding_capacity_claims
+               - requested_max_allocation
+               - max(observed_growth_rate, declared_growth_rate) * reaction_window
+```
+
+`projected_free < 11 GiB`なら新規claimをatomicに拒否する。claimはowner、PID、artifact、maximum bytes、expiry、
+checkpointを持ち、同時起動するproducerが同じfree bytesを二重に予約できないようsingle lockで直列化する。
+開始後もproducerはquota到達前またはprojected floor到達前に自分でcheckpoint/drainし、保護sessionを保持したまま
+新規bulk writeを止める。Codex/OpenClaw/browser database、WAL、logなどprotected growthはcleanupが削除せず、
+owner側のlossless rotation/checkpoint contractでbounded化する。
+
+未登録application、OS update、APFS snapshotなどLife Managerが開始を阻止できないwriterについて、絶対的な
+「disk fullにならない」保証はしない。60秒sentinelがfree deltaとtime-to-floorを計算し、declared claimで説明できない
+growthを検出した時点で全managed producerの新規claimを拒否し、既存producerへcheckpoint要求を出し、owner不明の
+capacity incidentを通知する。unknown path、session、source、credential、database、swapは削除しない。
+
+したがって完成時の保証は次の4つである。
+
+1. managed producerは11 GiB recovery floorを割る新規allocationを開始しない。
+2. in-flight managed producerはquota/projected floor前にcheckpointし、bulk writeを継続しない。
+3. unmanaged/protected growthでも、cleanupはdataを壊さずmanaged loadを遮断し、control-plane receiptを書ける。
+4. ENOSPCが発生してもA-25 reserveでreceiptを1回回復し、失敗を成功として隠さない。
 
 ### 2026-08-21 GUI bootstrap incident and recovery
 
@@ -383,6 +419,12 @@ flowchart TD
   X[All local writable volumes] --> C[Host-wide capacity census]
   C --> O[Owner and growth attribution]
   P[All host producers] -->|artifact + lease + finalizer| M[Lifecycle manifest]
+  P -->|request max bytes| A[Atomic capacity claims]
+  S[60-second sentinel] --> Q[Growth rate and time-to-floor]
+  C --> A
+  Q --> A
+  A -->|projected free >= 11 GiB| P
+  A -->|below floor or unknown surge| Z[Reject start or request checkpoint]
   D[5-minute deterministic pass] --> M
   M --> G{All deletion proofs pass}
   G -->|No or unknown| K[Preserve and record reason]
@@ -396,7 +438,7 @@ flowchart TD
   L --> D
   L --> H
   L --> B[Backpressure and bounded resume]
-  B -->|quota + preflight + checkpoint| P[All host producers]
+  B -->|quota + preflight + checkpoint| P
 ```
 
 ### Ownership
@@ -515,12 +557,37 @@ package managerを含む新規または既存のwrite-heavy producerは、開始
 | ULTRA | free < 3 GiB | 非必須write停止。state/receipt/checkpoint書き込みだけ許可 |
 
 1. tierはData volumeのbytesで算出し、丸めたGBだけで判断しない。
-2. tierを下げるには20 GiB reserveを2回連続観測する。
+2. CRITICAL/ULTRAのhard stopはfree >= 11 GiBを2回連続観測するまで解除しない。NORMALへ戻すには
+   free >= 20 GiBを2回連続観測する。
 3. cleanup後も6 GiB未満なら成功扱いにしない。
 4. stop flagは各producerのpreflightでMUST確認する。
 5. recoveryは一度に全loopを起動せず、owner単位でbounded redispatchする。
 
-### 2.7 Intelligence boundary
+### 2.7 Capacity firewall and ENOSPC prevention
+
+1. 全managed write-heavy producerはprocess開始前と各irreversible/bulk-write effect直前に、同じcapacity
+   admission helperを呼ぶ。helper未接続entrypointが1件でもあればproduction completionを拒否する。
+2. admissionはData volumeのexact free bytes、11 GiB recovery floor、全active claim、producerの
+   `requested_max_allocation`、観測/宣言growth rate、reaction windowから`projected_free`を計算する。
+   reaction windowは`max(2 * sentinel interval, producer checkpoint deadline)`とする。
+3. capacity claimの作成・更新・解放はsingle lock下でatomicに行う。同じfree bytesを複数producerへ
+   二重予約せず、stale claimはPID、lease、checkpointを検証するまで自動解放しない。既存state directoryの
+   bounded atomic JSONを使い、新しいdatabase、daemon、queue、third-party dependencyは作らない。
+4. `projected_free < 11 GiB`、stop/pressure flag、unknown surge、claim ledger read failureのいずれかで
+   admissionをfail-closedにし、effect=0 receiptを残す。
+5. in-flight producerは実使用量とgrowth rateをheartbeatし、quotaまたはprojected floor到達前に
+   checkpointしてbulk writeを止める。kill、session削除、source削除をdrainとして扱わない。
+6. protected growthのownerはlossless rotation/checkpointまたは同一ownerのbounded offloadを実装する。
+   cleanup authorityはprotected fileをtruncate、圧縮、移動、削除しない。
+7. 60秒sentinelはfree deltaとtime-to-11GiB/6GiB/3GiB floorを算出する。declared claimで説明できない
+   surgeは全managed claimを閉じ、in-flight checkpointを要求し、dedupe capacity incidentを発行する。
+8. receipt reserve、claim ledger、stop flag、checkpointはinventory/reclaimerのcandidateから除外する。
+9. isolated filesystemでconcurrent claims、rapid unknown growth、crash-stale claim、write/file-fsync/replace
+   ENOSPCを再現し、protected deletion 0、oversubscription 0、receipt corruption 0を証明する。
+10. 64 KiB以下のreceipt/checkpoint/control flag writeはcapacity claimの対象外とし、bounded control-plane
+    writeとしてA-25 reserveで保護する。bulk data writeをcontrol-plane名義へ偽装してはならない。
+
+### 2.8 Intelligence boundary
 
 hourly intelligence passは、次だけを出力する。
 
@@ -542,7 +609,7 @@ intelligence passはpathを削除せず、manifestを直接変更せず、protec
 - 2 GiB/hour以上の未知growthを検出した。
 - 同じownerで3回連続のlease/finalizer defectを検出した。
 
-### 2.8 Reporting and audit
+### 2.9 Reporting and audit
 
 1. 1 passは `observed_at`、free before/after、tier、eligible count、reclaimed bytes、
    preserved reasons、owner、policy versionを1 receiptに記録する。
@@ -552,7 +619,7 @@ intelligence passはpathを削除せず、manifestを直接変更せず、protec
 4. 同じ状態とpayloadはdedupeする。
 5. report delivery failureはcleanupを失敗させないが、delivery failure receiptを残す。
 
-### 2.9 Production completion
+### 2.10 Production completion
 
 1. unit/integration testが全てpassする。
 2. fixtureでactive session、active lease、open file、dirty worktree、unpushed worktree、
@@ -565,6 +632,8 @@ intelligence passはpathを削除せず、manifestを直接変更せず、protec
 7. 7日間でENOSPC 0、state write failure 0、cleanup起因producer failure 0を観測する。
 8. host inventory coverage reportでlocal writable volume missing 0、required owner family missing 0、
    1 GiB以上のunattributed root 0を観測する。
+9. managed producer entrypoint/effect boundaryのcapacity admission consumer missing 0を観測する。
+10. isolated saturation matrixでoversubscribed claim 0、receipt write failure 0、protected deletion 0を観測する。
 
 ## 3. As-Is / To-Be
 
@@ -579,6 +648,9 @@ intelligence passはpathを削除せず、manifestを直接変更せず、protec
 | Active execution | open-path中心 | producer lease + heartbeat + open-pathの二重証明 |
 | Worktrees | remote/dirty/open判定はcleanup側に存在 | producer ownershipとremote recovery receiptまで必須 |
 | Backpressure | stop flag consumerが不均一 | 全write-heavy producer preflightで同じtier contractを実行 |
+| Capacity admission | producerが同じfree bytesを独立に見て同時起動できる | atomic claimでmax allocationを予約し、projected freeが11 GiB未満なら開始/effectを拒否 |
+| In-flight growth | 起動後のproducerはstop flagだけでは止まらない | quota/growth heartbeatからfloor到達前にcheckpointし、bulk writeをdrain |
+| Unknown growth | 事後のhourly attribution中心 | 60秒sentinelがtime-to-floorを予測し、unknown surge中はmanaged claimを閉じる |
 | Logs | ledgerが無制限に増加可能 | bounded ops log + immutable incident receipt |
 | Recovery | reserve回復後に複数ownerが競合可能 | owner単位のbounded redispatch |
 
@@ -619,6 +691,14 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 | 28 | `dscl`/`launchctl`の141/153をhealth failureとしてfail-closed処理 | `test_gui_bootstrap_health_failure_is_observation_only` | OK |
 | 29 | stale app-server復旧後もcleanup labelのload readbackを独立検証 | `test_cleanup_label_load_readback_is_required` | OK |
 | 30 | receiptのpre-commit write/file-fsync/replace ENOSPC時だけreserveを解放し、atomic operationを1回再実行してreserveを復元 | `test_receipt_enospc_releases_reserve_retries_once_and_restores_reserve` | OK |
+| 31 | concurrent producerがfree bytesを二重予約しない | `test_capacity_claims_serialize_and_reject_oversubscription` | OK |
+| 32 | projected freeが11 GiB未満なら開始/effectを拒否 | `test_projected_floor_blocks_start_and_effect` | OK |
+| 33 | stale claimをproofなしで解放しない | `test_stale_capacity_claim_requires_pid_lease_and_checkpoint_proof` | OK |
+| 34 | in-flight producerがquota前にcheckpointする | `test_inflight_growth_checkpoints_before_recovery_floor` | OK |
+| 35 | protected growthはowner rotationでbounded化しcleanupは触らない | `test_protected_growth_uses_owner_rotation_without_cleanup_effect` | OK |
+| 36 | unknown surgeはmanaged claimを閉じる | `test_unknown_growth_surge_closes_managed_admission` | OK |
+| 37 | 全managed entrypoint/effect boundaryが同じadmission helperを使う | `test_managed_producer_admission_coverage_is_complete` | OK |
+| 38 | isolated saturationでもreceipt/protected dataを壊さない | `test_isolated_saturation_preserves_control_plane_and_protected_data` | OK |
 
 ### E2E judgment
 
@@ -655,7 +735,7 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 
 ## 6. Execution Steps — Atomic TODO
 
-この表はphase mapである。実装と完了判定の唯一のSSOTは下のAtomic TODO Register A-01〜A-36であり、
+この表はphase mapである。実装と完了判定の唯一のSSOTは下のAtomic TODO Register A-01〜A-44であり、
 後続itemを先に実行しない。
 
 | # | Work | Completion evidence | State |
@@ -684,7 +764,7 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 各行は1つの作業だけを持つ。順序を飛ばさず、受入証拠が保存されるまで完了扱いにしない。
 
 実行queueはcapacity-safety interruptの **A-25を最初に1件だけ** 閉じ、その後
-`A-04 → A-05 → … → A-24 → A-26 → … → A-36`へ戻る。A-25の先行はA-04〜A-24の
+`A-04 → A-05 → … → A-24 → A-26 → … → A-44`へ戻る。A-25の先行はA-04〜A-24の
 完了を意味しない。各itemはRED、最小GREEN、focused regression、fresh adversarial review、実機readback、
 spec state更新、commit/pushまでを同じsliceで閉じる。後続itemのscaffoldは前倒ししない。
 
@@ -722,10 +802,18 @@ spec state更新、commit/pushまでを同じsliceで閉じる。後続itemのsc
 | A-30 | owner recovery redispatchを実装する | checkpoint/retry/duplicate redispatch 0 | 未完了 |
 | A-31 | legacy/canonical shadow parityを保存する | protected mismatch 0 receipt | 未完了 |
 | A-32 | full regression matrixを実行する | Test Matrix 3–11 and 18–30 PASS | 部分完了 |
-| A-33 | 24-hour production observationを完了する | 24h free≥11GiB, ENOSPC 0, protected deletion 0 | 未完了 |
-| A-34 | 7-day production observationを完了する | 7d state-write failure 0 and cleanup-caused producer failure 0 | 未完了 |
-| A-35 | rollback restore testを保存する | prior label restore receipt | 未完了 |
-| A-36 | final production receiptを保存する | final receipt and Telegram message ID | 未完了 |
+| A-33 | atomic capacity claim ledgerを実装する | concurrent claimsをsingle lockで直列化し、oversubscription 0、stale claim proof fixture PASS | 未完了 |
+| A-34 | projected-free admissionを開始/effect境界へ実装する | exact bytes、active claims、requested max、growth rateで11GiB floorを割るstart/effect 0 | 未完了 |
+| A-35 | managed producer admission coverageを閉じる | launchd/runtime entrypointとbulk-write effect boundaryのconsumer missing 0 | 未完了 |
+| A-36 | 全managed in-flight producerへquota heartbeat/drainを接続する | browser/build/media/VM/package/agent/Gig/Writerがfloor前にcheckpoint、session loss 0 | 未完了 |
+| A-37 | protected-growth owner rotationを接続する | Codex/OpenClaw/browser DB/WAL/logのowner-side lossless rotation、cleanup effect 0 | 未完了 |
+| A-38 | 60秒rapid-growth predictorを実装する | free delta、declared/observed rate、time-to-floor receiptとunknown surge gate fixture PASS | 未完了 |
+| A-39 | unknown/unmanaged growth containmentを実装する | managed claim close、in-flight checkpoint request、dedupe incident、unknown deletion 0 | 未完了 |
+| A-40 | isolated capacity saturation matrixを実行する | Test Matrix 31–38 PASS。concurrent start、rapid growth、crash-stale claim、ENOSPCでoversubscription/receipt corruption/protected deletion各0 | 未完了 |
+| A-41 | 24-hour production observationを完了する | 24h free≥11GiB、managed floor violation 0、ENOSPC 0、protected deletion 0 | 未完了 |
+| A-42 | 7-day production observationを完了する | 7d state-write failure 0、oversubscription 0、cleanup-caused producer failure 0 | 未完了 |
+| A-43 | rollback restore testを保存する | prior label restore receipt | 未完了 |
+| A-44 | final production receiptを保存する | final receipt、admission coverage missing 0、Telegram message ID | 未完了 |
 
 ### Required verification commands
 
@@ -748,5 +836,5 @@ jq '{observed_at,tier,errors,protected_deletions}' ~/.openclaw/state/last-receip
 
 ### Completion claim rule
 
-spec作成、unit test、launchd load、1回の回収だけではDONEではない。Atomic TODO A-01〜A-36が
+spec作成、unit test、launchd load、1回の回収だけではDONEではない。Atomic TODO A-01〜A-44が
 順番に完了し、24時間と7日間のproduction observationを満たした時だけDONEとする。
