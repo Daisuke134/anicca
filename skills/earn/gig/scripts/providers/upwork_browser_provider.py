@@ -28,6 +28,7 @@ from connector_outbox import ConnectorOutbox  # noqa: E402
 from provider_authorization import DEFAULT_RECEIPT_PATH  # noqa: E402
 from upwork_proposal_browser import submit_proposal_after_fence  # noqa: E402
 from upwork_inbound_planner import invoke as plan_inbound, write_sealed_proposal  # noqa: E402
+from upwork_offer_gate import invoke as qualify_direct_offer  # noqa: E402
 from upwork_sealed_effect import (  # noqa: E402
     SealedUpworkProposalEffect, active_upwork_browser_account,
 )
@@ -50,6 +51,7 @@ DEFAULT_BROWSER_PROFILE = Path.home() / ".cloak/profiles/gig-daily-driver"
 DEFAULT_INBOUND_DIR = Path.home() / ".config/anicca/gig/upwork-inbound"
 DEFAULT_INBOUND_PROPOSALS = Path.home() / ".config/anicca/gig/upwork-inbound-proposals"
 DEFAULT_INBOUND_EVIDENCE = Path.home() / "gig/state/upwork-inbound-planner"
+DEFAULT_OFFER_EVIDENCE = Path.home() / "gig/state/upwork-offer-gate"
 TERMINAL_JOB_STATUSES = {"closed", "removed"}
 _COUNT_LABELS = {
     "offers": r"Offers\s*\((\d+)\)",
@@ -708,7 +710,20 @@ async def observe(
                         state.update(post_connects)
                         state["evidence_sha256"]["connects-post"] = post_hash
             elif detail_state == "actionable":
-                state["free_acquisition"]["offer_state"] = "terms_gate_pending"
+                packet_sha = seal_inbound_detail(
+                    inbound, detail_text, detail_hash, inbound_dir, state["observed_at"],
+                )
+                state["free_acquisition"]["private_packet_sha256"] = packet_sha
+                decision = await asyncio.to_thread(
+                    qualify_direct_offer, inbound_dir.expanduser() / f"{packet_sha}.json",
+                    evidence_dir=DEFAULT_OFFER_EVIDENCE.expanduser() / packet_sha,
+                )
+                state["free_acquisition"]["offer_state"] = {
+                    "accept": "accept_ready",
+                    "request_changes": "request_changes",
+                    "decline": "decline",
+                }[decision["action"]]
+                state["free_acquisition"]["offer_reason_codes"] = decision["reason_codes"]
         else:
             state["free_acquisition"] = inbound
         return state
