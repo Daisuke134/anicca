@@ -57,7 +57,8 @@ send_telegram() {
   params="$("$PY" -c 'import json,sys; print(json.dumps({"channel":"telegram","to":sys.argv[1],"message":sys.argv[2],"idempotencyKey":sys.argv[3]}, separators=(",",":")))' \
     "$TELEGRAM_ALERT_CHAT_ID" "$body" "$idempotency_key")" || return 1
   response="$(timeout "$TELEGRAM_SEND_TIMEOUT" openclaw gateway call send \
-    --params "$params" --timeout "$((TELEGRAM_SEND_TIMEOUT * 1000))" --json 2>&1)" || {
+    --params "$params" --timeout "$((TELEGRAM_SEND_TIMEOUT * 1000))" --json \
+    2>>"$EV/telegram.err")" || {
       printf '%s\n' "$response" >>"$EV/telegram.jsonl"
       return 1
     }
