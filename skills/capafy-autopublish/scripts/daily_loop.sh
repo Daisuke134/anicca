@@ -67,6 +67,14 @@ INV="$(python3 "$AUTO/scripts/inventory_status.py" 2>>"$LOG")"
 VERDICT="$(printf '%s\n' "$INV" | sed -n 's/^VERDICT=//p' | head -1)"
 echo "$TS inventory verdict=$VERDICT :: $(printf '%s' "$INV" | tail -1)" >> "$LOG"
 
+# Refresh the durable OFFLINE candidate backlog before any CAP_FULL/DRAINED exit.
+# This consumes the inventory response already read above and performs no Capafy write.
+printf '%s\n' "$INV" | tail -1 | python3 "$AUTO/scripts/candidate_backlog.py" refresh \
+  --inventory-stdin >>"$LOG" 2>&1 || {
+    echo "=== $TS candidate backlog refresh failed ===" >>"$LOG"
+    exit 1
+  }
+
 case "$VERDICT" in
   DRAINED|CAP_FULL)
     touch "$MARK"
