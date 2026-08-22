@@ -302,10 +302,12 @@ no-send, replay-zero and a new natural sub-30-minute official reply/estimate pro
 Do not advance the development cursor until every unchecked item in the current stage has official
 evidence. Independent production lanes continue running while development follows this order.
 
-**Live handover state.** The loaded Paid owner uses an immutable release with up to eight independent
-project workers. Its launchd environment ignores the shared preventive `disk-pressure.block` and
-`disk-writers.stop` flags while retaining the 512 MiB last-resort guard and expiring operator brake.
-The published Paid release is `227111b43c5ec0ed6527ee902faaa11063e419cb`. It includes the prior
+**Live handover state.** `main`, `origin/main` and the immutable release selected by the Paid `current`
+link all read back `6c7b27438b64c88c5efcd51028dcd873356ab962`; the protected unrelated dirty
+`skills/earn/gig/tests/test_reply_concurrency.py` remains outside this work. The loaded Paid owner uses up to
+eight independent project workers. Its launchd environment ignores the shared preventive
+`disk-pressure.block` and `disk-writers.stop` flags while retaining the 512 MiB last-resort guard and expiring
+operator brake. The release includes the prior
 `d24a9dbb3e86ce9df648965aac4aadcdf7bce56a` safety boundary, which removes all
 `undeterminable`/review-exhaustion delivery authorization, requires the builder to copy the exact decision
 asset contract, and preserves a failed staged candidate under private owner evidence before cleanup. The newer
@@ -416,6 +418,9 @@ exact source files; prose summaries alone are not implementation authority.
 | `anthropics/cwc-long-running-agents` | `ad107a974bced5244f74dd283dbf2bfd3baee3a1` | Fresh-context evaluator, default-fail evidence gate and durable handoff |
 | `langchain-ai/deepagents` | `23b83ad50f63d241d0069a3dc426d43b211adf2e` | Model-driven tool loop with middleware limited to context, persistence and safety |
 | `anthropics/launch-your-agent` | `c9e0f1378a252bd42deb7e9eb02ac0cbd07160bc` | Explicit done criteria, grading and resumable long-running progress |
+| `langchain-ai/langgraph` | `f09cfe8ffc1eeffd68f4b628ed69c30f7cad229f` | Checkpoint/interrupt/retry mechanics; never fixed business-semantic authority |
+| `temporalio/samples-python` | `e652a4d0e85042a34ec8fc46a4a03e51681fd7f9` | Durable timer, signal and external activity/effect boundaries |
+| `dagster-io/dagster` | `b2dabdc99f23d5d19bb9bf7417e606c0427c4413` | Materialized-asset dependency/staleness projection derived from facts |
 
 Do not add these frameworks as dependencies or transplant a demo wholesale. Copy the smallest relevant code
 shapes into the existing `agent_runner.py`/Paid owner, retain license notices for any copied code, and delete
@@ -423,6 +428,89 @@ the replaced semantic routing. The manager decides buyer intent, artifact work a
 code only enforces exact room, artifact/hash integrity, formal-delivery policy, secret boundaries, effect
 dedupe, official readback and lease ownership. Raw tool failures return to the manager; an enum may describe
 an observed failure but may never prescribe shipment or the next business action.
+
+**Code-level adoption map.** These isolated clones are research inputs, not runtime dependencies. Preserve the
+upstream license notice if source is copied; otherwise copy the behavior into the smallest local implementation.
+
+| Pinned source code | Observed code shape | Local adoption | Deliberately omitted |
+|---|---|---|---|
+| `openai-agents-python/src/agents/agent.py::Agent.as_tool` (MIT) | Specialist is callable while its caller retains orchestration | Paid manager owns room context and calls builder/evaluator/browser capabilities | Handoff that changes conversation owner |
+| `deepagents/libs/deepagents/deepagents/graph.py::create_deep_agent` (MIT) | Model loop receives durable filesystem and specialist tools | Existing runner, project filesystem and raw tool-result envelopes | DeepAgents/LangGraph dependency and generic middleware stack |
+| `cwc-long-running-agents/README.md` and `agents/evaluator.md` (Apache-2.0) | Durable handoff and fresh read-only evidence evaluator | Append-only room facts and artifact evaluator | Builder-authored completion and extra ceremony |
+| `langgraph/libs/langgraph/langgraph/graph/state.py::StateGraph.compile` (MIT) | Checkpointer and interrupts resume computation by thread | Resume manager context from facts; interrupt at external-effect boundaries | Static nodes/edges for buyer intent; graph state as truth |
+| `langgraph/libs/langgraph/langgraph/_internal/_retry.py` (MIT) | Retry wraps task execution, not business judgment | Retry transient tools and return terminal evidence to manager | Regenerating accepted artifacts or repeating effects |
+| `samples-python/sleep_for_days/workflows.py::SleepForDaysWorkflow` (MIT) | Durable wait races timer against external signal; effects are activities | launchd wake plus fenced browser activity | Temporal server/SDK in local OSS baseline |
+| `samples-python/message_passing/waiting_for_handlers_and_compensation/workflows.py` (MIT) | Platform lifecycle is separate from application logic | Lease/restart/cleanup outside model judgment | Attempted undo of irreversible marketplace messages |
+| `dagster/_scheduler/stale.py::resolve_stale_or_missing_assets` (Apache-2.0) | Dependency graph derives stale work from materialization facts | Derive artifact/capability/readback graph from factual ledger | Dagster runtime and second authoritative store |
+
+**Life Manager economic harness — accepted foundation.** Coconala is the first proving adapter, not the
+architecture boundary. One shared economic kernel owns goals, evidence and capital/risk constraints. A lane is
+a durable goal stream; a marketplace is a mechanical adapter; a skill is a capability with an observable
+contract; a graph is a rebuildable projection of facts. Telegram is the control/report channel, not marketplace
+truth.
+
+```mermaid
+flowchart LR
+    Sources[Markets and opportunities] --> Manager[Economic manager]
+    Telegram[Telegram] <--> Manager
+    Manager <--> Facts[(Append-only facts and effects)]
+    Manager <--> Registry[Capability registry]
+    Facts --> Graph[Derived economic graph]
+    Registry --> Graph
+    Graph --> Manager
+    Manager --> Tools[Research artifact evaluator tools]
+    Manager --> Adapters[Marketplace adapters]
+    Adapters --> Sites[Official UI or API]
+    Sites --> Receipts[Official readback and revenue]
+    Tools --> Facts
+    Receipts --> Facts
+    Facts --> Allocator[Outcome attribution and allocator]
+    Allocator --> Manager
+```
+
+The kernel stores five factual classes only: `Observation`, `Decision`, `Artifact`, `Effect` and `Readback`.
+Marketplace selectors, URLs and receipt parsers stay in adapters. The model decides buyer intent, proposal,
+work and replanning. Deterministic code enforces permission, budget, secret boundary, exact target, content
+hash, lease, effect idempotency and official readback. No enum, graph node or edge may promote uncertainty to
+delivery authority.
+
+Graph engineering begins now only as a projection schema: nodes are goals, opportunities, contracts,
+capabilities, artifacts, effects, readbacks and revenue; edges are `requires`, `produced_by`, `sent_to`,
+`proved_by` and `earned`. Initial storage remains one local append-only ledger with an in-memory index. Add a
+graph library/database only when a real query needs cycle detection, cross-goal dependency planning or
+multi-device concurrent traversal. This keeps local install fast/cheap and prevents a second source of truth.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Observe: scheduler or external fact
+    Observe --> Plan: reconstruct goal from ledger
+    Plan --> Act: choose capability or adapter
+    Act --> Verify: save artifact or effect fact
+    Verify --> Plan: needs work or new information
+    Verify --> Await: official effect and readback proved
+    Await --> Observe: buyer or market event
+    Await --> Outcome: payment withdrawal or terminal loss
+    Outcome --> Learn: attribute cost revenue failure
+    Learn --> [*]: update portfolio evidence
+```
+
+```mermaid
+flowchart TB
+    Kernel[Shared economic kernel]
+    Kernel --> Paid[Paid]
+    Kernel --> Negotiate[Negotiate]
+    Kernel --> Apply[Apply]
+    Kernel --> Storefront[Storefront]
+    Paid --> Coconala[Coconala adapter]
+    Negotiate --> Coconala
+    Apply --> Coconala
+    Storefront --> Coconala
+    Kernel --> Upwork[Future Upwork adapter]
+    Kernel --> Lancers[Future Lancers adapter]
+    Kernel --> CloudWorks[Future CloudWorks adapter]
+    Kernel --> Local[Local launchd and content store]
+    Kernel --> Cloud[Later cloud scheduler workers event store]
+```
 
 **Atomic reconstruction order.** Do not execute an item before its preceding spec checkbox exists here.
 
@@ -432,30 +520,37 @@ an observed failure but may never prescribe shipment or the next business action
    AI/PDF/PNG members and hashes, and reject any page-wide regression; obtain
    fresh evidence-backed PASS; submit the exact package directly through the existing browser tool with formal
    delivery OFF; obtain exact-room official DOM readback; repeat read-only and prove replay-zero.
-2. [ ] Produce a code-level adoption map: for every copied OSS pattern record pinned source file/function,
+2. [x] Produce a code-level adoption map: for every copied OSS pattern record pinned source file/function,
    local destination, license, behavior retained and behavior deliberately omitted. No article-only rationale.
-3. [ ] Make one Paid manager own the complete room conversation, accumulated contract, current artifact,
+3. [ ] Introduce the smallest shared economic-kernel contracts used by Paid first: append-only facts,
+   capability result envelope, effect key and graph projection. Do not add LangGraph, Temporal, Dagster, a
+   graph database, symlinks, a new service or speculative Upwork code.
+4. [ ] Make one Paid manager own the complete room conversation, accumulated contract, current artifact,
    buyer-visible goal and final response. Specialists are tools; no handoff may lose conversation ownership.
-4. [ ] Replace hardcoded business-semantic error-to-transition routing with raw structured tool results returned
+5. [ ] Replace hardcoded business-semantic error-to-transition routing with raw structured tool results returned
    to the manager for replanning. Retain only deterministic safety invariants and delete obsolete shipment enums.
-5. [ ] Make artifact production a tool with durable inputs/outputs: every buyer asset and generated asset is
+6. [ ] Make artifact production a tool with durable inputs/outputs: every buyer asset and generated asset is
    saved once, content-addressed, package-bound and available after failure/restart; temporary cleanup cannot
    erase the only candidate or its review images.
-6. [ ] Make the fresh evaluator a read-only agent-as-tool that opens the actual source, candidate and package.
+7. [ ] Make the fresh evaluator a read-only agent-as-tool that opens the actual source, candidate and package.
    Its delivery result is only PASS or NEEDS_WORK; missing evidence, uncertainty and timeout fail closed and
    return concrete findings to the manager.
-7. [ ] Make browser send/readback tools mechanical and idempotent: exact-room preflight, exact artifact hash,
+8. [ ] Make browser send/readback tools mechanical and idempotent: exact-room preflight, exact artifact hash,
    formal delivery OFF before approval, send fence, official DOM receipt and replay-zero. They never decide copy,
    artifact fitness or buyer intent.
-8. [ ] Replace workflow-state completion with an append-only factual handoff/effect ledger that survives crash,
+9. [ ] Replace workflow-state completion with an append-only factual handoff/effect ledger that survives crash,
    restart and model context loss. Manager reconstructs the next action from facts; no stale state authorizes an
    effect.
-9. [ ] Migrate every purchased Paid room through the reconstructed manager, preserve already-proved effects,
+10. [ ] Migrate every purchased Paid room through the reconstructed manager, preserve already-proved effects,
    close every silent pending/failure with an owned disposition, and prove one natural multi-project pass with
    official readback and replay-zero for every effect.
-10. [ ] Only after Paid proves the architecture, apply the same manager/tool/evaluator/effect-ledger shape to
-    Negotiate, Storefront and Apply in the existing authoritative lane order; then continue device durability,
-    clean third-device acceptance, real withdrawal and OSS audit.
+11. [ ] Only after Paid proves the architecture, extract the proved kernel from Coconala-specific code and apply
+    the same manager/tool/evaluator/effect-ledger shape to Negotiate, Storefront and Apply in the existing
+    authoritative lane order; then continue device durability, clean third-device acceptance, real withdrawal
+    and OSS audit.
+12. [ ] After local four-lane and clean-device acceptance pass, add the first second-market adapter against the
+    same capability/effect contracts. Upwork is first; Lancers and CloudWorks follow only from observed adapter
+    gaps. Cloud scheduling comes after local OSS truth.
 
 #### Paid buyer-visible media contract — authoritative
 
