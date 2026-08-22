@@ -28,6 +28,7 @@ _CONFIRMATION_TERMS = (
     "applicationreceived",
     "thankyouforapplying",
     "thanksforapplying",
+    "thankyouforyourinterest",
     "applicationsubmitted",
     "wehavereceivedyourapplication",
     "hasbeenreceived",
