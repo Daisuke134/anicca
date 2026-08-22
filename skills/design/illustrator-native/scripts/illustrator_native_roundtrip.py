@@ -52,13 +52,14 @@ def roundtrip(source: Path, output: Path, receipt: Path) -> dict[str, object]:
     subprocess.run(["open", "-a", str(APP_PATH), str(source)], check=True, timeout=30)
     for _ in range(60):
         try:
-            count = subprocess.run(
-                ["osascript", "-e", f'tell application id "{APP_ID}" to count documents'],
+            active_path = subprocess.run(
+                ["osascript", "-e", f'tell application id "{APP_ID}" to do javascript '
+                 '"app.activeDocument.fullName.fsName"'],
                 check=True, capture_output=True, text=True, timeout=5,
             ).stdout.strip()
-            if int(count or "0") > 0:
+            if Path(active_path).resolve() == source:
                 break
-        except (subprocess.SubprocessError, ValueError):
+        except (OSError, subprocess.SubprocessError, ValueError):
             pass
         time.sleep(1)
     else:
