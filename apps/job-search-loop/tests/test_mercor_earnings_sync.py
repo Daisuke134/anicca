@@ -11,11 +11,17 @@ class MercorEarningsSyncTests(unittest.TestCase):
     def _store_accepted(self, path: Path) -> WorkStateStore:
         store = WorkStateStore(path)
         for state in ("selected", "contracted", "authorized_work", "work_submitted", "accepted"):
+            kwargs = {}
+            if state == "authorized_work":
+                kwargs["authorization_policy"] = "explicitly_allowed"
+            if state == "accepted":
+                kwargs["acceptance_status"] = "accepted"
             store.transition(
                 work_id="application-1",
                 event_id=f"event-{state}",
                 next_state=state,
                 evidence_ref=f"evidence://{state}",
+                **kwargs,
             )
         return store
 

@@ -41,6 +41,8 @@ def advance_state(
     settlement_status: str | None = None,
     amount_usd: Any = None,
     reason: str | None = None,
+    authorization_policy: str | None = None,
+    acceptance_status: str | None = None,
 ) -> tuple[str, dict[str, Any]]:
     if next_state not in TRANSITIONS.get(current_state, set()):
         raise WorkHarnessError(f"invalid work transition: {current_state} -> {next_state}")
@@ -48,6 +50,16 @@ def advance_state(
         raise WorkHarnessError("evidence_ref is required")
     if next_state == "needs_human" and (not isinstance(reason, str) or not reason.strip()):
         raise WorkHarnessError("needs_human requires a reason")
+    if next_state == "authorized_work":
+        if authorization_policy != "explicitly_allowed":
+            raise WorkHarnessError("authorized_work requires explicit AI permission")
+    elif authorization_policy is not None:
+        raise WorkHarnessError("authorization_policy is allowed only for authorized_work")
+    if next_state == "accepted":
+        if acceptance_status != "accepted":
+            raise WorkHarnessError("accepted requires explicit acceptance evidence")
+    elif acceptance_status is not None:
+        raise WorkHarnessError("acceptance_status is allowed only for accepted")
     if next_state == "paid_settled":
         if not isinstance(payment_id, str) or not payment_id.strip():
             raise WorkHarnessError("paid_settled requires payment_id")
@@ -66,6 +78,10 @@ def advance_state(
     }
     if reason:
         event["reason"] = reason.strip()
+    if next_state == "authorized_work":
+        event["authorization_policy"] = authorization_policy
+    if next_state == "accepted":
+        event["acceptance_status"] = acceptance_status
     if next_state == "paid_settled":
         event.update(
             {

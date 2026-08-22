@@ -35,7 +35,7 @@ def sync_result(
             raise WorkStoreError("mercor work event has missing identity/evidence fields")
         payment = {
             field: raw[field]
-            for field in ("payment_id", "settlement_status", "amount_usd", "reason")
+            for field in ("payment_id", "settlement_status", "amount_usd", "reason", "authorization_policy", "acceptance_status")
             if field in raw
         }
         event = store.transition(

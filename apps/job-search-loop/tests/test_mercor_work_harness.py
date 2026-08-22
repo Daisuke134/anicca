@@ -12,10 +12,16 @@ class MercorWorkHarnessTests(unittest.TestCase):
     def test_authorized_work_to_settled_payout_to_revenue(self):
         state = "submitted_pending_review"
         for next_state in ("selected", "contracted", "authorized_work", "work_submitted", "accepted"):
+            kwargs = {}
+            if next_state == "authorized_work":
+                kwargs["authorization_policy"] = "explicitly_allowed"
+            if next_state == "accepted":
+                kwargs["acceptance_status"] = "accepted"
             state, _ = advance_state(
                 state,
                 next_state,
                 evidence_ref=f"evidence://{next_state}",
+                **kwargs,
             )
         state, event = advance_state(
             state,
@@ -56,6 +62,26 @@ class MercorWorkHarnessTests(unittest.TestCase):
         )
         self.assertEqual(state, "needs_human")
         self.assertEqual(event["reason"], "contract_prohibits_ai_assessment")
+
+    def test_authorized_work_requires_explicit_ai_permission_and_acceptance_proof(self):
+        with self.assertRaises(WorkHarnessError):
+            advance_state("contracted", "authorized_work", evidence_ref="contract://1")
+        state, _ = advance_state(
+            "contracted",
+            "authorized_work",
+            evidence_ref="contract://1",
+            authorization_policy="explicitly_allowed",
+        )
+        with self.assertRaises(WorkHarnessError):
+            advance_state("work_submitted", "accepted", evidence_ref="acceptance://1")
+        state, event = advance_state(
+            "work_submitted",
+            "accepted",
+            evidence_ref="acceptance://1",
+            acceptance_status="accepted",
+        )
+        self.assertEqual(state, "accepted")
+        self.assertEqual(event["acceptance_status"], "accepted")
 
 
 if __name__ == "__main__":

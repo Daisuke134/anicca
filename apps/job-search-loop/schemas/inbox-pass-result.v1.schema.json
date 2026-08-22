@@ -20,7 +20,9 @@
           "payment_id": {"type": "string", "minLength": 1},
           "settlement_status": {"enum": ["paid", "settled", "completed", "pending"]},
           "amount_usd": {"type": ["string", "number"]},
-          "reason": {"type": "string", "minLength": 1}
+          "reason": {"type": "string", "minLength": 1},
+          "authorization_policy": {"const": "explicitly_allowed"},
+          "acceptance_status": {"const": "accepted"}
         }
       }
     },
