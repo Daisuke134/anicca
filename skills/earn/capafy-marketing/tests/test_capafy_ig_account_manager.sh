@@ -177,22 +177,22 @@ chmod +x "$CASE/handoff-counter"
 export CAPAFY_MARKETING_HANDOFF="$CASE/handoff-counter" HANDOFF_CALLS="$CASE/handoff.calls"
 : >"$HANDOFF_CALLS"
 before_record="$(find "$CAPAFY_OUTCOME_STATE_DIR/capafy-incidents" -name '*.json' -exec cat {} \;)"
-before_accounts="$(cat "$CAPAFY_IG_ACCOUNTS_FILE")"
 before_events="$(cat "$CAPAFY_OUTCOME_STATE_DIR/capafy-revenue-events.jsonl" 2>/dev/null || true)"
 bash "$MANAGER" >/dev/null 2>&1; exact_rc=$?
-eq "exact recovery exits one without handoff" "$exact_rc" 1
+eq "exact recovery exits zero without handoff" "$exact_rc" 0
 eq "exact recovery calls no handoff" "$(wc -l <"$HANDOFF_CALLS" | tr -d ' ')" 0
-eq "exact recovery does not invoke browser" "$(wc -l <"$BROWSER_CALLS" | tr -d ' ')" 0
+eq "exact recovery invokes browser once" "$(wc -l <"$BROWSER_CALLS" | tr -d ' ')" 1
 eq "exact recovery does not invoke agent" "$(wc -l <"$RUNNER_CALLS" | tr -d ' ')" 0
-eq "exact recovery adds no manager wake" "$(wc -l <"$KICKSTART_CALLS" | tr -d ' ')" 0
+eq "exact recovery wakes publisher once" "$(grep -Fc 'ai.anicca.capafy-ig-marketing-daily' "$KICKSTART_CALLS")" 1
 eq "exact recovery sends no second Telegram" "$(wc -l <"$TELEGRAM_BODY" | tr -d ' ')" 0
 eq "exact recovery keeps one active incident" "$(find "$CAPAFY_OUTCOME_STATE_DIR/capafy-incidents" -name '*.json' | wc -l | tr -d ' ')" 1
 after_record="$(find "$CAPAFY_OUTCOME_STATE_DIR/capafy-incidents" -name '*.json' -exec cat {} \;)"
 eq "exact recovery preserves delivery reservation" "$(python3 -c 'import json,sys;print(json.load(sys.stdin)["terminal_message_key"])' <<<"$after_record")" "$(python3 -c 'import json,sys;print(json.load(sys.stdin)["terminal_message_key"])' <<<"$before_record")"
 eq "exact recovery preserves Telegram id" "$(python3 -c 'import json,sys;print(json.load(sys.stdin)["telegram_message_id"])' <<<"$after_record")" 6001
-has "exact recovery writes stable result" "$CAPAFY_MARKETING_RESULT" '"session_recovery": true'
-has "exact recovery writes exact handle" "$CAPAFY_MARKETING_RESULT" 'capafy.recovery'
-eq "exact recovery preserves account row" "$(cat "$CAPAFY_IG_ACCOUNTS_FILE")" "$before_accounts"
+eq "exact recovery clears stale result" "$(test -e "$CAPAFY_MARKETING_RESULT"; echo $?)" 1
+eq "exact recovery restores account row" "$(python3 -c 'import json,sys;d=json.load(open(sys.argv[1]))[0];print(d["status"],d["port"],d["browser_identity"])' "$CAPAFY_IG_ACCOUNTS_FILE")" 'ready_browser 9444 instagram:capafy-provision'
+eq "exact recovery clears retirement markers" "$(python3 -c 'import json,sys;d=json.load(open(sys.argv[1]))[0];print(any(k in d for k in ("incident_id","retirement_reason","retired_at","poisoned_at")))' "$CAPAFY_IG_ACCOUNTS_FILE")" False
+eq "exact recovery restores lifecycle" "$(python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));print(d["status"],d["handle"],d["replacement_requested"])' "$CAPAFY_IG_LIFECYCLE_STATE")" 'publish_probe_ready capafy.recovery False'
 after_lifecycle="$(python3 - "$CAPAFY_IG_LIFECYCLE_STATE" <<'PY'
 import json,sys
 d=json.load(open(sys.argv[1])); d.pop("updated_at",None); print(json.dumps(d,sort_keys=True))
@@ -200,17 +200,10 @@ PY
 )"
 first_lifecycle="$after_lifecycle"
 eq "exact recovery preserves event ledger" "$(cat "$CAPAFY_OUTCOME_STATE_DIR/capafy-revenue-events.jsonl" 2>/dev/null || true)" "$before_events"
-result_shape(){
-  python3 - "$1" <<'PY'
-import json,sys
-d=json.load(open(sys.argv[1])); d.pop("next_retry_at",None); print(json.dumps(d,sort_keys=True))
-PY
-}
-first_result_shape="$(result_shape "$CAPAFY_MARKETING_RESULT")"
 bash "$MANAGER" >/dev/null 2>&1; exact_replay_rc=$?
-eq "exact recovery replay exits one" "$exact_replay_rc" 1
+eq "exact recovery replay exits zero" "$exact_replay_rc" 0
 eq "exact recovery replay calls no handoff" "$(wc -l <"$HANDOFF_CALLS" | tr -d ' ')" 0
-eq "exact recovery replay preserves account row" "$(cat "$CAPAFY_IG_ACCOUNTS_FILE")" "$before_accounts"
+eq "exact recovery replay keeps ready row" "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))[0]["status"])' "$CAPAFY_IG_ACCOUNTS_FILE")" ready_browser
 eq "exact recovery replay preserves lifecycle state" "$(python3 - "$CAPAFY_IG_LIFECYCLE_STATE" <<'PY'
 import json,sys
 d=json.load(open(sys.argv[1])); d.pop("updated_at",None); print(json.dumps(d,sort_keys=True))
@@ -218,11 +211,10 @@ PY
 )" "$first_lifecycle"
 eq "exact recovery replay preserves incident" "$(find "$CAPAFY_OUTCOME_STATE_DIR/capafy-incidents" -name '*.json' -exec cat {} \;)" "$before_record"
 eq "exact recovery replay preserves event ledger" "$(cat "$CAPAFY_OUTCOME_STATE_DIR/capafy-revenue-events.jsonl" 2>/dev/null || true)" "$before_events"
-eq "exact recovery replay preserves result" "$(result_shape "$CAPAFY_MARKETING_RESULT")" "$first_result_shape"
 eq "exact recovery replay sends no Telegram" "$(wc -l <"$TELEGRAM_BODY" | tr -d ' ')" 0
-eq "exact recovery replay invokes no browser" "$(wc -l <"$BROWSER_CALLS" | tr -d ' ')" 0
+eq "exact recovery replay invokes no extra browser" "$(wc -l <"$BROWSER_CALLS" | tr -d ' ')" 1
 eq "exact recovery replay invokes no agent" "$(wc -l <"$RUNNER_CALLS" | tr -d ' ')" 0
-eq "exact recovery replay adds no manager wake" "$(wc -l <"$KICKSTART_CALLS" | tr -d ' ')" 0
+eq "exact recovery replay adds no publisher wake" "$(grep -Fc 'ai.anicca.capafy-ig-marketing-daily' "$KICKSTART_CALLS")" 1
 
 new_case ambiguous-recovery
 seed_recovery_incident

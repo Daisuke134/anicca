@@ -90,6 +90,50 @@ session_recovery_shortcut(){
   write_session_recovery_result "$handle"
   exit 1
 }
+attempt_existing_session_recovery(){
+  local cdp port handle verified matches=""
+  cdp="$(AI_BROWSER_HOLDER_PID=$$ AI_BROWSER_GUARD="$GUARD" bash "$BROWSER" "$IDENTITY")" || return 1
+  browser_leased=1
+  port="${cdp##*:}"
+  case "$port" in ''|*[!0-9]*) return 1;; esac
+  while IFS= read -r handle; do
+    [ -n "$handle" ] || continue
+    if { [ -x "$VERIFY_SESSION" ] && "$VERIFY_SESSION" --accounts "$ACCOUNTS" --handle "$handle" --port "$port" --current-session; } >/dev/null 2>&1 \
+      || { [ ! -x "$VERIFY_SESSION" ] && python3 "$VERIFY_SESSION" --accounts "$ACCOUNTS" --handle "$handle" --port "$port" --current-session; } >/dev/null 2>&1; then
+      matches="${matches}${matches:+ }${handle}"
+    fi
+  done < <(python3 - "$ACCOUNTS" <<'PY'
+import json,re,sys
+rows=json.load(open(sys.argv[1]))
+seen=set()
+for row in rows if isinstance(rows,list) else []:
+    handle=str(row.get("handle") or "").lstrip("@").lower() if isinstance(row,dict) else ""
+    if row.get("session_owner")=="browser" and re.fullmatch(r"capafy\.[a-z0-9](?:[a-z0-9._-]{0,61}[a-z0-9])?",handle) and handle not in seen:
+        seen.add(handle); print(handle)
+PY
+)
+  [ -n "$matches" ] && [ "${matches#* }" = "$matches" ] || return 1
+  verified="$matches"
+  python3 - "$ACCOUNTS" "$verified" "$port" "$IDENTITY" <<'PY' || return 1
+import datetime,json,os,sys
+path,handle,port,identity=sys.argv[1:]
+rows=json.load(open(path)); found=0
+for row in rows:
+    if isinstance(row,dict) and str(row.get("handle") or "").lstrip("@").lower()==handle:
+        row.update(status="ready_browser",port=int(port),session_owner="browser",browser_identity=identity,session_recovered_at=datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00","Z"))
+        for key in ("poisoned","poisoned_at","frozen_at","blocked_at","retired_at","retirement_reason","incident_id","failure_reason","replacement_requested"):
+            row.pop(key,None)
+        found+=1
+if found!=1: raise SystemExit(2)
+tmp=path+".tmp"
+with open(tmp,"w") as stream: json.dump(rows,stream,indent=2); stream.write("\n"); stream.flush(); os.fsync(stream.fileno())
+os.replace(tmp,path)
+PY
+  python3 "$LIFECYCLE" snapshot --accounts "$ACCOUNTS" --state "$STATE" >/dev/null || return 1
+  rm -f "$RESULT"
+  "$KICKSTART" kickstart -k "gui/$(id -u)/ai.anicca.capafy-ig-marketing-daily" >/dev/null 2>&1 || true
+  return 0
+}
 fail(){
   local reason="$1" rc
   write_result failure "$reason"
@@ -139,7 +183,10 @@ replacement="$(python3 -c 'import json,sys;print(str(json.load(open(sys.argv[1])
 prior_result_kind="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1])).get("result", ""))' "$RESULT" 2>/dev/null || true)"
 
 recovery_handle="$(resolve_session_recovery_handle 2>/dev/null || true)"
-[ -z "$recovery_handle" ] || [ "$prior_result_kind" = "challenge" ] || session_recovery_shortcut "$recovery_handle"
+if [ -n "$recovery_handle" ] && [ "$prior_result_kind" != "challenge" ]; then
+  attempt_existing_session_recovery && exit 0
+  session_recovery_shortcut "$recovery_handle"
+fi
 
 python3 - "$STATE" <<'PY' || fail "could not persist the provisioning lifecycle state"
 import datetime,json,os,sys
