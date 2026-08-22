@@ -2410,7 +2410,7 @@ def _run_isolated_file_owner(args, root: Path, context: Path, prompt_text: str,
             "summarize, regroup, or replace that contract. If a required native desktop application cannot be "
             "controlled from this isolated process, do not fake its output and do not ask the buyer or operator "
             "to run it. Write delivery/paid-tool-requests.json with version=1 and a requests array. Each request "
-            "must name an installed controller capability and paths relative to this workdir. The currently "
+            "must contain capability, input, output and receipt fields using paths relative to this workdir. The currently "
             "available capability is illustrator_native_roundtrip with input, output and receipt fields. Return "
             "blocked after writing the request; the durable controller will execute it outside this sandbox and "
             "resume this same owner to inspect the official receipt and finish the artifact.",
@@ -2513,7 +2513,9 @@ def _execute_owner_tool_requests(staging: Path, code_root: Path) -> int:
     tool = code_root / "skills" / "design" / "illustrator-native" / "scripts" / "illustrator_native_roundtrip.py"
     results: list[dict[str, Any]] = []
     for index, request in enumerate(requests):
-        if not isinstance(request, dict) or request.get("tool") != "illustrator_native_roundtrip":
+        capability = (request.get("capability", request.get("tool"))
+                      if isinstance(request, dict) else None)
+        if capability != "illustrator_native_roundtrip":
             raise Failure("file_builder")
         resolved: dict[str, Path] = {}
         for field, suffixes in (("input", {".svg", ".pdf"}), ("output", {".ai"}), ("receipt", {".json"})):
@@ -2541,7 +2543,7 @@ def _execute_owner_tool_requests(staging: Path, code_root: Path) -> int:
                 text=True, timeout=360,
             )
         result = {
-            "index": index, "tool": request["tool"], "returncode": completed.returncode,
+            "index": index, "capability": capability, "returncode": completed.returncode,
             "stdout": completed.stdout[-4000:], "stderr": completed.stderr[-4000:],
         }
         results.append(result)
