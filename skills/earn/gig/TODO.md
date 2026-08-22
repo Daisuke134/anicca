@@ -302,25 +302,29 @@ no-send, replay-zero and a new natural sub-30-minute official reply/estimate pro
 Do not advance the development cursor until every unchecked item in the current stage has official
 evidence. Independent production lanes continue running while development follows this order.
 
-**Current live cursor.** `main` and `origin/main` were verified equal immediately before this snapshot. The Paid
-desktop-capability implementation, observed `capability` field contract and empty-session recovery are immutable
-commit `e2cdaded2976cd0e0b4c98c337f3790e6b315d22`; the release selector and active launchd Paid pass are pinned
-to that exact release. The shared disk guard is active with
-`GIG_DISK_HEADROOM_KIB=0`; the earlier speculative storage floor no longer stops Paid. APFS clonefile staging
-is also active, so historical ZIPs remain independent paths without physically duplicating their blocks.
+**Current live cursor.** `main` and `origin/main` were verified equal immediately before this snapshot at
+`5bb23b3de798b550d14b4420aff64560e4f12399`; the starting verification commit
+`79ac01ba1eb66b06aed1f9cee66d4af303f03a3d` remains an ancestor. The existing launchd Paid owner is the only
+customer-effect owner. The shared disk guard remains `GIG_DISK_HEADROOM_KIB=0`; storage floors do not stop Paid.
 
-**Haru v41 is artifact-complete; effect proof remains first.** The natural Paid owner produced and promoted
-`habikino-renewal-v41.zip` with acceptance `PASS`, package SHA-256
-`ea8951c80abf4ea2150d284fee9df522c77cd88a7ba911bf7af5b28915c1783f`, 19 hash-bound assets and the contextual
-apology/correction/cancellation handoff. Both native `.ai` files have official Illustrator 30.7.0 reopen receipts;
-PC and responsive exports are 1440/2880 and 750/1500 pixels, and both 71-entry content censuses have zero omissions.
-The fresh controller extracted four final-output previews, but the shared structure validator incorrectly demanded
-that those preview receipts also equal every bundled buyer-supplied reference and feedback-screenshot hash. This
-produced `required_visual_review_missing` after promotion and before customer effect. The shared receipt check is
-being corrected to validate the exact package binding plus nonempty controller-selected page paths and hashes,
-without treating immutable inputs as output-review pages. Publish/activate that generic fix, naturally resume the
-existing Paid owner, then require exact-room DOM readback of v41 with formal delivery OFF and a subsequent replay-zero
-receipt before Haru advances.
+**Haru v43 is visually verified but must not be sent until native Illustrator receipts exist.** Three natural
+isolated owners independently rebuilt the same bounded v43 correction from the accepted v27/v32 lineage. The latest
+owner measured PC exports at 1440x5667 and 2880x11334 and responsive exports at 750x10224 and 1500x20448; both PDFs
+contain only the two buyer-mandated raster illustrations and otherwise preserve vector artwork. Direct inspection
+confirmed the responsive top badge, both CTA arrows, four reason icons, the final inquiry notice panel, process
+icons, five FAQ chevrons, three customer-house illustrations, Habikino wording, apology/immediate-fix/cancellation
+handoff and formal delivery OFF. Customer effect and readback are still zero.
+
+The mandatory Illustrator 30.7 save/reopen receipt has now failed after three distinct natural repairs: (1) v43 SVG
+input after the scoped buyer-policy correction, (2) an independently rendered vector-PDF input, and (3) a newly
+rebuilt SVG input after restarting Illustrator and granting both macOS Automation/data-access prompts. The last
+attempt reached responsive Illustrator, then `app.open()` returned non-zero; durable
+`context/paid-tool-results.json` records the sanitized `/paid-owner-workdir` request and return code 1. Do not
+regenerate or send another candidate. The exact minimum non-delegable action is for the account owner to open the
+two latest v43 SVG masters in Adobe Illustrator 30.7, Save As native `.ai`, close and reopen both once. The durable
+controller must capture both official hash/count receipts, resume the same artifact package, and only then may the
+existing Paid owner submit once to exact room `18169583`, with formal delivery OFF, exact-room DOM readback and a
+subsequent replay-zero receipt.
 
 The latest natural pass proved byusco `18171890` once with `effect=1`, `readback=1`, exact artifact SHA-256
 `6d1a0a95850c4bbd496174b27881371dc4b81d44284bf347bd2b5e9d0766ab3d`, exact room DOM, empty composer and
