@@ -54,7 +54,9 @@ unrelated dirty paths `docs/loops/x-repost.md` and `state/effective-cron/`.
   opened the correct tenant page; visual evidence showed two password fields and
   one `Submit` button. The message is `navigation_unknown` and must not be retried.
 - The unique reset-page `Submit` label is now supported, but the next daily run
-  `daily-20260823-015932` is in host uninterruptible disk I/O before model handoff
-  while opening the Ledger. Three 30-second checks showed no progress with 256
-  MiB free. Do not kill the owner, browser, or SQLite process. Observe natural
-  recovery, then let the existing owner request a new reset message and continue.
+  `daily-20260823-015932` naturally recovered and requested fresh message
+  `1a02a70e1d915f80`. Inbox run `inbox-20260823-020818` opened it but observed
+  both the native `Submit` and Workday's clickable `click_filter` wrapper. The
+  secret rail now restricts reset actions to native button/input controls. The
+  opened message is `navigation_unknown`; request a new reset message and never
+  retry it.

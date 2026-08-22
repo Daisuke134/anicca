@@ -85,6 +85,7 @@ async def complete_account_mail(
                 control
                 for control in observation.controls
                 if control.role == "button"
+                and control.tag in {"button", "input"}
                 and any(
                     phrase in control.label.casefold()
                     for phrase in (
