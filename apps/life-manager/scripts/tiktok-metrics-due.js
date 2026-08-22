@@ -7,7 +7,7 @@ const path = require("node:path");
 const { resolveDataRoot } = require("../lib/runtime-paths.js");
 const { persistDailyDigest, sendMetricSnapshot } = require("./instagram-metrics-read.js");
 const { collectTikTokWindow } = require("./tiktok-native-metrics-read.js");
-const { persistAniccaDaily, persistHonneDaily, sendSummary } = require("./marketing-product-summary.js");
+const { persistAniccaDaily, persistHonneDaily, persistWeeklyReview, sendSummary } = require("./marketing-product-summary.js");
 
 const WINDOWS = Object.freeze({ "2h": 2 * 3600_000, "24h": 24 * 3600_000, "72h": 72 * 3600_000, "7d": 7 * 86400_000 });
 const GRACE_MS = 90 * 60_000;
@@ -51,6 +51,8 @@ function delayed(dataDir, expected, window, observedAt) {
 
 async function runDue(nowMs = Date.now(), env = process.env, provided = null) {
   const dataDir = resolveDataRoot(env); const results = []; const expecteds = provided || discoverTargets(dataDir);
+  const reportParts = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date(nowMs)).map(({ type, value }) => [type, value])); const reportDay = `${reportParts.year}-${reportParts.month}-${reportParts.day}`;
+  if (Number(reportParts.hour) >= 22 && !provided) { const weekly = persistWeeklyReview(dataDir, reportDay, new Date(nowMs).toISOString()); results.push({ product_id: "mobile-marketing", window: "weekly-product", state: weekly.created ? "reported" : "complete", telegram: await sendSummary(weekly, env, dataDir) }); }
   for (const expected of expecteds) {
     for (const [window, delay] of Object.entries(WINDOWS)) {
       const existingFile = snapshotFile(dataDir, expected, window);
@@ -65,8 +67,7 @@ async function runDue(nowMs = Date.now(), env = process.env, provided = null) {
     if (Number(parts.hour) > 17 || (Number(parts.hour) === 17 && Number(parts.minute) >= 30)) { const digest = persistDailyDigest({ dataDir, reportDay, observedAt: new Date(nowMs).toISOString(), expected }); results.push({ video_id: expected.video_id, window: "daily", state: digest.created ? "reported" : "complete", telegram: await sendMetricSnapshot(digest, env, dataDir) }); }
     else results.push({ video_id: expected.video_id, window: "daily", state: "pending", due_at: `${reportDay}T17:30:00+09:00` });
   }
-  const parts = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date(nowMs)).map(({ type, value }) => [type, value])); const reportDay = `${parts.year}-${parts.month}-${parts.day}`;
-  if (Number(parts.hour) >= 22 && !provided) {
+  if (Number(reportParts.hour) >= 22 && !provided) {
     for (const [productId, persist] of [["honne-ai", persistHonneDaily], ["anicca-ios", persistAniccaDaily]]) { const summary = persist(dataDir, reportDay, new Date(nowMs).toISOString()); results.push({ product_id: productId, window: "daily-product", state: summary.created ? "reported" : "complete", telegram: await sendSummary(summary, env, dataDir) }); }
   }
   return results;
