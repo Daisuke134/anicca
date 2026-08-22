@@ -34,14 +34,16 @@ class ActionExecutor:
             if target.role
             else page.get_by_label(target.label, exact=target.exact)
         )
-        if await locator.count() != 1:
-            raise RuntimeError("action target must resolve to exactly one current control")
-        locator = locator.first
-        if not await locator.is_visible():
-            raise RuntimeError("action target is not visible")
-        if not await locator.is_enabled():
-            raise RuntimeError("action target is not enabled")
-        return locator
+        visible = []
+        for index in range(await locator.count()):
+            candidate = locator.nth(index)
+            if await candidate.is_visible() and await candidate.is_enabled():
+                visible.append(candidate)
+        if len(visible) != 1:
+            raise RuntimeError(
+                "action target must resolve to exactly one visible enabled control"
+            )
+        return visible[0]
 
     async def execute(
         self, handle: SessionHandleV1, action: VisibleActionV1
