@@ -31,6 +31,7 @@ from upwork_inbound_planner import invoke as plan_inbound, write_sealed_proposal
 from upwork_offer_gate import invoke as qualify_direct_offer  # noqa: E402
 from upwork_offer_browser import accept_offer_after_fence  # noqa: E402
 from upwork_offer_effect import SealedUpworkOfferEffect  # noqa: E402
+from upwork_inbox import append_changed_heads, normalize_observation  # noqa: E402
 from upwork_sealed_effect import (  # noqa: E402
     SealedUpworkProposalEffect, active_upwork_browser_account,
 )
@@ -54,6 +55,7 @@ DEFAULT_INBOUND_DIR = Path.home() / ".config/anicca/gig/upwork-inbound"
 DEFAULT_INBOUND_PROPOSALS = Path.home() / ".config/anicca/gig/upwork-inbound-proposals"
 DEFAULT_INBOUND_EVIDENCE = Path.home() / "gig/state/upwork-inbound-planner"
 DEFAULT_OFFER_EVIDENCE = Path.home() / "gig/state/upwork-offer-gate"
+DEFAULT_INBOX_LEDGER = Path.home() / "gig/state/upwork-inbox.jsonl"
 TERMINAL_JOB_STATUSES = {"closed", "removed"}
 _COUNT_LABELS = {
     "offers": r"Offers\s*\((\d+)\)",
@@ -138,7 +140,7 @@ def parse_catalog(text: str) -> dict[str, Any]:
 
 def _stable_link(link: dict[str, Any]) -> dict[str, str] | None:
     href = str(link.get("href") or "")
-    match = re.search(r"/jobs/(?:[^/?#]*-)?(~[A-Za-z0-9]+)(?:[/?#]|$)", href)
+    match = re.search(r"/jobs/[^/?#]*(~[A-Za-z0-9]+)(?:[/?#]|$)", href)
     if match is None:
         match = re.search(
             r"/(?:proposals|workroom|rooms)/([^/?#]+)(?:[/?#]|$)", href,
@@ -649,6 +651,7 @@ async def observe(
     inbound_dir: Path = DEFAULT_INBOUND_DIR,
     inbound_proposals: Path = DEFAULT_INBOUND_PROPOSALS,
     inbound_evidence: Path = DEFAULT_INBOUND_EVIDENCE,
+    inbox_ledger: Path = DEFAULT_INBOX_LEDGER,
 ) -> dict[str, Any]:
     pass_id = f"upwork-free-{time.time_ns()}-{os.getpid()}"
     artifacts: dict[str, str] = {}
@@ -677,6 +680,30 @@ async def observe(
                 if attempt == 3:
                     raise
                 await asyncio.sleep(attempt)
+    message_inventory = parse_messages(pages["messages"], links["messages"])
+    inbox_observations: list[dict[str, Any]] = []
+    for offset, room in enumerate(message_inventory["message_rooms"][:20], start=1):
+        label = f"room-{hashlib.sha256(room['id'].encode()).hexdigest()[:16]}"
+        artifact = Path(await navigate_and_snapshot(
+            pass_id, f"{len(targets) + offset:02d}-1", label, room["href"],
+            "read_only", 2, 1440,
+        ))
+        room_text, room_hash, room_links = _read_evidence(artifact, room["href"])
+        pages[label], artifacts[label] = room_text, room_hash
+        inbox_observations.append(normalize_observation(
+            kind="message_room", resource_id=room["id"], resource_url=room["href"],
+            rendered_text=room_text, source_evidence_sha256=room_hash,
+            observed_at=datetime.now(timezone.utc).isoformat(),
+            rendered_links=room_links,
+        ))
+    contract_inventory = parse_contracts(pages["contracts"], links["contracts"])
+    for contract in contract_inventory["active_contracts"]:
+        inbox_observations.append(normalize_observation(
+            kind="contract", resource_id=contract["id"], resource_url=contract["href"],
+            rendered_text=pages["contracts"], source_evidence_sha256=artifacts["contracts"],
+            observed_at=datetime.now(timezone.utc).isoformat(),
+        ))
+    inbox_reconciliation = append_changed_heads(inbox_ledger, inbox_observations)
     state = {
         "version": 1,
         "provider": "upwork",
@@ -691,8 +718,9 @@ async def observe(
             invite_links=links["invites"], proposal_links=links["proposals"],
         ),
         **parse_catalog(pages["catalog"]),
-        **parse_contracts(pages["contracts"], links["contracts"]),
-        **parse_messages(pages["messages"], links["messages"]),
+        **contract_inventory,
+        **message_inventory,
+        "inbox_reconciliation": inbox_reconciliation,
         "candidate_jobs": [
             parse_candidate(
                 item,
@@ -711,7 +739,7 @@ async def observe(
                 pass_id, f"{len(targets) + 1:02d}-1", "inbound-detail",
                 inbound["resource_url"], "read_only", 2, 1440,
             ))
-            detail_text, detail_hash, _ = _read_evidence(
+            detail_text, detail_hash, detail_links = _read_evidence(
                 detail_artifact, inbound["resource_url"],
             )
             state["evidence_sha256"]["inbound-detail"] = detail_hash
@@ -721,6 +749,18 @@ async def observe(
                 "detail_state": detail_state,
                 "detail_evidence_sha256": detail_hash,
             }
+            if inbound["state"] == "direct_offer_detected":
+                offer_reconciliation = append_changed_heads(inbox_ledger, [normalize_observation(
+                    kind="offer", resource_id=inbound["resource_id"],
+                    resource_url=inbound["resource_url"], rendered_text=detail_text,
+                    source_evidence_sha256=detail_hash, observed_at=state["observed_at"],
+                    rendered_links=detail_links,
+                )])
+                state["inbox_reconciliation"] = {
+                    "observed": inbox_reconciliation["observed"] + offer_reconciliation["observed"],
+                    "appended": inbox_reconciliation["appended"] + offer_reconciliation["appended"],
+                    "heads": inbox_reconciliation["heads"] + offer_reconciliation["heads"],
+                }
             if detail_state == "actionable" and inbound["state"] == "invitation_detected":
                 packet_sha = seal_inbound_detail(
                     inbound, detail_text, detail_hash, inbound_dir, state["observed_at"],
@@ -792,6 +832,7 @@ def main() -> int:
     parser.add_argument("--inbound-dir", type=Path, default=DEFAULT_INBOUND_DIR)
     parser.add_argument("--inbound-proposals", type=Path, default=DEFAULT_INBOUND_PROPOSALS)
     parser.add_argument("--inbound-evidence", type=Path, default=DEFAULT_INBOUND_EVIDENCE)
+    parser.add_argument("--inbox-ledger", type=Path, default=DEFAULT_INBOX_LEDGER)
     parser.add_argument("--transitions", type=Path, default=DEFAULT_TRANSITIONS)
     parser.add_argument(
         "--output", type=Path,
@@ -803,6 +844,7 @@ def main() -> int:
         args.candidates.expanduser(), args.proposals.expanduser(), args.database.expanduser(),
         args.manifest.expanduser(), args.browser_profile.expanduser(), args.inbound_dir.expanduser(),
         args.inbound_proposals.expanduser(), args.inbound_evidence.expanduser(),
+        args.inbox_ledger.expanduser(),
     ))
     state = reconcile_terminal_transitions(
         args.output.expanduser(), args.transitions.expanduser(), state,
