@@ -14,7 +14,7 @@ Life Manager public repositoryだけをsourceとして、Capafy skillの発見�
 | launchd cutover | loaded 8件すべての`ProgramArguments`と`WorkingDirectory`が`/Users/anicca/Projects/life-manager-main`を指す。旧repo path 0件、duplicate label 0件 | **PASS: runtimeはLife Manager** |
 | scheduler | `ai.anicca.capafy-loop-daily`、IG daily、hourly/daily-close monitorはloaded | schedule定義は存在 |
 | process health | daily loopとIG marketingはchild failureをそのままnonzeroで返し、成功時だけterminal heartbeatを書く。7日連続の実運転証明は未完 | wrapper false-green解消、C21継続 |
-| event ledger | hourly reportは同じ`event_id conflict`を反復。outcome monitorは`verified -> unresolved`の逆遷移を反復 | **FAIL: incident state machine不整合** |
+| event ledger | live ledger 471行でduplicate `event_id` 0件、`verified`後の`unresolved` 0件。exact replayはidempotent、新しいretry/occurrenceだけが新IDを得る | **PASS: identityとphaseは単調** |
 | last money snapshot | 5 orders、2 paid orders、gross `$19.98`、pending `$8.00`、realized `$0.00`、MRR `$0.00` | 売上実績あり、$10K MRR未達 |
 | marketing snapshot | IG Reel URLあり、121 views、1 click、0 likes、0 comments。marketing/inventory/account snapshotはstale | 投稿履歴あり、closed loopは停止 |
 | creative renderer | Capafy STEP3はrepo外`~/.claude/skills/faceless-money-factory`を直接呼ぶstock b-roll + TTS | **FAIL: OSS/self-containedでなく品質も未gate** |
@@ -243,6 +243,8 @@ C2で旧installed definitionをrollback snapshotへ保存し、8件をbootout、
 
 C3でdaily money loopとIG marketing wrapperをterminal stateの唯一のownerにする。failure injectionではmoney childの`17`とIG childの`23`をそのまま返し、どちらもheartbeatを作らない。child `0`とIG cadence no-opだけがheartbeatを作る。focused 4件、Capafy marketing 112件、runner wiring 10件（subtest 7件）、money loop 7件が通る。
 
+C4はmainに存在するevent store、incident adapter、incident transitionの現行実装をlive stateに対して再検証する。exact replayは同じevent IDでappendされず、semantic changeまたは新しいretry occurrenceは別IDになり、`verified`からの遷移は拒否される。live ledger 471行はduplicate ID 0件、`verified`後の`unresolved` 0件で、outcome 31件、adapter 12件、store 24件、shell monitor 54件、marketing全体112件が通る。追加production codeは不要である。
+
 ## Atomic remaining TODO
 
 Items are executed top-to-bottom. Only one item is active.
@@ -253,7 +255,7 @@ Items are executed top-to-bottom. Only one item is active.
 | C1 | restore the complete Life Manager runtime closure and render repo-owned plist templates to Life Manager main release paths | 8/8 rendered plist files pass `plutil`; resolved ProgramArguments/WorkingDirectory point to Life Manager; focused runtime regression passes | completed |
 | C2 | install and bootstrap revised jobs once, unload duplicate old-path jobs, and read back the exact loaded set | `launchctl print` points to Life Manager; one owner per responsibility; no duplicate daily/hourly publisher | completed — loaded 8/8; old path 0; duplicates 0 |
 | C3 | fix false-green exits so child failure remains nonzero and terminal heartbeat is written only after classified completion | failure injection returns exact child codes `17`/`23`; failed runs write no heartbeat; success/no-op writes heartbeat | completed |
-| C4 | fix event identity and incident monotonicity | repeated observation is idempotent; new observation gets new event ID; verified cannot regress to unresolved | pending |
+| C4 | fix event identity and incident monotonicity | repeated observation is idempotent; new observation gets new event ID; verified cannot regress to unresolved | completed — live duplicate IDs 0; verified regressions 0 |
 | C5 | run a bounded hourly reconcile against live Capafy account/inventory/sales/refunds/subscriptions | fresh receipt separates MRR, one-time, pending, refunds; unknown remains unknown | pending |
 | C6 | normalize current Capafy server response and restore exact status/slot inventory readback | live call returns agent rows and deterministic occupied/free/retry counts | pending |
 | C7 | implement slot allocator contract | table-driven tests cover free/full/rejected/listed/server-unreadable without duplicate Agent creation | pending |
