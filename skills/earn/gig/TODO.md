@@ -411,6 +411,18 @@ both roundtrips and resume, then require PASS, one exact-room send with formal d
 attachment/message readback, and a second natural replay-zero wake. Customer effect and official readback remain
 zero.
 
+The account owner then explicitly overrode the remaining v44 wait and required immediate Haru submission. The
+in-flight Haru file worker alone was stopped to prevent a later duplicate; the other Paid project workers and the
+launchd parent continued. The already durable acceptance-PASS v43 package, containing both official Illustrator
+30.7 save-close-reopen receipts and SHA-256
+`4d13095f163db23120d4a66498cea2f801bae1ea4c9c0b92db4072f5426afcd8`, was attached once to exact room
+`18169583`. Official post-send DOM readback shows `habikino-renewal-v43.zip`, the complete apology / immediate
+minor-fix / seller-cancellation offer, and formal delivery unchecked; the effect keys bind that exact room,
+message hash and package hash. Immediate replay of the identical contract returned `send_performed=false` and
+`deduplicated=true` with the same effect keys and formal delivery still off. Haru review-stage submission is
+therefore complete; buyer approval and any later requested correction remain live transaction work. The next
+natural Paid wake must rediscover this official effect without sending it again.
+
 **Current runtime refresh.** Unrelated dirty files remain untouched. The existing Paid pass naturally resumed the
 Haru v43 staging after compiling
 the complete proposal, DM, talkroom and attachment context. Haru `18169583` remains unsent. The resumed owner first
