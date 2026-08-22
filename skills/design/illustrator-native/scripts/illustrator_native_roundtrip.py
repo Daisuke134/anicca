@@ -62,14 +62,28 @@ def _ensure_responsive() -> None:
 
 
 def _open(path: Path) -> None:
-    opened = _javascript(
-        f"var f=new File({json.dumps(str(path))});var d=null;"
-        "for(var i=0;i<app.documents.length;i++){"
-        "if(app.documents[i].fullName.fsName==f.fsName){d=app.documents[i];break;}}"
-        "if(d===null){d=app.open(f);}d.activate();d.fullName.fsName;"
+    # Illustrator 30.7 can finish opening a PDF while leaving the synchronous
+    # `app.open()` Apple event unanswered.  Ask LaunchServices to open the exact
+    # file, then bind to it through a separate short readback instead.
+    subprocess.run(
+        ["open", "-a", str(APP_PATH), str(path)],
+        check=True, timeout=30,
     )
-    if Path(opened).resolve() != path.resolve():
-        raise RuntimeError("Illustrator opened a different document")
+    for _ in range(60):
+        try:
+            opened = _javascript(
+                f"var f=new File({json.dumps(str(path))});var d=null;"
+                "for(var i=0;i<app.documents.length;i++){"
+                "if(app.documents[i].fullName.fsName==f.fsName){d=app.documents[i];break;}}"
+                "d===null?'':(d.activate(),d.fullName.fsName);",
+                timeout=5,
+            )
+            if opened and Path(opened).resolve() == path.resolve():
+                return
+        except (OSError, subprocess.SubprocessError, ValueError):
+            pass
+        time.sleep(1)
+    raise RuntimeError("Illustrator opened a different document")
 
 
 def roundtrip(source: Path, output: Path, receipt: Path) -> dict[str, object]:

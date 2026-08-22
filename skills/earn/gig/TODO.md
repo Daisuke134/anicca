@@ -328,6 +328,16 @@ closed the PC document during `app.open()` (`The document is no longer open`); e
 responsive request did not run. That input hash is now durably failed. The next owner resume must choose the
 already-inspected PC/responsive PDF inputs, obtain both save-close-reopen receipts, finish v43 and send once.
 
+The next natural Haru owner has now made that semantic recovery decision from the complete context: it wrote
+controller requests for `work/v43-package/exports/habikino-pc-v43.pdf` and
+`work/v43-package/exports/habikino-responsive-v43.pdf`, with distinct native `.ai` outputs and receipt paths, and
+did not repeat either failed SVG hash. The durable controller then opened the exact PC PDF successfully in
+Illustrator 30.7, confirmed by the live document window, but the synchronous `app.open()` Apple Event never
+returned even though the document was already open. The shared native-roundtrip CLI now opens the exact file via
+LaunchServices and binds it through a separate short exact-active-path readback. This is a generic Illustrator
+30.7 recovery, not a Haru branch. Publish and activate it, let the existing Paid owner rerun both PDF requests,
+then require both official receipts before packaging or customer effect.
+
 **Current runtime refresh.** Unrelated dirty files remain untouched. The existing Paid pass naturally resumed the
 Haru v43 staging after compiling
 the complete proposal, DM, talkroom and attachment context. Haru `18169583` remains unsent. The resumed owner first
