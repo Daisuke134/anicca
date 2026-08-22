@@ -470,6 +470,35 @@ def test_inline_artifact_debt_cannot_authorize_a_second_seller_only_reply():
     assert requested_estimate._inline_artifact_debt(rows) is False
 
 
+def test_semantic_validation_allows_clarify_to_name_missing_buyer_input():
+    rows = [{
+        "message_id": "buyer-photo", "role": "buyer",
+        "sent_at": "2026-08-22T14:24:22Z", "body": "写真を送りました。",
+    }]
+    payload = {
+        "conversation_state": "clarify",
+        "next_action": "clarify",
+        "cycle_start_message_id": "buyer-photo",
+        "evidence_message_ids": ["buyer-photo"],
+        "required_official_context": "none",
+        "estimate_terms": None,
+        "reply_body": "ありがとうございます。サンプル対象のメンバー名を教えてください。",
+        "reply_audit": {
+            "answered_buyer_message_ids": ["buyer-photo"],
+            "unanswered_questions": [],
+            "unsupported_claims": [],
+            "unrequested_cta": False,
+            "repeats_seller_message": False,
+            "off_platform_contact": False,
+        },
+        "uncertainty": ["サンプル対象のメンバー名が会話内にない"],
+    }
+
+    assert requested_estimate.validate_semantic_judgement(payload, rows)[
+        "reply_body"
+    ].startswith("ありがとうございます")
+
+
 def test_semantic_judge_uses_one_bounded_runner_attempt(tmp_path, monkeypatch):
     schema = GIG_ROOT / "schemas" / "reply_semantic_judgement.schema.json"
     calls = []

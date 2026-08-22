@@ -339,7 +339,12 @@ def validate_semantic_judgement(
         ):
             raise SemanticJudgementError("semantic_reply_invalid")
         reply_body = reply_body.strip()
-        if len(reply_body) > 1000 or uncertainty or official_context != "none" or terms is not None:
+        if (
+            len(reply_body) > 1000
+            or (action == "reply" and uncertainty)
+            or official_context != "none"
+            or terms is not None
+        ):
             raise SemanticJudgementError("semantic_reply_not_authorized")
         latest_buyer_id = next(
             row["message_id"] for row in reversed(rows) if row["role"] == "buyer"
