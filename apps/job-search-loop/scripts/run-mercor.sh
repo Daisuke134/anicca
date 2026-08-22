@@ -37,6 +37,31 @@ export PYTHONPATH="$JOB_SEARCH_APP_ROOT"
   --workdir "$JOB_SEARCH_REPO_ROOT" \
   --run-id "$RUN_ID"
 
+# Read-only Earnings capture is part of every Mercor wake. It never clicks a
+# payment control and fail-closes if the page exposes rows we cannot structure.
+EARNINGS_EVIDENCE="$EVIDENCE/earnings"
+EARNINGS_SNAPSHOT="$MERCOR_STATE_ROOT/earnings-readback.json"
+mkdir -p "$EARNINGS_EVIDENCE"
+chmod 700 "$EARNINGS_EVIDENCE"
+set +e
+"$JOB_SEARCH_PYTHON" -m job_search_loop.mercor_earnings_capture \
+  --cdp "$CDP_URL" \
+  --evidence-dir "$EARNINGS_EVIDENCE" \
+  --output "$EARNINGS_SNAPSHOT"
+CAPTURE_RC=$?
+if [[ "$CAPTURE_RC" -eq 0 ]]; then
+  "$JOB_SEARCH_PYTHON" -m job_search_loop.mercor_earnings_sync \
+    --snapshot "$EARNINGS_SNAPSHOT" \
+    --store "$MERCOR_STATE_ROOT/work-events.jsonl" \
+    --outbox "$JOB_SEARCH_STATE_ROOT/telegram-outbox.sqlite3" \
+    --output "$EVIDENCE/mercor-earnings-sync.json"
+else
+  printf '%s\n' '{"status":"blocked","synced_count":0,"events":[],"reason":"earnings_capture_failed"}' \
+    >"$EVIDENCE/mercor-earnings-sync.json"
+  chmod 600 "$EVIDENCE/mercor-earnings-sync.json"
+fi
+set -e
+
 # Report every pass through the existing idempotent Telegram outbox. A missing
 # Telegram credential must not erase or retry the browser pass; the report
 # evidence records delivery_unknown and the next wake can reconcile it.
