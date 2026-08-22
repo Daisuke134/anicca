@@ -338,6 +338,14 @@ LaunchServices and binds it through a separate short exact-active-path readback.
 30.7 recovery, not a Haru branch. Publish and activate it, let the existing Paid owner rerun both PDF requests,
 then require both official receipts before packaging or customer effect.
 
+The first repaired-controller transition was deliberately terminated after the exact PDF document had opened but
+before the old synchronous call returned; its durable mechanical row is therefore `returncode=-15` with empty
+stdout/stderr and no output/receipt. Treating that controller interruption as an input-hash defect would wrongly
+ban the now-correct PDF. Shared failure persistence now distinguishes this exact no-effect interruption: after a
+controller repair the semantic owner may retry that same capability/input hash exactly once; any tool-produced
+error or repeated failure still requires a different honest input. Activate this policy with the open/readback
+repair before the next Haru owner pass.
+
 **Current runtime refresh.** Unrelated dirty files remain untouched. The existing Paid pass naturally resumed the
 Haru v43 staging after compiling
 the complete proposal, DM, talkroom and attachment context. Haru `18169583` remains unsent. The resumed owner first
