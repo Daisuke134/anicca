@@ -385,6 +385,7 @@ def test_writer_lanes_render_from_immutable_release_and_life_manager_state():
         assert rendered["EnvironmentVariables"]["ARTICLE_STATE_DIR"] == (
             str(Path.home() / ".local/state/life-manager/writer")
         )
+        assert rendered["EnvironmentVariables"]["GIG_DISK_HEADROOM_KIB"] == "524288"
         assert rendered["ProgramArguments"][1].endswith(
             "/skills/earn/gig/scripts/gig_disk_guard.py"
         )
