@@ -18,7 +18,7 @@ returns the fresh redacted observation. When it reports `needs_navigation=true` 
 an empty `about:blank` page, navigate once without constructing an action file:
 
 While an active row is returned, the command envelope is mandatory: execute only
-`job_search_loop.browser_agent.runtime observe`, `navigate`, `act`, `auth`,
+`job_search_loop.browser_agent.runtime observe`, `navigate`, `click`, `wait`, `act`, `auth`,
 `finalize`, `checkpoint`, or `report`. Do not invoke Python snippets, inspect
 signatures/source/tests, read Ledger/Queue internals, print environment variables,
 or construct a helper. The runtime already owns row collection, cursor/evidence,
@@ -36,16 +36,24 @@ same tenant account again.
 ```
 
 For every other surface, choose exactly one action from the observation,
-write its JSON object to a mode-0600 file under `$JOB_SEARCH_BROWSER_SCRATCH`, then
-execute exactly:
+use the direct runtime command for an ordinary visible click or bounded wait:
+
+```bash
+/opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime click --label "THE_EXACT_VISIBLE_LABEL" --role "THE_RETURNED_ROLE" --stable-id "THE_RETURNED_STABLE_ID"
+/opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime wait --milliseconds 6000
+```
+
+For type, select, upload, or scroll, write its JSON object to a mode-0600 file under
+`$JOB_SEARCH_BROWSER_SCRATCH`, then execute exactly:
 
 ```bash
 /opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime act --action-file "$ACTION_FILE"
 ```
 
-For a typed field use `candidate_concept` instead of putting its private value in the
-action file whenever Candidate Memory has that concept. Repeat `act` from each returned
-fresh observation. Do not inspect Python signatures or source before using this CLI.
+For a typed field use one exact name from the returned `candidate_concepts` list as
+`candidate_concept` instead of putting its private value in the action file. Never
+guess a concept name and never inspect source or Candidate Memory to discover names.
+Repeat from each returned fresh observation.
 While any collected row still has steps, do not run web
 search, multi-source discovery, inspect historical runs, read tests, or reread source
 modules unless a named runtime API has just raised an exception that requires that

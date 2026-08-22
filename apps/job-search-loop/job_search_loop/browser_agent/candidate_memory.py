@@ -125,6 +125,10 @@ class CandidateMemoryView:
             raise KeyError(concept)
         return matches[0]["value"]
 
+    def concepts(self) -> tuple[str, ...]:
+        """Return only safe schema identifiers, never private candidate values."""
+        return tuple(str(item["concept"]) for item in self.value["concepts"])
+
 
 def main() -> int:
     parser = argparse.ArgumentParser()

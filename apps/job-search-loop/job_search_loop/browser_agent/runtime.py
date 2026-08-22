@@ -228,6 +228,9 @@ async def observe() -> dict[str, Any]:
             _path_env("JOB_SEARCH_MACHINE_CREDENTIALS")
         ).known_tenants()
     )
+    candidate_concepts = CandidateMemoryView.load(
+        _path_env("JOB_SEARCH_CANDIDATE_MEMORY")
+    ).concepts()
     return {
         "status": "observed",
         "row": {
@@ -239,6 +242,7 @@ async def observe() -> dict[str, Any]:
         },
         "needs_navigation": cursor.needs_navigation,
         "recovery_url": cursor.recovery_url if cursor.needs_navigation else None,
+        "candidate_concepts": candidate_concepts,
         "observation": _safe_observation(observation, cursor.checkpoint, _wake_budget()),
     }
 
@@ -447,6 +451,36 @@ async def navigate(url: str) -> dict[str, Any]:
     path = _path_env("JOB_SEARCH_BROWSER_SCRATCH") / "runtime-navigate.json"
     path.write_text(
         json.dumps({"kind": "navigate", "url": url}, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    os.chmod(path, 0o600)
+    return await act(path)
+
+
+async def click(*, label: str, role: str, stable_id: str) -> dict[str, Any]:
+    path = _path_env("JOB_SEARCH_BROWSER_SCRATCH") / "runtime-click.json"
+    path.write_text(
+        json.dumps(
+            {
+                "kind": "click",
+                "target": {"label": label, "role": role, "stable_id": stable_id},
+            },
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    os.chmod(path, 0o600)
+    return await act(path)
+
+
+async def wait(milliseconds: int) -> dict[str, Any]:
+    if milliseconds < 1 or milliseconds > 10_000:
+        raise ValueError("wait milliseconds must be between 1 and 10000")
+    path = _path_env("JOB_SEARCH_BROWSER_SCRATCH") / "runtime-wait.json"
+    path.write_text(
+        json.dumps({"kind": "wait", "wait_ms": milliseconds}, sort_keys=True)
+        + "\n",
         encoding="utf-8",
     )
     os.chmod(path, 0o600)
@@ -688,6 +722,12 @@ def main(argv: list[str] | None = None) -> int:
     subparsers.add_parser("finalize")
     navigate_parser = subparsers.add_parser("navigate")
     navigate_parser.add_argument("--url", required=True)
+    click_parser = subparsers.add_parser("click")
+    click_parser.add_argument("--label", required=True)
+    click_parser.add_argument("--role", default="")
+    click_parser.add_argument("--stable-id", default="")
+    wait_parser = subparsers.add_parser("wait")
+    wait_parser.add_argument("--milliseconds", required=True, type=int)
     act_parser = subparsers.add_parser("act")
     act_parser.add_argument("--action-file", required=True, type=Path)
     auth_parser = subparsers.add_parser("auth")
@@ -713,6 +753,12 @@ def main(argv: list[str] | None = None) -> int:
         operation = finalize()
     elif args.command == "navigate":
         operation = navigate(args.url)
+    elif args.command == "click":
+        operation = click(
+            label=args.label, role=args.role, stable_id=args.stable_id
+        )
+    elif args.command == "wait":
+        operation = wait(args.milliseconds)
     elif args.command == "act":
         operation = act(args.action_file)
     elif args.command == "auth":
