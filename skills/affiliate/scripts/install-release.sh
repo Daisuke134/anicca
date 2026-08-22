@@ -29,6 +29,28 @@ HOME_ROOT="${HOME:?HOME must be set}"
 DATA_HOME="${LIFE_MANAGER_DATA_HOME:-$HOME_ROOT/.local/share/life-manager}"
 STATE_HOME="${LIFE_MANAGER_STATE_HOME:-$HOME_ROOT/.local/state/life-manager}"
 
+CANONICAL_HOME="$(/usr/bin/python3 -I -c 'import os,pwd; print(pwd.getpwuid(os.getuid()).pw_dir)')" \
+  || die "canonical OS home is unavailable"
+[[ "$CANONICAL_HOME" = /* && -d "$CANONICAL_HOME" ]] \
+  || die "canonical OS home is invalid"
+GUARD_PATH="$CANONICAL_HOME/gig/releases/life-manager/current/skills/earn/gig/scripts/gig_disk_guard.py"
+[[ -f "$GUARD_PATH" && ! -L "$GUARD_PATH" && -r "$GUARD_PATH" ]] \
+  || die "Life Manager disk guard is unavailable at $GUARD_PATH"
+GUARD_COMPILE_DIR="$(mktemp -d "${TMPDIR:-/tmp}/life-manager-disk-guard.XXXXXX")" \
+  || die "Life Manager disk guard compile staging failed"
+GUARD_COMPILE_PATH="$GUARD_COMPILE_DIR/gig_disk_guard.py"
+if ! cp "$GUARD_PATH" "$GUARD_COMPILE_PATH" \
+  || ! /usr/bin/python3 -I -m py_compile "$GUARD_COMPILE_PATH"; then
+  rm -rf "$GUARD_COMPILE_DIR"
+  die "Life Manager disk guard failed py_compile"
+fi
+rm -rf "$GUARD_COMPILE_DIR"
+GUARD_COMPILE_DIR=""
+GUARD_SHA256="$(/usr/bin/shasum -a 256 "$GUARD_PATH" | /usr/bin/awk '{print $1}')" \
+  || die "Life Manager disk guard sha256 failed"
+[[ "$GUARD_SHA256" =~ ^[[:xdigit:]]{64}$ ]] \
+  || die "Life Manager disk guard sha256 is invalid"
+
 AFFILIATE_DATA="$DATA_HOME/affiliate"
 RELEASES="$AFFILIATE_DATA/releases"
 RELEASE="$RELEASES/$HEAD_SHA"
@@ -97,12 +119,26 @@ fi
   '["legacy/SHA256SUMS","legacy/DEPENDENCIES.sha256"]' "$RECEIPT_STAGE"
 /usr/bin/plutil -insert missing_dependency_inventory -string \
   "publisher and commission reconciliation remain gated" "$RECEIPT_STAGE"
+/usr/bin/plutil -insert disk_guard_path -string "$GUARD_PATH" "$RECEIPT_STAGE"
+/usr/bin/plutil -insert disk_guard_sha256 -string "$GUARD_SHA256" "$RECEIPT_STAGE"
+/usr/bin/plutil -insert external_dependencies -array "$RECEIPT_STAGE"
+/usr/bin/plutil -insert external_dependencies.0 -dictionary "$RECEIPT_STAGE"
+/usr/bin/plutil -insert external_dependencies.0.name -string \
+  "life-manager-disk-guard" "$RECEIPT_STAGE"
+/usr/bin/plutil -insert external_dependencies.0.path -string \
+  "$GUARD_PATH" "$RECEIPT_STAGE"
+/usr/bin/plutil -insert external_dependencies.0.sha256 -string \
+  "$GUARD_SHA256" "$RECEIPT_STAGE"
 /usr/bin/plutil -insert excluded_mutable_paths -json '["state"]' "$RECEIPT_STAGE"
 if [[ "$INSTALL_LAUNCHD" == "1" ]]; then
   /usr/bin/plutil -insert launchd_owners -json \
     '["ai.anicca.affiliate-browser","ai.anicca.affiliate-impact-browser","ai.anicca.affiliate-x-browser","ai.anicca.affiliate-source-refresh","ai.anicca.affiliate-composition","ai.anicca.affiliate-loop"]' "$RECEIPT_STAGE"
+  /usr/bin/plutil -insert deferred_launchd_owners -json '[]' "$RECEIPT_STAGE"
 else
   /usr/bin/plutil -insert launchd_owners -array "$RECEIPT_STAGE"
+  /usr/bin/plutil -insert deferred_launchd_owners -json \
+    '["ai.anicca.affiliate-browser","ai.anicca.affiliate-impact-browser","ai.anicca.affiliate-x-browser"]' \
+    "$RECEIPT_STAGE"
 fi
 /usr/bin/plutil -convert json "$RECEIPT_STAGE"
 if [[ -e "$RECEIPT" ]]; then

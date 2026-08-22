@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import pwd
 import shutil
 import subprocess
 import tempfile
@@ -47,6 +48,20 @@ def manifest_entries(path: Path) -> dict[str, str]:
 
 def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+GUARD_RELATIVE = Path(
+    "gig/releases/life-manager/current/skills/earn/gig/scripts/gig_disk_guard.py"
+)
+
+
+def canonical_guard() -> Path:
+    return Path(pwd.getpwuid(os.getuid()).pw_dir) / GUARD_RELATIVE
+
+
+def canonical_guard_ready() -> bool:
+    guard = canonical_guard()
+    return guard.is_file() and not guard.is_symlink()
 
 
 class RepositoryOwnershipTests(unittest.TestCase):
@@ -108,6 +123,10 @@ class RepositoryOwnershipTests(unittest.TestCase):
             | {"SHA256SUMS", "DEPENDENCIES.sha256"},
         )
 
+    @unittest.skipUnless(
+        canonical_guard_ready(),
+        "canonical Life Manager guard is unavailable; success integration is not hermetic here",
+    )
     def test_install_release_is_atomic_and_does_not_touch_launch_agents(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             temporary_root = Path(temporary)
@@ -185,6 +204,8 @@ class RepositoryOwnershipTests(unittest.TestCase):
             # immutable release and receipt.
             receipt = next((state_home / "affiliate").glob("*.json"))
             receipt_data = json.loads(receipt.read_text(encoding="utf-8"))
+            guard = canonical_guard()
+            guard_hash = sha256(guard)
             self.assertEqual(receipt_data["status"], "LOCAL_RELEASE_ONLY")
             self.assertEqual(receipt_data["canonical_sha"], commit)
             self.assertEqual(receipt_data["release_path"], str(release))
@@ -194,6 +215,20 @@ class RepositoryOwnershipTests(unittest.TestCase):
             )
             self.assertEqual(receipt_data["excluded_mutable_paths"], ["state"])
             self.assertEqual(receipt_data["launchd_owners"], [])
+            self.assertEqual(receipt_data["disk_guard_path"], str(guard))
+            self.assertEqual(receipt_data["disk_guard_sha256"], guard_hash)
+            self.assertEqual(
+                receipt_data["external_dependencies"],
+                [{"name": "life-manager-disk-guard", "path": str(guard), "sha256": guard_hash}],
+            )
+            self.assertEqual(
+                receipt_data["deferred_launchd_owners"],
+                [
+                    "ai.anicca.affiliate-browser",
+                    "ai.anicca.affiliate-impact-browser",
+                    "ai.anicca.affiliate-x-browser",
+                ],
+            )
             receipt_hash = sha256(receipt)
             subprocess.run(["bash", str(install_script)], check=True, env=environment)
             self.assertEqual(current.resolve(), release.resolve())
@@ -220,6 +255,61 @@ class RepositoryOwnershipTests(unittest.TestCase):
             )
             self.assertNotEqual(conflict.returncode, 0)
             self.assertIn("conflicts with canonical source", conflict.stderr)
+
+    @unittest.skipIf(
+        canonical_guard_ready(),
+        "canonical Life Manager guard exists; missing-dependency branch is CI-only",
+    )
+    def test_install_release_fails_closed_when_canonical_guard_is_absent(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            temporary_root = Path(temporary)
+            fixture_root = temporary_root / "life-manager"
+            fixture_skill = fixture_root / "skills" / "affiliate"
+            fixture_skill.parent.mkdir(parents=True)
+            shutil.copytree(
+                SKILL_ROOT,
+                fixture_skill,
+                ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+            )
+            subprocess.run(["git", "init", "-q", str(fixture_root)], check=True)
+            subprocess.run(
+                ["git", "-C", str(fixture_root), "add", "skills/affiliate"],
+                check=True,
+            )
+            subprocess.run(
+                [
+                    "git", "-C", str(fixture_root), "-c", "user.name=ownership-test",
+                    "-c", "user.email=ownership-test@example.invalid", "commit", "-qm", "fixture",
+                ],
+                check=True,
+            )
+            commit = subprocess.check_output(
+                ["git", "-C", str(fixture_root), "rev-parse", "HEAD"], text=True,
+            ).strip()
+            home = temporary_root / "home"
+            data_home = temporary_root / "data"
+            state_home = temporary_root / "state"
+            environment = os.environ.copy()
+            environment.update(
+                {
+                    "HOME": str(home),
+                    "LIFE_MANAGER_DATA_HOME": str(data_home),
+                    "LIFE_MANAGER_STATE_HOME": str(state_home),
+                    "LIFE_MANAGER_RELEASE_SHA": commit,
+                    "AFFILIATE_INSTALL_LAUNCHD": "0",
+                }
+            )
+            result = subprocess.run(
+                ["bash", str(fixture_skill / "scripts" / "install-release.sh")],
+                check=False,
+                env=environment,
+                capture_output=True,
+                text=True,
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("Life Manager disk guard is unavailable", result.stderr)
+            self.assertFalse((data_home / "affiliate" / "current").exists())
+            self.assertFalse((data_home / "affiliate" / "releases").exists())
 
 
 if __name__ == "__main__":
