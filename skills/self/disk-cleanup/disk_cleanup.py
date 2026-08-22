@@ -35,6 +35,12 @@ CANONICAL_LABEL = "ai.anicca.life-manager-disk-cleanup"
 THRESHOLDS = ((20 * GiB, "NORMAL"), (11 * GiB, "PREVENTIVE"), (6 * GiB, "PRESSURE"), (3 * GiB, "CRITICAL"))
 RECEIPT_RESERVE_BYTES = 1024 * 1024
 RECEIPT_PAYLOAD_MAX_BYTES = 64 * 1024
+SOURCE_SUFFIXES = {
+    ".c", ".cc", ".cpp", ".go", ".h", ".hpp", ".java", ".js", ".jsx",
+    ".kt", ".kts", ".m", ".md", ".mm", ".py", ".rb", ".rs", ".sh", ".swift",
+    ".ts", ".tsx",
+}
+SECRET_SUFFIXES = {".env", ".key", ".p12", ".pem", ".pfx"}
 
 
 class _ReceiptAtomicFailure(Exception):
@@ -263,11 +269,53 @@ class HostDiskGovernor:
         text = "/".join(parts)
         if any(text == root or text.startswith(root + "/") for root in protected_roots):
             return True
-        if ".git" in parts or path.suffix in {".sqlite", ".db"}:
+        lowered_parts = {part.lower() for part in parts}
+        if lowered_parts.intersection({".claude", ".codex", ".cloak", "anicca-rtdash", "anicca-monk-factory"}):
+            return True
+        protected_pairs = {
+            (".config", "ai"),
+            (".openclaw", "identity"),
+            (".openclaw", "state"),
+            (".openclaw", "workspace"),
+        }
+        if any(tuple(part.lower() for part in parts[index:index + 2]) in protected_pairs for index in range(len(parts) - 1)):
+            return True
+        if ".git" in parts or lowered_parts.intersection({"memory", "source", "src"}):
+            return True
+        if path.suffix.lower() in {".sqlite", ".db"} | SOURCE_SUFFIXES | SECRET_SUFFIXES:
             return True
         if len(parts) >= 2 and parts[-2] == "state" and path.suffix == ".jsonl":
             return True
-        return any(token in path.name.lower() for token in ("cookie", "login data", "auth.json"))
+        if path.name == ".env" or path.name.startswith(".env."):
+            return True
+        return any(
+            token in path.name.lower()
+            for token in (
+                "auth", "cookie", "credential", "ledger", "login data", "payment",
+                "publication", "receipt", "secret", "session", "transcript",
+            )
+        )
+
+    def _protected_descendant(self, path: Path, *, deadline: float | None = None) -> str | None:
+        errors: list[OSError] = []
+        for root, directories, files in os.walk(
+            path,
+            topdown=True,
+            followlinks=False,
+            onerror=errors.append,
+        ):
+            if errors:
+                return "descendant_probe_error"
+            for name in directories + files:
+                if deadline is not None and self.clock() >= deadline:
+                    return "probe-budget-exhausted"
+                descendant = Path(root) / name
+                try:
+                    if descendant.is_symlink() or self._protected(descendant):
+                        return "protected_descendant"
+                except OSError:
+                    return "descendant_probe_error"
+        return "descendant_probe_error" if errors else None
 
     def _allowlisted_candidate(self, path: Path, item: dict) -> bool:
         """Require discovery proof and an exact regenerable path family."""
@@ -477,6 +525,11 @@ class HostDiskGovernor:
                 result["errors"] += state == "probe-error"
                 preserve(state)
                 continue
+            descendant_state = self._protected_descendant(path, deadline=deadline)
+            if descendant_state is not None:
+                result["errors"] += descendant_state == "descendant_probe_error"
+                preserve(descendant_state)
+                continue
             if deadline is not None and self.clock() >= deadline:
                 preserve("probe-budget-exhausted")
                 continue
@@ -489,6 +542,11 @@ class HostDiskGovernor:
                 continue
             if deadline is not None and self.clock() + POST_SWEEP_RESERVE_SECONDS >= deadline:
                 preserve("probe-budget-exhausted")
+                continue
+            descendant_state = self._protected_descendant(path, deadline=deadline)
+            if descendant_state is not None:
+                result["errors"] += descendant_state == "descendant_probe_error"
+                preserve(descendant_state)
                 continue
             try:
                 if path.is_dir():

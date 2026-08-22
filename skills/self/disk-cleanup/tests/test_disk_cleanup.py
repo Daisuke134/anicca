@@ -93,6 +93,94 @@ def test_open_or_protected_artifact_is_preserved(tmp_path: Path, monkeypatch) ->
     assert result["protected_deletions"] == 0
 
 
+def test_protected_roots_never_enter_runtime_manifest(tmp_path: Path, monkeypatch) -> None:
+    temporary = tmp_path / "tmp"
+    disposable_candidate = temporary / "cfo-disposable"
+    protected_candidates = []
+    protected_paths = []
+    for index, relative in enumerate(
+        (
+            ".claude/session.jsonl",
+            ".codex/logs.sqlite",
+            ".config/ai/config.json",
+            ".openclaw/state/events.jsonl",
+            ".openclaw/identity/device.json",
+            ".openclaw/workspace/source.py",
+            ".cloak/profile/Cookies",
+            "anicca-rtdash/source.py",
+            "anicca-monk-factory/source.py",
+            "project/.git/config",
+            "project/data.db",
+            "project/credentials.json",
+            "project/.env",
+            "project/secret.key",
+            "project/memory/fact",
+            "project/publication-receipt.json",
+        )
+    ):
+        candidate = temporary / f"cfo-protected-{index}"
+        path = candidate / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("protected")
+        protected_candidates.append(candidate)
+        protected_paths.append(path)
+    disposable_candidate.mkdir(parents=True)
+    (disposable_candidate / "payload").write_text("regenerable")
+    monkeypatch.setattr(disk_cleanup.tempfile, "gettempdir", lambda: str(temporary))
+    governor = HostDiskGovernor(
+        home=tmp_path,
+        state_dir=tmp_path / "state",
+        lsof=lambda _path: "confirmed-closed",
+        usage=lambda: (0, 1),
+    )
+
+    result = governor.sweep(
+        [
+            *[
+                {"path": candidate, "class": "ephemeral", "owner": "temporary-run", "discovery": "allowlisted"}
+                for candidate in protected_candidates
+            ],
+            {"path": disposable_candidate, "class": "ephemeral", "owner": "temporary-run", "discovery": "allowlisted"},
+        ]
+    )
+
+    assert all(candidate.exists() for candidate in protected_candidates)
+    assert all(path.exists() for path in protected_paths)
+    assert not disposable_candidate.exists()
+    assert result["preserved_reasons"] == {"protected_descendant": len(protected_candidates)}
+    assert result["reclaimed"] > 0
+    assert result["protected_deletions"] == 0
+
+
+def test_effect_recheck_preserves_new_protected_descendant(tmp_path: Path, monkeypatch) -> None:
+    temporary = tmp_path / "tmp"
+    candidate = temporary / "cfo-race"
+    candidate.mkdir(parents=True)
+    (candidate / "payload").write_text("regenerable")
+    monkeypatch.setattr(disk_cleanup.tempfile, "gettempdir", lambda: str(temporary))
+    real_bytes = disk_cleanup._bytes
+
+    def inject_protected_descendant(path: Path, **kwargs) -> int | None:
+        (path / ".env").write_text("credential")
+        return real_bytes(path, **kwargs)
+
+    monkeypatch.setattr(disk_cleanup, "_bytes", inject_protected_descendant)
+    governor = HostDiskGovernor(
+        home=tmp_path,
+        state_dir=tmp_path / "state",
+        lsof=lambda _path: "confirmed-closed",
+        usage=lambda: (0, 1),
+    )
+
+    result = governor.sweep(
+        [{"path": candidate, "class": "ephemeral", "owner": "temporary-run", "discovery": "allowlisted"}]
+    )
+
+    assert candidate.exists()
+    assert (candidate / ".env").exists()
+    assert result["preserved_reasons"] == {"protected_descendant": 1}
+
+
 def test_unproved_candidate_is_preserved(tmp_path: Path) -> None:
     candidate = tmp_path / "important"
     candidate.write_bytes(b"do-not-delete")

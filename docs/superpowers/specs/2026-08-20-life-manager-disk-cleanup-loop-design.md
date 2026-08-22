@@ -246,6 +246,17 @@ fresh adversarial re-reviewはBLOCKER/HIGH/MEDIUMなしで`ship`だった。
 final sourceによる2026-08-22T09:08:04Z canonical fast passはruns 89→90、last exit 0、mount 9、
 local writable device volume 7、Data含有、sealed `/`はread-only、missing 0、mount metadata gap 0、
 file mode `0600`、SHA一致、`errors=0`、`protected_deletions=0`をread backした。
+
+A-07の初回fixtureはprotected file自身だけを`sweep()`へ渡していたため、実allowlisted parentの内側にある
+`.git`、DB、state JSONL、credential、sourceを`rmtree`できるHIGH gapをadversarial reviewが再現した。
+削除前のbounded descendant scanを共通effect pathへ追加し、protected root/pair、memory/source、source/secret suffix、
+auth/cookie/credential/session/transcript/ledger/payment/publication receiptを検出したら親全体をpreserveする。
+scan error、nested symlink、budget exhaustionもfail-closedにし、`_bytes()`後・effect直前に同じscanを再実行する。
+独立16 allowlisted candidateとsafe siblingを使うfixture、および`_bytes()`中に`.env`が追加される競合fixtureは
+RED 2 failedからGREENとなり、protected parent 16件を保持しつつsafe siblingだけを回収した。
+disk-cleanup regression **50 passed**、compile/diff check PASS、2回のfix-first後のfresh reviewは`ship`だった。
+final canonical receiptは2026-08-22T09:28:22Z、runs 93→94、last exit 0、`errors=0`、
+`protected_deletions=0`、`reclaimed=0`、mode `0600`である。
 Anicca cleanup controlのgit/lsof/du probeにも15秒timeoutを設定し、さらにguard外側のgovernor、
 runtime-manifest、sweep subprocessにも120秒（kill-after 10秒）のtimeoutを設定した。timeoutは
 error/preserveとして扱い、runtime-manifest失敗時はhourly markerを進めない。これによりfull passの
@@ -776,7 +787,7 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 |---:|---|---|---|
 | 1 | 全local volume、top-level root、guard/sentinel/janitor/plist/log/state/manifestをimmutable host censusへ記録 | mount/root/owner family、label、interval、program SHA、last exit、free bytes | 部分完了: bounded `host-inventory.json`はmount 9/root 23を実測。full gapは4件まで縮小し、permission/owner attributionが残る |
 | 2 | `skills/self/disk-cleanup/` にcanonical host inventory、manifest、runner、health interfaceを定義 | local writable volume missing 0、required owner family missing 0、schema PASS | 部分完了: inventory schema、atomic writer、fast/full mode、hourly marker、48 tests、90秒census/90秒governor budget、permission/partial size、required owner coverage、local writable missing 0のreadbackは実装。health readbackの残契約は未完了 |
-| 3 | protected rootsとfail-closed validatorをTDDで固定 | Test Matrix 3–11 PASS | 部分完了: Life Manager governorとAnicca回帰testで主要保護を確認。全Matrix 3–11の統合証跡は未完了 |
+| 3 | protected rootsとfail-closed validatorをTDDで固定 | Test Matrix 3–11 PASS | 部分完了: protected-rootの実allowlisted parent descendant scan、effect直前recheck、50 testsを実装。A-07は完了したが、A-08〜A-12の統合証跡は未完了 |
 | 4 | exact-byte tier、hysteresis、single lock、300秒schedulerをTDD実装 | Test Matrix 2、12–14 PASS | 部分完了: exact-byte tier、atomic lock、300秒plist、pressure/recovery floor、hourly full-pass marker、ULTRA時のcritical full-pass promotion、hourly/explicit fullのcooldown、marker fail-closed、bounded fast/full pass、正本labelのbootstrap/readbackは実装・unit/live PASS。24時間観測は未完了 |
 | 4a | GUI bootstrap health failureを観測専用fail-closedに固定 | Test Matrix 28–29 PASS、141/153 fixture receipt、復旧後readback | 部分完了: cleanup内preflight、atomic `gui-bootstrap-health-failure` receipt、UID/Directory Services/`gui/501`の実機PASSを実装。141/153 failure fixtureとstale app-server分離の実機証跡は未完了 |
 | 5 | Mac全体のproducer censusを作り、artifact/lease/finalizer helperを上位growth ownerへ接続 | 1 GiB以上のunattributed root 0、active lease readback、orphan lease fixture PASS | 部分完了: Chrome/Chromium cloneと`cfo-*`のallow-list discoveryは実装。host-wide census、lease heartbeat/finalizer接続は未完了 |
@@ -797,10 +808,12 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 
 各行は1つの作業だけを持つ。順序を飛ばさず、受入証拠が保存されるまで完了扱いにしない。
 
-capacity-safety interruptのA-25とA-04〜A-06を閉じたため、実行queueは
-`A-07 → A-08 → … → A-24 → A-26 → … → A-44`へ進む。A-25の先行完了はA-07〜A-24の
-完了を意味しない。各itemは現状実測、straight fix、必要最小限のregression、fresh adversarial review、実機readback、
-spec state更新、commit/pushまでを同じsliceで閉じる。TDDのためだけのfixture増加や後続itemのscaffoldは前倒ししない。
+capacity-safety interruptのA-25とA-04〜A-07を閉じたため、実行queueは
+`A-08 → A-09 → … → A-24 → A-26 → … → A-44`へ進む。A-25の先行完了はA-08〜A-24の
+完了を意味しない。data loss、credential/session保護、money safety、ENOSPC recoveryなど重要sliceは
+Ponytailでscopeを最小化してTDDを行う。軽微なdocs/readbackは現状実測からstraight fixへ進める。
+全itemで必要最小限のregression、fresh adversarial review、実機readback、spec state更新、commit/pushを同じsliceで閉じ、
+TDDのためだけの過剰fixtureや後続itemのscaffoldは前倒ししない。
 
 | ID | Atomic action（1作業） | Acceptance evidence | State |
 |---|---|---|---|
@@ -810,7 +823,7 @@ spec state更新、commit/pushまでを同じsliceで閉じる。TDDのためだ
 | A-04 | size-deferred rootを解消する | `coverage.gaps`のsize-deferred 0 | 完了: 08:30:14Z canonical full、runs 81→82、exit 0、root 23、mode/receipt 0600、SHA一致、size-deferred 0、errors/protected deletion 0、review `ship` |
 | A-05 | permission-limited rootを分類する | TCC/system-temp/`.Trash`のowner receipt | 完了: 08:44:06Z canonical full、exact 4 owner receipts、全件reclaim不可、root 23、mode 0600、SHA一致、runs 83→85、exit 0、errors/protected deletion 0、41 tests、review `ship` |
 | A-06 | local writable volume coverageを証明する | writable volume missing 0 | 完了: 09:08:04Z canonical fast、mount 9、local writable 7、Data含有、missing 0、metadata gap 0、runs 89→90、exit 0、0600、SHA一致、48 tests、review `ship` |
-| A-07 | protected-root fixtureを追加する | protected rootがmanifestへ入らないtest PASS | 部分完了 |
+| A-07 | protected-root fixtureを追加する | protected rootがmanifestへ入らないtest PASS | 完了: independent allowlisted parent 16件をpreserve、safe siblingだけ回収、effect直前競合もpreserve、50 tests、runs 93→94、exit 0、protected deletion 0、review `ship` |
 | A-08 | active-lease fixtureを追加する | active lease candidate preserve test PASS | 未完了 |
 | A-09 | open-path fixtureを追加する | open path candidate preserve test PASS | 未完了 |
 | A-10 | probe/atomic-write failure fixtureを追加する | lsof/du failure fail-closed、production size-timeout owner attribution、host-inventory orphan temporary 0 | 未完了: 08:30:14Z fullでsize-timeout 8件、closedな旧`.host-inventory.*` temporary 1件を観測 |
