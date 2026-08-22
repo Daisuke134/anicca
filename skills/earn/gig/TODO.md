@@ -396,18 +396,22 @@ customer media and private project state out of Git, logs, prompts and public te
 **6. Atomic execution steps.** Soft target: two production files and one focused public regression file;
 reduce scope before exceeding three files or 100 production LOC.
 
-1. Extend the existing Paid decision/manifest boundary in `scripts/paid_direct.py` with the structured
+1. [x] Extend the existing Paid decision boundary in `scripts/paid_direct.py` and the existing decision
+   schema with the structured `required_assets` contract. Schema/prompt version 4/v8 now invalidates old
+   cached decisions, binds every buyer-visible screenshot/image/linked asset before the builder runs, and
+   directly rejects malformed, duplicate, zero-count or unsupported asset entries.
+2. [ ] Extend the existing Paid manifest boundary in `scripts/paid_direct.py` with the structured
    required/produced asset contract and distinct PASS, REVIEW_READY and BLOCKED_NON_DELEGABLE semantics.
-2. Extend `scripts/paid_work_evidence.py` to fail closed on asset count, path ownership, non-zero bytes,
+3. [ ] Extend `scripts/paid_work_evidence.py` to fail closed on asset count, path ownership, non-zero bytes,
    MIME/type, hash and required ZIP membership, and to reject required visual media with no review receipt.
-3. Add the eight synthetic regressions above in one focused test file and run only that file plus the
-   existing Paid disk preflight regression.
-4. Reclassify existing private records without regenerating artifacts: Haru v31 must prove its existing
+4. [ ] Run the smallest direct synthetic checks for the asset boundary plus the existing Paid disk preflight
+   regression; do not add a TDD workflow or separate review ceremony.
+5. [ ] Reclassify existing private records without regenerating artifacts: Haru v31 must prove its existing
    images/archive members; Manledge v20 must prove that its accumulated contract requires no media;
    byusco v4 must become REVIEW_READY or BLOCKED_NON_DELEGABLE, never completed PASS.
-5. Publish the immutable release, read back the four launchd program arguments/release SHA, kick the real
+6. [ ] Publish the immutable release, read back the four launchd program arguments/release SHA, kick the real
    Paid owner, and observe natural continuation. Do not use Codex as the customer-work executor.
-6. Obtain exact-room official readback and replay-zero for every safe effect; keep byusco's exact owner
+7. [ ] Obtain exact-room official readback and replay-zero for every safe effect; keep byusco's exact owner
    dependency durable while Haru, Manledge and every other non-blocked purchased room continue.
 
 1. **Paid/Submission — finish first.**

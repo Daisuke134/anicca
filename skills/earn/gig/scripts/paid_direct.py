@@ -77,8 +77,8 @@ OWNER_WORKED_TALKROOMS = {
     # revision cycle cannot settle. Observe only.
     "18151989",  # jedbyJUNKYアメーバnote — デザインテンプレート利用許諾契約書
 }
-PAID_DECISION_SCHEMA_VERSION = 3
-PAID_DECISION_PROMPT_VERSION = "paid-semantic-decision-v7"
+PAID_DECISION_SCHEMA_VERSION = 4
+PAID_DECISION_PROMPT_VERSION = "paid-semantic-decision-v8"
 PAID_DECISION_MODEL = "gpt-5.6-sol"
 PAID_FILE_MODEL = "gpt-5.6-sol"
 PAID_FILE_POLICY_VERSION = "paid-file-build-review-v20"
@@ -92,7 +92,7 @@ PAID_SOURCE_CENSUS_SKILLS = ("music-score-omr", "buyma-work", "ai-video-work")
 PAID_FILE_OPERATOR_POLICY = "paid-file-operator-policy.json"
 PAID_DECISION_FIELDS = frozenset((
     "decision", "mode", "feedback_sha256", "requirements_sha256",
-    "latest_message_identity", "required_output", "required_effect", "delivery_stage",
+    "latest_message_identity", "required_output", "required_effect", "required_assets", "delivery_stage",
     "formal_approval_evidence", "unresolved",
 ))
 
@@ -580,6 +580,25 @@ def _validate_paid_decision(value: dict[str, Any], feedback: str, requirements: 
     unresolved = value.get("unresolved")
     if not isinstance(unresolved, list) or any(not isinstance(item, str) for item in unresolved):
         raise ValueError("invalid paid semantic decision unresolved")
+    required_assets = value.get("required_assets")
+    if not isinstance(required_assets, list):
+        raise ValueError("invalid paid semantic decision required assets")
+    asset_fields = {"asset_id", "kind", "minimum_count", "buyer_visible_purpose",
+                    "source_authority", "archive_required"}
+    asset_ids: set[str] = set()
+    for asset in required_assets:
+        if (not isinstance(asset, dict) or set(asset) != asset_fields
+                or not re.fullmatch(r"[a-z0-9][a-z0-9._-]*", _text(asset.get("asset_id")))
+                or asset.get("asset_id") in asset_ids
+                or asset.get("kind") not in {"screenshot", "image", "linked_asset"}
+                or not isinstance(asset.get("minimum_count"), int)
+                or isinstance(asset.get("minimum_count"), bool)
+                or asset.get("minimum_count") < 1
+                or not _text(asset.get("buyer_visible_purpose"))
+                or asset.get("source_authority") not in {"builder", "buyer", "account_owner"}
+                or not isinstance(asset.get("archive_required"), bool)):
+            raise ValueError("invalid paid semantic decision required asset")
+        asset_ids.add(asset["asset_id"])
     return value
 
 
@@ -1040,7 +1059,11 @@ def _decision_prompt(context: Path, context_sha256: str, feedback: str,
         "latest_message_identity. Every non-formal decision uses formal_approval_evidence null. Every non-file decision "
         "uses delivery_stage none. Decide explicit approval from "
         "the complete semantic workflow, never from title or keyword matching. required_output and required_effect must "
-        "state the bounded outcome; unresolved is an array of strings. "
+        "state the bounded outcome. required_assets must list every buyer-visible screenshot, image, or linked asset "
+        "required by the accumulated contract before any builder runs; use [] only when no such media is required. "
+        "Each required asset needs a stable lowercase asset_id, kind, minimum_count, buyer_visible_purpose, "
+        "source_authority builder/buyer/account_owner, and archive_required. Do not hide a required asset only in "
+        "unresolved. unresolved is an array of strings. "
         "Read the context and its read_these_first files. Do not use a browser or mutate anything."
     ).encode("utf-8")
 
