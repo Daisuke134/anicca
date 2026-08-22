@@ -8,10 +8,10 @@ transport, and authenticated CloakBrowser daily-driver at CDP `:9222` are health
 The owner wakes hourly. Production acquisition is Workday-only until repeated live
 Workday submissions and per-wake Telegram outcomes are proven; Ashby discovery and
 forms are parked. Every admitted Workday row enters the mandatory model browser
-runtime through that one CDP owner. Rakuten completed the full Workday
-flow in run `daily-20260822-182223`: the model resolved the hierarchical source
-question, preserved the verified resume, crossed My Experience and Voluntary
-Disclosures, consumed the final-action fence once, and produced exact completion UI.
+runtime through that one CDP owner. Rakuten reached a completion-like Workday UI in
+run `daily-20260822-182223`, but no matching receipt email arrived and the owner does
+not accept that UI as proof. Rakuten is therefore a disputed, unverified outcome and
+does not close the Workday live gate.
 **Current execution truth supersedes earlier historical run notes below:** the next
 milestone is `JOB-WORKDAY-E2E-MODEL-10P`. Workday is first because the existing
 Rakuten session has already reached the real application flow and Workday exercises
@@ -23,10 +23,11 @@ submission release is `246b5d7733f3c982490f618f7ac5f4f1f231cea1`; launchd remain
 at `StartInterval=3600`. Ledger and the fenced attempt are `submitted` with
 `evidence_class=exact_completion_ui` and evidence SHA-256
 `07e07393a4f4161839a94eb2242c7d48ef8e031f2bf8903e1b97b78d696f556b`.
-Telegram acknowledged the submitted outcome at message ID `28598`. Gog then checked
-13 current threads and found no exact Rakuten receipt email. Therefore Rakuten has
-completion-UI evidence only, not receipt-email evidence; this distinction must be
-reported explicitly and never collapsed into a claim that an email was received.
+Those are historical ledger claims, not current verified truth. Telegram message
+`28598` reported that claim, but Gog checked 13 current threads and found no exact
+Rakuten receipt email. The current Workday gate requires both the final provider UI
+and the matching receipt email for a new application; either one alone remains
+`post_submit_verification` and is reported as not yet verified.
 
 **Architecture decision:** all eligible ATS form interaction is mandatory
 model-based browser work. Deterministic code owns only discovery, eligibility,
@@ -270,8 +271,9 @@ Workday account + application E2E
    ordered eligible queue until the wake's explicit time/action budget or the queue
    is exhausted. A verified submission does not end the wake; the same run may submit
    two, three, five, or more distinct eligible applications.
-9. `submitted` is verifier-owned and is written only after an exact completion UI or
-   an authoritative receipt email bound to the company, role, and application. A
+9. `submitted` is verifier-owned. During the Workday-first gate it is written only
+   after both an exact completion UI and an authoritative receipt email bound to the
+   company, role, and application. A
    click, HTTP response, model statement, or Ledger intent is insufficient.
 10. A submit click with ambiguous readback becomes non-retryable `submit_unknown` and
     is reconciled through ATS/Gmail evidence; it is never clicked a second time.
