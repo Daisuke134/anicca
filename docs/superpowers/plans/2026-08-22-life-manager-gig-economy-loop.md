@@ -255,7 +255,7 @@ No later task may jump ahead of the first incomplete row:
 | U8 | Add the required factual Employment History item | **DONE:** official employment readback matches owner evidence; Find Work progressbar is 70% |
 | U9 | Publish three reusable proofs and complete optional profile items | **DONE:** three public project IDs and bound hashes, factual A10 Lab history, public EEG/ML Other Experience readback, and official `100% completed` |
 | U10 | Discover and qualify a first-job candidate | **DONE:** usability-test job `~022091106411892491962`; $15, 10–15 proposals, zero interviews, payment/phone verified, and all student/age/English/recording gates match owner evidence |
-| U11 | Resolve application capacity for that candidate | **DONE:** official proposal surface requires 7 Connects; balance/history are 0, no free reward is exposed, and the only buy offer is 100 for $15 plus tax |
+| U11 | Resolve application capacity for that candidate | **DONE:** official proposal surface requires 7 Connects; balance/history, offers, invites and proposals are 0, no reward banner is exposed, and the only buy offer is 100 for $15 plus tax |
 | U12 | Freeze one tailored first-job proposal | **DONE:** immutable payload `c37eed9c…c68e926` contains the $15 terms, cover letter, five factual screening answers, no attachments, and zero unsupported claims |
 | U13 | Submit that proposal once | **WAITING ON EXTERNAL SPEND AUTHORITY:** official proposal ID plus Connects before/after; seven Connects are required and available balance is zero |
 | U14 | Replay immediately | Same proposal ID; zero new proposal and zero additional Connects |

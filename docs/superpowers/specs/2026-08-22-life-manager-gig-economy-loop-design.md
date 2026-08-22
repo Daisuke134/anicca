@@ -93,6 +93,9 @@ monthly grant, while Buy Connects offers only 100 for $15 plus tax. The exact $1
 screening answers are frozen at SHA-256
 `c37eed9c7a41a712f373504ea1a0555eb6be4a60b4f772763c64d8899c68e926` with no unsupported
 claims or attachments. U13 submission is waiting only on seven Connects; no proposal effect occurred.
+The official Proposals and Offers readback also shows Offers 0, Invites 0, Active proposals 0 and
+Submitted proposals 0; the Invites tab is empty and no educational Connects reward banner is exposed.
+There is therefore no current zero-Connect submission path for this account.
 
 The proposal effect kernel remains ready before live execution. It persists the full canonical proposal and
 Connects pre-state, admits one concurrent submitter through an atomic compare-and-set, re-hashes the
