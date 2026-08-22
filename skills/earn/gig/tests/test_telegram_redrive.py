@@ -113,3 +113,17 @@ def test_verified_application_receipt_remains_redrivable_for_one_day(tmp_path):
     moved = outbox.redrive_unresolved(now=1000 + 4008)
     assert moved == 1
     assert _state(outbox, report_id)["state"] == "pending"
+
+
+def test_redrive_can_be_scoped_to_one_lane_kind(tmp_path):
+    outbox = TelegramOutbox(tmp_path / "outbox.sqlite3")
+    application_id = _make_unknown(
+        outbox, event_key="application", created_at=1000, kind="application",
+    )
+    paid_id = _make_unknown(
+        outbox, event_key="paid", created_at=1000, kind="paid-direct",
+    )
+    moved = outbox.redrive_unresolved(now=1600, kinds=("application",))
+    assert moved == 1
+    assert _state(outbox, application_id)["state"] == "pending"
+    assert _state(outbox, paid_id)["state"] == "delivery_unknown"

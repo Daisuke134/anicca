@@ -381,6 +381,7 @@ class TelegramOutbox:
     def redrive_unresolved(
         self, *, now: int, older_than_seconds: int = 600, max_attempts: int = 3,
         newer_than_seconds: int = 3600, business_newer_than_seconds: int = 86400,
+        kinds: tuple[str, ...] | None = None,
     ) -> int:
         """Give a stale delivery_unknown row one more shot after reconciliation gave up on it.
 
@@ -416,17 +417,24 @@ class TelegramOutbox:
             "business_newer_than_seconds", business_newer_than_seconds, positive=True
         )
         max_attempts = self._integer("max_attempts", max_attempts, positive=True)
+        selected_kinds = tuple(self._text("kind", kind, 80) for kind in (kinds or ()))
+        kind_clause = ""
+        if selected_kinds:
+            kind_clause = " AND kind IN ({})".format(
+                ",".join("?" for _ in selected_kinds)
+            )
         with self._write() as connection:
             cursor = connection.execute(
-                """UPDATE telegram_reports
+                f"""UPDATE telegram_reports
                    SET state='pending',owner=NULL,lease_until=0,error_class=NULL,updated_at=?
                    WHERE state='delivery_unknown' AND updated_at<=? AND fencing_token<?
                      AND (CAST(created_at AS INTEGER)>=?
                           OR (kind IN ('application','delivery')
-                              AND CAST(created_at AS INTEGER)>=?))""",
+                              AND CAST(created_at AS INTEGER)>=?)){kind_clause}""",
                 (
                     now, now - older_than_seconds, max_attempts,
                     now - newer_than_seconds, now - business_newer_than_seconds,
+                    *selected_kinds,
                 ),
             )
             return int(cursor.rowcount)
