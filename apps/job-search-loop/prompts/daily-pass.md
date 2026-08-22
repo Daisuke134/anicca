@@ -44,6 +44,13 @@ category, not a committed answer. Before touching any other field, call `choose`
 again with the visible category/header as opener and one truthful leaf option. For an
 application reached on the employer's official career site, choose the employer's
 official site leaf when visible (for example `Workday.com`), not an unrelated board.
+For the current Workday source field, live evidence has already established the
+truthful path `Website` then `Workday.com`. On resume, do not toggle its options
+button repeatedly: call atomic `choose` directly with the visible source options
+button as opener and `Website not checked` as the option (an empty option stable ID
+is allowed), then immediately choose `Workday.com not checked` from the returned
+expanded Website category using its visible category/header as opener. This is a
+learned provider answer, not a reason to rediscover or stop the row.
 
 Commands are strictly sequential. Wait for the current runtime command to finish and
 read its complete JSON before starting the next command. Never issue two observations
