@@ -1044,7 +1044,12 @@ payload under the same provider identity is rejected. The revision/workspace/exe
 delivery focused suite passes 31/31, plus the six-case revision suite passes independently; Python
 compilation and `git diff --check` pass. This proves the engine only: the last official Upwork state
 has zero active contracts and no revision request, so no live revision, rebuilt artifact or
-resubmission is claimed.
+resubmission is claimed. Main merge `d6bf01002758560d015aa7aea64f8dc96567b941` is published as
+immutable gig release `d6bf01002758560d015aa7aea64f8dc96567b941`; the revision engine SHA-256
+is `71d610948e09fb207df4c004da9a6eb83ce710fdb721e9643de60158b74f5f04`. The same 31 focused
+tests pass from the read-only release. The stable `current` pointer resolves to that release, while
+launchd argv readback remains unavailable in the orphaned GUI context; deployment is proven, but a
+fresh official Upwork wake is not.
 
 ### Task 21: Reconcile Upwork payment, fee and payout
 
