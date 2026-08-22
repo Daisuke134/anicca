@@ -34,7 +34,19 @@ class DirectCDPPage:
         await self.call("Page.enable")
         await self.call("Runtime.enable")
         await self.call("DOM.enable")
+        await self._ensure_viewport()
         self.url = str(await self.evaluate("() => location.href") or "about:blank")
+
+    async def _ensure_viewport(self) -> None:
+        await self.call(
+            "Emulation.setDeviceMetricsOverride",
+            {
+                "width": 1440,
+                "height": 900,
+                "deviceScaleFactor": 1,
+                "mobile": False,
+            },
+        )
 
     async def call(
         self, method: str, params: dict[str, Any] | None = None, timeout: float = 20
@@ -104,6 +116,7 @@ class DirectCDPPage:
         return str(await self.evaluate("() => document.title") or "")
 
     async def screenshot(self, **_: Any) -> bytes:
+        await self._ensure_viewport()
         result = await self.call(
             "Page.captureScreenshot",
             {"format": "jpeg", "quality": 65, "captureBeyondViewport": True},
