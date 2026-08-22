@@ -130,7 +130,10 @@ def _result(evidence_dir: Path, context_sha256: str) -> tuple[dict, dict]:
 
 
 def advance(skill_root: Path, state: Path) -> dict:
-    baselines = sorted((state / "distribution-baselines").glob("devto-*.json"))
+    baselines = sorted([
+        *(state / "distribution-baselines").glob("devto-*.json"),
+        *(state / "distribution-baselines").glob("focused-*.json"),
+    ])
     if not baselines:
         return {"state": "WAITING_FOR_BASELINE", "changed": False}
     for baseline_path in baselines:
