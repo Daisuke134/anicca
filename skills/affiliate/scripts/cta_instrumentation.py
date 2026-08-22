@@ -21,6 +21,12 @@ FILES = {
     "apps/landing/app/blog/[slug]/page.tsx": "11286f2056a2958c4504809537c23c947f822e2c0c445a0cc5da8708e8b45abe",
 }
 MARKER = "AFFILIATE_CTA_V1"
+V2_FILES = {
+    "apps/landing/netlify/functions/marketing-go.js": "c060d60bc0c151403b3d1f81db76280aaf5bf94e16bbc8d62970e9f844386ef3",
+    "apps/landing/netlify/functions/_lib/marketing-go.js": "d7a7d5dee2dfb1b12bb210548a7642a7e42133b9a1936d356891535387655178",
+    "apps/landing/netlify/functions/_lib/__tests__/marketing-go.test.js": "2e64e76da4636afd33fc42d66565a68599f3c3219c980f175f33ca5081561a84",
+}
+V2_MARKER = "AFFILIATE_CTA_V2"
 
 
 class InstrumentationError(RuntimeError):
@@ -80,6 +86,45 @@ test("affiliate tokens persist exact placement before fixed-host redirect", asyn
   assert.equal(response.headers.location, `https://try.elevenlabs.io/${placement}`);
   assert.equal(writes[0].product_id, placement);
   assert.equal(JSON.stringify(writes[0]).includes("try.elevenlabs.io"), false);
+});
+'''
+
+
+def _transform_v2_wrapper(text):
+    return text.replace(
+        "  if (!providerToken || !supabaseUrl || !serviceKey)",
+        "  if (!supabaseUrl || !serviceKey) // AFFILIATE_CTA_V2",
+    ).replace("    providerToken,", "    providerToken: providerToken || \"\",")
+
+
+def _transform_v2_library(text):
+    return text.replace(
+        "af_([a-z0-9][a-z0-9-]{2,80})",
+        "af_(elevenlabs-discovered-[a-z0-9][a-z0-9-]{2,60}-en-1)",
+    ).replace(
+        '  if (!products || !providerToken || typeof persist !== "function")',
+        '  if (!products || typeof persist !== "function") // AFFILIATE_CTA_V2',
+    ).replace(
+        "    if (!product)\n      return { statusCode: 404, headers: { \"cache-control\": \"no-store\" }, body: \"Not Found\" };",
+        "    if (!product)\n      return { statusCode: 404, headers: { \"cache-control\": \"no-store\" }, body: \"Not Found\" };\n    if (product.kind === \"app\" && !providerToken)\n      return { statusCode: 503, headers: { \"cache-control\": \"no-store\" }, body: \"Attribution unavailable\" };",
+    )
+
+
+def _transform_v2_test(text):
+    return text + '''
+// AFFILIATE_CTA_V2
+test("affiliate redirect does not require App Store provider token", async () => {
+  const writes = [];
+  const handler = makeMarketingGoHandler({
+    products, providerToken: "", persist: async (_key, value) => writes.push(value),
+  });
+  const placement = "elevenlabs-discovered-voice-changer-en-1";
+  assert.equal((await handler(event(`af_${placement}`))).statusCode, 302);
+  assert.equal(writes.length, 1);
+  assert.equal((await handler(event("af_bad"))).statusCode, 404);
+  assert.equal(writes.length, 1);
+  assert.equal((await handler(event("ai_abcdefghijklmnopqrst"))).statusCode, 503);
+  assert.equal(writes.length, 1);
 });
 '''
 
@@ -182,6 +227,27 @@ def advance(state, landing_root, placement_id, owned_url):
             raise InstrumentationError("marketing-go test failed")
         _git(root, "add", "--", *paths)
         _git(root, "commit", "-m", "feat(marketing): receipt affiliate CTA redirects")
+    v2_paths = {name: root / name for name in V2_FILES}
+    if not all(V2_MARKER in path.read_text(encoding="utf-8") for path in v2_paths.values()):
+        if _git(root, "status", "--porcelain"):
+            raise InstrumentationError("publication worktree is dirty before V2")
+        for name, path in v2_paths.items():
+            if _sha(path) != V2_FILES[name]:
+                raise InstrumentationError("publication V2 source hash drift")
+        wrapper_name = next(name for name in v2_paths if name.endswith("functions/marketing-go.js"))
+        library_name = next(name for name in v2_paths if name.endswith("_lib/marketing-go.js"))
+        test_name = next(name for name in v2_paths if "__tests__" in name)
+        v2_paths[wrapper_name].write_text(_transform_v2_wrapper(v2_paths[wrapper_name].read_text()), encoding="utf-8")
+        v2_paths[library_name].write_text(_transform_v2_library(v2_paths[library_name].read_text()), encoding="utf-8")
+        v2_paths[test_name].write_text(_transform_v2_test(v2_paths[test_name].read_text()), encoding="utf-8")
+        completed = subprocess.run(
+            ["node", "--test", "netlify/functions/_lib/__tests__/marketing-go.test.js"],
+            cwd=root / "apps/landing", capture_output=True, check=False, timeout=60,
+        )
+        if completed.returncode:
+            raise InstrumentationError("marketing-go V2 test failed")
+        _git(root, "add", "--", *v2_paths)
+        _git(root, "commit", "-m", "fix(marketing): admit fixed-host affiliate redirects")
     commit = _git(root, "rev-parse", "HEAD")
     remote = _git(root, "ls-remote", "origin", "refs/heads/main")
     remote_head = remote.split()[0] if remote else None

@@ -47,6 +47,14 @@ class CtaInstrumentationTests(unittest.TestCase):
             self.assertEqual(result["money_state"], "NON_MONEY")
             self.assertNotIn("key", json.dumps(result))
 
+    def test_v2_scopes_tokens_and_keeps_app_token_requirement(self):
+        wrapper = '''  if (!providerToken || !supabaseUrl || !serviceKey)\n    providerToken,'''
+        library = '''const TOKEN = /af_([a-z0-9][a-z0-9-]{2,80})/;\n  if (!products || !providerToken || typeof persist !== "function")\n    if (!product)\n      return { statusCode: 404, headers: { "cache-control": "no-store" }, body: "Not Found" };'''
+        self.assertIn("AFFILIATE_CTA_V2", MODULE._transform_v2_wrapper(wrapper))
+        transformed = MODULE._transform_v2_library(library)
+        self.assertIn("elevenlabs-discovered-", transformed)
+        self.assertIn('product.kind === "app" && !providerToken', transformed)
+
 
 if __name__ == "__main__":
     unittest.main()
