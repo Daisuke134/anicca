@@ -345,6 +345,9 @@ async def checkpoint(reason: str) -> dict[str, Any]:
     row, session, checkpoints, _evidence, cursor, builder = await _context()
     observation = await builder.build(cursor.handle)
     prior_hashes = cursor.checkpoint.action_receipt_hashes if cursor.checkpoint else ()
+    recovery_url = (
+        row["canonical_url"] if reason == "provider_unavailable" else observation.url
+    )
     receipt = checkpoints.save(
         RowCheckpointV1(
             1,
@@ -355,7 +358,7 @@ async def checkpoint(reason: str) -> dict[str, Any]:
             observation.content_sha256,
             prior_hashes,
             0,
-            observation.url,
+            recovery_url,
         )
     )
     await session.close_owned(cursor.handle)
