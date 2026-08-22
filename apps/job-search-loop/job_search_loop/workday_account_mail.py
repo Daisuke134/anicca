@@ -87,7 +87,12 @@ async def complete_account_mail(
                 if control.role == "button"
                 and any(
                     phrase in control.label.casefold()
-                    for phrase in ("reset password", "save password", "パスワードをリセット")
+                    for phrase in (
+                        "reset password",
+                        "save password",
+                        "submit",
+                        "パスワードをリセット",
+                    )
                 )
             ]
             if len(buttons) != 1:
