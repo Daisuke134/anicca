@@ -409,7 +409,19 @@ U14 atomic order:
    `220a6ebbc` then completed its launchd wake with exit 0 at
    `2026-08-22T17:07:32.599713+00:00`: balance 0 produced `waiting_free_capacity`, public submit
    permission false, and zero proposals, invitations, offers, earnings or transition append.
-2. Add click-free proposal-form fill/readback preflight for the selected sealed payload.
+2. **IN PROGRESS:** the click-free preflight contract now requires the live apply URL, job ID,
+   exact Connects, bid, delivery, cover letter, ordered screening answers, attachments, enabled
+   submit label and zero validation errors to match the sealed payload. It returns only job ID,
+   Connects and an evidence hash, never proposal copy. Focused provider/preflight tests pass 21/21.
+   The OSS comparison fixed `MSarfarazMeyo/upwork-auto-apply-bot` at commit
+   `e2bfc46dcfdf81b303cae7745102725457286e3`; its real entrypoint confirms apply URL
+   `/ab/proposals/job/{id}/apply/#/`, `.cover-letter-area textarea`,
+   `.fe-proposal-job-questions textarea`, duration combobox and footer primary button. Its automatic
+   Connects refill, generic default answers and duplicate-as-success behavior are rejected. The
+   `swindon/upwork-proposals-chrome-extension` commit
+   `13e80c143f1c3aa5fbbad3407b8552c790a5f70d` supplies job-title/description selector fallbacks but
+   has no submit/readback path. Next, generate this contract from a real CloakBrowser hidden-target
+   fill without clicking submit.
 3. After preflight, cross the existing durable effect fence once, submit once, and require the exact
    official proposal ID plus post-effect Connects readback; unknown effect stays reconcile-only.
 

@@ -1,0 +1,91 @@
+from __future__ import annotations
+
+import importlib.util
+import sys
+from pathlib import Path
+
+import pytest
+
+
+GIG_ROOT = Path(__file__).resolve().parents[1]
+MODULE = GIG_ROOT / "scripts" / "providers" / "upwork_proposal_browser.py"
+
+
+def _load():
+    if not MODULE.is_file():
+        return None
+    spec = importlib.util.spec_from_file_location("upwork_proposal_browser_test", MODULE)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+browser = _load()
+
+
+def _payload() -> dict[str, object]:
+    return {
+        "attachments": [],
+        "cover_letter": "Exact factual proposal.",
+        "job_id": "~012345678901234",
+        "job_source_sha256": "1" * 64,
+        "job_url": "https://www.upwork.com/jobs/Exact-job_~012345678901234/",
+        "payload_sha256": "2" * 64,
+        "provider": "upwork",
+        "screening_answers": [{"question": "Can you start now?", "answer": "Yes."}],
+        "status": "frozen_waiting_for_connects",
+        "terms": {
+            "type": "fixed_price", "bid_usd": 15, "delivery_days": 1,
+            "required_connects": 7, "available_connects_before": 0,
+        },
+        "title": "Exact job",
+        "unsupported_claims": [],
+    }
+
+
+def _snapshot(**overrides: object) -> dict[str, object]:
+    value: dict[str, object] = {
+        "job_id": "~012345678901234",
+        "form_url": "https://www.upwork.com/ab/proposals/job/~012345678901234/apply/#/",
+        "required_connects": 7,
+        "bid_usd": 15,
+        "delivery_days": 1,
+        "cover_letter": "Exact factual proposal.",
+        "screening_answers": [{"question": "Can you start now?", "answer": "Yes."}],
+        "attachments": [],
+        "submit_label": "Send for 7 Connects",
+        "submit_enabled": True,
+        "validation_errors": [],
+    }
+    value.update(overrides)
+    return value
+
+
+def test_exact_filled_form_returns_only_safe_preflight_receipt():
+    assert browser is not None
+
+    receipt = browser.validate_preflight(_snapshot(), _payload())
+
+    assert receipt["ready"] is True
+    assert receipt["job_id"] == "~012345678901234"
+    assert receipt["required_connects"] == 7
+    assert len(receipt["evidence_sha256"]) == 64
+    assert "Exact factual proposal" not in repr(receipt)
+
+
+@pytest.mark.parametrize(
+    "override",
+    [
+        {"required_connects": 8},
+        {"cover_letter": "Different proposal."},
+        {"screening_answers": [{"question": "Can you start now?", "answer": "Maybe."}]},
+        {"submit_enabled": False},
+    ],
+)
+def test_any_form_or_submit_mismatch_fails_before_click(override: dict[str, object]):
+    assert browser is not None
+
+    with pytest.raises(ValueError, match="upwork_proposal_preflight_mismatch"):
+        browser.validate_preflight(_snapshot(**override), _payload())
