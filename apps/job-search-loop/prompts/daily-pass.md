@@ -54,6 +54,11 @@ use the direct runtime command for an ordinary visible click or bounded wait:
 /opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime wait --milliseconds 6000
 ```
 
+When multiple visible controls have the same label and role and no stable ID,
+use `click --ordinal` with their one-based order in the returned controls. Ambiguity
+is a target-selection problem to resolve from the observation, never a checkpoint
+reason.
+
 If the fresh provider page explicitly shows the job is no longer available and no
 application form exists, do not navigate to a listings page. Execute exactly:
 
