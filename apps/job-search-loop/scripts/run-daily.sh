@@ -150,25 +150,7 @@ PY
 export JOB_SEARCH_ASHBY_FAST_PATH_RESULT="$ASHBY_COMBINED_RESULT"
 export JOB_SEARCH_ASHBY_DISCOVERY_RESULT="$ASHBY_DISCOVERY_RESULT"
 WORKDAY_FAST_PATH_RESULT="$EVIDENCE/workday-fast-path.json"
-if [[ "${JOB_SEARCH_ENABLE_WORKDAY:-1}" == "1" ]]; then
-  set +e
-  "$JOB_SEARCH_PYTHON" -m job_search_loop.workday_fast_path \
-    --endpoint "http://127.0.0.1:9222" \
-    --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
-    --profile "$JOB_SEARCH_PROFILE" \
-    --materials-root "${XDG_DATA_HOME:-$HOME/.local/share}/anicca/job-search/materials" \
-    --evidence-dir "$EVIDENCE/workday-fast-path" \
-    --store-path "${XDG_CONFIG_HOME:-$HOME/.config}/anicca/job-search/workday-accounts.json" \
-    --manual-completed-state "$JOB_SEARCH_STATE_ROOT/workday-manual-completed.json" \
-    --output "$WORKDAY_FAST_PATH_RESULT" \
-    --japan-day "$JAPAN_DAY"
-  WORKDAY_FAST_PATH_RC=$?
-  set -e
-  if [[ "$WORKDAY_FAST_PATH_RC" -ne 0 ]]; then
-    printf '%s\n' "Workday fast path exited rc=$WORKDAY_FAST_PATH_RC; browser-lane fallback continues" >&2
-  fi
-else
-  "$JOB_SEARCH_PYTHON" - "$WORKDAY_FAST_PATH_RESULT" <<'PY'
+"$JOB_SEARCH_PYTHON" - "$WORKDAY_FAST_PATH_RESULT" <<'PY'
 import json
 import os
 import sys
@@ -179,11 +161,11 @@ path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
 path.write_text(
     json.dumps(
         {
-            "status": "parked",
+            "status": "model_owned",
             "processed": [],
             "excluded": [],
             "owner": "ai.anicca.job-search-daily",
-            "reason": "ashby_first_gate",
+            "reason": "mandatory_browser_lane",
         },
         ensure_ascii=False,
     )
@@ -192,7 +174,6 @@ path.write_text(
 )
 os.chmod(path, 0o600)
 PY
-fi
 export JOB_SEARCH_WORKDAY_FAST_PATH_RESULT="$WORKDAY_FAST_PATH_RESULT"
 FAST_PATH_REPORT="$EVIDENCE/fast-path-report.json"
 JOB_SEARCH_REPORT_TEXT=$("$JOB_SEARCH_PYTHON" - \
@@ -246,14 +227,14 @@ message = (
     + "; ".join(details)
     + f". Workday is {workday_status}"
     + (f" ({workday_reason})" if workday_reason else "")
-    + ". This checkpoint is sent before the model fallback so a timeout cannot suppress Telegram reporting."
+    + ". This checkpoint is sent before the mandatory model lane so a timeout cannot suppress Telegram reporting."
 )
 print(message)
 PY
 )
 set +e
 JOB_SEARCH_REPORT_RESPONSE=$(/opt/homebrew/bin/timeout 90 env PATH="/opt/homebrew/bin:/opt/homebrew/opt/node/bin:/usr/bin:/bin" \
-  /opt/homebrew/bin/openclaw message send \
+  "$JOB_SEARCH_OPENCLAW" message send \
     --channel telegram \
     --target "${TELEGRAM_ALERT_CHAT_ID:-8547730585}" \
     -m "$JOB_SEARCH_REPORT_TEXT" \
@@ -291,16 +272,7 @@ PY
 if [[ "$JOB_SEARCH_REPORT_RC" -ne 0 ]]; then
   printf '%s\n' "fast-path Telegram report failed; wake continues" >&2
 fi
-if [[ "${JOB_SEARCH_ENABLE_MODEL_FALLBACK:-0}" != "1" ]]; then
-  "$JOB_SEARCH_PYTHON" -m job_search_loop.application_reporting deliver \
-    --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
-    --outbox "$TELEGRAM_OUTBOX" \
-    --media-root "$JOB_SEARCH_TELEGRAM_MEDIA" \
-    --output "$EVIDENCE/resume-deliver-after.json"
-  refresh_summary
-  exit 0
-fi
-MODEL_TIMEOUT_SECONDS="${JOB_SEARCH_BROWSER_TIMEOUT_SECONDS:-300}"
+MODEL_TIMEOUT_SECONDS="${JOB_SEARCH_BROWSER_TIMEOUT_SECONDS:-900}"
 set +e
 "$JOB_SEARCH_PYTHON" "$JOB_SEARCH_RUNNER" \
   --task-class browser-lane-agent \

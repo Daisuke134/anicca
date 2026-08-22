@@ -151,6 +151,22 @@ class ModelBrowserLoopContractTests(unittest.TestCase):
             gaps,
         )
 
+    def test_every_eligible_workday_row_reaches_the_mandatory_model_lane(self):
+        daily = (APP_ROOT / "scripts" / "run-daily.sh").read_text(encoding="utf-8")
+        prompt = (APP_ROOT / "prompts" / "daily-pass.md").read_text(encoding="utf-8")
+        normalized_prompt = " ".join(prompt.split())
+
+        self.assertNotIn("JOB_SEARCH_ENABLE_MODEL_FALLBACK", daily)
+        self.assertNotIn("-m job_search_loop.workday_fast_path", daily)
+        self.assertEqual(daily.count("--task-class browser-lane-agent"), 1)
+        self.assertIn('"status": "model_owned"', daily)
+        self.assertIn(
+            "Process every eligible Workday row returned by both Ledger queue methods",
+            normalized_prompt,
+        )
+        self.assertNotIn("do not reopen a row it advanced", prompt)
+        self.assertNotIn("preserve that exact blocker", prompt)
+
 
 if __name__ == "__main__":
     unittest.main()

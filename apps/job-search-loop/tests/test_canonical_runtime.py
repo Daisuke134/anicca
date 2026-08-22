@@ -45,6 +45,7 @@ class CanonicalRuntimeTests(unittest.TestCase):
 
     def _run_daily_with_fake_python(self, root: Path, slot_count: int, runner_rc: int):
         fake_python = root / "fake-python"
+        fake_openclaw = root / "fake-openclaw"
         calls = root / "python-calls.jsonl"
         fake_python.write_text(
             """#!/usr/bin/env python3
@@ -56,11 +57,26 @@ calls = pathlib.Path(__file__).with_name("python-calls.jsonl")
 with calls.open("a", encoding="utf-8") as handle:
     handle.write(json.dumps(sys.argv[1:]) + "\\n")
 if sys.argv[1:2] == ["-"]:
-    print(%d)
+    program = sys.stdin.read()
+    sys.argv = sys.argv[1:]
+    exec(compile(program, "<stdin>", "exec"), {"__name__": "__main__"})
     raise SystemExit(0)
 if sys.argv[1:3] == ["-m", "job_search_loop.summary"]:
     from job_search_loop.summary import main
     raise SystemExit(main(sys.argv[3:]))
+if sys.argv[1:3] and sys.argv[1] == "-m" and "--output" in sys.argv:
+    module = sys.argv[2]
+    output = pathlib.Path(sys.argv[sys.argv.index("--output") + 1])
+    output.parent.mkdir(parents=True, exist_ok=True)
+    value = {}
+    if module == "job_search_loop.ashby_fast_path":
+        value = {"status": "no_work", "processed": [], "excluded": []}
+    elif module == "job_search_loop.ashby_discovery":
+        value = {"status": "completed", "discovered": []}
+    elif module == "job_search_loop.browser_owner":
+        value = {"status": "ready", "endpoint": "http://127.0.0.1:9222"}
+    output.write_text(json.dumps(value) + "\\n", encoding="utf-8")
+    raise SystemExit(0)
 if sys.argv[1:2] and sys.argv[1].endswith("agent_runner.py"):
     evidence = pathlib.Path(sys.argv[sys.argv.index("--evidence-dir") + 1])
     evidence.mkdir(parents=True, exist_ok=True)
@@ -71,10 +87,15 @@ if sys.argv[1:2] and sys.argv[1].endswith("agent_runner.py"):
     raise SystemExit(%d)
 raise SystemExit(0)
 """
-            % (slot_count, runner_rc),
+            % runner_rc,
             encoding="utf-8",
         )
         fake_python.chmod(0o700)
+        fake_openclaw.write_text(
+            "#!/bin/sh\nprintf '%s\\n' '{\"messageId\":\"test-message\"}'\n",
+            encoding="utf-8",
+        )
+        fake_openclaw.chmod(0o700)
         env = {
             **os.environ,
             "HOME": str(root / "home"),
@@ -82,6 +103,7 @@ raise SystemExit(0)
             "XDG_DATA_HOME": str(root / "data"),
             "JOB_SEARCH_STATE_ROOT": str(root / "state"),
             "JOB_SEARCH_PYTHON": str(fake_python),
+            "JOB_SEARCH_OPENCLAW": str(fake_openclaw),
             "JOB_SEARCH_TELEGRAM_MEDIA": str(root / "media"),
         }
         result = subprocess.run(
@@ -106,6 +128,14 @@ raise SystemExit(0)
             encoded = json.dumps(calls)
             self.assertIn("job_search_loop.browser_owner", encoded)
             self.assertIn("agent_runner.py", encoded)
+            self.assertNotIn("job_search_loop.workday_fast_path", encoded)
+            self.assertEqual(
+                1,
+                sum(
+                    bool(call and call[0].endswith("agent_runner.py"))
+                    for call in calls
+                ),
+            )
 
     def test_daily_success_refreshes_durable_summary_projection(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -279,7 +309,7 @@ raise SystemExit(0)
                 learning["ProgramArguments"][0],
                 str(APP_ROOT / "scripts" / "run-learning.sh"),
             )
-            self.assertEqual(daily["StartInterval"], 1800)
+            self.assertEqual(daily["StartInterval"], 3600)
             self.assertEqual(inbox["StartInterval"], 900)
             self.assertEqual(
                 learning["StartCalendarInterval"],

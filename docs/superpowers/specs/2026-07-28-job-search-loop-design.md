@@ -377,8 +377,8 @@ This is the remaining implementation-order SSOT. Only the first
 | 7 | Define one provider-neutral sanitized row-envelope and row-run state schema | `done` | `schemas/browser-row-run.v1.schema.json` allowlists exact identity/evidence pointers and excludes secrets, raw answers, provider workflows, and terminal retry inputs |
 | 8 | Add framework contract tests and recorded real-shape replays | `done` | `tests.test_model_browser_loop` replays sanitized live Workday plus recorded Ashby shapes, rejects forbidden envelopes, and detects all five current fast-path contract gaps |
 | 9 | Route `browser-lane-agent` to Luna xhigh with the existing bounded runner | `done` | `luna-xhigh-browser-loop` has one Codex Luna xhigh candidate, the existing 900-second bound, explicit reason at both callers, and no fallback executor |
-| 10 | Remove `JOB_SEARCH_ENABLE_MODEL_FALLBACK` as a production decision | `pending_actionable` | Every eligible Workday row reaches one framework run even after recognized preflight |
-| 11 | Replace Workday/Ashby filler ownership with the framework orchestrator | `pending_after_10` | Fast paths produce hints/evidence only and cannot navigate, fill, or terminate an eligible form |
+| 10 | Remove `JOB_SEARCH_ENABLE_MODEL_FALLBACK` as a production decision | `done` | The flag and early exit are absent, Workday fast path is outside production, and the mandatory Luna lane consumes every eligible Ledger Workday row |
+| 11 | Replace Workday/Ashby filler ownership with the framework orchestrator | `pending_actionable` | Fast paths produce hints/evidence only and cannot navigate, fill, or terminate an eligible form |
 | 12 | Make Workday the only active application lane during 10P | `pending_after_11` | Ashby discovery may refresh, but no Ashby form opens before Workday live gate closes |
 | 13 | Implement persistent CDP session ownership and reconnection | `pending_after_12` | Framework reuses `:9222`, isolates its row tab/context, reconnects safely, and closes only what it opened |
 | 14 | Implement `ObservationBuilder` from fresh screenshot + AX/DOM + visible text | `pending_after_13` | Dynamic rerender invalidates old elements; every observation has a stable hash |
@@ -730,11 +730,33 @@ was introduced.
 
 Atomic 9 evidence is a two-failure RED against the previous Terra route, followed
 by 10 focused route/caller/runner/schema tests passing, shell syntax passing, and a
-direct JSON route readback. The broader legacy canonical-runtime suite still has
-three independently observed stale-harness failures (two fake runs do not create
-the current Ashby discovery artifact and one asserts the superseded 1800-second
-interval); these are not route evidence and must be corrected when the daily owner
-body is changed in Atomic 10.
+direct JSON route readback. The three stale canonical-runtime harness failures
+observed in that slice are corrected with the daily owner change in Atomic 10: its
+fake module now emits current Ashby artifacts, Telegram is isolated behind the
+configured fake executable, and the interval assertion is 3600 seconds.
+
+#### Mandatory Workday model ownership
+
+Production no longer reads `JOB_SEARCH_ENABLE_MODEL_FALLBACK` or
+`JOB_SEARCH_ENABLE_WORKDAY`. `run-daily.sh` does not invoke
+`job_search_loop.workday_fast_path`; it writes a secret-free compatibility receipt
+with `status=model_owned` and proceeds unconditionally to the one existing shared
+`browser-lane-agent`. The caller's default bound is the route's 900 seconds rather
+than the old hidden 300-second reduction.
+
+The mandatory prompt calls both existing Ledger queue methods and processes every
+eligible Workday `materials_ready`/retryable row. A prior recognized surface,
+unfamiliar required field, or deterministic error is context, not permission to
+suppress the model lane. Exact terminal identity, manual completion, hard
+ineligibility, and a current provider policy limit remain deterministic exclusions.
+This slice intentionally leaves Ashby filler ownership in place for Atomic 11; it
+does not create a second runner, browser, queue, or external effect.
+
+Atomic 10 evidence is one RED against the optional flag/Workday filler/prompt, then
+4/4 browser contract tests, 3/3 restricted-route tests, 8/8 canonical-runtime tests,
+and `zsh -n scripts/run-daily.sh` passing. The isolated canonical execution has no
+model-enable environment flag, observes no Workday fast-path module call, invokes
+the shared runner exactly once, and performs no real Telegram send.
 
 #### Source lineage
 
