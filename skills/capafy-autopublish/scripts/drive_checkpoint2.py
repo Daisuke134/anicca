@@ -14,18 +14,52 @@ Usage: drive_checkpoint2.py <CP2_review_url>
 Requires: CloakBrowser daemon on CDP :9222 (never close it), CAPAFY_HOST_OPENROUTER_KEY in env.
 Exit 0 + prints VERIFIED on success; exit 1 on failure (fail-closed).
 """
+import math
 import os, sys, time, json, urllib.request
+from urllib.parse import urlsplit
 from playwright.sync_api import sync_playwright
 
 BASE_URL = "https://openrouter.ai/api/v1"
 MODEL    = "anthropic/claude-sonnet-4.6"
+CDP_ATTACH_TIMEOUT_MS = int(os.environ.get("CP2_CDP_ATTACH_TIMEOUT_MS", "15000"))
+RAW_NAV_TIMEOUT_S = float(os.environ.get("CP2_RAW_NAV_TIMEOUT_S", "30"))
+RAW_CALL_TIMEOUT_S = float(os.environ.get("CP2_RAW_CALL_TIMEOUT_S", "20"))
+CP2_HOST = "capafy.ai"
+CP2_PATH = "/developer/createAgent"
+OPENROUTER_API_KEY_PATH = "models.providers.openrouter.apiKey"
+OPENROUTER_BASE_URL_PATH = "models.providers.openrouter.baseUrl"
+BLOCKRUN_API_KEY_PATH = "models.providers.blockrun.apiKey"
+
+
+def _is_loopback_host(host):
+    return str(host or "").lower().strip("[]") in {"localhost", "127.0.0.1", "::1"}
+
+
+def _validate_cdp_base(cdp_base):
+    parts = urlsplit(str(cdp_base or ""))
+    if parts.scheme != "http" or not _is_loopback_host(parts.hostname) or parts.username or parts.password:
+        raise RuntimeError("CDP base must be an unauthenticated loopback HTTP URL")
+    return str(cdp_base).rstrip("/")
+
+
+def _validate_ws_url(ws_url):
+    parts = urlsplit(str(ws_url or ""))
+    if parts.scheme not in {"ws", "wss"} or not _is_loopback_host(parts.hostname) or parts.username or parts.password:
+        raise RuntimeError("CDP websocket must use a loopback host")
+    return str(ws_url)
+
+
+def _is_capafy_target_url(url):
+    parts = urlsplit(str(url or ""))
+    return parts.scheme == "https" and parts.netloc.lower() == CP2_HOST and parts.path == CP2_PATH
+
 
 def _detect_cdp():
     """CDP port drifts (observed 9222 -> 9223) — auto-detect instead of trusting
     a hardcoded port (self-fix-capafy-loop, 2026-07-21)."""
     override = os.environ.get("CP1_CDP_URL")
     if override:
-        return override
+        return _validate_cdp_base(override)
     for port in (9222, 9223):
         url = f"http://localhost:{port}"
         try:
@@ -35,6 +69,323 @@ def _detect_cdp():
         except Exception:
             continue
     return "http://localhost:9222"
+
+
+def _raw_page_target(cdp_base):
+    """Return an existing Capafy page target for page-level CDP fallback.
+
+    CloakBrowser can answer the page websocket while Playwright's browser-level
+    attach hangs. Reusing an existing Capafy page avoids Target.createTarget,
+    which requires the browser websocket that is unavailable in that failure
+    mode. The caller remains fail-closed when no suitable page exists.
+    """
+    cdp_base = _validate_cdp_base(cdp_base)
+    with urllib.request.urlopen(f"{cdp_base}/json/list", timeout=8) as r:
+        targets = json.loads(r.read())
+    for target in reversed(targets if isinstance(targets, list) else []):
+        if (
+            isinstance(target, dict)
+            and target.get("type") == "page"
+            and _is_capafy_target_url(target.get("url"))
+            and target.get("webSocketDebuggerUrl")
+        ):
+            return target
+    raise RuntimeError("no existing Capafy page target for raw CDP fallback")
+
+
+def _raw_page_targets(cdp_base):
+    cdp_base = _validate_cdp_base(cdp_base)
+    with urllib.request.urlopen(f"{cdp_base}/json/list", timeout=8) as r:
+        targets = json.loads(r.read())
+    return [
+        target for target in reversed(targets if isinstance(targets, list) else [])
+        if isinstance(target, dict)
+        and target.get("type") == "page"
+        and _is_capafy_target_url(target.get("url"))
+        and target.get("webSocketDebuggerUrl")
+    ]
+
+
+class _RawPage:
+    """Small synchronous page-level CDP adapter for the CP2 interactions below."""
+
+    def __init__(self, ws_url):
+        try:
+            import websocket
+        except ImportError as exc:  # pragma: no cover - environment guard
+            raise RuntimeError("websocket-client is required for raw CDP fallback") from exc
+        self._ws = websocket.create_connection(_validate_ws_url(ws_url), timeout=15, enable_multithread=True)
+        self._next_id = 0
+        self._events = []
+
+    def close(self):
+        self._ws.close()
+
+    def call(self, method, params=None):
+        self._next_id += 1
+        request_id = self._next_id
+        message = {"id": request_id, "method": method, "params": params or {}}
+        self._ws.send(json.dumps(message))
+        deadline = time.monotonic() + RAW_CALL_TIMEOUT_S
+        while time.monotonic() < deadline:
+            self._ws.settimeout(max(0.1, min(2.0, deadline - time.monotonic())))
+            try:
+                message = json.loads(self._ws.recv())
+            except Exception as exc:
+                if time.monotonic() >= deadline:
+                    raise RuntimeError(f"CDP call timeout: {method}") from exc
+                continue
+            if message.get("id") != request_id:
+                self._events.append(message)
+                continue
+            if "error" in message:
+                raise RuntimeError(f"{method}: {message['error']}")
+            return message.get("result", {})
+        raise RuntimeError(f"CDP call timeout: {method}")
+
+    def evaluate(self, expression):
+        result = self.call(
+            "Runtime.evaluate",
+            {"expression": expression, "returnByValue": True, "awaitPromise": True},
+        )
+        if result.get("exceptionDetails"):
+            raise RuntimeError(f"Runtime.evaluate failed: {result['exceptionDetails']}")
+        return result.get("result", {}).get("value")
+
+    def click_coords(self, expression):
+        coords = self.evaluate(expression)
+        if not isinstance(coords, dict) or not {"x", "y"} <= coords.keys():
+            return False
+        x, y = float(coords["x"]), float(coords["y"])
+        self.call("Input.dispatchMouseEvent", {
+            "type": "mousePressed", "x": x, "y": y, "button": "left", "clickCount": 1,
+        })
+        self.call("Input.dispatchMouseEvent", {
+            "type": "mouseReleased", "x": x, "y": y, "button": "left", "clickCount": 1,
+        })
+        return True
+
+    def strict_focus_and_insert(self, path, role, value):
+        result = self.evaluate(_strict_focus_expression(path, role))
+        if not isinstance(result, dict) or not result.get("ok"):
+            raise RuntimeError(f"ambiguous CP2 {role} field ({result})")
+        self.call("Input.insertText", {"text": value})
+
+    def strict_click(self, path, kind):
+        result = self.evaluate(_strict_button_expression(path, kind))
+        if not isinstance(result, dict) or not result.get("ok"):
+            raise RuntimeError(f"ambiguous CP2 {kind} button ({result})")
+        if result.get("disabled"):
+            raise RuntimeError(f"CP2 {kind} button is disabled")
+        x, y = result.get("x"), result.get("y")
+        if isinstance(x, bool) or isinstance(y, bool) or not isinstance(x, (int, float)) or not isinstance(y, (int, float)):
+            raise RuntimeError(f"CP2 {kind} button coordinates missing")
+        if not math.isfinite(float(x)) or not math.isfinite(float(y)):
+            raise RuntimeError(f"CP2 {kind} button coordinates invalid")
+        try:
+            self.call("Input.dispatchMouseEvent", {
+                "type": "mousePressed", "x": float(x), "y": float(y), "button": "left", "clickCount": 1,
+            })
+            self.call("Input.dispatchMouseEvent", {
+                "type": "mouseReleased", "x": float(x), "y": float(y), "button": "left", "clickCount": 1,
+            })
+        except Exception as exc:
+            raise RuntimeError(f"CP2 {kind} dispatch failed") from exc
+        return True
+
+    def press_enter(self):
+        self.call("Input.dispatchKeyEvent", {"type": "keyDown", "key": "Enter", "code": "Enter"})
+        self.call("Input.dispatchKeyEvent", {"type": "keyUp", "key": "Enter", "code": "Enter"})
+
+
+def _location_key(url):
+    parts = urlsplit(str(url or ""))
+    return (parts.scheme.lower(), parts.netloc.lower(), parts.path.rstrip("/") or "/")
+
+
+def _validate_cp2_url(cp2):
+    parts = urlsplit(cp2)
+    if parts.scheme != "https" or parts.netloc.lower() != CP2_HOST or parts.path != CP2_PATH:
+        raise RuntimeError("CP2 URL must use the exact Capafy HTTPS origin/path")
+
+
+def _wait_raw_navigation(page, cp2):
+    _validate_cp2_url(cp2)
+    expected = _location_key(cp2)
+    result = page.call("Page.navigate", {"url": cp2})
+    error_text = str(result.get("errorText") or "").strip()
+    if error_text:
+        raise RuntimeError(f"Page.navigate failed: {error_text}")
+    deadline = time.monotonic() + RAW_NAV_TIMEOUT_S
+    while time.monotonic() < deadline:
+        state = page.evaluate("({ready:document.readyState,href:location.href})")
+        if isinstance(state, dict) and state.get("ready") in {"interactive", "complete"}:
+            actual = str(state.get("href") or "")
+            if _location_key(actual) != expected:
+                raise RuntimeError("CP2 navigation reached the wrong origin/path")
+            return actual
+        time.sleep(0.25)
+    raise RuntimeError("CP2 navigation did not reach ready state before deadline")
+
+
+def _fresh_success(before_url, before_toasts, current_url, toast):
+    if current_url != before_url and "credential-done" in str(current_url or ""):
+        return True
+    return "キー確認済み" in str(toast or "") and str(toast) not in set(before_toasts or ())
+
+
+def _strict_focus_expression(path, role):
+    predicates = {
+        "base": "(x.value||'').includes('api.')||(x.value||'').includes('openrouter.ai')||(x.placeholder||'').includes('api.')",
+        "model": "(x.value||'').startsWith('gpt-')||(x.value||'').startsWith('claude-')||(x.value||'').startsWith('anthropic/')||(x.value||'')==='auto'||(x.placeholder||'')==='Model'",
+        "key": "(x.placeholder||'').includes('Paste')||(x.placeholder||'').toLowerCase().includes('key')",
+    }
+    predicate = predicates[role]
+    return (
+        "(() => {"
+        f"const path={json.dumps(path)};"
+        "const leaves=[...document.querySelectorAll('*')].filter(e=>(e.textContent||'').trim()===path&&![...e.children].some(c=>(c.textContent||'').trim()===path));"
+        "if(leaves.length!==1)return {ok:false,reason:'path-count',count:leaves.length};"
+        "let card=leaves[0],matches=[];"
+        "for(let k=0;k<12&&card;k++,card=card.parentElement){"
+        f"const xs=[...card.querySelectorAll('input')].filter(x=>{predicate});"
+        "if(xs.length===1){matches=xs;break;}"
+        "}"
+        "if(matches.length!==1)return {ok:false,reason:'field-count',count:matches.length};"
+        "const x=matches[0];x.scrollIntoView({block:'center'});x.focus();x.select();return {ok:true};"
+        "})()"
+    )
+
+
+def _strict_button_expression(path, kind):
+    if kind == "save":
+        predicate = "['Save','保存'].includes((b.textContent||'').trim())"
+    elif kind == "confirm":
+        predicate = "/キーを確認して保存/.test(b.textContent||'')"
+    elif kind == "edit":
+        predicate = "true"
+    else:
+        raise ValueError(kind)
+    return (
+        "(() => {"
+        f"const path={json.dumps(path)};"
+        "const leaves=[...document.querySelectorAll('*')].filter(e=>(e.textContent||'').trim()===path&&![...e.children].some(c=>(c.textContent||'').trim()===path));"
+        "if(leaves.length!==1)return {ok:false,reason:'path-count',count:leaves.length};"
+        "let card=leaves[0],buttons=[];"
+        "for(let k=0;k<12&&card;k++,card=card.parentElement){"
+        f"const bs=[...card.querySelectorAll('button')].filter(b=>{predicate});"
+        "if(bs.length===1){buttons=bs;break;}"
+        "}"
+        "if(buttons.length!==1)return {ok:false,reason:'button-count',count:buttons.length};"
+        "const b=buttons[0];b.scrollIntoView({block:'center'});const r=b.getBoundingClientRect();return {ok:true,x:r.x+r.width/2,y:r.y+r.height/2,disabled:!!b.disabled};"
+        "})()"
+    )
+
+
+def _pw_strict_focus_and_insert(page, path, role, value):
+    result = page.evaluate(_strict_focus_expression(path, role))
+    if not isinstance(result, dict) or not result.get("ok"):
+        raise RuntimeError(f"ambiguous CP2 {role} field ({result})")
+    page.keyboard.insert_text(value)
+
+
+def _pw_strict_click(page, path, kind):
+    result = page.evaluate(_strict_button_expression(path, kind))
+    if not isinstance(result, dict) or not result.get("ok"):
+        raise RuntimeError(f"ambiguous CP2 {kind} button ({result})")
+    if result.get("disabled"):
+        return False
+    page.mouse.click(float(result["x"]), float(result["y"]))
+    return True
+
+
+def _raw_cp2(cp2, key, cdp_base):
+    """Drive CP2 through an existing page websocket when browser attach is unavailable."""
+    _validate_cp2_url(cp2)
+    targets = _raw_page_targets(cdp_base)
+    if not targets:
+        raise RuntimeError("no existing Capafy page target for raw CDP fallback")
+    last_error = None
+    for target in targets:
+        try:
+            page = _RawPage(target["webSocketDebuggerUrl"])
+            page.evaluate("1")
+            break
+        except Exception as exc:
+            last_error = exc
+            try:
+                page.close()
+            except Exception:
+                pass
+    else:
+        raise RuntimeError(f"no responsive Capafy page target ({last_error})")
+    try:
+        page.call("Page.enable")
+        page.call("Page.bringToFront")
+        _wait_raw_navigation(page, cp2)
+
+        has_input = page.evaluate(
+            "[...document.querySelectorAll('input')].some(i=>/apiKey/.test(i.value||''))"
+        )
+        if not has_input:
+            label_state = page.evaluate("(() => {const xs=[...document.querySelectorAll('*')].filter(x=>(x.textContent||'').trim()==='検出されたキー'&&![...x.children].some(c=>(c.textContent||'').trim()==='検出されたキー'));if(xs.length!==1)return {ok:false,count:xs.length};const x=xs[0];x.scrollIntoView({block:'center'});const r=x.getBoundingClientRect();return {ok:true,x:r.x+r.width/2,y:r.y+r.height/2};})()")
+            if not isinstance(label_state, dict) or not label_state.get("ok"):
+                raise RuntimeError(f"ambiguous detected-keys label ({label_state})")
+            page.click_coords("(() => {const xs=[...document.querySelectorAll('*')].filter(x=>(x.textContent||'').trim()==='検出されたキー'&&![...x.children].some(c=>(c.textContent||'').trim()==='検出されたキー'));if(xs.length!==1)return null;const x=xs[0];x.scrollIntoView({block:'center'});const r=x.getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2};})()")
+            time.sleep(1.5)
+
+        has_input = page.evaluate(
+            "[...document.querySelectorAll('input')].some(i=>{const v=i.value||'';return v.includes('api.')||v.includes('openrouter')})"
+        )
+        if not has_input:
+            page.strict_click(OPENROUTER_API_KEY_PATH, "edit")
+            time.sleep(2)
+
+        page.strict_focus_and_insert(OPENROUTER_BASE_URL_PATH, "base", BASE_URL)
+        print("baseurl: True")
+        page.strict_focus_and_insert(OPENROUTER_API_KEY_PATH, "model", MODEL)
+        page.press_enter()
+        print("model: True")
+        page.strict_focus_and_insert(OPENROUTER_API_KEY_PATH, "key", key)
+        print("key pasted len", len(key))
+
+        def card_save():
+            return page.strict_click(OPENROUTER_API_KEY_PATH, "save")
+
+        if not card_save():
+            raise RuntimeError("CP2 card Save is disabled")
+        time.sleep(2)
+        blockrun_state = page.evaluate("(() => {const path='models.providers.blockrun.apiKey';const xs=[...document.querySelectorAll('*')].filter(x=>(x.textContent||'').trim()===path&&![...x.children].some(c=>(c.textContent||'').trim()===path));if(xs.length===0)return {ok:true,none:true};if(xs.length!==1)return {ok:false,count:xs.length};let card=xs[0],bs=[];for(let k=0;k<12&&card;k++,card=card.parentElement){const ys=[...card.querySelectorAll('button')];if(ys.length===1){bs=ys;break;}}if(bs.length!==1)return {ok:false,count:bs.length};const b=bs[0];b.scrollIntoView({block:'center'});const r=b.getBoundingClientRect();return {ok:true,x:r.x+r.width/2,y:r.y+r.height/2};})()")
+        if not isinstance(blockrun_state, dict) or not blockrun_state.get("ok"):
+            raise RuntimeError(f"ambiguous blockrun card ({blockrun_state})")
+        if not blockrun_state.get("none"):
+            page.click_coords("(() => {const path='models.providers.blockrun.apiKey';const xs=[...document.querySelectorAll('*')].filter(x=>(x.textContent||'').trim()===path&&![...x.children].some(c=>(c.textContent||'').trim()===path));if(xs.length!==1)return null;let card=xs[0],b=null;for(let k=0;k<12&&card&&!b;k++,card=card.parentElement){const ys=[...card.querySelectorAll('button')];if(ys.length===1)b=ys[0];}if(!b)return null;b.scrollIntoView({block:'center'});const r=b.getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2};})()")
+        time.sleep(1.2)
+
+        baseline_url = str(page.evaluate("location.href") or "")
+        baseline_toasts = page.evaluate("[...document.querySelectorAll('*')].map(e=>(e.textContent||'').trim()).filter(x=>/キー確認済み|Verification failed|失敗|エラー/i.test(x)&&x.length<120)") or []
+        if not page.strict_click(OPENROUTER_API_KEY_PATH, "confirm"):
+            raise RuntimeError("CP2 confirmation button is disabled")
+        print("save: clicked")
+
+        result = "TIMEOUT"
+        deadline = time.monotonic() + RAW_NAV_TIMEOUT_S
+        for _ in range(10):
+            if time.monotonic() >= deadline:
+                break
+            time.sleep(3)
+            toast = page.evaluate("[...document.querySelectorAll('*')].map(e=>(e.textContent||'').trim()).find(x=>/キー確認済み|Verification failed|失敗|エラー/i.test(x)&&x.length<120)||''")
+            url = page.evaluate("location.href") or ""
+            if _fresh_success(baseline_url, baseline_toasts, url, toast):
+                result = "VERIFIED"
+                break
+            if "Verification failed" in str(toast) or "失敗" in str(toast):
+                result = "FAILED: " + str(toast)[:80]
+                break
+        print("RESULT:", result)
+        return result == "VERIFIED"
+    finally:
+        page.close()
 
 def main():
     if len(sys.argv) < 2:
@@ -56,92 +407,97 @@ def main():
     if not key:
         print("ERR: CAPAFY_HOST_OPENROUTER_KEY missing"); sys.exit(1)
 
+    cdp = _detect_cdp()
     p = sync_playwright().start()
-    b = p.chromium.connect_over_cdp(_detect_cdp())
+    try:
+        b = p.chromium.connect_over_cdp(cdp, timeout=CDP_ATTACH_TIMEOUT_MS)
+    except Exception as attach_error:
+        # CloakBrowser may keep each page websocket healthy while its browser-level
+        # endpoint hangs. Fall back to the existing Capafy page target instead of
+        # waiting for the outer publish timeout or hijacking another tab.
+        try:
+            p.stop()
+        except Exception:
+            pass
+        print(f"WARN: Playwright browser CDP attach failed; using page CDP fallback ({type(attach_error).__name__})")
+        try:
+            ok = _raw_cp2(cp2, key, cdp)
+        except Exception as raw_error:
+            print(f"ERR: raw page CDP fallback failed ({type(raw_error).__name__}: {str(raw_error)[:160]})")
+            sys.exit(1)
+        sys.exit(0 if ok else 1)
     # Reuse an existing capafy tab; else create a BRAND-NEW tab. NEVER hijack a
     # daily-driver tab (ctx.pages[0] may be coconala/discord/etc and its watchdog
     # reverts a hijacked URL -> silent CP2 failure).
     allpg = [pg for c in b.contexts for pg in c.pages]
-    cap = [pg for pg in allpg if 'capafy.ai' in (pg.url or '')]
+    cap = [pg for pg in allpg if _is_capafy_target_url(pg.url)]
     if cap:
         pg = cap[-1]
     else:
         ctx = b.contexts[0] if b.contexts else b.new_context()
         pg = ctx.new_page()
     pg.bring_to_front()
-    pg.goto(cp2, wait_until="domcontentloaded", timeout=60000); time.sleep(7)
+    _validate_cp2_url(cp2)
+    pg.goto(cp2, wait_until="domcontentloaded", timeout=60000)
+    before_url = pg.url
+    if _location_key(before_url) != _location_key(cp2):
+        raise RuntimeError("CP2 navigation reached the wrong origin/path")
+    time.sleep(2)
 
     # expand 検出されたキー if collapsed
     if not pg.evaluate("""()=>[...document.querySelectorAll('input')].some(i=>/apiKey/.test(i.value||''))"""):
-        pg.evaluate("""()=>{const e=[...document.querySelectorAll('*')].find(x=>/検出されたキー/.test((x.textContent||''))&&x.getBoundingClientRect().height<60&&x.getBoundingClientRect().width<400);if(e)e.click();}""")
+        label_state = pg.evaluate("(() => {const xs=[...document.querySelectorAll('*')].filter(x=>(x.textContent||'').trim()==='検出されたキー'&&![...x.children].some(c=>(c.textContent||'').trim()==='検出されたキー'));if(xs.length!==1)return {ok:false,count:xs.length};const x=xs[0];x.scrollIntoView({block:'center'});const r=x.getBoundingClientRect();return {ok:true,x:r.x+r.width/2,y:r.y+r.height/2};})()")
+        if not isinstance(label_state, dict) or not label_state.get("ok"):
+            raise RuntimeError(f"ambiguous detected-keys label ({label_state})")
+        pg.mouse.click(float(label_state["x"]), float(label_state["y"]))
         time.sleep(1.5)
 
     # CRITICAL: the LLM card is often in SUMMARY mode (shows Base URL/Model as text, no inputs).
     # Click its Edit pencil (first button in the card) to enter edit mode, else field-setting finds nothing.
     has_input = pg.evaluate("""()=>[...document.querySelectorAll('input')].some(i=>{const v=i.value||'';return v.indexOf('api.')>-1||v.indexOf('openrouter')>-1;})""")
     if not has_input:
-        pg.evaluate(r"""()=>{const t=[...document.querySelectorAll('*')].find(e=>/^models\.providers\.[a-z_]+\.apiKey$/.test((e.textContent||'').trim()));if(t){let c=t;for(let k=0;k<10;k++){c=c.parentElement;if(!c)break;if(c.querySelectorAll('button').length&&c.getBoundingClientRect().height>120)break;}const bs=[...c.querySelectorAll('button')];if(bs.length)bs[0].click();}}""")
+        if not _pw_strict_click(pg, OPENROUTER_API_KEY_PATH, "edit"):
+            raise RuntimeError("CP2 OpenRouter edit button is disabled")
         time.sleep(2)
 
-    # set Base URL (the input currently holding api.openai.com or api.anthropic.com)
-    def setfield(match_substrs, val):
-        for i in pg.query_selector_all("input"):
-            v = i.get_attribute("value") or ""; ph = i.get_attribute("placeholder") or ""
-            if any(s in v for s in match_substrs) or any(s in ph for s in match_substrs):
-                i.scroll_into_view_if_needed(); i.click(); i.fill(""); i.fill(val); return True
-        return False
-    print("baseurl:", setfield(["api.openai.com", "api.anthropic.com", "openrouter.ai", "api.deepseek", "127.0.0.1"], BASE_URL))
-
-    # model field
-    mset = False
-    for i in pg.query_selector_all("input"):
-        v = i.get_attribute("value") or ""; ph = i.get_attribute("placeholder") or ""
-        if v.startswith("gpt-") or v.startswith("claude-") or v.startswith("anthropic/") or v == "auto" or ph == "Model":
-            i.scroll_into_view_if_needed(); i.click(); i.fill(""); i.type(MODEL, delay=10); time.sleep(0.6)
-            pg.keyboard.press("Enter"); mset = True; break
-    print("model:", mset)
-
-    # api key
-    ak = pg.query_selector("input[placeholder*='Paste'], input[placeholder*='key']")
-    if ak:
-        ak.scroll_into_view_if_needed(); ak.click(); ak.fill(key); print("key pasted len", len(ak.input_value()))
+    _pw_strict_focus_and_insert(pg, OPENROUTER_BASE_URL_PATH, "base", BASE_URL)
+    print("baseurl: True")
+    _pw_strict_focus_and_insert(pg, OPENROUTER_API_KEY_PATH, "model", MODEL)
+    pg.keyboard.press("Enter")
+    print("model: True")
+    _pw_strict_focus_and_insert(pg, OPENROUTER_API_KEY_PATH, "key", key)
+    print("key pasted len", len(key))
 
     # ★ commit the LLM card. It is often in EDIT mode (Base URL/Model/Key inputs
     #   shown) — a card-level "Save"/"保存" button MUST be clicked to commit, else
     #   "キーを確認して保存" stays DISABLED. Scroll each Save into view and click. ★
-    def click_card_save():
-        return pg.evaluate("""()=>{const bs=[...document.querySelectorAll('button')].filter(e=>['Save','保存'].includes((e.textContent||'').trim()));for(const bt of bs){bt.scrollIntoView({block:'center'});bt.click();return true;}return false;}""")
-    click_card_save(); time.sleep(2)
+    if not _pw_strict_click(pg, OPENROUTER_API_KEY_PATH, "save"):
+        raise RuntimeError("CP2 card Save is disabled")
+    time.sleep(2)
 
     # delete blockrun (localhost) card (always fails verification)
-    pg.evaluate(r"""()=>{
-      const t=[...document.querySelectorAll('*')].find(e=>(e.textContent||'').trim()==='models.providers.blockrun.apiKey');
-      if(!t) return;
-      let card=t; for(let k=0;k<10;k++){card=card.parentElement;if(!card)break;const h=card.getBoundingClientRect().height;if(h>150&&h<420)break;}
-      const btns=[...card.querySelectorAll('button')]; if(btns.length){btns[btns.length-1].click();}
-    }""")
+    blockrun_state = pg.evaluate("(() => {const path='models.providers.blockrun.apiKey';const xs=[...document.querySelectorAll('*')].filter(x=>(x.textContent||'').trim()===path&&![...x.children].some(c=>(c.textContent||'').trim()===path));if(xs.length===0)return {ok:true,none:true};if(xs.length!==1)return {ok:false,count:xs.length};let card=xs[0],bs=[];for(let k=0;k<12&&card;k++,card=card.parentElement){const ys=[...card.querySelectorAll('button')];if(ys.length===1){bs=ys;break;}}if(bs.length!==1)return {ok:false,count:bs.length};const b=bs[0];b.scrollIntoView({block:'center'});const r=b.getBoundingClientRect();return {ok:true,x:r.x+r.width/2,y:r.y+r.height/2};})()")
+    if not isinstance(blockrun_state, dict) or not blockrun_state.get("ok"):
+        raise RuntimeError(f"ambiguous blockrun card ({blockrun_state})")
+    if not blockrun_state.get("none"):
+        pg.mouse.click(float(blockrun_state["x"]), float(blockrun_state["y"]))
     time.sleep(1.2)
 
     # final verify: click キーを確認して保存 once ENABLED. If disabled, the card is
     # still uncommitted -> click its Save again and retry (up to 4 rounds).
-    def verify_click():
-        return pg.evaluate("""()=>{const bs=[...document.querySelectorAll('button')].filter(e=>/キーを確認して保存/.test((e.textContent||'')));const bt=bs[bs.length-1];if(!bt)return 'nf';if(bt.disabled)return 'disabled';bt.scrollIntoView({block:'center'});bt.click();return 'clicked';}""")
-    sv = "?"
-    for _ in range(4):
-        sv = verify_click()
-        if sv == "clicked":
-            break
-        if sv == "disabled":
-            click_card_save(); time.sleep(2)
-        else:
-            break
-    print("save:", sv)
+    baseline_toasts = pg.evaluate("[...document.querySelectorAll('*')].map(e=>(e.textContent||'').trim()).filter(x=>/キー確認済み|Verification failed|失敗|エラー/i.test(x)&&x.length<120)") or []
+    if not _pw_strict_click(pg, OPENROUTER_API_KEY_PATH, "confirm"):
+        raise RuntimeError("CP2 confirmation button is disabled")
+    print("save: clicked")
     result = "TIMEOUT"
+    deadline = time.monotonic() + RAW_NAV_TIMEOUT_S
     for _ in range(10):
+        if time.monotonic() >= deadline:
+            break
         time.sleep(3)
         toast = pg.evaluate("""()=>{const t=[...document.querySelectorAll('*')].map(e=>(e.textContent||'').trim()).find(x=>/キー確認済み|Verification failed|失敗|エラー/i.test(x)&&x.length<120);return t||'';}""")
         url = pg.evaluate("()=>location.href")
-        if "キー確認済み" in toast or "credential-done" in url:
+        if _fresh_success(before_url, baseline_toasts, url, toast):
             result = "VERIFIED"; break
         if "Verification failed" in toast or "失敗" in toast:
             result = "FAILED: " + toast[:80]; break
