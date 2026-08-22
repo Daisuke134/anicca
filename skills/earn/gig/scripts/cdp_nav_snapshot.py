@@ -209,6 +209,7 @@ async def navigate_and_snapshot(
     evidence_path = os.path.join(outdir, f"{seq}-{label}.json")
     final_url, title, navigated_ok = "", "", False
     rendered_text = ""
+    rendered_links = []
 
     async with hidden_page_target(url) as ws_url:
         async with websockets.connect(
@@ -264,12 +265,28 @@ async def navigate_and_snapshot(
                 r.get("result", {}).get("result", {}).get("value", "")
                 or ""
             )
+            cid += 1
+            r = await _call(
+                ws,
+                "Runtime.evaluate",
+                {
+                    "expression": """JSON.stringify(Array.from(document.querySelectorAll('a[href]')).slice(0,2000).map(a=>{const c=a.closest('article,li,tr,[data-test],[data-qa]')||a.parentElement;return {href:a.href,text:(a.innerText||'').trim().slice(0,500),context:((c&&c.innerText)||'').trim().slice(0,2000),aria:a.getAttribute('aria-label')||'',data_qa:a.getAttribute('data-qa')||'',class_name:a.className||''}}))""",
+                    "returnByValue": True,
+                },
+                cid,
+            )
+            raw_links = r.get("result", {}).get("result", {}).get("value", "[]")
+            try:
+                rendered_links = json.loads(raw_links)
+            except (TypeError, json.JSONDecodeError):
+                rendered_links = []
 
     evidence = {
         "url": final_url,
         "requested_url": url,
         "title": title,
         "rendered_text": rendered_text,
+        "rendered_links": rendered_links,
         "navigated_ok": navigated_ok,
     }
     with open(evidence_path, "w", encoding="utf-8") as handle:

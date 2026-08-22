@@ -16,7 +16,10 @@ for directory in (SCRIPTS, PROVIDERS):
 from upwork_browser_provider import (  # noqa: E402
     parse_catalog,
     parse_connects,
+    parse_contracts,
     parse_inventory,
+    parse_messages,
+    parse_stable_entities,
 )
 
 
@@ -60,6 +63,33 @@ def test_parses_visible_catalog_inventory_without_inventing_an_order():
             "orders": 0,
         }],
     }
+
+
+def test_parses_zero_contract_and_message_effects_from_official_empty_states():
+    assert parse_contracts(
+        "Earnings available now: $0.00\nActive contracts\n"
+        "There are no active contracts.\n",
+        [],
+    ) == {"earnings_available_usd_minor": 0, "active_contracts": []}
+    assert parse_messages(
+        "Messages\nUnread\nFavorites\nConversations will appear here\n",
+        [],
+    ) == {"message_rooms": [], "unread_message_room_ids": []}
+
+
+def test_extracts_stable_official_ids_instead_of_titles():
+    state = parse_stable_entities(
+        invite_links=[{
+            "href": "https://www.upwork.com/jobs/python-task-~012ABC",
+            "text": "Python task", "context": "Client invited you to apply",
+        }],
+        proposal_links=[{
+            "href": "https://www.upwork.com/ab/proposals/offer-77",
+            "text": "Offer", "context": "Offers Active offer",
+        }],
+    )
+    assert state["invitation_entities"][0]["id"] == "~012ABC"
+    assert state["proposal_offer_entities"][0]["id"] == "offer-77"
 
 
 @pytest.mark.parametrize("parser,text", [

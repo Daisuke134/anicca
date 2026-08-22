@@ -344,7 +344,12 @@ U13 atomic order:
    provider now fail-closed reads the Catalog inventory alongside Connects, invites, offers and
    proposals; seven focused tests and a live four-page E2E pass. Immutable release `d6c28857e`
    completed a production launchd wake with exit 0 and persisted the same official zero-order state.
-4. Read invitations, unread messages, direct offers and active contracts; join stable official IDs.
+4. **DONE:** the authenticated six-page read joins official-link-derived stable inventories for
+   invitations, proposal/offers, active contracts, message rooms and unread room IDs. The one-time
+   Messages anti-circumvention acknowledgement is completed in Upwork; no message was sent. Current
+   official readback is empty arrays for every entity class, zero invitations/offers/proposals/
+   contracts, and `earnings_available_usd_minor=0`. The provider refuses a missing empty-state or a
+   positive row without a stable official href; nine focused tests and the live E2E pass.
 5. Read official submitted and active proposal inventories and persist their stable IDs.
 6. Re-read every nonterminal job detail and record open, closed, removed or unknown without inference.
 7. Record each terminal transition once with official reason, observation time and receipt hash.
