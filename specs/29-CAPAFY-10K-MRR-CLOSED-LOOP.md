@@ -334,7 +334,7 @@ system resolver不調時もOS DNS設定を変えず、Cloudflare DoHで公式A r
 
 loaded marketing cadenceの自己収束は、既存serviceが`run interval = 3600 seconds`ならmutation 0、旧cadenceなら`bin/launchctl-safe`のpreflight後にexact serviceだけをbootoutし、unload readback、canonical plist bootstrap、3600秒readbackまでを一回で閉じる。preflight、bootout、bounded unload wait、bootstrap、post-readbackのいずれかが失敗すればgoal monitor全体を`exit 2`にしてhealthy reportingへ進まない。bootout timeout、bootstrap failure、実際の`7200 seconds` readback mismatch、full production pathへの非zero伝播を含むfocused 6件とfresh reviewer `ship`を確認し、commit `36cdd0219`をmainへpushする。installed plistは`StartInterval=3600`だが、Aqua domainのloaded service readbackは次のhourly owner receiptまで未完である。容量閾値、空き容量headroom gate、重複cleanupは追加しない。
 
-Data Analyst `7785270416`の第3 Reelはofficial company distribution readbackでnative URL `https://www.instagram.com/reel/DcSwjsMIzpa/`、creative SHA-256 `70ee62ec6c9e7c8b82e0cc0dcb7b90ab1ddcef134e54f7b8f8d31788549ebea8`、owner session verifiedを返す。したがってrender/post自体をremainingへ残さない。一方、最新company receiptのTelegram deliveryはtimeout後`pending`でmessage IDがなく、同一Reelのmedia receiptと3 Reel同一window metricsは未完として残す。
+Data Analyst `7785270416`には既存のlegacy Reel `https://www.instagram.com/reel/DcSwjsMIzpa/`があり、official evidenceは`published_at=2026-08-21T07:05:02Z`、旧creative SHA-256 `70ee62ec6c9e7c8b82e0cc0dcb7b90ab1ddcef134e54f7b8f8d31788549ebea8`、owner session verifiedを返す。これは今回承認されたHyperFrames、scene-matched demonstration、Andrew voice contractより前の旧動画であり、新しいquality-approved creativeの完了証拠として数えない。次のeligible passはrepo-owned evidenceからData Analystを作り直し、別creative hash、quality readback、native URL、Telegram media message IDを一件で閉じる。
 
 ## Atomic remaining TODO
 
@@ -364,16 +364,17 @@ Items are executed top-to-bottom. Only one item is active.
 | C19 | prove one listed transition frees a fresh slot | status=4 reduces occupied count and next hourly wake submits exactly one candidate | pending/event-driven — Portfolio `9480246345`を含む5件がoccupied、free 0。hourly ownerは3600秒ごとにwrite 0で監視し、accepted/rejectedでfree 1になった最初のwakeだけがFootball same-Agent `1037238583`を再提出する |
 | C20 | connect post/click/subscription windows without claiming causal proof | attribution row is candidate unless Capafy exposes order-level UTM/source | completed — live attribution v2 joins one IG post + 23 counters + Capafy snapshot; clicks 7; causal=false; subscription unknown; Netlify deploy `6a89b4126e21fe74286b7a79`; TG `29036` |
 | C21 | prove seven consecutive daily healthy terminals and hourly freshness | 7-day ledger has no stale source, duplicate Agent/version/post or missing Telegram receipt | observing — strict proof `0/7` because an earlier same-day failed execution correctly breaks the streak。run `9`はCAP_FULL/rc0/write0、false-green classifierはfocused 10件でfailure/invalidを非zeroへ写像する |
-| C22 | operate growth and retention experiments until settled net MRR reaches `$10,000` | active subscription readback and refunds/fees reconcile to target | **active** — unreadable state fail-openは`e40202978`、loaded cadence convergence false-greenは`36cdd0219`で閉じる。Data Analyst `7785270416`の第3 Reelはnative URLとcreative hashまでofficial readback済み。次はloaded 3600秒readback、同一ReelのTelegram media message ID、3 Reel同一window metricsを閉じる。5 ordersは`unattributed_sales`、settled MRR sourceは unavailable のためMRRをgrossから推定しない |
+| C22 | operate growth and retention experiments until settled net MRR reaches `$10,000` | active subscription readback and refunds/fees reconcile to target | **active** — unreadable state fail-openは`e40202978`、loaded cadence convergence false-greenは`36cdd0219`で閉じる。Data Analyst `7785270416`の既存`DcSwjsMIzpa`は承認済みquality contract前のlegacy creativeなので再利用しない。次はloaded 3600秒readback後、repo-owned evidence、HyperFrames、scene-matched Andrew voiceで新creativeを一件だけrender/postし、別hash、native URL、Telegram media message ID、3本の同一window metricsを閉じる。5 ordersは`unattributed_sales`、settled MRR sourceは unavailable のためMRRをgrossから推定しない |
 
 ### Remaining execution order
 
 1. C22-0: 次のAqua hourly goal-monitor receiptでloaded marketing serviceの`run interval = 3600 seconds`をreadbackし、収束失敗ならmonitor rc `2`、healthy continuation 0を確認する。
-2. C22-1: Data Analyst Reelの同一native URL・creative hashをTelegram mediaへat-most-once送信し、provider message IDをreceiptへ保存する。timeoutでmessage ID不明なら重複送信せず`delivery_uncertain`を維持する。
-3. C22-2: metric windowで3 Reelsのreach、landing click、Agent sales snapshotを同じwindowへjoinする。order-level sourceが無ければcausal claimをfalseのまま保つ。
-4. C19-1: hourly inventoryでfree slotを初めて検出したwakeだけがFootball Agent `1037238583`をsame-Agent修正・再提出し、6件目のAgentを作らない。
-5. C21-1: 失敗を隠さないterminal ledgerで7 consecutive healthy daysを蓄積する。途中failureは0/7へ戻すが、C22の安全なgrowth workは停止しない。
-6. C22-3: settled active subscription sourceが取得できるまでmoney truthを`unknown`として監視し、取得後はrefund/fee控除後のnet MRRだけを`$10,000`へ加算する。
+2. C22-1: cadence gateが開いた最初のmarketing wakeでData Analystのrepo-owned evidenceから新しいHyperFrames + scene-matched Andrew voice MP4を一件だけrenderし、full-video inspectionと旧creative hash不一致を確認する。
+3. C22-2: 新しい同一bytesだけをInstagramへ一件投稿し、native Reel URL、Telegram media message ID、rotation commitをreadbackする。失敗時は投稿0・rotation0・heartbeat0でterminal failureにする。
+4. C22-3: metric windowでquality-approved 3 Reelsのreach、landing click、Agent sales snapshotを同じwindowへjoinする。order-level sourceが無ければcausal claimをfalseのまま保つ。
+5. C19-1: hourly inventoryでfree slotを初めて検出したwakeだけがFootball Agent `1037238583`をsame-Agent修正・再提出し、6件目のAgentを作らない。
+6. C21-1: 失敗を隠さないterminal ledgerで7 consecutive healthy daysを蓄積する。途中failureは0/7へ戻すが、C22の安全なgrowth workは停止しない。
+7. C22-4: settled active subscription sourceが取得できるまでmoney truthを`unknown`として監視し、取得後はrefund/fee控除後のnet MRRだけを`$10,000`へ加算する。
 
 ## Test matrix
 
