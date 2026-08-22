@@ -316,9 +316,14 @@ authorization, including after restart. `undeterminable` remains fail-closed onl
 risk. The answer reviewer remains removed. Direct compile/help/contract checks pass; no TDD or extra review
 ceremony was added. Disk headroom was recovered from about 529 MiB to 1.4 GiB by removing only verified
 regenerable caches and terminating four duplicate prohibited pytest runs; customer artifacts, active Haru
-workspace and the protected dirty test were preserved. Next: commit/push and activate this immutable release,
-then kickstart the existing Paid owner and require exact-room official DOM effect/readback plus replay-zero
-for Haru, Manledge, byusco and reopened X before advancing beyond Paid.
+workspace and the protected dirty test were preserved. Commit `39574cae2` is pushed and activated; Haru,
+Manledge and byusco continue as independent natural workers. Reopened X then produced a semantically inconsistent
+decision: `mode=file` while its own required effect and buyer instruction require the deliverable contents pasted
+into the talkroom. That X worker was stopped before effect. Shared semantic policy v10 now requires answer mode
+whenever the buyer explicitly requires talkroom-pasted contents and does not also request a separate file, even
+for structured copy or a revision previously stored in a file. This is a generic medium-selection rule, not an
+X-specific route. Next: push/activate v10, naturally resume X, and require exact-room official DOM effect/readback
+plus replay-zero for all four rooms before advancing beyond Paid.
 
 **Live handover state.** `main` and `origin/main` include implementation commit
 `92174b7932f9691109a537e3a90a95b8f6759227`; the latest activated Paid release is that immutable commit.
