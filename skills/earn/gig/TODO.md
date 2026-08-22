@@ -305,11 +305,12 @@ evidence. Independent production lanes continue running while development follow
 **Current live cursor.** `main` and `origin/main` were verified equal immediately before this snapshot at
 `0d16152be`; the starting verification commit
 `79ac01ba1eb66b06aed1f9cee66d4af303f03a3d` remains an ancestor. The existing launchd Paid owner is the only
-customer-effect owner. The authenticated gig-browser launcher was still overriding the configured no-floor policy
-with a hard-coded 512 MiB headroom and by unsetting both ignore flags. Under current host pressure this prevented
-CDP startup after 78 stale tabs made all nine targeted readbacks time out. The generic launcher now honors the
-configured environment and defaults to zero headroom with both pressure-stop flags ignored; cleanup remains owned
-by the separate cleanup loop rather than blocking every Paid customer effect.
+customer-effect owner. The authenticated gig-browser launcher and launchd manifest were still overriding the
+configured no-floor policy with a hard-coded 512 MiB headroom; the launcher also unset both ignore flags. Under
+current host pressure this prevented CDP startup after 78 stale tabs made all nine targeted readbacks time out. The
+generic launcher now honors the configured environment and defaults to zero headroom with both pressure-stop flags
+ignored, while the Coconala Apply, Negotiate/reply and shared browser jobs explicitly carry zero headroom. Cleanup
+remains owned by the separate cleanup loop rather than blocking every customer effect.
 
 **Current runtime refresh.** Unrelated dirty files remain untouched. The existing Paid pass naturally resumed the
 Haru v43 staging after compiling

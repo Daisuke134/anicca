@@ -140,7 +140,7 @@
         "GIG_OPERATOR_BRAKE_FILE": "{{GIG_BRAKE_DIR}}/apply.operator.brake",
         "GIG_IGNORE_DISK_PRESSURE_BLOCK": "1",
         "GIG_IGNORE_DISK_WRITERS_STOP": "1",
-        "GIG_DISK_HEADROOM_KIB": "524288"
+        "GIG_DISK_HEADROOM_KIB": "0"
       },
       "StartInterval": 60,
       "ThrottleInterval": 60,
@@ -212,7 +212,7 @@
         "GIG_NO_CONTACT_REGISTRY": "{{HOME}}/.config/anicca/gig/no-contact.json",
         "GIG_IGNORE_DISK_PRESSURE_BLOCK": "1",
         "GIG_IGNORE_DISK_WRITERS_STOP": "1",
-        "GIG_DISK_HEADROOM_KIB": "524288"
+        "GIG_DISK_HEADROOM_KIB": "0"
       },
       "KeepAlive": true,
       "ThrottleInterval": 30,
@@ -539,7 +539,7 @@
         "GIG_BROWSER_PROFILE": "{{CDP_DAILY_DRIVER_PROFILE}}",
         "GIG_BROWSER_FINGERPRINT": "{{GIG_BROWSER_FINGERPRINT}}",
         "GIG_BROWSER_TLS_COMPAT": "{{GIG_BROWSER_TLS_COMPAT}}",
-        "GIG_DISK_HEADROOM_KIB": "524288"
+        "GIG_DISK_HEADROOM_KIB": "0"
       },
       "RunAtLoad": true,
       "KeepAlive": true,
