@@ -1,5 +1,16 @@
 # Affiliate local money loop handover
 
+- X measurement runtime is now commit `1ae08822f`, pushed to both Repost
+  remotes and installed as immutable release `20260822T223509-1ae08822`.
+  Source/runtime `x_collect.py` is byte-equal at SHA-256
+  `e0a7768032ba5cbdadb35bb4aa940d7ba1d9cb9b92e7538eba2514092b0178d9`;
+  21 tests pass. It will write one bounded 30-day daily snapshot separating
+  original/reply/quote/Affiliate metrics, measured denominators, and public
+  follower/following counts. Real authenticated readback is one follower and
+  27 following. Profile visits are gated by X Premium and must remain
+  `null / UNAVAILABLE_X_PREMIUM_REQUIRED`. Do not manually run measurement;
+  the next eligible existing-owner pass is the live snapshot proof.
+
 - Latest X effect is now exact-read, not shadow/mock. Repost commits
   `3b339a433` and `0361b9d3b` are pushed to both Repost remotes and installed as
   immutable sparse release `20260822T222514-0361b9d3`. X renders source quote

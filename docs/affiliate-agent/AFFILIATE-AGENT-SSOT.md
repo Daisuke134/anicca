@@ -53,10 +53,18 @@ backlog is:
    replace the daily useful original.
    Every original carries exactly one public evidence URL and its ledger row
    retains that source URL.
-5. **X05:** replace early views as the optimizer's sole objective with a funnel
+5. **X05 — PARTIAL, SNAPSHOT INSTALLED:** replace early views as the optimizer's sole objective with a funnel
    vector: qualified impressions, profile visits/follows when observable,
    owned-article sessions, CTA clicks, provider clicks, official transactions,
    approved/paid net, reversals, and real cost. Unknown fields stay unknown.
+   Repost release `1ae08822f5b870152da21d9e6b7728c447e8b8d5`
+   adds a bounded 30-day daily snapshot that separates original, reply, quote,
+   and Affiliate rows; preserves measured versus unmeasured denominators; and
+   reads public follower/following counts. Authenticated browser readback shows
+   one follower and 27 following. The account analytics page responds
+   `Advanced analytics with X Premium`, so profile visits remain null with
+   state `UNAVAILABLE_X_PREMIUM_REQUIRED`, never zero. The next eligible owner
+   pass must generate the first durable snapshot from installed runtime.
 6. **X06 — PARTIAL:** the existing owner already has a browser lease and exact
    terminal effect ledger. Add X-Manager's canonical content dedupe and bounded
    30-day post-metric collection around it. Do not introduce its
@@ -66,8 +74,8 @@ backlog is:
    queued and never converts a post, view, or click into money.
 
 Current live checkpoint: immutable sparse release
-`20260822T222514-0361b9d3` is installed from commit
-`0361b9d3ba4601d265920e03b5f86963909c2c7d`, pushed to both Repost remotes.
+`20260822T223509-1ae08822` is installed from commit
+`1ae08822f5b870152da21d9e6b7728c447e8b8d5`, pushed to both Repost remotes.
 Source/runtime `x-repost-cli.sh` is byte-equal at SHA-256
 `b6f54e1018845dd18a75528b2f1079997f84831593e2feb25bf2624f7088fef7`.
 Its versioned readback lets a newer exact verifier inspect an old terminal row
@@ -77,6 +85,10 @@ forever. Run 33 read back the 22:13 source-backed original at exact permalink
 same row to `status=recovered`; no new composer effect occurred. Nineteen
 focused tests, shell syntax, source/runtime hash, launchd Aqua/gui/501 preflight,
 and the real owner readback pass.
+The installed `x_collect.py` is byte-equal to source at SHA-256
+`e0a7768032ba5cbdadb35bb4aa940d7ba1d9cb9b92e7538eba2514092b0178d9`;
+21 focused tests pass. Its snapshot code is installed but not called manually:
+the existing owner remains the sole measurement executor.
 
 The remaining atomic path is the following single ordered queue; this is the
 current execution order, not a menu:
