@@ -2072,3 +2072,12 @@ Commit `8c1f095cb` persists the new `original_ratio=0.15` into existing private
 strategy state on the next owner run using fsync plus atomic replace. Installed
 release is `20260822T233154-8c1f095c`; source/runtime SHA-256 is
 `054ea01a24105b27729b9eb17330c0529dc5b53d2a77f07f31dfaa35327cb3b2`.
+
+Commit `04eaca779` makes the ratio genuinely self-improving without changing two
+variables at once. The daily digest alternates original-share and tone verdicts;
+original share requires 3 measured originals and 3 measured quotes in the same
+48-hour window, steps by 0.05, and remains bounded to 0.05..0.50. Affiliate rows
+never enter this audience-format comparison. Installed release is
+`20260822T233414-04eaca77`; source/runtime evaluator SHA-256 is
+`0dcfac06ca841f9b622916aef3b08f0f4978a27267be3f650e80bb20ae071b04`;
+22 focused tests pass.
