@@ -143,6 +143,8 @@ class ModelBrowserLoopContractTests(unittest.TestCase):
         self.assertIn("StepEvidenceV1", prompt)
         self.assertIn("job_search_loop.browser_agent.candidate_memory", daily)
         self.assertIn("CandidateMemoryView", prompt)
+        self.assertIn("JOB_SEARCH_ANSWER_MEMORY", daily)
+        self.assertIn("AnswerMemory.concept_for_question", prompt)
         self.assertNotIn("Use `chromium.connect_over_cdp(endpoint)`", prompt)
 
     def test_orchestrator_delegates_once_to_the_existing_bounded_runner(self):

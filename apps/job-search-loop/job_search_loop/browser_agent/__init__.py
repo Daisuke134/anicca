@@ -3,6 +3,7 @@
 API_VERSION = "job-hunter-browser-agent/1"
 
 from .actions import ActionExecutor
+from .answer_memory import AnswerMemory, AnswerRecordV1
 from .checkpoint import CheckpointStore, EvidenceStore
 from .candidate_memory import CandidateMemoryView, build_candidate_memory
 from .contracts import (
@@ -24,7 +25,8 @@ from .policy import AgentPolicy
 from .session import BrowserSession
 
 __all__ = [
-    "API_VERSION", "ActionExecutor", "ActionPlanV1", "ActionReceiptV1",
+    "API_VERSION", "ActionExecutor", "ActionPlanV1", "ActionReceiptV1", "AnswerMemory",
+    "AnswerRecordV1",
     "ActionTargetV1", "AgentPolicy",
     "BrowserSession", "CandidateMemoryView", "CheckpointReceiptV1", "CheckpointStore", "EvidenceReceiptV1",
     "EvidenceStore", "ObservationBuilder", "ObservationV1", "PolicyContextV1",

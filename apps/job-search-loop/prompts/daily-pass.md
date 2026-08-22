@@ -63,6 +63,16 @@ actions. Never print or copy its values into model output, evidence, commands, o
 Telegram. Its identity, dated experience, skills/projects, work authorization,
 logistics, links, and preferences replace any missing-context stop.
 
+`$JOB_SEARCH_ANSWER_MEMORY` is the private semantic Answer Memory. For every form
+question, first let Luna map the current wording to a stable semantic concept and
+check `AnswerMemory.concept_for_question`/`lookup`. Reuse an existing concept answer
+across employer/provider wording. After resolving a new wording, call `remember`
+with its exact/derived/generated/conservative kind, Candidate Memory or inference
+provenance, and the current question as an alias. Never overwrite history: changed
+answers create a revision, unchanged answers only extend aliases, and an alias may
+not be rebound to a different concept. Keep raw answers inside this private store
+and direct typed browser inputs only; output/evidence receives hashes and kinds.
+
 Never print, `cat`, or `sed` the private profile, credentials, or raw provider
 transcripts into stdout/stderr. If a value is needed, query only the one required
 non-secret field with a redacting filter and keep the command output minimal.

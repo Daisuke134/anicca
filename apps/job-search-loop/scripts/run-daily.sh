@@ -41,6 +41,7 @@ CANDIDATE_MEMORY="$JOB_SEARCH_STATE_ROOT/candidate-memory.v1.json"
   --output "$CANDIDATE_MEMORY" >"$EVIDENCE/candidate-memory-receipt.json"
 chmod 600 "$EVIDENCE/candidate-memory-receipt.json"
 export JOB_SEARCH_CANDIDATE_MEMORY="$CANDIDATE_MEMORY"
+export JOB_SEARCH_ANSWER_MEMORY="$JOB_SEARCH_STATE_ROOT/answer-memory.v1.json"
 ASHBY_BOARD_BLOCKER_STATE="$JOB_SEARCH_STATE_ROOT/ashby-board-blockers.json"
 ASHBY_DISCOVERY_RESULT="$EVIDENCE/ashby-discovery.json"
 set +e
