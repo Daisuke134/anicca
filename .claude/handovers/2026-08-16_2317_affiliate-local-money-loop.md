@@ -1,5 +1,20 @@
 # Affiliate local money loop handover
 
+- Current owner progress at `2026-08-22T11:51:11+0900`: the user-directed
+  action cap is `ACTION_CAP_DISABLED` and runtime disk guard is `CLEAR` with
+  `floor_bytes=null`; cost/quarantine/replay/public-readback gates remain.
+  Existing owners restored the missing publication worktree, verified the
+  Translate Video dedicated PartnerStack link, delivered its owned article,
+  and exact-read back campaign X permalink
+  `https://x.com/selawmqt/status/2090955572699132177` as `X_LIVE`. This is a
+  live placement, not a click or money event. Terminal Repost proposals for
+  Voice Isolator and Subtitle Translator remain non-retryable `UNVERIFIED`.
+  The next durable Repost proposal is Voice Changer
+  `16b5b8ff4e4e79a7b304999755b909e1e0f07a37e35c2e0da2e39c4a5e4d1b60`,
+  `READY_FOR_EXISTING_REPOST_OWNER / UNCONSUMED / NO_REVENUE_CREDIT` with six
+  provider clicks. Official rolling net remains `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS /
+  cost=UNKNOWN`; all status counts are zero.
+
 - Current diagnosis: provider clicks total 39 across 20 placements, but the
   latest official PartnerStack artifact is `commission_row_count=0`, payout
   `EMPTY`, and `NO_LIVE_ROWS`. The economic blocker is no buyer conversion into

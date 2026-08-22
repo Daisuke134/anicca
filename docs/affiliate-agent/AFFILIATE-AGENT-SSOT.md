@@ -1471,6 +1471,40 @@ click links, create transactions, or count money. The next owner action MUST
 resume the durable composition job after the disk floor is restored, then prove
 a new exact placement join and an official provider transaction.
 
+### 1.1.60 Owners now advance a new public placement; remaining work is atomic
+
+User-directed releases disable the daily action cap and runtime disk floor while
+retaining actual-cost, quarantine, replay, disclosure, exact-readback, and
+money-evidence gates. The existing owner self-heals a missing
+`affiliate-foundation-prod` worktree from its existing branch before publishing.
+At `2026-08-22T11:51:11+0900`, existing owners verified the Translate Video
+dedicated PartnerStack link, published its owned article, and exact-read back
+`https://x.com/selawmqt/status/2090955572699132177` as
+`elevenlabs-discovered-translate-video-en-1 / X_LIVE`. This is a live
+placement, not a click, transaction, or money receipt.
+
+Voice Isolator and Subtitle Translator Repost proposals are terminal
+`UNVERIFIED` and cannot be retried. The terminal-aware selector now advances
+the next unconsumed Voice Changer proposal
+`16b5b8ff4e4e79a7b304999755b909e1e0f07a37e35c2e0da2e39c4a5e4d1b60`
+(`READY_FOR_EXISTING_REPOST_OWNER / UNCONSUMED / NO_REVENUE_CREDIT`, six
+provider clicks). Official rolling net remains `NO_TRANSACTIONS /
+NO_APPROVED_OR_PAID_ROWS / cost=UNKNOWN`; pending, approved, paid, and reversed
+counts are all zero.
+
+| Order | Atomic owner action | Required receipt to close it | State now |
+|---|---|---|---|
+| A01 | Existing Repost owner consumes Voice Changer proposal once | terminal consumption row and exact X permalink | Ready |
+| A02 | Existing Affiliate owner joins that permalink to the exact placement | placement ID + owned URL + X URL exact join | Waiting A01 |
+| A03 | Existing provider owner captures baseline and later click/exposure denominators | provider metric artifact keyed to placement link | Waiting A02/time window |
+| A04 | Existing money owner captures first non-empty official provider transaction | provider transaction ID, status, currency, exact placement join | Waiting organic buyer |
+| A05 | Reconcile lifecycle transitions replay-safely | pending/approved/paid/reversed + settlement/payout IDs | Waiting A04 |
+| A06 | Ingest known actual billed costs and FX | real cost IDs and rate evidence; unknown stays unknown | Open |
+| A07 | Add/reject executable providers and channels from official evidence | accepted provider/link or typed rejection receipt | Open |
+| A08 | Allocate only from mature approved-net cohorts | allocation receipt tied to approved/paid net | Waiting A05 |
+| A09 | Prove rolling 30-day net threshold | canonical ledger: USD 10,000 approved-or-paid net after known costs | Waiting A05–A08 |
+| A10 | Package OSS distribution from proven local loop | redacted installer/verifier with no earnings claim | Waiting A09 |
+
 ### 1.2.0 Audited executable boundary
 
 The installed ownership graph has six launchd labels: three persistent browser
