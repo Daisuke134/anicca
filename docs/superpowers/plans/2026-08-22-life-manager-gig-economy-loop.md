@@ -253,7 +253,7 @@ No later task may jump ahead of the first incomplete row:
 | U6 | Exercise qualification on one observed job | **DONE, PARKED:** technical/margin qualification proved on `~022091070478975551162`; 50+ proposals and 26 Connects make it unsuitable as the first target |
 | U7 | Exercise immutable proposal freezing | **DONE, PARKED:** payload `9fab22a2…10d19` retained for later requalification; zero marketplace effects |
 | U8 | Add the required factual Employment History item | **DONE:** official employment readback matches owner evidence; Find Work progressbar is 70% |
-| U9 | Publish three reusable proofs and complete optional profile items | Three public portfolio item IDs with bound hashes, only truthful optional items, and official completion readback is 100% |
+| U9 | Publish three reusable proofs and complete optional profile items | **IN PROGRESS:** proof 1 is public as `2091143267699150848`, image hash `ed3cef56…e5136`, and official completion is 75%; two proofs plus truthful optional items remain before 100% |
 | U10 | Publish one narrow Project Catalog offer | Live catalog ID; bounded input/output/exclusions/price/time and client-visible readback |
 | U11 | Collect free acquisition capacity | Account-earned Connects balance and invitation readback; purchases, Plus, badge and boosts remain zero |
 | U12 | Discover and qualify a first-job candidate | Recent, <=20 proposals, explicit acceptance, verified client, positive expected net, low Connects, 1-3 day delivery |
@@ -309,7 +309,8 @@ Marketplace effects remain zero.
 
 The observed purchase entry offers 100 Connects for $15 plus tax, but it is no longer a pending
 gate. U8 first adds Upwork's required factual Employment History item and records the new baseline.
-U9 then publishes three reusable proofs and uses only truthful optional items to reach official
+U9 has published proof 1 as project `2091143267699150848` and official completion now reads 75%.
+It next publishes proofs 2 and 3, then uses only truthful optional items to reach official
 100%; U10 publishes one narrow Project Catalog offer; U11 collects account-earned
 Connects and invitations. Purchased Connects, Freelancer Plus, Availability Badge and boosts stay
 disabled during this bootstrap. Application, Connects-spend and payment effects remain zero.
