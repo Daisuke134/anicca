@@ -111,6 +111,14 @@ never parsed values. For each mismatched label, retrieve the Candidate Memory va
 internally, correct it through one typed action, observe again, and reverify until no
 mismatch remains.
 
+On the final Workday review surface, build one more fresh observation and call
+`verify_final_review` with the exact row/application identity and latest
+`ResumeVerificationV1`. It must match canonical URL and resume SHA-256, find company
+and role on the rendered surface, have zero parsed-field mismatches, and bind the
+fresh observation hash. This receipt—not model prose—is the only identity input to
+the SubmissionFence. Any mismatch returns to observation/correction; it never
+authorizes Submit.
+
 Use `StableInferencePolicy` for common concepts. Luna supplies dated,
 Candidate-Memory-provenance intervals for experience; the policy merges overlaps
 before computing years. Minimum/target/stretch compensation comes from the matching

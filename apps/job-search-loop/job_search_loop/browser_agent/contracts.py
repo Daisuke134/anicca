@@ -180,6 +180,19 @@ class QueueRowReceiptV1:
 
 
 @dataclass(frozen=True, slots=True)
+class FinalReviewReceiptV1:
+    schema_version: int
+    row_run_id: str
+    application_id: str
+    canonical_url: str
+    resume_sha256: str
+    observation_sha256: str
+    company_visible: bool
+    role_visible: bool
+    receipt_sha256: str
+
+
+@dataclass(frozen=True, slots=True)
 class FieldQuestionV1:
     label: str
     field_type: str
