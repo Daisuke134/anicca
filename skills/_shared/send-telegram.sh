@@ -25,7 +25,14 @@ try: print(json.load(sys.stdin).get("ok", False))
 except Exception: print(False)' 2>/dev/null)
 
 if [ "$OK" = "True" ]; then
-  echo "TELEGRAM_SENT=true"
+  MESSAGE_ID=$(printf '%s' "$RESP" | python3 -c 'import json,sys
+value=json.load(sys.stdin)
+print(value["result"]["message_id"])' 2>/dev/null)
+  if [ -z "$MESSAGE_ID" ]; then
+    echo "TELEGRAM_SENT=false RESP=missing_message_id"
+    exit 1
+  fi
+  echo "TELEGRAM_SENT=true TELEGRAM_MESSAGE_ID=$MESSAGE_ID"
   exit 0
 else
   echo "TELEGRAM_SENT=false RESP=$RESP"
