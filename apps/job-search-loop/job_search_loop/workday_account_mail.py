@@ -19,6 +19,7 @@ from .workday_verification import (
 async def complete_account_mail(
     *,
     account: str,
+    thread_id: str,
     message_id: str,
     credential_store: Path,
     database: Path,
@@ -27,6 +28,7 @@ async def complete_account_mail(
 ) -> dict[str, str]:
     target = extract_verification_target_from_gmail(
         account=account,
+        thread_id=thread_id,
         message_id=message_id,
         credential_store=credential_store,
         gog=gog,
@@ -139,6 +141,7 @@ async def complete_account_mail(
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--account", required=True)
+    parser.add_argument("--thread-id", required=True)
     parser.add_argument("--message-id", required=True)
     parser.add_argument("--credential-store", required=True, type=Path)
     parser.add_argument("--database", required=True, type=Path)
@@ -148,6 +151,7 @@ def main(argv: list[str] | None = None) -> int:
     receipt = asyncio.run(
         complete_account_mail(
             account=args.account,
+            thread_id=args.thread_id,
             message_id=args.message_id,
             credential_store=args.credential_store,
             database=args.database,

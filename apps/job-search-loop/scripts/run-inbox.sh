@@ -62,9 +62,11 @@ if [[ "$NEW_COUNT" -gt 0 && "$RESET_COUNT" == "$NEW_COUNT" ]]; then
   RESET_RECEIPTS="$EVIDENCE/workday-account-mail-receipts.jsonl"
   RESET_RESULT="$EVIDENCE/workday-account-mail-result.json"
   : >"$RESET_RECEIPTS"
-  "$JOB_SEARCH_JQ" -r '.messages[].message_id' "$CANDIDATES" | while read -r message_id; do
+  "$JOB_SEARCH_JQ" -r '.messages[] | [.thread_id,.message_id] | @tsv' "$CANDIDATES" | \
+    while IFS=$'\t' read -r thread_id message_id; do
     "$JOB_SEARCH_PYTHON" -m job_search_loop.workday_account_mail \
       --account "$GMAIL_ACCOUNT" \
+      --thread-id "$thread_id" \
       --message-id "$message_id" \
       --credential-store "$JOB_SEARCH_MACHINE_CREDENTIALS" \
       --database "$JOB_SEARCH_STATE_ROOT/workday-verifications.sqlite3" \

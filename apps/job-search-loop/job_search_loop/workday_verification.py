@@ -183,6 +183,7 @@ def _decoded_html_parts(value: object) -> list[str]:
 def extract_verification_target_from_gmail(
     *,
     account: str,
+    thread_id: str,
     message_id: str,
     credential_store: Path,
     gog: str = "/opt/homebrew/bin/gog",
@@ -198,7 +199,7 @@ def extract_verification_target_from_gmail(
             "--json",
             "--full",
             "--gmail-no-send",
-            message_id,
+            thread_id,
         ],
         check=True,
         capture_output=True,
