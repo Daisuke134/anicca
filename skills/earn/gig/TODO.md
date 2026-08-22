@@ -312,6 +312,13 @@ generic launcher now honors the configured environment and defaults to zero head
 ignored, while the Coconala Apply, Negotiate/reply and shared browser jobs explicitly carry zero headroom. Cleanup
 remains owned by the separate cleanup loop rather than blocking every customer effect.
 
+The first no-floor Paid wake then proved a separate shared-browser contention defect: all eight actionable
+targeted readbacks entered the one authenticated default CDP context concurrently, created duplicate room tabs and
+failed, while the one reserved room read back normally. Paid project owners remain parallel at eight, but the
+read-only targeted refresh is now serialized through that single physical browser before project dispatch. This
+does not serialize artifact work or delivery; it prevents one browser resource from turning parallel dispatch into
+an all-room failure.
+
 **Current runtime refresh.** Unrelated dirty files remain untouched. The existing Paid pass naturally resumed the
 Haru v43 staging after compiling
 the complete proposal, DM, talkroom and attachment context. Haru `18169583` remains unsent. The resumed owner first

@@ -98,6 +98,7 @@ PAID_FILE_MODEL = "gpt-5.6-sol"
 PAID_FILE_POLICY_VERSION = "paid-file-build-review-v21"
 MAX_FILE_REVIEW_ITERATIONS = 1
 PAID_MAX_PARALLEL_PROJECTS = 8
+PAID_MAX_PARALLEL_READBACKS = 1
 PAID_SOURCE_CENSUS_VERSION = "paid-source-census-v4"
 # The skills a paid order may be built with. A skill the lane cannot see is a skill it will
 # reimplement badly under time pressure, so the BUYMA and video contracts belong here now that both
@@ -4247,7 +4248,7 @@ def run_once(args, output: Path) -> int:
         failed = effect = readback = 0; failed_step = ""
         targeted_items = []
         with ThreadPoolExecutor(
-            max_workers=PAID_MAX_PARALLEL_PROJECTS, thread_name_prefix="paid-refresh",
+            max_workers=PAID_MAX_PARALLEL_READBACKS, thread_name_prefix="paid-refresh",
         ) as refresh_executor:
             refresh_jobs = [
                 (item, refresh_executor.submit(_targeted, args, item, index))
