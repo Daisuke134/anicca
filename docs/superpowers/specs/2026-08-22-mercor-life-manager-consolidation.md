@@ -180,6 +180,7 @@ Mercor interview messages enter the existing Job Hunter inbox lane. Reuse `apps/
 - A redacted two-operator fixture now proves separate operator IDs, state roots, application ledgers, evidence files, resume paths, and CDP endpoints; no cross-operator listing or evidence is visible.
 - The reproducible release artifact passed extraction and clean-home install tests with a non-Dais redacted profile; the archive excludes private state, and the tracked public tree has no private-key/token credential matches.
 - A production-scope reference scan found zero `profitable-claude` or legacy absolute-path dependencies in `apps/job-search-loop`, `loops/job-hunter`, `skills/mercor`, or the Mercor provider reference; canonical runtime/launchd/job-hunter contract tests pass 17/17.
+- Deletion-gate read-back found `/Users/anicca/profitable-claude` is a separate 2.0G Git repository with uncommitted changes and 38 enabled LaunchAgents still pointing at it. No deletion, move, unload, or process termination was performed; removing it now would break unrelated active loops. The final destructive step remains pending migration or an explicit stop plan for those consumers.
 - Mercor Summary currently resets after reload and is tracked as `summary_unpersisted`.
 
 ## 9. Migration acceptance gate
@@ -213,4 +214,4 @@ Only the first unchecked item is active. Finish its evidence and read-back befor
 13. [x] **Multi-operator test:** run a second redacted operator fixture with separate state, browser, ledger, and evidence; confirm no cross-operator data.
 14. [x] **Open-source release:** secret scan, fresh-install test, setup/runbook, provider docs, and one non-Dais fixture pass.
 15. [x] **Reference cleanup:** remove all production references to `profitable-claude` and confirm the canonical Life Manager runtime still passes.
-16. [ ] **Deletion gate:** only after every prior read-back succeeds, obtain the final check-in and archive/delete the old repository as a separate destructive operation.
+16. [ ] **Deletion gate:** only after every prior read-back succeeds, migrate or explicitly stop the 38 active old-repo consumers, then archive/delete `/Users/anicca/profitable-claude` as a separate destructive operation. Current status: blocked by active consumers and dirty old-repo worktree; no destructive action was taken.
