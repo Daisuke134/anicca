@@ -253,7 +253,7 @@ No later task may jump ahead of the first incomplete row:
 | U6 | Exercise qualification on one observed job | **DONE, PARKED:** technical/margin qualification proved on `~022091070478975551162`; 50+ proposals and 26 Connects make it unsuitable as the first target |
 | U7 | Exercise immutable proposal freezing | **DONE, PARKED:** payload `9fab22a2…10d19` retained for later requalification; zero marketplace effects |
 | U8 | Add the required factual Employment History item | **DONE:** official employment readback matches owner evidence; Find Work progressbar is 70% |
-| U9 | Publish three reusable proofs and complete optional profile items | **IN PROGRESS:** proofs 1–2 are public as `2091143267699150848` and `2091143845069127680`, their image hashes are bound, and official completion is 80%; one proof plus truthful optional items remain before 100% |
+| U9 | Publish three reusable proofs and complete optional profile items | **IN PROGRESS:** all three proofs are public as `2091143267699150848`, `2091143845069127680`, and `2091144398831636480`, their image hashes are bound, and official completion is 85%; GitHub linking plus Other Experience remain before 100% |
 | U10 | Publish one narrow Project Catalog offer | Live catalog ID; bounded input/output/exclusions/price/time and client-visible readback |
 | U11 | Collect free acquisition capacity | Account-earned Connects balance and invitation readback; purchases, Plus, badge and boosts remain zero |
 | U12 | Discover and qualify a first-job candidate | Recent, <=20 proposals, explicit acceptance, verified client, positive expected net, low Connects, 1-3 day delivery |
@@ -309,8 +309,9 @@ Marketplace effects remain zero.
 
 The observed purchase entry offers 100 Connects for $15 plus tax, but it is no longer a pending
 gate. U8 first adds Upwork's required factual Employment History item and records the new baseline.
-U9 has published proofs 1 and 2 as projects `2091143267699150848` and `2091143845069127680`;
-official completion now reads 80%. It next publishes proof 3, then uses only truthful optional items to reach official
+U9 has published all three proofs as projects `2091143267699150848`, `2091143845069127680`, and
+`2091144398831636480`; official completion now reads 85%. It next links GitHub and adds one truthful
+Other Experience item to reach official
 100%; U10 publishes one narrow Project Catalog offer; U11 collects account-earned
 Connects and invitations. Purchased Connects, Freelancer Plus, Availability Badge and boosts stay
 disabled during this bootstrap. Application, Connects-spend and payment effects remain zero.

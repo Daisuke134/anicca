@@ -65,8 +65,11 @@ is publicly readable as project `2091143267699150848`; its bound image SHA-256 i
 progressbar changed from 70% to `aria-valuenow=75` / `75% completed`. Portfolio proof 2,
 `Life Manager iOS — Interactive UX Prototype`, is publicly readable as project `2091143845069127680`;
 its bound image SHA-256 is `fe867ffd64ef8d055a0b326eefa641aa919a67a77cba6f9db8cc497c07eb4e6d`,
-and the official progressbar now reads `aria-valuenow=80` / `80% completed`. One portfolio proof and
-the remaining truthful optional items are still required before Upwork reports 100%. The free-first bootstrap then
+and the official progressbar then read `aria-valuenow=80` / `80% completed`. Portfolio proof 3,
+`Daily Affirmations — Published iOS App`, is publicly readable as project `2091144398831636480`;
+its bound image SHA-256 is `13746c887768c85292980c7a7068396b935bad81e355d57e932f7e538344ef2d`,
+and the official progressbar now reads `aria-valuenow=85` / `85% completed`. GitHub linking and one
+truthful Other Experience item remain before Upwork reports 100%. The free-first bootstrap then
 publishes one narrow Project Catalog offer, obtains any account-earned Connects, and searches for a
 small paid job with bounded scope, low competition and delivery in one to three days. Freelancer
 Plus, Availability Badge, proposal boost and purchased Connects stay disabled until a qualified
