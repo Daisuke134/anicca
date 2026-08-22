@@ -5,25 +5,30 @@
 **Owner:** Daisuke Narita
 **Status:** The macOS launchd manager and canonical job-search LaunchAgents are
 healthy. Telegram uses the shared OpenClaw gateway. The acquisition owner wakes
-hourly, but `JOB-MODEL-BROWSER-LOOP-10P` is not implemented: production still lets
-deterministic Ashby/Workday code terminate a row before mandatory model operation.
+hourly, but `JOB-ASHBY-HOURLY-MODEL-10P` is not implemented: production still lets
+deterministic Ashby code terminate a row before mandatory model operation.
 **Current execution truth supersedes earlier historical run notes below:** the
 hourly owner, browser, and Telegram checkpoint run. Ashby boards tested so far
 are quarantined when their real form exposes reCAPTCHA or an explicit provider
-limit; no such row is counted as submitted. Workday is enabled every wake and
-the user-confirmed Salesforce FDE URL is excluded from reapplication. The active
+limit; no such row is counted as submitted. The current release still enables
+Workday every wake, but the next release MUST park Workday until the Ashby hourly
+application gate closes. The user-confirmed Salesforce FDE URL is excluded from
+reapplication. The active
 release is `96f49a0ff5ba29557f5725dd2bc55c8750facc1d`; launchd remains hourly at
 `StartInterval=3600`. Rakuten's source control now uses stable field lookup and
 waits for the exact visible `Job Boards` prompt before keyboard selection, but
 the latest wake still stopped at `application_surface_not_found` after the
 provider surface transition. No Rakuten submit request, completion UI, or
 receipt evidence is present in that run. **Architecture decision (2026-08-22):
-all eligible Ashby and Workday form interaction is model-based browser work.**
+all eligible ATS form interaction is model-based browser work, delivered Ashby
+first.**
 Deterministic code owns discovery, hard exclusions, duplicate/profile/CAPTCHA and
 provider-policy gates, materials, intent fencing, evidence validation, and final
 state transitions. It never owns the variable question-by-question form workflow.
-After preflight, every eligible row is handed to `browser-lane-agent` through the
-existing authenticated CDP owner. One row-local blocker never terminates the queue.
+During 10P, every eligible Ashby row is handed to `browser-lane-agent` through the
+existing authenticated CDP owner. Workday MUST remain parked. After one confirmed
+Ashby application and one repeated hourly dedupe wake, the identical contract moves
+to Workday as 10Q. One row-local blocker never terminates the queue.
 **Handover state:** active immutable release is
 `96f49a0ff5ba29557f5725dd2bc55c8750facc1d`; launchd uses
 `StartInterval=3600`. The latest completed Workday receipt is
@@ -40,10 +45,10 @@ CDP evidence also showed the source multiselect renders all options before
 filtering; the keyboard sequence now waits for the exact visible
 `data-automation-label="Job Boards"` option or fails closed. Focused regressions
 cover both stable re-lookup and exact-prompt gating. Those deterministic fixes
-are not sufficient by themselves: the next implementation must enable the
-model-based browser handoff at the surface boundary, then prove the Workday
-surface transition and Save and Continue advance to step 2. Do not claim
-submission from a click, response, or ledger row alone.
+are not sufficient by themselves, but Workday repair is not the next gate. The next
+implementation MUST prove the mandatory Ashby model-browser loop and one real
+confirmed Ashby application. Do not claim submission from a click, response, or
+ledger row alone.
 
 ### Universal-application architecture (target)
 
@@ -67,7 +72,7 @@ browser interaction per eligible row → Telegram/Ledger reconciliation**. Ashby
 and Workday deterministic paths are preflight accelerators and evidence writers;
 they are not allowed to suppress the browser agent when a real form is present or
 when a fixed surface evaluator returns `application_surface_not_found`. Workday
-runs on the same hourly owner wake; it is no longer parked behind Ashby. A user-confirmed
+MUST be parked during the Ashby 10P proof and resumes only in 10Q. A user-confirmed
 Salesforce application is held in the private manual-completed URL set and is never
 reapplied by the loop. In the latest catch-up, Ashby fast path reported `no_work` because there
 was no retryable Ashby row; the run was stopped before its Workday stage after the
@@ -172,32 +177,123 @@ evidence, a fenced intent and authoritative confirmation.
 
 ## 1. Outcome
 
-### 1.0 Hourly model-browser atomic queue (current TODO SSOT)
+### 1.0 Ashby hourly model-browser MVP (current execution SSOT)
+
+#### Overview
+
+The first production milestone is one reliable Ashby lane, not simultaneous ATS
+coverage. Every hourly owner wake MUST select at least one new unique eligible Ashby
+row when one exists and hand it to the model browser loop. Workday MUST remain parked
+until the Ashby acceptance gate closes. This removes the current failure mode where
+a fixed mapper or production-disabled global model branch prevents the model from
+seeing a new question.
+
+#### Acceptance criteria
+
+1. `ai.anicca.job-search-daily` remains the only acquisition owner and wakes with
+   `StartInterval=3600`; the existing authenticated CDP owner at `:9222` remains the
+   only browser transport.
+2. Every eligible Ashby row receives one schema-valid row envelope and one bounded
+   `browser-lane-agent` invocation. No production-off model flag exists.
+3. Luna xhigh rereads the visible controls after every action, answers only from the
+   private truth ledger, snapshots every step, and blocks only the current row when a
+   required fact is unknown.
+4. One blocked Ashby row does not stop the queue. The owner continues additional
+   eligible Ashby rows within the bounded wake.
+5. `submitted` is written only for an exact completion UI or authoritative receipt
+   email. A submit click without either becomes `submit_unknown` and is never retried.
+6. Every wake sends or queues a Telegram result for each processed company and role,
+   using exactly `submitted`, `submit_unknown`, `blocked`, or `not submitted`.
+7. One live Ashby application reaches authoritative `submitted`, and the next hourly
+   wake proves URL dedupe and no repeated external side effect.
+8. Only after criteria 1-7 pass does `JOB-WORKDAY-MODEL-10Q` unpark Workday and apply
+   the same row envelope, browser, evidence, verifier, and Telegram contracts.
+
+#### As-Is / To-Be
+
+| Area | As-Is | To-Be |
+|---|---|---|
+| Form owner | Deterministic Ashby filler; model execution is disabled by the production default after all fast paths | Luna xhigh owns every eligible Ashby form from first visible control to terminal row outcome |
+| Scheduling | Hourly owner exists, but a wake can exit without model form operation | Every wake with an eligible Ashby row invokes the model lane at least once |
+| ATS scope | Ashby and Workday both consume the wake while neither model loop is proven | Ashby is the only active application lane; Workday is parked until the Ashby gate closes |
+| New questions | Unknown mapper fields terminate the deterministic row | Model reads exact wording; grounded resolver answers or blocks only that row |
+| Success | Click/request/Ledger evidence can be mistaken for progress | Only completion UI or exact official receipt transitions to `submitted` |
+| Reporting | Fast-path checkpoint can summarize without a model outcome | Per-company and role model outcome plus hourly summary always produces a Telegram receipt |
+
+#### Test matrix
+
+| # | To-Be | Test name | Cover |
+|---:|---|---|---|
+| 1 | Hourly single owner and Workday parked | `test_ashby_mvp_keeps_single_hourly_owner_and_parks_workday` | OK |
+| 2 | Mandatory model handoff | `test_every_eligible_ashby_row_invokes_browser_lane` | OK |
+| 3 | No production-off model flag | `test_daily_owner_has_no_optional_model_exit` | OK |
+| 4 | Row envelope redacts secrets and fences terminal states | `test_ashby_row_envelope_contract` | OK |
+| 5 | Dynamic questions use grounded facts or row block | `test_unknown_ashby_question_blocks_only_current_row` | OK |
+| 6 | Queue continues after blocker/timeout/schema error | `test_ashby_model_failure_continues_queue` | OK |
+| 7 | Ambiguous click becomes non-retryable | `test_ashby_submit_unknown_is_never_retried` | OK |
+| 8 | Submitted requires authoritative evidence | `test_ashby_submitted_requires_completion_or_receipt` | OK |
+| 9 | Telegram contains company, role, and exact outcome | `test_ashby_hourly_report_contract` | OK |
+| 10 | Repeated wake deduplicates the live application | `test_ashby_repeated_wake_has_no_duplicate_side_effect` | OK |
+
+| E2E item | Value |
+|---|---|
+| UI change | Yes: external Ashby application UI is operated |
+| Judgment | Maestro not required because this is not an iOS UI; existing CDP launchd E2E is mandatory |
+
+#### Boundaries
+
+- 10P MUST NOT run Workday, Greenhouse, Lever, or a second executor.
+- It MUST NOT bypass CAPTCHA or provider limits, invent candidate facts, reopen
+  `submit_unknown`, or reapply any terminal URL.
+- A truthful hourly result may be zero submissions when no eligible Ashby row exists
+  or all rows have recorded safety blockers. The owner still MUST refresh discovery
+  and send the exact Telegram result.
+- Interview scheduling, assessment handling, learning, guardian, and Career work do
+  not enter 10P implementation.
+
+#### Atomic execution steps
 
 | Order | Atomic TODO | State | Evidence needed to close |
 |---:|---|---|---|
-| 1 | Keep the existing browser owner healthy at CDP `:9222` | `done` | `ai.anicca.job-search-browser` is enabled/running; `/json/version` responds; no second browser owner |
-| 2 | Keep one hourly acquisition owner | `done` | `ai.anicca.job-search-daily` has `StartInterval=3600`; no second scheduler, browser owner, or executor |
-| 2a | Make model-based browser handoff mandatory on every eligible ATS form (`JOB-MODEL-BROWSER-LOOP-10P`) | `pending_implementation` | Remove the production-off branch represented by `JOB_SEARCH_ENABLE_MODEL_FALLBACK=0`; after preflight, every eligible Ashby/Workday row receives one row envelope and one bounded `browser-lane-agent` run through the existing runner and CDP owner |
-| 2b | Define and validate the row envelope | `pending_after_2a` | Schema includes application ID, company, role, canonical URL, ATS, profile/material references, prior evidence, fencing state, CDP-owner evidence path, and forbidden retry states; no secret values or raw answers |
-| 2c | Implement the observe-act-snapshot loop | `pending_after_2b` | Agent rereads visible page text and accessible controls before every action, uses ordinary role/label clicks and typing, and writes a sanitized before/after snapshot plus action receipt at every step |
-| 2d | Resolve provider-varying questions without guessing | `pending_after_2c` | Exact live question wording is classified against the private truth ledger; grounded facts may be phrased, missing/legal/demographic facts block only that row; unknown controls do not become fixed-script errors |
-| 2e | Isolate every row outcome and continue the queue | `pending_after_2d` | Owner catches timeout/schema/browser/fact blockers per row, closes the page it created, records `submitted`, `submit_unknown`, or `not_submitted/blocked`, and invokes the same lane for the next eligible row |
-| 3 | Replace the timed-out model discovery with a bounded Ashby discovery pass | `completed` | CLI/owner commit `12ea0d89a`; live discovery selected ElevenLabs after browser/cache verification and wrote immutable attribution |
-| 4 | Prove Rakuten reaches Workday step 2 through the model loop | `in_progress` | Live step snapshots show My Information completed truthfully and one real `Save and Continue` transition to step 2; latest `daily-20260822-082615` remains `application_surface_not_found` |
-| 5 | Continue other Workday rows even if Rakuten blocks | `in_progress` | One wake emits a separate receipt for every pending/retryable Workday row; latest Rakuten receipt is isolated, but the queue-wide receipt set is not yet closed |
-| 6 | Complete all subsequent Workday steps with grounded profile answers and exact resume | `pending_after_4` | Per-step before/after snapshots, question-resolution receipts, and one visible final Submit control |
-| 7 | Click Workday Submit once and preserve the final UI | `pending_after_6` | `submitted` only if the saved UI explicitly confirms the exact application; otherwise fence as `submit_unknown` and never retry |
-| 8 | Reconcile Gmail/ATS confirmation and send Telegram proof | `pending_after_7` | Exact authoritative receipt bound to company, role, canonical application, and post-intent timestamp; Telegram reports company + role + `submitted`/`blocked`/`not submitted` for every processed row |
-| 9 | Continue every hourly wake without reapplying user-confirmed URLs | `in_progress` | `workday-manual-completed.json` skips Salesforce FDE JR355047; repeated wake processes every eligible Workday row |
-| 10 | Continue inbox replies, interview scheduling, preparation and outcome tracking | `pending_after_8` | Real Gmail thread, Calendar readback, interview/offer state, and Telegram receipts |
-| 11 | Finish guardian/self-healing, Career surface, and OSS/cloud distribution | `pending_after_9` | Health repair evidence, `summary.v2` parity, tenant isolation, export/revocation, and clean install E2E |
+| 1 | Preserve the existing CDP and hourly owner | `done` | CDP `:9222` responds; launchd `StartInterval=3600`; no second owner |
+| 2 | Keep bounded official Ashby discovery | `done` | Commit `12ea0d89a`; one untried eligible row can be attributed |
+| 3 | Add RED owner tests for mandatory Ashby model routing and parked Workday | `pending_actionable` | Focused tests fail on the current optional exit and enabled Workday branch |
+| 4 | Define the sanitized Ashby row-envelope schema | `pending_after_3` | Schema rejects secrets, terminal retries, missing application ID/URL/company/role/evidence paths |
+| 5 | Route `browser-lane-agent` to Luna xhigh | `pending_after_4` | Runner config test proves one model route and bounded timeout |
+| 6 | Replace the production-disabled global model branch with per-row Ashby invocation | `pending_after_5` | Every eligible row is invoked once; Workday result is `parked / ashby_mvp_gate` |
+| 7 | Make the model observe, act, and snapshot until a row terminal state | `pending_after_6` | Step receipts show URL, visible controls, ordinary action, result, screenshot/hash, and redaction |
+| 8 | Ground variable questions through the truth ledger | `pending_after_7` | Known facts are answerable; missing/legal/demographic facts produce a row-local blocker without guessing |
+| 9 | Enforce verifier-owned outcomes and non-retry fences | `pending_after_8` | Completion/receipt is required for `submitted`; ambiguous submit is `submit_unknown`; retry query excludes it |
+| 10 | Emit per-row and hourly Telegram contracts | `pending_after_9` | ACK contains company, role, exact outcome, blocker/evidence class, and next scheduled action |
+| 11 | Run focused and full regression checks | `pending_after_10` | New matrix tests, existing launchd/canonical runtime/ledger/confirmation/Telegram suites, shell syntax, PII scan all pass |
+| 12 | Build a commit-pinned immutable release | `pending_after_11` | Archive checksum passes; release contains only versioned app/runner roots and is read-only |
+| 13 | Activate only while the hourly owner is idle | `pending_after_12` | `current` points to the new checksum-verified release; rollback target remains intact |
+| 14 | Kickstart the existing launchd owner | `pending_after_13` | No second executor; live evidence contains one row envelope and model attempt |
+| 15 | Obtain one real authoritative Ashby outcome | `pending_after_14` | Completion UI or exact receipt proves `submitted`; otherwise exact row blocker is recorded and queue continues |
+| 16 | Reconcile Ledger, Gmail, evidence, and Telegram | `pending_after_15` | All four agree on company, role, URL, material hash, outcome, and Telegram message ID |
+| 17 | Verify the next hourly wake | `pending_after_16` | No duplicate application; next eligible Ashby row is attempted or truthful `no_work` is reported |
+| 18 | Unpark Workday as `JOB-WORKDAY-MODEL-10Q` | `pending_after_17` | Workday uses the already-proven Ashby row/evidence/verifier contract without changing 10P |
 
-The hourly service-level objective is one new unique eligible row handed to the
-model loop on every wake when such a row exists. The owner continues additional
-eligible rows within its bounded window. A wake with no eligible row or only
-truthfully blocked rows reports that exact result; it never fabricates a submission
-to satisfy the cadence.
+Execution and verification commands:
+
+```bash
+cd /Users/anicca/lm-loops-core/apps/job-search-loop
+python3 -m unittest tests.test_launchd tests.test_canonical_runtime tests.test_model_browser_loop -v
+python3 -m unittest discover -s tests -v
+zsh -n scripts/run-daily.sh scripts/runtime-paths.sh
+
+cd /Users/anicca/lm-loops-core
+python3 scripts/security/pii_shape_scan.py --allowlist .pii-shape-allowlist .
+zsh apps/job-search-loop/scripts/build-release.sh \
+  --output-dir /Users/anicca/.local/share/anicca/job-search/dist \
+  --version "$(git rev-parse HEAD)"
+shasum -a 256 -c "/Users/anicca/.local/share/anicca/job-search/dist/anicca-job-search-$(git rev-parse HEAD).tar.gz.sha256"
+launchctl kickstart -k "gui/$(id -u)/ai.anicca.job-search-daily"
+```
+
+After activation, `readlink ~/.local/share/anicca/job-search/current`, release file
+permissions, launchd last exit, live evidence JSON, Ledger integrity, Gmail receipt
+search, and Telegram `messageId` MUST be read back before 10P can close.
 
 ### 1.1 Repeatable-loop robustness contract
 
@@ -208,7 +304,7 @@ interaction:
 launchd (hourly)
   → CDP browser health evidence
   → discovery, hard exclusions, duplicate/profile/CAPTCHA safety gates
-  → build ordered eligible-row queue (Ashby + Workday)
+  → build ordered eligible Ashby row queue (Workday parked during 10P)
   → for each row: same runner → browser-lane-agent → same CDP owner
       → observe → grounded answer/action → snapshot → observe
       → authoritative completion | submit_unknown | row-local block
@@ -223,13 +319,13 @@ launchd (hourly)
 | Required form fact unknown | Store the exact non-secret fields keyed to the profile SHA-256 and mapper revision; skip that row until profile facts or the grounded mapper change, then continue to another candidate rather than guessing a fact |
 | Submit click without authoritative confirmation | Record `submit_unknown`; never click it again; inbox/ATS reconciliation owns later confirmation |
 | Telegram transport outcome unknown | Keep legacy outbox events `send_started`; never blindly resend them. The Ashby wake itself uses the proven launchd-safe OpenClaw CLI and stores that run's returned message ID in evidence, so every run has an independently observable delivery attempt |
-| Model browser lane | Mandatory for every eligible ATS form, including surfaces recognized by a fast path. Deterministic results are hints and gates, never permission to skip model ownership. |
+| Model browser lane | Mandatory for every eligible Ashby form during 10P, including surfaces recognized by a fast path. Deterministic results are hints and gates, never permission to skip model ownership. Workday receives the same rule only after the 10P live gate closes. |
 
 ### 1.2 Model-based browser loop contract (2026-08-22 decision)
 
-The browser agent is the only form operator for Ashby, Workday, and future ATS
-providers. Deterministic adapters are preflight/evidence/safety rails; after this
-increment they do not fill, navigate, or submit variable ATS forms.
+The browser agent is the only form operator for Ashby during 10P. Deterministic
+adapters are preflight/evidence/safety rails; they do not fill, navigate, or submit
+variable Ashby forms. Workday adopts this same contract in 10Q.
 
 ```text
 receive one eligible row envelope from the hourly owner
@@ -1493,10 +1589,11 @@ but it does not block independent engineering or evidence collection. Two pointe
 exist so the resident loop never waits for development and development never waits
 for a naturally arriving email:
 
-- Runtime evidence pointer: Order 10 continues hourly until one truthful confirmed
-  submission exists for both Ashby and Workday.
+- Runtime evidence pointer: 10P continues hourly until one truthful confirmed Ashby
+  submission and one repeated-wake dedupe receipt exist. Workday evidence resumes
+  only in 10Q.
 - Engineering pointer: `JOB-LEDGER-EVENT-10N` and the hourly scheduler policy are
-  present. The next implementation increment is `JOB-MODEL-BROWSER-LOOP-10P` in
+  present. The next implementation increment is `JOB-ASHBY-HOURLY-MODEL-10P` in
   section 1.0; guardian work follows only after its live outcome gate closes.
 
 Orders 8 and 9, plus 10L's naturally occurring same-thread follow-up proof, wait for
@@ -1507,8 +1604,8 @@ must accumulate in the live loop:
 
 | Lane | Current evidence | Next completion gate |
 |---|---|---|
-| Engineering now | 11C and 10N are complete; hourly owner and preflights are live; model fallback remains production-off | Implement 10P row envelopes and mandatory per-row browser-lane invocation, then close focused/release/live gates |
-| Resident runtime | `Aqua`/manager PID `1` is healthy; installed acquisition owner reports `StartInterval=3600`, last exit `0`; active release is `96f49a0ff5ba29557f5725dd2bc55c8750facc1d`; latest Workday run `daily-20260822-082615` blocked Rakuten at `application_surface_not_found` and sent Telegram ACK `28150` | Make the model loop advance Rakuten to Workday step 2, continue all other eligible rows, and obtain a final completion UI or truthful row blocker |
+| Engineering now | 11C and 10N are complete; hourly owner and Ashby discovery are live; model fallback remains production-off | Implement 10P mandatory per-row Ashby model invocation and park Workday, then close focused/release/live gates |
+| Resident runtime | `Aqua`/manager PID `1` is healthy; installed acquisition owner reports `StartInterval=3600`, last exit `0`; active release is `96f49a0ff5ba29557f5725dd2bc55c8750facc1d` | Obtain one authoritative Ashby submission, per-row Telegram proof, and next-wake dedupe before resuming Workday |
 | Private/external wait | No verified nationality/work-visa facts, real interview email, or naturally occurring later same-thread recruiting message has arrived | Close Order 8, Order 9 and the 10L E2E gate only when their authoritative input exists; none blocks 11B engineering |
 
 | Order | Deliverable | Status | Completion evidence |
@@ -1523,10 +1620,11 @@ must accumulate in the live loop:
 | 7 | Bilingual resume and official-posting language routing | `completed` | 107 tests; fourteen grounded Japanese points; A4 one-page Japanese PDF; extracted-text and visual inspection; real CLI selected the Japanese PDF for Japanese text and technical-business English PDF for English text; routed path/hash remains the Telegram receipt source |
 | 8 | Verified nationality and Japan work-visa answers | `waiting_private_input` | Add the two legal facts to the private profile, then rerun the current BJAK AI Finance Agent application without inference |
 | 9 | Recurring interview preparation and real interview-email E2E | `implemented_waiting_external_e2e` | Persistent registration; 3-day/1-day/immediate windows; real Telegram immediate delivery plus second-tick dedupe; forced production launchd no-mail pass and private DB healthcheck; final real recruiter-email E2E waits for an interview message |
-| 10 | ATS resilience for Ashby, Workday and other blocked forms | `in_progress` | 10A–10O are audit history and deterministic rails. Current gate is 10P: every eligible Ashby and Workday row is model-operated in the same hourly wake; provider queues are peers, and a block in either lane cannot park the other. Completion requires authoritative confirmation for both adapters. |
+| 10 | ATS resilience for Ashby, then Workday | `in_progress` | 10A–10O are audit history and deterministic rails. Current gate is 10P: Ashby is the only active application lane and every eligible Ashby row is model-operated. Workday is parked until one confirmed Ashby application and repeated-wake dedupe are proven, then 10Q applies the same contract to Workday. |
 | 10N | `JOB-LEDGER-EVENT-10N`: repair the attributed-application transition contract | `completed` | `Ledger` appends the matching event before updating the trigger-guarded projection in the same transaction. Focused ledger tests pass (`17/17`); the live Cognition row advanced `discovered→qualified→materials_ready`, survived DB reopen, and the real ledger reports integrity `ok` with zero event/projection mismatches. |
 | 10O | `JOB-SCHEDULER-POLICY-10O`: align cadence and application objective | `implemented` | The quota short-circuit is removed and pending `materials_ready` rows are exposed. The installed production policy is now hourly (`StartInterval=3600`); final completion evidence is owned by 10P. |
-| 10P | `JOB-MODEL-BROWSER-LOOP-10P`: mandatory per-row model browser ownership | `pending_actionable` | Section 1.0 closes in order: row schema and deterministic gates; Luna-xhigh observe/act/snapshot loop through the existing CDP owner; row-local continuation; focused tests; immutable release checksum/read-only activation; launchd kickstart; Rakuten step 2; final UI or truthful block; Ledger/Gmail reconciliation; per-company/role Telegram ACK; repeated hourly dedupe |
+| 10P | `JOB-ASHBY-HOURLY-MODEL-10P`: mandatory per-row Ashby model browser ownership | `pending_actionable` | Section 1.0 atomic steps 3-17 close: Workday parked, Luna-xhigh Ashby observe/act/snapshot loop, authoritative Ashby outcome, Ledger/Gmail/Telegram agreement, and repeated hourly dedupe |
+| 10Q | `JOB-WORKDAY-MODEL-10Q`: reuse the proven model-browser contract for Workday | `pending_after_10P` | Workday is unparked without a second executor; Rakuten reaches step 2 and then final completion UI or a truthful row blocker; other Workday rows continue independently |
 | 11 | Closed-loop Dream Job objective, self-improvement and self-healing | `in_progress` | 11A completed in PR #1364 (final CI `30473862095`). 11B adds immutable attribution and outcomes. 11C implements the resident weekly learning driver, deterministic two-arm assignment, held-out replay, Wilson promotion, immediate rollback, compare-and-swap pointer and hashed Telegram report; its real first pass remained truthfully inconclusive at 0/0 resolved with replay violations=0 and ACK `4530`, without changing the five application states. Guardian, lifecycle closure and `summary.v2` remain in 11D–11F |
 | 12 | Portable local OSS distribution | `completed` | 12A merged in PR #1296; 12B merged in PR #1302 (`a58f1838`, CI `30449915191`): guided interactive/JSON profile authoring with placeholder/overwrite/legal-inference fences; reproducible 105-entry merge-commit tar.gz + SHA-256 `f334202a`; extracted-artifact clean-HOME install; 149 job-loop + 7 runner tests; canonical health exit 0 and both SQLite integrity checks `ok` without scheduler reinstall |
 | 13 | Life Manager Career organ and paid multi-tenant service | `pending` | 13A local Career surface consumes `summary.v2`; 13B moves the proven drivers to isolated cloud tenants; 13C integrates evidence-backed Financial/Physical/Mental job utility without merging consent boundaries |
@@ -1544,8 +1642,9 @@ not start merely because their design is already written:
 | `JOB-LEARNING-PASS-11C` | `completed` | PR #1376 / merge `1bdbc67d3` / final CI `30507559728`; health-status follow-up PR #1377 / merge `fd26398cc`. 203 job-loop + 11 runner tests pass. Sunday 09:15 JST launchd and persistent systemd drivers replay eight safety cases, deterministically assign future canonical job keys, evaluate authoritative interview outcomes, atomically promote/close/rollback with pointer-race fencing, and send one content-addressed Telegram report. The live ledger stayed integrity `ok` with unchanged 2 submitted / 1 submit-unknown / 2 not-submitted counts; its first 0/0-sample decision was correctly inconclusive, receipt `175d3b7be5db06f88dbdc9aaf9428dfbda3fe65245a497a1f377b6271255564c`, Telegram ACK `4530`; canonical LaunchAgent reached runs=4 / last exit=0 and the three-driver healthcheck reports learning `status=success` with both SQLite integrity checks `ok` |
 | `JOB-LEDGER-EVENT-10N` | `completed` | The production fix and focused ledger suite write event then projection atomically; Cognition was repaired and reopened successfully with integrity `ok` and zero mismatches. |
 | `JOB-SCHEDULER-POLICY-10O` | `implemented` | The legacy two-slot gate is removed, pending `materials_ready` rows are exposed, and the installed owner is hourly. Authoritative application outcomes and repeated-wake queue progress move to 10P. |
-| `JOB-MODEL-BROWSER-LOOP-10P` | `pending_actionable` | Every eligible Ashby/Workday row is passed to `browser-lane-agent` through the one authenticated CDP owner; live evidence closes the Rakuten step-2, final outcome, Gmail/Ledger, Telegram, and repeated-wake gates in section 1.0. |
-| `JOB-GUARDIAN-PASS-11D` | `pending_after_10P` | A deterministic scheduled guardian checks launchd/timer freshness, DB integrity, provider/browser health and leases; repairs only pre-side-effect failures; deduplicates alerts and persists remediation |
+| `JOB-ASHBY-HOURLY-MODEL-10P` | `pending_actionable` | Every eligible Ashby row is passed to `browser-lane-agent` through the one authenticated CDP owner; live evidence closes authoritative outcome, Gmail/Ledger, Telegram, and repeated-wake gates in section 1.0. |
+| `JOB-WORKDAY-MODEL-10Q` | `pending_after_10P` | Workday reuses 10P and proves Rakuten step 2 plus a final completion UI or truthful row blocker without affecting Ashby cadence. |
+| `JOB-GUARDIAN-PASS-11D` | `pending_after_10Q` | A deterministic scheduled guardian checks launchd/timer freshness, DB integrity, provider/browser health and leases; repairs only pre-side-effect failures; deduplicates alerts and persists remediation |
 | `JOB-LIFECYCLE-CLOSE-11E` | `pending_after_11D` | Follow-up cadence, every interview round, offers, negotiation support and accepted/declined/started outcomes are durable; only final identity/judgment actions require the user |
 | `JOB-CAREER-SUMMARY-11F` | `pending_after_11E` | Versioned `summary.v2` exposes Today, Pipeline, Interviews, Decisions, Learning and Health; its counts are rebuilt from the same events and match Telegram receipts |
 | `LIFE-CAREER-LOCAL-13A` | `pending_after_11F` | The local Life Manager Career surface reads `summary.v2`, shows the full timeline and provides pause/resume/goal controls without browser ownership |
@@ -1594,10 +1693,11 @@ Completion requires:
     throttling, and no duplicate external side effect across repeated wakes.
 16. Telegram delivery uses the OpenClaw CLI, records a real `messageId` ACK in the
     outbox, and leaves no raw bot token in LaunchAgent environment or evidence.
-17. `JOB-MODEL-BROWSER-LOOP-10P` proves, in one immutable hourly release, that every
-    eligible Ashby/Workday row receives a row-scoped `browser-lane-agent` attempt;
+17. `JOB-ASHBY-HOURLY-MODEL-10P` proves, in one immutable hourly release, that every
+    eligible Ashby row receives a row-scoped `browser-lane-agent` attempt;
     each step has sanitized before/after UI evidence; one blocker does not stop the
-    queue; Rakuten reaches Workday step 2; and `submitted` appears only beside an
+    Ashby queue; and `submitted` appears only beside an
     exact completion UI or authoritative Gmail receipt. Release checksum/read-only
     checks, existing launchd kickstart, live evidence JSON, Ledger reconciliation,
-    Gmail search, and company/role Telegram ACKs must all agree.
+    Gmail search, and company/role Telegram ACKs must all agree. 10Q separately
+    proves Workday/Rakuten using the unchanged 10P contract.
