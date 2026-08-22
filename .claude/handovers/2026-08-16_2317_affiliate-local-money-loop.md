@@ -1558,3 +1558,16 @@ reads `runs=38`, last exit `0`; rolling money remains
 `NO_TRANSACTIONS / NO_APPROVED_OR_PAID_ROWS / NOT_REACHED`. The next atomic item
 is FUNNEL-D: join provider unique clicks, exact-placement customer availability,
 and official transaction counts to this same observation interval.
+
+FUNNEL-D is installed but truthfully waiting for the first post-CTA official
+provider readback. Release `404608f109fa6c1725f844816d9a49f76f473881`
+selects the latest exact snapshot at or before CTA interval start
+`2026-08-22T07:20:00.091568Z`, then refuses to compute deltas until both the link
+report and official transaction report are at or after that boundary. Current
+observations remain `06:48:52Z` and `06:49:07Z`, so the existing owner recorded
+`WAITING_FOR_CURRENT_PROVIDER_READBACK`, no receipt hash, and no failure. The last
+successful revenue cycle completed `06:49:07Z`; its next legitimate due time is
+`07:49:07Z`. Durable owner is `ai.anicca.affiliate-loop`; `launchctl` reads
+`runs=39`, last exit `0`, and Telegram message ID `28468`. Do not manually capture
+or coerce the current delta to zero. After the due owner wake, read back the exact
+interval join, customer availability, official transactions, and money state.

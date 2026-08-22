@@ -2837,7 +2837,15 @@ installed or committed as a substitute for this queue.
   exit `0`.
 - **FUNNEL-D — provider funnel join:** join provider unique clicks, customer/signup
   count, and transaction count to the same placements and interval; ambiguous
-  legacy links remain unjoined and receive no conversion credit.
+  legacy links remain unjoined and receive no conversion credit. **IN PROGRESS:**
+  installed release `404608f109fa6c1725f844816d9a49f76f473881` owns the
+  hash-bound interval join. CTA interval start is `2026-08-22T07:20:00.091568Z`,
+  while current official link/transaction observations are still
+  `06:48:52Z/06:49:07Z`; therefore owner readback correctly remains
+  `WAITING_FOR_CURRENT_PROVIDER_READBACK` instead of claiming zero delta. The
+  durable owner is `ai.anicca.affiliate-loop`; the revenue cooldown is due at
+  `07:49:07Z`. `launchctl` reads `runs=39`, last exit `0`; owner Telegram message
+  ID is `28468`.
 - **FUNNEL-E — focus one cohort:** select exactly one placement by qualified buyer
   intent plus measured funnel evidence, not by treating clicks as money; pause new
   placement expansion until this cohort matures or reaches a typed terminal state.
