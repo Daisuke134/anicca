@@ -1,5 +1,19 @@
 # Affiliate local money loop handover
 
+- Current X acquisition runtime is sparse immutable Repost release
+  `20260822T203734-51cf4204`, full commit
+  `51cf420416776e848184137660a556b05a3d5514`, pushed to both Repost remotes.
+  Source/runtime `x-repost-cli.sh` is byte-equal at SHA-256
+  `441c712f9d0c754b9795650e7ac4550f958e409b7b76e981e027d18705a649d8`;
+  16 focused tests pass. It requires an exact source-body `evidence_quote`, a
+  concrete `reader_value`, and a separate factual critic before an original may
+  publish. It also reserves exactly one missing source-backed original through
+  the ordinary daily cap, retains the rolling EN 9 / JA 1 allocator, and defers
+  fresh Affiliate proposals after 3 verified posts in 7 days. Owner run 25
+  flushed exactly one Telegram backlog row, repeated the measured `5/3`
+  Affiliate deferral, and correctly stopped at the same-hour fence with no X
+  effect. The first exact original permalink remains the next live proof.
+
 - X acquisition quality reset: the Affiliate owner now observes 73 real Repost
   actions, four exact placement joins, 69 unjoined ordinary actions, and zero
   invalid rows. The fourth join is YouTube Transcript Generator at

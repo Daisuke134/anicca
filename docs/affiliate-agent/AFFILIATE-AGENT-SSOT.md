@@ -22,14 +22,14 @@ backlog is:
    Affiliate effect at `https://x.com/selawmqt/status/2091124360723698095` for
    `elevenlabs-discovered-video-to-text-en-1`; consumption is exactly
    `EFFECT_STARTED -> POSTED`. It was not manually posted or retried.
-2. **X02 — PARTIAL:** installed release
-   `9111b85f2f955084ac307ffdfdf5eaa553c7411c` guarantees one source-backed
-   original per JST day and requires a concrete fact/step/number plus reader
-   benefit and next action. Complete the remaining LangChain-shaped pipeline:
-   fetch an admitted source, create an evidence report, reject irrelevant or
-   unsupported content, generate a useful original, and rewrite/condense whole
-   sentences up to three times. Do not copy its human-approval node; the existing
-   launchd owner, effect journal, policy gate, and exact public readback remain.
+2. **X02 — INSTALLED, LIVE READBACK OPEN:** installed release
+   `51cf420416776e848184137660a556b05a3d5514` implements the bounded
+   LangChain-shaped pipeline inside the existing owner. It fetches an admitted
+   source, requires an exact `evidence_quote` substring plus a concrete
+   `reader_value`, rejects an unsupported draft with a separate model critic,
+   and condenses only at sentence boundaries. It does not copy LangChain's human
+   approval node or scheduler; the existing launchd owner, effect journal,
+   policy gate, and exact public readback remain the only effect path.
 3. **X03 — INSTALLED, LIVE READBACK OPEN:** a durable rolling language allocator
    now targets nine English and one Japanese across verified non-Affiliate X
    effects. The
@@ -38,8 +38,11 @@ backlog is:
    default. This explicit 9:1 instruction supersedes the older English-only
    account sentence while preserving separate money accounting by language.
 4. **X04 — INSTALLED, LIVE READBACK OPEN:** ship one original evidence/help post
-   per JST day, plus bounded high-value replies/quotes. Affiliate distribution
-   is a minority lane and is not allowed to replace the daily useful original.
+   per JST day, plus bounded high-value replies/quotes. The daily ordinary-action
+   ceiling reserves exactly the missing original even when replies/quotes have
+   already filled that ceiling; after an original exists it grants no extra
+   action. Affiliate distribution is a minority lane and is not allowed to
+   replace the daily useful original.
    Every original carries exactly one public evidence URL and its ledger row
    retains that source URL.
 5. **X05:** replace early views as the optimizer's sole objective with a funnel
@@ -61,7 +64,11 @@ consuming every future acquisition pass. It never reopens a publish claim and
 never retries the external effect. Source/runtime `affiliate_proposal.py` bytes
 match at SHA-256
 `56bb21aa3639bb26fc664d895cef711bc34819176243ff45292ea5c3b21d9610`;
-13 focused tests and shell/Python syntax pass.
+16 focused tests and shell/Python syntax pass. The sparse immutable release was
+cut with `release_paths=skills/x-repost lib bin config loops/x-repost`, avoiding
+the observed full-tree ENOSPC without weakening runtime behavior. Source and
+installed `x-repost-cli.sh` are byte-equal at SHA-256
+`441c712f9d0c754b9795650e7ac4550f958e409b7b76e981e027d18705a649d8`.
 
 Installed-policy readback is live for the starvation fence. Affiliate owner run
 71 exited `0` with 74 post actions, five exact placement joins, 69 unjoined
@@ -69,7 +76,10 @@ ordinary actions, zero invalid rows, and Telegram message `28774`; it selected
 Music proposal `474cb886...d492` as READY. Repost owner run 24 then logged
 `fresh affiliate proposal deferred (5/3 in rolling 7d)` and exited at the normal
 same-hour fence. `posted.jsonl` remained 74 rows and consumption remained 14
-rows, so this policy check produced no extra X effect. The first source-backed
+rows, so this policy check produced no extra X effect. Repost owner run 25 on
+installed `51cf42041` flushed exactly one Telegram backlog row, repeated the
+same `5/3` deferral, and also produced no public effect at the same-hour fence.
+The first source-backed
 original and the subsequent Japanese slot still require exact live permalink
 readback on their next eligible owner wakes.
 
