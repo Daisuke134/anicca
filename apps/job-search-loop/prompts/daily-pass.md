@@ -150,6 +150,9 @@ that reset instructions were sent is successful recovery handoff, not
 row as checkpointed, and continue the queue. If email verification is
 visibly required, preserve the same row for the existing inbox owner; after
 verification the next wake signs in and resumes it.
+If the runtime returns `action_rejected`, treat its attached fresh observation as
+the next decision surface; it is a safety correction, not a blocker or transport
+failure.
 
 ## Resume and form completion
 

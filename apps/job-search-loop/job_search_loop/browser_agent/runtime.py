@@ -566,9 +566,10 @@ async def click(*, label: str, role: str, stable_id: str, ordinal: int | None = 
         ).account_status(row["canonical_url"])
         in {"create_submitted", "signed_in"}
     ):
-        raise RuntimeError(
-            "Workday account creation is forbidden after create_submitted"
-        )
+        result = await observe()
+        result["status"] = "action_rejected"
+        result["reason"] = "workday_account_already_create_submitted"
+        return result
     normalized_label = " ".join(label.split()).casefold()
     if (
         stable_id == "automation:pageFooterNextButton"
