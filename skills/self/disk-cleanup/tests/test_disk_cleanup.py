@@ -301,6 +301,35 @@ def test_unproved_candidate_is_preserved(tmp_path: Path) -> None:
     assert result["preserved_reasons"] == {"unknown_artifact": 1}
 
 
+def test_unknown_artifact_is_preserved_and_reported(tmp_path: Path, monkeypatch) -> None:
+    temporary = tmp_path / "tmp"
+    candidate = temporary / "cfo-unknown-class"
+    candidate.mkdir(parents=True)
+    (candidate / "payload").write_text("do-not-delete")
+    monkeypatch.setattr(disk_cleanup.tempfile, "gettempdir", lambda: str(temporary))
+
+    def unexpected_probe(_path: Path) -> str:
+        raise AssertionError("unknown classes must be rejected before lsof")
+
+    governor = HostDiskGovernor(
+        home=tmp_path,
+        state_dir=tmp_path / "state",
+        lsof=unexpected_probe,
+        usage=lambda: (0, 1),
+    )
+
+    result = governor.sweep(
+        [{"path": candidate, "class": "unknown", "owner": "temporary-run", "discovery": "allowlisted"}]
+    )
+
+    assert candidate.exists()
+    assert result["reclaimed"] == 0
+    assert result["preserved_reasons"] == {"unknown_class": 1}
+    receipt = json.loads((tmp_path / "state" / "last-receipt.json").read_text())
+    assert receipt["preserved_reasons"] == {"unknown_class": 1}
+    assert receipt["protected_deletions"] == 0
+
+
 def test_lsof_stderr_is_probe_error(monkeypatch) -> None:
     class Result:
         returncode = 1
