@@ -365,6 +365,34 @@ test("disabled, default-off, and shadow routes never become production-armed", (
   );
 });
 
+test("a verified portfolio target can become production-armed at its declared limit", () => {
+  const target = row({
+    disposition: "target",
+    renderer: "reelclaw",
+    format: "relationship-confession",
+    approved_pack: "honne-en.pack.json",
+    canary_state: "verified",
+    target_daily_limit: 3,
+    lane_state: "production-armed",
+    production_armed: true,
+  });
+  const manifest = createMarketingLaneManifest(
+    { tenant_id: "tenant-1", integrations: [target], holds: [{
+      integration_id: "held-route",
+      platform: "instagram",
+      account: "@held",
+      provider: "postiz",
+      provider_disabled: false,
+      disposition: "hold",
+      target_daily_limit: 0,
+      verified: true,
+    }] },
+    { tenantId: "tenant-1", assignments: [target] },
+  );
+  assert.equal(manifest.lanes[0].production_armed, true);
+  assert.equal(manifest.lanes[0].target_daily_limit, 3);
+});
+
 test("Postiz registry fetch is GET-only, injectable, and fails with an exact missing-secret blocker", async () => {
   await assert.rejects(
     fetchPostizIntegrationRegistry({}),
