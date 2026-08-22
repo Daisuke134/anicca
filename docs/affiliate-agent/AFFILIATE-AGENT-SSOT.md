@@ -6673,3 +6673,23 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   non-Affiliate browser ports and legacy earning-loop owners are out of scope.
 - `$10k`, `$10M`, and `$100M` are outcome gates. There is no honest date or
   probability forecast until live cohorts and partner capacity are measured.
+
+### 11.5 Current distribution readback
+
+- Existing Repost owner run 15 consumed Voice Cloning proposal
+  `bb5c8fbdadb0dc622351e9d5c9e9a19188b8a548419a946c98c3a89fc560bae7`
+  exactly once as `EFFECT_STARTED -> POSTED`. Exact X readback is
+  `https://x.com/selawmqt/status/2091103481784685036` for placement
+  `elevenlabs-discovered-voice-cloning-en-1`; the posted ledger contains one
+  matching `affiliate_original` row.
+- Existing Affiliate owner run 62 observed 71 total Repost actions, 2 exact
+  placement joins, 69 unjoined actions, and 0 invalid rows. Telegram receipt is
+  `28648`.
+- The next fresh distribution proposal is
+  `d74db46252c28e610e73a0b9dab54af6929e1d5e058ef366831e21410b53e174`
+  for `elevenlabs-discovered-realtime-speech-to-text-en-1` and remains for the
+  existing Repost owner to consume at its next eligible hour.
+- The official PartnerStack report observed at
+  `2026-08-22T10:01:25.068317+00:00` contains zero commission rows. Pending,
+  approved, paid, and reversed remain zero. These X effects and exact joins are
+  distribution evidence, not money.

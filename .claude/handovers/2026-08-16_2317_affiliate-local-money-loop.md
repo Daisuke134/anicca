@@ -1754,3 +1754,18 @@ placement/decision/content hashes, and a declared age/sample boundary into an
 immutable receipt. Then only the existing Affiliate owner captures the mature
 official funnel. Insufficient sample remains exploration; do not call clicks,
 views, or the live placement money and do not publish another variant meanwhile.
+
+Distribution is active. Existing Repost owner run 15 consumed Voice Cloning
+proposal `bb5c8fbdadb0dc622351e9d5c9e9a19188b8a548419a946c98c3a89fc560bae7`
+exactly once as `EFFECT_STARTED -> POSTED`; exact X readback is
+`https://x.com/selawmqt/status/2091103481784685036` and exact placement is
+`elevenlabs-discovered-voice-cloning-en-1`. Existing Affiliate owner run 62 read
+71 Repost actions, 2 exact placement joins, 69 unjoined actions, 0 invalid rows,
+and Telegram message `28648`. It selected fresh proposal
+`d74db46252c28e610e73a0b9dab54af6929e1d5e058ef366831e21410b53e174` for
+`elevenlabs-discovered-realtime-speech-to-text-en-1`. PartnerStack official report
+time is `2026-08-22T10:01:25.068317+00:00` with zero commission rows; all official
+money status counts remain zero. Next: at the next eligible hour, kick only
+`ai.anicca.x-repost-pass`, read claim/exact X/terminal state, then kick only
+`ai.anicca.affiliate-loop` and read exact join, official transactions, and
+Telegram receipt. Do not retry any terminal `UNVERIFIED` proposal.
