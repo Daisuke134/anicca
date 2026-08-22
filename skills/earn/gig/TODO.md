@@ -1424,6 +1424,32 @@ definition and A0 acceptance is closed.
 
 #### B. Restore Apply and prove one new application
 
+**Apply/Negotiate recovery cursor.** Close the unchecked Apply items below before starting new
+Negotiate implementation. Paid/Submission continues under its existing independent owner; this
+slice neither edits nor waits on the Paid section, `paid_direct.py`, or the Paid runtime.
+
+**Current outage, not a disabled lane.** The loaded launchd definition still evaluates Apply every
+60 seconds, but the process currently exits in `gig_disk_guard.py` before `application_direct.py`
+can run. The Data volume is at 100% capacity, writes are failing with `ENOSPC`, and the durable
+`disk-writers.stop` flag remains present. A schedule or successful historical application is
+therefore not 24/7 availability evidence.
+
+- [ ] Recover Apply through the existing disk-cleanup owner: create enough bounded working
+  headroom for snapshot, planner, intent, official-readback and Telegram-receipt writes; clear
+  `disk-writers.stop` only after the cleanup readback says writes are safe. Do not bypass the guard
+  or broadly delete user data to make the lane appear green.
+- [ ] Kick the existing `ai.anicca.hf-gig-apply-direct` launchd owner after recovery and prove the
+  loaded program resolves to the immutable Life Manager release. A manual foreground executor is
+  not acceptance evidence.
+- [ ] Prove one natural maximal-coverage pass accounts for every observed eligible request as
+  officially applied, already applied, bounded truthful ineligibility, or durable owned retry;
+  require `missing=0`, `unowned=0`, and no silent planner/browser/provider loss.
+- [ ] Replay that exact snapshot and prove zero duplicate application effects, then read back the
+  next natural scheduled pass to prove the 60-second owner continues after its child exits.
+- [ ] Hold a 24-hour natural soak with no unowned Apply gap. Every new official application must
+  have application-history readback plus a Telegram provider message ID; every blocked wake must
+  retain a retry owner and produce a natural-language incident/recovery report.
+
 - [x] Restore immediate per-application Telegram reporting. The parent reporter deadline was 90
   seconds while the inner provider deadline was 180 seconds, which killed valid slow sends and left
   them `delivery_unknown`. Release `1b72c4329` makes the parent outlive the transport at 240 seconds;
@@ -1548,6 +1574,30 @@ policy no-send, or owned pending retry; it may never disappear because another t
 operation is slow. The product SLO is official reply readback within 30 minutes of the buyer's
 message. Thirty-second polling is the operating mechanism, not a promise to send a reply every 30
 seconds.
+
+**Current outage, not a disabled lane.** The loaded Negotiate definition remains `KeepAlive` and
+`RunAtLoad`, with a 30-second poll and two workers, but the shared disk guard exits before
+`reply_detector.py` can run while the filesystem is full and `disk-writers.stop` is present. After
+Apply recovery is proven, close Negotiate in the following atomic order:
+
+- [ ] Load a machine-private no-contact registry keyed by exact marketplace counterparty ID and
+  canonical thread path. Provision the two current operator-owned counterparties outside git.
+  Matching threads must terminate as `ignore_policy` before semantic judgement, estimate creation,
+  reply send, or counterparty-specific Telegram content; the effect fence must independently deny
+  any stale or manually queued action for the same identities.
+- [ ] Recover and kick only the existing `ai.anicca.hf-gig-reply-detector` owner, then prove its
+  loaded immutable Life Manager release remains alive across a child failure and resumes 30-second
+  discovery without a manual foreground executor.
+- [ ] Census every pre-purchase inbox source and assign every buyer-authored actionable message to
+  exactly one durable action identity. Drain the existing non-policy backlog oldest-first; each
+  item must end as official reply readback, official estimate readback, permitted policy no-send,
+  or an observable owned retry, with `missing=0` and `unowned=0`.
+- [ ] Emit natural-language Telegram receipts for backlog, blocked, recovered, reply and estimate
+  transitions, each with a provider message ID. Aggregate no-contact skips without exposing private
+  counterparty identity or conversation content.
+- [ ] Hold a 24-hour natural soak with continuous discovery, zero duplicate replies/estimates, no
+  unauthorized effect on private no-contact identities, and every new authorized actionable buyer
+  message reaching official reply/estimate readback within 30 minutes.
 
 Source fix `da5e16627` now coalesces a changed buyer identity onto the current durable action and
 selects the newest coalesced event for restart dispatch. Commit `c366586ac` additionally binds a
