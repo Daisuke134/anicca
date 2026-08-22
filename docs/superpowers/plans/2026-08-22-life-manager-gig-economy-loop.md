@@ -342,7 +342,8 @@ U13 atomic order:
    1600x1200 gallery image, one required client-input question, three delivery steps, $75 price,
    three-day delivery, one revision and one-project concurrency cap are persisted. The five-minute
    provider now fail-closed reads the Catalog inventory alongside Connects, invites, offers and
-   proposals; seven focused tests and a live four-page E2E pass.
+   proposals; seven focused tests and a live four-page E2E pass. Immutable release `d6c28857e`
+   completed a production launchd wake with exit 0 and persisted the same official zero-order state.
 4. Read invitations, unread messages, direct offers and active contracts; join stable official IDs.
 5. Read official submitted and active proposal inventories and persist their stable IDs.
 6. Re-read every nonterminal job detail and record open, closed, removed or unknown without inference.
