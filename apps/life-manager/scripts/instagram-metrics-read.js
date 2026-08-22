@@ -120,11 +120,13 @@ function persistDailyDigest({ dataDir, reportDay, observedAt, expected = EXPECTE
 async function sendMetricSnapshot(result, env, dataDir) {
   if (!result.created) return { created: false, reason: "snapshot_replay" };
   const expected = result.snapshot;
+  const platform = /^https:\/\/www\.tiktok\.com\//.test(expected.public_url) ? "tiktok" : "instagram";
+  const lane = platform === "tiktok" ? `tiktok-metrics-${String(expected.account_id).replace(/^@/, "").replace(/[^A-Za-z0-9._-]/g, "-")}` : "anicca-main-ja-instagram";
   const objectStore = createContentObjectStore({ objectDir: path.join(dataDir, "objects") });
   const snapshotRef = objectStore.import(result.file).ref;
   const job = buildMarketingLivenessJob({
     tenantId: expected.tenant_id, telegramTokenRef: "secret://telegram/bot-token", telegramChatRef: "telegram-chat://owner",
-    payload: { lane: "anicca-main-ja-instagram", product: expected.product_id, locale: expected.locale, platform: "instagram", account: expected.account_id,
+    payload: { lane, product: expected.product_id, locale: expected.locale, platform, account: expected.account_id,
       status: "observed", window: result.snapshot.window, observed_at: result.snapshot.observed_at, public_url: expected.public_url, snapshot_ref: snapshotRef },
   });
   const store = createMarketingLocalLedger({ dataDir });

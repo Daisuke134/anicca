@@ -145,3 +145,20 @@ test("metric snapshot renders every measured and unavailable field with stable d
   assert.match(sent[0], /取得不可: Watch time、Account totals/);
   assert.match(sent[0], /DcTFx_UjSio/); assert.equal(verifyMarketingLivenessReceipt(result.receipt), true);
 });
+
+test("TikTok metric snapshot renders every account value instead of an aggregate count", async () => {
+  const payload = {
+    lane: "anicca-jp4-ja-tiktok", product: "anicca-ios", locale: "ja", platform: "tiktok", account: "@anicca.jp4",
+    status: "observed", window: "24h", observed_at: "2026-08-22T14:46:13.240Z",
+    public_url: "https://www.tiktok.com/@anicca.jp4/video/7676495865816632583", snapshot_ref: `object://sha256/${HASH}`,
+  };
+  const job = buildMarketingLivenessJob({ tenantId: "dais-local", telegramTokenRef: "secret://telegram/bot-token", telegramChatRef: "telegram-chat://owner", payload }); const sent = [];
+  await executeMarketingLivenessJob(job, {
+    secretProvider: { get: async () => "fake-token" }, chatProvider: { get: async () => "fake-chat" },
+    snapshotProvider: { get: async () => ({ public_url: payload.public_url, window: "24h", post: { views: { status: "measured", value: 141 } }, sources: { postiz_account: { status: "measured" } }, account_metrics: { followers: { status: "measured", value: 122 }, following: { status: "measured", value: 0 }, total_likes: { status: "measured", value: 6839 }, videos: { status: "measured", value: 304 }, recent_views: { status: "measured", value: 11873 }, recent_likes: { status: "measured", value: 110 }, recent_comments: { status: "measured", value: 1 }, recent_shares: { status: "measured", value: 2 } } }) },
+    sendTelegram: async (_token, _chat, text) => { sent.push(text); return { ok: true, result: { message_id: 705 } }; },
+  });
+  assert.match(sent[0], /Followers 122、Following 0、Account total likes 6839、Videos 304/);
+  assert.match(sent[0], /Latest 20 videos views 11873、Latest 20 videos likes 110、Latest 20 videos comments 1、Latest 20 videos shares 2/);
+  assert.doesNotMatch(sent[0], /Account totals 8/);
+});

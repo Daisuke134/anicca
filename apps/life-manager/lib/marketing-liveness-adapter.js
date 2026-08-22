@@ -229,7 +229,7 @@ function planMarketingLivenessJobs(input = {}) {
 
 function renderMessage(payload) {
   if (payload.status === "observed") {
-    const label = (key) => ({ views: "Views", reach: "Reach", impressions: "Impressions", likes: "Likes", comments: "Comments", shares: "Shares", saves: "Saves", watch_time: "Watch time", average_watch_time: "Average watch time", completion: "Completion", engagement: "Engagement", account_totals: "Account totals" }[key] || key);
+    const label = (key) => ({ views: "Views", reach: "Reach", impressions: "Impressions", likes: "Likes", comments: "Comments", shares: "Shares", saves: "Saves", watch_time: "Watch time", average_watch_time: "Average watch time", completion: "Completion", engagement: "Engagement", account_totals: "Account totals", account_followers: "Followers", account_following: "Following", account_total_likes: "Account total likes", account_videos: "Videos", account_recent_views: "Latest 20 videos views", account_recent_likes: "Latest 20 videos likes", account_recent_comments: "Latest 20 videos comments", account_recent_shares: "Latest 20 videos shares" }[key] || key);
     const measured = []; const unavailable = [];
     for (const [key, metric] of Object.entries(payload.metrics)) {
       if (metric.status === "unavailable") unavailable.push(label(key));
@@ -287,8 +287,15 @@ async function executeMarketingLivenessJob(job, deps = {}) {
       metric.status === "unavailable" ? { status: "unavailable" }
         : metric.status === "derived" ? { status: "derived", percent: metric.percent }
           : { status: "measured", value: metric.value }]));
-    compact.account_totals = snapshot.sources?.postiz_account?.status === "unavailable" ? { status: "unavailable" }
-      : { status: "measured", value: Array.isArray(snapshot.account_metrics) ? snapshot.account_metrics.length : 0 };
+    if (snapshot.sources?.postiz_account?.status === "unavailable") compact.account_totals = { status: "unavailable" };
+    else if (snapshot.account_metrics && typeof snapshot.account_metrics === "object" && !Array.isArray(snapshot.account_metrics)) {
+      for (const [key, metric] of Object.entries(snapshot.account_metrics)) {
+        if (!metric || !["measured", "derived", "unavailable"].includes(metric.status)) throw new Error("marketing account metric snapshot invalid");
+        compact[`account_${key}`] = metric.status === "unavailable" ? { status: "unavailable" }
+          : metric.status === "derived" ? { status: "derived", percent: metric.percent }
+            : { status: "measured", value: metric.value };
+      }
+    } else compact.account_totals = { status: "measured", value: Array.isArray(snapshot.account_metrics) ? snapshot.account_metrics.length : 0 };
     renderedPayload = { ...payload, metrics: compact, ...(Array.isArray(snapshot.observation_windows) ? { window_summary: snapshot.observation_windows.map((row) => `${row.window} ${row.status}`) } : {}) };
   }
   let providerResult;
