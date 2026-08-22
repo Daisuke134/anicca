@@ -764,8 +764,11 @@ def _submit_action(observation) -> VisibleActionV1:
     candidates = [
         control
         for control in observation.controls
-        if " ".join(control.label.split()).casefold()
-        in {"submit", "submit application"}
+        if (
+            control.stable_id == "automation:pageFooterNextButton"
+            or " ".join(control.label.split()).casefold()
+            in {"submit", "submit application", "送信", "応募を送信"}
+        )
         and not control.disabled
     ]
     if len(candidates) != 1:
