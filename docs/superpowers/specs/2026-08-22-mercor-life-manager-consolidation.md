@@ -108,6 +108,8 @@ The loop may submit a new listing without human intervention when the live appli
 
 For each wake, select at most one new ready-to-submit listing, submit it once, reopen the application result, and append one evidence row. Never resubmit `submitted_pending_review`, click `Start` on a new interview, or infer readiness from a title alone.
 
+An ungrounded or human-gated candidate is not a reason to end the wake. The model must continue through distinct candidates until it finds one grounded submit-ready listing, reaches an irreversible submit/unknown boundary, or exhausts the verified queue. The one-submit-per-wake cap remains unchanged.
+
 Current ready queue observed in Mercor before the resident pass:
 
 1. Data analysis / quantitative readouts Evaluator — $80–$120/hour (submitted in the resident pass below)

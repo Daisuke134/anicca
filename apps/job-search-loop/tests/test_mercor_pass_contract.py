@@ -18,6 +18,8 @@ class MercorPassContractTests(unittest.TestCase):
             "model-led",
             "3 of 3 steps completed",
             "Submit application",
+            "continue to the next distinct listing",
+            "not a terminal pass result",
             "never retry",
             "needs_human",
             "browser Google 2FA button named `はい`",

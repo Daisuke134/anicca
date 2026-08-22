@@ -13,7 +13,10 @@ Pass order:
    observe-only and must never be resubmitted.
 2. Reconcile the oldest in-progress application first. Record every inspected
    listing in `inspected_listings` with its live URL, application state, and decision.
-3. Choose at most one new listing. A listing is ready for submission only when the
+3. Maintain a queue of distinct new listings and inspect candidates in order. A
+   candidate that is ready in the UI but fails a verified-fact requirement is not a terminal pass result:
+   record its exact missing fact in `inspected_listings` and
+   continue to the next distinct listing. Choose at most one new listing. A listing is ready for submission only when the
    live application page shows `3 of 3 steps completed`, `100%`, the completed
    Domain Expert Interview is reused, and a visible `Submit application` control.
    The listing/application identifier must not already exist in the ledger.
@@ -21,9 +24,11 @@ Pass order:
    Submit exactly once, then reopen the application result and require the visible
    success/read-back before returning `submitted`. If the outcome is ambiguous after
    the click, return `blocked` with `submit_unknown`; never retry the click.
-5. If the next step is an interview, assessment, CAPTCHA, recovery/reset screen,
+5. If a candidate's next step is an interview, assessment, CAPTCHA, recovery/reset screen,
    unsupported free-response question, or human-only work, return `needs_human` and
-   do not click Start, impersonate the operator, or submit guessed answers.
+   do not click Start, impersonate the operator, or submit guessed answers; continue
+   to another distinct listing only when the current candidate has not produced an
+   irreversible effect.
 6. If no eligible new listing remains, return `observed_no_action` with the exact
    inspected evidence. A transient browser/model failure is `blocked`, not success.
 
