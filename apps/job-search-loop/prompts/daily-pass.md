@@ -10,7 +10,7 @@ Application work has strict priority over discovery. Your first executable brows
 step must be exactly:
 
 ```bash
-python -m job_search_loop.browser_agent.runtime observe
+/opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime observe
 ```
 
 This command collects the safe active-provider row, restores its durable cursor, and
@@ -19,7 +19,7 @@ write its JSON object to a mode-0600 file under `$JOB_SEARCH_BROWSER_SCRATCH`, t
 execute exactly:
 
 ```bash
-python -m job_search_loop.browser_agent.runtime act --action-file "$ACTION_FILE"
+/opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime act --action-file "$ACTION_FILE"
 ```
 
 For a typed field use `candidate_concept` instead of putting its private value in the
@@ -31,6 +31,10 @@ modules unless a named runtime API has just raised an exception that requires th
 specific definition. Discovery is permitted only after the entire collected tuple has
 reached a typed row outcome for this wake. A checkpoint is continuation state, not
 permission to abandon the current row while its step budget remains.
+The runtime gives every new owner wake a fresh bounded step budget even when the
+durable cursor ended the prior wake at zero. A provider `Network Error`, loading
+spinner, empty custom-combobox result, or transient timeout is not a row blocker:
+wait once, reopen the current combobox from a fresh observation, and continue.
 
 This process is the existing `ai.anicca.job-search-daily` launchd owner. Do not
 start another launchd job, agent runner, or Chromium process. Read the JSON path in

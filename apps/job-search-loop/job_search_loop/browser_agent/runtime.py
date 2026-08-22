@@ -27,6 +27,7 @@ from .session import BrowserSession
 
 _EMAIL = re.compile(r"\b[^\s@]+@[^\s@]+\.[^\s@]+\b")
 _PHONE = re.compile(r"(?<!\w)(?:\+?\d[\d ()-]{7,}\d)(?!\w)")
+_WAKE_STEP_BUDGET = 50
 
 
 def _path_env(name: str) -> Path:
@@ -47,6 +48,33 @@ def _owner_endpoint() -> str:
     return str(owner["endpoint"])
 
 
+def _wake_budget_path() -> Path:
+    return _path_env("JOB_SEARCH_BROWSER_SCRATCH") / "wake-step-budget.json"
+
+
+def _wake_budget(*, consume: bool = False) -> int:
+    """Bound one owner wake without carrying exhaustion into the next wake."""
+
+    path = _wake_budget_path()
+    if path.exists():
+        if path.stat().st_mode & 0o077:
+            raise RuntimeError("wake step budget must be private")
+        remaining = int(json.loads(path.read_text(encoding="utf-8"))["remaining_steps"])
+    else:
+        remaining = _WAKE_STEP_BUDGET
+    if consume:
+        if remaining < 1:
+            raise RuntimeError("wake step budget exhausted")
+        remaining -= 1
+        path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        path.write_text(
+            json.dumps({"remaining_steps": remaining}, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        os.chmod(path, 0o600)
+    return remaining
+
+
 def _row() -> dict[str, Any]:
     ledger = Ledger(_path_env("JOB_SEARCH_STATE_ROOT") / "ledger.sqlite3")
     try:
@@ -58,14 +86,14 @@ def _row() -> dict[str, Any]:
     return rows[0]
 
 
-def _safe_observation(observation, checkpoint) -> dict[str, Any]:
+def _safe_observation(observation, checkpoint, remaining_steps: int) -> dict[str, Any]:
     return {
         "url": observation.url,
         "title": _redact(observation.title),
         "content_sha256": observation.content_sha256,
         "validation": [_redact(value) for value in observation.validation_text],
         "challenges": list(observation.visible_challenges),
-        "remaining_steps": checkpoint.remaining_steps if checkpoint else 50,
+        "remaining_steps": remaining_steps,
         "controls": [
             {
                 "tag": control.tag,
@@ -111,7 +139,7 @@ async def observe() -> dict[str, Any]:
         },
         "needs_navigation": cursor.needs_navigation,
         "recovery_url": cursor.recovery_url if cursor.needs_navigation else None,
-        "observation": _safe_observation(observation, cursor.checkpoint),
+        "observation": _safe_observation(observation, cursor.checkpoint, _wake_budget()),
     }
 
 
@@ -143,8 +171,11 @@ def _action(value: dict[str, Any]) -> VisibleActionV1:
             raise ValueError("candidate concept is not a scalar browser value")
         text = str(resolved)
     file_path = Path(value["file_path"]) if value.get("file_path") else None
+    kind = value.get("kind", value.get("action"))
+    if not kind:
+        raise ValueError("action file requires kind")
     return VisibleActionV1(
-        kind=str(value["kind"]),
+        kind=str(kind),
         target=target,
         text=str(text) if text is not None else None,
         url=str(value["url"]) if value.get("url") else None,
@@ -158,6 +189,7 @@ async def act(action_path: Path) -> dict[str, Any]:
     row, session, checkpoints, evidence, cursor, builder = await _context()
     before = await builder.build(cursor.handle)
     action = _action(_private_action(action_path))
+    remaining = _wake_budget(consume=True)
     receipt = await ActionExecutor(session).execute(cursor.handle, action)
     after = await builder.build(cursor.handle)
     chain = evidence.read_chain(row["application_id"])
@@ -173,7 +205,6 @@ async def act(action_path: Path) -> dict[str, Any]:
         )
     )
     prior_hashes = cursor.checkpoint.action_receipt_hashes if cursor.checkpoint else ()
-    remaining = max(0, (cursor.checkpoint.remaining_steps if cursor.checkpoint else 50) - 1)
     checkpoint_receipt = checkpoints.save(
         RowCheckpointV1(
             1,
@@ -196,7 +227,9 @@ async def act(action_path: Path) -> dict[str, Any]:
         },
         "evidence_sha256": evidence_receipt.evidence_sha256,
         "checkpoint_sha256": checkpoint_receipt.checkpoint_sha256,
-        "observation": _safe_observation(after, checkpoints.load(row["application_id"])),
+        "observation": _safe_observation(
+            after, checkpoints.load(row["application_id"]), remaining
+        ),
     }
 
 
