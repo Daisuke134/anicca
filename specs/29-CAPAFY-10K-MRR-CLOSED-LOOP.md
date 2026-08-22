@@ -271,6 +271,8 @@ C14 HyperFrames review V2はrepo-owned `skills/video/hyperframes/capafy-o13-revi
 
 User reviewはV2のvisualを`good`と承認し、macOS Samantha narrationだけを不承認にする。ElevenLabs account readbackは既存英語voice 3件を確認するが、cloned `AniccaMonkEN`は現planでupgrade必須のため採用しない。既存allowance内で生成可能なprofessional English `Mona`を選び、1.1382x timing fitとloudness normalizationを行う。V3はV2とvideo stream SHA-256 `41192bbe5fe9126cd992264d03ccff8c3d5b026549e81352c06c3b581a4f1c95`が一致し、変更はvoiceだけである。V3 artifactは1080x1920、30.0秒、H.264/AAC 48kHz stereo、integrated `-16.8 LUFS`、peak `-4.3 dBFS`、artifact SHA-256 `221671a308486f7aa4da86b81ab4d34c6cca3ed38a6c2594bafc5c6eed46f3b4`。Telegram review media message IDは`28766`。subscription upgrade/purchaseは0。userがV3 voiceを明示承認するまではC14未完、C15 public post禁止を維持する。
 
+User reviewはV3もREJECTする。ElevenLabs voice metadata readbackでMonaの`accent=indian`が確認でき、product videoとnarration内容のscene timingも一致していなかった。V4は`en-US-AndrewNeural`を固定し、4 sceneごとに画面文言だけから独立scriptを作る。実音声区間はmess `0.401-4.249s`（visual `0-5.5s`）、evidence `5.897-11.294s`（visual `5.5-13s`）、cluster `13.397-20.085s`（visual `13-21.5s`）、memo `21.908-27.725s`（visual `21.5-30s`）で、scene境界越え0。V4 video stream SHA-256はV2/V3と同じ`41192bbe5fe9126cd992264d03ccff8c3d5b026549e81352c06c3b581a4f1c95`、integrated loudness `-16.4 LUFS`、peak `-4.3 dBFS`、artifact SHA-256 `88163040c4c99a1539a5457339a19171e1a379ec0c31101239e23058aaef9486`、Telegram review media message IDは`28775`である。V4 voiceのuser reviewまではC14未完、C15 public post禁止を維持する。
+
 ## Atomic remaining TODO
 
 Items are executed top-to-bottom. Only one item is active.
@@ -291,7 +293,7 @@ Items are executed top-to-bottom. Only one item is active.
 | C11 | port the required FFmpeg editing subset from `video-processing-editing` into repo-owned canonical renderer | unit tests and one local 1080x1920 candidate artifact pass probe/audio/caption/secret gates | completed — o13 artifact/contact sheet pass; one encode; TG `28699` |
 | C12 | replace Capafy STEP3 repo-external renderer call with canonical renderer | dependency audit contains no `~/.claude/skills/faceless-money-factory` | completed — canonical command + manifest gate; old renderer path 0; TG `28706` |
 | C13 | add demonstration-first creative gate | public candidate shows verified skill input/output or before/after; generic b-roll-only fixture fails | completed — source-hashed o13 scenes pass; generic invocation fails; TG `28713` |
-| C14 | render one real Capafy listing candidate and send it to Telegram before public adoption | actual mp4 + Telegram media message ID + user-observable quality artifact | pending voice approval — V2 visuals approved; natural-voice V3 sent as TG `28766` |
+| C14 | render one real Capafy listing candidate and send it to Telegram before public adoption | actual mp4 + Telegram media message ID + user-observable quality artifact | V3 rejected; V2 visuals approved; American scene-synced V4 sent as TG `28775`, awaiting review |
 | C15 | run one live IG pass through existing account rail | selected listing -> artifact -> account -> native Reel URL -> metrics -> Telegram message ID | pending — hard-gated on explicit approval of rebuilt C14 media |
 | C16 | add ReelFarm TikTok derivative behind credential/account/quality gates | no credential means honest no-op; success requires TikTok native URL | pending |
 | C17 | run one real slot-controlled supply pass | inventory readback -> allocator decision -> skill/version remote status -> Telegram message ID | pending |
