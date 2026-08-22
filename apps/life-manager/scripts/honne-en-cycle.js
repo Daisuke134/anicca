@@ -12,6 +12,8 @@ const {
 } = require("../lib/marketing-video-generation-adapter.js");
 const { buildMarketingVideoPublicationJob } = require("../lib/marketing-video-publication-adapter.js");
 const { PROMOTION_CONFIRMATION } = require("../lib/marketing-canary.js");
+const { HONNE_EN_SLOTS } = require("../lib/honne-en-shadow-runtime.js");
+const { marketingVideoDueSlot } = require("../lib/honne-ja-shadow-schedule.js");
 const { runHonneEnCanary } = require("./honne-en-canary.js");
 
 const TENANT = "dais-local";
@@ -35,7 +37,8 @@ function parseArgs(argv) {
 }
 
 function runSlot(slot, nowMs) {
-  const value = slot || new Date(nowMs).toISOString();
+  const value = slot || marketingVideoDueSlot(nowMs, "Asia/Tokyo", HONNE_EN_SLOTS);
+  if (!value) throw new Error("honne EN cycle has no due slot yet");
   const slotMs = Date.parse(String(value));
   if (!Number.isFinite(slotMs) || new Date(slotMs).toISOString() !== value) throw new Error("honne EN cycle run timestamp is invalid");
   return value;
