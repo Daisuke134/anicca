@@ -27,7 +27,7 @@ Mercor is a global provider lane of Life Manager's existing Job Hunter system. I
 
 - Reconcile an existing in-progress Mercor application before discovering a new listing.
 - Apply only with verified profile facts and a read-back-verified resume artifact.
-- Do not impersonate interviews or assessments. The Japanese Evaluator's 14-minute camera/microphone `Domain Expert Interview` is now completed and the application card reads `Ready to submit`; still apply the exact 5+ years relevant-experience fact gate before submitting.
+- Do not impersonate interviews or assessments. The Japanese Evaluator's 14-minute camera/microphone `Domain Expert Interview` is completed and the application page reads `Your application has been submitted!`; reconcile the review result and never resubmit the same application.
 - Unsupported questions, CAPTCHA, and ambiguous attestations become `needs_human`.
 - Count earnings only from an authoritative Mercor Earnings/contract settlement read-back; never count views, invitations, estimates, or pending offers.
 
