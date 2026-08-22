@@ -2932,6 +2932,11 @@ def advance_known_publication(
     }
     if generic["state"] not in generic_non_blocking:
         return generic
+    if (state / "focused-cohort" / "latest.json").is_file():
+        return {
+            "state": "FOCUSED_COHORT_HELD", "public_url": None,
+            "generic_state": generic["state"],
+        }
     legacy = advance_legacy_dedicated_publication(
         state, landing_root, x_cdp_port, private_markdown, provider_cdp_port,
     )

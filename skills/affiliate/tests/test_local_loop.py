@@ -895,6 +895,28 @@ class LocalLoopTest(unittest.TestCase):
                     })
                     advance.assert_called_once()
 
+    def test_focused_cohort_does_not_fall_through_to_legacy_publication(self):
+        with tempfile.TemporaryDirectory() as root:
+            root = Path(root)
+            state = root / "state"
+            landing = root / "landing"
+            landing.mkdir()
+            MODULE.atomic_json(state / "focused-cohort" / "latest.json", {
+                "selection_state": "FOCUSED_EXPLORATION",
+                "placement_id": "subtitle-en-1",
+            })
+            with (
+                patch.object(MODULE, "advance_generic_publication", return_value={
+                    "state": "ALREADY_LIVE", "public_url": None,
+                }),
+                patch.object(MODULE, "advance_legacy_dedicated_publication") as legacy,
+            ):
+                result = MODULE.advance_known_publication(
+                    state, landing, 9326, root / "private.md",
+                )
+            self.assertEqual(result["state"], "FOCUSED_COHORT_HELD")
+            legacy.assert_not_called()
+
     def test_legacy_migration_stops_after_creating_one_provider_link(self):
         with tempfile.TemporaryDirectory() as root:
             state = Path(root) / "state"
