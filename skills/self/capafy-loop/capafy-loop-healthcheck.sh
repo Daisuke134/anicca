@@ -24,7 +24,7 @@ if [ "$mtime" -gt 0 ] && [ "$age" -lt "$STALE_SECONDS" ]; then
 fi
 
 # A stale/missing terminal receipt means the real launchd loop needs a pass.
-# kickstart that owner directly; never spawn a parallel executor or disk gate.
+# kickstart that owner directly; never spawn a parallel executor.
 if launchctl kickstart -k "$DOMAIN/$LABEL"; then
   echo "$(date '+%F %T') stale healthy-pass (${age}s); kickstarted $LABEL" >>"$LOG"
   exit 0
