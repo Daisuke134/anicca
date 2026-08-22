@@ -23,6 +23,48 @@ if [ -n "${LM_TELEGRAM_BOT_TOKEN:-}" ] && [ -z "${TELEGRAM_BOT_TOKEN:-}" ]; then
   export TELEGRAM_BOT_TOKEN="$LM_TELEGRAM_BOT_TOKEN"
 fi
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LAUNCHCTL_SAFE="${CAPAFY_LAUNCHCTL_SAFE:-$LIFE_MANAGER_REPO/bin/launchctl-safe}"
+LAUNCHCTL_DOMAIN="${CAPAFY_LAUNCHCTL_DOMAIN:-gui/$(id -u)}"
+
+selfheal_capafy_launchd() {
+  local labels=(
+    ai.anicca.capafy-goal-monitor
+    ai.anicca.capafy-goal-monitor-hourly
+    ai.anicca.capafy-goal-monitor-daily-close
+    ai.anicca.capafy-loop-daily
+    ai.anicca.capafy-loop-healthcheck
+    ai.anicca.capafy-outcome-monitor
+    ai.anicca.capafy-ig-account-manager
+  )
+  local label plist current newly_hourly=0
+  for label in "${labels[@]}"; do
+    case "$label" in
+      ai.anicca.capafy-goal-monitor|ai.anicca.capafy-goal-monitor-hourly|ai.anicca.capafy-goal-monitor-daily-close|ai.anicca.capafy-loop-daily|ai.anicca.capafy-loop-healthcheck|ai.anicca.capafy-outcome-monitor|ai.anicca.capafy-ig-account-manager) ;;
+      *) return 2 ;;
+    esac
+    plist="$HOME/Library/LaunchAgents/$label.plist"
+    if current="$($LAUNCHCTL_SAFE print "$LAUNCHCTL_DOMAIN/$label" 2>/dev/null)"; then
+      continue
+    fi
+    [ -f "$plist" ] || return 2
+    "$LAUNCHCTL_SAFE" preflight >/dev/null || return $?
+    "$LAUNCHCTL_SAFE" bootstrap "$LAUNCHCTL_DOMAIN" "$plist" >/dev/null || return $?
+    "$LAUNCHCTL_SAFE" print "$LAUNCHCTL_DOMAIN/$label" >/dev/null 2>&1 || return 1
+    [ "$label" = "ai.anicca.capafy-goal-monitor-hourly" ] && newly_hourly=1
+  done
+  if [ "$newly_hourly" -eq 1 ]; then
+    "$LAUNCHCTL_SAFE" kickstart "$LAUNCHCTL_DOMAIN/ai.anicca.capafy-goal-monitor-hourly" >/dev/null || return $?
+  fi
+}
+
+if [ "${CAPAFY_IG_MARKETING_SELFHEAL_TEST:-0}" = "1" ]; then
+  selfheal_capafy_launchd
+  exit $?
+fi
+if ! selfheal_capafy_launchd; then
+  echo "Capafy launchd self-heal failed — stopping marketing wake" >&2
+  exit 2
+fi
 # shellcheck source=account_state.sh
 . "$SCRIPT_DIR/account_state.sh"
 MARKETING_ENGINE_DIR="$SCRIPT_DIR/../marketing-engine"
