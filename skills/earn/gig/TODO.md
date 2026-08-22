@@ -380,8 +380,10 @@ The remaining immediate blocker is now the macOS user bootstrap, not Paid logic,
 disk. After the disk incident, `launchctl-safe`, direct `launchctl` and `launchctl asuser` all return 141
 `Reentrancy avoided`; Terminal/Aqua resolution returns -10827; OpenClaw Gateway is unavailable; sudo and localhost
 SSH report that uid 501 has no passwd record; and direct OpenDirectory lookup returns `eServerError`. No attempted
-path started another Paid process and customer effect/readback remain zero. The exact minimum owner action is to
-fully quit and reopen the Codex/ChatGPT desktop app, then resume this thread. On the recovered Aqua bootstrap,
+path started another Paid process and customer effect/readback remain zero. A full Codex/ChatGPT desktop app
+restart was then rechecked and did not recover either service: OpenDirectory still returns `eServerError`, and
+`launchctl print gui/501/...` still returns 141. The exact minimum owner action is now one full Mac reboot, then
+resume this thread. On the recovered Aqua bootstrap,
 kickstart the existing `ai.anicca.hf-gig-paid-direct` owner once; do not run a custom executor. Require v44 PASS,
 exact-room attachment/message readback with formal delivery OFF, then a second natural wake with replay-zero.
 
