@@ -127,3 +127,16 @@ def test_head_policy_revives_matching_dlq_event_before_durable_closure(tmp_path)
         "action_id": 1, "now": 1000, "require_no_intent": True,
     }]
     assert outbox.closed[0]["reason"] == "ignore_policy:operator-owned-1"
+
+
+def test_policy_report_identity_is_unique_and_contains_no_counterparty_data():
+    result = detector.no_contact_report({
+        "status": "ignore_policy", "policy_id": "operator-owned-1", "action_id": 42,
+    }, now=1000)
+
+    assert result["run_id"] == "ignore-policy-42-1000"
+    assert result["closed_without_send"] == 1
+    assert result["effect"] == 0
+    assert result["official_readback"] == 0
+    assert "thread_id" not in result
+    assert "counterparty" not in json.dumps(result)
