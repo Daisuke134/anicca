@@ -5,6 +5,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import urllib.error
 from pathlib import Path
 from unittest.mock import patch
 
@@ -89,6 +90,17 @@ function renderMarkdown(md: string): string {
                 cwd=landing, capture_output=True, text=True, check=False,
             )
         self.assertEqual(result.returncode, 0, result.stderr or result.stdout)
+
+    def test_entry_public_readback_requires_exact_post_only_contract(self):
+        error = urllib.error.HTTPError(
+            "https://aniccaai.com/.netlify/functions/marketing-entry",
+            405, "Method Not Allowed", {"allow": "POST"}, None,
+        )
+        with patch.object(MODULE.urllib.request, "urlopen", side_effect=error):
+            self.assertTrue(MODULE._entry_public_ready())
+        missing = urllib.error.HTTPError("https://aniccaai.com", 404, "Not Found", {}, None)
+        with patch.object(MODULE.urllib.request, "urlopen", side_effect=missing):
+            self.assertFalse(MODULE._entry_public_ready())
 
 
 if __name__ == "__main__":

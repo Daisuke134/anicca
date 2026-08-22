@@ -8,6 +8,7 @@ import os
 import subprocess
 import urllib.parse
 import urllib.request
+import urllib.error
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -377,6 +378,19 @@ def _public_ready(owned_url, placement_id):
     return f"/go/af_{placement_id}" in body
 
 
+def _entry_public_ready():
+    """The entry function is live only when the deployed endpoint enforces POST."""
+    try:
+        urllib.request.urlopen(
+            "https://aniccaai.com/.netlify/functions/marketing-entry", timeout=20
+        )
+    except urllib.error.HTTPError as error:
+        return error.code == 405 and error.headers.get("allow", "").upper() == "POST"
+    except Exception:
+        return False
+    return False
+
+
 def advance(state, landing_root, placement_id, owned_url):
     receipt_path = state / "cta-instrumentation.json"
     prior = json.loads(receipt_path.read_text()) if receipt_path.is_file() else {}
@@ -395,6 +409,7 @@ def advance(state, landing_root, placement_id, owned_url):
     if (
         prior.get("state") in {"DELIVERED", "LIVE"}
         and v2_ready and v3_ready and _public_ready(owned_url, placement_id)
+        and _entry_public_ready()
     ):
         receipt = {**prior, "state": "LIVE", "observed_at": datetime.now(timezone.utc).isoformat()}
         atomic_write(receipt_path, receipt)
