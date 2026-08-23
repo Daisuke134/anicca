@@ -7312,3 +7312,28 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   `NO_APPROVED_OR_PAID_ROWS`, and USD 10,000 `NOT_REACHED`; real cost remains
   unknown. The provider click count of 2 on the READY/UNCONSUMED Subtitle
   Translator proposal remains non-money.
+- Repost is now the first Affiliate dependency blocker. The launchd schedule is
+  still firing and recent passes lease `x:anicca` and collect 95-96 candidates,
+  but `state/.last-pass` has not advanced past `2026-08-23T11:36:49+09:00`.
+  At `2026-08-24T01:25:44+09:00` the heartbeat is 13.82 hours old against the
+  three-hour health limit. This is not a missing-scheduler diagnosis: completed
+  attempts from `20260823T164301` onward repeatedly stop at model selection.
+- The direct `codex exec` response in each failed selection receipt is
+  `You've hit your usage limit` with retry time `Aug 29th, 2026 5:03 PM`;
+  `select.json` is empty and the pass reports `select step returned unparseable
+  output`. The latest owner attempt `20260824T011159` reproduces the same
+  boundary after collecting 95 candidates. Browser availability is intermittent
+  but not the primary blocker because the next pass reacquires the lease and
+  reaches the same model failure. Current immutable release is
+  `20260823T130005-09eea570`.
+- Commit `9b846ae4e` routes agent-runner Codex authentication to account 2, but
+  it does not cover Repost's direct `codex exec` call. Do not merely redeploy
+  that commit and claim recovery. The next atom is to bind the direct Repost
+  model call to a verified, isolated account-2 automation home, classify a
+  usage-limit response before JSON parsing, install one immutable release, and
+  safe-kick only the existing `ai.anicca.x-repost-pass` owner from an Aqua/user
+  context. Done requires a fresh owner-owned pass to update `.last-pass` and
+  return either an exact X permalink or a terminal safe no-effect, with no retry
+  of the unresolved Postiz submission `cmt53pflq07lrqp0ykliif201`. Only then
+  rerun the Affiliate owner for placement join and official PartnerStack money
+  readback; clicks and posts remain non-money.
