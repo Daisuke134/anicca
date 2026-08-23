@@ -1763,6 +1763,13 @@ readback source. A partial target, draft, internal state or public proxy cannot 
 natural wake must reject the stale proxy result, preserve the completed search evidence and continue only the remaining
 qualified outreach without duplicate effects.
 
+Commit `d81196657` is pushed and published as the current immutable release. The old `b89d95ac8` wake exited naturally
+with `effect=0/readback=9/failed=0/pending=1`; Manledge was the sole pending room and no proxy result reached Coconala.
+The existing launchd Paid label was then kickstarted, not replaced by a Codex executor. Natural PID `35408` pinned
+`d81196657`, completed fresh targeted room reads and started eight independent project workers through the same generic
+path. This proves deployment and parallel resumption, but not yet the required Manledge business effect or full-room
+silent-pending zero; keep watching the natural owners and accept only official effect receipts.
+
 1. **Paid/Submission — finish first.**
    - [x] Deploy and read back Paid ignoring shared preventive `disk-pressure.block` (20 GiB) and
      `disk-writers.stop` (10/11 GiB hysteresis), while retaining the 512 MiB last-resort guard and
