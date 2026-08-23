@@ -39,6 +39,14 @@ JSON, permission errors and unconfirmed intents still fail closed. Storefront-fo
 verification is 45 passed plus `py_compile`; the remaining evidence is the two natural
 production wakes above.
 
+The loaded Storefront plist is also stale: unlike the current manifest, it does not
+ignore the shared preventive stop flags, so the wrapper exits on
+`disk-writers.stop` even with several GiB free. The Storefront job now follows the
+existing lane contract by ignoring those two shared flags while retaining an explicit
+512 MiB `GIG_DISK_HEADROOM_KIB` last-resort floor. The rendered-plist regression was
+RED for all three missing values and is GREEN; no global flag or Paid configuration
+was changed.
+
 ## Current scoped milestone: finish the public Coconala package
 
 The repository and `skills/earn/gig/` tree are already public on
