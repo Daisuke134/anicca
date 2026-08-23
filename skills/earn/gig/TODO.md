@@ -1791,6 +1791,12 @@ is checkpointed with `exact_readback=true`, `quality_status=qualified` and `coun
 outreach is now eight. The current owner is re-running the exact final 15-query remainder through the leased
 `x:anicca` adapter before declaring reachable exhaustion. Forty-two further qualified effects or complete official
 exhaustion, truthful Coconala handoff and replay-zero remain open.
+The remainder pass has since completed with all 15 queries attempted, zero unattempted and zero errors; its only
+candidate was the already-contacted, qualification-only `@mgwpbdgw`. Because the earlier 51-query evidence was
+fragmented and could not by itself prove one intended=attempted exhaustion receipt, the same owner started the full
+66-query manifest once through the leased production adapter. No send occurs during this read-only pass. A shortfall
+may be reported only if this pass finishes with all queries attempted, zero errors, completion time and every official
+URL checked; otherwise the room remains pending and resumes naturally.
 
 The same natural wake produced two independent Coconala effects through the shared answer path. BUYMA room
 `18128025` truthfully identified the two duplicate proposals as AI auto-applications, apologized, told the buyer no
