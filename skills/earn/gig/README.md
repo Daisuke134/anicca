@@ -276,6 +276,14 @@ Honest list. These are measured, not suspected.
   message IDs `30152`, `30379`, `30428`, `30583`, and `30625`). Three fresh samples
   completed in 42, 109, and 8 seconds. This evidence accepts Negotiate only; it does
   not accept Paid or Storefront.
+- **The reference Mac has completed Storefront production acceptance.** Release
+  `ead7fd657` recovered a confirmed gallery contract after bounded evidence GC,
+  loaded the Storefront job with a real 512 MiB disk floor, and completed two
+  successive natural listing updates. The first changed only service `4312985` body;
+  the second did not replay it and changed only service `4302213` title. Each wake had
+  one hash-sealed contract, matching official before/after service identity,
+  `effect=1`, `readback=1`, and `duplicate=0`. Durable Telegram receipts are provider
+  message IDs `30741` and `30746`. This evidence does not accept Paid.
 - **The paid lane's feedback digest is not stable.** The window that assembles
   the latest buyer feedback has been observed regressing to older concatenated
   text within the same day, which means the digest a builder would act on cannot

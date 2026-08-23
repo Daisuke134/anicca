@@ -28,8 +28,10 @@ the confirmed contract.
 Storefront acceptance for this cursor is: recover that confirmed gallery contract
 without a second customer effect; complete one natural official listing create/update
 readback through the existing owner; then observe the next natural wake with
-`effect=0`, `duplicate=0`, no wrong-service mutation and a durable owner-report
-receipt. No new scheduler, database, browser owner or reporting transport is allowed.
+zero replay of the first experiment, `duplicate=0`, no wrong-service mutation and a
+durable owner-report receipt. The next wake may execute a different independently
+sealed experiment; total `effect=0` is not required. No new scheduler, database,
+browser owner or reporting transport is allowed.
 
 The recovery fix is GREEN on branch `fix/gig-storefront-acceptance`. Regression
 `test_confirmed_gallery_survives_gc_of_transient_before_evidence` first failed with
@@ -57,6 +59,17 @@ single runner boundary, requires prompt stdin, and receives no shell/code-mode
 tools. CLI/tool-starvation RED is GREEN; Storefront and runner verification is 79
 passed. The failed wake had `effect=0`, `readback=0`, `duplicate=0`; Telegram delivery
 was unknown. The next natural wake must prove the proposal/effect/readback path.
+
+Storefront production acceptance is complete on release `ead7fd657`. Natural wake
+`storefront-direct-1787504743306208000-54125` updated only service `4312985` body,
+then read the changed official public hash back: `effect=1`, `readback=1`,
+`duplicate=0`; provider receipt file confirms Telegram message `30741`. The next
+natural wake `storefront-direct-1787505080566670000-95440` did not replay that
+experiment. It independently updated only service `4302213` title with matching
+contract/before/after/receipt service identity: `effect=1`, `readback=1`,
+`duplicate=0`, Telegram message `30746`. Both confirmed intents were appended once;
+there was no wrong-service or duplicate mutation. Apply, Negotiate and Paid were not
+changed by either wake.
 
 ## Current scoped milestone: finish the public Coconala package
 
@@ -2566,7 +2579,7 @@ action completes.
 
 - [x] Remove operator capability paths from public defaults and load them from the private install
   configuration via `GIG_STOREFRONT_CAPABILITY_EVIDENCE`.
-- [ ] Activate `f90898caf` or a descendant for the loaded Storefront job, then read back the loaded
+- [x] Activate `f90898caf` or a descendant for the loaded Storefront job, then read back the loaded
   environment with two configured evidence paths without exposing their values.
 - [x] Reconcile the sellable product truth before any mutation: the private 4313386 contract now
   binds to the latest official version `3c862a33…`, and the official seller form reads back both
@@ -2575,9 +2588,13 @@ action completes.
   contract.
 - [x] Delete the unused listing-envelope protocol instead of exposing a half-built consumer;
   `storefront_direct.py` no longer writes or reports envelopes/ACK state (24 focused tests pass).
-- [ ] Produce one valid, scoped, unfenced create/update mutation contract.
-- [ ] Execute exactly one official listing create/update and read back the resulting live listing.
-- [ ] Replay it and prove zero duplicate or wrong-service mutations.
+- [x] Produce one valid, scoped, unfenced create/update mutation contract. Natural release
+  `ead7fd657` sealed the `4312985/body` contract and a second independent `4302213/title` contract.
+- [x] Execute exactly one official listing create/update and read back the resulting live listing.
+  Wake `...-54125` changed `4312985/body` with `effect=1/readback=1/duplicate=0`.
+- [x] Replay it and prove zero duplicate or wrong-service mutations. Wake `...-95440` did not
+  replay the first experiment; it changed a different contract-bound service with
+  `effect=1/readback=1/duplicate=0`. Telegram receipts are `30741` and `30746`.
 
 #### E. Prove natural Paid delivery
 
