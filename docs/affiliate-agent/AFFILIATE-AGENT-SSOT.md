@@ -7495,3 +7495,13 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   provider link placeholder, and distribution copy. Only the title changed to
   the decision's exact string. This proves one-variable materialization, not
   publication, traffic, transaction, or money.
+- Policy owner passed all deterministic checks and semantic audit with zero
+  unsupported claims, but main publication stopped at
+  `CAMPAIGN_METADATA_INVALID`: nesting the prior experiment ID and new decision
+  made the placement ID 94 characters against the 80-character gate. Commit
+  `6a9645e8f` compacts repeated experiment suffixes while preserving the full
+  control plan in the experiment lineage, refuses to count the existing
+  oversized artifact as decision consumption, and lets an invalid metadata
+  policy remain visible without blocking a later valid due policy. Focused
+  source/acquisition/auth/installer tests are 21/21 GREEN with one expected
+  guard skip. Review and production replacement remain open.
