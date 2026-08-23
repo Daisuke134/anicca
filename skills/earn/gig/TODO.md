@@ -345,8 +345,17 @@ Do not replace this owner with a manual Codex send. Let it choose an honest cont
 and then rerun under the shared resolver release so discovery and adaptive fallback are proven without
 project-specific prompt knowledge.
 
+The resumed Manledge owner then exposed a second shared-tool contract defect: `x-repost` advertised generic
+`post` capability in the shared registry, but its production CLI accepted only `quote` and `reply` and required a
+source post URL. The owner correctly resolved and reused the skill, yet could not publish the approved standalone
+recruitment notice without reimplementing browser automation. The existing adapter now has a real `post` mode
+using the same leased account, official compose acknowledgement and exact profile-timeline permalink readback;
+quote/reply behavior is unchanged and still requires `--source-url`. This is a generic X capability repair, not a
+Manledge script. No post is complete until the natural Paid owner uses this released adapter and records the
+official permalink; the earlier drafts and failed compose attempts remain zero effects.
+
 **Current live cursor.** `main` and `origin/main` were verified equal immediately before this snapshot at
-`543e65aeb`; the starting verification commit
+`28129d28e`; the starting verification commit
 `79ac01ba1eb66b06aed1f9cee66d4af303f03a3d` remains an ancestor. The existing launchd Paid owner is the only
 customer-effect owner. The authenticated gig-browser launcher and launchd manifest were still overriding the
 configured no-floor policy with a hard-coded 512 MiB headroom; the launcher also unset both ignore flags. Under
