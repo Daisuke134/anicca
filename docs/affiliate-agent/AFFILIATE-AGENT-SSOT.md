@@ -7430,3 +7430,10 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   disk space to 9.2 GiB. The next existing-owner pass must take the absorbing
   recent-unverified reconciliation path and recover
   `https://x.com/selawmqt/status/2091584652951879730` without a Postiz call.
+- Affiliate owner independently observed the new ledger state: 85 X actions,
+  5 exact Affiliate campaign joins, 80 unjoined actions, and 0 invalid rows.
+  Official PartnerStack capture advanced to `2026-08-23T17:44:27.436947Z`
+  with zero commission rows and an empty payout table. Rolling
+  pending/approved/paid/reversed remain all zero with `NO_TRANSACTIONS` and
+  `NO_APPROVED_OR_PAID_ROWS`. The restored Repost effect is therefore verified
+  distribution but still non-money.
