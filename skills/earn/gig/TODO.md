@@ -1792,6 +1792,13 @@ outreach is now eight. The current owner is re-running the exact final 15-query 
 `x:anicca` adapter before declaring reachable exhaustion. Forty-two further qualified effects or complete official
 exhaustion, truthful Coconala handoff and replay-zero remain open.
 
+The same natural wake produced two independent Coconala effects through the shared answer path. BUYMA room
+`18128025` truthfully identified the two duplicate proposals as AI auto-applications, apologized, told the buyer no
+action was needed for them, and retained the pending BUYMA approval-email follow-up. Smile room `18179735` confirmed
+that acquisition/usage improvement is in scope and requested only a no-charge test path needed to exercise the
+built certificate flow. Each room returned `effect=1/readback=1`, the exact seller text is present in its official
+talkroom DOM snapshot, and formal delivery remained OFF. Neither reply was sent by Codex.
+
 1. **Paid/Submission — finish first.**
    - [x] Deploy and read back Paid ignoring shared preventive `disk-pressure.block` (20 GiB) and
      `disk-writers.stop` (10/11 GiB hysteresis), while retaining the 512 MiB last-resort guard and
