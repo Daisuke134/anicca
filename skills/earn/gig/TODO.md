@@ -2252,8 +2252,13 @@ a later successful example.
   every owner evidence file, verifier result, and verifier evidence. The model retains autonomous
   tool/account/skill selection; only substitution of an easier proxy outcome is rejected. Direct
   validation rejects the existing public-post artifacts as `semantic effect contract mismatch`.
-  Completion still requires the natural owner to perform/read back the individual outreach or
-  return honest verified exhaustion, then prove replay-zero.
+  Immutable release `4917386bf` then ran naturally across nine rooms and rejected Manledge as
+  `remote_builder`; it did not resend the public post or start a replacement owner effect. The
+  fresh semantic-decision evidence directory contains an incomplete runner attempt without its
+  summary/result receipt, so the next atomic repair is to resume that same bound decision attempt
+  inside the project worker instead of surfacing a terminal-looking builder failure. Completion
+  still requires the natural owner to perform/read back the individual outreach or return honest
+  verified exhaustion, then prove replay-zero.
 - [x] P30 — Resume the existing Haru liability through the generic Paid owner. The live
   `57ac9eb159e0` Paid owner recognized the legacy v26 artifact as already beyond five review
   iterations, performed no v27 build and no additional review, authorized the unchanged artifact
