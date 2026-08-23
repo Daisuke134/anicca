@@ -555,6 +555,48 @@ def test_purchase_decision_reply_cannot_lead_with_internal_confirmation():
         requested_estimate.validate_semantic_judgement(payload, rows)
 
 
+def test_acknowledged_existing_purchase_cannot_generate_another_estimate():
+    rows = [
+        {
+            "message_id": "buyer-purchased", "role": "buyer",
+            "sent_at": "2026-08-21T01:15:00Z", "body": "すでに購入していますが…",
+        },
+        {
+            "message_id": "seller-ack", "role": "seller",
+            "sent_at": "2026-08-21T01:31:18Z",
+            "body": "すでにご購入済みであることを確認しました。合意済みの内容に沿って進行いたします。",
+        },
+    ]
+    payload = {
+        "conversation_state": "ready_to_buy", "next_action": "send_estimate",
+        "cycle_start_message_id": "buyer-purchased",
+        "evidence_message_ids": ["buyer-purchased"],
+        "required_official_context": "estimate_form", "estimate_terms": {
+            "title": "作業", "content": "合意済み作業を実施します。", "quantity": 1,
+            "price_jpy": 9000, "delivery_days": 4, "purchase_plan": "single",
+            "title_evidence_message_ids": ["buyer-purchased"],
+            "content_evidence_message_ids": ["buyer-purchased"],
+            "quantity_evidence_message_ids": ["buyer-purchased"],
+            "price_evidence_message_ids": ["buyer-purchased"],
+            "delivery_evidence_message_ids": ["buyer-purchased"],
+            "purchase_plan_evidence_message_ids": ["buyer-purchased"],
+        },
+        "reply_body": None,
+        "reply_audit": {
+            "answered_buyer_message_ids": [], "unanswered_questions": [],
+            "unsupported_claims": [], "unrequested_cta": False,
+            "repeats_seller_message": False, "off_platform_contact": False,
+        },
+        "uncertainty": [],
+    }
+
+    with pytest.raises(
+        requested_estimate.SemanticJudgementError,
+        match="semantic_existing_purchase_estimate_conflict",
+    ):
+        requested_estimate.validate_semantic_judgement(payload, rows)
+
+
 def test_verified_dm_attachments_enter_semantic_context_without_local_path():
     dom = {
         "own_user_path": "/users/seller",
@@ -762,15 +804,17 @@ def test_negotiate_runs_every_30_seconds_without_changing_other_job_intervals():
     assert by_lane["browser"]["ThrottleInterval"] == 30
 
 
-def test_semantic_prompt_v26_is_proactive_and_reads_verified_attachments():
+def test_semantic_prompt_v27_is_proactive_and_reads_verified_attachments():
     prompt = requested_estimate.semantic_prompt(
         [{"message_id": "buyer-1", "role": "buyer", "sent_at": "2026-08-19T00:00:00Z", "body": "質問です"}],
         official_context=None,
         seller_facts=[],
     )
 
-    assert requested_estimate.SEMANTIC_PROMPT_VERSION == "reply-negotiate-v26"
+    assert requested_estimate.SEMANTIC_PROMPT_VERSION == "reply-negotiate-v27"
     assert "条件付き購入意思は購入承認ではありません" in prompt
+    assert "すでに購入済み" in prompt
+    assert "新しい見積りを送らない" in prompt
     assert "判断を本文の先頭で明言" in prompt
     assert "確認します／確認してお伝えします" in prompt
     assert "verified_attachments" in prompt

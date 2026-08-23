@@ -63,7 +63,7 @@ NA15_CATEGORY_IDS = {
 }
 
 SEMANTIC_RECEIPT_VERSION = 1
-SEMANTIC_PROMPT_VERSION = "reply-negotiate-v26"
+SEMANTIC_PROMPT_VERSION = "reply-negotiate-v27"
 SEMANTIC_RUNNER_PROFILE = "reply-semantic-agent"
 SEMANTIC_COMPATIBLE_RUNNER_PROFILES = frozenset({
     "composition-agent", SEMANTIC_RUNNER_PROFILE,
@@ -187,6 +187,7 @@ def semantic_prompt(
 必須規則:
 - next_actionはreply/send_estimate/clarify/wait/stopの1つ。seller-lastは単なる最新roleの別名ではなく、未処理のbuyer actionが残っていない状態だけです。まず全current cycleを読み、未処理の購入・見積送付承認がないか確認します。
 - buyerが購入または見積送付を承認済みなら、その後のsellerの確認・感謝・謝罪は承認を消しません。この場合conversation_state=seller_lastやnext_action=waitにせず、必要条件が揃えばready_to_buy/send_estimateにします。seller-lastで新しいreply/clarifyは作りません。
+- buyerが「すでに購入済み」「既に購入しています」と購入完了を伝え、sellerも購入済みを確認・了承したcycleは購入前の承認ではありません。新しい見積りを送らないでください。未処理のbuyer依頼がなければseller_last/waitとし、購入後の作業は別のPaid laneへ委ねます。
 - sellerが「見積りを送る」「見積ります」「お待ちください」等、公式見積りの後続送信を約束し、buyerが価格・内容を承認済みで、その約束後のstructured official estimate cardがverified_official_contextに存在しない場合、その約束は未履行です。最新roleがsellerでもseller_last/waitにせず、会話全体のbuyer根拠からsend_estimateにします。表層語だけで判断せず、約束済みの価格・内容・数量・納期・購入プランが一意な場合だけ適用します。
 - buyerの「X円でお願いします」「X円でお願いできればと思います」は、その金額で進める明示承認です。sellerが続けて「X円で見積ります」「見積りを送るのでお待ちください」と受諾したcycleでは、buyerが「公式」という単語を使っていなくても公式見積り送付は承認済みです。未承認としてwaitにしません。
 - buyerが他候補の価格や希望上限を示して値下げ余地を尋ねた場合、それは拒否ではなくcurrent cycleの再交渉です。案件scope、数量、納期、現在のseller提案、buyer提示額を全て読み、合法・安全で履行可能かつ公式フォーム下限以上なら、競争力のある合計価格を柔軟に提示します。固定割引率、category相場、別案件の価格を機械適用しません。
@@ -295,6 +296,26 @@ def _unanswered_purchase_decision(rows: list[dict[str, str]]) -> dict[str, str] 
     return None
 
 
+def _acknowledged_existing_purchase(rows: list[dict[str, str]]) -> bool:
+    """Return true only when buyer reports a completed purchase and seller acknowledges it."""
+    for index, row in enumerate(rows):
+        if row["role"] != "buyer":
+            continue
+        body = row["body"]
+        if not any(
+            phrase in body
+            for phrase in ("すでに購入", "既に購入", "購入済み", "購入しています")
+        ):
+            continue
+        return any(
+            later["role"] == "seller"
+            and "購入" in later["body"]
+            and any(word in later["body"] for word in ("確認", "承知", "了承"))
+            for later in rows[index + 1:]
+        )
+    return False
+
+
 def _verified_attachment_denial_debt(rows: list[dict[str, Any]]) -> bool:
     if rows[-1]["role"] != "seller" or not any(
         row.get("role") == "buyer" and row.get("verified_attachments") for row in rows
@@ -339,6 +360,8 @@ def validate_semantic_judgement(
             raise SemanticJudgementError(
                 "semantic_purchase_decision_requires_proactive_reply"
             )
+    if _acknowledged_existing_purchase(rows) and action == "send_estimate":
+        raise SemanticJudgementError("semantic_existing_purchase_estimate_conflict")
     artifact_debt = _inline_artifact_debt(rows)
     attachment_denial_debt = _verified_attachment_denial_debt(rows)
     if (

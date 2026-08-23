@@ -53,7 +53,7 @@ def test_targeted_seller_debt_bridge_binds_verified_reply_to_target_event():
         "next_action": "reply",
         "semantic_reply_body": "X用投稿案：全文\nWeibo用投稿案：全文",
         "semantic_receipt": {
-            "prompt_version": "reply-negotiate-v26",
+            "prompt_version": "reply-negotiate-v27",
             "judgement": {"next_action": "reply"},
         },
     }
