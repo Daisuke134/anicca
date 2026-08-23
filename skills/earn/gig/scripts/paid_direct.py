@@ -106,7 +106,7 @@ OWNER_WORKED_TALKROOMS = {
     "18151989",  # jedbyJUNKYアメーバnote — デザインテンプレート利用許諾契約書
 }
 PAID_DECISION_SCHEMA_VERSION = 4
-PAID_DECISION_PROMPT_VERSION = "paid-semantic-decision-v11"
+PAID_DECISION_PROMPT_VERSION = "paid-semantic-decision-v12"
 PAID_DECISION_MODEL = "gpt-5.6-sol"
 PAID_FILE_MODEL = "gpt-5.6-sol"
 PAID_FILE_POLICY_VERSION = "paid-file-build-review-v21"
@@ -1126,6 +1126,14 @@ def _decision_prompt(context: Path, context_sha256: str, feedback: str,
         "including initial delivery, revision, and resubmission of an artifact already present on disk. A file delivery "
         "may also include an accompanying Coconala message. Do not choose remote merely because the response describes "
         "or acknowledges an action. "
+        "When the accumulated contract still requires authorized external effects, do not choose file merely to "
+        "package or report incomplete progress; choose remote until the required effects are complete or official "
+        "evidence proves reachable exhaustion. Audit progress semantically rather than copying a stored total. If an "
+        "effect's exact outbound payload asks the recipient to confirm a required qualification, that effect remains "
+        "qualification-only and does not count toward a qualified target until an affirmative official response is "
+        "read back. When a stored classification contradicts its payload or official response state, do not propagate "
+        "the incorrect total to the buyer: require the remote owner to append an audited classification revision, then "
+        "continue the authorized external work from the corrected effective ledger. "
         "For every initial file submission and every correction, set delivery_stage to review and "
         "formal_approval_evidence to null. Formal delivery is never inferred merely because an artifact is complete. "
         "Set delivery_stage to formal only after the buyer explicitly approves an already submitted artifact and permits "
