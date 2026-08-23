@@ -24,4 +24,6 @@
 - [x] Extract the existing readback-only dispositions into one pure parent helper so they do not consume admission slots.
 - [x] Collect unresolved candidates, call `paid_admission.plan(max_orders=1)`, record skip decisions, and start only the admitted project.
 - [x] Run focused tests, `py_compile`, and the file-by-file regression gate.
-- [ ] Commit, push, publish through the existing watcher, and prove one natural wake creates at most one new project prepared result while skipped projects start no decision/owner model.
+- [x] Commit, push, publish through the existing watcher, and prove one natural wake creates at most one new project prepared result while skipped projects start no decision/owner model.
+
+Production evidence: immutable release `eb3da7e8a640427bc8674129854cf0c017f20b97` becomes `current` through the existing watcher. Its first completed natural wake reports `status=pending`, `actionable=1`, `failed=0`, and `pending=6`. Exactly one prepared file receives a new mtime (`18130722`); unresolved `18169985`, `18128025`, `18178439`, `18062411`, `18183618`, and `18184558` report `queued`. The existing admission ledger appends `queue_skipped/pass_order_limit_reached` for skipped established projects.
