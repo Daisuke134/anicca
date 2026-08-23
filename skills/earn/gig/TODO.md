@@ -1797,6 +1797,12 @@ fragmented and could not by itself prove one intended=attempted exhaustion recei
 66-query manifest once through the leased production adapter. No send occurs during this read-only pass. A shortfall
 may be reported only if this pass finishes with all queries attempted, zero errors, completion time and every official
 URL checked; otherwise the room remains pending and resumes naturally.
+Inspection of the shared production adapter found that its JSON previously omitted start/completion timestamps,
+per-query official search URLs and the complete set of returned official post URLs. Counts alone therefore could not
+serve as the required machine-readable exhaustion receipt even after a complete pass. The adapter now emits
+`started_at`, `completed_at`, one `query_receipts` row per intended query with attempted/status/error and official X
+search URL, plus deduplicated `checked_official_urls`. The model still decides candidate eligibility and whether the
+business scope is exhausted; the adapter only records what was mechanically attempted and observed.
 
 The same natural wake produced two independent Coconala effects through the shared answer path. BUYMA room
 `18128025` truthfully identified the two duplicate proposals as AI auto-applications, apologized, told the buyer no

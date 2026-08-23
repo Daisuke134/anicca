@@ -280,13 +280,34 @@ def main():
         else:
             queries = [l.strip() for l in Path(args.queries).read_text(encoding="utf-8").splitlines()
                        if l.strip() and not l.strip().startswith("#")]
+            started_at = datetime.now(timezone.utc).isoformat()
             rows, errors, attempted = recon(
                 page, queries, args.per_query, already, handle, max(1, args.time_budget_seconds)
             )
+            completed_at = datetime.now(timezone.utc).isoformat()
+            errors_by_query = {row.get("query"): row.get("reason") for row in errors}
+            query_receipts = []
+            for index, query in enumerate(queries):
+                attempted_query = index < attempted
+                reason = errors_by_query.get(query)
+                query_receipts.append({
+                    "query": query,
+                    "official_search_url": (
+                        "https://x.com/search?q=" + urllib.parse.quote(query)
+                        + "&src=typed_query&f=live"
+                    ),
+                    "attempted": attempted_query,
+                    "status": ("not_attempted" if not attempted_query else
+                               "error" if reason else "completed"),
+                    "error": reason,
+                })
             result = {"handle": handle, "query_count": len(queries),
+                      "started_at": started_at, "completed_at": completed_at,
                       "queries_attempted": attempted,
                       "queries_not_attempted": len(queries) - attempted,
+                      "query_receipts": query_receipts,
                       "candidate_count": len(rows), "candidates": rows,
+                      "checked_official_urls": sorted({row["url"] for row in rows}),
                       "query_errors": errors}
     json.dump(result, sys.stdout, ensure_ascii=False, indent=1)
     print()
