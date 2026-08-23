@@ -7382,3 +7382,13 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   same suite; `LOOPS_RELEASE_PATHS='.'` is required on macOS Bash 3.2 to avoid
   the cutter's empty-array failure. Final re-review and owner production E2E
   remain open.
+- Fresh read-only re-review returned `ship` with no findings at `24ee5b5c9`.
+  Production `~/loops/current` is now immutable release
+  `20260824T015718-24ee5b5c`, built from the latest canonical-main ancestry plus
+  the live-proven Repost tree. Source/runtime SHA-256 matches for the CLI and
+  model boundary, the release is read-only, the posted ledger remained exactly
+  84, and disk free space is 4.5 GiB after normal release pruning. The prior
+  release `20260823T130005-09eea570` remains available for rollback. This Codex
+  context still fails Aqua/user preflight with launchd 141, so it did not bypass
+  the guard or kick the owner; the next proof must come from the existing
+  scheduled owner reading the new `current` release.
