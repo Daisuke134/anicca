@@ -366,6 +366,8 @@ T1 clean-clone closureを閉じる。metrics fallbackが実行していたrepo�
 
 旧manual `capafy-loop-cli.sh`のtmux + Claude + internal CronCreate経路を廃止し、同じfilenameを唯一のlaunchd owner `ai.anicca.capafy-loop-daily`へsafe kickstartするcompatibility wrapperにする。`--status`は実loaded ownerをreadbackし、default/`--restart`も新executorを生成しない。本番wrapper E2Eはlaunchd runs `3→4`、last exit `0`、新execution `20260823T005115Z-21843`が2秒で`CAP_FULL / healthy=true`へterminal化し、platform write 0。process readbackは旧Capafy tmux/Claude 0、tmux server 0で、停止済みsocket inodeだけをrecoverable Trashへ移す。これでhealthcheck、hourly schedule、manual入口の全てが同一Life Manager launchd ownerへ収束する。commitは`57cdb7208`。
 
+OpenClaw internal cronもofficial Gateway CLIで監査する。raw `~/.openclaw/cron/jobs.json`はmtime `2026-08-02`のstale snapshotでCapafyをenabledと誤表示するが、`openclaw cron get 569dc7b6-8533-4bdc-9257-2413607d2430`と`cron list --all --json`のlive stateは`anicca-capafy-daily-publish enabled=false`を返す。Capafyに一致するもう1件`anicca-cron-auto-disable`もdisabled。raw fileを編集せず、Gateway readbackを正本としてOpenClaw active Capafy owner 0を維持する。
+
 3本目以降のcopy experimentを学習可能にするため、live Reel ledger rowへexact `caption`、on-screen `hook`、`listing_name`を必須化する。新native URLとselected Agent IDだけではterminal successにせず、3 fieldのいずれかがblankならrotation commit 0、wrapper rc `3`にする。次のData Analyst passから`ig_reflect`はhookとreachを同じReel identityで比較できる。focused 3件、shell syntax、fresh reviewer `ship`を確認し、commit `c3004dbdf`をmainへpushする。
 
 Data Analyst production preflightでHyperFrames `0.8.8`と`edge-tts 7.2.8`は利用可能だが、STEP4が指定していた`~/.cache/instagrapi-venv/bin/python`は存在しないことを実測する。instagrapiがimportでき、poster CLI readbackがrc `0`の`/opt/homebrew/bin/python3`へ実行pathを固定する。focused 3件、shell syntax、poster `--help`、fresh reviewer `ship`を確認し、commit `7186fec9d`をmainへpushする。
