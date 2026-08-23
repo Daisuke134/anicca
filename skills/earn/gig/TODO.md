@@ -1668,6 +1668,27 @@ sources. Latest-row reduction now yields exactly seven valid contacts. The natur
 preserved roster; 43 further valid contacts or official reachable exhaustion, truthful buyer handoff, and replay-zero
 remain required.
 
+The following wake exposed why other purchased rooms stayed silent even with eight project slots. All ten targeted
+readbacks completed, but only Manledge and the legacy room received workers; Haru `18169583`, Aufbau `18178439`
+and byusco `18171890` remained pending. Their current DOM windows omitted older buyer rows while each project already
+held a hash-bound durable `requirements/live-buyer-reply.json`. The collector preserved those sidecars but returned no
+request identity to the parent. It now re-names the exact existing sidecar through the already-established
+`_request_named_by_existing_sidecar` path; it does not infer or rewrite buyer content. Commit `3961b115b` is pushed and
+published, but a natural wake must still prove all three independent owners start.
+
+That wake also proved two generic lifecycle and evidence defects. A timed-out Codex Code Mode owner left its detached
+read-only `x_collect.py` command reparented to PID 1 with the `x:anicca` lease. The lease wrapper trap released correctly
+when stopped, but the separately-sessioned grandchildren also required collection. `agent_runner` now snapshots and
+terminates descendants outside the provider process group, and Paid `_run_bounded` now forwards worker termination to
+the active owner process group; isolated live probes proved no detached child survived either boundary. Commits
+`efb0c0bb2` and `39f2e8fae` are pushed and published. Finally, semantic v12 tried to treat a timed-out zero-byte
+54-profile search as reachable exhaustion and prepare a false `7/50` completion report. No Coconala effect occurred.
+Semantic v13 preserves model eligibility judgment but requires a complete nonempty machine-readable exhaustion receipt
+binding intended and attempted query counts, completion time, zero query errors, and checked official URLs; search
+start logs, partial/zero-byte files, timeout and model narration cannot close the external-work contract. Commit
+`e4aa9cb1b` is pushed and published. The next natural wake must prove v13 remains remote, uses the bounded collector,
+reaps every child on timeout, and starts Haru, Aufbau and byusco rather than leaving silent pending rows.
+
 1. **Paid/Submission — finish first.**
    - [x] Deploy and read back Paid ignoring shared preventive `disk-pressure.block` (20 GiB) and
      `disk-writers.stop` (10/11 GiB hysteresis), while retaining the 512 MiB last-resort guard and
