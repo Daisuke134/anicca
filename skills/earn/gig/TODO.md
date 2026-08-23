@@ -1689,6 +1689,13 @@ start logs, partial/zero-byte files, timeout and model narration cannot close th
 `e4aa9cb1b` is pushed and published. The next natural wake must prove v13 remains remote, uses the bounded collector,
 reaps every child on timeout, and starts Haru, Aufbau and byusco rather than leaving silent pending rows.
 
+The next existing-launchd wake started naturally as Paid parent PID `53167` from immutable release `b89d95ac8`.
+After ten fresh targeted readbacks, it created five independent project workers in parallel: Haru `18169583`,
+Manledge `18169985`, Aufbau `18178439`, byusco `18171890`, and legacy `18062411`. This is the first natural proof that
+the durable-sidecar recovery removes the three silent pending rows and that new/current purchased work is admitted
+without a Codex customer-work executor. Owner decisions, buyer-visible effects, exact-room readbacks and replay-zero
+for the four unfinished customer projects remain open.
+
 1. **Paid/Submission — finish first.**
    - [x] Deploy and read back Paid ignoring shared preventive `disk-pressure.block` (20 GiB) and
      `disk-writers.stop` (10/11 GiB hysteresis), while retaining the 512 MiB last-resort guard and
