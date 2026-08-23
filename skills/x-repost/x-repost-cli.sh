@@ -25,6 +25,9 @@ STATE="${X_REPOST_STATE_DIR:-$SKILL/state}"
 POSTED="$STATE/posted.jsonl"
 PY=/opt/homebrew/bin/python3; [ -x "$PY" ] || PY=python3
 CODEX="$(command -v codex || echo "$HOME/.local/bin/codex")"
+MODEL_BOUNDARY="$SKILL/scripts/model_boundary.py"
+CODEX_AUTH_FILE="${X_REPOST_CODEX_AUTH_FILE:-$HOME/.codex-acct2/auth.json}"
+CODEX_AUTOMATION_HOME="${X_REPOST_CODEX_HOME:-$HOME/.local/state/life-manager/x-repost-codex}"
 IDENTITY="${X_REPOST_BROWSER_IDENTITY:-x:anicca}"
 # x-repost is Codex-only: Claude's subscription ceiling must not be able to stall this loop.
 MODEL="${X_REPOST_MODEL:-gpt-5.6-luna}"
@@ -36,6 +39,7 @@ ENSURE_BROWSER="$HOME/anicca/skills/browser/ensure_provision_browser.sh"
 AFFILIATE_PROPOSAL="${AFFILIATE_REPOST_PROPOSAL_PATH:-$HOME/.local/state/life-manager/affiliate/repost-proposals/latest.json}"
 AFFILIATE_CONSUMED="$STATE/affiliate-proposals-consumed.jsonl"
 BROWSER_LEASED=0
+MODEL_FAILURE="other"
 
 PASS_ID="$(date +%Y%m%dT%H%M%S)"
 EV="$STATE/evidence/$PASS_ID"
@@ -141,17 +145,26 @@ finish() {
 # Every Codex call in this loop is one-shot, Luna/max, and must end in a JSON object. Anything else
 # is a failed step -- the prompt is never "retried creatively", the pass just stops.
 ask_model() {
-  local prompt_file="$1" out_file="$2"
+  local prompt_file="$1" out_file="$2" prepared_home rc
+  MODEL_FAILURE="other"
+  prepared_home="$("$PY" "$MODEL_BOUNDARY" prepare \
+    --home "$CODEX_AUTOMATION_HOME" --auth "$CODEX_AUTH_FILE")" || {
+      MODEL_FAILURE="auth"
+      return 1
+    }
+  CODEX_AUTOMATION_HOME="$prepared_home"
   # Bounded, because the cadence is hourly and a model call has no natural end. On 2026-08-19 a
   # single pass spent over half an hour across three calls, which on this schedule means two passes
   # driving the same browser at once. A call that overruns is a failed step, not a slow one.
   timeout "${X_REPOST_MODEL_TIMEOUT:-600}" \
-    env -u ANTHROPIC_API_KEY "$CODEX" exec --ephemeral --model "$MODEL" \
+    env -u ANTHROPIC_API_KEY CODEX_HOME="$CODEX_AUTOMATION_HOME" \
+    "$CODEX" exec --ephemeral --model "$MODEL" \
     -c "model_reasoning_effort=\"$REASONING_EFFORT\"" --ignore-user-config --json \
     -o "$out_file" --dangerously-bypass-approvals-and-sandbox \
     --skip-git-repo-check -C "$SKILL" --add-dir "$SKILL" \
     "$(cat "$prompt_file")" >"$EV/model.stdout" 2>>"$EV/model.err"
-  "$PY" - "$out_file" <<'PYEOF'
+  rc=$?
+  if [ "$rc" -eq 0 ] && "$PY" - "$out_file" <<'PYEOF'
 import json, re, sys
 raw = open(sys.argv[1], encoding="utf-8", errors="replace").read()
 blocks = re.findall(r"\{.*\}", raw, re.S)
@@ -164,6 +177,39 @@ for candidate in reversed(blocks):
             continue
 raise SystemExit(1)
 PYEOF
+  then
+    return 0
+  fi
+  MODEL_FAILURE="$("$PY" "$MODEL_BOUNDARY" classify \
+    "$EV/model.stdout" "$EV/model.err" "$out_file" --returncode "$rc")" || MODEL_FAILURE="other"
+  return 1
+}
+
+handle_model_failure() {
+  local step="$1" out_file="$2"
+  case "$MODEL_FAILURE" in
+    quota)
+      report "🛑 $step はモデル上限のため安全に見送り。外部作用なし。"
+      lesson "モデル上限でパス見送り" "provider failureはJSON parse failureと分ける"
+      finish 0 "model quota exhausted"
+      ;;
+    auth)
+      report "❌ $step は隔離Codex認証を準備できず停止。外部作用なし。"
+      finish 1 "codex automation auth unavailable"
+      ;;
+    timeout)
+      report "❌ $step はモデルtimeoutで停止。外部作用なし。"
+      finish 1 "model timeout"
+      ;;
+    network)
+      report "❌ $step はprovider network断で停止。外部作用なし。"
+      finish 1 "model network unavailable"
+      ;;
+    *)
+      report "❌ $step の応答が JSON として読めなかった: $(head -c 200 "$out_file")"
+      finish 1 "$step returned unparseable output"
+      ;;
+  esac
 }
 
 # Publishing and collection share the release-installed Python runtime. Never resolve or download
@@ -869,16 +915,7 @@ EOF
 } >"$EV/prompt-select.txt"
 
 if ! ask_model "$EV/prompt-select.txt" "$EV/select.raw" >"$EV/select.json"; then
-  # Distinguish "the model refused/failed" from "the account ran out of budget" -- the second is
-  # not a bug in this loop and needs a human to raise a limit, so it must not read as a parse error.
-  # 2026-08-17 13:35 lost a pass to exactly this, reported as "unparseable output".
-  if grep -qi "spend limit\|usage limit\|rate limit" "$EV/select.raw" 2>/dev/null; then
-    report "🛑 モデルの上限に当たってパスを見送り: $(head -c 200 "$EV/select.raw")"
-    lesson "モデル上限でパス見送り" "ループ側では直せない。上限を上げるまで一定割合のパスが落ちる"
-    finish 0 "model budget exhausted"
-  fi
-  report "❌ 選定/生成の応答が JSON として読めなかった: $(head -c 200 "$EV/select.raw")"
-  finish 1 "select step returned unparseable output"
+  handle_model_failure "select step" "$EV/select.raw"
 fi
 SELECTED="$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1])).get("selected"))' "$EV/select.json")"
 if [ "$SELECTED" != "True" ]; then
@@ -945,8 +982,7 @@ fi
 } >"$EV/prompt-humanize.txt"
 
 if ! ask_model "$EV/prompt-humanize.txt" "$EV/humanize.raw" >"$EV/humanized.json"; then
-  report "❌ humanize の応答が JSON として読めなかった"
-  finish 1 "humanize step returned unparseable output"
+  handle_model_failure "humanize step" "$EV/humanize.raw"
 fi
 
 # ---------------------------------------------------------------- 5. choose one
@@ -965,8 +1001,7 @@ fi
 } >"$EV/prompt-choose.txt"
 
 if ! ask_model "$EV/prompt-choose.txt" "$EV/choose.raw" >"$EV/chosen.json"; then
-  report "❌ 最終選択の応答が JSON として読めなかった"
-  finish 1 "choose step returned unparseable output"
+  handle_model_failure "choose step" "$EV/choose.raw"
 fi
 
 # Enforce X's real limit before touching the browser. Every failed publish so far was an
@@ -1063,8 +1098,7 @@ SRC_METRICS="$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1]))["me
   echo; echo '## 出力（最後にJSONだけ）'; echo '{"supported":true,"useful":true,"source_specific":true,"value_types":["procedure","failure_condition"],"reason":"1文"}'
 } >"$EV/prompt-verify.txt"
 if ! ask_model "$EV/prompt-verify.txt" "$EV/verify.raw" >"$EV/verify.json"; then
-  report "❌ source-grounding criticの応答を読めなかったため投稿を見送り"
-  finish 1 "source grounding critic failed"
+  handle_model_failure "source-grounding critic" "$EV/verify.raw"
 fi
 if [ "$("$PY" -c 'import json,sys; d=json.load(open(sys.argv[1])); allowed={"procedure","decision_criterion","failure_condition","comparison_method"}; values=d.get("value_types") or []; print(d.get("supported") is True and d.get("useful") is True and d.get("source_specific") is True and len(set(values) & allowed) >= 2)' "$EV/verify.json" 2>/dev/null)" != "True" ]; then
   report "⚠️ 最終本文がsource支持または具体的な読者効用gateを満たさないため投稿を見送り"
