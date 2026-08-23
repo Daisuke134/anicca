@@ -355,12 +355,18 @@ Manledge script. The still-running pre-release Manledge owner independently shor
 copy to fit X's weighted-length limit, published it from the resolver-selected `@selawmqt` identity, and read the
 one matching official timeline post back at `https://x.com/selawmqt/status/2091325726750544166`. This is one real
 natural-owner public recruitment effect, not any of the required 50 individual approaches and not yet a complete
-Coconala handoff. The earlier drafts and failed compose attempts remain zero effects. Manledge stays open until a
-fresh verifier reads this exact post, the owner sends the concise result in the exact Coconala room, and official
-room readback plus replay-zero are recorded.
+Coconala handoff. The earlier drafts and failed compose attempts remain zero effects. After that owner exited, the
+existing launchd Paid job naturally restarted from a release containing the shared adapter, rediscovered all nine
+purchased rooms, and dispatched Manledge, Smile, X and the legacy room as four parallel project workers. Manledge
+reclassified the completed remote work from `remote` to `answer`, discarded the stale account-signup request, and
+sent the concise post result once in exact room `18169985`. The installed effect receipt records
+`send_performed=true`, `effect=1`, `readback=1`, `formal_delivery_checkbox=false`, and effect key
+`coconala:reply:18169985:c2fd08283c5052760c0583de1e1645fc88e7c65ba398a6ad2fb862db5f68cb18`;
+the official room snapshot reads back the new seller message with the X URL redacted in stored customer data.
+Manledge remains open for replay-zero and the still-unfulfilled 50 qualified individual approaches.
 
 **Current live cursor.** `main` and `origin/main` were verified equal immediately before this snapshot at
-`d980a14ee`; the starting verification commit
+`883e92e2a`; the starting verification commit
 `79ac01ba1eb66b06aed1f9cee66d4af303f03a3d` remains an ancestor. The existing launchd Paid owner is the only
 customer-effect owner. The authenticated gig-browser launcher and launchd manifest were still overriding the
 configured no-floor policy with a hard-coded 512 MiB headroom; the launcher also unset both ignore flags. Under
