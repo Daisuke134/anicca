@@ -121,6 +121,11 @@ not use a fixed default. Prefer a visible non-disclosure option for optional dem
 For routine logistics, select the least-claiming option consistent with the resume,
 job location, and candidate facts. Missing a prewritten answer is never a reason to
 stop the row.
+For a segmented Workday month/year date, fill Month first, use the returned fresh
+observation, then fill Year. Re-observe the combined displayed date before leaving
+the field. Do not open Calendar or step through years when the visible month and year
+spinbuttons are available. If an autofilled optional work-history row cannot be
+corrected from grounded dated facts, remove only that exact extra row.
 
 For text without a candidate concept, use exactly one `runtime type-text` command.
 If the fresh observation exposes visible options, click the chosen option's exact
