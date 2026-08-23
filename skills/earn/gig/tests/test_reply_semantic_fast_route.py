@@ -812,6 +812,15 @@ def test_semantic_prompt_v27_is_proactive_and_reads_verified_attachments():
     )
 
     assert requested_estimate.SEMANTIC_PROMPT_VERSION == "reply-negotiate-v27"
+    assert requested_estimate.semantic_prompt_compatible(
+        {"prompt_version": "reply-negotiate-v26"}
+    ) is True
+    assert requested_estimate.semantic_prompt_compatible(
+        {"prompt_version": "reply-negotiate-v27"}
+    ) is True
+    assert requested_estimate.semantic_prompt_compatible(
+        {"prompt_version": "reply-negotiate-v25"}
+    ) is False
     assert "条件付き購入意思は購入承認ではありません" in prompt
     assert "すでに購入済み" in prompt
     assert "新しい見積りを送らない" in prompt

@@ -1357,7 +1357,7 @@ def _targeted_seller_debt_reply(inquiry: dict[str, Any]) -> bool:
         and inquiry.get("reply_required") is True
         and inquiry.get("next_action") == "reply"
         and isinstance(receipt, dict)
-        and receipt.get("prompt_version") == SEMANTIC_PROMPT_VERSION
+        and _requested_estimate_module().semantic_prompt_compatible(receipt)
         and isinstance(judgement, dict)
         and judgement.get("next_action") == "reply"
         and type(inquiry.get("semantic_reply_body")) is str

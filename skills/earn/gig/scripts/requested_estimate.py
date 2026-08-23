@@ -64,6 +64,9 @@ NA15_CATEGORY_IDS = {
 
 SEMANTIC_RECEIPT_VERSION = 1
 SEMANTIC_PROMPT_VERSION = "reply-negotiate-v27"
+SEMANTIC_COMPATIBLE_PROMPT_VERSIONS = frozenset({
+    "reply-negotiate-v26", SEMANTIC_PROMPT_VERSION,
+})
 SEMANTIC_RUNNER_PROFILE = "reply-semantic-agent"
 SEMANTIC_COMPATIBLE_RUNNER_PROFILES = frozenset({
     "composition-agent", SEMANTIC_RUNNER_PROFILE,
@@ -88,7 +91,10 @@ SELLER_FACT_IDS = frozenset({
 
 
 def semantic_prompt_compatible(value: Any) -> bool:
-    return isinstance(value, dict) and value.get("prompt_version") == SEMANTIC_PROMPT_VERSION
+    return (
+        isinstance(value, dict)
+        and value.get("prompt_version") in SEMANTIC_COMPATIBLE_PROMPT_VERSIONS
+    )
 
 
 class SemanticJudgementError(ValueError):
