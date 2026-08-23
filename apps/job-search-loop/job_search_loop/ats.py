@@ -16,6 +16,10 @@ def detect_provider(url: str) -> str:
         return "workday"
     if hostname == "myworkdaysite.com" or hostname.endswith(".myworkdaysite.com"):
         return "workday"
+    if hostname in {"job-boards.greenhouse.io", "boards.greenhouse.io"}:
+        return "greenhouse"
+    if hostname == "jobs.lever.co":
+        return "lever"
     return "generic"
 
 

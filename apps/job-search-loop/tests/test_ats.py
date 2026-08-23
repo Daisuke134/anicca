@@ -19,7 +19,11 @@ class AtsReadinessTests(unittest.TestCase):
             "https://app.ashbyhq.com/applicationForm": "ashby",
             "https://acme.wd5.myworkdayjobs.com/jobs/role": "workday",
             "https://wd1.myworkdaysite.com/acme/job/role": "workday",
+            "https://job-boards.greenhouse.io/gitlab/jobs/123": "greenhouse",
+            "https://boards.greenhouse.io/gitlab/jobs/123": "greenhouse",
+            "https://jobs.lever.co/example/123": "lever",
             "https://ashbyhq.com.example.test/role": "generic",
+            "https://greenhouse.io.example.test/role": "generic",
             "https://careers.example.com/role": "generic",
         }
         for url, expected in cases.items():
