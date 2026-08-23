@@ -7399,3 +7399,20 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   stayed exactly 84 and no Postiz/X effect occurred. This is not evidence
   against the new release. With installed `StartInterval=1800`, the first
   natural owner wake that can load `24ee5b5c9` is after `02:44:40+09:00`.
+- New-release owner pass `20260824T024440` proves the auth/model repair. It
+  loaded dedicated account-2 `CODEX_HOME`, collected 96 candidates, completed
+  select, humanize, choose, and the independent source critic without the prior
+  usage-limit/JSON failure, selected the 50% standalone-original arm, and passed
+  length at 214/250. Postiz accepted submission
+  `cmt63va540h3dqp0yxg7p72ud`; public X exact readback is
+  `https://x.com/selawmqt/status/2091584652951879730`. The same profile readback
+  also resolves the prior Binance original to
+  `https://x.com/selawmqt/status/2091329904222904593`.
+- The owner still exited `publish unverified` because X rendered the exact body
+  without a quote-card/source anchor. Commit `c9ea8316d` adds that measured DOM
+  shape: accept an exact generated body only when no quote card exists; retain
+  rejection when any wrong quote card is present. Both positive and negative
+  regressions pass, with the full suite 35/35 GREEN. The X ledger is 85 with the
+  new row still terminal-unverified; no duplicate publish is allowed. Fresh
+  review and a release-owned reconciliation pass remain required before this
+  readback repair is complete.
