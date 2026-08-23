@@ -1728,6 +1728,15 @@ characters for ordinary replies, while allowing longer output only when the buye
 written report. This remains model composition, not a buyer-name router or deterministic semantic gate. Both rooms
 must continue from every newer buyer message and prove replay-zero when no newer request exists.
 
+LBJ room `18130722` exposed the inverse context failure. This TODO already records the account owner's transfer of
+that work to another provider and retention of only the latest v107 package, but the semantic owner could not see the
+exact-cycle `paid-file-operator-policy.json` until after choosing `actionable`; it therefore kept reserving obsolete
+revision work. Semantic v14 now hash-binds the same scoped account-owner policy before mode selection. Such a policy
+may stop, narrow or transfer seller work but cannot invent buyer approval, permit formal delivery or override safety.
+The current LBJ policy is bound to the current feedback and requirements hashes, requires `satisfied_noop` with no
+new build/send, and expires automatically when a genuinely newer buyer message creates a different feedback cycle.
+The next natural Paid wake must prove this transition and preserve v107 without another customer effect.
+
 1. **Paid/Submission — finish first.**
    - [x] Deploy and read back Paid ignoring shared preventive `disk-pressure.block` (20 GiB) and
      `disk-writers.stop` (10/11 GiB hysteresis), while retaining the 512 MiB last-resort guard and

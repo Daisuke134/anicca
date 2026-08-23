@@ -106,7 +106,7 @@ OWNER_WORKED_TALKROOMS = {
     "18151989",  # jedbyJUNKYアメーバnote — デザインテンプレート利用許諾契約書
 }
 PAID_DECISION_SCHEMA_VERSION = 4
-PAID_DECISION_PROMPT_VERSION = "paid-semantic-decision-v13"
+PAID_DECISION_PROMPT_VERSION = "paid-semantic-decision-v14"
 PAID_DECISION_MODEL = "gpt-5.6-sol"
 PAID_FILE_MODEL = "gpt-5.6-sol"
 PAID_FILE_POLICY_VERSION = "paid-file-build-review-v21"
@@ -1136,7 +1136,18 @@ def _revalidate_file_snapshots(snapshots: dict[str, tuple[int, str]]) -> None:
 
 
 def _decision_prompt(context: Path, context_sha256: str, feedback: str,
-                    requirements: str, identity: dict[str, str]) -> bytes:
+                    requirements: str, identity: dict[str, str],
+                    operator_policy: dict[str, Any] | None = None,
+                    operator_policy_sha256: str = "") -> bytes:
+    policy_instruction = ""
+    if operator_policy:
+        policy_instruction = (
+            "The account owner supplied an exact-cycle operator policy with SHA256 "
+            f"{operator_policy_sha256}: "
+            f"{json.dumps(operator_policy['directives'], ensure_ascii=False)}. "
+            "Treat it as current project authority. It may stop, narrow, transfer, or otherwise constrain seller work, "
+            "but it cannot invent buyer approval, authorize formal delivery, or override marketplace safety. "
+        )
     return (
         f"Return one strict JSON semantic decision for the compiled cumulative context {context}. "
         f"context_sha256={context_sha256}; current feedback_sha256={feedback}; requirements_sha256={requirements}; "
@@ -1190,7 +1201,8 @@ def _decision_prompt(context: Path, context_sha256: str, feedback: str,
         "Each required asset needs a stable lowercase asset_id, kind, minimum_count, buyer_visible_purpose, "
         "source_authority builder/buyer/account_owner, and archive_required. Do not hide a required asset only in "
         "unresolved. unresolved is an array of strings. "
-        "Read the context and its read_these_first files. Do not use a browser or mutate anything."
+        + policy_instruction
+        + "Read the context and its read_these_first files. Do not use a browser or mutate anything."
     ).encode("utf-8")
 
 
@@ -1260,6 +1272,11 @@ def _paid_decision(args, item_path: Path, root: Path, base: Path) -> dict[str, A
     context_sha256 = hashlib.sha256(context_snapshot).hexdigest()
     context_inputs = _context_input_snapshot(root, context)
     context_inputs_sha256 = _context_inputs_sha256(context_inputs)
+    operator_policy_path, operator_policy, operator_policy_sha256 = _file_operator_policy(
+        root, feedback, requirements)
+    if operator_policy_path is not None:
+        context_inputs[str(operator_policy_path.resolve())] = _file_snapshot(operator_policy_path)
+        context_inputs_sha256 = _context_inputs_sha256(context_inputs)
     if (paid_remote_result.requirements_digest(root, feedback) != requirements
             or _latest_official_identity(root, talkroom_id) != identity):
         raise Failure("paid_work_decision")
@@ -1267,7 +1284,9 @@ def _paid_decision(args, item_path: Path, root: Path, base: Path) -> dict[str, A
         raise Failure("paid_work_decision")
     receipt_path = context.parent / "paid-work-decision.json"
     prompt = base / "mode" / "decision.prompt.txt"
-    prompt_bytes = _decision_prompt(context, context_sha256, feedback, requirements, identity)
+    prompt_bytes = _decision_prompt(
+        context, context_sha256, feedback, requirements, identity,
+        operator_policy, operator_policy_sha256)
     prompt_sha256 = hashlib.sha256(prompt_bytes).hexdigest()
     try:
         receipt = None if receipt_path.is_symlink() or not _regular_file(receipt_path) else _load(receipt_path)
