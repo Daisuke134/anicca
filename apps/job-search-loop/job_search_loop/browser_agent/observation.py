@@ -63,9 +63,9 @@ class ObservationBuilder:
               }
               const stableId = (el, index) => {
                 const automation = el.getAttribute('data-automation-id');
-                if (automation && automationCounts.get(automation) === 1) return `automation:${automation}`;
                 const id = el.getAttribute('id');
                 if (id && idCounts.get(id) === 1) return `id:${id}`;
+                if (automation && automationCounts.get(automation) === 1) return `automation:${automation}`;
                 // Adapted from career-ops' ref-tagged drive loop: every fresh
                 // observation gives otherwise anonymous visible controls an
                 // observation-local identity. The next observation replaces it.
