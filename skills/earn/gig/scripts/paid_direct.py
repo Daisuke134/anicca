@@ -93,6 +93,11 @@ PAID_DECISION_SCHEMA_VERSION = 4
 PAID_DECISION_PROMPT_VERSION = "paid-semantic-decision-v14"
 PAID_DECISION_MODEL = "gpt-5.6-sol"
 PAID_FILE_MODEL = "gpt-5.6-sol"
+PAID_RUNNER_CANDIDATES = {
+    ("codex", "gpt-5.6-sol"),
+    ("codex", "gpt-5.6-luna"),
+    ("claude-direct", "sonnet"),
+}
 PAID_FILE_POLICY_VERSION = "paid-file-build-review-v21"
 MAX_FILE_REVIEW_ITERATIONS = 1
 PAID_MAX_PARALLEL_PROJECTS = 8
@@ -679,13 +684,15 @@ def _validate_paid_decision(value: dict[str, Any], feedback: str, requirements: 
 def _decision_runner_proof(evidence: Path) -> dict[str, Any]:
     summary = _runner_summary(evidence)
     expected = {"status": "success", "task_label": "paid-work-decision",
-                "task_class": "escalation-agent", "escalated": True,
-                "selected_provider": "codex", "selected_model": PAID_DECISION_MODEL}
+                "task_class": "escalation-agent", "escalated": True}
     if any(summary.get(key) != value for key, value in expected.items()):
+        raise Failure("paid_work_decision")
+    provider_model = (summary.get("selected_provider"), summary.get("selected_model"))
+    if provider_model not in PAID_RUNNER_CANDIDATES:
         raise Failure("paid_work_decision")
     result_path = _consultation_result_path(evidence, summary)
     summary_path = evidence / "summary.json"
-    return {**expected,
+    return {**expected, "selected_provider": provider_model[0], "selected_model": provider_model[1],
             "summary_sha256": hashlib.sha256(summary_path.read_bytes()).hexdigest(),
             "result_sha256": hashlib.sha256(result_path.read_bytes()).hexdigest()}
 
@@ -945,7 +952,7 @@ def _prepare_blind_output_audit(
         started = time.time_ns()
         command = [
             "/usr/bin/sandbox-exec", "-f", str(profile), sys.executable, str(isolated_runner),
-            "--task-class", "escalation-agent", "--candidate-model", PAID_FILE_MODEL,
+            "--task-class", "escalation-agent",
             "--prompt-file", str(prompt), "--schema", str(schema),
             "--evidence-dir", str(evidence_dir), "--task-label", "paid-output-blind-audit",
             "--loop", "gig", "--workdir", str(isolated), "--timeout-seconds", "1800", "--read-only",
@@ -1211,8 +1218,7 @@ def _cached_paid_decision(root: Path, receipt: Any, prompt: Path,
             or runner.get("task_label") != "paid-work-decision"
             or runner.get("task_class") != "escalation-agent"
             or runner.get("escalated") is not True
-            or runner.get("selected_provider") != "codex"
-            or runner.get("selected_model") != PAID_DECISION_MODEL
+            or (runner.get("selected_provider"), runner.get("selected_model")) not in PAID_RUNNER_CANDIDATES
             or any(not re.fullmatch(r"[0-9a-f]{64}", runner.get(key, ""))
                    for key in ("summary_sha256", "result_sha256"))):
         raise ValueError("invalid paid decision runner proof")
@@ -1298,10 +1304,9 @@ def _paid_decision(args, item_path: Path, root: Path, base: Path) -> dict[str, A
     started_ns = time.time_ns()
     try:
         decision_command = [sys.executable, str(args.agent_runner), "--task-class", "escalation-agent",
-              "--candidate-model", PAID_DECISION_MODEL,
               "--prompt-file", str(prompt), "--schema", str(schema), "--evidence-dir", str(evidence),
               "--task-label", "paid-work-decision", "--escalation-reason",
-              "Paid delivery routing must use the authorized Sol semantic decision model.",
+              "Paid delivery routing must use an authorized escalation semantic model.",
               "--loop", "gig", "--workdir", str(root), "--timeout-seconds", "1800", "--read-only"]
         _run(_private_model_runner(root, decision_command, "paid-work-decision"),
              "paid_work_decision")
@@ -1432,8 +1437,10 @@ def _validate_verifier_runner(managed: Path, semantic_status: str,
                               min_mtime_ns: int | None = None) -> dict[str, Any]:
     summary = _runner_summary(managed)
     expected = {"status": "success", "task_label": "paid-remote-verifier", "task_class": "escalation-agent",
-                "escalated": True, "selected_provider": "codex", "selected_model": "gpt-5.6-sol"}
-    if not isinstance(summary, dict) or any(summary.get(key) != value for key, value in expected.items()):
+                "escalated": True}
+    if (not isinstance(summary, dict)
+            or any(summary.get(key) != value for key, value in expected.items())
+            or (summary.get("selected_provider"), summary.get("selected_model")) not in PAID_RUNNER_CANDIDATES):
         raise ValueError("verifier runner selection mismatch")
     if step_result_status.status_from_evidence(managed) != semantic_status:
         raise ValueError("verifier runner semantic status mismatch")
@@ -1571,7 +1578,7 @@ def _validate_managed_verifier(verifier: Path, project_root: Path, intent: dict[
 
 def _review_failure(verifier: Path, project_root: Path, intent: dict[str, Any], feedback: str, digest: str,
                     min_mtime_ns: int | None = None) -> dict[str, Any]:
-    """Read a Sol-owned rejection as repair input, never as effect authorization."""
+    """Read a model-owned rejection as repair input, never as effect authorization."""
     try:
         project_root = project_root.resolve(); managed = project_root / "evidence" / "agent-PAID_REMOTE_VERIFY"
         if managed.is_symlink() or not managed.is_dir() or verifier.is_symlink():
@@ -1779,9 +1786,10 @@ def _file_runner_result(evidence: Path, *, task_label: str,
     summary = _runner_summary(evidence)
     expected = {
         "status": "success", "task_label": task_label, "task_class": "escalation-agent",
-        "escalated": True, "selected_provider": "codex", "selected_model": PAID_FILE_MODEL,
+        "escalated": True,
     }
-    if any(summary.get(key) != value for key, value in expected.items()):
+    if (any(summary.get(key) != value for key, value in expected.items())
+            or (summary.get("selected_provider"), summary.get("selected_model")) not in PAID_RUNNER_CANDIDATES):
         raise Failure("file_verifier" if "verifier" in task_label else "file_builder")
     result_path = _consultation_result_path(evidence, summary)
     if started_ns is not None:
@@ -1793,6 +1801,8 @@ def _file_runner_result(evidence: Path, *, task_label: str,
     if not isinstance(value, dict):
         raise Failure("file_verifier" if "verifier" in task_label else "file_builder")
     proof = {
+        "selected_provider": summary["selected_provider"],
+        "selected_model": summary["selected_model"],
         "summary_sha256": hashlib.sha256((evidence / "summary.json").read_bytes()).hexdigest(),
         "result_sha256": hashlib.sha256(result_path.read_bytes()).hexdigest(),
     }
@@ -2006,7 +2016,7 @@ def _prepare_source_census(args, root: Path, requirements_sha256: str, code_root
         started = time.time_ns()
         command = [
             "/usr/bin/sandbox-exec", "-f", str(profile), sys.executable, str(isolated_runner),
-            "--task-class", "escalation-agent", "--candidate-model", PAID_FILE_MODEL,
+            "--task-class", "escalation-agent",
             "--prompt-file", str(prompt), "--schema", str(isolated_schema),
             "--evidence-dir", str(evidence), "--task-label", "paid-source-census",
             "--loop", "gig", "--workdir", str(isolated), "--timeout-seconds", "3600",
@@ -2412,7 +2422,7 @@ def _validate_file_authorization(root: Path, stable: Path, feedback: str,
                 != snapshots["source_correspondence"][1])
             or receipt.get("verifier_summary_sha256") != hashlib.sha256((verifier / "summary.json").read_bytes()).hexdigest()
             or receipt.get("verifier_result_sha256") != hashlib.sha256(result_path.read_bytes()).hexdigest()
-            or receipt.get("reviewer_model") != PAID_FILE_MODEL
+            or receipt.get("reviewer_model") != summary.get("selected_model")
             or (isinstance(review_state, dict)
                 and review_state.get("state") == "REPAIR_PENDING"
                 and review_state.get("buyer_feedback_sha256") == feedback
@@ -2422,8 +2432,7 @@ def _validate_file_authorization(root: Path, stable: Path, feedback: str,
             or summary.get("task_label") != "paid-file-verifier"
             or summary.get("task_class") != "escalation-agent"
             or summary.get("escalated") is not True
-            or summary.get("selected_provider") != "codex"
-            or summary.get("selected_model") != PAID_FILE_MODEL):
+            or (summary.get("selected_provider"), summary.get("selected_model")) not in PAID_RUNNER_CANDIDATES):
         raise ValueError("stale file authorization")
     ok, errors = paid_work_evidence.validate_paid_work(
         root, stable, artifact_judge=lambda *_: ("deliverable", _text(result.get("reason"))),
@@ -2611,11 +2620,11 @@ def _run_isolated_file_owner(args, root: Path, context: Path, prompt_text: str,
         started = time.time_ns()
         command = [
             "/usr/bin/sandbox-exec", "-f", str(profile), sys.executable, str(args.agent_runner),
-            "--task-class", "escalation-agent", "--candidate-model", PAID_FILE_MODEL,
+            "--task-class", "escalation-agent",
             "--prompt-file", str(prompt), "--schema", str(args.runner_schema),
             "--evidence-dir", str(staged_evidence), "--task-label", "paid-file-owner",
             "--loop", "gig", "--workdir", str(staging), "--timeout-seconds", "3600",
-            "--escalation-reason", "One isolated Sol paid owner must build the buyer deliverable",
+            "--escalation-reason", "One isolated paid owner must build the buyer deliverable",
         ]
         try:
             for owner_round in range(2):
@@ -3044,7 +3053,7 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
             if blocked_recheck_finding else ""
         )
         verifier_prompt.write_text(
-            f"You are a fresh read-only Sol reviewer. Independently read the actual artifact {manifest['artifact_path']}, "
+            f"You are a fresh read-only reviewer. Independently read the actual artifact {manifest['artifact_path']}, "
             f"the complete accumulated requirements {manifest['requirements_path']}, acceptance evidence "
             f"{manifest['acceptance_evidence_path']}, and compiled context {context}. The exact artifact SHA256 is "
             f"{snapshots['artifact'][1]}, the exact requirements file SHA256 is {snapshots['requirements'][1]}, and the "
@@ -3102,11 +3111,10 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
         verifier_started = time.time_ns()
         verifier_command = [
             sys.executable, str(args.agent_runner), "--task-class", "escalation-agent",
-            "--candidate-model", PAID_FILE_MODEL,
             "--prompt-file", str(verifier_prompt), "--schema", str(args.artifact_schema),
             "--evidence-dir", str(verifier_evidence), "--task-label", "paid-file-verifier",
             "--loop", "gig", "--workdir", str(root), "--timeout-seconds", "1800", "--read-only",
-            "--escalation-reason", "Fresh independent Sol review before paid submission",
+            "--escalation-reason", "Fresh independent review before paid submission",
         ]
         for image in review_images + reference_images:
             verifier_command += ["--image", str(image)]
@@ -3226,7 +3234,7 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
         "acceptance_sha256": snapshots["acceptance"][1],
         **({"source_correspondence_sha256": snapshots["source_correspondence"][1]}
            if "source_correspondence" in snapshots else {}),
-        "reviewer_model": PAID_FILE_MODEL,
+        "reviewer_model": proof["selected_model"],
         "shipment_basis": shipment_basis,
         "review_round": review_round,
         "verifier_summary_sha256": proof["summary_sha256"],
@@ -3342,7 +3350,7 @@ def _repair_prompt(root: Path, item: Path, feedback: str, requirements_sha256: s
                    review_delta: list[dict[str, str]] | None = None) -> str:
     code_root = HERE.parents[2]
     semantic_contract, semantic_contract_sha256 = _semantic_effect_contract(root)
-    role = "fresh read-only Sol remote reviewer" if verifier else "Sol paid remote owner"
+    role = "fresh read-only remote reviewer" if verifier else "paid remote owner"
     tab_owner = "paid-direct-remote-verifier" if verifier else "paid-direct-remote-builder"
     mutation = "Never mutate, click submit, or send anything." if verifier else "Mutate only the authenticated target when required, idempotently."
     target_contract = (
@@ -3379,7 +3387,7 @@ def _repair_prompt(root: Path, item: Path, feedback: str, requirements_sha256: s
     )
     correction = ""
     if not verifier and review_delta:
-        correction = ("A fresh Sol reviewer rejected the prior result. Correct every structured finding, then re-read the "
+        correction = ("A fresh reviewer rejected the prior result. Correct every structured finding, then re-read the "
                       "live target and rewrite owner evidence: "
                       + json.dumps(review_delta, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + ". ")
     return (f"You are the {role}. PROJECT_ROOT={root}. Current queue item={item}. "
@@ -3507,9 +3515,10 @@ def _consultation_runner_result(evidence: Path, *, task_label: str, task_class: 
                                 model: str, started_ns: int) -> dict[str, Any]:
     summary = _runner_summary(evidence)
     expected = {"status": "success", "task_label": task_label, "task_class": task_class,
-                "selected_provider": "codex", "selected_model": model}
+                }
     if task_class == "escalation-agent": expected["escalated"] = True
-    if any(summary.get(key) != value for key, value in expected.items()):
+    if (any(summary.get(key) != value for key, value in expected.items())
+            or (summary.get("selected_provider"), summary.get("selected_model")) not in PAID_RUNNER_CANDIDATES):
         raise Failure("remote_verifier" if "verifier" in task_label else "remote_builder")
     result_path = _consultation_result_path(evidence, summary)
     now_ns = time.time_ns()
@@ -3573,11 +3582,12 @@ def _validate_consultation_authorization(root: Path, feedback: str) -> dict[str,
                                         task_class="escalation-agent", model=PAID_DECISION_MODEL,
                                         started_ns=0)
     owner_result_path = _consultation_result_path(owner_dir)
+    owner_summary = _runner_summary(owner_dir)
     if (hashlib.sha256(owner_result_path.read_bytes()).hexdigest()
             != intent.get("owner_result_sha256")
             or hashlib.sha256((owner_dir / "summary.json").read_bytes()).hexdigest()
             != intent.get("owner_summary_sha256")
-            or intent.get("owner_model") != PAID_DECISION_MODEL):
+            or intent.get("owner_model") != owner_summary.get("selected_model")):
         raise ValueError("consultation review proof changed")
     _validate_consultation_result(owner, expected, message=message)
     if owner.get("status") != "ok" or owner.get("issues"):
@@ -3626,7 +3636,7 @@ def _run_consultation_review(args, item_path: Path, root: Path, feedback: str, b
         else:
             attachment_instruction = "No buyer attachments are present; reviewed_attachments must be an empty array."
         owner_prompt.write_text(
-            "You are the Sol paid answer owner. Never submit or send anything. You may run local read commands and "
+            "You are the paid answer owner. Never submit or send anything. You may run local read commands and "
             "research the public web with installed CLI tools when the buyer asks for current or externally verifiable "
             "facts. Before repeating any external fact not proved by the compiled project sources, fetch its official "
             "page with the installed crwl CLI so the command output is preserved in your runner stdout evidence; include "
@@ -3649,10 +3659,9 @@ def _run_consultation_review(args, item_path: Path, root: Path, feedback: str, b
             encoding="utf-8",
         )
         command = [sys.executable, str(args.agent_runner), "--task-class", "escalation-agent",
-                   "--candidate-model", PAID_DECISION_MODEL,
                    "--prompt-file", str(owner_prompt), "--schema", str(schema),
                    "--evidence-dir", str(owner_evidence), "--task-label", "paid-answer-owner",
-                   "--escalation-reason", "Sol owner composes the exact paid buyer answer",
+                   "--escalation-reason", "Paid owner composes the exact paid buyer answer",
                    "--loop", "gig", "--workdir", str(root), "--timeout-seconds", "1800"]
         for image in images:
             command += ["--image", str(image)]
@@ -3691,7 +3700,7 @@ def _run_consultation_review(args, item_path: Path, root: Path, feedback: str, b
            "requirements_sha256": requirements_sha256, "message_sha256": message_sha256,
            "owner_result_sha256": hashlib.sha256(_consultation_result_path(owner_evidence).read_bytes()).hexdigest(),
            "owner_summary_sha256": hashlib.sha256((owner_evidence / "summary.json").read_bytes()).hexdigest(),
-           "owner_model": PAID_DECISION_MODEL})
+           "owner_model": _runner_summary(owner_evidence)["selected_model"]})
     _write(delivery / "paid-answer.json", {"version": 1, "status": "answer", "message": message,
            "requirements_sha256": requirements_sha256, "message_sha256": message_sha256})
     _validate_consultation_authorization(root, feedback)
@@ -3767,10 +3776,9 @@ def _run_remote_repair(args, item_path: Path, root: Path, feedback: str, base: P
             owner_evidence = root / "evidence" / "agent-PAID_REMOTE_OWNER"
             owner_started_ns = time.time_ns()
             owner_command = [sys.executable, str(args.agent_runner), "--task-class", "escalation-agent",
-                  "--candidate-model", PAID_DECISION_MODEL,
                   "--prompt-file", str(prompt), "--schema", str(args.runner_schema),
                   "--evidence-dir", str(owner_evidence), "--task-label", "paid-remote-owner",
-                  "--escalation-reason", "Sol owner mutates the authenticated paid target",
+                  "--escalation-reason", "Paid owner mutates the authenticated paid target",
                   "--loop", "gig", "--workdir", str(root), "--timeout-seconds", "1800"]
             progress_size = progress.stat().st_size if _regular_file(progress) else 0
             try:
@@ -3824,10 +3832,9 @@ def _run_remote_repair(args, item_path: Path, root: Path, feedback: str, base: P
         # file - which is why this gate had never once passed. Tampering stays fenced by the
         # snapshots either side of the run.
         verifier_command = [sys.executable, str(args.agent_runner), "--task-class", "escalation-agent",
-              "--candidate-model", PAID_DECISION_MODEL,
               "--prompt-file", str(prompt), "--schema", str(args.runner_schema),
               "--evidence-dir", str(verifier_evidence), "--task-label", "paid-remote-verifier",
-              "--escalation-reason", "Fresh Sol independently verifies the paid live target",
+              "--escalation-reason", "Fresh model independently verifies the paid live target",
               "--loop", "gig", "--workdir", str(root), "--timeout-seconds", "1800"]
         _run(_private_model_runner(root, verifier_command, "paid-remote-verifier"), "remote_verifier")
         if (_requirements_snapshot(root) != requirements_snapshot

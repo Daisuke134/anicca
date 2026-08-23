@@ -1847,6 +1847,15 @@ the exact-path open has failed and official readback proves `app.documents.lengt
 once. It never restarts over an open document and never relaxes exact-source, native-data or reopen verification. A
 new existing-launchd wake must prove both native receipts, the exact v44 ZIP hash, review-stage Coconala readback with
 formal delivery OFF, and replay-zero; no Codex submission substitutes for that proof.
+The first retry then exposed a shared provider failover defect before either Haru or Manledge could decide: Codex CLI
+returned its subscription usage limit until August 29, and both semantic runners stopped after one attempt. The
+runner already classifies usage limits as transient quota and its escalation route already orders Sol, Luna, then
+Claude Sonnet, but Paid passed `--candidate-model gpt-5.6-sol` on every owner/reviewer invocation and rejected any
+receipt not hardcoded as `codex/sol`; those constraints silently disabled the configured fallback. Paid now preserves
+the configured candidate order, permits only those three authorized provider/model pairs, and hash-binds the pair
+actually selected into decision, owner and reviewer receipts. Schema-invalid model output still fails closed and
+never falls through. The next existing-launchd wake must prove the quota error advances through the configured route
+and resumes both projects without manual customer work.
 
 1. **Paid/Submission — finish first.**
    - [x] Deploy and read back Paid ignoring shared preventive `disk-pressure.block` (20 GiB) and
