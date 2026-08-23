@@ -45,6 +45,31 @@ class DirectCDPTypeTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result["reason"], "observed_text_target_no_longer_visible")
         observe.assert_awaited_once()
 
+    async def test_literal_type_rejects_focus_lost_during_controlled_rerender(self):
+        from job_search_loop.browser_agent import runtime
+
+        observation = {"status": "observed", "observation": {"controls": []}}
+        with tempfile.TemporaryDirectory() as directory, patch.object(
+            runtime,
+            "_act_locked",
+            new=AsyncMock(
+                side_effect=RuntimeError(
+                    "visible text target did not accept whole-value selection"
+                )
+            ),
+        ), patch.object(
+            runtime, "observe", new=AsyncMock(return_value=observation)
+        ) as observe, patch.object(
+            runtime, "_path_env", return_value=Path(directory)
+        ):
+            result = await type_text(
+                label="Country*", role="combobox", stable_id="id:country", text="Japan"
+            )
+
+        self.assertEqual(result["status"], "action_rejected")
+        self.assertEqual(result["reason"], "observed_text_target_lost_focus")
+        observe.assert_awaited_once()
+
     async def test_type_rejects_non_text_control_without_browser_action(self):
         observation = {"status": "observed", "observation": {"controls": []}}
         with patch(

@@ -486,11 +486,15 @@ async def type_text(*, label: str, role: str, stable_id: str, text: str) -> dict
             with _exclusive_action():
                 return await _act_locked(path)
         except RuntimeError as error:
-            if "action target must resolve to exactly one visible enabled control" not in str(error):
+            if "action target must resolve to exactly one visible enabled control" in str(error):
+                reason = "observed_text_target_no_longer_visible"
+            elif "visible text target did not accept whole-value selection" in str(error):
+                reason = "observed_text_target_lost_focus"
+            else:
                 raise
             result = await observe()
             result["status"] = "action_rejected"
-            result["reason"] = "observed_text_target_no_longer_visible"
+            result["reason"] = reason
             return result
     finally:
         path.unlink(missing_ok=True)
