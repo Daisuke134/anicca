@@ -18,6 +18,49 @@ SPEC.loader.exec_module(MODULE)
 
 
 class CtaInstrumentationTests(unittest.TestCase):
+    def test_interval_join_initializes_new_focused_lineage_counter(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root)
+            child = "subtitle-en-experiment-abcdef123456-1"
+            MODULE.atomic_write(state / "cta-click-observations" / "latest.json", {
+                "interval_start": "2026-08-22T00:00:00+00:00",
+                "placements": [
+                    {"placement_id": "subtitle-en-1", "count": 0},
+                    {"placement_id": child, "count": 0},
+                ],
+            })
+            snapshots = [
+                {"snapshot_sha256": "a" * 64, "placements": [{
+                    "placement_id": "subtitle-en-1",
+                    "provider_clicks": {"count": 7, "unique_count": 6,
+                                        "observed_at": "2026-08-21T00:00:00+00:00"},
+                    "transactions": {"count": 0, "state": "OBSERVED"},
+                }]},
+                {"snapshot_sha256": "b" * 64, "placements": [
+                    {"placement_id": "subtitle-en-1",
+                     "provider_clicks": {"count": 7, "unique_count": 6,
+                                         "observed_at": "2026-08-23T00:00:00+00:00"},
+                     "transactions": {"count": 0, "state": "OBSERVED"}},
+                    {"placement_id": child,
+                     "provider_clicks": {"count": 2, "unique_count": 2,
+                                         "observed_at": "2026-08-23T00:00:00+00:00"},
+                     "transactions": {"count": 0, "state": "OBSERVED"}},
+                ]},
+            ]
+            path = state / "funnel-snapshots.jsonl"
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("\n".join(json.dumps(row) for row in snapshots) + "\n")
+            MODULE.atomic_write(state / "provider-reports" / "partnerstack" / "latest.json", {
+                "observed_at": "2026-08-23T00:00:00+00:00",
+            })
+
+            result = MODULE.join_provider_interval(state)
+
+            child_row = next(row for row in result["placements"] if row["placement_id"] == child)
+            self.assertEqual(child_row["provider_click_delta"], 0)
+            self.assertEqual(child_row["provider_unique_click_delta"], 0)
+            self.assertEqual(child_row["provider_baseline_state"], "INITIALIZED_FROM_CURRENT")
+
     def test_transforms_fixed_host_redirect_and_public_href_without_raw_receipt(self):
         library = '''const TOKEN = /^(ai|ho|ej|ee)_[a-z2-7]{20}$/;\nfunction destination(product, token, providerToken) {\n  if (product.kind === "app") {\n}\n    const product = match && products[match[1]];'''
         transformed = MODULE._transform_library(library)

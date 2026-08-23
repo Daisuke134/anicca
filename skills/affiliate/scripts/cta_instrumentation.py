@@ -388,8 +388,13 @@ def join_provider_interval(state):
     entry_rows = {row["placement_id"]: row for row in entries.get("placements", [])}
     rows = []
     for placement_id in sorted(cta_rows):
-        before = (baseline_rows.get(placement_id, {}).get("provider_clicks") or {})
         after = (current_rows.get(placement_id, {}).get("provider_clicks") or {})
+        before = (baseline_rows.get(placement_id, {}).get("provider_clicks") or {})
+        if not all(isinstance(before.get(key), int) for key in ("count", "unique_count")):
+            before = after
+            provider_baseline_state = "INITIALIZED_FROM_CURRENT"
+        else:
+            provider_baseline_state = "OBSERVED"
         click_delta = after.get("count") - before.get("count")
         unique_delta = after.get("unique_count") - before.get("unique_count")
         if click_delta < 0 or unique_delta < 0:
@@ -402,6 +407,7 @@ def join_provider_interval(state):
             "cta_clicks": cta_rows[placement_id]["count"],
             "provider_click_delta": click_delta,
             "provider_unique_click_delta": unique_delta,
+            "provider_baseline_state": provider_baseline_state,
             "customers": None,
             "customer_state": "UNAVAILABLE_AT_EXACT_PLACEMENT",
             "transaction_count": commission.get("count", 0),
