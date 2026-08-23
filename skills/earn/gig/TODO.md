@@ -1622,6 +1622,16 @@ current is immutable release `20260823T122053-15790c97`. The already-running pre
 interrupted. Their existence is not acceptance: the next natural owners must prove bounded lease handoff, write
 the pending Manledge classification revision, and continue real official effects without collision or duplicate.
 
+That next Paid launchd wake started naturally at `2026-08-23T12:33:52+09:00` as PID `16565`, pinned immutable
+release `b921eb17d66775f25e556d7001fabb1e6264907a`, and completed fresh targeted readbacks before creating only
+the Manledge and legacy project workers. It created no Chii or Smile worker, so neither prior seller effect was
+replayed. The legacy decision owner now starts inside the repaired outer privacy sandbox, reads the compiled
+allowed context and ordinary project files, and no longer fails at `sandbox_apply`; restricted credential values
+remain represented only by redacted metadata. This proves the nested-sandbox recovery reached a natural runtime,
+but the legacy room remains open until that owner returns an honest disposition and any required effect/readback.
+Manledge is concurrently re-deciding from the corrected release; its classification revision and remaining
+official outreach are still pending.
+
 1. **Paid/Submission — finish first.**
    - [x] Deploy and read back Paid ignoring shared preventive `disk-pressure.block` (20 GiB) and
      `disk-writers.stop` (10/11 GiB hysteresis), while retaining the 512 MiB last-resort guard and
