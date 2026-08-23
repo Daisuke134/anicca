@@ -390,20 +390,31 @@ class LeaseHandle:
 
     def _heartbeat_loop(self) -> None:
         while not self._stop.wait(self.heartbeat_seconds):
-            try:
-                with self._value_lock:
-                    fence_value = self.lease_fence
-                    self._run(
-                        "heartbeat",
-                        self.task,
-                        "--token",
-                        str(fence_value["token"]),
-                        "--generation",
-                        str(fence_value["generation"]),
-                    )
-            except Exception as error:  # Keep cleanup alive; commit fails closed.
-                self._heartbeat_error = f"{type(error).__name__}:{error}"
-                return
+            with self._value_lock:
+                fence_value = self.lease_fence
+                for attempt in range(2):
+                    try:
+                        self._run(
+                            "heartbeat",
+                            self.task,
+                            "--token",
+                            str(fence_value["token"]),
+                            "--generation",
+                            str(fence_value["generation"]),
+                        )
+                        break
+                    except subprocess.TimeoutExpired as error:
+                        # acquire() may briefly hold the shared lease ledger while it
+                        # replaces a dead browser context. One 35-second timeout does
+                        # not invalidate this task's token; confirm it once before
+                        # failing the irreversible-effect fence.
+                        if attempt == 0 and not self._stop.is_set():
+                            continue
+                        self._heartbeat_error = f"{type(error).__name__}:{error}"
+                        return
+                    except Exception as error:  # A real fence error stays fail-closed.
+                        self._heartbeat_error = f"{type(error).__name__}:{error}"
+                        return
 
     def assert_healthy(self) -> None:
         if self._heartbeat_error is not None:
