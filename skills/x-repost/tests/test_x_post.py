@@ -182,6 +182,18 @@ class XPostTests(unittest.TestCase):
             "https://x.com/selawmqt/status/789",
         )
 
+    def test_source_backed_original_reads_exact_body_when_x_omits_quote_card(self) -> None:
+        source = "https://x.com/ForwardEditor/status/2091534492603220452"
+        body = "Codex shines when your workspace looks like a junk drawer with an API key."
+        text = f"{body}\n{source}"
+        article = Article(
+            body, "", article_links=[Node(href="/selawmqt/status/2091584652951879730")]
+        )
+        self.assertEqual(
+            MODULE.scan_timeline(Page([article]), "selawmqt", body, source, text),
+            "https://x.com/selawmqt/status/2091584652951879730",
+        )
+
     def test_source_backed_original_rejects_wrong_non_anchor_quote_card(self) -> None:
         source = "https://x.com/jun_song/status/2091114049954283855"
         body = "Pair cloud orchestration with local execution, then compare one task."

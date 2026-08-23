@@ -117,10 +117,13 @@ def normalized(value: str) -> str:
 def scan_timeline(page, handle: str, needle: str, expected_url: str | None = None,
                   expected_text: str | None = None):
     expected_visible = (expected_url or "").removeprefix("https://")
+    exact_body_without_source = normalized(
+        (expected_text or "").replace(expected_url or "", "").strip()
+    )
     exact_bodies = {
         normalized(expected_text or ""),
         normalized((expected_text or "").replace(expected_url or "", expected_visible)),
-        normalized((expected_text or "").replace(expected_url or "", "").strip()),
+        exact_body_without_source,
     }
     for art in page.query_selector_all('article[data-testid="tweet"]'):
         text_el = art.query_selector('div[data-testid="tweetText"]')
@@ -150,10 +153,14 @@ def scan_timeline(page, handle: str, needle: str, expected_url: str | None = Non
                                              and len(parts) >= 3 and parts[1] == "status") else ""
                 quote_cards = art.query_selector_all('div[role="link"]')
                 source_identity = f"@{source_handle}" if source_handle else ""
-                if not source_identity or not any(
-                    source_identity in {line.strip() for line in (card.inner_text() or "").splitlines()}
-                    for card in quote_cards
-                ):
+                card_matches = bool(source_identity) and any(
+                    source_identity in {
+                        line.strip() for line in (card.inner_text() or "").splitlines()
+                    } for card in quote_cards
+                )
+                if quote_cards and not card_matches:
+                    continue
+                if not quote_cards and body_text != exact_body_without_source:
                     continue
             link = art.query_selector(f'a[href*="/{handle}/status/"]')
             href = link.get_attribute("href") if link else ""
