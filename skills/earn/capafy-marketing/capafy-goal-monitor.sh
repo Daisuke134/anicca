@@ -277,6 +277,8 @@ REPORT_KIND="${CAPAFY_REPORT_KIND:-morning}"
 # joins candidate/slot/post/revenue under one run_id, and dedupes through the
 # durable Telegram outbox. Never fall through to the legacy sender on this path.
 if [ "$REPORT_KIND" = "hourly" ]; then
+  "$PY" "$LIFE_MANAGER_REPO/skills/earn/capafy-marketing/scripts/capafy_web_token_refresh.py" \
+    >>"$HOME/.local/state/life-manager/logs/capafy-goal-monitor-hourly.out" 2>>"$HOME/.local/state/life-manager/logs/capafy-goal-monitor-hourly.err" || true
   "$PY" "$LIFE_MANAGER_REPO/skills/earn/capafy-marketing/scripts/capafy_hourly_reconcile.py" \
     >>"$HOME/.local/state/life-manager/logs/capafy-goal-monitor-hourly.out" 2>>"$HOME/.local/state/life-manager/logs/capafy-goal-monitor-hourly.err"
   RECONCILE_RC=$?
