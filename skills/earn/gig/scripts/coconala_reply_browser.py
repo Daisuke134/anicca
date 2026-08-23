@@ -230,10 +230,13 @@ def thread_state(
                 ensure_ascii=False, sort_keys=True, separators=(",", ":"),
             )
             message_id = "sha256_" + hashlib.sha256(canonical.encode()).hexdigest()
-        context_rows.append({
+        context_row: dict[str, Any] = {
             "side": side, "role": side, "message_id": message_id,
             "sent_at": raw_sent_at, "body": body,
-        })
+        }
+        if isinstance(message.get("verified_attachments"), list):
+            context_row["verified_attachments"] = message["verified_attachments"]
+        context_rows.append(context_row)
         fingerprint_rows.append({"side": side, "sent_at": sent_at, "body_sha256": digest})
         last_sender = side
         if side == "seller":
@@ -584,6 +587,7 @@ class CoconalaCdpReplyBrowser:
         self.send_error_code = ""
         self.required_official_context = "none"
         self.semantic_context_sha256: str | None = None
+        self.semantic_expected_last_sender = "buyer"
 
     def __enter__(self) -> "CoconalaCdpReplyBrowser":
         self.tab = collector.DefaultTab(
@@ -605,6 +609,8 @@ class CoconalaCdpReplyBrowser:
         raw = asyncio.run(collector.inspect_message_page(
             self.tab.ws, collector.DIRECT_MESSAGE_EXPRESSION, self.thread_url,
         ))
+        thread_id = direct_message_path(self.thread_url).rsplit("/", 1)[-1]
+        collector.merge_durable_dm_attachments(raw, thread_id)
         return thread_state(raw, self.thread_url)
 
     def _navigate_to(self, url: str) -> None:
@@ -870,20 +876,24 @@ class CoconalaCdpReplyBrowser:
         if not re.fullmatch(r"[0-9a-f]{64}", expected):
             return
         context, bounded = self._read()
-        rows = [
-            {
+        rows = []
+        for row in context.get("conversation", []):
+            if not isinstance(row, dict):
+                continue
+            normalized: dict[str, Any] = {
                 "message_id": str(row.get("message_id") or ""),
                 "role": str(row.get("role") or row.get("side") or ""),
                 "sent_at": str(row.get("sent_at") or ""),
                 "body": str(row.get("body") or ""),
             }
-            for row in context.get("conversation", [])
-            if isinstance(row, dict)
-        ]
+            if isinstance(row.get("verified_attachments"), list):
+                normalized["verified_attachments"] = row["verified_attachments"]
+            rows.append(normalized)
         actual = hashlib.sha256(json.dumps(
             rows, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
         ).encode()).hexdigest()
-        if actual != expected or bounded.get("last_sender") != "buyer":
+        expected_last_sender = str(self.semantic_expected_last_sender or "buyer")
+        if actual != expected or bounded.get("last_sender") != expected_last_sender:
             raise ValueError("semantic_context_changed")
 
     def fill(self, body: str) -> None:

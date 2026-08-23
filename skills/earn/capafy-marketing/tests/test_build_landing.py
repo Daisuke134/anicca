@@ -120,7 +120,7 @@ class BuildLandingTests(unittest.TestCase):
             script,
         )
         self.assertIn('build_landing.py" >>"$LOG"', script)
-        self.assertIn('netlify deploy --prod --dir', script)
+        self.assertIn('/opt/homebrew/bin/npx --yes netlify-cli@27.1.2 deploy --prod --dir', script)
         self.assertIn('--site "$LANDING_SITE_ID"', script)
         self.assertLess(script.index("build_landing.py"), script.index("# ── CADENCE GATE"))
         self.assertIn(

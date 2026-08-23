@@ -179,6 +179,17 @@ class PostizVideoTests(unittest.TestCase):
         self.assertEqual(calls[0][0], "https://www.tiktok.com/@honne_reveal")
         self.assertEqual(calls[0][3], "someone tell me this is")
 
+    def test_profile_caption_join_rejects_an_old_duplicate(self):
+        rows = [
+            {"href": "https://www.tiktok.com/@life/video/7676852644698262791", "alt": "Exact caption #tag"},
+            {"href": "https://www.tiktok.com/@life/video/7676422253638176020", "alt": "Exact caption #tag"},
+        ]
+        self.assertEqual(
+            postiz_video._matching_profile_url(rows, "exact caption", 1_787_406_536),
+            "https://www.tiktok.com/@life/video/7676852644698262791",
+        )
+        self.assertIsNone(postiz_video._matching_profile_url(rows[1:], "exact caption", 1_787_406_536))
+
 
 if __name__ == "__main__":
     unittest.main()

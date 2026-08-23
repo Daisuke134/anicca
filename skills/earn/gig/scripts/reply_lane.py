@@ -96,6 +96,8 @@ class _SemanticContext:
     def __init__(self, browser: Any, item: dict[str, Any]):
         self._browser, self._item = browser, item
         self._browser.semantic_context_sha256 = item.get("semantic_context_sha256")
+        if item.get("semantic_seller_debt_reply") is True:
+            self._browser.semantic_expected_last_sender = "seller"
         self._browser.required_official_context = "none"
 
     def __getattr__(self, name: str) -> Any:
@@ -113,6 +115,8 @@ class _SemanticContext:
         if isinstance(context, dict):
             context = dict(context)
             context["semantic_reply_body"] = self._item.get("semantic_reply_body")
+            if self._item.get("semantic_seller_debt_reply") is True:
+                context["semantic_seller_debt_reply"] = True
         return context, before
 
 
@@ -127,6 +131,8 @@ class SemanticReceiptComposer:
         if isinstance(rows, list) and rows:
             latest = rows[-1]
             if isinstance(latest, dict) and (latest.get("role") or latest.get("side")) == "seller":
+                if context.get("semantic_seller_debt_reply") is True:
+                    return None
                 return "seller_last"
         return None
 

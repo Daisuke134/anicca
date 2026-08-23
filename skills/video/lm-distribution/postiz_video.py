@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import asyncio
 from datetime import datetime, timedelta, timezone
 import json
 import mimetypes
@@ -178,6 +179,22 @@ def _normalized(value: str) -> str:
     return re.sub(r"\s+", " ", value).strip().casefold()
 
 
+def _matching_profile_url(rows, caption_prefix: str, posted_after: int) -> str | None:
+    candidates = []
+    for row in rows if isinstance(rows, list) else []:
+        url = row.get("href") if isinstance(row, dict) else None
+        alt = row.get("alt") if isinstance(row, dict) else ""
+        match = re.fullmatch(r"https://www\.tiktok\.com/@[^/]+/video/([0-9]+)/?", url or "")
+        if (
+            match
+            and caption_prefix
+            and caption_prefix in _normalized(str(alt))
+            and (int(match.group(1)) >> 32) >= posted_after - 5
+        ):
+            candidates.append((int(match.group(1)), url))
+    return max(candidates)[1] if candidates else None
+
+
 def resolve_profile_release_url(
     profile_url: str,
     caption: str,
@@ -240,44 +257,58 @@ def _resolve_profile_release_url_browser(
     caption_prefix: str | None = None,
 ) -> str | None:
     """Read the newest profile DOM when yt-dlp cannot read TikTok's JS page."""
-    del caption, posted_after  # profile order is newest-first; exact caption is the join key.
+    del caption
     try:
-        from playwright.sync_api import sync_playwright
+        import websockets
     except ImportError:
         return None
     prefix = caption_prefix or ""
-    try:
+
+    async def read_profile():
         host = os.environ.get("CDP_HOST", "127.0.0.1")
         port = os.environ.get("CDP_PORT", "9222")
-        with sync_playwright() as playwright:
-            browser = playwright.chromium.connect_over_cdp(f"http://{host}:{port}")
-            if not browser.contexts:
-                return None
-            page = browser.contexts[0].new_page()
+        version = json.loads(urllib.request.urlopen(
+            f"http://{host}:{port}/json/version", timeout=8,
+        ).read())
+        websocket_url = version["webSocketDebuggerUrl"]
+        async with websockets.connect(
+            websocket_url, open_timeout=10, ping_interval=None, max_size=64 * 1024 * 1024,
+        ) as socket:
+            sequence = 0
+
+            async def call(method, params=None, session_id=None):
+                nonlocal sequence
+                sequence += 1
+                request = {"id": sequence, "method": method, "params": params or {}}
+                if session_id:
+                    request["sessionId"] = session_id
+                await socket.send(json.dumps(request))
+                while True:
+                    response = json.loads(await asyncio.wait_for(socket.recv(), timeout=15))
+                    if response.get("id") == sequence:
+                        if response.get("error"):
+                            raise RuntimeError("TikTok profile CDP read failed")
+                        return response.get("result", {})
+
+            target_id = (await call("Target.createTarget", {"url": profile_url}))["targetId"]
             try:
-                page.goto(profile_url, wait_until="domcontentloaded", timeout=45_000)
-                try:
-                    page.wait_for_load_state("networkidle", timeout=15_000)
-                except Exception:
-                    pass
-                rows = page.locator('a[href*="/video/"]').evaluate_all(
-                    "els => els.map(e => ({href:e.href, alt:e.querySelector('img')?.alt || ''}))",
+                session_id = (await call(
+                    "Target.attachToTarget", {"targetId": target_id, "flatten": True},
+                ))["sessionId"]
+                await asyncio.sleep(8)
+                expression = "JSON.stringify([...document.querySelectorAll('a[href*=\"/video/\"]')].slice(0,20).map(e=>({href:e.href,alt:e.querySelector('img')?.alt||''})))"
+                result = await call(
+                    "Runtime.evaluate", {"expression": expression, "returnByValue": True}, session_id,
                 )
-                for row in rows:
-                    url = row.get("href") if isinstance(row, dict) else None
-                    alt = row.get("alt") if isinstance(row, dict) else ""
-                    if (
-                        isinstance(url, str)
-                        and re.fullmatch(r"https://www\.tiktok\.com/@[^/]+/video/[0-9]+/?", url)
-                        and prefix
-                        and prefix in _normalized(str(alt))
-                    ):
-                        return url
+                value = result.get("result", {}).get("value")
+                return _matching_profile_url(json.loads(value), prefix, posted_after) if isinstance(value, str) else None
             finally:
-                page.close()
+                await call("Target.closeTarget", {"targetId": target_id})
+
+    try:
+        return asyncio.run(read_profile())
     except Exception:
         return None
-    return None
 
 
 def _request_json(request: urllib.request.Request, timeout: int = 90):

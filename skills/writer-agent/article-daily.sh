@@ -521,7 +521,18 @@ python3 "$ARTICLE_ROOT/scripts/strategy_runtime.py" \
 # zero hits, before this line existed. Runs exactly once, inside the lock this script already
 # holds, so it can never race the 5-min ai.anicca.article-healthcheck poller, which
 # deliberately does not touch the browser at all for this same reason.
-BROWSER_STATUS="$(bash "$HOME/anicca/skills/browser/ensure_browser.sh" 2>>"$LOG" | tail -1)"
+BROWSER_GUARD="${LIFE_MANAGER_REPO:-$(cd "$ARTICLE_ROOT/../.." && pwd)}/skills/browser/ensure_browser.sh"
+if [ -x "$BROWSER_GUARD" ]; then
+  BROWSER_STATUS="$(
+    CLOAK_CDP_BASE_URL="${WRITER_CDP_URL:-http://127.0.0.1:9222}" \
+    CDP_DAILY_DRIVER_PORT="${WRITER_CDP_PORT:-9222}" \
+    CDP_DAILY_DRIVER_PROFILE="${WRITER_CDP_PROFILE:-$HOME/.cloak/profiles/job-search-daily}" \
+    CLOAK_BROWSER_LAUNCHD_LABEL="${WRITER_BROWSER_LAUNCHD_LABEL:-ai.anicca.job-search-browser}" \
+    bash "$BROWSER_GUARD" 2>>"$LOG" | tail -1
+  )"
+else
+  BROWSER_STATUS="FAILED: browser guard missing at $BROWSER_GUARD"
+fi
 echo "=== article-daily ensure_browser: ${BROWSER_STATUS:-EMPTY} ===" >>"$LOG"
 
 # PRE-PUBLICATION RESUME CARD RECOVERY: the first pass legitimately claims its demand card
@@ -786,7 +797,7 @@ STEP 4.6 (IDENTITY SAFETY): for EACH language draft run identity-gate.sh. Do NOT
 
 STEP 4.7 (STABLE READER TESTING): for EACH language use one immutable gates/reader-questions-<lang>.json and pass it through --questions-file on every invocation. Run one initial evaluation and at most two revise-then-evaluate cycles. The terminal gates/reader-testing-gate-<lang>.terminal.json must say status=pass, payload.verdict=PASS, and article_sha256 equal to the current draft. Remaining questions, crash, timeout, malformed output, or 429 are non-PASS evidence for STEP 4.75. Never regenerate questions or fabricate PASS.
 
-STEP 4.75 (QUALITY OBSERVATION -- mandatory, non-blocking for prose quality): run `python3 ARTICLE_ROOT_PLACEHOLDER/scripts/quality_self_heal.py assess --run-dir "$ARTICLE_RUN_DIR" --draft-ja "$ARTICLE_RUN_DIR/article-ja.md" --draft-en "$ARTICLE_RUN_DIR/article-en.md"`. With ARTICLE_PUBLICATION_POLICY=continuous, editorial/reader FAIL is persisted as quality_advisory and action=ready_to_freeze; continue immediately to STEP 4.8 and publish. A block_freeze now means identity/safety evidence is not current PASS: do not publish that unsafe artifact. Never reuse stale identity/safety evidence.
+STEP 4.75 (QUALITY ITERATION -- mandatory): run `python3 ARTICLE_ROOT_PLACEHOLDER/scripts/quality_self_heal.py assess --run-dir "$ARTICLE_RUN_DIR" --draft-ja "$ARTICLE_RUN_DIR/article-ja.md" --draft-en "$ARTICLE_RUN_DIR/article-en.md"`. Editorial/reader FAIL is never treated as an immediate publish permission. Feed every concrete failure back into the same run and repeat the quality recovery up to five total iterations. Until iteration five, do not stage or publish. At iteration five, action=force_publish_advisory permits publication only when identity, conscience, PII, duplicate, media, CTA, monetization, and platform guards are PASS; editorial/reader failures remain visible in the Telegram report. Never reuse stale identity/safety evidence.
 
 STEP 4.8 (CONSCIENCE GATE -- mandatory, quality-independent, fail-closed, NO-SKIP): for EACH language draft that cleared STEP 4.7, run bash ARTICLE_ROOT_PLACEHOLDER/scripts/conscience-gate.sh <f> --lang <ja|en>. This fresh, context-zero judge sees only the proposed article and returns ALLOW or BLOCK for gray-zone exposure: internal credentials, non-public information about others, reputational or legal risk, or identifying a real person/organization in order to accuse them. A non-zero exit, missing JSON, or BLOCK is publication-blocking and MUST NOT be bypassed or softened. If either language is BLOCKed, publish neither version of that topic today: append an honest carry-over row for the blocked topic to ARTICLE_STATE_DIR_PLACEHOLDER/articles.jsonl with published:false and state:\"carry-over:conscience-block:<reason>\", preserve its research and drafts for the next day, and make the carry-over mechanically selectable tomorrow. If this run claimed a card, move that card from ARTICLE_STATE_DIR_PLACEHOLDER/topics/in-progress/ back to ARTICLE_STATE_DIR_PLACEHOLDER/topics/queue/ without changing created/priority, remember its basename, and pass one --exclude-basename argument for it on every same-pass STEP 1 restart. If the topic came from fallback state, append an explicit carry-over to ARTICLE_STATE_DIR_PLACEHOLDER/topic-queue.md and materialize it as a normal ARTICLE_STATE_DIR_PLACEHOLDER/topics/queue/ card with original topic, research paths, created timestamp, and stable basename; exclude that basename for the rest of this pass. Materialize a genuinely different alternate topic as another normal queue card, then restart through select-next-topic.sh. Both the blocked carry-over and alternate must use queue cards so the selector cannot return the blocked topic today and can return it on the next scheduled pass when exclusions reset. The no-skip invariant applies to the daily publishing obligation, never to forcing a gray-zone topic through this gate. A pass may not proceed to STEP 5 without conscience-gate.sh ALLOW for BOTH ja and en.
 
@@ -794,7 +805,7 @@ STEP 4.85 (ACTIVE STRATEGY CONSUMPTION AND CANDIDATE CANARY EVIDENCE -- advisory
 
 STEP 4.86 (CTA + X POST INVARIANTS -- mandatory, revenue-path, fail-closed): run bash ARTICLE_ROOT_PLACEHOLDER/scripts/cta-gate.sh article-ja.md --run-id RUN_DIR_PLACEHOLDER --artifact-id article-ja, then the same for article-en.md/artifact-id article-en and x-post-ja.txt/artifact-id x-post-ja. Save each JSON result as gates/cta-ja.json, gates/cta-en.json, and gates/cta-x-post-ja.json. A missing or mismatched measurable product landing path is not an advisory quality miss: revise that artifact before proceeding. x-post-ja.txt must contain 1..280 characters after stripping outer whitespace; shorten it before freeze rather than letting the pending worker reject the same immutable intent forever. publication_resume.py init independently reruns the CTA gate on all three frozen artifacts, requires distinct click_id values, enforces the X Post length, and refuses to create publication state if any result is not PASS, so no staging or live action can precede the invariant.
 
-STEP 4.9 (PUBLICATION SSOT -- mandatory before staging or live action): export ARTICLE_RUN_DIR=ARTICLE_STATE_DIR_PLACEHOLDER/runs/RUN_DIR_PLACEHOLDER, ARTICLE_PUBLICATION_STATE=$ARTICLE_RUN_DIR/gates/publication-state.json, and ARTICLE_LEDGER=ARTICLE_STATE_DIR_PLACEHOLDER/articles.jsonl. Keep all three exported through every staging, guard, live, and reconcile command. Copy the final drafts and x-post into this run and require canonical media. After conscience ALLOW has caused quality-phase-terminal.py to write hash-bound editorial=PASS, reader=PASS, identity=PASS, safety=ALLOW markers for both languages, run `python3 ARTICLE_ROOT_PLACEHOLDER/scripts/publication_resume.py --state "$ARTICLE_PUBLICATION_STATE" --ledger "$ARTICLE_LEDGER" init --run-id RUN_DIR_PLACEHOLDER --run-dir "$ARTICLE_RUN_DIR" --topic-id <shared_topic_id> --draft-ja "$ARTICLE_RUN_DIR/article-ja.md" --draft-en "$ARTICLE_RUN_DIR/article-en.md" --x-post-ja $ARTICLE_RUN_DIR/x-post-ja.txt --headline-image "$ARTICLE_RUN_DIR/headline-image.png" --body-asset "$ARTICLE_RUN_DIR/body-diagram.png" --safety ALLOW --max-resume-attempts 2 --require-quality` and append one --body-asset for every additional canonical body asset. Initialization must reject missing, stale, or non-PASS quality terminals before publication-state.json exists. It also refuses missing article frontmatter and CTA/media mismatches. After successful init publish the immutable run media receipt, then stage only the four active destinations. Never replace run/topic/artifact identities.
+STEP 4.9 (PUBLICATION SSOT -- mandatory before staging or live action): export ARTICLE_RUN_DIR=ARTICLE_STATE_DIR_PLACEHOLDER/runs/RUN_DIR_PLACEHOLDER, ARTICLE_PUBLICATION_STATE=$ARTICLE_RUN_DIR/gates/publication-state.json, and ARTICLE_LEDGER=ARTICLE_STATE_DIR_PLACEHOLDER/articles.jsonl. Keep all three exported through every staging, guard, live, and reconcile command. Copy the final drafts and x-post into this run and require canonical media. After conscience ALLOW has caused quality-phase-terminal.py to write hash-bound identity=PASS and safety=ALLOW markers for both languages, run `python3 ARTICLE_ROOT_PLACEHOLDER/scripts/publication_resume.py --state "$ARTICLE_PUBLICATION_STATE" --ledger "$ARTICLE_LEDGER" init --run-id RUN_DIR_PLACEHOLDER --run-dir "$ARTICLE_RUN_DIR" --topic-id <shared_topic_id> --draft-ja "$ARTICLE_RUN_DIR/article-ja.md" --draft-en "$ARTICLE_RUN_DIR/article-en.md" --x-post-ja $ARTICLE_RUN_DIR/x-post-ja.txt --headline-image "$ARTICLE_RUN_DIR/headline-image.png" --body-asset "$ARTICLE_RUN_DIR/body-diagram.png" --safety ALLOW --max-resume-attempts 2 --require-quality` and append one --body-asset for every additional canonical body asset. Initialization accepts editorial/reader ADVISORY only when the current quality receipt proves `force_publish_after_iterations=5` and continuous policy; it still rejects missing/stale identity, conscience, safety, PII, CTA, media, duplicate, monetization, or platform proofs. After successful init publish the immutable run media receipt, then stage only the four active destinations. Never replace run/topic/artifact identities.
 
 STEP 5 (STAGE EXACTLY FOUR ACTIVE ARTICLE DESTINATIONS -- every pass): use the REAL orchestrator ARTICLE_ROOT_PLACEHOLDER/scripts/run.sh, which you should read first (case "$CHANNEL" arms) so you use its real flags. Put exactly four platform/language jobs below in a JSONL manifest at ARTICLE_STATE_DIR_PLACEHOLDER/runs/RUN_DIR_PLACEHOLDER/gates/platform-dispatch.jsonl: note/ja, substack/ja, substack/en, and x-article/ja. Each line is exactly {"platform":"...","lang":"ja|en","argv":["one","argument","per","element"],"env":{"NAME":"value"}}. Build it with JSON serialization, never a shell command string: a title such as "$44M / $188K" must be one literal argv element and must not be shell-expanded. Resolve every argv path to an absolute path first because argv does not expand ~, $HOME, or globs. Put ARTICLE_QUALITY_ADVISORY, ARTICLE_QUALITY_ADVISORY_LOG, ARTICLE_RUN_DIR, ARTICLE_PUBLICATION_STATE, ARTICLE_LEDGER, and ARTICLE_PUBLISH_PAIR in the matching env. For the X Article JA row, put X_COVER equal to the same existing absolute cover PNG and ARTICLE_PUBLISH_PAIR=x-article/ja; for Substack put ARTICLE_PUBLISH_PAIR=substack/ja or substack/en so its first draft ID becomes the stable target. Then run platform-dispatch.sh --manifest <that file> --results ARTICLE_STATE_DIR_PLACEHOLDER/runs/RUN_DIR_PLACEHOLDER/gates/platform-dispatch-results.jsonl. The helper preflights the complete manifest, rejects shell -c/background dispatch, waits for each foreground argv to finish, executes every row after earlier non-zero results, and returns non-zero only after recording all four rows:
   - note (ja):       ARTICLE_QUALITY_ADVISORY=1 ARTICLE_QUALITY_ADVISORY_LOG=ARTICLE_STATE_DIR_PLACEHOLDER/runs/RUN_DIR_PLACEHOLDER/gates/publish-quality-advisory-ja.log bash ARTICLE_ROOT_PLACEHOLDER/scripts/run.sh --channel note --phase publish --markdown-file <ja.md> --title "<t>" --meta "<m>"
@@ -815,7 +826,7 @@ STEP 8 (PLATFORMS ARE INDEPENDENT): if one platform fails (auth expired, selecto
 
 STEP 9 (TELEGRAM REPORT -- MANDATORY, every pass, success or failure): the built-in local push-notify tool does NOT reach Dais (it silently no-ops when Remote Control is inactive -- proven 2026-07-12). Use: openclaw message send --channel telegram --target 8547730585 --message "<your honest one-screen report>" --json. The message MUST contain: the topic chosen, all four active destination draft URLs (or the honest failure reason for any that failed), and what you personally verified on each page. The compatibility x-post artifact may be retained for the nonpublication CTA gate, but it is not a destination row or publication work. In unarmed mode, explicitly say these are DRAFTS awaiting manual publish and never live. In armed mode, STEP 20 replaces that reminder with immediate live and scheduled-pending evidence. Confirm the send returned a real messageId; if the send fails, retry once, then note the failure in your final report line.
 
-STEP 10 (FINISH -- HONEST DELIVERY): completion requires identity safety clear, conscience ALLOW, every active platform attempted independently, and exact current-run ledger evidence. Editorial/reader FAIL remains a learning advisory and never blocks publication under continuous policy. In armed mode article-run-complete.py requires four active live reality receipts; the four dormant skip receipts are not failures or SLO work. Until then report PENDING; never equate foreground exit with shipped.'
+STEP 10 (FINISH -- HONEST DELIVERY): completion requires identity safety clear, conscience ALLOW, every active platform attempted independently, and exact current-run ledger evidence. Editorial/reader FAIL is retried in the same run up to five iterations; after the fifth it may be an explicitly recorded force-publish advisory, never a hidden bypass. In armed mode article-run-complete.py requires four active live reality receipts; the four dormant skip receipts are not failures or SLO work. Until then report PENDING; never equate foreground exit with shipped.'
 
 # task #27: PROMPT is single-quoted (the literal text above can't be touched safely -- it is a
 # live production agent instruction, editing it in place risks corrupting it), so the Telegram
@@ -895,7 +906,7 @@ PROMPT="$PROMPT
 
 TELEGRAM REPORT LANGUAGE: every Telegram progress or delivery message sent by this loop must be neutral natural language that a non-technical family member can understand. Do not add harness labels or prefixes such as Codex::: or Claude:::; start directly with the report.
 
-MEDIA CREATE-ONCE OVERRIDE (mandatory; supersedes STEP 3's direct-save wording): the wrapper has already armed an immutable two-asset boundary. Never pass canonical headline-image.png or body-diagram.png directly to an image generator or renderer. Create every output under \$ARTICLE_RUN_DIR/gates/media-candidates/ with a distinct candidate filename. Generate one headline candidate, then run python3 ARTICLE_ROOT_PLACEHOLDER/scripts/media_create_once.py commit --candidate <candidate> --destination \"\$ARTICLE_RUN_DIR/headline-image.png\" --receipt \"\$ARTICLE_RUN_DIR/gates/headline-image-create.json\" --kind headline. Render one body diagram candidate, then run python3 ARTICLE_ROOT_PLACEHOLDER/scripts/media_create_once.py commit --candidate <candidate> --destination \"\$ARTICLE_RUN_DIR/body-diagram.png\" --receipt \"\$ARTICLE_RUN_DIR/gates/body-diagram-create.json\" --kind body. A response-loss replay of the exact same commit is allowed; a different second candidate is refused and must never trigger another generator call. Before any gate or publication init, run python3 ARTICLE_ROOT_PLACEHOLDER/scripts/media_create_once.py verify --run-dir \"\$ARTICLE_RUN_DIR\"."
+MEDIA CREATE-ONCE OVERRIDE (mandatory; supersedes STEP 3's direct-save wording): the wrapper has already armed an immutable two-asset boundary. Never pass canonical headline-image.png or body-diagram.png directly to an image generator or renderer. Create every output under \$ARTICLE_RUN_DIR/gates/media-candidates/ with a distinct candidate filename. Generate one headline candidate, then run python3 ARTICLE_ROOT_PLACEHOLDER/scripts/media_create_once.py commit --candidate <candidate> --destination \"\$ARTICLE_RUN_DIR/headline-image.png\" --receipt \"\$ARTICLE_RUN_DIR/gates/headline-image-create.json\" --kind headline. Render one body diagram candidate whose projected height at X's 587px content width is between 110px and 650px (for a 1300px-wide source, roughly 244–1440px tall), then run python3 ARTICLE_ROOT_PLACEHOLDER/scripts/media_create_once.py commit --candidate <candidate> --destination \"\$ARTICLE_RUN_DIR/body-diagram.png\" --receipt \"\$ARTICLE_RUN_DIR/gates/body-diagram-create.json\" --kind body. A response-loss replay of the exact same commit is allowed; a different second candidate is refused and must never trigger another generator call. Before any gate or publication init, run python3 ARTICLE_ROOT_PLACEHOLDER/scripts/media_create_once.py verify --run-dir \"\$ARTICLE_RUN_DIR\"."
 
 # RUN RECORD (spec 47): replace only while writing a new immutable prompt, after every optional
 # addendum has been appended. Bash 3.2's in-memory global replacement becomes superlinear on this
@@ -908,6 +919,54 @@ GENERATION_ARGS=(--run-dir "$RUN_DIR" --run-id "$RUN_TS" --prompt-file "$PROMPT_
 # evaluations before publication initialization. Export it before the model starts so an
 # agent cannot accidentally bypass the per-run attempt controller by delaying STEP 4.9.
 export ARTICLE_RUN_DIR="$RUN_DIR"
+
+writer_capacity_preflight() {
+  local free_kib flag control_dir="$HOME/.openclaw/state"
+  local required_kib="${GIG_DISK_HEADROOM_KIB:-524288}"
+  free_kib="$(df -Pk / 2>/dev/null | awk 'NR==2{print $4}')"
+  case "$free_kib" in
+    ''|*[!0-9]*)
+      echo "=== article-daily provider gate BLOCK: disk capacity unavailable ===" >>"$LOG"
+      return 78
+      ;;
+  esac
+  case "$required_kib" in
+    ''|*[!0-9]*|0)
+      echo "=== article-daily provider gate BLOCK: disk floor configuration invalid ===" >>"$LOG"
+      return 78
+      ;;
+  esac
+  if [ "$free_kib" -lt "$required_kib" ]; then
+    echo "=== article-daily provider gate BLOCK: free=${free_kib}KiB below Life Manager ${required_kib}KiB floor ===" >>"$LOG"
+    return 78
+  fi
+  if [ ! -d "$control_dir" ] || [ ! -r "$control_dir" ] || [ ! -x "$control_dir" ]; then
+    echo "=== article-daily provider gate BLOCK: control directory unavailable=$control_dir ===" >>"$LOG"
+    return 78
+  fi
+  for flag in "$control_dir/disk-writers.stop" "$control_dir/disk-pressure.block"; do
+    if [ -L "$flag" ] || { [ -e "$flag" ] && [ ! -f "$flag" ]; }; then
+      echo "=== article-daily provider gate BLOCK: non-regular control flag=$flag ===" >>"$LOG"
+      return 78
+    fi
+    if [ -f "$flag" ] && {
+      { [ "$flag" = "$control_dir/disk-pressure.block" ] \
+        && [ "${GIG_IGNORE_DISK_PRESSURE_BLOCK:-}" = "1" ]; } \
+      || { [ "$flag" = "$control_dir/disk-writers.stop" ] \
+        && [ "${GIG_IGNORE_DISK_WRITERS_STOP:-}" = "1" ]; };
+    }; then
+      continue
+    fi
+    if [ -f "$flag" ]; then
+      echo "=== article-daily provider gate BLOCK: control flag=$flag ===" >>"$LOG"
+      return 78
+    fi
+  done
+  return 0
+}
+if ! writer_capacity_preflight; then
+  exit 78
+fi
 
 # Judge broker: nested judge/vision calls inside the bounded agent sandbox cannot
 # start a provider process, so this unsandboxed sidecar serves their request files
@@ -943,6 +1002,7 @@ fi
 # starts never replays the complete prompt on another provider because public side effects may exist.
 run_model_pass() {
   local active_prompt_file="${1:-$PROMPT_FILE}"
+  BOUNDED_EXEC_STOP_PATHS="$HOME/.openclaw/state/disk-writers.stop:$HOME/.openclaw/state/disk-pressure.block" \
   ARTICLE_RUN_ID="$RUN_TS" ARTICLE_MODEL_LOG="$LOG" \
     python3 "$ARTICLE_ROOT/runtime/bounded-exec.py" \
       "$ARTICLE_MODEL_AGENT_TIMEOUT_SECONDS" \

@@ -6,6 +6,39 @@ evidence does not belong on this list.
 The four lanes run from `~/gig/releases/life-manager/<sha>/`, cut from `main` by
 `gig_release.py`. See `README.md` for how the whole thing is installed.
 
+## Current execution cursor override
+
+The active development cursor is **Storefront only**. Apply is accepted and remains
+untouched. Negotiate production acceptance is recorded in `README.md` at commit
+`49e6b4d84`: a fresh official 140-thread reconciliation, two already-delivered
+estimate readbacks, five later verified replies, zero duplicate reply/estimate
+effects and five durable Telegram receipts. Paid is owned by another session and is
+outside this cursor. Older ordering text below remains historical context and does
+not authorize changing Apply, Negotiate or Paid in this slice.
+
+Current Storefront production truth is receipt
+`storefront-direct-1787477480777530000-18612`: `status=failed`, `actionable=0`,
+`effect=0`, `readback=0`, `duplicate=0`, Telegram message `30158`, reason
+`published_gallery_before_evidence_missing`. The gallery effect itself is already a
+confirmed, ledger-appended intent with a hash-sealed mutation contract. Bounded
+evidence GC removed the old `public_before_path`, and every later wake incorrectly
+requires that transient file instead of the durable rollback identity already inside
+the confirmed contract.
+
+Storefront acceptance for this cursor is: recover that confirmed gallery contract
+without a second customer effect; complete one natural official listing create/update
+readback through the existing owner; then observe the next natural wake with
+`effect=0`, `duplicate=0`, no wrong-service mutation and a durable owner-report
+receipt. No new scheduler, database, browser owner or reporting transport is allowed.
+
+The recovery fix is GREEN on branch `fix/gig-storefront-acceptance`. Regression
+`test_confirmed_gallery_survives_gc_of_transient_before_evidence` first failed with
+the production error, then passed after missing transient evidence was reconstructed
+only from the confirmed contract's hash-validated rollback image identity. Invalid
+JSON, permission errors and unconfirmed intents still fail closed. Storefront-focused
+verification is 45 passed plus `py_compile`; the remaining evidence is the two natural
+production wakes above.
+
 ## Current scoped milestone: finish the public Coconala package
 
 The repository and `skills/earn/gig/` tree are already public on
@@ -297,6 +330,1660 @@ because purchased orders are not reliably receiving context-complete artifacts. 
 live independently but is not complete: total coverage, competitive repricing, bounded terminal
 no-send, replay-zero and a new natural sub-30-minute official reply/estimate proof remain unchecked.
 
+#### Remaining TODO snapshot — authoritative order to the end
+
+Do not advance the development cursor until every unchecked item in the current stage has official
+evidence. Independent production lanes continue running while development follows this order.
+
+**Apply qualification correction.** New applications must reject work whose required deliverable depends on
+operating a named desktop application (for example Adobe Illustrator, Photoshop, CAD, or video-editor project
+files). These jobs are cost-inefficient for the current fast/cheap autonomous loop even when the application is
+installed. Ordinary output formats that can be produced and verified with the existing general toolchain remain
+eligible. Apply must make this decision from the listing requirements before proposal submission; it must not ask
+the buyer to relax a mandatory native-app requirement after applying. The Apply implementation is currently owned
+by the separate Apply session, so this SSOT requirement must be incorporated there without overwriting its active
+`application_parent.py` changes.
+
+**Buyer-message style correction.** Paid customer handoffs lead with the delivered outcome and use one to three
+short natural sentences. They omit repeated apologies, internal process/evidence narration, and information the
+buyer already knows; they retain only the artifact, the requested review point, and the next action. This is model
+editorial guidance, not a deterministic length gate: safety-critical facts and a buyer-requested cancellation
+option may remain when relevant.
+
+**Shared resource resolver and Manledge recovery.** Official X DOM confirms the registered `x:anicca` browser
+identity is authenticated as `@selawmqt` at `https://x.com/selawmqt`. Life Manager previously split capabilities,
+browser sessions and credentials across unrelated registries, so Paid could see only its gig browser and asked the
+buyer to create an account that already existed. The shared `skills/_shared/resource_resolver.py` now joins the OSS
+skill registry, local browser-identity registry and the single local credential SSOT without returning secret
+values. `x-repost` is a live installable OSS skill, and every gig agent receives the same resolver contract before
+signup or reimplementation. The account owner sent a concise Coconala correction telling the buyer to disregard
+the unnecessary signup request. No additional buyer confirmation is required: the buyer never requested account
+approval, and the earlier approval gate was a seller-created promise, not a buyer requirement. Next natural work
+must resolve and use `@selawmqt`, execute the already-approved outreach plan from the full proposal/DM/talkroom
+context, and record official X effects plus the outreach ledger; it must not send another Coconala acknowledgement
+or count an unsent draft as outreach. This resolver is the cross-loop foundation: future Coconala, Lancers,
+CloudWorks, Writer and growth owners discover the same reusable account/session/skill instead of per-loop copies.
+The pre-resolver Paid release has now naturally read the full proposal, DM thread and talkroom history, bound the
+official `@selawmqt` DOM identity, and inspected the first five candidate profiles. All five profile pages were
+available, but none exposed a direct-message action; these inspections are qualification evidence, not outreach.
+The official X messages surface then resolved to `/i/chat/pin/recovery` and required the account's encrypted-message
+passcode, so the authenticated session was not DM-ready. No X send or official effect receipt exists yet, so
+Manledge remains open. Static discovery previously overclaimed `x-repost` as an outreach adapter merely because its
+service token matched X. Resources now declare exact capabilities and the resolver separately returns `discovered`
+and `effect_ready`: X outreach resolves the account but correctly reports no ready effect adapter, while X post
+resolves the existing post/readback skill and browser. The generic Paid owner is instructed to verify live readiness
+and, when one transport is unavailable, choose another authorized skill/contact surface from complete context;
+qualification questions may be the first permitted contact rather than requiring every fact to be public first.
+Do not replace this owner with a manual Codex send. Let it choose an honest contact surface, record each real effect,
+and then rerun under the shared resolver release so discovery and adaptive fallback are proven without
+project-specific prompt knowledge.
+
+The remaining architectural defect was that shared discovery was opt-in: every agent received only an instruction
+to call the resolver if it independently realized that a reusable resource might exist. Life Manager now compiles a
+non-secret capability manifest at every agent start and places the same live skill catalogue, account references
+and browser-identity references in every loop owner's initial context. The owner selects from that common plane and
+then calls `resolve` for the exact service/action; only the selected adapter may dereference a secret locally. This
+is the reusable Life Manager contract, not a Coconala or Manledge rule. Shared does not mean one giant mutable
+prompt: proposal/DM/talkroom/customer files and browser effect ownership remain isolated per project, while stable
+seller facts, skills and resource references are shared. The next immutable release must naturally prove that a
+fresh owner sees this manifest without being reminded by Codex, resolves the existing resource, performs the real
+effect, records official readback and resumes after restart without duplicate effects.
+
+Before that new release took ownership, the still-running natural Manledge owner independently found a second
+qualified active candidate from official X search: `@syo19861103` publicly identifies as an Osaka bicycle Uber
+courier and states 10,000+ deliveries with a 100% rating. The owner sent the full approved individual invitation
+from `@selawmqt`; official X DOM read back the exact message at
+`https://x.com/selawmqt/status/2091339909156237677`, and the immediate replay returned `already_sent` with the same
+URL and exact-message readback. This is individual contact 2, not completion of the required 50 contacts or
+verified exhaustion. The new shared-manifest release remains responsible for durable continuation without either
+duplicate effect or Codex prompting.
+
+The same natural owner then sent a third X reply to `@toru3569`. Official DOM proves the account is an active Osaka
+motorbike courier and proves the exact sent reply at `https://x.com/selawmqt/status/2091340461923607006`, but the
+observed profile/tweets did not prove the reply's statement that the recipient had a 100% rating. Therefore this
+effect is real but quality-invalid and is not counted toward the 50 qualified contacts. The generic owner contract
+now requires a claim-to-source map before every external mutation: each factual outbound claim must bind to an
+official URL or hash-bound project source; an unknown fact is omitted or asked as a concise qualification question.
+This remains model judgment and evidence binding, not a buyer-specific deterministic qualification gate.
+
+The 30-minute natural owner timed out after producing those official effects but before rewriting its canonical
+intent/result, so the parent reported `remote_builder` with effect zero. The effects lived only in provider stdout;
+the existing outreach CSV was an artifact template and did not checkpoint them. A shared mechanical checkpoint now
+fsync-appends each model-decided official effect to `delivery/paid-remote-progress.jsonl` immediately after readback,
+dedupes by effect key, records claim sources and quality status, and is read before the next owner acts. A timeout
+with durable progress becomes pending continuation rather than terminal failure. The model still chooses targets,
+claims, channel and next action; the script owns only persistence and replay safety. A fresh natural owner must now
+reconcile the already-observed official X effects into this ledger, exclude the quality-invalid third reply, and
+continue without repeating either valid contact.
+
+The fresh owner proved that the shared manifest and checkpoint contract reached its prompt, then acquired the
+registered `x:anicca` lease itself. It also exposed a general parallelism boundary by launching multiple official X
+inspectors concurrently against that one leased browser identity; all remained in progress for more than one
+minute. Independent projects remain parallel, but reads, mutations and readbacks sharing one external account lease
+must be serialized. The common owner contract now states that boundary. The always-loaded capability manifest is
+also compacted to slot/capability references rather than copying every skill's long description; all skills remain
+discoverable through `resolve`, while irrelevant prose no longer consumes every owner's context.
+
+That same natural owner recovered all three prior individual X effects from official DOM and fsync-checkpointed
+them into `projects/18169985/delivery/paid-remote-progress.jsonl`: one `qualified` effect for `@syo19861103` counts
+toward 50, one `qualification` effect for `@26AnNPNH5Qr8bBK` remains awaiting an answer and does not count yet, and
+one `invalid` effect for `@toru3569` is retained for replay safety but excluded from the count. Each row binds the
+exact seller receipt URL, payload hash, requirement hash, semantic-contract hash and official qualification
+sources. This proves recovery plus durable classification without a manual Codex send; it does not yet prove the
+remaining 49 qualified contacts, verified reachable exhaustion, timeout continuation, or restart replay-zero.
+Without Codex prompting, the owner then searched additional official X posts, verified `@D2JOG` from the account's
+Osaka and small-motorbike profile plus its own 100%-rating post, sent the approved individual invitation, read back
+the exact seller reply at `https://x.com/selawmqt/status/2091347297758245018`, and immediately checkpointed it as
+`qualified`. The durable valid count is therefore 2 of 50; 48 valid contacts or verified reachable exhaustion remain.
+The same pre-fix owner later selected `@haitatsuin_` from official Osaka, motorbike and 95%-rating sources but reused
+the earlier canned `full_bike` payload that falsely said 100%. It sent and read back that reply at
+`https://x.com/selawmqt/status/2091348211659407512`, correctly checkpointed it as `invalid`, and excluded it from
+the count, but quality classification after mutation is too late. The shared remote-owner contract now requires
+candidate-specific copy composed from the current claim map, prohibits another recipient's canned factual message
+mode or literal value, and requires a final exact-composer-text/source comparison before send; transport scripts
+may execute and read back approved copy but may not choose semantic copy. Immutable release `4a39fe485` contains
+that general repair. Its next natural wake must prove no recurrence; the durable valid count remains 2 of 50.
+Before that old wake exited, its own model corrected the copy to the source-backed threshold wording `評価4.5以上`
+and continued naturally. It officially read back and checkpointed `@cxzapwign` at
+`https://x.com/selawmqt/status/2091348910652735542` from an Osaka Uber-courier profile, a bicycle-operation post and
+the candidate's 98%-or-higher rating post; it then did the same for `@Rim_Uber` at
+`https://x.com/selawmqt/status/2091349174038179945` from the Osaka courier profile, vehicle evidence and the
+candidate's 98%-rating post. Both are `qualified`. The durable valid count is now 4 of 50, with one qualification
+pending and two invalid effects retained only for replay safety; 46 valid contacts or verified exhaustion remain.
+
+The same resume exposed that `agent-runner` reused stable `attempt-01` paths by deleting the prior wake's logs and
+summary at each launch. Existing consumers still need those stable names for the current run, so the runner now
+atomically archives the prior `attempt-*`, `attempts.jsonl` and `summary.json` under that evidence directory before
+starting. The active run remains freshness-isolated at the original paths, while future owners can recursively
+recover official-effect history instead of relying on Codex or a transient provider transcript.
+
+The parallel new project `18179735` was automatically discovered and assigned its own answer owner, proving new
+talkrooms can become independent project lanes without Codex. Its owner then spent more than nine minutes retrying
+one timed-out official Stripe support page and inspecting the crawler implementation instead of completing the
+bounded buyer answer. Customer-response research now attempts each official fact source once; a retrieval failure
+causes that fact to be omitted or labelled unverified and the model must immediately finish the useful answer.
+Research-tool debugging remains a separate harness-repair task, never hidden inside a waiting buyer response.
+
+The resumed Manledge owner then exposed a second shared-tool contract defect: `x-repost` advertised generic
+`post` capability in the shared registry, but its production CLI accepted only `quote` and `reply` and required a
+source post URL. The owner correctly resolved and reused the skill, yet could not publish the approved standalone
+recruitment notice without reimplementing browser automation. The existing adapter now has a real `post` mode
+using the same leased account, official compose acknowledgement and exact profile-timeline permalink readback;
+quote/reply behavior is unchanged and still requires `--source-url`. This is a generic X capability repair, not a
+Manledge script. The still-running pre-release Manledge owner independently shortened its approved recruitment
+copy to fit X's weighted-length limit, published it from the resolver-selected `@selawmqt` identity, and read the
+one matching official timeline post back at `https://x.com/selawmqt/status/2091325726750544166`. This is one real
+natural-owner public recruitment effect, not any of the required 50 individual approaches and not yet a complete
+Coconala handoff. The earlier drafts and failed compose attempts remain zero effects. After that owner exited, the
+existing launchd Paid job naturally restarted from a release containing the shared adapter, rediscovered all nine
+purchased rooms, and dispatched Manledge, Smile, X and the legacy room as four parallel project workers. Manledge
+reclassified the completed remote work from `remote` to `answer`, discarded the stale account-signup request, and
+sent the concise post result once in exact room `18169985`. The installed effect receipt records
+`send_performed=true`, `effect=1`, `readback=1`, `formal_delivery_checkbox=false`, and effect key
+`coconala:reply:18169985:c2fd08283c5052760c0583de1e1645fc88e7c65ba398a6ad2fb862db5f68cb18`;
+the official room snapshot reads back the new seller message with the X URL redacted in stored customer data.
+Manledge remains open for replay-zero and the still-unfulfilled 50 qualified individual approaches.
+
+The same natural pass also sent Smile `18179735` one consultation answer and read it back from the exact official
+room (`effect=1`, `readback=1`, formal delivery off). Its approximately 1,600-character response was useful but
+too expansive for the buyer-message style contract, because the answer-owner prompt did not inherit the concise
+artifact-handoff guidance. The generic consultation owner now leads with the conclusion and keeps only decisive
+reasons and the next action; it produces a long report only when the buyer explicitly requests one. Do not resend
+or abridge the already-delivered Smile answer.
+
+The first replay pass exposed another self-invalidating boundary: a successful answer changes compiled context,
+so replay detection incorrectly required its prior semantic decision to remain current; the queue item also omits
+seller messages and exposes them only through its collector-owned `talkroom_evidence_file`. Replay recognition now
+loads that exact official room evidence, validates the room id, and binds the signed answer intent to unchanged
+buyer feedback and official seller-last. Live reproduction recognizes Smile as completed while correctly leaving
+Manledge actionable because its current semantic decision requires the still-unfulfilled 50 individual approaches.
+
+**Current live cursor.** `main` and `origin/main` were verified equal immediately before this snapshot at
+`9289798c8`; the starting verification commit
+`79ac01ba1eb66b06aed1f9cee66d4af303f03a3d` remains an ancestor. The existing launchd Paid owner is the only
+customer-effect owner. The authenticated gig-browser launcher and launchd manifest were still overriding the
+configured no-floor policy with a hard-coded 512 MiB headroom; the launcher also unset both ignore flags. Under
+current host pressure this prevented CDP startup after 78 stale tabs made all nine targeted readbacks time out. The
+generic launcher now honors the configured environment and defaults to zero headroom with both pressure-stop flags
+ignored, while the Coconala Apply, Negotiate/reply and shared browser jobs explicitly carry zero headroom. Cleanup
+remains owned by the separate cleanup loop rather than blocking every customer effect.
+
+Paid immutable release `543e65aeb` is now active. The release manager observed the prior Manledge owner mid-pass,
+left it uninterrupted until it wrote its honest zero-effect result and released `x:anicca`, then the existing
+launchd Paid job was kickstarted. The new pass obtained fresh official snapshots for all paid rooms and naturally
+spawned independent workers for Manledge `18169985`, Smile `18179735`, X `18171850`, and legacy room `18062411`
+in parallel. This is the required discovery-to-project-lane behavior; process existence is only liveness evidence,
+so each lane remains incomplete until its external effect and exact official readback exist.
+
+That pass exposed a provider-neutral routing self-invalidation defect. Smile `18179735` was correctly classified
+`actionable/answer`, and its owner wrote the requested consultation answer, but the decision freshness snapshot
+also treated `delivery/paid-answer.json`, `delivery/paid-remote-intent.json`, and `events.jsonl` as immutable
+inputs. The owner's authorized output therefore made its own semantic decision stale and the write phase fell
+back to `remote_resume`, producing zero effect. The compiled context hash now freezes the exact prior owner-output
+history while live freshness tracks buyer sources, accumulated requirements and project state only. A direct
+reproduction changes Smile from `answer_ready=False / compiled source reference changed` to
+`decision=answer / answer_ready=True`; publish this repair and require the natural lane to send once with official
+readback rather than regenerating or manually sending the answer.
+
+The first no-floor Paid wake then proved a separate shared-browser contention defect: all eight actionable
+targeted readbacks entered the one authenticated default CDP context concurrently, created duplicate room tabs and
+failed, while the one reserved room read back normally. Paid project owners remain parallel at eight, but the
+read-only targeted refresh is now serialized through that single physical browser before project dispatch. This
+does not serialize artifact work or delivery; it prevents one browser resource from turning parallel dispatch into
+an all-room failure.
+
+Release `17fb4a7e6` then completed fresh targeted official readback for all nine paid rooms and dispatched the
+project owners in parallel. Haru was classified `actionable/file/review`, formal approval null and unresolved empty
+against latest buyer message `js-talkroomMessage-220032238`. Its existing v43 package remains SHA-256
+`4ce8e306b2edc0d9aeb9c68c217d9948f044d3c293f62f1f6bea277a19ffc640`. The owner selected two new
+self-contained SVG inputs after proving zero pixel delta from the v43 masters, but Illustrator 30.7 immediately
+closed the PC document during `app.open()` (`The document is no longer open`); effect/readback remain zero and the
+responsive request did not run. That input hash is now durably failed. The next owner resume must choose the
+already-inspected PC/responsive PDF inputs, obtain both save-close-reopen receipts, finish v43 and send once.
+
+The next natural Haru owner has now made that semantic recovery decision from the complete context: it wrote
+controller requests for `work/v43-package/exports/habikino-pc-v43.pdf` and
+`work/v43-package/exports/habikino-responsive-v43.pdf`, with distinct native `.ai` outputs and receipt paths, and
+did not repeat either failed SVG hash. The durable controller then opened the exact PC PDF successfully in
+Illustrator 30.7, confirmed by the live document window, but the synchronous `app.open()` Apple Event never
+returned even though the document was already open. The shared native-roundtrip CLI now opens the exact file via
+LaunchServices and binds it through a separate short exact-active-path readback. This is a generic Illustrator
+30.7 recovery, not a Haru branch. Publish and activate it, let the existing Paid owner rerun both PDF requests,
+then require both official receipts before packaging or customer effect.
+
+The first repaired-controller transition was deliberately terminated after the exact PDF document had opened but
+before the old synchronous call returned; its durable mechanical row is therefore `returncode=-15` with empty
+stdout/stderr and no output/receipt. Treating that controller interruption as an input-hash defect would wrongly
+ban the now-correct PDF. Shared failure persistence now distinguishes this exact no-effect interruption: after a
+controller repair the semantic owner may retry that same capability/input hash exactly once; any tool-produced
+error or repeated failure still requires a different honest input. Activate this policy with the open/readback
+repair before the next Haru owner pass.
+
+On the first post-repair retry, Illustrator still held the unanswered legacy Apple Event: the controller failed in
+`_ensure_responsive` at the `app.version` health check before opening either PDF. Accessibility readback showed the
+only open document was the Haru PC input and no new AI output existed, so Illustrator alone was restarted and
+officially read back as version `30.7.0`; browser and Paid state were preserved. Shared failure classification now
+uses the effect boundary rather than raw return code: an explicit native-app health-check failure before input
+effect does not poison the input hash, while any failure after input processing still does. The next natural pass
+must retry the two PDFs only after this positive health readback.
+
+That natural owner retry has now completed both native PDF roundtrips. Illustrator 30.7 officially saved, closed
+and reopened the PC AI (`5d46bbf52ae9c57f5ed7f8075fe587f94bee408513f5f3968750b4244de644c9`,
+7,076,972 bytes) and responsive AI
+(`6e2c2423386f7042f72968e78cdae5e81771dd8ea4b4274e77ac795f332e71b2`, 7,058,459 bytes), with positive
+layer/artboard counts, native private-data markers and creator metadata. The same owner rebuilt
+`habikino-renewal-v43.zip`, included both AI files and exact receipts, verified ZIP integrity and emitted PASS with
+package SHA-256 `4d13095f163db23120d4a66498cea2f801bae1ea4c9c0b92db4072f5426afcd8`. Promotion to the durable project
+completed with no customer effect. The post-promotion asset-contract review then correctly stopped before send:
+the artifact was complete, but five `required_assets` IDs had been renamed in the manifest. Durable feedback names
+the exact missing/extra IDs; effect/readback remain zero. Paid run 6 naturally refreshed exact room `18169583` and
+re-entered semantic decision/file ownership. It must repair only those stable manifest IDs, preserve the verified
+package hash, pass the generic contract/correspondence validators, then attach/send once with formal delivery OFF,
+exact-room DOM readback and replay-zero.
+
+Runs 6-8 exposed two later generic recovery failures before any customer effect. A stale one-time v43 recovery
+policy was replayed, so the natural owner truthfully froze the same verified design as v44 and requested fresh PC
+and responsive Illustrator receipts instead of sending stale-path receipts. The old immutable controller then
+proved LaunchServices had opened a different document; shared `_open` now uses Illustrator's native Apple Event
+`open POSIX file` and is published in current release. The parallel pass next reached physical ENOSPC while writing
+its final receipt. Only regenerated caches and a completed failed staging copy were reclaimed; APFS then released
+19 GiB, while durable customer data, browser profiles and the verified v43 bundle remained intact.
+
+The remaining immediate blocker is now the macOS user bootstrap, not Paid logic, Coconala auth, artifact quality or
+disk. After the disk incident, `launchctl-safe`, direct `launchctl` and `launchctl asuser` all return 141
+`Reentrancy avoided`; Terminal/Aqua resolution returns -10827; OpenClaw Gateway is unavailable; sudo and localhost
+SSH report that uid 501 has no passwd record; and direct OpenDirectory lookup returns `eServerError`. No attempted
+path started another Paid process and customer effect/readback remain zero. A full Codex/ChatGPT desktop app
+restart was then rechecked and did not recover either service: OpenDirectory still returns `eServerError`, and
+`launchctl print gui/501/...` still returns 141. The exact minimum owner action is now one full Mac reboot, then
+resume this thread. On the recovered Aqua bootstrap,
+kickstart the existing `ai.anicca.hf-gig-paid-direct` owner once; do not run a custom executor. Require v44 PASS,
+exact-room attachment/message readback with formal delivery OFF, then a second natural wake with replay-zero.
+The account owner then authorized that reboot. All three in-session native restart paths failed at the same broken
+control plane before any restart effect: `System Events` returned Apple Event `-10827`, direct `loginwindow`
+resolution returned `-1728`, and `launchctl reboot system` returned 141 `Reentrancy avoided`. No Paid process or
+customer effect was created. The only remaining action is therefore a physical Apple-menu/power-button Mac reboot;
+after login, resume this thread and continue with the existing Paid owner as specified above.
+The account owner explicitly reauthorized an immediate reboot and Haru send. A fresh attempt still found uptime
+over 21 hours, `dscl=eServerError`, `launchctl=141`, and no process table. Passwordless `shutdown -r now` could not
+resolve uid 501; the Computer Use service could not start; and the independently installed CuaDriver saw neither a
+running app PID nor a WindowServer window. These attempts also produced no reboot or customer effect. Physical
+Apple-menu/power-button reboot remains the sole required owner action; this is not permission waiting.
+
+The account owner then restored the macOS user bootstrap without a reboot. Fresh readback now resolves uid 501,
+`dscl` returns `UniqueID: 501`, the process table is available, and launchd reports the unchanged
+`ai.anicca.hf-gig-paid-direct` owner running naturally as PID 74801 from immutable release `c0c66c32f562...`.
+That owner refreshed all nine paid rooms and dispatched their isolated workers in parallel; Haru `18169583` is
+actionable at review stage, with formal delivery unchecked and latest buyer message
+`js-talkroomMessage-220032238`. Its isolated owner preserved the verified v43 visual lineage as required v44,
+created `habikino-renewal-v44.zip` plus distinct PC/responsive PDF native inputs, and wrote two generic
+`illustrator_native_roundtrip` requests. The owner emitted the required blocked handoff after about six minutes;
+the controller can now execute both requests and resume that same owner. No official v44 save-close-reopen receipt
+exists yet, so do not send this unreceipted package or create a manual executor. Let the durable controller finish
+both roundtrips and resume, then require PASS, one exact-room send with formal delivery OFF, official
+attachment/message readback, and a second natural replay-zero wake. Customer effect and official readback remain
+zero.
+
+The account owner then explicitly overrode the remaining v44 wait and required immediate Haru submission. The
+in-flight Haru file worker alone was stopped to prevent a later duplicate; the other Paid project workers and the
+launchd parent continued. The already durable acceptance-PASS v43 package, containing both official Illustrator
+30.7 save-close-reopen receipts and SHA-256
+`4d13095f163db23120d4a66498cea2f801bae1ea4c9c0b92db4072f5426afcd8`, was attached once to exact room
+`18169583`. Official post-send DOM readback shows `habikino-renewal-v43.zip`, the complete apology / immediate
+minor-fix / seller-cancellation offer, and formal delivery unchecked; the effect keys bind that exact room,
+message hash and package hash. Immediate replay of the identical contract returned `send_performed=false` and
+`deduplicated=true` with the same effect keys and formal delivery still off. Haru review-stage submission is
+therefore complete; buyer approval and any later requested correction remain live transaction work. The next
+natural Paid wake then rediscovered the same official effect: exact-room snapshot reports
+`buyer_visible_artifact_observed=true`, `buyer_feedback_pending_artifact=false`, `delivery_action=none`, an empty
+composer and formal delivery unchecked, while its seller-message history contains the v43 attachment and exact
+handoff. The durable owner therefore performed no replay. Buyer approval and any later requested correction remain
+live transaction work; Haru no longer blocks advancement to the next still-pending Paid room.
+
+Aufbau `18178439` was the next official silent liability: the buyer had supplied `MSG41.pdf`, no buyer-visible
+artifact had been sent, and the durable v1 package was already acceptance-PASS. The isolated owner was stopped
+after it re-entered generic CAD-tool discovery despite the verified prior package; other Paid workers continued.
+`MSG41_CAD_Review_v1.zip` was then attached once for review with formal delivery off. Its SHA-256 is
+`162629feed1809c20ad37ef56458d1fcfd79ab7fd4d06c570a13193cac5360fa`; the archive contains the separate
+MSG41P-1Y1-L and MSG41RR-1Y1-M1 models plus their assembled state in STEP and IGES, the source drawing and README.
+Exact-room post-send DOM readback binds that filename, customer message, room and hash while the formal checkbox
+remains unchecked. Immediate replay returned `send_performed=false` and `deduplicated=true` with the same effect
+keys. The next natural Paid wake must rediscover this effect without sending it again.
+
+**Current runtime refresh.** Unrelated dirty files remain untouched. The existing Paid pass naturally resumed the
+Haru v43 staging after compiling
+the complete proposal, DM, talkroom and attachment context. Haru `18169583` remains unsent. The resumed owner first
+rejected the already-failed data-URI SVG inputs. After the generic receipt crash repair, its linked recovery-SVG
+attempt reached Illustrator but failed at `app.open()` before any effect/readback. Queued Keychain prompts and the
+Illustrator cross-application access prompt were cleared without storing credentials. The next honest reusable
+inputs are the already-inspected v43 PC/responsive PDFs; no artifact regeneration or Haru-only bypass is allowed.
+Publish the generic browser-launch repair, restart the authenticated browser and existing Paid owner, then require
+that owner to choose those inputs, obtain both exact-output reopen receipts, package and send once with formal
+delivery OFF, exact-room DOM readback and replay-zero. Customer effect and official readback remain zero. The same
+pass automatically discovered new paid room
+`18179735` (`smilejack2`, app-market-research/promotion work), started its independent project worker and began
+pre-purchase DM collection without a code or queue edit. This proves discovery only, not delivery: it must compile
+proposal + DM + full talkroom + attachments, avoid re-asking known facts, create useful work and remain owned until
+the transaction is complete. Aufbau `18178439` remains active under its own isolated owner in parallel.
+
+**Haru v43 is visually verified but must not be sent until native Illustrator receipts exist.** Three natural
+isolated owners independently rebuilt the same bounded v43 correction from the accepted v27/v32 lineage. The latest
+owner measured PC exports at 1440x5667 and 2880x11334 and responsive exports at 750x10224 and 1500x20448; both PDFs
+contain only the two buyer-mandated raster illustrations and otherwise preserve vector artwork. Direct inspection
+confirmed the responsive top badge, both CTA arrows, four reason icons, the final inquiry notice panel, process
+icons, five FAQ chevrons, three customer-house illustrations, Habikino wording, apology/immediate-fix/cancellation
+handoff and formal delivery OFF. Customer effect and readback are still zero.
+
+The latest failure is now fully mechanical and reproducible: the PC PDF successfully saved and reopened as native
+Illustrator data, then the receipt-only full-artwork item count caused the application crash. The official receipt
+contract still requires exact output-path reopen, Illustrator version, positive layers/artboards, distinct hashes
+and native private data; it no longer needs an exhaustive page-item enumeration that adds no buyer-quality proof.
+Do not regenerate or manually submit another candidate. Publish this generic receipt repair, let the durable owner
+perform both native roundtrips and resume the same package, and only then let that owner submit once to exact room
+`18169583`, with formal delivery OFF, exact-room DOM readback and a subsequent replay-zero receipt.
+
+The latest natural pass proved byusco `18171890` once with `effect=1`, `readback=1`, exact artifact SHA-256
+`6d1a0a95850c4bbd496174b27881371dc4b81d44284bf347bd2b5e9d0766ab3d`, exact room DOM, empty composer and
+formal delivery OFF. Its following wake omitted a new byusco worker after targeted official readback, so the final
+aggregate receipt must still record replay-zero explicitly. Manledge `18169985` then sent its authorized answer
+exactly once with `effect=1`, `readback=1`, empty composer and formal delivery OFF; its official latest-seller-text
+SHA-256 is `219cf0bff258b88fd782e3a060c8199a181d231933896b96c81a832e680256f9`. Manledge also still needs a subsequent
+official replay-zero receipt. X `18171850` remains no-resend: its prior official effect exists, but the final
+aggregate replay-zero row is still missing.
+
+Haru `18169583` now has a v40 candidate built from the accepted v27/v32/v39 lineage with vector text, panels,
+icons and inquiry artwork plus only the two buyer-mandated raster illustrations. The isolated owner correctly
+refused to represent PDF-identical `.ai` members as native Illustrator files. The observed blocker is mechanical,
+not semantic: macOS rejects Illustrator Apple Events inherited by the model sandbox with `-10004`, although the
+same official Illustrator automation is reachable from the durable controller context. The generic repair is a
+controller capability boundary: the model requests a named installed desktop capability using only staging-relative
+paths; the controller validates those paths, executes the existing `illustrator_native_roundtrip.py` outside the
+model sandbox under one host-wide desktop-tool lease, records stdout/stderr and official receipt, then resumes the
+same project owner for final inspection
+and packaging. This must be published and proved by the natural Haru owner; no Codex one-off artifact generation or
+customer send counts.
+
+The first broker-enabled natural owner selected the installed Illustrator capability itself, staged the two v40
+SVG masters and emitted exactly two relative-path requests. That pass exposed one protocol mismatch before any
+customer effect: the owner used the natural field name `capability` while the controller expected `tool`. The
+controller now treats `capability` as canonical and accepts `tool` only as compatibility input. A new natural
+pass then reached the out-of-sandbox Illustrator CLI, but the dedicated app remained on an empty unresponsive home
+window after earlier interrupted automation. The native tool now health-checks Illustrator and restarts it only
+when System Events proves no document window is open; a user document makes the pass fail closed. A third natural
+launchd pass is active on that corrected immutable release; it must produce both official Illustrator reopen
+receipts, resume the same owner, obtain PASS, send v40 once with formal delivery OFF and read it back from Haru's
+exact room before this item advances.
+
+**Native receipt blocker after three distinct repairs.** The same mandatory Illustrator save/reopen receipt remains
+absent after (1) binding the owner's natural `capability` request field, (2) recovering only an empty stale
+Illustrator session, and (3) moving the mechanical execution outside the model sandbox. The third path proves TCC
+and controller access, then Adobe Illustrator 30.7.0 crashes while adopting the tall PC SVG: macOS diagnostic
+`Adobe Illustrator-2026-08-22-193132.ips` records `EXC_BAD_ACCESS`, `SIGSEGV`, faulting thread 0. No buyer effect
+occurred in any attempt. Do not repeat that SVG open path or send the PDF-identical pseudo-AI. The next safe repair
+must preserve `paid-tool-results.json` into durable project context so the same owner can semantically select a
+different honest input supported by the installed skill, most plausibly the already verified vector PDF roundtrip,
+then issue a new capability request. If Illustrator also crashes on that independent input, the exact minimum
+non-delegable action is an account-owner native Illustrator save/reopen on this machine; record its official receipt
+before the loop may package or send v40.
+
+**Durable semantic recovery now implemented, activation proof pending.** `main` and `origin/main` were verified at
+`aabadf06f69f3e64e374bf95f33a8dc44c28942d` before this change while the already-running Haru effect child remained
+on its pre-change `ba6dfa88c21334ce6ca2993e41f8b15febc6b0f0` source path. On a desktop-capability failure the controller now
+preserves only the mechanical request, request SHA-256, staging-relative input names and SHA-256 values, return code
+and path-sanitized stdout/stderr in project-local `context/paid-tool-results.json`. The next isolated Project Owner
+receives that receipt and must semantically choose a different honest installed-skill input or approach instead of
+repeating the same capability plus input hash; the controller does not classify the buyer problem or select the
+replacement. A successful promoted bundle removes the stale failure receipt. A local isolated receipt exercise
+proved the input hash binding and removal of the transient workspace path; syntax and diff checks pass. This is not
+customer evidence: publish it, let the existing Paid launchd owner restart naturally, and require the alternate
+native receipt, v40 artifact inspection, one send, exact-room official DOM readback, formal delivery OFF and then
+replay-zero before marking Haru complete. Current APFS free space is about 3.0 GiB; the active Haru runtime occupies
+about 2.9 GiB, so do not delete or mutate that in-flight workspace.
+
+**Buyer-trust message ownership correction, activation proof pending.** The Haru semantic decision correctly required
+a concise apology with the resubmission, but the final file progress helper replaced the Project Owner's contextual
+handoff with a fixed generic sentence. The generic harness now asks the same isolated Project Owner to bind a concise
+`customer_message` into the artifact manifest from the complete conversation and cited `buyer_trust_context`; the
+controller passes that text through unchanged after a nonempty 2,400-character bound. When cited buyer messages prove
+repeated failed submissions or an explicit cancellation warning, the owner must acknowledge the delay and errors,
+offer immediate minor corrections, and offer seller-initiated cancellation if the new artifact still cannot satisfy
+the explicit requirements. It must not invent a cancellation offer for unrelated buyers. Existing manifests without
+that optional field retain the safe legacy fallback. Local passthrough, syntax and diff checks pass; this remains
+non-customer evidence until a natural owner creates the message and exact-room official readback proves it was sent.
+
+**Natural durable-failure proof.** Release `9f4cbe8b0e2e4df17bf02686d92d6a44d8867468`, which contains the
+`32717dc80` recovery change, naturally restarted Haru in an independent multi-room Paid pass. Its semantic owner
+again selected the installed native capability before any prior durable receipt existed, and the controller recorded
+the failed PC SVG request at `context/paid-tool-results.json` with request SHA-256
+`d7fde7137bd0cbba2d59ddbc057223183e8a68458499953bd37c8aee7e5178ff`, PC input SHA-256
+`5f50915acc1c1ec431711588f244800bf6797ffa057c33676bc722b479ab25ec`, responsive input SHA-256
+`2e8b48f879c0abc7175cf2fb57791abe7020691d9a52528aa7b3ccad6e451724` and native return code 1.
+The transient workspace path is sanitized to `/paid-owner-workdir`; customer effect remains zero. The next natural
+Haru owner must read this receipt and choose a different honest input or approach. Do not call this complete until
+that alternate request produces official native reopen receipts and the `bca06caca` contextual handoff path is active.
+
+**PDF handoff ordering defect, repair pending activation.** The next natural owner read the durable SVG failure and
+correctly selected fresh PDF inputs for both PC and responsive native roundtrips. It produced a complete v40 package,
+acceptance and manifest, then returned `status=blocked` exactly as the capability prompt instructed while asking the
+controller to execute the two PDF requests. The controller incorrectly treated that blocked runner exit as
+`file_builder` failure before reading the valid request file, so Illustrator never received either PDF and customer
+effect remained zero. The generic controller now accepts a failed/blocked runner exit only when a staging-local
+`paid-tool-requests.json` exists, then runs the same strict capability/path/input validation before any desktop effect.
+An exit without that request still fails closed. Publish and naturally re-run; success requires the PDF native receipts,
+same-owner resume, promoted v40 and contextual customer message before browser delivery may begin.
+
+**Targeted readback cleanup separation, activation proof pending.** A subsequent Paid pass captured each selected
+talkroom DOM, including Haru, but `DefaultTab.__exit__` let a 10-second temporary-tab close timeout invalidate the
+already-written authenticated snapshot. All eight refreshed rooms were therefore reported as `targeted_readback`
+failures and no project worker or customer effect followed. Tab close is now best-effort only for
+`TimeoutExpired`/`OSError` after successful capture; authenticated open, exact-room DOM, identity, coverage and source
+receipt failures remain fail-closed. This is a generic browser cleanup boundary, not a Haru exception. Publish and
+prove a natural multi-room refresh reaches the Haru project worker before advancing.
+
+**Current reviewer correction.** `main` and `origin/main` were both `31e7fa09d` before this change; the
+starting verification commit `79ac01ba1eb66b06aed1f9cee66d4af303f03a3d` remains an ancestor. The loaded
+Paid release is still `f747c7d05` while its natural pass is active, so no effect is attributed to the new
+code yet. The shared file reviewer policy is now v21: exactly one material-risk review may block only a
+materially missing explicit buyer requirement, a false or materially unverified claim, a wrong-target /
+duplicate / formal-delivery error, a secret/legal/money risk, or a corrupt or buyer-unusable artifact.
+Style, wording preference, optional additions, cosmetic polish and alternate approaches are non-blocking.
+For one concrete repairable material finding, the Project Owner performs one class-wide repair and then
+the controller verifies structure, hashes, immutable inputs and TOCTOU without starting a second reviewer
+round. The original reviewer receipt and repaired artifact hash remain separately bound in the durable
+authorization, including after restart. `undeterminable` remains fail-closed only for an unresolved material
+risk. The answer reviewer remains removed. Direct compile/help/contract checks pass; no TDD or extra review
+ceremony was added. Disk headroom was recovered from about 529 MiB to 1.4 GiB by removing only verified
+regenerable caches and terminating four duplicate prohibited pytest runs; customer artifacts, active Haru
+workspace and the protected dirty test were preserved. Commit `39574cae2` is pushed and activated; Haru,
+Manledge and byusco continue as independent natural workers. Reopened X then produced a semantically inconsistent
+decision: `mode=file` while its own required effect and buyer instruction require the deliverable contents pasted
+into the talkroom. That X worker was stopped before effect. Shared semantic policy v10 now requires answer mode
+whenever the buyer explicitly requires talkroom-pasted contents and does not also request a separate file, even
+for structured copy or a revision previously stored in a file. This is a generic medium-selection rule, not an
+X-specific route. Next: push/activate v10, naturally resume X, and require exact-room official DOM effect/readback
+plus replay-zero for all four rooms before advancing beyond Paid.
+
+The first v21 byusco pass independently approved `casican-review-article-v7.md`, SHA-256
+`6d1a0a95850c4bbd496174b27881371dc4b81d44284bf347bd2b5e9d0766ab3d`, but effect remained zero because
+`_prepare_file` incorrectly synthesized `buyer_formal_delivery_hold=true` from every semantic review stage.
+That conflated the controller's formal-delivery-OFF policy with an explicit buyer hold and routed an approved
+review draft back to `work_required`. The shared cadence now preserves only the collector's actual buyer-hold
+fact; the unchanged formal-approval gate naturally selects buyer-visible `progress` with the formal checkbox
+false. A direct production-data decision check returns exactly that result. This is not yet a customer effect;
+activate the fix and let the existing Paid owner naturally retry byusco once.
+
+**Live handover state.** `main` and `origin/main` include implementation commit
+`92174b7932f9691109a537e3a90a95b8f6759227`; the latest activated Paid release is that immutable commit.
+Its completed natural receipt is
+`status=pending`, `observed=7`, `actionable=0`, `effect=0`, `readback=3`, `failed=0`, `pending=4`:
+all four owned rooms checkpointed at `disk_pressure` before project mutation. Old regenerable OSS inspection
+clones and a completed pytest browser cache were removed after proving they had no open handles, restoring about
+4.1 GiB free; no customer runtime or evidence was deleted. This process liveness and disk recovery are not an
+official customer effect, readback or replay-zero result. The account
+owner authorized deletion of obsolete LBJ `18130722` work because another provider now owns that job. Only the
+v107 package SHA-256 `cc7ddd9e…` plus audit metadata remain; old work/source/backups and all MP4/MOV copies were
+removed, reducing that room from 6.8 GiB to 232 MiB and restoring 6.0 GiB free. The protected unrelated dirty
+`skills/earn/gig/tests/test_reply_concurrency.py` remains outside this work. The loaded Paid owner uses up to
+eight independent project workers and retains the 512 MiB effect floor and expiring operator brake.
+
+**Current official Paid truth — supersedes the historical chronology below.** The latest completed natural receipt is
+`status=failed`, `observed=7`, `actionable=4`, `effect=0`, `readback=3`, `failed=4`, `pending=0`.
+Three rows are official readback-only/reserved; the owned failures are Manledge `remote_verifier`, Haru
+`file_builder`, byusco `file_owner_feedback`, and `18062411` `remote_resume`. Silent pending is zero, but no new
+customer effect exists.
+
+- Haru `18169583` sent v32 previously with exact official readback/replay-zero, but the buyer then supplied two
+  complaint screenshots and explicitly reported rough images, repeated lack of checking and possible
+  cancellation. Haru is therefore reopened and first priority. The natural Project Owner preserved
+  `habikino-renewal-v37.zip`, 40,866,940 bytes, SHA-256
+  `eedfe409b25536709d0fcdd69b5b6538ad59e61856ee889041c84d66e42a0969`, with producer-side `PASS`; the
+  controller stopped on the old ordering defect `required_visual_review_missing` before customer effect. The
+  newer release performs that review before validation. The natural isolated owner is now building v38 from the
+  accepted lineage: measured previews are PC 1440x5472/2880x10944 and responsive
+  750x9984/1500x19968, with embedded fonts, two authorized raster images and 205–245 effective PPI. Its current
+  `.ai` members are still byte-identical to the PDFs, so native Illustrator edit/save/reopen proof is absent.
+  v38 was promoted as ZIP SHA-256 `bc747bc35b197322c57bb391d1faf3e48115bfcbcbf619d1b7809b9d11799e09`
+  but failed closed before review/effect because all 22 asset bindings retained staging paths and used field names
+  different from the durable validator contract. No v37/v38 customer effect or readback exists. Local/producer PASS does not authorize
+  sending. The same Project Owner must fresh-inspect the resulting package against every accumulated
+  requirement, the last accepted layout lineage and both complaint screenshots, repair through the natural loop
+  if any visible defect remains, then send exactly one verified hash with formal delivery OFF and replay-zero.
+  The natural owner advanced to v40 and correctly reused the shared native-Illustrator CLI, but its first SVG and
+  PDF attempts were blocked by an Illustrator missing-link modal and macOS Automation denial. The account owner has
+  now authorized the Python-to-Illustrator automation prompt, direct Illustrator JavaScript succeeds, and the stale
+  modal was cancelled without accepting missing links. The shared CLI no longer treats any open Illustrator document
+  as the requested source: it requires the active document's exact filesystem path to match before saving. Release
+  `92174b793` is naturally resuming the existing v40 workspace; no v40 customer effect/readback exists yet.
+- Manledge `18169985` naturally prepared v24, SHA-256
+  `fbf365e364695907b9ebe853fa72a2e77232267380fb6f7fc6f9b44c1a5f432b`; no completed exact-room effect/readback
+  receipt exists yet. Its v9 semantic owner autonomously chose `actionable` / `mode=file` and reused the preserved v24
+  review kit rather than regenerating it. A fresh verifier directly checked the fixed hash against the entire buyer
+  conversation, DM commitments, proposal, listing/outreach copy, 100/50 rule, progress controls and report templates,
+  and returned `deliverable`. The browser writer then lost the shared CDP lock before any effect; the durable checkpoint
+  is `delivery_unknown`, `reason=writer_lock`, `effect=0`, `readback=0`, and no post-send browser evidence exists.
+  Therefore do not assume success or blindly resend: on the next natural wake, official exact-room readback must decide
+  whether to deduplicate or send once, with formal delivery OFF, then prove replay-zero. On that wake the fresh v9
+  semantic decision changed naturally to `mode=answer`. The research-capable owner produced a complete talkroom reply;
+  two fresh verifier passes rejected concrete proof/wording defects rather than sending them: unsupported prior-send
+  claims, unsourced official-detail assertions, a missing exploratory-contact template, omission of known LINE ID
+  `@810akrtq`, and an unqualified zero-effect claim. The third natural repair also failed closed: it still repeated
+  external official facts without a captured fetch, omitted the three mandatory fit checks from the 50-count rule, and
+  called an advertising-partnership contact an employment-recruiting desk. The generic missing harness is evidence
+  transport, not another buyer rule: when the owner uses external facts it must fetch official pages with installed
+  `crwl`, retain that stdout in its owner evidence, and let the fresh verifier inspect it. No customer effect/readback
+  exists yet. The shared answer owner is
+  now allowed to run local read commands and official-source web research while customer mutation remains exclusively
+  owned by the fenced browser executor. Do not add a Manledge-only reply path.
+- byusco `18171890` currently holds `casican-review-article-v5.md`, SHA-256
+  `28199b8fb6479915d5ec372f3e57df83899f449a705ac7157dd9ad59867907d1`, as `REVIEW_READY`; the controller
+  fails `file_validation: asset contract mismatch`. Its Project Owner must bind every required buyer-visible
+  screenshot/asset or return a truthful non-delivery disposition; it may not call an incomplete article perfect.
+- X `18171850` has a newer buyer event after the v1 official effect/readback and is reopened. The buyer corrected
+  the source category to FANBOX four-panel manga, asked for talkroom text rather than an attachment, and later named
+  one already-used four-panel topic that must be avoided because assignments are first-come. The old room-local
+  `observe_only` policy was incorrectly treated as permanent even though targeted official readback reports
+  `buyer_reply_after_artifact_observed=true`. The generic policy now expires on a newer buyer reply; the natural
+  owner must read the current linked source/DM sequence, produce nonduplicative X copy as talkroom text, send once,
+  and obtain exact-room readback/replay-zero. This is a new response, not a resend of v1.
+- `18062411` currently closes at `remote_resume`; its latest semantic decision is `satisfied_noop` while the
+  buyer consults a superior. It requires durable factual disposition/recovery, not a new customer effect.
+- A current Paid Project Context model stdout log contains plaintext content from a buyer-supplied
+  credential-bearing attachment. The value is not copied into this spec and must never enter repo, Telegram,
+  prompt, model stdout or deliverable evidence. Before another Paid model run, preserve only the restricted
+  local source/hash/metadata required for authorized work, redact derived prompt/log material, audit analogous
+  projects and record the minimum account-owner rotation action if exposure requires it.
+
+**Private-data boundary readback.** The leak above is closed before further Paid reconstruction. The shared
+compiler now identifies credential-bearing buyer attachments without logging their contents, keeps the three
+observed sources under owner-only local project permissions, removes their paths from `read_these_first`, and
+exposes only size, SHA-256, content type, restricted purpose and `restricted=true` to the model context. Every
+project-root Paid decision/builder/verifier model invocation is wrapped by a mode-600 macOS sandbox profile that
+denies those exact files, and the isolated file-owner staging copier omits them. Existing derived prompt/stdout/
+work evidence was audited and 16 files were redacted while the three authorized sources were preserved; exact
+secret-value scans return zero matches in remaining derived project files and tracked repository files. A natural
+`18062411` decision run from immutable release `f7755b48e` read back three restricted metadata rows, zero exposed
+credential paths, a mode-600 sandbox profile and zero secret matches in model stdout. The credential reached a
+third-party model before this boundary existed, so the smallest remaining legal owner action is for the buyer or
+authorized account owner to rotate that external account credential before it is used again; Life Manager must
+not request, copy or store the replacement in prompt/log/repo/Telegram.
+
+**Structured contract-diff readback.** The next natural run from `280267229` produced no customer effect and
+no generic `file_validation` result. Haru and X now stop at `file_contract_review` with content-hash-bound
+`paid-asset-contract-diff.json` evidence: Haru has six decision assets missing and six differently named manifest
+assets; X has three current decision assets absent from its already-sent v1 manifest. Both remain owner decisions,
+not auto-delivery or auto-regeneration. Manledge and byusco now stop earlier at
+`file_non_delivery_disposition`, so the natural run correctly did not mutate their preserved manifests. A
+read-only comparison of those exact current files classifies Manledge as two missing decision assets and byusco
+as the same three stable ids/mechanical fields with two purpose-wording differences. The generic boundary
+normalizes only that stable-id/mechanical-equivalent wording case; every missing/extra/mechanical change returns
+`owner_review_required`. The official receipt remains failed with `observed=7`, `actionable=5`, `effect=0`,
+`readback=2`, `failed=5`, `pending=0`; the next blockers are therefore explicit semantic dispositions, not the
+old catch-all validation label.
+
+**Historical incident chronology — evidence only, not current room state.** The release includes the prior
+`d24a9dbb3e86ce9df648965aac4aadcdf7bce56a` safety boundary, which removes all
+`undeterminable`/review-exhaustion delivery authorization, requires the builder to copy the exact decision
+asset contract, and preserves a failed staged candidate under private owner evidence before cleanup. The newer
+release also reuses hash-verified saved buyer attachments instead of redownloading all six Haru files on every
+readback. The existing Paid launchd job read back the immutable release, but these code paths are not yet
+production-proved. The latest completed
+natural receipt remains
+`status=failed`, `observed=7`, `actionable=5`, `effect=0`, `readback=2`, `failed=5`, `pending=0`;
+silent pending is now zero, but parallel artifact production therefore does not yet prove
+parallel buyer delivery. X-post talkroom `18171850` remains the sole closed item in the current
+four-client set: approved v1 has already been sent and officially read back with formal delivery OFF.
+The natural owner pass violated the no-regeneration boundary before the durable non-PASS guard took effect:
+review-article talkroom `18171890` changed from v4 to REVIEW_READY v5
+`28199b8fb6479915d5ec372f3e57df83899f449a705ac7157dd9ad59867907d1`, and Manledge `18169985`
+changed from acceptance-PASS v20 to REVIEW_READY v21
+`b0588d9e2e99fd998896e611ddb52d61c98bacf56750b130e082580de5bd4c2e`. Do not regenerate either
+artifact again; decide whether the truthful v5/v21 records may be preserved or whether the existing v4/v20
+hashes must be restored without sending. The current failures are `18171890=file_non_delivery_disposition`
+and `18169985=file_validation`. Haru `18169583` remains acceptance-PASS v31
+`bceca32db8a9272330fd12798d44da06e14aab51e83e17d81e030aa37665d185` in
+`BOUNDED_REVIEW_SHIP` round 4. An account-owner Coconala screenshot now proves the v31 filename was
+buyer-visible at 05:30, but the buyer replied at 11:13 that the design had reverted again and asked
+whether it had been sent without proper checking; the seller apologized at 11:47 and promised another
+verified submission. The fresh reviewer had returned `undeterminable` because native Illustrator provenance
+could not be proved, while calling the package otherwise useful, and the controller incorrectly converted
+that verdict into shipment without proving retention of the buyer-approved latest design. The latest natural
+owner pass now fails Haru closed at `file_validation`; it has neither resent v31 nor produced a proved
+correction. Codex is the explicit incident lead for Haru: it must inspect the complete buyer attachment/message
+sequence and candidate visually, decide what correction is truthful, and authorize only a reviewer-PASS
+artifact. The existing Paid owner remains the sole browser/effect executor so the repair is durable and
+replay-safe; do not create a manual browser shortcut or one-off Haru script. Neither the incorrect shipment
+nor the apology is a successful Paid completion. The already-closed X room incorrectly re-entered `file_builder`, and room `18062411`
+still fails `remote_resume`. Paid completion is therefore still one officially delivered/read-back artifact
+out of four, not four.
+
+The incident lead visually compared the saved buyer source `5372ec073081-image.png` with v31 and confirmed
+the buyer's report: v31 reverted the designed heading rails, cards, diagrams and large comparison sections to
+a sparse generic page. The natural owner then generated a claimed v32 correction, but its manifest renamed the
+decision's required asset ids and failed `asset contract mismatch`; cleanup removed the temporary v32 ZIP before
+independent visual inspection. This is not a review PASS and must not be reconstructed from the self-report.
+The surviving v32 PC/responsive style previews were subsequently opened directly: unlike v31 they restore the
+inquiry artwork, comparison table, special-vacant-house diagram and designed content hierarchy. They remain
+insufficient for authorization because the package, editable AI files and exact asset contract no longer exist
+for hash-bound inspection.
+
+A later natural reconstruction attempt exposed the decisive lineage defect before any customer effect. The
+Paid owner was instructed to revise rejected v31 and preserve everything not named by the latest finding, so it
+again produced v31's card-based page hierarchy with the latest inquiry artwork added. Direct full-preview
+comparison against durable v27, v29, v30 and v31 proves that v27 is the last artifact that preserves the
+buyer-supplied base design's two-column heading rows, wide section rails, side-by-side illustration treatment,
+horizontal process, FAQ, voices and summary composition. The buyer's messages after v27 requested only the
+inquiry-section replacement and higher-resolution Illustrator output; they did not authorize a page-wide
+redesign. Codex stopped only that isolated Haru builder before promotion. No v32 entered durable delivery and
+no Coconala message or attachment was sent. The attempt nevertheless proved that all six saved buyer inputs and
+the generated PNG/PDF/AI/SVG files can persist as non-zero local files; persistence alone does not make the
+candidate fit for delivery. The next candidate must branch from v27's approved visual lineage, replace only the
+PC/responsive inquiry sections with `2424.png` and `2.png`, regenerate every derivative, and be rejected if a
+full-preview comparison shows any unrelated page-wide layout regression.
+The minimal generic repair now stages every durable prior ZIP for the isolated owner and explicitly requires
+the manager to inspect previews plus the complete conversation and select the last buyer-accepted visual
+lineage; highest version is no longer treated as synonymous with accepted. It adds no Haru-specific branch,
+workflow state or new dependency. This source change is syntax-verified but is not production-proved until a
+published natural owner pass selects v27, builds the next version and passes the visual/effect gates below.
+Published release `829334b6fabf76bade54601182f43acbc186fc67` production-proved lineage selection:
+the natural Haru owner staged v1-v31, opened v27-v31 PC/responsive previews, selected v27 as the last accepted
+base and used the v28 internal derivative that preserves that layout with the latest inquiry assets. It produced
+durable v32 SHA-256 `832fbef4e194e168147a2faa838795a667b6c78c9467639e53f6b1a800e23b13` with exact required asset ids,
+AI/PDF/standard and 2x PNG/SVG/source members and ZIP integrity. Direct PC/responsive inspection confirms the
+v27 layout and both latest inquiry treatments. The first pass still stopped before review/send because the
+builder called this complete review-stage package `REVIEW_READY`; the controller's old structure gate accepts
+only `PASS`. The owner contract now states that a complete artifact ready for the current review delivery stage
+is `PASS` even though buyer approval comes later; `REVIEW_READY` is reserved for an explicitly allowed incomplete
+draft. The already-inspected v32 records were normalized to that definition only to enter the existing fresh
+evaluator. The fresh evaluator found no visual,
+semantic or package defect and called v32 otherwise complete/useful, but returned `undeterminable` solely
+because the `.ai` members are PDF-compatible Illustrator files and native Adobe Illustrator provenance cannot
+be proved on this Mac. Dais explicitly directed the incident lead to rely on its own complete verification and
+submit rather than regenerate again. Codex re-opened both full previews, proved v32 standard PC/responsive PNGs
+byte-identical to the correct v28 derivative, proved the latest PC/responsive source assets hash-identical inside
+the ZIP, rechecked ZIP integrity and all AI/PDF/PNG/SVG/source members, and authorized exact package SHA-256
+`832fbef4e194e168147a2faa838795a667b6c78c9467639e53f6b1a800e23b13`. The existing mechanical browser tool
+then sent `habikino-renewal-v32.zip` once to exact talkroom `18169583` with the apology/correction message and
+formal delivery OFF. Official post-send DOM readback records filename, `55,552,300` bytes, exact message,
+`formal_delivery_control_checked=false` and `formal_delivery_click_performed=false`. Immediate identical replay
+records `send_performed=false`, `deduplicated=true` and the same attachment effect key. Haru incident delivery is
+closed; buyer approval remains a later external event and formal delivery remains prohibited until then.
+
+#### Coconala-first completion contract — authoritative
+
+**1. Overview.** Coconala is the first production proof of the shared Life Manager Economic Harness. No App
+Store, ebook, trading, Upwork, Lancers, CloudWorks or self-generated business loop may advance the development
+cursor while purchased Coconala clients are waiting for context-correct work. Independent already-loaded lanes
+continue normal safe operation, but architecture work serves the current Paid incident first. The purpose is
+not to ship whatever passes a local schema; it is to make each isolated Project Owner understand the complete
+commercial relationship and naturally deliver the correct buyer outcome once.
+
+**2. Acceptance criteria.** All are mandatory.
+
+- Each purchased project has one exclusive durable owner and Project Context Capsule containing the original
+  listing/job description, exact proposal/application, full chronological DM/talkroom ledger, seller promises,
+  evidence-linked buyer emotion/trust state, accumulated requirements, attachments, accepted/rejected artifact
+  lineage, effect ledger and current delta. Another buyer's context is absent.
+- Every semantic decision records capsule hash and source-read hashes. Tail-only DM context, silent truncation of
+  trust-changing turns, and asking for known information are failures.
+- Every candidate is content-addressed and survives restart. Producer PASS is only an input to a fresh evaluator,
+  never delivery authorization. The evaluator opens the actual artifact/package and every required visual
+  reference; PASS means every observable requirement is satisfied, not merely that files exist.
+- The marketplace adapter performs exact-target preflight, exact-hash attachment, buyer-appropriate message,
+  formal delivery OFF before approval, one effect fence, official DOM/API readback and replay-zero. It never
+  chooses buyer intent or artifact fitness.
+- Haru closes only after its newest complaint is resolved by a fresh-inspected artifact and one official
+  readback/replay-zero. Manledge and byusco close by the same standard. X proves preserved prior effect and zero
+  resend. Every other purchased room has an official effect or a truthful durable no-effect disposition.
+- One natural Paid wake processes independent projects concurrently without mixed context, duplicate effects,
+  silent pending, orphan worker or stale-state re-entry. Process exit and the next scheduled wake reconstruct
+  the same facts and do not repeat completed effects.
+- Paid completion is followed, not preceded, by Negotiate full coverage/sub-30-minute reply, Storefront truth and
+  attribution, Apply audit, four-lane restart/reboot, clean-device install, actual cash reconciliation and OSS
+  audit in the single atomic order below.
+
+**3. As-is / To-be.**
+
+| Boundary | As-is observed | To-be required |
+|---|---|---|
+| Client context | Full sources exist, but bounded context can truncate DM and lose decisive history | Hash-bound capsule preserves all decisive origin, conversation, commitments, emotion evidence and lineage |
+| Ownership | One controller plus project workers, but stale workflow state can re-enter completed work | One exclusive Project Owner per client; official facts dominate derived workflow state |
+| Quality | Producer can report PASS while controller fails later | Producer result → fresh actual-artifact evaluator → mechanical effect fence |
+| Artifact state | Haru v34 exists locally but has no customer authorization/readback | Actual complaint references inspected; exact approved hash sent once and read back |
+| Parallel speed | Projects run concurrently but failures repeat across stale semantic routes | Independent clients run concurrently; sequential context stays with one owner; one failure cannot contaminate another |
+| Expansion | Many potential money loops exist | Coconala proves the kernel first; later markets reuse contracts rather than copy platform-specific loops |
+
+**4. Runtime verification matrix.** This adds no TDD or separate ceremony; these are direct production evidence
+checks performed by the natural owner and existing tools.
+
+| # | To-be | Runtime evidence check | Cover |
+|---|---|---|---|
+| 1 | Complete isolated capsule | `paid_context_capsule_readback` | OK |
+| 2 | No cross-client context | `paid_project_namespace_readback` | OK |
+| 3 | Actual artifact/reference inspection | `paid_fresh_artifact_evaluator_readback` | OK |
+| 4 | Exact safe customer effect | `paid_exact_room_effect_readback` | OK |
+| 5 | No duplicate replay | `paid_effect_replay_zero_readback` | OK |
+| 6 | Concurrent natural clients | `paid_multi_project_natural_receipt` | OK |
+| 7 | Restart continuity | `paid_restart_fact_reconstruction_readback` | OK |
+| 8 | No secrets/customer data in distributable evidence | `paid_private_data_boundary_readback` | OK |
+
+**5. Boundaries.** DO NOT manually impersonate a Project Owner, create a Haru/Manledge/byusco one-off script,
+resend X, mark formal delivery before buyer approval, regenerate a preserved artifact without a new requirement,
+install a graph/workflow framework, add symlinks, expand to a second market, store credential/customer content in
+repo/log/prompt, or call PID/local PASS/Telegram/dry run/mock completion. Account-holder authentication, legal
+identity/KYC and irreversible personal-money operations remain explicit minimum owner actions when required.
+
+**6. Execution steps.** Update this section whenever an observed fact changes. Then implement only the first
+unchecked atomic item, publish one immutable release, kickstart the existing launchd owner rather than spawning a
+replacement, watch its natural per-project workers, inspect actual artifacts and official site readbacks, prove
+replay-zero/restart continuity, update this section, and commit/push before advancing. Failure after three
+materially different fixes records the exact evidence and smallest owner action; it never silently skips to a
+later business lane.
+
+**E2E judgment.** This work changes no owned application UI, so Maestro is not applicable. Completion
+requires the real launchd owner to act through the authenticated Coconala browser and an exact-room
+official DOM/readback receipt; local artifact PASS, process liveness or Telegram alone is insufficient.
+
+#### Paid harness reconstruction — authoritative
+
+**Decision.** Stop extending the current business-semantic state machine. Haru is the emergency recovery:
+Codex owns the complete context, visual decision and submission directly, using the existing authenticated
+Paid browser tools only as mechanical tools. After Haru has an exact corrected artifact and fresh PASS, Codex
+attaches that exact hash immediately with formal delivery OFF and obtains official DOM readback. No v31 resend,
+no self-reported v32 reconstruction and no shipment from preview images is allowed.
+
+The subsequent Paid repair is a harness reconstruction, not another error-type patch. It copies proven code
+patterns from the following locally cloned, commit-pinned OSS references after checking their licenses and the
+exact source files; prose summaries alone are not implementation authority.
+
+| Reference | Pinned commit | Pattern to copy into the existing owner |
+|---|---|---|
+| `openai/openai-agents-python` | `904bc6988fd8e855c565de7fa65b223847101ed0` | One manager retains conversation ownership and invokes specialist agents as tools |
+| `openai/openai-cs-agents-demo` | `bd7bfca0f5abf50529370814c3e7c88542011925` | Customer-context triage, specialist tools and one current conversation owner |
+| `anthropics/cwc-long-running-agents` | `ad107a974bced5244f74dd283dbf2bfd3baee3a1` | Fresh-context evaluator, default-fail evidence gate and durable handoff |
+| `langchain-ai/deepagents` | `23b83ad50f63d241d0069a3dc426d43b211adf2e` | Model-driven tool loop with middleware limited to context, persistence and safety |
+| `anthropics/launch-your-agent` | `c9e0f1378a252bd42deb7e9eb02ac0cbd07160bc` | Explicit done criteria, grading and resumable long-running progress |
+| `langchain-ai/langgraph` | `f09cfe8ffc1eeffd68f4b628ed69c30f7cad229f` | Checkpoint/interrupt/retry mechanics; never fixed business-semantic authority |
+| `temporalio/samples-python` | `e652a4d0e85042a34ec8fc46a4a03e51681fd7f9` | Durable timer, signal and external activity/effect boundaries |
+| `dagster-io/dagster` | `b2dabdc99f23d5d19bb9bf7417e606c0427c4413` | Materialized-asset dependency/staleness projection derived from facts |
+| `codejunkie99/graph-engineering` | `cfacb56a05a31ba69bf84d0b8b00f5ce463127ef` | Competency-question-first schema, provenance, fusion and true-dependency task edges |
+| `cobusgreyling/loop-engineering` | `37d558f03aa024d82f7db8f11f43d0bbcf3595bd` | Operational circuit breaker, locked accounting and mechanical policy gate |
+
+Do not add these frameworks as dependencies or transplant a demo wholesale. Copy the smallest relevant code
+shapes into the existing `agent_runner.py`/Paid owner, retain license notices for any copied code, and delete
+the replaced semantic routing. The manager decides buyer intent, artifact work and replanning. Deterministic
+code only enforces exact room, artifact/hash integrity, formal-delivery policy, secret boundaries, effect
+dedupe, official readback and lease ownership. Raw tool failures return to the manager; an enum may describe
+an observed failure but may never prescribe shipment or the next business action.
+
+**Code-level adoption map.** These isolated clones are research inputs, not runtime dependencies. Preserve the
+upstream license notice if source is copied; otherwise copy the behavior into the smallest local implementation.
+
+| Pinned source code | Observed code shape | Local adoption | Deliberately omitted |
+|---|---|---|---|
+| `openai-agents-python/src/agents/agent.py::Agent.as_tool` (MIT) | Specialist is callable while its caller retains orchestration | Paid manager owns room context and calls builder/evaluator/browser capabilities | Handoff that changes conversation owner |
+| `deepagents/libs/deepagents/deepagents/graph.py::create_deep_agent` (MIT) | Model loop receives durable filesystem and specialist tools | Existing runner, project filesystem and raw tool-result envelopes | DeepAgents/LangGraph dependency and generic middleware stack |
+| `cwc-long-running-agents/README.md` and `agents/evaluator.md` (Apache-2.0) | Durable handoff and fresh read-only evidence evaluator | Append-only room facts and artifact evaluator | Builder-authored completion and extra ceremony |
+| `langgraph/libs/langgraph/langgraph/graph/state.py::StateGraph.compile` (MIT) | Checkpointer and interrupts resume computation by thread | Resume manager context from facts; interrupt at external-effect boundaries | Static nodes/edges for buyer intent; graph state as truth |
+| `langgraph/libs/langgraph/langgraph/_internal/_retry.py` (MIT) | Retry wraps task execution, not business judgment | Retry transient tools and return terminal evidence to manager | Regenerating accepted artifacts or repeating effects |
+| `samples-python/sleep_for_days/workflows.py::SleepForDaysWorkflow` (MIT) | Durable wait races timer against external signal; effects are activities | launchd wake plus fenced browser activity | Temporal server/SDK in local OSS baseline |
+| `samples-python/message_passing/waiting_for_handlers_and_compensation/workflows.py` (MIT) | Platform lifecycle is separate from application logic | Lease/restart/cleanup outside model judgment | Attempted undo of irreversible marketplace messages |
+| `dagster/_scheduler/stale.py::resolve_stale_or_missing_assets` (Apache-2.0) | Dependency graph derives stale work from materialization facts | Derive artifact/capability/readback graph from factual ledger | Dagster runtime and second authoritative store |
+| `graph-engineering/references/modeling.md` (MIT) | Competency questions define the minimum ontology; every fact carries source/time/confidence provenance | Define Economic Graph only from queries needed by Apply/Negotiate/Paid/Storefront and bind every projected edge to ledger fact ids | Generic `RELATED_TO` edges, speculative entity types and a graph database before a required traversal query exists |
+| `graph-engineering/references/task-graphs.md` (MIT) | Delete fake dependencies, parallelize only independent jobs and retain one merge owner | Manager owns sequential buyer context; independent room/tool work may fan out and factual outputs rejoin at that manager | Written static routing for semantic buyer decisions, blanket human gates and multi-agent voting on sequential work |
+| `loop-engineering/tools/loop-context/src/context-manager.ts::checkCircuitBreaker` (MIT) | Deterministic caps stop repeated similar failures, no-progress runs and budget exhaustion | Operational breaker observes attempts and stops a failing executor after the configured three materially different fixes or equivalent no-progress evidence | Error signatures that choose a business action, classify buyer intent or authorize delivery |
+| `loop-engineering/tools/loop-context/src/daily-spend.ts::withLock` (MIT) | Exclusive-create lock serializes a read-modify-write counter and expires stale ownership | Reuse the single-writer shape for per-goal lease/accounting only where the existing owner lacks an equivalent | Lock files as marketplace truth or a second effect ledger |
+| `loop-engineering/tools/loop-gate/src/gate.ts::checkGate` (MIT) | Static deny/allow policy is mechanical and separate from run-history judgment | Apply the shape to secret paths, money caps, formal-delivery policy, exact target and permitted effect classes | Mandatory human review for already-authorized reversible marketplace activity and semantic artifact grading |
+| `loop-engineering/tools/loop-swarm/src/swarm.ts::runSwarm` (MIT) | Exact patch hashes can form a strict majority across isolated runs | No current adoption | Consensus voting for customer work, duplicated model cost and extra review ceremony; identical mistakes are still identical |
+
+The two requested repositories were cloned and read at the commits above. `graph-engineering` contains a
+packaged skill and reference workflows rather than an executable graph store or scheduler, so it is design
+authority only. `loop-engineering` contains executable TypeScript tools, but Life Manager copies only the
+three bounded mechanics named above; installing its CLI/fleet/worktree/swarm stack would duplicate launchd,
+the current owner and existing state. Neither repository is vendored, symlinked or added as a dependency.
+Primary code evidence: `graph-engineering/references/task-graphs.md` states, “Draw an arrow only when a job
+needs another job's result before it can start”
+([source](https://github.com/codejunkie99/graph-engineering/blob/cfacb56a05a31ba69bf84d0b8b00f5ce463127ef/graph-engineering/references/task-graphs.md));
+`loop-engineering/tools/loop-gate/src/gate.ts` describes “Mechanical enforcement of static policy”
+([source](https://github.com/cobusgreyling/loop-engineering/blob/37d558f03aa024d82f7db8f11f43d0bbcf3595bd/tools/loop-gate/src/gate.ts)).
+
+**Observed `file_validation` root cause and adopted boundary.** Current
+`paid_direct.py::_normalize_acceptance_delta` compares the latest decision's `required_assets` and the artifact
+manifest's `required_assets` as exact JSON and raises `asset contract mismatch`. That same outer
+`file_validation` label also collapses structure-validation errors, evaluator exhaustion/rejection, invalid
+delivery decisions and package-hash failures, discarding the actionable `errors` returned by validators. The
+four current rooms prove that this is not one business condition: Haru has semantically corresponding assets
+whose ids/descriptions were regenerated; Manledge has an empty current decision contract but two manifest
+sources; byusco has the same three asset roles with wording-only purpose changes; and completed X has a newer
+stale decision contract while its already-sent v1 manifest correctly has no assets. Exact JSON equality is
+therefore neither artifact fitness nor delivery authorization.
+
+Copy the `loop-gate` separation rather than its whole stack: deterministic code remains strict for exact room,
+artifact/package hash and bytes, archive integrity, restricted-secret paths, formal-delivery policy, lease,
+effect dedupe and official readback. Semantic contract comparison returns a structured diff with source fact
+ids, contract versions and raw validator errors to the same Project Owner. That owner decides whether the diff
+is equivalent terminology to normalize, a buyer-event contract migration, missing work to repair, or stale
+derived state dominated by an official effect. It may not convert uncertainty into PASS. Required-assets
+contracts are created/versioned from buyer events and accepted lineage, then referenced by hash; they are not
+silently regenerated on every pass. This is the smallest copy/tweak of the cloned code: no new workflow engine,
+graph database, error taxonomy, framework dependency or room-specific branch.
+
+**Life Manager economic harness — accepted foundation.** Coconala is the first proving adapter, not the
+architecture boundary. One shared economic kernel owns goals, evidence and capital/risk constraints. A lane is
+a durable goal stream; a marketplace is a mechanical adapter; a skill is a capability with an observable
+contract; a graph is a rebuildable projection of facts. Telegram is the control/report channel, not marketplace
+truth.
+
+**Loop and graph, from first principles.** A loop is agency through time: observe current reality, reconstruct
+the goal, choose and perform the next bounded action, verify the external result, persist facts, then wake again.
+Without recurrence it is a one-shot prompt; without official verification it is only repeated guessing; without
+durable facts it forgets after restart. Loop engineering designs that recurrence, stop condition, ownership,
+budget, recovery and effect safety.
+
+A graph is agency across relationships: it represents which goals, people, conversations, capabilities,
+artifacts, effects and revenue depend on or prove one another. Graph engineering designs the minimal schema,
+provenance, identity fusion, true dependency edges and queries. The graph does not replace the loop. Each loop
+appends facts; the graph projects relationships among those facts; the manager queries the graph to select a
+better next action; the next loop outcome improves the graph. Loops supply time and learning cycles; graphs
+supply structure and cross-loop reuse.
+
+```mermaid
+flowchart LR
+    Wake[Wake] --> Observe[Observe official reality]
+    Observe --> Context[Rebuild goal context]
+    Context --> Decide[Model selects next action]
+    Decide --> Effect[Capability or marketplace effect]
+    Effect --> Verify[Official verification]
+    Verify --> Ledger[(Append fact)]
+    Ledger --> Graph[Project relationships]
+    Graph --> Context
+    Verify --> Wait[Wait or next wake]
+    Wait --> Wake
+```
+
+**Four-lane topology.** The lanes share the kernel, capability registry, factual ledger, economic graph,
+content-addressed artifact store, scheduler/leases, secrets boundary, evaluator and official receipt contract.
+They do not share mutable conversation context or browser effect ownership. Each lane is independently loaded,
+self-cleaning and restartable, and all four may run concurrently.
+
+| Lane | Durable goal owner | Natural loop | Required business outcome |
+|---|---|---|---|
+| Apply | one opportunity/application owner per listing | discover → qualify → assemble capabilities → write proposal → exact submission → readback | real application officially received |
+| Negotiate | one conversation owner per application/thread | observe buyer message → reconstruct application/proposal/DM → reply or estimate within 30 minutes → readback | every buyer message has a durable official disposition |
+| Paid | one project owner per purchased talkroom | reconstruct complete contract/context → build/revise → verify → exact delivery → readback → await approval/payment | context-correct artifact delivered once, replay-zero |
+| Storefront | one portfolio/listing owner per service | observe demand/outcomes → select capability bundle → create/update truthful listing → readback → attribute sales | real listing mutation and attributable revenue |
+
+The Economic Manager allocates attention across lanes using expected value, deadline, buyer risk, marginal cost,
+capacity and evidence quality. It may call any registered skill whose input contract is satisfied: research,
+writing, design, image, software, marketing, pricing, localization and future capabilities are not separate
+islands. A skill publishes `inputs`, `outputs`, `cost`, `permissions`, `evidence`, `quality history` and
+`marketplace constraints`; the manager composes skills for the current goal, while the outcome ledger updates
+their demonstrated usefulness. No skill may directly send to a marketplace; only the owning lane adapter may
+cross an effect fence.
+
+**Paid project isolation and context contract — mandatory.** Speed comes from independent projects running in
+parallel, not from shortening or mixing their reasoning. The Paid supervisor performs only observation,
+priority, lease and worker lifecycle. For every `platform + account + talkroom/contract`, exactly one durable
+Project Owner receives one project root, one conversation ledger, one artifact lineage and one effect namespace.
+It cannot read another buyer's project context. Sequential work inside one project stays with the same owner;
+independent projects may run concurrently up to the measured capacity limit.
+
+```mermaid
+flowchart TB
+    Supervisor[Paid supervisor] --> Haru[Project Owner Haru]
+    Supervisor --> Manledge[Project Owner Manledge]
+    Supervisor --> Byusco[Project Owner byusco]
+    Supervisor --> Other[Project Owner N]
+    Haru --> HC[Haru Context Capsule]
+    Manledge --> MC[Manledge Context Capsule]
+    Byusco --> BC[byusco Context Capsule]
+    HC --> Shared[Shared capability tools]
+    MC --> Shared
+    BC --> Shared
+    Shared --> HEffect[Haru exact-room effect fence]
+    Shared --> MEffect[Manledge exact-room effect fence]
+    Shared --> BEffect[byusco exact-room effect fence]
+```
+
+Before every semantic decision or artifact build, the Project Owner reconstructs a hash-bound `Project Context
+Capsule` from full durable sources, in chronological order:
+
+1. identity and deadline: marketplace, account, listing/request, application, contract and talkroom ids;
+2. original job description and every source/attachment available before application;
+3. exact submitted proposal, price, scope, schedule and promises that won the work;
+4. complete DM/talkroom ledger from both buyer and seller, not merely the last N messages;
+5. accumulated requirements, corrections, explicit approvals/rejections and unresolved questions;
+6. seller commitment ledger: every promise, apology, estimate and stated next action;
+7. buyer-state interpretation: current objective, urgency, satisfaction/frustration, trust damage and expected
+   response tone, each linked to exact quoted message ids with confidence; inference is never stored as fact;
+8. artifact lineage: buyer-supplied inputs, every candidate hash, review evidence, last buyer-accepted base and
+   why later versions were rejected;
+9. effect ledger: every message/file/formal-delivery action and official DOM/API readback, including replay key;
+10. current decision boundary: what changed since the last verified fact and what must not be repeated.
+
+The full ledger remains on disk and content-addressed. Context budgeting may summarize older turns only into an
+evidence-linked digest; it may never silently keep only the tail, omit the winning proposal, discard seller
+promises, or substitute a newer artifact version for the last buyer-accepted lineage. The owner must record a
+context-read receipt containing capsule hash and every source hash before work. If any required origin source is
+missing, it collects/reconstructs that source or fails closed; it does not ask the buyer for information already
+present anywhere in the project ledger.
+
+```mermaid
+flowchart LR
+    Sources[Markets and opportunities] --> Manager[Economic manager]
+    Telegram[Telegram] <--> Manager
+    Manager <--> Facts[(Append-only facts and effects)]
+    Manager <--> Registry[Capability registry]
+    Facts --> Graph[Derived economic graph]
+    Registry --> Graph
+    Graph --> Manager
+    Manager --> Tools[Research artifact evaluator tools]
+    Manager --> Adapters[Marketplace adapters]
+    Adapters --> Sites[Official UI or API]
+    Sites --> Receipts[Official readback and revenue]
+    Tools --> Facts
+    Receipts --> Facts
+    Facts --> Allocator[Outcome attribution and allocator]
+    Allocator --> Manager
+```
+
+The kernel stores five factual classes only: `Observation`, `Decision`, `Artifact`, `Effect` and `Readback`.
+Marketplace selectors, URLs and receipt parsers stay in adapters. The model decides buyer intent, proposal,
+work and replanning. Deterministic code enforces permission, budget, secret boundary, exact target, content
+hash, lease, effect idempotency and official readback. No enum, graph node or edge may promote uncertainty to
+delivery authority.
+
+Graph engineering begins now only as a projection schema. Its initial competency questions are: which buyer
+requirement produced this artifact; which official readback proves this effect; which capability and evidence
+led to revenue or loss; which goals are blocked by the same missing capability; and which effect has already
+occurred and must replay to zero. Nodes are goals, opportunities, contracts, capabilities, artifacts, effects,
+readbacks and revenue; edges are `requires`, `produced_by`, `sent_to`, `proved_by` and `earned`. Every node and
+edge carries source ledger fact ids, observed time and confidence/authority. Initial storage remains one local
+append-only ledger with an in-memory index. Add a graph library/database only when a real query needs cycle
+detection, cross-goal dependency planning or multi-device concurrent traversal. This keeps local install
+fast/cheap and prevents a second source of truth.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Observe: scheduler or external fact
+    Observe --> Plan: reconstruct goal from ledger
+    Plan --> Act: choose capability or adapter
+    Act --> Verify: save artifact or effect fact
+    Verify --> Plan: needs work or new information
+    Verify --> Await: official effect and readback proved
+    Await --> Observe: buyer or market event
+    Await --> Outcome: payment withdrawal or terminal loss
+    Outcome --> Learn: attribute cost revenue failure
+    Learn --> [*]: update portfolio evidence
+```
+
+```mermaid
+flowchart TB
+    Kernel[Shared economic kernel]
+    Kernel --> Paid[Paid]
+    Kernel --> Negotiate[Negotiate]
+    Kernel --> Apply[Apply]
+    Kernel --> Storefront[Storefront]
+    Paid --> Coconala[Coconala adapter]
+    Negotiate --> Coconala
+    Apply --> Coconala
+    Storefront --> Coconala
+    Kernel --> Upwork[Future Upwork adapter]
+    Kernel --> Lancers[Future Lancers adapter]
+    Kernel --> CloudWorks[Future CloudWorks adapter]
+    Kernel --> Local[Local launchd and content store]
+    Kernel --> Cloud[Later cloud scheduler workers event store]
+```
+
+**Atomic reconstruction order.** Do not execute an item before its preceding spec checkbox exists here.
+
+1. [x] Haru incident lead: regenerate one durable next-version package from the durable v27 visual lineage,
+   preserving every unrelated v27 layout while replacing only the inquiry sections from saved latest PC
+   `2424.png` and responsive `2.png`; open both full previews beside v27 and the buyer source, inspect
+   AI/PDF/PNG members and hashes, and reject any page-wide regression; obtain
+   fresh evidence-backed PASS; submit the exact package directly through the existing browser tool with formal
+   delivery OFF; obtain exact-room official DOM readback; repeat read-only and prove replay-zero.
+2. [x] Produce a code-level adoption map: for every copied OSS pattern record pinned source file/function,
+   local destination, license, behavior retained and behavior deliberately omitted. No article-only rationale.
+3. [x] Close the observed credential/customer-data boundary before another Paid model run: detect
+   credential-bearing buyer attachments without printing their contents; keep authorized source bytes only in
+   restricted local project storage; expose hash/type/purpose metadata to the model; redact derived prompt/stdout
+   evidence; audit every Paid project and distributable path; and record any required credential rotation as one
+   minimum account-owner action. Do not delete the only authorized customer source or copy its value elsewhere.
+4. [x] Replace the one generic Paid `file_validation` collapse for Haru v34, Manledge v21, byusco v5 and the
+   already-completed X v1. Preserve exact mechanical failures, but return raw validator errors plus a versioned
+   semantic contract diff to the durable Project Owner. Normalize only owner-decided equivalent terminology;
+   migrate contracts only from buyer events/accepted lineage; repair genuinely missing work; and let official
+   X/Haru prior effects dominate stale derived state. Fix this shared path once and perform no customer effect.
+5. [x] Introduce the smallest shared Economic Kernel contracts used by that fix: append-only facts, capability
+   result envelope, effect key and rebuildable graph projection. Add provenance and reuse only bounded
+   circuit-breaker/gate/lease shapes where no equivalent exists. Do not add frameworks, graph DB, CLI stack,
+   symlink, new service or speculative second-market code. The existing JSONL ledger now owns these stdlib-only
+   contracts. A natural Paid pass wrote one provenance-bound `asset_contract_compared` fact for Manledge and one
+   for byusco, each with a versioned effect key, two source facts and `needs_work` capability evidence. Rebuilding
+   both graph projections from the ledgers preserved the exact file hash; each ledger has one unique fact and
+   zero duplicates. No dependency, framework, service, graph database or customer effect was added.
+6. [x] Make one durable Project Owner per purchased project own the complete hash-bound Project Context Capsule:
+   job description, exact proposal/application, full DM/talkroom, seller commitments, evidence-linked buyer
+   emotion/trust interpretation, accumulated requirements, artifacts/accepted lineage, effects and current delta.
+   Remove tail-only context loss; specialists remain tools and cross-client reads fail closed. The existing compiler
+   now carries every DM/talkroom message with message-level source fact ids, every hash-bound artifact/acceptance
+   lineage reference, economic effects and current delta; buyer emotion/trust must be interpreted only from the
+   cited buyer-message facts. A natural owner pass rebuilt Haru, Manledge, byusco, X and `18062411`: each talkroom
+   message count exactly matched its ledger, no capsule truncated, every room produced a matching context-read
+   receipt, and all source references remained inside that room's project root. A completed staging cleanup freed
+   disk without deleting any unique candidate: only inactive directories with no open file and no delivery hash
+   absent from durable project storage were removed.
+7. [ ] Return raw structured builder/evaluator/browser results, including every validator error and source fact
+   id, to the Project Owner for semantic replanning. Delete generic error collapse and hardcoded
+   business-error-to-transition/shipment authority while retaining deterministic exact target, hash/archive,
+   secret, money, formal-delivery, lease, dedupe and official-readback safety. In the current natural pass,
+   Manledge and byusco crossed the former `file_non_delivery_disposition`/`file_contract_review` stop and spawned
+   isolated Project Owners with the structured contract diff copied into each staging root. byusco produced v6
+   and Haru produced v36; structure validation returned respectively 7 and 26 raw errors, each bound to two
+   source facts in a durable `project_owner_feedback` fact instead of collapsing to `file_validation`. Manledge
+   v22 passed structure review; its fresh evaluator returned one concrete cross-document quality finding as a
+   source-bound fact, and the same run naturally spawned a second Owner with that full verdict in its prompt.
+   Browser nonzero output is now redacted and returned through the same room-local fact boundary. This item
+   remains unchecked until the natural repair finishes and the newer browser boundary is exercised/read back.
+   The next release also routes delivery-gate results as structured Owner feedback and performs visual review
+   before validating its receipt, fixing the measured Haru and byusco ordering failures without regenerating
+   their artifacts merely to classify an error.
+   The native save dialog observed during the disk-full incident was dismissed once; after natural launchd
+   restart every current Haru attachment resolves by saved filename/hash and the dialog has not recurred. This
+   shows the existing attachment recovery path works; do not add a speculative filename index or regenerate
+   artifacts to classify that stale dialog. Haru's preserved v37 is independently measured rather than trusted from producer PASS: both buyer roughness
+   screenshots are durable 2880x1800 sources; PC/Responsive 2x previews are 2880x10944 and 1500x19968; its
+   PDF-compatible AI/PDF contents contain editable text/vector structure, embedded fonts and exactly the two
+   buyer-authorized raster illustrations at 205–245 effective PPI. The `.ai` bytes are identical to the PDFs and
+   this Mac has no Illustrator installation, so no claim of native Illustrator private-data/layer roundtrip is
+   permitted. Fresh visual review must compare the actual v37 package to both complaint images and v27 before
+   effect; missing native-only proof must be reported truthfully rather than hidden by a filename extension.
+8. [ ] Complete the shared tool boundary: content-addressed durable artifact inputs/outputs; fresh read-only
+   evaluator opening every actual source/candidate/package/reference; and mechanical exact-room browser
+   send/readback with formal delivery OFF, effect fence and replay-zero. Missing evidence is NEEDS_WORK, never
+   an inferred PASS; temporary cleanup cannot erase the only candidate.
+   When an Owner lacks a required production capability, it may run bounded OSS capability discovery: search
+   code, clone a pinned commit into isolated temporary storage, verify license and the exact entrypoint/call
+   path, run it against a non-customer artifact, and record an artifact receipt. Only then may a minimal copied
+   tool enter the capability registry. Downloaded code never receives browser, credential, customer-send or
+   money authority. For Illustrator conversion, inspected sources are `creold/illustrator-scripts` commit
+   `9b3e3ee…` (MIT, native `IllustratorSaveOptions`) and `rjduran/adobe-scripting` commit `b2cd2c8…`
+   (behavioral comparison only; no clear license file, so no copied code). The account owner authorized Adobe
+   Illustrator's seven-day monthly-plan trial (current charge JPY 0; JPY 4,980/month after the trial, cancelable
+   without an annual termination fee), Adobe Stock was not selected, and 3DS completed. The installer process
+   first failed with Adobe installer error 133: 4,992,147,982 bytes were required while only 141,459,456 bytes
+   were available. Cleanup
+   removed 23 inactive, unopened CFO immutable releases while preserving its current release, customer projects
+   and state, raising free space to 9.0 GiB. The one retry completed with Adobe installer Exit Code 0 and
+   `/Applications/Adobe Illustrator 2026/Adobe Illustrator.app` now exists. Read-only `gog gmail search` also
+   returned the official Adobe trial-start and Illustrator welcome messages; Gmail UI and send authority were
+   not used. The first-launch macOS prompts granted Illustrator file/Apple Event automation but denied its
+   unrelated local-network request.
+   The shared `skills/design/illustrator-native` capability now copies the MIT native
+   `IllustratorSaveOptions`/`Document.saveAs` primitive from `creold/illustrator-scripts` pinned commit
+   `9b3e3eeade9ba748f41612ec4697bb6a5c2489c2` and omits its selection UI. A non-customer SVG smoke run through
+   Illustrator 30.7 produced a distinct 68,313-byte AI hash, reopened it in Illustrator, read back two page
+   items, one editable text frame, one layer and one artboard, and found official `AIPrivateData1` plus creator
+   metadata. This is capability proof only; Haru still requires a natural owner-produced package and fresh
+   visual review before any effect.
+9. [ ] Publish the immutable reconstruction release and kickstart the existing launchd Paid owner. Observe Haru's
+   natural Project Owner inspect v38 against the new complaint screenshots, complete conversation and accepted
+   lineage. If defective, revise naturally; if fresh PASS, send the exact final hash once, obtain official DOM
+   readback with formal delivery OFF and prove replay-zero. Do not manually submit or call producer PASS Done.
+10. [ ] Through the same natural owner architecture, fresh-inspect the naturally prepared Manledge v24 without
+   blind regeneration,
+   obtain one complete fresh PASS artifact, exact-room official readback, formal delivery OFF and replay-zero.
+11. [ ] Through the same natural owner architecture, bind every required byusco screenshot/asset to the article;
+    produce a complete fresh PASS or truthful buyer-permitted review-stage disposition, then obtain the matching
+    exact-room official readback and replay-zero. Incomplete `REVIEW_READY` is not completed delivery.
+12. [ ] Migrate X's already-proved v1 effect/readback into the factual authority and demonstrate zero rebuild/send;
+    close `18062411`'s `remote_resume` as durable `satisfied_noop` or resume only on a newer official buyer event.
+    X now has a room-local account-owner observe-only disposition bound to sent hash `c95765c5…`, immutable
+    browser effect evidence and exact-room official DOM readback. The local same-name artifact was measured as
+    later-mutated hash `8266ce28…`; the guard deliberately rejects it as authority. This remains unchecked until
+    a natural pass observes X and proves zero builder spawn, zero send and replay-zero.
+13. [ ] Migrate every remaining purchased room, close every silent pending/failure with an owned disposition and
+    prove one natural concurrent multi-project pass. Each client must show its own capsule/source hashes,
+    context-correct artifact/disposition, official readback and replay-zero; parallel speed may not reduce
+    per-client quality.
+14. [ ] Apply the proved kernel in the existing Coconala order: Negotiate full message coverage and natural
+    sub-30-minute reply/estimate; Storefront truthful create/update plus attribution; Apply maximal coverage and
+    replay audit. Each lane needs a real official effect/readback, not PID/draft/report/local PASS.
+15. [ ] Prove four independent local launchd owners: concurrent no-shared-context operation, one effect owner per
+    target, lease recovery, self-clean, process-exit restart, Mac reboot continuation, two natural starts and no
+    split brain. Telegram/email reporting failure must not stop business work.
+16. [ ] On a clean third-party device, run only `./install.sh coconala`, authenticate without repo/log/prompt
+    secrets or customer data, enable email notifications, restart and obtain one natural official receipt for all
+    four lanes. No symlink or development checkout may be required.
+17. [ ] Reconcile one real Coconala sale through platform balance, permitted withdrawal and bank arrival; separate
+    gross revenue, fees, refunds, receivable and cash. Authentication/KYC/irreversible owner-money actions remain
+    explicit minimum legal owner gates.
+18. [ ] Run secret/customer-data/license audit, remove private artifacts from the distributable package, retain
+    copied-code notices, prove empty-HOME install and publish the complete Life Manager package under MIT.
+19. [ ] Only after Coconala OSS completion, add App Store product-building/release/growth as a capability bundle
+    and marketplace adapter using the same goal/context/effect/readback/revenue contracts; App Store review,
+    proceeds and bank arrival are the official outcomes.
+20. [ ] Add Upwork as the first second-market gig adapter without forking the kernel; use real outcomes to expose
+    genuine adapter gaps and feed reusable evidence back to the shared registry/graph.
+21. [ ] Add Lancers and CloudWorks, then admit ebook, bounded capital/trading and newly discovered revenue loops
+    through the same observation→pilot→official outcome→scale/kill contract. No loop self-authorizes secrets,
+    unbounded spend or irreversible public/financial effects.
+22. [ ] Move scheduler/workers/event store to cloud only after local, clean-device and second-market contracts
+    remain unchanged and Telegram-only operation is naturally proved.
+
+#### Paid buyer-visible media contract — authoritative
+
+**1. Overview.** A saved screenshot, generated image or linked asset is part of the buyer-visible
+deliverable, not transient model/browser evidence. The current generic file path can mark an incomplete
+draft PASS when the draft merely lists missing contract-required media as unresolved. This allowed
+`18171890` v4 to pass locally with zero supplied/candidate/reference images and three required screenshots
+still absent. The durable Paid owner must bind required media before building, save every produced asset,
+prove package membership and visual review, and distinguish a truthful review-stage draft from a completed
+buyer output.
+
+**2. Acceptance criteria.** All criteria are mandatory before this slice closes.
+
+- Before the builder runs, the accumulated buyer contract records `required_assets`. Each entry binds a
+  stable `asset_id`, media kind, minimum count, buyer-visible purpose, source authority (`builder`, `buyer`
+  or `account_owner`) and whether the file must be a member of the delivered archive.
+- Every produced or supplied buyer-visible file records an `artifact_assets` entry with a project-owned
+  absolute path, non-zero byte count, MIME/type, SHA-256, provenance class and archive member path when
+  applicable. A transient browser/model path is not an artifact.
+- `acceptance_status=PASS` requires every `required_assets` entry to be covered by the required number of
+  readable, non-empty, hash-matching `artifact_assets`. For ZIP output, every required member must exist,
+  be readable and match the recorded bytes/hash. Missing, zero-byte, corrupt, hash-mismatched or omitted
+  required media fails closed.
+- A requirement whose source authority is `account_owner` and cannot truthfully be delegated produces a
+  durable `BLOCKED_NON_DELEGABLE` disposition with one exact minimum owner action. It cannot become PASS
+  because a draft documents the gap. `REVIEW_READY` may describe and send a useful truthful draft with
+  formal delivery OFF only when the accumulated contract permits buyer review before those inputs exist;
+  it never counts as completed Paid delivery.
+- The fresh visual reviewer receives every candidate and reference image named by the contract and records
+  the inspected hashes. `required_assets` containing visual media with zero attached review images is a
+  validation failure, not “visual inspection not applicable.”
+- A contract with no buyer-visible media requirement remains valid without synthetic images. Manledge is
+  the regression case for asset-free output; Haru is the regression case for a ZIP containing real media;
+  tests use synthetic fixtures and never copy customer files into the public repository.
+- Completion still requires the generic launchd owner to attach the exact hash-bound artifact, obtain the
+  exact-room official DOM readback with formal delivery OFF where required, and prove replay-zero.
+
+**3. As-is / To-be.**
+
+| Boundary | As-is | To-be |
+|---|---|---|
+| Requirement capture | Media can remain prose in `unresolved` | Required media is a structured pre-build contract |
+| Persistence | Evidence images may exist without deliverable binding | Buyer-visible assets have durable path, size and hash |
+| Package validation | Top-level artifact existence/hash is sufficient | Required archive members and their bytes are verified |
+| Acceptance | Missing screenshots may be recorded as a PASS check | Missing required media is FAIL, REVIEW_READY or BLOCKED |
+| Visual review | Zero attached images can be called non-applicable | Required visual hashes must all reach the reviewer |
+| Completion | Bounded draft can look like completed delivery | Review-stage and completed effects have distinct dispositions |
+
+**4. Test matrix.** No separate review ceremony is added; these are direct regression checks for the
+existing owner and validator.
+
+| # | To-be | Test name | Cover |
+|---|---|---|---|
+| 1 | Required media is structured before build | `test_required_assets_are_bound_before_builder` | OK |
+| 2 | Missing/empty/hash-mismatched media cannot PASS | `test_required_asset_integrity_fails_closed` | OK |
+| 3 | Required ZIP members and bytes must match | `test_required_archive_member_is_verified` | OK |
+| 4 | All visual hashes reach the reviewer | `test_required_visual_assets_are_attached_to_reviewer` | OK |
+| 5 | Non-delegable media becomes durable blocker | `test_account_owner_asset_gap_cannot_pass` | OK |
+| 6 | Review draft never counts as completed Paid delivery | `test_review_ready_is_not_delivery_complete` | OK |
+| 7 | Asset-free contracts remain valid | `test_asset_free_contract_does_not_invent_media` | OK |
+| 8 | Existing customer data stays out of public fixtures | `test_media_contract_fixture_contains_no_customer_data` | OK |
+
+**5. Boundaries.** Do not fabricate firsthand use, seller-authored text, privacy-redacted screenshots or
+human publication approval. Do not regenerate Haru v31 or Manledge v20. Do not create a one-off byusco
+executor, new agent layer or second Paid owner. Do not formally deliver before buyer approval. Keep secrets,
+customer media and private project state out of Git, logs, prompts and public test fixtures.
+
+**6. Atomic execution steps.** Soft target: two production files and one focused public regression file;
+reduce scope before exceeding three files or 100 production LOC.
+
+1. [x] Extend the existing Paid decision boundary in `scripts/paid_direct.py` and the existing decision
+   schema with the structured `required_assets` contract. Schema/prompt version 4/v8 now invalidates old
+   cached decisions, binds every buyer-visible screenshot/image/linked asset before the builder runs, and
+   directly rejects malformed, duplicate, zero-count or unsupported asset entries.
+2. [x] Extend the existing Paid manifest boundary in `scripts/paid_direct.py` with the structured
+   required/produced asset contract and distinct PASS, REVIEW_READY and BLOCKED_NON_DELEGABLE semantics.
+   The normalizer now copies the versioned decision's `required_assets`, requires `artifact_assets`, binds
+   manifest/acceptance disposition exactly, requires one exact `blocking_action` for non-delegable input,
+   preserves the existing PASS-only delivery validator instead of creating a second state machine, and
+   stops a durable non-PASS artifact before authorization/build so a later pass cannot silently regenerate it.
+   Legacy artifacts may carry their truthful migrated contract in the manifest without forging an old signed
+   decision receipt; once a current decision exists, any manifest/decision contract mismatch fails closed.
+3. [x] Extend `scripts/paid_work_evidence.py` to fail closed on asset count, path ownership, non-zero bytes,
+   MIME/type, hash and required ZIP membership, and to reject required visual media with no review receipt.
+   The existing validator now checks project-owned files or exact ZIP members byte-for-byte and requires every
+   image hash in the artifact contract to appear in the controller's artifact-bound review manifest.
+4. [x] Run the smallest direct synthetic checks for the asset boundary plus the existing Paid disk preflight
+   regression; do not add a TDD workflow or separate review ceremony. Direct temporary fixtures proved ZIP
+   integrity, missing/count/hash/review failure and the asset-free case; `test_paid_disk_preflight.py` remains
+   green at 9/9 without modifying its tests.
+5. [ ] Repair the failed private-record migration without another regeneration: Haru v31 must prove its
+   existing images/archive members; reconcile Manledge v21 against the preserved v20 hash and its actual
+   media-free contract; keep byusco v5 REVIEW_READY/non-delivery and preserve the prior v4 hash as migration
+   evidence. Never represent either regenerated artifact as an approved buyer effect.
+6. [x] Publish release `097a2e1363929e4724294e8e44fba86bfd3e9d71`, verify its Paid source bytes
+   against the Git blob, read back the four loaded launchd program arguments, and observe a natural Paid
+   continuation. The continuation produced no effect and exposed the migration failures above; it is not Done.
+7. [ ] Obtain exact-room official readback and replay-zero for every safe effect; keep byusco's exact owner
+   dependency durable while Haru, Manledge and every other non-blocked purchased room continue.
+
+**Latest natural Paid continuation.** `main`, `origin/main`, and the active immutable Paid release were
+verified equal at `f95bae1119f21606a9a6a9a4f8ffca7e4eb88a56`; the unrelated dirty files listed at the
+start of this task remain untouched. The existing launchd owner naturally discovered new purchased room
+`18180857` (Chii), created a project worker in parallel with Manledge and the legacy room, compiled the
+listing/proposal/DM/talkroom context, and asked only for the missing start materials. The loop itself sent
+the concise answer once. Its result records `effect=1`, `readback=1`, `send_performed=true`,
+`deduplicated=false`, and `formal_delivery_checkbox=false`; exact-room official DOM readback at
+`2026-08-23T02:33:57.365469+00:00` contains the matching message SHA-256
+`0aa66bd32d500931dba40ab4140a58d3c0bcd3a720d9e732863e554f4be7f140`, an empty composer, and the
+room remains `取引中`. This proves autonomous discovery, independent lane creation and one real answer
+effect for the new room; it does not yet prove replay-zero, completion of its purchased work, Manledge's
+remaining qualified contacts, or Paid-wide silent-pending zero.
+
+In parallel, the natural Manledge owner recovered and officially read back one additional qualified
+individual approach to `@taka_kimura0701` at
+`https://x.com/selawmqt/status/2091350336401551647`. The candidate-specific message says
+`評価4.5以上`, its official qualification sources prove Osaka, bicycle delivery and a current rating above
+that threshold, and the fsync ledger marks it `counts_toward_50=true`; the valid count became 5 of 50 at that
+checkpoint. The following owner correctly refused to collide
+with the shared `x:anicca` lease, but exposed that separate `browser-guard acquire` and later `release`
+commands strand a fresh dead-shell lease for up to 30 minutes when an owner exits between them. The generic
+Paid owner contract now requires the existing `with-browser.sh` lifetime wrapper, whose signal/EXIT trap
+owns acquire, CDP export and release as one operation. The lease remains a mechanical safety boundary; target,
+copy, qualification and fallback remain model decisions. The same wake also exposed that the reusable X recon
+adapter aborted a fourteen-query candidate search and discarded all accumulated rows when one official search
+page timed out. Recon now isolates that transport failure to the affected query, emits `query_errors`, and
+continues the remaining model-selected queries; an isolated direct smoke proved the second query still runs after
+the first raises. A natural owner must still prove this behavior against live X and may decide how to adapt or
+qualify the resulting candidates.
+
+The same uninterrupted natural owner then used the official X search results to select `@take95186000`.
+The candidate's own current post simultaneously proves Osaka City, bicycle delivery and 99% satisfaction;
+the owner composed only those source-bound facts, sent the individual invitation, and read back the exact
+seller reply at `https://x.com/selawmqt/status/2091356887501742457`. It immediately fsync-checkpointed the
+effect with its source URL, payload hash, semantic-contract hash and `quality_status=qualified`. No prior
+effect key was repeated. The durable valid count is now 6 of 50; 44 qualified contacts or verified reachable
+exhaustion remain.
+
+The owner next sent an honest qualification question to `@mgwpbdgw` and read back the exact seller reply at
+`https://x.com/selawmqt/status/2091357481423483280`, but then contradicted its own payload by checkpointing
+the row as `qualified/counts_toward_50=true` even though it had asked whether the recipient still met the
+current Osaka/vehicle condition. The external effect and receipt remain real and replay-protected, but it must
+not increase the valid count until an affirmative official response supplies the missing fact. The append-only
+checkpoint now supports an audited `classification_revision` for the same effect key while prohibiting changes
+to target, payload hash, official receipt, readback or semantic-contract identity. The generic owner contract
+reduces repeated effect keys to their latest classification and requires any payload that asks a required
+qualification to remain `qualification/counts_toward_50=false`. An isolated direct smoke proved one immutable
+effect plus one classification revision reduces to one non-counting effective row. The next natural owner must
+write that correction; Codex must not rewrite the private ledger by hand. The authoritative valid count remains
+6 of 50.
+
+The pre-fix owner then drafted a buyer report claiming 7 valid contacts. Because that inaccurate report had
+not reached Coconala, the owner process alone was terminated before its result could be authorized; both new X
+effects were already fsync-checkpointed. The parent followed its durable-progress contract and wrote
+`pending/effect=0/readback=1` rather than sending the report or losing the effects. After proving the terminated
+holder PID absent, its exact orphaned `x:anicca` lease was released. The latest immutable release is
+`7d30b28cdd808802c575937ffeae3afbd82f292d`; the next natural Paid wake owns classification correction,
+replay-zero and any buyer-visible progress report.
+
+The next natural launchd wake started at `2026-08-23T12:03:35+09:00` from current main and refreshed all
+ten official paid rooms before dispatch. Fresh exact-room DOM for Chii still contains the same seller-message
+hash, an empty composer and formal delivery OFF; no Chii project worker was created, so the first natural
+replay produced zero duplicate effect. Manledge, Smile and legacy room `18062411` became three independent
+workers. The legacy semantic owner then repeated the same `sandbox_apply: Operation not permitted` failure for
+a second wake. Comparison proved the room has restricted private attachments, so its outer privacy
+`sandbox-exec` was nesting Codex's own read-only Seatbelt profile; rooms without restricted attachments do not
+take that path. Private read-only owners now retain the outer restricted-file denials, remove only the nested
+inner profile, and add outer OS write denials for every project top-level path except runner evidence. Direct
+profile inspection found three restricted-read denials and eleven project-write denials, and a real sandbox
+probe proved context writes are blocked with no file created. A natural wake must still prove the legacy owner
+can read allowed context and reach an honest disposition.
+
+The same wake exposed cross-loop browser starvation rather than a Manledge-specific failure. The independent
+`x-repost` loop acquired `x:anicca` before recon and retained it through several model-only drafting calls, while
+the Manledge owner correctly waited instead of colliding. The shared X loop now releases the identity immediately
+after recon/engagement and reacquires it only around the publish plus official permalink readback. Its finish path
+tracks actual lease ownership so it cannot release a lease another loop acquired later. The OSS lifetime wrapper
+now lives at `skills/browser/with-browser.sh`, binds the lease to its own durable PID rather than the short-lived
+`$(guard acquire)` subshell, exports CDP only to the child, and releases on normal exit or signal. Paid owners and
+`x-repost` both reference this same installable wrapper. Commits `9236ffbf0` and `15790c972` are on `origin/main`;
+gig current includes them through immutable release `c905b4b903d0de2691a27935a703f10c63eea06a`, and common loop
+current is immutable release `20260823T122053-15790c97`. The already-running pre-fix X and Paid owners were not
+interrupted. Their existence is not acceptance: the next natural owners must prove bounded lease handoff, write
+the pending Manledge classification revision, and continue real official effects without collision or duplicate.
+
+That next Paid launchd wake started naturally at `2026-08-23T12:33:52+09:00` as PID `16565`, pinned immutable
+release `b921eb17d66775f25e556d7001fabb1e6264907a`, and completed fresh targeted readbacks before creating only
+the Manledge and legacy project workers. It created no Chii or Smile worker, so neither prior seller effect was
+replayed. The legacy decision owner now starts inside the repaired outer privacy sandbox, reads the compiled
+allowed context and ordinary project files, and no longer fails at `sandbox_apply`; restricted credential values
+remain represented only by redacted metadata. This proves the nested-sandbox recovery reached a natural runtime,
+but the legacy room remains open until that owner returns an honest disposition and any required effect/readback.
+Manledge is concurrently re-deciding from the corrected release; its classification revision and remaining
+official outreach are still pending.
+
+That decision pass exposed two more generic routing defects before either could cause a buyer effect. First, the
+semantic decision copied the raw ledger total and selected a file solely to report incomplete external work, so it
+would have repeated the known false `7/50` count before the remote owner had a chance to append its correction.
+The v12 semantic contract now audits exact payload and official response state, treats a required-qualification
+question as non-counting until affirmative readback, refuses to propagate a contradictory stored total, and keeps
+unfinished authorized external work in the remote lane rather than replacing it with a progress artifact. Second,
+the legacy owner correctly returned `satisfied_noop`, but the prepare router had no no-effect branch and fell through
+to `remote_resume`. `satisfied_noop` and `await_buyer` now return official-readback-backed zero-effect results and
+cannot reach an external mutation path. Commits `ef1a03090` and `ca2c6d1a5` are pushed and activated. Both pre-fix
+Manledge worker attempts were stopped before file build or Coconala send; the official progress ledger remains
+unchanged at ten rows and the authoritative qualified count remains 6. The next natural wake must prove v12 chooses
+remote, the loop appends the classification revision itself, and legacy returns `satisfied_noop` without failure.
+
+The next natural wake proved all three transitions. Semantic v12 selected `remote` for Manledge, explicitly required
+the `@mgwpbdgw` audit correction, and bound the effective total to 6 before starting the remote owner. That owner
+itself appended row 11 as `record_type=classification_revision`, preserving the original effect key, target, payload
+SHA-256, official seller receipt `https://x.com/selawmqt/status/2091357481423483280`, exact readback and semantic
+contract while changing only `quality_status` to `qualification` and `counts_toward_50` to false with a nonempty
+reason. Latest-row reduction now yields ten effective effects and exactly six valid contacts. The owner then acquired
+`x:anicca` through the OSS lifetime wrapper; browser-guard records live wrapper PID `62606`, not a dead command-
+substitution shell, while official recon runs below it. In parallel, legacy returned `satisfied_noop/effect=0/
+readback=1/failed=0`; no redundant buyer reply or remote action occurred. Manledge still requires 44 further valid
+contacts or official reachable exhaustion plus a truthful buyer handoff and replay-zero.
+
+The same generic owner then proved that shared capability discovery can continue real work without Codex becoming
+the customer-work owner. X recon was bounded mechanically at the adapter layer by commit `09eea5704`: it preserves
+all candidates already collected, stops starting new queries after the global time budget, and reports attempted and
+unattempted queries without deciding business eligibility. The already-running immutable owner completed its own
+five-query follow-up search with 89 saved candidates and zero query errors. It rejected `@5555daisuke5555` after the
+official source page exposed no reply composer, produced no receipt and therefore checkpointed no effect. It then
+sent recipient-specific outreach to `@youtubeayachan1` from the authorized `@selawmqt` identity, read back the exact
+payload at `https://x.com/selawmqt/status/2091376496535646545`, and immediately checkpointed the receipt and claim
+sources. Latest-row reduction now yields exactly seven valid contacts. The natural owner is continuing from the
+preserved roster; 43 further valid contacts or official reachable exhaustion, truthful buyer handoff, and replay-zero
+remain required.
+
+The current natural Manledge continuation expanded the official X search to 66 rating/vehicle/location queries. Its
+first bounded pass attempted 51, preserved nine candidates and truthfully reported 15 unattempted queries rather than
+claiming exhaustion. The owner rejected third-party rating statements as qualification evidence, retained only posts
+where the candidate speaks for their own Osaka operation, vehicle and rating, and started a second pass containing
+exactly the remaining 15 queries. No new outreach effect is counted until that pass completes and an exact official
+post receipt is checkpointed.
+
+The following wake exposed why other purchased rooms stayed silent even with eight project slots. All ten targeted
+readbacks completed, but only Manledge and the legacy room received workers; Haru `18169583`, Aufbau `18178439`
+and byusco `18171890` remained pending. Their current DOM windows omitted older buyer rows while each project already
+held a hash-bound durable `requirements/live-buyer-reply.json`. The collector preserved those sidecars but returned no
+request identity to the parent. It now re-names the exact existing sidecar through the already-established
+`_request_named_by_existing_sidecar` path; it does not infer or rewrite buyer content. Commit `3961b115b` is pushed and
+published, but a natural wake must still prove all three independent owners start.
+
+That wake also proved two generic lifecycle and evidence defects. A timed-out Codex Code Mode owner left its detached
+read-only `x_collect.py` command reparented to PID 1 with the `x:anicca` lease. The lease wrapper trap released correctly
+when stopped, but the separately-sessioned grandchildren also required collection. `agent_runner` now snapshots and
+terminates descendants outside the provider process group, and Paid `_run_bounded` now forwards worker termination to
+the active owner process group; isolated live probes proved no detached child survived either boundary. Commits
+`efb0c0bb2` and `39f2e8fae` are pushed and published. Finally, semantic v12 tried to treat a timed-out zero-byte
+54-profile search as reachable exhaustion and prepare a false `7/50` completion report. No Coconala effect occurred.
+Semantic v13 preserves model eligibility judgment but requires a complete nonempty machine-readable exhaustion receipt
+binding intended and attempted query counts, completion time, zero query errors, and checked official URLs; search
+start logs, partial/zero-byte files, timeout and model narration cannot close the external-work contract. Commit
+`e4aa9cb1b` is pushed and published. The next natural wake must prove v13 remains remote, uses the bounded collector,
+reaps every child on timeout, and starts Haru, Aufbau and byusco rather than leaving silent pending rows.
+
+The next existing-launchd wake started naturally as Paid parent PID `53167` from immutable release `b89d95ac8`.
+After ten fresh targeted readbacks, it created five independent project workers in parallel: Haru `18169583`,
+Manledge `18169985`, Aufbau `18178439`, byusco `18171890`, and legacy `18062411`. This is the first natural proof that
+the durable-sidecar recovery removes the three silent pending rows and that new/current purchased work is admitted
+without a Codex customer-work executor. Owner decisions, buyer-visible effects, exact-room readbacks and replay-zero
+for the four unfinished customer projects remain open.
+
+Haru then completed the first no-resend proof on that wake. Semantic v13 returned `await_buyer`; the current official
+room readback shows the seller's final review-stage message with `habikino-renewal-v43.zip`, no newer buyer reply,
+transaction state `取引中`, and formal delivery OFF. The buyer-visible ZIP SHA-256
+`4d13095f163db23120d4a66498cea2f801bae1ea4c9c0b92db4072f5426afcd8` exactly matches the v43 PASS manifest.
+Natural preparation returned `effect=0/readback=1/failed=0`, proving replay-zero. Haru is now awaiting buyer approval
+or specific revision feedback; it must resume automatically on either and formal delivery remains prohibited meanwhile.
+
+The shared capability plane also exposed and repaired a cross-loop discovery defect. `resource_resolver.py` previously
+searched only live `skills/registry.json` slots, so installed OSS skills such as Writer/Note were invisible to Paid
+owners even though their `SKILL.md`, adapters and persistent work existed. It now searches every installed `SKILL.md`
+on demand and returns the relevant skill path for owner inspection, while keeping runtime readiness separate from
+knowledge discovery. A focused live query for `note.com/publish` now discovers `writer-agent` but truthfully returns
+`effect_ready=false` because no registered live publication adapter or browser identity currently matches; it does
+not mislabel the draft-only path as a public effect. The same query for `x.com/post` returns the live `x-repost` slot
+and seller-owned `x:anicca` / `@selawmqt` session with `effect_ready=true`. Secrets remain outside prompts and repo.
+This is the general skill-reuse path for every lane and future marketplace, not a byusco-specific router.
+The existing Note credentials were also migrated from the legacy Writer environment into the Mac-local private
+credential SSOT as one `note.com` record. The directory remains mode `700`, the file remains mode `600`, and the
+resolver exposes only its non-secret `credentials:15` reference plus configured status. No credential value entered
+the repository, owner prompt or evidence. Account discovery is therefore true while publication readiness remains
+false until an authenticated adapter proves a live official effect and readback.
+
+The same natural admission pass also proved new purchased rooms are not dependent on Codex. TikTok room `18180857`
+was initialized automatically and the Paid answer owner sent one indispensable request for the missing targeting,
+message, account and spreadsheet instructions; official talkroom readback binds the exact message and effect key.
+Smile room `18179735` was likewise admitted and the owner answered each newer buyer question with official talkroom
+readback. Its responses were materially useful but too long despite the existing abstract "smallest useful answer"
+instruction. The shared answer-owner harness now sets a measurable editorial target of at most 600 Japanese
+characters for ordinary replies, while allowing longer output only when the buyer explicitly asks for a detailed
+written report. This remains model composition, not a buyer-name router or deterministic semantic gate. Both rooms
+must continue from every newer buyer message and prove replay-zero when no newer request exists.
+
+LBJ room `18130722` exposed the inverse context failure. This TODO already records the account owner's transfer of
+that work to another provider and retention of only the latest v107 package, but the semantic owner could not see the
+exact-cycle `paid-file-operator-policy.json` until after choosing `actionable`; it therefore kept reserving obsolete
+revision work. Semantic v14 now hash-binds the same scoped account-owner policy before mode selection. Such a policy
+may stop, narrow or transfer seller work but cannot invent buyer approval, permit formal delivery or override safety.
+The current LBJ policy is bound to the current feedback and requirements hashes, requires `satisfied_noop` with no
+new build/send, and expires automatically when a genuinely newer buyer message creates a different feedback cycle.
+The next natural Paid wake must prove this transition and preserve v107 without another customer effect.
+The deeper cause was the remaining `OWNER_WORKED_TALKROOMS` set: four buyer IDs were hardcoded at every Paid
+entrypoint and returned `reserved_for_owner` before any semantic owner could read current context. This was exactly
+the customer-specific conditional architecture the general harness forbids. It is removed. Every room now follows
+the same path: fresh official readback, compiled context, exact-cycle operator policy, semantic model decision,
+project owner and official effect/readback. Existing generic `paid-effect-policy.json` remains available for a
+hash-bound observe-only effect that is already officially visible. LBJ's stop/transfer is represented by its scoped
+policy; BUYMA and any future project can resume through shared skills rather than another buyer-ID exclusion.
+
+The still-running old-release Manledge owner then exposed a broader remote acceptance defect. It completed all 66
+intended X searches with zero unattempted queries and zero query errors, but its builder/result remained bound to the
+already-public general recruitment post while the fresh verifier inspected a blocked signup screen for the prohibited
+`@diceai0` identity. Neither record proves the required individual-outreach outcome; no new Manledge official effect
+was observed. The generic verifier previously treated canonical equality for one selected target as sufficient even
+when the semantic contract required a broader business outcome. Current main now requires both builder and verifier
+to bind an identical `business_outcome`: the complete required effect and required output must each be satisfied,
+remaining work must be empty, and at least one exact official receipt must identify its effect key, provider URL and
+readback source. A partial target, draft, internal state or public proxy cannot PASS this gate. The next current-release
+natural wake must reject the stale proxy result, preserve the completed search evidence and continue only the remaining
+qualified outreach without duplicate effects.
+
+Commit `d81196657` is pushed and published as the current immutable release. The old `b89d95ac8` wake exited naturally
+with `effect=0/readback=9/failed=0/pending=1`; Manledge was the sole pending room and no proxy result reached Coconala.
+The existing launchd Paid label was then kickstarted, not replaced by a Codex executor. Natural PID `35408` pinned
+`d81196657`, completed fresh targeted room reads and started eight independent project workers through the same generic
+path. This proves deployment and parallel resumption, but not yet the required Manledge business effect or full-room
+silent-pending zero; keep watching the natural owners and accept only official effect receipts.
+
+That wake exposed one remaining decision-cache bypass before LBJ could transition. The generic new-decision path put
+the exact-cycle operator policy into the v14 prompt, but `_current_paid_decision` accepted an already-stored v6 receipt
+without checking prompt version or policy digest, and new receipts did not persist that digest. LBJ therefore reused
+the obsolete actionable/file decision despite the current transfer policy. The shared cache contract now records and
+requires the current prompt version, schema version and exact policy SHA, includes that policy in context-input
+revalidation, and invalidates the legacy LBJ receipt. The next natural current-release wake must generate a v14
+policy-bound `satisfied_noop`; no LBJ customer effect is permitted. Superseded by a genuinely newer buyer-side cycle:
+the feedback hash changed to `9da1bcff...`, so the old exact-cycle transfer policy correctly expired. The natural
+owner generated v14 `await_buyer`, recording that the buyer is performing internal caption adjustments and client
+review; preparation returned `effect=0/readback=1`. No obsolete build, send or formal delivery resumed. The lane must
+now remain replay-zero until a still-newer buyer instruction or explicit approval arrives.
+
+The durable Manledge owner has now produced another real business effect without Codex customer-work execution. It
+bound `@Upapa43252396` to official evidence for an Osaka City base, bicycle registration and a 100% rating, sent the
+recipient-specific approved outreach from `@selawmqt`, and read back the exact payload at
+`https://x.com/selawmqt/status/2091392067822088695`. Effect key
+`x:reply:1338135876572876800:4260819b9c159aad1c75633d9867b5a2b13528ebab8b1d0b1592530db1574991`
+is checkpointed with `exact_readback=true`, `quality_status=qualified` and `counts_toward_50=true`; effective qualified
+outreach is now eight. The current owner is re-running the exact final 15-query remainder through the leased
+`x:anicca` adapter before declaring reachable exhaustion. Forty-two further qualified effects or complete official
+exhaustion, truthful Coconala handoff and replay-zero remain open.
+The remainder pass has since completed with all 15 queries attempted, zero unattempted and zero errors; its only
+candidate was the already-contacted, qualification-only `@mgwpbdgw`. Because the earlier 51-query evidence was
+fragmented and could not by itself prove one intended=attempted exhaustion receipt, the same owner started the full
+66-query manifest once through the leased production adapter. No send occurs during this read-only pass. A shortfall
+may be reported only if this pass finishes with all queries attempted, zero errors, completion time and every official
+URL checked; otherwise the room remains pending and resumes naturally.
+Inspection of the shared production adapter found that its JSON previously omitted start/completion timestamps,
+per-query official search URLs and the complete set of returned official post URLs. Counts alone therefore could not
+serve as the required machine-readable exhaustion receipt even after a complete pass. The adapter now emits
+`started_at`, `completed_at`, one `query_receipts` row per intended query with attempted/status/error and official X
+search URL, plus deduplicated `checked_official_urls`. The model still decides candidate eligibility and whether the
+business scope is exhausted; the adapter only records what was mechanically attempted and observed.
+The same adapter now also supports an atomic `--output` path and rewrites that receipt after every completed query.
+This removes the recurring zero-byte failure mode where a long recon pass reached its owner timeout before final
+stdout was flushed, losing every completed observation and forcing an expensive full rerun. Paid remote owners are
+explicitly instructed to use this durable output instead of shell redirection. Partial receipts remain partial and
+cannot prove exhaustion, but the next natural wake can resume from truthful saved progress.
+The pre-checkpoint owner reached its 30-minute remote-owner limit during that full pass before stdout could be
+committed. Its zero-byte redirected file was removed, the parent classified Manledge as `remote_builder`, and no X
+or Coconala mutation occurred during the read-only search. This is the final expected loss from the pinned
+`d81196657` process, not evidence of exhaustion. The next existing-launchd wake must run from current immutable
+release `442dd0175`, use the atomic `--output` contract, preserve each completed query across timeout/restart, and
+continue the same project lane without Codex performing the work.
+That handoff is now live. Existing launchd run 9 started PID `28848`, rediscovered all ten purchased rooms, and
+spawned independent project workers. Manledge's fresh semantic owner independently reduced the ledger to eight,
+selected the same bounded 50-or-exhaustion outcome, and its new remote owner invoked the production adapter with
+`--output delivery/x-exhaustion-receipt-v3.json`. After the first query the partial receipt was already nonempty:
+`query_count=66`, `queries_attempted=1`, `queries_not_attempted=65`, `completed_at=null`, 66 per-query receipt rows
+and three checked official URLs. This proves timeout-safe natural continuation; it is progress only, not exhaustion
+or buyer completion, and the owner remains responsible for finishing the pass and truthful Coconala handoff.
+The same natural owner then finished the evidence scope without discarding that partial work: it isolated the ten
+time-budgeted queries, ran a second atomic pass, and merged a complete receipt with 66 intended, 66 attempted, zero
+query errors, completion time and 76 official search/result URLs. It reread all eight qualified and two
+qualification-only outreach threads; no recipient response or LOXAD registration was visible. One newly surfaced
+qualified target, `@pwrfusk`, passed claim-source review, but the production X adapter retained the exact text in the
+composer and returned `posted=false`; the owner discarded the draft, checkpointed the failed attempt as noncounting,
+and produced no false effect. Its 30-minute window ended with Manledge durably `pending`, `effect=0/readback=1`, not
+failed. The next current-release wake must either complete that remaining authorized send with exact X readback or
+bind the proven reachable shortfall honestly, then report the audited eight-result/exhaustion outcome to Coconala.
+
+The same natural wake produced two independent Coconala effects through the shared answer path. BUYMA room
+`18128025` truthfully identified the two duplicate proposals as AI auto-applications, apologized, told the buyer no
+action was needed for them, and retained the pending BUYMA approval-email follow-up. Smile room `18179735` confirmed
+that acquisition/usage improvement is in scope and requested only a no-charge test path needed to exercise the
+built certificate flow. Each room returned `effect=1/readback=1`, the exact seller text is present in its official
+talkroom DOM snapshot, and formal delivery remained OFF. Neither reply was sent by Codex.
+
+The same run 9 Haru worker rebuilt and internally validated review package v44, then correctly withheld it and asked
+the durable native controller for two official Illustrator 30.7 save-close-reopen receipts. The controller executed
+Illustrator itself but failed before output because the application remained responsive with zero documents while
+refusing the exact PDF open Apple Event; the existing recovery handled only an unresponsive process and therefore
+misclassified this empty half-alive session as healthy. The shared native adapter now restarts Illustrator only when
+the exact-path open has failed and official readback proves `app.documents.length == 0`, then retries that same path
+once. It never restarts over an open document and never relaxes exact-source, native-data or reopen verification. A
+new existing-launchd wake must prove both native receipts, the exact v44 ZIP hash, review-stage Coconala readback with
+formal delivery OFF, and replay-zero; no Codex submission substitutes for that proof.
+The first retry then exposed a shared provider failover defect before either Haru or Manledge could decide: Codex CLI
+returned its subscription usage limit until August 29, and both semantic runners stopped after one attempt. The
+runner already classifies usage limits as transient quota and its escalation route already orders Sol, Luna, then
+Claude Sonnet, but Paid passed `--candidate-model gpt-5.6-sol` on every owner/reviewer invocation and rejected any
+receipt not hardcoded as `codex/sol`; those constraints silently disabled the configured fallback. Paid now preserves
+the configured candidate order, permits only those three authorized provider/model pairs, and hash-binds the pair
+actually selected into decision, owner and reviewer receipts. Schema-invalid model output still fails closed and
+never falls through. The next existing-launchd wake must prove the quota error advances through the configured route
+and resumes both projects without manual customer work.
+
+1. **Paid/Submission — finish first.**
+   - [x] Deploy and read back Paid ignoring shared preventive `disk-pressure.block` (20 GiB) and
+     `disk-writers.stop` (10/11 GiB hysteresis), while retaining the 512 MiB last-resort guard and
+     expiring operator brake; an expired audit file or healthy 10+ GiB headroom must not stop earning.
+   - [ ] Haru `18169583`: submit the already acceptance-PASS v31 ZIP with concise text, recover exact-room
+     `targeted_readback`, prove the v31 hash buyer-visible and keep formal delivery OFF. Superseded by the
+     buyer's explicit defect report: do not resend v31. Preserve it as failed evidence, reconstruct the exact
+     buyer-approved latest design from the accumulated attachment/message sequence, require direct visual
+     correspondence rather than `bounded_undeterminable`, and send only a genuinely corrected next artifact.
+     Atomic order: [ ] persist every candidate before temporary runtime cleanup; [ ] make the builder reuse the
+     decision's exact required asset ids instead of renaming them; [ ] regenerate one next-version correction
+     from the saved buyer source and latest PC/responsive inquiry references; [ ] have the incident lead and a
+     fresh reviewer open the source, both candidate previews and package members and record hash-bound PASS;
+     [ ] let the existing Paid owner attach that exact hash with formal delivery OFF; [ ] obtain exact-room
+     official DOM readback; [ ] rerun naturally and prove replay-zero.
+   - [ ] Manledge `18169985`: submit the already acceptance-PASS v20 deliverable, repair the
+     `file_browser` attachment path without regenerating the artifact, obtain official readback and
+     keep formal delivery OFF. The buyer has approved the CSV and is now waiting for the community details,
+     complete proposed listing copy, individual outreach wording, and the progress-management/reporting method.
+     The semantic decision correctly classified that combined response, but the runtime created REVIEW_READY
+     v21 while the answer reviewer state remained `APPROVED`, then stopped at `file_validation`; no response
+     or attachment is officially visible for the latest buyer request.
+   - [x] X-post project `18171850`: approved v1 was attached and officially read back with formal
+     delivery OFF.
+   - [ ] New TikTok project `18180857`: the natural loop sent and officially read back its first concise
+     start-material request with formal delivery OFF. Prove the unchanged buyer state replays with zero
+     effect, then consume the buyer's materials and continue the same project lane through real work and
+     delivery without Codex becoming the customer-work owner.
+   - [ ] Review-article project `18171890`: do not represent v4 as a publishable completed article.
+     Repair the generic acceptance boundary so missing contract-required screenshots, firsthand-use
+     passages and required human editing cannot pass merely because the draft lists them as unresolved;
+     persist the exact non-delegable seller action as a durable blocker. Only then repair the
+     `file_validation` handoff, send the truthful buyer-review-stage artifact if that bounded effect is
+     still contract-valid, obtain official readback and keep formal delivery OFF.
+   - [ ] Treat ten reviews as a ceiling, not a quota, and fail closed: a fresh reviewer may return only
+     evidence-backed PASS or NEEDS_WORK for delivery authorization. `undeterminable`, missing visual
+     correspondence, unavailable provenance and review exhaustion never authorize shipment; preserve the
+     artifact, return the raw evidence to the Paid manager for replanning, and request one exact owner input
+     only when the missing fact is genuinely non-delegable.
+   - [ ] Read back first-artifact staging without a prior `paid-work-result.json`: new projects must
+     create v1 from complete context, while existing projects alone receive a prior artifact to resume.
+   - [ ] Classify and close every other purchased room as buyer-waiting, formally complete,
+     generic-loop actionable or explicitly reserved with a durable reason; no silent `pending`,
+     `remote_resume`, `file_validation` or missing project state remains.
+   - [ ] Prove one natural multi-project pass with all actionable projects running independently,
+     every effect officially read back, formal delivery OFF before buyer approval, and replay-zero.
+   - [ ] Verify progress-file upload survives Coconala form re-render: on CDP stale-node error,
+     reacquire document and file-input node before retrying; persist non-retryable browser errors.
+
+2. **Negotiate — coverage before latency.**
+   - [ ] Account for every buyer-authored message with exactly one durable disposition: replied,
+     estimate sent, safely terminal, or retry-owned. Missing/skipped messages must be zero.
+   - [ ] Use Job Description + seller proposal + complete DM/thread context for every reply; never
+     ask again for facts already present and never use a text-only acknowledgement when an estimate
+     or concrete answer is due.
+   - [ ] Send or revise one competitive estimate when the buyer requests/agrees to it, preserve
+     explicit buyer prices, deduplicate effects and obtain official card/thread readback.
+   - [ ] Prove a new natural actionable buyer message reaches official reply/estimate readback in
+     under 30 minutes, then prove replay-zero.
+
+3. **Storefront.**
+   - [ ] Make every public listing, price, scope, FAQ and option match an actually purchasable live
+     product; remove contract-only ¥3,000/¥5,000 options that are not sold or publish them truthfully.
+   - [ ] Persist storefront attribution from official facts captured during Negotiate rather than
+     requiring the buyer to paste a listing URL.
+   - [ ] Prove one natural official listing create/update receipt and replay-zero.
+
+4. **Four-lane durability on this device.**
+   - [ ] Re-audit Apply maximal coverage and duplicate fences, then obtain a new natural official
+     application receipt without reviving historical replay work.
+   - [ ] Verify Apply, Negotiate, Paid and Storefront are all loaded, independently scheduled,
+     bounded on browser/model/disk failures, self-cleaning, owner-reported and able to resume after
+     restart without split-brain checkouts or an expired brake.
+   - [ ] Observe natural official receipts for application, buyer reply/estimate, listing effect and
+     paid delivery, followed by no duplicate effect on replay.
+
+5. **OSS third-device acceptance and onboarding.**
+   - [ ] From a clean third-party/friend device, run `./install.sh coconala` without this seller's
+     checkout, credentials, customer state or private bundle.
+   - [ ] Complete one front-loaded setup session covering account recovery/signup, email verification,
+     SMS, seller identity, eKYC, required consents and domestic payout account while keeping secrets,
+     OTPs, documents and bank data out of Git, logs, prompts and reports.
+   - [ ] Start all four lanes with email as the default notification adapter; prove no external effect
+     before authentication and one natural official receipt per lane after activation.
+   - [ ] Prove a real marketplace balance withdrawal arrives at the registered bank without another
+     setup step. Do not call balance, estimates, views, tests or dry runs revenue.
+   - [ ] Re-run public-tree/history secret and customer-data audits, clean-clone commands and README
+     verification at the final commit; keep the MIT package explicit that income is not guaranteed.
+
+6. **Bounded follow-up after the product proof.**
+   - [ ] Qualify the current CloakBrowser major against the real marketplace before upgrading it.
+   - [ ] Merge the already-pushed legacy profitable-claude removal branch after its unrelated merge
+     clears, then verify no reachable Coconala skill, loop, launchd job or runtime import remains there.
+
 **Ponytail decision and current development cursor.** Do not create a separate email project,
 one-off Manledge/Haru executor, new agent layer or parallel implementation track. Reuse the existing
 four lanes and make the smallest changes inside their durable owners. Finish in this order:
@@ -528,6 +2215,68 @@ definition and A0 acceptance is closed.
 
 #### B. Restore Apply and prove one new application
 
+**Apply/Negotiate recovery cursor.** Close the unchecked Apply items below before starting new
+Negotiate implementation. Paid/Submission continues under its existing independent owner; this
+slice neither edits nor waits on the Paid section, `paid_direct.py`, or the Paid runtime.
+
+**Current production truth.** Apply is enabled and owned by launchd every 60 seconds. The loaded
+definition keeps the real 512 MiB write floor while allowing this lane to continue past the global
+pressure and writer-stop advisory flags; the child still fails closed below the real floor. Natural
+pass `gig-apply-direct-1787448339022678000-11329` officially submitted and read back requests
+`5227527`, `5227443`, `5227381` and `5227400`; their immediate provider ACKs are `29639`, `29642`,
+`29645` and `29661`, and the terminal ACK is `29668`. A following natural pass proved all four in
+official applied history and created no submit evidence or ledger row for them. Two long passes then
+exposed a separate shared-lease contention fault: one 35-second heartbeat timeout was treated as a
+permanent fence failure even though the lease token remained valid. Commit `f6f8a2538` confirms one
+transient timeout before failing closed. Natural launchd pass
+`gig-apply-direct-1787452590761626000-88171`, pinned to a release containing that fix, completed
+`ok` with 79 observed, 38 already applied, zero effects, zero failures and full-source completion;
+the same four IDs produced no submit evidence or ledger row, and its Telegram summary is provider-
+acknowledged as `29738`.
+
+- [x] Restore at least the loaded 512 MiB real write floor without deleting protected/user data or
+  stopping another lane, then read back one launchd-owned natural pass with no ENOSPC and a provider-
+  acknowledged natural-language Telegram summary. Do not lower or bypass the floor to claim success.
+  The real floor remains loaded and the gig filesystem supports durable evidence, SQLite and receipt
+  writes. The four-effect natural pass and the later zero-effect replay pass above both completed
+  without ENOSPC. Historical unknown application receipt `5225359` was reconciled from official
+  history without a blind resend and provider-acknowledged as `28769`. The current click-boundary,
+  official-readback, duplicate-fence, one-time heartbeat confirmation and Telegram receipt paths are
+  all loaded and proved by natural launchd wakes.
+
+- [x] Restore bounded write headroom without broad user-data deletion. Apply now ignores only the
+  global advisory pressure/stop flags and retains `GIG_DISK_HEADROOM_KIB=524288`; measured natural
+  snapshot, intent, official-readback, SQLite and Telegram receipt writes all succeeded above that
+  real floor.
+- [x] Prove the existing `ai.anicca.hf-gig-apply-direct` launchd owner. Its loaded program uses
+  `/Users/anicca/gig/releases/life-manager/current`, natural PID `80764` exited 0, and launchd then
+  started PID `78438` as run 3 without a foreground executor.
+- [x] Prove a natural maximal pass with no silent loss. Pass
+  `gig-apply-direct-1787394811693936000-80764` observed 40, classified the full snapshot as 17
+  already applied, 17 cached truthful ineligible and six current decisions, then ended with five
+  official applications/readbacks, zero failed and one exact-ID uncertainty retained behind a
+  durable duplicate fence. Per-application Telegram provider ACKs are `28744`, `28748`, `28749`,
+  `28753` and `28754`; terminal receipt ACK is `28758`.
+- [x] Prove replay zero and the next natural scheduled owner. Run 3 snapshot includes all five newly
+  confirmed IDs in `already_applied_ids`, while the one unresolved ID remains a request detail with
+  a durable intent fence, so neither class can submit twice. The next natural process uses immutable
+  release `3fa2f7d4...`, which contains the release-retention fix. A separate exact-ID audit of the
+  preceding 15 official applications against that same natural snapshot reports 15/15 in
+  `already_applied_ids`, 0/15 in `request_details`, and no missing ID.
+- [x] Prove deterministic continuous Apply operation without waiting 24 wall-clock hours. The wrapper
+  now pins its immutable release for its whole wake; GC preserved the live pin while `/current`
+  advanced, same-wake reconciliation completed from the pinned release, and the next natural wake
+  automatically created `.pins/78438-3fa2f7d4...`. launchd owns 60-second restart and the loaded
+  five-minute `ai.anicca.earning-health-allslots` owner checks all gig labels plus the Apply wake
+  ledger. The 24-hour observation continues in parallel and is not a gate for starting Negotiate;
+  every future application still requires official-history readback and a Telegram provider ACK.
+  The sole earlier unknown application receipt, request `5225359`, had official history but no
+  provider receipt after its first transport timeout. Business-result redrive now remains eligible
+  for 24 hours while transient health reports retain the one-hour bound; an application-only
+  recovery changed report `9769` from `delivery_unknown` to `sent` with provider message ID `28769`
+  and a matching event-key/target/message-hash receipt. The concurrent Paid unknown row was not
+  changed.
+
 - [x] Restore immediate per-application Telegram reporting. The parent reporter deadline was 90
   seconds while the inner provider deadline was 180 seconds, which killed valid slow sends and left
   them `delivery_unknown`. Release `1b72c4329` makes the parent outlive the transport at 240 seconds;
@@ -653,6 +2402,36 @@ operation is slow. The product SLO is official reply readback within 30 minutes 
 message. Thirty-second polling is the operating mechanism, not a promise to send a reply every 30
 seconds.
 
+**Current outage, not a disabled lane.** The loaded Negotiate definition remains `KeepAlive` and
+`RunAtLoad`, with a 30-second poll and two workers, but the shared disk guard exits before
+`reply_detector.py` can run while `disk-writers.stop` is present. The canonical cleanup owner ran
+successfully but preserved all nine open candidates; regenerable npm caches were removed and free
+space recovered to 3.3 GiB, still below the 11 GiB hysteresis release boundary. Do not delete the
+flag manually or bypass this fail-closed gate. After
+Apply recovery is proven, close Negotiate in the following atomic order:
+
+- [ ] Load a machine-private no-contact registry keyed by exact marketplace counterparty ID and
+  canonical thread path. Provision the two current operator-owned counterparties outside git.
+  Matching threads must terminate as `ignore_policy` before semantic judgement, estimate creation,
+  reply send, or counterparty-specific Telegram content; the effect fence must independently deny
+  any stale or manually queued action for the same identities.
+- [ ] Recover and kick only the existing `ai.anicca.hf-gig-reply-detector` owner, then prove its
+  loaded immutable Life Manager release remains alive across a child failure and resumes 30-second
+  discovery without a manual foreground executor.
+- [ ] Census every pre-purchase inbox source and assign every buyer-authored actionable message to
+  exactly one durable action identity. Drain the existing non-policy backlog oldest-first; each
+  item must end as official reply readback, official estimate readback, permitted policy no-send,
+  or an observable owned retry, with `missing=0` and `unowned=0`.
+- [ ] Emit natural-language Telegram receipts for backlog, blocked, recovered, reply and estimate
+  transitions, each with a provider message ID. Aggregate no-contact skips without exposing private
+  counterparty identity or conversation content.
+- [ ] Prove durable continuous Negotiate operation without making 24 hours of wall-clock waiting a
+  blocking delivery gate: natural restart, continuous discovery, duplicate fences, private
+  no-contact enforcement and durable health ownership must pass. Keep the 24-hour observation
+  running in parallel with zero duplicate replies/estimates, no unauthorized effect on private
+  identities, and every new authorized actionable buyer message reaching official reply/estimate
+  readback within 30 minutes.
+
 Source fix `da5e16627` now coalesces a changed buyer identity onto the current durable action and
 selects the newest coalesced event for restart dispatch. Commit `c366586ac` additionally binds a
 seller-last closure to the dispatch-time revision, so a newer coalesced buyer event cannot be
@@ -703,6 +2482,49 @@ action completes.
 - [x] Send and read back an explicitly requested estimate through the existing lane. Addres88 action
   276 reached exact-thread official estimate readback; later purchased threads are handed to Paid
   and all unfinished Negotiate actions are closed without a resend.
+- [x] Make purchase-decision negotiation proactive. A buyer asking whether the seller recommends
+  proceeding must receive an immediate affirmative, useful recommendation before any investigation
+  note; a conditional statement that the buyer will purchase after that answer cannot authorize an
+  estimate by itself (`ba515600a`, prompt v25 and validator gate).
+- [x] Save and hash buyer DM attachments before semantic judgement. The authenticated collector now
+  persists the exact PDF/PNG/JPEG bytes under the private per-thread material root, binds only an
+  exact message identity (or the strict body/index fallback), exposes bounded filename/type/size/hash
+  metadata to the semantic context, and fails closed on collection error (`82e5366df`, prompt v26).
+  This is the shared durable conversation-material boundary for later work; marketplace replies and
+  Telegram reports must never expose its local paths.
+- [x] Rebind the durable attachment manifest during the final official-DOM freshness read. The exact
+  semantic hash therefore includes verified attachments both before judgement and immediately before
+  effect, while a newly changed message or attachment stops the stale reply (`bf1a14b94`; 50 focused
+  tests pass).
+- [x] Keep seller-last correction authorization bound to the current semantic prompt SSOT instead of
+  the obsolete hard-coded v23. Prompt v26 can now queue one evidence-bound correction after the
+  seller falsely denied a verified attachment, and the post-correction debt detector prevents a
+  second correction (`7f5608836`; focused RED then 50-test GREEN).
+- [x] On the affected attachment thread, the existing Negotiate owner sent exactly one correction
+  that names both verified buyer images, states that the earlier inability claim was wrong, says no
+  reattachment is required, and proceeds with the agreed sample. The official thread readback shows
+  that correction once at 00:30:59, the buyer's new acknowledgement at 00:32:28, and action 412 has
+  naturally reconciled to `replied` without another marketplace effect.
+- [x] On the natural polls after that correction, prove seller-last replay zero: no second apology and
+  no duplicate reply/estimate. The only later marketplace event is the buyer's distinct acknowledgement.
+- [x] Re-open the affected live material root and verify the attachment contract at the byte boundary,
+  not from reply text. Its private manifest still owns four buyer files with nonzero bytes and exact
+  SHA-256 values; both requested PNGs open as distinct valid 638 x 848 images, and their on-disk sizes
+  match the manifest. Authenticated in-page fetch is the primary path; a no-href control uses the
+  existing trusted-pointer/download-behavior fallback. A browser save-dialog interaction is not a
+  completion fact by itself: durable bytes, hash, exact message binding and successful content open are.
+- [ ] Prove the purchase handoff without asking the buyer to upload again. Negotiate must expose the
+  canonical thread material manifest as a private content-addressed handoff; after a matching purchase,
+  the separate Paid owner must read back the same attachment SHA-256 values inside the project context
+  without a blind redownload or filename-only match. This lane owns the immutable handoff output only;
+  do not edit `paid_direct.py` or the Paid runtime from this section.
+- [ ] Resolve the correction's Telegram report without a blind resend. Report
+  `gig:telegram:reply:v2:412:6` is `delivery_unknown` after `TimeoutExpired` and has no provider message
+  ID; match a provider receipt first and resend only if non-delivery is proven. Future runs retain a
+  complete provider JSON acknowledgement carried by `TimeoutExpired.stdout`, persist its exact
+  event/target/message binding and still fail closed for empty, malformed, rejected or ID-less output
+  (`81a4e91b7`; 23 focused tests pass). This prevents another lost acknowledgement but does not invent
+  a receipt for the historical unknown report.
 - [ ] Treat a buyer's competing bid or desired ceiling as a semantic renegotiation signal. Choose a
   deliverable, platform-valid competitive price from the whole current cycle without a hard-coded
   discount, revise the existing pre-purchase estimate when needed, and require official readback of
@@ -860,7 +2682,28 @@ a later successful example.
 - [ ] P26 — Resume the same transition after a machine/login restart.
 - [ ] P27 — Persist buyer-wait as an owned state rather than ending the workflow.
 - [ ] P28 — Consume a later buyer reply and resume without Codex/operator execution.
-- [ ] P29 — Resume the existing Manledge liability through the generic Paid owner.
+- [ ] P29 — Resume the existing Manledge liability through the generic Paid owner. A natural
+  replay exposed a generic contract-substitution defect: the current semantic decision requires
+  50 verified individual X approaches (or verified candidate exhaustion with shortage evidence),
+  but the remote owner replaced that outcome with readback of the already-published public post,
+  which explicitly adds zero to the individual-approach count. The verifier contract authenticated
+  only the owner-selected proxy state, not the semantic decision's required effect. Release source
+  now hashes `decision/mode/feedback/requirements/required_output/required_effect/required_assets`
+  into one semantic effect contract and requires the identical digest in owner intent/result,
+  every owner evidence file, verifier result, and verifier evidence. The model retains autonomous
+  tool/account/skill selection; only substitution of an easier proxy outcome is rejected. Direct
+  validation rejects the existing public-post artifacts as `semantic effect contract mismatch`.
+  Immutable release `4917386bf` then ran naturally across nine rooms and rejected Manledge as
+  `remote_builder`; it did not resend the public post or start a replacement owner effect. The
+  next natural pass completed the fresh Sol semantic-decision receipt with the required individual
+  outreach outcome, then started `PAID_REMOTE_OWNER` inside the same project worker under that bound
+  contract. The owner resolved `@selawmqt`, found X Chat blocked by its encryption passcode without
+  resetting it, and selected candidate-specific public replies as the authorized fallback. Its first
+  real effect contacted `@26AnNPNH5Qr8bBK`; official X DOM read back the exact qualification message
+  at `https://x.com/selawmqt/status/2091337871240356062`. The public recruitment post is still
+  excluded from the count. Completion still requires the natural owner to continue to 50 verified
+  individual contacts or verified exhaustion, report the result to the exact Coconala room, and
+  prove replay-zero.
 - [x] P30 — Resume the existing Haru liability through the generic Paid owner. The live
   `57ac9eb159e0` Paid owner recognized the legacy v26 artifact as already beyond five review
   iterations, performed no v27 build and no additional review, authorized the unchanged artifact
@@ -943,16 +2786,18 @@ revision cycle from the existing artifact, with formal delivery still off. Paid 
 owner and blind-audit workspaces live under `~/gig/runtime/<talkroom>/`, outside both the
 machine-wide temp tree and the sandbox-denied durable project: unrelated cleanup may never delete
 an active job's workspace, while the isolated owner can still access its own staging tree. Owner
-workspaces are keyed by the accumulated requirements digest; an abrupt process death leaves the
-workspace for the next wake to resume, while a normal success/failure removes it.
+workspaces are keyed by the accumulated requirements digest and stable context-input digest; an
+abrupt process death leaves the workspace for the next wake to resume, while a new attachment gets
+a fresh workspace and a normal success/failure removes it.
 Artifact version and review iteration are independent counters. A high historical `vN` may never
 advance the review cap; only `paid-review-state.round` for the exact feedback/requirements cycle
 counts toward the maximum of ten. A buyer-visible progress artifact does not suppress a durable
 `REPAIR_PENDING` cycle: the next wake revises and submits again until approval or round ten.
-The read-only targeted refresh is also project-scoped: up to four fresh hidden CDP targets run in
+The read-only targeted refresh is also project-scoped: up to eight fresh hidden CDP targets run in
 parallel before the existing project workers, and one refresh failure degrades only that talkroom.
-Each target attempt is bounded to 90 seconds with one retry, so one wedged browser target cannot
-hold every other independent project behind the generic 35-minute step timeout.
+Each target is bounded to one 180-second attempt, so long histories can finish without restarting
+their work at 90 seconds while one wedged browser target still cannot hold every other independent
+project behind the generic 35-minute step timeout.
 When a purchased request exposes both its original request id and a talkroom id, an existing
 talkroom project containing the authenticated accumulated requirements is canonical. The resolver
 must not select an empty request-id twin and strand article, copy or other new Paid work as pending.
@@ -961,9 +2806,30 @@ context. When the authenticated offer has no DM reference and discovery returns 
 the loop records `dm_collection_unavailable` and continues only if proposal, full talkroom history
 and accumulated requirements are all present; it never invents a DM or blocks an otherwise
 buildable artifact merely to ask the buyer again.
-Every reused semantic decision must bind the current compiled-context SHA256. If attachments or
-messages arrive after the decision, the mismatch invalidates it and forces a new Sol decision before
-any owner starts; an old `unresolved` claim may never survive after the missing source is collected.
+DM discovery itself is bounded to 180 seconds. A browser process that exceeds that bound becomes the
+same durable unavailable receipt and cannot hold its independent project worker for 35 minutes.
+That unavailable receipt is reused for one hour while proposal, talkroom and requirements remain
+present. A project that returns `remote_resume` immediately after stabilizing its decision retries
+prepare once inside the same worker, without waiting for the next five-minute wake.
+Remaining brake acceptance: deploy and read back Paid using the shared `gig_brake.sh status`
+contract rather than raw file existence. A held lease must stop all effects, malformed/unknown
+status must fail closed, and the owner's recorded expiry must free the lane even when the expired
+file remains as an audit record.
+Every reused semantic decision binds a digest of the compiled context's actual input file
+size/SHA256 pairs, not volatile compilation timestamps. If attachments or messages arrive after the
+decision, the mismatch forces a new Sol decision before any owner starts; identical inputs reuse the
+decision, and an old `unresolved` claim may never survive after the missing source is collected.
+The project worker revalidates that decision after DM collection. If DM discovery adds or changes
+an input, it runs the Sol decision again in the same worker before choosing file/answer/remote mode;
+it may not fall through to `remote_resume` merely because the required context became more complete.
+It revalidates once more after a potentially long build/review and before delivery mode selection.
+An official receipt refresh may update context during review; the loop refreshes only the semantic
+decision and reuses the already approved hash-bound artifact instead of failing `file_validation` or
+rebuilding it.
+The parent initializes any missing durable state and submits the project immediately; it never runs
+a bootstrap Sol decision inline. Decision, DM refresh, build and review therefore remain inside each
+of the maximum eight independent project workers rather than serializing queue construction; the
+current seven Paid rooms can all progress simultaneously.
 The authenticated offer page is the exact bridge from a purchased order to its pre-purchase DM:
 persist its `/mypage/direct_message/<id>` reference in the project proposal, then have Paid refresh
 that one thread directly. A buyer-name scan incorrectly reported Haru's real DM `10102712` absent

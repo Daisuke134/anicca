@@ -253,6 +253,11 @@ def main():
     # publishes (+75, against 0.5 for a like).
     ap.add_argument("--mode", choices=["quote", "reply", "original", "reconcile"], default="quote")
     args = ap.parse_args()
+    if not args.cdp:
+        ap.error("--cdp or the CDP environment variable is required")
+
+    if args.mode in {"quote", "reply"} and not args.source_url:
+        ap.error("--source-url is required for quote and reply modes")
 
     if args.mode in {"quote", "reply"} and not args.source_url:
         raise SystemExit("x_post: --source-url is required for quote or reply")

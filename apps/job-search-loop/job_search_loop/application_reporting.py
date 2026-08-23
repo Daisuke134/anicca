@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Callable
 
 from .ledger import Ledger
+from .outbox import DeliveryUncertain
 from .telegram import send_document_once
 
 
@@ -30,16 +31,26 @@ def deliver_submitted_resumes(
             f"{report['company']} — {report['title']}\n"
             f"{report['canonical_url']}"
         )
-        delivery = sender(
-            database=outbox_path,
-            event_key=(
-                f"application-resume:{report['application_id']}:"
-                f"{report['resume_sha256']}"
-            ),
-            message=message,
-            document=Path(report["resume_path"]),
-            media_root=media_root,
-        )
+        try:
+            delivery = sender(
+                database=outbox_path,
+                event_key=(
+                    f"application-resume:{report['application_id']}:"
+                    f"{report['resume_sha256']}"
+                ),
+                message=message,
+                document=Path(report["resume_path"]),
+                media_root=media_root,
+            )
+        except DeliveryUncertain:
+            deliveries.append(
+                {
+                    "application_id": report["application_id"],
+                    "status": "delivery_unknown",
+                    "message_id": None,
+                }
+            )
+            continue
         deliveries.append(
             {
                 "application_id": report["application_id"],

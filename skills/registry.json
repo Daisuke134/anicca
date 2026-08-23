@@ -4,6 +4,31 @@
   "description": "Anicca capability registry (SSOT). install.sh reads this to sync every skill slot into the runtime body. Foundation pre-declares EVERY slot so parallel subsystem builders only ADD files inside their slot's dir and NEVER edit this registry. A slot with status \"declared\" is reserved (dir scaffolded, entrypoint stubbed); a builder flips it to \"live\" once its real implementation + E2E verify land.",
   "runtime_root": "~/.anicca",
   "slots": {
+    "resource-resolver": {
+      "track": "core",
+      "dir": "skills/resource-resolver",
+      "entrypoint": "run.sh",
+      "status": "live",
+      "owner": "foundation",
+      "alwaysAvailable": true,
+      "capabilities": ["resolve"],
+      "summary": "Resolve reusable skills, accounts, authenticated browser sessions, and credential references across every loop.",
+      "toolDescription": "Call before signup, account creation, or implementing a new service adapter. Given service and capability, returns reusable installed skills, public account identity, authenticated browser sessions, and non-secret credential refs. It never returns secret values.",
+      "argsExample": {"service": "x.com", "capability": "outreach"},
+      "riskNote": "Read-only resource discovery; never exposes credential values or performs external effects."
+    },
+    "x-repost": {
+      "track": "shared-growth",
+      "dir": "skills/x-repost",
+      "entrypoint": "x-repost-cli.sh",
+      "status": "live",
+      "owner": "x-repost-loop",
+      "capabilities": ["research", "post", "readback"],
+      "summary": "Reuse the registered seller-owned X session to research, publish, and read official post receipts.",
+      "risk": "safe",
+      "toolDescription": "Operates the registered seller-owned X account through its leased CloakBrowser session. Use for X research, posting, or outreach only when the current project authorizes that operation; returns official X readback.",
+      "argsExample": {}
+    },
     "report": {
       "track": "core",
       "dir": "skills/report",

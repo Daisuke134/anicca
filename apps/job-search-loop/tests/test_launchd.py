@@ -11,9 +11,14 @@ class LaunchdTests(unittest.TestCase):
         learning = plistlib.loads(
             (root / "ai.anicca.job-search-learning.plist").read_bytes()
         )
+        mercor = plistlib.loads(
+            (root / "ai.anicca.job-search-mercor.plist").read_bytes()
+        )
         self.assertTrue(daily["RunAtLoad"])
         self.assertEqual(daily["StartInterval"], 3600)
         self.assertEqual(inbox["StartInterval"], 900)
+        self.assertEqual(mercor["StartInterval"], 3600)
+        self.assertFalse(mercor["RunAtLoad"])
         self.assertTrue(learning["RunAtLoad"])
         self.assertEqual(
             learning["StartCalendarInterval"],
@@ -24,6 +29,7 @@ class LaunchdTests(unittest.TestCase):
         self.assertNotEqual(
             learning["ProgramArguments"][0], daily["ProgramArguments"][0]
         )
+        self.assertNotEqual(mercor["Label"], daily["Label"])
 
     def test_inbox_shell_uses_deterministic_prefilter_before_model(self):
         root = Path(__file__).parents[1]

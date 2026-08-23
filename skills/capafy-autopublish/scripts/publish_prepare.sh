@@ -11,20 +11,41 @@
 # saves -> isConfirmedSkills=0 -> loop STOP). Per "build agents, don't hardcode", the
 # card-save step is now agent-driven, not a brittle script.
 #
-# Usage: publish_prepare.sh <skill-dir> <LISTING.md> <icon.png>
+# Usage: publish_prepare.sh <skill-dir> <LISTING.md> <icon.png> [draft-agent-id]
 # Prints (machine-greppable):  AGENT_ID=<id>  EDIT_URL=<url>  then the target pricing.
 set -uo pipefail
 
 SKILL_DIR="${1:?skill-dir required}"
 LISTING="${2:?LISTING.md required}"
 ICON="${3:?icon path required}"
+REUSE_AGENT_ID="${4:-}"
+
+# The workflow changes directory to the publisher before it reads LISTING again.
+# Resolve caller-relative paths once at the boundary so a valid repo-owned source
+# cannot turn into a missing file halfway through a live same-Agent update.
+SKILL_DIR="$(cd "$SKILL_DIR" 2>/dev/null && pwd)" || { echo "❌ skill dir not found: $SKILL_DIR"; exit 1; }
+LISTING="$(cd "$(dirname "$LISTING")" 2>/dev/null && pwd)/$(basename "$LISTING")"
+ICON="$(cd "$(dirname "$ICON")" 2>/dev/null && pwd)/$(basename "$ICON")"
 
 AUTO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PUB="$AUTO/vendor/capafy-publisher"
 LIFE_MANAGER_STATE_HOME="${LIFE_MANAGER_STATE_HOME:-$HOME/.local/state/life-manager}"
 VENV="${CAPAFY_BROWSER_PYTHON:-python3}"
-WS="${CAPAFY_WORKSPACE:-$LIFE_MANAGER_STATE_HOME/work/capafy}"
+# OpenClaw resolves provider config from $HOME/.openclaw/openclaw.json, not from
+# runtime_dir. Give the publisher an isolated HOME so it cannot package the
+# operator's live OpenClaw providers. Canonical skill source remains in this repo.
+CAPAFY_PUBLISH_HOME="${CAPAFY_PUBLISH_HOME:-$LIFE_MANAGER_STATE_HOME/runtime/capafy-publisher-home}"
+WS="${CAPAFY_WORKSPACE:-$CAPAFY_PUBLISH_HOME/.openclaw/workspace}"
 SKILL_NAME="$(basename "$SKILL_DIR")"
+SEL_FILE="$LIFE_MANAGER_STATE_HOME/state/capafy-autopublish/sel_one.json"
+
+# launchd and direct recovery runs must use the same private credential SSOT.
+# Load names into the process only; never copy values into the repo or output.
+for ENV_FILE in "$LIFE_MANAGER_STATE_HOME/.env" "$HOME/.openclaw/.env"; do
+  if [ -f "$ENV_FILE" ]; then
+    set -a; . "$ENV_FILE" 2>/dev/null; set +a
+  fi
+done
 
 step(){ echo ""; echo "━━━ $* ━━━"; }
 die(){ echo "❌ $*"; exit 1; }
@@ -41,30 +62,54 @@ step "[0b] KEY-HEALTH GATE (fail-closed) — never publish into an under-funded 
 "$AUTO/scripts/key_health_gate.sh" 2.00 || die "KEY-HEALTH gate FAIL — top up OpenRouter (>= \$2 remaining) before publishing; see state/lessons.md"
 
 step "clean-WS copy"
+mkdir -p "$WS/skills"
 rm -rf "$WS/skills/$SKILL_NAME" 2>/dev/null
 cp -R "$SKILL_DIR" "$WS/skills/$SKILL_NAME" || die "clean-WS copy failed"
 
+# run_online packaging scans the clean runtime, not the operator's ~/.openclaw.
+# Give that runtime one explicit hosted provider contract.  Keep only an env
+# reference here: CP2 supplies the real key from the private state env.
+mkdir -p "$CAPAFY_PUBLISH_HOME/.openclaw"
+python3 - "$CAPAFY_PUBLISH_HOME/.openclaw/openclaw.json" <<'PY'
+import json, sys
+json.dump({
+  "models": {"providers": {"openrouter": {
+    "baseUrl": "https://openrouter.ai/api/v1",
+    "api": "openai-responses",
+    "apiKey": "${CAPAFY_HOST_OPENROUTER_KEY}",
+    "models": [{"id": "anthropic/claude-sonnet-4.6", "name": "Claude Sonnet 4.6"}]
+  }}},
+  "agents": {"defaults": {"model": {"primary": "openrouter/anthropic/claude-sonnet-4.6"}}}
+}, open(sys.argv[1], "w"), ensure_ascii=False, indent=2)
+PY
+
 step "[1] publish-init"
+export HOME="$CAPAFY_PUBLISH_HOME"
 cd "$PUB" || die "cd PUB"
 TITLE="$(grep -A1 '^## Title' "$LISTING" | tail -1)"
 # write selections via python (heredoc redirects can be blocked by the sandbox)
-"$VENV" - "$TITLE" "$SKILL_NAME" <<'PY'
+mkdir -p "$(dirname "$SEL_FILE")"
+"$VENV" - "$TITLE" "$SKILL_NAME" "$SEL_FILE" <<'PY'
 import json,sys,os
-title,sn=sys.argv[1],sys.argv[2]
-os.makedirs(".temp",exist_ok=True)
+title,sn,out=sys.argv[1],sys.argv[2],sys.argv[3]
 json.dump({"title":title,"description":title,
   "skills":[{"path":f".openclaw/skills/{sn}","name":sn,"purpose":sn}],
-  "plugins":[],"crons":[]}, open(".temp/sel_one.json","w"), ensure_ascii=False)
+  "plugins":[],"crons":[]}, open(out,"w"), ensure_ascii=False)
 PY
 # RESUME GUARD: every failed run used to publish-init a NEW draft, so failures piled
 # up orphan drafts that eat the 5-slot cap until the loop hard-blocks. Reuse an
 # EXACT-title agent that already exists (the "(LM generated…)" auto-stub has a suffix
 # so it is NOT matched). draft -> resume its CP1; under_review/online -> already done.
-ID="$(python3 packager.py publish-list 2>/dev/null | TITLE="$TITLE" python3 -c "
+ID="$(python3 packager.py publish-list 2>/dev/null | TITLE="$TITLE" REUSE_AGENT_ID="$REUSE_AGENT_ID" python3 -c "
 import json,os,sys
 want=os.environ['TITLE'].strip()
+reuse=os.environ.get('REUSE_AGENT_ID','').strip()
 try: lst=json.loads(sys.stdin.read(),strict=False)['agents']['list']
 except Exception: sys.exit(0)
+if reuse:
+  rows=[a for a in lst if str(a.get('agentId') or '')==reuse]
+  if len(rows)!=1 or rows[0].get('agentStatus')!='draft': sys.exit(2)
+  print(reuse); sys.exit(0)
 rank={'online':3,'approved':3,'under_review':2,'draft':1}; best=None
 for a in lst:
   if (a.get('name') or '').strip()==want:
@@ -72,8 +117,15 @@ for a in lst:
     if not best or r>best[0]: best=(r,a.get('agentId'),a.get('agentStatus'))
 if best: print(best[1])
 ")"
+if [ -n "$REUSE_AGENT_ID" ] && [ "$ID" != "$REUSE_AGENT_ID" ]; then
+  die "explicit reuse target is missing or is not a draft: $REUSE_AGENT_ID"
+fi
 if [ -n "$ID" ]; then
-  echo "RESUME existing agent_id=$ID (title match) — not creating a new draft"
+  if [ -n "$REUSE_AGENT_ID" ]; then
+    echo "REUSE explicit draft agent_id=$ID — not creating a new draft"
+  else
+    echo "RESUME existing agent_id=$ID (title match) — not creating a new draft"
+  fi
   # BUG FIX 2026-07-17: this branch used to skip publish-init entirely, leaving the
   # LOCAL publish work-state (.temp/publish-work-state.json) pointed at whatever
   # agent_id a PRIOR run last touched. publish-ship then failed closed with
@@ -83,11 +135,11 @@ if [ -n "$ID" ]; then
   # currently under_review (not editable), this call fails — that's fine, it means
   # there is no fixed content to ship yet; ship will correctly refuse later instead
   # of silently no-op'ing.
-  python3 packager.py publish-init --env openclaw --runtime-dir "$WS" --skill-dir "$WS/skills/$SKILL_NAME" --agent-id "$ID" --selections-file "$PUB/.temp/sel_one.json" >/dev/null 2>&1 \
+  python3 packager.py publish-init --env openclaw --runtime-dir "$WS" --skill-dir "$WS/skills/$SKILL_NAME" --agent-id "$ID" --selections-file "$SEL_FILE" >/dev/null 2>&1 \
     && echo "local publish work-state rebound to agent_id=$ID" \
     || echo "WARN: could not rebind local publish work-state to $ID (agent likely under_review, not editable) — publish_finish.sh ship step will fail closed rather than resubmit stale content"
 else
-  ID="$(python3 packager.py publish-init --env openclaw --runtime-dir "$WS" --skill-dir "$WS/skills/$SKILL_NAME" --selections-file "$PUB/.temp/sel_one.json" 2>&1 | python3 -c "import json,sys
+  ID="$(python3 packager.py publish-init --env openclaw --runtime-dir "$WS" --skill-dir "$WS/skills/$SKILL_NAME" --selections-file "$SEL_FILE" 2>&1 | python3 -c "import json,sys
 try: print(json.loads(sys.stdin.read()).get('agent_id',''))
 except: print('')")"
   [ -n "$ID" ] || die "publish-init returned no agent_id (dup title? cap full = 5 unlisted max? see publish-list)"

@@ -380,6 +380,26 @@ def require_quality_terminals(
     """Require hash-bound editorial, reader, and safety PASS for both drafts."""
 
     receipts: dict[str, dict[str, Any]] = {}
+    quality_self_heal = None
+    try:
+        quality_self_heal = json.loads(
+            (Path(run_dir) / "gates" / "quality-self-heal.json").read_text(
+                encoding="utf-8"
+            )
+        )
+    except (OSError, json.JSONDecodeError, TypeError):
+        quality_self_heal = None
+    force_advisory = False
+    if isinstance(quality_self_heal, dict):
+        try:
+            from quality_self_heal import validate_force_receipt
+
+            force_advisory = validate_force_receipt(
+                Path(run_dir), drafts
+            )
+        except Exception:
+            force_advisory = False
+    advisory_seen = False
     for lang in ("ja", "en"):
         draft = Path(drafts[lang])
         path = Path(run_dir) / "gates" / f"quality-terminal-{lang}.json"
@@ -411,10 +431,18 @@ def require_quality_terminals(
             raise InvariantError(
                 f"{lang} quality terminal does not match the current artifact"
             )
+        advisory_seen = advisory_seen or any(
+            receipt.get(key) == "ADVISORY"
+            for key in ("editorial_gate", "reader_gate")
+        )
         receipts[lang] = {
             key: receipt[key]
             for key in (*expected, "editorial_gate", "reader_gate")
         }
+    if advisory_seen and not force_advisory:
+        raise InvariantError(
+            "editorial/reader advisory requires five-iteration force receipt"
+        )
     return receipts
 
 
@@ -1342,6 +1370,12 @@ class PublicationStore:
         }
         if quality_receipts is not None:
             payload["quality_receipts"] = quality_receipts
+            if any(
+                receipt.get(key) == "ADVISORY"
+                for receipt in quality_receipts.values()
+                for key in ("editorial_gate", "reader_gate")
+            ):
+                payload["quality_force_publish_after_iterations"] = 5
         with self._lock():
             if self.state_path.exists():
                 current = self._read_locked()
@@ -2563,6 +2597,11 @@ class PublicationStore:
                 or receipt.get("reader_gate") not in {"PASS", "ADVISORY"}
             ):
                 return False
+            if (
+                receipt.get("editorial_gate") == "ADVISORY"
+                or receipt.get("reader_gate") == "ADVISORY"
+            ) and state.get("quality_force_publish_after_iterations") != 5:
+                return False
         return True
 
     def _all_intents_valid(
@@ -2973,7 +3012,12 @@ class PublicationStore:
                 and remote.get("verified") is True
                 and _remote_identity_verified(state, pair, remote)
             ):
-                return {"action": "publish", "pair": pair, "target": entry["target"]}
+                return {
+                    "action": "publish",
+                    "pair": pair,
+                    "target": entry["target"],
+                    "remote": remote,
+                }
             entry["status"] = "ambiguous"
             entry["error"] = str(remote.get("reason") or "remote-state-unknown")
             self._write_locked(state)

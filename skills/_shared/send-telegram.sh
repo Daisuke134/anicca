@@ -20,7 +20,9 @@ fi
 for ENV_FILE in "${ENV_FILES[@]}"; do
   if [ -f "$ENV_FILE" ]; then
     set -a; . "$ENV_FILE" 2>/dev/null; set +a
-    break
+    # The Life Manager state file may intentionally contain only LM_* names;
+    # continue to the OpenClaw compatibility env until the sender token exists.
+    [ -n "${TELEGRAM_BOT_TOKEN:-}" ] && break
   fi
 done
 : "${TELEGRAM_BOT_TOKEN:?TELEGRAM_BOT_TOKEN is required}"

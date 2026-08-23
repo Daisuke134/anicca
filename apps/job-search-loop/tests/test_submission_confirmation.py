@@ -1,9 +1,11 @@
 import hashlib
 import json
+import sqlite3
 import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from unittest.mock import patch
 
 from job_search_loop.ledger import Ledger
 from job_search_loop.state import InvalidTransition
@@ -230,6 +232,47 @@ class SubmissionConfirmationTests(unittest.TestCase):
                 0,
             )
             ledger.close()
+
+    def test_sqlite_integrity_error_is_blocked_without_crashing_inbox(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ledger, _, _ = self._unknown_submission(root)
+            ledger.close()
+            received = datetime.now(timezone.utc) + timedelta(minutes=1)
+            thread = {
+                "id": "gmail-thread-integrity",
+                "subject": "Application received: Agent Product Engineer",
+                "snippet": "Thank you for applying",
+            }
+            payload = {
+                "thread": {
+                    "id": thread["id"],
+                    "messages": [
+                        {
+                            "id": "gmail-message-integrity",
+                            "threadId": thread["id"],
+                            "internalDate": int(received.timestamp() * 1000),
+                            "headers": {
+                                "from": "jobs@ashbyhq.com",
+                                "subject": thread["subject"],
+                            },
+                            "body": "Thank you for applying to Agent Product Engineer at Dream AI.",
+                        }
+                    ],
+                }
+            }
+            with patch(
+                "job_search_loop.submission_confirmation.Ledger.reconcile_submission_confirmation",
+                side_effect=sqlite3.IntegrityError("application state requires matching event"),
+            ):
+                result = reconcile_confirmation_threads(
+                    ledger_path=root / "ledger.sqlite3",
+                    threads=[thread],
+                    thread_loader=lambda _: payload,
+                    seen_state=root / "seen.json",
+                )
+            self.assertEqual(result["reconciled"], [])
+            self.assertEqual(result["blocked"][0]["status"], "ledger_integrity_blocked")
 
     def test_exact_late_ashby_receipt_reconciles_and_marks_thread_seen(self):
         with tempfile.TemporaryDirectory() as directory:

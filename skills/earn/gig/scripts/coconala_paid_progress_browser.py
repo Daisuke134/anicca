@@ -725,21 +725,28 @@ async def _upload(session: CdpSession, artifact_path: Path) -> None:
     # DOM.setFileInputFiles makes Chromium open the local path directly, so the
     # marketplace's own input/change handlers receive the real file without a
     # second in-memory/network transfer.
-    document = await session.call("DOM.getDocument", {"depth": 1, "pierce": True})
-    root_id = document.get("root", {}).get("nodeId")
-    if not isinstance(root_id, int) or root_id <= 0:
-        raise RuntimeError("paid_progress_document_missing")
-    selected = await session.call(
-        "DOM.querySelector",
-        {"nodeId": root_id, "selector": ".d-messageForm .isPC input[type=file]"},
-    )
-    node_id = selected.get("nodeId")
-    if not isinstance(node_id, int) or node_id <= 0:
-        raise RuntimeError("paid_progress_file_input_missing")
-    await session.call(
-        "DOM.setFileInputFiles",
-        {"nodeId": node_id, "files": [str(artifact_path.resolve())]},
-    )
+    for attempt in range(3):
+        try:
+            document = await session.call("DOM.getDocument", {"depth": 1, "pierce": True})
+            root_id = document.get("root", {}).get("nodeId")
+            if not isinstance(root_id, int) or root_id <= 0:
+                raise RuntimeError("paid_progress_document_missing")
+            selected = await session.call(
+                "DOM.querySelector",
+                {"nodeId": root_id, "selector": ".d-messageForm .isPC input[type=file]"},
+            )
+            node_id = selected.get("nodeId")
+            if not isinstance(node_id, int) or node_id <= 0:
+                raise RuntimeError("paid_progress_file_input_missing")
+            await session.call(
+                "DOM.setFileInputFiles",
+                {"nodeId": node_id, "files": [str(artifact_path.resolve())]},
+            )
+            return
+        except RuntimeError as error:
+            if "Could not find node with given id" not in str(error) or attempt == 2:
+                raise
+            await asyncio.sleep(0.25)
 
 
 async def _click_send(session: CdpSession) -> None:

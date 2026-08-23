@@ -9,6 +9,7 @@ LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$AUTO" rev-parse --show-toplev
 [ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
 LIFE_MANAGER_STATE_HOME="${LIFE_MANAGER_STATE_HOME:-$HOME/.local/state/life-manager}"
 CAPAFY_STATE_DIR="${CAPAFY_STATE_DIR:-$LIFE_MANAGER_STATE_HOME/state/capafy-autopublish}"
+export LIFE_MANAGER_REPO LIFE_MANAGER_STATE_HOME CAPAFY_STATE_DIR
 LOG="$CAPAFY_STATE_DIR/daily_loop.log"
 RUN_AGENT="${CAPAFY_RUN_AGENT:-$LIFE_MANAGER_REPO/skills/earn/marketing-engine/run_agent.sh}"
 # HEALTHY-PASS MARKER (self-fix-capafy-loop, 2026-07-08): touched whenever the loop reaches a
@@ -24,7 +25,7 @@ TS="$(date '+%Y-%m-%d %H:%M:%S')"
 mkdir -p "$CAPAFY_STATE_DIR"
 
 # EXCLUSIVE LOCK (self-fix-capafy-loop, 2026-07-12): two independent schedulers
-# (launchd ai.anicca.capafy-loop-daily @ 08:10 JST via the full money-loop-core prompt,
+# (launchd ai.anicca.capafy-loop-daily every hour via the full money-loop-core prompt,
 # and OpenClaw cron "anicca-capafy-daily-publish" @ 09:00 JST calling this script directly)
 # both end up invoking this drainer. Without a lock, overlapping runs raced on the SAME
 # shared CloakBrowser tab (:9222), each seeing the other's mid-edit DOM state, burning
@@ -67,6 +68,14 @@ INV="$(python3 "$AUTO/scripts/inventory_status.py" 2>>"$LOG")"
 VERDICT="$(printf '%s\n' "$INV" | sed -n 's/^VERDICT=//p' | head -1)"
 echo "$TS inventory verdict=$VERDICT :: $(printf '%s' "$INV" | tail -1)" >> "$LOG"
 
+# Refresh the durable OFFLINE candidate backlog before any CAP_FULL/DRAINED exit.
+# This consumes the inventory response already read above and performs no Capafy write.
+printf '%s\n' "$INV" | tail -1 | python3 "$AUTO/scripts/candidate_backlog.py" refresh \
+  --inventory-stdin >>"$LOG" 2>&1 || {
+    echo "=== $TS candidate backlog refresh failed ===" >>"$LOG"
+    exit 1
+  }
+
 case "$VERDICT" in
   DRAINED|CAP_FULL)
     touch "$MARK"
@@ -95,7 +104,7 @@ printf '%s\n' "$PROMPT" | timeout 1200 env -u ANTHROPIC_API_KEY "$RUN_AGENT" \
   --evidence-dir "$EVIDENCE_DIR" \
   --task-label capafy-drainer \
   --loop capafy \
-  --workdir "$HOME" >> "$LOG" 2>&1
+  --workdir "$LIFE_MANAGER_REPO" >> "$LOG" 2>&1
 RC=$?
 
 # Post-run truth: did a listing actually go live (online_count increased), not just "did the

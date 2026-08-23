@@ -16,10 +16,14 @@ from pathlib import Path
 
 REPO_ROOT = Path(os.environ.get("LIFE_MANAGER_REPO", Path(__file__).resolve().parents[3]))
 CAPAFY_HTTP = str(REPO_ROOT / "skills/capafy-autopublish/vendor/capafy-user/scripts/capafy_http.py")
-OUT = os.path.expanduser("~/.local/state/life-manager/state/capafy-sales-ranking.json")
+STATE_HOME = Path(os.environ.get("LIFE_MANAGER_STATE_HOME", Path.home() / ".local/state/life-manager"))
+OUT = STATE_HOME / "state/capafy-sales-ranking.json"
+COMPANY_RECEIPT = STATE_HOME / "state/capafy-hourly-reconcile.json"
 
 
 def _num(v):
+    if isinstance(v, list):
+        return sum(_num(item) for item in v)
     try:
         return float(v)
     except (TypeError, ValueError):
@@ -41,14 +45,18 @@ def _score(a):
     return _num(a.get("sales")) * 10 + _num(a.get("recentSales")) * 5 + _num(a.get("rating")) * _num(a.get("reviewCount"))
 
 
-def main():
+def _company_signal(path=COMPANY_RECEIPT):
     try:
-        agents = _fetch()
-    except Exception as e:  # network / server-broken — do not crash the loop
-        out = {"ok": False, "error": f"fetch failed: {e}", "signal": "none", "advice": "use BEST_PRACTICES marketplace research"}
-        json.dump(out, open(OUT, "w"), ensure_ascii=False, indent=2)
-        print(json.dumps(out)); return 0
+        value = json.loads(Path(path).read_text())
+        orders = value.get("orders")
+        orders = orders if isinstance(orders, int) and not isinstance(orders, bool) and orders >= 0 else None
+        winner = value.get("seller_winner")
+        return orders, winner if isinstance(winner, dict) else None
+    except (OSError, json.JSONDecodeError, AttributeError):
+        return None, None
 
+
+def select_signal(agents, company_orders, official_winner=None):
     ranked = sorted(agents, key=_score, reverse=True)
     total_sales = sum(_num(a.get("sales")) + _num(a.get("recentSales")) for a in agents)
     top = [
@@ -57,24 +65,53 @@ def main():
          "rating": a.get("rating"), "reviewCount": a.get("reviewCount"), "score": _score(a)}
         for a in ranked[:5]
     ]
-
-    if total_sales <= 0:
-        out = {
-            "ok": True, "signal": "none", "listings": len(agents),
-            "advice": "NO sales signal yet across our listings — do NOT fabricate a winner. "
-                      "For this pass, pick the next skill via BEST_PRACTICES.md marketplace-winner "
-                      "research (research a live top seller, copy its pricing/category/structure).",
+    if (
+        isinstance(official_winner, dict)
+        and official_winner.get("source") == "official_publisher_console"
+        and official_winner.get("agent_id")
+        and official_winner.get("name")
+        and _num(official_winner.get("sales_usd")) > 0
+    ):
+        return {
+            "ok": True, "signal": "sales", "listings": len(agents), "company_orders": company_orders,
+            "winner": official_winner, "attribution_status": "official_seller_ranking",
+            "advice": f"Official seller winner is '{official_winner['name']}'. Build the NEXT skill in the same customer-job category/style; this is {official_winner.get('revenue_kind', 'observed')} revenue, not subscription MRR proof.",
             "top_by_proxy": top,
         }
-    else:
+    if total_sales > 0:
         winner = ranked[0]
-        out = {
-            "ok": True, "signal": "sales", "listings": len(agents),
+        return {
+            "ok": True, "signal": "sales", "listings": len(agents), "company_orders": company_orders,
             "winner": {"name": winner.get("name"), "agentId": winner.get("agentId")},
-            "advice": f"Our best-selling listing is '{winner.get('name')}'. Build the NEXT skill in the "
-                      f"same category/style as our proven winners below (double down on what sells).",
+            "advice": f"Our best-selling listing is '{winner.get('name')}'. Build the NEXT skill in the same category/style as this proven winner.",
             "top": top,
         }
+    if company_orders is not None and company_orders > 0:
+        return {
+            "ok": True, "signal": "unattributed_sales", "listings": len(agents),
+            "company_orders": company_orders,
+            "attribution_status": "company_orders_exist_agent_sales_unavailable",
+            "advice": "Company orders exist, but Capafy exposes no usable Agent-level winner signal. Do not fabricate a winner or clone a category. Rotate tracked marketing across existing online listings until Agent-level sales become observable.",
+            "top_by_proxy": top,
+        }
+    return {
+        "ok": True, "signal": "none", "listings": len(agents), "company_orders": company_orders,
+        "advice": "No company or Agent-level sales signal is observable. Do not fabricate a winner; use marketplace research for the next differentiated candidate.",
+        "top_by_proxy": top,
+    }
+
+
+def main():
+    try:
+        agents = _fetch()
+    except Exception as e:  # network / server-broken — do not crash the loop
+        out = {"ok": False, "error": f"fetch failed: {e}", "signal": "none", "advice": "use BEST_PRACTICES marketplace research"}
+        json.dump(out, open(OUT, "w"), ensure_ascii=False, indent=2)
+        print(json.dumps(out)); return 0
+
+    company_orders, official_winner = _company_signal()
+    out = select_signal(agents, company_orders, official_winner)
+    OUT.parent.mkdir(parents=True, exist_ok=True)
     json.dump(out, open(OUT, "w"), ensure_ascii=False, indent=2)
     print(json.dumps(out, ensure_ascii=False))
     return 0

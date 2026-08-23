@@ -42,6 +42,9 @@ EDIT_RE = re.compile(
 )
 CANONICAL_MEDIA_START = "<!-- canonical-media:start -->"
 CANONICAL_MEDIA_END = "<!-- canonical-media:end -->"
+X_RENDER_WIDTH = 587
+X_BODY_MIN_HEIGHT = 110
+X_BODY_MAX_HEIGHT = 650
 
 
 def _normalized_title(value: str) -> str:
@@ -86,6 +89,52 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _body_media_readability(paths: list[Path]) -> dict[str, Any]:
+    """Measure immutable body media before any X editor mutation."""
+    try:
+        from PIL import Image
+    except ImportError as error:
+        raise XRepairRefused("X media readability decoder is unavailable") from error
+    images: list[dict[str, Any]] = []
+    violations: list[str] = []
+    for path in paths:
+        if not path.is_file():
+            violations.append(f"missing:{path}")
+            continue
+        try:
+            with Image.open(path) as image:
+                width, height = image.size
+        except Exception as error:
+            violations.append(f"decode:{path}:{error}")
+            continue
+        row = {
+            "path": str(path),
+            "sha256": sha256(path),
+            "width": int(width),
+            "height": int(height),
+        }
+        images.append(row)
+        projected_height = round(X_RENDER_WIDTH * height / width, 2) if width else 0
+        row["projected_height"] = projected_height
+        if projected_height < X_BODY_MIN_HEIGHT:
+            violations.append(
+                f"too-flat:{path}:source={width}x{height}:projected={projected_height}:min={X_BODY_MIN_HEIGHT}"
+            )
+        elif projected_height > X_BODY_MAX_HEIGHT:
+            violations.append(
+                f"too-tall:{path}:source={width}x{height}:projected={projected_height}:max={X_BODY_MAX_HEIGHT}"
+            )
+    return {
+        "version": 1,
+        "status": "PASS" if not violations else "FAIL",
+        "min_height": X_BODY_MIN_HEIGHT,
+        "max_height": X_BODY_MAX_HEIGHT,
+        "render_width": X_RENDER_WIDTH,
+        "images": images,
+        "violations": violations,
+    }
+
+
 def _atomic_json(path: Path, value: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
@@ -126,9 +175,9 @@ def _guard(
         arguments.extend(
             ["--target-kind", "x-draft-url", "--target", target]
         )
-    if command == "quarantine-missing-media":
+    if command in {"quarantine-missing-media", "mark-unavailable"}:
         if not reason:
-            raise XRepairRefused("missing-media quarantine reason is required")
+            raise XRepairRefused("unavailable reason is required")
         arguments.extend(["--reason", reason])
     result = subprocess.run(
         arguments,
@@ -802,6 +851,7 @@ class XBrowserAdapter:
         source: str,
         cover: str,
         protected: dict[str, Any] | None = None,
+        readability_receipt: Path | None = None,
     ) -> dict[str, Any]:
         match = EDIT_RE.fullmatch(target)
         if not match:
@@ -823,6 +873,14 @@ class XBrowserAdapter:
             sha256(Path(str(image["path"])))
             for image in content_images
         ]
+        readability = _body_media_readability(
+            [Path(str(image["path"])) for image in content_images]
+        )
+        if readability["status"] != "PASS":
+            raise XRepairRefused(
+                "X body media readability gate failed: "
+                + "; ".join(str(item) for item in readability["violations"])
+            )
         manager, _browser, page = self._page()
         try:
             page.goto(
@@ -946,6 +1004,36 @@ class XBrowserAdapter:
                 raise XRepairRefused(
                     f"X body image count is {actual_images}, "
                     f"expected {expected_images}"
+                )
+            rendered_sizes = page.evaluate(
+                """()=>{const c=document.querySelector('[data-testid=composer]');
+                    return c ? [...c.querySelectorAll('img')].map(im=>{const b=im.getBoundingClientRect();
+                    return {width:Math.round(b.width),height:Math.round(b.height)}}) : [];}"""
+            )
+            rendered_violations = [
+                f"rendered={row['width']}x{row['height']}"
+                for row in rendered_sizes
+                if row["height"] < X_BODY_MIN_HEIGHT
+                or row["height"] > X_BODY_MAX_HEIGHT
+            ]
+            if rendered_violations:
+                if readability_receipt is not None:
+                    _atomic_json(
+                        readability_receipt,
+                        {
+                            "version": 1,
+                            "status": "FAIL",
+                            "min_height": X_BODY_MIN_HEIGHT,
+                            "max_height": X_BODY_MAX_HEIGHT,
+                            "render_width": X_RENDER_WIDTH,
+                            "images": rendered_sizes,
+                            "violations": rendered_violations,
+                            "stage": "native-editor",
+                        },
+                    )
+                raise XRepairRefused(
+                    "X rendered media readability gate failed: "
+                    + "; ".join(rendered_violations)
                 )
             publish = page.get_by_text(
                 re.compile(r"^(Publish|Update|公開する|更新)$")
@@ -1089,7 +1177,63 @@ def repair(
         raise XRepairRefused(
             f"X guard did not authorize {expected_action}"
         )
+    remote_proof = decision.get("remote")
+    if expected_action == "publish" and not (
+        isinstance(remote_proof, dict)
+        and remote_proof.get("status") == "not-live"
+        and remote_proof.get("verified") is True
+        and remote_proof.get("content_verified") is True
+        and remote_proof.get("artifact_sha256") == sha256(source)
+        and remote_proof.get("target") == target
+        and remote_proof.get("destination_identity") == expected_identity
+        and remote_proof.get("identity_verified") is True
+        and remote_proof.get("identity_source") == "x-authenticated-edit-url"
+    ):
+        raise XRepairRefused("X draft target/content readback proof is incomplete")
     work = state_path.parent / "x-inplace-repair" / language
+    readability = _body_media_readability(
+        [Path(str(item["path"])) for item in body_assets]
+    )
+    readability.update(
+        {
+            "run_id": state["run_id"],
+            "pair": pair,
+            "target": target,
+            "target_kind": "x-draft-url",
+            "readback_status": "not-live" if decision.get("action") == "publish" else "protected-live",
+            "readback_verified": True,
+            "content_verified": (
+                remote_proof.get("content_verified") is True
+                if isinstance(remote_proof, dict)
+                else False
+            ),
+            "artifact_sha256": (
+                remote_proof.get("artifact_sha256")
+                if isinstance(remote_proof, dict)
+                else None
+            ),
+            "destination_identity": expected_identity,
+            "identity_verified": True,
+            "identity_source": "x-authenticated-edit-url",
+        }
+    )
+    _atomic_json(work / "media-readability.json", readability)
+    if readability["status"] != "PASS":
+        if decision.get("action") != "publish":
+            raise XRepairRefused(
+                "X body media readability failed after a live/protected preflight"
+            )
+        reason = "x-article body media readability failed: " + "; ".join(
+            str(item) for item in readability["violations"]
+        )
+        unavailable = _guard("mark-unavailable", pair, reason=reason)
+        return {
+            "action": "quarantined-unreadable-media",
+            "pair": pair,
+            "reason": reason,
+            "media_receipt": str(work / "media-readability.json"),
+            "state": unavailable,
+        }
     adapted = _adapt_source(
         state,
         pair,
@@ -1205,6 +1349,7 @@ def repair(
         str(adapted),
         str(cover),
         protected if isinstance(protected, dict) else None,
+        readability_receipt=work / "media-readability.json",
     )
     inserted_hashes = evidence.get("inserted_image_sha256", [])
     required_body_hashes = [

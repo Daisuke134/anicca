@@ -1,6 +1,10 @@
 import json
+import os
+import stat
 import subprocess
 from pathlib import Path
+
+import pytest
 
 import sys
 
@@ -17,6 +21,13 @@ def fake_runner(argv: list[str], *, timeout: float) -> subprocess.CompletedProce
             0,
             "Filesystem 1024-blocks Used Available Capacity Mounted on\n"
             "/dev/test 100 40 60 40% /test\n",
+            "",
+        )
+    if argv[0].endswith("/mount"):
+        return subprocess.CompletedProcess(
+            argv,
+            0,
+            "/dev/test on /test (apfs, local)\n",
             "",
         )
     return subprocess.CompletedProcess(argv, 0, "8\t%s\n" % argv[-1], "")
@@ -42,6 +53,248 @@ def test_fast_inventory_is_atomic_and_records_coverage_gaps(tmp_path: Path) -> N
     assert all(root["measurement"] == "metadata-only" for root in written["roots"])
 
 
+def test_inventory_uses_mount_metadata_for_local_writable_classification(tmp_path: Path) -> None:
+    def runner(argv: list[str], *, timeout: float) -> subprocess.CompletedProcess[str]:
+        if argv[0].endswith("/df"):
+            return subprocess.CompletedProcess(
+                argv,
+                0,
+                "Filesystem 1024-blocks Used Available Capacity Mounted on\n"
+                "/dev/root 100 40 60 40% /\n"
+                "/dev/data 200 100 100 50% /System/Volumes/Data\n",
+                "",
+            )
+        if argv[0].endswith("/mount"):
+            return subprocess.CompletedProcess(
+                argv,
+                0,
+                "/dev/root on / (apfs, local, read-only)\n"
+                "/dev/data on /System/Volumes/Data (apfs, local)\n",
+                "",
+            )
+        return subprocess.CompletedProcess(argv, 0, "8\t%s\n" % argv[-1], "")
+
+    payload = collect_host_inventory(
+        home=tmp_path,
+        state_dir=tmp_path / "state",
+        runner=runner,
+    )
+
+    mounts = {mount["mount"]: mount for mount in payload["mounts"]}
+    assert mounts["/"]["local"] is True
+    assert mounts["/"]["writable"] is False
+    assert mounts["/System/Volumes/Data"]["local"] is True
+    assert mounts["/System/Volumes/Data"]["writable"] is True
+    assert payload["coverage"]["local_writable_mounts"] == ["/System/Volumes/Data"]
+    assert payload["coverage"]["missing_local_writable_mounts"] == []
+
+
+def test_inventory_reports_local_writable_mount_missing_from_df(tmp_path: Path) -> None:
+    def runner(argv: list[str], *, timeout: float) -> subprocess.CompletedProcess[str]:
+        if argv[0].endswith("/df"):
+            return subprocess.CompletedProcess(
+                argv,
+                0,
+                "Filesystem 1024-blocks Used Available Capacity Mounted on\n"
+                "/dev/root 100 40 60 40% /\n",
+                "",
+            )
+        if argv[0].endswith("/mount"):
+            return subprocess.CompletedProcess(
+                argv,
+                0,
+                "/dev/root on / (apfs, local, read-only)\n"
+                "/dev/data on /System/Volumes/Data (apfs, local)\n",
+                "",
+            )
+        return subprocess.CompletedProcess(argv, 0, "8\t%s\n" % argv[-1], "")
+
+    payload = collect_host_inventory(
+        home=tmp_path,
+        state_dir=tmp_path / "state",
+        runner=runner,
+    )
+
+    coverage = payload["coverage"]
+    assert coverage["local_writable_mounts"] == ["/System/Volumes/Data"]
+    assert coverage["local_writable_mount_count"] == 1
+    assert coverage["missing_local_writable_mounts"] == ["/System/Volumes/Data"]
+
+
+def test_inventory_fails_closed_when_df_device_mount_lacks_metadata(tmp_path: Path) -> None:
+    def runner(argv: list[str], *, timeout: float) -> subprocess.CompletedProcess[str]:
+        if argv[0].endswith("/df"):
+            return subprocess.CompletedProcess(
+                argv,
+                0,
+                "Filesystem 1024-blocks Used Available Capacity Mounted on\n"
+                "/dev/root 100 40 60 40% /\n"
+                "/dev/data 200 100 100 50% /System/Volumes/Data\n",
+                "",
+            )
+        if argv[0].endswith("/mount"):
+            return subprocess.CompletedProcess(
+                argv,
+                0,
+                "/dev/root on / (apfs, local, read-only)\n",
+                "",
+            )
+        return subprocess.CompletedProcess(argv, 0, "8\t%s\n" % argv[-1], "")
+
+    payload = collect_host_inventory(
+        home=tmp_path,
+        state_dir=tmp_path / "state",
+        runner=runner,
+    )
+
+    data_mount = next(mount for mount in payload["mounts"] if mount["mount"] == "/System/Volumes/Data")
+    assert data_mount["local"] is None
+    assert data_mount["writable"] is None
+    assert data_mount["mount_options"] is None
+    assert payload["coverage"]["local_writable_mounts"] is None
+    assert payload["coverage"]["local_writable_mount_count"] is None
+    assert payload["coverage"]["missing_local_writable_mounts"] is None
+    assert "mount-metadata:missing:/System/Volumes/Data" in payload["coverage"]["gaps"]
+
+
+def test_inventory_excludes_devfs_and_autofs_from_local_writable_mounts(tmp_path: Path) -> None:
+    def runner(argv: list[str], *, timeout: float) -> subprocess.CompletedProcess[str]:
+        if argv[0].endswith("/df"):
+            return subprocess.CompletedProcess(
+                argv,
+                0,
+                "Filesystem 1024-blocks Used Available Capacity Mounted on\n"
+                "/dev/root 100 40 60 40% /\n"
+                "devfs 20 4 16 20% /dev\n"
+                "map 30 4 26 14% /Users/test\n",
+                "",
+            )
+        if argv[0].endswith("/mount"):
+            return subprocess.CompletedProcess(
+                argv,
+                0,
+                "/dev/root on / (apfs, local)\n"
+                "devfs on /dev (devfs, local)\n"
+                "map auto_home on /Users/test (autofs, automounted)\n",
+                "",
+            )
+        return subprocess.CompletedProcess(argv, 0, "8\t%s\n" % argv[-1], "")
+
+    payload = collect_host_inventory(
+        home=tmp_path,
+        state_dir=tmp_path / "state",
+        runner=runner,
+    )
+
+    assert payload["coverage"]["local_writable_mounts"] == ["/"]
+    mounts = {mount["mount"]: mount for mount in payload["mounts"]}
+    assert mounts["/dev"]["local"] is True
+    assert mounts["/Users/test"]["local"] is False
+
+
+def test_inventory_parses_mount_and_df_paths_with_spaces(tmp_path: Path) -> None:
+    mount_path = "/Volumes/External on Data"
+
+    def runner(argv: list[str], *, timeout: float) -> subprocess.CompletedProcess[str]:
+        if argv[0].endswith("/df"):
+            return subprocess.CompletedProcess(
+                argv,
+                0,
+                "Filesystem 1024-blocks Used Available Capacity Mounted on\n"
+                f"/dev/external 200 100 100 50% {mount_path}\n",
+                "",
+            )
+        if argv[0].endswith("/mount"):
+            return subprocess.CompletedProcess(
+                argv,
+                0,
+                f"/dev/external on {mount_path} (apfs, local, journaled)\n",
+                "",
+            )
+        return subprocess.CompletedProcess(argv, 0, "8\t%s\n" % argv[-1], "")
+
+    payload = collect_host_inventory(
+        home=tmp_path,
+        state_dir=tmp_path / "state",
+        runner=runner,
+    )
+
+    mount = payload["mounts"][0]
+    assert mount["mount"] == mount_path
+    assert mount["mount_options"] == ["apfs", "journaled", "local"]
+    assert mount["local"] is True
+    assert mount["writable"] is True
+    assert payload["coverage"]["local_writable_mounts"] == [mount_path]
+
+
+def test_inventory_fails_closed_when_mount_metadata_times_out(tmp_path: Path) -> None:
+    def runner(argv: list[str], *, timeout: float) -> subprocess.CompletedProcess[str]:
+        if argv[0].endswith("/df"):
+            return subprocess.CompletedProcess(
+                argv,
+                0,
+                "Filesystem 1024-blocks Used Available Capacity Mounted on\n"
+                "/dev/root 100 40 60 40% /\n",
+                "",
+            )
+        if argv[0].endswith("/mount"):
+            raise subprocess.TimeoutExpired(argv, timeout)
+        return subprocess.CompletedProcess(argv, 0, "8\t%s\n" % argv[-1], "")
+
+    payload = collect_host_inventory(
+        home=tmp_path,
+        state_dir=tmp_path / "state",
+        runner=runner,
+    )
+
+    mount = payload["mounts"][0]
+    assert mount["local"] is None
+    assert mount["writable"] is None
+    assert mount["mount_options"] is None
+    assert payload["coverage"]["local_writable_mounts"] is None
+    assert payload["coverage"]["local_writable_mount_count"] is None
+    assert payload["coverage"]["missing_local_writable_mounts"] is None
+    assert "mount-metadata:TimeoutExpired" in payload["coverage"]["gaps"]
+
+
+def test_full_inventory_recomputes_mount_timeout_after_df_consumes_budget(tmp_path: Path) -> None:
+    clock = [0.0]
+    probe_timeouts: list[tuple[str, float]] = []
+
+    def runner(argv: list[str], *, timeout: float) -> subprocess.CompletedProcess[str]:
+        probe_timeouts.append((argv[0], timeout))
+        if argv[0].endswith("/df"):
+            clock[0] += 2.0
+            return subprocess.CompletedProcess(
+                argv,
+                0,
+                "Filesystem 1024-blocks Used Available Capacity Mounted on\n"
+                "/dev/root 100 40 60 40% /\n",
+                "",
+            )
+        if argv[0].endswith("/mount"):
+            return subprocess.CompletedProcess(
+                argv,
+                0,
+                "/dev/root on / (apfs, local, read-only)\n",
+                "",
+            )
+        return subprocess.CompletedProcess(argv, 0, "8\t%s\n" % argv[-1], "")
+
+    collect_host_inventory(
+        home=tmp_path,
+        state_dir=tmp_path / "state",
+        full=True,
+        budget_seconds=3.0,
+        runner=runner,
+        clock=lambda: clock[0],
+    )
+
+    mount_calls = [timeout for argv, timeout in probe_timeouts if argv.endswith("/mount")]
+    assert mount_calls
+    assert mount_calls[0] <= 1.0
+
+
 def test_full_inventory_uses_bounded_du_only_for_allowlisted_families(tmp_path: Path) -> None:
     for directory in ("Projects", "anicca-project", "gig", ".openclaw", "Library"):
         (tmp_path / directory).mkdir()
@@ -56,6 +309,24 @@ def test_full_inventory_uses_bounded_du_only_for_allowlisted_families(tmp_path: 
     measurements = {root["measurement"] for root in payload["roots"]}
     assert "bounded-du" in measurements
     assert all(root["measurement"] in {"bounded-du", "metadata-only"} for root in payload["roots"])
+
+
+def test_full_inventory_is_preserved_separately_from_fast_inventory(tmp_path: Path) -> None:
+    state = tmp_path / "state"
+
+    payload = collect_host_inventory(
+        home=tmp_path,
+        state_dir=state,
+        full=True,
+        runner=fake_runner,
+    )
+
+    full_path = state / "host-inventory-full.json"
+    assert full_path.is_file()
+    written = json.loads(full_path.read_text())
+    assert written["mode"] == "full"
+    assert written["inventory_sha256"] == payload["inventory_sha256"]
+    assert not (state / "host-inventory.json").exists()
 
 
 def test_full_inventory_allows_slow_allowlisted_root_with_bounded_timeout(tmp_path: Path) -> None:
@@ -78,6 +349,46 @@ def test_full_inventory_allows_slow_allowlisted_root_with_bounded_timeout(tmp_pa
     projects = next(root for root in payload["roots"] if root["path"] == str(tmp_path / "Projects"))
     assert projects["measurement"] == "bounded-du"
     assert f"size-timeout:{tmp_path / 'Projects'}" not in payload["coverage"]["gaps"]
+
+
+def test_du_timeout_preserves_unknown_size_with_owner_attribution(tmp_path: Path) -> None:
+    projects_path = tmp_path / "Projects"
+    projects_path.mkdir()
+
+    def timeout_runner(argv: list[str], *, timeout: float) -> subprocess.CompletedProcess[str]:
+        if argv[0].endswith("/du") and argv[-1] == str(projects_path):
+            raise subprocess.TimeoutExpired(argv, timeout)
+        return fake_runner(argv, timeout=timeout)
+
+    payload = collect_host_inventory(
+        home=tmp_path,
+        state_dir=tmp_path / "state",
+        full=True,
+        runner=timeout_runner,
+    )
+
+    projects = next(root for root in payload["roots"] if root["path"] == str(projects_path))
+    assert projects["measurement"] == "timeout"
+    assert projects["size_bytes"] is None
+    assert projects["owner_family"] == "repository-worktree"
+    assert f"size-timeout:{projects_path}" in payload["coverage"]["gaps"]
+
+
+def test_inventory_replace_failure_preserves_target_and_removes_temporaries(tmp_path: Path, monkeypatch) -> None:
+    state = tmp_path / "state"
+    state.mkdir()
+    target = state / "host-inventory.json"
+    target.write_text('{"old":true}\n')
+    orphan = state / ".host-inventory.orphan"
+    orphan.write_text("orphan")
+    os.utime(orphan, (1, 1))
+    monkeypatch.setattr(host_inventory.os, "replace", lambda *_args: (_ for _ in ()).throw(OSError("replace failed")))
+
+    with pytest.raises(OSError, match="replace failed"):
+        collect_host_inventory(home=tmp_path, state_dir=state, runner=fake_runner)
+
+    assert target.read_text() == '{"old":true}\n'
+    assert list(state.glob(".host-inventory.*")) == []
 
 
 def test_full_inventory_gives_homebrew_a_longer_bounded_probe(tmp_path: Path) -> None:
@@ -205,3 +516,71 @@ def test_inventory_reports_required_owner_family_coverage(tmp_path: Path) -> Non
     assert set(coverage["missing_owner_families"]).issubset(
         set(coverage["required_owner_families"])
     )
+
+
+def test_inventory_persists_permission_boundary_owner_receipts(tmp_path: Path, monkeypatch) -> None:
+    tcc = tmp_path / "Library" / "Application Support" / "com.apple.TCC"
+    trash = tmp_path / ".Trash"
+    system_tmp = Path("/private/tmp")
+    system_folders = Path("/private/var/folders")
+    boundary_paths = {tcc, trash, system_tmp, system_folders}
+    real_lstat = host_inventory.os.lstat
+    real_scandir = host_inventory.os.scandir
+
+    def fake_lstat(path):
+        path = Path(path)
+        if path == system_tmp:
+            raise FileNotFoundError(path)
+        if path == system_folders:
+            return os.stat_result((stat.S_IFLNK | 0o755, 0, 0, 1, 0, 0, 0, 0, 0, 0))
+        if path in boundary_paths:
+            return os.stat_result((stat.S_IFDIR | 0o755, 0, 0, 1, 0, 0, 0, 0, 0, 0))
+        return real_lstat(path)
+
+    class EmptyScan:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, traceback):
+            return False
+
+    def fake_scandir(path):
+        path = Path(path)
+        if path == trash:
+            raise PermissionError(path)
+        if path == tcc:
+            return EmptyScan()
+        return real_scandir(path)
+
+    monkeypatch.setattr(host_inventory.os, "lstat", fake_lstat)
+    monkeypatch.setattr(host_inventory.os, "scandir", fake_scandir)
+
+    payload = collect_host_inventory(
+        home=tmp_path,
+        state_dir=tmp_path / "state",
+        runner=fake_runner,
+    )
+
+    receipts = payload["permission_owner_receipts"]
+    assert {
+        (receipt["path"], receipt["owner_family"])
+        for receipt in receipts
+    } == {
+        (str(tcc), "user-library"),
+        (str(trash), "downloads-trash"),
+        (str(system_tmp), "system-temp"),
+        (str(system_folders), "system-temp"),
+    }
+    assert all(receipt["reclaim_eligible"] is False for receipt in receipts)
+    classifications = {
+        (receipt["path"], receipt["access"])
+        for receipt in receipts
+    }
+    assert (str(tcc), "readable") in classifications
+    assert (str(trash), "permission-error") in classifications
+    assert (str(system_tmp), "missing") in classifications
+    assert (str(system_folders), "symlink") in classifications
+    assert all("children" not in receipt for receipt in receipts)
+
+    persisted = json.loads((tmp_path / "state" / "host-inventory.json").read_text())
+    assert persisted["permission_owner_receipts"] == receipts

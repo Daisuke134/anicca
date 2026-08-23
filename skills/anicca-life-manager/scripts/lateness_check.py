@@ -24,6 +24,9 @@ import time
 import urllib.parse
 import urllib.request
 import base64
+import gzip
+import shutil
+import fcntl
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
@@ -45,6 +48,62 @@ URL_FILE = Path(os.environ.get(
 ))
 DEPART_SCRIPT = SCRIPT_DIR / "gcal_departures.py"
 LOCATION_STATE_DIR = ANICCA_HOME / "state" / "location"
+HEARTBEAT_LOG_MAX_BYTES = int(os.environ.get("LIFE_MANAGER_HEARTBEAT_LOG_MAX_BYTES", 64 * 1024 * 1024))
+
+
+def _next_heartbeat_archive(ledger: Path, stamp: str) -> Path:
+    base = ledger.with_name(f"{ledger.stem}.{stamp}.jsonl.gz")
+    candidate = base
+    suffix = 0
+    while candidate.exists():
+        suffix += 1
+        candidate = ledger.with_name(f"{ledger.stem}.{stamp}.{suffix}.jsonl.gz")
+    return candidate
+
+
+def _archive_heartbeat_source(source: Path, ledger: Path, stamp: str) -> None:
+    archive = _next_heartbeat_archive(ledger, stamp)
+    temporary = archive.with_name(f".{archive.name}.{os.getpid()}.tmp")
+    with source.open("rb") as input_file, gzip.open(temporary, "wb") as output_file:
+        shutil.copyfileobj(input_file, output_file)
+    os.replace(temporary, archive)
+    source.unlink()
+
+
+def _rotate_heartbeat_log_if_needed(ledger: Path) -> None:
+    """Archive oversized heartbeat JSONL without dropping any event lines."""
+    rotating = None
+    temporary = None
+    try:
+        stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        restored = False
+        for orphan in sorted(ledger.parent.glob(f".{ledger.name}.*.rotating")):
+            if not restored and (not ledger.exists() or ledger.stat().st_size == 0):
+                os.replace(orphan, ledger)
+                restored = True
+            else:
+                _archive_heartbeat_source(orphan, ledger, stamp)
+        if not ledger.exists() or ledger.stat().st_size <= HEARTBEAT_LOG_MAX_BYTES:
+            return
+        rotating = ledger.with_name(f".{ledger.name}.{stamp}.rotating")
+        os.replace(ledger, rotating)
+        ledger.touch()
+        _archive_heartbeat_source(rotating, ledger, stamp)
+    except Exception:
+        # Preserve the rotating source and active ledger on any failure; the
+        # next heartbeat can retry without losing the receipt history.
+        try:
+            if temporary is not None and temporary.exists():
+                temporary.unlink()
+        except Exception:
+            pass
+        try:
+            if rotating is not None and rotating.exists() and (
+                not ledger.exists() or ledger.stat().st_size == 0
+            ):
+                os.replace(rotating, ledger)
+        except Exception:
+            pass
 
 # Routine event summaries that always happen at home — when gcal location is empty,
 # auto-resolve to profile.identity.homeAddress instead of letting the LLM fabricate
@@ -603,23 +662,28 @@ def main():
     try:
         ledger = Path(__file__).resolve().parent.parent / "state" / "heartbeat_log.jsonl"
         ledger.parent.mkdir(parents=True, exist_ok=True)
-        with ledger.open("a") as f:
-            f.write(json.dumps({
-                "ts": now.isoformat(),
-                "n_events": len(deps),
-                "events": [
-                    {
-                        "summary": e.get("summary"),
-                        "startIso": e.get("startIso"),
-                        "departByIso": e.get("departByIso"),
-                        "travelSource": e.get("travelSource"),
-                        "minutesUntilDepart": e.get("minutesUntilDepart"),
-                    }
-                    for e in deps
-                ],
-                "decided_action": d.get("action"),
-                "decided_event": (d.get("event") or {}).get("summary"),
-            }, ensure_ascii=False) + "\n")
+        lock = ledger.with_name(f".{ledger.name}.lock")
+        with lock.open("a") as lock_file:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+            _rotate_heartbeat_log_if_needed(ledger)
+            with ledger.open("a") as f:
+                f.write(json.dumps({
+                    "ts": now.isoformat(),
+                    "n_events": len(deps),
+                    "events": [
+                        {
+                            "summary": e.get("summary"),
+                            "startIso": e.get("startIso"),
+                            "departByIso": e.get("departByIso"),
+                            "travelSource": e.get("travelSource"),
+                            "minutesUntilDepart": e.get("minutesUntilDepart"),
+                        }
+                        for e in deps
+                    ],
+                    "decided_action": d.get("action"),
+                    "decided_event": (d.get("event") or {}).get("summary"),
+                }, ensure_ascii=False) + "\n")
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
     except Exception as ex:
         print(f"[late] ledger write failed: {ex}", file=sys.stderr)
     if d["action"] == "nudge":

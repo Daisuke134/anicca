@@ -24,6 +24,7 @@ if str(SCRIPTS) not in sys.path:
 from telegram_outbox import TelegramOutbox, dispatch_one  # noqa: E402
 from owner_notify import send_email_if_configured  # noqa: E402
 from gig_paths import BROWSER_DIR, GIG_DIR, HOST_STATE_DIR, RUNNER_DIR, STATE_DIR  # noqa: E402
+from gig_disk_guard import disk_headroom_ok  # noqa: E402
 
 DEFAULT_STATE = STATE_DIR / "storefront-direct"
 DEFAULT_BRAKE = HOST_STATE_DIR / "gig-work" / "storefront.operator.brake"
@@ -515,6 +516,54 @@ def _persist_receipt(args: argparse.Namespace, output: Path, row: dict) -> dict:
     _append(args.state_dir / "wakes.jsonl", durable)
     _atomic_write(output, durable)
     return durable
+
+
+def _operator_brake_status(path: Path | None = None) -> str:
+    environment = os.environ.copy()
+    if path is not None:
+        environment["GIG_OPERATOR_BRAKE_FILE"] = str(path)
+        try:
+            if not path.exists():
+                return "free"
+        except OSError:
+            return "failed"
+    try:
+        completed = subprocess.run(
+            [str(SCRIPTS / "gig_brake.sh"), "status"], stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+            timeout=5, check=False, env=environment,
+        )
+    except Exception:
+        return "failed"
+    return {0: "held", 1: "free"}.get(completed.returncode, "failed")
+
+
+def _effect_gate_reason(args: argparse.Namespace) -> str | None:
+    try:
+        if not disk_headroom_ok():
+            return "disk_pressure"
+    except Exception as error:  # fail closed when host policy is unknowable
+        return f"disk_preflight_error:{type(error).__name__}"
+    brake_status = _operator_brake_status(getattr(args, "operator_brake", None))
+    return {
+        "held": "operator_brake",
+        "free": None,
+        "failed": "operator_brake_check_failed",
+    }.get(brake_status, "operator_brake_check_failed")
+
+
+def _persist_effect_block(
+    args: argparse.Namespace, output: Path, pass_id: str, checkpoint: str,
+) -> dict | None:
+    reason = _effect_gate_reason(args)
+    if reason is None:
+        return None
+    return _persist_receipt(
+        args, output, _receipt(
+            pass_id, status="pending", reason=reason, effect=0, readback=0,
+            checkpoint=checkpoint, send_performed=False,
+        ),
+    )
 
 
 def _append_effect_once(path: Path, value: dict) -> bool:
@@ -3949,6 +3998,11 @@ def _render_published_gallery_mutation(state_dir: Path, own_page: dict) -> dict:
         _validate_image_mutation_contract(contract, state_dir=state_dir, require_assets=False)
         try:
             public_before = json.loads(Path(intent["public_before_path"]).read_text(encoding="utf-8"))
+        except FileNotFoundError:
+            public_before = {
+                "url": f"https://coconala.com/services/{GALLERY_SERVICE_ID}",
+                "service_image_ids": contract["rollback_value"]["service_image_ids"],
+            }
         except (OSError, KeyError, json.JSONDecodeError) as error:
             raise RuntimeError("published_gallery_before_evidence_missing") from error
         _validate_public_image_acceptance(
@@ -4947,13 +5001,12 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
     minimum_epoch = int(time.time())
     args.state_dir.mkdir(parents=True, exist_ok=True)
     output = args.output or args.state_dir / "current.json"
-    try:
-        brake_held = args.operator_brake.exists()
-    except OSError as error:
-        row = _receipt(pass_id, status="failed", reason=f"operator_brake_check_failed:{error}")
+    brake_status = _operator_brake_status(args.operator_brake)
+    if brake_status == "failed":
+        row = _receipt(pass_id, status="failed", reason="operator_brake_check_failed")
         row = _persist_receipt(args, output, row)
         return 1, row
-    if brake_held:
+    if brake_status == "held":
         row = _receipt(pass_id, status="operator_brake", reason="storefront_operator_brake_held")
         row = _persist_receipt(args, output, row)
         return 0, row
@@ -5607,6 +5660,11 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                                          "changed_field": None, "experiment_key": None}
                             _atomic_write(judgement_path, judgement)
                     if args.effect and judgement["decision"] == "change":
+                        blocked = _persist_effect_block(
+                            args, output, pass_id, "before_listing_effect",
+                        )
+                        if blocked is not None:
+                            return 0, blocked
                         if judgement["changed_field"] == "image":
                             seller_before, _, intent_path = _execute_image_effect(
                                 ws_url=ws_url, contract=mutation_contract, judgement=judgement,
@@ -5669,6 +5727,8 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             # One external effect per wake. When nothing else changed, a duplicate listing is
             # taken down through the platform's own archive control, which keeps it restorable.
             retire_result = None
+            retire_attempted_this_wake = False
+            retire_effect_this_wake = False
             # The allocator returns the single row it selected, preferring retirement, not the
             # whole catalogue; reading a list it never returns is how this silently did nothing.
             selected_allocation = portfolio.get("selected") or {}
@@ -5682,7 +5742,13 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             # nothing, which the refresh queue would have postponed for hours.
             changed_service = str(judgement.get("service_id") or "")
             if (args.effect and retire_allocation is not None
+                    and pending_effect is None
                     and str(retire_allocation["service_id"]) != changed_service):
+                blocked = _persist_effect_block(
+                    args, output, pass_id, "before_retire_effect",
+                )
+                if blocked is not None:
+                    return 0, blocked
                 retire_service_id = str(retire_allocation["service_id"])
                 try:
                     # The card's own controls are adapter input and are kept out of the hashed
@@ -5714,9 +5780,22 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     if retire_opened.returncode != 0 or retire_tab.get("ok") is not True:
                         raise RuntimeError("storefront_retire_tab_open_failed")
                     try:
+                        retire_attempted_this_wake = True
+                        retire_attempt = inventory_path.parent / "retire-attempt.json"
+                        _atomic_write(retire_attempt, {
+                            "version": 1, "status": "attempted", "effect": 0,
+                            "service_id": retire_service_id, "contract_sha256": retire_contract["contract_sha256"],
+                            "attempted_at_epoch": int(time.time()),
+                        })
                         retire_result = asyncio.run(_execute_listing_state_effect_async(
                             str(retire_tab["ws"]), contract=retire_contract,
                             evidence_dir=inventory_path.parent))
+                        retire_effect_this_wake = True
+                        _atomic_write(retire_attempt, {
+                            "version": 1, "status": "confirmed", "effect": 1,
+                            "service_id": retire_service_id, "contract_sha256": retire_contract["contract_sha256"],
+                            "confirmed_at_epoch": int(time.time()),
+                        })
                     finally:
                         if retire_tab.get("target_id"):
                             subprocess.run(
@@ -5753,6 +5832,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             new_listing_contract = storefront_draft.load_contract(new_listing_path)
             create_family = None
             create_draft_claim = None
+            create_effect_this_wake = False
             fixed_candidate_public = new_listing_contract["draft_service_id"] in inventory_ids
             # One published listing per distinct demand evidence. Without this the loop generates a
             # brand new service on every full wake until the catalogue hits its slot limit.
@@ -5954,9 +6034,17 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 )
                 proposal_agent = create_route
                 if create_proposal.get("decision") == "create" and args.effect:
+                    blocked = _persist_effect_block(
+                        args, output, pass_id, "before_blank_draft_create",
+                    )
+                    if blocked is not None:
+                        return 0, blocked
                     create_draft_claim = storefront_draft.create_or_claim_blank_draft(
                         getattr(args, "default_tab_script", DEFAULT_TAB)
                     )
+                    create_effect_this_wake = int(
+                        create_draft_claim.get("effect") or create_draft_claim.get("public_effect") or 0
+                    ) == 1
                     blueprint = cluster_blueprint or {
                         **new_listing_contract,
                         "demand_evidence_path": str(Path(new_listing_path).resolve())}
@@ -6069,6 +6157,15 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 for line in (args.state_dir / "effects.jsonl").read_text(
                     encoding="utf-8").splitlines() if line.strip()
             )
+            if (args.effect and not candidate_public and not platform_withdrawn
+                    and not create_effect_this_wake
+                    and pending_effect is None and not retire_attempted_this_wake
+                    and not awaiting_repair and not improved_since_publication):
+                blocked = _persist_effect_block(
+                    args, output, pass_id, "before_new_listing_draft",
+                )
+                if blocked is not None:
+                    return 0, blocked
             draft_result = ({
                 "version": 1, "candidate_key": new_listing_contract["candidate_key"],
                 "contract_sha256": new_listing_contract["contract_sha256"],
@@ -6086,7 +6183,8 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     getattr(args, "default_tab_script", DEFAULT_TAB),
                     inventory_path.parent,
                 )
-                if args.effect and not platform_withdrawn else {
+                if (args.effect and not platform_withdrawn and not create_effect_this_wake
+                        and pending_effect is None and not retire_attempted_this_wake) else {
                     "version": 1,
                     "candidate_key": new_listing_contract["candidate_key"],
                     "contract_sha256": new_listing_contract["contract_sha256"],
@@ -6097,6 +6195,14 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     "public_effect": 0,
                 }
             ))
+            if create_effect_this_wake:
+                draft_result = {
+                    **draft_result, "status": "draft_created", "effect": 1,
+                    "public_effect": 0,
+                }
+            draft_effect_this_wake = int(
+                draft_result.get("effect") or draft_result.get("public_effect") or 0
+            ) == 1
             conflicting_hypothesis = (
                 next_hypothesis
                 if next_hypothesis is not None
@@ -6109,13 +6215,21 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 else "platform_withdrew_listing" if platform_withdrawn
                 else "duplicate_listing_title" if duplicate_title
                 else "catalog_capacity_exhausted" if observed >= 20
-                else "existing_listing_effect_open" if pending_effect is not None
+                    else "existing_listing_effect_open" if pending_effect is not None
+                else "effect_already_this_wake" if create_effect_this_wake
+                else "effect_already_this_wake" if retire_attempted_this_wake
+                else "effect_already_this_wake" if draft_effect_this_wake
                 else str(conflicting_hypothesis["guard_reason"])
                 if conflicting_hypothesis is not None else None
             )
             if publication_guard is not None:
                 draft_result = {**draft_result, "publication_guard": publication_guard}
             elif args.effect:
+                blocked = _persist_effect_block(
+                    args, output, pass_id, "before_new_listing_publish",
+                )
+                if blocked is not None:
+                    return 0, blocked
                 draft_result = storefront_draft.publish_draft(
                     new_listing_contract,
                     getattr(args, "default_tab_script", DEFAULT_TAB),
@@ -6155,8 +6269,11 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 "contract_sha256",
                 draft_result,
             )
-            accepted_effect = 0
-            accepted_readback = 0
+            accepted_effect = int(
+                pending_effect is not None or retire_attempted_this_wake
+                or create_effect_this_wake or draft_effect_this_wake
+            )
+            accepted_readback = int((create_draft_claim or {}).get("readback") or 0)
             if pending_effect is not None:
                 effect_row = {
                     "version": 1, "status": "accepted", "effect": 1,
@@ -6219,8 +6336,13 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 )
             row = _receipt(
                 pass_id,
-                status="completed",
+                status=("delivery_unknown" if retire_attempted_this_wake and not retire_effect_this_wake
+                        else "completed"),
                 reason=("public_accepted" if pending_effect is not None
+                        else "draft_created" if create_effect_this_wake
+                        else "retire_delivery_unknown" if retire_attempted_this_wake and not retire_effect_this_wake
+                        else "retire_accepted" if retire_effect_this_wake
+                        else "draft_prepared" if draft_effect_this_wake
                         else "judgement_ready" if judgement["decision"] == "change"
                         else str(judgement["no_op_reason"])),
                 decision=judgement["decision"],

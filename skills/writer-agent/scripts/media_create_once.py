@@ -26,6 +26,15 @@ REQUIRED_ASSETS: list[dict[str, str]] = [
         "receipt": "gates/body-diagram-create.json",
     },
 ]
+X_RENDER_WIDTH = 587
+X_BODY_MIN_HEIGHT = 110
+X_BODY_MAX_HEIGHT = 650
+
+
+def _body_projection(descriptor: dict[str, object]) -> float:
+    width = int(descriptor.get("width", 0) or 0)
+    height = int(descriptor.get("height", 0) or 0)
+    return round(X_RENDER_WIDTH * height / width, 2) if width else 0
 
 
 def _descriptor_from_file(path: Path) -> dict[str, object]:
@@ -116,6 +125,17 @@ def verify(run_dir: Path) -> dict[str, object]:
             for field in ("byte_length", "width", "height")
         ):
             raise MediaCreateRefused(f"media-create-asset-invalid:{asset['kind']}")
+        if asset["kind"] == "body":
+            projected = _body_projection(descriptor)
+            if not X_BODY_MIN_HEIGHT <= projected <= X_BODY_MAX_HEIGHT:
+                # A run that already has publication-state.json predates this
+                # X readability contract. Keep its immutable boundary readable
+                # so the X repair worker can persist a receipt and quarantine
+                # the exact unpublished pair; new runs fail at commit above.
+                if not (run / "gates" / "publication-state.json").is_file():
+                    raise MediaCreateRefused(
+                        "media-create-body-outside-x-render-range"
+                    )
         expected_receipt: dict[str, object] = {
             "version": 1,
             "status": "committed",
@@ -140,6 +160,10 @@ def commit(candidate: Path, destination: Path, receipt: Path, kind: str) -> dict
         for field in ("byte_length", "width", "height")
     ):
         raise MediaCreateRefused("candidate-not-decodable-image")
+    if kind == "body":
+        projected = _body_projection(descriptor)
+        if not X_BODY_MIN_HEIGHT <= projected <= X_BODY_MAX_HEIGHT:
+            raise MediaCreateRefused("candidate-body-outside-x-render-range")
     payload: dict[str, object] = {
         "version": 1,
         "status": "committed",

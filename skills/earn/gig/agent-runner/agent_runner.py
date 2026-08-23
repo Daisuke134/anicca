@@ -299,6 +299,35 @@ def append_usage_event(path: Path, event: dict[str, Any]) -> None:
 def terminate_process_tree(process: subprocess.Popen[bytes]) -> None:
     """Terminate a timed-out provider and every child in its process group."""
     if os.name == "posix":
+        # Codex Code Mode may start tool commands in their own sessions.  killpg(provider)
+        # cannot reach those descendants and, once the provider exits, launchd reparents them
+        # to PID 1.  Snapshot the live descendant tree before killing the provider so detached
+        # browser/search commands cannot retain an account lease after their owner times out.
+        descendants: list[int] = []
+        try:
+            rows = subprocess.run(
+                ["/bin/ps", "-axo", "pid=,ppid="],
+                check=True, capture_output=True, text=True, timeout=2,
+            ).stdout.splitlines()
+            children: dict[int, list[int]] = {}
+            for row in rows:
+                fields = row.split()
+                if len(fields) != 2:
+                    continue
+                pid, parent = (int(value) for value in fields)
+                children.setdefault(parent, []).append(pid)
+            stack = list(children.get(process.pid, []))
+            while stack:
+                pid = stack.pop()
+                descendants.append(pid)
+                stack.extend(children.get(pid, []))
+        except (OSError, ValueError, subprocess.SubprocessError):
+            descendants = []
+        for pid in reversed(descendants):
+            try:
+                os.kill(pid, signal.SIGTERM)
+            except ProcessLookupError:
+                pass
         try:
             os.killpg(process.pid, signal.SIGTERM)
         except ProcessLookupError:
@@ -311,6 +340,11 @@ def terminate_process_tree(process: subprocess.Popen[bytes]) -> None:
             os.killpg(process.pid, signal.SIGKILL)
         except ProcessLookupError:
             pass
+        for pid in reversed(descendants):
+            try:
+                os.kill(pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
     else:
         process.kill()
     try:
@@ -1150,6 +1184,23 @@ def run() -> int:
         if any(path.is_symlink() or not path.is_file() for path in parsed.image):
             raise ValueError("image input must be an existing regular file")
         prompt = sys.stdin.read() if parsed.prompt_stdin else parsed.prompt_file.read_text(encoding="utf-8")
+        resolver = HERE.parents[3] / "skills" / "_shared" / "resource_resolver.py"
+        if resolver.is_file():
+            manifest = subprocess.run(
+                [sys.executable, str(resolver), "manifest"],
+                check=True,
+                capture_output=True,
+                text=True,
+                timeout=10,
+            ).stdout.strip()
+            prompt = (
+                "Life Manager shared capability manifest (non-secret; available to every loop owner): "
+                f"{manifest}\n"
+                "When this task needs an external skill, account, authenticated session, or credential, first run "
+                f"python3 {resolver} resolve --service <service> --capability <action>. Reuse a returned resource "
+                "before signup or reimplementation. Never print credential values; adapters read them by ref.\n\n"
+                + prompt
+            )
         # Fail closed before any provider process starts. Billing begins at
         # launch, not at a usable answer: capafy was charged $0.135 on both
         # 2026-07-26 and 2026-07-27 for a one-turn greeting. A prompt this
@@ -1314,8 +1365,18 @@ def run() -> int:
     evidence_dir.mkdir(parents=True, exist_ok=True)
     attempts_path = evidence_dir / "attempts.jsonl"
     summary_path = evidence_dir / "summary.json"
-    # An evidence directory is one logical run. Reusing it must never let a
-    # prior result/attempt/summary satisfy the current run.
+    # Keep the stable latest paths expected by existing consumers, but never erase a
+    # previous wake: later owners need its official-effect trail for durable resume.
+    previous = [path for path in evidence_dir.glob("attempt-*.*") if path.is_file()]
+    previous += [path for path in (attempts_path, summary_path) if path.is_file()]
+    if previous:
+        history = evidence_dir / "history" / (datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+                                                + "-" + uuid.uuid4().hex[:8])
+        history.mkdir(parents=True, exist_ok=False)
+        for path in previous:
+            os.replace(path, history / path.name)
+    # A prior result still cannot satisfy the current run because its stable latest
+    # paths have moved out of the active directory before provider launch.
     attempts_path.unlink(missing_ok=True)
     summary_path.unlink(missing_ok=True)
     started_at = utc_now()

@@ -61,6 +61,17 @@
   },
 
   "writer_env": {
+    "GIG_IGNORE_DISK_PRESSURE_BLOCK": "1",
+    "GIG_IGNORE_DISK_WRITERS_STOP": "1",
+    "GIG_DISK_HEADROOM_KIB": "524288",
+    "CLOAK_BROWSER_LAUNCHD_LABEL": "ai.anicca.job-search-browser",
+    "CLOAK_CDP_BASE_URL": "http://127.0.0.1:9222",
+    "CDP_DAILY_DRIVER_PORT": "9222",
+    "CDP_DAILY_DRIVER_PROFILE": "{{HOME}}/.cloak/profiles/job-search-daily",
+    "WRITER_BROWSER_LAUNCHD_LABEL": "ai.anicca.job-search-browser",
+    "WRITER_CDP_URL": "http://127.0.0.1:9222",
+    "WRITER_CDP_PORT": "9222",
+    "WRITER_CDP_PROFILE": "{{HOME}}/.cloak/profiles/job-search-daily",
     "ARTICLE_ROOT": "{{RELEASE}}/skills/writer-agent",
     "ARTICLE_SKILL_DIR": "{{RELEASE}}/skills/writer-agent",
     "ARTICLE_STATE_DIR": "{{WRITER_STATE_DIR}}",
@@ -84,6 +95,32 @@
 
   "jobs": [
     {
+      "label": "ai.anicca.life-manager-upwork-free-loop",
+      "lane": "upwork-free",
+      "summary": "Reconciles free Upwork capacity, invitations, proposals, and offers without purchasing anything.",
+      "program": [
+        "{{PYTHON}}",
+        "{{RELEASE}}/skills/earn/gig/scripts/providers/upwork_browser_provider.py",
+        "--cdp-base",
+        "http://127.0.0.1:9233",
+        "--candidates",
+        "{{RELEASE}}/skills/earn/gig/config/upwork-candidates.public.json",
+        "--transitions",
+        "{{GIG_STATE_DIR}}/state/upwork-free-transitions.jsonl",
+        "--output",
+        "{{GIG_STATE_DIR}}/state/upwork-free-loop.json"
+      ],
+      "env": {
+        "CLOAK_BROWSER_OWNER": "life-manager-upwork-free-loop",
+        "CLOAK_CDP_BASE_URL": "http://127.0.0.1:9233"
+      },
+      "StartInterval": 300,
+      "ThrottleInterval": 60,
+      "RunAtLoad": true,
+      "ProcessType": "Background",
+      "log_basename": "upwork-free-loop-launchd"
+    },
+    {
       "label": "ai.anicca.hf-gig-apply-direct",
       "lane": "apply",
       "summary": "Reads the coconala job board and submits applications.",
@@ -100,7 +137,10 @@
         "CLOAK_BROWSER_OWNER": "gig-apply-direct",
         "CLOAK_CONTEXT_LEASES_FILE": "{{CLOAK_VAULT_DIR}}/gig-leases.json",
         "CDP_LOCK_DIR": "{{GIG_STATE_DIR}}/.cdp-gig.lock",
-        "GIG_OPERATOR_BRAKE_FILE": "{{GIG_BRAKE_DIR}}/apply.operator.brake"
+        "GIG_OPERATOR_BRAKE_FILE": "{{GIG_BRAKE_DIR}}/apply.operator.brake",
+        "GIG_IGNORE_DISK_PRESSURE_BLOCK": "1",
+        "GIG_IGNORE_DISK_WRITERS_STOP": "1",
+        "GIG_DISK_HEADROOM_KIB": "0"
       },
       "StartInterval": 60,
       "ThrottleInterval": 60,
@@ -168,7 +208,11 @@
         "CDP_LOCK_DIR": "{{GIG_STATE_DIR}}/.cdp-gig.lock",
         "CDP_GUARD_LOCK": "{{GIG_STATE_DIR}}/.cdp-gig-guard.lock",
         "CDP_GUARD_LOG": "{{GIG_LOG_DIR}}/cdp-gig-browser-guard.log",
-        "GIG_CDP_HEALTH_URL": "http://127.0.0.1:{{CDP_PORT}}/json/version"
+        "GIG_CDP_HEALTH_URL": "http://127.0.0.1:{{CDP_PORT}}/json/version",
+        "GIG_NO_CONTACT_REGISTRY": "{{HOME}}/.config/anicca/gig/no-contact.json",
+        "GIG_IGNORE_DISK_PRESSURE_BLOCK": "1",
+        "GIG_IGNORE_DISK_WRITERS_STOP": "1",
+        "GIG_DISK_HEADROOM_KIB": "0"
       },
       "KeepAlive": true,
       "ThrottleInterval": 30,
@@ -200,6 +244,8 @@
         "CLOAK_BROWSER_OWNER": "gig-paid-direct",
         "CLOAK_CONTEXT_LEASES_FILE": "{{CLOAK_VAULT_DIR}}/gig-leases.json",
         "CDP_LOCK_DIR": "{{GIG_STATE_DIR}}/.cdp-gig.lock",
+        "GIG_IGNORE_DISK_PRESSURE_BLOCK": "1",
+        "GIG_IGNORE_DISK_WRITERS_STOP": "1",
         "GIG_OPERATOR_BRAKE_FILE": "{{GIG_BRAKE_DIR}}/paid.operator.brake",
         "GIG_SANDBOX_DENY": "{{GIG_SANDBOX_DENY}}"
       },
@@ -492,7 +538,8 @@
         "GIG_BROWSER_PORT": "{{CDP_PORT}}",
         "GIG_BROWSER_PROFILE": "{{CDP_DAILY_DRIVER_PROFILE}}",
         "GIG_BROWSER_FINGERPRINT": "{{GIG_BROWSER_FINGERPRINT}}",
-        "GIG_BROWSER_TLS_COMPAT": "{{GIG_BROWSER_TLS_COMPAT}}"
+        "GIG_BROWSER_TLS_COMPAT": "{{GIG_BROWSER_TLS_COMPAT}}",
+        "GIG_DISK_HEADROOM_KIB": "524288"
       },
       "RunAtLoad": true,
       "KeepAlive": true,

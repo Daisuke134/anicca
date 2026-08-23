@@ -221,11 +221,64 @@ trap 'release_publication_lock' EXIT
 # immutable boundary and invokes it once. Never create a run from this worker.
 START_CONTROL="${ARTICLE_START_CONTROL:-$ARTICLE_ROOT/scripts/article_daily_start_control.py}"
 LOCAL_DATE="${ARTICLE_LOCAL_DATE:-$(TZ=Asia/Tokyo date +%F)}"
+QUALITY_LEDGER="$STATE_DIR/articles.jsonl"
 PRE_START_DECISION="$(python3 "$START_CONTROL" \
   --state-dir "$STATE_DIR" --local-date "$LOCAL_DATE" 2>>"$LOG" || \
   printf '%s' '{"action":"block-incomplete","reason":"start-control-error"}')"
 PRE_START_ACTION="$(printf '%s' "$PRE_START_DECISION" | jq -r '.action // empty')"
 PRE_START_REASON="$(printf '%s' "$PRE_START_DECISION" | jq -r '.reason // empty')"
+# A quality recovery is an unpublished obligation, not a same-day article. At
+# midnight, do not let the calendar selector hide a prior-day run whose Codex
+# feedback budget is still live. The controller is read-only here; the normal
+# owner fence and quality recovery state machine still own every side effect.
+PENDING_QUALITY_RUN_ID=""
+if [ "$PRE_START_ACTION" != "skip-pending-worker" ]; then
+  PENDING_QUALITY_RUN_ID="$(python3 - "$STATE_DIR" "$QUALITY_LEDGER" "$QUALITY_FEEDBACK_CONTROL" <<'PY'
+import importlib.util
+from pathlib import Path
+import sys
+
+state_root = Path(sys.argv[1]).resolve()
+ledger = Path(sys.argv[2]).resolve()
+control_path = Path(sys.argv[3]).resolve()
+spec = importlib.util.spec_from_file_location("quality_feedback_recovery_scan", control_path)
+control = importlib.util.module_from_spec(spec)
+assert spec.loader is not None
+spec.loader.exec_module(control)
+if not state_root.is_dir() or not (state_root / "runs").is_dir():
+    raise SystemExit(0)
+candidates = sorted(
+    (path for path in (state_root / "runs").iterdir() if path.is_dir()),
+    key=lambda path: path.stat().st_mtime,
+    reverse=True,
+)
+accepted = {
+    "terminal-quality-feedback",
+    "prepared-quality-feedback-recovery",
+    "orphaned-quality-feedback-recovery",
+    "terminal-quality-publication-handoff",
+    "prepared-quality-publication-handoff",
+    "orphaned-quality-publication-handoff",
+}
+for candidate in candidates:
+    try:
+        result = control.plan(candidate, ledger)
+    except Exception:
+        continue
+    if result.get("status") == "READY" and result.get("reason") in accepted:
+        print(candidate.name)
+        break
+PY
+)"
+fi
+if [ -n "$PENDING_QUALITY_RUN_ID" ]; then
+  PRE_START_DECISION="$(jq -cn \
+    --arg run_id "$PENDING_QUALITY_RUN_ID" \
+    '{action:"resume-quality-feedback",run_id:$run_id,reason:"pending-quality-recovery-across-calendar-day"}')"
+  PRE_START_ACTION="resume-quality-feedback"
+  PRE_START_REASON="pending-quality-recovery-across-calendar-day"
+  echo "article-resume: prioritizing unpublished quality recovery run=$PENDING_QUALITY_RUN_ID local=$LOCAL_DATE" >>"$LOG"
+fi
 # A persisted publication backlog is the foreground availability contract.
 # Inspect it before today's schedule decision so midnight and quality work
 # cannot starve an older immutable active-four run.
@@ -324,7 +377,6 @@ GENERATION_STATE_PATH="$GENERATION_RUN_DIR/gates/generation-state.json"
 # A replacement that consumed its one normal reroute may receive one research-first
 # recovery on the same run. It runs before legacy/source-defect repair because its
 # terminal receipts are current and its missing evidence is the actual input.
-QUALITY_LEDGER="$STATE_DIR/articles.jsonl"
 QUALITY_FEEDBACK_PLAN="$(python3 "$QUALITY_FEEDBACK_CONTROL" plan \
   --run-dir "$GENERATION_RUN_DIR" --ledger "$QUALITY_LEDGER" 2>>"$LOG" || true)"
 if [ "$PRIORITY_PUBLICATION_READY" -ne 1 ] \
@@ -597,6 +649,30 @@ STATE_PATH="$(printf '%s' "$PLAN" | jq -r '.state_path')"
 LEDGER_PATH="$(printf '%s' "$PLAN" | jq -r '.ledger_path')"
 case "$RUN_ID" in daily-????-??-??|????????-??????) ;; *) echo "article-resume: invalid run id" >>"$LOG"; exit 1 ;; esac
 [ -d "$RUN_DIR" ] && [ -f "$STATE_PATH" ] || exit 1
+
+# X Article staging uses the shared authenticated job-search browser on CDP :9222.
+# The Coconala browser on :9223 is a different profile and must never satisfy this
+# preflight by accident.
+if [ "$FIRST_INITIALIZATION" = "x-article/ja" ] || [ "$FIRST_INITIALIZATION" = "x-article/en" ] \
+  || [ "$(printf '%s' "$PLAN" | jq -r '.eligible_pairs[0] // empty')" = "x-article/ja" ]; then
+  BROWSER_GUARD="${LIFE_MANAGER_REPO:-$(cd "$ARTICLE_ROOT/../.." && pwd)}/skills/browser/ensure_browser.sh"
+  if [ ! -x "$BROWSER_GUARD" ]; then
+    echo "article-resume: X browser guard missing at $BROWSER_GUARD" >>"$LOG"
+    exit 1
+  fi
+  WRITER_CDP_ENDPOINT="${WRITER_CDP_URL:-http://127.0.0.1:9222}"
+  WRITER_CDP_ENDPOINT_PORT="${WRITER_CDP_PORT:-9222}"
+  WRITER_CDP_ENDPOINT_PROFILE="${WRITER_CDP_PROFILE:-$HOME/.cloak/profiles/job-search-daily}"
+  WRITER_BROWSER_OWNER_LABEL="${WRITER_BROWSER_LAUNCHD_LABEL:-ai.anicca.job-search-browser}"
+  CLOAK_CDP_BASE_URL="$WRITER_CDP_ENDPOINT" \
+  CDP_DAILY_DRIVER_PORT="$WRITER_CDP_ENDPOINT_PORT" \
+  CDP_DAILY_DRIVER_PROFILE="$WRITER_CDP_ENDPOINT_PROFILE" \
+  CLOAK_BROWSER_LAUNCHD_LABEL="$WRITER_BROWSER_OWNER_LABEL" \
+  bash "$BROWSER_GUARD" >>"$LOG" 2>&1 || {
+    echo "article-resume: X browser preflight failed closed" >>"$LOG"
+    exit 1
+  }
+fi
 
 notify_pending() {
   python3 "$ARTICLE_ROOT/scripts/article-completion-notify.py" \

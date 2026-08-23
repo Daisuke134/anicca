@@ -19,6 +19,17 @@ def is_protected(run_dir: Path) -> bool:
     quarantine = run_dir / "gates/run-quarantine.json"
     if quarantine.is_file() and not quarantine.is_symlink():
         return True
+    # A non-terminal quality receipt is owned by the same-run recovery worker.
+    # Retention must not erase the drafts and evidence before that worker can
+    # apply its bounded revision or publish decision.
+    quality = run_dir / "gates/quality-self-heal.json"
+    if quality.is_file() and not quality.is_symlink():
+        try:
+            value = json.loads(quality.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return True
+        if not isinstance(value, dict) or value.get("action") not in {"complete", "closed"}:
+            return True
     artifact = run_dir / "gates/zenn-deferred.json"
     if not artifact.is_file():
         return False

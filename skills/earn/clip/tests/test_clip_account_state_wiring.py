@@ -49,6 +49,15 @@ def test_warming_day1_is_counted_as_usable_but_poisoned_is_not():
     assert run_account_state("count_ig_usable_accounts", accounts) == "3"
 
 
+def test_capability_ready_statuses_are_usable_for_publishing():
+    accounts = [
+        {"handle": "probe", "status": "publish_probe_ready"},
+        {"handle": "commercial", "status": "commercial_ready"},
+    ]
+    assert run_account_state("count_ig_usable_accounts", accounts) == "2"
+    assert run_account_state("resolve_ig_handle", accounts) == "commercial"
+
+
 def test_clip_pass_bio_uses_engine_resolver_not_retired_hardcode():
     source = CLIP_PASS.read_text()
     assert '. "$MARKETING_ENGINE_DIR/account_state.sh"' in source

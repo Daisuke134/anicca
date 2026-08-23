@@ -30,6 +30,7 @@ from typing import Any, Callable, Iterator, Protocol
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 import application_effect_fence as fence
+import gig_disk_guard
 import application_snapshot as snapshot_contract
 from application_planner import validate_decisions
 from market_snapshot import MARKET_FIELDS, parse_market
@@ -389,20 +390,31 @@ class LeaseHandle:
 
     def _heartbeat_loop(self) -> None:
         while not self._stop.wait(self.heartbeat_seconds):
-            try:
-                with self._value_lock:
-                    fence_value = self.lease_fence
-                    self._run(
-                        "heartbeat",
-                        self.task,
-                        "--token",
-                        str(fence_value["token"]),
-                        "--generation",
-                        str(fence_value["generation"]),
-                    )
-            except Exception as error:  # Keep cleanup alive; commit fails closed.
-                self._heartbeat_error = f"{type(error).__name__}:{error}"
-                return
+            with self._value_lock:
+                fence_value = self.lease_fence
+                for attempt in range(2):
+                    try:
+                        self._run(
+                            "heartbeat",
+                            self.task,
+                            "--token",
+                            str(fence_value["token"]),
+                            "--generation",
+                            str(fence_value["generation"]),
+                        )
+                        break
+                    except subprocess.TimeoutExpired as error:
+                        # acquire() may briefly hold the shared lease ledger while it
+                        # replaces a dead browser context. One 35-second timeout does
+                        # not invalidate this task's token; confirm it once before
+                        # failing the irreversible-effect fence.
+                        if attempt == 0 and not self._stop.is_set():
+                            continue
+                        self._heartbeat_error = f"{type(error).__name__}:{error}"
+                        return
+                    except Exception as error:  # A real fence error stays fail-closed.
+                        self._heartbeat_error = f"{type(error).__name__}:{error}"
+                        return
 
     def assert_healthy(self) -> None:
         if self._heartbeat_error is not None:
@@ -594,6 +606,14 @@ def _is_expected_offer_form_url(request_id: str, url: object) -> bool:
         return False
     query = parse_qsl(parsed.query, keep_blank_values=True)
     return all(key == "_t" and value for key, value in query)
+
+
+def _mouse_click_event_params(x: float, y: float) -> tuple[dict[str, object], ...]:
+    return (
+        {"type": "mouseMoved", "x": x, "y": y, "button": "none", "buttons": 0, "clickCount": 0},
+        {"type": "mousePressed", "x": x, "y": y, "button": "left", "buttons": 1, "clickCount": 1},
+        {"type": "mouseReleased", "x": x, "y": y, "button": "left", "buttons": 0, "clickCount": 1},
+    )
 
 
 _LIFECYCLE_FIELDS = ("page_state", "accepting_control", "deadline_state", "deadline_value", "form_state")
@@ -900,7 +920,7 @@ class CdpParentEffects:
         ) as ws:
             call_id = 1
             await self._call(ws, "Page.enable", {}, call_id)
-            call_id = await self._navigate(ws, url, call_id + 1)
+            call_id = await self._navigate_retry_once(ws, url, call_id + 1)
             page, call_id = await self._eval_json(
                 ws,
                 """JSON.stringify((()=>{
@@ -1188,7 +1208,7 @@ class CdpParentEffects:
             return False
         name = f"gig-{origin_pass_id}-B2-{request_id}-submit-attempt.png"
         proofs = [path for path in origin.glob(f"*/{name}") if path.is_file()]
-        return len(proofs) == 1 and proofs[0].stat().st_size > 0
+        return bool(proofs) and all(path.stat().st_size > 0 for path in proofs)
 
     async def _fill_async(
         self, request_id: str, proposal_text: str, price_jpy: int, deliver_date: str
@@ -1281,15 +1301,13 @@ class CdpParentEffects:
                         y = float(button["y"])
                     except (KeyError, TypeError, ValueError) as error:
                         raise ParentContractError("submit_confirm_modal_failed") from error
-                    for event_type, button_name, click_count in (
-                        ("mouseMoved", "none", 0),
-                        ("mousePressed", "left", 1),
-                        ("mouseReleased", "left", 1),
-                    ):
+                    await self._call(ws, "Page.bringToFront", {}, call_id)
+                    call_id += 1
+                    for params in _mouse_click_event_params(x, y):
                         await self._call(
                             ws,
                             "Input.dispatchMouseEvent",
-                            {"type": event_type, "x": x, "y": y, "button": button_name, "clickCount": click_count},
+                            params,
                             call_id,
                         )
                         call_id += 1
@@ -1315,6 +1333,7 @@ class CdpParentEffects:
         ) as ws:
             call_id = 1
             await self._call(ws, "Page.enable", {}, call_id)
+            call_id += 1
             state: dict[str, object] = {}
             for _ in range(24):
                 state, call_id = await self._eval_json(
@@ -1366,13 +1385,13 @@ class CdpParentEffects:
                 y = float(button["y"])
             except (KeyError, TypeError, ValueError) as error:
                 raise ParentContractError("application_button_coordinates_invalid") from error
-            for event_type, button_name, click_count in (
-                ("mouseMoved", "none", 0), ("mousePressed", "left", 1), ("mouseReleased", "left", 1)
-            ):
+            await self._call(ws, "Page.bringToFront", {}, call_id)
+            call_id += 1
+            for params in _mouse_click_event_params(x, y):
                 await self._call(
                     ws,
                     "Input.dispatchMouseEvent",
-                    {"type": event_type, "x": x, "y": y, "button": button_name, "clickCount": click_count},
+                    params,
                     call_id,
                 )
                 call_id += 1
@@ -2697,6 +2716,16 @@ def commit_decisions(
                     phase = "click_confirm"
                     effects.click_confirm(request_id)
                     effects.crash_if_requested("after_confirm_click")
+                    phase = "pre_submit_headroom"
+                    if not gig_disk_guard.disk_headroom_ok():
+                        results.append(_pre_submit_abort_result(
+                            store,
+                            request_id,
+                            intent,
+                            phase=phase,
+                            error=ParentContractError("disk_headroom_low"),
+                        ))
+                        continue
                     if attempt_budget_path is None and submit_attempts >= cap:
                         results.append({"request_id": request_id, "status": "cap_reached"})
                         continue
