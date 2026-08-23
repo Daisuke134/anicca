@@ -3641,7 +3641,12 @@ def _run_remote_repair(args, item_path: Path, root: Path, feedback: str, base: P
                     f"python3 {HERE / 'effect_checkpoint.py'} --project-root {root} --effect-json <path>. "
                     "Checkpoint before searching for the next target or composing the final result. quality_status is "
                     "qualified, qualification, or invalid; qualification_sources must contain the official URLs or "
-                    "hash-bound project sources supporting the outbound claims.\n"
+                    "hash-bound project sources supporting the outbound claims. Reduce the ledger by effect_key with the last row effective; "
+                    "a classification_revision is an audit correction, never another external effect. If the exact outbound payload asks the "
+                    "recipient to confirm any required qualification, classify it as qualification with counts_toward_50=false until an "
+                    "affirmative official response supplies that missing fact. If an earlier row violates this rule, preserve its effect identity "
+                    "and receipt, write a corrected effect JSON with classification_revision=true and a nonempty revision_reason, and checkpoint "
+                    "that same effect_key before calculating totals.\n"
                 )
             owner_evidence = root / "evidence" / "agent-PAID_REMOTE_OWNER"
             owner_started_ns = time.time_ns()

@@ -33,14 +33,28 @@ def main() -> int:
     existing = []
     if ledger.is_file():
         existing = [json.loads(line) for line in ledger.read_text(encoding="utf-8").splitlines() if line.strip()]
-    if any(row.get("effect_key") == value["effect_key"] for row in existing):
+    matches = [row for row in existing if row.get("effect_key") == value["effect_key"]]
+    revision = value.get("classification_revision") is True
+    if matches and not revision:
         print(json.dumps({"status": "already_checkpointed", "effect_key": value["effect_key"]}))
         return 0
+    if revision:
+        if not matches or not str(value.get("revision_reason") or "").strip():
+            raise SystemExit("classification revision requires an existing effect and reason")
+        prior = matches[-1]
+        immutable = ("target", "payload_sha256", "official_receipt_url", "exact_readback",
+                     "semantic_contract_sha256")
+        if any(value.get(key) != prior.get(key) for key in immutable):
+            raise SystemExit("classification revision cannot change effect identity")
+        value["record_type"] = "classification_revision"
+    elif matches:
+        raise SystemExit("duplicate effect checkpoint")
     with ledger.open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n")
         handle.flush()
         os.fsync(handle.fileno())
-    print(json.dumps({"status": "checkpointed", "effect_key": value["effect_key"]}))
+    print(json.dumps({"status": "classification_revised" if revision else "checkpointed",
+                      "effect_key": value["effect_key"]}))
     return 0
 
 

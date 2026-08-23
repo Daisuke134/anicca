@@ -1575,6 +1575,19 @@ effect with its source URL, payload hash, semantic-contract hash and `quality_st
 effect key was repeated. The durable valid count is now 6 of 50; 44 qualified contacts or verified reachable
 exhaustion remain.
 
+The owner next sent an honest qualification question to `@mgwpbdgw` and read back the exact seller reply at
+`https://x.com/selawmqt/status/2091357481423483280`, but then contradicted its own payload by checkpointing
+the row as `qualified/counts_toward_50=true` even though it had asked whether the recipient still met the
+current Osaka/vehicle condition. The external effect and receipt remain real and replay-protected, but it must
+not increase the valid count until an affirmative official response supplies the missing fact. The append-only
+checkpoint now supports an audited `classification_revision` for the same effect key while prohibiting changes
+to target, payload hash, official receipt, readback or semantic-contract identity. The generic owner contract
+reduces repeated effect keys to their latest classification and requires any payload that asks a required
+qualification to remain `qualification/counts_toward_50=false`. An isolated direct smoke proved one immutable
+effect plus one classification revision reduces to one non-counting effective row. The next natural owner must
+write that correction; Codex must not rewrite the private ledger by hand. The authoritative valid count remains
+6 of 50.
+
 1. **Paid/Submission — finish first.**
    - [x] Deploy and read back Paid ignoring shared preventive `disk-pressure.block` (20 GiB) and
      `disk-writers.stop` (10/11 GiB hysteresis), while retaining the 512 MiB last-resort guard and
