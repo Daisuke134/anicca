@@ -1588,6 +1588,14 @@ effect plus one classification revision reduces to one non-counting effective ro
 write that correction; Codex must not rewrite the private ledger by hand. The authoritative valid count remains
 6 of 50.
 
+The pre-fix owner then drafted a buyer report claiming 7 valid contacts. Because that inaccurate report had
+not reached Coconala, the owner process alone was terminated before its result could be authorized; both new X
+effects were already fsync-checkpointed. The parent followed its durable-progress contract and wrote
+`pending/effect=0/readback=1` rather than sending the report or losing the effects. After proving the terminated
+holder PID absent, its exact orphaned `x:anicca` lease was released. The latest immutable release is
+`7d30b28cdd808802c575937ffeae3afbd82f292d`; the next natural Paid wake owns classification correction,
+replay-zero and any buyer-visible progress report.
+
 1. **Paid/Submission — finish first.**
    - [x] Deploy and read back Paid ignoring shared preventive `disk-pressure.block` (20 GiB) and
      `disk-writers.stop` (10/11 GiB hysteresis), while retaining the 512 MiB last-resort guard and
