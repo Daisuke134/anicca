@@ -702,6 +702,11 @@ async def choose(
 async def type_candidate(
     *, label: str, role: str, stable_id: str, candidate_concept: str
 ) -> dict[str, Any]:
+    if role not in {"textbox", "searchbox", "spinbutton", "combobox"}:
+        result = await observe()
+        result["status"] = "action_rejected"
+        result["reason"] = "type_requires_text_control"
+        return result
     path = _path_env("JOB_SEARCH_BROWSER_SCRATCH") / "runtime-type.json"
     path.write_text(
         json.dumps(
