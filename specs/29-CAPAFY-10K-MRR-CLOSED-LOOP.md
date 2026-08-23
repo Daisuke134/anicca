@@ -431,6 +431,15 @@ Current production truth:
 5. C21-1: 失敗を隠さないterminal ledgerで7 consecutive healthy daysを蓄積する。途中failureは0/7へ戻すが、C22の安全なgrowth workは停止しない。
 6. C22-5: official active subscription、refund、fee、settlementを毎時監視し、settled net MRRだけを`$10,000`へ加算する。現在値は`$0`であり、到達までloopを継続する。経済目標のcalendar ETAは捏造しない。
 
+### Current completion and finish forecast
+
+- Engineering acceptanceは`20/23`。未完はC19、C21、C22だけである。ただしC22が`$10K settled net subscription MRR`そのものを含むため、`20/23 = 事業目標87%達成`とは解釈しない。
+- Scheduler/runtimeはすでに24/7運転中である。supply ownerは`StartInterval=3600`、最新runは`rc=0 / CAP_FULL / agent spend=0 / platform write=0`。5 occupied rowsは全件`under_review`、incomplete draftは0、第6 Agentは0である。
+- 次の決定論的milestoneはData Analystのquality-approved Reelである。20時間cadenceは`2026-08-23T20:57:42+09:00`に開き、hourly ownerの最初のeligible wakeは約`21:31 JST`。成功時は同wakeで新MP4、full-video inspection、native Reel URL、Telegram media message ID、rotation commitを閉じる。
+- C19のcalendar ETAはCapafy review transition依存で確定不能。accepted/rejectedでfree slotが生じた後、最大約1時間で最初のhourly wakeが同じFootball Agent `1037238583`を一件だけ再提出する。
+- C21の最短完了は、今日の既存failureを含めず`2026-08-24`から7日間すべてhealthyの場合、`2026-08-30`の日次close後。途中で1件でもterminal failureがあれば0/7へ戻る。
+- C22の`$10K` calendar ETAは現在の公式subscription MRR `$0`からは算出不能。完了条件は時間経過ではなく、公式settled net subscription MRRが`$10,000`へ到達したreadbackである。loopはそれまでhourlyにinventory/money/reviewを測定し、cadenceごとにcreative→native post→reach/click→seller saleを反復する。
+
 ## Test matrix
 
 | ID | To-Be | test/evidence | cover |
