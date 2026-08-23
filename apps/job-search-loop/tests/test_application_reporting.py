@@ -10,6 +10,85 @@ from job_search_loop.ledger import Ledger
 
 
 class ApplicationReportingTests(unittest.TestCase):
+    def test_quota_failed_wake_reports_queued_company_role_and_next_action(self):
+        reporting = importlib.import_module("job_search_loop.application_reporting")
+        deliver = getattr(reporting, "deliver_wake_report", None)
+        self.assertIsNotNone(deliver)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ledger_path = root / "ledger.sqlite3"
+            ledger = Ledger(ledger_path)
+            application_id = ledger.add_application(
+                "NVIDIA",
+                "Senior AI Partner Manager",
+                "https://nvidia.wd5.myworkdayjobs.com/job/JR-test",
+            )
+            ledger.transition(application_id, "qualified")
+            ledger.transition(application_id, "materials_ready")
+            ledger.close()
+            discovery = root / "workday-discovery.json"
+            discovery.write_text(
+                json.dumps(
+                    {
+                        "status": "queue_present",
+                        "queued_application_ids": [application_id],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            attempts = root / "attempts.jsonl"
+            attempts.write_text(
+                json.dumps(
+                    {"error_class": "transient_quota", "adapter_error": None}
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            summary = root / "summary.json"
+            summary.write_text(
+                json.dumps(
+                    {
+                        "status": "failed",
+                        "attempts_path": str(attempts),
+                    }
+                ),
+                encoding="utf-8",
+            )
+            calls = []
+
+            def sender(**kwargs):
+                calls.append(kwargs)
+                return {
+                    "status": "sent",
+                    "message_id": "wake-901",
+                    "event_key": "job-search-daily:test",
+                }
+
+            output = root / "wake-report.json"
+            receipt = deliver(
+                ledger_path=ledger_path,
+                outbox_path=root / "telegram.sqlite3",
+                run_id="daily-test",
+                japan_day="2026-08-24",
+                runner_summary_path=summary,
+                discovery_path=discovery,
+                output_path=output,
+                sender=sender,
+            )
+
+            message = calls[0]["message"]
+            self.assertIn("Codex:::", message)
+            self.assertIn("NVIDIA — Senior AI Partner Manager", message)
+            self.assertIn("outcome=failed", message)
+            self.assertIn("reason=transient_quota", message)
+            self.assertIn(
+                "next_action=retry_with_available_provider_capacity",
+                message,
+            )
+            self.assertEqual(receipt["message_id"], "wake-901")
+            self.assertEqual(receipt, json.loads(output.read_text(encoding="utf-8")))
+            self.assertEqual(output.stat().st_mode & 0o777, 0o600)
+
     def test_reconciled_receipt_sends_authoritative_submitted_correction_once(self):
         reporting = importlib.import_module("job_search_loop.application_reporting")
         deliver = reporting.deliver_reconciled_outcomes
@@ -65,7 +144,7 @@ class ApplicationReportingTests(unittest.TestCase):
                 message_id="gmail-1",
                 thread_id="thread-1",
                 evidence_sha256="e" * 64,
-                received_at="2026-08-23T00:00:00+00:00",
+                received_at="2099-01-01T00:00:00+00:00",
             )
             ledger.close()
             calls = []
@@ -97,25 +176,12 @@ class ApplicationReportingTests(unittest.TestCase):
             source = root / "resume.pdf"
             source.write_bytes(b"%PDF-1.4\nresume\n")
             media_root = root / "allowed-media"
-            executable = root / "fake-openclaw"
-            executable.write_text(
-                """#!/usr/bin/env python3
-import json
-import pathlib
-import sys
-
-counter = pathlib.Path(__file__).with_suffix(".count")
-count = int(counter.read_text() or "0") if counter.exists() else 0
-counter.write_text(str(count + 1))
-media = pathlib.Path(sys.argv[sys.argv.index("--media") + 1])
-assert media.is_file()
-assert "--force-document" in sys.argv
-print(json.dumps({"messageId": "901"}))
-""",
-                encoding="utf-8",
-            )
-            executable.chmod(0o700)
             database = root / "outbox.sqlite3"
+            requests = []
+
+            def requester(**kwargs):
+                requests.append(kwargs)
+                return {"ok": True, "result": {"message_id": 901}}
 
             first = sender(
                 database=database,
@@ -123,7 +189,7 @@ print(json.dumps({"messageId": "901"}))
                 message="Resume used for Example — AI Engineer",
                 document=source,
                 media_root=media_root,
-                executable=str(executable),
+                requester=requester,
             )
             second = sender(
                 database=database,
@@ -131,16 +197,14 @@ print(json.dumps({"messageId": "901"}))
                 message="Resume used for Example — AI Engineer",
                 document=source,
                 media_root=media_root,
-                executable=str(executable),
+                requester=requester,
             )
 
             self.assertEqual(first, {"status": "sent", "message_id": "901"})
             self.assertEqual(second, first)
-            self.assertEqual(executable.with_suffix(".count").read_text(), "1")
-            staged = list(media_root.iterdir())
-            self.assertEqual(len(staged), 1)
-            self.assertEqual(staged[0].read_bytes(), source.read_bytes())
-            self.assertEqual(staged[0].stat().st_mode & 0o777, 0o600)
+            self.assertEqual(len(requests), 1)
+            self.assertEqual(requests[0]["method"], "sendDocument")
+            self.assertEqual(requests[0]["document"], source.resolve())
 
     def test_submitted_resume_report_uses_ledger_company_role_and_url(self):
         try:

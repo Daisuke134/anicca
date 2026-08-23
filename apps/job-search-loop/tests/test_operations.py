@@ -136,7 +136,15 @@ class OperationsTests(unittest.TestCase):
             self.assertEqual(selected["message_ids"], ["message-new"])
             self.assertEqual(
                 selected["messages"],
-                [{"message_id": "message-new", "thread_id": "thread-1"}],
+                [
+                    {
+                        "message_id": "message-new",
+                        "thread_id": "thread-1",
+                        "subject": "Interview invitation",
+                        "sender": "jobs@example.com",
+                        "body": "Choose a time.",
+                    }
+                ],
             )
             self.assertEqual(
                 selected["bootstrap_message_ids"], ["message-old"]

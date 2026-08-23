@@ -24,6 +24,5 @@ export PYTHONPATH="$JOB_SEARCH_APP_ROOT"
   --replay "$JOB_SEARCH_APP_ROOT/config/learning-replay.v1.json" \
   --report "$REPORT" \
   --outbox "$TELEGRAM_OUTBOX" \
-  --telegram-executable "$JOB_SEARCH_OPENCLAW" \
   >"$SUMMARY"
 chmod 600 "$REPORT" "$SUMMARY"

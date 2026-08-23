@@ -144,6 +144,28 @@ raise SystemExit(0)
                 ),
             )
 
+    def test_daily_emits_one_direct_final_wake_report_on_runner_failure(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            result, calls = self._run_daily_with_fake_python(root, 0, 99)
+
+            self.assertEqual(result.returncode, 99, result.stderr)
+            wake_reports = [
+                call
+                for call in calls
+                if call[:3]
+                == ["-m", "job_search_loop.application_reporting", "wake"]
+            ]
+            self.assertEqual(len(wake_reports), 1)
+
+    def test_daily_has_no_openclaw_telegram_transport(self):
+        source = (APP_ROOT / "scripts" / "run-daily.sh").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertNotIn("$JOB_SEARCH_OPENCLAW\" message send", source)
+        self.assertNotIn("pre-model-report.json", source)
+
     def test_daily_success_refreshes_durable_summary_projection(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

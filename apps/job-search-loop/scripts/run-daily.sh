@@ -49,6 +49,8 @@ export JOB_SEARCH_BROWSER_SCRATCH="$BROWSER_SCRATCH"
   --media-root "$JOB_SEARCH_TELEGRAM_MEDIA" \
   --output "$EVIDENCE/resume-deliver-before.json"
 JAPAN_DAY=$(TZ=Asia/Tokyo /bin/date +%F)
+WORKDAY_DISCOVERY_RESULT="$EVIDENCE/workday-discovery.json"
+RUNNER_SUMMARY="$EVIDENCE/summary.json"
 refresh_summary() {
   "$JOB_SEARCH_PYTHON" -m job_search_loop.summary \
     --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
@@ -56,6 +58,27 @@ refresh_summary() {
     --day "$JAPAN_DAY" \
     --model-route "${AGENT_RUNNER_PROVIDER:-unconfigured}"
 }
+report_wake() {
+  local original_rc=$?
+  local report_rc
+  trap - EXIT
+  set +e
+  "$JOB_SEARCH_PYTHON" -m job_search_loop.application_reporting wake \
+    --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
+    --outbox "$TELEGRAM_OUTBOX" \
+    --output "$EVIDENCE/wake-report.json" \
+    --run-id "$RUN_ID" \
+    --day "$JAPAN_DAY" \
+    --runner-summary "$RUNNER_SUMMARY" \
+    --discovery "$WORKDAY_DISCOVERY_RESULT"
+  report_rc=$?
+  set -e
+  if [[ "$original_rc" -eq 0 && "$report_rc" -ne 0 ]]; then
+    exit "$report_rc"
+  fi
+  exit "$original_rc"
+}
+trap report_wake EXIT
 "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_owner \
   --endpoint "http://127.0.0.1:9222" \
   --output "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE"
@@ -70,7 +93,6 @@ chmod 600 "$EVIDENCE/candidate-memory-receipt.json"
 export JOB_SEARCH_CANDIDATE_MEMORY="$CANDIDATE_MEMORY"
 export JOB_SEARCH_ANSWER_MEMORY="$JOB_SEARCH_STATE_ROOT/answer-memory.v1.json"
 export JOB_SEARCH_MACHINE_CREDENTIALS="${XDG_DATA_HOME:-$HOME/.local/share}/anicca/credentials.json"
-WORKDAY_DISCOVERY_RESULT="$EVIDENCE/workday-discovery.json"
 set +e
 "$JOB_SEARCH_PYTHON" -m job_search_loop.workday_discovery \
   --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
@@ -135,84 +157,6 @@ path.write_text(
 os.chmod(path, 0o600)
 PY
 export JOB_SEARCH_WORKDAY_FAST_PATH_RESULT="$WORKDAY_FAST_PATH_RESULT"
-PREFLIGHT_REPORT="$EVIDENCE/pre-model-report.json"
-JOB_SEARCH_REPORT_TEXT=$("$JOB_SEARCH_PYTHON" - \
-  "$ASHBY_COMBINED_RESULT" \
-  "$WORKDAY_FAST_PATH_RESULT" \
-  "$JAPAN_DAY" \
-  "$RUN_ID" <<'PY'
-import json
-import sys
-from pathlib import Path
-
-ashby_path, workday_path, japan_day, run_id = map(Path, sys.argv[1:])
-
-def read(path: Path) -> dict:
-    try:
-        value = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return {"status": "failed", "processed": [], "reason": "result_unreadable"}
-    return value if isinstance(value, dict) else {"status": "failed", "processed": [], "reason": "result_invalid"}
-
-ashby = read(ashby_path)
-workday = read(workday_path)
-ashby_discovery = ashby.get("discovery") if isinstance(ashby.get("discovery"), dict) else {}
-ashby_discovery_status = str(ashby_discovery.get("status") or "unknown")
-ashby_discovered_count = int(ashby_discovery.get("discovered_count") or 0)
-workday_status = str(workday.get("status") or "unknown")
-workday_reason = str(workday.get("reason") or "")
-message = (
-    "Codex::: "
-    f"{japan_day} JST {run_id.name} pre-model checkpoint. "
-    + "Workday-only model browser wake is starting"
-    + f"; Workday is {workday_status}"
-    + (f" ({workday_reason})" if workday_reason else "")
-    + f". Ashby is {ashby_discovery_status} ({ashby_discovered_count} discovered; parked until Workday is proven repeatable)"
-    + ". This checkpoint is sent before the mandatory model lane so a timeout cannot suppress Telegram reporting."
-)
-print(message)
-PY
-)
-set +e
-JOB_SEARCH_REPORT_RESPONSE=$(/opt/homebrew/bin/timeout 10 env PATH="/opt/homebrew/bin:/opt/homebrew/opt/node/bin:/usr/bin:/bin" \
-  "$JOB_SEARCH_OPENCLAW" message send \
-    --channel telegram \
-    --target "${TELEGRAM_ALERT_CHAT_ID:-8547730585}" \
-    -m "$JOB_SEARCH_REPORT_TEXT" \
-    --json 2>/dev/null)
-JOB_SEARCH_REPORT_RC=$?
-set -e
-"$JOB_SEARCH_PYTHON" - \
-  "$PREFLIGHT_REPORT" \
-  "$JOB_SEARCH_REPORT_RESPONSE" \
-  "$JOB_SEARCH_REPORT_RC" <<'PY'
-import json
-import os
-import sys
-from pathlib import Path
-
-path = Path(sys.argv[1])
-raw = sys.argv[2]
-returncode = int(sys.argv[3])
-receipt = {"status": "failed", "error_type": f"openclaw_rc_{returncode}"}
-if returncode == 0:
-    try:
-        value = json.loads(raw)
-        payload = value.get("payload") if isinstance(value, dict) else {}
-        message_id = value.get("messageId") or (payload or {}).get("messageId")
-        if message_id:
-            receipt = {"status": "sent", "message_id": str(message_id)}
-        else:
-            receipt = {"status": "failed", "error_type": "ack_missing_message_id"}
-    except json.JSONDecodeError:
-        receipt = {"status": "failed", "error_type": "invalid_openclaw_json"}
-path.write_text(json.dumps(receipt, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
-os.chmod(path, 0o600)
-print(json.dumps(receipt, ensure_ascii=False, sort_keys=True))
-PY
-if [[ "$JOB_SEARCH_REPORT_RC" -ne 0 ]]; then
-  printf '%s\n' "pre-model Telegram report failed; wake continues" >&2
-fi
 MODEL_TIMEOUT_SECONDS="${JOB_SEARCH_BROWSER_TIMEOUT_SECONDS:-1800}"
 set +e
 "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_agent.orchestrator \
