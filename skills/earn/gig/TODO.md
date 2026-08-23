@@ -1907,29 +1907,27 @@ slice neither edits nor waits on the Paid section, `paid_direct.py`, or the Paid
 **Current production truth.** Apply is enabled and owned by launchd every 60 seconds. The loaded
 definition keeps the real 512 MiB write floor while allowing this lane to continue past the global
 pressure and writer-stop advisory flags; the child still fails closed below the real floor. Natural
-pass `gig-apply-direct-1787414266013748000-88004` completed `ok`, inspected 40 official requests,
-made no duplicate application and sent its natural-language Telegram summary with provider message
-ID `29154`. Later natural wakes are currently stopped by the real floor: the Data volume has about
-235 MiB free while `/System/Volumes/VM` holds about 16 GiB, and the guard reports
-`disk_headroom_low` instead of starting another pass. Earlier wakes that began above the floor but
-lost space during execution failed while persisting evidence with `OSError: [Errno 28]`. Apply's
-submission, official-readback, replay and Telegram paths remain proved below, but current-device
-24/7 liveness is not complete until host headroom is restored and the next natural wake finishes.
+pass `gig-apply-direct-1787448339022678000-11329` officially submitted and read back requests
+`5227527`, `5227443`, `5227381` and `5227400`; their immediate provider ACKs are `29639`, `29642`,
+`29645` and `29661`, and the terminal ACK is `29668`. A following natural pass proved all four in
+official applied history and created no submit evidence or ledger row for them. Two long passes then
+exposed a separate shared-lease contention fault: one 35-second heartbeat timeout was treated as a
+permanent fence failure even though the lease token remained valid. Commit `f6f8a2538` confirms one
+transient timeout before failing closed. Natural launchd pass
+`gig-apply-direct-1787452590761626000-88171`, pinned to a release containing that fix, completed
+`ok` with 79 observed, 38 already applied, zero effects, zero failures and full-source completion;
+the same four IDs produced no submit evidence or ledger row, and its Telegram summary is provider-
+acknowledged as `29738`.
 
-- [ ] Restore at least the loaded 512 MiB real write floor without deleting protected/user data or
+- [x] Restore at least the loaded 512 MiB real write floor without deleting protected/user data or
   stopping another lane, then read back one launchd-owned natural pass with no ENOSPC and a provider-
   acknowledged natural-language Telegram summary. Do not lower or bypass the floor to claim success.
-  Natural wake `gig-apply-direct-1787415528495922000-61669` started while the floor was briefly
-  available and officially submitted/read back request `5227320`, but then lost the Cloak lease
-  heartbeat when the volume fell below the floor and exited 120. Its application report is outbox
-  row `9978 / delivery_unknown / TimeoutExpired`; its terminal summary is row `9979 / send_started`
-  with no provider message ID. After headroom recovery, reconcile both receipts without a blind
-  resend and prove that the next natural snapshot treats `5227320` as already applied. Source now
-  reuses the real disk guard immediately before the irreversible submit marker/click, so a wake
-  that loses headroom after startup retires its pre-effect intent instead of creating another
-  customer effect. The focused RED reproduced two clicks; GREEN and the related guard/reconcile
-  suite pass 31/31. This remains unchecked until that source is loaded and the natural proof above
-  completes.
+  The real floor remains loaded and the gig filesystem supports durable evidence, SQLite and receipt
+  writes. The four-effect natural pass and the later zero-effect replay pass above both completed
+  without ENOSPC. Historical unknown application receipt `5225359` was reconciled from official
+  history without a blind resend and provider-acknowledged as `28769`. The current click-boundary,
+  official-readback, duplicate-fence, one-time heartbeat confirmation and Telegram receipt paths are
+  all loaded and proved by natural launchd wakes.
 
 - [x] Restore bounded write headroom without broad user-data deletion. Apply now ignores only the
   global advisory pressure/stop flags and retains `GIG_DISK_HEADROOM_KIB=524288`; measured natural
