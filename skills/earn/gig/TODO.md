@@ -1632,6 +1632,19 @@ but the legacy room remains open until that owner returns an honest disposition 
 Manledge is concurrently re-deciding from the corrected release; its classification revision and remaining
 official outreach are still pending.
 
+That decision pass exposed two more generic routing defects before either could cause a buyer effect. First, the
+semantic decision copied the raw ledger total and selected a file solely to report incomplete external work, so it
+would have repeated the known false `7/50` count before the remote owner had a chance to append its correction.
+The v12 semantic contract now audits exact payload and official response state, treats a required-qualification
+question as non-counting until affirmative readback, refuses to propagate a contradictory stored total, and keeps
+unfinished authorized external work in the remote lane rather than replacing it with a progress artifact. Second,
+the legacy owner correctly returned `satisfied_noop`, but the prepare router had no no-effect branch and fell through
+to `remote_resume`. `satisfied_noop` and `await_buyer` now return official-readback-backed zero-effect results and
+cannot reach an external mutation path. Commits `ef1a03090` and `ca2c6d1a5` are pushed and activated. Both pre-fix
+Manledge worker attempts were stopped before file build or Coconala send; the official progress ledger remains
+unchanged at ten rows and the authoritative qualified count remains 6. The next natural wake must prove v12 chooses
+remote, the loop appends the classification revision itself, and legacy returns `satisfied_noop` without failure.
+
 1. **Paid/Submission — finish first.**
    - [x] Deploy and read back Paid ignoring shared preventive `disk-pressure.block` (20 GiB) and
      `disk-writers.stop` (10/11 GiB hysteresis), while retaining the 512 MiB last-resort guard and
