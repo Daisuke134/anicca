@@ -238,7 +238,11 @@ class DirectCDPPage:
             await asyncio.sleep(0.25)
 
     async def type_target(self, target: dict[str, Any], text: str) -> None:
-        await self.click_target(target)
+        resolved = await self.resolve_target(target, scroll=True)
+        x, y = float(resolved["x"]), float(resolved["y"])
+        await self.call("Input.dispatchMouseEvent", {"type": "mouseMoved", "x": x, "y": y})
+        await self.call("Input.dispatchMouseEvent", {"type": "mousePressed", "x": x, "y": y, "button": "left", "clickCount": 1})
+        await self.call("Input.dispatchMouseEvent", {"type": "mouseReleased", "x": x, "y": y, "button": "left", "clickCount": 1})
         selected = await self.evaluate("""() => {
           const el = document.activeElement;
           if (!el || !['INPUT', 'TEXTAREA'].includes(el.tagName)) return false;

@@ -182,7 +182,8 @@ class DirectCDPTypeTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_type_selects_the_existing_whole_value_before_inserting(self):
         page = DirectCDPPage("ws://example", "target")
-        page.click_target = AsyncMock()
+        page.click_target = AsyncMock(side_effect=AssertionError("typing must focus before transition wait"))
+        page.resolve_target = AsyncMock(return_value={"x": 10.0, "y": 20.0})
         page.evaluate = AsyncMock(return_value=True)
         page.call = AsyncMock(return_value={})
 
@@ -192,6 +193,9 @@ class DirectCDPTypeTests(unittest.IsolatedAsyncioTestCase):
         )
 
         page.evaluate.assert_awaited_once()
+        page.click_target.assert_not_awaited()
+        page.resolve_target.assert_awaited_once()
+        self.assertEqual(page.call.await_args_list[0].args[0], "Input.dispatchMouseEvent")
         self.assertIn("el.select()", page.evaluate.await_args.args[0])
         self.assertIn("el.value.length === 0", page.evaluate.await_args.args[0])
         self.assertIn("document.activeElement === el", page.evaluate.await_args.args[0])
