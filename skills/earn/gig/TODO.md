@@ -1821,6 +1821,15 @@ selected the same bounded 50-or-exhaustion outcome, and its new remote owner inv
 `query_count=66`, `queries_attempted=1`, `queries_not_attempted=65`, `completed_at=null`, 66 per-query receipt rows
 and three checked official URLs. This proves timeout-safe natural continuation; it is progress only, not exhaustion
 or buyer completion, and the owner remains responsible for finishing the pass and truthful Coconala handoff.
+The same natural owner then finished the evidence scope without discarding that partial work: it isolated the ten
+time-budgeted queries, ran a second atomic pass, and merged a complete receipt with 66 intended, 66 attempted, zero
+query errors, completion time and 76 official search/result URLs. It reread all eight qualified and two
+qualification-only outreach threads; no recipient response or LOXAD registration was visible. One newly surfaced
+qualified target, `@pwrfusk`, passed claim-source review, but the production X adapter retained the exact text in the
+composer and returned `posted=false`; the owner discarded the draft, checkpointed the failed attempt as noncounting,
+and produced no false effect. Its 30-minute window ended with Manledge durably `pending`, `effect=0/readback=1`, not
+failed. The next current-release wake must either complete that remaining authorized send with exact X readback or
+bind the proven reachable shortfall honestly, then report the audited eight-result/exhaustion outcome to Coconala.
 
 The same natural wake produced two independent Coconala effects through the shared answer path. BUYMA room
 `18128025` truthfully identified the two duplicate proposals as AI auto-applications, apologized, told the buyer no
