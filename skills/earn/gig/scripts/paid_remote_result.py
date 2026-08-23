@@ -183,6 +183,65 @@ def validate_owner(root, feedback, digest, pass_start=0, resume=False):
     return _validate_builder_contract(root, feedback, digest, pass_start, resume)[2]
 
 
+def validate_wait(root, feedback, digest, pass_start=0):
+    """Validate an incomplete remote effect as a durable, nonterminal wait."""
+    root = Path(root).resolve()
+    intent_path = root / "delivery/paid-remote-intent.json"
+    result_path = root / "delivery/paid-remote-result.json"
+    if not intent_path.is_file() or not result_path.is_file():
+        raise ValueError("remote wait intent/result missing")
+    if result_path.stat().st_mtime < float(pass_start):
+        raise ValueError("remote wait result is stale")
+    intent, result = _load(intent_path), _load(result_path)
+    requirements_sha256 = requirements_digest(root, feedback)
+    if (intent.get("buyer_feedback_sha256") != feedback
+            or result.get("buyer_feedback_sha256") != feedback
+            or intent.get("requirements_sha256") != requirements_sha256
+            or result.get("requirements_sha256") != requirements_sha256):
+        raise ValueError("remote wait feedback mismatch")
+    desired, observed = intent.get("desired_state"), result.get("observed_state")
+    if (not isinstance(desired, dict)
+            or intent.get("desired_state_sha256") != digest
+            or not _digest_matches(desired, digest)
+            or result.get("after_state_digest") != digest
+            or not _digest_matches(observed, digest)
+            or not canonical_equal(desired, observed)):
+        raise ValueError("remote wait state mismatch")
+    if (not intent.get("target") or result.get("target") != intent.get("target")
+            or result.get("authenticated") is not True):
+        raise ValueError("remote wait target mismatch")
+    outcome = result.get("business_outcome")
+    if (result.get("status") != "blocked" or not isinstance(outcome, dict)
+            or outcome.get("required_effect_satisfied") is not False
+            or outcome.get("required_output_satisfied") is not False
+            or not isinstance(outcome.get("remaining_work"), list)
+            or not outcome["remaining_work"]
+            or not isinstance(result.get("blocker"), str)
+            or not result["blocker"].strip()):
+        raise ValueError("not an external wait")
+    receipts = outcome.get("official_receipts")
+    if not isinstance(receipts, list) or not receipts:
+        raise ValueError("remote wait receipt missing")
+    readback_present = False
+    for receipt in receipts:
+        url = receipt.get("url") or receipt.get("official_url") if isinstance(receipt, dict) else None
+        if (not isinstance(receipt, dict)
+                or any(not isinstance(receipt.get(key), str) or not receipt[key].strip()
+                       for key in ("provider", "kind"))
+                or not isinstance(url, str) or not url.strip()):
+            raise ValueError("invalid remote wait receipt")
+        readback_present = readback_present or (
+            isinstance(receipt.get("readback"), str) and bool(receipt["readback"].strip())
+        ) or (
+            receipt.get("exact_readback") is True
+            and isinstance(receipt.get("readback_source"), str)
+            and bool(receipt["readback_source"].strip())
+        )
+    if not readback_present:
+        raise ValueError("remote wait readback missing")
+    return result
+
+
 def validate(root, feedback, digest, pass_start, resume=False, verifier=None):
     root, intent, result, requirements_sha256, message_sha256, before, after = \
         _validate_builder_contract(root, feedback, digest, pass_start, resume)

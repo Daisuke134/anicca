@@ -3712,6 +3712,16 @@ def _run_consultation_review(args, item_path: Path, root: Path, feedback: str, b
     return _consultation_result_path(owner_evidence)
 
 
+def _remote_owner_checkpoint(status: str, root: Path, feedback: str, digest: str,
+                             pass_start: float) -> str:
+    if status == "ok":
+        return "ok"
+    if status == "blocked":
+        paid_remote_result.validate_wait(root, feedback, digest, pass_start)
+        return "pending"
+    raise Failure("remote_builder")
+
+
 def _run_remote_repair(args, item_path: Path, root: Path, feedback: str, base: Path) -> Path:
     context = root / "context" / "current.json"
     context.parent.mkdir(parents=True, exist_ok=True)
@@ -3791,19 +3801,24 @@ def _run_remote_repair(args, item_path: Path, root: Path, feedback: str, base: P
                 owner_evidence, task_label="paid-remote-owner", task_class="escalation-agent",
                 model=PAID_DECISION_MODEL, started_ns=owner_started_ns,
             )
-            if (_requirements_snapshot(root) != requirements_snapshot
-                    or step_result_status.status_from_evidence(owner_evidence) != "ok"):
+            if _requirements_snapshot(root) != requirements_snapshot:
                 raise Failure("remote_builder")
             if not all((root / "delivery" / name).is_file()
                        for name in ("paid-remote-intent.json", "paid-remote-result.json")):
                 raise Failure("remote_builder")
-            _normalize_builder_result(root)
             try:
                 intent = _load(root / "delivery" / "paid-remote-intent.json")
                 delivery_result = _load(root / "delivery" / "paid-remote-result.json")
                 if _require_semantic_effect_binding(root, intent, delivery_result) != semantic_contract_sha256:
                     raise ValueError("semantic effect contract changed")
                 digest = _text(intent.get("desired_state_sha256"))
+                checkpoint = _remote_owner_checkpoint(
+                    step_result_status.status_from_evidence(owner_evidence),
+                    root, feedback, digest, pass_start,
+                )
+                if checkpoint == "pending":
+                    raise Failure("remote_progress")
+                _normalize_builder_result(root)
                 paid_remote_result.validate_builder(root, feedback, digest, pass_start)
             except (OSError, ValueError, TypeError, json.JSONDecodeError) as error:
                 raise Failure("remote_builder") from error
