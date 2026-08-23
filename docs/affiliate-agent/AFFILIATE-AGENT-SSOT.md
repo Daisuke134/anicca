@@ -7466,3 +7466,10 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   release-only installation replays three times without touching LaunchAgents;
   combined installer/auth/acquisition tests are 16/16 GREEN with one expected
   missing-guard branch skip. Final review remains open.
+- Final acquisition/release review returned `ship` with no findings. Affiliate
+  `current` is now immutable release `2d3726bae81026bb0d04809912bd6add161660b4`
+  via release-only atomic install; acquisition and runner source/runtime hashes
+  match, the ownership receipt is `LOCAL_RELEASE_ONLY`, and LaunchAgents were
+  not modified. The next existing-owner wake must prove account-2 auth, a new
+  scheduler-run budget scope, and either a sealed decision or an accurately
+  typed budget/provider failure.
