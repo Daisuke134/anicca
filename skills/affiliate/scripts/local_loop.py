@@ -3994,7 +3994,7 @@ def _wake_once(args, started_at, run_id):
             "acquisition.decision", "READ_ONLY",
             {"rolling_net_state": rolling_net.get("state")},
             lambda: advance_acquisition_decision(
-                Path(__file__).resolve().parent.parent, state
+                Path(__file__).resolve().parent.parent, state, run_id
             ),
         )
     except Exception as error:

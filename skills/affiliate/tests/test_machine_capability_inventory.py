@@ -201,7 +201,10 @@ class MachineCapabilityInventoryTests(unittest.TestCase):
             self.assertEqual(child["HOME"], str((root / "state" / "affiliate" / "codex-runner" / "user-home").resolve()))
             self.assertEqual(child["CODEX_HOME"], str((root / "state" / "affiliate" / "codex-runner").resolve()))
             self.assertNotEqual(child["HOME"], str(owner_home))
-            self.assertEqual(child["AFFILIATE_CODEX_AUTH_FILE"], str((owner_home / ".codex" / "auth.json").resolve()))
+            self.assertEqual(
+                child["AFFILIATE_CODEX_AUTH_FILE"],
+                str((owner_home / ".codex-acct2" / "auth.json").resolve()),
+            )
             self.assertEqual(child["ANICCA_BUDGET_SCOPE_ID"], "affiliate-campaign")
             self.assertEqual(child["PATH"], f"{executable.parent}:/usr/bin:/bin:/usr/sbin:/sbin")
             config = json.loads(

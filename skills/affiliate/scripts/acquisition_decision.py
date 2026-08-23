@@ -129,7 +129,28 @@ def _result(evidence_dir: Path, context_sha256: str) -> tuple[dict, dict]:
     return result, seal
 
 
-def advance(skill_root: Path, state: Path) -> dict:
+def _budget_scope(baseline_sha256: str, scheduler_run_id: str) -> str:
+    run_component = re.sub(r"[^A-Za-z0-9._-]", "-", scheduler_run_id).strip("-")
+    if not run_component:
+        raise DecisionError
+    return f"affiliate-acquisition-{baseline_sha256[:16]}-{run_component[:32]}"
+
+
+def _runner_failure_type(evidence_dir: Path, returncode: int) -> str:
+    summary_path = evidence_dir / "summary.json"
+    try:
+        summary = _read(summary_path)
+    except (OSError, ValueError, json.JSONDecodeError):
+        summary = {}
+    if summary.get("status") == "budget_blocked":
+        return "BUDGET_BLOCKED"
+    return {
+        2: "RUNNER_INVALID_CONFIG",
+        75: "BUDGET_BLOCKED",
+    }.get(returncode, "RUNNER_REJECTED")
+
+
+def advance(skill_root: Path, state: Path, scheduler_run_id: str) -> dict:
     baselines = sorted([
         *(state / "distribution-baselines").glob("devto-*.json"),
         *(state / "distribution-baselines").glob("focused-*.json"),
@@ -184,7 +205,9 @@ OBSERVED JSON:
                     state / "machine" / "codex-capability.json"
                 ),
                 "AFFILIATE_SOURCE_SET_SHA256": context_sha256,
-                "ANICCA_BUDGET_SCOPE_ID": f"affiliate-acquisition-{baseline_sha256[:16]}",
+                "ANICCA_BUDGET_SCOPE_ID": _budget_scope(
+                    baseline_sha256, scheduler_run_id
+                ),
                 "ANICCA_PASS_TOKEN_BUDGET": "8192",
                 "ANICCA_LOOP_DAILY_TOKEN_BUDGET": "32768",
                 "ANICCA_BUDGET_REQUIRED": "1",
@@ -216,10 +239,9 @@ OBSERVED JSON:
             except OSError:
                 return _failure(state, baseline_sha256, "RUNNER_START_FAILED")
             if completed.returncode != 0:
-                failure_type = {
-                    2: "RUNNER_INVALID_CONFIG",
-                    75: "BUDGET_BLOCKED",
-                }.get(completed.returncode, "RUNNER_REJECTED")
+                failure_type = _runner_failure_type(
+                    evidence_dir, completed.returncode
+                )
                 evidence_state = (
                     "SEALED" if (evidence_dir / "evidence-seal.json").is_file()
                     else "UNSEALED"

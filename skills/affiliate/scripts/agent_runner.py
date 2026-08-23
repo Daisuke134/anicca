@@ -78,7 +78,10 @@ def allowlisted_environment(source: dict[str, str], executable: Path) -> dict[st
         directory.mkdir(parents=True, exist_ok=True, mode=0o700)
         directory.chmod(0o700)
     auth_file = _owner_path(
-        source.get("AFFILIATE_CODEX_AUTH_FILE", str(owner_home / ".codex" / "auth.json")),
+        source.get(
+            "AFFILIATE_CODEX_AUTH_FILE",
+            str(owner_home / ".codex-acct2" / "auth.json"),
+        ),
         owner_home,
     ).resolve()
     child = {
