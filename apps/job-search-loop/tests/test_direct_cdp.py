@@ -86,6 +86,30 @@ class DirectCDPTypeTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result["observation"]["url"], observation.url)
         ledger.assert_not_called()
 
+    async def test_upload_rejects_file_textbox_before_file_chooser(self):
+        from job_search_loop.browser_agent import runtime
+
+        observation = {"status": "observed", "observation": {"controls": []}}
+        with patch.object(
+            runtime,
+            "observe",
+            new=AsyncMock(return_value=observation),
+        ) as observe, patch.object(
+            runtime,
+            "_context",
+            new=AsyncMock(),
+        ) as context:
+            result = await runtime.upload_resume(
+                label="Resume",
+                role="textbox",
+                stable_id="id:_systemfield_resume",
+            )
+
+        self.assertEqual(result["status"], "action_rejected")
+        self.assertEqual(result["reason"], "upload_requires_button_control")
+        observe.assert_awaited_once()
+        context.assert_not_awaited()
+
     async def test_screenshot_does_not_reflow_virtualized_provider_lists(self):
         page = DirectCDPPage("ws://example", "target")
         page._ensure_viewport = AsyncMock()

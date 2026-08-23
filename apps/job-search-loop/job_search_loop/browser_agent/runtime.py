@@ -727,6 +727,11 @@ async def type_candidate(
 
 async def upload_resume(*, label: str, role: str, stable_id: str) -> dict[str, Any]:
     """Upload the row's immutable assigned resume without exposing its path."""
+    if role != "button":
+        result = await observe()
+        result["status"] = "action_rejected"
+        result["reason"] = "upload_requires_button_control"
+        return result
     row, _session, _checkpoints, _evidence, cursor, builder = await _context()
     observation = await builder.build(cursor.handle)
     routed = _routed_resume(row, f"{row['title']}\n{observation.visible_text}")
