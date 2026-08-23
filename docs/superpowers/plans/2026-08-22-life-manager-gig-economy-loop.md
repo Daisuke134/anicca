@@ -277,14 +277,16 @@ All cross-market tasks remain frozen until U22 closes.
 The last complete official snapshot is stale and shows applications 0, contracts 0 and payout
 `received` USD 0; pipeline values do not change it. Upwork finance main proof is `12d92846e`, its
 production proof is `c0c66c32f`, and release tests are 40/40. U13 remains
-active because `launchctl gui/501` returns 141, while CDP 9222 is `job-search-daily`, not `gig-upwork`; no
-fresh official Upwork inventory proves recovery.
+active because `launchctl gui/501` returns 141. The shared Gig browser is alive on 9223, but the
+authenticated `gig-upwork` profile has 103 Upwork cookies and no owner listening on its configured
+9233. Disk headroom is 7.6 GiB with 15 GiB of macOS swap, so no fresh official inventory proves
+recovery and no production wake is safe yet.
 
 Remaining order to finish the local Upwork skill and business loop:
 
 | Order | Required closure |
 |---:|---|
-| 1 | Native Aqua verifies/restarts the existing browser job and reads back owner, profile and CDP; no replacement service |
+| 1 | Native Aqua loads the dedicated `life-manager-upwork-browser` owner for existing profile `gig-upwork` on 9233 and reads back label/profile/CDP |
 | 2 | Two existing provider wakes return a complete official inventory, then replay with external effects 0 |
 | 3 | U14–U15 close one natural qualified acquisition with official ID, exact Connects delta and replay 0 |
 | 4 | U16–U17 close client reply, profitable terms and active contract with official IDs and replay 0 |
@@ -429,13 +431,10 @@ U13 atomic order:
     regenerable `~/.npm/_npx` cache plus two unpinned immutable releases while preserving current,
     live and rollback releases. Free space recovered from roughly 320 MiB to 20.08 GiB; the owning
     disk sentinel then cleared both `disk-writers.stop` and `disk-pressure.block` through their
-    normal >=11 GiB recovery condition. The remaining fault is the orphaned Codex GUI context:
-    `launchctl print gui/501/...` returns 141 and the previous Chromium reported WindowServer port
-    death. A later read-only probe finds Chromium PID `74749` listening on CDP 9222, but argv binds it
-    to `~/.cloak/profiles/job-search-daily`, not `gig-upwork`, and its open pages are unrelated to
-    Upwork. No alternate profile, fake browser receipt, proposal or payment was created. The next
-    native Aqua wake must verify or restart the existing `ai.anicca.hf-gig-browser`, then the existing
-    five-minute provider must refresh all official rows before U14 may act.
+    normal >=11 GiB recovery condition. A fresh recheck finds the shared Gig browser healthy on 9223,
+    but the Upwork provider still targets 9233 and no process owns that port. The authenticated
+    `gig-upwork` profile remains separate from `gig-daily-driver`; moving the provider to 9223 would
+    lose its session and is rejected. No alternate profile, fake receipt, proposal or payment exists.
 13. **CANDIDATE COST EVIDENCE REPAIRED:** fresh host readback still shows no CDP listener on
     9223/9233 and the isolated Codex context still returns launchctl 141/manager 153. The correct
     `gig-upwork` profile is intact with 103 Upwork cookies and 114 Upwork history rows; an isolated
@@ -453,6 +452,18 @@ U13 atomic order:
     `20fd33e07aec70063b48fd2e20539a13ca55d07727da46693580b956aefc1a72`. The same 20 focused
     tests pass from the read-only release and syntax compilation passes with a redirected bytecode
     cache. This proves deployment, not a fresh Upwork wake or application.
+14. **DEDICATED BROWSER OWNER CODE COMPLETE / PRODUCTION PENDING:** root-cause comparison proves the
+    original 9233 choice is intentional: `gig-upwork` has 103 Upwork cookies while the shared 9223
+    profile has zero. The missing component is its durable browser owner. The manifest now reuses
+    `launch_gig_browser.sh` as `ai.anicca.life-manager-upwork-browser` with port 9233, profile
+    `gig-upwork`, historical fingerprint `80138`, KeepAlive and a distinct log; the provider names
+    that label. Fingerprint provenance is the prior live main Chromium argv at
+    `/Users/anicca/.codex/sessions/2026/08/22/rollout-2026-08-22T12-44-48-01a02792-348c-7ad3-b606-eaf93a8eb3c0.jsonl:11941`,
+    which binds `80138`, `9233` and `gig-upwork` in one process. Focused provider tests pass 20/20.
+    Disk cleanup preserves client projects, ledgers,
+    archives and proof while recovering regenerable caches and compressing 1376 trashed Codex
+    sessions into an integrity-checked archive. Headroom is still 7.6 GiB because macOS holds 15 GiB
+    of swap, so build/publish/Aqua activation and fresh provider readback remain pending.
 
 U14 atomic order:
 

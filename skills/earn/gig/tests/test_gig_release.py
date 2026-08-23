@@ -120,3 +120,21 @@ def test_default_activation_never_restarts_a_busy_continuous_lane():
 
     assert gig_release.skip_busy_for_requested_activation(label, None) is True
     assert gig_release.skip_busy_for_requested_activation(label, {label}) is False
+
+
+def test_upwork_browser_running_fence_uses_process_fallback(monkeypatch):
+    label = "ai.anicca.life-manager-upwork-browser"
+    ps_output = [""]
+
+    def run(command, **_kwargs):
+        if command[:2] == ["launchctl", "print"]:
+            return SimpleNamespace(returncode=1, stdout="")
+        if command == ["ps", "-axo", "command="]:
+            return SimpleNamespace(returncode=0, stdout=ps_output[0])
+        raise AssertionError(command)
+
+    monkeypatch.setattr(gig_release.subprocess, "run", run)
+
+    assert gig_release.is_running(label) is False
+    ps_output[0] = "/Applications/Chromium --remote-debugging-port=9233\n"
+    assert gig_release.is_running(label) is True

@@ -95,6 +95,28 @@
 
   "jobs": [
     {
+      "label": "ai.anicca.life-manager-upwork-browser",
+      "lane": "upwork-browser",
+      "summary": "Keeps the dedicated logged-in Chromium for the zero-spend Upwork lane.",
+      "program": [
+        "/bin/bash",
+        "{{RELEASE}}/skills/earn/gig/scripts/launch_gig_browser.sh"
+      ],
+      "env": {
+        "GIG_BROWSER_PORT": "9233",
+        "GIG_BROWSER_PROFILE": "{{HOME}}/.cloak/profiles/gig-upwork",
+        "GIG_BROWSER_FINGERPRINT": "80138",
+        "GIG_DISK_HEADROOM_KIB": "524288",
+        "CLOAK_CDP_BASE_URL": "http://127.0.0.1:9233",
+        "CLOAK_BROWSER_LAUNCHD_LABEL": "ai.anicca.life-manager-upwork-browser"
+      },
+      "RunAtLoad": true,
+      "KeepAlive": true,
+      "ThrottleInterval": 30,
+      "ProcessType": "Interactive",
+      "log_basename": "upwork-browser-launchd"
+    },
+    {
       "label": "ai.anicca.life-manager-upwork-free-loop",
       "lane": "upwork-free",
       "summary": "Reconciles free Upwork capacity, invitations, proposals, and offers without purchasing anything.",
@@ -103,6 +125,8 @@
         "{{RELEASE}}/skills/earn/gig/scripts/providers/upwork_browser_provider.py",
         "--cdp-base",
         "http://127.0.0.1:9233",
+        "--browser-profile",
+        "{{HOME}}/.cloak/profiles/gig-upwork",
         "--candidates",
         "{{RELEASE}}/skills/earn/gig/config/upwork-candidates.public.json",
         "--transitions",
@@ -112,7 +136,8 @@
       ],
       "env": {
         "CLOAK_BROWSER_OWNER": "life-manager-upwork-free-loop",
-        "CLOAK_CDP_BASE_URL": "http://127.0.0.1:9233"
+        "CLOAK_CDP_BASE_URL": "http://127.0.0.1:9233",
+        "CLOAK_BROWSER_LAUNCHD_LABEL": "ai.anicca.life-manager-upwork-browser"
       },
       "StartInterval": 300,
       "ThrottleInterval": 60,

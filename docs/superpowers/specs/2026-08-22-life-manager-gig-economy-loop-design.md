@@ -117,12 +117,13 @@ Timeout or lost-ack without readback remains `reconcile_unknown` and cannot rese
 live replay remain intentionally unclaimed until the replacement first-job candidate passes the new
 bootstrap qualification gate.
 
-The production read-only browser provider is now implemented. It reuses the existing hidden-target CDP
-helper against the dedicated `gig-upwork` profile and atomically persists the official zero-spend
-inventory. Live readback currently proves balance 0, no Connects transactions, Offers 0, Invites 0,
-Active proposals 0 and Submitted proposals 0. The account exposes a working-style assessment task but
-does not claim a Connects reward for it, so the loop records it only as `account_task`. A five-minute
-launchd definition exists for this reconciliation and contains no buy, billing, Plus or boost command.
+The production read-only browser provider is implemented. It uses the hidden-target helper and the
+dedicated `gig-upwork` profile; sharing the logged-in Coconala browser is forbidden. Live readback
+previously proved balance 0, no Connects transactions, Offers 0, Invites 0, Active proposals 0 and
+Submitted proposals 0. The five-minute provider contains no buy, billing, Plus or boost command.
+Its missing production dependency is now explicit: `ai.anicca.life-manager-upwork-browser` owns the
+existing authenticated profile on 9233 by reusing `launch_gig_browser.sh`; the provider names that
+label. Code tests pass, but disk/Aqua activation and a fresh official readback remain open.
 The dedicated label `ai.anicca.life-manager-upwork-free-loop` is loaded from immutable release
 `c8d2a990351f02d72537d521c10faad2525b867c` at a 300-second interval. Two real wakes both exited
 zero, updated only `observed_at`, reproduced identical official evidence hashes and emitted zero

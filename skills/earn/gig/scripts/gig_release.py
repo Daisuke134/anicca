@@ -63,6 +63,7 @@ DEFAULT_EXCLUDED = {"ai.anicca.hf-gig-browser", "ai.anicca.hf-gig-release-watch"
 CONTINUOUS_RELOADABLE = {"ai.anicca.hf-gig-reply-detector"}
 PLACEHOLDER = re.compile(r"\{\{([A-Z0-9_]+)\}\}")
 JOB_PROCESS_MARKERS = {
+    "ai.anicca.life-manager-upwork-browser": "--remote-debugging-port=9233",
     "ai.anicca.hf-gig-apply-direct": "application_direct.py",
     "ai.anicca.hf-gig-storefront-direct": "storefront_direct.py",
     "ai.anicca.hf-gig-paid-direct": "paid_direct.py",

@@ -360,12 +360,47 @@ def test_partial_provider_pages_fail_closed(parser, text):
         parser(text)
 
 
-def test_launchd_job_is_zero_spend_and_runs_every_five_minutes():
+def test_launchd_job_is_zero_spend_and_runs_every_five_minutes(monkeypatch):
+    import gig_release
+
     manifest = json.loads((SCRIPTS.parent / "config" / "launchd-jobs.json").read_text())
-    job = next(item for item in manifest["jobs"] if item["lane"] == "upwork-free")
+    jobs = manifest["jobs"]
+    labels = [item["label"] for item in jobs]
+    dedicated_label = "ai.anicca.life-manager-upwork-browser"
+    assert dedicated_label in labels
+    assert dedicated_label not in gig_release.DEFAULT_EXCLUDED
+    browser_index = labels.index(dedicated_label)
+    upwork_index = next(index for index, item in enumerate(jobs) if item["lane"] == "upwork-free")
+    assert browser_index < upwork_index
+    browser = jobs[browser_index]
+    assert browser["program"] == [
+        "/bin/bash",
+        "{{RELEASE}}/skills/earn/gig/scripts/launch_gig_browser.sh",
+    ]
+    assert browser["env"]["GIG_BROWSER_PORT"] == "9233"
+    assert browser["env"]["GIG_BROWSER_PROFILE"] == "{{HOME}}/.cloak/profiles/gig-upwork"
+    assert browser["env"]["GIG_BROWSER_FINGERPRINT"] == "80138"
+    assert browser["KeepAlive"] is True
+    assert browser["log_basename"] == "upwork-browser-launchd"
+    assert browser["ThrottleInterval"] == 30
+    assert browser["ProcessType"] == "Interactive"
+    job = jobs[upwork_index]
+    profile_index = job["program"].index("--browser-profile")
+    assert job["program"][profile_index + 1] == "{{HOME}}/.cloak/profiles/gig-upwork"
+    monkeypatch.setattr(gig_release, "OVERRIDES", Path("/nonexistent/install.json"))
+    rendered_manifest, table = gig_release.settings(Path("/release"))
+    rendered_browser = next(item for item in rendered_manifest["jobs"] if item["label"] == dedicated_label)
+    rendered_env = gig_release.plist_for(rendered_browser, table)["EnvironmentVariables"]
+    assert rendered_env["CLOAK_CDP_BASE_URL"] == "http://127.0.0.1:9233"
+    assert rendered_env["CLOAK_BROWSER_LAUNCHD_LABEL"] == dedicated_label
+
     command = " ".join(job["program"]).lower()
     assert job["StartInterval"] == 300
     assert "upwork_browser_provider.py" in command
     assert "upwork-candidates.public.json" in command
     assert "upwork-free-transitions.jsonl" in command
     assert all(term not in command for term in ("buy", "billing", "plus", "boost"))
+    cdp_index = job["program"].index("--cdp-base")
+    assert job["program"][cdp_index + 1] == "http://127.0.0.1:9233"
+    assert job["env"]["CLOAK_CDP_BASE_URL"] == "http://127.0.0.1:9233"
+    assert job["env"]["CLOAK_BROWSER_LAUNCHD_LABEL"] == dedicated_label
