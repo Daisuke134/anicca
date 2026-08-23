@@ -137,3 +137,27 @@ def test_paid_direct_maps_valid_blocked_owner_to_pending(tmp_path):
     assert paid._remote_owner_checkpoint(
         "blocked", root, feedback, digest, pass_start=0,
     ) == "pending"
+
+
+def test_current_remote_wait_is_fresh(tmp_path):
+    paid = load("paid_direct")
+    root, feedback, digest = blocked_project(tmp_path)
+    mtime = (root / "delivery/paid-remote-result.json").stat().st_mtime
+
+    assert paid._remote_wait_is_fresh(root, feedback, digest, now=mtime + 10) is True
+
+
+def test_remote_wait_expires_after_recheck_interval(tmp_path):
+    paid = load("paid_direct")
+    root, feedback, digest = blocked_project(tmp_path)
+    mtime = (root / "delivery/paid-remote-result.json").stat().st_mtime
+
+    assert paid._remote_wait_is_fresh(root, feedback, digest, now=mtime + 3601) is False
+
+
+def test_future_dated_remote_wait_is_not_fresh(tmp_path):
+    paid = load("paid_direct")
+    root, feedback, digest = blocked_project(tmp_path)
+    mtime = (root / "delivery/paid-remote-result.json").stat().st_mtime
+
+    assert paid._remote_wait_is_fresh(root, feedback, digest, now=mtime - 1) is False

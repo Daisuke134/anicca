@@ -100,6 +100,7 @@ PAID_RUNNER_CANDIDATES = {
 }
 PAID_FILE_POLICY_VERSION = "paid-file-build-review-v21"
 MAX_FILE_REVIEW_ITERATIONS = 1
+PAID_REMOTE_WAIT_RECHECK_SECONDS = 3600
 PAID_MAX_PARALLEL_PROJECTS = 8
 PAID_MAX_PARALLEL_READBACKS = 1
 PAID_SOURCE_CENSUS_VERSION = "paid-source-census-v4"
@@ -3722,6 +3723,14 @@ def _remote_owner_checkpoint(status: str, root: Path, feedback: str, digest: str
     raise Failure("remote_builder")
 
 
+def _remote_wait_is_fresh(root: Path, feedback: str, digest: str,
+                          now: float | None = None) -> bool:
+    paid_remote_result.validate_wait(root, feedback, digest, pass_start=0)
+    observed_at = (root / "delivery" / "paid-remote-result.json").stat().st_mtime
+    age = (time.time() if now is None else now) - observed_at
+    return 0 <= age < PAID_REMOTE_WAIT_RECHECK_SECONDS
+
+
 def _run_remote_repair(args, item_path: Path, root: Path, feedback: str, base: Path) -> Path:
     context = root / "context" / "current.json"
     context.parent.mkdir(parents=True, exist_ok=True)
@@ -3743,6 +3752,8 @@ def _run_remote_repair(args, item_path: Path, root: Path, feedback: str, base: P
         delivery_result = _load(root / "delivery" / "paid-remote-result.json")
         _require_semantic_effect_binding(root, intent, delivery_result)
         digest = _text(intent.get("desired_state_sha256"))
+        if _remote_wait_is_fresh(root, feedback, digest):
+            raise Failure("remote_progress")
         paid_remote_result.validate_builder(root, feedback, digest, resume=True)
         builder_required, validation_start = False, 0
         try:
