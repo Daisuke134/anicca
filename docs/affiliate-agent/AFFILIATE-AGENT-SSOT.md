@@ -7445,3 +7445,17 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   publish`, exited, and advanced `.last-pass` to `2026-08-24T03:25:51+09:00`.
   This closes the stale-health and JSON/auth/readback defects with owner-owned
   production evidence. Affiliate money remains open at zero transactions.
+- The next revenue-path blocker is acquisition decision retry, not Repost.
+  Baseline `94963719ea956f8f...` has a retryable failure whose runner summary is
+  `budget_blocked / pass_token_budget_exceeded`; the first allowed 8,192-token
+  reservation was consumed by an account-1/auth-target mismatch, then every
+  ten-minute wake reused the same pass scope and remained permanently blocked.
+  The public `RUNNER_REJECTED` label hid that underlying budget state.
+- Commit `e066d5b0b` on `fix/affiliate-acquisition-retry-prod` changes the
+  wrapper default to account 2, derives pass scope from baseline plus scheduler
+  run ID, keeps the existing 32,768 daily scope/cap, and maps a sealed
+  `budget_blocked` summary to `BUDGET_BLOCKED`. Focused auth/acquisition tests
+  are 10/10 GREEN with compile and diff checks. The branch-wide 135-test run
+  still has 9 pre-existing environment/fixture errors and one unrelated Repost
+  fixture failure, so it is not claimed globally GREEN. Fresh review and owner
+  production proof remain open.
