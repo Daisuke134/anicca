@@ -1459,6 +1459,32 @@ def _require_semantic_effect_binding(project_root: Path, *records: dict[str, Any
         raise ValueError("semantic effect contract mismatch")
     return digest
 
+def _validated_business_outcome(record: dict[str, Any]) -> dict[str, Any]:
+    """Require official proof that the semantic outcome itself is complete.
+
+    Matching one remote target state is only a transport/readback proof.  It is
+    never sufficient when the semantic contract requires a broader business
+    effect or buyer-facing output.
+    """
+    outcome = record.get("business_outcome") if isinstance(record, dict) else None
+    if not isinstance(outcome, dict):
+        raise ValueError("business outcome missing")
+    if (outcome.get("required_effect_satisfied") is not True
+            or outcome.get("required_output_satisfied") is not True
+            or outcome.get("remaining_work") not in ([], None)):
+        raise ValueError("business outcome incomplete")
+    receipts = outcome.get("official_receipts")
+    if not isinstance(receipts, list) or not receipts:
+        raise ValueError("official business receipts missing")
+    for receipt in receipts:
+        if (not isinstance(receipt, dict)
+                or not _text(receipt.get("effect_key"))
+                or not _text(receipt.get("official_url"))
+                or not _text(receipt.get("readback_source"))
+                or receipt.get("exact_readback") is not True):
+            raise ValueError("invalid official business receipt")
+    return outcome
+
 def _validate_managed_verifier(verifier: Path, project_root: Path, intent: dict[str, Any], feedback: str, digest: str,
                                min_evidence_mtime_ns: int | None = None) -> Path:
     try:
@@ -1488,6 +1514,8 @@ def _validate_managed_verifier(verifier: Path, project_root: Path, intent: dict[
             raise ValueError("builder requirements contract mismatch")
         result = _load(verifier); desired = intent["desired_state"]; target = intent["target"]
         _require_semantic_effect_binding(project_root, intent, delivery_result, result)
+        builder_outcome = _validated_business_outcome(delivery_result)
+        verifier_outcome = _validated_business_outcome(result)
         if (not isinstance(result, dict) or result.get("verified") is not True
                 or result.get("buyer_feedback_sha256") != feedback or result.get("target") != target
                 or result.get("desired_digest", result.get("desired_state_digest")) != digest
@@ -1496,6 +1524,8 @@ def _validate_managed_verifier(verifier: Path, project_root: Path, intent: dict[
                 or result.get("requirements_sha256") != requirements_sha256
                 or result.get("message_sha256") != message_sha256):
             raise ValueError("verifier result mismatch")
+        if not paid_remote_result.canonical_equal(verifier_outcome, builder_outcome):
+            raise ValueError("business outcome verifier mismatch")
         attachment = _validated_customer_attachment(project_root, delivery_result.get("customer_attachment"))
         if (intent.get("customer_attachment") != attachment or result.get("customer_attachment") != attachment):
             raise ValueError("customer attachment verifier mismatch")
@@ -3313,6 +3343,11 @@ def _repair_prompt(root: Path, item: Path, feedback: str, requirements_sha256: s
         "Write version=1 remote-verifier-result.json under PROJECT_ROOT/evidence/agent-PAID_REMOTE_VERIFY/. "
         "On PASS write verified=true with matching feedback, target, desired/observed digest, canonical observed_state, "
         "requirements_sha256, message_sha256, customer_attachment, and fresh verifier evidence, then return runner status=ok. "
+        "PASS is forbidden merely because one target state matches. Independently prove the complete required_effect and "
+        "required_output. Copy the builder's business_outcome only after checking every receipt against the official provider: "
+        "required_effect_satisfied=true, required_output_satisfied=true, remaining_work=[], and a nonempty official_receipts "
+        "array whose records contain effect_key, official_url, readback_source, and exact_readback=true. If any required work "
+        "remains, return blocked; never describe a partial target, draft, internal state, or public proxy as business completion. "
         "For a correctable mismatch write verified=false, classification=quality_mismatch, and a nonempty delta array whose "
         "objects contain only requirement, expected, observed, evidence, and repair strings, then return status=blocked. "
         "For a temporary browser failure use auth_transient or cdp_transient with no delta."
@@ -3322,7 +3357,10 @@ def _repair_prompt(root: Path, item: Path, feedback: str, requirements_sha256: s
     ownership = (
         "Never modify paid-remote-intent.json, paid-remote-result.json, paid-answer.json, or any buyer/client surface."
         if verifier else
-        "Write project-owned intent/result, authenticated before/after evidence, and a natural Japanese customer_message; "
+        "Write project-owned intent/result, authenticated before/after evidence, and a natural Japanese customer_message. "
+        "paid-remote-result.json must include business_outcome with required_effect_satisfied, required_output_satisfied, "
+        "remaining_work, and official_receipts. Set both satisfied fields true only after the complete semantic contract has "
+        "official provider readback; otherwise preserve progress and return blocked without manufacturing a completion result. "
         "do not submit to Coconala or use formal delivery."
     )
     correction = ""

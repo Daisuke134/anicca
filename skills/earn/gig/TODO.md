@@ -1751,6 +1751,18 @@ project owner and official effect/readback. Existing generic `paid-effect-policy
 hash-bound observe-only effect that is already officially visible. LBJ's stop/transfer is represented by its scoped
 policy; BUYMA and any future project can resume through shared skills rather than another buyer-ID exclusion.
 
+The still-running old-release Manledge owner then exposed a broader remote acceptance defect. It completed all 66
+intended X searches with zero unattempted queries and zero query errors, but its builder/result remained bound to the
+already-public general recruitment post while the fresh verifier inspected a blocked signup screen for the prohibited
+`@diceai0` identity. Neither record proves the required individual-outreach outcome; no new Manledge official effect
+was observed. The generic verifier previously treated canonical equality for one selected target as sufficient even
+when the semantic contract required a broader business outcome. Current main now requires both builder and verifier
+to bind an identical `business_outcome`: the complete required effect and required output must each be satisfied,
+remaining work must be empty, and at least one exact official receipt must identify its effect key, provider URL and
+readback source. A partial target, draft, internal state or public proxy cannot PASS this gate. The next current-release
+natural wake must reject the stale proxy result, preserve the completed search evidence and continue only the remaining
+qualified outreach without duplicate effects.
+
 1. **Paid/Submission — finish first.**
    - [x] Deploy and read back Paid ignoring shared preventive `disk-pressure.block` (20 GiB) and
      `disk-writers.stop` (10/11 GiB hysteresis), while retaining the 512 MiB last-resort guard and
