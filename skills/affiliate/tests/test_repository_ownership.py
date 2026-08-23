@@ -56,7 +56,11 @@ GUARD_RELATIVE = Path(
 
 
 def canonical_guard() -> Path:
-    return Path(pwd.getpwuid(os.getuid()).pw_dir) / GUARD_RELATIVE
+    try:
+        owner_home = Path(pwd.getpwuid(os.getuid()).pw_dir)
+    except KeyError:
+        owner_home = Path.home()
+    return owner_home / GUARD_RELATIVE
 
 
 def canonical_guard_ready() -> bool:
@@ -69,6 +73,13 @@ class RepositoryOwnershipTests(unittest.TestCase):
         installer = REPO_ROOT / "skills" / "affiliate" / "scripts" / "install-release.sh"
         text = installer.read_text(encoding="utf-8")
         self.assertNotIn('/bin/launchctl bootout "gui/$(id -u)/$label"', text)
+
+    def test_installer_supports_explicit_canonical_home_without_weakening_guard(self) -> None:
+        installer = REPO_ROOT / "skills" / "affiliate" / "scripts" / "install-release.sh"
+        text = installer.read_text(encoding="utf-8")
+        self.assertIn("AFFILIATE_CANONICAL_HOME", text)
+        self.assertIn('[[ "$CANONICAL_HOME" = /* && -d "$CANONICAL_HOME" ]]', text)
+        self.assertIn('[[ -f "$GUARD_PATH" && ! -L "$GUARD_PATH" && -r "$GUARD_PATH" ]]', text)
 
     def test_canonical_skill_is_migration_only_and_active_files_are_portable(self) -> None:
         skill = SKILL_ROOT / "SKILL.md"
@@ -181,6 +192,7 @@ class RepositoryOwnershipTests(unittest.TestCase):
                     "LIFE_MANAGER_STATE_HOME": str(state_home),
                     "LIFE_MANAGER_RELEASE_SHA": commit,
                     "AFFILIATE_INSTALL_LAUNCHD": "0",
+                    "AFFILIATE_CANONICAL_HOME": str(Path.home()),
                 }
             )
             install_script = fixture_skill / "scripts" / "install-release.sh"
@@ -297,6 +309,7 @@ class RepositoryOwnershipTests(unittest.TestCase):
                     "LIFE_MANAGER_STATE_HOME": str(state_home),
                     "LIFE_MANAGER_RELEASE_SHA": commit,
                     "AFFILIATE_INSTALL_LAUNCHD": "0",
+                    "AFFILIATE_CANONICAL_HOME": str(Path.home()),
                 }
             )
             result = subprocess.run(

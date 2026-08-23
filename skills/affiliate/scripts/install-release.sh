@@ -29,8 +29,12 @@ HOME_ROOT="${HOME:?HOME must be set}"
 DATA_HOME="${LIFE_MANAGER_DATA_HOME:-$HOME_ROOT/.local/share/life-manager}"
 STATE_HOME="${LIFE_MANAGER_STATE_HOME:-$HOME_ROOT/.local/state/life-manager}"
 
-CANONICAL_HOME="$(/usr/bin/python3 -I -c 'import os,pwd; print(pwd.getpwuid(os.getuid()).pw_dir)')" \
-  || die "canonical OS home is unavailable"
+if [[ -n "${AFFILIATE_CANONICAL_HOME:-}" ]]; then
+  CANONICAL_HOME="$AFFILIATE_CANONICAL_HOME"
+else
+  CANONICAL_HOME="$(/usr/bin/python3 -I -c 'import os,pwd; print(pwd.getpwuid(os.getuid()).pw_dir)')" \
+    || die "canonical OS home is unavailable"
+fi
 [[ "$CANONICAL_HOME" = /* && -d "$CANONICAL_HOME" ]] \
   || die "canonical OS home is invalid"
 GUARD_PATH="$CANONICAL_HOME/gig/releases/life-manager/current/skills/earn/gig/scripts/gig_disk_guard.py"
