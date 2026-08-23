@@ -61,7 +61,7 @@ def _ensure_responsive() -> None:
         raise RuntimeError("Illustrator did not recover")
 
 
-def _open(path: Path) -> None:
+def _open(path: Path, *, recover_empty_session: bool = True) -> None:
     # Illustrator 30.7 can finish opening a PDF while leaving the synchronous
     # `app.open()` JavaScript call unanswered. Use Illustrator's native Apple
     # Event open command, then bind through a separate short readback.
@@ -86,6 +86,29 @@ def _open(path: Path) -> None:
         except (OSError, subprocess.SubprocessError, ValueError):
             pass
         time.sleep(1)
+    if recover_empty_session:
+        try:
+            document_count = int(_javascript("app.documents.length", timeout=5))
+        except (OSError, subprocess.SubprocessError, ValueError):
+            document_count = -1
+        if document_count == 0:
+            pids = subprocess.run(
+                ["pgrep", "-x", "Adobe Illustrator"], check=False,
+                capture_output=True, text=True, timeout=5,
+            ).stdout.split()
+            for pid in pids:
+                os.kill(int(pid), 15)
+            time.sleep(3)
+            subprocess.run(["open", "-a", str(APP_PATH)], check=True, timeout=30)
+            for _ in range(30):
+                try:
+                    _javascript("app.version", timeout=5)
+                    break
+                except subprocess.SubprocessError:
+                    time.sleep(1)
+            else:
+                raise RuntimeError("Illustrator did not recover")
+            return _open(path, recover_empty_session=False)
     raise RuntimeError("Illustrator opened a different document")
 
 

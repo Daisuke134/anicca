@@ -1829,6 +1829,16 @@ that acquisition/usage improvement is in scope and requested only a no-charge te
 built certificate flow. Each room returned `effect=1/readback=1`, the exact seller text is present in its official
 talkroom DOM snapshot, and formal delivery remained OFF. Neither reply was sent by Codex.
 
+The same run 9 Haru worker rebuilt and internally validated review package v44, then correctly withheld it and asked
+the durable native controller for two official Illustrator 30.7 save-close-reopen receipts. The controller executed
+Illustrator itself but failed before output because the application remained responsive with zero documents while
+refusing the exact PDF open Apple Event; the existing recovery handled only an unresponsive process and therefore
+misclassified this empty half-alive session as healthy. The shared native adapter now restarts Illustrator only when
+the exact-path open has failed and official readback proves `app.documents.length == 0`, then retries that same path
+once. It never restarts over an open document and never relaxes exact-source, native-data or reopen verification. A
+new existing-launchd wake must prove both native receipts, the exact v44 ZIP hash, review-stage Coconala readback with
+formal delivery OFF, and replay-zero; no Codex submission substitutes for that proof.
+
 1. **Paid/Submission — finish first.**
    - [x] Deploy and read back Paid ignoring shared preventive `disk-pressure.block` (20 GiB) and
      `disk-writers.stop` (10/11 GiB hysteresis), while retaining the 512 MiB last-resort guard and
