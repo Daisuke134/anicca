@@ -1935,6 +1935,56 @@ def execute_requested_estimate(
                 context["semantic_estimate_terms"] = item["semantic_estimate_terms"]
             if not _fresh_request_unchanged(item, context):
                 raise ValueError("estimate_request_changed")
+            pre_cards = thread_observation.get("structured_offers") if isinstance(thread_observation, dict) else []
+            semantic_terms = item.get("semantic_estimate_terms")
+            readback_terms = None
+            if (
+                isinstance(semantic_terms, dict)
+                and isinstance(semantic_terms.get("title"), str)
+                and semantic_terms["title"].strip()
+                and isinstance(semantic_terms.get("content"), str)
+                and semantic_terms["content"].strip()
+                and type(semantic_terms.get("price_jpy")) is int
+                and 0 < semantic_terms["price_jpy"] <= 10_000_000
+                and type(semantic_terms.get("delivery_days")) is int
+                and 0 < semantic_terms["delivery_days"] <= MAX_DELIVERY_DAYS
+                and semantic_terms.get("purchase_plan") in {"single", "subscription"}
+            ):
+                readback_terms = materialize_delivery_content(
+                    semantic_terms, _today_for_epoch(observed_at),
+                )
+            before_form = (
+                classify_delivery(
+                    pre_click_cards=pre_cards if isinstance(pre_cards, list) else [],
+                    post_click_cards=[], terms=readback_terms, click_started_at=None,
+                    today=_today_for_epoch(observed_at),
+                    request_sent_at=item.get("estimate_request_sent_at"),
+                    own_user_path=thread_observation.get("own_user_path"),
+                )
+                if readback_terms is not None else {"status": "not_required", "cards": []}
+            )
+            if before_form.get("status") == "already_delivered":
+                card = before_form["cards"][0]
+                card_receipt = {
+                    key: card.get(key) for key in (
+                        "author_path", "completion_date", "content", "offer_url",
+                        "price_jpy", "sent_at", "title",
+                    )
+                }
+                database.close_already_delivered(
+                    int(action["action_id"]), thread_url=thread_url,
+                    outgoing_hash=_body_hash(json.dumps(
+                        card_receipt, ensure_ascii=False, sort_keys=True,
+                        separators=(",", ":"),
+                    )),
+                    observed_at=observed_at,
+                    seller_sent_at=_card_time(card),
+                )
+                return _result(
+                    item, status="already_delivered", event_key=event_key,
+                    action_id=int(action["action_id"]), revision=int(action["revision"]),
+                    official_readback=1,
+                )
             form = browser.open_form()
             if not validate_form_contract(form):
                 raise ValueError("estimate_form_identity_mismatch")
@@ -1967,7 +2017,6 @@ def execute_requested_estimate(
             terms = materialize_delivery_content(terms, _today_for_epoch(observed_at))
             contract = composer.select_related_service(terms) if hasattr(composer, "select_related_service") else None
             related_service = verified_related_service_context(contract, terms) if contract is not None else None
-            pre_cards = thread_observation.get("structured_offers") if isinstance(thread_observation, dict) else []
             before = classify_delivery(
                 pre_click_cards=pre_cards if isinstance(pre_cards, list) else [],
                 post_click_cards=[], terms=terms, click_started_at=None,

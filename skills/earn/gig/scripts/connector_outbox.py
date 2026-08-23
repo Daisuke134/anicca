@@ -1387,7 +1387,7 @@ class ConnectorOutbox:
                           i.click_started_at,i.executor_quiesced_at,i.rejection_code,
                           e.event_key
                      FROM connector_actions a
-                     JOIN connector_intents i
+                     LEFT JOIN connector_intents i
                        ON i.action_id=a.action_id AND i.revision=a.revision
                      JOIN connector_events e ON e.action_id=a.action_id
                     WHERE a.platform='coconala' AND a.thread_id=?
@@ -1431,13 +1431,16 @@ class ConnectorOutbox:
                           i.origin_at AS intent_origin_at,i.click_started_at,
                           e.event_key
                      FROM connector_actions a
-                     JOIN connector_intents i
+                     LEFT JOIN connector_intents i
                        ON i.action_id=a.action_id AND i.revision=a.revision
                      JOIN connector_events e ON e.action_id=a.action_id
                     WHERE a.platform='coconala' AND a.thread_id=?
                       AND a.state='replied' AND a.dlq_at IS NULL
                       AND a.seller_sent_at>=?
-                      AND i.state='verified' AND i.outgoing_body IS NOT NULL
+                      AND (
+                        (i.state='verified' AND i.outgoing_body IS NOT NULL)
+                        OR (i.action_id IS NULL AND a.verified_outgoing_hash IS NOT NULL)
+                      )
                       AND e.event_key LIKE 'coconala:estimate:v1:%'
                       AND NOT EXISTS (
                         SELECT 1 FROM connector_events newer
