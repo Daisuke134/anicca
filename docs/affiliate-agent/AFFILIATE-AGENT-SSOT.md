@@ -7424,3 +7424,9 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   effects without publishing. Regressions prove old-only returns no match and
   old-plus-new returns only the new status; the complete suite is 37/37 GREEN.
   Final review and immutable release replacement remain open.
+- Final Snowflake review returned `ship` with no findings. Production `current`
+  is now immutable release `20260824T030140-63154b93`; source/runtime `x_post.py`
+  hashes match, the ledger remains 85, and normal release pruning raised free
+  disk space to 9.2 GiB. The next existing-owner pass must take the absorbing
+  recent-unverified reconciliation path and recover
+  `https://x.com/selawmqt/status/2091584652951879730` without a Postiz call.
