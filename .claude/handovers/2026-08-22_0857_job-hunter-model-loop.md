@@ -9,8 +9,8 @@
 
 - Worktree: `/Users/anicca/lm-loops-core`
 - Branch/push target: `codex/job-search-spec-20260821`
-- HEAD/pushed release commit: `120b779219a65f9418df3abe04163ba446db1c05`
-- Active immutable release: `/Users/anicca/.local/share/anicca/job-search/releases/120b779219a65f9418df3abe04163ba446db1c05`
+- Last runtime-code commit: `7ea4da7d6c72e89161dd6865901adb1675377ef6`
+- Active immutable release: `/Users/anicca/.local/share/anicca/job-search/releases/7ea4da7d6c72e89161dd6865901adb1675377ef6`
 - Launchd: `ai.anicca.job-search-daily`, `StartInterval=1800`; trigger only with `launchctl kickstart -k gui/$(id -u)/ai.anicca.job-search-daily`
 - CDP: `http://127.0.0.1:9222`
 - State root: `/Users/anicca/.local/state/anicca/job-search`
@@ -18,6 +18,8 @@
 - Latest Workday result: NVIDIA `JR2008309` is receipt-verified `submitted`
 - Latest Telegram receipts: resume `29697`; submitted outcome `29698`
 - Authoritative Gmail receipt: `1a02c66d77d269c2`
+- Direct Telegram transport proof: `29706`
+- Recurrence run: `daily-20260823-112426` excluded JR2008309 and handed new NVIDIA JR2008507 to Luna/xhigh
 
 ## Architecture decision
 
@@ -175,5 +177,7 @@ unrelated dirty paths `docs/loops/x-repost.md` and `state/effective-cron/`.
   `Application Submitted` and Candidate Home says `Application Received`. Inbox
   run `inbox-20260823-111827` bound receipt `1a02c66d77d269c2`, Ledger is
   `submitted`, and Telegram ACKs are resume `29697` plus receipt-bound outcome
-  `29698`. The remaining hardening is the already-proven direct Telegram Bot API
-  restoration, then one next-wake dedupe/recurrence proof.
+  `29698`. Release `7ea4da7d6c72e89161dd6865901adb1675377ef6` restored the
+  proven direct Telegram Bot API path while preserving every uncertain-send fence;
+  provider ACK `29706` proves it live. Next wake `daily-20260823-112426` excluded
+  JR2008309, discovered NVIDIA JR2008507, and handed only that new row to Luna/xhigh.
