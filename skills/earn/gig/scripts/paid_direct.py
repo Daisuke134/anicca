@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Recover verified paid remote answers through existing delivery boundaries."""
 from __future__ import annotations
-import argparse, fcntl, hashlib, json, os, re, shutil, stat, subprocess, sys, tempfile, time, zipfile
+import argparse, fcntl, hashlib, json, os, re, shutil, signal, stat, subprocess, sys, tempfile, threading, time, zipfile
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from datetime import date, datetime
@@ -170,13 +170,53 @@ def _run_bounded(command: list[str], *, env=None, timeout: float | None = None):
     The runner already budgets itself, but nothing enforced that from out here: one child that
     never returned held the whole lane for an hour, sleeping, with no output written.
     """
+    process = subprocess.Popen(
+        command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env,
+        start_new_session=os.name == "posix",
+    )
+
+    def terminate() -> None:
+        if process.poll() is not None:
+            return
+        if os.name == "posix":
+            try:
+                os.killpg(process.pid, signal.SIGTERM)
+            except ProcessLookupError:
+                pass
+            try:
+                process.wait(timeout=0.5)
+            except subprocess.TimeoutExpired:
+                try:
+                    os.killpg(process.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+        else:
+            process.kill()
+
+    previous: dict[int, Any] = {}
+    main_thread = threading.current_thread() is threading.main_thread()
+    if main_thread and os.name == "posix":
+        def forward(signum: int, _frame: Any) -> None:
+            terminate()
+            signal.signal(signum, signal.SIG_DFL)
+            os.kill(os.getpid(), signum)
+
+        for signum in (signal.SIGTERM, signal.SIGINT, signal.SIGHUP):
+            previous[signum] = signal.getsignal(signum)
+            signal.signal(signum, forward)
+    effective_timeout = timeout or DEFAULT_STEP_TIMEOUT_SECONDS
     try:
-        return subprocess.run(command, capture_output=True, text=True, env=env,
-                              timeout=timeout or DEFAULT_STEP_TIMEOUT_SECONDS)
+        stdout, stderr = process.communicate(timeout=effective_timeout)
+        return subprocess.CompletedProcess(command, process.returncode, stdout, stderr)
     except subprocess.TimeoutExpired as error:
+        terminate()
+        stdout, stderr = process.communicate()
         return subprocess.CompletedProcess(
-            command, STEP_TIMEOUT_RETURNCODE, error.stdout or "",
-            (error.stderr or "") + f"\nstep timed out after {error.timeout}s")
+            command, STEP_TIMEOUT_RETURNCODE, stdout or error.stdout or "",
+            (stderr or error.stderr or "") + f"\nstep timed out after {error.timeout}s")
+    finally:
+        for signum, handler in previous.items():
+            signal.signal(signum, handler)
 
 
 def _run(command: list[str], step: str, timeout: float | None = None) -> str:
