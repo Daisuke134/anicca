@@ -31,6 +31,14 @@ readback through the existing owner; then observe the next natural wake with
 `effect=0`, `duplicate=0`, no wrong-service mutation and a durable owner-report
 receipt. No new scheduler, database, browser owner or reporting transport is allowed.
 
+The recovery fix is GREEN on branch `fix/gig-storefront-acceptance`. Regression
+`test_confirmed_gallery_survives_gc_of_transient_before_evidence` first failed with
+the production error, then passed after missing transient evidence was reconstructed
+only from the confirmed contract's hash-validated rollback image identity. Invalid
+JSON, permission errors and unconfirmed intents still fail closed. Storefront-focused
+verification is 45 passed plus `py_compile`; the remaining evidence is the two natural
+production wakes above.
+
 ## Current scoped milestone: finish the public Coconala package
 
 The repository and `skills/earn/gig/` tree are already public on

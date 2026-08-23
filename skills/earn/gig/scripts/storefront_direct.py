@@ -3998,6 +3998,11 @@ def _render_published_gallery_mutation(state_dir: Path, own_page: dict) -> dict:
         _validate_image_mutation_contract(contract, state_dir=state_dir, require_assets=False)
         try:
             public_before = json.loads(Path(intent["public_before_path"]).read_text(encoding="utf-8"))
+        except FileNotFoundError:
+            public_before = {
+                "url": f"https://coconala.com/services/{GALLERY_SERVICE_ID}",
+                "service_image_ids": contract["rollback_value"]["service_image_ids"],
+            }
         except (OSError, KeyError, json.JSONDecodeError) as error:
             raise RuntimeError("published_gallery_before_evidence_missing") from error
         _validate_public_image_acceptance(

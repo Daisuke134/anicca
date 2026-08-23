@@ -436,6 +436,53 @@ def test_gallery_mutation_allows_only_hashed_assets_inside_external_bundle(tmp_p
         storefront._validate_image_mutation_contract(mismatched, root / "families.json")
 
 
+def test_confirmed_gallery_survives_gc_of_transient_before_evidence(tmp_path, monkeypatch):
+    root = tmp_path / "bundle"
+    _bundle(root)
+    before = [f"image-{number}.png" for number in range(1, 7)]
+    kept = [before[2], before[4]]
+    replacements = []
+    for number in (1, 2, 4, 6):
+        asset_path = root / "assets" / f"gallery-{number}.png"
+        content = f"gallery-{number}".encode()
+        asset_path.write_bytes(content)
+        replacements.append({
+            "replace_image_id": before[number - 1], "asset_path": str(asset_path),
+            "asset_sha256": hashlib.sha256(content).hexdigest(),
+        })
+    mappings = {storefront.GALLERY_SERVICE_ID: "vision"}
+    monkeypatch.setenv("GIG_STOREFRONT_ROOT", str(root))
+    monkeypatch.setattr(storefront, "_load_capability_families", lambda _path: (mappings, {}))
+    contract = storefront._render_gallery_mutation(
+        {"service_id": storefront.GALLERY_SERVICE_ID, "service_image_ids": before},
+        "a" * 64,
+        {"before_image_ids": before, "kept_image_ids": kept,
+         "claim_source": "test", "platform_requirement_source": "test",
+         "replacements": replacements},
+        mappings,
+    )["contract"]
+    intents = tmp_path / "runtime" / "effect-intents"
+    intents.mkdir(parents=True)
+    (intents / "confirmed.json").write_text(json.dumps({
+        "status": "confirmed", "effect_ledger_appended": True,
+        "service_id": storefront.GALLERY_SERVICE_ID, "changed_field": "image",
+        "public_before_path": str(tmp_path / "gc-removed.json"),
+        "mutation_contract": contract,
+    }), encoding="utf-8")
+
+    rendered = storefront._render_published_gallery_mutation(
+        tmp_path / "runtime",
+        {"service_id": storefront.GALLERY_SERVICE_ID,
+         "url": f"https://coconala.com/services/{storefront.GALLERY_SERVICE_ID}",
+         "service_image_count": 6,
+         "service_image_ids": ["new-1.png", "new-2.png", kept[0],
+                               "new-4.png", kept[1], "new-6.png"]},
+    )
+
+    assert rendered["published"] is True
+    assert rendered["contract"]["contract_sha256"] == contract["contract_sha256"]
+
+
 def test_storefront_launchd_job_renders_optional_root_from_install_override(tmp_path, monkeypatch):
     import gig_release
 
