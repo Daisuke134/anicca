@@ -7416,3 +7416,11 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   new row still terminal-unverified; no duplicate publish is allowed. Fresh
   review and a release-owned reconciliation pass remain required before this
   readback repair is complete.
+- Adversarial review rejected body-only readback without causal binding: an old
+  identical cardless post could otherwise satisfy a new Postiz submission.
+  Commit `63154b93e` computes the minimum X Snowflake at the instant before the
+  new Postiz call and rejects older status IDs in DOM and SSR readback. Historical
+  `reconcile` remains intentionally unbounded so it can recover known unknown
+  effects without publishing. Regressions prove old-only returns no match and
+  old-plus-new returns only the new status; the complete suite is 37/37 GREEN.
+  Final review and immutable release replacement remain open.
