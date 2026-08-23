@@ -431,12 +431,12 @@ Current production truth:
 | T2 | five-slot allocator | allocator table covers occupied 5 with retry/no retry and never returns a write | completed — focused allocator contract passes |
 | T3 | same-Agent rejection retry | rejected catalog title preserves existing agent_id and becomes retry only when free > 0 | completed — Football backlog/allocator fixtures preserve `1037238583` |
 | T4 | listed frees slot | `test_listed_agent_not_counted_as_unlisted` | pending |
-| T5 | server unreadable fail-close | `test_server_unreadable_blocks_only_platform_write` | pending |
-| T6 | cap-full productive idle | offline candidate build + marketing/revenue wake evidence | pending |
+| T5 | server unreadable fail-close | `test_server_unreadable_blocks_only_platform_write` | completed — unknown inventory produces no platform action; fresh normalized inventory is required before allocation |
+| T6 | cap-full productive idle | offline candidate build + marketing/revenue wake evidence | completed — production `CAP_FULL` exits 0/write 0 while selector, metrics, landing and official money owners continue |
 | T7 | video quality | probe, audio, caption, black-frame, secret and demonstration fixtures | completed — media and source-hashed demonstration gates pass |
-| T8 | public distribution | native URL logged-out readback | pending |
-| T9 | money separation | one-time/hourly/subscription/refund/fee/MRR fixtures | pending |
-| T10 | receipt exactly once | duplicate wake yields one run receipt and one Telegram message ID | pending |
+| T8 | public distribution | native URL logged-out readback | completed — O13 and Decision Debate native Reel URLs return public readback; duplicate post 0 |
+| T9 | money separation | one-time/hourly/subscription/refund/fee/MRR fixtures | completed — official seller receipt separates `$9.99` one-time, `$0` MRR, `$8` ending balance, `$0` payable/paid from legacy API |
+| T10 | receipt exactly once | duplicate wake yields one run receipt and one Telegram message ID | completed — semantic replay dedupes; official winner company receipt `capafy-6aea4000c07b70b16f945bf6` delivered once as Telegram `29520` |
 | T11 | seven-day operation | outer-owner started/terminal ledger; missing/nonzero execution breaks streak | in progress — durable proof contract passes; live strict counter `0/7`; run `9` healthy CAP_FULL |
 
 | E2E item | value |
