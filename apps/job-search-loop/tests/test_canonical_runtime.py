@@ -178,6 +178,18 @@ raise SystemExit(0)
         self.assertNotIn("/Users/", encoded)
         self.assertNotIn("gig-", encoded)
 
+    def test_runner_codex_home_is_job_search_owned(self):
+        config_path = REPO_ROOT / "runtime" / "agent-runner" / "config.json"
+        provider = json.loads(config_path.read_text(encoding="utf-8"))["providers"][
+            "codex"
+        ]
+
+        self.assertEqual(
+            provider["automation_home"],
+            "~/.local/state/anicca/job-search/codex-runner",
+        )
+        self.assertEqual(provider["auth_file"], "~/.codex/auth.json")
+
     def test_private_env_loader_reads_only_the_requested_key(self):
         with tempfile.TemporaryDirectory() as tmp:
             private_root = Path(tmp)

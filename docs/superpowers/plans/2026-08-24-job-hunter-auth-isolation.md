@@ -31,7 +31,7 @@
 - Consumes: runner provider config keys `automation_home` and `auth_file`.
 - Produces: `CODEX_HOME=~/.local/state/anicca/job-search/codex-runner`, whose `auth.json` target is owned only by Job Hunter.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 def test_runner_codex_home_is_job_search_owned(self):
@@ -45,19 +45,19 @@ def test_runner_codex_home_is_job_search_owned(self):
     self.assertEqual(provider["auth_file"], "~/.codex/auth.json")
 ```
 
-- [ ] **Step 2: Run the test and verify RED**
+- [x] **Step 2: Run the test and verify RED**
 
 Run: `python3 -m unittest apps.job-search-loop.tests.test_canonical_runtime.CanonicalRuntimeTests.test_runner_codex_home_is_job_search_owned -v`
 
 Expected: FAIL because the current value is `~/.local/state/life-manager/codex-runner`.
 
-- [ ] **Step 3: Apply the minimal configuration change**
+- [x] **Step 3: Apply the minimal configuration change**
 
 ```json
 "automation_home": "~/.local/state/anicca/job-search/codex-runner"
 ```
 
-- [ ] **Step 4: Verify GREEN and focused regression**
+- [x] **Step 4: Verify GREEN and focused regression**
 
 Run: `python3 -m unittest apps.job-search-loop.tests.test_canonical_runtime runtime.agent-runner.tests.test_terra_default -v`
 
