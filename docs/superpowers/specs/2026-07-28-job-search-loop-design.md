@@ -498,18 +498,18 @@ This is the remaining implementation-order SSOT. Only the first
 | 48bq | Reject an invented model transport failure and drain the queue first | `implementation_done_live_gate` | Resume run `daily-20260823-033554` successfully reopened the exact Salesforce source picker and returned `Job Board not checked` after every runtime command exited zero, but Luna nevertheless emitted `transport_failed` without another command. The prompt now prohibits that terminal result unless an actual runtime command exits nonzero. Discovery also returns `queue_present` without contacting providers whenever an eligible Workday row already exists, preventing a new row on each recovery wake from growing an unbounded backlog. Twelve focused checks pass. Resume the safe pre-submit checkpoint. |
 | 48br | Resume the Workday checkpoint after host disk capacity recovers | `external_blocked_live_gate` | Release `8ddb0bba47eec17ca1f55fdfe60e66184eb67418` live-proved `queue_present`, resumed Salesforce `JR334569`, selected the actually visible `Job Board`, completed the former-employment answer, country, and phone type, then failed before `Save and Continue` because opening the Ledger raised `sqlite3.OperationalError: unable to open database file`. Data-volume free space measured 326 MiB then 290 MiB; independent `PRAGMA quick_check` remains `ok`. The canonical disk-cleanup control-plane preflight passed, but its existing launchd owner remains `spawn scheduled`; emergency guard last exited 3. No submit fence was consumed. Do not retry until free capacity and a fresh Ledger open are stable, then kickstart the existing Job Hunter owner and resume this checkpoint. |
 | 48bs | Gate every scheduled Job Hunter wake before any disk write | `implementation_done_release_gate` | Host free space continued falling below 200 MiB. The canonical cleanup owner could not create its lock/receipt (`ENOSPC`), and emergency guard was occupied in `colima status`; no safe reclaimable target was reported. `run-daily.sh` now runs the shared Life Manager producer preflight before creating the run directory, opening Ledger, sending Telegram, or invoking Luna. It honors `disk-pressure.block`/`disk-writers.stop`, requires 512 MiB, and exits 75 with the checkpoint untouched. Thirteen focused checks pass. Release this small guard change without starting the model while pressure remains. |
-| 48bt | Resume the existing 30-minute Workday owner and close one queued Salesforce row with authoritative evidence | `external_blocked_live_gate` | The installed plist already has `StartInterval=1800` and the CloakBrowser owner has `KeepAlive=1`. Disk capacity recovered to 19 GiB and `ledger.sqlite3` reports `PRAGMA quick_check=ok`. The latest saved UI visibly shows Salesforce `AI Native Delivery Consultant` (`JR334569`) at Personal Information with phone fields complete and `Save and Continue` available; this is not completion UI, so the row remains `materials_ready`. Root-cause readback now shows the Mac at `loginwindow`: `/dev/console` is owned by root, WindowServer/loginwindow restarted after the disk incident, the surviving Codex process belongs to the older orphaned GUI session, screen capture has no display, CDP `:9222` is down, and `launchctl-safe preflight gui/501` returns `blocked_control_plane` (`username_unresolved`, `directory_services_unresolved`, `manager_not_aqua`, `manager_uid_mismatch`, `manager_pid_unresolved`, `gui_domain_unreadable`; raw launchctl error 141). Telegram milestone delivery also stopped before provider acceptance because DNS could not resolve `api.telegram.org`; no message ID exists. Do not create a second browser/executor or mutate the active symlink without an idle-owner readback. When the existing console user session returns: activate `8d59090e2`, kick only `ai.anicca.job-search-daily`, resume the checkpoint, require Workday completion UI or exact receipt mail, reconcile Ledger, then require a Telegram provider message ID. |
+| 48bt | Resume the existing 30-minute Workday owner and close queued Salesforce rows with authoritative evidence | `application_ui_verified_receipt_pending` | The installed plist is live at `StartInterval=1800`; release `0f835b81f028ab91574828ca84efafafdb4a5120` is active and upstream. Luna/xhigh through the one CloakBrowser owner drove JR337672 and JR334569 to fresh exact Workday completion UI. Both Ledger attempts are `exact_completion_ui_pending_receipt` and MUST NOT be resubmitted. The remaining gate is exact inbox reconciliation plus an automatic Telegram ACK. Manual correction ACK `29480` proves the destination works, but the automatic outcome rows remain `send_started` without provider message IDs. The latest scheduled owner exit is disk-preflight `75`; current Data-volume free space is 9.5 GiB, so the next wake MUST pass the canonical producer guard before model work. |
 | 49 | Drive the fresh Workday form with the LLM agent only | `live_proven` | Two consecutive NVIDIA Workday rows were driven through CloakBrowser CDP `:9222` by Luna/xhigh from fresh visible observations and screenshots, without a scripted question mapper or fixed page workflow. |
-| 50 | Reuse or create the Workday tenant account inside the same agent session | `pending_after_49` | Preserve the authenticated session; if the tenant is new, generate/store credentials privately, consume email verification, prove login, and resume the same row without user intervention. |
-| 51 | Complete every Workday page and variable employer question | `pending_after_50` | The model grounds answers in resume/Candidate Memory/job context, infers missing routine answers, corrects rendered validation, and keeps observing until Review without a missing-context stop. |
-| 52 | Verify final review identity before the one submit action | `pending_after_51` | With our own visual inspection, confirm company, full role, canonical URL, resume filename/hash, and no rendered validation; then consume one final-action fence. |
-| 53 | Submit once and inspect the resulting Workday UI with our own eyes | `pending_after_52` | Capture the immediate post-click page and a fresh settled observation. Do not translate a click, HTTP response, model statement, or generic success-like screen into success. |
-| 54 | Verify the matching Workday receipt email | `pending_after_53` | Read the authenticated mailbox with Gog; require authoritative sender, exact company/role/application binding, post-submit timestamp, and immutable message evidence. No matching message means not yet verified. |
-| 55 | Reconcile Ledger only after UI plus email agree | `pending_after_54` | Both evidence rails must identify the same application. Until then keep `post_submit_verification`; never write or report `submitted`. |
-| 56 | Send the per-run Telegram truth and verify its ACK | `pending_after_55` | Report company, role, and `verified submitted` or exact `not yet verified/failed` outcome on every kickstarted or scheduled wake; require the real Telegram message ID. |
+| 50 | Reuse or create the Workday tenant account inside the same agent session | `live_proven` | The same tenant credential/session was reused by Luna without a second browser or executor. |
+| 51 | Complete every Workday page and variable employer question | `live_proven` | Luna completed provider-varying Salesforce questions for two rows from fresh observations and reached Review. |
+| 52 | Verify final review identity before the one submit action | `live_proven` | Both Salesforce rows passed the fenced company/role/URL/resume/no-validation review gate. |
+| 53 | Submit once and inspect the resulting Workday UI with our own eyes | `live_proven` | JR337672 and JR334569 each produced fresh exact Workday completion UI after one fenced submit. |
+| 54 | Verify the matching Workday receipt email | `in_progress` | Run the existing authenticated inbox owner until exact authoritative receipts bind JR337672 and JR334569. No receipt currently appears in `gmail_application_matches`; never resubmit either row. |
+| 55 | Reconcile Ledger only after UI plus email agree | `pending_after_54` | Promote each row from `exact_completion_ui_pending_receipt` only after its exact receipt is inserted atomically. |
+| 56 | Send the per-run Telegram truth and verify its ACK | `in_progress` | Automatic outcome rows exist but remain `send_started` without message IDs. Require a fresh loop-owned ACK; manual correction `29480` is channel proof, not automatic-loop closure. |
 | 57 | Immediately repeat on a second fresh Workday row | `application_verified_telegram_pending` | `JR2015317` and fresh `JR2022223` are both authoritatively submitted. The second row visibly showed `Application Submitted` and Gmail independently confirmed the exact role. Receipt-bound Telegram ACK remains before closure. |
-| 58 | Prove recurring Workday-only operation | `application_verified_telegram_pending` | Existing launchd owner runs every 1800 seconds and the recurrence selected and completed a fresh Workday row. Verify the new receipt-bound Telegram ACK, then observe the next scheduled wake without creating another executor or browser. |
-| 59 | Close `JOB-WORKDAY-E2E-MODEL-10P` | `pending_after_58` | At least two fresh Workday applications, each visually verified by final UI plus exact receipt email, deduped on the next wake, with Ledger and Telegram agreement and no scripted form ownership. |
+| 58 | Prove recurring Workday-only operation | `in_progress` | The sole owner is installed every 1800 seconds and has 11 recorded runs. The last exit is producer-guard `75`, so pass the disk guard, reconcile receipts, then prove one subsequent scheduled wake dedupes both completed rows and selects only a new eligible Workday row. |
+| 59 | Close `JOB-WORKDAY-E2E-MODEL-10P` | `pending_after_54_56_58` | Close only when both Salesforce rows have exact receipt reconciliation, Ledger agreement, fresh automatic Telegram ACKs, and next-wake dedupe. |
 | 60 | Unpark Ashby as `JOB-ASHBY-E2E-MODEL-10Q` | `pending_after_59` | Only after 10P closes; reuse the identical agent loop without restoring deterministic Ashby form ownership. |
 | 61 | Extend the proven loop to Greenhouse, Lever, and generic ATS | `pending_after_60` | Add provider discovery/safety hints only; never add a new scripted form/question workflow. |
 | 62 | Package Job Hunter as a canonical open-source Life Manager skill/loop | `pending_after_61` | Clean-home install accepts finalized resume plus email, owns one release/launchd/state/Telegram contract, and reproduces the verified behavior without private data. |
@@ -592,46 +592,40 @@ terminate or bypass the model loop.
 
 #### Current production call graph and replacement seams
 
-The traced production path is concrete. The launchd plist owns the only hourly
+The traced production path is concrete. The launchd plist owns the only 30-minute
 process and resolves its installed immutable-release program at install time. Its
-`StartInterval` is 3600 seconds. That program is `scripts/run-daily.sh`, which
-currently probes the shared CDP browser, lets two deterministic form fillers own
-browser actions and Ledger outcomes, reports their checkpoint, and invokes the
-model only when the optional `JOB_SEARCH_ENABLE_MODEL_FALLBACK=1` flag is present:
+`StartInterval` is 1800 seconds. That program is `scripts/run-daily.sh`; it probes
+the shared CDP browser, admits/dedupes rows, and hands eligible Workday forms to the
+mandatory Luna/xhigh browser agent. Deterministic code owns only safety, evidence,
+Ledger, discovery, and final-effect fencing:
 
 ```mermaid
 flowchart TD
-    L["launchd: ai.anicca.job-search-daily<br/>StartInterval 3600"] --> D["installed run-daily.sh"]
-    D --> R0["deliver pending Telegram resume reports"]
-    D --> B["browser_owner probe<br/>existing CDP :9222"]
-    B --> AF["ashby_fast_path<br/>currently navigates, fills, clicks, classifies"]
-    AF --> AD["ashby_discovery<br/>queue admission only"]
-    AD --> AF2["ashby_fast_path for newly discovered row"]
-    AF2 --> WF["workday_fast_path<br/>currently authenticates, fills, clicks, classifies"]
-    WF --> T0["direct fast-path Telegram checkpoint"]
-    T0 --> G{"JOB_SEARCH_ENABLE_MODEL_FALLBACK == 1?"}
-    G -- "no: production default" --> X["deliver reports + summary + exit"]
-    G -- yes --> AR["shared agent_runner.py<br/>browser-lane-agent"]
-    AR --> R1["deliver reports + summary"]
+    L["launchd: ai.anicca.job-search-daily<br/>StartInterval 1800"] --> D["installed run-daily.sh"]
+    D --> P["disk producer guard"]
+    P --> R0["deliver pending reports"]
+    R0 --> B["browser_owner probe<br/>existing CDP :9222"]
+    B --> Q["Workday discovery + canonical dedupe"]
+    Q --> AR["mandatory Luna/xhigh<br/>browser-lane-agent"]
+    AR --> F["one fenced final effect"]
+    F --> R1["completion UI evidence + Telegram outcome"]
     I["separate run-inbox.sh"] --> GC["submission_confirmation reconcile Gmail"]
     GC --> LR["Ledger receipt reconciliation"]
     LR --> R0
 ```
 
-This ordering is the exact defect boundary: recognized Workday and Ashby rows are
-acted on before the model and the production default exits at the optional-model
-gate. The renewal keeps the control plane and evidence stores, but removes form
-ownership from both fast paths. Discovery and hard safety checks may produce queue
-facts or provider hints; they cannot open, fill, advance, submit, classify, or
-terminate an eligible form.
+Discovery and hard safety checks produce only queue facts or provider hints. They
+cannot open, fill, advance, submit, classify, or terminate an eligible form. The
+mandatory model lane owns every visible Workday control; the deterministic fence
+owns only dedupe and the final external effect.
 
 | Existing entrypoint | Current ownership | Renewal decision and exact seam |
 |---|---|---|
-| `launchd/ai.anicca.job-search-daily.plist` → installed `scripts/run-daily.sh` | One hourly owner and process lifetime | Reuse unchanged as the only executor; replace the body between CDP preflight and final reconciliation with ordered queue → mandatory orchestrator calls |
+| `launchd/ai.anicca.job-search-daily.plist` → installed `scripts/run-daily.sh` | One 30-minute owner and process lifetime | Reuse unchanged as the only executor; ordered queue → mandatory orchestrator calls remain the production path |
 | `scripts/runtime-paths.sh` → `runtime/agent-runner/agent_runner.py` | Installed paths, selected provider, shared state roots | Reuse; no Job Hunter-specific second runner or browser process |
 | `job_search_loop.browser_owner:probe_cdp` | Read-only readiness evidence for CDP `:9222` | Reuse as `BrowserSession` preflight; session attach/reconnect remains inside the framework |
 | `job_search_loop.ashby_discovery:main` and existing eligibility/dedupe queries | Candidate discovery and admission | Reuse sanitized queue facts; during Workday 10P it may refresh only and cannot invoke `ashby_fast_path` |
-| `job_search_loop.workday_fast_path:_run/_process_one` | Opens a page, signs in, fills scripted fields, advances steps, claims Submit, clicks, and writes `blocked`/`submitted`/`submit_unknown` | Replace this ownership completely. Workday-specific surface terms become non-authoritative `ProviderHints`; each row is handed to `BrowserAgentOrchestrator` before any form action |
+| `job_search_loop.workday_fast_path:_run/_process_one` | Discovery/provider hints only in the production path | MUST NOT own form controls or terminal outcomes; every eligible row is handed to `BrowserAgentOrchestrator` before any form action |
 | `job_search_loop.ashby_fast_path:_run/_process_one` | Same deterministic browser and terminal-state ownership for Ashby | Remove from the application path; later Ashby 10Q reuses the same orchestrator with Ashby hints only |
 | `job_search_loop.workday_credentials:ensure_credentials/load_credentials` | Per-tenant generated password and private application email lookup | Reuse behind a typed credential tool. The model receives neither password nor raw store contents |
 | `runtime/agent-runner/agent_runner.py --task-class browser-lane-agent` | Bounded provider execution, schema validation, evidence directory, provider usage | Reuse as the single model execution boundary; route changes to Luna xhigh, and the optional fallback gate is removed |
@@ -2220,8 +2214,8 @@ must accumulate in the live loop:
 
 | Lane | Current evidence | Next completion gate |
 |---|---|---|
-| Engineering now | 11C and 10N are complete; hourly owner and provider discovery are live; model fallback remains production-off | Build the full framework in section 1.0, replace fast-path ownership, and close Workday release/live gates |
-| Resident runtime | `Aqua`/manager PID `1` is healthy; installed acquisition owner reports `StartInterval=3600`, last exit `0`; active release is `96f49a0ff5ba29557f5725dd2bc55c8750facc1d` | Obtain one authoritative Workday submission, per-row Telegram proof, and next-wake dedupe before enabling Ashby forms |
+| Engineering now | Mandatory Luna/xhigh Workday ownership is live; two Salesforce rows have exact completion UI | Close receipt reconciliation, automatic Telegram ACK, and scheduled dedupe before Ashby |
+| Resident runtime | Installed owner reports `StartInterval=1800`, runs `11`, last exit producer-guard `75`; active release is `0f835b81f028ab91574828ca84efafafdb4a5120` | Pass disk guard, reconcile both receipts, verify automatic Telegram ACK and next-wake dedupe |
 | External evidence wait | No real interview email or naturally occurring later same-thread recruiting message has arrived | Order 9 and the 10L E2E gate close only on authoritative external messages; no profile-context wait blocks application engineering |
 
 | Order | Deliverable | Status | Completion evidence |
@@ -2237,8 +2231,8 @@ must accumulate in the live loop:
 | 9 | Recurring interview preparation and real interview-email E2E | `implemented_waiting_external_e2e` | Persistent registration; 3-day/1-day/immediate windows; real Telegram immediate delivery plus second-tick dedupe; forced production launchd no-mail pass and private DB healthcheck; final real recruiter-email E2E waits for an interview message |
 | 10 | Shared browser-agent framework and ATS rollout | `in_progress` | 10A–10O are audit history and deterministic rails. Current gate is 10P: build the framework and close Workday E2E. 10Q applies it to Ashby, 10R to Greenhouse, 10S to Lever, and 10T to unknown supported ATS forms. |
 | 10N | `JOB-LEDGER-EVENT-10N`: repair the attributed-application transition contract | `completed` | `Ledger` appends the matching event before updating the trigger-guarded projection in the same transaction. Focused ledger tests pass (`17/17`); the live Cognition row advanced `discovered→qualified→materials_ready`, survived DB reopen, and the real ledger reports integrity `ok` with zero event/projection mismatches. |
-| 10O | `JOB-SCHEDULER-POLICY-10O`: align cadence and application objective | `implemented` | The quota short-circuit is removed and pending `materials_ready` rows are exposed. The installed production policy is now hourly (`StartInterval=3600`); final completion evidence is owned by 10P. |
-| 10P | `JOB-WORKDAY-E2E-MODEL-10P`: full framework plus Workday E2E | `in_progress` | The 30-minute owner and persistent CDP owner are live. Run `daily-20260823-092021` used Luna against the signed-in Salesforce Workday tenant, answered the visible provider-varying questionnaire, reached Review, executed one fenced Japanese `送信`, and recorded `exact_completion_ui_pending_receipt` for JR337672. The same submission must not be retried. Remaining closure is authoritative inbox reconciliation plus an automatic per-row Telegram ACK; manual truth correction ACK `29480` proves the channel itself works. |
+| 10O | `JOB-SCHEDULER-POLICY-10O`: align cadence and application objective | `implemented` | The quota short-circuit is removed and pending `materials_ready` rows are exposed. The installed production policy is every 30 minutes (`StartInterval=1800`); final completion evidence is owned by 10P. |
+| 10P | `JOB-WORKDAY-E2E-MODEL-10P`: full framework plus Workday E2E | `in_progress` | The 30-minute owner and persistent CDP owner are live. Luna/xhigh produced exact Workday completion UI for Salesforce JR337672 and JR334569 through one fenced submit each. Both remain `exact_completion_ui_pending_receipt` and MUST NOT be retried. Close exact inbox receipt reconciliation, automatic Telegram provider ACK, disk-guard recovery, and next-wake dedupe. |
 | 10Q | `JOB-ASHBY-E2E-MODEL-10Q`: reuse the framework for Ashby | `in_progress_actionable` | Same orchestrator/session/observation/action/checkpoint/verifier contracts; unpark Ashby forms, then close one authoritative Ashby outcome and repeated-wake dedupe. |
 | 10R | `JOB-GREENHOUSE-E2E-MODEL-10R` | `pending_after_10Q` | Provider hints only plus one authoritative Greenhouse outcome |
 | 10S | `JOB-LEVER-E2E-MODEL-10S` | `pending_after_10R` | Provider hints only plus one authoritative Lever outcome |
