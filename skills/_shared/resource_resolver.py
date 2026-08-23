@@ -20,6 +20,7 @@ REPO = Path(os.environ.get("LIFE_MANAGER_REPO") or HERE.parents[1]).resolve()
 REGISTRY = Path(os.environ.get("LIFE_MANAGER_SKILL_REGISTRY") or REPO / "skills/registry.json")
 CREDENTIALS = Path(os.environ.get("ANICCA_CREDENTIALS_FILE") or Path.home() / ".local/share/anicca/credentials.json")
 BROWSERS = Path(os.environ.get("AI_BROWSER_REGISTRY") or Path.home() / ".config/ai/registry/browsers.toml")
+SKILLS_ROOT = REPO / "skills"
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -40,6 +41,77 @@ def service_tokens(service: str) -> set[str]:
     if "x" in result or "twitter" in result:
         result.update(("x", "twitter"))
     return result
+
+
+def matches_service(service: str, *values: object) -> bool:
+    haystack = " ".join(str(value).lower() for value in values if value is not None)
+    wanted = service_tokens(service)
+    if "x" in wanted or "twitter" in wanted:
+        return bool(re.search(r"(?:x\.com|twitter|(?:^|[\s/_-])x(?:[\s/_-]|$))", haystack))
+    return bool(tokens(haystack) & wanted)
+
+
+def matches_registered_service(service: str, name: str, *values: object) -> bool:
+    """Live slots must advertise the service, not merely mention a common word."""
+    haystack = " ".join(str(value).lower() for value in values if value is not None)
+    lowered = service.lower()
+    if lowered in ("x.com", "twitter.com"):
+        return matches_service(service, name, haystack)
+    if "." in lowered:
+        label = lowered.split(".", 1)[0]
+        return lowered in haystack or label in tokens(name)
+    return matches_service(service, name, haystack)
+
+
+def frontmatter_scalar(frontmatter: str, key: str) -> str:
+    match = re.search(rf"(?m)^{re.escape(key)}:\s*(.*)$", frontmatter)
+    if not match:
+        return ""
+    value = match.group(1).strip().strip("'\"")
+    if value not in ("|", ">", "|-", ">-"):
+        return value
+    lines = frontmatter[match.end():].splitlines()
+    continuation = []
+    for line in lines:
+        if not line.startswith((" ", "\t")):
+            break
+        continuation.append(line.strip())
+    return " ".join(continuation)
+
+
+def installed_skill_refs(service: str, capability: str) -> list[dict[str, Any]]:
+    """Discover installed knowledge/adapters without claiming runtime readiness.
+
+    SKILL.md is the OSS capability catalogue.  The live slot registry is a smaller
+    execution catalogue, so limiting discovery to it made otherwise reusable skills
+    invisible to gig owners.  Parse only frontmatter and return a path for the owner to
+    read; the owner still has to inspect the adapter and prove live readiness.
+    """
+    result = []
+    for path in SKILLS_ROOT.glob("**/SKILL.md"):
+        try:
+            source = path.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        if not source.startswith("---\n"):
+            continue
+        end = source.find("\n---", 4)
+        if end < 0:
+            continue
+        frontmatter = source[4:end]
+        name = frontmatter_scalar(frontmatter, "name") or path.parent.name
+        description = frontmatter_scalar(frontmatter, "description")
+        if not matches_service(service, name, description, frontmatter):
+            continue
+        if capability and capability not in tokens(name, description, frontmatter):
+            continue
+        result.append({
+            "skill": name,
+            "skill_path": str(path.relative_to(REPO)),
+            "description": description,
+            "readiness": "inspect_adapter_and_verify_live_effect",
+        })
+    return sorted(result, key=lambda row: (row["skill"], row["skill_path"]))
 
 
 def credential_refs(service: str) -> list[dict[str, Any]]:
@@ -80,7 +152,6 @@ def browser_refs(service: str, capability: str) -> list[dict[str, Any]]:
 
 def skill_refs(service: str, capability: str) -> list[dict[str, Any]]:
     slots = load_json(REGISTRY).get("slots", {}) if REGISTRY.is_file() else {}
-    wanted = service_tokens(service) | tokens(capability)
     result = []
     for name, row in slots.items():
         if not isinstance(row, dict) or row.get("status") != "live":
@@ -88,13 +159,19 @@ def skill_refs(service: str, capability: str) -> list[dict[str, Any]]:
         capabilities = row.get("capabilities", [])
         if capability and capabilities and capability not in capabilities:
             continue
-        if not (tokens(name, row.get("summary"), row.get("toolDescription")) & wanted):
+        if not matches_registered_service(
+                service, name, row.get("summary"), row.get("toolDescription")):
             continue
         result.append({key: value for key, value in {
             "slot": name, "dir": row.get("dir"), "entrypoint": row.get("entrypoint"),
             "summary": row.get("summary"), "risk": row.get("risk"),
             "capabilities": capabilities,
         }.items() if value not in (None, "")})
+    known_paths = {row.get("dir") for row in result}
+    for row in installed_skill_refs(service, capability):
+        skill_dir = str(Path(row["skill_path"]).parent)
+        if skill_dir not in known_paths:
+            result.append(row)
     return result
 
 
@@ -164,7 +241,10 @@ def main() -> int:
         "credential_policy": "Adapters read secret fields by ref; never print or place them in prompts.",
     }
     value["discovered"] = bool(value["skills"] or value["accounts"] or value["browser_sessions"])
-    value["effect_ready"] = bool(value["skills"] or value["browser_sessions"])
+    value["effect_ready"] = bool(
+        value["browser_sessions"]
+        or any(row.get("slot") for row in value["skills"])
+    )
     value["readiness_policy"] = (
         "Static capability match only. The selected owner must verify live readiness in official UI/API; "
         "if unavailable, resolve another authorized skill or channel instead of treating discovery as success."

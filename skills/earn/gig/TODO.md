@@ -1696,6 +1696,23 @@ the durable-sidecar recovery removes the three silent pending rows and that new/
 without a Codex customer-work executor. Owner decisions, buyer-visible effects, exact-room readbacks and replay-zero
 for the four unfinished customer projects remain open.
 
+Haru then completed the first no-resend proof on that wake. Semantic v13 returned `await_buyer`; the current official
+room readback shows the seller's final review-stage message with `habikino-renewal-v43.zip`, no newer buyer reply,
+transaction state `取引中`, and formal delivery OFF. The buyer-visible ZIP SHA-256
+`4d13095f163db23120d4a66498cea2f801bae1ea4c9c0b92db4072f5426afcd8` exactly matches the v43 PASS manifest.
+Natural preparation returned `effect=0/readback=1/failed=0`, proving replay-zero. Haru is now awaiting buyer approval
+or specific revision feedback; it must resume automatically on either and formal delivery remains prohibited meanwhile.
+
+The shared capability plane also exposed and repaired a cross-loop discovery defect. `resource_resolver.py` previously
+searched only live `skills/registry.json` slots, so installed OSS skills such as Writer/Note were invisible to Paid
+owners even though their `SKILL.md`, adapters and persistent work existed. It now searches every installed `SKILL.md`
+on demand and returns the relevant skill path for owner inspection, while keeping runtime readiness separate from
+knowledge discovery. A focused live query for `note.com/publish` now discovers `writer-agent` but truthfully returns
+`effect_ready=false` because no registered live publication adapter or browser identity currently matches; it does
+not mislabel the draft-only path as a public effect. The same query for `x.com/post` returns the live `x-repost` slot
+and seller-owned `x:anicca` / `@selawmqt` session with `effect_ready=true`. Secrets remain outside prompts and repo.
+This is the general skill-reuse path for every lane and future marketplace, not a byusco-specific router.
+
 1. **Paid/Submission — finish first.**
    - [x] Deploy and read back Paid ignoring shared preventive `disk-pressure.block` (20 GiB) and
      `disk-writers.stop` (10/11 GiB hysteresis), while retaining the 512 MiB last-resort guard and
