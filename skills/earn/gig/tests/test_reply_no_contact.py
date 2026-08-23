@@ -70,6 +70,30 @@ def test_targeted_seller_debt_bridge_binds_verified_reply_to_target_event():
     assert rebound["items"][0]["covered_event_keys"] == [target["inbox_event_key"]]
 
 
+def test_targeted_obsolete_estimate_closes_exact_action_without_send(tmp_path):
+    database = tmp_path / "outbox.sqlite3"
+    manifest = ROOT / "config/connectors/coconala.json"
+    outbox = connector.ConnectorOutbox(database, manifest)
+    event_key = connector.coconala_estimate_event_key("90001", "buyer-purchased")
+    action = outbox.enqueue(
+        event_key=event_key, thread_id="90001",
+        thread_url="https://coconala.com/mypage/direct_message/90001",
+        observed_at=1000,
+    )
+
+    closed = detector._targeted_close_obsolete_estimate(
+        database=database, manifest=manifest,
+        action_id=int(action["action_id"]), thread_id="90001",
+        event_key=event_key, expected_revision=1, run_id="test",
+    )
+
+    assert closed == {"action_id": action["action_id"], "revision": 1,
+                      "status": "nothing_to_say"}
+    assert outbox.dlq_actions() == []
+    closure = outbox.closed_actions(closure="nothing_to_say")[0]
+    assert closure["reason"] == "nothing_to_say:estimate_no_longer_required"
+
+
 def test_reply_queue_builds_verified_seller_debt_without_relabeling_official_side():
     queue = reply_queue.build_queue({
         "captured_at": "2026-08-22T12:32:00+00:00",

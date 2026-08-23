@@ -1128,6 +1128,38 @@ def _targeted_close_no_send(
     }
 
 
+def _targeted_close_obsolete_estimate(
+    *, database: Path, manifest: Path, action_id: int, thread_id: str,
+    event_key: str, expected_revision: int, run_id: str,
+) -> dict[str, Any] | None:
+    """Close the exact pending estimate after fresh semantics withdraws the request."""
+    try:
+        _requested_estimate_module().validate_estimate_event_key(event_key, thread_id)
+    except Exception:
+        return None
+    bound = _durable_event_action(database, event_key, thread_id)
+    if (
+        bound is None or int(bound.get("action_id") or 0) != action_id
+        or int(bound.get("revision") or 0) != expected_revision
+        or bound.get("state") != "pending" or bound.get("dlq_at") is not None
+    ):
+        return None
+    now = max(int(time.time()), int(bound.get("updated_at") or 0))
+    owner = f"gig-estimate-obsolete-{run_id}"
+    outbox = ConnectorOutbox(database, manifest)
+    claimed = outbox.claim(owner=owner, now=now, lease_seconds=30, action_id=action_id)
+    if claimed is None or int(claimed.get("revision") or 0) != expected_revision:
+        return None
+    closed = outbox.close_nothing_to_say(
+        action_id, owner=owner, fencing_token=int(claimed["fencing_token"]),
+        reason="estimate_no_longer_required", now=now,
+    )
+    return {
+        "action_id": int(closed["action_id"]),
+        "revision": int(closed["revision"]), "status": "nothing_to_say",
+    }
+
+
 def _collect_targeted_head(
     args: Any, *, evidence: Path, thread_id: str, identity_sha256: str,
 ) -> dict[str, Any]:
@@ -1707,7 +1739,28 @@ def run_targeted_thread(
         _run("collect", collect_command)
         _owner_only(snapshot_path)
         snapshot = _targeted_snapshot(snapshot_path)
-        _targeted_inquiry(snapshot, thread_id)
+        inquiry = _targeted_inquiry(snapshot, thread_id)
+        if not (
+            inquiry.get("estimate_required") is True
+            or str(inquiry.get("next_action") or "") in _TARGETED_ESTIMATE_ACTIONS
+        ):
+            closed = _targeted_close_obsolete_estimate(
+                database=Path(args.database), manifest=Path(args.manifest),
+                action_id=action_id, thread_id=thread_id, event_key=event_key,
+                expected_revision=expected_revision, run_id=run_id,
+            )
+            if closed is None:
+                return _targeted_pending(
+                    thread_id, run_id, error="obsolete_estimate_close_raced",
+                )
+            return {
+                "status": "completed", "thread_id": thread_id, "run_id": run_id,
+                "estimate_required": 0, "estimate_effect": 0,
+                "estimate_readback": 0, "estimate_pending": 0,
+                "estimate_failed": 0, "estimate_events": [],
+                "closed_without_send": 1, "pending": 0, "errors": [],
+                "closed_action_ids": [closed["action_id"]],
+            }
         return _run_effect_pipeline(
             args, snapshot=snapshot, evidence=evidence, run_id=run_id, target=binding,
         )
