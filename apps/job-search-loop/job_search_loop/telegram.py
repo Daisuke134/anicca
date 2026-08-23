@@ -86,7 +86,7 @@ def send_once(
                 check=False,
                 capture_output=True,
                 text=True,
-                timeout=20,
+                timeout=60,
                 env=_transport_env(),
                 stdin=subprocess.DEVNULL,
             )
@@ -160,7 +160,7 @@ def send_document_once(
                 check=False,
                 capture_output=True,
                 text=True,
-                timeout=20,
+                timeout=60,
                 env=_transport_env(),
                 stdin=subprocess.DEVNULL,
             )

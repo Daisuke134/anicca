@@ -130,3 +130,21 @@ unrelated dirty paths `docs/loops/x-repost.md` and `state/effective-cron/`.
   console session without inventing a credential. A milestone Telegram attempt
   failed before provider acceptance with DNS resolution failure; no message ID was
   produced and no success report was sent.
+- The console/CDP owners recovered. Immutable release
+  `559a085edfd0981970c590338552f7b25ef4028d` is active; the daily owner is
+  `StartInterval=1800` and the existing browser owner remains `KeepAlive=1`.
+- Live run `daily-20260823-092021` resumed Salesforce Workday JR337672 in the
+  signed-in tenant, answered the visible questionnaire, accepted terms, reached the
+  final Review, executed exactly one fenced Japanese `送信`, and recorded evidence
+  class `exact_completion_ui_pending_receipt` with SHA-256
+  `e9b5334a1058f2efb4f9eca83f002300d899cc3ec53785aa04cc6c685fef20b2`.
+  Ledger remains `submit_unknown` only because Workday receipt reconciliation is
+  required; never submit this row again.
+- The run then failed after completion observation because automatic Telegram ACK
+  remained `send_started` without a message ID. A truthful manual correction sent
+  through the same OpenClaw transport returned provider message ID `29480` in 5.2s,
+  proving channel auth and destination are healthy. The smallest remaining code fix
+  extends the bounded Telegram ACK wait from 20s to 60s while retaining the
+  no-retry fence for ambiguous sends. Deploy it, run the inbox owner for JR337672's
+  authoritative receipt, then verify the next automatic per-row outcome has a real
+  Telegram message ID.
