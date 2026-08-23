@@ -114,7 +114,11 @@ def find_permalink(pw, cdp: str, handle: str, needle: str, attempts: int = 6):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--cdp", required=True, help="leased CDP base URL from browser-guard.sh")
+    ap.add_argument(
+        "--cdp",
+        default=os.environ.get("CDP"),
+        help="leased CDP base URL (or CDP from with-browser.sh)",
+    )
     ap.add_argument("--source-url", help="the post being quoted or replied to")
     ap.add_argument("--text-file", required=True, help="file holding the comment body")
     # A quote is a new post from an account with no followers, which asks the ranker to distribute
@@ -123,6 +127,8 @@ def main():
     # publishes (+75, against 0.5 for a like).
     ap.add_argument("--mode", choices=["post", "quote", "reply"], default="quote")
     args = ap.parse_args()
+    if not args.cdp:
+        ap.error("--cdp or the CDP environment variable is required")
 
     if args.mode in {"quote", "reply"} and not args.source_url:
         ap.error("--source-url is required for quote and reply modes")
