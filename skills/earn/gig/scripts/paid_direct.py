@@ -3487,6 +3487,10 @@ def _run_consultation_review(args, item_path: Path, root: Path, feedback: str, b
     schema = HERE.parent / "schemas" / "paid_consultation_review.schema.json"
     owner_evidence = root / "evidence" / "agent-PAID_ANSWER_OWNER"
     verifier_evidence = root / "evidence" / "agent-PAID_ANSWER_VERIFY"
+    # A brand-new project has no owner directory yet. Create it before taking the project
+    # identity snapshot, otherwise agent-runner's mkdir changes the parent evidence directory
+    # mtime and is misclassified as a customer-context TOCTOU mutation.
+    owner_evidence.mkdir(parents=True, exist_ok=True)
     review_state_path = root / "context" / "paid-review-state.json"
     review_state = _load(review_state_path) if _regular_file(review_state_path) else {}
     issues = ([_text(issue) for issue in review_state.get("findings", []) if _text(issue)]
