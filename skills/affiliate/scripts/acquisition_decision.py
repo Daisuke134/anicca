@@ -22,6 +22,9 @@ VARIABLES = {
     "title", "opening_hook", "article_structure", "cta",
 }
 
+ACQUISITION_PASS_TOKEN_BUDGET = 32768
+ACQUISITION_DAILY_TOKEN_BUDGET = ACQUISITION_PASS_TOKEN_BUDGET
+
 
 def experiment_plan_id(control_plan_id: str, decision_id: str) -> str:
     """Return the one compact plan id sealed by an acquisition decision."""
@@ -82,7 +85,7 @@ def _failure(
     return {**payload, "changed": False}
 
 
-def _economics(state: Path) -> tuple[dict, str | None]:
+def _economics(state: Path, placement_id: str) -> tuple[dict, str | None]:
     path = state / "placement-ledger.json"
     if not path.is_file():
         return {"state": "UNKNOWN", "reason": "placement ledger unavailable"}, None
@@ -95,9 +98,27 @@ def _economics(state: Path) -> tuple[dict, str | None]:
     ).encode()).hexdigest()
     if claimed != actual:
         raise DecisionError
+    placements = [row for row in ledger.get("placements", []) if isinstance(row, dict)]
+    matches = [row for row in placements if row.get("placement_id") == placement_id]
+    exact = matches[0] if len(matches) == 1 else None
+    safe_exact = {
+        key: exact.get(key) for key in (
+            "placement_id", "plan_id", "public_url", "exposure",
+            "provider_clicks", "commission", "cost", "unit_economics", "experiment",
+        )
+    } if exact else {
+        "state": "UNKNOWN", "reason": "no exact placement economics row",
+    }
+    status_counts = {key: 0 for key in ("approved", "paid", "pending", "reversed")}
+    for row in placements:
+        observed = ((row.get("commission") or {}).get("status_counts") or {})
+        for key in status_counts:
+            status_counts[key] += int(observed.get(key) or 0)
     return {
         "state": "OBSERVED",
-        "placements": ledger.get("placements", []),
+        "placement_count": len(placements),
+        "official_commission_status_counts": status_counts,
+        "exact_placement": safe_exact,
     }, claimed
 
 
@@ -111,7 +132,7 @@ def _context(state: Path, baseline: dict) -> tuple[dict, str | None]:
         row for row in link_report.get("placements", [])
         if isinstance(row, dict) and row.get("placement_id") == baseline["placement_id"]
     ]
-    economics, economics_sha256 = _economics(state)
+    economics, economics_sha256 = _economics(state, baseline["placement_id"])
     return {
         "baseline": baseline,
         "public_campaign": {
@@ -225,8 +246,8 @@ OBSERVED JSON:
                 "ANICCA_BUDGET_SCOPE_ID": _budget_scope(
                     baseline_sha256, scheduler_run_id
                 ),
-                "ANICCA_PASS_TOKEN_BUDGET": "8192",
-                "ANICCA_LOOP_DAILY_TOKEN_BUDGET": "32768",
+                "ANICCA_PASS_TOKEN_BUDGET": str(ACQUISITION_PASS_TOKEN_BUDGET),
+                "ANICCA_LOOP_DAILY_TOKEN_BUDGET": str(ACQUISITION_DAILY_TOKEN_BUDGET),
                 "ANICCA_BUDGET_REQUIRED": "1",
                 "ANICCA_BUDGET_DAILY_SCOPE": "affiliate-acquisition-decision",
                 "ANICCA_TOKEN_BUDGET_LEDGER": str(state / "telemetry" / "token-budget.jsonl"),

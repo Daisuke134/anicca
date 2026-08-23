@@ -13,6 +13,13 @@ SPEC.loader.exec_module(MODULE)
 
 
 class AcquisitionDecisionTest(unittest.TestCase):
+    def test_one_daily_decision_has_one_realistic_full_pass(self):
+        self.assertEqual(MODULE.ACQUISITION_PASS_TOKEN_BUDGET, 32768)
+        self.assertEqual(
+            MODULE.ACQUISITION_DAILY_TOKEN_BUDGET,
+            MODULE.ACQUISITION_PASS_TOKEN_BUDGET,
+        )
+
     def test_retry_budget_scope_is_unique_per_scheduler_run(self):
         baseline = "a" * 64
         self.assertEqual(
@@ -50,11 +57,23 @@ class AcquisitionDecisionTest(unittest.TestCase):
                 "schema_version": 1,
                 "receipt_type": "AFFILIATE_PLACEMENT_LEDGER",
                 "observed_at": "observed",
-                "placements": [{
-                    "placement_id": "alpha-en-1",
-                    "cost": {"actual_cash_state": "UNKNOWN"},
-                    "unit_economics": {"actual_net_profit_state": "UNKNOWN_COST"},
-                }],
+                "placements": [
+                    {
+                        "placement_id": "alpha-en-1",
+                        "cost": {"actual_cash_state": "UNKNOWN"},
+                        "unit_economics": {"actual_net_profit_state": "UNKNOWN_COST"},
+                        "commission": {"status_counts": {
+                            "approved": 0, "paid": 0, "pending": 1, "reversed": 0,
+                        }},
+                    },
+                    {
+                        "placement_id": "beta-en-1",
+                        "private_tracking_url": "must-not-enter-model-context",
+                        "commission": {"status_counts": {
+                            "approved": 1, "paid": 2, "pending": 0, "reversed": 0,
+                        }},
+                    },
+                ],
             }
             core["ledger_sha256"] = hashlib.sha256(json.dumps(
                 core, sort_keys=True, separators=(",", ":")
@@ -66,8 +85,16 @@ class AcquisitionDecisionTest(unittest.TestCase):
             self.assertEqual(ledger_sha256, core["ledger_sha256"])
             self.assertEqual(context["placement_economics"]["state"], "OBSERVED")
             self.assertEqual(
-                context["placement_economics"]["placements"][0]["placement_id"],
+                context["placement_economics"]["exact_placement"]["placement_id"],
                 "alpha-en-1",
+            )
+            self.assertEqual(context["placement_economics"]["placement_count"], 2)
+            self.assertEqual(
+                context["placement_economics"]["official_commission_status_counts"],
+                {"approved": 1, "paid": 2, "pending": 1, "reversed": 0},
+            )
+            self.assertNotIn(
+                "must-not-enter-model-context", json.dumps(context, sort_keys=True),
             )
 
 
