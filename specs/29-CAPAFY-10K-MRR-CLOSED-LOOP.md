@@ -396,8 +396,9 @@ Current production truth:
 - Official Publisher Console seller truth is `1` paid order / `$9.99` one-time Sales / `$0` subscription MRR / `$8` ending balance / `$0` payable / `$0` paid. Legacy agent API `5` orders / `$19.98` is isolated and MUST NOT drive revenue or MRR decisions.
 - The earliest deterministic operations-complete claim now requires one review transition with same-Agent retry proof, one quality-approved marketing post/readback, and C21 seven consecutive healthy days. With no further failure, C21 cannot complete in less than seven calendar days from the next clean day boundary.
 - `$10,000` settled net MRR has no honest calendar ETA. It is an economic target, and completion requires official active subscription and settlement readback reaching `$10,000`; runtime uptime, listing count, views and one-time Sales do not substitute for it.
-- Completion audit: `20/23` atomic items are completed. C19 draft recovery is complete and its acceptance now waits for a real review transition plus same-Agent retry proof, C21 remains time-bound at `0/7`, and C22 remains economic/experimental at official subscription MRR `$0`; therefore the full objective is not complete.
+- Completion audit: `20/24` atomic items are completed. C19 draft recovery is complete and its acceptance now waits for a real review transition plus same-Agent retry proof, C21 remains time-bound at `0/7`, C22 remains economic/experimental at official subscription MRR `$0`, and C23 must restore a bounded daily offline candidate build while all five slots are occupied; therefore the full objective is not complete.
 - Data Analyst review receipt is durable and pending: Agent `7785270416` / Telegram `29647` / SHA-256 `1d52fd0ce772cfa678a85e6ad5be5bc9ff3d5502c474325ca879054e1eeca7dc`. Until the same receipt is changed to `approved` from an explicit user response, the hourly marketing owner exits healthy with Instagram write `0`.
+- CAP_FULL supply currently preserves platform safety but does not sustain skill development: latest run `6` is `rc=0 / CAP_FULL / agent spend=0 / platform write=0`, while durable backlog is `submitted=5 / ready_retry=1 / ready=0 / building=0`. The old one-time o13 offline artifact proves the backlog format, not a continuing daily development loop.
 
 | ID | atomic action | done evidence | state |
 |---|---|---|---|
@@ -424,20 +425,22 @@ Current production truth:
 | C20 | connect post/click/subscription windows without claiming causal proof | attribution row is candidate unless Capafy exposes order-level UTM/source | completed — live attribution v2 joins one IG post + 23 counters + Capafy snapshot; clicks 7; causal=false; subscription unknown; Netlify deploy `6a89b4126e21fe74286b7a79`; TG `29036` |
 | C21 | prove seven consecutive daily healthy terminals and hourly freshness | 7-day ledger has no stale source, duplicate Agent/version/post or missing Telegram receipt | observing — strict proof `0/7` because an earlier same-day failed execution correctly breaks the streak。run `9`はCAP_FULL/rc0/write0、false-green classifierはfocused 10件でfailure/invalidを非zeroへ写像する |
 | C22 | operate growth and retention experiments until settled net MRR reaches `$10,000` | active subscription readback and refunds/fees reconcile to target | **active** — hourly control plane、official seller money readback、token refresh、Telegram dedupe、IG real metrics、official seller winner selectorは稼働済み。現在の公式値はpaid order `1`、one-time `$9.99`、subscription MRR `$0`。Data Analyst `7785270416`の新HyperFrames + Andrew MP4はquality gateを通りTelegram `29647`へ送信済みで、user approval後のcadence-open wakeだけが同bytesを投稿する。`$10K`完了は公式settled net subscription MRRでのみ判定する |
+| C23 | sustain offline skill development while all five submission slots are occupied | at most one bounded build per calendar day produces a repo-owned SKILL/LISTING/icon/evidence candidate; hourly CAP_FULL wakes outside that cadence spend 0 and all passes write 0 to Capafy | pending — current backlog is `ready=0 / building=0`; latest CAP_FULL run spends 0 but does not create the next offline candidate |
 
 ### Remaining execution order
 
-1. C22-2 approval: Telegram `29647`のData Analyst MP4についてuser approvalを得る。rejectなら同じartifact lineageを修正・再送し、承認前に公開しない。制作gateは完了済み: HyperFrames check 0 error、1080x1920/30秒/H.264/AAC、Andrew 4 scene、scene-boundary crossing 0、full-resolution 8地点、音声transcript一致、stable SHA-256 `1d52fd0ce772cfa678a85e6ad5be5bc9ff3d5502c474325ca879054e1eeca7dc`、旧creative hash不一致。
-2. C22-3: user approvalとcadence gateの両方が成立した最初のwakeだけがTelegram `29647`と同じbytesをInstagramへ一件投稿し、native Reel URL、Telegram live media message ID、rotation commitをreadbackする。失敗時は投稿0・rotation0・heartbeat0でterminal failureにする。
-3. C22-4: metric windowでquality-approved 3 Reelsのreach、landing click、official Publisher Console seller salesを同じwindowへjoinする。legacy orders `5` / gross `$19.98`は除外し、order-level sourceが無ければcausal claimをfalseのまま保つ。
-4. C19-1: accepted/rejectedでfree slotを初めて検出したwakeだけがFootball Agent `1037238583`をsame-Agent修正・再提出し、第6 Agentを作らない。
-5. C21-1: 失敗を隠さないterminal ledgerで7 consecutive healthy daysを蓄積する。途中failureは0/7へ戻すが、C22の安全なgrowth workは停止しない。
-6. C22-5: official active subscription、refund、fee、settlementを毎時監視し、settled net MRRだけを`$10,000`へ加算する。現在値は`$0`であり、到達までloopを継続する。経済目標のcalendar ETAは捏造しない。
+1. C23-1: CAP_FULL時もcalendar dayあたり最大1回だけmarket evidenceから次candidateを選び、repo-owned `SKILL.md`、`LISTING.md`、icon、verified demonstrationをoffline buildする。Capafy Agent作成・submitは0、同日2回目以降のhourly wakeはagent spend 0にする。
+2. C22-2 approval: Telegram `29647`のData Analyst MP4についてuser approvalを得る。rejectなら同じartifact lineageを修正・再送し、承認前に公開しない。制作gateは完了済み: HyperFrames check 0 error、1080x1920/30秒/H.264/AAC、Andrew 4 scene、scene-boundary crossing 0、full-resolution 8地点、音声transcript一致、stable SHA-256 `1d52fd0ce772cfa678a85e6ad5be5bc9ff3d5502c474325ca879054e1eeca7dc`、旧creative hash不一致。
+3. C22-3: user approvalとcadence gateの両方が成立した最初のwakeだけがTelegram `29647`と同じbytesをInstagramへ一件投稿し、native Reel URL、Telegram live media message ID、rotation commitをreadbackする。失敗時は投稿0・rotation0・heartbeat0でterminal failureにする。
+4. C22-4: metric windowでquality-approved 3 Reelsのreach、landing click、official Publisher Console seller salesを同じwindowへjoinする。legacy orders `5` / gross `$19.98`は除外し、order-level sourceが無ければcausal claimをfalseのまま保つ。
+5. C19-1: accepted/rejectedでfree slotを初めて検出したwakeだけがFootball Agent `1037238583`をsame-Agent修正・再提出し、第6 Agentを作らない。
+6. C21-1: 失敗を隠さないterminal ledgerで7 consecutive healthy daysを蓄積する。途中failureは0/7へ戻すが、C22/C23の安全なworkは停止しない。
+7. C22-5: official active subscription、refund、fee、settlementを毎時監視し、settled net MRRだけを`$10,000`へ加算する。現在値は`$0`であり、到達までloopを継続する。経済目標のcalendar ETAは捏造しない。
 
 ### Current completion and finish forecast
 
-- Engineering acceptanceは`20/23`。未完はC19、C21、C22だけである。ただしC22が`$10K settled net subscription MRR`そのものを含むため、`20/23 = 事業目標87%達成`とは解釈しない。
-- Scheduler/runtimeはすでに24/7運転中である。supply ownerは`StartInterval=3600`、最新runは`rc=0 / CAP_FULL / agent spend=0 / platform write=0`。5 occupied rowsは全件`under_review`、incomplete draftは0、第6 Agentは0である。
+- Engineering acceptanceは`20/24`。未完はC19、C21、C22、C23である。ただしC22が`$10K settled net subscription MRR`そのものを含むため、checklist比率を事業目標達成率とは解釈しない。
+- Scheduler/runtimeはすでに24/7運転中である。supply ownerは`StartInterval=3600`、最新run `6`は`rc=0 / CAP_FULL / agent spend=0 / platform write=0`。5 occupied rowsは全件`under_review`、incomplete draftは0、第6 Agentは0である。C23完了まではCAP_FULL中のdaily offline developmentだけが欠ける。
 - 次の決定論的milestoneはData Analystのquality-approved Reelである。20時間cadenceは`2026-08-23T20:57:42+09:00`に開き、hourly ownerの最初のeligible wakeは約`21:31 JST`。成功時は同wakeで新MP4、full-video inspection、native Reel URL、Telegram media message ID、rotation commitを閉じる。
 - C19のcalendar ETAはCapafy review transition依存で確定不能。accepted/rejectedでfree slotが生じた後、最大約1時間で最初のhourly wakeが同じFootball Agent `1037238583`を一件だけ再提出する。
 - C21の最短完了は、今日の既存failureを含めず`2026-08-24`から7日間すべてhealthyの場合、`2026-08-30`の日次close後。途中で1件でもterminal failureがあれば0/7へ戻る。
@@ -452,7 +455,7 @@ Current production truth:
 | T3 | same-Agent rejection retry | rejected catalog title preserves existing agent_id and becomes retry only when free > 0 | completed — Football backlog/allocator fixtures preserve `1037238583` |
 | T4 | listed frees slot | `test_listed_agent_not_counted_as_unlisted` | pending |
 | T5 | server unreadable fail-close | `test_server_unreadable_blocks_only_platform_write` | completed — unknown inventory produces no platform action; fresh normalized inventory is required before allocation |
-| T6 | cap-full productive idle | offline candidate build + marketing/revenue wake evidence | completed — production `CAP_FULL` exits 0/write 0 while selector, metrics, landing and official money owners continue |
+| T6 | cap-full productive idle | offline candidate build + marketing/revenue wake evidence | partial — production `CAP_FULL` exits 0/write 0 and marketing/money continue, but current backlog `ready=0/building=0` proves the daily offline build is not sustained |
 | T7 | video quality | probe, audio, caption, black-frame, secret and demonstration fixtures | completed — media and source-hashed demonstration gates pass |
 | T8 | public distribution | native URL logged-out readback | completed — O13 and Decision Debate native Reel URLs return public readback; duplicate post 0 |
 | T9 | money separation | one-time/hourly/subscription/refund/fee/MRR fixtures | completed — official seller receipt separates `$9.99` one-time, `$0` MRR, `$8` ending balance, `$0` payable/paid from legacy API |
@@ -476,7 +479,7 @@ Current production truth:
 
 ## Execution steps
 
-1. C0からC22まで順番に1件ずつ実装する。
+1. C0からC23まで、Remaining execution orderに従って1件ずつ実装する。
 2. 各code sliceは該当testをRED→GREENにし、全Capafy regressionを実行する。
 3. launchd変更はinstalled plist、resolved path、last exit、receiptをreadbackする。
 4. platform writeはslot inventory fresh、lock acquired、idempotency key presentの時だけ行う。
