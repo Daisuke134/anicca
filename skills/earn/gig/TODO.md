@@ -1668,6 +1668,13 @@ sources. Latest-row reduction now yields exactly seven valid contacts. The natur
 preserved roster; 43 further valid contacts or official reachable exhaustion, truthful buyer handoff, and replay-zero
 remain required.
 
+The current natural Manledge continuation expanded the official X search to 66 rating/vehicle/location queries. Its
+first bounded pass attempted 51, preserved nine candidates and truthfully reported 15 unattempted queries rather than
+claiming exhaustion. The owner rejected third-party rating statements as qualification evidence, retained only posts
+where the candidate speaks for their own Osaka operation, vehicle and rating, and started a second pass containing
+exactly the remaining 15 queries. No new outreach effect is counted until that pass completes and an exact official
+post receipt is checkpointed.
+
 The following wake exposed why other purchased rooms stayed silent even with eight project slots. All ten targeted
 readbacks completed, but only Manledge and the legacy room received workers; Haru `18169583`, Aufbau `18178439`
 and byusco `18171890` remained pending. Their current DOM windows omitted older buyer rows while each project already
