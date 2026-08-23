@@ -3237,7 +3237,7 @@ def _repair_prompt(root: Path, item: Path, feedback: str, requirements_sha256: s
             "support the target and its live readback. Read the skill, use its CLI contract when applicable, and do not reimplement it. "
             "Choose skills from the complete project context and actual target capabilities, never from a hardcoded buyer-name or keyword router. "
             "An authenticated remote session is not proof that it is the correct account. Before signup or asking the buyer for an account, "
-            f"run python3 {code_root / 'skills/_shared/resource_resolver.py'} resolve --service <target-host> --capability <action>. "
+            f"run python3 {code_root / '_shared/resource_resolver.py'} resolve --service <target-host> --capability <action>. "
             "Resource discovery is not live readiness: inspect the selected skill/session in official UI or API before effect. "
             "When the first channel is unavailable, use the complete project context to resolve another authorized skill, account, "
             "or contact surface that achieves the same buyer outcome. Treat qualification questions as legitimate first contact when "
