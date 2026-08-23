@@ -2408,7 +2408,7 @@ async def inspect_page(
     validate_coverage: bool = True,
     attachment_project_root: Path | None = None,
 ) -> dict[str, Any]:
-    async with websockets.connect(ws_url, ping_interval=None, open_timeout=10, max_size=50 * 1024 * 1024) as ws:
+    async with websockets.connect(ws_url, ping_interval=None, open_timeout=10, max_size=160 * 1024 * 1024) as ws:
         request_id = 1
         for _ in range(40):
             state = await call(ws, request_id, "Runtime.evaluate", {
