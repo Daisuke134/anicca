@@ -31,8 +31,9 @@ def verify_final_review(
         raise RuntimeError("final review resume does not match routed material")
     if resume.mismatched_labels:
         raise RuntimeError("parsed fields still differ at final review")
-    company_visible = _visible(observation.visible_text, company)
-    role_visible = _visible(observation.visible_text, role)
+    identity_surface = f"{observation.title}\n{observation.visible_text}"
+    company_visible = _visible(identity_surface, company)
+    role_visible = _visible(identity_surface, role)
     if not company_visible or not role_visible:
         raise RuntimeError("company or role is absent from final review")
     safe = {
