@@ -1193,13 +1193,14 @@ def _decision_prompt(context: Path, context_sha256: str, feedback: str,
 def _cached_paid_decision(root: Path, receipt: Any, prompt: Path,
                           prompt_sha256: str, schema_sha256: str, context_sha256: str,
                           context_inputs_sha256: str, feedback: str, requirements: str,
-                          identity: dict[str, str]) -> dict[str, Any]:
+                          identity: dict[str, str], operator_policy_sha256: str) -> dict[str, Any]:
     if (not isinstance(receipt, dict)
             or receipt.get("schema_version") != PAID_DECISION_SCHEMA_VERSION
             or receipt.get("prompt_version") != PAID_DECISION_PROMPT_VERSION
             or receipt.get("schema_sha256") != schema_sha256
             or receipt.get("context_sha256") != context_sha256
             or receipt.get("context_inputs_sha256") != context_inputs_sha256
+            or receipt.get("operator_policy_sha256", "") != operator_policy_sha256
             or receipt.get("prompt_sha256") != prompt_sha256
             or not isinstance(receipt.get("runner"), dict)):
         raise ValueError("stale paid decision receipt")
@@ -1276,7 +1277,7 @@ def _paid_decision(args, item_path: Path, root: Path, base: Path) -> dict[str, A
         receipt = None if receipt_path.is_symlink() or not _regular_file(receipt_path) else _load(receipt_path)
         return _cached_paid_decision(root, receipt, prompt, prompt_sha256,
                                      schema_sha256, context_sha256, context_inputs_sha256,
-                                     feedback, requirements, identity)
+                                     feedback, requirements, identity, operator_policy_sha256)
     except (AttributeError, Failure, OSError, ValueError, TypeError, json.JSONDecodeError):
         pass
 
@@ -1320,7 +1321,13 @@ def _paid_decision(args, item_path: Path, root: Path, base: Path) -> dict[str, A
             str(context): (len(context_snapshot), context_sha256),
         }
         _revalidate_file_snapshots(current_bound)
-        if (_context_input_snapshot(root, context) != context_inputs
+        current_context_inputs = _context_input_snapshot(root, context)
+        current_policy_path, _current_policy, current_policy_sha256 = _file_operator_policy(
+            root, feedback, requirements)
+        if current_policy_path is not None:
+            current_context_inputs[str(current_policy_path.resolve())] = _file_snapshot(current_policy_path)
+        if (current_context_inputs != context_inputs
+                or current_policy_sha256 != operator_policy_sha256
                 or paid_remote_result.requirements_digest(root, feedback) != requirements
                 or _latest_official_identity(root, talkroom_id) != identity):
             raise ValueError("paid decision inputs changed")
@@ -1328,6 +1335,7 @@ def _paid_decision(args, item_path: Path, root: Path, base: Path) -> dict[str, A
                    "prompt_version": PAID_DECISION_PROMPT_VERSION, "schema_sha256": schema_sha256,
                    "prompt_sha256": prompt_sha256, "context_sha256": context_sha256,
                    "context_inputs_sha256": context_inputs_sha256,
+                   "operator_policy_sha256": operator_policy_sha256,
                    "runner": runner_proof, **value}
         _write(receipt_path, receipt)
         return value
@@ -1743,14 +1751,20 @@ def _account_owner_observe_only(args, item: dict[str, Any]) -> Path | None:
 def _current_paid_decision(root: Path, item: dict[str, Any]) -> dict[str, Any]:
     receipt = _load(root / "context" / "paid-work-decision.json")
     context = root / "context" / "current.json"
-    if (receipt.get("context_sha256") != _file_snapshot(context)[1]
-            or receipt.get("context_inputs_sha256") != _context_inputs_sha256(
-        _context_input_snapshot(root, context)
-    )):
-        raise ValueError("stale paid decision context")
-    value = {key: receipt[key] for key in PAID_DECISION_FIELDS}
     feedback = _text(item.get("buyer_feedback_sha256"))
     requirements = paid_remote_result.requirements_digest(root, feedback)
+    context_inputs = _context_input_snapshot(root, context)
+    operator_policy_path, _operator_policy, operator_policy_sha256 = _file_operator_policy(
+        root, feedback, requirements)
+    if operator_policy_path is not None:
+        context_inputs[str(operator_policy_path.resolve())] = _file_snapshot(operator_policy_path)
+    if (receipt.get("context_sha256") != _file_snapshot(context)[1]
+            or receipt.get("schema_version") != PAID_DECISION_SCHEMA_VERSION
+            or receipt.get("prompt_version") != PAID_DECISION_PROMPT_VERSION
+            or receipt.get("operator_policy_sha256", "") != operator_policy_sha256
+            or receipt.get("context_inputs_sha256") != _context_inputs_sha256(context_inputs)):
+        raise ValueError("stale paid decision context")
+    value = {key: receipt[key] for key in PAID_DECISION_FIELDS}
     identity = _latest_official_identity(root, _text(item.get("talkroom_id")))
     return _validate_paid_decision(value, feedback, requirements, identity)
 

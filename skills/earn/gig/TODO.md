@@ -1770,6 +1770,14 @@ The existing launchd Paid label was then kickstarted, not replaced by a Codex ex
 path. This proves deployment and parallel resumption, but not yet the required Manledge business effect or full-room
 silent-pending zero; keep watching the natural owners and accept only official effect receipts.
 
+That wake exposed one remaining decision-cache bypass before LBJ could transition. The generic new-decision path put
+the exact-cycle operator policy into the v14 prompt, but `_current_paid_decision` accepted an already-stored v6 receipt
+without checking prompt version or policy digest, and new receipts did not persist that digest. LBJ therefore reused
+the obsolete actionable/file decision despite the current transfer policy. The shared cache contract now records and
+requires the current prompt version, schema version and exact policy SHA, includes that policy in context-input
+revalidation, and invalidates the legacy LBJ receipt. The next natural current-release wake must generate a v14
+policy-bound `satisfied_noop`; no LBJ customer effect is permitted.
+
 1. **Paid/Submission — finish first.**
    - [x] Deploy and read back Paid ignoring shared preventive `disk-pressure.block` (20 GiB) and
      `disk-writers.stop` (10/11 GiB hysteresis), while retaining the 512 MiB last-resort guard and
