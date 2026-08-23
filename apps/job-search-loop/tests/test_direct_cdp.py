@@ -33,6 +33,59 @@ class DirectCDPTypeTests(unittest.IsolatedAsyncioTestCase):
         observe.assert_awaited_once()
         act.assert_not_awaited()
 
+    async def test_premature_finalize_returns_fresh_action_rejection_before_fence(self):
+        from job_search_loop.browser_agent import runtime
+
+        observation = unittest.mock.Mock(
+            controls=(),
+            url="https://jobs.ashbyhq.com/example/role/application",
+            title="Role @ Example",
+            visible_text="Editable application form",
+            content_sha256="a" * 64,
+            validation_text=(),
+            visible_challenges=(),
+        )
+        cursor = unittest.mock.Mock(checkpoint=None)
+        cursor.handle.row_run_id = "row-run"
+        builder = unittest.mock.Mock()
+        builder.build = AsyncMock(return_value=observation)
+        context = (
+            {
+                "application_id": "application",
+                "company": "Example",
+                "title": "Role",
+                "canonical_url": "https://jobs.ashbyhq.com/example/role",
+            },
+            unittest.mock.Mock(),
+            unittest.mock.Mock(),
+            unittest.mock.Mock(),
+            cursor,
+            builder,
+        )
+        verifier = unittest.mock.Mock()
+        verifier.verify = AsyncMock(return_value=unittest.mock.Mock())
+        with patch.object(
+            runtime, "_context", new=AsyncMock(return_value=context)
+        ), patch.object(
+            runtime,
+            "_routed_resume",
+            return_value={"resume_path": "/tmp/resume.pdf", "resume_sha256": "b" * 64},
+        ), patch.object(
+            runtime, "ResumeVerifier", return_value=verifier
+        ), patch.object(
+            runtime,
+            "verify_final_review",
+            side_effect=RuntimeError("company or role is absent from final review"),
+        ), patch.object(runtime, "_wake_budget", return_value=9), patch.object(
+            runtime, "Ledger"
+        ) as ledger:
+            result = await runtime.finalize()
+
+        self.assertEqual(result["status"], "action_rejected")
+        self.assertEqual(result["reason"], "final_review_not_ready")
+        self.assertEqual(result["observation"]["url"], observation.url)
+        ledger.assert_not_called()
+
     async def test_screenshot_does_not_reflow_virtualized_provider_lists(self):
         page = DirectCDPPage("ws://example", "target")
         page._ensure_viewport = AsyncMock()

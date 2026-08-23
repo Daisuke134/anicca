@@ -900,17 +900,32 @@ async def finalize() -> dict[str, Any]:
     resume = await ResumeVerifier(session).verify(
         cursor.handle, before, resume_path, {}
     )
-    review = verify_final_review(
-        row_run_id=cursor.handle.row_run_id,
-        application_id=row["application_id"],
-        company=row["company"],
-        role=row["title"],
-        expected_url=row["canonical_url"],
-        expected_resume_sha256=routed["resume_sha256"],
-        observation=before,
-        resume=resume,
-    )
-    final_action = _submit_action(before)
+    try:
+        review = verify_final_review(
+            row_run_id=cursor.handle.row_run_id,
+            application_id=row["application_id"],
+            company=row["company"],
+            role=row["title"],
+            expected_url=row["canonical_url"],
+            expected_resume_sha256=routed["resume_sha256"],
+            observation=before,
+            resume=resume,
+        )
+        final_action = _submit_action(before)
+    except RuntimeError as error:
+        if str(error) not in {
+            "company or role is absent from final review",
+            "final review URL does not match the application",
+            "final review requires exactly one visible Submit control",
+        }:
+            raise
+        return {
+            "status": "action_rejected",
+            "reason": "final_review_not_ready",
+            "observation": _safe_observation(
+                before, cursor.checkpoint, _wake_budget()
+            ),
+        }
     snapshot_path = _path_env("JOB_SEARCH_BROWSER_SCRATCH") / "final-review-ats.json"
     snapshot_path.write_text(
         json.dumps(_claim_snapshot(before), ensure_ascii=False, sort_keys=True) + "\n",
