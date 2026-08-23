@@ -365,6 +365,14 @@ URL and exact-message readback. This is individual contact 2, not completion of 
 verified exhaustion. The new shared-manifest release remains responsible for durable continuation without either
 duplicate effect or Codex prompting.
 
+The same natural owner then sent a third X reply to `@toru3569`. Official DOM proves the account is an active Osaka
+motorbike courier and proves the exact sent reply at `https://x.com/selawmqt/status/2091340461923607006`, but the
+observed profile/tweets did not prove the reply's statement that the recipient had a 100% rating. Therefore this
+effect is real but quality-invalid and is not counted toward the 50 qualified contacts. The generic owner contract
+now requires a claim-to-source map before every external mutation: each factual outbound claim must bind to an
+official URL or hash-bound project source; an unknown fact is omitted or asked as a concise qualification question.
+This remains model judgment and evidence binding, not a buyer-specific deterministic qualification gate.
+
 The resumed Manledge owner then exposed a second shared-tool contract defect: `x-repost` advertised generic
 `post` capability in the shared registry, but its production CLI accepted only `quote` and `reply` and required a
 source post URL. The owner correctly resolved and reused the skill, yet could not publish the approved standalone
