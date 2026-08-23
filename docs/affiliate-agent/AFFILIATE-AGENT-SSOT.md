@@ -7591,3 +7591,25 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   immutable release `49861c45b997ad87f42d4a5d37df80f3fbdc38e9` via
   release-only install with LaunchAgents unchanged. The focused decision retry
   remains externally gated only by the next JST budget day.
+- Focused placement E2E audit found a separate post-publication revenue blocker.
+  Blog rendering rewrites the affiliate CTA to `/go/af_<placement>`, but the
+  production redirect and X-entry receipt regexes admitted only base
+  `...-en-1` placements. The next compact experiment
+  `...-en-experiment-<12hex>-1` would therefore render a tracked CTA but return
+  404 on click and 400 on entry attribution, making a valid experiment unable
+  to reach the provider or preserve its entry receipt.
+- Commits `e8f4e4952` and `9af75bcdf` align page rendering, entry receipts, and
+  fixed-host redirects on one exact compact-experiment shape and an 80-character
+  maximum. Base and compact experiment placements preserve their exact ID;
+  non-hex experiment IDs, suffix extensions, and overlong placements fail
+  closed. Fresh review initially found the cross-boundary entry and length
+  mismatches, then returned `ship` after correction; focused entry/redirect
+  tests are 12/12 GREEN.
+- Origin PR `Daisuke134/anicca-products#394` was squash-merged as
+  `fb664e2c0995349bbbcb8c1606abcf61773a864d`. The production deployment check
+  completed `success` at GitHub Actions run `32663512682`, job `97253170604`.
+  No synthetic `/go` GET was made because that would create a false click
+  receipt and contaminate the focused experiment. Both source commits remain
+  pushed on canonical branch `feature/affiliate-foundation-prod`; canonical
+  `main` has no merge base with this deployment history and is not falsely
+  rewritten or called SHA-identical.
