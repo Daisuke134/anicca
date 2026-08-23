@@ -5,6 +5,7 @@ from pathlib import Path
 DAILY_LOOP = Path(__file__).resolve().parents[1] / "scripts" / "daily_loop.sh"
 RUNBOOK = Path(__file__).resolve().parents[1] / "DAILY_LOOP.md"
 MONEY_DAILY = Path(__file__).resolve().parents[2] / "self" / "capafy-loop" / "capafy-loop-daily.sh"
+LEGACY_CLI = Path(__file__).resolve().parents[2] / "self" / "capafy-loop" / "capafy-loop-cli.sh"
 
 
 class ProviderAgnosticRunnerTest(unittest.TestCase):
@@ -30,6 +31,15 @@ class ProviderAgnosticRunnerTest(unittest.TestCase):
         runner = text.index('printf \'%s\\n\' "$PROMPT" | "$RUN_AGENT"')
         self.assertLess(gate, runner)
         self.assertIn("agent spend=0; platform write=0", text)
+
+    def test_legacy_cli_converges_on_the_single_launchd_owner(self):
+        text = LEGACY_CLI.read_text(encoding="utf-8")
+
+        self.assertIn("bin/launchctl-safe", text)
+        self.assertIn("ai.anicca.capafy-loop-daily", text)
+        self.assertNotIn("tmux", text)
+        self.assertNotIn("CronCreate", text)
+        self.assertNotIn("command -v claude", text)
 
 
 if __name__ == "__main__":
