@@ -105,26 +105,40 @@ if [[ "$WORKDAY_DISCOVERY_RC" -ne 0 ]]; then
 fi
 ASHBY_DISCOVERY_RESULT="$EVIDENCE/ashby-discovery.json"
 ASHBY_COMBINED_RESULT="$EVIDENCE/ashby-fast-path-combined.json"
-"$JOB_SEARCH_PYTHON" - \
-  "$ASHBY_DISCOVERY_RESULT" \
-  "$ASHBY_COMBINED_RESULT" <<'PY'
+set +e
+"$JOB_SEARCH_PYTHON" -m job_search_loop.ashby_discovery \
+  --cache "$JOB_SEARCH_STATE_ROOT/official-ats-board-cache.v1.json" \
+  --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
+  --profile "$JOB_SEARCH_PROFILE" \
+  --materials-root "${XDG_DATA_HOME:-$HOME/.local/share}/anicca/job-search/materials" \
+  --prompt "$JOB_SEARCH_APP_ROOT/prompts/daily-pass.md" \
+  --output "$ASHBY_DISCOVERY_RESULT" \
+  --max-jobs 1
+ASHBY_DISCOVERY_RC=$?
+set -e
+if [[ "$ASHBY_DISCOVERY_RC" -ne 0 ]]; then
+  printf '%s\n' "Ashby discovery failed; existing eligible queue continues" >&2
+fi
+"$JOB_SEARCH_PYTHON" - "$ASHBY_DISCOVERY_RESULT" "$ASHBY_COMBINED_RESULT" <<'PY'
 import json
 import os
 import sys
 from pathlib import Path
 
 discovery_path, output_path = map(Path, sys.argv[1:])
-discovery_path.write_text(
-    json.dumps({"status": "parked", "reason": "workday_first_gate"}) + "\n",
-    encoding="utf-8",
-)
-os.chmod(discovery_path, 0o600)
+try:
+    discovery = json.loads(discovery_path.read_text(encoding="utf-8"))
+except (OSError, json.JSONDecodeError):
+    discovery = {"status": "failed", "discovered": []}
 combined = {
-    "status": "parked",
+    "status": "model_owned",
     "processed": [],
     "excluded": [],
-    "reason": "workday_first_gate",
-    "discovery": {"status": "parked", "discovered_count": 0},
+    "reason": "mandatory_browser_lane",
+    "discovery": {
+        "status": discovery.get("status", "failed"),
+        "discovered_count": len(discovery.get("discovered", [])),
+    },
     "owner": "ai.anicca.job-search-daily",
 }
 output_path.write_text(json.dumps(combined, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
@@ -168,7 +182,7 @@ set +e
   --evidence-dir "$EVIDENCE" \
   --workdir "$JOB_SEARCH_REPO_ROOT" \
   --python "$JOB_SEARCH_PYTHON" \
-  --active-provider workday
+  --active-provider all
 RUNNER_RC=$?
 set -e
 set +e

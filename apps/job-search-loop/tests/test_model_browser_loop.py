@@ -56,6 +56,34 @@ def _row_run(*, provider: str, canonical_url: str) -> dict[str, object]:
 
 
 class ModelBrowserLoopContractTests(unittest.TestCase):
+    def test_all_provider_queue_keeps_workday_before_ashby(self):
+        from job_search_loop.browser_agent.queue import RowQueueSupervisor
+
+        rows = [
+            {
+                "application_id": "ashby",
+                "company": "Ashby Co",
+                "title": "AI Role",
+                "canonical_url": "https://jobs.ashbyhq.com/example/role",
+            },
+            {
+                "application_id": "workday",
+                "company": "Workday Co",
+                "title": "AI Role",
+                "canonical_url": "https://example.wd5.myworkdayjobs.com/job/role",
+            },
+        ]
+        ledger = Mock()
+        ledger.pending_materials_ready_applications.return_value = rows
+        ledger.retryable_applications.return_value = []
+
+        collected = RowQueueSupervisor.collect(ledger, active_provider=None)
+
+        self.assertEqual(
+            [row["application_id"] for row in collected],
+            ["workday", "ashby"],
+        )
+
     def test_transport_failed_requires_a_real_nonzero_runtime_command(self):
         from job_search_loop.browser_agent import orchestrator
 
@@ -315,7 +343,8 @@ class ModelBrowserLoopContractTests(unittest.TestCase):
             daily.count("-m job_search_loop.browser_agent.orchestrator"), 1
         )
         self.assertIn('"status": "model_owned"', daily)
-        self.assertIn("Process every eligible Workday row", prompt)
+        self.assertIn("Process every eligible ATS row", prompt)
+        self.assertIn("Workday and Ashby use this same agent loop", prompt)
         self.assertIn("A row-local failure never ends the queue", normalized_prompt)
         self.assertNotIn("do not reopen a row it advanced", prompt)
         self.assertNotIn("preserve that exact blocker", prompt)
@@ -325,12 +354,13 @@ class ModelBrowserLoopContractTests(unittest.TestCase):
         prompt = (APP_ROOT / "prompts" / "daily-pass.md").read_text(encoding="utf-8")
         normalized_prompt = " ".join(prompt.split())
 
-        self.assertNotIn("-m job_search_loop.ashby_discovery", daily)
+        self.assertIn("-m job_search_loop.ashby_discovery", daily)
         self.assertIn('"status": "model_owned"', daily)
         self.assertIn('"reason": "mandatory_browser_lane"', daily)
-        self.assertIn("--active-provider workday", daily)
-        self.assertIn("Never open Ashby", prompt)
-        self.assertIn("--active-provider workday", daily)
+        self.assertIn("--active-provider all", daily)
+        self.assertNotIn("Never open Ashby", prompt)
+        self.assertIn("Process every eligible ATS row", prompt)
+        self.assertIn("Workday and Ashby use this same agent loop", prompt)
 
 
 if __name__ == "__main__":

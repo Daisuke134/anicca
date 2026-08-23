@@ -56,6 +56,9 @@ class RowQueueSupervisor:
                 continue
             seen.add(identity)
             rows.append(row)
+        rows.sort(
+            key=lambda row: detect_provider(str(row["canonical_url"])) != "workday"
+        )
         return tuple(rows)
 
     @staticmethod
