@@ -50,7 +50,8 @@ export PYTHONPATH="$JOB_SEARCH_APP_ROOT"
 JAPAN_DAY=$(TZ=Asia/Tokyo /bin/date +%F)
 "$JOB_SEARCH_PYTHON" -m job_search_loop.summary \
   --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
-  --output "$JOB_SEARCH_STATE_ROOT/summary.v1.json" \
+  --output "$JOB_SEARCH_STATE_ROOT/summary.v2.json" \
+  --compat-output "$JOB_SEARCH_STATE_ROOT/summary.v1.json" \
   --day "$JAPAN_DAY" \
   --model-route "${AGENT_RUNNER_PROVIDER:-unconfigured}"
 "$JOB_SEARCH_PYTHON" -m job_search_loop.inbox scan \
@@ -154,7 +155,8 @@ esac
   --output "$EVIDENCE/resume-deliver-reconciled.json"
 "$JOB_SEARCH_PYTHON" -m job_search_loop.summary \
   --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
-  --output "$JOB_SEARCH_STATE_ROOT/summary.v1.json" \
+  --output "$JOB_SEARCH_STATE_ROOT/summary.v2.json" \
+  --compat-output "$JOB_SEARCH_STATE_ROOT/summary.v1.json" \
   --day "$JAPAN_DAY" \
   --model-route "${AGENT_RUNNER_PROVIDER:-unconfigured}"
 "$JOB_SEARCH_PYTHON" -m job_search_loop.interview_prep deliver \

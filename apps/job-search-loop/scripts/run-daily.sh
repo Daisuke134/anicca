@@ -54,7 +54,8 @@ RUNNER_SUMMARY="$EVIDENCE/summary.json"
 refresh_summary() {
   "$JOB_SEARCH_PYTHON" -m job_search_loop.summary \
     --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
-    --output "$JOB_SEARCH_STATE_ROOT/summary.v1.json" \
+    --output "$JOB_SEARCH_STATE_ROOT/summary.v2.json" \
+    --compat-output "$JOB_SEARCH_STATE_ROOT/summary.v1.json" \
     --day "$JAPAN_DAY" \
     --model-route "${AGENT_RUNNER_PROVIDER:-unconfigured}"
 }

@@ -94,7 +94,9 @@ class Ledger:
                 title TEXT NOT NULL,
                 canonical_url TEXT NOT NULL,
                 current_state TEXT NOT NULL,
-                created_at TEXT NOT NULL
+                created_at TEXT NOT NULL,
+                owner TEXT NOT NULL DEFAULT 'agent'
+                    CHECK (owner IN ('agent', 'dais_manual', 'recruiter'))
             );
             CREATE TABLE IF NOT EXISTS events (
                 event_id TEXT PRIMARY KEY,
@@ -325,6 +327,26 @@ class Ledger:
                     f"ALTER TABLE {table} ADD COLUMN outcome_evidence_class TEXT"
                 )
         self._migrate_funnel_outcome_evidence_constraint()
+        application_columns = {
+            str(row["name"])
+            for row in self.connection.execute("PRAGMA table_info(applications)")
+        }
+        if "owner" not in application_columns:
+            self.connection.execute(
+                "ALTER TABLE applications ADD COLUMN owner TEXT NOT NULL "
+                "DEFAULT 'agent' CHECK (owner IN "
+                "('agent', 'dais_manual', 'recruiter'))"
+            )
+        self.connection.execute(
+            """
+            CREATE TRIGGER IF NOT EXISTS applications_owner_no_update
+            BEFORE UPDATE OF owner ON applications
+            WHEN NEW.owner != OLD.owner
+            BEGIN
+                SELECT RAISE(ABORT, 'application owner is immutable');
+            END
+            """
+        )
         intent_columns = {
             str(row["name"])
             for row in self.connection.execute("PRAGMA table_info(submit_intents)")
@@ -1138,6 +1160,193 @@ class Ledger:
             }
             for row in rows
         ]
+
+    def event_summary_rows(self) -> list[dict[str, Any]]:
+        has_application_routes = self.connection.execute(
+            "SELECT 1 FROM sqlite_master "
+            "WHERE type='table' AND name='application_routes'"
+        ).fetchone() is not None
+        applications = self.connection.execute(
+            "SELECT id, canonical_url, owner FROM applications ORDER BY created_at, rowid"
+        ).fetchall()
+        projection: list[dict[str, Any]] = []
+        for application in applications:
+            rows = self.connection.execute(
+                "SELECT from_state, to_state, payload_json FROM events "
+                "WHERE application_id = ? ORDER BY rowid",
+                (application["id"],),
+            ).fetchall()
+            if not rows or rows[0]["from_state"] is not None:
+                raise FenceError("application event chain lacks a valid origin")
+            first_state = str(rows[0]["to_state"])
+            first_payload = json.loads(str(rows[0]["payload_json"]))
+            external_origin = first_state == "submitted" and (
+                first_payload.get("external_import") is True
+                and all(
+                    first_payload.get(key)
+                    for key in (
+                        "applied_at",
+                        "source",
+                        "source_message_id",
+                        "evidence_sha256",
+                    )
+                )
+            )
+            if first_state != "discovered" and not external_origin:
+                raise FenceError("application event chain lacks a valid origin")
+            previous = first_state
+            previous_payload = first_payload
+            ever_submitted = first_state == "submitted"
+            submission_attempted = first_state in {"submitted", "submit_unknown"}
+            for event in rows[1:]:
+                to_state = str(event["to_state"])
+                payload = json.loads(str(event["payload_json"]))
+                outreach_correction = False
+                if str(event["from_state"]) != previous:
+                    raise FenceError("application event chain is discontinuous")
+                if previous == "submit_unknown" and to_state == "submitted":
+                    receipt_verified = all(
+                        payload.get(key)
+                        for key in (
+                            "message_id",
+                            "thread_id",
+                            "evidence_sha256",
+                            "received_at",
+                        )
+                    )
+                    legacy_ashby_verified = False
+                    if (
+                        payload.get("evidence_source")
+                        == "ashby_graphql_plus_visible_success"
+                        and payload.get("evidence_sha256")
+                        == "e73a212752d3ca020b16bae36ca19578ba437dcf434b054daff414e467cb430b"
+                    ):
+                        legacy_ashby_verified = self.connection.execute(
+                            "SELECT 1 FROM submit_intents WHERE intent_id=? "
+                            "AND application_id=? AND fence=? AND status='submitted'",
+                            (
+                                payload.get("intent_id"),
+                                application["id"],
+                                payload.get("fence"),
+                            ),
+                        ).fetchone() is not None
+                    route_verified = False
+                    if has_application_routes and all(
+                        payload.get(key)
+                        for key in ("route_id", "provider_id", "channel")
+                    ):
+                        route_verified = self.connection.execute(
+                            """
+                            SELECT 1
+                            FROM application_routes AS routes
+                            JOIN funnel_outcomes AS outcomes
+                              ON outcomes.application_id = routes.application_id
+                             AND outcomes.evidence_sha256 = routes.delivery_evidence_sha256
+                            WHERE routes.route_id = ?
+                              AND routes.application_id = ?
+                              AND routes.route_kind = ?
+                              AND routes.delivery_state = 'delivered'
+                              AND routes.provider_id = ?
+                              AND outcomes.funnel_stage = 'confirmed_application'
+                              AND outcomes.disposition = 'positive'
+                              AND outcomes.evidence_source IN ('ats','gmail')
+                            """,
+                            (
+                                payload.get("route_id"),
+                                application["id"],
+                                payload.get("channel"),
+                                payload.get("provider_id"),
+                            ),
+                        ).fetchone() is not None
+                    if not (
+                        receipt_verified
+                        or legacy_ashby_verified
+                        or route_verified
+                    ):
+                        raise FenceError("late confirmation event lacks evidence")
+                elif previous == "submitted" and to_state == "submit_unknown":
+                    route_id = payload.get("route_id")
+                    provider_id = payload.get("provider_id")
+                    evidence_sha256 = payload.get("evidence_sha256")
+                    correction_verified = (
+                        payload.get("reason") == "outreach_only_delivery_correction"
+                        and previous_payload.get("route_id") == route_id
+                        and previous_payload.get("provider_id") == provider_id
+                        and previous_payload.get("channel") == "recruiting_outreach"
+                        and self.connection.execute(
+                            """
+                            SELECT 1 FROM application_routes
+                            WHERE route_id=? AND application_id=?
+                              AND route_kind='recruiting_outreach'
+                              AND recipient_acceptance='outreach_only'
+                              AND delivery_state='delivered'
+                              AND provider_id=?
+                              AND delivery_evidence_sha256=?
+                            """,
+                            (
+                                route_id,
+                                application["id"],
+                                provider_id,
+                                evidence_sha256,
+                            ),
+                        ).fetchone()
+                        is not None
+                    )
+                    if not correction_verified:
+                        raise FenceError("outreach truth correction lacks evidence")
+                    outreach_correction = True
+                else:
+                    validate_transition(previous, to_state)
+                previous = to_state
+                previous_payload = payload
+                ever_submitted = ever_submitted or to_state == "submitted"
+                if outreach_correction:
+                    ever_submitted = False
+                submission_attempted = submission_attempted or to_state in {
+                    "submitted",
+                    "submit_unknown",
+                }
+            positive_query = (
+                """
+                    SELECT outcomes.funnel_stage
+                    FROM funnel_outcomes AS outcomes
+                    WHERE outcomes.application_id = ?
+                      AND outcomes.disposition = 'positive'
+                      AND NOT (
+                        outcomes.funnel_stage = 'confirmed_application'
+                        AND EXISTS (
+                          SELECT 1
+                          FROM application_routes AS routes
+                          WHERE routes.application_id = outcomes.application_id
+                            AND routes.delivery_state = 'delivered'
+                            AND routes.recipient_acceptance = 'outreach_only'
+                            AND routes.delivery_evidence_sha256 = outcomes.evidence_sha256
+                        )
+                      )
+                    """
+                if has_application_routes
+                else "SELECT funnel_stage FROM funnel_outcomes "
+                "WHERE application_id=? AND disposition='positive'"
+            )
+            positive_stages = {
+                str(row["funnel_stage"])
+                for row in self.connection.execute(
+                    positive_query,
+                    (application["id"],),
+                ).fetchall()
+            }
+            projection.append(
+                {
+                    "application_id": str(application["id"]),
+                    "canonical_url": str(application["canonical_url"]),
+                    "owner": str(application["owner"]),
+                    "current_state": previous,
+                    "ever_submitted": ever_submitted,
+                    "submission_attempted": submission_attempted,
+                    "positive_funnel_stages": sorted(positive_stages),
+                }
+            )
+        return projection
 
     def retryable_applications(self) -> list[dict[str, Any]]:
         rows = self.connection.execute(

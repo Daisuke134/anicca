@@ -172,8 +172,18 @@ raise SystemExit(0)
             result, calls = self._run_daily_with_fake_python(root, 0, 0)
 
             self.assertEqual(result.returncode, 0, result.stderr)
-            projection = root / "state" / "summary.v1.json"
+            projection = root / "state" / "summary.v2.json"
+            compatibility = root / "state" / "summary.v1.json"
             self.assertTrue(projection.is_file())
+            self.assertTrue(compatibility.is_file())
+            self.assertEqual(
+                json.loads(projection.read_text(encoding="utf-8"))["version"],
+                2,
+            )
+            self.assertEqual(
+                json.loads(compatibility.read_text(encoding="utf-8"))["version"],
+                1,
+            )
             self.assertEqual(
                 json.loads(projection.read_text(encoding="utf-8"))["day"],
                 __import__("datetime").datetime.now(
@@ -181,6 +191,7 @@ raise SystemExit(0)
                 ).date().isoformat(),
             )
             self.assertIn("job_search_loop.summary", json.dumps(calls))
+            self.assertIn("--compat-output", json.dumps(calls))
 
     def test_runner_config_is_job_scoped_and_contains_no_private_identity(self):
         config_path = REPO_ROOT / "runtime" / "agent-runner" / "config.json"
