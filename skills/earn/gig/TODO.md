@@ -398,6 +398,10 @@ one `invalid` effect for `@toru3569` is retained for replay safety but excluded 
 exact seller receipt URL, payload hash, requirement hash, semantic-contract hash and official qualification
 sources. This proves recovery plus durable classification without a manual Codex send; it does not yet prove the
 remaining 49 qualified contacts, verified reachable exhaustion, timeout continuation, or restart replay-zero.
+Without Codex prompting, the owner then searched additional official X posts, verified `@D2JOG` from the account's
+Osaka and small-motorbike profile plus its own 100%-rating post, sent the approved individual invitation, read back
+the exact seller reply at `https://x.com/selawmqt/status/2091347297758245018`, and immediately checkpointed it as
+`qualified`. The durable valid count is therefore 2 of 50; 48 valid contacts or verified reachable exhaustion remain.
 
 The same resume exposed that `agent-runner` reused stable `attempt-01` paths by deleting the prior wake's logs and
 summary at each launch. Existing consumers still need those stable names for the current run, so the runner now
