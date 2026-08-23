@@ -7486,3 +7486,12 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   to 45,139 against a 32,768 configured limit. The daily gate blocks subsequent
   calls but cannot prevent this call from overshooting after settlement. Do not
   hide this as GREEN capacity or treat the acquisition decision as profit.
+- Existing source-refresh and composition owners consumed decision `c682536a...`
+  without manual execution. They created experiment plan/bundle
+  `elevenlabs-discovered-subtitle-translator-en-experiment-1ecf26fe47e1-
+  experiment-c682536aed63` from the same official product/pricing hashes.
+  Composition output is `READY_FOR_POLICY`; control and experiment share exact
+  `content_fingerprint=b389a88b...`, identical markdown, structure, CTA,
+  provider link placeholder, and distribution copy. Only the title changed to
+  the decision's exact string. This proves one-variable materialization, not
+  publication, traffic, transaction, or money.
