@@ -387,11 +387,12 @@ Items are executed top-to-bottom. Only one item is active.
 Current production truth:
 
 - The 24/7 control plane is already installed: launchd wakes the bounded supply, outcome, marketing and money owners hourly; the latest hourly goal-monitor run is `4`, last exit `0`.
-- Inventory is `33` observed / `22` listed / `5` occupied / `0` free / `6` retry. Cap-full is healthy idle, not a blocker; the loop performs no sixth submission.
+- Inventory is `33` observed / `22` listed / `5` occupied / `0` free / `6` retry. The five occupied rows are three `under_review` plus two incomplete `draft` rows, so `CAP_FULL` is safe no-sixth-Agent behavior but is not the same as five submitted reviews.
+- The two incomplete rows are official server truth: YouTube `7686597754` and Amazon Gallery `7631594519` are both `status=0 / auditStatus=0 / run_online / isConfirmedSkills=1 / isConfirmedConfigKeys=0 / packageUrl=pending://draft`. YouTube is an existing Agent version returned to draft; Amazon Gallery duplicates the already-online Amazon Kit `5648342153`. The shipped Capafy runtime exposes no delete-draft API, so the loop must finish or deliberately reuse these exact Agent IDs through the official browser flow; it must not create a sixth Agent.
 - Official Publisher Console seller truth is `1` paid order / `$9.99` one-time Sales / `$0` subscription MRR / `$8` ending balance / `$0` payable / `$0` paid. Legacy agent API `5` orders / `$19.98` is isolated and MUST NOT drive revenue or MRR decisions.
-- The earliest deterministic operations-complete claim requires C19 external review transition, one quality-approved marketing post/readback, and C21 seven consecutive healthy days. With no further failure, C21 cannot complete in less than seven calendar days from the next clean day boundary.
+- The earliest deterministic operations-complete claim requires recovery of the two incomplete drafts, one subsequent review transition with same-Agent retry proof, one quality-approved marketing post/readback, and C21 seven consecutive healthy days. With no further failure, C21 cannot complete in less than seven calendar days from the next clean day boundary.
 - `$10,000` settled net MRR has no honest calendar ETA. It is an economic target, and completion requires official active subscription and settlement readback reaching `$10,000`; runtime uptime, listing count, views and one-time Sales do not substitute for it.
-- Completion audit: `20/23` atomic items are completed. C19 remains external-review event-driven, C21 remains time-bound at `0/7`, and C22 remains economic/experimental at official subscription MRR `$0`; therefore the full objective is not complete.
+- Completion audit: `20/23` atomic items are completed. C19 is now locally actionable because two occupied rows are incomplete drafts and then becomes external-review event-driven, C21 remains time-bound at `0/7`, and C22 remains economic/experimental at official subscription MRR `$0`; therefore the full objective is not complete.
 
 | ID | atomic action | done evidence | state |
 |---|---|---|---|
@@ -414,19 +415,21 @@ Current production truth:
 | C16 | add ReelFarm TikTok derivative behind credential/account/quality gates | no credential means honest no-op; success requires TikTok native URL | completed — stored key is invalid by live account/accounts reads; generation 0, publish 0, spend 0, native URL none; TG `28874` |
 | C17 | run one real slot-controlled supply pass | inventory readback -> allocator decision -> skill/version remote status -> Telegram message ID | completed — same Agent `3661050861`, version `2091144781376671744`, `status=1/audit=1/run_online/skills=1/config=1`; listed 22/occupied 4/free 1/retry 7; TG `28979` |
 | C18 | prove one rejected Agent correction/resubmit E2E | same agent_id, new package/revision, under-review readback, no orphan Agent | completed — Agent `3098034209`, platform-preserved version `2080431424288878592`, new package, `status=1/audit=1/skills=1/config=1`; duplicate Agent 0; TG `29019` |
-| C19 | prove one listed transition frees a fresh slot | status=4 reduces occupied count and next hourly wake submits exactly one candidate | pending/event-driven — Portfolio `9480246345`を含む5件がoccupied、free 0。hourly ownerは3600秒ごとにwrite 0で監視し、accepted/rejectedでfree 1になった最初のwakeだけがFootball same-Agent `1037238583`を再提出する |
+| C19 | recover every occupied draft, then prove one review transition frees a slot | no incomplete draft remains; a listed/rejected transition reduces occupied count and the next hourly wake submits exactly one candidate | pending/actionable — current five slots are three `under_review` plus YouTube `7686597754` and Amazon Gallery `7631594519` in incomplete draft. Recover those exact IDs first without a sixth Agent. After the next accepted/rejected transition, the first eligible hourly wake alone resubmits Football `1037238583` as the same Agent |
 | C20 | connect post/click/subscription windows without claiming causal proof | attribution row is candidate unless Capafy exposes order-level UTM/source | completed — live attribution v2 joins one IG post + 23 counters + Capafy snapshot; clicks 7; causal=false; subscription unknown; Netlify deploy `6a89b4126e21fe74286b7a79`; TG `29036` |
 | C21 | prove seven consecutive daily healthy terminals and hourly freshness | 7-day ledger has no stale source, duplicate Agent/version/post or missing Telegram receipt | observing — strict proof `0/7` because an earlier same-day failed execution correctly breaks the streak。run `9`はCAP_FULL/rc0/write0、false-green classifierはfocused 10件でfailure/invalidを非zeroへ写像する |
 | C22 | operate growth and retention experiments until settled net MRR reaches `$10,000` | active subscription readback and refunds/fees reconcile to target | **active** — hourly control plane、official seller money readback、token refresh、Telegram dedupe、IG real metrics、official seller winner selectorは稼働済み。現在の公式値はpaid order `1`、one-time `$9.99`、subscription MRR `$0`。次のcadence-open wakeはData Analyst `7785270416`をrepo-owned evidence、HyperFrames、scene-matched Andrew voiceで新規render/postし、旧creativeを再利用しない。`$10K`完了は公式settled net subscription MRRでのみ判定する |
 
 ### Remaining execution order
 
-1. C22-2: cadence gateが開いた最初のmarketing wakeでowner-measured 2 Reel reach receiptを読み、Data Analystのrepo-owned evidenceからsoft CTA + bio landing付きの新しいHyperFrames + scene-matched Andrew voice MP4を一件だけrenderし、full-video inspectionと旧creative hash不一致を確認する。
-2. C22-3: 新しい同一bytesだけをInstagramへ一件投稿し、native Reel URL、Telegram media message ID、rotation commitをreadbackする。失敗時は投稿0・rotation0・heartbeat0でterminal failureにする。
-3. C22-4: metric windowでquality-approved 3 Reelsのreach、landing click、official Publisher Console seller salesを同じwindowへjoinする。legacy orders `5` / gross `$19.98`は除外し、order-level sourceが無ければcausal claimをfalseのまま保つ。
-4. C19-1: hourly inventoryでfree slotを初めて検出したwakeだけがFootball Agent `1037238583`をsame-Agent修正・再提出し、6件目のAgentを作らない。
-5. C21-1: 失敗を隠さないterminal ledgerで7 consecutive healthy daysを蓄積する。途中failureは0/7へ戻すが、C22の安全なgrowth workは停止しない。
-6. C22-5: official active subscription、refund、fee、settlementを毎時監視し、settled net MRRだけを`$10,000`へ加算する。現在値は`$0`であり、到達までloopを継続する。
+1. C19-0a: YouTube Agent `7686597754`をrepo-owned catalog/skillへ正本化し、credential deep-scanを最小化して同じversionをconfigure→package→submitする。完了readbackは`status=1 / isConfirmedSkills=1 / isConfirmedConfigKeys=1 / packageUrl=https://...`であり、新Agentは作らない。
+2. C19-0b: Amazon Gallery Agent `7631594519`はonline Amazon Kit `5648342153`との重複をそのまま提出しない。公式browser flowで同じdraft IDを次の検証済み・非重複catalog skillへ再利用し、configure→package→submitする。delete-draft APIや第6 Agentを仮定しない。
+3. C22-2: cadence gateが開いた最初のmarketing wakeでowner-measured 2 Reel reach receiptを読み、Data Analystのrepo-owned evidenceからsoft CTA + bio landing付きの新しいHyperFrames + scene-matched Andrew voice MP4を一件だけrenderし、full-video inspectionと旧creative hash不一致を確認する。
+4. C22-3: 新しい同一bytesだけをInstagramへ一件投稿し、native Reel URL、Telegram media message ID、rotation commitをreadbackする。失敗時は投稿0・rotation0・heartbeat0でterminal failureにする。
+5. C22-4: metric windowでquality-approved 3 Reelsのreach、landing click、official Publisher Console seller salesを同じwindowへjoinする。legacy orders `5` / gross `$19.98`は除外し、order-level sourceが無ければcausal claimをfalseのまま保つ。
+6. C19-1: accepted/rejectedでfree slotを初めて検出したwakeだけがFootball Agent `1037238583`をsame-Agent修正・再提出し、第6 Agentを作らない。
+7. C21-1: 失敗を隠さないterminal ledgerで7 consecutive healthy daysを蓄積する。途中failureは0/7へ戻すが、C22の安全なgrowth workは停止しない。
+8. C22-5: official active subscription、refund、fee、settlementを毎時監視し、settled net MRRだけを`$10,000`へ加算する。現在値は`$0`であり、到達までloopを継続する。経済目標のcalendar ETAは捏造しない。
 
 ## Test matrix
 
