@@ -1,5 +1,7 @@
 import unittest
 import inspect
+import tempfile
+from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 from job_search_loop.browser_agent.direct_cdp import DirectCDPPage
@@ -7,11 +9,36 @@ from job_search_loop.browser_agent.observation import ObservationBuilder
 from job_search_loop.browser_agent.actions import ActionExecutor
 from job_search_loop.browser_agent.contracts import ActionTargetV1, VisibleActionV1
 from job_search_loop.browser_agent.runtime import main as browser_runtime_main
-from job_search_loop.browser_agent.runtime import type_candidate
+from job_search_loop.browser_agent.runtime import type_candidate, type_text
 from job_search_loop.runtime import main as compatibility_runtime_main
 
 
 class DirectCDPTypeTests(unittest.IsolatedAsyncioTestCase):
+    async def test_literal_type_rejects_an_expired_target_with_fresh_observation(self):
+        from job_search_loop.browser_agent import runtime
+
+        observation = {"status": "observed", "observation": {"controls": []}}
+        with tempfile.TemporaryDirectory() as directory, patch.object(
+            runtime,
+            "_act_locked",
+            new=AsyncMock(
+                side_effect=RuntimeError(
+                    "action target must resolve to exactly one visible enabled control (count=0)"
+                )
+            ),
+        ), patch.object(
+            runtime, "observe", new=AsyncMock(return_value=observation)
+        ) as observe, patch.object(
+            runtime, "_path_env", return_value=Path(directory)
+        ):
+            result = await type_text(
+                label="Year", role="spinbutton", stable_id="id:expired", text="2020"
+            )
+
+        self.assertEqual(result["status"], "action_rejected")
+        self.assertEqual(result["reason"], "observed_text_target_no_longer_visible")
+        observe.assert_awaited_once()
+
     async def test_type_rejects_non_text_control_without_browser_action(self):
         observation = {"status": "observed", "observation": {"controls": []}}
         with patch(

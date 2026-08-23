@@ -482,8 +482,16 @@ async def type_text(*, label: str, role: str, stable_id: str, text: str) -> dict
     )
     os.chmod(path, 0o600)
     try:
-        with _exclusive_action():
-            return await _act_locked(path)
+        try:
+            with _exclusive_action():
+                return await _act_locked(path)
+        except RuntimeError as error:
+            if "action target must resolve to exactly one visible enabled control" not in str(error):
+                raise
+            result = await observe()
+            result["status"] = "action_rejected"
+            result["reason"] = "observed_text_target_no_longer_visible"
+            return result
     finally:
         path.unlink(missing_ok=True)
 
