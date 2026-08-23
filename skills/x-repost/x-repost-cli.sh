@@ -31,7 +31,7 @@ MODEL="${X_REPOST_MODEL:-gpt-5.6-luna}"
 REASONING_EFFORT="${X_REPOST_REASONING_EFFORT:-max}"
 HUMANIZER_SKILL="${X_REPOST_HUMANIZER:-$HOME/.openclaw/skills/jp-humanizer-pro/SKILL.md}"
 GUARD="$HOME/.config/ai/bin/browser-guard.sh"
-WITH_BROWSER="$HOME/.config/ai/bin/with-browser.sh"
+WITH_BROWSER="$REPO_ROOT/skills/browser/with-browser.sh"
 ENSURE_BROWSER="$HOME/anicca/skills/browser/ensure_provision_browser.sh"
 LEASE_HELD=0
 
@@ -198,7 +198,7 @@ if [ -z "${TWITTER_AUTH_TOKEN:-}" ]; then
 fi
 
 # ---------------------------------------------------------------- browser (leased, never :9222)
-CDP="$(bash "$ENSURE_BROWSER" "$IDENTITY" 2>>"$EV/browser.err")"
+CDP="$(AI_BROWSER_HOLDER_PID=$$ bash "$ENSURE_BROWSER" "$IDENTITY" 2>>"$EV/browser.err")"
 case "$CDP" in
   http*) LEASE_HELD=1; log "leased $IDENTITY at $CDP" ;;
   *) log "browser unavailable for $IDENTITY (see $EV/browser.err) -- skipping this pass"

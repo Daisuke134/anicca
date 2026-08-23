@@ -3316,7 +3316,7 @@ def _repair_prompt(root: Path, item: Path, feedback: str, requirements_sha256: s
             "the recipient permits that channel; do not require every fact to be public before contact, and do not stop merely because "
             "one transport is unavailable. Never bypass platform policy, impersonate the buyer, or invent consent. "
             "A matching reusable seller-owned browser identity may serve this project; never infer authorization from login alone. "
-            "Run every leased-browser operation through ~/.config/ai/bin/with-browser.sh <identity> -- <command>, which acquires, exports CDP, "
+            f"Run every leased-browser operation through {code_root / 'browser/with-browser.sh'} <identity> -- <command>, which acquires, exports CDP, "
             "and releases through an EXIT/signal trap; never split browser-guard acquire and release across separate commands. Verify the live "
             "account handle/profile URL in official DOM while that wrapper owns the lease. Bind the observed account/member identity to the matching authorization before reading or mutating it, "
             "and fail closed rather than reuse another client's session or evidence. "
