@@ -148,3 +148,10 @@ unrelated dirty paths `docs/loops/x-repost.md` and `state/effective-cron/`.
   no-retry fence for ambiguous sends. Deploy it, run the inbox owner for JR337672's
   authoritative receipt, then verify the next automatic per-row outcome has a real
   Telegram message ID.
+- Release `23b35edec6718d07a39c4abe6b2f1aa6acbd23ad` passed checksum and activated.
+  Its next existing-owner wake correctly excluded JR337672 and selected the still
+  safe `materials_ready` Salesforce JR334569 row. The first auth field exposed a
+  one-line local type bug: the decision signer received the private descriptor Path
+  instead of its bytes. No credential was exposed and no submit fence was consumed.
+  `descriptor.read_bytes()` is the smallest fix; focused direct-CDP plus Telegram
+  tests pass 6/6. Build and activate that commit, then resume through the same owner.

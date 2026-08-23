@@ -526,7 +526,7 @@ async def auth(
         )
         os.chmod(descriptor, 0o600)
         decision_signature = _reject_repeated_decision(
-            before.content_sha256, descriptor
+            before.content_sha256, descriptor.read_bytes()
         )
         remaining = _wake_budget(consume=True)
         receipt = await ActionExecutor(session).execute(
