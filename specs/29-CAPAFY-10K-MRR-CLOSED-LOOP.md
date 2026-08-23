@@ -401,7 +401,7 @@ Items are executed top-to-bottom. Only one item is active.
 3. C22-3: metric windowでquality-approved 3 Reelsのreach、landing click、official Publisher Console seller salesを同じwindowへjoinする。orders `5` / gross `$19.98`の非seller集計は除外し、order-level sourceが無ければcausal claimをfalseのまま保つ。
 4. C19-1: hourly inventoryでfree slotを初めて検出したwakeだけがFootball Agent `1037238583`をsame-Agent修正・再提出し、6件目のAgentを作らない。
 5. C21-1: 失敗を隠さないterminal ledgerで7 consecutive healthy daysを蓄積する。途中failureは0/7へ戻すが、C22の安全なgrowth workは停止しない。
-6. C22-4: **done** — hourly money readbackをofficial Publisher Console seller endpointsへ接続し、Sales、subscription MRR、refund、statement ending balance、payable、paid payoutを別fieldでreceiptへ保存する。現在値はSales `$9.99`、subscription MRR `$0`、ending balance `$8`、payable/paid `$0`。次のhourly company receiptでTelegram message IDをreadbackする。
+6. C22-4: **done** — hourly money readbackをofficial Publisher Console seller endpointsへ接続し、Sales、subscription MRR、refund、statement ending balance、payable、paid payoutを別fieldでreceiptへ保存する。現在値はpaid seller orders `1`、Sales `$9.99`、subscription MRR `$0`、ending balance `$8`、payable/paid `$0`。production company receipt `capafy-f1c5e2d13ea2c988696d97bc`はTelegram `message_id=29481`でdelivered。launchd envの`LM_TELEGRAM_ALERT_CHAT_ID`もsender targetとして読む。
 6. C22-4: settled active subscription sourceが取得できるまでmoney truthを`unknown`として監視し、取得後はrefund/fee控除後のnet MRRだけを`$10,000`へ加算する。
 
 ## Test matrix

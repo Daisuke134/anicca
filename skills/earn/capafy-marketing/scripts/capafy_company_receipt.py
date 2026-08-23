@@ -202,7 +202,8 @@ def _find_message_id(value: Any) -> str | None:
 
 
 def _openclaw_sender(message: str) -> str:
-    target = os.environ.get("CAPAFY_TELEGRAM_TARGET") or os.environ.get("TELEGRAM_ALERT_CHAT_ID")
+    target = (os.environ.get("CAPAFY_TELEGRAM_TARGET") or os.environ.get("TELEGRAM_ALERT_CHAT_ID")
+              or os.environ.get("LM_TELEGRAM_ALERT_CHAT_ID"))
     if not target:
         raise DeliveryUncertain("telegram_target_missing")
     try:
