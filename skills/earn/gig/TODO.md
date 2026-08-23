@@ -351,11 +351,16 @@ source post URL. The owner correctly resolved and reused the skill, yet could no
 recruitment notice without reimplementing browser automation. The existing adapter now has a real `post` mode
 using the same leased account, official compose acknowledgement and exact profile-timeline permalink readback;
 quote/reply behavior is unchanged and still requires `--source-url`. This is a generic X capability repair, not a
-Manledge script. No post is complete until the natural Paid owner uses this released adapter and records the
-official permalink; the earlier drafts and failed compose attempts remain zero effects.
+Manledge script. The still-running pre-release Manledge owner independently shortened its approved recruitment
+copy to fit X's weighted-length limit, published it from the resolver-selected `@selawmqt` identity, and read the
+one matching official timeline post back at `https://x.com/selawmqt/status/2091325726750544166`. This is one real
+natural-owner public recruitment effect, not any of the required 50 individual approaches and not yet a complete
+Coconala handoff. The earlier drafts and failed compose attempts remain zero effects. Manledge stays open until a
+fresh verifier reads this exact post, the owner sends the concise result in the exact Coconala room, and official
+room readback plus replay-zero are recorded.
 
 **Current live cursor.** `main` and `origin/main` were verified equal immediately before this snapshot at
-`28129d28e`; the starting verification commit
+`d980a14ee`; the starting verification commit
 `79ac01ba1eb66b06aed1f9cee66d4af303f03a3d` remains an ancestor. The existing launchd Paid owner is the only
 customer-effect owner. The authenticated gig-browser launcher and launchd manifest were still overriding the
 configured no-floor policy with a hard-coded 512 MiB headroom; the launcher also unset both ignore flags. Under
