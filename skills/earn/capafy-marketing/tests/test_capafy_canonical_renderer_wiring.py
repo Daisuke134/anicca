@@ -27,6 +27,14 @@ class ApprovedHyperFramesWiringTest(unittest.TestCase):
         self.assertNotIn("~/.claude/skills/faceless-money-factory", source)
         self.assertNotIn("~/.agents/skills/faceless-money-factory", source)
 
+    def test_profile_writer_is_repo_owned(self):
+        source = SCRIPT.read_text(encoding="utf-8")
+        profile_writer = SCRIPT.parent / "scripts/setup_profile.py"
+
+        self.assertIn("$LIFE_MANAGER_REPO/skills/earn/capafy-marketing/scripts/setup_profile.py", source)
+        self.assertNotIn("~/.agents/skills/ig-account-create", source)
+        self.assertTrue(profile_writer.is_file())
+
     def test_live_pass_selects_once_and_requires_new_native_reel_before_success(self):
         source = SCRIPT.read_text(encoding="utf-8")
 
