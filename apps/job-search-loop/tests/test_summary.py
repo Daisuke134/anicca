@@ -228,8 +228,10 @@ class SummaryProjectionTests(unittest.TestCase):
                     },
                     "model_route": "codex",
                     "ats_progress": {
-                        "required_adapters": ["ashby", "workday"],
-                        "confirmed_adapters": ["ashby"],
+                        "required_adapters": [
+                            "ashby", "greenhouse", "lever", "workday", "generic"
+                        ],
+                        "confirmed_adapters": ["ashby", "generic"],
                         "complete": False,
                         "adapters": {
                             "ashby": {"submitted": 2},

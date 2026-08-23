@@ -13,7 +13,7 @@ from .ats import detect_provider
 from .ledger import Ledger
 
 
-REQUIRED_ATS_ADAPTERS = ("ashby", "workday")
+REQUIRED_ATS_ADAPTERS = ("ashby", "greenhouse", "lever", "workday", "generic")
 
 
 def build_summary(

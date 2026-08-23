@@ -134,6 +134,20 @@ set -e
 if [[ "$GREENHOUSE_DISCOVERY_RC" -ne 0 ]]; then
   printf '%s\n' "Greenhouse discovery failed; existing eligible queue continues" >&2
 fi
+LEVER_DISCOVERY_RESULT="$EVIDENCE/lever-discovery.json"
+set +e
+"$JOB_SEARCH_PYTHON" -m job_search_loop.lever_discovery \
+  --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
+  --profile "$JOB_SEARCH_PROFILE" \
+  --materials-root "${XDG_DATA_HOME:-$HOME/.local/share}/anicca/job-search/materials" \
+  --prompt "$JOB_SEARCH_APP_ROOT/prompts/daily-pass.md" \
+  --output "$LEVER_DISCOVERY_RESULT" \
+  --max-jobs 1
+LEVER_DISCOVERY_RC=$?
+set -e
+if [[ "$LEVER_DISCOVERY_RC" -ne 0 ]]; then
+  printf '%s\n' "Lever discovery failed; existing eligible queue continues" >&2
+fi
 "$JOB_SEARCH_PYTHON" - "$ASHBY_DISCOVERY_RESULT" "$ASHBY_COMBINED_RESULT" <<'PY'
 import json
 import os
