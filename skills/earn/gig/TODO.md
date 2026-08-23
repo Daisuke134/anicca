@@ -1778,6 +1778,16 @@ requires the current prompt version, schema version and exact policy SHA, includ
 revalidation, and invalidates the legacy LBJ receipt. The next natural current-release wake must generate a v14
 policy-bound `satisfied_noop`; no LBJ customer effect is permitted.
 
+The durable Manledge owner has now produced another real business effect without Codex customer-work execution. It
+bound `@Upapa43252396` to official evidence for an Osaka City base, bicycle registration and a 100% rating, sent the
+recipient-specific approved outreach from `@selawmqt`, and read back the exact payload at
+`https://x.com/selawmqt/status/2091392067822088695`. Effect key
+`x:reply:1338135876572876800:4260819b9c159aad1c75633d9867b5a2b13528ebab8b1d0b1592530db1574991`
+is checkpointed with `exact_readback=true`, `quality_status=qualified` and `counts_toward_50=true`; effective qualified
+outreach is now eight. The current owner is re-running the exact final 15-query remainder through the leased
+`x:anicca` adapter before declaring reachable exhaustion. Forty-two further qualified effects or complete official
+exhaustion, truthful Coconala handoff and replay-zero remain open.
+
 1. **Paid/Submission — finish first.**
    - [x] Deploy and read back Paid ignoring shared preventive `disk-pressure.block` (20 GiB) and
      `disk-writers.stop` (10/11 GiB hysteresis), while retaining the 512 MiB last-resort guard and
