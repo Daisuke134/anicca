@@ -1,33 +1,45 @@
 # Autonomous Job Search Loop Design
 
 **Date:** 2026-07-28
-**Last updated:** 2026-08-22
+**Last updated:** 2026-08-24
 **Owner:** Daisuke Narita
-**Status:** The one macOS launchd acquisition owner, shared OpenClaw Telegram
-transport, and authenticated CloakBrowser daily-driver at CDP `:9222` are healthy.
-The owner wakes every 30 minutes. Production acquisition is Workday-only until repeated live
-Workday submissions and per-wake Telegram outcomes are proven; Ashby discovery and
-forms are parked. Every admitted Workday row enters the mandatory model browser
-runtime through that one CDP owner. Rakuten reached a completion-like Workday UI in
-run `daily-20260822-182223`, but no matching receipt email arrived and the owner does
-not accept that UI as proof. Rakuten is therefore a disputed, unverified outcome and
-does not close the Workday live gate.
-**Current execution truth supersedes earlier historical run notes below:** the next
-milestone is `JOB-WORKDAY-E2E-MODEL-10P`. Workday is first because the existing
-Rakuten session has already reached the real application flow and Workday exercises
-the complete account-create, sign-in, multi-page, upload, variable-question, review,
-submit, and receipt lifecycle. Ashby follows as 10Q using the same agent contract;
-Greenhouse, Lever, and generic ATS coverage follow only after both live gates close.
-The user-confirmed Salesforce FDE URL remains excluded from reapplication. The
-submission release is `246b5d7733f3c982490f618f7ac5f4f1f231cea1`; launchd remains hourly
-at `StartInterval=3600`. Ledger and the fenced attempt are `submitted` with
-`evidence_class=exact_completion_ui` and evidence SHA-256
-`07e07393a4f4161839a94eb2242c7d48ef8e031f2bf8903e1b97b78d696f556b`.
-Those are historical ledger claims, not current verified truth. Telegram message
-`28598` reported that claim, but Gog checked 13 current threads and found no exact
-Rakuten receipt email. The current Workday gate requires both the final provider UI
-and the matching receipt email for a new application; either one alone remains
-`post_submit_verification` and is reported as not yet verified.
+**Current verified status:** `ai.anicca.job-search-daily` is installed with
+`StartInterval=1800`; this is a 30-minute loop, not an hourly loop. Its immutable
+runtime is release `7ea4da7d6c72e89161dd6865901adb1675377ef6`, and the authenticated
+CloakBrowser daily-driver answers at CDP `:9222`. The latest wake
+`daily-20260824-011525` reached CDP and found queued Workday application
+`dad6324663cb...` (NVIDIA, JR2008507), but stopped before starting Luna. The runner
+requires `~/.codex/auth.json`, while the shared automation-home target currently
+resolves to `~/.codex-acct2/auth.json`; their SHA-256 values differ. The fail-closed
+result is `codex automation auth target mismatch`, the daily last exit is 1, and the
+health owner reports the acquisition owner unhealthy. This authentication ownership
+conflict is the first actionable TODO. It is not a launchd cadence, discovery, CDP,
+Workday form, or empty-queue failure.
+
+The application Ledger is live and remains the state SSOT. It currently records 5
+verified Workday submissions, 2 Workday `materials_ready` rows, and 6 Workday
+`submit_unknown` rows. Run `daily-20260823-110429` completed NVIDIA JR2008309 through
+the sole launchd/CDP owner; Gmail receipt `1a02c66d77d269c2` reconciled the exact role,
+and the loop delivered Telegram message `29697` for the exact resume and `29698` for
+the receipt-bound submitted outcome. The direct job-search Telegram transport is
+therefore proven for application results. The separate pre-model checkpoint still
+uses the OpenClaw CLI and currently times out as `openclaw_rc_124`; every-wake final
+reporting must move to the same direct, fenced transport. `summary.v1.json` reflects
+the live Ledger, but `summary.v2.json` is stale and still represents an older Ledger
+snapshot. Tracking is therefore durable at the Ledger layer but not yet correct in
+the long-lived funnel projection.
+
+**Current execution truth supersedes earlier historical run notes below:** Workday
+remains the only active acquisition provider until the repaired 30-minute owner
+completes one fresh queued row, reports its exact result to Telegram, and the next
+scheduled wake proves exact-URL dedupe while selecting another eligible Workday row.
+Ashby follows as 10Q using the same browser-agent contract; Greenhouse, Lever, and a
+provider-neutral ATS follow only after that gate. The minimum throughput contract is
+one verified Workday application per 30-minute wake whenever at least one eligible,
+permitted Workday role exists. There is no one-per-wake ceiling: after each verified
+submission the same owner continues until the queue or explicit wake budget is
+exhausted. A wake with no eligible role or a truthful external blocker still sends
+one company/role/outcome/next-action Telegram report with a provider message ID.
 
 **Architecture decision:** all eligible ATS form interaction is mandatory
 model-based browser work. Deterministic code owns only discovery, eligibility,
@@ -37,7 +49,7 @@ owns the variable question-by-question workflow. Every eligible row is handed to
 the existing `browser-lane-agent`, which attaches to the existing CDP owner and
 repeats `observe → reason → act → post-action snapshot → observe` until the row is
 verified submitted or safely resumable. A row-local failure never terminates the
-queue or becomes a reason for the hourly owner to stop before trying another
+queue or becomes a reason for the 30-minute owner to stop before trying another
 eligible role.
 
 The minimum autonomous input is a finalized truthful resume and the candidate's
@@ -51,14 +63,9 @@ email-verification flow through the authenticated Gmail rail, verifies a fresh
 sign-in, and resumes the same application. Credentials, verification codes, cookies,
 and form values never enter repo, logs, screenshots, Telegram, or model-visible row
 envelopes.
-**Handover state:** active immutable release is
-`96f49a0ff5ba29557f5725dd2bc55c8750facc1d`; launchd uses
-`StartInterval=3600`. The latest completed Workday receipt is
-`daily-20260822-082615`: Rakuten is `blocked` with
-`application_surface_not_found`, and Telegram checkpoint `28150` was sent.
-There is no provider submit request, completion UI, or receipt evidence in that
-run. The audit history below explains earlier increments but does not override
-sections 1.0-1.2, which are the current execution and TODO SSOT. The earlier
+**Handover state:** the status paragraphs above and sections 1.0-1.2 are the current
+execution and TODO SSOT. The audit history below explains earlier increments but
+does not override them. The earlier
 `daily-20260822-000400` wake captured the root cause of the
 radio exception: after source keyboard interaction, Workday dynamically
 reordered controls while `_fill_step` reused stale `nth(index)` metadata. The
@@ -366,7 +373,7 @@ accepted as a substitute for the framework.
   resubmitted.
 - Credentials, email codes, cookies, raw profile values, and resume contents never
   enter a row envelope, evidence JSON, model transcript, Telegram, or repository.
-- The hourly floor is one verified application when an eligible, permitted role
+- The 30-minute-wake floor is one verified application when an eligible, permitted role
   exists; there is no one-per-wake or daily ceiling. The owner continues after each
   success until its explicit wake budget or queue is exhausted. During development,
   repeated launchd kickstarts replace waiting for the clock; they do not bypass the
@@ -492,28 +499,31 @@ This is the remaining implementation-order SSOT. Only the first
 | 48bk | Admit NVIDIA's subject at the receipt summary fence | `implementation_done_live_gate` | Inbox run `inbox-20260823-024029` searched the expanded Gmail query but did not load the NVIDIA thread because the cheap summary fence still lacked the exact subject `Thank you for your interest in NVIDIA`. That folded phrase is now admitted only at summary selection; full-message reconciliation still requires exact recipient, authoritative Workday sender, company, full role, confirmation text, and one uncertain intent. No submit action is retried. |
 | 48bl | Deliver Telegram after zero-new receipt reconciliation | `implementation_done_live_gate` | Inbox run `inbox-20260823-024240` reconciled NVIDIA receipt `1a02a898712efee9` and moved the exact application from `submit_unknown` to `submitted`. The zero-new fast path then exited before the existing application-report delivery command, leaving Telegram without an ACK. That path now invokes the same fenced/deduped `application_reporting deliver` immediately after reconciliation. No ATS action occurs. A real Telegram message ID remains the live gate. |
 | 48bm | Report a reconciled submission with a receipt-bound Telegram event | `implementation_done_live_gate` | Recurrence run `daily-20260823-030807` resumed NVIDIA Workday `JR2022223` from its visual checkpoint, reached Review, submitted once, and produced both a visible `Application Submitted` modal and authoritative Gmail receipt `1a02aab4b967f64a`. The old per-run Telegram outcome is `send_started` without an ACK and is never retried. `application_reporting deliver` now emits a new at-most-once `application-submitted:{application_id}:{receipt_message_id}` correction from reconciled Ledger truth, so a later authoritative receipt cannot remain hidden behind an uncertain earlier transport. A real Telegram message ID for that new event remains the live gate. |
-| 48bn | Supply one fresh Workday row on every 30-minute wake | `pending_root_cause` | Release `7fdc2d29be0d7aeb0899d4e4f4b8a9a55b34ccd1` ran as the existing 1800-second launchd owner in `daily-20260823-031951`. Luna/xhigh and CloakBrowser were healthy, but runtime returned `queue_complete` because Ledger had no remaining eligible or discovered Workday row. Daily slots are audit labels, not a two-application quota. Add recurring official Workday discovery and admission before the model queue, while preserving canonical-URL dedupe, eligibility, provider isolation, and never-retry fences. |
-| 48bo | Discover one official Workday posting before each model wake | `implementation_done_live_gate` | `workday_discovery` queries the official NVIDIA, Workday, and Salesforce CXS job surfaces independently, filters Japan/remote target-role postings, excludes every canonical URL already present in Ledger, and promotes only the highest-priority unseen row to `materials_ready`. One tenant failure is isolated and the existing queue still runs. The existing `run-daily.sh` invokes it before the same Luna/xhigh Workday-only orchestrator; no second browser or executor is introduced. Focused discovery/launchd checks pass. A live wake that emits a new discovery receipt and hands that exact row to Luna remains the gate. |
+| 48bn | Supply one fresh Workday row on every 30-minute wake | `live_proven` | The existing 1800-second owner admitted NVIDIA JR2008309, completed it, then the next wake excluded it and discovered JR2008507. Daily slots remain audit labels, not a quota. |
+| 48bo | Discover one official Workday posting before each model wake | `live_proven` | `workday_discovery` queries the official NVIDIA, Workday, and Salesforce surfaces independently, filters eligible Japan/remote target roles, excludes canonical URLs already in Ledger, and admits the highest-priority unseen row. Runs `daily-20260823-110429` and `daily-20260823-112426` prove discovery and handoff through the existing owner without a second executor. |
 | 48bp | Let Luna recover when a provider option disappears | `implementation_done_live_gate` | Live run `daily-20260823-032744` discovered Salesforce `JR334569` as `AI Native Delivery Consultant`, handed exact row `add61f0f...75c` to Luna, reused the stored tenant credential, uploaded the resume, and reached Personal Information. A stale prompt then forced the NVIDIA-learned `Website → Workday.com` path even though the fresh Salesforce observation exposed `Job Board` and no `Website`; target resolution failed before submit. The tenant-specific answer is removed. `runtime choose` now converts only a vanished/ambiguous observed option into exit-zero `action_rejected` with a fresh observation, so Luna continues from visible controls. The row remains `materials_ready`, no submit fence was consumed, and a checkpoint resume is safe. |
 | 48bq | Reject an invented model transport failure and drain the queue first | `implementation_done_live_gate` | Resume run `daily-20260823-033554` successfully reopened the exact Salesforce source picker and returned `Job Board not checked` after every runtime command exited zero, but Luna nevertheless emitted `transport_failed` without another command. The prompt now prohibits that terminal result unless an actual runtime command exits nonzero. Discovery also returns `queue_present` without contacting providers whenever an eligible Workday row already exists, preventing a new row on each recovery wake from growing an unbounded backlog. Twelve focused checks pass. Resume the safe pre-submit checkpoint. |
 | 48br | Resume the Workday checkpoint after host disk capacity recovers | `external_blocked_live_gate` | Release `8ddb0bba47eec17ca1f55fdfe60e66184eb67418` live-proved `queue_present`, resumed Salesforce `JR334569`, selected the actually visible `Job Board`, completed the former-employment answer, country, and phone type, then failed before `Save and Continue` because opening the Ledger raised `sqlite3.OperationalError: unable to open database file`. Data-volume free space measured 326 MiB then 290 MiB; independent `PRAGMA quick_check` remains `ok`. The canonical disk-cleanup control-plane preflight passed, but its existing launchd owner remains `spawn scheduled`; emergency guard last exited 3. No submit fence was consumed. Do not retry until free capacity and a fresh Ledger open are stable, then kickstart the existing Job Hunter owner and resume this checkpoint. |
 | 48bs | Gate every scheduled Job Hunter wake before any disk write | `implementation_done_release_gate` | Host free space continued falling below 200 MiB. The canonical cleanup owner could not create its lock/receipt (`ENOSPC`), and emergency guard was occupied in `colima status`; no safe reclaimable target was reported. `run-daily.sh` now runs the shared Life Manager producer preflight before creating the run directory, opening Ledger, sending Telegram, or invoking Luna. It honors `disk-pressure.block`/`disk-writers.stop`, requires 512 MiB, and exits 75 with the checkpoint untouched. Thirteen focused checks pass. Release this small guard change without starting the model while pressure remains. |
 | 48bt | Resume the existing 30-minute Workday owner and close one complete application loop | `live_proven` | Release `120b779219a65f9418df3abe04163ba446db1c05` passed checksum and ran through the installed `StartInterval=1800` owner. Run `daily-20260823-110429` discovered NVIDIA `JR2008309` (Solutions Architect, AI for Science and HPC), handed the exact row to Luna/xhigh through the sole CloakBrowser CDP owner, reused the tenant credential, uploaded the routed resume, answered the visible NVIDIA source/former-employment/gender/terms controls, reached Review, and consumed one submit fence. The fresh screenshot visibly says `Application Submitted` and Candidate Home says `Application Received`. Inbox run `inbox-20260823-111827` reconciled authoritative receipt `1a02c66d77d269c2`; Ledger is `submitted`. Telegram ACKs are `29697` for the exact resume and `29698` for the receipt-bound submitted outcome. No retry or second executor occurred. |
 | 48bu | Remove the intermittent OpenClaw CLI hop from Job Hunter Telegram delivery | `live_proven` | The NVIDIA loop closed, but the pre-receipt outcome intermittently timed out through the OpenClaw CLI and remained fenced as `send_started`. Release `7ea4da7d6c72e89161dd6865901adb1675377ef6` restores the repository's previously proven job-search-specific Telegram Bot API transport from commit `482e41aa4`: private token/chat lookup, direct `sendMessage`/`sendDocument`, positive provider `message_id`, and the same durable outbox fence. It preserves both `sent` and `send_started` without a network call, so existing uncertain rows remain untouched and are never retried. Seventeen focused checks pass; live direct delivery returned provider message ID `29706`. The next owner wake `daily-20260823-112426` excluded submitted JR2008309, discovered new NVIDIA JR2008507, and handed it to the mandatory model lane. |
+| 48bv | Isolate and verify the Job Hunter Codex automation identity | `pending_actionable` | Give the existing Job Hunter owner a job-search-specific automation home and an install-selected auth source. Before every model launch, atomically verify the source and target resolve to the same file without exposing credential bytes. No other loop or interactive Codex session may rewrite this owner. Close with a released scheduled wake that starts Luna for queued JR2008507; the current failure is `codex automation auth target mismatch`. |
+| 48bw | Report every 30-minute wake through the direct Telegram transport | `pending_after_48bv` | Replace the remaining pre-model OpenClaw CLI hop with the already-proven direct, fenced job-search transport. Each wake emits exactly one final company/role/outcome/next-action report and records a positive provider message ID, including no-eligible-role and internal-failure outcomes. Keep application document and receipt-bound outcome events separately at-most-once. |
+| 48bx | Restore one current tracking projection from the Ledger SSOT | `pending_after_48bw` | Rebuild `summary.v2.json` atomically after every daily or inbox state transition from `ledger.sqlite3`, include a durable event high-water mark, and derive any `summary.v1` compatibility view from the same snapshot. Do not read the empty legacy SQLite files as alternate truth. Close when Workday counts and the JR2008507 state match Ledger after process restart. |
 | 49 | Drive the fresh Workday form with the LLM agent only | `live_proven` | Two consecutive NVIDIA Workday rows were driven through CloakBrowser CDP `:9222` by Luna/xhigh from fresh visible observations and screenshots, without a scripted question mapper or fixed page workflow. |
 | 50 | Reuse or create the Workday tenant account inside the same agent session | `live_proven` | The same tenant credential/session was reused by Luna without a second browser or executor. |
 | 51 | Complete every Workday page and variable employer question | `live_proven` | Luna completed provider-varying Salesforce questions for two rows from fresh observations and reached Review. |
 | 52 | Verify final review identity before the one submit action | `live_proven` | Both Salesforce rows passed the fenced company/role/URL/resume/no-validation review gate. |
 | 53 | Submit once and inspect the resulting Workday UI with our own eyes | `live_proven` | JR337672 and JR334569 each produced fresh exact Workday completion UI after one fenced submit. |
-| 54 | Verify the matching Workday receipt email | `in_progress` | Run the existing authenticated inbox owner until exact authoritative receipts bind JR337672 and JR334569. No receipt currently appears in `gmail_application_matches`; never resubmit either row. |
-| 55 | Reconcile Ledger only after UI plus email agree | `pending_after_54` | Promote each row from `exact_completion_ui_pending_receipt` only after its exact receipt is inserted atomically. |
-| 56 | Send the per-run Telegram truth and verify its ACK | `in_progress` | Automatic outcome rows exist but remain `send_started` without message IDs. Require a fresh loop-owned ACK; manual correction `29480` is channel proof, not automatic-loop closure. |
-| 57 | Immediately repeat on a second fresh Workday row | `application_verified_telegram_pending` | `JR2015317` and fresh `JR2022223` are both authoritatively submitted. The second row visibly showed `Application Submitted` and Gmail independently confirmed the exact role. Receipt-bound Telegram ACK remains before closure. |
-| 58 | Prove recurring Workday-only operation | `in_progress` | The sole owner is installed every 1800 seconds and has 11 recorded runs. The last exit is producer-guard `75`, so pass the disk guard, reconcile receipts, then prove one subsequent scheduled wake dedupes both completed rows and selects only a new eligible Workday row. |
-| 59 | Close `JOB-WORKDAY-E2E-MODEL-10P` | `pending_after_54_56_58` | Close only when both Salesforce rows have exact receipt reconciliation, Ledger agreement, fresh automatic Telegram ACKs, and next-wake dedupe. |
+| 54 | Verify a matching Workday receipt email | `live_proven` | NVIDIA JR2008309 binds authoritative Gmail receipt `1a02c66d77d269c2`; older `submit_unknown` rows remain fenced and are reconciled only if exact receipts arrive. |
+| 55 | Reconcile Ledger only after UI plus email agree | `live_proven` | JR2008309 moves to `submitted` only after exact role-bound receipt reconciliation. |
+| 56 | Send the per-application Telegram truth and verify its ACK | `live_proven` | Loop-owned Telegram IDs `29697` and `29698` prove resume and receipt-bound submission delivery; direct transport test ID `29706` proves the repaired route. Per-wake final reporting remains 48bw. |
+| 57 | Immediately repeat on a second fresh Workday row | `live_proven` | Consecutive NVIDIA Workday rows reach authoritative submitted state without duplicate side effects; JR2008309 additionally closes the full Telegram proof. |
+| 58 | Prove recurring Workday-only operation | `blocked_by_48bv` | The sole owner is installed every 1800 seconds, CDP is ready, and JR2008507 is queued. The latest scheduled wake stops before Luna because the shared automation auth target resolves to a different source. Close 48bv, run this queued row, then verify the next scheduled wake dedupes it and admits only another unseen eligible Workday URL. |
+| 59 | Close `JOB-WORKDAY-E2E-MODEL-10P` | `pending_after_48bv_48bw_48bx_58` | Close only after the repaired scheduled owner completes or truthfully resolves JR2008507, sends the final per-wake Telegram ACK, updates the current tracking projection, and the following wake proves dedupe plus continued fresh discovery. |
 | 60 | Unpark Ashby as `JOB-ASHBY-E2E-MODEL-10Q` | `pending_after_59` | Only after 10P closes; reuse the identical agent loop without restoring deterministic Ashby form ownership. |
 | 61 | Extend the proven loop to Greenhouse, Lever, and generic ATS | `pending_after_60` | Add provider discovery/safety hints only; never add a new scripted form/question workflow. |
-| 62 | Package Job Hunter as a canonical open-source Life Manager skill/loop | `pending_after_61` | Clean-home install accepts finalized resume plus email, owns one release/launchd/state/Telegram contract, and reproduces the verified behavior without private data. |
+| 62 | Package Job Hunter as a canonical open-source Life Manager skill/loop | `pending_after_61` | Reuse the current `apps/job-search-loop` implementation and fixed OSS-derived patterns; do not create a second executor. A clean-home install accepts finalized resume plus email, owns one release/launchd/state/credential/Telegram contract, and reproduces the verified behavior without private data. |
 | 63 | Close inbox, interview, assessment, offer, acceptance, and start lineage | `pending_after_62` | Every external event remains bound to one application with evidence, Telegram reporting, scheduling, preparation, and final-action fences. |
 | 64 | Prove the USD 10,000/month salary outcome and recurring soak | `pending_after_63` | One accepted and started role has authoritative gross base salary of at least USD 10,000 monthly equivalent, while the full application and follow-through loop remains healthy 24/7. |
 
@@ -2118,7 +2128,7 @@ surface is complete.
 
 The target policy has no artificial daily application cap. The legacy 08:30 and
 `daily_slot_count >= 2` gates are retired; `daily_slots` remains an append-only
-audit sequence. The resident acquisition owner runs with `StartInterval=3600`.
+audit sequence. The resident acquisition owner runs with `StartInterval=1800`.
 Live completion still requires row-local browser evidence, authoritative outcome
 proof, Ledger reconciliation, and a Telegram ACK.
 
@@ -2199,10 +2209,10 @@ exist so the resident loop never waits for development and development never wai
 for a naturally arriving email:
 
 - Runtime evidence pointer: 10P implements the shared browser-agent framework and
-  continues through every eligible row in each hourly or development-kickstarted
+  continues through every eligible row in each 30-minute or development-kickstarted
   wake. It closes with an authoritative Workday submission, same-wake continuation,
   and immediate repeated-kickstart dedupe receipt. Ashby adopts the framework in 10Q.
-- Engineering pointer: `JOB-LEDGER-EVENT-10N` and the hourly scheduler policy are
+- Engineering pointer: `JOB-LEDGER-EVENT-10N` and the 30-minute scheduler policy are
   present. The next implementation increment is `JOB-WORKDAY-E2E-MODEL-10P` in
   section 1.0; guardian work follows only after the provider rollout gate closes.
 
@@ -2215,8 +2225,8 @@ must accumulate in the live loop:
 
 | Lane | Current evidence | Next completion gate |
 |---|---|---|
-| Engineering now | Mandatory Luna/xhigh Workday ownership is live; two Salesforce rows have exact completion UI | Close receipt reconciliation, automatic Telegram ACK, and scheduled dedupe before Ashby |
-| Resident runtime | Installed owner reports `StartInterval=1800`, runs `11`, last exit producer-guard `75`; active release is `0f835b81f028ab91574828ca84efafafdb4a5120` | Pass disk guard, reconcile both receipts, verify automatic Telegram ACK and next-wake dedupe |
+| Engineering now | Mandatory Luna/xhigh Workday ownership, official discovery, fenced submit, Gmail reconciliation, and direct application-result Telegram are live | Isolate the Job Hunter Codex automation identity, then add direct final reporting for every wake and restore the current `summary.v2` projection |
+| Resident runtime | Installed owner reports `StartInterval=1800`; active release is `7ea4da7d6c72e89161dd6865901adb1675377ef6`; CDP is ready; JR2008507 is queued; latest daily exit is 1 from `codex automation auth target mismatch` | Close 48bv, process JR2008507 through the same owner, then verify final Telegram ACK, projection freshness, and next-wake dedupe |
 | External evidence wait | No real interview email or naturally occurring later same-thread recruiting message has arrived | Order 9 and the 10L E2E gate close only on authoritative external messages; no profile-context wait blocks application engineering |
 
 | Order | Deliverable | Status | Completion evidence |
@@ -2233,8 +2243,8 @@ must accumulate in the live loop:
 | 10 | Shared browser-agent framework and ATS rollout | `in_progress` | 10A–10O are audit history and deterministic rails. Current gate is 10P: build the framework and close Workday E2E. 10Q applies it to Ashby, 10R to Greenhouse, 10S to Lever, and 10T to unknown supported ATS forms. |
 | 10N | `JOB-LEDGER-EVENT-10N`: repair the attributed-application transition contract | `completed` | `Ledger` appends the matching event before updating the trigger-guarded projection in the same transaction. Focused ledger tests pass (`17/17`); the live Cognition row advanced `discovered→qualified→materials_ready`, survived DB reopen, and the real ledger reports integrity `ok` with zero event/projection mismatches. |
 | 10O | `JOB-SCHEDULER-POLICY-10O`: align cadence and application objective | `implemented` | The quota short-circuit is removed and pending `materials_ready` rows are exposed. The installed production policy is every 30 minutes (`StartInterval=1800`); final completion evidence is owned by 10P. |
-| 10P | `JOB-WORKDAY-E2E-MODEL-10P`: full framework plus Workday E2E | `in_progress` | The 30-minute owner and persistent CDP owner are live. Luna/xhigh produced exact Workday completion UI for Salesforce JR337672 and JR334569 through one fenced submit each. Both remain `exact_completion_ui_pending_receipt` and MUST NOT be retried. Close exact inbox receipt reconciliation, automatic Telegram provider ACK, disk-guard recovery, and next-wake dedupe. |
-| 10Q | `JOB-ASHBY-E2E-MODEL-10Q`: reuse the framework for Ashby | `in_progress_actionable` | Same orchestrator/session/observation/action/checkpoint/verifier contracts; unpark Ashby forms, then close one authoritative Ashby outcome and repeated-wake dedupe. |
+| 10P | `JOB-WORKDAY-E2E-MODEL-10P`: full framework plus Workday E2E | `in_progress_actionable` | The 30-minute owner, persistent CDP owner, official fresh discovery, model application, exact Gmail reconciliation, and direct application-result Telegram are live. JR2008309 closes with ACKs `29697` and `29698`. Close auth isolation 48bv, final per-wake reporting 48bw, tracking projection 48bx, JR2008507 processing, and the following scheduled dedupe wake. |
+| 10Q | `JOB-ASHBY-E2E-MODEL-10Q`: reuse the framework for Ashby | `pending_after_10P` | Same orchestrator/session/observation/action/checkpoint/verifier contracts; unpark Ashby forms, then close one authoritative Ashby outcome and repeated-wake dedupe. |
 | 10R | `JOB-GREENHOUSE-E2E-MODEL-10R` | `pending_after_10Q` | Provider hints only plus one authoritative Greenhouse outcome |
 | 10S | `JOB-LEVER-E2E-MODEL-10S` | `pending_after_10R` | Provider hints only plus one authoritative Lever outcome |
 | 10T | `JOB-GENERIC-ATS-MODEL-10T` | `pending_after_10S` | An unknown supported ATS form completes without a new fixed workflow |
