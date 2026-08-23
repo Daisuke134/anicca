@@ -1718,6 +1718,16 @@ resolver exposes only its non-secret `credentials:15` reference plus configured 
 the repository, owner prompt or evidence. Account discovery is therefore true while publication readiness remains
 false until an authenticated adapter proves a live official effect and readback.
 
+The same natural admission pass also proved new purchased rooms are not dependent on Codex. TikTok room `18180857`
+was initialized automatically and the Paid answer owner sent one indispensable request for the missing targeting,
+message, account and spreadsheet instructions; official talkroom readback binds the exact message and effect key.
+Smile room `18179735` was likewise admitted and the owner answered each newer buyer question with official talkroom
+readback. Its responses were materially useful but too long despite the existing abstract "smallest useful answer"
+instruction. The shared answer-owner harness now sets a measurable editorial target of at most 600 Japanese
+characters for ordinary replies, while allowing longer output only when the buyer explicitly asks for a detailed
+written report. This remains model composition, not a buyer-name router or deterministic semantic gate. Both rooms
+must continue from every newer buyer message and prove replay-zero when no newer request exists.
+
 1. **Paid/Submission — finish first.**
    - [x] Deploy and read back Paid ignoring shared preventive `disk-pressure.block` (20 GiB) and
      `disk-writers.stop` (10/11 GiB hysteresis), while retaining the 512 MiB last-resort guard and
