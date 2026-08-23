@@ -474,6 +474,15 @@ U13 atomic order:
     official state timestamp at `2026-08-22T18:46:29.413515+00:00`. Shared 9223 remained healthy.
     Current free space later read 6.8 GiB and macOS swap remained 15 GiB. U13 therefore waits on the
     host disk policy, not missing code, launchd definition, browser profile or provider routing.
+16. **MEMORY/DISK SAFE RECLAIM EXHAUSTED:** browser restart had invalidated the old target-ownership
+    IDs, so the normal tab GC saw zero owned pages while 45 Coconala pages remained. A direct CDP
+    audit closed only exact duplicate or `/mypage/direct_message/` pages whose textarea and
+    contenteditable controls were empty; no draft or evaluation-error page was closed. The shared
+    browser moved from 45 pages to 5, preserving storefront, offer edit, one message, active talkroom
+    and blank. Swap total fell from 15 GiB to 14 GiB and free disk rose from 6.8 GiB to 8.5 GiB.
+    Standard `purge` was denied by macOS, and no live loop, app, customer project, ledger, archive or
+    proof was removed. The 20 GiB host policy therefore remains active; a native reboot or equivalent
+    authorized host-level swap recovery is still required before 9233 can start.
 
 U14 atomic order:
 
