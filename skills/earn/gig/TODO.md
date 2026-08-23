@@ -346,7 +346,7 @@ and then rerun under the shared resolver release so discovery and adaptive fallb
 project-specific prompt knowledge.
 
 **Current live cursor.** `main` and `origin/main` were verified equal immediately before this snapshot at
-`6ae5e944b`; the starting verification commit
+`543e65aeb`; the starting verification commit
 `79ac01ba1eb66b06aed1f9cee66d4af303f03a3d` remains an ancestor. The existing launchd Paid owner is the only
 customer-effect owner. The authenticated gig-browser launcher and launchd manifest were still overriding the
 configured no-floor policy with a hard-coded 512 MiB headroom; the launcher also unset both ignore flags. Under
@@ -354,6 +354,13 @@ current host pressure this prevented CDP startup after 78 stale tabs made all ni
 generic launcher now honors the configured environment and defaults to zero headroom with both pressure-stop flags
 ignored, while the Coconala Apply, Negotiate/reply and shared browser jobs explicitly carry zero headroom. Cleanup
 remains owned by the separate cleanup loop rather than blocking every customer effect.
+
+Paid immutable release `543e65aeb` is now active. The release manager observed the prior Manledge owner mid-pass,
+left it uninterrupted until it wrote its honest zero-effect result and released `x:anicca`, then the existing
+launchd Paid job was kickstarted. The new pass obtained fresh official snapshots for all paid rooms and naturally
+spawned independent workers for Manledge `18169985`, Smile `18179735`, X `18171850`, and legacy room `18062411`
+in parallel. This is the required discovery-to-project-lane behavior; process existence is only liveness evidence,
+so each lane remains incomplete until its external effect and exact official readback exist.
 
 The first no-floor Paid wake then proved a separate shared-browser contention defect: all eight actionable
 targeted readbacks entered the one authenticated default CDP context concurrently, created duplicate room tabs and
