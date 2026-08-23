@@ -35,7 +35,6 @@ REASONING_EFFORT="${X_REPOST_REASONING_EFFORT:-max}"
 TELEGRAM_SEND_TIMEOUT="${X_REPOST_TELEGRAM_SEND_TIMEOUT:-30}"
 HUMANIZER_SKILL="${X_REPOST_HUMANIZER:-$HOME/.openclaw/skills/jp-humanizer-pro/SKILL.md}"
 GUARD="$HOME/.config/ai/bin/browser-guard.sh"
-WITH_BROWSER="$REPO_ROOT/skills/browser/with-browser.sh"
 ENSURE_BROWSER="$HOME/anicca/skills/browser/ensure_provision_browser.sh"
 AFFILIATE_PROPOSAL="${AFFILIATE_REPOST_PROPOSAL_PATH:-$HOME/.local/state/life-manager/affiliate/repost-proposals/latest.json}"
 AFFILIATE_CONSUMED="$STATE/affiliate-proposals-consumed.jsonl"
@@ -163,7 +162,7 @@ ask_model() {
     -c "model_reasoning_effort=\"$REASONING_EFFORT\"" --ignore-user-config --json \
     -o "$out_file" --dangerously-bypass-approvals-and-sandbox \
     --skip-git-repo-check -C "$SKILL" --add-dir "$SKILL" \
-    "$(cat "$prompt_file")" >"$EV/model.stdout" 2>>"$EV/model.err"
+    "$(cat "$prompt_file")" >"$EV/model.stdout" 2>"$EV/model.err"
   rc=$?
   if [ "$rc" -eq 0 ] && "$PY" - "$out_file" <<'PYEOF'
 import json, re, sys
@@ -182,7 +181,7 @@ PYEOF
     return 0
   fi
   MODEL_FAILURE="$("$PY" "$MODEL_BOUNDARY" classify \
-    "$EV/model.stdout" "$EV/model.err" "$out_file" --returncode "$rc")" || MODEL_FAILURE="other"
+    "$EV/model.stdout" "$EV/model.err" --returncode "$rc")" || MODEL_FAILURE="other"
   return 1
 }
 
@@ -444,9 +443,9 @@ if [ -z "${TWITTER_AUTH_TOKEN:-}" ]; then
 fi
 
 # ---------------------------------------------------------------- browser (leased, never :9222)
-CDP="$(AI_BROWSER_HOLDER_PID=$$ bash "$ENSURE_BROWSER" "$IDENTITY" 2>>"$EV/browser.err")"
+CDP="$(bash "$ENSURE_BROWSER" "$IDENTITY" 2>>"$EV/browser.err")"
 case "$CDP" in
-  http*) LEASE_HELD=1; log "leased $IDENTITY at $CDP" ;;
+  http*) log "leased $IDENTITY at $CDP" ;;
   *) log "browser unavailable for $IDENTITY (see $EV/browser.err) -- skipping this pass"
      report "⚠️ ブラウザ($IDENTITY)を確保できずパスを見送り: $(tail -1 "$EV/browser.err" 2>/dev/null)"
      exit 0 ;;
@@ -712,12 +711,6 @@ fi
 # ---------------------------------------------------------------- 2. engagement feedback
 run_x_script x_collect.py --cdp "$CDP" --mode engagement \
   --posted "$POSTED" >"$EV/engagement.json" 2>>"$EV/collect.err" || log "engagement refresh failed (non-fatal)"
-
-# Recon is complete. Drafting and model selection do not use the browser, so return the shared
-# identity immediately. Publishing acquires it again for exactly the mutation + readback lifetime.
-bash "$GUARD" release "$IDENTITY" >/dev/null 2>&1 || true
-LEASE_HELD=0
-CDP=""
 
 # top performers become the few-shot for this pass (most recent 10 considered, best 5 shown)
 "$PY" - "$POSTED" >"$EV/fewshot.json" <<'PYEOF'

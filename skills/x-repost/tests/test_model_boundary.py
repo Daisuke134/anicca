@@ -77,8 +77,21 @@ class ModelBoundaryTest(unittest.TestCase):
         self.assertIn('"$PY" "$MODEL_BOUNDARY" prepare', normalized)
         self.assertIn('CODEX_HOME="$CODEX_AUTOMATION_HOME"', normalized)
         self.assertIn('"$PY" "$MODEL_BOUNDARY" classify', normalized)
-        self.assertIn('"$EV/model.stdout" "$EV/model.err" "$out_file"', normalized)
+        self.assertIn(
+            '"$EV/model.stdout" "$EV/model.err" --returncode "$rc"', normalized
+        )
+        self.assertNotIn(
+            '"$EV/model.stdout" "$EV/model.err" "$out_file"', normalized
+        )
+        self.assertIn('2>"$EV/model.err"', normalized)
+        self.assertNotIn('2>>"$EV/model.err"', normalized)
         self.assertEqual(normalized.count("handle_model_failure"), 5)
+
+    def test_cli_preserves_working_browser_lease_through_postiz_readback(self) -> None:
+        source = CLI.read_text()
+        self.assertIn('BROWSER_LEASED=1', source)
+        self.assertNotIn('LEASE_HELD=', source)
+        self.assertNotIn('CDP=""', source)
 
 
 if __name__ == "__main__":
