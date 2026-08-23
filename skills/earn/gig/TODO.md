@@ -6,6 +6,31 @@ evidence does not belong on this list.
 The four lanes run from `~/gig/releases/life-manager/<sha>/`, cut from `main` by
 `gig_release.py`. See `README.md` for how the whole thing is installed.
 
+## Current execution cursor override
+
+The active development cursor is **Storefront only**. Apply is accepted and remains
+untouched. Negotiate production acceptance is recorded in `README.md` at commit
+`49e6b4d84`: a fresh official 140-thread reconciliation, two already-delivered
+estimate readbacks, five later verified replies, zero duplicate reply/estimate
+effects and five durable Telegram receipts. Paid is owned by another session and is
+outside this cursor. Older ordering text below remains historical context and does
+not authorize changing Apply, Negotiate or Paid in this slice.
+
+Current Storefront production truth is receipt
+`storefront-direct-1787477480777530000-18612`: `status=failed`, `actionable=0`,
+`effect=0`, `readback=0`, `duplicate=0`, Telegram message `30158`, reason
+`published_gallery_before_evidence_missing`. The gallery effect itself is already a
+confirmed, ledger-appended intent with a hash-sealed mutation contract. Bounded
+evidence GC removed the old `public_before_path`, and every later wake incorrectly
+requires that transient file instead of the durable rollback identity already inside
+the confirmed contract.
+
+Storefront acceptance for this cursor is: recover that confirmed gallery contract
+without a second customer effect; complete one natural official listing create/update
+readback through the existing owner; then observe the next natural wake with
+`effect=0`, `duplicate=0`, no wrong-service mutation and a durable owner-report
+receipt. No new scheduler, database, browser owner or reporting transport is allowed.
+
 ## Current scoped milestone: finish the public Coconala package
 
 The repository and `skills/earn/gig/` tree are already public on
