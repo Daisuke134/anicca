@@ -7613,3 +7613,45 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   pushed on canonical branch `feature/affiliate-foundation-prod`; canonical
   `main` has no merge base with this deployment history and is not falsely
   rewritten or called SHA-identical.
+- Revenue-path audit then recovered an already-valid focused experiment that
+  made the apparent need for a new base decision misleading. Acquisition
+  decision `1ecf26fe...` was sealed on 2026-08-22 for base placement
+  `elevenlabs-discovered-subtitle-translator-en-1`, changed only the CTA, and
+  required exact official `transaction_count >= 1`. Its owned article and X
+  placement were already live at
+  `https://x.com/selawmqt/status/2091080533396922494`, with provider counters
+  2 clicks / 2 unique and zero transactions. The redirect deployment above
+  makes that existing experiment's tracked CTA viable; it must be measured as
+  the active child rather than optimizing the base again.
+- Commits `8a34ce9a3` through `bbf2b8bfd` repair the focused lineage state
+  machine. The top-three funnel snapshot now retains the frozen focused
+  placement plus its latest live experiment chain as an additional set; focus
+  advances only along sealed control-placement lineage and remains stable when
+  no child exists. A newly included child initializes its provider counter from
+  current official values, persists a self-hashed interval/placement baseline,
+  rejects malformed or tampered receipts, preserves identical replay hashes,
+  and records later counter growth from that fixed baseline. Equal provider
+  timestamps select the latest append-only snapshot, not the first stale one.
+  Acquisition now selects only the baseline named by
+  `focused-cohort/latest.receipt_sha256`, leaving historical focused and Dev.to
+  files for audit without allowing them to supersede the active experiment.
+- Fresh review repeatedly reproduced and closed missing-entry, nonpersistent
+  counter, unsealed receipt, replay drift, and equal-timestamp failures, then
+  returned `ship` after an isolated production-copy E2E. Focused acquisition,
+  CTA instrumentation, snapshot, and lineage tests are 19/19 GREEN. Affiliate
+  `current` now resolves exactly to immutable release
+  `bbf2b8bfdfae54c24bcf23d18c5b4208955f1b42`, installed release-only with
+  LaunchAgents unchanged.
+- Existing owner production wake under that exact release succeeded and moved
+  focus from base to CTA child
+  `elevenlabs-discovered-subtitle-translator-en-experiment-1ecf26fe47e1-1`.
+  Snapshot `293c955b...` contains top three plus the child and reports
+  `focused_lineage_count=2`. Provider baseline receipt `5b15edcc...` binds
+  counters 2/2 and independently recomputes to the same self-hash; interval
+  receipt `37c484b...` reports child deltas 0/0 and transaction count 0. Active
+  focused baseline content SHA is `bb99d29d...`, and the acquisition owner now
+  reports that exact SHA rather than the old base or Dev.to SHA. Canonical run
+  receipt `f0e7e407...` binds release `bbf2b8bf...`, `run_state=SUCCEEDED`, and
+  terminal `READY_FOR_PUBLICATION`. The decision call remains retryable
+  `BUDGET_BLOCKED` until the next JST budget day; money remains
+  `NO_TRANSACTIONS` with all commission status counts zero.
