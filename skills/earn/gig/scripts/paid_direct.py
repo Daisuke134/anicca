@@ -106,7 +106,7 @@ OWNER_WORKED_TALKROOMS = {
     "18151989",  # jedbyJUNKYアメーバnote — デザインテンプレート利用許諾契約書
 }
 PAID_DECISION_SCHEMA_VERSION = 4
-PAID_DECISION_PROMPT_VERSION = "paid-semantic-decision-v12"
+PAID_DECISION_PROMPT_VERSION = "paid-semantic-decision-v13"
 PAID_DECISION_MODEL = "gpt-5.6-sol"
 PAID_FILE_MODEL = "gpt-5.6-sol"
 PAID_FILE_POLICY_VERSION = "paid-file-build-review-v21"
@@ -1128,7 +1128,11 @@ def _decision_prompt(context: Path, context_sha256: str, feedback: str,
         "or acknowledges an action. "
         "When the accumulated contract still requires authorized external effects, do not choose file merely to "
         "package or report incomplete progress; choose remote until the required effects are complete or official "
-        "evidence proves reachable exhaustion. Audit progress semantically rather than copying a stored total. If an "
+        "evidence proves reachable exhaustion. A started search, query list, zero-byte or partial output, model "
+        "narration, timeout, or simple absence of candidates is not exhaustion evidence. Exhaustion requires a "
+        "complete nonempty machine-readable receipt that binds the intended query scope, attempted count equal to "
+        "intended count, completion time, zero query errors, and the official URLs actually checked; the model still "
+        "decides semantic eligibility from those sources. Audit progress semantically rather than copying a stored total. If an "
         "effect's exact outbound payload asks the recipient to confirm a required qualification, that effect remains "
         "qualification-only and does not count toward a qualified target until an affirmative official response is "
         "read back. When a stored classification contradicts its payload or official response state, do not propagate "
