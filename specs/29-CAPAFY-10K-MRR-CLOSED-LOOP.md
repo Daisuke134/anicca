@@ -372,6 +372,14 @@ GUI Aquaが存在しない間も既存4 ownerを同じLife Manager sourceから�
 
 Items are executed top-to-bottom. Only one item is active.
 
+Current production truth:
+
+- The 24/7 control plane is already installed: launchd wakes the bounded supply, outcome, marketing and money owners hourly; the latest hourly goal-monitor run is `3`, last exit `0`.
+- Inventory is `33` observed / `22` listed / `5` occupied / `0` free / `6` retry. Cap-full is healthy idle, not a blocker; the loop performs no sixth submission.
+- Official Publisher Console seller truth is `1` paid order / `$9.99` one-time Sales / `$0` subscription MRR / `$8` ending balance / `$0` payable / `$0` paid. Legacy agent API `5` orders / `$19.98` is isolated and MUST NOT drive revenue or MRR decisions.
+- The earliest deterministic operations-complete claim requires C19 external review transition, one quality-approved marketing post/readback, and C21 seven consecutive healthy days. With no further failure, C21 cannot complete in less than seven calendar days from the next clean day boundary.
+- `$10,000` settled net MRR has no honest calendar ETA. It is an economic target, and completion requires official active subscription and settlement readback reaching `$10,000`; runtime uptime, listing count, views and one-time Sales do not substitute for it.
+
 | ID | atomic action | done evidence | state |
 |---|---|---|---|
 | C0 | inventory every loaded Capafy launchd label and map source path, state path, log path, cadence | checked-in inventory has no unknown owner | completed — 9/9 loaded labels mapped; unknown owner 0 |
@@ -379,7 +387,7 @@ Items are executed top-to-bottom. Only one item is active.
 | C2 | install and bootstrap revised jobs once, unload duplicate old-path jobs, and read back the exact loaded set | `launchctl print` points to Life Manager; one owner per responsibility; no duplicate daily/hourly publisher | completed — loaded 8/8; old path 0; duplicates 0 |
 | C3 | fix false-green exits so child failure remains nonzero and terminal heartbeat is written only after classified completion | failure injection returns exact child codes `17`/`23`; failed runs write no heartbeat; success/no-op writes heartbeat | completed |
 | C4 | fix event identity and incident monotonicity | repeated observation is idempotent; new observation gets new event ID; verified cannot regress to unresolved | completed — live duplicate IDs 0; verified regressions 0 |
-| C5 | run a bounded hourly reconcile against live Capafy account/inventory/sales/refunds/subscriptions | fresh receipt separates MRR, one-time, pending, refunds; unknown remains unknown | completed — 5/5 sources fresh; MRR/one-time honestly unknown |
+| C5 | run a bounded hourly reconcile against live Capafy account/inventory/sales/refunds/subscriptions | fresh receipt separates MRR, one-time, pending, refunds; unknown remains unknown | completed — official seller sources fresh; 1 paid order, `$9.99` one-time, `$0` subscription MRR, `$8` pending/ending balance, `$0` payable/paid; legacy 5/$19.98 isolated |
 | C6 | normalize current Capafy server response and restore exact status/slot inventory readback | live call returns agent rows and deterministic occupied/free/retry counts | completed — 32 rows; occupied 3; free 2; retry 7 |
 | C7 | implement slot allocator contract | table-driven tests cover free/full/rejected/listed/server-unreadable without duplicate Agent creation | completed — max one stable action per wake |
 | C8 | implement same-agent rejection repair queue | real rejected fixture preserves agent_id, records reason, adds regression test, creates version update | completed — 7 same-Agent target versions queued; reason absence explicit |
@@ -396,17 +404,17 @@ Items are executed top-to-bottom. Only one item is active.
 | C19 | prove one listed transition frees a fresh slot | status=4 reduces occupied count and next hourly wake submits exactly one candidate | pending/event-driven — Portfolio `9480246345`を含む5件がoccupied、free 0。hourly ownerは3600秒ごとにwrite 0で監視し、accepted/rejectedでfree 1になった最初のwakeだけがFootball same-Agent `1037238583`を再提出する |
 | C20 | connect post/click/subscription windows without claiming causal proof | attribution row is candidate unless Capafy exposes order-level UTM/source | completed — live attribution v2 joins one IG post + 23 counters + Capafy snapshot; clicks 7; causal=false; subscription unknown; Netlify deploy `6a89b4126e21fe74286b7a79`; TG `29036` |
 | C21 | prove seven consecutive daily healthy terminals and hourly freshness | 7-day ledger has no stale source, duplicate Agent/version/post or missing Telegram receipt | observing — strict proof `0/7` because an earlier same-day failed execution correctly breaks the streak。run `9`はCAP_FULL/rc0/write0、false-green classifierはfocused 10件でfailure/invalidを非zeroへ写像する |
-| C22 | operate growth and retention experiments until settled net MRR reaches `$10,000` | active subscription readback and refunds/fees reconcile to target | **active** — unreadable state fail-openは`e40202978`、loaded cadence convergence false-greenは`36cdd0219`、Telegram timeout stuck-sending/replay raceは`e39d7176f` + `b8e3de68a`、Aqua不在fallbackは`136a9f61f`、IG false-zero metricsは`3ef6dfb3a`で閉じる。Aqua実receiptはloaded 3600秒、4 owner exit 0、timeout replay再送0を証明済み。owner metricsはplays `1/8`であり、完全0配信やwinnerを主張しない。Data Analyst `7785270416`の既存`DcSwjsMIzpa`は承認済みquality contract前のlegacy creativeなので再利用しない。次はcadenceが開いたwakeでrepo-owned evidence、HyperFrames、scene-matched Andrew voiceの新creativeを一件だけrender/postし、別hash、native URL、Telegram media message ID、3本の同一window metricsを閉じる。5 ordersは`unattributed_sales`、settled MRR sourceは unavailable のためMRRをgrossから推定しない |
+| C22 | operate growth and retention experiments until settled net MRR reaches `$10,000` | active subscription readback and refunds/fees reconcile to target | **active** — hourly control plane、official seller money readback、token refresh、Telegram dedupe、IG real metricsは稼働済み。現在の公式値はpaid order `1`、one-time `$9.99`、subscription MRR `$0`。公式rankingの実winnerはAcademic Humanizer Agent `6839055303` / Download `$9.99`だが、現selectorはまだ旧`unattributed_sales`なので最初に公式winnerへ接続する。次のcadence-open wakeはData Analyst `7785270416`をrepo-owned evidence、HyperFrames、scene-matched Andrew voiceで新規render/postし、旧creativeを再利用しない。`$10K`完了は公式settled net subscription MRRでのみ判定する |
 
 ### Remaining execution order
 
-1. C22-1: cadence gateが開いた最初のmarketing wakeでowner-measured 2 Reel reach receiptを読み、Data Analystのrepo-owned evidenceからsoft CTA + bio landing付きの新しいHyperFrames + scene-matched Andrew voice MP4を一件だけrenderし、full-video inspectionと旧creative hash不一致を確認する。
-2. C22-2: 新しい同一bytesだけをInstagramへ一件投稿し、native Reel URL、Telegram media message ID、rotation commitをreadbackする。失敗時は投稿0・rotation0・heartbeat0でterminal failureにする。
-3. C22-3: metric windowでquality-approved 3 Reelsのreach、landing click、official Publisher Console seller salesを同じwindowへjoinする。orders `5` / gross `$19.98`の非seller集計は除外し、order-level sourceが無ければcausal claimをfalseのまま保つ。
-4. C19-1: hourly inventoryでfree slotを初めて検出したwakeだけがFootball Agent `1037238583`をsame-Agent修正・再提出し、6件目のAgentを作らない。
-5. C21-1: 失敗を隠さないterminal ledgerで7 consecutive healthy daysを蓄積する。途中failureは0/7へ戻すが、C22の安全なgrowth workは停止しない。
-6. C22-4: **done** — hourly money readbackをofficial Publisher Console seller endpointsへ接続し、Sales、subscription MRR、refund、statement ending balance、payable、paid payoutを別fieldでreceiptへ保存する。現在値はpaid seller orders `1`、Sales `$9.99`、subscription MRR `$0`、ending balance `$8`、payable/paid `$0`。production company receipt `capafy-f1c5e2d13ea2c988696d97bc`はTelegram `message_id=29481`でdelivered。launchd envの`LM_TELEGRAM_ALERT_CHAT_ID`もsender targetとして読む。
-6. C22-4: settled active subscription sourceが取得できるまでmoney truthを`unknown`として監視し、取得後はrefund/fee控除後のnet MRRだけを`$10,000`へ加算する。
+1. C22-1: official seller ranking winner `6839055303` / Academic Humanizer / Download `$9.99`をhourly receiptからgrowth selectorへ渡し、旧`unattributed_sales`を廃止する。one-time winnerをsubscription winnerまたはMRRと呼ばない。
+2. C22-2: cadence gateが開いた最初のmarketing wakeでowner-measured 2 Reel reach receiptを読み、Data Analystのrepo-owned evidenceからsoft CTA + bio landing付きの新しいHyperFrames + scene-matched Andrew voice MP4を一件だけrenderし、full-video inspectionと旧creative hash不一致を確認する。
+3. C22-3: 新しい同一bytesだけをInstagramへ一件投稿し、native Reel URL、Telegram media message ID、rotation commitをreadbackする。失敗時は投稿0・rotation0・heartbeat0でterminal failureにする。
+4. C22-4: metric windowでquality-approved 3 Reelsのreach、landing click、official Publisher Console seller salesを同じwindowへjoinする。legacy orders `5` / gross `$19.98`は除外し、order-level sourceが無ければcausal claimをfalseのまま保つ。
+5. C19-1: hourly inventoryでfree slotを初めて検出したwakeだけがFootball Agent `1037238583`をsame-Agent修正・再提出し、6件目のAgentを作らない。
+6. C21-1: 失敗を隠さないterminal ledgerで7 consecutive healthy daysを蓄積する。途中failureは0/7へ戻すが、C22の安全なgrowth workは停止しない。
+7. C22-5: official active subscription、refund、fee、settlementを毎時監視し、settled net MRRだけを`$10,000`へ加算する。現在値は`$0`であり、到達までloopを継続する。
 
 ## Test matrix
 
