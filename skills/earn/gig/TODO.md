@@ -317,6 +317,17 @@ buyer already knows; they retain only the artifact, the requested review point, 
 editorial guidance, not a deterministic length gate: safety-critical facts and a buyer-requested cancellation
 option may remain when relevant.
 
+**Manledge account recovery.** Official X DOM confirms the existing registered `x:anicca` browser identity is
+authenticated as `@selawmqt` at `https://x.com/selawmqt`. The account owner explicitly authorized that seller-owned
+account for project `18169985` in the private remote-account authorization SSOT and sent a concise Coconala
+correction telling the buyer to disregard the unnecessary signup request. No additional buyer confirmation is
+required: the buyer never requested account approval, and the earlier approval gate was a seller-created promise,
+not a buyer requirement. Paid semantic routing now permits an explicitly project-authorized seller-owned remote
+target, and remote owners must inspect the browser registry plus private authorization before signup or asking for
+another account. Next natural work must use that account, execute the already-approved outreach plan from the full
+proposal/DM/talkroom context, and record official X effects plus the outreach ledger; it must not send another
+Coconala acknowledgement or count an unsent draft as outreach.
+
 **Current live cursor.** `main` and `origin/main` were verified equal immediately before this snapshot at
 `0d16152be`; the starting verification commit
 `79ac01ba1eb66b06aed1f9cee66d4af303f03a3d` remains an ancestor. The existing launchd Paid owner is the only
