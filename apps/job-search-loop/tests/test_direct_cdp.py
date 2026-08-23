@@ -14,6 +14,12 @@ from job_search_loop.runtime import main as compatibility_runtime_main
 
 
 class DirectCDPTypeTests(unittest.IsolatedAsyncioTestCase):
+    def test_observation_ignores_only_the_passive_recaptcha_badge(self):
+        source = inspect.getsource(ObservationBuilder.build)
+
+        self.assertIn("!el.closest('.grecaptcha-badge')", source)
+        self.assertIn("iframe,[data-sitekey]", source)
+
     async def test_literal_type_rejects_an_expired_target_with_fresh_observation(self):
         from job_search_loop.browser_agent import runtime
 

@@ -105,7 +105,9 @@ class ObservationBuilder:
                 return '';
               };
               const challenges = Array.from(document.querySelectorAll('iframe,[data-sitekey]'))
-                .filter(visible).map(challengeProvider).filter(Boolean);
+                .filter(visible)
+                .filter(el => !el.closest('.grecaptcha-badge'))
+                .map(challengeProvider).filter(Boolean);
               return { visible_text: document.body ? document.body.innerText : '', controls, validation,
                 challenges: Array.from(new Set(challenges)) };
             }"""
