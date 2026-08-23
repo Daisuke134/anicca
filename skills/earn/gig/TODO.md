@@ -2256,8 +2256,13 @@ a later successful example.
   `remote_builder`; it did not resend the public post or start a replacement owner effect. The
   next natural pass completed the fresh Sol semantic-decision receipt with the required individual
   outreach outcome, then started `PAID_REMOTE_OWNER` inside the same project worker under that bound
-  contract. Completion still requires that owner to perform/read back the individual outreach or
-  return honest verified exhaustion, then prove replay-zero.
+  contract. The owner resolved `@selawmqt`, found X Chat blocked by its encryption passcode without
+  resetting it, and selected candidate-specific public replies as the authorized fallback. Its first
+  real effect contacted `@26AnNPNH5Qr8bBK`; official X DOM read back the exact qualification message
+  at `https://x.com/selawmqt/status/2091337871240356062`. The public recruitment post is still
+  excluded from the count. Completion still requires the natural owner to continue to 50 verified
+  individual contacts or verified exhaustion, report the result to the exact Coconala room, and
+  prove replay-zero.
 - [x] P30 — Resume the existing Haru liability through the generic Paid owner. The live
   `57ac9eb159e0` Paid owner recognized the legacy v26 artifact as already beyond five review
   iterations, performed no v27 build and no additional review, authorized the unchanged artifact
