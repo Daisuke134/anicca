@@ -7504,4 +7504,15 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   oversized artifact as decision consumption, and lets an invalid metadata
   policy remain visible without blocking a later valid due policy. Focused
   source/acquisition/auth/installer tests are 21/21 GREEN with one expected
-  guard skip. Review and production replacement remain open.
+  guard skip. Review found two release blockers before production replacement:
+  source consumption and composition still used the old nested-prefix lineage,
+  and an existing live campaign hid the invalid-metadata terminal state.
+- Commit `9d4bba75d` makes acquisition decision ID plus normalized control plan
+  the shared deterministic experiment-lineage contract for source capture and
+  composition, and prioritizes `CAMPAIGN_METADATA_INVALID` when no valid due
+  campaign advances. The three new regressions, all source/composition tests,
+  compile, and diff checks are GREEN. One pre-existing local-loop fixture still
+  raises `FileNotFoundError` for its absent landing directory and is not counted
+  as this slice's GREEN. Fresh adversarial review, immutable release placement,
+  existing-owner compact-plan publication, exact public permalink readback,
+  and official transaction readback remain open in that order.
