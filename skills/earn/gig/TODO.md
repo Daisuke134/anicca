@@ -421,7 +421,11 @@ minor-fix / seller-cancellation offer, and formal delivery unchecked; the effect
 message hash and package hash. Immediate replay of the identical contract returned `send_performed=false` and
 `deduplicated=true` with the same effect keys and formal delivery still off. Haru review-stage submission is
 therefore complete; buyer approval and any later requested correction remain live transaction work. The next
-natural Paid wake must rediscover this official effect without sending it again.
+natural Paid wake then rediscovered the same official effect: exact-room snapshot reports
+`buyer_visible_artifact_observed=true`, `buyer_feedback_pending_artifact=false`, `delivery_action=none`, an empty
+composer and formal delivery unchecked, while its seller-message history contains the v43 attachment and exact
+handoff. The durable owner therefore performed no replay. Buyer approval and any later requested correction remain
+live transaction work; Haru no longer blocks advancement to the next still-pending Paid room.
 
 **Current runtime refresh.** Unrelated dirty files remain untouched. The existing Paid pass naturally resumed the
 Haru v43 staging after compiling
