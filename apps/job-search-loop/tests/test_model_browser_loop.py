@@ -59,7 +59,7 @@ class ModelBrowserLoopContractTests(unittest.TestCase):
     def test_wake_budget_covers_workday_and_one_following_ats_form(self):
         from job_search_loop.browser_agent import runtime
 
-        self.assertGreaterEqual(runtime._WAKE_STEP_BUDGET, 75)
+        self.assertGreaterEqual(runtime._WAKE_STEP_BUDGET, 100)
 
     def test_all_provider_queue_keeps_workday_before_ashby(self):
         from job_search_loop.browser_agent.queue import RowQueueSupervisor
