@@ -6,12 +6,22 @@ def agent(agent_id: str, sales=None, recent=None) -> dict:
             "sales": sales, "recentSales": recent, "rating": None, "reviewCount": 0}
 
 
-def test_company_orders_without_agent_sales_are_unattributed_not_none() -> None:
-    result = select_signal([agent("1", None, [0, 0])], company_orders=5)
+def test_official_seller_winner_overrides_missing_legacy_agent_sales() -> None:
+    official_winner = {
+        "agent_id": "6839055303",
+        "name": "Academic Humanizer — Human Voice, No AI Tells",
+        "sales_usd": "9.99",
+        "sku_type": "buyout",
+        "revenue_kind": "one_time",
+        "source": "official_publisher_console",
+    }
 
-    assert result["signal"] == "unattributed_sales"
-    assert result["company_orders"] == 5
-    assert "winner" not in result
+    result = select_signal([agent("1", None, [0, 0])], company_orders=1, official_winner=official_winner)
+
+    assert result["signal"] == "sales"
+    assert result["company_orders"] == 1
+    assert result["winner"] == official_winner
+    assert result["attribution_status"] == "official_seller_ranking"
 
 
 def test_agent_sales_identify_real_winner_including_recent_sales_array() -> None:

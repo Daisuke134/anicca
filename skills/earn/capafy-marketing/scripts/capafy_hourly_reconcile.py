@@ -88,7 +88,7 @@ def _refund_count(payload: dict) -> int | None:
 
 def _seller_money(sales_payload: dict, ranking_payload: dict, statements_payload: dict) -> dict:
     empty = {"gross": None, "orders": None, "refunds": None, "one_time": None,
-             "mrr": None, "ending_balance": None, "payable": None}
+             "mrr": None, "ending_balance": None, "payable": None, "winner": None}
     if not all(_ok(value) for value in (sales_payload, ranking_payload, statements_payload)):
         return empty
     sales = _data(sales_payload)
@@ -114,17 +114,36 @@ def _seller_money(sales_payload: dict, ranking_payload: dict, statements_payload
             for agent in agents for sku in (agent.get("skus") or [])
             if str(sku.get("skuType") or "").startswith("subscription_")
         )
+        winner_row = max(agents, key=lambda agent: Decimal(str(agent.get("totalSalesAmount", 0) or 0)), default={})
+        winner_sales = Decimal(str(winner_row.get("totalSalesAmount", 0) or 0))
+        winner_sku = max(
+            winner_row.get("skus") or [],
+            key=lambda sku: Decimal(str(sku.get("salesAmount", 0) or 0)),
+            default={},
+        )
         latest = max(statement_rows, key=lambda row: str(row.get("settlementMonth") or ""), default={})
     except (InvalidOperation, TypeError, ValueError):
         return empty
     # Zero lifetime subscription sales proves current MRR is zero. Once any
     # subscription sale exists, active/canceled status is required; do not infer it.
     mrr = "0.00" if subscription_sales == 0 else None
+    sku_type = str(winner_sku.get("skuType") or "")
+    winner = None
+    if winner_sales > 0 and winner_row.get("agentId") and winner_row.get("agentTitle"):
+        winner = {
+            "agent_id": str(winner_row["agentId"]),
+            "name": str(winner_row["agentTitle"]),
+            "sales_usd": _money(winner_sales),
+            "sku_type": sku_type,
+            "revenue_kind": "subscription" if sku_type.startswith("subscription_") else "one_time",
+            "source": "official_publisher_console",
+        }
     return {
         "gross": _money(gross), "orders": orders, "refunds": _money(refunds),
         "one_time": _money(gross - subscription_sales), "mrr": mrr,
         "ending_balance": _money(latest.get("endingSettlementBalance")) if latest else None,
         "payable": _money(latest.get("payableAmount")) if latest else None,
+        "winner": winner,
     }
 
 
@@ -201,6 +220,7 @@ def build_receipt(payloads: dict[str, dict], observed_at: str) -> dict:
         "account": {"authenticated": True if _ok(payloads.get("account")) else None},
         "inventory": inventory,
         "orders": orders,
+        "seller_winner": seller["winner"],
         "legacy_agent_api": {"orders": legacy_orders, "gross_usd": legacy_gross, "refunds_usd": legacy_refunds},
         "refunds": {"tickets": _refund_count(payloads.get("refunds", {}))},
         "money": {

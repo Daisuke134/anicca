@@ -51,7 +51,16 @@ def live_payloads() -> dict:
         },
         "refunds": {"code": 0, "data": {"list": [{"refundId": "r-1"}]}},
         "seller_sales": {"code": 0, "data": {"totalRevenue": 9.99, "data": [{"orders": 1, "refundAmount": 0}]}},
-        "seller_ranking": {"code": 0, "data": {"agents": [{"skus": [{"skuType": "buyout", "salesAmount": 9.99}]}]}},
+        "seller_ranking": {"code": 0, "data": {"agents": [{
+            "agentId": "6839055303",
+            "agentTitle": "Academic Humanizer — Human Voice, No AI Tells",
+            "totalSalesAmount": 9.99,
+            "previousSalesAmount": 0.0,
+            "changePercent": 0.0,
+            "skuCount": 1,
+            "skus": [{"skuName": "Per Download", "skuType": "buyout", "salesAmount": 9.99,
+                      "previousSalesAmount": 0.0, "changePercent": 0.0}],
+        }]}},
         "statements": {"code": 0, "data": {"list": [{"settlementMonth": "2026-07", "endingSettlementBalance": 8, "payableAmount": 0}]}},
     }
 
@@ -74,6 +83,14 @@ def test_receipt_separates_money_and_keeps_unobservable_mrr_unknown() -> None:
     }
     assert receipt["money_status"]["one_time_revenue_usd"] == "fresh_official_seller_console"
     assert receipt["money_status"]["settled_mrr_usd"] == "fresh_zero_lifetime_subscription_sales"
+    assert receipt["seller_winner"] == {
+        "agent_id": "6839055303",
+        "name": "Academic Humanizer — Human Voice, No AI Tells",
+        "sales_usd": "9.99",
+        "sku_type": "buyout",
+        "revenue_kind": "one_time",
+        "source": "official_publisher_console",
+    }
     assert receipt["refunds"]["tickets"] == 1
     assert receipt["sources"]["sales"]["freshness"] == "fresh"
 

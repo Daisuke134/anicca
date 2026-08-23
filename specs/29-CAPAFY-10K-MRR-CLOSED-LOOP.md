@@ -356,6 +356,8 @@ seller Web tokenはJWT 30日、current expiry `2026-09-22T00:20:00Z`。hourly ow
 
 loaded `ai.anicca.capafy-goal-monitor-hourly`をsafe kickstartしたproduction E2Eはruns `2→3`、last exit `0`。launchd contextでtoken `healthy_noop / remaining_days=29`、seller sales/ranking/statements全fresh、paid orders `1`、gross `$9.99`、settled MRR `$0`、legacy orders `5`隔離をreadbackし、同一semantic company receiptはTelegram `29481`へ重複送信せずdedupeする。
 
+official seller rankingをgrowth selectorへ接続する。hourly receiptは実winner `6839055303` / Academic Humanizer / buyout / `$9.99` / `one_time`を`source=official_publisher_console`付きで保存し、selectorは旧Agent APIのnull salesより公式winnerを優先する。本番selector readbackは`signal=sales / company_orders=1 / attribution_status=official_seller_ranking`。one-time winnerをsubscription winnerまたはMRR proofへ昇格させない。
+
 3本目以降のcopy experimentを学習可能にするため、live Reel ledger rowへexact `caption`、on-screen `hook`、`listing_name`を必須化する。新native URLとselected Agent IDだけではterminal successにせず、3 fieldのいずれかがblankならrotation commit 0、wrapper rc `3`にする。次のData Analyst passから`ig_reflect`はhookとreachを同じReel identityで比較できる。focused 3件、shell syntax、fresh reviewer `ship`を確認し、commit `c3004dbdf`をmainへpushする。
 
 Data Analyst production preflightでHyperFrames `0.8.8`と`edge-tts 7.2.8`は利用可能だが、STEP4が指定していた`~/.cache/instagrapi-venv/bin/python`は存在しないことを実測する。instagrapiがimportでき、poster CLI readbackがrc `0`の`/opt/homebrew/bin/python3`へ実行pathを固定する。focused 3件、shell syntax、poster `--help`、fresh reviewer `ship`を確認し、commit `7186fec9d`をmainへpushする。
@@ -404,17 +406,16 @@ Current production truth:
 | C19 | prove one listed transition frees a fresh slot | status=4 reduces occupied count and next hourly wake submits exactly one candidate | pending/event-driven — Portfolio `9480246345`を含む5件がoccupied、free 0。hourly ownerは3600秒ごとにwrite 0で監視し、accepted/rejectedでfree 1になった最初のwakeだけがFootball same-Agent `1037238583`を再提出する |
 | C20 | connect post/click/subscription windows without claiming causal proof | attribution row is candidate unless Capafy exposes order-level UTM/source | completed — live attribution v2 joins one IG post + 23 counters + Capafy snapshot; clicks 7; causal=false; subscription unknown; Netlify deploy `6a89b4126e21fe74286b7a79`; TG `29036` |
 | C21 | prove seven consecutive daily healthy terminals and hourly freshness | 7-day ledger has no stale source, duplicate Agent/version/post or missing Telegram receipt | observing — strict proof `0/7` because an earlier same-day failed execution correctly breaks the streak。run `9`はCAP_FULL/rc0/write0、false-green classifierはfocused 10件でfailure/invalidを非zeroへ写像する |
-| C22 | operate growth and retention experiments until settled net MRR reaches `$10,000` | active subscription readback and refunds/fees reconcile to target | **active** — hourly control plane、official seller money readback、token refresh、Telegram dedupe、IG real metricsは稼働済み。現在の公式値はpaid order `1`、one-time `$9.99`、subscription MRR `$0`。公式rankingの実winnerはAcademic Humanizer Agent `6839055303` / Download `$9.99`だが、現selectorはまだ旧`unattributed_sales`なので最初に公式winnerへ接続する。次のcadence-open wakeはData Analyst `7785270416`をrepo-owned evidence、HyperFrames、scene-matched Andrew voiceで新規render/postし、旧creativeを再利用しない。`$10K`完了は公式settled net subscription MRRでのみ判定する |
+| C22 | operate growth and retention experiments until settled net MRR reaches `$10,000` | active subscription readback and refunds/fees reconcile to target | **active** — hourly control plane、official seller money readback、token refresh、Telegram dedupe、IG real metrics、official seller winner selectorは稼働済み。現在の公式値はpaid order `1`、one-time `$9.99`、subscription MRR `$0`。次のcadence-open wakeはData Analyst `7785270416`をrepo-owned evidence、HyperFrames、scene-matched Andrew voiceで新規render/postし、旧creativeを再利用しない。`$10K`完了は公式settled net subscription MRRでのみ判定する |
 
 ### Remaining execution order
 
-1. C22-1: official seller ranking winner `6839055303` / Academic Humanizer / Download `$9.99`をhourly receiptからgrowth selectorへ渡し、旧`unattributed_sales`を廃止する。one-time winnerをsubscription winnerまたはMRRと呼ばない。
-2. C22-2: cadence gateが開いた最初のmarketing wakeでowner-measured 2 Reel reach receiptを読み、Data Analystのrepo-owned evidenceからsoft CTA + bio landing付きの新しいHyperFrames + scene-matched Andrew voice MP4を一件だけrenderし、full-video inspectionと旧creative hash不一致を確認する。
-3. C22-3: 新しい同一bytesだけをInstagramへ一件投稿し、native Reel URL、Telegram media message ID、rotation commitをreadbackする。失敗時は投稿0・rotation0・heartbeat0でterminal failureにする。
-4. C22-4: metric windowでquality-approved 3 Reelsのreach、landing click、official Publisher Console seller salesを同じwindowへjoinする。legacy orders `5` / gross `$19.98`は除外し、order-level sourceが無ければcausal claimをfalseのまま保つ。
-5. C19-1: hourly inventoryでfree slotを初めて検出したwakeだけがFootball Agent `1037238583`をsame-Agent修正・再提出し、6件目のAgentを作らない。
-6. C21-1: 失敗を隠さないterminal ledgerで7 consecutive healthy daysを蓄積する。途中failureは0/7へ戻すが、C22の安全なgrowth workは停止しない。
-7. C22-5: official active subscription、refund、fee、settlementを毎時監視し、settled net MRRだけを`$10,000`へ加算する。現在値は`$0`であり、到達までloopを継続する。
+1. C22-2: cadence gateが開いた最初のmarketing wakeでowner-measured 2 Reel reach receiptを読み、Data Analystのrepo-owned evidenceからsoft CTA + bio landing付きの新しいHyperFrames + scene-matched Andrew voice MP4を一件だけrenderし、full-video inspectionと旧creative hash不一致を確認する。
+2. C22-3: 新しい同一bytesだけをInstagramへ一件投稿し、native Reel URL、Telegram media message ID、rotation commitをreadbackする。失敗時は投稿0・rotation0・heartbeat0でterminal failureにする。
+3. C22-4: metric windowでquality-approved 3 Reelsのreach、landing click、official Publisher Console seller salesを同じwindowへjoinする。legacy orders `5` / gross `$19.98`は除外し、order-level sourceが無ければcausal claimをfalseのまま保つ。
+4. C19-1: hourly inventoryでfree slotを初めて検出したwakeだけがFootball Agent `1037238583`をsame-Agent修正・再提出し、6件目のAgentを作らない。
+5. C21-1: 失敗を隠さないterminal ledgerで7 consecutive healthy daysを蓄積する。途中failureは0/7へ戻すが、C22の安全なgrowth workは停止しない。
+6. C22-5: official active subscription、refund、fee、settlementを毎時監視し、settled net MRRだけを`$10,000`へ加算する。現在値は`$0`であり、到達までloopを継続する。
 
 ## Test matrix
 

@@ -45,16 +45,18 @@ def _score(a):
     return _num(a.get("sales")) * 10 + _num(a.get("recentSales")) * 5 + _num(a.get("rating")) * _num(a.get("reviewCount"))
 
 
-def _company_orders(path=COMPANY_RECEIPT):
+def _company_signal(path=COMPANY_RECEIPT):
     try:
         value = json.loads(Path(path).read_text())
         orders = value.get("orders")
-        return orders if isinstance(orders, int) and not isinstance(orders, bool) and orders >= 0 else None
+        orders = orders if isinstance(orders, int) and not isinstance(orders, bool) and orders >= 0 else None
+        winner = value.get("seller_winner")
+        return orders, winner if isinstance(winner, dict) else None
     except (OSError, json.JSONDecodeError, AttributeError):
-        return None
+        return None, None
 
 
-def select_signal(agents, company_orders):
+def select_signal(agents, company_orders, official_winner=None):
     ranked = sorted(agents, key=_score, reverse=True)
     total_sales = sum(_num(a.get("sales")) + _num(a.get("recentSales")) for a in agents)
     top = [
@@ -63,6 +65,19 @@ def select_signal(agents, company_orders):
          "rating": a.get("rating"), "reviewCount": a.get("reviewCount"), "score": _score(a)}
         for a in ranked[:5]
     ]
+    if (
+        isinstance(official_winner, dict)
+        and official_winner.get("source") == "official_publisher_console"
+        and official_winner.get("agent_id")
+        and official_winner.get("name")
+        and _num(official_winner.get("sales_usd")) > 0
+    ):
+        return {
+            "ok": True, "signal": "sales", "listings": len(agents), "company_orders": company_orders,
+            "winner": official_winner, "attribution_status": "official_seller_ranking",
+            "advice": f"Official seller winner is '{official_winner['name']}'. Build the NEXT skill in the same customer-job category/style; this is {official_winner.get('revenue_kind', 'observed')} revenue, not subscription MRR proof.",
+            "top_by_proxy": top,
+        }
     if total_sales > 0:
         winner = ranked[0]
         return {
@@ -94,7 +109,8 @@ def main():
         json.dump(out, open(OUT, "w"), ensure_ascii=False, indent=2)
         print(json.dumps(out)); return 0
 
-    out = select_signal(agents, _company_orders())
+    company_orders, official_winner = _company_signal()
+    out = select_signal(agents, company_orders, official_winner)
     OUT.parent.mkdir(parents=True, exist_ok=True)
     json.dump(out, open(OUT, "w"), ensure_ascii=False, indent=2)
     print(json.dumps(out, ensure_ascii=False))
