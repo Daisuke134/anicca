@@ -22,6 +22,44 @@ SPEC.loader.exec_module(MODULE)
 
 
 class LocalLoopTest(unittest.TestCase):
+    def test_funnel_snapshot_keeps_focused_live_experiment_below_rank_limit(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root)
+            base = "subtitle-en-1"
+            child = "subtitle-en-experiment-abcdef123456-1"
+            rows = []
+            for placement_id, unique, count in ((base, 6, 7), (child, 2, 2)):
+                rows.append({
+                    "placement_id": placement_id, "public_url": f"https://example/{placement_id}",
+                    "provider_link_key": f"key-{placement_id}",
+                    "provider_clicks": {"unique_count": unique, "count": count,
+                                        "unique_state": "OBSERVED"},
+                    "exposure": {}, "commission": {"transaction_count": 0},
+                })
+            MODULE.atomic_json(state / "placement-ledger.json", {
+                "ledger_sha256": "a" * 64, "placements": rows,
+            })
+            MODULE.atomic_json(state / "focused-cohort" / "latest.json", {
+                "placement_id": base,
+            })
+            for placement_id, experiment in (
+                (base, None),
+                (child, {"control_placement_id": base, "decision_id": "b" * 64}),
+            ):
+                plan_id = placement_id.removesuffix("-1")
+                MODULE.atomic_json(state / "campaign-publications" / f"{plan_id}.json", {
+                    "placement_id": placement_id, "plan_id": plan_id, "state": "X_LIVE",
+                    "created_at": "2026-08-22T00:00:00+00:00", "experiment": experiment,
+                })
+
+            snapshot = MODULE.refresh_funnel_snapshot(state, limit=1)
+
+            self.assertEqual(
+                [row["placement_id"] for row in snapshot["placements"]], [base, child],
+            )
+            self.assertEqual(snapshot["limit"], 1)
+            self.assertEqual(snapshot["focused_lineage_count"], 2)
+
     def test_invalid_campaign_metadata_remains_visible_after_live_campaign(self):
         self.assertEqual(
             MODULE.generic_publication_terminal_state(
@@ -100,6 +138,74 @@ class LocalLoopTest(unittest.TestCase):
             self.assertTrue(MODULE.focused_publication_allowed(
                 state, "subtitle-en-experiment-1", {}, admitted,
             ))
+
+    def test_focus_cohort_follows_live_experiment_child_despite_lower_clicks(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root)
+            base = "subtitle-en-1"
+            child = "subtitle-en-experiment-abcdef123456-1"
+            rows = [
+                {"placement_id": base, "cta_clicks": 0, "provider_click_delta": 0,
+                 "provider_unique_click_delta": 0, "transaction_count": 0},
+                {"placement_id": child, "cta_clicks": 0, "provider_click_delta": 0,
+                 "provider_unique_click_delta": 0, "transaction_count": 0},
+            ]
+            interval_core = {
+                "schema_version": 1, "receipt_type": "AFFILIATE_INTERVAL_FUNNEL_JOIN",
+                "placements": rows,
+            }
+            interval_hash = hashlib.sha256(json.dumps(
+                interval_core, sort_keys=True, separators=(",", ":"),
+            ).encode()).hexdigest()
+            MODULE.atomic_json(state / "interval-funnel-joins" / "latest.json", {
+                **interval_core, "receipt_sha256": interval_hash,
+            })
+            MODULE.atomic_json(state / "funnel-snapshots" / "latest.json", {
+                "snapshot_sha256": "a" * 64,
+                "placements": [
+                    {"placement_id": base, "provider_clicks": {
+                        "unique_count": 6, "count": 7,
+                    }},
+                    {"placement_id": child, "provider_clicks": {
+                        "unique_count": 2, "count": 2,
+                    }},
+                ],
+            })
+            for placement_id, created_at, experiment in (
+                (base, "2026-08-20T00:00:00+00:00", None),
+                (child, "2026-08-22T00:00:00+00:00", {
+                    "control_placement_id": base,
+                    "decision_id": "abcdef123456" + "0" * 52,
+                    "selected_variable": "cta",
+                    "success_metric": "official transaction_count >= 1",
+                }),
+            ):
+                plan_id = placement_id.removesuffix("-1")
+                MODULE.atomic_json(state / "campaign-publications" / f"{plan_id}.json", {
+                    "placement_id": placement_id, "plan_id": plan_id, "state": "X_LIVE",
+                    "created_at": created_at, "experiment": experiment,
+                })
+                MODULE.atomic_json(state / "campaign-handoffs" / f"{plan_id}.json", {
+                    "buyer_intent": "Creators evaluating subtitles before paying",
+                    "title": "Subtitle decision guide", "handoff_fingerprint": placement_id,
+                    "experiment": experiment,
+                })
+            MODULE.atomic_json(state / "focused-cohort" / "latest.json", {
+                "schema_version": 1, "receipt_type": "AFFILIATE_FOCUSED_COHORT",
+                "placement_id": base, "plan_id": base.removesuffix("-1"),
+                "buyer_problem": "Creators evaluating subtitles before paying",
+                "decision_stage_query": "Subtitle decision guide",
+                "handoff_fingerprint": base, "provider_unique_clicks": 6,
+                "provider_clicks": 7, "receipt_sha256": "b" * 64,
+                "source_interval_receipt_sha256": interval_hash,
+                "source_snapshot_sha256": "a" * 64,
+            })
+
+            focus = MODULE.focus_cohort(state)
+
+            self.assertEqual(focus["placement_id"], child)
+            self.assertEqual(focus["control_placement_id"], base)
+            self.assertEqual(focus["experiment_decision_id"], "abcdef123456" + "0" * 52)
 
     def test_funnel_snapshot_ranks_top_three_and_preserves_unknown_denominators(self):
         with tempfile.TemporaryDirectory() as root:

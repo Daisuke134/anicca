@@ -108,13 +108,44 @@ def json_rows(path):
     return rows
 
 
+def focused_live_lineage(state):
+    latest = state / "focused-cohort" / "latest.json"
+    if not latest.is_file():
+        return []
+    focus = json.loads(latest.read_text(encoding="utf-8"))
+    current = focus.get("placement_id")
+    if not isinstance(current, str) or not current:
+        return []
+    campaigns = [
+        json.loads(path.read_text(encoding="utf-8"))
+        for path in (state / "campaign-publications").glob("*.json")
+    ]
+    lineage = [current]
+    visited = {current}
+    while True:
+        children = [
+            campaign for campaign in campaigns
+            if campaign.get("state") == "X_LIVE"
+            and campaign.get("placement_id") not in visited
+            and (campaign.get("experiment") or {}).get("control_placement_id") == current
+        ]
+        if not children:
+            return lineage
+        child = max(children, key=lambda campaign: (
+            campaign.get("created_at") or "", campaign.get("placement_id") or "",
+        ))
+        current = child["placement_id"]
+        lineage.append(current)
+        visited.add(current)
+
+
 def refresh_funnel_snapshot(state, limit=3):
     """Persist the highest-observed exact placement funnels without inference."""
     ledger = json.loads((state / "placement-ledger.json").read_text(encoding="utf-8"))
     rows = ledger.get("placements")
     if not isinstance(rows, list):
         raise ValueError("placement ledger rows unavailable")
-    ranked = sorted(
+    ranked_all = sorted(
         (row for row in rows if isinstance(row, dict) and row.get("placement_id")),
         key=lambda row: (
             -(
@@ -129,7 +160,15 @@ def refresh_funnel_snapshot(state, limit=3):
             ),
             row["placement_id"],
         ),
-    )[:limit]
+    )
+    ranked = ranked_all[:limit]
+    by_placement = {row["placement_id"]: row for row in ranked_all}
+    focused_lineage = focused_live_lineage(state)
+    selected_ids = {row["placement_id"] for row in ranked}
+    for placement_id in focused_lineage:
+        if placement_id in by_placement and placement_id not in selected_ids:
+            ranked.append(by_placement[placement_id])
+            selected_ids.add(placement_id)
     placements = []
     for row in ranked:
         placement_id = row["placement_id"]
@@ -175,6 +214,10 @@ def refresh_funnel_snapshot(state, limit=3):
         "source_ledger_sha256": ledger.get("ledger_sha256"),
         "selection": "PROVIDER_UNIQUE_CLICKS_DESC",
         "limit": limit,
+        "focused_lineage_count": len([
+            placement_id for placement_id in focused_lineage
+            if placement_id in selected_ids
+        ]),
         "placements": placements,
     }
     snapshot_sha256 = hashlib.sha256(json.dumps(
@@ -191,10 +234,7 @@ def refresh_funnel_snapshot(state, limit=3):
 def focus_cohort(state):
     """Select one existing pre-payment cohort and freeze broad expansion."""
     latest = state / "focused-cohort" / "latest.json"
-    if latest.is_file():
-        receipt = json.loads(latest.read_text(encoding="utf-8"))
-        write_focused_baseline(state, receipt)
-        return {**receipt, "state": "FOCUSED", "changed": False}
+    prior = json.loads(latest.read_text(encoding="utf-8")) if latest.is_file() else None
     interval = json.loads(
         (state / "interval-funnel-joins" / "latest.json").read_text(encoding="utf-8")
     )
@@ -222,6 +262,7 @@ def focus_cohort(state):
         buyer_intent = handoff.get("buyer_intent", "")
         clicks = (snapshot_rows.get(placement_id, {}).get("provider_clicks") or {})
         if campaign.get("state") == "X_LIVE" and "before paying" in buyer_intent.lower():
+            experiment = campaign.get("experiment") or handoff.get("experiment") or {}
             candidates.append({
                 "placement_id": placement_id, "plan_id": plan_id,
                 "buyer_problem": buyer_intent,
@@ -229,12 +270,42 @@ def focus_cohort(state):
                 "handoff_fingerprint": handoff.get("handoff_fingerprint"),
                 "provider_unique_clicks": clicks.get("unique_count", -1),
                 "provider_clicks": clicks.get("count", -1),
+                "created_at": campaign.get("created_at"),
+                "control_placement_id": experiment.get("control_placement_id"),
+                "experiment_decision_id": experiment.get("decision_id"),
+                "experiment_selected_variable": experiment.get("selected_variable"),
+                "experiment_success_metric": experiment.get("success_metric"),
             })
     if not candidates:
         return {"state": "NO_QUALIFIED_COHORT", "changed": False}
-    selected = max(candidates, key=lambda row: (
-        row["provider_unique_clicks"], row["provider_clicks"], row["placement_id"]
-    ))
+    selected = next((
+        row for row in candidates
+        if prior and row["placement_id"] == prior.get("placement_id")
+    ), None)
+    if selected is None:
+        if prior:
+            write_focused_baseline(state, prior)
+            return {**prior, "state": "FOCUSED", "changed": False}
+        base_candidates = [row for row in candidates if not row.get("control_placement_id")]
+        selected = max(base_candidates or candidates, key=lambda row: (
+            row["provider_unique_clicks"], row["provider_clicks"], row["placement_id"]
+        ))
+    visited = set()
+    while selected["placement_id"] not in visited:
+        visited.add(selected["placement_id"])
+        children = [
+            row for row in candidates
+            if row.get("control_placement_id") == selected["placement_id"]
+            and row["placement_id"] not in visited
+        ]
+        if not children:
+            break
+        selected = max(children, key=lambda row: (
+            row.get("created_at") or "", row["placement_id"],
+        ))
+    if prior and selected["placement_id"] == prior.get("placement_id"):
+        write_focused_baseline(state, prior)
+        return {**prior, "state": "FOCUSED", "changed": False}
     receipt_core = {
         "schema_version": 1,
         "receipt_type": "AFFILIATE_FOCUSED_COHORT",
