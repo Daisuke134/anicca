@@ -362,6 +362,8 @@ official seller rankingをgrowth selectorへ接続する。hourly receiptは実w
 
 OSS境界を実測する。GitHub `Daisuke134/life-manager`は`PUBLIC`、default branch `main`、root licenseはMITで、Capafy runtime/spec/HyperFrames関連は499 tracked filesとして同repo内にある。local publisher/user `config.json`とbrowser staging `.temp/`はcredential/stateであり、履歴に未commitのままexact `.gitignore`へ追加する。credential SSOTは引き続きrepo外 `~/.local/share/anicca/credentials.json`だけで、password/tokenをMarkdown、Git、Telegramへ複製しない。
 
+T1 clean-clone closureを閉じる。metrics fallbackが実行していたrepo外`~/.agents/.../cdp.py`をrepo-owned `skills/browser/scripts/cdp.py`へ置換し、実CloakBrowserでnew tab → eval `42` → own-tab closeをreadbackする。commercial bio writerもrepo-owned `skills/earn/capafy-marketing/scripts/setup_profile.py`へ移し、field全選択、trusted text input、save、reload後のfull URL persistenceを維持する。HEADのclean `git archive`で必須5 runtime files、repo外skill実行参照0、Python compile、3 shell syntaxが通る。commitsは`0a791277d`、`23c51fa80`、`3ffb024db`。
+
 3本目以降のcopy experimentを学習可能にするため、live Reel ledger rowへexact `caption`、on-screen `hook`、`listing_name`を必須化する。新native URLとselected Agent IDだけではterminal successにせず、3 fieldのいずれかがblankならrotation commit 0、wrapper rc `3`にする。次のData Analyst passから`ig_reflect`はhookとreachを同じReel identityで比較できる。focused 3件、shell syntax、fresh reviewer `ship`を確認し、commit `c3004dbdf`をmainへpushする。
 
 Data Analyst production preflightでHyperFrames `0.8.8`と`edge-tts 7.2.8`は利用可能だが、STEP4が指定していた`~/.cache/instagrapi-venv/bin/python`は存在しないことを実測する。instagrapiがimportでき、poster CLI readbackがrc `0`の`/opt/homebrew/bin/python3`へ実行pathを固定する。focused 3件、shell syntax、poster `--help`、fresh reviewer `ship`を確認し、commit `7186fec9d`をmainへpushする。
@@ -425,7 +427,7 @@ Current production truth:
 
 | ID | To-Be | test/evidence | cover |
 |---|---|---|---|
-| T1 | self-contained Life Manager source | dependency scan + clean clone test | pending |
+| T1 | self-contained Life Manager source | dependency scan + clean clone test | completed — clean HEAD archive has repo-external skill execution refs 0; required CDP/profile/metrics/HyperFrames files present; compile/syntax pass |
 | T2 | five-slot allocator | allocator table covers occupied 5 with retry/no retry and never returns a write | completed — focused allocator contract passes |
 | T3 | same-Agent rejection retry | rejected catalog title preserves existing agent_id and becomes retry only when free > 0 | completed — Football backlog/allocator fixtures preserve `1037238583` |
 | T4 | listed frees slot | `test_listed_agent_not_counted_as_unlisted` | pending |
