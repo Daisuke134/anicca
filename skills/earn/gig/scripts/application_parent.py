@@ -1197,7 +1197,7 @@ class CdpParentEffects:
             return False
         name = f"gig-{origin_pass_id}-B2-{request_id}-submit-attempt.png"
         proofs = [path for path in origin.glob(f"*/{name}") if path.is_file()]
-        return len(proofs) == 1 and proofs[0].stat().st_size > 0
+        return bool(proofs) and all(path.stat().st_size > 0 for path in proofs)
 
     async def _fill_async(
         self, request_id: str, proposal_text: str, price_jpy: int, deliver_date: str
