@@ -597,6 +597,14 @@ def _is_expected_offer_form_url(request_id: str, url: object) -> bool:
     return all(key == "_t" and value for key, value in query)
 
 
+def _mouse_click_event_params(x: float, y: float) -> tuple[dict[str, object], ...]:
+    return (
+        {"type": "mouseMoved", "x": x, "y": y, "button": "none", "buttons": 0, "clickCount": 0},
+        {"type": "mousePressed", "x": x, "y": y, "button": "left", "buttons": 1, "clickCount": 1},
+        {"type": "mouseReleased", "x": x, "y": y, "button": "left", "buttons": 0, "clickCount": 1},
+    )
+
+
 _LIFECYCLE_FIELDS = ("page_state", "accepting_control", "deadline_state", "deadline_value", "form_state")
 _LIFECYCLE_ALLOWED = ({"present", "not_found", "unknown"}, {"present", "absent", "unknown"}, {"future", "expired", "unknown"}, None, {"present", "absent", "unknown"})
 
@@ -1282,15 +1290,11 @@ class CdpParentEffects:
                         y = float(button["y"])
                     except (KeyError, TypeError, ValueError) as error:
                         raise ParentContractError("submit_confirm_modal_failed") from error
-                    for event_type, button_name, click_count in (
-                        ("mouseMoved", "none", 0),
-                        ("mousePressed", "left", 1),
-                        ("mouseReleased", "left", 1),
-                    ):
+                    for params in _mouse_click_event_params(x, y):
                         await self._call(
                             ws,
                             "Input.dispatchMouseEvent",
-                            {"type": event_type, "x": x, "y": y, "button": button_name, "clickCount": click_count},
+                            params,
                             call_id,
                         )
                         call_id += 1
@@ -1367,13 +1371,11 @@ class CdpParentEffects:
                 y = float(button["y"])
             except (KeyError, TypeError, ValueError) as error:
                 raise ParentContractError("application_button_coordinates_invalid") from error
-            for event_type, button_name, click_count in (
-                ("mouseMoved", "none", 0), ("mousePressed", "left", 1), ("mouseReleased", "left", 1)
-            ):
+            for params in _mouse_click_event_params(x, y):
                 await self._call(
                     ws,
                     "Input.dispatchMouseEvent",
-                    {"type": event_type, "x": x, "y": y, "button": button_name, "clickCount": click_count},
+                    params,
                     call_id,
                 )
                 call_id += 1
