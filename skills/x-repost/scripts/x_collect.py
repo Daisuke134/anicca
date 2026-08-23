@@ -113,13 +113,18 @@ def scrape_articles(page, limit: int) -> list:
 
 
 def recon(page, queries, per_query, exclude_urls, own_handle):
-    out = []
+    out, errors = [], []
     for q in queries:
         url = ("https://x.com/search?q=" + urllib.parse.quote(q)
                + "&src=typed_query&f=live")
-        page.goto(url, wait_until="domcontentloaded", timeout=60000)
-        page.wait_for_timeout(4500)
-        for row in scrape_articles(page, per_query):
+        try:
+            page.goto(url, wait_until="domcontentloaded", timeout=60000)
+            page.wait_for_timeout(4500)
+            rows = scrape_articles(page, per_query)
+        except Exception as exc:
+            errors.append({"query": q, "reason": str(exc)[:200]})
+            continue
+        for row in rows:
             if row["url"] in exclude_urls:
                 continue
             if own_handle and f"/{own_handle}/status/" in row["url"]:
@@ -133,7 +138,7 @@ def recon(page, queries, per_query, exclude_urls, own_handle):
             continue
         seen.add(row["url"])
         uniq.append(row)
-    return uniq
+    return uniq, errors
 
 
 # X leaves a zero-count action out of the action bar's aria-label entirely: a post with no likes
@@ -266,9 +271,10 @@ def main():
         else:
             queries = [l.strip() for l in Path(args.queries).read_text(encoding="utf-8").splitlines()
                        if l.strip() and not l.strip().startswith("#")]
-            rows = recon(page, queries, args.per_query, already, handle)
+            rows, errors = recon(page, queries, args.per_query, already, handle)
             result = {"handle": handle, "query_count": len(queries),
-                      "candidate_count": len(rows), "candidates": rows}
+                      "candidate_count": len(rows), "candidates": rows,
+                      "query_errors": errors}
     json.dump(result, sys.stdout, ensure_ascii=False, indent=1)
     print()
 

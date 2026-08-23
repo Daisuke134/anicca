@@ -1560,7 +1560,12 @@ with the shared `x:anicca` lease, but exposed that separate `browser-guard acqui
 commands strand a fresh dead-shell lease for up to 30 minutes when an owner exits between them. The generic
 Paid owner contract now requires the existing `with-browser.sh` lifetime wrapper, whose signal/EXIT trap
 owns acquire, CDP export and release as one operation. The lease remains a mechanical safety boundary; target,
-copy, qualification and fallback remain model decisions.
+copy, qualification and fallback remain model decisions. The same wake also exposed that the reusable X recon
+adapter aborted a fourteen-query candidate search and discarded all accumulated rows when one official search
+page timed out. Recon now isolates that transport failure to the affected query, emits `query_errors`, and
+continues the remaining model-selected queries; an isolated direct smoke proved the second query still runs after
+the first raises. A natural owner must still prove this behavior against live X and may decide how to adapt or
+qualify the resulting candidates.
 
 1. **Paid/Submission — finish first.**
    - [x] Deploy and read back Paid ignoring shared preventive `disk-pressure.block` (20 GiB) and
