@@ -28,6 +28,12 @@ from playwright.sync_api import sync_playwright
 
 
 POSTIZ_API = "https://api.postiz.com/public/v1/posts"
+X_SNOWFLAKE_EPOCH_MS = 1288834974657
+
+
+def snowflake_floor(observed_at: datetime) -> int:
+    timestamp_ms = int(observed_at.timestamp() * 1000)
+    return max(0, timestamp_ms - X_SNOWFLAKE_EPOCH_MS) << 22
 
 
 def postiz_publish(text: str, mode: str, source_url: str | None) -> str:
@@ -115,7 +121,7 @@ def normalized(value: str) -> str:
 
 
 def scan_timeline(page, handle: str, needle: str, expected_url: str | None = None,
-                  expected_text: str | None = None):
+                  expected_text: str | None = None, minimum_status_id: int | None = None):
     expected_visible = (expected_url or "").removeprefix("https://")
     exact_body_without_source = normalized(
         (expected_text or "").replace(expected_url or "", "").strip()
@@ -165,16 +171,24 @@ def scan_timeline(page, handle: str, needle: str, expected_url: str | None = Non
             link = art.query_selector(f'a[href*="/{handle}/status/"]')
             href = link.get_attribute("href") if link else ""
             if href:
+                status = re.search(r"/status/([0-9]+)", href)
+                if minimum_status_id is not None and (
+                    not status or int(status.group(1)) < minimum_status_id
+                ):
+                    continue
                 return "https://x.com" + href.split("/photo/")[0]
     return None
 
 
-def find_exact_public_markup(markup: str, expected_text: str, expected_url: str, handle: str):
+def find_exact_public_markup(markup: str, expected_text: str, expected_url: str, handle: str,
+                             minimum_status_id: int | None = None):
     prefix = normalized(expected_text.replace(expected_url, "").strip())
     escaped_url = html_lib.escape(expected_url, quote=True)
     for article in re.findall(r"<article\b.*?</article>", markup, flags=re.DOTALL):
         tweet_id = re.search(r'data-tweet-id="([0-9]+)"', article)
         if not tweet_id or f'href="{escaped_url}"' not in article:
+            continue
+        if minimum_status_id is not None and int(tweet_id.group(1)) < minimum_status_id:
             continue
         visible = normalized(html_lib.unescape(re.sub(r"<[^>]+>", " ", article)))
         if prefix in visible:
@@ -182,17 +196,21 @@ def find_exact_public_markup(markup: str, expected_text: str, expected_url: str,
     return None
 
 
-def public_profile_readback(handle: str, expected_text: str, expected_url: str):
+def public_profile_readback(handle: str, expected_text: str, expected_url: str,
+                            minimum_status_id: int | None = None):
     request = Request(f"https://x.com/{handle}", headers={"User-Agent": "x-repost/1.0"})
     try:
         with urlopen(request, timeout=12) as response:
             markup = response.read().decode("utf-8")
     except (OSError, UnicodeDecodeError):
         return None
-    return find_exact_public_markup(markup, expected_text, expected_url, handle)
+    return find_exact_public_markup(
+        markup, expected_text, expected_url, handle, minimum_status_id
+    )
 
 
-def find_reply_permalink(pw, cdp: str, source_url: str, handle: str, needle: str, attempts: int = 5):
+def find_reply_permalink(pw, cdp: str, source_url: str, handle: str, needle: str,
+                         minimum_status_id: int | None = None, attempts: int = 5):
     """A reply lives in the conversation, not on the profile timeline, so read it back there.
 
     Scanning the profile would report every reply as unverified: X files replies under a separate
@@ -206,7 +224,9 @@ def find_reply_permalink(pw, cdp: str, source_url: str, handle: str, needle: str
             try:
                 page.goto(source_url, wait_until="domcontentloaded", timeout=60000)
                 page.wait_for_timeout(6000)
-                found = scan_timeline(page, handle, needle)
+                found = scan_timeline(
+                    page, handle, needle, minimum_status_id=minimum_status_id
+                )
                 if found:
                     return found
             finally:
@@ -218,7 +238,8 @@ def find_reply_permalink(pw, cdp: str, source_url: str, handle: str, needle: str
 
 
 def find_permalink(pw, cdp: str, handle: str, needle: str, expected_url: str | None = None,
-                   expected_text: str | None = None, attempts: int = 6):
+                   expected_text: str | None = None,
+                   minimum_status_id: int | None = None, attempts: int = 6):
     """Read the account timeline back and return the permalink of the post we just made.
 
     Reconnects on every attempt instead of holding one page handle. The browser can die
@@ -234,7 +255,9 @@ def find_permalink(pw, cdp: str, handle: str, needle: str, expected_url: str | N
             try:
                 page.goto(f"https://x.com/{handle}", wait_until="domcontentloaded", timeout=60000)
                 page.wait_for_timeout(5000)
-                found = scan_timeline(page, handle, needle, expected_url, expected_text)
+                found = scan_timeline(
+                    page, handle, needle, expected_url, expected_text, minimum_status_id
+                )
                 if found:
                     return found
             finally:
@@ -242,7 +265,9 @@ def find_permalink(pw, cdp: str, handle: str, needle: str, expected_url: str | N
         except Exception as exc:
             print(f"x_post: read-back attempt {attempt + 1} failed: {exc}", file=sys.stderr)
         if expected_url and expected_text:
-            found = public_profile_readback(handle, expected_text, expected_url)
+            found = public_profile_readback(
+                handle, expected_text, expected_url, minimum_status_id
+            )
             if found:
                 return found
         time.sleep(6)
@@ -285,6 +310,7 @@ def main():
     transport = os.environ.get("X_REPOST_PUBLISH_TRANSPORT", "postiz").strip().lower()
     if transport != "postiz":
         raise SystemExit("x_post: non-API publish transport is disabled")
+    minimum_status_id = snowflake_floor(datetime.now(timezone.utc))
     try:
         submission_id = postiz_publish(text, args.mode, args.source_url)
     except (ValueError, OSError, urllib.error.HTTPError) as exc:
@@ -299,10 +325,13 @@ def main():
             browser = pw.chromium.connect_over_cdp(args.cdp)
             handle = ensure_logged_in(get_page(browser))
             if args.mode == "reply":
-                permalink = find_reply_permalink(pw, args.cdp, args.source_url, handle, needle)
+                permalink = find_reply_permalink(
+                    pw, args.cdp, args.source_url, handle, needle, minimum_status_id
+                )
             else:
                 permalink = find_permalink(
-                    pw, args.cdp, handle, needle, expected_url, text if expected_url else None
+                    pw, args.cdp, handle, needle, expected_url,
+                    text if expected_url else None, minimum_status_id
                 )
     except (Exception, SystemExit) as exc:
         # The Postiz effect already happened above. A readback/session failure is therefore an
