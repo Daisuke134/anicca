@@ -117,6 +117,11 @@ class ModelBrowserLoopContractTests(unittest.TestCase):
                         "item": {
                             "type": "command_execution",
                             "exit_code": 7,
+                            "command": (
+                                "/opt/homebrew/bin/python3 -m "
+                                "job_search_loop.browser_agent.runtime observe"
+                            ),
+                            "aggregated_output": "runtime traceback",
                         },
                     }
                 )
@@ -124,6 +129,28 @@ class ModelBrowserLoopContractTests(unittest.TestCase):
                 encoding="utf-8",
             )
             self.assertIsNone(validator(root))
+            stdout.write_text(
+                json.dumps(
+                    {
+                        "type": "item.completed",
+                        "item": {
+                            "type": "command_execution",
+                            "exit_code": 1,
+                            "command": (
+                                "/bin/zsh -lc '/opt/homebrew/bin/python3 -m "
+                                "job_search_loop.browser_agent.runtime click"
+                            ),
+                            "aggregated_output": 'zsh:1: unmatched "\n',
+                        },
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            self.assertEqual(
+                validator(root),
+                "transport_failed_without_command_failure",
+            )
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -216,6 +243,8 @@ class ModelBrowserLoopContractTests(unittest.TestCase):
         self.assertIn("Canonical Review example", prompt)
         self.assertIn("enabled `Submit`", prompt)
         self.assertIn("the next action is `runtime finalize`", prompt)
+        self.assertIn("shell parser rejects malformed quoting", prompt)
+        self.assertIn("Correct the quoting and issue that intended command once", prompt)
         self.assertNotIn("workday_job", prompt)
         self.assertNotIn("workday-accounts.json", prompt)
         self.assertNotIn("click_filter", prompt)

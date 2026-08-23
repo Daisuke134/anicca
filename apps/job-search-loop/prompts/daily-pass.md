@@ -58,6 +58,10 @@ failure is not row recovery and must never spend the rest of the model budget.
 `transport_failed` is prohibited when every runtime command completed with exit code
 zero. An exit-zero `acted`, `observed`, or `action_rejected` response always means
 continue from its returned observation; it is not a transport failure.
+If the shell parser rejects malformed quoting before Python starts, no runtime command
+or external effect occurred. Correct the quoting and issue that intended command once
+with the same fresh target. A shell parse error is not `transport_failed`; only a
+nonzero result from the started Python runtime satisfies that status.
 
 Every otherwise anonymous control has an observation-local `ref:*` stable ID,
 adapted from career-ops. Prefer that exact returned ref. A ref, label resolution,

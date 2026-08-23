@@ -53,6 +53,9 @@ def validate_pass_result(evidence_dir: Path) -> str | None:
             and isinstance(item.get("exit_code"), int)
             and item["exit_code"] != 0
         ):
+            output = str(item.get("aggregated_output") or "")
+            if output.startswith("zsh:") and "unmatched" in output:
+                continue
             return None
     return "transport_failed_without_command_failure"
 
