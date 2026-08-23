@@ -16,7 +16,10 @@ from typing import Any
 
 
 API = "https://api.capafy.ai"
-SOURCE_NAMES = ("account", "inventory", "sales", "payout", "refunds")
+SOURCE_NAMES = (
+    "account", "inventory", "sales", "payout", "refunds",
+    "seller_sales", "seller_ranking", "statements",
+)
 CAPAFY_ACTIVE_SUBMISSION_CAP = 5
 
 
@@ -83,6 +86,48 @@ def _refund_count(payload: dict) -> int | None:
     return None
 
 
+def _seller_money(sales_payload: dict, ranking_payload: dict, statements_payload: dict) -> dict:
+    empty = {"gross": None, "orders": None, "refunds": None, "one_time": None,
+             "mrr": None, "ending_balance": None, "payable": None}
+    if not all(_ok(value) for value in (sales_payload, ranking_payload, statements_payload)):
+        return empty
+    sales = _data(sales_payload)
+    ranking = _data(ranking_payload)
+    statements = _data(statements_payload)
+    if not isinstance(sales, dict) or not isinstance(ranking, dict) or not isinstance(statements, dict):
+        return empty
+    rows = sales.get("data")
+    agents = ranking.get("agents")
+    statement_rows = statements.get("list")
+    if not isinstance(rows, list) or not isinstance(agents, list) or not isinstance(statement_rows, list):
+        return empty
+    try:
+        gross = Decimal(str(sales.get("totalRevenue", 0) or 0))
+        orders = sum(
+            int(row.get("orders", 0) or 0)
+            for row in rows
+            if Decimal(str(row.get("revenue", 0) or 0)) > 0
+        )
+        refunds = sum(Decimal(str(row.get("refundAmount", 0) or 0)) for row in rows)
+        subscription_sales = sum(
+            Decimal(str(sku.get("salesAmount", 0) or 0))
+            for agent in agents for sku in (agent.get("skus") or [])
+            if str(sku.get("skuType") or "").startswith("subscription_")
+        )
+        latest = max(statement_rows, key=lambda row: str(row.get("settlementMonth") or ""), default={})
+    except (InvalidOperation, TypeError, ValueError):
+        return empty
+    # Zero lifetime subscription sales proves current MRR is zero. Once any
+    # subscription sale exists, active/canceled status is required; do not infer it.
+    mrr = "0.00" if subscription_sales == 0 else None
+    return {
+        "gross": _money(gross), "orders": orders, "refunds": _money(refunds),
+        "one_time": _money(gross - subscription_sales), "mrr": mrr,
+        "ending_balance": _money(latest.get("endingSettlementBalance")) if latest else None,
+        "payable": _money(latest.get("payableAmount")) if latest else None,
+    }
+
+
 def _inventory(payload: dict) -> dict:
     result = {"status": "unknown_unrecognized_shape", "observed_agents": None, "occupied": None, "free": None}
     if not _ok(payload):
@@ -137,7 +182,11 @@ def build_receipt(payloads: dict[str, dict], observed_at: str) -> dict:
         }
         for name in SOURCE_NAMES
     }
-    gross, refunds, orders = _sales_money(payloads.get("sales", {}))
+    legacy_gross, legacy_refunds, legacy_orders = _sales_money(payloads.get("sales", {}))
+    seller = _seller_money(
+        payloads.get("seller_sales", {}), payloads.get("seller_ranking", {}), payloads.get("statements", {})
+    )
+    gross, refunds, orders = seller["gross"], seller["refunds"], seller["orders"]
     pending, realized = _payout_money(payloads.get("payout", {}))
     inventory = _inventory(payloads.get("inventory", {}))
     required_fresh = (
@@ -152,24 +201,27 @@ def build_receipt(payloads: dict[str, dict], observed_at: str) -> dict:
         "account": {"authenticated": True if _ok(payloads.get("account")) else None},
         "inventory": inventory,
         "orders": orders,
+        "legacy_agent_api": {"orders": legacy_orders, "gross_usd": legacy_gross, "refunds_usd": legacy_refunds},
         "refunds": {"tickets": _refund_count(payloads.get("refunds", {}))},
         "money": {
             "gross_usd": gross,
-            "one_time_revenue_usd": None,
+            "one_time_revenue_usd": seller["one_time"],
             "pending_usd": pending,
             "realized_usd": realized,
             "refunds_usd": refunds,
-            "settled_mrr_usd": None,
-            "net_mrr_usd": None,
+            "settled_mrr_usd": seller["mrr"],
+            "net_mrr_usd": seller["mrr"],
+            "statement_ending_balance_usd": seller["ending_balance"],
+            "statement_payable_usd": seller["payable"],
         },
         "money_status": {
             "gross_usd": "fresh" if gross is not None else "unknown",
-            "one_time_revenue_usd": "unknown_order_billing_mix",
+            "one_time_revenue_usd": "fresh_official_seller_console" if seller["one_time"] is not None else "unknown",
             "pending_usd": "fresh" if pending is not None else "unknown",
             "realized_usd": "fresh" if realized is not None else "unknown",
             "refunds_usd": "fresh" if refunds is not None else "unknown",
-            "settled_mrr_usd": "unknown_no_seller_subscription_source",
-            "net_mrr_usd": "unknown_no_seller_subscription_source",
+            "settled_mrr_usd": "fresh_zero_lifetime_subscription_sales" if seller["mrr"] == "0.00" else "unknown_active_subscription_status",
+            "net_mrr_usd": "fresh_zero_lifetime_subscription_sales" if seller["mrr"] == "0.00" else "unknown_active_subscription_status",
         },
         "sources": sources,
     }
@@ -193,6 +245,15 @@ def _token(repo_root: Path) -> str:
     return ""
 
 
+def _web_token() -> str:
+    try:
+        credentials = json.loads((Path.home() / ".local/share/anicca/credentials.json").read_text())["credentials"]
+        matches = [row for row in credentials if row.get("service") == "capafy-publisher"]
+        return str(matches[0].get("web_token") or "") if len(matches) == 1 else ""
+    except (OSError, json.JSONDecodeError, KeyError, TypeError):
+        return ""
+
+
 def _get(path: str, token: str) -> dict:
     request = urllib.request.Request(API + path, headers={"Authorization": f"Bearer {token}"})
     try:
@@ -205,6 +266,7 @@ def _get(path: str, token: str) -> dict:
 
 def _live_payloads(repo_root: Path, observed: dt.datetime) -> dict[str, dict]:
     token = _token(repo_root)
+    web_token = _web_token()
     if not token:
         return {name: {"_error": "access_token_unavailable"} for name in SOURCE_NAMES}
     start = (observed.date() - dt.timedelta(days=89)).isoformat()
@@ -216,7 +278,16 @@ def _live_payloads(repo_root: Path, observed: dt.datetime) -> dict[str, dict]:
         "payout": "/agent/developer/payout-info",
         "refunds": "/agent/refund/developer/list",
     }
-    return {name: _get(path, token) for name, path in paths.items()}
+    payloads = {name: _get(path, token) for name, path in paths.items()}
+    if not web_token:
+        payloads.update({name: {"_error": "web_token_unavailable"} for name in ("seller_sales", "seller_ranking", "statements")})
+        return payloads
+    payloads.update({
+        "seller_sales": _get("/app/sales/trend?sinceLaunch=true&granularity=daily", web_token),
+        "seller_ranking": _get("/app/sales/ranking?sinceLaunch=true&granularity=daily&languageCode=en", web_token),
+        "statements": _get("/app/developer/settlement-statement/list?page=1&size=20", web_token),
+    })
+    return payloads
 
 
 def _atomic_write(path: Path, receipt: dict) -> None:

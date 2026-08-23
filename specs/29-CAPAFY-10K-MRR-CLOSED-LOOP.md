@@ -350,6 +350,8 @@ production owner readbackはactive handle `capafy.skills8m4q2z`で2/2 measured�
 
 公式Publisher Consoleを既存publisher email OTPで再認証し、seller側のmoney truthをread-only取得する。`/app/sales/trend?sinceLaunch=true`は2026-06-04〜2026-08-23のseller Sales `$9.99`、orders `1`、refund `$0`、唯一のwinnerをDownload Agent `6839055303` Academic Humanizer `$9.99`と返す。subscription SKUは全件seller sales `$0`なのでcurrent subscription MRRは`$0`であり、buyer order countやgross planning denominatorをMRRへ加算しない。`/app/developer/settlement-statement/list`は2026-06/07の2 statementをfinalized、ending balance `$8`、payable `$0`と返す。agent APIもbalancePayout `$8`、balancePending `$0`、totalPayout `$0`、payout recordはbelow-thresholdで一致する。従来のorders `5` / gross `$19.98`集計はofficial seller Consoleと不一致なので、原因を特定するまでseller revenue/MRR proofから除外する。
 
+hourly reconcileを公式seller Web tokenへ接続する。tokenはrepo外credential SSOT `~/.local/share/anicca/credentials.json`の既存`capafy-publisher` entryだけへ保存し、mode `600` / parent `700`を維持する。official seller sales、ranking SKU、monthly statementsを毎時読み、production receiptはpaid seller orders `1`、gross/one-time `$9.99`、refund `$0`、subscription MRR `$0`、ending balance/pending `$8`、payable/realized `$0`、verdict `success`を返す。`$0` order eventはpaid orderに数えず、旧agent APIのorders `5` / gross `$19.98`は`legacy_agent_api`へ隔離する。subscription saleが将来1件でも発生した後はactive/canceled readbackなしにMRRを推定せずunknownへ戻す。
+
 3本目以降のcopy experimentを学習可能にするため、live Reel ledger rowへexact `caption`、on-screen `hook`、`listing_name`を必須化する。新native URLとselected Agent IDだけではterminal successにせず、3 fieldのいずれかがblankならrotation commit 0、wrapper rc `3`にする。次のData Analyst passから`ig_reflect`はhookとreachを同じReel identityで比較できる。focused 3件、shell syntax、fresh reviewer `ship`を確認し、commit `c3004dbdf`をmainへpushする。
 
 Data Analyst production preflightでHyperFrames `0.8.8`と`edge-tts 7.2.8`は利用可能だが、STEP4が指定していた`~/.cache/instagrapi-venv/bin/python`は存在しないことを実測する。instagrapiがimportでき、poster CLI readbackがrc `0`の`/opt/homebrew/bin/python3`へ実行pathを固定する。focused 3件、shell syntax、poster `--help`、fresh reviewer `ship`を確認し、commit `7186fec9d`をmainへpushする。
@@ -399,7 +401,7 @@ Items are executed top-to-bottom. Only one item is active.
 3. C22-3: metric windowでquality-approved 3 Reelsのreach、landing click、official Publisher Console seller salesを同じwindowへjoinする。orders `5` / gross `$19.98`の非seller集計は除外し、order-level sourceが無ければcausal claimをfalseのまま保つ。
 4. C19-1: hourly inventoryでfree slotを初めて検出したwakeだけがFootball Agent `1037238583`をsame-Agent修正・再提出し、6件目のAgentを作らない。
 5. C21-1: 失敗を隠さないterminal ledgerで7 consecutive healthy daysを蓄積する。途中failureは0/7へ戻すが、C22の安全なgrowth workは停止しない。
-6. C22-4: hourly money readbackをofficial Publisher Console seller endpointsへ接続し、Sales、subscription MRR、refund、statement ending balance、payable、paid payoutを別fieldでTelegramへ送る。現在値はSales `$9.99`、subscription MRR `$0`、ending balance `$8`、payable/paid `$0`。
+6. C22-4: **done** — hourly money readbackをofficial Publisher Console seller endpointsへ接続し、Sales、subscription MRR、refund、statement ending balance、payable、paid payoutを別fieldでreceiptへ保存する。現在値はSales `$9.99`、subscription MRR `$0`、ending balance `$8`、payable/paid `$0`。次のhourly company receiptでTelegram message IDをreadbackする。
 6. C22-4: settled active subscription sourceが取得できるまでmoney truthを`unknown`として監視し、取得後はrefund/fee控除後のnet MRRだけを`$10,000`へ加算する。
 
 ## Test matrix

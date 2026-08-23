@@ -50,6 +50,9 @@ def live_payloads() -> dict:
             "data": {"balancePayout": 8, "totalPayout": 0, "balancePending": 3},
         },
         "refunds": {"code": 0, "data": {"list": [{"refundId": "r-1"}]}},
+        "seller_sales": {"code": 0, "data": {"totalRevenue": 9.99, "data": [{"orders": 1, "refundAmount": 0}]}},
+        "seller_ranking": {"code": 0, "data": {"agents": [{"skus": [{"skuType": "buyout", "salesAmount": 9.99}]}]}},
+        "statements": {"code": 0, "data": {"list": [{"settlementMonth": "2026-07", "endingSettlementBalance": 8, "payableAmount": 0}]}},
     }
 
 
@@ -59,16 +62,18 @@ def test_receipt_separates_money_and_keeps_unobservable_mrr_unknown() -> None:
 
     assert receipt["verdict"] == "success"
     assert receipt["money"] == {
-        "gross_usd": "19.98",
-        "one_time_revenue_usd": None,
+        "gross_usd": "9.99",
+        "one_time_revenue_usd": "9.99",
         "pending_usd": "8.00",
         "realized_usd": "0.00",
-        "refunds_usd": "2.00",
-        "settled_mrr_usd": None,
-        "net_mrr_usd": None,
+        "refunds_usd": "0.00",
+        "settled_mrr_usd": "0.00",
+        "net_mrr_usd": "0.00",
+        "statement_ending_balance_usd": "8.00",
+        "statement_payable_usd": "0.00",
     }
-    assert receipt["money_status"]["one_time_revenue_usd"] == "unknown_order_billing_mix"
-    assert receipt["money_status"]["settled_mrr_usd"] == "unknown_no_seller_subscription_source"
+    assert receipt["money_status"]["one_time_revenue_usd"] == "fresh_official_seller_console"
+    assert receipt["money_status"]["settled_mrr_usd"] == "fresh_zero_lifetime_subscription_sales"
     assert receipt["refunds"]["tickets"] == 1
     assert receipt["sources"]["sales"]["freshness"] == "fresh"
 
