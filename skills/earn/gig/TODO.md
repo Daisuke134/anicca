@@ -317,16 +317,19 @@ buyer already knows; they retain only the artifact, the requested review point, 
 editorial guidance, not a deterministic length gate: safety-critical facts and a buyer-requested cancellation
 option may remain when relevant.
 
-**Manledge account recovery.** Official X DOM confirms the existing registered `x:anicca` browser identity is
-authenticated as `@selawmqt` at `https://x.com/selawmqt`. The account owner explicitly authorized that seller-owned
-account for project `18169985` in the private remote-account authorization SSOT and sent a concise Coconala
-correction telling the buyer to disregard the unnecessary signup request. No additional buyer confirmation is
-required: the buyer never requested account approval, and the earlier approval gate was a seller-created promise,
-not a buyer requirement. Paid semantic routing now permits an explicitly project-authorized seller-owned remote
-target, and remote owners must inspect the browser registry plus private authorization before signup or asking for
-another account. Next natural work must use that account, execute the already-approved outreach plan from the full
-proposal/DM/talkroom context, and record official X effects plus the outreach ledger; it must not send another
-Coconala acknowledgement or count an unsent draft as outreach.
+**Shared resource resolver and Manledge recovery.** Official X DOM confirms the registered `x:anicca` browser
+identity is authenticated as `@selawmqt` at `https://x.com/selawmqt`. Life Manager previously split capabilities,
+browser sessions and credentials across unrelated registries, so Paid could see only its gig browser and asked the
+buyer to create an account that already existed. The shared `skills/_shared/resource_resolver.py` now joins the OSS
+skill registry, local browser-identity registry and the single local credential SSOT without returning secret
+values. `x-repost` is a live installable OSS skill, and every gig agent receives the same resolver contract before
+signup or reimplementation. The account owner sent a concise Coconala correction telling the buyer to disregard
+the unnecessary signup request. No additional buyer confirmation is required: the buyer never requested account
+approval, and the earlier approval gate was a seller-created promise, not a buyer requirement. Next natural work
+must resolve and use `@selawmqt`, execute the already-approved outreach plan from the full proposal/DM/talkroom
+context, and record official X effects plus the outreach ledger; it must not send another Coconala acknowledgement
+or count an unsent draft as outreach. This resolver is the cross-loop foundation: future Coconala, Lancers,
+CloudWorks, Writer and growth owners discover the same reusable account/session/skill instead of per-loop copies.
 
 **Current live cursor.** `main` and `origin/main` were verified equal immediately before this snapshot at
 `0d16152be`; the starting verification commit

@@ -1150,6 +1150,14 @@ def run() -> int:
         if any(path.is_symlink() or not path.is_file() for path in parsed.image):
             raise ValueError("image input must be an existing regular file")
         prompt = sys.stdin.read() if parsed.prompt_stdin else parsed.prompt_file.read_text(encoding="utf-8")
+        resolver = HERE.parents[3] / "skills" / "_shared" / "resource_resolver.py"
+        if resolver.is_file():
+            prompt = (
+                "When this task needs an external skill, account, authenticated session, or credential, first run "
+                f"python3 {resolver} resolve --service <service> --capability <action>. Reuse a returned resource "
+                "before signup or reimplementation. Never print credential values; adapters read them by ref.\n\n"
+                + prompt
+            )
         # Fail closed before any provider process starts. Billing begins at
         # launch, not at a usable answer: capafy was charged $0.135 on both
         # 2026-07-26 and 2026-07-27 for a one-turn greeting. A prompt this
