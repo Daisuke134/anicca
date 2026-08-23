@@ -1656,6 +1656,18 @@ substitution shell, while official recon runs below it. In parallel, legacy retu
 readback=1/failed=0`; no redundant buyer reply or remote action occurred. Manledge still requires 44 further valid
 contacts or official reachable exhaustion plus a truthful buyer handoff and replay-zero.
 
+The same generic owner then proved that shared capability discovery can continue real work without Codex becoming
+the customer-work owner. X recon was bounded mechanically at the adapter layer by commit `09eea5704`: it preserves
+all candidates already collected, stops starting new queries after the global time budget, and reports attempted and
+unattempted queries without deciding business eligibility. The already-running immutable owner completed its own
+five-query follow-up search with 89 saved candidates and zero query errors. It rejected `@5555daisuke5555` after the
+official source page exposed no reply composer, produced no receipt and therefore checkpointed no effect. It then
+sent recipient-specific outreach to `@youtubeayachan1` from the authorized `@selawmqt` identity, read back the exact
+payload at `https://x.com/selawmqt/status/2091376496535646545`, and immediately checkpointed the receipt and claim
+sources. Latest-row reduction now yields exactly seven valid contacts. The natural owner is continuing from the
+preserved roster; 43 further valid contacts or official reachable exhaustion, truthful buyer handoff, and replay-zero
+remain required.
+
 1. **Paid/Submission — finish first.**
    - [x] Deploy and read back Paid ignoring shared preventive `disk-pressure.block` (20 GiB) and
      `disk-writers.stop` (10/11 GiB hysteresis), while retaining the 512 MiB last-resort guard and
