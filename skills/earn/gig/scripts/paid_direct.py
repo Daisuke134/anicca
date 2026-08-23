@@ -11,6 +11,7 @@ HERE = Path(__file__).resolve().parent
 if str(HERE) not in sys.path: sys.path.insert(0, str(HERE))
 import delivery_project  # noqa: E402
 import delivery_queue  # noqa: E402
+import paid_admission  # noqa: E402
 import paid_work_evidence  # noqa: E402
 import paid_remote_result  # noqa: E402
 import reconcile_paid_delivery  # noqa: E402
@@ -4579,6 +4580,58 @@ def _paid_project_executor() -> ThreadPoolExecutor:
     return ThreadPoolExecutor(max_workers=1, thread_name_prefix="paid-project")
 
 
+def _reported_paid_row(args, item: dict[str, Any]) -> dict[str, Any] | None:
+    room = _text(item.get("talkroom_id"))
+    effect_policy = _account_owner_observe_only(args, item)
+    if effect_policy is not None:
+        return {"talkroom_id": room, "status": "reserved_for_owner",
+                "send_performed": False, "deduplicated": True,
+                "formal_delivery_checkbox": False,
+                "evidence_paths": {"official_readback": str(effect_policy)}}
+    handoff = _reported_handoff_cycle(args, item)
+    if handoff is not None:
+        return {"talkroom_id": room, "status": "awaiting_buyer",
+                "send_performed": False, "deduplicated": True,
+                "formal_delivery_checkbox": False,
+                "evidence_paths": {"official_readback": str(
+                    handoff / "delivery" / "paid-external-handoff.json")}}
+    if _reported_formal_cycle(args, item) is not None:
+        return {"talkroom_id": room, "status": "awaiting_buyer",
+                "send_performed": False, "deduplicated": True,
+                "formal_delivery_checkbox": True,
+                "evidence_paths": {"official_readback": _text(item.get("talkroom_evidence_file"))}}
+    if _reported_file_progress_cycle(args, item) is not None:
+        return {"talkroom_id": room, "status": "awaiting_buyer",
+                "send_performed": False, "deduplicated": True,
+                "formal_delivery_checkbox": False,
+                "evidence_paths": {"official_readback": _text(item.get("talkroom_evidence_file"))}}
+    if _reported_remote_cycle(args, item) is not None:
+        return {"talkroom_id": room, "status": "completed",
+                "send_performed": False, "deduplicated": True,
+                "formal_delivery_checkbox": False,
+                "evidence_paths": {"official_readback": _text(item.get("talkroom_evidence_file"))}}
+    return None
+
+
+def _admitted_paid_projects(args, items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    admission = paid_admission.plan(items, projects_root=args.projects_root, max_orders=1)
+    paid_admission.record_decisions(
+        admission, projects_root=args.projects_root,
+        pass_id=f"paid-direct-{time.time_ns()}",
+    )
+    admitted = set(admission.get("admitted") or [])
+    return [item for item in items if paid_admission.stable_identity(item) in admitted]
+
+
+def _paid_pending_count(rows: dict[str, dict[str, Any]]) -> int:
+    return sum(row.get("status") in {"pending", "disk_pressure", "queued"}
+               for row in rows.values())
+
+
+def _paid_parent_status(*, failed: int, pending: int) -> str:
+    return "failed" if failed else ("pending" if pending else "completed")
+
+
 def run_once(args, output: Path) -> int:
     # An operator must be able to stand this lane down without unloading launchd. This is the
     # one lane that can press an irreversible formal-delivery control, so it checks the brake
@@ -4623,49 +4676,27 @@ def run_once(args, output: Path) -> int:
                     step = error.step if isinstance(error, Failure) else "targeted_readback"
                     failed, failed_step = failed + 1, step
                     rows[room] = {"talkroom_id": room, "status": "failed", "failed_step": step}
+        work_candidates = []
+        for item in targeted_items:
+            room = _text(item.get("talkroom_id"))
+            reported = _reported_paid_row(args, item)
+            if reported is not None:
+                rows[room] = reported
+                readback += 1
+            else:
+                work_candidates.append(item)
+        admitted_items = _admitted_paid_projects(args, work_candidates)
+        admitted_rooms = {_text(item.get("talkroom_id")) for item in admitted_items}
+        for item in work_candidates:
+            room = _text(item.get("talkroom_id"))
+            if room not in admitted_rooms:
+                rows[room] = {"talkroom_id": room, "status": "queued"}
+
         executor = _paid_project_executor()
         jobs = []
         disk_blocked_reason: str | None = None
-        for item in targeted_items:
+        for item in admitted_items:
             room = _text(item.get("talkroom_id"))
-            effect_policy = _account_owner_observe_only(args, item)
-            if effect_policy is not None:
-                rows[room] = {"talkroom_id": room, "status": "reserved_for_owner",
-                              "send_performed": False, "deduplicated": True,
-                              "formal_delivery_checkbox": False,
-                              "evidence_paths": {"official_readback": str(effect_policy)}}
-                readback += 1
-                continue
-            handoff = _reported_handoff_cycle(args, item)
-            if handoff is not None:
-                rows[room] = {"talkroom_id": room, "status": "awaiting_buyer",
-                              "send_performed": False, "deduplicated": True,
-                              "formal_delivery_checkbox": False,
-                              "evidence_paths": {"official_readback": str(
-                                  handoff / "delivery" / "paid-external-handoff.json")}}
-                readback += 1
-                continue
-            if _reported_formal_cycle(args, item) is not None:
-                official = _text(item.get("talkroom_evidence_file"))
-                rows[room] = {"talkroom_id": room, "status": "awaiting_buyer", "send_performed": False,
-                              "deduplicated": True, "formal_delivery_checkbox": True,
-                              "evidence_paths": {"official_readback": official}}
-                readback += 1
-                continue
-            if _reported_file_progress_cycle(args, item) is not None:
-                official = _text(item.get("talkroom_evidence_file"))
-                rows[room] = {"talkroom_id": room, "status": "awaiting_buyer", "send_performed": False,
-                              "deduplicated": True, "formal_delivery_checkbox": False,
-                              "evidence_paths": {"official_readback": official}}
-                readback += 1
-                continue
-            if _reported_remote_cycle(args, item) is not None:
-                official = _text(item.get("talkroom_evidence_file"))
-                rows[room] = {"talkroom_id": room, "status": "completed", "send_performed": False,
-                              "deduplicated": True, "formal_delivery_checkbox": False,
-                              "evidence_paths": {"official_readback": official}}
-                readback += 1
-                continue
             if disk_blocked_reason is None:
                 disk_blocked_reason = _effect_gate_reason(args)
             if disk_blocked_reason is not None:
@@ -4675,28 +4706,29 @@ def run_once(args, output: Path) -> int:
                 if rows[room].get("status") == "failed":
                     failed, failed_step = failed + 1, "disk_checkpoint"
                 continue
-            room, resolved = _text(item.get("talkroom_id")), _recoverable(args, item)
-            if resolved is None:
-                try:
+            room = _text(item.get("talkroom_id"))
+            try:
+                delivery_project.record_queue_selection(
+                    args.projects_root, item, adapter="coconala",
+                )
+                resolved = _recoverable(args, item)
+                if resolved is None:
                     root = _paid_project_root(args, item)
                     if _answer_ready(root, item):
-                        delivery_project.record_queue_selection(args.projects_root, item, adapter="coconala")
                         resolved = _recoverable(args, item)
                     elif (root.is_dir() and not root.is_symlink()
                           and (root / "requirements" / "live-buyer-reply.json").is_file()
                           and re.fullmatch(r"[0-9a-f]{64}", _text(item.get("buyer_feedback_sha256")))):
                         root.resolve().relative_to(args.projects_root.resolve())
-                        if not (root / "state.json").is_file():
-                            delivery_project.record_queue_selection(args.projects_root, item, adapter="coconala")
                         # Decision generation belongs to the project worker. It revalidates after
                         # DM collection, so doing it here only serializes independent projects and
                         # can become stale before the worker starts.
                         resolved = (root.resolve(), None)
-                except (Failure, OSError, ValueError, TypeError, json.JSONDecodeError) as error:
-                    step = error.step if isinstance(error, Failure) else "context_compile"
-                    failed, failed_step = failed + 1, step
-                    rows[room] = {"talkroom_id": room, "status": "failed", "failed_step": step}
-                    continue
+            except (Failure, OSError, ValueError, TypeError, json.JSONDecodeError) as error:
+                step = error.step if isinstance(error, Failure) else "context_compile"
+                failed, failed_step = failed + 1, step
+                rows[room] = {"talkroom_id": room, "status": "failed", "failed_step": step}
+                continue
             if resolved is None: rows[room] = {"talkroom_id": room, "status": "pending"}; continue
             root, _ = resolved; private = {key: item[key] for key in (
                 "request_id", "contract_id", "talkroom_id", "title", "marketplace_url", "talkroom_url",
@@ -4748,12 +4780,12 @@ def run_once(args, output: Path) -> int:
                 for row in rows.values()
         ):
             disk_blocked_reason = disk_blocked_reason or "disk_pressure"
-        result_status = "failed" if failed else ("pending" if disk_blocked_reason else "completed")
+        pending = _paid_pending_count(rows)
+        result_status = _paid_parent_status(failed=failed, pending=pending)
         result = {"status": result_status, "observed": len(items),
                   "duplicate_dropped": duplicate_dropped, "actionable": actionable,
                   "effect": effect, "readback": readback, "failed": failed,
-                  "pending": sum(rows[_text(item["talkroom_id"])].get("status") in {"pending", "disk_pressure"}
-                                 for item in items),
+                  "pending": pending,
                   "oldest": min(dates, default=None),
                   "items": [rows[_text(item["talkroom_id"])] for item in items]}
         if failed_step: result["failed_step"] = failed_step

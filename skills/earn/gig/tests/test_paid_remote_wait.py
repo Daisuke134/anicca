@@ -6,6 +6,7 @@ import json
 import threading
 import time
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -210,3 +211,30 @@ def test_paid_project_executor_runs_one_owner_at_a_time():
             future.result()
 
     assert maximum == 1
+
+
+def test_paid_admission_selects_one_project_and_rotates(tmp_path):
+    paid = load("paid_direct")
+    args = SimpleNamespace(projects_root=tmp_path)
+    items = [
+        {"talkroom_id": "101", "buyer": "buyer-a"},
+        {"talkroom_id": "102", "buyer": "buyer-b"},
+    ]
+
+    first = paid._admitted_paid_projects(args, items)
+    assert [item["talkroom_id"] for item in first] == ["101"]
+
+    paid.delivery_project.record_queue_selection(tmp_path, first[0], adapter="coconala")
+    second = paid._admitted_paid_projects(args, items)
+    assert [item["talkroom_id"] for item in second] == ["102"]
+
+
+def test_queued_paid_project_keeps_parent_pending():
+    paid = load("paid_direct")
+    rows = {
+        "101": {"status": "completed"},
+        "102": {"status": "queued"},
+    }
+
+    assert paid._paid_pending_count(rows) == 1
+    assert paid._paid_parent_status(failed=0, pending=1) == "pending"
