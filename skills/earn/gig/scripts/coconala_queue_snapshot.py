@@ -1856,7 +1856,10 @@ def persist_latest_paid_buyer_reply(
     ]
     if not buyer_messages:
         keep_accumulation_only()
-        return None
+        # The current DOM window can omit older buyer rows even though the complete request was
+        # already captured durably.  Re-name that exact sidecar so the Paid parent can resume its
+        # project owner; returning None silently strands the room as pending forever.
+        return _request_named_by_existing_sidecar(requirements_path)
     feedback_parts: list[str] = []
     attachment_manifest: list[dict[str, Any]] = []
     for message in buyer_messages:
