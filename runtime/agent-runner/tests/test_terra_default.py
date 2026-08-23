@@ -43,7 +43,7 @@ class ApprovedRouteDefaultTest(unittest.TestCase):
         route = config["task_classes"]["browser-lane-agent"]
 
         self.assertEqual(route["route"], "luna-xhigh-browser-loop")
-        self.assertEqual(route["timeout_seconds"], 900)
+        self.assertEqual(route["timeout_seconds"], 1800)
         self.assertTrue(route["requires_explicit_escalation"])
         self.assertEqual(len(route["candidates"]), 1)
         for caller in (
