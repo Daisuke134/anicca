@@ -299,6 +299,35 @@ def append_usage_event(path: Path, event: dict[str, Any]) -> None:
 def terminate_process_tree(process: subprocess.Popen[bytes]) -> None:
     """Terminate a timed-out provider and every child in its process group."""
     if os.name == "posix":
+        # Codex Code Mode may start tool commands in their own sessions.  killpg(provider)
+        # cannot reach those descendants and, once the provider exits, launchd reparents them
+        # to PID 1.  Snapshot the live descendant tree before killing the provider so detached
+        # browser/search commands cannot retain an account lease after their owner times out.
+        descendants: list[int] = []
+        try:
+            rows = subprocess.run(
+                ["/bin/ps", "-axo", "pid=,ppid="],
+                check=True, capture_output=True, text=True, timeout=2,
+            ).stdout.splitlines()
+            children: dict[int, list[int]] = {}
+            for row in rows:
+                fields = row.split()
+                if len(fields) != 2:
+                    continue
+                pid, parent = (int(value) for value in fields)
+                children.setdefault(parent, []).append(pid)
+            stack = list(children.get(process.pid, []))
+            while stack:
+                pid = stack.pop()
+                descendants.append(pid)
+                stack.extend(children.get(pid, []))
+        except (OSError, ValueError, subprocess.SubprocessError):
+            descendants = []
+        for pid in reversed(descendants):
+            try:
+                os.kill(pid, signal.SIGTERM)
+            except ProcessLookupError:
+                pass
         try:
             os.killpg(process.pid, signal.SIGTERM)
         except ProcessLookupError:
@@ -311,6 +340,11 @@ def terminate_process_tree(process: subprocess.Popen[bytes]) -> None:
             os.killpg(process.pid, signal.SIGKILL)
         except ProcessLookupError:
             pass
+        for pid in reversed(descendants):
+            try:
+                os.kill(pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
     else:
         process.kill()
     try:
