@@ -98,12 +98,63 @@ def skill_refs(service: str, capability: str) -> list[dict[str, Any]]:
     return result
 
 
+def capability_manifest() -> dict[str, Any]:
+    """Return the shared, non-secret capability plane every owner starts with."""
+    slots = load_json(REGISTRY).get("slots", {}) if REGISTRY.is_file() else {}
+    skills = []
+    for name, row in slots.items():
+        if not isinstance(row, dict) or row.get("status") != "live":
+            continue
+        skills.append({key: value for key, value in {
+            "slot": name,
+            "summary": row.get("summary"),
+            "capabilities": row.get("capabilities", []),
+        }.items() if value not in (None, "", [])})
+
+    accounts = []
+    rows = load_json(CREDENTIALS).get("credentials", []) if CREDENTIALS.is_file() else []
+    for index, row in enumerate(rows):
+        if not isinstance(row, dict):
+            continue
+        accounts.append({key: value for key, value in {
+            "ref": f"credentials:{index}",
+            "service": row.get("service"),
+            "username": row.get("username"),
+            "url": row.get("url"),
+            "account_status": row.get("account_status"),
+        }.items() if value not in (None, "")})
+
+    sessions = []
+    if BROWSERS.is_file():
+        for row in tomllib.loads(BROWSERS.read_text(encoding="utf-8")).get("identity", []):
+            if not isinstance(row, dict):
+                continue
+            sessions.append({key: row.get(key) for key in (
+                "id", "owner", "accounts", "handles", "ownership", "capabilities"
+            ) if row.get(key) not in (None, [], "")})
+    return {
+        "version": 1,
+        "skills": skills,
+        "accounts": accounts,
+        "browser_sessions": sessions,
+        "policy": (
+            "Shared discovery only: resolve the selected service/capability, then let its adapter read secrets by ref. "
+            "Never copy secret values or another customer's mutable context into an owner prompt."
+        ),
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("command", choices=("resolve",))
-    parser.add_argument("--service", required=True)
+    parser.add_argument("command", choices=("resolve", "manifest"))
+    parser.add_argument("--service")
     parser.add_argument("--capability", default="")
     args = parser.parse_args()
+    if args.command == "manifest":
+        print(json.dumps(capability_manifest(), ensure_ascii=False, sort_keys=True))
+        return 0
+    if not args.service:
+        parser.error("resolve requires --service")
     value = {
         "version": 1,
         "service": args.service,

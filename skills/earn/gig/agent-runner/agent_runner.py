@@ -1152,7 +1152,16 @@ def run() -> int:
         prompt = sys.stdin.read() if parsed.prompt_stdin else parsed.prompt_file.read_text(encoding="utf-8")
         resolver = HERE.parents[3] / "skills" / "_shared" / "resource_resolver.py"
         if resolver.is_file():
+            manifest = subprocess.run(
+                [sys.executable, str(resolver), "manifest"],
+                check=True,
+                capture_output=True,
+                text=True,
+                timeout=10,
+            ).stdout.strip()
             prompt = (
+                "Life Manager shared capability manifest (non-secret; available to every loop owner): "
+                f"{manifest}\n"
                 "When this task needs an external skill, account, authenticated session, or credential, first run "
                 f"python3 {resolver} resolve --service <service> --capability <action>. Reuse a returned resource "
                 "before signup or reimplementation. Never print credential values; adapters read them by ref.\n\n"

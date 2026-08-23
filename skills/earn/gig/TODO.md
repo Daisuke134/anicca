@@ -345,6 +345,17 @@ Do not replace this owner with a manual Codex send. Let it choose an honest cont
 and then rerun under the shared resolver release so discovery and adaptive fallback are proven without
 project-specific prompt knowledge.
 
+The remaining architectural defect was that shared discovery was opt-in: every agent received only an instruction
+to call the resolver if it independently realized that a reusable resource might exist. Life Manager now compiles a
+non-secret capability manifest at every agent start and places the same live skill catalogue, account references
+and browser-identity references in every loop owner's initial context. The owner selects from that common plane and
+then calls `resolve` for the exact service/action; only the selected adapter may dereference a secret locally. This
+is the reusable Life Manager contract, not a Coconala or Manledge rule. Shared does not mean one giant mutable
+prompt: proposal/DM/talkroom/customer files and browser effect ownership remain isolated per project, while stable
+seller facts, skills and resource references are shared. The next immutable release must naturally prove that a
+fresh owner sees this manifest without being reminded by Codex, resolves the existing resource, performs the real
+effect, records official readback and resumes after restart without duplicate effects.
+
 The resumed Manledge owner then exposed a second shared-tool contract defect: `x-repost` advertised generic
 `post` capability in the shared registry, but its production CLI accepted only `quote` and `reply` and required a
 source post URL. The owner correctly resolved and reused the skill, yet could not publish the approved standalone
