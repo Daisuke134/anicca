@@ -1,12 +1,60 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import subprocess
 from pathlib import Path
 
 
 ESCALATION_REASON = "mandatory-model-browser-loop"
+
+
+def validate_pass_result(evidence_dir: Path) -> str | None:
+    summary_path = evidence_dir / "summary.json"
+    if not summary_path.is_file():
+        return None
+    try:
+        summary = json.loads(summary_path.read_text(encoding="utf-8"))
+        result_path = Path(str(summary.get("result_path") or ""))
+        attempts_path = Path(str(summary.get("attempts_path") or ""))
+    except (OSError, json.JSONDecodeError):
+        return None
+    if (
+        result_path.parent != evidence_dir
+        or attempts_path.parent != evidence_dir
+        or not result_path.is_file()
+        or not attempts_path.is_file()
+    ):
+        return None
+    try:
+        result = json.loads(result_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    if result.get("status") != "transport_failed":
+        return None
+    try:
+        attempt = json.loads(attempts_path.read_text(encoding="utf-8").splitlines()[-1])
+        stdout_path = Path(str(attempt.get("stdout_path") or ""))
+    except (OSError, json.JSONDecodeError, IndexError):
+        return "transport_failed_without_command_failure"
+    if stdout_path.parent != evidence_dir or not stdout_path.is_file():
+        return "transport_failed_without_command_failure"
+    for line in stdout_path.read_text(encoding="utf-8").splitlines():
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        item = event.get("item") if isinstance(event, dict) else None
+        if (
+            event.get("type") == "item.completed"
+            and isinstance(item, dict)
+            and item.get("type") == "command_execution"
+            and isinstance(item.get("exit_code"), int)
+            and item["exit_code"] != 0
+        ):
+            return None
+    return "transport_failed_without_command_failure"
 
 
 def invoke_runner(
@@ -48,7 +96,19 @@ def invoke_runner(
         environment.pop("JOB_SEARCH_ACTIVE_APPLICATION_PROVIDER", None)
     else:
         environment["JOB_SEARCH_ACTIVE_APPLICATION_PROVIDER"] = active_provider
-    return subprocess.run(command, check=False, env=environment).returncode
+    returncode = subprocess.run(command, check=False, env=environment).returncode
+    if returncode != 0:
+        return returncode
+    reason = validate_pass_result(evidence_dir)
+    if reason is None:
+        return 0
+    receipt = evidence_dir / "semantic-validation.json"
+    receipt.write_text(
+        json.dumps({"status": "failed", "reason": reason}, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    os.chmod(receipt, 0o600)
+    return 2
 
 
 def main(argv: list[str] | None = None) -> int:

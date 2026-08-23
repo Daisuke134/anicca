@@ -63,10 +63,10 @@ Change only output arguments; keep the existing pre-scan and post-run ordering.
 
 Run the CLI twice against a reopened Ledger and require byte-identical output and unchanged high-water.
 
-- [ ] **Step 4: Full regression, immutable release, and live readback**
+- [x] **Step 4: Full regression, immutable release, and live readback**
 
 Require all Job Hunter/runner tests, release checksum/read-only verification, a scheduled wake, mode-0600 current `summary.v2`, and exact equality between its Workday counts/high-water and independent Ledger queries.
 
-- [ ] **Step 5: Update spec and commit/push**
+- [x] **Step 5: Update spec and commit/push**
 
 Record RED/GREEN counts, release SHA-256, run ID, event high-water, Workday counts, and next 10P dedupe gate.

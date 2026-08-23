@@ -1,5 +1,6 @@
 import copy
 import json
+import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
@@ -55,6 +56,75 @@ def _row_run(*, provider: str, canonical_url: str) -> dict[str, object]:
 
 
 class ModelBrowserLoopContractTests(unittest.TestCase):
+    def test_transport_failed_requires_a_real_nonzero_runtime_command(self):
+        from job_search_loop.browser_agent import orchestrator
+
+        validator = getattr(orchestrator, "validate_pass_result", None)
+        self.assertIsNotNone(validator)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            result = root / "result.json"
+            stdout = root / "stdout.log"
+            attempts = root / "attempts.jsonl"
+            summary = root / "summary.json"
+            result.write_text(
+                json.dumps(
+                    {
+                        "status": "transport_failed",
+                        "submitted": [],
+                        "submit_unknown": [],
+                        "blocked": ["Example — Role"],
+                        "report_message_id": None,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            stdout.write_text(
+                json.dumps(
+                    {
+                        "type": "item.completed",
+                        "item": {
+                            "type": "command_execution",
+                            "exit_code": 0,
+                        },
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            attempts.write_text(
+                json.dumps({"stdout_path": str(stdout)}) + "\n",
+                encoding="utf-8",
+            )
+            summary.write_text(
+                json.dumps(
+                    {
+                        "result_path": str(result),
+                        "attempts_path": str(attempts),
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            self.assertEqual(
+                validator(root),
+                "transport_failed_without_command_failure",
+            )
+            stdout.write_text(
+                json.dumps(
+                    {
+                        "type": "item.completed",
+                        "item": {
+                            "type": "command_execution",
+                            "exit_code": 7,
+                        },
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            self.assertIsNone(validator(root))
+
     @classmethod
     def setUpClass(cls) -> None:
         schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
@@ -143,6 +213,9 @@ class ModelBrowserLoopContractTests(unittest.TestCase):
         self.assertIn("JOB_SEARCH_MACHINE_CREDENTIALS", daily)
         self.assertIn("runtime auth --mode", prompt)
         self.assertIn("visible page determine the next action", prompt)
+        self.assertIn("Canonical Review example", prompt)
+        self.assertIn("enabled `Submit`", prompt)
+        self.assertIn("the next action is `runtime finalize`", prompt)
         self.assertNotIn("workday_job", prompt)
         self.assertNotIn("workday-accounts.json", prompt)
         self.assertNotIn("click_filter", prompt)

@@ -176,6 +176,12 @@ resume, and absence of validation errors. Then call `runtime finalize` exactly o
 It owns the one-shot SubmissionFence and the only permitted final Submit click.
 Never call it twice, even after an exception or ambiguous response.
 
+Canonical Review example: the fresh observation shows the complete application
+summary, no validation errors or challenges, and an enabled `Submit`; every runtime
+command returned exit code zero. This is the final Review surface, so the next action is `runtime finalize`.
+Returning `transport_failed` in this state is false because no
+transport command failed.
+
 A click, HTTP response, model statement, or Ledger state is not success. The runtime
 captures a fresh post-click screenshot. The Workday gate remains unverified until
 the independent inbox owner binds an authoritative receipt email to the same company,

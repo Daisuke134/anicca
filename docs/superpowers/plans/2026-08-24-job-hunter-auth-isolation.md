@@ -67,14 +67,14 @@ Run: `python3 -m unittest apps.job-search-loop.tests.test_canonical_runtime runt
 
 Expected: all tests PASS.
 
-- [ ] **Step 5: Build and activate the immutable release**
+- [x] **Step 5: Build and activate the immutable release**
 
 Run the existing Job Hunter release/install path. Verify the installed runner config contains the job-search-owned automation home and that the source/target paths resolve identically without printing credential contents.
 
-- [ ] **Step 6: Trigger and verify production through the existing owner**
+- [x] **Step 6: Trigger and verify production through the existing owner**
 
 While the owner is idle, use `launchctl kickstart -k` for `ai.anicca.job-search-daily`. Verify Luna starts for queued JR2008507, the old auth mismatch is absent, and all application effects remain fenced.
 
-- [ ] **Step 7: Update the spec and commit/push**
+- [x] **Step 7: Update the spec and commit/push**
 
 Record RED, GREEN, release, launchd E2E, Telegram receipt, Ledger state, and the next ordered TODO in 48bv. Commit only owned files and push the existing remote job-search branch.

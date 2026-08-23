@@ -48,6 +48,11 @@ def deliver_wake_report(
 ) -> dict[str, Any]:
     summary = _read_object(runner_summary_path)
     discovery = _read_object(discovery_path)
+    result: dict[str, Any] = {}
+    result_path = Path(str(summary.get("result_path") or ""))
+    if result_path.parent == runner_summary_path.parent:
+        result = _read_object(result_path)
+    semantic = _read_object(runner_summary_path.parent / "semantic-validation.json")
     attempt: dict[str, Any] = {}
     attempts_path = Path(str(summary.get("attempts_path") or ""))
     if attempts_path.parent == runner_summary_path.parent and attempts_path.is_file():
@@ -73,9 +78,17 @@ def deliver_wake_report(
     finally:
         ledger.close()
 
-    outcome = "success" if summary.get("status") == "success" else "failed"
+    semantic_reason = semantic.get("reason") if semantic.get("status") == "failed" else None
+    result_status = str(result.get("status") or "")
+    outcome = (
+        "failed"
+        if semantic_reason or result_status == "transport_failed"
+        else "success" if summary.get("status") == "success" else "failed"
+    )
     reason = str(
-        attempt.get("error_class")
+        semantic_reason
+        or (result_status if result_status == "transport_failed" else None)
+        or attempt.get("error_class")
         or attempt.get("adapter_error")
         or summary.get("status")
         or discovery.get("status")

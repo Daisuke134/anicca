@@ -10,6 +10,75 @@ from job_search_loop.ledger import Ledger
 
 
 class ApplicationReportingTests(unittest.TestCase):
+    def test_wake_report_prefers_semantic_failure_over_runner_success(self):
+        reporting = importlib.import_module("job_search_loop.application_reporting")
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ledger_path = root / "ledger.sqlite3"
+            ledger = Ledger(ledger_path)
+            application_id = ledger.add_application(
+                "NVIDIA",
+                "AI Role",
+                "https://nvidia.wd5.myworkdayjobs.com/job/JR-semantic",
+            )
+            ledger.close()
+            discovery = root / "workday-discovery.json"
+            discovery.write_text(
+                json.dumps(
+                    {
+                        "status": "queue_present",
+                        "queued_application_ids": [application_id],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            result = root / "result.json"
+            result.write_text(
+                json.dumps(
+                    {
+                        "status": "transport_failed",
+                        "submitted": [],
+                        "submit_unknown": [],
+                        "blocked": ["NVIDIA — AI Role"],
+                        "report_message_id": None,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            summary = root / "summary.json"
+            summary.write_text(
+                json.dumps({"status": "success", "result_path": str(result)}),
+                encoding="utf-8",
+            )
+            (root / "semantic-validation.json").write_text(
+                json.dumps(
+                    {"status": "failed", "reason": "transport_failed_without_command_failure"}
+                ),
+                encoding="utf-8",
+            )
+            calls = []
+
+            def sender(**kwargs):
+                calls.append(kwargs)
+                return {"status": "sent", "message_id": "902", "event_key": "key"}
+
+            receipt = reporting.deliver_wake_report(
+                ledger_path=ledger_path,
+                outbox_path=root / "outbox.sqlite3",
+                run_id="daily-semantic",
+                japan_day="2026-08-24",
+                runner_summary_path=summary,
+                discovery_path=discovery,
+                output_path=root / "wake-report.json",
+                sender=sender,
+            )
+
+            self.assertEqual(receipt["outcome"], "failed")
+            self.assertEqual(
+                receipt["reason"],
+                "transport_failed_without_command_failure",
+            )
+            self.assertIn("outcome=failed", calls[0]["message"])
     def test_quota_failed_wake_reports_queued_company_role_and_next_action(self):
         reporting = importlib.import_module("job_search_loop.application_reporting")
         deliver = getattr(reporting, "deliver_wake_report", None)
