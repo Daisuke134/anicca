@@ -1,6 +1,6 @@
 const { randomUUID } = require("node:crypto");
 
-const TOKEN = /^(?:(ai|ho|ej|ee)_[a-z2-7]{20}|af_(elevenlabs-discovered-[a-z0-9][a-z0-9-]{2,60}-en-1))$/; // AFFILIATE_CTA_V1
+const TOKEN = /^(?:(ai|ho|ej|ee)_[a-z2-7]{20}|af_(elevenlabs-discovered-[a-z0-9][a-z0-9-]*-en(?:-experiment-[a-f0-9]{12})?-1))$/; // AFFILIATE_CTA_V1
 
 function destination(product, token, providerToken) {
   if (product.kind === "affiliate") return `https://try.elevenlabs.io/${product.placementId}`;
@@ -48,7 +48,7 @@ function makeMarketingGoHandler({
       return { statusCode: 405, headers: { allow: "GET" }, body: "Method Not Allowed" };
     const token = decodeURIComponent(String(event.path || "").split("/").filter(Boolean).at(-1) || "");
     const match = TOKEN.exec(token);
-    const product = match && (match[2]
+    const product = match && (!match[2] || match[2].length <= 80) && (match[2]
       ? { productId: match[2], kind: "affiliate", placementId: match[2] }
       : products[match[1]]);
     if (!product)

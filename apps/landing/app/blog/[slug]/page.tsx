@@ -98,8 +98,8 @@ function trackedAffiliateHref(href: string): string {
 }
 
 function affiliatePlacement(md: string): string | null { // AFFILIATE_ENTRY_V1
-  const match = md.match(/https:\/\/try\.elevenlabs\.io\/(elevenlabs-discovered-[a-z0-9][a-z0-9-]{2,60}-en-1)/);
-  return match ? match[1] : null;
+  const match = md.match(/https:\/\/try\.elevenlabs\.io\/(elevenlabs-discovered-[a-z0-9][a-z0-9-]*-en(?:-experiment-[a-f0-9]{12})?-1)/);
+  return match && match[1].length <= 80 ? match[1] : null;
 }
 
 function renderMarkdown(md: string): string {

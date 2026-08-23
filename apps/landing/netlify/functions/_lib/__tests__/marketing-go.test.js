@@ -157,6 +157,22 @@ test("affiliate tokens persist exact placement before fixed-host redirect", asyn
   assert.equal(JSON.stringify(writes[0]).includes("try.elevenlabs.io"), false);
 });
 
+test("compact affiliate experiment tokens preserve exact placement redirect", async () => {
+  const writes = [];
+  const handler = makeMarketingGoHandler({
+    products, providerToken: "", receiptId: () => "click-experiment",
+    persist: async (_key, value) => writes.push(value),
+  });
+  const placement = "elevenlabs-discovered-subtitle-translator-en-experiment-c682536aed63-1";
+  const response = await handler(event(`af_${placement}`));
+  assert.equal(response.statusCode, 302);
+  assert.equal(response.headers.location, `https://try.elevenlabs.io/${placement}`);
+  assert.equal(writes[0].product_id, placement);
+  assert.equal((await handler(event(
+    "af_elevenlabs-discovered-subtitle-translator-en-experiment-nothex123456-1",
+  ))).statusCode, 404);
+});
+
 // AFFILIATE_CTA_V2
 test("affiliate redirect does not require App Store provider token", async () => {
   const writes = [];
