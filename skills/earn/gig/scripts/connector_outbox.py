@@ -488,6 +488,16 @@ class ConnectorOutbox:
                     connection.execute(
                         "UPDATE connector_dlq SET closure='dlq' WHERE closure IS NULL"
                     )
+                    connection.execute(
+                        """UPDATE connector_dlq
+                           SET closure='nothing_to_say',
+                               reason='nothing_to_say:officially_unrepliable:'
+                                      || 'submit_rejected_sending_unavailable',
+                               attempts_kind='nothing_to_say'
+                           WHERE closure='dlq'
+                             AND reason='revive_attempts_exhausted:'
+                                        || 'submit_rejected_sending_unavailable'"""
+                    )
                     # SINGLE source of truth for the thread-uniqueness invariants.
                     # Deliberately not in SCHEMA: the predicate needs dlq_at, which
                     # only exists after the ALTER above. Runs unconditionally so a
@@ -867,8 +877,12 @@ class ConnectorOutbox:
                 # The block itself is the durable authoritative-absence receipt for
                 # the final attempt. Waiting through one more backoff cannot create a
                 # new send opportunity; it only leaves terminal work looking active.
-                decision = "dlq"
-                reason = f"revive_attempts_exhausted:{rejection_code or 'unknown'}"
+                if rejection_code == "submit_rejected_sending_unavailable":
+                    decision = "nothing_to_say"
+                    reason = f"officially_unrepliable:{rejection_code}"
+                else:
+                    decision = "dlq"
+                    reason = f"revive_attempts_exhausted:{rejection_code or 'unknown'}"
             elif now < next_attempt_at:
                 decision, reason = "wait", "backoff_open"
             elif int(row["active_siblings"]) > 0:
@@ -928,6 +942,7 @@ class ConnectorOutbox:
         now = self._require_timestamp("now", now)
         revived: list[dict[str, Any]] = []
         dead_lettered: list[dict[str, Any]] = []
+        closed_without_send: list[dict[str, Any]] = []
         closures: list[dict[str, Any]] = []
         if manifest.get("enabled") is not True or manifest.get("revoked_at") is not None:
             return {
@@ -944,7 +959,7 @@ class ConnectorOutbox:
             due = [
                 candidate
                 for candidate in self._blocked_revive_candidates(reader, now)
-                if candidate["decision"] in ("revive", "dlq")
+                if candidate["decision"] in ("revive", "dlq", "nothing_to_say")
             ]
         if not due:
             return {
@@ -1008,7 +1023,23 @@ class ConnectorOutbox:
                         "disposition": "dlq",
                         "blocked_seconds": max(0, now - candidate["blocked_at"]),
                     })
-        if not revived and not dead_lettered:
+                elif decision == "nothing_to_say":
+                    closures.append(self._dead_letter(
+                        connection,
+                        candidate,
+                        reason=f"nothing_to_say:{candidate['reason']}",
+                        attempts=candidate["revive_attempts"],
+                        attempts_kind="nothing_to_say",
+                        now=now,
+                        closure="nothing_to_say",
+                    ))
+                    closed_without_send.append({
+                        **candidate,
+                        "closed_at": now,
+                        "disposition": "nothing_to_say",
+                        "blocked_seconds": max(0, now - candidate["blocked_at"]),
+                    })
+        if not revived and not dead_lettered and not closed_without_send:
             # The advisory read saw work but the locked re-read did not: a
             # concurrent pass or detector took it first. Reporting "applied 0/0"
             # would read as a confident zero, so name what happened.
@@ -1037,6 +1068,7 @@ class ConnectorOutbox:
         return {
             "revived": revived,
             "dead_lettered": dead_lettered,
+            "closed_without_send": closed_without_send,
             "status": "applied",
             "audit_error": audit_error,
         }
@@ -2192,14 +2224,23 @@ class ConnectorOutbox:
             attempts = max(0, int(action["revive_attempts"]))
             attempt_cap = blocked_revive_attempt_cap(str(intent["rejection_code"]))
             if attempts >= attempt_cap:
-                reason = f"revive_attempts_exhausted:{intent['rejection_code']}"
+                clean_no_send = (
+                    intent["rejection_code"]
+                    == "submit_rejected_sending_unavailable"
+                )
+                reason = (
+                    f"nothing_to_say:officially_unrepliable:{intent['rejection_code']}"
+                    if clean_no_send
+                    else f"revive_attempts_exhausted:{intent['rejection_code']}"
+                )
                 closure = self._dead_letter(
                     connection,
                     action,
                     reason=reason,
                     attempts=attempts,
-                    attempts_kind="revive",
+                    attempts_kind="nothing_to_say" if clean_no_send else "revive",
                     now=observed_at,
+                    closure="nothing_to_say" if clean_no_send else "dlq",
                 )
                 connection.execute(
                     """UPDATE connector_actions

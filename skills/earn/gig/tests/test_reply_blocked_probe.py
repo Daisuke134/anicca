@@ -42,7 +42,7 @@ def test_sending_unavailable_action_remains_officially_probeable_at_attempt_seve
     assert [item["action_id"] for item in candidates] == [action["action_id"]]
 
 
-def test_authoritative_absence_at_attempt_cap_closes_without_another_day_wait(tmp_path):
+def test_authoritative_sending_unavailable_at_attempt_cap_is_clean_no_send(tmp_path):
     database = tmp_path / "outbox.sqlite3"
     outbox = outbox_module.ConnectorOutbox(
         database, ROOT / "config/connectors/coconala.json",
@@ -80,13 +80,15 @@ def test_authoritative_absence_at_attempt_cap_closes_without_another_day_wait(tm
     )
 
     assert stored["dlq_at"] == 2000
-    closures = outbox.closed_actions()
+    assert outbox.dlq_actions() == []
+    closures = outbox.closed_actions(closure="nothing_to_say")
+    assert closures[0]["closure"] == "nothing_to_say"
     assert closures[0]["reason"] == (
-        "revive_attempts_exhausted:submit_rejected_sending_unavailable"
+        "nothing_to_say:officially_unrepliable:submit_rejected_sending_unavailable"
     )
 
 
-def test_already_blocked_attempt_cap_is_terminal_before_backoff(tmp_path):
+def test_already_blocked_sending_unavailable_cap_plans_clean_no_send(tmp_path):
     database = tmp_path / "outbox.sqlite3"
     outbox = outbox_module.ConnectorOutbox(
         database, ROOT / "config/connectors/coconala.json",
@@ -114,7 +116,42 @@ def test_already_blocked_attempt_cap_is_terminal_before_backoff(tmp_path):
 
     plan = outbox.blocked_revive_plan(now=2001)
 
-    assert plan[0]["decision"] == "dlq"
+    assert plan[0]["decision"] == "nothing_to_say"
     assert plan[0]["reason"] == (
-        "revive_attempts_exhausted:submit_rejected_sending_unavailable"
+        "officially_unrepliable:submit_rejected_sending_unavailable"
+    )
+
+
+def test_open_reclassifies_historical_sending_unavailable_dlq_as_clean_no_send(tmp_path):
+    database = tmp_path / "outbox.sqlite3"
+    outbox = outbox_module.ConnectorOutbox(
+        database, ROOT / "config/connectors/coconala.json",
+    )
+    action = outbox.enqueue(
+        event_key=outbox_module.coconala_inbox_event_key("90001", "a" * 64),
+        thread_id="90001",
+        thread_url="https://coconala.com/mypage/direct_message/90001",
+        observed_at=1000,
+    )
+    with sqlite3.connect(database) as connection:
+        connection.execute(
+            "UPDATE connector_actions SET dlq_at=2000 WHERE action_id=?",
+            (action["action_id"],),
+        )
+        connection.execute(
+            """INSERT INTO connector_dlq
+               (action_id,thread_id,reason,unresolved_attempts,moved_at,attempts_kind,closure)
+               VALUES(?,?,'revive_attempts_exhausted:submit_rejected_sending_unavailable',
+                      8,2000,'revive_attempts','dlq')""",
+            (action["action_id"], action["thread_id"]),
+        )
+
+    reopened = outbox_module.ConnectorOutbox(
+        database, ROOT / "config/connectors/coconala.json",
+    )
+
+    assert reopened.dlq_actions() == []
+    closure = reopened.closed_actions(closure="nothing_to_say")[0]
+    assert closure["reason"] == (
+        "nothing_to_say:officially_unrepliable:submit_rejected_sending_unavailable"
     )
