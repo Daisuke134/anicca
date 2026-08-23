@@ -7,6 +7,7 @@ import hashlib
 import json
 import os
 import re
+import time
 from contextlib import contextmanager
 from datetime import datetime
 from dataclasses import asdict
@@ -91,12 +92,17 @@ def _exclusive_command():
     path = _path_env("JOB_SEARCH_BROWSER_SCRATCH") / "command.lock"
     descriptor = os.open(path, os.O_RDWR | os.O_CREAT, 0o600)
     with os.fdopen(descriptor, "r+") as lock:
-        try:
-            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError as error:
-            raise RuntimeError(
-                "a browser runtime command is already in progress; wait for its result"
-            ) from error
+        deadline = time.monotonic() + 30
+        while True:
+            try:
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except BlockingIOError as error:
+                if time.monotonic() >= deadline:
+                    raise RuntimeError(
+                        "a browser runtime command is already in progress after 30 seconds"
+                    ) from error
+                time.sleep(0.05)
         yield
 
 
@@ -777,7 +783,13 @@ async def upload_resume(*, label: str, role: str, stable_id: str) -> dict[str, A
         encoding="utf-8",
     )
     os.chmod(path, 0o600)
-    return await act(path)
+    try:
+        return await act(path)
+    except TimeoutError:
+        result = await observe()
+        result["status"] = "action_rejected"
+        result["reason"] = "upload_control_did_not_open_file_chooser"
+        return result
 
 
 async def wait(milliseconds: int) -> dict[str, Any]:

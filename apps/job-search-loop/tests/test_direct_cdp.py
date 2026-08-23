@@ -1,6 +1,10 @@
 import unittest
 import inspect
 import tempfile
+import fcntl
+import os
+import threading
+import time
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
@@ -14,6 +18,29 @@ from job_search_loop.runtime import main as compatibility_runtime_main
 
 
 class DirectCDPTypeTests(unittest.IsolatedAsyncioTestCase):
+    def test_command_lock_waits_for_the_active_runtime_command(self):
+        from job_search_loop.browser_agent import runtime
+
+        with tempfile.TemporaryDirectory() as directory, patch.object(
+            runtime, "_path_env", return_value=Path(directory)
+        ):
+            path = Path(directory) / "command.lock"
+            descriptor = os.open(path, os.O_RDWR | os.O_CREAT, 0o600)
+            lock = os.fdopen(descriptor, "r+")
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            released = threading.Event()
+
+            def release():
+                time.sleep(0.05)
+                lock.close()
+                released.set()
+
+            thread = threading.Thread(target=release)
+            thread.start()
+            with runtime._exclusive_command():
+                self.assertTrue(released.is_set())
+            thread.join()
+
     async def test_auth_rejects_html_input_type_as_a_role_before_secret_action(self):
         from job_search_loop.browser_agent import runtime
 
@@ -243,6 +270,36 @@ class DirectCDPTypeTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result["reason"], "upload_requires_button_control")
         observe.assert_awaited_once()
         context.assert_not_awaited()
+
+    async def test_upload_rejects_a_button_that_opens_no_file_chooser(self):
+        from job_search_loop.browser_agent import runtime
+
+        row = {"title": "Role"}
+        cursor = unittest.mock.Mock()
+        builder = unittest.mock.Mock()
+        builder.build = AsyncMock(return_value=unittest.mock.Mock(visible_text="Form"))
+        context = (row, None, None, None, cursor, builder)
+        observation = {"status": "observed", "observation": {"controls": []}}
+        with tempfile.TemporaryDirectory() as directory, patch.object(
+            runtime, "_context", new=AsyncMock(return_value=context)
+        ), patch.object(
+            runtime,
+            "_routed_resume",
+            return_value={"resume_path": "/tmp/resume.pdf"},
+        ), patch.object(
+            runtime, "act", new=AsyncMock(side_effect=TimeoutError())
+        ), patch.object(
+            runtime, "observe", new=AsyncMock(return_value=observation)
+        ) as observe, patch.object(
+            runtime, "_path_env", return_value=Path(directory)
+        ):
+            result = await runtime.upload_resume(
+                label="Attach", role="button", stable_id="ref:e23"
+            )
+
+        self.assertEqual(result["status"], "action_rejected")
+        self.assertEqual(result["reason"], "upload_control_did_not_open_file_chooser")
+        observe.assert_awaited_once()
 
     async def test_screenshot_does_not_reflow_virtualized_provider_lists(self):
         page = DirectCDPPage("ws://example", "target")
