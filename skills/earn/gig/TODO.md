@@ -302,6 +302,21 @@ no-send, replay-zero and a new natural sub-30-minute official reply/estimate pro
 Do not advance the development cursor until every unchecked item in the current stage has official
 evidence. Independent production lanes continue running while development follows this order.
 
+**Apply qualification correction.** New applications must reject work whose required deliverable depends on
+operating a named desktop application (for example Adobe Illustrator, Photoshop, CAD, or video-editor project
+files). These jobs are cost-inefficient for the current fast/cheap autonomous loop even when the application is
+installed. Ordinary output formats that can be produced and verified with the existing general toolchain remain
+eligible. Apply must make this decision from the listing requirements before proposal submission; it must not ask
+the buyer to relax a mandatory native-app requirement after applying. The Apply implementation is currently owned
+by the separate Apply session, so this SSOT requirement must be incorporated there without overwriting its active
+`application_parent.py` changes.
+
+**Buyer-message style correction.** Paid customer handoffs lead with the delivered outcome and use one to three
+short natural sentences. They omit repeated apologies, internal process/evidence narration, and information the
+buyer already knows; they retain only the artifact, the requested review point, and the next action. This is model
+editorial guidance, not a deterministic length gate: safety-critical facts and a buyer-requested cancellation
+option may remain when relevant.
+
 **Current live cursor.** `main` and `origin/main` were verified equal immediately before this snapshot at
 `0d16152be`; the starting verification commit
 `79ac01ba1eb66b06aed1f9cee66d4af303f03a3d` remains an ancestor. The existing launchd Paid owner is the only
