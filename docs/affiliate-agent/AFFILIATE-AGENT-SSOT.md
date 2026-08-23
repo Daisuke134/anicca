@@ -7346,3 +7346,21 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   -v`: all three tests fail because `scripts/model_boundary.py` does not yet
   exist. The tests cover isolated auth binding, refusal to overwrite a different
   auth target, and the exact Codex usage-limit event observed in production.
+- Root-cause comparison rejected canonical-main Repost as the recovery base.
+  It is not descended from the last live-proven Affiliate-integrated commit
+  `da4cfe547`; relative to that working system it deletes
+  `affiliate_proposal.py`, all four Repost test modules, Postiz exactly-once
+  publication/readback behavior, and standalone-original evaluation. Applying
+  only the auth patch there would preserve a different, regressed product.
+- Recovery therefore moved to isolated branch
+  `fix/x-repost-affiliate-auth-recovery` from exact working commit
+  `da4cfe547`. Its untouched baseline is 26/26 tests GREEN. Commit
+  `1aa44b3a0` adds the dedicated account-2 automation home and provider failure
+  boundary while preserving Affiliate proposal, Postiz, original/quote, and
+  exact readback contracts. The combined suite is 31/31 GREEN; shell syntax,
+  Python compile, and diff checks pass. A real acct2 Luna/max probe created the
+  mode-700 home and started a Codex thread without the prior usage-limit, but
+  this isolated Codex app-server then hit DNS/network reconnects and the outer
+  180-second timeout. That is classified as `network`, not falsely as JSON or
+  quota success, and is not production E2E proof. Both remotes contain
+  `1aa44b3a0`; fresh read-only review and owner-owned release E2E remain next.
