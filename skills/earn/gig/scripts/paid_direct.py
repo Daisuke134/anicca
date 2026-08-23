@@ -3290,6 +3290,8 @@ def _repair_prompt(root: Path, item: Path, feedback: str, requirements_sha256: s
             "An authenticated remote session is not proof that it is the correct account. Before signup or asking the buyer for an account, "
             f"run python3 {code_root / '_shared/resource_resolver.py'} resolve --service <target-host> --capability <action>. "
             "Resource discovery is not live readiness: inspect the selected skill/session in official UI or API before effect. "
+            "Independent projects may run concurrently, but serialize every read, mutation, and readback that uses the same "
+            "external account/browser lease; never launch concurrent commands against one leased identity. "
             "When the first channel is unavailable, use the complete project context to resolve another authorized skill, account, "
             "or contact surface that achieves the same buyer outcome. Treat qualification questions as legitimate first contact when "
             "the recipient permits that channel; do not require every fact to be public before contact, and do not stop merely because "

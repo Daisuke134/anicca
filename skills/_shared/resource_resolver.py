@@ -107,7 +107,6 @@ def capability_manifest() -> dict[str, Any]:
             continue
         skills.append({key: value for key, value in {
             "slot": name,
-            "summary": row.get("summary"),
             "capabilities": row.get("capabilities", []),
         }.items() if value not in (None, "", [])})
 

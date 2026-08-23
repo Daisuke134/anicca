@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 REQUIRED = ("effect_key", "target", "payload_sha256", "official_receipt_url",
-            "exact_readback", "quality_status", "qualification_sources")
+            "exact_readback", "quality_status", "qualification_sources", "semantic_contract_sha256")
 
 
 def main() -> int:
@@ -25,7 +25,8 @@ def main() -> int:
     if (not isinstance(value, dict) or any(key not in value for key in REQUIRED)
             or value["exact_readback"] is not True
             or value["quality_status"] not in {"qualified", "qualification", "invalid"}
-            or not isinstance(value["qualification_sources"], list)):
+            or not isinstance(value["qualification_sources"], list)
+            or len(str(value["semantic_contract_sha256"])) != 64):
         raise SystemExit("invalid effect checkpoint")
     ledger = root / "delivery" / "paid-remote-progress.jsonl"
     ledger.parent.mkdir(parents=True, exist_ok=True)

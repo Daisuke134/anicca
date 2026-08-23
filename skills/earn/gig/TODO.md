@@ -383,6 +383,14 @@ claims, channel and next action; the script owns only persistence and replay saf
 reconcile the already-observed official X effects into this ledger, exclude the quality-invalid third reply, and
 continue without repeating either valid contact.
 
+The fresh owner proved that the shared manifest and checkpoint contract reached its prompt, then acquired the
+registered `x:anicca` lease itself. It also exposed a general parallelism boundary by launching multiple official X
+inspectors concurrently against that one leased browser identity; all remained in progress for more than one
+minute. Independent projects remain parallel, but reads, mutations and readbacks sharing one external account lease
+must be serialized. The common owner contract now states that boundary. The always-loaded capability manifest is
+also compacted to slot/capability references rather than copying every skill's long description; all skills remain
+discoverable through `resolve`, while irrelevant prose no longer consumes every owner's context.
+
 The resumed Manledge owner then exposed a second shared-tool contract defect: `x-repost` advertised generic
 `post` capability in the shared registry, but its production CLI accepted only `quote` and `reply` and required a
 source post URL. The owner correctly resolved and reused the skill, yet could not publish the approved standalone
