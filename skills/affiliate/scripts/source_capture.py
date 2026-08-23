@@ -15,7 +15,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from provider_cli import atomic_write
-from acquisition_decision import VARIABLES
+from acquisition_decision import VARIABLES, experiment_plan_id, experiment_plan_matches
 import agent_runner
 from runtime_guard import RUNTIME_DISK_FLOOR_BYTES, runtime_guard
 
@@ -104,12 +104,7 @@ def pending_experiment(state_root, plans):
         plan.get("experiment", {}).get("decision_id")
         for plan in plans if isinstance(plan.get("experiment"), dict)
         and len(f"{plan.get('plan_id', '')}-1") <= 80
-        and (
-            plan.get("plan_id") == plan.get("experiment", {}).get("control_plan_id")
-            or str(plan.get("plan_id", "")).startswith(
-                f"{plan.get('experiment', {}).get('control_plan_id')}-experiment-"
-            )
-        )
+        and experiment_plan_matches(plan.get("plan_id"), plan["experiment"])
     }
     for path in sorted((state_root / "acquisition-decisions").glob("*.json")):
         decision = json.loads(path.read_text(encoding="utf-8"))
@@ -135,11 +130,6 @@ def pending_experiment(state_root, plans):
                 "success_metric": decision["success_metric"],
             }
     return None
-
-
-def experiment_plan_id(control_plan_id, short_id):
-    root = re.sub(r"(?:-experiment-[a-f0-9]{12})+$", "", control_plan_id)
-    return f"{root}-experiment-{short_id}"
 
 
 def select_opportunity(root, state_root, candidates, covered_families):

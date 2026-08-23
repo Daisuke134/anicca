@@ -14,6 +14,23 @@ SCRIPT = Path(__file__).parents[1] / "scripts" / "composition_owner.py"
 
 
 class CompositionOwnerTests(unittest.TestCase):
+    def test_compact_nested_experiment_lineage_is_accepted(self) -> None:
+        spec = importlib.util.spec_from_file_location("affiliate_composition_owner", SCRIPT)
+        module = importlib.util.module_from_spec(spec)
+        assert spec.loader is not None
+        spec.loader.exec_module(module)
+        experiment = {
+            "decision_id": "c682536aed63" + "0" * 52,
+            "control_plan_id": (
+                "elevenlabs-discovered-subtitle-translator-en-"
+                "experiment-1ecf26fe47e1"
+            ),
+        }
+        self.assertTrue(module.experiment_plan_matches(
+            "elevenlabs-discovered-subtitle-translator-en-experiment-c682536aed63",
+            experiment,
+        ))
+
     def test_budget_retry_after_is_next_jst_midnight(self) -> None:
         spec = importlib.util.spec_from_file_location("affiliate_composition_owner", SCRIPT)
         module = importlib.util.module_from_spec(spec)

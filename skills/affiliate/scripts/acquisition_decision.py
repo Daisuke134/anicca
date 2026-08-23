@@ -23,6 +23,23 @@ VARIABLES = {
 }
 
 
+def experiment_plan_id(control_plan_id: str, decision_id: str) -> str:
+    """Return the one compact plan id sealed by an acquisition decision."""
+    root = re.sub(r"(?:-experiment-[a-f0-9]{12})+$", "", control_plan_id)
+    return f"{root}-experiment-{decision_id[:12]}"
+
+
+def experiment_plan_matches(plan_id: str, experiment: dict) -> bool:
+    control_plan_id = experiment.get("control_plan_id")
+    decision_id = experiment.get("decision_id")
+    return (
+        isinstance(plan_id, str)
+        and isinstance(control_plan_id, str) and control_plan_id
+        and isinstance(decision_id, str) and len(decision_id) >= 12
+        and plan_id == experiment_plan_id(control_plan_id, decision_id)
+    )
+
+
 class DecisionError(Exception):
     pass
 

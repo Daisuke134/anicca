@@ -22,6 +22,14 @@ SPEC.loader.exec_module(MODULE)
 
 
 class LocalLoopTest(unittest.TestCase):
+    def test_invalid_campaign_metadata_remains_visible_after_live_campaign(self):
+        self.assertEqual(
+            MODULE.generic_publication_terminal_state(
+                completed=True, invalid_metadata=True,
+            ),
+            "CAMPAIGN_METADATA_INVALID",
+        )
+
     def test_focus_cohort_is_replay_safe_and_pauses_only_new_placements(self):
         with tempfile.TemporaryDirectory() as root:
             state = Path(root)

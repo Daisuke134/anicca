@@ -57,6 +57,33 @@ class SourceCaptureTest(unittest.TestCase):
                 decision["decision_id"],
             )
 
+    def test_compact_experiment_plan_consumes_ready_decision(self):
+        with tempfile.TemporaryDirectory() as directory:
+            state = Path(directory)
+            decisions = state / "acquisition-decisions"
+            decisions.mkdir(parents=True)
+            decision = {
+                "state": "READY", "decision_id": "c682536aed63" + "0" * 52,
+                "baseline_sha256": "a" * 64,
+                "plan_id": (
+                    "elevenlabs-discovered-subtitle-translator-en-"
+                    "experiment-1ecf26fe47e1"
+                ),
+                "placement_id": "control-1",
+                "selected_variable": "title", "hypothesis": "hypothesis",
+                "next_campaign_instruction": "change only title",
+                "success_metric": "page views > 0",
+            }
+            (decisions / "decision.json").write_text(json.dumps(decision))
+            plans = [{
+                "plan_id": "elevenlabs-discovered-subtitle-translator-en-experiment-c682536aed63",
+                "experiment": {
+                    "decision_id": decision["decision_id"],
+                    "control_plan_id": decision["plan_id"],
+                },
+            }]
+            self.assertIsNone(MODULE.pending_experiment(state, plans))
+
     def test_discovery_uses_agent_selected_candidate_instead_of_sitemap_order(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory) / "skill"

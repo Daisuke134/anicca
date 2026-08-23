@@ -17,6 +17,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import agent_runner
 import machine_capability_inventory as inventory
+from acquisition_decision import experiment_plan_matches
 from runtime_guard import RUNTIME_DISK_FLOOR_BYTES, runtime_guard
 
 
@@ -737,15 +738,9 @@ def wake(
             receipt_path = state_root / "composition-receipts" / path.name
             experiment = bundle.get("experiment")
             if isinstance(experiment, dict):
-                control_plan_id = experiment.get("control_plan_id")
                 plan_id = bundle.get("plan_id", "")
-                if not (
-                    isinstance(control_plan_id, str)
-                    and (
-                        plan_id == control_plan_id
-                        or plan_id.startswith(f"{control_plan_id}-experiment-")
-                    )
-                ):
+                control_plan_id = experiment.get("control_plan_id")
+                if not experiment_plan_matches(plan_id, experiment):
                     try:
                         prior_mismatch = json.loads(receipt_path.read_text(encoding="utf-8"))
                     except (OSError, ValueError):

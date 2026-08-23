@@ -2583,6 +2583,12 @@ def recover_provider(state, cdp_port, private_markdown, provider="elevenlabs"):
     return poll(poll_args, recovered)
 
 
+def generic_publication_terminal_state(completed, invalid_metadata):
+    if invalid_metadata:
+        return "CAMPAIGN_METADATA_INVALID"
+    return "ALREADY_LIVE" if completed else "NO_DUE_PUBLICATION"
+
+
 def advance_generic_publication(
     state, landing_root, x_cdp_port, private_markdown, provider_cdp_port=9324,
     owned_publisher=None, x_publisher=None, link_acquirer=None,
@@ -2859,11 +2865,7 @@ def advance_generic_publication(
         atomic_json(progress_path, progress)
         return {"state": "X_LIVE", "public_url": posted["public_url"], **link_metadata}
     return {
-        "state": (
-            "ALREADY_LIVE" if completed
-            else "CAMPAIGN_METADATA_INVALID" if invalid_metadata
-            else "NO_DUE_PUBLICATION"
-        ),
+        "state": generic_publication_terminal_state(completed, invalid_metadata),
         "public_url": None,
     }
 
