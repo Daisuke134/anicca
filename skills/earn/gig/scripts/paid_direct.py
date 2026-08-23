@@ -101,7 +101,6 @@ PAID_RUNNER_CANDIDATES = {
 PAID_FILE_POLICY_VERSION = "paid-file-build-review-v21"
 MAX_FILE_REVIEW_ITERATIONS = 1
 PAID_REMOTE_WAIT_RECHECK_SECONDS = 3600
-PAID_MAX_PARALLEL_PROJECTS = 8
 PAID_MAX_PARALLEL_READBACKS = 1
 PAID_SOURCE_CENSUS_VERSION = "paid-source-census-v4"
 # The skills a paid order may be built with. A skill the lane cannot see is a skill it will
@@ -4576,6 +4575,10 @@ def _update_disk_checkpoint(path: Path, **updates: Any) -> bool:
     return True
 
 
+def _paid_project_executor() -> ThreadPoolExecutor:
+    return ThreadPoolExecutor(max_workers=1, thread_name_prefix="paid-project")
+
+
 def run_once(args, output: Path) -> int:
     # An operator must be able to stand this lane down without unloading launchd. This is the
     # one lane that can press an irreversible formal-delivery control, so it checks the brake
@@ -4620,9 +4623,7 @@ def run_once(args, output: Path) -> int:
                     step = error.step if isinstance(error, Failure) else "targeted_readback"
                     failed, failed_step = failed + 1, step
                     rows[room] = {"talkroom_id": room, "status": "failed", "failed_step": step}
-        executor = ThreadPoolExecutor(
-            max_workers=PAID_MAX_PARALLEL_PROJECTS, thread_name_prefix="paid-project",
-        )
+        executor = _paid_project_executor()
         jobs = []
         disk_blocked_reason: str | None = None
         for item in targeted_items:

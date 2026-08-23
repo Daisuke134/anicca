@@ -3,6 +3,8 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import threading
+import time
 from pathlib import Path
 
 import pytest
@@ -185,3 +187,26 @@ def test_current_wait_is_reused_before_semantic_decision(tmp_path):
     assert paid._remote_wait_before_decision(
         root, {"buyer_feedback_sha256": feedback}, now=None,
     ) is True
+
+
+def test_paid_project_executor_runs_one_owner_at_a_time():
+    paid = load("paid_direct")
+    active = 0
+    maximum = 0
+    lock = threading.Lock()
+
+    def work():
+        nonlocal active, maximum
+        with lock:
+            active += 1
+            maximum = max(maximum, active)
+        time.sleep(0.05)
+        with lock:
+            active -= 1
+
+    with paid._paid_project_executor() as executor:
+        futures = [executor.submit(work) for _ in range(2)]
+        for future in futures:
+            future.result()
+
+    assert maximum == 1
