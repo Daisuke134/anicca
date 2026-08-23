@@ -344,6 +344,8 @@ Aqua復旧後のfresh read-only selectorはData Analyst `7785270416`、evidence 
 
 IG metricsの旧0値はreach証拠ではなかった。`:9222` daily-driverは両ReelでInstagramのsuspended/selfie verification画面へredirectされ、`article=false`なのにparserがempty DOMを`0/0/0`としてappendしていた。metrics ownerをReel ledgerのhandleに対応する保存済みinstagrapi sessionへ移し、proxy適用後のread-only `media_info_v1`を一次sourceにする。login、relogin、settings dumpは行わない。private read失敗時もpublic DOMにarticleとexplicit counter evidenceが無ければunknown/nonzeroにし、偽0をappendしない。live readbackはUser Interview plays `1`、Decision Debate plays `8`、両方likes/comments `0/0`、source `instagrapi_private`、2/2 measured、rc `0`。focused 1件とfresh reviewer `ship`を確認し、commit `3ef6dfb3a`をmainへpushする。Telegram milestoneは`29379`。
 
+commercial reach gateは空markerの手動作成に依存させない。各metrics wakeでReelごとのlatest snapshotを読み、異なる2本以上が`source=instagrapi_private`、`metric_status=measured`、`views>0`を同時に満たす時だけJSON receipt markerをatomic replaceする。public DOM、unknown、0は解禁証拠に数えない。これにより次のData Analyst投稿は実測reachに基づくsoft CTAとbio landingを持ち、条件未達なら従来どおり非commercialでfail closedする。
+
 3本目以降のcopy experimentを学習可能にするため、live Reel ledger rowへexact `caption`、on-screen `hook`、`listing_name`を必須化する。新native URLとselected Agent IDだけではterminal successにせず、3 fieldのいずれかがblankならrotation commit 0、wrapper rc `3`にする。次のData Analyst passから`ig_reflect`はhookとreachを同じReel identityで比較できる。focused 3件、shell syntax、fresh reviewer `ship`を確認し、commit `c3004dbdf`をmainへpushする。
 
 Data Analyst production preflightでHyperFrames `0.8.8`と`edge-tts 7.2.8`は利用可能だが、STEP4が指定していた`~/.cache/instagrapi-venv/bin/python`は存在しないことを実測する。instagrapiがimportでき、poster CLI readbackがrc `0`の`/opt/homebrew/bin/python3`へ実行pathを固定する。focused 3件、shell syntax、poster `--help`、fresh reviewer `ship`を確認し、commit `7186fec9d`をmainへpushする。
@@ -388,7 +390,7 @@ Items are executed top-to-bottom. Only one item is active.
 
 ### Remaining execution order
 
-1. C22-1: cadence gateが開いた最初のmarketing wakeでData Analystのrepo-owned evidenceから新しいHyperFrames + scene-matched Andrew voice MP4を一件だけrenderし、full-video inspectionと旧creative hash不一致を確認する。
+1. C22-1: cadence gateが開いた最初のmarketing wakeでowner-measured 2 Reel reach receiptを読み、Data Analystのrepo-owned evidenceからsoft CTA + bio landing付きの新しいHyperFrames + scene-matched Andrew voice MP4を一件だけrenderし、full-video inspectionと旧creative hash不一致を確認する。
 2. C22-2: 新しい同一bytesだけをInstagramへ一件投稿し、native Reel URL、Telegram media message ID、rotation commitをreadbackする。失敗時は投稿0・rotation0・heartbeat0でterminal failureにする。
 3. C22-3: metric windowでquality-approved 3 Reelsのreach、landing click、Agent sales snapshotを同じwindowへjoinする。order-level sourceが無ければcausal claimをfalseのまま保つ。
 4. C19-1: hourly inventoryでfree slotを初めて検出したwakeだけがFootball Agent `1037238583`をsame-Agent修正・再提出し、6件目のAgentを作らない。

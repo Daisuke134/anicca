@@ -21,6 +21,10 @@ IGLEDGER = os.path.expanduser("~/.local/state/life-manager/state/capafy-marketin
 METRICS = os.path.expanduser("~/.local/state/life-manager/state/capafy-marketing-ig-metrics.jsonl")
 POSTER = Path(__file__).resolve().parents[2] / "marketing-engine/poster.py"
 ACCOUNTS = os.path.expanduser("~/.cloak/clip-accounts-capafy.json")
+REACH_MARKER = os.environ.get(
+    "CAPAFY_IG_REACH_MARKER",
+    os.path.expanduser("~/.local/state/life-manager/state/.capafy-ig-reach-healthy"),
+)
 
 READ_JS = r'''(() => {
   const a=document.querySelector('article'); if(!a) return JSON.stringify({available:false,reason:'article_absent'});
@@ -97,6 +101,39 @@ def _private_read(url, handle, client_factory=None, poster_module=None):
         return None
 
 
+def _write_reach_marker(metrics_path=METRICS, marker_path=REACH_MARKER):
+    """Enable commercial copy only after two distinct owner-measured Reels have reach."""
+    latest = {}
+    if os.path.isfile(metrics_path):
+        for line in open(metrics_path):
+            try:
+                row = json.loads(line)
+            except Exception:
+                continue
+            if row.get("reel_url"):
+                latest[row["reel_url"]] = row
+    healthy = [
+        row for row in latest.values()
+        if row.get("source") == "instagrapi_private"
+        and row.get("metric_status") == "measured"
+        and int(row.get("views", 0) or 0) > 0
+    ]
+    if len(healthy) < 2:
+        return False
+    receipt = {
+        "status": "reach_healthy",
+        "criterion": "two_distinct_owner_measured_reels_with_nonzero_views",
+        "reels": sorted(row["reel_url"] for row in healthy),
+        "observed_at": int(time.time()),
+    }
+    marker = Path(marker_path)
+    marker.parent.mkdir(parents=True, exist_ok=True)
+    temporary = marker.with_suffix(marker.suffix + ".tmp")
+    temporary.write_text(json.dumps(receipt, sort_keys=True) + "\n", encoding="utf-8")
+    os.replace(temporary, marker)
+    return True
+
+
 def main():
     if not os.path.exists(IGLEDGER):
         print(json.dumps({"ok": True, "measured": 0, "note": "no IG Reels yet (account warming) — no-op"})); return 0
@@ -128,7 +165,9 @@ def main():
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
         measured += 1
         print(json.dumps({"snapshot": row}, ensure_ascii=False))
-    print(json.dumps({"ok": not incomplete, "measured": measured, "unavailable": int(incomplete)}))
+    reach_healthy = _write_reach_marker()
+    print(json.dumps({"ok": not incomplete, "measured": measured, "unavailable": int(incomplete),
+                      "reach_healthy": reach_healthy}))
     return 1 if incomplete else 0
 
 

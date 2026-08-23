@@ -95,6 +95,8 @@ fi
 LANDING_URL="${MKT_BIO_LINK:-https://capafy-skills-daily.netlify.app}"
 LANDING_SITE_ID="${MKT_LANDING_SITE_ID:-41c8e52e-b163-442a-84ff-fd866269bf6c}"
 COOKED_MARKER="$HOME/.local/state/life-manager/state/.${INSTANCE}-ig-account-cooked"
+COMMERCIAL_MARKER="$HOME/.local/state/life-manager/state/.${INSTANCE}-ig-reach-healthy"
+export CAPAFY_IG_REACH_MARKER="$COMMERCIAL_MARKER"
 PROVISION_REASON="$(capafy_ig_provision_reason "$IG_HANDLE" "$COOKED_MARKER")"
 PROVISION_NEEDED="no"
 [ -n "$PROVISION_REASON" ] && PROVISION_NEEDED="yes"
@@ -137,7 +139,6 @@ fi
 # NON-COMMERCIAL (no bio link, pure-info caption) to measure reach before adding a commercial
 # link. COMMERCIAL_OK only after the reach-check step writes the healthy marker.
 MODE_FLAG=""   # empty = dry (build video+copy only, publish nothing). --live from day>=3.
-COMMERCIAL_MARKER="$HOME/.local/state/life-manager/state/.${INSTANCE}-ig-reach-healthy"
 LAST_PASS_MARKER="$HOME/.local/state/life-manager/state/.${INSTANCE}-ig-marketing-last-pass"
 IG_LEDGER="$HOME/.local/state/life-manager/state/${INSTANCE}-marketing-ig-ledger.jsonl"
 if [ "${WARM_DAY:-0}" -ge 3 ]; then MODE_FLAG="--live"; fi
