@@ -126,12 +126,17 @@ def same_application_surface(actual: str, expected: str) -> bool:
             job_index = segments.index("job")
         except ValueError:
             return None
-        if job_index + 2 >= len(segments):
-            return None
-        # Workday mutates or inserts the locale before the tenant path, mutates
-        # location punctuation, and appends `/apply/*`.  The requisition-bearing
-        # slug is the stable identity within the already-matched tenant host.
-        return segments[job_index + 2]
+        # Workday may omit the location segment in a recovery URL and append
+        # `/apply/*`.  The requisition suffix inside the slug remains stable.
+        for segment in segments[job_index + 1 :]:
+            if segment == "apply":
+                break
+            if "_" not in segment:
+                continue
+            requisition = segment.rsplit("_", 1)[-1]
+            if re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", requisition):
+                return requisition
+        return None
 
     actual_identity = workday_identity(actual_url.path)
     return actual_identity is not None and actual_identity == workday_identity(expected_url.path)

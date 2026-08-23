@@ -37,6 +37,24 @@ class StateTests(unittest.TestCase):
                 "https://rakuten.wd1.myworkdayjobs.com/en-us/rakuteninc/job/tokyo-japan/other_999",
             )
         )
+
+    def test_workday_recovery_review_without_location_is_same_posting(self):
+        posting = (
+            "https://nvidia.wd5.myworkdayjobs.com/NVIDIAExternalCareerSite/"
+            "job/Japan-Tokyo/Senior-Partner-Manager_JR2008507"
+        )
+        review = (
+            "https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/"
+            "job/Senior-Partner-Manager_JR2008507/apply"
+        )
+
+        self.assertTrue(same_application_surface(review, posting))
+        self.assertFalse(
+            same_application_surface(
+                review,
+                posting.replace("JR2008507", "JR2009999"),
+            )
+        )
         self.assertTrue(
             same_application_surface(
                 "https://workday.wd5.myworkdayjobs.com/ja-JP/Workday/job/Japan%2C-Tokyo/Account-Executive_JR-0103573-1/apply/autofillWithResume",
