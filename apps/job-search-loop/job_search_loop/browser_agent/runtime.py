@@ -732,12 +732,16 @@ async def type_candidate(
     os.chmod(path, 0o600)
     try:
         return await act(path)
-    except RuntimeError as error:
-        if "visible text target did not accept whole-value selection" not in str(error):
+    except (RuntimeError, ValueError) as error:
+        if str(error) == "candidate concept is not a scalar browser value":
+            reason = "candidate_concept_requires_scalar_value"
+        elif "visible text target did not accept whole-value selection" in str(error):
+            reason = "observed_text_target_lost_focus"
+        else:
             raise
         result = await observe()
         result["status"] = "action_rejected"
-        result["reason"] = "observed_text_target_lost_focus"
+        result["reason"] = reason
         return result
 
 

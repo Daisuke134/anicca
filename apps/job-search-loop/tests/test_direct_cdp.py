@@ -94,6 +94,32 @@ class DirectCDPTypeTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result["reason"], "observed_text_target_lost_focus")
         observe.assert_awaited_once()
 
+    async def test_candidate_type_rejects_a_non_scalar_concept_before_action(self):
+        from job_search_loop.browser_agent import runtime
+
+        observation = {"status": "observed", "observation": {"controls": []}}
+        with tempfile.TemporaryDirectory() as directory, patch.object(
+            runtime,
+            "act",
+            new=AsyncMock(
+                side_effect=ValueError("candidate concept is not a scalar browser value")
+            ),
+        ), patch.object(
+            runtime, "observe", new=AsyncMock(return_value=observation)
+        ) as observe, patch.object(
+            runtime, "_path_env", return_value=Path(directory)
+        ):
+            result = await type_candidate(
+                label="Location (City)*",
+                role="combobox",
+                stable_id="id:candidate-location",
+                candidate_concept="candidate.location_preferences",
+            )
+
+        self.assertEqual(result["status"], "action_rejected")
+        self.assertEqual(result["reason"], "candidate_concept_requires_scalar_value")
+        observe.assert_awaited_once()
+
     async def test_premature_finalize_returns_fresh_action_rejection_before_fence(self):
         from job_search_loop.browser_agent import runtime
 
