@@ -1331,8 +1331,18 @@ def run() -> int:
     evidence_dir.mkdir(parents=True, exist_ok=True)
     attempts_path = evidence_dir / "attempts.jsonl"
     summary_path = evidence_dir / "summary.json"
-    # An evidence directory is one logical run. Reusing it must never let a
-    # prior result/attempt/summary satisfy the current run.
+    # Keep the stable latest paths expected by existing consumers, but never erase a
+    # previous wake: later owners need its official-effect trail for durable resume.
+    previous = [path for path in evidence_dir.glob("attempt-*.*") if path.is_file()]
+    previous += [path for path in (attempts_path, summary_path) if path.is_file()]
+    if previous:
+        history = evidence_dir / "history" / (datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+                                                + "-" + uuid.uuid4().hex[:8])
+        history.mkdir(parents=True, exist_ok=False)
+        for path in previous:
+            os.replace(path, history / path.name)
+    # A prior result still cannot satisfy the current run because its stable latest
+    # paths have moved out of the active directory before provider launch.
     attempts_path.unlink(missing_ok=True)
     summary_path.unlink(missing_ok=True)
     started_at = utc_now()

@@ -391,6 +391,12 @@ must be serialized. The common owner contract now states that boundary. The alwa
 also compacted to slot/capability references rather than copying every skill's long description; all skills remain
 discoverable through `resolve`, while irrelevant prose no longer consumes every owner's context.
 
+The same resume exposed that `agent-runner` reused stable `attempt-01` paths by deleting the prior wake's logs and
+summary at each launch. Existing consumers still need those stable names for the current run, so the runner now
+atomically archives the prior `attempt-*`, `attempts.jsonl` and `summary.json` under that evidence directory before
+starting. The active run remains freshness-isolated at the original paths, while future owners can recursively
+recover official-effect history instead of relying on Codex or a transient provider transcript.
+
 The resumed Manledge owner then exposed a second shared-tool contract defect: `x-repost` advertised generic
 `post` capability in the shared registry, but its production CLI accepted only `quote` and `reply` and required a
 source post URL. The owner correctly resolved and reused the skill, yet could not publish the approved standalone
