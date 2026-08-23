@@ -89,22 +89,6 @@ def _private_model_runner(root: Path, command: list[str], label: str) -> list[st
     )
     profile.chmod(0o600)
     return ["/usr/bin/sandbox-exec", "-f", str(profile), *command]
-# These orders are worked by hand and must never be answered, delivered, or submitted by this lane.
-# They are the ones where a wrong send is expensive: LBJ's video edit already sits at AWAITING_BUYER
-# on an exact cut, and both BUYMA jobs are listing work inside a client's own account, where the
-# buyer's manual rather than a generic reply decides what is correct. The lane still observes them
-# so the backlog stays honest; it stops before any effect.
-OWNER_WORKED_TALKROOMS = {
-    "18130722",  # LBJ株式会社 — AI短尺動画編集
-    "18115694",  # kaaasu — BUYMA出品作業
-    "18128025",  # na_l5 — BUYMA出品作業 12件
-    # 2026-08-18: jedbyJUNKY. The lane and the owner both answered this room on the same day and
-    # the lane's package went out as a ZIP whose entry names were encoded without the UTF-8 flag,
-    # so the buyer replied 開けません and the transaction stalled. The contract text also turns on
-    # readings of the buyer's own prose (whose shop donates, which mark is 18+), which a generic
-    # revision cycle cannot settle. Observe only.
-    "18151989",  # jedbyJUNKYアメーバnote — デザインテンプレート利用許諾契約書
-}
 PAID_DECISION_SCHEMA_VERSION = 4
 PAID_DECISION_PROMPT_VERSION = "paid-semantic-decision-v14"
 PAID_DECISION_MODEL = "gpt-5.6-sol"
@@ -1357,14 +1341,6 @@ def _decision_only(args, item_path: Path, output: Path) -> int:
     try:
         item = _load(item_path)
         room = _text(item.get("talkroom_id"))
-        # The fourth entrypoint. A review found it unguarded and judged it non-blocking because
-        # this path only writes a local decision receipt — but that rests on prompt wording and on
-        # a read-only sandbox nobody has confirmed strips browser access. Guard it too, so the
-        # invariant is "no entrypoint touches these rooms" rather than "this one probably cannot".
-        if room in OWNER_WORKED_TALKROOMS:
-            _write(output, {"status": "reserved_for_owner", "talkroom_id": room,
-                            "effect": 0, "readback": 0, "failed": 0})
-            return 0
         if not re.fullmatch(r"[0-9]+", room):
             raise Failure("paid_work_decision")
         candidate = delivery_project.resolve_project_root(args.projects_root, item)
@@ -3849,12 +3825,6 @@ def _prepare_one(args, item_path: Path, output: Path) -> int:
     room = ""; root = None; diagnostic_stage = "load_item"
     try:
         item = _load(item_path); room, feedback = _text(item.get("talkroom_id")), _text(item.get("buyer_feedback_sha256"))
-        # Also refuse here, not only in the parent loop. A guard that sits on one call path while
-        # the effect is reachable from another is the defect that blocked the previous release.
-        if room in OWNER_WORKED_TALKROOMS:
-            _write(output, {"status": "reserved_for_owner", "talkroom_id": room,
-                            "effect": 0, "readback": 0, "failed": 0})
-            return 0
         diagnostic_stage = "resolve_project"
         root = _paid_project_root(args, item)
         if _account_owner_observe_only(args, item) is not None:
@@ -4119,11 +4089,6 @@ def _write_one(args, item_path: Path, output: Path) -> int:
     sent_effect = 0
     try:
         prepared = _load(item_path); item = prepared
-        # Before the file/remote split, because both of them can send.
-        if _text(prepared.get("talkroom_id")) in OWNER_WORKED_TALKROOMS:
-            _write(output, {"status": "reserved_for_owner", "talkroom_id": _text(prepared.get("talkroom_id")),
-                            "effect": 0, "readback": 0, "failed": 0})
-            return 0
         if _account_owner_observe_only(args, item) is not None:
             _write(output, {"status": "reserved_for_owner",
                             "talkroom_id": _text(prepared.get("talkroom_id")),
@@ -4551,17 +4516,6 @@ def run_once(args, output: Path) -> int:
         disk_blocked_reason: str | None = None
         for item in targeted_items:
             room = _text(item.get("talkroom_id"))
-            # Reserved rooms are refreshed, then dropped. Placing this guard before the read-back
-            # above stopped the lane from ever looking at those three talkrooms again — measured:
-            # their snapshots froze at the hour the guard shipped while every other room kept
-            # updating. LBJ is supposed to resume when the buyer approves, and a room nobody reads
-            # cannot produce that signal. Read always; act never.
-            if room in OWNER_WORKED_TALKROOMS:
-                rows[room] = {"talkroom_id": room, "status": "reserved_for_owner",
-                              "send_performed": False, "deduplicated": True,
-                              "formal_delivery_checkbox": False}
-                readback += 1
-                continue
             effect_policy = _account_owner_observe_only(args, item)
             if effect_policy is not None:
                 rows[room] = {"talkroom_id": room, "status": "reserved_for_owner",

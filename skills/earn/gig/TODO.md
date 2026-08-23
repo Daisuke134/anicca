@@ -1736,6 +1736,13 @@ may stop, narrow or transfer seller work but cannot invent buyer approval, permi
 The current LBJ policy is bound to the current feedback and requirements hashes, requires `satisfied_noop` with no
 new build/send, and expires automatically when a genuinely newer buyer message creates a different feedback cycle.
 The next natural Paid wake must prove this transition and preserve v107 without another customer effect.
+The deeper cause was the remaining `OWNER_WORKED_TALKROOMS` set: four buyer IDs were hardcoded at every Paid
+entrypoint and returned `reserved_for_owner` before any semantic owner could read current context. This was exactly
+the customer-specific conditional architecture the general harness forbids. It is removed. Every room now follows
+the same path: fresh official readback, compiled context, exact-cycle operator policy, semantic model decision,
+project owner and official effect/readback. Existing generic `paid-effect-policy.json` remains available for a
+hash-bound observe-only effect that is already officially visible. LBJ's stop/transfer is represented by its scoped
+policy; BUYMA and any future project can resume through shared skills rather than another buyer-ID exclusion.
 
 1. **Paid/Submission — finish first.**
    - [x] Deploy and read back Paid ignoring shared preventive `disk-pressure.block` (20 GiB) and
