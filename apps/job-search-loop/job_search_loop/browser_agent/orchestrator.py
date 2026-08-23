@@ -56,6 +56,13 @@ def validate_pass_result(evidence_dir: Path) -> str | None:
             output = str(item.get("aggregated_output") or "")
             if output.startswith("zsh:") and "unmatched" in output:
                 continue
+            command = str(item.get("command") or "")
+            if (
+                "job_search_loop.runtime" in command
+                and "job_search_loop.browser_agent.runtime" not in command
+                and "following arguments are required: command" in output
+            ):
+                continue
             return None
     return "transport_failed_without_command_failure"
 

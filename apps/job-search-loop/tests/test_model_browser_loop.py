@@ -144,6 +144,32 @@ class ModelBrowserLoopContractTests(unittest.TestCase):
                         "type": "item.completed",
                         "item": {
                             "type": "command_execution",
+                            "exit_code": 2,
+                            "command": (
+                                "/bin/zsh -lc '/opt/homebrew/bin/python3 -m "
+                                "job_search_loop.runtime'"
+                            ),
+                            "aggregated_output": (
+                                "usage: python -m job_search_loop.runtime [-h] "
+                                "{observe,finalize} ...\n"
+                                "error: the following arguments are required: command\n"
+                            ),
+                        },
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            self.assertEqual(
+                validator(root),
+                "transport_failed_without_command_failure",
+            )
+            stdout.write_text(
+                json.dumps(
+                    {
+                        "type": "item.completed",
+                        "item": {
+                            "type": "command_execution",
                             "exit_code": 7,
                             "command": (
                                 "/opt/homebrew/bin/python3 -m "

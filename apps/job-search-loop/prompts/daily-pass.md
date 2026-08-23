@@ -62,6 +62,13 @@ If the shell parser rejects malformed quoting before Python starts, no runtime c
 or external effect occurred. Correct the quoting and issue that intended command once
 with the same fresh target. A shell parse error is not `transport_failed`; only a
 nonzero result from the started Python runtime satisfies that status.
+The only valid runtime module is
+`job_search_loop.browser_agent.runtime`. If you accidentally invoke
+`job_search_loop.runtime` without a subcommand and argparse reports that `command` is
+required, no browser action or external effect occurred. Correct the module and issue
+the intended canonical command once with the same fresh target; this usage error is
+not `transport_failed`. Do not generalize this exception to any command that reached
+the canonical browser runtime.
 
 Every otherwise anonymous control has an observation-local `ref:*` stable ID,
 adapted from career-ops. Prefer that exact returned ref. A ref, label resolution,

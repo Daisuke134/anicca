@@ -5,35 +5,26 @@
 **Owner:** Daisuke Narita
 **Current verified status:** `ai.anicca.job-search-daily` is installed with
 `StartInterval=1800`; this is a 30-minute loop, not an hourly loop. Its immutable
-runtime is release `7ea4da7d6c72e89161dd6865901adb1675377ef6`, and the authenticated
-CloakBrowser daily-driver answers at CDP `:9222`. Release `f5adead1d` uses the
-Job Hunter private automation home and install-selected acct2 alias. Natural wake
-`daily-20260824-021627` proves the old auth mismatch and primary-account quota block
-are gone: Luna/xhigh signs into NVIDIA Workday, reaches the final Review surface with
-an enabled Submit, and every runtime command exits zero. No submit fence or external
-application effect occurs in run `daily-20260824-021627` because Luna calls
-`runtime finalize` and the deterministic review verifier exits 1 with
-`final review URL does not match the application`. The next release fixes that URL
-identity. Run `daily-20260824-025055` then re-enters the form, but one model-authored
-click command has an unmatched quote; zsh rejects it before Python/runtime starts, so
-no browser action or submit fence occurs. Direct final reporting is now truthful:
-mode-0600 `wake-report.json`, outbox, and Telegram message `30797` agree on
-`failed / transport_failed / resume_same_row_next_wake`. The current release gate
-teaches the model and semantic validator that a shell parse rejection before Python
-starts is an effect-free command-construction error that may be corrected once.
+runtime is release `b369fd63a09cb149b3896c1a2acafde88de5874a`, the private automation
+home resolves to the install-selected acct2 identity, and the authenticated
+CloakBrowser daily-driver answers at CDP `:9222`. Workday 10P is closed end to end:
+NVIDIA JR2008507 has exact completion UI, authoritative Gmail receipt
+`1a02ff31ecb7353d`, Ledger `submitted`, direct Telegram `30852`/`30853`, current
+`summary.v2`, and immediate repeated-wake duplicate count zero. Later wakes continue
+to discover and operate fresh Workday roles rather than stopping at that proof.
 
-The application Ledger is live and remains the state SSOT. It currently records 5
-verified Workday submissions, 2 Workday `materials_ready` rows, and 6 Workday
-`submit_unknown` rows. Run `daily-20260823-110429` completed NVIDIA JR2008309 through
-the sole launchd/CDP owner; Gmail receipt `1a02c66d77d269c2` reconciled the exact role,
-and the loop delivered Telegram message `29697` for the exact resume and `29698` for
-the receipt-bound submitted outcome. The direct job-search Telegram transport is
-therefore proven for application results. The separate pre-model checkpoint still
-uses the OpenClaw CLI and currently times out as `openclaw_rc_124`; every-wake final
-reporting must move to the same direct, fenced transport. `summary.v1.json` reflects
-the live Ledger, but `summary.v2.json` is stale and still represents an older Ledger
-snapshot. Tracking is therefore durable at the Ledger layer but not yet correct in
-the long-lived funnel projection.
+The application Ledger remains the state SSOT and `summary.v2` is rebuilt from its
+event stream on every wake. Every-wake and application-result Telegram delivery uses
+the direct fenced Bot API transport; OpenClaw is not in the daily reporting path.
+The active engineering gate is Ashby 10Q. Provider-all wakes retain Workday-first
+queue order, then continue into Ashby with the same model/browser owner and remaining
+budget. Run `daily-20260824-052945` discovers Salesforce Workday JR350390, navigates
+from a stale LangChain page to the exact posting, resumes the signed-in tenant,
+uploads the resume, and reaches required questionnaire controls. It consumes no
+submit fence and exits safely resumable after the model invokes the noncanonical
+`job_search_loop.runtime` without a command. 48ci treats only that effect-free
+argparse usage error like the already proven shell-quote correction; the canonical
+browser runtime's real nonzero failures remain fail-closed.
 
 **Current execution truth supersedes earlier historical run notes below:** Workday
 10P is live-proven. Run `daily-20260824-033952` reaches exact NVIDIA
@@ -529,6 +520,7 @@ This is the remaining implementation-order SSOT. Only the first
 | 48cf | Revalidate recovered page identity for every row | `live_partial_superseded_by_48cg` | Run `daily-20260824-045640` selects Workday while the leased page shows Sierra Ashby; the exact model/orchestrator processes are terminated after one wrong Apply click and before form fill/submit. RED/GREEN makes page mismatch set `needs_navigation=true`. Live run `daily-20260824-050210` proves that flag, but exposes that `recovery_url` still comes from the stale Sierra checkpoint. 48cg completes the boundary. |
 | 48cg | Discard stale checkpoint URL when recovered page belongs to another row | `implementation_done_release_gate` | In run `daily-20260824-050210`, runtime correctly reports Workday row plus Ashby page and `needs_navigation=true`, but returns the stale Sierra URL as recovery target. The run is terminated before navigation or browser action. RED binds a recovered Workday handle to both an Ashby page and Ashby checkpoint URL. GREEN discards checkpoint URL whenever current page identity mismatches and returns only `provider_recovery_url(canonical_row_url)`. Unit test passes; full regression/release remain. |
 | 48ch | Reject Ashby resume upload through a file textbox | `implementation_done_release_gate` | Run `daily-20260824-051846` finishes Workday JR0107219 with exact UI, then resumes LangChain Ashby with 35 steps and fills Name/Email. Luna calls upload on `Resume` role=textbox; direct CDP waits for a fileChooser event that never opens and exits nonzero. RED proves upload reached row/context work for the non-button target. GREEN requires a visible button for upload and otherwise returns exit-zero `action_rejected / upload_requires_button_control` plus fresh controls before context/file/browser action. Direct runtime tests pass 8/8. Full regression/release/live resume remain. |
+| 48ci | Recover one effect-free noncanonical runtime invocation | `implementation_done_release_gate` | Run `daily-20260824-052945` safely resumes Salesforce JR350390 through the sole owner, navigates from the stale LangChain page to the canonical Workday posting, uploads the resume, and reaches required questionnaire controls without a submit fence. Luna then invokes `job_search_loop.runtime` with no command; argparse exits 2 before browser/runtime action and Luna reports `transport_failed`. RED proves the semantic validator accepted this model-authored usage error. GREEN recognizes only this exact noncanonical-module/missing-command signature as effect-free and requires one correction to `job_search_loop.browser_agent.runtime`; canonical runtime failures remain fail-closed. Focused regression passes; full regression/release/live resume remain. |
 | 49 | Drive the fresh Workday form with the LLM agent only | `live_proven` | Two consecutive NVIDIA Workday rows were driven through CloakBrowser CDP `:9222` by Luna/xhigh from fresh visible observations and screenshots, without a scripted question mapper or fixed page workflow. |
 | 50 | Reuse or create the Workday tenant account inside the same agent session | `live_proven` | The same tenant credential/session was reused by Luna without a second browser or executor. |
 | 51 | Complete every Workday page and variable employer question | `live_proven` | Luna completed provider-varying Salesforce questions for two rows from fresh observations and reached Review. |
@@ -540,7 +532,7 @@ This is the remaining implementation-order SSOT. Only the first
 | 57 | Immediately repeat on a second fresh Workday row | `live_proven` | Consecutive NVIDIA Workday rows reach authoritative submitted state without duplicate side effects; JR2008309 additionally closes the full Telegram proof. |
 | 58 | Prove recurring Workday-only operation | `live_proven` | JR2008507 closes with exact UI, Gmail, Ledger and Telegram. Immediate existing-owner wake `daily-20260824-035611` excludes it, discovers unseen JR2020208-1, and starts only that row; duplicate side effects are zero. |
 | 59 | Close `JOB-WORKDAY-E2E-MODEL-10P` | `done` | One 30-minute owner, acct2 Luna, existing CDP, fresh Workday discovery, one fenced submit, exact completion UI, authoritative Gmail receipt, Ledger `submitted`, Telegram `30852`/`30853`, current v2 projection, immediate dedupe 0, and next-unseen-row continuation all agree. |
-| 60 | Unpark Ashby as `JOB-ASHBY-E2E-MODEL-10Q` | `live_outcome_gate_48ch` | Provider-all release fences Workday then operates multiple Ashby rows. LangChain checkpoint and Replit rendered rejection/Telegram `30916` are authoritative pre-submit outcomes with no duplicate submit. 48ce live-proves premature finalize recovery; 48cd live-proves Name/Email. Resume upload target error 48ch remains before a terminal Ashby submit outcome plus dedupe. |
+| 60 | Unpark Ashby as `JOB-ASHBY-E2E-MODEL-10Q` | `live_outcome_gate_48ci` | Provider-all release fences Workday then operates multiple Ashby rows. LangChain checkpoint and Replit rendered rejection/Telegram `30916` are authoritative pre-submit outcomes with no duplicate submit. 48ce live-proves premature finalize recovery; 48cd live-proves Name/Email; 48ch rejects the wrong upload target. Release 48ci, resume the active Workday row, then close one terminal Ashby submit outcome plus dedupe. |
 | 61 | Extend the proven loop to Greenhouse, Lever, and generic ATS | `pending_after_60` | Add provider discovery/safety hints only; never add a new scripted form/question workflow. |
 | 62 | Package Job Hunter as a canonical open-source Life Manager skill/loop | `pending_after_61` | Reuse the current `apps/job-search-loop` implementation and fixed OSS-derived patterns; do not create a second executor. A clean-home install accepts finalized resume plus email, owns one release/launchd/state/credential/Telegram contract, and reproduces the verified behavior without private data. |
 | 63 | Close inbox, interview, assessment, offer, acceptance, and start lineage | `pending_after_62` | Every external event remains bound to one application with evidence, Telegram reporting, scheduling, preparation, and final-action fences. |
@@ -2259,11 +2251,11 @@ must accumulate in the live loop:
 | 7 | Bilingual resume and official-posting language routing | `completed` | 107 tests; fourteen grounded Japanese points; A4 one-page Japanese PDF; extracted-text and visual inspection; real CLI selected the Japanese PDF for Japanese text and technical-business English PDF for English text; routed path/hash remains the Telegram receipt source |
 | 8 | Required-question autonomy | `superseded_by_10P` | Section 1.0 steps 18-21 replace the private-input wait with Candidate Memory, semantic Answer Memory, and stable always-answer inference policies |
 | 9 | Recurring interview preparation and real interview-email E2E | `implemented_waiting_external_e2e` | Persistent registration; 3-day/1-day/immediate windows; real Telegram immediate delivery plus second-tick dedupe; forced production launchd no-mail pass and private DB healthcheck; final real recruiter-email E2E waits for an interview message |
-| 10 | Shared browser-agent framework and ATS rollout | `in_progress` | 10A–10O are audit history and deterministic rails. Current gate is 10P: build the framework and close Workday E2E. 10Q applies it to Ashby, 10R to Greenhouse, 10S to Lever, and 10T to unknown supported ATS forms. |
+| 10 | Shared browser-agent framework and ATS rollout | `in_progress` | 10P Workday is complete. Current gate 10Q applies the same framework to Ashby; 10R follows with Greenhouse, 10S with Lever, and 10T with unknown supported ATS forms. |
 | 10N | `JOB-LEDGER-EVENT-10N`: repair the attributed-application transition contract | `completed` | `Ledger` appends the matching event before updating the trigger-guarded projection in the same transaction. Focused ledger tests pass (`17/17`); the live Cognition row advanced `discovered→qualified→materials_ready`, survived DB reopen, and the real ledger reports integrity `ok` with zero event/projection mismatches. |
 | 10O | `JOB-SCHEDULER-POLICY-10O`: align cadence and application objective | `implemented` | The quota short-circuit is removed and pending `materials_ready` rows are exposed. The installed production policy is every 30 minutes (`StartInterval=1800`); final completion evidence is owned by 10P. |
 | 10P | `JOB-WORKDAY-E2E-MODEL-10P`: full framework plus Workday E2E | `completed` | JR2008507 closes with exact UI, receipt `1a02ff31ecb7353d`, Ledger `submitted`, Telegram `30852`/`30853`, v2 agreement, immediate dedupe 0, and unseen JR2020208-1 continuation through the one existing owner. |
-| 10Q | `JOB-ASHBY-E2E-MODEL-10Q`: reuse the framework for Ashby | `live_outcome_gate_48ch` | Same contracts are live through LangChain checkpoint and Replit rendered validation rejection/Telegram `30916`; no Ashby submit occurs. Release upload target correction, close one terminal submit outcome, then prove dedupe. |
+| 10Q | `JOB-ASHBY-E2E-MODEL-10Q`: reuse the framework for Ashby | `live_outcome_gate_48ci` | Same contracts are live through LangChain checkpoint and Replit rendered validation rejection/Telegram `30916`; no Ashby submit occurs. Release the effect-free CLI correction, finish the active Workday checkpoint, close one terminal Ashby submit outcome, then prove dedupe. |
 | 10R | `JOB-GREENHOUSE-E2E-MODEL-10R` | `pending_after_10Q` | Provider hints only plus one authoritative Greenhouse outcome |
 | 10S | `JOB-LEVER-E2E-MODEL-10S` | `pending_after_10R` | Provider hints only plus one authoritative Lever outcome |
 | 10T | `JOB-GENERIC-ATS-MODEL-10T` | `pending_after_10S` | An unknown supported ATS form completes without a new fixed workflow |
@@ -2284,9 +2276,9 @@ not start merely because their design is already written:
 | `JOB-OUTCOME-ATTRIBUTION-11B` | `completed` | PR #1374 / merge `683ba9562` / final CI `30502556044`; immutable content-addressed generations and DB-enforced immutable assignments/outcomes persist; one external receipt may prove multiple stages only for its bound application; negative silence requires a versioned observation policy; Gmail submission confirmation is attributed; 191 job-loop and 11 runner tests pass; the redacted CLI migrated the live 5-row ledger with unchanged state counts, zero unassigned rows and integrity `ok`; projection rebuild is deterministic |
 | `JOB-LEARNING-PASS-11C` | `completed` | PR #1376 / merge `1bdbc67d3` / final CI `30507559728`; health-status follow-up PR #1377 / merge `fd26398cc`. 203 job-loop + 11 runner tests pass. Sunday 09:15 JST launchd and persistent systemd drivers replay eight safety cases, deterministically assign future canonical job keys, evaluate authoritative interview outcomes, atomically promote/close/rollback with pointer-race fencing, and send one content-addressed Telegram report. The live ledger stayed integrity `ok` with unchanged 2 submitted / 1 submit-unknown / 2 not-submitted counts; its first 0/0-sample decision was correctly inconclusive, receipt `175d3b7be5db06f88dbdc9aaf9428dfbda3fe65245a497a1f377b6271255564c`, Telegram ACK `4530`; canonical LaunchAgent reached runs=4 / last exit=0 and the three-driver healthcheck reports learning `status=success` with both SQLite integrity checks `ok` |
 | `JOB-LEDGER-EVENT-10N` | `completed` | The production fix and focused ledger suite write event then projection atomically; Cognition was repaired and reopened successfully with integrity `ok` and zero mismatches. |
-| `JOB-SCHEDULER-POLICY-10O` | `implemented` | The legacy two-slot gate is removed, pending `materials_ready` rows are exposed, and the installed owner is hourly. Authoritative application outcomes and repeated-wake queue progress move to 10P. |
+| `JOB-SCHEDULER-POLICY-10O` | `completed` | The legacy two-slot gate is removed, pending `materials_ready` rows are exposed, and the installed owner runs every 1800 seconds. Authoritative Workday outcome and repeated-wake progress are proven in 10P. |
 | `JOB-WORKDAY-E2E-MODEL-10P` | `completed` | JR2008507 exact UI, authoritative receipt, Ledger, Telegram and immediate dedupe/next-row evidence agree. |
-| `JOB-ASHBY-E2E-MODEL-10Q` | `implementation_done_release_gate` | Ashby reuses the framework unchanged except discovery/provider hints; release and close the same live evidence gates. |
+| `JOB-ASHBY-E2E-MODEL-10Q` | `live_outcome_gate_48ci` | Ashby reuses the framework unchanged except discovery/provider hints; release 48ci, close one terminal Ashby outcome, and prove repeated-wake dedupe. |
 | `JOB-GREENHOUSE-E2E-MODEL-10R` | `pending_after_10Q` | Greenhouse provider hints and one authoritative outcome close. |
 | `JOB-LEVER-E2E-MODEL-10S` | `pending_after_10R` | Lever provider hints and one authoritative outcome close. |
 | `JOB-GENERIC-ATS-MODEL-10T` | `pending_after_10S` | An unknown supported ATS form completes through the same framework. |
