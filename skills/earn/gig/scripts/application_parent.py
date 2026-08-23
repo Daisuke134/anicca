@@ -1290,6 +1290,8 @@ class CdpParentEffects:
                         y = float(button["y"])
                     except (KeyError, TypeError, ValueError) as error:
                         raise ParentContractError("submit_confirm_modal_failed") from error
+                    await self._call(ws, "Page.bringToFront", {}, call_id)
+                    call_id += 1
                     for params in _mouse_click_event_params(x, y):
                         await self._call(
                             ws,
@@ -1320,8 +1322,6 @@ class CdpParentEffects:
         ) as ws:
             call_id = 1
             await self._call(ws, "Page.enable", {}, call_id)
-            call_id += 1
-            await self._call(ws, "Page.bringToFront", {}, call_id)
             call_id += 1
             state: dict[str, object] = {}
             for _ in range(24):
@@ -1374,6 +1374,8 @@ class CdpParentEffects:
                 y = float(button["y"])
             except (KeyError, TypeError, ValueError) as error:
                 raise ParentContractError("application_button_coordinates_invalid") from error
+            await self._call(ws, "Page.bringToFront", {}, call_id)
+            call_id += 1
             for params in _mouse_click_event_params(x, y):
                 await self._call(
                     ws,
