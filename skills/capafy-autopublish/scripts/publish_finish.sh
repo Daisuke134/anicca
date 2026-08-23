@@ -17,6 +17,15 @@ PUB="$AUTO/vendor/capafy-publisher"
 LIFE_MANAGER_STATE_HOME="${LIFE_MANAGER_STATE_HOME:-$HOME/.local/state/life-manager}"
 CAPAFY_PUBLISH_HOME="${CAPAFY_PUBLISH_HOME:-$LIFE_MANAGER_STATE_HOME/runtime/capafy-publisher-home}"
 VENV="${CAPAFY_BROWSER_PYTHON:-python3}"
+
+# Direct recovery and launchd must resolve credentials from the same repo-external
+# SSOT. Load them before the key-health gate; values stay process-local.
+for ENV_FILE in "$LIFE_MANAGER_STATE_HOME/.env" "$HOME/.openclaw/.env"; do
+  if [ -f "$ENV_FILE" ]; then
+    set -a; . "$ENV_FILE" 2>/dev/null; set +a
+  fi
+done
+
 export HOME="$CAPAFY_PUBLISH_HOME"
 cd "$PUB" || { echo "❌ cd PUB"; exit 1; }
 
@@ -96,7 +105,8 @@ else
     [ "$(rstat status)" = "1" ] && break
     echo "CP3 submit attempt $attempt"
     CP3="$(refresh ship)"
-    CP3_OUT="$(timeout 30 "$VENV" "$AUTO/scripts/drive_checkpoint3.py" "$CP3" 2>&1)" || {
+    VERSION_UPDATE_INFO="Updated the Agent package and workflow for this review submission."
+    CP3_OUT="$(timeout 30 "$VENV" "$AUTO/scripts/drive_checkpoint3.py" "$CP3" "$VERSION_UPDATE_INFO" 2>&1)" || {
       printf '%s\n' "$CP3_OUT" | tail -3
       die "CP3 raw submit failed"
     }

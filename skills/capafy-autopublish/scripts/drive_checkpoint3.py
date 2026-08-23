@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import json
+import os
 import re
 import sys
 import time
@@ -140,7 +142,51 @@ CONFIRM_CLICK_JS = """(() => {
 })()"""
 
 
-def _wait_and_submit(page: _RawPage) -> None:
+def _fill_version_update_if_required(page: _RawPage, update_info: str) -> None:
+    """Populate the one required version-history textarea when the page has it."""
+    deadline = time.monotonic() + CP3_HYDRATE_TIMEOUT_S
+    state = None
+    while time.monotonic() < deadline:
+        state = page.evaluate("""(() => {
+          const visible = e => !!(e.offsetWidth || e.offsetHeight || e.getClientRects().length);
+          const xs = [...document.querySelectorAll('textarea')].filter(e => visible(e) && /変更内容|変更履歴|changes/i.test(`${e.placeholder || ''} ${e.getAttribute('aria-label') || ''}`));
+          const submit = [...document.querySelectorAll('button')].some(b => visible(b) && ['審査に提出','Submit for Review'].includes((b.textContent || '').trim()));
+          if (xs.length === 0) return {ok:true, hydrated:submit, required:false};
+          if (xs.length !== 1) return {ok:false, count:xs.length};
+          const x=xs[0]; x.scrollIntoView({block:'center'}); x.focus(); x.select();
+          return {ok:true, hydrated:true, required:true, empty:!(x.value || '').trim()};
+        })()""")
+        if isinstance(state, dict) and state.get("hydrated"):
+            break
+        time.sleep(CP3_POLL_S)
+    if not isinstance(state, dict) or not state.get("ok"):
+        raise RuntimeError(f"CP3 version-update field is ambiguous: {state}")
+    if not state.get("hydrated"):
+        raise RuntimeError("CP3 version form did not hydrate before deadline")
+    if not state.get("required") or not state.get("empty"):
+        return
+    update_info = str(update_info or "").strip()
+    if not update_info:
+        raise RuntimeError("CP3 version update description is required")
+    inserted = page.evaluate("""(() => {
+      const value=%s;
+      const visible = e => !!(e.offsetWidth || e.offsetHeight || e.getClientRects().length);
+      const xs = [...document.querySelectorAll('textarea')].filter(e => visible(e) && /変更内容|変更履歴|changes/i.test(`${e.placeholder || ''} ${e.getAttribute('aria-label') || ''}`));
+      if (xs.length !== 1) return {ok:false,count:xs.length};
+      const x=xs[0];
+      const setter=Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set;
+      setter.call(x,value);
+      x.dispatchEvent(new InputEvent('input',{bubbles:true,composed:true,inputType:'insertText',data:value}));
+      x.dispatchEvent(new Event('change',{bubbles:true}));
+      return {ok:true,value:x.value};
+    })()""" % json.dumps(update_info))
+    if not isinstance(inserted, dict) or not inserted.get("ok") or inserted.get("value") != update_info:
+        raise RuntimeError(f"CP3 version update description did not persist: {inserted}")
+    time.sleep(0.5)
+
+
+def _wait_and_submit(page: _RawPage, update_info: str = "") -> None:
+    _fill_version_update_if_required(page, update_info)
     deadline = time.monotonic() + CP3_HYDRATE_TIMEOUT_S
     while time.monotonic() < deadline:
         state = _bounded_page_evaluate(page, SUBMIT_STATE_JS, deadline)
@@ -179,11 +225,63 @@ def _wait_and_submit(page: _RawPage) -> None:
     raise RuntimeError("CP3 submit did not become disabled or show a unique confirmation")
 
 
+def _playwright_submit(url: str, update_info: str) -> None:
+    """Submit from one owned page so stale Capafy tabs cannot be selected."""
+    from playwright.sync_api import sync_playwright
+
+    pw = sync_playwright().start()
+    owned_page = None
+    try:
+        browser = pw.chromium.connect_over_cdp(_detect_cdp(), timeout=15000)
+        context = browser.contexts[0] if browser.contexts else browser.new_context()
+        owned_page = context.new_page()
+        owned_page.goto(url, wait_until="domcontentloaded", timeout=60000)
+        if not _is_review_url(owned_page.url):
+            raise RuntimeError("CP3 owned page reached the wrong target")
+
+        field = owned_page.locator('textarea[placeholder*="変更内容"], textarea[placeholder*="changes" i]')
+        field.first.wait_for(state="visible", timeout=15000)
+        if field.count() != 1:
+            raise RuntimeError(f"CP3 version-update field is ambiguous ({field.count()})")
+        if not field.first.input_value().strip():
+            if not update_info.strip():
+                raise RuntimeError("CP3 version update description is required")
+            field.first.fill(update_info)
+
+        submit = owned_page.get_by_role("button", name=re.compile(r"^(審査に提出|Submit for Review)$"))
+        submit.first.wait_for(state="visible", timeout=10000)
+        if submit.count() != 1 or submit.first.is_disabled():
+            raise RuntimeError(f"CP3 submit button is not uniquely enabled ({submit.count()})")
+        submit.first.click()
+        owned_page.wait_for_timeout(1500)
+
+        confirm = owned_page.get_by_role("button", name=re.compile(r"^(提出を確認|Confirm Submit)$"))
+        if confirm.count() == 1 and confirm.first.is_visible():
+            if confirm.first.is_disabled():
+                raise RuntimeError("CP3 confirmation button is disabled")
+            confirm.first.click()
+        owned_page.wait_for_timeout(4000)
+        if _is_review_url(owned_page.url) and submit.count() == 1 and not submit.first.is_disabled():
+            raise RuntimeError("CP3 submit did not reach a terminal UI state")
+    finally:
+        if owned_page is not None:
+            try:
+                owned_page.close()
+            except Exception:
+                pass
+        pw.stop()
+
+
 def main(argv: list[str]) -> int:
     if len(argv) < 2:
         print("ERR: need CP3 url")
         return 1
     resolved = _resolve_review_url(argv[1])
+    update_info = argv[2] if len(argv) > 2 else ""
+    if os.environ.get("CP3_TRANSPORT", "playwright").strip().lower() != "raw":
+        _playwright_submit(resolved, update_info)
+        print("RESULT: submitted")
+        return 0
     cdp = _detect_cdp()
     targets = _candidate_page_targets(cdp)
     page = _open_responsive_page(targets)
@@ -191,7 +289,7 @@ def main(argv: list[str]) -> int:
         page.call("Page.enable")
         page.call("Page.bringToFront")
         _navigate(page, resolved)
-        _wait_and_submit(page)
+        _wait_and_submit(page, update_info)
         print("RESULT: submitted")
         return 0
     finally:

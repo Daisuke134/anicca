@@ -105,6 +105,23 @@ def _raw_page_targets(cdp_base, cp2):
     return matches
 
 
+def _capafy_page_targets(cdp_base):
+    """Return existing Capafy createAgent pages that are safe to navigate to CP2."""
+    cdp_base = _validate_cdp_base(cdp_base)
+    with urllib.request.urlopen(f"{cdp_base}/json/list", timeout=8) as r:
+        targets = json.loads(r.read())
+    matches = [
+        target for target in reversed(targets if isinstance(targets, list) else [])
+        if isinstance(target, dict)
+        and target.get("type") == "page"
+        and _is_capafy_target_url(target.get("url"))
+        and target.get("webSocketDebuggerUrl")
+    ]
+    if not matches:
+        raise RuntimeError("no existing Capafy createAgent page target")
+    return matches
+
+
 class _RawPage:
     """Small synchronous page-level CDP adapter for the CP2 interactions below."""
 
@@ -496,7 +513,10 @@ def _open_responsive_page(targets):
 def _raw_cp2(cp2, key, cdp_base):
     """Drive CP2 through an existing page websocket when browser attach is unavailable."""
     _validate_cp2_url(cp2)
-    targets = _raw_page_targets(cdp_base, cp2)
+    try:
+        targets = _raw_page_targets(cdp_base, cp2)
+    except RuntimeError:
+        targets = _capafy_page_targets(cdp_base)
     page = _open_responsive_page(targets)
     try:
         page.call("Page.enable")

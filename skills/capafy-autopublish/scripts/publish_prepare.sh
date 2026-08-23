@@ -11,13 +11,14 @@
 # saves -> isConfirmedSkills=0 -> loop STOP). Per "build agents, don't hardcode", the
 # card-save step is now agent-driven, not a brittle script.
 #
-# Usage: publish_prepare.sh <skill-dir> <LISTING.md> <icon.png>
+# Usage: publish_prepare.sh <skill-dir> <LISTING.md> <icon.png> [draft-agent-id]
 # Prints (machine-greppable):  AGENT_ID=<id>  EDIT_URL=<url>  then the target pricing.
 set -uo pipefail
 
 SKILL_DIR="${1:?skill-dir required}"
 LISTING="${2:?LISTING.md required}"
 ICON="${3:?icon path required}"
+REUSE_AGENT_ID="${4:-}"
 
 # The workflow changes directory to the publisher before it reads LISTING again.
 # Resolve caller-relative paths once at the boundary so a valid repo-owned source
@@ -99,11 +100,16 @@ PY
 # up orphan drafts that eat the 5-slot cap until the loop hard-blocks. Reuse an
 # EXACT-title agent that already exists (the "(LM generated…)" auto-stub has a suffix
 # so it is NOT matched). draft -> resume its CP1; under_review/online -> already done.
-ID="$(python3 packager.py publish-list 2>/dev/null | TITLE="$TITLE" python3 -c "
+ID="$(python3 packager.py publish-list 2>/dev/null | TITLE="$TITLE" REUSE_AGENT_ID="$REUSE_AGENT_ID" python3 -c "
 import json,os,sys
 want=os.environ['TITLE'].strip()
+reuse=os.environ.get('REUSE_AGENT_ID','').strip()
 try: lst=json.loads(sys.stdin.read(),strict=False)['agents']['list']
 except Exception: sys.exit(0)
+if reuse:
+  rows=[a for a in lst if str(a.get('agentId') or '')==reuse]
+  if len(rows)!=1 or rows[0].get('agentStatus')!='draft': sys.exit(2)
+  print(reuse); sys.exit(0)
 rank={'online':3,'approved':3,'under_review':2,'draft':1}; best=None
 for a in lst:
   if (a.get('name') or '').strip()==want:
@@ -111,8 +117,15 @@ for a in lst:
     if not best or r>best[0]: best=(r,a.get('agentId'),a.get('agentStatus'))
 if best: print(best[1])
 ")"
+if [ -n "$REUSE_AGENT_ID" ] && [ "$ID" != "$REUSE_AGENT_ID" ]; then
+  die "explicit reuse target is missing or is not a draft: $REUSE_AGENT_ID"
+fi
 if [ -n "$ID" ]; then
-  echo "RESUME existing agent_id=$ID (title match) — not creating a new draft"
+  if [ -n "$REUSE_AGENT_ID" ]; then
+    echo "REUSE explicit draft agent_id=$ID — not creating a new draft"
+  else
+    echo "RESUME existing agent_id=$ID (title match) — not creating a new draft"
+  fi
   # BUG FIX 2026-07-17: this branch used to skip publish-init entirely, leaving the
   # LOCAL publish work-state (.temp/publish-work-state.json) pointed at whatever
   # agent_id a PRIOR run last touched. publish-ship then failed closed with
