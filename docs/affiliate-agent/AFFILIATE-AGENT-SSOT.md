@@ -7392,3 +7392,10 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   context still fails Aqua/user preflight with launchd 141, so it did not bypass
   the guard or kick the owner; the next proof must come from the existing
   scheduled owner reading the new `current` release.
+- Pass `20260824T015547` was already in flight on the old release before the
+  `current` swap. It spent until `02:10:54+09:00` in Telegram work, then leased
+  the browser, collected 96 candidates, and failed through the old default-auth
+  path at `02:14:40` with the same unparseable usage-limit symptom. The X ledger
+  stayed exactly 84 and no Postiz/X effect occurred. This is not evidence
+  against the new release. With installed `StartInterval=1800`, the first
+  natural owner wake that can load `24ee5b5c9` is after `02:44:40+09:00`.
