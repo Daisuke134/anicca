@@ -119,6 +119,21 @@ set -e
 if [[ "$ASHBY_DISCOVERY_RC" -ne 0 ]]; then
   printf '%s\n' "Ashby discovery failed; existing eligible queue continues" >&2
 fi
+GREENHOUSE_DISCOVERY_RESULT="$EVIDENCE/greenhouse-discovery.json"
+set +e
+"$JOB_SEARCH_PYTHON" -m job_search_loop.greenhouse_discovery \
+  --cache "$JOB_SEARCH_STATE_ROOT/official-ats-board-cache.v1.json" \
+  --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
+  --profile "$JOB_SEARCH_PROFILE" \
+  --materials-root "${XDG_DATA_HOME:-$HOME/.local/share}/anicca/job-search/materials" \
+  --prompt "$JOB_SEARCH_APP_ROOT/prompts/daily-pass.md" \
+  --output "$GREENHOUSE_DISCOVERY_RESULT" \
+  --max-jobs 1
+GREENHOUSE_DISCOVERY_RC=$?
+set -e
+if [[ "$GREENHOUSE_DISCOVERY_RC" -ne 0 ]]; then
+  printf '%s\n' "Greenhouse discovery failed; existing eligible queue continues" >&2
+fi
 "$JOB_SEARCH_PYTHON" - "$ASHBY_DISCOVERY_RESULT" "$ASHBY_COMBINED_RESULT" <<'PY'
 import json
 import os
