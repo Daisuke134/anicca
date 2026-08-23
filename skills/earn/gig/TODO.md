@@ -1776,7 +1776,11 @@ without checking prompt version or policy digest, and new receipts did not persi
 the obsolete actionable/file decision despite the current transfer policy. The shared cache contract now records and
 requires the current prompt version, schema version and exact policy SHA, includes that policy in context-input
 revalidation, and invalidates the legacy LBJ receipt. The next natural current-release wake must generate a v14
-policy-bound `satisfied_noop`; no LBJ customer effect is permitted.
+policy-bound `satisfied_noop`; no LBJ customer effect is permitted. Superseded by a genuinely newer buyer-side cycle:
+the feedback hash changed to `9da1bcff...`, so the old exact-cycle transfer policy correctly expired. The natural
+owner generated v14 `await_buyer`, recording that the buyer is performing internal caption adjustments and client
+review; preparation returned `effect=0/readback=1`. No obsolete build, send or formal delivery resumed. The lane must
+now remain replay-zero until a still-newer buyer instruction or explicit approval arrives.
 
 The durable Manledge owner has now produced another real business effect without Codex customer-work execution. It
 bound `@Upapa43252396` to official evidence for an Osaka City base, bicycle registration and a 100% rating, sent the
