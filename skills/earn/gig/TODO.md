@@ -21,7 +21,7 @@ readback, next-wake replay fence and owner-report receipts are recorded below. P
 completion, final four-lane control-plane evidence and third-device acceptance remain
 separate milestones; this cursor does not manufacture or pre-empt their evidence.
 
-Current Storefront production truth is receipt
+The pre-fix Storefront production failure was receipt
 `storefront-direct-1787477480777530000-18612`: `status=failed`, `actionable=0`,
 `effect=0`, `readback=0`, `duplicate=0`, Telegram message `30158`, reason
 `published_gallery_before_evidence_missing`. The gallery effect itself is already a
@@ -43,10 +43,10 @@ The recovery fix is GREEN on branch `fix/gig-storefront-acceptance`. Regression
 the production error, then passed after missing transient evidence was reconstructed
 only from the confirmed contract's hash-validated rollback image identity. Invalid
 JSON, permission errors and unconfirmed intents still fail closed. Storefront-focused
-verification is 45 passed plus `py_compile`; the remaining evidence is the two natural
-production wakes above.
+verification is 45 passed plus `py_compile`. At that checkpoint, the remaining
+evidence was the two natural production wakes recorded below.
 
-The loaded Storefront plist is also stale: unlike the current manifest, it does not
+The loaded Storefront plist was also stale: unlike the current manifest, it did not
 ignore the shared preventive stop flags, so the wrapper exits on
 `disk-writers.stop` even with several GiB free. The Storefront job now follows the
 existing lane contract by ignoring those two shared flags while retaining an explicit
@@ -63,7 +63,8 @@ choices and tool-less class set omitted it. The class is now registered at that
 single runner boundary, requires prompt stdin, and receives no shell/code-mode
 tools. CLI/tool-starvation RED is GREEN; Storefront and runner verification is 79
 passed. The failed wake had `effect=0`, `readback=0`, `duplicate=0`; Telegram delivery
-was unknown. The next natural wake must prove the proposal/effect/readback path.
+was unknown. At that checkpoint, the next natural wake still had to prove the
+proposal/effect/readback path; the two following paragraphs close that evidence.
 
 Storefront production acceptance is complete on release `ead7fd657`. Natural wake
 `storefront-direct-1787504743306208000-54125` updated only service `4312985` body,
