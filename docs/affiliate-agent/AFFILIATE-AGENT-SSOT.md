@@ -7542,3 +7542,28 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   decision. Only that admitted decision may materialize and publish the next
   owned article plus X placement. Exact public URL, provider transaction join,
   and approved/paid commission remain open; money is still `NO_TRANSACTIONS`.
+- The 45,139/32,768 overrun is a pre-admission versus settlement defect, not a
+  reason to increase the cap. The local ledger reserved 8,192 but could only
+  charge provider-reported usage after a Codex turn had already consumed
+  28,755 tokens. Codex CLI 0.145 exposes an under-development native
+  `features.rollout_budget` that stops at provider response boundaries; one
+  response may still overshoot, so it strengthens but does not falsely claim a
+  mathematically exact hard cap.
+- Commit `bdfc56372` injects that native rollout budget into every budgeted
+  Codex invocation with `limit_tokens` equal to the admitted pass allowance,
+  explicit unit weights, and no reminders. It classifies the CLI terminal
+  `shared rollout token budget exhausted` as a typed native budget exhaustion
+  and preserves the existing retryable `budget_blocked` owner contract. It
+  leaves unbudgeted and non-Codex routes unchanged. Ten focused routing,
+  acquisition, and due-state tests are GREEN; compile, exact vendor hash, and
+  real Codex 0.145 strict-config acceptance are GREEN. Fresh adversarial review
+  and immutable production replacement remain open before the next reset.
+- Fresh adversarial review returned `ship` with no findings. Its fake-Codex
+  execution proved native exhaustion becomes attempt class
+  `native_rollout_budget_exhausted`, summary `budget_blocked`, reason
+  `native_rollout_budget_exhausted`, and exit 75; it also proved no native cap
+  is injected into unbudgeted Codex or budgeted non-Codex routes. Affiliate
+  `current` now resolves exactly to immutable release
+  `bdfc563726cbde0122adf45bb70babfefb39aa22` via release-only installation;
+  LaunchAgents remain unchanged. The next meaningful external state change is
+  the JST daily reset followed by the existing owner's focused decision retry.
