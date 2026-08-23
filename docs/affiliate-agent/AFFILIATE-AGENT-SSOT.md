@@ -7567,3 +7567,27 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   `bdfc563726cbde0122adf45bb70babfefb39aa22` via release-only installation;
   LaunchAgents remain unchanged. The next meaningful external state change is
   the JST daily reset followed by the existing owner's focused decision retry.
+- A second capacity audit found that the successful old decision spent 27,974
+  input tokens and only 781 output tokens. The dominant avoidable input was the
+  complete 55,130-byte, 25-placement ledger supplied to a one-placement
+  decision. The active focused context needs the hash-bound exact placement
+  signals and global official commission totals, not every unrelated campaign
+  URL and history row.
+- Commit `49861c45b` reduces the current focused decision context to 3,124 bytes
+  by retaining the exact placement's public exposure, provider clicks,
+  commission, cost, unit economics, experiment, and public URL plus aggregate
+  approved/paid/pending/reversed counts and the original ledger SHA. It excludes
+  all other placement payloads from model context. Because Codex's own prefill
+  also counts toward the native meter, acquisition now uses the existing task
+  reservation of 32,768 as both pass and daily limit: at most one viable
+  decision per JST day, rather than an unrealistically small 8,192 cap followed
+  by three retries. Eleven focused tests, compile, and vendor hashes are GREEN;
+  fresh review and production replacement remain open.
+- Fresh adversarial review returned `ship` with no findings and 17 focused
+  tests GREEN. On the production ledger it independently measured roughly
+  56.6 KB to 3.1 KB context reduction, confirmed exact-placement truth and all
+  hash/seal bindings remain present, and proved a second run scope is blocked
+  by the one-pass daily limit. Affiliate `current` now resolves exactly to
+  immutable release `49861c45b997ad87f42d4a5d37df80f3fbdc38e9` via
+  release-only install with LaunchAgents unchanged. The focused decision retry
+  remains externally gated only by the next JST budget day.
