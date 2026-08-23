@@ -123,7 +123,9 @@ previously proved balance 0, no Connects transactions, Offers 0, Invites 0, Acti
 Submitted proposals 0. The five-minute provider contains no buy, billing, Plus or boost command.
 Its missing production dependency is now explicit: `ai.anicca.life-manager-upwork-browser` owns the
 existing authenticated profile on 9233 by reusing `launch_gig_browser.sh`; the provider names that
-label. Code tests pass, but disk/Aqua activation and a fresh official readback remain open.
+label. Native launchd has accepted the exact plist and release, but the host disk policy blocks the
+browser before Chromium starts. The provider therefore keeps the last official inventory unchanged;
+fresh 9233 readback remains open.
 The dedicated label `ai.anicca.life-manager-upwork-free-loop` is loaded from immutable release
 `c8d2a990351f02d72537d521c10faad2525b867c` at a 300-second interval. Two real wakes both exited
 zero, updated only `observed_at`, reproduced identical official evidence hashes and emitted zero

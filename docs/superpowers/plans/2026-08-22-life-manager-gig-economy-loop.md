@@ -464,6 +464,16 @@ U13 atomic order:
     archives and proof while recovering regenerable caches and compressing 1376 trashed Codex
     sessions into an integrity-checked archive. Headroom is still 7.6 GiB because macOS holds 15 GiB
     of swap, so build/publish/Aqua activation and fresh provider readback remain pending.
+15. **PRODUCTION LABEL ACCEPTED / DISK-BLOCKED:** native release watcher published descendant release
+    `5351f1f58483bac6eec9c1610e4224022bde9d03` and loaded both new definitions. The dedicated browser
+    plist readback is label `ai.anicca.life-manager-upwork-browser`, stable-current
+    `launch_gig_browser.sh`, port `9233`, profile `gig-upwork`, fingerprint `80138`, KeepAlive true,
+    CDP URL `9233` and dedicated owner label. The browser preflight then returned
+    `reason=disk_writers_stop`, `available_bytes=7347806208`, `required_bytes=536870912`, `effect=0`,
+    `readback=0`; 9233 stayed absent. The provider wake failed on connection refused and left the
+    official state timestamp at `2026-08-22T18:46:29.413515+00:00`. Shared 9223 remained healthy.
+    Current free space later read 6.8 GiB and macOS swap remained 15 GiB. U13 therefore waits on the
+    host disk policy, not missing code, launchd definition, browser profile or provider routing.
 
 U14 atomic order:
 
