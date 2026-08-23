@@ -346,6 +346,8 @@ IG metricsの旧0値はreach証拠ではなかった。`:9222` daily-driverは�
 
 commercial reach gateは空markerの手動作成に依存させない。各metrics wakeでReelごとのlatest snapshotを読み、現在のactive handleと一致する異なる2本以上が`source=instagrapi_private`、`metric_status=measured`、`views>0`を同時に満たす時だけhandle入りJSON receipt markerをatomic replaceする。旧account履歴、public DOM、unknown、0は解禁証拠に数えない。これにより次のData Analyst投稿は実測reachに基づくsoft CTAとbio landingを持ち、条件未達なら従来どおり非commercialでfail closedする。
 
+production owner readbackはactive handle `capafy.skills8m4q2z`で2/2 measured、plays `1/8`、`reach_healthy=true`、marker handle一致、`commercial_ok=true`を返す。初回reviewで旧account履歴でもmarker存在だけで解禁できる欠陥を検出し、metrics rowとreceiptへhandleを保存し、callerもstatusとcurrent handle一致を必須化した。focused testは1本だけ、reviewは1回だけに限定し、commit `19234deea`とfix `2d9e118d5`をmainへpushした。Instagram投稿は行わずcadenceを維持する。
+
 3本目以降のcopy experimentを学習可能にするため、live Reel ledger rowへexact `caption`、on-screen `hook`、`listing_name`を必須化する。新native URLとselected Agent IDだけではterminal successにせず、3 fieldのいずれかがblankならrotation commit 0、wrapper rc `3`にする。次のData Analyst passから`ig_reflect`はhookとreachを同じReel identityで比較できる。focused 3件、shell syntax、fresh reviewer `ship`を確認し、commit `c3004dbdf`をmainへpushする。
 
 Data Analyst production preflightでHyperFrames `0.8.8`と`edge-tts 7.2.8`は利用可能だが、STEP4が指定していた`~/.cache/instagrapi-venv/bin/python`は存在しないことを実測する。instagrapiがimportでき、poster CLI readbackがrc `0`の`/opt/homebrew/bin/python3`へ実行pathを固定する。focused 3件、shell syntax、poster `--help`、fresh reviewer `ship`を確認し、commit `7186fec9d`をmainへpushする。
