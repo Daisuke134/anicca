@@ -3811,6 +3811,18 @@ def _prepare_one(args, item_path: Path, output: Path) -> int:
             semantic = _current_paid_decision(root, item)
         except (AttributeError, KeyError, OSError, ValueError, TypeError, json.JSONDecodeError):
             semantic = _paid_decision(args, item_path, root, base)
+        if semantic.get("decision") in {"satisfied_noop", "await_buyer"}:
+            status = "satisfied_noop" if semantic.get("decision") == "satisfied_noop" else "awaiting_buyer"
+            _write(output, {
+                "status": status,
+                "talkroom_id": room,
+                "effect": 0,
+                "readback": 1,
+                "failed": 0,
+                "semantic_decision": semantic.get("decision"),
+                "_paid_prepare_status": "no_effect",
+            })
+            return 0
         file_mode = semantic.get("decision") == "actionable" and semantic.get("mode") == "file"
         if file_mode:
             diagnostic_stage = "file_prepare"
@@ -4184,6 +4196,14 @@ def _run_paid_item(args, room: str, item_file: Path, prepared_file: Path,
         break
     if prepare.returncode == 0 and prepared.get("_paid_prepare_status") == "pending":
         return {"talkroom_id": room, "status": "pending"}, 0, 0, 0, ""
+    if prepare.returncode == 0 and prepared.get("_paid_prepare_status") == "no_effect":
+        return {
+            "talkroom_id": room,
+            "status": _text(prepared.get("status")) or "satisfied_noop",
+            "send_performed": False,
+            "deduplicated": True,
+            "formal_delivery_checkbox": False,
+        }, 0, int(prepared.get("readback") == 1), 0, ""
     if prepare.returncode or prepared.get("_paid_prepare_status") != "prepared":
         step = _text(prepared.get("failed_step")) or "remote_resume"
         return {"talkroom_id": room, "status": "failed", "failed_step": step}, 0, 0, 1, step
