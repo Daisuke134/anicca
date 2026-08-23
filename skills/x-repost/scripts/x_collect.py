@@ -113,7 +113,8 @@ def scrape_articles(page, limit: int) -> list:
     return rows[:limit]
 
 
-def recon(page, queries, per_query, exclude_urls, own_handle, time_budget_seconds):
+def recon(page, queries, per_query, exclude_urls, own_handle, time_budget_seconds,
+          checkpoint=None):
     out, errors = [], []
     started = time.monotonic()
     attempted = 0
@@ -121,6 +122,8 @@ def recon(page, queries, per_query, exclude_urls, own_handle, time_budget_second
         if index and time.monotonic() - started >= time_budget_seconds:
             errors.extend({"query": pending, "reason": "time_budget_not_attempted"}
                           for pending in queries[index:])
+            if checkpoint:
+                checkpoint(out, errors, attempted)
             break
         attempted += 1
         url = ("https://x.com/search?q=" + urllib.parse.quote(q)
@@ -131,6 +134,8 @@ def recon(page, queries, per_query, exclude_urls, own_handle, time_budget_second
             rows = scrape_articles(page, per_query)
         except Exception as exc:
             errors.append({"query": q, "reason": str(exc)[:200]})
+            if checkpoint:
+                checkpoint(out, errors, attempted)
             continue
         for row in rows:
             if row["url"] in exclude_urls:
@@ -139,6 +144,8 @@ def recon(page, queries, per_query, exclude_urls, own_handle, time_budget_second
                 continue
             row["query"] = q
             out.append(row)
+        if checkpoint:
+            checkpoint(out, errors, attempted)
     # de-dupe across queries, keep the first sighting
     uniq, seen = [], set()
     for row in out:
@@ -147,6 +154,50 @@ def recon(page, queries, per_query, exclude_urls, own_handle, time_budget_second
         seen.add(row["url"])
         uniq.append(row)
     return uniq, errors, attempted
+
+
+def recon_receipt(handle, queries, rows, errors, attempted, started_at, completed_at=None):
+    """Build one mechanical receipt; eligibility remains an owner-model decision."""
+    uniq, seen = [], set()
+    for row in rows:
+        if row["url"] in seen:
+            continue
+        seen.add(row["url"])
+        uniq.append(row)
+    errors_by_query = {row.get("query"): row.get("reason") for row in errors}
+    query_receipts = []
+    for index, query in enumerate(queries):
+        attempted_query = index < attempted
+        reason = errors_by_query.get(query)
+        query_receipts.append({
+            "query": query,
+            "official_search_url": (
+                "https://x.com/search?q=" + urllib.parse.quote(query)
+                + "&src=typed_query&f=live"
+            ),
+            "attempted": attempted_query,
+            "status": ("not_attempted" if not attempted_query else
+                       "error" if reason else "completed"),
+            "error": reason,
+        })
+    return {
+        "handle": handle, "query_count": len(queries),
+        "started_at": started_at, "completed_at": completed_at,
+        "queries_attempted": attempted,
+        "queries_not_attempted": len(queries) - attempted,
+        "query_receipts": query_receipts,
+        "candidate_count": len(uniq), "candidates": uniq,
+        "checked_official_urls": sorted({row["url"] for row in uniq}),
+        "query_errors": errors,
+    }
+
+
+def write_checkpoint(path: Path, receipt: dict) -> None:
+    path = path.expanduser().resolve()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    temporary.write_text(json.dumps(receipt, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    os.replace(temporary, path)
 
 
 # X leaves a zero-count action out of the action bar's aria-label entirely: a post with no likes
@@ -258,6 +309,7 @@ def main():
     ap.add_argument("--queries", help="queries file (recon mode)")
     ap.add_argument("--per-query", type=int, default=6)
     ap.add_argument("--time-budget-seconds", type=int, default=240)
+    ap.add_argument("--output", help="atomically checkpoint recon progress after every query")
     ap.add_argument("--posted", help="state/posted.jsonl")
     args = ap.parse_args()
 
@@ -281,34 +333,22 @@ def main():
             queries = [l.strip() for l in Path(args.queries).read_text(encoding="utf-8").splitlines()
                        if l.strip() and not l.strip().startswith("#")]
             started_at = datetime.now(timezone.utc).isoformat()
+            checkpoint_path = Path(args.output) if args.output else None
+            def checkpoint(rows, errors, attempted):
+                if checkpoint_path is not None:
+                    write_checkpoint(checkpoint_path, recon_receipt(
+                        handle, queries, rows, errors, attempted, started_at,
+                    ))
             rows, errors, attempted = recon(
-                page, queries, args.per_query, already, handle, max(1, args.time_budget_seconds)
+                page, queries, args.per_query, already, handle, max(1, args.time_budget_seconds),
+                checkpoint,
             )
             completed_at = datetime.now(timezone.utc).isoformat()
-            errors_by_query = {row.get("query"): row.get("reason") for row in errors}
-            query_receipts = []
-            for index, query in enumerate(queries):
-                attempted_query = index < attempted
-                reason = errors_by_query.get(query)
-                query_receipts.append({
-                    "query": query,
-                    "official_search_url": (
-                        "https://x.com/search?q=" + urllib.parse.quote(query)
-                        + "&src=typed_query&f=live"
-                    ),
-                    "attempted": attempted_query,
-                    "status": ("not_attempted" if not attempted_query else
-                               "error" if reason else "completed"),
-                    "error": reason,
-                })
-            result = {"handle": handle, "query_count": len(queries),
-                      "started_at": started_at, "completed_at": completed_at,
-                      "queries_attempted": attempted,
-                      "queries_not_attempted": len(queries) - attempted,
-                      "query_receipts": query_receipts,
-                      "candidate_count": len(rows), "candidates": rows,
-                      "checked_official_urls": sorted({row["url"] for row in rows}),
-                      "query_errors": errors}
+            result = recon_receipt(
+                handle, queries, rows, errors, attempted, started_at, completed_at,
+            )
+            if checkpoint_path is not None:
+                write_checkpoint(checkpoint_path, result)
     json.dump(result, sys.stdout, ensure_ascii=False, indent=1)
     print()
 

@@ -3754,6 +3754,8 @@ def _run_remote_repair(args, item_path: Path, root: Path, feedback: str, base: P
                     "Immediately after every official exact readback, write one project-owned effect JSON and run "
                     f"python3 {HERE / 'effect_checkpoint.py'} --project-root {root} --effect-json <path>. "
                     "Checkpoint before searching for the next target or composing the final result. quality_status is "
+                    "For long X recon, use the production x_collect.py --output path so every completed query is "
+                    "atomically durable; do not redirect its final stdout to a zero-byte file that loses the whole pass on timeout. "
                     "qualified, qualification, or invalid; qualification_sources must contain the official URLs or "
                     "hash-bound project sources supporting the outbound claims. Reduce the ledger by effect_key with the last row effective; "
                     "a classification_revision is an audit correction, never another external effect. If the exact outbound payload asks the "

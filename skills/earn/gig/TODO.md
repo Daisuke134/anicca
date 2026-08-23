@@ -1803,6 +1803,11 @@ serve as the required machine-readable exhaustion receipt even after a complete 
 `started_at`, `completed_at`, one `query_receipts` row per intended query with attempted/status/error and official X
 search URL, plus deduplicated `checked_official_urls`. The model still decides candidate eligibility and whether the
 business scope is exhausted; the adapter only records what was mechanically attempted and observed.
+The same adapter now also supports an atomic `--output` path and rewrites that receipt after every completed query.
+This removes the recurring zero-byte failure mode where a long recon pass reached its owner timeout before final
+stdout was flushed, losing every completed observation and forcing an expensive full rerun. Paid remote owners are
+explicitly instructed to use this durable output instead of shell redirection. Partial receipts remain partial and
+cannot prove exhaustion, but the next natural wake can resume from truthful saved progress.
 
 The same natural wake produced two independent Coconala effects through the shared answer path. BUYMA room
 `18128025` truthfully identified the two duplicate proposals as AI auto-applications, apologized, told the buyer no
