@@ -44,7 +44,7 @@ from .workday_account import MachineWorkdayCredentialStore
 
 _EMAIL = re.compile(r"\b[^\s@]+@[^\s@]+\.[^\s@]+\b")
 _PHONE = re.compile(r"(?<!\w)(?:\+?\d[\d ()-]{7,}\d)(?!\w)")
-_WAKE_STEP_BUDGET = 50
+_WAKE_STEP_BUDGET = 75
 
 
 def _path_env(name: str) -> Path:
