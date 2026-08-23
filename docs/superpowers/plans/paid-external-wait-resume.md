@@ -102,13 +102,15 @@ No Coconala or JAIC mutation is permitted in this check.
 
 Run the complete tests currently present under `skills/earn/gig/tests`, record the six known baseline failures and existing post-208-test hang separately, and require no new failure attributable to this slice. The two focused files and `py_compile` must be fully green.
 
-- [ ] **Step 7: Commit the slice**
+- [x] **Step 7: Commit the slice**
 
 ```bash
 git add skills/earn/gig/scripts/paid_direct.py skills/earn/gig/scripts/paid_remote_result.py skills/earn/gig/tests/test_paid_remote_wait.py docs/superpowers/plans/paid-external-wait-resume.md
 git commit -m "fix(gig): preserve paid external waits"
 ```
 
-- [ ] **Step 8: Release and production verification**
+- [x] **Step 8: Release and production verification**
 
-Promote the immutable Life Manager release with the existing release tool, verify `current` points to the committed tree, and trigger only the existing `ai.anicca.hf-gig-paid-direct` job through `bin/launchctl-safe`. For `18183618`, require `pending`, `failed=0`, official JAIC/Gmail readback, no duplicate qualification submission, and no Coconala send. A later substantive JAIC response must resume the same project owner and continue toward booking rather than create a new project.
+Promote the immutable Life Manager release with the existing release tool, verify `current` points to the committed tree, and observe the existing `ai.anicca.hf-gig-paid-direct` job's natural wake. If an explicit trigger is required, it may run only through `bin/launchctl-safe`. For `18183618`, require `pending`, `failed=0`, official JAIC/Gmail readback, no duplicate qualification submission, and no Coconala send. A later substantive JAIC response must resume the same project owner and continue toward booking rather than create a new project.
+
+Production evidence: immutable release `e79ea8915070021530806d9851b3afe20b989c9f` becomes `current` through the existing release watcher. Two natural Paid wakes both produce `18183618 status=pending`, `failed=0`, `effect=0`, `readback=1`; the qualification effect key remains one row and the Coconala effect child remains absent. The project stays active because JAIC has not supplied a substantive eligibility response or booking path. File-by-file regression result is 57 files green, two pre-existing failure files, and one pre-existing timeout file; focused Paid tests are 14/14 green.
