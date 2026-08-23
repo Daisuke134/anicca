@@ -1537,6 +1537,19 @@ reduce scope before exceeding three files or 100 production LOC.
 7. [ ] Obtain exact-room official readback and replay-zero for every safe effect; keep byusco's exact owner
    dependency durable while Haru, Manledge and every other non-blocked purchased room continue.
 
+**Latest natural Paid continuation.** `main`, `origin/main`, and the active immutable Paid release were
+verified equal at `f95bae1119f21606a9a6a9a4f8ffca7e4eb88a56`; the unrelated dirty files listed at the
+start of this task remain untouched. The existing launchd owner naturally discovered new purchased room
+`18180857` (Chii), created a project worker in parallel with Manledge and the legacy room, compiled the
+listing/proposal/DM/talkroom context, and asked only for the missing start materials. The loop itself sent
+the concise answer once. Its result records `effect=1`, `readback=1`, `send_performed=true`,
+`deduplicated=false`, and `formal_delivery_checkbox=false`; exact-room official DOM readback at
+`2026-08-23T02:33:57.365469+00:00` contains the matching message SHA-256
+`0aa66bd32d500931dba40ab4140a58d3c0bcd3a720d9e732863e554f4be7f140`, an empty composer, and the
+room remains `取引中`. This proves autonomous discovery, independent lane creation and one real answer
+effect for the new room; it does not yet prove replay-zero, completion of its purchased work, Manledge's
+remaining 46 qualified contacts, or Paid-wide silent-pending zero.
+
 1. **Paid/Submission — finish first.**
    - [x] Deploy and read back Paid ignoring shared preventive `disk-pressure.block` (20 GiB) and
      `disk-writers.stop` (10/11 GiB hysteresis), while retaining the 512 MiB last-resort guard and
@@ -1561,6 +1574,10 @@ reduce scope before exceeding three files or 100 production LOC.
      or attachment is officially visible for the latest buyer request.
    - [x] X-post project `18171850`: approved v1 was attached and officially read back with formal
      delivery OFF.
+   - [ ] New TikTok project `18180857`: the natural loop sent and officially read back its first concise
+     start-material request with formal delivery OFF. Prove the unchanged buyer state replays with zero
+     effect, then consume the buyer's materials and continue the same project lane through real work and
+     delivery without Codex becoming the customer-work owner.
    - [ ] Review-article project `18171890`: do not represent v4 as a publishable completed article.
      Repair the generic acceptance boundary so missing contract-required screenshots, firsthand-use
      passages and required human editing cannot pass merely because the draft lists them as unresolved;
