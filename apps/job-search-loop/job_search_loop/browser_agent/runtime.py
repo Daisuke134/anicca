@@ -226,6 +226,30 @@ def _routed_resume(row: dict[str, Any], posting_text: str) -> dict[str, str]:
 
 
 def _safe_observation(observation, checkpoint, remaining_steps: int) -> dict[str, Any]:
+    controls: list[dict[str, Any]] = []
+    for control in observation.controls:
+        if not (control.label or control.stable_id):
+            continue
+        if control.role in {"link", "presentation"}:
+            continue
+        value: dict[str, Any] = {
+            "role": control.role,
+            "label": _redact(control.label),
+            "stable_id": control.stable_id,
+        }
+        if control.control_type:
+            value["type"] = control.control_type
+        if control.disabled:
+            value["disabled"] = True
+        if control.required:
+            value["required"] = True
+        if control.filled:
+            value["filled"] = True
+        if control.checked is not None:
+            value["checked"] = control.checked
+        if control.options:
+            value["options"] = [_redact(option) for option in control.options]
+        controls.append(value)
     return {
         "url": observation.url,
         "title": _redact(observation.title),
@@ -233,22 +257,7 @@ def _safe_observation(observation, checkpoint, remaining_steps: int) -> dict[str
         "validation": [_redact(value) for value in observation.validation_text],
         "challenges": list(observation.visible_challenges),
         "remaining_steps": remaining_steps,
-        "controls": [
-            {
-                "tag": control.tag,
-                "role": control.role,
-                "type": control.control_type,
-                "label": _redact(control.label),
-                "disabled": control.disabled,
-                "required": control.required,
-                "filled": control.filled,
-                "stable_id": control.stable_id,
-                "checked": control.checked,
-                "options": [_redact(value) for value in control.options],
-            }
-            for control in observation.controls
-            if control.label or control.stable_id
-        ],
+        "controls": controls,
     }
 
 
