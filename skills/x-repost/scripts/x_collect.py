@@ -20,6 +20,7 @@ import json
 import os
 import re
 import sys
+import time
 import urllib.parse
 from datetime import datetime, timezone
 from pathlib import Path
@@ -112,9 +113,16 @@ def scrape_articles(page, limit: int) -> list:
     return rows[:limit]
 
 
-def recon(page, queries, per_query, exclude_urls, own_handle):
+def recon(page, queries, per_query, exclude_urls, own_handle, time_budget_seconds):
     out, errors = [], []
-    for q in queries:
+    started = time.monotonic()
+    attempted = 0
+    for index, q in enumerate(queries):
+        if index and time.monotonic() - started >= time_budget_seconds:
+            errors.extend({"query": pending, "reason": "time_budget_not_attempted"}
+                          for pending in queries[index:])
+            break
+        attempted += 1
         url = ("https://x.com/search?q=" + urllib.parse.quote(q)
                + "&src=typed_query&f=live")
         try:
@@ -138,7 +146,7 @@ def recon(page, queries, per_query, exclude_urls, own_handle):
             continue
         seen.add(row["url"])
         uniq.append(row)
-    return uniq, errors
+    return uniq, errors, attempted
 
 
 # X leaves a zero-count action out of the action bar's aria-label entirely: a post with no likes
@@ -249,6 +257,7 @@ def main():
     ap.add_argument("--mode", choices=["recon", "engagement"], default="recon")
     ap.add_argument("--queries", help="queries file (recon mode)")
     ap.add_argument("--per-query", type=int, default=6)
+    ap.add_argument("--time-budget-seconds", type=int, default=240)
     ap.add_argument("--posted", help="state/posted.jsonl")
     args = ap.parse_args()
 
@@ -271,8 +280,12 @@ def main():
         else:
             queries = [l.strip() for l in Path(args.queries).read_text(encoding="utf-8").splitlines()
                        if l.strip() and not l.strip().startswith("#")]
-            rows, errors = recon(page, queries, args.per_query, already, handle)
+            rows, errors, attempted = recon(
+                page, queries, args.per_query, already, handle, max(1, args.time_budget_seconds)
+            )
             result = {"handle": handle, "query_count": len(queries),
+                      "queries_attempted": attempted,
+                      "queries_not_attempted": len(queries) - attempted,
                       "candidate_count": len(rows), "candidates": rows,
                       "query_errors": errors}
     json.dump(result, sys.stdout, ensure_ascii=False, indent=1)
