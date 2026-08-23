@@ -1378,6 +1378,26 @@ def _validate_verifier_runner(managed: Path, semantic_status: str,
                 raise ValueError("verifier runner proof is stale")
     return summary
 
+def _semantic_effect_contract(project_root: Path) -> tuple[dict[str, Any], str]:
+    decision = _load(project_root / "context" / "paid-work-decision.json")
+    contract = {key: decision.get(key) for key in (
+        "decision", "mode", "feedback_sha256", "requirements_sha256",
+        "required_output", "required_effect", "required_assets",
+    )}
+    if (contract["decision"] != "actionable" or contract["mode"] != "remote"
+            or not _text(contract["required_output"]) or not _text(contract["required_effect"])
+            or not isinstance(contract["required_assets"], list)):
+        raise ValueError("invalid semantic effect contract")
+    encoded = json.dumps(contract, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
+    return contract, hashlib.sha256(encoded).hexdigest()
+
+def _require_semantic_effect_binding(project_root: Path, *records: dict[str, Any]) -> str:
+    _, digest = _semantic_effect_contract(project_root)
+    if any(not isinstance(record, dict) or record.get("semantic_contract_sha256") != digest
+           for record in records):
+        raise ValueError("semantic effect contract mismatch")
+    return digest
+
 def _validate_managed_verifier(verifier: Path, project_root: Path, intent: dict[str, Any], feedback: str, digest: str,
                                min_evidence_mtime_ns: int | None = None) -> Path:
     try:
@@ -1406,6 +1426,7 @@ def _validate_managed_verifier(verifier: Path, project_root: Path, intent: dict[
                 or delivery_result.get("message_sha256") != message_sha256):
             raise ValueError("builder requirements contract mismatch")
         result = _load(verifier); desired = intent["desired_state"]; target = intent["target"]
+        _require_semantic_effect_binding(project_root, intent, delivery_result, result)
         if (not isinstance(result, dict) or result.get("verified") is not True
                 or result.get("buyer_feedback_sha256") != feedback or result.get("target") != target
                 or result.get("desired_digest", result.get("desired_state_digest")) != digest
@@ -1432,6 +1453,7 @@ def _validate_managed_verifier(verifier: Path, project_root: Path, intent: dict[
                                                  and (mtime_ns <= min_evidence_mtime_ns or mtime_ns > now_ns + 1_000_000_000))):
                 raise ValueError("verifier evidence is stale or missing")
             evidence = _load(evidence_path)
+            _require_semantic_effect_binding(project_root, evidence)
             if (not isinstance(evidence, dict) or evidence.get("target") != target
                     or evidence.get("authenticated") is not True
                     or evidence.get("requirements_sha256") != requirements_sha256
@@ -1464,6 +1486,7 @@ def _review_failure(verifier: Path, project_root: Path, intent: dict[str, Any], 
             raise ValueError("stale verifier rejection")
         result = _load(verifier)
         delivery_result = _load(project_root / "delivery" / "paid-remote-result.json")
+        _require_semantic_effect_binding(project_root, intent, delivery_result, result)
         requirements_sha256 = paid_remote_result.requirements_digest(project_root, feedback)
         message = delivery_result.get("customer_message") if isinstance(delivery_result, dict) else None
         if not isinstance(message, str) or not message.strip(): raise ValueError("invalid customer message")
@@ -3213,6 +3236,7 @@ def _repair_prompt(root: Path, item: Path, feedback: str, requirements_sha256: s
                    verifier: bool, cdp_helper: Path,
                    review_delta: list[dict[str, str]] | None = None) -> str:
     code_root = HERE.parents[2]
+    semantic_contract, semantic_contract_sha256 = _semantic_effect_contract(root)
     role = "fresh read-only Sol remote reviewer" if verifier else "Sol paid remote owner"
     tab_owner = "paid-direct-remote-verifier" if verifier else "paid-direct-remote-builder"
     mutation = "Never mutate, click submit, or send anything." if verifier else "Mutate only the authenticated target when required, idempotently."
@@ -3248,6 +3272,12 @@ def _repair_prompt(root: Path, item: Path, feedback: str, requirements_sha256: s
     return (f"You are the {role}. PROJECT_ROOT={root}. Current queue item={item}. "
             f"Read {root / 'context/current.json'} and every read_these_first path, then read the live target. "
             f"Current buyer feedback SHA256={feedback}. {mutation} "
+            "The semantic decision below is the immutable outcome contract for this cycle. You may choose tools, skills, "
+            "accounts, and execution steps autonomously, but must not replace its required effect with an easier proxy: "
+            f"{json.dumps(semantic_contract, ensure_ascii=False, sort_keys=True, separators=(',', ':'))}. "
+            f"Write semantic_contract_sha256={semantic_contract_sha256} into intent, result, and every owned evidence JSON. "
+            "The verifier must copy the same digest into its result and evidence and reject any state that does not satisfy "
+            "required_effect and required_output. "
             f"The canonical accumulated buyer requirements are {root / 'requirements/live-buyer-reply.json'} "
             f"with accumulated requirements SHA256={requirements_sha256}. Independently read that file; its feedback_sha256 must match the current feedback. "
             f"{target_contract} "
@@ -3549,6 +3579,8 @@ def _run_remote_repair(args, item_path: Path, root: Path, feedback: str, base: P
     try: requirements_sha256 = paid_remote_result.requirements_digest(root, feedback)
     except (OSError, ValueError, TypeError, json.JSONDecodeError) as error: raise Failure("context_compile") from error
     requirements_snapshot = _requirements_snapshot(root)
+    try: _, semantic_contract_sha256 = _semantic_effect_contract(root)
+    except (OSError, ValueError, TypeError, json.JSONDecodeError) as error: raise Failure("context_compile") from error
     repair = base / "remote-repair"
     repair.mkdir(parents=True, exist_ok=True)
     pass_start = time.time()
@@ -3557,6 +3589,8 @@ def _run_remote_repair(args, item_path: Path, root: Path, feedback: str, base: P
     builder_required, validation_start = True, pass_start
     try:
         intent = _load(root / "delivery" / "paid-remote-intent.json")
+        delivery_result = _load(root / "delivery" / "paid-remote-result.json")
+        _require_semantic_effect_binding(root, intent, delivery_result)
         digest = _text(intent.get("desired_state_sha256"))
         paid_remote_result.validate_builder(root, feedback, digest, resume=True)
         builder_required, validation_start = False, 0
@@ -3602,6 +3636,9 @@ def _run_remote_repair(args, item_path: Path, root: Path, feedback: str, base: P
             _normalize_builder_result(root)
             try:
                 intent = _load(root / "delivery" / "paid-remote-intent.json")
+                delivery_result = _load(root / "delivery" / "paid-remote-result.json")
+                if _require_semantic_effect_binding(root, intent, delivery_result) != semantic_contract_sha256:
+                    raise ValueError("semantic effect contract changed")
                 digest = _text(intent.get("desired_state_sha256"))
                 paid_remote_result.validate_builder(root, feedback, digest, pass_start)
             except (OSError, ValueError, TypeError, json.JSONDecodeError) as error:

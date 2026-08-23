@@ -2241,7 +2241,19 @@ a later successful example.
 - [ ] P26 — Resume the same transition after a machine/login restart.
 - [ ] P27 — Persist buyer-wait as an owned state rather than ending the workflow.
 - [ ] P28 — Consume a later buyer reply and resume without Codex/operator execution.
-- [ ] P29 — Resume the existing Manledge liability through the generic Paid owner.
+- [ ] P29 — Resume the existing Manledge liability through the generic Paid owner. A natural
+  replay exposed a generic contract-substitution defect: the current semantic decision requires
+  50 verified individual X approaches (or verified candidate exhaustion with shortage evidence),
+  but the remote owner replaced that outcome with readback of the already-published public post,
+  which explicitly adds zero to the individual-approach count. The verifier contract authenticated
+  only the owner-selected proxy state, not the semantic decision's required effect. Release source
+  now hashes `decision/mode/feedback/requirements/required_output/required_effect/required_assets`
+  into one semantic effect contract and requires the identical digest in owner intent/result,
+  every owner evidence file, verifier result, and verifier evidence. The model retains autonomous
+  tool/account/skill selection; only substitution of an easier proxy outcome is rejected. Direct
+  validation rejects the existing public-post artifacts as `semantic effect contract mismatch`.
+  Completion still requires the natural owner to perform/read back the individual outreach or
+  return honest verified exhaustion, then prove replay-zero.
 - [x] P30 — Resume the existing Haru liability through the generic Paid owner. The live
   `57ac9eb159e0` Paid owner recognized the legacy v26 artifact as already beyond five review
   iterations, performed no v27 build and no additional review, authorized the unchanged artifact
