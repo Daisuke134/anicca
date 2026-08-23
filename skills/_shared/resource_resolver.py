@@ -85,11 +85,15 @@ def skill_refs(service: str, capability: str) -> list[dict[str, Any]]:
     for name, row in slots.items():
         if not isinstance(row, dict) or row.get("status") != "live":
             continue
+        capabilities = row.get("capabilities", [])
+        if capability and capabilities and capability not in capabilities:
+            continue
         if not (tokens(name, row.get("summary"), row.get("toolDescription")) & wanted):
             continue
         result.append({key: value for key, value in {
             "slot": name, "dir": row.get("dir"), "entrypoint": row.get("entrypoint"),
             "summary": row.get("summary"), "risk": row.get("risk"),
+            "capabilities": capabilities,
         }.items() if value not in (None, "")})
     return result
 
@@ -109,7 +113,13 @@ def main() -> int:
         "browser_sessions": browser_refs(args.service, args.capability),
         "credential_policy": "Adapters read secret fields by ref; never print or place them in prompts.",
     }
-    value["available"] = bool(value["skills"] or value["accounts"] or value["browser_sessions"])
+    value["discovered"] = bool(value["skills"] or value["accounts"] or value["browser_sessions"])
+    value["effect_ready"] = bool(value["skills"] or value["browser_sessions"])
+    value["readiness_policy"] = (
+        "Static capability match only. The selected owner must verify live readiness in official UI/API; "
+        "if unavailable, resolve another authorized skill or channel instead of treating discovery as success."
+    )
+    value["available"] = value["discovered"]
     print(json.dumps(value, ensure_ascii=False, sort_keys=True))
     return 0
 

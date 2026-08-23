@@ -333,9 +333,17 @@ CloudWorks, Writer and growth owners discover the same reusable account/session/
 The pre-resolver Paid release has now naturally read the full proposal, DM thread and talkroom history, bound the
 official `@selawmqt` DOM identity, and inspected the first five candidate profiles. All five profile pages were
 available, but none exposed a direct-message action; these inspections are qualification evidence, not outreach.
-No X send or official effect receipt exists yet, so Manledge remains open. Do not replace this owner with a manual
-Codex send. Let it choose an honest contact surface, record each real effect, and then rerun under the shared
-resolver release so account/skill discovery is proven without project-specific prompt knowledge.
+The official X messages surface then resolved to `/i/chat/pin/recovery` and required the account's encrypted-message
+passcode, so the authenticated session was not DM-ready. No X send or official effect receipt exists yet, so
+Manledge remains open. Static discovery previously overclaimed `x-repost` as an outreach adapter merely because its
+service token matched X. Resources now declare exact capabilities and the resolver separately returns `discovered`
+and `effect_ready`: X outreach resolves the account but correctly reports no ready effect adapter, while X post
+resolves the existing post/readback skill and browser. The generic Paid owner is instructed to verify live readiness
+and, when one transport is unavailable, choose another authorized skill/contact surface from complete context;
+qualification questions may be the first permitted contact rather than requiring every fact to be public first.
+Do not replace this owner with a manual Codex send. Let it choose an honest contact surface, record each real effect,
+and then rerun under the shared resolver release so discovery and adaptive fallback are proven without
+project-specific prompt knowledge.
 
 **Current live cursor.** `main` and `origin/main` were verified equal immediately before this snapshot at
 `6ae5e944b`; the starting verification commit
