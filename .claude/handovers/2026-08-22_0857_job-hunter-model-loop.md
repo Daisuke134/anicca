@@ -9,15 +9,15 @@
 
 - Worktree: `/Users/anicca/lm-loops-core`
 - Branch/push target: `codex/job-search-spec-20260821`
-- HEAD: `f8dae46936ab774eafa1fee2934515b735675d9b`
-- Active immutable release: `/Users/anicca/.local/share/anicca/job-search/releases/96f49a0ff5ba29557f5725dd2bc55c8750facc1d`
-- Launchd: `ai.anicca.job-search-daily`, `StartInterval=3600`; trigger only with `launchctl kickstart -k gui/$(id -u)/ai.anicca.job-search-daily`
+- HEAD/pushed release commit: `120b779219a65f9418df3abe04163ba446db1c05`
+- Active immutable release: `/Users/anicca/.local/share/anicca/job-search/releases/120b779219a65f9418df3abe04163ba446db1c05`
+- Launchd: `ai.anicca.job-search-daily`, `StartInterval=1800`; trigger only with `launchctl kickstart -k gui/$(id -u)/ai.anicca.job-search-daily`
 - CDP: `http://127.0.0.1:9222`
 - State root: `/Users/anicca/.local/state/anicca/job-search`
-- Latest checked run: `daily-20260822-082615`
-- Latest Workday result: Rakuten `blocked / application_surface_not_found`
-- Latest Telegram checkpoint: `28150`
-- No Rakuten submit request, completion UI, or authoritative receipt evidence.
+- Latest checked run: `daily-20260823-110429`
+- Latest Workday result: NVIDIA `JR2008309` is receipt-verified `submitted`
+- Latest Telegram receipts: resume `29697`; submitted outcome `29698`
+- Authoritative Gmail receipt: `1a02c66d77d269c2`
 
 ## Architecture decision
 
@@ -168,6 +168,12 @@ unrelated dirty paths `docs/loops/x-repost.md` and `state/effective-cron/`.
   lane-local contract instead: ignore both shared preventive flags while retaining
   control-directory validation and the fail-closed 512-MiB real-capacity floor.
   Focused suite passes 14/14 and the live guard returns 0 with both flags present.
-  Build an immutable release,
-  activate it, kick only `ai.anicca.job-search-daily`, then require receipt, Ledger,
-  automatic Telegram message ID, and next-wake dedupe evidence.
+  Release `120b779219a65f9418df3abe04163ba446db1c05` then passed checksum and the
+  existing 30-minute owner completed NVIDIA `JR2008309` end to end. Luna/xhigh
+  reused the tenant credential, uploaded the routed resume, answered the visible
+  employer controls, reached Review, and submitted once. The fresh UI says
+  `Application Submitted` and Candidate Home says `Application Received`. Inbox
+  run `inbox-20260823-111827` bound receipt `1a02c66d77d269c2`, Ledger is
+  `submitted`, and Telegram ACKs are resume `29697` plus receipt-bound outcome
+  `29698`. The remaining hardening is the already-proven direct Telegram Bot API
+  restoration, then one next-wake dedupe/recurrence proof.
