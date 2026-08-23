@@ -8,13 +8,18 @@ The four lanes run from `~/gig/releases/life-manager/<sha>/`, cut from `main` by
 
 ## Current execution cursor override
 
-The active development cursor is **Storefront only**. Apply is accepted and remains
+The Storefront development cursor is **complete**. Apply is accepted and remains
 untouched. Negotiate production acceptance is recorded in `README.md` at commit
 `49e6b4d84`: a fresh official 140-thread reconciliation, two already-delivered
 estimate readbacks, five later verified replies, zero duplicate reply/estimate
 effects and five durable Telegram receipts. Paid is owned by another session and is
 outside this cursor. Older ordering text below remains historical context and does
 not authorize changing Apply, Negotiate or Paid in this slice.
+
+There is no remaining Storefront product TODO in this cursor. Its official mutation,
+readback, next-wake replay fence and owner-report receipts are recorded below. Paid
+completion, final four-lane control-plane evidence and third-device acceptance remain
+separate milestones; this cursor does not manufacture or pre-empt their evidence.
 
 Current Storefront production truth is receipt
 `storefront-direct-1787477480777530000-18612`: `status=failed`, `actionable=0`,
