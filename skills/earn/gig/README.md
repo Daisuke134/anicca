@@ -264,10 +264,18 @@ These are enforced in code, not by convention.
 
 Honest list. These are measured, not suspected.
 
-- **A natural buyer-message latency sample is still pending.** Negotiate now keeps
-  discovery alive every 30 seconds and dispatches exact-thread work to two workers;
-  idle probes and process liveness are verified. The next real unread message is
-  still needed to record end-to-end official-readback latency under five minutes.
+- **The reference Mac has completed Negotiate production acceptance.** A natural
+  reconciliation read all 140 official inbox cards over five terminally proven
+  pages (`30/30/30/30/20`), freshly read all 140 threads, and reused none. It found
+  no reply to send, two prior estimates to confirm, and 138 no-send conversations
+  (`observe 102`, `stop_contact 15`, `semantic_failed 11`,
+  `officially_unrepliable 10`). Both estimates were read back as already delivered,
+  so the pass made zero reply or estimate effects. Later natural traffic produced
+  five verified replies; each has one verified intent and seller-side readback,
+  `duplicate_effect=0`, and a durable Telegram `reply_verified` receipt (provider
+  message IDs `30152`, `30379`, `30428`, `30583`, and `30625`). Three fresh samples
+  completed in 42, 109, and 8 seconds. This evidence accepts Negotiate only; it does
+  not accept Paid or Storefront.
 - **The paid lane's feedback digest is not stable.** The window that assembles
   the latest buyer feedback has been observed regressing to older concatenated
   text within the same day, which means the digest a builder would act on cannot
