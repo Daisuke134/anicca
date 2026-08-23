@@ -36,6 +36,12 @@ class CtaInstrumentationTests(unittest.TestCase):
                                         "observed_at": "2026-08-21T00:00:00+00:00"},
                     "transactions": {"count": 0, "state": "OBSERVED"},
                 }]},
+                {"snapshot_sha256": "0" * 64, "placements": [{
+                    "placement_id": "subtitle-en-1",
+                    "provider_clicks": {"count": 7, "unique_count": 6,
+                                        "observed_at": "2026-08-23T00:00:00+00:00"},
+                    "transactions": {"count": 0, "state": "OBSERVED"},
+                }]},
                 {"snapshot_sha256": "b" * 64, "placements": [
                     {"placement_id": "subtitle-en-1",
                      "provider_clicks": {"count": 7, "unique_count": 6,

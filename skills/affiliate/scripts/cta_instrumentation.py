@@ -371,8 +371,15 @@ def join_provider_interval(state):
             for row in snapshot.get("placements", [])
         ]
         return min((value for value in values if isinstance(value, str)), default="")
-    baselines = [row for row in snapshots if observed_at(row) and observed_at(row) <= interval_start]
-    current = max(snapshots, key=observed_at, default={})
+    indexed_snapshots = list(enumerate(snapshots))
+    baselines = [
+        (index, row) for index, row in indexed_snapshots
+        if observed_at(row) and observed_at(row) <= interval_start
+    ]
+    current = max(
+        indexed_snapshots, key=lambda item: (observed_at(item[1]), item[0]),
+        default=(-1, {}),
+    )[1]
     report = json.loads((state / "provider-reports" / "partnerstack" / "latest.json").read_text())
     if not baselines or observed_at(current) < interval_start or report.get("observed_at", "") < interval_start:
         return {
@@ -381,7 +388,7 @@ def join_provider_interval(state):
             "current_link_observed_at": observed_at(current) or None,
             "current_transaction_observed_at": report.get("observed_at"),
         }
-    baseline = max(baselines, key=observed_at)
+    baseline = max(baselines, key=lambda item: (observed_at(item[1]), item[0]))[1]
     baseline_rows = {row["placement_id"]: row for row in baseline["placements"]}
     current_rows = {row["placement_id"]: row for row in current["placements"]}
     cta_rows = {row["placement_id"]: row for row in cta["placements"]}
