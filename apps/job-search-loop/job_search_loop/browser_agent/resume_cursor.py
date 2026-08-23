@@ -58,7 +58,9 @@ class RowResumer:
             self._session.page(handle).url, canonical_url
         )
         recovery_url = checkpoint.current_url or canonical_url
-        if normalize_url(recovery_url) == normalize_url(canonical_url):
+        if not page_matches:
+            recovery_url = provider_recovery_url(canonical_url)
+        elif normalize_url(recovery_url) == normalize_url(canonical_url):
             recovery_url = provider_recovery_url(canonical_url)
         return ResumeCursorV1(
             handle,

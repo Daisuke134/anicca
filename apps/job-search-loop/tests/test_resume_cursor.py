@@ -24,7 +24,7 @@ class ResumeCursorTests(unittest.IsolatedAsyncioTestCase):
             "a" * 64,
             (),
             20,
-            "https://example.wd5.myworkdayjobs.com/job/Workday-Role_JR123",
+            "https://jobs.ashbyhq.com/sierra/role/application",
         )
         checkpoints = Mock()
         checkpoints.load.return_value = checkpoint
