@@ -1609,6 +1609,19 @@ profile inspection found three restricted-read denials and eleven project-write 
 probe proved context writes are blocked with no file created. A natural wake must still prove the legacy owner
 can read allowed context and reach an honest disposition.
 
+The same wake exposed cross-loop browser starvation rather than a Manledge-specific failure. The independent
+`x-repost` loop acquired `x:anicca` before recon and retained it through several model-only drafting calls, while
+the Manledge owner correctly waited instead of colliding. The shared X loop now releases the identity immediately
+after recon/engagement and reacquires it only around the publish plus official permalink readback. Its finish path
+tracks actual lease ownership so it cannot release a lease another loop acquired later. The OSS lifetime wrapper
+now lives at `skills/browser/with-browser.sh`, binds the lease to its own durable PID rather than the short-lived
+`$(guard acquire)` subshell, exports CDP only to the child, and releases on normal exit or signal. Paid owners and
+`x-repost` both reference this same installable wrapper. Commits `9236ffbf0` and `15790c972` are on `origin/main`;
+gig current includes them through immutable release `c905b4b903d0de2691a27935a703f10c63eea06a`, and common loop
+current is immutable release `20260823T122053-15790c97`. The already-running pre-fix X and Paid owners were not
+interrupted. Their existence is not acceptance: the next natural owners must prove bounded lease handoff, write
+the pending Manledge classification revision, and continue real official effects without collision or duplicate.
+
 1. **Paid/Submission — finish first.**
    - [x] Deploy and read back Paid ignoring shared preventive `disk-pressure.block` (20 GiB) and
      `disk-writers.stop` (10/11 GiB hysteresis), while retaining the 512 MiB last-resort guard and
