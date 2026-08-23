@@ -7437,3 +7437,11 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   pending/approved/paid/reversed remain all zero with `NO_TRANSACTIONS` and
   `NO_APPROVED_OR_PAID_ROWS`. The restored Repost effect is therefore verified
   distribution but still non-money.
+- Repost recovery is production-complete. Existing owner pass
+  `20260824T032514` loaded release `63154b93`, made no Postiz call, and exact-read
+  `https://x.com/selawmqt/status/2091584652951879730` through reconcile mode.
+  It updated the existing terminal row to `status=recovered`, kept ledger line
+  count exactly 85, logged `generic original reconciled without duplicate
+  publish`, exited, and advanced `.last-pass` to `2026-08-24T03:25:51+09:00`.
+  This closes the stale-health and JSON/auth/readback defects with owner-owned
+  production evidence. Affiliate money remains open at zero transactions.
