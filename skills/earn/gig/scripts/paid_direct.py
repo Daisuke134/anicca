@@ -3459,7 +3459,11 @@ def _run_consultation_review(args, item_path: Path, root: Path, feedback: str, b
             f"{root / 'context/paid-work-decision.json'}. The answer must satisfy that decision's required_output and "
             f"required_effect without contradicting primary evidence. {attachment_instruction} "
             "Write a concrete, safe Japanese answer to the exact current buyer request. Distinguish proved facts from "
-            "uncertainty and invent nothing. Never ask for a fact available anywhere in current.json or any "
+            "uncertainty and invent nothing. Compress the buyer-facing response to the smallest useful answer: lead "
+            "with the conclusion, keep only the decisive reasons and the next action, and remove repeated explanation, "
+            "internal research narration, exhaustive alternatives, and facts the buyer already knows. Use short natural "
+            "paragraphs; provide a long report only when the buyer explicitly requested a detailed written report. "
+            "Never ask for a fact available anywhere in current.json or any "
             "read_these_first source. Ask at most one question only when the absent fact is indispensable to truthful "
             "work; otherwise answer or produce the non-blocked work now. Resolve every previous "
             f"fresh-review issue: {json.dumps(issues, ensure_ascii=False)}. Return blocked only when no safe answer can be sent.",
