@@ -70,7 +70,7 @@ def _semantic_payload(sources: dict) -> dict:
         "growth_signal": {
             "signal": growth.get("signal") or "unknown",
             "company_orders": growth.get("company_orders"),
-            "winner_agent_id": (growth.get("winner") or {}).get("agentId") if isinstance(growth.get("winner"), dict) else None,
+            "winner_agent_id": ((growth.get("winner") or {}).get("agent_id") or (growth.get("winner") or {}).get("agentId")) if isinstance(growth.get("winner"), dict) else None,
             "attribution_status": growth.get("attribution_status"),
         },
     }

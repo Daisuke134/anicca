@@ -50,9 +50,10 @@ def sources() -> dict:
             "money_status": {"settled_mrr_usd": "unknown_no_seller_subscription_source"},
         },
         "growth": {
-            "signal": "unattributed_sales",
-            "company_orders": 5,
-            "attribution_status": "company_orders_exist_agent_sales_unavailable",
+            "signal": "sales",
+            "company_orders": 1,
+            "winner": {"agent_id": "6839055303", "name": "Academic Humanizer"},
+            "attribution_status": "official_seller_ranking",
         },
     }
 
@@ -68,10 +69,10 @@ def test_receipt_joins_skill_slots_post_money_under_one_run_id() -> None:
     assert receipt["money"]["gross_usd"] == "19.98"
     assert receipt["money"]["settled_mrr_usd"] is None
     assert receipt["growth_signal"] == {
-        "signal": "unattributed_sales",
-        "company_orders": 5,
-        "winner_agent_id": None,
-        "attribution_status": "company_orders_exist_agent_sales_unavailable",
+        "signal": "sales",
+        "company_orders": 1,
+        "winner_agent_id": "6839055303",
+        "attribution_status": "official_seller_ranking",
     }
     assert receipt["telegram"] == {"status": "pending", "message_id": None}
 
