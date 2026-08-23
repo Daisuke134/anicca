@@ -7364,3 +7364,21 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   180-second timeout. That is classified as `network`, not falsely as JSON or
   quota success, and is not production E2E proof. Both remotes contain
   `1aa44b3a0`; fresh read-only review and owner-owned release E2E remain next.
+- Production integration commit `63be5d10b` merges canonical main
+  `33e4c729e` so the shared `~/loops/current` release cannot regress sibling
+  loops. The merge retains the live-proven Affiliate/Postiz/original Repost
+  tree and adopts only the later bounded-query checkpoint work. Diff audit
+  caught and removed a partial browser-lease merge that cleared CDP before
+  Postiz readback; a regression test now requires the working
+  `BROWSER_LEASED` contract through effect readback.
+- Fresh review then found provider classification could read quota words from
+  non-error JSONL events and could inherit stderr from a prior model call.
+  Commit `24ee5b5c9` limits signals to Codex `error`/`turn.failed` events plus
+  plain stderr, resets stderr per call, and excludes final model output from
+  provider classification. A fake-Codex shell harness now proves quota exits
+  zero with heartbeat and publish zero, while auth/network/timeout exit one
+  without heartbeat or publish. The complete suite is 34/34 GREEN. Full
+  immutable release probe is 63,000 KiB, read-only, SHA-bound, and passes the
+  same suite; `LOOPS_RELEASE_PATHS='.'` is required on macOS Bash 3.2 to avoid
+  the cutter's empty-array failure. Final re-review and owner production E2E
+  remain open.
