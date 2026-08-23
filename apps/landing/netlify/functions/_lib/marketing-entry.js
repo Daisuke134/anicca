@@ -1,6 +1,6 @@
 const { randomUUID } = require("node:crypto");
+const { PLACEMENT, isAffiliatePlacement } = require("./affiliate-placement");
 
-const PLACEMENT = /^elevenlabs-discovered-[a-z0-9][a-z0-9-]{2,60}-en-1$/;
 
 function makeSupabasePersist({ url, serviceKey, fetchImpl = fetch }) {
   const endpoint = `${url.replace(/\/$/, "")}/rest/v1/marketing_click_receipts`;
@@ -19,7 +19,7 @@ function makeEntryHandler({ persist, now = () => new Date().toISOString(), recei
     if (event.httpMethod !== "POST") return { statusCode: 405, headers: { allow: "POST" }, body: "" };
     let body;
     try { body = JSON.parse(event.body || "{}"); } catch { return { statusCode: 400, body: "" }; }
-    if (!PLACEMENT.test(body.placement_id || "") || body.source !== "X")
+    if (!isAffiliatePlacement(body.placement_id) || body.source !== "X")
       return { statusCode: 400, body: "" };
     const receipt = { schema_version: 1, receipt_id: receiptId(), campaign_token: "entry_x",
       product_id: `entry:${body.placement_id}`, clicked_at: now() };

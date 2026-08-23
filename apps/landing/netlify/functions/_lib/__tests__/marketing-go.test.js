@@ -171,6 +171,9 @@ test("compact affiliate experiment tokens preserve exact placement redirect", as
   assert.equal((await handler(event(
     "af_elevenlabs-discovered-subtitle-translator-en-experiment-nothex123456-1",
   ))).statusCode, 404);
+  assert.equal((await handler(event(
+    `af_elevenlabs-discovered-${"a".repeat(61)}-en-experiment-c682536aed63-1`,
+  ))).statusCode, 404);
 });
 
 // AFFILIATE_CTA_V2

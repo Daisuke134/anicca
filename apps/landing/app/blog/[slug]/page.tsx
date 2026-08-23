@@ -86,20 +86,26 @@ function loadPost(slug: string): ResearchPost | null {
 }
 
 // AFFILIATE_CTA_V1: fixed-host redirect; no arbitrary destination input.
+const AFFILIATE_PLACEMENT = /^elevenlabs-discovered-[a-z0-9][a-z0-9-]*-en(?:-experiment-[a-f0-9]{12})?-1$/;
+
+function isAffiliatePlacement(value: string): boolean {
+  return value.length <= 80 && AFFILIATE_PLACEMENT.test(value);
+}
+
 function trackedAffiliateHref(href: string): string {
   try {
     const url = new URL(href);
     const placement = url.pathname.replace(/^\/+|\/+$/g, "");
     if (url.protocol === "https:" && url.hostname === "try.elevenlabs.io" &&
-        !url.search && !url.hash && /^[a-z0-9][a-z0-9-]{2,80}$/.test(placement))
+        !url.search && !url.hash && isAffiliatePlacement(placement))
       return `/go/af_${placement}`;
   } catch {}
   return href;
 }
 
 function affiliatePlacement(md: string): string | null { // AFFILIATE_ENTRY_V1
-  const match = md.match(/https:\/\/try\.elevenlabs\.io\/(elevenlabs-discovered-[a-z0-9][a-z0-9-]*-en(?:-experiment-[a-f0-9]{12})?-1)/);
-  return match && match[1].length <= 80 ? match[1] : null;
+  const match = md.match(/https:\/\/try\.elevenlabs\.io\/(elevenlabs-discovered-[a-z0-9][a-z0-9-]*-en(?:-experiment-[a-f0-9]{12})?-1)(?=$|[\s)"'<])/);
+  return match && isAffiliatePlacement(match[1]) ? match[1] : null;
 }
 
 function renderMarkdown(md: string): string {
@@ -123,7 +129,7 @@ function renderMarkdown(md: string): string {
   };
   const inline = (s: string) =>
     s
-      .replace(/https:\/\/try\.elevenlabs\.io\/[a-z0-9][a-z0-9-]{2,80}/g, trackedAffiliateHref)
+      .replace(/https:\/\/try\.elevenlabs\.io\/elevenlabs-discovered-[a-z0-9][a-z0-9-]*-en(?:-experiment-[a-f0-9]{12})?-1(?=$|[\s)"'<])/g, trackedAffiliateHref)
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
