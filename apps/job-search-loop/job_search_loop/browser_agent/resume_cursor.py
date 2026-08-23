@@ -54,6 +54,9 @@ class RowResumer:
             checkpoint.session_generation,
         )
         handle, recovered = await self._session.resume(prior)
+        page_matches = same_application_surface(
+            self._session.page(handle).url, canonical_url
+        )
         recovery_url = checkpoint.current_url or canonical_url
         if normalize_url(recovery_url) == normalize_url(canonical_url):
             recovery_url = provider_recovery_url(canonical_url)
@@ -61,6 +64,6 @@ class RowResumer:
             handle,
             checkpoint,
             chain[-1].evidence_sha256 if chain else None,
-            not recovered,
+            not recovered or not page_matches,
             recovery_url,
         )
