@@ -391,6 +391,14 @@ must be serialized. The common owner contract now states that boundary. The alwa
 also compacted to slot/capability references rather than copying every skill's long description; all skills remain
 discoverable through `resolve`, while irrelevant prose no longer consumes every owner's context.
 
+That same natural owner recovered all three prior individual X effects from official DOM and fsync-checkpointed
+them into `projects/18169985/delivery/paid-remote-progress.jsonl`: one `qualified` effect for `@syo19861103` counts
+toward 50, one `qualification` effect for `@26AnNPNH5Qr8bBK` remains awaiting an answer and does not count yet, and
+one `invalid` effect for `@toru3569` is retained for replay safety but excluded from the count. Each row binds the
+exact seller receipt URL, payload hash, requirement hash, semantic-contract hash and official qualification
+sources. This proves recovery plus durable classification without a manual Codex send; it does not yet prove the
+remaining 49 qualified contacts, verified reachable exhaustion, timeout continuation, or restart replay-zero.
+
 The same resume exposed that `agent-runner` reused stable `attempt-01` paths by deleting the prior wake's logs and
 summary at each launch. Existing consumers still need those stable names for the current run, so the runner now
 atomically archives the prior `attempt-*`, `attempts.jsonl` and `summary.json` under that evidence directory before
