@@ -7516,3 +7516,29 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   as this slice's GREEN. Fresh adversarial review, immutable release placement,
   existing-owner compact-plan publication, exact public permalink readback,
   and official transaction readback remain open in that order.
+- Fresh adversarial review of `9d4bba75d` returned `ship` with no findings and
+  17 relevant tests GREEN. Immutable Affiliate `current` now resolves exactly
+  to release `9d4bba75d5d4851142c8cb00b260afbbd74ac6b9`; release installation did not
+  modify LaunchAgents. Existing source and composition owners then created the
+  compact plan at `2026-08-24T04:25:49+09:00`, sealed its inbox at 04:27:58,
+  accepted its lineage as `READY_FOR_POLICY`, and produced a policy receipt
+  with all 16 checks true, semantic audit PASS, and zero unsupported claims.
+  The compact placement is 70 characters and therefore passes the 80-character
+  metadata gate.
+- The existing main owner correctly did **not** publish that compact artifact.
+  Decision `c682536a...` belongs to the older Dev.to baseline, controls nested
+  placement `...experiment-1ecf26fe47e1-1`, and measures page views. The active
+  focused cohort instead controls base placement
+  `elevenlabs-discovered-subtitle-translator-en-1` and permits only an exact
+  official transaction-count metric. `focused_publication_allowed` therefore
+  rejects the stale experiment contract; publishing it would violate the
+  current money-focused experiment rather than advance revenue.
+- The next atomic item is baseline `7dbd2477...`, the sealed focused baseline
+  with transaction count zero and required metric
+  `EXACT_PLACEMENT_OFFICIAL_TRANSACTION_COUNT`. Its current acquisition result
+  is retryable `BUDGET_BLOCKED`: daily consumption is 45,139 against limit
+  32,768, so no provider execution occurred. After the next JST daily reset,
+  the existing acquisition owner must produce one focused, transaction-metric
+  decision. Only that admitted decision may materialize and publish the next
+  owned article plus X placement. Exact public URL, provider transaction join,
+  and approved/paid commission remain open; money is still `NO_TRANSACTIONS`.
