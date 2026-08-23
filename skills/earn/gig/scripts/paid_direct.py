@@ -3731,6 +3731,19 @@ def _remote_wait_is_fresh(root: Path, feedback: str, digest: str,
     return 0 <= age < PAID_REMOTE_WAIT_RECHECK_SECONDS
 
 
+def _remote_wait_before_decision(root: Path, item: dict[str, Any],
+                                 now: float | None = None) -> bool:
+    feedback = _text(item.get("buyer_feedback_sha256"))
+    intent = _load(root / "delivery" / "paid-remote-intent.json")
+    result = _load(root / "delivery" / "paid-remote-result.json")
+    _, semantic_sha256 = _semantic_effect_contract(root)
+    if _require_semantic_effect_binding(root, intent, result) != semantic_sha256:
+        return False
+    return _remote_wait_is_fresh(
+        root, feedback, _text(intent.get("desired_state_sha256")), now=now,
+    )
+
+
 def _run_remote_repair(args, item_path: Path, root: Path, feedback: str, base: Path) -> Path:
     context = root / "context" / "current.json"
     context.parent.mkdir(parents=True, exist_ok=True)
@@ -3927,6 +3940,17 @@ def _prepare_one(args, item_path: Path, output: Path) -> int:
         if _text(preflight_row.get("buyer_feedback_sha256")) != feedback: raise Failure("remote_resume")
         diagnostic_stage = "dm_context"
         _collect_dm_context(args, {**item, **preflight_row}, root, base)
+        diagnostic_stage = "external_wait_resume"
+        try:
+            if _remote_wait_before_decision(root, item):
+                progress = root / "delivery" / "paid-remote-progress.jsonl"
+                _write(output, {"status": "pending", "talkroom_id": room, "failed": 0,
+                                "failed_step": None, "effect": 0, "readback": 1,
+                                "progress_ledger": str(progress),
+                                "_paid_prepare_status": "pending"})
+                return 0
+        except (AttributeError, OSError, ValueError, TypeError, json.JSONDecodeError, Failure):
+            pass
         diagnostic_stage = "semantic_decision"
         try:
             semantic = _current_paid_decision(root, item)

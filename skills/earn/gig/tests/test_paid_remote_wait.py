@@ -39,6 +39,18 @@ def blocked_project(tmp_path: Path) -> tuple[Path, str, str]:
     digest = hashlib.sha256(json.dumps(
         desired, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
     ).encode()).hexdigest()
+    semantic_contract = {
+        "decision": "actionable",
+        "mode": "remote",
+        "feedback_sha256": feedback,
+        "requirements_sha256": requirements_sha,
+        "required_output": "Report the completed provider outcome.",
+        "required_effect": "Wait for and process the provider response.",
+        "required_assets": [],
+    }
+    semantic_sha = hashlib.sha256(json.dumps(
+        semantic_contract, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+    ).encode()).hexdigest()
     write_json(root / "requirements/live-buyer-reply.json", {
         "feedback_sha256": feedback,
         "accumulated_requirements": [{**requirement, "sha256": requirement_sha}],
@@ -50,6 +62,7 @@ def blocked_project(tmp_path: Path) -> tuple[Path, str, str]:
         "target": "https://provider.example/status",
         "desired_state": desired,
         "desired_state_sha256": digest,
+        "semantic_contract_sha256": semantic_sha,
     })
     write_json(root / "delivery/paid-remote-result.json", {
         "status": "blocked",
@@ -59,6 +72,7 @@ def blocked_project(tmp_path: Path) -> tuple[Path, str, str]:
         "authenticated": True,
         "observed_state": desired,
         "after_state_digest": digest,
+        "semantic_contract_sha256": semantic_sha,
         "blocker": "The provider has acknowledged the request but has not replied.",
         "business_outcome": {
             "required_effect_satisfied": False,
@@ -72,6 +86,7 @@ def blocked_project(tmp_path: Path) -> tuple[Path, str, str]:
             }],
         },
     })
+    write_json(root / "context/paid-work-decision.json", semantic_contract)
     return root, feedback, digest
 
 
@@ -161,3 +176,12 @@ def test_future_dated_remote_wait_is_not_fresh(tmp_path):
     mtime = (root / "delivery/paid-remote-result.json").stat().st_mtime
 
     assert paid._remote_wait_is_fresh(root, feedback, digest, now=mtime - 1) is False
+
+
+def test_current_wait_is_reused_before_semantic_decision(tmp_path):
+    paid = load("paid_direct")
+    root, feedback, _digest = blocked_project(tmp_path)
+
+    assert paid._remote_wait_before_decision(
+        root, {"buyer_feedback_sha256": feedback}, now=None,
+    ) is True

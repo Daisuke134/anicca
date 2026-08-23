@@ -4,7 +4,7 @@
 
 **Goal:** Reuse a current validated external-wait receipt without launching the paid remote owner every five minutes, while periodically rechecking the official provider with the same project owner.
 
-**Architecture:** Add one deterministic freshness predicate around the existing `validate_wait()` contract. A fresh wait immediately follows the existing `remote_progress -> pending` path; an expired wait falls through to the existing owner and official provider readback. The model still decides the external work; code owns only the timer and receipt validation.
+**Architecture:** Add one deterministic freshness predicate around the existing `validate_wait()` contract and apply it after DM synchronization but before semantic-decision model execution. A fresh wait immediately returns pending; an expired or hash-mismatched wait falls through to the existing semantic owner and official provider readback. The model still decides the external work; code owns only the timer and receipt validation.
 
 **Tech Stack:** Python 3.14, pytest, existing Paid scripts.
 
@@ -25,11 +25,12 @@
 
 **Interfaces:**
 - Consumes: validated `paid-remote-result.json` mtime and current feedback/requirements/digest.
-- Produces: `_remote_wait_is_fresh(root, feedback, digest, now) -> bool`; `_run_remote_repair()` raises existing `Failure("remote_progress")` before model launch when true.
+- Produces: `_remote_wait_is_fresh(root, feedback, digest, now) -> bool` and `_remote_wait_before_decision(root, item, now) -> bool`; `_prepare_one()` returns the existing pending checkpoint before either decision or remote-owner model launch when true.
 
 - [x] Write RED tests proving a current wait is fresh, a wait older than 3600 seconds is expired, and a future-dated receipt is rejected.
 - [x] Run `python3 -m pytest skills/earn/gig/tests/test_paid_remote_wait.py -q` and observe missing `_remote_wait_is_fresh` failures.
 - [x] Add the pure freshness predicate and call it before `validate_builder()` in `_run_remote_repair()`.
+- [x] Move the effective fast path before semantic-decision execution after production showed per-wake decision drift invalidated the later cache.
 - [x] Run focused tests plus `py_compile` GREEN.
 - [x] Run all gig test files with the same per-file timeout gate and require no new failure file.
 - [ ] Commit, push to main, and let the existing release watcher publish naturally.
