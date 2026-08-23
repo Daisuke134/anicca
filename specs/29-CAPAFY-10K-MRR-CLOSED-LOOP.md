@@ -382,6 +382,8 @@ GUI Aquaが存在しない間も既存4 ownerを同じLife Manager sourceから�
 
 C19の2 incomplete draftを同じAgent/version IDのまま回収する。YouTube `7686597754`はLife Managerの`skills/capafy/catalog/youtube-script-writer/`へ正本化し、repo外credential SSOTをfinish開始前に読む修正後、CP1→OpenRouter CP2→package→CP3を通す。official readbackは`status=1 / audit=1 / skills=1 / config=1`、package URLあり。Amazon Gallery `7631594519`はonline Amazon Kitとの重複を提出せず、明示draft-only reuse境界でTalent Review Deck Writerへ置換する。現行marketplace 6検索に直接一致がないため、closest proven Slide Maker 22 salesの`$9.99/week + $24.99/month`構造を採り、PPTX生成を主張しない。remoteは同じAgent/version、週24h trial、月72h trial、repo-owned skill、固有test case、新logo、OpenRouter CP2、package URL、`status=1 / audit=1 / skills=1 / config=1`を返す。新Agent作成0、最終inventoryは22 listed、5 occupiedすべて`under_review`、free 0、retry 6。複数Capafy review tabからlocalization editorを誤選択したCP3は、既存tabを再利用せず同じauthenticated context内にowned pageを一枚だけ作成し、exact version textareaとexact submit buttonだけを操作して終了時にown pageだけを閉じる経路へ変更する。production recoveryも同じ一意Playwright target条件で実提出済みである。最後に本物の`ai.anicca.capafy-loop-daily`をkickstartし、runs `4→5`、last exit `0`、execution `20260823T012501Z-10089`が2秒で`CAP_FULL / healthy=true / agent spend=0 / platform write=0`へterminal化する。backlogはsubmitted `5`へ再整合し、hourly owner自身も5件すべて`under_review`をreadbackする。
 
+Data Analyst review artifactの公開前gateを実コードへ固定する。旧runnerはTelegram review送信を要求しながらprovider receiptやuser approvalを検証せず、同じlive passでPOSTできた。新しいrepo-external `capafy-creative-approval.json`はAgent `7785270416`、Telegram `29647`、exact SHA-256 `1d52fd0ce772cfa678a85e6ad5be5bc9ff3d5502c474325ca879054e1eeca7dc`を`pending`としてmode `0600`で保持する。wrapperはselector後・agent runner前にstate/path/hash/message IDを検証し、pendingなら`HEALTHY-IDLE / platform write=0`、approvedならexact bytesだけを再hashして使い、再render・remux・substituteを禁止する。missing stateは既存の一般loop contractを変えず、invalid/hash mismatchはrc `2`でfail closedする。focused approval test、shell syntax、実pending readbackが通る。
+
 ## Atomic remaining TODO
 
 Items are executed top-to-bottom. Only one item is active.
@@ -395,6 +397,7 @@ Current production truth:
 - The earliest deterministic operations-complete claim now requires one review transition with same-Agent retry proof, one quality-approved marketing post/readback, and C21 seven consecutive healthy days. With no further failure, C21 cannot complete in less than seven calendar days from the next clean day boundary.
 - `$10,000` settled net MRR has no honest calendar ETA. It is an economic target, and completion requires official active subscription and settlement readback reaching `$10,000`; runtime uptime, listing count, views and one-time Sales do not substitute for it.
 - Completion audit: `20/23` atomic items are completed. C19 draft recovery is complete and its acceptance now waits for a real review transition plus same-Agent retry proof, C21 remains time-bound at `0/7`, and C22 remains economic/experimental at official subscription MRR `$0`; therefore the full objective is not complete.
+- Data Analyst review receipt is durable and pending: Agent `7785270416` / Telegram `29647` / SHA-256 `1d52fd0ce772cfa678a85e6ad5be5bc9ff3d5502c474325ca879054e1eeca7dc`. Until the same receipt is changed to `approved` from an explicit user response, the hourly marketing owner exits healthy with Instagram write `0`.
 
 | ID | atomic action | done evidence | state |
 |---|---|---|---|

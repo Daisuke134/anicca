@@ -188,6 +188,10 @@ fi
 SELECTED_JSON='{}'
 SELECTED_AGENT_ID=''
 PRE_IG_ROWS=0
+CREATIVE_APPROVAL_STATUS='none'
+APPROVED_ARTIFACT_PATH=''
+APPROVED_ARTIFACT_SHA256=''
+CREATIVE_APPROVAL_FILE="$HOME/.local/state/life-manager/state/${INSTANCE}-creative-approval.json"
 if [ "$PROVISION_NEEDED" = "no" ]; then
   SELECTED_JSON="$(/opt/homebrew/bin/python3 "$SCRIPT_DIR/scripts/select_listing.py")" || {
     echo "evidence-ready listing selection failed: $SELECTED_JSON" >>"$LOG"
@@ -196,6 +200,23 @@ if [ "$PROVISION_NEEDED" = "no" ]; then
   SELECTED_AGENT_ID="$(printf '%s' "$SELECTED_JSON" | /opt/homebrew/bin/python3 -c 'import json,sys; print(json.load(sys.stdin).get("agent_id") or "")')"
   [ -n "$SELECTED_AGENT_ID" ] || exit 1
   [ -f "$IG_LEDGER" ] && PRE_IG_ROWS="$(wc -l < "$IG_LEDGER" | tr -d ' ')"
+  APPROVAL_JSON="$(/opt/homebrew/bin/python3 "$SCRIPT_DIR/scripts/creative_approval.py" \
+    --state "$CREATIVE_APPROVAL_FILE" \
+    --agent-id "$SELECTED_AGENT_ID" \
+    --artifact-root "$HOME/.local/state/life-manager/artifacts/capafy/ig")" || {
+      echo "creative approval state invalid — stopping pass: $APPROVAL_JSON" >>"$LOG"
+      exit 2
+    }
+  CREATIVE_APPROVAL_STATUS="$(printf '%s' "$APPROVAL_JSON" | /opt/homebrew/bin/python3 -c 'import json,sys; print(json.load(sys.stdin)["status"])')"
+  if [ "$CREATIVE_APPROVAL_STATUS" = "pending" ]; then
+    echo "HEALTHY-IDLE: selected Agent $SELECTED_AGENT_ID creative is pending user approval; platform write=0" >>"$LOG"
+    touch "$LAST_PASS_MARKER" || exit 2
+    exit 0
+  fi
+  if [ "$CREATIVE_APPROVAL_STATUS" = "approved" ]; then
+    APPROVED_ARTIFACT_PATH="$(printf '%s' "$APPROVAL_JSON" | /opt/homebrew/bin/python3 -c 'import json,sys; print(json.load(sys.stdin)["artifact_path"])')"
+    APPROVED_ARTIFACT_SHA256="$(printf '%s' "$APPROVAL_JSON" | /opt/homebrew/bin/python3 -c 'import json,sys; print(json.load(sys.stdin)["artifact_sha256"])')"
+  fi
 fi
 
 PROVISION_PROMPT="$(
@@ -224,11 +245,13 @@ PROVISION GATE: provision_needed='"$PROVISION_NEEDED"', reason='"${PROVISION_REA
 
 STEP1 SELECTED (deterministic caller; do not call selector again): '"$SELECTED_JSON"'. Use exactly this Agent and its evidence_source. Never advance rotation during exploration.
 
+CREATIVE APPROVAL: status='"$CREATIVE_APPROVAL_STATUS"', approved_artifact='"$APPROVED_ARTIFACT_PATH"', approved_sha256='"$APPROVED_ARTIFACT_SHA256"'. When status=approved, skip new creative generation and use only that exact artifact after recomputing and matching its SHA-256. Never substitute, modify, remux, or re-render approved bytes. A mismatch is terminal before POST.
+
 COMMERCIAL GATE: commercial_ok='"$COMMERCIAL_OK"'. While commercial_ok=no, EVERY post is NON-COMMERCIAL: pure-info caption ("here is a Claude skill that does X" — NO "buy/subscribe/link in bio" push), and DO NOT add any Capafy link to the bio yet. This avoids the day-0 commercial-link suspension trigger while we measure reach. Only when commercial_ok=yes do you add the bio link + a soft CTA.
 
 STEP2 COPY (YOUR judgment, no template): from name+desc write (a) a Reel caption (hook + what the skill does; if commercial_ok=yes add a soft "link in bio" CTA, else pure info, NO push, NO link in caption/comment — IG comment links are unclickable) and (b) a one-line on-screen hook for the video. Before writing, if $LIFE_MANAGER_REPO/skills/earn/capafy-marketing/IG_BEST_PRACTICES.md exists, read it and follow its measured winning patterns; if absent, use your normal judgment.
 
-STEP3 VIDEO (B3, APPROVED HyperFrames V4 contract): create one unique run directory below $HOME/.local/state/life-manager/artifacts/capafy/ig/. Find a repo-owned test fixture or immutable live output receipt for THIS selected listing; do not invent a result from its description. If no source exists, fail before rendering/posting. Use `$LIFE_MANAGER_REPO/skills/video/hyperframes/capafy-o13-review/` only as the approved visual/technical reference; copy its HyperFrames 0.8.8 project shape into the run directory and author four listing-specific 1080x1920 scenes that visibly match the narration: pain/raw input -> source evidence -> transformation -> verified output/CTA. Do not reuse O13 text for another listing. Generate four separate scene narration clips with free `edge-tts --voice en-US-AndrewNeural`, constrain each clip to its matching visual scene window, join them with zero scene-boundary crossings, and normalize the final mix near -16 LUFS. The rejected Samantha and Indian-accent Mona voices are forbidden. Render through pinned `npx --yes hyperframes@0.8.8 render` in the foreground; never background the render or inspect while final mux is running. Continue only after the render process exits 0 and the MP4 size and SHA-256 are identical across two probes at least 2 seconds apart. The old canonical-renderer and generic text-card fallback are forbidden. Gate before POST: HyperFrames check/lint passes; final MP4 is 1080x1920, about 30 seconds, H.264/AAC; four scene files are present; the source path/hash, selected Agent ID, scene timings, voice, output hash and inspection frames are saved in a manifest; inspect full-resolution frames from all four scenes and reject blank rectangles, tiny text, mismatched narration/content, generic b-roll, or reused O13 copy. A render, inspection, evidence, or audio-sync failure is terminal; never post a fallback.
+STEP3 VIDEO (B3, APPROVED HyperFrames V4 contract): when CREATIVE APPROVAL status is approved, use the exact approved artifact above and do not render. Otherwise create one unique run directory below $HOME/.local/state/life-manager/artifacts/capafy/ig/. Find a repo-owned test fixture or immutable live output receipt for THIS selected listing; do not invent a result from its description. If no source exists, fail before rendering/posting. Use `$LIFE_MANAGER_REPO/skills/video/hyperframes/capafy-o13-review/` only as the approved visual/technical reference; copy its HyperFrames 0.8.8 project shape into the run directory and author four listing-specific 1080x1920 scenes that visibly match the narration: pain/raw input -> source evidence -> transformation -> verified output/CTA. Do not reuse O13 text for another listing. Generate four separate scene narration clips with free `edge-tts --voice en-US-AndrewNeural`, constrain each clip to its matching visual scene window, join them with zero scene-boundary crossings, and normalize the final mix near -16 LUFS. The rejected Samantha and Indian-accent Mona voices are forbidden. Render through pinned `npx --yes hyperframes@0.8.8 render` in the foreground; never background the render or inspect while final mux is running. Continue only after the render process exits 0 and the MP4 size and SHA-256 are identical across two probes at least 2 seconds apart. The old canonical-renderer and generic text-card fallback are forbidden. Gate before POST: HyperFrames check/lint passes; final MP4 is 1080x1920, about 30 seconds, H.264/AAC; four scene files are present; the source path/hash, selected Agent ID, scene timings, voice, output hash and inspection frames are saved in a manifest; inspect full-resolution frames from all four scenes and reject blank rectangles, tiny text, mismatched narration/content, generic b-roll, or reused O13 copy. A render, inspection, evidence, or audio-sync failure is terminal; never post a fallback.
 
 STEP4 POST (B4, shared instagrapi poster): CDP_PORT='"$IG_PORT"' /opt/homebrew/bin/python3 $LIFE_MANAGER_REPO/skills/earn/marketing-engine/poster.py --video <mp4> --caption-file <caption> --handle '"$IG_HANDLE"' --port '"$IG_PORT"' --accounts-path '"$ACCOUNTS_FILE"' --live . The poster must try ~/.cloak/instagrapi-'"$IG_HANDLE"'.json as tier1 and verify the authenticated handle. Do not reject a valid tier1 session merely because the account lifecycle SSOT remains session_owner=browser; that state permits the existing tier2 browser-session fallback only after tier1 is unavailable. Only run when MODE=--live; if MODE=DRY do not post. If it returns ChallengeRequired, stop and report; never retry-login. Capture post_url.
 

@@ -109,11 +109,10 @@ if [ "${CAPAFY_GOAL_MONITOR_LAUNCHD_TEST:-0}" = "1" ]; then
   exit $?
 fi
 
-# NO-HUMAN-LOOP (Dais approved 2026-07-18): NO freeze/approval gate. At day>=3 (the clip 3-day
-# floor — loop self-pacing, NOT a human gate) the monitor auto-loads the IG launchd itself, which
-# then posts live daily. Safety pacing that remains is all LOOP-DRIVEN (day1-2 warmup only, day3+
-# NON-COMMERCIAL first posts, reach-gated commercial via .capafy-ig-reach-healthy that the LOOP
-# writes) — zero human approval anywhere. Idempotent: never double-loads.
+# Distribution remains loop-driven after warmup. A newer explicit creative-review request overrides
+# the old standing no-approval rule for a reviewed artifact: the marketing wrapper fail-closes on its
+# repo-external pending receipt and releases only the exact user-approved SHA-256. This monitor does
+# not create, alter, or bypass that receipt. Idempotent: never double-loads.
 WDAY="$ACCOUNT_DAY"
 
 # Read-only account health probe. Only an aged instagrapi-owned account has a golden session to
