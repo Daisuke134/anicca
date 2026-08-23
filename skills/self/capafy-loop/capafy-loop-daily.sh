@@ -30,6 +30,8 @@ LAST_PASS_MARKER="$HOME/.local/state/life-manager/state/.capafy-loop-last-pass"
 TERMINAL_LEDGER="$HOME/.local/state/life-manager/state/capafy-daily-terminals.jsonl"
 TERMINAL_TOOL="$SCRIPT_DIR/capafy_daily_terminal.py"
 PASS_SCHEMA="$SCRIPT_DIR/capafy-loop-pass.schema.json"
+OFFLINE_CADENCE_TOOL="$SCRIPT_DIR/capafy_offline_cadence.py"
+OFFLINE_CADENCE_STATE="$HOME/.local/state/life-manager/state/capafy-offline-build-cadence.json"
 EXECUTION_ID="$(date -u +%Y%m%dT%H%M%SZ)-$$"
 TERMINAL_RECORDED=0
 mkdir -p "$(dirname "$LOG")"
@@ -51,14 +53,38 @@ python3 "$TERMINAL_TOOL" start --ledger "$TERMINAL_LEDGER" \
   --execution-id "$EXECUTION_ID" >>"$LOG" 2>&1 || exit 1
 
 # Enforce the five simultaneous-submission cap before spending an agent turn.
-# CAP_FULL is healthy idle: refresh the offline backlog and perform no write.
+# CAP_FULL permits one offline-only candidate build per local calendar day. It never writes to Capafy.
 INVENTORY="$(python3 "$LIFE_MANAGER_REPO/skills/capafy-autopublish/scripts/inventory_status.py" 2>>"$LOG")"
 VERDICT="$(printf '%s\n' "$INVENTORY" | sed -n 's/^VERDICT=//p' | head -1)"
 printf '%s\n' "$INVENTORY" | tail -n 1 | python3 \
   "$LIFE_MANAGER_REPO/skills/capafy-autopublish/scripts/candidate_backlog.py" refresh \
   --inventory-stdin >>"$LOG" 2>&1 || exit 1
 if [ "$VERDICT" = "CAP_FULL" ]; then
-  echo "=== capafy-loop-daily done rc=0 (HEALTHY-IDLE: CAP_FULL; agent spend=0; platform write=0) $(date '+%F %T %Z') ===" >>"$LOG"
+  if ! python3 "$OFFLINE_CADENCE_TOOL" claim --state "$OFFLINE_CADENCE_STATE" \
+      --day "$(date +%F)" --execution-id "$EXECUTION_ID" >>"$LOG" 2>&1; then
+    echo "=== capafy-loop-daily done rc=0 (HEALTHY-IDLE: CAP_FULL; offline build already claimed today; agent spend=0; platform write=0) $(date '+%F %T %Z') ===" >>"$LOG"
+    mkdir -p "$(dirname "$LAST_PASS_MARKER")"
+    touch "$LAST_PASS_MARKER" || exit 2
+    exit 0
+  fi
+
+  BACKLOG="$HOME/.local/state/life-manager/state/capafy-candidate-backlog.json"
+  READY_BEFORE="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("counts",{}).get("ready",0))' "$BACKLOG")"
+  EVIDENCE_DIR="$HOME/.local/state/life-manager/state/agent-runner-evidence/capafy-offline-build/$(date +%s)-$$"
+  OFFLINE_PROMPT='Build exactly ONE differentiated, honest Capafy skill candidate OFFLINE inside $LIFE_MANAGER_REPO/skills/capafy/catalog/<new-slug>/. This is a CAP_FULL pass: NEVER call Capafy create/publish/configure/ship/submit APIs or UI, and never modify any remote platform state. Use sales_selector.py plus current inventory and existing catalog to avoid duplicates. Produce SKILL.md, LISTING.md, icon.svg, and evidence/verified-demonstration.md containing a concrete input, actual output, and verification notes. Follow the repository skill-creator quality contract, keep claims within what the skill can actually do, and run the existing listing lint. Return status=success only after all four repo-owned artifacts exist and lint passes; otherwise status=failure. Include the created path and lint evidence.'
+  printf '%s\n' "$OFFLINE_PROMPT" | "$RUN_AGENT" \
+    --task-class browser-lane-agent --schema "$PASS_SCHEMA" --evidence-dir "$EVIDENCE_DIR" \
+    --task-label capafy-offline-daily --loop capafy >>"$LOG" 2>&1
+  RC=$?
+  [ "$RC" -eq 0 ] || exit "$RC"
+  python3 "$TERMINAL_TOOL" result --summary "$EVIDENCE_DIR/summary.json" >>"$LOG" 2>&1 || exit $?
+  printf '%s\n' "$INVENTORY" | tail -n 1 | python3 \
+    "$LIFE_MANAGER_REPO/skills/capafy-autopublish/scripts/candidate_backlog.py" refresh \
+    --inventory-stdin >>"$LOG" 2>&1 || exit 1
+  READY_AFTER="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("counts",{}).get("ready",0))' "$BACKLOG")"
+  [ "$READY_AFTER" -gt "$READY_BEFORE" ] || { echo "offline build produced no new ready candidate" >>"$LOG"; exit 1; }
+  VERDICT="CAP_FULL_OFFLINE_BUILT"
+  echo "=== capafy-loop-daily done rc=0 (CAP_FULL_OFFLINE_BUILT; ready=$READY_BEFORE->$READY_AFTER; platform write=0) $(date '+%F %T %Z') ===" >>"$LOG"
   mkdir -p "$(dirname "$LAST_PASS_MARKER")"
   touch "$LAST_PASS_MARKER" || exit 2
   exit 0
