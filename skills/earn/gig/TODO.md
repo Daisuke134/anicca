@@ -410,6 +410,13 @@ candidate-specific copy composed from the current claim map, prohibits another r
 mode or literal value, and requires a final exact-composer-text/source comparison before send; transport scripts
 may execute and read back approved copy but may not choose semantic copy. Immutable release `4a39fe485` contains
 that general repair. Its next natural wake must prove no recurrence; the durable valid count remains 2 of 50.
+Before that old wake exited, its own model corrected the copy to the source-backed threshold wording `評価4.5以上`
+and continued naturally. It officially read back and checkpointed `@cxzapwign` at
+`https://x.com/selawmqt/status/2091348910652735542` from an Osaka Uber-courier profile, a bicycle-operation post and
+the candidate's 98%-or-higher rating post; it then did the same for `@Rim_Uber` at
+`https://x.com/selawmqt/status/2091349174038179945` from the Osaka courier profile, vehicle evidence and the
+candidate's 98%-rating post. Both are `qualified`. The durable valid count is now 4 of 50, with one qualification
+pending and two invalid effects retained only for replay safety; 46 valid contacts or verified exhaustion remain.
 
 The same resume exposed that `agent-runner` reused stable `attempt-01` paths by deleting the prior wake's logs and
 summary at each launch. Existing consumers still need those stable names for the current run, so the runner now
