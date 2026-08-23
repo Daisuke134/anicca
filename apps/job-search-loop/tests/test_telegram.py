@@ -7,6 +7,35 @@ from job_search_loop import telegram
 
 
 class TelegramReportTests(unittest.TestCase):
+    def test_uncertain_send_is_not_retried_through_direct_transport(self):
+        with tempfile.TemporaryDirectory() as directory:
+            database = Path(directory) / "outbox.sqlite3"
+            requests = []
+
+            def requester(**request):
+                requests.append(request)
+                return {"ok": True, "result": {"message_id": 900}}
+
+            outbox = telegram.Outbox(database)
+            try:
+                outbox.enqueue("uncertain", "already attempted")
+                fence = outbox.claim("uncertain")
+                outbox.mark_send_started("uncertain", fence)
+            finally:
+                outbox.close()
+
+            result = telegram.send_once(
+                database=database,
+                event_key="uncertain",
+                message="already attempted",
+                target="test-chat",
+                token="test-token",
+                requester=requester,
+            )
+
+            self.assertEqual(result, {"status": "send_started", "message_id": None})
+            self.assertEqual(requests, [])
+
     def test_transport_has_no_openclaw_or_subprocess_dependency(self):
         source = inspect.getsource(telegram)
         self.assertNotIn("openclaw", source.casefold())

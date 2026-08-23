@@ -164,7 +164,7 @@ def send_once(
     try:
         outbox.enqueue(event_key, message)
         existing = outbox.status(event_key)
-        if existing["status"] == "sent":
+        if existing["status"] in {"sent", "send_started"}:
             return existing
         fence = outbox.claim(event_key)
         outbox.mark_send_started(event_key, fence)
@@ -194,7 +194,7 @@ def send_document_once(
     try:
         outbox.enqueue(event_key, message)
         existing = outbox.status(event_key)
-        if existing["status"] == "sent":
+        if existing["status"] in {"sent", "send_started"}:
             return existing
 
         source = Path(document).expanduser().resolve()
