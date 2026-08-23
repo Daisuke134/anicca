@@ -70,9 +70,23 @@ def _private_model_runner(root: Path, command: list[str], label: str) -> list[st
     restricted = [str(path) for path in restricted_attachment_paths(root)]
     if not restricted:
         return command
+    read_only = "--read-only" in command
+    if read_only:
+        # macOS rejects a second Seatbelt profile inside sandbox-exec. Keep the
+        # outer privacy boundary and make it enforce the decision owner's write
+        # boundary too; agent-runner may still write its evidence directory.
+        command = [part for part in command if part != "--read-only"]
+    write_denies = []
+    if read_only:
+        write_denies = [str(path) for path in root.iterdir() if path.name != "evidence"]
     profile = root / "context" / f".{label}-private-data.sb"
     profile.parent.mkdir(parents=True, exist_ok=True)
-    profile.write_text("(version 1)\n(allow default)\n" + _deny_reads(restricted), encoding="utf-8")
+    profile.write_text(
+        "(version 1)\n(allow default)\n"
+        + _deny_reads(restricted)
+        + "".join(f"(deny file-write* (subpath {json.dumps(path)}))\n" for path in write_denies),
+        encoding="utf-8",
+    )
     profile.chmod(0o600)
     return ["/usr/bin/sandbox-exec", "-f", str(profile), *command]
 # These orders are worked by hand and must never be answered, delivered, or submitted by this lane.

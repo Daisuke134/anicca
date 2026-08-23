@@ -1596,6 +1596,19 @@ holder PID absent, its exact orphaned `x:anicca` lease was released. The latest 
 `7d30b28cdd808802c575937ffeae3afbd82f292d`; the next natural Paid wake owns classification correction,
 replay-zero and any buyer-visible progress report.
 
+The next natural launchd wake started at `2026-08-23T12:03:35+09:00` from current main and refreshed all
+ten official paid rooms before dispatch. Fresh exact-room DOM for Chii still contains the same seller-message
+hash, an empty composer and formal delivery OFF; no Chii project worker was created, so the first natural
+replay produced zero duplicate effect. Manledge, Smile and legacy room `18062411` became three independent
+workers. The legacy semantic owner then repeated the same `sandbox_apply: Operation not permitted` failure for
+a second wake. Comparison proved the room has restricted private attachments, so its outer privacy
+`sandbox-exec` was nesting Codex's own read-only Seatbelt profile; rooms without restricted attachments do not
+take that path. Private read-only owners now retain the outer restricted-file denials, remove only the nested
+inner profile, and add outer OS write denials for every project top-level path except runner evidence. Direct
+profile inspection found three restricted-read denials and eleven project-write denials, and a real sandbox
+probe proved context writes are blocked with no file created. A natural wake must still prove the legacy owner
+can read allowed context and reach an honest disposition.
+
 1. **Paid/Submission — finish first.**
    - [x] Deploy and read back Paid ignoring shared preventive `disk-pressure.block` (20 GiB) and
      `disk-writers.stop` (10/11 GiB hysteresis), while retaining the 512 MiB last-resort guard and
