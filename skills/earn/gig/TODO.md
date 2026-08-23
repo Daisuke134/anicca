@@ -397,6 +397,13 @@ atomically archives the prior `attempt-*`, `attempts.jsonl` and `summary.json` u
 starting. The active run remains freshness-isolated at the original paths, while future owners can recursively
 recover official-effect history instead of relying on Codex or a transient provider transcript.
 
+The parallel new project `18179735` was automatically discovered and assigned its own answer owner, proving new
+talkrooms can become independent project lanes without Codex. Its owner then spent more than nine minutes retrying
+one timed-out official Stripe support page and inspecting the crawler implementation instead of completing the
+bounded buyer answer. Customer-response research now attempts each official fact source once; a retrieval failure
+causes that fact to be omitted or labelled unverified and the model must immediately finish the useful answer.
+Research-tool debugging remains a separate harness-repair task, never hidden inside a waiting buyer response.
+
 The resumed Manledge owner then exposed a second shared-tool contract defect: `x-repost` advertised generic
 `post` capability in the shared registry, but its production CLI accepted only `quote` and `reply` and required a
 source post URL. The owner correctly resolved and reused the skill, yet could not publish the approved standalone
