@@ -1031,6 +1031,14 @@ def _context_input_snapshot(root: Path, context: Path) -> dict[str, tuple[int, s
             path.relative_to(root)
         except ValueError as error:
             raise ValueError("compiled source reference escapes project") from error
+        # The compiled context freezes the exact prior owner outputs in context_sha256. Those
+        # outputs are then deliberately replaced by the selected owner, so treating them as live
+        # routing inputs makes a decision invalidate itself as soon as it is executed. Buyer
+        # sources, requirements and state remain live freshness inputs.
+        relative = path.relative_to(root)
+        if ((relative.parts and relative.parts[0] == "delivery")
+                or relative == Path("events.jsonl")):
+            continue
         snapshot = _file_snapshot(path)
         if (ref.get("bytes"), ref.get("sha256")) != snapshot:
             raise ValueError("compiled source reference changed")
@@ -1603,9 +1611,10 @@ def _account_owner_observe_only(args, item: dict[str, Any]) -> Path | None:
 def _current_paid_decision(root: Path, item: dict[str, Any]) -> dict[str, Any]:
     receipt = _load(root / "context" / "paid-work-decision.json")
     context = root / "context" / "current.json"
-    if receipt.get("context_inputs_sha256") != _context_inputs_sha256(
+    if (receipt.get("context_sha256") != _file_snapshot(context)[1]
+            or receipt.get("context_inputs_sha256") != _context_inputs_sha256(
         _context_input_snapshot(root, context)
-    ):
+    )):
         raise ValueError("stale paid decision context")
     value = {key: receipt[key] for key in PAID_DECISION_FIELDS}
     feedback = _text(item.get("buyer_feedback_sha256"))

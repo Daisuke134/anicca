@@ -362,6 +362,16 @@ spawned independent workers for Manledge `18169985`, Smile `18179735`, X `181718
 in parallel. This is the required discovery-to-project-lane behavior; process existence is only liveness evidence,
 so each lane remains incomplete until its external effect and exact official readback exist.
 
+That pass exposed a provider-neutral routing self-invalidation defect. Smile `18179735` was correctly classified
+`actionable/answer`, and its owner wrote the requested consultation answer, but the decision freshness snapshot
+also treated `delivery/paid-answer.json`, `delivery/paid-remote-intent.json`, and `events.jsonl` as immutable
+inputs. The owner's authorized output therefore made its own semantic decision stale and the write phase fell
+back to `remote_resume`, producing zero effect. The compiled context hash now freezes the exact prior owner-output
+history while live freshness tracks buyer sources, accumulated requirements and project state only. A direct
+reproduction changes Smile from `answer_ready=False / compiled source reference changed` to
+`decision=answer / answer_ready=True`; publish this repair and require the natural lane to send once with official
+readback rather than regenerating or manually sending the answer.
+
 The first no-floor Paid wake then proved a separate shared-browser contention defect: all eight actionable
 targeted readbacks entered the one authenticated default CDP context concurrently, created duplicate room tabs and
 failed, while the one reserved room read back normally. Paid project owners remain parallel at eight, but the
