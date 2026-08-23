@@ -241,7 +241,9 @@ class DirectCDPPage:
         await self.click_target(target)
         selected = await self.evaluate("""() => {
           const el = document.activeElement;
-          if (!el || !['INPUT', 'TEXTAREA'].includes(el.tagName) || typeof el.select !== 'function') return false;
+          if (!el || !['INPUT', 'TEXTAREA'].includes(el.tagName)) return false;
+          if (el.value.length === 0) return document.activeElement === el;
+          if (typeof el.select !== 'function') return false;
           el.select();
           return el.selectionStart === 0 && el.selectionEnd === el.value.length;
         }""")

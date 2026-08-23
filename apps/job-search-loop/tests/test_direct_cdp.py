@@ -83,6 +83,8 @@ class DirectCDPTypeTests(unittest.IsolatedAsyncioTestCase):
 
         page.evaluate.assert_awaited_once()
         self.assertIn("el.select()", page.evaluate.await_args.args[0])
+        self.assertIn("el.value.length === 0", page.evaluate.await_args.args[0])
+        self.assertIn("document.activeElement === el", page.evaluate.await_args.args[0])
         self.assertEqual(
             [call.args for call in page.call.await_args_list if call.args[0] == "Input.insertText"],
             [("Input.insertText", {"text": "Daisuke"})],
