@@ -1712,6 +1712,11 @@ knowledge discovery. A focused live query for `note.com/publish` now discovers `
 not mislabel the draft-only path as a public effect. The same query for `x.com/post` returns the live `x-repost` slot
 and seller-owned `x:anicca` / `@selawmqt` session with `effect_ready=true`. Secrets remain outside prompts and repo.
 This is the general skill-reuse path for every lane and future marketplace, not a byusco-specific router.
+The existing Note credentials were also migrated from the legacy Writer environment into the Mac-local private
+credential SSOT as one `note.com` record. The directory remains mode `700`, the file remains mode `600`, and the
+resolver exposes only its non-secret `credentials:15` reference plus configured status. No credential value entered
+the repository, owner prompt or evidence. Account discovery is therefore true while publication readiness remains
+false until an authenticated adapter proves a live official effect and readback.
 
 1. **Paid/Submission — finish first.**
    - [x] Deploy and read back Paid ignoring shared preventive `disk-pressure.block` (20 GiB) and
