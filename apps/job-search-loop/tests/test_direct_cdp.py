@@ -9,11 +9,33 @@ from job_search_loop.browser_agent.observation import ObservationBuilder
 from job_search_loop.browser_agent.actions import ActionExecutor
 from job_search_loop.browser_agent.contracts import ActionTargetV1, VisibleActionV1
 from job_search_loop.browser_agent.runtime import main as browser_runtime_main
-from job_search_loop.browser_agent.runtime import type_candidate, type_text
+from job_search_loop.browser_agent.runtime import auth, type_candidate, type_text
 from job_search_loop.runtime import main as compatibility_runtime_main
 
 
 class DirectCDPTypeTests(unittest.IsolatedAsyncioTestCase):
+    async def test_auth_rejects_html_input_type_as_a_role_before_secret_action(self):
+        from job_search_loop.browser_agent import runtime
+
+        observation = {"status": "observed", "observation": {"controls": []}}
+        with patch.object(
+            runtime, "observe", new=AsyncMock(return_value=observation)
+        ) as observe, patch.object(
+            runtime, "_context", new=AsyncMock()
+        ) as context:
+            result = await auth(
+                mode="sign_in",
+                field="password",
+                label="Password*",
+                role="password",
+                stable_id="id:input-5",
+            )
+
+        self.assertEqual(result["status"], "action_rejected")
+        self.assertEqual(result["reason"], "auth_requires_textbox_role")
+        observe.assert_awaited_once()
+        context.assert_not_awaited()
+
     def test_observation_ignores_only_the_passive_recaptcha_badge(self):
         source = inspect.getsource(ObservationBuilder.build)
 

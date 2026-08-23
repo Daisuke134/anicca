@@ -510,6 +510,11 @@ async def auth(
         raise ValueError("auth field is invalid")
     if field == "verify_password" and mode != "create_account":
         raise ValueError("verify_password is only valid for create_account")
+    if role not in {"textbox", "searchbox"}:
+        result = await observe()
+        result["status"] = "action_rejected"
+        result["reason"] = "auth_requires_textbox_role"
+        return result
     with _exclusive_action():
         row, session, checkpoints, evidence, cursor, builder = await _context()
         before = await builder.build(cursor.handle)
