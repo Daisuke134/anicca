@@ -61,6 +61,20 @@ class CtaInstrumentationTests(unittest.TestCase):
             self.assertEqual(child_row["provider_unique_click_delta"], 0)
             self.assertEqual(child_row["provider_baseline_state"], "INITIALIZED_FROM_CURRENT")
 
+            replay = MODULE.join_provider_interval(state)
+            self.assertFalse(replay["changed"])
+            self.assertEqual(replay["receipt_sha256"], result["receipt_sha256"])
+
+            baseline_path = next((state / "interval-provider-baselines").glob("*.json"))
+            baseline_receipt = json.loads(baseline_path.read_text())
+            baseline_path.write_text(json.dumps({
+                **baseline_receipt,
+                "provider_click_count": baseline_receipt["provider_click_count"] + 10,
+            }))
+            with self.assertRaises(MODULE.InstrumentationError):
+                MODULE.join_provider_interval(state)
+            baseline_path.write_text(json.dumps(baseline_receipt))
+
             snapshots.append({
                 "snapshot_sha256": "c" * 64, "placements": [
                     {"placement_id": "subtitle-en-1",
@@ -84,7 +98,7 @@ class CtaInstrumentationTests(unittest.TestCase):
             )
             self.assertEqual(later_child["provider_click_delta"], 1)
             self.assertEqual(later_child["provider_unique_click_delta"], 1)
-            self.assertEqual(later_child["provider_baseline_state"], "PERSISTED_INITIAL")
+            self.assertEqual(later_child["provider_baseline_state"], "INITIALIZED_FROM_CURRENT")
 
     def test_transforms_fixed_host_redirect_and_public_href_without_raw_receipt(self):
         library = '''const TOKEN = /^(ai|ho|ej|ee)_[a-z2-7]{20}$/;\nfunction destination(product, token, providerToken) {\n  if (product.kind === "app") {\n}\n    const product = match && products[match[1]];'''

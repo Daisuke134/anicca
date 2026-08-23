@@ -397,25 +397,40 @@ def join_provider_interval(state):
                 f"{interval_start}:{placement_id}".encode()
             ).hexdigest()
             baseline_path = state / "interval-provider-baselines" / f"{baseline_id}.json"
+            baseline_exists = baseline_path.is_file()
             try:
                 persisted = json.loads(baseline_path.read_text())
             except (OSError, ValueError):
+                if baseline_exists:
+                    raise InstrumentationError("invalid persisted provider baseline")
                 persisted = {}
-            if (
-                persisted.get("interval_start") == interval_start
-                and persisted.get("placement_id") == placement_id
-                and all(isinstance(persisted.get(key), int) for key in (
-                    "provider_click_count", "provider_unique_click_count",
+            if persisted:
+                claimed = persisted.get("receipt_sha256")
+                persisted_core = {
+                    key: value for key, value in persisted.items()
+                    if key != "receipt_sha256"
+                }
+                actual = hashlib.sha256(json.dumps(
+                    persisted_core, sort_keys=True, separators=(",", ":")
+                ).encode()).hexdigest()
+                valid = all((
+                    claimed == actual,
+                    persisted.get("interval_start") == interval_start,
+                    persisted.get("placement_id") == placement_id,
+                    all(isinstance(persisted.get(key), int) for key in (
+                        "provider_click_count", "provider_unique_click_count",
+                    )),
                 ))
-            ):
+                if not valid:
+                    raise InstrumentationError("persisted provider baseline mismatch")
                 before = {
                     "count": persisted["provider_click_count"],
                     "unique_count": persisted["provider_unique_click_count"],
                 }
-                provider_baseline_state = "PERSISTED_INITIAL"
+                provider_baseline_state = "INITIALIZED_FROM_CURRENT"
             else:
                 before = after
-                atomic_write(baseline_path, {
+                baseline_core = {
                     "schema_version": 1,
                     "receipt_type": "AFFILIATE_INTERVAL_PROVIDER_BASELINE",
                     "interval_start": interval_start,
@@ -424,6 +439,12 @@ def join_provider_interval(state):
                     "provider_unique_click_count": after.get("unique_count"),
                     "source_snapshot_sha256": current.get("snapshot_sha256"),
                     "observed_at": observed_at(current),
+                }
+                atomic_write(baseline_path, {
+                    **baseline_core,
+                    "receipt_sha256": hashlib.sha256(json.dumps(
+                        baseline_core, sort_keys=True, separators=(",", ":")
+                    ).encode()).hexdigest(),
                 })
                 provider_baseline_state = "INITIALIZED_FROM_CURRENT"
         else:
