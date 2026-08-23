@@ -1645,6 +1645,17 @@ Manledge worker attempts were stopped before file build or Coconala send; the of
 unchanged at ten rows and the authoritative qualified count remains 6. The next natural wake must prove v12 chooses
 remote, the loop appends the classification revision itself, and legacy returns `satisfied_noop` without failure.
 
+The next natural wake proved all three transitions. Semantic v12 selected `remote` for Manledge, explicitly required
+the `@mgwpbdgw` audit correction, and bound the effective total to 6 before starting the remote owner. That owner
+itself appended row 11 as `record_type=classification_revision`, preserving the original effect key, target, payload
+SHA-256, official seller receipt `https://x.com/selawmqt/status/2091357481423483280`, exact readback and semantic
+contract while changing only `quality_status` to `qualification` and `counts_toward_50` to false with a nonempty
+reason. Latest-row reduction now yields ten effective effects and exactly six valid contacts. The owner then acquired
+`x:anicca` through the OSS lifetime wrapper; browser-guard records live wrapper PID `62606`, not a dead command-
+substitution shell, while official recon runs below it. In parallel, legacy returned `satisfied_noop/effect=0/
+readback=1/failed=0`; no redundant buyer reply or remote action occurred. Manledge still requires 44 further valid
+contacts or official reachable exhaustion plus a truthful buyer handoff and replay-zero.
+
 1. **Paid/Submission — finish first.**
    - [x] Deploy and read back Paid ignoring shared preventive `disk-pressure.block` (20 GiB) and
      `disk-writers.stop` (10/11 GiB hysteresis), while retaining the 512 MiB last-resort guard and
