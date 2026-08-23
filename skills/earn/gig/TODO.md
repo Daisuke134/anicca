@@ -402,6 +402,14 @@ Without Codex prompting, the owner then searched additional official X posts, ve
 Osaka and small-motorbike profile plus its own 100%-rating post, sent the approved individual invitation, read back
 the exact seller reply at `https://x.com/selawmqt/status/2091347297758245018`, and immediately checkpointed it as
 `qualified`. The durable valid count is therefore 2 of 50; 48 valid contacts or verified reachable exhaustion remain.
+The same pre-fix owner later selected `@haitatsuin_` from official Osaka, motorbike and 95%-rating sources but reused
+the earlier canned `full_bike` payload that falsely said 100%. It sent and read back that reply at
+`https://x.com/selawmqt/status/2091348211659407512`, correctly checkpointed it as `invalid`, and excluded it from
+the count, but quality classification after mutation is too late. The shared remote-owner contract now requires
+candidate-specific copy composed from the current claim map, prohibits another recipient's canned factual message
+mode or literal value, and requires a final exact-composer-text/source comparison before send; transport scripts
+may execute and read back approved copy but may not choose semantic copy. Immutable release `4a39fe485` contains
+that general repair. Its next natural wake must prove no recurrence; the durable valid count remains 2 of 50.
 
 The same resume exposed that `agent-runner` reused stable `attempt-01` paths by deleting the prior wake's logs and
 summary at each launch. Existing consumers still need those stable names for the current run, so the runner now
