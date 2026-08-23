@@ -1554,8 +1554,8 @@ In parallel, the natural Manledge owner recovered and officially read back one a
 individual approach to `@taka_kimura0701` at
 `https://x.com/selawmqt/status/2091350336401551647`. The candidate-specific message says
 `評価4.5以上`, its official qualification sources prove Osaka, bicycle delivery and a current rating above
-that threshold, and the fsync ledger marks it `counts_toward_50=true`; the valid count is now 5 of 50 and
-45 valid contacts or verified reachable exhaustion remain. The following owner correctly refused to collide
+that threshold, and the fsync ledger marks it `counts_toward_50=true`; the valid count became 5 of 50 at that
+checkpoint. The following owner correctly refused to collide
 with the shared `x:anicca` lease, but exposed that separate `browser-guard acquire` and later `release`
 commands strand a fresh dead-shell lease for up to 30 minutes when an owner exits between them. The generic
 Paid owner contract now requires the existing `with-browser.sh` lifetime wrapper, whose signal/EXIT trap
@@ -1566,6 +1566,14 @@ page timed out. Recon now isolates that transport failure to the affected query,
 continues the remaining model-selected queries; an isolated direct smoke proved the second query still runs after
 the first raises. A natural owner must still prove this behavior against live X and may decide how to adapt or
 qualify the resulting candidates.
+
+The same uninterrupted natural owner then used the official X search results to select `@take95186000`.
+The candidate's own current post simultaneously proves Osaka City, bicycle delivery and 99% satisfaction;
+the owner composed only those source-bound facts, sent the individual invitation, and read back the exact
+seller reply at `https://x.com/selawmqt/status/2091356887501742457`. It immediately fsync-checkpointed the
+effect with its source URL, payload hash, semantic-contract hash and `quality_status=qualified`. No prior
+effect key was repeated. The durable valid count is now 6 of 50; 44 qualified contacts or verified reachable
+exhaustion remain.
 
 1. **Paid/Submission — finish first.**
    - [x] Deploy and read back Paid ignoring shared preventive `disk-pressure.block` (20 GiB) and
