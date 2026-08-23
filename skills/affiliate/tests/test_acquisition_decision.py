@@ -13,6 +13,22 @@ SPEC.loader.exec_module(MODULE)
 
 
 class AcquisitionDecisionTest(unittest.TestCase):
+    def test_active_focused_baseline_supersedes_historical_and_devto_files(self):
+        with tempfile.TemporaryDirectory() as directory:
+            state = Path(directory)
+            baselines = state / "distribution-baselines"
+            baselines.mkdir(parents=True)
+            active = "a" * 64
+            for name in ("devto-old.json", "focused-old.json", f"focused-{active}.json"):
+                (baselines / name).write_text("{}")
+            MODULE._write(state / "focused-cohort" / "latest.json", {
+                "receipt_sha256": active,
+            })
+
+            selected = MODULE._baseline_paths(state)
+
+            self.assertEqual(selected, [baselines / f"focused-{active}.json"])
+
     def test_one_daily_decision_has_one_realistic_full_pass(self):
         self.assertEqual(MODULE.ACQUISITION_PASS_TOKEN_BUDGET, 32768)
         self.assertEqual(

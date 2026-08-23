@@ -188,11 +188,27 @@ def _runner_failure_type(evidence_dir: Path, returncode: int) -> str:
     }.get(returncode, "RUNNER_REJECTED")
 
 
-def advance(skill_root: Path, state: Path, scheduler_run_id: str) -> dict:
-    baselines = sorted([
+def _baseline_paths(state: Path) -> list[Path]:
+    latest = state / "focused-cohort" / "latest.json"
+    if latest.is_file():
+        focus = _read(latest)
+        receipt_sha256 = focus.get("receipt_sha256")
+        if not isinstance(receipt_sha256, str) or not re.fullmatch(
+            r"[0-9a-f]{64}", receipt_sha256
+        ):
+            raise DecisionError
+        active = state / "distribution-baselines" / f"focused-{receipt_sha256}.json"
+        if not active.is_file():
+            raise DecisionError
+        return [active]
+    return sorted([
         *(state / "distribution-baselines").glob("devto-*.json"),
         *(state / "distribution-baselines").glob("focused-*.json"),
     ])
+
+
+def advance(skill_root: Path, state: Path, scheduler_run_id: str) -> dict:
+    baselines = _baseline_paths(state)
     if not baselines:
         return {"state": "WAITING_FOR_BASELINE", "changed": False}
     for baseline_path in baselines:
