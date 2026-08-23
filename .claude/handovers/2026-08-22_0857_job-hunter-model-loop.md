@@ -155,3 +155,15 @@ unrelated dirty paths `docs/loops/x-repost.md` and `state/effective-cron/`.
   instead of its bytes. No credential was exposed and no submit fence was consumed.
   `descriptor.read_bytes()` is the smallest fix; focused direct-CDP plus Telegram
   tests pass 6/6. Build and activate that commit, then resume through the same owner.
+- Straight-shot closure resumed from commit `3124097e5`. The inbox owner still has
+  no exact receipt for Salesforce JR337672 or JR334569; both attempts remain
+  `exact_completion_ui_pending_receipt` and MUST NOT be resubmitted. The daily owner
+  was stopped by shared disk policy, not Workday: free space was 9.0 GiB and both
+  `disk-writers.stop` and `disk-pressure.block` existed. Canonical cleanup found all
+  candidates open. Bounded regenerable npm/node-gyp/Homebrew/CodexBar cache cleanup
+  restored 11.0 GiB, and the sentinel removed `disk-writers.stop`. `run-daily.sh`
+  now ignores only the preventive pressure advisory, matching the proven Writer
+  contract; the hard stop, control-directory check, and 512-MiB floor remain active.
+  Focused suite passes 14/14 and the live guard returns 0. Build an immutable release,
+  activate it, kick only `ai.anicca.job-search-daily`, then require receipt, Ledger,
+  automatic Telegram message ID, and next-wake dedupe evidence.

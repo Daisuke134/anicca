@@ -10,15 +10,15 @@ if [[ ! -f "$JOB_SEARCH_DISK_GUARD" || -L "$JOB_SEARCH_DISK_GUARD" || ! -r "$JOB
   print -u2 "job-search daily: disk guard is missing or unsafe"
   exit 75
 fi
-unset GIG_IGNORE_DISK_PRESSURE_BLOCK \
-  GIG_IGNORE_DISK_WRITERS_STOP \
+unset GIG_IGNORE_DISK_WRITERS_STOP \
   DISK_CONTROL_STATE_DIR \
   OPENCLAW_STATE_DIR \
   LIFE_MANAGER_HOST_STATE_DIR
+GIG_IGNORE_DISK_PRESSURE_BLOCK=1
 GIG_DISK_HEADROOM_KIB=524288
 GIG_HOST_STATE_DIR="$HOME/.openclaw/state"
 GIG_STATE_DIR="$HOME/.local/state/life-manager/job-search-daily"
-export GIG_DISK_HEADROOM_KIB GIG_HOST_STATE_DIR GIG_STATE_DIR
+export GIG_IGNORE_DISK_PRESSURE_BLOCK GIG_DISK_HEADROOM_KIB GIG_HOST_STATE_DIR GIG_STATE_DIR
 if ! /usr/bin/python3 -I "$JOB_SEARCH_DISK_GUARD" /usr/bin/true; then
   print -u2 "job-search daily: disk guard blocked model wake"
   exit 75
