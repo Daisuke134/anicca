@@ -22,7 +22,9 @@ class _Connection:
         return None
 
 
-def _run_submit_click(tmp_path, monkeypatch, *, confirm_modal: bool) -> list[dict[str, object]]:
+def _run_submit_click(
+    tmp_path, monkeypatch, *, confirm_modal: bool
+) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
     request_id = "123"
     expected_url = f"https://coconala.com/offers/add/{request_id}"
     states = iter([
@@ -31,6 +33,7 @@ def _run_submit_click(tmp_path, monkeypatch, *, confirm_modal: bool) -> list[dic
         {"url": expected_url, "body": ""},
     ])
     events: list[dict[str, object]] = []
+    calls: list[dict[str, object]] = []
     effects = application_parent.CdpParentEffects(
         ws_url="ws://example.invalid/devtools/page/1",
         evidence_dir=tmp_path,
@@ -38,7 +41,8 @@ def _run_submit_click(tmp_path, monkeypatch, *, confirm_modal: bool) -> list[dic
         pass_id="test-pass",
     )
 
-    async def call(_ws, method, params, _call_id):
+    async def call(_ws, method, params, call_id):
+        calls.append({"method": method, "params": params, "call_id": call_id})
         if method == "Input.dispatchMouseEvent":
             events.append(params)
         return {}
@@ -59,11 +63,19 @@ def _run_submit_click(tmp_path, monkeypatch, *, confirm_modal: bool) -> list[dic
     monkeypatch.setattr(application_parent.asyncio, "sleep", no_sleep)
 
     asyncio.run(effects._click_button_async(request_id, "応募する", confirm_modal=confirm_modal))
-    return events
+    return events, calls
 
 
 def test_submit_click_dispatches_complete_left_button_sequence(tmp_path, monkeypatch):
-    events = _run_submit_click(tmp_path, monkeypatch, confirm_modal=False)
+    events, calls = _run_submit_click(tmp_path, monkeypatch, confirm_modal=False)
+
+    methods = [call["method"] for call in calls]
+    enable_index = methods.index("Page.enable")
+    bring_to_front_index = methods.index("Page.bringToFront")
+    first_input_index = methods.index("Input.dispatchMouseEvent")
+    assert enable_index < bring_to_front_index < first_input_index
+    assert calls[bring_to_front_index]["params"] == {}
+    assert calls[bring_to_front_index]["call_id"] == calls[enable_index]["call_id"] + 1
 
     assert events == [
         {"type": "mouseMoved", "x": 10.0, "y": 20.0, "button": "none", "buttons": 0, "clickCount": 0},
@@ -73,7 +85,15 @@ def test_submit_click_dispatches_complete_left_button_sequence(tmp_path, monkeyp
 
 
 def test_terms_modal_dispatches_the_same_complete_left_button_sequence(tmp_path, monkeypatch):
-    events = _run_submit_click(tmp_path, monkeypatch, confirm_modal=True)
+    events, calls = _run_submit_click(tmp_path, monkeypatch, confirm_modal=True)
+
+    methods = [call["method"] for call in calls]
+    enable_index = methods.index("Page.enable")
+    bring_to_front_index = methods.index("Page.bringToFront")
+    first_input_index = methods.index("Input.dispatchMouseEvent")
+    assert enable_index < bring_to_front_index < first_input_index
+    assert calls[bring_to_front_index]["params"] == {}
+    assert calls[bring_to_front_index]["call_id"] == calls[enable_index]["call_id"] + 1
 
     assert events == [
         {"type": "mouseMoved", "x": 10.0, "y": 20.0, "button": "none", "buttons": 0, "clickCount": 0},

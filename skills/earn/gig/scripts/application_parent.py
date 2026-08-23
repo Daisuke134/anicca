@@ -1320,6 +1320,9 @@ class CdpParentEffects:
         ) as ws:
             call_id = 1
             await self._call(ws, "Page.enable", {}, call_id)
+            call_id += 1
+            await self._call(ws, "Page.bringToFront", {}, call_id)
+            call_id += 1
             state: dict[str, object] = {}
             for _ in range(24):
                 state, call_id = await self._eval_json(
