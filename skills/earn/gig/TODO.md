@@ -1808,6 +1808,12 @@ This removes the recurring zero-byte failure mode where a long recon pass reache
 stdout was flushed, losing every completed observation and forcing an expensive full rerun. Paid remote owners are
 explicitly instructed to use this durable output instead of shell redirection. Partial receipts remain partial and
 cannot prove exhaustion, but the next natural wake can resume from truthful saved progress.
+The pre-checkpoint owner reached its 30-minute remote-owner limit during that full pass before stdout could be
+committed. Its zero-byte redirected file was removed, the parent classified Manledge as `remote_builder`, and no X
+or Coconala mutation occurred during the read-only search. This is the final expected loss from the pinned
+`d81196657` process, not evidence of exhaustion. The next existing-launchd wake must run from current immutable
+release `442dd0175`, use the atomic `--output` contract, preserve each completed query across timeout/restart, and
+continue the same project lane without Codex performing the work.
 
 The same natural wake produced two independent Coconala effects through the shared answer path. BUYMA room
 `18128025` truthfully identified the two duplicate proposals as AI auto-applications, apologized, told the buyer no
