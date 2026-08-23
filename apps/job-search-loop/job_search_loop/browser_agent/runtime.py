@@ -396,9 +396,13 @@ async def _act_locked(action_path: Path) -> dict[str, Any]:
     before = await builder.build(cursor.handle)
     action_value = _private_action(action_path)
     action = _action(action_value)
-    decision_signature = _reject_repeated_decision(
-        before.content_sha256,
-        json.dumps(action_value, ensure_ascii=False, sort_keys=True).encode("utf-8"),
+    action_bytes = json.dumps(
+        action_value, ensure_ascii=False, sort_keys=True
+    ).encode("utf-8")
+    decision_signature = (
+        _decision_signature(before.content_sha256, action_bytes)
+        if action.kind == "wait"
+        else _reject_repeated_decision(before.content_sha256, action_bytes)
     )
     remaining = _wake_budget(consume=True)
     receipt = await ActionExecutor(session).execute(cursor.handle, action)
