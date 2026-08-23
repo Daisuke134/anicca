@@ -3582,6 +3582,7 @@ def _run_remote_repair(args, item_path: Path, root: Path, feedback: str, base: P
     try: requirements_sha256 = paid_remote_result.requirements_digest(root, feedback)
     except (OSError, ValueError, TypeError, json.JSONDecodeError) as error: raise Failure("context_compile") from error
     requirements_snapshot = _requirements_snapshot(root)
+    progress = root / "delivery" / "paid-remote-progress.jsonl"
     try: _, semantic_contract_sha256 = _semantic_effect_contract(root)
     except (OSError, ValueError, TypeError, json.JSONDecodeError) as error: raise Failure("context_compile") from error
     repair = base / "remote-repair"
@@ -3617,6 +3618,17 @@ def _run_remote_repair(args, item_path: Path, root: Path, feedback: str, base: P
                                args.cdp_helper, review_delta),
                 encoding="utf-8",
             )
+            with prompt.open("a", encoding="utf-8") as handle:
+                handle.write(
+                    f"\nDurable effect progress is {progress}. Read it before acting and never repeat an effect_key. "
+                    f"If it is absent or incomplete, inspect prior owner evidence under {root / 'evidence/agent-PAID_REMOTE_OWNER'}, "
+                    "verify each claimed effect again on the official target, and checkpoint only the exact readbacks before new mutations. "
+                    "Immediately after every official exact readback, write one project-owned effect JSON and run "
+                    f"python3 {HERE / 'effect_checkpoint.py'} --project-root {root} --effect-json <path>. "
+                    "Checkpoint before searching for the next target or composing the final result. quality_status is "
+                    "qualified, qualification, or invalid; qualification_sources must contain the official URLs or "
+                    "hash-bound project sources supporting the outbound claims.\n"
+                )
             owner_evidence = root / "evidence" / "agent-PAID_REMOTE_OWNER"
             owner_started_ns = time.time_ns()
             owner_command = [sys.executable, str(args.agent_runner), "--task-class", "escalation-agent",
@@ -3625,7 +3637,13 @@ def _run_remote_repair(args, item_path: Path, root: Path, feedback: str, base: P
                   "--evidence-dir", str(owner_evidence), "--task-label", "paid-remote-owner",
                   "--escalation-reason", "Sol owner mutates the authenticated paid target",
                   "--loop", "gig", "--workdir", str(root), "--timeout-seconds", "1800"]
-            _run(_private_model_runner(root, owner_command, "paid-remote-owner"), "remote_builder")
+            progress_size = progress.stat().st_size if _regular_file(progress) else 0
+            try:
+                _run(_private_model_runner(root, owner_command, "paid-remote-owner"), "remote_builder")
+            except Failure:
+                if _regular_file(progress) and progress.stat().st_size > progress_size:
+                    raise Failure("remote_progress")
+                raise
             _consultation_runner_result(
                 owner_evidence, task_label="paid-remote-owner", task_class="escalation-agent",
                 model=PAID_DECISION_MODEL, started_ns=owner_started_ns,
@@ -3804,6 +3822,12 @@ def _prepare_one(args, item_path: Path, output: Path) -> int:
                                 "_paid_prepare_status": "pending"})
                 return 0
         cause = error.__cause__
+        progress = root / "delivery" / "paid-remote-progress.jsonl" if isinstance(root, Path) else None
+        if isinstance(error, Failure) and error.step == "remote_progress" and progress is not None:
+            _write(output, {"status": "pending", "talkroom_id": room, "failed": 0,
+                            "failed_step": None, "effect": 0, "readback": 1,
+                            "progress_ledger": str(progress), "_paid_prepare_status": "pending"})
+            return 0
         failure = {
             "status": "failed", "talkroom_id": room, "failed": 1,
             "failed_step": error.step if isinstance(error, Failure) else "remote_resume",

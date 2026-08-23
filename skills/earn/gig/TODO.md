@@ -373,6 +373,16 @@ now requires a claim-to-source map before every external mutation: each factual 
 official URL or hash-bound project source; an unknown fact is omitted or asked as a concise qualification question.
 This remains model judgment and evidence binding, not a buyer-specific deterministic qualification gate.
 
+The 30-minute natural owner timed out after producing those official effects but before rewriting its canonical
+intent/result, so the parent reported `remote_builder` with effect zero. The effects lived only in provider stdout;
+the existing outreach CSV was an artifact template and did not checkpoint them. A shared mechanical checkpoint now
+fsync-appends each model-decided official effect to `delivery/paid-remote-progress.jsonl` immediately after readback,
+dedupes by effect key, records claim sources and quality status, and is read before the next owner acts. A timeout
+with durable progress becomes pending continuation rather than terminal failure. The model still chooses targets,
+claims, channel and next action; the script owns only persistence and replay safety. A fresh natural owner must now
+reconcile the already-observed official X effects into this ledger, exclude the quality-invalid third reply, and
+continue without repeating either valid contact.
+
 The resumed Manledge owner then exposed a second shared-tool contract defect: `x-repost` advertised generic
 `post` capability in the shared registry, but its production CLI accepted only `quote` and `reply` and required a
 source post URL. The owner correctly resolved and reused the skill, yet could not publish the approved standalone
