@@ -365,8 +365,22 @@ sent the concise post result once in exact room `18169985`. The installed effect
 the official room snapshot reads back the new seller message with the X URL redacted in stored customer data.
 Manledge remains open for replay-zero and the still-unfulfilled 50 qualified individual approaches.
 
+The same natural pass also sent Smile `18179735` one consultation answer and read it back from the exact official
+room (`effect=1`, `readback=1`, formal delivery off). Its approximately 1,600-character response was useful but
+too expansive for the buyer-message style contract, because the answer-owner prompt did not inherit the concise
+artifact-handoff guidance. The generic consultation owner now leads with the conclusion and keeps only decisive
+reasons and the next action; it produces a long report only when the buyer explicitly requests one. Do not resend
+or abridge the already-delivered Smile answer.
+
+The first replay pass exposed another self-invalidating boundary: a successful answer changes compiled context,
+so replay detection incorrectly required its prior semantic decision to remain current; the queue item also omits
+seller messages and exposes them only through its collector-owned `talkroom_evidence_file`. Replay recognition now
+loads that exact official room evidence, validates the room id, and binds the signed answer intent to unchanged
+buyer feedback and official seller-last. Live reproduction recognizes Smile as completed while correctly leaving
+Manledge actionable because its current semantic decision requires the still-unfulfilled 50 individual approaches.
+
 **Current live cursor.** `main` and `origin/main` were verified equal immediately before this snapshot at
-`883e92e2a`; the starting verification commit
+`9289798c8`; the starting verification commit
 `79ac01ba1eb66b06aed1f9cee66d4af303f03a3d` remains an ancestor. The existing launchd Paid owner is the only
 customer-effect owner. The authenticated gig-browser launcher and launchd manifest were still overriding the
 configured no-floor policy with a hard-coded 512 MiB headroom; the launcher also unset both ignore flags. Under
