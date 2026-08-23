@@ -188,7 +188,10 @@ raise SystemExit(0)
             provider["automation_home"],
             "~/.local/state/anicca/job-search/codex-runner",
         )
-        self.assertEqual(provider["auth_file"], "~/.codex/auth.json")
+        self.assertEqual(
+            provider["auth_file"],
+            "~/.config/anicca/job-search/codex-auth.json",
+        )
 
     def test_private_env_loader_reads_only_the_requested_key(self):
         with tempfile.TemporaryDirectory() as tmp:

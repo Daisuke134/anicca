@@ -6,7 +6,7 @@
     "codex": {
       "executable": "codex",
       "automation_home": "~/.local/state/anicca/job-search/codex-runner",
-      "auth_file": "~/.codex/auth.json",
+      "auth_file": "~/.config/anicca/job-search/codex-auth.json",
       "ssl_cert_file": "/etc/ssl/cert.pem",
       "project_doc_max_bytes": 0,
       "disabled_skills": ["imagegen", "openai-docs", "plugin-creator", "skill-creator", "skill-installer"],

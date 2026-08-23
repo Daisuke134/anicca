@@ -4,7 +4,7 @@
 
 **Goal:** Prevent another Life Manager or interactive Codex process from changing the authentication target used by the 30-minute Job Hunter owner.
 
-**Architecture:** Keep the existing runner and its fail-closed source/target identity check. Change only the configured Codex automation home from the shared Life Manager directory to the private Job Hunter state directory, so the existing runner creates and verifies a job-search-owned `auth.json` target.
+**Architecture:** Keep the existing runner and its fail-closed source/target identity check. Use a private Job Hunter automation home and make the installer atomically bind the active `CODEX_HOME/auth.json` to a stable private Job Hunter alias without copying credential bytes. The runner reads only that alias, so another Life Manager loop cannot change its target and a user can select the intended authenticated Codex account at install time.
 
 **Tech Stack:** JSON, Python `unittest`, existing Life Manager agent runner.
 
@@ -14,7 +14,7 @@
 
 - `ai.anicca.job-search-daily` remains the only acquisition owner.
 - `StartInterval=1800` remains unchanged.
-- The existing `auth_file` remains `~/.codex/auth.json`; credential bytes are never copied into repo, logs, evidence, or Telegram.
+- The runner reads `~/.config/anicca/job-search/codex-auth.json`; the installer binds it to the selected `CODEX_HOME/auth.json` by symlink, and credential bytes are never copied into repo, logs, evidence, or Telegram.
 - No second executor, browser, profile, credential store, or dependency is added.
 - A scheduled launchd wake, not a direct `run-daily.sh` invocation, is the production E2E gate.
 
@@ -29,7 +29,7 @@
 
 **Interfaces:**
 - Consumes: runner provider config keys `automation_home` and `auth_file`.
-- Produces: `CODEX_HOME=~/.local/state/anicca/job-search/codex-runner`, whose `auth.json` target is owned only by Job Hunter.
+- Produces: `CODEX_HOME=~/.local/state/anicca/job-search/codex-runner`, whose `auth.json` target resolves through the install-selected private alias.
 
 - [x] **Step 1: Write the failing test**
 
@@ -42,7 +42,10 @@ def test_runner_codex_home_is_job_search_owned(self):
         provider["automation_home"],
         "~/.local/state/anicca/job-search/codex-runner",
     )
-    self.assertEqual(provider["auth_file"], "~/.codex/auth.json")
+    self.assertEqual(
+        provider["auth_file"],
+        "~/.config/anicca/job-search/codex-auth.json",
+    )
 ```
 
 - [x] **Step 2: Run the test and verify RED**
@@ -54,7 +57,8 @@ Expected: FAIL because the current value is `~/.local/state/life-manager/codex-r
 - [x] **Step 3: Apply the minimal configuration change**
 
 ```json
-"automation_home": "~/.local/state/anicca/job-search/codex-runner"
+"automation_home": "~/.local/state/anicca/job-search/codex-runner",
+"auth_file": "~/.config/anicca/job-search/codex-auth.json"
 ```
 
 - [x] **Step 4: Verify GREEN and focused regression**

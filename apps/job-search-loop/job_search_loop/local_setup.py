@@ -119,6 +119,26 @@ def _atomic_private_write(path: Path, data: bytes) -> None:
         temporary.unlink(missing_ok=True)
 
 
+def _install_codex_auth_alias(config_dir: Path, env: dict[str, str]) -> Path:
+    home = Path(env.get("HOME") or Path.home())
+    codex_home = _absolute_root(env, "CODEX_HOME", home / ".codex")
+    source = codex_home / "auth.json"
+    if not source.is_file():
+        raise SetupError(f"Codex auth file not found: {source}")
+    source = source.resolve(strict=True)
+    alias = config_dir / "codex-auth.json"
+    if alias.exists() and not alias.is_symlink():
+        raise SetupError(f"Codex auth alias is not a symlink: {alias}")
+    temporary = alias.with_name(f".{alias.name}.tmp-{os.getpid()}")
+    try:
+        temporary.unlink(missing_ok=True)
+        temporary.symlink_to(source)
+        temporary.replace(alias)
+    finally:
+        temporary.unlink(missing_ok=True)
+    return alias
+
+
 def _load_profile(path: Path) -> dict[str, Any]:
     if not path.is_file():
         raise SetupError(f"profile not found: {path}")
@@ -160,6 +180,11 @@ def install(
 
     for directory in (config_dir, state_dir, data_dir):
         _private_dir(directory)
+    auth_alias = (
+        _install_codex_auth_alias(config_dir, env)
+        if selected_provider == "codex"
+        else None
+    )
     if not source_is_active:
         encoded_profile = (
             json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
@@ -175,6 +200,8 @@ def install(
         "state_root": str(state_dir),
         "data_root": str(data_dir),
     }
+    if auth_alias is not None:
+        receipt["codex_auth_alias"] = str(auth_alias)
     _atomic_private_write(
         install_path,
         (json.dumps(receipt, indent=2, sort_keys=True) + "\n").encode("utf-8"),
