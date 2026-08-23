@@ -11,6 +11,14 @@ MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
 
 
+def test_browser_fallback_is_repo_owned() -> None:
+    repo = Path(__file__).resolve().parents[4]
+    cdp = Path(MODULE.CDP).resolve()
+
+    assert cdp.is_relative_to(repo)
+    assert cdp.is_file()
+
+
 def test_private_metrics_and_suspended_dom_do_not_fabricate_zero(tmp_path, monkeypatch):
     settings = tmp_path / "instagrapi-capafy.example.json"
     settings.write_text("{}", encoding="utf-8")

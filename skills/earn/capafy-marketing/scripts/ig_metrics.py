@@ -15,7 +15,7 @@ import importlib.util
 import json, os, re, subprocess, sys, time
 from pathlib import Path
 
-CDP = os.path.expanduser("~/.agents/skills/ig-account-create/scripts/cdp.py")
+CDP = str(Path(__file__).resolve().parents[3] / "browser/scripts/cdp.py")
 PY = "/opt/homebrew/bin/python3"
 IGLEDGER = os.path.expanduser("~/.local/state/life-manager/state/capafy-marketing-ig-ledger.jsonl")
 METRICS = os.path.expanduser("~/.local/state/life-manager/state/capafy-marketing-ig-metrics.jsonl")
