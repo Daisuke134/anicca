@@ -47,6 +47,17 @@ existing lane contract by ignoring those two shared flags while retaining an exp
 RED for all three missing values and is GREEN; no global flag or Paid configuration
 was changed.
 
+Natural wake `storefront-direct-1787504054089137000-67566` proved both recovery
+changes in production: it ran from release `49e888ce1`, crossed the stale shared
+stop flags, read 13 official services, and rendered the confirmed gallery as
+`published=true`. It then failed before effect because the Storefront caller and
+`agent-runner/config.json` named `storefront-proposal-agent` while the runner CLI
+choices and tool-less class set omitted it. The class is now registered at that
+single runner boundary, requires prompt stdin, and receives no shell/code-mode
+tools. CLI/tool-starvation RED is GREEN; Storefront and runner verification is 79
+passed. The failed wake had `effect=0`, `readback=0`, `duplicate=0`; Telegram delivery
+was unknown. The next natural wake must prove the proposal/effect/readback path.
+
 ## Current scoped milestone: finish the public Coconala package
 
 The repository and `skills/earn/gig/` tree are already public on
