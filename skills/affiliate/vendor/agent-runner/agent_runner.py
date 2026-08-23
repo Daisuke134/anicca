@@ -778,7 +778,8 @@ def command_for(provider: str, executable: str, provider_config: dict[str, Any],
                 candidate: dict[str, Any], args: argparse.Namespace, prompt: str,
                 schema: dict[str, Any], result_path: Path, timeout_seconds: int,
                 session_id: str | None, openclaw_workdir: str | None = None,
-                *, prompt_via_stdin: bool = False) -> list[str]:
+                *, prompt_via_stdin: bool = False,
+                rollout_budget_tokens: int | None = None) -> list[str]:
     model = candidate["model"]
     effort = candidate.get("effort", "medium")
     if provider == "codex":
@@ -811,6 +812,15 @@ def command_for(provider: str, executable: str, provider_config: dict[str, Any],
                 raise ValueError("codex disabled_features must be a list of nonempty names")
             for feature in disabled_features:
                 command.extend(["--disable", feature])
+        if rollout_budget_tokens is not None:
+            if rollout_budget_tokens <= 0:
+                raise ValueError("codex rollout budget must be positive")
+            command.extend(["-c", (
+                "features.rollout_budget={enabled=true,"
+                f"limit_tokens={rollout_budget_tokens},"
+                "reminder_at_remaining_tokens=[],"
+                "sampling_token_weight=1.0,prefill_token_weight=1.0}"
+            )])
         command.extend([
             "--ignore-user-config", "--json",
             "--output-schema", str(provider_schema_path), "-o", str(result_path),
@@ -878,6 +888,8 @@ def classify_provider_error(rc: int, timed_out: bool, stdout: str, stderr: str, 
     # Claude prints quota/weekly-limit notices to stdout (with an empty
     # stderr), so both provider streams are part of the transient signal.
     text = f"{stdout}\n{stderr}\n{launch_error}".lower()
+    if "shared rollout token budget exhausted" in text:
+        return "native_rollout_budget_exhausted"
     if any(token in text for token in (
         "invalid credentials", "invalid api key", "invalid token",
         "permission denied", "insufficient permission", "forbidden", "unauthorized",
@@ -1074,6 +1086,7 @@ def run() -> int:
     attempts: list[dict[str, Any]] = []
     selected: dict[str, Any] | None = None
     budget_blocked: dict[str, Any] | None = None
+    native_budget_exhausted = False
     last_budget: dict[str, Any] = {
         "status": "disabled",
         "reason": "budget_not_configured",
@@ -1151,6 +1164,7 @@ def run() -> int:
                 provider, executable, provider_config, effective_candidate, parsed, candidate_prompt,
                 schema, result_path, timeout_seconds, session_id, openclaw_workdir,
                 prompt_via_stdin=parsed.prompt_stdin,
+                rollout_budget_tokens=pass_token_budget if budget_enabled else None,
             )
             with stdout_path.open("wb") as stdout, stderr_path.open("wb") as stderr:
                 try:
@@ -1225,6 +1239,7 @@ def run() -> int:
         error_class = None if (rc == 0 and schema_valid) else classify_provider_error(
             rc, timed_out, stdout_text, stderr_text, launch_error,
         )
+        native_budget_exhausted = error_class == "native_rollout_budget_exhausted"
 
         row = {
             "attempt": index,
@@ -1332,6 +1347,12 @@ def run() -> int:
         ):
             break
 
+    if native_budget_exhausted:
+        budget_blocked = {
+            **last_budget,
+            "status": "blocked",
+            "reason": "native_rollout_budget_exhausted",
+        }
     summary = {
         "version": 1,
         "started_at": started_at,

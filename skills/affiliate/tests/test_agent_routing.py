@@ -5,6 +5,8 @@ import hashlib
 import importlib.util
 import tempfile
 import unittest
+import sys
+from argparse import Namespace
 from pathlib import Path
 
 
@@ -20,7 +22,48 @@ def load_runner_module():
     return module
 
 
+def load_vendor_runner_module():
+    vendor = RUNNER.parents[1] / "vendor" / "agent-runner"
+    sys.path.insert(0, str(vendor))
+    spec = importlib.util.spec_from_file_location(
+        "affiliate_vendor_agent_runner", vendor / "agent_runner.py",
+    )
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
+
+
 class AffiliateAgentRoutingTests(unittest.TestCase):
+    def test_budgeted_codex_command_enforces_native_rollout_ceiling(self) -> None:
+        runner = load_vendor_runner_module()
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            command = runner.command_for(
+                "codex", "/usr/bin/codex", {},
+                {"model": "gpt-5.6-terra", "effort": "high"},
+                Namespace(task_class="marketing-agent", workdir=root, image=[]),
+                "bounded task", {"type": "object"}, root / "result.json", 60,
+                None, rollout_budget_tokens=8192,
+            )
+        expected = (
+            "features.rollout_budget={enabled=true,limit_tokens=8192,"
+            "reminder_at_remaining_tokens=[],sampling_token_weight=1.0,"
+            "prefill_token_weight=1.0}"
+        )
+        self.assertIn(expected, command)
+
+    def test_native_rollout_exhaustion_is_typed_budget_failure(self) -> None:
+        runner = load_vendor_runner_module()
+        self.assertEqual(
+            runner.classify_provider_error(
+                1, False,
+                '{"type":"turn.failed","error":{"message":"shared rollout token budget exhausted"}}',
+                "", "",
+            ),
+            "native_rollout_budget_exhausted",
+        )
+
     def test_strategy_and_repair_routes_are_explicit_and_single_candidate(self) -> None:
         config = json.loads(CONFIG.read_text(encoding="utf-8"))
         strategy = config["task_classes"]["marketing-agent"]
