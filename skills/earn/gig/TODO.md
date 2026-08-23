@@ -1814,6 +1814,13 @@ or Coconala mutation occurred during the read-only search. This is the final exp
 `d81196657` process, not evidence of exhaustion. The next existing-launchd wake must run from current immutable
 release `442dd0175`, use the atomic `--output` contract, preserve each completed query across timeout/restart, and
 continue the same project lane without Codex performing the work.
+That handoff is now live. Existing launchd run 9 started PID `28848`, rediscovered all ten purchased rooms, and
+spawned independent project workers. Manledge's fresh semantic owner independently reduced the ledger to eight,
+selected the same bounded 50-or-exhaustion outcome, and its new remote owner invoked the production adapter with
+`--output delivery/x-exhaustion-receipt-v3.json`. After the first query the partial receipt was already nonempty:
+`query_count=66`, `queries_attempted=1`, `queries_not_attempted=65`, `completed_at=null`, 66 per-query receipt rows
+and three checked official URLs. This proves timeout-safe natural continuation; it is progress only, not exhaustion
+or buyer completion, and the owner remains responsible for finishing the pass and truthful Coconala handoff.
 
 The same natural wake produced two independent Coconala effects through the shared answer path. BUYMA room
 `18128025` truthfully identified the two duplicate proposals as AI auto-applications, apologized, told the buyer no
