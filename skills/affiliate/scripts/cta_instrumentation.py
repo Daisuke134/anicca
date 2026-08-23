@@ -389,10 +389,43 @@ def join_provider_interval(state):
     rows = []
     for placement_id in sorted(cta_rows):
         after = (current_rows.get(placement_id, {}).get("provider_clicks") or {})
+        if not all(isinstance(after.get(key), int) for key in ("count", "unique_count")):
+            raise InstrumentationError("current provider click counter unavailable")
         before = (baseline_rows.get(placement_id, {}).get("provider_clicks") or {})
         if not all(isinstance(before.get(key), int) for key in ("count", "unique_count")):
-            before = after
-            provider_baseline_state = "INITIALIZED_FROM_CURRENT"
+            baseline_id = hashlib.sha256(
+                f"{interval_start}:{placement_id}".encode()
+            ).hexdigest()
+            baseline_path = state / "interval-provider-baselines" / f"{baseline_id}.json"
+            try:
+                persisted = json.loads(baseline_path.read_text())
+            except (OSError, ValueError):
+                persisted = {}
+            if (
+                persisted.get("interval_start") == interval_start
+                and persisted.get("placement_id") == placement_id
+                and all(isinstance(persisted.get(key), int) for key in (
+                    "provider_click_count", "provider_unique_click_count",
+                ))
+            ):
+                before = {
+                    "count": persisted["provider_click_count"],
+                    "unique_count": persisted["provider_unique_click_count"],
+                }
+                provider_baseline_state = "PERSISTED_INITIAL"
+            else:
+                before = after
+                atomic_write(baseline_path, {
+                    "schema_version": 1,
+                    "receipt_type": "AFFILIATE_INTERVAL_PROVIDER_BASELINE",
+                    "interval_start": interval_start,
+                    "placement_id": placement_id,
+                    "provider_click_count": after.get("count"),
+                    "provider_unique_click_count": after.get("unique_count"),
+                    "source_snapshot_sha256": current.get("snapshot_sha256"),
+                    "observed_at": observed_at(current),
+                })
+                provider_baseline_state = "INITIALIZED_FROM_CURRENT"
         else:
             provider_baseline_state = "OBSERVED"
         click_delta = after.get("count") - before.get("count")

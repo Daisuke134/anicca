@@ -61,6 +61,31 @@ class CtaInstrumentationTests(unittest.TestCase):
             self.assertEqual(child_row["provider_unique_click_delta"], 0)
             self.assertEqual(child_row["provider_baseline_state"], "INITIALIZED_FROM_CURRENT")
 
+            snapshots.append({
+                "snapshot_sha256": "c" * 64, "placements": [
+                    {"placement_id": "subtitle-en-1",
+                     "provider_clicks": {"count": 7, "unique_count": 6,
+                                         "observed_at": "2026-08-24T00:00:00+00:00"},
+                     "transactions": {"count": 0, "state": "OBSERVED"}},
+                    {"placement_id": child,
+                     "provider_clicks": {"count": 3, "unique_count": 3,
+                                         "observed_at": "2026-08-24T00:00:00+00:00"},
+                     "transactions": {"count": 0, "state": "OBSERVED"}},
+                ],
+            })
+            path.write_text("\n".join(json.dumps(row) for row in snapshots) + "\n")
+            MODULE.atomic_write(state / "provider-reports" / "partnerstack" / "latest.json", {
+                "observed_at": "2026-08-24T00:00:00+00:00",
+            })
+
+            later = MODULE.join_provider_interval(state)
+            later_child = next(
+                row for row in later["placements"] if row["placement_id"] == child
+            )
+            self.assertEqual(later_child["provider_click_delta"], 1)
+            self.assertEqual(later_child["provider_unique_click_delta"], 1)
+            self.assertEqual(later_child["provider_baseline_state"], "PERSISTED_INITIAL")
+
     def test_transforms_fixed_host_redirect_and_public_href_without_raw_receipt(self):
         library = '''const TOKEN = /^(ai|ho|ej|ee)_[a-z2-7]{20}$/;\nfunction destination(product, token, providerToken) {\n  if (product.kind === "app") {\n}\n    const product = match && products[match[1]];'''
         transformed = MODULE._transform_library(library)
