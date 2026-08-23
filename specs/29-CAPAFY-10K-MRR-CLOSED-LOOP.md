@@ -356,7 +356,7 @@ seller Web tokenはJWT 30日、current expiry `2026-09-22T00:20:00Z`。hourly ow
 
 loaded `ai.anicca.capafy-goal-monitor-hourly`をsafe kickstartしたproduction E2Eはruns `2→3`、last exit `0`。launchd contextでtoken `healthy_noop / remaining_days=29`、seller sales/ranking/statements全fresh、paid orders `1`、gross `$9.99`、settled MRR `$0`、legacy orders `5`隔離をreadbackし、同一semantic company receiptはTelegram `29481`へ重複送信せずdedupeする。
 
-official seller rankingをgrowth selectorへ接続する。hourly receiptは実winner `6839055303` / Academic Humanizer / buyout / `$9.99` / `one_time`を`source=official_publisher_console`付きで保存し、selectorは旧Agent APIのnull salesより公式winnerを優先する。本番selector readbackは`signal=sales / company_orders=1 / attribution_status=official_seller_ranking`。one-time winnerをsubscription winnerまたはMRR proofへ昇格させない。
+official seller rankingをgrowth selectorへ接続する。hourly receiptは実winner `6839055303` / Academic Humanizer / buyout / `$9.99` / `one_time`を`source=official_publisher_console`付きで保存し、selectorは旧Agent APIのnull salesより公式winnerを優先する。本番selector readbackは`signal=sales / company_orders=1 / attribution_status=official_seller_ranking`。company receiptの旧camelCase-only joinも修復し、run `capafy-6aea4000c07b70b16f945bf6`はwinner Agent `6839055303`、orders `1`、MRR `$0`、Telegram `29520`をreadbackする。one-time winnerをsubscription winnerまたはMRR proofへ昇格させない。commitsは`abf0f2451`、`da2a571d6`。
 
 3本目以降のcopy experimentを学習可能にするため、live Reel ledger rowへexact `caption`、on-screen `hook`、`listing_name`を必須化する。新native URLとselected Agent IDだけではterminal successにせず、3 fieldのいずれかがblankならrotation commit 0、wrapper rc `3`にする。次のData Analyst passから`ig_reflect`はhookとreachを同じReel identityで比較できる。focused 3件、shell syntax、fresh reviewer `ship`を確認し、commit `c3004dbdf`をmainへpushする。
 
