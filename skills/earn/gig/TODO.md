@@ -356,6 +356,15 @@ seller facts, skills and resource references are shared. The next immutable rele
 fresh owner sees this manifest without being reminded by Codex, resolves the existing resource, performs the real
 effect, records official readback and resumes after restart without duplicate effects.
 
+Before that new release took ownership, the still-running natural Manledge owner independently found a second
+qualified active candidate from official X search: `@syo19861103` publicly identifies as an Osaka bicycle Uber
+courier and states 10,000+ deliveries with a 100% rating. The owner sent the full approved individual invitation
+from `@selawmqt`; official X DOM read back the exact message at
+`https://x.com/selawmqt/status/2091339909156237677`, and the immediate replay returned `already_sent` with the same
+URL and exact-message readback. This is individual contact 2, not completion of the required 50 contacts or
+verified exhaustion. The new shared-manifest release remains responsible for durable continuation without either
+duplicate effect or Codex prompting.
+
 The resumed Manledge owner then exposed a second shared-tool contract defect: `x-repost` advertised generic
 `post` capability in the shared registry, but its production CLI accepted only `quote` and `reply` and required a
 source post URL. The owner correctly resolved and reused the skill, yet could not publish the approved standalone
