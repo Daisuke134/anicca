@@ -103,6 +103,7 @@ def pending_experiment(state_root, plans):
     used = {
         plan.get("experiment", {}).get("decision_id")
         for plan in plans if isinstance(plan.get("experiment"), dict)
+        and len(f"{plan.get('plan_id', '')}-1") <= 80
         and (
             plan.get("plan_id") == plan.get("experiment", {}).get("control_plan_id")
             or str(plan.get("plan_id", "")).startswith(
@@ -134,6 +135,11 @@ def pending_experiment(state_root, plans):
                 "success_metric": decision["success_metric"],
             }
     return None
+
+
+def experiment_plan_id(control_plan_id, short_id):
+    root = re.sub(r"(?:-experiment-[a-f0-9]{12})+$", "", control_plan_id)
+    return f"{root}-experiment-{short_id}"
 
 
 def select_opportunity(root, state_root, candidates, covered_families):
@@ -294,11 +300,12 @@ def discover_official_plan(root, state_root, now, opportunity_selector=select_op
         short_id = re.sub(r"[^a-z0-9]+", "", experiment["decision_id"].lower())[:12]
         if not short_id:
             raise CaptureError("experiment decision id is invalid")
-        plan_id = f"{control['plan_id']}-experiment-{short_id}"
+        plan_id = experiment_plan_id(control["plan_id"], short_id)
+        slug = experiment_plan_id(control["slug"], short_id)
         plan = {
             **control,
             "plan_id": plan_id,
-            "slug": f"{control['slug']}-experiment-{short_id}",
+            "slug": slug,
             "experiment": experiment,
         }
         plan.pop("opportunity_decision", None)

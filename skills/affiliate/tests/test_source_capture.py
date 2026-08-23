@@ -15,6 +15,48 @@ SPEC.loader.exec_module(MODULE)
 
 
 class SourceCaptureTest(unittest.TestCase):
+    def test_nested_experiment_plan_id_is_compact_enough_for_placement(self):
+        control = (
+            "elevenlabs-discovered-subtitle-translator-en-"
+            "experiment-1ecf26fe47e1"
+        )
+        plan_id = MODULE.experiment_plan_id(control, "c682536aed63")
+        self.assertEqual(
+            plan_id,
+            "elevenlabs-discovered-subtitle-translator-en-experiment-c682536aed63",
+        )
+        self.assertLessEqual(len(f"{plan_id}-1"), 80)
+
+    def test_oversized_experiment_plan_does_not_consume_ready_decision(self):
+        with tempfile.TemporaryDirectory() as directory:
+            state = Path(directory)
+            decisions = state / "acquisition-decisions"
+            decisions.mkdir(parents=True)
+            decision = {
+                "state": "READY", "decision_id": "c682536aed63",
+                "baseline_sha256": "a" * 64,
+                "plan_id": (
+                    "elevenlabs-discovered-subtitle-translator-en-"
+                    "experiment-1ecf26fe47e1"
+                ),
+                "placement_id": "control-1",
+                "selected_variable": "title", "hypothesis": "hypothesis",
+                "next_campaign_instruction": "change only title",
+                "success_metric": "page views > 0",
+            }
+            (decisions / "decision.json").write_text(json.dumps(decision))
+            plans = [{
+                "plan_id": f"{decision['plan_id']}-experiment-c682536aed63",
+                "experiment": {
+                    "decision_id": decision["decision_id"],
+                    "control_plan_id": decision["plan_id"],
+                },
+            }]
+            self.assertEqual(
+                MODULE.pending_experiment(state, plans)["decision_id"],
+                decision["decision_id"],
+            )
+
     def test_discovery_uses_agent_selected_candidate_instead_of_sitemap_order(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory) / "skill"

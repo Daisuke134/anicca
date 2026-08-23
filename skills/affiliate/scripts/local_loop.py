@@ -2595,6 +2595,7 @@ def advance_generic_publication(
     x_publisher = x_publisher or default_x_publisher
     link_acquirer = link_acquirer or elevenlabs_link_action
     completed = False
+    invalid_metadata = False
 
     def generic_link_receipt_pending(placement):
         return not any(
@@ -2693,7 +2694,8 @@ def advance_generic_publication(
             not re.fullmatch(r"[a-z0-9][a-z0-9-]{2,100}", slug)
             or not re.fullmatch(r"[a-z0-9][a-z0-9-]{2,80}", placement)
         ):
-            return {"state": "CAMPAIGN_METADATA_INVALID", "public_url": None}
+            invalid_metadata = True
+            continue
         progress_path = state / "campaign-publications" / f"{plan_id}.json"
         try:
             progress = json.loads(progress_path.read_text(encoding="utf-8"))
@@ -2857,7 +2859,11 @@ def advance_generic_publication(
         atomic_json(progress_path, progress)
         return {"state": "X_LIVE", "public_url": posted["public_url"], **link_metadata}
     return {
-        "state": "ALREADY_LIVE" if completed else "NO_DUE_PUBLICATION",
+        "state": (
+            "ALREADY_LIVE" if completed
+            else "CAMPAIGN_METADATA_INVALID" if invalid_metadata
+            else "NO_DUE_PUBLICATION"
+        ),
         "public_url": None,
     }
 
