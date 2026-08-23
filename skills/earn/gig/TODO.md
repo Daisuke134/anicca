@@ -427,6 +427,16 @@ composer and formal delivery unchecked, while its seller-message history contain
 handoff. The durable owner therefore performed no replay. Buyer approval and any later requested correction remain
 live transaction work; Haru no longer blocks advancement to the next still-pending Paid room.
 
+Aufbau `18178439` was the next official silent liability: the buyer had supplied `MSG41.pdf`, no buyer-visible
+artifact had been sent, and the durable v1 package was already acceptance-PASS. The isolated owner was stopped
+after it re-entered generic CAD-tool discovery despite the verified prior package; other Paid workers continued.
+`MSG41_CAD_Review_v1.zip` was then attached once for review with formal delivery off. Its SHA-256 is
+`162629feed1809c20ad37ef56458d1fcfd79ab7fd4d06c570a13193cac5360fa`; the archive contains the separate
+MSG41P-1Y1-L and MSG41RR-1Y1-M1 models plus their assembled state in STEP and IGES, the source drawing and README.
+Exact-room post-send DOM readback binds that filename, customer message, room and hash while the formal checkbox
+remains unchecked. Immediate replay returned `send_performed=false` and `deduplicated=true` with the same effect
+keys. The next natural Paid wake must rediscover this effect without sending it again.
+
 **Current runtime refresh.** Unrelated dirty files remain untouched. The existing Paid pass naturally resumed the
 Haru v43 staging after compiling
 the complete proposal, DM, talkroom and attachment context. Haru `18169583` remains unsent. The resumed owner first
