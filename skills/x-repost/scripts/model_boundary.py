@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sys
 from pathlib import Path
@@ -32,10 +33,24 @@ def prepare(home: Path, auth: Path) -> Path:
 
 
 def classify(paths: list[Path], returncode: int | None) -> str:
-    text = "\n".join(
-        item.read_text(encoding="utf-8", errors="replace")
-        for item in paths if item.is_file()
-    ).lower()
+    messages = []
+    for item in paths:
+        if not item.is_file():
+            continue
+        for line in item.read_text(encoding="utf-8", errors="replace").splitlines():
+            try:
+                event = json.loads(line)
+            except json.JSONDecodeError:
+                messages.append(line)
+                continue
+            if not isinstance(event, dict):
+                continue
+            if event.get("type") == "error":
+                messages.append(str(event.get("message") or ""))
+            elif event.get("type") == "turn.failed":
+                error = event.get("error")
+                messages.append(str(error.get("message") if isinstance(error, dict) else error or ""))
+    text = "\n".join(messages).lower()
     if any(token in text for token in (
         "failed to lookup address information", "connection failed",
         "error sending request", "stream disconnected before completion",

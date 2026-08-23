@@ -1,5 +1,6 @@
 import json
 import os
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -59,6 +60,17 @@ class ModelBoundaryTest(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual(result.stdout.strip(), "quota")
 
+    def test_classify_ignores_limit_words_in_non_error_events(self) -> None:
+        with tempfile.TemporaryDirectory() as root:
+            stdout = Path(root) / "model.stdout"
+            stdout.write_text(json.dumps({
+                "type": "item.completed",
+                "item": {"type": "agent_message", "text": "Add API rate limit handling."},
+            }))
+            result = self.run_boundary("classify", str(stdout))
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(result.stdout.strip(), "other")
+
     def test_classify_preserves_network_failure_even_when_outer_timeout_fires(self) -> None:
         with tempfile.TemporaryDirectory() as root:
             stdout = Path(root) / "model.stdout"
@@ -92,6 +104,63 @@ class ModelBoundaryTest(unittest.TestCase):
         self.assertIn('BROWSER_LEASED=1', source)
         self.assertNotIn('LEASE_HELD=', source)
         self.assertNotIn('CDP=""', source)
+
+    def test_real_shell_boundary_maps_provider_failures_without_publish(self) -> None:
+        source = CLI.read_text()
+        ask_start = source.index("ask_model() {")
+        handle_start = source.index("handle_model_failure() {")
+        handle_end = source.index("# Publishing and collection", handle_start)
+        functions = source[ask_start:handle_end]
+        cases = (
+            ('printf \'{"type":"error","message":"usage limit"}\\n\'; exit 1', "quota", 0, True),
+            ('printf \'{"type":"error","message":"failed to lookup address information"}\\n\'; exit 1', "network", 1, False),
+            ('printf \'{"type":"error","message":"unauthorized"}\\n\'; exit 1', "auth", 1, False),
+            ("sleep 2", "timeout", 1, False),
+        )
+        for fake_body, expected_kind, expected_rc, expected_heartbeat in cases:
+            with self.subTest(expected_kind=expected_kind), tempfile.TemporaryDirectory() as root:
+                root_path = Path(root)
+                auth = root_path / "auth.json"
+                auth.write_text("{}")
+                fake = root_path / "codex"
+                fake.write_text(f"#!/bin/sh\n{fake_body}\n")
+                fake.chmod(0o755)
+                prompt = root_path / "prompt.txt"
+                prompt.write_text("return json")
+                state, evidence = root_path / "state", root_path / "evidence"
+                state.mkdir()
+                evidence.mkdir()
+                values = {
+                    "PY": sys.executable, "MODEL_BOUNDARY": str(SCRIPT),
+                    "CODEX_AUTH_FILE": str(auth),
+                    "CODEX_AUTOMATION_HOME": str(root_path / "automation"),
+                    "CODEX": str(fake), "MODEL": "fake", "REASONING_EFFORT": "low",
+                    "SKILL": str(CLI.parent), "EV": str(evidence), "STATE": str(state),
+                }
+                assignments = "\n".join(
+                    f"{key}={shlex.quote(value)}" for key, value in values.items()
+                )
+                harness = f"""set -uo pipefail
+{assignments}
+X_REPOST_MODEL_TIMEOUT=1
+MODEL_FAILURE=other
+{functions}
+report() {{ :; }}
+lesson() {{ :; }}
+run_x_post() {{ touch {shlex.quote(str(root_path / 'published'))}; }}
+finish() {{ rc=$1; [ "$rc" -eq 0 ] && touch "$STATE/.last-pass"; return "$rc"; }}
+if ask_model {shlex.quote(str(prompt))} {shlex.quote(str(evidence / 'raw'))} >{shlex.quote(str(evidence / 'json'))}; then exit 42; fi
+printf 'kind=%s\\n' "$MODEL_FAILURE"
+handle_model_failure step {shlex.quote(str(evidence / 'raw'))}
+exit $?
+"""
+                result = subprocess.run(
+                    ["bash", "-c", harness], text=True, capture_output=True, check=False
+                )
+                self.assertEqual(result.returncode, expected_rc, result.stderr)
+                self.assertIn(f"kind={expected_kind}", result.stdout)
+                self.assertEqual((state / ".last-pass").exists(), expected_heartbeat)
+                self.assertFalse((root_path / "published").exists())
 
 
 if __name__ == "__main__":
