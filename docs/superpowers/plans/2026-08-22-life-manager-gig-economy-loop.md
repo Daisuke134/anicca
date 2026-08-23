@@ -5,14 +5,15 @@
 > checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Close one real Upwork email-signup/login → job → proposal → negotiation → contract →
-delivery → received-payment loop first, then generalize the proven receipts into the local-first
-open-source portfolio agent and add remaining markets one at a time.
+delivery → received-payment loop, repeat it across three independent paid jobs, then operate the
+proven local loop until one complete calendar month reaches USD 10,000 verified net received before
+adding another market.
 
 **Architecture:** The active slice is Upwork only. It uses the dedicated CloakBrowser profile,
 normal owner email/password authentication, Upwork-scoped state and the smallest existing durable
 effect primitives needed for the first live path. Coconala continues independently and contributes
 neither runtime state nor capacity to Upwork. Cross-market Portfolio CEO and Skill Factory work
-resumes only after Upwork receives one real payment.
+resumes only after the Upwork USD 10,000 received-cash gate closes.
 
 **Tech Stack:** Python 3.13+, standard-library SQLite/JSON, existing CloakBrowser CDP helpers,
 approved provider APIs, existing launchd release system, pytest with plugin autoload disabled.
@@ -22,7 +23,8 @@ approved provider APIs, existing launchd release system, pytest with plugin auto
 ## Global constraints
 
 - Execute exactly one task at a time and commit/push after its verification passes.
-- Until the first Upwork payment, mutate and measure Upwork only; do not operate on Coconala.
+- Until the Upwork USD 10,000 received-cash gate, mutate and measure Upwork only; do not operate on
+  Coconala from this plan.
 - Use normal owner email/password signup/login for Upwork. DO NOT use Google, Apple or social login.
 - Create an Upwork account only if the owner email has no existing account; never create a duplicate.
 - Upwork capacity counts active Upwork contracts only. Never read Coconala projects as Upwork capacity.
@@ -265,11 +267,34 @@ No later task may jump ahead of the first incomplete row:
 | U17 | Negotiate and accept profitable terms | Offer ID, exact terms hash and active contract ID |
 | U18 | Fulfill and independently verify the work | Artifact hash and independent verifier PASS |
 | U19 | Deliver once | Official submission ID/state and replay with zero duplicate delivery |
-| U20 | Reconcile money and review | Received transaction, fee, costs, payout and honest review evidence |
+| U20 | Reconcile money and review | Official payout `received`, transaction, fee, actual costs and honest review evidence; Pending/Available excluded |
 | U21 | Repeat on three independent paid jobs | Three contract/payment/review IDs and complete per-job economics |
+| U22 | Operate the proven Upwork loop to USD 10k/month | One complete calendar-month window totals at least USD 10,000 verified net received; cross-month payouts and later chargebacks are attributed once to their actual months |
 
 Later implementation tasks are renumbered only when their first incomplete outcome becomes active.
-All cross-market tasks remain frozen until the first received Upwork payment closes.
+All cross-market tasks remain frozen until U22 closes.
+
+The last complete official snapshot is stale and shows applications 0, contracts 0 and payout
+`received` USD 0; pipeline values do not change it. Upwork finance main proof is `12d92846e`, its
+production proof is `c0c66c32f`, and release tests are 40/40. U13 remains
+active because `launchctl gui/501` returns 141, while CDP 9222 is `job-search-daily`, not `gig-upwork`; no
+fresh official Upwork inventory proves recovery.
+
+Remaining order to finish the local Upwork skill and business loop:
+
+| Order | Required closure |
+|---:|---|
+| 1 | Native Aqua verifies/restarts the existing browser job and reads back owner, profile and CDP; no replacement service |
+| 2 | Two existing provider wakes return a complete official inventory, then replay with external effects 0 |
+| 3 | U14–U15 close one natural qualified acquisition with official ID, exact Connects delta and replay 0 |
+| 4 | U16–U17 close client reply, profitable terms and active contract with official IDs and replay 0 |
+| 5 | U18–U19 close immutable build, independent PASS, one delivery ID and duplicate 0; Task 20 runs only on a real revision |
+| 6 | U20 joins gross, fee, adjustment, cost and payout `received`; cross-month payout/chargeback follows occurrence month |
+| 7 | U21/Task 22 close three independent paid-review paths with complete economics and no unresolved or duplicate effect |
+| 8 | U22 repeats the winner to USD 3,000 then USD 10,000 verified net received, changing one strategy variable at a time |
+
+Engineering completion is Task 22's repeatability gate. Business completion is U22. Neither a test
+pass nor a deployed release satisfies a live receipt checkbox.
 
 U3 closure evidence: factual profile `~01f5fe272d6df34084` is published with the authentic owner
 photo, Status Online and More than 30 hrs/week. The official completion meter is 40%, identity is
@@ -405,10 +430,11 @@ U13 atomic order:
     live and rollback releases. Free space recovered from roughly 320 MiB to 20.08 GiB; the owning
     disk sentinel then cleared both `disk-writers.stop` and `disk-pressure.block` through their
     normal >=11 GiB recovery condition. The remaining fault is the orphaned Codex GUI context:
-    `launchctl print gui/501/...` returns 141, the previous Chromium reports WindowServer port death,
-    and the canonical browser entrypoint cannot persist the macOS Chromium policy or start ports
-    9223/9233 from this context. No alternate profile, fake browser receipt, proposal or payment was
-    created. The next native Aqua wake must restart `ai.anicca.hf-gig-browser`, then the existing
+    `launchctl print gui/501/...` returns 141 and the previous Chromium reported WindowServer port
+    death. A later read-only probe finds Chromium PID `74749` listening on CDP 9222, but argv binds it
+    to `~/.cloak/profiles/job-search-daily`, not `gig-upwork`, and its open pages are unrelated to
+    Upwork. No alternate profile, fake browser receipt, proposal or payment was created. The next
+    native Aqua wake must verify or restart the existing `ai.anicca.hf-gig-browser`, then the existing
     five-minute provider must refresh all official rows before U14 may act.
 13. **CANDIDATE COST EVIDENCE REPAIRED:** fresh host readback still shows no CDP listener on
     9223/9233 and the isolated Codex context still returns launchctl 141/manager 153. The correct
@@ -1106,7 +1132,26 @@ fresh official transaction window is not.
 - [ ] Advance only when all three paths pass; otherwise persist the exact failed entity/stage.
 - [ ] Run gate tests and commit/push.
 
+### Task 22A: Operate Upwork to the USD 10k received-cash gate
+
+**Files:** Modify `skills/earn/gig/scripts/providers/upwork_finance.py` and
+`skills/earn/gig/tests/test_upwork_finance.py` only.
+
+**Interfaces:** Add `cash_accounting_period` to normalized cash-relevant rows, then
+`summarize_verified_month(rows, accounting_period, source_window) -> int | None`. Require `complete`
+and exact first/last calendar-day bounds. For the requested period, sum `verified_net_usd_minor`
+where `cash_accounting_period` matches regardless of payment state; return `None` if any such row
+lacks join/cost evidence, and reject duplicate transaction IDs.
+
+- [ ] Test partial-month rejection, cross-month payout, an `available` payment with a later negative
+  chargeback, pre-payout adjustment, unknown evidence and USD 9999.99/USD 10000.00 boundaries.
+- [ ] Repeat the winning Skill and change one strategy variable at a time until a complete month
+  returns at least `1_000_000`; then close G11 and unlock Phase C.
+
 ## Phase C — Fiverr second complete adapter
+
+Phase C is locked until Task 22A closes G11. A first Upwork payment or three-job repeatability alone
+does not unlock a second growth market.
 
 ### Task 23: Record Fiverr authorization and authenticated transport
 

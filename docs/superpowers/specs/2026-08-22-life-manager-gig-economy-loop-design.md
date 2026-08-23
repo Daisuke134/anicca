@@ -6,7 +6,9 @@ Life Manager ultimately contains one revenue system, not one harness per marketp
 delivery slice is now **Upwork only**. Coconala continues running independently and is neither an
 Upwork dependency nor an Upwork capacity source. Fiverr, LinkedIn, Mercor, TELUS Digital,
 Welocalize, uTest, Prolific, Outlier and Babel Audio stay frozen until Upwork closes one real
-proposal-to-received-payment path.
+proposal-to-received-payment path. Upwork remains the only growth market until one complete calendar
+month reaches USD 10,000 verified net received revenue; a first payment unlocks learning, not another
+market implementation.
 
 The target is an open-source, local-first agent that discovers demand, builds or selects Skills,
 sells work, fulfills it, verifies delivery and payment, and reallocates effort toward the highest
@@ -137,7 +139,8 @@ demand → qualified offer → sale → verified fulfillment → received money
        → attributed economics → one bounded improvement → repeat
 ```
 
-The first portfolio outcome gate is USD 10,000 verified net monthly revenue. The long-range gate is
+The first portfolio outcome gate is USD 10,000 verified net received revenue in one complete calendar
+month. The long-range gate is
 JPY 10,000,000 verified net monthly revenue. Neither is an income promise.
 
 ### 1.2 Objective function
@@ -145,12 +148,13 @@ JPY 10,000,000 verified net monthly revenue. Neither is an income promise.
 The allocator maximizes long-run verified contribution, not gross proposal value:
 
 ```text
-verified_net = received_gross
-             - provider_fee
-             - Connects_or_bid_cost
-             - model_and_tool_cost
-             - subcontractor_cost
-             - refund_and_chargeback
+recognized_cash(M) = sum(official payout rows with status=received and received_month=M)
+                   - sum(post-payout refunds and chargebacks whose occurrence_month=M)
+
+verified_net_received(M) = recognized_cash(M)
+                         - Connects_or_bid_cost_charged_once_in_M
+                         - model_and_tool_cost_charged_once_in_M
+                         - subcontractor_cost_charged_once_in_M
 
 portfolio_utility = expected_verified_net
                   - capital_at_risk
@@ -176,10 +180,21 @@ its official proposal surface explicitly reads back `connects_cost=0`.
 
 During the Upwork proof, `delivery capacity` means active Upwork contracts only. Coconala orders,
 projects and stale Coconala talkroom states MUST NOT make an Upwork opportunity eligible or
-ineligible. Portfolio-wide allocation begins only after Upwork receives its first real payment.
+ineligible. Portfolio-wide allocation begins only after Upwork closes G11; first cash starts the
+Upwork learning ladder but does not unlock another market.
 
-One-off revenue, repeat revenue and MRR remain separate. Missing evidence is `unknown`, not zero.
-Only received payment plus actual cost evidence enters `verified_net`.
+Each received payout must equal its gross payment minus fee and every refund/chargeback occurring on
+or before that payout. Those pre-payout adjustments are already inside the payout amount and are not
+subtracted again; only later adjustments become separate negative revenue. The provider fee is also
+never subtracted twice.
+`Work in progress`, `In review`, `Pending` and `Available` remain operational pipeline fields only;
+none is revenue. A payout received after the contract month enters the payout's received month. A
+later refund or chargeback enters its actual later month as negative revenue without charging the
+original execution cost twice. A transaction ID may belong to only one occurrence month.
+
+One-off revenue, repeat revenue and MRR remain separate. Missing source windows, fees, payout IDs or
+project joins are `unknown`, not zero. Only official payout `received` plus complete actual cost
+evidence enters `verified_net_received` or the USD 10,000 gate.
 
 ### 1.3 Human-minimized contract
 
@@ -478,7 +493,8 @@ allocator whose rewards come only from external receipts.
 ## 5. Market sequence
 
 Markets are completed one at a time. The default queue is deterministic; after Upwork closes its
-three-job gate, the CEO may reorder the remaining queue only from measured opportunity, margin,
+three-job gate it keeps scaling Upwork, and only after G11 may the CEO reorder the remaining queue
+from measured opportunity, margin,
 authorization and human-minute evidence.
 
 | Order | Market | Intended lane | Unique lesson / Skill |
@@ -495,8 +511,9 @@ authorization and human-minute evidence.
 | 9 | Outlier | Project-specific authorized AI work | Rubric-bound production and strict provenance |
 | 10 | Babel Audio | Human voice/data contribution | Physical-capture ceremony, audio QA and submission receipts |
 
-Each market may finish as `active`, `assisted`, `denied` or `unprofitable`. A denial or negative
-margin is a valid completed experiment; it is not a reason to weaken the kernel.
+After G11, each later market may finish as `active`, `assisted`, `denied` or `unprofitable`. Before
+G11, Upwork denial or negative margin pauses this design and exposes its evidence; it does not
+automatically unlock the next market or weaken the kernel.
 
 ## 6. Upwork reference adapter
 
@@ -528,6 +545,26 @@ The loop optimizes the measured funnel
 Ten qualified proposals without a view trigger a profile/first-lines/proof correction; they do not
 automatically authorize more Connects spend. Project Catalog, invitations and proposals share the
 same contract, delivery, payment and review receipts after acquisition.
+
+### 6.1A Beginner-to-USD-10k operating ladder
+
+The strategy assumes no prior reviews, invitations, repeat clients or referrals. It cannot guarantee
+income; it runs staged evidence gates until cash reaches USD 10,000 or Upwork proves unprofitable.
+
+| Stage | Objective | What the loop does | Exit evidence |
+|---|---|---|---|
+| Control plane | Restore trustworthy observation | Native Aqua owner verifies or restarts the existing browser job; one fresh provider wake reconciles account, Connects, Catalog, candidates, inbox, offers, contracts and finance | Complete official inventory; external effects 0 |
+| 0 reviews → first cash | Buy trust with a small outcome, not unpaid work | Keep the approved $75 three-day API package live, retain three recent low-competition one-to-three-day candidates, tailor only evidence-backed proposals, and prioritize qualified Catalog orders, invitations and Direct Offers | One contract, independently verified delivery, honest review and official payout `received` |
+| 1 → 3 paid reviews | Repeat the proven unit | Reuse the same Skill/package before adding categories, preserve fast response and delivery, ask only for an honest review, and prefer repeat work from satisfied clients | Three independent contract, delivery, payout and review identities with complete economics |
+| Repeatable → USD 3k/month | Raise value without widening failure surface | Test one variable at a time across package, price, proof or proposal opening; keep the active-contract cap; retain only changes that improve received net without late work, revision or refund regressions | One complete month at least USD 3,000 verified net received |
+| USD 3k → USD 10k/month | Scale the proven winner | Favor repeat clients and larger bounded milestones built from the winning Skill, add Catalog variants only for observed demand, and allocate capacity by received net per constrained delivery hour | One complete month at least USD 10,000 verified net received |
+
+The allocator chooses ticket size from observed close rate, delivery time, revisions, fee and
+adjustments; it does not forecast income from a preferred mix. Upwork's guidance supports a complete
+profile, niche, tailored proposals, portfolio, feedback, repeat clients and specialized fixed-price
+Catalog work. Qualification uses the displayed contract fee, not a universal percentage.
+
+Sources: [beginner tips](https://www.upwork.com/resources/how-to-get-more-jobs-on-upwork), [Project Catalog](https://support.upwork.com/hc/en-us/articles/360057397533-Project-Catalog-for-freelancers), [fees](https://support.upwork.com/hc/en-us/articles/211062538-Freelancer-Service-Fees), [earnings statuses](https://support.upwork.com/hc/en-us/articles/211068418-How-to-track-the-status-of-your-earnings-on-Upwork).
 
 ### 6.2 Continuous application reconciliation
 
@@ -635,10 +672,10 @@ promise of earnings.
 | G5 Upwork delivery | Artifact QA, one delivery effect and official submission state |
 | G6 first cash | Received payment, fee, cost and payout evidence reconcile to the project |
 | G7 repeatability | Three independent paid Upwork jobs; zero blind duplicate effects |
-| G8 second market | Fiverr reaches one verified payment without kernel duplication |
+| G8 second market | After G11, Fiverr reaches one verified payment without kernel duplication |
 | G9 market factory | A third market is added from templates without changing kernel contracts |
 | G10 learning | One strategy/Skill canary produces an evidence-backed keep or revert |
-| G11 USD 10k | Complete sources prove USD 10,000 verified monthly net |
+| G11 Upwork USD 10k | One complete calendar-month source window proves at least USD 10,000 `verified_net_received`; Pending/Available are excluded and later chargebacks enter their occurrence month |
 | G12 JPY 10m | Provider and bank sources prove JPY 10,000,000 verified monthly net |
 | G13 replication | A clean third device completes setup and one authorized receipt path |
 
@@ -658,6 +695,7 @@ promise of earnings.
 | Reconciliation preempts acquisition | Unread message, offer, paid deadline or unknown effect blocks a new proposal tick until reconciled | Required |
 | Negotiation creates no duplicate message | Official story/message IDs across replay | Required |
 | Contract, delivery and money reconcile | Contract ID, submission ID, transaction ID and actual fee/cost evidence | Required |
+| USD 10k uses cash truth | Complete calendar-month window; only payout `received`; Pending/Available excluded; cross-month payout and later chargeback attributed once | Required |
 
 | E2E item | Value |
 |---|---|
@@ -668,17 +706,19 @@ promise of earnings.
 
 | Scenario | Result |
 |---|---|
-| Worst | A market proves denied, technically inaccessible or negative-margin; it is retired with no duplicate effects and the next market is tested. |
-| Base | Upwork and Fiverr produce repeat paid work while assisted markets improve net per human minute. |
-| Best | Several independent lanes reach capacity-safe positive contribution and the CEO reallocates toward USD 10k then JPY 10m gates. |
+| Worst | Upwork proves denied or negative-margin; effects stop safely and a separately approved design decides whether to change constraints or markets. |
+| Base | Upwork reaches repeat paid work and climbs the received-cash ladder before the second market opens. |
+| Best | Upwork closes the USD 10k gate with repeat clients and bounded high-value milestones, then the CEO generalizes the proven receipts. |
 
 The strongest argument for implementing all ten adapters immediately is faster market coverage. It
 is rejected because ten unproved transports hide whether demand, conversion, fulfillment or payment
 is broken. One complete market at a time produces reusable evidence.
 
 The most likely way this design is wrong is that Upwork's close rate or fulfillment margin is lower
-than expected. The correction is automatic portfolio reallocation after the first complete payment
-windows, not protecting Upwork as a permanent favorite.
+than required for USD 10,000 within the fixed capacity and zero-spend policy. The loop must expose
+that with complete funnel and cash evidence; it may not report a guarantee or substitute
+Pending/Available for revenue. Changing the zero-spend constraint or opening another market requires
+a separately authorized design change.
 
 ## 11. Implementation boundary
 
