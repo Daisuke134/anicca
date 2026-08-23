@@ -7473,3 +7473,16 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   not modified. The next existing-owner wake must prove account-2 auth, a new
   scheduler-run budget scope, and either a sealed decision or an accurately
   typed budget/provider failure.
+- Existing-owner wake at `2026-08-23T18:49:03Z` proves the acquisition repair:
+  baseline `94963719...` moved `DECISION_FAILED → READY`, produced sealed
+  decision `c682536a...`, selected only `title`, and instructed the next Dev.to
+  campaign to use exactly `ElevenLabs Subtitle Translator for Creators: Make
+  Multilingual Videos Easier` while retaining hook, structure, CTA, provider
+  link, placement, and distribution. The DEVTO baseline has zero page views, so
+  its success metric is the next exact 24-hour `devto_page_views > 0`, not money.
+  Revenue remains `NO_TRANSACTIONS` with approved/paid zero.
+- The same receipt exposes a separate budget-accounting defect: reservation was
+  8,192 tokens, provider-reported charge was 28,755, and daily consumption moved
+  to 45,139 against a 32,768 configured limit. The daily gate blocks subsequent
+  calls but cannot prevent this call from overshooting after settlement. Do not
+  hide this as GREEN capacity or treat the acquisition decision as profit.
