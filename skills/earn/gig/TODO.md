@@ -1548,7 +1548,19 @@ the concise answer once. Its result records `effect=1`, `readback=1`, `send_perf
 `0aa66bd32d500931dba40ab4140a58d3c0bcd3a720d9e732863e554f4be7f140`, an empty composer, and the
 room remains `取引中`. This proves autonomous discovery, independent lane creation and one real answer
 effect for the new room; it does not yet prove replay-zero, completion of its purchased work, Manledge's
-remaining 46 qualified contacts, or Paid-wide silent-pending zero.
+remaining qualified contacts, or Paid-wide silent-pending zero.
+
+In parallel, the natural Manledge owner recovered and officially read back one additional qualified
+individual approach to `@taka_kimura0701` at
+`https://x.com/selawmqt/status/2091350336401551647`. The candidate-specific message says
+`評価4.5以上`, its official qualification sources prove Osaka, bicycle delivery and a current rating above
+that threshold, and the fsync ledger marks it `counts_toward_50=true`; the valid count is now 5 of 50 and
+45 valid contacts or verified reachable exhaustion remain. The following owner correctly refused to collide
+with the shared `x:anicca` lease, but exposed that separate `browser-guard acquire` and later `release`
+commands strand a fresh dead-shell lease for up to 30 minutes when an owner exits between them. The generic
+Paid owner contract now requires the existing `with-browser.sh` lifetime wrapper, whose signal/EXIT trap
+owns acquire, CDP export and release as one operation. The lease remains a mechanical safety boundary; target,
+copy, qualification and fallback remain model decisions.
 
 1. **Paid/Submission — finish first.**
    - [x] Deploy and read back Paid ignoring shared preventive `disk-pressure.block` (20 GiB) and
