@@ -330,9 +330,15 @@ must resolve and use `@selawmqt`, execute the already-approved outreach plan fro
 context, and record official X effects plus the outreach ledger; it must not send another Coconala acknowledgement
 or count an unsent draft as outreach. This resolver is the cross-loop foundation: future Coconala, Lancers,
 CloudWorks, Writer and growth owners discover the same reusable account/session/skill instead of per-loop copies.
+The pre-resolver Paid release has now naturally read the full proposal, DM thread and talkroom history, bound the
+official `@selawmqt` DOM identity, and inspected the first five candidate profiles. All five profile pages were
+available, but none exposed a direct-message action; these inspections are qualification evidence, not outreach.
+No X send or official effect receipt exists yet, so Manledge remains open. Do not replace this owner with a manual
+Codex send. Let it choose an honest contact surface, record each real effect, and then rerun under the shared
+resolver release so account/skill discovery is proven without project-specific prompt knowledge.
 
 **Current live cursor.** `main` and `origin/main` were verified equal immediately before this snapshot at
-`0d16152be`; the starting verification commit
+`6ae5e944b`; the starting verification commit
 `79ac01ba1eb66b06aed1f9cee66d4af303f03a3d` remains an ancestor. The existing launchd Paid owner is the only
 customer-effect owner. The authenticated gig-browser launcher and launchd manifest were still overriding the
 configured no-floor policy with a hard-coded 512 MiB headroom; the launcher also unset both ignore flags. Under
