@@ -7459,3 +7459,10 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   still has 9 pre-existing environment/fixture errors and one unrelated Repost
   fixture failure, so it is not claimed globally GREEN. Fresh review and owner
   production proof remain open.
+- The isolated Codex app-server cannot resolve `pwd.getpwuid(501)`, which also
+  blocked the normal Affiliate release-only installer. Commit `2d3726bae` adds
+  an explicit `AFFILIATE_CANONICAL_HOME` override while retaining absolute-dir,
+  non-symlink readable disk-guard, compile, and SHA-256 gates. Atomic
+  release-only installation replays three times without touching LaunchAgents;
+  combined installer/auth/acquisition tests are 16/16 GREEN with one expected
+  missing-guard branch skip. Final review remains open.
