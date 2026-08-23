@@ -7337,3 +7337,12 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   of the unresolved Postiz submission `cmt53pflq07lrqp0ykliif201`. Only then
   rerun the Affiliate owner for placement join and official PartnerStack money
   readback; clicks and posts remain non-money.
+- Repost auth recovery implementation is active on isolated branch
+  `fix/x-repost-auth-recovery` from canonical `9b846ae4e`. The bounded design
+  adds one deterministic model boundary only: bind account-2 auth into a
+  dedicated automation home and classify provider failure streams before JSON
+  parsing; post selection and composition remain model judgments. TDD RED is
+  proven by `python3 -m unittest skills/x-repost/tests/test_model_boundary.py
+  -v`: all three tests fail because `scripts/model_boundary.py` does not yet
+  exist. The tests cover isolated auth binding, refusal to overwrite a different
+  auth target, and the exact Codex usage-limit event observed in production.
