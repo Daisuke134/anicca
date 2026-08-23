@@ -33,5 +33,7 @@
 - [x] Move the effective fast path before semantic-decision execution after production showed per-wake decision drift invalidated the later cache.
 - [x] Run focused tests plus `py_compile` GREEN.
 - [x] Run all gig test files with the same per-file timeout gate and require no new failure file.
-- [ ] Commit, push to main, and let the existing release watcher publish naturally.
-- [ ] Prove a natural wake returns `18183618 pending/effect=0/readback=1` without changing the remote-owner summary mtime, qualification effect count, or Coconala seller messages.
+- [x] Commit, push to main, and let the existing release watcher publish naturally.
+- [x] Prove a natural wake returns `18183618 pending/effect=0/readback=1` without changing the remote-owner summary mtime, qualification effect count, or Coconala seller messages.
+
+Production evidence: release `7380faddd133e5731cf9b50f46a987d508f5b0b6` becomes `current` through the existing watcher. The natural wake starts the project at 03:36:00 and writes pending at 03:36:09. Decision summary remains at 03:17:07, remote-owner summary remains at 03:20:56, the qualification effect remains one row, the Coconala effect child is absent, and the official seller message hash remains unchanged.
