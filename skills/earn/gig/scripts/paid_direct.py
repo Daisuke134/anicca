@@ -308,29 +308,47 @@ def _reported_remote_cycle(args, item: dict[str, Any]) -> Path | None:
     try:
         root = _paid_project_root(args, item)
         feedback = _text(item.get("buyer_feedback_sha256"))
+        observed = item
+        evidence_path = Path(_text(item.get("talkroom_evidence_file")))
+        if _regular_file(evidence_path) and not evidence_path.is_symlink():
+            live = _load(evidence_path)
+            if _text(live.get("talkroom_id")) == _text(item.get("talkroom_id")):
+                observed = {**item, **live}
         answer = _load(root / "delivery" / "paid-answer.json")
-        if _answer_ready(root, item):
+        intent = _load(root / "delivery" / "paid-remote-intent.json")
+        try:
+            current_decision = _current_paid_decision(root, item)
+        except (AttributeError, KeyError, OSError, ValueError, TypeError, json.JSONDecodeError):
+            current_decision = None
+        new_non_answer_work = (isinstance(current_decision, dict)
+                               and current_decision.get("decision") == "actionable"
+                               and current_decision.get("mode") != "answer")
+        # Sending the answer changes the compiled context and intentionally makes the prior
+        # semantic decision stale. Replay recognition therefore binds the signed answer intent
+        # directly to the unchanged buyer feedback and official seller-last readback; requiring
+        # the old decision to remain current makes every successful answer look actionable again.
+        if intent.get("mode") in {"answer", "consultation_answer"} and not new_non_answer_work:
             _validate_consultation_authorization(root, feedback)
             message = _text(answer.get("message"))
-            formal = item.get("formal_delivery_observed", item.get("formal_delivery_confirmed"))
-            if (message and _seller_last_sha256(item) == hashlib.sha256(_comparison_key(message).encode()).hexdigest()
+            formal = observed.get("formal_delivery_observed", observed.get("formal_delivery_confirmed"))
+            if (message and _seller_last_sha256(observed) == hashlib.sha256(_comparison_key(message).encode()).hexdigest()
                     and formal is False
-                    and _text(item.get("talkroom_state", item.get("transaction_state")))):
+                    and _text(observed.get("talkroom_state", observed.get("transaction_state")))):
                 return root
             return None
         result = _load(root / "delivery" / "paid-remote-result.json")
         message = _text(answer.get("message"))
         attachment = _validated_customer_attachment(root, result.get("customer_attachment"))
-        seller_match = (_seller_message_with_attachment(item, message, attachment["filename"])
+        seller_match = (_seller_message_with_attachment(observed, message, attachment["filename"])
                         if attachment else
-                        _seller_last_sha256(item) == hashlib.sha256(_comparison_key(message).encode()).hexdigest())
-        formal = item.get("formal_delivery_observed", item.get("formal_delivery_confirmed"))
+                        _seller_last_sha256(observed) == hashlib.sha256(_comparison_key(message).encode()).hexdigest())
+        formal = observed.get("formal_delivery_observed", observed.get("formal_delivery_confirmed"))
         if (result.get("status") == "ok" and result.get("verified_after") is True
                 and result.get("buyer_feedback_sha256") == feedback
                 and _comparison_key(_text(result.get("customer_message"))) == _comparison_key(message)
                 and message and seller_match
                 and formal is False
-                and _text(item.get("talkroom_state", item.get("transaction_state")))):
+                and _text(observed.get("talkroom_state", observed.get("transaction_state")))):
             return root
     except (AttributeError, OSError, ValueError, TypeError, json.JSONDecodeError, Failure):
         pass
