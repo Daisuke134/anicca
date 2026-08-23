@@ -1739,28 +1739,7 @@ def run_targeted_thread(
         _run("collect", collect_command)
         _owner_only(snapshot_path)
         snapshot = _targeted_snapshot(snapshot_path)
-        inquiry = _targeted_inquiry(snapshot, thread_id)
-        if not (
-            inquiry.get("estimate_required") is True
-            or str(inquiry.get("next_action") or "") in _TARGETED_ESTIMATE_ACTIONS
-        ):
-            closed = _targeted_close_obsolete_estimate(
-                database=Path(args.database), manifest=Path(args.manifest),
-                action_id=action_id, thread_id=thread_id, event_key=event_key,
-                expected_revision=expected_revision, run_id=run_id,
-            )
-            if closed is None:
-                return _targeted_pending(
-                    thread_id, run_id, error="obsolete_estimate_close_raced",
-                )
-            return {
-                "status": "completed", "thread_id": thread_id, "run_id": run_id,
-                "estimate_required": 0, "estimate_effect": 0,
-                "estimate_readback": 0, "estimate_pending": 0,
-                "estimate_failed": 0, "estimate_events": [],
-                "closed_without_send": 1, "pending": 0, "errors": [],
-                "closed_action_ids": [closed["action_id"]],
-            }
+        _targeted_inquiry(snapshot, thread_id)
         return _run_effect_pipeline(
             args, snapshot=snapshot, evidence=evidence, run_id=run_id, target=binding,
         )
@@ -1834,7 +1813,28 @@ def run_targeted_estimate(
             snapshot = _targeted_snapshot(snapshot_path)
         else:
             snapshot = retry_snapshot
-        _targeted_inquiry(snapshot, thread_id)
+        inquiry = _targeted_inquiry(snapshot, thread_id)
+        if not (
+            inquiry.get("estimate_required") is True
+            or str(inquiry.get("next_action") or "") in _TARGETED_ESTIMATE_ACTIONS
+        ):
+            closed = _targeted_close_obsolete_estimate(
+                database=Path(args.database), manifest=Path(args.manifest),
+                action_id=action_id, thread_id=thread_id, event_key=event_key,
+                expected_revision=expected_revision, run_id=run_id,
+            )
+            if closed is None:
+                return _targeted_pending(
+                    thread_id, run_id, error="obsolete_estimate_close_raced",
+                )
+            return {
+                "status": "completed", "thread_id": thread_id, "run_id": run_id,
+                "estimate_required": 0, "estimate_effect": 0,
+                "estimate_readback": 0, "estimate_pending": 0,
+                "estimate_failed": 0, "estimate_events": [],
+                "closed_without_send": 1, "pending": 0, "errors": [],
+                "closed_action_ids": [closed["action_id"]],
+            }
         return _run_effect_pipeline(
             args, snapshot=snapshot, evidence=evidence, run_id=run_id,
         )
