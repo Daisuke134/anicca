@@ -66,6 +66,34 @@ class DirectCDPTypeTests(unittest.IsolatedAsyncioTestCase):
         observe.assert_awaited_once()
         act.assert_not_awaited()
 
+    async def test_candidate_type_rejects_focus_lost_during_controlled_rerender(self):
+        from job_search_loop.browser_agent import runtime
+
+        observation = {"status": "observed", "observation": {"controls": []}}
+        with tempfile.TemporaryDirectory() as directory, patch.object(
+            runtime,
+            "act",
+            new=AsyncMock(
+                side_effect=RuntimeError(
+                    "visible text target did not accept whole-value selection"
+                )
+            ),
+        ), patch.object(
+            runtime, "observe", new=AsyncMock(return_value=observation)
+        ) as observe, patch.object(
+            runtime, "_path_env", return_value=Path(directory)
+        ):
+            result = await type_candidate(
+                label="First Name",
+                role="textbox",
+                stable_id="id:first_name",
+                candidate_concept="candidate.name_romaji_parts.given",
+            )
+
+        self.assertEqual(result["status"], "action_rejected")
+        self.assertEqual(result["reason"], "observed_text_target_lost_focus")
+        observe.assert_awaited_once()
+
     async def test_premature_finalize_returns_fresh_action_rejection_before_fence(self):
         from job_search_loop.browser_agent import runtime
 

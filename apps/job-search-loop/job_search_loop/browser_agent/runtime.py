@@ -730,7 +730,15 @@ async def type_candidate(
         encoding="utf-8",
     )
     os.chmod(path, 0o600)
-    return await act(path)
+    try:
+        return await act(path)
+    except RuntimeError as error:
+        if "visible text target did not accept whole-value selection" not in str(error):
+            raise
+        result = await observe()
+        result["status"] = "action_rejected"
+        result["reason"] = "observed_text_target_lost_focus"
+        return result
 
 
 async def upload_resume(*, label: str, role: str, stable_id: str) -> dict[str, Any]:
