@@ -92,6 +92,7 @@ if ! IG_STARTED_WARMING="$(resolve_capafy_ig_started_warming "$ACCOUNTS_FILE")";
   echo "account SSOT unreadable: warming timestamp resolution failed" >&2
   exit 2
 fi
+export CAPAFY_IG_HANDLE="$IG_HANDLE"
 LANDING_URL="${MKT_BIO_LINK:-https://capafy-skills-daily.netlify.app}"
 LANDING_SITE_ID="${MKT_LANDING_SITE_ID:-41c8e52e-b163-442a-84ff-fd866269bf6c}"
 COOKED_MARKER="$HOME/.local/state/life-manager/state/.${INSTANCE}-ig-account-cooked"
@@ -142,7 +143,18 @@ MODE_FLAG=""   # empty = dry (build video+copy only, publish nothing). --live fr
 LAST_PASS_MARKER="$HOME/.local/state/life-manager/state/.${INSTANCE}-ig-marketing-last-pass"
 IG_LEDGER="$HOME/.local/state/life-manager/state/${INSTANCE}-marketing-ig-ledger.jsonl"
 if [ "${WARM_DAY:-0}" -ge 3 ]; then MODE_FLAG="--live"; fi
-COMMERCIAL_OK="no"; [ -f "$COMMERCIAL_MARKER" ] && COMMERCIAL_OK="yes"
+COMMERCIAL_OK="no"
+if /opt/homebrew/bin/python3 - "$COMMERCIAL_MARKER" "$IG_HANDLE" <<'PY'
+import json, os, sys
+try:
+    row = json.load(open(sys.argv[1]))
+except Exception:
+    raise SystemExit(1)
+raise SystemExit(0 if row.get("status") == "reach_healthy" and row.get("handle") == sys.argv[2] else 1)
+PY
+then
+  COMMERCIAL_OK="yes"
+fi
 echo "warmup day-count=$WARM_DAY -> post mode: ${MODE_FLAG:-DRY} | commercial_ok=$COMMERCIAL_OK" >>"$LOG"
 
 # ── CADENCE GATE (rolling 20h, platform=ig) ──

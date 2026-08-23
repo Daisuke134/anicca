@@ -50,14 +50,15 @@ def test_private_metrics_and_suspended_dom_do_not_fabricate_zero(tmp_path, monke
     metrics = tmp_path / "metrics.jsonl"
     marker = tmp_path / "reach.json"
     rows = [
-        {"reel_url": "one", "source": "instagrapi_private", "metric_status": "measured", "views": 1},
-        {"reel_url": "two", "source": "instagram_public_dom", "metric_status": "measured", "views": 99},
+        {"reel_url": "one", "handle": "current", "source": "instagrapi_private", "metric_status": "measured", "views": 1},
+        {"reel_url": "two", "handle": "old", "source": "instagram_public_dom", "metric_status": "measured", "views": 99},
     ]
     metrics.write_text("".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8")
-    assert MODULE._write_reach_marker(metrics, marker) is False
+    assert MODULE._write_reach_marker(metrics, marker, "current") is False
     assert not marker.exists()
 
     rows[1]["source"] = "instagrapi_private"
+    rows[1]["handle"] = "current"
     metrics.write_text("".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8")
-    assert MODULE._write_reach_marker(metrics, marker) is True
+    assert MODULE._write_reach_marker(metrics, marker, "current") is True
     assert json.loads(marker.read_text())["status"] == "reach_healthy"

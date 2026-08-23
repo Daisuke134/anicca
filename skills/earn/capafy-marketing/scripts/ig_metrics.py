@@ -25,6 +25,7 @@ REACH_MARKER = os.environ.get(
     "CAPAFY_IG_REACH_MARKER",
     os.path.expanduser("~/.local/state/life-manager/state/.capafy-ig-reach-healthy"),
 )
+CURRENT_HANDLE = os.environ.get("CAPAFY_IG_HANDLE", "")
 
 READ_JS = r'''(() => {
   const a=document.querySelector('article'); if(!a) return JSON.stringify({available:false,reason:'article_absent'});
@@ -101,7 +102,7 @@ def _private_read(url, handle, client_factory=None, poster_module=None):
         return None
 
 
-def _write_reach_marker(metrics_path=METRICS, marker_path=REACH_MARKER):
+def _write_reach_marker(metrics_path=METRICS, marker_path=REACH_MARKER, expected_handle=CURRENT_HANDLE):
     """Enable commercial copy only after two distinct owner-measured Reels have reach."""
     latest = {}
     if os.path.isfile(metrics_path):
@@ -114,7 +115,9 @@ def _write_reach_marker(metrics_path=METRICS, marker_path=REACH_MARKER):
                 latest[row["reel_url"]] = row
     healthy = [
         row for row in latest.values()
-        if row.get("source") == "instagrapi_private"
+        if expected_handle
+        and row.get("handle") == expected_handle
+        and row.get("source") == "instagrapi_private"
         and row.get("metric_status") == "measured"
         and int(row.get("views", 0) or 0) > 0
     ]
@@ -123,6 +126,7 @@ def _write_reach_marker(metrics_path=METRICS, marker_path=REACH_MARKER):
     receipt = {
         "status": "reach_healthy",
         "criterion": "two_distinct_owner_measured_reels_with_nonzero_views",
+        "handle": expected_handle,
         "reels": sorted(row["reel_url"] for row in healthy),
         "observed_at": int(time.time()),
     }
@@ -160,7 +164,7 @@ def main():
             print(json.dumps({"snapshot": {"reel_url": url, "agent_id": r.get("agent_id"), "metric_status": "unavailable"}}, ensure_ascii=False))
             continue
         row = {"ts": int(time.time()), "reel_url": url, "agent_id": r.get("agent_id"),
-               "listing_name": r.get("listing_name"), **s}
+               "listing_name": r.get("listing_name"), "handle": r.get("handle"), **s}
         with open(METRICS, "a") as f:
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
         measured += 1
