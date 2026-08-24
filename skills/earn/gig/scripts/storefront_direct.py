@@ -5224,13 +5224,21 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     ).hexdigest()
                     record_onboarding(Path.home(), "storefront_listing_readback", replay_evidence)
                 selection_path = args.state_dir / "storefront-bootstrap-selection.json"
+                rejection_path = args.state_dir / "storefront-bootstrap-rejections.jsonl"
+                rejected_rows = _jsonl_rows(rejection_path)[0] if rejection_path.exists() else []
+                rejected_pairs = {
+                    (row.get("skill_path"), row.get("service_query")) for row in rejected_rows
+                    if isinstance(row, dict)
+                }
                 selection_record = None
                 if observed == 0 and selection_path.exists():
                     try:
                         candidate = json.loads(selection_path.read_text(encoding="utf-8"))
                         if (candidate.get("version") == 1
                                 and candidate.get("inventory_sha256") == capability_inventory["inventory_sha256"]
-                                and isinstance(candidate.get("selection"), dict)):
+                                and isinstance(candidate.get("selection"), dict)
+                                and (candidate["selection"].get("skill_path"),
+                                     candidate["selection"].get("service_query")) not in rejected_pairs):
                             selection_record = candidate
                     except (OSError, json.JSONDecodeError):
                         pass
@@ -5242,6 +5250,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                         evidence_dir=inventory_path.parent / "bootstrap-selection-agent",
                         workdir=args.workdir,
                         timeout_seconds=args.timeout_seconds,
+                        rejected=rejected_rows,
                     )
                     selection_record = {
                         "version": 1,
@@ -5285,6 +5294,19 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                             "score": score,
                         }
                         _atomic_write(demand_path, demand_record)
+                    if (demand_record.get("score") or {}).get("status") == "known" and int(
+                            (demand_record.get("score") or {}).get("score") or 0) <= 0:
+                        rejection_key = hashlib.sha256(
+                            f"{selection['skill_path']}:{selection['service_query']}".encode("utf-8")
+                        ).hexdigest()
+                        _append_key_once(rejection_path, "rejection_key", {
+                            "version": 1, "rejection_key": rejection_key,
+                            "skill_path": selection["skill_path"],
+                            "service_query": selection["service_query"],
+                            "demand_evidence_sha256": demand_record["evidence_sha256"],
+                            "reason": "official_demand_score_zero",
+                            "observed_at_epoch": int(time.time()),
+                        })
                 category_record = None
                 demand_score = (demand_record or {}).get("score") or {}
                 if (observed == 0 and args.effect and demand_score.get("status") == "known"

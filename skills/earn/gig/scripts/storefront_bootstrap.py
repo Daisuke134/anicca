@@ -85,6 +85,7 @@ def inventory(repo: Path = REPO) -> dict[str, Any]:
 def select_capability(
     value: dict[str, Any], *, runner: Path, schema: Path,
     evidence_dir: Path, workdir: Path, timeout_seconds: int = 180,
+    rejected: list[dict[str, str]] | None = None,
 ) -> dict[str, Any]:
     prompt = """Choose the single strongest first Coconala service from CAPABILITY_INVENTORY and
 return only the strict schema object. The AI/Mac/tool system is the delivery workforce: never use
@@ -96,7 +97,10 @@ Japanese phrase suitable for checking official Coconala demand, not listing copy
 trading, account creation, outreach, marketplace operation, regulated advice, physical work, or a
 skill that merely orchestrates another money loop. If no listed skill supports an honest standalone
 buyer deliverable, choose no_op and set skill_path/service_query/outcome/deliverable/inputs to null.
-CAPABILITY_INVENTORY=""" + json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+Never repeat an exact skill_path + service_query pair in REJECTED_OFFICIAL_DEMAND; the official
+marketplace already proved that candidate has no sold/reviewed demand.
+CAPABILITY_INVENTORY=""" + json.dumps(value, ensure_ascii=False, separators=(",", ":")) + \
+        "\nREJECTED_OFFICIAL_DEMAND=" + json.dumps(rejected or [], ensure_ascii=False, separators=(",", ":"))
     evidence_dir.mkdir(parents=True, exist_ok=True)
     started = time.time()
     completed = subprocess.run([
@@ -121,9 +125,11 @@ CAPABILITY_INVENTORY=""" + json.dumps(value, ensure_ascii=False, separators=(","
             raise RuntimeError("storefront_bootstrap_noop_invalid")
         return result
     known = {row["skill_path"] for row in value["skills"]}
+    rejected_pairs = {(row.get("skill_path"), row.get("service_query")) for row in rejected or []}
     if (result.get("decision") != "sell" or result.get("skill_path") not in known
             or not all(result.get(key) for key in nullable)
-            or result.get("no_op_reason") is not None):
+            or result.get("no_op_reason") is not None
+            or (result.get("skill_path"), result.get("service_query")) in rejected_pairs):
         raise RuntimeError("storefront_bootstrap_selection_invalid")
     return result
 
