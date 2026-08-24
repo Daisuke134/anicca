@@ -46,7 +46,7 @@ def test_provider_neutral_application_decision_renders_and_appends_once(tmp_path
         "evidence": ["official_job", "model_decision"],
         "attributes": {
             "platform": "anymarket", "title": "Physical filming",
-            "reason_codes": ["現地での撮影が必須で、インストール済みSkillでは完遂できません。"],
+            "reason_codes": ["現地での撮影が必須で、コンピューター上では完遂できません。"],
         },
     }
 
@@ -69,6 +69,27 @@ def test_provider_neutral_application_decision_renders_and_appends_once(tmp_path
     result = apply_telegram_report.publish(tmp_path, outbox, transport)
     assert result == {"enqueued": 1, "sent": 1, "delivery_unknown": 0}
     assert transport.calls[0][1] == message
+
+
+def test_verified_provider_application_renders_actual_submission_receipt():
+    event = {
+        "kind": "application", "event_key": "gig:application:upwork:proposal-1",
+        "entity_id": "~job-1", "occurred_at": datetime.now(timezone.utc).isoformat(),
+        "state": "verified", "action": "応募送信", "result": "公式確認",
+        "next_action": "返信、Offer、契約を自動で監視します", "evidence": ["proposal_id"],
+        "attributes": {
+            "platform": "upwork", "title": "High-value job", "proposal_id": "proposal-1",
+            "connects_before": 92, "connects_after": 81, "connects_spent": 11,
+            "quote": {"currency": "USD", "amount": 40, "unit": "hourly"},
+        },
+    }
+    message = report_envelope.render_human_ja(report_envelope.build_work_event_envelope(
+        work_event=event, observed_at=datetime.now(timezone.utc),
+    ))
+    assert "[Upwork][応募完了]" in message
+    assert "✅ 実際に応募しました" in message
+    assert "Proposal ID: proposal-1" in message
+    assert "Connects: 92 → 81 (-11)" in message
 
 
 def _application_event(event_key: str, occurred_at: int) -> dict:

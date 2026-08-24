@@ -33,7 +33,7 @@ from upwork_browser_provider import (  # noqa: E402
 def test_application_decision_uses_shared_work_event_and_reporter_once(tmp_path, monkeypatch):
     calls = []
     monkeypatch.setattr(provider, "DEFAULT_GIG_DIR", tmp_path)
-    monkeypatch.setattr(provider.subprocess, "run", lambda command, **kwargs: calls.append(command))
+    monkeypatch.setattr(provider.subprocess, "Popen", lambda command, **kwargs: calls.append(command))
     event = {
         "kind": "application", "event_key": "gig:decision:upwork:job-1",
         "entity_id": "job-1", "occurred_at": "2026-08-24T08:00:00+00:00",
@@ -50,6 +50,28 @@ def test_application_decision_uses_shared_work_event_and_reporter_once(tmp_path,
     assert "instant-work-events" not in calls[0]
     rows = [json.loads(line) for line in (tmp_path / "work-events.jsonl").read_text().splitlines()]
     assert rows == [event]
+
+
+def test_verified_proposal_event_carries_official_id_connects_and_quote():
+    payload = {
+        "job_id": "~job-1", "job_url": "https://www.upwork.com/jobs/~job-1",
+        "title": "High-value job",
+        "terms": {"type": "hourly", "bid_usd": 40, "delivery_days": 2,
+                  "required_connects": 11, "available_connects_before": 92},
+    }
+
+    event = provider.proposal_submitted_event(
+        payload, proposal_id="proposal-1", connects_after=81,
+    )
+
+    assert event["state"] == "verified"
+    assert event["attributes"] == {
+        "platform": "upwork", "title": "High-value job",
+        "url": "https://www.upwork.com/jobs/~job-1", "job_id": "~job-1",
+        "proposal_id": "proposal-1", "connects_before": 92,
+        "connects_after": 81, "connects_spent": 11,
+        "quote": {"currency": "USD", "amount": 40, "unit": "hourly"},
+    }
 
 
 def test_independent_public_job_details_are_read_concurrently_in_source_order(tmp_path, monkeypatch):

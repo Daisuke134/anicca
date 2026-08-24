@@ -1091,6 +1091,15 @@ includes `apply`, `skip`, `reply`, `offer`, `contract`, `delivery`, `payment`, `
 not regexes or provider-specific keyword rules. Re-observing the same decision or receipt sends zero
 additional messages.
 
+Decision and effect notifications are distinct. `[Market][応募判断]` reports only Luna's selected/skip
+intent and never counts as an application. `[Market][応募完了]` is emitted only after official proposal/
+application ID and spend/capacity readback; it contains that ID, quote and before/after balance and is
+the only event that increments the application funnel. Telegram transport runs from the durable outbox
+outside the acquisition critical path: send/ACK timeout cannot stop proposal sealing, submission,
+readback or sibling work. A pre-repair Skill-based message for `~022091530074067341095` was traced to a
+decision at 18:41:30 and delivered after the repaired wake began; it was stale queue delivery, not a
+new repaired-policy judgment.
+
 Current implementation evidence: production release `fac29d37e0` contains ordered per-candidate batch
 decisions, one batched WorkEvent handoff, fresh-first reporting and parallel hidden job reads. A natural
 wake exits 0 and reconciles official Submitted proposals 4 with runtime state 4 and Connects 92. The
