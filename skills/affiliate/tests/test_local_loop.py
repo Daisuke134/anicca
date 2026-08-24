@@ -23,6 +23,60 @@ SPEC.loader.exec_module(MODULE)
 
 
 class LocalLoopTest(unittest.TestCase):
+    def test_distribution_mix_plan_preserves_content_and_dedupes(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root)
+            experiment = {
+                "state": "ACTIVE", "experiment_id": "a" * 64,
+                "decision_id": "b" * 64, "control_placement_id": "caption-en-1",
+                "control_job_id": "c" * 64,
+                "control_post_url": "https://x.com/selawmqt/status/200",
+                "selected_variable": "distribution_mix",
+                "official_success_metric": "Exact impressions increase from baseline 9.",
+            }
+            MODULE.atomic_json(state / "funnel-experiments" / "active.json", experiment)
+            MODULE.atomic_json(state / "funnel-experiments" / "latest-exposure-gate.json", {
+                "state": "WAITING_FOR_EXPOSURE", "experiment_id": experiment["experiment_id"],
+                "distribution_required": True, "maximize_relevant_exposure": True,
+            })
+            MODULE.atomic_json(state / "x-distribution-jobs" / f'{"c" * 64}.json', {
+                "job_id": "c" * 64, "placement_id": "caption-en-1",
+                "content_sha256": "d" * 64, "target_x_account": "selawmqt",
+                "landing_url": "https://example.com/caption",
+            })
+            MODULE.atomic_json(state / "devto-publications" / "caption-en.json", {
+                "state": "LIVE", "placement_id": "caption-en-1",
+                "public_url": "https://dev.to/a/caption",
+            })
+            MODULE.atomic_json(state / "substack-publications" / "caption-en.json", {
+                "state": "LIVE", "placement_id": "caption-en-1",
+                "public_url": "https://a.substack.com/p/caption",
+            })
+            MODULE.atomic_json(state / "x-posts" / "caption-en.json", {
+                "state": "LIVE", "placement_id": "caption-en-1",
+                "public_url": "https://x.com/selawmqt/status/199",
+            })
+
+            first = MODULE.materialize_distribution_mix_plan(state)
+            replay = MODULE.materialize_distribution_mix_plan(state)
+
+            self.assertEqual(first["state"], "READY")
+            self.assertEqual(first["selected_variable"], "distribution_mix")
+            self.assertEqual(first["control_content_sha256"], "d" * 64)
+            self.assertEqual(first["next_action"], "SAFE_X_RECIRCULATION")
+            self.assertEqual(set(first["live_surfaces"]), {"devto", "substack", "x"})
+            self.assertTrue(first["maximize_relevant_exposure"])
+            self.assertFalse(replay["changed"])
+            self.assertEqual(len(MODULE.json_rows(
+                state / "funnel-experiments" / "distribution-plans.jsonl"
+            )), 1)
+
+            MODULE.atomic_json(state / "funnel-experiments" / "active.json", {
+                **experiment, "experiment_id": "e" * 64, "selected_variable": "hook",
+            })
+            with self.assertRaises(ValueError):
+                MODULE.materialize_distribution_mix_plan(state)
+
     def test_exposure_gate_blocks_conversion_verdict_for_insufficient_reach(self):
         with tempfile.TemporaryDirectory() as root:
             state = Path(root)

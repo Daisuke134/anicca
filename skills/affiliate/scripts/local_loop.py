@@ -525,6 +525,81 @@ def enforce_exposure_gate(state):
     return {**receipt, "changed": changed}
 
 
+def materialize_distribution_mix_plan(state):
+    active_path = state / "funnel-experiments" / "active.json"
+    gate_path = state / "funnel-experiments" / "latest-exposure-gate.json"
+    if not active_path.is_file() or not gate_path.is_file():
+        return {"state": "WAITING_FOR_EXPOSURE_GATE", "changed": False}
+    active = json.loads(active_path.read_text(encoding="utf-8"))
+    gate = json.loads(gate_path.read_text(encoding="utf-8"))
+    if active.get("state") != "ACTIVE" or active.get("selected_variable") != "distribution_mix":
+        raise ValueError("active experiment is not distribution_mix")
+    if (
+        gate.get("experiment_id") != active.get("experiment_id")
+        or gate.get("state") != "WAITING_FOR_EXPOSURE"
+        or gate.get("distribution_required") is not True
+    ):
+        return {"state": "NO_DISTRIBUTION_REQUIRED", "changed": False}
+    job_id = active.get("control_job_id")
+    job_path = state / "x-distribution-jobs" / f"{job_id}.json"
+    if not job_path.is_file():
+        raise ValueError("control distribution job unavailable")
+    job = json.loads(job_path.read_text(encoding="utf-8"))
+    placement_id = active.get("control_placement_id")
+    if job.get("job_id") != job_id or job.get("placement_id") != placement_id:
+        raise ValueError("control distribution job mismatch")
+    content_sha256 = job.get("content_sha256")
+    if not isinstance(content_sha256, str) or not REPOST_PROPOSAL_ID_PATTERN.fullmatch(content_sha256):
+        raise ValueError("control content hash unavailable")
+    surface_dirs = {
+        "devto": "devto-publications",
+        "substack": "substack-publications",
+        "x": "x-posts",
+    }
+    live_surfaces = sorted(
+        surface for surface, directory in surface_dirs.items()
+        if any(
+            row.get("placement_id") == placement_id
+            and row.get("state") == "LIVE"
+            and isinstance(row.get("public_url"), str)
+            for row in (
+                json.loads(path.read_text(encoding="utf-8"))
+                for path in (state / directory).glob("*.json")
+            )
+        )
+    )
+    core = {
+        "schema_version": 1,
+        "receipt_type": "AFFILIATE_DISTRIBUTION_MIX_PLAN",
+        "state": "READY",
+        "experiment_id": active["experiment_id"],
+        "decision_id": active.get("decision_id"),
+        "selected_variable": "distribution_mix",
+        "control_placement_id": placement_id,
+        "control_job_id": job_id,
+        "control_content_sha256": content_sha256,
+        "control_post_url": active.get("control_post_url"),
+        "target_x_account": job.get("target_x_account"),
+        "live_surfaces": live_surfaces,
+        "next_action": "SAFE_X_RECIRCULATION",
+        "cadence_rule": "ONE_RELEVANT_RECIRCULATION_PER_OWNER_PASS",
+        "maximize_relevant_exposure": gate.get("maximize_relevant_exposure") is True,
+        "official_success_metric": active.get("official_success_metric"),
+        "content_mutation_allowed": False,
+    }
+    plan_id = hashlib.sha256(json.dumps(
+        core, sort_keys=True, separators=(",", ":")
+    ).encode()).hexdigest()
+    receipt = {**core, "plan_id": plan_id,
+               "created_at": datetime.now(timezone.utc).isoformat()}
+    changed = append_unique(
+        state / "funnel-experiments" / "distribution-plans.jsonl",
+        receipt, ("plan_id",),
+    )
+    atomic_json(state / "funnel-experiments" / "latest-distribution-plan.json", receipt)
+    return {**receipt, "changed": changed}
+
+
 def focused_live_lineage(state):
     latest = state / "focused-cohort" / "latest.json"
     if not latest.is_file():
@@ -4715,6 +4790,17 @@ def _wake_once(args, started_at, run_id):
             "state": "EXPOSURE_GATE_FAILED", "changed": False,
             "failure_type": type(error).__name__,
         }
+    try:
+        distribution_plan = admit(
+            "acquisition.distribution-mix-plan", "LEDGER_ONLY",
+            {"exposure_gate_state": exposure_gate.get("state")},
+            lambda: materialize_distribution_mix_plan(state),
+        )
+    except Exception as error:
+        distribution_plan = {
+            "state": "DISTRIBUTION_PLAN_FAILED", "changed": False,
+            "failure_type": type(error).__name__,
+        }
     if provider["state"] == "AUTHENTICATED" and not placement_link_ready:
         status = placement_link["state"]
     elif not link:
@@ -4884,6 +4970,17 @@ def _wake_once(args, started_at, run_id):
                 "current_impressions", "conversion_verdict_allowed",
                 "distribution_required", "maximize_relevant_exposure",
                 "transactions_observed", "transactions_verdict_state", "failure_type",
+            )
+        },
+        "distribution_plan": {
+            key: distribution_plan.get(key)
+            for key in (
+                "state", "changed", "plan_id", "experiment_id", "decision_id",
+                "selected_variable", "control_placement_id", "control_job_id",
+                "control_content_sha256", "control_post_url", "target_x_account",
+                "live_surfaces", "next_action", "cadence_rule",
+                "maximize_relevant_exposure", "official_success_metric",
+                "content_mutation_allowed", "failure_type",
             )
         },
         "revenue_state": revenue["state"],
