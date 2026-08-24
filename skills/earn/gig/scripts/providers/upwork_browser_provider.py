@@ -313,7 +313,9 @@ def load_sealed_candidates(root: Path) -> list[dict[str, str]]:
     return rows
 
 
-def plan_free_proposal(state: dict[str, Any], proposals_dir: Path) -> dict[str, Any] | None:
+def plan_free_proposal(
+    state: dict[str, Any], proposals_dir: Path, completed_job_ids: set[str] | None = None,
+) -> dict[str, Any] | None:
     """Return the first exact sealed proposal covered by the observed free balance."""
     balance = state.get("balance")
     candidates = state.get("candidate_jobs")
@@ -325,10 +327,12 @@ def plan_free_proposal(state: dict[str, Any], proposals_dir: Path) -> dict[str, 
         or proposals_dir.stat().st_mode & 0o777 != 0o700
     ):
         raise ValueError("upwork_proposal_store_invalid")
+    completed_job_ids = completed_job_ids or set()
     for candidate in candidates:
         if (
             not isinstance(candidate, dict) or candidate.get("status") != "open"
             or candidate.get("queue") != "ready"
+            or candidate.get("job_id") in completed_job_ids
         ):
             continue
         required = candidate.get("connects_required")
@@ -1024,7 +1028,10 @@ async def observe(
         else:
             state["free_acquisition"] = inbound
         return state
-    selected = plan_free_proposal(state, proposals_dir)
+    completed_jobs = ConnectorOutbox(
+        database.expanduser(), manifest.expanduser(),
+    ).verified_provider_resource_ids("upwork", "propose")
+    selected = plan_free_proposal(state, proposals_dir, completed_jobs)
     if selected is None:
         selected = await discover_affordable_proposal(
             state, pass_id=pass_id, sequence=len(targets) + 21,
