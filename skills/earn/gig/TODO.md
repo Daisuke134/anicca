@@ -104,6 +104,10 @@ contract, fee, payout, and bank receipts advance it.
    stored-credential login submit. If TikTok still shows the attempt limit, stop without another
    buyer message. If it issues a fresh OTP, ask for that code and enter it immediately in the same
    continuation.
+   The account owner has now transferred Chii to a separate agent. The installed Paid owner is
+   observe-only for this exact cycle and must produce zero login/OTP/message/DM/sheet/delivery/
+   cancellation effects. Preserve existing context/evidence and resume only after a genuinely newer
+   official buyer/provider event or a verified handback receipt; do not duplicate the other agent.
 8. [ ] `18169985`: the buyer has now explicitly approved the unchanged @diceai0 account, the
    shown DM format with a recipient-specific introduction, a total of 100 DMs, and formal
    delivery with evidence. The buyer then replaced the common body with an explicitly estimated
