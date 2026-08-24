@@ -232,6 +232,31 @@ def observe_x_channel_ledger(state, cdp_port, inspector=x_profile_cli.inspect_po
     if not money_path.is_file():
         return {"state": "WAITING_FOR_MONETIZATION_METRICS", "changed": False}
     money = json.loads(money_path.read_text(encoding="utf-8"))
+    metric_names = ("impressions", "replies", "reposts", "likes", "bookmarks")
+    placement_rows = [
+        row for row in json_rows(state / "x-growth" / "post-metrics.jsonl")
+        if row.get("placement_id") == money.get("placement_id")
+        and isinstance(row.get("post_url"), str)
+    ]
+    if placement_rows:
+        maxima = {}
+        for row in placement_rows:
+            post = maxima.setdefault(row["post_url"], {})
+            for name in metric_names:
+                count = (row.get(name) or {}).get("count")
+                if isinstance(count, int):
+                    post[name] = max(post.get(name, count), count)
+        money = {
+            **money,
+            **{
+                name: {
+                    "count": sum(post.get(name, 0) for post in maxima.values()),
+                    "state": "EXACT",
+                }
+                for name in metric_names
+            },
+            "distribution_post_count": len(maxima),
+        }
     repost_root = Path(os.environ.get(
         "AFFILIATE_REPOST_STATE_DIR", Path.home() / "loops" / "x-repost"
     )).expanduser()
@@ -280,6 +305,7 @@ def observe_x_channel_ledger(state, cdp_port, inspector=x_profile_cli.inspect_po
                 key: money.get(key) for key in (
                     "post_url", "job_id", "placement_id", "impressions",
                     "replies", "reposts", "likes", "bookmarks",
+                    "distribution_post_count",
                 )
             },
         },

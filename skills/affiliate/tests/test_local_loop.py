@@ -288,6 +288,16 @@ class LocalLoopTest(unittest.TestCase):
                 "likes": {"count": 0, "state": "EXACT"},
                 "bookmarks": {"count": 0, "state": "EXACT"},
             })
+            for url, count in ((money_url, 6), ("https://x.com/selawmqt/status/201", 4)):
+                MODULE.append(state / "x-growth" / "post-metrics.jsonl", {
+                    "transition_id": hashlib.sha256(url.encode()).hexdigest(),
+                    "post_url": url, "placement_id": "caption-en-1",
+                    "impressions": {"count": count, "state": "EXACT"},
+                    "replies": {"count": 0, "state": "EXACT"},
+                    "reposts": {"count": 0, "state": "EXACT"},
+                    "likes": {"count": 0, "state": "EXACT"},
+                    "bookmarks": {"count": 0, "state": "EXACT"},
+                })
             inspector = lambda *_args: {
                 "views": 10, "replies": 1, "reposts": 0, "likes": 2, "bookmarks": 0,
             }
@@ -299,7 +309,8 @@ class LocalLoopTest(unittest.TestCase):
             self.assertEqual(first["lanes"]["growth"]["post_url"], growth_url)
             self.assertEqual(first["lanes"]["growth"]["impressions"]["count"], 10)
             self.assertEqual(first["lanes"]["monetization"]["post_url"], money_url)
-            self.assertEqual(first["lanes"]["monetization"]["impressions"]["count"], 4)
+            self.assertEqual(first["lanes"]["monetization"]["impressions"]["count"], 10)
+            self.assertEqual(first["lanes"]["monetization"]["distribution_post_count"], 2)
             self.assertFalse(replay["changed"])
             self.assertEqual(len(MODULE.json_rows(
                 state / "x-growth" / "channel-ledger.jsonl"
