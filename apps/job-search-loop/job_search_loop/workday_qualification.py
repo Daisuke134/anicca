@@ -171,6 +171,8 @@ def qualify_one(
             "company": row["company"],
             "title": row["title"],
             "decision": result["decision"],
+            "reason": result["interview_thesis"],
+            "compensation": result["compensation_thesis"],
             "evidence_sha256": evidence_sha256,
         }
     finally:

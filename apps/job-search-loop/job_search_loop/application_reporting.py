@@ -188,6 +188,46 @@ def deliver_reconciled_outcomes(
     return deliveries
 
 
+def deliver_fit_decision(
+    *,
+    decision: dict[str, Any],
+    outbox_path: Path,
+    sender: Callable[..., dict[str, str | None]] = send_once,
+) -> dict[str, str | None]:
+    status = str(decision.get("decision") or "")
+    company = str(decision.get("company") or "")
+    title = str(decision.get("title") or "")
+    reason = str(decision.get("reason") or "判断理由は記録されていません。")
+    compensation = str(decision.get("compensation") or "給与情報は未確認です。")
+    if status == "qualified":
+        heading = "✅ この求人へ応募します"
+        next_action = "応募フォームを自動で進め、結果を改めて報告します。"
+    elif status == "hold":
+        heading = "⏸ この求人への応募を保留しました"
+        next_action = "確認可能な不足情報を調べながら、次の求人の確認を続けます。"
+    else:
+        heading = "🚫 この求人には応募しませんでした"
+        next_action = "次の求人の確認を続けます。ユーザーの操作は必要ありません。"
+    message = (
+        "Codex::: [Job Hunter][応募判断]\n"
+        f"{heading}\n\n"
+        f"会社: {company}\n"
+        f"求人: {title}\n"
+        f"理由: {reason}\n"
+        f"給与: {compensation}\n\n"
+        "次に自動で行うこと\n"
+        f"{next_action}"
+    )
+    return sender(
+        database=outbox_path,
+        event_key=(
+            f"workday-fit:{decision.get('application_id')}:"
+            f"{decision.get('evidence_sha256')}"
+        ),
+        message=message,
+    )
+
+
 def deliver_submitted_resumes(
     *,
     ledger_path: Path,

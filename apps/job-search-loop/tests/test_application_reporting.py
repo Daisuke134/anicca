@@ -233,8 +233,9 @@ class ApplicationReportingTests(unittest.TestCase):
                 calls[0]["event_key"],
                 f"application-submitted:{application_id}:gmail-1",
             )
-            self.assertIn("Dream AI — Agent Engineer", calls[0]["message"])
-            self.assertIn("submitted (authoritative_receipt_email)", calls[0]["message"])
+            self.assertIn("会社: Dream AI", calls[0]["message"])
+            self.assertIn("求人: Agent Engineer", calls[0]["message"])
+            self.assertIn("確認: authoritative_receipt_email", calls[0]["message"])
 
     def test_document_delivery_is_private_and_at_most_once(self):
         sender = getattr(telegram, "send_document_once", None)

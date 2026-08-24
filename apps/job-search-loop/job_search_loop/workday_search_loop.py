@@ -10,6 +10,7 @@ from typing import Any
 from urllib.parse import urlsplit
 
 from .agent_runner import AgentRunner, wrap_untrusted
+from .application_reporting import deliver_fit_decision
 from .ledger import Ledger
 from .state import canonical_url, is_excluded_employer
 from .workday_discovery import _fetch_jobs, discover_one
@@ -180,7 +181,16 @@ def search_until_qualified(
                 "discoveries": discoveries,
                 "decisions": decisions,
             }
-        decision = qualify()
+        try:
+            decision = qualify()
+        except Exception as error:
+            decisions.append(
+                {
+                    "status": "qualification_retryable_failure",
+                    "error": type(error).__name__,
+                }
+            )
+            continue
         decisions.append(decision)
         if decision.get("decision") == "qualified":
             return {
@@ -302,9 +312,8 @@ def main() -> int:
             preferred_urls=preferred_urls,
         )
 
-    result = search_until_qualified(
-        discover=discover_next,
-        qualify=lambda: qualify_one(
+    def qualify_next() -> dict[str, Any]:
+        decision = qualify_one(
             ledger_path=args.ledger,
             candidate_memory_path=args.candidate_memory,
             fetch_description=lambda url: fetch_official_description(url, sources),
@@ -316,7 +325,23 @@ def main() -> int:
                 run_id=f"workday-fit-{uuid.uuid4().hex}",
             ),
             allowed_hosts=allowed_hosts,
-        ),
+        )
+        if decision.get("status") == "decided":
+            try:
+                delivery = deliver_fit_decision(
+                    decision=decision,
+                    outbox_path=args.ledger.parent / "telegram-outbox.sqlite3",
+                )
+                decision["telegram_message_id"] = delivery.get("message_id")
+                decision["telegram_status"] = delivery.get("status")
+            except Exception as error:
+                decision["telegram_status"] = "failed"
+                decision["telegram_error"] = type(error).__name__
+        return decision
+
+    result = search_until_qualified(
+        discover=discover_next,
+        qualify=qualify_next,
         max_candidates=args.max_candidates,
     )
     result["discovered"] = [
