@@ -7989,54 +7989,52 @@ when the model exposure boundary is met or the channel is closed; execute D17;
 then D18–D30 without skipping first transaction, first approved/paid money, and
 unit-economics gates.
 
-For the next seven observed days, preserve the existing half-hour X cadence:
-one public effect in every safe 30-minute slot, for up to 48 public effects per
-day. Claim, model-copy, verification, and readback stages must be prepared before
-the target slot rather than consuming multiple public slots. A slot is skipped
-only for an unresolved duplicate risk, authentication/provider failure, safety
-failure, or absence of a model-qualified source; silence is not a daily-volume
-policy.
+The X growth architecture has two independent half-hour loops; do not merge them
+into one percentage branch:
 
-Use a rolling eight-slot bootstrap allocation:
+- `x-repost` runs every 30 minutes and owns relevant harvested quote/repost
+  effects. Its public boundaries are staggered at `:00` and `:30`, for up to 48
+  relevant quote effects per day. An admitted Affiliate distribution job may
+  replace that boundary's ordinary quote; it is not an extra duplicate effect.
+- `x-tweeter` runs every 30 minutes and owns useful standalone original AI posts.
+  Its boundaries are staggered at `:15` and `:45`, for up to 48 original effects
+  per day. Each original gives one concrete workflow, comparison,
+  failure/recovery lesson, tool-use lesson, or reproducible action.
+- Both owners use dedicated browser leases for the same authorized X account and
+  the same public readback contract. Staggering prevents simultaneous mutation;
+  each owner has its own queue, claim ledger, payloads, results, healthcheck, and
+  duplicate identity.
+- The Affiliate loop does not replace either growth owner. It observes the
+  audience created by both, chooses a monetization placement, and hands that job
+  to the appropriate distribution owner. Exact Affiliate effects remain joined
+  to the control placement and official money ledger.
 
-- Four useful original AI posts. This preserves the user-directed 50% original
-  branch: up to 24 originals per day. Each gives one concrete workflow,
-  comparison, failure/recovery lesson, or reproducible action.
-- Three non-Affiliate relevant external quote-posts: up to 18 per day. The model
-  selects a harvested source with meaningful official reach and adds a distinct,
-  source-grounded practical insight. Plain reposts without commentary remain
-  zero by default.
-- One Affiliate-disclosed relevant external quote-post: up to 6 per day. It is
-  part of the quote half, not an extra post. Identical copy and unmeasured
-  self-quote repetition remain forbidden.
+The resulting ceiling is 96 public effects per day: 48 original and 48
+quote/repost boundaries, subject only to explicit duplicate, authentication,
+provider, safety, or no-qualified-source failures. Model preparation,
+humanization, verification, and readback must happen before the assigned public
+boundary rather than consuming later boundaries. Identical copy and unmeasured
+self-quote repetition remain forbidden.
 
-Thus the bootstrap target is 24 useful originals, 18 relevant growth quotes,
-and 6 Affiliate external quotes per day, one effect per half-hour and never two
-effects in one slot. After seven days, the model reallocates the non-original
-slots using official median impressions, follower delta, engagement, exact
-Affiliate reach, provider-click delta, and transactions, while the 50% original
-branch remains until the user changes it. If an Affiliate placement has at least
-100 exact impressions and zero post-attributable provider clicks, change the
-distribution, CTA, offer, or article according to the sealed bottleneck
-decision; do not solve it with identical duplicate posts.
+Current runtime does not implement that architecture. Only
+`ai.anicca.x-repost-pass` is loaded at a 1,800-second interval; no independent
+30-minute `x-tweeter` launchd exists. The current x-repost entrypoint mixes
+original and quote through `original_ratio=0.5`. From 00:00 through 16:45 JST,
+its posted ledger contains only 16 public effects: 5 originals, 6 ordinary
+quotes, and 5 Affiliate effects. Claim, model-copy, humanization, verification,
+and readback consume separate wakes; slow or invalid model JSON, Postiz
+failures, `NO_EFFECT`, and `UNVERIFIED` outcomes also leave boundaries empty.
+Therefore the independent original loop is missing and the repost loop does not
+fill its own half-hour cadence.
 
-Current cadence evidence shows the scheduler is not yet a half-hour publishing
-machine. From 00:00 through 16:45 JST there are about 33 half-hour slots, but the
-posted ledger contains only 16 public effects: 5 originals, 6 ordinary quotes,
-and 5 Affiliate effects. The owner has a 30-minute launch interval, yet claim,
-model-copy, humanization, verification, and readback consume separate wakes;
-slow or invalid model JSON, Postiz failures, `NO_EFFECT`, and `UNVERIFIED`
-outcomes also leave slots empty. Therefore "launchd ran" is not evidence that
-the cadence or exposure target was met.
-
-The immediate cadence repair must make slot publication and payload preparation
-separate states: precompute model-qualified original, growth-quote, and
-Affiliate-quote payloads before their assigned slot; atomically claim one ready
-payload at the half-hour boundary; publish at most one effect; read back the
-permalink; and refill the future queue without consuming the next public slot.
-The slot ledger must record `POSTED`, `SKIPPED_UNSAFE`, `PROVIDER_FAILED`, or
-`NO_QUALIFIED_SOURCE` for every half-hour boundary and report rolling fill rate,
-original share, quote share, Affiliate share, duplicate count, and exact reach.
+The immediate repair must split the current entrypoint into independent
+`x-repost` and `x-tweeter` owners, then make payload preparation and boundary
+publication separate states. Each precomputes model-qualified payloads;
+atomically claims one ready payload at its staggered boundary; publishes at most
+one effect; reads back the permalink; and refills its future queue without
+consuming the next boundary. Each slot ledger records `POSTED`,
+`SKIPPED_UNSAFE`, `PROVIDER_FAILED`, or `NO_QUALIFIED_SOURCE` and reports fill
+rate, duplicate count, exact reach, follower delta, and Affiliate contribution.
 
 ### Loop runtime protocol — not Codex's design TODO
 
