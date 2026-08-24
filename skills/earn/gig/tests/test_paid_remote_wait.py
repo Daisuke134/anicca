@@ -180,6 +180,19 @@ def test_remote_owner_prompt_includes_exact_cycle_account_owner_policy(tmp_path)
     assert "account-owner policy" in prompt
 
 
+def test_decision_prompt_scopes_required_assets_to_current_bounded_output(tmp_path):
+    paid = load("paid_direct")
+
+    prompt = paid._decision_prompt(
+        tmp_path / "context.json", "a" * 64, "b" * 64, "c" * 64,
+        {"message_id": "m1", "content_sha256": "d" * 64, "side": "buyer"},
+    ).decode()
+
+    assert "current bounded output" in prompt
+    assert "future event" in prompt
+    assert "Do not hide a required asset only in unresolved" not in prompt
+
+
 def test_current_remote_wait_is_fresh(tmp_path):
     paid = load("paid_direct")
     root, feedback, digest = blocked_project(tmp_path)
