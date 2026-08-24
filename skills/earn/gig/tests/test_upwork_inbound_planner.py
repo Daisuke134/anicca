@@ -73,6 +73,15 @@ def test_exact_private_packet_and_decision_seal_zero_connect_proposal(tmp_path):
     assert len(proposal["payload_sha256"]) == 64
 
 
+def test_prompts_require_owner_readable_natural_language_reasons(tmp_path, monkeypatch):
+    _, packet = _packet(tmp_path)
+    single = planner.planner_prompt(packet, {}, {})
+    batch = planner.batch_planner_prompt([packet], {}, {})
+    for prompt in (single, batch):
+        assert "natural Japanese" in prompt
+        assert "snake_case" in prompt
+
+
 @pytest.mark.parametrize("mutation", [
     ("job_id", "~other"), ("job_url", "https://www.upwork.com/jobs/~other"),
     ("job_source_sha256", "b" * 64),
