@@ -118,9 +118,17 @@ Storefront work.
        now enters this `start` flow directly.
     5. [ ] Let the owner complete account/email/SMS/seller/consent/eKYC/bank setup in that
        exact browser profile, then report completion once. Never request the password.
+       The public `finished` command now exists and refuses to run without the prepared
+       venv and live dedicated CDP browser; the owner-side ceremony remains pilot work.
     6. [ ] Attach over CDP to the same browser/session and read back authenticated, email,
        SMS, seller, eKYC and bank states; show only the
-       exact missing official gate and reopen its official page when incomplete.
+       exact missing official gate and reopen its official page when incomplete. The
+       `finished` observer now opens five background tabs in the persistent default
+       context, closes its owned targets, stores only URL/form structure/filled booleans/
+       DOM hashes in a mode-0600 private file, and can evidence-bind `authenticated`.
+       Compile, shell syntax and a secret-injection sanitization check pass. SMS/seller/
+       eKYC/bank completion decisions await pilot DOM evidence; production readback was
+       intentionally not run while the separate Paid owner uses this profile.
     7. [ ] Activate the browser, Apply, Negotiate, Storefront, Paid and release watcher
        only after all official account gates are accepted. A listing is not this gate.
     8. [ ] Make Storefront import existing listings; when listing count is zero, it probes
