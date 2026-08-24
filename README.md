@@ -71,6 +71,19 @@ If you came here for the **self-funded agent** — the wallet-holding loop that 
 different thing and it lives in [`docs/agent-economy.md`](docs/agent-economy.md). It shares this repository and
 this core, but it is not the product described above.
 
+### Run the Coconala seller loop
+
+The repository also contains four macOS `launchd` lanes for a Coconala seller:
+Apply, Negotiate, Paid, and Storefront. See the dedicated
+[Coconala setup guide](skills/earn/gig/README.md) before inviting another user.
+
+Current boundary: the lanes can run an already-created, already-listed seller
+account after one manual browser login. The root `./install.sh coconala` command
+does **not yet** perform Coconala signup, seller/SMS/eKYC/bank registration, initial
+listing creation, or bank-payout verification. Do not promise friends a one-command
+signup-to-income flow until the clean-device onboarding acceptance in
+[the Coconala task list](skills/earn/gig/TODO.md) is closed.
+
 ---
 
 ## One product, two execution surfaces

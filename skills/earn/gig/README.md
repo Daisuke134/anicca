@@ -1,5 +1,12 @@
 # The Coconala loop
 
+> **Current onboarding boundary:** this package runs an existing Coconala seller
+> account after one manual browser login. It does not yet create the account,
+> complete seller/SMS/eKYC/bank registration, create the first listing, or prove a
+> bank payout. Also, the repository-root `./install.sh coconala` argument is not yet
+> wired to this installer. Until that acceptance is closed, send friends this guide
+> as a preview, not as a one-command signup-to-income promise.
+
 Four background jobs that run a [Coconala](https://coconala.com) seller account
 around the clock: they read the job board and apply, keep the storefront honest,
 answer buyers who ask questions before they buy, and work the orders that get
@@ -54,6 +61,9 @@ given browser or send tools by this fallback.
 ---
 
 ## Install
+
+This is the current manual onboarding flow. The intended future public entrypoint
+is `./install.sh coconala`, but it is not accepted yet.
 
 ### 1. Get the code
 

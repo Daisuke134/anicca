@@ -62,9 +62,17 @@ Storefront work.
    mostly outside Apply/Negotiate; the final clean-clone rerun after this fix determines
    which package-owned findings remain.
 9. [ ] Run the public Apply and Negotiate test suites from the clean clone with a clean
-   temporary HOME; compile both production entrypoints.
+   temporary HOME; compile both production entrypoints. Current isolated-worktree
+   checkpoint is GREEN: 131 tests (`Apply 23 + Negotiate 55 + concurrency 53`) and
+   both `application_direct.py` / `reply_detector.py` compile. This stays unchecked
+   until the same command passes from the exact pushed clean clone.
 10. [ ] Run `./install.sh coconala` through the pre-auth boundary in that clean HOME and
-    prove external marketplace effect zero before authentication.
+    prove external marketplace effect zero before authentication. Verified blocker:
+    root `install.sh` currently ignores the `coconala` argument and installs the
+    generic self-funded runtime; `skills/earn/gig/install.sh` only invokes the
+    filesystem capability-receipt CLI and requires unrelated explicit arguments.
+    Therefore public one-command Coconala onboarding is not implemented and no
+    signup-to-bank-income claim is permitted.
 11. [ ] Render the Apply, Negotiate, browser and release-watcher launchd definitions
     from public configuration; verify no plaintext secret/private seller default and
     verify the intended immutable `current` paths/cadences.
