@@ -742,6 +742,13 @@ U13 atomic order:
     then verifies the exact Connects delta before marking the effect verified. The model cannot turn its
     own success claim into a receipt. Upwork regression remains `154 passed`; next evidence is one
     loop-owned live submit and official replay.
+51. **AGENT OBSERVED THE NEXT STATE / CEREMONY BOUNDARY CORRECTED:** the first Terra production run
+    dynamically passed the Connects explainer, then stopped at a safety-policy acknowledgement because
+    the initial prompt classified every acknowledgement as human-only. Official readback proves
+    proposals `0` and balance `150`. Ordinary educational and marketplace-safety acknowledgements that
+    do not change proposal, price, contract, identity, tax or payment facts are part of the authorized
+    browser task; CAPTCHA, identity proof and personal legal/tax declarations remain typed human
+    ceremonies. This is one general prompt rule, not an Upwork dialog string or scripted path.
 
 U14 atomic order:
 

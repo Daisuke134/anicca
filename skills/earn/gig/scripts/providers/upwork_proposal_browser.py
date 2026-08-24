@@ -107,8 +107,11 @@ is {form_url}. Use current page feedback to handle ordinary non-financial UI and
 filled proposal exactly once. Do not edit proposal fields, buy anything, boost, subscribe, open another
 job, change account settings, edit code, or claim success from a click. Stop after the page visibly
 leaves the editable proposal state or shows a provider-authored result. Return status ok if you acted,
-blocked if a human-only ceremony appears, or error if the live result remains unknown. Evidence must
-name only safe page state or local evidence paths; never include proposal text or credentials."""
+blocked if a human-only ceremony appears, or error if the live result remains unknown. You may accept
+ordinary educational or marketplace-safety acknowledgements needed to continue this already-authorized
+submission when they do not change price, proposal content, contract terms, identity, tax or payment
+facts. CAPTCHA, identity proof and personal legal/tax declarations remain human-only. Evidence must name
+only safe page state or local evidence paths; never include proposal text or credentials."""
     evidence.mkdir(parents=True, exist_ok=False, mode=0o700)
     completed = subprocess.run([
         sys.executable, str(DEFAULT_RUNNER), "--task-class", "browser-lane-agent",
