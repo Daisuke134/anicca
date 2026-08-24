@@ -8009,12 +8009,19 @@ into one percentage branch:
   to the appropriate distribution owner. Exact Affiliate effects remain joined
   to the control placement and official money ledger.
 
-The resulting ceiling is 96 public effects per day: 48 original and 48
-quote/repost boundaries, subject only to explicit duplicate, authentication,
-provider, safety, or no-qualified-source failures. Model preparation,
-humanization, verification, and readback must happen before the assigned public
-boundary rather than consuming later boundaries. Identical copy and unmeasured
-self-quote repetition remain forbidden.
+The resulting ceiling is 96 independent execution opportunities per day, not a
+source-supported promise of 96 public posts. Both loops wake every 30 minutes,
+but a public effect requires a fresh, helpful, non-duplicative payload and an
+X-policy-safe route. X explicitly permits helpful automated informational posts
+and automated quote/reposts, while warning that duplicative, spammy, bulk, or
+aggressive reposting can cause filtering or suspension. Model preparation,
+humanization, verification, and readback happen before the assigned opportunity.
+
+Publication uses Postiz/API transport. Browser automation is limited to
+authorized search, observation, and public readback: X's Automation Rules state
+that scripting the website as a non-API automation method may result in
+permanent suspension. Therefore "both loops use the browser" means dedicated
+read-only browser leases plus API publication, not DOM-driven posting.
 
 Current runtime does not implement that architecture. Only
 `ai.anicca.x-repost-pass` is loaded at a 1,800-second interval; no independent
@@ -8035,6 +8042,85 @@ one effect; reads back the permalink; and refills its future queue without
 consuming the next boundary. Each slot ledger records `POSTED`,
 `SKIPPED_UNSAFE`, `PROVIDER_FAILED`, or `NO_QUALIFIED_SOURCE` and reports fill
 rate, duplicate count, exact reach, follower delta, and Affiliate contribution.
+
+### First-source money architecture
+
+```mermaid
+flowchart LR
+  R["x-repost\n30分ごとに独立wake"] --> Q["関連性と有用性をモデル判定"]
+  T["x-tweeter\n30分ごとに独立wake"] --> O["有用なAI originalをモデル生成"]
+  Q --> P["Postiz APIで公開"]
+  O --> P
+  P --> B["Browserは検索・exact readbackのみ"]
+  B --> A["関連audienceとqualified reach"]
+  A --> C["Affiliate disclosure付き記事導線"]
+  C --> L["固有Affiliate Link click"]
+  L --> S["有料subscriber登録・帰属"]
+  S --> X["PartnerStack transaction"]
+  X --> PA["Pending approval"]
+  PA --> AP["Approved / Paid commission"]
+  AP --> N["既知cost・reversal控除後net"]
+  N --> G{"rolling 30日 net >= $10,000?"}
+  G -- "No" --> Q
+  G -- "Yes" --> D["D30完了"]
+```
+
+Authoritative sources and adopted rules:
+
+- X Organic Best Practices:
+  `https://business.x.com/en/basics/organic-best-practices`. Keep copy concise,
+  conversational, generally hashtag-free, with a clear CTA where applicable;
+  plan ahead and keep approved evergreen posts ready. Adopt precomputed quality
+  queues and clear article CTAs.
+- X Automation Rules, updated April 2026:
+  `https://help.x.com/en/rules-and-policies/x-automation`. Helpful automated
+  informational posts and automated quote/reposts are allowed, but duplicate,
+  spammy, bulk, or aggressive behavior is prohibited; non-API website scripting
+  may lead to permanent suspension. Adopt API publication, browser readback,
+  duplicate zero, and no guaranteed public effect merely because a wake ran.
+- PartnerStack Intro and payout guidance:
+  `https://support.partnerstack.com/hc/en-us/articles/360009183474-Intro-to-PartnerStack`
+  and
+  `https://support.partnerstack.com/hc/en-us/articles/360009501113-How-do-I-get-paid`.
+  Clicks and projected earnings are not cash. Money progresses through a real
+  transaction and commission states; the company approves or declines, and only
+  approved/paid funds become withdrawable.
+- ElevenLabs Affiliate Program and current terms:
+  `https://elevenlabs.io/affiliates`,
+  `https://elevenlabs.io/affiliate-partner-guide`, and
+  `https://elevenlabs.io/affiliates-terms`. A qualifying customer must use the
+  unique Affiliate Link, register and maintain a non-free subscription, and be
+  attributed. Starter/Creator/Pro/Scale pay 22% for the first 12 months;
+  Business pays 11%; enterprise is excluded. Disclosure must be clear, close to
+  the endorsement/link, and in the same language. Commission becomes valid 90
+  days after first payment under the guide and is paid in a later payment
+  period.
+
+At current official monthly prices, gross monthly commission of USD 10,000
+before costs/reversals requires approximately one of these active referred
+subscriber equivalents:
+
+| Plan | Monthly price | Rate | Commission/customer/month | Customers for $10k |
+|---|---:|---:|---:|---:|
+| Starter | $6 | 22% | $1.32 | 7,576 |
+| Creator standard | $22 | 22% | $4.84 | 2,067 |
+| Pro | $99 | 22% | $21.78 | 460 |
+| Scale | $299 | 22% | $65.78 | 153 |
+| Business | $990 | 11% | $108.90 | 92 |
+
+The actual target is stricter: `approved_or_paid commission - known costs -
+reversals >= USD 10,000`. Therefore the agent must favor higher-value, relevant
+buyers and multiple approved offers; raw post volume or low-intent Starter
+traffic cannot be assumed to reach D30.
+
+ElevenLabs' current terms also state under participation requirements that only
+natural persons may register and that bots, scripts, or other automated methods
+are prohibited. The scope of that sentence is ambiguous for scheduled promotion
+after a natural-person registration. Before scaling automated ElevenLabs link
+promotion, obtain written program clarification or admit a different program
+whose terms explicitly allow the intended automation. Growth loops may continue
+with non-Affiliate helpful content while this commission-enforceability gate is
+open.
 
 ### Loop runtime protocol — not Codex's design TODO
 
