@@ -4624,13 +4624,27 @@ def _reported_paid_row(args, item: dict[str, Any]) -> dict[str, Any] | None:
 
 
 def _admitted_paid_projects(args, items: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    admission = paid_admission.plan(items, projects_root=args.projects_root, max_orders=1)
+    available = [item for item in items if not _paid_timed_retry_is_future(args, item)]
+    if not available:
+        return []
+    admission = paid_admission.plan(available, projects_root=args.projects_root, max_orders=1)
     paid_admission.record_decisions(
         admission, projects_root=args.projects_root,
         pass_id=f"paid-direct-{time.time_ns()}",
     )
     admitted = set(admission.get("admitted") or [])
-    return [item for item in items if paid_admission.stable_identity(item) in admitted]
+    return [item for item in available if paid_admission.stable_identity(item) in admitted]
+
+
+def _paid_timed_retry_is_future(args, item: dict[str, Any], now: float | None = None) -> bool:
+    try:
+        retry = _load(_paid_project_root(args, item) / "context" / "paid-retry.json")
+        if retry.get("version") != 1 or retry.get("status") != "timed_retry":
+            return False
+        due = datetime.fromisoformat(_text(retry.get("retry_not_before")).replace("Z", "+00:00"))
+        return due.timestamp() > (time.time() if now is None else now)
+    except (AttributeError, Failure, OSError, ValueError, TypeError, json.JSONDecodeError):
+        return False
 
 
 def _paid_pending_count(rows: dict[str, dict[str, Any]]) -> int:

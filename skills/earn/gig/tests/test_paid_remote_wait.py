@@ -252,6 +252,29 @@ def test_paid_admission_selects_one_project_and_rotates(tmp_path):
     assert [item["talkroom_id"] for item in second] == ["102"]
 
 
+def test_paid_admission_skips_future_timed_retry_for_actionable_project(tmp_path):
+    paid = load("paid_direct")
+    args = SimpleNamespace(projects_root=tmp_path)
+    items = [
+        {"talkroom_id": "101", "buyer": "buyer-a"},
+        {"talkroom_id": "102", "buyer": "buyer-b"},
+    ]
+    for item in items:
+        root = tmp_path / item["talkroom_id"]
+        root.mkdir(parents=True)
+        write_json(root / "state.json", {"talkroom_id": item["talkroom_id"]})
+    write_json(tmp_path / "101/context/paid-retry.json", {
+        "version": 1,
+        "status": "timed_retry",
+        "retry_not_before": "2999-01-01T00:00:00+00:00",
+        "reason": "provider_attempt_limit",
+    })
+
+    admitted = paid._admitted_paid_projects(args, items)
+
+    assert [item["talkroom_id"] for item in admitted] == ["102"]
+
+
 def test_queued_paid_project_keeps_parent_pending():
     paid = load("paid_direct")
     rows = {
