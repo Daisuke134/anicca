@@ -12,10 +12,32 @@ This is the only current task list for this cursor. Unchecked items in older sec
 are historical or belong to Paid/other owners; they do not reopen completed Apply or
 Storefront work.
 
-### Current Codex-owned OSS UX TODO — external trials excluded
+### Current Coconala-only code TODO — external trials excluded
 
-This is the active implementation cursor. External-device/user trials remain acceptance
-evidence and are not reported as coding work.
+This session implements only Coconala. Future integration manifests remain possible but
+are not active work.
+
+1. [x] One-line clean-Mac bootstrap opens the local UI and Coconala Connect/Resume.
+2. [x] Installer prepares Codex/CloakBrowser/private Python and keeps secrets on official surfaces.
+3. [x] Official account/email/SMS/seller/eKYC/bank gates are evidence-bound and missing gates reopen.
+4. [x] Browser, Apply, Negotiate, Storefront, Paid and Release Watcher share one activation/readback contract.
+5. [x] Storefront imports existing listings or selects demand and publishes the first listing at count zero.
+6. [x] Local UI shows customer-safe Application/Negotiation/Listing/Delivery/Bank receipts.
+7. [x] Re-render all six public launchd definitions and compile all four business lane
+   entrypoints from current main. Result: six exact labels, four compiled business
+   entrypoints, private defaults zero, and tracked public `paid_direct.py` confirmed.
+8. [x] Re-run clean-HOME pre-auth/effect-zero simulation and scoped secret/PII scans on
+   current main. Coconala/browser-not-ready returns blocked with HOME writes and marketplace
+   effects zero; integrations/UI/Gig gitleaks and scoped owner PII scans are zero.
+9. [x] Finish the friend-facing README so normal setup requires no manual listing, JSON,
+   plist, Python package or notification adapter work. The one-line bootstrap, five
+   official owner ceremonies, same-browser handoff, six jobs, first-listing behavior and
+   local receipt UI are above the advanced recovery section.
+
+### Future shared OSS UX — not current session
+
+The manifest/UI foundation intentionally permits future money loops. The remaining
+repository-wide migration is not part of this Coconala session.
 
 1. [ ] Define and validate one public integration onboarding manifest schema used by every
    persistent Money/Body/Mind loop. The schema and first Coconala manifest are complete

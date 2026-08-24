@@ -30,6 +30,10 @@
 7. Storefront imports existing listings or creates the first truthful listing when the
    official count is zero; the other lanes then operate without ordinary approval gates.
 
+That is the complete normal setup. Do not create a listing manually, install Python
+packages, edit JSON, configure launchd, or give Life Manager a Coconala password. The
+local UI remains the default notification and status surface; email/Telegram are optional.
+
 ### Deferred external acceptance
 
 After the code-owned OSS UX is complete, independent clean-device owners validate this
@@ -75,15 +79,12 @@ loop alone must use the person's real employment facts and availability.
 | | why |
 |---|---|
 | A Mac, Apple Silicon, macOS 14 or newer | The jobs are launchd user agents and the browser build is a macOS app bundle. |
-| A **Codex subscription** and the `codex` CLI signed in | This is the default paid route. `codex login`, then check `~/.codex/auth.json` exists. |
-| A **Coconala seller account** with at least one listing | This is the only account you create. You do not need to finish identity verification or add a bank account to start — those matter when you withdraw, not when you sell. |
-| Python 3.13 or newer | The installer creates a private venv with `websockets`, `beautifulsoup4`, `jsonschema`, `cloakbrowser`, and `pillow`; Pillow is required for Storefront listing images. |
-| A CloakBrowser Chromium build under `~/.cloakbrowser/chromium-*/` | An ordinary Chrome will not do: the lanes attach over CDP, and the launcher passes `--fingerprint`, a flag only this build has. See [the browser](#the-browser) below — the version matters. |
+| A **ChatGPT subscription** | The installer installs the Codex CLI when missing, opens `codex login`, and verifies the resulting session. |
+| A Coconala registration email, Japanese mobile phone, accepted identity document, and matching domestic bank account | Enter these only on official Coconala/eKYC pages opened by the installer. Storefront creates the first listing when none exists. |
+| Internet access and macOS administrator access during setup | The installer prepares Homebrew, Git, Python, the private venv, CloakBrowser, and the six jobs only when missing. |
 
-Owner reports default to email. Install a sendmail-compatible client such as
-`msmtp` (`brew install msmtp`), connect it to Gmail in `~/.msmtprc`, then set
-`GIG_NOTIFY_EMAIL` and `GIG_SENDMAIL`. The existing `openclaw` Telegram path is
-only a fallback when no email recipient is configured.
+Owner status and official outcome receipts default to the local Life Manager UI. Email
+and Telegram are optional advanced notification adapters; neither blocks the four lanes.
 
 The semantic reply lane is tool-less. If the machine has a local CLI proxy, put
 its token in `~/.cli-proxy-api-key` and keep the loopback provider enabled in the
@@ -95,10 +96,11 @@ given browser or send tools by this fallback.
 
 ---
 
-## Install
+## Advanced/manual recovery
 
-This is the current manual onboarding flow. The intended future public entrypoint
-is `./install.sh coconala`, but it is not accepted yet.
+The normal one-line UI flow above is the public onboarding. The remaining sections are
+for recovery, custom notification adapters, operator overrides, qualification and
+uninstall; a normal owner should not need them.
 
 ### 1. Get the code
 
