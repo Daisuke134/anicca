@@ -839,7 +839,7 @@ async def execute_sealed_proposal(
                 connects_before=int(existing["connects_pre"]), connects_after=connects_pre,
             )])
             return {**base, "state": "submitted", "proposal_id": receipt["proposal_id"]}, None, None
-        if not matches and connects_pre == existing["connects_pre"]:
+        if not matches:
             no_effect_hash = hashlib.sha256(json.dumps({
                 "proposals": proposals_pre_hash, "connects": connects_pre_hash,
             }, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
