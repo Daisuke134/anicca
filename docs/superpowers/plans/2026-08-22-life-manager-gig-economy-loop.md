@@ -260,8 +260,8 @@ No later task may jump ahead of the first incomplete row:
 | U10 | Discover and qualify a first-job candidate | **DONE:** usability-test job `~022091106411892491962`; $15, 10–15 proposals, zero interviews, payment/phone verified, and all student/age/English/recording gates match owner evidence |
 | U11 | Resolve application capacity for that candidate | **DONE:** official proposal surface requires 7 Connects; balance/history, offers, invites and proposals are 0, no reward banner is exposed, and the only buy offer is 100 for $15 plus tax |
 | U12 | Freeze one tailored first-job proposal | **DONE:** immutable payload `c37eed9c…c68e926` contains the $15 terms, cover letter, five factual screening answers, no attachments, and zero unsupported claims |
-| U13 | Make acquisition fully loop-owned | **IN PROGRESS, PONYTAIL:** custom query/candidate/verifier stack deleted; the existing provider now scans current jobs, passes only official zero-Connect details through the existing proposal model, and uses the existing proposal effect/readback path |
-| U14 | Close the first acquisition effect | **IN PROGRESS, ZERO-SPEND:** submit any model-qualified public job whose official cost is 0 Connects, or accept a qualified invitation/direct offer/Catalog order; paid Connects remain disabled; verify official proposal/order ID and exact balance delta |
+| U13 | Make acquisition fully loop-owned | **DONE:** custom acquisition stack deleted; production release scans three current-job pages, reads exact proposal cost, reuses the existing proposal model/effect/readback path, and polls invitations, Direct Offers, Catalog orders and free Connects every five minutes |
+| U14 | Close the first acquisition effect | **WAITING PROVIDER CAPACITY:** the latest production wake inspected 28 jobs and found zero official zero-Connect jobs; balance/invites/offers/Catalog orders remain 0. The loop submits immediately when any zero-spend path becomes actionable and then verifies official proposal/order ID and exact balance delta |
 | U15 | Replay immediately | Same proposal ID; zero new proposal and zero additional Connects |
 | U16 | Poll and answer the resulting thread | Official story/message IDs and no duplicate reply |
 | U17 | Negotiate and accept profitable terms | Offer ID, exact terms hash and active contract ID |
@@ -627,6 +627,13 @@ U13 atomic order:
     provider files/about 300 production lines with zero kernel changes; later markets shrink toward
     one manifest plus transport glue. Unknown-site signup and adapter generation belong to the resident
     agent, not manual Skill authoring, except for typed human-only identity/tax/payout ceremonies.
+35. **UPWORK APPLY LOOP LIVE / NO CURRENT ACTIONABLE JOB:** release `5a0ff9e4f93c` completed a
+    production wake with exit 0, traversed three official result pages and inspected 28 unique current
+    job details. None showed an official zero-Connect proposal entry. Balance, submitted/active
+    proposals, invitations, Direct Offers and Catalog orders all remain 0; marketplace effects remain
+    0. U13 is therefore engineering-complete: the five-minute loop applies through the existing fence
+    as soon as a zero-cost job, invitation, offer, order or free Connects becomes official. U14 remains
+    a live business outcome, not another code task.
 
 U14 atomic order:
 
