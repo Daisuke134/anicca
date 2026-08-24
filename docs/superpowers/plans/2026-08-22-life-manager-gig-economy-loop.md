@@ -260,7 +260,7 @@ No later task may jump ahead of the first incomplete row:
 | U10 | Discover and qualify a first-job candidate | **DONE:** usability-test job `~022091106411892491962`; $15, 10–15 proposals, zero interviews, payment/phone verified, and all student/age/English/recording gates match owner evidence |
 | U11 | Resolve application capacity for that candidate | **DONE:** official proposal surface requires 7 Connects; balance/history, offers, invites and proposals are 0, no reward banner is exposed, and the only buy offer is 100 for $15 plus tax |
 | U12 | Freeze one tailored first-job proposal | **DONE:** immutable payload `c37eed9c…c68e926` contains the $15 terms, cover letter, five factual screening answers, no attachments, and zero unsupported claims |
-| U13 | Make acquisition fully loop-owned | **IN PROGRESS:** dedicated 9233 and two fresh replay-safe wakes are complete; next remove the static-candidate dependency so the launchd loop itself searches, model-qualifies, seals truthful job-specific proposals and restores three live ready candidates |
+| U13 | Make acquisition fully loop-owned | **CODE COMPLETE / LIVE WAKE PENDING:** the provider now treats static candidates as seed only, searches authenticated recent jobs when ready count is below three, opens current details, invokes schema-bound model judgment with owner/Skill evidence, atomically seals a private proposal and runtime candidate cache, and preserves reply/inbound priority; next deploy and prove one loop-owned replenishment plus duplicate-zero replay |
 | U14 | Close the first zero-spend acquisition effect | Accept one qualified invitation/direct offer or Project Catalog order, or submit the best sealed public-job proposal when granted/returned Connects cover its exact cost; never purchase capacity; verify official IDs and balance readback |
 | U15 | Replay immediately | Same proposal ID; zero new proposal and zero additional Connects |
 | U16 | Poll and answer the resulting thread | Official story/message IDs and no duplicate reply |
@@ -535,6 +535,16 @@ U13 atomic order:
     three ready candidates without Codex choosing or editing marketplace work. This is the first
     unfinished engineering item; reply, contract, fulfillment, delivery, money and learning remain
     subsequent loop-owned closures.
+22. **AUTONOMOUS REPLENISHMENT CODE COMPLETE / PRODUCTION PENDING:** the provider now reads the
+    release candidate JSON only as an initial seed. With fewer than three officially open ready jobs,
+    the same resident wake opens authenticated recency search and up to four current job details,
+    supplies each exact evidence receipt, owner profile and installed Upwork delivery Skill contract
+    to the existing isolated model runner, and accepts only a schema-valid `submit` or evidenced
+    `skip`. Deterministic code binds job ID/URL/title/evidence hash/Connects, requires empty unsupported
+    claims and attachments, writes mode-600 sealed proposals and atomically replaces the runtime
+    cache. Existing replies/inbound and already-ready covered proposals preempt discovery; discovery
+    failure is fail-visible without killing those lanes. All current Upwork tests pass 154/154. The
+    next closure is immutable release activation followed by one live replenishment and replay.
 
 U14 atomic order:
 
