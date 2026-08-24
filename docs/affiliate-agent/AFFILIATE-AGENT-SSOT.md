@@ -7655,27 +7655,41 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   terminal `READY_FOR_PUBLICATION`. The decision call remains retryable
   `BUDGET_BLOCKED` until the next JST budget day; money remains
   `NO_TRANSACTIONS` with all commission status counts zero.
+- Correction: that reset was not an OpenAI or ChatGPT account limit. It was the
+  Affiliate runner's own `ANICCA_LOOP_DAILY_TOKEN_BUDGET=32768` breaker while
+  the production caller already used ChatGPT account 2 successfully. User
+  direction explicitly removes this acquisition daily breaker. Commit
+  `785309f57` deletes the variable from the acquisition subprocess environment
+  and makes the generic runner's daily cap optional without substituting a
+  hidden large value. The required per-run scope, 32,768-token pass admission,
+  and equal Codex native rollout ceiling remain. Other owners that explicitly
+  configure daily caps retain them. Fresh review returned `ship`; focused tests
+  are GREEN and vendor hashes match. Production `current` resolves to immutable
+  release `785309f57f8b42268c3b608cbdfbf783c13618bb` with LaunchAgents unchanged.
 
 ### Atomic remaining TODO — active focused revenue path
 
 Current authoritative state:
 
 - Production Affiliate release is
-  `bbf2b8bfdfae54c24bcf23d18c5b4208955f1b42`; owner health is `HEALTHY`.
+  `785309f57f8b42268c3b608cbdfbf783c13618bb`; owner health is `HEALTHY`.
 - Active focus is CTA child placement
   `elevenlabs-discovered-subtitle-translator-en-experiment-1ecf26fe47e1-1`.
 - Latest active focused baseline content SHA is `d07bcf15e4ac1703ceb4e2e12b84c1022c677c062e88396ed20e4fd14d9a34e2`.
-- Acquisition is retryable `BUDGET_BLOCKED`. Rolling money is
-  `NO_TRANSACTIONS`; approved, paid, pending, and reversed are all zero.
+- The latest wake still carries the historical `BUDGET_BLOCKED` receipt from
+  before release replacement. It is no longer a valid wait gate; the next
+  existing-owner wake retries immediately using ChatGPT account 2. Rolling
+  money is `NO_TRANSACTIONS`; approved, paid, pending, and reversed are all zero.
 - `CAMPAIGN_METADATA_INVALID` refers to the preserved oversized historical
   artifact. It must stay visible for audit, but it does not authorize deletion
   and must not supersede a later valid due campaign.
 
 Execute the remaining work strictly in this order:
 
-1. **External budget gate.** Wait for the next JST acquisition budget day. The
-   existing owner retries; no manual model executor or manual publication is
-   allowed.
+1. **Immediate existing-owner retry.** On the next normal owner wake, verify
+   release `785309f57...`, account-2 execution, `daily_limit_tokens=null`, and a
+   non-`BUDGET_BLOCKED` terminal. No manual model executor or manual publication
+   is allowed.
 2. **Active-child decision.** Require one sealed acquisition decision whose
    baseline SHA equals the then-current active CTA-child baseline, whose
    `control_placement_id` is the active child, and whose success metric uses
@@ -7704,7 +7718,7 @@ Execute the remaining work strictly in this order:
    attribution. Zero rows remains `NO_TRANSACTIONS`.
 7. **Iterate without parallel experiments.** If official transaction count
    remains zero after the bounded observation interval, advance focus to the
-   latest live child and repeat steps 1–6 with one new model-selected variable.
+   latest live child and repeat steps 2–6 with one new model-selected variable.
    Do not reopen historical Dev.to or base baselines and do not run sibling
    experiments concurrently.
 8. **First-money gate.** Count success only when PartnerStack returns one real
