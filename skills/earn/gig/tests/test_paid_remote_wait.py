@@ -13,6 +13,8 @@ import pytest
 
 
 SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
+if str(SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS))
 
 
 def load(name: str):
@@ -307,6 +309,25 @@ def test_delivery_cadence_accepts_oversize_linked_asset_and_latest_buyer_approva
 
     assert cadence._artifact_ready(item) is True
     assert cadence.delivery_decision(item)["mode"] == "formal"
+
+
+def test_formal_browser_accepts_latest_buyer_approval_and_linked_asset():
+    formal = load("coconala_formal_delivery_browser")
+    buyer = {"message_id": "buyer-approval", "content_sha256": "a" * 64, "side": "buyer"}
+    queue = {
+        "formal_approval_evidence": buyer,
+        "latest_message_identity": {
+            "message_id": "seller-ack", "content_sha256": "b" * 64, "side": "seller",
+        },
+        "latest_buyer_message_identity": buyer,
+        "delivery_evidence": {
+            "required_assets": [{"asset_id": "package", "kind": "linked_asset", "minimum_count": 1}],
+            "artifact_assets": [{"asset_id": "package", "type": "linked_asset"}],
+        },
+    }
+
+    assert formal._formal_approval_ready(queue) is True
+    assert formal._linked_asset_delivery(queue["delivery_evidence"]) is True
 
 
 def test_wait_accepts_supplementary_receipt_when_another_has_readback(tmp_path):
