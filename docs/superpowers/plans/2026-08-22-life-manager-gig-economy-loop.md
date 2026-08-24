@@ -900,6 +900,13 @@ U13 atomic order:
     URL and accept those provider-authored empty markers. No reply or contract is fabricated. Upwork
     regression remains `156 passed`; next production wake must normalize both proposal IDs as submitted,
     read the real empty inbox and exit 0 while acquisition remains enabled.
+69. **CONTINUOUS SALES ZERO-EVENT BASELINE PASS:** integrated release `9adf4fe15` exits 0 with both
+    official proposal IDs normalized as submitted, unclassified 0, canonical Messages readback,
+    rooms/unread 0, offers/invites/contracts 0 and inbox events appended 0. Proposal count remains 2,
+    balance 133 and both effect rows verified. The same wake continues batched acquisition, proving
+    Sales monitoring does not serialize or disable Apply. The next external reply/offer must preempt
+    acquisition and flow through Luna composition, immutable outbox effect and official message/
+    contract readback; until one exists, no synthetic effect can close that live gate.
 
 U14 atomic order:
 
