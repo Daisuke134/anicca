@@ -708,6 +708,13 @@ U13 atomic order:
     Upwork regression is `154 passed`; next release, reset only this absence-proven effect to prepared,
     trigger the existing launchd loop once, then reconcile proposal ID and Connects delta before any
     further acquisition.
+46. **FIRST-USE CONNECTS EXPLAINER FOUND:** the trusted Submit click is working, but Upwork intercepts
+    the account's first proposal with an official `Use Connects to submit proposals` education dialog
+    whose only action is `Close`. Post-attempt official evidence again proves proposals `0` and balance
+    `150`. Keep the same sealed proposal and effect identity; within the same fenced attempt, close only
+    that exact platform explainer with trusted input, then click the already verified Submit control
+    once and require proposal ID plus the exact `150 -> 141` Connects readback. No generic modal
+    dismissal, JavaScript click, duplicate retry or new qualification logic is introduced.
 
 U14 atomic order:
 

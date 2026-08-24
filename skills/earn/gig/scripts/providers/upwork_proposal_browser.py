@@ -103,6 +103,14 @@ return{{job_id:job,form_url:url,proposal_id:match?match[1]:null,state:submitted&
 }})()'''
 
 
+async def _trusted_click(ws: Any, point: dict[str, Any], call_id: int) -> None:
+    for offset, event in enumerate(("mousePressed", "mouseReleased")):
+        await _call(ws, "Input.dispatchMouseEvent", {
+            "type": event, "x": point["x"], "y": point["y"],
+            "button": "left", "clickCount": 1,
+        }, call_id + offset)
+
+
 def validate_submit_readback(snapshot: dict[str, Any], payload: dict[str, Any]) -> dict[str, str]:
     """Require an exact official proposal identifier after the one click."""
     if not isinstance(snapshot, dict) or set(snapshot) != _SUBMIT_KEYS:
@@ -199,27 +207,33 @@ async def submit_proposal_after_fence(
                 or not isinstance(point.get("y"), (int, float))
             ):
                 raise ValueError("upwork_submit_control_missing")
-            await _call(ws, "Input.dispatchMouseEvent", {
-                "type": "mouseMoved", "x": point["x"], "y": point["y"],
-            }, cid + 2)
-            await _call(ws, "Input.dispatchMouseEvent", {
-                "type": "mousePressed", "x": point["x"], "y": point["y"],
-                "button": "left", "clickCount": 1,
-            }, cid + 3)
-            await _call(ws, "Input.dispatchMouseEvent", {
-                "type": "mouseReleased", "x": point["x"], "y": point["y"],
-                "button": "left", "clickCount": 1,
+            await _trusted_click(ws, point, cid + 2)
+            await asyncio.sleep(1)
+            explainer = await _call(ws, "Runtime.evaluate", {
+                "expression": """(()=>{const n=x=>(x||'').replace(/\\s+/g,' ').trim(),d=[...document.querySelectorAll('[role=dialog]')].find(x=>x.offsetParent&&n(x.innerText).includes('Use Connects to submit proposals'));if(!d)return null;const b=[...d.querySelectorAll('button')].find(x=>n(x.innerText)==='Close');if(!b)throw Error('upwork_connects_explainer_close_missing');b.scrollIntoView({block:'center',inline:'center'});const r=b.getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2}})()""",
+                "returnByValue": True,
             }, cid + 4)
+            close_point = explainer.get("result", {}).get("result", {}).get("value")
+            if isinstance(close_point, dict):
+                await _trusted_click(ws, close_point, cid + 5)
+                await asyncio.sleep(1)
+                control = await _call(ws, "Runtime.evaluate", {
+                    "expression": submit_click_expression(job_id), "returnByValue": True,
+                }, cid + 7)
+                point = control.get("result", {}).get("result", {}).get("value")
+                if not isinstance(point, dict):
+                    raise ValueError("upwork_submit_control_missing")
+                await _trusted_click(ws, point, cid + 8)
             await asyncio.sleep(5)
             readback = await _call(ws, "Runtime.evaluate", {
                 "expression": submit_readback_expression(job_id), "returnByValue": True,
-            }, cid + 5)
+            }, cid + 10)
             value = readback.get("result", {}).get("result", {}).get("value")
             if isinstance(value, dict) and value.get("state") == "unknown":
                 diagnostic = await _call(ws, "Runtime.evaluate", {
                     "expression": """(()=>{const n=x=>(x||'').replace(/\\s+/g,' ').trim();return{url:location.href,buttons:[...document.querySelectorAll('button')].filter(x=>x.offsetParent).map(x=>n(x.innerText)).filter(Boolean).slice(-12),dialogs:[...document.querySelectorAll('[role=dialog]')].filter(x=>x.offsetParent).map(x=>n(x.innerText).slice(0,300)),alerts:[...document.querySelectorAll('[role=alert],.air3-alert')].filter(x=>x.offsetParent).map(x=>n(x.innerText).slice(0,300))}})()""",
                     "returnByValue": True,
-                }, cid + 6)
+                }, cid + 11)
                 detail = diagnostic.get("result", {}).get("result", {}).get("value")
                 raise ValueError("upwork_proposal_submit_unconfirmed:" + json.dumps(
                     detail, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
