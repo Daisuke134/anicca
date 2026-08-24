@@ -92,9 +92,16 @@ Storefront work.
          compatibility tests pass 5/5, shell syntax passes, missing browser fails closed
          with HOME write zero, and the current Mac returns all seven checks true.
        - [ ] 2b. Install only missing public dependencies, then rerun the same detector.
+         Direct implementation now installs Homebrew/Python only when required, creates
+         `~/.local/share/anicca/gig/venv`, installs the four public Python dependencies,
+         installs the official Codex standalone CLI only when absent, and downloads the
+         CloakBrowser binary only when absent. This Mac proved fresh venv installation,
+         imports, all-ready readback and an idempotent second run; missing Homebrew/Codex/
+         browser downloads remain clean-pilot evidence before this box closes.
        - [ ] 2c. When Codex is unauthenticated, run `codex login` and require
          `codex login status` readback. Official OpenAI documentation defines this as
-         the default ChatGPT browser login and status command.
+         the default ChatGPT browser login and status command. The authenticated no-op
+         path is verified here; a genuinely signed-out pilot remains required.
     3. [ ] Create the private resumable onboarding receipt with no raw identity, OTP,
        document, password, bank or session value in Git/logs/model/report output.
     4. [ ] Show one prerequisite screen, then launch the dedicated CloakBrowser profile
