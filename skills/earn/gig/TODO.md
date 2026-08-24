@@ -76,6 +76,9 @@ Storefront work.
     signup-to-bank-income claim is permitted.
     Atomic implementation order (design SSOT:
     `docs/superpowers/specs/2026-08-24-coconala-one-session-onboarding-design.md`):
+    Active implementation plan:
+    `docs/superpowers/plans/2026-08-24-coconala-installer-dispatch.md`. Only item 1
+    is active; later items remain untouched until its RED/GREEN/push closes.
     1. [ ] Dispatch root `./install.sh coconala` to the package controller; reject unknown
        product arguments without running the generic self-funded installer.
     2. [ ] Preflight macOS, Apple Silicon, supported Python, CloakBrowser and disk space;
