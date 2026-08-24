@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import sys
 import threading
 import time
 from pathlib import Path
@@ -226,7 +227,7 @@ def test_current_wait_is_reused_before_semantic_decision(tmp_path):
     ) is True
 
 
-def test_paid_project_executor_runs_one_owner_at_a_time():
+def test_paid_project_executor_runs_different_owners_in_parallel():
     paid = load("paid_direct")
     active = 0
     maximum = 0
@@ -246,10 +247,10 @@ def test_paid_project_executor_runs_one_owner_at_a_time():
         for future in futures:
             future.result()
 
-    assert maximum == 1
+    assert maximum == 2
 
 
-def test_paid_effect_waits_for_shared_browser_lock(tmp_path):
+def test_paid_effect_child_does_not_take_global_browser_lock(tmp_path):
     paid = load("paid_direct")
     args = SimpleNamespace(**{
         name: tmp_path / name for name in (
@@ -264,8 +265,19 @@ def test_paid_effect_waits_for_shared_browser_lock(tmp_path):
         args, tmp_path / "item-18183618-prepared.json", tmp_path / "result.json",
     )
 
-    assert command[2] == str(paid.PAID_EFFECT_LOCK_TIMEOUT_SECONDS)
-    assert paid.PAID_EFFECT_LOCK_TIMEOUT_SECONDS >= 60
+    assert command[0] == sys.executable
+    assert "--write-item" in command
+    assert str(args.run_with_cdp_lock) not in command
+
+
+def test_paid_child_env_scopes_browser_owner_by_talkroom(tmp_path):
+    paid = load("paid_direct")
+    args = SimpleNamespace(cdp_lock_dir=tmp_path / "legacy-lock")
+
+    env = paid._fresh_child_env(args, owner="paid-direct-18183618")
+
+    assert env["CLOAK_BROWSER_OWNER"] == "paid-direct-18183618"
+    assert "GIG_CDP_LOCK_HELD" not in env
 
 
 def test_effect_process_diagnostic_is_bounded():
@@ -281,7 +293,7 @@ def test_effect_process_diagnostic_is_bounded():
     }
 
 
-def test_paid_admission_selects_one_project_and_rotates(tmp_path):
+def test_paid_admission_selects_independent_projects_in_same_wake(tmp_path):
     paid = load("paid_direct")
     args = SimpleNamespace(projects_root=tmp_path)
     items = [
@@ -289,12 +301,9 @@ def test_paid_admission_selects_one_project_and_rotates(tmp_path):
         {"talkroom_id": "102", "buyer": "buyer-b"},
     ]
 
-    first = paid._admitted_paid_projects(args, items)
-    assert [item["talkroom_id"] for item in first] == ["101"]
+    admitted = paid._admitted_paid_projects(args, items)
 
-    paid.delivery_project.record_queue_selection(tmp_path, first[0], adapter="coconala")
-    second = paid._admitted_paid_projects(args, items)
-    assert [item["talkroom_id"] for item in second] == ["102"]
+    assert [item["talkroom_id"] for item in admitted] == ["101", "102"]
 
 
 def test_paid_admission_skips_future_timed_retry_for_actionable_project(tmp_path):
@@ -320,7 +329,7 @@ def test_paid_admission_skips_future_timed_retry_for_actionable_project(tmp_path
     assert [item["talkroom_id"] for item in admitted] == ["102"]
 
 
-def test_paid_admission_respects_project_scoped_owner_priority(tmp_path):
+def test_paid_admission_orders_project_scoped_priority_without_excluding_others(tmp_path):
     paid = load("paid_direct")
     args = SimpleNamespace(projects_root=tmp_path)
     items = [
@@ -340,7 +349,7 @@ def test_paid_admission_respects_project_scoped_owner_priority(tmp_path):
 
     admitted = paid._admitted_paid_projects(args, items)
 
-    assert [item["talkroom_id"] for item in admitted] == ["102"]
+    assert [item["talkroom_id"] for item in admitted] == ["102", "101"]
 
 
 def test_queued_paid_project_keeps_parent_pending():
