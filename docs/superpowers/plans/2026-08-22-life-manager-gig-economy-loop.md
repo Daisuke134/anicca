@@ -279,26 +279,26 @@ Read-only research and adapter generation may proceed earlier. After U14, additi
 canaries may run while Upwork continues through U15–U22; paid work and unknown-effect reconciliation
 always preempt expansion.
 
-Current official truth is proposals 3, Connects 118, replies/offers/contracts 0 and payout `received`
-USD 0. The loop is merged to main, survives later shared releases and runs every five minutes through
+Current official truth is proposals 4, Connects 92, replies/offers/contracts 0 and payout `received`
+USD 0. Production `fac29d37e0` runs every five minutes through
 the dedicated authenticated 9233 browser. Finance proof remains `12d92846e`/`c0c66c32f` with 40/40;
-the live Upwork regression is 156/156.
+the latest natural wake exits 0 and official/runtime proposal counts both equal 4.
 
 Remaining order to finish the local Upwork skill and business loop:
 
 | Order | Required closure |
 |---:|---|
-| 1 | **DONE:** account/profile/portfolio, dedicated browser, native discovery, two exact proposals and replay 0 |
-| 2 | **DONE:** batched Luna qualification, published-proof/Skill inventory, seller-owned pricing, Terra current-UI submission and continuous Sales zero-event baseline |
-| 3 | Submit the currently sealed hourly iOS proposal after hourly-form preflight, then continue qualified acquisition while preserving the funnel spend gates |
+| 1 | **DONE:** account/profile/portfolio, dedicated browser, parallel discovery, one-call per-candidate Luna decisions, four official proposals, natural Telegram and official/runtime count 4 |
+| 2 | Replay proposal 4 with the same ID and Connects `92 → 92`; remove notification transport from acquisition critical path |
+| 3 | Execute all positive-EV sealed proposals with job leases and atomic Connects reservations; partial failure cannot stop sibling jobs |
 | 4 | U16–U17 close the first real client reply, profitable terms and active contract with official IDs and replay 0 |
-| 5 | U18–U19 close immutable project, Skill execution, independent PASS, one delivery ID and duplicate 0; run revision only from real buyer feedback |
-| 6 | U20 joins gross, fee, Connects/model/tool cost, refund/chargeback and payout `received`; cross-month events follow occurrence month |
-| 7 | Publish OSS alpha after the first complete discovery-to-received path, redacted fixtures, secret scan and isolated installer pass |
-| 8 | U21 closes three independent paid-review paths; retain the winning Skill/problem/proof/price and prioritize repeat clients |
-| 9 | Run zero-spend canaries on configured uGig, Freelancer, Lancers, CrowdWorks, Fiverr and Mercor through the same agent/tools while Upwork paid work remains first |
-| 10 | Enable Founder discovery for unknown markets, promote only official positive-net canaries, then close clean-device OSS stable |
-| 11 | U22 repeats the winners to USD 3,000 then USD 10,000 verified net received, changing one causal strategy variable at a time |
+| 5 | Close protected hourly Time Tracker and diary evidence before billable work |
+| 6 | U18–U19 close immutable project, Skill execution, independent PASS, one delivery/work receipt and duplicate 0 |
+| 7 | U20 joins diary/milestone, gross, fee, Connects/model/tool cost, invoice/review, refund/chargeback and payout `received` |
+| 8 | Publish OSS alpha after the first complete discovery-to-received path, redacted fixtures, secret scan and isolated installer pass |
+| 9 | U21 closes three independent paid-review paths; retain the winning Skill/problem/proof/price and prioritize repeat clients |
+| 10 | Run zero-spend canaries on uGig, Freelancer, Lancers, CrowdWorks, Fiverr and Mercor concurrently through the same common rails |
+| 11 | Enable Founder discovery, close second-market `received`, clean-device OSS stable, then repeat measured winners toward the revenue gates |
 
 The remaining work belongs to the resident Upwork loop, not to Codex as a marketplace operator.
 Codex's atomic engineering TODO is ordered as follows; it only edits, activates and verifies the loop:
@@ -2290,6 +2290,33 @@ scheduler. Fence the narrowest resource and serialize only genuinely shared acco
   original absolute paths; defaults perform zero external effects and zero spend.
 - [ ] Close OSS alpha only with Upwork real-receipt replay and close OSS stable only after a second
   market reaches official `received` plus clean-device receipt.
+
+### Task 62: Close one real Upwork proposal-to-money path
+
+Only the first unchecked row is active; a missing buyer event blocks that resource, not sibling lanes.
+
+- [ ] Reconcile proposal 4 and replay the same payload; require proposal ID
+  `2091811328085401601`, official Submitted proposals 4 and Connects `92 → 92`.
+- [ ] Make Telegram delivery a durable independent queue effect; acquisition never waits for OpenClaw
+  send/ACK or fails because a notification times out.
+- [ ] Replace one-proposal-per-wake with job-scoped proposal workers plus an atomic shared Connects
+  reservation; prove two sibling jobs can progress and same-job replay effect 0.
+- [ ] On the first official buyer message, append its exact room/head before Luna, send one truthful
+  reply, read the official story ID and replay the same head with reply 0.
+- [ ] On the first offer, read exact scope, rate/bid, weekly limit/milestones, fee, billing and deadline;
+  persist Luna accept/counter/decline and require official offer/contract state plus replay 0.
+- [ ] Compile active contract into one private project, reserve measured capacity and select an
+  installed Skill without copying customer content to logs, fixtures or Telegram.
+- [ ] For hourly work, prove Desktop App tracker start/stop, related screenshots, meaningful memo,
+  adequate activity and weekly-limit compliance before counting protected time.
+- [ ] Produce immutable artifacts, run independent verifier PASS, and freeze the exact accepted
+  artifact hash before any delivery or client-visible work-complete message.
+- [ ] Deliver once according to contract type and require official submission/story/diary receipt;
+  exact replay produces delivery 0. Revisions require a new official buyer head.
+- [ ] Reconcile work diary/milestone, invoice, review, gross, actual fee, Connects/model/tool cost,
+  refund/dispute/chargeback, availability and payout; only payout `received` enters cash.
+- [ ] Request only an honest review, capture repeat-work identity, attribute the complete funnel and
+  emit one evidence-backed keep/revert/pause decision.
 
 ## Final verification
 

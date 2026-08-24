@@ -1052,11 +1052,11 @@ includes `apply`, `skip`, `reply`, `offer`, `contract`, `delivery`, `payment`, `
 not regexes or provider-specific keyword rules. Re-observing the same decision or receipt sends zero
 additional messages.
 
-Current implementation evidence: production release `a81ec3b630` returned ten schema-bound decisions
-from one Luna call. Main `e846b873e4` additionally batches all ten WorkEvents into one reporting handoff
-instead of invoking Telegram once per decision, but is not yet the production pointer because the
-immutable release build encountered 318 MiB free-space exhaustion. This is a release-workspace issue,
-not a 20 GiB operating cap; protected profiles, customer projects, ledgers and receipts remain intact.
+Current implementation evidence: production release `fac29d37e0` contains ordered per-candidate batch
+decisions, one batched WorkEvent handoff, fresh-first reporting and parallel hidden job reads. A natural
+wake exits 0 and reconciles official Submitted proposals 4 with runtime state 4 and Connects 92. The
+earlier release-workspace failure is no longer the active runtime blocker; the disk remains low and is
+handled without a 20 GiB operating cap or deletion of protected profiles, projects, ledgers or receipts.
 
 The owner also receives a compact funnel heartbeat instead of one message for every unchanged poll:
 
@@ -1088,6 +1088,40 @@ ten-detail shape reduced search-to-all-details from 49 seconds to 11 seconds and
 44 seconds to 5 seconds (about 4.5x end-to-end), while preserving source order and ten distinct
 evidence artifacts. This is the first measured resource-parallel slice; model decisions and effects
 remain separate later slices.
+
+### 6.5 End-to-end Upwork completion contract
+
+The loop is not complete merely because acquisition works. It is complete only when one real buyer
+event traverses every official state below and exact replay creates no duplicate external effect:
+
+```mermaid
+flowchart LR
+  A[Proposal ID] --> R[Buyer message ID]
+  R --> O[Offer ID and terms]
+  O --> C[Active contract ID]
+  C --> H[Protected hourly diary]
+  H --> Q[Artifact and independent QA]
+  Q --> D[Submission or work diary receipt]
+  D --> I[Invoice and review]
+  I --> P[Payout received]
+  P --> L[Review, repeat work and learning]
+```
+
+| Stage | Current truth | Required fix | Completion evidence |
+|---|---|---|---|
+| Acquisition | 4 official proposals, 92 Connects | Replay proposal 4; then execute all affordable positive-EV proposals by job-scoped leases and atomic Connects reservations | Same four IDs, proposal 4 replay `92 → 92`; each new job has proposal ID and exact Connects delta |
+| Reply | Rooms/unread 0; code exists but no real buyer event | Persist each official message head before Luna; reply per room without blocking other markets/jobs | Official story/message ID; exact-head replay reply 0 |
+| Offer | Offers 0; qualification/effect code exists but live path unproved | Read rate, weekly limit, fee, billing, scope and deadline; Luna accepts/counters/declines | Offer ID, immutable terms hash, official resulting state; replay accept/message 0 |
+| Contract | Active contracts 0 | Reserve real delivery capacity and compile accepted scope into private project workspace | Active contract ID, capacity reservation and project identity agree |
+| Protected hourly work | Not implemented E2E | Drive Desktop App Time Tracker start/stop, memo, related screenshots, activity and weekly-limit enforcement | Official work-diary segments join exact contract/task; manual protected hours 0 |
+| Fulfillment and QA | Shared Skills/verifier exist; no Upwork contract proof | Route scope to existing Skill, produce immutable artifacts, run independent verifier, revise only from buyer evidence | Artifact/provenance hashes and verifier PASS bound to contract |
+| Delivery | Effect/fence code exists; no real Upwork delivery receipt | Freeze artifact hash and submit once, or close the hourly scoped outcome through diary/message as contract requires | Official submission/story/work-diary receipt; exact replay delivery 0 |
+| Money | Finance reconciliation and 40/40 release tests exist; live cash 0 | Join diary/milestone, gross, contract fee, Connects/model/tool cost, refund/dispute/chargeback, invoice/review/availability and payout | Complete source window; only official payout `received` enters verified cash |
+| Retention and learning | No completed Upwork job | Request only an honest review, detect repeat work, attribute full funnel, change one variable | Review/repeat identity and evidence-backed keep/revert/pause |
+
+Acquisition, reply, offer, contract fulfillment, money and learning are independent durable lanes.
+Waiting for a buyer event blocks only the matching resource; it never stops discovery, another market,
+another room, another contract, notification delivery or reconciliation.
 
 ## 7. Self-improvement and promotion
 
