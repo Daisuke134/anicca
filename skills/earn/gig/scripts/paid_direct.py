@@ -4332,8 +4332,8 @@ def _effect_command(args, item, output):
 def _effect_process_diagnostic(process: Any) -> dict[str, Any]:
     return {
         "returncode": int(process.returncode),
-        "stdout": _text(getattr(process, "stdout", ""))[:500],
-        "stderr": _text(getattr(process, "stderr", ""))[:500],
+        "stdout_tail": _text(getattr(process, "stdout", ""))[-2000:],
+        "stderr_tail": _text(getattr(process, "stderr", ""))[-2000:],
     }
 
 def _fresh_child_env(args):
