@@ -107,6 +107,13 @@ if [ "${1:-}" = "status" ]; then
   exec "$python" "$GIG_DIR/scripts/coconala_onboarding.py" status
 fi
 
+if [ "${1:-}" = "outcomes" ]; then
+  venv="$HOME/.local/share/anicca/gig/venv"
+  python="${PYTHON:-$venv/bin/python}"
+  [ -x "$python" ] || { echo '{"status":"waiting","receipts":[]}' ; exit 0; }
+  exec "$python" "$GIG_DIR/scripts/coconala_outcomes.py"
+fi
+
 if [ "${1:-}" = "start" ]; then
   preflight="$(bash "$0" prepare)"
   venv="$HOME/.local/share/anicca/gig/venv"

@@ -76,6 +76,9 @@ def _graph() -> dict[str, Any]:
             integration["state"] = "issue"
             integration["next_action"] = "Open diagnostics"
         integration["readiness_state"] = status or "unknown"
+        outcome_code, outcomes = _json_command(integration["outcome_status"]["command"])
+        integration["outcomes"] = outcomes.get("receipts", []) if outcome_code == 0 else []
+        integration["outcome_state"] = outcomes.get("status", "issue") if outcome_code == 0 else "issue"
     return graph
 
 
