@@ -1,0 +1,212 @@
+#!/bin/zsh
+set -euo pipefail
+
+SCRIPT_DIR="${0:A:h}"
+source "$SCRIPT_DIR/runtime-paths.sh"
+COMMAND="${1:-auto}"
+[[ "$#" -eq 0 ]] || shift
+
+usage() {
+  print -u2 "usage: $0 {preflight|prepare|start|status|finished|outcomes|stop|uninstall} [--answers /absolute/profile-answers.json]"
+}
+
+preflight() {
+  local darwin=false arm64=false python_ready=false codex_cli=false codex_authenticated=false cloakbrowser=false disk_headroom=false
+  [[ "$(uname -s 2>/dev/null)" == "Darwin" ]] && darwin=true
+  [[ "$(uname -m 2>/dev/null)" == "arm64" ]] && arm64=true
+  "$JOB_SEARCH_PYTHON" -c 'import sys; raise SystemExit(sys.version_info < (3, 13))' >/dev/null 2>&1 && python_ready=true
+  if command -v codex >/dev/null 2>&1; then
+    codex_cli=true
+    codex login status >/dev/null 2>&1 && codex_authenticated=true
+  fi
+  for candidate in "$HOME"/.cloakbrowser/chromium-*/Chromium.app/Contents/MacOS/Chromium(N); do
+    [[ -x "$candidate" ]] && cloakbrowser=true && break
+  done
+  local required_kib="${JOB_SEARCH_OSS_REQUIRED_KIB:-524288}"
+  df -Pk "$HOME" 2>/dev/null | awk -v required="$required_kib" 'NR==2 {found=1; ok=($4 >= required)} END {exit !(found && ok)}' && disk_headroom=true
+  local readiness_status=blocked code=2
+  if $darwin && $arm64 && $python_ready && $codex_cli && $codex_authenticated && $cloakbrowser && $disk_headroom; then
+    readiness_status=ready
+    code=0
+  fi
+  printf '{"status":"%s","darwin":%s,"arm64":%s,"python":%s,"codex_cli":%s,"codex_authenticated":%s,"cloakbrowser":%s,"disk_headroom":%s}\n' \
+    "$readiness_status" "$darwin" "$arm64" "$python_ready" "$codex_cli" "$codex_authenticated" "$cloakbrowser" "$disk_headroom"
+  return "$code"
+}
+
+prepare() {
+  [[ "$(uname -s)" == "Darwin" && "$(uname -m)" == "arm64" ]] || {
+    print -u2 "[job-hunter] requires Apple Silicon macOS"
+    return 2
+  }
+  if ! command -v brew >/dev/null 2>&1; then
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+  fi
+  if ! "$JOB_SEARCH_PYTHON" -c 'import sys; raise SystemExit(sys.version_info < (3, 13))' >/dev/null 2>&1; then
+    brew install python@3.14
+  fi
+  local venv="${XDG_DATA_HOME:-$HOME/.local/share}/anicca/job-search/venv"
+  [[ -x "$venv/bin/python" ]] || "$JOB_SEARCH_PYTHON" -m venv "$venv"
+  "$venv/bin/python" -c 'import cloakbrowser' >/dev/null 2>&1 || "$venv/bin/pip" install cloakbrowser
+  if ! command -v codex >/dev/null 2>&1; then
+    local installer
+    installer="$(mktemp -t codex-install.XXXXXX)"
+    curl -fsSL https://chatgpt.com/codex/install.sh -o "$installer"
+    /bin/bash "$installer"
+    rm -f "$installer"
+  fi
+  if ! codex login status >/dev/null 2>&1; then
+    codex login
+    codex login status >/dev/null 2>&1 || {
+      print -u2 "[job-hunter] Codex login was not confirmed"
+      return 2
+    }
+  fi
+  local chromium_found=false
+  for candidate in "$HOME"/.cloakbrowser/chromium-*/Chromium.app/Contents/MacOS/Chromium(N); do
+    [[ -x "$candidate" ]] && chromium_found=true && break
+  done
+  if ! $chromium_found; then
+    "$venv/bin/python" -c 'from cloakbrowser import launch; browser=launch(headless=True); browser.close()'
+  fi
+  preflight
+}
+
+record_state() {
+  local state="$1"
+  "$JOB_SEARCH_PYTHON" - "$JOB_SEARCH_INSTALL_CONFIG" "$state" <<'PY'
+import json, os, sys, tempfile
+from pathlib import Path
+path, state = Path(sys.argv[1]), sys.argv[2]
+value = json.loads(path.read_text(encoding="utf-8"))
+value["oss_onboarding"] = {
+    "state": state,
+    "browser_profile_ref": "browser-profile://cloakbrowser/job-search-daily",
+}
+fd, name = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
+try:
+    os.fchmod(fd, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as handle:
+        json.dump(value, handle, sort_keys=True, separators=(",", ":"))
+        handle.write("\n")
+        handle.flush()
+        os.fsync(handle.fileno())
+    os.replace(name, path)
+finally:
+    try: os.unlink(name)
+    except FileNotFoundError: pass
+PY
+}
+
+start_setup() {
+  local answers="" replace=0
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      --answers) [[ "$#" -ge 2 ]] || { usage; return 2; }; answers="$2"; shift 2 ;;
+      --replace) replace=1; shift ;;
+      *) usage; return 2 ;;
+    esac
+  done
+  [[ "${JOB_SEARCH_OSS_SKIP_PREP:-0}" == "1" ]] || prepare >/dev/null
+  if [[ ! -f "$JOB_SEARCH_PROFILE" || "$replace" == "1" ]]; then
+    local profile_args=()
+    [[ -z "$answers" ]] || profile_args+=(--answers "$answers")
+    [[ "$replace" == "0" ]] || profile_args+=(--replace)
+    "$SCRIPT_DIR/setup-profile.sh" "${profile_args[@]}"
+  fi
+  local install_args=(--profile "$JOB_SEARCH_PROFILE" --provider auto --scheduler none)
+  [[ "$replace" == "0" ]] || install_args+=(--replace-profile)
+  "$SCRIPT_DIR/install-local.sh" "${install_args[@]}" >/dev/null
+  "$SCRIPT_DIR/install-launchd.sh" --browser-only
+  local ready=false
+  for _ in {1..30}; do
+    if curl -fsS --max-time 3 http://127.0.0.1:9222/json/version >/dev/null 2>&1; then
+      ready=true
+      break
+    fi
+    sleep 1
+  done
+  $ready || { print -u2 "[job-hunter] dedicated browser did not become ready"; return 2; }
+  curl -fsS -X PUT 'http://127.0.0.1:9222/json/new?https%3A%2F%2Faccounts.google.com%2F' >/dev/null || true
+  record_state browser_ready
+  cat <<'GUIDE'
+
+Job Hunter setup is open in the dedicated Life Manager browser.
+Complete Google login only on the official page. Workday tenant accounts are created or
+reused later by the loop for each fit-qualified job; do not send Life Manager a password,
+OTP, identity document, or private legal value.
+
+Return to the Life Manager setup window and press Refresh when Google is ready.
+Recovery command: ./install.sh job-hunter finished
+GUIDE
+}
+
+status() {
+  if [[ ! -f "$JOB_SEARCH_PROFILE" || ! -f "$JOB_SEARCH_INSTALL_CONFIG" ]]; then
+    print '{"status":"uninitialized"}'
+    return 2
+  fi
+  local browser=false stage=profile_ready
+  curl -fsS --max-time 3 http://127.0.0.1:9222/json/version >/dev/null 2>&1 && browser=true
+  stage=$("$JOB_SEARCH_PYTHON" - "$JOB_SEARCH_INSTALL_CONFIG" <<'PY'
+import json,sys
+from pathlib import Path
+v=json.loads(Path(sys.argv[1]).read_text())
+print((v.get("oss_onboarding") or {}).get("state") or "profile_ready")
+PY
+  )
+  local result=needs_setup code=2
+  [[ "$stage" == "activated" && "$browser" == "true" ]] && result=ready code=0
+  printf '{"status":"%s","profile":true,"browser":%s,"stage":"%s"}\n' "$result" "$browser" "$stage"
+  return "$code"
+}
+
+finished() {
+  [[ -f "$JOB_SEARCH_PROFILE" && -f "$JOB_SEARCH_INSTALL_CONFIG" ]] || {
+    print '{"status":"blocked","missing":["profile"]}'
+    return 2
+  }
+  curl -fsS --max-time 3 http://127.0.0.1:9222/json/version >/dev/null 2>&1 || {
+    print '{"status":"blocked","missing":["browser"]}'
+    return 2
+  }
+  print '{"status":"blocked","missing":["gmail","telegram"],"next":"connector_preflight"}'
+  return 2
+}
+
+outcomes() {
+  "$JOB_SEARCH_PYTHON" - "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" <<'PY'
+import json, sqlite3, sys
+from pathlib import Path
+path=Path(sys.argv[1])
+count=0
+if path.is_file():
+    with sqlite3.connect(path) as db:
+        count=db.execute("SELECT COUNT(*) FROM applications WHERE current_state='submitted'").fetchone()[0]
+print(json.dumps({"status":"ready" if count else "waiting", "receipts":[{"receipt_id":"application","state":"proven","count":count}] if count else []}, sort_keys=True))
+PY
+}
+
+stop_or_uninstall() {
+  local uninstall="$1" domain="gui/$(id -u)"
+  for label in ai.anicca.job-search-browser ai.anicca.job-search-daily ai.anicca.job-search-inbox ai.anicca.job-search-learning ai.anicca.job-search-health; do
+    "$JOB_SEARCH_LAUNCHCTL" bootout "$domain/$label" >/dev/null 2>&1 || true
+    [[ "$uninstall" == "uninstall" ]] && rm -f "$JOB_SEARCH_LAUNCH_AGENT_DIR/$label.plist"
+  done
+  printf '{"status":"%s","private_state":"preserved"}\n' "$uninstall"
+}
+
+case "$COMMAND" in
+  auto) [[ -f "$JOB_SEARCH_INSTALL_CONFIG" ]] && finished || start_setup "$@" ;;
+  preflight) preflight ;;
+  prepare) prepare ;;
+  start) start_setup "$@" ;;
+  status) status ;;
+  finished) finished ;;
+  outcomes) outcomes ;;
+  stop) stop_or_uninstall stop ;;
+  uninstall) stop_or_uninstall uninstall ;;
+  -h|--help|help) usage ;;
+  *) usage; exit 2 ;;
+esac

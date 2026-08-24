@@ -29,9 +29,9 @@ function run(args) {
 }
 
 test("job-hunter subcommand enters its installer before generic effects", () => {
-  const { result, runtime } = run(["job-hunter"]);
+  const { result, runtime } = run(["job-hunter", "status"]);
   assert.equal(result.status, 2);
-  assert.match(result.stderr, /--profile is required/);
+  assert.equal(JSON.parse(result.stdout).status, "uninitialized");
   assert.equal(existsSync(runtime), false);
 });
 

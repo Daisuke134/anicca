@@ -3,7 +3,7 @@
   "version": 1,
   "integration_id": "coconala",
   "display_name": "Coconala Money Printer",
-  "organ": "money",
+  "group": "money",
   "outcome": "AIが応募、購入前交渉、出品、納品、売上受取を24時間運用する",
   "owner_time_minutes": 15,
   "platforms": ["macos-arm64"],

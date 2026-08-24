@@ -512,6 +512,51 @@ raise SystemExit(0)
             receipt = json.loads(result.stdout)
             self.assertEqual(receipt["scheduler"], "launchd")
 
+    def test_browser_only_installer_loads_no_application_owner(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            bin_dir = root / "bin"
+            bin_dir.mkdir()
+            calls = root / "launchctl-calls.jsonl"
+            launchctl = bin_dir / "launchctl"
+            launchctl.write_text(
+                "#!/bin/sh\n" f"printf '%s\\n' \"$*\" >> {calls}\n",
+                encoding="utf-8",
+            )
+            launchctl.chmod(0o700)
+            plutil = bin_dir / "plutil"
+            plutil.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+            plutil.chmod(0o700)
+            env = {
+                **os.environ,
+                "HOME": str(root / "home"),
+                "XDG_STATE_HOME": str(root / "state"),
+                "PATH": f"{bin_dir}:/usr/bin:/bin",
+                "JOB_SEARCH_SKIP_BOOTSTRAP": "1",
+                "JOB_SEARCH_LAUNCHCTL": str(launchctl),
+                "JOB_SEARCH_PLUTIL": str(plutil),
+                "JOB_SEARCH_LAUNCH_AGENT_DIR": str(root / "LaunchAgents"),
+            }
+            result = subprocess.run(
+                [
+                    "/bin/zsh",
+                    str(APP_ROOT / "scripts" / "install-launchd.sh"),
+                    "--browser-only",
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+                env=env,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            recorded = calls.read_text(encoding="utf-8")
+            self.assertIn("ai.anicca.job-search-browser", recorded)
+            self.assertNotIn("ai.anicca.job-search-daily", recorded)
+            self.assertEqual(
+                sorted(path.name for path in (root / "LaunchAgents").iterdir()),
+                ["ai.anicca.job-search-browser.plist"],
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

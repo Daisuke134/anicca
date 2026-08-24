@@ -85,7 +85,7 @@ def graph(manifests: list[dict[str, Any]]) -> dict[str, Any]:
         "integrations": [{
             "integration_id": manifest["integration_id"],
             "display_name": manifest["display_name"],
-            "organ": manifest["organ"],
+            "group": manifest["group"],
             "outcome": manifest["outcome"],
             "owner_time_minutes": manifest["owner_time_minutes"],
             "platforms": manifest["platforms"],

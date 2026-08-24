@@ -24,4 +24,4 @@ else
 fi
 
 export LIFE_MANAGER_CHECKOUT="$TARGET"
-exec "$TARGET/install.sh" job-hunter
+exec "$TARGET/scripts/bootstrap.sh"

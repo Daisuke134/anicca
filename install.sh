@@ -32,7 +32,7 @@ if [ "$#" -gt 0 ]; then
       ;;
     job-hunter)
       shift
-      exec zsh "$REPO_ROOT/apps/job-search-loop/scripts/install-local.sh" "$@"
+      exec zsh "$REPO_ROOT/apps/job-search-loop/scripts/install-oss.sh" "$@"
       ;;
     *)
       echo "[install] unknown product '$1'; supported: coconala, job-hunter" >&2

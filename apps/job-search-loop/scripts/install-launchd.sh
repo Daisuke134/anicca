@@ -4,6 +4,26 @@ set -euo pipefail
 SCRIPT_DIR="${0:A:h}"
 source "$SCRIPT_DIR/runtime-paths.sh"
 
+MODE="${1:-all}"
+case "$MODE" in
+  all)
+    NAMES=(
+      ai.anicca.job-search-browser
+      ai.anicca.job-search-daily
+      ai.anicca.job-search-inbox
+      ai.anicca.job-search-learning
+      ai.anicca.job-search-health
+    )
+    ;;
+  --browser-only)
+    NAMES=(ai.anicca.job-search-browser)
+    ;;
+  *)
+    print -u2 "install-launchd: usage: $0 [--browser-only]"
+    exit 2
+    ;;
+esac
+
 UID_VALUE="$(id -u)"
 mkdir -p "$JOB_SEARCH_LAUNCH_AGENT_DIR" "$JOB_SEARCH_STATE_ROOT/logs"
 chmod 700 "$JOB_SEARCH_STATE_ROOT" "$JOB_SEARCH_STATE_ROOT/logs"
@@ -12,7 +32,7 @@ if [[ "${JOB_SEARCH_SKIP_BOOTSTRAP:-0}" != "1" ]]; then
   "$JOB_SEARCH_APP_ROOT/scripts/bootstrap-framework.sh"
 fi
 
-for name in ai.anicca.job-search-browser ai.anicca.job-search-daily ai.anicca.job-search-inbox ai.anicca.job-search-learning ai.anicca.job-search-health; do
+for name in "${NAMES[@]}"; do
   template="$JOB_SEARCH_APP_ROOT/launchd/$name.plist"
   installed="$JOB_SEARCH_LAUNCH_AGENT_DIR/$name.plist"
   program="${name##*-}"
@@ -40,7 +60,7 @@ PY
 done
 
 if [[ "${JOB_SEARCH_SKIP_LAUNCHCTL:-0}" != "1" ]]; then
-  for name in ai.anicca.job-search-browser ai.anicca.job-search-daily ai.anicca.job-search-inbox ai.anicca.job-search-learning ai.anicca.job-search-health; do
+  for name in "${NAMES[@]}"; do
     "$JOB_SEARCH_LAUNCHCTL" bootout "gui/$UID_VALUE/$name" 2>/dev/null || true
     "$JOB_SEARCH_LAUNCHCTL" bootstrap \
       "gui/$UID_VALUE" "$JOB_SEARCH_LAUNCH_AGENT_DIR/$name.plist"

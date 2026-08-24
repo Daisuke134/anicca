@@ -1,0 +1,53 @@
+{
+  "$schema": "./onboarding.schema.json",
+  "version": 1,
+  "integration_id": "job-hunter",
+  "display_name": "Job Hunter",
+  "group": "money",
+  "outcome": "履歴書と希望条件に合う求人を探し、応募から面接、Offer、入社まで追跡する",
+  "owner_time_minutes": 10,
+  "platforms": ["macos-arm64"],
+  "prerequisites": [
+    {"requirement_id": "mac", "label": "Apple Silicon Mac", "kind": "device", "required": true},
+    {"requirement_id": "chatgpt", "label": "ChatGPT subscription", "kind": "subscription", "required": true},
+    {"requirement_id": "resume", "label": "Finalized resume PDF", "kind": "document", "required": true},
+    {"requirement_id": "gmail", "label": "Google account used for applications", "kind": "account", "required": true},
+    {"requirement_id": "telegram", "label": "Life Manager Telegram conversation", "kind": "account", "required": true}
+  ],
+  "profile_fields": [],
+  "ceremonies": [
+    {"ceremony_id": "profile", "label": "Resume and job preferences", "official_url": "https://aniccaai.com/lm", "owner_action": "Choose the finalized resume, target roles, locations, salary floor, and excluded employers", "why": "The model needs the person's real evidence and constraints before judging any job", "completion_state": "profile_ready"},
+    {"ceremony_id": "google", "label": "Google account", "official_url": "https://accounts.google.com/", "owner_action": "Complete Google login and Gmail authorization on the official surface", "why": "Authoritative application receipts and recruiter messages arrive in Gmail", "completion_state": "gmail_ready"},
+    {"ceremony_id": "telegram", "label": "Telegram reporting", "official_url": "https://telegram.org/", "owner_action": "Connect the existing Life Manager Telegram conversation", "why": "Every job decision and application outcome is reported in realtime", "completion_state": "telegram_ready"}
+  ],
+  "gate_states": ["preflight", "profile_ready", "browser_ready", "gmail_ready", "telegram_ready", "launchd_readback", "application_readback"],
+  "browser": {"identity": "job-search-daily", "profile": "private:~/.cloak/profiles/job-search-daily", "session_policy": "persistent-dedicated"},
+  "connect": ["./scripts/open-job-hunter-setup.sh"],
+  "preflight": {"command": ["./install.sh", "job-hunter", "preflight"], "states": ["ready", "blocked"]},
+  "readiness": {"command": ["./install.sh", "job-hunter", "status"], "states": ["ready", "needs_setup", "uninitialized"]},
+  "outcome_status": {"command": ["./install.sh", "job-hunter", "outcomes"], "states": ["ready", "waiting", "issue"]},
+  "activation": {
+    "command": ["./install.sh", "job-hunter", "finished"],
+    "states": ["ready", "blocked"],
+    "owners": [
+      "ai.anicca.job-search-browser",
+      "ai.anicca.job-search-daily",
+      "ai.anicca.job-search-inbox",
+      "ai.anicca.job-search-learning",
+      "ai.anicca.job-search-health"
+    ]
+  },
+  "receipts": [
+    {"receipt_id": "application", "effect": "official Workday application submitted", "readback": "official completion plus matching Gmail receipt", "replay_zero": true},
+    {"receipt_id": "interview", "effect": "recruiter reply or interview event confirmed", "readback": "Gmail thread and Calendar event", "replay_zero": true},
+    {"receipt_id": "offer", "effect": "offer received and explicitly accepted by the person", "readback": "authoritative offer and acceptance record", "replay_zero": true},
+    {"receipt_id": "start", "effect": "employment start confirmed", "readback": "authoritative employer or Calendar confirmation", "replay_zero": true}
+  ],
+  "lifecycle": {
+    "status": ["./install.sh", "job-hunter", "status"],
+    "stop": ["./install.sh", "job-hunter", "stop"],
+    "upgrade": ["git", "pull", "--ff-only"],
+    "uninstall": ["./install.sh", "job-hunter", "uninstall"]
+  },
+  "authority": {"money": "none", "ordinary_owner_approval": false}
+}
