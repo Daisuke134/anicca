@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import os
 import re
 
 PLACEHOLDER = "PLATFORM_MANAGED_KEY"
@@ -16,7 +17,10 @@ def _find_skill_root(start: Path) -> Path:
 
 _SKILL_ROOT = _find_skill_root(Path(__file__).resolve())
 SKILL_CONFIG_PATH = _SKILL_ROOT / "config.json"
-DEVELOPER_WORK_DIR_PATH = _SKILL_ROOT / ".temp"
+# A shared .temp directory lets an earlier retry's manifest be consumed by a
+# later agent.  The Capafy entrypoints bind this to .temp/agents/<agent-id>.
+_work_dir_override = os.environ.get("CAPAFY_PUBLISH_WORK_DIR", "").strip()
+DEVELOPER_WORK_DIR_PATH = Path(_work_dir_override).expanduser() if _work_dir_override else _SKILL_ROOT / ".temp"
 DEVELOPER_FALLBACK_DIR_PATH = _SKILL_ROOT / ".temp-fallback"
 DEFAULT_STAGING_PATH = str(DEVELOPER_WORK_DIR_PATH / "staging")
 DEFAULT_BUNDLE_PATH = str(DEVELOPER_WORK_DIR_PATH / "bundle.zip")

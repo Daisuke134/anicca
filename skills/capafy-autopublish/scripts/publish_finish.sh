@@ -18,6 +18,11 @@ LIFE_MANAGER_STATE_HOME="${LIFE_MANAGER_STATE_HOME:-$HOME/.local/state/life-mana
 CAPAFY_PUBLISH_HOME="${CAPAFY_PUBLISH_HOME:-$LIFE_MANAGER_STATE_HOME/runtime/capafy-publisher-home}"
 VENV="${CAPAFY_BROWSER_PYTHON:-python3}"
 
+# Keep configure/ship bound to the selected agent even when a previous retry
+# left a recoverable manifest behind.  The publisher reads this before parsing
+# its command, so it must be exported before the first Python invocation.
+export CAPAFY_PUBLISH_WORK_DIR="${CAPAFY_PUBLISH_WORK_DIR:-$PUB/.temp/agents/$ID}"
+
 # Direct recovery and launchd must resolve credentials from the same repo-external
 # SSOT. Load them before the key-health gate; values stay process-local.
 for ENV_FILE in "$LIFE_MANAGER_STATE_HOME/.env" "$HOME/.openclaw/.env"; do
