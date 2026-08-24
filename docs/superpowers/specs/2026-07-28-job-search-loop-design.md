@@ -72,6 +72,34 @@ only after authoritative Gog mail; then continue with the next unseen identity.
 Company prestige or membership in the registry is never evidence of fit. An
 unpublished salary is `compensation_unverified`, never an invented pass.
 
+#### Life Manager open-source product boundary
+
+Job Hunter ships as a first-class open-source Life Manager organ, not as a private
+automation script or a Workday-only demo. A clean user supplies a truthful profile,
+resume files and connector credentials locally; the repository contains no Daisuke
+profile, resume, mailbox content, browser vault, Telegram destination or credential.
+The installed organ owns the durable career loop from discovery through started-job
+outcome:
+
+```text
+Life Manager
+  -> Connector layer: browser, Gmail, Telegram, Calendar, ATS sources
+  -> Job Hunter organ: discover, rank, apply, verify, follow up, interview, offer
+  -> Daily Manager organ: today queue, reminders, health and user-visible status
+  -> CFO organ: compensation evidence, offer comparison and salary-goal tracking
+  -> Staff layer: cross-organ delegation only after each organ works independently
+```
+
+The OSS acceptance bar is a clean-machine install from the public Life Manager
+repository that creates the resident scheduler, imports no private state, discovers
+fresh jobs from official sources, applies only to model-qualified work, verifies an
+authoritative provider receipt, exposes the same Ledger/summary/Telegram state, and
+survives upgrade plus repeated wakes without duplicate external effects. Workday is
+the first proven adapter. Ashby, Greenhouse, Lever and generic remain zero-progress
+until rebuilt one at a time against that same bar. Connector, CFO and Daily Manager
+integration follows the standalone Job Hunter package; the general staff layer is
+last and may not substitute for an unfinished organ.
+
 **Current execution truth supersedes earlier historical run notes below:** Workday
 10P is live-proven. Run `daily-20260824-033952` reaches exact NVIDIA
 `Application Submitted` and `Application Received` UI for JR2008507 with one fenced
@@ -2431,7 +2459,7 @@ must accumulate in the live loop:
 | 10T | `JOB-GENERIC-ATS-MODEL-10T` | `pending_after_10S` | An unknown supported ATS form completes without a new fixed workflow |
 | 11 | Closed-loop Dream Job objective, self-improvement and self-healing | `in_progress` | 11A completed in PR #1364 (final CI `30473862095`). 11B adds immutable attribution and outcomes. 11C implements the resident weekly learning driver, deterministic two-arm assignment, held-out replay, Wilson promotion, immediate rollback, compare-and-swap pointer and hashed Telegram report; its real first pass remained truthfully inconclusive at 0/0 resolved with replay violations=0 and ACK `4530`, without changing the five application states. Guardian, lifecycle closure and `summary.v2` remain in 11D–11F |
 | 12 | Portable local OSS distribution | `completed` | 12A merged in PR #1296; 12B merged in PR #1302 (`a58f1838`, CI `30449915191`): guided interactive/JSON profile authoring with placeholder/overwrite/legal-inference fences; reproducible 105-entry merge-commit tar.gz + SHA-256 `f334202a`; extracted-artifact clean-HOME install; 149 job-loop + 7 runner tests; canonical health exit 0 and both SQLite integrity checks `ok` without scheduler reinstall |
-| 13 | Life Manager Career organ and paid multi-tenant service | `pending` | 13A packages the local open-source Job Hunter skill/loop and Career surface around `summary.v2`; 13B moves proven semantics to isolated cloud tenants; 13C coordinates evidence-backed whole-life utility without merging consent boundaries |
+| 13 | Life Manager Career organ and paid multi-tenant service | `pending` | 13A packages the proven local Job Hunter as a public Life Manager organ with skill, resident loop, clean setup, connector interfaces and Career surface around `summary.v2`; 13B integrates Daily Manager and CFO consumers without transferring career consent or secrets; 13C moves proven semantics to isolated cloud tenants. General cross-organ staff coordination is last. |
 | 14 | Verified USD 10K/month salary outcome | `pending_after_lifecycle` | One accepted and started role has authoritative gross base compensation of at least USD 10,000/month equivalent; annualization and FX evidence are durable, while bonus/equity remain separate |
 
 ### 11.2 Autonomy closure increments
@@ -2458,7 +2486,7 @@ not start merely because their design is already written:
 | `JOB-GUARDIAN-PASS-11D` | `pending_after_10T` | A deterministic scheduled guardian checks launchd/timer freshness, DB integrity, provider/browser health and leases; repairs only pre-side-effect failures; deduplicates alerts and persists remediation |
 | `JOB-LIFECYCLE-CLOSE-11E` | `pending_after_11D` | Follow-up cadence, every interview round, offers, negotiation support and accepted/declined/started outcomes are durable; only final identity/judgment actions require the user |
 | `JOB-CAREER-SUMMARY-11F` | `pending_after_11E` | Versioned `summary.v2` exposes Today, Pipeline, Interviews, Decisions, Learning and Health; its counts are rebuilt from the same events and match Telegram receipts |
-| `JOB-LIFE-MANAGER-SKILL-11G` | `pending_after_11F` | Job Hunter is an installable open-source Life Manager skill and resident loop; clean-home install, upgrade, launchd, state, Telegram and summary contracts reproduce local behavior without private data |
+| `JOB-LIFE-MANAGER-SKILL-11G` | `pending_after_11F` | Job Hunter is an installable open-source Life Manager organ with `SKILL.md`, resident loop and explicit browser/Gmail/Telegram/Calendar connector boundaries. A clean-home public-repo install, upgrade and real fresh-job E2E reproduce scheduler, Ledger, summary and receipt-backed application behavior without private data. Daily Manager and CFO consume its versioned outputs afterward; general staff coordination is last. |
 | `JOB-SALARY-OUTCOME-11H` | `pending_after_11G_and_live_started_role` | Authoritative offer/acceptance/start evidence proves at least USD 10,000/month gross base salary equivalent with FX/date/annualization; bonus and equity remain separate |
 | `LIFE-CAREER-LOCAL-13A` | `pending_after_11G` | The local Life Manager Career surface reads `summary.v2`, shows the full timeline and provides pause/resume/goal controls without browser ownership |
 | `LIFE-CAREER-CLOUD-13B` | `pending_after_local_e2e` | Per-tenant queues, encrypted state/materials, scoped OAuth, budgets and export/revocation reproduce the verified local semantics |
