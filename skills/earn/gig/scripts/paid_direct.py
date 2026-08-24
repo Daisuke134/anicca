@@ -2870,7 +2870,7 @@ def _persist_owner_tool_failure(staging: Path, root: Path) -> None:
 def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str, Any],
                               feedback: str, requirements_sha256: str, base: Path,
                               stable: Path) -> dict[str, Any]:
-    code_root = HERE.parents[2]
+    code_root = REPO_ROOT
     _refresh_owner_tool_failure_instruction(root)
     context = root / "context" / "current.json"
     _run([sys.executable, str(args.context_compiler), "--project-root", str(root),
@@ -3364,7 +3364,7 @@ def _remote_mode_required(root: Path, item: dict[str, Any], feedback: str) -> bo
 def _repair_prompt(root: Path, item: Path, feedback: str, requirements_sha256: str,
                    verifier: bool, cdp_helper: Path,
                    review_delta: list[dict[str, str]] | None = None) -> str:
-    code_root = HERE.parents[2]
+    code_root = REPO_ROOT
     semantic_contract, semantic_contract_sha256 = _semantic_effect_contract(root)
     role = "fresh read-only remote reviewer" if verifier else "paid remote owner"
     tab_owner = "paid-direct-remote-verifier" if verifier else "paid-direct-remote-builder"
@@ -3440,7 +3440,7 @@ def _repair_prompt(root: Path, item: Path, feedback: str, requirements_sha256: s
             "qualification question. Browser scripts may transport and read back the model-approved exact text, but must not choose or "
             "substitute semantic copy. "
             "An authenticated remote session is not proof that it is the correct account. Before signup or asking the buyer for an account, "
-            f"run python3 {code_root / '_shared/resource_resolver.py'} resolve --service <target-host> --capability <action>. "
+            f"run python3 {code_root / 'skills/_shared/resource_resolver.py'} resolve --service <target-host> --capability <action>. "
             "Resource discovery is not live readiness: inspect the selected skill/session in official UI or API before effect. "
             "Independent projects may run concurrently, but serialize every read, mutation, and readback that uses the same "
             "external account/browser lease; never launch concurrent commands against one leased identity. "
@@ -3449,7 +3449,7 @@ def _repair_prompt(root: Path, item: Path, feedback: str, requirements_sha256: s
             "the recipient permits that channel; do not require every fact to be public before contact, and do not stop merely because "
             "one transport is unavailable. Never bypass platform policy, impersonate the buyer, or invent consent. "
             "A matching reusable seller-owned browser identity may serve this project; never infer authorization from login alone. "
-            f"Run every leased-browser operation through {code_root / 'browser/with-browser.sh'} <identity> -- <command>, which acquires, exports CDP, "
+            f"Run every leased-browser operation through {code_root / 'skills/browser/with-browser.sh'} <identity> -- <command>, which acquires, exports CDP, "
             "and releases through an EXIT/signal trap; never split browser-guard acquire and release across separate commands. Verify the live "
             "account handle/profile URL in official DOM while that wrapper owns the lease. Bind the observed account/member identity to the matching authorization before reading or mutating it, "
             "and fail closed rather than reuse another client's session or evidence. "

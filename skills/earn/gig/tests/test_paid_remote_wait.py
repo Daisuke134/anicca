@@ -181,6 +181,21 @@ def test_remote_owner_prompt_includes_exact_cycle_account_owner_policy(tmp_path)
     assert "account-owner policy" in prompt
 
 
+def test_remote_owner_prompt_searches_complete_repo_and_valid_shared_tools(tmp_path):
+    paid = load("paid_direct")
+    root, feedback, _digest = blocked_project(tmp_path)
+    requirements_sha = paid.paid_remote_result.requirements_digest(root, feedback)
+
+    prompt = paid._repair_prompt(
+        root, tmp_path / "item.json", feedback, requirements_sha,
+        False, tmp_path / "cdp.py",
+    )
+
+    assert f"search {paid.REPO_ROOT} with rg" in prompt
+    assert str(paid.REPO_ROOT / "skills/_shared/resource_resolver.py") in prompt
+    assert str(paid.REPO_ROOT / "skills/browser/with-browser.sh") in prompt
+
+
 def test_decision_prompt_scopes_required_assets_to_current_bounded_output(tmp_path):
     paid = load("paid_direct")
 
