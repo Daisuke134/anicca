@@ -50,9 +50,9 @@
   ],
   "lifecycle": {
     "status": ["./install.sh", "coconala", "status"],
-    "stop": ["python3", "skills/earn/gig/scripts/gig_release.py", "status"],
+    "stop": ["./install.sh", "coconala", "stop"],
     "upgrade": ["git", "pull", "--ff-only"],
-    "uninstall": ["README", "skills/earn/gig/README.md#keeping-it-running"]
+    "uninstall": ["./install.sh", "coconala", "uninstall"]
   },
   "authority": {"money": "earn-only", "ordinary_owner_approval": false}
 }

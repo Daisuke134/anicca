@@ -104,13 +104,25 @@ def missing(integration_id: str, value: dict[str, Any]) -> dict[str, Any]:
             "status": "ready" if not absent else "needs_profile"}
 
 
+def export_profile(output: Path) -> dict[str, Any]:
+    value = load()
+    _validator().validate(value)
+    _write_private(output.expanduser().absolute(), value)
+    return {"status": "exported", "fields": len(value["fields"]), "output": "private:profile-export"}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("init", "put", "status", "missing"))
+    parser.add_argument("command", choices=("init", "put", "status", "missing", "export"))
     parser.add_argument("--field-id")
     parser.add_argument("--integration")
+    parser.add_argument("--output", type=Path)
     args = parser.parse_args()
-    if args.command == "init":
+    if args.command == "export":
+        if args.output is None:
+            parser.error("export requires --output")
+        output = export_profile(args.output)
+    elif args.command == "init":
         value = load(create=True)
         output = summary(value)
     elif args.command == "put":
