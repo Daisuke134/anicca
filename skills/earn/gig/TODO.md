@@ -45,8 +45,10 @@ evidence and are not reported as coding work.
    the remaining 74 owner-to-manifest migrations are still open.
 7. [ ] Add one Money/Body/Mind home showing only Running, Needs you, Waiting for external
    result, or Issue detected, backed by official outcome receipts.
-8. [ ] Migrate Coconala's installer/gates/six jobs/receipts into the shared manifest without
-   weakening its current one-command and zero-listing behavior.
+8. [x] Migrate Coconala's installer/gates/six jobs/receipts into the shared manifest without
+   weakening its current one-command and zero-listing behavior. Both global and Coconala
+   bootstraps open the common UI; Connect/Resume invokes the existing evidence-gated flow,
+   and the manifest retains all nine gates, six owners and five official receipts.
 9. [ ] Run a clean local simulation covering install, ask-once reuse, blocked/ready isolation,
    restart resume, update and uninstall/export with secret/log/prompt/report scans.
 
