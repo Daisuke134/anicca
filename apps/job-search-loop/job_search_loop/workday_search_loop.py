@@ -7,6 +7,7 @@ import uuid
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 from .agent_runner import AgentRunner, wrap_untrusted
 from .ledger import Ledger
@@ -36,6 +37,22 @@ def unique_sources(
         seen.add(key)
         unique.append(source)
     return tuple(unique)
+
+
+def qualified_queue_ids(
+    ledger_path: Path, allowed_hosts: set[str]
+) -> tuple[str, ...]:
+    ledger = Ledger(ledger_path)
+    try:
+        return tuple(
+            str(row["application_id"])
+            for row in ledger.pending_materials_ready_applications()
+            if (urlsplit(str(row["canonical_url"])).hostname or "").casefold()
+            in allowed_hosts
+            and ledger.workday_fit_qualified(str(row["application_id"]))
+        )
+    finally:
+        ledger.close()
 
 
 def cached_source_fetcher(
@@ -202,6 +219,23 @@ def main() -> int:
         tuple(dict(row) for row in source_payload.get("sources", []))
     )
     allowed_hosts = {str(row["host"]).casefold() for row in sources}
+    queued_ids = qualified_queue_ids(args.ledger, allowed_hosts)
+    if queued_ids:
+        result = {
+            "status": "qualified_queue_present",
+            "queued_application_ids": list(queued_ids),
+            "discovered": [],
+            "decisions": [],
+            "shortlist": [],
+        }
+        args.output.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        args.output.write_text(
+            json.dumps(result, ensure_ascii=False, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        os.chmod(args.output, 0o600)
+        print(json.dumps(result, ensure_ascii=False, sort_keys=True))
+        return 0
     source_cursor = 0
     jobs_by_source: dict[str, list[dict[str, Any]]] = {}
     fetch_jobs = cached_source_fetcher(_fetch_jobs, jobs_by_source)

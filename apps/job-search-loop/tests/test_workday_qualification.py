@@ -8,6 +8,7 @@ from pathlib import Path
 from job_search_loop.ledger import Ledger
 from job_search_loop.workday_search_loop import (
     cached_source_fetcher,
+    qualified_queue_ids,
     rank_candidates,
     rotated_sources,
     search_until_qualified,
@@ -19,6 +20,27 @@ from job_search_loop.workday_qualification import qualify_one
 
 
 class WorkdayQualificationTests(unittest.TestCase):
+    def test_qualified_queue_is_detected_before_snapshot_search(self):
+        with tempfile.TemporaryDirectory() as directory:
+            ledger_path = Path(directory) / "ledger.sqlite3"
+            ledger = Ledger(ledger_path)
+            application_id = ledger.add_application(
+                "Example", "Role", "https://example.wd1.myworkdayjobs.com/Careers/job/R1"
+            )
+            ledger.transition(application_id, "qualified")
+            ledger.transition(application_id, "materials_ready")
+            ledger.record_workday_fit_decision(
+                application_id, "qualified", "a" * 64, policy_version="test"
+            )
+            ledger.close()
+
+            self.assertEqual(
+                qualified_queue_ids(
+                    ledger_path, {"example.wd1.myworkdayjobs.com"}
+                ),
+                (application_id,),
+            )
+
     def test_duplicate_registry_source_is_fetched_once(self):
         sources = (
             {"company": "A", "host": "a.wd1.myworkdayjobs.com", "tenant": "a", "site": "Careers", "search_text": "one"},
