@@ -29,12 +29,9 @@ class AcquisitionDecisionTest(unittest.TestCase):
 
             self.assertEqual(selected, [baselines / f"focused-{active}.json"])
 
-    def test_one_daily_decision_has_one_realistic_full_pass(self):
+    def test_acquisition_uses_bounded_pass_without_daily_cap(self):
         self.assertEqual(MODULE.ACQUISITION_PASS_TOKEN_BUDGET, 32768)
-        self.assertEqual(
-            MODULE.ACQUISITION_DAILY_TOKEN_BUDGET,
-            MODULE.ACQUISITION_PASS_TOKEN_BUDGET,
-        )
+        self.assertNotIn("ANICCA_LOOP_DAILY_TOKEN_BUDGET", SCRIPT.read_text())
 
     def test_retry_budget_scope_is_unique_per_scheduler_run(self):
         baseline = "a" * 64

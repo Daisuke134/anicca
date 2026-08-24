@@ -1015,12 +1015,14 @@ def run() -> int:
         budget_scope_id = os.environ.get("ANICCA_BUDGET_SCOPE_ID", "").strip()
         pass_budget_raw = os.environ.get("ANICCA_PASS_TOKEN_BUDGET", "").strip()
         daily_budget_raw = os.environ.get("ANICCA_LOOP_DAILY_TOKEN_BUDGET", "").strip()
-        budget_values_present = tuple(bool(value) for value in (
-            budget_scope_id, pass_budget_raw, daily_budget_raw,
+        pass_budget_values_present = tuple(bool(value) for value in (
+            budget_scope_id, pass_budget_raw,
         ))
-        if any(budget_values_present) and not all(budget_values_present):
-            raise ValueError("token budget scope/pass/daily settings must be provided together")
-        budget_enabled = all(budget_values_present)
+        if any(pass_budget_values_present) and not all(pass_budget_values_present):
+            raise ValueError("token budget scope/pass settings must be provided together")
+        budget_enabled = all(pass_budget_values_present)
+        if daily_budget_raw and not budget_enabled:
+            raise ValueError("daily token budget requires scope/pass settings")
         # Fail closed. An unconfigured budget used to degrade silently to no
         # breaker at all, which is how the reply detector ran 47 uncharged model
         # calls. Owners that are meant to be budgeted set this and refuse to run
@@ -1037,11 +1039,11 @@ def run() -> int:
         )
         task_token_reservation = int(task_config.get("token_reservation", 0))
         pass_token_budget = int(pass_budget_raw or 0)
-        daily_token_budget = int(daily_budget_raw or 0)
+        daily_token_budget = int(daily_budget_raw) if daily_budget_raw else None
         if budget_enabled and (
             task_token_reservation <= 0
             or pass_token_budget <= 0
-            or daily_token_budget <= 0
+            or (daily_token_budget is not None and daily_token_budget <= 0)
         ):
             raise ValueError("enabled token budgets and task reservation must be positive")
         # Admission must reserve an upper bound, not the task class's planning

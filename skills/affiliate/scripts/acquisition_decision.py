@@ -23,7 +23,6 @@ VARIABLES = {
 }
 
 ACQUISITION_PASS_TOKEN_BUDGET = 32768
-ACQUISITION_DAILY_TOKEN_BUDGET = ACQUISITION_PASS_TOKEN_BUDGET
 
 
 def experiment_plan_id(control_plan_id: str, decision_id: str) -> str:
@@ -263,7 +262,6 @@ OBSERVED JSON:
                     baseline_sha256, scheduler_run_id
                 ),
                 "ANICCA_PASS_TOKEN_BUDGET": str(ACQUISITION_PASS_TOKEN_BUDGET),
-                "ANICCA_LOOP_DAILY_TOKEN_BUDGET": str(ACQUISITION_DAILY_TOKEN_BUDGET),
                 "ANICCA_BUDGET_REQUIRED": "1",
                 "ANICCA_BUDGET_DAILY_SCOPE": "affiliate-acquisition-decision",
                 "ANICCA_TOKEN_BUDGET_LEDGER": str(state / "telemetry" / "token-budget.jsonl"),

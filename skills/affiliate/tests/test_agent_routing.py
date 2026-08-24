@@ -35,6 +35,25 @@ def load_vendor_runner_module():
 
 
 class AffiliateAgentRoutingTests(unittest.TestCase):
+    def test_pass_budget_can_run_without_a_daily_cap(self) -> None:
+        runner = load_vendor_runner_module()
+        with tempfile.TemporaryDirectory() as temporary:
+            ledger = runner.TokenBudgetLedger(Path(temporary) / "budget.jsonl")
+            first = ledger.reserve(
+                event_id="one", loop="affiliate", scope_id="run-one",
+                daily_scope="affiliate", day="2026-08-24",
+                reservation_tokens=100, pass_limit=100, daily_limit=None,
+            )
+            ledger.settle(event_id="one", actual_tokens=100, measurement="provider_reported")
+            second = ledger.reserve(
+                event_id="two", loop="affiliate", scope_id="run-two",
+                daily_scope="affiliate", day="2026-08-24",
+                reservation_tokens=100, pass_limit=100, daily_limit=None,
+            )
+        self.assertEqual(first["status"], "allowed")
+        self.assertIsNone(first["daily_limit_tokens"])
+        self.assertEqual(second["status"], "allowed")
+
     def test_budgeted_codex_command_enforces_native_rollout_ceiling(self) -> None:
         runner = load_vendor_runner_module()
         with tempfile.TemporaryDirectory() as temporary:
