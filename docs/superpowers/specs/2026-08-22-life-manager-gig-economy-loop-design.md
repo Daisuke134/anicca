@@ -662,6 +662,13 @@ intervening 21-Connect verified effect, reopened at the current balance and subm
 has one official ID, one ledger row and one instant Telegram event. Current official truth is eight
 submitted proposals, 35 Connects, zero replies, zero offers, zero contracts and payout-received USD 0.
 
+Owner acquisition policy now preserves the remaining 35 Connects while the first eight-proposal cohort
+can produce reply/interview evidence. The existing owner bound `connects_cap=0` pauses only public
+Connects-spending proposals. Each wake still reads Messages, invitations, Direct Offers, contracts,
+Project Catalog and finance before that gate, so zero-Connect acquisition and every downstream money
+lane remain 24/7. This is not a loop shutdown or a permanent proposal quota. The Portfolio CEO may
+restore a positive cap after cohort evidence or replenished/returned Connects justify more spend.
+
 A Skill bundle is immutable and versioned:
 
 ```text
