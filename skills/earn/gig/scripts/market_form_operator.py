@@ -21,14 +21,18 @@ DEFAULT_EVIDENCE = Path.home() / "gig/evidence/market-form-operator"
 
 def operate(
     *, provider: str, resource_id: str, form_url: str, sealed_intent: dict[str, Any],
+    cdp_base: str,
     runner: Path = DEFAULT_RUNNER, schema: Path = DEFAULT_SCHEMA,
     evidence_root: Path = DEFAULT_EVIDENCE,
 ) -> dict[str, Any]:
     evidence = evidence_root / f"{time.time_ns()}-{provider}-{resource_id.lstrip('~')}"
     evidence.mkdir(parents=True, exist_ok=False, mode=0o700)
     intent = json.dumps(sealed_intent, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    cdp_base = cdp_base.rstrip("/")
+    if not cdp_base.startswith(("http://127.0.0.1:", "http://localhost:")):
+        raise ValueError("market_form_operator_requires_local_cdp")
     prompt = f"""Execute one already-authorized marketplace form intent using the current authenticated
-browser at the configured CDP endpoint. Provider={provider}; resource={resource_id}; target={form_url}.
+browser at EXACT_CDP_ENDPOINT={cdp_base}. Provider={provider}; resource={resource_id}; target={form_url}.
 SEALED_INTENT={intent}
 
 Inspect the live page yourself. Open or locate the exact target, understand its current form, fill every
@@ -41,7 +45,8 @@ Return ok only after the provider visibly leaves the editable form or shows prov
 the parent will independently verify the official ID and balance, so never claim those from inference."""
     prompt += """
 Use only the provider-owned authenticated persistent DEFAULT browser context already running at the
-configured CDP endpoint. Create a new tab in that default context when needed. Never create an
+exact endpoint above. Do not inspect, guess, or use any other CDP endpoint or port. Create a new tab in
+that default context when needed. Never create an
 isolated/incognito context, never launch another browser/profile, and never perform session restoration
 or login; a login redirect means blocked."""
     completed = subprocess.run([

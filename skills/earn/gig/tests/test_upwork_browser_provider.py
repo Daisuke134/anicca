@@ -33,7 +33,7 @@ from upwork_browser_provider import (  # noqa: E402
 def test_application_decision_uses_shared_work_event_and_reporter_once(tmp_path, monkeypatch):
     calls = []
     monkeypatch.setattr(provider, "DEFAULT_GIG_DIR", tmp_path)
-    monkeypatch.setattr(provider.subprocess, "Popen", lambda command, **kwargs: calls.append(command))
+    monkeypatch.setattr(provider.subprocess, "run", lambda command, **kwargs: calls.append(command))
     event = {
         "kind": "application", "event_key": "gig:decision:upwork:job-1",
         "entity_id": "job-1", "occurred_at": "2026-08-24T08:00:00+00:00",

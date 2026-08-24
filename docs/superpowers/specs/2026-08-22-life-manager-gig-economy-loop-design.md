@@ -551,6 +551,14 @@ provider-owned authenticated persistent default context and forbids isolated/inc
 alternate profiles and login restoration. Because the fence had already entered reconcile-unknown,
 the common effect kernel now reopens the exact intent only when official resource absence plus unchanged
 balance proves effect 0; otherwise it remains reconcile-only or verifies an already-visible receipt.
+The following canary exposed the remaining routing defect: the browser agent guessed daily-driver CDP
+9222 instead of the provider-owned authenticated CDP 9233. The common form operator now receives the
+exact local CDP endpoint as ACI input and forbids endpoint discovery or substitution. This is generic
+browser ownership routing, not Upwork form logic. `reconcile_unknown` is never terminal when official
+resource absence and unchanged balance prove effect 0: the same immutable intent is reopened in that
+wake. A verified application appends its WorkEvent and synchronously drives the existing shared
+Telegram outbox before acquisition proceeds, matching Coconala's instant-effect reporting; only the
+official Proposal ID plus Connects readback renders `[Upwork][応募完了]`.
 
 ### 4.3 Sales loop
 
@@ -639,7 +647,9 @@ The submit-by-default refinement was then replayed read-only over the same ten o
 returned eight `submit` and two `skip`; the only skips required phone/live customer handling. Mobile
 App and Website, AI/MCP integration, Claude marketing, Voice AI product work and other feasible jobs
 all became submit. Missing Skill, unverified payment, new-client history, duration and Connects alone
-produced zero skip. External effects for this replay remained 0; production promotion is next.
+produced zero skip. External effects for this replay remained 0. The AI/MCP sealed intent remains the
+first production transport canary; official truth remains four proposals until a fifth Proposal ID and
+the exact Connects delta are read back.
 
 A Skill bundle is immutable and versioned:
 

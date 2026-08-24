@@ -31,6 +31,7 @@ def test_common_operator_passes_sealed_intent_to_terra_without_provider_selector
     result = operator.operate(
         provider="anymarket", resource_id="job-1", form_url="https://example.com/apply",
         sealed_intent={"price": 40, "proposal": "truthful"},
+        cdp_base="http://127.0.0.1:9233",
         runner=tmp_path / "runner.py", schema=tmp_path / "schema.json",
         evidence_root=tmp_path / "evidence",
     )
@@ -43,3 +44,5 @@ def test_common_operator_passes_sealed_intent_to_terra_without_provider_selector
     normalized = " ".join(captured["prompt"].split())
     assert "authenticated persistent DEFAULT browser context" in normalized
     assert "Never create an isolated/incognito context" in normalized
+    assert "EXACT_CDP_ENDPOINT=http://127.0.0.1:9233" in normalized
+    assert "any other CDP endpoint or port" in normalized
