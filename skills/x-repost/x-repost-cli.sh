@@ -38,6 +38,8 @@ GUARD="$HOME/.config/ai/bin/browser-guard.sh"
 ENSURE_BROWSER="$HOME/anicca/skills/browser/ensure_provision_browser.sh"
 AFFILIATE_PROPOSAL="${AFFILIATE_REPOST_PROPOSAL_PATH:-$HOME/.local/state/life-manager/affiliate/repost-proposals/latest.json}"
 AFFILIATE_CONSUMED="$STATE/affiliate-proposals-consumed.jsonl"
+AFFILIATE_JOB_QUEUE="${AFFILIATE_X_DISTRIBUTION_QUEUE:-$HOME/.local/state/life-manager/affiliate/x-distribution-jobs.jsonl}"
+AFFILIATE_JOB_CLAIMS="$STATE/affiliate-x-distribution-job-claims.jsonl"
 BROWSER_LEASED=0
 MODEL_FAILURE="other"
 
@@ -378,6 +380,25 @@ json.dump({"pending": bool(selected), "row": selected}, open(target, "w", encodi
           ensure_ascii=False, sort_keys=True)
 PYEOF
 GENERIC_RECOVERY_PENDING="$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1])).get("pending") is True)' "$GENERIC_RECOVERY")"
+# Claim one durable Affiliate distribution job before reading the legacy proposal handoff.
+# D03 owns only queued -> EFFECT_STARTED. D04 will render the safe payload; until then an
+# existing claim does not block ordinary Repost work and can never trigger an external post.
+if ! AFFILIATE_JOB_CLAIM="$("$PY" "$SKILL/scripts/affiliate_proposal.py" \
+  --job-queue "$AFFILIATE_JOB_QUEUE" --job-claims "$AFFILIATE_JOB_CLAIMS" \
+  --claim-next-job 2>>"$EV/affiliate-job.err")"; then
+  report "🛑 Affiliate distribution queue is invalid; no queue effect is allowed"
+  finish 1 "affiliate distribution job claim failed"
+fi
+AFFILIATE_JOB_STATE="$("$PY" -c 'import json,sys; print(json.load(sys.stdin).get("state","NO_JOB"))' \
+  <<<"$AFFILIATE_JOB_CLAIM" 2>/dev/null || echo NO_JOB)"
+AFFILIATE_JOB_CHANGED="$("$PY" -c 'import json,sys; print(json.load(sys.stdin).get("changed",False))' \
+  <<<"$AFFILIATE_JOB_CLAIM" 2>/dev/null || echo False)"
+if [ "$AFFILIATE_JOB_STATE" = "EFFECT_STARTED" ] && [ "$AFFILIATE_JOB_CHANGED" = "True" ]; then
+  AFFILIATE_JOB_ID="$("$PY" -c 'import json,sys; print(json.load(sys.stdin)["job_id"])' \
+    <<<"$AFFILIATE_JOB_CLAIM")"
+  report "✅ Affiliate distribution job claimed without posting\njob: $AFFILIATE_JOB_ID\nnext: D04 safe payload"
+  finish 0 "affiliate distribution job claimed"
+fi
 # Read and validate the proposal ledger before the daily generic-post gate. An unresolved
 # EFFECT_STARTED claim must remain recoverable even when generic reposts already hit their brake.
 if ! AFFILIATE_PICK="$($PY "$SKILL/scripts/affiliate_proposal.py" --proposal "$AFFILIATE_PROPOSAL" --consumed "$AFFILIATE_CONSUMED" --posted "$POSTED" 2>>"$EV/affiliate-proposal.err")"; then

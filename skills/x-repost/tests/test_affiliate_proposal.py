@@ -3,6 +3,8 @@ from __future__ import annotations
 import importlib.util
 import json
 import re
+import subprocess
+import sys
 import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
@@ -17,6 +19,95 @@ SPEC.loader.exec_module(MODULE)
 
 
 class AffiliateProposalTests(unittest.TestCase):
+    def test_owner_claims_distribution_job_before_legacy_proposal(self) -> None:
+        shell = (SCRIPT.parents[1] / "x-repost-cli.sh").read_text()
+        claim = shell.index("--claim-next-job")
+        legacy = shell.index("--proposal \"$AFFILIATE_PROPOSAL\"")
+        self.assertLess(claim, legacy)
+        self.assertIn("affiliate distribution job claimed", shell)
+
+    def test_oldest_distribution_job_is_claimed_once_across_processes(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            queue = root / "jobs.jsonl"
+            claims = root / "claims.jsonl"
+
+            def job(job_id: str, created_at: str) -> dict:
+                return {
+                    "schema_version": 1,
+                    "receipt_type": "AFFILIATE_X_DISTRIBUTION_JOB",
+                    "state": "QUEUED",
+                    "job_id": job_id,
+                    "effect_identity": ("a" if job_id[0] == "1" else "b") * 64,
+                    "placement_id": "elevenlabs-discovered-caption-generator-en-1",
+                    "owned_article_url": "https://aniccaai.com/blog/caption-generator",
+                    "content_sha256": "c" * 64,
+                    "experiment_lineage": {
+                        "kind": "BASE", "decision_id": None,
+                        "control_placement_id": None,
+                    },
+                    "target_x_account": "selawmqt",
+                    "cadence_class": "AFFILIATE_MONETIZATION",
+                    "policy_sha256": "d" * 64,
+                    "source_set_sha256": "e" * 64,
+                    "created_at": created_at,
+                    "private_tracking_url_state": "NOT_INCLUDED",
+                    "revenue_credit_state": "NO_REVENUE_CREDIT",
+                }
+
+            older = job("1" * 64, "2026-08-23T00:00:00+00:00")
+            newer = job("2" * 64, "2026-08-24T00:00:00+00:00")
+            queue.write_text(json.dumps(newer) + "\n" + json.dumps(older) + "\n")
+            command = [
+                sys.executable, str(SCRIPT), "--job-queue", str(queue),
+                "--job-claims", str(claims), "--claim-next-job",
+            ]
+            processes = [
+                subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                for _ in range(2)
+            ]
+            results = [process.communicate(timeout=10) for process in processes]
+
+            self.assertEqual([process.returncode for process in processes], [0, 0])
+            values = [json.loads(stdout) for stdout, _ in results]
+            self.assertEqual({value["job_id"] for value in values}, {older["job_id"]})
+            self.assertEqual(sorted(value["changed"] for value in values), [False, True])
+            claim_rows = [json.loads(line) for line in claims.read_text().splitlines()]
+            self.assertEqual(len(claim_rows), 1)
+            self.assertEqual(claim_rows[0]["state"], "EFFECT_STARTED")
+            self.assertEqual(claim_rows[0]["job"], older)
+
+    def test_distribution_job_consumer_rejects_extra_private_field(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            queue, claims = root / "jobs.jsonl", root / "claims.jsonl"
+            queue.write_text(json.dumps({
+                "schema_version": 1,
+                "receipt_type": "AFFILIATE_X_DISTRIBUTION_JOB",
+                "state": "QUEUED",
+                "job_id": "1" * 64,
+                "effect_identity": "2" * 64,
+                "placement_id": "elevenlabs-discovered-caption-generator-en-1",
+                "owned_article_url": "https://aniccaai.com/blog/caption-generator",
+                "content_sha256": "3" * 64,
+                "experiment_lineage": {"kind": "BASE", "decision_id": None,
+                                       "control_placement_id": None},
+                "target_x_account": "selawmqt",
+                "cadence_class": "AFFILIATE_MONETIZATION",
+                "policy_sha256": "4" * 64,
+                "source_set_sha256": "5" * 64,
+                "created_at": "2026-08-24T00:00:00+00:00",
+                "private_tracking_url_state": "NOT_INCLUDED",
+                "revenue_credit_state": "NO_REVENUE_CREDIT",
+                "private_tracking_url": "https://try.elevenlabs.io/private",
+            }) + "\n")
+            result = subprocess.run([
+                sys.executable, str(SCRIPT), "--job-queue", str(queue),
+                "--job-claims", str(claims), "--claim-next-job",
+            ], capture_output=True, text=True, check=False)
+            self.assertEqual(result.returncode, 2)
+            self.assertFalse(claims.exists())
+
     def test_new_ready_proposal_precedes_older_terminal_readback(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

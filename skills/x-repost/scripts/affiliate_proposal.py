@@ -22,6 +22,12 @@ SAFE_FIELDS = (
     "language", "disclosure_required", "tracking_link_state", "revenue_credit_state",
     "article_title", "buyer_intent",
 )
+JOB_FIELDS = {
+    "schema_version", "receipt_type", "state", "job_id", "effect_identity",
+    "placement_id", "owned_article_url", "content_sha256", "experiment_lineage",
+    "target_x_account", "cadence_class", "policy_sha256", "source_set_sha256",
+    "created_at", "private_tracking_url_state", "revenue_credit_state",
+}
 X_TRANSFORMED_URL_LENGTH = 23
 UNVERIFIED_RECOVERY_WINDOW = timedelta(hours=6)
 URL = re.compile(r"https?://\S+")
@@ -79,6 +85,126 @@ def canonical(proposal: dict) -> dict:
     if not valid(proposal):
         raise ValueError("invalid proposal")
     return {field: proposal.get(field) for field in SAFE_FIELDS}
+
+
+def valid_job(job: dict) -> bool:
+    if not isinstance(job, dict) or set(job) != JOB_FIELDS:
+        return False
+    url = job.get("owned_article_url")
+    lineage = job.get("experiment_lineage")
+    try:
+        parsed = urlparse(url)
+        port = parsed.port
+        created = datetime.fromisoformat(job.get("created_at", "").replace("Z", "+00:00"))
+    except (AttributeError, TypeError, ValueError):
+        return False
+    lineage_valid = (
+        isinstance(lineage, dict)
+        and set(lineage) == {"kind", "decision_id", "control_placement_id"}
+        and (
+            lineage == {"kind": "BASE", "decision_id": None, "control_placement_id": None}
+            or (
+                lineage.get("kind") == "EXPERIMENT"
+                and isinstance(lineage.get("decision_id"), str)
+                and PROPOSAL_ID.fullmatch(lineage["decision_id"])
+                and isinstance(lineage.get("control_placement_id"), str)
+                and PLACEMENT_ID.fullmatch(lineage["control_placement_id"])
+            )
+        )
+    )
+    return all((
+        job.get("schema_version") == 1,
+        job.get("receipt_type") == "AFFILIATE_X_DISTRIBUTION_JOB",
+        job.get("state") == "QUEUED",
+        isinstance(job.get("job_id"), str) and PROPOSAL_ID.fullmatch(job["job_id"]),
+        isinstance(job.get("effect_identity"), str)
+        and PROPOSAL_ID.fullmatch(job["effect_identity"]),
+        isinstance(job.get("placement_id"), str)
+        and PLACEMENT_ID.fullmatch(job["placement_id"]),
+        isinstance(job.get("content_sha256"), str)
+        and PROPOSAL_ID.fullmatch(job["content_sha256"]),
+        isinstance(job.get("policy_sha256"), str)
+        and PROPOSAL_ID.fullmatch(job["policy_sha256"]),
+        isinstance(job.get("source_set_sha256"), str)
+        and PROPOSAL_ID.fullmatch(job["source_set_sha256"]),
+        lineage_valid,
+        isinstance(job.get("target_x_account"), str)
+        and bool(re.fullmatch(r"[A-Za-z0-9_]{1,15}", job["target_x_account"])),
+        job.get("cadence_class") == "AFFILIATE_MONETIZATION",
+        job.get("private_tracking_url_state") == "NOT_INCLUDED",
+        job.get("revenue_credit_state") == "NO_REVENUE_CREDIT",
+        created.tzinfo is not None,
+        parsed.scheme == "https" and parsed.hostname == "aniccaai.com"
+        and bool(re.fullmatch(r"/blog/[a-z0-9][a-z0-9-]*", parsed.path))
+        and not parsed.username and not parsed.password and port is None
+        and not parsed.query and not parsed.fragment,
+    ))
+
+
+def distribution_jobs(path: Path) -> list[dict]:
+    if not path.is_file():
+        return []
+    with path.open("r", encoding="utf-8") as stream:
+        fcntl.flock(stream, fcntl.LOCK_SH)
+        try:
+            jobs = [json.loads(line) for line in stream if line.strip()]
+        except ValueError as error:
+            raise ValueError("distribution job queue invalid") from error
+    if any(not valid_job(job) for job in jobs):
+        raise ValueError("distribution job queue invalid")
+    if len({job["job_id"] for job in jobs}) != len(jobs):
+        raise ValueError("distribution job queue contains duplicate job identity")
+    if len({job["effect_identity"] for job in jobs}) != len(jobs):
+        raise ValueError("distribution job queue contains duplicate effect identity")
+    return jobs
+
+
+def claim_next_job(queue_path: Path, claims_path: Path) -> dict:
+    jobs = distribution_jobs(queue_path)
+    claims_path.parent.mkdir(parents=True, exist_ok=True)
+    with claims_path.open("a+", encoding="utf-8") as stream:
+        fcntl.flock(stream, fcntl.LOCK_EX)
+        stream.seek(0)
+        claims = []
+        for line in stream:
+            try:
+                row = json.loads(line)
+            except ValueError as error:
+                raise ValueError("distribution job claim ledger invalid") from error
+            if not (
+                isinstance(row, dict)
+                and row.get("schema_version") == 1
+                and row.get("receipt_type") == "X_REPOST_DISTRIBUTION_JOB_CLAIM"
+                and row.get("state") == "EFFECT_STARTED"
+                and row.get("owner_label") == "ai.anicca.x-repost-pass"
+                and isinstance(row.get("job_id"), str) and PROPOSAL_ID.fullmatch(row["job_id"])
+                and isinstance(row.get("effect_identity"), str)
+                and PROPOSAL_ID.fullmatch(row["effect_identity"])
+                and valid_job(row.get("job"))
+            ):
+                raise ValueError("distribution job claim ledger invalid")
+            claims.append(row)
+        if claims:
+            return {**claims[0], "changed": False}
+        if not jobs:
+            return {"state": "NO_JOB", "changed": False}
+        job = min(jobs, key=lambda value: (value["created_at"], value["job_id"]))
+        row = {
+            "schema_version": 1,
+            "receipt_type": "X_REPOST_DISTRIBUTION_JOB_CLAIM",
+            "state": "EFFECT_STARTED",
+            "job_id": job["job_id"],
+            "effect_identity": job["effect_identity"],
+            "placement_id": job["placement_id"],
+            "owner_label": "ai.anicca.x-repost-pass",
+            "job": job,
+            "observed_at": datetime.now(timezone.utc).isoformat(),
+        }
+        stream.seek(0, os.SEEK_END)
+        stream.write(json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n")
+        stream.flush()
+        os.fsync(stream.fileno())
+        return {**row, "changed": True}
 
 
 def post_text(proposal: dict) -> str:
@@ -324,14 +450,24 @@ def record(consumed_path: Path, proposal: dict, state: str, post_url: str | None
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--proposal", type=Path, required=True)
-    parser.add_argument("--consumed", type=Path, required=True)
+    parser.add_argument("--proposal", type=Path)
+    parser.add_argument("--consumed", type=Path)
+    parser.add_argument("--job-queue", type=Path)
+    parser.add_argument("--job-claims", type=Path)
+    parser.add_argument("--claim-next-job", action="store_true")
     parser.add_argument("--posted", type=Path)
     parser.add_argument("--record", choices=("POSTED", "UNVERIFIED", "NO_EFFECT"))
     parser.add_argument("--claim", action="store_true")
     parser.add_argument("--render", action="store_true")
     parser.add_argument("--post-url")
     args = parser.parse_args()
+    if args.claim_next_job:
+        if args.job_queue is None or args.job_claims is None:
+            parser.error("--claim-next-job requires --job-queue and --job-claims")
+        print(json.dumps(claim_next_job(args.job_queue, args.job_claims), sort_keys=True))
+        return 0
+    if args.proposal is None or args.consumed is None:
+        parser.error("legacy proposal mode requires --proposal and --consumed")
     if args.claim:
         print(json.dumps(claim(args.consumed, read_json(args.proposal)), sort_keys=True))
         return 0
