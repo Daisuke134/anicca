@@ -7839,11 +7839,21 @@ the named production evidence:
   `WAITING_FOR_EXPOSURE`; baseline impressions 9, current 10,
   `conversion_verdict_allowed=false`, `distribution_required=true`, and
   `maximize_relevant_exposure=true`. Transaction count 0 is explicitly
-  `NOT_JUDGED_INSUFFICIENT_EXPOSURE`. Identical evidence appends nothing. D15 is
-  now the first unchecked item.
-- [ ] **D15 One-variable builder.** Materialize exactly the selected title,
+  `NOT_JUDGED_INSUFFICIENT_EXPOSURE`. Identical evidence appends nothing. A
+  later exact readback observes 17 impressions without changing the gate
+  verdict. D15 is now the first unchecked item.
+- [x] **D15 One-variable builder.** Materialize exactly the selected title,
   hook, structure, CTA, offer, timing, or distribution change while preserving
   every non-selected field and the exact provider link.
+  Done at `27540b452`: the owner joins the active D13 experiment, D14 exposure
+  gate, control job, and all public distribution receipts into one immutable
+  `AFFILIATE_DISTRIBUTION_MIX_PLAN`. Production plan `2bab9753...` observes the
+  caption-generator placement already LIVE on Dev.to, Substack, and X; seals
+  control content SHA `c2de6762...`; forbids content mutation; and selects
+  `SAFE_X_RECIRCULATION` with one relevant recirculation per owner pass while
+  `maximize_relevant_exposure=true`. A second existing-owner wake returns the
+  same plan ID with `changed=false`; append-only plan count remains exactly 1.
+  D16 is now the first unchecked item.
 - [ ] **D16 Experiment publication.** Publish the owned page and X placement once
   through existing owners. Evidence: exact owned URL, X permalink, placement
   link, hashes, and duplicate-zero second wake.
@@ -7906,79 +7916,32 @@ preventing one of those outcomes.
 
 Current authoritative state:
 
-- Production Affiliate release is
-  `785309f57f8b42268c3b608cbdfbf783c13618bb`; owner health is `HEALTHY`.
-- Active focus is CTA child placement
-  `elevenlabs-discovered-subtitle-translator-en-experiment-1ecf26fe47e1-1`.
-- Latest active focused baseline content SHA is `d07bcf15e4ac1703ceb4e2e12b84c1022c677c062e88396ed20e4fd14d9a34e2`.
-- The latest wake still carries the historical `BUDGET_BLOCKED` receipt from
-  before release replacement. It is no longer a valid wait gate; the next
-  existing-owner wake retries immediately using ChatGPT account 2. Rolling
-  money is `NO_TRANSACTIONS`; approved, paid, pending, and reversed are all zero.
-- X activity is not yet sufficient acquisition distribution: 95 Repost actions
-  are observed, 6 join an exact Affiliate campaign URL, and 89 are unjoined.
-  Follower growth and X impressions have no official denominator, so post count
-  cannot be called account growth. The active CTA child has only 2 provider
-  clicks / 2 unique at its fixed counter baseline and zero later delta or
-  transaction. This low exact traffic plus zero conversion, not missing content
-  volume, is the current direct reason revenue remains zero.
-- The delivery pipe itself now works end to end, but the official X audience is
-  only 1 follower at the D08 discovery checkpoint. Therefore the immediate
-  economic blocker is insufficient real reach, followed by still-zero official
-  transactions. More posting without D08–D14 denominators would repeat volume,
-  not prove growth or improve money allocation.
-- The first D01 job is still `QUEUED`. D03 is not implemented, so x-repost does
-  not claim this queue, publish its owned URL, or return a permalink. This is
-  the immediate system blocker. D08–D10 growth denominators and D11–D17 funnel
-  control are also absent, so the system cannot yet distinguish reach failure
-  from conversion failure or optimize toward money.
-- `CAMPAIGN_METADATA_INVALID` refers to the preserved oversized historical
-  artifact. It must stay visible for audit, but it does not authorize deletion
-  and must not supersede a later valid due campaign.
+- Production Affiliate release is `27540b452e7d796825789f8398e6df9d19fea414`;
+  two existing-owner wakes exit 0.
+- Active placement is `elevenlabs-discovered-caption-generator-en-1`; its exact
+  X permalink is `https://x.com/selawmqt/status/2091754957448040906`.
+- D01–D15 are complete. The distribution plan `2bab9753...` observes Dev.to,
+  Substack, and X already LIVE and requires safe X recirculation without content
+  mutation. D16 is the sole active implementation item.
+- Exact impressions have increased from the experiment baseline 9 to 17, but
+  exposure remains insufficient by the model-selected boundary. Official
+  transactions, pending, approved, paid, and reversed commission remain zero;
+  therefore the result is still non-money.
+- The immediate blocker is insufficient relevant reach, followed by zero exact
+  transactions. There is no token-budget or JST-reset blocker.
 
 Execute the remaining work strictly in this order:
 
-1. **Immediate existing-owner retry.** On the next normal owner wake, verify
-   release `785309f57...`, account-2 execution, `daily_limit_tokens=null`, and a
-   non-`BUDGET_BLOCKED` terminal. No manual model executor or manual publication
-   is allowed.
-2. **Active-child decision.** Require one sealed acquisition decision whose
-   baseline SHA equals the then-current active CTA-child baseline, whose
-   `control_placement_id` is the active child, and whose success metric uses
-   exact official `transaction_count` or `customer_count`. Views, clicks,
-   engagement, estimates, and money claims are invalid decision metrics.
-3. **One-variable materialization.** Source and composition owners create one
-   compact child plan. Verify that exactly the selected variable changes and
-   title, hook, structure, CTA, provider link, and distribution remain identical
-   unless that field is the selected variable. Placement length remains at most
-   80 characters and lineage hashes bind decision, control, sources, handoff,
-   and policy.
-4. **Policy and real publication.** Require all deterministic policy checks and
-   semantic audit to PASS with zero unsupported claims. The existing publication
-   owner then publishes the owned article and X placement exactly once. Read
-   back the owned URL, exact X permalink, content hash, provider link key, and
-   terminal receipts; a dry run, manual post, or provider ID without public
-   readback is not completion.
-5. **Post-fix funnel measurement.** Preserve the current provider counter
-   baseline and measure only later entry receipts, CTA clicks, provider clicks,
-   unique clicks, customers, and transactions for the exact new placement.
-   Synthetic diagnostic clicks are forbidden because they contaminate the
-   experiment. Clicks and URLs remain non-money.
-6. **Official transaction join.** Re-fetch PartnerStack official links and
-   transactions, join by exact placement/sub-ID or sealed link fingerprint, and
-   record pending, approved, paid, or reversed status without inventing
-   attribution. Zero rows remains `NO_TRANSACTIONS`.
-7. **Iterate without parallel experiments.** If official transaction count
-   remains zero after the bounded observation interval, advance focus to the
-   latest live child and repeat steps 2–6 with one new model-selected variable.
-   Do not reopen historical Dev.to or base baselines and do not run sibling
-   experiments concurrently.
-8. **First-money gate.** Count success only when PartnerStack returns one real
-   non-test transaction for the exact placement. Pending is transaction evidence
-   but not approved cash; approved or paid is the first money evidence.
-9. **Scale gate.** Continue the same measured loop, retain only experiments with
-   better official approved/paid unit economics, and expand distribution only
-   after exact-placement evidence. Completion requires rolling 30-day official
-   approved-or-paid affiliate net revenue of at least USD 10,000, with known
-   costs reconciled. Posts, page views, clicks, provider IDs, and projected
-   commissions never satisfy this gate.
+1. Execute D16 through the existing Affiliate and x-repost owners: create one
+   new deduplicated recirculation effect for plan `2bab9753...`, obtain its exact
+   X permalink, and read back exact placement impressions. Continue bounded
+   relevant recirculation on later owner passes until the model-selected
+   exposure boundary is met or model evidence closes the channel.
+2. Execute D17 and seal the full exact-placement funnel delta. Zero transactions
+   remains non-money and cannot be called a conversion loss while exposure is
+   insufficient.
+3. Execute D18–D23 sequentially to add approved measurable offers and allocate
+   growth/monetization cadence from official reach and money evidence.
+4. Execute D24–D30 sequentially: first exact transaction, first approved/paid
+   commission, unit economics, winner scaling, loser stopping, portfolio
+   iteration, and the repeated rolling-30-day net USD 10,000 readback.
