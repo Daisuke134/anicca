@@ -531,6 +531,7 @@ async def discover_affordable_proposal(
         jobs = [row for row in _dedupe_links(search_links)
                 if "/jobs/" in row["href"] and row["id"] not in known]
         packet_paths: list[Path] = []
+        batch_identities: list[str] = []
         observed_by_id: dict[str, tuple[dict[str, str], str, str]] = {}
         for offset, job in enumerate(jobs[:10], start=1):
             known.add(job["id"])
@@ -555,9 +556,10 @@ async def discover_affordable_proposal(
                 "available_connects_before": state["balance"],
             }, text, digest, inbound_dir, state["observed_at"])
             packet_paths.append(inbound_dir / f"{packet_sha}.json")
+            batch_identities.append(f"{job['id']}|{digest}|{required}|{state['balance']}")
             observed_by_id[job["id"]] = (candidate, text, digest)
         if packet_paths:
-            batch_key = hashlib.sha256("\n".join(path.stem for path in packet_paths).encode()).hexdigest()
+            batch_key = hashlib.sha256("\n".join(batch_identities).encode()).hexdigest()
             proposal = await asyncio.to_thread(
                 plan_batch, packet_paths, profile=DEFAULT_OWNER_PROFILE,
                 evidence_dir=inbound_evidence / f"batch-{batch_key}",
