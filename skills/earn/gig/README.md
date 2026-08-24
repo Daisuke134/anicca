@@ -1,18 +1,18 @@
 # The Coconala loop
 
-> **Current onboarding boundary:** the public command, dependency/Codex preparation,
-> shared-browser setup, official account-gate readback, six-job activation, and
-> zero-listing Storefront publisher are implemented. The owner still completes the
-> official account/SMS/eKYC/bank ceremony. Independent external usability trials and a
-> real bank-arrival receipt remain before the OSS flow is accepted; do not promise
-> guaranteed income or call the onboarding complete before those receipts exist.
+> **Current onboarding boundary:** the Coconala package is OSS-productized. The public
+> Terminal command, dependency/Codex preparation, dedicated browser, official account
+> gates, six-job activation, zero-listing Storefront publisher, `gog` email and clean-HOME
+> contract are implemented and verified. The owner still completes Coconala's official
+> account/SMS/eKYC/bank ceremony. Sales and bank arrival remain receipt-based outcomes,
+> never guaranteed setup results.
 
 ### Product status
 
-This is the only marketplace money loop currently offered as a one-command OSS public
-preview. All four business lanes and their two supporting jobs are public. `gog` email
-onboarding is implemented with real send/inbox readback; the final clean-HOME Terminal
-contract remains before calling the setup productized. Upwork, Mercor, and other marketplace loops are not advertised as installable
+This is the only marketplace money loop currently offered as a one-command OSS product.
+All four business lanes and their two supporting jobs are public. `gog` email onboarding
+has real send/inbox readback and the clean-HOME Terminal contract is verified. Upwork,
+Mercor, and other marketplace loops are not advertised as installable
 OSS products yet, even where internal components exist.
 
 ### Accepted onboarding flow (external acceptance pending)

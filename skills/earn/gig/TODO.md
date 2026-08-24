@@ -46,13 +46,16 @@ are not active work.
     default. Email failure does not block the six jobs; Terminal receipts stay authoritative.
     Verification: private config mode `0600`, focused contracts 24/24, real Gmail send
     acknowledged and nonce found in the same inbox on the first readback attempt.
-11. [ ] Re-run the clean-HOME bootstrap contract after the terminal-only change: assert no
+11. [x] Re-run the clean-HOME bootstrap contract after the terminal-only change: assert no
     onboarding web server/browser UI starts, the official Coconala browser opens, rerun
     resumes `finished`, all six launchd definitions render, and pre-auth marketplace effects
-    remain zero.
+    remain zero. Result: pre-auth `blocked`, HOME writes zero, local onboarding UI refs
+    zero, official signup route present, rerun selects `finished`, six unique labels
+    rendered, four business entrypoints compiled, OSS 11/11, ShellCheck GREEN, and scoped
+    Gig gitleaks zero.
 12. [x] Make productization status explicit in both READMEs: Coconala is the only
-    one-command marketplace OSS public preview; clean-HOME verification remains; Upwork,
-    Mercor and other money loops are roadmap/non-productized. Keep
+    one-command marketplace OSS product; Upwork, Mercor and other money loops are
+    roadmap/non-productized. Keep
     time-dependent eKYC, buyer traffic, sales and bank arrival outside the coding TODO.
 
 ### Future shared OSS UX — not current session
