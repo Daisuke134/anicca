@@ -97,6 +97,33 @@ def test_skip_requires_reason_and_never_creates_proposal(tmp_path):
         planner.validate_decision({"decision": "skip", "reason_codes": [], "proposal": None}, packet)
 
 
+def test_luna_submit_and_skip_project_to_stable_natural_language_work_events(tmp_path):
+    path, packet = _packet(tmp_path)
+    loaded = planner.load_packet(path)
+    submit = _decision(packet)
+    skipped = {
+        "decision": "skip",
+        "reason_codes": ["The requested physical filming cannot be completed by installed Skills."],
+        "proposal": None,
+    }
+
+    submit_event = planner.application_decision_event(
+        submit, loaded, title="Exact private job", occurred_at="2026-08-24T08:00:00+00:00",
+    )
+    skip_event = planner.application_decision_event(
+        skipped, loaded, title="On-site filming", occurred_at="2026-08-24T08:00:00+00:00",
+    )
+
+    assert submit_event["state"] == "selected"
+    assert submit_event["attributes"]["terms"]["bid_usd"] == 75
+    assert planner.application_decision_event(
+        submit, loaded, title="Exact private job", occurred_at="2026-08-24T08:00:00+00:00",
+    )["event_key"] == submit_event["event_key"]
+    assert skip_event["state"] == "skipped"
+    assert skip_event["attributes"]["reason_codes"] == skipped["reason_codes"]
+    assert skip_event["next_action"] == "次の案件確認を続けます"
+
+
 def test_batch_selects_one_exact_packet_with_one_model_decision(tmp_path, monkeypatch):
     first_path, _ = _public_packet(tmp_path, "a")
     second_path, second = _public_packet(tmp_path, "b")

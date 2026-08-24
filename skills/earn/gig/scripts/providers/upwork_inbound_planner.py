@@ -212,6 +212,44 @@ def validate_decision(
     return {**proposal, "payload_sha256": hashlib.sha256(body.encode()).hexdigest()}
 
 
+def application_decision_event(
+    decision: dict[str, Any], packet: dict[str, Any], *, title: str, occurred_at: str,
+) -> dict[str, Any]:
+    """Project one validated Luna decision into the shared Gig WorkEvent shape."""
+    proposal = validate_decision(decision, packet)
+    clean_title = title.strip() if isinstance(title, str) else ""
+    if not clean_title or not isinstance(occurred_at, str) or not occurred_at.strip():
+        raise InboundPlannerError("application_decision_event_invalid")
+    canonical = json.dumps(decision, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    decision_sha256 = hashlib.sha256(canonical.encode()).hexdigest()
+    submitted = proposal is not None
+    reasons = list(decision["reason_codes"])
+    return {
+        "event_key": (
+            f"gig:application-decision:upwork:{packet['resource_id']}:"
+            f"{packet['detail_evidence_sha256']}:{decision_sha256}"
+        ),
+        "kind": "application",
+        "entity_id": packet["resource_id"],
+        "occurred_at": occurred_at,
+        "state": "selected" if submitted else "skipped",
+        "action": "応募準備" if submitted else "応募見送り",
+        "result": "Lunaが応募対象に選定しました" if submitted else "Lunaが応募しないと判断しました",
+        "next_action": "公式preflight後に応募します" if submitted else "次の案件確認を続けます",
+        "evidence": ["official_job", "model_decision"],
+        "attributes": {
+            "platform": "upwork",
+            "title": clean_title,
+            "url": packet["resource_url"],
+            "decision": decision["decision"],
+            "reason_codes": reasons,
+            "decision_sha256": decision_sha256,
+            "job_source_sha256": packet["detail_evidence_sha256"],
+            "terms": proposal["terms"] if submitted else None,
+        },
+    }
+
+
 def _invoke_prompt(
     prompt: str, *, runner: Path, schema: Path, evidence_dir: Path,
 ) -> dict[str, Any]:
