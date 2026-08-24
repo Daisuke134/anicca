@@ -966,6 +966,13 @@ U13 atomic order:
     then configured Sonnet/Gemini fallback. UI judgment and effect/readback contracts stay identical.
     Regression remains `156 passed`; bind the absence evidence to this exact effect, reset it once and
     require proposal ID plus `133 -> 118` before any later retry.
+81. **ABSENT RATE-INCREASE TERM MAPS TO OFFICIAL NEVER:** a later Terra attempt reached Submit but
+    Upwork rejected the hourly form because its visually optional rate-increase component requires an
+    explicit frequency selection. Official absence remains proposals 2 and balance 133. The provider
+    options are `Never`, 3, 6 or 12 months. The sealed proposal contains no rate-increase term, so map
+    that absence to official `Never`; do not select a percent or boost. This is deterministic form
+    projection, not a pricing judgment. Fresh click-free preflight remains ready for exact job/rate/
+    Connects, and regression is `156 passed`. Reset only the absence-proven effect once after release.
 
 U14 atomic order:
 
