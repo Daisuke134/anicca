@@ -3138,7 +3138,18 @@ a later successful example.
   `shipment_basis=max_review_iterations`, selected `delivery_action=progress` with
   `formal_delivery_checkbox=false`, and returned exact-room `effect=1`, `readback=1`, `failed=0`.
 - [ ] P31 — Prove one natural order end to end from complete context through one formal delivery and
-  replay-zero.
+  replay-zero. The generic Paid owner selects talkroom `18183618` first, reads the booked JAIC
+  consultation and subsequent Gmail context, replies to the substantive pre-consultation question,
+  and sends privacy-redacted `JAIC-appointment-confirmation-v4.zip` once with exact Coconala
+  readback. The next natural wake records Coconala `effect=0`, `failed=0`, proving that progress
+  attachment is replay-safe. This project remains open: the owner must read the official Meet URL,
+  update the existing Calendar event without duplication, preserve truthful consultation-completion
+  evidence, report the requested four post-consultation facts, formally deliver, observe buyer
+  acceptance/transaction completion, and then prove another replay-zero. After that, process
+  `18184558`, `18180857`, and `18169985` in order; Manledge sends no additional candidate message
+  until its buyer explicitly approves the already-sent private-DM sample format. LBJ `18130722`
+  remains a later repair: a seller acknowledgement after an unrevoked buyer approval must not erase
+  that approval; a later buyer revocation must.
 
 **Accepted architecture — ship within ten reviews.** A production worker builds the buyer-requested
 artifact and a fresh reviewer supplies bounded improvement feedback. The worker may revise the same
