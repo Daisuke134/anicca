@@ -41,6 +41,7 @@ AFFILIATE_CONSUMED="$STATE/affiliate-proposals-consumed.jsonl"
 AFFILIATE_JOB_QUEUE="${AFFILIATE_X_DISTRIBUTION_QUEUE:-$HOME/.local/state/life-manager/affiliate/x-distribution-jobs.jsonl}"
 AFFILIATE_JOB_CLAIMS="$STATE/affiliate-x-distribution-job-claims.jsonl"
 AFFILIATE_JOB_PAYLOADS="$STATE/affiliate-x-distribution-payloads"
+AFFILIATE_JOB_RESULTS="$STATE/affiliate-x-distribution-job-results.jsonl"
 BROWSER_LEASED=0
 MODEL_FAILURE="other"
 
@@ -414,6 +415,85 @@ if [ "$AFFILIATE_JOB_STATE" = "EFFECT_STARTED" ]; then
       <<<"$AFFILIATE_JOB_PAYLOAD")"
     report "✅ Affiliate distribution payload ready without posting\njob: $AFFILIATE_PAYLOAD_JOB\nnext: D05 X effect"
     finish 0 "affiliate distribution payload ready"
+  fi
+  if ! AFFILIATE_JOB_EFFECT="$("$PY" "$SKILL/scripts/affiliate_proposal.py" \
+    --job-claims "$AFFILIATE_JOB_CLAIMS" --job-payload-dir "$AFFILIATE_JOB_PAYLOADS" \
+    --job-results "$AFFILIATE_JOB_RESULTS" --job-effect-state \
+    2>>"$EV/affiliate-job.err")"; then
+    report "🛑 Affiliate distribution effect state is invalid; no post is allowed"
+    finish 1 "affiliate distribution effect state failed"
+  fi
+  AFFILIATE_EFFECT_STATE="$("$PY" -c 'import json,sys; print(json.load(sys.stdin).get("state","UNKNOWN"))' \
+    <<<"$AFFILIATE_JOB_EFFECT" 2>/dev/null || echo UNKNOWN)"
+  if [ "$AFFILIATE_EFFECT_STATE" = "UNVERIFIED" ] || [ "$AFFILIATE_EFFECT_STATE" = "NO_EFFECT" ]; then
+    log "affiliate distribution job awaits D06 reconciliation ($AFFILIATE_EFFECT_STATE)"
+    finish 0 "affiliate distribution job awaits reconciliation"
+  fi
+  if [ "$AFFILIATE_EFFECT_STATE" = "READY_TO_POST" ]; then
+    AFFILIATE_JOB_TEXT="$EV/affiliate-job-post.txt"
+    "$PY" - "$AFFILIATE_JOB_EFFECT" "$AFFILIATE_JOB_TEXT" <<'PYEOF'
+import json, os, sys
+value, target = json.loads(sys.argv[1]), sys.argv[2]
+payload = value.get("payload") or {}
+text = payload.get("text")
+if not isinstance(text, str) or not text.strip(): raise SystemExit(1)
+with open(target, "x", encoding="utf-8") as stream:
+    stream.write(text)
+    stream.flush(); os.fsync(stream.fileno())
+PYEOF
+    run_x_post --cdp "$CDP" --text-file "$AFFILIATE_JOB_TEXT" --mode original \
+      >"$EV/affiliate-job-post.json" 2>>"$EV/affiliate-job-post.err"
+    AFFILIATE_JOB_RC=$?
+    AFFILIATE_PROVIDER_ID="$("$PY" -c 'import json,sys
+try: print(json.load(open(sys.argv[1])).get("provider_submission_id") or "")
+except Exception: print("")' "$EV/affiliate-job-post.json")"
+    AFFILIATE_JOB_ID="$("$PY" -c 'import json,sys; print(json.load(sys.stdin)["job_id"])' \
+      <<<"$AFFILIATE_JOB_EFFECT")"
+    if [ "$AFFILIATE_JOB_RC" -eq 0 ] && [ -n "$AFFILIATE_PROVIDER_ID" ]; then
+      AFFILIATE_POST_URL="$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1]))["post_url"])' \
+        "$EV/affiliate-job-post.json")"
+      "$PY" "$SKILL/scripts/affiliate_proposal.py" --job-claims "$AFFILIATE_JOB_CLAIMS" \
+        --job-payload-dir "$AFFILIATE_JOB_PAYLOADS" --job-results "$AFFILIATE_JOB_RESULTS" \
+        --record-job-result POSTED --post-url "$AFFILIATE_POST_URL" \
+        --provider-submission-id "$AFFILIATE_PROVIDER_ID" >/dev/null || \
+        finish 1 "affiliate distribution terminal receipt failed"
+      X_REPOST_JOB_ID="$AFFILIATE_JOB_ID" X_REPOST_PROVIDER_ID="$AFFILIATE_PROVIDER_ID" \
+        "$PY" - "$POSTED" "$AFFILIATE_JOB_EFFECT" "$AFFILIATE_POST_URL" <<'PYEOF'
+import datetime, fcntl, json, os, sys
+posted, effect_json, post_url = sys.argv[1:4]
+payload = json.loads(effect_json)["payload"]
+with open(posted, "a+", encoding="utf-8") as stream:
+    fcntl.flock(stream, fcntl.LOCK_EX); stream.seek(0)
+    if any(json.loads(line).get("affiliate_job_id") == os.environ["X_REPOST_JOB_ID"]
+           for line in stream if line.strip()): raise SystemExit(0)
+    row = {"posted_at": datetime.datetime.now().astimezone().isoformat(),
+           "kind": "affiliate_distribution", "source_url": payload["owned_article_url"],
+           "affiliate_job_id": payload["job_id"],
+           "affiliate_effect_identity": payload["effect_identity"],
+           "affiliate_placement_id": payload["placement_id"],
+           "affiliate_owned_article_url": payload["owned_article_url"],
+           "content_sha256": payload["content_sha256"], "text_sha256": payload["text_sha256"],
+           "provider_submission_id": os.environ["X_REPOST_PROVIDER_ID"],
+           "tone": "affiliate_disclosed", "text": payload["text"], "post_url": post_url}
+    stream.seek(0, 2); stream.write(json.dumps(row, ensure_ascii=False) + "\n")
+    stream.flush(); os.fsync(stream.fileno())
+PYEOF
+      report "✅ Affiliate distribution job published\njob: $AFFILIATE_JOB_ID\npost: $AFFILIATE_POST_URL"
+      finish 0 "affiliate distribution job published"
+    fi
+    AFFILIATE_TERMINAL="UNVERIFIED"
+    if [ "$AFFILIATE_JOB_RC" -ne 2 ] && [ "$("$PY" -c 'import json,sys
+try: print(json.load(open(sys.argv[1])).get("posted") is False)
+except Exception: print(False)' "$EV/affiliate-job-post.json")" = "True" ]; then
+      AFFILIATE_TERMINAL="NO_EFFECT"
+    fi
+    "$PY" "$SKILL/scripts/affiliate_proposal.py" --job-claims "$AFFILIATE_JOB_CLAIMS" \
+      --job-payload-dir "$AFFILIATE_JOB_PAYLOADS" --job-results "$AFFILIATE_JOB_RESULTS" \
+      --record-job-result "$AFFILIATE_TERMINAL" \
+      --provider-submission-id "$AFFILIATE_PROVIDER_ID" >/dev/null || \
+      finish 1 "affiliate distribution unresolved receipt failed"
+    report "⚠️ Affiliate distribution job ended $AFFILIATE_TERMINAL; duplicate post is fenced"
+    finish 1 "affiliate distribution job $AFFILIATE_TERMINAL"
   fi
 fi
 # Read and validate the proposal ledger before the daily generic-post gate. An unresolved

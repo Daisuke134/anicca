@@ -19,6 +19,69 @@ SPEC.loader.exec_module(MODULE)
 
 
 class AffiliateProposalTests(unittest.TestCase):
+    def test_distribution_post_result_is_exact_and_idempotent(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            queue, claims = root / "jobs.jsonl", root / "claims.jsonl"
+            payloads, results = root / "payloads", root / "results.jsonl"
+            job = {
+                "schema_version": 1, "receipt_type": "AFFILIATE_X_DISTRIBUTION_JOB",
+                "state": "QUEUED", "job_id": "1" * 64,
+                "effect_identity": "2" * 64,
+                "placement_id": "elevenlabs-discovered-caption-generator-en-1",
+                "owned_article_url": "https://aniccaai.com/blog/caption-generator",
+                "content_sha256": "3" * 64,
+                "experiment_lineage": {"kind": "BASE", "decision_id": None,
+                                       "control_placement_id": None},
+                "target_x_account": "selawmqt",
+                "cadence_class": "AFFILIATE_MONETIZATION",
+                "policy_sha256": "4" * 64, "source_set_sha256": "5" * 64,
+                "created_at": "2026-08-24T00:00:00+00:00",
+                "private_tracking_url_state": "NOT_INCLUDED",
+                "revenue_credit_state": "NO_REVENUE_CREDIT",
+            }
+            queue.write_text(json.dumps(job) + "\n")
+            MODULE.claim_next_job(queue, claims)
+            payload = MODULE.render_claimed_job(claims, payloads)
+            self.assertEqual(
+                MODULE.distribution_effect_state(claims, payloads, results)["state"],
+                "READY_TO_POST",
+            )
+
+            first = MODULE.record_distribution_result(
+                claims, payloads, results, "POSTED",
+                "https://x.com/selawmqt/status/123", "postiz-123",
+            )
+            second = MODULE.record_distribution_result(
+                claims, payloads, results, "POSTED",
+                "https://x.com/selawmqt/status/123", "postiz-123",
+            )
+
+            self.assertTrue(first["changed"])
+            self.assertFalse(second["changed"])
+            self.assertEqual(first["job_id"], job["job_id"])
+            self.assertEqual(first["placement_id"], job["placement_id"])
+            self.assertEqual(first["content_sha256"], job["content_sha256"])
+            self.assertEqual(first["text_sha256"], payload["text_sha256"])
+            self.assertEqual(first["post_url"], "https://x.com/selawmqt/status/123")
+            self.assertEqual(first["provider_submission_id"], "postiz-123")
+            self.assertEqual(len(results.read_text().splitlines()), 1)
+            self.assertEqual(
+                MODULE.distribution_effect_state(claims, payloads, results)["state"],
+                "POSTED",
+            )
+            with self.assertRaises(ValueError):
+                MODULE.record_distribution_result(
+                    claims, payloads, results, "POSTED",
+                    "https://x.com/selawmqt/status/999", "postiz-999",
+                )
+
+    def test_owner_posts_distribution_payload_through_existing_x_effect(self) -> None:
+        shell = (SCRIPT.parents[1] / "x-repost-cli.sh").read_text()
+        self.assertIn("affiliate distribution job published", shell)
+        self.assertIn("X_REPOST_JOB_ID", shell)
+        self.assertIn("--record-job-result", shell)
+
     def test_claimed_distribution_job_renders_one_safe_idempotent_payload(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

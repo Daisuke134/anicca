@@ -284,6 +284,140 @@ def render_claimed_job(claims_path: Path, payloads_dir: Path) -> dict:
     return {**receipt, "changed": True}
 
 
+def distribution_payload(claims_path: Path, payloads_dir: Path) -> dict:
+    claims = distribution_claims(claims_path)
+    if not claims:
+        raise ValueError("distribution job claim unavailable")
+    job = claims[0]["job"]
+    payload = read_json(payloads_dir / f"{job['job_id']}.json")
+    text = payload.get("text")
+    urls = URL.findall(text) if isinstance(text, str) else []
+    comparable = {
+        "schema_version": 1,
+        "receipt_type": "X_REPOST_DISTRIBUTION_PAYLOAD",
+        "state": "PAYLOAD_READY",
+        "job_id": job["job_id"],
+        "effect_identity": job["effect_identity"],
+        "placement_id": job["placement_id"],
+        "target_x_account": job["target_x_account"],
+        "owned_article_url": job["owned_article_url"],
+        "content_sha256": job["content_sha256"],
+        "text": text,
+        "text_sha256": hashlib.sha256((text or "").encode()).hexdigest(),
+        "weighted_length": len(URL.sub("x" * X_TRANSFORMED_URL_LENGTH, text or "")),
+        "private_tracking_url_state": "NOT_INCLUDED",
+    }
+    if (
+        {key: value for key, value in payload.items() if key != "created_at"} != comparable
+        or not isinstance(payload.get("created_at"), str)
+        or urls != [job["owned_article_url"]]
+        or "try.elevenlabs.io" in (text or "").casefold()
+        or comparable["weighted_length"] > 280
+    ):
+        raise ValueError("distribution payload invalid")
+    return payload
+
+
+def valid_distribution_result(row: dict) -> bool:
+    if not isinstance(row, dict) or row.get("state") not in {
+        "POSTED", "UNVERIFIED", "NO_EFFECT",
+    }:
+        return False
+    hashes = ("job_id", "effect_identity", "content_sha256", "text_sha256")
+    if any(not isinstance(row.get(key), str) or not PROPOSAL_ID.fullmatch(row[key])
+           for key in hashes):
+        return False
+    if row["state"] == "POSTED":
+        try:
+            parsed = urlparse(row.get("post_url"))
+        except (TypeError, ValueError):
+            return False
+        if not (
+            parsed.scheme == "https" and parsed.hostname == "x.com"
+            and not parsed.username and not parsed.password and parsed.port is None
+            and not parsed.query and not parsed.fragment
+            and re.fullmatch(r"/[A-Za-z0-9_]+/status/[0-9]+", parsed.path)
+            and isinstance(row.get("provider_submission_id"), str)
+            and bool(re.fullmatch(r"[A-Za-z0-9_-]{1,128}", row["provider_submission_id"]))
+        ):
+            return False
+    elif row.get("post_url") is not None:
+        return False
+    return all((
+        row.get("schema_version") == 1,
+        row.get("receipt_type") == "X_REPOST_DISTRIBUTION_JOB_RESULT",
+        isinstance(row.get("placement_id"), str) and PLACEMENT_ID.fullmatch(row["placement_id"]),
+        row.get("owner_label") == "ai.anicca.x-repost-pass",
+        row.get("provider") == "postiz",
+        isinstance(row.get("observed_at"), str),
+    ))
+
+
+def distribution_results(path: Path) -> list[dict]:
+    if not path.is_file():
+        return []
+    try:
+        values = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()
+                  if line.strip()]
+    except (OSError, ValueError) as error:
+        raise ValueError("distribution result ledger invalid") from error
+    if any(not valid_distribution_result(row) for row in values):
+        raise ValueError("distribution result ledger invalid")
+    return values
+
+
+def distribution_effect_state(claims_path: Path, payloads_dir: Path, results_path: Path) -> dict:
+    payload = distribution_payload(claims_path, payloads_dir)
+    results = distribution_results(results_path)
+    if results:
+        return {**results[0], "changed": False}
+    return {"state": "READY_TO_POST", "job_id": payload["job_id"],
+            "payload": payload, "changed": False}
+
+
+def record_distribution_result(
+    claims_path: Path, payloads_dir: Path, results_path: Path,
+    state: str, post_url: str | None, provider_submission_id: str | None,
+) -> dict:
+    if state not in {"POSTED", "UNVERIFIED", "NO_EFFECT"}:
+        raise ValueError("invalid distribution result state")
+    payload = distribution_payload(claims_path, payloads_dir)
+    row = {
+        "schema_version": 1,
+        "receipt_type": "X_REPOST_DISTRIBUTION_JOB_RESULT",
+        "state": state,
+        "job_id": payload["job_id"],
+        "effect_identity": payload["effect_identity"],
+        "placement_id": payload["placement_id"],
+        "content_sha256": payload["content_sha256"],
+        "text_sha256": payload["text_sha256"],
+        "post_url": post_url if state == "POSTED" else None,
+        "provider": "postiz",
+        "provider_submission_id": provider_submission_id,
+        "owner_label": "ai.anicca.x-repost-pass",
+        "observed_at": datetime.now(timezone.utc).isoformat(),
+    }
+    if not valid_distribution_result(row):
+        raise ValueError("invalid distribution result")
+    results_path.parent.mkdir(parents=True, exist_ok=True)
+    with results_path.open("a+", encoding="utf-8") as stream:
+        fcntl.flock(stream, fcntl.LOCK_EX)
+        stream.seek(0)
+        existing = [json.loads(line) for line in stream if line.strip()]
+        if existing:
+            prior = existing[0]
+            comparable = {key: value for key, value in prior.items() if key != "observed_at"}
+            expected = {key: value for key, value in row.items() if key != "observed_at"}
+            if not valid_distribution_result(prior) or comparable != expected:
+                raise ValueError("distribution result conflicts with terminal receipt")
+            return {**prior, "changed": False}
+        stream.seek(0, os.SEEK_END)
+        stream.write(json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n")
+        stream.flush()
+        os.fsync(stream.fileno())
+    return {**row, "changed": True}
+
+
 def post_text(proposal: dict) -> str:
     proposal = canonical(proposal)
     url = proposal["owned_article_url"]
@@ -534,11 +668,15 @@ def main() -> int:
     parser.add_argument("--claim-next-job", action="store_true")
     parser.add_argument("--render-claimed-job", action="store_true")
     parser.add_argument("--job-payload-dir", type=Path)
+    parser.add_argument("--job-results", type=Path)
+    parser.add_argument("--job-effect-state", action="store_true")
+    parser.add_argument("--record-job-result", choices=("POSTED", "UNVERIFIED", "NO_EFFECT"))
     parser.add_argument("--posted", type=Path)
     parser.add_argument("--record", choices=("POSTED", "UNVERIFIED", "NO_EFFECT"))
     parser.add_argument("--claim", action="store_true")
     parser.add_argument("--render", action="store_true")
     parser.add_argument("--post-url")
+    parser.add_argument("--provider-submission-id")
     args = parser.parse_args()
     if args.claim_next_job:
         if args.job_queue is None or args.job_claims is None:
@@ -549,6 +687,21 @@ def main() -> int:
         if args.job_claims is None or args.job_payload_dir is None:
             parser.error("--render-claimed-job requires --job-claims and --job-payload-dir")
         print(json.dumps(render_claimed_job(args.job_claims, args.job_payload_dir), sort_keys=True))
+        return 0
+    if args.job_effect_state:
+        if args.job_claims is None or args.job_payload_dir is None or args.job_results is None:
+            parser.error("--job-effect-state requires claim, payload, and result paths")
+        print(json.dumps(distribution_effect_state(
+            args.job_claims, args.job_payload_dir, args.job_results
+        ), sort_keys=True))
+        return 0
+    if args.record_job_result:
+        if args.job_claims is None or args.job_payload_dir is None or args.job_results is None:
+            parser.error("--record-job-result requires claim, payload, and result paths")
+        print(json.dumps(record_distribution_result(
+            args.job_claims, args.job_payload_dir, args.job_results,
+            args.record_job_result, args.post_url, args.provider_submission_id,
+        ), sort_keys=True))
         return 0
     if args.proposal is None or args.consumed is None:
         parser.error("legacy proposal mode requires --proposal and --consumed")
