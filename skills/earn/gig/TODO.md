@@ -65,6 +65,15 @@ contract, fee, payout, and bank receipts advance it.
    every file prepare; the complete Paid regression passes 39/39. The next installed-owner wake
    must resume the existing approved package, formally deliver it once, obtain official readback,
    and replay with zero duplicate effect.
+   The account owner then clarified the required order: the buyer's latest Project Manager share
+   request occurred after the earlier URL message, so the package had to be shared again before a
+   new approval. The installed owner re-shared the still-live GigaFile URL as a normal message with
+   no attachment and the formal checkbox off, naming `LBJ_Proposal12_v98.prproj` and the included
+   confirmation MP4. Production result: `effect=1/readback=1/failed=0`; the official Coconala DOM
+   contains the re-share message. Current action is now only to await a genuinely newer buyer reply.
+   Do not perform another formal delivery unless that newer buyer reply explicitly approves the
+   re-shared package; the earlier premature formal event remains historical evidence and must not be
+   repeated or represented as this new approval.
 5. [ ] `18183618`: continue the JAIC path without impersonation; use a truthful disclosed-agent
    equivalent, negotiate supported scope, or complete official cancellation when the exact
    provider requirement cannot be performed autonomously. Otherwise obtain completion evidence,
