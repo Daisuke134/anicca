@@ -46,11 +46,14 @@ contract, fee, payout, and bank receipts advance it.
    and prove replay-zero.
 8. [ ] `18169985`: the buyer has now explicitly approved the unchanged @diceai0 account, the
    shown DM format with a recipient-specific introduction, a total of 100 DMs, and formal
-   delivery with evidence. Count the first verified @5555daisuke5555 DM once; send 99 additional
-   unique, freshly qualified, personalized DMs with the clickable LOXAD LINE URL. After each
-   effect retain official X Chat readback plus a privacy-minimized screenshot. Fresh-review one
-   ZIP containing the 100-row ledger, 100 bound screenshots and hash manifest; then formally
-   deliver it, obtain buyer completion, and replay every effect class at zero.
+   delivery with evidence. The buyer then replaced the common body with an explicitly estimated
+   monthly compensation-uplift version. Have the installed owner acknowledge that change once
+   without asking for approval again. Count the first verified @5555daisuke5555 DM once; send 99
+   additional unique DMs whose opening is personalized from fresh recipient evidence and whose
+   common body exactly preserves the buyer's non-guaranteed estimate plus clickable LOXAD LINE
+   URL. After each effect retain official X Chat readback and a privacy-minimized screenshot.
+   Fresh-review one ZIP containing the 100-row ledger, 100 bound screenshots and hash manifest;
+   formally deliver it, obtain buyer completion, and replay every effect class at zero.
 
 ### Stage 3 — generalize the measured Paid owner into a job-doing agent
 
