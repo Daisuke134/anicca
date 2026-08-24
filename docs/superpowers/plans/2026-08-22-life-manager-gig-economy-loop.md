@@ -2198,6 +2198,19 @@ provider/payment/payout evidence.
 - [ ] Close USD 10,000 and JPY 10,000,000 gates only from complete source evidence.
 - [ ] Record clean-device replication evidence; run tests and commit/push.
 
+### Task 58: Project Upwork decisions and funnel receipts to Telegram
+
+**Ponytail constraint:** Reuse the existing Coconala `work-events`, `telegram_report.py` and durable
+Telegram outbox. Add no scheduler, notifier, database or provider-specific semantic rules.
+
+- [ ] Project each new Upwork apply/skip/reply/offer/contract/delivery/money transition once with a
+  provider-scoped event key and model-authored reason.
+- [ ] Send it immediately through the existing outbox and prove a replay sends zero duplicates.
+- [ ] Emit one compact periodic funnel/KPI report and a stalled-stage alert; unchanged polls stay
+  silent.
+- [ ] Bind each one-variable Luna experiment to its strategy version and later keep/revert evidence.
+- [ ] Verify one real Upwork decision notification, Telegram message ID and duplicate send 0.
+
 ## Final verification
 
 - [ ] `git diff --check` exits 0.

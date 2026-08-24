@@ -808,6 +808,37 @@ Required Upwork receipts are job ID, proposal ID, Connects before/after, message
 contract ID, milestone/submission ID, transaction/fee ID and payout availability. Browser and API
 effects share the same effect identity, so transport fallback cannot duplicate an action.
 
+### 6.4 Realtime owner visibility and funnel learning
+
+Upwork reuses the existing Coconala `work-events → Telegram outbox → receipt` reporting path. It does
+not add another notifier, scheduler, database or reporting agent. Every new model decision and every
+official lifecycle transition is projected once with a provider-scoped event key; Telegram delivery
+is replay-safe and is not itself evidence that the marketplace effect succeeded.
+
+Event messages are immediate and include provider, decision, job title/ID, model-authored reason,
+official effect/readback when present, Connects before/after and the next autonomous action. This
+includes `apply`, `skip`, `reply`, `offer`, `contract`, `delivery`, `payment`, `refund`, `chargeback`,
+`payout_received`, `incident` and `recovery`. Skip reasons come from the schema-bound model decision,
+not regexes or provider-specific keyword rules. Re-observing the same decision or receipt sends zero
+additional messages.
+
+The owner also receives a compact funnel heartbeat instead of one message for every unchanged poll:
+
+```text
+discovered → qualified → applied → replied → offered → contracted → delivered → payout received
+```
+
+It reports window and lifetime counts, conversion at every boundary, median response/close/delivery
+time, quoted and contracted value, Connects spent/refunded, cost per reply/contract, gross, provider
+fees, refunds/chargebacks and verified net received. Zero and unknown remain explicit. A stalled-stage
+alert names the current bottleneck and the next autonomous experiment.
+
+Self-improvement consumes these same receipts. Luna diagnoses the narrowest measured funnel stage,
+changes one of qualification, proof, proposal, price/package or delivery strategy, binds the change
+to a strategy version and later emits `keep`, `revert`, `pause` or `insufficient_evidence`. It never
+optimizes raw application volume at the expense of expected verified net, truthful capability or
+delivery quality.
+
 ## 7. Self-improvement and promotion
 
 An evaluation window returns exactly one of:
