@@ -29,7 +29,7 @@ class AffiliateProposalTests(unittest.TestCase):
                 "state": "QUEUED", "job_id": "1" * 64,
                 "effect_identity": "2" * 64,
                 "placement_id": "elevenlabs-discovered-caption-generator-en-1",
-                "owned_article_url": "https://aniccaai.com/blog/caption-generator",
+                "owned_article_url": "https://aniccaai.com/blog/elevenlabs-caption-generator-for-creators",
                 "content_sha256": "3" * 64,
                 "experiment_lineage": {"kind": "BASE", "decision_id": None,
                                        "control_placement_id": None},
@@ -59,12 +59,24 @@ class AffiliateProposalTests(unittest.TestCase):
                 MODULE.distribution_effect_state(claims, payloads, results)["state"],
                 "READY_TO_POST",
             )
+            MODULE.record_distribution_result(
+                claims, payloads, results, "NO_EFFECT", None, "",
+            )
+            revised = MODULE.revise_payload_for_raw_limit(claims, payloads)
+            self.assertTrue(revised["changed"])
+            self.assertLessEqual(len(revised["text"]), 280)
+            self.assertNotEqual(revised["text_sha256"], first["text_sha256"])
+            retry_two = MODULE.requeue_confirmed_no_effect(
+                results, job["job_id"], revised["text_sha256"],
+            )
+            self.assertEqual(retry_two["retry_number"], 2)
             posted = MODULE.record_distribution_result(
                 claims, payloads, results, "POSTED",
                 "https://x.com/selawmqt/status/123", "postiz-123",
             )
             self.assertEqual(posted["state"], "POSTED")
-            self.assertEqual(len(results.read_text().splitlines()), 3)
+            self.assertEqual(posted["text_sha256"], revised["text_sha256"])
+            self.assertEqual(len(results.read_text().splitlines()), 5)
 
             other = root / "unverified.jsonl"
             MODULE.record_distribution_result(

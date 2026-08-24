@@ -428,9 +428,27 @@ if [ "$AFFILIATE_JOB_STATE" = "EFFECT_STARTED" ]; then
   if [ "$AFFILIATE_EFFECT_STATE" = "NO_EFFECT" ]; then
     AFFILIATE_RETRY_JOB="$("$PY" -c 'import json,sys; print(json.load(sys.stdin)["job_id"])' \
       <<<"$AFFILIATE_JOB_EFFECT")"
-    if ! AFFILIATE_RETRY="$("$PY" "$SKILL/scripts/affiliate_proposal.py" \
-      --job-results "$AFFILIATE_JOB_RESULTS" --job-id "$AFFILIATE_RETRY_JOB" \
-      --requeue-no-effect 2>>"$EV/affiliate-job.err")"; then
+    AFFILIATE_RETRY_COUNT="$("$PY" -c 'import json,sys; print(json.load(sys.stdin).get("retry_count",0))' \
+      <<<"$AFFILIATE_JOB_EFFECT")"
+    if [ "$AFFILIATE_RETRY_COUNT" -ge 1 ]; then
+      if ! AFFILIATE_REVISED_PAYLOAD="$("$PY" "$SKILL/scripts/affiliate_proposal.py" \
+        --job-claims "$AFFILIATE_JOB_CLAIMS" --job-payload-dir "$AFFILIATE_JOB_PAYLOADS" \
+        --revise-raw-limit 2>>"$EV/affiliate-job.err")"; then
+        report "🛑 Postiz raw-length payload revision failed"
+        finish 1 "affiliate distribution payload revision failed"
+      fi
+      AFFILIATE_REVISED_TEXT_SHA="$("$PY" -c 'import json,sys; print(json.load(sys.stdin)["text_sha256"])' \
+        <<<"$AFFILIATE_REVISED_PAYLOAD")"
+      AFFILIATE_RETRY="$("$PY" "$SKILL/scripts/affiliate_proposal.py" \
+        --job-results "$AFFILIATE_JOB_RESULTS" --job-id "$AFFILIATE_RETRY_JOB" \
+        --text-sha256 "$AFFILIATE_REVISED_TEXT_SHA" --requeue-no-effect \
+        2>>"$EV/affiliate-job.err")" || AFFILIATE_RETRY=""
+    else
+      AFFILIATE_RETRY="$("$PY" "$SKILL/scripts/affiliate_proposal.py" \
+        --job-results "$AFFILIATE_JOB_RESULTS" --job-id "$AFFILIATE_RETRY_JOB" \
+        --requeue-no-effect 2>>"$EV/affiliate-job.err")" || AFFILIATE_RETRY=""
+    fi
+    if [ -z "$AFFILIATE_RETRY" ]; then
       report "🛑 Confirmed no-effect Affiliate job could not be safely requeued"
       finish 1 "affiliate distribution requeue failed"
     fi

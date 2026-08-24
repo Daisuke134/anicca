@@ -289,7 +289,10 @@ def distribution_payload(claims_path: Path, payloads_dir: Path) -> dict:
     if not claims:
         raise ValueError("distribution job claim unavailable")
     job = claims[0]["job"]
-    payload = read_json(payloads_dir / f"{job['job_id']}.json")
+    revised_path = payloads_dir / f"{job['job_id']}-r1.json"
+    payload = read_json(
+        revised_path if revised_path.is_file() else payloads_dir / f"{job['job_id']}.json"
+    )
     text = payload.get("text")
     urls = URL.findall(text) if isinstance(text, str) else []
     comparable = {
@@ -307,8 +310,16 @@ def distribution_payload(claims_path: Path, payloads_dir: Path) -> dict:
         "weighted_length": len(URL.sub("x" * X_TRANSFORMED_URL_LENGTH, text or "")),
         "private_tracking_url_state": "NOT_INCLUDED",
     }
+    revision = payload.get("revision", 0)
+    if revision == 1:
+        comparable.update({
+            "revision": 1,
+            "prior_text_sha256": payload.get("prior_text_sha256"),
+            "revision_reason": "POSTIZ_RAW_LENGTH",
+        })
     if (
-        {key: value for key, value in payload.items() if key != "created_at"} != comparable
+        revision not in {0, 1}
+        or {key: value for key, value in payload.items() if key != "created_at"} != comparable
         or not isinstance(payload.get("created_at"), str)
         or urls != [job["owned_article_url"]]
         or "try.elevenlabs.io" in (text or "").casefold()
@@ -316,6 +327,40 @@ def distribution_payload(claims_path: Path, payloads_dir: Path) -> dict:
     ):
         raise ValueError("distribution payload invalid")
     return payload
+
+
+def revise_payload_for_raw_limit(claims_path: Path, payloads_dir: Path) -> dict:
+    current = distribution_payload(claims_path, payloads_dir)
+    if current.get("revision") == 1:
+        return {**current, "changed": False}
+    if len(current["text"]) <= 280:
+        raise ValueError("distribution payload does not need raw-length revision")
+    text = (
+        "Check whether this AI tool fits your workflow, limits, and budget before subscribing.\n\n"
+        "Affiliate disclosure: I may earn a commission through this link.\n"
+        f"{current['owned_article_url']}"
+    )
+    if len(text) > 280 or URL.findall(text) != [current["owned_article_url"]]:
+        raise ValueError("revised distribution payload remains invalid")
+    receipt = {
+        **{key: value for key, value in current.items()
+           if key not in {"text", "text_sha256", "weighted_length", "created_at"}},
+        "text": text,
+        "text_sha256": hashlib.sha256(text.encode()).hexdigest(),
+        "weighted_length": len(URL.sub("x" * X_TRANSFORMED_URL_LENGTH, text)),
+        "revision": 1,
+        "prior_text_sha256": current["text_sha256"],
+        "revision_reason": "POSTIZ_RAW_LENGTH",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    path = payloads_dir / f"{current['job_id']}-r1.json"
+    temporary = path.with_name(f".{path.name}.{os.getpid()}")
+    with temporary.open("x", encoding="utf-8") as stream:
+        json.dump(receipt, stream, sort_keys=True, separators=(",", ":"))
+        stream.write("\n"); stream.flush(); os.fsync(stream.fileno())
+    os.replace(temporary, path)
+    distribution_payload(claims_path, payloads_dir)
+    return {**receipt, "changed": True}
 
 
 def valid_distribution_result(row: dict) -> bool:
@@ -333,8 +378,10 @@ def valid_distribution_result(row: dict) -> bool:
                 for key in hashes),
             isinstance(row.get("placement_id"), str)
             and PLACEMENT_ID.fullmatch(row["placement_id"]),
-            row.get("reason") == "CONFIRMED_NO_EFFECT",
-            row.get("retry_number") == 1,
+            (row.get("retry_number"), row.get("reason")) in {
+                (1, "CONFIRMED_NO_EFFECT"),
+                (2, "PAYLOAD_REVISED_AFTER_CONFIRMED_NO_EFFECT"),
+            },
             row.get("owner_label") == "ai.anicca.x-repost-pass",
             isinstance(row.get("observed_at"), str),
         ))
@@ -389,8 +436,11 @@ def distribution_effect_state(claims_path: Path, payloads_dir: Path, results_pat
     if results:
         if results[-1]["state"] == "RETRY_READY":
             return {"state": "READY_TO_POST", "job_id": payload["job_id"],
-                    "payload": payload, "retry_number": 1, "changed": False}
-        return {**results[-1], "changed": False}
+                    "payload": payload, "retry_number": results[-1]["retry_number"],
+                    "changed": False}
+        return {**results[-1],
+                "retry_count": sum(row.get("state") == "RETRY_READY" for row in results),
+                "changed": False}
     return {"state": "READY_TO_POST", "job_id": payload["job_id"],
             "payload": payload, "changed": False}
 
@@ -441,7 +491,9 @@ def record_distribution_result(
     return {**row, "changed": True}
 
 
-def requeue_confirmed_no_effect(results_path: Path, job_id: str) -> dict:
+def requeue_confirmed_no_effect(
+    results_path: Path, job_id: str, text_sha256: str | None = None,
+) -> dict:
     if not isinstance(job_id, str) or not PROPOSAL_ID.fullmatch(job_id):
         raise ValueError("invalid distribution job identity")
     with results_path.open("a+", encoding="utf-8") as stream:
@@ -458,10 +510,16 @@ def requeue_confirmed_no_effect(results_path: Path, job_id: str) -> dict:
             raise ValueError("distribution retry job mismatch")
         if latest["state"] == "RETRY_READY":
             return {**latest, "changed": False}
-        if latest["state"] != "NO_EFFECT" or any(
-            row.get("state") == "RETRY_READY" for row in values
-        ):
+        if latest["state"] != "NO_EFFECT":
             raise ValueError("distribution result is not safely retryable")
+        retry_number = sum(row.get("state") == "RETRY_READY" for row in values) + 1
+        if retry_number > 2:
+            raise ValueError("distribution retry limit reached")
+        next_text_sha256 = text_sha256 or latest["text_sha256"]
+        if not isinstance(next_text_sha256, str) or not PROPOSAL_ID.fullmatch(next_text_sha256):
+            raise ValueError("invalid distribution retry text identity")
+        if retry_number > 1 and next_text_sha256 == latest["text_sha256"]:
+            raise ValueError("second distribution retry requires revised payload")
         retry = {
             "schema_version": 1,
             "receipt_type": "X_REPOST_DISTRIBUTION_JOB_RETRY",
@@ -470,12 +528,15 @@ def requeue_confirmed_no_effect(results_path: Path, job_id: str) -> dict:
             "effect_identity": latest["effect_identity"],
             "placement_id": latest["placement_id"],
             "content_sha256": latest["content_sha256"],
-            "text_sha256": latest["text_sha256"],
+            "text_sha256": next_text_sha256,
             "prior_result_sha256": hashlib.sha256(json.dumps(
                 latest, sort_keys=True, separators=(",", ":")
             ).encode()).hexdigest(),
-            "reason": "CONFIRMED_NO_EFFECT",
-            "retry_number": 1,
+            "reason": (
+                "CONFIRMED_NO_EFFECT" if retry_number == 1
+                else "PAYLOAD_REVISED_AFTER_CONFIRMED_NO_EFFECT"
+            ),
+            "retry_number": retry_number,
             "owner_label": "ai.anicca.x-repost-pass",
             "observed_at": datetime.now(timezone.utc).isoformat(),
         }
@@ -741,6 +802,8 @@ def main() -> int:
     parser.add_argument("--record-job-result", choices=("POSTED", "UNVERIFIED", "NO_EFFECT"))
     parser.add_argument("--requeue-no-effect", action="store_true")
     parser.add_argument("--job-id")
+    parser.add_argument("--text-sha256")
+    parser.add_argument("--revise-raw-limit", action="store_true")
     parser.add_argument("--posted", type=Path)
     parser.add_argument("--record", choices=("POSTED", "UNVERIFIED", "NO_EFFECT"))
     parser.add_argument("--claim", action="store_true")
@@ -777,7 +840,14 @@ def main() -> int:
         if args.job_results is None or args.job_id is None:
             parser.error("--requeue-no-effect requires --job-results and --job-id")
         print(json.dumps(requeue_confirmed_no_effect(
-            args.job_results, args.job_id
+            args.job_results, args.job_id, args.text_sha256
+        ), sort_keys=True))
+        return 0
+    if args.revise_raw_limit:
+        if args.job_claims is None or args.job_payload_dir is None:
+            parser.error("--revise-raw-limit requires claim and payload paths")
+        print(json.dumps(revise_payload_for_raw_limit(
+            args.job_claims, args.job_payload_dir
         ), sort_keys=True))
         return 0
     if args.proposal is None or args.consumed is None:
