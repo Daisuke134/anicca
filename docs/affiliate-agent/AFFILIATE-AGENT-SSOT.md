@@ -8243,6 +8243,13 @@ unknown-effect fixes while restoring only that publish effect.
 - [ ] **XB02 Generic browser canary.** Publish one x-repost Quote and one
   x-tweeter Original through the same shared browser publisher; exact-read both
   permalinks and replay with duplicate zero.
+  First natural x-tweeter browser run starts at 18:15 and reaches XT01 with a
+  source-grounded Vercel/open-model comparison, but publishes nothing because
+  XT01 incorrectly capped body-plus-source at 250 while the proven body gate
+  reserves 250 before the fixed 23-character X URL cost. Commit `42408237d`
+  corrects XT01 to X's real 280 weighted limit; all source, critic, novelty, and
+  spam gates remain unchanged. Production release `42408237d` awaits the 18:45
+  natural canary.
 - [ ] **XB03 Affiliate browser result contract.** Remove the assumption that a
   successful Affiliate effect must have a Postiz submission ID; bind browser
   effects to job/effect/text/content hashes plus exact X permalink.
