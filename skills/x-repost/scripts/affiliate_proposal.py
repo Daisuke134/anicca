@@ -532,7 +532,10 @@ def requeue_confirmed_no_effect(
             return {**latest, "changed": False}
         if latest["state"] != "NO_EFFECT":
             raise ValueError("distribution result is not safely retryable")
-        retry_number = sum(row.get("state") == "RETRY_READY" for row in values) + 1
+        retry_number = sum(
+            row.get("state") == "RETRY_READY" and row.get("job_id") == job_id
+            for row in values
+        ) + 1
         if retry_number > 2:
             raise ValueError("distribution retry limit reached")
         next_text_sha256 = text_sha256 or latest["text_sha256"]

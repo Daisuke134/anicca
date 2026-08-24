@@ -65,6 +65,37 @@ class AffiliateProposalTests(unittest.TestCase):
             self.assertTrue(second["changed"])
             self.assertEqual(len(MODULE.distribution_claims(claims)), 2)
 
+    def test_retry_limit_is_scoped_to_current_job(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            results = Path(temporary) / "results.jsonl"
+            base = {
+                "schema_version": 1,
+                "effect_identity": "a" * 64,
+                "placement_id": "caption-en-1",
+                "content_sha256": "b" * 64,
+                "text_sha256": "c" * 64,
+                "owner_label": "ai.anicca.x-repost-pass",
+                "observed_at": "2026-08-24T00:00:00+00:00",
+            }
+            old_retry = {
+                **base, "receipt_type": "X_REPOST_DISTRIBUTION_JOB_RETRY",
+                "state": "RETRY_READY", "job_id": "1" * 64,
+                "prior_result_sha256": "d" * 64,
+                "reason": "CONFIRMED_NO_EFFECT", "retry_number": 1,
+            }
+            current = {
+                **base, "receipt_type": "X_REPOST_DISTRIBUTION_JOB_RESULT",
+                "state": "NO_EFFECT", "job_id": "2" * 64,
+                "post_url": None, "provider": "postiz",
+                "provider_submission_id": "",
+            }
+            results.write_text(json.dumps(old_retry) + "\n" + json.dumps(current) + "\n")
+
+            retry = MODULE.requeue_confirmed_no_effect(results, current["job_id"])
+
+            self.assertEqual(retry["retry_number"], 1)
+            self.assertEqual(retry["job_id"], current["job_id"])
+
     def test_confirmed_no_effect_requeues_once_but_unverified_never_does(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
