@@ -169,17 +169,69 @@ portfolio_utility = expected_verified_net
 Hard constraints always dominate the score: authorization, identity, customer confidentiality,
 budget caps, delivery capacity, quality, effect idempotency and receipt integrity.
 
-For the open-source Upwork bootstrap, `spend_cap_usd` is exactly `0`. The loop MUST NOT purchase
-Connects, subscribe to Freelancer Plus, boost a proposal/profile or open a billing flow. It may submit
-only when the official current free balance covers the exact sealed `connects_cost`, or when an
-official invitation requires zero Connects. Insufficient balance keeps the candidate sealed and
-continues discovery/reconciliation; it is not an error and never triggers a purchase fallback.
+The public open-source default remains `spend_cap_usd=0`. A local owner may separately sign one
+bounded capital policy: `bootstrap_connects_seed_usd=15`, `seed_count=1`, `auto_top_up=false`. That
+receipt authorizes the resident agent to buy the currently read-back 100-Connect bundle once and use
+it only for ordinary proposals. Without that receipt the loop never opens billing. The seed does not
+authorize Freelancer Plus, proposal/profile boosts, Availability Badge or the 35-Connect identity
+badge. Insufficient balance keeps candidates sealed; it never silently broadens the capital policy.
 
-Zero-spend acquisition MUST run all provider-supported paths in this order: claim only account-visible
+After the first official payout `received`, acquisition becomes self-funded. The loop may accumulate
+up to 10% of trailing verified net received as an acquisition reserve, capped at USD 15 per calendar
+month until three independent paid reviews. It buys no bundle until that reserve covers the whole
+official price, never charges the owner's external wallet, and never auto-renews. Every Connect cost
+is charged once to the job/strategy that consumed it. After three reviews, the allocator may change
+the cap only through an evidence-backed experiment using received-cash ROI, not application volume.
+
+Zero-spend acquisition MUST continue alongside any seed: claim only account-visible
 onboarding/education rewards, respond to qualified invitations at zero Connects, publish and monitor
 one bounded Project Catalog service, accept qualified direct offers, then spend only granted or returned
 Connects on a small public job. A normal public `Apply now` path is never classified as zero-cost unless
 its official proposal surface explicitly reads back `connects_cost=0`.
+
+### 6.1B Evidence-backed first-job and scale playbook
+
+The agent does not spray proposals or rely on a hidden zero-Connect category. For the first 100
+Connects it uses the current Upwork filters and full job detail to prefer recent jobs with fewer than
+15 proposals, verified payment, clear bounded acceptance criteria, credible client hiring/spend and
+one-to-three-day delivery from installed Skills. It does not boost. A concise proposal leads with the
+client's specific problem in the first two sentences, names the exact deliverable, binds truthful
+portfolio proof and stays within the displayed budget. Upwork's current guidance says only the first
+couple of proposal sentences appear initially and reports that profiles with portfolio items are hired
+more often; both are treated as hypotheses measured on this account, not guaranteed conversion.
+
+```mermaid
+flowchart LR
+  S[One approved $15 seed] --> P[About 7-11 focused proposals]
+  P --> V{Funnel evidence}
+  V -->|No views| PF[Fix title, first lines, job fit]
+  V -->|Views, no interviews| PR[Fix proof and proposal]
+  V -->|Interviews, no hire| T[Fix scope, price, trust]
+  V -->|Contract| D[Fast bounded delivery and honest review]
+  D --> R[Repeat client and adjacent milestone]
+  R --> H[Raise value: $100-$500 packages]
+  H --> M[Retainers and larger bounded milestones]
+  M --> C[USD 10k verified net received month]
+```
+
+Ten submitted proposals with zero views stop new proposal spend until the profile/title/first-lines
+canary changes. Five viewed proposals with zero interviews stop spend until proof/proposal changes.
+Interview without hire changes scope, trust or price. These are bounded diagnostic windows, not
+hardcoded semantic rejection rules; the model judges each job and changes one strategy variable.
+
+The first contract optimizes for a real outcome and honest review, not lowest possible headline price.
+After one review, reuse the same deliverable and seek repeat/adjacent work. After three independent
+reviews, move from micro-projects toward $100-$500 packages; after repeatability, prefer recurring
+maintenance and bounded $500-$2,000 milestones. Ticket size remains an output of observed close rate,
+delivery time, revisions, actual fee (currently 0%-15% per contract), refunds and received net. USD
+10,000 is achieved by repeatable value and repeat clients, never by counting Pending/Available or by
+assuming a fixed number of jobs.
+
+Rising Talent is useful but not a bootstrap purchase target: current eligibility also requires an
+Upwork invitation or at least $250 earned plus other account conditions, and its ID badge costs 35
+Connects. The agent monitors badge eligibility and claims the 30-Connect award if granted, but does not
+spend the first proposal seed chasing the badge. Tax information and a matching withdrawal method are
+completed before payout; they are payment-readiness ceremonies, not acquisition claims.
 
 During the Upwork proof, `delivery capacity` means active Upwork contracts only. Coconala orders,
 projects and stale Coconala talkroom states MUST NOT make an Upwork opportunity eligible or
@@ -537,10 +589,10 @@ allocator whose rewards come only from external receipts.
 
 ## 5. Market sequence
 
-Markets are completed one at a time. The default queue is deterministic; after Upwork closes its
-three-job gate it keeps scaling Upwork, and only after G11 may the CEO reorder the remaining queue
-from measured opportunity, margin,
-authorization and human-minute evidence.
+Upwork closes the first proposal receipt before another marketplace mutation lane opens. Read-only
+market research and adapter generation may proceed in parallel. After that receipt the CEO may run
+additional zero-spend canaries while Upwork keeps scaling, ordering markets from measured opportunity,
+margin, authorization and human-minute evidence.
 
 | Order | Market | Intended lane | Unique lesson / Skill |
 |---:|---|---|---|
@@ -556,9 +608,9 @@ authorization and human-minute evidence.
 | 9 | Outlier | Project-specific authorized AI work | Rubric-bound production and strict provenance |
 | 10 | Babel Audio | Human voice/data contribution | Physical-capture ceremony, audio QA and submission receipts |
 
-After G11, each later market may finish as `active`, `assisted`, `denied` or `unprofitable`. Before
-G11, Upwork denial or negative margin pauses this design and exposes its evidence; it does not
-automatically unlock the next market or weaken the kernel.
+Each later market may finish as `active`, `assisted`, `denied` or `unprofitable`. Upwork denial or
+negative margin remains visible evidence and never weakens the shared kernel; the CEO may redirect
+capacity only after the active paid/unknown work is safe.
 
 ## 6. Upwork reference adapter
 

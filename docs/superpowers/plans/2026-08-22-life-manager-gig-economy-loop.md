@@ -261,7 +261,7 @@ No later task may jump ahead of the first incomplete row:
 | U11 | Resolve application capacity for that candidate | **DONE:** official proposal surface requires 7 Connects; balance/history, offers, invites and proposals are 0, no reward banner is exposed, and the only buy offer is 100 for $15 plus tax |
 | U12 | Freeze one tailored first-job proposal | **DONE:** immutable payload `c37eed9c…c68e926` contains the $15 terms, cover letter, five factual screening answers, no attachments, and zero unsupported claims |
 | U13 | Make acquisition fully loop-owned | **IN PROGRESS:** production scans page 1 plus two durable-cursor pages, reads exact proposal cost, reuses the existing proposal model/effect/readback path, and polls invitations, Direct Offers, Catalog orders and free Connects every five minutes; next prove cursor advances across wakes |
-| U14 | Close the first acquisition effect | **WAITING OWNER SPEND DECISION OR FREE INBOUND:** production covered current pages through cursor 14 without a zero-Connect public job; official and user evidence does not support zero-Connect public proposals as a reliable acquisition class. Keep free inbound monitoring, but the fastest reproducible public-application path is a one-time Connects bundle followed by model-selected low-competition proposals; any purchase still requires explicit owner approval |
+| U14 | Close the first acquisition effect | **WAITING ONE BOUNDED CAPITAL RECEIPT OR FREE INBOUND:** recommend one $15/100-Connect seed, no subscription/boost/badge/auto-top-up. After approval the agent buys once, applies to recent low-competition bounded jobs, verifies one official proposal ID and replay 0; free inbound remains active |
 | U15 | Replay immediately | Same proposal ID; zero new proposal and zero additional Connects |
 | U16 | Poll and answer the resulting thread | Official story/message IDs and no duplicate reply |
 | U17 | Negotiate and accept profitable terms | Offer ID, exact terms hash and active contract ID |
@@ -663,6 +663,16 @@ U13 atomic order:
     rare exception as the primary strategy. Continue free inbound monitoring, but require an explicit
     owner decision before the reproducible one-time $15/100-Connect public-application canary. Reject
     fake-client, self-interview, multi-account or other manipulation as fraud, not growth tactics.
+40. **2026 FIRST-JOB/SCALE RESEARCH INCORPORATED:** current Upwork guidance emphasizes complete
+    profiles, portfolios, early job alerts, concise personalized first lines, job-specific proof,
+    proposal statistics and repeat client relationships. Current official fee is 0%-15% and fixed per
+    contract; Rising Talent can award 30 Connects but requires additional eligibility and its identity
+    badge costs 35 Connects. User reports converge on applying early, targeting fewer than 15 competing
+    proposals and showing relevant proof, while showing wide variance in proposals-to-first-job and no
+    reliable free-public-application route. Adopt one explicitly approved $15 seed for proposal spend
+    only, then self-fund up to 10% of verified net received capped at $15/month until three reviews.
+    Add funnel stop/repair gates at ten no-view proposals and five viewed/no-interview proposals, then
+    climb from one bounded review to repeat work, $100-$500 packages and $500-$2,000 milestones.
 
 U14 atomic order:
 
