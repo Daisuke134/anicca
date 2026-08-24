@@ -8226,7 +8226,13 @@ Current implementation state:
   then selects Postiz as the continuing production transport. Commit
   `29bc34d7b` and production release `29bc34d7b` restore x-tweeter Postiz
   transport; launchctl readback returns `X_REPOST_PUBLISH_TRANSPORT => postiz`.
-  The next eligible Postiz calendar proof boundary is 18:45.
+  The 18:27 Browser canary exits before publication because the select model
+  returns unparseable output; public effect count remains zero for Browser. The
+  18:45 natural Postiz opportunity starts normally, leases the browser, collects
+  94 candidates, and remains in model generation at the latest readback.
+  Therefore XT05 evidence is currently one manual Postiz permalink and zero
+  natural-calendar Postiz permalinks; three consecutive natural effects remain
+  unproven.
 
 ### Shared browser publisher migration
 
@@ -8269,6 +8275,11 @@ Current authoritative state:
   Production shared X release is `29bc34d7b487551fe7b07e08a3b73b3e9916bf6b`;
   x-repost is Quote-only at `:00/:30`, x-tweeter is Original-only at `:15/:45`,
   and both live plists select Postiz publication plus browser readback.
+- Runtime health is not yet "both fine": x-tweeter has one manual Postiz success
+  but no natural-calendar success after the final reload; x-repost's 18:00 run is
+  terminal `UNVERIFIED` after Postiz acceptance and its 18:30 run exits on
+  Affiliate distribution job claim failure. Both schedules are loaded, but
+  constant successful publication remains the immediate runtime blocker.
 - Active placement is `elevenlabs-discovered-caption-generator-en-1`; its exact
   X permalink is `https://x.com/selawmqt/status/2091754957448040906`.
 - D01–D15 are complete. D16 has one public quote effect with duplicate zero; its
