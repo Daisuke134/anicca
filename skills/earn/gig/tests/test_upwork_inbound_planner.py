@@ -151,7 +151,7 @@ def test_batch_returns_every_profitable_proposal_and_every_candidate_event(tmp_p
     events = []
     proposals = planner.invoke_batch(
         [first_path, second_path], profile=profile, evidence_dir=tmp_path / "evidence",
-        decision_sink=events.append,
+        decision_sink=events.extend,
     )
 
     assert [proposal["job_id"] for proposal in proposals] == [
@@ -178,7 +178,7 @@ def test_batch_skip_emits_one_natural_decision_per_candidate(tmp_path, monkeypat
 
     assert planner.invoke_batch(
         [first_path, second_path], profile=profile, evidence_dir=tmp_path / "evidence",
-        decision_sink=events.append,
+        decision_sink=events.extend,
     ) == []
     assert [(event["state"], event["entity_id"]) for event in events] == [
         ("skipped", first["resource_id"]), ("skipped", second["resource_id"]),

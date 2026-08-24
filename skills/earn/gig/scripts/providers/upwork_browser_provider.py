@@ -81,10 +81,13 @@ _CONNECTS_REQUIRED = re.compile(
 )
 
 
-def publish_application_decision(event: dict[str, Any]) -> None:
+def publish_application_decisions(events: list[dict[str, Any]]) -> None:
     """Use the provider-neutral WorkEvent and Telegram rails; notification never owns the sale."""
-    result = report_envelope.append_work_event(DEFAULT_GIG_DIR / "work-events.jsonl", event)
-    if result["appended"] != 1:
+    appended = sum(
+        report_envelope.append_work_event(DEFAULT_GIG_DIR / "work-events.jsonl", event)["appended"]
+        for event in events
+    )
+    if appended == 0:
         return
     subprocess.run([
         sys.executable, str(DEFAULT_TELEGRAM_REPORT),
@@ -589,7 +592,7 @@ async def discover_affordable_proposal(
             proposals = await asyncio.to_thread(
                 plan_batch, packet_paths, profile=DEFAULT_OWNER_PROFILE,
                 evidence_dir=inbound_evidence / f"batch-{batch_key}",
-                decision_sink=publish_application_decision,
+                decision_sink=publish_application_decisions,
             )
             if not proposals:
                 continue
@@ -1038,7 +1041,7 @@ async def observe(
                 proposal = await asyncio.to_thread(
                     plan_inbound, inbound_dir.expanduser() / f"{packet_sha}.json",
                     evidence_dir=inbound_evidence.expanduser() / packet_sha,
-                    decision_sink=publish_application_decision,
+                    decision_sink=publish_application_decisions,
                     title=str(inbound.get("title") or inbound["resource_id"]),
                 )
                 if proposal is None:
