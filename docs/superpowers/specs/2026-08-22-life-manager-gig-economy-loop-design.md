@@ -938,6 +938,13 @@ to a strategy version and later emits `keep`, `revert`, `pause` or `insufficient
 optimizes raw application volume at the expense of expected verified net, truthful capability or
 delivery quality.
 
+Production evidence: a live Upwork wake compared ten official candidates and emitted two concise
+natural Japanese reasons without deterministic reason translation. The provider-neutral WorkEvent
+reached the canonical Telegram outbox, an event-bound provider receipt reconciled it to `sent` with
+message ID `31872`, and exact replay kept WorkEvent lines `1 → 1`, outbox rows `1 → 1` and the same
+message ID. Fresh application decisions are ordered ahead of reopened historical unknown rows; old
+notification recovery no longer delays a new business event by construction.
+
 ## 7. Self-improvement and promotion
 
 An evaluation window returns exactly one of:
