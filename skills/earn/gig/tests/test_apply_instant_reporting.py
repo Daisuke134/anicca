@@ -36,6 +36,41 @@ def test_parent_outlives_the_telegram_transport(tmp_path, monkeypatch):
     assert reporter[1]["timeout"] > 180
 
 
+def test_provider_neutral_application_decision_renders_and_appends_once(tmp_path):
+    event = {
+        "kind": "application", "event_key": "gig:decision:any-market:job-1",
+        "entity_id": "job-1", "occurred_at": datetime.now(timezone.utc).isoformat(),
+        "state": "skipped", "action": "応募見送り",
+        "result": "Lunaが応募しないと判断しました",
+        "next_action": "次の案件の確認を続けます。",
+        "evidence": ["official_job", "model_decision"],
+        "attributes": {
+            "platform": "anymarket", "title": "Physical filming",
+            "reason_codes": ["現地での撮影が必須で、インストール済みSkillでは完遂できません。"],
+        },
+    }
+
+    assert report_envelope.append_work_event(tmp_path / "work-events.jsonl", event) == {
+        "appended": 1, "duplicate": 0,
+    }
+    assert report_envelope.append_work_event(tmp_path / "work-events.jsonl", event) == {
+        "appended": 0, "duplicate": 1,
+    }
+    envelope = report_envelope.build_work_event_envelope(
+        work_event=event, observed_at=datetime.now(timezone.utc),
+    )
+    message = report_envelope.render_human_ja(envelope)
+    assert "[Anymarket][応募判断]" in message
+    assert "🚫 この案件には応募しませんでした" in message
+    assert event["attributes"]["reason_codes"][0] in message
+    assert envelope["data"]["work"]["applied"] == 0
+    outbox = TelegramOutbox(tmp_path / "telegram-outbox.sqlite3")
+    transport = _Transport("decision-test-chat", tmp_path / "receipts")
+    result = apply_telegram_report.publish(tmp_path, outbox, transport)
+    assert result == {"enqueued": 1, "sent": 1, "delivery_unknown": 0}
+    assert transport.calls[0][1] == message
+
+
 def _application_event(event_key: str, occurred_at: int) -> dict:
     return {
         "kind": "application", "event_key": event_key, "entity_id": event_key,
