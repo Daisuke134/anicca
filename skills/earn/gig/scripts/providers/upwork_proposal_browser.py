@@ -215,25 +215,36 @@ async def submit_proposal_after_fence(
             }, cid + 4)
             close_point = explainer.get("result", {}).get("result", {}).get("value")
             if isinstance(close_point, dict):
-                await _trusted_click(ws, close_point, cid + 5)
+                await _call(ws, "Input.dispatchKeyEvent", {
+                    "type": "rawKeyDown", "key": "Escape", "code": "Escape",
+                }, cid + 5)
+                await _call(ws, "Input.dispatchKeyEvent", {
+                    "type": "keyUp", "key": "Escape", "code": "Escape",
+                }, cid + 6)
                 await asyncio.sleep(1)
+                closed = await _call(ws, "Runtime.evaluate", {
+                    "expression": "![...document.querySelectorAll('[role=dialog]')].some(x=>x.offsetParent)",
+                    "returnByValue": True,
+                }, cid + 7)
+                if closed.get("result", {}).get("result", {}).get("value") is not True:
+                    raise ValueError("upwork_connects_explainer_close_failed")
                 control = await _call(ws, "Runtime.evaluate", {
                     "expression": submit_click_expression(job_id), "returnByValue": True,
-                }, cid + 7)
+                }, cid + 8)
                 point = control.get("result", {}).get("result", {}).get("value")
                 if not isinstance(point, dict):
                     raise ValueError("upwork_submit_control_missing")
-                await _trusted_click(ws, point, cid + 8)
+                await _trusted_click(ws, point, cid + 9)
             await asyncio.sleep(5)
             readback = await _call(ws, "Runtime.evaluate", {
                 "expression": submit_readback_expression(job_id), "returnByValue": True,
-            }, cid + 10)
+            }, cid + 11)
             value = readback.get("result", {}).get("result", {}).get("value")
             if isinstance(value, dict) and value.get("state") == "unknown":
                 diagnostic = await _call(ws, "Runtime.evaluate", {
                     "expression": """(()=>{const n=x=>(x||'').replace(/\\s+/g,' ').trim();return{url:location.href,buttons:[...document.querySelectorAll('button')].filter(x=>x.offsetParent).map(x=>n(x.innerText)).filter(Boolean).slice(-12),dialogs:[...document.querySelectorAll('[role=dialog]')].filter(x=>x.offsetParent).map(x=>n(x.innerText).slice(0,300)),alerts:[...document.querySelectorAll('[role=alert],.air3-alert')].filter(x=>x.offsetParent).map(x=>n(x.innerText).slice(0,300))}})()""",
                     "returnByValue": True,
-                }, cid + 11)
+                }, cid + 12)
                 detail = diagnostic.get("result", {}).get("result", {}).get("value")
                 raise ValueError("upwork_proposal_submit_unconfirmed:" + json.dumps(
                     detail, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
