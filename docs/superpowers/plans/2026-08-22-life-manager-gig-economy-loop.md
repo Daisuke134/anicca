@@ -959,6 +959,13 @@ U13 atomic order:
     retaining the sealed estimate. Fresh click-free production preflight returns `ready=true`, exact
     job, available 133, required 15 and evidence `5c9e52cc…544cd`; regression remains `156 passed`.
     Next release must produce proposal ID, exact `133 -> 118` and replay 0.
+80. **BROWSER MODEL CAPACITY FALLS BACK WITHOUT DUPLICATE EFFECT:** the first hourly submit crossed the
+    durable fence but forced Terra returned `Selected model is at capacity` before acting. Fresh
+    official evidence proves submitted proposals still 2 and balance 133, so the effect is absent.
+    Remove the forced candidate model and use the existing `browser-lane-agent` route: Terra first,
+    then configured Sonnet/Gemini fallback. UI judgment and effect/readback contracts stay identical.
+    Regression remains `156 passed`; bind the absence evidence to this exact effect, reset it once and
+    require proposal ID plus `133 -> 118` before any later retry.
 
 U14 atomic order:
 

@@ -115,7 +115,7 @@ only safe page state or local evidence paths; never include proposal text or cre
     evidence.mkdir(parents=True, exist_ok=False, mode=0o700)
     completed = subprocess.run([
         sys.executable, str(DEFAULT_RUNNER), "--task-class", "browser-lane-agent",
-        "--candidate-model", "gpt-5.6-terra", "--prompt-stdin",
+        "--prompt-stdin",
         "--schema", str(DEFAULT_STEP_SCHEMA), "--evidence-dir", str(evidence),
         "--task-label", "upwork-proposal-submit", "--loop", "gig-upwork",
         "--workdir", str(Path.home()), "--timeout-seconds", "900",
