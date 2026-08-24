@@ -86,9 +86,11 @@ Storefront work.
        adversarial verification also passes argv forwarding, pre-dispatch effect zero,
        no-argument compatibility, `bash -n` and `git diff --check` with no findings.
     2. [ ] Preflight and prepare the machine:
-       - [ ] 2a. Side-effect-free detection for Darwin arm64, Python 3.13+, Codex CLI
+       - [x] 2a. Side-effect-free detection for Darwin arm64, Python 3.13+, Codex CLI
          and auth status, CloakBrowser binary, and 512 MiB disk headroom. Active plan:
-         `docs/superpowers/plans/2026-08-24-coconala-preflight-detection.md`.
+         `docs/superpowers/plans/2026-08-24-coconala-preflight-detection.md`. Focused plus
+         compatibility tests pass 5/5, shell syntax passes, missing browser fails closed
+         with HOME write zero, and the current Mac returns all seven checks true.
        - [ ] 2b. Install only missing public dependencies, then rerun the same detector.
        - [ ] 2c. When Codex is unauthenticated, run `codex login` and require
          `codex login status` readback. Official OpenAI documentation defines this as
