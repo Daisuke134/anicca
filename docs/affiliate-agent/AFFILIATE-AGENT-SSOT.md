@@ -7678,9 +7678,17 @@ design items.
 Execute exactly one unchecked item at a time. Each item is complete only with
 the named production evidence:
 
-- [ ] **D01 Queue schema.** Define one versioned Affiliate distribution-job
+- [x] **D01 Queue schema.** Define one versioned Affiliate distribution-job
   receipt containing job ID, exact placement ID, public owned URL, content hash,
   experiment lineage, target X account, cadence class, and effect identity.
+  Done in `dae491422`: Draft 2020-12 schema
+  `affiliate-x-distribution-job-v1.json` reuses the existing proposal/effect
+  journal instead of adding a queue dependency. It binds all named fields plus
+  policy/source hashes, accepts base or experiment lineage, and rejects missing
+  effect identity, non-Anicca owned URLs, invalid accounts/hashes, extra secret
+  tracking fields, and private tracking URL inclusion. Schema and repository
+  contract tests are GREEN. No producer, consumer, or external effect is part of
+  D01; D02 is now the first unchecked item.
 - [ ] **D02 Queue producer.** Make Affiliate enqueue exactly one job only after
   owned-page public readback and policy PASS. Evidence: one immutable queued
   receipt and duplicate enqueue count zero.
