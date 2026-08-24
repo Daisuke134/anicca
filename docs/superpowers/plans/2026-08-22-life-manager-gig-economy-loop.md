@@ -700,6 +700,14 @@ U13 atomic order:
     control and dispatch a CDP Enter key sequence, wait five seconds, then require the official
     proposal ID. Reset only this exact intent after binding the official absence evidence; no blind
     retry is allowed.
+45. **TRUSTED ENTER RECONCILED ABSENT / ROOT CAUSE FIXED:** fresh official readback proves proposals
+    `0`, active `0`, and Connects `150`, so neither prior attempt created an external effect. Live DOM
+    inspection proves the current `Submit proposal` control is `type=button` and has no form; Enter
+    therefore cannot submit it. The executor now scrolls that exact verified control into view and
+    dispatches one trusted CDP mouse press/release at its measured center after the durable fence.
+    Upwork regression is `154 passed`; next release, reset only this absence-proven effect to prepared,
+    trigger the existing launchd loop once, then reconcile proposal ID and Connects delta before any
+    further acquisition.
 
 U14 atomic order:
 
