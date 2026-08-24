@@ -10,12 +10,8 @@ class GreenhouseDiscoveryTests(unittest.TestCase):
             Path(__file__).resolve().parents[1] / "scripts/run-daily.sh"
         ).read_text(encoding="utf-8")
 
-        self.assertIn("-m job_search_loop.greenhouse_discovery", script)
-        self.assertLess(
-            script.index("-m job_search_loop.greenhouse_discovery"),
-            script.index("-m job_search_loop.browser_agent.orchestrator"),
-        )
-        self.assertIn("--active-provider all", script)
+        self.assertNotIn("-m job_search_loop.greenhouse_discovery", script)
+        self.assertIn("--active-provider workday", script)
 
     def test_live_board_jobs_normalizes_only_official_https_rows(self):
         rows = live_board_jobs(

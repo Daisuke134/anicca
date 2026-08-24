@@ -103,78 +103,6 @@ set -e
 if [[ "$WORKDAY_DISCOVERY_RC" -ne 0 ]]; then
   printf '%s\n' "Workday discovery failed; existing eligible queue continues" >&2
 fi
-ASHBY_DISCOVERY_RESULT="$EVIDENCE/ashby-discovery.json"
-ASHBY_COMBINED_RESULT="$EVIDENCE/ashby-fast-path-combined.json"
-set +e
-"$JOB_SEARCH_PYTHON" -m job_search_loop.ashby_discovery \
-  --cache "$JOB_SEARCH_STATE_ROOT/official-ats-board-cache.v1.json" \
-  --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
-  --profile "$JOB_SEARCH_PROFILE" \
-  --materials-root "${XDG_DATA_HOME:-$HOME/.local/share}/anicca/job-search/materials" \
-  --prompt "$JOB_SEARCH_APP_ROOT/prompts/daily-pass.md" \
-  --output "$ASHBY_DISCOVERY_RESULT" \
-  --max-jobs 1
-ASHBY_DISCOVERY_RC=$?
-set -e
-if [[ "$ASHBY_DISCOVERY_RC" -ne 0 ]]; then
-  printf '%s\n' "Ashby discovery failed; existing eligible queue continues" >&2
-fi
-GREENHOUSE_DISCOVERY_RESULT="$EVIDENCE/greenhouse-discovery.json"
-set +e
-"$JOB_SEARCH_PYTHON" -m job_search_loop.greenhouse_discovery \
-  --cache "$JOB_SEARCH_STATE_ROOT/official-ats-board-cache.v1.json" \
-  --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
-  --profile "$JOB_SEARCH_PROFILE" \
-  --materials-root "${XDG_DATA_HOME:-$HOME/.local/share}/anicca/job-search/materials" \
-  --prompt "$JOB_SEARCH_APP_ROOT/prompts/daily-pass.md" \
-  --output "$GREENHOUSE_DISCOVERY_RESULT" \
-  --max-jobs 1
-GREENHOUSE_DISCOVERY_RC=$?
-set -e
-if [[ "$GREENHOUSE_DISCOVERY_RC" -ne 0 ]]; then
-  printf '%s\n' "Greenhouse discovery failed; existing eligible queue continues" >&2
-fi
-LEVER_DISCOVERY_RESULT="$EVIDENCE/lever-discovery.json"
-set +e
-"$JOB_SEARCH_PYTHON" -m job_search_loop.lever_discovery \
-  --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
-  --profile "$JOB_SEARCH_PROFILE" \
-  --materials-root "${XDG_DATA_HOME:-$HOME/.local/share}/anicca/job-search/materials" \
-  --prompt "$JOB_SEARCH_APP_ROOT/prompts/daily-pass.md" \
-  --output "$LEVER_DISCOVERY_RESULT" \
-  --max-jobs 1
-LEVER_DISCOVERY_RC=$?
-set -e
-if [[ "$LEVER_DISCOVERY_RC" -ne 0 ]]; then
-  printf '%s\n' "Lever discovery failed; existing eligible queue continues" >&2
-fi
-"$JOB_SEARCH_PYTHON" - "$ASHBY_DISCOVERY_RESULT" "$ASHBY_COMBINED_RESULT" <<'PY'
-import json
-import os
-import sys
-from pathlib import Path
-
-discovery_path, output_path = map(Path, sys.argv[1:])
-try:
-    discovery = json.loads(discovery_path.read_text(encoding="utf-8"))
-except (OSError, json.JSONDecodeError):
-    discovery = {"status": "failed", "discovered": []}
-combined = {
-    "status": "model_owned",
-    "processed": [],
-    "excluded": [],
-    "reason": "mandatory_browser_lane",
-    "discovery": {
-        "status": discovery.get("status", "failed"),
-        "discovered_count": len(discovery.get("discovered", [])),
-    },
-    "owner": "ai.anicca.job-search-daily",
-}
-output_path.write_text(json.dumps(combined, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
-os.chmod(output_path, 0o600)
-PY
-export JOB_SEARCH_ASHBY_FAST_PATH_RESULT="$ASHBY_COMBINED_RESULT"
-export JOB_SEARCH_ASHBY_DISCOVERY_RESULT="$ASHBY_DISCOVERY_RESULT"
 WORKDAY_FAST_PATH_RESULT="$EVIDENCE/workday-fast-path.json"
 "$JOB_SEARCH_PYTHON" - "$WORKDAY_FAST_PATH_RESULT" <<'PY'
 import json
@@ -211,7 +139,7 @@ set +e
   --evidence-dir "$EVIDENCE" \
   --workdir "$JOB_SEARCH_REPO_ROOT" \
   --python "$JOB_SEARCH_PYTHON" \
-  --active-provider all
+  --active-provider workday
 RUNNER_RC=$?
 set -e
 set +e
