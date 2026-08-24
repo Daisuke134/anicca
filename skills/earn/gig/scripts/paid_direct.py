@@ -522,11 +522,17 @@ def _reported_formal_cycle(args, item: dict[str, Any]) -> Path | None:
         if not root.is_dir():
             return None
         attachments: set[str] = set()
+        seller_texts: set[str] = set()
         for message in item.get("seller_sent_messages") or item.get("seller_messages") or []:
             if not isinstance(message, dict):
                 continue
+            if isinstance(message.get("text"), str) and message["text"]:
+                seller_texts.add(message["text"])
             attachments.update(value for value in message.get("attachments") or []
                                if isinstance(value, str) and value and Path(value).name == value)
+        project_ids = {root.name}
+        project_ids.update(_text(item.get(key)) for key in ("request_id", "project_id"))
+        project_ids.discard("")
         ledgers = [root / "events.jsonl", *root.rglob("formal-delivery-ledger.jsonl")]
         for ledger in ledgers:
             if ledger.is_symlink() or not _regular_file(ledger):
@@ -535,9 +541,8 @@ def _reported_formal_cycle(args, item: dict[str, Any]) -> Path | None:
                 try: record = json.loads(line)
                 except json.JSONDecodeError: continue
                 if (not isinstance(record, dict) or record.get("event") != "FORMAL_DELIVERY_CONFIRMED"
-                        or _text(record.get("project_id")) != root.name
-                        or _text(record.get("talkroom_id")) != _text(item.get("talkroom_id"))
-                        or _text(record.get("seller_attachment_readback")) not in attachments):
+                        or _text(record.get("project_id")) not in project_ids
+                        or _text(record.get("talkroom_id")) != _text(item.get("talkroom_id"))):
                     continue
                 artifact = Path(_text(record.get("artifact_path")))
                 if artifact.is_symlink() or not _regular_file(artifact):
@@ -545,9 +550,20 @@ def _reported_formal_cycle(args, item: dict[str, Any]) -> Path | None:
                 resolved = artifact.resolve()
                 resolved.relative_to(root)
                 content = resolved.read_bytes()
-                if (resolved.name == record.get("seller_attachment_readback")
-                        and len(content) == record.get("artifact_bytes")
-                        and hashlib.sha256(content).hexdigest() == record.get("artifact_sha256")):
+                artifact_bound = (
+                    len(content) == record.get("artifact_bytes")
+                    and hashlib.sha256(content).hexdigest() == record.get("artifact_sha256")
+                )
+                linked_readback = (
+                    record.get("linked_asset_delivery") is True
+                    and record.get("seller_attachment_readback") is None
+                    and _text(record.get("seller_message_readback")) in seller_texts
+                )
+                attachment_readback = (
+                    resolved.name == record.get("seller_attachment_readback")
+                    and resolved.name in attachments
+                )
+                if artifact_bound and (linked_readback or attachment_readback):
                     return root
     except (OSError, ValueError, TypeError, json.JSONDecodeError, Failure):
         pass

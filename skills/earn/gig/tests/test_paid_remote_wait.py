@@ -341,6 +341,32 @@ def test_paid_queue_accepts_completed_linked_formal_readback():
     assert evidence._formal_transaction_state_ready("取引完了") is True
 
 
+def test_reported_formal_cycle_accepts_exact_linked_message_readback(tmp_path, monkeypatch):
+    paid = load("paid_direct")
+    projects = tmp_path / "projects"
+    root = projects / "18130722"
+    artifact = root / "delivery" / "package-v1.zip"
+    artifact.parent.mkdir(parents=True)
+    artifact.write_bytes(b"package")
+    message = "正式な納品とさせていただきます。"
+    event = {
+        "event": "FORMAL_DELIVERY_CONFIRMED", "project_id": "18130722",
+        "talkroom_id": "18130722", "linked_asset_delivery": True,
+        "seller_attachment_readback": None, "seller_message_readback": message,
+        "artifact_path": str(artifact), "artifact_bytes": artifact.stat().st_size,
+        "artifact_sha256": hashlib.sha256(artifact.read_bytes()).hexdigest(),
+    }
+    (root / "events.jsonl").write_text(json.dumps(event, ensure_ascii=False) + "\n")
+    monkeypatch.setattr(paid.delivery_project, "resolve_project_root", lambda *_args: root)
+    item = {
+        "talkroom_id": "18130722", "formal_delivery_observed": True,
+        "talkroom_state": "取引完了", "buyer_feedback_pending_artifact": False,
+        "seller_messages": [{"text": message, "attachments": []}],
+    }
+
+    assert paid._reported_formal_cycle(SimpleNamespace(projects_root=projects), item) == root
+
+
 def test_wait_accepts_supplementary_receipt_when_another_has_readback(tmp_path):
     remote = load("paid_remote_result")
     root, feedback, digest = blocked_project(tmp_path)
