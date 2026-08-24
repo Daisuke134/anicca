@@ -57,6 +57,10 @@ are not active work.
     one-command marketplace OSS product; Upwork, Mercor and other money loops are
     roadmap/non-productized. Keep
     time-dependent eKYC, buyer traffic, sales and bank arrival outside the coding TODO.
+13. [x] Add the canonical friend DM to the onboarding spec with the one-line command,
+    official-only secret entry, same-command resume, four lanes, and no income promise.
+
+**Remaining current Coconala OSS coding TODO: 0.**
 
 ### Future shared OSS UX — not current session
 
