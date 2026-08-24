@@ -15,9 +15,11 @@ payout, and bank receipts advance it.
 
 ### Shared loop contract
 
-1. [ ] Replace lane-wide work ownership with one isolated owner per application, inquiry,
-   or paid project while retaining the existing lane schedulers. Let independent owners run
-   concurrently; serialize only the exact shared browser/account/tool lease.
+1. [ ] Converge every runtime path to `P0-four-lane-parallel`: one isolated owner per
+   application, inquiry, or paid project, fully concurrent inside and across lanes. Give each
+   owner a distinct tab/target, client identity, URL, state, and evidence root. Do not add or
+   retain an account-wide, browser-wide, lane-wide, or wake-wide queue merely because owners
+   share one authenticated profile.
 2. [ ] Compile all relevant DM, talkroom, attachments, listing, and effect history into that
    owner. Share skills, account references, browser sessions, and tools, but never customer
    context, artifact, history, or state. Resolve secrets only inside the selected adapter.
@@ -26,10 +28,13 @@ payout, and bank receipts advance it.
    requires human meetings, undisclosed personal participation, unsupported desktop-only
    work, or unreliable prolonged browser operation. Do not hardcode buyer names, categories,
    or keyword lists.
-4. [ ] Require a fresh isolated pre-submit review of the exact current requirements and exact
-   outbound artifact/message. Repair actionable findings, fence the effect, send once, obtain
-   provider plus Coconala exact readback, observe buyer acceptance/transaction completion
-   when required, and prove duplicate effect zero on a later wake.
+4. [ ] Remove the remaining Paid global CDP-lock and single-owner executor path, while keeping
+   same-entity duplicate safety through effect-key compare-and-swap/fencing. Prove two
+   different paid clients can prepare, send, and read back concurrently without context,
+   page, attachment, receipt, or effect-key crossover. Require a fresh isolated pre-submit
+   review of each exact current requirement and outbound artifact/message; repair findings,
+   send once, obtain provider plus Coconala exact readback, observe buyer completion when
+   required, and prove duplicate effect zero on a later wake.
 
 ### Acquisition and conversion
 
@@ -3215,8 +3220,9 @@ a later successful example.
   attachment is replay-safe. This project remains open: the owner must read the official Meet URL,
   update the existing Calendar event without duplication, preserve truthful consultation-completion
   evidence, report the requested four post-consultation facts, formally deliver, observe buyer
-  acceptance/transaction completion, and then prove another replay-zero. After that, process
-  `18184558`, `18180857`, and `18169985` in order; Manledge sends no additional candidate message
+  acceptance/transaction completion, and then prove another replay-zero. In parallel,
+  `18184558`, `18180857`, and `18169985` each progress under their own owner, page, state, and
+  evidence root without waiting for `18183618`; Manledge sends no additional candidate message
   until its buyer explicitly approves the already-sent private-DM sample format. LBJ `18130722`
   remains a later repair: a seller acknowledgement after an unrevoked buyer approval must not erase
   that approval; a later buyer revocation must.
