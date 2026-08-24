@@ -8273,9 +8273,14 @@ Current authoritative state:
   X permalink is `https://x.com/selawmqt/status/2091754957448040906`.
 - D01–D15 are complete. D16 has one public quote effect with duplicate zero; its
   exact reach and post-effect money readback remain the sole active item.
-- Exact impressions have increased from the experiment baseline 9 to aggregate
-  38 across four monetization posts, but
+- The current-day public ledger contains 17 exact permalinks: 6 Originals, 6
+  ordinary Quotes, and 5 Affiliate effects. Sixteen predate the independent
+  owner split; x-tweeter has one Postiz-backed manual Original canary. The next
+  natural boundaries are x-tweeter `:15/:45` and x-repost `:00/:30`.
+- Exact Affiliate impressions have increased from the experiment baseline 9 to
+  aggregate 54, but
   exposure remains insufficient by the model-selected boundary. Official
+  cumulative provider clicks are 3 with post-distribution baseline unavailable;
   transactions, pending, approved, paid, and reversed commission remain zero;
   therefore the result is still non-money.
 - The immediate blocker is insufficient relevant reach, followed by zero exact
