@@ -82,29 +82,21 @@ Storefront work.
        CloakBrowser and disk space; install only missing public dependencies.
     3. [ ] Create the private resumable onboarding receipt with no raw identity, OTP,
        document, password, bank or session value in Git/logs/model/report output.
-    4. [ ] Detect and recover an existing Coconala account before permitting signup;
-       create exactly one account only when official readback proves none exists.
-    5. [ ] Connect the authorized mailbox adapter and consume the Coconala verification
-       email automatically.
-    6. [ ] Collect owner facts once through private local input; drive all delegable
-       official browser fields from those facts.
-    7. [ ] Submit the mobile number, pause only for the SMS code when required, and resume
-       after official `sms_verified` readback.
-    8. [ ] Complete seller information and required consent surfaces; pause only where
-       personal legal acceptance is non-delegable.
-    9. [ ] Open the smartphone eKYC handoff; owner performs document/face capture; poll
-       official state until approved or report the exact rejection mismatch.
-    10. [ ] Register the matching domestic bank account and read back accepted payout
-        state without persisting raw bank values outside the approved private boundary.
-    11. [ ] Probe executable Mac capabilities, then have the agent choose a truthful
-        initial service, category, scope, price, copy and assets without an owner survey.
-    12. [ ] Create exactly one first listing and require official public listing readback;
-        rerun duplicate count must be zero.
-    13. [ ] Activate the browser, Apply, Negotiate, Storefront, Paid and release watcher
-        only after account/SMS/seller/eKYC/bank/listing gates are all accepted.
-    14. [ ] From a clean HOME prove zero marketplace effects before authentication, exact
-        resume after interruption, one owner per launchd label and zero secrets in output.
-    15. [ ] On a clean friend-owned Mac complete the one-session setup and collect the
+    4. [ ] Show one prerequisite screen, then open the official Coconala registration or
+       recovery surface. Do not collect duplicate identity/bank facts in Life Manager.
+    5. [ ] Let the owner complete account/email/SMS/seller/consent/eKYC/bank setup in one
+       uninterrupted official-site session, then return to `Verify and start`.
+    6. [ ] Read back authenticated, email, SMS, seller, eKYC and bank states; show only the
+       exact missing official gate and reopen its official page when incomplete.
+    7. [ ] Activate the browser, Apply, Negotiate, Storefront, Paid and release watcher
+       only after all official account gates are accepted. A listing is not this gate.
+    8. [ ] Make Storefront import existing listings; when listing count is zero, it probes
+       capabilities and owns initial service/category/scope/price/copy/assets creation.
+    9. [ ] Require one official initial-listing readback and rerun duplicate zero from
+       Storefront. Apply may run before it; Negotiate/Paid wait for buyer activity.
+    10. [ ] From a clean HOME prove zero marketplace effects before authentication, exact
+       resume after interruption, one owner per launchd label and zero secrets in output.
+    11. [ ] On a clean friend-owned Mac complete the one-session setup and collect the
         four independent business receipts plus permitted bank-arrival receipt. Paid
         completion remains owned by its separate production acceptance.
 11. [x] Render the Apply, Negotiate, browser and release-watcher launchd definitions
@@ -260,29 +252,26 @@ not this operator's Telegram identity.
 ### Target one-session onboarding contract
 
 The public command is `./install.sh coconala`. One interactive setup session completes all required
-owner input before starting the loops. The wizard asks only for facts the official marketplace or
-bank rail requires; it never asks the owner to describe skills, choose categories, write listings,
-set prices, approve applications, approve replies, approve estimates, or approve deliveries.
+owner work before starting the loops. It never asks the owner to duplicate official identity/bank
+facts in Life Manager, describe skills, choose categories, write listings, set prices, approve
+applications, approve replies, approve estimates, or approve deliveries.
 
-1. Inspect the device and install or configure the declared runtime, model route, browser, email
-   adapter, four lane jobs and release watcher.
-2. Collect the notification/registration email, create or recover exactly one Coconala account with
-   the signup/login skill or CLI, and consume email verification through the mailbox adapter. Never
-   create a second account when one already exists.
-3. In the same setup session, complete the official seller-information form (name/furigana, address,
-   birth date and gender), mobile-number SMS verification, required terms/consents, eKYC document and
-   face capture, and matching domestic bank-account registration. Sensitive values remain only on
-   official surfaces or in the minimum private local credential store; documents, OTPs and bank
-   details are never committed, logged, placed in model prompts or sent in reports.
-4. Discover executable capabilities from installed tools and prove them with a bounded local
-   preflight. Import any existing official listings and history. When the account is new, build the
-   initial sellable listing, price, scope, FAQ and assets from verified capabilities and observed
-   marketplace demand. Unknown capability fails closed; it does not become a human question.
-5. Verify before activation that account/session, seller information, SMS, eKYC and payout account
-   are accepted by the official site. Invoice registration remains optional and is not invented as a
-   setup requirement.
-6. Activate Apply, Negotiate, Storefront and Submission plus their browser/release owners, then
-   report official receipts and bank-payout state to the configured email. Ordinary operation has no
+1. Inspect the device and install or configure the declared runtime, model route, browser, four lane
+   jobs and release watcher; then show every official prerequisite on one screen.
+2. Open the official Coconala setup surface. The owner creates or recovers the account and completes
+   email, SMS, seller information, required consents, eKYC and the matching domestic bank account in
+   one uninterrupted official-site session. Life Manager never creates a second account or stores a
+   second copy of documents, OTPs, passwords or bank details.
+3. After the owner selects `Verify and start`, read back that account/session, seller information,
+   SMS, eKYC and payout account are accepted by the official site. Invoice registration remains
+   optional and is not invented as a setup requirement.
+4. Activate Apply, Negotiate, Storefront and Submission plus their browser/release owners. Storefront
+   imports existing listings; if the official listing count is zero, Storefront discovers executable
+   capabilities and owns the first truthful listing, price, scope, FAQ, assets and official readback.
+   Unknown capability fails closed; it does not become a human questionnaire.
+5. After activation, report official receipts and bank-payout state to the configured notification
+   adapter. Apply can run before Storefront creates a first listing; Negotiate and Paid remain idle
+   until buyer activity exists. Ordinary operation has no
    approval gate. Login expiry uses autonomous session recovery; if the marketplace later introduces
    a new non-delegable identity ceremony, the loop reports the exact blocker without pretending to
    be 24/7 complete.
@@ -3107,11 +3096,12 @@ messages, outreach or delivery. No manual/Codex effect may be used as that proof
   tree and pass the exact `f90898caf` public acceptance.
 - [x] Provide email-first notification plus documented install, status, upgrade and uninstall.
 - [ ] Add the public `./install.sh coconala` entrypoint and one-session wizard. Before activation it
-  completes registration/recovery, seller information, SMS, eKYC, bank registration and all current
-  mandatory official consents; no ordinary setup prompt may appear after lane activation.
-- [ ] Add the local mailbox adapter and permitted Coconala signup/login skill/CLI path so account
-  creation, session recovery and email verification do not become recurring human tasks. Preserve
-  platform-mandated CAPTCHA, passkey, terms and identity ceremonies as explicit resumable exceptions.
+  opens one official-site session where the owner completes registration/recovery, seller information,
+  SMS, eKYC, bank registration and all current mandatory consents; it then readbacks every gate and no
+  ordinary setup prompt may appear after lane activation.
+- [ ] Keep account creation and initial recovery on the official owner-controlled surface. After the
+  setup, reuse the authenticated browser/session and automate only delegable recovery; platform-mandated
+  CAPTCHA, passkey, terms and identity ceremonies remain explicit resumable owner exceptions.
 - [ ] Replace the private capability-bundle onboarding requirement with automatic installed-tool
   discovery, bounded production preflights, official listing import and new-account storefront
   generation. Unknown capability must fail closed without asking the owner what they can do.
