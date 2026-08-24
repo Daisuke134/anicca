@@ -24,4 +24,4 @@ else
 fi
 
 export LIFE_MANAGER_CHECKOUT="$TARGET"
-exec "$TARGET/scripts/bootstrap.sh"
+exec "$TARGET/install.sh" coconala

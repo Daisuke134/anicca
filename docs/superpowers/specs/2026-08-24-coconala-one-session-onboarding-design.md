@@ -15,11 +15,15 @@ this Coconala package passes the clean-device acceptance below.
 The public start is:
 
 ```bash
-./install.sh coconala
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Daisuke134/life-manager/main/scripts/bootstrap-coconala.sh)"
 ```
 
 If Codex is not authenticated, the installer runs `codex login` first and waits for
 the CLI's own successful authentication readback.
+
+Terminal is the only Life Manager onboarding surface for Coconala. The flow does not
+open or require a local web UI and does not ask for language, timezone, skills,
+categories, prices, or notification-channel preference.
 
 ## Selected approach
 
@@ -38,11 +42,20 @@ The owner performs the complete official account setup once:
 2. complete SMS verification, seller information, and required consents;
 3. use a smartphone to photograph the accepted identity document and their face;
 4. register the matching domestic payout account;
-5. return to the installer and report `finished` once.
+5. return to Terminal and run the same bootstrap command once.
 
 The owner does not choose categories, write copy, set prices, make images, configure
 launchd, create local files, approve applications, approve replies, approve estimates,
 or approve deliveries.
+
+The registered Coconala email remains the official marketplace notification address.
+Life Manager reads that address from the authenticated official account surface and
+stores it only in the private machine configuration; it does not ask the owner to type
+the same address twice. Reports reuse the repository's existing `gog` Gmail transport.
+If no Gmail OAuth exists, setup performs one `gog auth add` ceremony. A nonce-bound setup
+message must be sent and found in the destination inbox before email is marked ready.
+Missing Gmail transport never blocks earning; Terminal receipts remain authoritative.
+SMTP and Telegram are not part of the public default.
 
 ## Architecture
 
@@ -70,7 +83,7 @@ flowchart TD
     LOGIN --> GUIDE
     GUIDE --> OFFICIAL["Open dedicated CloakBrowser profile"]
     OFFICIAL --> HUMAN["Owner completes account + SMS + seller + eKYC + bank"]
-    HUMAN --> DONE["Owner reports setup complete"]
+    HUMAN --> DONE["Owner reruns the same Terminal command"]
     DONE --> VERIFY["Agent attaches to same browser session"]
     VERIFY --> APPROVED{"All official gates accepted?"}
     APPROVED -->|No| CORRECT["Show exact missing official gate"]
@@ -144,10 +157,10 @@ marketplace work such as Coconala, Upwork, or future money printers.
 
 ## Acceptance
 
-On an independent clean Mac, the owner runs only `./install.sh coconala`. The installer
+On an independent clean Mac, the owner runs only the one-line bootstrap. The installer
 completes `codex login`, opens the dedicated Coconala browser, and prints the full setup
-checklist. The owner completes all official setup there and reports completion once. The
-agent then takes over that exact profile without receiving the password. Acceptance
+checklist in Terminal. The owner completes all official setup there and reruns the same
+command once. The agent then takes over that exact profile without receiving the password. Acceptance
 requires official readback for every state, one loaded owner for each launchd label, no
 marketplace effect before authentication, no duplicate listing/effect on rerun, and no
 private value in the public tree or logs.

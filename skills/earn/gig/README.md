@@ -17,22 +17,25 @@
    ```
 
    It installs Homebrew/Git only when missing, creates or fast-forwards
-   `~/life-manager`, and opens the shared local Life Manager setup UI. It never deletes
+   `~/life-manager`, and starts the Coconala setup directly in Terminal. It never deletes
    or replaces a non-Git directory.
-2. Select Coconala. The integration installer runs `codex login` when the CLI is not authenticated.
+2. The installer runs `codex login` when the CLI is not authenticated. It does not ask
+   for language, timezone, skills, categories, prices, or a notification channel.
 3. It opens Coconala in the dedicated agent browser profile at
    `~/.cloak/profiles/gig-daily-driver` and shows the whole checklist once.
 4. In that browser, the owner completes account or login, email, SMS, seller
    information, required consents, smartphone eKYC, and bank registration.
-5. The owner reports completion once. Life Manager attaches to the same browser session,
-   receives no password, and verifies every official state.
+5. The owner returns to Terminal and runs the same command once. Life Manager attaches
+   to the same browser session, receives no password, and verifies every official state.
 6. Life Manager starts Browser, Apply, Negotiate, Storefront, Paid, and Release Watcher.
 7. Storefront imports existing listings or creates the first truthful listing when the
    official count is zero; the other lanes then operate without ordinary approval gates.
 
 That is the complete normal setup. Do not create a listing manually, install Python
-packages, edit JSON, configure launchd, or give Life Manager a Coconala password. The
-local UI remains the default notification and status surface; email/Telegram are optional.
+packages, edit JSON, configure launchd, or give Life Manager a Coconala password.
+Terminal is the setup and status surface. Official Coconala email remains active. Life
+Manager reports use the existing `gog` Gmail transport after Google OAuth and a real
+send/inbox readback; SMTP and Telegram are not part of the public default.
 
 ### Deferred external acceptance
 
@@ -83,8 +86,10 @@ loop alone must use the person's real employment facts and availability.
 | A Coconala registration email, Japanese mobile phone, accepted identity document, and matching domestic bank account | Enter these only on official Coconala/eKYC pages opened by the installer. Storefront creates the first listing when none exists. |
 | Internet access and macOS administrator access during setup | The installer prepares Homebrew, Git, Python, the private venv, CloakBrowser, and the six jobs only when missing. |
 
-Owner status and official outcome receipts default to the local Life Manager UI. Email
-and Telegram are optional advanced notification adapters; neither blocks the four lanes.
+Owner status and official outcome receipts are available in Terminal with
+`./install.sh coconala outcomes`. Coconala continues sending its own account and buyer
+mail to the registered address. Life Manager email reports require a configured outbound
+`gog` Gmail account; their absence never blocks the four lanes.
 
 The semantic reply lane is tool-less. If the machine has a local CLI proxy, put
 its token in `~/.cli-proxy-api-key` and keep the loopback provider enabled in the
@@ -98,7 +103,7 @@ given browser or send tools by this fallback.
 
 ## Advanced/manual recovery
 
-The normal one-line UI flow above is the public onboarding. The remaining sections are
+The normal one-line Terminal flow above is the public onboarding. The remaining sections are
 for recovery, custom notification adapters, operator overrides, qualification and
 uninstall; a normal owner should not need them.
 
