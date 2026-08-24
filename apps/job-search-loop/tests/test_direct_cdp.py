@@ -338,6 +338,30 @@ class DirectCDPTypeTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("if (resolvedByStableId) return true", script)
         self.assertIn("closest('[role=\"option\"]')", inspect.getsource(ObservationBuilder.build))
 
+    def test_anonymous_fieldset_textarea_uses_question_label_for_observe_and_resolve(self):
+        observation_source = inspect.getsource(ObservationBuilder.build)
+        target_source = DirectCDPPage._target_script(
+            {"label": "Notice Period", "role": "textbox", "stable_id": "ref:e1"}
+        )
+
+        for source in (observation_source, target_source):
+            self.assertIn("const fieldsetLabel", source)
+            self.assertIn("fieldsetControls.length", source)
+            self.assertIn("closest('fieldset')", source)
+            self.assertIn("querySelector(':scope > legend')", source)
+        self.assertIn("!/^error\\\\b/i.test", observation_source)
+        self.assertIn("!/^error\\b/i.test", target_source)
+        self.assertIn("fieldsetLabel", observation_source)
+        self.assertIn("fieldsetLabel", target_source)
+        self.assertLess(
+            observation_source.index("|| fieldsetLabel ||"),
+            observation_source.index("el.getAttribute('placeholder')"),
+        )
+        self.assertLess(
+            target_source.index("||fieldsetLabel||"),
+            target_source.index("el.getAttribute('placeholder')"),
+        )
+
     async def test_type_selects_the_existing_whole_value_before_inserting(self):
         page = DirectCDPPage("ws://example", "target")
         page.click_target = AsyncMock(side_effect=AssertionError("typing must focus before transition wait"))

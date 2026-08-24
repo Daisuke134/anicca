@@ -43,7 +43,17 @@ class ObservationBuilder:
                 const relatedInput = el.closest('[data-automation-id="multiselectInputContainer"]')?.querySelector('input');
                 const related = relatedInput && relatedInput !== el
                   ? `${label(relatedInput)} options` : '';
-                return (own || linked || labelledBy || el.getAttribute('placeholder') || el.innerText || related || '').trim();
+                const fieldset = el.closest('fieldset');
+                const fieldsetControls = fieldset
+                  ? Array.from(fieldset.querySelectorAll('input,select,textarea')).filter(visible)
+                  : [];
+                const legend = fieldset?.querySelector(':scope > legend');
+                const fieldsetLabel = fieldsetControls.length === 1
+                  ? legend?.innerText?.trim() || (fieldset?.innerText || '')
+                    .split(/\\r?\\n/).map(line => line.trim())
+                    .find(line => line && !/^error\\b/i.test(line)) || ''
+                  : '';
+                return (own || linked || labelledBy || fieldsetLabel || el.getAttribute('placeholder') || el.innerText || related || '').trim();
               };
               const nodes = Array.from(document.querySelectorAll('input,button,select,textarea,a,[role],[data-automation-id]'))
                 .filter(visible)
