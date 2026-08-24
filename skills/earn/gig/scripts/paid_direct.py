@@ -4328,6 +4328,14 @@ def _effect_command(args, item, output):
                 args, "--write-item", item, output,
             )
 
+
+def _effect_process_diagnostic(process: Any) -> dict[str, Any]:
+    return {
+        "returncode": int(process.returncode),
+        "stdout": _text(getattr(process, "stdout", ""))[:500],
+        "stderr": _text(getattr(process, "stderr", ""))[:500],
+    }
+
 def _fresh_child_env(args):
     env = {key: value for key, value in os.environ.items() if key != "GIG_CDP_LOCK_HELD"}
     env["CDP_LOCK_DIR"] = str(args.cdp_lock_dir)
@@ -4398,8 +4406,9 @@ def _run_paid_item(args, room: str, item_file: Path, prepared_file: Path,
         observed_effect = int(value.get("effect") == 1)
         checkpoint_state = "delivery_unknown" if process.returncode or observed_effect else "effect_rejected"
         if not _update_disk_checkpoint(
-                checkpoint, status=checkpoint_state, checkpoint="effect_observed" if observed_effect else checkpoint_state,
-                reason=step, effect=observed_effect, readback=int(value.get("readback") == 1)):
+            checkpoint, status=checkpoint_state, checkpoint="effect_observed" if observed_effect else checkpoint_state,
+            reason=step, effect=observed_effect, readback=int(value.get("readback") == 1),
+            process=_effect_process_diagnostic(process)):
             step = "disk_checkpoint"
         return ({"talkroom_id": room, "status": "failed", "failed_step": step},
                 observed_effect, int(value.get("readback") == 1), 1, step)

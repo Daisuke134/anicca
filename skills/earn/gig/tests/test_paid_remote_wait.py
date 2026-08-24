@@ -268,6 +268,19 @@ def test_paid_effect_waits_for_shared_browser_lock(tmp_path):
     assert paid.PAID_EFFECT_LOCK_TIMEOUT_SECONDS >= 60
 
 
+def test_effect_process_diagnostic_is_bounded():
+    paid = load("paid_direct")
+    process = SimpleNamespace(returncode=75, stdout="x" * 700, stderr="deferred_cdp_busy")
+
+    diagnostic = paid._effect_process_diagnostic(process)
+
+    assert diagnostic == {
+        "returncode": 75,
+        "stdout": "x" * 500,
+        "stderr": "deferred_cdp_busy",
+    }
+
+
 def test_paid_admission_selects_one_project_and_rotates(tmp_path):
     paid = load("paid_direct")
     args = SimpleNamespace(projects_root=tmp_path)
