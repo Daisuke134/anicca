@@ -166,6 +166,21 @@ def observe_x_post_metrics(state, cdp_port, inspector=x_profile_cli.inspect_post
     ), None)
     if selected is None:
         return {"state": "WAITING_FOR_AFFILIATE_POST", "changed": False}
+    distribution_placement_id = selected["affiliate_placement_id"]
+    placement_id = distribution_placement_id
+    try:
+        job = json.loads((
+            state / "x-distribution-jobs" / f'{selected["affiliate_job_id"]}.json'
+        ).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        job = {}
+    lineage = job.get("experiment_lineage") if isinstance(job, dict) else None
+    if (
+        isinstance(lineage, dict) and lineage.get("kind") == "EXPERIMENT"
+        and isinstance(lineage.get("control_placement_id"), str)
+        and REPOST_PLACEMENT_ID_PATTERN.fullmatch(lineage["control_placement_id"])
+    ):
+        placement_id = lineage["control_placement_id"]
     config = x_profile_cli.load_config(Path(__file__).resolve().parents[1], "en")
     metrics = inspector(SimpleNamespace(
         cdp_host="127.0.0.1", cdp_port=cdp_port, state=state,
@@ -180,7 +195,8 @@ def observe_x_post_metrics(state, cdp_port, inspector=x_profile_cli.inspect_post
         "receipt_type": "X_POST_METRICS_BASELINE",
         "post_url": selected["post_url"],
         "job_id": selected["affiliate_job_id"],
-        "placement_id": selected["affiliate_placement_id"],
+        "placement_id": placement_id,
+        "distribution_placement_id": distribution_placement_id,
         "owned_article_url": selected["affiliate_owned_article_url"],
         "source_posted_sha256": hashlib.sha256(raw).hexdigest(),
         "impressions": metric_receipts.pop("views"),

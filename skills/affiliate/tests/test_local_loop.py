@@ -311,10 +311,16 @@ class LocalLoopTest(unittest.TestCase):
             repost.mkdir(parents=True)
             post_url = "https://x.com/selawmqt/status/123"
             MODULE.append(repost / "posted.jsonl", {
-                "kind": "affiliate_distribution", "affiliate_job_id": "1" * 64,
-                "affiliate_placement_id": "caption-en-1",
+                "kind": "affiliate_distribution_quote", "affiliate_job_id": "1" * 64,
+                "affiliate_placement_id": "caption-en-1-mix-a",
                 "affiliate_owned_article_url": "https://aniccaai.com/blog/caption",
                 "source_url": "https://aniccaai.com/blog/caption", "post_url": post_url,
+            })
+            MODULE.atomic_json(state / "x-distribution-jobs" / f'{"1" * 64}.json', {
+                "experiment_lineage": {
+                    "kind": "EXPERIMENT", "decision_id": "2" * 64,
+                    "control_placement_id": "caption-en-1",
+                },
             })
             metrics = iter((
                 {"views": 3, "replies": 0, "reposts": 0, "likes": 0, "bookmarks": 0},
@@ -328,6 +334,8 @@ class LocalLoopTest(unittest.TestCase):
                 changed = MODULE.observe_x_post_metrics(state, 9326, inspector=inspector)
 
             self.assertEqual(first["impressions"], {"count": 3, "state": "EXACT"})
+            self.assertEqual(first["placement_id"], "caption-en-1")
+            self.assertEqual(first["distribution_placement_id"], "caption-en-1-mix-a")
             self.assertTrue(first["changed"])
             self.assertFalse(replay["changed"])
             self.assertEqual(changed["impressions"]["count"], 4)
