@@ -17,9 +17,10 @@ Storefront work.
 This is the active implementation cursor. External-device/user trials remain acceptance
 evidence and are not reported as coding work.
 
-1. [x] Define and validate one public integration onboarding manifest schema used by every
-   persistent Money/Body/Mind loop. Coconala declares outcome, prerequisites, official
-   ceremonies, dedicated browser, commands, six owners, five receipts and authority.
+1. [ ] Define and validate one public integration onboarding manifest schema used by every
+   persistent Money/Body/Mind loop. The schema and first Coconala manifest are complete
+   (outcome, prerequisites, ceremonies, browser, commands, six owners, five receipts,
+   authority); repository-wide owner coverage remains to migrate.
 2. [x] Discover all manifests and render one side-effect-free readiness graph; duplicate
    integration ids/owners/receipts and conflicting ask-once field definitions fail closed.
    Current graph validates one Coconala integration with six owners, nine provider gates,
