@@ -2278,6 +2278,19 @@ scheduler. Fence the narrowest resource and serialize only genuinely shared acco
 - [ ] Join diary segments, weekly invoice/review, availability, payout and occurrence-month
   adjustments to the contract; only payout `received` enters verified cash.
 
+### Task 61: Freeze the OSS boundary without scaffolding a second framework
+
+- [ ] Move a primitive into `skills/_shared/marketplace-core` only after Upwork plus one second market
+  prove identical behavior; do not create empty interfaces for future markets.
+- [ ] Add one declarative market manifest per provider containing only official URLs, stable entity/
+  state names, currency/fee/payout mapping and supported effects; no judgment or credentials.
+- [ ] Run one provider conformance suite over redacted Upwork and second-market fixtures, including
+  success, skip, timeout, unknown effect, receipt, refund and chargeback paths.
+- [ ] Prove isolated install has zero credentials, identities, customer content, runtime ledgers and
+  original absolute paths; defaults perform zero external effects and zero spend.
+- [ ] Close OSS alpha only with Upwork real-receipt replay and close OSS stable only after a second
+  market reaches official `received` plus clean-device receipt.
+
 ## Final verification
 
 - [ ] `git diff --check` exits 0.

@@ -687,6 +687,73 @@ money ledger or learning agent. Navigation, pagination, filters and ordinary for
 through `observe/extract/act/readback`. When a market needs more than about three glue files or 300 LOC,
 implementation stops and extracts the missing shared primitive before continuing.
 
+### 4.10 Canonical repository and private-runtime tree
+
+OSS uses the existing repository boundaries; it does not create a second framework or one Skill per
+market. The target tree is:
+
+```text
+life-manager-main/
+├── skills/_shared/marketplace-core/
+│   ├── schemas/
+│   │   ├── market-inventory.schema.json
+│   │   ├── opportunity-decisions.schema.json
+│   │   ├── effect-intent.schema.json
+│   │   ├── provider-receipt.schema.json
+│   │   └── money-truth.schema.json
+│   └── scripts/
+│       ├── browser_aci.py
+│       ├── resource_lease.py
+│       ├── effect_kernel.py
+│       ├── work_events.py
+│       ├── money_truth.py
+│       └── provider_conformance.py
+├── skills/earn/gig/
+│   ├── SKILL.md
+│   ├── config/markets/
+│   │   ├── upwork.json
+│   │   ├── fiverr.json
+│   │   ├── lancers.json
+│   │   ├── crowdworks.json
+│   │   ├── freelancer.json
+│   │   ├── mercor.json
+│   │   └── ugig.json
+│   ├── scripts/
+│   │   ├── portfolio_ceo.py
+│   │   ├── market_loop.py
+│   │   ├── fulfillment_router.py
+│   │   └── providers/          # only unavoidable auth/state/fee/readback glue
+│   ├── tests/conformance/
+│   ├── fixtures/redacted/
+│   │   └── <market>/
+│   └── install.sh
+└── docs/gig-money-loop-install.md
+```
+
+This is a destination, not permission to scaffold empty abstractions. Existing files move into the
+shared boundary only when a second real market proves reuse. A market manifest contains official URLs,
+stable entity/state vocabulary, currency/fee/payout mapping and supported effect names; it contains no
+semantic qualification rules, selectors-as-strategy, proposal copy or credentials. Provider glue is
+deleted when the common browser ACI can express the same verified behavior.
+
+Private runtime never enters git:
+
+```text
+~/.local/share/anicca/credentials.json
+~/.config/anicca/gig/markets/<market>.json
+~/.cloak/profiles/gig-<market>/
+~/gig/state/markets/<market>/
+~/gig/projects/<provider>/<contract>/
+~/gig/telegram-outbox.sqlite3
+~/gig/work-events.jsonl
+```
+
+OSS alpha requires a zero-secret isolated install, safe zero-spend defaults, one redacted Upwork
+discover→decision→effect/readback replay, duplicate effect 0 and documented local account ceremonies.
+OSS stable additionally requires the same conformance suite on a second market through `received`, a
+clean-device receipt, no original operator paths/data and provider-only additions within the thin-glue
+budget. Tests or fixtures never substitute for the required real provider receipts.
+
 ## 5. Market sequence
 
 Every authorized market may progress concurrently from current evidence. Upwork retains primary
