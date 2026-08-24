@@ -8187,9 +8187,14 @@ Current implementation state:
   reuses the proven collect/model/humanize/Postiz/readback tools while bypassing
   the x-repost action choice. x-tweeter tests are 3/3 and x-repost regression is
   50/50. No production owner or public effect is claimed by XT02.
-- [ ] **XT03 Independent launchd owner.** Install `ai.anicca.x-tweeter-pass` with
-  its own state, queue, claims, results, healthcheck, and staggered `:15/:45`
-  public opportunities.
+- [x] **XT03 Independent launchd owner.** Commits `603c659e8` and `ef43dacb5`
+  extend plist generation with two calendar boundaries, declare dedicated
+  x-tweeter registry/budget/state, parameterize the proven healthcheck, and add a
+  one-hour first-heartbeat grace without forging state. Production release
+  `ef43dacb5` loads `ai.anicca.x-tweeter-pass` at `:15/:45` and
+  `ai.anicca.x-tweeter-healthcheck` every 300 seconds; launchctl readback shows
+  both labels present, pass runs 0 before its first calendar boundary, and the
+  grace healthcheck returns OK.
 - [ ] **XT04 Remove Original publication from x-repost.** Keep quote/repost and
   Affiliate distribution ownership in x-repost; historical Original receipts
   remain immutable evidence.
