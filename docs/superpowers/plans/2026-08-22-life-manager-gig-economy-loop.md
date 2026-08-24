@@ -827,6 +827,14 @@ U13 atomic order:
     expose authorization, money/capacity, leases, effects, projects and readback. New markets add a
     manifest plus unavoidable fixed-format transport/readback only; no site gets four copied controllers.
     Item 58 supersedes item 57's instruction to bind new markets directly to Coconala parents.
+59. **DYNAMIC JOB PREFLIGHT ROOT CAUSE CLOSED:** the sealed research job's cover, bid `$10`, duration,
+    zero screening answers, Connects cost `8`, available balance `141` and enabled Submit control all
+    matched. The mismatch came solely from collecting a hidden ARIA live-region message as a validation
+    error; the page had zero visible/native invalid controls. Restrict existing error collection to
+    visible elements. Fresh click-free production-profile preflight now returns `ready=true`, exact job,
+    cost 8, balance 141 and evidence `1009e093…b24a`; Upwork regression is `155 passed`. Next release
+    must run the same immutable payload through the existing launchd loop and require proposal ID,
+    `141 -> 133` Connects and replay zero.
 
 U14 atomic order:
 
