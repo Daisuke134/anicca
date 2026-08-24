@@ -52,6 +52,21 @@ def validate_sources(value: dict[str, Any]) -> tuple[dict[str, str], ...]:
     return tuple(accepted)
 
 
+def merge_sources(
+    previous: tuple[dict[str, str], ...],
+    discovered: tuple[dict[str, str], ...],
+) -> tuple[dict[str, str], ...]:
+    merged = []
+    seen = set()
+    for source in previous + discovered:
+        identity = (source["host"], source["tenant"], source["site"])
+        if identity in seen:
+            continue
+        seen.add(identity)
+        merged.append(source)
+    return tuple(merged)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--candidate-memory", required=True, type=Path)
@@ -63,8 +78,10 @@ def main() -> int:
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args()
     previous = ""
+    previous_sources: tuple[dict[str, str], ...] = ()
     if args.previous and args.previous.is_file():
         previous = args.previous.read_text(encoding="utf-8")
+        previous_sources = validate_sources(json.loads(previous))
     memory = args.candidate_memory.read_text(encoding="utf-8")
     prompt = (
         "Act as the source-discovery agent for a Tokyo-based autonomous job hunter. "
@@ -95,7 +112,7 @@ def main() -> int:
         workdir=args.workdir,
         run_id=f"workday-sources-{uuid.uuid4().hex}",
     )
-    sources = validate_sources(result)
+    sources = merge_sources(previous_sources, validate_sources(result))
     output = {"version": 1, "sources": list(sources)}
     args.output.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     args.output.write_text(

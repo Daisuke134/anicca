@@ -52,6 +52,7 @@ JAPAN_DAY=$(TZ=Asia/Tokyo /bin/date +%F)
 WORKDAY_DISCOVERY_RESULT="$EVIDENCE/workday-discovery.json"
 WORKDAY_SOURCES="$EVIDENCE/workday-sources.json"
 PERSISTED_WORKDAY_SOURCES="$JOB_SEARCH_STATE_ROOT/workday-sources.v1.json"
+WORKDAY_SOURCE_MAINTAINED_AT="$JOB_SEARCH_STATE_ROOT/workday-sources-maintained-at"
 WORKDAY_SNAPSHOT="$EVIDENCE/workday-job-snapshot.json"
 PERSISTED_WORKDAY_SNAPSHOT="$JOB_SEARCH_STATE_ROOT/workday-job-snapshot.v1.json"
 RUNNER_SUMMARY="$EVIDENCE/summary.json"
@@ -98,7 +99,14 @@ chmod 600 "$EVIDENCE/candidate-memory-receipt.json"
 export JOB_SEARCH_CANDIDATE_MEMORY="$CANDIDATE_MEMORY"
 export JOB_SEARCH_ANSWER_MEMORY="$JOB_SEARCH_STATE_ROOT/answer-memory.v1.json"
 export JOB_SEARCH_MACHINE_CREDENTIALS="${XDG_DATA_HOME:-$HOME/.local/share}/anicca/credentials.json"
-if [[ ! -f "$PERSISTED_WORKDAY_SOURCES" ]]; then
+NOW_EPOCH=$(date +%s)
+LAST_SOURCE_MAINTENANCE=0
+if [[ -f "$WORKDAY_SOURCE_MAINTAINED_AT" ]]; then
+  LAST_SOURCE_MAINTENANCE=$(<"$WORKDAY_SOURCE_MAINTAINED_AT")
+fi
+if [[ ! -f "$PERSISTED_WORKDAY_SOURCES" ]] || \
+   (( NOW_EPOCH - LAST_SOURCE_MAINTENANCE >= 86400 )); then
+  DISCOVERED_WORKDAY_SOURCES="$EVIDENCE/workday-source-maintenance.json"
   set +e
   "$JOB_SEARCH_PYTHON" -m job_search_loop.workday_source_discovery \
     --candidate-memory "$CANDIDATE_MEMORY" \
@@ -106,10 +114,16 @@ if [[ ! -f "$PERSISTED_WORKDAY_SOURCES" ]]; then
     --schema "$JOB_SEARCH_APP_ROOT/schemas/workday-sources.v1.schema.json" \
     --workdir "$JOB_SEARCH_REPO_ROOT" \
     --evidence-root "$EVIDENCE/source-discovery" \
-    --output "$PERSISTED_WORKDAY_SOURCES"
+    --previous "$PERSISTED_WORKDAY_SOURCES" \
+    --output "$DISCOVERED_WORKDAY_SOURCES"
   WORKDAY_SOURCE_RC=$?
   set -e
-  if [[ "$WORKDAY_SOURCE_RC" -ne 0 ]]; then
+  if [[ "$WORKDAY_SOURCE_RC" -eq 0 ]]; then
+    mv "$DISCOVERED_WORKDAY_SOURCES" "$PERSISTED_WORKDAY_SOURCES"
+    chmod 600 "$PERSISTED_WORKDAY_SOURCES"
+    print -r -- "$NOW_EPOCH" >"$WORKDAY_SOURCE_MAINTAINED_AT"
+    chmod 600 "$WORKDAY_SOURCE_MAINTAINED_AT"
+  else
     printf '%s\n' "Workday registry bootstrap failed closed" >&2
   fi
 fi

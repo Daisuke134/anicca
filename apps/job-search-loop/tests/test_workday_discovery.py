@@ -8,7 +8,7 @@ from pathlib import Path
 
 from job_search_loop.ledger import Ledger
 from job_search_loop.workday_discovery import _fetch_jobs, discover_one
-from job_search_loop.workday_source_discovery import validate_sources
+from job_search_loop.workday_source_discovery import merge_sources, validate_sources
 
 TEST_SOURCES = tuple(
     {
@@ -28,6 +28,12 @@ TEST_SOURCES = tuple(
 
 
 class WorkdayDiscoveryTests(unittest.TestCase):
+    def test_source_maintenance_accumulates_new_boards_without_replacing_old(self):
+        old = TEST_SOURCES[:1]
+        new = TEST_SOURCES[1:3]
+        merged = merge_sources(old, new)
+        self.assertEqual([row["company"] for row in merged], ["NVIDIA", "Workday", "Salesforce"])
+
     def test_unqualified_row_from_missing_source_does_not_block_current_registry(self):
         with tempfile.TemporaryDirectory() as directory:
             ledger_path = Path(directory) / "ledger.sqlite3"
