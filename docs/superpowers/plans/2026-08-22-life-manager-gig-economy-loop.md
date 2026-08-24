@@ -930,6 +930,12 @@ U13 atomic order:
     IDs, titles and public URLs. Exclude Connects, capacity, next action and other time-varying account
     fields; those come from the current wake. Regression remains `156 passed`, and prompt SHA changes so
     Luna re-evaluates rather than caching the contradictory skip.
+76. **SELLER-OWNED TERMS NO LONGER REQUIRE CLIENT VALUES:** after current balance and proof were clean,
+    Luna still skipped hourly work because the client supplied a rate range rather than one exact bid
+    and did not prescribe delivery days. These are proposal decisions, not client facts. Permit Luna to
+    choose bid and delivery estimate within the official displayed budget/rate and verified Skill
+    capacity, requiring positive expected value and explicit assumptions. Scope, experience, identity,
+    credentials and client facts remain non-inventable. Prompt SHA changes; regression stays `156 passed`.
 
 U14 atomic order:
 
