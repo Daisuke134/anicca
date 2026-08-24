@@ -679,6 +679,16 @@ delivery, revision and finance pass another 41/41. The missing evidence is not a
 no client has yet produced a real message, Offer or contract, so the first production official IDs and
 the first contract-to-payout-received path remain event-driven.
 
+The readiness audit then found two real integration defects hidden by component-only tests:
+`project_workspace.create_workspace()` had no resident production caller, and `workflow_executor`
+treated an installed named Skill as execution authority. The common executor now supports an immutable
+`general-agent` workflow whose model and local tools choose the method; named Skills remain optional,
+hash/version-checked cached playbooks. After a profitable Offer is accepted and an official contract ID
+is read back, the resident Upwork owner creates the common owner-only workspace from the exact frozen
+scope/deadline/terms and contract readback. Verified-effect replay repairs a missing workspace without
+another Offer click. Focused integration passes 49/49 and the complete combined downstream suite passes
+86/86. Production contract IDs remain zero, so no fabricated live workspace or delivery is claimed.
+
 A Skill bundle is immutable and versioned:
 
 ```text

@@ -74,6 +74,31 @@ def test_verified_proposal_event_carries_official_id_connects_and_quote():
     }
 
 
+def test_verified_offer_creates_replay_safe_general_agent_workspace(tmp_path):
+    decision = {
+        "action": "accept", "reason_codes": [], "decision_sha256": "a" * 64,
+        "offer": {
+            "offer_id": "offer-1", "scope": "Build one tested API integration.",
+            "deadline": "2026-09-01",
+        },
+    }
+
+    first = provider.create_offer_workspace(
+        decision, contract_id="contract-1", contract_readback_sha256="b" * 64,
+        projects_root=tmp_path / "projects",
+    )
+    replay = provider.create_offer_workspace(
+        decision, contract_id="contract-1", contract_readback_sha256="b" * 64,
+        projects_root=tmp_path / "projects",
+    )
+
+    assert first == replay
+    workflow = json.loads(next(
+        (Path(first["workspace"]) / "source" / "workflows").glob("*.json")
+    ).read_text())
+    assert workflow["skill_id"] == "general-agent"
+
+
 def test_submitted_receipt_uses_new_official_proposal_with_exact_title():
     payload = {"job_id": "~job-1", "title": "High-value job"}
     state = {

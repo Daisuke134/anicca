@@ -27,6 +27,7 @@ if str(SCRIPTS) not in sys.path:
 from cdp_nav_snapshot import navigate_and_snapshot  # noqa: E402
 from connector_outbox import ConnectorBusy, ConnectorOutbox  # noqa: E402
 from market_form_operator import operate as operate_market_form  # noqa: E402
+from project_workspace import create_workspace  # noqa: E402
 from provider_authorization import DEFAULT_RECEIPT_PATH  # noqa: E402
 import report_envelope  # noqa: E402
 from upwork_inbound_planner import invoke as plan_inbound, invoke_batch as plan_batch, write_sealed_proposal  # noqa: E402
@@ -41,6 +42,7 @@ from upwork_sealed_effect import (  # noqa: E402
     SealedUpworkProposalEffect, active_upwork_browser_account,
 )
 from upwork_transport import UpworkTransport  # noqa: E402
+from workflow_executor import general_agent_workflow  # noqa: E402
 
 
 CONNECTS_URL = "https://www.upwork.com/nx/plans/connects/history"
@@ -66,6 +68,7 @@ DEFAULT_INBOX_LEDGER = Path.home() / "gig/state/upwork-inbox.jsonl"
 DEFAULT_NEGOTIATION_EVIDENCE = Path.home() / "gig/state/upwork-negotiation-planner"
 DEFAULT_OWNER_PROFILE = Path.home() / ".config/anicca/gig/owner-profile.json"
 DEFAULT_GIG_DIR = Path.home() / "gig"
+DEFAULT_PROJECTS_ROOT = DEFAULT_GIG_DIR / "projects"
 DEFAULT_TELEGRAM_REPORT = SCRIPTS / "apply_telegram_report.py"
 TERMINAL_JOB_STATUSES = {"closed", "removed"}
 _COUNT_LABELS = {
@@ -922,6 +925,19 @@ def submitted_proposal_receipt(
     }
 
 
+def create_offer_workspace(
+    decision: dict[str, Any], *, contract_id: str, contract_readback_sha256: str,
+    projects_root: Path = DEFAULT_PROJECTS_ROOT,
+) -> dict[str, str]:
+    offer = decision["offer"]
+    return create_workspace(projects_root, {
+        "version": 1, "provider": "upwork", "contract_id": contract_id,
+        "offer_id": offer["offer_id"], "scope": offer["scope"],
+        "deadline": offer["deadline"], "terms_sha256": decision["decision_sha256"],
+        "contract_readback_sha256": contract_readback_sha256,
+    }, general_agent_workflow())
+
+
 async def execute_direct_offer(
     decision: dict[str, Any], *, database: Path, manifest: Path, browser_profile: Path,
     active_contract_ids: list[str], concurrent_job_cap: int,
@@ -940,7 +956,12 @@ async def execute_direct_offer(
     existing = effect.store.provider_effect(planned)
     base = {"offer_decision_sha256": decision["decision_sha256"]}
     if existing is not None and existing["reconciliation_state"] == "verified":
-        return {**base, "state": "accepted", "contract_id": existing["proposal_id"]}
+        workspace = create_offer_workspace(
+            decision, contract_id=existing["proposal_id"],
+            contract_readback_sha256=existing["readback_hash"],
+        )
+        return {**base, "state": "accepted", "contract_id": existing["proposal_id"],
+                "project_workspace": workspace}
     if existing is not None and existing["state"] == "reconcile_pending":
         return {**base, "state": "reconcile_unknown"}
     holder: dict[str, Any] = {}
@@ -956,8 +977,13 @@ async def execute_direct_offer(
         receipt = await accept_offer_after_fence(decision, start_effect)
     except ConnectorBusy:
         return {**base, "state": "capacity_full"}
-    effect.verify(holder["intent"], receipt)
-    return {**base, "state": "accepted", "contract_id": receipt["contract_id"]}
+    verified = effect.verify(holder["intent"], receipt)
+    workspace = create_offer_workspace(
+        decision, contract_id=receipt["contract_id"],
+        contract_readback_sha256=verified["readback_hash"],
+    )
+    return {**base, "state": "accepted", "contract_id": receipt["contract_id"],
+            "project_workspace": workspace}
 
 
 async def execute_negotiation_message(
