@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version", "integration_id", "display_name", "organ", "outcome", "owner_time_minutes", "platforms",
+    "prerequisites", "profile_fields", "ceremonies", "gate_states", "browser", "connect", "preflight", "readiness", "outcome_status",
+    "activation", "receipts", "lifecycle", "authority"
+  ],
+  "properties": {
+    "$schema": {"type": "string"},
+    "version": {"const": 1},
+    "integration_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{1,63}$"},
+    "display_name": {"type": "string", "minLength": 1, "maxLength": 80},
+    "organ": {"type": "string", "enum": ["money", "body", "mind"]},
+    "outcome": {"type": "string", "minLength": 1, "maxLength": 240},
+    "owner_time_minutes": {"type": "integer", "minimum": 0, "maximum": 240},
+    "platforms": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["macos-arm64", "linux-x64", "cloud"]}},
+    "prerequisites": {
+      "type": "array", "items": {"$ref": "#/$defs/requirement"}
+    },
+    "profile_fields": {
+      "type": "array", "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["field_id", "purpose", "privacy", "required"],
+        "properties": {
+          "field_id": {"type": "string", "pattern": "^[a-z][a-z0-9_.-]{1,79}$"},
+          "purpose": {"type": "string", "minLength": 1, "maxLength": 240},
+          "privacy": {"enum": ["reusable", "provider_only", "secret_ref"]},
+          "required": {"type": "boolean"}
+        }
+      }
+    },
+    "ceremonies": {
+      "type": "array", "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["ceremony_id", "label", "official_url", "owner_action", "why", "completion_state"],
+        "properties": {
+          "ceremony_id": {"type": "string", "pattern": "^[a-z][a-z0-9_.-]{1,79}$"},
+          "label": {"type": "string", "minLength": 1, "maxLength": 120},
+          "official_url": {"type": "string", "pattern": "^https://"},
+          "owner_action": {"type": "string", "minLength": 1, "maxLength": 240},
+          "why": {"type": "string", "minLength": 1, "maxLength": 240},
+          "completion_state": {"type": "string", "pattern": "^[a-z][a-z0-9_.-]{1,79}$"}
+        }
+      }
+    },
+    "gate_states": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^[a-z][a-z0-9_.-]{1,79}$"}
+    },
+    "browser": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["identity", "profile", "session_policy"],
+      "properties": {
+        "identity": {"type": "string", "minLength": 1, "maxLength": 80},
+        "profile": {"type": "string", "pattern": "^private:"},
+        "session_policy": {"enum": ["persistent-dedicated", "isolated-per-effect", "provider-oauth"]}
+      }
+    },
+    "connect": {"$ref": "#/$defs/command"},
+    "preflight": {"$ref": "#/$defs/commandContract"},
+    "readiness": {"$ref": "#/$defs/commandContract"},
+    "outcome_status": {"$ref": "#/$defs/commandContract"},
+    "activation": {
+      "allOf": [{"$ref": "#/$defs/commandContract"}],
+      "properties": {
+        "owners": {
+          "type": "array", "uniqueItems": true,
+          "items": {"type": "string", "pattern": "^[A-Za-z0-9._-]+$"}
+        }
+      },
+      "required": ["command", "states", "owners"]
+    },
+    "receipts": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["receipt_id", "effect", "readback", "replay_zero"],
+        "properties": {
+          "receipt_id": {"type": "string", "pattern": "^[a-z][a-z0-9_.-]{1,79}$"},
+          "effect": {"type": "string", "minLength": 1, "maxLength": 160},
+          "readback": {"type": "string", "minLength": 1, "maxLength": 160},
+          "replay_zero": {"type": "boolean"}
+        }
+      }
+    },
+    "lifecycle": {
+      "type": "object", "additionalProperties": false,
+      "required": ["status", "stop", "upgrade", "uninstall"],
+      "properties": {
+        "status": {"$ref": "#/$defs/command"},
+        "stop": {"$ref": "#/$defs/command"},
+        "upgrade": {"$ref": "#/$defs/command"},
+        "uninstall": {"$ref": "#/$defs/command"}
+      }
+    },
+    "authority": {
+      "type": "object", "additionalProperties": false,
+      "required": ["money", "ordinary_owner_approval"],
+      "properties": {
+        "money": {"enum": ["none", "earn-only", "bounded-spend", "irreversible-owner-money"]},
+        "ordinary_owner_approval": {"type": "boolean"}
+      }
+    }
+  },
+  "$defs": {
+    "command": {
+      "type": "array", "minItems": 1,
+      "items": {"type": "string", "minLength": 1, "maxLength": 240}
+    },
+    "commandContract": {
+      "type": "object", "additionalProperties": false,
+      "required": ["command", "states"],
+      "properties": {
+        "command": {"$ref": "#/$defs/command"},
+        "states": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "pattern": "^[a-z][a-z0-9_.-]{1,79}$"}},
+        "owners": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "requirement": {
+      "type": "object", "additionalProperties": false,
+      "required": ["requirement_id", "label", "kind", "required"],
+      "properties": {
+        "requirement_id": {"type": "string", "pattern": "^[a-z][a-z0-9_.-]{1,79}$"},
+        "label": {"type": "string", "minLength": 1, "maxLength": 160},
+        "kind": {"enum": ["device", "subscription", "account", "document", "bank", "command", "capability"]},
+        "required": {"type": "boolean"}
+      }
+    }
+  }
+}

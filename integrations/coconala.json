@@ -1,0 +1,58 @@
+{
+  "$schema": "./onboarding.schema.json",
+  "version": 1,
+  "integration_id": "coconala",
+  "display_name": "Coconala Money Printer",
+  "organ": "money",
+  "outcome": "AIが応募、購入前交渉、出品、納品、売上受取を24時間運用する",
+  "owner_time_minutes": 15,
+  "platforms": ["macos-arm64"],
+  "prerequisites": [
+    {"requirement_id": "mac", "label": "Apple Silicon Mac", "kind": "device", "required": true},
+    {"requirement_id": "chatgpt", "label": "ChatGPT subscription", "kind": "subscription", "required": true},
+    {"requirement_id": "phone", "label": "Japanese mobile phone", "kind": "device", "required": true},
+    {"requirement_id": "identity", "label": "Accepted Japanese identity document", "kind": "document", "required": true},
+    {"requirement_id": "bank", "label": "Matching domestic payout account", "kind": "bank", "required": true}
+  ],
+  "profile_fields": [],
+  "ceremonies": [
+    {"ceremony_id": "account", "label": "Account and email", "official_url": "https://coconala.com/users/signup", "owner_action": "Create or recover the account and verify email", "why": "Coconala must own the account and notification address before any marketplace action", "completion_state": "authenticated"},
+    {"ceremony_id": "sms", "label": "SMS verification", "official_url": "https://coconala.com/mypage/sms", "owner_action": "Verify the Japanese mobile number", "why": "Coconala requires SMS verification for proposals, applications, and questions", "completion_state": "sms_verified"},
+    {"ceremony_id": "seller", "label": "Seller information", "official_url": "https://coconala.com/mypage/user_information", "owner_action": "Complete required seller facts and consents", "why": "The official seller and payout records must match the account owner", "completion_state": "seller_information"},
+    {"ceremony_id": "identity", "label": "Identity verification", "official_url": "https://coconala.com/mypage/user_identification", "owner_action": "Complete smartphone document and face capture and wait for approval", "why": "Approved identity verification is required before withdrawing sales", "completion_state": "identity_approved"},
+    {"ceremony_id": "bank", "label": "Payout account", "official_url": "https://coconala.com/mypage/bank", "owner_action": "Register the matching domestic bank account", "why": "Verified sales need an official destination for bank arrival", "completion_state": "bank_registered"}
+  ],
+  "gate_states": [
+    "preflight", "authenticated", "email_verified", "sms_verified",
+    "seller_information", "identity_approved", "bank_registered",
+    "launchd_readback", "storefront_listing_readback"
+  ],
+  "browser": {"identity": "gig-daily-driver", "profile": "private:~/.cloak/profiles/gig-daily-driver", "session_policy": "persistent-dedicated"},
+  "connect": ["./install.sh", "coconala"],
+  "preflight": {"command": ["./install.sh", "coconala", "preflight"], "states": ["ready", "blocked"]},
+  "readiness": {"command": ["./install.sh", "coconala", "status"], "states": ["ready", "needs_setup", "uninitialized"]},
+  "outcome_status": {"command": ["./install.sh", "coconala", "outcomes"], "states": ["ready", "waiting", "issue"]},
+  "activation": {
+    "command": ["./install.sh", "coconala", "finished"],
+    "states": ["ready", "blocked"],
+    "owners": [
+      "ai.anicca.hf-gig-browser", "ai.anicca.hf-gig-apply-direct",
+      "ai.anicca.hf-gig-reply-detector", "ai.anicca.hf-gig-storefront-direct",
+      "ai.anicca.hf-gig-paid-direct", "ai.anicca.hf-gig-release-watch"
+    ]
+  },
+  "receipts": [
+    {"receipt_id": "application", "effect": "official application submitted", "readback": "official applied page", "replay_zero": true},
+    {"receipt_id": "negotiation", "effect": "official reply or estimate sent", "readback": "official seller message or estimate", "replay_zero": true},
+    {"receipt_id": "listing", "effect": "official listing created or updated", "readback": "official public listing", "replay_zero": true},
+    {"receipt_id": "delivery", "effect": "official paid delivery submitted", "readback": "official paid talkroom delivery", "replay_zero": true},
+    {"receipt_id": "bank_arrival", "effect": "permitted withdrawal requested", "readback": "registered bank arrival", "replay_zero": true}
+  ],
+  "lifecycle": {
+    "status": ["./install.sh", "coconala", "status"],
+    "stop": ["./install.sh", "coconala", "stop"],
+    "upgrade": ["git", "pull", "--ff-only"],
+    "uninstall": ["./install.sh", "coconala", "uninstall"]
+  },
+  "authority": {"money": "earn-only", "ordinary_owner_approval": false}
+}
