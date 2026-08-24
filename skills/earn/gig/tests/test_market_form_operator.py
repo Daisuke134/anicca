@@ -19,6 +19,7 @@ def test_common_operator_passes_sealed_intent_to_terra_without_provider_selector
     def run(command, **kwargs):
         captured["command"] = command
         captured["prompt"] = kwargs["input"]
+        captured["env"] = kwargs["env"]
         evidence = Path(command[command.index("--evidence-dir") + 1])
         result = evidence / "result.json"
         result.write_text(json.dumps({"status": "ok", "summary": "submitted", "evidence": ["page"]}))
@@ -46,3 +47,6 @@ def test_common_operator_passes_sealed_intent_to_terra_without_provider_selector
     assert "Never create an isolated/incognito context" in normalized
     assert "EXACT_CDP_ENDPOINT=http://127.0.0.1:9233" in normalized
     assert "any other CDP endpoint or port" in normalized
+    assert "Do not search for browser libraries or build a raw CDP client" in normalized
+    assert captured["env"]["BU_CDP_URL"] == "http://127.0.0.1:9233"
+    assert captured["env"]["BU_NAME"] == "market-form-anymarket"

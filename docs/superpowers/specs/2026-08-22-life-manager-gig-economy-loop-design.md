@@ -647,9 +647,11 @@ The submit-by-default refinement was then replayed read-only over the same ten o
 returned eight `submit` and two `skip`; the only skips required phone/live customer handling. Mobile
 App and Website, AI/MCP integration, Claude marketing, Voice AI product work and other feasible jobs
 all became submit. Missing Skill, unverified payment, new-client history, duration and Connects alone
-produced zero skip. External effects for this replay remained 0. The AI/MCP sealed intent remains the
-first production transport canary; official truth remains four proposals until a fifth Proposal ID and
-the exact Connects delta are read back.
+produced zero skip. The production transport then closed AI/MCP proposal `2091839815472439297`,
+Japanese translation proposal `2091842071424061441`, and OpenClaw agent proposal
+`2091845545298235393`. The latest exact Connects delta is `67 -> 46`; each effect has one official ID,
+one ledger row and one instant Telegram event. Current official truth is seven submitted proposals,
+46 Connects, zero replies, zero offers, zero contracts and payout-received USD 0.
 
 A Skill bundle is immutable and versioned:
 
@@ -1014,11 +1016,10 @@ count. Ten qualified proposals are only the first diagnostic checkpoint: the lea
 and reply evidence there while acquisition continues for every independently profitable candidate.
 Worker count expands from queue depth and measured browser/model/provider capacity and contracts only
 when observed errors, throttling, duplicate risk, deadlines or negative economics require backpressure.
-Current official truth is four submitted proposals, 92 Connects, zero replies, zero offers and zero
-contracts. The fourth is proposal `2091811328085401601` for job `~022091778584504223418`, with
-official Connects `118 → 92`. The runtime snapshot still reports three because it reads the Proposals
-count before the effect and does not refresh that page afterward; fixing this stale post-effect state
-is the next atomic readback task. Public proposal cost varies by job and can change, so the remaining proposal count is
+Current official truth is seven submitted proposals, 46 Connects, zero replies, zero offers and zero
+contracts. The latest is proposal `2091845545298235393` for job `~022091828786665166180`, with
+official Connects `67 -> 46`. Runtime count refreshes on the following five-minute wake; the effect
+ledger and Proposal ID are authoritative immediately. Public proposal cost varies by job and can change, so the remaining proposal count is
 unknown until each fresh preflight; invitations and Direct Offers are prioritized because replying
 costs no Connects. No boost, badge, Plus, auto-top-up or new owner-funded Connects purchase is implied.
 
@@ -1128,11 +1129,12 @@ readback or sibling work. A pre-repair Skill-based message for `~022091530074067
 decision at 18:41:30 and delivered after the repaired wake began; it was stale queue delivery, not a
 new repaired-policy judgment.
 
-Current implementation evidence: production release `fac29d37e0` contains ordered per-candidate batch
-decisions, one batched WorkEvent handoff, fresh-first reporting and parallel hidden job reads. A natural
-wake exits 0 and reconciles official Submitted proposals 4 with runtime state 4 and Connects 92. The
-earlier release-workspace failure is no longer the active runtime blocker; the disk remains low and is
-handled without a 20 GiB operating cap or deletion of protected profiles, projects, ledgers or receipts.
+Current implementation evidence: main and production release `908ea66550b0` contain ordered
+per-candidate batch decisions, exact authenticated CDP routing, one batched WorkEvent handoff,
+fresh-first reporting and parallel hidden job reads. The latest effect reconciles official proposal
+`2091845545298235393` and Connects `67 -> 46`; Telegram ACK is message `32169`. The earlier
+release-workspace failure is no longer the active runtime blocker. Disk headroom is 6.4 GiB without a
+20 GiB operating cap or deletion of protected profiles, projects, ledgers or receipts.
 
 The owner also receives a compact funnel heartbeat instead of one message for every unchanged poll:
 

@@ -48,13 +48,18 @@ Use only the provider-owned authenticated persistent DEFAULT browser context alr
 exact endpoint above. Do not inspect, guess, or use any other CDP endpoint or port. Create a new tab in
 that default context when needed. Never create an
 isolated/incognito context, never launch another browser/profile, and never perform session restoration
-or login; a login redirect means blocked."""
+or login; a login redirect means blocked. The installed common Browser ACI is already configured through
+BU_CDP_URL and BU_NAME. Use `browser-harness` with Python on stdin as documented by its installed
+SKILL.md. Do not search for browser libraries or build a raw CDP client."""
+    environment = os.environ.copy()
+    environment.update({"BU_CDP_URL": cdp_base, "BU_NAME": f"market-form-{provider}"})
     completed = subprocess.run([
         sys.executable, str(runner), "--task-class", "browser-lane-agent", "--prompt-stdin",
         "--schema", str(schema), "--evidence-dir", str(evidence),
         "--task-label", "market-form-effect", "--loop", "gig",
         "--workdir", str(Path.home()), "--timeout-seconds", "900",
-    ], input=prompt, text=True, capture_output=True, timeout=930, check=False)
+    ], input=prompt, text=True, capture_output=True, timeout=930, check=False,
+       env=environment)
     if completed.returncode != 0:
         raise RuntimeError("market_form_operator_failed")
     summary = json.loads((evidence / "summary.json").read_text(encoding="utf-8"))
