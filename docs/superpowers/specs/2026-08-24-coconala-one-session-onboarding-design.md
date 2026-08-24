@@ -144,7 +144,7 @@ marketplace work such as Coconala, Upwork, or future money printers.
 
 ## Acceptance
 
-On each clean pilot-owned Mac, the owner runs only `./install.sh coconala`. The installer
+On an independent clean Mac, the owner runs only `./install.sh coconala`. The installer
 completes `codex login`, opens the dedicated Coconala browser, and prints the full setup
 checklist. The owner completes all official setup there and reports completion once. The
 agent then takes over that exact profile without receiving the password. Acceptance
@@ -152,20 +152,11 @@ requires official readback for every state, one loaded owner for each launchd la
 marketplace effect before authentication, no duplicate listing/effect on rerun, and no
 private value in the public tree or logs.
 
-The onboarding UX is accepted on three independent non-technical owners and their own
-Mac/account/profile/state:
-
-1. family pilot A completes the flow while the maintainer observes but does not type;
-2. family pilot B completes it from the public README without verbal instructions;
-3. friend pilot completes a cold install from the public repository without access to
-   any prior pilot's configuration, credentials, browser profile, listing bundle, or
-   runtime state.
-
-Every pilot must reach official account-gate readback, one loaded owner per launchd
-label, Storefront import or first-listing readback, and next-run duplicate zero. A pilot
-failure updates the public installer/README before the next pilot; private coaching is
-not accepted as a product fix. The pilots validate setup and continuous ownership, not a
-guaranteed time to first sale.
+Independent clean-device usability and business trials follow the code-owned OSS UX gate.
+They use separate owner accounts/profile/state, require README-only completion without
+private coaching, and prove official gates, loaded owners, Storefront import/create,
+replay-zero and eventual business receipts. They are external acceptance evidence, not
+implementation tasks assigned to the coding cursor, and never guarantee time to first sale.
 
 Business completion remains receipt-based: one official Apply application with replay
 zero, one official Negotiate reply/estimate with replay zero, one Storefront listing

@@ -29,6 +29,15 @@ without a receipt.
 
 ## Quick start
 
+### Ideal OSS onboarding target
+
+Life Manager is converging on one local setup UI for every connector and loop: run one
+command, connect ChatGPT/Codex once, confirm reusable facts once, connect each official
+service once, and let every ready Money/Body/Mind loop start automatically. Individual
+skills declare onboarding through a shared manifest instead of adding another installer
+or asking the same questions again. See the
+[OSS onboarding design](docs/superpowers/specs/2026-08-24-life-manager-oss-onboarding-design.md).
+
 ### Use it — cloud (nothing to install)
 
 [Start in Telegram](https://t.me/LifeManagerBotbot?start=lp), or open the
@@ -104,10 +113,9 @@ health, or workload is not a throughput limit. Job Hunter is the separate case w
 human is the employee, so only that loop binds opportunities to the person's real history,
 eligibility, availability, and acceptance authority.
 
-Coconala remains the first OSS onboarding target. Its installer must pass three separate
-clean-device trials—two family pilots and one friend pilot—before this repository starts
-generic multi-market onboarding work. Each pilot uses only their own account, browser
-profile, configuration and state; README-only completion is the product gate.
+Coconala remains the first provider-specific onboarding adapter. Independent clean-device
+usability trials follow the shared code-owned OSS UX gate and are acceptance evidence,
+not current implementation tasks or named personal obligations.
 
 ---
 
