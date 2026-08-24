@@ -8171,10 +8171,26 @@ An original is publishable only when all are true:
 6. The public effect uses Postiz/API transport and returns one exact X permalink.
    An uncertain effect is fenced and never blindly repeated.
 
-Current status: these OSS patterns are inspected and specified, but an
-independent production x-tweeter entrypoint, state root, launchd owner, and three
-consecutive half-hour production effects do not yet exist. That implementation
-gap remains ahead of any claim that original posting is healthy.
+Current implementation state:
+
+- [x] **XT01 Original admission contract.** Commit `7f7969eec` adds an
+  independent `skills/x-tweeter/scripts/original_contract.py`. It binds source,
+  draft, critic, evidence quote, reader value, two concrete value types, weighted
+  length, recent posted hashes, unsupported claims, near-duplicate IDs, novelty,
+  usefulness, and spam risk into one deterministic payload ID. Grounded useful
+  input passes; generic, unsupported, near-duplicate, high-risk, and exact-repeat
+  input fail closed. x-tweeter tests are 2/2 and x-repost regression is 50/50.
+- [ ] **XT02 Independent entrypoint and state.** Build the model/source/critic
+  owner that produces XT01 inputs without importing the x-repost action router.
+- [ ] **XT03 Independent launchd owner.** Install `ai.anicca.x-tweeter-pass` with
+  its own state, queue, claims, results, healthcheck, and staggered `:15/:45`
+  public opportunities.
+- [ ] **XT04 Remove Original publication from x-repost.** Keep quote/repost and
+  Affiliate distribution ownership in x-repost; historical Original receipts
+  remain immutable evidence.
+- [ ] **XT05 Production proof.** Require three consecutive x-tweeter public
+  opportunities with source receipts, quality PASS, exact permalinks, duplicate
+  zero, and exact reach readback before calling independent Original healthy.
 
 ### Loop runtime protocol — not Codex's design TODO
 
