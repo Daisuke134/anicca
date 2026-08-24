@@ -26,6 +26,7 @@ _REQUIRED = {
     "compensation_uncertain",
     "resume_variant",
 }
+POLICY_VERSION = "interview-chance-v2"
 
 
 def fetch_official_description(
@@ -95,15 +96,23 @@ def qualify_one(
 ) -> dict[str, Any]:
     ledger = Ledger(ledger_path)
     try:
-        candidates = [
-            row
-            for row in ledger.pending_materials_ready_applications()
-            if detect_provider(str(row["canonical_url"])) == "workday"
-            and not ledger.connection.execute(
-                "SELECT 1 FROM workday_fit_decisions WHERE application_id = ?",
+        candidates = []
+        for row in ledger.pending_materials_ready_applications():
+            if detect_provider(str(row["canonical_url"])) != "workday":
+                continue
+            fit = ledger.connection.execute(
+                """
+                SELECT decision, policy_version
+                FROM workday_fit_decisions
+                WHERE application_id = ?
+                """,
                 (row["application_id"],),
             ).fetchone()
-        ]
+            if fit is None or (
+                str(fit["decision"]) == "hold"
+                and str(fit["policy_version"] or "") != POLICY_VERSION
+            ):
+                candidates.append(row)
         if not candidates:
             return {"status": "no_pending_workday_fit"}
         row = candidates[0]
@@ -147,7 +156,10 @@ def qualify_one(
             json.dumps(result, ensure_ascii=False, sort_keys=True).encode("utf-8")
         ).hexdigest()
         ledger.record_workday_fit_decision(
-            str(row["application_id"]), str(result["decision"]), evidence_sha256
+            str(row["application_id"]),
+            str(result["decision"]),
+            evidence_sha256,
+            policy_version=POLICY_VERSION,
         )
         return {
             "status": "decided",

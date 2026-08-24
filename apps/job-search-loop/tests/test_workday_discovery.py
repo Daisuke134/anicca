@@ -162,7 +162,9 @@ class WorkdayDiscoveryTests(unittest.TestCase):
             )
             ledger.transition(held_id, "qualified")
             ledger.transition(held_id, "materials_ready")
-            ledger.record_workday_fit_decision(held_id, "hold", "a" * 64)
+            ledger.record_workday_fit_decision(
+                held_id, "hold", "a" * 64, policy_version="test"
+            )
             ledger.close()
 
             def fake_fetch(source):

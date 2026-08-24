@@ -158,6 +158,7 @@ class Ledger:
                 decision TEXT NOT NULL
                     CHECK (decision IN ('qualified', 'rejected', 'hold')),
                 evidence_sha256 TEXT NOT NULL,
+                policy_version TEXT,
                 created_at TEXT NOT NULL
             );
             CREATE TABLE IF NOT EXISTS strategy_generations (
@@ -334,6 +335,16 @@ class Ledger:
                     f"ALTER TABLE {table} ADD COLUMN outcome_evidence_class TEXT"
                 )
         self._migrate_funnel_outcome_evidence_constraint()
+        fit_columns = {
+            str(row["name"])
+            for row in self.connection.execute(
+                "PRAGMA table_info(workday_fit_decisions)"
+            )
+        }
+        if "policy_version" not in fit_columns:
+            self.connection.execute(
+                "ALTER TABLE workday_fit_decisions ADD COLUMN policy_version TEXT"
+            )
         application_columns = {
             str(row["name"])
             for row in self.connection.execute("PRAGMA table_info(applications)")
@@ -1431,7 +1442,12 @@ class Ledger:
         return row is not None and str(row["decision"]) == "qualified"
 
     def record_workday_fit_decision(
-        self, application_id: str, decision: str, evidence_sha256: str
+        self,
+        application_id: str,
+        decision: str,
+        evidence_sha256: str,
+        *,
+        policy_version: str,
     ) -> None:
         if decision not in {"qualified", "rejected", "hold"}:
             raise ValueError("invalid Workday fit decision")
@@ -1441,10 +1457,17 @@ class Ledger:
             self.connection.execute(
                 """
                 INSERT INTO workday_fit_decisions
-                  (application_id, decision, evidence_sha256, created_at)
-                VALUES (?, ?, ?, ?)
+                  (application_id, decision, evidence_sha256, policy_version, created_at)
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT(application_id) DO UPDATE SET
+                  decision = excluded.decision,
+                  evidence_sha256 = excluded.evidence_sha256,
+                  policy_version = excluded.policy_version,
+                  created_at = excluded.created_at
+                WHERE workday_fit_decisions.decision = 'hold'
+                  AND COALESCE(workday_fit_decisions.policy_version, '') != excluded.policy_version
                 """,
-                (application_id, decision, evidence_sha256, _now()),
+                (application_id, decision, evidence_sha256, policy_version, _now()),
             )
             if decision == "rejected":
                 self._transition_in_transaction(

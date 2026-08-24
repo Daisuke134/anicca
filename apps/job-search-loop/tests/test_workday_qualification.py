@@ -122,6 +122,37 @@ class WorkdayQualificationTests(unittest.TestCase):
             self.assertEqual(ledger.current_state(application_id), "materials_ready")
             ledger.close()
 
+    def test_old_hold_is_re_evaluated_once_by_new_policy(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ledger_path, application_id, memory = self._row(root)
+            ledger = Ledger(ledger_path)
+            ledger.record_workday_fit_decision(
+                application_id, "hold", "a" * 64, policy_version="old-policy"
+            )
+            ledger.close()
+
+            result = qualify_one(
+                ledger_path=ledger_path,
+                candidate_memory_path=memory,
+                fetch_description=lambda _url: "Applied AI implementation role",
+                run_model=lambda _prompt: {
+                    "decision": "qualified",
+                    "mandatory_evidence": ["Equivalent impact is grounded"],
+                    "unsupported_gaps": ["Published years exceed tenure"],
+                    "interview_thesis": "Credible interview case now",
+                    "location_feasibility": "Tokyo",
+                    "compensation_thesis": "Unpublished and uncertain",
+                    "compensation_uncertain": True,
+                    "resume_variant": "business",
+                },
+            )
+
+            ledger = Ledger(ledger_path)
+            self.assertEqual(result["decision"], "qualified")
+            self.assertTrue(ledger.workday_fit_qualified(application_id))
+            ledger.close()
+
 
 if __name__ == "__main__":
     unittest.main()
