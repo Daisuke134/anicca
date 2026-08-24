@@ -137,8 +137,8 @@ Complete Google login only on the official page. Workday tenant accounts are cre
 reused later by the loop for each fit-qualified job; do not send Life Manager a password,
 OTP, identity document, or private legal value.
 
-Return to the Life Manager setup window and press Refresh when Google is ready.
-Recovery command: ./install.sh job-hunter finished
+When Google is ready, return to Terminal and run the same public command again.
+Recovery command from this checkout: ./install.sh job-hunter finished
 GUIDE
 }
 

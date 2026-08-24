@@ -77,23 +77,24 @@ zsh scripts/install-launchd.sh
 zsh scripts/healthcheck.sh
 ```
 
-### Public Life Manager onboarding
+### Public Terminal onboarding
 
 > **Public beta:** the code-owned onboarding path is available, but independent
 > clean-Mac real-application acceptance remains open. Do not describe it as fully
 > proven for another person until that receipt exists.
 
-Run the shared Life Manager command:
+Run the Job Hunter command:
 
 ```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Daisuke134/life-manager/main/scripts/bootstrap.sh)"
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Daisuke134/life-manager/main/scripts/bootstrap-job-hunter.sh)"
 ```
 
-Choose **Job Hunter**. The setup collects the finalized resume PDF, application
-email, target role families, acceptable locations, salary floor/target and excluded
-employers. It starts only the dedicated browser until Gmail and Telegram readback
-pass; then it activates the 30-minute acquisition, inbox, learning and health owners.
-Credentials remain in their existing CLI/browser/private transports.
+The first run collects the finalized resume PDF, application email, target role
+families, acceptable locations, salary floor/target and excluded employers directly
+in Terminal. It starts only the dedicated browser. Complete the official login and
+run the exact same command again; Gmail and Telegram readback must pass before the
+30-minute acquisition, inbox, learning and health owners activate. Credentials
+remain in their existing CLI/browser/private transports.
 
 For recovery or development from an existing checkout:
 

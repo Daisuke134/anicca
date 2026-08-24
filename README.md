@@ -37,17 +37,17 @@ authenticated `/panel`; you talk to it in Telegram and it reports back there wit
 
 ### Run it yourself — local (your machine holds the data)
 
-For the local loop onboarding UI on an Apple Silicon Mac:
+To start the Job Hunter loop on an Apple Silicon Mac:
 
 ```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Daisuke134/life-manager/main/scripts/bootstrap.sh)"
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Daisuke134/life-manager/main/scripts/bootstrap-job-hunter.sh)"
 ```
 
-Life Manager opens one local setup surface. Choose the Coconala loop, Job Hunter
-loop, or any other available loop. It asks reusable basics once, opens official
-provider surfaces for credentials or identity ceremonies, verifies readiness, and
-starts only the loops whose gates pass. Passwords, OTPs, identity documents and
-bank values stay on the official provider pages.
+The command installs only missing dependencies, asks for the finalized resume and
+job preferences in Terminal, and opens the dedicated CloakBrowser for official
+login. Finish the official login, then run the exact same command again. Life
+Manager verifies Gmail and Telegram and starts the ready Job Hunter owners.
+Passwords and OTPs stay on official provider pages.
 
 Job Hunter is currently a public-beta loop: its Workday production path is proven
 on the maintainer's Mac, but independent clean-Mac acceptance is still open. Ashby,
@@ -103,7 +103,7 @@ Life Manager is one product in one repository. “Local Life Manager” and the 
              │                                       │
      LOCAL / SELF-HOSTED                      WEB / CLOUD
      deploy/local/compose.yaml                 apps/landing
-          │                                  onboarding UI
+          │                                  web entry
           ▼                                       │
      apps/life-manager                             ▼
      api · scheduler · worker            apps/life-manager
