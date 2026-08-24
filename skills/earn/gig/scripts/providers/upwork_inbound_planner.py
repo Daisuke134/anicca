@@ -246,6 +246,10 @@ def application_decision_event(
             "decision_sha256": decision_sha256,
             "job_source_sha256": packet["detail_evidence_sha256"],
             "terms": proposal["terms"] if submitted else None,
+            "quote": ({
+                "currency": "USD", "amount": proposal["terms"]["bid_usd"],
+                "unit": proposal["terms"]["type"],
+            } if submitted else None),
         },
     }
 
