@@ -31,6 +31,7 @@
   "connect": ["./install.sh", "coconala"],
   "preflight": {"command": ["./install.sh", "coconala", "preflight"], "states": ["ready", "blocked"]},
   "readiness": {"command": ["./install.sh", "coconala", "status"], "states": ["ready", "needs_setup", "uninitialized"]},
+  "outcome_status": {"command": ["./install.sh", "coconala", "outcomes"], "states": ["ready", "waiting", "issue"]},
   "activation": {
     "command": ["./install.sh", "coconala", "finished"],
     "states": ["ready", "blocked"],

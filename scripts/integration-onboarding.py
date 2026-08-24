@@ -96,6 +96,7 @@ def graph(manifests: list[dict[str, Any]]) -> dict[str, Any]:
             "connect": manifest["connect"],
             "preflight": manifest["preflight"],
             "readiness": manifest["readiness"],
+            "outcome_status": manifest["outcome_status"],
             "activation": manifest["activation"],
             "receipt_ids": [row["receipt_id"] for row in manifest["receipts"]],
             "state": "unknown",

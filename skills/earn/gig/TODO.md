@@ -44,7 +44,12 @@ evidence and are not reported as coding work.
    one; one child in Waiting does not block other cards. Generic launchd owner readback and
    the remaining 74 owner-to-manifest migrations are still open.
 7. [ ] Add one Money/Body/Mind home showing only Running, Needs you, Waiting for external
-   result, or Issue detected, backed by official outcome receipts.
+   result, or Issue detected, backed by official outcome receipts. The home and four-state
+   vocabulary are implemented. Coconala now reports five customer-safe outcome rows from
+   provider evidence: current readback proves Application 703, Negotiation 307,
+   Storefront 26 and individual Paid delivery receipts 3, while Bank remains Waiting and
+   payout-request state is never mislabeled as arrival. Body/Mind manifests and receipts
+   remain open; individual Paid receipts do not declare the Paid lane globally complete.
 8. [x] Migrate Coconala's installer/gates/six jobs/receipts into the shared manifest without
    weakening its current one-command and zero-listing behavior. Both global and Coconala
    bootstraps open the common UI; Connect/Resume invokes the existing evidence-gated flow,

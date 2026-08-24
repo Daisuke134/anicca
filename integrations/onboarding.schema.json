@@ -4,7 +4,7 @@
   "additionalProperties": false,
   "required": [
     "version", "integration_id", "display_name", "organ", "outcome", "owner_time_minutes", "platforms",
-    "prerequisites", "profile_fields", "ceremonies", "gate_states", "browser", "connect", "preflight", "readiness",
+    "prerequisites", "profile_fields", "ceremonies", "gate_states", "browser", "connect", "preflight", "readiness", "outcome_status",
     "activation", "receipts", "lifecycle", "authority"
   ],
   "properties": {
@@ -62,6 +62,7 @@
     "connect": {"$ref": "#/$defs/command"},
     "preflight": {"$ref": "#/$defs/commandContract"},
     "readiness": {"$ref": "#/$defs/commandContract"},
+    "outcome_status": {"$ref": "#/$defs/commandContract"},
     "activation": {
       "allOf": [{"$ref": "#/$defs/commandContract"}],
       "properties": {
