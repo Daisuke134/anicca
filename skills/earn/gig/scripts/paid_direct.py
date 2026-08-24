@@ -2560,6 +2560,21 @@ def _prior_artifact_candidates(root: Path) -> list[Path]:
     return candidates
 
 
+def _next_artifact_version(root: Path, prior_candidates: list[Path]) -> str:
+    versions: list[int] = []
+    values = [path.name for path in (root / "delivery").iterdir()]
+    try:
+        values.append(_text(_load(root / "state.json").get("current_version")))
+    except (AttributeError, OSError, json.JSONDecodeError):
+        pass
+    values.extend(path.name for path in prior_candidates)
+    for value in values:
+        versions.extend(int(match.group(1)) for match in re.finditer(
+            r"(?:^|-)v(\d+)(?:\D|$)", value,
+        ))
+    return f"v{max(versions, default=0) + 1}"
+
+
 def _prepare_file_owner_staging(root: Path, context: Path, staging: Path) -> Path | None:
     shutil.copytree(root / "requirements", staging / "requirements")
     restricted = set(restricted_attachment_paths(root))
@@ -2684,9 +2699,7 @@ def _run_isolated_file_owner(args, root: Path, context: Path, prompt_text: str,
                 _clone_prior_artifact(candidate, target)
         prior_candidates = sorted(prior_dir.glob("*.zip"))
         prompt = staging / "owner.prompt.txt"
-        versions = [int(match.group(1)) for path in (root / "delivery").iterdir()
-                    if (match := re.search(r"(?:^|-)v(\d+)(?:\D|$)", path.name))]
-        expected_version = f"v{max(versions, default=0) + 1}"
+        expected_version = _next_artifact_version(root, prior_candidates)
         isolated_prompt = _rewrite_staging_paths(prompt_text, root, staging)
         prior_instruction = (
             f" Prior artifact candidates are under {prior_dir}. Inspect their actual previews and the complete "

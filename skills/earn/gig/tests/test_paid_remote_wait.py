@@ -272,6 +272,18 @@ def test_formal_handoff_does_not_carry_superseded_complaints_forward():
     assert "later explicit buyer approval supersedes" in instruction
 
 
+def test_next_artifact_version_includes_receipt_linked_prior_candidates(tmp_path):
+    paid = load("paid_direct")
+    root = tmp_path / "project"
+    (root / "delivery").mkdir(parents=True)
+    write_json(root / "state.json", {"current_version": "v97"})
+    prior = root / "prior" / "approved-v107-package.zip"
+    prior.parent.mkdir()
+    prior.write_bytes(b"zip")
+
+    assert paid._next_artifact_version(root, [prior]) == "v108"
+
+
 def test_wait_accepts_supplementary_receipt_when_another_has_readback(tmp_path):
     remote = load("paid_remote_result")
     root, feedback, digest = blocked_project(tmp_path)
