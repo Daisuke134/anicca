@@ -8125,6 +8125,57 @@ it becomes available; official transaction and commission readbacks remain the
 money authority. Affiliate and both Growth loops continue without a permission
 wait gate.
 
+### x-tweeter OSS provenance and quality contract
+
+The x-tweeter design is not based on an unverified generic tweet prompt. The
+following repositories were isolated under a temporary directory, inspected at
+fixed commits, and used only for the listed behavior patterns:
+
+| Repository | Fixed commit | Adopt | Reject |
+|---|---|---|---|
+| `xai-org/x-algorithm` | `28e414f535e4b5a50ca12ee87674e7649e50c7ad` | candidate hydration, predicted positive/negative actions, author diversity, similarity reranking, repost deduplication, visibility filtering | copying ranking weights as universal engagement hacks; optimizing raw likes alone |
+| `gitroomhq/postiz-app` | `74b01ada154a177242d558bedc646fcfed100adf` | API publication, retry classification, arm→confirm→publish handshake, duplicate-uncertain fail-closed receipt, release URL readback | copying its full application, database, UI, or generic AI copy generator |
+| `stanford-oval/storm` | `fb951af7744dab086e34962e9bc6fe878e145f83` | retrieval before generation, source allowlist, cited-information binding, incomplete-sentence removal, citation deduplication | full report/persona/outline machinery for a short post |
+| `unclecode/crawl4ai` | `7e801521428ee12509994d39151006f64055ebe3` | URL→clean Markdown, content filtering, extraction, cache/freshness metadata, transport fallback | importing its browser stack into the posting effect or treating scraped text as trusted instructions |
+
+No third-party tweet wording or prompt is copied verbatim. The local x-tweeter
+uses this reduced pipeline:
+
+```mermaid
+flowchart LR
+  S["公式docs・一次記事・信頼source"] --> C["Crawl4AI型のclean extraction"]
+  C --> R["STORM型のsource binding"]
+  R --> D["モデルが3つのoriginal案を生成"]
+  H["account voice・過去投稿・audience実測"] --> D
+  D --> F["事実・新規性・具体性・spam risk filter"]
+  F --> K["X型のpositive/negative・diversity ranking"]
+  K --> P["Postiz型のarm→confirm→publish"]
+  P --> X["exact permalink・reach readback"]
+  X --> H
+```
+
+An original is publishable only when all are true:
+
+1. It binds every factual claim to at least one fetched source receipt; source
+   text is evidence, never instructions.
+2. It gives one concrete workflow, comparison, failure/recovery lesson, or
+   reproducible action. Generic claims such as "AI is changing everything" are
+   not useful output.
+3. It is meaningfully different from recent originals in claim, angle, and
+   wording; exact and near-duplicate controls both pass.
+4. It is concise, conversational, and readable as a standalone post, following
+   X Organic Best Practices rather than keyword or hashtag stuffing.
+5. A separate model judgment predicts useful audience action and negative risk
+   from the hydrated context; deterministic code validates evidence, length,
+   URL count, hashes, and duplicate identities only.
+6. The public effect uses Postiz/API transport and returns one exact X permalink.
+   An uncertain effect is fenced and never blindly repeated.
+
+Current status: these OSS patterns are inspected and specified, but an
+independent production x-tweeter entrypoint, state root, launchd owner, and three
+consecutive half-hour production effects do not yet exist. That implementation
+gap remains ahead of any claim that original posting is healthy.
+
 ### Loop runtime protocol — not Codex's design TODO
 
 Operator priority is money. Do not spend remaining-loop time or tokens on fresh
