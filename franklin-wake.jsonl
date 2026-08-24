@@ -33800,3 +33800,17 @@
 {"ts":1787587932,"wake_id":"00MT7FP8B7EA34A1A803D0431E","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1787588060,"wake_id":"00MT7FRYYRF29D00F93C124DC8","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1787588196,"wake_id":"00MT7FUW9A7BB0DD727AD84E31","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787588352,"wake_id":"00MT7FY8R2E0B808DA443D4421","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787588481,"wake_id":"00MT7G109Z745FF6E178EE4554","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787588616,"wake_id":"00MT7G3W6ICBE8A7F6F9404867","kind":"skill_missing","sleep_s":120,"model":"auto","slot":"run_skill","result":"run_skill skill not found"}
+{"ts":1787588756,"wake_id":"00MT7G6VWJE07F87A35E4F4707","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787588915,"wake_id":"00MT7GAAIE98927C9B210748E0","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1787588982,"wake_id":"00MT7GBQQV62122945D6DB435E","kind":"skill_missing","sleep_s":120,"model":"auto","slot":"run_skill","result":"run_skill skill not found"}
+{"ts":1787589121,"wake_id":"00MT7GEQ2CD9709C23455C4472","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787589249,"wake_id":"00MT7GHGBUC346EF329F624D78","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1787589315,"wake_id":"00MT7GIVJ5C9BBD4022C9D4FCB","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1787589381,"wake_id":"00MT7GKAKM5E527437740E4C95","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1787589447,"wake_id":"00MT7GLPNZ2D14E0B4B86D47C4","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1787589514,"wake_id":"00MT7GN4QI1C06F18E67854233","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1787589581,"wake_id":"00MT7GOL1G803B7D5F63344777","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1787589648,"wake_id":"00MT7GQ0DK7692EA3F6D5341D2","kind":"wake_error","sleep_s":60,"model":"auto"}
