@@ -6,120 +6,107 @@ evidence does not belong on this list.
 The four lanes run from `~/gig/releases/life-manager/<sha>/`, cut from `main` by
 `gig_release.py`. See `README.md` for how the whole thing is installed.
 
-## Current four-lane revenue cursor
+## Current four-lane revenue cursor — execute in this order
 
-This section is the current execution order. Older unchecked sections are supporting
-evidence only and do not override it. The target is verified monthly net cash of at least
-USD 10,000; it is an optimization target, not a promise. Only official contract, fee,
-payout, and bank receipts advance it.
+This is the only active order. Finish stages from top to bottom; items inside the same stage run
+concurrently. Older unchecked sections are evidence only and never override this cursor. The
+target is verified monthly net cash of at least USD 10,000, not a promise. Only official
+contract, fee, payout, and bank receipts advance it.
 
-### Shared loop contract
+### Stage 1 — unblock Paid, then start every current owner
 
-1. [ ] Converge every runtime path to `P0-four-lane-parallel`: one isolated owner per
-   application, inquiry, or paid project, fully concurrent inside and across lanes. Give each
-   owner a distinct tab/target, client identity, URL, state, and evidence root. Do not add or
-   retain an account-wide, browser-wide, lane-wide, or wake-wide queue merely because owners
-   share one authenticated profile.
-2. [ ] Compile all relevant DM, talkroom, attachments, listing, and effect history into that
-   owner. Share skills, account references, browser sessions, and tools, but never customer
+1. [ ] Remove Paid's remaining `max_workers=1` and global CDP-lock path. Dispatch one isolated
+   owner per paid marketplace entity with distinct tab/target, client identity, URL, state, and
+   evidence root. Different clients prepare, build, review, send, and read back concurrently;
+   only the same entity/effect key is compare-and-swap fenced.
+2. [ ] Before dispatch, refresh every current room and compile all relevant DM, talkroom,
+   attachments, listing, latest buyer message identity, and effect history into that project's
+   private context. Share skills, account references, sessions, and tools only; never customer
    context, artifact, history, or state. Resolve secrets only inside the selected adapter.
-3. [ ] Use one model-owned capability judgement across Apply and Paid. Prefer demonstrated
-   software, landing-page, writing, research, and strategy work. Normally reject work that
-   requires human meetings, undisclosed personal participation, unsupported desktop-only
-   work, or unreliable prolonged browser operation. Do not hardcode buyer names, categories,
-   or keyword lists.
-4. [ ] Remove the remaining Paid global CDP-lock and single-owner executor path, while keeping
-   same-entity duplicate safety through effect-key compare-and-swap/fencing. Prove two
-   different paid clients can prepare, send, and read back concurrently without context,
-   page, attachment, receipt, or effect-key crossover. Require a fresh isolated pre-submit
-   review of each exact current requirement and outbound artifact/message; repair findings,
-   send once, obtain provider plus Coconala exact readback, observe buyer completion when
-   required, and prove duplicate effect zero on a later wake.
-4a. [ ] Persist one lifecycle state per marketplace entity: `ACTIVE`, `WAITING_EXTERNAL`,
-    `AWAITING_BUYER`, `TERMINAL_PENDING_REPLAY`, `CLOSED_COMPLETED`, or
-    `CLOSED_CANCELLED`. A bounded worker process exits after each step; its durable owner and
-    checkpoint remain. Failure, revision, provider wait, and buyer review are non-terminal.
-4b. [ ] Enter `TERMINAL_PENDING_REPLAY` only after official buyer acceptance/transaction
-    completion or official cancellation readback. Run one observe-only wake with all effect
-    classes zero, then atomically release active capacity into the corresponding closed state.
-    Never close from model success, a cancellation request, local completion, tests, or process
-    exit.
-4c. [ ] Keep closed project context, artifacts, receipts, effect keys, and the terminal
-    readback as an immutable tombstone. Delete nothing on close. A replay of the same entity is
-    a no-op; a pre-terminal revision resumes the same owner; a new order gets a new owner ID.
-4d. [ ] Add lifecycle regressions copied at the pattern level from Temporal `e652a4d0`,
-    LangGraph `f09cfe8f`, and Hatchet `89d130f3`: wait survives process exit, successful sibling
-    checkpoints are not rerun, stale invocation is rejected, completion/cancellation cannot
-    close before replay-zero, and two different entity keys remain fully parallel.
-4e. [ ] Bind every Paid provider/Coconala effect to the installed launchd project-owner ID,
-    run ID, marketplace entity, effect key, exact payload/artifact hash, and official readback.
-    Reject manual user, foreground Codex, ad-hoc script, or uncheckpointed browser effects as
-    acceptance evidence even when the external result happens to be correct.
-4f. [ ] Remove ordinary human approval and customer-work fallbacks after setup. Resolve the
-    next skill/account/session/tool autonomously. When the exact requirement cannot be completed
-    truthfully without identity, attendance, consent, physical presence, or unsupported tooling,
-    choose a disclosed-agent equivalent that satisfies the buyer outcome, negotiate supported
-    scope, or complete official cancellation. Never impersonate, fabricate, or ship a proxy.
-4g. [ ] Prove the no-human contract on varied real Paid orders: one artifact delivery, one
-    external-provider job, and one revision/cancellation lifecycle. Each starts from natural
-    discovery, survives a process restart, closes from official terminal state, and replays with
-    every effect class zero; no account-owner/Codex customer-work receipt appears in the cycle.
 
-### Acquisition and conversion
+### Stage 2 — close the current Paid liabilities concurrently
 
-5. [ ] Apply: read the full posting and attachments, prove current capability and available
-   delivery evidence, submit only high-fit profitable work, and read the official application
-   identity back. Track application → reply → contract → payment conversion, not raw volume.
-6. [ ] Reply/Negotiate: consume every new buyer message once with complete cross-surface
-   context; answer concisely and truthfully without apologies, internal agent details, or
-   unnecessary operational disclosure; read the exact seller message or estimate back.
-7. [ ] Storefront: keep only offers aligned with demonstrated high-quality capabilities,
-   connect inquiry/order identity to the correct listing, measure official impression → view
-   → inquiry → order conversion, and change one buyer-visible variable per measured experiment.
-8. [ ] Revenue controller: attribute every contract and payment to Apply or Storefront,
-   subtract marketplace fees and attributable delivery cost, and optimize expected verified
-   net cash toward USD 10,000/month. Pending/available balances are pipeline, not cash.
+3. [ ] byusco `18171890`: invalidate the stale note-only decision, consume the latest request,
+   publish the reviewed article to the agreed anicca AI blog through the installed owner, read
+   back the public URL, report and formally deliver it, obtain buyer completion, and replay with
+   zero effects. The earlier note handoff is not completion.
+4. [ ] LBJ `18130722`: use only the latest explicit buyer approval and latest v98 project-manager
+   package. Codex may inspect v98 and repair the generic approval/reviewer code, but must not send
+   customer work. A seller acknowledgement must not erase buyer approval. The installed Paid
+   owner fresh-reviews v98, formally submits it, reads it back, closes, and proves replay-zero.
+5. [ ] `18183618`: continue the JAIC path without impersonation; use a truthful disclosed-agent
+   equivalent, negotiate supported scope, or complete official cancellation when the exact
+   provider requirement cannot be performed autonomously. Otherwise obtain completion evidence,
+   the four-part report, fresh review, formal delivery, buyer completion, and replay-zero.
+6. [ ] `18184558`: make no guessed seller-side delivery/cancellation action. Observe official
+   Coconala cancellation, enter terminal pending replay, prove all effects zero, and close as
+   cancelled.
+7. [ ] `18180857`: use the already-authorized TikTok account/session and never ask Chii for
+   another code. Perform the exact scope, verify the live result, deliver, obtain buyer completion,
+   and prove replay-zero.
+8. [ ] `18169985`: keep additional outreach at zero until the buyer explicitly approves the
+   already-sent private-DM sample format. After approval, complete only that approved batch,
+   report verified recipients/results, formally deliver, obtain buyer completion, and replay-zero.
 
-### Active paid projects
+### Stage 3 — generalize the measured Paid owner into a job-doing agent
 
-9. [ ] `18183618`: let the project owner continue the already-booked JAIC path; obtain the
-   official Meet URL, update the existing Calendar event without duplication, complete only
-   provider work that can be performed truthfully without impersonation, produce the requested
-   four-part report and completion evidence, pass fresh review, formally deliver, obtain buyer
-   completion, and prove replay-zero.
-10. [ ] `18184558`: honor the latest cancellation/support flow with no seller-side delivery or
-    cancellation-control guess. Observe the official Coconala cancellation, enter terminal
-    pending replay, prove all effects zero, and close as cancelled.
-11. [ ] `18180857`: use the already-authorized TikTok account/session without asking Chii for
-    another code; perform the exact current scope, verify the live result, deliver, obtain buyer
-    completion, and prove replay-zero.
-12. [ ] `18169985`: keep additional outreach at zero until the buyer explicitly approves the
-    already-sent private-DM sample format; after approval, complete only the approved batch,
-    report verified recipients/results, formally deliver, obtain buyer completion, and prove
-    replay-zero.
-13. [ ] byusco `18171890`: consume the latest buyer requirement that replaces the stale note-only
-    decision, publish the already-reviewed article to the agreed anicca AI blog through the
-    installed owner, read back the public URL, report and formally deliver it, obtain buyer
-    completion, and prove replay-zero. Do not count the earlier note handoff as completion.
-13a. [ ] LBJ `18130722`: use only the latest buyer request and latest v98 project-manager package;
-     never resume an obsolete version. Repair the generic approval-state defect so a seller
-     acknowledgement cannot erase the buyer's explicit approval, then let the Paid owner fresh-
-     review, formally submit, read back, close, and replay-check it. Codex repairs the loop and
-     does not become the delivery worker.
+9. [ ] Give every new paid order one stable marketplace owner ID and lifecycle:
+   `ACTIVE`, `WAITING_EXTERNAL`, `AWAITING_BUYER`, `TERMINAL_PENDING_REPLAY`,
+   `CLOSED_COMPLETED`, or `CLOSED_CANCELLED`. Worker processes are bounded; owner state survives
+   waits, failures, revisions, restarts, and model failover.
+10. [ ] Keep every verified effect as a checkpoint so a resumed owner never repeats successful
+    work. Close only after official acceptance/transaction completion or cancellation plus an
+    observe-only replay with every effect zero. Release capacity but retain immutable context,
+    artifact, state, receipt, and effect-key tombstones.
+11. [ ] Let the model judge the complete job and choose skills/accounts/sessions/tools. Prefer
+    demonstrated software, landing-page, writing, research, and strategy capability. Do not use
+    buyer-name, category, or keyword routing. Deterministic code owns only identity, arithmetic,
+    checkpoints, fencing, receipts, and exact readback.
+12. [ ] Require a fresh isolated reviewer to compare exact current requirements with the exact
+    artifact/message. Return every actionable finding to the same owner; never submit a known
+    low-quality proxy. Only the installed project owner may send once and read back the result.
+13. [ ] Bind every provider/Coconala effect to launchd owner ID, run ID, marketplace entity,
+    effect key, exact payload/artifact hash, and official readback. Manual user, foreground Codex,
+    ad-hoc script, and uncheckpointed browser effects never satisfy acceptance.
+14. [ ] Remove ordinary human approval/customer-work fallbacks after setup. When a requirement
+    truthfully needs identity, attendance, consent, physical presence, or unsupported tooling,
+    select a disclosed-agent equivalent that satisfies the outcome, negotiate supported scope,
+    or complete official cancellation. Never impersonate or fabricate.
 
-### OSS acceptance
+### Stage 4 — prove no-human Paid before claiming completion
 
-14. [ ] Run the public one-line bootstrap on independent clean Apple Silicon Macs through
-    official signup gates, six-owner activation, restart/update recovery, one real application,
-    one reply, one storefront mutation, and the three varied no-human Paid cycles in 4g. For every
-    effect retain installed-owner provenance, official readback, terminal state, and next-wake
-    duplicate zero; publish no income guarantee or unverified autonomous-completion claim.
+15. [ ] Add regressions patterned on Temporal `e652a4d0`, LangGraph `f09cfe8f`, and Hatchet
+    `89d130f3`: process-exit resume, retained sibling checkpoints, stale invocation rejection,
+    same-key dedupe, different-key full parallelism, terminal-before-replay rejection, and closed
+    tombstone no-op.
+16. [ ] From the public one-line bootstrap on independent clean Apple Silicon Macs, prove three
+    varied real Paid cycles: artifact delivery, external-provider work, and revision/cancellation.
+    Each starts from natural discovery, survives restart/update, carries installed-owner
+    provenance, reaches official terminal state, and replays every effect class at zero without
+    account-owner or foreground-Codex customer work.
+
+### Stage 5 — improve acquisition and verified net cash
+
+17. [ ] Apply reads full posting/attachments, proves current capability, submits only high-fit
+    profitable work, reads back official application identity, and tracks application → reply →
+    contract → payment conversion rather than raw volume.
+18. [ ] Reply/Negotiate consumes each buyer event once with complete cross-surface context,
+    answers concisely without apologies/internal detail/unnecessary disclosure, and reads back the
+    exact seller message or estimate.
+19. [ ] Storefront keeps offers aligned with demonstrated capabilities, correlates inquiry/order
+    to listing identity, measures impression → view → inquiry → order, and changes one measured
+    buyer-visible variable at a time.
+20. [ ] Attribute every contract/payment to Apply or Storefront, subtract marketplace fees and
+    attributable delivery cost, and optimize verified net cash toward USD 10,000/month. Pending
+    and available balances remain pipeline, not cash.
 
 ## Historical onboarding checklist — supporting evidence
 
 The current cursor is the four-lane revenue section above. This older checklist preserves
 implementation and acceptance evidence; its unchecked external trials remain inputs to
-item 14 above and do not redefine the current order.
+Stage 4 item 16 above and do not redefine the current order.
+Every older buyer-specific action, stop, transfer, artifact version, priority, and completion
+claim is historical; Stage 2's latest-message-bound instruction supersedes it.
 
 ### Current Coconala-only code TODO — external trials excluded
 
