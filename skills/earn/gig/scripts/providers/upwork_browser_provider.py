@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
-from urllib.parse import quote_plus, urlsplit
+from urllib.parse import quote, urlsplit
 
 
 SCRIPTS = Path(__file__).resolve().parents[1]
@@ -324,7 +324,7 @@ async def replenish_candidates(
     )
     query_index = load_search_query_index(cache) % len(queries)
     search = queries[query_index]
-    search_url = "https://www.upwork.com/nx/search/jobs/?q=" + quote_plus(search["query"]) + "&sort=recency"
+    search_url = "https://www.upwork.com/nx/search/jobs/?q=" + quote(search["query"], safe="") + "&sort=recency"
     result["search_query"] = search
     artifact = Path(await navigate_and_snapshot(
         pass_id, f"{sequence:02d}-1", "candidate-search", search_url, "read_only", 2, 1440,

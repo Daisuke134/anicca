@@ -571,6 +571,12 @@ U13 atomic order:
     location-bound work, exposing search strategy as the next bottleneck. The next slice asks the
     model for three narrow queries from the installed Upwork Skill and owner evidence, persists a
     rotation index, and uses no hardcoded semantic keywords.
+27. **MODEL SEARCH QUERY PROVED / URL CANONICALIZATION FIX ACTIVE:** release `33f8ae5d9755` asked the
+    model once and received three Skill-bound queries covering FastAPI text AI, multimodal similarity
+    ranking and bounded AI integration. The first authenticated search rendered real results, but
+    Upwork canonicalized query spaces from `+` to `%20`, so the strict requested/final URL receipt
+    rejected it before candidate judgment. Generate `%20` directly and replay the same cached model
+    strategy. No proposal, Connects or marketplace effect occurred.
 
 U14 atomic order:
 
