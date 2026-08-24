@@ -2346,6 +2346,11 @@ Only the first unchecked row is active; a missing buyer event blocks that resour
 
 ### Task 64: Retire provider-specific application form scripts
 
+- [x] Add one provider-neutral `market_form_operator.py` that passes provider, resource URL and sealed
+  intent to the existing Terra `browser-lane-agent`; it contains no site selectors or form policy.
+- [x] Bypass Upwork deterministic form filling in the acquisition path. Fence from the already-read
+  official Connects receipt, let Terra operate the whole form, then independently read Proposals and
+  Connects pages for Proposal ID and exact delta.
 - [ ] Replace Upwork deterministic form filling/preflight selectors with one Terra common-Browser-ACI
   task: inspect current form, fill the sealed intent, resolve ordinary validation feedback and submit.
 - [ ] Keep deterministic code only for immutable intent hash, resource lease, Connects reservation,

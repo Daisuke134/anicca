@@ -74,6 +74,26 @@ def test_verified_proposal_event_carries_official_id_connects_and_quote():
     }
 
 
+def test_submitted_receipt_uses_new_official_proposal_with_exact_title():
+    payload = {"job_id": "~job-1", "title": "High-value job"}
+    state = {
+        "submitted_proposal_entities": [
+            {"id": "100", "title": "Old job"},
+            {"id": "200", "title": "High-value job"},
+        ],
+        "active_proposal_entities": [],
+    }
+
+    receipt = provider.submitted_proposal_receipt(
+        payload, state, evidence_sha256="a" * 64, existing_proposal_ids={"100"},
+    )
+
+    assert receipt == {
+        "state": "submitted", "job_id": "~job-1", "proposal_id": "200",
+        "evidence_sha256": "a" * 64,
+    }
+
+
 def test_independent_public_job_details_are_read_concurrently_in_source_order(tmp_path, monkeypatch):
     active = 0
     peak = 0

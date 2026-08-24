@@ -26,9 +26,9 @@ if str(SCRIPTS) not in sys.path:
 
 from cdp_nav_snapshot import navigate_and_snapshot  # noqa: E402
 from connector_outbox import ConnectorBusy, ConnectorOutbox  # noqa: E402
+from market_form_operator import operate as operate_market_form  # noqa: E402
 from provider_authorization import DEFAULT_RECEIPT_PATH  # noqa: E402
 import report_envelope  # noqa: E402
-from upwork_proposal_browser import submit_proposal_after_fence  # noqa: E402
 from upwork_inbound_planner import invoke as plan_inbound, invoke_batch as plan_batch, write_sealed_proposal  # noqa: E402
 from upwork_offer_gate import invoke as qualify_direct_offer  # noqa: E402
 from upwork_offer_browser import accept_offer_after_fence  # noqa: E402
@@ -805,7 +805,8 @@ def reconcile_terminal_transitions(
 
 async def execute_sealed_proposal(
     payload: dict[str, Any], *, pass_id: str, sequence: int, database: Path,
-    manifest: Path, browser_profile: Path,
+    manifest: Path, browser_profile: Path, connects_pre: int, connects_pre_hash: str,
+    existing_proposal_ids: set[str],
 ) -> tuple[dict[str, Any], dict[str, Any] | None, str | None]:
     """Run either public or invitation proposal through the same durable effect."""
     effect_now = datetime.now(timezone.utc)
@@ -824,21 +825,45 @@ async def execute_sealed_proposal(
         return {**base, "state": "submitted", "proposal_id": existing["proposal_id"]}, None, None
     if existing is not None and existing["state"] == "reconcile_pending":
         return {**base, "state": "reconcile_unknown"}, None, None
-    holder: dict[str, Any] = {}
-
-    def start_effect(preflight: dict[str, Any]) -> bool:
-        holder["intent"], started = effect.start(payload, preflight)
-        return started
-
-    receipt = await submit_proposal_after_fence(payload, start_effect)
+    preflight = {
+        "ready": True, "job_id": payload["job_id"],
+        "required_connects": payload["terms"]["required_connects"],
+        "available_connects": connects_pre, "evidence_sha256": connects_pre_hash,
+    }
+    intent, started = effect.start(payload, preflight)
+    if started is not True:
+        return {**base, "state": "reconcile_unknown"}, None, None
+    form_url = (
+        payload["job_url"] if payload["status"] == "frozen_waiting_for_invitation"
+        else f"https://www.upwork.com/nx/proposals/job/{payload['job_id']}/apply/#/"
+    )
+    await asyncio.to_thread(
+        operate_market_form, provider="upwork", resource_id=payload["job_id"],
+        form_url=form_url, sealed_intent=payload,
+    )
+    proposal_artifact = Path(await navigate_and_snapshot(
+        pass_id, f"{sequence:02d}-1", "proposal-post", PROPOSALS_URL,
+        "read_only", 2, 1440,
+    ))
+    proposal_text, proposal_hash, proposal_links = _read_evidence(
+        proposal_artifact, PROPOSALS_URL,
+    )
+    proposal_state = {
+        **parse_inventory(proposal_text),
+        **parse_stable_entities(invite_links=[], proposal_links=proposal_links),
+    }
+    receipt = submitted_proposal_receipt(
+        payload, proposal_state, evidence_sha256=proposal_hash,
+        existing_proposal_ids=existing_proposal_ids,
+    )
     artifact = Path(await navigate_and_snapshot(
-        pass_id, f"{sequence:02d}-1", "connects-post", CONNECTS_URL,
+        pass_id, f"{sequence + 1:02d}-1", "connects-post", CONNECTS_URL,
         "read_only", 2, 1440,
     ))
     post_text, post_hash, _ = _read_evidence(artifact, CONNECTS_URL)
     post_connects = parse_connects(post_text)
     effect.verify(
-        holder["intent"], receipt, connects_post=post_connects["balance"],
+        intent, receipt, connects_post=post_connects["balance"],
         connects_evidence_sha256=post_hash,
     )
     publish_application_decisions([proposal_submitted_event(
@@ -847,6 +872,27 @@ async def execute_sealed_proposal(
     return {
         **base, "state": "submitted", "proposal_id": receipt["proposal_id"],
     }, post_connects, post_hash
+
+
+def submitted_proposal_receipt(
+    payload: dict[str, Any], state: dict[str, Any], *, evidence_sha256: str,
+    existing_proposal_ids: set[str],
+) -> dict[str, str]:
+    entities = [
+        item for key in ("submitted_proposal_entities", "active_proposal_entities")
+        for item in state.get(key, []) if isinstance(item, dict)
+    ]
+    matches = [
+        item for item in entities
+        if item.get("title") == payload.get("title")
+        and str(item.get("id") or "") not in existing_proposal_ids
+    ]
+    if len(matches) != 1 or not re.fullmatch(r"[0-9]+", str(matches[0].get("id") or "")):
+        raise ValueError("upwork_proposal_submit_unconfirmed")
+    return {
+        "state": "submitted", "job_id": payload["job_id"],
+        "proposal_id": str(matches[0]["id"]), "evidence_sha256": evidence_sha256,
+    }
 
 
 async def execute_direct_offer(
@@ -1082,6 +1128,13 @@ async def observe(
                     acquisition, post_connects, post_hash = await execute_sealed_proposal(
                         proposal, pass_id=pass_id, sequence=len(targets) + 2,
                         database=database, manifest=manifest, browser_profile=browser_profile,
+                        connects_pre=state["balance"],
+                        connects_pre_hash=state["evidence_sha256"]["connects"],
+                        existing_proposal_ids={
+                            str(item["id"]) for key in (
+                                "submitted_proposal_entities", "active_proposal_entities",
+                            ) for item in state.get(key, []) if isinstance(item, dict) and item.get("id")
+                        },
                     )
                     state["free_acquisition"].update(acquisition)
                     if post_connects is not None and post_hash is not None:
@@ -1133,6 +1186,13 @@ async def observe(
         acquisition, post_connects, post_hash = await execute_sealed_proposal(
             selected, pass_id=pass_id, sequence=len(targets) + 1,
             database=database, manifest=manifest, browser_profile=browser_profile,
+            connects_pre=state["balance"],
+            connects_pre_hash=state["evidence_sha256"]["connects"],
+            existing_proposal_ids={
+                str(item["id"]) for key in (
+                    "submitted_proposal_entities", "active_proposal_entities",
+                ) for item in state.get(key, []) if isinstance(item, dict) and item.get("id")
+            },
         )
         state["free_acquisition"] = acquisition
         if post_connects is not None and post_hash is not None:
