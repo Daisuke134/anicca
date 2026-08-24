@@ -63,6 +63,11 @@ def validate_pass_result(evidence_dir: Path) -> str | None:
                 and "following arguments are required: command" in output
             ):
                 continue
+            if (
+                "job_search_loop.browser_agent.browser_agent.runtime" in command
+                and "ModuleNotFoundError" in output
+            ):
+                continue
             return None
     return "transport_failed_without_command_failure"
 

@@ -168,6 +168,31 @@ class ModelBrowserLoopContractTests(unittest.TestCase):
                         "type": "item.completed",
                         "item": {
                             "type": "command_execution",
+                            "exit_code": 1,
+                            "command": (
+                                "/opt/homebrew/bin/python3 -m "
+                                "job_search_loop.browser_agent.browser_agent.runtime type"
+                            ),
+                            "aggregated_output": (
+                                "ModuleNotFoundError: No module named "
+                                "'job_search_loop.browser_agent.browser_agent'"
+                            ),
+                        },
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            self.assertEqual(
+                validator(root),
+                "transport_failed_without_command_failure",
+            )
+            stdout.write_text(
+                json.dumps(
+                    {
+                        "type": "item.completed",
+                        "item": {
+                            "type": "command_execution",
                             "exit_code": 2,
                             "command": (
                                 "/bin/zsh -lc '/opt/homebrew/bin/python3 -m "

@@ -67,8 +67,11 @@ The only valid runtime module is
 `job_search_loop.runtime` without a subcommand and argparse reports that `command` is
 required, no browser action or external effect occurred. Correct the module and issue
 the intended canonical command once with the same fresh target; this usage error is
-not `transport_failed`. Do not generalize this exception to any command that reached
-the canonical browser runtime.
+not `transport_failed`. The same correction rule applies if you accidentally duplicate
+the namespace as `job_search_loop.browser_agent.browser_agent.runtime` and Python
+reports `ModuleNotFoundError`: replace it with the canonical module and issue the
+intended command once with the same fresh target. Do not generalize these exceptions
+to any command that reached the canonical browser runtime.
 
 Every otherwise anonymous control has an observation-local `ref:*` stable ID,
 adapted from career-ops. Prefer that exact returned ref. A ref, label resolution,
