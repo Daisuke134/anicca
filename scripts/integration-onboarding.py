@@ -5,6 +5,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import plistlib
+import re
 from pathlib import Path
 from typing import Any
 
@@ -71,8 +73,15 @@ def validate_cross_manifest(manifests: list[dict[str, Any]]) -> None:
 
 
 def graph(manifests: list[dict[str, Any]]) -> dict[str, Any]:
+    discovered = discover_owner_labels()
+    declared = {owner for manifest in manifests for owner in manifest["activation"]["owners"]}
     return {
         "version": 1,
+        "manifest_coverage": {
+            "discovered_owners": len(discovered),
+            "declared_owners": len(discovered & declared),
+            "unmanaged_owners": len(discovered - declared),
+        },
         "integrations": [{
             "integration_id": manifest["integration_id"],
             "display_name": manifest["display_name"],
@@ -92,6 +101,31 @@ def graph(manifests: list[dict[str, Any]]) -> dict[str, Any]:
             "state": "unknown",
         } for manifest in manifests],
     }
+
+
+def discover_owner_labels() -> set[str]:
+    labels: set[str] = set()
+    for path in REPO.rglob("launchd-jobs.json"):
+        try:
+            value = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        for row in value.get("jobs", []):
+            if isinstance(row, dict) and isinstance(row.get("label"), str):
+                labels.add(row["label"])
+    for path in list(REPO.rglob("*.plist")) + list(REPO.rglob("*.plist.template")):
+        if ".git" in path.parts or "legacy-launchd-archive" in path.parts:
+            continue
+        try:
+            value = plistlib.loads(path.read_bytes())
+            label = value.get("Label") if isinstance(value, dict) else None
+        except Exception:
+            text = path.read_text(encoding="utf-8", errors="ignore")
+            match = re.search(r"<key>Label</key>\s*<string>([^<]+)</string>", text)
+            label = match.group(1) if match else None
+        if isinstance(label, str) and re.fullmatch(r"[A-Za-z0-9._-]+", label):
+            labels.add(label)
+    return labels
 
 
 def main() -> int:
