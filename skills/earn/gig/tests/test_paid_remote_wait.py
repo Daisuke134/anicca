@@ -165,6 +165,64 @@ def test_business_outcome_effect_match_ignores_descriptive_receipt_metadata():
     assert paid._business_outcomes_match_effects(builder, verifier) is True
 
 
+def test_formal_approval_survives_later_seller_acknowledgement(tmp_path):
+    paid = load("paid_direct")
+    root = tmp_path / "18130722"
+    write_json(root / "state.json", {"talkroom_id": "18130722"})
+
+    def row(side: str, message_id: str, text_value: str) -> dict:
+        value = {
+            "version": 1,
+            "source": "coconala_live_talkroom",
+            "talkroom_id": "18130722",
+            "message_id": message_id,
+            "observed_at": "2026-08-24T00:00:00Z",
+            "side": side,
+            "sent_at": None,
+            "text": text_value,
+            "attachments": [],
+        }
+        value["content_sha256"] = paid._official_content_sha256(value)
+        return value
+
+    buyer_row = row("buyer", "buyer-approved", "Approved; share the project and formally deliver.")
+    seller_row = row("seller", "seller-ack", "Acknowledged; I will share it.")
+    messages = root / "source/talkroom/messages.jsonl"
+    messages.parent.mkdir(parents=True)
+    messages.write_text(
+        "\n".join(json.dumps(value, ensure_ascii=False) for value in (buyer_row, seller_row)) + "\n",
+        encoding="utf-8",
+    )
+    latest = paid._latest_official_identity(root, "18130722")
+    latest_buyer = paid._latest_official_buyer_identity(root, "18130722")
+    decision = {
+        "decision": "actionable",
+        "mode": "file",
+        "feedback_sha256": "a" * 64,
+        "requirements_sha256": "b" * 64,
+        "latest_message_identity": latest,
+        "required_output": "Share the approved project package.",
+        "required_effect": "Formally deliver after the share.",
+        "required_assets": [{
+            "asset_id": "project_package",
+            "kind": "linked_asset",
+            "minimum_count": 1,
+            "buyer_visible_purpose": "Download the approved project package.",
+            "source_authority": "builder",
+            "archive_required": True,
+        }],
+        "delivery_stage": "formal",
+        "formal_approval_evidence": latest_buyer,
+        "unresolved": [],
+    }
+
+    assert latest["side"] == "seller"
+    assert latest_buyer["side"] == "buyer"
+    assert paid._validate_paid_decision(
+        decision, "a" * 64, "b" * 64, latest, latest_buyer,
+    ) == decision
+
+
 def test_wait_accepts_supplementary_receipt_when_another_has_readback(tmp_path):
     remote = load("paid_remote_result")
     root, feedback, digest = blocked_project(tmp_path)
@@ -248,9 +306,10 @@ def test_remote_owner_prompt_searches_complete_repo_and_valid_shared_tools(tmp_p
 def test_decision_prompt_scopes_required_assets_to_current_bounded_output(tmp_path):
     paid = load("paid_direct")
 
+    identity = {"message_id": "m1", "content_sha256": "d" * 64, "side": "buyer"}
     prompt = paid._decision_prompt(
         tmp_path / "context.json", "a" * 64, "b" * 64, "c" * 64,
-        {"message_id": "m1", "content_sha256": "d" * 64, "side": "buyer"},
+        identity, identity,
     ).decode()
 
     assert "current bounded output" in prompt

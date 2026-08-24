@@ -91,7 +91,7 @@ def _private_model_runner(root: Path, command: list[str], label: str) -> list[st
     profile.chmod(0o600)
     return ["/usr/bin/sandbox-exec", "-f", str(profile), *command]
 PAID_DECISION_SCHEMA_VERSION = 4
-PAID_DECISION_PROMPT_VERSION = "paid-semantic-decision-v15"
+PAID_DECISION_PROMPT_VERSION = "paid-semantic-decision-v16"
 PAID_DECISION_MODEL = "gpt-5.6-sol"
 PAID_FILE_MODEL = "gpt-5.6-sol"
 PAID_RUNNER_CANDIDATES = {
@@ -591,17 +591,24 @@ def _official_content_sha256(row: dict[str, Any]) -> str:
     ).encode("utf-8")).hexdigest()
 
 
-def _latest_official_identity(root: Path, talkroom_id: str) -> dict[str, str]:
+def _official_message_rows(root: Path, talkroom_id: str) -> list[dict[str, Any]]:
     path = root / "source" / "talkroom" / "messages.jsonl"
     if path.is_symlink() or not _regular_file(path):
         raise Failure("paid_work_decision")
     try:
         lines = [line.strip() for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
-        row = json.loads(lines[-1]) if lines else None
-    except (IndexError, OSError, json.JSONDecodeError) as error:
+        rows = [json.loads(line) for line in lines]
+    except (OSError, json.JSONDecodeError) as error:
         raise Failure("paid_work_decision") from error
-    if not isinstance(row, dict):
+    if not rows or any(not isinstance(row, dict) for row in rows):
         raise Failure("paid_work_decision")
+    state = _load(root / "state.json")
+    if _text(state.get("talkroom_id")) != talkroom_id:
+        raise Failure("paid_work_decision")
+    return rows
+
+
+def _official_identity(row: dict[str, Any], talkroom_id: str) -> dict[str, str]:
     required = {"version", "source", "talkroom_id", "message_id", "observed_at",
                 "content_sha256", "side", "sent_at", "text", "attachments"}
     if (set(row) < required or row.get("version") != 1
@@ -619,15 +626,24 @@ def _latest_official_identity(root: Path, talkroom_id: str) -> dict[str, str]:
         if not isinstance(attachment, dict) or set(attachment) < {
                 "filename", "content_type", "size_text", "href", "reference"}:
             raise Failure("paid_work_decision")
-    state = _load(root / "state.json")
-    if _text(state.get("talkroom_id")) != talkroom_id:
-        raise Failure("paid_work_decision")
     return {"message_id": _text(row["message_id"]),
             "content_sha256": _text(row["content_sha256"]), "side": _text(row["side"])}
 
 
+def _latest_official_identity(root: Path, talkroom_id: str) -> dict[str, str]:
+    return _official_identity(_official_message_rows(root, talkroom_id)[-1], talkroom_id)
+
+
+def _latest_official_buyer_identity(root: Path, talkroom_id: str) -> dict[str, str]:
+    for row in reversed(_official_message_rows(root, talkroom_id)):
+        if row.get("side") == "buyer":
+            return _official_identity(row, talkroom_id)
+    raise Failure("paid_work_decision")
+
+
 def _validate_paid_decision(value: dict[str, Any], feedback: str, requirements: str,
-                            identity: dict[str, str]) -> dict[str, Any]:
+                            identity: dict[str, str],
+                            buyer_identity: dict[str, str] | None = None) -> dict[str, Any]:
     if not isinstance(value, dict) or set(value) != PAID_DECISION_FIELDS:
         raise ValueError("invalid paid semantic decision")
     decision, mode = value.get("decision"), value.get("mode")
@@ -644,7 +660,8 @@ def _validate_paid_decision(value: dict[str, Any], feedback: str, requirements: 
         raise ValueError("non-file decision requires none delivery stage")
     approval = value.get("formal_approval_evidence")
     if delivery_stage == "formal":
-        if identity.get("side") != "buyer" or approval != identity:
+        current_buyer = buyer_identity or identity
+        if current_buyer.get("side") != "buyer" or approval != current_buyer:
             raise ValueError("formal delivery requires current buyer approval evidence")
     elif approval is not None:
         raise ValueError("non-formal decision requires null approval evidence")
@@ -1142,6 +1159,7 @@ def _revalidate_file_snapshots(snapshots: dict[str, tuple[int, str]]) -> None:
 
 def _decision_prompt(context: Path, context_sha256: str, feedback: str,
                     requirements: str, identity: dict[str, str],
+                    buyer_identity: dict[str, str],
                     operator_policy: dict[str, Any] | None = None,
                     operator_policy_sha256: str = "") -> bytes:
     policy_instruction = ""
@@ -1156,7 +1174,8 @@ def _decision_prompt(context: Path, context_sha256: str, feedback: str,
     return (
         f"Return one strict JSON semantic decision for the compiled cumulative context {context}. "
         f"context_sha256={context_sha256}; current feedback_sha256={feedback}; requirements_sha256={requirements}; "
-        f"latest_message_identity={json.dumps(identity, sort_keys=True)}. "
+        f"latest_message_identity={json.dumps(identity, sort_keys=True)}; "
+        f"latest_buyer_message_identity={json.dumps(buyer_identity, sort_keys=True)}. "
         "Use decision actionable, await_buyer, satisfied_noop, or blocked. "
         "Actionable requires mode file, remote, or answer; every other decision requires mode null. "
         "Choose mode from the required effect: remote only for an authenticated system mutation outside the Coconala "
@@ -1197,8 +1216,10 @@ def _decision_prompt(context: Path, context_sha256: str, feedback: str,
         "For every initial file submission and every correction, set delivery_stage to review and "
         "formal_approval_evidence to null. Formal delivery is never inferred merely because an artifact is complete. "
         "Set delivery_stage to formal only after the buyer explicitly approves an already submitted artifact and permits "
-        "the transaction to be completed; then formal_approval_evidence must exactly equal the current buyer-side "
-        "latest_message_identity. Every non-formal decision uses formal_approval_evidence null. Every non-file decision "
+        "the transaction to be completed; then formal_approval_evidence must exactly equal "
+        "latest_buyer_message_identity. A later seller acknowledgement does not erase that approval; any later buyer "
+        "message becomes the new buyer identity and requires a new semantic decision. Every non-formal decision uses "
+        "formal_approval_evidence null. Every non-file decision "
         "uses delivery_stage none. Decide explicit approval from "
         "the complete semantic workflow, never from title or keyword matching. required_output and required_effect must "
         "state the bounded outcome. required_assets must list every buyer-visible screenshot, image, or linked asset "
@@ -1216,7 +1237,8 @@ def _decision_prompt(context: Path, context_sha256: str, feedback: str,
 def _cached_paid_decision(root: Path, receipt: Any, prompt: Path,
                           prompt_sha256: str, schema_sha256: str, context_sha256: str,
                           context_inputs_sha256: str, feedback: str, requirements: str,
-                          identity: dict[str, str], operator_policy_sha256: str) -> dict[str, Any]:
+                          identity: dict[str, str], buyer_identity: dict[str, str],
+                          operator_policy_sha256: str) -> dict[str, Any]:
     if (not isinstance(receipt, dict)
             or receipt.get("schema_version") != PAID_DECISION_SCHEMA_VERSION
             or receipt.get("prompt_version") != PAID_DECISION_PROMPT_VERSION
@@ -1250,7 +1272,7 @@ def _cached_paid_decision(root: Path, receipt: Any, prompt: Path,
         raise ValueError("tampered paid decision evidence")
     result_path = _consultation_result_path(evidence)
     value = _load(result_path)
-    validated = _validate_paid_decision(value, feedback, requirements, identity)
+    validated = _validate_paid_decision(value, feedback, requirements, identity, buyer_identity)
     cached_value = {key: receipt.get(key) for key in PAID_DECISION_FIELDS}
     if validated != cached_value:
         raise ValueError("paid decision result does not match receipt")
@@ -1264,6 +1286,7 @@ def _paid_decision(args, item_path: Path, root: Path, base: Path) -> dict[str, A
     item = _load(item_path)
     talkroom_id = _text(item.get("talkroom_id"))
     identity = _latest_official_identity(root, talkroom_id)
+    buyer_identity = _latest_official_buyer_identity(root, talkroom_id)
     schema = args.decision_schema
     schema_snapshot = _file_snapshot(schema)
     schema_sha256 = schema_snapshot[1]
@@ -1292,14 +1315,15 @@ def _paid_decision(args, item_path: Path, root: Path, base: Path) -> dict[str, A
     receipt_path = context.parent / "paid-work-decision.json"
     prompt = base / "mode" / "decision.prompt.txt"
     prompt_bytes = _decision_prompt(
-        context, context_sha256, feedback, requirements, identity,
+        context, context_sha256, feedback, requirements, identity, buyer_identity,
         operator_policy, operator_policy_sha256)
     prompt_sha256 = hashlib.sha256(prompt_bytes).hexdigest()
     try:
         receipt = None if receipt_path.is_symlink() or not _regular_file(receipt_path) else _load(receipt_path)
         return _cached_paid_decision(root, receipt, prompt, prompt_sha256,
                                      schema_sha256, context_sha256, context_inputs_sha256,
-                                     feedback, requirements, identity, operator_policy_sha256)
+                                     feedback, requirements, identity, buyer_identity,
+                                     operator_policy_sha256)
     except (AttributeError, Failure, OSError, ValueError, TypeError, json.JSONDecodeError):
         pass
 
@@ -1334,7 +1358,7 @@ def _paid_decision(args, item_path: Path, root: Path, base: Path) -> dict[str, A
         except Failure as error:
             raise Failure("paid_work_decision") from error
         runner_proof = _decision_runner_proof(evidence)
-        value = _validate_paid_decision(value, feedback, requirements, identity)
+        value = _validate_paid_decision(value, feedback, requirements, identity, buyer_identity)
         current_bound = {
             str(item_path): item_snapshot,
             str(schema): schema_snapshot,
@@ -1808,8 +1832,10 @@ def _current_paid_decision(root: Path, item: dict[str, Any]) -> dict[str, Any]:
             or receipt.get("context_inputs_sha256") != _context_inputs_sha256(context_inputs)):
         raise ValueError("stale paid decision context")
     value = {key: receipt[key] for key in PAID_DECISION_FIELDS}
-    identity = _latest_official_identity(root, _text(item.get("talkroom_id")))
-    return _validate_paid_decision(value, feedback, requirements, identity)
+    talkroom_id = _text(item.get("talkroom_id"))
+    identity = _latest_official_identity(root, talkroom_id)
+    buyer_identity = _latest_official_buyer_identity(root, talkroom_id)
+    return _validate_paid_decision(value, feedback, requirements, identity, buyer_identity)
 
 
 def _file_mode(root: Path, item: dict[str, Any]) -> bool:
