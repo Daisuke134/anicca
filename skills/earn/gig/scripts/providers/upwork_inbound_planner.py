@@ -109,6 +109,8 @@ def planner_prompt(
     return f"""You decide one Upwork proposal. Return only schema-valid JSON.
 Use only facts present in OWNER_PROFILE and OFFICIAL_INBOUND. Never invent experience, identity,
 availability, credentials, portfolio, results, client facts, requirements, questions, or scope.
+Although the legacy field is named reason_codes, write one to three concise natural Japanese
+sentences that an owner can understand. Never return enum names, snake_case slugs or keyword codes.
 Choose skip when delivery is not fully feasible, required facts are missing, synchronous/physical work
 is required, the client requests off-platform contact/payment, or exact questions cannot be answered.
 Installed Skills are executable delivery capabilities, not claims of prior client experience. Do not
@@ -140,6 +142,8 @@ independently verify it, expected value is positive, and the official Connects b
 otherwise return skip for the whole set with reasons. Compare candidates against each other rather
 than accepting the first feasible one. Use only supplied facts. Never invent experience, identity,
 availability, credentials, portfolio, results, client facts, requirements, questions or scope.
+Although the legacy field is named reason_codes, write one to three concise natural Japanese
+sentences that explain the actual comparison. Never return enum names, snake_case slugs or keyword codes.
 Installed Skills prove executable capability, not prior client experience. Missing implementation
 details may become concise pre-contract questions. The market profile contains provider-published
 portfolio proof; use only its exact facts and public IDs. Bid and delivery estimate are seller
