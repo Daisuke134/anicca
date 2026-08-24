@@ -17,6 +17,7 @@ STATES = (
     "seller_information", "identity_approved", "bank_registered",
     "launchd_readback", "storefront_listing_readback",
 )
+ACCOUNT_GATES = STATES[:7]
 
 
 def _validate(value: Any) -> dict[str, Any]:
@@ -66,20 +67,29 @@ def record(home: Path, state: str, evidence_sha256: str) -> dict[str, Any]:
     return _validate(value)
 
 
+def ready(home: Path) -> tuple[dict[str, Any], int]:
+    value = receipt(home)
+    missing = [state for state in ACCOUNT_GATES if value["states"][state]["status"] != "complete"]
+    return {"status": "ready" if not missing else "blocked", "missing": missing}, 0 if not missing else 2
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("init", "status", "record"))
+    parser.add_argument("command", choices=("init", "status", "record", "ready"))
     parser.add_argument("--state", choices=STATES)
     parser.add_argument("--evidence-sha256")
     args = parser.parse_args()
+    exit_code = 0
     if args.command == "record":
         if not args.state or not args.evidence_sha256:
             parser.error("record requires --state and --evidence-sha256")
         value = record(Path.home(), args.state, args.evidence_sha256)
+    elif args.command == "ready":
+        value, exit_code = ready(Path.home())
     else:
         value = receipt(Path.home())
     print(json.dumps(value, ensure_ascii=False, sort_keys=True))
-    return 0
+    return exit_code
 
 
 if __name__ == "__main__":

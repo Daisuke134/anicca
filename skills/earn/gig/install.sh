@@ -82,9 +82,12 @@ if [ "${1:-}" = "init" ]; then
 fi
 
 if [ "${1:-}" = "start" ]; then
-  bash "$0" prepare >/dev/null
+  preflight="$(bash "$0" prepare)"
   venv="$HOME/.local/share/anicca/gig/venv"
   PYTHON="$venv/bin/python" bash "$0" init >/dev/null
+  preflight_sha="$(printf '%s' "$preflight" | shasum -a 256 | awk '{print $1}')"
+  "$venv/bin/python" "$GIG_DIR/scripts/coconala_onboarding.py" record \
+    --state preflight --evidence-sha256 "$preflight_sha" >/dev/null
   "$venv/bin/python" "$GIG_DIR/scripts/gig_release.py" activate \
     --jobs ai.anicca.hf-gig-browser
   for _ in {1..30}; do
@@ -123,7 +126,20 @@ if [ "${1:-}" = "finished" ]; then
   curl -fsS http://127.0.0.1:9223/json/version >/dev/null 2>&1 || {
     echo "[coconala] dedicated browser is not running" >&2; exit 2;
   }
-  exec "$venv/bin/python" "$GIG_DIR/scripts/coconala_onboarding_observe.py"
+  "$venv/bin/python" "$GIG_DIR/scripts/coconala_onboarding_observe.py"
+  ready=""
+  if ! ready="$("$venv/bin/python" "$GIG_DIR/scripts/coconala_onboarding.py" ready)"; then
+    printf '%s\n' "$ready"
+    exit 2
+  fi
+  four_lanes="$("$venv/bin/python" "$GIG_DIR/scripts/gig_release.py" activate)"
+  release_watch="$("$venv/bin/python" "$GIG_DIR/scripts/gig_release.py" activate \
+    --jobs ai.anicca.hf-gig-release-watch)"
+  launchd_sha="$(printf '%s\n%s' "$four_lanes" "$release_watch" | shasum -a 256 | awk '{print $1}')"
+  "$venv/bin/python" "$GIG_DIR/scripts/coconala_onboarding.py" record \
+    --state launchd_readback --evidence-sha256 "$launchd_sha" >/dev/null
+  printf '%s\n%s\n%s\n' "$ready" "$four_lanes" "$release_watch"
+  exit 0
 fi
 
 exec "${PYTHON:-python3}" "$GIG_DIR/scripts/money_loop_onboarding.py" "$@"
