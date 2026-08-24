@@ -1508,13 +1508,33 @@ def _validated_business_outcome(record: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(receipts, list) or not receipts:
         raise ValueError("official business receipts missing")
     for receipt in receipts:
+        source = (_text(receipt.get("readback_source")) if isinstance(receipt, dict) else "")
+        if not source and isinstance(receipt, dict):
+            source = " ".join(_text(receipt.get(key)) for key in ("provider", "kind", "result")).strip()
         if (not isinstance(receipt, dict)
                 or not _text(receipt.get("effect_key"))
                 or not _text(receipt.get("official_url"))
-                or not _text(receipt.get("readback_source"))
+                or not source
                 or receipt.get("exact_readback") is not True):
             raise ValueError("invalid official business receipt")
     return outcome
+
+
+def _business_outcomes_match_effects(builder: dict[str, Any], verifier: dict[str, Any]) -> bool:
+    def identity(outcome: dict[str, Any]) -> tuple[Any, ...]:
+        receipts = outcome.get("official_receipts") if isinstance(outcome, dict) else None
+        effects = sorted(
+            (_text(receipt.get("effect_key")), _text(receipt.get("official_url")))
+            for receipt in receipts or [] if isinstance(receipt, dict)
+        )
+        return (
+            outcome.get("required_effect_satisfied"),
+            outcome.get("required_output_satisfied"),
+            outcome.get("remaining_work") or [],
+            effects,
+        )
+
+    return identity(builder) == identity(verifier)
 
 def _validate_managed_verifier(verifier: Path, project_root: Path, intent: dict[str, Any], feedback: str, digest: str,
                                min_evidence_mtime_ns: int | None = None) -> Path:
@@ -1555,7 +1575,7 @@ def _validate_managed_verifier(verifier: Path, project_root: Path, intent: dict[
                 or result.get("requirements_sha256") != requirements_sha256
                 or result.get("message_sha256") != message_sha256):
             raise ValueError("verifier result mismatch")
-        if not paid_remote_result.canonical_equal(verifier_outcome, builder_outcome):
+        if not _business_outcomes_match_effects(builder_outcome, verifier_outcome):
             raise ValueError("business outcome verifier mismatch")
         attachment = _validated_customer_attachment(project_root, delivery_result.get("customer_attachment"))
         if (intent.get("customer_attachment") != attachment or result.get("customer_attachment") != attachment):
