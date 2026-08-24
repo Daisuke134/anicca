@@ -25,8 +25,8 @@ flowchart LR
 | order | state | atomic TODO | 完了の公式証拠 |
 |---|---|---|---|
 | P0 | completed | provider quota/auth availabilityをscheduler healthから分離し、quota時は5分healthcheck kickstartを行わずdurable backoffへ収束させる。external side effect後は別providerへretryしない | account 2 direct `ACCOUNT2_OK`、production Capafy auth HTTP 200、tests 2件、manual 3回とinstalled scheduled `0→1→2→3`の全期間でsupply runs `162→162`、追加kickstart 0、public write 0 |
-| P1 | **ACTIVE: explicit approval** | Telegram `29647`のData Analyst MP4を本人が承認またはrejectする。承認前はInstagram write 0 | 同じAgent ID、Telegram message ID、SHA-256を持つapproval receiptが`approved`または`rejected` |
-| P2 | pending | generic one-page CTAをprimary導線にせず、このReelへData Analystの個別Capafy listing URLとstable attribution IDを結ぶ | caption/link receiptにexact Agent ID、listing URL、attribution ID。redirect readbackが同じlistingへ到達 |
+| P1 | completed | TelegramでData Analyst MP4を本人が承認またはrejectする。承認前はInstagram write 0 | user response `Quality superb continue`、再送Telegram `31823`、Agent `7785270416`、SHA-256 `1d52fd0ce772cfa678a85e6ad5be5bc9ff3d5502c474325ca879054e1eeca7dc`、private approval receipt `approved` / `approved_at=2026-08-24T08:16:42Z` |
+| P2 | **ACTIVE** | generic one-page CTAをprimary導線にせず、このReelへData Analystの個別Capafy listing URLとstable attribution IDを結ぶ | caption/link receiptにexact Agent ID、listing URL、attribution ID。redirect readbackが同じlistingへ到達 |
 | P3 | pending | P1とcadence gate成立後の最初のwakeだけが承認済みbytesをReelとして1件投稿する | exact creative hash、native Reel URL、Telegram message ID、rotation commit。duplicate post 0 |
 | P4 | pending | 同じidentity/windowで`qualified view → listing click → product view → paid subscription → retained subscription → settlement`をjoinする | native metrics、redirect counter、official Publisher Console seller readback。order-level source不明なら`causal=false` |
 | P5 | event-driven | accepted/rejectedでfree slotが生じた最初のwakeだけがFootball `1037238583`をsame-Agent修正・再提出する | same Agent ID、新package/version、under-review official readback、第6 Agent 0、replay submission 0 |
@@ -39,6 +39,10 @@ flowchart LR
 - **Remember:** 現在の公式seller truthはpaid order `1`、one-time `$9.99`、subscription MRR `$0`、paid payout `$0`。MRRへone-time売上、views、clicks、pending balanceを加算しない。
 - **Remember:** Capafy sourceとruntimeはすでにLife Manager public repoへ移植済み。新しいrepoや重複schedulerを作らない。
 - **Never:** quota failureを5分ごとに再発火しない。承認前creativeを公開しない。slot fullで第6 Agentを作らない。rejected Agentを捨てて別Agentを作らない。generic landing pageを個別listing attributionの代用にしない。
+
+### Daily video loop contract
+
+P1は最初のcreative quality barを確定する一回限りのhuman gateである。以後は毎日、同じquality contractを自動検証し、`fresh selection → new demonstration creative → quality/hash gate → exact listing attribution → one native post → metrics/sales readback → next hypothesis`を一巡する。各日の動画は新しいartifact hash、hook、caption、Agent IDを持ち、同一bytesまたは同一postを再利用しない。通常の合格動画は毎回human approvalを待たず投稿し、quality regression、secret/PII、account risk、identity/hash mismatch、provider/readback failureの時だけfail closedで停止する。
 
 ## Current evidence
 
