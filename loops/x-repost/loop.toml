@@ -18,7 +18,7 @@ X_REPOST_FORCE_KIND = "quote"
 # may still produce no output, so the schedule is a floor on attempts, not a promise of posts.
 [jobs.pass]
 program          = "skills/x-repost/x-repost-cli.sh"
-interval_seconds = 1800
+calendars         = [{ minute = 0 }, { minute = 30 }]
 
 # The schedule and the session are what can die silently here, so this checks both.
 [jobs.healthcheck]

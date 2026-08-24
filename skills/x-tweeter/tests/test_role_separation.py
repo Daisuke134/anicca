@@ -18,6 +18,9 @@ class XRoleSeparationTests(unittest.TestCase):
         ).read_text(encoding="utf-8")
 
         self.assertEqual(repost["env"]["X_REPOST_FORCE_KIND"], "quote")
+        self.assertEqual(repost["jobs"]["pass"]["calendars"], [
+            {"minute": 0}, {"minute": 30},
+        ])
         self.assertIn("X_REPOST_FORCE_KIND=original", tweeter)
         self.assertNotEqual(
             repost["state_dir"],
