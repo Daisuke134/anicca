@@ -156,6 +156,22 @@ if [ "${1:-}" = "finished" ]; then
   ready=""
   if ! ready="$("$venv/bin/python" "$GIG_DIR/scripts/coconala_onboarding.py" ready)"; then
     printf '%s\n' "$ready"
+    missing="$(printf '%s' "$ready" | "$venv/bin/python" -c \
+      'import json,sys; value=json.load(sys.stdin); print((value.get("missing") or [""])[0])')"
+    setup_url=""
+    case "$missing" in
+      authenticated|email_verified) setup_url='https%3A%2F%2Fcoconala.com%2Fusers%2Fsignup' ;;
+      sms_verified) setup_url='https%3A%2F%2Fcoconala.com%2Fmypage%2Fsms' ;;
+      seller_information) setup_url='https%3A%2F%2Fcoconala.com%2Fmypage%2Fuser_information' ;;
+      identity_approved) setup_url='https%3A%2F%2Fcoconala.com%2Fmypage%2Fuser_identification' ;;
+      bank_registered) setup_url='https%3A%2F%2Fcoconala.com%2Fmypage%2Fbank' ;;
+    esac
+    if [ -n "$setup_url" ]; then
+      curl -fsS -X PUT "http://127.0.0.1:9223/json/new?$setup_url" >/dev/null
+      echo "[coconala] opened the official page for missing gate: $missing" >&2
+    else
+      echo "[coconala] missing gate: $missing; rerun ./install.sh coconala" >&2
+    fi
     exit 2
   fi
   four_lanes="$("$venv/bin/python" "$GIG_DIR/scripts/gig_release.py" activate)"
