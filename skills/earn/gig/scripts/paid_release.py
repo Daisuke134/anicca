@@ -15,8 +15,9 @@ import tempfile
 import shutil
 from pathlib import Path
 
-ENTRYPOINT = "skills/gig-work/scripts/paid_direct.py"
+ENTRYPOINT = "skills/earn/gig/scripts/paid_direct.py"
 MANIFEST = "RELEASE-MANIFEST.json"
+DEFAULT_REPO = Path(__file__).resolve().parents[4]
 
 
 class ReleaseError(RuntimeError):
@@ -232,7 +233,7 @@ def gc(repo: Path, release_root: Path) -> dict:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--repo", type=Path, default=Path(__file__).resolve().parents[3])
+    parser.add_argument("--repo", type=Path, default=DEFAULT_REPO)
     parser.add_argument("--release-root", type=Path, default=Path.home() / "gig/releases/paid")
     sub = parser.add_subparsers(dest="command", required=True)
     build_parser = sub.add_parser("build"); build_parser.add_argument("revision")
