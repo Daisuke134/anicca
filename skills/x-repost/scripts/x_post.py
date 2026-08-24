@@ -31,6 +31,20 @@ POSTIZ_API = "https://api.postiz.com/public/v1/posts"
 X_SNOWFLAKE_EPOCH_MS = 1288834974657
 
 
+def http_error_summary(error: urllib.error.HTTPError) -> str:
+    try:
+        value = json.loads(error.read(4096).decode("utf-8", errors="replace"))
+        message = value.get("message") if isinstance(value, dict) else None
+        if isinstance(message, list):
+            message = "; ".join(str(item) for item in message)
+        text = message if isinstance(message, str) else error.reason
+    except Exception:
+        text = error.reason
+    text = re.sub(r"https?://\S+", "[url]", str(text))
+    text = re.sub(r"\b[A-Za-z0-9_-]{32,}\b", "[redacted]", text)
+    return " ".join(text.split())[:300]
+
+
 def snowflake_floor(observed_at: datetime) -> int:
     timestamp_ms = int(observed_at.timestamp() * 1000)
     return max(0, timestamp_ms - X_SNOWFLAKE_EPOCH_MS) << 22
@@ -315,9 +329,12 @@ def main():
         submission_id = postiz_publish(text, args.mode, args.source_url)
     except (ValueError, OSError, urllib.error.HTTPError) as exc:
         status = exc.code if isinstance(exc, urllib.error.HTTPError) else None
-        json.dump({"posted": False, "mode": args.mode, "source_url": args.source_url,
+        receipt = {"posted": False, "mode": args.mode, "source_url": args.source_url,
                    "provider": "postiz", "provider_status": status,
-                   "reason": type(exc).__name__}, sys.stdout, ensure_ascii=False)
+                   "reason": type(exc).__name__}
+        if isinstance(exc, urllib.error.HTTPError):
+            receipt["provider_error"] = http_error_summary(exc)
+        json.dump(receipt, sys.stdout, ensure_ascii=False)
         print()
         sys.exit(1)
     try:

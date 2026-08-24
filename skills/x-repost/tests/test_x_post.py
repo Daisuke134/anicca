@@ -6,6 +6,7 @@ import json
 import os
 import tempfile
 import unittest
+import urllib.error
 from contextlib import redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
@@ -64,6 +65,19 @@ class Page:
 
 
 class XPostTests(unittest.TestCase):
+    def test_postiz_http_error_summary_keeps_message_and_redacts_urls(self) -> None:
+        error = urllib.error.HTTPError(
+            "https://api.postiz.com/public/v1/posts", 400, "Bad Request", {},
+            io.BytesIO(json.dumps({
+                "message": "Duplicate content at https://secret.example/path",
+                "apiKey": "must-not-leak",
+            }).encode()),
+        )
+        summary = MODULE.http_error_summary(error)
+        self.assertIn("Duplicate content", summary)
+        self.assertNotIn("https://", summary)
+        self.assertNotIn("must-not-leak", summary)
+
     def test_postiz_acceptance_survives_readback_session_failure_as_unverified(self) -> None:
         class BrokenPlaywright:
             def __enter__(self):
