@@ -29,21 +29,21 @@
 - Consumes: `skills/earn/gig/install.sh preflight` and current machine state.
 - Produces: one JSON object with `status`, `darwin`, `arm64`, `python`, `codex_cli`, `codex_authenticated`, `cloakbrowser`, and `disk_headroom`; exit 0 only when every check is true, otherwise exit 2.
 
-- [ ] **Step 1: Write RED tests against the real shell**
+- [x] **Step 1: Write RED tests against the real shell**
 
 Use a temporary PATH with deterministic `uname`, `python3`, `codex`, and `df` executables plus a temporary executable CloakBrowser binary. Assert the all-ready fixture exits 0 with every boolean true. Remove the browser binary and assert exit 2, `cloakbrowser=false`, and no HOME/runtime files were created.
 
-- [ ] **Step 2: Verify RED**
+- [x] **Step 2: Verify RED**
 
 Run: `node --test test/install-coconala-preflight.test.mjs`
 
 Expected: FAIL because the current package installer treats `preflight` as missing onboarding arguments.
 
-- [ ] **Step 3: Implement minimal checks**
+- [x] **Step 3: Implement minimal checks**
 
 Add a `preflight` branch before the existing Python exec. Use fixed-format command exit status for platform, Python, Codex, browser glob, and disk checks; emit one JSON line and exit 0/2. Preserve all other argv forwarding unchanged.
 
-- [ ] **Step 4: Verify focused and dispatch compatibility**
+- [x] **Step 4: Verify focused and dispatch compatibility**
 
 Run:
 
@@ -53,6 +53,6 @@ node --test test/install-coconala-preflight.test.mjs test/install-coconala-dispa
 
 Expected: all tests PASS.
 
-- [ ] **Step 5: Record, review, and publish**
+- [x] **Step 5: Record, review, and publish**
 
 Update atomic item 2a and this plan, run `bash -n`, `git diff --check`, commit, fetch/rebase, push main, read back remote, and obtain fresh read-only adversarial verification.
