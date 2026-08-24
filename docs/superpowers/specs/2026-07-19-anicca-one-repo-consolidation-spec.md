@@ -1685,11 +1685,16 @@ flowchart LR
 
 | Order | TODO | Done evidence |
 |---:|---|---|
-| 1 | account 1/2を独立candidateとして表す共有execution contractのfailing regressionを追加する | named REDがexpected failure |
-| 2 | account alias別auth isolationとquota/auth fallbackを実装する | focused RED→GREEN、auth isolation |
-| 3 | effect-aware fail-closed gateを既存effect evidenceへ接続する | effect後fallback 0のregression |
-| 4 | canonical configとrelease wiringへaccount orderを反映する | account 1 primary / account 2 fallback readback |
-| 5 | controlled E2Eを閉じる | account 1 quota→account 2 real response、duplicate effect 0 |
+| 1 | account alias別に独立`CODEX_HOME`と`auth_file`を解決するfailing testを1件追加する | named REDがauth混線を再現 |
+| 2 | account alias別env/auth解決だけを実装する | TODO 1 GREEN、既存provider tests PASS |
+| 3 | account 1のeffect前quota failureからaccount 2へ進むfailing testを1件追加する | named REDがfallback欠落を再現 |
+| 4 | effect前のmachine-readable quota/auth failureだけを次accountへ渡す | TODO 3 GREEN、invalid task fallback 0 |
+| 5 | effect開始後のfailureでaccount 2を呼ばないfailing testを1件追加する | named REDがduplicate riskを再現 |
+| 6 | 既存effect evidenceをaccount retry gateへ接続する | TODO 5 GREEN、account 2 call 0 |
+| 7 | canonical configへaccount 1→account 2のcandidate orderを追加する | config parse PASS、order readback |
+| 8 | account 2 failure後だけ既存Claude/Hermes candidateへ進む回帰を追加する | provider order focused test PASS |
+| 9 | exact main commitをLife Manager releaseへdeployする | deployed SHA readback |
+| 10 | account 1 quota→account 2 real responseのcontrolled E2Eを1回実行する | account alias/exit readback、duplicate effect 0 |
 
 
 
