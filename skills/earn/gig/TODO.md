@@ -135,6 +135,10 @@ Storefront work.
        Compile, shell syntax and a secret-injection sanitization check pass. SMS/seller/
        eKYC/bank completion decisions await pilot DOM evidence; production readback was
        intentionally not run while the separate Paid owner uses this profile.
+       Structural completion now evidence-binds authenticated/email activation from an
+       official `/mypage` session and seller/bank only when at least one enabled required
+       official control exists and every such control is filled/checked. Empty or partial
+       forms stay pending. SMS and eKYC still require pilot-specific official status proof.
     7. [ ] Activate the browser, Apply, Negotiate, Storefront, Paid and release watcher
        only after all official account gates are accepted. A listing is not this gate.
        Direct implementation now records preflight evidence, requires all seven account
