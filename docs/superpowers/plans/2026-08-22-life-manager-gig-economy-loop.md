@@ -868,6 +868,14 @@ U13 atomic order:
     exclude only those IDs from the acquisition-ready queue; their proposal/history monitoring remains
     intact. Unknown or unverified effects still preempt and reconcile. Regression remains `156 passed`;
     next production wake must reach batched discovery without resubmitting either verified job.
+65. **BATCH LUNA PRODUCTION PASS / CACHE IDENTITY FIX:** one natural wake inspected 30 affordable
+    jobs in three pages and used exactly three Luna calls, one per ten-job set; all three sets were
+    skipped for missing Skill/verification/positive-value evidence. The old path would have used 30
+    calls. Existing proposals remained 2, balance 133 and duplicate effects 0. The first batch key still
+    inherited packet observation time, so an unchanged next wake would miss cache. Key batches only by
+    ordered job ID, official detail hash, Connects cost and current balance; timestamps remain evidence,
+    never decision identity. Regression remains `156 passed`; next wake must reuse unchanged page-one
+    batch evidence without a new Luna call and evaluate only changed/new sets.
 
 U14 atomic order:
 
