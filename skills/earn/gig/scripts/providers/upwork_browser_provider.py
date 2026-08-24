@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlsplit
+from urllib.parse import quote_plus, urlsplit
 
 
 SCRIPTS = Path(__file__).resolve().parents[1]
@@ -29,7 +29,7 @@ from provider_authorization import DEFAULT_RECEIPT_PATH  # noqa: E402
 from upwork_proposal_browser import submit_proposal_after_fence  # noqa: E402
 from upwork_inbound_planner import invoke as plan_inbound, write_sealed_proposal  # noqa: E402
 from upwork_candidate_planner import (  # noqa: E402
-    invoke as plan_candidate, write_packet as write_candidate_packet,
+    invoke as plan_candidate, plan_search_queries, write_packet as write_candidate_packet,
     write_sealed_proposal as write_candidate_proposal,
 )
 from upwork_offer_gate import invoke as qualify_direct_offer  # noqa: E402
@@ -52,7 +52,6 @@ CATALOG_URL = "https://www.upwork.com/nx/project-dashboard/?step=approved"
 CONTRACTS_URL = "https://www.upwork.com/nx/wm/freelancer/home"
 MESSAGES_URL = "https://www.upwork.com/ab/messages/rooms/"
 WORKING_STYLE_URL = "https://www.upwork.com/nx/skills-assesment/assessment-results"
-SEARCH_URL = "https://www.upwork.com/nx/search/jobs/?sort=recency"
 DEFAULT_CANDIDATES = SCRIPTS.parent / "config" / "upwork-candidates.public.json"
 DEFAULT_CANDIDATE_CACHE = Path.home() / "gig/state/upwork-candidates.runtime.json"
 DEFAULT_CANDIDATE_EVIDENCE = Path.home() / "gig/state/upwork-candidate-planner"
@@ -286,6 +285,16 @@ def load_rejected_job_ids(path: Path) -> set[str]:
     return {str(x) for x in rows}
 
 
+def load_search_query_index(path: Path) -> int:
+    if not path.exists():
+        return 0
+    value = json.loads(path.read_text(encoding="utf-8"))
+    index = value.get("search_query_index", 0) if isinstance(value, dict) else 0
+    if type(index) is not int or index < 0:
+        raise ValueError("upwork_candidate_config_invalid")
+    return index
+
+
 def _search_jobs(links: list[dict[str, Any]], excluded: set[str]) -> list[dict[str, str]]:
     jobs = []
     seen = set(excluded)
@@ -309,14 +318,21 @@ async def replenish_candidates(
     result = {"needed": deficit, "searched": 0, "selected": [], "skipped": []}
     if not deficit:
         return result
+    skill_files = sorted(SCRIPTS.parent.parent.glob("upwork-*/SKILL.md"))
+    queries = await asyncio.to_thread(
+        plan_search_queries, skill_files, evidence_root=evidence_root,
+    )
+    query_index = load_search_query_index(cache) % len(queries)
+    search = queries[query_index]
+    search_url = "https://www.upwork.com/nx/search/jobs/?q=" + quote_plus(search["query"]) + "&sort=recency"
+    result["search_query"] = search
     artifact = Path(await navigate_and_snapshot(
-        pass_id, f"{sequence:02d}-1", "candidate-search", SEARCH_URL, "read_only", 2, 1440,
+        pass_id, f"{sequence:02d}-1", "candidate-search", search_url, "read_only", 2, 1440,
     ))
-    _, search_hash, search_links = _read_evidence(artifact, SEARCH_URL)
+    _, search_hash, search_links = _read_evidence(artifact, search_url)
     state["evidence_sha256"]["candidate-search"] = search_hash
     rejected = load_rejected_job_ids(cache)
     existing = {str(row.get("job_id")) for row in state["candidate_jobs"]} | rejected
-    skill_files = sorted(SCRIPTS.parent.parent.glob("upwork-*/SKILL.md"))
     retained = [
         {key: str(row.get(key) or "") for key in (
             "job_id", "job_url", "queue", "title", "proposal_payload_sha256",
@@ -358,6 +374,7 @@ async def replenish_candidates(
     _atomic_write(cache, {
         "version": 1, "candidates": retained,
         "rejected_job_ids": sorted(rejected),
+        "search_query_index": (query_index + 1) % len(queries),
     })
     return result
 

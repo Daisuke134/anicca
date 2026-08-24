@@ -564,6 +564,13 @@ U13 atomic order:
     exposed that the prompt incorrectly allowed zero current Connects to count against qualification,
     and that skipped IDs were not durable. Clarify that Connects gate execution rather than sealing,
     persist rejected IDs in the runtime cache, and continue deeper into current results next wake.
+26. **REJECT MEMORY PROVED / MODEL SEARCH STRATEGY NEXT:** release `bca5e36ff0b4` completed two
+    production wakes. Each inspected four fresh jobs, persisted eight unique model-skipped IDs, and
+    the second wake did not reconsider the first four. Zero Connects no longer appeared as a sole
+    rejection reason. The broad unqueried recency feed was dominated by unrelated design, CAD and
+    location-bound work, exposing search strategy as the next bottleneck. The next slice asks the
+    model for three narrow queries from the installed Upwork Skill and owner evidence, persists a
+    rotation index, and uses no hardcoded semantic keywords.
 
 U14 atomic order:
 

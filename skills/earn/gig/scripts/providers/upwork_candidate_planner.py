@@ -18,11 +18,79 @@ HERE = Path(__file__).resolve()
 GIG_ROOT = HERE.parents[2]
 DEFAULT_RUNNER = GIG_ROOT / "agent-runner/agent_runner.py"
 DEFAULT_SCHEMA = GIG_ROOT / "schemas/upwork_public_proposal.schema.json"
+DEFAULT_SEARCH_SCHEMA = GIG_ROOT / "schemas/upwork_search_queries.schema.json"
 DEFAULT_PROFILE = Path.home() / ".config/anicca/job-search/profile.json"
 
 
 class CandidatePlannerError(ValueError):
     """A public-job decision is not bound to its official evidence."""
+
+
+def _run_model(
+    *, prompt: str, schema: Path, evidence_dir: Path, task_label: str,
+    escalation_reason: str, runner: Path = DEFAULT_RUNNER,
+) -> dict[str, Any]:
+    evidence_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
+    os.chmod(evidence_dir, 0o700)
+    summary = evidence_dir / "summary.json"
+    prior = _object(summary, "planner_summary") if summary.is_file() else {}
+    if prior.get("status") != "success":
+        completed = subprocess.run([
+            sys.executable, str(runner), "--task-class", "application-intent-planner",
+            "--prompt-stdin", "--schema", str(schema), "--evidence-dir", str(evidence_dir),
+            "--task-label", task_label, "--loop", "gig-upwork",
+            "--workdir", str(Path.home()), "--timeout-seconds", "420",
+            "--escalation-reason", escalation_reason,
+        ], input=prompt, text=True, capture_output=True, timeout=450, check=False)
+        if completed.returncode != 0:
+            raise CandidatePlannerError(f"{task_label}_failed")
+    result_summary = _object(summary, "planner_summary")
+    if result_summary.get("status") != "success":
+        raise CandidatePlannerError(f"{task_label}_failed")
+    try:
+        result = Path(str(result_summary["result_path"])).resolve()
+        result.relative_to(evidence_dir.resolve())
+    except (KeyError, OSError, ValueError) as exc:
+        raise CandidatePlannerError(f"{task_label}_result_unowned") from exc
+    for path in evidence_dir.rglob("*"):
+        if path.is_file() and not path.is_symlink():
+            os.chmod(path, 0o600)
+    return _object(result, "planner_result")
+
+
+def plan_search_queries(
+    skill_files: list[Path], *, evidence_root: Path, profile: Path = DEFAULT_PROFILE,
+) -> list[dict[str, str]]:
+    skills = [{"path": str(path), "contract": path.read_text(encoding="utf-8")[:30000]}
+              for path in skill_files if path.is_file() and not path.is_symlink()]
+    owner = _object(profile.expanduser(), "owner_profile")
+    source = json.dumps({"owner": owner, "skills": skills}, ensure_ascii=False, sort_keys=True)
+    digest = hashlib.sha256(source.encode()).hexdigest()
+    prompt = """Return only schema-valid JSON. Generate three concise Upwork search queries from the
+actual deliverables in INSTALLED_SKILLS and truthful OWNER_PROFILE facts. You control search strategy;
+do not copy a hardcoded category list. Prefer narrow buyer language for bounded work this loop can
+deliver and verify. Do not invent capabilities, experience, credentials, outcomes, or availability.
+OWNER_AND_SKILLS=""" + source
+    result = _run_model(
+        prompt=prompt, schema=DEFAULT_SEARCH_SCHEMA,
+        evidence_dir=evidence_root / "search-queries" / digest,
+        task_label="upwork-search-queries",
+        escalation_reason="Skill-bound Upwork market search strategy",
+    )
+    rows = result.get("queries")
+    if not isinstance(rows, list) or not 1 <= len(rows) <= 3:
+        raise CandidatePlannerError("search_queries_invalid")
+    queries = []
+    seen = set()
+    for row in rows:
+        if not isinstance(row, dict) or set(row) != {"query", "reason"}:
+            raise CandidatePlannerError("search_queries_invalid")
+        query, reason = str(row["query"]).strip(), str(row["reason"]).strip()
+        if not query or not reason or query.casefold() in seen:
+            raise CandidatePlannerError("search_queries_invalid")
+        seen.add(query.casefold())
+        queries.append({"query": query, "reason": reason})
+    return queries
 
 
 def _object(path: Path, label: str) -> dict[str, Any]:
@@ -165,34 +233,15 @@ def invoke(
     schema: Path = DEFAULT_SCHEMA, profile: Path = DEFAULT_PROFILE,
 ) -> tuple[dict[str, Any] | None, list[str]]:
     packet = load_packet(packet_path)
-    evidence_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
-    os.chmod(evidence_dir, 0o700)
-    summary = evidence_dir / "summary.json"
-    prior = _object(summary, "planner_summary") if summary.is_file() else {}
-    if prior.get("status") != "success":
-        completed = subprocess.run([
-            sys.executable, str(runner), "--task-class", "application-intent-planner",
-            "--prompt-stdin", "--schema", str(schema), "--evidence-dir", str(evidence_dir),
-            "--task-label", "upwork-public-proposal", "--loop", "gig-upwork",
-            "--workdir", str(Path.home()), "--timeout-seconds", "420",
-            "--escalation-reason", "client-facing public Upwork qualification and proposal",
-        ], input=planner_prompt(packet, _object(profile.expanduser(), "owner_profile")),
-            text=True, capture_output=True, timeout=450, check=False)
-        if completed.returncode != 0:
-            raise CandidatePlannerError("public_job_planner_failed")
-    result_summary = _object(summary, "planner_summary")
-    if result_summary.get("status") != "success":
-        raise CandidatePlannerError("public_job_planner_failed")
-    try:
-        result = Path(str(result_summary["result_path"])).resolve()
-        result.relative_to(evidence_dir.resolve())
-    except (KeyError, OSError, ValueError) as exc:
-        raise CandidatePlannerError("public_job_planner_result_unowned") from exc
-    proposal = validate_decision(_object(result, "planner_result"), packet)
-    for path in evidence_dir.rglob("*"):
-        if path.is_file() and not path.is_symlink():
-            os.chmod(path, 0o600)
-    return proposal, list(_object(result, "planner_result")["reason_codes"])
+    result = _run_model(
+        prompt=planner_prompt(packet, _object(profile.expanduser(), "owner_profile")),
+        schema=schema, evidence_dir=evidence_dir,
+        task_label="upwork-public-proposal",
+        escalation_reason="client-facing public Upwork qualification and proposal",
+        runner=runner,
+    )
+    proposal = validate_decision(result, packet)
+    return proposal, list(result["reason_codes"])
 
 
 def write_sealed_proposal(proposal: dict[str, Any], root: Path) -> Path:
