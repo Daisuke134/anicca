@@ -78,6 +78,20 @@ def _safe_snapshot(raw: dict[str, object]) -> dict[str, object]:
     }
 
 
+def _required_form_complete(snapshot: dict[str, object]) -> bool:
+    controls = [row for row in snapshot.get("controls") or [] if isinstance(row, dict)]
+    required = [
+        row for row in controls
+        if row.get("required") is True and row.get("disabled") is not True
+        and row.get("type") not in {"hidden", "submit", "button", "file"}
+    ]
+    return bool(required) and all(
+        row.get("checked") is True if row.get("type") in {"checkbox", "radio"}
+        else row.get("has_value") is True
+        for row in required
+    )
+
+
 def observe(home: Path) -> dict[str, object]:
     os.environ["CLOAK_CDP_BASE_URL"] = "http://127.0.0.1:9223"
     os.environ["CLOAK_TARGET_OWNERS_FILE"] = str(
@@ -98,8 +112,9 @@ def observe(home: Path) -> dict[str, object]:
             cdp_default_tab.close_tab(str(tab["target_id"]), owner="gig-onboarding")
     evidence = {"version": 1, "platform": "coconala", "pages": snapshots}
     output = home / ".config" / "anicca" / "gig" / "onboarding-observation.json"
-    _write_private(output, evidence)
 
+    classifications = {state: False for state in PAGES}
+    classifications["email_verified"] = False
     auth_url = str(snapshots["authenticated"].get("url") or "")
     parsed = urlparse(auth_url)
     if parsed.hostname == "coconala.com" and parsed.path.startswith("/mypage"):
@@ -107,6 +122,18 @@ def observe(home: Path) -> dict[str, object]:
             json.dumps(snapshots["authenticated"], sort_keys=True, separators=(",", ":")).encode("utf-8")
         ).hexdigest()
         record(home, "authenticated", digest)
+        record(home, "email_verified", digest)
+        classifications["authenticated"] = True
+        classifications["email_verified"] = True
+    for state in ("seller_information", "bank_registered"):
+        if _required_form_complete(snapshots[state]):
+            digest = hashlib.sha256(
+                json.dumps(snapshots[state], sort_keys=True, separators=(",", ":")).encode("utf-8")
+            ).hexdigest()
+            record(home, state, digest)
+            classifications[state] = True
+    evidence["classifications"] = classifications
+    _write_private(output, evidence)
     return evidence
 
 
@@ -115,6 +142,8 @@ def main() -> int:
     print(json.dumps({
         "status": "observed",
         "pages": {state: row["url"] for state, row in evidence["pages"].items()},
+        "complete": sorted(state for state, complete in evidence["classifications"].items() if complete),
+        "pending": sorted(state for state, complete in evidence["classifications"].items() if not complete),
         "evidence": "private:onboarding-observation.json",
     }, ensure_ascii=False, sort_keys=True))
     return 0
