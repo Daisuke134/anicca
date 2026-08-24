@@ -13,6 +13,52 @@ sys.path.insert(0, str(SCRIPT.parent))
 
 
 class FunnelDecisionTests(unittest.TestCase):
+    def test_distribution_plan_gets_one_model_route(self):
+        spec = importlib.util.spec_from_file_location("affiliate_funnel_decision", SCRIPT)
+        module = importlib.util.module_from_spec(spec)
+        assert spec.loader is not None
+        spec.loader.exec_module(module)
+        with tempfile.TemporaryDirectory() as directory:
+            state = Path(directory)
+            plan = {
+                "state": "READY", "plan_id": "a" * 64,
+                "control_placement_id": "caption-en-1",
+                "decision_action": "Use one additional relevant channel.",
+                "live_surfaces": ["devto", "substack", "x"],
+                "official_success_metric": "At least 100 exact impressions.",
+            }
+            module._write(state / "money-funnel" / "latest.json", {
+                "transition_id": "b" * 64, "impressions": {"count": 37, "state": "EXACT"},
+                "transactions": {"count": 0, "state": "OBSERVED"},
+            })
+            module._write(state / "x-growth" / "latest-post-metrics.json", {
+                "placement_id": "caption-en-1", "post_url": "https://x.com/a/status/1",
+                "impressions": {"count": 1, "state": "EXACT"},
+            })
+            calls = []
+
+            def runner(_skill_root, _state, context, _sha, _run_id):
+                calls.append(context)
+                return {
+                    "target": "x_relevant_external_quote",
+                    "reason": "Self quotes have low measured reach.",
+                    "evidence": ["three owned surfaces are already live"],
+                    "result_sha256": "c" * 64,
+                    "execution": {"selected_model": "gpt-5.6-terra"},
+                }
+
+            first = module.advance_distribution_route(
+                Path(directory), state, plan, "run-1", runner=runner,
+            )
+            replay = module.advance_distribution_route(
+                Path(directory), state, plan, "run-2", runner=runner,
+            )
+
+            self.assertEqual(first["target"], "x_relevant_external_quote")
+            self.assertTrue(first["changed"])
+            self.assertFalse(replay["changed"])
+            self.assertEqual(len(calls), 1)
+
     def test_one_funnel_transition_gets_one_model_decision(self):
         self.assertTrue(SCRIPT.is_file(), f"missing decision owner: {SCRIPT}")
         spec = importlib.util.spec_from_file_location("affiliate_funnel_decision", SCRIPT)

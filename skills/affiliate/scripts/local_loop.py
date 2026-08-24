@@ -26,7 +26,10 @@ from job_journal import (
 from provider_cli import ProviderError, observe, poll, read_login_credentials, resume
 from program_registry import TTS_PLACEMENT, apply_getresponse, elevenlabs_link_action
 from acquisition_decision import advance as advance_acquisition_decision
-from funnel_decision import advance as advance_funnel_decision
+from funnel_decision import (
+    advance as advance_funnel_decision,
+    advance_distribution_route,
+)
 from cta_instrumentation import (
     advance as advance_cta_instrumentation, join_provider_interval, observe_clicks,
     observe_entries,
@@ -1951,7 +1954,7 @@ def create_x_distribution_job(state, proposal):
     return {**receipt, "changed": True}
 
 
-def create_x_recirculation_job(state, plan):
+def create_x_recirculation_job(state, plan, route=None):
     """Queue the one content-preserving X child selected by a distribution plan."""
     if not isinstance(plan, dict) or plan.get("state") != "READY":
         return {"state": "WAITING_FOR_DISTRIBUTION_PLAN", "changed": False}
@@ -1974,6 +1977,25 @@ def create_x_recirculation_job(state, plan):
         and REPOST_PLACEMENT_ID_PATTERN.fullmatch(control_placement),
     )):
         raise ValueError("recirculation plan lineage invalid")
+    mode = "QUOTE_CONTROL_POST"
+    route_id = None
+    if route is not None:
+        if route.get("state") not in {"READY", "ALREADY_ROUTED"}:
+            return {"state": "WAITING_FOR_DISTRIBUTION_ROUTE", "changed": False}
+        if route.get("plan_id") != plan_id:
+            raise ValueError("distribution route plan mismatch")
+        if route.get("target") == "wait":
+            return {"state": "ROUTE_WAIT", "changed": False}
+        mode = {
+            "x_self_quote": "QUOTE_CONTROL_POST",
+            "x_relevant_external_quote": "QUOTE_RELEVANT_EXTERNAL",
+        }.get(route.get("target"))
+        route_id = route.get("route_id")
+        if not (
+            mode and isinstance(route_id, str)
+            and REPOST_PROPOSAL_ID_PATTERN.fullmatch(route_id)
+        ):
+            raise ValueError("distribution route invalid")
     control_path = state / "x-distribution-jobs" / f"{control_job_id}.json"
     try:
         control = json.loads(control_path.read_text(encoding="utf-8"))
@@ -1993,9 +2015,11 @@ def create_x_recirculation_job(state, plan):
         "content_sha256": control["content_sha256"],
         "target_x_account": control["target_x_account"],
         "cadence_class": control["cadence_class"],
-        "distribution_mode": "QUOTE_CONTROL_POST",
+        "distribution_mode": mode,
         "control_post_url": plan.get("control_post_url"),
     }
+    if route_id:
+        effect_core["distribution_route_id"] = route_id
     if not isinstance(effect_core["control_post_url"], str) or not re.fullmatch(
         r"https://x\.com/[A-Za-z0-9_]{1,15}/status/[0-9]+",
         effect_core["control_post_url"],
@@ -4976,10 +5000,26 @@ def _wake_once(args, started_at, run_id):
             "failure_type": type(error).__name__,
         }
     try:
+        distribution_route = admit(
+            "acquisition.distribution-route", "READ_ONLY",
+            {"distribution_plan_state": distribution_plan.get("state")},
+            lambda: advance_distribution_route(
+                Path(__file__).resolve().parent.parent, state,
+                distribution_plan, run_id,
+            ),
+        )
+    except Exception as error:
+        distribution_route = {
+            "state": "DISTRIBUTION_ROUTE_FAILED", "changed": False,
+            "failure_type": type(error).__name__,
+        }
+    try:
         recirculation_job = admit(
             "acquisition.x-recirculation-job", "LEDGER_ONLY",
             {"distribution_plan_state": distribution_plan.get("state")},
-            lambda: create_x_recirculation_job(state, distribution_plan),
+            lambda: create_x_recirculation_job(
+                state, distribution_plan, distribution_route,
+            ),
         )
     except Exception as error:
         recirculation_job = {
@@ -5174,6 +5214,13 @@ def _wake_once(args, started_at, run_id):
                 "state", "changed", "job_id", "effect_identity", "placement_id",
                 "owned_article_url", "content_sha256", "experiment_lineage",
                 "target_x_account", "cadence_class", "failure_type",
+            )
+        },
+        "distribution_route": {
+            key: distribution_route.get(key)
+            for key in (
+                "state", "changed", "route_id", "plan_id", "target", "reason",
+                "evidence", "failure_type",
             )
         },
         "revenue_state": revenue["state"],

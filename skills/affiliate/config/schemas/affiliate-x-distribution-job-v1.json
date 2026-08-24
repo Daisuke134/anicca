@@ -73,7 +73,10 @@
       "pattern": "^[A-Za-z0-9_]+$"
     },
     "cadence_class": {"const": "AFFILIATE_MONETIZATION"},
-    "distribution_mode": {"const": "QUOTE_CONTROL_POST"},
+    "distribution_mode": {
+      "enum": ["QUOTE_CONTROL_POST", "QUOTE_RELEVANT_EXTERNAL"]
+    },
+    "distribution_route_id": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
     "control_post_url": {
       "type": "string",
       "pattern": "^https://x\\.com/[A-Za-z0-9_]{1,15}/status/[0-9]+$"
