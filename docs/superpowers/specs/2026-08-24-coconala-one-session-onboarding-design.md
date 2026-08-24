@@ -206,3 +206,25 @@ official Coconala signup URL; rerun selects `finished`; six unique launchd label
 all four business entrypoints compile; OSS self-containment passes 11/11; ShellCheck and
 the scoped Gig secret scan pass with zero findings. `gog` setup has an acknowledged real
 send and same-inbox nonce readback.
+
+## Current remaining work
+
+The Coconala OSS code-owned TODO is empty. Do not add waiting for eKYC review, buyer
+traffic, sales, Paid orders, withdrawal windows, or bank arrival. Those are external
+outcomes recorded when they occur, not implementation work. Future Upwork, Mercor, and
+other marketplace productization belongs to separate provider specs.
+
+## Friend DM
+
+Send this without promising income:
+
+> MacでAIにココナラの応募・返信・出品・納品を24時間運用させるOSSを作ったので、試してほしい！
+> 必要なのはApple Silicon Mac、ChatGPTの有料プラン、ココナラ登録に必要なメール・携帯電話・本人確認書類・振込口座です。
+>
+> Terminalを開いて、これをそのまま貼り付けて実行してください：
+>
+> `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Daisuke134/life-manager/main/scripts/bootstrap-coconala.sh)"`
+>
+> 専用ブラウザが開くので、ココナラ公式画面で登録、メール・SMS認証、本人確認、振込口座設定を完了してください。パスワード、本人確認書類、銀行情報はAIへ送らず、公式画面だけに入力します。完了後、Terminalで同じコマンドをもう一度実行すれば、Apply・Negotiate・Storefront・Paidが起動します。
+>
+> 収益保証はありません。途中で止まった場合は、秘密情報を隠したTerminalのエラー画面だけ送ってください。
