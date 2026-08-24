@@ -8,15 +8,45 @@ from pathlib import Path
 from job_search_loop.ledger import Ledger
 from job_search_loop.workday_search_loop import (
     cached_source_fetcher,
+    rank_candidates,
     rotated_sources,
     search_until_qualified,
     snapshot_candidates,
     validate_shortlist,
+    unique_sources,
 )
 from job_search_loop.workday_qualification import qualify_one
 
 
 class WorkdayQualificationTests(unittest.TestCase):
+    def test_duplicate_registry_source_is_fetched_once(self):
+        sources = (
+            {"company": "A", "host": "a.wd1.myworkdayjobs.com", "tenant": "a", "site": "Careers", "search_text": "one"},
+            {"company": "A", "host": "a.wd1.myworkdayjobs.com", "tenant": "a", "site": "Careers", "search_text": "two"},
+        )
+        self.assertEqual(len(unique_sources(sources)), 1)
+
+    def test_complete_snapshot_is_ranked_in_chunks_then_finalists(self):
+        candidates = [
+            {"url": f"https://a.wd1.myworkdayjobs.com/Careers/job/{index}"}
+            for index in range(20)
+        ]
+        calls = []
+
+        def rank(chunk):
+            calls.append([row["url"] for row in chunk])
+            return {"ranked_urls": [chunk[-1]["url"]]}
+
+        result = rank_candidates(
+            candidates=candidates,
+            rank_chunk=rank,
+            chunk_size=2,
+        )
+
+        self.assertEqual(len(calls), 11)
+        self.assertEqual(len(calls[-1]), 10)
+        self.assertEqual(result, (calls[-1][-1],))
+
     def test_snapshot_skips_failed_source_and_keeps_other_company(self):
         with tempfile.TemporaryDirectory() as directory:
             sources = (

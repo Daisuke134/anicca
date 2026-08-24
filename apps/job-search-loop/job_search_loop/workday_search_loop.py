@@ -24,6 +24,20 @@ def rotated_sources(
     return sources[offset:] + sources[:offset]
 
 
+def unique_sources(
+    sources: tuple[dict[str, str], ...],
+) -> tuple[dict[str, str], ...]:
+    unique = []
+    seen = set()
+    for source in sources:
+        key = (source["host"].casefold(), source["tenant"], source["site"])
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(source)
+    return tuple(unique)
+
+
 def cached_source_fetcher(
     fetch: Callable[[dict[str, str]], list[dict[str, Any]]],
     cache: dict[str, list[dict[str, Any]]] | None = None,
@@ -100,6 +114,27 @@ def validate_shortlist(
     return tuple(validated)
 
 
+def rank_candidates(
+    *,
+    candidates: list[dict[str, str]],
+    rank_chunk: Callable[[list[dict[str, str]]], dict[str, Any]],
+    chunk_size: int = 400,
+) -> tuple[str, ...]:
+    if chunk_size < 1:
+        raise ValueError("chunk_size must be positive")
+    finalists: list[dict[str, str]] = []
+    by_url = {row["url"].casefold(): row for row in candidates}
+    for offset in range(0, len(candidates), chunk_size):
+        chunk = candidates[offset : offset + chunk_size]
+        for url in validate_shortlist(rank_chunk(chunk), chunk):
+            row = by_url[url.casefold()]
+            if row not in finalists:
+                finalists.append(row)
+    if len(finalists) <= 8:
+        return tuple(row["url"] for row in finalists)
+    return validate_shortlist(rank_chunk(finalists), finalists)
+
+
 def search_until_qualified(
     *,
     discover: Callable[[], dict[str, Any]],
@@ -156,7 +191,9 @@ def main() -> int:
     args = parser.parse_args()
     runner = AgentRunner(evidence_root=args.evidence_root, runner_path=args.runner)
     source_payload = json.loads(args.sources.read_text(encoding="utf-8"))
-    sources = tuple(dict(row) for row in source_payload.get("sources", []))
+    sources = unique_sources(
+        tuple(dict(row) for row in source_payload.get("sources", []))
+    )
     allowed_hosts = {str(row["host"]).casefold() for row in sources}
     source_cursor = 0
     jobs_by_source: dict[str, list[dict[str, Any]]] = {}
@@ -182,9 +219,10 @@ def main() -> int:
     preferred_urls: tuple[str, ...] = ()
     if candidates:
         candidate_memory = args.candidate_memory.read_text(encoding="utf-8")
-        shortlist = runner.run(
-            task="improve",
-            prompt=(
+        def rank_chunk(chunk: list[dict[str, str]]) -> dict[str, Any]:
+            return runner.run(
+                task="improve",
+                prompt=(
                 "Rank the Workday jobs for this candidate's realistic chance of winning "
                 "an interview and reaching at least JPY 7M, prioritizing JPY 10M-30M. "
                 "Use the whole supplied snapshot, not company prestige or source order. "
@@ -194,16 +232,20 @@ def main() -> int:
                 "Return only the schema.\n\n"
                 + wrap_untrusted(
                     "workday_snapshot",
-                    json.dumps(candidates, ensure_ascii=False),
+                    json.dumps(chunk, ensure_ascii=False),
                 )
                 + "\n\n"
                 + wrap_untrusted("candidate_memory", candidate_memory)
             ),
-            schema_path=args.shortlist_schema,
-            workdir=args.workdir,
-            run_id=f"workday-shortlist-{uuid.uuid4().hex}",
+                schema_path=args.shortlist_schema,
+                workdir=args.workdir,
+                run_id=f"workday-shortlist-{uuid.uuid4().hex}",
+            )
+
+        preferred_urls = rank_candidates(
+            candidates=candidates,
+            rank_chunk=rank_chunk,
         )
-        preferred_urls = validate_shortlist(shortlist, candidates)
 
     def discover_next() -> dict[str, Any]:
         nonlocal source_cursor
