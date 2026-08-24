@@ -403,8 +403,39 @@ if [ "$AFFILIATE_JOB_STATE" = "EFFECT_STARTED" ] && [ "$AFFILIATE_JOB_CHANGED" =
   finish 0 "affiliate distribution job claimed"
 fi
 if [ "$AFFILIATE_JOB_STATE" = "EFFECT_STARTED" ]; then
+  AFFILIATE_COPY_ARGS=()
+  AFFILIATE_JOB_MODE="$("$PY" -c 'import json,sys; print((json.load(sys.stdin).get("job") or {}).get("distribution_mode") or "ORIGINAL")' <<<"$AFFILIATE_JOB_CLAIM")"
+  AFFILIATE_CURRENT_JOB_ID="$("$PY" -c 'import json,sys; print(json.load(sys.stdin)["job_id"])' <<<"$AFFILIATE_JOB_CLAIM")"
+  if [ "$AFFILIATE_JOB_MODE" = "QUOTE_CONTROL_POST" ] && \
+     [ ! -f "$AFFILIATE_JOB_PAYLOADS/$AFFILIATE_CURRENT_JOB_ID.json" ]; then
+    AFFILIATE_CONTROL_POST="$("$PY" -c 'import json,sys; print(json.load(sys.stdin)["job"]["control_post_url"])' <<<"$AFFILIATE_JOB_CLAIM")"
+    cat >"$EV/prompt-affiliate-copy.txt" <<EOF
+You write one contextual wrapper for a quote post that recirculates an existing Affiliate post.
+The quoted post is $AFFILIATE_CONTROL_POST and already contains the exact article URL and Affiliate disclosure.
+
+Return exactly one JSON object with keys:
+{"text":"one English sentence", "claims":[]}
+
+Rules:
+- 40-180 characters, one sentence, no newline, no URL, no hashtag, no emoji.
+- Add a useful workflow-oriented reason to revisit the quoted checklist.
+- Do not repeat its opening sentence.
+- Do not assert prices, features, performance, popularity, urgency, endorsement, or any new factual claim.
+- claims must be [] or the output is rejected.
+
+Good: {"text":"This checklist is most useful before a workflow commitment turns into a recurring subscription.","claims":[]}
+Good: {"text":"Revisit the trade-offs when the tool has to fit a real publishing workflow rather than a demo.","claims":[]}
+Bad: {"text":"This is the best and cheapest caption tool.","claims":["best and cheapest"]}
+EOF
+    if ! ask_model "$EV/prompt-affiliate-copy.txt" "$EV/affiliate-copy.raw" \
+      >"$EV/affiliate-copy.json"; then
+      handle_model_failure "affiliate recirculation copy" "$EV/affiliate-copy.raw"
+    fi
+    AFFILIATE_COPY_ARGS=(--job-copy "$EV/affiliate-copy.json")
+  fi
   if ! AFFILIATE_JOB_PAYLOAD="$("$PY" "$SKILL/scripts/affiliate_proposal.py" \
     --job-claims "$AFFILIATE_JOB_CLAIMS" --job-payload-dir "$AFFILIATE_JOB_PAYLOADS" \
+    "${AFFILIATE_COPY_ARGS[@]}" \
     --render-claimed-job 2>>"$EV/affiliate-job.err")"; then
     report "🛑 Affiliate distribution payload failed the public-link safety gate"
     finish 1 "affiliate distribution payload failed"
@@ -479,8 +510,16 @@ with open(target, "x", encoding="utf-8") as stream:
     stream.write(text)
     stream.flush(); os.fsync(stream.fileno())
 PYEOF
-    run_x_post --cdp "$CDP" --text-file "$AFFILIATE_JOB_TEXT" --mode original \
-      >"$EV/affiliate-job-post.json" 2>>"$EV/affiliate-job-post.err"
+    AFFILIATE_POST_MODE="$("$PY" -c 'import json,sys; p=json.load(sys.stdin).get("payload") or {}; print("quote" if p.get("distribution_mode")=="QUOTE_CONTROL_POST" else "original")' <<<"$AFFILIATE_JOB_EFFECT")"
+    AFFILIATE_SOURCE_URL="$("$PY" -c 'import json,sys; print((json.load(sys.stdin).get("payload") or {}).get("source_url") or "")' <<<"$AFFILIATE_JOB_EFFECT")"
+    if [ "$AFFILIATE_POST_MODE" = "quote" ]; then
+      run_x_post --cdp "$CDP" --text-file "$AFFILIATE_JOB_TEXT" --mode quote \
+        --source-url "$AFFILIATE_SOURCE_URL" \
+        >"$EV/affiliate-job-post.json" 2>>"$EV/affiliate-job-post.err"
+    else
+      run_x_post --cdp "$CDP" --text-file "$AFFILIATE_JOB_TEXT" --mode original \
+        >"$EV/affiliate-job-post.json" 2>>"$EV/affiliate-job-post.err"
+    fi
     AFFILIATE_JOB_RC=$?
     AFFILIATE_PROVIDER_ID="$("$PY" -c 'import json,sys
 try: print(json.load(open(sys.argv[1])).get("provider_submission_id") or "")
@@ -505,7 +544,9 @@ with open(posted, "a+", encoding="utf-8") as stream:
     if any(json.loads(line).get("affiliate_job_id") == os.environ["X_REPOST_JOB_ID"]
            for line in stream if line.strip()): raise SystemExit(0)
     row = {"posted_at": datetime.datetime.now().astimezone().isoformat(),
-           "kind": "affiliate_distribution", "source_url": payload["owned_article_url"],
+           "kind": ("affiliate_distribution_quote" if payload.get("distribution_mode")
+                    == "QUOTE_CONTROL_POST" else "affiliate_distribution"),
+           "source_url": payload.get("source_url") or payload["owned_article_url"],
            "affiliate_job_id": payload["job_id"],
            "affiliate_effect_identity": payload["effect_identity"],
            "affiliate_placement_id": payload["placement_id"],

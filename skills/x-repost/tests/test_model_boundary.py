@@ -97,7 +97,7 @@ class ModelBoundaryTest(unittest.TestCase):
         )
         self.assertIn('2>"$EV/model.err"', normalized)
         self.assertNotIn('2>>"$EV/model.err"', normalized)
-        self.assertEqual(normalized.count("handle_model_failure"), 5)
+        self.assertEqual(normalized.count("handle_model_failure"), 6)
 
     def test_cli_preserves_working_browser_lease_through_postiz_readback(self) -> None:
         source = CLI.read_text()

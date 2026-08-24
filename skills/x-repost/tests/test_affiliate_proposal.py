@@ -19,6 +19,49 @@ SPEC.loader.exec_module(MODULE)
 
 
 class AffiliateProposalTests(unittest.TestCase):
+    def test_quote_job_requires_model_copy_and_binds_control_post(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            queue, claims = root / "jobs.jsonl", root / "claims.jsonl"
+            payloads, results, copy = (
+                root / "payloads", root / "results.jsonl", root / "copy.json"
+            )
+            job = {
+                "schema_version": 1, "receipt_type": "AFFILIATE_X_DISTRIBUTION_JOB",
+                "state": "QUEUED", "job_id": "1" * 64,
+                "effect_identity": "2" * 64, "placement_id": "caption-en-mix-1",
+                "owned_article_url": "https://aniccaai.com/blog/caption",
+                "content_sha256": "3" * 64,
+                "experiment_lineage": {"kind": "EXPERIMENT", "decision_id": "4" * 64,
+                                       "control_placement_id": "caption-en-1"},
+                "target_x_account": "selawmqt",
+                "cadence_class": "AFFILIATE_MONETIZATION",
+                "distribution_mode": "QUOTE_CONTROL_POST",
+                "control_post_url": "https://x.com/selawmqt/status/200",
+                "policy_sha256": "5" * 64, "source_set_sha256": "6" * 64,
+                "created_at": "2026-08-24T00:00:00+00:00",
+                "private_tracking_url_state": "NOT_INCLUDED",
+                "revenue_credit_state": "NO_REVENUE_CREDIT",
+            }
+            queue.write_text(json.dumps(job) + "\n")
+            MODULE.claim_next_job(queue, claims, results)
+
+            with self.assertRaises(ValueError):
+                MODULE.render_claimed_job(claims, payloads)
+            copy.write_text(json.dumps({
+                "text": "A useful checklist when the subscription trade-offs are still unclear.",
+                "claims": [],
+            }))
+            payload = MODULE.render_claimed_job(claims, payloads, copy)
+
+            self.assertEqual(payload["distribution_mode"], "QUOTE_CONTROL_POST")
+            self.assertEqual(payload["source_url"], job["control_post_url"])
+            self.assertNotIn("http", payload["text"])
+            self.assertLessEqual(payload["weighted_length"], 220)
+            self.assertEqual(MODULE.distribution_effect_state(
+                claims, payloads, results
+            )["state"], "READY_TO_POST")
+
     def test_terminal_job_advances_to_next_queue_item_without_overlap(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

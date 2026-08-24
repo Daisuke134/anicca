@@ -29,6 +29,7 @@ JOB_FIELDS = {
     "target_x_account", "cadence_class", "policy_sha256", "source_set_sha256",
     "created_at", "private_tracking_url_state", "revenue_credit_state",
 }
+QUOTE_JOB_FIELDS = {"distribution_mode", "control_post_url"}
 X_TRANSFORMED_URL_LENGTH = 23
 UNVERIFIED_RECOVERY_WINDOW = timedelta(hours=6)
 URL = re.compile(r"https?://\S+")
@@ -89,7 +90,9 @@ def canonical(proposal: dict) -> dict:
 
 
 def valid_job(job: dict) -> bool:
-    if not isinstance(job, dict) or set(job) != JOB_FIELDS:
+    if not isinstance(job, dict) or set(job) not in {
+        frozenset(JOB_FIELDS), frozenset(JOB_FIELDS | QUOTE_JOB_FIELDS),
+    }:
         return False
     url = job.get("owned_article_url")
     lineage = job.get("experiment_lineage")
@@ -113,6 +116,18 @@ def valid_job(job: dict) -> bool:
             )
         )
     )
+    quote_valid = (
+        not (set(job) & QUOTE_JOB_FIELDS)
+        or (
+            set(job) >= QUOTE_JOB_FIELDS
+            and job.get("distribution_mode") == "QUOTE_CONTROL_POST"
+            and isinstance(job.get("control_post_url"), str)
+            and bool(re.fullmatch(
+                r"https://x\.com/[A-Za-z0-9_]{1,15}/status/[0-9]+",
+                job["control_post_url"],
+            ))
+        )
+    )
     return all((
         job.get("schema_version") == 1,
         job.get("receipt_type") == "AFFILIATE_X_DISTRIBUTION_JOB",
@@ -129,6 +144,7 @@ def valid_job(job: dict) -> bool:
         isinstance(job.get("source_set_sha256"), str)
         and PROPOSAL_ID.fullmatch(job["source_set_sha256"]),
         lineage_valid,
+        quote_valid,
         isinstance(job.get("target_x_account"), str)
         and bool(re.fullmatch(r"[A-Za-z0-9_]{1,15}", job["target_x_account"])),
         job.get("cadence_class") == "AFFILIATE_MONETIZATION",
@@ -244,28 +260,49 @@ def claim_next_job(
         return {**row, "changed": True}
 
 
-def render_claimed_job(claims_path: Path, payloads_dir: Path) -> dict:
+def render_claimed_job(
+    claims_path: Path, payloads_dir: Path, copy_path: Path | None = None,
+) -> dict:
     claims = distribution_claims(claims_path)
     if not claims:
         return {"state": "NO_CLAIM", "changed": False}
     job = claims[-1]["job"]
-    text = post_text({
-        "receipt_type": "AFFILIATE_REPOST_PROPOSAL",
-        "state": "READY_FOR_EXISTING_REPOST_OWNER",
-        "proposal_id": job["job_id"],
-        "placement_id": job["placement_id"],
-        "owned_article_url": job["owned_article_url"],
-        "language": "en",
-        "disclosure_required": True,
-        "tracking_link_state": "NOT_INCLUDED",
-        "revenue_credit_state": "NO_REVENUE_CREDIT",
-    })
+    path = payloads_dir / f"{job['job_id']}.json"
+    quote_mode = job.get("distribution_mode") == "QUOTE_CONTROL_POST"
+    if quote_mode and path.is_file() and copy_path is None:
+        return {**distribution_payload(claims_path, payloads_dir), "changed": False}
+    if quote_mode:
+        if copy_path is None:
+            raise ValueError("quote distribution requires model copy")
+        copy = read_json(copy_path)
+        text = copy.get("text")
+        if not (
+            set(copy) == {"text", "claims"} and copy.get("claims") == []
+            and
+            isinstance(text, str) and text == text.strip()
+            and 40 <= len(text) <= 220
+            and not URL.search(text)
+            and "\n" not in text and "\r" not in text
+        ):
+            raise ValueError("quote distribution copy invalid")
+    else:
+        text = post_text({
+            "receipt_type": "AFFILIATE_REPOST_PROPOSAL",
+            "state": "READY_FOR_EXISTING_REPOST_OWNER",
+            "proposal_id": job["job_id"],
+            "placement_id": job["placement_id"],
+            "owned_article_url": job["owned_article_url"],
+            "language": "en",
+            "disclosure_required": True,
+            "tracking_link_state": "NOT_INCLUDED",
+            "revenue_credit_state": "NO_REVENUE_CREDIT",
+        })
     urls = URL.findall(text)
-    if urls != [job["owned_article_url"]] or "try.elevenlabs.io" in text.casefold():
+    if ((quote_mode and urls) or (not quote_mode and urls != [job["owned_article_url"]])
+            or "try.elevenlabs.io" in text.casefold()):
         raise ValueError("distribution payload contains an unsafe link")
     text_sha256 = hashlib.sha256(text.encode()).hexdigest()
     payloads_dir.mkdir(parents=True, exist_ok=True)
-    path = payloads_dir / f"{job['job_id']}.json"
     expected = {
         "schema_version": 1,
         "receipt_type": "X_REPOST_DISTRIBUTION_PAYLOAD",
@@ -281,6 +318,11 @@ def render_claimed_job(claims_path: Path, payloads_dir: Path) -> dict:
         "weighted_length": len(URL.sub("x" * X_TRANSFORMED_URL_LENGTH, text)),
         "private_tracking_url_state": "NOT_INCLUDED",
     }
+    if quote_mode:
+        expected.update({
+            "distribution_mode": "QUOTE_CONTROL_POST",
+            "source_url": job["control_post_url"],
+        })
     if path.is_file():
         prior = read_json(path)
         comparable = {key: value for key, value in prior.items() if key != "created_at"}
@@ -324,6 +366,12 @@ def distribution_payload(claims_path: Path, payloads_dir: Path) -> dict:
         "weighted_length": len(URL.sub("x" * X_TRANSFORMED_URL_LENGTH, text or "")),
         "private_tracking_url_state": "NOT_INCLUDED",
     }
+    quote_mode = job.get("distribution_mode") == "QUOTE_CONTROL_POST"
+    if quote_mode:
+        comparable.update({
+            "distribution_mode": "QUOTE_CONTROL_POST",
+            "source_url": job["control_post_url"],
+        })
     revision = payload.get("revision", 0)
     if revision == 1:
         comparable.update({
@@ -335,7 +383,8 @@ def distribution_payload(claims_path: Path, payloads_dir: Path) -> dict:
         revision not in {0, 1}
         or {key: value for key, value in payload.items() if key != "created_at"} != comparable
         or not isinstance(payload.get("created_at"), str)
-        or urls != [job["owned_article_url"]]
+        or (quote_mode and urls)
+        or (not quote_mode and urls != [job["owned_article_url"]])
         or "try.elevenlabs.io" in (text or "").casefold()
         or comparable["weighted_length"] > 280
     ):
@@ -820,6 +869,7 @@ def main() -> int:
     parser.add_argument("--claim-next-job", action="store_true")
     parser.add_argument("--render-claimed-job", action="store_true")
     parser.add_argument("--job-payload-dir", type=Path)
+    parser.add_argument("--job-copy", type=Path)
     parser.add_argument("--job-results", type=Path)
     parser.add_argument("--job-effect-state", action="store_true")
     parser.add_argument("--record-job-result", choices=("POSTED", "UNVERIFIED", "NO_EFFECT"))
@@ -844,7 +894,9 @@ def main() -> int:
     if args.render_claimed_job:
         if args.job_claims is None or args.job_payload_dir is None:
             parser.error("--render-claimed-job requires --job-claims and --job-payload-dir")
-        print(json.dumps(render_claimed_job(args.job_claims, args.job_payload_dir), sort_keys=True))
+        print(json.dumps(render_claimed_job(
+            args.job_claims, args.job_payload_dir, args.job_copy
+        ), sort_keys=True))
         return 0
     if args.job_effect_state:
         if args.job_claims is None or args.job_payload_dir is None or args.job_results is None:
