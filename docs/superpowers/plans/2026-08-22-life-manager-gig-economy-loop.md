@@ -1675,10 +1675,26 @@ lacks join/cost evidence, and reject duplicate transaction IDs.
 - [ ] Repeat the winning Skill and change one strategy variable at a time until a complete month
   returns at least `1_000_000`; then close G11 and unlock Phase C.
 
-## Phase C — Fiverr second complete adapter
+## Phase C — Second-market canary through the common browser ACI
 
 Phase C is locked until Task 22A closes G11. A first Upwork payment or three-job repeatability alone
 does not unlock a second growth market.
+
+**Current execution rule:** Tasks 23–28 below are historical decomposition, not permission to build
+six Fiverr-specific controllers. They are superseded by the common `observe/extract/act/readback` ACI
+and remain only as acceptance scenarios. Implement one thin manifest plus exceptional authentication,
+fee/currency or official-readback glue; reuse the common effect, inbox, project, QA, delivery, money,
+Telegram and learning paths. If the canary needs more than three provider files or about 300 LOC,
+stop and extract the missing common primitive first.
+
+### Task 22B: Prove the common browser ACI on one second-market canary
+
+- [ ] Reuse the current model-driven browser operator to observe and schema-extract the authenticated
+  market without provider-specific semantic routing.
+- [ ] Bind one frozen effect to provider/account/source/payload/observation identity before acting.
+- [ ] Execute one authorized zero-spend canary and require official provider readback.
+- [ ] Project its lifecycle through the existing work-events, Telegram, funnel and money ledgers.
+- [ ] Replay with zero duplicate effects and record actual provider-only LOC/files.
 
 ### Task 23: Record Fiverr authorization and authenticated transport
 
