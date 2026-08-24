@@ -260,7 +260,7 @@ No later task may jump ahead of the first incomplete row:
 | U10 | Discover and qualify a first-job candidate | **DONE:** usability-test job `~022091106411892491962`; $15, 10–15 proposals, zero interviews, payment/phone verified, and all student/age/English/recording gates match owner evidence |
 | U11 | Resolve application capacity for that candidate | **DONE:** official proposal surface requires 7 Connects; balance/history, offers, invites and proposals are 0, no reward banner is exposed, and the only buy offer is 100 for $15 plus tax |
 | U12 | Freeze one tailored first-job proposal | **DONE:** immutable payload `c37eed9c…c68e926` contains the $15 terms, cover letter, five factual screening answers, no attachments, and zero unsupported claims |
-| U13 | Make acquisition fully loop-owned | **DONE:** production launchd wakes generate Skill-bound searches, inspect current jobs, make model-owned select/skip decisions, retain rejected IDs and seal proposals without manual marketplace selection; existing ready work remains available |
+| U13 | Make acquisition fully loop-owned | **IN PROGRESS, PONYTAIL:** custom query/candidate/verifier stack deleted; the existing provider now scans current jobs, passes only official zero-Connect details through the existing proposal model, and uses the existing proposal effect/readback path |
 | U14 | Close the first acquisition effect | **IN PROGRESS, ZERO-SPEND:** submit any model-qualified public job whose official cost is 0 Connects, or accept a qualified invitation/direct offer/Catalog order; paid Connects remain disabled; verify official proposal/order ID and exact balance delta |
 | U15 | Replay immediately | Same proposal ID; zero new proposal and zero additional Connects |
 | U16 | Poll and answer the resulting thread | Official story/message IDs and no duplicate reply |
@@ -604,6 +604,12 @@ U13 atomic order:
     rejected bounded $400 freelance work. Coconala application planning does not use employee salary
     policy. Point Upwork acquisition to the existing gig owner profile and installed Skill contracts;
     do not add a new scoring rule, keyword list or marketplace-specific salary abstraction.
+32. **CUSTOM ACQUISITION STACK DELETED / COMMON LOOP RESTORED:** remove 521 lines of dedicated query
+    planner, candidate planner, response schemas and verifier Skill. Keep the existing Upwork browser,
+    proposal model, effect fence and official readback. The single provider now follows the proven
+    Coconala shape: read current listings, let the model decide from full detail, submit through the
+    provider adapter, then require the official proposal ID. Code parses only fixed Upwork URLs, IDs
+    and Connects amounts; it contains no keyword or regex suitability judgment.
 
 U14 atomic order:
 

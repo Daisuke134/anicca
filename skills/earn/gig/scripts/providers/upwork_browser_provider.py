@@ -48,6 +48,7 @@ CATALOG_URL = "https://www.upwork.com/nx/project-dashboard/?step=approved"
 CONTRACTS_URL = "https://www.upwork.com/nx/wm/freelancer/home"
 MESSAGES_URL = "https://www.upwork.com/ab/messages/rooms/"
 WORKING_STYLE_URL = "https://www.upwork.com/nx/skills-assesment/assessment-results"
+SEARCH_URL = "https://www.upwork.com/nx/search/jobs/?sort=recency"
 DEFAULT_CANDIDATES = SCRIPTS.parent / "config" / "upwork-candidates.public.json"
 DEFAULT_TRANSITIONS = Path.home() / "gig/state/upwork-free-transitions.jsonl"
 DEFAULT_PROPOSALS = Path.home() / ".config/anicca/gig/upwork-proposals"
@@ -286,8 +287,6 @@ def plan_free_proposal(state: dict[str, Any], proposals_dir: Path) -> dict[str, 
     candidates = state.get("candidate_jobs")
     if type(balance) is not int or balance < 0 or not isinstance(candidates, list):
         raise ValueError("upwork_free_action_state_invalid")
-    if balance == 0:
-        return None
     proposals_dir = proposals_dir.expanduser()
     if (
         proposals_dir.is_symlink() or not proposals_dir.is_dir()
@@ -455,6 +454,62 @@ def parse_candidate(
         if connects else None,
         "evidence_sha256": evidence_sha256,
     }
+
+
+async def discover_zero_connect_proposal(
+    state: dict[str, Any], *, pass_id: str, sequence: int,
+    proposals_dir: Path, inbound_dir: Path, inbound_evidence: Path,
+) -> dict[str, Any] | None:
+    """Reuse the invitation proposal brain for current public jobs costing zero Connects."""
+    artifact = Path(await navigate_and_snapshot(
+        pass_id, f"{sequence:02d}-1", "public-search", SEARCH_URL,
+        "read_only", 2, 1440,
+    ))
+    _, search_hash, search_links = _read_evidence(artifact, SEARCH_URL)
+    state["evidence_sha256"]["public-search"] = search_hash
+    known = {str(row.get("job_id")) for row in state["candidate_jobs"]}
+    jobs = [row for row in _dedupe_links(search_links)
+            if "/jobs/" in row["href"] and row["id"] not in known]
+    state["zero_connect_discovery"] = {"inspected": 0, "eligible": 0}
+    for offset, job in enumerate(jobs[:10], start=1):
+        detail = Path(await navigate_and_snapshot(
+            pass_id, f"{sequence + offset:02d}-1", "public-job",
+            job["href"], "read_only", 2, 1440,
+        ))
+        text, digest, _ = _read_evidence(detail, job["href"])
+        candidate = {
+            "job_id": job["id"], "job_url": job["href"], "queue": "discovered",
+            "title": job["title"], "proposal_payload_sha256": "",
+        }
+        observed = parse_candidate(candidate, text, digest)
+        state["zero_connect_discovery"]["inspected"] += 1
+        if observed["status"] != "open" or observed["connects_required"] != 0:
+            continue
+        state["zero_connect_discovery"]["eligible"] += 1
+        packet_sha = seal_inbound_detail({
+            "state": "invitation_detected", "resource_id": job["id"],
+            "resource_url": job["href"],
+        }, text, digest, inbound_dir, state["observed_at"])
+        proposal = await asyncio.to_thread(
+            plan_inbound, inbound_dir / f"{packet_sha}.json",
+            profile=DEFAULT_OWNER_PROFILE,
+            evidence_dir=inbound_evidence / packet_sha,
+        )
+        if proposal is None:
+            continue
+        public = dict(proposal)
+        public["status"] = "frozen_waiting_for_connects"
+        public.pop("payload_sha256", None)
+        body = json.dumps(public, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n"
+        public["payload_sha256"] = hashlib.sha256(body.encode()).hexdigest()
+        proposals_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
+        os.chmod(proposals_dir, 0o700)
+        _atomic_write(proposals_dir / f"{job['id'].lstrip('~')}.json", public)
+        ready = {**candidate, "queue": "ready",
+                 "proposal_payload_sha256": public["payload_sha256"]}
+        state["candidate_jobs"].append(parse_candidate(ready, text, digest))
+        return public
+    return None
 
 
 def _read_evidence(path: Path, expected_url: str) -> tuple[str, str, list[dict[str, Any]]]:
@@ -900,6 +955,12 @@ async def observe(
             state["free_acquisition"] = inbound
         return state
     selected = plan_free_proposal(state, proposals_dir)
+    if selected is None and state["balance"] == 0:
+        selected = await discover_zero_connect_proposal(
+            state, pass_id=pass_id, sequence=len(targets) + 21,
+            proposals_dir=proposals_dir, inbound_dir=inbound_dir,
+            inbound_evidence=inbound_evidence,
+        )
     state["can_submit_public_job"] = selected is not None
     if selected is None:
         state["free_acquisition"] = {"state": "waiting_free_capacity"}
