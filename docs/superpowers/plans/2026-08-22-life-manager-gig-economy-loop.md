@@ -890,6 +890,15 @@ U13 atomic order:
     with proposal IDs 2, balance 133, rooms/offers/contracts 0, duplicate 0 and 27 affordable jobs
     inspected while other lanes remain independently scheduled. Apply is now a persistent 24/7 main
     capability; the next live gate is an external client reply or offer.
+71. **NATIVE BEST-MATCHES FEED REPLACES BLOCKED GLOBAL SEARCH:** authenticated comparison proves
+    `/nx/find-work/best-matches` and `/nx/find-work/most-recent` render current personalized job cards,
+    including an iOS/webapp opportunity aligned with installed Skills, while the prior global
+    `/nx/search/jobs/?sort=recency` now returns a Cloudflare challenge and zero jobs. Use Upwork's native
+    Best Matches ranking as the primary discovery surface and retain Luna as the final fit/value judge;
+    provider pagination is bookkeeping only. This removes a brittle blocked transport and improves
+    candidate relevance without hardcoded categories or a new search agent. Regression remains
+    `156 passed`; next main wake must inspect the native feed, preserve existing proposal effects and
+    submit only if Luna finds positive verified value.
 
 U14 atomic order:
 
