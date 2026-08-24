@@ -13,11 +13,14 @@ for NAME in ai.anicca.job-search-daily ai.anicca.job-search-inbox ai.anicca.job-
     /^[[:space:]]*last exit code =/ {exit_code=$5}
     END {printf "state=%s last_exit=%s", state, exit_code}
   ')
-  if [[ "$STATUS" != *"last_exit=0" ]]; then
+  if [[ "$NAME" == "ai.anicca.job-search-daily" && "$STATUS" == *"last_exit=75" ]]; then
+    echo "$NAME waiting_capacity $STATUS"
+  elif [[ "$STATUS" != *"last_exit=0" ]]; then
     echo "$NAME unhealthy: $STATUS" >&2
     exit 1
+  else
+    echo "$NAME $STATUS"
   fi
-  echo "$NAME $STATUS"
 done
 
 BROWSER_STATUS=$("$JOB_SEARCH_LAUNCHCTL" print "gui/$JOB_UID/ai.anicca.job-search-browser" 2>/dev/null | awk '
@@ -91,8 +94,8 @@ for prefix, maximum_age in limits.items():
         candidates = [
             candidate
             for candidate in sorted(evidence_root.glob(f"{prefix}*"))
-            if (candidate / "ashby-fast-path-combined.json").is_file()
-            and (candidate / "fast-path-report.json").is_file()
+            if (candidate / "workday-fast-path.json").is_file()
+            and (candidate / "wake-report.json").is_file()
         ]
     else:
         candidates = [
@@ -104,12 +107,12 @@ for prefix, maximum_age in limits.items():
         raise SystemExit(f"missing completed evidence for {prefix}")
     latest = candidates[-1]
     if prefix == "daily-":
-        combined = json.loads((latest / "ashby-fast-path-combined.json").read_text(encoding="utf-8"))
-        report = json.loads((latest / "fast-path-report.json").read_text(encoding="utf-8"))
+        combined = json.loads((latest / "workday-fast-path.json").read_text(encoding="utf-8"))
+        report = json.loads((latest / "wake-report.json").read_text(encoding="utf-8"))
         if report.get("status") != "sent" or not report.get("message_id"):
             raise SystemExit("latest daily evidence has no Telegram ACK")
         value = {"status": combined.get("status")}
-        evidence_path = latest / "fast-path-report.json"
+        evidence_path = latest / "wake-report.json"
     else:
         evidence_path = latest / "summary.json"
         value = json.loads(evidence_path.read_text(encoding="utf-8"))

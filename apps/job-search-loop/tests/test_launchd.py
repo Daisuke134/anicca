@@ -76,7 +76,18 @@ class LaunchdTests(unittest.TestCase):
         self.assertIn("ai.anicca.job-search-inbox", script)
         self.assertIn("ai.anicca.job-search-learning", script)
         self.assertIn('"learning-": 8 * 24 * 3600', script)
+        self.assertIn('candidate / "workday-fast-path.json"', script)
+        self.assertIn('candidate / "wake-report.json"', script)
+        self.assertNotIn("ashby-fast-path-combined.json", script)
         self.assertNotIn("cat /Users/anicca/.openclaw/.env", script)
+
+    def test_health_alert_uses_direct_fenced_telegram(self):
+        root = Path(__file__).parents[1]
+        script = (root / "scripts" / "run-health.sh").read_text(encoding="utf-8")
+        self.assertIn("job_search_loop.telegram import send_once", script)
+        self.assertIn("job-search-health:", script)
+        self.assertNotIn("openclaw message send", script)
+        self.assertNotIn("Ashby healthcheck", script)
 
 
 if __name__ == "__main__":

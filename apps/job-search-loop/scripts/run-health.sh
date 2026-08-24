@@ -37,14 +37,17 @@ PY
   exit 0
 fi
 
-MESSAGE="Codex::: Ashby healthcheck failed in ${RUN_ID}. The application loop is not claimed healthy; inspect the private health evidence before the next wake."
+MESSAGE=$'Codex::: [Job Hunter][ヘルスチェック]\n⚠️ Workday loopの実処理で問題を検出しました。\n\n次に自動で行うこと\nprivate evidenceから原因を確認し、安全に再開できる処理だけを続けます。'
 set +e
-REPORT=$( /opt/homebrew/bin/timeout 90 env PATH="/opt/homebrew/bin:/opt/homebrew/opt/node/bin:/usr/bin:/bin" \
-  /opt/homebrew/bin/openclaw message send \
-    --channel telegram \
-    --target "${TELEGRAM_ALERT_CHAT_ID:-8547730585}" \
-    -m "$MESSAGE" \
-    --json 2>/dev/null )
+export PYTHONPATH="$JOB_SEARCH_APP_ROOT${PYTHONPATH:+:$PYTHONPATH}"
+REPORT=$("$JOB_SEARCH_PYTHON" - "$JOB_SEARCH_STATE_ROOT/telegram-outbox.sqlite3" "$RUN_ID" "$MESSAGE" <<'PY'
+import json,sys
+from pathlib import Path
+from job_search_loop.telegram import send_once
+value=send_once(database=Path(sys.argv[1]), event_key=f"job-search-health:{sys.argv[2]}", message=sys.argv[3])
+print(json.dumps(value, sort_keys=True))
+PY
+)
 REPORT_RC=$?
 set -e
 
@@ -61,8 +64,7 @@ receipt = {"status": "failed", "report_status": "failed", "report_rc": returncod
 if returncode == 0:
     try:
         value = json.loads(raw)
-        payload = value.get("payload") if isinstance(value, dict) else {}
-        message_id = value.get("messageId") or (payload or {}).get("messageId")
+        message_id = value.get("message_id") if isinstance(value, dict) else None
         if message_id:
             receipt["report_status"] = "sent"
             receipt["message_id"] = str(message_id)

@@ -5,7 +5,7 @@ SCRIPT_DIR="${0:A:h}"
 source "$SCRIPT_DIR/runtime-paths.sh"
 export CLOAK_LEASE_HOLDER_PID=$$
 
-JOB_SEARCH_DISK_GUARD="${JOB_SEARCH_DISK_GUARD:-$HOME/gig/releases/life-manager/current/skills/earn/gig/scripts/gig_disk_guard.py}"
+JOB_SEARCH_DISK_GUARD="${JOB_SEARCH_DISK_GUARD:-$JOB_SEARCH_REPO_ROOT/skills/earn/gig/scripts/gig_disk_guard.py}"
 if [[ ! -f "$JOB_SEARCH_DISK_GUARD" || -L "$JOB_SEARCH_DISK_GUARD" || ! -r "$JOB_SEARCH_DISK_GUARD" ]]; then
   print -u2 "job-search daily: disk guard is missing or unsafe"
   exit 75
