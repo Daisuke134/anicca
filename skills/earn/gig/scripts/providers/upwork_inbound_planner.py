@@ -117,7 +117,8 @@ absent when the work can be completed and independently verified with an install
 pre-contract implementation details may become concise client questions rather than automatic rejection.
 The market profile contains provider-published portfolio proof; use only its exact facts and public IDs.
 Bid and delivery estimate are seller decisions: choose them within the official displayed budget/rate
-and verified Skill capacity, with positive expected value and an explicit assumption when needed.
+when one exists. When the client displays no range, choose a reasonable seller rate from scope,
+verified Skill capacity, delivery effort and positive expected value; state the assumption.
 For submit, copy job_id, job_url and job_source_sha256 exactly; status is {status}, required_connects
 is {required}, available_connects_before is {available}; unsupported_claims and attachments are empty. Keep all
 pre-contract communication on Upwork. The proposal must be specific, concise, truthful, and answer
@@ -143,7 +144,9 @@ Installed Skills prove executable capability, not prior client experience. Missi
 details may become concise pre-contract questions. The market profile contains provider-published
 portfolio proof; use only its exact facts and public IDs. Bid and delivery estimate are seller
 decisions: choose them within the official displayed budget/rate and verified Skill capacity, with
-positive expected value and an explicit assumption when needed. For submit, copy the chosen resource_id, URL,
+positive expected value and an explicit assumption when needed. When no client range is displayed,
+choose a reasonable seller rate from scope, Skill capacity and delivery effort rather than treating
+the missing client value as a blocker. For submit, copy the chosen resource_id, URL,
 detail hash, required_connects and available_connects_before exactly; status is
 frozen_waiting_for_connects; unsupported_claims and attachments are empty; answer every explicit
 screening question exactly once and keep communication on Upwork.
