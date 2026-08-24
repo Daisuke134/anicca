@@ -10,6 +10,7 @@ import hashlib
 import json
 import os
 import re
+import subprocess
 import sys
 import time
 from datetime import datetime, timezone
@@ -26,6 +27,7 @@ if str(SCRIPTS) not in sys.path:
 from cdp_nav_snapshot import navigate_and_snapshot  # noqa: E402
 from connector_outbox import ConnectorBusy, ConnectorOutbox  # noqa: E402
 from provider_authorization import DEFAULT_RECEIPT_PATH  # noqa: E402
+import report_envelope  # noqa: E402
 from upwork_proposal_browser import submit_proposal_after_fence  # noqa: E402
 from upwork_inbound_planner import invoke as plan_inbound, invoke_batch as plan_batch, write_sealed_proposal  # noqa: E402
 from upwork_offer_gate import invoke as qualify_direct_offer  # noqa: E402
@@ -63,6 +65,8 @@ DEFAULT_OFFER_EVIDENCE = Path.home() / "gig/state/upwork-offer-gate"
 DEFAULT_INBOX_LEDGER = Path.home() / "gig/state/upwork-inbox.jsonl"
 DEFAULT_NEGOTIATION_EVIDENCE = Path.home() / "gig/state/upwork-negotiation-planner"
 DEFAULT_OWNER_PROFILE = Path.home() / ".config/anicca/gig/owner-profile.json"
+DEFAULT_GIG_DIR = Path.home() / "gig"
+DEFAULT_TELEGRAM_REPORT = SCRIPTS / "telegram_report.py"
 TERMINAL_JOB_STATUSES = {"closed", "removed"}
 _COUNT_LABELS = {
     "offers": r"Offers\s*\((\d+)\)",
@@ -75,6 +79,18 @@ _CONNECTS_REQUIRED = re.compile(
     r"Required Connects to submit a proposal:\s*(\d+)",
     re.IGNORECASE,
 )
+
+
+def publish_application_decision(event: dict[str, Any]) -> None:
+    """Use the provider-neutral WorkEvent and Telegram rails; notification never owns the sale."""
+    result = report_envelope.append_work_event(DEFAULT_GIG_DIR / "work-events.jsonl", event)
+    if result["appended"] != 1:
+        return
+    subprocess.run([
+        sys.executable, str(DEFAULT_TELEGRAM_REPORT), "instant-work-events",
+        "--gig-dir", str(DEFAULT_GIG_DIR),
+        "--telegram-database", str(DEFAULT_GIG_DIR / "telegram-outbox.sqlite3"),
+    ], capture_output=True, text=True, timeout=240, check=False)
 
 
 def parse_connects(text: str) -> dict[str, Any]:
@@ -579,6 +595,7 @@ async def discover_affordable_proposal(
             proposal = await asyncio.to_thread(
                 plan_batch, packet_paths, profile=DEFAULT_OWNER_PROFILE,
                 evidence_dir=inbound_evidence / f"batch-{batch_key}",
+                decision_sink=publish_application_decision,
             )
             if proposal is None:
                 continue
@@ -1004,6 +1021,8 @@ async def observe(
                 proposal = await asyncio.to_thread(
                     plan_inbound, inbound_dir.expanduser() / f"{packet_sha}.json",
                     evidence_dir=inbound_evidence.expanduser() / packet_sha,
+                    decision_sink=publish_application_decision,
+                    title=str(inbound.get("title") or inbound["resource_id"]),
                 )
                 if proposal is None:
                     state["free_acquisition"]["proposal_state"] = "model_skip"

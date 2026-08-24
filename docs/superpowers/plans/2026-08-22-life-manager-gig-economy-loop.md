@@ -2226,8 +2226,11 @@ Telegram outbox. Add no scheduler, notifier, database or provider-specific seman
   appends zero duplicate WorkEvents.
 - [ ] Project each new Upwork reply/offer/contract/delivery/money transition once with a
   provider-scoped event key and model-authored reason.
-- [ ] Wire the production Upwork planner output into the shared path, send it immediately through the
-  existing outbox and prove a replay sends zero duplicates.
+- [x] Wire the production Upwork planner output into the shared path for selected and honest aggregate
+  batch-skip decisions; focused production-helper proof appends once and invokes the existing
+  `instant-work-events` reporter once.
+- [ ] Release it, observe one real planner decision, confirm the Telegram message ID and prove a
+  replay sends zero duplicates.
 - [ ] Emit one compact periodic funnel/KPI report and a stalled-stage alert; unchanged polls stay
   silent.
 - [ ] Bind each one-variable Luna experiment to its strategy version and later keep/revert evidence.

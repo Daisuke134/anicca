@@ -10,7 +10,7 @@ import re
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 from urllib.parse import urlsplit
 
 
@@ -254,6 +254,30 @@ def application_decision_event(
     }
 
 
+def application_batch_skip_event(
+    decision: dict[str, Any], packets: list[dict[str, Any]], *, occurred_at: str,
+) -> dict[str, Any]:
+    """Project one truthful whole-batch skip without inventing per-job reasons."""
+    if not packets or decision.get("decision") != "skip":
+        raise InboundPlannerError("application_batch_event_invalid")
+    for packet in packets:
+        validate_decision(decision, packet)
+    candidate_ids = [packet["resource_id"] for packet in packets]
+    evidence_hash = hashlib.sha256("\n".join(
+        packet["detail_evidence_sha256"] for packet in packets
+    ).encode()).hexdigest()
+    packet = {
+        "resource_id": "batch-" + hashlib.sha256("\n".join(candidate_ids).encode()).hexdigest(),
+        "resource_url": "https://www.upwork.com/nx/find-work/best-matches",
+        "detail_evidence_sha256": evidence_hash,
+    }
+    event = application_decision_event(
+        decision, packet, title=f"{len(packets)}件の案件候補", occurred_at=occurred_at,
+    )
+    event["attributes"]["candidate_ids"] = candidate_ids
+    return event
+
+
 def _invoke_prompt(
     prompt: str, *, runner: Path, schema: Path, evidence_dir: Path,
 ) -> dict[str, Any]:
@@ -298,7 +322,8 @@ def _invoke_prompt(
 def invoke(
     packet_path: Path, *, runner: Path = DEFAULT_RUNNER, schema: Path = DEFAULT_SCHEMA,
     profile: Path = DEFAULT_PROFILE, market_profile: Path = DEFAULT_MARKET_PROFILE,
-    evidence_dir: Path,
+    evidence_dir: Path, decision_sink: Callable[[dict[str, Any]], None] | None = None,
+    title: str = "",
 ) -> dict[str, Any] | None:
     packet = load_packet(packet_path)
     facts = {
@@ -308,15 +333,20 @@ def invoke(
     prompt = planner_prompt(
         packet, facts, capability_inventory(REPO_ROOT),
     )
-    return validate_decision(
-        _invoke_prompt(prompt, runner=runner, schema=schema, evidence_dir=evidence_dir), packet,
-    )
+    decision = _invoke_prompt(prompt, runner=runner, schema=schema, evidence_dir=evidence_dir)
+    proposal = validate_decision(decision, packet)
+    if decision_sink is not None:
+        decision_sink(application_decision_event(
+            decision, packet, title=(proposal or {}).get("title") or title or packet["resource_id"],
+            occurred_at=packet["observed_at"],
+        ))
+    return proposal
 
 
 def invoke_batch(
     packet_paths: list[Path], *, runner: Path = DEFAULT_RUNNER, schema: Path = DEFAULT_SCHEMA,
     profile: Path = DEFAULT_PROFILE, market_profile: Path = DEFAULT_MARKET_PROFILE,
-    evidence_dir: Path,
+    evidence_dir: Path, decision_sink: Callable[[dict[str, Any]], None] | None = None,
 ) -> dict[str, Any] | None:
     packets = [load_packet(path) for path in packet_paths]
     if not packets or len(packets) > 10 or any(packet.get("kind") != "public_job" for packet in packets):
@@ -330,14 +360,24 @@ def invoke_batch(
     )
     decision = _invoke_prompt(prompt, runner=runner, schema=schema, evidence_dir=evidence_dir)
     if decision.get("decision") == "skip":
-        return validate_decision(decision, packets[0])
+        proposal = validate_decision(decision, packets[0])
+        if decision_sink is not None:
+            decision_sink(application_batch_skip_event(
+                decision, packets, occurred_at=max(packet["observed_at"] for packet in packets),
+            ))
+        return proposal
     proposal = decision.get("proposal")
     chosen = next(
         (packet for packet in packets if packet["resource_id"] == (proposal or {}).get("job_id")), None,
     )
     if chosen is None:
         raise InboundPlannerError("inbound_batch_choice_invalid")
-    return validate_decision(decision, chosen)
+    validated = validate_decision(decision, chosen)
+    if decision_sink is not None:
+        decision_sink(application_decision_event(
+            decision, chosen, title=validated["title"], occurred_at=chosen["observed_at"],
+        ))
+    return validated
 
 
 def write_sealed_proposal(proposal: dict[str, Any], root: Path) -> Path:

@@ -134,12 +134,40 @@ def test_batch_selects_one_exact_packet_with_one_model_decision(tmp_path, monkey
     monkeypatch.setattr(planner, "capability_inventory", lambda root: {"skills": []})
     profile = tmp_path / "profile.json"; profile.write_text("{}")
 
+    events = []
     proposal = planner.invoke_batch(
         [first_path, second_path], profile=profile, evidence_dir=tmp_path / "evidence",
+        decision_sink=events.append,
     )
 
     assert proposal["job_id"] == second["resource_id"]
     assert proposal["terms"]["required_connects"] == 8
+    assert [(event["state"], event["entity_id"]) for event in events] == [
+        ("selected", second["resource_id"]),
+    ]
+
+
+def test_batch_skip_emits_one_honest_aggregate_decision(tmp_path, monkeypatch):
+    first_path, first = _public_packet(tmp_path, "a")
+    second_path, second = _public_packet(tmp_path, "b")
+    decision = {
+        "decision": "skip", "reason_codes": ["Neither candidate has positive expected value."],
+        "proposal": None,
+    }
+    monkeypatch.setattr(planner, "_invoke_prompt", lambda *args, **kwargs: decision)
+    monkeypatch.setattr(planner, "capability_inventory", lambda root: {"skills": []})
+    profile = tmp_path / "profile.json"; profile.write_text("{}")
+    events = []
+
+    assert planner.invoke_batch(
+        [first_path, second_path], profile=profile, evidence_dir=tmp_path / "evidence",
+        decision_sink=events.append,
+    ) is None
+    assert events[0]["state"] == "skipped"
+    assert events[0]["attributes"]["candidate_ids"] == [
+        first["resource_id"], second["resource_id"],
+    ]
+    assert events[0]["attributes"]["reason_codes"] == decision["reason_codes"]
 
 
 def test_existing_runner_cli_contract_returns_owned_private_result(tmp_path):
