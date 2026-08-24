@@ -75,7 +75,7 @@ Storefront work.
     signed-out clean-Mac and pre-auth effect-zero receipts; no signup-to-bank-income claim
     is permitted before the pilots and bank arrival below.
     Latest implementation checkpoint: fresh remote shallow clone
-    `d8e16b4cfc861084030d8f1504a33b113a109a64` passes OSS self-contained 11/11,
+    `a2aa1aa31cd240ad10b698a6c592e1f0bd17cecb` passes OSS self-contained 11/11,
     compiles all five onboarding/Storefront entrypoints, passes all three installer shell
     syntax and ShellCheck checks, and has zero Gig-tree gitleaks findings. This is package evidence,
     not a substitute for the three live pilots below.
