@@ -5011,12 +5011,14 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
         row = _persist_receipt(args, output, row)
         return 0, row
 
-    try:
-        _preflight_storefront_bundle()
-    except RuntimeError as error:
-        row = _receipt(pass_id, status="failed", reason=str(error).strip() or type(error).__name__)
-        row = _persist_receipt(args, output, row)
-        return 1, row
+    public_bootstrap = not os.environ.get("GIG_STOREFRONT_ROOT", "").strip()
+    if not public_bootstrap:
+        try:
+            _preflight_storefront_bundle()
+        except RuntimeError as error:
+            row = _receipt(pass_id, status="failed", reason=str(error).strip() or type(error).__name__)
+            row = _persist_receipt(args, output, row)
+            return 1, row
     if getattr(args, "auto_cadence", False):
         try:
             args.incremental = _auto_cadence_is_incremental(
@@ -5067,6 +5069,9 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     )
                     count = int(read.get("service_count") or 0)
                     sources = read.get("_contract_sources")
+                    if (public_bootstrap and count == 0
+                            and read.get("services") == [] and sources == []):
+                        return read, [], 0
                     if count <= 0 or count != len(read.get("services") or []):
                         failure = "official_inventory_empty_or_invalid"
                     else:
@@ -5084,6 +5089,20 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 raise RuntimeError(failure)
 
             inventory, contract_sources, observed = _read_official_catalog()
+            if public_bootstrap:
+                release = _lease(args.lease_script, "release", task, lease)
+                released = release.get("released") == task
+                if not released:
+                    raise RuntimeError("lease_release_unproven")
+                row = _receipt(
+                    pass_id, status="completed",
+                    reason=("storefront_bootstrap_required" if observed == 0
+                            else "storefront_import_required"),
+                    official_services_read=observed,
+                    pending=1,
+                )
+                row = _persist_receipt(args, output, row)
+                return 0, row
             source_dicts = True
             source_ids = [source.get("service_id") for source in contract_sources]
             if source_dicts:

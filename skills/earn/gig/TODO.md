@@ -144,6 +144,11 @@ Storefront work.
        readback is hash-bound. Live activation remains first-pilot evidence.
     8. [ ] Make Storefront import existing listings; when listing count is zero, it probes
        capabilities and owns initial service/category/scope/price/copy/assets creation.
+       The public-root path now skips the private bundle preflight, accepts an authoritative
+       zero-service catalogue, releases its browser lease and returns durable
+       `storefront_bootstrap_required`; a nonzero public catalogue returns
+       `storefront_import_required`. Direct function verification proves the zero-catalog
+       receipt and one lease release. Capability selection and creation remain next.
     9. [ ] Require one official initial-listing readback and rerun duplicate zero from
        Storefront. Apply may run before it; Negotiate/Paid wait for buyer activity.
     10. [ ] From a clean HOME prove zero marketplace effects before authentication, exact
