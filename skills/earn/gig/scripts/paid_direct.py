@@ -26,6 +26,7 @@ from gig_disk_guard import disk_headroom_ok  # noqa: E402
 DEFAULT_STEP_TIMEOUT_SECONDS = 2100
 TARGETED_READBACK_TIMEOUT_SECONDS = 180
 DM_CONTEXT_TIMEOUT_SECONDS = 180
+PAID_EFFECT_LOCK_TIMEOUT_SECONDS = 120
 # One prepare child owns up to three 60-minute production rounds plus three 30-minute reviews.
 # Its outer deadline must not expire before those already-bounded inner steps can settle.
 FILE_PREPARE_TIMEOUT_SECONDS = 21600
@@ -4322,7 +4323,10 @@ def _prepare_command(args, item, output):
     return _child_command(args, "--effect-item", item, output)
 
 def _effect_command(args, item, output):
-    return [str(args.run_with_cdp_lock), f"paid-direct-{item.stem}", "0", "--"] + _child_command(args, "--write-item", item, output)
+    return [str(args.run_with_cdp_lock), f"paid-direct-{item.stem}",
+            str(PAID_EFFECT_LOCK_TIMEOUT_SECONDS), "--"] + _child_command(
+                args, "--write-item", item, output,
+            )
 
 def _fresh_child_env(args):
     env = {key: value for key, value in os.environ.items() if key != "GIG_CDP_LOCK_HELD"}

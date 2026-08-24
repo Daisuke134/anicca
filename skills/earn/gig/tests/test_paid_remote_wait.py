@@ -249,6 +249,25 @@ def test_paid_project_executor_runs_one_owner_at_a_time():
     assert maximum == 1
 
 
+def test_paid_effect_waits_for_shared_browser_lock(tmp_path):
+    paid = load("paid_direct")
+    args = SimpleNamespace(**{
+        name: tmp_path / name for name in (
+            "run_with_cdp_lock", "evidence_dir", "projects_root", "collector",
+            "answer_browser", "formal_browser", "delivery_evidence_dir", "cdp_helper",
+            "context_compiler", "dm_collector", "agent_runner", "runner_schema",
+            "artifact_schema", "cdp_lock_dir",
+        )
+    }, today="2026-08-24")
+
+    command = paid._effect_command(
+        args, tmp_path / "item-18183618-prepared.json", tmp_path / "result.json",
+    )
+
+    assert command[2] == str(paid.PAID_EFFECT_LOCK_TIMEOUT_SECONDS)
+    assert paid.PAID_EFFECT_LOCK_TIMEOUT_SECONDS >= 60
+
+
 def test_paid_admission_selects_one_project_and_rotates(tmp_path):
     paid = load("paid_direct")
     args = SimpleNamespace(projects_root=tmp_path)
