@@ -92,6 +92,12 @@ once. Life Manager then attaches to the same authenticated profile without recei
 password, verifies every official gate, starts the existing lanes, and lets Storefront
 create the first listing when the official listing count is zero.
 
+Clean-Mac Coconala bootstrap:
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Daisuke134/life-manager/main/scripts/bootstrap-coconala.sh)"
+```
+
 For Coconala, Upwork, and similar marketplaces, the AI system is the delivery workforce.
 Life Manager maximizes verified expected net income using demonstrated AI/Mac/tool
 capabilities and parallel execution; the owner's personal free time, manual skill, sleep,

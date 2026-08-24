@@ -79,6 +79,10 @@ Storefront work.
     compiles all five onboarding/Storefront entrypoints, passes both installer shell
     syntax checks, and has zero Gig-tree gitleaks findings. This is package evidence,
     not a substitute for the three live pilots below.
+    A clean-Mac one-line bootstrap now uses macOS curl, installs Homebrew/Git only
+    when missing, clones or fast-forwards `~/life-manager`, and enters the same Coconala
+    installer. It refuses an existing non-Git target without deleting or replacing it;
+    shell syntax, ShellCheck and the refusal path pass.
     Atomic implementation order (design SSOT:
     `docs/superpowers/specs/2026-08-24-coconala-one-session-onboarding-design.md`):
     Active implementation plan:

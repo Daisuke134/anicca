@@ -9,7 +9,16 @@
 
 ### Accepted onboarding flow (implementation pending)
 
-1. Run `./install.sh coconala`.
+1. On a clean Mac, run the one-line bootstrap (or run `./install.sh coconala` from an
+   existing checkout):
+
+   ```bash
+   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Daisuke134/life-manager/main/scripts/bootstrap-coconala.sh)"
+   ```
+
+   It installs Homebrew/Git only when missing, creates or fast-forwards
+   `~/life-manager`, and enters the same package installer. It never deletes or replaces
+   a non-Git directory.
 2. The installer runs `codex login` when the CLI is not authenticated.
 3. It opens Coconala in the dedicated agent browser profile at
    `~/.cloak/profiles/gig-daily-driver` and shows the whole checklist once.
