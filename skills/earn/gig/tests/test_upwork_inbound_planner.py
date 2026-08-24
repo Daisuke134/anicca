@@ -47,6 +47,21 @@ def _decision(packet):
     }
 
 
+def _public_packet(tmp_path, suffix):
+    value = {
+        "version": 1, "provider": "upwork", "kind": "public_job",
+        "resource_id": f"~job-{suffix}",
+        "resource_url": f"https://www.upwork.com/jobs/~job-{suffix}",
+        "detail_evidence_sha256": suffix * 64, "observed_at": "now",
+        "rendered_text": f"Public job {suffix}", "required_connects": 8,
+        "available_connects_before": 20,
+    }
+    body = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n"
+    path = tmp_path / f"{hashlib.sha256(body.encode()).hexdigest()}.json"
+    path.write_text(body); path.chmod(0o600)
+    return path, value
+
+
 def test_exact_private_packet_and_decision_seal_zero_connect_proposal(tmp_path):
     path, packet = _packet(tmp_path)
 
@@ -80,6 +95,24 @@ def test_skip_requires_reason_and_never_creates_proposal(tmp_path):
     }, packet) is None
     with pytest.raises(ValueError, match="inbound_decision_invalid"):
         planner.validate_decision({"decision": "skip", "reason_codes": [], "proposal": None}, packet)
+
+
+def test_batch_selects_one_exact_packet_with_one_model_decision(tmp_path, monkeypatch):
+    first_path, _ = _public_packet(tmp_path, "a")
+    second_path, second = _public_packet(tmp_path, "b")
+    decision = _decision(second)
+    decision["proposal"]["status"] = "frozen_waiting_for_connects"
+    decision["proposal"]["terms"].update(required_connects=8, available_connects_before=20)
+    monkeypatch.setattr(planner, "_invoke_prompt", lambda *args, **kwargs: decision)
+    monkeypatch.setattr(planner, "capability_inventory", lambda root: {"skills": []})
+    profile = tmp_path / "profile.json"; profile.write_text("{}")
+
+    proposal = planner.invoke_batch(
+        [first_path, second_path], profile=profile, evidence_dir=tmp_path / "evidence",
+    )
+
+    assert proposal["job_id"] == second["resource_id"]
+    assert proposal["terms"]["required_connects"] == 8
 
 
 def test_existing_runner_cli_contract_returns_owned_private_result(tmp_path):
