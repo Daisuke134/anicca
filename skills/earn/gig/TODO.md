@@ -93,7 +93,8 @@ Storefront work.
          with HOME write zero, and the current Mac returns all seven checks true.
        - [ ] 2b. Install only missing public dependencies, then rerun the same detector.
          Direct implementation now installs Homebrew/Python only when required, creates
-         `~/.local/share/anicca/gig/venv`, installs the four public Python dependencies,
+         `~/.local/share/anicca/gig/venv`, installs the five public Python dependencies
+         (`websockets`, Beautiful Soup, JSON Schema, CloakBrowser and Pillow),
          installs the official Codex standalone CLI only when absent, and downloads the
          CloakBrowser binary only when absent. This Mac proved fresh venv installation,
          imports, all-ready readback and an idempotent second run; missing Homebrew/Codex/

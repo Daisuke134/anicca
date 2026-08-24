@@ -69,8 +69,8 @@ if [ "${1:-}" = "prepare" ]; then
   if [ ! -x "$venv/bin/python" ]; then
     python3 -m venv "$venv"
   fi
-  if ! "$venv/bin/python" -c 'import websockets, bs4, jsonschema, cloakbrowser' >/dev/null 2>&1; then
-    "$venv/bin/pip" install websockets beautifulsoup4 jsonschema cloakbrowser
+  if ! "$venv/bin/python" -c 'import websockets, bs4, jsonschema, cloakbrowser, PIL' >/dev/null 2>&1; then
+    "$venv/bin/pip" install websockets beautifulsoup4 jsonschema cloakbrowser pillow
   fi
   "$venv/bin/python" "$GIG_DIR/scripts/coconala_onboarding.py" configure-python \
     --python "$venv/bin/python" >/dev/null
