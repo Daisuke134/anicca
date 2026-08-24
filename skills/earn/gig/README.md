@@ -7,6 +7,20 @@
 > wired to this installer. Until that acceptance is closed, send friends this guide
 > as a preview, not as a one-command signup-to-income promise.
 
+### Accepted onboarding flow (implementation pending)
+
+1. Run `./install.sh coconala`.
+2. The installer runs `codex login` when the CLI is not authenticated.
+3. It opens Coconala in the dedicated agent browser profile at
+   `~/.cloak/profiles/gig-daily-driver` and shows the whole checklist once.
+4. In that browser, the owner completes account or login, email, SMS, seller
+   information, required consents, smartphone eKYC, and bank registration.
+5. The owner reports completion once. Life Manager attaches to the same browser session,
+   receives no password, and verifies every official state.
+6. Life Manager starts Browser, Apply, Negotiate, Storefront, Paid, and Release Watcher.
+7. Storefront imports existing listings or creates the first truthful listing when the
+   official count is zero; the other lanes then operate without ordinary approval gates.
+
 Four background jobs that run a [Coconala](https://coconala.com) seller account
 around the clock: they read the job board and apply, keep the storefront honest,
 answer buyers who ask questions before they buy, and work the orders that get

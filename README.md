@@ -84,6 +84,14 @@ listing creation, or bank-payout verification. Do not promise friends a one-comm
 signup-to-income flow until the clean-device onboarding acceptance in
 [the Coconala task list](skills/earn/gig/TODO.md) is closed.
 
+The accepted onboarding UX is one handoff, not field-by-field automation:
+`./install.sh coconala` completes `codex login`, opens the dedicated Coconala
+CloakBrowser profile, and prints the complete official setup checklist. The owner
+finishes account/email/SMS/seller/eKYC/bank setup in that browser and reports completion
+once. Life Manager then attaches to the same authenticated profile without receiving the
+password, verifies every official gate, starts the existing lanes, and lets Storefront
+create the first listing when the official listing count is zero.
+
 ---
 
 ## One product, two execution surfaces

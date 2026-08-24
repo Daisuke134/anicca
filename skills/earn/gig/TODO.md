@@ -78,15 +78,17 @@ Storefront work.
     `docs/superpowers/specs/2026-08-24-coconala-one-session-onboarding-design.md`):
     1. [ ] Dispatch root `./install.sh coconala` to the package controller; reject unknown
        product arguments without running the generic self-funded installer.
-    2. [ ] Preflight macOS, Apple Silicon, Codex authentication, supported Python,
-       CloakBrowser and disk space; install only missing public dependencies.
+    2. [ ] Preflight macOS, Apple Silicon, supported Python, CloakBrowser and disk space;
+       when Codex is unauthenticated, run `codex login` and require CLI auth readback.
     3. [ ] Create the private resumable onboarding receipt with no raw identity, OTP,
        document, password, bank or session value in Git/logs/model/report output.
-    4. [ ] Show one prerequisite screen, then open the official Coconala registration or
-       recovery surface. Do not collect duplicate identity/bank facts in Life Manager.
-    5. [ ] Let the owner complete account/email/SMS/seller/consent/eKYC/bank setup in one
-       uninterrupted official-site session, then return to `Verify and start`.
-    6. [ ] Read back authenticated, email, SMS, seller, eKYC and bank states; show only the
+    4. [ ] Show one prerequisite screen, then launch the dedicated CloakBrowser profile
+       `~/.cloak/profiles/gig-daily-driver` on the official Coconala setup surface. Do not
+       collect duplicate identity/bank facts in Life Manager.
+    5. [ ] Let the owner complete account/email/SMS/seller/consent/eKYC/bank setup in that
+       exact browser profile, then report completion once. Never request the password.
+    6. [ ] Attach over CDP to the same browser/session and read back authenticated, email,
+       SMS, seller, eKYC and bank states; show only the
        exact missing official gate and reopen its official page when incomplete.
     7. [ ] Activate the browser, Apply, Negotiate, Storefront, Paid and release watcher
        only after all official account gates are accepted. A listing is not this gate.
@@ -262,7 +264,7 @@ applications, approve replies, approve estimates, or approve deliveries.
    email, SMS, seller information, required consents, eKYC and the matching domestic bank account in
    one uninterrupted official-site session. Life Manager never creates a second account or stores a
    second copy of documents, OTPs, passwords or bank details.
-3. After the owner selects `Verify and start`, read back that account/session, seller information,
+3. After the owner reports `finished` once, read back that account/session, seller information,
    SMS, eKYC and payout account are accepted by the official site. Invoice registration remains
    optional and is not invented as a setup requirement.
 4. Activate Apply, Negotiate, Storefront and Submission plus their browser/release owners. Storefront

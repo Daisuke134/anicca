@@ -8,11 +8,14 @@ completes the entire account, SMS, seller, eKYC, consent, and bank setup directl
 official site in one uninterrupted session. Life Manager then verifies that setup and
 starts the four existing Coconala lanes without ongoing approval prompts.
 
-The public command is:
+The public start is:
 
 ```bash
 ./install.sh coconala
 ```
+
+If Codex is not authenticated, the installer runs `codex login` first and waits for
+the CLI's own successful authentication readback.
 
 ## Selected approach
 
@@ -31,7 +34,7 @@ The owner performs the complete official account setup once:
 2. complete SMS verification, seller information, and required consents;
 3. use a smartphone to photograph the accepted identity document and their face;
 4. register the matching domestic payout account;
-5. return to the installer and select `Verify and start`.
+5. return to the installer and report `finished` once.
 
 The owner does not choose categories, write copy, set prices, make images, configure
 launchd, create local files, approve applications, approve replies, approve estimates,
@@ -40,9 +43,15 @@ or approve deliveries.
 ## Architecture
 
 The root installer dispatches `coconala` to one package-owned onboarding controller. The
-controller checks prerequisites, opens the official setup URL, waits for the owner to
-finish, and then uses browser readback and release-activation tools. It never asks the
+controller checks prerequisites, runs `codex login` when required, launches the dedicated
+CloakBrowser with profile `~/.cloak/profiles/gig-daily-driver`, shows the full official
+setup checklist once, and waits for the owner to report completion. It never asks the
 owner to duplicate official identity or bank facts in Life Manager.
+
+The owner performs the entire Coconala setup in that dedicated browser, not Safari or a
+separate Chrome profile. After completion, the controller attaches to the same running
+browser over CDP. The authenticated cookies remain in that profile, so the owner never
+hands a password to Life Manager and the agent never performs a second login.
 
 The controller resumes from a private state receipt. Re-running the command never creates
 an account, repeats identity submission, duplicates a listing, or loads a second copy of
@@ -51,10 +60,14 @@ a launchd job. Account creation and recovery remain owner actions on the officia
 ```mermaid
 flowchart TD
     CMD["./install.sh coconala"] --> PREFLIGHT["Mac + Codex + browser preflight"]
-    PREFLIGHT --> GUIDE["Show all prerequisites once"]
-    GUIDE --> OFFICIAL["Open official Coconala setup"]
+    PREFLIGHT --> CODEX{"Codex authenticated?"}
+    CODEX -->|No| LOGIN["Run codex login"]
+    CODEX -->|Yes| GUIDE["Show all prerequisites once"]
+    LOGIN --> GUIDE
+    GUIDE --> OFFICIAL["Open dedicated CloakBrowser profile"]
     OFFICIAL --> HUMAN["Owner completes account + SMS + seller + eKYC + bank"]
-    HUMAN --> VERIFY["Verify and start"]
+    HUMAN --> DONE["Owner reports setup complete"]
+    DONE --> VERIFY["Agent attaches to same browser session"]
     VERIFY --> APPROVED{"All official gates accepted?"}
     APPROVED -->|No| CORRECT["Show exact missing official gate"]
     CORRECT --> OFFICIAL
@@ -109,11 +122,13 @@ claim.
 
 ## Acceptance
 
-On a clean friend-owned Mac, the owner runs only `./install.sh coconala`, follows one link,
-completes all official setup, returns, and selects `Verify and start`. Acceptance requires
-official readback for every state, one loaded owner for each launchd label, no marketplace
-effect before authentication, no duplicate listing/effect on rerun, and no private value
-in the public tree or logs.
+On a clean friend-owned Mac, the owner runs only `./install.sh coconala`. The installer
+completes `codex login`, opens the dedicated Coconala browser, and prints the full setup
+checklist. The owner completes all official setup there and reports completion once. The
+agent then takes over that exact profile without receiving the password. Acceptance
+requires official readback for every state, one loaded owner for each launchd label, no
+marketplace effect before authentication, no duplicate listing/effect on rerun, and no
+private value in the public tree or logs.
 
 Business completion remains receipt-based: one official Apply application with replay
 zero, one official Negotiate reply/estimate with replay zero, one Storefront listing
