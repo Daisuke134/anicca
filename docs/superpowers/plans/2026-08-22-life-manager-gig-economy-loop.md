@@ -923,6 +923,13 @@ U13 atomic order:
     store preparation. Explicitly exclude unsupported Android-native, named specialized SDK experience,
     unbounded rebuilds and unauthorized publication. It composes the independent verifier and changes
     prompt SHA, allowing one fresh truthful Luna comparison without inventing prior client work.
+75. **DRIFTING PROFILE STATE REMOVED FROM MODEL FACTS:** the first mobile-Skill wake still skipped with
+    `official_connects_balance_zero` because the historical bootstrap profile file contained stale
+    balance 0 alongside each current job packet's authoritative balance 133. Project only immutable
+    provider proof into the planner: provider/profile ID and officially read-back portfolio project
+    IDs, titles and public URLs. Exclude Connects, capacity, next action and other time-varying account
+    fields; those come from the current wake. Regression remains `156 passed`, and prompt SHA changes so
+    Luna re-evaluates rather than caching the contradictory skip.
 
 U14 atomic order:
 

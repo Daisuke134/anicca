@@ -46,6 +46,24 @@ def _optional_object(path: Path, label: str) -> dict[str, Any]:
     return _object(path, label) if path.is_file() else {}
 
 
+def _market_proof(path: Path) -> dict[str, Any]:
+    value = _optional_object(path, "market_profile")
+    projects = value.get("portfolio_projects", [])
+    if not isinstance(projects, list):
+        raise InboundPlannerError("market_profile_invalid")
+    return {
+        "provider": value.get("provider"),
+        "profile_id": value.get("profile_id"),
+        "portfolio_projects": [
+            {key: project.get(key) for key in (
+                "project_id", "title", "public_profile_path", "source_url",
+                "official_profile_readback",
+            )}
+            for project in projects if isinstance(project, dict)
+        ],
+    }
+
+
 def load_packet(path: Path) -> dict[str, Any]:
     path = path.expanduser()
     if path.is_symlink() or not path.is_file() or path.stat().st_mode & 0o777 != 0o600:
@@ -236,7 +254,7 @@ def invoke(
     packet = load_packet(packet_path)
     facts = {
         "owner": _object(profile.expanduser(), "owner_profile"),
-        "market": _optional_object(market_profile.expanduser(), "market_profile"),
+        "market": _market_proof(market_profile.expanduser()),
     }
     prompt = planner_prompt(
         packet, facts, capability_inventory(REPO_ROOT),
@@ -256,7 +274,7 @@ def invoke_batch(
         raise InboundPlannerError("inbound_batch_invalid")
     facts = {
         "owner": _object(profile.expanduser(), "owner_profile"),
-        "market": _optional_object(market_profile.expanduser(), "market_profile"),
+        "market": _market_proof(market_profile.expanduser()),
     }
     prompt = batch_planner_prompt(
         packets, facts, capability_inventory(REPO_ROOT),
