@@ -24,6 +24,37 @@ BUSINESS_ROLE_FAMILIES = frozenset(
 
 JAPANESE_PATTERN = re.compile(r"[ぁ-んァ-ヶ一-龯々]")
 ASCII_LETTER_PATTERN = re.compile(r"[A-Za-z]")
+RESUME_VARIANTS = ("engineering", "technical_business", "japanese")
+
+
+def load_resume_manifest(materials_root: Path) -> dict[str, Path]:
+    root = Path(materials_root).expanduser().resolve()
+    manifest = root / "manifest.v1.json"
+    try:
+        value = json.loads(manifest.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise ValueError(f"invalid resume manifest: {error}") from error
+    resumes = value.get("resumes") if isinstance(value, dict) else None
+    if value.get("version") != 1 or not isinstance(resumes, dict):
+        raise ValueError("resume manifest must be version 1 with resumes")
+    resolved = {}
+    for variant in RESUME_VARIANTS:
+        relative = resumes.get(variant)
+        if not isinstance(relative, str) or not relative.strip():
+            raise ValueError(f"resume manifest missing {variant}")
+        path = Path(relative)
+        if path.is_absolute() or ".." in path.parts:
+            raise ValueError("resume manifest paths must stay under materials root")
+        target = (root / path).resolve()
+        if root not in target.parents or not target.is_file():
+            raise ValueError(f"resume manifest file is unavailable: {variant}")
+        resolved[variant] = target
+    return resolved
+
+
+def list_resume_paths(materials_root: Path) -> tuple[Path, ...]:
+    values = load_resume_manifest(materials_root)
+    return tuple(dict.fromkeys(values[variant] for variant in RESUME_VARIANTS))
 
 
 def detect_posting_language(posting_text: str) -> str:
@@ -56,19 +87,12 @@ def select_resume(
 
     if language == "ja":
         variant = "japanese"
-        relative_path = Path("japan") / "Daisuke_Narita_Japan_AI_Resume.pdf"
     elif _normalized_role_family(role_family) in BUSINESS_ROLE_FAMILIES:
         variant = "technical_business"
-        relative_path = (
-            Path("business") / "Daisuke_Narita_AI_Business_Resume.pdf"
-        )
     else:
         variant = "engineering"
-        relative_path = Path("master") / "Daisuke_Narita_AI_Resume.pdf"
 
-    resume_path = (Path(materials_root).expanduser() / relative_path).resolve()
-    if not resume_path.is_file():
-        raise FileNotFoundError(f"selected resume does not exist: {resume_path}")
+    resume_path = load_resume_manifest(materials_root)[variant]
     digest = hashlib.sha256(resume_path.read_bytes()).hexdigest()
     return {
         "posting_language": language,
@@ -80,11 +104,17 @@ def select_resume(
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--role-family", required=True)
+    parser.add_argument("--role-family")
     parser.add_argument("--materials-root", required=True, type=Path)
+    parser.add_argument("--list-resumes", action="store_true")
     parser.add_argument("--posting-language", choices=("ja", "en"))
     parser.add_argument("--posting-text-file", type=Path)
     arguments = parser.parse_args()
+    if arguments.list_resumes:
+        print(json.dumps([str(path) for path in list_resume_paths(arguments.materials_root)]))
+        return 0
+    if not arguments.role_family:
+        parser.error("--role-family is required unless --list-resumes is used")
     posting_text = (
         arguments.posting_text_file.read_text(encoding="utf-8")
         if arguments.posting_text_file

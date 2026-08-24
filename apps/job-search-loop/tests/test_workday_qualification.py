@@ -20,6 +20,25 @@ from job_search_loop.workday_qualification import qualify_one
 
 
 class WorkdayQualificationTests(unittest.TestCase):
+    def test_transient_qualification_failure_retries_same_wake(self):
+        attempts = 0
+
+        def qualify():
+            nonlocal attempts
+            attempts += 1
+            if attempts == 1:
+                raise RuntimeError("model at capacity")
+            return {"status": "decided", "decision": "qualified"}
+
+        result = search_until_qualified(
+            discover=lambda: {"status": "queue_present", "discovered": []},
+            qualify=qualify,
+            max_candidates=3,
+        )
+
+        self.assertEqual(result["status"], "qualified")
+        self.assertEqual(attempts, 2)
+
     def test_qualified_queue_is_detected_before_snapshot_search(self):
         with tempfile.TemporaryDirectory() as directory:
             ledger_path = Path(directory) / "ledger.sqlite3"

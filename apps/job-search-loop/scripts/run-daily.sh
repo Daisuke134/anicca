@@ -89,11 +89,19 @@ trap report_wake EXIT
   --endpoint "http://127.0.0.1:9222" \
   --output "$JOB_SEARCH_BROWSER_OWNER_EVIDENCE"
 CANDIDATE_MEMORY="$JOB_SEARCH_STATE_ROOT/candidate-memory.v1.json"
+MATERIALS_ROOT="${XDG_DATA_HOME:-$HOME/.local/share}/anicca/job-search/materials"
+RESUME_PATHS=$(
+  "$JOB_SEARCH_PYTHON" -m job_search_loop.resume_routing \
+    --materials-root "$MATERIALS_ROOT" \
+    --list-resumes
+)
+RESUME_ARGUMENTS=()
+while IFS= read -r resume_path; do
+  RESUME_ARGUMENTS+=(--resume "$resume_path")
+done < <(print -r -- "$RESUME_PATHS" | "$JOB_SEARCH_JQ" -r '.[]')
 "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_agent.candidate_memory \
   --profile "$JOB_SEARCH_PROFILE" \
-  --resume "${XDG_DATA_HOME:-$HOME/.local/share}/anicca/job-search/materials/master/Daisuke_Narita_AI_Resume.pdf" \
-  --resume "${XDG_DATA_HOME:-$HOME/.local/share}/anicca/job-search/materials/business/Daisuke_Narita_AI_Business_Resume.pdf" \
-  --resume "${XDG_DATA_HOME:-$HOME/.local/share}/anicca/job-search/materials/japan/Daisuke_Narita_Japan_AI_Resume.pdf" \
+  "${RESUME_ARGUMENTS[@]}" \
   --output "$CANDIDATE_MEMORY" >"$EVIDENCE/candidate-memory-receipt.json"
 chmod 600 "$EVIDENCE/candidate-memory-receipt.json"
 export JOB_SEARCH_CANDIDATE_MEMORY="$CANDIDATE_MEMORY"

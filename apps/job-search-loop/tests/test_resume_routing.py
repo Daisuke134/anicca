@@ -1,4 +1,5 @@
 import importlib
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -7,13 +8,26 @@ from pathlib import Path
 class ResumeRoutingTests(unittest.TestCase):
     def _resume_tree(self, root: Path) -> None:
         files = [
-            root / "japan" / "Daisuke_Narita_Japan_AI_Resume.pdf",
-            root / "master" / "Daisuke_Narita_AI_Resume.pdf",
-            root / "business" / "Daisuke_Narita_AI_Business_Resume.pdf",
+            root / "resumes" / "japanese.pdf",
+            root / "resumes" / "engineering.pdf",
+            root / "resumes" / "technical-business.pdf",
         ]
         for index, path in enumerate(files):
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(f"%PDF-1.4 resume-{index}".encode())
+        (root / "manifest.v1.json").write_text(
+            json.dumps(
+                {
+                    "version": 1,
+                    "resumes": {
+                        "engineering": "resumes/engineering.pdf",
+                        "technical_business": "resumes/technical-business.pdf",
+                        "japanese": "resumes/japanese.pdf",
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
 
     def test_japanese_posting_selects_japanese_resume_regardless_of_role_family(self):
         self.assertIsNotNone(
@@ -39,7 +53,7 @@ class ResumeRoutingTests(unittest.TestCase):
             self.assertEqual(result["resume_variant"], "japanese")
             self.assertEqual(
                 Path(result["resume_path"]).name,
-                "Daisuke_Narita_Japan_AI_Resume.pdf",
+                "japanese.pdf",
             )
 
     def test_english_posting_keeps_english_role_variant(self):
@@ -68,13 +82,13 @@ class ResumeRoutingTests(unittest.TestCase):
             self.assertEqual(engineering["resume_variant"], "engineering")
             self.assertEqual(
                 Path(engineering["resume_path"]).name,
-                "Daisuke_Narita_AI_Resume.pdf",
+                "engineering.pdf",
             )
             self.assertEqual(business["posting_language"], "en")
             self.assertEqual(business["resume_variant"], "technical_business")
             self.assertEqual(
                 Path(business["resume_path"]).name,
-                "Daisuke_Narita_AI_Business_Resume.pdf",
+                "technical-business.pdf",
             )
 
 
