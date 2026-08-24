@@ -199,7 +199,7 @@ raise SystemExit(0)
             self.assertIn("--compat-output", json.dumps(calls))
 
     def test_runner_config_is_job_scoped_and_contains_no_private_identity(self):
-        config_path = REPO_ROOT / "runtime" / "agent-runner" / "config.json"
+        config_path = APP_ROOT / "agent-runner" / "config.json"
         config = json.loads(config_path.read_text(encoding="utf-8"))
 
         self.assertTrue({"codex", "claude-direct"}.issubset(config["providers"]))
@@ -217,7 +217,7 @@ raise SystemExit(0)
         self.assertNotIn("gig-", encoded)
 
     def test_runner_codex_home_is_job_search_owned(self):
-        config_path = REPO_ROOT / "runtime" / "agent-runner" / "config.json"
+        config_path = APP_ROOT / "agent-runner" / "config.json"
         provider = json.loads(config_path.read_text(encoding="utf-8"))["providers"][
             "codex"
         ]
