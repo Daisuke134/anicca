@@ -3,11 +3,11 @@
 > **Current onboarding boundary:** the public command, dependency/Codex preparation,
 > shared-browser setup, official account-gate readback, six-job activation, and
 > zero-listing Storefront publisher are implemented. The owner still completes the
-> official account/SMS/eKYC/bank ceremony. Three independent clean-Mac pilots and a
+> official account/SMS/eKYC/bank ceremony. Independent external usability trials and a
 > real bank-arrival receipt remain before the OSS flow is accepted; do not promise
 > guaranteed income or call the onboarding complete before those receipts exist.
 
-### Accepted onboarding flow (live pilots pending)
+### Accepted onboarding flow (external acceptance pending)
 
 1. On a clean Mac, run the one-line bootstrap (or run `./install.sh coconala` from an
    existing checkout):
@@ -30,21 +30,11 @@
 7. Storefront imports existing listings or creates the first truthful listing when the
    official count is zero; the other lanes then operate without ordinary approval gates.
 
-### Clean-device acceptance sequence
+### Deferred external acceptance
 
-The installer is not accepted from the maintainer's Mac alone. Three independent
-non-technical owners test it with their own Mac, Coconala account, browser profile and
-private state:
-
-1. first family pilot with observation but no maintainer typing;
-2. second family pilot using only this README and no verbal instructions;
-3. friend pilot from a cold public clone with no copied credentials, configuration,
-   listing bundle, browser profile or state.
-
-Each must finish account-gate readback, load one owner for every job, import or create a
-listing through Storefront, and replay with duplicate zero. Questions and terminal repair
-become installer/README defects; coaching is not counted as acceptance. These trials
-validate setup and continuous operation, not guaranteed income or time to first sale.
+After the code-owned OSS UX is complete, independent clean-device owners validate this
+README without private coaching or copied credentials/configuration/browser/state. That
+evidence is not a current coding task and does not guarantee income or time to first sale.
 
 Four background jobs that run a [Coconala](https://coconala.com) seller account
 around the clock: they read the job board and apply, keep the storefront honest,

@@ -12,6 +12,33 @@ This is the only current task list for this cursor. Unchecked items in older sec
 are historical or belong to Paid/other owners; they do not reopen completed Apply or
 Storefront work.
 
+### Current Codex-owned OSS UX TODO — external trials excluded
+
+This is the active implementation cursor. External-device/user trials remain acceptance
+evidence and are not reported as coding work.
+
+1. [x] Define and validate one public integration onboarding manifest schema used by every
+   persistent Money/Body/Mind loop. Coconala declares outcome, prerequisites, official
+   ceremonies, dedicated browser, commands, six owners, five receipts and authority.
+2. [x] Discover all manifests and render one side-effect-free readiness graph; duplicate
+   integration ids/owners/receipts and conflicting ask-once field definitions fail closed.
+   Current graph validates one Coconala integration with six owners, nine provider gates,
+   five official receipts and state `unknown`, without running readiness or effects.
+3. [ ] Add one ask-once private profile with semantic field ids, source, scope, freshness,
+   consent, and secret-reference separation.
+4. [ ] Add one local onboarding web UI opened by the root bootstrap; terminal commands are
+   recovery-only.
+5. [ ] Render integration cards with prerequisites, owner time, official ceremonies,
+   readiness, one Connect/Resume action, and no internal labels or log jargon.
+6. [ ] Start every ready loop from the graph, leave blocked loops independent, and read back
+   exactly one persistent owner per declared label.
+7. [ ] Add one Money/Body/Mind home showing only Running, Needs you, Waiting for external
+   result, or Issue detected, backed by official outcome receipts.
+8. [ ] Migrate Coconala's installer/gates/six jobs/receipts into the shared manifest without
+   weakening its current one-command and zero-listing behavior.
+9. [ ] Run a clean local simulation covering install, ask-once reuse, blocked/ready isolation,
+   restart resume, update and uninstall/export with secret/log/prompt/report scans.
+
 ### Completed and not TODO
 
 - [x] Apply production acceptance: 24/7 launchd owner, official application readback,
@@ -214,18 +241,6 @@ Storefront work.
        instead of being called replay-zero. Live two-wake evidence remains pilot work.
     10. [ ] From a clean HOME prove zero marketplace effects before authentication, exact
        resume after interruption, one owner per launchd label and zero secrets in output.
-    11. [ ] Family pilot A: on their own clean Mac/account, complete setup while the
-        maintainer observes but never types; record account-gate, launchd, Storefront
-        import/create and replay-zero receipts without copying operator state.
-    12. [ ] Family pilot B: complete the same flow from the public README with no verbal
-        instructions; any question or manual terminal repair is a product defect to fix
-        before retrying.
-    13. [ ] Friend pilot: cold-clone the public repository with no prior pilot credential,
-        browser profile, configuration, listing bundle or runtime state; require the same
-        setup/ownership/listing/replay-zero receipts.
-    14. [ ] Join the three onboarding receipts to the four independent Coconala business
-        receipts and one permitted bank-arrival receipt. Paid completion remains owned by
-        its separate production acceptance; pilot setup does not guarantee time to sale.
 11. [x] Render the Apply, Negotiate, browser and release-watcher launchd definitions
     from public configuration in a clean temporary HOME. No plaintext secret,
     notification destination or private seller default is present. Apply uses the
@@ -239,15 +254,21 @@ Storefront work.
     application/replay-zero and Negotiate actions 434/436/estimate/replay-zero receipts.
 13. [x] Record the clean-clone commands, exact SHA, test counts, scans and receipt IDs in
     README/TODO; commit and push main, followed by remote-main readback.
-14. [ ] Declare Coconala onboarding OSS acceptance complete only after atomic item 10 and
-    all three clean-device pilots pass. Paid remains separate until its owner supplies
-    production delivery/replay-zero evidence; no Paid completion claim is made here.
+14. [ ] Declare Coconala onboarding OSS acceptance complete only after the code-owned
+    shared UX/Coconala gates and deferred external acceptance pass. Paid remains separate
+    until its owner supplies production delivery/replay-zero evidence.
 
 ### Scope fence until Coconala OSS acceptance
 
 This cursor implements no Upwork, Mercor or generic multi-market onboarding. Reusable
 contracts may be documented, but implementation stays on the first unchecked Coconala
-item above until the three clean-device pilots pass.
+and shared OSS UX item above until the code-owned gates pass.
+
+### Deferred external acceptance — not current coding TODO
+
+Independent clean-device owners later validate README-only provider ceremonies,
+restart/resume, listing readback, duplicate zero, natural business outcomes and bank
+arrival. No named family member or friend is an implementation task.
 
 ## Current execution cursor override
 
