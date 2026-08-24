@@ -277,6 +277,25 @@ def _raw_field_expression(idx, value=None, focus_only=False):
         "const e=fs[idx];if(!e)return {ok:false,count:fs.length};e.scrollIntoView({block:'center'});" + action + " })()")
 
 
+def _raw_upload(pg, idx, path):
+    """Set a file chooser selection without attaching Playwright to the browser.
+
+    Capafy's browser-level CDP endpoint can accept a websocket but then stall while
+    enumerating contexts.  The page websocket is still able to use the DevTools DOM
+    domain, including DOM.setFileInputFiles.  Keeping upload here means the thin
+    agentic CP1 driver has every primitive it needs on that responsive page.
+    """
+    if not os.path.isfile(path):
+        raise RuntimeError(f"CP1 upload file does not exist: {path}")
+    root = pg.call("DOM.getDocument", {"depth": 1}).get("root", {})
+    node_ids = pg.call("DOM.querySelectorAll", {
+        "nodeId": root.get("nodeId"), "selector": "input[type=file]"
+    }).get("nodeIds", [])
+    if idx < 0 or idx >= len(node_ids):
+        raise RuntimeError(f"CP1 file input idx {idx} out of range ({len(node_ids)})")
+    pg.call("DOM.setFileInputFiles", {"files": [os.path.abspath(path)], "nodeId": node_ids[idx]})
+
+
 def raw_main(cmd):
     """Bounded raw-CDP fallback for every CP1 primitive except file upload."""
     target_hint = sys.argv[2] if cmd == "open" else os.environ.get("CP1_TARGET_TOKEN", "")
@@ -328,7 +347,7 @@ def raw_main(cmd):
             st = pg.evaluate("(" + STATE_JS + ")()")
             print(json.dumps({"toastOK": st["toastOK"], "cardDone": st["cardDone"], "priceSvg": st["priceSvg"], "url": st["url"]}, ensure_ascii=False)); return
         elif cmd == "upload":
-            print(json.dumps({"error": "raw CDP upload unavailable; retry after CDP attachment recovers"})); return
+            _raw_upload(pg, int(sys.argv[2]), sys.argv[3])
         else:
             print(f"unknown cmd: {cmd}"); return
         time.sleep(1)

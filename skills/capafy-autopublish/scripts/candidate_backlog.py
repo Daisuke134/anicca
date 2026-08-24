@@ -124,7 +124,9 @@ def refresh_backlog(existing: dict, inventory: dict, features: Path, icons: Path
         for directory in sorted(path for path in catalog.iterdir() if path.is_dir()):
             skill = directory / "SKILL.md"
             listing = directory / "LISTING.md"
-            icon = next((directory / name for name in ("icon.svg", "icon.png")
+            # Capafy's CP1 logo cropper accepts raster files only. Prefer a
+            # publishable listing asset over the source SVG.
+            icon = next((directory / name for name in ("icon.png", "icon.jpg", "icon.webp", "icon.svg")
                          if (directory / name).is_file()), directory / "icon.svg")
             title = _title(listing)
             gates = {
