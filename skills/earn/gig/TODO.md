@@ -98,6 +98,9 @@ Storefront work.
          CloakBrowser binary only when absent. This Mac proved fresh venv installation,
          imports, all-ready readback and an idempotent second run; missing Homebrew/Codex/
          browser downloads remain clean-pilot evidence before this box closes.
+         Prepare now also merges the stable venv `bin/python` into private `install.json`
+         without replacing existing machine overrides; temp HOME proves mode `0600` and
+         that rendered launchd ProgramArguments use that exact dependency-bearing Python.
        - [ ] 2c. When Codex is unauthenticated, run `codex login` and require
          `codex login status` readback. Official OpenAI documentation defines this as
          the default ChatGPT browser login and status command. The authenticated no-op

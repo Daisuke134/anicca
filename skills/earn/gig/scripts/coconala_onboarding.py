@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 from pathlib import Path
 from typing import Any
@@ -73,14 +74,36 @@ def ready(home: Path) -> tuple[dict[str, Any], int]:
     return {"status": "ready" if not missing else "blocked", "missing": missing}, 0 if not missing else 2
 
 
+def configure_python(home: Path, python: Path) -> dict[str, Any]:
+    python = python.expanduser().absolute()
+    python.resolve(strict=True)
+    if not python.is_file() or not os.access(python, os.X_OK):
+        raise ValueError("invalid_coconala_python")
+    path = home / ".config" / "anicca" / "gig" / "install.json"
+    if path.exists():
+        value = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(value, dict):
+            raise ValueError("invalid_coconala_install_config")
+    else:
+        value = {}
+    value["PYTHON"] = str(python)
+    _write_private(path, value)
+    return {"status": "configured", "python": "private:install.json#PYTHON"}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("init", "status", "record", "ready"))
+    parser.add_argument("command", choices=("init", "status", "record", "ready", "configure-python"))
     parser.add_argument("--state", choices=STATES)
     parser.add_argument("--evidence-sha256")
+    parser.add_argument("--python", type=Path)
     args = parser.parse_args()
     exit_code = 0
-    if args.command == "status":
+    if args.command == "configure-python":
+        if args.python is None:
+            parser.error("configure-python requires --python")
+        value = configure_python(Path.home(), args.python)
+    elif args.command == "status":
         path = Path.home() / ".config" / "anicca" / "gig" / "coconala-onboarding.json"
         if not path.exists():
             print(json.dumps({"status": "uninitialized"}, sort_keys=True))
