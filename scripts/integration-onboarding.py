@@ -22,7 +22,7 @@ def load_manifests() -> list[dict[str, Any]]:
     validator = Draft202012Validator(schema)
     manifests = []
     for path in sorted(ROOT.glob("*.json")):
-        if path == SCHEMA:
+        if path.name.endswith(".schema.json"):
             continue
         value = json.loads(path.read_text(encoding="utf-8"))
         errors = sorted(validator.iter_errors(value), key=lambda error: list(error.path))
@@ -78,11 +78,14 @@ def graph(manifests: list[dict[str, Any]]) -> dict[str, Any]:
             "display_name": manifest["display_name"],
             "organ": manifest["organ"],
             "outcome": manifest["outcome"],
+            "owner_time_minutes": manifest["owner_time_minutes"],
             "platforms": manifest["platforms"],
             "prerequisites": manifest["prerequisites"],
             "profile_fields": manifest["profile_fields"],
             "ceremonies": manifest["ceremonies"],
             "gate_states": manifest["gate_states"],
+            "connect": manifest["connect"],
+            "preflight": manifest["preflight"],
             "readiness": manifest["readiness"],
             "activation": manifest["activation"],
             "receipt_ids": [row["receipt_id"] for row in manifest["receipts"]],

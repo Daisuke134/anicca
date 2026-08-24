@@ -108,7 +108,12 @@ def main() -> int:
         if not path.exists():
             print(json.dumps({"status": "uninitialized"}, sort_keys=True))
             return 2
-        value = _validate(json.loads(path.read_text(encoding="utf-8")))
+        receipt_value = _validate(json.loads(path.read_text(encoding="utf-8")))
+        value = {
+            "status": ("ready" if receipt_value["states"]["launchd_readback"]["status"] == "complete"
+                       else "needs_setup"),
+            "states": receipt_value["states"],
+        }
     elif args.command == "record":
         if not args.state or not args.evidence_sha256:
             parser.error("record requires --state and --evidence-sha256")

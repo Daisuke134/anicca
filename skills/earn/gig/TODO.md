@@ -29,10 +29,14 @@ evidence and are not reported as coding work.
    are `0700/0600`, status never echoes values, and reuse requires matching privacy,
    purpose, consent, scope and freshness. Provider-only fields hold evidence hashes and
    credentials remain refs. Coconala correctly requires zero duplicate profile facts.
-4. [ ] Add one local onboarding web UI opened by the root bootstrap; terminal commands are
-   recovery-only.
-5. [ ] Render integration cards with prerequisites, owner time, official ceremonies,
-   readiness, one Connect/Resume action, and no internal labels or log jargon.
+4. [x] Add one local onboarding web UI opened by the root bootstrap; terminal commands are
+   recovery-only. The loopback-only stdlib server renders a private control surface, uses
+   a per-process CSRF token, never serves logs, and the global/Coconala bootstraps converge
+   on it. Real HTTP checks pass for HTML, graph API and forbidden tokenless mutation.
+5. [x] Render integration cards with prerequisites, owner time, official ceremonies,
+   readiness, one Connect/Resume action, and no internal labels or log jargon. The first
+   Coconala card shows 15 owner minutes, five reasons, six declared owners and `Needs you`;
+   the same action smart-resumes `finished` when receipt plus browser session exist.
 6. [ ] Start every ready loop from the graph, leave blocked loops independent, and read back
    exactly one persistent owner per declared label.
 7. [ ] Add one Money/Body/Mind home showing only Running, Needs you, Waiting for external
