@@ -6,11 +6,80 @@ evidence does not belong on this list.
 The four lanes run from `~/gig/releases/life-manager/<sha>/`, cut from `main` by
 `gig_release.py`. See `README.md` for how the whole thing is installed.
 
-## Authoritative atomic TODO — Apply + Negotiate → OSS
+## Current four-lane revenue cursor
 
-This is the only current task list for this cursor. Unchecked items in older sections
-are historical or belong to Paid/other owners; they do not reopen completed Apply or
-Storefront work.
+This section is the current execution order. Older unchecked sections are supporting
+evidence only and do not override it. The target is verified monthly net cash of at least
+USD 10,000; it is an optimization target, not a promise. Only official contract, fee,
+payout, and bank receipts advance it.
+
+### Shared loop contract
+
+1. [ ] Replace lane-wide work ownership with one isolated owner per application, inquiry,
+   or paid project while retaining the existing lane schedulers. Let independent owners run
+   concurrently; serialize only the exact shared browser/account/tool lease.
+2. [ ] Compile all relevant DM, talkroom, attachments, listing, and effect history into that
+   owner. Share skills, account references, browser sessions, and tools, but never customer
+   context, artifact, history, or state. Resolve secrets only inside the selected adapter.
+3. [ ] Use one model-owned capability judgement across Apply and Paid. Prefer demonstrated
+   software, landing-page, writing, research, and strategy work. Normally reject work that
+   requires human meetings, undisclosed personal participation, unsupported desktop-only
+   work, or unreliable prolonged browser operation. Do not hardcode buyer names, categories,
+   or keyword lists.
+4. [ ] Require a fresh isolated pre-submit review of the exact current requirements and exact
+   outbound artifact/message. Repair actionable findings, fence the effect, send once, obtain
+   provider plus Coconala exact readback, observe buyer acceptance/transaction completion
+   when required, and prove duplicate effect zero on a later wake.
+
+### Acquisition and conversion
+
+5. [ ] Apply: read the full posting and attachments, prove current capability and available
+   delivery evidence, submit only high-fit profitable work, and read the official application
+   identity back. Track application → reply → contract → payment conversion, not raw volume.
+6. [ ] Reply/Negotiate: consume every new buyer message once with complete cross-surface
+   context; answer concisely and truthfully without apologies, internal agent details, or
+   unnecessary operational disclosure; read the exact seller message or estimate back.
+7. [ ] Storefront: keep only offers aligned with demonstrated high-quality capabilities,
+   connect inquiry/order identity to the correct listing, measure official impression → view
+   → inquiry → order conversion, and change one buyer-visible variable per measured experiment.
+8. [ ] Revenue controller: attribute every contract and payment to Apply or Storefront,
+   subtract marketplace fees and attributable delivery cost, and optimize expected verified
+   net cash toward USD 10,000/month. Pending/available balances are pipeline, not cash.
+
+### Active paid projects
+
+9. [ ] `18183618`: let the project owner continue the already-booked JAIC path; obtain the
+   official Meet URL, update the existing Calendar event without duplication, complete only
+   provider work that can be performed truthfully without impersonation, produce the requested
+   four-part report and completion evidence, pass fresh review, formally deliver, obtain buyer
+   completion, and prove replay-zero.
+10. [ ] `18184558`: compile all current buyer context and attachments, build the exact requested
+    deliverable, pass fresh review, formally deliver, obtain buyer completion, and prove
+    replay-zero.
+11. [ ] `18180857`: use the already-authorized TikTok account/session without asking Chii for
+    another code; perform the exact current scope, verify the live result, deliver, obtain buyer
+    completion, and prove replay-zero.
+12. [ ] `18169985`: keep additional outreach at zero until the buyer explicitly approves the
+    already-sent private-DM sample format; after approval, complete only the approved batch,
+    report verified recipients/results, formally deliver, obtain buyer completion, and prove
+    replay-zero.
+13. [ ] Exclude byusco from new work. Keep LBJ `18130722` eligible only through the latest buyer
+    request and latest artifact/project-manager version; never resume an obsolete version.
+    Repair the generic approval-state defect, then let the Paid owner review, submit, read back,
+    close, and replay-check it. Codex repairs the loop and does not become the delivery worker.
+
+### OSS acceptance
+
+14. [ ] Run the public one-line bootstrap on independent clean Apple Silicon Macs through
+    official signup gates, six-owner activation, restart/update recovery, one real application,
+    one reply, one storefront mutation, and one paid delivery. For every effect retain official
+    readback and next-wake duplicate zero; publish no income guarantee or unverified completion.
+
+## Historical onboarding checklist — supporting evidence
+
+The current cursor is the four-lane revenue section above. This older checklist preserves
+implementation and acceptance evidence; its unchecked external trials remain inputs to
+item 14 above and do not redefine the current order.
 
 ### Current Coconala-only code TODO — external trials excluded
 
@@ -60,7 +129,8 @@ are not active work.
 13. [x] Add the canonical friend DM to the onboarding spec with the one-line command,
     official-only secret entry, same-command resume, four lanes, and no income promise.
 
-**Remaining current Coconala OSS coding TODO: 0.**
+**The original onboarding coding slice has no remaining implementation item. Full four-lane
+revenue and independent public-beta acceptance remain open in the current cursor above.**
 
 ### Future shared OSS UX — not current session
 

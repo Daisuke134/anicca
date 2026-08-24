@@ -1,15 +1,15 @@
 # The Coconala loop
 
-> **Current onboarding boundary:** the Coconala package is OSS-productized. The public
+> **Current onboarding boundary:** the Coconala package is a public beta. The public
 > Terminal command, dependency/Codex preparation, dedicated browser, official account
 > gates, six-job activation, zero-listing Storefront publisher, `gog` email and clean-HOME
-> contract are implemented and verified. The owner still completes Coconala's official
-> account/SMS/eKYC/bank ceremony. Sales and bank arrival remain receipt-based outcomes,
-> never guaranteed setup results.
+> contract are implemented. Independent clean-Mac full E2E acceptance is still open. The
+> owner completes Coconala's official account/SMS/eKYC/bank ceremony. Sales and bank arrival
+> remain receipt-based outcomes, never guaranteed setup results.
 
 ### Product status
 
-This is the only marketplace money loop currently offered as a one-command OSS product.
+This is the only marketplace money loop currently offered as a one-command OSS public beta.
 All four business lanes and their two supporting jobs are public. `gog` email onboarding
 has real send/inbox readback and the clean-HOME Terminal contract is verified. Upwork,
 Mercor, and other marketplace loops are not advertised as installable
@@ -89,6 +89,40 @@ sleep, health, or workload does not cap Coconala throughput. Independent profita
 runs concurrently up to measured compute, browser/tool, deadline, platform, cost, and
 quality limits. Job Hunter is different: because the human becomes the employee, that
 loop alone must use the person's real employment facts and availability.
+
+### Autonomous operating contract
+
+Each application, inquiry, and purchased order has an isolated owner and private project
+root. That owner reads the complete relevant DM, talkroom, attachment, listing, and prior
+effect history. Reusable skills, account references, browser sessions, and tools are shared;
+customer context, artifacts, history, and state are not. Secrets remain resolver references
+and are opened only by the adapter that needs them.
+
+Independent project owners may work concurrently. A lease serializes only the shared
+resource actually in use, such as one authenticated browser profile, account, desktop
+application, or rate-limited provider. Parallel work must never mean concurrent mutation of
+one account or mixing two customers' context. The model chooses the work plan and tools;
+deterministic code owns leases, hashes, receipts, effect fencing, and replay detection.
+
+Apply prioritizes work the installed AI/Mac/tool system can demonstrate it can deliver well,
+especially software, landing pages, writing, research, and strategy. It normally rejects work
+whose success depends on a human meeting, undisclosed personal participation, unsupported
+desktop-only operation, or prolonged browser labor with no reliable adapter. This is a
+model judgement grounded in the complete posting and current capability evidence, never a
+buyer-name, category, or keyword rule.
+
+Before any buyer-visible submission, a fresh isolated reviewer checks the exact current
+requirements against the exact artifact or message. The producing owner repairs actionable
+findings before the fenced adapter sends once. Completion requires the intended provider
+effect, exact Coconala seller readback, buyer acceptance or transaction completion when the
+contract requires it, and a later wake with duplicate effect zero. Model success, process
+liveness, tests, and a local artifact are not completion.
+
+The four lanes form one revenue system: Apply and Storefront acquire demand, Negotiate
+(Reply) converts it without exposing internal process details, and Paid fulfills it. Revenue
+targets are measured from official contract, fee, payout, and bank receipts. Application
+volume, listing publication, pending balance, and model estimates never count as the monthly
+cash target and no income amount is guaranteed.
 
 ---
 
