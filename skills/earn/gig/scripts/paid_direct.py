@@ -1074,6 +1074,18 @@ def _file_progress_payload(cadence: dict[str, Any]) -> dict[str, Any]:
     return payload
 
 
+def _browser_contract_finding(process: Any) -> str | None:
+    for line in reversed(_text(getattr(process, "stdout", "")).splitlines()):
+        try:
+            value = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        finding = value.get("contract_invalid") if isinstance(value, dict) else None
+        if isinstance(finding, str) and finding.strip():
+            return finding.strip()
+    return None
+
+
 def _context_input_snapshot(root: Path, context: Path) -> dict[str, tuple[int, str]]:
     try:
         compiled = _load(context)
@@ -4141,6 +4153,18 @@ def _write_file_effect(args, item_path: Path, output: Path, prepared: dict[str, 
             owner_browser_result = root / "context" / "paid-browser-result.json"
             _write(owner_browser_result, browser_error)
             _owner_feedback(root, "paid.file_browser", [browser_error], [owner_browser_result])
+            contract_finding = _browser_contract_finding(browser_process)
+            if contract_finding:
+                authorization = _load(root / "context" / "paid-file-authorization.json")
+                _write(root / "context" / "paid-review-state.json", {
+                    "version": 1, "state": "REPAIR_PENDING", "mode": "file",
+                    "review_policy_version": PAID_FILE_POLICY_VERSION,
+                    "operator_policy_sha256": _text(authorization.get("operator_policy_sha256")),
+                    "buyer_feedback_sha256": feedback,
+                    "requirements_sha256": requirements_sha256,
+                    "artifact_sha256": manifest["package_sha256"],
+                    "round": 0, "verdict": "needs_revision", "finding": contract_finding,
+                })
             if "artifact_is_about_the_deal_not_the_deliverable:" in browser_process.stderr:
                 authorization = _load(root / "context" / "paid-file-authorization.json")
                 finding = browser_process.stderr.rsplit(

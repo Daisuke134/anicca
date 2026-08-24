@@ -26,6 +26,21 @@ def test_paid_browser_diagnostics_use_private_data_redactor():
     assert paid.redact_prompt_text("password:secret-value") == "password:[REDACTED]"
 
 
+def test_browser_contract_failure_becomes_owner_repair_finding():
+    paid = _load_paid()
+    process = SimpleNamespace(
+        stdout='{"ok":false,"contract_invalid":"buyer_style_violation:evidence"}\n',
+    )
+
+    assert paid._browser_contract_finding(process) == "buyer_style_violation:evidence"
+
+
+def test_non_contract_browser_failure_is_not_owner_repair_finding():
+    paid = _load_paid()
+
+    assert paid._browser_contract_finding(SimpleNamespace(stdout="")) is None
+
+
 def test_inflight_gate_reports_pressure(monkeypatch):
     paid = _load_paid()
     monkeypatch.setattr(paid, "disk_headroom_ok", lambda: False)
