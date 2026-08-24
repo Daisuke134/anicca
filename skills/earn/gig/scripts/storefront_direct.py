@@ -5149,6 +5149,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                             "query": selection["service_query"],
                             "search_url": cluster.get("search_url"),
                             "evidence_path": str(cluster.get("evidence_path") or ""),
+                            "cluster": cluster,
                             "evidence_sha256": hashlib.sha256(
                                 json.dumps(cluster, ensure_ascii=False, sort_keys=True,
                                            separators=(",", ":")).encode("utf-8")
@@ -5156,6 +5157,89 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                             "score": score,
                         }
                         _atomic_write(demand_path, demand_record)
+                category_record = None
+                demand_score = (demand_record or {}).get("score") or {}
+                if (observed == 0 and args.effect and demand_score.get("status") == "known"
+                        and int(demand_score.get("score") or 0) > 0):
+                    category_path = args.state_dir / "storefront-bootstrap-category.json"
+                    if category_path.exists():
+                        try:
+                            candidate = json.loads(category_path.read_text(encoding="utf-8"))
+                            if (candidate.get("version") == 1
+                                    and candidate.get("demand_evidence_sha256") == demand_record.get("evidence_sha256")
+                                    and str(candidate.get("draft_service_id") or "").isdigit()):
+                                category_record = candidate
+                        except (OSError, json.JSONDecodeError):
+                            pass
+                    if category_record is None:
+                        import storefront_draft
+                        draft = storefront_draft.create_or_claim_blank_draft(
+                            getattr(args, "default_tab_script", DEFAULT_TAB)
+                        )
+                        draft_id = str(draft["draft_service_id"])
+                        seller = _seller_snapshot_from_fresh_tab(
+                            getattr(args, "default_tab_script", DEFAULT_TAB), draft_id,
+                        )
+                        cluster = {**demand_record["cluster"],
+                                   "capability_family": selection.get("skill_path")}
+                        master_options = (seller.get("select_options") or {}).get(
+                            "data[Service][master_category]", [])
+                        choice, master_route = _invoke_category_proposal(
+                            runner=getattr(args, "runner", DEFAULT_RUNNER),
+                            schema=getattr(args, "category_proposal_schema", DEFAULT_CATEGORY_PROPOSAL_SCHEMA),
+                            workdir=args.workdir,
+                            evidence_dir=inventory_path.parent / "bootstrap-category-master",
+                            cluster=cluster, options=master_options,
+                            timeout_seconds=args.timeout_seconds,
+                        )
+                        if choice.get("decision") != "choose":
+                            raise RuntimeError("storefront_bootstrap_category_noop")
+                        master = _validate_category_choice(
+                            choice.get("master_category_value"), master_options, "master")
+                        children = storefront_draft.read_category_children(
+                            getattr(args, "default_tab_script", DEFAULT_TAB), draft_id, master["value"])
+                        picked, child_route = _invoke_category_child_proposal(
+                            runner=getattr(args, "runner", DEFAULT_RUNNER),
+                            schema=getattr(args, "category_child_schema", DEFAULT_CATEGORY_CHILD_SCHEMA),
+                            workdir=args.workdir,
+                            evidence_dir=inventory_path.parent / "bootstrap-category-child",
+                            cluster=cluster, master=master, children=children,
+                            timeout_seconds=args.timeout_seconds,
+                        )
+                        sub = _validate_category_choice(
+                            picked.get("sub_value"),
+                            children.get("data[Service][master_sub_category]") or [], "sub")
+                        typed = storefront_draft.read_category_children(
+                            getattr(args, "default_tab_script", DEFAULT_TAB),
+                            draft_id, master["value"], sub["value"])
+                        type_options = typed.get("data[Service][master_category_type_id]") or []
+                        picked_type, type_route = _invoke_category_child_proposal(
+                            runner=getattr(args, "runner", DEFAULT_RUNNER),
+                            schema=getattr(args, "category_child_schema", DEFAULT_CATEGORY_CHILD_SCHEMA),
+                            workdir=args.workdir,
+                            evidence_dir=inventory_path.parent / "bootstrap-category-type",
+                            cluster=cluster, master=master,
+                            children={**typed, "data[Service][master_sub_category]": [sub]},
+                            timeout_seconds=args.timeout_seconds,
+                        )
+                        category_record = {
+                            "version": 1,
+                            "demand_evidence_sha256": demand_record["evidence_sha256"],
+                            "draft_service_id": draft_id,
+                            "draft_effect": int(draft.get("effect") or 0),
+                            "category": {
+                                "master": master,
+                                "sub": sub,
+                                "type": _validate_category_choice(
+                                    picked_type.get("type_value"), type_options, "type"),
+                            },
+                            "routes": {
+                                "master": master_route.get("model"),
+                                "sub": child_route.get("model"),
+                                "type": type_route.get("model"),
+                            },
+                        }
+                        _atomic_write(category_path, category_record)
                 release = _lease(args.lease_script, "release", task, lease)
                 released = release.get("released") == task
                 if not released:
@@ -5180,6 +5264,9 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     } if demand_record is not None else None),
                     bootstrap_demand_path=("storefront-bootstrap-demand.json"
                                            if demand_record is not None else None),
+                    bootstrap_category=category_record,
+                    bootstrap_category_path=("storefront-bootstrap-category.json"
+                                             if category_record is not None else None),
                 )
                 row = _persist_receipt(args, output, row)
                 return 0, row

@@ -160,6 +160,11 @@ Storefront work.
        crawls its official Coconala search query, scores only sold/reviewed comparables,
        and hash-binds the demand receipt. Score logic and compile pass; live official
        search evidence begins on the clean pilot browser, not this busy production profile.
+       When that official score is positive and Storefront owns effect authority, the
+       bootstrap now reuses the existing recoverable blank-draft creator, reads the live
+       seller form, and binds model choices to official master/sub/type category options.
+       Draft/category state is demand-hash idempotent; compile passes and the first live
+       draft remains pilot evidence.
     9. [ ] Require one official initial-listing readback and rerun duplicate zero from
        Storefront. Apply may run before it; Negotiate/Paid wait for buyer activity.
     10. [ ] From a clean HOME prove zero marketplace effects before authentication, exact
