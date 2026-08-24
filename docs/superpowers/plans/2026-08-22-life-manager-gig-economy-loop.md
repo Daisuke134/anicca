@@ -260,8 +260,8 @@ No later task may jump ahead of the first incomplete row:
 | U10 | Discover and qualify a first-job candidate | **DONE:** usability-test job `~022091106411892491962`; $15, 10–15 proposals, zero interviews, payment/phone verified, and all student/age/English/recording gates match owner evidence |
 | U11 | Resolve application capacity for that candidate | **DONE:** official proposal surface requires 7 Connects; balance/history, offers, invites and proposals are 0, no reward banner is exposed, and the only buy offer is 100 for $15 plus tax |
 | U12 | Freeze one tailored first-job proposal | **DONE:** immutable payload `c37eed9c…c68e926` contains the $15 terms, cover letter, five factual screening answers, no attachments, and zero unsupported claims |
-| U13 | Make acquisition fully loop-owned | **CODE COMPLETE / LIVE WAKE PENDING:** the provider now treats static candidates as seed only, searches authenticated recent jobs when ready count is below three, opens current details, invokes schema-bound model judgment with owner/Skill evidence, atomically seals a private proposal and runtime candidate cache, and preserves reply/inbound priority; next deploy and prove one loop-owned replenishment plus duplicate-zero replay |
-| U14 | Close the first zero-spend acquisition effect | Accept one qualified invitation/direct offer or Project Catalog order, or submit the best sealed public-job proposal when granted/returned Connects cover its exact cost; never purchase capacity; verify official IDs and balance readback |
+| U13 | Make acquisition fully loop-owned | **DONE:** production launchd wakes generate Skill-bound searches, inspect current jobs, make model-owned select/skip decisions, retain rejected IDs and seal proposals without manual marketplace selection; existing ready work remains available |
+| U14 | Close the first acquisition effect | **WAITING WALLET AUTHORIZATION:** submit the best current sealed public-job proposal immediately after the owner authorizes and the loop officially reads enough Connects, or earlier through a qualified invitation/direct offer/Catalog order; verify official proposal/order ID and exact balance delta |
 | U15 | Replay immediately | Same proposal ID; zero new proposal and zero additional Connects |
 | U16 | Poll and answer the resulting thread | Official story/message IDs and no duplicate reply |
 | U17 | Negotiate and accept profitable terms | Offer ID, exact terms hash and active contract ID |
@@ -584,6 +584,13 @@ U13 atomic order:
     Add the narrow independent `upwork-ai-api-verifier` contract so qualification can truthfully bind
     build and QA before selecting work. Search query index advanced, rejected IDs remained durable,
     and proposals/effects stayed 0.
+29. **PONYTAIL SCOPE CUT / APPLICATION IS THE ONLY NEXT EFFECT:** release `883a329efc7e` includes the
+    independent verifier and completed another production model-search wake with exit 0. The loop has
+    inspected twelve model-query jobs plus earlier broad-feed jobs, retains one officially open sealed
+    proposal requiring 9 Connects, and has submitted 0 because the official balance is 0. Stop adding
+    acquisition abstractions or requiring three ready jobs before action. Reuse the existing proposal
+    effect path and submit the best sealed job as soon as wallet-authorized Connects are officially
+    available. A Connects purchase is the only next action requiring owner approval.
 
 U14 atomic order:
 
