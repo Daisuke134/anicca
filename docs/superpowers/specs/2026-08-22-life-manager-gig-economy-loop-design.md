@@ -608,6 +608,61 @@ It prefers a reusable micro-service that can be truthfully delivered from instal
 one to three days. This rule is a bootstrap constraint; after three independent paid reviews, the
 normal expected-verified-net allocator may select larger work.
 
+Qualification, proposal strategy, negotiation, fulfillment planning and learning are model judgments,
+not keyword/regex routing. Deterministic code only parses official machine fields, enforces money and
+capacity limits, freezes payloads, fences effects and verifies receipts. The model receives the full
+official job/client/thread/contract evidence, owner facts, installed Skill manifests, current capacity
+and economics, then returns a schema-bound decision with cited evidence. Unsupported facts or a
+deliverable not covered by an installed Skill force `skip` or `capability_gap`; they never trigger a
+fabricated claim.
+
+### 6.3 Upwork money-printer Skill system
+
+The Upwork product is not a proposal helper. The existing launchd-owned Upwork loop owns the complete
+commercial lifecycle continuously; Codex does not manually choose jobs, write proposals, reply,
+negotiate, build, deliver or mark money. Login/signup/KYC are recoverable account ceremonies and may be
+added later because the current dedicated profile is already authenticated.
+
+```mermaid
+flowchart LR
+  S[Market sensing\nsearch · invites · Catalog] --> Q[Model qualification\nfit · proof · margin · risk]
+  Q --> O[Offer creation\nproposal · package · price]
+  O --> A[Exactly-once acquisition\napply · accept · reply]
+  A --> N[Sales conversation\nclarify · negotiate · contract]
+  N --> F[Skill fulfillment\nworkspace · build · provenance]
+  F --> V[Independent QA\nacceptance · safety · truth]
+  V --> D[Exactly-once delivery\nsubmission readback]
+  D --> M[Money truth\nfee · refund · chargeback · payout received]
+  M --> L[Learning allocator\nkeep · pause · price · niche]
+  L --> S
+  M -->|repeat client| N
+```
+
+One resident loop composes five bounded Skill families rather than creating another scheduler or
+ledger:
+
+| Skill family | Autonomous responsibility | Required terminal proof |
+|---|---|---|
+| `upwork-acquire` | Search current jobs, inspect full detail/client evidence, reconcile invites/offers/Catalog, qualify against installed Skills, keep the ready queue replenished, generate and seal truthful job-specific proposals, execute an authorized acquisition | Official job/order/invitation/offer identity; proposal or acceptance ID; exact Connects delta; replay effect 0 |
+| `upwork-sell` | Detect and answer every new client message, ask only missing scope questions, negotiate profitable bounded terms, accept only supported work | Official message/story ID, offer terms hash and active contract ID; duplicate reply/accept 0 |
+| `upwork-fulfill` | Compile the contract into an immutable project, select/compose installed delivery Skills, produce artifacts, run independent acceptance QA, revise when requested and deliver | Artifact/provenance hashes, verifier PASS, official submission/revision ID; duplicate delivery 0 |
+| `upwork-money` | Reconcile contract transactions, fees, refunds, disputes, chargebacks and payouts without confusing earnings states with cash | Only official payout `received` enters revenue; Pending/Available excluded; later adjustments attributed once in occurrence month |
+| `upwork-learn` | Attribute the entire funnel and unit economics to Skill/strategy versions, diagnose the current bottleneck, change one variable, keep/revert from later evidence and prioritize repeat clients | Evidence-backed keep/pause/revert plus complete discovered-to-received funnel |
+
+`upwork-acquire` owns candidate replenishment. When fewer than three current submission-ready public
+jobs remain, it searches the authenticated Upwork market, opens current details, asks the model to
+select or skip, and atomically persists both the public evidence record and owner-only sealed proposal.
+A static candidate JSON is a cache/output of this Skill, never a human-maintained input dependency.
+The same wake may submit a newly sealed proposal only after a fresh official Connects read proves the
+exact cost is covered and the effect fence is clear. The zero-spend bootstrap remains in force:
+Connects purchase, Plus and boosting require a separately authorized money-policy change.
+
+Work priority on every wake is `unknown effect → paid deadline/revision → unread client → offer/
+contract → delivery/payment → acquisition → learning experiment`. A failure in discovery cannot stop
+paid work; a failure in fulfillment pauses new acquisition before deadlines are endangered. The loop
+runs indefinitely through launchd, uses bounded retries/backoff, retains durable state across restart,
+and emits a fail-visible health receipt instead of silently becoming idle.
+
 ```mermaid
 flowchart LR
   J[Official job receipt] --> Q[Qualification and margin]
@@ -690,6 +745,7 @@ promise of earnings.
 | Profile contains only factual owner data and is application-ready | Official profile completeness readback | Required |
 | First acquisition is zero-spend and review-oriented | 100% profile, three reusable proofs, free-reward inventory, one live Project Catalog service, invitation/direct-offer monitoring, three live qualified public-job candidates and no paid effect | Required |
 | Discovery reflects current Upwork state | Same job IDs across two authenticated reads | Required |
+| Discovery and ready-queue replenishment are loop-owned | With fewer than three ready candidates, one launchd wake searches current jobs, model-selects or skips with evidence, and atomically seals truthful proposals without manual candidate editing | Required |
 | First-job qualification rejects high-competition broad builds | Bounded 1-3 day deliverable, proposals <=20, explicit acceptance and evidence-backed proof | Required |
 | Qualification ignores Coconala runtime state | Upwork active-contract count and provider-scoped ledger query | Required |
 | Proposal submits at most once | Proposal ID and Connects before/after, then zero-delta replay | Required |
@@ -699,6 +755,7 @@ promise of earnings.
 | Negotiation creates no duplicate message | Official story/message IDs across replay | Required |
 | Contract, delivery and money reconcile | Contract ID, submission ID, transaction ID and actual fee/cost evidence | Required |
 | USD 10k uses cash truth | Complete calendar-month window; only payout `received`; Pending/Available excluded; cross-month payout and later chargeback attributed once | Required |
+| Resident operation survives restart and market drought | launchd restarts the same loop; durable lease/effect state resumes; paid work remains first; no-work wakes end healthy with a next wake rather than terminal success | Required |
 
 | E2E item | Value |
 |---|---|

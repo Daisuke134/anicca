@@ -260,7 +260,7 @@ No later task may jump ahead of the first incomplete row:
 | U10 | Discover and qualify a first-job candidate | **DONE:** usability-test job `~022091106411892491962`; $15, 10–15 proposals, zero interviews, payment/phone verified, and all student/age/English/recording gates match owner evidence |
 | U11 | Resolve application capacity for that candidate | **DONE:** official proposal surface requires 7 Connects; balance/history, offers, invites and proposals are 0, no reward banner is exposed, and the only buy offer is 100 for $15 plus tax |
 | U12 | Freeze one tailored first-job proposal | **DONE:** immutable payload `c37eed9c…c68e926` contains the $15 terms, cover letter, five factual screening answers, no attachments, and zero unsupported claims |
-| U13 | Activate every zero-spend acquisition path | **IN PROGRESS:** dedicated 9233 and two fresh replay-safe wakes are complete; Catalog is visible with one view and zero orders, while one of three sealed candidates closed, so replace it and restore three live ready candidates |
+| U13 | Make acquisition fully loop-owned | **IN PROGRESS:** dedicated 9233 and two fresh replay-safe wakes are complete; next remove the static-candidate dependency so the launchd loop itself searches, model-qualifies, seals truthful job-specific proposals and restores three live ready candidates |
 | U14 | Close the first zero-spend acquisition effect | Accept one qualified invitation/direct offer or Project Catalog order, or submit the best sealed public-job proposal when granted/returned Connects cover its exact cost; never purchase capacity; verify official IDs and balance readback |
 | U15 | Replay immediately | Same proposal ID; zero new proposal and zero additional Connects |
 | U16 | Poll and answer the resulting thread | Official story/message IDs and no duplicate reply |
@@ -285,13 +285,31 @@ Remaining order to finish the local Upwork skill and business loop:
 | Order | Required closure |
 |---:|---|
 | 1 | **DONE:** Aqua preflight, dedicated `life-manager-upwork-browser`, profile `gig-upwork`, 9233 and two provider wakes with effect 0 |
-| 2 | Replace the closed sealed candidate and restore three current low-competition ready candidates |
+| 2 | Implement loop-owned current-job discovery, model qualification and atomic proposal sealing; prove one launchd wake replaces the closed candidate and restores three live ready candidates without manual config editing |
 | 3 | U14–U15 close one natural qualified acquisition with official ID, exact Connects delta and replay 0 |
 | 4 | U16–U17 close client reply, profitable terms and active contract with official IDs and replay 0 |
 | 5 | U18–U19 close immutable build, independent PASS, one delivery ID and duplicate 0; Task 20 runs only on a real revision |
 | 6 | U20 joins gross, fee, adjustment, cost and payout `received`; cross-month payout/chargeback follows occurrence month |
 | 7 | U21/Task 22 close three independent paid-review paths with complete economics and no unresolved or duplicate effect |
 | 8 | U22 repeats the winner to USD 3,000 then USD 10,000 verified net received, changing one strategy variable at a time |
+
+The remaining work belongs to the resident Upwork loop, not to Codex as a marketplace operator.
+Codex's atomic engineering TODO is ordered as follows; it only edits, activates and verifies the loop:
+
+1. Wire authenticated search/detail receipts from port 9233 into `upwork-acquire`.
+2. Give the model owner facts, installed Skill manifests, full job/client evidence, capacity and
+   economics; require schema-bound `select` or `skip` with cited evidence and no keyword routing.
+3. Atomically write the selected candidate cache and owner-only sealed proposal, bound to job ID,
+   official URL, evidence hash, terms, exact Connects and factual claims.
+4. Run the existing `ai.anicca.life-manager-upwork-free-loop`; verify it replenishes the ready queue
+   itself, then replay with no duplicate candidate/proposal/effect.
+5. Complete the already-planned loop-owned paths for reply, negotiation, contract, Skill fulfillment,
+   independent QA, revision, delivery, payout/review and three-job replay.
+6. Keep the loop resident and let `upwork-learn` change one acquisition/package/price variable at a
+   time until a complete calendar month reaches USD 10,000 verified net received.
+
+Login/signup/KYC recovery is deliberately deferred until the authenticated profile actually fails;
+it is not on the current money path.
 
 Engineering completion is Task 22's repeatability gate. Business completion is U22. Neither a test
 pass nor a deployed release satisfies a live receipt checkbox.
@@ -509,6 +527,14 @@ U13 atomic order:
     visible with one 30-day view and zero orders. Of three sealed candidates, the $15 usability job
     is officially closed; the two open jobs require 14 and 9 Connects. U13 next replaces the closed
     candidate before U14.
+21. **STATIC-CANDIDATE DEFECT IDENTIFIED / AUTONOMOUS REPLENISHMENT NEXT:** the deployed provider can
+    reconcile and execute sealed proposals, but its public candidate JSON is still a manually
+    maintained input. That is not an end-to-end Upwork loop. U13 now closes only when the existing
+    launchd loop searches authenticated current jobs, supplies full evidence plus owner/Skill facts
+    to model judgment, selects or skips, and atomically seals enough truthful proposals to restore
+    three ready candidates without Codex choosing or editing marketplace work. This is the first
+    unfinished engineering item; reply, contract, fulfillment, delivery, money and learning remain
+    subsequent loop-owned closures.
 
 U14 atomic order:
 
