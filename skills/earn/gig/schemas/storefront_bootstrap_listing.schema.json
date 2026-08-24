@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "decision", "title_stem", "catchphrase", "head", "body", "display_price_jpy",
+    "delivery_days", "paid_option_title", "paid_option_price_jpy", "image_copy",
+    "features", "industries", "languages", "provision_format", "fix_limit",
+    "unit_price_jpy_per_character", "subscription_discount_ratio",
+    "success_metric", "observation_window_days", "rationale", "no_op_reason", "uncertainty"
+  ],
+  "properties": {
+    "decision": {"type": "string", "enum": ["create", "no_op"]},
+    "title_stem": {"type": ["string", "null"], "minLength": 1, "maxLength": 23},
+    "catchphrase": {"type": ["string", "null"], "minLength": 15, "maxLength": 30},
+    "head": {"type": ["string", "null"], "minLength": 1, "maxLength": 1000},
+    "body": {"type": ["string", "null"], "minLength": 1, "maxLength": 500},
+    "display_price_jpy": {"type": ["integer", "null"], "minimum": 500},
+    "delivery_days": {"type": ["integer", "null"], "minimum": 1, "maximum": 99},
+    "paid_option_title": {"type": ["string", "null"], "minLength": 1, "maxLength": 60},
+    "paid_option_price_jpy": {"type": ["integer", "null"], "minimum": 500},
+    "image_copy": {"type": ["string", "null"], "maxLength": 240},
+    "features": {"type": ["array", "null"], "items": {"type": "string", "pattern": "^[0-9]+$"}},
+    "industries": {"type": ["array", "null"], "items": {"type": "string", "pattern": "^[0-9]+$"}},
+    "languages": {"type": ["array", "null"], "items": {"type": "string", "pattern": "^[0-9]+$"}},
+    "provision_format": {"type": ["string", "null"], "pattern": "^[0-9]+$"},
+    "fix_limit": {"type": ["string", "null"], "pattern": "^-?[0-9]+$"},
+    "unit_price_jpy_per_character": {"type": ["string", "null"], "pattern": "^[0-9]+$"},
+    "subscription_discount_ratio": {"type": ["string", "null"], "enum": ["5", "10", "15", "20", null]},
+    "success_metric": {"type": ["string", "null"], "enum": ["inquiries", "purchases", "views_to_inquiry", "views_to_purchase", "net_receipt", null]},
+    "observation_window_days": {"type": ["integer", "null"], "enum": [7, 14, null]},
+    "rationale": {"type": "string", "minLength": 1, "maxLength": 1000},
+    "no_op_reason": {"type": ["string", "null"], "maxLength": 1000},
+    "uncertainty": {"type": "array", "maxItems": 8, "items": {"type": "string", "minLength": 1, "maxLength": 240}}
+  }
+}

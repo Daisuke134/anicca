@@ -893,6 +893,72 @@ def read_category_children(
         return asyncio.run(_read_category_children_async(str(tab["ws"]), master_value, sub_value))
     finally:
         if isinstance(tab, dict) and tab.get("target_id"):
+                subprocess.run(
+                    [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
+                     "close", str(tab["target_id"])], capture_output=True, text=True,
+                    check=False, timeout=30,
+                )
+
+
+async def _read_category_form_async(ws_url: str, category: dict[str, dict[str, str]]) -> dict[str, Any]:
+    import websockets
+
+    async with websockets.connect(ws_url, ping_interval=None, open_timeout=10,
+                                  max_size=40 * 1024 * 1024) as ws:
+        cid = 1
+        await _call(ws, "Page.enable", {}, cid); cid += 1
+        for key, field in (
+            ("master", "data[Service][master_category]"),
+            ("sub", "data[Service][master_sub_category]"),
+            ("type", "data[Service][master_category_type_id]"),
+        ):
+            row = category.get(key)
+            if not isinstance(row, dict):
+                continue
+            value = str(row.get("value") or "")
+            cid = await _wait_for_option(ws, field, value, cid)
+            changed, cid = await _evaluate(ws, (
+                "(()=>{const s=document.querySelector(" + json.dumps(f'[name="{field}"]') + ");"
+                f"if(!s||![...s.options].some(o=>o.value==={json.dumps(value)}))return false;"
+                f"s.value={json.dumps(value)};s.dispatchEvent(new Event('input',{{bubbles:true}}));"
+                "s.dispatchEvent(new Event('change',{bubbles:true}));return true})()"
+            ), cid)
+            if changed is not True:
+                raise RuntimeError(f"storefront_bootstrap_category_not_selectable:{key}")
+            await asyncio.sleep(0.75)
+        has_option, cid = await _evaluate(
+            ws, "!!document.querySelector('[name=\"data[Option][0][title]\"]')", cid,
+        )
+        if has_option is not True:
+            await _evaluate(ws, (
+                "(()=>{const b=document.querySelector('.js_add-option-button');"
+                "if(!b)return false;b.click();return true})()"
+            ), cid)
+            await asyncio.sleep(0.5)
+        raw, cid = await _evaluate(ws, DRAFT_SNAPSHOT_EXPRESSION, cid)
+        snapshot = json.loads(str(raw or "{}"))
+        if snapshot.get("url") is None or not isinstance(snapshot.get("fields"), list):
+            raise RuntimeError("storefront_bootstrap_form_unavailable")
+        return snapshot
+
+
+def read_category_form(
+    default_tab_script: Path, draft_service_id: str, category: dict[str, dict[str, str]],
+) -> dict[str, Any]:
+    """Read official category-specific form choices without saving the draft."""
+    opened = subprocess.run(
+        [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
+         "--background", "open", f"https://coconala.com/mypage/services/{draft_service_id}"],
+        capture_output=True, text=True, check=False, timeout=30,
+    )
+    tab = None
+    try:
+        tab = json.loads(opened.stdout)
+        if opened.returncode != 0 or tab.get("ok") is not True:
+            raise RuntimeError("storefront_bootstrap_form_tab_open_failed")
+        return asyncio.run(_read_category_form_async(str(tab["ws"]), category))
+    finally:
+        if isinstance(tab, dict) and tab.get("target_id"):
             subprocess.run(
                 [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
                  "close", str(tab["target_id"])], capture_output=True, text=True,

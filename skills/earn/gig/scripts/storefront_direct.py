@@ -39,6 +39,7 @@ DEFAULT_DEMAND_PROPOSAL_SCHEMA = GIG_DIR / "schemas" / "storefront_demand_propos
 DEFAULT_CATEGORY_PROPOSAL_SCHEMA = GIG_DIR / "schemas" / "storefront_category_proposal.schema.json"
 DEFAULT_CATEGORY_CHILD_SCHEMA = GIG_DIR / "schemas" / "storefront_category_child.schema.json"
 DEFAULT_BOOTSTRAP_SELECTION_SCHEMA = GIG_DIR / "schemas" / "storefront_bootstrap_selection.schema.json"
+DEFAULT_BOOTSTRAP_LISTING_SCHEMA = GIG_DIR / "schemas" / "storefront_bootstrap_listing.schema.json"
 DEFAULT_STOREFRONT_ROOT = Path(
     os.environ.get("GIG_STOREFRONT_ROOT") or "/nonexistent/storefront-root-required"
 )
@@ -3587,6 +3588,99 @@ def _seal_create_contract(
                            "claims": image_copy.splitlines(), **asset}}
 
 
+def _seal_bootstrap_contract(
+    proposal: dict, *, selection: dict, demand: dict, category_record: dict,
+    official_form: dict, draft_service_id: str, evidence_dir: Path,
+) -> dict:
+    title = str(proposal.get("title_stem") or "").strip()
+    catchphrase = str(proposal.get("catchphrase") or "").strip()
+    head = str(proposal.get("head") or "").strip()
+    body = str(proposal.get("body") or "").strip()
+    image_copy = str(proposal.get("image_copy") or "").strip()
+    if (proposal.get("decision") != "create" or not title
+            or title[-1] not in "いきしちにひみりぎじびぴえけせてねへめれげぜでべぺ"
+            or len([line for line in image_copy.splitlines() if line.strip()]) != 3
+            or "｜" not in image_copy.splitlines()[-1]
+            or _prohibited_copy_terms(title, catchphrase, head, body, image_copy)):
+        raise RuntimeError("storefront_bootstrap_contract_copy_invalid")
+    price = next(
+        (row for row in official_form.get("display_prices", [])
+         if row.get("display_price_jpy") == proposal.get("display_price_jpy")), None,
+    )
+    if not isinstance(price, dict):
+        raise RuntimeError("storefront_bootstrap_contract_price_invalid")
+    asset = _render_generated_image_asset(image_copy, draft_service_id, evidence_dir)
+    option_title = str(proposal.get("paid_option_title") or "").strip()
+    option_price = proposal.get("paid_option_price_jpy")
+    if not option_title or type(option_price) is not int:
+        raise RuntimeError("storefront_bootstrap_contract_option_invalid")
+    unsigned = {
+        "version": 1, "platform": "coconala",
+        "candidate_key": "storefront:create:v1:" + hashlib.sha256(
+            f"{selection['skill_path']}:{demand['evidence_sha256']}".encode()
+        ).hexdigest(),
+        "draft_service_id": draft_service_id,
+        "draft_url": f"https://coconala.com/mypage/services/{draft_service_id}",
+        "expected_public_url": f"https://coconala.com/services/{draft_service_id}",
+        "origin": "storefront-bootstrap",
+        "demand_evidence": {
+            "query": demand["query"], "search_url": demand["search_url"],
+            "evidence_sha256": demand["evidence_sha256"], "score": demand["score"],
+        },
+        "capability_evidence": {
+            "skill_path": selection["skill_path"],
+            "buyer_outcome": selection["buyer_outcome"],
+            "deliverable": selection["deliverable"],
+        },
+        "hero_image_contract": asset["asset_path"],
+        "category": category_record["category"],
+        "public_fields": {
+            "overview_input": title, "expected_title": f"{title}ます",
+            "catchphrase": catchphrase, "head": head, "body": body,
+            "price_option_value": str(price["value"]),
+            "display_price_jpy": int(proposal["display_price_jpy"]),
+            "delivery_days": int(proposal["delivery_days"]), "order_limit": 1,
+            "accept_estimates": True, "estimate_required": False,
+        },
+        "category_specific": {
+            "features": list(proposal.get("features") or []),
+            "industries": list(proposal.get("industries") or []),
+            "languages": list(proposal.get("languages") or []),
+            "provision_format": str(proposal.get("provision_format") or "1"),
+            "fix_limit": str(proposal.get("fix_limit") or "0"),
+            "unit_price_jpy_per_character": str(
+                proposal.get("unit_price_jpy_per_character") or "0"
+            ),
+        },
+        "subscription": {
+            "enabled": True,
+            "discount_ratio": str(proposal.get("subscription_discount_ratio") or "5"),
+        },
+        "paid_options": [{"title": option_title, "price_jpy": option_price, "opened": "1"}],
+        "publication_gate": {
+            "requires_distinct_catalog_outcome": True,
+            "requires_owned_capability": True,
+            "requires_available_capacity": True,
+            "requires_hero_image": True,
+            "requires_no_conflicting_service_experiment": True,
+        },
+        "success_metric": proposal["success_metric"],
+        "observation_window_days": proposal["observation_window_days"],
+        "proposal_evidence": [selection["skill_path"], demand["evidence_sha256"]],
+    }
+    canonical = json.dumps(unsigned, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return {
+        **unsigned,
+        "contract_sha256": hashlib.sha256(canonical.encode("utf-8")).hexdigest(),
+        "hero_image": {
+            "version": 1, "service_id": draft_service_id, "field": "image",
+            "mime_type": "image/png", "width": 1220, "height": 1016,
+            "claims": [line.strip() for line in image_copy.splitlines() if line.strip()],
+            **asset,
+        },
+    }
+
+
 def _seal_generated_proposal(
     proposal: dict, hypothesis: dict, source: dict, seller_snapshot: dict,
     family_name: str, capability_families: dict[str, str], allowed_refs: set[str],
@@ -5091,7 +5185,9 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
 
             inventory, contract_sources, observed = _read_official_catalog()
             if public_bootstrap:
-                from storefront_bootstrap import inventory as bootstrap_inventory, select_capability
+                from storefront_bootstrap import (
+                    compose_listing, inventory as bootstrap_inventory, select_capability,
+                )
                 capability_inventory = bootstrap_inventory()
                 capability_path = args.state_dir / "storefront-capabilities.json"
                 _atomic_write(capability_path, capability_inventory)
@@ -5240,16 +5336,96 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                             },
                         }
                         _atomic_write(category_path, category_record)
+                bootstrap_contract = None
+                bootstrap_result = None
+                if observed == 0 and category_record is not None:
+                    import storefront_draft
+                    contract_path = args.state_dir / "storefront-bootstrap-contract.json"
+                    if contract_path.exists():
+                        try:
+                            candidate = json.loads(contract_path.read_text(encoding="utf-8"))
+                            if (candidate.get("version") == 1
+                                    and candidate.get("draft_service_id") == category_record.get("draft_service_id")
+                                    and (candidate.get("demand_evidence") or {}).get("evidence_sha256")
+                                    == demand_record.get("evidence_sha256")
+                                    and str(candidate.get("contract_sha256") or "")):
+                                bootstrap_contract = candidate
+                        except (OSError, json.JSONDecodeError):
+                            pass
+                    if bootstrap_contract is None:
+                        form_snapshot = storefront_draft.read_category_form(
+                            getattr(args, "default_tab_script", DEFAULT_TAB),
+                            str(category_record["draft_service_id"]), category_record["category"],
+                        )
+                        proposal, official_form = compose_listing(
+                            selection=selection, demand=demand_record,
+                            category=category_record["category"], form_snapshot=form_snapshot,
+                            runner=getattr(args, "runner", DEFAULT_RUNNER),
+                            schema=getattr(args, "bootstrap_listing_schema", DEFAULT_BOOTSTRAP_LISTING_SCHEMA),
+                            evidence_dir=inventory_path.parent / "bootstrap-listing-agent",
+                            workdir=args.workdir, timeout_seconds=args.timeout_seconds,
+                        )
+                        if proposal.get("decision") != "create":
+                            raise RuntimeError("storefront_bootstrap_listing_noop")
+                        bootstrap_contract = _seal_bootstrap_contract(
+                            proposal, selection=selection, demand=demand_record,
+                            category_record=category_record, official_form=official_form,
+                            draft_service_id=str(category_record["draft_service_id"]),
+                            evidence_dir=inventory_path.parent / "bootstrap-contract",
+                        )
+                        _atomic_write(contract_path, bootstrap_contract)
+                    ledger_path = args.state_dir / "new-listing-drafts.jsonl"
+                    prior = next(
+                        (row for row in reversed(_jsonl_rows(ledger_path)[0])
+                         if row.get("candidate_key") == bootstrap_contract["candidate_key"]
+                         and row.get("status") in {"published", "already_public"}),
+                        None,
+                    ) if ledger_path.exists() else None
+                    if prior is not None:
+                        bootstrap_result = storefront_draft.readback_published_draft(
+                            bootstrap_contract,
+                            getattr(args, "default_tab_script", DEFAULT_TAB),
+                            inventory_path.parent / "bootstrap-public-readback",
+                            known_image_identity=prior.get("public_image_identity"),
+                        )
+                    else:
+                        try:
+                            bootstrap_result = storefront_draft.readback_published_draft(
+                                bootstrap_contract,
+                                getattr(args, "default_tab_script", DEFAULT_TAB),
+                                inventory_path.parent / "bootstrap-public-readback",
+                            )
+                        except RuntimeError:
+                            storefront_draft.prepare_draft(
+                                bootstrap_contract,
+                                getattr(args, "default_tab_script", DEFAULT_TAB),
+                                inventory_path.parent / "bootstrap-draft",
+                            )
+                            bootstrap_result = storefront_draft.publish_draft(
+                                bootstrap_contract,
+                                getattr(args, "default_tab_script", DEFAULT_TAB),
+                                inventory_path.parent / "bootstrap-public-readback",
+                            )
+                    _append_key_once(ledger_path, "candidate_key", {
+                        **bootstrap_result,
+                        "capability_family": selection["skill_path"],
+                        "demand_evidence_path": demand_record["evidence_path"],
+                        "contract_path": "storefront-bootstrap-contract.json",
+                    })
                 release = _lease(args.lease_script, "release", task, lease)
                 released = release.get("released") == task
                 if not released:
                     raise RuntimeError("lease_release_unproven")
                 row = _receipt(
                     pass_id, status="completed",
-                    reason=("storefront_bootstrap_required" if observed == 0
+                    reason=("storefront_bootstrap_published" if bootstrap_result is not None
+                            and bootstrap_result.get("status") == "published"
+                            else "storefront_bootstrap_readback" if bootstrap_result is not None
+                            else "storefront_bootstrap_required" if observed == 0
                             else "storefront_import_required"),
                     official_services_read=observed,
-                    pending=1,
+                    pending=(0 if bootstrap_result is not None
+                             and int(bootstrap_result.get("readback") or 0) == 1 else 1),
                     capability_inventory_count=len(capability_inventory["skills"]),
                     capability_inventory_sha256=capability_inventory["inventory_sha256"],
                     capability_inventory_path="storefront-capabilities.json",
@@ -5267,6 +5443,10 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     bootstrap_category=category_record,
                     bootstrap_category_path=("storefront-bootstrap-category.json"
                                              if category_record is not None else None),
+                    bootstrap_contract_sha256=(bootstrap_contract or {}).get("contract_sha256"),
+                    bootstrap_contract_path=("storefront-bootstrap-contract.json"
+                                             if bootstrap_contract is not None else None),
+                    new_listing_draft=bootstrap_result,
                 )
                 row = _persist_receipt(args, output, row)
                 return 0, row
@@ -6622,6 +6802,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--category-proposal-schema", type=Path, default=DEFAULT_CATEGORY_PROPOSAL_SCHEMA)
     parser.add_argument("--category-child-schema", type=Path, default=DEFAULT_CATEGORY_CHILD_SCHEMA)
     parser.add_argument("--bootstrap-selection-schema", type=Path, default=DEFAULT_BOOTSTRAP_SELECTION_SCHEMA)
+    parser.add_argument("--bootstrap-listing-schema", type=Path, default=DEFAULT_BOOTSTRAP_LISTING_SCHEMA)
     parser.add_argument("--scorecard", type=Path, default=storefront["scorecard"])
     parser.add_argument("--image-contract", type=Path, default=storefront["image"])
     parser.add_argument("--gallery-contract", type=Path, default=storefront["gallery"])

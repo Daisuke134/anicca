@@ -165,8 +165,19 @@ Storefront work.
        seller form, and binds model choices to official master/sub/type category options.
        Draft/category state is demand-hash idempotent; compile passes and the first live
        draft remains pilot evidence.
+       Category-bound form observation now reads official price/facet/radio/select/paid-
+       option choices without saving. A bounded model retry corrects schema-valid but
+       unofficial/null choices. Real Codex against a synthetic official option surface
+       produced an accepted Japanese listing at 5,000 JPY, 3 days, 1,000 JPY option,
+       5% subscription and official facet ids. Contract sealing generated the exact
+       `…ます` title, 1220x1016 hero PNG and hash-bound contract.
     9. [ ] Require one official initial-listing readback and rerun duplicate zero from
        Storefront. Apply may run before it; Negotiate/Paid wait for buyer activity.
+       The zero-listing branch is now connected to existing `prepare_draft`,
+       `publish_draft` and exact public readback. Before any publish it first attempts
+       official recovery of an already-public candidate, so a crash after acceptance but
+       before ledger append cannot cause a second publish. Live effect/readback/replay-zero
+       remain pilot evidence.
     10. [ ] From a clean HOME prove zero marketplace effects before authentication, exact
        resume after interruption, one owner per launchd label and zero secrets in output.
     11. [ ] Family pilot A: on their own clean Mac/account, complete setup while the
