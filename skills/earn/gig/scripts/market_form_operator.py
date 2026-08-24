@@ -39,6 +39,11 @@ subscribe, alter account settings, or open another opportunity. Ordinary navigat
 acknowledgements are allowed. CAPTCHA, identity, tax and personal legal declarations are blocked.
 Return ok only after the provider visibly leaves the editable form or shows provider-authored success;
 the parent will independently verify the official ID and balance, so never claim those from inference."""
+    prompt += """
+Use only the provider-owned authenticated persistent DEFAULT browser context already running at the
+configured CDP endpoint. Create a new tab in that default context when needed. Never create an
+isolated/incognito context, never launch another browser/profile, and never perform session restoration
+or login; a login redirect means blocked."""
     completed = subprocess.run([
         sys.executable, str(runner), "--task-class", "browser-lane-agent", "--prompt-stdin",
         "--schema", str(schema), "--evidence-dir", str(evidence),

@@ -147,3 +147,26 @@ def test_lost_ack_stays_reconcile_only_and_never_prepares_second_effect(tmp_path
     assert repeated_start["reconcile_only"] is True
     assert replay["state"] == "reconcile_pending"
     assert replay["created"] is False and replay["reconcile_only"] is True
+
+
+def test_official_no_effect_and_unchanged_balance_reopen_exact_intent(tmp_path: Path):
+    database = _database(tmp_path)
+    authorization = _authorization()
+    intent = _intent(authorization)
+    database.prepare_provider_effect(
+        intent, authorization=authorization, now=100, connects_pre=10,
+        connects_pre_hash="a" * 64, payload_body='{"sealed":true}',
+    )
+    database.mark_provider_effect_started(intent, authorization=authorization, now=101)
+
+    reopened = database.reopen_provider_effect_after_no_effect(
+        intent, authorization=authorization, connects_current=10,
+        connects_evidence_sha256="b" * 64, no_effect_readback_hash="c" * 64, now=102,
+    )
+    restarted = database.mark_provider_effect_started(
+        intent, authorization=authorization, now=103,
+    )
+
+    assert (reopened["state"], reopened["reconciliation_state"]) == ("prepared", "not_started")
+    assert reopened["connects_pre_hash"] == "b" * 64
+    assert restarted["started"] is True

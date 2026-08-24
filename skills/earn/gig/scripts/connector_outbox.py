@@ -1925,6 +1925,42 @@ class ConnectorOutbox:
             ).fetchone()
             return dict(row) if row is not None else None
 
+    def reopen_provider_effect_after_no_effect(
+        self, intent: Any, *, authorization: Any, connects_current: int,
+        connects_evidence_sha256: str, no_effect_readback_hash: str, now: int,
+    ) -> dict[str, Any]:
+        """Reopen only after official resource absence and unchanged spend prove effect 0."""
+        values = self._provider_effect_values(intent, authorization)
+        now = self._require_timestamp("now", now)
+        if (
+            type(connects_current) is not int or connects_current < 0
+            or not re.fullmatch(r"[0-9a-f]{64}", connects_evidence_sha256)
+            or not re.fullmatch(r"[0-9a-f]{64}", no_effect_readback_hash)
+        ):
+            raise ValueError("invalid provider no-effect evidence")
+        with self._write() as connection:
+            existing = connection.execute(
+                "SELECT * FROM provider_effect_intents WHERE effect_key=?", (values[0],),
+            ).fetchone()
+            if (
+                existing is None or existing["state"] != "reconcile_pending"
+                or existing["reconciliation_state"] != "reconcile_unknown"
+                or existing["proposal_id"] is not None
+                or existing["connects_post"] is not None
+                or existing["connects_pre"] != connects_current
+            ):
+                raise InvalidTransition("provider no-effect readback is inconsistent")
+            connection.execute(
+                """UPDATE provider_effect_intents
+                   SET state='prepared',reconciliation_state='not_started',
+                       connects_pre=?,connects_pre_hash=?,readback_hash=?,updated_at=?
+                   WHERE effect_key=?""",
+                (connects_current, connects_evidence_sha256, no_effect_readback_hash, now, values[0]),
+            )
+            return dict(connection.execute(
+                "SELECT * FROM provider_effect_intents WHERE effect_key=?", (values[0],),
+            ).fetchone())
+
     def verified_provider_resource_ids(self, provider: str, action: str) -> set[str]:
         """Project completed external effects out of an acquisition-ready queue."""
         provider = self._require_key("provider", provider)

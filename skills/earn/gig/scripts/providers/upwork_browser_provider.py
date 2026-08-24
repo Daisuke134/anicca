@@ -806,7 +806,7 @@ def reconcile_terminal_transitions(
 async def execute_sealed_proposal(
     payload: dict[str, Any], *, pass_id: str, sequence: int, database: Path,
     manifest: Path, browser_profile: Path, connects_pre: int, connects_pre_hash: str,
-    existing_proposal_ids: set[str],
+    existing_proposals: list[dict[str, Any]], proposals_pre_hash: str,
 ) -> tuple[dict[str, Any], dict[str, Any] | None, str | None]:
     """Run either public or invitation proposal through the same durable effect."""
     effect_now = datetime.now(timezone.utc)
@@ -818,13 +818,34 @@ async def execute_sealed_proposal(
             profiles_root=browser_profile.expanduser().parent,
         ),
     )
-    _, planned = effect.intent(payload)
+    selection, planned = effect.intent(payload)
     existing = effect.store.provider_effect(planned)
     base = {"proposal_payload_sha256": payload["payload_sha256"]}
     if existing is not None and existing["reconciliation_state"] == "verified":
         return {**base, "state": "submitted", "proposal_id": existing["proposal_id"]}, None, None
     if existing is not None and existing["state"] == "reconcile_pending":
-        return {**base, "state": "reconcile_unknown"}, None, None
+        matches = [item for item in existing_proposals if item.get("title") == payload["title"]]
+        if len(matches) == 1 and connects_pre == existing["connects_pre"] - payload["terms"]["required_connects"]:
+            receipt = {
+                "state": "submitted", "job_id": payload["job_id"],
+                "proposal_id": str(matches[0]["id"]), "evidence_sha256": proposals_pre_hash,
+            }
+            effect.verify(
+                planned, receipt, connects_post=connects_pre,
+                connects_evidence_sha256=connects_pre_hash,
+            )
+            return {**base, "state": "submitted", "proposal_id": receipt["proposal_id"]}, None, None
+        if not matches and connects_pre == existing["connects_pre"]:
+            no_effect_hash = hashlib.sha256(json.dumps({
+                "proposals": proposals_pre_hash, "connects": connects_pre_hash,
+            }, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+            effect.store.reopen_provider_effect_after_no_effect(
+                planned, authorization=selection.authorization, connects_current=connects_pre,
+                connects_evidence_sha256=connects_pre_hash,
+                no_effect_readback_hash=no_effect_hash, now=int(effect_now.timestamp()),
+            )
+        else:
+            return {**base, "state": "reconcile_unknown"}, None, None
     preflight = {
         "ready": True, "job_id": payload["job_id"],
         "required_connects": payload["terms"]["required_connects"],
@@ -854,7 +875,7 @@ async def execute_sealed_proposal(
     }
     receipt = submitted_proposal_receipt(
         payload, proposal_state, evidence_sha256=proposal_hash,
-        existing_proposal_ids=existing_proposal_ids,
+        existing_proposal_ids={str(item["id"]) for item in existing_proposals},
     )
     artifact = Path(await navigate_and_snapshot(
         pass_id, f"{sequence + 1:02d}-1", "connects-post", CONNECTS_URL,
@@ -1130,11 +1151,12 @@ async def observe(
                         database=database, manifest=manifest, browser_profile=browser_profile,
                         connects_pre=state["balance"],
                         connects_pre_hash=state["evidence_sha256"]["connects"],
-                        existing_proposal_ids={
-                            str(item["id"]) for key in (
+                        existing_proposals=[
+                            item for key in (
                                 "submitted_proposal_entities", "active_proposal_entities",
                             ) for item in state.get(key, []) if isinstance(item, dict) and item.get("id")
-                        },
+                        ],
+                        proposals_pre_hash=state["evidence_sha256"]["proposals"],
                     )
                     state["free_acquisition"].update(acquisition)
                     if post_connects is not None and post_hash is not None:
@@ -1188,11 +1210,12 @@ async def observe(
             database=database, manifest=manifest, browser_profile=browser_profile,
             connects_pre=state["balance"],
             connects_pre_hash=state["evidence_sha256"]["connects"],
-            existing_proposal_ids={
-                str(item["id"]) for key in (
+            existing_proposals=[
+                item for key in (
                     "submitted_proposal_entities", "active_proposal_entities",
                 ) for item in state.get(key, []) if isinstance(item, dict) and item.get("id")
-            },
+            ],
+            proposals_pre_hash=state["evidence_sha256"]["proposals"],
         )
         state["free_acquisition"] = acquisition
         if post_connects is not None and post_hash is not None:

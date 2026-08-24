@@ -2351,6 +2351,9 @@ Only the first unchecked row is active; a missing buyer event blocks that resour
 - [x] Bypass Upwork deterministic form filling in the acquisition path. Fence from the already-read
   official Connects receipt, let Terra operate the whole form, then independently read Proposals and
   Connects pages for Proposal ID and exact delta.
+- [x] Repair the first common-operator canary: require the authenticated persistent default context,
+  never isolated/incognito; add generic no-effect reconciliation from official resource absence plus
+  unchanged balance so the same fenced intent can safely retry.
 - [ ] Replace Upwork deterministic form filling/preflight selectors with one Terra common-Browser-ACI
   task: inspect current form, fill the sealed intent, resolve ordinary validation feedback and submit.
 - [ ] Keep deterministic code only for immutable intent hash, resource lease, Connects reservation,

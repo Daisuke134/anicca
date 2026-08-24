@@ -542,6 +542,13 @@ including the current Upwork `fill_preflight_expression`, are legacy and must be
 debugged or copied to another market. DOM selectors may exist only inside a generic browser tool for
 mechanical element access chosen from live model observation, never as one site's workflow brain.
 
+First common-operator canary reached Terra for the AI/MCP proposal but Terra created an isolated
+context, was redirected to login and made no external effect. The operator contract now requires the
+provider-owned authenticated persistent default context and forbids isolated/incognito contexts,
+alternate profiles and login restoration. Because the fence had already entered reconcile-unknown,
+the common effect kernel now reopens the exact intent only when official resource absence plus unchanged
+balance proves effect 0; otherwise it remains reconcile-only or verifies an already-visible receipt.
+
 ### 4.3 Sales loop
 
 ```text
