@@ -8289,7 +8289,9 @@ Current authoritative state:
   but no natural-calendar success after the final reload; x-repost's 18:00 run is
   terminal `UNVERIFIED` after Postiz acceptance and its 18:30 run exits on
   Affiliate distribution job claim failure. Both schedules are loaded, but
-  constant successful publication remains the immediate runtime blocker.
+  constant successful publication remains the immediate runtime blocker. The
+  x:anicca browser is currently stopped after controlled stale-tab cleanup and
+  cannot be reprovisioned while the disk stop flag remains active.
 - Disk headroom is also a direct runtime blocker: the data volume reached 100%
   with 232 MiB available, causing x-repost 18:30 to fail before creating its
   evidence directory. Rotating only regenerable launchd logs retained recent
@@ -8300,8 +8302,15 @@ Current authoritative state:
   effect. The 19:30 natural run publishes
   `https://x.com/selawmqt/status/2091835568003207246`; provider submission is
   `cmt73hewv000emp0ye2qrnna7`, terminal state is `POSTED`, and owner exit is 0.
-  Additional durable headroom is still desirable, but `No space left on device`
-  is no longer the active x-repost failure.
+  Later failures prove that recovery was temporary. APFS VM consumes about
+  26.1 GB and `vm.swapusage` reaches roughly 23.8 GB used; free container space
+  repeatedly falls below 300 MiB. Restarting only the idle x browser removes
+  stale tabs and lowers swap use by about 6 GB, but macOS does not shrink enough
+  swapfiles to meet disk-sentinel's authoritative 11 GiB recovery threshold.
+  `disk-writers.stop` therefore remains set and blocks browser reprovisioning.
+  The next host-level action is an approved Mac restart, followed by exact
+  swap/headroom, launchd, browser identity, x-repost, and x-tweeter readback
+  before any new public effect.
 - Active placement is `elevenlabs-discovered-caption-generator-en-1`; its exact
   X permalink is `https://x.com/selawmqt/status/2091754957448040906`.
 - D01–D15 are complete. D16 has one public quote effect with duplicate zero; its
