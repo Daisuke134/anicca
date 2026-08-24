@@ -748,8 +748,10 @@ jobs remain, it searches the authenticated Upwork market, opens current details,
 select or skip, and atomically persists both the public evidence record and owner-only sealed proposal.
 A static candidate JSON is a cache/output of this Skill, never a human-maintained input dependency.
 The same wake may submit a newly sealed proposal only after a fresh official Connects read proves the
-exact cost is covered and the effect fence is clear. The zero-spend bootstrap remains in force:
-Connects purchase, Plus and boosting require a separately authorized money-policy change.
+exact cost is covered and the effect fence is clear. The owner authorized and completed the one-time
+$15 seed purchase: official history proves 150 Connects (100 purchased plus 50 new-member credit).
+Auto top-up, Plus, boosting and badges remain disabled; any further owner-funded purchase needs a new
+authorization, while later acquisition may reinvest only under the received-cash cap in section 4.4.
 
 Work priority on every wake is `unknown effect → paid deadline/revision → unread client → offer/
 contract → delivery/payment → acquisition → learning experiment`. A failure in discovery cannot stop
