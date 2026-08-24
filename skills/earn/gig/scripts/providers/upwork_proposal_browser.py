@@ -86,7 +86,8 @@ def submit_click_expression(job_id: str) -> str:
     return f'''(()=>{{
 const job={sealed_job},norm=x=>(x||'').replace(/\\s+/g,' ').trim().toLowerCase(),submit=[...document.querySelectorAll('button')].find(x=>['submit proposal','send proposal'].includes(norm(x.innerText)))||document.querySelector('footer .air3-btn-primary,footer button[type="submit"],button[data-test*="submit" i]');
 if(!(location.pathname.includes('/ab/proposals/job/'+job+'/apply')||location.pathname.includes('/nx/proposals/job/'+job+'/apply'))||!submit||submit.disabled)throw Error('upwork_submit_control_missing');
-submit.focus();return true;
+submit.scrollIntoView({{block:'center',inline:'center'}});submit.focus();const r=submit.getBoundingClientRect();
+return{{x:r.left+r.width/2,y:r.top+r.height/2}};
 }})()'''
 
 
@@ -188,17 +189,26 @@ async def submit_proposal_after_fence(
             snapshot = filled.get("result", {}).get("result", {}).get("value")
             preflight = validate_preflight(snapshot, payload)
             require_effect_start(preflight, start_effect)
-            await _call(ws, "Runtime.evaluate", {
+            control = await _call(ws, "Runtime.evaluate", {
                 "expression": submit_click_expression(job_id), "returnByValue": True,
             }, cid + 1)
-            await _call(ws, "Input.dispatchKeyEvent", {
-                "type": "rawKeyDown", "key": "Enter", "code": "Enter",
+            point = control.get("result", {}).get("result", {}).get("value")
+            if (
+                not isinstance(point, dict)
+                or not isinstance(point.get("x"), (int, float))
+                or not isinstance(point.get("y"), (int, float))
+            ):
+                raise ValueError("upwork_submit_control_missing")
+            await _call(ws, "Input.dispatchMouseEvent", {
+                "type": "mouseMoved", "x": point["x"], "y": point["y"],
             }, cid + 2)
-            await _call(ws, "Input.dispatchKeyEvent", {
-                "type": "char", "key": "Enter", "code": "Enter", "text": "\r",
+            await _call(ws, "Input.dispatchMouseEvent", {
+                "type": "mousePressed", "x": point["x"], "y": point["y"],
+                "button": "left", "clickCount": 1,
             }, cid + 3)
-            await _call(ws, "Input.dispatchKeyEvent", {
-                "type": "keyUp", "key": "Enter", "code": "Enter",
+            await _call(ws, "Input.dispatchMouseEvent", {
+                "type": "mouseReleased", "x": point["x"], "y": point["y"],
+                "button": "left", "clickCount": 1,
             }, cid + 4)
             await asyncio.sleep(5)
             readback = await _call(ws, "Runtime.evaluate", {
