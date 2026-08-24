@@ -656,9 +656,11 @@ App and Website, AI/MCP integration, Claude marketing, Voice AI product work and
 all became submit. Missing Skill, unverified payment, new-client history, duration and Connects alone
 produced zero skip. The production transport then closed AI/MCP proposal `2091839815472439297`,
 Japanese translation proposal `2091842071424061441`, and OpenClaw agent proposal
-`2091845545298235393`. The latest exact Connects delta is `67 -> 46`; each effect has one official ID,
-one ledger row and one instant Telegram event. Current official truth is seven submitted proposals,
-46 Connects, zero replies, zero offers, zero contracts and payout-received USD 0.
+`2091845545298235393`. An earlier effect-0 market-survey intent was later reconciled across the
+intervening 21-Connect verified effect, reopened at the current balance and submitted as proposal
+`2091851780096692225`. Its exact Connects delta is `46 -> 35` and Telegram ACK is `32209`. Each effect
+has one official ID, one ledger row and one instant Telegram event. Current official truth is eight
+submitted proposals, 35 Connects, zero replies, zero offers, zero contracts and payout-received USD 0.
 
 A Skill bundle is immutable and versioned:
 
@@ -1023,9 +1025,9 @@ count. Ten qualified proposals are only the first diagnostic checkpoint: the lea
 and reply evidence there while acquisition continues for every independently profitable candidate.
 Worker count expands from queue depth and measured browser/model/provider capacity and contracts only
 when observed errors, throttling, duplicate risk, deadlines or negative economics require backpressure.
-Current official truth is seven submitted proposals, 46 Connects, zero replies, zero offers and zero
-contracts. The latest is proposal `2091845545298235393` for job `~022091828786665166180`, with
-official Connects `67 -> 46`. Runtime count refreshes on the following five-minute wake; the effect
+Current official truth is eight submitted proposals, 35 Connects, zero replies, zero offers and zero
+contracts. The latest is proposal `2091851780096692225` for job `~022091841678706169465`, with
+official Connects `46 -> 35`. Runtime count refreshes on the following five-minute wake; the effect
 ledger and Proposal ID are authoritative immediately. Public proposal cost varies by job and can change, so the remaining proposal count is
 unknown until each fresh preflight; invitations and Direct Offers are prioritized because replying
 costs no Connects. No boost, badge, Plus, auto-top-up or new owner-funded Connects purchase is implied.
