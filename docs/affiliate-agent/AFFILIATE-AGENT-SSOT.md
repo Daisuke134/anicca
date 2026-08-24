@@ -7801,9 +7801,19 @@ the named production evidence:
   `WAITING_FOR_POST_PROVIDER_READBACK`; transactions 0 OBSERVED; all commission
   statuses zero; approved/paid `NO_APPROVED_OR_PAID`; cost UNKNOWN. No missing
   denominator is replaced with zero. D12 is now the first unchecked item.
-- [ ] **D12 Bottleneck decision contract.** Give that row to the model and require
+- [x] **D12 Bottleneck decision contract.** Give that row to the model and require
   one bottleneck, one selected variable, one falsifiable hypothesis, one action,
   and one official success metric. Deterministic code binds evidence only.
+  Done at `f6404f2f0`: one sealed D11 transition triggers one account-2 Terra
+  decision and replay triggers zero model calls. Production decision
+  `5566eeea...` binds funnel `08320d89...`, selects bottleneck `reach`, exposure
+  `insufficient`, variable `distribution_mix`, and action to distribute the
+  existing placement through one additional relevant channel. Its model-chosen
+  official metric is exact placement impressions at least 100. Evidence states
+  impressions 7 are insufficient, entry/CTA are unknown, provider clicks lack
+  post baseline, and zero transactions do not prove a transaction bottleneck.
+  Provider usage is 11,482 tokens with pass limit 32,768 and no daily cap. D13
+  is now the first unchecked item.
 - [ ] **D13 Active-experiment lock.** Permit one active lineage and reject
   sibling experiments, stale controls, and overlapping measurement windows.
 - [ ] **D14 Exposure gate.** Prevent a conversion verdict until the active
