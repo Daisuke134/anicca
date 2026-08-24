@@ -1,0 +1,59 @@
+#!/usr/bin/env python3
+"""Run one sealed marketplace form intent through the common Terra browser ACI."""
+
+from __future__ import annotations
+
+import json
+import os
+import subprocess
+import sys
+import time
+from pathlib import Path
+from typing import Any
+
+
+HERE = Path(__file__).resolve().parent
+GIG_ROOT = HERE.parent
+DEFAULT_RUNNER = GIG_ROOT / "agent-runner/agent_runner.py"
+DEFAULT_SCHEMA = GIG_ROOT / "schemas/gig_step_result.schema.json"
+DEFAULT_EVIDENCE = Path.home() / "gig/evidence/market-form-operator"
+
+
+def operate(
+    *, provider: str, resource_id: str, form_url: str, sealed_intent: dict[str, Any],
+    runner: Path = DEFAULT_RUNNER, schema: Path = DEFAULT_SCHEMA,
+    evidence_root: Path = DEFAULT_EVIDENCE,
+) -> dict[str, Any]:
+    evidence = evidence_root / f"{time.time_ns()}-{provider}-{resource_id.lstrip('~')}"
+    evidence.mkdir(parents=True, exist_ok=False, mode=0o700)
+    intent = json.dumps(sealed_intent, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    prompt = f"""Execute one already-authorized marketplace form intent using the current authenticated
+browser at the configured CDP endpoint. Provider={provider}; resource={resource_id}; target={form_url}.
+SEALED_INTENT={intent}
+
+Inspect the live page yourself. Open or locate the exact target, understand its current form, fill every
+required field from SEALED_INTENT, answer screening questions exactly, handle ordinary validation and
+UI feedback, review the final values, and submit exactly once. Do not use hardcoded provider selectors,
+do not edit code, do not invent facts, do not change price/scope/content, and do not buy, boost,
+subscribe, alter account settings, or open another opportunity. Ordinary navigation and non-financial
+acknowledgements are allowed. CAPTCHA, identity, tax and personal legal declarations are blocked.
+Return ok only after the provider visibly leaves the editable form or shows provider-authored success;
+the parent will independently verify the official ID and balance, so never claim those from inference."""
+    completed = subprocess.run([
+        sys.executable, str(runner), "--task-class", "browser-lane-agent", "--prompt-stdin",
+        "--schema", str(schema), "--evidence-dir", str(evidence),
+        "--task-label", "market-form-effect", "--loop", "gig",
+        "--workdir", str(Path.home()), "--timeout-seconds", "900",
+    ], input=prompt, text=True, capture_output=True, timeout=930, check=False)
+    if completed.returncode != 0:
+        raise RuntimeError("market_form_operator_failed")
+    summary = json.loads((evidence / "summary.json").read_text(encoding="utf-8"))
+    result_path = Path(str(summary.get("result_path") or "")).resolve()
+    result_path.relative_to(evidence.resolve())
+    result = json.loads(result_path.read_text(encoding="utf-8"))
+    if result.get("status") != "ok":
+        raise RuntimeError("market_form_operator_not_ok")
+    for path in evidence.rglob("*"):
+        if path.is_file() and not path.is_symlink():
+            os.chmod(path, 0o600)
+    return result
