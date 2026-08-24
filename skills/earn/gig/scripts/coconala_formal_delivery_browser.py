@@ -811,11 +811,13 @@ def persist(contract: dict[str, Any], verified: dict[str, Any], screenshot: byte
         # True was hardcoded here while a 定期購入 room has no checkbox at all -- the
         # evidence gate downstream trusts this field, so it must state the room's truth.
         "formal_delivery_control_checked_before_send": mode == "formal_checkbox",
-        "latest_seller_attachment": {
+        "latest_seller_attachment": None if contract.get("linked_asset_delivery") is True else {
             "filename": contract["artifact"].name,
             "size_bytes": contract["artifact"].stat().st_size,
             "message": str(matched.get("text") or ""),
         },
+        "latest_seller_message": str(matched.get("text") or ""),
+        "linked_asset_delivery": contract.get("linked_asset_delivery") is True,
         "formal_effect_key": contract["event_key"],
     }
     queue_outer = {
@@ -833,6 +835,7 @@ def persist(contract: dict[str, Any], verified: dict[str, Any], screenshot: byte
         "screenshot_path": str(queue_screenshot_path),
         "live_dom_path": str(queue_dom_path),
         "formal_effect_key": contract["event_key"],
+        "linked_asset_delivery": contract.get("linked_asset_delivery") is True,
     }
     collector.atomic_json(queue_dom_path, queue_live)
     collector.atomic_json(queue_manifest_path, queue_outer)

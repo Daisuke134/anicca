@@ -33,6 +33,30 @@ def _live_dom_url(live_dom: Any) -> tuple[str, str | None]:
     return canonical or legacy, None
 
 
+def _formal_transaction_state_ready(value: Any) -> bool:
+    return value in {"納品確認待ち", "取引完了"}
+
+
+def _linked_asset_delivery(evidence: dict[str, Any]) -> bool:
+    required = evidence.get("required_assets")
+    produced = evidence.get("artifact_assets")
+    if not isinstance(required, list) or not required or not isinstance(produced, list):
+        return False
+    counts: dict[str, int] = {}
+    for row in produced:
+        if isinstance(row, dict) and row.get("type") == "linked_asset":
+            asset_id = str(row.get("asset_id") or "")
+            counts[asset_id] = counts.get(asset_id, 0) + 1
+    return all(
+        isinstance(row, dict)
+        and row.get("kind") == "linked_asset"
+        and isinstance(row.get("minimum_count"), int)
+        and row["minimum_count"] > 0
+        and counts.get(str(row.get("asset_id") or ""), 0) >= row["minimum_count"]
+        for row in required
+    )
+
+
 def validate_paid_queue(
     evidence_dir: str | Path,
     expected_item: dict[str, Any] | None = None,
@@ -126,7 +150,7 @@ def validate_paid_queue(
         else:
             if live_dom.get("formal_delivery_control_checked_before_send") is not True:
                 errors.append("formal_delivery_checked_readback_missing")
-            if live_dom.get("transaction_state") != "納品確認待ち":
+            if not _formal_transaction_state_ready(live_dom.get("transaction_state")):
                 errors.append("formal_delivery_transaction_state_missing")
     artifact_version = str(payload.get("artifact_version") or "")
     package_hash = str(payload.get("package_sha256") or "")
@@ -143,6 +167,7 @@ def validate_paid_queue(
     expected_evidence = expected_item.get("delivery_evidence") if isinstance(expected_item, dict) else None
     if not isinstance(expected_evidence, dict):
         expected_evidence = {}
+    linked_asset_delivery = _linked_asset_delivery(expected_evidence)
     if expected_item:
         expected_talkroom_id = str(expected_item.get("talkroom_id") or expected_talkroom_id)
         expected_url = str(expected_item.get("marketplace_url") or expected_item.get("talkroom_url") or expected_url)
@@ -179,7 +204,14 @@ def validate_paid_queue(
         elif hashlib.sha256(seller_message.encode("utf-8")).hexdigest() != message_hash:
             errors.append("paid_answer_message_hash_mismatch")
         return not errors, errors
-    if not isinstance(attachment, dict):
+    if linked_asset_delivery:
+        expected_message = str(expected_evidence.get("customer_message") or "").strip()
+        observed_message = str(live_dom.get("latest_seller_message") or "").strip()
+        if not expected_message or observed_message != expected_message:
+            errors.append("linked_asset_message_readback_mismatch")
+        if attachment is not None:
+            errors.append("linked_asset_unexpected_attachment")
+    elif not isinstance(attachment, dict):
         errors.append("latest_seller_attachment_missing")
     else:
         if artifact_basename and attachment.get("filename") != artifact_basename:

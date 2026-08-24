@@ -330,6 +330,17 @@ def test_formal_browser_accepts_latest_buyer_approval_and_linked_asset():
     assert formal._linked_asset_delivery(queue["delivery_evidence"]) is True
 
 
+def test_paid_queue_accepts_completed_linked_formal_readback():
+    evidence = load("paid_queue_evidence")
+    linked = {
+        "required_assets": [{"asset_id": "package", "kind": "linked_asset", "minimum_count": 1}],
+        "artifact_assets": [{"asset_id": "package", "type": "linked_asset"}],
+    }
+
+    assert evidence._linked_asset_delivery(linked) is True
+    assert evidence._formal_transaction_state_ready("取引完了") is True
+
+
 def test_wait_accepts_supplementary_receipt_when_another_has_readback(tmp_path):
     remote = load("paid_remote_result")
     root, feedback, digest = blocked_project(tmp_path)
