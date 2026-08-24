@@ -122,21 +122,24 @@ def rank_candidates(
 ) -> tuple[str, ...]:
     if chunk_size < 1:
         raise ValueError("chunk_size must be positive")
-    identified = [
-        {**row, "candidate_id": f"candidate-{index:06d}"}
-        for index, row in enumerate(candidates)
-    ]
+    def select(rows: list[dict[str, str]]) -> tuple[str, ...]:
+        presented = [
+            {**row, "candidate_id": f"c{index}"}
+            for index, row in enumerate(rows)
+        ]
+        return validate_shortlist(rank_chunk(presented), presented)
+
     finalists: list[dict[str, str]] = []
-    by_url = {row["url"].casefold(): row for row in identified}
-    for offset in range(0, len(identified), chunk_size):
-        chunk = identified[offset : offset + chunk_size]
-        for url in validate_shortlist(rank_chunk(chunk), chunk):
+    by_url = {row["url"].casefold(): row for row in candidates}
+    for offset in range(0, len(candidates), chunk_size):
+        chunk = candidates[offset : offset + chunk_size]
+        for url in select(chunk):
             row = by_url[url.casefold()]
             if row not in finalists:
                 finalists.append(row)
     if len(finalists) <= 8:
         return tuple(row["url"] for row in finalists)
-    return validate_shortlist(rank_chunk(finalists), finalists)
+    return select(finalists)
 
 
 def search_until_qualified(

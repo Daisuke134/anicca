@@ -32,9 +32,11 @@ class WorkdayQualificationTests(unittest.TestCase):
             for index in range(20)
         ]
         calls = []
+        candidate_id_calls = []
 
         def rank(chunk):
             calls.append([row["url"] for row in chunk])
+            candidate_id_calls.append([row["candidate_id"] for row in chunk])
             return {"ranked_candidate_ids": [chunk[-1]["candidate_id"]]}
 
         result = rank_candidates(
@@ -46,6 +48,7 @@ class WorkdayQualificationTests(unittest.TestCase):
         self.assertEqual(len(calls), 11)
         self.assertEqual(len(calls[-1]), 10)
         self.assertEqual(result, (calls[-1][-1],))
+        self.assertTrue(all(ids[0] == "c0" for ids in candidate_id_calls))
 
     def test_snapshot_skips_failed_source_and_keeps_other_company(self):
         with tempfile.TemporaryDirectory() as directory:
