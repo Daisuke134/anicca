@@ -17,7 +17,7 @@ import paid_remote_result  # noqa: E402
 import reconcile_paid_delivery  # noqa: E402
 import step_result_status  # noqa: E402
 import project_ledger  # noqa: E402
-from private_data_boundary import restricted_attachment_paths  # noqa: E402
+from private_data_boundary import redact_prompt_text, restricted_attachment_paths  # noqa: E402
 from telegram_outbox import TelegramOutbox, dispatch_one  # noqa: E402
 from telegram_report import OpenClawTelegramTransport  # noqa: E402
 from gig_paths import BROWSER_DIR, REPO_ROOT, RUNNER_DIR  # noqa: E402

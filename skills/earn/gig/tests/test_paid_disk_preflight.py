@@ -20,6 +20,12 @@ def _load_paid():
     return module
 
 
+def test_paid_browser_diagnostics_use_private_data_redactor():
+    paid = _load_paid()
+
+    assert paid.redact_prompt_text("password:secret-value") == "password:[REDACTED]"
+
+
 def test_inflight_gate_reports_pressure(monkeypatch):
     paid = _load_paid()
     monkeypatch.setattr(paid, "disk_headroom_ok", lambda: False)
