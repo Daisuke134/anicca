@@ -16,6 +16,10 @@ def detect_provider(url: str) -> str:
         return "workday"
     if hostname == "myworkdaysite.com" or hostname.endswith(".myworkdaysite.com"):
         return "workday"
+    if hostname in {"job-boards.greenhouse.io", "boards.greenhouse.io"}:
+        return "greenhouse"
+    if hostname == "jobs.lever.co":
+        return "lever"
     return "generic"
 
 
@@ -38,24 +42,8 @@ def _control_text(control: dict[str, Any]) -> str:
     )
 
 
-def _is_email_control(control: dict[str, Any]) -> bool:
-    control_type = _normalized(control.get("type"))
-    if control_type == "email":
-        return True
-    if control_type not in {"", "text"}:
-        return False
-    return any(
-        marker in _normalized(control.get(field))
-        for field in ("label", "name", "text")
-        for marker in ("email", "メール")
-    )
-
-
 def _is_application_form(controls: list[dict[str, Any]]) -> bool:
-    has_email = any(
-        _is_email_control(control)
-        for control in controls
-    )
+    has_email = any(_normalized(control.get("type")) == "email" for control in controls)
     has_resume = any(_normalized(control.get("type")) == "file" for control in controls)
     has_submit = any(
         "submit application" in _control_text(control)
@@ -72,17 +60,20 @@ def _is_apply_control(control: dict[str, Any]) -> bool:
     text = _control_text(control)
     role = _normalized(control.get("role"))
     tag = _normalized(control.get("tag"))
-    visible_text = _normalized(control.get("text"))
-    is_apply_text = visible_text in {
-        "apply",
-        "apply now",
-        "apply for this job",
-        "apply for this role",
-    }
     return (
-        is_apply_text
+        _normalized(control.get("text")) == "apply"
         and (role in {"button", "link"} or tag in {"a", "button"})
-        and "submit application" not in text
+        and "application" not in text
+    )
+
+
+def _is_ashby_apply_control(control: dict[str, Any]) -> bool:
+    """Recognize Ashby's job-page CTA before the application form opens."""
+    text = _normalized(control.get("text"))
+    role = _normalized(control.get("role"))
+    tag = _normalized(control.get("tag"))
+    return text == "apply for this job" and (
+        role in {"button", "link"} or tag in {"a", "button"}
     )
 
 
@@ -92,7 +83,7 @@ def _has_exact_text(controls: list[dict[str, Any]], value: str) -> bool:
 
 
 def _is_workday_apply_choice(controls: list[dict[str, Any]]) -> bool:
-    english_labels = all(
+    return all(
         _has_exact_text(controls, text)
         for text in (
             "Autofill with Resume",
@@ -100,30 +91,18 @@ def _is_workday_apply_choice(controls: list[dict[str, Any]]) -> bool:
             "Use My Last Application",
         )
     )
-    japanese_labels = all(
-        _has_exact_text(controls, text)
-        for text in ("手動で応募", "自分の前回の応募情報を使用")
-    )
-    return english_labels or japanese_labels
 
 
 def _is_workday_account_create(controls: list[dict[str, Any]]) -> bool:
+    combined = " ".join(_control_text(control) for control in controls)
     password_count = sum(
         _normalized(control.get("type")) == "password" for control in controls
     )
-    has_email = any(_is_email_control(control) for control in controls)
-    has_password_confirmation = any(
-        marker in _control_text(control)
-        for control in controls
-        for marker in (
-            "verify new password",
-            "password confirmation",
-            "新しいパスワードの確認",
-            "パスワードの確認",
-        )
+    has_consent = any(
+        _normalized(control.get("type")) == "checkbox" for control in controls
     )
     has_create_action = any(
-        _normalized(control.get("text")) in {"create account", "アカウントの作成"}
+        _normalized(control.get("text")) == "create account"
         and (
             _normalized(control.get("role")) == "button"
             or _normalized(control.get("tag")) == "button"
@@ -131,11 +110,114 @@ def _is_workday_account_create(controls: list[dict[str, Any]]) -> bool:
         for control in controls
     )
     return (
-        has_email
-        and has_password_confirmation
+        "email address" in combined
+        and "verify new password" in combined
         and password_count >= 2
+        and has_consent
         and has_create_action
     )
+
+
+def _is_workday_sign_in(controls: list[dict[str, Any]]) -> bool:
+    """Recognize Workday's existing-account authentication form."""
+    # Workday's production form currently renders the email field as
+    # ``<input type="text" ...>`` and exposes ``Email Address*`` as its label
+    # (some tenants use ``name=email`` instead).  Do not require HTML5
+    # ``type=email`` or the real sign-in surface is misclassified as ``none``.
+    has_email = any(
+        _normalized(control.get("type")) == "email"
+        or (
+            _normalized(control.get("tag")) == "input"
+            and (
+                "email address" in _normalized(control.get("label"))
+                or _normalized(control.get("name")) == "email"
+            )
+        )
+        for control in controls
+    )
+    has_password = any(
+        _normalized(control.get("type")) == "password" for control in controls
+    )
+    # An incomplete account-create form can already contain one password field
+    # and a generic Sign In action; its verify-password marker wins.
+    combined = " ".join(_control_text(control) for control in controls)
+    if "verify new password" in combined:
+        return False
+    has_sign_in = any(
+        _normalized(control.get("text")) == "sign in"
+        and (
+            _normalized(control.get("role")) == "button"
+            or _normalized(control.get("tag")) == "button"
+        )
+        for control in controls
+    )
+    return has_email and has_password and has_sign_in
+
+
+def _is_workday_sign_in_entry(controls: list[dict[str, Any]]) -> bool:
+    """Recognize the post-account-creation Sign In entry surface."""
+    sign_in_count = sum(
+        _normalized(control.get("text")) == "sign in"
+        and (
+            _normalized(control.get("role")) == "button"
+            or _normalized(control.get("tag")) == "button"
+        )
+        for control in controls
+    )
+    has_auth_fields = any(
+        _normalized(control.get("type")) == "password"
+        or (
+            _normalized(control.get("tag")) == "input"
+            and (
+                "email address" in _normalized(control.get("label"))
+                or _normalized(control.get("name")) == "email"
+            )
+        )
+        for control in controls
+    )
+    return sign_in_count == 1 and not has_auth_fields
+
+
+def _is_workday_application_step(controls: list[dict[str, Any]]) -> bool:
+    """Recognize a rendered multi-step Workday form before final submit.
+
+    Workday first exposes only the step shell while its profile controls load.
+    Once ``Save and Continue`` and at least one My Information field are
+    present, the model/browser lane may fill this step; it is never claimable.
+    """
+
+    has_save = _has_exact_text(controls, "Save and Continue")
+    profile_markers = (
+        "how did you hear",
+        "legal name",
+        "phone number",
+    )
+    has_profile_control = any(
+        _normalized(control.get("tag")) in {"input", "textarea", "select"}
+        and any(marker in _control_text(control) for marker in profile_markers)
+        for control in controls
+    )
+    return has_save and has_profile_control
+
+
+def _is_workday_review(controls: list[dict[str, Any]]) -> bool:
+    """Recognize Workday's final review surface without claiming a click."""
+
+    for control in controls:
+        text = _normalized(control.get("text"))
+        role = _normalized(control.get("role"))
+        tag = _normalized(control.get("tag"))
+        automation_id = _normalized(control.get("automation_id"))
+        if text != "submit" or not (role in {"button", "link"} or tag in {"a", "button"}):
+            continue
+        if (
+            not automation_id
+            or "submit" in automation_id
+            or "footer" in automation_id
+            or automation_id == "bottom-navigation-next-button"
+        ):
+            return True
+    return False
 
 
 def _validate_snapshot(snapshot: Any) -> dict[str, Any]:
@@ -179,6 +261,16 @@ def evaluate_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
 
     for frame_index, frame in enumerate(value["frames"]):
         controls = frame["controls"]
+        if provider == "workday" and _is_workday_review(controls):
+            base.update(
+                {
+                    "ready": True,
+                    "claim_ready": True,
+                    "surface": "workday_review",
+                    "frame_index": frame_index,
+                }
+            )
+            return base
         if _is_application_form(controls):
             base.update(
                 {
@@ -193,6 +285,17 @@ def evaluate_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
                             else "generic_application"
                         )
                     ),
+                    "frame_index": frame_index,
+                }
+            )
+            return base
+        if provider == "ashby" and any(
+            _is_ashby_apply_control(control) for control in controls
+        ):
+            base.update(
+                {
+                    "ready": True,
+                    "surface": "ashby_job",
                     "frame_index": frame_index,
                 }
             )
@@ -216,6 +319,36 @@ def evaluate_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
                     }
                 )
                 return base
+            if _is_workday_sign_in(controls):
+                base.update(
+                    {
+                        "ready": True,
+                        "surface": "workday_sign_in",
+                        "frame_index": frame_index,
+                    }
+                )
+                return base
+            # A normal Workday job page can expose one generic ``Sign In``
+            # header link.  It is not the application auth-entry surface;
+            # require the committed application route before classifying it.
+            if "/apply" in value["url"].casefold() and _is_workday_sign_in_entry(controls):
+                base.update(
+                    {
+                        "ready": True,
+                        "surface": "workday_sign_in_entry",
+                        "frame_index": frame_index,
+                    }
+                )
+                return base
+            if _is_workday_application_step(controls):
+                base.update(
+                    {
+                        "ready": True,
+                        "surface": "workday_application_step",
+                        "frame_index": frame_index,
+                    }
+                )
+                return base
             if any(_is_apply_control(control) for control in controls):
                 base.update(
                     {
@@ -225,17 +358,6 @@ def evaluate_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
                     }
                 )
                 return base
-        elif any(_is_apply_control(control) for control in controls):
-            base.update(
-                {
-                    "ready": True,
-                    "surface": (
-                        "ashby_job" if provider == "ashby" else "generic_job"
-                    ),
-                    "frame_index": frame_index,
-                }
-            )
-            return base
 
     base["blockers"] = ["application_surface_not_found"]
     return base

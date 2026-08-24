@@ -18,14 +18,24 @@ class LocalSetupTests(unittest.TestCase):
         self.config = self.root / "config"
         self.state = self.root / "state"
         self.data = self.root / "data"
+        self.codex_home = self.root / "codex-home"
         self.bin = self.root / "bin"
         self.bin.mkdir(parents=True)
+        self.codex_home.mkdir()
+        self.codex_auth = self.codex_home / "auth.json"
+        self.codex_auth.write_text('{"test":"credential"}\n', encoding="utf-8")
+        self.codex_auth.chmod(0o600)
         self.profile = self.root / "source-profile.json"
+        self.resume = self.root / "resume.pdf"
+        self.resume.write_bytes(b"%PDF-1.4\nportable resume\n")
         self.profile.write_text(
             json.dumps(
                 {
                     "version": 1,
                     "candidate": {"name": "Portable Candidate"},
+                    "materials": {
+                        "resumes": {"engineering": str(self.resume)}
+                    },
                     "facts": [
                         {
                             "id": "verified-experience",
@@ -54,6 +64,7 @@ class LocalSetupTests(unittest.TestCase):
             "XDG_CONFIG_HOME": str(self.config),
             "XDG_STATE_HOME": str(self.state),
             "XDG_DATA_HOME": str(self.data),
+            "CODEX_HOME": str(self.codex_home),
             "PATH": f"{self.bin}:/usr/bin:/bin",
             "PYTHONPATH": str(APP_ROOT),
         }
@@ -87,12 +98,15 @@ class LocalSetupTests(unittest.TestCase):
         receipt = json.loads(result.stdout)
         profile = self.config / "anicca" / "job-search" / "profile.json"
         install = self.config / "anicca" / "job-search" / "install.json"
+        auth_alias = self.config / "anicca" / "job-search" / "codex-auth.json"
         self.assertEqual(receipt["provider"], "codex")
         self.assertEqual(receipt["scheduler"], "none")
         self.assertEqual(receipt["profile_path"], str(profile))
         self.assertEqual(profile.stat().st_mode & 0o777, 0o600)
         self.assertEqual(install.stat().st_mode & 0o777, 0o600)
         self.assertEqual(profile.parent.stat().st_mode & 0o777, 0o700)
+        self.assertTrue(auth_alias.is_symlink())
+        self.assertEqual(auth_alias.resolve(strict=True), self.codex_auth.resolve())
         self.assertEqual(
             (self.state / "anicca" / "job-search").stat().st_mode & 0o777,
             0o700,
@@ -101,10 +115,17 @@ class LocalSetupTests(unittest.TestCase):
             (self.data / "anicca" / "job-search").stat().st_mode & 0o777,
             0o700,
         )
+        manifest = self.data / "anicca/job-search/materials/manifest.v1.json"
+        self.assertEqual(manifest.stat().st_mode & 0o777, 0o600)
+        self.assertEqual(json.loads(manifest.read_text())["resumes"], {
+            "engineering": "resumes/engineering.pdf",
+            "japanese": "resumes/japanese.pdf",
+            "technical_business": "resumes/technical_business.pdf",
+        })
         encoded = install.read_text(encoding="utf-8")
         self.assertNotIn("Logged in using ChatGPT", encoded)
         self.assertNotIn("token", encoded.lower())
-        self.assertNotIn("/Users/operator", encoded)
+        self.assertNotIn("/Users/anicca", encoded)
 
     def test_auto_falls_through_to_authenticated_claude(self):
         self._write_executable("codex", "exit 1")

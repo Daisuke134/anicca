@@ -3,6 +3,11 @@ set -euo pipefail
 
 SCRIPT_DIR="${0:A:h}"
 source "$SCRIPT_DIR/runtime-paths.sh"
+source "$SCRIPT_DIR/private-env.sh"
+job_search_load_private_env GOG_KEYRING_PASSWORD || {
+  print -u2 "job-search inbox: GOG_KEYRING_PASSWORD is unavailable"
+  exit 78
+}
 
 RUN_ID="inbox-$(date +%Y%m%d-%H%M%S)"
 EVIDENCE="$JOB_SEARCH_STATE_ROOT/evidence/$RUN_ID"
@@ -14,6 +19,7 @@ OUTBOX_DATABASE="$JOB_SEARCH_STATE_ROOT/ledger.sqlite3"
 PREP_STATUS="$EVIDENCE/prep-status.json"
 TELEGRAM_OUTBOX="$JOB_SEARCH_STATE_ROOT/telegram-outbox.sqlite3"
 GMAIL_ACCOUNT="${JOB_SEARCH_GMAIL_ACCOUNT:-}"
+export JOB_SEARCH_MACHINE_CREDENTIALS="${XDG_DATA_HOME:-$HOME/.local/share}/anicca/credentials.json"
 
 if [[ -z "$GMAIL_ACCOUNT" ]]; then
   GMAIL_ACCOUNT=$("$JOB_SEARCH_JQ" -er \
@@ -27,26 +33,27 @@ chmod 700 \
   "$EVIDENCE" \
   "$JOB_SEARCH_STATE_ROOT/logs"
 export PYTHONPATH="$JOB_SEARCH_APP_ROOT"
-"$JOB_SEARCH_PYTHON" -m job_search_loop.submission_confirmation reconcile \
-  --account "$GMAIL_ACCOUNT" \
-  --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
-  --seen "$SEEN_STATE" \
-  --output "$EVIDENCE/submission-confirmations.json"
-"$JOB_SEARCH_PYTHON" -m job_search_loop.application_reporting deliver \
-  --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
-  --outbox "$TELEGRAM_OUTBOX" \
-  --media-root "$JOB_SEARCH_TELEGRAM_MEDIA" \
-  --output "$EVIDENCE/resume-deliver-reconciled.json"
-JAPAN_DAY=$(TZ=Asia/Tokyo /bin/date +%F)
-"$JOB_SEARCH_PYTHON" -m job_search_loop.summary \
-  --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
-  --output "$JOB_SEARCH_STATE_ROOT/summary.v1.json" \
-  --day "$JAPAN_DAY" \
-  --model-route "${AGENT_RUNNER_PROVIDER:-unconfigured}"
 "$JOB_SEARCH_PYTHON" -m job_search_loop.interview_prep deliver \
   --database "$PREP_DATABASE" \
   --outbox "$OUTBOX_DATABASE" \
   --output "$EVIDENCE/prep-deliver-before.json"
+"$JOB_SEARCH_PYTHON" -m job_search_loop.submission_confirmation reconcile \
+  --account "$GMAIL_ACCOUNT" \
+  --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
+  --seen "$SEEN_STATE" \
+  --output "$EVIDENCE/submission-confirmations-before.json"
+"$JOB_SEARCH_PYTHON" -m job_search_loop.application_reporting deliver \
+  --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
+  --outbox "$TELEGRAM_OUTBOX" \
+  --media-root "$JOB_SEARCH_TELEGRAM_MEDIA" \
+  --output "$EVIDENCE/resume-deliver-before.json"
+JAPAN_DAY=$(TZ=Asia/Tokyo /bin/date +%F)
+"$JOB_SEARCH_PYTHON" -m job_search_loop.summary \
+  --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
+  --output "$JOB_SEARCH_STATE_ROOT/summary.v2.json" \
+  --compat-output "$JOB_SEARCH_STATE_ROOT/summary.v1.json" \
+  --day "$JAPAN_DAY" \
+  --model-route "${AGENT_RUNNER_PROVIDER:-unconfigured}"
 "$JOB_SEARCH_PYTHON" -m job_search_loop.inbox scan \
   --account "$GMAIL_ACCOUNT" \
   --state "$SEEN_STATE" \
@@ -63,7 +70,48 @@ JAPAN_DAY=$(TZ=Asia/Tokyo /bin/date +%F)
   --profile "$JOB_SEARCH_PROFILE"
 NEW_COUNT=$("$JOB_SEARCH_JQ" -r '.new_count' "$CANDIDATES")
 PENDING_PREP_COUNT=$("$JOB_SEARCH_JQ" -r '.pending_count' "$PREP_STATUS")
+RESET_COUNT=$("$JOB_SEARCH_JQ" -r '
+  [.messages[] | select(
+    (.subject | contains("Reset your password for your candidate account")) and
+    (.sender | ascii_downcase | contains("@otp.workday.com"))
+  )] | length' "$CANDIDATES")
+if [[ "$NEW_COUNT" -gt 0 && "$RESET_COUNT" == "$NEW_COUNT" ]]; then
+  RESET_RECEIPTS="$EVIDENCE/workday-account-mail-receipts.jsonl"
+  RESET_RESULT="$EVIDENCE/workday-account-mail-result.json"
+  : >"$RESET_RECEIPTS"
+  "$JOB_SEARCH_JQ" -r '.messages[] | [.thread_id,.message_id] | @tsv' "$CANDIDATES" | \
+    while IFS=$'\t' read -r thread_id message_id; do
+    "$JOB_SEARCH_PYTHON" -m job_search_loop.workday_account_mail \
+      --account "$GMAIL_ACCOUNT" \
+      --thread-id "$thread_id" \
+      --message-id "$message_id" \
+      --credential-store "$JOB_SEARCH_MACHINE_CREDENTIALS" \
+      --database "$JOB_SEARCH_STATE_ROOT/workday-verifications.sqlite3" \
+      --endpoint "http://127.0.0.1:9222" \
+      >>"$RESET_RECEIPTS"
+  done
+  "$JOB_SEARCH_JQ" -s \
+    --argjson messages "$("$JOB_SEARCH_JQ" '.message_ids' "$CANDIDATES")" \
+    --argjson threads "$("$JOB_SEARCH_JQ" '.thread_ids' "$CANDIDATES")" \
+    '{status:"workday_account_mail_processed",processed_threads:($threads|length),processed_thread_ids:$threads,processed_message_ids:$messages,calendar_events:[],replies:[],assessments:[],prep_packs:[],verifications:.,reports:[]}' \
+    "$RESET_RECEIPTS" >"$RESET_RESULT"
+  "$JOB_SEARCH_PYTHON" -m job_search_loop.inbox mark \
+    --state "$SEEN_STATE" \
+    --input "$CANDIDATES" \
+    --result "$RESET_RESULT"
+  exit 0
+fi
 if [[ "$NEW_COUNT" == "0" && "$PENDING_PREP_COUNT" == "0" ]]; then
+  "$JOB_SEARCH_PYTHON" -m job_search_loop.submission_confirmation reconcile \
+    --account "$GMAIL_ACCOUNT" \
+    --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
+    --seen "$SEEN_STATE" \
+    --output "$EVIDENCE/submission-confirmations.json"
+  "$JOB_SEARCH_PYTHON" -m job_search_loop.application_reporting deliver \
+    --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
+    --outbox "$TELEGRAM_OUTBOX" \
+    --media-root "$JOB_SEARCH_TELEGRAM_MEDIA" \
+    --output "$EVIDENCE/resume-deliver-reconciled.json"
   exit 0
 fi
 set +e
@@ -95,36 +143,22 @@ esac
   --state "$SEEN_STATE" \
   --input "$CANDIDATES" \
   --result "$RESULT_PATH"
-"$JOB_SEARCH_PYTHON" -m job_search_loop.mercor_work_sync \
-  --result "$RESULT_PATH" \
-  --store "$JOB_SEARCH_STATE_ROOT/mercor/work-events.jsonl" \
+"$JOB_SEARCH_PYTHON" -m job_search_loop.submission_confirmation reconcile \
+  --account "$GMAIL_ACCOUNT" \
+  --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
+  --seen "$SEEN_STATE" \
+  --output "$EVIDENCE/submission-confirmations.json"
+"$JOB_SEARCH_PYTHON" -m job_search_loop.application_reporting deliver \
+  --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
   --outbox "$TELEGRAM_OUTBOX" \
-  --output "$EVIDENCE/mercor-work-sync.json"
-"$JOB_SEARCH_PYTHON" - "$RESULT_PATH" "$JOB_SEARCH_STATE_ROOT/mercor/work-events.jsonl" "$TELEGRAM_OUTBOX" "$EVIDENCE/mercor-calendar-sync.json" <<'PY'
-import json
-import sys
-from pathlib import Path
-from job_search_loop.mercor_calendar_sync import sync_calendar_events
-
-result_path, store_path, outbox_path, output_path = map(Path, sys.argv[1:])
-payload = json.loads(result_path.read_text(encoding="utf-8"))
-value = sync_calendar_events(payload=payload, store_path=store_path, outbox_path=outbox_path)
-output_path.write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-output_path.chmod(0o600)
-print(json.dumps(value, ensure_ascii=False))
-PY
-MERCOR_EARNINGS_SNAPSHOT="${MERCOR_EARNINGS_SNAPSHOT:-$JOB_SEARCH_STATE_ROOT/mercor/earnings-readback.json}"
-if [[ -f "$MERCOR_EARNINGS_SNAPSHOT" ]]; then
-  "$JOB_SEARCH_PYTHON" -m job_search_loop.mercor_earnings_sync \
-    --snapshot "$MERCOR_EARNINGS_SNAPSHOT" \
-    --store "$JOB_SEARCH_STATE_ROOT/mercor/work-events.jsonl" \
-    --outbox "$TELEGRAM_OUTBOX" \
-    --output "$EVIDENCE/mercor-earnings-sync.json"
-else
-  printf '%s\n' '{"status":"not_observed","synced_count":0,"events":[],"reason":"no live earnings snapshot"}' \
-    >"$EVIDENCE/mercor-earnings-sync.json"
-  chmod 600 "$EVIDENCE/mercor-earnings-sync.json"
-fi
+  --media-root "$JOB_SEARCH_TELEGRAM_MEDIA" \
+  --output "$EVIDENCE/resume-deliver-reconciled.json"
+"$JOB_SEARCH_PYTHON" -m job_search_loop.summary \
+  --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
+  --output "$JOB_SEARCH_STATE_ROOT/summary.v2.json" \
+  --compat-output "$JOB_SEARCH_STATE_ROOT/summary.v1.json" \
+  --day "$JAPAN_DAY" \
+  --model-route "${AGENT_RUNNER_PROVIDER:-unconfigured}"
 "$JOB_SEARCH_PYTHON" -m job_search_loop.interview_prep deliver \
   --database "$PREP_DATABASE" \
   --outbox "$OUTBOX_DATABASE" \

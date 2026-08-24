@@ -13,6 +13,7 @@ from zoneinfo import ZoneInfo
 from .calendar_sync import event_key
 from .interview_prep import PrepStore
 from .recruiter_reply import send_reply_once
+from .state import is_excluded_employer
 
 
 IDENTIFIER_PATTERN = re.compile(r"^[A-Za-z0-9_-]{1,1024}$")
@@ -368,7 +369,9 @@ def ensure_interview_event(
     }
 
 
-def build_confirmation_reply(slot: CandidateSlot) -> dict[str, Any]:
+def build_confirmation_reply(
+    slot: CandidateSlot, *, candidate_name: str
+) -> dict[str, Any]:
     japan = ZoneInfo("Asia/Tokyo")
     start = slot.start.astimezone(japan)
     end = slot.end.astimezone(japan)
@@ -384,7 +387,7 @@ def build_confirmation_reply(slot: CandidateSlot) -> dict[str, Any]:
         "body": (
             "Thank you for sharing the interview options.\n\n"
             f"I confirm {human_time}. I look forward to speaking with you.\n\n"
-            "Best regards,\nDaisuke Narita"
+            f"Best regards,\n{candidate_name.strip()}"
         ),
     }
 
@@ -400,12 +403,18 @@ def confirm_interview_slot(
     thread_id: str,
     company: str,
     role: str,
+    candidate_name: str,
     raw_slots: list[dict[str, Any]],
     now: datetime,
     calendar_executable: str = "/opt/homebrew/bin/gog",
     gmail_executable: str = "/opt/homebrew/bin/gog",
     allow_self_recipient: bool = False,
 ) -> dict[str, Any]:
+    if is_excluded_employer(company):
+        return {
+            "status": "blocked",
+            "blocker": "employer_excluded",
+        }
     slots = normalize_candidate_slots(raw_slots, now=now)
     existing = find_interview_event(
         account=account,
@@ -466,7 +475,7 @@ def confirm_interview_slot(
         account=account,
         inbound_message_id=inbound_message_id,
         inbound_subject=inbound_subject,
-        decision=build_confirmation_reply(selected),
+        decision=build_confirmation_reply(selected, candidate_name=candidate_name),
         executable=gmail_executable,
         allow_self_recipient=allow_self_recipient,
     )

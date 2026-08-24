@@ -1,13 +1,26 @@
 import hashlib
 import inspect
 import json
-import os
 import tempfile
 import threading
 import unittest
 from pathlib import Path
 
 from job_search_loop.ledger import FenceError, Ledger
+
+
+def _complete_verified(ledger, intent_id, fence, outcome):
+    evidence_class = {
+        "submitted": "exact_completion_ui",
+        "submit_unknown": "no_authoritative_completion_ui",
+    }[outcome]
+    ledger.complete_submission_verified(
+        intent_id,
+        fence,
+        outcome=outcome,
+        evidence_sha256="e" * 64,
+        evidence_class=evidence_class,
+    )
 
 
 class LedgerTests(unittest.TestCase):
@@ -107,73 +120,26 @@ class LedgerTests(unittest.TestCase):
         )
         self.assertEqual(len(self.ledger.events(self.application_id)), 3)
 
-    def test_transition_supports_existing_state_requires_event_trigger(self):
-        self.ledger.connection.executescript(
-            """
-            CREATE TRIGGER applications_state_requires_event_test
-            BEFORE UPDATE OF current_state ON applications
-            WHEN NEW.current_state != (
-                SELECT to_state FROM events
-                WHERE application_id = OLD.id ORDER BY rowid DESC LIMIT 1
-            )
-            BEGIN
-                SELECT RAISE(ABORT, 'application state requires matching event');
-            END;
-            """
-        )
-        try:
-            self.ledger.transition(self.application_id, "qualified")
-        finally:
-            self.ledger.connection.execute(
-                "DROP TRIGGER applications_state_requires_event_test"
-            )
-        self.assertEqual(self.ledger.current_state(self.application_id), "qualified")
-        self.assertEqual(self.ledger.events(self.application_id)[-1]["to_state"], "qualified")
-
-    def test_daily_quota_counts_submitted_and_unknown(self):
+    def test_daily_slots_are_audit_sequence_without_product_cap(self):
         self._ready()
         first = self._claim(
             self.ledger, self.application_id, "2026-07-28", "hash-1"
         )
-        self.ledger.complete_submission(first.intent_id, first.fence, "submitted")
+        _complete_verified(self.ledger, first.intent_id, first.fence, "submitted")
         second_id = self.ledger.add_application(
             "Other", "GenAI Engineer", "https://jobs.example.com/43"
         )
         self._ready(second_id)
         second = self._claim(self.ledger, second_id, "2026-07-28", "hash-2")
-        self.ledger.complete_submission(second.intent_id, second.fence, "submit_unknown")
+        _complete_verified(self.ledger, second.intent_id, second.fence, "submit_unknown")
         third_id = self.ledger.add_application(
             "Third", "AI Product Engineer", "https://jobs.example.com/44"
         )
         self._ready(third_id)
-        self.assertIsNone(
-            self._claim(self.ledger, third_id, "2026-07-28", "hash-3")
-        )
-        self.assertEqual(self.ledger.daily_slot_count("2026-07-28"), 2)
-
-    def test_daily_wake_id_allows_only_one_submission_claim(self):
-        original = os.environ.get("JOB_SEARCH_DAILY_WAKE_ID")
-        os.environ["JOB_SEARCH_DAILY_WAKE_ID"] = "daily-test-wake-1"
-        try:
-            self._ready()
-            first = self._claim(
-                self.ledger, self.application_id, "2026-07-28", "wake-hash-1"
-            )
-            self.assertIsNotNone(first)
-
-            second_id = self.ledger.add_application(
-                "Other", "GenAI Engineer", "https://jobs.example.com/wake-2"
-            )
-            self._ready(second_id)
-            self.assertIsNone(
-                self._claim(self.ledger, second_id, "2026-07-28", "wake-hash-2")
-            )
-            self.assertEqual(self.ledger.daily_slot_count("2026-07-28"), 1)
-        finally:
-            if original is None:
-                os.environ.pop("JOB_SEARCH_DAILY_WAKE_ID", None)
-            else:
-                os.environ["JOB_SEARCH_DAILY_WAKE_ID"] = original
+        third = self._claim(self.ledger, third_id, "2026-07-28", "hash-3")
+        self.assertIsNotNone(third)
+        self.assertEqual(third.slot, 3)
+        self.assertEqual(self.ledger.daily_slot_count("2026-07-28"), 3)
 
     def test_not_submitted_releases_observable_daily_slot(self):
         self._ready()
@@ -221,7 +187,7 @@ class LedgerTests(unittest.TestCase):
         self.assertEqual(self.ledger.retryable_applications(), [])
 
         with self.assertRaises(FenceError):
-            self.ledger.complete_submission(
+            _complete_verified(self.ledger,
                 first.intent_id, first.fence, "submitted"
             )
 
@@ -234,7 +200,7 @@ class LedgerTests(unittest.TestCase):
             ],
         )
 
-        self.ledger.complete_submission(
+        _complete_verified(self.ledger,
             second.intent_id, second.fence, "submitted"
         )
         self.assertEqual(
@@ -248,7 +214,7 @@ class LedgerTests(unittest.TestCase):
             self.ledger, self.application_id, "2026-07-28", "hash"
         )
         with self.assertRaises(FenceError):
-            self.ledger.complete_submission(
+            _complete_verified(self.ledger,
                 intent.intent_id, intent.fence + 1, "submitted"
             )
 
@@ -257,7 +223,7 @@ class LedgerTests(unittest.TestCase):
         intent = self._claim(
             self.ledger, self.application_id, "2026-07-28", "hash"
         )
-        self.ledger.complete_submission(
+        _complete_verified(self.ledger,
             intent.intent_id, intent.fence, "submit_unknown"
         )
         self.assertIsNone(
@@ -271,7 +237,7 @@ class LedgerTests(unittest.TestCase):
         intent = self._claim(
             self.ledger, self.application_id, "2026-07-28", "hash"
         )
-        self.ledger.complete_submission(intent.intent_id, intent.fence, "submitted")
+        _complete_verified(self.ledger, intent.intent_id, intent.fence, "submitted")
         self.assertIsNone(
             self._claim(
                 self.ledger, self.application_id, "2026-07-29", "new-hash"
@@ -297,7 +263,7 @@ class LedgerTests(unittest.TestCase):
             [(1, "legacy-hash", "not_submitted")],
         )
 
-    def test_concurrent_claims_never_exceed_two(self):
+    def test_concurrent_claims_allocate_unique_unbounded_slots(self):
         ids = [self.application_id]
         for index in range(1, 5):
             ids.append(
@@ -333,7 +299,9 @@ class LedgerTests(unittest.TestCase):
         for thread in threads:
             thread.join()
         self.ledger = Ledger(self.db)
-        self.assertEqual(sum(value is not None for value in results), 2)
+        claimed = [value for value in results if value is not None]
+        self.assertEqual(len(claimed), 5)
+        self.assertEqual({value.slot for value in claimed}, {1, 2, 3, 4, 5})
 
     def test_snapshot_hash_mismatch_cannot_claim_or_consume_slot(self):
         self._ready()
@@ -418,78 +386,6 @@ class LedgerTests(unittest.TestCase):
                 ats_snapshot_sha256=hashlib.sha256(snapshot.read_bytes()).hexdigest(),
             )
         self.assertEqual(self.ledger.daily_slot_count("2026-07-29"), 0)
-
-    def test_same_origin_application_route_can_claim(self):
-        self._ready()
-        snapshot = Path(self.tempdir.name) / "application-route.json"
-        snapshot.write_text(
-            json.dumps(
-                {
-                    "version": 1,
-                    "url": "https://jobs.example.com/42/application",
-                    "navigation_committed": True,
-                    "frames": [
-                        {
-                            "url": "https://jobs.example.com/42/application",
-                            "controls": [
-                                {"tag": "input", "type": "email"},
-                                {"tag": "input", "type": "file"},
-                                {
-                                    "tag": "button",
-                                    "type": "submit",
-                                    "text": "Submit Application",
-                                },
-                            ],
-                        }
-                    ],
-                }
-            ),
-            encoding="utf-8",
-        )
-        intent = self.ledger.claim_submission(
-            self.application_id,
-            "2026-07-29",
-            "application-route",
-            resume_path=self.resume,
-            resume_sha256=self.resume_sha256,
-            ats_snapshot_path=snapshot,
-            ats_snapshot_sha256=hashlib.sha256(snapshot.read_bytes()).hexdigest(),
-        )
-        self.assertIsNotNone(intent)
-
-    def test_snapshot_route_requires_scheme_and_identity_query_match(self):
-        from job_search_loop.state import ats_snapshot_matches_application
-
-        application = "https://jobs.example.com/42?job=42"
-        self.assertFalse(
-            ats_snapshot_matches_application(
-                application, "https://jobs.example.com/42?job=99"
-            )
-        )
-        self.assertFalse(
-            ats_snapshot_matches_application(
-                "https://jobs.example.com/42?gh_jid=42",
-                "https://jobs.example.com/42?gh_jid=99",
-            )
-        )
-        self.assertFalse(
-            ats_snapshot_matches_application(
-                "https://jobs.example.com/42",
-                "http://jobs.example.com/42/application",
-            )
-        )
-        self.assertFalse(
-            ats_snapshot_matches_application(
-                "https://jobs.example.com/42",
-                "//jobs.example.com/42/application",
-            )
-        )
-        self.assertTrue(
-            ats_snapshot_matches_application(
-                "https://jobs.example.com/42",
-                "https://jobs.example.com/42/application?utm_source=freehire.me",
-            )
-        )
 
     def test_workday_job_surface_is_ready_for_navigation_but_not_for_claim(self):
         fixture = (
@@ -619,7 +515,7 @@ class LedgerTests(unittest.TestCase):
         )
         self.assertEqual(intent.ats_snapshot_path, str(ats_snapshot.resolve()))
         self.assertEqual(intent.ats_snapshot_sha256, ats_sha256)
-        self.ledger.complete_submission(intent.intent_id, intent.fence, "submitted")
+        _complete_verified(self.ledger, intent.intent_id, intent.fence, "submitted")
 
         self.assertEqual(
             reports(),

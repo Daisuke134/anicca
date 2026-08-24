@@ -5,6 +5,7 @@ import json
 import os
 import re
 import subprocess
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -12,6 +13,8 @@ from typing import Any
 STRONG_RECRUITING_TERMS = (
     "verify your candidate account",
     "confirm your email address",
+    "reset your password for your candidate account",
+    "アカウントを確認してください",
     "application received",
     "application status",
     "interview invitation",
@@ -47,6 +50,7 @@ RECRUITING_SENDER_TERMS = (
     "lever.co",
     "myworkdayjobs.com",
     "myworkday.com",
+    "otp.workday.com",
 )
 WEAK_RECRUITING_TERMS = (
     "application",
@@ -65,7 +69,11 @@ def classify_message(subject: str, body: str) -> str:
     rules = (
         (
             "account_verification",
-            ("verify your candidate account", "confirm your email address"),
+            (
+                "verify your candidate account",
+                "confirm your email address",
+                "reset your password for your candidate account",
+            ),
         ),
         ("offer", ("offer letter", "pleased to offer")),
         ("interview", ("interview", "choose a time", "schedule a call")),
@@ -316,7 +324,20 @@ def select_new_recruiting_messages(
             ):
                 continue
             messages.append(
-                {"message_id": message_id, "thread_id": thread_id}
+                {
+                    "message_id": message_id,
+                    "thread_id": thread_id,
+                    "subject": subject,
+                    "sender": sender,
+                    "received_at": datetime.fromtimestamp(
+                        received_epoch, timezone.utc
+                    ).isoformat(),
+                    # The thread loader already requests --wrap-untrusted and
+                    # --sanitize-content.  Persist the exact fetched content
+                    # privately so the model lane never needs a second Gmail
+                    # OAuth/DNS round-trip for the same candidate message.
+                    "body": body,
+                }
             )
     thread_ids = list(dict.fromkeys(row["thread_id"] for row in messages))
     message_ids = [row["message_id"] for row in messages]
@@ -396,7 +417,8 @@ def _gmail_threads(account: str) -> list[dict[str, Any]]:
     query = (
         "newer_than:14d "
         "(application OR applied OR assessment OR interview OR offer OR recruiter "
-        "OR candidate OR verify OR 応募 OR 選考 OR 面接 OR 採用 OR エントリー)"
+        "OR candidate OR verify OR account OR password OR reset OR 応募 OR 選考 OR 面接 OR 採用 "
+        "OR エントリー OR アカウント OR 確認)"
     )
     completed = subprocess.run(
         [

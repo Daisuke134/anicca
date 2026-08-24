@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Mapping
 
 from .outbox import Outbox
+from .state import is_excluded_employer
 
 
 AUTO_REPLY_KINDS = {
@@ -130,7 +131,8 @@ def build_approved_reply(
         "Thank you for your message.\n\n"
         f"{answer}\n\n"
         "Please let me know if any additional verified information would be helpful.\n\n"
-        "Best regards,\nDaisuke Narita"
+        "Best regards,\n"
+        + _clean(_candidate(profile, "name"), name="candidate name", maximum=160)
     )
     return {
         "action": "auto_reply",
@@ -174,6 +176,9 @@ def send_reply_once(
 ) -> dict[str, str | None]:
     if decision.get("action") != "auto_reply":
         raise ReplyError("only approved auto_reply decisions may be sent")
+    decision_company = decision.get("company")
+    if decision_company and is_excluded_employer(str(decision_company)):
+        raise ReplyError("employer is excluded")
     message_id = str(inbound_message_id)
     if not MESSAGE_ID_PATTERN.fullmatch(message_id):
         raise ReplyError("inbound Gmail message ID is invalid")

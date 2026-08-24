@@ -4,22 +4,38 @@ set -euo pipefail
 SCRIPT_DIR="${0:A:h}"
 source "$SCRIPT_DIR/runtime-paths.sh"
 JOB_UID="$(id -u)"
-JOB_SEARCH_LAUNCHD_DOMAIN="$(job_search_launchd_domain "$JOB_UID")"
 
 for NAME in ai.anicca.job-search-daily ai.anicca.job-search-inbox ai.anicca.job-search-learning; do
   "$JOB_SEARCH_PLUTIL" -lint "$JOB_SEARCH_APP_ROOT/launchd/$NAME.plist" >/dev/null
   "$JOB_SEARCH_PLUTIL" -lint "$JOB_SEARCH_LAUNCH_AGENT_DIR/$NAME.plist" >/dev/null
-  STATUS=$("$JOB_SEARCH_LAUNCHCTL" print "$JOB_SEARCH_LAUNCHD_DOMAIN/$NAME" | awk '
+  STATUS=$("$JOB_SEARCH_LAUNCHCTL" print "gui/$JOB_UID/$NAME" | awk '
     /^[[:space:]]*state =/ {state=$3}
     /^[[:space:]]*last exit code =/ {exit_code=$5}
     END {printf "state=%s last_exit=%s", state, exit_code}
   ')
-  if [[ "$STATUS" != *"last_exit=0" ]]; then
+  if [[ "$STATUS" == *"state=running"* ]]; then
+    echo "$NAME $STATUS"
+  elif [[ "$NAME" == "ai.anicca.job-search-daily" && "$STATUS" == *"last_exit=75" ]]; then
+    echo "$NAME waiting_capacity $STATUS"
+  elif [[ "$STATUS" != *"last_exit=0" ]]; then
     echo "$NAME unhealthy: $STATUS" >&2
     exit 1
+  else
+    echo "$NAME $STATUS"
   fi
-  echo "$NAME $STATUS"
 done
+
+BROWSER_STATUS=$("$JOB_SEARCH_LAUNCHCTL" print "gui/$JOB_UID/ai.anicca.job-search-browser" 2>/dev/null | awk '
+  /^[[:space:]]*state =/ {state=$3}
+  /^[[:space:]]*pid =/ {pid=$3}
+  END {printf "state=%s pid=%s", state, pid}
+')
+if [[ "$BROWSER_STATUS" != *"state=running"* || "$BROWSER_STATUS" == *"pid= " || "$BROWSER_STATUS" == *"pid=" ]]; then
+  echo "ai.anicca.job-search-browser unhealthy: $BROWSER_STATUS" >&2
+  exit 1
+fi
+curl -fsS --max-time 5 http://127.0.0.1:9222/json/version >/dev/null
+echo "ai.anicca.job-search-browser $BROWSER_STATUS"
 
 "$JOB_SEARCH_PYTHON" - "$JOB_SEARCH_STATE_ROOT" "$JOB_SEARCH_PROFILE" <<'PY'
 import json
@@ -76,16 +92,33 @@ limits = {
 freshness = {}
 now = time.time()
 for prefix, maximum_age in limits.items():
-    candidates = [
-        candidate
-        for candidate in sorted(evidence_root.glob(f"{prefix}*"))
-        if (candidate / "summary.json").is_file()
-    ]
+    if prefix == "daily-":
+        candidates = [
+            candidate
+            for candidate in sorted(evidence_root.glob(f"{prefix}*"))
+            if (candidate / "workday-fast-path.json").is_file()
+            and (candidate / "wake-report.json").is_file()
+        ]
+    else:
+        candidates = [
+            candidate
+            for candidate in sorted(evidence_root.glob(f"{prefix}*"))
+            if (candidate / "summary.json").is_file()
+        ]
     if not candidates:
         raise SystemExit(f"missing completed evidence for {prefix}")
-    summary = candidates[-1] / "summary.json"
-    value = json.loads(summary.read_text(encoding="utf-8"))
-    age = now - summary.stat().st_mtime
+    latest = candidates[-1]
+    if prefix == "daily-":
+        combined = json.loads((latest / "workday-fast-path.json").read_text(encoding="utf-8"))
+        report = json.loads((latest / "wake-report.json").read_text(encoding="utf-8"))
+        if report.get("status") != "sent" or not report.get("message_id"):
+            raise SystemExit("latest daily evidence has no Telegram ACK")
+        value = {"status": combined.get("status")}
+        evidence_path = latest / "wake-report.json"
+    else:
+        evidence_path = latest / "summary.json"
+        value = json.loads(evidence_path.read_text(encoding="utf-8"))
+    age = now - evidence_path.stat().st_mtime
     if age > maximum_age:
         raise SystemExit(f"stale evidence for {prefix}: {int(age)}s")
     freshness[prefix.rstrip("-")] = {

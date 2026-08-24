@@ -51,11 +51,30 @@ replay-checked by the installed launchd owners without the account owner or a fo
 Codex session performing customer work. Until that receipt exists across varied real orders,
 the package must not claim autonomous Paid completion.
 
+### Try the Workday Job Hunter loop
+
+Job Hunter searches official Workday companies and jobs dynamically, compares each
+complete job description with the owner's private resume and preferences, applies
+through one dedicated CloakBrowser, reconciles Gmail and Ledger receipts, prevents
+duplicate submissions, and reports every decision, application start and result in
+natural language through Telegram.
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Daisuke134/life-manager/main/scripts/bootstrap-job-hunter.sh)"
+```
+
+The first run prepares Codex, imports the finalized resume and job preferences, and
+opens the dedicated browser. Complete official login there, then run the exact same
+command again to verify Gmail and Telegram and activate the 30-minute launchd loop.
+Workday is the only active ATS product; Ashby, Greenhouse, Lever, Mercor and generic
+ATS routes remain broken or unverified until separately rebuilt.
+
 ### OSS productization status
 
 | Surface | Public code | One-command owner setup | Current status |
 |---|---:|---:|---|
 | Coconala Apply / Negotiate / Storefront / Paid | Yes | Yes | Public beta; one Terminal command and six persistent jobs exist, independent clean-Mac full E2E acceptance remains open |
+| Workday Job Hunter | Yes | Yes | Workday-only initial release; 30-minute resident loop, official Gmail/Ledger proof, natural Telegram and duplicate-zero are production-proven on the maintainer installation |
 | Other marketplace money loops, including Upwork and Mercor | Partial/internal components only | No | Not OSS-productized; do not present them as ready for third-party setup |
 | Generic Money / Body / Mind onboarding | Foundation only | No | Future shared Life Manager surface, not the Coconala quick start |
 

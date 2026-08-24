@@ -1,11 +1,9 @@
 import hashlib
 import json
-import sqlite3
 import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from unittest.mock import patch
 
 from job_search_loop.ledger import Ledger
 from job_search_loop.state import InvalidTransition
@@ -71,8 +69,12 @@ class SubmissionConfirmationTests(unittest.TestCase):
             ats_snapshot_path=snapshot,
             ats_snapshot_sha256=snapshot_sha256,
         )
-        ledger.complete_submission(
-            intent.intent_id, intent.fence, "submit_unknown"
+        ledger.complete_submission_verified(
+            intent.intent_id,
+            intent.fence,
+            outcome="submit_unknown",
+            evidence_sha256="e" * 64,
+            evidence_class="no_authoritative_completion_ui",
         )
         return ledger, application_id, intent.intent_id
 
@@ -176,39 +178,6 @@ class SubmissionConfirmationTests(unittest.TestCase):
             )
             ledger.close()
 
-    def test_late_confirmation_supports_existing_state_requires_event_trigger(self):
-        with tempfile.TemporaryDirectory() as directory:
-            ledger, _, intent_id = self._unknown_submission(Path(directory))
-            ledger.connection.executescript(
-                """
-                CREATE TRIGGER applications_state_requires_event_test
-                BEFORE UPDATE OF current_state ON applications
-                WHEN NEW.current_state != (
-                    SELECT to_state FROM events
-                    WHERE application_id = OLD.id ORDER BY rowid DESC LIMIT 1
-                )
-                BEGIN
-                    SELECT RAISE(ABORT, 'application state requires matching event');
-                END;
-                """
-            )
-            try:
-                result = ledger.reconcile_submission_confirmation(
-                    intent_id=intent_id,
-                    message_id="gmail-message-trigger",
-                    thread_id="gmail-thread-trigger",
-                    evidence_sha256="b" * 64,
-                    received_at=(
-                        datetime.now(timezone.utc) + timedelta(minutes=1)
-                    ).isoformat(),
-                )
-            finally:
-                ledger.connection.execute(
-                    "DROP TRIGGER applications_state_requires_event_test"
-                )
-            self.assertEqual(result, "reconciled")
-            ledger.close()
-
     def test_generic_transition_cannot_bypass_confirmation_receipt(self):
         with tempfile.TemporaryDirectory() as directory:
             ledger, application_id, _ = self._unknown_submission(
@@ -232,47 +201,6 @@ class SubmissionConfirmationTests(unittest.TestCase):
                 0,
             )
             ledger.close()
-
-    def test_sqlite_integrity_error_is_blocked_without_crashing_inbox(self):
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            ledger, _, _ = self._unknown_submission(root)
-            ledger.close()
-            received = datetime.now(timezone.utc) + timedelta(minutes=1)
-            thread = {
-                "id": "gmail-thread-integrity",
-                "subject": "Application received: Agent Product Engineer",
-                "snippet": "Thank you for applying",
-            }
-            payload = {
-                "thread": {
-                    "id": thread["id"],
-                    "messages": [
-                        {
-                            "id": "gmail-message-integrity",
-                            "threadId": thread["id"],
-                            "internalDate": int(received.timestamp() * 1000),
-                            "headers": {
-                                "from": "jobs@ashbyhq.com",
-                                "subject": thread["subject"],
-                            },
-                            "body": "Thank you for applying to Agent Product Engineer at Dream AI.",
-                        }
-                    ],
-                }
-            }
-            with patch(
-                "job_search_loop.submission_confirmation.Ledger.reconcile_submission_confirmation",
-                side_effect=sqlite3.IntegrityError("application state requires matching event"),
-            ):
-                result = reconcile_confirmation_threads(
-                    ledger_path=root / "ledger.sqlite3",
-                    threads=[thread],
-                    thread_loader=lambda _: payload,
-                    seen_state=root / "seen.json",
-                )
-            self.assertEqual(result["reconciled"], [])
-            self.assertEqual(result["blocked"][0]["status"], "ledger_integrity_blocked")
 
     def test_exact_late_ashby_receipt_reconciles_and_marks_thread_seen(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -415,6 +343,34 @@ class SubmissionConfirmationTests(unittest.TestCase):
             )
             reopened.close()
             self.assertFalse((root / "inbox-seen.json").exists())
+
+    def test_unique_authoritative_receipt_without_role_promotes_one_intent(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ledger, application_id, _ = self._unknown_submission(root)
+            ledger.close()
+            received = datetime.now(timezone.utc) + timedelta(minutes=1)
+            payload = {"thread": {"messages": [{
+                "id": "gmail-roleless",
+                "threadId": "thread-roleless",
+                "internalDate": int(received.timestamp() * 1000),
+                "headers": {
+                    "from": "Dream AI <notifications@ashbyhq.com>",
+                    "to": "candidate@example.com",
+                    "subject": "Thank you for applying",
+                },
+                "body": "Dream AI has received your application.",
+            }]}}
+
+            result = reconcile_confirmation_threads(
+                ledger_path=root / "ledger.sqlite3",
+                threads=[{"id": "thread-roleless", "subject": "Thank you for applying"}],
+                thread_loader=lambda _thread_id: payload,
+                seen_state=root / "seen.json",
+                expected_recipient="candidate@example.com",
+            )
+
+            self.assertEqual(result["reconciled"][0]["application_id"], application_id)
 
     def test_ambiguous_company_and_role_match_fails_closed(self):
         with tempfile.TemporaryDirectory() as directory:

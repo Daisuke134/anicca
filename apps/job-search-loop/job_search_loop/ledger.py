@@ -14,9 +14,11 @@ from typing import Any, Iterator, Mapping
 
 from .ats import evaluate_snapshot
 from .state import (
-    ats_snapshot_matches_application,
+    DEFAULT_EMPLOYER_EXCLUSIONS,
     canonical_job_id,
     canonical_url,
+    is_excluded_employer,
+    same_application_surface,
     validate_transition,
 )
 
@@ -48,6 +50,10 @@ AUTHORITATIVE_EVIDENCE_SOURCES = frozenset(
 
 
 class FenceError(RuntimeError):
+    pass
+
+
+class ExcludedEmployerError(ValueError):
     pass
 
 
@@ -88,7 +94,9 @@ class Ledger:
                 title TEXT NOT NULL,
                 canonical_url TEXT NOT NULL,
                 current_state TEXT NOT NULL,
-                created_at TEXT NOT NULL
+                created_at TEXT NOT NULL,
+                owner TEXT NOT NULL DEFAULT 'agent'
+                    CHECK (owner IN ('agent', 'dais_manual', 'recruiter'))
             );
             CREATE TABLE IF NOT EXISTS events (
                 event_id TEXT PRIMARY KEY,
@@ -120,12 +128,6 @@ class Ledger:
                 status TEXT NOT NULL,
                 PRIMARY KEY (japan_day, slot)
             );
-            CREATE TABLE IF NOT EXISTS wake_claims (
-                wake_id TEXT PRIMARY KEY,
-                application_id TEXT NOT NULL REFERENCES applications(id),
-                intent_id TEXT NOT NULL REFERENCES submit_intents(intent_id),
-                claimed_at TEXT NOT NULL
-            );
             CREATE TABLE IF NOT EXISTS submission_attempts (
                 intent_id TEXT NOT NULL REFERENCES submit_intents(intent_id),
                 fence INTEGER NOT NULL,
@@ -149,6 +151,14 @@ class Ledger:
                     REFERENCES submit_intents(intent_id),
                 evidence_sha256 TEXT NOT NULL,
                 received_at TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS workday_fit_decisions (
+                application_id TEXT PRIMARY KEY REFERENCES applications(id),
+                decision TEXT NOT NULL
+                    CHECK (decision IN ('qualified', 'rejected', 'hold')),
+                evidence_sha256 TEXT NOT NULL,
+                policy_version TEXT,
                 created_at TEXT NOT NULL
             );
             CREATE TABLE IF NOT EXISTS strategy_generations (
@@ -311,7 +321,50 @@ class Ledger:
             END;
             """
         )
+        for table in ("submit_intents", "submission_attempts"):
+            columns = {
+                str(row["name"])
+                for row in self.connection.execute(f"PRAGMA table_info({table})")
+            }
+            if "outcome_evidence_sha256" not in columns:
+                self.connection.execute(
+                    f"ALTER TABLE {table} ADD COLUMN outcome_evidence_sha256 TEXT"
+                )
+            if "outcome_evidence_class" not in columns:
+                self.connection.execute(
+                    f"ALTER TABLE {table} ADD COLUMN outcome_evidence_class TEXT"
+                )
         self._migrate_funnel_outcome_evidence_constraint()
+        fit_columns = {
+            str(row["name"])
+            for row in self.connection.execute(
+                "PRAGMA table_info(workday_fit_decisions)"
+            )
+        }
+        if "policy_version" not in fit_columns:
+            self.connection.execute(
+                "ALTER TABLE workday_fit_decisions ADD COLUMN policy_version TEXT"
+            )
+        application_columns = {
+            str(row["name"])
+            for row in self.connection.execute("PRAGMA table_info(applications)")
+        }
+        if "owner" not in application_columns:
+            self.connection.execute(
+                "ALTER TABLE applications ADD COLUMN owner TEXT NOT NULL "
+                "DEFAULT 'agent' CHECK (owner IN "
+                "('agent', 'dais_manual', 'recruiter'))"
+            )
+        self.connection.execute(
+            """
+            CREATE TRIGGER IF NOT EXISTS applications_owner_no_update
+            BEFORE UPDATE OF owner ON applications
+            WHEN NEW.owner != OLD.owner
+            BEGIN
+                SELECT RAISE(ABORT, 'application owner is immutable');
+            END
+            """
+        )
         intent_columns = {
             str(row["name"])
             for row in self.connection.execute("PRAGMA table_info(submit_intents)")
@@ -481,6 +534,8 @@ class Ledger:
         )
 
     def add_application(self, company: str, title: str, url: str) -> str:
+        if is_excluded_employer(company):
+            raise ExcludedEmployerError(f"employer is excluded: {company}")
         application_id = canonical_job_id(company, title, url)
         with self._transaction():
             existing = self.connection.execute(
@@ -539,6 +594,8 @@ class Ledger:
         prompt_sha256: str,
         material_sha256: str,
     ) -> str:
+        if is_excluded_employer(company):
+            raise ExcludedEmployerError(f"employer is excluded: {company}")
         text_values = {
             "strategy_generation_id": strategy_generation_id,
             "source": source,
@@ -654,6 +711,48 @@ class Ledger:
                 ),
             )
         return application_id
+
+    def reject_excluded_employers(
+        self, exclusions: set[str] | frozenset[str] | None = None
+    ) -> list[dict[str, str]]:
+        """Quarantine pre-submit rows for every hard-excluded employer.
+
+        Terminal history (``submitted`` and ``submit_unknown``) is immutable
+        evidence and is deliberately not changed.  The default exclusions are
+        always applied; the private profile can add aliases for this run.
+        """
+        names = frozenset(DEFAULT_EMPLOYER_EXCLUSIONS)
+        if exclusions:
+            names = names | frozenset(str(value) for value in exclusions)
+        rows = self.connection.execute(
+            """
+            SELECT id, company, title, current_state
+            FROM applications
+            WHERE current_state IN ('discovered', 'qualified', 'materials_ready', 'not_submitted')
+            ORDER BY created_at, rowid
+            """
+        ).fetchall()
+        rejected: list[dict[str, str]] = []
+        with self._transaction():
+            for row in rows:
+                company = str(row["company"])
+                if not is_excluded_employer(company, names):
+                    continue
+                application_id = str(row["id"])
+                self._transition_in_transaction(
+                    application_id,
+                    "rejected",
+                    {"reason": "employer_excluded", "company": company},
+                )
+                rejected.append(
+                    {
+                        "application_id": application_id,
+                        "company": company,
+                        "title": str(row["title"]),
+                        "from_state": str(row["current_state"]),
+                    }
+                )
+        return rejected
 
     def strategy_assignment(self, application_id: str) -> dict[str, Any]:
         row = self.connection.execute(
@@ -941,10 +1040,9 @@ class Ledger:
     ) -> None:
         from_state = self.current_state(application_id)
         validate_transition(from_state, to_state)
-        # Some durable private ledgers enforce that the latest event already
-        # names the target state before applications.current_state is updated.
-        # Append first inside this transaction; rollback keeps both tables
-        # atomic if the state update fails.
+        # The applications_state_requires_event trigger validates the new state
+        # against the latest event. Append first, then mutate the projection in
+        # the same transaction so the trigger observes the matching event.
         self._append_event(application_id, from_state, to_state, payload)
         self.connection.execute(
             "UPDATE applications SET current_state = ? WHERE id = ?",
@@ -1081,6 +1179,193 @@ class Ledger:
             for row in rows
         ]
 
+    def event_summary_rows(self) -> list[dict[str, Any]]:
+        has_application_routes = self.connection.execute(
+            "SELECT 1 FROM sqlite_master "
+            "WHERE type='table' AND name='application_routes'"
+        ).fetchone() is not None
+        applications = self.connection.execute(
+            "SELECT id, canonical_url, owner FROM applications ORDER BY created_at, rowid"
+        ).fetchall()
+        projection: list[dict[str, Any]] = []
+        for application in applications:
+            rows = self.connection.execute(
+                "SELECT from_state, to_state, payload_json FROM events "
+                "WHERE application_id = ? ORDER BY rowid",
+                (application["id"],),
+            ).fetchall()
+            if not rows or rows[0]["from_state"] is not None:
+                raise FenceError("application event chain lacks a valid origin")
+            first_state = str(rows[0]["to_state"])
+            first_payload = json.loads(str(rows[0]["payload_json"]))
+            external_origin = first_state == "submitted" and (
+                first_payload.get("external_import") is True
+                and all(
+                    first_payload.get(key)
+                    for key in (
+                        "applied_at",
+                        "source",
+                        "source_message_id",
+                        "evidence_sha256",
+                    )
+                )
+            )
+            if first_state != "discovered" and not external_origin:
+                raise FenceError("application event chain lacks a valid origin")
+            previous = first_state
+            previous_payload = first_payload
+            ever_submitted = first_state == "submitted"
+            submission_attempted = first_state in {"submitted", "submit_unknown"}
+            for event in rows[1:]:
+                to_state = str(event["to_state"])
+                payload = json.loads(str(event["payload_json"]))
+                outreach_correction = False
+                if str(event["from_state"]) != previous:
+                    raise FenceError("application event chain is discontinuous")
+                if previous == "submit_unknown" and to_state == "submitted":
+                    receipt_verified = all(
+                        payload.get(key)
+                        for key in (
+                            "message_id",
+                            "thread_id",
+                            "evidence_sha256",
+                            "received_at",
+                        )
+                    )
+                    legacy_ashby_verified = False
+                    if (
+                        payload.get("evidence_source")
+                        == "ashby_graphql_plus_visible_success"
+                        and payload.get("evidence_sha256")
+                        == "e73a212752d3ca020b16bae36ca19578ba437dcf434b054daff414e467cb430b"
+                    ):
+                        legacy_ashby_verified = self.connection.execute(
+                            "SELECT 1 FROM submit_intents WHERE intent_id=? "
+                            "AND application_id=? AND fence=? AND status='submitted'",
+                            (
+                                payload.get("intent_id"),
+                                application["id"],
+                                payload.get("fence"),
+                            ),
+                        ).fetchone() is not None
+                    route_verified = False
+                    if has_application_routes and all(
+                        payload.get(key)
+                        for key in ("route_id", "provider_id", "channel")
+                    ):
+                        route_verified = self.connection.execute(
+                            """
+                            SELECT 1
+                            FROM application_routes AS routes
+                            JOIN funnel_outcomes AS outcomes
+                              ON outcomes.application_id = routes.application_id
+                             AND outcomes.evidence_sha256 = routes.delivery_evidence_sha256
+                            WHERE routes.route_id = ?
+                              AND routes.application_id = ?
+                              AND routes.route_kind = ?
+                              AND routes.delivery_state = 'delivered'
+                              AND routes.provider_id = ?
+                              AND outcomes.funnel_stage = 'confirmed_application'
+                              AND outcomes.disposition = 'positive'
+                              AND outcomes.evidence_source IN ('ats','gmail')
+                            """,
+                            (
+                                payload.get("route_id"),
+                                application["id"],
+                                payload.get("channel"),
+                                payload.get("provider_id"),
+                            ),
+                        ).fetchone() is not None
+                    if not (
+                        receipt_verified
+                        or legacy_ashby_verified
+                        or route_verified
+                    ):
+                        raise FenceError("late confirmation event lacks evidence")
+                elif previous == "submitted" and to_state == "submit_unknown":
+                    route_id = payload.get("route_id")
+                    provider_id = payload.get("provider_id")
+                    evidence_sha256 = payload.get("evidence_sha256")
+                    correction_verified = (
+                        payload.get("reason") == "outreach_only_delivery_correction"
+                        and previous_payload.get("route_id") == route_id
+                        and previous_payload.get("provider_id") == provider_id
+                        and previous_payload.get("channel") == "recruiting_outreach"
+                        and self.connection.execute(
+                            """
+                            SELECT 1 FROM application_routes
+                            WHERE route_id=? AND application_id=?
+                              AND route_kind='recruiting_outreach'
+                              AND recipient_acceptance='outreach_only'
+                              AND delivery_state='delivered'
+                              AND provider_id=?
+                              AND delivery_evidence_sha256=?
+                            """,
+                            (
+                                route_id,
+                                application["id"],
+                                provider_id,
+                                evidence_sha256,
+                            ),
+                        ).fetchone()
+                        is not None
+                    )
+                    if not correction_verified:
+                        raise FenceError("outreach truth correction lacks evidence")
+                    outreach_correction = True
+                else:
+                    validate_transition(previous, to_state)
+                previous = to_state
+                previous_payload = payload
+                ever_submitted = ever_submitted or to_state == "submitted"
+                if outreach_correction:
+                    ever_submitted = False
+                submission_attempted = submission_attempted or to_state in {
+                    "submitted",
+                    "submit_unknown",
+                }
+            positive_query = (
+                """
+                    SELECT outcomes.funnel_stage
+                    FROM funnel_outcomes AS outcomes
+                    WHERE outcomes.application_id = ?
+                      AND outcomes.disposition = 'positive'
+                      AND NOT (
+                        outcomes.funnel_stage = 'confirmed_application'
+                        AND EXISTS (
+                          SELECT 1
+                          FROM application_routes AS routes
+                          WHERE routes.application_id = outcomes.application_id
+                            AND routes.delivery_state = 'delivered'
+                            AND routes.recipient_acceptance = 'outreach_only'
+                            AND routes.delivery_evidence_sha256 = outcomes.evidence_sha256
+                        )
+                      )
+                    """
+                if has_application_routes
+                else "SELECT funnel_stage FROM funnel_outcomes "
+                "WHERE application_id=? AND disposition='positive'"
+            )
+            positive_stages = {
+                str(row["funnel_stage"])
+                for row in self.connection.execute(
+                    positive_query,
+                    (application["id"],),
+                ).fetchall()
+            }
+            projection.append(
+                {
+                    "application_id": str(application["id"]),
+                    "canonical_url": str(application["canonical_url"]),
+                    "owner": str(application["owner"]),
+                    "current_state": previous,
+                    "ever_submitted": ever_submitted,
+                    "submission_attempted": submission_attempted,
+                    "positive_funnel_stages": sorted(positive_stages),
+                }
+            )
+        return projection
+
     def retryable_applications(self) -> list[dict[str, Any]]:
         rows = self.connection.execute(
             """
@@ -1109,6 +1394,90 @@ class Ledger:
             }
             for row in rows
         ]
+
+    def pending_materials_ready_applications(self) -> list[dict[str, Any]]:
+        """Return attributed jobs ready for a first submit claim.
+
+        A materials-ready row with no submit intent is durable work left by a
+        previous pass.  The resident daily owner consumes these rows before
+        discovering new URLs so a recovered application cannot be stranded by
+        the discovery order.
+        """
+        rows = self.connection.execute(
+            """
+            SELECT
+              applications.id AS application_id,
+              applications.company,
+              applications.title,
+              applications.canonical_url
+            FROM applications
+            WHERE applications.current_state = 'materials_ready'
+              AND NOT EXISTS (
+                SELECT 1
+                FROM submit_intents
+                WHERE submit_intents.application_id = applications.id
+              )
+            ORDER BY applications.created_at, applications.rowid
+            """
+        ).fetchall()
+        return [
+            {
+                "application_id": str(row["application_id"]),
+                "company": str(row["company"]),
+                "title": str(row["title"]),
+                "canonical_url": str(row["canonical_url"]),
+            }
+            for row in rows
+        ]
+
+    def workday_fit_qualified(self, application_id: str) -> bool:
+        row = self.connection.execute(
+            """
+            SELECT decision
+            FROM workday_fit_decisions
+            WHERE application_id = ?
+            """,
+            (application_id,),
+        ).fetchone()
+        return row is not None and str(row["decision"]) == "qualified"
+
+    def record_workday_fit_decision(
+        self,
+        application_id: str,
+        decision: str,
+        evidence_sha256: str,
+        *,
+        policy_version: str,
+    ) -> None:
+        if decision not in {"qualified", "rejected", "hold"}:
+            raise ValueError("invalid Workday fit decision")
+        if not re.fullmatch(r"[a-f0-9]{64}", evidence_sha256):
+            raise ValueError("Workday fit evidence must be a lowercase SHA-256")
+        with self._transaction():
+            self.connection.execute(
+                """
+                INSERT INTO workday_fit_decisions
+                  (application_id, decision, evidence_sha256, policy_version, created_at)
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT(application_id) DO UPDATE SET
+                  decision = excluded.decision,
+                  evidence_sha256 = excluded.evidence_sha256,
+                  policy_version = excluded.policy_version,
+                  created_at = excluded.created_at
+                WHERE workday_fit_decisions.decision = 'hold'
+                  AND COALESCE(workday_fit_decisions.policy_version, '') != excluded.policy_version
+                """,
+                (application_id, decision, evidence_sha256, policy_version, _now()),
+            )
+            if decision == "rejected":
+                self._transition_in_transaction(
+                    application_id,
+                    "rejected",
+                    {
+                        "reason": "model_workday_fit_rejected",
+                        "evidence_sha256": evidence_sha256,
+                    },
+                )
 
     def submission_attempts(self, application_id: str) -> list[dict[str, Any]]:
         rows = self.connection.execute(
@@ -1151,6 +1520,8 @@ class Ledger:
         resume_sha256: str,
         ats_snapshot_path: Path,
         ats_snapshot_sha256: str,
+        final_review_receipt_sha256: str | None = None,
+        observed_at: str | None = None,
     ) -> SubmitIntent | None:
         resolved_resume = Path(resume_path).expanduser().resolve()
         if not resolved_resume.is_file():
@@ -1172,28 +1543,41 @@ class Ledger:
             snapshot_evaluation = evaluate_snapshot(snapshot)
         except (json.JSONDecodeError, ValueError) as error:
             raise ValueError(f"ATS snapshot is invalid: {error}") from error
-        if not snapshot_evaluation["ready"]:
-            blockers = ",".join(snapshot_evaluation["blockers"])
-            raise ValueError(f"ATS snapshot is not ready: {blockers}")
-        if not snapshot_evaluation["claim_ready"]:
-            raise ValueError("ATS snapshot is not claim-ready: application form not open")
+        final_review = final_review_receipt_sha256 is not None
+        if final_review:
+            if not re.fullmatch(r"[a-f0-9]{64}", final_review_receipt_sha256 or ""):
+                raise ValueError("final review receipt must be a lowercase SHA-256")
+            labels = [
+                " ".join(str(control.get("label") or control.get("text") or "").split()).casefold()
+                for frame in snapshot.get("frames", [])
+                for control in frame.get("controls", [])
+            ]
+            if sum(label in {"submit", "submit application", "送信", "応募を送信"} for label in labels) != 1:
+                raise ValueError("final review snapshot requires exactly one submit control")
+        else:
+            if not snapshot_evaluation["ready"]:
+                blockers = ",".join(snapshot_evaluation["blockers"])
+                raise ValueError(f"ATS snapshot is not ready: {blockers}")
+            if not snapshot_evaluation["claim_ready"]:
+                raise ValueError("ATS snapshot is not claim-ready: application form not open")
+        claimed_at = _now()
+        if observed_at is not None:
+            if not final_review:
+                raise ValueError("observed_at is only valid with a final review receipt")
+            observed = datetime.fromisoformat(observed_at)
+            now = datetime.now(timezone.utc)
+            if observed.tzinfo is None or observed > now or (now - observed).total_seconds() > 3600:
+                raise ValueError("observed_at must be a recent timezone-aware timestamp")
+            claimed_at = observed.isoformat()
         with self._transaction():
-            wake_id = os.environ.get("JOB_SEARCH_DAILY_WAKE_ID", "").strip()
-            if wake_id:
-                existing_wake = self.connection.execute(
-                    "SELECT 1 FROM wake_claims WHERE wake_id = ?",
-                    (wake_id,),
-                ).fetchone()
-                if existing_wake is not None:
-                    return None
             application = self.connection.execute(
                 "SELECT canonical_url FROM applications WHERE id = ?",
                 (application_id,),
             ).fetchone()
             if application is None:
                 raise KeyError(application_id)
-            if not ats_snapshot_matches_application(
-                str(application["canonical_url"]), snapshot["url"]
+            if not same_application_surface(
+                snapshot["url"], str(application["canonical_url"])
             ):
                 raise ValueError("ATS snapshot URL does not match the application")
             existing = self.connection.execute(
@@ -1210,17 +1594,16 @@ class Ledger:
                 return None
             if existing is None and current_state != "materials_ready":
                 return None
-            used = {
-                int(row["slot"])
-                for row in self.connection.execute(
-                    "SELECT slot FROM daily_slots WHERE japan_day = ?",
-                    (japan_day,),
-                ).fetchall()
-            }
-            slot = next((candidate for candidate in (1, 2) if candidate not in used), None)
-            if slot is None:
-                return None
-            claimed_at = _now()
+            # Slots are transactional per-day audit labels, not a quota.
+            # A definite pre-click `not_submitted` releases its row below;
+            # BEGIN IMMEDIATE still makes max+1 deterministic and collision-free
+            # among all live claims while submitted/unknown claims remain held.
+            row = self.connection.execute(
+                "SELECT COALESCE(MAX(slot), 0) AS max_slot "
+                "FROM daily_slots WHERE japan_day = ?",
+                (japan_day,),
+            ).fetchone()
+            slot = int(row["max_slot"]) + 1
             intent = SubmitIntent(
                 intent_id=(
                     str(existing["intent_id"]) if reopening else uuid.uuid4().hex
@@ -1290,15 +1673,6 @@ class Ledger:
                         claimed_at,
                     ),
                 )
-            if wake_id:
-                self.connection.execute(
-                    """
-                    INSERT INTO wake_claims
-                      (wake_id, application_id, intent_id, claimed_at)
-                    VALUES (?, ?, ?, ?)
-                    """,
-                    (wake_id, application_id, intent.intent_id, claimed_at),
-                )
             self.connection.execute(
                 """
                 INSERT INTO submission_attempts
@@ -1337,8 +1711,43 @@ class Ledger:
     def complete_submission(
         self, intent_id: str, fence: int, outcome: str
     ) -> None:
-        if outcome not in {"submitted", "submit_unknown", "not_submitted"}:
-            raise ValueError(f"invalid submission outcome: {outcome}")
+        if outcome != "not_submitted":
+            raise ValueError(
+                "submitted and submit_unknown require verifier evidence"
+            )
+        self.complete_submission_verified(
+            intent_id,
+            fence,
+            outcome="not_submitted",
+            evidence_sha256=hashlib.sha256(
+                f"legacy-pre-submit:{intent_id}:{fence}".encode()
+            ).hexdigest(),
+            evidence_class="definite_pre_submit_stop",
+        )
+
+    def complete_submission_verified(
+        self,
+        intent_id: str,
+        fence: int,
+        *,
+        outcome: str,
+        evidence_sha256: str,
+        evidence_class: str,
+    ) -> None:
+        allowed = {
+            "submitted": "exact_completion_ui",
+            "submit_unknown": "no_authoritative_completion_ui",
+            "not_submitted": "rendered_validation_rejection",
+        }
+        if allowed.get(outcome) != evidence_class and not (
+            outcome == "not_submitted" and evidence_class == "definite_pre_submit_stop"
+        ) and not (
+            outcome == "submit_unknown"
+            and evidence_class == "exact_completion_ui_pending_receipt"
+        ):
+            raise ValueError("outcome does not match authoritative evidence class")
+        if not re.fullmatch(r"[a-f0-9]{64}", evidence_sha256):
+            raise ValueError("outcome evidence must be a lowercase SHA-256")
         with self._transaction():
             row = self.connection.execute(
                 "SELECT * FROM submit_intents WHERE intent_id = ?", (intent_id,)
@@ -1350,17 +1759,27 @@ class Ledger:
             completed_at = _now()
             self.connection.execute(
                 """
-                UPDATE submit_intents SET status = ?, completed_at = ?
+                UPDATE submit_intents
+                SET status = ?, completed_at = ?, outcome_evidence_sha256 = ?,
+                    outcome_evidence_class = ?
                 WHERE intent_id = ? AND fence = ?
                 """,
-                (outcome, completed_at, intent_id, fence),
+                (
+                    outcome, completed_at, evidence_sha256, evidence_class,
+                    intent_id, fence,
+                ),
             )
             self.connection.execute(
                 """
-                UPDATE submission_attempts SET status = ?, completed_at = ?
+                UPDATE submission_attempts
+                SET status = ?, completed_at = ?, outcome_evidence_sha256 = ?,
+                    outcome_evidence_class = ?
                 WHERE intent_id = ? AND fence = ?
                 """,
-                (outcome, completed_at, intent_id, fence),
+                (
+                    outcome, completed_at, evidence_sha256, evidence_class,
+                    intent_id, fence,
+                ),
             )
             self.connection.execute(
                 """
@@ -1372,7 +1791,12 @@ class Ledger:
             self._transition_in_transaction(
                 str(row["application_id"]),
                 outcome,
-                {"intent_id": intent_id, "fence": fence},
+                {
+                    "intent_id": intent_id,
+                    "fence": fence,
+                    "evidence_sha256": evidence_sha256,
+                    "evidence_class": evidence_class,
+                },
             )
             if outcome == "not_submitted":
                 self.connection.execute(

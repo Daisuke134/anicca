@@ -10,7 +10,7 @@ JOB_SEARCH_SYSTEMD_ANALYZE="${JOB_SEARCH_SYSTEMD_ANALYZE:-$(command -v systemd-a
 
 mkdir -p "$JOB_SEARCH_SYSTEMD_USER_DIR"
 chmod 700 "$JOB_SEARCH_SYSTEMD_USER_DIR"
-for name in daily inbox learning mercor; do
+for name in daily inbox learning; do
   for kind in service timer; do
     template="$JOB_SEARCH_APP_ROOT/systemd/ai.anicca.job-search-$name.$kind"
     installed="$JOB_SEARCH_SYSTEMD_USER_DIR/ai.anicca.job-search-$name.$kind"
@@ -55,6 +55,5 @@ if [[ "${JOB_SEARCH_SKIP_SYSTEMCTL:-0}" != "1" ]]; then
   "$JOB_SEARCH_SYSTEMCTL" --user enable --now \
     ai.anicca.job-search-daily.timer \
     ai.anicca.job-search-inbox.timer \
-    ai.anicca.job-search-learning.timer \
-    ai.anicca.job-search-mercor.timer
+    ai.anicca.job-search-learning.timer
 fi

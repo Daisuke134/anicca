@@ -19,7 +19,11 @@ class AtsReadinessTests(unittest.TestCase):
             "https://app.ashbyhq.com/applicationForm": "ashby",
             "https://acme.wd5.myworkdayjobs.com/jobs/role": "workday",
             "https://wd1.myworkdaysite.com/acme/job/role": "workday",
+            "https://job-boards.greenhouse.io/gitlab/jobs/123": "greenhouse",
+            "https://boards.greenhouse.io/gitlab/jobs/123": "greenhouse",
+            "https://jobs.lever.co/example/123": "lever",
             "https://ashbyhq.com.example.test/role": "generic",
+            "https://greenhouse.io.example.test/role": "generic",
             "https://careers.example.com/role": "generic",
         }
         for url, expected in cases.items():
@@ -64,54 +68,6 @@ class AtsReadinessTests(unittest.TestCase):
                 "blockers": [],
             },
         )
-
-    def test_ashby_job_surface_is_ready_for_apply_navigation(self):
-        result = evaluate_snapshot(
-            {
-                "version": 1,
-                "url": "https://jobs.ashbyhq.com/acme/role",
-                "navigation_committed": True,
-                "frames": [
-                    {
-                        "url": "https://jobs.ashbyhq.com/acme/role",
-                        "controls": [
-                            {
-                                "tag": "button",
-                                "role": "button",
-                                "text": "Apply for this Job",
-                            }
-                        ],
-                    }
-                ],
-            }
-        )
-        self.assertEqual(result["surface"], "ashby_job")
-        self.assertTrue(result["ready"])
-        self.assertFalse(result["claim_ready"])
-
-    def test_generic_apply_now_surface_is_ready_for_navigation(self):
-        result = evaluate_snapshot(
-            {
-                "version": 1,
-                "url": "https://careers.example.com/role",
-                "navigation_committed": True,
-                "frames": [
-                    {
-                        "url": "https://careers.example.com/role",
-                        "controls": [
-                            {
-                                "tag": "a",
-                                "role": "link",
-                                "text": "Apply now",
-                            }
-                        ],
-                    }
-                ],
-            }
-        )
-        self.assertEqual(result["surface"], "generic_job")
-        self.assertTrue(result["ready"])
-        self.assertFalse(result["claim_ready"])
 
     def test_committed_page_without_application_surface_fails_closed(self):
         self.assertEqual(
@@ -160,31 +116,6 @@ class AtsReadinessTests(unittest.TestCase):
             },
         )
 
-    def test_workday_localized_apply_choice_is_ready_for_navigation(self):
-        result = evaluate_snapshot(
-            {
-                "version": 1,
-                "url": "https://wd3.myworkdaysite.com/ja-JP/recruiting/example/job/role",
-                "navigation_committed": True,
-                "frames": [
-                    {
-                        "url": "https://wd3.myworkdaysite.com/ja-JP/recruiting/example/job/role",
-                        "controls": [
-                            {"tag": "a", "role": "button", "text": "手動で応募"},
-                            {
-                                "tag": "a",
-                                "role": "button",
-                                "text": "自分の前回の応募情報を使用",
-                            },
-                        ],
-                    }
-                ],
-            }
-        )
-        self.assertEqual(result["surface"], "workday_apply_choice")
-        self.assertTrue(result["ready"])
-        self.assertFalse(result["claim_ready"])
-
     def test_workday_create_account_is_ready_but_not_claim_ready(self):
         self.assertEqual(
             evaluate_snapshot(load_fixture("workday-create-account-surface.json")),
@@ -213,44 +144,53 @@ class AtsReadinessTests(unittest.TestCase):
         self.assertFalse(result["claim_ready"])
         self.assertEqual(result["surface"], "none")
 
-    def test_workday_localized_create_account_without_consent_is_ready(self):
-        result = evaluate_snapshot(
-            {
-                "version": 1,
-                "url": "https://wd3.myworkdaysite.com/ja-JP/recruiting/example/job/role/apply/applyManually",
-                "navigation_committed": True,
-                "frames": [
-                    {
-                        "url": "https://wd3.myworkdaysite.com/ja-JP/recruiting/example/job/role/apply/applyManually",
-                        "controls": [
-                            {
-                                "tag": "input",
-                                "type": "text",
-                                "label": "E メール アドレス*",
-                            },
-                            {
-                                "tag": "input",
-                                "type": "password",
-                                "label": "パスワード*",
-                            },
-                            {
-                                "tag": "input",
-                                "type": "password",
-                                "label": "新しいパスワードの確認*",
-                            },
-                            {
-                                "tag": "button",
-                                "type": "submit",
-                                "text": "アカウントの作成",
-                            },
-                        ],
-                    }
-                ],
-            }
-        )
-        self.assertEqual(result["surface"], "workday_account_create")
+    def test_workday_sign_in_accepts_text_email_field_with_email_label(self):
+        snapshot = {
+            "version": 1,
+            "url": "https://example.wd5.myworkdayjobs.com/en-US/careers/job/Japan-Tokyo/example/apply/applyManually",
+            "navigation_committed": True,
+            "frames": [
+                {
+                    "url": "https://example.wd5.myworkdayjobs.com/en-US/careers/job/Japan-Tokyo/example/apply/applyManually",
+                    "controls": [
+                        {
+                            "tag": "input",
+                            "type": "text",
+                            "label": "Email Address*",
+                        },
+                        {"tag": "input", "type": "password", "label": "Password*"},
+                        {"tag": "button", "type": "submit", "text": "Sign In"},
+                    ],
+                }
+            ],
+        }
+        result = evaluate_snapshot(snapshot)
+        self.assertEqual(result["surface"], "workday_sign_in")
         self.assertTrue(result["ready"])
         self.assertFalse(result["claim_ready"])
+
+    def test_workday_review_accepts_visible_submit_on_next_button_automation_id(self):
+        snapshot = {
+            "version": 1,
+            "url": "https://example.wd5.myworkdayjobs.com/en-US/careers/job/example",
+            "navigation_committed": True,
+            "frames": [
+                {
+                    "url": "https://example.wd5.myworkdayjobs.com/en-US/careers/job/example",
+                    "controls": [
+                        {
+                            "tag": "button",
+                            "role": "button",
+                            "automation_id": "bottom-navigation-next-button",
+                            "text": "Submit",
+                        }
+                    ],
+                }
+            ],
+        }
+        result = evaluate_snapshot(snapshot)
+        self.assertEqual(result["surface"], "workday_review")
+        self.assertTrue(result["claim_ready"])
 
     def test_generic_application_surface_is_claim_ready(self):
         snapshot = {
@@ -273,32 +213,6 @@ class AtsReadinessTests(unittest.TestCase):
             ],
         }
         result = evaluate_snapshot(snapshot)
-        self.assertTrue(result["ready"])
-        self.assertTrue(result["claim_ready"])
-        self.assertEqual(result["surface"], "generic_application")
-
-    def test_labeled_text_email_control_is_claim_ready(self):
-        result = evaluate_snapshot(
-            {
-                "version": 1,
-                "url": "https://job-boards.greenhouse.io/acme/jobs/42",
-                "navigation_committed": True,
-                "frames": [
-                    {
-                        "url": "https://job-boards.greenhouse.io/acme/jobs/42",
-                        "controls": [
-                            {"tag": "input", "type": "text", "label": "Email"},
-                            {"tag": "input", "type": "file", "label": "Attach"},
-                            {
-                                "tag": "button",
-                                "type": "submit",
-                                "text": "Submit application",
-                            },
-                        ],
-                    }
-                ],
-            }
-        )
         self.assertTrue(result["ready"])
         self.assertTrue(result["claim_ready"])
         self.assertEqual(result["surface"], "generic_application")

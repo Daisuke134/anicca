@@ -4,42 +4,6 @@
   "required": ["status", "processed_threads", "processed_thread_ids", "processed_message_ids", "calendar_events", "replies", "assessments", "prep_packs", "verifications", "reports"],
   "properties": {
     "status": {"type": "string"},
-    "mercor_work_events": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["work_id", "event_id", "next_state", "evidence_ref"],
-        "properties": {
-          "work_id": {"type": "string", "minLength": 1},
-          "event_id": {"type": "string", "minLength": 1},
-          "next_state": {
-            "enum": ["selected", "contracted", "authorized_work", "work_submitted", "accepted", "paid_settled", "needs_human", "rejected"]
-          },
-          "evidence_ref": {"type": "string", "minLength": 1},
-          "payment_id": {"type": "string", "minLength": 1},
-          "settlement_status": {"enum": ["paid", "settled", "completed", "pending"]},
-          "amount_usd": {"type": ["string", "number"]},
-          "reason": {"type": "string", "minLength": 1},
-          "authorization_policy": {"const": "explicitly_allowed"},
-          "acceptance_status": {"const": "accepted"}
-        }
-      }
-    },
-    "mercor_calendar_events": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["work_id", "event_id", "calendar_event_key", "evidence_ref"],
-        "properties": {
-          "work_id": {"type": "string", "minLength": 1},
-          "event_id": {"type": "string", "minLength": 1},
-          "calendar_event_key": {"type": "string", "minLength": 1},
-          "evidence_ref": {"type": "string", "minLength": 1}
-        }
-      }
-    },
     "processed_threads": {"type": "integer"},
     "processed_thread_ids": {
       "type": "array",

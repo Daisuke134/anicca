@@ -24,14 +24,37 @@ BUSINESS_ROLE_FAMILIES = frozenset(
 
 JAPANESE_PATTERN = re.compile(r"[ぁ-んァ-ヶ一-龯々]")
 ASCII_LETTER_PATTERN = re.compile(r"[A-Za-z]")
+RESUME_VARIANTS = ("engineering", "technical_business", "japanese")
 
-RESUME_VARIANT_PATHS = {
-    "engineering": Path("master") / "Daisuke_Narita_AI_Resume.pdf",
-    "technical_business": (
-        Path("business") / "Daisuke_Narita_AI_Business_Resume.pdf"
-    ),
-    "japanese": Path("japan") / "Daisuke_Narita_Japan_AI_Resume.pdf",
-}
+
+def load_resume_manifest(materials_root: Path) -> dict[str, Path]:
+    root = Path(materials_root).expanduser().resolve()
+    manifest = root / "manifest.v1.json"
+    try:
+        value = json.loads(manifest.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise ValueError(f"invalid resume manifest: {error}") from error
+    resumes = value.get("resumes") if isinstance(value, dict) else None
+    if value.get("version") != 1 or not isinstance(resumes, dict):
+        raise ValueError("resume manifest must be version 1 with resumes")
+    resolved = {}
+    for variant in RESUME_VARIANTS:
+        relative = resumes.get(variant)
+        if not isinstance(relative, str) or not relative.strip():
+            raise ValueError(f"resume manifest missing {variant}")
+        path = Path(relative)
+        if path.is_absolute() or ".." in path.parts:
+            raise ValueError("resume manifest paths must stay under materials root")
+        target = (root / path).resolve()
+        if root not in target.parents or not target.is_file():
+            raise ValueError(f"resume manifest file is unavailable: {variant}")
+        resolved[variant] = target
+    return resolved
+
+
+def list_resume_paths(materials_root: Path) -> tuple[Path, ...]:
+    values = load_resume_manifest(materials_root)
+    return tuple(dict.fromkeys(values[variant] for variant in RESUME_VARIANTS))
 
 
 def detect_posting_language(posting_text: str) -> str:
@@ -49,36 +72,6 @@ def detect_posting_language(posting_text: str) -> str:
 
 def _normalized_role_family(role_family: str) -> str:
     return re.sub(r"[\s-]+", "_", role_family.strip().casefold())
-
-
-def select_resume_variant(
-    *,
-    resume_variant: str,
-    materials_root: Path,
-    expected_sha256: str | None = None,
-) -> dict[str, str]:
-    """Resolve an immutable prior assignment without re-running role routing."""
-    variant = resume_variant.strip().casefold()
-    try:
-        relative_path = RESUME_VARIANT_PATHS[variant]
-    except KeyError as error:
-        raise ValueError(f"unknown resume variant: {resume_variant}") from error
-
-    resume_path = (Path(materials_root).expanduser() / relative_path).resolve()
-    if not resume_path.is_file():
-        raise FileNotFoundError(f"selected resume does not exist: {resume_path}")
-    digest = hashlib.sha256(resume_path.read_bytes()).hexdigest()
-    if expected_sha256 is not None:
-        if not re.fullmatch(r"[a-f0-9]{64}", expected_sha256):
-            raise ValueError("expected_sha256 must be a lowercase SHA-256")
-        if digest != expected_sha256:
-            raise ValueError("stored resume hash does not match selected variant")
-    return {
-        "posting_language": "ja" if variant == "japanese" else "en",
-        "resume_variant": variant,
-        "resume_path": str(resume_path),
-        "resume_sha256": digest,
-    }
 
 
 def select_resume(
@@ -99,47 +92,46 @@ def select_resume(
     else:
         variant = "engineering"
 
-    result = select_resume_variant(
-        resume_variant=variant,
-        materials_root=materials_root,
-    )
-    result["posting_language"] = language
-    return result
+    resume_path = load_resume_manifest(materials_root)[variant]
+    digest = hashlib.sha256(resume_path.read_bytes()).hexdigest()
+    return {
+        "posting_language": language,
+        "resume_variant": variant,
+        "resume_path": str(resume_path),
+        "resume_sha256": digest,
+    }
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    role = parser.add_mutually_exclusive_group(required=True)
-    role.add_argument("--role-family")
-    role.add_argument("--resume-variant", choices=tuple(RESUME_VARIANT_PATHS))
+    parser.add_argument("--role-family")
     parser.add_argument("--materials-root", required=True, type=Path)
-    parser.add_argument("--expected-sha256")
+    parser.add_argument("--list-resumes", action="store_true")
     parser.add_argument("--posting-language", choices=("ja", "en"))
     parser.add_argument("--posting-text-file", type=Path)
     arguments = parser.parse_args()
-    if arguments.resume_variant and not arguments.expected_sha256:
-        parser.error("--expected-sha256 is required with --resume-variant")
-    if arguments.role_family and arguments.expected_sha256:
-        parser.error("--expected-sha256 is only valid with --resume-variant")
-    if arguments.resume_variant:
-        result = select_resume_variant(
-            resume_variant=arguments.resume_variant,
-            materials_root=arguments.materials_root,
-            expected_sha256=arguments.expected_sha256,
+    if arguments.list_resumes:
+        print(json.dumps([str(path) for path in list_resume_paths(arguments.materials_root)]))
+        return 0
+    if not arguments.role_family:
+        parser.error("--role-family is required unless --list-resumes is used")
+    posting_text = (
+        arguments.posting_text_file.read_text(encoding="utf-8")
+        if arguments.posting_text_file
+        else sys.stdin.read()
+    )
+    print(
+        json.dumps(
+            select_resume(
+                posting_text=posting_text,
+                role_family=arguments.role_family,
+                materials_root=arguments.materials_root,
+                posting_language=arguments.posting_language,
+            ),
+            ensure_ascii=False,
+            sort_keys=True,
         )
-    else:
-        posting_text = (
-            arguments.posting_text_file.read_text(encoding="utf-8")
-            if arguments.posting_text_file
-            else sys.stdin.read()
-        )
-        result = select_resume(
-            posting_text=posting_text,
-            role_family=arguments.role_family,
-            materials_root=arguments.materials_root,
-            posting_language=arguments.posting_language,
-        )
-    print(json.dumps(result, ensure_ascii=False, sort_keys=True))
+    )
     return 0
 
 

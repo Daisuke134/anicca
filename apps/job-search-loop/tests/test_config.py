@@ -17,7 +17,7 @@ class ConfigTests(unittest.TestCase):
             json.dumps(
                 {
                     "version": 1,
-                    "daily_target": 10,
+                    "daily_target": 2,
                     "auto_apply_threshold": 75,
                     "compensation_floor_jpy": 7_000_000,
                 }
@@ -60,7 +60,7 @@ class ConfigTests(unittest.TestCase):
             state_dir=self.root / "state",
             materials_dir=self.root / "materials",
         )
-        self.assertEqual(settings.daily_target, 10)
+        self.assertEqual(settings.daily_target, 2)
         self.assertEqual(settings.auto_apply_threshold, 75)
         self.assertEqual(settings.compensation_floor_jpy, 7_000_000)
         self.assertEqual(settings.state_dir.stat().st_mode & 0o777, 0o700)
