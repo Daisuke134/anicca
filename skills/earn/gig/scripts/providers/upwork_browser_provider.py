@@ -396,8 +396,6 @@ def plan_free_proposal(state: dict[str, Any], proposals_dir: Path) -> dict[str, 
     candidates = state.get("candidate_jobs")
     if type(balance) is not int or balance < 0 or not isinstance(candidates, list):
         raise ValueError("upwork_free_action_state_invalid")
-    if balance == 0:
-        return None
     proposals_dir = proposals_dir.expanduser()
     if (
         proposals_dir.is_symlink() or not proposals_dir.is_dir()

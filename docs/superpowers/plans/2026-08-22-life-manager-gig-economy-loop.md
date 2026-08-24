@@ -261,7 +261,7 @@ No later task may jump ahead of the first incomplete row:
 | U11 | Resolve application capacity for that candidate | **DONE:** official proposal surface requires 7 Connects; balance/history, offers, invites and proposals are 0, no reward banner is exposed, and the only buy offer is 100 for $15 plus tax |
 | U12 | Freeze one tailored first-job proposal | **DONE:** immutable payload `c37eed9c…c68e926` contains the $15 terms, cover letter, five factual screening answers, no attachments, and zero unsupported claims |
 | U13 | Make acquisition fully loop-owned | **DONE:** production launchd wakes generate Skill-bound searches, inspect current jobs, make model-owned select/skip decisions, retain rejected IDs and seal proposals without manual marketplace selection; existing ready work remains available |
-| U14 | Close the first acquisition effect | **WAITING WALLET AUTHORIZATION:** submit the best current sealed public-job proposal immediately after the owner authorizes and the loop officially reads enough Connects, or earlier through a qualified invitation/direct offer/Catalog order; verify official proposal/order ID and exact balance delta |
+| U14 | Close the first acquisition effect | **IN PROGRESS, ZERO-SPEND:** submit any model-qualified public job whose official cost is 0 Connects, or accept a qualified invitation/direct offer/Catalog order; paid Connects remain disabled; verify official proposal/order ID and exact balance delta |
 | U15 | Replay immediately | Same proposal ID; zero new proposal and zero additional Connects |
 | U16 | Poll and answer the resulting thread | Official story/message IDs and no duplicate reply |
 | U17 | Negotiate and accept profitable terms | Offer ID, exact terms hash and active contract ID |
@@ -591,6 +591,14 @@ U13 atomic order:
     acquisition abstractions or requiring three ready jobs before action. Reuse the existing proposal
     effect path and submit the best sealed job as soon as wallet-authorized Connects are officially
     available. A Connects purchase is the only next action requiring owner approval.
+30. **ZERO-CONNECT PUBLIC JOB BUG REMOVED:** operator confirmed no Connects purchase and directed the
+    loop to pursue work requiring no prior network or paid capacity. Official Upwork documentation
+    distinguishes human connections from Connects and confirms invitations cost zero; public job cost
+    is provider-assigned and read per job. The existing planner incorrectly returned immediately for
+    balance 0 before checking a candidate whose official `connects_required` could itself be 0. Remove
+    that guard and rely only on `required_connects <= balance`, preserving the existing sealed proposal
+    and exactly-once submission path. Search/selection remains model-owned; regex is limited to fixed
+    provider identifiers and numeric readback, never suitability judgment.
 
 U14 atomic order:
 
