@@ -35,7 +35,13 @@ contract, fee, payout, and bank receipts advance it.
 3. [ ] byusco `18171890`: invalidate the stale note-only decision, consume the latest request,
    publish the reviewed article to the agreed anicca AI blog through the installed owner, read
    back the public URL, report and formally deliver it, obtain buyer completion, and replay with
-   zero effects. The earlier note handoff is not completion.
+   zero effects. The earlier note handoff is not completion. The preserved v8 article contract is
+   SHA256 `1b0e4818894b4c223421a2142f723d35b4f7751bddd054d2bf0632b33ddab37d`
+   with three immutable screenshot assets. Use the account-owned site's existing
+   `skills/affiliate/scripts/owned_publish.py` from one clean isolated site worktree: commit only
+   the three image paths, then let that adapter stage/commit/push the article JSON and obtain
+   `https://aniccaai.com/blog/casican-review` readback. Do not clone Life Manager, install web
+   dependencies, run a site build, or create another publisher.
 4. [ ] LBJ `18130722`: use only the latest explicit buyer approval and latest v98 project-manager
    package. Codex may inspect v98 and repair the generic approval/reviewer code, but must not send
    customer work. A seller acknowledgement must not erase buyer approval. The installed Paid
