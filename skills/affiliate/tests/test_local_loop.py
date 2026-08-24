@@ -121,6 +121,26 @@ class LocalLoopTest(unittest.TestCase):
                 state / "funnel-experiments" / "distribution-plans.jsonl"
             )), 1)
 
+            next_funnel = {
+                "transition_id": "9" * 64, "placement_id": "caption-en-1",
+            }
+            MODULE.atomic_json(state / "money-funnel" / "latest.json", next_funnel)
+            next_decision = {
+                "state": "READY", "decision_id": "8" * 64,
+                "source_funnel_transition_id": next_funnel["transition_id"],
+                "selected_variable": "distribution_mix", "bottleneck": "reach",
+                "exposure_assessment": "insufficient",
+                "action": "Publish one more quote without changing the offer.",
+                "official_success_metric": "Exact impressions exceed 32.",
+            }
+            next_plan = MODULE.materialize_distribution_mix_plan(state, next_decision)
+            self.assertNotEqual(next_plan["plan_id"], first["plan_id"])
+            self.assertEqual(next_plan["decision_id"], next_decision["decision_id"])
+            self.assertEqual(next_plan["decision_action"], next_decision["action"])
+            self.assertEqual(len(MODULE.json_rows(
+                state / "funnel-experiments" / "distribution-plans.jsonl"
+            )), 2)
+
             MODULE.atomic_json(state / "funnel-experiments" / "active.json", {
                 **experiment, "experiment_id": "e" * 64, "selected_variable": "hook",
             })

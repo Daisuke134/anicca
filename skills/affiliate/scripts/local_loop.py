@@ -567,7 +567,7 @@ def enforce_exposure_gate(state):
     return {**receipt, "changed": changed}
 
 
-def materialize_distribution_mix_plan(state):
+def materialize_distribution_mix_plan(state, decision=None):
     active_path = state / "funnel-experiments" / "active.json"
     gate_path = state / "funnel-experiments" / "latest-exposure-gate.json"
     if not active_path.is_file() or not gate_path.is_file():
@@ -582,6 +582,25 @@ def materialize_distribution_mix_plan(state):
         or gate.get("distribution_required") is not True
     ):
         return {"state": "NO_DISTRIBUTION_REQUIRED", "changed": False}
+    selected_decision = active
+    if isinstance(decision, dict) and decision.get("state") in {"READY", "ALREADY_DECIDED"}:
+        try:
+            latest_funnel = json.loads((
+                state / "money-funnel" / "latest.json"
+            ).read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            latest_funnel = {}
+        if not all((
+            decision.get("selected_variable") == "distribution_mix",
+            decision.get("bottleneck") == "reach",
+            decision.get("exposure_assessment") == "insufficient",
+            decision.get("source_funnel_transition_id") == latest_funnel.get("transition_id"),
+            latest_funnel.get("placement_id") == active.get("control_placement_id"),
+            isinstance(decision.get("decision_id"), str)
+            and REPOST_PROPOSAL_ID_PATTERN.fullmatch(decision["decision_id"]),
+        )):
+            raise ValueError("distribution continuation decision mismatch")
+        selected_decision = decision
     job_id = active.get("control_job_id")
     job_path = state / "x-distribution-jobs" / f"{job_id}.json"
     if not job_path.is_file():
@@ -615,7 +634,7 @@ def materialize_distribution_mix_plan(state):
         "receipt_type": "AFFILIATE_DISTRIBUTION_MIX_PLAN",
         "state": "READY",
         "experiment_id": active["experiment_id"],
-        "decision_id": active.get("decision_id"),
+        "decision_id": selected_decision.get("decision_id"),
         "selected_variable": "distribution_mix",
         "control_placement_id": placement_id,
         "control_job_id": job_id,
@@ -626,7 +645,8 @@ def materialize_distribution_mix_plan(state):
         "next_action": "SAFE_X_RECIRCULATION",
         "cadence_rule": "ONE_RELEVANT_RECIRCULATION_PER_OWNER_PASS",
         "maximize_relevant_exposure": gate.get("maximize_relevant_exposure") is True,
-        "official_success_metric": active.get("official_success_metric"),
+        "official_success_metric": selected_decision.get("official_success_metric"),
+        "decision_action": selected_decision.get("action"),
         "content_mutation_allowed": False,
     }
     plan_id = hashlib.sha256(json.dumps(
@@ -4928,7 +4948,7 @@ def _wake_once(args, started_at, run_id):
         distribution_plan = admit(
             "acquisition.distribution-mix-plan", "LEDGER_ONLY",
             {"exposure_gate_state": exposure_gate.get("state")},
-            lambda: materialize_distribution_mix_plan(state),
+            lambda: materialize_distribution_mix_plan(state, funnel_decision),
         )
     except Exception as error:
         distribution_plan = {
