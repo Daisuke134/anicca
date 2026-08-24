@@ -260,7 +260,7 @@ No later task may jump ahead of the first incomplete row:
 | U10 | Discover and qualify a first-job candidate | **DONE:** usability-test job `~022091106411892491962`; $15, 10–15 proposals, zero interviews, payment/phone verified, and all student/age/English/recording gates match owner evidence |
 | U11 | Resolve application capacity for that candidate | **DONE:** official proposal surface requires 7 Connects; balance/history, offers, invites and proposals are 0, no reward banner is exposed, and the only buy offer is 100 for $15 plus tax |
 | U12 | Freeze one tailored first-job proposal | **DONE:** immutable payload `c37eed9c…c68e926` contains the $15 terms, cover letter, five factual screening answers, no attachments, and zero unsupported claims |
-| U13 | Activate every zero-spend acquisition path | **IN PROGRESS:** the bounded Project Catalog service is approved, visible and monitored; inspect remaining factual free-reward tasks, monitor invitations/direct offers, retain three sealed public-job candidates and reconcile all official states into one inventory |
+| U13 | Activate every zero-spend acquisition path | **IN PROGRESS:** dedicated 9233 and two fresh replay-safe wakes are complete; Catalog is visible with one view and zero orders, while one of three sealed candidates closed, so replace it and restore three live ready candidates |
 | U14 | Close the first zero-spend acquisition effect | Accept one qualified invitation/direct offer or Project Catalog order, or submit the best sealed public-job proposal when granted/returned Connects cover its exact cost; never purchase capacity; verify official IDs and balance readback |
 | U15 | Replay immediately | Same proposal ID; zero new proposal and zero additional Connects |
 | U16 | Poll and answer the resulting thread | Official story/message IDs and no duplicate reply |
@@ -274,20 +274,18 @@ No later task may jump ahead of the first incomplete row:
 Later implementation tasks are renumbered only when their first incomplete outcome becomes active.
 All cross-market tasks remain frozen until U22 closes.
 
-The last complete official snapshot is stale and shows applications 0, contracts 0 and payout
-`received` USD 0; pipeline values do not change it. Upwork finance main proof is `12d92846e`, its
-production proof is `c0c66c32f`, and release tests are 40/40. U13 remains
-active because `launchctl gui/501` returns 141. The shared Gig browser is alive on 9223, but the
-authenticated `gig-upwork` profile has 103 Upwork cookies and no owner listening on its configured
-9233. Disk headroom is 7.6 GiB with 15 GiB of macOS swap, so no fresh official inventory proves
-recovery and no production wake is safe yet.
+The fresh official snapshot shows applications 0, replies 0, contracts 0 and payout `received` USD 0.
+Upwork finance main proof is `12d92846e`, its production proof is `c0c66c32f`, and release tests are
+40/40. The stale app-server was replaced, preflight now reads `anicca/Aqua/501/manager PID 1/gui 0`,
+the dedicated `gig-upwork` browser is live on 9233, and two provider wakes exited 0 with provider
+effects 0, transition delta 0 and unchanged official business counts.
 
 Remaining order to finish the local Upwork skill and business loop:
 
 | Order | Required closure |
 |---:|---|
-| 1 | Native Aqua loads the dedicated `life-manager-upwork-browser` owner for existing profile `gig-upwork` on 9233 and reads back label/profile/CDP |
-| 2 | Two existing provider wakes return a complete official inventory, then replay with external effects 0 |
+| 1 | **DONE:** Aqua preflight, dedicated `life-manager-upwork-browser`, profile `gig-upwork`, 9233 and two provider wakes with effect 0 |
+| 2 | Replace the closed sealed candidate and restore three current low-competition ready candidates |
 | 3 | U14–U15 close one natural qualified acquisition with official ID, exact Connects delta and replay 0 |
 | 4 | U16–U17 close client reply, profitable terms and active contract with official IDs and replay 0 |
 | 5 | U18–U19 close immutable build, independent PASS, one delivery ID and duplicate 0; Task 20 runs only on a real revision |
@@ -498,6 +496,19 @@ U13 atomic order:
     `GIG_DISK_HEADROOM_KIB=524288` still requires 512 MiB free before Chromium starts. The shared
     9223 browser and all other lanes retain their existing policy. Next acceptance is 9233 argv/profile
     readback followed by two fresh provider wakes and exact funnel counts.
+19. **141 CONTROL PLANE RECOVERED:** the command parent was stale app-server PID `2128`, started before
+    the current ChatGPT GUI and detached at PPID 1. Targeted TERM plus the official acct2 daemon stop
+    reconnected this thread to new PID `26982`. The same preflight changed from numeric username,
+    manager 153 and gui 141 to `id-un=anicca`, `managername=Aqua`, UID 501, manager PID 1,
+    `gui/501` rc 0, `status=pass`, `mutation_allowed=true`. No OS service or browser was restarted.
+20. **9233 AND FRESH FUNNEL ACCEPTED:** release `3e41b0ce0c3a` scoped the preventive flag override to
+    the Upwork browser and retained the 512 MiB hard floor. Production readback is PID `68012`,
+    fingerprint `80138`, profile `gig-upwork`, port 9233 and launchd running. Two provider wakes exited
+    0. The second observed balance 0, submitted proposals 0, replies/messages 0, invitations 0,
+    offers 0, active contracts 0, payout USD 0, provider effects 0 and transition delta 0. Catalog is
+    visible with one 30-day view and zero orders. Of three sealed candidates, the $15 usability job
+    is officially closed; the two open jobs require 14 and 9 Connects. U13 next replaces the closed
+    candidate before U14.
 
 U14 atomic order:
 
