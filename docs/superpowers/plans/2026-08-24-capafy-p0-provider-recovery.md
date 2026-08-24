@@ -37,7 +37,7 @@ Load `runtime/agent-runner/config.json` and assert that the Codex provider uses 
 
 - [ ] **Step 2: Run the test and verify RED**
 
-Run: `python3 -m unittest runtime.agent-runner.tests.test_account2_direct_routing -v`
+Run: `python3 runtime/agent-runner/tests/test_account2_direct_routing.py -v`
 
 Expected: FAIL because `model_provider` is `local_proxy`.
 
@@ -50,7 +50,7 @@ Delete `model_provider` and `model_providers` from the Codex provider row. Prese
 Run:
 
 ```bash
-python3 -m unittest runtime.agent-runner.tests.test_account2_direct_routing -v
+python3 runtime/agent-runner/tests/test_account2_direct_routing.py -v
 python3 -m unittest discover -s runtime/agent-runner/tests -p 'test_*.py'
 ```
 
