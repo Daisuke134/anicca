@@ -58,6 +58,7 @@ DEFAULT_BROWSER_PROFILE = Path.home() / ".cloak/profiles/gig-daily-driver"
 DEFAULT_INBOUND_DIR = Path.home() / ".config/anicca/gig/upwork-inbound"
 DEFAULT_INBOUND_PROPOSALS = Path.home() / ".config/anicca/gig/upwork-inbound-proposals"
 DEFAULT_INBOUND_EVIDENCE = Path.home() / "gig/state/upwork-inbound-planner"
+DEFAULT_SEARCH_CURSOR = Path.home() / "gig/state/upwork-search-cursor.json"
 DEFAULT_OFFER_EVIDENCE = Path.home() / "gig/state/upwork-offer-gate"
 DEFAULT_INBOX_LEDGER = Path.home() / "gig/state/upwork-inbox.jsonl"
 DEFAULT_NEGOTIATION_EVIDENCE = Path.home() / "gig/state/upwork-negotiation-planner"
@@ -459,11 +460,20 @@ def parse_candidate(
 async def discover_zero_connect_proposal(
     state: dict[str, Any], *, pass_id: str, sequence: int,
     proposals_dir: Path, inbound_dir: Path, inbound_evidence: Path,
+    cursor_path: Path,
 ) -> dict[str, Any] | None:
     """Reuse the invitation proposal brain for current public jobs costing zero Connects."""
+    next_page = 2
+    if cursor_path.exists():
+        cursor = json.loads(cursor_path.read_text(encoding="utf-8"))
+        if (not isinstance(cursor, dict) or cursor.get("version") != 1
+                or type(cursor.get("next_page")) is not int or cursor["next_page"] < 2):
+            raise ValueError("upwork_search_cursor_invalid")
+        next_page = cursor["next_page"]
     known = {str(row.get("job_id")) for row in state["candidate_jobs"]}
     state["zero_connect_discovery"] = {"pages": 0, "inspected": 0, "eligible": 0}
-    for page in range(1, 4):
+    pages = (1, next_page, next_page + 1)
+    for page in pages:
         search_url = SEARCH_URL if page == 1 else f"{SEARCH_URL}&page={page}"
         base = sequence + (page - 1) * 11
         artifact = Path(await navigate_and_snapshot(
@@ -513,7 +523,11 @@ async def discover_zero_connect_proposal(
             ready = {**candidate, "queue": "ready",
                      "proposal_payload_sha256": public["payload_sha256"]}
             state["candidate_jobs"].append(parse_candidate(ready, text, digest))
+            _atomic_write(cursor_path, {"version": 1, "next_page": page + 1})
+            state["zero_connect_discovery"]["next_page"] = page + 1
             return public
+    _atomic_write(cursor_path, {"version": 1, "next_page": next_page + 2})
+    state["zero_connect_discovery"]["next_page"] = next_page + 2
     return None
 
 
@@ -779,6 +793,7 @@ async def observe(
     inbound_proposals: Path = DEFAULT_INBOUND_PROPOSALS,
     inbound_evidence: Path = DEFAULT_INBOUND_EVIDENCE,
     inbox_ledger: Path = DEFAULT_INBOX_LEDGER,
+    search_cursor: Path = DEFAULT_SEARCH_CURSOR,
 ) -> dict[str, Any]:
     pass_id = f"upwork-free-{time.time_ns()}-{os.getpid()}"
     artifacts: dict[str, str] = {}
@@ -964,7 +979,7 @@ async def observe(
         selected = await discover_zero_connect_proposal(
             state, pass_id=pass_id, sequence=len(targets) + 21,
             proposals_dir=proposals_dir, inbound_dir=inbound_dir,
-            inbound_evidence=inbound_evidence,
+            inbound_evidence=inbound_evidence, cursor_path=search_cursor,
         )
     state["can_submit_public_job"] = selected is not None
     if selected is None:
@@ -993,6 +1008,7 @@ def main() -> int:
     parser.add_argument("--inbound-proposals", type=Path, default=DEFAULT_INBOUND_PROPOSALS)
     parser.add_argument("--inbound-evidence", type=Path, default=DEFAULT_INBOUND_EVIDENCE)
     parser.add_argument("--inbox-ledger", type=Path, default=DEFAULT_INBOX_LEDGER)
+    parser.add_argument("--search-cursor", type=Path, default=DEFAULT_SEARCH_CURSOR)
     parser.add_argument("--transitions", type=Path, default=DEFAULT_TRANSITIONS)
     parser.add_argument(
         "--output", type=Path,
@@ -1004,7 +1020,7 @@ def main() -> int:
         args.candidates.expanduser(), args.proposals.expanduser(), args.database.expanduser(),
         args.manifest.expanduser(), args.browser_profile.expanduser(), args.inbound_dir.expanduser(),
         args.inbound_proposals.expanduser(), args.inbound_evidence.expanduser(),
-        args.inbox_ledger.expanduser(),
+        args.inbox_ledger.expanduser(), args.search_cursor.expanduser(),
     ))
     state = reconcile_terminal_transitions(
         args.output.expanduser(), args.transitions.expanduser(), state,

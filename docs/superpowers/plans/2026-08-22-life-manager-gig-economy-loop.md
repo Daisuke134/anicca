@@ -260,7 +260,7 @@ No later task may jump ahead of the first incomplete row:
 | U10 | Discover and qualify a first-job candidate | **DONE:** usability-test job `~022091106411892491962`; $15, 10–15 proposals, zero interviews, payment/phone verified, and all student/age/English/recording gates match owner evidence |
 | U11 | Resolve application capacity for that candidate | **DONE:** official proposal surface requires 7 Connects; balance/history, offers, invites and proposals are 0, no reward banner is exposed, and the only buy offer is 100 for $15 plus tax |
 | U12 | Freeze one tailored first-job proposal | **DONE:** immutable payload `c37eed9c…c68e926` contains the $15 terms, cover letter, five factual screening answers, no attachments, and zero unsupported claims |
-| U13 | Make acquisition fully loop-owned | **DONE:** custom acquisition stack deleted; production release scans three current-job pages, reads exact proposal cost, reuses the existing proposal model/effect/readback path, and polls invitations, Direct Offers, Catalog orders and free Connects every five minutes |
+| U13 | Make acquisition fully loop-owned | **IN PROGRESS:** production scans page 1 plus two durable-cursor pages, reads exact proposal cost, reuses the existing proposal model/effect/readback path, and polls invitations, Direct Offers, Catalog orders and free Connects every five minutes; next prove cursor advances across wakes |
 | U14 | Close the first acquisition effect | **WAITING PROVIDER CAPACITY:** the latest production wake inspected 28 jobs and found zero official zero-Connect jobs; balance/invites/offers/Catalog orders remain 0. The loop submits immediately when any zero-spend path becomes actionable and then verifies official proposal/order ID and exact balance delta |
 | U15 | Replay immediately | Same proposal ID; zero new proposal and zero additional Connects |
 | U16 | Poll and answer the resulting thread | Official story/message IDs and no duplicate reply |
@@ -634,6 +634,12 @@ U13 atomic order:
     0. U13 is therefore engineering-complete: the five-minute loop applies through the existing fence
     as soon as a zero-cost job, invitation, offer, order or free Connects becomes official. U14 remains
     a live business outcome, not another code task.
+36. **REOPENED UNTIL ACTUAL APPLICATION / DURABLE SEARCH CURSOR:** application count 0 means U13 is
+    not complete. The three-page wake repeated the same leading pages and could never cover deeper
+    current inventory. Reuse the Coconala search-objective pattern: every wake refreshes page 1, then
+    reads two pages from a mode-600 durable cursor and checkpoints the next page. No query, category,
+    keyword, score or suitability rule is added. U13 closes only after consecutive production wakes
+    prove cursor advancement; U14 still requires an official proposal ID and replay effect 0.
 
 U14 atomic order:
 
