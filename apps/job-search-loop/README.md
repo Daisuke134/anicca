@@ -1,19 +1,19 @@
 # Anicca Job Search Loop
 
 Anicca Job Search Loop is a bounded, evidence-first job application system for a
-verified private candidate profile. It discovers and ranks suitable roles, submits at
-most two verified applications per Japan day, monitors recruiter mail, prepares
+verified private candidate profile. It discovers and ranks suitable roles, submits
+every unique qualified role that fits within the bounded owner window, monitors recruiter mail, prepares
 interviews, and reports every material state change to Telegram.
 
 ## Operating contract
 
 | Concern | Current rule |
 |---|---|
-| Daily target | At most 2 unique, confirmed submissions |
+| Acquisition target | Every fresh unique model-qualified role; no daily application quota |
 | Location | Tokyo or remote roles that can employ someone based in Japan |
-| Compensation | JPY 5.5M hard floor; JPY 7M target |
+| Compensation | JPY 7M minimum; JPY 10M target; JPY 10M-30M priority |
 | Role focus | Applied AI/agent engineering plus technical AI business roles: Product, Program, Solutions, GTM, Partnerships, Customer Success and Sales Engineering |
-| Discovery | Firecrawl, public Freehire, public low-volume LinkedIn Tokyo/Remote, then official ATS pages in the existing browser; one provider failure never ends a pass |
+| Discovery | Accumulating official Workday company registry plus complete CXS snapshots and model ranking; non-Workday adapters remain broken/unverified until rebuilt |
 | Evidence | Every application is fenced in SQLite and retained under a private evidence directory |
 | Uncertainty | Ambiguous submission becomes `submit_unknown` and is never blindly retried; a later exact official receipt may reconcile it without another submit click |
 | Personal data | Verified private profile and generated materials are mode `0600` |
@@ -34,7 +34,7 @@ quota, and policy gates run before browser/model initialization.
 
 | Component | Schedule | Route |
 |---|---|---|
-| `ai.anicca.job-search-daily` | 08:30 JST daily | bounded browser-lane agent |
+| `ai.anicca.job-search-daily` | every 30 minutes (`StartInterval=1800`) | bounded browser-lane agent |
 | `ai.anicca.job-search-inbox` | every 15 minutes | deterministic Gmail and prep preflight; Terra composition agent only for new recruiting work or pending prep generation |
 
 The current local deployment uses launchd and is designed so the same drivers and
@@ -58,9 +58,7 @@ unlimited loop.
 | Interview prep state | `~/.local/state/anicca/job-search/interview-prep.sqlite3` |
 | Evidence | `~/.local/state/anicca/job-search/evidence/` |
 | Materials | `~/.local/share/anicca/job-search/materials/` |
-| Engineering resume | `~/.local/share/anicca/job-search/materials/master/Daisuke_Narita_AI_Resume.pdf` |
-| Technical-business resume | `~/.local/share/anicca/job-search/materials/business/Daisuke_Narita_AI_Business_Resume.pdf` |
-| Japanese resume | `~/.local/share/anicca/job-search/materials/japan/Daisuke_Narita_Japan_AI_Resume.pdf` |
+| Resume files | `~/.local/share/anicca/job-search/materials/` (installed private manifest; current production still requires private-generalization work before sharing) |
 | Resume language router | `job_search_loop/resume_routing.py` |
 | Technical-business message templates | `templates/application-messages.v1.json` |
 | Recruiter reply policy | `job_search_loop/recruiter_reply.py` |
@@ -83,6 +81,11 @@ zsh scripts/healthcheck.sh
 ```
 
 ### Portable local install
+
+> **Not yet friend/share ready.** The command below is the intended public entry
+> point, but current production still contains candidate-specific material names,
+> signatures and machine fallback paths tracked by spec items 62A-62C. Do not ask
+> another user to run it until the clean-HOME real-application gate passes.
 
 Authenticate one supported subscription CLI without copying its credentials into
 this repository:
