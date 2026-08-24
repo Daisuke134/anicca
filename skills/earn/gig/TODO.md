@@ -30,6 +30,9 @@ evidence and are not reported as coding work.
    are `0700/0600`, status never echoes values, and reuse requires matching privacy,
    purpose, consent, scope and freshness. Provider-only fields hold evidence hashes and
    credentials remain refs. Coconala correctly requires zero duplicate profile facts.
+   The local UI now auto-suggests language/timezone, asks notification channel once, and
+   stores all three via CSRF-bound loopback POST; temp API verification proves no value in
+   responses and `0700/0600` modes.
 4. [x] Add one local onboarding web UI opened by the root bootstrap; terminal commands are
    recovery-only. The loopback-only stdlib server renders a private control surface, uses
    a per-process CSRF token, never serves logs, and the global/Coconala bootstraps converge
