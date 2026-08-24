@@ -51,7 +51,7 @@ class WorkdayQualificationTests(unittest.TestCase):
     def test_complete_snapshot_is_ranked_in_chunks_then_finalists(self):
         candidates = [
             {"url": f"https://a.wd1.myworkdayjobs.com/Careers/job/{index}"}
-            for index in range(20)
+            for index in range(50)
         ]
         calls = []
         candidate_id_calls = []
@@ -67,8 +67,8 @@ class WorkdayQualificationTests(unittest.TestCase):
             chunk_size=2,
         )
 
-        self.assertEqual(len(calls), 11)
-        self.assertEqual(len(calls[-1]), 10)
+        self.assertEqual(len(calls), 26)
+        self.assertEqual(len(calls[-1]), 25)
         self.assertEqual(result, (calls[-1][-1],))
         self.assertTrue(all(ids[0] == "c0" for ids in candidate_id_calls))
 

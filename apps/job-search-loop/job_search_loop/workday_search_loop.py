@@ -15,6 +15,8 @@ from .state import canonical_url, is_excluded_employer
 from .workday_discovery import _fetch_jobs, discover_one
 from .workday_qualification import fetch_official_description, qualify_one
 
+SHORTLIST_SIZE = 24
+
 
 def rotated_sources(
     sources: tuple[dict[str, str], ...], index: int
@@ -154,7 +156,7 @@ def rank_candidates(
             row = by_url[url.casefold()]
             if row not in finalists:
                 finalists.append(row)
-    if len(finalists) <= 8:
+    if len(finalists) <= SHORTLIST_SIZE:
         return tuple(row["url"] for row in finalists)
     return select(finalists)
 
@@ -269,7 +271,8 @@ def main() -> int:
                 "Use the whole supplied snapshot, not company prestige or source order. "
                 "Prefer roles whose actual work is supported by demonstrated experience. "
                 "Do not invent requirements, compensation, or candidate facts. Return up "
-                "to 8 unique candidate_id values, best first, copied exactly from the snapshot. "
+                f"exactly {min(SHORTLIST_SIZE, len(chunk))} unique candidate_id values, "
+                "best first, copied exactly from the snapshot. "
                 "Return only the schema.\n\n"
                 + wrap_untrusted(
                     "workday_snapshot",

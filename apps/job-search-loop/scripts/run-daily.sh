@@ -143,7 +143,7 @@ if [[ -f "$WORKDAY_SOURCES" ]]; then
   --evidence-root "$EVIDENCE/qualification" \
   --output "$WORKDAY_DISCOVERY_RESULT" \
   --snapshot "$WORKDAY_SNAPSHOT" \
-  --max-candidates 8
+  --max-candidates 24
 WORKDAY_SEARCH_RC=$?
 else
   WORKDAY_SEARCH_RC=75
