@@ -7826,7 +7826,7 @@ the named production evidence:
   action is one additional relevant owned distribution and its official metric
   is placement-specific exact impressions increasing from baseline 9. History
   count is exactly 1. D14 is now the first unchecked item.
-- [ ] **D14 Exposure gate.** Prevent a conversion verdict until the active
+- [x] **D14 Exposure gate.** Prevent a conversion verdict until the active
   placement has a sealed observation window and sufficient real reach chosen by
   the model. Scheduler time or post count alone cannot satisfy exposure.
   While the gate is waiting, maximize relevant exposure toward the model-chosen
@@ -7834,6 +7834,13 @@ the named production evidence:
   wait passively and do not substitute indiscriminate spam: every added
   distribution effect must bind the active placement, preserve duplicate zero,
   respect account/provider safety, and return an exact reach delta.
+  Done at `67c66d4e1`: owner binds the D13 experiment, its source D11 row, and
+  latest D11 row into an immutable gate. Production gate `55654d66...` is
+  `WAITING_FOR_EXPOSURE`; baseline impressions 9, current 10,
+  `conversion_verdict_allowed=false`, `distribution_required=true`, and
+  `maximize_relevant_exposure=true`. Transaction count 0 is explicitly
+  `NOT_JUDGED_INSUFFICIENT_EXPOSURE`. Identical evidence appends nothing. D15 is
+  now the first unchecked item.
 - [ ] **D15 One-variable builder.** Materialize exactly the selected title,
   hook, structure, CTA, offer, timing, or distribution change while preserving
   every non-selected field and the exact provider link.
