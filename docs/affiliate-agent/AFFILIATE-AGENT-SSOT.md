@@ -8286,8 +8286,13 @@ Current authoritative state:
 - Disk headroom is also a direct runtime blocker: the data volume reached 100%
   with 232 MiB available, causing x-repost 18:30 to fail before creating its
   evidence directory. Rotating only regenerable launchd logs retained recent
-  tails and increased availability to 342 MiB, but durable headroom repair is
-  still required before claiming constant loops.
+  tails and pruning five old 8/22 core backups while preserving the latest two
+  recovery archives increases availability to 1.7 GiB. The 19:00 x-repost
+  natural run then creates evidence and claims the next Affiliate job with exit
+  0; a 19:05 same-owner kickstart prepares its payload with exit 0 and no public
+  effect. The 19:30 boundary now owns the publish attempt. Additional durable
+  headroom is still desirable, but `No space left on device` is no longer the
+  active x-repost failure.
 - Active placement is `elevenlabs-discovered-caption-generator-en-1`; its exact
   X permalink is `https://x.com/selawmqt/status/2091754957448040906`.
 - D01–D15 are complete. D16 has one public quote effect with duplicate zero; its
