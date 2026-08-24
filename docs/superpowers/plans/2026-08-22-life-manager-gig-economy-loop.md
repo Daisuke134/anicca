@@ -2229,15 +2229,20 @@ Telegram outbox. Add no scheduler, notifier, database or provider-specific seman
 
 ### Task 59: Let Upwork lifecycle lanes progress independently
 
-**Ponytail constraint:** Reuse the existing wake, durable queues, provider-effect lease and configured
-three-contract capacity. Add no provider scheduler and never permit concurrent account mutations.
+**Ponytail constraint:** Reuse the existing wake, durable queues and effect fence. Add no provider
+scheduler. Fence the narrowest resource and serialize only genuinely shared account state.
 
 - [ ] Split the current wake's durable work into acquire, sell, fulfill, money and learn queue items.
-- [ ] Allow read-only/model/artifact work concurrently while one account-effect lease serializes
-  proposal, reply, offer acceptance and delivery mutations.
-- [ ] Prove paid deadline/revision, unread buyer and unknown-effect work preempt acquisition.
-- [ ] Prove three fulfillment projects can progress independently while a fourth acceptance is
-  refused by current official capacity.
+- [ ] Replace one-proposal-per-wake and the fixed three-contract cap with dynamic workers and measured
+  backpressure; ten proposals remain a learning checkpoint, never a stop.
+- [ ] Key leases by job, message head, offer and contract/milestone so distinct effects run in
+  parallel; use a short global reservation only for Connects/account/KYC/billing/payout state.
+- [ ] Prove two different proposals, rooms and contracts progress concurrently while replay of the
+  same resource produces zero duplicate effects.
+- [ ] Prove queue depth increases workers and provider errors/throttling/deadline risk reduce them
+  without hardcoded marketplace-specific counts.
+- [ ] Prove paid deadline/revision and unread buyer receive priority without stopping unrelated
+  acquisition or fulfillment.
 - [ ] Expose per-lane last progress, queue depth, blocker and next action in the existing Telegram
   funnel heartbeat.
 
