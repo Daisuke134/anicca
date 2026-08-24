@@ -534,6 +534,14 @@ add provider code only for authentication, machine-stable extraction, fees/curre
 cannot be expressed safely through the common ACI. No provider gets its own planner, scheduler,
 notification path, funnel ledger or learning loop.
 
+Ordinary marketplace forms are never provider code. Luna seals the truthful commercial intent; Terra
+uses the common Browser ACI to inspect the current page, fill every visible required field, respond to
+validation feedback and submit. Deterministic code may reserve spend/capacity, fence the exact intent
+and parse official machine-stable IDs/balances after Terra acts. Provider-specific selector/fill scripts,
+including the current Upwork `fill_preflight_expression`, are legacy and must be retired rather than
+debugged or copied to another market. DOM selectors may exist only inside a generic browser tool for
+mechanical element access chosen from live model observation, never as one site's workflow brain.
+
 ### 4.3 Sales loop
 
 ```text
