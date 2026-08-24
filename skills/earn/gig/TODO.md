@@ -81,9 +81,14 @@ contract, fee, payout, and bank receipts advance it.
 6. [ ] `18184558`: make no guessed seller-side delivery/cancellation action. Observe official
    Coconala cancellation, enter terminal pending replay, prove all effects zero, and close as
    cancelled.
-7. [ ] `18180857`: use the already-authorized TikTok account/session and never ask Chii for
-   another code. Perform the exact scope, verify the live result, deliver, obtain buyer completion,
-   and prove replay-zero.
+7. [ ] `18180857`: use the buyer-authorized TikTok account and stored credential. The historical
+   code is no longer reusable. At the first official observation outside Chii's unavailable
+   19:00–22:00 JST window, ask once only whether TikTok authentication can be handled now; do not
+   ask for a code in that message. After a newer availability confirmation, start login immediately
+   and request a six-digit code only if official TikTok issues a new OTP in that same continuation;
+   enter it immediately and never ask again pre-emptively. Then perform the exact campaign scope,
+   checkpoint every verified DM/sheet effect, verify the live result, deliver, obtain buyer
+   completion, and prove replay-zero.
 8. [ ] `18169985`: the buyer has now explicitly approved the unchanged @diceai0 account, the
    shown DM format with a recipient-specific introduction, a total of 100 DMs, and formal
    delivery with evidence. The buyer then replaced the common body with an explicitly estimated
