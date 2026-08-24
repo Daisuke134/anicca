@@ -7675,57 +7675,100 @@ repairs the money-making system; the installed owners execute it. Reporting an
 owner's next wake, post, or readback is not a substitute for completing these
 design items.
 
-Execute one design slice at a time in this order:
+Execute exactly one unchecked item at a time. Each item is complete only with
+the named production evidence:
 
-1. **Affiliate-to-X distribution contract.** Replace the current loose proposal
-   observation with one durable queue owned by Affiliate and consumed by
-   x-repost. Each job binds exact placement ID, public owned-article URL,
-   experiment lineage, content hash, target X account, cadence class, and effect
-   identity. x-repost must publish the owned URL, never the private tracking URL,
-   and return the exact X permalink to Affiliate. This closes the current 5
-   exact joins versus 84 unjoined Repost actions.
-2. **X growth measurement.** Add owner-side official readback for follower
-   count and exact-post impressions/engagement where X exposes them. Persist
-   immutable before/after receipts and explicit `UNAVAILABLE` states. Stop
-   treating post count as growth. Feed real reach denominators into the
-   acquisition context.
-3. **Money-funnel controller.** Give the model the exact chain
-   impression → owned entry → CTA click → provider click → transaction →
-   approved/paid commission and let it identify the current bottleneck. Code
-   performs only evidence binding and arithmetic; it must not hardcode whether
-   title, hook, timing, CTA, offer, or distribution is the right business move.
-4. **Single active experiment scheduler.** Enforce one active placement lineage,
-   a sealed observation window, minimum real exposure before a conversion
-   verdict, and one selected-variable mutation. Prevent sibling experiments,
-   stale-baseline decisions, and repeated posting merely because a scheduler
-   wakes.
-5. **Offer and program acquisition.** Expand beyond one ElevenLabs offer. Build
-   an owner that discovers official affiliate programs, verifies commission and
-   payout terms, applies through the real provider, records approval state, and
-   admits only offers with a working exact-placement link and official
-   transaction readback. Rejected, sign-in-required, and unverified programs do
-   not enter distribution.
-6. **Revenue-weighted content selection.** Replace content-volume optimization
-   with model selection over approved offers, buyer intent, exact reach,
-   provider clicks, transaction rate, approved/paid commission, reversal rate,
-   and known cost. Exploration remains bounded; positive money evidence, not
-   clicks alone, controls exploitation.
-7. **Closed-loop X growth and monetization.** Make x-repost balance account
-   growth content and Affiliate distribution from the same measured state.
-   Growth posts earn reach; monetization posts route relevant users to the exact
-   owned article. The controller changes cadence and mix from official follower,
-   impression, entry, click, and money deltas rather than a fixed 50/50 rule.
-8. **Scale and stop rules.** Allocate more X distribution and owned content only
-   to placements with positive official approved/paid unit economics. Pause or
-   replace offers with sufficient exposure and zero transactions. Stop any lane
-   with reversals, unknown attribution, broken public readback, or negative
-   known net economics.
-9. **Production completion evidence.** Deploy each slice through immutable
-   releases and existing owners, then prove the full chain with exact public X
-   permalink, owned URL, entry receipt, CTA receipt, provider click, official
-   transaction, and approved/paid commission. Final completion is rolling
-   30-day official approved-or-paid net Affiliate revenue of at least USD
-   10,000 after known costs.
+- [ ] **D01 Queue schema.** Define one versioned Affiliate distribution-job
+  receipt containing job ID, exact placement ID, public owned URL, content hash,
+  experiment lineage, target X account, cadence class, and effect identity.
+- [ ] **D02 Queue producer.** Make Affiliate enqueue exactly one job only after
+  owned-page public readback and policy PASS. Evidence: one immutable queued
+  receipt and duplicate enqueue count zero.
+- [ ] **D03 Queue consumer.** Make existing x-repost claim the oldest eligible
+  job atomically. Evidence: queued → claimed transition owned by the launchd
+  process, with two simultaneous wakes unable to claim the same job.
+- [ ] **D04 Safe X payload.** Build the post from the job's public owned URL and
+  forbid private provider tracking URLs. Evidence: sealed content hash and
+  secret/link scan PASS.
+- [ ] **D05 X effect return.** After real publication, return the exact X
+  permalink, provider post ID, content hash, and placement ID to Affiliate.
+  Evidence: public X readback and one terminal delivered receipt.
+- [ ] **D06 Queue reconciliation.** Resume ambiguous/partial jobs without a
+  second post. Evidence: second wake performs zero duplicate external effects.
+- [ ] **D07 Exact-join repair.** Backfill only provable historical X-to-placement
+  joins and leave all others explicitly unjoined. Evidence: joined count rises
+  without guessed attribution; current baseline is 5 joined / 84 unjoined.
+- [ ] **D08 Follower baseline.** Add official X profile follower-count readback
+  for the target account. Evidence: timestamped immutable value or explicit
+  `UNAVAILABLE`; post count is never substituted.
+- [ ] **D09 Post reach baseline.** Add exact-post impressions and engagement
+  readback where X exposes them. Evidence: permalink-bound receipt or explicit
+  `UNAVAILABLE`.
+- [ ] **D10 X growth ledger.** Join follower and post reach deltas to growth and
+  monetization posts separately. Evidence: before/after denominators with no
+  revenue credit.
+- [ ] **D11 Complete funnel row.** Produce one exact-placement row containing
+  impressions, owned entries, CTA clicks, provider clicks, unique clicks,
+  transactions, approved/paid commission, reversals, and known costs. Missing
+  fields remain `UNKNOWN` or `UNAVAILABLE`.
+- [ ] **D12 Bottleneck decision contract.** Give that row to the model and require
+  one bottleneck, one selected variable, one falsifiable hypothesis, one action,
+  and one official success metric. Deterministic code binds evidence only.
+- [ ] **D13 Active-experiment lock.** Permit one active lineage and reject
+  sibling experiments, stale controls, and overlapping measurement windows.
+- [ ] **D14 Exposure gate.** Prevent a conversion verdict until the active
+  placement has a sealed observation window and sufficient real reach chosen by
+  the model. Scheduler time or post count alone cannot satisfy exposure.
+- [ ] **D15 One-variable builder.** Materialize exactly the selected title,
+  hook, structure, CTA, offer, timing, or distribution change while preserving
+  every non-selected field and the exact provider link.
+- [ ] **D16 Experiment publication.** Publish the owned page and X placement once
+  through existing owners. Evidence: exact owned URL, X permalink, placement
+  link, hashes, and duplicate-zero second wake.
+- [ ] **D17 Observation close.** At the model-selected boundary, seal the full
+  funnel delta and classify it as insufficient exposure, no transaction,
+  transaction pending, approved/paid winner, reversed, or attribution failure.
+- [ ] **D18 Program discovery owner.** Discover one candidate affiliate program
+  at a time from official terms and record commission, cookie/attribution,
+  payout, geography, approval, and product/buyer fit without inventing values.
+- [ ] **D19 Program application owner.** Submit the real application through the
+  provider, persist provider application ID/state, and resume without duplicate
+  submission.
+- [ ] **D20 Offer admission.** Admit an offer only after approval, a working
+  exact-placement tracking link, public destination readback, and official
+  transaction-report access. Rejected or sign-in-required offers stay out.
+- [ ] **D21 Offer portfolio loop.** Repeat D18–D20 until the model has multiple
+  approved, measurable offers rather than a single ElevenLabs dependency.
+- [ ] **D22 Revenue-weighted selector.** Select the next offer/content using
+  buyer intent, official reach, clicks, transactions, approved/paid commission,
+  reversals, and known cost. Positive money controls exploitation; bounded
+  exploration handles missing money evidence.
+- [ ] **D23 Growth/monetization mix.** Let the model allocate X cadence between
+  reach-building posts and relevant Affiliate jobs from official follower,
+  impression, funnel, and money deltas. Remove fixed percentage routing as a
+  business decision.
+- [ ] **D24 First exact transaction.** Produce one non-test official transaction
+  joined to one exact placement. Pending proves a transaction, not approved
+  cash.
+- [ ] **D25 First approved/paid money.** Read one official approved or paid
+  commission for that placement and reconcile currency and known costs.
+- [ ] **D26 Unit economics.** Compute official approved/paid net per impression,
+  entry, provider click, and transaction without replacing unknown costs with
+  zero.
+- [ ] **D27 Winner scaling.** Increase distribution only for positive official
+  unit economics; verify the additional cadence creates no duplicate post and
+  preserves attribution.
+- [ ] **D28 Loser stopping.** Pause or replace placements with model-confirmed
+  sufficient exposure and no transaction, reversals, broken attribution, or
+  negative known net economics.
+- [ ] **D29 Continuous portfolio iteration.** Repeat D11–D28 one active lineage
+  at a time, preserving immutable evidence and using real money as the terminal
+  optimization signal.
+- [ ] **D30 USD 10k completion gate.** Declare completion only when official
+  rolling 30-day approved-or-paid Affiliate net revenue is at least USD 10,000,
+  known costs are reconciled, exact placement attribution is intact, and a
+  repeated readback returns the same money state. Posts, followers, impressions,
+  clicks, pending estimates, and projected commissions do not complete D30.
 
 ### Loop runtime protocol — not Codex's design TODO
 
