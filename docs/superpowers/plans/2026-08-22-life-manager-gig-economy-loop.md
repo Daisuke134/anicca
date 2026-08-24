@@ -262,7 +262,7 @@ No later task may jump ahead of the first incomplete row:
 | U12 | Freeze one tailored first-job proposal | **DONE:** immutable payload `c37eed9c…c68e926` contains the $15 terms, cover letter, five factual screening answers, no attachments, and zero unsupported claims |
 | U13 | Make acquisition fully loop-owned | **DONE:** five-minute main loop uses native Best Matches, ten-job Luna batches, prompt-bound cache, durable sealed queue, Terra browser operation, exact Connects/effect readback and one-candidate failure isolation. |
 | U14 | Close the first acquisition effect | **DONE:** owner-authorized seed produced 150 Connects; proposal `2091740505918763009`, exact `150 -> 141`, no subscription/boost/badge/auto-top-up. |
-| U15 | Replay immediately | **DONE:** same proposal ID, official count unchanged and additional Connects 0. Second dynamic proposal `2091760957211561985` is also verified `141 -> 133` with replay 0. |
+| U15 | Replay immediately | **DONE:** all three proposals return the same IDs on exact replay with additional Connects 0. IDs include dynamic fixed-price `2091760957211561985` (`141 -> 133`) and hourly iOS `2091789044149923841` (`133 -> 118`). |
 | U16 | Poll and answer the resulting thread | **IN PROGRESS:** official submitted entities 2, canonical Messages works, rooms/unread/offers/contracts 0. Next real buyer event must produce official story/message ID and duplicate reply 0. |
 | U17 | Negotiate and accept profitable terms | Offer ID, exact terms hash and active contract ID |
 | U18 | Fulfill and independently verify the work | Artifact hash and independent verifier PASS |
@@ -279,7 +279,7 @@ Read-only research and adapter generation may proceed earlier. After U14, additi
 canaries may run while Upwork continues through U15–U22; paid work and unknown-effect reconciliation
 always preempt expansion.
 
-Current official truth is proposals 2, Connects 133, replies/offers/contracts 0 and payout `received`
+Current official truth is proposals 3, Connects 118, replies/offers/contracts 0 and payout `received`
 USD 0. The loop is merged to main, survives later shared releases and runs every five minutes through
 the dedicated authenticated 9233 browser. Finance proof remains `12d92846e`/`c0c66c32f` with 40/40;
 the live Upwork regression is 156/156.
@@ -973,6 +973,13 @@ U13 atomic order:
     that absence to official `Never`; do not select a percent or boost. This is deterministic form
     projection, not a pricing judgment. Fresh click-free preflight remains ready for exact job/rate/
     Connects, and regression is `156 passed`. Reset only the absence-proven effect once after release.
+82. **THIRD PROPOSAL CLOSES HIGH-VALUE HOURLY PATH:** release `0859676d0` resumed the exact sealed
+    iOS proposal, explicitly selected no rate increase, used the configured browser-model route and
+    submitted exactly once. Official proposal `2091789044149923841` is verified at `$40/hour` with
+    exact Connects `133 -> 118` and boost 0. A fresh Proposals page reads submitted 3, Connects History
+    names the exact job with `-15`, and exact payload replay returns the same proposal ID with no new
+    spend. The application portfolio now contains bounded fixed-price review work, research work and a
+    higher-value hourly iOS opportunity. Acquisition remains active while Sales monitors all three.
 
 U14 atomic order:
 
