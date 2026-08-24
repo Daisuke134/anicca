@@ -74,6 +74,11 @@ Storefront work.
     filesystem capability-receipt CLI and requires unrelated explicit arguments.
     Therefore public one-command Coconala onboarding is not implemented and no
     signup-to-bank-income claim is permitted.
+    Latest implementation checkpoint: fresh remote shallow clone
+    `50d6e146b688a31047e999fb7e5097bc86106b9b` passes OSS self-contained 11/11,
+    compiles all five onboarding/Storefront entrypoints, passes both installer shell
+    syntax checks, and has zero Gig-tree gitleaks findings. This is package evidence,
+    not a substitute for the three live pilots below.
     Atomic implementation order (design SSOT:
     `docs/superpowers/specs/2026-08-24-coconala-one-session-onboarding-design.md`):
     Active implementation plan:
