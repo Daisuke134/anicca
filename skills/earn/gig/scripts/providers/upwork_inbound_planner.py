@@ -16,6 +16,12 @@ from urllib.parse import urlsplit
 
 HERE = Path(__file__).resolve()
 GIG_ROOT = HERE.parents[2]
+REPO_ROOT = HERE.parents[5]
+SCRIPTS = GIG_ROOT / "scripts"
+if str(SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS))
+from storefront_bootstrap import inventory as capability_inventory  # noqa: E402
+
 DEFAULT_RUNNER = GIG_ROOT / "agent-runner/agent_runner.py"
 DEFAULT_SCHEMA = GIG_ROOT / "schemas/upwork_inbound_proposal.schema.json"
 DEFAULT_PROFILE = Path.home() / ".config/anicca/job-search/profile.json"
@@ -68,9 +74,12 @@ def load_packet(path: Path) -> dict[str, Any]:
     return packet
 
 
-def planner_prompt(packet: dict[str, Any], owner_profile: dict[str, Any]) -> str:
+def planner_prompt(
+    packet: dict[str, Any], owner_profile: dict[str, Any], capabilities: dict[str, Any],
+) -> str:
     facts = json.dumps(owner_profile, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     inbound = json.dumps(packet, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    skills = json.dumps(capabilities, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     required = packet.get("required_connects", 0)
     available = packet.get("available_connects_before", 0)
     status = "frozen_waiting_for_connects" if packet.get("kind") == "public_job" else "frozen_waiting_for_invitation"
@@ -79,11 +88,16 @@ Use only facts present in OWNER_PROFILE and OFFICIAL_INBOUND. Never invent exper
 availability, credentials, portfolio, results, client facts, requirements, questions, price, or scope.
 Choose skip when delivery is not fully feasible, required facts are missing, synchronous/physical work
 is required, the client requests off-platform contact/payment, or exact questions cannot be answered.
+Installed Skills are executable delivery capabilities, not claims of prior client experience. Do not
+invent experience, but do not skip solely because an exact prior job, testimonial or portfolio item is
+absent when the work can be completed and independently verified with an installed Skill. Missing
+pre-contract implementation details may become concise client questions rather than automatic rejection.
 For submit, copy job_id, job_url and job_source_sha256 exactly; status is {status}, required_connects
 is {required}, available_connects_before is {available}; unsupported_claims and attachments are empty. Keep all
 pre-contract communication on Upwork. The proposal must be specific, concise, truthful, and answer
 every explicit screening question exactly once.
 OWNER_PROFILE={facts}
+INSTALLED_SKILLS={skills}
 OFFICIAL_INBOUND={inbound}"""
 
 
@@ -153,7 +167,9 @@ def invoke(
     os.chmod(evidence_dir, 0o700)
     summary_path = evidence_dir / "summary.json"
     if not summary_path.is_file():
-        prompt = planner_prompt(packet, _object(profile.expanduser(), "owner_profile"))
+        prompt = planner_prompt(
+            packet, _object(profile.expanduser(), "owner_profile"), capability_inventory(REPO_ROOT),
+        )
         completed = subprocess.run([
             sys.executable, str(runner), "--task-class", "application-intent-planner",
             "--prompt-stdin", "--schema", str(schema), "--evidence-dir", str(evidence_dir),
