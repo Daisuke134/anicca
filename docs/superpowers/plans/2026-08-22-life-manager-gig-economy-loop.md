@@ -756,6 +756,13 @@ U13 atomic order:
     failed read-only inventory because Upwork renders the one-item label as singular `Submitted
     proposal (1)`. Accept singular/plural for this fixed official count field, then prove replay leaves
     proposal count `1` and Connects `141`.
+53. **G3 PROPOSAL GATE COMPLETE / REPLAY ZERO:** release `05a6797d2` parses Upwork's singular official
+    count and a fresh launchd wake exits `0` with `submitted_proposals=1`, balance `141`, no model call
+    and no second effect. A separate post-replay browser read proves the same official count and
+    balance. G3 evidence is therefore proposal `2091740505918763009`, exact Connects `150 -> 141`, and
+    replay delta `0`. The next active acquisition item is replacing the exhausted static candidate
+    cache with loop-owned current-job discovery and Luna proposal sealing whenever no eligible sealed
+    proposal remains and the official balance can fund another application.
 
 U14 atomic order:
 
