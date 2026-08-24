@@ -117,8 +117,13 @@ def qualify_one(
             "Do not infer missing skills, years, management scope, credentials, salary, "
             "or work authorization. Judge mandatory requirements, Tokyo/Japan feasibility, "
             "and a credible path to USD 120,000 annual gross base. If compensation is "
-            "unpublished, state uncertainty and never invent a range. Return rejected or "
-            "hold when a material requirement lacks evidence. Return only the schema.\n\n"
+            "unpublished, state uncertainty and never invent a range, but do not reject or "
+            "hold for unpublished compensation alone. Judge whether the candidate has a "
+            "realistic chance of winning an interview now. A stated years-of-experience gap "
+            "is evidence to weigh, not an automatic rejection, when demonstrated equivalent "
+            "impact directly covers the work. Qualify when the interview case is credible; "
+            "hold only for one resolvable material unknown; reject when the core work is not "
+            "supported. Return only the schema.\n\n"
             + wrap_untrusted(
                 "job",
                 json.dumps(
