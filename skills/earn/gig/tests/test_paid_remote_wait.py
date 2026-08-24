@@ -270,14 +270,14 @@ def test_paid_effect_waits_for_shared_browser_lock(tmp_path):
 
 def test_effect_process_diagnostic_is_bounded():
     paid = load("paid_direct")
-    process = SimpleNamespace(returncode=75, stdout="x" * 700, stderr="deferred_cdp_busy")
+    process = SimpleNamespace(returncode=75, stdout="x" * 2500, stderr="deferred_cdp_busy")
 
     diagnostic = paid._effect_process_diagnostic(process)
 
     assert diagnostic == {
         "returncode": 75,
-        "stdout": "x" * 500,
-        "stderr": "deferred_cdp_busy",
+        "stdout_tail": "x" * 2000,
+        "stderr_tail": "deferred_cdp_busy",
     }
 
 
