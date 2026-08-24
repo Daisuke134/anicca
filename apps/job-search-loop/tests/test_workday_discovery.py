@@ -9,6 +9,20 @@ from job_search_loop.workday_discovery import discover_one
 
 
 class WorkdayDiscoveryTests(unittest.TestCase):
+    def test_rakuten_official_workday_tenant_is_in_discovery_rotation(self):
+        seen = []
+        with tempfile.TemporaryDirectory() as directory:
+            def fake_fetch(source):
+                seen.append(source["company"])
+                return []
+
+            discover_one(
+                ledger_path=Path(directory) / "ledger.sqlite3",
+                fetch_jobs=fake_fetch,
+            )
+
+        self.assertIn("Rakuten", seen)
+
     def test_discovers_one_best_unseen_japan_role_and_dedupes_next_wake(self):
         with tempfile.TemporaryDirectory() as directory:
             ledger_path = Path(directory) / "ledger.sqlite3"

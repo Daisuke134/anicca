@@ -42,6 +42,12 @@ TENANTS = (
         "tenant": "salesforce",
         "site": "External_Career_Site",
     },
+    {
+        "company": "Rakuten",
+        "host": "rakuten.wd1.myworkdayjobs.com",
+        "tenant": "rakuten",
+        "site": "rakuteninc",
+    },
 )
 
 
