@@ -7710,9 +7710,17 @@ the named production evidence:
   `4ceff8ec...` / effect `f9639316...` as `EFFECT_STARTED` with owner label
   `ai.anicca.x-repost-pass`; claim count is exactly 1 and no X post occurs. D04
   is now the first unchecked item.
-- [ ] **D04 Safe X payload.** Build the post from the job's public owned URL and
+- [x] **D04 Safe X payload.** Build the post from the job's public owned URL and
   forbid private provider tracking URLs. Evidence: sealed content hash and
   secret/link scan PASS.
+  Done at `ee5d3f0b1`: the existing owner converts the claimed job into one
+  immutable `X_REPOST_DISTRIBUTION_PAYLOAD`. It contains the exact public owned
+  URL once, Affiliate disclosure, job/effect/placement/target/content/text
+  hashes, weighted length 253, and `private_tracking_url_state=NOT_INCLUDED`.
+  Re-render returns the same receipt without another file. Production release
+  `20260824T133404-ee5d3f0b` generates payload `8325983e...` for job
+  `4ceff8ec...`; claim count remains 1 and no X post occurs. D05 is now the
+  first unchecked item.
 - [ ] **D05 X effect return.** After real publication, return the exact X
   permalink, provider post ID, content hash, and placement ID to Affiliate.
   Evidence: public X readback and one terminal delivered receipt.
