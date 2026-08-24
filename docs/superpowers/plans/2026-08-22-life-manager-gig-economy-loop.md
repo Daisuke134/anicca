@@ -763,6 +763,14 @@ U13 atomic order:
     replay delta `0`. The next active acquisition item is replacing the exhausted static candidate
     cache with loop-owned current-job discovery and Luna proposal sealing whenever no eligible sealed
     proposal remains and the official balance can fund another application.
+54. **CURRENT-JOB REPLENISHMENT GENERALIZED:** when no existing sealed proposal is eligible, the same
+    authenticated search cursor now scans current jobs regardless of whether balance is zero, opens
+    official details and passes every affordable job to the existing Luna-first proposal planner.
+    Luna alone decides submit or skip from full job evidence and owner capabilities; deterministic code
+    only requires official `required_connects <= balance`, binds those exact values into the immutable
+    payload and persists a ready proposal. The former zero-Connect-only discovery name/state and fake
+    invitation packet are removed. Upwork regression remains `155 passed`; next proof is a launchd wake
+    discovering, sealing and submitting a new current job without editing the static candidate list.
 
 U14 atomic order:
 
