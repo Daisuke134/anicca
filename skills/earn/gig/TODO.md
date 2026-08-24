@@ -109,7 +109,11 @@ Storefront work.
        compile success and byte-identical hash on the second init.
     4. [ ] Show one prerequisite screen, then launch the dedicated CloakBrowser profile
        `~/.cloak/profiles/gig-daily-driver` on the official Coconala setup surface. Do not
-       collect duplicate identity/bank facts in Life Manager.
+       collect duplicate identity/bank facts in Life Manager. `start` is implemented using
+       the existing browser launchd job, CDP readiness readback and official signup tab;
+       shell syntax and immutable browser plist dry-render pass. Live execution is deferred
+       to the first clean pilot because this Mac already has a production owner on that
+       exact profile and must not be disrupted.
     5. [ ] Let the owner complete account/email/SMS/seller/consent/eKYC/bank setup in that
        exact browser profile, then report completion once. Never request the password.
     6. [ ] Attach over CDP to the same browser/session and read back authenticated, email,
