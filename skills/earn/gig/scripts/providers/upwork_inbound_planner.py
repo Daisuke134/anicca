@@ -44,13 +44,22 @@ def load_packet(path: Path) -> dict[str, Any]:
         "version", "provider", "kind", "resource_id", "resource_url",
         "detail_evidence_sha256", "observed_at", "rendered_text",
     }
+    kind = packet.get("kind")
+    if kind == "public_job":
+        expected |= {"required_connects", "available_connects_before"}
     canonical = json.dumps(packet, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n"
     if (
         set(packet) != expected or packet.get("version") != 1 or packet.get("provider") != "upwork"
-        or packet.get("kind") != "invitation_detected"
+        or kind not in {"invitation_detected", "public_job"}
         or not isinstance(packet.get("resource_id"), str)
         or not re.fullmatch(r"[0-9a-f]{64}", str(packet.get("detail_evidence_sha256") or ""))
         or hashlib.sha256(canonical.encode()).hexdigest() != path.stem
+        or (kind == "public_job" and (
+            type(packet.get("required_connects")) is not int
+            or type(packet.get("available_connects_before")) is not int
+            or packet["required_connects"] < 0
+            or packet["available_connects_before"] < packet["required_connects"]
+        ))
     ):
         raise InboundPlannerError("inbound_packet_invalid")
     url = urlsplit(str(packet.get("resource_url") or ""))
@@ -62,13 +71,16 @@ def load_packet(path: Path) -> dict[str, Any]:
 def planner_prompt(packet: dict[str, Any], owner_profile: dict[str, Any]) -> str:
     facts = json.dumps(owner_profile, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     inbound = json.dumps(packet, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
-    return f"""You decide one Upwork invitation proposal. Return only schema-valid JSON.
+    required = packet.get("required_connects", 0)
+    available = packet.get("available_connects_before", 0)
+    status = "frozen_waiting_for_connects" if packet.get("kind") == "public_job" else "frozen_waiting_for_invitation"
+    return f"""You decide one Upwork proposal. Return only schema-valid JSON.
 Use only facts present in OWNER_PROFILE and OFFICIAL_INBOUND. Never invent experience, identity,
 availability, credentials, portfolio, results, client facts, requirements, questions, price, or scope.
 Choose skip when delivery is not fully feasible, required facts are missing, synchronous/physical work
 is required, the client requests off-platform contact/payment, or exact questions cannot be answered.
-For submit, copy job_id, job_url and job_source_sha256 exactly; required_connects and
-available_connects_before are both 0; unsupported_claims and attachments are empty. Keep all
+For submit, copy job_id, job_url and job_source_sha256 exactly; status is {status}, required_connects
+is {required}, available_connects_before is {available}; unsupported_claims and attachments are empty. Keep all
 pre-contract communication on Upwork. The proposal must be specific, concise, truthful, and answer
 every explicit screening question exactly once.
 OWNER_PROFILE={facts}
@@ -97,12 +109,16 @@ def validate_decision(
     terms = proposal.get("terms")
     answers = proposal.get("screening_answers")
     url = urlsplit(str(proposal.get("job_url") or ""))
+    is_public = packet.get("kind") == "public_job"
+    expected_status = "frozen_waiting_for_connects" if is_public else "frozen_waiting_for_invitation"
+    expected_required = packet.get("required_connects", 0)
+    expected_available = packet.get("available_connects_before", 0)
     if (
         set(proposal) != expected_keys or proposal.get("provider") != "upwork"
         or proposal.get("job_id") != packet["resource_id"]
         or proposal.get("job_url") != packet["resource_url"]
         or proposal.get("job_source_sha256") != packet["detail_evidence_sha256"]
-        or proposal.get("status") != "frozen_waiting_for_invitation"
+        or proposal.get("status") != expected_status
         or url.scheme != "https" or url.netloc != "www.upwork.com"
         or not isinstance(proposal.get("title"), str) or not proposal["title"].strip()
         or not isinstance(proposal.get("cover_letter"), str) or len(proposal["cover_letter"].strip()) < 80
@@ -113,8 +129,8 @@ def validate_decision(
         or not isinstance(terms.get("bid_usd"), (int, float)) or isinstance(terms.get("bid_usd"), bool)
         or terms["bid_usd"] <= 0
         or type(terms.get("delivery_days")) is not int or not 1 <= terms["delivery_days"] <= 365
-        or terms.get("required_connects") != 0
-        or terms.get("available_connects_before") != 0
+        or terms.get("required_connects") != expected_required
+        or terms.get("available_connects_before") != expected_available
         or not isinstance(answers, list)
         or any(
             not isinstance(answer, dict) or set(answer) != {"question", "answer"}

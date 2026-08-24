@@ -756,6 +756,21 @@ U13 atomic order:
     failed read-only inventory because Upwork renders the one-item label as singular `Submitted
     proposal (1)`. Accept singular/plural for this fixed official count field, then prove replay leaves
     proposal count `1` and Connects `141`.
+53. **G3 PROPOSAL GATE COMPLETE / REPLAY ZERO:** release `05a6797d2` parses Upwork's singular official
+    count and a fresh launchd wake exits `0` with `submitted_proposals=1`, balance `141`, no model call
+    and no second effect. A separate post-replay browser read proves the same official count and
+    balance. G3 evidence is therefore proposal `2091740505918763009`, exact Connects `150 -> 141`, and
+    replay delta `0`. The next active acquisition item is replacing the exhausted static candidate
+    cache with loop-owned current-job discovery and Luna proposal sealing whenever no eligible sealed
+    proposal remains and the official balance can fund another application.
+54. **CURRENT-JOB REPLENISHMENT GENERALIZED:** when no existing sealed proposal is eligible, the same
+    authenticated search cursor now scans current jobs regardless of whether balance is zero, opens
+    official details and passes every affordable job to the existing Luna-first proposal planner.
+    Luna alone decides submit or skip from full job evidence and owner capabilities; deterministic code
+    only requires official `required_connects <= balance`, binds those exact values into the immutable
+    payload and persists a ready proposal. The former zero-Connect-only discovery name/state and fake
+    invitation packet are removed. Upwork regression remains `155 passed`; next proof is a launchd wake
+    discovering, sealing and submitting a new current job without editing the static candidate list.
 
 U14 atomic order:
 
