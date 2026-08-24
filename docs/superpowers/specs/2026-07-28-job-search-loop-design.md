@@ -763,6 +763,28 @@ reference and is copied then adapted, not redesigned.
 | `JH-OSS-07` `in_progress` | Close independent clean-Mac production acceptance | evidence and the existing spec only; no acceptance-only production abstraction | On a separate Apple Silicon Mac, run the README command twice, then let the installed loop discover and apply to one new fit-qualified Workday job. Verify official completion, exact Gog receipt, Ledger transition, natural Telegram ACK, restart-safe continuation and next-wake duplicate effect zero. | All acceptance signals agree. Only then mark Job Hunter OSS ready and share the command as working. |
 | `JH-E2E-01` | Continue beyond application to a landed job | existing `run-inbox.sh` and the recruiter/interview/assessment/offer modules named by row 63 | After `JH-OSS-07`, close one external stage at a time: recruiter reply, interview scheduling/prep, assessment tracking, offer comparison/negotiation, explicit human offer acceptance, and start confirmation. Reuse the same application identity and Telegram timeline throughout. | Each stage has authoritative provider/Gmail/Calendar evidence, replay zero and a natural Telegram receipt; final Done is accepted offer plus confirmed start, not application count. |
 
+### Supported-device forever-working contract
+
+The public promise is not "works on the maintainer's Mac." Version 1 supports every
+Apple Silicon Mac that satisfies the documented prerequisites. Intel macOS, Linux and
+cloud are unsupported until each gets its own native browser/scheduler production proof;
+they are not silently routed through a different browser or executor.
+
+| Order | Atomic outcome | Files or owner | Required proof |
+|---|---|---|---|
+| `JH-DEVICE-01` | One command reaches the same private setup on a clean supported Mac | `scripts/bootstrap-job-hunter.sh`, `install.sh`, `apps/job-search-loop/scripts/install-oss.sh` | Clean HOME and independent Mac both clone/fast-forward safely, install only missing public dependencies, authenticate Codex, import a finalized resume plus preferences, and create no private state before prerequisite validation. The same command resumes rather than creating another profile. |
+| `JH-DEVICE-02` | Each Mac owns exactly one durable browser and scheduler set | browser plist, `run-browser.sh`, `install-launchd.sh`, stable launchers | One dedicated CloakBrowser profile and loopback CDP owner; one acquisition/inbox/learning/health owner per label; installed argv, release and `StartInterval=1800` match source. Reinstall/update changes no account, Ledger or browser identity and starts no parallel executor. |
+| `JH-DEVICE-03` | Readiness is official and per-user | private profile/material manifest, Gog, Telegram connector receipt | Resume hash/readback, candidate preferences, browser `/json/version`, exact Gmail account query, positive Telegram provider message ID and writable mode-0600 state all agree before application owners activate. Tokens, OTPs, passwords and raw private values never enter Git, logs or reports. |
+| `JH-DEVICE-04` | Every wake keeps hunting instead of depending on one stored company list | dynamic Workday source registry, full snapshot, model ranking, Ledger | Source discovery may add any valid official Workday board without code change; candidate exclusions come only from that user's private profile; every wake compares the current complete snapshot, reports every fit decision and browser start, and never repeats a canonical job effect. Same-company jobs remain valid when independently best. |
+| `JH-DEVICE-05` | Host faults recover without duplicate external effects | disk gate, browser/session vault, checkpoints, outbox, health owner | Low disk exits 75 before writes; browser restart restores the same profile; process death resumes the same row; auth expiry opens the existing official recovery surface; quota retries before effect only; `submit_unknown` never retries; Telegram uncertain sends never resend. Each recovery has official readback and replay zero. |
+| `JH-DEVICE-06` | Update and rollback preserve customer state | immutable release/current/previous, release watcher or installer | Checksum-pinned read-only release activates only while the owner is idle; current/previous remain valid; rollback changes code only; profile, resumes, Ledger, evidence, browser session and connector credentials survive. A natural scheduled wake succeeds after update and after rollback rehearsal. |
+| `JH-DEVICE-07` | Independent-device soak closes the OSS gate | two independently configured Apple Silicon Macs and their installed loop owners | Each device completes onboarding from README only, produces one fresh fit-qualified Workday application with official completion, exact Gmail receipt, natural Telegram IDs and next-wake duplicate zero, then completes at least 48 consecutive scheduled wake opportunities without a silent missed report. A truthful capacity/auth/external wait is allowed only when explicitly reported and later recovered. |
+
+Only after `JH-DEVICE-01` through `07` and `JH-OSS-07` are live-proven may the
+README remove the public-beta warning. Tests, launchd presence, process liveness,
+manual Codex actions or one maintainer-device application cannot substitute for this
+device acceptance.
+
 Execution and verification commands:
 
 ```bash
