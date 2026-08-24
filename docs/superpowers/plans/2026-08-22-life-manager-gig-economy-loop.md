@@ -686,6 +686,12 @@ U13 atomic order:
     of reaching the next valid 9-Connect candidate. Preserve invalid-payload fail-closed behavior, but
     treat an official cost change as stale qualification and continue to the next sealed candidate.
     No proposal or Connects spend occurred in the failed wake.
+43. **CURRENT PROPOSAL UI PREFLIGHT PASS:** Upwork moved public proposal entry from `/ab/proposals/`
+    to `/nx/proposals/` and replaced the old cover, bid, duration, balance and submit controls. Update
+    only those provider selectors/readbacks and wait two seconds for the SPA form after page load. A
+    fresh click-free production-profile preflight now returns `ready=true`, exact job
+    `~022091170260597544595`, required Connects 9, available Connects 150 and evidence hash
+    `77cf032a…1f84e`. No submit click or Connects deduction occurred during preflight.
 
 U14 atomic order:
 

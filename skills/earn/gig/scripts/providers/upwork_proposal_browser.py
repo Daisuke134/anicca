@@ -57,18 +57,18 @@ def fill_preflight_expression(payload: dict[str, Any]) -> str:
 const p={sealed},duration={duration_json},wait=ms=>new Promise(r=>setTimeout(r,ms));
 const norm=x=>(x||'').replace(/\\s+/g,' ').trim();
 const setValue=(x,v)=>{{if(!x)throw Error('upwork_form_control_missing');const proto=x.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;Object.getOwnPropertyDescriptor(proto,'value').set.call(x,String(v));x.dispatchEvent(new Event('input',{{bubbles:true}}));x.dispatchEvent(new Event('change',{{bubbles:true}}));}};
-const cover=document.querySelector('.cover-letter-area textarea,textarea[data-test*="cover" i],textarea[aria-label*="cover" i]');
-const bid=document.querySelector('input[data-test*="bid" i],input[name*="bid" i],.fe-proposal-job-rate input');
+const cover=document.querySelector('.cover-letter-area textarea,textarea[data-test*="cover" i],textarea[aria-label*="cover" i],textarea[aria-labelledby="cover_letter_label"],textarea.inner-textarea');
+const bid=document.querySelector('#charged-amount-id,input[data-test*="bid" i],input[name*="bid" i],.fe-proposal-job-rate input,input[data-test="currency-input"]:not([disabled])');
 setValue(cover,p.cover_letter);setValue(bid,p.terms.bid_usd);
 const durationRoot=document.querySelector('.fe-proposal-job-estimated-duration,[data-test*="duration" i]');
-const combo=durationRoot?.querySelector('[role="combobox"],button');if(!combo)throw Error('upwork_duration_missing');combo.click();await wait(0);
-const option=[...(durationRoot.querySelectorAll('li,[role="option"]'))].find(x=>norm(x.innerText)===duration);if(!option)throw Error('upwork_duration_option_missing');option.click();await wait(0);
+const combo=document.querySelector('[role="combobox"][aria-labelledby="duration-label"]')||durationRoot?.querySelector('[role="combobox"],button');if(!combo)throw Error('upwork_duration_missing');combo.click();await wait(100);
+const option=[...document.querySelectorAll('[role="option"]')].find(x=>norm(x.innerText)===duration)||[...(durationRoot?.querySelectorAll('li,[role="option"]')||[])].find(x=>norm(x.innerText)===duration);if(!option)throw Error('upwork_duration_option_missing');option.click();await wait(100);
 const areas=[...document.querySelectorAll('.fe-proposal-job-questions textarea')];if(areas.length!==p.screening_answers.length)throw Error('upwork_question_count_mismatch');
 const answers=p.screening_answers.map(item=>{{const area=areas.find(x=>norm((x.closest('label,.up-form-group,.air3-form-group,[data-test]')||x.parentElement).innerText).includes(norm(item.question)));if(!area)throw Error('upwork_question_mismatch');setValue(area,item.answer);return{{question:item.question,answer:area.value}};}});
-const submit=document.querySelector('footer .air3-btn-primary,footer button[type="submit"],button[data-test*="submit" i]');if(!submit)throw Error('upwork_submit_control_missing');
-const body=norm(document.body.innerText),required=p.terms.required_connects,isInvite=p.status==='frozen_waiting_for_invitation',costs=[...body.matchAll(/(\\d+)\\s+Connects/gi)].map(x=>Number(x[1])),connects=isInvite?(costs.some(x=>x>0)?null:0):(body.includes(String(required)+' Connects')?required:null),availableMatch=body.match(/Available Connects:?\\s*(\\d+)/i),available=isInvite?0:(availableMatch?Number(availableMatch[1]):null);
+const submit=[...document.querySelectorAll('button')].find(x=>['submit proposal','send proposal'].includes(norm(x.innerText).toLowerCase()))||document.querySelector('footer .air3-btn-primary,footer button[type="submit"],button[data-test*="submit" i]');if(!submit)throw Error('upwork_submit_control_missing');
+const body=norm(document.body.innerText),required=p.terms.required_connects,isInvite=p.status==='frozen_waiting_for_invitation',costs=[...body.matchAll(/(\\d+)\\s+Connects/gi)].map(x=>Number(x[1])),connects=isInvite?(costs.some(x=>x>0)?null:0):(body.includes(String(required)+' Connects')?required:null),availableMatch=body.match(/Available Connects:?\\s*(\\d+)/i),remainingMatch=body.match(/you(?:'|’)ll have\\s+(\\d+)\\s+Connects remaining/i),available=isInvite?0:(availableMatch?Number(availableMatch[1]):remainingMatch?Number(remainingMatch[1])+required:null);
 const errors=[...document.querySelectorAll('.form-error,.air3-form-error,.up-alert-danger,[role="alert"]')].map(x=>norm(x.innerText)).filter(Boolean);
-return{{job_id:p.job_id,form_url:location.href,required_connects:connects,available_connects:available,bid_usd:Number(bid.value),duration_label:norm(combo.innerText),cover_letter:cover.value,screening_answers:answers,attachments:[],submit_label:norm(submit.innerText),submit_enabled:!submit.disabled,validation_errors:errors}};
+return{{job_id:p.job_id,form_url:location.href,required_connects:connects,available_connects:available,bid_usd:Number(String(bid.value).replace(/[^0-9.-]/g,'')),duration_label:norm(combo.innerText),cover_letter:cover.value,screening_answers:answers,attachments:[],submit_label:norm(submit.innerText),submit_enabled:!submit.disabled,validation_errors:errors}};
 }})()'''
 
 
@@ -84,8 +84,8 @@ def submit_click_expression(job_id: str) -> str:
     """Build the only proposal-submit mutation; callers must cross the fence first."""
     sealed_job = json.dumps(job_id)
     return f'''(()=>{{
-const job={sealed_job},submit=document.querySelector('footer .air3-btn-primary,footer button[type="submit"],button[data-test*="submit" i]');
-if(!location.pathname.includes('/ab/proposals/job/'+job+'/apply')||!submit||submit.disabled)throw Error('upwork_submit_control_missing');
+const job={sealed_job},norm=x=>(x||'').replace(/\\s+/g,' ').trim().toLowerCase(),submit=[...document.querySelectorAll('button')].find(x=>['submit proposal','send proposal'].includes(norm(x.innerText)))||document.querySelector('footer .air3-btn-primary,footer button[type="submit"],button[data-test*="submit" i]');
+if(!(location.pathname.includes('/ab/proposals/job/'+job+'/apply')||location.pathname.includes('/nx/proposals/job/'+job+'/apply'))||!submit||submit.disabled)throw Error('upwork_submit_control_missing');
 submit.click();return true;
 }})()'''
 
@@ -135,7 +135,7 @@ async def fill_proposal_preflight(payload: dict[str, Any]) -> dict[str, Any]:
     job_id = payload.get("job_id") if isinstance(payload, dict) else None
     if not isinstance(job_id, str) or not job_id:
         raise ValueError("upwork_proposal_preflight_mismatch")
-    apply_url = f"https://www.upwork.com/ab/proposals/job/{job_id}/apply/#/"
+    apply_url = f"https://www.upwork.com/nx/proposals/job/{job_id}/apply/#/"
     async with hidden_page_target(apply_url) as ws_url:
         async with websockets.connect(
             ws_url, ping_interval=None, open_timeout=10, max_size=40 * 1024 * 1024,
@@ -145,6 +145,7 @@ async def fill_proposal_preflight(payload: dict[str, Any]) -> dict[str, Any]:
             _, cid = await _wait_for_load(
                 ws, asyncio.get_event_loop().time() + LOAD_TIMEOUT_SECS, 3,
             )
+            await asyncio.sleep(2)
             result = await _call(ws, "Runtime.evaluate", {
                 "expression": fill_preflight_expression(payload),
                 "awaitPromise": True, "returnByValue": True,
@@ -162,7 +163,7 @@ async def submit_proposal_after_fence(
     job_id = payload.get("job_id") if isinstance(payload, dict) else None
     if not isinstance(job_id, str) or not job_id or not callable(start_effect):
         raise ValueError("upwork_proposal_preflight_mismatch")
-    apply_url = f"https://www.upwork.com/ab/proposals/job/{job_id}/apply/#/"
+    apply_url = f"https://www.upwork.com/nx/proposals/job/{job_id}/apply/#/"
     is_invitation = payload.get("status") == "frozen_waiting_for_invitation"
     entry_url = str(payload.get("job_url") or "") if is_invitation else apply_url
     async with hidden_page_target(entry_url) as ws_url:
@@ -174,6 +175,7 @@ async def submit_proposal_after_fence(
             _, cid = await _wait_for_load(
                 ws, asyncio.get_event_loop().time() + LOAD_TIMEOUT_SECS, 3,
             )
+            await asyncio.sleep(2)
             if is_invitation:
                 await _call(ws, "Runtime.evaluate", {
                     "expression": invitation_accept_expression(), "returnByValue": True,
@@ -219,7 +221,7 @@ def validate_preflight(snapshot: dict[str, Any], payload: dict[str, Any]) -> dic
     if (
         not isinstance(job_id, str) or not job_id
         or url.scheme != "https" or url.netloc != "www.upwork.com"
-        or f"/ab/proposals/job/{job_id}/apply" not in url.path
+        or not any(f"/{prefix}/proposals/job/{job_id}/apply" in url.path for prefix in ("ab", "nx"))
         or any(snapshot.get(key) != value for key, value in expected.items())
         or type(snapshot.get("available_connects")) is not int
         or snapshot["available_connects"] < required
@@ -232,7 +234,7 @@ def validate_preflight(snapshot: dict[str, Any], payload: dict[str, Any]) -> dic
         )
         or (
             payload.get("status") != "frozen_waiting_for_invitation"
-            and not re.search(rf"\b{required}\s+Connects\b", snapshot["submit_label"], re.IGNORECASE)
+            and not re.search(r"submit|send", snapshot["submit_label"], re.IGNORECASE)
         )
     ):
         raise ValueError("upwork_proposal_preflight_mismatch")
