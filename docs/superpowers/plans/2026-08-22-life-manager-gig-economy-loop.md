@@ -483,6 +483,15 @@ U13 atomic order:
     Standard `purge` was denied by macOS, and no live loop, app, customer project, ledger, archive or
     proof was removed. The 20 GiB host policy therefore remains active; a native reboot or equivalent
     authorized host-level swap recovery is still required before 9233 can start.
+17. **EXPLICIT CLEANUP COMPLETED / SWAP CONFIRMED AS ROOT BLOCKER:** after operator cleanup approval,
+    Trash `2.34 GiB` was emptied and a `1.64 GiB` pre-OSS Git bundle was removed only after all
+    `566/566` bundle head commits were proven present in the current repository. Project janitor
+    scanned 25 projects and deleted zero because every project remained nonterminal or guarded;
+    customer work was preserved. Trash is now empty. Despite roughly 4 GiB of file cleanup, free
+    space is only 8.0 GiB because macOS swap grew to 16 GiB with 15.66 GiB used. Deleting enough
+    additional space would require active project/runtime or Codex history loss. The smallest safe
+    unblock remains a native reboot that releases swap, followed by the existing 20 GiB policy
+    readback and automatic 9233 restart.
 
 U14 atomic order:
 
