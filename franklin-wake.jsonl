@@ -33853,3 +33853,17 @@
 {"ts":1787595916,"wake_id":"00MT7KGD3D06E9197A32CB4DEE","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1787596046,"wake_id":"00MT7KJ57Y41436C7597E642A8","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1787596177,"wake_id":"00MT7KLXV8EEDA94927FC6419B","kind":"wake","sleep_s":120,"model":"auto","slot":"yield","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1787596308,"wake_id":"00MT7KORH41FC259CA55D546FA","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1787596436,"wake_id":"00MT7KRHWED86EC0286B5D4BE1","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787596568,"wake_id":"00MT7KUC7SDE6DC18D509E414A","kind":"skill_missing","sleep_s":120,"model":"auto","slot":"run_skill","result":"run_skill skill not found"}
+{"ts":1787596711,"wake_id":"00MT7KXDZUA0AE4F0D17F04685","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787596872,"wake_id":"00MT7L0UC85F1A71692FC743F2","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787597001,"wake_id":"00MT7L3M88EF44F9C14B2343B2","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787597129,"wake_id":"00MT7L6CKK4CB46741CF524454","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787597256,"wake_id":"00MT7L92SYED7AD4F0724140B4","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1787597322,"wake_id":"00MT7LAHMKD155ED88CD6048A1","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1787597388,"wake_id":"00MT7LBWAAFA919B21105C41DE","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1787597453,"wake_id":"00MT7LDAXP1E54F303F3A242C8","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1787597519,"wake_id":"00MT7LEPMN8C86BA6314564143","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1787597585,"wake_id":"00MT7LG4F8E8BF66A7ABE44622","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1787597651,"wake_id":"00MT7LHJBDF0D3F93410A740A6","kind":"wake_error","sleep_s":60,"model":"auto"}
