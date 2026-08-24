@@ -5191,6 +5191,38 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 capability_inventory = bootstrap_inventory()
                 capability_path = args.state_dir / "storefront-capabilities.json"
                 _atomic_write(capability_path, capability_inventory)
+                public_contract = None
+                public_replay = None
+                public_contract_path = args.state_dir / "storefront-bootstrap-contract.json"
+                if observed > 0 and public_contract_path.exists():
+                    public_contract = json.loads(public_contract_path.read_text(encoding="utf-8"))
+                    created_id = str(public_contract.get("draft_service_id") or "")
+                    source = next(
+                        (row for row in contract_sources
+                         if isinstance(row, dict) and str(row.get("service_id") or "") == created_id),
+                        None,
+                    )
+                    expected = public_contract.get("public_fields") or {}
+                    if (not isinstance(source, dict)
+                            or source.get("public_url") != public_contract.get("expected_public_url")
+                            or source.get("title") != expected.get("expected_title")
+                            or source.get("price_jpy") != expected.get("display_price_jpy")):
+                        raise RuntimeError("storefront_bootstrap_public_replay_mismatch")
+                    public_replay = {
+                        "version": 1,
+                        "candidate_key": public_contract["candidate_key"],
+                        "contract_sha256": public_contract["contract_sha256"],
+                        "draft_service_id": created_id,
+                        "status": "already_public", "effect": 0, "public_effect": 0,
+                        "readback": 1, "duplicate": 0,
+                        "public_url": public_contract["expected_public_url"],
+                    }
+                    from coconala_onboarding import record as record_onboarding
+                    replay_evidence = hashlib.sha256(
+                        json.dumps(public_replay, ensure_ascii=False, sort_keys=True,
+                                   separators=(",", ":")).encode("utf-8")
+                    ).hexdigest()
+                    record_onboarding(Path.home(), "storefront_listing_readback", replay_evidence)
                 selection_path = args.state_dir / "storefront-bootstrap-selection.json"
                 selection_record = None
                 if observed == 0 and selection_path.exists():
@@ -5336,8 +5368,8 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                             },
                         }
                         _atomic_write(category_path, category_record)
-                bootstrap_contract = None
-                bootstrap_result = None
+                bootstrap_contract = public_contract
+                bootstrap_result = public_replay
                 if observed == 0 and category_record is not None:
                     import storefront_draft
                     contract_path = args.state_dir / "storefront-bootstrap-contract.json"
@@ -5431,7 +5463,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                             else "storefront_bootstrap_required" if observed == 0
                             else "storefront_import_required"),
                     official_services_read=observed,
-                    actionable=int(bootstrap_result is not None),
+                    actionable=int((bootstrap_result or {}).get("status") == "published"),
                     effect=int((bootstrap_result or {}).get("public_effect") or 0),
                     readback=int((bootstrap_result or {}).get("readback") or 0),
                     duplicate=0,
