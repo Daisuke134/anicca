@@ -7872,8 +7872,19 @@ the named production evidence:
   model text SHA `d5712326...` publish at
   `https://x.com/selawmqt/status/2091774875048546748`; provider submission is
   `cmt6uvc640p9cqp0y7whyvvhd`. A second wake leaves both terminal result and
-  posted ledger at exactly 1. D16 remains open only for the child exact-reach
-  readback and continued bounded exposure toward the model boundary.
+  posted ledger at exactly 1. Affiliate commits `9d4631ac5` and `b57a717f9`
+  normalize each distribution child to its control money placement and sum
+  post-by-post exact maxima without double-counting repeated readbacks. Round 2
+  job `4aa466f1...` publishes at
+  `https://x.com/selawmqt/status/2091780112375337100` with provider submission
+  `cmt6vm3wk0g9bqk0y7t099vqy`. Aggregate exact impressions are 35 across three
+  monetization posts; official transactions and all commission states remain
+  zero. Terra sets the next sufficient-exposure target to at least 100 exact
+  impressions. Commit `f14503790` keeps later distribution decisions inside the
+  same active lineage. Round 3 job `f16a373b...` is claimed with a validated
+  93-character model wrapper and awaits the next safe X slot. D16 remains open
+  until aggregate exact reach reaches 100 or a later model decision closes the
+  channel for safety/negative evidence.
 - [ ] **D17 Observation close.** At the model-selected boundary, seal the full
   funnel delta and classify it as insufficient exposure, no transaction,
   transaction pending, approved/paid winner, reversed, or attribution failure.
@@ -7929,15 +7940,15 @@ preventing one of those outcomes.
 
 Current authoritative state:
 
-- Production Affiliate release is `aff0980af27819dc7fc02ad0fb6c1fecf9e757f0`;
-  reach-observer update `b4d3e41ae` is pushed and awaits deployment after the
-  current X browser lease ends. Production x-repost release is
+- Production Affiliate release is `f145037908730ede2ec848832c08e4d0410b1cc2`.
+  Production x-repost release is
   `5cc750278b9f9428c8fc771d502b5db1da914cd1`.
 - Active placement is `elevenlabs-discovered-caption-generator-en-1`; its exact
   X permalink is `https://x.com/selawmqt/status/2091754957448040906`.
 - D01–D15 are complete. D16 has one public quote effect with duplicate zero; its
   exact reach and post-effect money readback remain the sole active item.
-- Exact impressions have increased from the experiment baseline 9 to 17, but
+- Exact impressions have increased from the experiment baseline 9 to aggregate
+  35 across three monetization posts, but
   exposure remains insufficient by the model-selected boundary. Official
   transactions, pending, approved, paid, and reversed commission remain zero;
   therefore the result is still non-money.
