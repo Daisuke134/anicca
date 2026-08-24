@@ -7897,7 +7897,10 @@ the named production evidence:
   candidates, and validates candidate membership. External job `99c69e13...`
   chooses source `https://x.com/c_valenzuelab/status/2091584754386714846`, whose
   harvested receipt shows 127,044 views, and seals an Affiliate-disclosed
-  172-weighted-character payload for the next safe slot.
+  172-weighted-character payload. It publishes at
+  `https://x.com/selawmqt/status/2091793838792925277` with provider submission
+  `cmt6xk92f0pysqp0ysr84g0el`. Commit `59bb7aee2` ensures later external
+  Affiliate quotes are classified as quote effects in the posted ledger.
 - [ ] **D17 Observation close.** At the model-selected boundary, seal the full
   funnel delta and classify it as insufficient exposure, no transaction,
   transaction pending, approved/paid winner, reversed, or attribution failure.
@@ -8016,6 +8019,24 @@ branch remains until the user changes it. If an Affiliate placement has at least
 100 exact impressions and zero post-attributable provider clicks, change the
 distribution, CTA, offer, or article according to the sealed bottleneck
 decision; do not solve it with identical duplicate posts.
+
+Current cadence evidence shows the scheduler is not yet a half-hour publishing
+machine. From 00:00 through 16:45 JST there are about 33 half-hour slots, but the
+posted ledger contains only 16 public effects: 5 originals, 6 ordinary quotes,
+and 5 Affiliate effects. The owner has a 30-minute launch interval, yet claim,
+model-copy, humanization, verification, and readback consume separate wakes;
+slow or invalid model JSON, Postiz failures, `NO_EFFECT`, and `UNVERIFIED`
+outcomes also leave slots empty. Therefore "launchd ran" is not evidence that
+the cadence or exposure target was met.
+
+The immediate cadence repair must make slot publication and payload preparation
+separate states: precompute model-qualified original, growth-quote, and
+Affiliate-quote payloads before their assigned slot; atomically claim one ready
+payload at the half-hour boundary; publish at most one effect; read back the
+permalink; and refill the future queue without consuming the next public slot.
+The slot ledger must record `POSTED`, `SKIPPED_UNSAFE`, `PROVIDER_FAILED`, or
+`NO_QUALIFIED_SOURCE` for every half-hour boundary and report rolling fill rate,
+original share, quote share, Affiliate share, duplicate count, and exact reach.
 
 ### Loop runtime protocol — not Codex's design TODO
 
