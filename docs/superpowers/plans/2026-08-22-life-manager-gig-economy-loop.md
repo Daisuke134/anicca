@@ -640,6 +640,13 @@ U13 atomic order:
     reads two pages from a mode-600 durable cursor and checkpoints the next page. No query, category,
     keyword, score or suitability rule is added. U13 closes only after consecutive production wakes
     prove cursor advancement; U14 still requires an official proposal ID and replay effect 0.
+37. **DURABLE CURSOR LIVE / ACQUISITION PIVOT REQUIRED:** consecutive production wakes advanced the
+    official search cursor `4 → 6 → 8 → 10` while refreshing page 1 each time. The latest wake still
+    reports balance 0, eligible zero-Connect jobs 0, submitted proposals 0, invitations 0, offers 0
+    and Catalog orders 0. Search continuity is fixed, but U13 remains open until a real proposal ID.
+    The same resident agent must continue search while shifting spare acquisition effort to the
+    already-approved Catalog and profile/invitation surfaces; it must not wait for another manual
+    session or create another scheduler/decision engine.
 
 U14 atomic order:
 
