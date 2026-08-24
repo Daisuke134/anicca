@@ -321,7 +321,7 @@ def validate_batch_result(
 def invoke(
     packet_path: Path, *, runner: Path = DEFAULT_RUNNER, schema: Path = DEFAULT_SCHEMA,
     profile: Path = DEFAULT_PROFILE, market_profile: Path = DEFAULT_MARKET_PROFILE,
-    evidence_dir: Path, decision_sink: Callable[[dict[str, Any]], None] | None = None,
+    evidence_dir: Path, decision_sink: Callable[[list[dict[str, Any]]], None] | None = None,
     title: str = "",
 ) -> dict[str, Any] | None:
     packet = load_packet(packet_path)
@@ -337,17 +337,17 @@ def invoke(
     decision = decisions[0]
     proposal = validate_decision(decision, packet)
     if decision_sink is not None:
-        decision_sink(application_decision_event(
+        decision_sink([application_decision_event(
             decision, packet, title=(proposal or {}).get("title") or title or packet["resource_id"],
             occurred_at=packet["observed_at"],
-        ))
+        )])
     return proposal
 
 
 def invoke_batch(
     packet_paths: list[Path], *, runner: Path = DEFAULT_RUNNER, schema: Path = DEFAULT_SCHEMA,
     profile: Path = DEFAULT_PROFILE, market_profile: Path = DEFAULT_MARKET_PROFILE,
-    evidence_dir: Path, decision_sink: Callable[[dict[str, Any]], None] | None = None,
+    evidence_dir: Path, decision_sink: Callable[[list[dict[str, Any]]], None] | None = None,
 ) -> list[dict[str, Any]]:
     packets = [load_packet(path) for path in packet_paths]
     if not packets or len(packets) > 10 or any(packet.get("kind") != "public_job" for packet in packets):
@@ -362,15 +362,17 @@ def invoke_batch(
     result = _invoke_prompt(prompt, runner=runner, schema=schema, evidence_dir=evidence_dir)
     decisions = validate_batch_result(result, packets)
     proposals = []
+    events = []
     for packet, decision in zip(packets, decisions, strict=True):
         proposal = validate_decision(decision, packet)
-        if decision_sink is not None:
-            decision_sink(application_decision_event(
-                decision, packet, title=(proposal or {}).get("title") or packet["title"],
-                occurred_at=packet["observed_at"],
-            ))
+        events.append(application_decision_event(
+            decision, packet, title=(proposal or {}).get("title") or packet["title"],
+            occurred_at=packet["observed_at"],
+        ))
         if proposal is not None:
             proposals.append(proposal)
+    if decision_sink is not None:
+        decision_sink(events)
     return proposals
 
 

@@ -42,8 +42,8 @@ def test_application_decision_uses_shared_work_event_and_reporter_once(tmp_path,
         "attributes": {"platform": "upwork", "title": "Job", "reason_codes": ["Not feasible"]},
     }
 
-    provider.publish_application_decision(event)
-    provider.publish_application_decision(event)
+    provider.publish_application_decisions([event])
+    provider.publish_application_decisions([event])
 
     assert len(calls) == 1
     assert str(provider.DEFAULT_TELEGRAM_REPORT) in calls[0]
