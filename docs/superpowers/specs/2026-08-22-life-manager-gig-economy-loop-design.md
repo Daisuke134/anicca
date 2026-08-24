@@ -904,6 +904,38 @@ delivery estimate and observed conversion prove higher expected verified net. Th
 only when one complete calendar month totals at least USD 10,000 official `verified_net_received` after
 fees, execution cost, refunds and occurrence-month chargebacks.
 
+### 6.3B Fourth proposal and hourly-contract economics
+
+Proposal `2091811328085401601` is not a USD 25 one-shot. It bids USD 25/hour on an official ongoing
+job showing less than 30 hours/week and a one-to-three-month duration. The sealed `delivery_days=2`
+means the first bounded scoped outcome, not the lifetime of the hourly contract. Acceptance alone
+guarantees neither hours nor revenue; the client's offer must establish the exact hourly rate, weekly
+limit and contract-specific Freelancer Service Fee before work begins.
+
+Upwork currently states that the Freelancer Service Fee is fixed per contract at 0–15% and is shown
+on the proposal/offer. At USD 25/hour, illustrative four-week economics are:
+
+| Approved hours/week | Monthly gross | Net after 0–15% provider fee, before execution cost/tax |
+|---:|---:|---:|
+| 5 | USD 500 | USD 425–500 |
+| 10 | USD 1,000 | USD 850–1,000 |
+| 20 | USD 2,000 | USD 1,700–2,000 |
+| 29 | USD 2,900 | USD 2,465–2,900 |
+
+These are arithmetic scenarios, not forecasts. The three-month gross ceiling at 29 approved hours
+per week would be about USD 8,700 before fee/cost, but the actual result may be USD 0 if the client
+offers no contract or assigns no hours. One such contract therefore may become an anchor client, but
+does not alone prove the USD 10k monthly gate.
+
+Hourly work enters protected fulfillment only after official offer readback confirms verified client
+billing, rate, weekly limit and fee. Work time must be logged through the Upwork Desktop App tracker
+with contract-related screenshots, meaningful memos, adequate activity and no time beyond the weekly
+limit. Manual time is not treated as protected. The loop must start/stop tracking around the exact
+project task, bind diary segments to project evidence, reconcile Monday invoice/review and Wednesday
+availability, and still recognize revenue only at payout `received`.
+
+Sources: [Freelancer Service Fee](https://support.upwork.com/hc/en-us/articles/211062538-Learn-about-the-Freelancer-Service-Fee), [Hourly Payment Protection](https://support.upwork.com/hc/en-us/articles/211068288-How-Hourly-Payment-Protection-works-for-freelancers), [hourly payment cycle](https://support.upwork.com/hc/en-us/articles/211063668-How-payments-for-hourly-contracts-work).
+
 `upwork-acquire` owns continuous candidate replenishment. It searches the authenticated Upwork market,
 opens every independently affordable current detail, asks one batched model call to decide every
 candidate, and atomically persists every positive-EV owner-only sealed proposal plus every natural-

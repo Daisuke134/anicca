@@ -264,10 +264,10 @@ No later task may jump ahead of the first incomplete row:
 | U14 | Close the first acquisition effect | **DONE:** owner-authorized seed produced 150 Connects; proposal `2091740505918763009`, exact `150 -> 141`, no subscription/boost/badge/auto-top-up. |
 | U15 | Replay immediately | **DONE:** the first three proposals return the same IDs on exact replay with additional Connects 0. A fourth loop-owned proposal `2091811328085401601` for `~022091778584504223418` is also officially listed, with `118 -> 92`; its post-effect count refresh and replay remain the next readback slice. |
 | U16 | Poll and answer the resulting thread | **IN PROGRESS:** official Submitted proposals is 4; canonical Messages works, rooms/unread/offers/contracts 0. Next real buyer event must produce official story/message ID and duplicate reply 0. |
-| U17 | Negotiate and accept profitable terms | Offer ID, exact terms hash and active contract ID |
-| U18 | Fulfill and independently verify the work | Artifact hash and independent verifier PASS |
+| U17 | Negotiate and accept profitable terms | Offer ID, exact rate, weekly limit, 0–15% contract fee, terms hash and active contract ID |
+| U18 | Fulfill and independently verify the work | Immutable scoped task, Upwork Desktop App tracker start/stop, protected diary screenshot/memo/activity evidence, artifact hash and independent verifier PASS |
 | U19 | Deliver once | Official submission ID/state and replay with zero duplicate delivery |
-| U20 | Reconcile money and review | Official payout `received`, transaction, fee, actual costs and honest review evidence; Pending/Available excluded |
+| U20 | Reconcile money and review | Hour diary → Monday invoice → client review → Wednesday availability → official payout `received`, transaction, fee, actual costs and honest review evidence; Pending/Available excluded |
 | U21 | Repeat on three independent paid jobs | Three contract/payment/review IDs and complete per-job economics |
 | U22 | Operate the proven Upwork loop to USD 10k/month | One complete calendar-month window totals at least USD 10,000 verified net received; cross-month payouts and later chargebacks are attributed once to their actual months |
 | U23 | Compress the next-market path | **IN PROGRESS:** general Luna/Terra market operation, shared effects/projects/accounting and Skill inventory are proven; next existing market adds only manifest plus fixed-format readback glue. |
@@ -2261,6 +2261,22 @@ scheduler. Fence the narrowest resource and serialize only genuinely shared acco
   acquisition or fulfillment.
 - [ ] Expose per-lane last progress, queue depth, blocker and next action in the existing Telegram
   funnel heartbeat.
+
+### Task 60: Close fourth-proposal readback and protected hourly work
+
+- [ ] After every proposal effect, refresh the official Proposals page and persist the post-effect
+  submitted count/entities; proposal 4 must change runtime state `3 → 4`.
+- [ ] Replay proposal `2091811328085401601`; require same ID and Connects `92 → 92`.
+- [ ] Remove Telegram transport from the acquisition critical path; a notification timeout leaves the
+  durable event pending but cannot stop search, proposal sealing or submission.
+- [ ] Promote the latest main release and prove one natural wake exits 0 without disk or reporter
+  timeout.
+- [ ] On an hourly offer, read exact rate, weekly limit, contract fee and verified billing before
+  accept/counter/decline.
+- [ ] Drive Upwork Desktop App Time Tracker around the exact project task, including meaningful memo,
+  related screenshots, adequate activity and limit enforcement; manual time is not protected.
+- [ ] Join diary segments, weekly invoice/review, availability, payout and occurrence-month
+  adjustments to the contract; only payout `received` enters verified cash.
 
 ## Final verification
 
