@@ -494,6 +494,46 @@ effect → official readback`. It completes ordinary signup/login itself. CAPTCH
 payout ownership and legally human-only acts become typed resumable ceremonies. A new delivery Skill
 is created only after an observed profitable opportunity cannot use existing Skills.
 
+### 4.2B External implementation comparison and browser ACI boundary
+
+Pinned source inspection confirms that the shared commercial kernel and thin provider boundary should
+remain, but the adapter must not become a growing selector script. `browser-use/browser-use` at
+`85ddbfedf609166b2d2c76c3d80506649fee82a9` demonstrates an LLM-directed observe/action loop with
+step history, callbacks, bounded failures and an optional independent trace judge. `browserbase/
+stagehand` at `a21633d53930abc5d62b8dbd6b608995f2ccb4b1` exposes the smaller useful browser ACI:
+`observe`, schema-bound `extract` and natural-language `act`, with reusable sessions and metrics.
+`Skyvern-AI/skyvern` at `47537c0e5a613f9349c0e17eacb3e5da1dff926e` additionally binds planned browser effects to an
+observation epoch, page/tab/frame identity, canonical target/method and one-time approval. These are
+transport patterns, not replacements for business truth.
+
+The inspected `Sherry141/AI-Upwork-Proposal-Agent` at
+`e1d7a3be874266289a0c523107f135f2266517b5` is intentionally not adopted: it accepts a manually supplied
+job description and produces proposal artifacts through a fixed multi-agent graph, but does not own
+market discovery, submission readback, replies, contracts, fulfillment, payout or replay-safe money
+effects. Its structured proposal output is already covered by the existing schema-bound planner.
+
+Therefore the common browser tool surface is only:
+
+```text
+observe(goal) -> page facts, stable element references, screenshot and observation identity
+extract(goal, schema) -> typed provider facts plus provenance
+act(goal, frozen intent) -> transport acknowledgement and action trace
+readback(receipt schema) -> authoritative provider state plus provenance
+```
+
+The model chooses navigation, pagination, filters, fields and recovery from live feedback. The kernel
+chooses authority, spend/capacity ceilings, effect identity, retry/reconcile state, business events,
+accounting and promotion. Before any money-, message-, application-, acceptance- or delivery-changing
+action, the frozen effect binds provider/account, source entity, payload hash, observation identity
+and expected readback. A generic browser success or model/judge verdict can aid recovery and evals but
+never substitutes for the provider receipt.
+
+New-market implementation follows a deletion-first ladder: try the common ACI with a natural-language
+market goal and schema; add a declarative state/readback manifest only for stable facts observed twice;
+add provider code only for authentication, machine-stable extraction, fees/currency or a mutation that
+cannot be expressed safely through the common ACI. No provider gets its own planner, scheduler,
+notification path, funnel ledger or learning loop.
+
 ### 4.3 Sales loop
 
 ```text
