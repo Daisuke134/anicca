@@ -8200,7 +8200,9 @@ Current implementation state:
   x-repost, original-only x-tweeter, and distinct state roots. Production release
   `44a6c6bf3` reloads `ai.anicca.x-repost-pass`; launchctl environment readback
   returns `X_REPOST_FORCE_KIND => quote`. Historical Original receipts remain
-  immutable evidence.
+  immutable evidence. Commit `d9a31c56d` replaces reload-anchored
+  `StartInterval=1800` with explicit `:00/:30` calendar boundaries; production
+  launchctl readback shows Minute 0 and 30 plus Quote-only environment.
 - [ ] **XT05 Production proof.** Require three consecutive x-tweeter public
   opportunities with source receipts, quality PASS, exact permalinks, duplicate
   zero, and exact reach readback before calling independent Original healthy.
