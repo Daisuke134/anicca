@@ -945,6 +945,13 @@ message ID `31872`, and exact replay kept WorkEvent lines `1 → 1`, outbox rows
 message ID. Fresh application decisions are ordered ahead of reopened historical unknown rows; old
 notification recovery no longer delays a new business event by construction.
 
+Independent authenticated job detail reads now use one hidden CDP target per resource and run
+concurrently; the only shared trajectory append is file-locked. Production comparison over the same
+ten-detail shape reduced search-to-all-details from 49 seconds to 11 seconds and completion span from
+44 seconds to 5 seconds (about 4.5x end-to-end), while preserving source order and ten distinct
+evidence artifacts. This is the first measured resource-parallel slice; model decisions and effects
+remain separate later slices.
+
 ## 7. Self-improvement and promotion
 
 An evaluation window returns exactly one of:

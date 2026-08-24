@@ -2243,6 +2243,8 @@ Telegram outbox. Add no scheduler, notifier, database or provider-specific seman
 scheduler. Fence the narrowest resource and serialize only genuinely shared account state.
 
 - [ ] Split the current wake's durable work into acquire, sell, fulfill, money and learn queue items.
+- [x] Run independent hidden-CDP job detail reads concurrently with a locked shared trajectory append;
+  production ten-job search-to-all-details improved `49s → 11s` and completion span `44s → 5s`.
 - [ ] Replace one-proposal-per-wake and the fixed three-contract cap with dynamic workers and measured
   backpressure; ten proposals remain a learning checkpoint, never a stop.
 - [ ] Key leases by job, message head, offer and contract/milestone so distinct effects run in
