@@ -6,6 +6,64 @@ evidence does not belong on this list.
 The four lanes run from `~/gig/releases/life-manager/<sha>/`, cut from `main` by
 `gig_release.py`. See `README.md` for how the whole thing is installed.
 
+## Authoritative atomic TODO — Apply + Negotiate → OSS
+
+This is the only current task list for this cursor. Unchecked items in older sections
+are historical or belong to Paid/other owners; they do not reopen completed Apply or
+Storefront work.
+
+### Completed and not TODO
+
+- [x] Apply production acceptance: 24/7 launchd owner, official application readback,
+  Telegram receipts and replay-zero. Current zero-effect wakes mean no fresh eligible
+  request; they do not reopen Apply.
+- [x] Storefront production acceptance: official mutations/readbacks, next-wake
+  replay-zero and Telegram receipts.
+- [x] Negotiate live restart: stale PID replaced by launchd PID `70493` with the current
+  disk policy and immutable release.
+- [x] Negotiate action 434: one send, official `replied`, verified outgoing hash and
+  timestamp, duplicate zero. Its Telegram delivery remains unknown and is never blindly
+  retried.
+- [x] Negotiate action 436: distinct buyer question, one send, official `replied`,
+  verified outgoing hash and timestamp, duplicate zero, Telegram `sent` message
+  `31282`. This closes the current owner-report receipt gate.
+- [x] Post-send attachment readback defect fixed and deployed at `23b0115ee`; related
+  tests are GREEN.
+
+### Negotiate remaining — current cursor
+
+1. [ ] Let the already-running full-inbox reconciliation finish; do not replace it
+   with a manual send or a second collector.
+2. [ ] Read back `coverage_complete=true` and exact `cards_count == len(inquiries)`.
+3. [ ] Reduce every buyer-authored message to exactly one disposition: official
+   `replied`, official estimate, bounded intentional no-send, or durable pending with
+   an observable retry owner.
+4. [ ] Resolve current same-thread residual actions 435/437/438 through that reduction;
+   missing/unowned disposition must equal zero.
+5. [ ] Confirm duplicate reply zero and duplicate estimate zero in the completed pass.
+6. [ ] Record final reply/estimate/no-send/pending/readback counts here, commit and push.
+
+### Apply + Negotiate OSS acceptance — immediately after item 6
+
+7. [ ] Freeze the exact pushed `origin/main` SHA and build a clean archive/clone from
+   that commit, not from a dirty operator checkout.
+8. [ ] Scan the public tree and history for credentials, customer payloads, private
+   account IDs and operator-only absolute paths; findings must be zero or removed.
+9. [ ] Run the public Apply and Negotiate test suites from the clean clone with a clean
+   temporary HOME; compile both production entrypoints.
+10. [ ] Run `./install.sh coconala` through the pre-auth boundary in that clean HOME and
+    prove external marketplace effect zero before authentication.
+11. [ ] Render the Apply, Negotiate, browser and release-watcher launchd definitions
+    from public configuration; verify no plaintext secret/private seller default and
+    verify the intended immutable `current` paths/cadences.
+12. [ ] Join the clean-package evidence to this Mac's already-proved authorized
+    production receipts: Apply official application + replay-zero and Negotiate
+    official replies/estimate + replay-zero. Do not create a second seller account.
+13. [ ] Record the clean-clone commands, exact SHA, test counts, scans and receipt IDs in
+    README/TODO; commit and push main.
+14. [ ] Declare Apply + Negotiate OSS acceptance complete. Paid remains separate; no
+    Paid completion claim is made here.
+
 ## Current execution cursor override
 
 The Storefront development cursor is **complete**. Apply is accepted and remains
@@ -79,8 +137,8 @@ changed by either wake.
 
 ## Current Negotiate live correction
 
-Negotiate is the active cursor until a fresh official reply readback closes action
-`434`. The loaded launchd definition had the correct disk exemptions, but its old
+Negotiate is the active cursor until the fresh full-inbox reconciliation closes. The
+loaded launchd definition had the correct disk exemptions, but its old
 long-lived PID predated that definition and still stopped before every official
 probe. A control-plane-safe restart replaced PID `97563` with PID `52469`; the new
 owner immediately read the official inbox head, found buyer thread `10115148`, read
@@ -108,12 +166,12 @@ replied once and reached official `replied` revision 3 with hash `6141c936...`, 
 timestamp `09:33:22` and duplicate zero. This proves live reply execution and the
 post-send attachment readback fix.
 
-The current OSS gate is not yet closed. Telegram rows
-`gig:telegram:reply:v2:434:3` and `...:436:3` both ended `delivery_unknown` after
-transport timeout and have no provider receipt file, so they must not be blindly
-resent. The fresh full-inbox reconciliation is also still running. OSS transition is
-allowed only after that pass records complete coverage and the owner-report transport
-has an acknowledged receipt for a subsequent natural Negotiate outcome.
+The current OSS gate is not yet closed. Telegram row
+`gig:telegram:reply:v2:434:3` ended `delivery_unknown` after transport timeout and has
+no provider receipt file, so it is not blindly resent. The distinct subsequent action
+436 produced acknowledged Telegram message `31282`, closing the owner-report receipt
+gate. The fresh full-inbox reconciliation is still running; OSS transition begins when
+that pass records complete coverage and zero missing/unowned dispositions.
 
 ## Current scoped milestone: finish the public Coconala package
 
