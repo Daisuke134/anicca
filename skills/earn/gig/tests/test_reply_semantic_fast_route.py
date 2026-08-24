@@ -637,6 +637,30 @@ def test_merge_verified_dm_attachments_requires_hash_and_bytes():
     assert dom["messages"][0]["verified_attachments"][0]["sha256"] == "b" * 64
 
 
+def test_merge_verified_dm_attachments_accepts_new_seller_reply_after_send():
+    dom = {"messages": [
+        {"message_id": "buyer-1", "author_path": "/users/buyer", "body": "添付です"},
+        {"message_id": "seller-1", "author_path": "/users/seller", "body": "確認しました"},
+    ]}
+    document = {
+        "messages": [{
+            "message_id": "buyer-1", "side": "buyer",
+            "attachments": [{
+                "url": "https://coconala.com/uploaded_files/view/1", "filename": "1880.png",
+            }],
+        }],
+        "attachment_index": [{
+            "url": "https://coconala.com/uploaded_files/view/1", "filename": "1880.png",
+            "bytes": 632406, "sha256": "d" * 64, "content_type": "image/png",
+        }],
+    }
+
+    queue_snapshot.merge_verified_dm_attachments(dom, document)
+
+    assert dom["messages"][0]["verified_attachments"][0]["sha256"] == "d" * 64
+    assert "verified_attachments" not in dom["messages"][1]
+
+
 def test_merge_verified_dm_attachments_fails_closed_on_download_error():
     dom = {"messages": [{"message_id": "m1", "author_path": "/users/buyer", "body": "添付です"}]}
     document = {

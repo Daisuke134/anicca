@@ -77,6 +77,29 @@ contract/before/after/receipt service identity: `effect=1`, `readback=1`,
 there was no wrong-service or duplicate mutation. Apply, Negotiate and Paid were not
 changed by either wake.
 
+## Current Negotiate live correction
+
+Negotiate is the active cursor until a fresh official reply readback closes action
+`434`. The loaded launchd definition had the correct disk exemptions, but its old
+long-lived PID predated that definition and still stopped before every official
+probe. A control-plane-safe restart replaced PID `97563` with PID `52469`; the new
+owner immediately read the official inbox head, found buyer thread `10115148`, read
+the original application scope, composed one bounded reply and clicked send once.
+The intent is revision 3 with one `click_started_at` and remains
+`reconcile_pending`; duplicate effect is zero.
+
+Post-send official readback exposed `dm_attachment_message_identity_changed`.
+The verified attachment manifest describes the pre-send buyer messages, while the
+current official DOM correctly contains one additional seller reply. The binder
+already has stable message IDs but rejected the harmless total-row-count difference
+before using them. Regression
+`test_merge_verified_dm_attachments_accepts_new_seller_reply_after_send` is RED on
+that production error and GREEN after binding attachment-bearing buyer rows by stable
+message ID. ID-less legacy rows still require exact position plus body, and missing
+or unverified attachment evidence still fails closed. Completion still requires the
+new release to reconcile action 434 to `replied`, a seller-side official hash and
+timestamp, duplicate zero and a durable Telegram receipt.
+
 ## Current scoped milestone: finish the public Coconala package
 
 The repository and `skills/earn/gig/` tree are already public on

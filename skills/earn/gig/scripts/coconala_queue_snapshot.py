@@ -88,8 +88,6 @@ def merge_verified_dm_attachments(dom: dict[str, Any], document: dict[str, Any])
     document_rows = [
         row for row in document.get("messages", []) if isinstance(row, dict)
     ]
-    if len(semantic_rows) != len(document_rows):
-        raise CollectorUnhealthy("dm_attachment_message_identity_changed")
     semantic_messages = {
         str(row.get("message_id") or ""): row
         for row in semantic_rows if row.get("message_id")
@@ -101,7 +99,8 @@ def merge_verified_dm_attachments(dom: dict[str, Any], document: dict[str, Any])
         if not attachments:
             continue
         target = semantic_messages.get(str(message.get("message_id") or ""))
-        if target is None and not message.get("message_id"):
+        if (target is None and not message.get("message_id")
+                and message_index < len(semantic_rows)):
             indexed = semantic_rows[message_index]
             if str(indexed.get("body") or "") == str(message.get("text") or ""):
                 target = indexed
