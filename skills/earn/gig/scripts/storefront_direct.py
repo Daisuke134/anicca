@@ -5431,6 +5431,10 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                             else "storefront_bootstrap_required" if observed == 0
                             else "storefront_import_required"),
                     official_services_read=observed,
+                    actionable=int(bootstrap_result is not None),
+                    effect=int((bootstrap_result or {}).get("public_effect") or 0),
+                    readback=int((bootstrap_result or {}).get("readback") or 0),
+                    duplicate=0,
                     pending=(0 if bootstrap_result is not None
                              and int(bootstrap_result.get("readback") or 0) == 1 else 1),
                     capability_inventory_count=len(capability_inventory["skills"]),
