@@ -13,7 +13,9 @@ for NAME in ai.anicca.job-search-daily ai.anicca.job-search-inbox ai.anicca.job-
     /^[[:space:]]*last exit code =/ {exit_code=$5}
     END {printf "state=%s last_exit=%s", state, exit_code}
   ')
-  if [[ "$NAME" == "ai.anicca.job-search-daily" && "$STATUS" == *"last_exit=75" ]]; then
+  if [[ "$STATUS" == *"state=running"* ]]; then
+    echo "$NAME $STATUS"
+  elif [[ "$NAME" == "ai.anicca.job-search-daily" && "$STATUS" == *"last_exit=75" ]]; then
     echo "$NAME waiting_capacity $STATUS"
   elif [[ "$STATUS" != *"last_exit=0" ]]; then
     echo "$NAME unhealthy: $STATUS" >&2

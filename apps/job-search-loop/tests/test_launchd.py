@@ -78,6 +78,7 @@ class LaunchdTests(unittest.TestCase):
         self.assertIn('"learning-": 8 * 24 * 3600', script)
         self.assertIn('candidate / "workday-fast-path.json"', script)
         self.assertIn('candidate / "wake-report.json"', script)
+        self.assertIn('"$STATUS" == *"state=running"*', script)
         self.assertNotIn("ashby-fast-path-combined.json", script)
         self.assertNotIn("cat /Users/anicca/.openclaw/.env", script)
 
