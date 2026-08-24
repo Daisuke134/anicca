@@ -656,6 +656,15 @@ ledger's actual pre/post balances, and the same WorkEvent/outbox rail delivered 
 as message `32123`. Future direct and reconciled submissions use that same measured delta. Current
 replies, offers, contracts and payout-received remain zero.
 
+The next natural acquisition pass immediately continued to the `Japanese to english` fixed-price job.
+Terra used authenticated CDP 9233, adapted to the live project-price, duration and fixed-price
+acknowledgement controls, and submitted official Proposal `2091842071424061441` for USD 500 with zero
+boost. The parent verified Connects `78 -> 67`; the loop-owned instant report was ACKed as Telegram
+message `32131`. Immediate replay leaves one provider-effect row, one Telegram event and zero duplicate
+application. Current official truth is six submitted proposals, 67 Connects, replies/offers/contracts
+zero and payout-received USD 0. The following wake found no additional current positive-EV capacity and
+closed `waiting_free_capacity`; the five-minute resident schedule continues discovery automatically.
+
 A Skill bundle is immutable and versioned:
 
 ```text
