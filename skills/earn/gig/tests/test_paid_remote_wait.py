@@ -357,10 +357,16 @@ def test_reported_formal_cycle_accepts_exact_linked_message_readback(tmp_path, m
         "artifact_sha256": hashlib.sha256(artifact.read_bytes()).hexdigest(),
     }
     (root / "events.jsonl").write_text(json.dumps(event, ensure_ascii=False) + "\n")
+    feedback = "c" * 64
+    write_json(root / "state.json", {
+        "formal_delivery_confirmed": True,
+        "handled_buyer_feedback_sha256": feedback,
+    })
     monkeypatch.setattr(paid.delivery_project, "resolve_project_root", lambda *_args: root)
     item = {
-        "talkroom_id": "18130722", "formal_delivery_observed": True,
-        "talkroom_state": "取引完了", "buyer_feedback_pending_artifact": False,
+        "talkroom_id": "18130722", "formal_delivery_observed": False,
+        "talkroom_state": "取引完了", "buyer_feedback_pending_artifact": True,
+        "buyer_feedback_sha256": feedback,
         "seller_messages": [{"text": message, "attachments": []}],
     }
 

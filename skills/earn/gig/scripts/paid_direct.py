@@ -509,9 +509,7 @@ def _reported_formal_cycle(args, item: dict[str, Any]) -> Path | None:
     """Close only an official formal delivery backed by the same project artifact."""
     try:
         state = _text(item.get("talkroom_state", item.get("transaction_state")))
-        formal = item.get("formal_delivery_observed", item.get("formal_delivery_confirmed"))
-        if (formal is not True or state not in {"納品確認待ち", "取引完了"}
-                or item.get("buyer_feedback_pending_artifact") is True):
+        if state not in {"納品確認待ち", "取引完了"}:
             return None
         talkroom_identity = {key: value for key, value in item.items() if key not in {"request_id", "project_id"}}
         candidate = delivery_project.resolve_project_root(args.projects_root, talkroom_identity)
@@ -520,6 +518,14 @@ def _reported_formal_cycle(args, item: dict[str, Any]) -> Path | None:
         root = candidate.resolve()
         root.relative_to(args.projects_root.resolve())
         if not root.is_dir():
+            return None
+        project_state = _load(root / "state.json")
+        formal = item.get("formal_delivery_observed", item.get("formal_delivery_confirmed"))
+        if formal is not True and project_state.get("formal_delivery_confirmed") is not True:
+            return None
+        if (item.get("buyer_feedback_pending_artifact") is True
+                and _text(project_state.get("handled_buyer_feedback_sha256"))
+                != _text(item.get("buyer_feedback_sha256"))):
             return None
         attachments: set[str] = set()
         seller_texts: set[str] = set()
