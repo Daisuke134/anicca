@@ -136,7 +136,9 @@ def qualify_one(
             "is evidence to weigh, not an automatic rejection, when demonstrated equivalent "
             "impact directly covers the work. Qualify when the interview case is credible; "
             "hold only for one resolvable material unknown; reject when the core work is not "
-            "supported. Return only the schema.\n\n"
+            "supported. Write interview_thesis, location_feasibility, and "
+            "compensation_thesis in concise natural Japanese for the user's realtime "
+            "Telegram report. Return only the schema.\n\n"
             + wrap_untrusted(
                 "job",
                 json.dumps(
