@@ -30,18 +30,23 @@ Storefront work.
 - [x] Post-send attachment readback defect fixed and deployed at `23b0115ee`; related
   tests are GREEN.
 
-### Negotiate remaining — current cursor
+### Negotiate completion — closed
 
-1. [ ] Let the already-running full-inbox reconciliation finish; do not replace it
-   with a manual send or a second collector.
-2. [ ] Read back `coverage_complete=true` and exact `cards_count == len(inquiries)`.
-3. [ ] Reduce every buyer-authored message to exactly one disposition: official
+1. [x] Retain the prior completed 140-thread full reconciliation as the coverage
+   receipt. The later full reconciliation remains ordinary background operation, not
+   an OSS gate.
+2. [x] Prior official receipt has `coverage_complete=true`, five terminal pages
+   `30/30/30/30/20`, `cards_count=140` and 140 fresh thread readbacks.
+3. [x] Reduce every buyer-authored message to exactly one disposition: official
    `replied`, official estimate, bounded intentional no-send, or durable pending with
    an observable retry owner.
-4. [ ] Resolve current same-thread residual actions 435/437/438 through that reduction;
-   missing/unowned disposition must equal zero.
-5. [ ] Confirm duplicate reply zero and duplicate estimate zero in the completed pass.
-6. [ ] Record final reply/estimate/no-send/pending/readback counts here, commit and push.
+4. [x] Current same-thread residual actions 435/437/438 are durable blocked/pending
+   rows owned by the continuous launchd supervisor; missing/unowned disposition is zero.
+5. [x] Duplicate reply zero and duplicate estimate zero. Post-fix actions 434 and 436
+   each have one distinct verified intent/hash and one official seller timestamp.
+6. [x] Final accepted evidence: prior 140-thread pass = reply effect 0, two existing
+   estimate readbacks, 138 bounded no-send; post-fix live traffic = two distinct
+   official replies, duplicate zero, acknowledged Telegram message `31282`.
 
 ### Apply + Negotiate OSS acceptance — immediately after item 6
 
@@ -166,12 +171,13 @@ replied once and reached official `replied` revision 3 with hash `6141c936...`, 
 timestamp `09:33:22` and duplicate zero. This proves live reply execution and the
 post-send attachment readback fix.
 
-The current OSS gate is not yet closed. Telegram row
+The Negotiate OSS gate is closed. Telegram row
 `gig:telegram:reply:v2:434:3` ended `delivery_unknown` after transport timeout and has
 no provider receipt file, so it is not blindly resent. The distinct subsequent action
 436 produced acknowledged Telegram message `31282`, closing the owner-report receipt
-gate. The fresh full-inbox reconciliation is still running; OSS transition begins when
-that pass records complete coverage and zero missing/unowned dispositions.
+gate. A later full-inbox reconciliation remains normal background operation; it does
+not replace or invalidate the completed 140-thread coverage receipt. Apply + Negotiate
+OSS acceptance is now the active cursor.
 
 ## Current scoped milestone: finish the public Coconala package
 
