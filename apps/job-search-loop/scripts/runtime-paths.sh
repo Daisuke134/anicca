@@ -14,7 +14,7 @@ typeset -gx JOB_SEARCH_CDP_LEASE_SCRIPT="${JOB_SEARCH_CDP_LEASE_SCRIPT:-$JOB_SEA
 typeset -gx JOB_SEARCH_SESSION_VAULT_SCRIPT="${JOB_SEARCH_SESSION_VAULT_SCRIPT:-$JOB_SEARCH_REPO_ROOT/skills/browser/scripts/session_vault.py}"
 typeset -gx JOB_SEARCH_SESSION_VAULT_DIR="${JOB_SEARCH_SESSION_VAULT_DIR:-$HOME/.cloak/vault/job-search-daily}"
 typeset -gx JOB_SEARCH_LAUNCH_AGENT_DIR="${JOB_SEARCH_LAUNCH_AGENT_DIR:-$HOME/Library/LaunchAgents}"
-typeset -gx JOB_SEARCH_PRIVATE_ENV="${JOB_SEARCH_PRIVATE_ENV:-$HOME/.openclaw/.env}"
+typeset -gx JOB_SEARCH_PRIVATE_ENV="${JOB_SEARCH_PRIVATE_ENV:-${XDG_CONFIG_HOME:-$HOME/.config}/anicca/job-search/private.env}"
 if [[ -x /opt/homebrew/bin/python3 ]]; then
   typeset -gx JOB_SEARCH_PYTHON="${JOB_SEARCH_PYTHON:-/opt/homebrew/bin/python3}"
 else

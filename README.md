@@ -4,7 +4,7 @@
 completed real-world actions. It acts within delegated boundaries, verifies what happened, and reports the
 result in plain language with evidence in Telegram.
 
-| Organ | What Life Manager manages |
+| Group | What Life Manager manages through its loops |
 |---|---|
 | **Daily** | Calendar, event and accelerator applications, job applications, priorities, and follow-through |
 | **Physical / Mental** | Routines, wellbeing, and continuity of care |
@@ -29,72 +29,6 @@ without a receipt.
 
 ## Quick start
 
-### Try the Coconala money loop
-
-Coconala is the first provider-specific OSS money loop with a one-command Terminal
-onboarding path. It installs the local dependencies, authenticates Codex, opens a
-dedicated Coconala browser, verifies the official account gates, and then starts Apply,
-Negotiate, Storefront, and Paid under launchd.
-
-```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Daisuke134/life-manager/main/scripts/bootstrap-coconala.sh)"
-```
-
-The owner enters account, SMS, identity, and bank information only on official Coconala
-pages. After finishing those pages, run the same command again. See the
-[Coconala setup guide](skills/earn/gig/README.md) for prerequisites and exact boundaries.
-
-The four lanes and command are already open source. The remaining public-beta gate is
-Paid no-human production acceptance: after the official setup ceremonies, a purchased order
-must be detected, worked, independently reviewed, delivered, accepted or cancelled, and
-replay-checked by the installed launchd owners without the account owner or a foreground
-Codex session performing customer work. Until that receipt exists across varied real orders,
-the package must not claim autonomous Paid completion.
-
-### Try the Workday Job Hunter loop
-
-Job Hunter searches official Workday companies and jobs dynamically, compares each
-complete job description with the owner's private resume and preferences, applies
-through one dedicated CloakBrowser, reconciles Gmail and Ledger receipts, prevents
-duplicate submissions, and reports every decision, application start and result in
-natural language through Telegram.
-
-```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Daisuke134/life-manager/main/scripts/bootstrap-job-hunter.sh)"
-```
-
-The first run prepares Codex, imports the finalized resume and job preferences, and
-opens the dedicated browser. Complete official login there, then run the exact same
-command again to verify Gmail and Telegram and activate the 30-minute launchd loop.
-Workday is the only active ATS product; Ashby, Greenhouse, Lever, Mercor and generic
-ATS routes remain broken or unverified until separately rebuilt.
-
-### OSS productization status
-
-| Surface | Public code | One-command owner setup | Current status |
-|---|---:|---:|---|
-| Coconala Apply / Negotiate / Storefront / Paid | Yes | Yes | Public beta; one Terminal command and six persistent jobs exist, independent clean-Mac full E2E acceptance remains open |
-| Workday Job Hunter | Yes | Yes | Workday-only initial release; 30-minute resident loop, official Gmail/Ledger proof, natural Telegram and duplicate-zero are production-proven on the maintainer installation |
-| Other marketplace money loops, including Upwork and Mercor | Partial/internal components only | No | Not OSS-productized; do not present them as ready for third-party setup |
-| Generic Money / Body / Mind onboarding | Foundation only | No | Future shared Life Manager surface, not the Coconala quick start |
-
-The direction is one Life Manager that can run many independently verified money loops
-24/7, but README status follows shipped onboarding and official receipts—not roadmap
-intent. “Public code exists” is not the same as “a non-technical owner can install it.”
-
-### Future shared OSS onboarding
-
-Life Manager is converging on one local setup UI for every connector and loop: run one
-command, connect ChatGPT/Codex once, confirm reusable facts once, connect each official
-service once, and let every ready Money/Body/Mind loop start automatically. Individual
-skills declare onboarding through a shared manifest instead of adding another installer
-or asking the same questions again. See the
-[OSS onboarding design](docs/superpowers/specs/2026-08-24-life-manager-oss-onboarding-design.md).
-
-```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Daisuke134/life-manager/main/scripts/bootstrap.sh)"
-```
-
 ### Use it — cloud (nothing to install)
 
 [Start in Telegram](https://t.me/LifeManagerBotbot?start=lp), or open the
@@ -102,6 +36,27 @@ or asking the same questions again. See the
 authenticated `/panel`; you talk to it in Telegram and it reports back there with receipts.
 
 ### Run it yourself — local (your machine holds the data)
+
+To start the Job Hunter loop on an Apple Silicon Mac:
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Daisuke134/life-manager/main/scripts/bootstrap-job-hunter.sh)"
+```
+
+The command installs only missing dependencies, asks for the finalized resume and
+job preferences in Terminal, and opens the dedicated CloakBrowser for official
+login. It also installs `gog`, opens Gmail OAuth for the application email, and asks
+for the owner's Telegram bot token privately plus numeric chat ID. Finish the
+official login, then run the exact same command again. Life Manager verifies Gmail
+and a real Telegram message ID before starting the owners. Passwords, OTPs and bot
+tokens are never printed or committed.
+
+Job Hunter is pre-release until Dais's installed 30-minute Workday loop closes the
+current production acceptance: dynamic discovery, fit-qualified application,
+descriptive loop-owned Telegram, official Gmail/Ledger proof and duplicate zero.
+Ashby, Greenhouse, Lever, Mercor and generic ATS lanes are not working products.
+
+### Run the server stack yourself
 
 Requires Docker. The local stack is Postgres + an object store + the API, scheduler, and worker — the same core
 the cloud runs.
@@ -137,37 +92,6 @@ If you came here for the **self-funded agent** — the wallet-holding loop that 
 different thing and it lives in [`docs/agent-economy.md`](docs/agent-economy.md). It shares this repository and
 this core, but it is not the product described above.
 
-### Coconala implementation details
-
-The repository also contains four macOS `launchd` lanes for a Coconala seller:
-Apply, Negotiate, Paid, and Storefront. See the dedicated
-[Coconala setup guide](skills/earn/gig/README.md) before inviting another user.
-
-Current boundary: the one-command installer and zero-listing publisher are implemented,
-while the owner completes Coconala's official signup/SMS/eKYC/bank ceremony in the
-dedicated browser. The remaining code-owned productization work is `gog` email wiring and
-the clean-HOME Terminal contract listed in [the Coconala task list](skills/earn/gig/TODO.md).
-Natural sales and bank arrival are business receipts, not coding tasks or guaranteed timing.
-
-The accepted onboarding UX is one handoff, not field-by-field automation:
-`./install.sh coconala` completes `codex login`, opens the dedicated Coconala
-CloakBrowser profile, and prints the complete official setup checklist. The owner
-finishes account/email/SMS/seller/eKYC/bank setup in that browser and runs the same command
-once more. Life Manager then attaches to the same authenticated profile without receiving the
-password, verifies every official gate, starts the existing lanes, and lets Storefront
-create the first listing when the official listing count is zero.
-
-For Coconala, Upwork, and similar marketplaces, the AI system is the delivery workforce.
-Life Manager maximizes verified expected net income using demonstrated AI/Mac/tool
-capabilities and parallel execution; the owner's personal free time, manual skill, sleep,
-health, or workload is not a throughput limit. Job Hunter is the separate case where the
-human is the employee, so only that loop binds opportunities to the person's real history,
-eligibility, availability, and acceptance authority.
-
-Coconala remains the first provider-specific onboarding adapter. Other marketplaces are
-roadmap direction until each has its own one-command setup, official gates, persistent
-owners, effect readback, and duplicate-zero contract.
-
 ---
 
 ## One product, two execution surfaces
@@ -182,7 +106,7 @@ Life Manager is one product in one repository. “Local Life Manager” and the 
              │                                       │
      LOCAL / SELF-HOSTED                      WEB / CLOUD
      deploy/local/compose.yaml                 apps/landing
-          │                                  onboarding UI
+          │                                  web entry
           ▼                                       │
      apps/life-manager                             ▼
      api · scheduler · worker            apps/life-manager
@@ -315,7 +239,7 @@ Current canonical acceptance: PR `#1936` established the production baseline at 
 | **Cloud service** (`apps/life-manager`, `node server.js` on Railway) | **Deployed** — the scheduler and API are the same code the local stack runs. |
 | **Telegram reporting with receipts** | **Live** — every report carries a message id, and a send that fails is not recorded as sent. |
 | **Calendar, connectors, coverage** (`lib/calendar-*`, `lib/connector-*`) | **Implemented, coverage still moving** — per-connector state and gaps are tracked in the execution spec rather than claimed here. |
-| **Financial organ** (net worth, cash flow, payouts, ledgers) | **Partial** — the ledger and payout jobs exist; their current health is tracked in the execution spec. Nothing here is an investment guarantee. |
+| **Financial loops** (net worth, cash flow, payouts, ledgers) | **Partial** — the ledger and payout jobs exist; their current health is tracked in the execution spec. Nothing here is an investment guarantee. |
 | **The self-funded agent economy** | Separate track — status and on-chain evidence in [`docs/agent-economy.md`](docs/agent-economy.md). |
 
 ---

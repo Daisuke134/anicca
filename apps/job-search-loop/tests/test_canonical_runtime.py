@@ -557,6 +557,22 @@ raise SystemExit(0)
                 ["ai.anicca.job-search-browser.plist"],
             )
 
+    def test_oss_setup_owns_gmail_and_telegram_private_onboarding(self):
+        installer = (APP_ROOT / "scripts" / "install-oss.sh").read_text(
+            encoding="utf-8"
+        )
+        paths = (APP_ROOT / "scripts" / "runtime-paths.sh").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("brew install gogcli", installer)
+        self.assertIn('gog auth add "$email" --services gmail', installer)
+        self.assertIn('read -s "bot_token?Telegram bot token: "', installer)
+        self.assertIn("TELEGRAM_BOT_TOKEN=", installer)
+        self.assertIn("JOB_SEARCH_TELEGRAM_CHAT_ID=", installer)
+        self.assertIn("os.fchmod(fd,0o600)", installer)
+        self.assertNotIn("echo \"$bot_token\"", installer)
+        self.assertIn("/anicca/job-search/private.env", paths)
+
 
 if __name__ == "__main__":
     unittest.main()
