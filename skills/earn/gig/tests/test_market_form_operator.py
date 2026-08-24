@@ -40,3 +40,6 @@ def test_common_operator_passes_sealed_intent_to_terra_without_provider_selector
     assert "SEALED_INTENT=" in captured["prompt"]
     assert "#step-rate" not in captured["prompt"]
     assert "hardcoded provider selectors" in captured["prompt"]
+    normalized = " ".join(captured["prompt"].split())
+    assert "authenticated persistent DEFAULT browser context" in normalized
+    assert "Never create an isolated/incognito context" in normalized
