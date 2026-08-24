@@ -192,7 +192,9 @@ def distribution_claims(path: Path) -> list[dict]:
     return values
 
 
-def claim_next_job(queue_path: Path, claims_path: Path) -> dict:
+def claim_next_job(
+    queue_path: Path, claims_path: Path, results_path: Path | None = None,
+) -> dict:
     jobs = distribution_jobs(queue_path)
     claims_path.parent.mkdir(parents=True, exist_ok=True)
     with claims_path.open("a+", encoding="utf-8") as stream:
@@ -208,9 +210,21 @@ def claim_next_job(queue_path: Path, claims_path: Path) -> dict:
                 raise ValueError("distribution job claim ledger invalid")
             claims.append(row)
         if claims:
-            return {**claims[0], "changed": False}
+            current = claims[-1]
+            results = distribution_results(results_path) if results_path else []
+            current_results = [
+                row for row in results if row.get("job_id") == current["job_id"]
+            ]
+            terminal = bool(
+                current_results and current_results[-1].get("state") in {"POSTED", "UNVERIFIED"}
+            )
+            if not terminal:
+                return {**current, "changed": False}
+            claimed_ids = {row["job_id"] for row in claims}
+            jobs = [job for job in jobs if job["job_id"] not in claimed_ids]
         if not jobs:
-            return {"state": "NO_JOB", "changed": False}
+            return ({**claims[-1], "changed": False} if claims
+                    else {"state": "NO_JOB", "changed": False})
         job = min(jobs, key=lambda value: (value["created_at"], value["job_id"]))
         row = {
             "schema_version": 1,
@@ -234,7 +248,7 @@ def render_claimed_job(claims_path: Path, payloads_dir: Path) -> dict:
     claims = distribution_claims(claims_path)
     if not claims:
         return {"state": "NO_CLAIM", "changed": False}
-    job = claims[0]["job"]
+    job = claims[-1]["job"]
     text = post_text({
         "receipt_type": "AFFILIATE_REPOST_PROPOSAL",
         "state": "READY_FOR_EXISTING_REPOST_OWNER",
@@ -288,7 +302,7 @@ def distribution_payload(claims_path: Path, payloads_dir: Path) -> dict:
     claims = distribution_claims(claims_path)
     if not claims:
         raise ValueError("distribution job claim unavailable")
-    job = claims[0]["job"]
+    job = claims[-1]["job"]
     revised_path = payloads_dir / f"{job['job_id']}-r1.json"
     payload = read_json(
         revised_path if revised_path.is_file() else payloads_dir / f"{job['job_id']}.json"
@@ -432,7 +446,8 @@ def distribution_results(path: Path) -> list[dict]:
 
 def distribution_effect_state(claims_path: Path, payloads_dir: Path, results_path: Path) -> dict:
     payload = distribution_payload(claims_path, payloads_dir)
-    results = distribution_results(results_path)
+    results = [row for row in distribution_results(results_path)
+               if row.get("job_id") == payload["job_id"]]
     if results:
         if results[-1]["state"] == "RETRY_READY":
             return {"state": "READY_TO_POST", "job_id": payload["job_id"],
@@ -473,10 +488,15 @@ def record_distribution_result(
     with results_path.open("a+", encoding="utf-8") as stream:
         fcntl.flock(stream, fcntl.LOCK_EX)
         stream.seek(0)
-        existing = [json.loads(line) for line in stream if line.strip()]
-        if existing:
-            if any(not valid_distribution_result(value) for value in existing):
+        all_existing = [json.loads(line) for line in stream if line.strip()]
+        if all_existing:
+            if any(not valid_distribution_result(value) for value in all_existing):
                 raise ValueError("distribution result ledger invalid")
+            existing = [value for value in all_existing
+                        if value.get("job_id") == payload["job_id"]]
+        else:
+            existing = []
+        if existing:
             prior = existing[-1]
             if prior["state"] != "RETRY_READY":
                 comparable = {key: value for key, value in prior.items() if key != "observed_at"}
@@ -814,7 +834,9 @@ def main() -> int:
     if args.claim_next_job:
         if args.job_queue is None or args.job_claims is None:
             parser.error("--claim-next-job requires --job-queue and --job-claims")
-        print(json.dumps(claim_next_job(args.job_queue, args.job_claims), sort_keys=True))
+        print(json.dumps(claim_next_job(
+            args.job_queue, args.job_claims, args.job_results
+        ), sort_keys=True))
         return 0
     if args.render_claimed_job:
         if args.job_claims is None or args.job_payload_dir is None:

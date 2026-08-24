@@ -387,6 +387,7 @@ GENERIC_RECOVERY_PENDING="$("$PY" -c 'import json,sys; print(json.load(open(sys.
 # existing claim does not block ordinary Repost work and can never trigger an external post.
 if ! AFFILIATE_JOB_CLAIM="$("$PY" "$SKILL/scripts/affiliate_proposal.py" \
   --job-queue "$AFFILIATE_JOB_QUEUE" --job-claims "$AFFILIATE_JOB_CLAIMS" \
+  --job-results "$AFFILIATE_JOB_RESULTS" \
   --claim-next-job 2>>"$EV/affiliate-job.err")"; then
   report "🛑 Affiliate distribution queue is invalid; no queue effect is allowed"
   finish 1 "affiliate distribution job claim failed"

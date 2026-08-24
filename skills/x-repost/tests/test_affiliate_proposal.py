@@ -19,6 +19,52 @@ SPEC.loader.exec_module(MODULE)
 
 
 class AffiliateProposalTests(unittest.TestCase):
+    def test_terminal_job_advances_to_next_queue_item_without_overlap(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            queue, claims = root / "jobs.jsonl", root / "claims.jsonl"
+            payloads, results = root / "payloads", root / "results.jsonl"
+
+            def job(identity: str, created: str) -> dict:
+                return {
+                    "schema_version": 1,
+                    "receipt_type": "AFFILIATE_X_DISTRIBUTION_JOB",
+                    "state": "QUEUED", "job_id": identity * 64,
+                    "effect_identity": ("a" if identity == "1" else "b") * 64,
+                    "placement_id": f"caption-en-{identity}",
+                    "owned_article_url": "https://aniccaai.com/blog/caption",
+                    "content_sha256": "c" * 64,
+                    "experiment_lineage": {"kind": "BASE", "decision_id": None,
+                                           "control_placement_id": None},
+                    "target_x_account": "selawmqt",
+                    "cadence_class": "AFFILIATE_MONETIZATION",
+                    "policy_sha256": "d" * 64, "source_set_sha256": "e" * 64,
+                    "created_at": created,
+                    "private_tracking_url_state": "NOT_INCLUDED",
+                    "revenue_credit_state": "NO_REVENUE_CREDIT",
+                }
+
+            first_job = job("1", "2026-08-24T00:00:00+00:00")
+            second_job = job("2", "2026-08-24T01:00:00+00:00")
+            queue.write_text(json.dumps(first_job) + "\n" + json.dumps(second_job) + "\n")
+
+            first = MODULE.claim_next_job(queue, claims, results)
+            blocked = MODULE.claim_next_job(queue, claims, results)
+            MODULE.render_claimed_job(claims, payloads)
+            MODULE.record_distribution_result(
+                claims, payloads, results, "POSTED",
+                "https://x.com/selawmqt/status/123", "postiz-123",
+            )
+            second = MODULE.claim_next_job(queue, claims, results)
+
+            self.assertEqual(first["job_id"], first_job["job_id"])
+            self.assertTrue(first["changed"])
+            self.assertEqual(blocked["job_id"], first_job["job_id"])
+            self.assertFalse(blocked["changed"])
+            self.assertEqual(second["job_id"], second_job["job_id"])
+            self.assertTrue(second["changed"])
+            self.assertEqual(len(MODULE.distribution_claims(claims)), 2)
+
     def test_confirmed_no_effect_requeues_once_but_unverified_never_does(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
