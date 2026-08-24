@@ -116,6 +116,55 @@ def test_completed_result_cannot_be_a_wait(tmp_path):
         remote.validate_wait(root, feedback, digest, pass_start=0)
 
 
+def test_business_outcome_accepts_provider_kind_result_as_official_source():
+    paid = load("paid_direct")
+    outcome = {
+        "required_effect_satisfied": True,
+        "required_output_satisfied": True,
+        "remaining_work": [],
+        "official_receipts": [{
+            "effect_key": "gmail:reply:1",
+            "official_url": "https://mail.google.com/mail/u/0/#inbox/thread",
+            "provider": "Google Gmail",
+            "kind": "authenticated_dom_readback",
+            "result": "Exact sent message is visible in the official thread.",
+            "exact_readback": True,
+        }],
+    }
+
+    assert paid._validated_business_outcome({"business_outcome": outcome}) == outcome
+
+
+def test_business_outcome_effect_match_ignores_descriptive_receipt_metadata():
+    paid = load("paid_direct")
+    builder = {
+        "required_effect_satisfied": True,
+        "required_output_satisfied": True,
+        "remaining_work": [],
+        "official_receipts": [{
+            "effect_key": "gmail:reply:1",
+            "official_url": "https://mail.google.com/mail/u/0/#inbox/thread",
+            "provider": "Google Gmail",
+            "kind": "authenticated_dom_readback",
+            "result": "Exact sent message is visible.",
+            "exact_readback": True,
+        }],
+    }
+    verifier = {
+        "required_effect_satisfied": True,
+        "required_output_satisfied": True,
+        "remaining_work": [],
+        "official_receipts": [{
+            "effect_key": "gmail:reply:1",
+            "official_url": "https://mail.google.com/mail/u/0/#inbox/thread",
+            "readback_source": "Authenticated Gmail DOM message node",
+            "exact_readback": True,
+        }],
+    }
+
+    assert paid._business_outcomes_match_effects(builder, verifier) is True
+
+
 def test_wait_accepts_supplementary_receipt_when_another_has_readback(tmp_path):
     remote = load("paid_remote_result")
     root, feedback, digest = blocked_project(tmp_path)
