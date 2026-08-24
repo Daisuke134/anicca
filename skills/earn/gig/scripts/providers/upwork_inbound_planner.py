@@ -71,7 +71,7 @@ def load_packet(path: Path) -> dict[str, Any]:
     packet = _object(path, "inbound_packet")
     expected = {
         "version", "provider", "kind", "resource_id", "resource_url",
-        "detail_evidence_sha256", "observed_at", "rendered_text",
+        "detail_evidence_sha256", "observed_at", "rendered_text", "title",
     }
     kind = packet.get("kind")
     if kind == "public_job":
@@ -81,6 +81,7 @@ def load_packet(path: Path) -> dict[str, Any]:
         set(packet) != expected or packet.get("version") != 1 or packet.get("provider") != "upwork"
         or kind not in {"invitation_detected", "public_job"}
         or not isinstance(packet.get("resource_id"), str)
+        or not isinstance(packet.get("title"), str) or not packet["title"].strip()
         or not re.fullmatch(r"[0-9a-f]{64}", str(packet.get("detail_evidence_sha256") or ""))
         or hashlib.sha256(canonical.encode()).hexdigest() != path.stem
         or (kind == "public_job" and (
@@ -106,7 +107,8 @@ def planner_prompt(
     required = packet.get("required_connects", 0)
     available = packet.get("available_connects_before", 0)
     status = "frozen_waiting_for_connects" if packet.get("kind") == "public_job" else "frozen_waiting_for_invitation"
-    return f"""You decide one Upwork proposal. Return only schema-valid JSON.
+    return f"""You decide one Upwork proposal. Return only schema-valid JSON with a decisions array
+containing exactly one item. Copy resource_id into both decision.job_id and proposal.job_id.
 Use only facts present in OWNER_PROFILE and OFFICIAL_INBOUND. Never invent experience, identity,
 availability, credentials, portfolio, results, client facts, requirements, questions, or scope.
 Although the legacy field is named reason_codes, write one to three concise natural Japanese
@@ -136,11 +138,12 @@ def batch_planner_prompt(
     facts = json.dumps(owner_profile, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     inbound = json.dumps(packets, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     skills = json.dumps(capabilities, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
-    return f"""Choose at most one best Upwork public job from OFFICIAL_CANDIDATES and return the existing
-single-proposal schema. Return submit with one proposal only when installed Skills can complete and
-independently verify it, expected value is positive, and the official Connects balance covers it;
-otherwise return skip for the whole set with reasons. Compare candidates against each other rather
-than accepting the first feasible one. Use only supplied facts. Never invent experience, identity,
+    return f"""Return one schema-valid decision for every item in OFFICIAL_CANDIDATES, in the same
+order, with no omission. Copy each resource_id into decision.job_id and proposal.job_id. Return submit
+for every candidate that installed Skills can complete and independently verify, has positive expected
+value, and whose official Connects cost is covered; otherwise return skip with that candidate's own
+natural-language reasons. Never limit the batch to one winner. Compare candidates, but do not suppress
+one profitable candidate because another is better. Use only supplied facts. Never invent experience, identity,
 availability, credentials, portfolio, results, client facts, requirements, questions or scope.
 Although the legacy field is named reason_codes, write one to three concise natural Japanese
 sentences that explain the actual comparison. Never return enum names, snake_case slugs or keyword codes.
@@ -162,8 +165,10 @@ OFFICIAL_CANDIDATES={inbound}"""
 def validate_decision(
     decision: dict[str, Any], packet: dict[str, Any],
 ) -> dict[str, Any] | None:
-    if set(decision) != {"decision", "reason_codes", "proposal"}:
+    if set(decision) != {"job_id", "decision", "reason_codes", "proposal"}:
         raise InboundPlannerError("inbound_decision_invalid")
+    if decision.get("job_id") != packet["resource_id"]:
+        raise InboundPlannerError("inbound_decision_mismatch")
     reasons = decision.get("reason_codes")
     if not isinstance(reasons, list) or any(not isinstance(item, str) or not item for item in reasons):
         raise InboundPlannerError("inbound_decision_invalid")
@@ -258,30 +263,6 @@ def application_decision_event(
     }
 
 
-def application_batch_skip_event(
-    decision: dict[str, Any], packets: list[dict[str, Any]], *, occurred_at: str,
-) -> dict[str, Any]:
-    """Project one truthful whole-batch skip without inventing per-job reasons."""
-    if not packets or decision.get("decision") != "skip":
-        raise InboundPlannerError("application_batch_event_invalid")
-    for packet in packets:
-        validate_decision(decision, packet)
-    candidate_ids = [packet["resource_id"] for packet in packets]
-    evidence_hash = hashlib.sha256("\n".join(
-        packet["detail_evidence_sha256"] for packet in packets
-    ).encode()).hexdigest()
-    packet = {
-        "resource_id": "batch-" + hashlib.sha256("\n".join(candidate_ids).encode()).hexdigest(),
-        "resource_url": "https://www.upwork.com/nx/find-work/best-matches",
-        "detail_evidence_sha256": evidence_hash,
-    }
-    event = application_decision_event(
-        decision, packet, title=f"{len(packets)}件の案件候補", occurred_at=occurred_at,
-    )
-    event["attributes"]["candidate_ids"] = candidate_ids
-    return event
-
-
 def _invoke_prompt(
     prompt: str, *, runner: Path, schema: Path, evidence_dir: Path,
 ) -> dict[str, Any]:
@@ -323,6 +304,20 @@ def _invoke_prompt(
     return decision
 
 
+def validate_batch_result(
+    result: dict[str, Any], packets: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    decisions = result.get("decisions") if isinstance(result, dict) and set(result) == {"decisions"} else None
+    expected_ids = [packet["resource_id"] for packet in packets]
+    if (
+        not isinstance(decisions, list) or len(decisions) != len(packets)
+        or [decision.get("job_id") if isinstance(decision, dict) else None for decision in decisions]
+        != expected_ids
+    ):
+        raise InboundPlannerError("inbound_batch_result_invalid")
+    return decisions
+
+
 def invoke(
     packet_path: Path, *, runner: Path = DEFAULT_RUNNER, schema: Path = DEFAULT_SCHEMA,
     profile: Path = DEFAULT_PROFILE, market_profile: Path = DEFAULT_MARKET_PROFILE,
@@ -337,7 +332,9 @@ def invoke(
     prompt = planner_prompt(
         packet, facts, capability_inventory(REPO_ROOT),
     )
-    decision = _invoke_prompt(prompt, runner=runner, schema=schema, evidence_dir=evidence_dir)
+    result = _invoke_prompt(prompt, runner=runner, schema=schema, evidence_dir=evidence_dir)
+    decisions = validate_batch_result(result, [packet])
+    decision = decisions[0]
     proposal = validate_decision(decision, packet)
     if decision_sink is not None:
         decision_sink(application_decision_event(
@@ -351,7 +348,7 @@ def invoke_batch(
     packet_paths: list[Path], *, runner: Path = DEFAULT_RUNNER, schema: Path = DEFAULT_SCHEMA,
     profile: Path = DEFAULT_PROFILE, market_profile: Path = DEFAULT_MARKET_PROFILE,
     evidence_dir: Path, decision_sink: Callable[[dict[str, Any]], None] | None = None,
-) -> dict[str, Any] | None:
+) -> list[dict[str, Any]]:
     packets = [load_packet(path) for path in packet_paths]
     if not packets or len(packets) > 10 or any(packet.get("kind") != "public_job" for packet in packets):
         raise InboundPlannerError("inbound_batch_invalid")
@@ -362,26 +359,19 @@ def invoke_batch(
     prompt = batch_planner_prompt(
         packets, facts, capability_inventory(REPO_ROOT),
     )
-    decision = _invoke_prompt(prompt, runner=runner, schema=schema, evidence_dir=evidence_dir)
-    if decision.get("decision") == "skip":
-        proposal = validate_decision(decision, packets[0])
+    result = _invoke_prompt(prompt, runner=runner, schema=schema, evidence_dir=evidence_dir)
+    decisions = validate_batch_result(result, packets)
+    proposals = []
+    for packet, decision in zip(packets, decisions, strict=True):
+        proposal = validate_decision(decision, packet)
         if decision_sink is not None:
-            decision_sink(application_batch_skip_event(
-                decision, packets, occurred_at=max(packet["observed_at"] for packet in packets),
+            decision_sink(application_decision_event(
+                decision, packet, title=(proposal or {}).get("title") or packet["title"],
+                occurred_at=packet["observed_at"],
             ))
-        return proposal
-    proposal = decision.get("proposal")
-    chosen = next(
-        (packet for packet in packets if packet["resource_id"] == (proposal or {}).get("job_id")), None,
-    )
-    if chosen is None:
-        raise InboundPlannerError("inbound_batch_choice_invalid")
-    validated = validate_decision(decision, chosen)
-    if decision_sink is not None:
-        decision_sink(application_decision_event(
-            decision, chosen, title=validated["title"], occurred_at=chosen["observed_at"],
-        ))
-    return validated
+        if proposal is not None:
+            proposals.append(proposal)
+    return proposals
 
 
 def write_sealed_proposal(proposal: dict[str, Any], root: Path) -> Path:

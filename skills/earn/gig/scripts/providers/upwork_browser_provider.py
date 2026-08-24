@@ -477,7 +477,7 @@ def seal_inbound_detail(
         "version": 1, "provider": "upwork", "kind": inbound["state"],
         "resource_id": inbound["resource_id"], "resource_url": inbound["resource_url"],
         "detail_evidence_sha256": evidence_sha256, "observed_at": observed_at,
-        "rendered_text": text,
+        "rendered_text": text, "title": str(inbound.get("title") or inbound["resource_id"]),
     }
     if inbound["state"] == "public_job":
         required = inbound.get("required_connects")
@@ -579,30 +579,32 @@ async def discover_affordable_proposal(
                 "state": "public_job", "resource_id": job["id"],
                 "resource_url": job["href"], "required_connects": required,
                 "available_connects_before": state["balance"],
+                "title": job["title"],
             }, text, digest, inbound_dir, state["observed_at"])
             packet_paths.append(inbound_dir / f"{packet_sha}.json")
             batch_identities.append(f"{job['id']}|{digest}|{required}|{state['balance']}")
             observed_by_id[job["id"]] = (candidate, text, digest)
         if packet_paths:
             batch_key = hashlib.sha256("\n".join(batch_identities).encode()).hexdigest()
-            proposal = await asyncio.to_thread(
+            proposals = await asyncio.to_thread(
                 plan_batch, packet_paths, profile=DEFAULT_OWNER_PROFILE,
                 evidence_dir=inbound_evidence / f"batch-{batch_key}",
                 decision_sink=publish_application_decision,
             )
-            if proposal is None:
+            if not proposals:
                 continue
-            candidate, text, digest = observed_by_id[proposal["job_id"]]
-            public = dict(proposal)
             proposals_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
             os.chmod(proposals_dir, 0o700)
-            _atomic_write(proposals_dir / f"{proposal['job_id'].lstrip('~')}.json", public)
-            ready = {**candidate, "queue": "ready",
-                     "proposal_payload_sha256": public["payload_sha256"]}
-            state["candidate_jobs"].append(parse_candidate(ready, text, digest))
+            for proposal in proposals:
+                candidate, text, digest = observed_by_id[proposal["job_id"]]
+                public = dict(proposal)
+                _atomic_write(proposals_dir / f"{proposal['job_id'].lstrip('~')}.json", public)
+                ready = {**candidate, "queue": "ready",
+                         "proposal_payload_sha256": public["payload_sha256"]}
+                state["candidate_jobs"].append(parse_candidate(ready, text, digest))
             _atomic_write(cursor_path, {"version": 1, "next_page": page + 1})
             state["proposal_discovery"]["next_page"] = page + 1
-            return public
+            return proposals[0]
     _atomic_write(cursor_path, {"version": 1, "next_page": next_page + 2})
     state["proposal_discovery"]["next_page"] = next_page + 2
     return None
