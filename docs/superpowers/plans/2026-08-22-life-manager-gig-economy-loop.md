@@ -842,6 +842,13 @@ U13 atomic order:
     owner-only proposal store into the ready queue, deduped by job ID. No proposal content, score or
     category is inferred. Regression remains `155 passed`; next release must resume the existing
     research payload before spending another Luna call on unchanged discovery.
+61. **SECOND LOOP-OWNED DYNAMIC PROPOSAL VERIFIED:** release `f733d9022` reloaded the private sealed
+    queue before discovery, passed the corrected click-free preflight and invoked the shared Terra
+    browser operator. Official proposal `2091760957211561985` is verified with exact Connects
+    `141 -> 133`; a separate fresh Proposals page reads submitted `2`, and Connects History names the
+    exact research job with `-8`. No purchase, boost, identity, tax or payment action occurred. The
+    next wake must preserve both proposal IDs and spend zero additional Connects on either while any
+    newly qualified proposal remains a distinct effect.
 
 U14 atomic order:
 
