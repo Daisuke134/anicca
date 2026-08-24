@@ -177,7 +177,7 @@ class DirectCDPPage:
             const related=relatedInput&&relatedInput!==el?`${{label(relatedInput)}} options`:'';
             const fieldset=el.closest('fieldset');
             const fieldsetControls=fieldset
-              ?Array.from(fieldset.querySelectorAll('input,select,textarea')).filter(visible)
+              ?Array.from(fieldset.querySelectorAll('input,select,textarea,button')).filter(visible)
               :[];
             const legend=fieldset?.querySelector(':scope > legend');
             const fieldsetLabel=fieldsetControls.length===1

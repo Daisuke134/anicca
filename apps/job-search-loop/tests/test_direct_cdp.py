@@ -347,6 +347,7 @@ class DirectCDPTypeTests(unittest.IsolatedAsyncioTestCase):
         for source in (observation_source, target_source):
             self.assertIn("const fieldsetLabel", source)
             self.assertIn("fieldsetControls.length", source)
+            self.assertIn("input,select,textarea,button", source)
             self.assertIn("closest('fieldset')", source)
             self.assertIn("querySelector(':scope > legend')", source)
         self.assertIn("!/^error\\\\b/i.test", observation_source)
