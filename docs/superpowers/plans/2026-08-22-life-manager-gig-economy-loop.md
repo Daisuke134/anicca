@@ -647,6 +647,13 @@ U13 atomic order:
     The same resident agent must continue search while shifting spare acquisition effort to the
     already-approved Catalog and profile/invitation surfaces; it must not wait for another manual
     session or create another scheduler/decision engine.
+38. **SEARCH CONTINUES / CATALOG PRICE CANARY PENDING PUBLIC READBACK:** later wakes advanced the
+    cursor `10 → 12 → 14`; zero-Connect eligibility and submitted proposals remain 0. Direct browser
+    inspection found the approved Catalog service visible with one view, zero orders and a $75 public
+    price despite a zero-review profile. The existing editor accepted and persisted a $10 draft and
+    returned `Project has been saved successfully`, but the public service still reads $75. Treat the
+    price experiment as pending, not live, until the public URL itself reads $10; continue job, invite,
+    offer, order and free-Connect monitoring meanwhile.
 
 U14 atomic order:
 
