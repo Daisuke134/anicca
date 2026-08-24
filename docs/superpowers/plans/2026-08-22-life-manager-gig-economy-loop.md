@@ -715,6 +715,11 @@ U13 atomic order:
     that exact platform explainer with trusted input, then click the already verified Submit control
     once and require proposal ID plus the exact `150 -> 141` Connects readback. No generic modal
     dismissal, JavaScript click, duplicate retry or new qualification logic is introduced.
+47. **EXPLAINER CLOSE COORDINATE REJECTED:** the exact dialog remained visible after a trusted click
+    on its rendered Close center; official evidence still proves proposals `0` and balance `150`.
+    Replace only that no-effect dismissal with the platform-standard trusted Escape key, require that
+    no visible dialog remains, then issue the single trusted Submit click. Failure to close aborts
+    before Submit and remains reconcile-only.
 
 U14 atomic order:
 
