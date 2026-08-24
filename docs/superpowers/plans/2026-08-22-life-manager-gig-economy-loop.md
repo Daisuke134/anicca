@@ -876,6 +876,14 @@ U13 atomic order:
     ordered job ID, official detail hash, Connects cost and current balance; timestamps remain evidence,
     never decision identity. Regression remains `156 passed`; next wake must reuse unchanged page-one
     batch evidence without a new Luna call and evaluate only changed/new sets.
+66. **STABLE-KEY CANARY PRESERVED MONEY / RELEASE CONFLICT:** release `0dbeb8784` reached two new
+    stable-key candidate sets and used one Luna call for each; both returned skip, while official
+    proposals remained 2, balance 133 and duplicate effects 0. The final detail snapshot was
+    inconclusive and the wake exited 1 without mutation. Before an immediate same-page cache replay,
+    another active Life Manager task switched `current` to Paid release `e3d93c806`, which does not
+    contain the Upwork batching/durable-queue changes. The Upwork branch remains pushed and verified;
+    do not overwrite the shared production symlink until that concurrent release owner is clear, then
+    activate the integrated commit and prove unchanged batch model-call delta 0.
 
 U14 atomic order:
 
