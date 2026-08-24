@@ -908,6 +908,14 @@ U13 atomic order:
     Skill inventory and policy. A changed proof or Skill therefore triggers one fresh Luna decision,
     while identical inputs remain zero-call. Regression remains `156 passed`; next native-feed wake
     must reconsider the same opportunities with official proof and apply only on positive verified value.
+73. **EXISTING QA BECOMES A DISCOVERABLE VERIFIER SKILL:** even with published portfolio evidence,
+    Luna still returned `no_verified_skill_fit` because delivery Skills require an independent verifier
+    but the production artifact/test/visual QA machinery had no discoverable Skill contract. Add one
+    instruction-only `gig-delivery-verifier` that routes code/API, research/data, writing/documents,
+    presentations and mobile/web builds to existing executable or visual evidence. It never builds,
+    submits or approves money; missing modality/evidence is `UNDETERMINABLE`. Skill validation and
+    capability-inventory readback pass. A changed Skill inventory changes the prompt SHA, so native
+    Best Matches receives one fresh Luna decision rather than reusing the prior skip.
 
 U14 atomic order:
 
