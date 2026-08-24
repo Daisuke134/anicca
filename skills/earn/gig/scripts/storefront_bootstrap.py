@@ -128,6 +128,143 @@ CAPABILITY_INVENTORY=""" + json.dumps(value, ensure_ascii=False, separators=(","
     return result
 
 
+def _official_form_options(snapshot: dict[str, Any]) -> dict[str, Any]:
+    rows = [row for row in snapshot.get("fields") or [] if isinstance(row, dict)]
+    checkboxes: dict[str, list[str]] = {}
+    radios: dict[str, list[str]] = {}
+    selects: dict[str, list[str]] = {}
+    for row in rows:
+        name, value, kind = str(row.get("name") or ""), str(row.get("value") or ""), str(row.get("type") or "")
+        if not name:
+            continue
+        if kind == "checkbox" and value:
+            checkboxes.setdefault(name, []).append(value)
+        elif kind == "radio" and value:
+            radios.setdefault(name, []).append(value)
+        elif row.get("tag") == "SELECT":
+            selects[name] = [str(item) for item in row.get("options") or [] if str(item)]
+    prices = []
+    for row in snapshot.get("price_options") or []:
+        if not isinstance(row, dict):
+            continue
+        label = str(row.get("text") or "").replace(",", "")
+        digits = "".join(character for character in label if character.isdigit())
+        if str(row.get("value") or "").isdigit() and digits:
+            prices.append({"value": str(row["value"]), "display_price_jpy": int(digits)})
+    return {"checkboxes": checkboxes, "radios": radios, "selects": selects,
+            "display_prices": prices}
+
+
+def _validate_listing(result: dict[str, Any], official: dict[str, Any]) -> None:
+    nullable = (
+        "title_stem", "catchphrase", "head", "body", "display_price_jpy", "delivery_days",
+        "paid_option_title", "paid_option_price_jpy", "image_copy", "features", "industries",
+        "languages", "provision_format", "fix_limit", "unit_price_jpy_per_character",
+        "subscription_discount_ratio", "success_metric", "observation_window_days",
+    )
+    if result.get("decision") == "no_op":
+        if any(result.get(key) is not None for key in nullable) or not result.get("no_op_reason"):
+            raise RuntimeError("storefront_bootstrap_listing_noop_invalid")
+        return
+    required_create = (
+        "title_stem", "catchphrase", "head", "body", "display_price_jpy", "delivery_days",
+        "image_copy", "features", "industries", "languages", "success_metric",
+        "observation_window_days",
+    )
+    if result.get("decision") != "create" or any(result.get(key) is None for key in required_create):
+        raise RuntimeError("storefront_bootstrap_listing_required_field_missing")
+    prices = {row["display_price_jpy"] for row in official["display_prices"]}
+    if result["display_price_jpy"] not in prices:
+        raise RuntimeError("storefront_bootstrap_listing_price_not_official")
+    for key, name in (("features", "data[facets][163][]"), ("industries", "data[facets][164][]"),
+                      ("languages", "data[facets][165][]")):
+        if not set(result[key]) <= set(official["checkboxes"].get(name, [])):
+            raise RuntimeError(f"storefront_bootstrap_listing_{key}_not_official")
+    provision = official["radios"].get("data[Service][provision_format]", [])
+    if provision and result["provision_format"] not in provision:
+        raise RuntimeError("storefront_bootstrap_listing_format_not_official")
+    option_prices = set(official["selects"].get("data[Option][0][price]", []))
+    if option_prices:
+        if (not result.get("paid_option_title")
+                or str(result.get("paid_option_price_jpy") or "") not in option_prices):
+            raise RuntimeError("storefront_bootstrap_listing_option_price_not_official")
+    elif result.get("paid_option_title") is not None or result.get("paid_option_price_jpy") is not None:
+        raise RuntimeError("storefront_bootstrap_listing_option_unavailable")
+    discounts = set(official["selects"].get("data[ServiceSubscription][discount_ratio]", []))
+    if discounts and result.get("subscription_discount_ratio") not in discounts:
+        raise RuntimeError("storefront_bootstrap_listing_discount_not_official")
+
+
+def _invoke_listing_agent(
+    prompt: str, *, runner: Path, schema: Path, evidence_dir: Path,
+    workdir: Path, timeout_seconds: int,
+) -> dict[str, Any]:
+    evidence_dir.mkdir(parents=True, exist_ok=True)
+    started = time.time()
+    completed = subprocess.run([
+        sys.executable, str(runner), "--task-class", "storefront-proposal-agent", "--prompt-stdin",
+        "--schema", str(schema), "--evidence-dir", str(evidence_dir),
+        "--task-label", "gig-storefront-bootstrap-listing", "--loop", "gig-storefront",
+        "--workdir", str(workdir), "--timeout-seconds", str(timeout_seconds),
+    ], input=prompt, text=True, capture_output=True, timeout=timeout_seconds + 30, check=False)
+    if completed.returncode != 0:
+        raise RuntimeError("storefront_bootstrap_listing_failed")
+    summary_path = evidence_dir / "summary.json"
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    result_path = Path(str(summary.get("result_path") or "")).resolve(strict=True)
+    result_path.relative_to(evidence_dir.resolve())
+    result = json.loads(result_path.read_text(encoding="utf-8"))
+    if summary.get("status") != "success" or min(summary_path.stat().st_mtime, result_path.stat().st_mtime) < started:
+        raise RuntimeError("storefront_bootstrap_listing_stale")
+    return result
+
+
+def compose_listing(
+    *, selection: dict[str, Any], demand: dict[str, Any], category: dict[str, Any],
+    form_snapshot: dict[str, Any], runner: Path, schema: Path,
+    evidence_dir: Path, workdir: Path, timeout_seconds: int = 180,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    official = _official_form_options(form_snapshot)
+    context = {"selection": selection, "demand": demand, "category": category,
+               "official_form_options": official}
+    base_prompt = """Create the first buyer-facing Coconala listing and return only the strict schema
+object. The selected installed AI skill is the delivery workforce. Sell exactly selection.buyer_outcome
+and require the buyer inputs listed there; do not claim personal experience, sales, speed guarantees,
+live data, credentials, or work outside the selected skill. Use Japanese buyer-facing prose. title_stem
+excludes the final `ます` and must end in a Japanese continuative verb form. head states outcome,
+inclusions, exclusions, required inputs, deliverable and support boundary. body gives purchase steps
+and unsupported work. image_copy is exactly three non-empty lines: headline, support line, then two
+or three badges separated by `｜`; no price/review/sales/guarantee. Choose display_price_jpy only from
+official_form_options.display_prices. Choose facet/radio/select values only from the exact official
+lists; copy the literal ids and never infer an id from meaning. Use empty arrays/null when that control
+is absent. When `data[Option][0][price]` has options, provide one concise paid option and copy its exact
+numeric value as paid_option_price_jpy. When it is absent, both paid option fields are null.
+When `data[ServiceSubscription][discount_ratio]` has options, copy one exact value;
+otherwise subscription_discount_ratio is null. Choose no_op when the official form cannot
+represent an honest listing and set every nullable commercial/form/metric field to null.
+CONTEXT_JSON=""" + json.dumps(context, ensure_ascii=False, separators=(",", ":"))
+    feedback = ""
+    for attempt in range(2):
+        result = _invoke_listing_agent(
+            base_prompt + feedback,
+            runner=runner, schema=schema, evidence_dir=evidence_dir / f"attempt-{attempt + 1}",
+            workdir=workdir, timeout_seconds=timeout_seconds,
+        )
+        try:
+            _validate_listing(result, official)
+            return result, official
+        except RuntimeError as error:
+            if attempt == 1:
+                raise
+            feedback = (
+                "\nThe previous schema-valid answer was rejected by the deterministic official-form "
+                f"validator with `{error}`. Correct only that mismatch. Every create answer must set "
+                "delivery_days, success_metric and observation_window_days. Copy each facet id only "
+                "from its own named list; do not move ids between features/industries/languages."
+            )
+    raise RuntimeError("storefront_bootstrap_listing_unreachable")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("command", choices=("inventory", "select"))
