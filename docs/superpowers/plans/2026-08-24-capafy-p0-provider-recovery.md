@@ -31,21 +31,21 @@
 - Consumes: provider config field `auth_file` and `provider_process_env()`.
 - Produces: Codex candidate environment whose `CODEX_HOME/auth.json` resolves to `~/.codex-acct2/auth.json`, with no configured `local_proxy` model provider.
 
-- [ ] **Step 1: Write the failing routing contract test**
+- [x] **Step 1: Write the failing routing contract test**
 
 Load `runtime/agent-runner/config.json` and assert that the Codex provider uses `~/.codex-acct2/auth.json` and does not define `model_provider` or `model_providers`.
 
-- [ ] **Step 2: Run the test and verify RED**
+- [x] **Step 2: Run the test and verify RED**
 
 Run: `python3 runtime/agent-runner/tests/test_account2_direct_routing.py -v`
 
 Expected: FAIL because `model_provider` is `local_proxy`.
 
-- [ ] **Step 3: Remove only the local proxy override**
+- [x] **Step 3: Remove only the local proxy override**
 
 Delete `model_provider` and `model_providers` from the Codex provider row. Preserve `auth_file`, automation isolation, capability declarations, task classes, and Claude fallback.
 
-- [ ] **Step 4: Verify GREEN and focused runner regression**
+- [x] **Step 4: Verify GREEN and focused runner regression**
 
 Run:
 
@@ -56,11 +56,11 @@ python3 -m unittest discover -s runtime/agent-runner/tests -p 'test_*.py'
 
 Expected: all tests PASS.
 
-- [ ] **Step 5: Verify a direct account 2 provider probe**
+- [x] **Step 5: Verify a direct account 2 provider probe**
 
 Run one ephemeral, read-only Codex request with `CODEX_HOME=~/.codex-acct2`, no proxy environment, and require exact output `ACCOUNT2_OK`.
 
-- [ ] **Step 6: Commit Task 1**
+- [x] **Step 6: Commit Task 1**
 
 ```bash
 git add runtime/agent-runner/config.json runtime/agent-runner/tests/test_account2_direct_routing.py
@@ -77,21 +77,21 @@ git commit -m "fix(capafy): route Codex through account 2"
 - Consumes: latest `capafy-marketplace/*/summary.json` and `attempts.jsonl`.
 - Produces: private `capafy-provider-backoff.json` with `error_class`, `observed_at`, and `next_eligible_at`; no kickstart while the latest terminal is all `transient_quota`.
 
-- [ ] **Step 1: Write the failing stale-marker plus quota test**
+- [x] **Step 1: Write the failing stale-marker plus quota test**
 
 Create a temporary Life Manager state tree, a stale healthy marker, a failed summary with only `transient_quota` attempts, and a fake `launchctl` that records calls. Assert exit `0`, zero `kickstart`, and a future `next_eligible_at`.
 
-- [ ] **Step 2: Run the test and verify RED**
+- [x] **Step 2: Run the test and verify RED**
 
 Run: `python3 skills/self/capafy-loop/test_capafy_healthcheck_quota_backoff.py -v`
 
 Expected: FAIL because the current healthcheck calls `launchctl kickstart` and writes no backoff receipt.
 
-- [ ] **Step 3: Add the minimal quota classification guard**
+- [x] **Step 3: Add the minimal quota classification guard**
 
 Before stale-marker kickstart, inspect the latest completed runner receipt. If every failed attempt is `transient_quota`, atomically write a mode-0600 backoff receipt for the next hourly boundary, log the no-write terminal, and exit `0`. Missing, malformed, mixed, or non-quota evidence keeps the existing fail-closed behavior.
 
-- [ ] **Step 4: Verify GREEN and Capafy regression**
+- [x] **Step 4: Verify GREEN and Capafy regression**
 
 Run:
 
