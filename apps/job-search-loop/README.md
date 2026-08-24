@@ -91,10 +91,12 @@ Run the Job Hunter command:
 
 The first run collects the finalized resume PDF, application email, target role
 families, acceptable locations, salary floor/target and excluded employers directly
-in Terminal. It starts only the dedicated browser. Complete the official login and
-run the exact same command again; Gmail and Telegram readback must pass before the
-30-minute acquisition, inbox, learning and health owners activate. Credentials
-remain in their existing CLI/browser/private transports.
+in Terminal. It installs `gog` when missing, starts Gmail OAuth for that email, and
+privately asks for an owner-created Telegram bot token plus numeric chat ID. It then
+starts only the dedicated browser. Complete the official login and run the exact
+same command again; Gmail and a real Telegram provider message ID must pass before
+the 30-minute acquisition, inbox, learning and health owners activate. Credentials
+remain mode-0600 in their CLI/browser/private transports and are never echoed.
 
 For recovery or development from an existing checkout:
 

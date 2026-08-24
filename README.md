@@ -45,9 +45,11 @@ To start the Job Hunter loop on an Apple Silicon Mac:
 
 The command installs only missing dependencies, asks for the finalized resume and
 job preferences in Terminal, and opens the dedicated CloakBrowser for official
-login. Finish the official login, then run the exact same command again. Life
-Manager verifies Gmail and Telegram and starts the ready Job Hunter owners.
-Passwords and OTPs stay on official provider pages.
+login. It also installs `gog`, opens Gmail OAuth for the application email, and asks
+for the owner's Telegram bot token privately plus numeric chat ID. Finish the
+official login, then run the exact same command again. Life Manager verifies Gmail
+and a real Telegram message ID before starting the owners. Passwords, OTPs and bot
+tokens are never printed or committed.
 
 Job Hunter is pre-release until Dais's installed 30-minute Workday loop closes the
 current production acceptance: dynamic discovery, fit-qualified application,

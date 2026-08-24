@@ -56,6 +56,9 @@ prepare() {
     /bin/bash "$installer"
     rm -f "$installer"
   fi
+  if ! command -v gog >/dev/null 2>&1; then
+    brew install gogcli
+  fi
   if ! codex login status >/dev/null 2>&1; then
     codex login
     codex login status >/dev/null 2>&1 || {
@@ -71,6 +74,77 @@ prepare() {
     "$venv/bin/python" -c 'from cloakbrowser import launch; browser=launch(headless=True); browser.close()'
   fi
   preflight
+}
+
+configure_connectors() {
+  local email private_dir telegram_env keyring_password bot_token chat_id
+  email=$("$JOB_SEARCH_JQ" -er '.candidate.application_email' "$JOB_SEARCH_PROFILE")
+  private_dir="${XDG_CONFIG_HOME:-$HOME/.config}/anicca/job-search"
+  telegram_env="$private_dir/telegram.env"
+  mkdir -p "$private_dir"
+  chmod 700 "$private_dir"
+
+  source "$SCRIPT_DIR/private-env.sh"
+  if ! job_search_load_private_env GOG_KEYRING_PASSWORD; then
+    print -u2 "Create a local Gmail keyring password. It stays on this Mac."
+    read -s "keyring_password?Gmail keyring password: "
+    print -u2
+    [[ -n "$keyring_password" ]] || {
+      print -u2 "[job-hunter] Gmail keyring password is required"
+      return 2
+    }
+    printf '%s' "$keyring_password" | "$JOB_SEARCH_PYTHON" -c '
+import os,shlex,sys,tempfile
+from pathlib import Path
+path=Path(sys.argv[1]); value=sys.stdin.read()
+path.parent.mkdir(parents=True,exist_ok=True,mode=0o700); os.chmod(path.parent,0o700)
+fd,name=tempfile.mkstemp(prefix=f".{path.name}.",dir=path.parent)
+try:
+ os.fchmod(fd,0o600)
+ with os.fdopen(fd,"w",encoding="utf-8") as f:
+  f.write("GOG_KEYRING_PASSWORD="+shlex.quote(value)+"\n"); f.flush(); os.fsync(f.fileno())
+ os.replace(name,path)
+finally:
+ try: os.unlink(name)
+ except FileNotFoundError: pass
+' "$JOB_SEARCH_PRIVATE_ENV"
+    typeset -gx GOG_KEYRING_PASSWORD="$keyring_password"
+  fi
+  if ! gog auth list --json --no-input 2>/dev/null | "$JOB_SEARCH_PYTHON" -c '
+import json,sys
+v=json.load(sys.stdin); want=sys.argv[1]
+raise SystemExit(0 if any(x.get("email")==want and "gmail" in (x.get("services") or []) for x in v.get("accounts",[])) else 1)
+' "$email"; then
+    gog auth add "$email" --services gmail
+  fi
+
+  if [[ ! -f "$telegram_env" ]]; then
+    print -u2 "Create a Telegram bot with @BotFather, open its chat, then enter the private values below."
+    read -s "bot_token?Telegram bot token: "
+    print -u2
+    read "chat_id?Telegram chat ID: "
+    [[ -n "$bot_token" && "$chat_id" == <-> ]] || {
+      print -u2 "[job-hunter] valid Telegram bot token and numeric chat ID are required"
+      return 2
+    }
+    printf '%s\n%s' "$bot_token" "$chat_id" | "$JOB_SEARCH_PYTHON" -c '
+import os,shlex,sys,tempfile
+from pathlib import Path
+path=Path(sys.argv[1]); token,chat=sys.stdin.read().splitlines()
+path.parent.mkdir(parents=True,exist_ok=True,mode=0o700); os.chmod(path.parent,0o700)
+fd,name=tempfile.mkstemp(prefix=f".{path.name}.",dir=path.parent)
+try:
+ os.fchmod(fd,0o600)
+ with os.fdopen(fd,"w",encoding="utf-8") as f:
+  f.write("TELEGRAM_BOT_TOKEN="+shlex.quote(token)+"\n")
+  f.write("JOB_SEARCH_TELEGRAM_CHAT_ID="+shlex.quote(chat)+"\n")
+  f.flush(); os.fsync(f.fileno())
+ os.replace(name,path)
+finally:
+ try: os.unlink(name)
+ except FileNotFoundError: pass
+' "$telegram_env"
+  fi
 }
 
 record_state() {
@@ -115,6 +189,7 @@ start_setup() {
     [[ "$replace" == "0" ]] || profile_args+=(--replace)
     "$SCRIPT_DIR/setup-profile.sh" "${profile_args[@]}"
   fi
+  configure_connectors
   local install_args=(--profile "$JOB_SEARCH_PROFILE" --provider auto --scheduler none)
   [[ "$replace" == "0" ]] || install_args+=(--replace-profile)
   "$SCRIPT_DIR/install-local.sh" "${install_args[@]}" >/dev/null
