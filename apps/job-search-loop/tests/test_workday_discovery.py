@@ -14,6 +14,7 @@ TEST_SOURCES = tuple(
         "host": f"{tenant}.wd1.myworkdayjobs.com",
         "tenant": tenant,
         "site": "Careers",
+        "search_text": "Japan",
     }
     for company, tenant in (
         ("NVIDIA", "nvidia"),
@@ -32,12 +33,14 @@ class WorkdayDiscoveryTests(unittest.TestCase):
                 "host": "different.wd1.myworkdayjobs.com",
                 "tenant": "different",
                 "site": "Careers",
+                "search_text": "applied AI",
             },
             {
                 "company": "OpenAI",
                 "host": "openai.wd1.myworkdayjobs.com",
                 "tenant": "openai",
                 "site": "Careers",
+                "search_text": "applied AI",
             },
         ]})
 
@@ -49,6 +52,7 @@ class WorkdayDiscoveryTests(unittest.TestCase):
             "host": "different.wd1.myworkdayjobs.com",
             "tenant": "different",
             "site": "Careers",
+            "search_text": "applied AI",
         }
         seen = []
         with tempfile.TemporaryDirectory() as directory:

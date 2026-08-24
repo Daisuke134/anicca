@@ -11,12 +11,13 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["company", "host", "tenant", "site"],
+        "required": ["company", "host", "tenant", "site", "search_text"],
         "properties": {
           "company": {"type": "string", "minLength": 1},
           "host": {"type": "string", "minLength": 1},
           "tenant": {"type": "string", "minLength": 1},
-          "site": {"type": "string", "minLength": 1}
+          "site": {"type": "string", "minLength": 1},
+          "search_text": {"type": "string", "minLength": 1}
         }
       }
     }

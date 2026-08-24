@@ -22,7 +22,12 @@ def _fetch_jobs(source: dict[str, str]) -> list[dict[str, Any]]:
     request = Request(
         endpoint,
         data=json.dumps(
-            {"appliedFacets": {}, "limit": 20, "offset": 0, "searchText": "Japan"}
+            {
+                "appliedFacets": {},
+                "limit": 20,
+                "offset": 0,
+                "searchText": source["search_text"],
+            }
         ).encode(),
         headers={
             "Accept": "application/json",

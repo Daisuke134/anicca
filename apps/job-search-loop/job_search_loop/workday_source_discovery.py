@@ -12,7 +12,7 @@ from .agent_runner import AgentRunner, wrap_untrusted
 from .state import is_excluded_employer
 
 
-_FIELDS = {"company", "host", "tenant", "site"}
+_FIELDS = {"company", "host", "tenant", "site", "search_text"}
 
 
 def validate_sources(value: dict[str, Any]) -> tuple[dict[str, str], ...]:
@@ -33,10 +33,16 @@ def validate_sources(value: dict[str, Any]) -> tuple[dict[str, str], ...]:
             or "/" in host
             or not re.fullmatch(r"[A-Za-z0-9_-]+", source["tenant"])
             or not re.fullmatch(r"[A-Za-z0-9_-]+", source["site"])
+            or not source["search_text"]
         ):
             continue
         source["host"] = host
-        identity = (host, source["tenant"], source["site"])
+        identity = (
+            host,
+            source["tenant"],
+            source["site"],
+            source["search_text"].casefold(),
+        )
         if identity in seen:
             continue
         seen.add(identity)
@@ -66,7 +72,9 @@ def main() -> int:
         "hiring in Tokyo, Japan-remote, or Japan-compatible global remote through "
         "official Workday career sites. Do not choose jobs or judge candidate fit. "
         "Return the exact CXS source identity needed to query each official site: "
-        "company, myworkdayjobs host, tenant, and site. Validate each against its "
+        "company, myworkdayjobs host, tenant, site, and a focused Workday search_text "
+        "chosen from the candidate's grounded experience. Return multiple rows for a "
+        "company when distinct searches are useful. Validate each source against its "
         "official HTTPS Workday page or CXS endpoint. Do not return excluded employers "
         "from candidate memory. Do not limit results to companies seen previously. "
         "Return only the schema.\n\n"
