@@ -74,6 +74,39 @@ Storefront work.
     filesystem capability-receipt CLI and requires unrelated explicit arguments.
     Therefore public one-command Coconala onboarding is not implemented and no
     signup-to-bank-income claim is permitted.
+    Atomic implementation order (design SSOT:
+    `docs/superpowers/specs/2026-08-24-coconala-one-session-onboarding-design.md`):
+    1. [ ] Dispatch root `./install.sh coconala` to the package controller; reject unknown
+       product arguments without running the generic self-funded installer.
+    2. [ ] Preflight macOS, Apple Silicon, Codex authentication, supported Python,
+       CloakBrowser and disk space; install only missing public dependencies.
+    3. [ ] Create the private resumable onboarding receipt with no raw identity, OTP,
+       document, password, bank or session value in Git/logs/model/report output.
+    4. [ ] Detect and recover an existing Coconala account before permitting signup;
+       create exactly one account only when official readback proves none exists.
+    5. [ ] Connect the authorized mailbox adapter and consume the Coconala verification
+       email automatically.
+    6. [ ] Collect owner facts once through private local input; drive all delegable
+       official browser fields from those facts.
+    7. [ ] Submit the mobile number, pause only for the SMS code when required, and resume
+       after official `sms_verified` readback.
+    8. [ ] Complete seller information and required consent surfaces; pause only where
+       personal legal acceptance is non-delegable.
+    9. [ ] Open the smartphone eKYC handoff; owner performs document/face capture; poll
+       official state until approved or report the exact rejection mismatch.
+    10. [ ] Register the matching domestic bank account and read back accepted payout
+        state without persisting raw bank values outside the approved private boundary.
+    11. [ ] Probe executable Mac capabilities, then have the agent choose a truthful
+        initial service, category, scope, price, copy and assets without an owner survey.
+    12. [ ] Create exactly one first listing and require official public listing readback;
+        rerun duplicate count must be zero.
+    13. [ ] Activate the browser, Apply, Negotiate, Storefront, Paid and release watcher
+        only after account/SMS/seller/eKYC/bank/listing gates are all accepted.
+    14. [ ] From a clean HOME prove zero marketplace effects before authentication, exact
+        resume after interruption, one owner per launchd label and zero secrets in output.
+    15. [ ] On a clean friend-owned Mac complete the one-session setup and collect the
+        four independent business receipts plus permitted bank-arrival receipt. Paid
+        completion remains owned by its separate production acceptance.
 11. [x] Render the Apply, Negotiate, browser and release-watcher launchd definitions
     from public configuration in a clean temporary HOME. No plaintext secret,
     notification destination or private seller default is present. Apply uses the
