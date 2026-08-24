@@ -38,6 +38,7 @@ DEFAULT_CREATE_PROPOSAL_SCHEMA = GIG_DIR / "schemas" / "storefront_create_propos
 DEFAULT_DEMAND_PROPOSAL_SCHEMA = GIG_DIR / "schemas" / "storefront_demand_proposal.schema.json"
 DEFAULT_CATEGORY_PROPOSAL_SCHEMA = GIG_DIR / "schemas" / "storefront_category_proposal.schema.json"
 DEFAULT_CATEGORY_CHILD_SCHEMA = GIG_DIR / "schemas" / "storefront_category_child.schema.json"
+DEFAULT_BOOTSTRAP_SELECTION_SCHEMA = GIG_DIR / "schemas" / "storefront_bootstrap_selection.schema.json"
 DEFAULT_STOREFRONT_ROOT = Path(
     os.environ.get("GIG_STOREFRONT_ROOT") or "/nonexistent/storefront-root-required"
 )
@@ -5090,10 +5091,36 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
 
             inventory, contract_sources, observed = _read_official_catalog()
             if public_bootstrap:
-                from storefront_bootstrap import inventory as bootstrap_inventory
+                from storefront_bootstrap import inventory as bootstrap_inventory, select_capability
                 capability_inventory = bootstrap_inventory()
                 capability_path = args.state_dir / "storefront-capabilities.json"
                 _atomic_write(capability_path, capability_inventory)
+                selection_path = args.state_dir / "storefront-bootstrap-selection.json"
+                selection_record = None
+                if observed == 0 and selection_path.exists():
+                    try:
+                        candidate = json.loads(selection_path.read_text(encoding="utf-8"))
+                        if (candidate.get("version") == 1
+                                and candidate.get("inventory_sha256") == capability_inventory["inventory_sha256"]
+                                and isinstance(candidate.get("selection"), dict)):
+                            selection_record = candidate
+                    except (OSError, json.JSONDecodeError):
+                        pass
+                if observed == 0 and selection_record is None:
+                    selection = select_capability(
+                        capability_inventory,
+                        runner=getattr(args, "runner", DEFAULT_RUNNER),
+                        schema=getattr(args, "bootstrap_selection_schema", DEFAULT_BOOTSTRAP_SELECTION_SCHEMA),
+                        evidence_dir=inventory_path.parent / "bootstrap-selection-agent",
+                        workdir=args.workdir,
+                        timeout_seconds=args.timeout_seconds,
+                    )
+                    selection_record = {
+                        "version": 1,
+                        "inventory_sha256": capability_inventory["inventory_sha256"],
+                        "selection": selection,
+                    }
+                    _atomic_write(selection_path, selection_record)
                 release = _lease(args.lease_script, "release", task, lease)
                 released = release.get("released") == task
                 if not released:
@@ -5107,6 +5134,9 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     capability_inventory_count=len(capability_inventory["skills"]),
                     capability_inventory_sha256=capability_inventory["inventory_sha256"],
                     capability_inventory_path="storefront-capabilities.json",
+                    bootstrap_selection=(selection_record or {}).get("selection"),
+                    bootstrap_selection_path=("storefront-bootstrap-selection.json"
+                                              if selection_record is not None else None),
                 )
                 row = _persist_receipt(args, output, row)
                 return 0, row
@@ -6461,6 +6491,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--demand-proposal-schema", type=Path, default=DEFAULT_DEMAND_PROPOSAL_SCHEMA)
     parser.add_argument("--category-proposal-schema", type=Path, default=DEFAULT_CATEGORY_PROPOSAL_SCHEMA)
     parser.add_argument("--category-child-schema", type=Path, default=DEFAULT_CATEGORY_CHILD_SCHEMA)
+    parser.add_argument("--bootstrap-selection-schema", type=Path, default=DEFAULT_BOOTSTRAP_SELECTION_SCHEMA)
     parser.add_argument("--scorecard", type=Path, default=storefront["scorecard"])
     parser.add_argument("--image-contract", type=Path, default=storefront["image"])
     parser.add_argument("--gallery-contract", type=Path, default=storefront["gallery"])

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "decision", "skill_path", "service_query", "buyer_outcome", "deliverable",
+    "required_buyer_inputs", "rationale", "no_op_reason", "uncertainty"
+  ],
+  "properties": {
+    "decision": {"type": "string", "enum": ["sell", "no_op"]},
+    "skill_path": {"type": ["string", "null"], "pattern": "^skills/.+/SKILL\\.md$"},
+    "service_query": {"type": ["string", "null"], "minLength": 1, "maxLength": 80},
+    "buyer_outcome": {"type": ["string", "null"], "minLength": 1, "maxLength": 240},
+    "deliverable": {"type": ["string", "null"], "minLength": 1, "maxLength": 240},
+    "required_buyer_inputs": {
+      "type": ["array", "null"], "maxItems": 8,
+      "items": {"type": "string", "minLength": 1, "maxLength": 120}
+    },
+    "rationale": {"type": "string", "minLength": 1, "maxLength": 1000},
+    "no_op_reason": {"type": ["string", "null"], "maxLength": 1000},
+    "uncertainty": {
+      "type": "array", "maxItems": 8,
+      "items": {"type": "string", "minLength": 1, "maxLength": 240}
+    }
+  }
+}

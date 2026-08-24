@@ -152,7 +152,11 @@ Storefront work.
        Storefront now also derives a non-secret public inventory from every installed
        `SKILL.md`: current readback is 52 hash-bound skills / 7 live adapters, relative
        paths only, with one inventory SHA-256 recorded in the bootstrap receipt. The
-       model—not a keyword filter—must next select a buyer-deliverable capability.
+       model—not a keyword filter—selects a buyer-deliverable capability once per
+       inventory hash and persists the result. A real tool-disabled Codex selection chose
+       `sales-objection-reply-builder` with Japanese demand query, buyer outcome,
+       deliverable and three required buyer inputs; external marketplace effect remains
+       zero. Storefront now reuses that selection until the public skill inventory changes.
     9. [ ] Require one official initial-listing readback and rerun duplicate zero from
        Storefront. Apply may run before it; Negotiate/Paid wait for buyer activity.
     10. [ ] From a clean HOME prove zero marketplace effects before authentication, exact
