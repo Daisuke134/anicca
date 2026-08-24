@@ -7724,6 +7724,16 @@ the named production evidence:
 - [ ] **D05 X effect return.** After real publication, return the exact X
   permalink, provider post ID, content hash, and placement ID to Affiliate.
   Evidence: public X readback and one terminal delivered receipt.
+  In progress: `f6899859a` adds the existing Postiz/X effect and a terminal
+  result fence; `b5bc914d2` fixes browser lease ordering and installs release
+  `20260824T134529-b5bc914d` with all runtime dependencies. The first production
+  attempt returns Postiz HTTP 400 with confirmed `NO_EFFECT`: result count 1,
+  post URL/provider ID absent, and posted ledger delta zero. Public owned page
+  readback is HTTP 200 and contains the exact CTA, so the immediate blocker is
+  provider submission validation rather than landing availability. Commit
+  `d0f188227` adds redacted Postiz error-message capture. D06 must safely requeue
+  this confirmed no-effect once; D05 remains unchecked until exact X permalink
+  and provider submission ID exist.
 - [ ] **D06 Queue reconciliation.** Resume ambiguous/partial jobs without a
   second post. Evidence: second wake performs zero duplicate external effects.
 - [ ] **D07 Exact-join repair.** Backfill only provable historical X-to-placement
