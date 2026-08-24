@@ -171,6 +171,26 @@ class ModelBrowserLoopContractTests(unittest.TestCase):
                             "exit_code": 1,
                             "command": (
                                 "/opt/homebrew/bin/python3 -m "
+                                "job_search_loop.browser_agent.runtime type-text "
+                                "--text job_search_loop.browser_agent.browser_agent.runtime"
+                            ),
+                            "aggregated_output": "ModuleNotFoundError after browser action",
+                        },
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            self.assertIsNone(validator(root))
+            stdout.write_text(
+                json.dumps(
+                    {
+                        "type": "item.completed",
+                        "item": {
+                            "type": "command_execution",
+                            "exit_code": 1,
+                            "command": (
+                                "/opt/homebrew/bin/python3 -m "
                                 "job_search_loop.browser_agent.browser_agent.runtime type"
                             ),
                             "aggregated_output": (
@@ -260,6 +280,11 @@ class ModelBrowserLoopContractTests(unittest.TestCase):
         schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
         Draft202012Validator.check_schema(schema)
         cls.validator = Draft202012Validator(schema, format_checker=FormatChecker())
+
+    def test_daily_prompt_requires_correction_of_duplicated_runtime_namespace(self):
+        prompt = (APP_ROOT / "prompts/daily-pass.md").read_text(encoding="utf-8")
+        self.assertIn("job_search_loop.browser_agent.browser_agent.runtime", prompt)
+        self.assertIn("replace it with the canonical module", prompt)
 
     def assertValid(self, value: dict[str, object]) -> None:
         errors = sorted(self.validator.iter_errors(value), key=lambda item: list(item.path))

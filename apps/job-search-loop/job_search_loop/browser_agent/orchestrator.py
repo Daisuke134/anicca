@@ -3,11 +3,36 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shlex
 import subprocess
 from pathlib import Path
 
 
 ESCALATION_REASON = "mandatory-model-browser-loop"
+
+
+def _is_duplicate_runtime_module_typo(command: str) -> bool:
+    if any(
+        marker in command
+        for marker in ("$(", "`", ";", "&&", "||", "|", ">", "<", "\n")
+    ):
+        return False
+    try:
+        parts = shlex.split(command)
+        if parts[:2] == ["/bin/zsh", "-lc"] and len(parts) == 3:
+            parts = shlex.split(parts[2])
+    except ValueError:
+        return False
+    return (
+        len(parts) >= 3
+        and parts[0]
+        in {
+            "/opt/homebrew/bin/python3",
+            "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        }
+        and parts[1:3]
+        == ["-m", "job_search_loop.browser_agent.browser_agent.runtime"]
+    )
 
 
 def validate_pass_result(evidence_dir: Path) -> str | None:
@@ -64,7 +89,7 @@ def validate_pass_result(evidence_dir: Path) -> str | None:
             ):
                 continue
             if (
-                "job_search_loop.browser_agent.browser_agent.runtime" in command
+                _is_duplicate_runtime_module_typo(command)
                 and "ModuleNotFoundError" in output
             ):
                 continue
