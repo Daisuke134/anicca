@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import sys
 import hashlib
 import json
@@ -49,6 +50,37 @@ def test_application_decision_uses_shared_work_event_and_reporter_once(tmp_path,
     assert "instant-work-events" not in calls[0]
     rows = [json.loads(line) for line in (tmp_path / "work-events.jsonl").read_text().splitlines()]
     assert rows == [event]
+
+
+def test_independent_public_job_details_are_read_concurrently_in_source_order(tmp_path, monkeypatch):
+    active = 0
+    peak = 0
+
+    async def navigate(pass_id, seq, label, url, action, settle_seconds, viewport_width):
+        nonlocal active, peak
+        active += 1
+        peak = max(peak, active)
+        await asyncio.sleep(0.01)
+        path = tmp_path / f"{seq}.json"
+        path.write_text(json.dumps({
+            "navigated_ok": True, "url": url, "rendered_text": f"detail {url}",
+            "rendered_links": [],
+        }))
+        active -= 1
+        return str(path)
+
+    monkeypatch.setattr(provider, "navigate_and_snapshot", navigate)
+    jobs = [
+        {"id": f"~job-{index}", "href": f"https://www.upwork.com/jobs/~job-{index}",
+         "title": f"Job {index}"}
+        for index in range(3)
+    ]
+
+    results = asyncio.run(provider.read_public_job_details(jobs, pass_id="pass", base=30))
+
+    assert peak == 3
+    assert [job["id"] for job, _ in results] == [job["id"] for job in jobs]
+    assert all(detail is not None for _, detail in results)
 
 
 def test_parses_zero_connects_without_inventing_a_reward():
