@@ -577,6 +577,13 @@ U13 atomic order:
     Upwork canonicalized query spaces from `+` to `%20`, so the strict requested/final URL receipt
     rejected it before candidate judgment. Generate `%20` directly and replay the same cached model
     strategy. No proposal, Connects or marketplace effect occurred.
+28. **MODEL QUERY EXECUTION PROVED / VERIFIER CAPABILITY GAP NEXT:** release `7a3559b85d84` reused the
+    cached model strategy, executed the canonical authenticated query and inspected four API/AI jobs.
+    It rejected all four with direct scope, margin, client and proof reasons; one repeated reason was
+    that `upwork-ai-api-delivery` explicitly requires a different verifier Skill but none was installed.
+    Add the narrow independent `upwork-ai-api-verifier` contract so qualification can truthfully bind
+    build and QA before selecting work. Search query index advanced, rejected IDs remained durable,
+    and proposals/effects stayed 0.
 
 U14 atomic order:
 
