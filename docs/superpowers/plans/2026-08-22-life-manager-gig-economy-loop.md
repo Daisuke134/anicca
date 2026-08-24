@@ -1673,12 +1673,12 @@ lacks join/cost evidence, and reject duplicate transaction IDs.
 - [ ] Test partial-month rejection, cross-month payout, an `available` payment with a later negative
   chargeback, pre-payout adjustment, unknown evidence and USD 9999.99/USD 10000.00 boundaries.
 - [ ] Repeat the winning Skill and change one strategy variable at a time until a complete month
-  returns at least `1_000_000`; then close G11 and unlock Phase C.
+  returns at least `1_000_000`; then close G11. Other market canaries do not wait for this gate.
 
 ## Phase C — Second-market canary through the common browser ACI
 
-Phase C is locked until Task 22A closes G11. A first Upwork payment or three-job repeatability alone
-does not unlock a second growth market.
+Phase C runs concurrently with Upwork. G11 remains Upwork's primary outcome gate, not authority to
+block independent read-only discovery, zero-spend canaries or positive-EV work on another market.
 
 **Current execution rule:** Tasks 23–28 below are historical decomposition, not permission to build
 six Fiverr-specific controllers. They are superseded by the common `observe/extract/act/readback` ACI
@@ -2235,7 +2235,7 @@ Telegram outbox. Add no scheduler, notifier, database or provider-specific seman
 - [ ] Emit one compact periodic funnel/KPI report and a stalled-stage alert; unchanged polls stay
   silent.
 - [ ] Bind each one-variable Luna experiment to its strategy version and later keep/revert evidence.
-- [ ] Verify one real Upwork decision notification, Telegram message ID and duplicate send 0.
+- [x] Verify one real Upwork decision notification, Telegram message ID and duplicate send 0.
 
 ### Task 59: Let Upwork lifecycle lanes progress independently
 
@@ -2245,6 +2245,10 @@ scheduler. Fence the narrowest resource and serialize only genuinely shared acco
 - [ ] Split the current wake's durable work into acquire, sell, fulfill, money and learn queue items.
 - [x] Run independent hidden-CDP job detail reads concurrently with a locked shared trajectory append;
   production ten-job search-to-all-details improved `49s → 11s` and completion span `44s → 5s`.
+- [x] Make one Luna batch return exactly one ordered decision per candidate rather than one winner;
+  production release `a81ec3b630` returned 10/10 decisions from one call.
+- [ ] Promote main `e846b873e4` or later and prove all decisions append in one WorkEvent handoff with
+  every submit proposal sealed before Telegram transport begins.
 - [ ] Replace one-proposal-per-wake and the fixed three-contract cap with dynamic workers and measured
   backpressure; ten proposals remain a learning checkpoint, never a stop.
 - [ ] Key leases by job, message head, offer and contract/milestone so distinct effects run in
