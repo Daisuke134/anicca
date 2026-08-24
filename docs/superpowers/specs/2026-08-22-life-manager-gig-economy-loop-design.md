@@ -47,7 +47,7 @@ schemas. U5 performs two independent discoveries before any Connects purchase de
 
 U5 is closed: two independent reads of the same recency query returned the same ordered ten job IDs.
 Saved jobs, proposals, messages, Connects spend and payments remained zero. U6 may now qualify one
-live job, but it must use only installed Skills and Upwork-owned capacity; Coconala activity is not
+live job using the general agent's model/tools and Upwork-owned capacity; Coconala activity is not
 part of the capacity calculation.
 
 U6/U7 proved qualification, proposal freezing and effect fencing on job
@@ -194,7 +194,7 @@ its official proposal surface explicitly reads back `connects_cost=0`.
 The agent does not spray proposals or rely on a hidden zero-Connect category. For the first 100
 Connects it uses the current Upwork filters and full job detail to prefer recent jobs with fewer than
 15 proposals, verified payment, clear bounded acceptance criteria, credible client hiring/spend and
-one-to-three-day delivery from installed Skills. It does not boost. A concise proposal leads with the
+one-to-three-day delivery by the general agent. It does not boost. A concise proposal leads with the
 client's specific problem in the first two sentences, names the exact deliverable, binds truthful
 portfolio proof and stays within the displayed budget. Upwork's current guidance says only the first
 couple of proposal sentences appear initially and reports that profiles with portfolio items are hired
@@ -414,7 +414,7 @@ The installer performs one bounded ceremony:
 4. Record action-level authorization without storing proof or secrets in Git.
 5. Configure hard caps: spend, Connects/bids, concurrent jobs, minimum margin and human minutes.
 6. Run a read-only capability probe and produce an account health receipt.
-7. Generate only service packages that installed Skills can fulfill and verify.
+7. Generate service packages the general agent can truthfully fulfill and verify; a named Skill is optional.
 8. Start the first canary with one external effect at a time.
 
 ### 4.2 Market Factory
@@ -548,7 +548,8 @@ economics and account health, not an arbitrary desire for maximum clicks.
 
 ### 4.4 Fulfillment loop
 
-Each sellable package binds requirements to installed Skills before sale:
+Each accepted scope binds requirements to an execution plan; an existing Skill may be reused but is
+never required:
 
 ```text
 contract scope
@@ -583,6 +584,24 @@ An HTTP success, DOM click or model claim is not success. A crash after a possib
 `reconcile_unknown`; it never causes a blind retry.
 
 ### 4.6 Skill Factory
+
+Skills are optional cached playbooks for repeated profitable methods. The general agent can apply,
+accept and execute work directly with its model and tools when no Skill exists. A missing Skill has
+zero admission authority and zero execution authority: it cannot cause `skip`, `capability_gap`, a
+smaller substituted scope or a request for human work. Create or improve a Skill only after real
+repetition shows that packaging the method reduces cost, latency or error. Actual impossibility is
+decided from the required outcome, available general tools, policy, time and economics—not inventory.
+
+Regression incident and permanent fix: Upwork independently added `INSTALLED_SKILLS` to its planner
+and required every job to be covered by that inventory, while the working Coconala planner explicitly
+says missing exact skill/tool/domain experience is never a prohibition. This caused feasible computer
+work such as `Mobile App and Website Developer` (`~022091720689866384000`) to be skipped solely because
+no Android Skill was installed. Coconala and Upwork now import one
+`common_marketplace_feasibility_policy()` SSOT; provider prompts receive no Skill inventory. Exact
+read-only replay of the same official evidence changed the decision from `skip` to `submit` at USD
+35/hour, with a truthful phased iOS/Android/Web plan and zero external effect. Every market conformance
+test must reject a provider prompt containing `INSTALLED_SKILLS`, `installed Skills can complete`, or
+any missing-Skill skip authority.
 
 A Skill bundle is immutable and versioned:
 
@@ -631,7 +650,7 @@ allocator whose rewards come only from external receipts.
 
 The portfolio agent does not wait for a human to name every market. After paid work, replies, offers
 and unknown effects are safe, it spends bounded read-only capacity discovering new gig, bounty and
-contracting markets. The model—not a keyword list—evaluates visible demand, Skill coverage, expected
+contracting markets. The model—not a keyword list—evaluates visible demand, general-agent feasibility, expected
 net cash, payout accessibility, platform rules, automation permission, competition, required human
 minutes and account ceremony cost.
 
@@ -864,17 +883,17 @@ because a proposal is old.
 The first-job qualifier rejects a candidate if any of these hold: broad multi-week build, proposal
 count above 20, unclear acceptance criteria, unsupported proof requirement, negative expected net,
 delivery capacity unavailable, or paid acquisition required before the free bootstrap is complete.
-It prefers a reusable micro-service that can be truthfully delivered from installed Skills within
+It prefers a reusable micro-service that can be truthfully delivered by the general agent within
 one to three days. This rule is a bootstrap constraint; after three independent paid reviews, the
 normal expected-verified-net allocator may select larger work.
 
 Qualification, proposal strategy, negotiation, fulfillment planning and learning are model judgments,
 not keyword/regex routing. Deterministic code only parses official machine fields, enforces money and
 capacity limits, freezes payloads, fences effects and verifies receipts. The model receives the full
-official job/client/thread/contract evidence, owner facts, installed Skill manifests, current capacity
-and economics, then returns a schema-bound decision with cited evidence. Unsupported facts or a
-deliverable not covered by an installed Skill force `skip` or `capability_gap`; they never trigger a
-fabricated claim.
+official job/client/thread/contract evidence, owner facts, general tools, current capacity and
+economics, then returns a schema-bound decision with cited evidence. Missing exact experience, a named
+tool recipe or a Skill never forces skip; the proposal states only verified facts and a concrete plan.
+Skip remains limited to the shared Coconala feasibility/prohibition policy.
 
 ### 6.3 Upwork money-printer Skill system
 
@@ -903,9 +922,9 @@ ledger:
 
 | Skill family | Autonomous responsibility | Required terminal proof |
 |---|---|---|
-| `upwork-acquire` | Search current jobs, inspect full detail/client evidence, reconcile invites/offers/Catalog, qualify against installed Skills, keep the ready queue replenished, generate and seal truthful job-specific proposals, execute an authorized acquisition | Official job/order/invitation/offer identity; proposal or acceptance ID; exact Connects delta; replay effect 0 |
+| `upwork-acquire` | Search current jobs, inspect full detail/client evidence, apply the shared Coconala feasibility policy, keep the ready queue replenished, generate and seal truthful job-specific proposals, execute an authorized acquisition | Official job/order/invitation/offer identity; proposal or acceptance ID; exact Connects delta; replay effect 0 |
 | `upwork-sell` | Detect and answer every new client message, ask only missing scope questions, negotiate profitable bounded terms, accept only supported work | Official message/story ID, offer terms hash and active contract ID; duplicate reply/accept 0 |
-| `upwork-fulfill` | Compile the contract into an immutable project, select/compose installed delivery Skills, produce artifacts, run independent acceptance QA, revise when requested and deliver | Artifact/provenance hashes, verifier PASS, official submission/revision ID; duplicate delivery 0 |
+| `upwork-fulfill` | Compile the contract into an immutable project, execute directly with general tools or optionally reuse/create a Skill, produce artifacts, run independent acceptance QA, revise when requested and deliver | Artifact/provenance hashes, verifier PASS, official submission/revision ID; duplicate delivery 0 |
 | `upwork-money` | Reconcile contract transactions, fees, refunds, disputes, chargebacks and payouts without confusing earnings states with cash | Only official payout `received` enters revenue; Pending/Available excluded; later adjustments attributed once in occurrence month |
 | `upwork-learn` | Attribute the entire funnel and unit economics to Skill/strategy versions, diagnose the current bottleneck, change one variable, keep/revert from later evidence and prioritize repeat clients | Evidence-backed keep/pause/revert plus complete discovered-to-received funnel |
 
@@ -960,10 +979,10 @@ cash evidence:
 
 | Stage | Preferred work | Operating quantity | Revenue role |
 |---|---|---:|---|
-| 0–1 paid review | One-to-three-day, explicit-acceptance API integration, automation repair, bounded research/data work, documentation or small iOS/web repair covered by installed Skills | Every positive-EV qualified candidate; independent workers scale to measured capacity | Prove delivery, payment and review without suppressing other profitable work |
+| 0–1 paid review | One-to-three-day, explicit-acceptance API integration, automation repair, bounded research/data work, documentation or small app/web work the general agent can complete | Every positive-EV qualified candidate; independent workers scale to measured capacity | Prove delivery, payment and review without suppressing other profitable work |
 | 1–3 paid reviews | Repeat the delivered Skill/package and adjacent work with the same proof | Every profitable candidate and every deliverable contract; dynamic backpressure from real deadlines and compute | Establish close rate, revision cost and repeatability |
-| Repeatable to USD 3k | Bounded USD 500–2,000 milestones or USD 30–60/hour work whose scope fits the proven Skill | Dynamic concurrent portfolio allocated by verified net per constrained hour | Raise verified net per constrained delivery hour |
-| USD 3k to USD 10k | Repeat-client retainers and bounded USD 2,000–5,000 milestones assembled from proven Skills | No fixed contract count; accept while each additional contract remains truthfully deliverable and positive-EV | Reach the gate with the best measured mix rather than a prescribed number of jobs |
+| Repeatable to USD 3k | Bounded USD 500–2,000 milestones or USD 30–60/hour work whose scope the general agent can complete | Dynamic concurrent portfolio allocated by verified net per constrained hour | Raise verified net per constrained delivery hour |
+| USD 3k to USD 10k | Repeat-client retainers and bounded USD 2,000–5,000 milestones; optional Skills accelerate repeated methods | No fixed contract count; accept while each additional contract remains truthfully deliverable and positive-EV | Reach the gate with the best measured mix rather than a prescribed number of jobs |
 
 The USD amounts are planning bands, not hardcoded acceptance rules or earnings promises. Luna may
 choose different work and prices when current official scope, competition, client history, fee,

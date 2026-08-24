@@ -2318,6 +2318,25 @@ Only the first unchecked row is active; a missing buyer event blocks that resour
 - [ ] Request only an honest review, capture repeat-work identity, attribute the complete funnel and
   emit one evidence-backed keep/revert/pause decision.
 
+### Task 63: Remove the harmful installed-Skill application gate everywhere
+
+- [x] Establish one shared Coconala-derived feasibility policy: apply to every legal job the general
+  agent can truthfully complete with model/tools; skip only actual policy, embodied, legal, identity,
+  scope, deadline or negative-economics impossibility.
+- [x] Remove `INSTALLED_SKILLS` and capability inventory from the Upwork application prompt. Missing
+  Skill, exact tool history, domain job, testimonial, portfolio or prior result has zero skip authority.
+- [x] Define Skills as optional caches for repeated profitable methods, never application or execution
+  prerequisites; the agent may perform work directly without creating a Skill.
+- [x] Run prompt regressions proving Coconala and Upwork both include the common policy and Upwork
+  contains none of `INSTALLED_SKILLS`, `installed Skills can complete`, or Skill-based skip language.
+- [x] Replay the previously skipped Mobile App and Website Developer evidence through the repaired
+  planner: the same job `~022091720689866384000` now returns `submit`, USD 35/hour and a phased
+  iOS/Android/Web plan with external effects 0 and no missing-Skill reason.
+- [ ] Release the repaired prompt, observe a natural batch and prove zero skip reason cites missing
+  installed Skills. Any remaining skip must cite actual task facts under the common policy.
+- [ ] Apply the same invariant to Fiverr, Lancers, CrowdWorks, Freelancer, Mercor, uGig and unknown
+  markets through provider conformance; no provider-specific capability matrix or brain is allowed.
+
 ## Final verification
 
 - [ ] `git diff --check` exits 0.
