@@ -587,6 +587,38 @@ The CEO chooses one next action from all active lanes:
 This is the general money-maximizing agent: not an unconstrained model, but a durable portfolio
 allocator whose rewards come only from external receipts.
 
+### 4.8 Founder exploration loop
+
+The portfolio agent does not wait for a human to name every market. After paid work, replies, offers
+and unknown effects are safe, it spends bounded read-only capacity discovering new gig, bounty and
+contracting markets. The model—not a keyword list—evaluates visible demand, Skill coverage, expected
+net cash, payout accessibility, platform rules, automation permission, competition, required human
+minutes and account ceremony cost.
+
+```mermaid
+flowchart LR
+  D[Discover markets and demand] --> O[Observe rules, UI and payout]
+  O --> J[Luna compares opportunity and risk]
+  J --> M[Create minimal private market state]
+  M --> B[Terra signup/login and read-only probe]
+  B --> C[One zero-spend canary effect]
+  C --> R[Official work and payment readback]
+  R --> P{Promote, pause, deny or retire}
+  P --> D
+```
+
+The agent first reuses existing credentials, profile facts, portfolio proofs and Skills. Ordinary
+signup/login and provider UI are agent-owned. CAPTCHA, biometrics, identity documents, tax and payout
+ownership are typed resumable ceremonies. Owner-funded spend outside an existing cap remains a human
+authorization. A new market adds only a manifest plus unavoidable fixed-format ID/state/fee/readback
+glue; navigation, qualification, proposal, conversation and ordinary forms remain Luna/Terra work.
+
+Every active market runs the same lifecycle concurrently under separate durable state:
+`discover → propose/list → reply → contract/order → Skill work → independent QA → delivery → received
+cash → learning`. Paid work and buyer replies always preempt exploration. Cross-market learning shares
+winning Skill, buyer problem, proof type, price band, delivery time, revision rate and verified net;
+private customer content and credentials never cross projects.
+
 ## 5. Market sequence
 
 Upwork closes the first proposal receipt before another marketplace mutation lane opens. Read-only
@@ -598,15 +630,14 @@ margin, authorization and human-minute evidence.
 |---:|---|---|---|
 | 0 | Coconala | Existing full sales/fulfillment/payment loop | Reference effect fence, inbox, paid project, receipt and learning |
 | 1 | Upwork | First complete new autonomous adapter | Outbound proposals, Connects economics, contract/milestone lifecycle |
-| 2 | Fiverr | Inbound catalogue plus custom offers | Storefront/Gig experiments, inquiry qualification, order/revision lifecycle |
-| 3 | LinkedIn | Lead discovery and approved outreach to off-platform service sales | Relationship graph, lead qualification, CRM attribution |
-| 4 | Mercor | Role matching and approved post-onboarding work | Resume/role matching, scheduling, identity ceremony boundary |
-| 5 | Welocalize | Project-specific language/data work | Project authorization, locale QA, heterogeneous task normalization |
-| 6 | TELUS Digital | Assessor/data projects with human-minute accounting | Human-assisted workflow packets and evidence-bound submission |
-| 7 | uTest | Confidential testing cycles | Isolated client workspace, reproduction evidence, bug-report QA |
-| 8 | Prolific | Study-specific eligible tasks | Per-study AI permission and short-task profitability |
-| 9 | Outlier | Project-specific authorized AI work | Rubric-bound production and strict provenance |
-| 10 | Babel Audio | Human voice/data contribution | Physical-capture ceremony, audio QA and submission receipts |
+| 2 | uGig | Existing account and invoice flow | Fast conformance canary using already-configured state |
+| 3 | Freelancer | Existing account, projects and bids | Bid economics and milestone/payment mapping |
+| 4 | Lancers | Existing Japanese account | Reuse Japanese facts, proof and delivery Skills |
+| 5 | CrowdWorks | Existing Japanese account | Project/task contracts and escrow mapping |
+| 6 | Fiverr | Inbound catalogue plus custom offers | Gig experiments, inquiry and order/revision lifecycle |
+| 7 | Mercor | Existing role/account workflow | Matching, interviews, task work and identity ceremony |
+| 8 | Authorized bounty markets | Fixed-scope rewards | Claim, acceptance and payout identity |
+| 9+ | Agent-discovered markets | One bounded zero-spend canary at a time | Founder discovery and shrinking adapter cost |
 
 Each later market may finish as `active`, `assisted`, `denied` or `unprofitable`. Upwork denial or
 negative margin remains visible evidence and never weakens the shared kernel; the CEO may redirect
@@ -826,12 +857,14 @@ promise of earnings.
 | G5 Upwork delivery | Artifact QA, one delivery effect and official submission state |
 | G6 first cash | Received payment, fee, cost and payout evidence reconcile to the project |
 | G7 repeatability | Three independent paid Upwork jobs; zero blind duplicate effects |
-| G8 second market | After G11, Fiverr reaches one verified payment without kernel duplication |
+| G8 second market | After G3, one configured market reaches an official zero-spend canary; activation still requires positive economics |
 | G9 market factory | A third market is added from templates without changing kernel contracts |
 | G10 learning | One strategy/Skill canary produces an evidence-backed keep or revert |
 | G11 Upwork USD 10k | One complete calendar-month source window proves at least USD 10,000 `verified_net_received`; Pending/Available are excluded and later chargebacks enter their occurrence month |
 | G12 JPY 10m | Provider and bank sources prove JPY 10,000,000 verified monthly net |
 | G13 replication | A clean third device completes setup and one authorized receipt path |
+| G14 OSS alpha | Upwork G6, replay zero, redacted fixtures, secret scan and isolated installer |
+| G15 OSS stable | G7, one second-market received path, conformance suite and clean-device receipt |
 
 ### 9.1 Upwork live-path test matrix
 

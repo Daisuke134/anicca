@@ -64,17 +64,17 @@ const p={sealed},duration={duration_json},wait=ms=>new Promise(r=>setTimeout(r,m
 const norm=x=>(x||'').replace(/\\s+/g,' ').trim();
 const setValue=(x,v)=>{{if(!x)throw Error('upwork_form_control_missing');const proto=x.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;Object.getOwnPropertyDescriptor(proto,'value').set.call(x,String(v));x.dispatchEvent(new Event('input',{{bubbles:true}}));x.dispatchEvent(new Event('change',{{bubbles:true}}));}};
 const cover=document.querySelector('.cover-letter-area textarea,textarea[data-test*="cover" i],textarea[aria-label*="cover" i],textarea[aria-labelledby="cover_letter_label"],textarea.inner-textarea');
-const bid=document.querySelector('#charged-amount-id,input[data-test*="bid" i],input[name*="bid" i],.fe-proposal-job-rate input,input[data-test="currency-input"]:not([disabled])');
+const hourly=p.terms.type==='hourly',bid=document.querySelector(hourly?'#step-rate':'#charged-amount-id,input[data-test*="bid" i],input[name*="bid" i],.fe-proposal-job-rate input,input[data-test="currency-input"]:not([disabled])');
 setValue(cover,p.cover_letter);setValue(bid,p.terms.bid_usd);
-const durationRoot=document.querySelector('.fe-proposal-job-estimated-duration,[data-test*="duration" i]');
+let durationLabel=null;if(!hourly){{const durationRoot=document.querySelector('.fe-proposal-job-estimated-duration,[data-test*="duration" i]');
 const combo=document.querySelector('[role="combobox"][aria-labelledby="duration-label"]')||durationRoot?.querySelector('[role="combobox"],button');if(!combo)throw Error('upwork_duration_missing');combo.click();await wait(100);
-const option=[...document.querySelectorAll('[role="option"]')].find(x=>norm(x.innerText)===duration)||[...(durationRoot?.querySelectorAll('li,[role="option"]')||[])].find(x=>norm(x.innerText)===duration);if(!option)throw Error('upwork_duration_option_missing');option.click();await wait(100);
+const option=[...document.querySelectorAll('[role="option"]')].find(x=>norm(x.innerText)===duration)||[...(durationRoot?.querySelectorAll('li,[role="option"]')||[])].find(x=>norm(x.innerText)===duration);if(!option)throw Error('upwork_duration_option_missing');option.click();await wait(100);durationLabel=norm(combo.innerText);}}
 const areas=[...document.querySelectorAll('.fe-proposal-job-questions textarea')];if(areas.length!==p.screening_answers.length)throw Error('upwork_question_count_mismatch');
 const answers=p.screening_answers.map(item=>{{const area=areas.find(x=>norm((x.closest('label,.up-form-group,.air3-form-group,[data-test]')||x.parentElement).innerText).includes(norm(item.question)));if(!area)throw Error('upwork_question_mismatch');setValue(area,item.answer);return{{question:item.question,answer:area.value}};}});
 const submit=[...document.querySelectorAll('button')].find(x=>['submit proposal','send proposal'].includes(norm(x.innerText).toLowerCase()))||document.querySelector('footer .air3-btn-primary,footer button[type="submit"],button[data-test*="submit" i]');if(!submit)throw Error('upwork_submit_control_missing');
 const body=norm(document.body.innerText),required=p.terms.required_connects,isInvite=p.status==='frozen_waiting_for_invitation',costs=[...body.matchAll(/(\\d+)\\s+Connects/gi)].map(x=>Number(x[1])),connects=isInvite?(costs.some(x=>x>0)?null:0):(body.includes(String(required)+' Connects')?required:null),availableMatch=body.match(/Available Connects:?\\s*(\\d+)/i),remainingMatch=body.match(/you(?:'|’)ll have\\s+(\\d+)\\s+Connects remaining/i),available=isInvite?0:(availableMatch?Number(availableMatch[1]):remainingMatch?Number(remainingMatch[1])+required:null);
 const errors=[...document.querySelectorAll('.form-error,.air3-form-error,.up-alert-danger,[role="alert"]')].filter(x=>x.offsetParent).map(x=>norm(x.innerText)).filter(Boolean);
-return{{job_id:p.job_id,form_url:location.href,required_connects:connects,available_connects:available,bid_usd:Number(String(bid.value).replace(/[^0-9.-]/g,'')),duration_label:norm(combo.innerText),cover_letter:cover.value,screening_answers:answers,attachments:[],submit_label:norm(submit.innerText),submit_enabled:!submit.disabled,validation_errors:errors}};
+return{{job_id:p.job_id,form_url:location.href,required_connects:connects,available_connects:available,bid_usd:Number(String(bid.value).replace(/[^0-9.-]/g,'')),duration_label:durationLabel,cover_letter:cover.value,screening_answers:answers,attachments:[],submit_label:norm(submit.innerText),submit_enabled:!submit.disabled,validation_errors:errors}};
 }})()'''
 
 
@@ -245,7 +245,7 @@ def validate_preflight(snapshot: dict[str, Any], payload: dict[str, Any]) -> dic
         "job_id": job_id,
         "required_connects": required,
         "bid_usd": terms.get("bid_usd"),
-        "duration_label": _duration_label(terms.get("delivery_days")),
+        "duration_label": None if terms.get("type") == "hourly" else _duration_label(terms.get("delivery_days")),
         "cover_letter": payload.get("cover_letter"),
         "screening_answers": payload.get("screening_answers"),
         "attachments": payload.get("attachments"),
