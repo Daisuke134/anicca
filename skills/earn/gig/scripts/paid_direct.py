@@ -2647,6 +2647,18 @@ def _promote_staged_file_bundle(staging: Path, root: Path, expected_version: str
     _write(root / "delivery" / "paid-work-result.json", promoted)
 
 
+def _file_customer_message_instruction() -> str:
+    return (
+        "Add customer_message to the manifest: write the concise buyer-facing handoff from the complete "
+        "conversation and buyer_trust_context, without internal evidence. Lead with the delivered outcome, "
+        "use one to three short natural sentences, remove repeated apologies, process narration and evidence "
+        "claims, and include only what the buyer needs to review or do next. Only when the latest buyer-side "
+        "message is itself an unresolved complaint or cancellation warning, acknowledge it and offer the one "
+        "relevant remedy. A later explicit buyer approval supersedes older complaints and cancellation warnings; "
+        "do not carry their apology, correction, or cancellation language into the final handoff. "
+    )
+
+
 def _run_isolated_file_owner(args, root: Path, context: Path, prompt_text: str,
                              owner_evidence: Path) -> int:
     decision = _load(root / "context" / "paid-work-decision.json")
@@ -2688,14 +2700,9 @@ def _run_isolated_file_owner(args, root: Path, context: Path, prompt_text: str,
             + f" The exact required artifact_version is {expected_version}; use that version in the "
             "artifact filename, acceptance filename and manifest. Copy required_assets exactly, including "
             "every asset_id and field, from context/paid-work-decision.json into the manifest; never rename, "
-            "summarize, regroup, or replace that contract. Add customer_message to the manifest: write the concise "
-            "buyer-facing handoff from the complete conversation and buyer_trust_context, without internal evidence. "
-            "Lead with the delivered outcome, use one to three short natural sentences, remove repeated apologies, "
-            "process narration and evidence claims, and include only what the buyer needs to review or do next. "
-            "When the cited buyer messages show repeated failed submissions or an explicit cancellation warning, "
-            "acknowledge the delay and errors, offer immediate minor corrections, and offer seller-initiated cancellation "
-            "if the new artifact still cannot satisfy the explicit requirements. Never invent that offer when the buyer "
-            "did not raise it. If a required native desktop application cannot be "
+            "summarize, regroup, or replace that contract. "
+            + _file_customer_message_instruction()
+            + "If a required native desktop application cannot be "
             "controlled from this isolated process, do not fake its output and do not ask the buyer or operator "
             "to run it. Write delivery/paid-tool-requests.json with version=1 and a requests array. Each request "
             "must contain capability, input, output and receipt fields using paths relative to this workdir. The currently "

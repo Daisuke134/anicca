@@ -263,6 +263,15 @@ def test_prior_artifact_candidates_include_only_project_receipt_linked_zips(tmp_
     assert paid._prior_artifact_candidates(root) == [delivery_zip, receipt_zip]
 
 
+def test_formal_handoff_does_not_carry_superseded_complaints_forward():
+    paid = load("paid_direct")
+
+    instruction = paid._file_customer_message_instruction()
+
+    assert "latest buyer-side message" in instruction
+    assert "later explicit buyer approval supersedes" in instruction
+
+
 def test_wait_accepts_supplementary_receipt_when_another_has_readback(tmp_path):
     remote = load("paid_remote_result")
     root, feedback, digest = blocked_project(tmp_path)
