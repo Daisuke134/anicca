@@ -95,28 +95,19 @@ export JOB_SEARCH_CANDIDATE_MEMORY="$CANDIDATE_MEMORY"
 export JOB_SEARCH_ANSWER_MEMORY="$JOB_SEARCH_STATE_ROOT/answer-memory.v1.json"
 export JOB_SEARCH_MACHINE_CREDENTIALS="${XDG_DATA_HOME:-$HOME/.local/share}/anicca/credentials.json"
 set +e
-"$JOB_SEARCH_PYTHON" -m job_search_loop.workday_discovery \
-  --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
-  --output "$WORKDAY_DISCOVERY_RESULT"
-WORKDAY_DISCOVERY_RC=$?
-set -e
-if [[ "$WORKDAY_DISCOVERY_RC" -ne 0 ]]; then
-  printf '%s\n' "Workday discovery failed; existing eligible queue continues" >&2
-fi
-WORKDAY_QUALIFICATION_RESULT="$EVIDENCE/workday-qualification.json"
-set +e
-"$JOB_SEARCH_PYTHON" -m job_search_loop.workday_qualification \
+"$JOB_SEARCH_PYTHON" -m job_search_loop.workday_search_loop \
   --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
   --candidate-memory "$CANDIDATE_MEMORY" \
   --runner "$JOB_SEARCH_RUNNER" \
   --schema "$JOB_SEARCH_APP_ROOT/schemas/workday-fit-decision.v1.schema.json" \
   --workdir "$JOB_SEARCH_REPO_ROOT" \
   --evidence-root "$EVIDENCE/qualification" \
-  --output "$WORKDAY_QUALIFICATION_RESULT"
-WORKDAY_QUALIFICATION_RC=$?
+  --output "$WORKDAY_DISCOVERY_RESULT" \
+  --max-candidates 8
+WORKDAY_SEARCH_RC=$?
 set -e
-if [[ "$WORKDAY_QUALIFICATION_RC" -ne 0 ]]; then
-  printf '%s\n' "Workday qualification failed closed; no unqualified row can enter the browser lane" >&2
+if [[ "$WORKDAY_SEARCH_RC" -ne 0 ]]; then
+  printf '%s\n' "Workday search failed closed; no unqualified row can enter the browser lane" >&2
 fi
 WORKDAY_FAST_PATH_RESULT="$EVIDENCE/workday-fast-path.json"
 "$JOB_SEARCH_PYTHON" - "$WORKDAY_FAST_PATH_RESULT" <<'PY'

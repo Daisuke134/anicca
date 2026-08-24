@@ -6,18 +6,45 @@ import unittest
 from pathlib import Path
 
 from job_search_loop.ledger import Ledger
+from job_search_loop.workday_search_loop import search_until_qualified
 from job_search_loop.workday_qualification import qualify_one
 
 
 class WorkdayQualificationTests(unittest.TestCase):
-    def test_daily_owner_qualifies_one_workday_row_before_browser_lane(self):
+    def test_same_wake_continues_after_reject_and_hold_until_qualified(self):
+        decisions = iter(("rejected", "hold", "qualified"))
+        discovered = []
+
+        def discover():
+            number = len(discovered) + 1
+            discovered.append(number)
+            return {"status": "discovered", "discovered": [{"id": number}]}
+
+        def qualify():
+            return {"status": "decided", "decision": next(decisions)}
+
+        result = search_until_qualified(
+            discover=discover,
+            qualify=qualify,
+            max_candidates=10,
+        )
+
+        self.assertEqual(discovered, [1, 2, 3])
+        self.assertEqual(result["status"], "qualified")
+        self.assertEqual([row["decision"] for row in result["decisions"]], [
+            "rejected", "hold", "qualified"
+        ])
+
+    def test_daily_owner_searches_until_qualified_before_browser_lane(self):
         script = (
             Path(__file__).resolve().parents[1] / "scripts/run-daily.sh"
         ).read_text(encoding="utf-8")
-        qualifier = "-m job_search_loop.workday_qualification"
+        qualifier = "-m job_search_loop.workday_search_loop"
         browser = "-m job_search_loop.browser_agent.orchestrator"
         self.assertIn(qualifier, script)
         self.assertLess(script.index(qualifier), script.index(browser))
+        self.assertNotIn("-m job_search_loop.workday_discovery", script)
+        self.assertNotIn("-m job_search_loop.workday_qualification", script)
 
     def _row(self, root: Path) -> tuple[Path, str, Path]:
         ledger_path = root / "ledger.sqlite3"

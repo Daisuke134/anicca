@@ -23,7 +23,26 @@ class WorkdayDiscoveryTests(unittest.TestCase):
 
         self.assertIn("Rakuten", seen)
 
-    def test_discovers_one_best_unseen_japan_role_and_dedupes_next_wake(self):
+    def test_discovery_does_not_use_title_keywords_as_fit_judgment(self):
+        with tempfile.TemporaryDirectory() as directory:
+            def fake_fetch(source):
+                if source["company"] == "NVIDIA":
+                    return [{
+                        "title": "Office Administrator",
+                        "locationsText": "Japan, Tokyo",
+                        "externalPath": "/job/Japan-Tokyo/Office-Administrator_JR8",
+                    }]
+                return []
+
+            result = discover_one(
+                ledger_path=Path(directory) / "ledger.sqlite3",
+                fetch_jobs=fake_fetch,
+            )
+
+            self.assertEqual(result["status"], "discovered")
+            self.assertEqual(result["discovered"][0]["title"], "Office Administrator")
+
+    def test_discovers_unseen_official_rows_without_keyword_ranking(self):
         with tempfile.TemporaryDirectory() as directory:
             ledger_path = Path(directory) / "ledger.sqlite3"
 
@@ -62,7 +81,7 @@ class WorkdayDiscoveryTests(unittest.TestCase):
 
             second = discover_one(ledger_path=ledger_path, fetch_jobs=fake_fetch)
             self.assertEqual(second["status"], "discovered")
-            self.assertEqual(second["discovered"][0]["title"], "Technical Account Manager")
+            self.assertEqual(second["discovered"][0]["title"], "Office Administrator")
 
     def test_existing_workday_queue_prevents_backlog_growth(self):
         with tempfile.TemporaryDirectory() as directory:

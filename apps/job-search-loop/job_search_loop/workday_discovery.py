@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import re
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -14,14 +13,6 @@ from urllib.request import Request, urlopen
 from .ledger import Ledger
 from .state import canonical_url, is_excluded_employer
 
-
-ROLE_RE = re.compile(
-    r"ai|agent|machine learning|\bml\b|solutions?|technical|customer success|"
-    r"product|partnership|program manager|sales engineer|developer relations|"
-    r"business development|forward deployed",
-    re.IGNORECASE,
-)
-JAPAN_RE = re.compile(r"tokyo|japan|remote", re.IGNORECASE)
 
 TENANTS = (
     {
@@ -74,21 +65,6 @@ def _fetch_jobs(source: dict[str, str]) -> list[dict[str, Any]]:
     return [row for row in (rows or []) if isinstance(row, dict)]
 
 
-def _priority(title: str) -> int:
-    value = title.casefold()
-    if "agent" in value or "artificial intelligence" in value or " ai " in f" {value} ":
-        return 6
-    if "solution" in value or "forward deployed" in value:
-        return 5
-    if "technical account" in value or "customer success" in value:
-        return 4
-    if "developer relations" in value or "program manager" in value:
-        return 3
-    if "product" in value or "partnership" in value:
-        return 2
-    return 1
-
-
 def discover_one(
     *,
     ledger_path: Path,
@@ -133,8 +109,6 @@ def discover_one(
                 path = str(job.get("externalPath") or "")
                 if not title or not path.startswith("/job/"):
                     continue
-                if not ROLE_RE.search(title) or not JAPAN_RE.search(location + " " + path):
-                    continue
                 url = canonical_url(f"https://{source['host']}/{source['site']}{path}")
                 if url.casefold() in seen:
                     continue
@@ -144,13 +118,8 @@ def discover_one(
                         "title": title,
                         "url": url,
                         "location": location,
-                        "priority": _priority(title),
                     }
                 )
-        candidates.sort(
-            key=lambda row: (int(row["priority"]), str(row["company"]), str(row["title"])),
-            reverse=True,
-        )
         if not candidates:
             return {"status": "no_fresh_workday", "errors": errors, "discovered": []}
         selected = candidates[0]
