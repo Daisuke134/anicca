@@ -712,7 +712,8 @@ async def _blank_draft_ids(ws_url: str) -> tuple[list[str], list[dict[str, Any]]
       controls:[...card.querySelectorAll('a,button')].map(e=>({tag:e.tagName,
       label:(e.innerText||'').trim().slice(0,24),href:e.getAttribute('href')||'',
       cls:(e.className||'').toString().slice(0,80)}))}));
-      return{cards:cards.length,
+      return{ready:document.readyState,cards:cards.length,
+      add_control:!!document.querySelector('a[href="/services/add"],a[href*="/services/add"]'),
       drafts:rows.filter(row=>row.text.includes('下書き中')).map(row=>({ids:row.ids,
       titled:!row.text.includes('サービスタイトル未設定'),controls:row.controls})),
       ids:rows.filter(row=>row.text.includes('下書き中')&&row.text.includes('サービスタイトル未設定'))
@@ -724,7 +725,8 @@ async def _blank_draft_ids(ws_url: str) -> tuple[list[str], list[dict[str, Any]]
         while asyncio.get_running_loop().time() < deadline:
             raw, cid = await _evaluate(ws, expression, cid)
             observed = json.loads(str(raw or "{}"))
-            if int(observed.get("cards") or 0) > 0:
+            if (int(observed.get("cards") or 0) > 0
+                    or (observed.get("ready") == "complete" and observed.get("add_control") is True)):
                 values = observed.get("ids") or []
                 drafts = [row for row in observed.get("drafts") or [] if isinstance(row, dict)]
                 break

@@ -173,6 +173,9 @@ Storefront work.
        seller form, and binds model choices to official master/sub/type category options.
        Draft/category state is demand-hash idempotent; compile passes and the first live
        draft remains pilot evidence.
+       The blank-draft detector now treats `document.readyState=complete` plus the official
+       `/services/add` control as authoritative zero inventory, so a truly empty new account
+       no longer waits forever for a card that cannot exist yet.
        Category-bound form observation now reads official price/facet/radio/select/paid-
        option choices without saving. A bounded model retry corrects schema-valid but
        unofficial/null choices. Real Codex against a synthetic official option surface
