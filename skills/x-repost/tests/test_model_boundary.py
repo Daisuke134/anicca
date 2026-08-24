@@ -88,6 +88,11 @@ class ModelBoundaryTest(unittest.TestCase):
         normalized = " ".join(CLI.read_text().split())
         self.assertIn('"$PY" "$MODEL_BOUNDARY" prepare', normalized)
         self.assertIn('CODEX_HOME="$CODEX_AUTOMATION_HOME"', normalized)
+        self.assertIn('--disable plugins', normalized)
+        self.assertIn('--disable shell_tool', normalized)
+        self.assertIn('--disable multi_agent', normalized)
+        self.assertIn('--disable browser_use', normalized)
+        self.assertIn('-c project_doc_max_bytes=0', normalized)
         self.assertIn('"$PY" "$MODEL_BOUNDARY" classify', normalized)
         self.assertIn(
             '"$EV/model.stdout" "$EV/model.err" --returncode "$rc"', normalized

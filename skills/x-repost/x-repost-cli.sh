@@ -164,7 +164,12 @@ ask_model() {
   timeout "${X_REPOST_MODEL_TIMEOUT:-600}" \
     env -u ANTHROPIC_API_KEY CODEX_HOME="$CODEX_AUTOMATION_HOME" \
     "$CODEX" exec --ephemeral --model "$MODEL" \
-    -c "model_reasoning_effort=\"$REASONING_EFFORT\"" --ignore-user-config --json \
+    -c "model_reasoning_effort=\"$REASONING_EFFORT\"" -c project_doc_max_bytes=0 \
+    --ignore-user-config --json --disable plugins --disable hooks --disable apps \
+    --disable multi_agent --disable browser_use --disable browser_use_external \
+    --disable browser_use_full_cdp_access --disable shell_tool --disable code_mode_host \
+    --disable unified_exec --disable workspace_dependencies --disable tool_suggest \
+    --disable tool_call_mcp_elicitation --disable goals --disable image_generation \
     -o "$out_file" --dangerously-bypass-approvals-and-sandbox \
     --skip-git-repo-check -C "$SKILL" --add-dir "$SKILL" \
     "$(cat "$prompt_file")" >"$EV/model.stdout" 2>"$EV/model.err"
