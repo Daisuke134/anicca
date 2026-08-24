@@ -771,6 +771,14 @@ U13 atomic order:
     payload and persists a ready proposal. The former zero-Connect-only discovery name/state and fake
     invitation packet are removed. Upwork regression remains `155 passed`; next proof is a launchd wake
     discovering, sealing and submitting a new current job without editing the static candidate list.
+55. **DELIVERY SKILLS BOUND INTO LUNA QUALIFICATION:** the first generalized wake correctly skipped
+    physical/location-bound jobs but also rejected feasible work merely because an identical prior job
+    or portfolio claim was absent. The existing capability inventory already parses every repository
+    `SKILL.md`; pass that signed name/description/path inventory to the Luna planner. Installed Skills
+    prove executable and independently verifiable capability, never prior client experience. Luna must
+    not fabricate experience, but exact prior work, testimonial or portfolio absence alone is no longer
+    a skip reason when a Skill can complete the work; missing implementation details become concise
+    pre-contract questions. Regression remains `155 passed`.
 
 U14 atomic order:
 
