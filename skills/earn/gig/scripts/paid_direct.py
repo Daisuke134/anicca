@@ -3316,6 +3316,7 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
 
 def _prepare_file(args, item_path: Path, root: Path, item: dict[str, Any], base: Path,
                   feedback: str) -> dict[str, Any]:
+    (root / "delivery").mkdir(parents=True, exist_ok=True)
     requirements_sha256 = paid_remote_result.requirements_digest(root, feedback)
     stable = delivery_queue.evidence_path(args.delivery_evidence_dir, item)
     try:

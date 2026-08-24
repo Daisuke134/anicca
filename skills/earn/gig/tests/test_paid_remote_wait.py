@@ -223,6 +223,30 @@ def test_formal_approval_survives_later_seller_acknowledgement(tmp_path):
     ) == decision
 
 
+def test_file_prepare_creates_missing_project_delivery_directory(tmp_path, monkeypatch):
+    paid = load("paid_direct")
+    root = tmp_path / "project"
+    root.mkdir()
+    monkeypatch.setattr(
+        paid.paid_remote_result, "requirements_digest", lambda *_args: "a" * 64,
+    )
+    monkeypatch.setattr(
+        paid.delivery_queue, "evidence_path", lambda *_args: tmp_path / "stable.json",
+    )
+
+    def observe_delivery(*_args):
+        assert (root / "delivery").is_dir()
+        raise RuntimeError("observed")
+
+    monkeypatch.setattr(paid, "_validate_file_authorization", observe_delivery)
+
+    with pytest.raises(RuntimeError, match="observed"):
+        paid._prepare_file(
+            SimpleNamespace(delivery_evidence_dir=tmp_path, projects_root=tmp_path),
+            tmp_path / "item.json", root, {}, tmp_path / "base", "b" * 64,
+        )
+
+
 def test_wait_accepts_supplementary_receipt_when_another_has_readback(tmp_path):
     remote = load("paid_remote_result")
     root, feedback, digest = blocked_project(tmp_path)
