@@ -262,8 +262,8 @@ No later task may jump ahead of the first incomplete row:
 | U12 | Freeze one tailored first-job proposal | **DONE:** immutable payload `c37eed9c…c68e926` contains the $15 terms, cover letter, five factual screening answers, no attachments, and zero unsupported claims |
 | U13 | Make acquisition fully loop-owned | **DONE:** five-minute main loop uses native Best Matches, ten-job Luna batches, prompt-bound cache, durable sealed queue, Terra browser operation, exact Connects/effect readback and one-candidate failure isolation. |
 | U14 | Close the first acquisition effect | **DONE:** owner-authorized seed produced 150 Connects; proposal `2091740505918763009`, exact `150 -> 141`, no subscription/boost/badge/auto-top-up. |
-| U15 | Replay immediately | **DONE:** all three proposals return the same IDs on exact replay with additional Connects 0. IDs include dynamic fixed-price `2091760957211561985` (`141 -> 133`) and hourly iOS `2091789044149923841` (`133 -> 118`). |
-| U16 | Poll and answer the resulting thread | **IN PROGRESS:** official submitted entities 2, canonical Messages works, rooms/unread/offers/contracts 0. Next real buyer event must produce official story/message ID and duplicate reply 0. |
+| U15 | Replay immediately | **DONE:** the first three proposals return the same IDs on exact replay with additional Connects 0. A fourth loop-owned proposal `2091811328085401601` for `~022091778584504223418` is also officially listed, with `118 -> 92`; its post-effect count refresh and replay remain the next readback slice. |
+| U16 | Poll and answer the resulting thread | **IN PROGRESS:** official Submitted proposals is 4; canonical Messages works, rooms/unread/offers/contracts 0. Next real buyer event must produce official story/message ID and duplicate reply 0. |
 | U17 | Negotiate and accept profitable terms | Offer ID, exact terms hash and active contract ID |
 | U18 | Fulfill and independently verify the work | Artifact hash and independent verifier PASS |
 | U19 | Deliver once | Official submission ID/state and replay with zero duplicate delivery |
