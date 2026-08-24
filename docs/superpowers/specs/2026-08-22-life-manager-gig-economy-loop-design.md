@@ -2,13 +2,18 @@
 
 ## 0. Decision
 
-Life Manager ultimately contains one revenue system, not one harness per marketplace. The active
-delivery slice starts with **Upwork**, while Coconala is the proven reference implementation. Upwork
-must close one real proposal readback before another marketplace mutation lane opens, but read-only
-research and thin-adapter generation for other gig and bounty markets may proceed earlier. After that
-receipt, the same resident agent may activate additional zero-spend canaries while Upwork continues
-toward one complete calendar month at USD 10,000 verified net received. A new market never receives a
-new decision brain.
+Life Manager ultimately contains one revenue system, not one harness per marketplace. Coconala is the
+proven reference implementation, Upwork remains an active acquisition lane, and **Lancers is the next
+atomic provider-neutral proof**. No market must wait for another market's revenue gate when its account,
+resource lease, delivery capacity and effect fence are independent. The resident agent may run
+read-only inventory and zero-spend canaries across markets concurrently; paid work, buyer messages and
+unknown effects still preempt acquisition. A new market never receives a new decision brain.
+
+Execution is vertical and atomic rather than a big-bang rewrite. Lancers first closes authenticated
+read-only inventory with external effects zero, then truthful profile/external-proof grounding, then one
+review-bearing non-negative-net application canary with an official proposal ID and replay duplicate
+zero. Every later slice closes the next real provider boundary. The full common architecture is fixed
+up front, but production acceptance advances one official receipt at a time.
 
 The target is an open-source, local-first agent that discovers demand, builds or selects Skills,
 sells work, fulfills it, verifies delivery and payment, and reallocates effort toward the highest
@@ -142,9 +147,11 @@ demand → qualified offer → sale → verified fulfillment → received money
        → attributed economics → one bounded improvement → repeat
 ```
 
-The first portfolio outcome gate is USD 10,000 verified net received revenue in one complete calendar
-month. The long-range gate is
-JPY 10,000,000 verified net monthly revenue. Neither is an income promise.
+The first active outcome gate is one Lancers review-bearing contract through independently verified
+delivery and official payout `received`. The portfolio-generalization gate is the same complete path on
+Upwork or another second market. USD 10,000 verified net received in one complete calendar month and the
+long-range JPY 10,000,000 verified net monthly revenue gate remain scale outcomes, not serialization
+gates or income promises.
 
 ### 1.2 Objective function
 
@@ -160,6 +167,9 @@ verified_net_received(M) = recognized_cash(M)
                          - subcontractor_cost_charged_once_in_M
 
 portfolio_utility = expected_verified_net
+                  + expected_reputation_and_review_value
+                  + expected_repeat_client_value
+                  + reusable_skill_and_market_learning_value
                   - capital_at_risk
                   - deadline_and_refund_risk
                   - account_health_risk
@@ -168,6 +178,10 @@ portfolio_utility = expected_verified_net
 
 Hard constraints always dominate the score: authorization, identity, customer confidentiality,
 budget caps, delivery capacity, quality, effect idempotency and receipt integrity.
+Luna judges the non-cash terms from full natural-language evidence. Deterministic code calculates only
+official numeric fields, reservations, dedupe, effect/readback and accounting. "Cheapest" is never an
+independent objective: the bootstrap target is the smallest truthful scope that can produce an official
+review, remains non-negative after fee and execution cost, and has positive long-run utility.
 
 The public open-source default remains `spend_cap_usd=0`. A local owner may separately sign one
 bounded capital policy: `bootstrap_connects_seed_usd=15`, `seed_count=1`, `auto_top_up=false`. That
@@ -189,7 +203,7 @@ one bounded Project Catalog service, accept qualified direct offers, then spend 
 Connects on a small public job. A normal public `Apply now` path is never classified as zero-cost unless
 its official proposal surface explicitly reads back `connects_cost=0`.
 
-### 6.1B Evidence-backed first-job and scale playbook
+### 1.2A Upwork evidence-backed first-job example
 
 The agent does not spray proposals or rely on a hidden zero-Connect category. For the first 100
 Connects it uses the current Upwork filters and full job detail to prefer recent jobs with fewer than
@@ -233,10 +247,10 @@ Connects. The agent monitors badge eligibility and claims the 30-Connect award i
 spend the first proposal seed chasing the badge. Tax information and a matching withdrawal method are
 completed before payout; they are payment-readiness ceremonies, not acquisition claims.
 
-During the Upwork proof, `delivery capacity` means active Upwork contracts only. Coconala orders,
-projects and stale Coconala talkroom states MUST NOT make an Upwork opportunity eligible or
-ineligible. Portfolio-wide allocation begins only after Upwork closes G11; first cash starts the
-Upwork learning ladder but does not unlock another market.
+During the Upwork proof, `delivery capacity` means active Upwork contracts only. Coconala, Lancers and
+other provider work MUST NOT be projected into Upwork capacity, and Upwork state MUST NOT serialize an
+independent market. The Portfolio CEO allocates across all fresh market inventories while reserving
+accepted scope against the exact provider/project resource.
 
 Each received payout must equal its gross payment minus fee and every refund/chargeback occurring on
 or before that payout. Those pre-payout adjustments are already inside the payout amount and are not
@@ -575,9 +589,12 @@ discover → inspect → eligibility → expected economics → tailored offer
 → negotiate → contract readback
 ```
 
-The system never sprays proposals. It applies whenever the measured expected utility is positive,
-capacity exists, the deliverable is provable and the action is authorized. Rate is an output of
-economics and account health, not an arbitrary desire for maximum clicks.
+The system never sprays irrelevant proposals. It applies to every independently judged positive
+**lifetime-EV** candidate while capacity exists, the deliverable is provable and the action is
+authorized. Before the first review, reputation, repeat-client probability, reusable proof and market
+learning may make a small contract preferable to a larger one; they never justify negative net,
+fabricated capability or unpaid full delivery. Rate is an output of economics and account health, not
+an arbitrary desire for maximum clicks.
 
 ### 4.4 Fulfillment loop
 
@@ -762,11 +779,15 @@ flowchart LR
   P --> D
 ```
 
-The agent first reuses existing credentials, profile facts, portfolio proofs and Skills. Ordinary
-signup/login and provider UI are agent-owned. CAPTCHA, biometrics, identity documents, tax and payout
-ownership are typed resumable ceremonies. Owner-funded spend outside an existing cap remains a human
-authorization. A new market adds only a manifest plus unavoidable fixed-format ID/state/fee/readback
-glue; navigation, qualification, proposal, conversation and ordinary forms remain Luna/Terra work.
+The agent first reuses existing credentials, profile facts, portfolio proofs and optional Skills.
+Neither a missing provider adapter nor a missing named Skill blocks feasible model-and-tool work.
+Ordinary signup/login and provider UI are agent-owned. CAPTCHA, biometrics, identity documents, tax and
+payout ownership are typed resumable ceremonies. Owner-funded spend outside an existing cap remains a
+human authorization. A new market starts with the common Browser ACI and adds only a manifest plus
+unavoidable fixed-format ID/state/fee/readback glue. Navigation, qualification, proposal, conversation
+and ordinary forms remain Luna/Terra work. A successful trace becomes deterministic code only after
+repetition proves that extraction reduces cost, latency or error without taking judgment from the
+model.
 
 Every active market runs the same lifecycle concurrently under separate durable state:
 `discover → propose/list → reply → contract/order → Skill work → independent QA → delivery → received
@@ -776,8 +797,9 @@ private customer content and credentials never cross projects.
 
 ### 4.9 Cross-market blitz-scaling contract
 
-Upwork remains the first USD 10k outcome goal, not a serialization gate for other markets. Fiverr,
-Lancers, CrowdWorks, Freelancer, Mercor, uGig and later founder-discovered markets may run read-only
+Upwork remains an active USD 10k scale goal, not a serialization gate for other markets. **Lancers is
+the current implementation cursor.** Fiverr, CrowdWorks, Freelancer, Mercor, uGig and later
+founder-discovered markets may run read-only
 discovery, authentication recovery, qualification, proposal/listing preparation and zero-spend
 canaries concurrently now. Paid work, buyer messages and unknown effects retain higher priority, but
 one market never pauses independent work on another.
@@ -801,6 +823,35 @@ planner, proposal brain, inbox brain, project system, QA system, notification se
 money ledger or learning agent. Navigation, pagination, filters and ordinary forms remain model-driven
 through `observe/extract/act/readback`. When a market needs more than about three glue files or 300 LOC,
 implementation stops and extracts the missing shared primitive before continuing.
+
+Lancers' provider-native automatic proposal surface remains inventory until the system can prove that
+each resulting proposal received its own Luna judgment, immutable intent and official readback. Native
+automation may reduce transport cost; it may not bypass the common commercial brain or create effects
+whose candidate-level decision evidence is missing.
+
+### 4.9A First-trust bootstrap contract
+
+The first job on a zero-review market optimizes for an honest official review and repeatable proof, not
+the absolute lowest price. The model prefers a review-bearing project or package with bounded scope,
+objective acceptance, credible client history, short feasible delivery, reusable proof and
+non-negative verified net. Work types that do not improve the market's principal reputation signal are
+ordinary cash opportunities, not reputation bootstrap substitutes. Before underpricing, the agent uses
+any provider-supported truthful external-experience import and reads back its official profile effect.
+
+Every application is attributed to the profile, proof, proposal and price strategy versions that
+produced it. Funnel evidence is input to Luna, not a hardcoded router: no view suggests profile/fit/first
+lines; view without reply suggests proof/proposal; reply without contract suggests scope/price/trust;
+contract without received cash suggests fulfillment or payout. The agent changes one variable, waits
+for a causally usable official window, then returns `insufficient_evidence`, `keep`, `pause`, `revert`
+or `retire`.
+
+Sources: Lancers states that fuller profiles correlate with higher order rates
+([profile guide](https://www.lancers.jp/help/beginner/lancer/profile)), supports reviewed external work
+history ([external achievements](https://www.lancers.jp/faq/l1001/1085)), and does not project accepted
+task work into the principal profile performance/evaluation
+([task evaluation](https://www.lancers.jp/faq/l1034/161)). Freelancer likewise states that reputation
+affects bid ranking
+([rating and bid ranking](https://www.freelancer.com/support/profile/tips-to-boost-your-freelancer-rating-and-bid-ranking)).
 
 ### 4.10 Canonical repository and private-runtime tree
 
@@ -869,25 +920,23 @@ OSS stable additionally requires the same conformance suite on a second market t
 clean-device receipt, no original operator paths/data and provider-only additions within the thin-glue
 budget. Tests or fixtures never substitute for the required real provider receipts.
 
-## 5. Market sequence
+## 5. Market execution state
 
-Every authorized market may progress concurrently from current evidence. Upwork retains primary
-revenue allocation until its USD 10k gate, while zero-spend canaries and profitable independent work on
-other markets proceed in parallel. Allocation follows measured opportunity, margin, authorization,
-delivery capacity and human-minute evidence, never a hardcoded market sequence.
+Every authorized market may progress concurrently from current evidence. The table records the current
+execution role, not a gate that forces one market to wait. Allocation follows measured opportunity,
+long-run utility, authorization, delivery capacity and human-minute evidence.
 
-| Order | Market | Intended lane | Unique lesson / Skill |
-|---:|---|---|---|
-| 0 | Coconala | Existing full sales/fulfillment/payment loop | Reference effect fence, inbox, paid project, receipt and learning |
-| 1 | Upwork | First complete new autonomous adapter | Outbound proposals, Connects economics, contract/milestone lifecycle |
-| 2 | uGig | Existing account and invoice flow | Fast conformance canary using already-configured state |
-| 3 | Freelancer | Existing account, projects and bids | Bid economics and milestone/payment mapping |
-| 4 | Lancers | Existing Japanese account | Reuse Japanese facts, proof and delivery Skills |
-| 5 | CrowdWorks | Existing Japanese account | Project/task contracts and escrow mapping |
-| 6 | Fiverr | Inbound catalogue plus custom offers | Gig experiments, inquiry and order/revision lifecycle |
-| 7 | Mercor | Existing role/account workflow | Matching, interviews, task work and identity ceremony |
-| 8 | Authorized bounty markets | Fixed-scope rewards | Claim, acceptance and payout identity |
-| 9+ | Agent-discovered markets | One bounded zero-spend canary at a time | Founder discovery and shrinking adapter cost |
+| Role | Market | Intended lane | Unique lesson / Skill |
+|---|---|---|---|
+| Reference | Coconala | Existing full sales/fulfillment/payment loop | Reference effect fence, inbox, paid project, receipt and learning |
+| Running | Upwork | Continue acquisition and event-driven downstream lanes | Outbound proposals, Connects economics, contract/milestone lifecycle |
+| **Current cursor** | **Lancers** | First-trust profile → application canary → review-bearing payout | Unknown-site ACI, external proof, Japanese contracts and payout |
+| Next evidence | Freelancer | Existing account, projects and bids | Bid economics and milestone/payment mapping |
+| Next evidence | CrowdWorks | Existing Japanese account | Project/task contracts and escrow mapping |
+| Parallel read-only | uGig | Existing account and invoice flow | Fast conformance using already-configured state |
+| Parallel read-only | Fiverr | Inbound catalogue plus custom offers | Gig experiments, inquiry and order/revision lifecycle |
+| Parallel read-only | Mercor | Existing role/account workflow | Matching, interviews, task work and identity ceremony |
+| Discovered | Authorized bounty and new markets | One bounded zero-spend canary at a time | Founder discovery and shrinking adapter cost |
 
 Each later market may finish as `active`, `assisted`, `denied` or `unprofitable`. Upwork denial or
 negative margin remains visible evidence and never weakens the shared kernel; the CEO may redirect
@@ -1296,8 +1345,14 @@ promise of earnings.
 | G5 Upwork delivery | Artifact QA, one delivery effect and official submission state |
 | G6 first cash | Received payment, fee, cost and payout evidence reconcile to the project |
 | G7 repeatability | Three independent paid Upwork jobs; zero blind duplicate effects |
-| G8 second market | After G3, one configured market reaches an official zero-spend canary; activation still requires positive economics |
-| G9 market factory | A third market is added from templates without changing kernel contracts |
+| G2L Lancers inventory | Two fresh authenticated common inventories, source complete, marketplace effect zero |
+| G3L Lancers trust | Truthful profile/external-proof official state or an evidence-backed provider block; replay effect zero |
+| G4L Lancers proposal | One review-bearing positive-lifetime-EV decision, proposal ID and replay duplicate zero |
+| G5L Lancers contract | Buyer message/offer and funded contract IDs reconcile without fabricated events |
+| G6L Lancers delivery | General-agent work, independent QA and official delivery readback bind the contract |
+| G7L Lancers cash/review | Fee/cost/refund and payout `received` reconcile; honest review identity is observed or explicitly absent |
+| G8 second market | One configured market reaches an official zero-spend canary while independent lanes continue |
+| G9 market factory | A third market is added through common ACI without changing kernel contracts |
 | G10 learning | One strategy/Skill canary produces an evidence-backed keep or revert |
 | G11 Upwork USD 10k | One complete calendar-month source window proves at least USD 10,000 `verified_net_received`; Pending/Available are excluded and later chargebacks enter their occurrence month |
 | G12 JPY 10m | Provider and bank sources prove JPY 10,000,000 verified monthly net |
@@ -1334,23 +1389,24 @@ promise of earnings.
 
 | Scenario | Result |
 |---|---|
-| Worst | Upwork proves denied or negative-margin; effects stop safely and a separately approved design decides whether to change constraints or markets. |
-| Base | Upwork reaches repeat paid work and climbs the received-cash ladder before the second market opens. |
-| Best | Upwork closes the USD 10k gate with repeat clients and bounded high-value milestones, then the CEO generalizes the proven receipts. |
+| Worst | Lancers authentication, economics or account rules produce an evidence-backed terminal state; its effects stop while Upwork and independent market inventory continue. |
+| Base | Lancers closes one review-bearing payout path, repeats the proven unit, and supplies the second-market conformance evidence while Upwork continues. |
+| Best | Lancers' common-ACI trace closes quickly, the same unchanged agent contract works on Freelancer/CrowdWorks and the CEO reallocates toward the highest verified long-run return. |
 
-The strongest argument for implementing all ten adapters immediately is faster market coverage. It
-is rejected because ten unproved transports hide whether demand, conversion, fulfillment or payment
-is broken. One complete market at a time produces reusable evidence.
+The strongest argument for implementing all provider adapters immediately is faster apparent market
+coverage. It is rejected because thick unproved transports hide whether demand, conversion,
+fulfillment or payment is broken. Concurrent read-only inventory is cheap; mutation glue is extracted
+only from real canaries and receipts.
 
-The most likely way this design is wrong is that Upwork's close rate or fulfillment margin is lower
-than required for USD 10,000 within the fixed capacity and zero-spend policy. The loop must expose
-that with complete funnel and cash evidence; it may not report a guarantee or substitute
-Pending/Available for revenue. Changing the zero-spend constraint or opening another market requires
-a separately authorized design change.
+The most likely way this design is wrong is that initial reputation value does not compensate for low
+ticket size, or that a common Browser ACI costs more and fails more often than thin measured provider
+glue. The loop must expose this through complete funnel, quality, time and received-cash evidence; it
+may not report a guarantee or substitute Pending/Available for revenue.
 
 ## 11. Implementation boundary
 
-The ordered atomic plan is
-`docs/superpowers/plans/2026-08-22-life-manager-gig-economy-loop.md`. Only its first unfinished task
-is active. Each coding slice targets at most three files and about 100 changed production/test lines;
-larger slices are split before execution.
+The portfolio plan remains
+`docs/superpowers/plans/2026-08-22-life-manager-gig-economy-loop.md`. The current Lancers execution
+cursor is `docs/superpowers/plans/2026-08-24-lancers-general-money-agent.md`; only its first unfinished
+task is active. Each coding slice targets at most three production/test files and about 100 changed
+production/test lines; larger slices are split before execution.

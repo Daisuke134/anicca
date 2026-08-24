@@ -1693,22 +1693,22 @@ sourceを5分observerが検知した時に実shapeで閉じる。active engineer
 
 | 面 | 実測した事実 | 判定 |
 |---|---|---|
-| canonical Git | current HEAD、`origin/main`、`origin/feat/lancers-quality-gate`は同じruntime更新へ収束 | production code bytesのbranch forkなし |
-| installed release | 現在値の正本は`~/.local/state/anicca/lancers/deployment.json`の`deployed_sha`。Browser、Application、Storefront、Work Sync、Telegramのargv/working directoryを毎auditで同値確認する | owner 5本exact release一致、manifest 21 files一致、release writable file 0 |
-| production browser | launchd `ai.anicca.lancers-revenue-browser`が専用profileとloopback`:9227`をPID `22242`でsole ownership。RunAtLoad、KeepAlive、exact working directoryを確認 | CDP endpoint live。応答不能Lancers targetを作るE2Eでもtimeout→close→一回retryで12.59秒復帰、targetはabout:blank一枚へ戻る |
-| Apply | launchd enabled、30分、累計`application_verified=31`、fingerprint 107、pending 0 | software proof/query拡張後、AI/API PoC `5586377`を一回送信しproposal `27813129`へ公式確定。最新wakeは10 queryで未処理の納品可能案件0、submit 0、exit 0 |
+| canonical Git | current `origin/main`はwebsite-neutral Gig kernel更新を含み、installed Lancers releaseより先へ進んでいる | mainとinstalled releaseの同一性を推測せず、promotion時にmanifest bytesを再検証する |
+| installed release | `~/.local/state/anicca/lancers/deployment.json`はimmutable release `82acfd306fab1840183fe4d63d1e21c929f54e9e`と21-file manifestを保持 | customer state、browser profile、ledger、receiptを保存したまま、common kernelへの移行元として扱う |
+| production browser | `ai.anicca.lancers-revenue-browser`はdisabledでlaunchd serviceなし、loopback`:9227` listenerなし | historical recovery receiptは有効だがcurrent authenticated inventoryを証明しない。最初のsliceはread-only復帰 |
+| Apply | Application ownerはdisabled。durable ledgerは`application_verified=32`、application stateはfingerprint 119、pending 0、terminal blocked 7 | application effectは再開前。最後のprovider observationは2026-08-15でstale |
 | Apply latest reconcile | project `5586218`、¥8,000、納期`2026-08-19`は一度だけ送信後、submit 0のreadback-onlyで公式proposal ID `27812863`へ確定。pending 1→0 | own-proposalは第462–463回の音声文字起こし＋整文を明記し、公開full scopeと一致。blind resend 0、receipt exactly 1 |
-| capacity | recovery後のWork Syncがfresh `contracts.json`を再生成し、source complete、active contract 0 | Application gateは再びallow。契約0でもstale sourceを無視して応募しないfail-closed contractを維持 |
-| Sales source | Work Sync production ownerは2連続wakeでexit 0。board `9024494`一件、required reply 0、unread 0、project/monthly/Storefront contract 0、`no_reply_required` | reply effect 0、sales/application/ledger不変。現在送るべきbuyer actionはない |
-| Contract | project working 0、monthly 0、Storefront contract candidate 0、合計0 | ContractReceipt 0。現在の第一収益ボトルネック |
+| capacity | retained `contracts.json`はsource complete、active contract 0を返すがobserved_atは2026-08-15 | fresh inventoryまでcurrent capacityは`unknown`。stale zeroから応募を許可しない |
+| Sales source | retained snapshotはboard 1、required reply 0、unread 0、contract candidate 0 | current reply/offer stateはfresh inventoryまで`unknown`。存在しないbuyerへのeffect 0 |
+| Contract | retained project working 0、monthly 0、Storefront contract candidate 0 | ContractReceipt 0はledger truth。current provider absenceは未確認 |
 | Storefront canonical | 公式inventoryは`published=1 / paused=0 / hidden=5 / draft=0`。`1338228`だけactive、旧`1338229–1338233`は各owner wakeでPOST 302→公式archived readback。public profile料金表もcanonical一件だけ | ¥98,000 / ¥198,000 / ¥398,000、画像、portfolio `743964`、spot/3か月/6か月routeは公開page一致。連続wake `status_effect_count=0` |
 | Storefront demand | canonical `1338228`は2連続production wakeで`action=unchanged / aligned=true / status_effect_count=0`。公式counterは`表示1 / 閲覧0 / お気に入り0 / 相談0 / 注文0` | owner exit 0、duplicate mutation 0、各wake後owned tab 0。7日需要実験を欠測なしで再開 |
-| Reporting | proposal funnel追加reportはGateway一次logのprovider message ID `19057`へ配信済み。outbox uncertainを同IDでreconcileし、同一snapshotの次wakeはoutbox 1193→1193、send 0、exit 0 | transportをstable idempotency key付きGateway 60秒sendへ置換。次のsemantic snapshotでpositive ACKを継続確認 |
-| Paid | ledger eventは`application_verified` 31件だけ。raw CDPで公式`/mypage/payment`を再観測し、入出金履歴0、残高0円を確認。ContractReceipt、DeliveryReceipt、PaymentReceipt、bank matchは0件 | funded work、納品、positive payment rowのproduction effect/readbackは未完成。現在net MRR 0円は公式empty sourceで確定 |
+| Reporting | retained Telegram outboxとhistorical provider ACKは保存されているがreport ownerはdisabled | stale snapshotをcurrent reportとして再送しない |
+| Paid | ledger eventは`application_verified` 32件だけ。retained公式snapshotは入出金履歴0、残高0円。ContractReceipt、DeliveryReceipt、PaymentReceipt、bank matchは0件 | current provider financeはfresh inventoryまで`unknown`。received cashは0件 |
 
 ### 18.2 なぜ応募しているのにお金にならないか
 
-応募数の不足が現在の主因ではない。累計31件の公式応募receiptがあるのに、公式contract candidateは0件である。
+応募数だけが解決策ではない。durable ledgerには累計32件の公式応募receiptがあり、retained公式snapshotのcontract candidateは0件である。
 売上になる境界は応募ではなく、buyerが選ぶ／相談する、sellerが正しいreply・見積を返す、buyerが仮払いする、sellerが
 契約を承諾する、納品・検収が終わる、支払・payout・銀行入金が照合される、の後段である。
 
@@ -1724,7 +1724,8 @@ sourceを5分observerが検知した時に実shapeで閉じる。active engineer
 
 ### 18.3 Coconala four-lane parityを採用する
 
-LancersもCoconalaと同じ四つのuser-facing lane名とownershipを使う。
+LancersもCoconalaと同じ四つのuser-facing business stageを使う。ただし、stageごとのscheduler、brain、ledgerを作る意味ではない。
+runtime ownershipはprovider-neutral Gig loop、Portfolio CEO、common Browser ACI、resource-scoped lease、effect kernel、project/QA、money truthへ統合する。
 
 1. **Apply** — 公開募集の発見、model判断、応募、公式ApplicationReceipt
 2. **Storefront** — 商品在庫、公開状態、需要counter、相談獲得、一商品一変数改善
@@ -1886,6 +1887,10 @@ proposal額、listing価格、未受領offerはどの値にも入れない。sou
 
 ### 18.6 残TODO — この順序だけを使う
 
+provider-neutral architectureと未知市場contractの正本は
+`docs/superpowers/specs/2026-08-22-life-manager-gig-economy-loop-design.md` §4.8–§4.10である。
+本表はLancersのcurrent production receipt順だけを所有し、共通architectureを複製しない。
+
 | 順序 | 一件の作業 | 完了証拠 | 実装目安 |
 |---:|---|---|---:|
 | 完了 | **exact-release + G3C収束**: main/feature/current/installed/3 ownerを`621e13b39…`へ統一。Application live tickは`observed=2 / eligible=0 / submitted=false / no_eligible_project`、state/ledger/listing不変、pending 0、orphan 0。Work Syncはofficial source complete、reply 0。Telegramは同一snapshot送信0 | manifest bytes一致、release writable 0、owner 3本exit 0、G3C current decision allow。自然にJapan day 10件へ達した時の`daily_quota_reached`だけ継続観測 | 完了 |
@@ -1893,16 +1898,17 @@ proposal額、listing価格、未受領offerはどの値にも入れない。sou
 | 完了 | **Apply acquisition outcome診断**: 10 query公式件数を分離し、validator通過済み能力外を既存claimへ保存、Coconala同様にdefault wake最大3探索turnへ進めた。Lancersのrequired生成AI宣言value 1も正直に選択する | release `829824532…`、`observed 21 / eligible 8`、provider block submit 0、次候補`5584041`一回送信、proposal `27812830`、receipt 26、pending 0、blind resend 0 | 完了 |
 | 完了 | **production browser owner recovery**: manual PID任せをやめ、既存profileと`:9227`をsole reproducible ownerへ束ねる。attach timeout時は専用profileのLancers targetだけをcloseして一度retry | release `65a08a957…`、browser PID=launchd PID `29096`、login ready。Application / Storefront / Work Sync exit 0、Storefront/Work Sync second wake effect 0、self-heal E2E 12.59秒、state/ledger不変 | 完了 |
 | 完了 | **seller proof + public catalog convergence**: 公開portfolio `743964`とpackage `1338228`をApplication判断へ接続し、旧商品5件を受付休止から公式非表示へ収束 | release `add41af43…`、no-fit送信0、旧5件archived、public料金表1件、連続Storefront wake effect 0、Application/ledger/contracts不変 | 完了 |
-| 1 | **Negotiate / Contract completion**: Coconalaのsemantic reply contractを再利用し、Apply選定、Storefront相談への返信、client-originated月額offer、仮払い済みactive contractの各公式shapeを同じSales ownerへ接続する。Lancers sellerから月額offerを作らない。イベントがない時は正常no-op | real event到着時にmessage/offer/contract exact ID、ContractReceipt、次wake duplicate reply/offer承諾 0。存在しないbuyerへのeffect 0 | 1–3日 + buyer event待ち |
-| 2 | **Paid fulfillment stage**: funded active contractだけを有限queueへ入れ、Coconala Paidのcontext→work-mode→制作→QA→official delivery/readback contractをLancers formへ適応 | 仮払い前work 0、成果物hash、QA、公式delivery ID、DeliveryReceipt、重複納品0 | 2–4日 + 制作時間 |
-| 3 | **Paid finance stage**: Lancersの支払、手数料、refund、payout batchを公式sourceから取得し、AI/外注原価と銀行transactionへ一意照合 | PaymentReceipt、source completeness、fee/cost、payout target、bank delta 0、net MRR再計算 | 2–4日 + provider入金時間 |
-| 4 | **four-lane human reporting completion**: 既存のApply / Storefront / Negotiate / Finance自然文をPaid receiptまで拡張し、transport failureをlane failureや売上へ混ぜず、当月入金総額・当月net revenue・単発売上・現在net MRRを別表示する | every-wake human message、個別effect/failure即時通知、receipt count、pending/blocker、四つのrevenue値のunknown/verified、exact-key dedupe | 0.5–1日 |
-| 並行観測 | **Storefront demand loop #1**: browser回復後に公式counterを欠測なく観測し、Coconalaのwinner imitation contractを再利用。buyer problemを前半へ置くtitle以外を固定する | 7日後の閲覧countでkeep/revert。次は一変数だけ変更し、public before/after、second wake mutation 0 | 7日観測 |
-| 5 | **payment後だけself-improvement**: Apply/Storefront別にinquiry→contract→delivery→payment→retention→net marginを帰属し、一度に一変数だけkeep/revert | 実PaymentReceipt cohort、conversion/margin比較、変更前後の公式outcome | 継続運用 |
+| 1 | **Read-only common inventory**: disabled Lancers profileをisolated ownerで復帰し、account identity hash、login、opportunities、messages、applications、active work、listing、contract、finance/payout、official URL、evidence hashをcommon `market-inventory`へ取得する | fresh authenticated inventory、source complete、2回の同値read、marketplace mutation 0、owned tab残存0 |
+| 2 | **First-trust profile**: public profileと32 proposal outcomeを再観測し、Lancers公式の外部実績申請面へCoconala等の真正な受注・完了・評価proofを渡せるかLunaが判断する。absolute-cheapest taskはprofile評価代替にしない | profile before/after、外部実績official ID/stateまたは根拠付きblocked、虚偽0、同一申請replay effect 0 |
+| 3 | **First-review application canary**: review-bearing、bounded、objective acceptance、credible buyer、non-negative net、再利用可能proofを持つ一件をLunaが個別判断し、common Browser ACIとeffect kernelで送信する | exact project/proposal ID、strategy/profile/proof version、official readback、next replay submit 0 |
+| 4 | **Maximal positive-lifetime-EV acquisition**: 各fresh候補をLunaが個別判断し、別jobは最大並列、同じjobだけlease直列化する。Lancers native自動提案はcandidate-level Luna intent/readbackを証明するまでinventory-only | 全positive-EV候補にdecision、各proposal official ID、dynamic capacity、overbooking 0、duplicate 0、provider throttle時の縮退receipt |
+| 5 | **Negotiate / Contract completion**: buyer-last、Storefront相談、client-originated月額offer、仮払い済みactive contractをcommon Sales stageへ接続する。イベントがない時は正常no-op | message/offer/contract exact ID、ContractReceipt、次wake duplicate reply/承諾 0、存在しないbuyerへのeffect 0 |
+| 6 | **Paid fulfillment and finance**: funded contractだけをcommon project→general-agent workflow→独立QA→official deliveryへ進め、fee/refund/payout batchと銀行transactionを一意照合する | 仮払い前work 0、成果物hash、独立QA、DeliveryReceipt、PaymentReceipt、payout `received`、bank delta 0、重複納品0 |
+| 7 | **Learning and OSS conformance**: profile/proof/proposal/price strategyをfunnel outcomeへ帰属し、一度に一変数だけkeep/revertする。redacted fixture、provider conformance、zero-spend install、secret/PII scanをLancersで通す | first honest review、received net、strategy verdict、clean fixture/conformance、secret 0。二市場received後にOSS stable gate |
+| 並行観測 | **Storefront demand**: fresh inventory復帰後にcanonical listing counterを欠測なく観測し、実需要が出るまで新generic listingを増やさない | official before/after、同一snapshot mutation 0、first inquiry/order exact ID |
 
-残る実装の集中時間はbest 5日、base 11日、worst 19日以上である。これはbuyer応答・検収・provider payoutの待ち時間を含まない。
-最初の入金はbest 1–3週、base 3–8週、worst 8週以上、$10K net MRRはbest 2–4か月、base 4–9か月、
-worst 9か月以上または未達とする。最大の不確実性はcodeではなく、商品価格でbuyerが契約し継続するconversion/retentionである。
+実装はstraight shotのbig bangではなく、上表のofficial receiptを一つずつ閉じる。buyer event待ちは同じresourceだけを待たせ、
+Upwork、Storefront、別job、次市場のread-only inventoryを止めない。最大の不確実性はcode量ではなく、最初の選定・評価・継続率である。
 
 ### 18.7 Storefront first demand experiment
 
