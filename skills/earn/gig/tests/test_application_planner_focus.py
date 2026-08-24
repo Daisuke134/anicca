@@ -36,4 +36,7 @@ def test_common_policy_never_uses_skills_as_admission_or_execution_authority():
     assert "never an application whitelist" in policy
     assert "Missing an exact Skill" in normalized
     assert "Compose or build the execution method after contract" in normalized
+    assert "Submit is the default for every feasible job" in normalized
+    assert "unverified payment" in normalized
+    assert "never standalone skip reasons" in normalized
     assert policy in prompt

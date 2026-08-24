@@ -86,6 +86,8 @@ def test_prompts_require_owner_readable_natural_language_reasons(tmp_path, monke
         assert "never an application whitelist" in prompt
         assert "INSTALLED_SKILLS=" not in prompt
         assert "installed Skills can complete" not in prompt
+        assert "Submit is the default for every feasible job" in " ".join(prompt.split())
+        assert "unverified payment" in prompt
 
 
 @pytest.mark.parametrize("mutation", [

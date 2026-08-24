@@ -137,8 +137,10 @@ def batch_planner_prompt(
     return f"""Return one schema-valid decision for every item in OFFICIAL_CANDIDATES, in the same
 order, with no omission. Copy each resource_id into decision.job_id and proposal.job_id.
 {common_policy}
-Return submit for every candidate the general agent can truthfully complete, whose expected value is
-positive, and whose official Connects cost is covered; otherwise return skip with that candidate's own
+Return submit for every candidate the general agent can truthfully complete and whose official Connects
+cost is covered. Do not use missing rate, unverified payment, new-client history, competition, duration
+or Connects cost alone as skip; price and ask questions instead. Return skip only under the common policy
+or when displayed compensation makes every truthful scoped offer clearly negative; include that candidate's own
 natural-language reasons. Never limit the batch to one winner. Compare candidates, but do not suppress
 one profitable candidate because another is better. Use only supplied facts. Never invent experience, identity,
 availability, credentials, portfolio, results, client facts, requirements, questions or scope.
