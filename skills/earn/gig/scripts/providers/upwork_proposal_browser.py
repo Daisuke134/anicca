@@ -210,41 +210,34 @@ async def submit_proposal_after_fence(
             await _trusted_click(ws, point, cid + 2)
             await asyncio.sleep(1)
             explainer = await _call(ws, "Runtime.evaluate", {
-                "expression": """(()=>{const n=x=>(x||'').replace(/\\s+/g,' ').trim(),d=[...document.querySelectorAll('[role=dialog]')].find(x=>x.offsetParent&&n(x.innerText).includes('Use Connects to submit proposals'));if(!d)return null;const b=[...d.querySelectorAll('button')].find(x=>n(x.innerText)==='Close');if(!b)throw Error('upwork_connects_explainer_close_missing');b.scrollIntoView({block:'center',inline:'center'});const r=b.getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2}})()""",
+                "expression": """(()=>{const n=x=>(x||'').replace(/\\s+/g,' ').trim(),d=[...document.querySelectorAll('[role=dialog]')].find(x=>x.offsetParent&&n(x.innerText).includes('Use Connects to submit proposals'));if(!d)return false;const b=[...d.querySelectorAll('button')].find(x=>n(x.innerText)==='Close');if(!b)throw Error('upwork_connects_explainer_close_missing');b.click();return true})()""",
                 "returnByValue": True,
             }, cid + 4)
-            close_point = explainer.get("result", {}).get("result", {}).get("value")
-            if isinstance(close_point, dict):
-                await _call(ws, "Input.dispatchKeyEvent", {
-                    "type": "rawKeyDown", "key": "Escape", "code": "Escape",
-                }, cid + 5)
-                await _call(ws, "Input.dispatchKeyEvent", {
-                    "type": "keyUp", "key": "Escape", "code": "Escape",
-                }, cid + 6)
+            if explainer.get("result", {}).get("result", {}).get("value") is True:
                 await asyncio.sleep(1)
                 closed = await _call(ws, "Runtime.evaluate", {
                     "expression": "![...document.querySelectorAll('[role=dialog]')].some(x=>x.offsetParent)",
                     "returnByValue": True,
-                }, cid + 7)
+                }, cid + 5)
                 if closed.get("result", {}).get("result", {}).get("value") is not True:
                     raise ValueError("upwork_connects_explainer_close_failed")
                 control = await _call(ws, "Runtime.evaluate", {
                     "expression": submit_click_expression(job_id), "returnByValue": True,
-                }, cid + 8)
+                }, cid + 6)
                 point = control.get("result", {}).get("result", {}).get("value")
                 if not isinstance(point, dict):
                     raise ValueError("upwork_submit_control_missing")
-                await _trusted_click(ws, point, cid + 9)
+                await _trusted_click(ws, point, cid + 7)
             await asyncio.sleep(5)
             readback = await _call(ws, "Runtime.evaluate", {
                 "expression": submit_readback_expression(job_id), "returnByValue": True,
-            }, cid + 11)
+            }, cid + 9)
             value = readback.get("result", {}).get("result", {}).get("value")
             if isinstance(value, dict) and value.get("state") == "unknown":
                 diagnostic = await _call(ws, "Runtime.evaluate", {
                     "expression": """(()=>{const n=x=>(x||'').replace(/\\s+/g,' ').trim();return{url:location.href,buttons:[...document.querySelectorAll('button')].filter(x=>x.offsetParent).map(x=>n(x.innerText)).filter(Boolean).slice(-12),dialogs:[...document.querySelectorAll('[role=dialog]')].filter(x=>x.offsetParent).map(x=>n(x.innerText).slice(0,300)),alerts:[...document.querySelectorAll('[role=alert],.air3-alert')].filter(x=>x.offsetParent).map(x=>n(x.innerText).slice(0,300))}})()""",
                     "returnByValue": True,
-                }, cid + 12)
+                }, cid + 10)
                 detail = diagnostic.get("result", {}).get("result", {}).get("value")
                 raise ValueError("upwork_proposal_submit_unconfirmed:" + json.dumps(
                     detail, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
