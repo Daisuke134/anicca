@@ -10,6 +10,7 @@ import secrets
 import subprocess
 import sys
 import webbrowser
+from datetime import datetime, timezone
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -19,6 +20,7 @@ from typing import Any
 REPO = Path(__file__).resolve().parents[1]
 HTML = REPO / "apps" / "oss-onboarding" / "index.html"
 GRAPH = REPO / "scripts" / "integration-onboarding.py"
+PROFILE_CLI = REPO / "scripts" / "life-manager-profile.py"
 CHILDREN: dict[str, subprocess.Popen[bytes]] = {}
 
 
@@ -103,6 +105,48 @@ def _connect(integration_id: str) -> dict[str, Any]:
     return {"status": "started", "integration_id": integration_id}
 
 
+def _profile_status() -> dict[str, Any]:
+    _code, value = _json_command([sys.executable, str(PROFILE_CLI), "status"])
+    return value
+
+
+def _store_basics(value: dict[str, Any]) -> dict[str, Any]:
+    allowed = {
+        "locale.language": ("Use one owner language across Life Manager", {"en", "ja"}),
+        "locale.timezone": ("Schedule every loop in the owner's timezone", None),
+        "notifications.channel": ("Send owner-visible outcomes through the chosen channel", {"local", "email", "telegram"}),
+    }
+    now = datetime.now(timezone.utc).isoformat()
+    stored = []
+    for field_id, (purpose, choices) in allowed.items():
+        raw = value.get(field_id)
+        if not isinstance(raw, str) or not raw.strip() or len(raw) > 120:
+            raise ValueError(f"invalid profile field: {field_id}")
+        clean = raw.strip()
+        if choices is not None and clean not in choices:
+            raise ValueError(f"invalid profile field: {field_id}")
+        if field_id == "locale.timezone" and not all(
+            part and part.replace("_", "").replace("-", "").isalnum()
+            for part in clean.split("/")
+        ):
+            raise ValueError("invalid profile field: locale.timezone")
+        field = {
+            "privacy": "reusable", "source": "owner_input", "purpose": purpose,
+            "scopes": ["*"], "updated_at": now, "expires_at": None,
+            "consent": {"granted": True, "granted_at": now},
+            "value": clean, "secret_ref": None, "evidence_sha256": None,
+        }
+        completed = subprocess.run(
+            [sys.executable, str(PROFILE_CLI), "put", "--field-id", field_id],
+            cwd=REPO, input=json.dumps(field), text=True, capture_output=True,
+            timeout=10, check=False,
+        )
+        if completed.returncode != 0:
+            raise RuntimeError(f"profile storage failed: {field_id}")
+        stored.append(field_id)
+    return {"status": "stored", "fields": stored}
+
+
 class Handler(BaseHTTPRequestHandler):
     token = ""
 
@@ -131,16 +175,25 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as error:
                 self._json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": str(error)[:160]})
             return
+        if self.path == "/api/profile":
+            self._json(HTTPStatus.OK, _profile_status())
+            return
         self._json(HTTPStatus.NOT_FOUND, {"error": "not found"})
 
     def do_POST(self) -> None:  # noqa: N802
-        if self.path not in {"/api/connect", "/api/enable-all"}:
+        if self.path not in {"/api/connect", "/api/enable-all", "/api/profile"}:
             self._json(HTTPStatus.NOT_FOUND, {"error": "not found"})
             return
         if self.headers.get("x-life-manager-token") != self.token:
             self._json(HTTPStatus.FORBIDDEN, {"error": "invalid local action token"})
             return
         try:
+            if self.path == "/api/profile":
+                length = int(self.headers.get("content-length") or 0)
+                if length <= 0 or length > 8192:
+                    raise ValueError("invalid request size")
+                self._json(HTTPStatus.OK, _store_basics(json.loads(self.rfile.read(length))))
+                return
             if self.path == "/api/enable-all":
                 manifests = [row for row in _graph()["integrations"] if row["state"] != "ready"]
                 results = [_connect(row["integration_id"]) for row in manifests]
