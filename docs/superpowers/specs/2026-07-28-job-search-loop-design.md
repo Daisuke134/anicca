@@ -585,7 +585,7 @@ This is the remaining implementation-order SSOT. Only the first
 | 48da | Project all five target ATS adapters from the event Ledger | `implementation_done_release_gate` | After the live Greenhouse outcome, `summary.v2` correctly counts Greenhouse `submit_unknown=1` but its required/confirmed adapter lists still contain only Ashby and Workday. RED requires Ashby, Greenhouse, Lever, Workday and generic. GREEN uses the same event-derived `ever_submitted` rule for all five; historical generic evidence remains visible, Lever stays unconfirmed until 10S, and overall completion remains false. Summary tests pass 3/3 and full regression passes 269/269. Release/live projection readback remain. |
 | 48db | Serialize an impatient model command through a bounded runtime lock | `implementation_done_release_gate` | At the end of `daily-20260824-083935`, Luna starts `observe` while a GitLab Resume Attach command is still waiting for `Page.fileChooserOpened`. The observe command fails the nonblocking command lock and the valid Attach button times out before any file is set, ending the row pre-fence. RED holds the command lock briefly and requires the second command to wait, and separately reproduces fileChooser timeout. GREEN serializes commands for at most 30 seconds and converts a no-chooser upload to fresh exit-zero `action_rejected / upload_control_did_not_open_file_chooser`; other upload failures and post-fence paths remain fail-closed. Direct runtime tests pass 16/16 and full regression passes 271/271. Release/live retry remain. |
 | 48dc | Park every non-Workday application lane | `pending_actionable` | The existing launchd owner may refresh diagnostic metadata, but Ashby, Greenhouse, Lever, and generic rows cannot enter the browser lane, acquire a submit intent, or consume a fence. A released production wake proves `active_provider=workday`, zero non-Workday browser navigation, and zero non-Workday submit effects. This closes 10P1. |
-| 48dd | Replace broad Workday title matching with model-owned evidence qualification | `pending_after_48dc` | The current discovery promotes a role from title/location regex alone and never compares the official description with Candidate Memory or the selected resume. The existing model lane must receive the complete official job description, grounded candidate experience, preferences, and prior same-employer/title Ledger rows. It returns one schema-valid `qualified`, `rejected`, or `hold` decision with requirement-by-requirement resume evidence, unsupported gaps, interview thesis, and resume choice. No keyword list, regex, fixed score, title allowlist, or deterministic code may make the fit judgment. Missing description, missing grounding, invalid output, unsupported mandatory experience, or uncertainty fails closed before `materials_ready`. The two currently pending Salesforce Workday rows must pass this gate before any Submit. One obviously unsupported role is rejected without browser submission; one genuinely matched fresh role reaches authoritative `submitted`, Telegram, and next-wake duplicate 0. This closes 10P2. |
+| 48dd | Replace broad Workday title matching with model-owned evidence qualification | `pending_after_48dc` | The current discovery promotes a role from title/location regex alone and never compares the official description with Candidate Memory or the selected resume. The existing model lane must receive the complete official job description, grounded candidate experience, preferences, prior same-employer/title Ledger rows, and compensation evidence when published. It returns one schema-valid `qualified`, `rejected`, or `hold` decision with requirement-by-requirement resume evidence, unsupported gaps, interview thesis, Tokyo/Japan feasibility, target-compensation thesis, uncertainty, and resume choice. No keyword list, regex, fixed score, title allowlist, or deterministic code may make the judgment. A known base below USD 120,000 annual equivalent is rejected; unpublished compensation may proceed only with a grounded, explicitly uncertain thesis and no invented range. Missing description, missing grounding, invalid output, unsupported mandatory experience, or unresolved material uncertainty fails closed before `materials_ready`. The two currently pending Salesforce Workday rows must pass this gate before any Submit. One obviously unsupported role is rejected without browser submission; one genuinely matched fresh role aligned with the compensation goal reaches authoritative `submitted`, Telegram, and next-wake duplicate 0. This closes 10P2. |
 | 48de | Expand fresh Workday discovery without semantic repost duplication | `pending_after_48dd` | Replace the fixed NVIDIA/Workday/Salesforce-only source set with official Workday tenants discovered from the existing target-company/search context. Exact canonical URL/requisition dedupe remains deterministic. The model compares a proposed row with prior same-company/title/location history and identifies a repost or materially different position from evidence; code only validates and persists that structured judgment. A production wake discovers a new, fit-qualified Workday position outside the original three tenants, while a controlled repost is recorded without a new submit intent. This closes 10P3. |
 | 49 | Drive the fresh Workday form with the LLM agent only | `live_proven` | Two consecutive NVIDIA Workday rows were driven through CloakBrowser CDP `:9222` by Luna/xhigh from fresh visible observations and screenshots, without a scripted question mapper or fixed page workflow. |
 | 50 | Reuse or create the Workday tenant account inside the same agent session | `live_proven` | The same tenant credential/session was reused by Luna without a second browser or executor. |
@@ -1136,11 +1136,11 @@ The loop optimizes for interviews, not raw submission count:
 
 | Objective | Rule |
 |---|---|
-| Application objective | Attempt each new unique eligible role discovered on the configured recurring cadence; no artificial daily count cap. ATS/provider rate limits, duplicate protection, truth requirements and side-effect fences remain mandatory. |
+| Application objective | Apply only to new unique roles for which the model can state a grounded interview case from the resume and official job description. Submission count is not a success metric. |
 | Location | Tokyo on-site/hybrid, Japan-remote, or global remote that accepts Japan-based workers |
-| Compensation | Prefer JPY 7M–10M+; hard reject known compensation below JPY 5.5M |
-| Experience requirements | Do not pre-filter solely on a stated years-of-experience requirement; shoot the application when the ATS can be completed truthfully. Never invent years or other candidate facts; an unverified mandatory field blocks only that submission. |
-| Role families | Applied AI/agent/GenAI engineering; AI product and technical program management; solutions/consulting; AI business development and partnerships; technical account management, customer success and sales engineering; agentic fintech/crypto/consumer AI |
+| Compensation | Outcome target is at least USD 120,000 annual gross base, stronger than six figures. Reject a known base below the configured target. When compensation is unpublished, the model must provide an evidence-backed target-compensation thesis and mark it uncertain; it may never invent a range. FX source/date and annualization are required at offer verification. |
+| Experience requirements | Compare every mandatory requirement with dated resume/Candidate Memory evidence. An unsupported material requirement produces `rejected` or `hold`, never an optimistic application. Never invent years, skills, management scope, credentials, or achievements. |
+| Role direction | The career preferences describe desired work, but no title or family is an automatic allowlist. The model must prove the specific role is a credible next step and explain the interview case from demonstrated experience. |
 | Hard exclusions | OpenAI, Anthropic, Palantir, Cursor, Accenture, KPMG, Deloitte, Ernst & Young/EY, and PwC/PricewaterhouseCoopers; citizenship or clearance requirements the candidate cannot meet; relocation-only roles outside Japan; already-applied roles; material skill fabrication |
 | Truthful zero | If fewer than two eligible jobs exist, submit the eligible count and report the shortfall; do not lower hard filters or claim success |
 
@@ -1985,27 +1985,26 @@ Every event uses a stable content-addressed outbox key. A changed same-day resul
 send one correction; an identical run remains silent. Life Manager consumes the same
 event stream and `summary.v2`, so Telegram and the local dashboard cannot disagree.
 
-## 6. Ranking
+## 6. Model-owned evidence ranking
 
-The deterministic score is 0–100:
+There is no deterministic 0–100 score, keyword weight, title allowlist, or numeric
+eligibility threshold. Those mechanisms previously promoted implausible Workday
+roles and are superseded by 10P2.
 
-| Dimension | Weight |
-|---|---:|
-| AI/agent role and demonstrated skill match | 30 |
-| Enterprise/financial-services/Databricks/Salesforce leverage | 20 |
-| Consumer AI/product/Swift/growth leverage | 15 |
-| Location and Japan-remote feasibility | 15 |
-| Compensation | 10 |
-| Mission interest: AI, fintech, crypto, consumer agents | 10 |
+For each official posting, the model compares the full description with dated
+Candidate Memory and resume evidence, then returns structured evidence for:
 
-Rules:
+- mandatory-requirement coverage and unsupported material gaps;
+- why this candidate can plausibly win an interview for this exact role;
+- Tokyo/Japan work-location feasibility;
+- credible progression toward at least USD 120,000 annual gross base;
+- the resume variant that proves the case; and
+- one decision: `qualified`, `rejected`, or `hold`.
 
-- `75+`: eligible for autonomous application.
-- `65–74`: retain for weekly review/learning, do not auto-submit.
-- `<65`: reject.
-- Unknown compensation earns neutral points; known compensation below the hard floor
-  is rejected.
-- A model may explain a score but cannot change deterministic hard filters.
+Code validates the schema, exact identity, provenance references, and safety fences;
+it does not decide job fit. Known compensation below the target is rejected.
+Unpublished compensation remains visibly uncertain and requires a grounded thesis,
+never an invented estimate. Only `qualified` enters `materials_ready`.
 
 ## 7. Resume and material policy
 
@@ -2323,7 +2322,7 @@ must accumulate in the live loop:
 | 10O | `JOB-SCHEDULER-POLICY-10O`: align cadence and application objective | `implemented` | The quota short-circuit is removed and pending `materials_ready` rows are exposed. The installed production policy is every 30 minutes (`StartInterval=1800`); final completion evidence is owned by 10P. |
 | 10P | `JOB-WORKDAY-E2E-MODEL-10P`: full framework plus Workday E2E | `completed` | JR2008507 closes with exact UI, receipt `1a02ff31ecb7353d`, Ledger `submitted`, Telegram `30852`/`30853`, v2 agreement, immediate dedupe 0, and unseen JR2020208-1 continuation through the one existing owner. |
 | 10P1 | `JOB-WORKDAY-ONLY-10P1` | `in_progress` | Park every non-Workday application lane and prove one production wake has zero non-Workday browser/submission effects |
-| 10P2 | `JOB-WORKDAY-FIT-QUALIFICATION-10P2` | `pending_after_10P1` | Prompt-owned full-description/resume evidence qualification replaces title regex; current pending rows are requalified before Submit; one unsupported role is safely rejected and one matched fresh role closes with authoritative submission plus dedupe 0 |
+| 10P2 | `JOB-WORKDAY-FIT-QUALIFICATION-10P2` | `pending_after_10P1` | Prompt-owned full-description/resume/interview/target-compensation evidence qualification replaces title regex and fixed scoring; current pending rows are requalified before Submit; one unsupported role is safely rejected and one matched fresh role aligned with the USD 120k base goal closes with authoritative submission plus dedupe 0 |
 | 10P3 | `JOB-WORKDAY-DIVERSE-DISCOVERY-10P3` | `pending_after_10P2` | Official Workday discovery expands beyond NVIDIA/Workday/Salesforce and model-owned semantic comparison prevents a repost with a new URL/requisition from creating another submit intent |
 | 10Q | `JOB-ASHBY-E2E-MODEL-10Q` | `broken_unverified_pending_after_workday` | Historical `submit_unknown` evidence is not accepted; rebuild from zero only after Workday is complete |
 | 10R | `JOB-GREENHOUSE-E2E-MODEL-10R` | `broken_unverified_pending_after_10Q` | Historical form interaction and `submit_unknown` evidence are not accepted; rebuild from zero after Ashby |
@@ -2349,7 +2348,7 @@ not start merely because their design is already written:
 | `JOB-SCHEDULER-POLICY-10O` | `completed` | The legacy two-slot gate is removed, pending `materials_ready` rows are exposed, and the installed owner runs every 1800 seconds. Authoritative Workday outcome and repeated-wake progress are proven in 10P. |
 | `JOB-WORKDAY-E2E-MODEL-10P` | `completed` | JR2008507 exact UI, authoritative receipt, Ledger, Telegram and immediate dedupe/next-row evidence agree. |
 | `JOB-WORKDAY-ONLY-10P1` | `in_progress` | The existing owner runs Workday only; every other provider is parked and one production wake proves zero non-Workday browser/submission effects. |
-| `JOB-WORKDAY-FIT-QUALIFICATION-10P2` | `pending_after_10P1` | Full official description plus Candidate Memory/resume evidence goes to the model; only grounded, schema-valid fit decisions can reach `materials_ready`; existing pending rows are requalified; one supported submit and one unsupported rejection are live-proven. |
+| `JOB-WORKDAY-FIT-QUALIFICATION-10P2` | `pending_after_10P1` | Full official description plus Candidate Memory/resume, Tokyo/Japan feasibility, interview thesis, and USD 120k target-compensation evidence go to the model; only grounded, schema-valid fit decisions can reach `materials_ready`; existing pending rows are requalified; one supported submit and one unsupported rejection are live-proven. |
 | `JOB-WORKDAY-DIVERSE-DISCOVERY-10P3` | `pending_after_10P2` | Official discovery expands beyond the fixed three tenants and model-owned semantic history comparison prevents a repost under a new URL/requisition from producing a duplicate submit intent. |
 | `JOB-ASHBY-E2E-MODEL-10Q` | `broken_unverified_pending_after_workday` | Prior evidence is diagnostic only. Start from zero after Workday and require a fit-qualified job, authoritative provider completion, Ledger, Telegram, and next-wake duplicate 0. |
 | `JOB-GREENHOUSE-E2E-MODEL-10R` | `broken_unverified_pending_after_10Q` | Prior evidence is diagnostic only. Start from zero after Ashby under the same authoritative gate. |
