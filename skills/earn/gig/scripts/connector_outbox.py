@@ -1929,7 +1929,7 @@ class ConnectorOutbox:
         self, intent: Any, *, authorization: Any, connects_current: int,
         connects_evidence_sha256: str, no_effect_readback_hash: str, now: int,
     ) -> dict[str, Any]:
-        """Reopen only after official resource absence and unchanged spend prove effect 0."""
+        """Reopen after absence and the ledger explain every balance change as another effect."""
         values = self._provider_effect_values(intent, authorization)
         now = self._require_timestamp("now", now)
         if (
@@ -1942,12 +1942,20 @@ class ConnectorOutbox:
             existing = connection.execute(
                 "SELECT * FROM provider_effect_intents WHERE effect_key=?", (values[0],),
             ).fetchone()
+            intervening_spend = 0 if existing is None else connection.execute(
+                """SELECT COALESCE(SUM(connects_pre-connects_post),0)
+                   FROM provider_effect_intents
+                   WHERE provider=? AND account_key=? AND effect_key<>?
+                     AND reconciliation_state='verified' AND updated_at>?
+                     AND connects_pre IS NOT NULL AND connects_post IS NOT NULL""",
+                (existing["provider"], existing["account_key"], values[0], existing["updated_at"]),
+            ).fetchone()[0]
             if (
                 existing is None or existing["state"] != "reconcile_pending"
                 or existing["reconciliation_state"] != "reconcile_unknown"
                 or existing["proposal_id"] is not None
                 or existing["connects_post"] is not None
-                or existing["connects_pre"] != connects_current
+                or existing["connects_pre"] - intervening_spend != connects_current
             ):
                 raise InvalidTransition("provider no-effect readback is inconsistent")
             connection.execute(

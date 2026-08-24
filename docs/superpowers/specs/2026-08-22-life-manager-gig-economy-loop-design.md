@@ -560,6 +560,13 @@ wake. A verified application appends its WorkEvent and synchronously drives the 
 Telegram outbox before acquisition proceeds, matching Coconala's instant-effect reporting; only the
 official Proposal ID plus Connects readback renders `[Upwork][応募完了]`.
 
+Unknown-effect reconciliation also accounts for later independent effects. Official resource absence
+and an unchanged raw balance prove effect 0 directly. If the raw balance changed, the common ledger may
+reopen only when every delta after the unknown intent is exactly explained by other verified provider
+effects; for example, unknown pre-balance 67, one later verified 21-Connect proposal and current balance
+46 prove the unknown effect spent zero. Any unexplained delta remains reconcile-only. This prevents one
+old unknown resource from blocking unrelated acquisition forever without permitting a blind retry.
+
 ### 4.3 Sales loop
 
 ```text
