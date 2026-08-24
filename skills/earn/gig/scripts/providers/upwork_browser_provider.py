@@ -409,7 +409,7 @@ def seal_inbound_detail(
 ) -> str:
     """Persist one actionable inbound privately for the existing model runner."""
     if (
-        inbound.get("state") not in {"invitation_detected", "direct_offer_detected"}
+        inbound.get("state") not in {"invitation_detected", "direct_offer_detected", "public_job"}
         or not isinstance(inbound.get("resource_id"), str)
         or not isinstance(inbound.get("resource_url"), str)
         or not isinstance(text, str) or not text.strip()
@@ -425,6 +425,15 @@ def seal_inbound_detail(
         "detail_evidence_sha256": evidence_sha256, "observed_at": observed_at,
         "rendered_text": text,
     }
+    if inbound["state"] == "public_job":
+        required = inbound.get("required_connects")
+        available = inbound.get("available_connects_before")
+        if type(required) is not int or type(available) is not int or not 0 <= required <= available:
+            raise ValueError("upwork_inbound_packet_invalid")
+        packet.update({
+            "required_connects": required,
+            "available_connects_before": available,
+        })
     body = json.dumps(packet, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n"
     digest = hashlib.sha256(body.encode()).hexdigest()
     path = root / f"{digest}.json"
@@ -458,12 +467,12 @@ def parse_candidate(
     }
 
 
-async def discover_zero_connect_proposal(
+async def discover_affordable_proposal(
     state: dict[str, Any], *, pass_id: str, sequence: int,
     proposals_dir: Path, inbound_dir: Path, inbound_evidence: Path,
     cursor_path: Path,
 ) -> dict[str, Any] | None:
-    """Reuse the invitation proposal brain for current public jobs costing zero Connects."""
+    """Ask the existing proposal brain about current public jobs the balance can fund."""
     next_page = 2
     if cursor_path.exists():
         cursor = json.loads(cursor_path.read_text(encoding="utf-8"))
@@ -472,7 +481,7 @@ async def discover_zero_connect_proposal(
             raise ValueError("upwork_search_cursor_invalid")
         next_page = cursor["next_page"]
     known = {str(row.get("job_id")) for row in state["candidate_jobs"]}
-    state["zero_connect_discovery"] = {"pages": 0, "inspected": 0, "eligible": 0}
+    state["proposal_discovery"] = {"pages": 0, "inspected": 0, "affordable": 0}
     pages = (1, next_page, next_page + 1)
     for page in pages:
         search_url = SEARCH_URL if page == 1 else f"{SEARCH_URL}&page={page}"
@@ -483,7 +492,7 @@ async def discover_zero_connect_proposal(
         ))
         _, search_hash, search_links = _read_evidence(artifact, search_url)
         state["evidence_sha256"][f"public-search-{page}"] = search_hash
-        state["zero_connect_discovery"]["pages"] += 1
+        state["proposal_discovery"]["pages"] += 1
         jobs = [row for row in _dedupe_links(search_links)
                 if "/jobs/" in row["href"] and row["id"] not in known]
         for offset, job in enumerate(jobs[:10], start=1):
@@ -498,13 +507,15 @@ async def discover_zero_connect_proposal(
                 "title": job["title"], "proposal_payload_sha256": "",
             }
             observed = parse_candidate(candidate, text, digest)
-            state["zero_connect_discovery"]["inspected"] += 1
-            if observed["status"] != "open" or observed["connects_required"] != 0:
+            state["proposal_discovery"]["inspected"] += 1
+            required = observed["connects_required"]
+            if observed["status"] != "open" or type(required) is not int or required > state["balance"]:
                 continue
-            state["zero_connect_discovery"]["eligible"] += 1
+            state["proposal_discovery"]["affordable"] += 1
             packet_sha = seal_inbound_detail({
-                "state": "invitation_detected", "resource_id": job["id"],
-                "resource_url": job["href"],
+                "state": "public_job", "resource_id": job["id"],
+                "resource_url": job["href"], "required_connects": required,
+                "available_connects_before": state["balance"],
             }, text, digest, inbound_dir, state["observed_at"])
             proposal = await asyncio.to_thread(
                 plan_inbound, inbound_dir / f"{packet_sha}.json",
@@ -514,10 +525,6 @@ async def discover_zero_connect_proposal(
             if proposal is None:
                 continue
             public = dict(proposal)
-            public["status"] = "frozen_waiting_for_connects"
-            public.pop("payload_sha256", None)
-            body = json.dumps(public, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n"
-            public["payload_sha256"] = hashlib.sha256(body.encode()).hexdigest()
             proposals_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
             os.chmod(proposals_dir, 0o700)
             _atomic_write(proposals_dir / f"{job['id'].lstrip('~')}.json", public)
@@ -525,10 +532,10 @@ async def discover_zero_connect_proposal(
                      "proposal_payload_sha256": public["payload_sha256"]}
             state["candidate_jobs"].append(parse_candidate(ready, text, digest))
             _atomic_write(cursor_path, {"version": 1, "next_page": page + 1})
-            state["zero_connect_discovery"]["next_page"] = page + 1
+            state["proposal_discovery"]["next_page"] = page + 1
             return public
     _atomic_write(cursor_path, {"version": 1, "next_page": next_page + 2})
-    state["zero_connect_discovery"]["next_page"] = next_page + 2
+    state["proposal_discovery"]["next_page"] = next_page + 2
     return None
 
 
@@ -976,8 +983,8 @@ async def observe(
             state["free_acquisition"] = inbound
         return state
     selected = plan_free_proposal(state, proposals_dir)
-    if selected is None and state["balance"] == 0:
-        selected = await discover_zero_connect_proposal(
+    if selected is None:
+        selected = await discover_affordable_proposal(
             state, pass_id=pass_id, sequence=len(targets) + 21,
             proposals_dir=proposals_dir, inbound_dir=inbound_dir,
             inbound_evidence=inbound_evidence, cursor_path=search_cursor,

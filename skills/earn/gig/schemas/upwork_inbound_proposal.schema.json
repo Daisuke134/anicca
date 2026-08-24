@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Upwork zero-Connect inbound proposal decision",
+  "title": "Upwork proposal decision",
   "type": "object",
   "additionalProperties": false,
   "required": ["decision", "reason_codes", "proposal"],
@@ -17,7 +17,7 @@
         "job_url": {"type": "string", "pattern": "^https://www\\.upwork\\.com/"},
         "job_source_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
         "title": {"type": "string", "minLength": 1, "maxLength": 500},
-        "status": {"type": "string", "const": "frozen_waiting_for_invitation"},
+        "status": {"type": "string", "enum": ["frozen_waiting_for_invitation", "frozen_waiting_for_connects"]},
         "terms": {
           "type": "object",
           "additionalProperties": false,
@@ -26,8 +26,8 @@
             "type": {"type": "string", "enum": ["fixed_price", "hourly"]},
             "bid_usd": {"type": "number", "exclusiveMinimum": 0},
             "delivery_days": {"type": "integer", "minimum": 1, "maximum": 365},
-            "required_connects": {"const": 0},
-            "available_connects_before": {"const": 0}
+            "required_connects": {"type": "integer", "minimum": 0},
+            "available_connects_before": {"type": "integer", "minimum": 0}
           }
         },
         "cover_letter": {"type": "string", "minLength": 80, "maxLength": 5000},
