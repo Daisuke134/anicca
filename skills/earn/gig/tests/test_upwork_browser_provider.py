@@ -61,7 +61,7 @@ def test_verified_proposal_event_carries_official_id_connects_and_quote():
     }
 
     event = provider.proposal_submitted_event(
-        payload, proposal_id="proposal-1", connects_after=81,
+        payload, proposal_id="proposal-1", connects_before=92, connects_after=81,
     )
 
     assert event["state"] == "verified"
