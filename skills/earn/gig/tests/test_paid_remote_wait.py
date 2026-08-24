@@ -157,6 +157,29 @@ def test_paid_direct_maps_valid_blocked_owner_to_pending(tmp_path):
     ) == "pending"
 
 
+def test_remote_owner_prompt_includes_exact_cycle_account_owner_policy(tmp_path):
+    paid = load("paid_direct")
+    root, feedback, _digest = blocked_project(tmp_path)
+    requirements_sha = paid.paid_remote_result.requirements_digest(root, feedback)
+    directive = "Do not contact the buyer for another verification code; use an authorized reusable account."
+    write_json(root / "context/paid-file-operator-policy.json", {
+        "version": 1,
+        "authorized_by": "account_owner",
+        "request_id": root.name,
+        "buyer_feedback_sha256": feedback,
+        "requirements_sha256": requirements_sha,
+        "directives": [directive],
+    })
+
+    prompt = paid._repair_prompt(
+        root, tmp_path / "item.json", feedback, requirements_sha,
+        False, tmp_path / "cdp.py",
+    )
+
+    assert directive in prompt
+    assert "account-owner policy" in prompt
+
+
 def test_current_remote_wait_is_fresh(tmp_path):
     paid = load("paid_direct")
     root, feedback, digest = blocked_project(tmp_path)

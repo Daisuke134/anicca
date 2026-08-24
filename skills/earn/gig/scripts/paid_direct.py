@@ -3391,6 +3391,15 @@ def _repair_prompt(root: Path, item: Path, feedback: str, requirements_sha256: s
         correction = ("A fresh reviewer rejected the prior result. Correct every structured finding, then re-read the "
                       "live target and rewrite owner evidence: "
                       + json.dumps(review_delta, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + ". ")
+    operator_policy_path, operator_policy, operator_policy_sha256 = _file_operator_policy(
+        root, feedback, requirements_sha256,
+    )
+    operator_instruction = (
+        "" if operator_policy_path is None else
+        f"Read and obey the exact-cycle account-owner policy {operator_policy_path} with SHA256 "
+        f"{operator_policy_sha256}: {json.dumps(operator_policy['directives'], ensure_ascii=False)}. "
+        "It may resolve account and workflow choices but never permits false claims or waives buyer requirements. "
+    )
     return (f"You are the {role}. PROJECT_ROOT={root}. Current queue item={item}. "
             f"Read {root / 'context/current.json'} and every read_these_first path, then read the live target. "
             f"Current buyer feedback SHA256={feedback}. {mutation} "
@@ -3400,6 +3409,7 @@ def _repair_prompt(root: Path, item: Path, feedback: str, requirements_sha256: s
             f"Write semantic_contract_sha256={semantic_contract_sha256} into intent, result, and every owned evidence JSON. "
             "The verifier must copy the same digest into its result and evidence and reject any state that does not satisfy "
             "required_effect and required_output. "
+            f"{operator_instruction}"
             f"The canonical accumulated buyer requirements are {root / 'requirements/live-buyer-reply.json'} "
             f"with accumulated requirements SHA256={requirements_sha256}. Independently read that file; its feedback_sha256 must match the current feedback. "
             f"{target_contract} "
