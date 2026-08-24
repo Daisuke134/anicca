@@ -942,6 +942,12 @@ U13 atomic order:
     and continue to the remaining candidates. Do not weaken or retry any external proposal effect.
     Regression remains `156 passed`; next wake must exit 0 unless a required account-level surface,
     rather than one optional acquisition candidate, is unavailable.
+78. **MISSING CLIENT RATE IS NOT A SELLER-PRICE BLOCKER:** the corrected native-feed wake still
+    skipped its best fit because the job detail omitted an hourly range. Upwork asks the freelancer to
+    propose the rate; this is a seller decision, not an invented client fact. When a client range is
+    shown, Luna stays within it. When absent, Luna chooses a reasonable rate from scope, verified Skill
+    capacity, delivery effort and positive expected value and states the assumption. Experience,
+    credentials, scope and client facts remain immutable. Prompt SHA changes; regression is `156 passed`.
 
 U14 atomic order:
 
