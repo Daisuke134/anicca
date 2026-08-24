@@ -75,9 +75,9 @@ Storefront work.
     signed-out clean-Mac and pre-auth effect-zero receipts; no signup-to-bank-income claim
     is permitted before the pilots and bank arrival below.
     Latest implementation checkpoint: fresh remote shallow clone
-    `50d6e146b688a31047e999fb7e5097bc86106b9b` passes OSS self-contained 11/11,
-    compiles all five onboarding/Storefront entrypoints, passes both installer shell
-    syntax checks, and has zero Gig-tree gitleaks findings. This is package evidence,
+    `d8e16b4cfc861084030d8f1504a33b113a109a64` passes OSS self-contained 11/11,
+    compiles all five onboarding/Storefront entrypoints, passes all three installer shell
+    syntax and ShellCheck checks, and has zero Gig-tree gitleaks findings. This is package evidence,
     not a substitute for the three live pilots below.
     A clean-Mac one-line bootstrap now uses macOS curl, installs Homebrew/Git only
     when missing, clones or fast-forwards `~/life-manager`, and enters the same Coconala
