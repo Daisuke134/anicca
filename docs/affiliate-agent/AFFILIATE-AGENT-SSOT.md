@@ -8221,11 +8221,17 @@ Current implementation state:
   0, but correctly returns `already published this half-hour slot
   (2026-08-24T17:30)` because the manual canary occupies that same state slot.
   It proves the duplicate guard but does not count toward the three public
-  calendar effects. The next eligible proof boundary is 18:15.
+  calendar effects. The 18:15 Browser-transport opportunity reaches XT01 but
+  publishes nothing because of the corrected weighted-length mismatch. The user
+  then selects Postiz as the continuing production transport. Commit
+  `29bc34d7b` and production release `29bc34d7b` restore x-tweeter Postiz
+  transport; launchctl readback returns `X_REPOST_PUBLISH_TRANSPORT => postiz`.
+  The next eligible Postiz calendar proof boundary is 18:45.
 
 ### Shared browser publisher migration
 
-Repository history proves this is a restoration, not a new publisher design.
+Repository history proves the browser fallback is a restoration, not a new
+publisher design.
 Commit `95d4c151e` replaced the browser composer with Postiz; its parent contains
 the prior Playwright implementation that opens a dedicated compose tab, types an
 Original or Quote plus source URL, submits through X's own composer, verifies the
@@ -8239,25 +8245,15 @@ unknown-effect fixes while restoring only that publish effect.
   unknown-effect fencing. Tests prove the selector never invokes both
   transports, Quote types body plus source once, submits once, and closes the
   clean composer. x_post tests are 15/15 and x-tweeter tests are 5/5. Production
-  remains Postiz until XB02 canaries pass.
-- [ ] **XB02 Generic browser canary.** Publish one x-repost Quote and one
-  x-tweeter Original through the same shared browser publisher; exact-read both
-  permalinks and replay with duplicate zero.
-  First natural x-tweeter browser run starts at 18:15 and reaches XT01 with a
-  source-grounded Vercel/open-model comparison, but publishes nothing because
-  XT01 incorrectly capped body-plus-source at 250 while the proven body gate
-  reserves 250 before the fixed 23-character X URL cost. Commit `42408237d`
-  corrects XT01 to X's real 280 weighted limit; all source, critic, novelty, and
-  spam gates remain unchanged. Production release `42408237d` awaits the 18:45
-  natural canary.
-- [ ] **XB03 Affiliate browser result contract.** Remove the assumption that a
-  successful Affiliate effect must have a Postiz submission ID; bind browser
-  effects to job/effect/text/content hashes plus exact X permalink.
-- [ ] **XB04 Production cutover.** Set both owners to browser transport, remove
-  Postiz integration variables from live plists, and verify three staggered
-  boundaries without Postiz calls.
-- [ ] **XB05 Postiz removal.** Remove live Postiz API/key/integration code and
-  retain old receipts only as immutable historical evidence.
+  remains available behind the explicit selector.
+
+The user chooses Postiz for current production because it already has exact
+successful permalink evidence. Browser canaries, Affiliate browser result
+adaptation, production browser cutover, and Postiz removal are deferred and are
+not remaining completion gates. Both live owners publish through the same
+`x_post.py` Postiz path and use the same browser lease for candidate collection
+and exact public readback. The browser publisher remains tested fallback code;
+it is not active transport.
 
 ### Loop runtime protocol — not Codex's design TODO
 
@@ -8270,8 +8266,9 @@ preventing one of those outcomes.
 Current authoritative state:
 
 - Production Affiliate release is `9d3a91413b96b6eb1e9b8a9bf1892ee35fd3dc69`.
-  Production x-repost release is
-  `aa5ca581ab498763c46986e5c6e64a51954124db`.
+  Production shared X release is `29bc34d7b487551fe7b07e08a3b73b3e9916bf6b`;
+  x-repost is Quote-only at `:00/:30`, x-tweeter is Original-only at `:15/:45`,
+  and both live plists select Postiz publication plus browser readback.
 - Active placement is `elevenlabs-discovered-caption-generator-en-1`; its exact
   X permalink is `https://x.com/selawmqt/status/2091754957448040906`.
 - D01–D15 are complete. D16 has one public quote effect with duplicate zero; its
