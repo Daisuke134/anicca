@@ -7721,21 +7721,31 @@ the named production evidence:
   `20260824T133404-ee5d3f0b` generates payload `8325983e...` for job
   `4ceff8ec...`; claim count remains 1 and no X post occurs. D05 is now the
   first unchecked item.
-- [ ] **D05 X effect return.** After real publication, return the exact X
+- [x] **D05 X effect return.** After real publication, return the exact X
   permalink, provider post ID, content hash, and placement ID to Affiliate.
   Evidence: public X readback and one terminal delivered receipt.
-  In progress: `f6899859a` adds the existing Postiz/X effect and a terminal
+  Done: `f6899859a` adds the existing Postiz/X effect and a terminal
   result fence; `b5bc914d2` fixes browser lease ordering and installs release
   `20260824T134529-b5bc914d` with all runtime dependencies. The first production
   attempt returns Postiz HTTP 400 with confirmed `NO_EFFECT`: result count 1,
   post URL/provider ID absent, and posted ledger delta zero. Public owned page
   readback is HTTP 200 and contains the exact CTA, so the immediate blocker is
   provider submission validation rather than landing availability. Commit
-  `d0f188227` adds redacted Postiz error-message capture. D06 must safely requeue
-  this confirmed no-effect once; D05 remains unchecked until exact X permalink
-  and provider submission ID exist.
-- [ ] **D06 Queue reconciliation.** Resume ambiguous/partial jobs without a
+  `d0f188227` identifies the exact safe message `post is too long, please fix
+  it`; `ca6b6e3da` preserves the raw-297 payload, creates revision 1 at raw 219
+  / weighted 175 with a new text hash, and performs the second safe retry.
+  Production owner publishes exactly once at
+  `https://x.com/selawmqt/status/2091754957448040906`; Postiz submission ID is
+  `cmt6s1k8i0faiqk0yitkb5evg`. Terminal receipt binds job `4ceff8ec...`, effect
+  `f9639316...`, caption-generator placement, content `c2de6762...`, and revised
+  text `7d4a8ae5...`. Affiliate owner readback raises exact joined campaigns 5→6.
+- [x] **D06 Queue reconciliation.** Resume ambiguous/partial jobs without a
   second post. Evidence: second wake performs zero duplicate external effects.
+  Done: confirmed no-effect retry history is append-only
+  `NO_EFFECT → RETRY_READY(1) → NO_EFFECT → RETRY_READY(2) → POSTED`; an
+  `UNVERIFIED` result remains non-retryable. A post-terminal owner wake keeps
+  result rows 5→5 and exact job posts 1→1, proving duplicate external effects
+  zero. D07 is now the first unchecked item.
 - [ ] **D07 Exact-join repair.** Backfill only provable historical X-to-placement
   joins and leave all others explicitly unjoined. Evidence: joined count rises
   without guessed attribution; current baseline is 5 joined / 84 unjoined.
@@ -7830,8 +7840,8 @@ Current authoritative state:
   before release replacement. It is no longer a valid wait gate; the next
   existing-owner wake retries immediately using ChatGPT account 2. Rolling
   money is `NO_TRANSACTIONS`; approved, paid, pending, and reversed are all zero.
-- X activity is not yet acquisition distribution: 94 Repost actions are
-  observed, but only 5 join an exact Affiliate campaign URL and 89 are unjoined.
+- X activity is not yet sufficient acquisition distribution: 95 Repost actions
+  are observed, 6 join an exact Affiliate campaign URL, and 89 are unjoined.
   Follower growth and X impressions have no official denominator, so post count
   cannot be called account growth. The active CTA child has only 2 provider
   clicks / 2 unique at its fixed counter baseline and zero later delta or
