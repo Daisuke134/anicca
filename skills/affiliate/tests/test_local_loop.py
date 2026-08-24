@@ -23,6 +23,35 @@ SPEC.loader.exec_module(MODULE)
 
 
 class LocalLoopTest(unittest.TestCase):
+    def test_x_post_metrics_append_only_when_exact_reach_changes(self):
+        with tempfile.TemporaryDirectory() as root:
+            state, repost = Path(root) / "affiliate", Path(root) / "repost"
+            repost.mkdir(parents=True)
+            post_url = "https://x.com/selawmqt/status/123"
+            MODULE.append(repost / "posted.jsonl", {
+                "kind": "affiliate_distribution", "affiliate_job_id": "1" * 64,
+                "affiliate_placement_id": "caption-en-1",
+                "affiliate_owned_article_url": "https://aniccaai.com/blog/caption",
+                "source_url": "https://aniccaai.com/blog/caption", "post_url": post_url,
+            })
+            metrics = iter((
+                {"views": 3, "replies": 0, "reposts": 0, "likes": 0, "bookmarks": 0},
+                {"views": 3, "replies": 0, "reposts": 0, "likes": 0, "bookmarks": 0},
+                {"views": 4, "replies": 0, "reposts": 0, "likes": 0, "bookmarks": 0},
+            ))
+            inspector = lambda *_args: next(metrics)
+            with patch.dict(MODULE.os.environ, {"AFFILIATE_REPOST_STATE_DIR": str(repost)}):
+                first = MODULE.observe_x_post_metrics(state, 9326, inspector=inspector)
+                replay = MODULE.observe_x_post_metrics(state, 9326, inspector=inspector)
+                changed = MODULE.observe_x_post_metrics(state, 9326, inspector=inspector)
+
+            self.assertEqual(first["impressions"], {"count": 3, "state": "EXACT"})
+            self.assertTrue(first["changed"])
+            self.assertFalse(replay["changed"])
+            self.assertEqual(changed["impressions"]["count"], 4)
+            self.assertEqual(len(MODULE.json_rows(
+                state / "x-growth" / "post-metrics.jsonl"
+            )), 2)
     def test_x_growth_baseline_appends_only_when_official_count_changes(self):
         with tempfile.TemporaryDirectory() as root:
             state = Path(root)

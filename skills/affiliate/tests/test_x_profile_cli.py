@@ -22,6 +22,14 @@ class XProfileCliTests(unittest.TestCase):
         self.assertIsNone(MODULE.exact_profile_count("1.2K Followers", "followers"))
         self.assertIsNone(MODULE.exact_profile_count("27 Following", "followers"))
 
+    def test_exact_post_metrics_parse_official_labels_only(self):
+        self.assertEqual(MODULE.exact_post_metric("3\n Views", "views"), 3)
+        self.assertEqual(MODULE.exact_post_metric("0 Replies. Reply", "replies"), 0)
+        self.assertEqual(MODULE.exact_post_metric("1 repost. Repost", "reposts"), 1)
+        self.assertEqual(MODULE.exact_post_metric("2 Likes. Like", "likes"), 2)
+        self.assertEqual(MODULE.exact_post_metric("0 Bookmarks. Bookmark", "bookmarks"), 0)
+        self.assertIsNone(MODULE.exact_post_metric("1.2K Views", "views"))
+
 
 if __name__ == "__main__":
     unittest.main()

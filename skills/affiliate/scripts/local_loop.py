@@ -146,6 +146,57 @@ def observe_x_growth(state, cdp_port, inspector=x_profile_cli.inspect):
             "changed": changed}
 
 
+def observe_x_post_metrics(state, cdp_port, inspector=x_profile_cli.inspect_post_metrics):
+    repost_root = Path(os.environ.get(
+        "AFFILIATE_REPOST_STATE_DIR", Path.home() / "loops" / "x-repost"
+    )).expanduser()
+    posted_path = repost_root / "posted.jsonl"
+    if not posted_path.is_file():
+        return {"state": "WAITING_FOR_AFFILIATE_POST", "changed": False}
+    raw = posted_path.read_bytes()
+    rows = [json.loads(line) for line in raw.decode("utf-8").splitlines() if line.strip()]
+    selected = next((
+        row for row in reversed(rows)
+        if row.get("kind") == "affiliate_distribution"
+        and isinstance(row.get("affiliate_job_id"), str)
+        and isinstance(row.get("affiliate_placement_id"), str)
+        and is_owned_article_url(row.get("affiliate_owned_article_url"))
+        and isinstance(row.get("post_url"), str)
+    ), None)
+    if selected is None:
+        return {"state": "WAITING_FOR_AFFILIATE_POST", "changed": False}
+    config = x_profile_cli.load_config(Path(__file__).resolve().parents[1], "en")
+    metrics = inspector(SimpleNamespace(
+        cdp_host="127.0.0.1", cdp_port=cdp_port, state=state,
+    ), config, selected["post_url"])
+    metric_receipts = {
+        key: {"count": metrics.get(key),
+              "state": "EXACT" if isinstance(metrics.get(key), int) else "UNAVAILABLE_EXACT"}
+        for key in ("views", "replies", "reposts", "likes", "bookmarks")
+    }
+    core = {
+        "schema_version": 1,
+        "receipt_type": "X_POST_METRICS_BASELINE",
+        "post_url": selected["post_url"],
+        "job_id": selected["affiliate_job_id"],
+        "placement_id": selected["affiliate_placement_id"],
+        "owned_article_url": selected["affiliate_owned_article_url"],
+        "source_posted_sha256": hashlib.sha256(raw).hexdigest(),
+        "impressions": metric_receipts.pop("views"),
+        **metric_receipts,
+    }
+    transition_id = hashlib.sha256(json.dumps(
+        core, sort_keys=True, separators=(",", ":")
+    ).encode()).hexdigest()
+    receipt = {**core, "transition_id": transition_id,
+               "observed_at": datetime.now(timezone.utc).isoformat()}
+    changed = append_unique(
+        state / "x-growth" / "post-metrics.jsonl", receipt, ("transition_id",)
+    )
+    atomic_json(state / "x-growth" / "latest-post-metrics.json", receipt)
+    return {**receipt, "state": "OBSERVED", "changed": changed}
+
+
 def focused_live_lineage(state):
     latest = state / "focused-cohort" / "latest.json"
     if not latest.is_file():
@@ -3937,6 +3988,17 @@ def _wake_once(args, started_at, run_id):
             },
         }
     try:
+        x_post_metrics = admit(
+            "growth.x-post-metrics", "READ_ONLY", {"owner": "affiliate-x-browser"},
+            lambda: observe_x_post_metrics(state, getattr(args, "x_cdp_port", 9326)),
+        )
+    except Exception as error:
+        x_post_metrics = {
+            "state": "OBSERVATION_FAILED", "changed": False,
+            "failure_type": type(error).__name__,
+            "impressions": {"count": None, "state": "UNAVAILABLE_EXACT"},
+        }
+    try:
         repost_proposal = admit(
             "repost.propose", "LEDGER_ONLY", {"owner": "existing-x-repost"},
             lambda: create_repost_proposal(state),
@@ -4377,6 +4439,14 @@ def _wake_once(args, started_at, run_id):
             for key in (
                 "state", "changed", "transition_id", "handle", "rendered_url",
                 "followers", "following", "failure_type",
+            )
+        },
+        "x_post_metrics": {
+            key: x_post_metrics.get(key)
+            for key in (
+                "state", "changed", "transition_id", "post_url", "job_id",
+                "placement_id", "impressions", "replies", "reposts", "likes",
+                "bookmarks", "failure_type",
             )
         },
         "repost_proposal": {

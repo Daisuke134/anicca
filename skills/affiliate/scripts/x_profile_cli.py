@@ -32,6 +32,21 @@ def exact_profile_count(text, kind):
     return int(match.group(1).replace(",", "")) if match else None
 
 
+def exact_post_metric(text, kind):
+    labels = {
+        "views": r"Views?",
+        "replies": r"Replies?\.\s*Reply",
+        "reposts": r"reposts?\.\s*Repost",
+        "likes": r"Likes?\.\s*Like",
+        "bookmarks": r"Bookmarks?\.\s*Bookmark",
+    }
+    pattern = labels.get(kind)
+    if not isinstance(text, str) or pattern is None:
+        return None
+    match = re.fullmatch(rf"([0-9][0-9,]*)\s+{pattern}", " ".join(text.split()), re.I)
+    return int(match.group(1).replace(",", "")) if match else None
+
+
 def load_config(root, locale):
     if locale != "en":
         raise XProfileError("unsupported X locale")
@@ -157,6 +172,57 @@ def inspect(args, config):
     if profile["handle"].lower() != config["handle"].lower() or not profile["owner"]:
         raise XProfileError("authenticated X identity mismatch")
     return profile
+
+
+def inspect_post_metrics(args, config, post_url):
+    parsed = urlparse(post_url)
+    expected_path = f"/{config['handle']}/status/"
+    if not (
+        parsed.scheme == "https" and parsed.hostname == "x.com"
+        and parsed.path.startswith(expected_path)
+        and re.fullmatch(r"[0-9]+", parsed.path.removeprefix(expected_path))
+        and not parsed.query and not parsed.fragment
+    ):
+        raise XProfileError("invalid X post permalink")
+    target = choose_x_target(args.cdp_host, args.cdp_port)
+    ws = connect(args, target)
+    try:
+        request_id = navigate(ws, 1, post_url)
+        path_json = json.dumps(parsed.path)
+        expression = f"""(() => {{
+          const path = {path_json};
+          const article = [...document.querySelectorAll('article')]
+            .find(a => a.querySelector(`a[href="${{path}}"]`));
+          if (!article) return null;
+          const analytics = article.querySelector(`a[href="${{path}}/analytics"]`);
+          const aria = testid => article.querySelector(`[data-testid="${{testid}}"]`)
+            ?.getAttribute('aria-label') || '';
+          return {{
+            views_text: analytics?.innerText || '',
+            replies_text: aria('reply'),
+            reposts_text: aria('retweet'),
+            likes_text: aria('like'),
+            bookmarks_text: aria('bookmark')
+          }};
+        }})()"""
+        raw = None
+        for _ in range(20):
+            result = cdp_call(ws, request_id, "Runtime.evaluate", {
+                "expression": expression, "returnByValue": True,
+            })
+            request_id += 1
+            raw = result.get("result", {}).get("value")
+            if isinstance(raw, dict):
+                break
+            time.sleep(0.5)
+    finally:
+        ws.close()
+    if not isinstance(raw, dict):
+        raise XProfileError("X post metrics DOM did not become ready")
+    return {
+        key: exact_post_metric(raw.get(f"{key}_text"), key)
+        for key in ("views", "replies", "reposts", "likes", "bookmarks")
+    }
 
 
 def matches(profile, config):
