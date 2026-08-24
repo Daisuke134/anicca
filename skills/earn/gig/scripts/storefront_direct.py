@@ -5090,6 +5090,10 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
 
             inventory, contract_sources, observed = _read_official_catalog()
             if public_bootstrap:
+                from storefront_bootstrap import inventory as bootstrap_inventory
+                capability_inventory = bootstrap_inventory()
+                capability_path = args.state_dir / "storefront-capabilities.json"
+                _atomic_write(capability_path, capability_inventory)
                 release = _lease(args.lease_script, "release", task, lease)
                 released = release.get("released") == task
                 if not released:
@@ -5100,6 +5104,9 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                             else "storefront_import_required"),
                     official_services_read=observed,
                     pending=1,
+                    capability_inventory_count=len(capability_inventory["skills"]),
+                    capability_inventory_sha256=capability_inventory["inventory_sha256"],
+                    capability_inventory_path="storefront-capabilities.json",
                 )
                 row = _persist_receipt(args, output, row)
                 return 0, row
