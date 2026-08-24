@@ -55,12 +55,12 @@ The owner does not choose categories, write copy, set prices, make images, confi
 launchd, create local files, approve applications, approve replies, approve estimates,
 or approve deliveries.
 
-The registered Coconala email remains the official marketplace notification address.
-Life Manager reads that address from the authenticated official account surface and
-stores it only in the private machine configuration; it does not ask the owner to type
-the same address twice. Reports reuse the repository's existing `gog` Gmail transport.
-If no Gmail OAuth exists, setup performs one `gog auth add` ceremony. A nonce-bound setup
-message must be sent and found in the destination inbox before email is marked ready.
+The registered Coconala email remains Coconala's official marketplace notification
+address. Life Manager reports reuse the repository's existing `gog` Gmail transport and
+go to the authenticated Google account, which is also the recommended Coconala signup
+address. If Gmail OAuth already exists, setup asks nothing. Otherwise it asks for the
+Google address once and performs one `gog auth add` ceremony. A nonce-bound setup message
+must be sent to and found in that same Gmail inbox before email is marked ready.
 Missing Gmail transport never blocks earning; Terminal receipts remain authoritative.
 SMTP and Telegram are not part of the public default.
 

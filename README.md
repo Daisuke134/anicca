@@ -48,7 +48,7 @@ pages. After finishing those pages, run the same command again. See the
 
 | Surface | Public code | One-command owner setup | Current status |
 |---|---:|---:|---|
-| Coconala Apply / Negotiate / Storefront / Paid | Yes | Yes, public preview | First productized marketplace path; `gog` email wiring and final clean-HOME contract remain |
+| Coconala Apply / Negotiate / Storefront / Paid | Yes | Yes, public preview | First productized marketplace path; final clean-HOME contract remains |
 | Other marketplace money loops, including Upwork and Mercor | Partial/internal components only | No | Not OSS-productized; do not present them as ready for third-party setup |
 | Generic Money / Body / Mind onboarding | Foundation only | No | Future shared Life Manager surface, not the Coconala quick start |
 

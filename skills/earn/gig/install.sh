@@ -86,6 +86,10 @@ if [ "${1:-}" = "prepare" ]; then
     rm -f "$installer"
     trap - EXIT
   fi
+
+  if ! command -v gog >/dev/null 2>&1; then
+    brew install gogcli
+  fi
   if ! codex login status >/dev/null 2>&1; then
     codex login
     codex login status >/dev/null 2>&1 || {
@@ -177,6 +181,57 @@ if [ "${1:-}" = "finished" ]; then
     echo "[coconala] dedicated browser is not running" >&2; exit 2;
   }
   "$venv/bin/python" "$GIG_DIR/scripts/coconala_onboarding_observe.py"
+  if ! (
+  gog_account="$(gog auth list --json --no-input | "$venv/bin/python" -c '
+import json,sys
+data=json.load(sys.stdin)
+for row in data.get("accounts", []):
+    if "gmail" in (row.get("services") or []):
+        print(row.get("email") or "")
+        break
+')"
+  if [ -z "$gog_account" ]; then
+    printf 'Google email for Coconala reports: ' >&2
+    IFS= read -r gog_account
+    gog auth add "$gog_account" --services gmail
+    gog auth list --json --no-input | "$venv/bin/python" -c '
+import json,sys
+data=json.load(sys.stdin)
+want=sys.argv[1]
+raise SystemExit(0 if any(row.get("email")==want and "gmail" in (row.get("services") or []) for row in data.get("accounts", [])) else 2)
+' "$gog_account" || { echo "[coconala] Gmail OAuth was not confirmed" >&2; exit 2; }
+  fi
+  "$venv/bin/python" "$GIG_DIR/scripts/coconala_onboarding.py" configure-email \
+    --account "$gog_account" >/dev/null
+  nonce="$(printf '%s:%s' "$gog_account" "$(date +%s)" | shasum -a 256 | cut -c1-24)"
+  sent="$(gog --account "$gog_account" gmail send --to="$gog_account" \
+    --subject="[Life Manager] Coconala ready $nonce" \
+    --body="Coconala email reports are connected. receipt:$nonce" --json --no-input)"
+  printf '%s' "$sent" | "$venv/bin/python" -c '
+import json,sys
+value=json.load(sys.stdin)
+raise SystemExit(0 if value.get("id") or value.get("messageId") else 2)
+' || { echo "[coconala] Gmail setup send was not acknowledged" >&2; exit 2; }
+  email_ready=false
+  for _ in {1..12}; do
+    if gog --account "$gog_account" gmail messages search \
+      "in:anywhere newer_than:1d \"$nonce\"" --max=10 --include-body --json --no-input \
+      | "$venv/bin/python" -c '
+import json,sys
+value=json.load(sys.stdin)
+rows=value.get("messages", value if isinstance(value, list) else [])
+needle=sys.argv[1]
+raise SystemExit(0 if any(needle in str(row.get("subject", ""))+str(row.get("body", "")) for row in rows) else 2)
+' "$nonce"; then
+      email_ready=true
+      break
+    fi
+    sleep 2
+  done
+  $email_ready || { echo "[coconala] Gmail setup receipt was not found" >&2; exit 2; }
+  ); then
+    echo "[coconala] Gmail reports are not ready; lanes continue and Terminal outcomes remain available" >&2
+  fi
   ready=""
   if ! ready="$("$venv/bin/python" "$GIG_DIR/scripts/coconala_onboarding.py" ready)"; then
     printf '%s\n' "$ready"

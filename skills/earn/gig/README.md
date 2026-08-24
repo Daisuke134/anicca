@@ -11,8 +11,8 @@
 
 This is the only marketplace money loop currently offered as a one-command OSS public
 preview. All four business lanes and their two supporting jobs are public. `gog` email
-onboarding and the final clean-HOME Terminal contract remain before calling the setup
-productized. Upwork, Mercor, and other marketplace loops are not advertised as installable
+onboarding is implemented with real send/inbox readback; the final clean-HOME Terminal
+contract remains before calling the setup productized. Upwork, Mercor, and other marketplace loops are not advertised as installable
 OSS products yet, even where internal components exist.
 
 ### Accepted onboarding flow (external acceptance pending)
@@ -49,6 +49,8 @@ packages, edit JSON, configure launchd, or give Life Manager a Coconala password
 Terminal is the setup and status surface. Official Coconala email remains active. Life
 Manager reports use the existing `gog` Gmail transport after Google OAuth and a real
 send/inbox readback; SMTP and Telegram are not part of the public default.
+Using that same Gmail address for Coconala signup avoids entering two addresses. If an
+authenticated Gmail account already exists in `gog`, setup asks no email question.
 
 ### Deferred external acceptance
 
@@ -137,8 +139,8 @@ mkdir -p ~/.config/anicca/gig
 cat > ~/.config/anicca/gig/install.json <<'JSON'
 {
   "GIG_NOTIFY_EMAIL": "you@example.com",
-  "GIG_NOTIFY_FROM": "you@example.com",
-  "GIG_SENDMAIL": "/opt/homebrew/bin/msmtp",
+  "GIG_GOG_ACCOUNT": "you@example.com",
+  "GIG_GOG_BIN": "/opt/homebrew/bin/gog",
   "GIG_BROWSER_FINGERPRINT": ""
 }
 JSON
@@ -289,8 +291,8 @@ no lane reads a credential from its environment.
 | `SESSION_VAULT_DIR` | `~/.cloak/vault/gig-daily-driver` | Cookie snapshots used to restore the session after a restart. |
 | `GIG_BROWSER_FINGERPRINT` | *(empty)* | Fingerprint seed passed to the browser build. |
 | `GIG_NOTIFY_EMAIL` | *(empty)* | Preferred owner-report recipient. When set, all four lanes use email. |
-| `GIG_NOTIFY_FROM` | recipient address | Envelope-visible sender passed to the local sendmail client. |
-| `GIG_SENDMAIL` | `/usr/sbin/sendmail` | A sendmail-compatible executable; use `/opt/homebrew/bin/msmtp` for Gmail. |
+| `GIG_GOG_ACCOUNT` | *(empty)* | Gmail-scoped `gog` OAuth account used to send owner reports. |
+| `GIG_GOG_BIN` | `/opt/homebrew/bin/gog` | `gogcli` executable installed by normal setup when missing. |
 | `GIG_REPORT_CHAT` | *(empty)* | Optional legacy Telegram fallback when email is unset. |
 | `GIG_SANDBOX_DENY` | *(empty)* | Colon-separated absolute paths the sandboxed paid builder must not read — other checkouts, other loops' state. Must be absolute; a relative entry is refused rather than silently ignored. |
 | `GIG_STOREFRONT_ROOT` | *(empty)* | Absolute private seller-bundle root; Storefront refuses to start without it. |

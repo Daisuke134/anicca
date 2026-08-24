@@ -74,11 +74,7 @@ def ready(home: Path) -> tuple[dict[str, Any], int]:
     return {"status": "ready" if not missing else "blocked", "missing": missing}, 0 if not missing else 2
 
 
-def configure_python(home: Path, python: Path) -> dict[str, Any]:
-    python = python.expanduser().absolute()
-    python.resolve(strict=True)
-    if not python.is_file() or not os.access(python, os.X_OK):
-        raise ValueError("invalid_coconala_python")
+def configure(home: Path, **updates: str) -> dict[str, Any]:
     path = home / ".config" / "anicca" / "gig" / "install.json"
     if path.exists():
         value = json.loads(path.read_text(encoding="utf-8"))
@@ -86,23 +82,44 @@ def configure_python(home: Path, python: Path) -> dict[str, Any]:
             raise ValueError("invalid_coconala_install_config")
     else:
         value = {}
-    value["PYTHON"] = str(python)
+    value.update(updates)
     _write_private(path, value)
-    return {"status": "configured", "python": "private:install.json#PYTHON"}
+    return {"status": "configured", "keys": sorted(updates)}
+
+
+def configure_python(home: Path, python: Path) -> dict[str, Any]:
+    python = python.expanduser().absolute()
+    python.resolve(strict=True)
+    if not python.is_file() or not os.access(python, os.X_OK):
+        raise ValueError("invalid_coconala_python")
+    return configure(home, PYTHON=str(python))
+
+
+def configure_email(home: Path, account: str) -> dict[str, Any]:
+    if re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", account) is None:
+        raise ValueError("invalid_gog_account")
+    return configure(home, GIG_GOG_ACCOUNT=account, GIG_NOTIFY_EMAIL=account)
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("init", "status", "record", "ready", "configure-python"))
+    parser.add_argument("command", choices=(
+        "init", "status", "record", "ready", "configure-python", "configure-email",
+    ))
     parser.add_argument("--state", choices=STATES)
     parser.add_argument("--evidence-sha256")
     parser.add_argument("--python", type=Path)
+    parser.add_argument("--account")
     args = parser.parse_args()
     exit_code = 0
     if args.command == "configure-python":
         if args.python is None:
             parser.error("configure-python requires --python")
         value = configure_python(Path.home(), args.python)
+    elif args.command == "configure-email":
+        if not args.account:
+            parser.error("configure-email requires --account")
+        value = configure_email(Path.home(), args.account)
     elif args.command == "status":
         path = Path.home() / ".config" / "anicca" / "gig" / "coconala-onboarding.json"
         if not path.exists():

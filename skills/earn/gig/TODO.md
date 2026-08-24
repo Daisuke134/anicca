@@ -38,19 +38,21 @@ are not active work.
     lanes alive, browser restarts reuse the dedicated profile/session vault, and an expired
     Coconala login reopens the official recovery surface in that same profile instead of
     creating another account.
-10. [ ] Reuse the existing `gog` Gmail transport for reports: install `gogcli` only when
-    missing, reuse a Gmail-scoped OAuth account or run one `gog auth add`, read the Coconala
-    registration address from the authenticated official surface without asking twice,
-    store only the address/account in mode-0600 private config, and prove one nonce-bound
-    setup message by destination-inbox readback. Remove SMTP/Telegram from the public
-    default. Email failure must not block the six jobs; Terminal receipts stay authoritative.
+10. [x] Reuse the existing `gog` Gmail transport for reports: install `gogcli` only when
+    missing, reuse a Gmail-scoped OAuth account or ask once and run one `gog auth add`,
+    store only that account as sender/recipient in mode-0600 private config, and prove one
+    nonce-bound setup message by same-inbox readback. Recommend the same Gmail for Coconala
+    signup so no address is repeated. Remove SMTP/Telegram from the public
+    default. Email failure does not block the six jobs; Terminal receipts stay authoritative.
+    Verification: private config mode `0600`, focused contracts 24/24, real Gmail send
+    acknowledged and nonce found in the same inbox on the first readback attempt.
 11. [ ] Re-run the clean-HOME bootstrap contract after the terminal-only change: assert no
     onboarding web server/browser UI starts, the official Coconala browser opens, rerun
     resumes `finished`, all six launchd definitions render, and pre-auth marketplace effects
     remain zero.
 12. [x] Make productization status explicit in both READMEs: Coconala is the only
-    one-command marketplace OSS public preview; `gog` email and clean-HOME verification
-    remain; Upwork, Mercor and other money loops are roadmap/non-productized. Keep
+    one-command marketplace OSS public preview; clean-HOME verification remains; Upwork,
+    Mercor and other money loops are roadmap/non-productized. Keep
     time-dependent eKYC, buyer traffic, sales and bank arrival outside the coding TODO.
 
 ### Future shared OSS UX — not current session
