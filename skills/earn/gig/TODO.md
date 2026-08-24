@@ -18,7 +18,12 @@ contract, fee, payout, and bank receipts advance it.
 1. [ ] Remove Paid's remaining `max_workers=1` and global CDP-lock path. Dispatch one isolated
    owner per paid marketplace entity with distinct tab/target, client identity, URL, state, and
    evidence root. Different clients prepare, build, review, send, and read back concurrently;
-   only the same entity/effect key is compare-and-swap fenced.
+   only the same entity/effect key is compare-and-swap fenced. Implementation is on `main` with
+   full Paid regression 34/34. The first production parent admitted six distinct rooms and ran six
+   project workers concurrently; that wake crossed a release-watcher cutover, so its children used
+   the preceding release and cannot close this item. Remaining proof is one natural wake whose
+   parent and every child use the same current-main descendant, with per-room effect/readback and
+   no context, attachment, target, receipt, or effect-key crossover.
 2. [ ] Before dispatch, refresh every current room and compile all relevant DM, talkroom,
    attachments, listing, latest buyer message identity, and effect history into that project's
    private context. Share skills, account references, sessions, and tools only; never customer
