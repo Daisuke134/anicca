@@ -662,12 +662,22 @@ intervening 21-Connect verified effect, reopened at the current balance and subm
 has one official ID, one ledger row and one instant Telegram event. Current official truth is eight
 submitted proposals, 35 Connects, zero replies, zero offers, zero contracts and payout-received USD 0.
 
-Owner acquisition policy now preserves the remaining 35 Connects while the first eight-proposal cohort
+Owner acquisition policy now preserves the remaining Connects while the first eight-proposal cohort
 can produce reply/interview evidence. The existing owner bound `connects_cap=0` pauses only public
 Connects-spending proposals. Each wake still reads Messages, invitations, Direct Offers, contracts,
 Project Catalog and finance before that gate, so zero-Connect acquisition and every downstream money
 lane remain 24/7. This is not a loop shutdown or a permanent proposal quota. The Portfolio CEO may
 restore a positive cap after cohort evidence or replenished/returned Connects justify more spend.
+The first production pause wake read official balance 47 after a 12-Connect return/grant, preserved all
+47, observed messages/invites/offers/contracts all zero, created no form effect and exited 0 with
+`free_acquisition.state=connects_spend_paused`.
+
+Pre-contract downstream readiness is complete at fixture/conformance level. Inbox, negotiation,
+message effect, Offer economics/capacity, Offer acceptance, delivery, revision and finance/chargeback
+pass 66/66. Immutable project workspace, frozen workflow execution, independent deliverable QA,
+delivery, revision and finance pass another 41/41. The missing evidence is not another implementation:
+no client has yet produced a real message, Offer or contract, so the first production official IDs and
+the first contract-to-payout-received path remain event-driven.
 
 A Skill bundle is immutable and versioned:
 
