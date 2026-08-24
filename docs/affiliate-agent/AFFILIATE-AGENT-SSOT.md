@@ -7776,9 +7776,18 @@ the named production evidence:
   nothing. Production owner persists baseline `d9e4800d...` for D05 permalink
   with impressions 4 EXACT and replies/reposts/likes/bookmarks all 0 EXACT;
   baseline count is 1. D10 is now the first unchecked item.
-- [ ] **D10 X growth ledger.** Join follower and post reach deltas to growth and
+- [x] **D10 X growth ledger.** Join follower and post reach deltas to growth and
   monetization posts separately. Evidence: before/after denominators with no
   revenue credit.
+  Done at `2d4cf24c9`: the existing owner selects the latest ordinary
+  quote/reply/original as the growth lane and latest Affiliate distribution as
+  the monetization lane, reads both exact post metrics, and joins immutable
+  follower transitions. Missing prior followers remains `NO_PRIOR_BASELINE`.
+  Production ledger `6b41457f...` records growth permalink
+  `2091737205161279634` at 3 impressions, monetization permalink
+  `2091754957448040906` at 5 impressions, all engagement counts zero EXACT,
+  follower delta unavailable due one baseline, and `money_state=NON_MONEY`.
+  D11 is now the first unchecked item.
 - [ ] **D11 Complete funnel row.** Produce one exact-placement row containing
   impressions, owned entries, CTA clicks, provider clicks, unique clicks,
   transactions, approved/paid commission, reversals, and known costs. Missing
