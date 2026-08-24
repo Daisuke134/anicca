@@ -100,6 +100,21 @@ or unverified attachment evidence still fails closed. Completion still requires 
 new release to reconcile action 434 to `replied`, a seller-side official hash and
 timestamp, duplicate zero and a durable Telegram receipt.
 
+Release `23b0115ee` is now live. A second safe Negotiate restart loaded it and
+reconciled action 434 to `replied` revision 3 with official outgoing hash
+`7118ed3d...`, seller timestamp `09:23:24`, one click intent and duplicate zero. The
+buyer then sent a distinct question about travel costs; action 436 independently
+replied once and reached official `replied` revision 3 with hash `6141c936...`, seller
+timestamp `09:33:22` and duplicate zero. This proves live reply execution and the
+post-send attachment readback fix.
+
+The current OSS gate is not yet closed. Telegram rows
+`gig:telegram:reply:v2:434:3` and `...:436:3` both ended `delivery_unknown` after
+transport timeout and have no provider receipt file, so they must not be blindly
+resent. The fresh full-inbox reconciliation is also still running. OSS transition is
+allowed only after that pass records complete coverage and the owner-report transport
+has an acknowledged receipt for a subsequent natural Negotiate outcome.
+
 ## Current scoped milestone: finish the public Coconala package
 
 The repository and `skills/earn/gig/` tree are already public on
