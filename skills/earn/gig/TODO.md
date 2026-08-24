@@ -54,6 +54,13 @@ Storefront work.
    that commit, not from a dirty operator checkout.
 8. [ ] Scan the public tree and history for credentials, customer payloads, private
    account IDs and operator-only absolute paths; findings must be zero or removed.
+   Current clean-clone audit: package `test:oss` passes 11/11 and the correctly scoped
+   Gig gitleaks scan has zero findings. PII scan found one personal Writer notification
+   default in the shared launchd manifest; its email and Telegram defaults are now
+   empty machine-local overrides, with 7 release tests and the PII scan GREEN. The
+   repository-wide `verify:oss` still reports 168 manifest/path/asset violations,
+   mostly outside Apply/Negotiate; the final clean-clone rerun after this fix determines
+   which package-owned findings remain.
 9. [ ] Run the public Apply and Negotiate test suites from the clean clone with a clean
    temporary HOME; compile both production entrypoints.
 10. [ ] Run `./install.sh coconala` through the pre-auth boundary in that clean HOME and

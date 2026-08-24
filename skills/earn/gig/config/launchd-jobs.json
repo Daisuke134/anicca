@@ -37,7 +37,8 @@
     "GIG_STOREFRONT_CAPABILITY_EVIDENCE": "",
     "WRITER_STATE_DIR": "{{HOME}}/.local/state/life-manager/writer",
     "WRITER_LOG_DIR": "{{HOME}}/.openclaw/logs",
-    "WRITER_TELEGRAM_TARGET": "8547730585",
+    "WRITER_TELEGRAM_TARGET": "",
+    "WRITER_GMAIL_ACCOUNT": "",
     "ANICCA_JOB_PROFILE": "{{HOME}}/.config/anicca/job-search/profile.json"
   },
 
@@ -431,7 +432,7 @@
         "--runner",
         "{{RELEASE}}/skills/writer-agent/runtime/model-runner.sh"
       ],
-      "env": {"WRITER_GMAIL_ACCOUNT": "keiodaisuke@gmail.com"},
+      "env": {"WRITER_GMAIL_ACCOUNT": "{{WRITER_GMAIL_ACCOUNT}}"},
       "StartInterval": 900,
       "RunAtLoad": true,
       "ProcessType": "Background",
