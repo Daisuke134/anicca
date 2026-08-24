@@ -24,8 +24,8 @@ flowchart LR
 
 | order | state | atomic TODO | 完了の公式証拠 |
 |---|---|---|---|
-| P0 | **ACTIVE: scheduled verification** | provider quota/auth availabilityをscheduler healthから分離し、quota時は5分healthcheck kickstartを行わずdurable backoffへ収束させる。external side effect後は別providerへretryしない | account 2 direct probe `ACCOUNT2_OK`、production CodexからCapafy auth HTTP 200、quota/recent-attempt test 2件、manual healthcheck 3回でruns `162→162`。installed 300秒timerの3 consecutive readback待ち |
-| P1 | BLOCKED: explicit approval | Telegram `29647`のData Analyst MP4を本人が承認またはrejectする。承認前はInstagram write 0 | 同じAgent ID、Telegram message ID、SHA-256を持つapproval receiptが`approved`または`rejected` |
+| P0 | completed | provider quota/auth availabilityをscheduler healthから分離し、quota時は5分healthcheck kickstartを行わずdurable backoffへ収束させる。external side effect後は別providerへretryしない | account 2 direct `ACCOUNT2_OK`、production Capafy auth HTTP 200、tests 2件、manual 3回とinstalled scheduled `0→1→2→3`の全期間でsupply runs `162→162`、追加kickstart 0、public write 0 |
+| P1 | **ACTIVE: explicit approval** | Telegram `29647`のData Analyst MP4を本人が承認またはrejectする。承認前はInstagram write 0 | 同じAgent ID、Telegram message ID、SHA-256を持つapproval receiptが`approved`または`rejected` |
 | P2 | pending | generic one-page CTAをprimary導線にせず、このReelへData Analystの個別Capafy listing URLとstable attribution IDを結ぶ | caption/link receiptにexact Agent ID、listing URL、attribution ID。redirect readbackが同じlistingへ到達 |
 | P3 | pending | P1とcadence gate成立後の最初のwakeだけが承認済みbytesをReelとして1件投稿する | exact creative hash、native Reel URL、Telegram message ID、rotation commit。duplicate post 0 |
 | P4 | pending | 同じidentity/windowで`qualified view → listing click → product view → paid subscription → retained subscription → settlement`をjoinする | native metrics、redirect counter、official Publisher Console seller readback。order-level source不明なら`causal=false` |
@@ -47,7 +47,7 @@ flowchart LR
 | canonical source | `Daisuke134/life-manager` mainはpublic canonical repo。Capafy sourceは`skills/capafy-autopublish`、`skills/self/capafy-loop`、`skills/earn/capafy-marketing`に存在 | sourceは移植済み |
 | launchd cutover | loaded 8件すべての`ProgramArguments`と`WorkingDirectory`が`/Users/anicca/Projects/life-manager-main`を指す。旧repo path 0件、duplicate label 0件 | **PASS: runtimeはLife Manager** |
 | scheduler | `ai.anicca.capafy-loop-daily`、IG daily、hourly/daily-close monitorはloaded | schedule定義は存在 |
-| process health | quota stormの原因はaccount 2 authではなくCodexの`local_proxy`強制routeだった。account 2 direct probeは`ACCOUNT2_OK`、production CodexはCapafy auth HTTP 200とinventory/sales readへ到達。healthcheckは最新completed quotaと直近incomplete attemptを分離し、2時間grace中はhourly ownerを再kickしない。manual production 3回は各0秒、runs `162→162` | **P0 code/test/manual PASS。installed 300秒timerの3 consecutive readback待ち。strict 7日証明は`0/7`** |
+| process health | quota stormの原因はaccount 2 authではなくCodexの`local_proxy`強制routeだった。account 2 direct probeは`ACCOUNT2_OK`、production CodexはCapafy auth HTTP 200とinventory/sales readへ到達。healthcheckは最新completed quotaと直近incomplete attemptを分離し、2時間grace中はhourly ownerを再kickしない。manual 3回とinstalled scheduled `0→1→2→3`の全期間でsupply runsは`162→162` | **P0 PASS: 5分再kick 0。P1がactive。strict 7日証明は`0/7`** |
 | event ledger | live ledger 471行でduplicate `event_id` 0件、`verified`後の`unresolved` 0件。exact replayはidempotent、新しいretry/occurrenceだけが新IDを得る | **PASS: identityとphaseは単調** |
 | last money snapshot | live GET 5 sourceはfresh。5 orders、gross `$19.98`、pending `$8.00`、realized `$0.00`、refund `$0.00`。order billing mixとseller active subscription identityは取得不能 | one-timeとMRRは`unknown`、grossから推定しない |
 | marketing snapshot | 承認済みO13 ReelとDecision Debate Reelのnative URL/readbackあり。owner sessionによるcurrent playsは`1`と`8`、likes/commentsは`0/0`、2 sampleはbaseline-only。次のread-only rotation候補はData Analyst `7785270416` | posting railとtruthful metrics railは復旧。第3 evidence-backed Reelと同一window metricsが次のactive action |

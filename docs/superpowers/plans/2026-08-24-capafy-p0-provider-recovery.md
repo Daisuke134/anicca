@@ -101,10 +101,10 @@ bash skills/self/capafy-loop/test-loop.sh
 bash -n skills/self/capafy-loop/capafy-loop-healthcheck.sh
 ```
 
-- [ ] **Step 5: Install and read back one production owner transition**
+- [x] **Step 5: Install and read back one production owner transition**
 
 Use `bin/launchctl-safe` for the exact Capafy labels. Verify the hourly owner uses the pushed Life Manager source, the provider receipt selects Codex account 2 direct, no Capafy/Instagram write occurs during recovery, and three consecutive five-minute healthchecks add zero kickstarts.
 
-- [ ] **Step 6: Synchronize the spec and push**
+- [x] **Step 6: Synchronize the spec and push**
 
 Mark P0 complete only with the production receipts above, move P1 to active, commit the code/test/spec, push `main`, and verify the remote spec readback.
