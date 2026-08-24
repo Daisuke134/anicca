@@ -13,6 +13,7 @@ class CapafyDirectListingBioTest(unittest.TestCase):
 
         self.assertIn('CAMPAIGN_URL="${LANDING_URL%/}/go/${SELECTED_AGENT_ID}"', source)
         self.assertIn('--website \'"$CAMPAIGN_URL"\'', source)
+        self.assertIn("include the exact campaign URL \'\"$CAMPAIGN_URL\"\'", source)
         self.assertNotIn("Never use an individual Capafy listing URL for the Website", source)
 
 
