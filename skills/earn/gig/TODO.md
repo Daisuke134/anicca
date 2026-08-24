@@ -89,6 +89,14 @@ contract, fee, payout, and bank receipts advance it.
    enter it immediately and never ask again pre-emptively. Then perform the exact campaign scope,
    checkpoint every verified DM/sheet effect, verify the live result, deliver, obtain buyer
    completion, and prove replay-zero.
+   At the account owner's direction, one stored-credential login submit was performed at
+   `2026-08-24T12:24:33Z`. The official TikTok DOM remained on the email/password route and read
+   `試行回数が上限に達しました。後ほどお試しください。`; authentication and OTP challenge were
+   both false. Durable evidence is
+   `evidence/tiktok-login-preflight-20260824T122433Z.json`. Do not submit login again or contact the
+   buyer while that provider state remains. The next TikTok action is read-only provider-state
+   observation; only after the limit clears may the owner make one new login attempt and follow the
+   OTP continuation above.
 8. [ ] `18169985`: the buyer has now explicitly approved the unchanged @diceai0 account, the
    shown DM format with a recipient-specific introduction, a total of 100 DMs, and formal
    delivery with evidence. The buyer then replaced the common body with an explicitly estimated
