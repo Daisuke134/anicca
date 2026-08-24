@@ -188,3 +188,19 @@ def test_apply_redrive_reopens_one_row_per_wake(tmp_path):
     )
     assert failed["delivery_unknown"] == 1
     assert outbox.counts().get("pending", 0) == 0
+
+
+def test_fresh_business_event_dispatches_before_old_unknown(tmp_path):
+    old = int(time.time()) - 1200
+    outbox = TelegramOutbox(tmp_path / "telegram-outbox.sqlite3")
+    _delivery_unknown(outbox, event_key="old-unknown", kind="application",
+                      message="old unknown", created_at=old)
+    fresh = _application_event("fresh", int(time.time()))
+    (tmp_path / "work-events.jsonl").write_text(json.dumps(fresh) + "\n", encoding="utf-8")
+    transport = _Transport("apply-test-chat", tmp_path / "receipts")
+
+    result = apply_telegram_report.publish(tmp_path, outbox, transport)
+
+    assert result["sent"] == 2
+    assert transport.calls[0][0].endswith(":fresh")
+    assert transport.calls[1][0] == "old-unknown"

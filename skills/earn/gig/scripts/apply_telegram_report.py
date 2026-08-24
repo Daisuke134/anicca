@@ -184,7 +184,7 @@ def publish(gig_dir: Path, outbox: TelegramOutbox, transport: OpenClawTelegramTr
             report_ids.append(int(queued["report_id"]))
     _write_seen(seen_path, seen)
     sent = unknown = 0
-    dispatch_ids = list(dict.fromkeys([*redrive_report_ids, *report_ids]))
+    dispatch_ids = list(dict.fromkeys([*report_ids, *redrive_report_ids]))
     for report_id in dispatch_ids:
         result = dispatch_one(
             outbox, owner=f"gig-apply-telegram:{uuid.uuid4().hex}",
