@@ -492,6 +492,12 @@ U13 atomic order:
     additional space would require active project/runtime or Codex history loss. The smallest safe
     unblock remains a native reboot that releases swap, followed by the existing 20 GiB policy
     readback and automatic 9233 restart.
+18. **20 GiB PREVENTIVE CAP REMOVED FOR UPWORK:** operator explicitly rejected the 20 GiB startup
+    requirement. The host-wide policy remains unchanged for other producers. Only the dedicated
+    Upwork browser now ignores `disk-pressure.block` and the stale `disk-writers.stop`, while
+    `GIG_DISK_HEADROOM_KIB=524288` still requires 512 MiB free before Chromium starts. The shared
+    9223 browser and all other lanes retain their existing policy. Next acceptance is 9233 argv/profile
+    readback followed by two fresh provider wakes and exact funnel counts.
 
 U14 atomic order:
 
