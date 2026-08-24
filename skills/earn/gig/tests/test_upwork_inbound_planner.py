@@ -23,6 +23,7 @@ def _packet(tmp_path):
         "resource_id": "~invite-1", "resource_url": "https://www.upwork.com/jobs/~invite-1",
         "detail_evidence_sha256": "a" * 64, "observed_at": "now",
         "rendered_text": "Accept and send a proposal. Exact private job. Decline.",
+        "title": "Exact private job",
     }
     body = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n"
     path = tmp_path / f"{hashlib.sha256(body.encode()).hexdigest()}.json"
@@ -33,7 +34,8 @@ def _packet(tmp_path):
 
 def _decision(packet):
     return {
-        "decision": "submit", "reason_codes": [],
+        "job_id": packet["resource_id"], "decision": "submit",
+        "reason_codes": ["この案件はインストール済みSkillで完遂できます。"],
         "proposal": {
             "provider": "upwork", "job_id": packet["resource_id"],
             "job_url": packet["resource_url"],
@@ -54,7 +56,7 @@ def _public_packet(tmp_path, suffix):
         "resource_url": f"https://www.upwork.com/jobs/~job-{suffix}",
         "detail_evidence_sha256": suffix * 64, "observed_at": "now",
         "rendered_text": f"Public job {suffix}", "required_connects": 8,
-        "available_connects_before": 20,
+        "available_connects_before": 20, "title": f"Public job {suffix}",
     }
     body = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n"
     path = tmp_path / f"{hashlib.sha256(body.encode()).hexdigest()}.json"
@@ -100,10 +102,12 @@ def test_skip_requires_reason_and_never_creates_proposal(tmp_path):
     packet = planner.load_packet(path)
 
     assert planner.validate_decision({
-        "decision": "skip", "reason_codes": ["not_fully_deliverable"], "proposal": None,
+        "job_id": packet["resource_id"], "decision": "skip",
+        "reason_codes": ["完全な納品を保証できません。"], "proposal": None,
     }, packet) is None
     with pytest.raises(ValueError, match="inbound_decision_invalid"):
-        planner.validate_decision({"decision": "skip", "reason_codes": [], "proposal": None}, packet)
+        planner.validate_decision({"job_id": packet["resource_id"], "decision": "skip",
+                                   "reason_codes": [], "proposal": None}, packet)
 
 
 def test_luna_submit_and_skip_project_to_stable_natural_language_work_events(tmp_path):
@@ -111,7 +115,7 @@ def test_luna_submit_and_skip_project_to_stable_natural_language_work_events(tmp
     loaded = planner.load_packet(path)
     submit = _decision(packet)
     skipped = {
-        "decision": "skip",
+        "job_id": packet["resource_id"], "decision": "skip",
         "reason_codes": ["The requested physical filming cannot be completed by installed Skills."],
         "proposal": None,
     }
@@ -133,37 +137,41 @@ def test_luna_submit_and_skip_project_to_stable_natural_language_work_events(tmp
     assert skip_event["next_action"] == "次の案件確認を続けます"
 
 
-def test_batch_selects_one_exact_packet_with_one_model_decision(tmp_path, monkeypatch):
-    first_path, _ = _public_packet(tmp_path, "a")
+def test_batch_returns_every_profitable_proposal_and_every_candidate_event(tmp_path, monkeypatch):
+    first_path, first = _public_packet(tmp_path, "a")
     second_path, second = _public_packet(tmp_path, "b")
-    decision = _decision(second)
-    decision["proposal"]["status"] = "frozen_waiting_for_connects"
-    decision["proposal"]["terms"].update(required_connects=8, available_connects_before=20)
-    monkeypatch.setattr(planner, "_invoke_prompt", lambda *args, **kwargs: decision)
+    decisions = [_decision(first), _decision(second)]
+    for decision in decisions:
+        decision["proposal"]["status"] = "frozen_waiting_for_connects"
+        decision["proposal"]["terms"].update(required_connects=8, available_connects_before=20)
+    monkeypatch.setattr(planner, "_invoke_prompt", lambda *args, **kwargs: {"decisions": decisions})
     monkeypatch.setattr(planner, "capability_inventory", lambda root: {"skills": []})
     profile = tmp_path / "profile.json"; profile.write_text("{}")
 
     events = []
-    proposal = planner.invoke_batch(
+    proposals = planner.invoke_batch(
         [first_path, second_path], profile=profile, evidence_dir=tmp_path / "evidence",
         decision_sink=events.append,
     )
 
-    assert proposal["job_id"] == second["resource_id"]
-    assert proposal["terms"]["required_connects"] == 8
+    assert [proposal["job_id"] for proposal in proposals] == [
+        first["resource_id"], second["resource_id"],
+    ]
+    assert all(proposal["terms"]["required_connects"] == 8 for proposal in proposals)
     assert [(event["state"], event["entity_id"]) for event in events] == [
+        ("selected", first["resource_id"]),
         ("selected", second["resource_id"]),
     ]
 
 
-def test_batch_skip_emits_one_honest_aggregate_decision(tmp_path, monkeypatch):
+def test_batch_skip_emits_one_natural_decision_per_candidate(tmp_path, monkeypatch):
     first_path, first = _public_packet(tmp_path, "a")
     second_path, second = _public_packet(tmp_path, "b")
-    decision = {
-        "decision": "skip", "reason_codes": ["Neither candidate has positive expected value."],
-        "proposal": None,
-    }
-    monkeypatch.setattr(planner, "_invoke_prompt", lambda *args, **kwargs: decision)
+    decisions = [{
+        "job_id": packet["resource_id"], "decision": "skip",
+        "reason_codes": [f"{packet['title']}は期待利益が正ではありません。"], "proposal": None,
+    } for packet in (first, second)]
+    monkeypatch.setattr(planner, "_invoke_prompt", lambda *args, **kwargs: {"decisions": decisions})
     monkeypatch.setattr(planner, "capability_inventory", lambda root: {"skills": []})
     profile = tmp_path / "profile.json"; profile.write_text("{}")
     events = []
@@ -171,12 +179,13 @@ def test_batch_skip_emits_one_honest_aggregate_decision(tmp_path, monkeypatch):
     assert planner.invoke_batch(
         [first_path, second_path], profile=profile, evidence_dir=tmp_path / "evidence",
         decision_sink=events.append,
-    ) is None
-    assert events[0]["state"] == "skipped"
-    assert events[0]["attributes"]["candidate_ids"] == [
-        first["resource_id"], second["resource_id"],
+    ) == []
+    assert [(event["state"], event["entity_id"]) for event in events] == [
+        ("skipped", first["resource_id"]), ("skipped", second["resource_id"]),
     ]
-    assert events[0]["attributes"]["reason_codes"] == decision["reason_codes"]
+    assert [event["attributes"]["reason_codes"] for event in events] == [
+        decision["reason_codes"] for decision in decisions
+    ]
 
 
 def test_existing_runner_cli_contract_returns_owned_private_result(tmp_path):
@@ -188,7 +197,7 @@ def test_existing_runner_cli_contract_returns_owned_private_result(tmp_path):
         "import json,sys\n"
         "from pathlib import Path\n"
         "args=sys.argv; root=Path(args[args.index('--evidence-dir')+1]); root.mkdir(parents=True,exist_ok=True)\n"
-        f"decision={decision!r}\n"
+        f"decision={{'decisions':[{decision!r}]}}\n"
         f"counter=Path({str(calls)!r}); counter.write_text(str(int(counter.read_text())+1) if counter.exists() else '1')\n"
         "result=root/'result.json'; result.write_text(json.dumps(decision))\n"
         "(root/'summary.json').write_text(json.dumps({'status':'success','result_path':str(result.resolve())}))\n"
