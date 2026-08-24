@@ -17,12 +17,13 @@ Storefront work.
 This session implements only Coconala. Future integration manifests remain possible but
 are not active work.
 
-1. [x] One-line clean-Mac bootstrap opens the local UI and Coconala Connect/Resume.
+1. [x] One-line clean-Mac bootstrap enters Coconala setup directly in Terminal; no local
+   web UI, integration picker, language, timezone or notification-channel question.
 2. [x] Installer prepares Codex/CloakBrowser/private Python and keeps secrets on official surfaces.
 3. [x] Official account/email/SMS/seller/eKYC/bank gates are evidence-bound and missing gates reopen.
 4. [x] Browser, Apply, Negotiate, Storefront, Paid and Release Watcher share one activation/readback contract.
 5. [x] Storefront imports existing listings or selects demand and publishes the first listing at count zero.
-6. [x] Local UI shows customer-safe Application/Negotiation/Listing/Delivery/Bank receipts.
+6. [x] Terminal `outcomes` shows customer-safe Application/Negotiation/Listing/Delivery/Bank receipts.
 7. [x] Re-render all six public launchd definitions and compile all four business lane
    entrypoints from current main. Result: six exact labels, four compiled business
    entrypoints, private defaults zero, and tracked public `paid_direct.py` confirmed.
@@ -32,7 +33,17 @@ are not active work.
 9. [x] Finish the friend-facing README so normal setup requires no manual listing, JSON,
    plist, Python package or notification adapter work. The one-line bootstrap, five
    official owner ceremonies, same-browser handoff, six jobs, first-listing behavior and
-   local receipt UI are above the advanced recovery section.
+   Terminal receipts are above the advanced recovery section.
+10. [ ] Reuse the existing `gog` Gmail transport for reports: install `gogcli` only when
+    missing, reuse a Gmail-scoped OAuth account or run one `gog auth add`, read the Coconala
+    registration address from the authenticated official surface without asking twice,
+    store only the address/account in mode-0600 private config, and prove one nonce-bound
+    setup message by destination-inbox readback. Remove SMTP/Telegram from the public
+    default. Email failure must not block the six jobs; Terminal receipts stay authoritative.
+11. [ ] Re-run the clean-HOME bootstrap contract after the terminal-only change: assert no
+    onboarding web server/browser UI starts, the official Coconala browser opens, rerun
+    resumes `finished`, all six launchd definitions render, and pre-auth marketplace effects
+    remain zero.
 
 ### Future shared OSS UX — not current session
 
@@ -52,13 +63,14 @@ repository-wide migration is not part of this Coconala session.
    are `0700/0600`, status never echoes values, and reuse requires matching privacy,
    purpose, consent, scope and freshness. Provider-only fields hold evidence hashes and
    credentials remain refs. Coconala correctly requires zero duplicate profile facts.
-   The local UI now auto-suggests language/timezone, asks notification channel once, and
+   The future shared UI auto-suggests language/timezone and asks notification channel once, and
    stores all three via CSRF-bound loopback POST; temp API verification proves no value in
    responses and `0700/0600` modes.
-4. [x] Add one local onboarding web UI opened by the root bootstrap; terminal commands are
-   recovery-only. The loopback-only stdlib server renders a private control surface, uses
-   a per-process CSRF token, never serves logs, and the global/Coconala bootstraps converge
-   on it. Real HTTP checks pass for HTML, graph API and forbidden tokenless mutation.
+4. [x] Add one future shared onboarding web UI. It is not opened by the Coconala bootstrap.
+   The loopback-only stdlib server renders a private control surface, uses
+   a per-process CSRF token and never serves logs. The generic Life Manager bootstrap may
+   use it; Coconala does not. Real HTTP checks pass for HTML, graph API and forbidden
+   tokenless mutation.
 5. [x] Render integration cards with prerequisites, owner time, official ceremonies,
    readiness, one Connect/Resume action, and no internal labels or log jargon. The first
    Coconala card shows 15 owner minutes, five reasons, six declared owners and `Needs you`;
@@ -76,9 +88,9 @@ repository-wide migration is not part of this Coconala session.
    payout-request state is never mislabeled as arrival. Body/Mind manifests and receipts
    remain open; individual Paid receipts do not declare the Paid lane globally complete.
 8. [x] Migrate Coconala's installer/gates/six jobs/receipts into the shared manifest without
-   weakening its current one-command and zero-listing behavior. Both global and Coconala
-   bootstraps open the common UI; Connect/Resume invokes the existing evidence-gated flow,
-   and the manifest retains all nine gates, six owners and five official receipts.
+   weakening its current one-command and zero-listing behavior. The generic bootstrap may
+   open the common UI; the Coconala bootstrap invokes the evidence-gated Terminal flow
+   directly. The manifest retains all nine gates, six owners and five official receipts.
 9. [ ] Run a clean local simulation covering install, ask-once reuse, blocked/ready isolation,
    restart resume, update and uninstall/export with secret/log/prompt/report scans. Current
    simulation covers manifest validation/coverage, loopback HTML+graph, CSRF rejection,
