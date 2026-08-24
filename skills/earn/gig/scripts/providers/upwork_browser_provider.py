@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
-from urllib.parse import quote, urlsplit
+from urllib.parse import urlsplit
 
 
 SCRIPTS = Path(__file__).resolve().parents[1]
@@ -28,10 +28,6 @@ from connector_outbox import ConnectorBusy, ConnectorOutbox  # noqa: E402
 from provider_authorization import DEFAULT_RECEIPT_PATH  # noqa: E402
 from upwork_proposal_browser import submit_proposal_after_fence  # noqa: E402
 from upwork_inbound_planner import invoke as plan_inbound, write_sealed_proposal  # noqa: E402
-from upwork_candidate_planner import (  # noqa: E402
-    invoke as plan_candidate, plan_search_queries, write_packet as write_candidate_packet,
-    write_sealed_proposal as write_candidate_proposal,
-)
 from upwork_offer_gate import invoke as qualify_direct_offer  # noqa: E402
 from upwork_offer_browser import accept_offer_after_fence  # noqa: E402
 from upwork_offer_effect import SealedUpworkOfferEffect  # noqa: E402
@@ -53,8 +49,6 @@ CONTRACTS_URL = "https://www.upwork.com/nx/wm/freelancer/home"
 MESSAGES_URL = "https://www.upwork.com/ab/messages/rooms/"
 WORKING_STYLE_URL = "https://www.upwork.com/nx/skills-assesment/assessment-results"
 DEFAULT_CANDIDATES = SCRIPTS.parent / "config" / "upwork-candidates.public.json"
-DEFAULT_CANDIDATE_CACHE = Path.home() / "gig/state/upwork-candidates.runtime.json"
-DEFAULT_CANDIDATE_EVIDENCE = Path.home() / "gig/state/upwork-candidate-planner"
 DEFAULT_TRANSITIONS = Path.home() / "gig/state/upwork-free-transitions.jsonl"
 DEFAULT_PROPOSALS = Path.home() / ".config/anicca/gig/upwork-proposals"
 DEFAULT_DATABASE = Path.home() / "gig/connector-outbox.sqlite3"
@@ -275,110 +269,6 @@ def load_candidates(path: Path) -> list[dict[str, str]]:
     return result
 
 
-def load_rejected_job_ids(path: Path) -> set[str]:
-    if not path.exists():
-        return set()
-    value = json.loads(path.read_text(encoding="utf-8"))
-    rows = value.get("rejected_job_ids", []) if isinstance(value, dict) else []
-    if not isinstance(rows, list) or any(not re.fullmatch(r"~\d{15,}", str(x)) for x in rows):
-        raise ValueError("upwork_candidate_config_invalid")
-    return {str(x) for x in rows}
-
-
-def load_search_query_index(path: Path) -> int:
-    if not path.exists():
-        return 0
-    value = json.loads(path.read_text(encoding="utf-8"))
-    index = value.get("search_query_index", 0) if isinstance(value, dict) else 0
-    if type(index) is not int or index < 0:
-        raise ValueError("upwork_candidate_config_invalid")
-    return index
-
-
-def _search_jobs(links: list[dict[str, Any]], excluded: set[str]) -> list[dict[str, str]]:
-    jobs = []
-    seen = set(excluded)
-    for link in links:
-        href = str(link.get("href") or "").split("?", 1)[0]
-        match = re.search(r"/jobs/[^/?#]*(~\d{15,})(?:[/?#]|$)", href)
-        title = str(link.get("text") or "").strip()
-        if match and match.group(1) not in seen and title:
-            seen.add(match.group(1))
-            jobs.append({"job_id": match.group(1), "job_url": href, "title": title})
-    return jobs
-
-
-async def replenish_candidates(
-    *, state: dict[str, Any], pass_id: str, sequence: int, cache: Path,
-    proposals: Path, evidence_root: Path,
-) -> dict[str, Any]:
-    ready = [row for row in state["candidate_jobs"] if row.get("status") == "open"
-             and row.get("queue") == "ready"]
-    deficit = max(0, 3 - len(ready))
-    result = {"needed": deficit, "searched": 0, "selected": [], "skipped": []}
-    if not deficit:
-        return result
-    skill_files = sorted(SCRIPTS.parent.parent.glob("upwork-*/SKILL.md"))
-    queries = await asyncio.to_thread(
-        plan_search_queries, skill_files, evidence_root=evidence_root,
-    )
-    query_index = load_search_query_index(cache) % len(queries)
-    search = queries[query_index]
-    search_url = "https://www.upwork.com/nx/search/jobs/?q=" + quote(search["query"], safe="") + "&sort=recency"
-    result["search_query"] = search
-    artifact = Path(await navigate_and_snapshot(
-        pass_id, f"{sequence:02d}-1", "candidate-search", search_url, "read_only", 2, 1440,
-    ))
-    _, search_hash, search_links = _read_evidence(artifact, search_url)
-    state["evidence_sha256"]["candidate-search"] = search_hash
-    rejected = load_rejected_job_ids(cache)
-    existing = {str(row.get("job_id")) for row in state["candidate_jobs"]} | rejected
-    retained = [
-        {key: str(row.get(key) or "") for key in (
-            "job_id", "job_url", "queue", "title", "proposal_payload_sha256",
-        )}
-        for row in state["candidate_jobs"] if row.get("status") not in TERMINAL_JOB_STATUSES
-    ]
-    for offset, job in enumerate(_search_jobs(search_links, existing)[:4], start=1):
-        result["searched"] += 1
-        detail = Path(await navigate_and_snapshot(
-            pass_id, f"{sequence + offset:02d}-1", "candidate-discovery", job["job_url"],
-            "read_only", 2, 1440,
-        ))
-        text, digest, _ = _read_evidence(detail, job["job_url"])
-        observed = parse_candidate({**job, "queue": "discovered", "proposal_payload_sha256": ""}, text, digest)
-        if observed["status"] != "open" or type(observed["connects_required"]) is not int:
-            result["skipped"].append({"job_id": job["job_id"], "reasons": ["not_open"]})
-            rejected.add(job["job_id"])
-            continue
-        packet = write_candidate_packet(
-            **job, rendered_text=text, evidence_sha256=digest,
-            connects_required=observed["connects_required"],
-            available_connects=state["balance"], observed_at=state["observed_at"],
-            skill_files=skill_files, root=evidence_root / "packets",
-        )
-        proposal, reasons = await asyncio.to_thread(
-            plan_candidate, packet, evidence_dir=evidence_root / packet.stem,
-        )
-        if proposal is None:
-            result["skipped"].append({"job_id": job["job_id"], "reasons": reasons})
-            rejected.add(job["job_id"])
-            continue
-        write_candidate_proposal(proposal, proposals)
-        candidate = {**job, "queue": "ready", "proposal_payload_sha256": proposal["payload_sha256"]}
-        retained.append(candidate)
-        state["candidate_jobs"].append(parse_candidate(candidate, text, digest))
-        result["selected"].append(job["job_id"])
-        if len(result["selected"]) >= deficit:
-            break
-    _atomic_write(cache, {
-        "version": 1, "candidates": retained,
-        "rejected_job_ids": sorted(rejected),
-        "search_query_index": (query_index + 1) % len(queries),
-    })
-    return result
-
-
 _SEALED_PROPOSAL_KEYS = {
     "attachments", "cover_letter", "job_id", "job_source_sha256", "job_url",
     "payload_sha256", "provider", "screening_answers", "status", "terms",
@@ -396,6 +286,8 @@ def plan_free_proposal(state: dict[str, Any], proposals_dir: Path) -> dict[str, 
     candidates = state.get("candidate_jobs")
     if type(balance) is not int or balance < 0 or not isinstance(candidates, list):
         raise ValueError("upwork_free_action_state_invalid")
+    if balance == 0:
+        return None
     proposals_dir = proposals_dir.expanduser()
     if (
         proposals_dir.is_symlink() or not proposals_dir.is_dir()
@@ -827,14 +719,12 @@ async def observe(
     inbound_proposals: Path = DEFAULT_INBOUND_PROPOSALS,
     inbound_evidence: Path = DEFAULT_INBOUND_EVIDENCE,
     inbox_ledger: Path = DEFAULT_INBOX_LEDGER,
-    candidate_cache: Path | None = None,
 ) -> dict[str, Any]:
     pass_id = f"upwork-free-{time.time_ns()}-{os.getpid()}"
     artifacts: dict[str, str] = {}
     pages: dict[str, str] = {}
     links: dict[str, list[dict[str, Any]]] = {}
-    candidate_cache = candidate_cache or candidates_path
-    candidates = load_candidates(candidate_cache if candidate_cache.exists() else candidates_path)
+    candidates = load_candidates(candidates_path)
     targets = [
         ("connects", CONNECTS_URL), ("invites", INVITES_URL),
         ("proposals", PROPOSALS_URL), ("catalog", CATALOG_URL),
@@ -1010,22 +900,6 @@ async def observe(
             state["free_acquisition"] = inbound
         return state
     selected = plan_free_proposal(state, proposals_dir)
-    if selected is None:
-        try:
-            state["candidate_replenishment"] = await replenish_candidates(
-                state=state, pass_id=pass_id, sequence=len(targets) + 21,
-                cache=candidate_cache, proposals=proposals_dir,
-                evidence_root=DEFAULT_CANDIDATE_EVIDENCE,
-            )
-        except Exception as exc:
-            state["candidate_replenishment"] = {
-                "state": "failed", "error": type(exc).__name__,
-            }
-        selected = plan_free_proposal(state, proposals_dir)
-    else:
-        state["candidate_replenishment"] = {
-            "state": "preempted_by_ready_proposal", "needed": 0,
-        }
     state["can_submit_public_job"] = selected is not None
     if selected is None:
         state["free_acquisition"] = {"state": "waiting_free_capacity"}
@@ -1045,7 +919,6 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--cdp-base", default="http://127.0.0.1:9233")
     parser.add_argument("--candidates", type=Path, default=DEFAULT_CANDIDATES)
-    parser.add_argument("--candidate-cache", type=Path, default=DEFAULT_CANDIDATE_CACHE)
     parser.add_argument("--proposals", type=Path, default=DEFAULT_PROPOSALS)
     parser.add_argument("--database", type=Path, default=DEFAULT_DATABASE)
     parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
@@ -1065,7 +938,7 @@ def main() -> int:
         args.candidates.expanduser(), args.proposals.expanduser(), args.database.expanduser(),
         args.manifest.expanduser(), args.browser_profile.expanduser(), args.inbound_dir.expanduser(),
         args.inbound_proposals.expanduser(), args.inbound_evidence.expanduser(),
-        args.inbox_ledger.expanduser(), args.candidate_cache.expanduser(),
+        args.inbox_ledger.expanduser(),
     ))
     state = reconcile_terminal_transitions(
         args.output.expanduser(), args.transitions.expanduser(), state,

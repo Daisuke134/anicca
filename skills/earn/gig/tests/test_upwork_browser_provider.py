@@ -273,21 +273,19 @@ def test_zero_balance_never_selects_a_private_proposal(tmp_path):
     assert planner({"balance": 0, "candidate_jobs": []}, proposals) is None
 
 
-@pytest.mark.parametrize(("balance", "connects"), [(0, 0), (7, 7)])
-def test_exact_free_capacity_selects_only_the_hash_bound_live_job(tmp_path, balance, connects):
+def test_exact_free_capacity_selects_only_the_hash_bound_live_job(tmp_path):
     proposals = tmp_path / "proposals"
     proposals.mkdir(mode=0o700)
     digest = _sealed_proposal(
         proposals / "01.json",
         job_url="https://www.upwork.com/jobs/One-bounded-job_~01/",
-        connects=connects,
     )
     state = {
-        "balance": balance,
+        "balance": 7,
         "candidate_jobs": [{
             "job_id": "~01", "status": "open", "queue": "ready",
             "job_url": "https://www.upwork.com/jobs/~01",
-            "connects_required": connects, "proposal_payload_sha256": digest,
+            "connects_required": 7, "proposal_payload_sha256": digest,
         }],
     }
     planner = getattr(provider, "plan_free_proposal", None)
@@ -296,7 +294,7 @@ def test_exact_free_capacity_selects_only_the_hash_bound_live_job(tmp_path, bala
     selected = planner(state, proposals)
     assert selected["job_id"] == "~01"
     assert selected["payload_sha256"] == digest
-    assert selected["terms"]["required_connects"] == connects
+    assert selected["terms"]["required_connects"] == 7
 
 
 def test_terminal_transition_is_fsynced_once_and_replay_is_zero(tmp_path):
