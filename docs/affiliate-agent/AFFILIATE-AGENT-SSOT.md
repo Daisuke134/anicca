@@ -7814,8 +7814,18 @@ the named production evidence:
   post baseline, and zero transactions do not prove a transaction bottleneck.
   Provider usage is 11,482 tokens with pass limit 32,768 and no daily cap. D13
   is now the first unchecked item.
-- [ ] **D13 Active-experiment lock.** Permit one active lineage and reject
+- [x] **D13 Active-experiment lock.** Permit one active lineage and reject
   sibling experiments, stale controls, and overlapping measurement windows.
+  Done at `e7a824597`: one D12 decision plus its exact D11 transition creates
+  one `ACTIVE` receipt; same decision replays, a sibling returns
+  `BLOCKED_ACTIVE_EXPERIMENT`, and a stale funnel transition fails closed.
+  Production active experiment `b34baf90...` binds decision `d1959d07...`,
+  caption-generator placement, job `4ceff8ec...`, X permalink
+  `2091754957448040906`, selected variable `distribution_mix`, bottleneck
+  `reach`, exposure `insufficient`, and observation `OPEN`. Its current model
+  action is one additional relevant owned distribution and its official metric
+  is placement-specific exact impressions increasing from baseline 9. History
+  count is exactly 1. D14 is now the first unchecked item.
 - [ ] **D14 Exposure gate.** Prevent a conversion verdict until the active
   placement has a sealed observation window and sufficient real reach chosen by
   the model. Scheduler time or post count alone cannot satisfy exposure.
