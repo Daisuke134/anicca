@@ -93,12 +93,16 @@ def qualify_one(
     candidate_memory_path: Path,
     fetch_description: Callable[[str], str],
     run_model: Callable[[str], dict[str, Any]],
+    allowed_hosts: set[str] | None = None,
 ) -> dict[str, Any]:
     ledger = Ledger(ledger_path)
     try:
         candidates = []
         for row in ledger.pending_materials_ready_applications():
             if detect_provider(str(row["canonical_url"])) != "workday":
+                continue
+            host = (urlsplit(str(row["canonical_url"])).hostname or "").casefold()
+            if allowed_hosts is not None and host not in allowed_hosts:
                 continue
             fit = ledger.connection.execute(
                 """
@@ -187,6 +191,7 @@ def main() -> int:
     runner = AgentRunner(evidence_root=args.evidence_root, runner_path=args.runner)
     source_payload = json.loads(args.sources.read_text(encoding="utf-8"))
     sources = tuple(dict(row) for row in source_payload.get("sources", []))
+    allowed_hosts = {str(row["host"]).casefold() for row in sources}
     result = qualify_one(
         ledger_path=args.ledger,
         candidate_memory_path=args.candidate_memory,
@@ -198,6 +203,7 @@ def main() -> int:
             workdir=args.workdir,
             run_id=f"workday-fit-{uuid.uuid4().hex}",
         ),
+        allowed_hosts=allowed_hosts,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     args.output.write_text(

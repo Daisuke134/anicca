@@ -153,6 +153,26 @@ class WorkdayQualificationTests(unittest.TestCase):
             self.assertTrue(ledger.workday_fit_qualified(application_id))
             ledger.close()
 
+    def test_old_hold_from_unavailable_source_does_not_block_search(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ledger_path, application_id, memory = self._row(root)
+            ledger = Ledger(ledger_path)
+            ledger.record_workday_fit_decision(
+                application_id, "hold", "a" * 64, policy_version="old-policy"
+            )
+            ledger.close()
+
+            result = qualify_one(
+                ledger_path=ledger_path,
+                candidate_memory_path=memory,
+                fetch_description=lambda _url: self.fail("must not fetch foreign source"),
+                run_model=lambda _prompt: self.fail("must not run model"),
+                allowed_hosts={"another.wd1.myworkdayjobs.com"},
+            )
+
+            self.assertEqual(result["status"], "no_pending_workday_fit")
+
 
 if __name__ == "__main__":
     unittest.main()

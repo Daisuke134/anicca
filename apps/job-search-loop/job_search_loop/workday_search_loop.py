@@ -77,6 +77,7 @@ def main() -> int:
     runner = AgentRunner(evidence_root=args.evidence_root, runner_path=args.runner)
     source_payload = json.loads(args.sources.read_text(encoding="utf-8"))
     sources = tuple(dict(row) for row in source_payload.get("sources", []))
+    allowed_hosts = {str(row["host"]).casefold() for row in sources}
     source_cursor = 0
 
     def discover_next() -> dict[str, Any]:
@@ -98,6 +99,7 @@ def main() -> int:
                 workdir=args.workdir,
                 run_id=f"workday-fit-{uuid.uuid4().hex}",
             ),
+            allowed_hosts=allowed_hosts,
         ),
         max_candidates=args.max_candidates,
     )
