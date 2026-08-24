@@ -81,6 +81,10 @@ class AffiliateProposalTests(unittest.TestCase):
         self.assertIn("affiliate distribution job published", shell)
         self.assertIn("X_REPOST_JOB_ID", shell)
         self.assertIn("--record-job-result", shell)
+        self.assertGreater(
+            shell.index('run_x_post --cdp "$CDP" --text-file "$AFFILIATE_JOB_TEXT"'),
+            shell.index('CDP="$(bash "$ENSURE_BROWSER"'),
+        )
 
     def test_claimed_distribution_job_renders_one_safe_idempotent_payload(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

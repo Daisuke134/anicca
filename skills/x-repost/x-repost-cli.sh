@@ -430,6 +430,13 @@ if [ "$AFFILIATE_JOB_STATE" = "EFFECT_STARTED" ]; then
     finish 0 "affiliate distribution job awaits reconciliation"
   fi
   if [ "$AFFILIATE_EFFECT_STATE" = "READY_TO_POST" ]; then
+    CDP="$(bash "$ENSURE_BROWSER" "$IDENTITY" 2>>"$EV/browser.err")"
+    case "$CDP" in
+      http*) log "leased $IDENTITY at $CDP for Affiliate distribution" ;;
+      *) report "❌ Affiliate distribution browser unavailable"; finish 1 "browser lease failed" ;;
+    esac
+    BROWSER_LEASED=1
+    trap '[ "$BROWSER_LEASED" -eq 1 ] && bash "$GUARD" release "$IDENTITY" >/dev/null 2>&1 || true' EXIT
     AFFILIATE_JOB_TEXT="$EV/affiliate-job-post.txt"
     "$PY" - "$AFFILIATE_JOB_EFFECT" "$AFFILIATE_JOB_TEXT" <<'PYEOF'
 import json, os, sys
