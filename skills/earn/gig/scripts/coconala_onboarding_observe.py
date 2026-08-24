@@ -80,6 +80,9 @@ def _safe_snapshot(raw: dict[str, object]) -> dict[str, object]:
 
 def observe(home: Path) -> dict[str, object]:
     os.environ["CLOAK_CDP_BASE_URL"] = "http://127.0.0.1:9223"
+    os.environ["CLOAK_TARGET_OWNERS_FILE"] = str(
+        home / ".cloak" / "vault" / "gig-target-owners.json"
+    )
     snapshots: dict[str, object] = {}
     for state, url in PAGES.items():
         tab = cdp_default_tab.open_tab(url, background=True, owner="gig-onboarding")

@@ -72,6 +72,8 @@ if [ "${1:-}" = "prepare" ]; then
   if ! "$venv/bin/python" -c 'import websockets, bs4, jsonschema, cloakbrowser' >/dev/null 2>&1; then
     "$venv/bin/pip" install websockets beautifulsoup4 jsonschema cloakbrowser
   fi
+  "$venv/bin/python" "$GIG_DIR/scripts/coconala_onboarding.py" configure-python \
+    --python "$venv/bin/python" >/dev/null
 
   if ! command -v codex >/dev/null 2>&1; then
     installer="$(mktemp -t codex-install.XXXXXX)"
