@@ -37,7 +37,7 @@ class XTweeterLaunchdContractTests(unittest.TestCase):
         self.assertTrue(plist["EnvironmentVariables"]["X_TWEETER_STATE_DIR"].endswith(
             "/loops/x-tweeter"
         ))
-        self.assertEqual(plist["EnvironmentVariables"]["X_REPOST_PUBLISH_TRANSPORT"], "browser")
+        self.assertEqual(plist["EnvironmentVariables"]["X_REPOST_PUBLISH_TRANSPORT"], "postiz")
         health = module.build(
             loop, "healthcheck", loop["jobs"]["healthcheck"],
             Path("/tmp/home"), Path("/tmp/current"), Path("/tmp/logs"),

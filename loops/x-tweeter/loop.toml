@@ -13,9 +13,6 @@ label     = "ai.anicca.x-tweeter-pass"
 program   = "skills/x-tweeter/x-tweeter-cli.sh"
 calendars = [{ minute = 15 }, { minute = 45 }]
 
-[jobs.pass.env]
-X_REPOST_PUBLISH_TRANSPORT = "browser"
-
 [jobs.healthcheck]
 label            = "ai.anicca.x-tweeter-healthcheck"
 program          = "skills/x-tweeter/x-tweeter-healthcheck.sh"
