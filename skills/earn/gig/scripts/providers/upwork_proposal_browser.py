@@ -7,7 +7,9 @@ import asyncio
 import hashlib
 import json
 import re
+import subprocess
 import sys
+import time
 from pathlib import Path
 from collections.abc import Callable
 from typing import Any
@@ -31,6 +33,10 @@ _SNAPSHOT_KEYS = {
     "submit_label", "validation_errors",
 }
 _SUBMIT_KEYS = {"form_url", "job_id", "proposal_id", "state"}
+GIG_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_RUNNER = GIG_ROOT / "agent-runner/agent_runner.py"
+DEFAULT_STEP_SCHEMA = GIG_ROOT / "schemas/gig_step_result.schema.json"
+DEFAULT_OPERATOR_EVIDENCE = Path.home() / "gig/evidence/upwork-browser-operator"
 
 
 def _duration_label(days: Any) -> str:
@@ -80,17 +86,6 @@ const accept=controls.find(x=>['accept and send a proposal','submit a proposal',
 if(!accept||accept.disabled)throw Error('upwork_invitation_accept_missing');accept.click();return true;})()'''
 
 
-def submit_click_expression(job_id: str) -> str:
-    """Build the only proposal-submit mutation; callers must cross the fence first."""
-    sealed_job = json.dumps(job_id)
-    return f'''(()=>{{
-const job={sealed_job},norm=x=>(x||'').replace(/\\s+/g,' ').trim().toLowerCase(),submit=[...document.querySelectorAll('button')].find(x=>['submit proposal','send proposal'].includes(norm(x.innerText)))||document.querySelector('footer .air3-btn-primary,footer button[type="submit"],button[data-test*="submit" i]');
-if(!(location.pathname.includes('/ab/proposals/job/'+job+'/apply')||location.pathname.includes('/nx/proposals/job/'+job+'/apply'))||!submit||submit.disabled)throw Error('upwork_submit_control_missing');
-submit.scrollIntoView({{block:'center',inline:'center'}});submit.focus();const r=submit.getBoundingClientRect();
-return{{x:r.left+r.width/2,y:r.top+r.height/2}};
-}})()'''
-
-
 def submit_readback_expression(job_id: str) -> str:
     """Read a post-click receipt without proposal copy."""
     sealed_job = json.dumps(job_id)
@@ -103,12 +98,29 @@ return{{job_id:job,form_url:url,proposal_id:match?match[1]:null,state:submitted&
 }})()'''
 
 
-async def _trusted_click(ws: Any, point: dict[str, Any], call_id: int) -> None:
-    for offset, event in enumerate(("mousePressed", "mouseReleased")):
-        await _call(ws, "Input.dispatchMouseEvent", {
-            "type": event, "x": point["x"], "y": point["y"],
-            "button": "left", "clickCount": 1,
-        }, call_id + offset)
+def _run_browser_operator(job_id: str, form_url: str) -> None:
+    evidence = DEFAULT_OPERATOR_EVIDENCE / f"{time.time_ns()}-{job_id.lstrip('~')}"
+    prompt = f"""Operate the current authenticated Upwork proposal page as a browser agent.
+The exact immutable proposal for job {job_id} is already filled and its exactly-once effect fence is
+already closed. Inspect the live browser at http://127.0.0.1:9233 and find the existing page whose URL
+is {form_url}. Use current page feedback to handle ordinary non-financial UI and submit that already
+filled proposal exactly once. Do not edit proposal fields, buy anything, boost, subscribe, open another
+job, change account settings, edit code, or claim success from a click. Stop after the page visibly
+leaves the editable proposal state or shows a provider-authored result. Return status ok if you acted,
+blocked if a human-only ceremony appears, or error if the live result remains unknown. Evidence must
+name only safe page state or local evidence paths; never include proposal text or credentials."""
+    evidence.mkdir(parents=True, exist_ok=False, mode=0o700)
+    completed = subprocess.run([
+        sys.executable, str(DEFAULT_RUNNER), "--task-class", "browser-lane-agent",
+        "--candidate-model", "gpt-5.6-terra", "--prompt-stdin",
+        "--schema", str(DEFAULT_STEP_SCHEMA), "--evidence-dir", str(evidence),
+        "--task-label", "upwork-proposal-submit", "--loop", "gig-upwork",
+        "--workdir", str(Path.home()), "--timeout-seconds", "900",
+    ], input=prompt, text=True, capture_output=True, timeout=930, check=False)
+    if completed.returncode != 0:
+        (evidence / "operator-return-code.txt").write_text(
+            f"{completed.returncode}\n", encoding="utf-8",
+        )
 
 
 def validate_submit_readback(snapshot: dict[str, Any], payload: dict[str, Any]) -> dict[str, str]:
@@ -197,47 +209,17 @@ async def submit_proposal_after_fence(
             snapshot = filled.get("result", {}).get("result", {}).get("value")
             preflight = validate_preflight(snapshot, payload)
             require_effect_start(preflight, start_effect)
-            control = await _call(ws, "Runtime.evaluate", {
-                "expression": submit_click_expression(job_id), "returnByValue": True,
-            }, cid + 1)
-            point = control.get("result", {}).get("result", {}).get("value")
-            if (
-                not isinstance(point, dict)
-                or not isinstance(point.get("x"), (int, float))
-                or not isinstance(point.get("y"), (int, float))
-            ):
-                raise ValueError("upwork_submit_control_missing")
-            await _trusted_click(ws, point, cid + 2)
-            await asyncio.sleep(1)
-            explainer = await _call(ws, "Runtime.evaluate", {
-                "expression": """(()=>{const n=x=>(x||'').replace(/\\s+/g,' ').trim(),d=[...document.querySelectorAll('[role=dialog]')].find(x=>x.offsetParent&&n(x.innerText).includes('Use Connects to submit proposals'));if(!d)return false;const b=[...d.querySelectorAll('button')].find(x=>n(x.innerText)==='Close');if(!b)throw Error('upwork_connects_explainer_close_missing');b.click();return true})()""",
-                "returnByValue": True,
-            }, cid + 4)
-            if explainer.get("result", {}).get("result", {}).get("value") is True:
-                await asyncio.sleep(1)
-                closed = await _call(ws, "Runtime.evaluate", {
-                    "expression": "![...document.querySelectorAll('[role=dialog]')].some(x=>x.offsetParent)",
-                    "returnByValue": True,
-                }, cid + 5)
-                if closed.get("result", {}).get("result", {}).get("value") is not True:
-                    raise ValueError("upwork_connects_explainer_close_failed")
-                control = await _call(ws, "Runtime.evaluate", {
-                    "expression": submit_click_expression(job_id), "returnByValue": True,
-                }, cid + 6)
-                point = control.get("result", {}).get("result", {}).get("value")
-                if not isinstance(point, dict):
-                    raise ValueError("upwork_submit_control_missing")
-                await _trusted_click(ws, point, cid + 7)
+            await asyncio.to_thread(_run_browser_operator, job_id, str(snapshot["form_url"]))
             await asyncio.sleep(5)
             readback = await _call(ws, "Runtime.evaluate", {
                 "expression": submit_readback_expression(job_id), "returnByValue": True,
-            }, cid + 9)
+            }, cid + 1)
             value = readback.get("result", {}).get("result", {}).get("value")
             if isinstance(value, dict) and value.get("state") == "unknown":
                 diagnostic = await _call(ws, "Runtime.evaluate", {
                     "expression": """(()=>{const n=x=>(x||'').replace(/\\s+/g,' ').trim();return{url:location.href,buttons:[...document.querySelectorAll('button')].filter(x=>x.offsetParent).map(x=>n(x.innerText)).filter(Boolean).slice(-12),dialogs:[...document.querySelectorAll('[role=dialog]')].filter(x=>x.offsetParent).map(x=>n(x.innerText).slice(0,300)),alerts:[...document.querySelectorAll('[role=alert],.air3-alert')].filter(x=>x.offsetParent).map(x=>n(x.innerText).slice(0,300))}})()""",
                     "returnByValue": True,
-                }, cid + 10)
+                }, cid + 2)
                 detail = diagnostic.get("result", {}).get("result", {}).get("value")
                 raise ValueError("upwork_proposal_submit_unconfirmed:" + json.dumps(
                     detail, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
