@@ -689,6 +689,16 @@ scope/deadline/terms and contract readback. Verified-effect replay repairs a mis
 another Offer click. Focused integration passes 49/49 and the complete combined downstream suite passes
 86/86. Production contract IDs remain zero, so no fabricated live workspace or delivery is claimed.
 
+The next call-graph audit found that a created workspace still had no resident production caller for
+build or QA. A provider-neutral `project_worker.py` now claims one workspace, runs the frozen general
+workflow once, invokes a fresh read-only reviewer, applies the deterministic artifact/contract/privacy
+verifier, writes a durable QA receipt and advances only to `deliver` after PASS. It has no marketplace
+capability. Offer-effect replay may spawn it again, but the workspace lock and receipts make builder,
+reviewer and external effects all zero on replay; different contracts use different processes and
+locks. The combined downstream suite now passes 87/87. The next unclosed boundary is QA PASS to the
+correct provider delivery mode: fixed-price official milestone submission versus hourly protected time
+tracking. No live client Offer exists yet, so production build, QA and delivery effects remain zero.
+
 A Skill bundle is immutable and versioned:
 
 ```text

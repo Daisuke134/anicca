@@ -69,6 +69,8 @@ DEFAULT_NEGOTIATION_EVIDENCE = Path.home() / "gig/state/upwork-negotiation-plann
 DEFAULT_OWNER_PROFILE = Path.home() / ".config/anicca/gig/owner-profile.json"
 DEFAULT_GIG_DIR = Path.home() / "gig"
 DEFAULT_PROJECTS_ROOT = DEFAULT_GIG_DIR / "projects"
+DEFAULT_PROJECT_WORKER = SCRIPTS / "project_worker.py"
+DEFAULT_AGENT_RUNNER = SCRIPTS.parent / "agent-runner/agent_runner.py"
 DEFAULT_TELEGRAM_REPORT = SCRIPTS / "apply_telegram_report.py"
 TERMINAL_JOB_STATUSES = {"closed", "removed"}
 _COUNT_LABELS = {
@@ -938,6 +940,14 @@ def create_offer_workspace(
     }, general_agent_workflow())
 
 
+def start_project_worker(workspace: dict[str, str]) -> None:
+    subprocess.Popen([
+        sys.executable, str(DEFAULT_PROJECT_WORKER), "--workspace", workspace["workspace"],
+        "--revision-sha256", workspace["revision_sha256"],
+        "--skills-root", str(SCRIPTS.parents[2]), "--agent-runner", str(DEFAULT_AGENT_RUNNER),
+    ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+
+
 async def execute_direct_offer(
     decision: dict[str, Any], *, database: Path, manifest: Path, browser_profile: Path,
     active_contract_ids: list[str], concurrent_job_cap: int,
@@ -960,6 +970,7 @@ async def execute_direct_offer(
             decision, contract_id=existing["proposal_id"],
             contract_readback_sha256=existing["readback_hash"],
         )
+        start_project_worker(workspace)
         return {**base, "state": "accepted", "contract_id": existing["proposal_id"],
                 "project_workspace": workspace}
     if existing is not None and existing["state"] == "reconcile_pending":
@@ -982,6 +993,7 @@ async def execute_direct_offer(
         decision, contract_id=receipt["contract_id"],
         contract_readback_sha256=verified["readback_hash"],
     )
+    start_project_worker(workspace)
     return {**base, "state": "accepted", "contract_id": receipt["contract_id"],
             "project_workspace": workspace}
 
