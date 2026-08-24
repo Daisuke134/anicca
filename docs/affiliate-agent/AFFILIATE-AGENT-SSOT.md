@@ -8242,7 +8242,15 @@ Current implementation state:
   `1c2142e5e` disables plugins, shell, browser, multi-agent, hooks, apps, and
   workspace dependencies for posting model calls while retaining account-2
   Luna/max JSON generation. Model boundary tests are 8/8 and x-tweeter tests are
-  5/5; production release `1c2142e5e` awaits the 19:45 natural run.
+  5/5. The 20:07 existing-owner run proves bounded JSON generation completes,
+  but Postiz rejects the Original with HTTP 400 because its 228-character body
+  is checked before the 53-character source URL is appended. Commit
+  `8ed034091` applies provider-compatible Original body budget 226 and removes
+  the remaining 512 MiB browser floor. Production release `8ed034091` then
+  publishes `https://x.com/selawmqt/status/2091848472018469086`, Postiz
+  submission `cmt75bevd00hzp20y4e4uc1oy`, length `225/226`, and exactly one
+  ledger row. This is production kickstart proof, not yet one of the three
+  required consecutive natural-calendar opportunities, so XT05 remains open.
 
 ### Shared browser publisher migration
 
@@ -8282,64 +8290,68 @@ preventing one of those outcomes.
 Current authoritative state:
 
 - Production Affiliate release is `9d3a91413b96b6eb1e9b8a9bf1892ee35fd3dc69`.
-  Production shared X release is `29bc34d7b487551fe7b07e08a3b73b3e9916bf6b`;
+  Production shared X release is `712ddb6b9482b090da45870bd6aaa58b6b07787c`;
   x-repost is Quote-only at `:00/:30`, x-tweeter is Original-only at `:15/:45`,
   and both live plists select Postiz publication plus browser readback.
-- Runtime health is not yet "both fine": x-tweeter has one manual Postiz success
-  but no natural-calendar success after the final reload; x-repost's 18:00 run is
-  terminal `UNVERIFIED` after Postiz acceptance and its 18:30 run exits on
-  Affiliate distribution job claim failure. Both schedules are loaded, but
-  constant successful publication remains the immediate runtime blocker. The
-  x:anicca browser is currently stopped after controlled stale-tab cleanup and
-  cannot be reprovisioned while the disk stop flag remains active.
-- Disk headroom is also a direct runtime blocker: the data volume reached 100%
-  with 232 MiB available, causing x-repost 18:30 to fail before creating its
-  evidence directory. Rotating only regenerable launchd logs retained recent
-  tails and pruning five old 8/22 core backups while preserving the latest two
-  recovery archives increases availability to 1.7 GiB. The 19:00 x-repost
-  natural run then creates evidence and claims the next Affiliate job with exit
-  0; a 19:05 same-owner kickstart prepares its payload with exit 0 and no public
-  effect. The 19:30 natural run publishes
-  `https://x.com/selawmqt/status/2091835568003207246`; provider submission is
-  `cmt73hewv000emp0ye2qrnna7`, terminal state is `POSTED`, and owner exit is 0.
-  Later failures prove that recovery was temporary. APFS VM consumes about
-  26.1 GB and `vm.swapusage` reaches roughly 23.8 GB used; free container space
-  repeatedly falls below 300 MiB. Restarting only the idle x browser removes
-  stale tabs and lowers swap use by about 6 GB, but macOS does not shrink enough
-  swapfiles to meet disk-sentinel's authoritative 11 GiB recovery threshold.
-  `disk-writers.stop` therefore remains set and blocks browser reprovisioning.
-  The next host-level action is an approved Mac restart, followed by exact
-  swap/headroom, launchd, browser identity, x-repost, and x-tweeter readback
-  before any new public effect.
+- Runtime publication is recovered. Per the user's explicit direction, all
+  free-GB caps are off: `com.anicca.disk-sentinel`,
+  `com.anicca.emergency-disk-guard`, and
+  `ai.anicca.life-manager-disk-cleanup` are stopped and launchctl-disabled;
+  active `disk-writers.stop`, `disk-pressure.block`, and
+  `disk-pressure.alert` paths are absent and their old files are retained only
+  under `disabled-disk-gates/`. The x browser floor is 0. `x:anicca` is
+  reachable at dynamic CDP port 52944 with UUID
+  `f8700afc-9f3c-4825-80fc-d0af93795abb`. No Mac restart or 11 GiB wait remains.
+- The 20:05 x-repost owner publishes
+  `https://x.com/selawmqt/status/2091844539585904917`, Postiz submission
+  `cmt74rbvn00aamp0yg7384u56`, job
+  `594d7c874fc188b11e00003b4253950b7ad117e20393c707157130b93de81f50`,
+  terminal `POSTED`, and one ledger row. However, its receipt is classified
+  `affiliate_distribution_quote` while `affiliate-job-post.json` records
+  `mode=original` with no source URL. Publication works; the x-repost
+  Quote-only Affiliate branch defect is fixed in `712ddb6b9`. The replacement
+  relevant-external Quote job is claimed and its next launchd wake is currently
+  spawn-scheduled; no replacement permalink is claimed yet.
 - Active placement is `elevenlabs-discovered-caption-generator-en-1`; its exact
   X permalink is `https://x.com/selawmqt/status/2091754957448040906`.
 - D01–D15 are complete. D16 has one public quote effect with duplicate zero; its
   exact reach and post-effect money readback remain the sole active item.
-- The current-day public ledger contains 17 exact permalinks: 6 Originals, 6
-  ordinary Quotes, and 5 Affiliate effects. Sixteen predate the independent
-  owner split; x-tweeter has one Postiz-backed manual Original canary. The next
+- The current-day public ledger includes the exact x-repost and x-tweeter
+  permalinks above. x-tweeter has one Postiz-backed manual Original canary and
+  one successful existing-owner production kickstart. The next
   natural boundaries are x-tweeter `:15/:45` and x-repost `:00/:30`.
-- Exact Affiliate impressions have increased from the experiment baseline 9 to
-  aggregate 54, but
-  exposure remains insufficient by the model-selected boundary. Official
-  cumulative provider clicks are 3 with post-distribution baseline unavailable;
-  transactions, pending, approved, paid, and reversed commission remain zero;
-  therefore the result is still non-money.
+- Exact Affiliate impressions have increased from experiment baseline 9 to 68.
+  PartnerStack's official last-30-day overview reads 61 cumulative clicks
+  (immutable baseline 1, delta +60), while the exact-placement join still reads
+  3 cumulative clicks with post-distribution baseline unavailable. The official
+  Commission Report has 0 rows; transactions, pending, approved, paid, reversed,
+  and revenue are all zero. Money state is `NO_TRANSACTIONS`, so clicks and
+  impressions remain non-money. PartnerStack also reports tax information
+  `REQUIRED` and payment provider `SELECTION_REQUIRED`; these block payout after
+  a future commission but do not explain the current zero transaction count.
 - The immediate blocker is insufficient relevant reach, followed by zero exact
   transactions. There is no token-budget or JST-reset blocker.
 
 Execute the remaining work strictly in this order:
 
-1. Execute D16 through the existing Affiliate and x-repost owners: create one
-   new deduplicated recirculation effect for plan `2bab9753...`, obtain its exact
-   X permalink, and read back exact placement impressions. Continue bounded
-   relevant recirculation on later owner passes until the model-selected
-   exposure boundary is met or model evidence closes the channel.
-2. Execute D17 and seal the full exact-placement funnel delta. Zero transactions
+1. Read back exact placement impressions and official PartnerStack transactions
+   after the new x-repost/x-tweeter effects. Preserve zero transaction as
+   non-money.
+2. Complete the already-started Quote-only proof. Commit `712ddb6b9` is pushed
+   to origin/canonical and installed as production release
+   `712ddb6b9482b090da45870bd6aaa58b6b07787c`; it maps both
+   `QUOTE_CONTROL_POST` and `QUOTE_RELEVANT_EXTERNAL` to provider mode `quote`.
+   New job `f17e0b33c92864f286cde86551c5599b68651cff15f98552e90180ac611eba5d`
+   is claimed but not yet payload-ready or published. Let the existing owner
+   finish payload generation, then require source URL, provider mode `quote`,
+   exact X permalink, and duplicate zero.
+3. Observe three consecutive natural `:15/:45` x-tweeter opportunities with
+   exact public effect or truthful no-op receipts to close XT05.
+4. Execute D17 and seal the full exact-placement funnel delta. Zero transactions
    remains non-money and cannot be called a conversion loss while exposure is
    insufficient.
-3. Execute D18–D23 sequentially to add approved measurable offers and allocate
+5. Execute D18–D23 sequentially to add approved measurable offers and allocate
    growth/monetization cadence from official reach and money evidence.
-4. Execute D24–D30 sequentially: first exact transaction, first approved/paid
+6. Execute D24–D30 sequentially: first exact transaction, first approved/paid
    commission, unit economics, winner scaling, loser stopping, portfolio
    iteration, and the repeated rolling-30-day net USD 10,000 readback.
