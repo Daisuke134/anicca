@@ -24,6 +24,7 @@ HEARTBEAT="${X_REPOST_STATE_DIR:-$SKILL/state}/.last-pass"
 # Hourly cadence, so 3h of silence is already three missed passes -- and the heartbeat is written
 # on every pass that reaches a decision, not only the ones that publish.
 MAX_AGE_SECONDS="${X_REPOST_MAX_PASS_AGE:-10800}"
+INITIAL_GRACE_SECONDS="${X_LOOP_INITIAL_GRACE_SECONDS:-0}"
 
 # shellcheck source=/dev/null
 source "$HOME/.openclaw/skills/_shared/scripts/telegram-notify.sh" 2>/dev/null || \
@@ -45,7 +46,10 @@ fi
 
 # 2. a pass reached a decision recently
 if [ ! -f "$HEARTBEAT" ]; then
-  problems+=("no pass has ever completed (state/.last-pass absent)")
+  installed_age=$(( $(date +%s) - $(stat -f %m "$INSTALLED" 2>/dev/null || echo 0) ))
+  if [ "$INITIAL_GRACE_SECONDS" -le 0 ] || [ "$installed_age" -gt "$INITIAL_GRACE_SECONDS" ]; then
+    problems+=("no pass has ever completed (state/.last-pass absent)")
+  fi
 else
   age=$(( $(date +%s) - $(stat -f %m "$HEARTBEAT") ))
   if [ "$age" -gt "$MAX_AGE_SECONDS" ]; then
