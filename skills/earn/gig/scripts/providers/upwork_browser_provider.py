@@ -27,7 +27,7 @@ from cdp_nav_snapshot import navigate_and_snapshot  # noqa: E402
 from connector_outbox import ConnectorBusy, ConnectorOutbox  # noqa: E402
 from provider_authorization import DEFAULT_RECEIPT_PATH  # noqa: E402
 from upwork_proposal_browser import submit_proposal_after_fence  # noqa: E402
-from upwork_inbound_planner import invoke as plan_inbound, write_sealed_proposal  # noqa: E402
+from upwork_inbound_planner import invoke as plan_inbound, invoke_batch as plan_batch, write_sealed_proposal  # noqa: E402
 from upwork_offer_gate import invoke as qualify_direct_offer  # noqa: E402
 from upwork_offer_browser import accept_offer_after_fence  # noqa: E402
 from upwork_offer_effect import SealedUpworkOfferEffect  # noqa: E402
@@ -526,6 +526,8 @@ async def discover_affordable_proposal(
         state["proposal_discovery"]["pages"] += 1
         jobs = [row for row in _dedupe_links(search_links)
                 if "/jobs/" in row["href"] and row["id"] not in known]
+        packet_paths: list[Path] = []
+        observed_by_id: dict[str, tuple[dict[str, str], str, str]] = {}
         for offset, job in enumerate(jobs[:10], start=1):
             known.add(job["id"])
             detail = Path(await navigate_and_snapshot(
@@ -548,17 +550,21 @@ async def discover_affordable_proposal(
                 "resource_url": job["href"], "required_connects": required,
                 "available_connects_before": state["balance"],
             }, text, digest, inbound_dir, state["observed_at"])
+            packet_paths.append(inbound_dir / f"{packet_sha}.json")
+            observed_by_id[job["id"]] = (candidate, text, digest)
+        if packet_paths:
+            batch_key = hashlib.sha256("\n".join(path.stem for path in packet_paths).encode()).hexdigest()
             proposal = await asyncio.to_thread(
-                plan_inbound, inbound_dir / f"{packet_sha}.json",
-                profile=DEFAULT_OWNER_PROFILE,
-                evidence_dir=inbound_evidence / packet_sha,
+                plan_batch, packet_paths, profile=DEFAULT_OWNER_PROFILE,
+                evidence_dir=inbound_evidence / f"batch-{batch_key}",
             )
             if proposal is None:
                 continue
+            candidate, text, digest = observed_by_id[proposal["job_id"]]
             public = dict(proposal)
             proposals_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
             os.chmod(proposals_dir, 0o700)
-            _atomic_write(proposals_dir / f"{job['id'].lstrip('~')}.json", public)
+            _atomic_write(proposals_dir / f"{proposal['job_id'].lstrip('~')}.json", public)
             ready = {**candidate, "queue": "ready",
                      "proposal_payload_sha256": public["payload_sha256"]}
             state["candidate_jobs"].append(parse_candidate(ready, text, digest))

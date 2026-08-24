@@ -101,6 +101,28 @@ INSTALLED_SKILLS={skills}
 OFFICIAL_INBOUND={inbound}"""
 
 
+def batch_planner_prompt(
+    packets: list[dict[str, Any]], owner_profile: dict[str, Any], capabilities: dict[str, Any],
+) -> str:
+    facts = json.dumps(owner_profile, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    inbound = json.dumps(packets, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    skills = json.dumps(capabilities, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return f"""Choose at most one best Upwork public job from OFFICIAL_CANDIDATES and return the existing
+single-proposal schema. Return submit with one proposal only when installed Skills can complete and
+independently verify it, expected value is positive, and the official Connects balance covers it;
+otherwise return skip for the whole set with reasons. Compare candidates against each other rather
+than accepting the first feasible one. Use only supplied facts. Never invent experience, identity,
+availability, credentials, portfolio, results, client facts, requirements, questions, price or scope.
+Installed Skills prove executable capability, not prior client experience. Missing implementation
+details may become concise pre-contract questions. For submit, copy the chosen resource_id, URL,
+detail hash, required_connects and available_connects_before exactly; status is
+frozen_waiting_for_connects; unsupported_claims and attachments are empty; answer every explicit
+screening question exactly once and keep communication on Upwork.
+OWNER_PROFILE={facts}
+INSTALLED_SKILLS={skills}
+OFFICIAL_CANDIDATES={inbound}"""
+
+
 def validate_decision(
     decision: dict[str, Any], packet: dict[str, Any],
 ) -> dict[str, Any] | None:
@@ -158,24 +180,19 @@ def validate_decision(
     return {**proposal, "payload_sha256": hashlib.sha256(body.encode()).hexdigest()}
 
 
-def invoke(
-    packet_path: Path, *, runner: Path = DEFAULT_RUNNER, schema: Path = DEFAULT_SCHEMA,
-    profile: Path = DEFAULT_PROFILE, evidence_dir: Path,
-) -> dict[str, Any] | None:
-    packet = load_packet(packet_path)
+def _invoke_prompt(
+    prompt: str, *, runner: Path, schema: Path, evidence_dir: Path,
+) -> dict[str, Any]:
     evidence_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
     os.chmod(evidence_dir, 0o700)
     summary_path = evidence_dir / "summary.json"
     if not summary_path.is_file():
-        prompt = planner_prompt(
-            packet, _object(profile.expanduser(), "owner_profile"), capability_inventory(REPO_ROOT),
-        )
         completed = subprocess.run([
             sys.executable, str(runner), "--task-class", "application-intent-planner",
             "--prompt-stdin", "--schema", str(schema), "--evidence-dir", str(evidence_dir),
             "--task-label", "upwork-inbound-proposal", "--loop", "gig-upwork",
             "--workdir", str(Path.home()), "--timeout-seconds", "420",
-            "--escalation-reason", "client-facing zero-Connect Upwork invitation proposal",
+            "--escalation-reason", "client-facing Upwork application decision",
         ], input=prompt, text=True, capture_output=True, timeout=450, check=False)
         if completed.returncode != 0:
             raise InboundPlannerError("inbound_planner_failed")
@@ -187,11 +204,46 @@ def invoke(
         result.relative_to(evidence_dir.resolve())
     except (KeyError, OSError, ValueError) as exc:
         raise InboundPlannerError("inbound_planner_result_unowned") from exc
-    proposal = validate_decision(_object(result, "planner_result"), packet)
+    decision = _object(result, "planner_result")
     for path in evidence_dir.rglob("*"):
         if path.is_file() and not path.is_symlink():
             os.chmod(path, 0o600)
-    return proposal
+    return decision
+
+
+def invoke(
+    packet_path: Path, *, runner: Path = DEFAULT_RUNNER, schema: Path = DEFAULT_SCHEMA,
+    profile: Path = DEFAULT_PROFILE, evidence_dir: Path,
+) -> dict[str, Any] | None:
+    packet = load_packet(packet_path)
+    prompt = planner_prompt(
+        packet, _object(profile.expanduser(), "owner_profile"), capability_inventory(REPO_ROOT),
+    )
+    return validate_decision(
+        _invoke_prompt(prompt, runner=runner, schema=schema, evidence_dir=evidence_dir), packet,
+    )
+
+
+def invoke_batch(
+    packet_paths: list[Path], *, runner: Path = DEFAULT_RUNNER, schema: Path = DEFAULT_SCHEMA,
+    profile: Path = DEFAULT_PROFILE, evidence_dir: Path,
+) -> dict[str, Any] | None:
+    packets = [load_packet(path) for path in packet_paths]
+    if not packets or len(packets) > 10 or any(packet.get("kind") != "public_job" for packet in packets):
+        raise InboundPlannerError("inbound_batch_invalid")
+    prompt = batch_planner_prompt(
+        packets, _object(profile.expanduser(), "owner_profile"), capability_inventory(REPO_ROOT),
+    )
+    decision = _invoke_prompt(prompt, runner=runner, schema=schema, evidence_dir=evidence_dir)
+    if decision.get("decision") == "skip":
+        return validate_decision(decision, packets[0])
+    proposal = decision.get("proposal")
+    chosen = next(
+        (packet for packet in packets if packet["resource_id"] == (proposal or {}).get("job_id")), None,
+    )
+    if chosen is None:
+        raise InboundPlannerError("inbound_batch_choice_invalid")
+    return validate_decision(decision, chosen)
 
 
 def write_sealed_proposal(proposal: dict[str, Any], root: Path) -> Path:

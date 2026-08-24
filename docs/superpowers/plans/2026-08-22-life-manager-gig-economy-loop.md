@@ -854,6 +854,14 @@ U13 atomic order:
     independent Upwork read remains submitted proposals `2` and balance `133`; duplicate proposal and
     additional Connects delta are both zero. The next atomic item is replacing one-job Luna discovery
     with one bounded candidate-set market-agent turn while the reply/offer monitor continues.
+63. **ONE LUNA DECISION PER CANDIDATE SET:** public discovery now collects up to ten affordable
+    official job packets, passes the full set plus owner facts and installed Skills to one Luna call,
+    and asks for the single best positive-utility proposal or one skip for the set. The existing strict
+    single-proposal schema is reused; chosen job ID, URL, source hash, Connects cost and balance are
+    validated against that packet before sealing. The batch evidence key is the ordered packet-hash
+    set, so unchanged candidates reuse the decision rather than repay the model. No regex/keyword job
+    judgment or new agent/schema is added. Upwork regression is `156 passed`; next production wake must
+    show at most one Luna call per ten inspected candidates and preserve both verified proposals.
 
 U14 atomic order:
 
