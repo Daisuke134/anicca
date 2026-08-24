@@ -57,6 +57,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--ledger", required=True, type=Path)
     parser.add_argument("--candidate-memory", required=True, type=Path)
+    parser.add_argument("--sources", required=True, type=Path)
     parser.add_argument("--runner", required=True, type=Path)
     parser.add_argument("--schema", required=True, type=Path)
     parser.add_argument("--workdir", required=True, type=Path)
@@ -65,12 +66,14 @@ def main() -> int:
     parser.add_argument("--max-candidates", type=int, default=8)
     args = parser.parse_args()
     runner = AgentRunner(evidence_root=args.evidence_root, runner_path=args.runner)
+    source_payload = json.loads(args.sources.read_text(encoding="utf-8"))
+    sources = tuple(dict(row) for row in source_payload.get("sources", []))
     result = search_until_qualified(
-        discover=lambda: discover_one(ledger_path=args.ledger),
+        discover=lambda: discover_one(ledger_path=args.ledger, sources=sources),
         qualify=lambda: qualify_one(
             ledger_path=args.ledger,
             candidate_memory_path=args.candidate_memory,
-            fetch_description=fetch_official_description,
+            fetch_description=lambda url: fetch_official_description(url, sources),
             run_model=lambda prompt: runner.run(
                 task="improve",
                 prompt=prompt,

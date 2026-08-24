@@ -6,22 +6,63 @@ from pathlib import Path
 
 from job_search_loop.ledger import Ledger
 from job_search_loop.workday_discovery import discover_one
+from job_search_loop.workday_source_discovery import validate_sources
+
+TEST_SOURCES = tuple(
+    {
+        "company": company,
+        "host": f"{tenant}.wd1.myworkdayjobs.com",
+        "tenant": tenant,
+        "site": "Careers",
+    }
+    for company, tenant in (
+        ("NVIDIA", "nvidia"),
+        ("Workday", "workday"),
+        ("Salesforce", "salesforce"),
+        ("Rakuten", "rakuten"),
+    )
+)
 
 
 class WorkdayDiscoveryTests(unittest.TestCase):
-    def test_rakuten_official_workday_tenant_is_in_discovery_rotation(self):
+    def test_model_sources_accept_arbitrary_company_and_reject_explicit_exclusion(self):
+        sources = validate_sources({"sources": [
+            {
+                "company": "DifferentCo",
+                "host": "different.wd1.myworkdayjobs.com",
+                "tenant": "different",
+                "site": "Careers",
+            },
+            {
+                "company": "OpenAI",
+                "host": "openai.wd1.myworkdayjobs.com",
+                "tenant": "openai",
+                "site": "Careers",
+            },
+        ]})
+
+        self.assertEqual([row["company"] for row in sources], ["DifferentCo"])
+
+    def test_discovery_uses_runtime_sources_not_fixed_companies(self):
+        source = {
+            "company": "DifferentCo",
+            "host": "different.wd1.myworkdayjobs.com",
+            "tenant": "different",
+            "site": "Careers",
+        }
         seen = []
         with tempfile.TemporaryDirectory() as directory:
-            def fake_fetch(source):
-                seen.append(source["company"])
+            def fake_fetch(candidate):
+                seen.append(candidate["company"])
                 return []
 
             discover_one(
                 ledger_path=Path(directory) / "ledger.sqlite3",
                 fetch_jobs=fake_fetch,
+                sources=(source,),
             )
 
-        self.assertIn("Rakuten", seen)
+        self.assertEqual(seen, ["DifferentCo"])
 
     def test_discovery_does_not_use_title_keywords_as_fit_judgment(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -37,6 +78,7 @@ class WorkdayDiscoveryTests(unittest.TestCase):
             result = discover_one(
                 ledger_path=Path(directory) / "ledger.sqlite3",
                 fetch_jobs=fake_fetch,
+                sources=TEST_SOURCES,
             )
 
             self.assertEqual(result["status"], "discovered")
@@ -70,7 +112,7 @@ class WorkdayDiscoveryTests(unittest.TestCase):
                     ]
                 return []
 
-            first = discover_one(ledger_path=ledger_path, fetch_jobs=fake_fetch)
+            first = discover_one(ledger_path=ledger_path, fetch_jobs=fake_fetch, sources=TEST_SOURCES)
             self.assertEqual(first["status"], "discovered")
             self.assertEqual(first["discovered"][0]["title"], "Solution Architect - Agentic AI")
 
@@ -79,7 +121,7 @@ class WorkdayDiscoveryTests(unittest.TestCase):
             ledger.transition(first["discovered"][0]["application_id"], "rejected")
             ledger.close()
 
-            second = discover_one(ledger_path=ledger_path, fetch_jobs=fake_fetch)
+            second = discover_one(ledger_path=ledger_path, fetch_jobs=fake_fetch, sources=TEST_SOURCES)
             self.assertEqual(second["status"], "discovered")
             self.assertEqual(second["discovered"][0]["title"], "Office Administrator")
 
@@ -99,6 +141,7 @@ class WorkdayDiscoveryTests(unittest.TestCase):
             result = discover_one(
                 ledger_path=ledger_path,
                 fetch_jobs=lambda _source: self.fail("provider must not run while queue exists"),
+                sources=TEST_SOURCES,
             )
 
             self.assertEqual(result["status"], "queue_present")
@@ -127,7 +170,7 @@ class WorkdayDiscoveryTests(unittest.TestCase):
                     }]
                 return []
 
-            result = discover_one(ledger_path=ledger_path, fetch_jobs=fake_fetch)
+            result = discover_one(ledger_path=ledger_path, fetch_jobs=fake_fetch, sources=TEST_SOURCES)
 
             self.assertEqual(result["status"], "discovered")
             self.assertEqual(result["discovered"][0]["title"], "Technical Account Manager")
@@ -148,7 +191,8 @@ class WorkdayDiscoveryTests(unittest.TestCase):
                 return []
 
             result = discover_one(
-                ledger_path=Path(directory) / "ledger.sqlite3", fetch_jobs=fake_fetch
+                ledger_path=Path(directory) / "ledger.sqlite3", fetch_jobs=fake_fetch,
+                sources=TEST_SOURCES,
             )
             self.assertEqual(result["status"], "discovered")
             self.assertEqual(result["errors"], ["nvidia:TimeoutError"])

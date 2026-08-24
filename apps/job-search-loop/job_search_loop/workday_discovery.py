@@ -14,34 +14,6 @@ from .ledger import Ledger
 from .state import canonical_url, is_excluded_employer
 
 
-TENANTS = (
-    {
-        "company": "NVIDIA",
-        "host": "nvidia.wd5.myworkdayjobs.com",
-        "tenant": "nvidia",
-        "site": "NVIDIAExternalCareerSite",
-    },
-    {
-        "company": "Workday",
-        "host": "workday.wd5.myworkdayjobs.com",
-        "tenant": "workday",
-        "site": "Workday",
-    },
-    {
-        "company": "Salesforce",
-        "host": "salesforce.wd12.myworkdayjobs.com",
-        "tenant": "salesforce",
-        "site": "External_Career_Site",
-    },
-    {
-        "company": "Rakuten",
-        "host": "rakuten.wd1.myworkdayjobs.com",
-        "tenant": "rakuten",
-        "site": "rakuteninc",
-    },
-)
-
-
 def _fetch_jobs(source: dict[str, str]) -> list[dict[str, Any]]:
     endpoint = (
         f"https://{source['host']}/wday/cxs/{source['tenant']}/"
@@ -68,6 +40,7 @@ def _fetch_jobs(source: dict[str, str]) -> list[dict[str, Any]]:
 def discover_one(
     *,
     ledger_path: Path,
+    sources: tuple[dict[str, str], ...],
     fetch_jobs: Callable[[dict[str, str]], list[dict[str, Any]]] = _fetch_jobs,
 ) -> dict[str, Any]:
     ledger = Ledger(ledger_path)
@@ -95,7 +68,7 @@ def discover_one(
         }
         candidates: list[dict[str, str | int]] = []
         errors: list[str] = []
-        for source in TENANTS:
+        for source in sources:
             if is_excluded_employer(source["company"]):
                 continue
             try:
@@ -157,9 +130,12 @@ def discover_one(
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--ledger", required=True, type=Path)
+    parser.add_argument("--sources", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args()
-    result = discover_one(ledger_path=args.ledger)
+    payload = json.loads(args.sources.read_text(encoding="utf-8"))
+    sources = tuple(dict(row) for row in payload.get("sources", []))
+    result = discover_one(ledger_path=args.ledger, sources=sources)
     args.output.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     args.output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n")
     os.chmod(args.output, 0o600)
