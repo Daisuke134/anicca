@@ -7,6 +7,14 @@
 > real bank-arrival receipt remain before the OSS flow is accepted; do not promise
 > guaranteed income or call the onboarding complete before those receipts exist.
 
+### Product status
+
+This is the only marketplace money loop currently offered as a one-command OSS public
+preview. All four business lanes and their two supporting jobs are public. `gog` email
+onboarding and the final clean-HOME Terminal contract remain before calling the setup
+productized. Upwork, Mercor, and other marketplace loops are not advertised as installable
+OSS products yet, even where internal components exist.
+
 ### Accepted onboarding flow (external acceptance pending)
 
 1. On a clean Mac, run the one-line bootstrap (or run `./install.sh coconala` from an

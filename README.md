@@ -29,7 +29,34 @@ without a receipt.
 
 ## Quick start
 
-### Ideal OSS onboarding target
+### Try the Coconala money loop
+
+Coconala is the first provider-specific OSS money loop with a one-command Terminal
+onboarding path. It installs the local dependencies, authenticates Codex, opens a
+dedicated Coconala browser, verifies the official account gates, and then starts Apply,
+Negotiate, Storefront, and Paid under launchd.
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Daisuke134/life-manager/main/scripts/bootstrap-coconala.sh)"
+```
+
+The owner enters account, SMS, identity, and bank information only on official Coconala
+pages. After finishing those pages, run the same command again. See the
+[Coconala setup guide](skills/earn/gig/README.md) for prerequisites and exact boundaries.
+
+### OSS productization status
+
+| Surface | Public code | One-command owner setup | Current status |
+|---|---:|---:|---|
+| Coconala Apply / Negotiate / Storefront / Paid | Yes | Yes, public preview | First productized marketplace path; `gog` email wiring and final clean-HOME contract remain |
+| Other marketplace money loops, including Upwork and Mercor | Partial/internal components only | No | Not OSS-productized; do not present them as ready for third-party setup |
+| Generic Money / Body / Mind onboarding | Foundation only | No | Future shared Life Manager surface, not the Coconala quick start |
+
+The direction is one Life Manager that can run many independently verified money loops
+24/7, but README status follows shipped onboarding and official receipts—not roadmap
+intent. “Public code exists” is not the same as “a non-technical owner can install it.”
+
+### Future shared OSS onboarding
 
 Life Manager is converging on one local setup UI for every connector and loop: run one
 command, connect ChatGPT/Codex once, confirm reusable facts once, connect each official
@@ -84,31 +111,25 @@ If you came here for the **self-funded agent** — the wallet-holding loop that 
 different thing and it lives in [`docs/agent-economy.md`](docs/agent-economy.md). It shares this repository and
 this core, but it is not the product described above.
 
-### Run the Coconala seller loop
+### Coconala implementation details
 
 The repository also contains four macOS `launchd` lanes for a Coconala seller:
 Apply, Negotiate, Paid, and Storefront. See the dedicated
 [Coconala setup guide](skills/earn/gig/README.md) before inviting another user.
 
 Current boundary: the one-command installer and zero-listing publisher are implemented,
-while the owner completes Coconala's official signup/SMS/eKYC/bank ceremony in the shared
-browser. Clean-device onboarding, natural four-lane outcomes, and bank arrival still need
-the receipts listed in [the Coconala task list](skills/earn/gig/TODO.md). Do not promise
-guaranteed income or call the OSS onboarding complete before those receipts exist.
+while the owner completes Coconala's official signup/SMS/eKYC/bank ceremony in the
+dedicated browser. The remaining code-owned productization work is `gog` email wiring and
+the clean-HOME Terminal contract listed in [the Coconala task list](skills/earn/gig/TODO.md).
+Natural sales and bank arrival are business receipts, not coding tasks or guaranteed timing.
 
 The accepted onboarding UX is one handoff, not field-by-field automation:
 `./install.sh coconala` completes `codex login`, opens the dedicated Coconala
 CloakBrowser profile, and prints the complete official setup checklist. The owner
-finishes account/email/SMS/seller/eKYC/bank setup in that browser and reports completion
-once. Life Manager then attaches to the same authenticated profile without receiving the
+finishes account/email/SMS/seller/eKYC/bank setup in that browser and runs the same command
+once more. Life Manager then attaches to the same authenticated profile without receiving the
 password, verifies every official gate, starts the existing lanes, and lets Storefront
 create the first listing when the official listing count is zero.
-
-Clean-Mac Coconala bootstrap:
-
-```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Daisuke134/life-manager/main/scripts/bootstrap-coconala.sh)"
-```
 
 For Coconala, Upwork, and similar marketplaces, the AI system is the delivery workforce.
 Life Manager maximizes verified expected net income using demonstrated AI/Mac/tool
@@ -117,9 +138,9 @@ health, or workload is not a throughput limit. Job Hunter is the separate case w
 human is the employee, so only that loop binds opportunities to the person's real history,
 eligibility, availability, and acceptance authority.
 
-Coconala remains the first provider-specific onboarding adapter. Independent clean-device
-usability trials follow the shared code-owned OSS UX gate and are acceptance evidence,
-not current implementation tasks or named personal obligations.
+Coconala remains the first provider-specific onboarding adapter. Other marketplaces are
+roadmap direction until each has its own one-command setup, official gates, persistent
+owners, effect readback, and duplicate-zero contract.
 
 ---
 

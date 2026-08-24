@@ -12,6 +12,13 @@ Coconala is the first and only onboarding implementation in this slice. Upwork,
 Mercor, shared cross-market onboarding, and other money printers are deferred until
 this Coconala package passes the clean-device acceptance below.
 
+Public product status must remain explicit in the root README and this package README:
+Coconala is the only marketplace offered as a one-command OSS public preview; other
+marketplaces are not productized until they independently have one-command onboarding,
+official account gates, persistent loop owners, effect readback, and replay-zero. The
+long-term product is many concurrent 24/7 money loops, but roadmap intent is never shown
+as current installability.
+
 The public start is:
 
 ```bash
@@ -187,3 +194,8 @@ zero, one official Negotiate reply/estimate with replay zero, one Storefront lis
 mutation with replay zero, one Paid delivery with replay zero, and one permitted withdrawal
 that arrives at the registered bank. Process exit zero, local state, or a notification is
 not a substitute.
+
+Time-dependent sales, buyer traffic, eKYC review duration, and bank-arrival waiting are
+acceptance evidence only. They are not coding TODOs and never keep an implementation
+session open. The code-owned terminal condition is completion of the ordered atomic TODO
+in `skills/earn/gig/TODO.md`.
