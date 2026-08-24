@@ -1,15 +1,14 @@
 ---
 name: job-hunter
 description: >-
-  End-to-end job-hunting skill with a resume-first onboarding contract. Use whenever
-  a user provides a resume, asks to improve/refine/tailor a resume, supplies career
-  facts, gives a job description, or asks to automate applications. It builds a
-  private evidence-backed fact bank, produces ATS-safe role-specific materials,
-  requires one explicit baseline approval, then lets the resident job loop continue
-  without repeatedly asking the user. Never invents experience, metrics, dates,
-  employers, titles, or skills.
+  End-to-end Life Manager Job Hunter loop with a resume-first onboarding contract.
+  Use when a user supplies a finalized resume, career facts, job preferences, a job
+  description, or asks to automate job hunting. It builds private candidate context,
+  discovers and judges jobs, applies through the resident loop, and follows Gmail,
+  interviews, assessments and offers without repeatedly asking the user. Never
+  invents experience, metrics, dates, employers, titles, skills or legal facts.
 metadata:
-  status: resume-refinement-first
+  status: workday-oss-public-beta
   provider_contract: codex-first-claude-generic
   private_data: true
 ---
@@ -21,7 +20,7 @@ starts with a short human onboarding pass, turns the candidate's documents and
 answers into a private evidence ledger, and then lets the resident loop operate on
 approved material without asking the same questions again.
 
-This skill owns intake, fact normalization, resume refinement, variant routing,
+This skill owns intake, fact normalization, finalized-resume import, variant routing,
 ATS/PDF verification, approval state, and natural-language progress reports. The
 versioned `apps/job-search-loop/` owns browser and application side effects. Do not
 create a second executor in this skill.
@@ -80,7 +79,7 @@ it never silently promotes a draft.
 
 Run these phases once per candidate. Reuse durable state on every later invocation.
 
-1. **Collect the minimum inputs.** Accept a resume PDF/DOCX/Markdown, the candidate
+1. **Collect the minimum inputs.** Accept a finalized resume PDF, the candidate
    email, and supplemental career information. Also collect target locale, role
    families, work location, start date, and any hard constraints when absent from
    the private profile. If an existing profile already has a value, show it as the
@@ -138,55 +137,12 @@ description or a user-approved variant policy justifies it.
    changes, evidence IDs, unresolved gaps, and the next safe action. Never emit
    raw JSON as the user-facing report.
 
-### Current English business baseline
+## Candidate-specific material rules
 
-The current Mitsubishi UFJ Information Technology business variant uses this order:
-
-1. Mitsubishi UFJ Information Technology — Applied AI / AI Agent Engineering
-   (Apr 2025–Present)
-2. Earlier Growth Experience
-3. Research Experience
-4. Education
-5. Skills
-6. Consumer AI Product (last)
-
-Within the current-role section, render exactly two accomplishment blocks:
-`Salesforce Agentforce deployment` contains three nested bullets (CRM deployment,
-Databricks workflow analysis, and relationship-manager context engineering), and
-`ICLR 2026 conference representation` contains one nested bullet. Do not turn the
-three deployment details into three separate accomplishment names or place ICLR
-inside that block. Use the full employer name `Mitsubishi UFJ Information Technology`
-in the resume instead of the `MUIT` abbreviation. Keep one consistent banking
-customer term throughout the variant. Do not include Life Manager or Portfolio links
-in this application variant unless a target explicitly requests them.
-
-## Education, research, and institution-name rules
-
-Read `references/resume-best-practices.md` before changing any resume material.
-The external resume-builder reference uses explicit education fields, domain-aware
-bullets, XYZ/STAR-style evidence, standard headings, and extracted-PDF checks.
-
-Keep these records separate in every English and Japanese variant:
-
-1. **Education:** institution, faculty/department, degree or study status, and
-   dates. For the English technical-business variant, show the date range when it
-   clarifies concurrent affiliations; do not pretend that a degree was conferred if
-   the fact bank only proves study.
-2. **Research experience:** each university or research institute is its own entry.
-   State the full institution name, research topic, method, and evidence. Do not
-   collapse NAIST and ATR into one vague school bullet.
-3. **Institution names:** spell out `Keio University, Faculty of Law, Department of
-   Political Science`, `Nara Institute of Science and Technology`, and `Advanced
-   Telecommunications Research Institute International` in visible resume text.
-   Acronyms are optional parenthetical aliases only after the full name; never use an
-   acronym-only heading.
-
-The Japanese 履歴書 uses full attendance periods and separate 学歴/職歴 sections;
-the Japanese 職務経歴書 uses concrete, concise research/work descriptions. The
-English resume follows the target market: completion/expected dates are the normal
-US default, while this candidate's overlapping NAIST/ATR work is shown with ranges
-for chronology. Do not apply the Japanese date convention blindly to every English
-resume or the US convention blindly to a Japanese form.
+Candidate-specific employers, schools, achievements, dates and resume ordering belong
+only in the mode-0600 private profile and finalized resume files. They never belong in
+this public skill. A public rule may describe how to preserve evidence or formatting;
+it may not name one person's institution, employer, metric or preferred bullet order.
 
 ## Autonomous loop after approval
 

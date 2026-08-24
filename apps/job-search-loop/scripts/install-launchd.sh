@@ -28,10 +28,6 @@ UID_VALUE="$(id -u)"
 mkdir -p "$JOB_SEARCH_LAUNCH_AGENT_DIR" "$JOB_SEARCH_STATE_ROOT/logs"
 chmod 700 "$JOB_SEARCH_STATE_ROOT" "$JOB_SEARCH_STATE_ROOT/logs"
 
-if [[ "${JOB_SEARCH_SKIP_BOOTSTRAP:-0}" != "1" ]]; then
-  "$JOB_SEARCH_APP_ROOT/scripts/bootstrap-framework.sh"
-fi
-
 for name in "${NAMES[@]}"; do
   template="$JOB_SEARCH_APP_ROOT/launchd/$name.plist"
   installed="$JOB_SEARCH_LAUNCH_AGENT_DIR/$name.plist"

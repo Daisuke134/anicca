@@ -4,7 +4,7 @@
 completed real-world actions. It acts within delegated boundaries, verifies what happened, and reports the
 result in plain language with evidence in Telegram.
 
-| Organ | What Life Manager manages |
+| Group | What Life Manager manages through its loops |
 |---|---|
 | **Daily** | Calendar, event and accelerator applications, job applications, priorities, and follow-through |
 | **Physical / Mental** | Routines, wellbeing, and continuity of care |
@@ -36,6 +36,24 @@ without a receipt.
 authenticated `/panel`; you talk to it in Telegram and it reports back there with receipts.
 
 ### Run it yourself — local (your machine holds the data)
+
+For the local loop onboarding UI on an Apple Silicon Mac:
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Daisuke134/life-manager/main/scripts/bootstrap.sh)"
+```
+
+Life Manager opens one local setup surface. Choose the Coconala loop, Job Hunter
+loop, or any other available loop. It asks reusable basics once, opens official
+provider surfaces for credentials or identity ceremonies, verifies readiness, and
+starts only the loops whose gates pass. Passwords, OTPs, identity documents and
+bank values stay on the official provider pages.
+
+Job Hunter is currently a public-beta loop: its Workday production path is proven
+on the maintainer's Mac, but independent clean-Mac acceptance is still open. Ashby,
+Greenhouse, Lever, Mercor and generic ATS lanes are not advertised as working.
+
+### Run the server stack yourself
 
 Requires Docker. The local stack is Postgres + an object store + the API, scheduler, and worker — the same core
 the cloud runs.
@@ -218,7 +236,7 @@ Current canonical acceptance: PR `#1936` established the production baseline at 
 | **Cloud service** (`apps/life-manager`, `node server.js` on Railway) | **Deployed** — the scheduler and API are the same code the local stack runs. |
 | **Telegram reporting with receipts** | **Live** — every report carries a message id, and a send that fails is not recorded as sent. |
 | **Calendar, connectors, coverage** (`lib/calendar-*`, `lib/connector-*`) | **Implemented, coverage still moving** — per-connector state and gaps are tracked in the execution spec rather than claimed here. |
-| **Financial organ** (net worth, cash flow, payouts, ledgers) | **Partial** — the ledger and payout jobs exist; their current health is tracked in the execution spec. Nothing here is an investment guarantee. |
+| **Financial loops** (net worth, cash flow, payouts, ledgers) | **Partial** — the ledger and payout jobs exist; their current health is tracked in the execution spec. Nothing here is an investment guarantee. |
 | **The self-funded agent economy** | Separate track — status and on-chain evidence in [`docs/agent-economy.md`](docs/agent-economy.md). |
 
 ---

@@ -1,4 +1,4 @@
-# Anicca Job Search Loop
+# Life Manager Job Hunter Loop
 
 Anicca Job Search Loop is a bounded, evidence-first job application system for a
 verified private candidate profile. It discovers and ranks suitable roles, submits
@@ -11,13 +11,13 @@ interviews, and reports every material state change to Telegram.
 |---|---|
 | Acquisition target | Every fresh unique model-qualified role; no daily application quota |
 | Location | Tokyo or remote roles that can employ someone based in Japan |
-| Compensation | JPY 7M minimum; JPY 10M target; JPY 10M-30M priority |
-| Role focus | Applied AI/agent engineering plus technical AI business roles: Product, Program, Solutions, GTM, Partnerships, Customer Success and Sales Engineering |
+| Compensation | Candidate-defined minimum and target from the private profile; unpublished compensation remains visible uncertainty |
+| Role focus | Candidate-defined target role families, checked by the model against the complete official JD and resume evidence |
 | Discovery | Accumulating official Workday company registry plus complete CXS snapshots and model ranking; non-Workday adapters remain broken/unverified until rebuilt |
 | Evidence | Every application is fenced in SQLite and retained under a private evidence directory |
 | Uncertainty | Ambiguous submission becomes `submit_unknown` and is never blindly retried; a later exact official receipt may reconcile it without another submit click |
 | Personal data | Verified private profile and generated materials are mode `0600` |
-| Career summary | Every terminal daily path atomically refreshes private `summary.v1.json` with state counts and Ashby/Workday confirmed-application coverage |
+| Career summary | Every terminal daily path atomically refreshes private `summary.v2.json` with state counts and Workday receipt coverage |
 | Application receipt | Every confirmed submission records the exact resume path and SHA-256, then sends that same PDF to Telegram once with company, role and URL |
 | Daily report repair | A materially changed same-day catch-up sends one content-addressed correction; identical retries remain at-most-once |
 | Inbox | Gmail threads expand to immutable unseen message IDs; official late application receipts reconcile before the model; a model runs only for remaining new recruiting messages or a pending prep-pack generation job |
@@ -41,8 +41,8 @@ The current local deployment uses launchd and is designed so the same drivers an
 SQLite contracts can later be invoked by Life Manager without changing application
 semantics.
 
-The daily owner connects Playwright to the already-running authenticated Chrome CDP
-endpoint. It does not launch a duplicate browser. The driver reserves a bounded
+The daily owner connects to the dedicated persistent CloakBrowser CDP endpoint. It
+does not launch a duplicate browser. The driver reserves a bounded
 normal pass plus bounded same-day recovery capacity, so a transient provider or
 browser-tool failure can fall through to another implementation without becoming an
 unlimited loop.
@@ -54,11 +54,11 @@ unlimited loop.
 | Private profile | `~/.config/anicca/job-search/profile.json` |
 | Strategy | `config/strategy.default.json` |
 | Ledger | `~/.local/state/anicca/job-search/ledger.sqlite3` |
-| Life Manager read projection | `~/.local/state/anicca/job-search/summary.v1.json` |
+| Life Manager read projection | `~/.local/state/anicca/job-search/summary.v2.json` |
 | Interview prep state | `~/.local/state/anicca/job-search/interview-prep.sqlite3` |
 | Evidence | `~/.local/state/anicca/job-search/evidence/` |
 | Materials | `~/.local/share/anicca/job-search/materials/` |
-| Resume files | `~/.local/share/anicca/job-search/materials/` (installed private manifest; current production still requires private-generalization work before sharing) |
+| Resume files | `~/.local/share/anicca/job-search/materials/` (installed private manifest with generic variants) |
 | Resume language router | `job_search_loop/resume_routing.py` |
 | Technical-business message templates | `templates/application-messages.v1.json` |
 | Recruiter reply policy | `job_search_loop/recruiter_reply.py` |
@@ -77,52 +77,37 @@ zsh scripts/install-launchd.sh
 zsh scripts/healthcheck.sh
 ```
 
-### Portable local install
+### Public Life Manager onboarding
 
-> **Not yet friend/share ready.** The command below is the intended public entry
-> point, but current production still contains candidate-specific material names,
-> signatures and machine fallback paths tracked by spec items 62A-62C. Do not ask
-> another user to run it until the clean-HOME real-application gate passes.
+> **Public beta:** the code-owned onboarding path is available, but independent
+> clean-Mac real-application acceptance remains open. Do not describe it as fully
+> proven for another person until that receipt exists.
 
-Authenticate one supported subscription CLI without copying its credentials into
-this repository:
+Run the shared Life Manager command:
 
 ```bash
-codex login
-# or: claude auth login
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Daisuke134/life-manager/main/scripts/bootstrap.sh)"
 ```
 
-Then import a valid private profile and install the user scheduler for the detected
-platform:
+Choose **Job Hunter**. The setup collects the finalized resume PDF, application
+email, target role families, acceptable locations, salary floor/target and excluded
+employers. It starts only the dedicated browser until Gmail and Telegram readback
+pass; then it activates the 30-minute acquisition, inbox, learning and health owners.
+Credentials remain in their existing CLI/browser/private transports.
+
+For recovery or development from an existing checkout:
 
 ```bash
-zsh scripts/install-local.sh \
-  --profile /absolute/path/to/profile.json \
-  --provider auto \
-  --scheduler auto
+./install.sh job-hunter status
+./install.sh job-hunter start
+./install.sh job-hunter finished
 ```
 
-`auto` selects an authenticated Codex CLI first, then Claude CLI. The receipt stores
-only `codex` or `claude-direct`; OAuth tokens and provider auth files remain owned by
-their CLI. macOS installs LaunchAgents; Linux installs systemd user services and
-timers. Use `--scheduler none` for a manual/test install without scheduler side
-effects.
-
-The installer follows XDG config/state/data roots, rejects relative XDG overrides,
-creates private directories as `0700`, and writes the profile and receipt as `0600`.
-It never overwrites an existing profile unless `--replace-profile` is explicit.
-
-For guided authoring, create the active private profile first:
-
-```bash
-zsh scripts/setup-profile.sh
-```
-
-The prompts require an application email and at least one explicit claim/evidence
-pair. They do not infer nationality, visa, work authorization, or any other legal
-fact. For repeatable provisioning, pass a production-shaped JSON file with
-`--answers /absolute/path/to/answers.json`. Placeholder values and implicit
-overwrites fail closed.
+The private directories are `0700`; profile, install and connector receipts are
+`0600`. Setup never infers nationality, visa, work authorization or other legal
+facts. Existing profiles are reused and cannot be overwritten implicitly. The
+public Workday install uses only this Life Manager checkout and does not clone a
+second Job Hunter framework repository.
 
 ### Reproducible release artifact
 
@@ -147,11 +132,11 @@ LaunchAgent and inspect the generated evidence:
 launchctl kickstart "gui/$(id -u)/ai.anicca.job-search-daily"
 ```
 
-The daily pass searches three English/Japanese query families across engineering,
-technical-business, crypto and consumer-agent work. Firecrawl is only one provider.
-The bundled public Freehire and LinkedIn guest search adapters require no applicant
-API key; if all automated providers fail or return no usable posting, the same owner
-continues through official company career and ATS pages in the authenticated browser.
+The daily pass refreshes the configured official Workday company registry, reads
+complete CXS snapshots, excludes Ledger duplicates, and lets the model rank and read
+official JDs. It is not restricted to a hardcoded company shortlist or randomly
+generated search words. Non-Workday providers remain disabled until separately
+rebuilt and live-proven.
 An actual legal/profile fact, CAPTCHA or authoritative submission ambiguity may stop
 one application, but a scraper outage may not.
 
