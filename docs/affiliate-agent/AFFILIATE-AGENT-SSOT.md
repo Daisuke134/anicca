@@ -8180,8 +8180,13 @@ Current implementation state:
   usefulness, and spam risk into one deterministic payload ID. Grounded useful
   input passes; generic, unsupported, near-duplicate, high-risk, and exact-repeat
   input fail closed. x-tweeter tests are 2/2 and x-repost regression is 50/50.
-- [ ] **XT02 Independent entrypoint and state.** Build the model/source/critic
-  owner that produces XT01 inputs without importing the x-repost action router.
+- [x] **XT02 Independent entrypoint and state.** Commit `468aba214` adds
+  `skills/x-tweeter/x-tweeter-cli.sh`, dedicated `~/loops/x-tweeter` state and
+  Codex home, forced Original ownership, disabled Affiliate inputs, dynamic loop
+  identity, and mandatory XT01 admission immediately before publication. It
+  reuses the proven collect/model/humanize/Postiz/readback tools while bypassing
+  the x-repost action choice. x-tweeter tests are 3/3 and x-repost regression is
+  50/50. No production owner or public effect is claimed by XT02.
 - [ ] **XT03 Independent launchd owner.** Install `ai.anicca.x-tweeter-pass` with
   its own state, queue, claims, results, healthcheck, and staggered `:15/:45`
   public opportunities.
