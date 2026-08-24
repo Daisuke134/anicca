@@ -107,6 +107,39 @@ browser lock. Parallel work must never mix two customers' context. The model cho
 work plan and tools; deterministic code owns target identity, hashes, receipts, effect
 fencing, and replay detection. This is the `P0-four-lane-parallel` contract.
 
+### Owner lifetime and closure
+
+An owner is durable project state, not a forever-running process. One bounded wake may
+plan, build, send, read back, or observe an external wait and then exit. A later official
+event resumes the same owner from its checkpoint. A revision, provider wait, buyer review,
+or temporary failure never creates a replacement owner and never closes the project.
+
+| state | process behavior | owner behavior |
+|---|---|---|
+| `ACTIVE` | Run the next bounded step, then exit | Retain ownership and checkpoint every verified effect |
+| `WAITING_EXTERNAL` | Exit with no polling process | Resume on a later official event or scheduled observation |
+| `AWAITING_BUYER` | Exit after exact submission readback | Resume on buyer revision, acceptance, or cancellation |
+| `TERMINAL_PENDING_REPLAY` | Run one observe-only wake | Permit no new effect; prove duplicate effect zero |
+| `CLOSED_COMPLETED` | No worker capacity | Official completion and replay-zero are immutable |
+| `CLOSED_CANCELLED` | No worker capacity | Official cancellation and replay-zero are immutable |
+
+`CLOSED_COMPLETED` requires the exact deliverable/provider effect, fresh pre-submit review,
+Coconala seller readback, and buyer acceptance or official transaction completion when the
+contract requires it. `CLOSED_CANCELLED` requires the official Coconala cancellation state,
+not a cancellation request or support conversation. Both require a later observe-only wake
+with effect zero. Closing releases execution capacity and the active browser target; it does
+not delete customer context, artifacts, state, effect keys, or receipts. Those records become
+an immutable tombstone that makes every replay a no-op. A new marketplace order receives a
+new owner identity; a pre-terminal revision resumes the existing owner.
+
+The lifecycle copies three proven OSS patterns without adding their runtimes as dependencies:
+
+| reference | pattern reused | decision |
+|---|---|---|
+| [Temporal Python samples](https://github.com/temporalio/samples-python) `e652a4d0` | Stable child identity, durable signal wait, cleanup on cancel, bounded history continuation | Copy the state-machine pattern; do not add a Temporal server/SDK |
+| [LangGraph](https://github.com/langchain-ai/langgraph) `f09cfe8f` | One `thread_id` per isolated owner, checkpoints and pending writes survive a failed step | Reuse existing project files/ledgers as checkpoints; do not add another state store |
+| [Hatchet](https://github.com/hatchet-dev/hatchet) `89d130f3` | Entity-keyed concurrency, durable events, explicit completed/cancelled terminal states, stale invocation rejection | Key fencing by marketplace entity/effect; do not add Hatchet/Postgres |
+
 Apply prioritizes work the installed AI/Mac/tool system can demonstrate it can deliver well,
 especially software, landing pages, writing, research, and strategy. It normally rejects work
 whose success depends on a human meeting, undisclosed personal participation, unsupported

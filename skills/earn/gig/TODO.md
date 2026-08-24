@@ -35,6 +35,22 @@ payout, and bank receipts advance it.
    review of each exact current requirement and outbound artifact/message; repair findings,
    send once, obtain provider plus Coconala exact readback, observe buyer completion when
    required, and prove duplicate effect zero on a later wake.
+4a. [ ] Persist one lifecycle state per marketplace entity: `ACTIVE`, `WAITING_EXTERNAL`,
+    `AWAITING_BUYER`, `TERMINAL_PENDING_REPLAY`, `CLOSED_COMPLETED`, or
+    `CLOSED_CANCELLED`. A bounded worker process exits after each step; its durable owner and
+    checkpoint remain. Failure, revision, provider wait, and buyer review are non-terminal.
+4b. [ ] Enter `TERMINAL_PENDING_REPLAY` only after official buyer acceptance/transaction
+    completion or official cancellation readback. Run one observe-only wake with all effect
+    classes zero, then atomically release active capacity into the corresponding closed state.
+    Never close from model success, a cancellation request, local completion, tests, or process
+    exit.
+4c. [ ] Keep closed project context, artifacts, receipts, effect keys, and the terminal
+    readback as an immutable tombstone. Delete nothing on close. A replay of the same entity is
+    a no-op; a pre-terminal revision resumes the same owner; a new order gets a new owner ID.
+4d. [ ] Add lifecycle regressions copied at the pattern level from Temporal `e652a4d0`,
+    LangGraph `f09cfe8f`, and Hatchet `89d130f3`: wait survives process exit, successful sibling
+    checkpoints are not rerun, stale invocation is rejected, completion/cancellation cannot
+    close before replay-zero, and two different entity keys remain fully parallel.
 
 ### Acquisition and conversion
 
