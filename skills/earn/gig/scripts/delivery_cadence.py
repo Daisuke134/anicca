@@ -89,7 +89,9 @@ def _artifact_ready(item: dict[str, Any]) -> bool:
     if not path or not version or version not in Path(path).name:
         return False
     artifact = Path(path)
-    if not artifact.is_file() or artifact.stat().st_size > MARKETPLACE_ARTIFACT_MAX_BYTES:
+    if not artifact.is_file():
+        return False
+    if artifact.stat().st_size > MARKETPLACE_ARTIFACT_MAX_BYTES and not _linked_asset_ready(item, artifact):
         return False
     if item.get("recipient_access_required") is True:
         try:
@@ -98,6 +100,32 @@ def _artifact_ready(item: dict[str, Any]) -> bool:
         except OSError:
             return False
     return True
+
+
+def _linked_asset_ready(item: dict[str, Any], artifact: Path) -> bool:
+    required = item.get("required_assets")
+    produced = item.get("artifact_assets")
+    if not isinstance(required, list) or not required or not isinstance(produced, list):
+        return False
+    counts: dict[str, int] = {}
+    for row in produced:
+        if not isinstance(row, dict) or row.get("type") != "linked_asset":
+            continue
+        try:
+            if Path(str(row.get("path") or "")).resolve() != artifact.resolve():
+                continue
+        except OSError:
+            continue
+        asset_id = str(row.get("asset_id") or "")
+        counts[asset_id] = counts.get(asset_id, 0) + 1
+    return all(
+        isinstance(row, dict)
+        and row.get("kind") == "linked_asset"
+        and isinstance(row.get("minimum_count"), int)
+        and row["minimum_count"] > 0
+        and counts.get(str(row.get("asset_id") or ""), 0) >= row["minimum_count"]
+        for row in required
+    )
 
 
 def _hash_ready(item: dict[str, Any]) -> bool:
@@ -407,7 +435,7 @@ def delivery_decision(item: dict[str, Any]) -> dict[str, Any]:
     # explicit approval of the already submitted artifact.  A loose keyword flag
     # such as buyer_agreement_observed is deliberately insufficient.
     approval = item.get("formal_approval_evidence")
-    latest_identity = item.get("latest_message_identity")
+    latest_identity = item.get("latest_buyer_message_identity") or item.get("latest_message_identity")
     formal_approval_ready = (
         isinstance(approval, dict)
         and isinstance(latest_identity, dict)

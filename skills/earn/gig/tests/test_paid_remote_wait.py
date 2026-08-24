@@ -284,6 +284,31 @@ def test_next_artifact_version_includes_receipt_linked_prior_candidates(tmp_path
     assert paid._next_artifact_version(root, [prior]) == "v108"
 
 
+def test_delivery_cadence_accepts_oversize_linked_asset_and_latest_buyer_approval(tmp_path, monkeypatch):
+    cadence = load("delivery_cadence")
+    artifact = tmp_path / "package-v1.zip"
+    artifact.write_bytes(b"linked package")
+    acceptance = tmp_path / "acceptance.json"
+    write_json(acceptance, {"status": "PASS"})
+    digest = hashlib.sha256(artifact.read_bytes()).hexdigest()
+    buyer = {"message_id": "buyer-approval", "content_sha256": "a" * 64, "side": "buyer"}
+    seller = {"message_id": "seller-ack", "content_sha256": "b" * 64, "side": "seller"}
+    monkeypatch.setattr(cadence, "MARKETPLACE_ARTIFACT_MAX_BYTES", 0)
+    item = {
+        "artifact_path": str(artifact), "artifact_version": "v1",
+        "acceptance_status": "PASS", "acceptance_evidence_path": str(acceptance),
+        "package_sha256": digest, "blockers": [],
+        "required_assets": [{"asset_id": "package", "kind": "linked_asset", "minimum_count": 1}],
+        "artifact_assets": [{"asset_id": "package", "type": "linked_asset", "path": str(artifact)}],
+        "formal_approval_evidence": buyer,
+        "latest_message_identity": seller,
+        "latest_buyer_message_identity": buyer,
+    }
+
+    assert cadence._artifact_ready(item) is True
+    assert cadence.delivery_decision(item)["mode"] == "formal"
+
+
 def test_wait_accepts_supplementary_receipt_when_another_has_readback(tmp_path):
     remote = load("paid_remote_result")
     root, feedback, digest = blocked_project(tmp_path)

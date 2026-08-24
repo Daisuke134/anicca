@@ -3393,10 +3393,12 @@ def _prepare_file(args, item_path: Path, root: Path, item: dict[str, Any], base:
     cadence = {**item, **{key: evidence[key] for key in (
         "project_root", "requirements_path", "artifact_path", "artifact_version",
         "acceptance_evidence_path", "acceptance_status", "package_sha256",
-        "acceptance_delta", "recipient_access_required",
+        "acceptance_delta", "recipient_access_required", "required_assets", "artifact_assets",
     ) if key in evidence}, "blockers": blockers,
         "buyer_formal_delivery_hold": item.get("buyer_formal_delivery_hold") is True,
         "latest_message_identity": semantic.get("latest_message_identity"),
+        "latest_buyer_message_identity": _latest_official_buyer_identity(
+            root, _text(item.get("talkroom_id"))),
         "formal_approval_evidence": semantic.get("formal_approval_evidence")}
     decision = delivery_queue.delivery_decision(cadence)
     if decision.get("mode") not in {"formal", "progress"}:
