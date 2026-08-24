@@ -48,6 +48,10 @@ are not active work.
     onboarding web server/browser UI starts, the official Coconala browser opens, rerun
     resumes `finished`, all six launchd definitions render, and pre-auth marketplace effects
     remain zero.
+12. [x] Make productization status explicit in both READMEs: Coconala is the only
+    one-command marketplace OSS public preview; `gog` email and clean-HOME verification
+    remain; Upwork, Mercor and other money loops are roadmap/non-productized. Keep
+    time-dependent eKYC, buyer traffic, sales and bank arrival outside the coding TODO.
 
 ### Future shared OSS UX — not current session
 
