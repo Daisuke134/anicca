@@ -899,6 +899,15 @@ U13 atomic order:
     candidate relevance without hardcoded categories or a new search agent. Regression remains
     `156 passed`; next main wake must inspect the native feed, preserve existing proposal effects and
     submit only if Luna finds positive verified value.
+72. **PUBLISHED PROOF ENTERS QUALIFICATION / CACHE BINDS ALL MODEL INPUT:** native Best Matches exposes
+    plausible iOS, AI-integration, invoice-agent and Claude-marketing work, but Luna skipped them because
+    it received Skills and the general owner profile without the already-published Upwork portfolio.
+    Load the existing private `upwork-profile-state.json` alongside owner facts so exact provider-owned
+    project IDs/titles can support truthful examples; never infer more than that evidence states.
+    Bind cache reuse to the SHA of the complete prompt, including job evidence, owner/market facts,
+    Skill inventory and policy. A changed proof or Skill therefore triggers one fresh Luna decision,
+    while identical inputs remain zero-call. Regression remains `156 passed`; next native-feed wake
+    must reconsider the same opportunities with official proof and apply only on positive verified value.
 
 U14 atomic order:
 

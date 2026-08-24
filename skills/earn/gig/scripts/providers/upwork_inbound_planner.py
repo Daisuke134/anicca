@@ -25,6 +25,7 @@ from storefront_bootstrap import inventory as capability_inventory  # noqa: E402
 DEFAULT_RUNNER = GIG_ROOT / "agent-runner/agent_runner.py"
 DEFAULT_SCHEMA = GIG_ROOT / "schemas/upwork_inbound_proposal.schema.json"
 DEFAULT_PROFILE = Path.home() / ".config/anicca/job-search/profile.json"
+DEFAULT_MARKET_PROFILE = Path.home() / ".config/anicca/gig/upwork-profile-state.json"
 
 
 class InboundPlannerError(ValueError):
@@ -39,6 +40,10 @@ def _object(path: Path, label: str) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise InboundPlannerError(f"{label}_invalid")
     return value
+
+
+def _optional_object(path: Path, label: str) -> dict[str, Any]:
+    return _object(path, label) if path.is_file() else {}
 
 
 def load_packet(path: Path) -> dict[str, Any]:
@@ -92,6 +97,7 @@ Installed Skills are executable delivery capabilities, not claims of prior clien
 invent experience, but do not skip solely because an exact prior job, testimonial or portfolio item is
 absent when the work can be completed and independently verified with an installed Skill. Missing
 pre-contract implementation details may become concise client questions rather than automatic rejection.
+The market profile contains provider-published portfolio proof; use only its exact facts and public IDs.
 For submit, copy job_id, job_url and job_source_sha256 exactly; status is {status}, required_connects
 is {required}, available_connects_before is {available}; unsupported_claims and attachments are empty. Keep all
 pre-contract communication on Upwork. The proposal must be specific, concise, truthful, and answer
@@ -114,7 +120,8 @@ otherwise return skip for the whole set with reasons. Compare candidates against
 than accepting the first feasible one. Use only supplied facts. Never invent experience, identity,
 availability, credentials, portfolio, results, client facts, requirements, questions, price or scope.
 Installed Skills prove executable capability, not prior client experience. Missing implementation
-details may become concise pre-contract questions. For submit, copy the chosen resource_id, URL,
+details may become concise pre-contract questions. The market profile contains provider-published
+portfolio proof; use only its exact facts and public IDs. For submit, copy the chosen resource_id, URL,
 detail hash, required_connects and available_connects_before exactly; status is
 frozen_waiting_for_connects; unsupported_claims and attachments are empty; answer every explicit
 screening question exactly once and keep communication on Upwork.
@@ -183,8 +190,18 @@ def validate_decision(
 def _invoke_prompt(
     prompt: str, *, runner: Path, schema: Path, evidence_dir: Path,
 ) -> dict[str, Any]:
+    prompt_sha = hashlib.sha256(prompt.encode()).hexdigest()
+    binding = evidence_dir / "prompt.sha256"
+    if evidence_dir.joinpath("summary.json").is_file() and (
+        not binding.is_file() or binding.read_text(encoding="utf-8").strip() != prompt_sha
+    ):
+        evidence_dir = evidence_dir / f"prompt-{prompt_sha}"
+        binding = evidence_dir / "prompt.sha256"
     evidence_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
     os.chmod(evidence_dir, 0o700)
+    if not binding.is_file():
+        binding.write_text(prompt_sha + "\n", encoding="utf-8")
+        os.chmod(binding, 0o600)
     summary_path = evidence_dir / "summary.json"
     if not summary_path.is_file():
         completed = subprocess.run([
@@ -213,11 +230,16 @@ def _invoke_prompt(
 
 def invoke(
     packet_path: Path, *, runner: Path = DEFAULT_RUNNER, schema: Path = DEFAULT_SCHEMA,
-    profile: Path = DEFAULT_PROFILE, evidence_dir: Path,
+    profile: Path = DEFAULT_PROFILE, market_profile: Path = DEFAULT_MARKET_PROFILE,
+    evidence_dir: Path,
 ) -> dict[str, Any] | None:
     packet = load_packet(packet_path)
+    facts = {
+        "owner": _object(profile.expanduser(), "owner_profile"),
+        "market": _optional_object(market_profile.expanduser(), "market_profile"),
+    }
     prompt = planner_prompt(
-        packet, _object(profile.expanduser(), "owner_profile"), capability_inventory(REPO_ROOT),
+        packet, facts, capability_inventory(REPO_ROOT),
     )
     return validate_decision(
         _invoke_prompt(prompt, runner=runner, schema=schema, evidence_dir=evidence_dir), packet,
@@ -226,13 +248,18 @@ def invoke(
 
 def invoke_batch(
     packet_paths: list[Path], *, runner: Path = DEFAULT_RUNNER, schema: Path = DEFAULT_SCHEMA,
-    profile: Path = DEFAULT_PROFILE, evidence_dir: Path,
+    profile: Path = DEFAULT_PROFILE, market_profile: Path = DEFAULT_MARKET_PROFILE,
+    evidence_dir: Path,
 ) -> dict[str, Any] | None:
     packets = [load_packet(path) for path in packet_paths]
     if not packets or len(packets) > 10 or any(packet.get("kind") != "public_job" for packet in packets):
         raise InboundPlannerError("inbound_batch_invalid")
+    facts = {
+        "owner": _object(profile.expanduser(), "owner_profile"),
+        "market": _optional_object(market_profile.expanduser(), "market_profile"),
+    }
     prompt = batch_planner_prompt(
-        packets, _object(profile.expanduser(), "owner_profile"), capability_inventory(REPO_ROOT),
+        packets, facts, capability_inventory(REPO_ROOT),
     )
     decision = _invoke_prompt(prompt, runner=runner, schema=schema, evidence_dir=evidence_dir)
     if decision.get("decision") == "skip":
