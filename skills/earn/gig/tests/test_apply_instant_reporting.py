@@ -204,3 +204,28 @@ def test_fresh_business_event_dispatches_before_old_unknown(tmp_path):
     assert result["sent"] == 2
     assert transport.calls[0][0].endswith(":fresh")
     assert transport.calls[1][0] == "old-unknown"
+
+
+def test_fresh_event_precedes_reopened_event_already_in_work_log(tmp_path):
+    now = int(time.time())
+    old_event = _application_event("old", now - 1200)
+    fresh_event = _application_event("fresh", now)
+    outbox = TelegramOutbox(tmp_path / "telegram-outbox.sqlite3")
+    old_key = "gig:telegram:instant-work-event:v1:old"
+    old_message = report_envelope.render_human_ja(report_envelope.build_work_event_envelope(
+        work_event=old_event, observed_at=datetime.now(timezone.utc),
+    ))
+    _delivery_unknown(outbox, event_key=old_key, kind="application",
+                      message=old_message, created_at=now - 1200)
+    (tmp_path / "instant-work-event-report-state.json").write_text(
+        json.dumps({"version": 1, "seen_event_keys": ["old"]}) + "\n", encoding="utf-8",
+    )
+    (tmp_path / "work-events.jsonl").write_text(
+        json.dumps(old_event) + "\n" + json.dumps(fresh_event) + "\n", encoding="utf-8",
+    )
+    transport = _Transport("apply-test-chat", tmp_path / "receipts")
+
+    apply_telegram_report.publish(tmp_path, outbox, transport)
+
+    assert transport.calls[0][0].endswith(":fresh")
+    assert transport.calls[1][0] == old_key
