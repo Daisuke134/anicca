@@ -26,6 +26,7 @@ from job_journal import (
 from provider_cli import ProviderError, observe, poll, read_login_credentials, resume
 from program_registry import TTS_PLACEMENT, apply_getresponse, elevenlabs_link_action
 from acquisition_decision import advance as advance_acquisition_decision
+from funnel_decision import advance as advance_funnel_decision
 from cta_instrumentation import (
     advance as advance_cta_instrumentation, join_provider_interval, observe_clicks,
     observe_entries,
@@ -4559,6 +4560,19 @@ def _wake_once(args, started_at, run_id):
             "state": "DECISION_FAILED", "changed": False,
             "failure_type": type(error).__name__,
         }
+    try:
+        funnel_decision = admit(
+            "acquisition.funnel-decision", "READ_ONLY",
+            {"money_funnel_state": money_funnel.get("state")},
+            lambda: advance_funnel_decision(
+                Path(__file__).resolve().parent.parent, state, run_id
+            ),
+        )
+    except Exception as error:
+        funnel_decision = {
+            "state": "DECISION_FAILED", "changed": False,
+            "failure_type": type(error).__name__,
+        }
     if provider["state"] == "AUTHENTICATED" and not placement_link_ready:
         status = placement_link["state"]
     elif not link:
@@ -4702,6 +4716,14 @@ def _wake_once(args, started_at, run_id):
         "acquisition_decision_hypothesis": acquisition_decision.get("hypothesis"),
         "acquisition_decision_instruction": acquisition_decision.get("next_campaign_instruction"),
         "acquisition_decision_failure_type": acquisition_decision.get("failure_type"),
+        "funnel_decision": {
+            key: funnel_decision.get(key)
+            for key in (
+                "state", "changed", "decision_id", "source_funnel_transition_id",
+                "bottleneck", "exposure_assessment", "selected_variable",
+                "hypothesis", "action", "official_success_metric", "failure_type",
+            )
+        },
         "revenue_state": revenue["state"],
         "revenue_source_rows": revenue["source_rows"],
         "revenue_appended_transitions": revenue["appended_transitions"],

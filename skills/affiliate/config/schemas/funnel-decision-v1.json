@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "bottleneck", "exposure_assessment", "selected_variable", "hypothesis",
+    "action", "official_success_metric", "evidence"
+  ],
+  "properties": {
+    "bottleneck": {
+      "enum": ["reach", "owned_entry", "cta", "provider_click", "transaction", "approval", "attribution", "cost_evidence"]
+    },
+    "exposure_assessment": {"enum": ["insufficient", "sufficient", "unknown"]},
+    "selected_variable": {
+      "enum": ["title", "opening_hook", "article_structure", "cta", "offer", "posting_time", "distribution_mix"]
+    },
+    "hypothesis": {"type": "string", "minLength": 1},
+    "action": {"type": "string", "minLength": 1},
+    "official_success_metric": {"type": "string", "minLength": 1},
+    "evidence": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+  }
+}
