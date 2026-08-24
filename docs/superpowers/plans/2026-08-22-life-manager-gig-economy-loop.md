@@ -892,6 +892,14 @@ U13 atomic order:
     returned the same skip with `summary.json` and `attempts.jsonl` mtime/size byte-for-byte unchanged,
     proving new Luna calls 0. This closes candidate batching/cache hardening. The next atomic item is
     continuous proposal-state/view/reply reconciliation while acquisition keeps running.
+68. **SALES RECONCILIATION ROUTES GROUNDED:** fresh official Upwork reads show submitted proposals 2,
+    messages 0, offers 0 and contracts 0. Proposal links now carry provider context `Initiated`, not
+    `Submitted`; classify that fixed official state as submitted. The sidebar's trailing-slash message
+    URL returns 404 in hidden navigation, while canonical `/ab/messages/rooms` renders the Messages app
+    and official empty state `Welcome to Messages / Once you connect with a client`. Use that canonical
+    URL and accept those provider-authored empty markers. No reply or contract is fabricated. Upwork
+    regression remains `156 passed`; next production wake must normalize both proposal IDs as submitted,
+    read the real empty inbox and exit 0 while acquisition remains enabled.
 
 U14 atomic order:
 
