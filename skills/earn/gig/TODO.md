@@ -79,8 +79,10 @@ Storefront work.
     Active implementation plan:
     `docs/superpowers/plans/2026-08-24-coconala-installer-dispatch.md`. Only item 1
     is active; later items remain untouched until its RED/GREEN/push closes.
-    1. [ ] Dispatch root `./install.sh coconala` to the package controller; reject unknown
-       product arguments without running the generic self-funded installer.
+    1. [x] Dispatch root `./install.sh coconala` to the package controller; reject unknown
+       product arguments without running the generic self-funded installer. Root dispatch
+       is GREEN at remote publication checkpoint: focused dispatch + legacy isolation =
+       3/3 tests; Coconala/unknown paths create no generic runtime root.
     2. [ ] Preflight macOS, Apple Silicon, supported Python, CloakBrowser and disk space;
        when Codex is unauthenticated, run `codex login` and require CLI auth readback.
     3. [ ] Create the private resumable onboarding receipt with no raw identity, OTP,
