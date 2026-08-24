@@ -40,6 +40,7 @@ AFFILIATE_PROPOSAL="${AFFILIATE_REPOST_PROPOSAL_PATH:-$HOME/.local/state/life-ma
 AFFILIATE_CONSUMED="$STATE/affiliate-proposals-consumed.jsonl"
 AFFILIATE_JOB_QUEUE="${AFFILIATE_X_DISTRIBUTION_QUEUE:-$HOME/.local/state/life-manager/affiliate/x-distribution-jobs.jsonl}"
 AFFILIATE_JOB_CLAIMS="$STATE/affiliate-x-distribution-job-claims.jsonl"
+AFFILIATE_JOB_PAYLOADS="$STATE/affiliate-x-distribution-payloads"
 BROWSER_LEASED=0
 MODEL_FAILURE="other"
 
@@ -398,6 +399,22 @@ if [ "$AFFILIATE_JOB_STATE" = "EFFECT_STARTED" ] && [ "$AFFILIATE_JOB_CHANGED" =
     <<<"$AFFILIATE_JOB_CLAIM")"
   report "✅ Affiliate distribution job claimed without posting\njob: $AFFILIATE_JOB_ID\nnext: D04 safe payload"
   finish 0 "affiliate distribution job claimed"
+fi
+if [ "$AFFILIATE_JOB_STATE" = "EFFECT_STARTED" ]; then
+  if ! AFFILIATE_JOB_PAYLOAD="$("$PY" "$SKILL/scripts/affiliate_proposal.py" \
+    --job-claims "$AFFILIATE_JOB_CLAIMS" --job-payload-dir "$AFFILIATE_JOB_PAYLOADS" \
+    --render-claimed-job 2>>"$EV/affiliate-job.err")"; then
+    report "🛑 Affiliate distribution payload failed the public-link safety gate"
+    finish 1 "affiliate distribution payload failed"
+  fi
+  AFFILIATE_PAYLOAD_CHANGED="$("$PY" -c 'import json,sys; print(json.load(sys.stdin).get("changed",False))' \
+    <<<"$AFFILIATE_JOB_PAYLOAD" 2>/dev/null || echo False)"
+  if [ "$AFFILIATE_PAYLOAD_CHANGED" = "True" ]; then
+    AFFILIATE_PAYLOAD_JOB="$("$PY" -c 'import json,sys; print(json.load(sys.stdin)["job_id"])' \
+      <<<"$AFFILIATE_JOB_PAYLOAD")"
+    report "✅ Affiliate distribution payload ready without posting\njob: $AFFILIATE_PAYLOAD_JOB\nnext: D05 X effect"
+    finish 0 "affiliate distribution payload ready"
+  fi
 fi
 # Read and validate the proposal ledger before the daily generic-post gate. An unresolved
 # EFFECT_STARTED claim must remain recoverable even when generic reposts already hit their brake.

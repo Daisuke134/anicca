@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import fcntl
+import hashlib
 import json
 import os
 import re
@@ -159,6 +160,38 @@ def distribution_jobs(path: Path) -> list[dict]:
     return jobs
 
 
+def valid_job_claim(row: dict) -> bool:
+    if not isinstance(row, dict):
+        return False
+    return all((
+        row.get("schema_version") == 1,
+        row.get("receipt_type") == "X_REPOST_DISTRIBUTION_JOB_CLAIM",
+        row.get("state") == "EFFECT_STARTED",
+        row.get("owner_label") == "ai.anicca.x-repost-pass",
+        isinstance(row.get("job_id"), str) and PROPOSAL_ID.fullmatch(row["job_id"]),
+        isinstance(row.get("effect_identity"), str)
+        and PROPOSAL_ID.fullmatch(row["effect_identity"]),
+        valid_job(row.get("job")),
+        row.get("job_id") == (row.get("job") or {}).get("job_id"),
+        row.get("effect_identity") == (row.get("job") or {}).get("effect_identity"),
+        row.get("placement_id") == (row.get("job") or {}).get("placement_id"),
+        isinstance(row.get("observed_at"), str),
+    ))
+
+
+def distribution_claims(path: Path) -> list[dict]:
+    if not path.is_file():
+        return []
+    try:
+        values = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()
+                  if line.strip()]
+    except (OSError, ValueError) as error:
+        raise ValueError("distribution job claim ledger invalid") from error
+    if any(not valid_job_claim(row) for row in values):
+        raise ValueError("distribution job claim ledger invalid")
+    return values
+
+
 def claim_next_job(queue_path: Path, claims_path: Path) -> dict:
     jobs = distribution_jobs(queue_path)
     claims_path.parent.mkdir(parents=True, exist_ok=True)
@@ -171,17 +204,7 @@ def claim_next_job(queue_path: Path, claims_path: Path) -> dict:
                 row = json.loads(line)
             except ValueError as error:
                 raise ValueError("distribution job claim ledger invalid") from error
-            if not (
-                isinstance(row, dict)
-                and row.get("schema_version") == 1
-                and row.get("receipt_type") == "X_REPOST_DISTRIBUTION_JOB_CLAIM"
-                and row.get("state") == "EFFECT_STARTED"
-                and row.get("owner_label") == "ai.anicca.x-repost-pass"
-                and isinstance(row.get("job_id"), str) and PROPOSAL_ID.fullmatch(row["job_id"])
-                and isinstance(row.get("effect_identity"), str)
-                and PROPOSAL_ID.fullmatch(row["effect_identity"])
-                and valid_job(row.get("job"))
-            ):
+            if not valid_job_claim(row):
                 raise ValueError("distribution job claim ledger invalid")
             claims.append(row)
         if claims:
@@ -205,6 +228,60 @@ def claim_next_job(queue_path: Path, claims_path: Path) -> dict:
         stream.flush()
         os.fsync(stream.fileno())
         return {**row, "changed": True}
+
+
+def render_claimed_job(claims_path: Path, payloads_dir: Path) -> dict:
+    claims = distribution_claims(claims_path)
+    if not claims:
+        return {"state": "NO_CLAIM", "changed": False}
+    job = claims[0]["job"]
+    text = post_text({
+        "receipt_type": "AFFILIATE_REPOST_PROPOSAL",
+        "state": "READY_FOR_EXISTING_REPOST_OWNER",
+        "proposal_id": job["job_id"],
+        "placement_id": job["placement_id"],
+        "owned_article_url": job["owned_article_url"],
+        "language": "en",
+        "disclosure_required": True,
+        "tracking_link_state": "NOT_INCLUDED",
+        "revenue_credit_state": "NO_REVENUE_CREDIT",
+    })
+    urls = URL.findall(text)
+    if urls != [job["owned_article_url"]] or "try.elevenlabs.io" in text.casefold():
+        raise ValueError("distribution payload contains an unsafe link")
+    text_sha256 = hashlib.sha256(text.encode()).hexdigest()
+    payloads_dir.mkdir(parents=True, exist_ok=True)
+    path = payloads_dir / f"{job['job_id']}.json"
+    expected = {
+        "schema_version": 1,
+        "receipt_type": "X_REPOST_DISTRIBUTION_PAYLOAD",
+        "state": "PAYLOAD_READY",
+        "job_id": job["job_id"],
+        "effect_identity": job["effect_identity"],
+        "placement_id": job["placement_id"],
+        "target_x_account": job["target_x_account"],
+        "owned_article_url": job["owned_article_url"],
+        "content_sha256": job["content_sha256"],
+        "text": text,
+        "text_sha256": text_sha256,
+        "weighted_length": len(URL.sub("x" * X_TRANSFORMED_URL_LENGTH, text)),
+        "private_tracking_url_state": "NOT_INCLUDED",
+    }
+    if path.is_file():
+        prior = read_json(path)
+        comparable = {key: value for key, value in prior.items() if key != "created_at"}
+        if comparable != expected:
+            raise ValueError("distribution payload conflicts with existing receipt")
+        return {**prior, "changed": False}
+    receipt = {**expected, "created_at": datetime.now(timezone.utc).isoformat()}
+    temporary = path.with_name(f".{path.name}.{os.getpid()}")
+    with temporary.open("x", encoding="utf-8") as stream:
+        json.dump(receipt, stream, sort_keys=True, separators=(",", ":"))
+        stream.write("\n")
+        stream.flush()
+        os.fsync(stream.fileno())
+    os.replace(temporary, path)
+    return {**receipt, "changed": True}
 
 
 def post_text(proposal: dict) -> str:
@@ -455,6 +532,8 @@ def main() -> int:
     parser.add_argument("--job-queue", type=Path)
     parser.add_argument("--job-claims", type=Path)
     parser.add_argument("--claim-next-job", action="store_true")
+    parser.add_argument("--render-claimed-job", action="store_true")
+    parser.add_argument("--job-payload-dir", type=Path)
     parser.add_argument("--posted", type=Path)
     parser.add_argument("--record", choices=("POSTED", "UNVERIFIED", "NO_EFFECT"))
     parser.add_argument("--claim", action="store_true")
@@ -465,6 +544,11 @@ def main() -> int:
         if args.job_queue is None or args.job_claims is None:
             parser.error("--claim-next-job requires --job-queue and --job-claims")
         print(json.dumps(claim_next_job(args.job_queue, args.job_claims), sort_keys=True))
+        return 0
+    if args.render_claimed_job:
+        if args.job_claims is None or args.job_payload_dir is None:
+            parser.error("--render-claimed-job requires --job-claims and --job-payload-dir")
+        print(json.dumps(render_claimed_job(args.job_claims, args.job_payload_dir), sort_keys=True))
         return 0
     if args.proposal is None or args.consumed is None:
         parser.error("legacy proposal mode requires --proposal and --consumed")

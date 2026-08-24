@@ -19,6 +19,52 @@ SPEC.loader.exec_module(MODULE)
 
 
 class AffiliateProposalTests(unittest.TestCase):
+    def test_claimed_distribution_job_renders_one_safe_idempotent_payload(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            queue, claims = root / "jobs.jsonl", root / "claims.jsonl"
+            payloads = root / "payloads"
+            job = {
+                "schema_version": 1, "receipt_type": "AFFILIATE_X_DISTRIBUTION_JOB",
+                "state": "QUEUED", "job_id": "1" * 64,
+                "effect_identity": "2" * 64,
+                "placement_id": "elevenlabs-discovered-caption-generator-en-1",
+                "owned_article_url": "https://aniccaai.com/blog/caption-generator",
+                "content_sha256": "3" * 64,
+                "experiment_lineage": {"kind": "BASE", "decision_id": None,
+                                       "control_placement_id": None},
+                "target_x_account": "selawmqt",
+                "cadence_class": "AFFILIATE_MONETIZATION",
+                "policy_sha256": "4" * 64, "source_set_sha256": "5" * 64,
+                "created_at": "2026-08-24T00:00:00+00:00",
+                "private_tracking_url_state": "NOT_INCLUDED",
+                "revenue_credit_state": "NO_REVENUE_CREDIT",
+            }
+            queue.write_text(json.dumps(job) + "\n")
+            MODULE.claim_next_job(queue, claims)
+
+            first = MODULE.render_claimed_job(claims, payloads)
+            second = MODULE.render_claimed_job(claims, payloads)
+
+            self.assertEqual(first["state"], "PAYLOAD_READY")
+            self.assertTrue(first["changed"])
+            self.assertFalse(second["changed"])
+            self.assertEqual(first["text_sha256"], second["text_sha256"])
+            self.assertEqual(first["text"].count(job["owned_article_url"]), 1)
+            self.assertIn("Affiliate disclosure:", first["text"])
+            self.assertNotIn("try.elevenlabs.io", json.dumps(first))
+            self.assertEqual(first["private_tracking_url_state"], "NOT_INCLUDED")
+            self.assertEqual(len(list(payloads.glob("*.json"))), 1)
+            weighted = len(re.sub(r"https?://\S+", "x" * 23, first["text"]))
+            self.assertLessEqual(weighted, 280)
+
+    def test_owner_renders_claimed_job_before_legacy_proposal(self) -> None:
+        shell = (SCRIPT.parents[1] / "x-repost-cli.sh").read_text()
+        render = shell.index("--render-claimed-job")
+        legacy = shell.index("--proposal \"$AFFILIATE_PROPOSAL\"")
+        self.assertLess(render, legacy)
+        self.assertIn("affiliate distribution payload ready", shell)
+
     def test_owner_claims_distribution_job_before_legacy_proposal(self) -> None:
         shell = (SCRIPT.parents[1] / "x-repost-cli.sh").read_text()
         claim = shell.index("--claim-next-job")
