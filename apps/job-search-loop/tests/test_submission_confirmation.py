@@ -344,6 +344,34 @@ class SubmissionConfirmationTests(unittest.TestCase):
             reopened.close()
             self.assertFalse((root / "inbox-seen.json").exists())
 
+    def test_unique_authoritative_receipt_without_role_promotes_one_intent(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ledger, application_id, _ = self._unknown_submission(root)
+            ledger.close()
+            received = datetime.now(timezone.utc) + timedelta(minutes=1)
+            payload = {"thread": {"messages": [{
+                "id": "gmail-roleless",
+                "threadId": "thread-roleless",
+                "internalDate": int(received.timestamp() * 1000),
+                "headers": {
+                    "from": "Dream AI <notifications@ashbyhq.com>",
+                    "to": "candidate@example.com",
+                    "subject": "Thank you for applying",
+                },
+                "body": "Dream AI has received your application.",
+            }]}}
+
+            result = reconcile_confirmation_threads(
+                ledger_path=root / "ledger.sqlite3",
+                threads=[{"id": "thread-roleless", "subject": "Thank you for applying"}],
+                thread_loader=lambda _thread_id: payload,
+                seen_state=root / "seen.json",
+                expected_recipient="candidate@example.com",
+            )
+
+            self.assertEqual(result["reconciled"][0]["application_id"], application_id)
+
     def test_ambiguous_company_and_role_match_fails_closed(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

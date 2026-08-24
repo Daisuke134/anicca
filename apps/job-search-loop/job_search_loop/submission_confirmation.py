@@ -133,6 +133,27 @@ def _confirmation_matches(
     )
 
 
+def _confirmation_matches_without_title(
+    message: dict[str, str],
+    candidate: dict[str, str],
+    expected_recipient: str | None = None,
+) -> bool:
+    subject_and_body = _fold(f"{message['subject']}\n{message['body']}")
+    company_context = _fold(
+        f"{message['sender']}\n{message['subject']}\n{message['body']}"
+    )
+    return (
+        (
+            expected_recipient is None
+            or parseaddr(message["recipient"])[1].casefold()
+            == expected_recipient.casefold()
+        )
+        and any(term in subject_and_body for term in _CONFIRMATION_TERMS)
+        and _fold(candidate["company"]) in company_context
+        and _sender_matches(message["sender"], candidate["canonical_url"])
+    )
+
+
 def _looks_like_confirmation_summary(thread: dict[str, Any]) -> bool:
     summary_text = _fold(
         f"{thread.get('subject', '')}\n{thread.get('snippet', '')}"
@@ -225,11 +246,20 @@ def reconcile_confirmation_threads(
                     received_epoch=received_epoch,
                 ):
                     continue
+                uncertain = _uncertain_candidates(ledger)
                 candidates = [
                     candidate
-                    for candidate in _uncertain_candidates(ledger)
+                    for candidate in uncertain
                     if _confirmation_matches(message, candidate, expected_recipient)
                 ]
+                if not candidates:
+                    candidates = [
+                        candidate
+                        for candidate in uncertain
+                        if _confirmation_matches_without_title(
+                            message, candidate, expected_recipient
+                        )
+                    ]
                 if len(candidates) != 1:
                     reason = (
                         "ambiguous_application_match"
