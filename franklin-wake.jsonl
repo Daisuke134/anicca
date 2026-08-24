@@ -33964,3 +33964,12 @@
 {"ts":1787608640,"wake_id":"00MT7S12UB89BF11886C774939","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: new x402 paid API agents pay for [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced for the model t"}
 {"ts":1787608774,"wake_id":"00MT7S3YD6070CB613A4CF4092","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1787608902,"wake_id":"00MT7S6OSM0D80915A71134C9C","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787609064,"wake_id":"00MT7SA5WYEB9D1C473EE54E29","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787609194,"wake_id":"00MT7SCYGL8989FF0BF67448AA","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787609321,"wake_id":"00MT7SFOCPAB2DCB12CAE646BF","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1787609389,"wake_id":"00MT7SH4YN214448EBCD16449A","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1787609457,"wake_id":"00MT7SILHA6F96FB4318594A62","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1787609526,"wake_id":"00MT7SK2025B9978425625458B","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787609652,"wake_id":"00MT7SMRKKA48D429B35EC489D","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787609779,"wake_id":"00MT7SPHAW1D33914C7FDF4E71","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787609914,"wake_id":"00MT7SSDJ2AE9B328F40D34C05","kind":"narrate","sleep_s":120,"model":"auto"}
