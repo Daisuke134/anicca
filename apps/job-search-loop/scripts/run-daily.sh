@@ -52,6 +52,8 @@ JAPAN_DAY=$(TZ=Asia/Tokyo /bin/date +%F)
 WORKDAY_DISCOVERY_RESULT="$EVIDENCE/workday-discovery.json"
 WORKDAY_SOURCES="$EVIDENCE/workday-sources.json"
 PERSISTED_WORKDAY_SOURCES="$JOB_SEARCH_STATE_ROOT/workday-sources.v1.json"
+WORKDAY_SNAPSHOT="$EVIDENCE/workday-job-snapshot.json"
+PERSISTED_WORKDAY_SNAPSHOT="$JOB_SEARCH_STATE_ROOT/workday-job-snapshot.v1.json"
 RUNNER_SUMMARY="$EVIDENCE/summary.json"
 refresh_summary() {
   "$JOB_SEARCH_PYTHON" -m job_search_loop.summary \
@@ -96,28 +98,23 @@ chmod 600 "$EVIDENCE/candidate-memory-receipt.json"
 export JOB_SEARCH_CANDIDATE_MEMORY="$CANDIDATE_MEMORY"
 export JOB_SEARCH_ANSWER_MEMORY="$JOB_SEARCH_STATE_ROOT/answer-memory.v1.json"
 export JOB_SEARCH_MACHINE_CREDENTIALS="${XDG_DATA_HOME:-$HOME/.local/share}/anicca/credentials.json"
-set +e
-SOURCE_ARGS=()
-if [[ -f "$PERSISTED_WORKDAY_SOURCES" ]]; then
-  SOURCE_ARGS=(--previous "$PERSISTED_WORKDAY_SOURCES")
+if [[ ! -f "$PERSISTED_WORKDAY_SOURCES" ]]; then
+  set +e
+  "$JOB_SEARCH_PYTHON" -m job_search_loop.workday_source_discovery \
+    --candidate-memory "$CANDIDATE_MEMORY" \
+    --runner "$JOB_SEARCH_RUNNER" \
+    --schema "$JOB_SEARCH_APP_ROOT/schemas/workday-sources.v1.schema.json" \
+    --workdir "$JOB_SEARCH_REPO_ROOT" \
+    --evidence-root "$EVIDENCE/source-discovery" \
+    --output "$PERSISTED_WORKDAY_SOURCES"
+  WORKDAY_SOURCE_RC=$?
+  set -e
+  if [[ "$WORKDAY_SOURCE_RC" -ne 0 ]]; then
+    printf '%s\n' "Workday registry bootstrap failed closed" >&2
+  fi
 fi
-"$JOB_SEARCH_PYTHON" -m job_search_loop.workday_source_discovery \
-  --candidate-memory "$CANDIDATE_MEMORY" \
-  --runner "$JOB_SEARCH_RUNNER" \
-  --schema "$JOB_SEARCH_APP_ROOT/schemas/workday-sources.v1.schema.json" \
-  --workdir "$JOB_SEARCH_REPO_ROOT" \
-  --evidence-root "$EVIDENCE/source-discovery" \
-  "${SOURCE_ARGS[@]}" \
-  --output "$WORKDAY_SOURCES"
-WORKDAY_SOURCE_RC=$?
-set -e
-if [[ "$WORKDAY_SOURCE_RC" -eq 0 ]]; then
-  cp "$WORKDAY_SOURCES" "$PERSISTED_WORKDAY_SOURCES"
-  chmod 600 "$PERSISTED_WORKDAY_SOURCES"
-elif [[ -f "$PERSISTED_WORKDAY_SOURCES" ]]; then
+if [[ -f "$PERSISTED_WORKDAY_SOURCES" ]]; then
   cp "$PERSISTED_WORKDAY_SOURCES" "$WORKDAY_SOURCES"
-else
-  printf '%s\n' "Workday source discovery failed closed; no fixed company fallback exists" >&2
 fi
 set +e
 if [[ -f "$WORKDAY_SOURCES" ]]; then
@@ -130,12 +127,17 @@ if [[ -f "$WORKDAY_SOURCES" ]]; then
   --workdir "$JOB_SEARCH_REPO_ROOT" \
   --evidence-root "$EVIDENCE/qualification" \
   --output "$WORKDAY_DISCOVERY_RESULT" \
+  --snapshot "$WORKDAY_SNAPSHOT" \
   --max-candidates 8
 WORKDAY_SEARCH_RC=$?
 else
   WORKDAY_SEARCH_RC=75
 fi
 set -e
+if [[ -f "$WORKDAY_SNAPSHOT" ]]; then
+  cp "$WORKDAY_SNAPSHOT" "$PERSISTED_WORKDAY_SNAPSHOT"
+  chmod 600 "$PERSISTED_WORKDAY_SNAPSHOT"
+fi
 if [[ "$WORKDAY_SEARCH_RC" -ne 0 ]]; then
   printf '%s\n' "Workday search failed closed; no unqualified row can enter the browser lane" >&2
 fi

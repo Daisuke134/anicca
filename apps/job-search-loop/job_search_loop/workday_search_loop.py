@@ -23,15 +23,16 @@ def rotated_sources(
 
 
 def cached_source_fetcher(
-    fetch: Callable[[dict[str, str]], list[dict[str, Any]]]
+    fetch: Callable[[dict[str, str]], list[dict[str, Any]]],
+    cache: dict[str, list[dict[str, Any]]] | None = None,
 ) -> Callable[[dict[str, str]], list[dict[str, Any]]]:
-    cache: dict[str, list[dict[str, Any]]] = {}
+    values = cache if cache is not None else {}
 
     def cached(source: dict[str, str]) -> list[dict[str, Any]]:
         key = json.dumps(source, ensure_ascii=False, sort_keys=True)
-        if key not in cache:
-            cache[key] = fetch(source)
-        return cache[key]
+        if key not in values:
+            values[key] = fetch(source)
+        return values[key]
 
     return cached
 
@@ -86,6 +87,7 @@ def main() -> int:
     parser.add_argument("--workdir", required=True, type=Path)
     parser.add_argument("--evidence-root", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--snapshot", required=True, type=Path)
     parser.add_argument("--max-candidates", type=int, default=8)
     args = parser.parse_args()
     runner = AgentRunner(evidence_root=args.evidence_root, runner_path=args.runner)
@@ -93,7 +95,8 @@ def main() -> int:
     sources = tuple(dict(row) for row in source_payload.get("sources", []))
     allowed_hosts = {str(row["host"]).casefold() for row in sources}
     source_cursor = 0
-    fetch_jobs = cached_source_fetcher(_fetch_jobs)
+    jobs_by_source: dict[str, list[dict[str, Any]]] = {}
+    fetch_jobs = cached_source_fetcher(_fetch_jobs, jobs_by_source)
 
     def discover_next() -> dict[str, Any]:
         nonlocal source_cursor
@@ -127,6 +130,19 @@ def main() -> int:
         for discovery in result["discoveries"]
         for row in discovery.get("discovered", [])
     ]
+    snapshot = {
+        "version": 1,
+        "sources": [
+            {"source": json.loads(key), "jobs": jobs}
+            for key, jobs in jobs_by_source.items()
+        ],
+    }
+    args.snapshot.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    args.snapshot.write_text(
+        json.dumps(snapshot, ensure_ascii=False, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    os.chmod(args.snapshot, 0o600)
     args.output.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     args.output.write_text(
         json.dumps(result, ensure_ascii=False, sort_keys=True) + "\n",

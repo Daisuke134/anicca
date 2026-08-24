@@ -19,27 +19,36 @@ def _fetch_jobs(source: dict[str, str]) -> list[dict[str, Any]]:
         f"https://{source['host']}/wday/cxs/{source['tenant']}/"
         f"{source['site']}/jobs"
     )
-    request = Request(
-        endpoint,
-        data=json.dumps(
-            {
-                "appliedFacets": {},
-                "limit": 20,
-                "offset": 0,
-                "searchText": source["search_text"],
-            }
-        ).encode(),
-        headers={
-            "Accept": "application/json",
-            "Content-Type": "application/json",
-            "User-Agent": "Mozilla/5.0 job-search-loop/1.0",
-        },
-        method="POST",
-    )
-    with urlopen(request, timeout=20) as response:
-        value = json.load(response)
-    rows = value.get("jobPostings") if isinstance(value, dict) else None
-    return [row for row in (rows or []) if isinstance(row, dict)]
+    rows: list[dict[str, Any]] = []
+    offset = 0
+    limit = 20
+    while True:
+        request = Request(
+            endpoint,
+            data=json.dumps(
+                {
+                    "appliedFacets": {},
+                    "limit": limit,
+                    "offset": offset,
+                    "searchText": "",
+                }
+            ).encode(),
+            headers={
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                "User-Agent": "Mozilla/5.0 job-search-loop/1.0",
+            },
+            method="POST",
+        )
+        with urlopen(request, timeout=20) as response:
+            value = json.load(response)
+        postings = value.get("jobPostings") if isinstance(value, dict) else None
+        page = [row for row in (postings or []) if isinstance(row, dict)]
+        rows.extend(page)
+        total = int(value.get("total") or len(rows)) if isinstance(value, dict) else len(rows)
+        offset += len(page)
+        if not page or offset >= total:
+            return rows
 
 
 def discover_one(

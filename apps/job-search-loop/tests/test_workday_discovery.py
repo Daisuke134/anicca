@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import json
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 from job_search_loop.ledger import Ledger
-from job_search_loop.workday_discovery import discover_one
+from job_search_loop.workday_discovery import _fetch_jobs, discover_one
 from job_search_loop.workday_source_discovery import validate_sources
 
 TEST_SOURCES = tuple(
@@ -26,6 +28,37 @@ TEST_SOURCES = tuple(
 
 
 class WorkdayDiscoveryTests(unittest.TestCase):
+    def test_cxs_fetch_paginates_empty_search_until_official_total(self):
+        payloads = [
+            {"total": 21, "jobPostings": [
+                {"title": f"Role {index}", "externalPath": f"/job/R{index}"}
+                for index in range(20)
+            ]},
+            {"total": 21, "jobPostings": [
+                {"title": "Role 20", "externalPath": "/job/R20"}
+            ]},
+        ]
+        requests = []
+
+        class Response:
+            def __init__(self, payload): self.payload = payload
+            def __enter__(self): return self
+            def __exit__(self, *_args): return False
+
+        def fake_urlopen(request, timeout):
+            requests.append(json.loads(request.data))
+            return Response(payloads[len(requests) - 1])
+
+        with patch("job_search_loop.workday_discovery.urlopen", fake_urlopen), patch(
+            "job_search_loop.workday_discovery.json.load",
+            side_effect=lambda response: response.payload,
+        ):
+            rows = _fetch_jobs(TEST_SOURCES[0])
+
+        self.assertEqual(len(rows), 21)
+        self.assertEqual([request["offset"] for request in requests], [0, 20])
+        self.assertEqual({request["searchText"] for request in requests}, {""})
+
     def test_model_sources_accept_arbitrary_company_and_reject_explicit_exclusion(self):
         sources = validate_sources({"sources": [
             {
